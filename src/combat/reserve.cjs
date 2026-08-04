@@ -20,7 +20,13 @@ function normalizeReserve(entries = []) {
     if (!['w', 'b'].includes(entry.side)) throw new TypeError(`invalid reserve side for ${entry.id}`);
     if (!['p', 'n', 'b', 'r', 'q'].includes(entry.type)) throw new TypeError(`invalid reserve type for ${entry.id}`);
     const orderCost = Number.isInteger(entry.orderCost) && entry.orderCost >= 0 ? entry.orderCost : 1;
-    return Object.freeze({ id: entry.id, side: entry.side, type: entry.type, orderCost });
+    return Object.freeze({
+      id: entry.id,
+      side: entry.side,
+      type: entry.type,
+      orderCost,
+      metadata: Object.freeze({ ...(entry.metadata || {}) })
+    });
   });
   return Object.freeze(normalized);
 }
