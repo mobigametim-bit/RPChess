@@ -17,7 +17,7 @@ module.exports = function applyUiHotfix136(dist) {
   ui = ui.replace(/<\/button><p class="compact-copy">/g,
     '</span><p class="compact-copy">');
 
-  const marker = '/* 1.3.6 hotfix — reward cards and banner typography */';
+  const marker = '/* 1.3.7 hotfix — restore reward illustrations */';
   if (!css.includes(marker)) {
     css += `
 
@@ -29,12 +29,30 @@ ${marker}
   align-items:flex-start !important;
   justify-content:flex-start !important;
   gap:8px;
-  min-height:300px;
+  min-height:330px;
   overflow:hidden;
 }
 .reward-grid .card > * { max-width:100%; }
 .reward-grid .card .tag { margin-top:auto; align-self:flex-start; }
 .reward-grid .compact-copy { max-width:26ch; }
+
+/* Empty background-image elements collapse inside a flex column unless their
+   size is explicit. Make the art fill the card width and remain visible. */
+.reward-grid .reward-art {
+  display:block !important;
+  align-self:stretch !important;
+  width:calc(100% + 40px) !important;
+  min-width:calc(100% + 40px) !important;
+  height:154px !important;
+  min-height:154px !important;
+  flex:0 0 154px !important;
+  margin:-20px -20px 14px !important;
+  background-size:contain !important;
+  background-repeat:no-repeat !important;
+  background-position:center center !important;
+  background-color:rgba(7,15,22,.78) !important;
+}
+
 .relic-name-button {
   display:block;
   margin:2px 0 6px;
@@ -109,15 +127,15 @@ ${marker}
 
   if (fs.existsSync(buildInfoPath)) {
     const info = JSON.parse(fs.readFileSync(buildInfoPath, 'utf8'));
-    info.version = '1.3.6';
-    info.build_name = 'RPChess Fantasy Edition 1.3.6 Reward Card and Banner Typography Fix';
-    info.notes = 'Fixed reward-card nesting, reduced top-frame typography by 20 percent, and prevented words from splitting.';
+    info.version = '1.3.7';
+    info.build_name = 'RPChess Fantasy Edition 1.3.7 Reward Illustration Restore';
+    info.notes = 'Restored reward illustrations by fixing flex sizing while preserving the reward-card and banner typography corrections.';
     fs.writeFileSync(buildInfoPath, JSON.stringify(info, null, 2));
   }
 
   if (ui.includes('<button class="relic-name-button"')) {
-    throw new Error('Nested relic button remained after RPChess 1.3.6 hotfix.');
+    throw new Error('Nested relic button remained after RPChess reward hotfix.');
   }
 
-  console.log('Applied RPChess 1.3.6 reward-card and typography hotfix.');
+  console.log('Applied RPChess 1.3.7 reward illustration restore.');
 };
