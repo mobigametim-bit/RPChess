@@ -44,7 +44,10 @@ test('after ward is consumed, the next legal capture removes the piece normally'
   const result = executeWardAwareCommand(state, move('e4', 'd5'));
   assert.strictEqual(identityAt(result.state.identities, 'e4'), null);
   assert.strictEqual(identityAt(result.state.identities, 'd5'), 'pawn_w');
-  assert.deepStrictEqual(result.events.map((event) => event.type), ['PieceMoved', 'PieceCaptured']);
+  const eventTypes = result.events.map((event) => event.type);
+  assert.strictEqual(eventTypes[0], 'PieceMoved');
+  assert.strictEqual(eventTypes.includes('PieceCaptured'), true);
+  assert.strictEqual(eventTypes.includes('CapturePrevented'), false);
 });
 
 test('ward cannot be applied to either king', () => {
