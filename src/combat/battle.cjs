@@ -11,6 +11,12 @@ const {
   deployReserve,
   legalReserveDeployments
 } = require('./reserve.cjs');
+const {
+  createPieceIdentities,
+  identityAt,
+  movePieceIdentities,
+  deployReserveIdentity
+} = require('./identity.cjs');
 
 function freezeArray(items) {
   return Object.freeze(items.slice());
@@ -34,6 +40,18 @@ function normalizeOrderPools(options = {}) {
   });
 }
 
+function normalizeIdentities(position, options, battleId, seed) {
+  if (options.identities && options.identities.format === 'rpchess-piece-identities') {
+    return options.identities;
+  }
+  return createPieceIdentities(position, {
+    battleId,
+    seed,
+    bySquare: options.identities && !options.identities.format ? options.identities : (options.identitiesBySquare || {}),
+    metadata: options.identityMetadata || {}
+  });
+}
+
 function outcomeForStatus(state, position, status) {
   if (status.state === 'checkmate') {
     return {
@@ -54,22 +72,24 @@ function outcomeForStatus(state, position, status) {
 function createBattleState(options) {
   if (!options || !options.position) throw new TypeError('position is required');
   const battleId = String(options.battleId || 'battle');
+  const seed = options.seed || 1;
   const playerSide = options.playerSide || 'w';
   const initialStatus = gameStatus(options.position);
   const outcome = outcomeForStatus({ playerSide }, options.position, initialStatus);
   return Object.freeze({
     format: 'rpchess-battle-state',
-    schemaVersion: 2,
+    schemaVersion: 3,
     battleId,
     playerSide,
     position: options.position,
+    identities: normalizeIdentities(options.position, options, battleId, seed),
     actionIndex: 0,
     status: outcome.status,
     result: outcome.result,
     orderPoints: normalizeOrderPools(options.orderPoints),
     reserve: normalizeReserve(options.reserve || []),
     reserveCells: normalizeReserveCells(options.reserveCells || {}),
-    envelope: initialEnvelope(battleId, options.seed || 1),
+    envelope: initialEnvelope(battleId, seed),
     history: freezeArray([]),
     eventLog: freezeArray([])
   });
@@ -110,21 +130,24 @@ function captureDetails(position, move) {
   return { square: to, piece: position.board[to] };
 }
 
-function appendPositionStatusEvents(state, position, factory, events) {
+function appendPositionStatusEvents(state, position, identities, factory, events) {
   const chessStatus = gameStatus(position);
   const outcome = outcomeForStatus(state, position, chessStatus);
   if (chessStatus.state === 'check') {
     const kingIndex = position.board.findIndex((value) => value && value.side === position.sideToMove && value.type === 'k');
+    const kingSquare = indexToSquare(kingIndex);
     events.push(factory.event('KingChecked', {
       battleId: state.battleId,
       checkedSide: position.sideToMove,
-      kingSquare: indexToSquare(kingIndex)
+      kingSquare,
+      kingId: identityAt(identities, kingSquare)
     }));
   } else if (chessStatus.state === 'checkmate') {
     events.push(factory.event('CheckmateDeclared', {
       battleId: state.battleId,
       winner: chessStatus.winner,
-      loser: position.sideToMove
+      loser: position.sideToMove,
+      losingKingId: identityAt(identities, indexToSquare(position.board.findIndex((value) => value && value.side === position.sideToMove && value.type === 'k')))
     }));
     events.push(factory.event('BattleCompleted', { battleId: state.battleId, ...outcome.result }));
   } else if (chessStatus.state === 'stalemate') {
@@ -141,8 +164,10 @@ function executeMoveCommand(state, command, factory) {
   const result = makeMove(before, command.payload);
   const move = result.move;
   const captured = captureDetails(before, move);
+  const identityChange = movePieceIdentities(state.identities, before, move);
   const events = [factory.event('PieceMoved', {
     battleId: state.battleId,
+    pieceId: identityChange.movedId,
     side: moving.side,
     pieceType: moving.type,
     from: indexToSquare(move.from),
@@ -153,25 +178,41 @@ function executeMoveCommand(state, command, factory) {
   if (captured && captured.piece) {
     events.push(factory.event('PieceCaptured', {
       battleId: state.battleId,
+      capturedId: identityChange.capturedId,
       capturedSide: captured.piece.side,
       capturedType: captured.piece.type,
       square: indexToSquare(captured.square),
+      byId: identityChange.movedId,
       bySide: moving.side,
       byType: moving.type,
       enPassant: move.enPassant
     }));
   }
-  if (move.castle) events.push(factory.event('CastleCompleted', { battleId: state.battleId, side: moving.side, flank: move.castle }));
-  if (move.promotion) events.push(factory.event('PawnPromoted', {
-    battleId: state.battleId,
-    side: moving.side,
-    square: indexToSquare(move.to),
-    promotedTo: move.promotion
-  }));
+  if (move.castle) {
+    events.push(factory.event('CastleCompleted', {
+      battleId: state.battleId,
+      side: moving.side,
+      kingId: identityChange.movedId,
+      rookId: identityChange.rookMove && identityChange.rookMove.id,
+      rookFrom: identityChange.rookMove && identityChange.rookMove.from,
+      rookTo: identityChange.rookMove && identityChange.rookMove.to,
+      flank: move.castle
+    }));
+  }
+  if (move.promotion) {
+    events.push(factory.event('PawnPromoted', {
+      battleId: state.battleId,
+      pieceId: identityChange.movedId,
+      side: moving.side,
+      square: indexToSquare(move.to),
+      promotedTo: move.promotion
+    }));
+  }
 
-  const outcome = appendPositionStatusEvents(state, result.position, factory, events);
+  const outcome = appendPositionStatusEvents(state, result.position, identityChange.identities, factory, events);
   return {
     position: result.position,
+    identities: identityChange.identities,
     events,
     status: outcome.status,
     result: outcome.result,
@@ -190,11 +231,13 @@ function executeReserveCommand(state, command, factory) {
     entryId: command.payload.entryId,
     square: command.payload.square
   });
+  const identities = deployReserveIdentity(state.identities, deployed.entry, deployed.square);
   const events = [
     factory.event('ReserveDeployed', {
       battleId: state.battleId,
       side: actorSide,
       entryId: deployed.entry.id,
+      pieceId: deployed.entry.id,
       pieceType: deployed.entry.type,
       square: deployed.square,
       orderCost: deployed.entry.orderCost
@@ -207,9 +250,10 @@ function executeReserveCommand(state, command, factory) {
       reason: 'reserve_deployment'
     })
   ];
-  const outcome = appendPositionStatusEvents(state, deployed.position, factory, events);
+  const outcome = appendPositionStatusEvents(state, deployed.position, identities, factory, events);
   return {
     position: deployed.position,
+    identities,
     events,
     status: outcome.status,
     result: outcome.result,
@@ -238,6 +282,7 @@ function executeBattleCommand(state, request) {
   const nextState = Object.freeze({
     ...state,
     position: resolution.position,
+    identities: resolution.identities,
     actionIndex: state.actionIndex + 1,
     status: resolution.status,
     result: resolution.result,
