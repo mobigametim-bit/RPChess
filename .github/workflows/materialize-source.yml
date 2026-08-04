@@ -1,0 +1,57 @@
+name: Materialize current RPChess source
+
+on:
+  push:
+    branches:
+      - refactor/source-normalization
+    paths:
+      - .github/workflows/materialize-source.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out normalization branch
+        uses: actions/checkout@v4
+        with:
+          ref: refactor/source-normalization
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install build dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Reconstruct the exact currently deployed source
+        run: npm run build
+
+      - name: Materialize source tree
+        shell: bash
+        run: |
+          test -f dist/index.html
+          rm -rf game
+          mkdir -p game
+          cp -a dist/. game/
+          rm -rf dist
+          printf '%s\n' '# Materialized game source' '' 'This directory is the exact build output produced from the former packaged source and deployment patches. It is committed as the Stage 1 behavioral baseline. Future work migrates these files into normal source modules and removes the ZIP/patch pipeline.' > game/SOURCE_BASELINE.md
+
+      - name: Commit materialized source
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add game package-lock.json
+          if git diff --cached --quiet; then
+            echo 'Materialized tree is already current.'
+            exit 0
+          fi
+          git commit -m 'Materialize current deployed game source'
+          git push origin HEAD:refactor/source-normalization
