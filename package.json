@@ -9,7 +9,7 @@
   },
   "scripts": {
     "verify": "node -e \"require('./scripts/verify-source.cjs')(require('path').resolve('game'))\"",
-    "test": "node tests/legacy-characterization.cjs && node tests/deterministic-foundations.cjs",
+    "test": "node tests/legacy-characterization.cjs && node tests/deterministic-foundations.cjs && node tests/legal-chess.cjs",
     "build": "node scripts/build.cjs",
     "deploy": "wrangler deploy"
   }
