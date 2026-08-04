@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const AdmZip = require('adm-zip');
 const applySceneLayoutPatch = require('./scene-layout-patch.cjs');
+const applyUiPolishPatch = require('./ui-polish-patch.cjs');
 
 const root = path.resolve(__dirname, '..');
 const dist = path.join(root, 'dist');
@@ -31,6 +32,7 @@ if (fs.existsSync(nested) && fs.statSync(nested).isDirectory()) {
 }
 
 applySceneLayoutPatch(dist);
+applyUiPolishPatch(dist);
 
 const index = path.join(dist, 'index.html');
 if (!fs.existsSync(index)) {
