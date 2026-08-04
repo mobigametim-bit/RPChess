@@ -7,6 +7,17 @@ function freezeRecord(record) {
   return Object.freeze({ ...record });
 }
 
+function normalizedMetadata(base, identity) {
+  return Object.freeze({
+    ...base,
+    id: identity.id,
+    side: identity.side,
+    initialType: base.initialType || identity.initialType,
+    currentType: base.currentType || identity.currentType,
+    source: identity.source
+  });
+}
+
 function createPieceIdentities(position, options = {}) {
   const provided = options.bySquare || {};
   const factory = new DeterministicIdFactory(`${options.battleId || 'battle'}_units`, options.seed || 1);
@@ -24,14 +35,16 @@ function createPieceIdentities(position, options = {}) {
     if (usedIds.has(id)) throw new Error(`duplicate piece id: ${id}`);
     usedIds.add(id);
     bySquare[square] = id;
-    metadata[id] = Object.freeze({
-      id,
-      side: boardPiece.side,
-      initialType: boardPiece.type,
-      currentType: boardPiece.type,
-      source: providedId ? 'provided' : 'generated',
-      ...(options.metadata && options.metadata[id] ? options.metadata[id] : {})
-    });
+    metadata[id] = normalizedMetadata(
+      options.metadata && options.metadata[id] ? options.metadata[id] : {},
+      {
+        id,
+        side: boardPiece.side,
+        initialType: boardPiece.type,
+        currentType: boardPiece.type,
+        source: providedId ? 'provided' : 'generated'
+      }
+    );
   }
 
   for (const square of Object.keys(provided)) {
@@ -48,6 +61,10 @@ function createPieceIdentities(position, options = {}) {
 
 function identityAt(identities, square) {
   return identities.bySquare[indexToSquare(squareToIndex(square))] || null;
+}
+
+function metadataFor(identities, pieceId) {
+  return identities.metadata[pieceId] || null;
 }
 
 function movePieceIdentities(identities, beforePosition, move) {
@@ -89,7 +106,11 @@ function movePieceIdentities(identities, beforePosition, move) {
   }
 
   return Object.freeze({
-    identities: Object.freeze({ format: identities.format, bySquare: freezeRecord(bySquare), metadata: freezeRecord(metadata) }),
+    identities: Object.freeze({
+      format: identities.format,
+      bySquare: freezeRecord(bySquare),
+      metadata: freezeRecord(metadata)
+    }),
     movedId: movingId,
     capturedId,
     capturedSquare,
@@ -106,7 +127,7 @@ function deployReserveIdentity(identities, entry, square) {
     bySquare: freezeRecord({ ...identities.bySquare, [target]: entry.id }),
     metadata: freezeRecord({
       ...identities.metadata,
-      [entry.id]: Object.freeze({
+      [entry.id]: normalizedMetadata(entry.metadata || {}, {
         id: entry.id,
         side: entry.side,
         initialType: entry.type,
@@ -120,6 +141,7 @@ function deployReserveIdentity(identities, entry, square) {
 module.exports = {
   createPieceIdentities,
   identityAt,
+  metadataFor,
   movePieceIdentities,
   deployReserveIdentity
 };
