@@ -4,7 +4,7 @@ const AdmZip = require('adm-zip');
 
 const root = path.resolve(__dirname, '..');
 const dist = path.join(root, 'dist');
-const preferred = 'RPChess_Standalone_1.3.3_Music_Update.zip';
+const preferred = 'RPChess_Standalone_1.3.3_Web_Deploy.zip';
 
 const zipFiles = fs.readdirSync(root)
   .filter((name) => /^RPChess_Standalone_.*\.zip$/i.test(name))
@@ -12,7 +12,7 @@ const zipFiles = fs.readdirSync(root)
 
 const archive = fs.existsSync(path.join(root, preferred)) ? preferred : zipFiles[0];
 if (!archive) {
-  throw new Error('RPChess build ZIP was not found in the repository root. Upload RPChess_Standalone_1.3.3_Music_Update.zip and retry the build.');
+  throw new Error('RPChess deployment ZIP was not found in the repository root. Upload RPChess_Standalone_1.3.3_Web_Deploy.zip and retry the build.');
 }
 
 fs.rmSync(dist, { recursive: true, force: true });
