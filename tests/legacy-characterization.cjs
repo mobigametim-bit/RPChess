@@ -10,7 +10,7 @@ const tests = [];
 function test(name, contract, fn) { tests.push({ name, contract, fn }); }
 function json(value) { return JSON.parse(JSON.stringify(value)); }
 function destinations(moves) {
-  return moves.map(({ x, y, capture }) => `${x},${y}${capture ? 'x' : ''}`).sort();
+  return json(moves).map(({ x, y, capture }) => `${x},${y}${capture ? 'x' : ''}`).sort();
 }
 
 function fixedGame(seed = 123456) {
@@ -50,7 +50,7 @@ test('fixed seed produces the current campaign opening', 'PRESERVE-UNTIL-GENERAT
 test('fixed opening battle layout remains reproducible', 'PRESERVE-AS-LEGACY-FIXTURE', () => {
   const { game } = fixedGame(123456);
   game.enterNode(game.run.choices[0].id);
-  const battle = normalizeBattle(game.battle);
+  const battle = json(normalizeBattle(game.battle));
   assert.strictEqual(battle.size, 6);
   assert.strictEqual(battle.seed, 2951787001);
   assert.strictEqual(battle.objectiveType, 'eliminate');
@@ -133,7 +133,7 @@ test('legacy enemy turn resolves synchronously as a whole-side batch', 'INTENTIO
   assert.strictEqual(game.battle.round, beforeRound + 1);
 });
 
-test('profile save/load round trip preserves active run decisions', 'PRESERVE-DATA-THEN-MIGRATE-ATOMically', () => {
+test('profile save/load round trip preserves active run decisions', 'PRESERVE-DATA-THEN-MIGRATE-ATOMICALLY', () => {
   const storage = new MemoryStorage();
   const runtime = loadLegacyRuntime({ storage });
   const game = new runtime.NC.Game(runtime.NC.defaultProfile());
