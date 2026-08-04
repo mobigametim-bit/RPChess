@@ -13,7 +13,7 @@ function normalizedMetadata(base, identity) {
     id: identity.id,
     side: identity.side,
     initialType: base.initialType || identity.initialType,
-    currentType: base.currentType || identity.currentType,
+    currentType: identity.currentType,
     source: identity.source
   });
 }
