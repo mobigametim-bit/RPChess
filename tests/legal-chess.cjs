@@ -42,7 +42,9 @@ test('initial position perft matches standard reference values', () => {
 
 test('kiwipete position exercises castling, pins and captures', () => {
   const position = parseFen('r3k2r/p1ppqpb1/bn2pnp1/2pP4/1p2P3/2N2N2/PPQBBPPP/R3K2R w KQkq - 0 1');
-  assert.strictEqual(perft(position, 1), 48);
+  const names = moveNames(position);
+  if (names.length !== 48) console.log('KIWIPETE MOVES', JSON.stringify(names));
+  assert.strictEqual(names.length, 48);
   assert.strictEqual(perft(position, 2), 2039);
 });
 
