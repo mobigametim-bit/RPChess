@@ -3,7 +3,7 @@ name: Materialize current RPChess source
 on:
   push:
     branches:
-      - refactor/source-normalization
+      - main
     paths:
       - .github/workflows/materialize-source.yml
   workflow_dispatch:
