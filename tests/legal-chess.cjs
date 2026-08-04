@@ -16,6 +16,7 @@ const {
 } = require('../src/core/chess/rules.cjs');
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+const KIWIPETE_FEN = 'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1';
 const tests = [];
 const test = (name, fn) => tests.push({ name, fn });
 const moveNames = (position) => generateLegalMoves(position).map((move) => `${indexToSquare(move.from)}${indexToSquare(move.to)}${move.promotion || ''}`).sort();
@@ -40,11 +41,9 @@ test('initial position perft matches standard reference values', () => {
   assert.strictEqual(perft(position, 3), 8902);
 });
 
-test('kiwipete position exercises castling, pins and captures', () => {
-  const position = parseFen('r3k2r/p1ppqpb1/bn2pnp1/2pP4/1p2P3/2N2N2/PPQBBPPP/R3K2R w KQkq - 0 1');
-  const names = moveNames(position);
-  if (names.length !== 48) console.log('KIWIPETE MOVES', JSON.stringify(names));
-  assert.strictEqual(names.length, 48);
+test('canonical Kiwipete position exercises castling, pins and captures', () => {
+  const position = parseFen(KIWIPETE_FEN);
+  assert.strictEqual(perft(position, 1), 48);
   assert.strictEqual(perft(position, 2), 2039);
 });
 
