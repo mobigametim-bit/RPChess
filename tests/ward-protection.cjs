@@ -1,5 +1,5 @@
 const assert = require('assert');
-const { parseFen } = require('../src/core/chess/position.cjs');
+const { parseFen, toFen } = require('../src/core/chess/position.cjs');
 const { identityAt } = require('../src/combat/identity.cjs');
 const { statusFor } = require('../src/combat/statuses.cjs');
 const { createBattleState } = require('../src/combat/battle.cjs');
@@ -42,12 +42,20 @@ test('after ward is consumed, the next legal capture removes the piece normally'
   state = executeWardAwareCommand(state, move('e4', 'd5')).state;
   state = executeWardAwareCommand(state, move('e8', 'f8')).state;
   const result = executeWardAwareCommand(state, move('e4', 'd5'));
-  assert.strictEqual(identityAt(result.state.identities, 'e4'), null);
-  assert.strictEqual(identityAt(result.state.identities, 'd5'), 'pawn_w');
   const eventTypes = result.events.map((event) => event.type);
-  assert.strictEqual(eventTypes[0], 'PieceMoved');
-  assert.strictEqual(eventTypes.includes('PieceCaptured'), true);
-  assert.strictEqual(eventTypes.includes('CapturePrevented'), false);
+  const correct = identityAt(result.state.identities, 'e4') === null
+    && identityAt(result.state.identities, 'd5') === 'pawn_w'
+    && eventTypes[0] === 'PieceMoved'
+    && eventTypes.includes('PieceCaptured')
+    && !eventTypes.includes('CapturePrevented');
+  if (!correct) {
+    throw new Error(`ward restoration diagnostic: ${JSON.stringify({
+      fen: toFen(result.state.position),
+      bySquare: result.state.identities.bySquare,
+      statuses: result.state.statuses,
+      eventTypes
+    })}`);
+  }
 });
 
 test('ward cannot be applied to either king', () => {
