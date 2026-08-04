@@ -4,6 +4,7 @@ const AdmZip = require('adm-zip');
 const applySceneLayoutPatch = require('./scene-layout-patch.cjs');
 const applyUiPolishPatch = require('./ui-polish-patch.cjs');
 const applyUiHotfix136 = require('./ui-hotfix-1.3.6.cjs');
+const applyUiHotfix138 = require('./ui-hotfix-1.3.8.cjs');
 
 const root = path.resolve(__dirname, '..');
 const dist = path.join(root, 'dist');
@@ -35,6 +36,7 @@ if (fs.existsSync(nested) && fs.statSync(nested).isDirectory()) {
 applySceneLayoutPatch(dist);
 applyUiPolishPatch(dist);
 applyUiHotfix136(dist);
+applyUiHotfix138(dist);
 
 const index = path.join(dist, 'index.html');
 if (!fs.existsSync(index)) {
