@@ -22,6 +22,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Verify normalized source
         run: npm run verify
+      - name: Run legacy characterization tests
+        run: npm test
       - name: Build web distribution
         run: npm run build
       - name: Verify distribution entry
