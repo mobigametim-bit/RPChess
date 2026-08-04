@@ -7,7 +7,8 @@ Part of `CONTENT_AND_ASSET_PRODUCTION_REGISTER.md`.
 Each encounter is a schema-validated YAML/JSON module containing:
 
 - stable ID/file;
-- board/shape and legal initial position;
+- logical board dimensions, active-cell mask/shape and legal initial position;
+- regional or cosmetic modular tile-pair reference;
 - player deployment zone and fixed pieces;
 - enemy roster profile and AI objective weights;
 - 0–2 readable environment types in ordinary battles;
@@ -17,11 +18,17 @@ Each encounter is a schema-validated YAML/JSON module containing:
 - deterministic generation parameters;
 - validation fixtures and reference-bot completion test.
 
-**Ready-to-use prompt:** “Design the RPChess encounter module **[TITLE]** for **[REGION]**, type **[NORMAL/ELITE/OBJECTIVE/RARE]**, using **[REGIONAL TACTICAL LANGUAGE]**. Specify board, legal starting position, deployment zone, enemy roster, at most two environment types, explicit victory/failure objectives, reserve/order rules, difficulty/reward tags and deterministic validation fixtures. The tactical idea must differ materially from every other module, not merely by numbers, names or color.”
+### Board rendering rule
 
-**Negative requirements:** no hidden enemy/attack source; no unannounced unavoidable mate; no inaccessible mandatory object; no HP/damage replacement for chess capture; no random unpreviewed rule; no reskin counted as new module.
+Encounter files describe logical cells and topology; they do not reference a complete pre-rendered board image. The renderer assembles every active cell from the selected biome/theme `tile_light.png` and `tile_dark.png` pair using board parity. Non-standard scenarios declare which cells are active, blocked, added or removed.
 
-**Acceptance:** standard-legality or declared scenario-rules validator passes; objective reachable; no illegal king state; all mandatory objects accessible; first-move threat policy passes; Apprentice/Warlord reference bots meet target bands; manual designer completion replay stored.
+Board frames and decorative underlays are not production assets. Coordinates, highlights, deployment zones, hazards, portals, objectives and blockers are separate rendering layers. Environment art may occupy declared cells but must never be baked into the base light/dark tile pair.
+
+**Ready-to-use prompt:** “Design the RPChess encounter module **[TITLE]** for **[REGION]**, type **[NORMAL/ELITE/OBJECTIVE/RARE]**, using **[REGIONAL TACTICAL LANGUAGE]**. Specify logical board dimensions, active-cell mask, modular tile-set reference, legal starting position, deployment zone, enemy roster, at most two environment types, explicit victory/failure objectives, reserve/order rules, difficulty/reward tags and deterministic validation fixtures. The tactical idea must differ materially from every other module, not merely by numbers, names, color or a different complete-board illustration.”
+
+**Negative requirements:** no complete-board raster dependency; no board frame/underlay requirement; no hidden enemy/attack source; no unannounced unavoidable mate; no inaccessible mandatory object; no HP/damage replacement for chess capture; no random unpreviewed rule; no reskin counted as new module.
+
+**Acceptance:** standard-legality or declared scenario-rules validator passes; modular tile pair resolves; active-cell mask is deterministic; objective reachable; no illegal king state; all mandatory objects accessible; first-move threat policy passes; Apprentice/Warlord reference bots meet target bands; manual designer completion replay stored.
 
 ## Regional module matrix — 84 records
 
@@ -66,15 +73,15 @@ A slot only counts as a new module when its regional mechanic changes tactical d
 ## Twelve generic/rare modules — `ENCOUNTER-085…096`
 
 | ID / file | Priority | Tactical brief | Status |
-|---|---|---|---|
-| 085 `fractured_board_01.yaml` | P1 | **Fractured Board** — separated legal board components connected by declared passages. | MISSING |
+|---|---|---|---|---|
+| 085 `fractured_board_01.yaml` | P1 | **Fractured Board** — separated legal board components connected by declared passages and rendered from the same modular tile pair. | MISSING |
 | 086 `mirror_rank_01.yaml` | P1 | **Mirrored Rank** — visible symmetry constraint; no AI information advantage. | MISSING |
 | 087 `portal_cross_01.yaml` | P1 | **Four Portals** — four paired, previewed portal endpoints. | MISSING |
 | 088 `last_pawn_01.yaml` | P1 | **Last Pawn** — protect/advance a designated pawn to promotion. | MISSING |
 | 089 `kingless_escape_01.yaml` | P1 | **Kingless Evacuation** — explicitly declared non-standard escort rules. | MISSING |
 | 090 `double_escort_01.yaml` | P1 | **Two Envoys** — route two escorts with different exits. | MISSING |
-| 091 `shrinking_field_01.yaml` | P1 | **Shrinking Field** — board contraction previewed at least one round ahead. | MISSING |
-| 092 `expanding_field_01.yaml` | P1 | **Expanding Field** — new ranks/files appear at declared phases. | MISSING |
+| 091 `shrinking_field_01.yaml` | P1 | **Shrinking Field** — active-cell mask contracts with changes previewed at least one round ahead. | MISSING |
+| 092 `expanding_field_01.yaml` | P1 | **Expanding Field** — new ranks/files and their modular cells appear at declared phases. | MISSING |
 | 093 `seal_break_01.yaml` | P1 | **Break the Seals** — destroy/activate three accessible seals. | MISSING |
 | 094 `survive_six_01.yaml` | P1 | **Survive Six Turns** — legal survival objective and reinforcement schedule. | MISSING |
 | 095 `promotion_race_01.yaml` | P1 | **Promotion Race** — competing pawn routes with visible future command cost. | MISSING |
@@ -86,14 +93,16 @@ Every boss folder contains:
 
 - `portrait.png` 768×768;
 - `piece.png` 512×512 RGBA with chess-readable silhouette;
-- `arena.jpg` 1600×900;
+- `arena.jpg` 1600×900 scene/backdrop, not a baked runtime board;
 - `phase_01.png`…`phase_03.png` 512×512 sigils;
 - `phase_transition.png` VFX sheet;
 - boss data, AI profile, objectives, transitions, RU/EN texts and validation fixtures.
 
-**Ready-to-use prompt:** “Complete RPChess boss kit for **[NAME]** of **[REGION]**: **[PHASE BRIEF]**. Produce portrait, transparent chess-readable boss piece, full 16:9 arena, three phase sigils and concise transition VFX. Heroic dark fantasy, strong silhouette, no text, no HP-bar assumptions. Every phase ends through an announced chess/scenario objective rather than numeric damage.”
+Boss battle boards use the region/theme modular tile pair unless the data declares another approved tile pair. A unique `arena.jpg` may establish atmosphere around the tactical field but must not contain the authoritative playable grid, coordinates, frame or underlay.
 
-**Acceptance:** 2–3 phases; phase rules displayed before activation; no ordinary HP bar; surviving composition/injuries preserved according to explicit transition; reference completion replay; all phase positions legal/reachable; assets consistent and rights recorded.
+**Ready-to-use prompt:** “Complete RPChess boss kit for **[NAME]** of **[REGION]**: **[PHASE BRIEF]**. Produce portrait, transparent chess-readable boss piece, full 16:9 atmospheric arena scene, three phase sigils and concise transition VFX. Heroic dark fantasy, strong silhouette, no text, no HP-bar assumptions, no baked playable board. Every phase ends through an announced chess/scenario objective rather than numeric damage.”
+
+**Acceptance:** 2–3 phases; phase rules displayed before activation; no ordinary HP bar; surviving composition/injuries preserved according to explicit transition; reference completion replay; all phase positions legal/reachable; modular tile references valid; assets consistent and rights recorded.
 
 ## Fifteen boss records
 
@@ -111,7 +120,7 @@ Every boss folder contains:
 | BOSS-10 `last_legion/` | Ashen Dominion | P1 | **Последний Легион** — survival and command-banner objective. | MISSING |
 | BOSS-11 `sky_khan/` | Sky Khanate | P1 | **Небесный Каган** — mobile reserve waves and cliff-edge files. | MISSING |
 | BOSS-12 `storm_sister/` | Sky Khanate | P1 | **Сестра Бури** — race objective and mounted duel. | MISSING |
-| BOSS-13 `hollow_sovereign/` | secret/final | P1 | **Пустой Суверен** — reality fracture across two boards. | MISSING |
+| BOSS-13 `hollow_sovereign/` | secret/final | P1 | **Пустой Суверен** — reality fracture across two logical boards assembled from approved modular tiles. | MISSING |
 | BOSS-14 `mirror_self/` | secret | P1 | **Зеркальный Двойник** — copies visible legal patterns without hidden cheating. | MISSING |
 | BOSS-15 `war_beyond_crown/` | final | P1 | **Война за Короной** — political coalition determined by faction outcomes. | MISSING |
 
@@ -121,5 +130,5 @@ Every boss folder contains:
 - 12 rare/generic modules;
 - 96 recommended total, exceeding the mandatory minimum of 70;
 - 12 regional primary/alternative boss kits plus 3 final/secret kits;
-- no module enters release count before schema validation, deterministic fixture, automated reachability checks and a designer completion replay;
+- no module enters release count before schema validation, deterministic fixture, modular tile-reference validation, automated reachability checks and a designer completion replay;
 - the current prototype boss is a reference/placeholder and does not automatically satisfy any P1 boss record.
