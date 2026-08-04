@@ -9,6 +9,7 @@
   },
   "scripts": {
     "verify": "node -e \"require('./scripts/verify-source.cjs')(require('path').resolve('game'))\"",
+    "test": "node tests/legacy-characterization.cjs",
     "build": "node scripts/build.cjs",
     "deploy": "wrangler deploy"
   }
