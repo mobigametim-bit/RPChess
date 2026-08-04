@@ -20,7 +20,7 @@ Part of `CONTENT_AND_ASSET_PRODUCTION_REGISTER.md`.
 | PORTRAIT-768 | 768×768 PNG/JPG | 8% head/edge margin | Identity stable; face/hands correct; safe square and circle crop |
 | PIECE-512 | 512×512 PNG RGBA | 10% around silhouette/base | Classic role recognized in blind test at 72 px; no frame |
 | SCENE-1600 | 1600×900 JPG/PNG | 5% global; declared text-safe area | Major shapes readable at 800×450; full art displayable without crop |
-| BOARD-2048 | 2048×2048 PNG | outer 6% reserved for frame/coordinates | Exact grid alignment; texture never obscures highlights |
+| BOARD-TILE-512 | 512×512 PNG, square top-down surface | full bleed; identical scale/light direction across paired tiles; static | Seam-safe edges; light/dark pair clearly distinct at 64 px; figures, highlights and coordinates remain readable |
 | OBJECT-SHEET | 2048×2048 PNG RGBA, 4×4 | 8% per cell | 16 centered objects with documented collision footprint |
 | VFX-SHEET | 2048×2048 PNG RGBA, 8×8 | stable center; declared active frame count | Alpha clean; effect does not hide board or delay input |
 | MUSIC | WAV 48 kHz/24-bit master + runtime OGG/MP3 | 2–4 min; loop/crossfade declared | no clipping, no vocals, rights metadata, seam tested |
@@ -28,19 +28,35 @@ Part of `CONTENT_AND_ASSET_PRODUCTION_REGISTER.md`.
 
 All entries inherit: no text unless explicitly requested; no micro-detail clutter; provenance/license recorded; status is not `APPROVED` until dimensions, visual consistency, in-game readability and rights checks pass.
 
-## P0 branding, UI and core-board assets
+## Runtime board construction policy
+
+Runtime boards are assembled cell by cell from one approved light tile and one approved dark tile for the selected biome or cosmetic theme. The renderer may build standard 8×8 boards and declared non-standard active-cell configurations from the same pair.
+
+The following are not required production assets:
+
+- a complete pre-rendered board image;
+- an outer board frame;
+- a decorative board underlay;
+- baked coordinates, legal-move highlights, deployment zones or environment objects.
+
+Coordinates, active-cell masks, highlights, blocked cells, hazards and objectives are rendered as separate UI/gameplay layers. Tiles must be top-down, square, full bleed, free of perspective and free of decorations that cross into neighboring cells. A subtle internal edge treatment is allowed only when it is identical on all four sides and does not form an outer-board border.
+
+Already generated complete-board illustrations may be retained as concept/reference, promotional art or unique scene art, but they do not satisfy the modular runtime tile records below.
+
+## P0 branding, UI and core board-cell assets
 
 | ID / filename | Use | Profile | Prompt | Status |
 |---|---|---|---|---|
 | BRAND-001 `assets/branding/logo_main.png` | Main menu/Steam identity | ICON-512 | RPChess crest combining crown, classic chess motifs and a subtle magical board pattern; premium readable silhouette; isolated. | EXISTS-VERIFY |
 | BRAND-002 `assets/branding/title_wordmark.png` | Header/menu wordmark | 1600×400 PNG RGBA | RPChess wordmark, elegant readable medieval-fantasy lettering, horizontal, isolated; avoid illegible blackletter. | EXISTS-VERIFY |
-| UI-001 `assets/ui/panel_frame_9slice.png` | Universal panel | BOARD-2048 | Nine-slice border with sapphire corners, restrained gold/silver filigree and transparent clear center. | EXISTS-VERIFY |
+| UI-001 `assets/ui/panel_frame_9slice.png` | Universal panel | 2048×2048 PNG RGBA | Nine-slice border with sapphire corners, restrained gold/silver filigree and transparent clear center. | EXISTS-VERIFY |
 | UI-002 `assets/ui/button_primary_9slice.png` | Primary actions | 1600×256 PNG RGBA | Ivory center, gold edge, sapphire corners, large uninterrupted text field. | EXISTS-VERIFY |
 | UI-003 `assets/ui/button_secondary_9slice.png` | Secondary actions | 1600×256 PNG RGBA | Deep navy center, silver/gold edge, restrained highlights. | EXISTS-VERIFY |
 | UI-004 `assets/ui/button_danger_9slice.png` | Destructive actions | 1600×256 PNG RGBA | Dark ruby center, blackened silver, red crystals; no gore. | EXISTS-VERIFY |
 | UI-005 `assets/ui/focus_ring.png` | Controller/keyboard focus | ICON-512 | Gold-blue luminous outline with transparent center, visible on light/dark surfaces. | MISSING |
-| BOARD-001 `assets/boards/neutral/board_8x8.png` | Default battle | BOARD-2048 | Exact top-down 8×8 pale stone/blue-gray slate board, subtle wear, no objects or perspective. | MISSING |
-| BOARD-002 `assets/boards/neutral/blocked_cell.png` | Blocked overlay | ICON-512 | Top-down cracked stone obstruction constrained to one cell. | MISSING |
+| BOARD-001A `assets/boards/neutral/tile_light.png` | Default light cells | BOARD-TILE-512 | Exact top-down pale stone chess cell, restrained fine wear, calm center, full bleed, no border, no perspective, no objects, no highlight, no text. | MISSING |
+| BOARD-001B `assets/boards/neutral/tile_dark.png` | Default dark cells | BOARD-TILE-512 | Exact top-down blue-gray slate chess cell matching the light tile in scale and lighting, clearly darker, calm center, full bleed, no border, no perspective, no objects, no highlight, no text. | MISSING |
+| BOARD-002 `assets/boards/neutral/blocked_cell.png` | Blocked overlay | ICON-512 | Top-down cracked stone obstruction constrained to one cell; transparent outside the obstruction footprint. | MISSING |
 | BOARD-003 `assets/boards/neutral/start_zone.png` | Deployment overlay | ICON-512 | Translucent green-gold heraldic boundary, transparent center. | MISSING |
 | VFX-001 `assets/vfx/legal_move.png` | Legal move | ICON-512 | Soft cyan circular rune, unobtrusive, transparent. | EXISTS-VERIFY |
 | VFX-002 `assets/vfx/capture_move.png` | Capture target | ICON-512 | Magenta-red angular capture rune, no blood. | EXISTS-VERIFY |
@@ -51,23 +67,25 @@ All entries inherit: no text unless explicitly requested; no micro-detail clutte
 
 ## Six main region/faction art kits — P1
 
-Each kit contains exactly: `map_banner.jpg`, `capital.jpg`, `battle.jpg`, `elite.jpg`, `boss_arena.jpg`, `crest.png`, `board_skin.png`, `environment_sheet.png`. Scenes use SCENE-1600; crest ICON-512; board BOARD-2048; objects OBJECT-SHEET. Battle images keep the board area calm. All eight files must share palette/material language.
+Each kit contains exactly: `map_banner.jpg`, `capital.jpg`, `battle.jpg`, `elite.jpg`, `boss_arena.jpg`, `crest.png`, `tile_light.png`, `tile_dark.png`, `environment_sheet.png`. Scenes use SCENE-1600; crest ICON-512; both tiles BOARD-TILE-512; objects OBJECT-SHEET. Battle images keep the board area calm. All nine files must share palette/material language.
+
+The paired tiles are runtime board surfaces, not crops from a completed board. They must share material scale and light direction, preserve clear light/dark parity, tile cleanly in any active-cell configuration and contain no outer frame, underlay, coordinates, overlays or gameplay objects.
 
 | ID / folder | Identity and tactical language | Ready-to-use series prompt | Status |
 |---|---|---|---|
-| REGION-01 `assets/regions/iron_marches/` | Crown of Stone; mountain fortresses, black iron, amber furnaces; rook defense and lines | Create the complete RPChess Iron Marches kit: heroic dark-fantasy mountain citadels, black iron, amber furnace light, disciplined defensive geometry, readable board space; one map banner, capital panorama, battle backdrop, elite backdrop, boss arena, crest, exact top-down board skin and 16-object transparent environment sheet; consistent series, no text. | MISSING |
-| REGION-02 `assets/regions/thorn_covenant/` | ancient forest borders, living stone, green-gold thorns; knight portals/ambushes | Create the complete Thorn Covenant kit with ancient forest courts, living stone, green-gold thorn magic and mobile knight/portal motifs; same eight-file specification; readable, beautiful, not cluttered. | MISSING |
-| REGION-03 `assets/regions/ashen_dominion/` | volcanic royal roads, ash-red banners, funerary gold; pawn formations/sacrifice | Create the complete Ashen Dominion kit with volcanic roads, ash-red standards and funerary gold; same eight-file specification; tragic but heroic, no gore. | MISSING |
-| REGION-04 `assets/regions/sky_khanate/` | high steppe/cliff citadels, turquoise/bronze; cavalry/reserve | Create the complete Sky Khanate kit with high steppe, cliff cities, turquoise cloth and bronze; same eight-file specification; wide open movement language. | MISSING |
-| REGION-05 `assets/regions/luminous_synod/` | cathedral cities, pearl/gold/cyan; bishops, altars, sanctified diagonals | Create the complete Luminous Synod kit with luminous cathedrals, pearl stone, gold and cyan sacred geometry; same eight-file specification; solemn rather than sterile. | MISSING |
-| REGION-06 `assets/regions/free_cities/` | river trade league, copper/teal/crimson; queens/heroes/contract politics | Create the complete League of Free Cities kit with river ports, guild towers, copper, teal and crimson; same eight-file specification; prosperous, politically divided, readable tactical spaces. | MISSING |
+| REGION-01 `assets/regions/iron_marches/` | Crown of Stone; mountain fortresses, black iron, amber furnaces; rook defense and lines | Create the complete RPChess Iron Marches kit: heroic dark-fantasy mountain citadels, black iron, amber furnace light, disciplined defensive geometry and readable tactical space; one map banner, capital panorama, battle backdrop, elite backdrop, boss arena, crest, one top-down light cell and one top-down dark cell, plus a 16-object transparent environment sheet; no complete board, no board frame, no underlay, no text. | MISSING |
+| REGION-02 `assets/regions/thorn_covenant/` | ancient forest borders, living stone, green-gold thorns; knight portals/ambushes | Create the complete Thorn Covenant kit with ancient forest courts, living stone, green-gold thorn magic and mobile knight/portal motifs; same nine-file specification; the paired cells must remain calm and readable; no complete board, frame or underlay. | MISSING |
+| REGION-03 `assets/regions/ashen_dominion/` | volcanic royal roads, ash-red banners, funerary gold; pawn formations/sacrifice | Create the complete Ashen Dominion kit with volcanic roads, ash-red standards and funerary gold; same nine-file specification; tragic but heroic, no gore; paired board cells only, no complete board, frame or underlay. | MISSING |
+| REGION-04 `assets/regions/sky_khanate/` | high steppe/cliff citadels, turquoise/bronze; cavalry/reserve | Create the complete Sky Khanate kit with high steppe, cliff cities, turquoise cloth and bronze; same nine-file specification; wide open movement language; paired board cells only, no complete board, frame or underlay. | MISSING |
+| REGION-05 `assets/regions/luminous_synod/` | cathedral cities, pearl/gold/cyan; bishops, altars, sanctified diagonals | Create the complete Luminous Synod kit with luminous cathedrals, pearl stone, gold and cyan sacred geometry; same nine-file specification; solemn rather than sterile; paired board cells only, no complete board, frame or underlay. | MISSING |
+| REGION-06 `assets/regions/free_cities/` | river trade league, copper/teal/crimson; queens/heroes/contract politics | Create the complete League of Free Cities kit with river ports, guild towers, copper, teal and crimson; same nine-file specification; prosperous, politically divided and readable; paired board cells only, no complete board, frame or underlay. | MISSING |
 
 ## Two rare faction directions — P1
 
 | ID / folder | Required files | Prompt | Status |
 |---|---|---|---|---|
-| RARE-01 `assets/regions/mirror_conclave/` | `map_banner`, `battle`, `boss_arena`, `crest`, `board_skin`, `environment_sheet` | Rare Mirror Conclave kit: silver glass, blue-violet reflections, doubled architecture and strictly readable mirror mechanics; no visual duplication that hides actual piece position. | MISSING |
-| RARE-02 `assets/regions/verdant_exiles/` | same six files | Rare Verdant Exiles kit: wandering living citadels, mossed ivory, emerald/amber growth and reformist political symbolism; beautiful and hopeful, not generic elves. | MISSING |
+| RARE-01 `assets/regions/mirror_conclave/` | `map_banner`, `battle`, `boss_arena`, `crest`, `tile_light`, `tile_dark`, `environment_sheet` | Rare Mirror Conclave kit: silver glass, blue-violet reflections, doubled architecture and strictly readable mirror mechanics; paired top-down cells only, with clear parity and no visual duplication that hides actual piece position; no complete board, frame or underlay. | MISSING |
+| RARE-02 `assets/regions/verdant_exiles/` | same seven files | Rare Verdant Exiles kit: wandering living citadels, mossed ivory, emerald/amber growth and reformist political symbolism; beautiful and hopeful, not generic elves; paired top-down cells only, no complete board, frame or underlay. | MISSING |
 
 ## Seven kings — individual P0/P1 records
 
@@ -88,7 +106,7 @@ Each record requires `portrait.png` (PORTRAIT-768), `piece.png` (PIECE-512), `co
 Each series: `emblem.png` 512×512 plus `node_01.png`…`node_05.png` 256×256 PNG RGBA. Emblem readable at 64 px; nodes mechanically distinct; no numbering/text baked into art.
 
 | ID / folder | Priority | Prompt | Status |
-|---|---|---|---|
+|---|---|---|---|---|
 | DOCTRINE-01 `assets/doctrines/fortress/` | P0 | Six-icon **Крепость** series: rook defense, king safety, walls, held lines; gold-blue with iron accent. | MISSING |
 | DOCTRINE-02 `assets/doctrines/cavalry/` | P0 | Six-icon **Кавалерия** series: knight mobility, flanks and fast reserve deployment; turquoise/bronze accent. | MISSING |
 | DOCTRINE-03 `assets/doctrines/sacred_diagonals/` | P1 | Six-icon **Священные диагонали** series: bishops, runes, altars, sanctified cells; pearl/cyan accent. | MISSING |
@@ -104,5 +122,5 @@ This annex is complete only when every P0/P1 record has:
 2. source/provenance and commercial distribution rights;
 3. manifest entry and content reference validation;
 4. in-game review at target and Steam Deck resolution;
-5. no crop, embedded text, unreadable silhouette or frame overflow;
+5. no crop, embedded text, unreadable silhouette, board-tile seam or UI overflow;
 6. status `APPROVED`.
