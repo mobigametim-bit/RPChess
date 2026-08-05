@@ -7,6 +7,12 @@ on:
     paths:
       - .github/workflows/import-register-01-assets.yml
       - scripts/import-register-01-assets.py
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/import-register-01-assets.yml
+      - scripts/import-register-01-assets.py
 
 permissions:
   contents: write
@@ -58,6 +64,9 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add game/assets content/assets/register_01_assets.json content/board-themes.json register/REGISTER_01_FOUNDATIONS.md
           git diff --cached --stat
-          git diff --cached --quiet && { echo 'Importer produced no changes'; exit 1; }
+          if git diff --cached --quiet; then
+            echo 'Register 01 assets are already normalized on this branch.'
+            exit 0
+          fi
           git commit -m 'Import and normalize all 141 Register 01 assets'
           git push origin HEAD:assets/register-01-production
