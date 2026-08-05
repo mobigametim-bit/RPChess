@@ -29,7 +29,14 @@ function normalizePackCollections(pack) {
 
 class ContentRegistry extends internal.ContentRegistry {
   addPack(pack) {
-    super.addPack(normalizePackCollections(pack));
+    const normalized = normalizePackCollections(pack);
+    const regions = normalized?.content?.regions || [];
+    for (const region of regions) {
+      if (region?.boardThemeId && !this.boardThemes.has(region.boardThemeId)) {
+        throw new Error(`${region.id || 'region'} references unknown board theme: ${region.boardThemeId}`);
+      }
+    }
+    super.addPack(normalized);
     return this;
   }
 }
