@@ -25,7 +25,7 @@ jobs:
   import-assets:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Check out import branch
         uses: actions/checkout@v4
@@ -42,7 +42,18 @@ jobs:
         run: python -m pip install --disable-pip-version-check 'gdown>=5.2,<6' 'Pillow>=11,<12'
 
       - name: Download, normalize and validate Register 01
-        run: python scripts/import-register-01-assets.py
+        run: |
+          for attempt in 1 2 3 4; do
+            echo "Register 01 import attempt ${attempt}/4"
+            if python scripts/import-register-01-assets.py; then
+              exit 0
+            fi
+            if [ "$attempt" = 4 ]; then
+              echo 'Register 01 import exhausted all retries.' >&2
+              exit 1
+            fi
+            sleep $((attempt * 20))
+          done
 
       - name: Verify complete canonical asset set
         run: |
