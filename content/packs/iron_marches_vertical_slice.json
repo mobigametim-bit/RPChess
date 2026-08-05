@@ -1,0 +1,452 @@
+{
+  "schemaVersion": 1,
+  "packId": "iron_marches_vertical_slice",
+  "content": {
+    "regions": [
+      {
+        "id": "region.iron_marches",
+        "nameKey": "region.iron_marches.name",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "defense", "fortress"],
+        "factionId": "faction.iron_marches",
+        "boardThemeId": "iron_marches"
+      }
+    ],
+    "doctrines": [
+      {
+        "id": "doctrine.fortress",
+        "nameKey": "doctrine.fortress.name",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "rook", "king_safety"],
+        "assets": {
+          "emblem": "assets/doctrines/fortress/emblem.png",
+          "nodes": [
+            "assets/doctrines/fortress/node_01.png",
+            "assets/doctrines/fortress/node_02.png",
+            "assets/doctrines/fortress/node_03.png",
+            "assets/doctrines/fortress/node_04.png",
+            "assets/doctrines/fortress/node_05.png"
+          ]
+        }
+      }
+    ],
+    "kings": [
+      {
+        "id": "king.oathkeeper",
+        "nameKey": "king.oathkeeper.name",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "balanced", "ward"],
+        "doctrineIds": ["doctrine.fortress"],
+        "assets": {
+          "portrait": "assets/kings/oathkeeper/portrait.png",
+          "piece": "assets/kings/oathkeeper/piece.png",
+          "commandIcon": "assets/kings/oathkeeper/command_icon.png",
+          "passiveIcon": "assets/kings/oathkeeper/passive_icon.png"
+        }
+      }
+    ],
+    "heroes": [
+      {
+        "id": "hero.aldric_wall",
+        "nameKey": "hero.aldric_wall.name",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "defender"],
+        "regionId": "region.iron_marches",
+        "pieceType": "rook",
+        "abilityId": "ability.interpose",
+        "assets": {
+          "portrait": "assets/heroes/aldric_wall/portrait.png",
+          "pieceBadge": "assets/heroes/aldric_wall/piece_badge.png",
+          "abilityIcon": "assets/heroes/aldric_wall/ability_icon.png"
+        }
+      },
+      {
+        "id": "hero.mara_chain",
+        "nameKey": "hero.mara_chain.name",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "formation"],
+        "regionId": "region.iron_marches",
+        "pieceType": "pawn",
+        "abilityId": "ability.chain_formation",
+        "assets": {
+          "portrait": "assets/heroes/mara_chain/portrait.png",
+          "pieceBadge": "assets/heroes/mara_chain/piece_badge.png",
+          "abilityIcon": "assets/heroes/mara_chain/ability_icon.png"
+        }
+      },
+      {
+        "id": "hero.brother_orell",
+        "nameKey": "hero.brother_orell.name",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "forge_priest"],
+        "regionId": "region.iron_marches",
+        "pieceType": "bishop",
+        "abilityId": "ability.forge_line",
+        "assets": {
+          "portrait": "assets/heroes/brother_orell/portrait.png",
+          "pieceBadge": "assets/heroes/brother_orell/piece_badge.png",
+          "abilityIcon": "assets/heroes/brother_orell/ability_icon.png"
+        }
+      },
+      {
+        "id": "hero.vael_hammer",
+        "nameKey": "hero.vael_hammer.name",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "cavalry"],
+        "regionId": "region.iron_marches",
+        "pieceType": "knight",
+        "abilityId": "ability.previewed_charge",
+        "assets": {
+          "portrait": "assets/heroes/vael_hammer/portrait.png",
+          "pieceBadge": "assets/heroes/vael_hammer/piece_badge.png",
+          "abilityIcon": "assets/heroes/vael_hammer/ability_icon.png"
+        }
+      },
+      {
+        "id": "hero.lady_sorn",
+        "nameKey": "hero.lady_sorn.name",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "court"],
+        "regionId": "region.iron_marches",
+        "pieceType": "queen",
+        "abilityId": "ability.hostage_tactic",
+        "assets": {
+          "portrait": "assets/heroes/lady_sorn/portrait.png",
+          "pieceBadge": "assets/heroes/lady_sorn/piece_badge.png",
+          "abilityIcon": "assets/heroes/lady_sorn/ability_icon.png"
+        }
+      },
+      {
+        "id": "hero.tomas_gate",
+        "nameKey": "hero.tomas_gate.name",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "escort"],
+        "regionId": "region.iron_marches",
+        "pieceType": "king",
+        "abilityId": "ability.gate_command",
+        "assets": {
+          "portrait": "assets/heroes/tomas_gate/portrait.png",
+          "pieceBadge": "assets/heroes/tomas_gate/piece_badge.png",
+          "abilityIcon": "assets/heroes/tomas_gate/ability_icon.png"
+        }
+      }
+    ],
+    "relics": [
+      {
+        "id": "relic.echo_shield",
+        "nameKey": "relic.echo_shield.name",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "ward"],
+        "compatibility": ["rook", "king"],
+        "effectId": "effect.ward_first_capture",
+        "icon": "assets/relics/echo_shield.png"
+      },
+      {
+        "id": "relic.phantom_spurs",
+        "nameKey": "relic.phantom_spurs.name",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "evasion"],
+        "compatibility": ["knight"],
+        "effectId": "effect.visible_evasion_after_non_capture",
+        "icon": "assets/relics/phantom_spurs.png"
+      },
+      {
+        "id": "relic.circle_warding",
+        "nameKey": "relic.circle_warding.name",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "ward"],
+        "compatibility": ["bishop", "king"],
+        "effectId": "effect.place_adjacent_ward",
+        "icon": "assets/relics/circle_warding.png"
+      },
+      {
+        "id": "relic.twin_command",
+        "nameKey": "relic.twin_command.name",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "orders"],
+        "compatibility": ["king", "hero"],
+        "effectId": "effect.first_ability_order_discount",
+        "icon": "assets/relics/twin_command.png"
+      },
+      {
+        "id": "relic.royal_decree",
+        "nameKey": "relic.royal_decree.name",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "promotion"],
+        "compatibility": ["pawn"],
+        "effectId": "effect.conditional_early_promotion",
+        "icon": "assets/relics/royal_decree.png"
+      },
+      {
+        "id": "relic.oath_fallen",
+        "nameKey": "relic.oath_fallen.name",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "sacrifice"],
+        "compatibility": ["any"],
+        "effectId": "effect.order_after_voluntary_sacrifice",
+        "icon": "assets/relics/oath_fallen.png"
+      }
+    ],
+    "events": [
+      {
+        "id": "event.silent_foundry",
+        "nameKey": "event.silent_foundry.name",
+        "titleKey": "event.silent_foundry.title",
+        "bodyKey": "event.silent_foundry.body",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "iron_marches", "labor"],
+        "scope": "iron_marches",
+        "sceneArt": "assets/regions/iron_marches/capital.jpg",
+        "choices": [
+          {"id": "workers", "textKey": "event.silent_foundry.choice.workers", "effectIds": ["effect.reputation_workers", "effect.supplies_loss_small"]},
+          {"id": "crown", "textKey": "event.silent_foundry.choice.crown", "effectIds": ["effect.reputation_crown", "effect.gold_gain_small"]},
+          {"id": "mediate", "textKey": "event.silent_foundry.choice.mediate", "effectIds": ["effect.supplies_trade", "effect.flag_foundry_mediated"]}
+        ]
+      },
+      {
+        "id": "event.wall_without_gate",
+        "nameKey": "event.wall_without_gate.name",
+        "titleKey": "event.wall_without_gate.title",
+        "bodyKey": "event.wall_without_gate.body",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "iron_marches", "fortification"],
+        "scope": "iron_marches",
+        "sceneArt": "assets/regions/iron_marches/battle.jpg",
+        "choices": [
+          {"id": "breach", "textKey": "event.wall_without_gate.choice.breach", "effectIds": ["effect.supplies_loss_small", "effect.scouting_gain"]},
+          {"id": "climb", "textKey": "event.wall_without_gate.choice.climb", "effectIds": ["effect.injury_risk_visible", "effect.route_unlock"]},
+          {"id": "wait", "textKey": "event.wall_without_gate.choice.wait", "effectIds": ["effect.gold_loss_small", "effect.safe_passage"]}
+        ]
+      },
+      {
+        "id": "event.miners_on_strike",
+        "nameKey": "event.miners_on_strike.name",
+        "titleKey": "event.miners_on_strike.title",
+        "bodyKey": "event.miners_on_strike.body",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "iron_marches", "politics"],
+        "scope": "iron_marches",
+        "sceneArt": "assets/regions/iron_marches/capital.jpg",
+        "choices": [
+          {"id": "accept", "textKey": "event.miners_on_strike.choice.accept", "effectIds": ["effect.gold_loss_small", "effect.reputation_workers"]},
+          {"id": "guards", "textKey": "event.miners_on_strike.choice.guards", "effectIds": ["effect.reputation_crown", "effect.flag_strike_broken"]},
+          {"id": "audit", "textKey": "event.miners_on_strike.choice.audit", "effectIds": ["effect.scouting_gain", "effect.flag_mine_audit"]}
+        ]
+      },
+      {
+        "id": "event.regents_tax",
+        "nameKey": "event.regents_tax.name",
+        "titleKey": "event.regents_tax.title",
+        "bodyKey": "event.regents_tax.body",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "iron_marches", "economy"],
+        "scope": "iron_marches",
+        "sceneArt": "assets/regions/iron_marches/map_banner.jpg",
+        "choices": [
+          {"id": "pay", "textKey": "event.regents_tax.choice.pay", "effectIds": ["effect.gold_loss_medium", "effect.safe_passage"]},
+          {"id": "refuse", "textKey": "event.regents_tax.choice.refuse", "effectIds": ["effect.flag_regent_opposed", "effect.elite_weight_up"]},
+          {"id": "charter", "textKey": "event.regents_tax.choice.charter", "effectIds": ["effect.reputation_guild", "effect.gold_loss_small"]}
+        ]
+      },
+      {
+        "id": "event.cracked_bell",
+        "nameKey": "event.cracked_bell.name",
+        "titleKey": "event.cracked_bell.title",
+        "bodyKey": "event.cracked_bell.body",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "iron_marches", "memory"],
+        "scope": "iron_marches",
+        "sceneArt": "assets/regions/iron_marches/capital.jpg",
+        "choices": [
+          {"id": "repair", "textKey": "event.cracked_bell.choice.repair", "effectIds": ["effect.gold_loss_small", "effect.flag_bell_repaired"]},
+          {"id": "melt", "textKey": "event.cracked_bell.choice.melt", "effectIds": ["effect.supplies_gain", "effect.reputation_workers_loss"]},
+          {"id": "record", "textKey": "event.cracked_bell.choice.record", "effectIds": ["effect.chronicle_memory", "effect.scouting_gain"]}
+        ]
+      },
+      {
+        "id": "event.ninth_bastion",
+        "nameKey": "event.ninth_bastion.name",
+        "titleKey": "event.ninth_bastion.title",
+        "bodyKey": "event.ninth_bastion.body",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "iron_marches", "defense"],
+        "scope": "iron_marches",
+        "sceneArt": "assets/regions/iron_marches/elite.jpg",
+        "choices": [
+          {"id": "reinforce", "textKey": "event.ninth_bastion.choice.reinforce", "effectIds": ["effect.supplies_loss_medium", "effect.relic_weight_fortress"]},
+          {"id": "evacuate", "textKey": "event.ninth_bastion.choice.evacuate", "effectIds": ["effect.reputation_civilians", "effect.route_cost_up"]},
+          {"id": "inspect", "textKey": "event.ninth_bastion.choice.inspect", "effectIds": ["effect.scouting_gain", "effect.flag_bastion_flaw"]}
+        ]
+      },
+      {
+        "id": "event.prisoners_pass",
+        "nameKey": "event.prisoners_pass.name",
+        "titleKey": "event.prisoners_pass.title",
+        "bodyKey": "event.prisoners_pass.body",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "iron_marches", "mercy"],
+        "scope": "iron_marches",
+        "sceneArt": "assets/regions/iron_marches/map_banner.jpg",
+        "choices": [
+          {"id": "release", "textKey": "event.prisoners_pass.choice.release", "effectIds": ["effect.reputation_workers", "effect.gold_loss_small"]},
+          {"id": "recruit", "textKey": "event.prisoners_pass.choice.recruit", "effectIds": ["effect.recruit_pool_pawn", "effect.flag_prisoner_oath"]},
+          {"id": "exchange", "textKey": "event.prisoners_pass.choice.exchange", "effectIds": ["effect.gold_gain_small", "effect.reputation_crown"]}
+        ]
+      },
+      {
+        "id": "event.empty_armory",
+        "nameKey": "event.empty_armory.name",
+        "titleKey": "event.empty_armory.title",
+        "bodyKey": "event.empty_armory.body",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "iron_marches", "supply"],
+        "scope": "iron_marches",
+        "sceneArt": "assets/regions/iron_marches/capital.jpg",
+        "choices": [
+          {"id": "search", "textKey": "event.empty_armory.choice.search", "effectIds": ["effect.scouting_gain", "effect.flag_armory_tunnel"]},
+          {"id": "rebuild", "textKey": "event.empty_armory.choice.rebuild", "effectIds": ["effect.gold_loss_medium", "effect.supplies_gain"]},
+          {"id": "seal", "textKey": "event.empty_armory.choice.seal", "effectIds": ["effect.reputation_crown", "effect.encounter_weight_down"]}
+        ]
+      },
+      {
+        "id": "event.duel_masons",
+        "nameKey": "event.duel_masons.name",
+        "titleKey": "event.duel_masons.title",
+        "bodyKey": "event.duel_masons.body",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "iron_marches", "guild"],
+        "scope": "iron_marches",
+        "sceneArt": "assets/regions/iron_marches/capital.jpg",
+        "choices": [
+          {"id": "first", "textKey": "event.duel_masons.choice.first", "effectIds": ["effect.reputation_guild_a", "effect.service_discount"]},
+          {"id": "second", "textKey": "event.duel_masons.choice.second", "effectIds": ["effect.reputation_guild_b", "effect.board_object_preview"]},
+          {"id": "joint", "textKey": "event.duel_masons.choice.joint", "effectIds": ["effect.gold_loss_small", "effect.flag_masons_reconciled"]}
+        ]
+      },
+      {
+        "id": "event.furnace_oath",
+        "nameKey": "event.furnace_oath.name",
+        "titleKey": "event.furnace_oath.title",
+        "bodyKey": "event.furnace_oath.body",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "iron_marches", "oath"],
+        "scope": "iron_marches",
+        "sceneArt": "assets/regions/iron_marches/boss_arena.jpg",
+        "choices": [
+          {"id": "swear", "textKey": "event.furnace_oath.choice.swear", "effectIds": ["effect.flag_furnace_oath", "effect.order_bonus_once"]},
+          {"id": "decline", "textKey": "event.furnace_oath.choice.decline", "effectIds": ["effect.reputation_independent", "effect.shop_price_up"]},
+          {"id": "rewrite", "textKey": "event.furnace_oath.choice.rewrite", "effectIds": ["effect.gold_loss_small", "effect.flag_oath_reformed"]}
+        ]
+      },
+      {
+        "id": "event.snow_black_iron",
+        "nameKey": "event.snow_black_iron.name",
+        "titleKey": "event.snow_black_iron.title",
+        "bodyKey": "event.snow_black_iron.body",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "iron_marches", "weather"],
+        "scope": "iron_marches",
+        "sceneArt": "assets/regions/iron_marches/map_banner.jpg",
+        "choices": [
+          {"id": "march", "textKey": "event.snow_black_iron.choice.march", "effectIds": ["effect.supplies_loss_small", "effect.route_progress"]},
+          {"id": "shelter", "textKey": "event.snow_black_iron.choice.shelter", "effectIds": ["effect.gold_loss_small", "effect.injury_recovery_light"]},
+          {"id": "guides", "textKey": "event.snow_black_iron.choice.guides", "effectIds": ["effect.gold_loss_medium", "effect.scouting_gain"]}
+        ]
+      },
+      {
+        "id": "event.disputed_standard",
+        "nameKey": "event.disputed_standard.name",
+        "titleKey": "event.disputed_standard.title",
+        "bodyKey": "event.disputed_standard.body",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "iron_marches", "succession"],
+        "scope": "iron_marches",
+        "sceneArt": "assets/regions/iron_marches/elite.jpg",
+        "choices": [
+          {"id": "marshal", "textKey": "event.disputed_standard.choice.marshal", "effectIds": ["effect.flag_support_varn", "effect.reputation_army"]},
+          {"id": "heir", "textKey": "event.disputed_standard.choice.heir", "effectIds": ["effect.flag_support_elda", "effect.reputation_reform"]},
+          {"id": "council", "textKey": "event.disputed_standard.choice.council", "effectIds": ["effect.flag_support_borek", "effect.reputation_workers"]}
+        ]
+      }
+    ],
+    "encounters": [
+      {
+        "id": "encounter.iron_crossfire_files",
+        "nameKey": "encounter.iron_crossfire_files.name",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "normal", "rook_lines"],
+        "regionId": "region.iron_marches",
+        "board": {"themeId": "iron_marches", "width": 8, "height": 8},
+        "objectiveKeys": ["encounter.iron_crossfire_files.objective"]
+      },
+      {
+        "id": "encounter.iron_blocked_diagonal",
+        "nameKey": "encounter.iron_blocked_diagonal.name",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "normal", "blocker"],
+        "regionId": "region.iron_marches",
+        "board": {"themeId": "iron_marches", "width": 8, "height": 8},
+        "objectiveKeys": ["encounter.iron_blocked_diagonal.objective"]
+      },
+      {
+        "id": "encounter.iron_broken_formation",
+        "nameKey": "encounter.iron_broken_formation.name",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "normal", "regroup"],
+        "regionId": "region.iron_marches",
+        "board": {"themeId": "iron_marches", "width": 8, "height": 8},
+        "objectiveKeys": ["encounter.iron_broken_formation.objective"]
+      },
+      {
+        "id": "encounter.iron_forward_outpost",
+        "nameKey": "encounter.iron_forward_outpost.name",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "normal", "objective"],
+        "regionId": "region.iron_marches",
+        "board": {"themeId": "iron_marches", "width": 8, "height": 8},
+        "objectiveKeys": ["encounter.iron_forward_outpost.objective"]
+      },
+      {
+        "id": "encounter.iron_champions_net",
+        "nameKey": "encounter.iron_champions_net.name",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "elite", "coordination"],
+        "regionId": "region.iron_marches",
+        "board": {"themeId": "iron_marches", "width": 8, "height": 8},
+        "objectiveKeys": ["encounter.iron_champions_net.objective"]
+      },
+      {
+        "id": "encounter.iron_escort_through_check",
+        "nameKey": "encounter.iron_escort_through_check.name",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "objective", "escort"],
+        "regionId": "region.iron_marches",
+        "board": {"themeId": "iron_marches", "width": 8, "height": 8},
+        "objectiveKeys": ["encounter.iron_escort_through_check.objective"]
+      }
+    ],
+    "bosses": [
+      {
+        "id": "boss.iron_regent",
+        "nameKey": "boss.iron_regent.name",
+        "status": "draft",
+        "tags": ["vertical_slice", "p0", "iron_marches", "multi_phase"],
+        "regionId": "region.iron_marches",
+        "phases": [
+          {"id": "furnace_seals", "titleKey": "boss.iron_regent.phase.furnace_seals", "objectiveKey": "boss.iron_regent.objective.furnace_seals"},
+          {"id": "collapsing_fortress", "titleKey": "boss.iron_regent.phase.collapsing_fortress", "objectiveKey": "boss.iron_regent.objective.collapsing_fortress"}
+        ],
+        "assets": {
+          "portrait": "assets/bosses/iron_regent/portrait.png",
+          "piece": "assets/bosses/iron_regent/piece.png",
+          "arena": "assets/bosses/iron_regent/arena.jpg",
+          "phaseTransition": "assets/bosses/iron_regent/phase_transition.png",
+          "phaseSigils": [
+            "assets/bosses/iron_regent/phase_01.png",
+            "assets/bosses/iron_regent/phase_02.png"
+          ]
+        }
+      }
+    ]
+  }
+}
