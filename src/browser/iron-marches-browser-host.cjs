@@ -1,0 +1,293 @@
+'use strict';
+
+const { hash32 } = require('../core/determinism.cjs');
+const { generateActGraph } = require('../campaign/graph.cjs');
+const { createCampaignState } = require('../campaign/state.cjs');
+const { createVerticalSliceRuntime } = require('../runtime/vertical-slice.cjs');
+const { createPresenterSnapshot, dispatchPresenterCommand } = require('../runtime/presenter-bridge.cjs');
+const {
+  createEncounterScenario,
+  createBossFromTemplates
+} = require('../content/scenario-templates.cjs');
+const {
+  createRunSelection,
+  selectRunKing,
+  selectRunDoctrine,
+  toggleRunHero,
+  lockRunSelection,
+  runSelectionPresenter,
+  runSelectionSnapshot
+} = require('../runtime/run-selection.cjs');
+const { buildBrowserProductionBundle } = require('./production-content-browser.cjs');
+
+const DEFAULT_BROWSER_SELECTION = Object.freeze({
+  regionId: 'region.iron_marches',
+  kingId: 'king.oathkeeper',
+  doctrineId: 'doctrine.fortress',
+  heroIds: Object.freeze([
+    'hero.aldric_wall',
+    'hero.mara_chain',
+    'hero.brother_orell',
+    'hero.vael_hammer',
+    'hero.lady_sorn',
+    'hero.tomas_gate'
+  ]),
+  relicIds: Object.freeze([
+    'relic.echo_shield',
+    'relic.phantom_spurs',
+    'relic.circle_warding',
+    'relic.twin_command',
+    'relic.royal_decree',
+    'relic.oath_fallen'
+  ])
+});
+
+const SELECTION_COMMANDS = Object.freeze(['SelectKing', 'SelectDoctrine', 'ToggleHero', 'LockSelection']);
+
+function freezeArray(values) {
+  return Object.freeze(values.slice());
+}
+
+function boardThemeMap(manifest) {
+  return Object.freeze(Object.fromEntries(manifest.themes.map((theme) => [theme.id, Object.freeze({
+    id: theme.id,
+    light: theme.light,
+    dark: theme.dark,
+    fallbackLight: theme.fallbackLight,
+    fallbackDark: theme.fallbackDark
+  })])));
+}
+
+function productionContentPools(bundle) {
+  return Object.freeze({
+    encounters: freezeArray(bundle.registry.list('encounter').map((record) => record.id)),
+    events: freezeArray(bundle.registry.list('event').map((record) => record.id)),
+    bosses: freezeArray(bundle.registry.list('boss').map((record) => record.id)),
+    shops: freezeArray(['shop.iron_field_quartermaster']),
+    services: freezeArray(['service.iron_field_smith']),
+    treasures: freezeArray(['treasure.iron_march_cache'])
+  });
+}
+
+function immediateNodeReward(nodeType) {
+  if (nodeType === 'shop' || nodeType === 'service') return Object.freeze({ gold: 0, supplies: 1, meta: 0 });
+  if (nodeType === 'treasure') return Object.freeze({ gold: 5, supplies: 1, meta: 0 });
+  return Object.freeze({ gold: 0, supplies: 0, meta: 0 });
+}
+
+function assertBrowserSelection(bundle, selection) {
+  const errors = [];
+  const region = bundle.registry.get('region', selection.regionId);
+  const king = bundle.registry.get('king', selection.kingId);
+  const doctrine = bundle.registry.get('doctrine', selection.doctrineId);
+  if (!region) errors.push(`missing selected region: ${selection.regionId}`);
+  if (!king) errors.push(`missing selected king: ${selection.kingId}`);
+  if (!doctrine) errors.push(`missing selected doctrine: ${selection.doctrineId}`);
+  if (king && doctrine && !king.doctrineIds.includes(doctrine.id)) errors.push(`${king.id} does not permit ${doctrine.id}`);
+  for (const heroId of selection.heroIds || []) if (!bundle.registry.get('hero', heroId)) errors.push(`missing selected hero: ${heroId}`);
+  for (const relicId of selection.relicIds || []) if (!bundle.registry.get('relic', relicId)) errors.push(`missing selected relic: ${relicId}`);
+  if (errors.length) {
+    const error = new Error(`browser run selection validation failed with ${errors.length} error(s)`);
+    error.details = Object.freeze(errors);
+    throw error;
+  }
+  return true;
+}
+
+function createBrowserDependencies(options) {
+  const { bundle, language, aiProfile, aiMaxNodes, aiTimeBudgetMs } = options;
+  const localization = bundle.localization[language];
+  if (!localization) throw new Error(`unsupported Iron Marches language: ${language}`);
+  const scenarioTemplates = bundle.scenarioTemplates;
+
+  const nodeResolver = ({ runtime, node, content }) => {
+    if (node.type === 'event') return Object.freeze({ mode: 'event', reward: Object.freeze({ gold: 1, supplies: 1, meta: 0 }) });
+    if (node.type === 'battle' || node.type === 'elite') {
+      const created = createEncounterScenario(scenarioTemplates, content.id, {
+        seed: hash32(`${runtime.seed}:${node.id}:${content.id}`),
+        playerSide: runtime.playerSide,
+        scenarioId: `${content.id.replace(/[^a-z0-9_-]+/g, '_')}_${node.id}`
+      });
+      return Object.freeze({ mode: 'scenario', scenario: created.scenario, reward: created.reward });
+    }
+    if (node.type === 'boss') {
+      const created = createBossFromTemplates(scenarioTemplates, content.id, {
+        seed: hash32(`${runtime.seed}:${node.id}:${content.id}`),
+        playerSide: runtime.playerSide
+      });
+      return Object.freeze({ mode: 'boss', boss: created.state, reward: created.reward });
+    }
+    return Object.freeze({ mode: 'immediate', reward: immediateNodeReward(node.type) });
+  };
+
+  const bossPhaseBattleResolver = ({ runtime, bossId, phaseIndex, contentId }) => {
+    const created = createBossFromTemplates(scenarioTemplates, contentId || bossId, {
+      seed: bossId === runtime.boss?.bossId ? runtime.boss.seed : hash32(`${runtime.seed}:${bossId}`),
+      playerSide: runtime.playerSide
+    });
+    return created.battleForPhase(phaseIndex);
+  };
+
+  return Object.freeze({
+    contentRegistry: bundle.registry,
+    localization,
+    boardThemes: boardThemeMap(bundle.boardThemeManifest),
+    eventChoiceResolver: bundle.eventChoiceResolver,
+    nodeResolver,
+    bossPhaseBattleResolver,
+    aiProfile,
+    aiMaxNodes,
+    aiTimeBudgetMs
+  });
+}
+
+function createBrowserIronMarchesRuntimeHost(options = {}) {
+  const bundle = options.bundle || buildBrowserProductionBundle();
+  const language = options.language || 'ru';
+  const seed = Number(options.seed ?? 9042);
+  const act = options.act ?? 1;
+  const nodeCount = options.nodeCount ?? 9;
+  const selection = Object.freeze({
+    regionId: options.selection?.regionId || DEFAULT_BROWSER_SELECTION.regionId,
+    kingId: options.selection?.kingId || DEFAULT_BROWSER_SELECTION.kingId,
+    doctrineId: options.selection?.doctrineId || DEFAULT_BROWSER_SELECTION.doctrineId,
+    heroIds: freezeArray(options.selection?.heroIds || DEFAULT_BROWSER_SELECTION.heroIds),
+    relicIds: freezeArray(options.selection?.relicIds || DEFAULT_BROWSER_SELECTION.relicIds)
+  });
+  assertBrowserSelection(bundle, selection);
+  const graph = generateActGraph({
+    seed,
+    act,
+    nodeCount,
+    regionId: selection.regionId,
+    contentPools: productionContentPools(bundle)
+  });
+  const campaign = createCampaignState(graph, {
+    supplies: options.supplies ?? 18,
+    scouting: options.scouting ?? 1
+  });
+  let state = createVerticalSliceRuntime({
+    runtimeId: options.runtimeId || `iron_marches_browser_${seed}_${act}`,
+    seed,
+    profileId: options.profileId || 'profile-1',
+    playerSide: options.playerSide || 'w',
+    aiProfile: options.aiProfile || 'apprentice',
+    campaign,
+    contentRegistry: bundle.registry
+  });
+  const dependencies = createBrowserDependencies({
+    bundle,
+    language,
+    aiProfile: options.aiProfile || 'apprentice',
+    aiMaxNodes: options.aiMaxNodes ?? 8000,
+    aiTimeBudgetMs: options.aiTimeBudgetMs ?? 0
+  });
+
+  return Object.freeze({
+    format: 'rpchess-browser-runtime-host',
+    selection,
+    bundle,
+    dependencies,
+    getState: () => state,
+    getSnapshot: () => createPresenterSnapshot(state, dependencies),
+    dispatch: async (command) => {
+      const result = dispatchPresenterCommand(state, command, dependencies);
+      state = result.state;
+      return Object.freeze({ snapshot: result.snapshot, saveEnvelope: result.saveEnvelope || null });
+    }
+  });
+}
+
+function normalizeSelectionCommand(command) {
+  if (!command || typeof command !== 'object') throw new Error('selection command is required');
+  const type = String(command.type || '');
+  if (!SELECTION_COMMANDS.includes(type)) throw new Error(`unsupported selection command: ${type}`);
+  if (type === 'SelectKing') {
+    const kingId = String(command.kingId || command.payload?.kingId || '');
+    if (!kingId) throw new Error('SelectKing requires kingId');
+    return Object.freeze({ type, kingId });
+  }
+  if (type === 'SelectDoctrine') {
+    const doctrineId = String(command.doctrineId || command.payload?.doctrineId || '');
+    if (!doctrineId) throw new Error('SelectDoctrine requires doctrineId');
+    return Object.freeze({ type, doctrineId });
+  }
+  if (type === 'ToggleHero') {
+    const heroId = String(command.heroId || command.payload?.heroId || '');
+    if (!heroId) throw new Error('ToggleHero requires heroId');
+    return Object.freeze({ type, heroId });
+  }
+  return Object.freeze({ type });
+}
+
+function createBrowserRunSelectionHost(options = {}) {
+  const bundle = options.bundle || buildBrowserProductionBundle();
+  const language = options.language || 'ru';
+  const localization = bundle.localization[language];
+  if (!localization) throw new Error(`unsupported run-selection language: ${language}`);
+  let selection = createRunSelection({
+    contentRegistry: bundle.registry,
+    selectionId: options.selectionId || `selection:${options.seed || 1}`,
+    regionId: options.regionId || DEFAULT_BROWSER_SELECTION.regionId,
+    heroLimit: options.heroLimit ?? 6,
+    minimumHeroes: options.minimumHeroes ?? 1
+  });
+  let runtimeHost = null;
+
+  function snapshot() {
+    return Object.freeze({
+      format: 'rpchess-run-selection-host-snapshot',
+      schemaVersion: 1,
+      status: runtimeHost ? 'ready' : selection.status,
+      selection: runSelectionPresenter(selection, bundle.registry, localization),
+      runtime: runtimeHost?.getSnapshot() || null
+    });
+  }
+
+  function execute(commandInput) {
+    const command = normalizeSelectionCommand(commandInput);
+    if (runtimeHost) throw new Error('run selection has already launched');
+    if (command.type === 'SelectKing') selection = selectRunKing(selection, command.kingId, bundle.registry);
+    else if (command.type === 'SelectDoctrine') selection = selectRunDoctrine(selection, command.doctrineId, bundle.registry);
+    else if (command.type === 'ToggleHero') selection = toggleRunHero(selection, command.heroId, bundle.registry);
+    else if (command.type === 'LockSelection') {
+      selection = lockRunSelection(selection, bundle.registry);
+      runtimeHost = createBrowserIronMarchesRuntimeHost({
+        ...options,
+        bundle,
+        language,
+        selection: Object.freeze({
+          regionId: selection.regionId,
+          kingId: selection.kingId,
+          doctrineId: selection.doctrineId,
+          heroIds: selection.heroIds,
+          relicIds: DEFAULT_BROWSER_SELECTION.relicIds
+        })
+      });
+    }
+    return Object.freeze({ command, snapshot: snapshot() });
+  }
+
+  return Object.freeze({
+    format: 'rpchess-browser-run-selection-host',
+    getSelection: () => runSelectionSnapshot(selection),
+    getRuntimeHost: () => runtimeHost,
+    getSnapshot: snapshot,
+    dispatch: async (command) => execute(command),
+    bundle,
+    localization
+  });
+}
+
+module.exports = {
+  DEFAULT_BROWSER_SELECTION,
+  SELECTION_COMMANDS,
+  boardThemeMap,
+  productionContentPools,
+  immediateNodeReward,
+  assertBrowserSelection,
+  createBrowserDependencies,
+  createBrowserIronMarchesRuntimeHost,
+  normalizeSelectionCommand,
+  createBrowserRunSelectionHost
+};
