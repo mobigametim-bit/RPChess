@@ -39,11 +39,13 @@ const test = (name, fn) => tests.push({ name, fn });
   });
 
   test('scene resolver selects map, battle, elite and boss art from current runtime state', () => {
-    const base = { campaign: { regionId: 'region.iron_marches' }, currentNode: { type: 'battle' } };
-    assert.strictEqual(assets.sceneAsset(base), 'assets/regions/iron_marches/map_banner.jpg');
-    assert.strictEqual(assets.sceneAsset(base, 'battle'), 'assets/regions/iron_marches/battle.jpg');
-    assert.strictEqual(assets.sceneAsset({ ...base, currentNode: { type: 'elite' } }, 'elite'), 'assets/regions/iron_marches/elite.jpg');
-    assert.strictEqual(assets.sceneAsset({ ...base, currentNode: { type: 'boss' } }, 'boss'), 'assets/regions/iron_marches/boss_arena.jpg');
+    const campaign = { campaign: { regionId: 'region.iron_marches' }, currentNode: null };
+    const battle = { ...campaign, currentNode: { type: 'battle' } };
+    assert.strictEqual(assets.sceneAsset(campaign), 'assets/regions/iron_marches/map_banner.jpg');
+    assert.strictEqual(assets.sceneAsset(battle), 'assets/regions/iron_marches/battle.jpg');
+    assert.strictEqual(assets.sceneAsset(battle, 'battle'), 'assets/regions/iron_marches/battle.jpg');
+    assert.strictEqual(assets.sceneAsset({ ...campaign, currentNode: { type: 'elite' } }, 'elite'), 'assets/regions/iron_marches/elite.jpg');
+    assert.strictEqual(assets.sceneAsset({ ...campaign, currentNode: { type: 'boss' } }, 'boss'), 'assets/regions/iron_marches/boss_arena.jpg');
   });
 
   test('battle events map only to declared non-blocking sprite sheets', () => {
