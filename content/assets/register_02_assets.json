@@ -1,0 +1,2793 @@
+{
+  "schemaVersion": 1,
+  "register": "register/REGISTER_02_HEROES_AND_POLITICS.md",
+  "source": {
+    "provider": "Google Drive",
+    "folderId": "1JzJyNu52MD7hS3F_xFi71klXF9oJG_VB",
+    "folderUrl": "https://drive.google.com/drive/folders/1JzJyNu52MD7hS3F_xFi71klXF9oJG_VB",
+    "providedBy": "project owner",
+    "downloadMode": "sharded-folder-artifacts"
+  },
+  "status": "REVIEW",
+  "approvalNote": "Canonical paths and dimensions are normalized. Rights metadata, visual consistency and in-game readability remain required before APPROVED.",
+  "assetCount": 126,
+  "heroCount": 36,
+  "politicalCharacterCount": 18,
+  "registerRecordsUpdated": 54,
+  "totalBytes": 79517812,
+  "unmappedSourceImages": [],
+  "assets": [
+    {
+      "canonicalPath": "assets/heroes/aldric_wall/portrait.png",
+      "repositoryPath": "game/assets/heroes/aldric_wall/portrait.png",
+      "sourceFolder": "aldric_wall",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1067066,
+      "sha256": "0e16167720945d4dbad805beeadcf53acaf5f3eba98d63137801abee720c9a23",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 1
+    },
+    {
+      "canonicalPath": "assets/heroes/aldric_wall/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/aldric_wall/piece_badge.png",
+      "sourceFolder": "aldric_wall",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 399931,
+      "sha256": "8fe05075f6d83f50062dca62f815cf9041e8c44445e20f323f062c1e9bdd7a5e",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 2
+    },
+    {
+      "canonicalPath": "assets/heroes/aldric_wall/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/aldric_wall/ability_icon.png",
+      "sourceFolder": "aldric_wall",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 462838,
+      "sha256": "0b394b6e400817189a8e72d81315ffb7b3c523eb30862174cd0f4f24b1f95f9f",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 3
+    },
+    {
+      "canonicalPath": "assets/heroes/mara_chain/portrait.png",
+      "repositoryPath": "game/assets/heroes/mara_chain/portrait.png",
+      "sourceFolder": "mara_chain",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1011092,
+      "sha256": "bc20a50ecf884a3d7c7f34fb3e97bee7b4692ae3ccd48b6f090323f77367cf43",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 4
+    },
+    {
+      "canonicalPath": "assets/heroes/mara_chain/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/mara_chain/piece_badge.png",
+      "sourceFolder": "mara_chain",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 388544,
+      "sha256": "00dec96d31d3bef73b53be808b09022f37b72ebcd575e0de593dd157c9657d18",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 5
+    },
+    {
+      "canonicalPath": "assets/heroes/mara_chain/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/mara_chain/ability_icon.png",
+      "sourceFolder": "mara_chain",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 310621,
+      "sha256": "7992690eb7e42b1564c3ed8cf9dc0ae0657e6f8246fa02abc5ee5c9d70667d90",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 6
+    },
+    {
+      "canonicalPath": "assets/heroes/brother_orell/portrait.png",
+      "repositoryPath": "game/assets/heroes/brother_orell/portrait.png",
+      "sourceFolder": "brother_orell",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 985382,
+      "sha256": "c5c4838fb568cdb96312bf76f8c179ec9a16bcff6f487040f4948a8b03965b4f",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 7
+    },
+    {
+      "canonicalPath": "assets/heroes/brother_orell/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/brother_orell/piece_badge.png",
+      "sourceFolder": "brother_orell",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 232850,
+      "sha256": "dca2f535f45044151a01863f63b0ac48cccbf47679194f98768678684727d440",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 8
+    },
+    {
+      "canonicalPath": "assets/heroes/brother_orell/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/brother_orell/ability_icon.png",
+      "sourceFolder": "brother_orell",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 401411,
+      "sha256": "51a90809a9c2e84f8f40cf443a5cf41216211995f99dd690e30e2c6e51a18a5e",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 9
+    },
+    {
+      "canonicalPath": "assets/heroes/vael_hammer/portrait.png",
+      "repositoryPath": "game/assets/heroes/vael_hammer/portrait.png",
+      "sourceFolder": "vael_hammer",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1086768,
+      "sha256": "8dc67538f210aba3cfc2f6ac781f5bea83eba6ca93a91ca30e5a2fe450447037",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 10
+    },
+    {
+      "canonicalPath": "assets/heroes/vael_hammer/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/vael_hammer/piece_badge.png",
+      "sourceFolder": "vael_hammer",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 341316,
+      "sha256": "2da00910c7b1c4259ad56aa7ec4361d99a4ffa5d39c7582df6da317cec4cc2b0",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 11
+    },
+    {
+      "canonicalPath": "assets/heroes/vael_hammer/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/vael_hammer/ability_icon.png",
+      "sourceFolder": "vael_hammer",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 398364,
+      "sha256": "183d776768cb9f3271e0323b5022004a081495c4a3e350e1d8918de87fda0078",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 12
+    },
+    {
+      "canonicalPath": "assets/heroes/lady_sorn/portrait.png",
+      "repositoryPath": "game/assets/heroes/lady_sorn/portrait.png",
+      "sourceFolder": "lady_sorn",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 828161,
+      "sha256": "73650148acffa1995170700dd95c18c26365e50409dd105fbdf5d941d6e7ddb3",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 13
+    },
+    {
+      "canonicalPath": "assets/heroes/lady_sorn/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/lady_sorn/piece_badge.png",
+      "sourceFolder": "lady_sorn",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 242288,
+      "sha256": "40c5bde754b9add71320c1184b3d4d738f45f92125034cb875dc2b930ddf81e8",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 14
+    },
+    {
+      "canonicalPath": "assets/heroes/lady_sorn/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/lady_sorn/ability_icon.png",
+      "sourceFolder": "lady_sorn",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 312718,
+      "sha256": "5a18dd91e1ba640636cc9b46862a0c63bc8eccaa9c70b0d943713f4e7882ffc6",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 15
+    },
+    {
+      "canonicalPath": "assets/heroes/tomas_gate/portrait.png",
+      "repositoryPath": "game/assets/heroes/tomas_gate/portrait.png",
+      "sourceFolder": "tomas_gate",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 945372,
+      "sha256": "ed8aa1ab831f649b5034b3675bd3507e4d4adcc5ef49340be88b30588d6af4cd",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 16
+    },
+    {
+      "canonicalPath": "assets/heroes/tomas_gate/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/tomas_gate/piece_badge.png",
+      "sourceFolder": "tomas_gate",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 218370,
+      "sha256": "daa23b3aec4018a94aefd3e453abec7d71d344c3f979347d0bf479524ef9bb7d",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 17
+    },
+    {
+      "canonicalPath": "assets/heroes/tomas_gate/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/tomas_gate/ability_icon.png",
+      "sourceFolder": "tomas_gate",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 355859,
+      "sha256": "9929f912cd2d99cffd8756ea03d3c2abdd24444ff30b1551659703077b9c3358",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 18
+    },
+    {
+      "canonicalPath": "assets/heroes/seraph_lyra/portrait.png",
+      "repositoryPath": "game/assets/heroes/seraph_lyra/portrait.png",
+      "sourceFolder": "seraph_lyra",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1100272,
+      "sha256": "4511ab583f1ba3c88ee3aff49e825123f7d55a9feaf2fdcb593eb17f476a7366",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 19
+    },
+    {
+      "canonicalPath": "assets/heroes/seraph_lyra/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/seraph_lyra/piece_badge.png",
+      "sourceFolder": "seraph_lyra",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 246188,
+      "sha256": "b700409481ff98b2c269195eadc1921b489941605a323a9a9e14228c8415727e",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 20
+    },
+    {
+      "canonicalPath": "assets/heroes/seraph_lyra/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/seraph_lyra/ability_icon.png",
+      "sourceFolder": "seraph_lyra",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 172575,
+      "sha256": "3b6d02c8144443b5540a45e9a1029d7a11adcaa725a6fe7d24acad9b1b8fea85",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 21
+    },
+    {
+      "canonicalPath": "assets/heroes/ivar_lens/portrait.png",
+      "repositoryPath": "game/assets/heroes/ivar_lens/portrait.png",
+      "sourceFolder": "ivar_lens",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1088612,
+      "sha256": "baa9f57c6c283b2f102e82f0d79e9ea5489a29440741959ce24c99fb9c1749a6",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 22
+    },
+    {
+      "canonicalPath": "assets/heroes/ivar_lens/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/ivar_lens/piece_badge.png",
+      "sourceFolder": "ivar_lens",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 222077,
+      "sha256": "dcde25a91fc86859be20e4928fcbc6712c532f549e9fa7d9ef2f8ed8e54280cb",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 23
+    },
+    {
+      "canonicalPath": "assets/heroes/ivar_lens/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/ivar_lens/ability_icon.png",
+      "sourceFolder": "ivar_lens",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 121303,
+      "sha256": "4bc103ad9ff7b90564d32cc2d7c96709463b2b45bdf10fd799a080fb6ab50525",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 24
+    },
+    {
+      "canonicalPath": "assets/heroes/nemea_quill/portrait.png",
+      "repositoryPath": "game/assets/heroes/nemea_quill/portrait.png",
+      "sourceFolder": "nemea_quill",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1040031,
+      "sha256": "027e7d90948a3e76c4a3cb137c4d2147d27b19d6adf4a73396fc78c099883a15",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 25
+    },
+    {
+      "canonicalPath": "assets/heroes/nemea_quill/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/nemea_quill/piece_badge.png",
+      "sourceFolder": "nemea_quill",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 354021,
+      "sha256": "014aef6b1a55de1255293bdcbf570cf1b3d401afb7e5b58db991e0634309bee4",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 26
+    },
+    {
+      "canonicalPath": "assets/heroes/nemea_quill/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/nemea_quill/ability_icon.png",
+      "sourceFolder": "nemea_quill",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 229655,
+      "sha256": "4c702c702ace0e25613409ba299b90383068fef73eb09e6bd916cbdaaf4bc97a",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 27
+    },
+    {
+      "canonicalPath": "assets/heroes/orion_step/portrait.png",
+      "repositoryPath": "game/assets/heroes/orion_step/portrait.png",
+      "sourceFolder": "orion_step",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1110645,
+      "sha256": "6ddc5a2e45864dd11b35325adf1a3535ea0589640530e24b89dbf1ecb622ec88",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 28
+    },
+    {
+      "canonicalPath": "assets/heroes/orion_step/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/orion_step/piece_badge.png",
+      "sourceFolder": "orion_step",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1536
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 406770,
+      "sha256": "31b0dfa6348ccee132af0d8f994d17588dfb56fb912f954601c12eea38a947d0",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 29
+    },
+    {
+      "canonicalPath": "assets/heroes/orion_step/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/orion_step/ability_icon.png",
+      "sourceFolder": "orion_step",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 342145,
+      "sha256": "02f09e38e4950924766d136282433b4f105a4bb16964f0041b8bb5045770089c",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 30
+    },
+    {
+      "canonicalPath": "assets/heroes/abbess_celene/portrait.png",
+      "repositoryPath": "game/assets/heroes/abbess_celene/portrait.png",
+      "sourceFolder": "abbess_celene",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1073327,
+      "sha256": "180f3d4acf701c1ca10dd14ae9825559010287b1528e25d23e3a34a502f01cf8",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 31
+    },
+    {
+      "canonicalPath": "assets/heroes/abbess_celene/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/abbess_celene/piece_badge.png",
+      "sourceFolder": "abbess_celene",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1536
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 423782,
+      "sha256": "52f7a23923326c5332127d219f0d4cb52471ccfc2ed903d153eb498da9df426f",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 32
+    },
+    {
+      "canonicalPath": "assets/heroes/abbess_celene/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/abbess_celene/ability_icon.png",
+      "sourceFolder": "abbess_celene",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 359117,
+      "sha256": "6cc205b4929a9af8037938d49be49c4098ad6406f55338872582e983a52a1feb",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 33
+    },
+    {
+      "canonicalPath": "assets/heroes/deacon_mirel/portrait.png",
+      "repositoryPath": "game/assets/heroes/deacon_mirel/portrait.png",
+      "sourceFolder": "deacon_mirel",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 944735,
+      "sha256": "d3c4e1b50b185834ced39b14d51582683476c4fd07a72630de0aef98fcdd4157",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 34
+    },
+    {
+      "canonicalPath": "assets/heroes/deacon_mirel/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/deacon_mirel/piece_badge.png",
+      "sourceFolder": "deacon_mirel",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1536
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 329399,
+      "sha256": "be5ef2c98436a3fc840de1f4562d224c535917e15eba6b6e5c90c84e22e2eb7d",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 35
+    },
+    {
+      "canonicalPath": "assets/heroes/deacon_mirel/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/deacon_mirel/ability_icon.png",
+      "sourceFolder": "deacon_mirel",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 185928,
+      "sha256": "039c1d7d03a4f7d1d6d97460931849172aa5df1c261c192747e4fc60a80e53cb",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 36
+    },
+    {
+      "canonicalPath": "assets/heroes/cassian_coin/portrait.png",
+      "repositoryPath": "game/assets/heroes/cassian_coin/portrait.png",
+      "sourceFolder": "cassian_coin",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1173485,
+      "sha256": "b783bf96098d124a734e49cb3571f6814e56554e1f0a78bdb696e6c60a07be06",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 37
+    },
+    {
+      "canonicalPath": "assets/heroes/cassian_coin/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/cassian_coin/piece_badge.png",
+      "sourceFolder": "cassian_coin",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 333291,
+      "sha256": "4e1fb98529a12cb8f81780f1c1167d29cfeeebf9c651329e68d567b1ec49bc09",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 38
+    },
+    {
+      "canonicalPath": "assets/heroes/cassian_coin/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/cassian_coin/ability_icon.png",
+      "sourceFolder": "cassian_coin",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 215573,
+      "sha256": "b3ef0a43ca0b030837a9b1e25eecc1fce8e5bcc44a8da0844e2b968e3755c408",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 39
+    },
+    {
+      "canonicalPath": "assets/heroes/viola_mask/portrait.png",
+      "repositoryPath": "game/assets/heroes/viola_mask/portrait.png",
+      "sourceFolder": "viola_mask",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1135469,
+      "sha256": "b9fd36cf22e4434098864503dc23f62ee224174b9568384366ec35df20175966",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 40
+    },
+    {
+      "canonicalPath": "assets/heroes/viola_mask/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/viola_mask/piece_badge.png",
+      "sourceFolder": "viola_mask",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 389654,
+      "sha256": "dcc5add88c5fe77bdb11262885949efcb00d12b338ae3cdccf98f305113a92dd",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 41
+    },
+    {
+      "canonicalPath": "assets/heroes/viola_mask/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/viola_mask/ability_icon.png",
+      "sourceFolder": "viola_mask",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 220531,
+      "sha256": "9f3a90debdb89aa03da5bf5ec3f505752f8ea0a0328a7dae2a2f35a9b75b7200",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 42
+    },
+    {
+      "canonicalPath": "assets/heroes/renzo_bridge/portrait.png",
+      "repositoryPath": "game/assets/heroes/renzo_bridge/portrait.png",
+      "sourceFolder": "renzo_bridge",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1128140,
+      "sha256": "914dd9af352242456cbffc0ded294e7baa9a95053f74cbc822d30e2490d0f7e8",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 43
+    },
+    {
+      "canonicalPath": "assets/heroes/renzo_bridge/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/renzo_bridge/piece_badge.png",
+      "sourceFolder": "renzo_bridge",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 249009,
+      "sha256": "3b407131623e8ec1d0c34cb8028516fd0fe5a8332edcbffc03870766abdab02e",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 44
+    },
+    {
+      "canonicalPath": "assets/heroes/renzo_bridge/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/renzo_bridge/ability_icon.png",
+      "sourceFolder": "renzo_bridge",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 202368,
+      "sha256": "a5382140a1a1ab799a47e6a2d0a543f48632b33f694ed7cb8e36696fcf700aaf",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 45
+    },
+    {
+      "canonicalPath": "assets/heroes/tessa_gull/portrait.png",
+      "repositoryPath": "game/assets/heroes/tessa_gull/portrait.png",
+      "sourceFolder": "tessa_gull",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1129995,
+      "sha256": "7a09cd103953a0c32ac48682e821b200ca6f1c7e72a52eaff307e5568e219816",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 46
+    },
+    {
+      "canonicalPath": "assets/heroes/tessa_gull/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/tessa_gull/piece_badge.png",
+      "sourceFolder": "tessa_gull",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 398069,
+      "sha256": "814e3f06b384dc5be6bc03ec2b8ae83484e781316bbe560cefaf34c9db580649",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 47
+    },
+    {
+      "canonicalPath": "assets/heroes/tessa_gull/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/tessa_gull/ability_icon.png",
+      "sourceFolder": "tessa_gull",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 581885,
+      "sha256": "16bf4186e821bb401361180cd19874cd127be613e147b14a6262fb01094282fd",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 48
+    },
+    {
+      "canonicalPath": "assets/heroes/old_marin/portrait.png",
+      "repositoryPath": "game/assets/heroes/old_marin/portrait.png",
+      "sourceFolder": "old_marin",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1071772,
+      "sha256": "40b2eced1df89c4eb534c2c857a70098a56340fe81c76272ca47009dbbb5af3b",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 49
+    },
+    {
+      "canonicalPath": "assets/heroes/old_marin/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/old_marin/piece_badge.png",
+      "sourceFolder": "old_marin",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 275448,
+      "sha256": "870e8470e15117aa5c03cd0e0e06c4283d4aff826291037964ba768eb11a2e6a",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 50
+    },
+    {
+      "canonicalPath": "assets/heroes/old_marin/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/old_marin/ability_icon.png",
+      "sourceFolder": "old_marin",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 468450,
+      "sha256": "201be26fe982fd210471d81d2bc8b769d3ed431b5be72a6ea7ffedb60f517dd9",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 51
+    },
+    {
+      "canonicalPath": "assets/heroes/elio_silk/portrait.png",
+      "repositoryPath": "game/assets/heroes/elio_silk/portrait.png",
+      "sourceFolder": "elio_silk",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 994572,
+      "sha256": "7bcc1eb5070af6aabeebcec3887ae838dc9f5f57113fdfdbb27a10d2f2ff59c6",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 52
+    },
+    {
+      "canonicalPath": "assets/heroes/elio_silk/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/elio_silk/piece_badge.png",
+      "sourceFolder": "elio_silk",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 276652,
+      "sha256": "11b6d09c0e33c8d23c0e107a5a875aa53f8a56c16805c52564a659ade1c73097",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 53
+    },
+    {
+      "canonicalPath": "assets/heroes/elio_silk/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/elio_silk/ability_icon.png",
+      "sourceFolder": "elio_silk",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 484610,
+      "sha256": "534d3764bf7dddaaf3d509dddb3b5cf61d5712df4c068e708a3188c48fc24603",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 54
+    },
+    {
+      "canonicalPath": "assets/heroes/briar_sister/portrait.png",
+      "repositoryPath": "game/assets/heroes/briar_sister/portrait.png",
+      "sourceFolder": "briar_sister",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1143261,
+      "sha256": "41d21ca1601b59f4ef7a2a940a7eebf5e6e1001aef646fa11d8b586334a03cbd",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 55
+    },
+    {
+      "canonicalPath": "assets/heroes/briar_sister/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/briar_sister/piece_badge.png",
+      "sourceFolder": "briar_sister",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 271080,
+      "sha256": "bcca180cf63ba8c40058980124bf5bab68bdeb9892aacea8213470205be49c7c",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 56
+    },
+    {
+      "canonicalPath": "assets/heroes/briar_sister/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/briar_sister/ability_icon.png",
+      "sourceFolder": "briar_sister",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 256459,
+      "sha256": "c9557501846cdb4f466a576df8d570639ad3c506260af1c9462af74ba7b8f25c",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 57
+    },
+    {
+      "canonicalPath": "assets/heroes/roan_stag/portrait.png",
+      "repositoryPath": "game/assets/heroes/roan_stag/portrait.png",
+      "sourceFolder": "roan_stag",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1219926,
+      "sha256": "257f7ed8e4ece580945a4cf38e961b96f1bf581cad19b75940cfcacfc14b1f1f",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 58
+    },
+    {
+      "canonicalPath": "assets/heroes/roan_stag/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/roan_stag/piece_badge.png",
+      "sourceFolder": "roan_stag",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 294857,
+      "sha256": "f673aae3600458490741d48b91af9a4fe6e153e9a9dd87f19d5928f45378b2cf",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 59
+    },
+    {
+      "canonicalPath": "assets/heroes/roan_stag/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/roan_stag/ability_icon.png",
+      "sourceFolder": "roan_stag",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 516522,
+      "sha256": "6c54fd9f101d9deda4b7453c0c92e03043eed4485fe9f16472f073e1fa886a4d",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 60
+    },
+    {
+      "canonicalPath": "assets/heroes/maeve_root/portrait.png",
+      "repositoryPath": "game/assets/heroes/maeve_root/portrait.png",
+      "sourceFolder": "maeve_root",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1165113,
+      "sha256": "55b854c6d6fd70760c1abe7e5919c664d1b8cabfb13619388fdf18db417e4c12",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 61
+    },
+    {
+      "canonicalPath": "assets/heroes/maeve_root/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/maeve_root/piece_badge.png",
+      "sourceFolder": "maeve_root",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 347472,
+      "sha256": "eb0fa1364c71b61a4b5a3a37df4ad51ea64e60bce0ada9691b9811329011e6a9",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 62
+    },
+    {
+      "canonicalPath": "assets/heroes/maeve_root/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/maeve_root/ability_icon.png",
+      "sourceFolder": "maeve_root",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 262566,
+      "sha256": "544e1be0b329ed6df8de3d9e1cec88a993ab9e543de9fbdad6860125124f2eee",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 63
+    },
+    {
+      "canonicalPath": "assets/heroes/puck_ember/portrait.png",
+      "repositoryPath": "game/assets/heroes/puck_ember/portrait.png",
+      "sourceFolder": "puck_ember",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1064763,
+      "sha256": "c3b2950197f9f553c8475d1f74c4df5f51822df495c1d5e464981dc7e6a370ce",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 64
+    },
+    {
+      "canonicalPath": "assets/heroes/puck_ember/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/puck_ember/piece_badge.png",
+      "sourceFolder": "puck_ember",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 278188,
+      "sha256": "fb3118596c44cea03b202e119b87ebe74e5ec95d62b73790bda6ac68f7a1ecf9",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 65
+    },
+    {
+      "canonicalPath": "assets/heroes/puck_ember/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/puck_ember/ability_icon.png",
+      "sourceFolder": "puck_ember",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 443173,
+      "sha256": "2050c0266bb822fb8a9ee882e328e6f2a6f2d67bb418c4f3542d20ae08026438",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 66
+    },
+    {
+      "canonicalPath": "assets/heroes/lord_aylen/portrait.png",
+      "repositoryPath": "game/assets/heroes/lord_aylen/portrait.png",
+      "sourceFolder": "lord_aylen",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1127964,
+      "sha256": "fde1128078562386d2f491a371d0701ddb446c3b02b07753672c95fd5227f27a",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 67
+    },
+    {
+      "canonicalPath": "assets/heroes/lord_aylen/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/lord_aylen/piece_badge.png",
+      "sourceFolder": "lord_aylen",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 293198,
+      "sha256": "b2c57b23e87087d356a37cf729f1acfaaa81c64a499ae8997c67c545039d9480",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 68
+    },
+    {
+      "canonicalPath": "assets/heroes/lord_aylen/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/lord_aylen/ability_icon.png",
+      "sourceFolder": "lord_aylen",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 329637,
+      "sha256": "8cf8c70efeed6657c883ea267f1be657cd1070e9553eb5db05a470768d7bd10c",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 69
+    },
+    {
+      "canonicalPath": "assets/heroes/ysra_moss/portrait.png",
+      "repositoryPath": "game/assets/heroes/ysra_moss/portrait.png",
+      "sourceFolder": "ysra_moss",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1212631,
+      "sha256": "464925c8f465dbce3e21784edc8af9431854b0476d71a8744b261171313cfac4",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 70
+    },
+    {
+      "canonicalPath": "assets/heroes/ysra_moss/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/ysra_moss/piece_badge.png",
+      "sourceFolder": "ysra_moss",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 259719,
+      "sha256": "40e1ec3cf9a9d053f860465b37083be3463f9d9000023cc25ce8d6320815448b",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 71
+    },
+    {
+      "canonicalPath": "assets/heroes/ysra_moss/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/ysra_moss/ability_icon.png",
+      "sourceFolder": "ysra_moss",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 378549,
+      "sha256": "02beaa5d4ae4c83126cb4ef12b7a1c9496a739c1a2f85e19323dd98648e2097c",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 72
+    },
+    {
+      "canonicalPath": "assets/heroes/kael_cinder/portrait.png",
+      "repositoryPath": "game/assets/heroes/kael_cinder/portrait.png",
+      "sourceFolder": "kael_cinder",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1025436,
+      "sha256": "6aa460a1422b2345ef605bf9000e09aed8d89c51cef388bfa0627335f22d39b5",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 73
+    },
+    {
+      "canonicalPath": "assets/heroes/kael_cinder/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/kael_cinder/piece_badge.png",
+      "sourceFolder": "kael_cinder",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 264619,
+      "sha256": "29ff3b1e0383674d355215704590d4fd9be2a1570f49ee7405d923449605fc71",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 74
+    },
+    {
+      "canonicalPath": "assets/heroes/kael_cinder/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/kael_cinder/ability_icon.png",
+      "sourceFolder": "kael_cinder",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 260823,
+      "sha256": "04cbe5dbad996ca7083ef1aa7372fe6edb65010c97761af89ba95f5bc34a06b8",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 75
+    },
+    {
+      "canonicalPath": "assets/heroes/velka_urn/portrait.png",
+      "repositoryPath": "game/assets/heroes/velka_urn/portrait.png",
+      "sourceFolder": "velka_urn",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1001111,
+      "sha256": "195d92b60f2ca6ffbd260ee753abbe9801f07b359f8f26226de4598dc21a8c8a",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 76
+    },
+    {
+      "canonicalPath": "assets/heroes/velka_urn/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/velka_urn/piece_badge.png",
+      "sourceFolder": "velka_urn",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 168839,
+      "sha256": "88b19a28780316df4a6ec0e2e3d7a4b047ec5c19b87c428e40c4db39269e0dc6",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 77
+    },
+    {
+      "canonicalPath": "assets/heroes/velka_urn/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/velka_urn/ability_icon.png",
+      "sourceFolder": "velka_urn",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 367791,
+      "sha256": "f430b1b06cff7ebfe6d29b1b3fcce5e1a0ba3b2d81bd4323559c46c2ca3446f0",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 78
+    },
+    {
+      "canonicalPath": "assets/heroes/rath_banner/portrait.png",
+      "repositoryPath": "game/assets/heroes/rath_banner/portrait.png",
+      "sourceFolder": "rath_banner",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1031490,
+      "sha256": "1a5f1e1651bb12772b886d5dca5d3d2883667790fc6f8b006af758dafe3fcb27",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 79
+    },
+    {
+      "canonicalPath": "assets/heroes/rath_banner/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/rath_banner/piece_badge.png",
+      "sourceFolder": "rath_banner",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 277892,
+      "sha256": "84a4b4300c7c51b070fc9edeb39514d388856ec7a5f650e293fd8bb2115af630",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 80
+    },
+    {
+      "canonicalPath": "assets/heroes/rath_banner/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/rath_banner/ability_icon.png",
+      "sourceFolder": "rath_banner",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 268861,
+      "sha256": "3a53da0b7d8bf53bcfbbd1bd0ad876bbd592369235f92f2ddcfb55abd6798777",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 81
+    },
+    {
+      "canonicalPath": "assets/heroes/suri_ash/portrait.png",
+      "repositoryPath": "game/assets/heroes/suri_ash/portrait.png",
+      "sourceFolder": "suri_ash",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1045919,
+      "sha256": "c0eb9ba56729f96be9cf9dca99940b61bd6f73e52199401c696a6b95a20c3ae6",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 82
+    },
+    {
+      "canonicalPath": "assets/heroes/suri_ash/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/suri_ash/piece_badge.png",
+      "sourceFolder": "suri_ash",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 218748,
+      "sha256": "adf0c70a53253779aed282968f76c0225c693e18e5fc771e78a9ccb2fac3fd42",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 83
+    },
+    {
+      "canonicalPath": "assets/heroes/suri_ash/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/suri_ash/ability_icon.png",
+      "sourceFolder": "suri_ash",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 323271,
+      "sha256": "339256c9a495dfe5e2e7727b796bdd023ed6cb527907808daf17e2d15ac8ef80",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 84
+    },
+    {
+      "canonicalPath": "assets/heroes/empress_nahla/portrait.png",
+      "repositoryPath": "game/assets/heroes/empress_nahla/portrait.png",
+      "sourceFolder": "empress_nahla",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1044394,
+      "sha256": "202417718fa911e0f03c3ccf5b9175ffde306f08ef67c7c239b828d19ad7b107",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 85
+    },
+    {
+      "canonicalPath": "assets/heroes/empress_nahla/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/empress_nahla/piece_badge.png",
+      "sourceFolder": "empress_nahla",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 145909,
+      "sha256": "5d34452df91084ea5e53c06ed88a6f189cf2031d901e676fb97de5ceb9d7250a",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 86
+    },
+    {
+      "canonicalPath": "assets/heroes/empress_nahla/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/empress_nahla/ability_icon.png",
+      "sourceFolder": "empress_nahla",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 241056,
+      "sha256": "224285a616a3d434affd3d89bf1bc194acfbc2575c0701f91e827ec494dd8c06",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 87
+    },
+    {
+      "canonicalPath": "assets/heroes/daro_last/portrait.png",
+      "repositoryPath": "game/assets/heroes/daro_last/portrait.png",
+      "sourceFolder": "daro_last",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 910286,
+      "sha256": "53d1c7632428bf9df4ec8a375fd335e4371bd60415864cf2578d5c678e83bf0f",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 88
+    },
+    {
+      "canonicalPath": "assets/heroes/daro_last/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/daro_last/piece_badge.png",
+      "sourceFolder": "daro_last",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 165674,
+      "sha256": "cd3182fbc48df19eddc47e814c9bec3e3bd1f227d2e04169089da6f96f968989",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 89
+    },
+    {
+      "canonicalPath": "assets/heroes/daro_last/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/daro_last/ability_icon.png",
+      "sourceFolder": "daro_last",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 194389,
+      "sha256": "6df7876b0b45816f1828583482a4b474e51783e237b89485d44f2a4123a45e4c",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 90
+    },
+    {
+      "canonicalPath": "assets/heroes/temur_wind/portrait.png",
+      "repositoryPath": "game/assets/heroes/temur_wind/portrait.png",
+      "sourceFolder": "temur_wind",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1177783,
+      "sha256": "bd730d30a6bde4730f3aa75f05b6a9c7e910980f2feafb4f17db37e42e9ec153",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 91
+    },
+    {
+      "canonicalPath": "assets/heroes/temur_wind/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/temur_wind/piece_badge.png",
+      "sourceFolder": "temur_wind",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 251701,
+      "sha256": "49af66ace203564f5d0ef4816c8b6b796a96d01fdb29dc6e2ca2f635534881e7",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 92
+    },
+    {
+      "canonicalPath": "assets/heroes/temur_wind/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/temur_wind/ability_icon.png",
+      "sourceFolder": "temur_wind",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 111004,
+      "sha256": "692be49c014a7d8bffd7ad865568aa4e87f21b8352865b3fd97e59af4e1bfdab",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 93
+    },
+    {
+      "canonicalPath": "assets/heroes/altana_bow/portrait.png",
+      "repositoryPath": "game/assets/heroes/altana_bow/portrait.png",
+      "sourceFolder": "altana_bow",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1119681,
+      "sha256": "58780b4502070daabe6111d718acd049efa4588142f38ab927ec1ced11443baf",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 94
+    },
+    {
+      "canonicalPath": "assets/heroes/altana_bow/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/altana_bow/piece_badge.png",
+      "sourceFolder": "altana_bow",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 216849,
+      "sha256": "322048c809a86a571ff6d2ed165c90c3932a9a07d31011f2596beb5397018aa8",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 95
+    },
+    {
+      "canonicalPath": "assets/heroes/altana_bow/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/altana_bow/ability_icon.png",
+      "sourceFolder": "altana_bow",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 138593,
+      "sha256": "b9c0450568b979fc0646eddcb5f2099b99713c32b32fa9714b816b16d2873187",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 96
+    },
+    {
+      "canonicalPath": "assets/heroes/batu_cliff/portrait.png",
+      "repositoryPath": "game/assets/heroes/batu_cliff/portrait.png",
+      "sourceFolder": "batu_cliff",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1160268,
+      "sha256": "78b81fb2274ce69a2691813f91fcb9a3c534c15a30b54264467490eba2a763ba",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 97
+    },
+    {
+      "canonicalPath": "assets/heroes/batu_cliff/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/batu_cliff/piece_badge.png",
+      "sourceFolder": "batu_cliff",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 306660,
+      "sha256": "fc7f191f3311d3955c6da4c3cbc386844335b054551631ff1040ff1ccae53975",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 98
+    },
+    {
+      "canonicalPath": "assets/heroes/batu_cliff/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/batu_cliff/ability_icon.png",
+      "sourceFolder": "batu_cliff",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 422031,
+      "sha256": "3ade01bcee35469c0d9805d6975066e39367bc6d0dfc7cf0f4fb77c3347a16a1",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 99
+    },
+    {
+      "canonicalPath": "assets/heroes/saran_dawn/portrait.png",
+      "repositoryPath": "game/assets/heroes/saran_dawn/portrait.png",
+      "sourceFolder": "saran_dawn",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1013067,
+      "sha256": "beb4eb6c706505e5cd871f41912cf3a2c8999242de37bcb00eeb2fe565ecad48",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 100
+    },
+    {
+      "canonicalPath": "assets/heroes/saran_dawn/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/saran_dawn/piece_badge.png",
+      "sourceFolder": "saran_dawn",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 173264,
+      "sha256": "a5fd644774e8d9dbdf1934996eb47c3123731918ead429c0ce721227cc8e0a47",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 101
+    },
+    {
+      "canonicalPath": "assets/heroes/saran_dawn/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/saran_dawn/ability_icon.png",
+      "sourceFolder": "saran_dawn",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 211148,
+      "sha256": "b600a84f4b363db28429b262363c982982d5352cd917f9164a5dd415fcc84213",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 102
+    },
+    {
+      "canonicalPath": "assets/heroes/khulan_star/portrait.png",
+      "repositoryPath": "game/assets/heroes/khulan_star/portrait.png",
+      "sourceFolder": "khulan_star",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1354849,
+      "sha256": "06b0e17f77a92972eeb8fdfcbd02fae089dcee5ba3753f42e892db2f3fdc0caa",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 103
+    },
+    {
+      "canonicalPath": "assets/heroes/khulan_star/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/khulan_star/piece_badge.png",
+      "sourceFolder": "khulan_star",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 198364,
+      "sha256": "5aab93ed8210c730dfbac79e23a55f1e4c3d1566e6c710742f72dff6b5d81495",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 104
+    },
+    {
+      "canonicalPath": "assets/heroes/khulan_star/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/khulan_star/ability_icon.png",
+      "sourceFolder": "khulan_star",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 355501,
+      "sha256": "f1f599b12d1d3e56e6a74566896594cb496727ab16eeb05ff9f51a0184f3e291",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 105
+    },
+    {
+      "canonicalPath": "assets/heroes/ergen_cloud/portrait.png",
+      "repositoryPath": "game/assets/heroes/ergen_cloud/portrait.png",
+      "sourceFolder": "ergen_cloud",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1264148,
+      "sha256": "79d6e81f6dc5e0763ad1e9b4c79c62b74e9d446966eb42f95ddef14be7f67a06",
+      "profile": "HERO-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 106
+    },
+    {
+      "canonicalPath": "assets/heroes/ergen_cloud/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/ergen_cloud/piece_badge.png",
+      "sourceFolder": "ergen_cloud",
+      "sourceFile": "piece_badge.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 348603,
+      "sha256": "d8c8e0f5190c8011d4f8811a281c4968068730296a198da2b2231bd21bfb801b",
+      "profile": "HERO-BADGE-512",
+      "status": "REVIEW",
+      "index": 107
+    },
+    {
+      "canonicalPath": "assets/heroes/ergen_cloud/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/ergen_cloud/ability_icon.png",
+      "sourceFolder": "ergen_cloud",
+      "sourceFile": "ability_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 535816,
+      "sha256": "d9e0baeb7bd655348b66218146ab9459ec145bd60bc63600deea988fea42a6f9",
+      "profile": "ABILITY-ICON-512",
+      "status": "REVIEW",
+      "index": 108
+    },
+    {
+      "canonicalPath": "assets/politics/marshal_varn.png",
+      "repositoryPath": "game/assets/politics/marshal_varn.png",
+      "sourceFolder": "politics",
+      "sourceFile": "marshal_varn.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 931789,
+      "sha256": "077af73b0b5fd3eea123995beff8ed6ccf98d9d97d25dfffc32e59d1304beb41",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 109
+    },
+    {
+      "canonicalPath": "assets/politics/heir_elda.png",
+      "repositoryPath": "game/assets/politics/heir_elda.png",
+      "sourceFolder": "politics",
+      "sourceFile": "heir_elda.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 933903,
+      "sha256": "63e2ef845b8746752e64d2965b8ed447fef330a0a5ca88270f29e4140d1382df",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 110
+    },
+    {
+      "canonicalPath": "assets/politics/guildmaster_borek.png",
+      "repositoryPath": "game/assets/politics/guildmaster_borek.png",
+      "sourceFolder": "politics",
+      "sourceFile": "guildmaster_borek.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1006281,
+      "sha256": "e48f2b885bd0173b0ef59bc67f6ddb597fa737e12881fae18984702ae019b621",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 111
+    },
+    {
+      "canonicalPath": "assets/politics/pontiff_aelia.png",
+      "repositoryPath": "game/assets/politics/pontiff_aelia.png",
+      "sourceFolder": "politics",
+      "sourceFile": "pontiff_aelia.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1190173,
+      "sha256": "791b5f1215c8ece3dcb7cfe332b175e9bec71d5b8d50243a415fe6276014fc5c",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 112
+    },
+    {
+      "canonicalPath": "assets/politics/archivist_noem.png",
+      "repositoryPath": "game/assets/politics/archivist_noem.png",
+      "sourceFolder": "politics",
+      "sourceFile": "archivist_noem.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1044033,
+      "sha256": "7fe38878d3b46ec1a293db6c2a7ca192597812910358fde4b2e475fb5157b38a",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 113
+    },
+    {
+      "canonicalPath": "assets/politics/heretic_salos.png",
+      "repositoryPath": "game/assets/politics/heretic_salos.png",
+      "sourceFolder": "politics",
+      "sourceFile": "heretic_salos.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1110587,
+      "sha256": "e64b17a991c1b7c34531e7e2dd6985ae5c457ebd8a49260c0ebac6e93af3f7d9",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 114
+    },
+    {
+      "canonicalPath": "assets/politics/consul_marco.png",
+      "repositoryPath": "game/assets/politics/consul_marco.png",
+      "sourceFolder": "politics",
+      "sourceFile": "consul_marco.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1045771,
+      "sha256": "0d4d2be0746b3e874b5fe8dcae7d04a975d951f13b243a2aed7db219f9b8af46",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 115
+    },
+    {
+      "canonicalPath": "assets/politics/speaker_ines.png",
+      "repositoryPath": "game/assets/politics/speaker_ines.png",
+      "sourceFolder": "politics",
+      "sourceFile": "speaker_ines.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 985437,
+      "sha256": "50a56a848129071adea175ced6a88ff72c90b395552ba0536f18a414469d8588",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 116
+    },
+    {
+      "canonicalPath": "assets/politics/admiral_rava.png",
+      "repositoryPath": "game/assets/politics/admiral_rava.png",
+      "sourceFolder": "politics",
+      "sourceFile": "admiral_rava.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1087792,
+      "sha256": "987e98140ac643bf7d0da1c190e869ca2ae6df1e78199018403a986f3f59f726",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 117
+    },
+    {
+      "canonicalPath": "assets/politics/warden_roan.png",
+      "repositoryPath": "game/assets/politics/warden_roan.png",
+      "sourceFolder": "politics",
+      "sourceFile": "warden_roan.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1079680,
+      "sha256": "1fb1e57ae23153c24efc6e8038c5facc3b13ff2f3e20b632f40e50888c4305ea",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 118
+    },
+    {
+      "canonicalPath": "assets/politics/bride_melis.png",
+      "repositoryPath": "game/assets/politics/bride_melis.png",
+      "sourceFolder": "politics",
+      "sourceFile": "bride_melis.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1131243,
+      "sha256": "13d668f02948862afd4699fe1f63d1f588f0d0a2af34ccae1f183ec974779651",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 119
+    },
+    {
+      "canonicalPath": "assets/politics/huntsman_orr.png",
+      "repositoryPath": "game/assets/politics/huntsman_orr.png",
+      "sourceFolder": "politics",
+      "sourceFile": "huntsman_orr.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1112092,
+      "sha256": "aa7d76f9f943e207918b8d10af719fab9d347ff897f1555d41dc9e56df03d7bf",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 120
+    },
+    {
+      "canonicalPath": "assets/politics/empress_nahla_p.png",
+      "repositoryPath": "game/assets/politics/empress_nahla_p.png",
+      "sourceFolder": "politics",
+      "sourceFile": "empress_nahla_p.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 971153,
+      "sha256": "cc204c9d26e2b15e0cbcf99aefce6f9548e8d8da8b32333a7ee6c9681122bd9f",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 121
+    },
+    {
+      "canonicalPath": "assets/politics/general_dor.png",
+      "repositoryPath": "game/assets/politics/general_dor.png",
+      "sourceFolder": "politics",
+      "sourceFile": "general_dor.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 915192,
+      "sha256": "b5cf00e928369681a009055706ae29949750af1439a35e827002587e73e90e9f",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 122
+    },
+    {
+      "canonicalPath": "assets/politics/priestess_velka.png",
+      "repositoryPath": "game/assets/politics/priestess_velka.png",
+      "sourceFolder": "politics",
+      "sourceFile": "priestess_velka.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 903118,
+      "sha256": "5ee1c9d7c6a1e98d6aeaba4221faa1bb46e07a67aa0df113e9515fec1c1b61a9",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 123
+    },
+    {
+      "canonicalPath": "assets/politics/khan_temur.png",
+      "repositoryPath": "game/assets/politics/khan_temur.png",
+      "sourceFolder": "politics",
+      "sourceFile": "khan_temur.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1125861,
+      "sha256": "6e4b0b2b9aecced29f10d3ca506036fd735c08640ad87d9910ab1c4c3cb2e013",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 124
+    },
+    {
+      "canonicalPath": "assets/politics/princess_khulan.png",
+      "repositoryPath": "game/assets/politics/princess_khulan.png",
+      "sourceFolder": "politics",
+      "sourceFile": "princess_khulan.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1257059,
+      "sha256": "a9b9860da182136a305919ad547f31f319103f209d6fca4b422bf2fd0cb2281b",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 125
+    },
+    {
+      "canonicalPath": "assets/politics/speaker_batu.png",
+      "repositoryPath": "game/assets/politics/speaker_batu.png",
+      "sourceFolder": "politics",
+      "sourceFile": "speaker_batu.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "bytes": 1037226,
+      "sha256": "37c1dcfb14fd765c98af7b11c3a6bce5f70017c7ae602948e758e3c958bff2fd",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "status": "REVIEW",
+      "index": 126
+    }
+  ]
+}
