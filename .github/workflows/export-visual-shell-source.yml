@@ -1,0 +1,50 @@
+name: Export visual shell source
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    if: ${{ github.head_ref == 'agent/restore-approved-visual-shell' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare source snapshot
+        run: |
+          mkdir -p visual-shell-export
+          cp -R game/js game/css visual-shell-export/
+          cp game/index.html game/vertical-slice.html game/style.css game/BUILD_INFO.json visual-shell-export/
+          cp -R src tests scripts content visual-shell-export/
+          find game/generated_assets -type f | sort > visual-shell-export/generated-assets.txt
+          find game/assets -type f | sort > visual-shell-export/runtime-assets.txt
+          find game/SFX game/music -type f | sort > visual-shell-export/audio-assets.txt
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          try:
+              from PIL import Image
+          except Exception:
+              Image = None
+          rows=[]
+          for path in sorted(Path('game/generated_assets').glob('*')):
+              if not path.is_file(): continue
+              row={'path':str(path),'bytes':path.stat().st_size}
+              if Image:
+                  try:
+                      with Image.open(path) as im:
+                          row['size']=list(im.size); row['mode']=im.mode
+                  except Exception as exc:
+                      row['error']=str(exc)
+              rows.append(row)
+          Path('visual-shell-export/generated-assets.json').write_text(json.dumps(rows,ensure_ascii=False,indent=2),encoding='utf-8')
+          PY
+          tar -czf visual-shell-source.tar.gz visual-shell-export package.json wrangler.toml README.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: visual-shell-source
+          path: visual-shell-source.tar.gz
+          retention-days: 1
