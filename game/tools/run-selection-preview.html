@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>RPChess — Run Selection Preview</title>
+  <link rel="stylesheet" href="../css/run-selection.css">
+  <style>html,body,#app{min-height:100%;margin:0}</style>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module">
+    import { RunSelectionClient } from '../js/run-selection-client.mjs';
+    import { RunSelectionPresenter } from '../js/run-selection-presenter.mjs';
+
+    const makeItem=(id,label,kind,selected=false)=>({id,label,selected,compatible:true,pieceType:kind,assets:{}});
+    let snapshot={
+      format:'rpchess-run-selection-host-snapshot',schemaVersion:1,status:'selecting',runtime:null,
+      selection:{format:'rpchess-run-selection-presenter',schemaVersion:1,status:'selecting',revision:0,
+        region:{id:'region.iron_marches',label:'Железные Марши'},selectedKing:null,selectedDoctrine:null,selectedHeroIds:[],heroLimit:6,minimumHeroes:1,canLock:false,
+        kings:[makeItem('king.oathkeeper','Хранитель Клятвы','king')],
+        doctrines:[makeItem('doctrine.fortress','Крепость','doctrine')],
+        heroes:['Альдрик Стена','Мара Цепь','Брат Орелл','Ваэль Молот','Леди Сорн','Томас Врата'].map((label,index)=>makeItem(`hero.${index}`,label,['rook','pawn','bishop','knight','queen','rook'][index]))
+      }
+    };
+    const recompute=()=>{const s=snapshot.selection;s.selectedKing=s.kings.find(x=>x.selected)||null;s.selectedDoctrine=s.doctrines.find(x=>x.selected)||null;s.selectedHeroIds=s.heroes.filter(x=>x.selected).map(x=>x.id);s.canLock=Boolean(s.selectedKing&&s.selectedDoctrine&&s.selectedHeroIds.length);};
+    const transport=async(command)=>{const s=snapshot.selection;if(command.type==='SelectKing')s.kings.forEach(x=>x.selected=x.id===command.kingId);if(command.type==='SelectDoctrine')s.doctrines.forEach(x=>x.selected=x.id===command.doctrineId);if(command.type==='ToggleHero'){const h=s.heroes.find(x=>x.id===command.heroId);h.selected=!h.selected;}if(command.type==='LockSelection'){snapshot={...snapshot,status:'ready',runtime:{format:'rpchess-presenter-snapshot'}};}recompute();return snapshot;};
+    recompute();
+    const client=new RunSelectionClient({transport,snapshot});
+    new RunSelectionPresenter({root:document.querySelector('#app'),client}).mount();
+  </script>
+</body>
+</html>
