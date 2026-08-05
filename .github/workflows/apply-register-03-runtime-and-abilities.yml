@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         if: steps.guard.outputs.applied == 'false'
         run: npm ci
-      - name: Apply runtime and UI package
+      - name: Apply runtime package
         if: steps.guard.outputs.applied == 'false'
         run: |
           python - <<'PY'
@@ -43,6 +43,7 @@ jobs:
           source = source.replace('`${record.filename} must be RGBA`', "record.filename + ' must be RGBA'")
           source = source.replace('`${abilityId}:${ownerId}`', "abilityId + ':' + ownerId")
           source = source.replace('`missing legal ${abilityId}`', "'missing legal ' + abilityId")
+          source = source.replace('patchRelicUi();', '')
           target.write_text(source, encoding='utf-8')
           PY
           node --check scripts/apply-register-03-runtime-and-ui.cjs
@@ -61,8 +62,6 @@ jobs:
           git add \
             content/audits/iron_marches_mechanics_readiness.json \
             game/js/generated/iron-marches-runtime.bundle.js \
-            game/js/register-02-codex.mjs \
-            game/js/vertical-slice-presenter-register-02.mjs \
             game/js/vertical-slice-presenter.mjs \
             package.json \
             src/combat/battle.cjs \
@@ -73,5 +72,5 @@ jobs:
             src/runtime/deployment-gate.cjs \
             tests/register-03-relic-assets.cjs \
             tests/remaining-iron-marches-abilities.cjs
-          git commit -m "Apply Register 03 art and remaining abilities [register03-runtime]"
+          git commit -m "Implement remaining Iron Marches abilities [register03-runtime]"
           git push origin HEAD:agent/register-03-relics-and-remaining-abilities
