@@ -63,10 +63,25 @@ function consumeNode(budget) {
   budget.nodes += 1;
 }
 
-function orderedChildren(state, perspective) {
-  const commands = legalWardAwareCommands(state).slice().sort((a, b) => commandKey(a).localeCompare(commandKey(b)));
+function resolveCommandProvider(options = {}) {
+  const provider = options.commandProvider || legalWardAwareCommands;
+  if (typeof provider !== 'function') throw new Error('AI commandProvider must be a function');
+  return provider;
+}
+
+function resolveCommandExecutor(options = {}) {
+  const executor = options.commandExecutor || executeWardAwareCommand;
+  if (typeof executor !== 'function') throw new Error('AI commandExecutor must be a function');
+  return executor;
+}
+
+function orderedChildren(state, perspective, options = {}) {
+  const provider = resolveCommandProvider(options);
+  const executor = resolveCommandExecutor(options);
+  const commands = provider(state).slice().sort((a, b) => commandKey(a).localeCompare(commandKey(b)));
   const children = commands.map((command) => {
-    const result = executeWardAwareCommand(state, command);
+    const result = executor(state, command);
+    if (!result || !result.state || !Array.isArray(result.events)) throw new Error('AI commandExecutor must return {state, events}');
     return { command, key: commandKey(command), result, order: tacticalOrder(result, command, perspective) };
   });
   const maximizing = state.position.sideToMove === perspective;
@@ -86,7 +101,7 @@ function minimax(state, depth, alpha, beta, perspective, profile, options, budge
     });
   }
 
-  const children = orderedChildren(state, perspective);
+  const children = orderedChildren(state, perspective, options);
   if (!children.length) {
     return evaluateBattleState(state, perspective, {
       ply,
@@ -121,7 +136,7 @@ function chooseAiCommand(state, options = {}) {
   if (perspective !== state.position.sideToMove) throw new Error('AI perspective must match the side to move');
   const seed = options.seed ?? hash32(`${state.battleId}:${state.actionIndex}:${profile.id}`);
   const budget = createBudget(profile, options);
-  const root = orderedChildren(state, perspective);
+  const root = orderedChildren(state, perspective, options);
   if (!root.length) return Object.freeze({ command: null, reason: 'no_legal_command', candidates: Object.freeze([]), nodes: 0 });
 
   const candidates = [];
@@ -187,5 +202,8 @@ module.exports = {
   deterministicNoise,
   tacticalOrder,
   createBudget,
+  resolveCommandProvider,
+  resolveCommandExecutor,
+  orderedChildren,
   chooseAiCommand
 };
