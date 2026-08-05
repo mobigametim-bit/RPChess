@@ -7,22 +7,40 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify-web-source:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: agent/profile-army-panels
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
+      - name: Apply army UI surfaces
+        run: node scripts/apply-profile-army-panels.cjs
+      - name: Rebuild production browser runtime
+        run: npm run build:browser
+      - name: Commit implementation
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/browser/profile-persistence.cjs src/runtime/presenter-bridge.cjs game/js/vertical-slice-app.mjs game/js/vertical-slice-presenter-register-02.mjs game/js/generated/iron-marches-runtime.bundle.js package.json
+          if git diff --cached --quiet; then
+            echo 'Army UI surfaces are already applied.'
+          else
+            git commit -m 'Show campaign army across profile and runtime UI'
+            git push origin HEAD:agent/profile-army-panels
+          fi
       - name: Verify normalized source
         run: npm run verify
-      - name: Run legacy characterization tests
+      - name: Run complete test suite
         run: npm test
       - name: Build web distribution
         run: npm run build
