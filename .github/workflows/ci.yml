@@ -7,13 +7,15 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify-web-source:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -26,5 +28,16 @@ jobs:
         run: npm test
       - name: Build web distribution
         run: npm run build
+      - name: Commit generated browser runtime
+        if: github.event_name == 'pull_request' && github.head_ref != ''
+        run: |
+          if git diff --quiet -- game/js/generated/iron-marches-runtime.bundle.js; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add game/js/generated/iron-marches-runtime.bundle.js
+          git commit -m "Update generated browser runtime"
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
       - name: Verify distribution entry
         run: test -f dist/index.html && test -f dist/SFX/win_fanfare.mp3
