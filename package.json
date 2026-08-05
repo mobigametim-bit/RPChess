@@ -9,7 +9,7 @@
   },
   "scripts": {
     "verify": "node -e \"require('./scripts/verify-source.cjs')(require('path').resolve('game'))\"",
-    "test": "node tests/legacy-characterization.cjs && node tests/deterministic-foundations.cjs && node tests/legal-chess.cjs && node tests/combat-scheduler.cjs && node tests/deployment-reserve.cjs && node tests/piece-identity.cjs && node tests/status-system.cjs && node tests/progression-loadout.cjs && node tests/ward-protection.cjs",
+    "test": "node tests/legacy-characterization.cjs && node tests/deterministic-foundations.cjs && node tests/legal-chess.cjs && node tests/combat-scheduler.cjs && node tests/deployment-reserve.cjs && node tests/piece-identity.cjs && node tests/status-system.cjs && node tests/progression-loadout.cjs && node tests/ward-protection.cjs && node tests/modular-board.cjs",
     "build": "node scripts/build.cjs",
     "deploy": "wrangler deploy"
   }
