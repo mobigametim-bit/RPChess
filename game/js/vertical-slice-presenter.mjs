@@ -47,6 +47,10 @@ function commandLabel(command) {
   const payload = command.payload || {};
   if (command.type === 'MovePiece') return `${payload.from} → ${payload.to}${payload.promotion ? ` = ${payload.promotion.toUpperCase()}` : ''}`;
   if (command.type === 'DeployReserve') return `Резерв: ${payload.entryId} → ${payload.square}`;
+  if (command.type === 'UseAbility') {
+    const name = payload.abilityId === 'ability.circle_warding' ? 'Круг защиты' : payload.abilityId;
+    return `${name} → ${payload.targetSquare || payload.targetId} · ${payload.effectiveOrderCost ?? payload.baseOrderCost ?? 0} ОП`;
+  }
   return command.type;
 }
 
@@ -353,6 +357,8 @@ class VerticalSlicePresenter {
     const failures = scenario.failures.map((item) => `<div class="rpvs__item ${item.triggered ? 'rpvs__item--danger' : ''}"><b>${escapeHtml(item.label)}</b><div class="rpvs__muted">${item.triggered ? 'Сработало' : 'Не допустить'}</div></div>`).join('');
     const moveCommands = scenario.legalCommands.filter((command) => command.type === 'MovePiece');
     const commands = moveCommands.map((command, index) => `<button class="rpvs__action" data-move-command-index="${index}">${escapeHtml(commandLabel(command))}</button>`).join('');
+    const abilityCommands = scenario.legalCommands.filter((command) => command.type === 'UseAbility');
+    const abilityButtons = abilityCommands.map((command, index) => `<button class="rpvs__action" data-ability-command-index="${index}">${escapeHtml(commandLabel(command))}</button>`).join('');
     const playerReserve = (scenario.reserve || []).filter((entry) => entry.side === snapshot.playerSide);
     if (this.selectedReserveEntryId && !playerReserve.some((entry) => entry.entryId === this.selectedReserveEntryId && entry.legalSquares.length)) this.selectedReserveEntryId = null;
     const reserveCards = playerReserve.map((entry) => {
@@ -366,11 +372,20 @@ class VerticalSlicePresenter {
     const check = scenario.chessStatus?.check ? `<span class="rpvs__check"><img src="${escapeAttribute(CORE_ASSETS.vfx.check)}" alt="">Шах</span>` : '';
     const main = `<div class="rpvs__panel-head"><h1 class="rpvs__title">${escapeHtml(title)}</h1><span class="rpvs__muted">${phase}ход: ${scenario.sideToMove === snapshot.playerSide ? 'игрок' : 'противник'} · действие ${scenario.actionIndex}</span>${check}</div><div class="rpvs__board-wrap" style="${sceneStyle(art)}"><canvas class="rpvs__canvas" data-board tabindex="0" aria-label="Шахматная доска"></canvas></div>`;
     const reserveSection = playerReserve.length ? `<section class="rpvs__sidebar-section"><h3>Резерв</h3><div class="rpvs__order"><span>Очки приказа</span><strong>${order.current} / ${order.max}</strong></div><div class="rpvs__reserve">${reserveCards}</div>${this.selectedReserveEntryId ? '<div class="rpvs__reserve-hint">Выберите подсвеченную клетку ввода на доске.</div>' : ''}</section>` : '';
-    const sidebar = `<div class="rpvs__panel-head"><h2 class="rpvs__title">Задачи</h2></div><div class="rpvs__panel-body"><section class="rpvs__sidebar-section"><div class="rpvs__list">${objectives}</div></section>${failures ? `<section class="rpvs__sidebar-section"><h3>Поражение</h3><div class="rpvs__list">${failures}</div></section>` : ''}${reserveSection}<section class="rpvs__sidebar-section"><h3>Ходы фигур</h3><div class="rpvs__commands">${commands || '<div class="rpvs__muted">Выберите фигуру на доске или ожидайте противника</div>'}</div></section></div>`;
+    const abilitySection = abilityButtons ? `<section class="rpvs__sidebar-section"><h3>Способности</h3><div class="rpvs__order"><span>Очки приказа</span><strong>${order.current} / ${order.max}</strong></div><div class="rpvs__commands">${abilityButtons}</div></section>` : '';
+    const sidebar = `<div class="rpvs__panel-head"><h2 class="rpvs__title">Задачи</h2></div><div class="rpvs__panel-body"><section class="rpvs__sidebar-section"><div class="rpvs__list">${objectives}</div></section>${failures ? `<section class="rpvs__sidebar-section"><h3>Поражение</h3><div class="rpvs__list">${failures}</div></section>` : ''}${reserveSection}${abilitySection}<section class="rpvs__sidebar-section"><h3>Ходы фигур</h3><div class="rpvs__commands">${commands || '<div class="rpvs__muted">Выберите фигуру на доске или ожидайте противника</div>'}</div></section></div>`;
     this.root.innerHTML = this.shell(snapshot, main, sidebar);
     for (const button of this.root.querySelectorAll('[data-move-command-index]')) {
       button.addEventListener('click', () => {
         const command = moveCommands[Number(button.dataset.moveCommandIndex)];
+        this.selectedReserveEntryId = null;
+        this.client.dispatch({ type: 'PlayerCommand', request: command }).catch(() => {});
+      });
+    }
+    for (const button of this.root.querySelectorAll('[data-ability-command-index]')) {
+      button.addEventListener('click', () => {
+        const command = abilityCommands[Number(button.dataset.abilityCommandIndex)];
+        this.selectedSquare = null;
         this.selectedReserveEntryId = null;
         this.client.dispatch({ type: 'PlayerCommand', request: command }).catch(() => {});
       });

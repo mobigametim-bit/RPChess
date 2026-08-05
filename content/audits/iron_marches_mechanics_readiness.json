@@ -2,7 +2,12 @@
   "schemaVersion": 1,
   "auditId": "iron_marches_mechanics_readiness_v1",
   "scope": "region.iron_marches",
-  "statusValues": ["IMPLEMENTED", "PARTIAL", "DECLARATIVE", "BLOCKED_BY_DESIGN"],
+  "statusValues": [
+    "IMPLEMENTED",
+    "PARTIAL",
+    "DECLARATIVE",
+    "BLOCKED_BY_DESIGN"
+  ],
   "abilities": [
     {
       "id": "ability.interpose",
@@ -58,17 +63,39 @@
       "id": "effect.ward_first_capture",
       "relicId": "relic.echo_shield",
       "name": "Защита от первого взятия",
-      "status": "PARTIAL",
-      "uiAvailability": "limited",
-      "reason": "Движок умеет видимо предотвращать взятие статуса ward и расходовать его, но отдельное production-связывание реликвии с автоматическим получением ward ещё не оформлено как эффект-каталог.",
+      "status": "IMPLEMENTED",
+      "uiAvailability": "enabled",
+      "reason": "Канонический владелец Эхо-щита автоматически получает ward при создании каждого production-боя; перехват взятия, расходование, сохранение и replay исполняются детерминированно.",
       "evidence": [
         {
+          "path": "src/runtime/iron-marches-mechanics.cjs",
+          "tokens": [
+            "ECHO_SHIELD",
+            "addStartingWard",
+            "effect.ward_first_capture"
+          ]
+        },
+        {
           "path": "src/combat/ward-protection.cjs",
-          "tokens": ["applyWardStatus", "executeWardAwareCommand", "CapturePrevented"]
+          "tokens": [
+            "executeWardAwareCommand",
+            "CapturePrevented"
+          ]
+        },
+        {
+          "path": "tests/iron-marches-abilities.cjs",
+          "tokens": [
+            "Echo Shield",
+            "aldric_role",
+            "statusFor(battle.statuses, 'aldric_role')"
+          ]
         },
         {
           "path": "tests/ward-protection.cjs",
-          "tokens": ["CapturePrevented", "ward"]
+          "tokens": [
+            "CapturePrevented",
+            "ward"
+          ]
         }
       ]
     },
@@ -84,17 +111,74 @@
       "id": "effect.place_adjacent_ward",
       "relicId": "relic.circle_warding",
       "name": "Соседний круг защиты",
-      "status": "DECLARATIVE",
-      "uiAvailability": "disabled",
-      "reason": "Ward поддерживается ядром, но размещение защиты на соседней фигуре не имеет команды, стоимости и выбора цели."
+      "status": "IMPLEMENTED",
+      "uiAvailability": "enabled",
+      "reason": "Круг защиты исполняется как проверяемая команда UseAbility: один приказ, один раз за бой, ортогонально соседняя союзная не-королевская цель без другого primary-статуса.",
+      "evidence": [
+        {
+          "path": "src/combat/abilities.cjs",
+          "tokens": [
+            "place_adjacent_ward",
+            "UseAbility",
+            "StatusApplied"
+          ]
+        },
+        {
+          "path": "src/runtime/iron-marches-mechanics.cjs",
+          "tokens": [
+            "CIRCLE_WARDING",
+            "ability.circle_warding"
+          ]
+        },
+        {
+          "path": "tests/iron-marches-abilities.cjs",
+          "tokens": [
+            "Circle Warding",
+            "effectiveOrderCost",
+            "AbilityUsed"
+          ]
+        },
+        {
+          "path": "game/js/vertical-slice-presenter.mjs",
+          "tokens": [
+            "data-ability-command-index",
+            "Способности"
+          ]
+        }
+      ]
     },
     {
       "id": "effect.first_ability_order_discount",
       "relicId": "relic.twin_command",
       "name": "Скидка на первый приказ способности",
-      "status": "DECLARATIVE",
-      "uiAvailability": "disabled",
-      "reason": "Зависит от ещё не реализованного общего контура активных способностей и их стоимости в приказах."
+      "status": "PARTIAL",
+      "uiAvailability": "limited",
+      "reason": "Общий детерминированный модификатор уже уменьшает стоимость первой способности владельца и расходуется, но уникальная способность Томаса пока не реализована и поэтому production-триггер ещё недоступен игроку.",
+      "evidence": [
+        {
+          "path": "src/combat/abilities.cjs",
+          "tokens": [
+            "FIRST_ABILITY_DISCOUNT",
+            "effectiveOrderCost",
+            "RelicEffectConsumed"
+          ]
+        },
+        {
+          "path": "src/runtime/iron-marches-mechanics.cjs",
+          "tokens": [
+            "TWIN_COMMAND",
+            "effect.first_ability_order_discount"
+          ]
+        },
+        {
+          "path": "tests/iron-marches-abilities.cjs",
+          "tokens": [
+            "Twin Command",
+            "consumed",
+            "effectiveOrderCost"
+          ]
+        }
+      ]
     },
     {
       "id": "effect.conditional_early_promotion",

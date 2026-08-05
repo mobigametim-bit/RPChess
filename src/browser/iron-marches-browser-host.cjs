@@ -21,9 +21,9 @@ const {
 const {
   createRuntimeArmy,
   validateRuntimeArmy,
-  runtimeSelectionFromArmy,
-  projectArmyBattleOptions
+  runtimeSelectionFromArmy
 } = require('../runtime/army-roster.cjs');
+const { projectIronMarchesBattleOptions } = require('../runtime/iron-marches-mechanics.cjs');
 const { buildBrowserProductionBundle } = require('./production-content-browser.cjs');
 const { createScenarioDeploymentGate } = require('../runtime/deployment-gate.cjs');
 const {
@@ -112,7 +112,7 @@ function createBrowserDependencies(options) {
   const localization = bundle.localization[language];
   if (!localization) throw new Error(`unsupported Iron Marches language: ${language}`);
   const scenarioTemplates = bundle.scenarioTemplates;
-  const battleProjector = (battleOptions) => projectArmyBattleOptions(battleOptions, army);
+  const battleProjector = (battleOptions) => projectIronMarchesBattleOptions(battleOptions, army);
 
   const nodeResolver = ({ runtime, node, content }) => {
     if (node.type === 'event') return Object.freeze({ mode: 'event', reward: Object.freeze({ gold: 1, supplies: 1, meta: 0 }) });

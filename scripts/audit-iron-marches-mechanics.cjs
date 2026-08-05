@@ -69,10 +69,12 @@ function auditIronMarchesMechanics() {
     validateEvidence(record);
   }
 
-  const presenterBridge = fs.readFileSync(path.join(ROOT, 'src/runtime/presenter-bridge.cjs'), 'utf8');
-  const browserClient = fs.readFileSync(path.join(ROOT, 'game/js/runtime-command-client.mjs'), 'utf8');
-  assert(!presenterBridge.includes("'UseAbility'"), 'UseAbility must not be exposed before an executable contract exists');
-  assert(!browserClient.includes("'UseAbility'"), 'browser client must not advertise an unavailable ability command');
+  const battleCore = fs.readFileSync(path.join(ROOT, 'src/combat/battle.cjs'), 'utf8');
+  const abilityCore = fs.readFileSync(path.join(ROOT, 'src/combat/abilities.cjs'), 'utf8');
+  const browserPresenter = fs.readFileSync(path.join(ROOT, 'game/js/vertical-slice-presenter.mjs'), 'utf8');
+  assert(battleCore.includes("'UseAbility'"), 'battle core must expose the executable UseAbility command');
+  assert(abilityCore.includes('normalizeAbilityRequest'), 'ability targets must be normalized against the legal command set');
+  assert(browserPresenter.includes('data-ability-command-index'), 'browser presenter must expose executable ability choices');
 
   const allRecords = [...report.abilities, ...report.relicEffects];
   const counts = Object.freeze(Object.fromEntries([...ALLOWED_STATUSES].map((status) => [

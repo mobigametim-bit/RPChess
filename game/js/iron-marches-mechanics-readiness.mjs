@@ -54,9 +54,9 @@ const RELIC_MECHANICS = Object.freeze({
   'relic.echo_shield': Object.freeze({
     id: 'effect.ward_first_capture',
     name: 'Защита от первого взятия',
-    status: 'PARTIAL',
-    availability: 'limited',
-    note: 'Перехват статуса ward работает, но автоматическая выдача ward от реликвии ещё не подключена.'
+    status: 'IMPLEMENTED',
+    availability: 'enabled',
+    note: 'Владелец автоматически получает ward в начале production-боя; первое взятие предотвращается и расходует защиту.'
   }),
   'relic.phantom_spurs': Object.freeze({
     id: 'effect.visible_evasion_after_non_capture',
@@ -68,16 +68,16 @@ const RELIC_MECHANICS = Object.freeze({
   'relic.circle_warding': Object.freeze({
     id: 'effect.place_adjacent_ward',
     name: 'Соседний круг защиты',
-    status: 'DECLARATIVE',
-    availability: 'disabled',
-    note: 'Нет команды, стоимости и выбора защищаемой фигуры.'
+    status: 'IMPLEMENTED',
+    availability: 'enabled',
+    note: 'Работает как UseAbility: один приказ, один раз за бой, соседняя союзная не-королевская цель.'
   }),
   'relic.twin_command': Object.freeze({
     id: 'effect.first_ability_order_discount',
     name: 'Скидка на первый приказ',
-    status: 'DECLARATIVE',
-    availability: 'disabled',
-    note: 'Зависит от общего контура активных способностей.'
+    status: 'PARTIAL',
+    availability: 'limited',
+    note: 'Скидка и её расходование работают в общем контуре; способность Томаса ещё не подключена.'
   }),
   'relic.royal_decree': Object.freeze({
     id: 'effect.conditional_early_promotion',

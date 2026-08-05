@@ -25,6 +25,12 @@ const {
   removeStatus,
   advanceStatuses
 } = require('./statuses.cjs');
+const {
+  createAbilityState,
+  legalAbilityCommands,
+  normalizeAbilityRequest,
+  resolveAbilityCommand
+} = require('./abilities.cjs');
 
 function freezeArray(items) {
   return Object.freeze(items.slice());
@@ -90,6 +96,7 @@ function createBattleState(options) {
     statuses: options.statuses && options.statuses.format === 'rpchess-status-state'
       ? options.statuses
       : createStatusState(options.statuses || {}),
+    abilities: createAbilityState(options.abilities || {}),
     actionIndex: 0,
     status: outcome.status,
     result: outcome.result,
@@ -122,6 +129,7 @@ function legalBattleCommands(state) {
   if (state.status !== 'active') return [];
   return [
     ...moveCommands(state),
+    ...legalAbilityCommands(state),
     ...legalReserveDeployments({
       position: state.position,
       reserve: state.reserve,
@@ -288,7 +296,7 @@ function sideByPiece(identities) {
 }
 
 function advanceBattleStatuses(state, resolution, actingSide, factory, events) {
-  let statuses = state.statuses;
+  let statuses = resolution.statuses || state.statuses;
   if (resolution.capturedId && statusFor(statuses, resolution.capturedId)) {
     const removal = removeStatus(statuses, resolution.capturedId, 'piece_captured');
     statuses = removal.state;
@@ -318,20 +326,24 @@ function advanceBattleStatuses(state, resolution, actingSide, factory, events) {
 function executeBattleCommand(state, request) {
   if (!state || state.format !== 'rpchess-battle-state') throw new TypeError('invalid battle state');
   if (state.status !== 'active') throw new Error('battle is already completed');
-  if (!request || !['MovePiece', 'DeployReserve'].includes(request.type)) {
+  if (!request || !['MovePiece', 'DeployReserve', 'UseAbility'].includes(request.type)) {
     throw new Error(`unsupported battle command: ${request && request.type}`);
   }
 
+  const normalizedRequest = request.type === 'UseAbility'
+    ? normalizeAbilityRequest(state, request)
+    : request;
   const actingSide = state.position.sideToMove;
   const factory = createEnvelopeFactory(state.envelope);
-  const command = factory.command(request.type, request.payload || {}, {
+  const command = factory.command(normalizedRequest.type, normalizedRequest.payload || {}, {
     battleId: state.battleId,
     actorSide: actingSide,
     actionIndex: state.actionIndex
   });
-  const resolution = request.type === 'MovePiece'
-    ? executeMoveCommand(state, command, factory)
-    : executeReserveCommand(state, command, factory);
+  let resolution;
+  if (normalizedRequest.type === 'MovePiece') resolution = executeMoveCommand(state, command, factory);
+  else if (normalizedRequest.type === 'DeployReserve') resolution = executeReserveCommand(state, command, factory);
+  else resolution = resolveAbilityCommand(state, command, factory);
   const events = resolution.events.slice();
   const statuses = advanceBattleStatuses(state, resolution, actingSide, factory, events);
 
@@ -340,6 +352,7 @@ function executeBattleCommand(state, request) {
     position: resolution.position,
     identities: resolution.identities,
     statuses,
+    abilities: resolution.abilities || state.abilities,
     actionIndex: state.actionIndex + 1,
     status: resolution.status,
     result: resolution.result,
