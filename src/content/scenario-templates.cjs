@@ -7,6 +7,19 @@ const { createBattleState } = require('../combat/battle.cjs');
 const { createScenarioState } = require('../scenario/scenario.cjs');
 const { createBossPhaseState } = require('../scenario/boss-phases.cjs');
 
+const INTERACTION_ALIASES = Object.freeze({
+  none: 'none',
+  preview_only: 'none',
+  blocks_declared_cell: 'none',
+  hold: 'hold',
+  escort_destination: 'hold',
+  activate: 'activate',
+  destroy: 'destroy',
+  capture: 'destroy',
+  capture_target: 'destroy',
+  capture_targets: 'destroy'
+});
+
 function freezeArray(values) {
   return Object.freeze(values.slice());
 }
@@ -41,6 +54,19 @@ function normalizeBattleTemplate(input, label) {
   });
 }
 
+function normalizeEnvironmentTemplate(record, label) {
+  if (!record || typeof record !== 'object' || Array.isArray(record)) throw new Error(`${label} must be an object`);
+  const requested = record.interaction || 'none';
+  const interaction = INTERACTION_ALIASES[requested];
+  if (!interaction) throw new Error(`${label}.interaction alias is unsupported: ${requested}`);
+  return Object.freeze({
+    ...record,
+    cells: freezeArray(record.cells || []),
+    interaction,
+    metadata: Object.freeze({ ...(record.metadata || {}) })
+  });
+}
+
 function normalizeScenarioTemplate(input, label, options = {}) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error(`${label} must be an object`);
   if (!Array.isArray(input.objectives) || !input.objectives.length) throw new Error(`${label}.objectives is required`);
@@ -50,9 +76,9 @@ function normalizeScenarioTemplate(input, label, options = {}) {
     battle: normalizeBattleTemplate(input.battle, label),
     board: Object.freeze({ width: input.board?.width ?? 8, height: input.board?.height ?? 8 }),
     completionMode: input.completionMode || 'all',
-    objectives: freezeArray(input.objectives),
-    failures: freezeArray(input.failures || []),
-    environment: freezeArray(input.environment || []),
+    objectives: freezeArray(input.objectives.map((objective) => Object.freeze({ ...objective }))),
+    failures: freezeArray((input.failures || []).map((failure) => Object.freeze({ ...failure }))),
+    environment: freezeArray((input.environment || []).map((record, index) => normalizeEnvironmentTemplate(record, `${label}.environment[${index}]`))),
     reward: options.requireReward === false ? null : normalizeReward(input.reward || {}, label)
   });
 }
@@ -190,8 +216,10 @@ function validateScenarioContentReferences(templateSet, registry) {
 }
 
 module.exports = {
+  INTERACTION_ALIASES,
   normalizeReward,
   normalizeBattleTemplate,
+  normalizeEnvironmentTemplate,
   normalizeScenarioTemplate,
   validateScenarioTemplateSet,
   loadScenarioTemplateSet,
