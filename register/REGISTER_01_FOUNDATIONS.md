@@ -53,17 +53,17 @@ Already generated complete-board illustrations may be retained as concept/refere
 | UI-002 `assets/ui/button_primary_9slice.png` | Primary actions | 1600×256 PNG RGBA | Ivory center, gold edge, sapphire corners, large uninterrupted text field. | EXISTS-VERIFY |
 | UI-003 `assets/ui/button_secondary_9slice.png` | Secondary actions | 1600×256 PNG RGBA | Deep navy center, silver/gold edge, restrained highlights. | EXISTS-VERIFY |
 | UI-004 `assets/ui/button_danger_9slice.png` | Destructive actions | 1600×256 PNG RGBA | Dark ruby center, blackened silver, red crystals; no gore. | EXISTS-VERIFY |
-| UI-005 `assets/ui/focus_ring.png` | Controller/keyboard focus | ICON-512 | Gold-blue luminous outline with transparent center, visible on light/dark surfaces. | MISSING |
-| BOARD-001A `assets/boards/neutral/tile_light.png` | Default light cells | BOARD-TILE-512 | Exact top-down pale stone chess cell, restrained fine wear, calm center, full bleed, no border, no perspective, no objects, no highlight, no text. | MISSING |
-| BOARD-001B `assets/boards/neutral/tile_dark.png` | Default dark cells | BOARD-TILE-512 | Exact top-down blue-gray slate chess cell matching the light tile in scale and lighting, clearly darker, calm center, full bleed, no border, no perspective, no objects, no highlight, no text. | MISSING |
-| BOARD-002 `assets/boards/neutral/blocked_cell.png` | Blocked overlay | ICON-512 | Top-down cracked stone obstruction constrained to one cell; transparent outside the obstruction footprint. | MISSING |
-| BOARD-003 `assets/boards/neutral/start_zone.png` | Deployment overlay | ICON-512 | Translucent green-gold heraldic boundary, transparent center. | MISSING |
+| UI-005 `assets/ui/focus_ring.png` | Controller/keyboard focus | ICON-512 | Gold-blue luminous outline with transparent center, visible on light/dark surfaces. | REVIEW |
+| BOARD-001A `assets/boards/neutral/tile_light.png` | Default light cells | BOARD-TILE-512 | Exact top-down pale stone chess cell, restrained fine wear, calm center, full bleed, no border, no perspective, no objects, no highlight, no text. | REVIEW |
+| BOARD-001B `assets/boards/neutral/tile_dark.png` | Default dark cells | BOARD-TILE-512 | Exact top-down blue-gray slate chess cell matching the light tile in scale and lighting, clearly darker, calm center, full bleed, no border, no perspective, no objects, no highlight, no text. | REVIEW |
+| BOARD-002 `assets/boards/neutral/blocked_cell.png` | Blocked overlay | ICON-512 | Top-down cracked stone obstruction constrained to one cell; transparent outside the obstruction footprint. | REVIEW |
+| BOARD-003 `assets/boards/neutral/start_zone.png` | Deployment overlay | ICON-512 | Translucent green-gold heraldic boundary, transparent center. | REVIEW |
 | VFX-001 `assets/vfx/legal_move.png` | Legal move | ICON-512 | Soft cyan circular rune, unobtrusive, transparent. | EXISTS-VERIFY |
 | VFX-002 `assets/vfx/capture_move.png` | Capture target | ICON-512 | Magenta-red angular capture rune, no blood. | EXISTS-VERIFY |
-| VFX-003 `assets/vfx/check.png` | Check warning | ICON-512 | Sharp gold/red crown warning sigil. | MISSING |
-| VFX-004 `assets/vfx/checkmate.png` | Checkmate | VFX-SHEET, 24 active frames | Crown seal forms with gold fractures and dark-red collapse, localized to king cell. | MISSING |
-| VFX-005 `assets/vfx/piece_capture.png` | Capture animation | VFX-SHEET, 24–32 frames | Fast magical shatter/dissolve under 0.45 sec; neutral faction use. | MISSING |
-| VFX-006 `assets/vfx/promotion.png` | Promotion | VFX-SHEET, 48 frames | Pawn rises through gold-blue crown light and resolves to selected piece; no preselected queen. | MISSING |
+| VFX-003 `assets/vfx/check.png` | Check warning | ICON-512 | Sharp gold/red crown warning sigil. | REVIEW |
+| VFX-004 `assets/vfx/checkmate.png` | Checkmate | VFX-SHEET, 24 active frames | Crown seal forms with gold fractures and dark-red collapse, localized to king cell. | REVIEW |
+| VFX-005 `assets/vfx/piece_capture.png` | Capture animation | VFX-SHEET, 24–32 frames | Fast magical shatter/dissolve under 0.45 sec; neutral faction use. | REVIEW |
+| VFX-006 `assets/vfx/promotion.png` | Promotion | VFX-SHEET, 48 frames | Pawn rises through gold-blue crown light and resolves to selected piece; no preselected queen. | REVIEW |
 
 ## Six main region/faction art kits — P1
 
@@ -73,19 +73,19 @@ The paired tiles are runtime board surfaces, not crops from a completed board. T
 
 | ID / folder | Identity and tactical language | Ready-to-use series prompt | Status |
 |---|---|---|---|
-| REGION-01 `assets/regions/iron_marches/` | Crown of Stone; mountain fortresses, black iron, amber furnaces; rook defense and lines | Create the complete RPChess Iron Marches kit: heroic dark-fantasy mountain citadels, black iron, amber furnace light, disciplined defensive geometry and readable tactical space; one map banner, capital panorama, battle backdrop, elite backdrop, boss arena, crest, one top-down light cell and one top-down dark cell, plus a 16-object transparent environment sheet; no complete board, no board frame, no underlay, no text. | MISSING |
-| REGION-02 `assets/regions/thorn_covenant/` | ancient forest borders, living stone, green-gold thorns; knight portals/ambushes | Create the complete Thorn Covenant kit with ancient forest courts, living stone, green-gold thorn magic and mobile knight/portal motifs; same nine-file specification; the paired cells must remain calm and readable; no complete board, frame or underlay. | MISSING |
-| REGION-03 `assets/regions/ashen_dominion/` | volcanic royal roads, ash-red banners, funerary gold; pawn formations/sacrifice | Create the complete Ashen Dominion kit with volcanic roads, ash-red standards and funerary gold; same nine-file specification; tragic but heroic, no gore; paired board cells only, no complete board, frame or underlay. | MISSING |
-| REGION-04 `assets/regions/sky_khanate/` | high steppe/cliff citadels, turquoise/bronze; cavalry/reserve | Create the complete Sky Khanate kit with high steppe, cliff cities, turquoise cloth and bronze; same nine-file specification; wide open movement language; paired board cells only, no complete board, frame or underlay. | MISSING |
-| REGION-05 `assets/regions/luminous_synod/` | cathedral cities, pearl/gold/cyan; bishops, altars, sanctified diagonals | Create the complete Luminous Synod kit with luminous cathedrals, pearl stone, gold and cyan sacred geometry; same nine-file specification; solemn rather than sterile; paired board cells only, no complete board, frame or underlay. | MISSING |
-| REGION-06 `assets/regions/free_cities/` | river trade league, copper/teal/crimson; queens/heroes/contract politics | Create the complete League of Free Cities kit with river ports, guild towers, copper, teal and crimson; same nine-file specification; prosperous, politically divided and readable; paired board cells only, no complete board, frame or underlay. | MISSING |
+| REGION-01 `assets/regions/iron_marches/` | Crown of Stone; mountain fortresses, black iron, amber furnaces; rook defense and lines | Create the complete RPChess Iron Marches kit: heroic dark-fantasy mountain citadels, black iron, amber furnace light, disciplined defensive geometry and readable tactical space; one map banner, capital panorama, battle backdrop, elite backdrop, boss arena, crest, one top-down light cell and one top-down dark cell, plus a 16-object transparent environment sheet; no complete board, no board frame, no underlay, no text. | REVIEW |
+| REGION-02 `assets/regions/thorn_covenant/` | ancient forest borders, living stone, green-gold thorns; knight portals/ambushes | Create the complete Thorn Covenant kit with ancient forest courts, living stone, green-gold thorn magic and mobile knight/portal motifs; same nine-file specification; the paired cells must remain calm and readable; no complete board, frame or underlay. | REVIEW |
+| REGION-03 `assets/regions/ashen_dominion/` | volcanic royal roads, ash-red banners, funerary gold; pawn formations/sacrifice | Create the complete Ashen Dominion kit with volcanic roads, ash-red standards and funerary gold; same nine-file specification; tragic but heroic, no gore; paired board cells only, no complete board, frame or underlay. | REVIEW |
+| REGION-04 `assets/regions/sky_khanate/` | high steppe/cliff citadels, turquoise/bronze; cavalry/reserve | Create the complete Sky Khanate kit with high steppe, cliff cities, turquoise cloth and bronze; same nine-file specification; wide open movement language; paired board cells only, no complete board, frame or underlay. | REVIEW |
+| REGION-05 `assets/regions/luminous_synod/` | cathedral cities, pearl/gold/cyan; bishops, altars, sanctified diagonals | Create the complete Luminous Synod kit with luminous cathedrals, pearl stone, gold and cyan sacred geometry; same nine-file specification; solemn rather than sterile; paired board cells only, no complete board, frame or underlay. | REVIEW |
+| REGION-06 `assets/regions/free_cities/` | river trade league, copper/teal/crimson; queens/heroes/contract politics | Create the complete League of Free Cities kit with river ports, guild towers, copper, teal and crimson; same nine-file specification; prosperous, politically divided and readable; paired board cells only, no complete board, frame or underlay. | REVIEW |
 
 ## Two rare faction directions — P1
 
 | ID / folder | Required files | Prompt | Status |
 |---|---|---|---|---|
-| RARE-01 `assets/regions/mirror_conclave/` | `map_banner`, `battle`, `boss_arena`, `crest`, `tile_light`, `tile_dark`, `environment_sheet` | Rare Mirror Conclave kit: silver glass, blue-violet reflections, doubled architecture and strictly readable mirror mechanics; paired top-down cells only, with clear parity and no visual duplication that hides actual piece position; no complete board, frame or underlay. | MISSING |
-| RARE-02 `assets/regions/verdant_exiles/` | same seven files | Rare Verdant Exiles kit: wandering living citadels, mossed ivory, emerald/amber growth and reformist political symbolism; beautiful and hopeful, not generic elves; paired top-down cells only, no complete board, frame or underlay. | MISSING |
+| RARE-01 `assets/regions/mirror_conclave/` | `map_banner`, `battle`, `boss_arena`, `crest`, `tile_light`, `tile_dark`, `environment_sheet` | Rare Mirror Conclave kit: silver glass, blue-violet reflections, doubled architecture and strictly readable mirror mechanics; paired top-down cells only, with clear parity and no visual duplication that hides actual piece position; no complete board, frame or underlay. | REVIEW |
+| RARE-02 `assets/regions/verdant_exiles/` | same seven files | Rare Verdant Exiles kit: wandering living citadels, mossed ivory, emerald/amber growth and reformist political symbolism; beautiful and hopeful, not generic elves; paired top-down cells only, no complete board, frame or underlay. | REVIEW |
 
 ## Seven kings — individual P0/P1 records
 
@@ -93,13 +93,13 @@ Each record requires `portrait.png` (PORTRAIT-768), `piece.png` (PIECE-512), `co
 
 | ID / folder | Priority | Mechanical/visual brief and prompt | Status |
 |---|---|---|---|
-| KING-01 `assets/kings/oathkeeper/` | P0 | **Хранитель Клятвы** — balanced law and once-per-battle protection with visible oath cost; dignified blue-gold regalia, sealed chains and an unbroken crown. Produce four required files. | MISSING |
-| KING-02 `assets/kings/stone_crown/` | P0 | **Каменная Корона** — fortification/rook coordination, slow scouting and costly repositioning; granite-and-iron monarch with amber seams. Produce four files. | MISSING |
-| KING-03 `assets/kings/wanderer_queen/` | P1 | **Странствующая Королева** — hero-focused elite court with reduced cheap recruitment; travel-worn royal mantle, portable crown and star map. Produce four files. | MISSING |
-| KING-04 `assets/kings/pilgrim/` | P1 | **Паломник Света** — recovery, sanctified cells and mercy, limited aggression; pearl-gold pilgrim regalia and lantern crown. Produce four files. | MISSING |
-| KING-05 `assets/kings/fox_prince/` | P1 | **Лисий Принц** — scouting, route manipulation and feints with fragile economy; copper-red court attire, fox heraldry but human monarch. Produce four files. | MISSING |
-| KING-06 `assets/kings/ash_regent/` | P1 | **Пепельный Регент** — voluntary sacrifice/comeback orders with explicit injury risk; ash-black armor, ember crown, restrained funeral symbolism. Produce four files. | MISSING |
-| KING-07 `assets/kings/nameless_heir/` | P1 | **Безымянный Наследник** — bounded mirror/reality mechanics; half-restored silver crown, identity concealed but not faceless horror. Produce four files. | MISSING |
+| KING-01 `assets/kings/oathkeeper/` | P0 | **Хранитель Клятвы** — balanced law and once-per-battle protection with visible oath cost; dignified blue-gold regalia, sealed chains and an unbroken crown. Produce four required files. | REVIEW |
+| KING-02 `assets/kings/stone_crown/` | P0 | **Каменная Корона** — fortification/rook coordination, slow scouting and costly repositioning; granite-and-iron monarch with amber seams. Produce four files. | REVIEW |
+| KING-03 `assets/kings/wanderer_queen/` | P1 | **Странствующая Королева** — hero-focused elite court with reduced cheap recruitment; travel-worn royal mantle, portable crown and star map. Produce four files. | REVIEW |
+| KING-04 `assets/kings/pilgrim/` | P1 | **Паломник Света** — recovery, sanctified cells and mercy, limited aggression; pearl-gold pilgrim regalia and lantern crown. Produce four files. | REVIEW |
+| KING-05 `assets/kings/fox_prince/` | P1 | **Лисий Принц** — scouting, route manipulation and feints with fragile economy; copper-red court attire, fox heraldry but human monarch. Produce four files. | REVIEW |
+| KING-06 `assets/kings/ash_regent/` | P1 | **Пепельный Регент** — voluntary sacrifice/comeback orders with explicit injury risk; ash-black armor, ember crown, restrained funeral symbolism. Produce four files. | REVIEW |
+| KING-07 `assets/kings/nameless_heir/` | P1 | **Безымянный Наследник** — bounded mirror/reality mechanics; half-restored silver crown, identity concealed but not faceless horror. Produce four files. | REVIEW |
 
 ## Six release doctrines — P0/P1
 
@@ -107,12 +107,12 @@ Each series: `emblem.png` 512×512 plus `node_01.png`…`node_05.png` 256×256 P
 
 | ID / folder | Priority | Prompt | Status |
 |---|---|---|---|---|
-| DOCTRINE-01 `assets/doctrines/fortress/` | P0 | Six-icon **Крепость** series: rook defense, king safety, walls, held lines; gold-blue with iron accent. | MISSING |
-| DOCTRINE-02 `assets/doctrines/cavalry/` | P0 | Six-icon **Кавалерия** series: knight mobility, flanks and fast reserve deployment; turquoise/bronze accent. | MISSING |
-| DOCTRINE-03 `assets/doctrines/sacred_diagonals/` | P1 | Six-icon **Священные диагонали** series: bishops, runes, altars, sanctified cells; pearl/cyan accent. | MISSING |
-| DOCTRINE-04 `assets/doctrines/pawn_ascension/` | P1 | Six-icon **Возвышение пешек** series: formations, advance, promotion and collective protection; red/gold accent. | MISSING |
-| DOCTRINE-05 `assets/doctrines/royal_court/` | P1 | Six-icon **Королевский двор** series: queen, named heroes and expensive elite army; violet/gold accent. | MISSING |
-| DOCTRINE-06 `assets/doctrines/gambit/` | P1 | Six-icon **Гамбит** series: voluntary sacrifice, consequences, return and exchange; ember/blackened silver accent. | MISSING |
+| DOCTRINE-01 `assets/doctrines/fortress/` | P0 | Six-icon **Крепость** series: rook defense, king safety, walls, held lines; gold-blue with iron accent. | REVIEW |
+| DOCTRINE-02 `assets/doctrines/cavalry/` | P0 | Six-icon **Кавалерия** series: knight mobility, flanks and fast reserve deployment; turquoise/bronze accent. | REVIEW |
+| DOCTRINE-03 `assets/doctrines/sacred_diagonals/` | P1 | Six-icon **Священные диагонали** series: bishops, runes, altars, sanctified cells; pearl/cyan accent. | REVIEW |
+| DOCTRINE-04 `assets/doctrines/pawn_ascension/` | P1 | Six-icon **Возвышение пешек** series: formations, advance, promotion and collective protection; red/gold accent. | REVIEW |
+| DOCTRINE-05 `assets/doctrines/royal_court/` | P1 | Six-icon **Королевский двор** series: queen, named heroes and expensive elite army; violet/gold accent. | REVIEW |
+| DOCTRINE-06 `assets/doctrines/gambit/` | P1 | Six-icon **Гамбит** series: voluntary sacrifice, consequences, return and exchange; ember/blackened silver accent. | REVIEW |
 
 ## Acceptance gate
 

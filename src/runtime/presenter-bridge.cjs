@@ -1,6 +1,7 @@
 'use strict';
 
 const { squareToIndex, toFen } = require('../core/chess/position.cjs');
+const { gameStatus } = require('../core/chess/rules.cjs');
 const { statusView } = require('../combat/statuses.cjs');
 const { legalWardAwareCommands } = require('../combat/ward-protection.cjs');
 const { technicalTileSet, validateTileSet } = require('../rendering/modular-board.cjs');
@@ -176,6 +177,15 @@ function activeScenario(state) {
   return state.scenario || state.boss?.scenario || null;
 }
 
+function recentBattleEvents(battle, limit = 8) {
+  return freezeArray((battle.eventLog || []).slice(-limit).map((event) => Object.freeze({
+    id: event.id,
+    sequence: event.sequence,
+    type: event.type,
+    payload: deepFreeze(serializableCopy(event.payload || {}))
+  })));
+}
+
 function scenarioSnapshot(state, dependencies = {}) {
   const scenario = activeScenario(state);
   if (!scenario) return null;
@@ -205,6 +215,7 @@ function scenarioSnapshot(state, dependencies = {}) {
     label: localizationValue(localization, object.previewKey, object.id),
     metadata: deepFreeze(serializableCopy(object.metadata || {}))
   }));
+  const chess = gameStatus(battle.position, battle.scenarioRules || {});
   return Object.freeze({
     scenarioId: scenario.scenarioId,
     status: scenario.status,
@@ -213,6 +224,12 @@ function scenarioSnapshot(state, dependencies = {}) {
     playerSide: state.playerSide,
     sideToMove: battle.position.sideToMove,
     playerTurn,
+    chessStatus: Object.freeze({
+      state: chess.state,
+      check: Boolean(chess.check),
+      legalMoves: chess.legalMoves,
+      winner: chess.winner || null
+    }),
     board: Object.freeze({
       width,
       height,
@@ -227,6 +244,7 @@ function scenarioSnapshot(state, dependencies = {}) {
     objectives: freezeArray(objectives),
     failures: freezeArray(failures),
     environment: freezeArray(environment),
+    recentBattleEvents: recentBattleEvents(battle),
     battleEventCount: battle.eventLog.length,
     scenarioEventCount: scenario.eventLog.length
   });
@@ -415,6 +433,7 @@ module.exports = {
   resolveBoardTheme,
   commandKey,
   activeScenario,
+  recentBattleEvents,
   createPresenterSnapshot,
   normalizePresenterCommand,
   dispatchPresenterCommand
