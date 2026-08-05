@@ -5,11 +5,6 @@ on:
   push:
     branches:
       - agent/domain-army-runtime-migration
-    paths:
-      - .github/workflows/apply-domain-army-runtime.yml
-      - scripts/apply-domain-army-runtime.cjs
-      - tests/domain-army-runtime.cjs
-      - tests/army-projection-matrix.cjs
 
 permissions:
   contents: write
@@ -27,6 +22,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: agent/domain-army-runtime-migration
+      - name: Record workflow start
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          mkdir -p .automation
+          printf 'started\n' > .automation/domain-army-workflow.txt
+          git add .automation/domain-army-workflow.txt
+          git commit -m 'Record domain army workflow start' || true
+          git push origin HEAD:agent/domain-army-runtime-migration
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -52,8 +56,6 @@ jobs:
         run: npm run build:browser
       - name: Commit implementation before validation
         run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add src/runtime/vertical-slice.cjs src/runtime/army-roster.cjs src/browser/profile-persistence.cjs src/browser/iron-marches-browser-host.cjs game/js/generated/iron-marches-runtime.bundle.js package.json
           if git diff --cached --quiet; then
             echo 'Domain army runtime is already applied.'
@@ -67,5 +69,3 @@ jobs:
         run: npm test
       - name: Build distribution
         run: npm run build
-
-# The implementation is committed before validation so any failing invariant is visible to standard PR CI.
