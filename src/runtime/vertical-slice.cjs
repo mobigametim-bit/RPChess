@@ -18,11 +18,17 @@ const {
   applyFlagChanges
 } = require('./authored-event.cjs');
 const { executeBossActionPair, advanceBossPhase } = require('./boss-gate.cjs');
+const {
+  DEPLOYMENT_COMMANDS,
+  executeDeploymentEdit,
+  finalizeScenarioDeployment
+} = require('./deployment-gate.cjs');
 
 const RUNTIME_FORMAT = 'rpchess-vertical-slice-runtime';
 const RUNTIME_SCHEMA_VERSION = 1;
 const RUNTIME_STATUSES = Object.freeze([
   'campaign',
+  'deployment',
   'event',
   'scenario',
   'boss',
@@ -128,6 +134,7 @@ function createVerticalSliceRuntime(options = {}) {
     campaign,
     status: 'campaign',
     currentNode: null,
+    deployment: null,
     event: null,
     scenario: null,
     boss: null,
@@ -196,6 +203,9 @@ function enterVerticalSliceNode(state, targetNodeId, dependencies = {}) {
     throw new Error(`${node.id} boss must begin on the player side`);
   }
 
+  const deployment = resolution.mode === 'scenario' && typeof dependencies.deploymentFactory === 'function'
+    ? dependencies.deploymentFactory({ runtime: state, campaign, node, content, scenario: resolution.scenario })
+    : null;
   const operation = Object.freeze({ type: 'Travel', targetNodeId });
   const currentNode = Object.freeze({
     nodeId: node.id,
@@ -204,7 +214,7 @@ function enterVerticalSliceNode(state, targetNodeId, dependencies = {}) {
     reward: resolution.reward
   });
   const nextStatus = resolution.mode === 'scenario'
-    ? 'scenario'
+    ? (deployment ? 'deployment' : 'scenario')
     : resolution.mode === 'boss'
       ? 'boss'
       : resolution.mode === 'event'
@@ -215,6 +225,7 @@ function enterVerticalSliceNode(state, targetNodeId, dependencies = {}) {
     campaign,
     status: nextStatus,
     currentNode,
+    deployment,
     event: resolution.event,
     scenario: resolution.scenario,
     boss: resolution.boss,
@@ -275,6 +286,48 @@ function chooseVerticalSliceEvent(state, choiceId, dependencies = {}) {
       removeFlags: event.resolution.removeFlags,
       chronicleKeys: event.resolution.chronicleKeys,
       outcomeKey: event.resolution.outcomeKey
+    })])
+  });
+}
+
+function executeVerticalSliceDeployment(state, commandInput, dependencies = {}) {
+  assertRuntimeState(state);
+  if (state.status !== 'deployment' || !state.deployment || !state.scenario) throw new Error('no active vertical slice deployment');
+  if (!commandInput || !DEPLOYMENT_COMMANDS.includes(commandInput.type)) throw new Error('unsupported vertical slice deployment command');
+  const command = Object.freeze({
+    type: commandInput.type,
+    payload: Object.freeze({ ...(commandInput.payload || {}) })
+  });
+  if (command.type === 'ConfirmDeployment') {
+    const finalized = finalizeScenarioDeployment(state.deployment);
+    return deepFreeze({
+      ...state,
+      status: 'scenario',
+      deployment: null,
+      scenario: finalized.scenario,
+      transcript: freezeArray([...state.transcript, command]),
+      history: freezeArray([...state.history, Object.freeze({
+        index: state.history.length,
+        type: 'deployment_confirmed',
+        nodeId: state.currentNode.nodeId,
+        commandSpent: finalized.summary.commandSpent,
+        commandLimit: finalized.summary.commandLimit,
+        reserveIds: finalized.summary.reserveIds
+      })])
+    });
+  }
+  const deployment = executeDeploymentEdit(state.deployment, command);
+  return deepFreeze({
+    ...state,
+    deployment,
+    transcript: freezeArray([...state.transcript, command]),
+    history: freezeArray([...state.history, Object.freeze({
+      index: state.history.length,
+      type: 'deployment_edited',
+      nodeId: state.currentNode.nodeId,
+      commandType: command.type,
+      payload: command.payload,
+      revision: deployment.revision
     })])
   });
 }
@@ -467,6 +520,7 @@ function claimVerticalSliceReward(state) {
     campaign,
     status: bossCompleted ? 'complete' : 'campaign',
     currentNode: null,
+    deployment: null,
     event: null,
     scenario: null,
     boss: null,
@@ -497,6 +551,7 @@ function validateVerticalSliceSnapshot(snapshot, options = {}) {
     if (!node) throw new Error(`snapshot current node is missing: ${state.currentNode.nodeId}`);
     if (node.type !== state.currentNode.type) throw new Error('snapshot current node type mismatch');
   }
+  if (state.status === 'deployment' && (!state.deployment || state.deployment.format !== 'rpchess-scenario-deployment-gate' || !state.scenario)) throw new Error('snapshot active deployment is invalid');
   if (state.status === 'event' && (!state.event || state.event.status !== 'active')) throw new Error('snapshot active event is invalid');
   if (state.status === 'scenario' && (!state.scenario || state.scenario.status !== 'active')) throw new Error('snapshot active scenario is invalid');
   if (state.status === 'boss' && (!state.boss || state.boss.status !== 'active')) throw new Error('snapshot active boss is invalid');
@@ -526,6 +581,7 @@ function replayVerticalSlice(initialState, operations, dependencies = {}) {
   for (const operation of operations) {
     if (!operation || typeof operation.type !== 'string') throw new Error('invalid vertical slice replay operation');
     if (operation.type === 'Travel') state = enterVerticalSliceNode(state, operation.targetNodeId, dependencies);
+    else if (DEPLOYMENT_COMMANDS.includes(operation.type)) state = executeVerticalSliceDeployment(state, operation, dependencies);
     else if (operation.type === 'ChooseEvent') state = chooseVerticalSliceEvent(state, operation.choiceId, dependencies);
     else if (operation.type === 'PlayerCommand') state = executeVerticalSlicePlayerTurn(state, operation.request, dependencies);
     else if (operation.type === 'BeginBossPhase') state = beginVerticalSliceBossPhase(state, dependencies);
@@ -547,6 +603,7 @@ module.exports = {
   availableVerticalSliceRoutes,
   enterVerticalSliceNode,
   chooseVerticalSliceEvent,
+  executeVerticalSliceDeployment,
   executeVerticalSlicePlayerTurn,
   beginVerticalSliceBossPhase,
   claimVerticalSliceReward,

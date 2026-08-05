@@ -19,6 +19,7 @@ const {
   runSelectionSnapshot
 } = require('../runtime/run-selection.cjs');
 const { buildBrowserProductionBundle } = require('./production-content-browser.cjs');
+const { createScenarioDeploymentGate } = require('../runtime/deployment-gate.cjs');
 const {
   createBrowserProfileStore,
   inspectBrowserProfile,
@@ -134,12 +135,20 @@ function createBrowserDependencies(options) {
     return created.battleForPhase(phaseIndex);
   };
 
+  const deploymentFactory = ({ runtime, node, scenario }) => createScenarioDeploymentGate(scenario, {
+    gateId: `${node.id}_deployment`,
+    seed: hash32(`${runtime.seed}:${node.id}:deployment`),
+    playerSide: runtime.playerSide,
+    localization
+  });
+
   return Object.freeze({
     contentRegistry: bundle.registry,
     localization,
     boardThemes: boardThemeMap(bundle.boardThemeManifest),
     eventChoiceResolver: bundle.eventChoiceResolver,
     nodeResolver,
+    deploymentFactory,
     bossPhaseBattleResolver,
     aiProfile,
     aiMaxNodes,

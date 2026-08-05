@@ -2,6 +2,9 @@ const SNAPSHOT_FORMAT = 'rpchess-presenter-snapshot';
 const SNAPSHOT_SCHEMA_VERSION = 1;
 const CLIENT_COMMANDS = Object.freeze([
   'Travel',
+  'PlaceDeploymentUnit',
+  'RemoveDeploymentUnit',
+  'ConfirmDeployment',
   'ChooseEvent',
   'PlayerCommand',
   'BeginBossPhase',
@@ -12,12 +15,13 @@ const CLIENT_COMMANDS = Object.freeze([
 function validatePresenterSnapshot(snapshot) {
   if (!snapshot || snapshot.format !== SNAPSHOT_FORMAT) throw new Error('invalid RPChess presenter snapshot');
   if (snapshot.schemaVersion !== SNAPSHOT_SCHEMA_VERSION) throw new Error('unsupported RPChess presenter snapshot schema');
-  if (!['campaign', 'event', 'scenario', 'boss', 'boss_transition', 'reward', 'complete', 'failed'].includes(snapshot.status)) {
+  if (!['campaign', 'deployment', 'event', 'scenario', 'boss', 'boss_transition', 'reward', 'complete', 'failed'].includes(snapshot.status)) {
     throw new Error(`invalid presenter status: ${snapshot.status}`);
   }
   if (!snapshot.campaign || !Array.isArray(snapshot.campaign.nodes) || !Array.isArray(snapshot.campaign.routes)) {
     throw new Error('presenter snapshot is missing campaign data');
   }
+  if (snapshot.status === 'deployment' && (!snapshot.deployment || !snapshot.scenario)) throw new Error('presenter deployment snapshot is incomplete');
   if (snapshot.status === 'event' && (!snapshot.event || !Array.isArray(snapshot.event.choices))) {
     throw new Error('presenter event snapshot is missing choices');
   }
@@ -38,6 +42,17 @@ function normalizeClientCommand(command) {
     const targetNodeId = String(command.targetNodeId || command.payload?.targetNodeId || '');
     if (!targetNodeId) throw new Error('Travel requires targetNodeId');
     return Object.freeze({ type, targetNodeId });
+  }
+  if (type === 'PlaceDeploymentUnit') {
+    const unitId = String(command.unitId || command.payload?.unitId || '');
+    const square = String(command.square || command.payload?.square || '');
+    if (!unitId || !square) throw new Error('PlaceDeploymentUnit requires unitId and square');
+    return Object.freeze({ type, payload: Object.freeze({ unitId, square }) });
+  }
+  if (type === 'RemoveDeploymentUnit') {
+    const unitId = String(command.unitId || command.payload?.unitId || '');
+    if (!unitId) throw new Error('RemoveDeploymentUnit requires unitId');
+    return Object.freeze({ type, payload: Object.freeze({ unitId }) });
   }
   if (type === 'ChooseEvent') {
     const choiceId = String(command.choiceId || command.payload?.choiceId || '');

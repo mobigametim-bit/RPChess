@@ -50,7 +50,7 @@ test('browser runtime accepts presenter commands through the same narrow boundar
   const route = initial.campaign.routes.find((item) => item.affordable);
   assert.ok(route);
   const result = await host.dispatch({ type: 'Travel', targetNodeId: route.to });
-  assert.ok(['campaign', 'event', 'scenario', 'boss', 'reward'].includes(result.snapshot.status));
+  assert.ok(['campaign', 'deployment', 'event', 'scenario', 'boss', 'reward'].includes(result.snapshot.status));
   assert.strictEqual(result.snapshot.transcriptLength, 1);
 });
 
