@@ -2,7 +2,7 @@
 
 **Updated:** 2026-08-05  
 **Source of truth:** merged code and CI on `main`.  
-**Runtime policy:** new systems remain isolated from the legacy browser battle until the vertical-slice presentation and content acceptance gates pass.
+**Runtime policy:** new systems remain isolated from the legacy public battle until the vertical-slice presentation, content, accessibility and acceptance gates pass.
 
 ## Completed foundations
 
@@ -24,11 +24,18 @@
 | Asset intake | Complete foundation | Canonical staged paths, PNG validation, safe copy/repair and replacement review |
 | Atomic saves | Complete foundation | Three profiles, checksums, pending/current/backup recovery, migrations and cloud-conflict classification |
 | Data-driven content | Complete foundation | Typed registry for regions, kings, doctrines, heroes, relics, events, encounters and bosses |
+| Iron Marches production content | Vertical-slice draft complete | One region, king, doctrine, six heroes, six relics, twelve authored events, six encounters and a two-phase boss with RU/EN localization |
+| Authored event choices | Complete foundation | Explicit three-to-four choice gate, deterministic consequences, flags, Chronicle hooks, replay and save support |
+| Event effect catalog | Complete foundation | Closed versioned effect vocabulary; unknown effects fail build and execution instead of silently doing nothing |
 | Legal AI | Complete foundation | Apprentice/Tactician/Warlord deterministic search, budgets and objective-aware evaluation |
 | Scenario objectives | Complete foundation | Checkmate, escort, capture, hold and survival objectives plus explicit failure conditions |
-| Boss phases | Complete foundation | Explicit two-to-three phase state machine and deterministic phase history |
+| Visible blocker legality | Complete foundation | Active blocker cells alter attacks, legal moves, castling, reserve, ward, AI, presenter, replay and saves through one battle-state rule source |
+| Boss phases | Complete foundation | Explicit two-to-three phase state machine, player/AI pairs, saveable transitions and deterministic phase history |
 | Campaign act graph | Complete foundation | Deterministic 9–12 node acts, safe routes, supplies, scouting and 10,000-seed validation |
-| Vertical-slice runtime | Complete foundation | Campaign → node → scenario → player/AI pair → reward → boss completion with atomic saves and deterministic replay |
+| Vertical-slice runtime | Complete foundation | Campaign → node → event/scenario/boss → player/AI pair → reward → completion with atomic saves and deterministic replay |
+| Iron Marches production bootstrap | Complete foundation | Real compiled content, scenario templates, board themes, localization and effect catalog create the act without test-only fixtures |
+| Pre-run selection | Complete foundation | Immutable king, doctrine and regional hero selection with compatibility, roster limits, locking, snapshots and deterministic bootstrap handoff |
+| Browser pre-run selection | Complete foundation | Accessible host/client/presenter, missing-art fallbacks, responsive layout and standalone preview |
 
 ## Current automated acceptance coverage
 
@@ -48,15 +55,21 @@ The CI suite currently covers:
 - generated-asset intake;
 - atomic profile saves and cloud conflicts;
 - typed content packs and localization references;
+- authored event choices and closed effect references;
 - legal AI decisions and action corpora;
 - alternative objectives and boss transitions;
 - 10,000 generated campaign seeds;
 - full vertical-slice campaign completion;
 - player/AI action-pair enforcement;
 - byte-equivalent operation replay;
-- vertical-slice checkpoint save, reload and corruption recovery.
+- vertical-slice checkpoint save, reload and corruption recovery;
+- production Iron Marches scenario construction;
+- multi-phase boss save/reload/replay and mate objective;
+- opaque blocker legality across chess, scenario, reserve, ward, AI, presenter and saves;
+- pre-run selection compatibility, locking and snapshot restoration;
+- browser selection command, escaping, accessibility-state and runtime-handoff checks.
 
-Every merged foundation listed above passed CI before merge.
+Every merged foundation listed above passed its required CI before entering `main`.
 
 ## Asset production interface
 
@@ -88,24 +101,46 @@ tile_dark.png
 
 Complete board rasters, board frames and decorative underlays are not runtime dependencies.
 
-The browser preview is available at:
+Browser previews:
 
 ```text
 game/tools/modular-board-preview.html
+game/tools/vertical-slice-preview.html
+game/tools/run-selection-preview.html
 ```
 
-It supports standard 8×8, fractured 8×8 and rectangular 10×6 layouts, board flipping and coordinate toggling. Missing final art is represented by visible technical cells rather than blank space.
+Missing final art is represented by visible technical cells or fallback cards rather than blank space.
+
+## Current vertical-slice flow
+
+The production-ready isolated path now has these gates:
+
+```text
+pre-run selection
+→ locked king / doctrine / hero roster
+→ deterministic Iron Marches act graph
+→ authored event choice or combat scenario
+→ blocker-aware legal chess action
+→ one objective-aware AI response
+→ reward
+→ save / replay / next node
+→ two-phase Iron Regent boss
+→ campaign completion
+```
+
+The public legacy `index.html` is still the rollback-safe default and has not been replaced.
 
 ## Next integration sequence
 
-1. Add a production vertical-slice content pack containing one approved king, doctrine, region, hero set, relic set, events, encounters and boss kit.
-2. Add a browser presenter for campaign routes, scenario HUD, modular board overlays, rewards and completion screens.
-3. Connect the browser presenter to the deterministic vertical-slice runtime through a narrow command/snapshot bridge.
-4. Run the authored vertical slice through save/reload, replay, fallback-art, RU/EN and deterministic-seed verification.
-5. Complete controller focus, accessibility, layout-stress and performance checks for the slice.
-6. Switch the public runtime only after explicit acceptance; keep the legacy path available as rollback until then.
-7. Scale authored content and final assets after the vertical-slice acceptance gate.
+1. Add a browser entry point that bundles the CommonJS production bootstrap behind the existing snapshot/command boundary without exposing internal mutable state.
+2. Render figures, statuses, visible blockers, objectives and legal targeting on the modular board using approved assets or technical fallbacks.
+3. Add deployment and reserve presentation before each production encounter.
+4. Connect pre-run selection, campaign presenter, event screen, combat presenter, boss transitions and rewards into one browser navigation shell.
+5. Run the complete authored Iron Marches act through save/reload, replay, missing-art, RU/EN and deterministic-seed verification in the browser build.
+6. Complete controller focus, remapping foundation, text scaling, reduced motion, contrast and Steam Deck layout stress tests.
+7. Validate the first approved asset package in the running slice and replace fallbacks without changing gameplay data.
+8. Request explicit acceptance before replacing the public legacy runtime; preserve the legacy path as rollback until the new path passes acceptance.
 
 ## Intervention gate
 
-No intervention is required for continued presenter, bridge, validation and fallback work. User approval becomes necessary before declaring a specific king/doctrine/region kit canonical, replacing technical visuals with final candidates, locking balance values with multiple valid design directions, or replacing the public legacy runtime.
+No intervention is required for continued browser bundling, navigation-shell, deployment/reserve presentation, validation, accessibility and fallback work. User approval becomes necessary before declaring specific visual candidates canonical, locking disputed balance values, approving the complete vertical slice, or replacing the public legacy runtime.
