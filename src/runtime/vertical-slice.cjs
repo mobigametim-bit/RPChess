@@ -12,10 +12,15 @@ const {
   scenarioObjectiveEvaluator
 } = require('../scenario/scenario.cjs');
 const { chooseAiCommand } = require('../ai/search.cjs');
+const {
+  createAuthoredEventState,
+  resolveAuthoredEventChoice,
+  applyFlagChanges
+} = require('./authored-event.cjs');
 
 const RUNTIME_FORMAT = 'rpchess-vertical-slice-runtime';
 const RUNTIME_SCHEMA_VERSION = 1;
-const RUNTIME_STATUSES = Object.freeze(['campaign', 'scenario', 'reward', 'complete', 'failed']);
+const RUNTIME_STATUSES = Object.freeze(['campaign', 'event', 'scenario', 'reward', 'complete', 'failed']);
 
 function freezeArray(values) {
   return Object.freeze(values.slice());
@@ -113,9 +118,12 @@ function createVerticalSliceRuntime(options = {}) {
     campaign,
     status: 'campaign',
     currentNode: null,
+    event: null,
     scenario: null,
     pendingReward: null,
     resources: Object.freeze({ gold: 0, meta: 0 }),
+    flags: freezeArray([]),
+    chronicleKeys: freezeArray([]),
     rewardLog: freezeArray([]),
     transcript: freezeArray([]),
     history: freezeArray([])
@@ -131,14 +139,20 @@ function availableVerticalSliceRoutes(state) {
 function normalizeNodeResolution(node, content, resolution) {
   if (!resolution || typeof resolution !== 'object') throw new Error(`node resolver returned no result for ${node.id}`);
   const mode = resolution.mode;
-  if (!['scenario', 'immediate'].includes(mode)) throw new Error(`node resolver returned invalid mode for ${node.id}`);
+  if (!['scenario', 'event', 'immediate'].includes(mode)) throw new Error(`node resolver returned invalid mode for ${node.id}`);
   const reward = normalizeReward(resolution.reward || {});
   if (mode === 'scenario') {
     const scenario = resolution.scenario;
     if (!scenario || scenario.format !== 'rpchess-scenario-state') throw new Error(`${node.id} resolver must return a valid scenario state`);
-    return Object.freeze({ mode, scenario, reward, contentId: content?.id || node.contentId || null });
+    return Object.freeze({ mode, scenario, event: null, reward, contentId: content?.id || node.contentId || null });
   }
-  return Object.freeze({ mode, scenario: null, reward, contentId: content?.id || node.contentId || null });
+  if (mode === 'event') {
+    if (!content || content.kind !== 'event') throw new Error(`${node.id} event mode requires compiled event content`);
+    const event = resolution.event || createAuthoredEventState(content, { nodeId: node.id });
+    if (!event || event.format !== 'rpchess-authored-event-state' || event.status !== 'active') throw new Error(`${node.id} resolver must return an active authored event state`);
+    return Object.freeze({ mode, scenario: null, event, reward, contentId: content.id });
+  }
+  return Object.freeze({ mode, scenario: null, event: null, reward, contentId: content?.id || node.contentId || null });
 }
 
 function enterVerticalSliceNode(state, targetNodeId, dependencies = {}) {
@@ -169,11 +183,13 @@ function enterVerticalSliceNode(state, targetNodeId, dependencies = {}) {
     contentId: resolution.contentId,
     reward: resolution.reward
   });
+  const nextStatus = resolution.mode === 'scenario' ? 'scenario' : resolution.mode === 'event' ? 'event' : 'reward';
   return deepFreeze({
     ...state,
     campaign,
-    status: resolution.mode === 'scenario' ? 'scenario' : 'reward',
+    status: nextStatus,
     currentNode,
+    event: resolution.event,
     scenario: resolution.scenario,
     pendingReward: resolution.mode === 'immediate' ? resolution.reward : null,
     transcript: freezeArray([...state.transcript, operation]),
@@ -185,6 +201,53 @@ function enterVerticalSliceNode(state, targetNodeId, dependencies = {}) {
       contentId: resolution.contentId,
       routeCost: route.cost,
       mode: resolution.mode
+    })])
+  });
+}
+
+function chooseVerticalSliceEvent(state, choiceId, dependencies = {}) {
+  assertRuntimeState(state);
+  if (state.status !== 'event' || !state.event || !state.currentNode) throw new Error('no active vertical slice event');
+  const event = resolveAuthoredEventChoice(state.event, choiceId, dependencies.eventChoiceResolver, {
+    runtimeId: state.runtimeId,
+    seed: state.seed,
+    profileId: state.profileId,
+    node: state.currentNode,
+    resources: Object.freeze({ ...state.resources, supplies: state.campaign.supplies }),
+    flags: state.flags
+  });
+  const delta = event.resolution.resourceDelta;
+  const gold = state.resources.gold + delta.gold;
+  const meta = state.resources.meta + delta.meta;
+  if (gold < 0) throw new Error('event choice would make gold negative');
+  if (meta < 0) throw new Error('event choice would make meta currency negative');
+  let campaign = state.campaign;
+  if (delta.supplies) campaign = gainSupplies(campaign, delta.supplies, `event:${event.eventId}:${event.selectedChoiceId}`);
+  const flags = applyFlagChanges(state.flags, event.resolution);
+  const chronicleKeys = freezeArray([...new Set([...state.chronicleKeys, ...event.resolution.chronicleKeys])].sort());
+  const operation = Object.freeze({ type: 'ChooseEvent', choiceId: event.selectedChoiceId });
+  return deepFreeze({
+    ...state,
+    campaign,
+    event,
+    status: 'reward',
+    pendingReward: state.currentNode.reward,
+    resources: Object.freeze({ gold, meta }),
+    flags,
+    chronicleKeys,
+    transcript: freezeArray([...state.transcript, operation]),
+    history: freezeArray([...state.history, Object.freeze({
+      index: state.history.length,
+      type: 'event_choice',
+      nodeId: state.currentNode.nodeId,
+      eventId: event.eventId,
+      choiceId: event.selectedChoiceId,
+      effectIds: event.resolution.effectIds,
+      resourceDelta: event.resolution.resourceDelta,
+      addFlags: event.resolution.addFlags,
+      removeFlags: event.resolution.removeFlags,
+      chronicleKeys: event.resolution.chronicleKeys,
+      outcomeKey: event.resolution.outcomeKey
     })])
   });
 }
@@ -289,6 +352,7 @@ function claimVerticalSliceReward(state) {
     campaign,
     status: bossCompleted ? 'complete' : 'campaign',
     currentNode: null,
+    event: null,
     scenario: null,
     pendingReward: null,
     resources,
@@ -317,6 +381,7 @@ function validateVerticalSliceSnapshot(snapshot, options = {}) {
     if (!node) throw new Error(`snapshot current node is missing: ${state.currentNode.nodeId}`);
     if (node.type !== state.currentNode.type) throw new Error('snapshot current node type mismatch');
   }
+  if (state.status === 'event' && (!state.event || state.event.status !== 'active')) throw new Error('snapshot active event is invalid');
   if (state.status === 'scenario' && (!state.scenario || state.scenario.status !== 'active')) throw new Error('snapshot active scenario is invalid');
   if (state.status === 'reward' && !state.pendingReward) throw new Error('snapshot reward state has no pending reward');
   if (state.status === 'complete' && state.campaign.status !== 'completed') throw new Error('snapshot completion does not match campaign');
@@ -343,6 +408,7 @@ function replayVerticalSlice(initialState, operations, dependencies = {}) {
   for (const operation of operations) {
     if (!operation || typeof operation.type !== 'string') throw new Error('invalid vertical slice replay operation');
     if (operation.type === 'Travel') state = enterVerticalSliceNode(state, operation.targetNodeId, dependencies);
+    else if (operation.type === 'ChooseEvent') state = chooseVerticalSliceEvent(state, operation.choiceId, dependencies);
     else if (operation.type === 'PlayerCommand') state = executeVerticalSlicePlayerTurn(state, operation.request, dependencies);
     else if (operation.type === 'ClaimReward') state = claimVerticalSliceReward(state);
     else throw new Error(`unsupported vertical slice replay operation: ${operation.type}`);
@@ -361,6 +427,7 @@ module.exports = {
   createVerticalSliceRuntime,
   availableVerticalSliceRoutes,
   enterVerticalSliceNode,
+  chooseVerticalSliceEvent,
   executeVerticalSlicePlayerTurn,
   claimVerticalSliceReward,
   snapshotVerticalSlice,
