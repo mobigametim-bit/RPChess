@@ -46,17 +46,21 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Repair generated test quoting
+      - name: Repair one-time patch generator
         run: |
           python - <<'PY'
           from pathlib import Path
           file = Path('scripts/apply-prebattle-deployment.cjs')
           text = file.read_text(encoding='utf-8')
-          old = "    } else throw new Error(`unexpected status while seeking deployment: ${snapshot.status}`);"
-          new = "    } else throw new Error('unexpected status while seeking deployment: ' + snapshot.status);"
-          if text.count(old) != 1:
-              raise SystemExit(f'expected one nested template line, found {text.count(old)}')
-          file.write_text(text.replace(old, new), encoding='utf-8')
+          replacements = {
+              "    } else throw new Error(`unexpected status while seeking deployment: ${snapshot.status}`);": "    } else throw new Error('unexpected status while seeking deployment: ' + snapshot.status);",
+              "  if (content.indexOf(needle, first + needle.length) >= 0) throw new Error(`${label}: ambiguous needle`);\n": ""
+          }
+          for old, new in replacements.items():
+              if text.count(old) != 1:
+                  raise SystemExit(f'expected one repair target, found {text.count(old)}: {old[:60]}')
+              text = text.replace(old, new)
+          file.write_text(text, encoding='utf-8')
           PY
 
       - name: Apply strict deployment patch
