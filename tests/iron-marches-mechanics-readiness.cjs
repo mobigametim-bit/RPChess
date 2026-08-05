@@ -1,4 +1,5 @@
 const assert = require('assert');
+const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
 const { auditIronMarchesMechanics } = require('../scripts/audit-iron-marches-mechanics.cjs');
@@ -27,35 +28,20 @@ const { auditIronMarchesMechanics } = require('../scripts/audit-iron-marches-mec
   assert.strictEqual(readiness.readinessLabel('DECLARATIVE'), 'Пока недоступно');
   assert.strictEqual(readiness.heroMechanicsSummary('hero.aldric_wall', ['relic.echo_shield']).relics[0].status, 'PARTIAL');
 
-  const presenter = await import(pathToFileURL(path.resolve(__dirname, '../game/js/vertical-slice-presenter-register-02.mjs')).href);
-  const markup = presenter.heroMechanicsMarkup({
-    heroId: 'hero.aldric_wall',
-    relicIds: ['relic.echo_shield']
-  });
+  const enhancer = await import(pathToFileURL(path.resolve(__dirname, '../game/js/iron-marches-mechanics-readiness-enhancer.mjs')).href);
+  const markup = enhancer.heroReadinessMarkup('hero.aldric_wall');
   assert.ok(markup.includes('Перехват'));
   assert.ok(markup.includes('Пока недоступно'));
-  assert.ok(markup.includes('Эхо-щит'));
+  assert.ok(markup.includes('Защита от первого взятия'));
   assert.ok(markup.includes('Частично подключено'));
   assert.ok(markup.includes('aria-disabled="true"'));
+  assert.strictEqual(enhancer.heroIdFromImageSource('assets/heroes/aldric_wall/portrait.png'), 'hero.aldric_wall');
+  assert.strictEqual(enhancer.heroIdFromImageSource('assets/politics/marshal_varn.png'), null);
+  assert.ok(enhancer.compactReadinessMarkup('hero.tomas_gate').includes('Способность: Пока недоступно'));
 
-  const armyMarkup = presenter.armyPanelMarkup({
-    status: 'campaign',
-    army: {
-      kingId: 'king.oathkeeper',
-      kingName: 'Хранитель Клятвы',
-      doctrineId: 'doctrine.fortress',
-      doctrineName: 'Крепость',
-      heroCount: 1,
-      relicCount: 1,
-      heroes: [{
-        heroId: 'hero.aldric_wall',
-        name: 'Альдрик Стена',
-        relicIds: ['relic.echo_shield']
-      }]
-    }
-  });
-  assert.ok(armyMarkup.includes('Пока недоступно'));
-  assert.ok(armyMarkup.includes('1 реликв.'));
+  const html = fs.readFileSync(path.resolve(__dirname, '../game/vertical-slice.html'), 'utf8');
+  assert.ok(html.indexOf('register-02-runtime-enhancer.mjs') < html.indexOf('iron-marches-mechanics-readiness-enhancer.mjs'));
+  assert.ok(html.includes('iron-marches-mechanics-readiness-enhancer.mjs'));
 
   console.log('Iron Marches mechanics readiness: 1/1 passed.');
 })().catch((error) => {
