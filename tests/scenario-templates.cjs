@@ -32,6 +32,7 @@ test('all six encounter templates construct legal player-turn scenarios with exp
     assert.ok(legalWardAwareCommands(created.scenario.battle).length > 0, encounterId);
     assert.ok(created.scenario.objectives.length > 0, encounterId);
     assert.ok(created.scenario.environment.objects.every((object) => object.visible), encounterId);
+    assert.ok(created.scenario.environment.objects.every((object) => ['none', 'activate', 'destroy', 'hold'].includes(object.interaction)), encounterId);
     assert.ok(created.reward.gold + created.reward.supplies + created.reward.meta > 0, encounterId);
   }
 });
@@ -41,7 +42,7 @@ test('template identity metadata connects registered heroes and relics to battle
   const metadata = created.scenario.battle.identities.metadata.aldric_wall;
   assert.strictEqual(metadata.heroId, 'hero.aldric_wall');
   assert.deepStrictEqual(metadata.relicIds, ['relic.echo_shield']);
-  assert.strictEqual(metadata.type, 'r');
+  assert.strictEqual(metadata.currentType, 'r');
   assert.strictEqual(metadata.side, 'w');
 });
 
