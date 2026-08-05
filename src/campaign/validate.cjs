@@ -20,6 +20,21 @@ function reachableFrom(graph, startId, direction = 'outgoing') {
   return visited;
 }
 
+function minimumPathCost(graph, fromId = graph.startNodeId, toId = graph.bossNodeId) {
+  if (!graph.nodesById[fromId] || !graph.nodesById[toId]) throw new Error('minimum path endpoints must exist');
+  const costs = { [fromId]: 0 };
+  const nodes = graph.nodes.slice().sort((a, b) => a.layer - b.layer || a.index - b.index || a.id.localeCompare(b.id));
+  for (const node of nodes) {
+    if (costs[node.id] == null) continue;
+    for (const edgeId of graph.outgoing[node.id] || []) {
+      const edge = graph.edgesById[edgeId];
+      const cost = costs[node.id] + edge.cost;
+      if (costs[edge.to] == null || cost < costs[edge.to]) costs[edge.to] = cost;
+    }
+  }
+  return costs[toId] ?? Infinity;
+}
+
 function validateActGraph(graph, options = {}) {
   const errors = [];
   if (!graph || graph.format !== 'rpchess-act-graph') return Object.freeze({ ok: false, errors: Object.freeze(['invalid graph format']) });
@@ -68,6 +83,7 @@ function validateActGraph(graph, options = {}) {
   if (!middle.some((node) => node.type === 'event')) errors.push('act has no event node');
   if (!middle.some((node) => ECONOMY_TYPES.includes(node.type))) errors.push('act has no shop/service node');
   if (graph.act >= 2 && !middle.some((node) => node.type === 'elite')) errors.push('act 2–3 has no elite node');
+  if (start && boss && minimumPathCost(graph) === Infinity) errors.push('boss has no finite supply-cost path');
 
   return Object.freeze({ ok: errors.length === 0, errors: Object.freeze(errors) });
 }
@@ -91,14 +107,17 @@ function batchValidateActGraphs(options = {}) {
   const typeCounts = {};
   let totalEdges = 0;
   let totalCost = 0;
+  let totalMinimumPathCost = 0;
   for (let index = 0; index < count; index += 1) {
-    const graph = options.generate(index + (options.seedStart || 1));
+    const seed = index + (options.seedStart || 1);
+    const graph = options.generate(seed);
     const report = validateActGraph(graph, options.validation || {});
-    if (!report.ok) failures.push(Object.freeze({ seed: index + (options.seedStart || 1), errors: report.errors }));
+    if (!report.ok) failures.push(Object.freeze({ seed, errors: report.errors }));
     nodeCounts[graph.nodes.length] = (nodeCounts[graph.nodes.length] || 0) + 1;
     for (const node of graph.nodes) typeCounts[node.type] = (typeCounts[node.type] || 0) + 1;
     totalEdges += graph.edges.length;
     totalCost += graph.edges.reduce((sum, edge) => sum + edge.cost, 0);
+    totalMinimumPathCost += minimumPathCost(graph);
   }
   return Object.freeze({
     count,
@@ -107,12 +126,14 @@ function batchValidateActGraphs(options = {}) {
     nodeCounts: Object.freeze(nodeCounts),
     typeCounts: Object.freeze(typeCounts),
     averageEdges: totalEdges / count,
-    averageEdgeCost: totalEdges ? totalCost / totalEdges : 0
+    averageEdgeCost: totalEdges ? totalCost / totalEdges : 0,
+    averageMinimumPathCost: totalMinimumPathCost / count
   });
 }
 
 module.exports = {
   reachableFrom,
+  minimumPathCost,
   validateActGraph,
   assertValidActGraph,
   batchValidateActGraphs
