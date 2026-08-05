@@ -7529,7 +7529,7 @@ var RPChessRuntime = (() => {
   var require_profile_persistence = __commonJS({
     "src/browser/profile-persistence.cjs"(exports, module) {
       "use strict";
-      var { AtomicProfileStore, normalizeProfileId } = require_profile_store();
+      var { AtomicProfileStore, PROFILE_SLOTS, normalizeProfileId } = require_profile_store();
       var { assertStorageAdapter } = require_storage();
       var { loadVerticalSlice, saveVerticalSlice } = require_vertical_slice();
       var BROWSER_SAVE_NAMESPACE = "rpchess.vertical-slice.v1";
@@ -7577,6 +7577,27 @@ var RPChessRuntime = (() => {
           diagnostics: loaded.diagnostics || null
         });
       }
+      function listBrowserProfiles(store, contentRegistry = null) {
+        return Object.freeze(PROFILE_SLOTS.map((profileId) => {
+          const inspected = inspectBrowserProfile(store, profileId, contentRegistry);
+          const state = inspected.state;
+          return Object.freeze({
+            profileId,
+            status: inspected.status,
+            available: Boolean(state),
+            revision: inspected.revision,
+            savedAt: inspected.savedAt,
+            recoveredFrom: inspected.recoveredFrom,
+            runtimeId: state?.runtimeId || null,
+            seed: state?.seed || null,
+            act: state?.campaign?.graph?.act || null,
+            regionId: state?.campaign?.graph?.regionId || null,
+            runtimeStatus: state?.status || null,
+            currentNodeId: state?.campaign?.currentNodeId || null,
+            rewardsClaimed: state?.rewardLog?.length || 0
+          });
+        }));
+      }
       function saveBrowserProfile(store, state) {
         if (!store) return null;
         return saveVerticalSlice(store, state);
@@ -7591,6 +7612,7 @@ var RPChessRuntime = (() => {
         resolveBrowserStorage,
         createBrowserProfileStore,
         inspectBrowserProfile,
+        listBrowserProfiles,
         saveBrowserProfile,
         deleteBrowserProfile
       };
@@ -7941,26 +7963,17 @@ var RPChessRuntime = (() => {
   var require_iron_marches_browser_entry = __commonJS({
     "src/browser/iron-marches-browser-entry.cjs"(exports, module) {
       require_buffer_shim();
-      var {
-        DEFAULT_BROWSER_SELECTION,
-        createBrowserProductionBundle,
-        createBrowserIronMarchesRuntimeHost,
-        createBrowserRunSelectionHost
-      } = (() => {
-        const content = require_production_content_browser();
-        const hosts = require_iron_marches_browser_host();
-        return {
-          DEFAULT_BROWSER_SELECTION: hosts.DEFAULT_BROWSER_SELECTION,
-          createBrowserProductionBundle: content.buildBrowserProductionBundle,
-          createBrowserIronMarchesRuntimeHost: hosts.createBrowserIronMarchesRuntimeHost,
-          createBrowserRunSelectionHost: hosts.createBrowserRunSelectionHost
-        };
-      })();
+      var content = require_production_content_browser();
+      var hosts = require_iron_marches_browser_host();
+      var profiles = require_profile_persistence();
       module.exports = Object.freeze({
-        DEFAULT_BROWSER_SELECTION,
-        createBrowserProductionBundle,
-        createBrowserIronMarchesRuntimeHost,
-        createBrowserRunSelectionHost
+        DEFAULT_BROWSER_SELECTION: hosts.DEFAULT_BROWSER_SELECTION,
+        createBrowserProductionBundle: content.buildBrowserProductionBundle,
+        createBrowserIronMarchesRuntimeHost: hosts.createBrowserIronMarchesRuntimeHost,
+        createBrowserRunSelectionHost: hosts.createBrowserRunSelectionHost,
+        createBrowserProfileStore: profiles.createBrowserProfileStore,
+        listBrowserProfiles: profiles.listBrowserProfiles,
+        deleteBrowserProfile: profiles.deleteBrowserProfile
       });
     }
   });

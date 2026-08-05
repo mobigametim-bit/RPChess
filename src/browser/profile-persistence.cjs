@@ -1,6 +1,6 @@
 'use strict';
 
-const { AtomicProfileStore, normalizeProfileId } = require('../save/profile-store.cjs');
+const { AtomicProfileStore, PROFILE_SLOTS, normalizeProfileId } = require('../save/profile-store.cjs');
 const { assertStorageAdapter } = require('../save/storage.cjs');
 const { loadVerticalSlice, saveVerticalSlice } = require('../runtime/vertical-slice.cjs');
 
@@ -53,6 +53,28 @@ function inspectBrowserProfile(store, profileIdInput, contentRegistry = null) {
   });
 }
 
+function listBrowserProfiles(store, contentRegistry = null) {
+  return Object.freeze(PROFILE_SLOTS.map((profileId) => {
+    const inspected = inspectBrowserProfile(store, profileId, contentRegistry);
+    const state = inspected.state;
+    return Object.freeze({
+      profileId,
+      status: inspected.status,
+      available: Boolean(state),
+      revision: inspected.revision,
+      savedAt: inspected.savedAt,
+      recoveredFrom: inspected.recoveredFrom,
+      runtimeId: state?.runtimeId || null,
+      seed: state?.seed || null,
+      act: state?.campaign?.graph?.act || null,
+      regionId: state?.campaign?.graph?.regionId || null,
+      runtimeStatus: state?.status || null,
+      currentNodeId: state?.campaign?.currentNodeId || null,
+      rewardsClaimed: state?.rewardLog?.length || 0
+    });
+  }));
+}
+
 function saveBrowserProfile(store, state) {
   if (!store) return null;
   return saveVerticalSlice(store, state);
@@ -69,6 +91,7 @@ module.exports = {
   resolveBrowserStorage,
   createBrowserProfileStore,
   inspectBrowserProfile,
+  listBrowserProfiles,
   saveBrowserProfile,
   deleteBrowserProfile
 };
