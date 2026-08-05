@@ -17,7 +17,7 @@ test('browser production bundle validates embedded content without filesystem re
   assert.strictEqual(bundle.format, 'rpchess-browser-production-content');
   assert.strictEqual(bundle.registry.get('region', 'region.iron_marches').boardThemeId, 'iron_marches');
   assert.strictEqual(bundle.registry.get('king', 'king.oathkeeper').assets.portrait, 'assets/kings/oathkeeper/portrait.png');
-  assert.ok(bundle.scenarioTemplates.encounters['encounter.iron_crossfire']);
+  assert.ok(bundle.scenarioTemplates.encounters['encounter.iron_crossfire_files']);
   assert.ok(bundle.scenarioTemplates.bosses['boss.iron_regent']);
   assert.ok(bundle.assetPaths.includes('assets/doctrines/fortress/emblem.png'));
 });
