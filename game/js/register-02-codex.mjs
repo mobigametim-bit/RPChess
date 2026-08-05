@@ -4,6 +4,7 @@ import {
   heroAssets,
   politicalAssets
 } from './register-02-assets.mjs';
+import { relicChipMarkup } from './register-03-relic-codex.mjs';
 
 const FACTIONS = Object.freeze({
   iron_marches: Object.freeze({ id: 'iron_marches', label: 'Железные Марши' }),
@@ -179,7 +180,7 @@ function heroPanelMarkup(recordInput, options = {}) {
       </div>
       <dl class="rp02-hero-panel__facts">
         <div><dt>Звёзды</dt><dd>${stars ? '★'.repeat(Math.min(stars, 5)) : '—'}</dd></div>
-        <div><dt>Реликвии</dt><dd>${relicIds.length ? relicIds.map((id) => escapeHtml(RELIC_LABELS[id] || id)).join(', ') : 'Нет'}</dd></div>
+        <div><dt>Реликвии</dt><dd>${relicChipMarkup(relicIds)}</dd></div>
         <div><dt>Эффекты</dt><dd>${statuses.length ? statuses.map(escapeHtml).join(', ') : 'Нет активных'}</dd></div>
       </dl>
     </div>
