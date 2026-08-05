@@ -3,6 +3,7 @@
 require('./buffer-shim.cjs');
 
 const { ContentRegistry } = require('../content/index.cjs');
+const { validateCombatProfileSet } = require('../content/combat-profiles.cjs');
 const {
   mergeEffectCatalogs,
   validateEffectCatalog,
@@ -16,6 +17,7 @@ const {
 
 const boardThemeManifest = require('../../content/board-themes.json');
 const productionPack = require('../../content/packs/iron_marches_vertical_slice.json');
+const combatProfileSource = require('../../content/combat-profiles/iron_marches.json');
 const effectCatalog = require('../../content/effects/iron_marches_events.json');
 const localizationRu = require('../../content/localization/ru/iron_marches_vertical_slice.json');
 const localizationEn = require('../../content/localization/en/iron_marches_vertical_slice.json');
@@ -30,6 +32,7 @@ function buildBrowserProductionBundle() {
   registry.addPack(productionPack);
   registry.finalize({ localization });
 
+  const combatProfiles = validateCombatProfileSet(combatProfileSource, registry);
   const eventEffectCatalog = mergeEffectCatalogs([validateEffectCatalog(effectCatalog)]);
   validateEventEffectReferences(registry, eventEffectCatalog);
   const scenarioTemplates = validateScenarioTemplateSet(scenarioTemplateSource);
@@ -41,6 +44,7 @@ function buildBrowserProductionBundle() {
     boardThemeManifest,
     registry,
     localization,
+    combatProfiles,
     eventEffectCatalog,
     eventChoiceResolver: createCatalogEventChoiceResolver(eventEffectCatalog),
     scenarioTemplates,
