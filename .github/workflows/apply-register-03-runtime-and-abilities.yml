@@ -55,6 +55,11 @@ jobs:
           import json
           from pathlib import Path
 
+          ability_core = Path('src/combat/abilities.cjs')
+          ability_source = ability_core.read_text(encoding='utf-8')
+          ability_source = ability_source.replace("expiry: { kind: 'side_actions', remaining: 1 }", "expiry: { kind: 'side_actions', remaining: 2 }")
+          ability_core.write_text(ability_source, encoding='utf-8')
+
           status_test = Path('tests/status-system.cjs')
           status_source = status_test.read_text(encoding='utf-8')
           status_source = status_source.replace("['bound', 'cursed', 'marked', 'provoked', 'silenced', 'ward']", "['bound', 'cursed', 'evasion', 'guarded', 'marked', 'offered', 'provoked', 'silenced', 'ward']")
@@ -122,6 +127,7 @@ jobs:
             game/js/generated/iron-marches-runtime.bundle.js \
             game/js/vertical-slice-presenter.mjs \
             package.json \
+            src/combat/abilities.cjs \
             src/combat/battle.cjs \
             src/combat/reserve.cjs \
             src/combat/statuses.cjs \
