@@ -77,7 +77,8 @@ function normalizeRuntimeArmy(army, options = {}) {
   }
   if (!army || army.format !== RUNTIME_ARMY_FORMAT) throw new Error('vertical slice runtime has an invalid army');
   if (!options.contentRegistry || !options.combatProfiles) {
-    throw new Error('vertical slice army validation requires contentRegistry and combatProfiles');
+    if (options.requireArmy) throw new Error('vertical slice army validation requires contentRegistry and combatProfiles');
+    return army;
   }
   return validateRuntimeArmy(army, options.contentRegistry, options.combatProfiles);
 }
