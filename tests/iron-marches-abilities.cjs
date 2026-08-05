@@ -151,8 +151,9 @@ test('Iron Marches projection binds Echo Shield, Circle Warding and Twin Command
 
   assert.strictEqual(projected.statuses.entries.aldric_role.id, 'ward');
   assert.strictEqual(projected.statuses.entries.aldric_role.sourceId, 'relic.echo_shield');
-  assert.strictEqual(projected.abilities.entries[0].ownerId, 'orell_role');
-  assert.strictEqual(projected.abilities.entries[0].effectId, 'effect.place_adjacent_ward');
+  const circleWarding = projected.abilities.entries.find((entry) => entry.effectId === 'effect.place_adjacent_ward');
+  assert.ok(circleWarding);
+  assert.strictEqual(circleWarding.ownerId, 'orell_role');
   assert.strictEqual(projected.abilities.modifiers[0].ownerId, 'tomas_role');
   assert.strictEqual(projected.abilities.modifiers[0].effectId, 'effect.first_ability_order_discount');
 

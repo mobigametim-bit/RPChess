@@ -206,6 +206,7 @@ function finalizeScenarioDeployment(gateInput) {
     identityMetadata: Object.freeze({ ...originalBattle.identities.metadata, ...unitMetadata }),
     statuses: originalBattle.statuses,
     abilities: originalBattle.abilities,
+    scenarioRules: originalBattle.scenarioRules,
     orderPoints: originalBattle.orderPoints,
     reserve: mergedReserve(gate, finalized),
     reserveCells

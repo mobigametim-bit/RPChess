@@ -532,8 +532,8 @@ function resolveAbilityCommand(state, command, factory) {
     events.push(statusAppliedEvent(state, applied.applied, entry.sourceId, factory));
     position = passActionPosition(position);
   } else if (entry.kind === 'hostage_tactic') {
-    const ownerApplied = applyOneStatus(statuses, entry.ownerId, 'bound', entry, state, { expiry: { kind: 'side_actions', remaining: 1 }, data: { hostageId: command.payload.targetId } });
-    const targetApplied = applyOneStatus(ownerApplied.state, command.payload.targetId, 'bound', entry, state, { expiry: { kind: 'side_actions', remaining: 1 }, data: { hostageId: entry.ownerId } });
+    const ownerApplied = applyOneStatus(statuses, entry.ownerId, 'bound', entry, state, { expiry: { kind: 'side_actions', remaining: 2 }, data: { hostageId: command.payload.targetId } });
+    const targetApplied = applyOneStatus(ownerApplied.state, command.payload.targetId, 'bound', entry, state, { expiry: { kind: 'side_actions', remaining: 2 }, data: { hostageId: entry.ownerId } });
     statuses = targetApplied.state;
     events.push(statusAppliedEvent(state, ownerApplied.applied, entry.sourceId, factory));
     events.push(statusAppliedEvent(state, targetApplied.applied, entry.sourceId, factory));

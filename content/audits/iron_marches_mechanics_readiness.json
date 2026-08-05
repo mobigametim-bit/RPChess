@@ -13,49 +13,139 @@
       "id": "ability.interpose",
       "heroId": "hero.aldric_wall",
       "name": "Перехват",
-      "status": "DECLARATIVE",
-      "uiAvailability": "disabled",
-      "reason": "Контент и описание существуют, но runtime-команда, точные цели, стоимость и правило однократного применения не определены исполняемым контрактом."
+      "status": "IMPLEMENTED",
+      "uiAvailability": "enabled",
+      "reason": "Механика исполняется детерминированным runtime-контрактом UseAbility/боевым пассивом, отображается в UI и покрыта регрессионными тестами.",
+      "evidence": [
+        {
+          "path": "src/combat/abilities.cjs",
+          "tokens": [
+            "interpose",
+            "guarded"
+          ]
+        },
+        {
+          "path": "tests/remaining-iron-marches-abilities.cjs",
+          "tokens": [
+            "ability.interpose"
+          ]
+        }
+      ]
     },
     {
       "id": "ability.chain_formation",
       "heroId": "hero.mara_chain",
       "name": "Цепное построение",
-      "status": "DECLARATIVE",
-      "uiAvailability": "disabled",
-      "reason": "Есть контентный идентификатор, но нет исполняемого обработчика и формального правила построения."
+      "status": "IMPLEMENTED",
+      "uiAvailability": "enabled",
+      "reason": "Механика исполняется детерминированным runtime-контрактом UseAbility/боевым пассивом, отображается в UI и покрыта регрессионными тестами.",
+      "evidence": [
+        {
+          "path": "src/combat/abilities.cjs",
+          "tokens": [
+            "chain_formation",
+            "FormationAdvanced"
+          ]
+        },
+        {
+          "path": "tests/remaining-iron-marches-abilities.cjs",
+          "tokens": [
+            "ability.chain_formation"
+          ]
+        }
+      ]
     },
     {
       "id": "ability.forge_line",
       "heroId": "hero.brother_orell",
       "name": "Линия кузни",
-      "status": "DECLARATIVE",
-      "uiAvailability": "disabled",
-      "reason": "Есть контентный идентификатор, но не определены точная геометрия линии, цели и runtime-эффект."
+      "status": "IMPLEMENTED",
+      "uiAvailability": "enabled",
+      "reason": "Механика исполняется детерминированным runtime-контрактом UseAbility/боевым пассивом, отображается в UI и покрыта регрессионными тестами.",
+      "evidence": [
+        {
+          "path": "src/combat/abilities.cjs",
+          "tokens": [
+            "forge_line",
+            "BoardTopologyChanged"
+          ]
+        },
+        {
+          "path": "tests/remaining-iron-marches-abilities.cjs",
+          "tokens": [
+            "ability.forge_line"
+          ]
+        }
+      ]
     },
     {
       "id": "ability.previewed_charge",
       "heroId": "hero.vael_hammer",
       "name": "Предсказанный натиск",
-      "status": "DECLARATIVE",
-      "uiAvailability": "disabled",
-      "reason": "Описание обещает ограниченный видимый натиск, но нет канонических дальности, цены, целей и обработчика."
+      "status": "IMPLEMENTED",
+      "uiAvailability": "enabled",
+      "reason": "Механика исполняется детерминированным runtime-контрактом UseAbility/боевым пассивом, отображается в UI и покрыта регрессионными тестами.",
+      "evidence": [
+        {
+          "path": "src/combat/abilities.cjs",
+          "tokens": [
+            "previewed_charge",
+            "PreviewedChargeCompleted"
+          ]
+        },
+        {
+          "path": "tests/remaining-iron-marches-abilities.cjs",
+          "tokens": [
+            "ability.previewed_charge"
+          ]
+        }
+      ]
     },
     {
       "id": "ability.hostage_tactic",
       "heroId": "hero.lady_sorn",
       "name": "Тактика заложника",
-      "status": "DECLARATIVE",
-      "uiAvailability": "disabled",
-      "reason": "Идентификатор присутствует в контенте, однако точный боевой эффект и условия применения не заданы."
+      "status": "IMPLEMENTED",
+      "uiAvailability": "enabled",
+      "reason": "Механика исполняется детерминированным runtime-контрактом UseAbility/боевым пассивом, отображается в UI и покрыта регрессионными тестами.",
+      "evidence": [
+        {
+          "path": "src/combat/abilities.cjs",
+          "tokens": [
+            "hostage_tactic",
+            "'bound'"
+          ]
+        },
+        {
+          "path": "tests/remaining-iron-marches-abilities.cjs",
+          "tokens": [
+            "ability.hostage_tactic"
+          ]
+        }
+      ]
     },
     {
       "id": "ability.gate_command",
       "heroId": "hero.tomas_gate",
       "name": "Команда ворот",
-      "status": "DECLARATIVE",
-      "uiAvailability": "disabled",
-      "reason": "Идентификатор присутствует, но управление воротами и связанная геометрия сценария не оформлены как runtime-команда."
+      "status": "IMPLEMENTED",
+      "uiAvailability": "enabled",
+      "reason": "Механика исполняется детерминированным runtime-контрактом UseAbility/боевым пассивом, отображается в UI и покрыта регрессионными тестами.",
+      "evidence": [
+        {
+          "path": "src/combat/abilities.cjs",
+          "tokens": [
+            "gate_command",
+            "BoardTopologyChanged"
+          ]
+        },
+        {
+          "path": "tests/remaining-iron-marches-abilities.cjs",
+          "tokens": [
+            "ability.gate_command"
+          ]
+        }
+      ]
     }
   ],
   "relicEffects": [
@@ -103,9 +193,24 @@
       "id": "effect.visible_evasion_after_non_capture",
       "relicId": "relic.phantom_spurs",
       "name": "Видимое уклонение после хода без взятия",
-      "status": "DECLARATIVE",
-      "uiAvailability": "disabled",
-      "reason": "Контентная ссылка существует, но статус, длительность, выбор клетки и обработчик отсутствуют."
+      "status": "IMPLEMENTED",
+      "uiAvailability": "enabled",
+      "reason": "Механика исполняется детерминированным runtime-контрактом UseAbility/боевым пассивом, отображается в UI и покрыта регрессионными тестами.",
+      "evidence": [
+        {
+          "path": "src/combat/iron-marches-hooks.cjs",
+          "tokens": [
+            "evasion_after_non_capture",
+            "'evasion'"
+          ]
+        },
+        {
+          "path": "tests/remaining-iron-marches-abilities.cjs",
+          "tokens": [
+            "effect.visible_evasion_after_non_capture"
+          ]
+        }
+      ]
     },
     {
       "id": "effect.place_adjacent_ward",
@@ -151,9 +256,9 @@
       "id": "effect.first_ability_order_discount",
       "relicId": "relic.twin_command",
       "name": "Скидка на первый приказ способности",
-      "status": "PARTIAL",
-      "uiAvailability": "limited",
-      "reason": "Общий детерминированный модификатор уже уменьшает стоимость первой способности владельца и расходуется, но уникальная способность Томаса пока не реализована и поэтому production-триггер ещё недоступен игроку.",
+      "status": "IMPLEMENTED",
+      "uiAvailability": "enabled",
+      "reason": "Скидка исполняется общим контуром активных способностей, а после реализации Команды ворот Томаса production-триггер достижим в каждом бою.",
       "evidence": [
         {
           "path": "src/combat/abilities.cjs",
@@ -184,17 +289,47 @@
       "id": "effect.conditional_early_promotion",
       "relicId": "relic.royal_decree",
       "name": "Условное раннее превращение",
-      "status": "DECLARATIVE",
-      "uiAvailability": "disabled",
-      "reason": "Условия раннего превращения и допустимые клетки не определены исполняемыми данными."
+      "status": "IMPLEMENTED",
+      "uiAvailability": "enabled",
+      "reason": "Механика исполняется детерминированным runtime-контрактом UseAbility/боевым пассивом, отображается в UI и покрыта регрессионными тестами.",
+      "evidence": [
+        {
+          "path": "src/combat/abilities.cjs",
+          "tokens": [
+            "early_promotion",
+            "PawnPromoted"
+          ]
+        },
+        {
+          "path": "tests/remaining-iron-marches-abilities.cjs",
+          "tokens": [
+            "effect.conditional_early_promotion"
+          ]
+        }
+      ]
     },
     {
       "id": "effect.order_after_voluntary_sacrifice",
       "relicId": "relic.oath_fallen",
       "name": "Приказ после добровольной жертвы",
-      "status": "DECLARATIVE",
-      "uiAvailability": "disabled",
-      "reason": "В runtime нет отдельного понятия добровольной жертвы и события, которое однозначно отличает её от обычной потери фигуры."
+      "status": "IMPLEMENTED",
+      "uiAvailability": "enabled",
+      "reason": "Механика исполняется детерминированным runtime-контрактом UseAbility/боевым пассивом, отображается в UI и покрыта регрессионными тестами.",
+      "evidence": [
+        {
+          "path": "src/combat/iron-marches-hooks.cjs",
+          "tokens": [
+            "VoluntarySacrificeResolved",
+            "voluntary_sacrifice"
+          ]
+        },
+        {
+          "path": "tests/remaining-iron-marches-abilities.cjs",
+          "tokens": [
+            "effect.order_after_voluntary_sacrifice"
+          ]
+        }
+      ]
     }
   ]
 }

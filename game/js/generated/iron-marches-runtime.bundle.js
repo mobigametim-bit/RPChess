@@ -1269,7 +1269,26 @@ var RPChessRuntime = (() => {
       var QUEEN_DIRECTIONS = [...BISHOP_DIRECTIONS, ...ROOK_DIRECTIONS];
       var PROMOTIONS = ["q", "r", "b", "n"];
       var inside = (x, y) => x >= 0 && x < 8 && y >= 0 && y < 8;
-      function isSquareAttacked(position, square, bySide) {
+      function normalizeRulesContext(options = {}) {
+        if (options && options.format === "rpchess-chess-rules-context") return options;
+        const source = options.blockedSquares || options.blocked || [];
+        if (!Array.isArray(source) && !(source instanceof Set)) throw new Error("blockedSquares must be an array or Set");
+        const blocked = /* @__PURE__ */ new Set();
+        for (const value of source) blocked.add(squareToIndex(value));
+        return Object.freeze({ format: "rpchess-chess-rules-context", blocked });
+      }
+      function isBlocked(context, square) {
+        return context.blocked.has(squareToIndex(square));
+      }
+      function assertNoPieceOnBlockedSquare(position, options = {}) {
+        const context = normalizeRulesContext(options);
+        for (const index of context.blocked) {
+          if (position.board[index]) throw new Error(`blocked square contains a piece: ${indexToSquare(index)}`);
+        }
+        return context;
+      }
+      function isSquareAttacked(position, square, bySide, options = {}) {
+        const context = normalizeRulesContext(options);
         const target = squareToIndex(square);
         const { x, y } = coordinates(target);
         const board = position.board;
@@ -1277,21 +1296,27 @@ var RPChessRuntime = (() => {
         const pawnSourceY = y - pawnDirection;
         for (const sourceX of [x - 1, x + 1]) {
           if (!inside(sourceX, pawnSourceY)) continue;
-          const candidate = board[indexOf(sourceX, pawnSourceY)];
+          const source = indexOf(sourceX, pawnSourceY);
+          if (isBlocked(context, source)) continue;
+          const candidate = board[source];
           if (candidate && candidate.side === bySide && candidate.type === "p") return true;
         }
         for (const [dx, dy] of KNIGHT_OFFSETS) {
           const sourceX = x + dx;
           const sourceY = y + dy;
           if (!inside(sourceX, sourceY)) continue;
-          const candidate = board[indexOf(sourceX, sourceY)];
+          const source = indexOf(sourceX, sourceY);
+          if (isBlocked(context, source)) continue;
+          const candidate = board[source];
           if (candidate && candidate.side === bySide && candidate.type === "n") return true;
         }
         for (const [dx, dy] of KING_OFFSETS) {
           const sourceX = x + dx;
           const sourceY = y + dy;
           if (!inside(sourceX, sourceY)) continue;
-          const candidate = board[indexOf(sourceX, sourceY)];
+          const source = indexOf(sourceX, sourceY);
+          if (isBlocked(context, source)) continue;
+          const candidate = board[source];
           if (candidate && candidate.side === bySide && candidate.type === "k") return true;
         }
         const scan = (directions, allowedTypes) => {
@@ -1299,7 +1324,9 @@ var RPChessRuntime = (() => {
             let sourceX = x + dx;
             let sourceY = y + dy;
             while (inside(sourceX, sourceY)) {
-              const candidate = board[indexOf(sourceX, sourceY)];
+              const source = indexOf(sourceX, sourceY);
+              if (isBlocked(context, source)) break;
+              const candidate = board[source];
               if (candidate) {
                 if (candidate.side === bySide && allowedTypes.includes(candidate.type)) return true;
                 break;
@@ -1312,10 +1339,10 @@ var RPChessRuntime = (() => {
         };
         return scan(BISHOP_DIRECTIONS, ["b", "q"]) || scan(ROOK_DIRECTIONS, ["r", "q"]);
       }
-      function isInCheck(position, side = position.sideToMove) {
+      function isInCheck(position, side = position.sideToMove, options = {}) {
         const king = findKing(position, side);
         if (king == null) throw new Error(`missing ${side} king`);
-        return isSquareAttacked(position, king, opposite(side));
+        return isSquareAttacked(position, king, opposite(side), options);
       }
       function createMove(from, to, options = {}) {
         return Object.freeze({
@@ -1328,35 +1355,41 @@ var RPChessRuntime = (() => {
           doublePawn: Boolean(options.doublePawn)
         });
       }
-      function addTargetMove(moves, position, moving, from, x, y, options = {}) {
+      function addTargetMove(moves, position, moving, from, x, y, options = {}, rules = {}) {
         if (!inside(x, y)) return false;
+        const context = normalizeRulesContext(rules);
         const to = indexOf(x, y);
+        if (isBlocked(context, to)) return false;
         const target = position.board[to];
         if (target && target.side === moving.side) return false;
         if (target && target.type === "k") return false;
         moves.push(createMove(from, to, { ...options, capture: Boolean(target) || options.enPassant }));
         return !target;
       }
-      function generatePawnMoves(position, from, moving, moves) {
+      function generatePawnMoves(position, from, moving, moves, rules = {}) {
+        const context = normalizeRulesContext(rules);
         const { x, y } = coordinates(from);
         const direction = moving.side === "w" ? -1 : 1;
         const startY = moving.side === "w" ? 6 : 1;
         const promotionY = moving.side === "w" ? 0 : 7;
         const forwardY = y + direction;
-        if (inside(x, forwardY) && !position.board[indexOf(x, forwardY)]) {
+        const forward = inside(x, forwardY) ? indexOf(x, forwardY) : null;
+        if (forward != null && !isBlocked(context, forward) && !position.board[forward]) {
           if (forwardY === promotionY) {
-            for (const promotion of PROMOTIONS) moves.push(createMove(from, indexOf(x, forwardY), { promotion }));
+            for (const promotion of PROMOTIONS) moves.push(createMove(from, forward, { promotion }));
           } else {
-            moves.push(createMove(from, indexOf(x, forwardY)));
+            moves.push(createMove(from, forward));
             const doubleY = y + direction * 2;
-            if (y === startY && !position.board[indexOf(x, doubleY)]) {
-              moves.push(createMove(from, indexOf(x, doubleY), { doublePawn: true }));
+            const double = inside(x, doubleY) ? indexOf(x, doubleY) : null;
+            if (y === startY && double != null && !isBlocked(context, double) && !position.board[double]) {
+              moves.push(createMove(from, double, { doublePawn: true }));
             }
           }
         }
         for (const captureX of [x - 1, x + 1]) {
           if (!inside(captureX, forwardY)) continue;
           const to = indexOf(captureX, forwardY);
+          if (isBlocked(context, to)) continue;
           const target = position.board[to];
           if (target && target.side !== moving.side && target.type !== "k") {
             if (forwardY === promotionY) {
@@ -1368,6 +1401,7 @@ var RPChessRuntime = (() => {
           }
           if (position.enPassant === to) {
             const capturedIndex = indexOf(captureX, y);
+            if (isBlocked(context, capturedIndex)) continue;
             const captured = position.board[capturedIndex];
             if (captured && captured.side !== moving.side && captured.type === "p") {
               moves.push(createMove(from, to, { capture: true, enPassant: true }));
@@ -1375,30 +1409,31 @@ var RPChessRuntime = (() => {
           }
         }
       }
-      function generateStepMoves(position, from, moving, moves, offsets) {
+      function generateStepMoves(position, from, moving, moves, offsets, rules = {}) {
         const { x, y } = coordinates(from);
-        for (const [dx, dy] of offsets) addTargetMove(moves, position, moving, from, x + dx, y + dy);
+        for (const [dx, dy] of offsets) addTargetMove(moves, position, moving, from, x + dx, y + dy, {}, rules);
       }
-      function generateSlidingMoves(position, from, moving, moves, directions) {
+      function generateSlidingMoves(position, from, moving, moves, directions, rules = {}) {
         const { x, y } = coordinates(from);
         for (const [dx, dy] of directions) {
           let targetX = x + dx;
           let targetY = y + dy;
           while (inside(targetX, targetY)) {
-            if (!addTargetMove(moves, position, moving, from, targetX, targetY)) break;
+            if (!addTargetMove(moves, position, moving, from, targetX, targetY, {}, rules)) break;
             targetX += dx;
             targetY += dy;
           }
         }
       }
-      function generateCastlingMoves(position, from, moving, moves) {
+      function generateCastlingMoves(position, from, moving, moves, rules = {}) {
         if (moving.type !== "k") return;
+        const context = normalizeRulesContext(rules);
         const white = moving.side === "w";
         const rankY = white ? 7 : 0;
         const kingStart = indexOf(4, rankY);
         if (from !== kingStart) return;
         const enemy = opposite(moving.side);
-        if (isSquareAttacked(position, kingStart, enemy)) return;
+        if (isSquareAttacked(position, kingStart, enemy, context)) return;
         const options = white ? [
           { right: "K", rookX: 7, emptyX: [5, 6], safeX: [5, 6], toX: 6, castle: "king" },
           { right: "Q", rookX: 0, emptyX: [1, 2, 3], safeX: [3, 2], toX: 2, castle: "queen" }
@@ -1410,25 +1445,29 @@ var RPChessRuntime = (() => {
           if (!position.castling.includes(option.right)) continue;
           const rook = position.board[indexOf(option.rookX, rankY)];
           if (!rook || rook.side !== moving.side || rook.type !== "r") continue;
-          if (option.emptyX.some((targetX) => position.board[indexOf(targetX, rankY)])) continue;
-          if (option.safeX.some((targetX) => isSquareAttacked(position, indexOf(targetX, rankY), enemy))) continue;
+          if (option.emptyX.some((targetX) => {
+            const index = indexOf(targetX, rankY);
+            return isBlocked(context, index) || position.board[index];
+          })) continue;
+          if (option.safeX.some((targetX) => isSquareAttacked(position, indexOf(targetX, rankY), enemy, context))) continue;
           moves.push(createMove(from, indexOf(option.toX, rankY), { castle: option.castle }));
         }
       }
-      function generatePseudoLegalMoves(position, side = position.sideToMove) {
+      function generatePseudoLegalMoves(position, side = position.sideToMove, options = {}) {
         validatePosition(position);
+        const context = assertNoPieceOnBlockedSquare(position, options);
         const moves = [];
         for (let from = 0; from < 64; from += 1) {
           const moving = position.board[from];
           if (!moving || moving.side !== side) continue;
-          if (moving.type === "p") generatePawnMoves(position, from, moving, moves);
-          else if (moving.type === "n") generateStepMoves(position, from, moving, moves, KNIGHT_OFFSETS);
-          else if (moving.type === "b") generateSlidingMoves(position, from, moving, moves, BISHOP_DIRECTIONS);
-          else if (moving.type === "r") generateSlidingMoves(position, from, moving, moves, ROOK_DIRECTIONS);
-          else if (moving.type === "q") generateSlidingMoves(position, from, moving, moves, QUEEN_DIRECTIONS);
+          if (moving.type === "p") generatePawnMoves(position, from, moving, moves, context);
+          else if (moving.type === "n") generateStepMoves(position, from, moving, moves, KNIGHT_OFFSETS, context);
+          else if (moving.type === "b") generateSlidingMoves(position, from, moving, moves, BISHOP_DIRECTIONS, context);
+          else if (moving.type === "r") generateSlidingMoves(position, from, moving, moves, ROOK_DIRECTIONS, context);
+          else if (moving.type === "q") generateSlidingMoves(position, from, moving, moves, QUEEN_DIRECTIONS, context);
           else if (moving.type === "k") {
-            generateStepMoves(position, from, moving, moves, KING_OFFSETS);
-            generateCastlingMoves(position, from, moving, moves);
+            generateStepMoves(position, from, moving, moves, KING_OFFSETS, context);
+            generateCastlingMoves(position, from, moving, moves, context);
           }
         }
         return moves;
@@ -1499,42 +1538,46 @@ var RPChessRuntime = (() => {
           fullmove: position.fullmove + (moving.side === "b" ? 1 : 0)
         });
       }
-      function generateLegalMoves(position) {
+      function generateLegalMoves(position, options = {}) {
+        const context = normalizeRulesContext(options);
         const side = position.sideToMove;
-        return generatePseudoLegalMoves(position, side).filter((move) => {
+        return generatePseudoLegalMoves(position, side, context).filter((move) => {
           const next = applyMoveUnchecked(position, move);
-          return !isInCheck(next, side);
+          return !isInCheck(next, side, context);
         });
       }
       function moveKey(move) {
         return `${squareToIndex(move.from)}:${squareToIndex(move.to)}:${move.promotion || ""}`;
       }
-      function makeMove(position, request) {
+      function makeMove(position, request, options = {}) {
         const desired = {
           from: squareToIndex(request.from),
           to: squareToIndex(request.to),
           promotion: request.promotion || null
         };
-        const match = generateLegalMoves(position).find((move) => moveKey(move) === moveKey(desired));
+        const match = generateLegalMoves(position, options).find((move) => moveKey(move) === moveKey(desired));
         if (!match) throw new Error(`illegal move: ${indexToSquare(desired.from)}${indexToSquare(desired.to)}${desired.promotion || ""}`);
         return { position: applyMoveUnchecked(position, match), move: match };
       }
-      function gameStatus(position) {
-        const legalMoves = generateLegalMoves(position);
-        const check = isInCheck(position, position.sideToMove);
+      function gameStatus(position, options = {}) {
+        const legalMoves = generateLegalMoves(position, options);
+        const check = isInCheck(position, position.sideToMove, options);
         if (legalMoves.length) return { state: check ? "check" : "active", check, legalMoves: legalMoves.length };
         return { state: check ? "checkmate" : "stalemate", check, legalMoves: 0, winner: check ? opposite(position.sideToMove) : null };
       }
-      function perft(position, depth) {
+      function perft(position, depth, options = {}) {
         if (!Number.isInteger(depth) || depth < 0) throw new RangeError("perft depth must be a non-negative integer");
         if (depth === 0) return 1;
         let nodes = 0;
-        for (const move of generateLegalMoves(position)) nodes += perft(applyMoveUnchecked(position, move), depth - 1);
+        for (const move of generateLegalMoves(position, options)) nodes += perft(applyMoveUnchecked(position, move), depth - 1, options);
         return nodes;
       }
       module.exports = {
         PROMOTIONS,
         createMove,
+        normalizeRulesContext,
+        isBlocked,
+        assertNoPieceOnBlockedSquare,
         isSquareAttacked,
         isInCheck,
         generatePseudoLegalMoves,
@@ -1596,7 +1639,7 @@ var RPChessRuntime = (() => {
         indexToSquare,
         createPosition
       } = require_position();
-      var { isInCheck } = require_rules();
+      var { isInCheck, normalizeRulesContext, isBlocked } = require_rules();
       var { spendOrderPoints } = require_order_points();
       function normalizeReserve(entries = []) {
         if (!Array.isArray(entries)) throw new TypeError("reserve must be an array");
@@ -1632,11 +1675,13 @@ var RPChessRuntime = (() => {
       }
       function deployReserve(options) {
         const { position, reserve, reserveCells, orderPoints, entryId, square } = options;
+        const rules = normalizeRulesContext(options.rules || {});
         const entry = findReserveEntry(reserve, entryId);
         if (entry.side !== position.sideToMove) throw new Error(`${entryId} cannot deploy on ${position.sideToMove} action`);
         const target = indexToSquare(squareToIndex(square));
         if (!(reserveCells[entry.side] || []).includes(target)) throw new Error(`${target} is not a legal reserve cell`);
         const targetIndex = squareToIndex(target);
+        if (isBlocked(rules, targetIndex)) throw new Error(`${target} is blocked by the scenario environment`);
         if (position.board[targetIndex]) throw new Error(`${target} is occupied`);
         const spent = spendOrderPoints(orderPoints[entry.side], entry.orderCost, "reserve_deployment");
         const board = position.board.slice();
@@ -1649,7 +1694,7 @@ var RPChessRuntime = (() => {
           halfmove: position.halfmove + 1,
           fullmove: position.fullmove + (entry.side === "b" ? 1 : 0)
         });
-        if (isInCheck(nextPosition, entry.side)) throw new Error("reserve deployment leaves own king in check");
+        if (isInCheck(nextPosition, entry.side, rules)) throw new Error("reserve deployment leaves own king in check");
         return Object.freeze({
           position: nextPosition,
           reserve: Object.freeze(reserve.filter((candidate) => candidate.id !== entryId)),
@@ -1668,7 +1713,7 @@ var RPChessRuntime = (() => {
           if (orderPoints[side].current < entry.orderCost) continue;
           for (const square of reserveCells[side] || []) {
             try {
-              deployReserve({ position, reserve, reserveCells, orderPoints, entryId: entry.id, square });
+              deployReserve({ ...options, position, reserve, reserveCells, orderPoints, entryId: entry.id, square });
               commands.push(Object.freeze({ type: "DeployReserve", payload: Object.freeze({ entryId: entry.id, square }) }));
             } catch (error) {
             }
@@ -1822,6 +1867,9 @@ var RPChessRuntime = (() => {
       "use strict";
       var STATUS_DEFINITIONS = Object.freeze({
         ward: Object.freeze({ id: "ward", category: "primary", visible: true, geometryChange: false, defaultExpiry: null, consumable: true }),
+        evasion: Object.freeze({ id: "evasion", category: "primary", visible: true, geometryChange: false, defaultExpiry: null, consumable: true }),
+        guarded: Object.freeze({ id: "guarded", category: "primary", visible: true, geometryChange: false, defaultExpiry: null, consumable: true }),
+        offered: Object.freeze({ id: "offered", category: "primary", visible: true, geometryChange: false, defaultExpiry: Object.freeze({ kind: "actions", remaining: 2 }), consumable: false }),
         marked: Object.freeze({ id: "marked", category: "primary", visible: true, geometryChange: false, defaultExpiry: Object.freeze({ kind: "side_actions", remaining: 2 }), consumable: false }),
         bound: Object.freeze({ id: "bound", category: "primary", visible: true, geometryChange: false, defaultExpiry: Object.freeze({ kind: "side_actions", remaining: 1 }), consumable: false }),
         silenced: Object.freeze({ id: "silenced", category: "primary", visible: true, geometryChange: false, defaultExpiry: Object.freeze({ kind: "side_actions", remaining: 2 }), consumable: false }),
@@ -1957,26 +2005,48 @@ var RPChessRuntime = (() => {
     "src/combat/abilities.cjs"(exports, module) {
       "use strict";
       var {
+        opposite,
         coordinates,
         indexOf,
         indexToSquare,
         squareToIndex,
-        createPosition,
-        opposite
+        createPosition
       } = require_position();
-      var { gameStatus, isInCheck } = require_rules();
+      var {
+        generateLegalMoves,
+        makeMove,
+        gameStatus,
+        isInCheck,
+        isSquareAttacked,
+        normalizeRulesContext
+      } = require_rules();
       var { identityAt } = require_identity();
       var { statusFor, hasStatus, applyPrimaryStatus } = require_statuses();
       var { spendOrderPoints } = require_order_points();
       var ABILITY_STATE_FORMAT = "rpchess-ability-state";
-      var ABILITY_STATE_SCHEMA_VERSION = 1;
-      var SUPPORTED_KINDS = Object.freeze(["place_adjacent_ward"]);
+      var ABILITY_STATE_SCHEMA_VERSION = 2;
       var FIRST_ABILITY_DISCOUNT = "effect.first_ability_order_discount";
+      var SUPPORTED_KINDS = Object.freeze([
+        "place_adjacent_ward",
+        "interpose",
+        "chain_formation",
+        "forge_line",
+        "previewed_charge",
+        "hostage_tactic",
+        "gate_command",
+        "early_promotion",
+        "declare_sacrifice"
+      ]);
+      var PASSIVE_KINDS = Object.freeze(["evasion_after_non_capture"]);
+      var QUEEN_DIRECTIONS = Object.freeze([[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]);
       function freezeArray(values) {
         return Object.freeze(values.slice());
       }
       function freezeRecord(record) {
         return Object.freeze({ ...record });
+      }
+      function rulesForState(state) {
+        return normalizeRulesContext(state.scenarioRules || {});
       }
       function normalizeEntry(raw, index) {
         if (!raw || typeof raw !== "object") throw new TypeError(`ability entry ${index} must be an object`);
@@ -1989,12 +2059,16 @@ var RPChessRuntime = (() => {
         if (!instanceId || !abilityId || !effectId || !ownerId) throw new Error(`ability entry ${index} requires stable ids`);
         if (!["w", "b"].includes(side)) throw new Error(`${instanceId} requires side w or b`);
         if (!SUPPORTED_KINDS.includes(kind)) throw new Error(`${instanceId} has unsupported kind: ${kind}`);
-        const orderCost = Number(raw.orderCost);
+        const orderCost = Number(raw.orderCost ?? 0);
         const maxUses = Number(raw.maxUses ?? 1);
         const used = Number(raw.used ?? 0);
+        const cooldownActions = Number(raw.cooldownActions ?? 0);
+        const lastUsedAction = raw.lastUsedAction == null ? null : Number(raw.lastUsedAction);
         if (!Number.isInteger(orderCost) || orderCost < 0) throw new Error(`${instanceId} requires a non-negative orderCost`);
         if (!Number.isInteger(maxUses) || maxUses < 1) throw new Error(`${instanceId} requires a positive maxUses`);
         if (!Number.isInteger(used) || used < 0 || used > maxUses) throw new Error(`${instanceId} has invalid used count`);
+        if (!Number.isInteger(cooldownActions) || cooldownActions < 0) throw new Error(`${instanceId} has invalid cooldownActions`);
+        if (lastUsedAction != null && (!Number.isInteger(lastUsedAction) || lastUsedAction < 0)) throw new Error(`${instanceId} has invalid lastUsedAction`);
         return freezeRecord({
           instanceId,
           abilityId,
@@ -2005,7 +2079,10 @@ var RPChessRuntime = (() => {
           kind,
           orderCost,
           maxUses,
-          used
+          used,
+          cooldownActions,
+          lastUsedAction,
+          data: freezeRecord(raw.data || {})
         });
       }
       function normalizeModifier(raw, index) {
@@ -2019,23 +2096,45 @@ var RPChessRuntime = (() => {
         if (!Number.isInteger(amount) || amount < 1) throw new Error(`${instanceId} requires a positive discount amount`);
         return freezeRecord({ instanceId, effectId, ownerId, amount, consumed: Boolean(raw.consumed) });
       }
+      function normalizePassive(raw, index) {
+        if (!raw || typeof raw !== "object") throw new TypeError(`ability passive ${index} must be an object`);
+        const instanceId = String(raw.instanceId || "");
+        const effectId = String(raw.effectId || "");
+        const ownerId = String(raw.ownerId || "");
+        const side = String(raw.side || "");
+        const kind = String(raw.kind || "");
+        if (!instanceId || !effectId || !ownerId) throw new Error(`ability passive ${index} requires stable ids`);
+        if (!["w", "b"].includes(side)) throw new Error(`${instanceId} requires side w or b`);
+        if (!PASSIVE_KINDS.includes(kind)) throw new Error(`${instanceId} has unsupported passive kind: ${kind}`);
+        return freezeRecord({
+          instanceId,
+          effectId,
+          sourceId: String(raw.sourceId || effectId),
+          ownerId,
+          side,
+          kind,
+          consumed: Boolean(raw.consumed),
+          data: freezeRecord(raw.data || {})
+        });
+      }
       function createAbilityState(input = {}) {
-        if (input && input.format === ABILITY_STATE_FORMAT) {
-          if (input.schemaVersion !== ABILITY_STATE_SCHEMA_VERSION) throw new Error("unsupported ability state schema");
+        if (input && input.format === ABILITY_STATE_FORMAT && ![1, 2].includes(input.schemaVersion)) {
+          throw new Error("unsupported ability state schema");
         }
         const entriesInput = Array.isArray(input) ? input : input.entries || [];
         const modifiersInput = Array.isArray(input) ? [] : input.modifiers || [];
+        const passivesInput = Array.isArray(input) ? [] : input.passives || [];
         const entries = entriesInput.map(normalizeEntry);
         const modifiers = modifiersInput.map(normalizeModifier);
-        const ids = entries.map((entry) => entry.instanceId);
-        const modifierIds = modifiers.map((modifier) => modifier.instanceId);
+        const passives = passivesInput.map(normalizePassive);
+        const ids = [...entries, ...modifiers, ...passives].map((record) => record.instanceId);
         if (new Set(ids).size !== ids.length) throw new Error("ability instance IDs must be unique");
-        if (new Set(modifierIds).size !== modifierIds.length) throw new Error("ability modifier IDs must be unique");
         return Object.freeze({
           format: ABILITY_STATE_FORMAT,
           schemaVersion: ABILITY_STATE_SCHEMA_VERSION,
           entries: freezeArray(entries),
-          modifiers: freezeArray(modifiers)
+          modifiers: freezeArray(modifiers),
+          passives: freezeArray(passives)
         });
       }
       function activeSquare(identities, pieceId) {
@@ -2061,10 +2160,18 @@ var RPChessRuntime = (() => {
         }
         return result;
       }
-      function wardTargets(state, entry) {
+      function cooldownReady(state, entry) {
+        return entry.lastUsedAction == null || state.actionIndex - entry.lastUsedAction >= entry.cooldownActions;
+      }
+      function ownerReady(state, entry) {
+        const square = activeSquare(state.identities, entry.ownerId);
+        if (!square || entry.side !== state.position.sideToMove || entry.used >= entry.maxUses || !cooldownReady(state, entry)) return null;
+        if (hasStatus(state.statuses, entry.ownerId, "silenced") || hasStatus(state.statuses, entry.ownerId, "bound")) return null;
+        return square;
+      }
+      function alliedStatusTargets(state, entry) {
         const ownerSquare = activeSquare(state.identities, entry.ownerId);
         if (!ownerSquare) return [];
-        if (hasStatus(state.statuses, entry.ownerId, "silenced")) return [];
         const targets = [];
         for (const square of adjacentSquares(ownerSquare)) {
           const boardPiece = state.position.board[squareToIndex(square)];
@@ -2075,19 +2182,185 @@ var RPChessRuntime = (() => {
         }
         return targets;
       }
+      function chainFormationTargets(state, entry) {
+        const ownerSquare = activeSquare(state.identities, entry.ownerId);
+        if (!ownerSquare) return [];
+        const ownerIndex = squareToIndex(ownerSquare);
+        const ownerPiece = state.position.board[ownerIndex];
+        if (!ownerPiece || ownerPiece.type !== "p") return [];
+        const { x, y } = coordinates(ownerIndex);
+        const direction = ownerPiece.side === "w" ? -1 : 1;
+        const nextY = y + direction;
+        if (nextY < 0 || nextY > 7) return [];
+        const rules = rulesForState(state);
+        const result = [];
+        for (const allyX of [x - 1, x + 1]) {
+          if (allyX < 0 || allyX > 7) continue;
+          const allyFromIndex = indexOf(allyX, y);
+          const ally = state.position.board[allyFromIndex];
+          if (!ally || ally.side !== entry.side || ally.type !== "p") continue;
+          const ownerToIndex = indexOf(x, nextY);
+          const allyToIndex = indexOf(allyX, nextY);
+          if (rules.blocked.has(ownerToIndex) || rules.blocked.has(allyToIndex) || state.position.board[ownerToIndex] || state.position.board[allyToIndex]) continue;
+          const allyFrom = indexToSquare(allyFromIndex);
+          const allyId = identityAt(state.identities, allyFrom);
+          if (!allyId || hasStatus(state.statuses, allyId, "bound")) continue;
+          const board = state.position.board.slice();
+          board[ownerIndex] = null;
+          board[allyFromIndex] = null;
+          board[ownerToIndex] = ownerPiece;
+          board[allyToIndex] = ally;
+          const projected = createPosition({
+            board,
+            sideToMove: opposite(entry.side),
+            castling: state.position.castling,
+            enPassant: null,
+            halfmove: 0,
+            fullmove: state.position.fullmove + (entry.side === "b" ? 1 : 0)
+          });
+          if (isInCheck(projected, entry.side, rules)) continue;
+          result.push(Object.freeze({ ownerFrom: ownerSquare, ownerTo: indexToSquare(ownerToIndex), allyId, allyFrom, allyTo: indexToSquare(allyToIndex) }));
+        }
+        return result;
+      }
+      function forgeLineTargets(state, entry) {
+        const ownerSquare = activeSquare(state.identities, entry.ownerId);
+        if (!ownerSquare) return [];
+        const ownerIndex = squareToIndex(ownerSquare);
+        const owner = state.position.board[ownerIndex];
+        if (!owner || owner.type !== "b") return [];
+        const { x, y } = coordinates(ownerIndex);
+        const rules = rulesForState(state);
+        const result = [];
+        for (const [dx, dy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+          for (let step = 1; step <= 3; step += 1) {
+            const nx = x + dx * step;
+            const ny = y + dy * step;
+            if (nx < 0 || nx > 7 || ny < 0 || ny > 7) break;
+            const target = indexOf(nx, ny);
+            if (state.position.board[target] || rules.blocked.has(target)) break;
+            result.push(Object.freeze({ targetSquare: indexToSquare(target), operation: "add" }));
+          }
+        }
+        return result;
+      }
+      function previewedChargeTargets(state, entry) {
+        const ownerSquare = activeSquare(state.identities, entry.ownerId);
+        if (!ownerSquare) return [];
+        const ownerIndex = squareToIndex(ownerSquare);
+        const owner = state.position.board[ownerIndex];
+        if (!owner || owner.type !== "n") return [];
+        const rules = rulesForState(state);
+        const firstMoves = generateLegalMoves(state.position, rules).filter((move) => move.from === ownerIndex && !move.capture);
+        const result = [];
+        for (const first of firstMoves) {
+          const firstResult = makeMove(state.position, { from: ownerSquare, to: indexToSquare(first.to) }, rules);
+          const continuation = createPosition({
+            board: firstResult.position.board,
+            sideToMove: entry.side,
+            castling: firstResult.position.castling,
+            enPassant: null,
+            halfmove: firstResult.position.halfmove,
+            fullmove: state.position.fullmove
+          });
+          const secondMoves = generateLegalMoves(continuation, rules).filter((move) => move.from === first.to && !move.capture && move.to !== ownerIndex);
+          for (const second of secondMoves) result.push(Object.freeze({ from: ownerSquare, via: indexToSquare(first.to), to: indexToSquare(second.to) }));
+        }
+        return result;
+      }
+      function hostageTargets(state, entry) {
+        const ownerSquare = activeSquare(state.identities, entry.ownerId);
+        if (!ownerSquare || statusFor(state.statuses, entry.ownerId)) return [];
+        const ownerIndex = squareToIndex(ownerSquare);
+        const owner = state.position.board[ownerIndex];
+        if (!owner || owner.type !== "q") return [];
+        const { x, y } = coordinates(ownerIndex);
+        const rules = rulesForState(state);
+        const result = [];
+        for (const [dx, dy] of QUEEN_DIRECTIONS) {
+          for (let step = 1; step <= 3; step += 1) {
+            const nx = x + dx * step;
+            const ny = y + dy * step;
+            if (nx < 0 || nx > 7 || ny < 0 || ny > 7) break;
+            const targetIndex = indexOf(nx, ny);
+            if (rules.blocked.has(targetIndex)) break;
+            const target = state.position.board[targetIndex];
+            if (!target) continue;
+            if (target.side !== entry.side && target.type !== "k") {
+              const targetSquare = indexToSquare(targetIndex);
+              const targetId = identityAt(state.identities, targetSquare);
+              if (targetId && !statusFor(state.statuses, targetId)) result.push(Object.freeze({ targetId, targetSquare }));
+            }
+            break;
+          }
+        }
+        return result;
+      }
+      function gateTargets(state, entry) {
+        const ownerSquare = activeSquare(state.identities, entry.ownerId);
+        if (!ownerSquare) return [];
+        const rules = rulesForState(state);
+        const authored = Array.isArray(entry.data.gateSquares) ? entry.data.gateSquares : [];
+        const candidates = authored.length ? authored : adjacentSquares(ownerSquare);
+        const result = [];
+        for (const square of candidates) {
+          const index = squareToIndex(square);
+          const blocked = rules.blocked.has(index);
+          if (!blocked && state.position.board[index]) continue;
+          result.push(Object.freeze({ targetSquare: indexToSquare(index), operation: blocked ? "remove" : "add" }));
+        }
+        return result;
+      }
+      function earlyPromotionTargets(state, entry) {
+        const ownerSquare = activeSquare(state.identities, entry.ownerId);
+        if (!ownerSquare) return [];
+        const index = squareToIndex(ownerSquare);
+        const owner = state.position.board[index];
+        if (!owner || owner.type !== "p") return [];
+        const { x, y } = coordinates(index);
+        if (y !== (owner.side === "w" ? 1 : 6)) return [];
+        const to = indexOf(x, y + (owner.side === "w" ? -1 : 1));
+        const rules = rulesForState(state);
+        if (rules.blocked.has(to) || state.position.board[to]) return [];
+        const targetSquare = indexToSquare(to);
+        return ["r", "b", "n"].map((promotion) => Object.freeze({ from: ownerSquare, to: targetSquare, promotion }));
+      }
+      function sacrificeTargets(state, entry) {
+        const rules = rulesForState(state);
+        const enemy = opposite(entry.side);
+        const result = [];
+        for (const [square, targetId] of Object.entries(state.identities.bySquare)) {
+          const boardPiece = state.position.board[squareToIndex(square)];
+          if (!boardPiece || boardPiece.side !== entry.side || boardPiece.type === "k" || targetId === entry.ownerId) continue;
+          if (statusFor(state.statuses, targetId)) continue;
+          if (isSquareAttacked(state.position, square, enemy, rules)) result.push(Object.freeze({ targetId, targetSquare: square }));
+        }
+        return result;
+      }
+      function targetsForEntry(state, entry) {
+        if (entry.kind === "place_adjacent_ward" || entry.kind === "interpose") return alliedStatusTargets(state, entry);
+        if (entry.kind === "chain_formation") return chainFormationTargets(state, entry);
+        if (entry.kind === "forge_line") return forgeLineTargets(state, entry);
+        if (entry.kind === "previewed_charge") return previewedChargeTargets(state, entry);
+        if (entry.kind === "hostage_tactic") return hostageTargets(state, entry);
+        if (entry.kind === "gate_command") return gateTargets(state, entry);
+        if (entry.kind === "early_promotion") return earlyPromotionTargets(state, entry);
+        if (entry.kind === "declare_sacrifice") return sacrificeTargets(state, entry);
+        return [];
+      }
       function legalAbilityCommands(state) {
         const abilities = state.abilities && state.abilities.format === ABILITY_STATE_FORMAT ? state.abilities : createAbilityState();
-        if (state.status !== "active" || isInCheck(state.position, state.position.sideToMove)) return [];
+        const rules = rulesForState(state);
+        if (state.status !== "active" || isInCheck(state.position, state.position.sideToMove, rules)) return [];
         const side = state.position.sideToMove;
         const pool = state.orderPoints?.[side];
         if (!pool) return [];
         const commands = [];
         for (const entry of abilities.entries) {
-          if (entry.side !== side || entry.used >= entry.maxUses || !activeSquare(state.identities, entry.ownerId)) continue;
+          if (!ownerReady(state, entry)) continue;
           const cost = effectiveOrderCost(abilities, entry);
           if (pool.current < cost) continue;
-          const targets = entry.kind === "place_adjacent_ward" ? wardTargets(state, entry) : [];
-          for (const target of targets) {
+          for (const target of targetsForEntry(state, entry)) {
             commands.push(Object.freeze({
               type: "UseAbility",
               payload: Object.freeze({
@@ -2096,20 +2369,22 @@ var RPChessRuntime = (() => {
                 effectId: entry.effectId,
                 sourceId: entry.sourceId,
                 ownerId: entry.ownerId,
-                targetId: target.targetId,
-                targetSquare: target.targetSquare,
                 baseOrderCost: entry.orderCost,
-                effectiveOrderCost: cost
+                effectiveOrderCost: cost,
+                ...target
               })
             }));
           }
         }
         return freezeArray(commands);
       }
+      function commandKey(payload) {
+        return JSON.stringify(Object.fromEntries(Object.entries(payload || {}).sort(([a], [b]) => a.localeCompare(b))));
+      }
       function normalizeAbilityRequest(state, request) {
         if (!request || request.type !== "UseAbility") throw new Error("UseAbility request is required");
-        const payload = request.payload || {};
-        const command = legalAbilityCommands(state).find((candidate) => candidate.payload.instanceId === payload.instanceId && candidate.payload.abilityId === payload.abilityId && candidate.payload.ownerId === payload.ownerId && candidate.payload.targetId === payload.targetId && candidate.payload.targetSquare === payload.targetSquare);
+        const requested = commandKey(request.payload);
+        const command = legalAbilityCommands(state).find((candidate) => commandKey(candidate.payload) === requested);
         if (!command) throw new Error("ability command is not currently legal");
         return command;
       }
@@ -2124,30 +2399,23 @@ var RPChessRuntime = (() => {
           fullmove: position.fullmove + (actingSide === "b" ? 1 : 0)
         });
       }
-      function outcomeForStatus(state, position, identities, factory, events) {
-        const status = gameStatus(position);
+      function identityMove(identities, changes) {
+        const bySquare = { ...identities.bySquare };
+        for (const change of changes) delete bySquare[change.from];
+        for (const change of changes) bySquare[change.to] = change.pieceId;
+        return Object.freeze({ ...identities, bySquare: Object.freeze(bySquare) });
+      }
+      function outcomeForStatus(state, position, identities, scenarioRules, factory, events) {
+        const status = gameStatus(position, scenarioRules || {});
         if (status.state === "check") {
           const kingIndex = position.board.findIndex((value) => value && value.side === position.sideToMove && value.type === "k");
           const kingSquare = indexToSquare(kingIndex);
-          events.push(factory.event("KingChecked", {
-            battleId: state.battleId,
-            checkedSide: position.sideToMove,
-            kingSquare,
-            kingId: identityAt(identities, kingSquare)
-          }));
+          events.push(factory.event("KingChecked", { battleId: state.battleId, checkedSide: position.sideToMove, kingSquare, kingId: identityAt(identities, kingSquare) }));
           return { status: "active", result: null };
         }
         if (status.state === "checkmate") {
-          const result = {
-            outcome: status.winner === state.playerSide ? "victory" : "defeat",
-            winner: status.winner,
-            reason: "checkmate"
-          };
-          events.push(factory.event("CheckmateDeclared", {
-            battleId: state.battleId,
-            winner: status.winner,
-            loser: position.sideToMove
-          }));
+          const result = { outcome: status.winner === state.playerSide ? "victory" : "defeat", winner: status.winner, reason: "checkmate" };
+          events.push(factory.event("CheckmateDeclared", { battleId: state.battleId, winner: status.winner, loser: position.sideToMove }));
           events.push(factory.event("BattleCompleted", { battleId: state.battleId, ...result }));
           return { status: "completed", result };
         }
@@ -2159,11 +2427,47 @@ var RPChessRuntime = (() => {
         }
         return { status: "active", result: null };
       }
-      function updateAbilityState(abilities, entry, modifier) {
+      function abilityStateAfterUse(abilities, entry, modifier, actionIndex) {
         return createAbilityState({
-          entries: abilities.entries.map((candidate) => candidate.instanceId === entry.instanceId ? { ...candidate, used: candidate.used + 1 } : candidate),
-          modifiers: abilities.modifiers.map((candidate) => modifier && candidate.instanceId === modifier.instanceId ? { ...candidate, consumed: true } : candidate)
+          entries: abilities.entries.map((candidate) => candidate.instanceId === entry.instanceId ? { ...candidate, used: candidate.used + 1, lastUsedAction: actionIndex } : candidate),
+          modifiers: abilities.modifiers.map((candidate) => modifier && candidate.instanceId === modifier.instanceId ? { ...candidate, consumed: true } : candidate),
+          passives: abilities.passives
         });
+      }
+      function statusAppliedEvent(state, applied, sourceId, factory) {
+        return factory.event("StatusApplied", { battleId: state.battleId, pieceId: applied.pieceId, statusId: applied.id, sourceId, expiry: applied.expiry });
+      }
+      function applyOneStatus(statuses, pieceId, statusId, entry, state, options = {}) {
+        return applyPrimaryStatus(statuses, pieceId, statusId, {
+          sourceId: entry.sourceId,
+          actionIndex: state.actionIndex,
+          ...Object.prototype.hasOwnProperty.call(options, "expiry") ? { expiry: options.expiry } : {},
+          data: { abilityId: entry.abilityId, effectId: entry.effectId, ownerId: entry.ownerId, ...options.data || {} }
+        });
+      }
+      function normalizeScenarioRules(state) {
+        const existing = state.scenarioRules || {};
+        return Object.freeze({
+          ...existing,
+          baseBlockedSquares: freezeArray(existing.baseBlockedSquares || existing.blockedSquares || []),
+          blockedSquares: freezeArray(existing.blockedSquares || []),
+          blockers: freezeArray(existing.blockers || [])
+        });
+      }
+      function toggleBlocker(state, entry, payload) {
+        const rules = normalizeScenarioRules(state);
+        const blockers = rules.blockers.filter((record) => record.square !== payload.targetSquare);
+        if (payload.operation === "add") {
+          blockers.push(Object.freeze({
+            square: payload.targetSquare,
+            sourceId: entry.sourceId,
+            ownerId: entry.ownerId,
+            kind: entry.kind,
+            expiresAfterAction: entry.kind === "forge_line" ? state.actionIndex + 3 : null
+          }));
+        }
+        const blockedSquares = [.../* @__PURE__ */ new Set([...rules.baseBlockedSquares, ...blockers.map((record) => record.square)])];
+        return Object.freeze({ ...rules, blockedSquares: freezeArray(blockedSquares), blockers: freezeArray(blockers) });
       }
       function resolveAbilityCommand(state, command, factory) {
         const abilities = state.abilities && state.abilities.format === ABILITY_STATE_FORMAT ? state.abilities : createAbilityState();
@@ -2173,76 +2477,216 @@ var RPChessRuntime = (() => {
         const cost = effectiveOrderCost(abilities, entry);
         const spending = spendOrderPoints(state.orderPoints[entry.side], cost, `ability:${entry.abilityId}`);
         const orderPoints = Object.freeze({ ...state.orderPoints, [entry.side]: spending.pool });
-        const applied = applyPrimaryStatus(state.statuses, command.payload.targetId, "ward", {
+        let position = state.position;
+        let identities = state.identities;
+        let statuses = state.statuses;
+        let scenarioRules = state.scenarioRules || null;
+        const events = [factory.event("AbilityUsed", {
+          battleId: state.battleId,
+          abilityId: entry.abilityId,
+          effectId: entry.effectId,
           sourceId: entry.sourceId,
-          actionIndex: state.actionIndex,
-          data: { abilityId: entry.abilityId, effectId: entry.effectId, ownerId: entry.ownerId }
-        });
-        const events = [
-          factory.event("AbilityUsed", {
-            battleId: state.battleId,
-            abilityId: entry.abilityId,
-            effectId: entry.effectId,
-            sourceId: entry.sourceId,
-            ownerId: entry.ownerId,
-            targetId: command.payload.targetId,
-            targetSquare: command.payload.targetSquare,
-            baseOrderCost: entry.orderCost,
-            effectiveOrderCost: cost,
-            useNumber: entry.used + 1,
-            maxUses: entry.maxUses
-          }),
-          factory.event("StatusApplied", {
-            battleId: state.battleId,
-            pieceId: command.payload.targetId,
-            statusId: "ward",
-            sourceId: entry.sourceId,
-            expiry: applied.applied.expiry
-          }),
-          factory.event("OrderPointsChanged", {
-            battleId: state.battleId,
-            side: entry.side,
-            changedBy: spending.changedBy,
-            current: spending.pool.current,
-            reason: `ability:${entry.abilityId}`
-          })
-        ];
-        if (modifier) {
-          events.push(factory.event("RelicEffectConsumed", {
-            battleId: state.battleId,
-            effectId: modifier.effectId,
-            ownerId: modifier.ownerId,
-            amount: modifier.amount,
-            reason: "first_ability_order_discount"
-          }));
+          ownerId: entry.ownerId,
+          targetId: command.payload.targetId || null,
+          targetSquare: command.payload.targetSquare || command.payload.to || null,
+          baseOrderCost: entry.orderCost,
+          effectiveOrderCost: cost,
+          useNumber: entry.used + 1,
+          maxUses: entry.maxUses,
+          preview: command.payload
+        })];
+        if (entry.kind === "place_adjacent_ward" || entry.kind === "interpose") {
+          const statusId = entry.kind === "interpose" ? "guarded" : "ward";
+          const applied = applyOneStatus(statuses, command.payload.targetId, statusId, entry, state, {
+            data: entry.kind === "interpose" ? { guardianId: entry.ownerId } : {}
+          });
+          statuses = applied.state;
+          events.push(statusAppliedEvent(state, applied.applied, entry.sourceId, factory));
+          position = passActionPosition(position);
+        } else if (entry.kind === "hostage_tactic") {
+          const ownerApplied = applyOneStatus(statuses, entry.ownerId, "bound", entry, state, { expiry: { kind: "side_actions", remaining: 2 }, data: { hostageId: command.payload.targetId } });
+          const targetApplied = applyOneStatus(ownerApplied.state, command.payload.targetId, "bound", entry, state, { expiry: { kind: "side_actions", remaining: 2 }, data: { hostageId: entry.ownerId } });
+          statuses = targetApplied.state;
+          events.push(statusAppliedEvent(state, ownerApplied.applied, entry.sourceId, factory));
+          events.push(statusAppliedEvent(state, targetApplied.applied, entry.sourceId, factory));
+          position = passActionPosition(position);
+        } else if (entry.kind === "declare_sacrifice") {
+          const applied = applyOneStatus(statuses, command.payload.targetId, "offered", entry, state, {
+            expiry: { kind: "actions", remaining: 2 },
+            data: { rewardSide: entry.side, rewardOrders: 2 }
+          });
+          statuses = applied.state;
+          events.push(statusAppliedEvent(state, applied.applied, entry.sourceId, factory));
+          position = passActionPosition(position);
+        } else if (entry.kind === "chain_formation") {
+          const board = position.board.slice();
+          const ownerPiece = board[squareToIndex(command.payload.ownerFrom)];
+          const allyPiece = board[squareToIndex(command.payload.allyFrom)];
+          board[squareToIndex(command.payload.ownerFrom)] = null;
+          board[squareToIndex(command.payload.allyFrom)] = null;
+          board[squareToIndex(command.payload.ownerTo)] = ownerPiece;
+          board[squareToIndex(command.payload.allyTo)] = allyPiece;
+          position = createPosition({ board, sideToMove: opposite(entry.side), castling: position.castling, enPassant: null, halfmove: 0, fullmove: position.fullmove + (entry.side === "b" ? 1 : 0) });
+          identities = identityMove(identities, [
+            { pieceId: entry.ownerId, from: command.payload.ownerFrom, to: command.payload.ownerTo },
+            { pieceId: command.payload.allyId, from: command.payload.allyFrom, to: command.payload.allyTo }
+          ]);
+          events.push(factory.event("FormationAdvanced", { battleId: state.battleId, ownerId: entry.ownerId, allyId: command.payload.allyId, moves: [command.payload.ownerFrom + command.payload.ownerTo, command.payload.allyFrom + command.payload.allyTo] }));
+        } else if (entry.kind === "previewed_charge") {
+          const rules = rulesForState(state);
+          const first = makeMove(position, { from: command.payload.from, to: command.payload.via }, rules);
+          const continuation = createPosition({ board: first.position.board, sideToMove: entry.side, castling: first.position.castling, enPassant: null, halfmove: first.position.halfmove, fullmove: position.fullmove });
+          const second = makeMove(continuation, { from: command.payload.via, to: command.payload.to }, rules);
+          position = second.position;
+          identities = identityMove(identities, [{ pieceId: entry.ownerId, from: command.payload.from, to: command.payload.to }]);
+          events.push(factory.event("PreviewedChargeCompleted", { battleId: state.battleId, ownerId: entry.ownerId, from: command.payload.from, via: command.payload.via, to: command.payload.to }));
+        } else if (entry.kind === "early_promotion") {
+          const moved = makeMove(position, { from: command.payload.from, to: command.payload.to, promotion: command.payload.promotion }, rulesForState(state));
+          position = moved.position;
+          identities = identityMove(identities, [{ pieceId: entry.ownerId, from: command.payload.from, to: command.payload.to }]);
+          events.push(factory.event("PawnPromoted", { battleId: state.battleId, pieceId: entry.ownerId, side: entry.side, square: command.payload.to, promotedTo: command.payload.promotion, early: true }));
+        } else if (entry.kind === "forge_line" || entry.kind === "gate_command") {
+          scenarioRules = toggleBlocker(state, entry, command.payload);
+          position = passActionPosition(position);
+          events.push(factory.event("BoardTopologyChanged", { battleId: state.battleId, ownerId: entry.ownerId, sourceId: entry.sourceId, square: command.payload.targetSquare, operation: command.payload.operation, durationActions: entry.kind === "forge_line" ? 2 : null }));
+        } else {
+          throw new Error(`unsupported ability resolution kind: ${entry.kind}`);
         }
-        const position = passActionPosition(state.position);
-        const outcome = outcomeForStatus(state, position, state.identities, factory, events);
+        events.push(factory.event("OrderPointsChanged", { battleId: state.battleId, side: entry.side, changedBy: spending.changedBy, current: spending.pool.current, reason: `ability:${entry.abilityId}` }));
+        if (modifier) events.push(factory.event("RelicEffectConsumed", { battleId: state.battleId, effectId: modifier.effectId, ownerId: modifier.ownerId, amount: modifier.amount, reason: "first_ability_order_discount" }));
+        const nextAbilities = abilityStateAfterUse(abilities, entry, modifier, state.actionIndex);
+        const outcome = outcomeForStatus(state, position, identities, scenarioRules, factory, events);
         return {
           position,
-          identities: state.identities,
-          statuses: applied.state,
-          abilities: updateAbilityState(abilities, entry, modifier),
+          identities,
+          statuses,
+          abilities: nextAbilities,
           events,
           status: outcome.status,
           result: outcome.result,
           orderPoints,
           reserve: state.reserve,
+          scenarioRules,
           actedPieceId: entry.ownerId,
           capturedId: null
         };
+      }
+      function updatePassive(abilities, instanceId, patch) {
+        return createAbilityState({
+          entries: abilities.entries,
+          modifiers: abilities.modifiers,
+          passives: abilities.passives.map((passive) => passive.instanceId === instanceId ? { ...passive, ...patch } : passive)
+        });
       }
       module.exports = {
         ABILITY_STATE_FORMAT,
         ABILITY_STATE_SCHEMA_VERSION,
         FIRST_ABILITY_DISCOUNT,
+        SUPPORTED_KINDS,
+        PASSIVE_KINDS,
         createAbilityState,
         activeSquare,
         effectiveOrderCost,
         legalAbilityCommands,
         normalizeAbilityRequest,
-        resolveAbilityCommand
+        resolveAbilityCommand,
+        updatePassive,
+        identityMove,
+        rulesForState
       };
+    }
+  });
+
+  // src/combat/iron-marches-hooks.cjs
+  var require_iron_marches_hooks = __commonJS({
+    "src/combat/iron-marches-hooks.cjs"(exports, module) {
+      "use strict";
+      var { applyPrimaryStatus, statusFor } = require_statuses();
+      var { gainOrderPoints } = require_order_points();
+      var { updatePassive } = require_abilities();
+      function freezeArray(values) {
+        return Object.freeze(values.slice());
+      }
+      function applyMovePassives(state, resolution, movingPiece, capturedId, factory, events) {
+        let statuses = resolution.statuses || state.statuses;
+        let abilities = resolution.abilities || state.abilities;
+        let orderPoints = resolution.orderPoints || state.orderPoints;
+        if (!capturedId && movingPiece?.type === "n") {
+          const passive = abilities.passives?.find((candidate) => candidate.kind === "evasion_after_non_capture" && candidate.ownerId === resolution.actedPieceId && !candidate.consumed);
+          if (passive && !statusFor(statuses, passive.ownerId)) {
+            const applied = applyPrimaryStatus(statuses, passive.ownerId, "evasion", {
+              sourceId: passive.sourceId,
+              actionIndex: state.actionIndex,
+              data: { effectId: passive.effectId }
+            });
+            statuses = applied.state;
+            abilities = updatePassive(abilities, passive.instanceId, { consumed: true });
+            events.push(factory.event("StatusApplied", {
+              battleId: state.battleId,
+              pieceId: passive.ownerId,
+              statusId: "evasion",
+              sourceId: passive.sourceId,
+              expiry: null
+            }));
+            events.push(factory.event("RelicEffectConsumed", {
+              battleId: state.battleId,
+              effectId: passive.effectId,
+              ownerId: passive.ownerId,
+              reason: "first_non_capture_knight_move"
+            }));
+          }
+        }
+        if (capturedId) {
+          const offered = statusFor(state.statuses, capturedId);
+          if (offered?.id === "offered") {
+            const rewardSide = offered.data.rewardSide;
+            const rewardOrders = Number(offered.data.rewardOrders || 2);
+            const gained = gainOrderPoints(orderPoints[rewardSide], rewardOrders, "voluntary_sacrifice");
+            orderPoints = Object.freeze({ ...orderPoints, [rewardSide]: gained.pool });
+            events.push(factory.event("VoluntarySacrificeResolved", {
+              battleId: state.battleId,
+              pieceId: capturedId,
+              rewardSide,
+              requestedOrders: rewardOrders,
+              changedBy: gained.changedBy
+            }));
+            events.push(factory.event("OrderPointsChanged", {
+              battleId: state.battleId,
+              side: rewardSide,
+              changedBy: gained.changedBy,
+              current: gained.pool.current,
+              reason: "voluntary_sacrifice"
+            }));
+          }
+        }
+        return Object.freeze({ statuses, abilities, orderPoints });
+      }
+      function advanceScenarioRules(input, nextActionIndex, factory, battleId, events) {
+        if (!input) return null;
+        const baseBlockedSquares = freezeArray(input.baseBlockedSquares || []);
+        const retained = [];
+        for (const blocker of input.blockers || []) {
+          if (blocker.expiresAfterAction != null && blocker.expiresAfterAction <= nextActionIndex) {
+            events.push(factory.event("BoardTopologyChanged", {
+              battleId,
+              ownerId: blocker.ownerId || null,
+              sourceId: blocker.sourceId,
+              square: blocker.square,
+              operation: "expire",
+              durationActions: 0
+            }));
+          } else {
+            retained.push(blocker);
+          }
+        }
+        return Object.freeze({
+          ...input,
+          baseBlockedSquares,
+          blockers: freezeArray(retained),
+          blockedSquares: freezeArray([.../* @__PURE__ */ new Set([...baseBlockedSquares, ...retained.map((record) => record.square)])])
+        });
+      }
+      module.exports = { applyMovePassives, advanceScenarioRules };
     }
   });
 
@@ -2253,7 +2697,7 @@ var RPChessRuntime = (() => {
       var { DeterministicIdFactory } = require_determinism();
       var { DomainEnvelopeFactory } = require_domain();
       var { indexToSquare, squareToIndex, toFen } = require_position();
-      var { generateLegalMoves, makeMove, gameStatus } = require_rules();
+      var { generateLegalMoves, makeMove, gameStatus, normalizeRulesContext } = require_rules();
       var { createOrderPoints } = require_order_points();
       var {
         normalizeReserve,
@@ -2281,6 +2725,7 @@ var RPChessRuntime = (() => {
         normalizeAbilityRequest,
         resolveAbilityCommand
       } = require_abilities();
+      var { applyMovePassives, advanceScenarioRules } = require_iron_marches_hooks();
       function freezeArray(items) {
         return Object.freeze(items.slice());
       }
@@ -2322,22 +2767,41 @@ var RPChessRuntime = (() => {
         if (status.state === "stalemate") return { status: "completed", result: { outcome: "draw", winner: null, reason: "stalemate" } };
         return { status: "active", result: null };
       }
+      function normalizeScenarioRules(input = {}) {
+        const baseBlockedSquares = [...new Set((input.baseBlockedSquares || input.blockedSquares || []).map((square) => indexToSquare(squareToIndex(square))))];
+        const blockers = (input.blockers || []).map((record) => Object.freeze({
+          square: indexToSquare(squareToIndex(record.square)),
+          sourceId: String(record.sourceId || "scenario"),
+          ownerId: record.ownerId || null,
+          kind: record.kind || "blocker",
+          expiresAfterAction: record.expiresAfterAction == null ? null : Number(record.expiresAfterAction)
+        }));
+        return Object.freeze({
+          ...input,
+          baseBlockedSquares: freezeArray(baseBlockedSquares),
+          blockers: freezeArray(blockers),
+          blockedSquares: freezeArray([.../* @__PURE__ */ new Set([...baseBlockedSquares, ...blockers.map((record) => record.square)])]),
+          gateSquares: freezeArray((input.gateSquares || []).map((square) => indexToSquare(squareToIndex(square))))
+        });
+      }
       function createBattleState(options) {
         if (!options || !options.position) throw new TypeError("position is required");
         const battleId = String(options.battleId || "battle");
         const seed = options.seed || 1;
         const playerSide = options.playerSide || "w";
-        const initialStatus = gameStatus(options.position);
+        const scenarioRules = normalizeScenarioRules(options.scenarioRules || {});
+        const initialStatus = gameStatus(options.position, scenarioRules);
         const outcome = outcomeForStatus({ playerSide }, initialStatus);
         return Object.freeze({
           format: "rpchess-battle-state",
-          schemaVersion: 4,
+          schemaVersion: 5,
           battleId,
           playerSide,
           position: options.position,
           identities: normalizeIdentities(options.position, options, battleId, seed),
           statuses: options.statuses && options.statuses.format === "rpchess-status-state" ? options.statuses : createStatusState(options.statuses || {}),
           abilities: createAbilityState(options.abilities || {}),
+          scenarioRules,
           actionIndex: 0,
           status: outcome.status,
           result: outcome.result,
@@ -2350,7 +2814,7 @@ var RPChessRuntime = (() => {
         });
       }
       function moveCommands(state) {
-        return generateLegalMoves(state.position).filter((move) => {
+        return generateLegalMoves(state.position, state.scenarioRules || {}).filter((move) => {
           const pieceId = identityAt(state.identities, indexToSquare(move.from));
           return !hasStatus(state.statuses, pieceId, "bound");
         }).map((move) => Object.freeze({
@@ -2371,7 +2835,8 @@ var RPChessRuntime = (() => {
             position: state.position,
             reserve: state.reserve,
             reserveCells: state.reserveCells,
-            orderPoints: state.orderPoints
+            orderPoints: state.orderPoints,
+            rules: state.scenarioRules || {}
           })
         ];
       }
@@ -2385,8 +2850,8 @@ var RPChessRuntime = (() => {
         const to = squareToIndex(move.to);
         return { square: to, piece: position.board[to] };
       }
-      function appendPositionStatusEvents(state, position, identities, factory, events) {
-        const chessStatus = gameStatus(position);
+      function appendPositionStatusEvents(state, position, identities, factory, events, scenarioRules = state.scenarioRules || {}) {
+        const chessStatus = gameStatus(position, scenarioRules);
         const outcome = outcomeForStatus(state, chessStatus);
         if (chessStatus.state === "check") {
           const kingIndex = position.board.findIndex((value) => value && value.side === position.sideToMove && value.type === "k");
@@ -2419,7 +2884,7 @@ var RPChessRuntime = (() => {
         if (!moving) throw new Error(`no piece on ${fromSquare}`);
         const movingId = identityAt(state.identities, fromSquare);
         if (hasStatus(state.statuses, movingId, "bound")) throw new Error(`${movingId} is bound and cannot move`);
-        const result = makeMove(before, command.payload);
+        const result = makeMove(before, command.payload, state.scenarioRules || {});
         const move = result.move;
         const captured = captureDetails(before, move);
         const identityChange = movePieceIdentities(state.identities, before, move);
@@ -2465,14 +2930,23 @@ var RPChessRuntime = (() => {
             promotedTo: move.promotion
           }));
         }
-        const outcome = appendPositionStatusEvents(state, result.position, identityChange.identities, factory, events);
+        const outcome = appendPositionStatusEvents(state, result.position, identityChange.identities, factory, events, state.scenarioRules);
+        const passives = applyMovePassives(state, {
+          actedPieceId: identityChange.movedId,
+          statuses: state.statuses,
+          abilities: state.abilities,
+          orderPoints: state.orderPoints
+        }, moving, identityChange.capturedId, factory, events);
         return {
           position: result.position,
           identities: identityChange.identities,
+          statuses: passives.statuses,
+          abilities: passives.abilities,
+          scenarioRules: state.scenarioRules,
           events,
           status: outcome.status,
           result: outcome.result,
-          orderPoints: state.orderPoints,
+          orderPoints: passives.orderPoints,
           reserve: state.reserve,
           actedPieceId: identityChange.movedId,
           capturedId: identityChange.capturedId
@@ -2486,7 +2960,8 @@ var RPChessRuntime = (() => {
           reserveCells: state.reserveCells,
           orderPoints: state.orderPoints,
           entryId: command.payload.entryId,
-          square: command.payload.square
+          square: command.payload.square,
+          rules: state.scenarioRules || {}
         });
         const identities = deployReserveIdentity(state.identities, deployed.entry, deployed.square);
         const events = [
@@ -2507,10 +2982,13 @@ var RPChessRuntime = (() => {
             reason: "reserve_deployment"
           })
         ];
-        const outcome = appendPositionStatusEvents(state, deployed.position, identities, factory, events);
+        const outcome = appendPositionStatusEvents(state, deployed.position, identities, factory, events, state.scenarioRules);
         return {
           position: deployed.position,
           identities,
+          statuses: state.statuses,
+          abilities: state.abilities,
+          scenarioRules: state.scenarioRules,
           events,
           status: outcome.status,
           result: outcome.result,
@@ -2570,12 +3048,14 @@ var RPChessRuntime = (() => {
         else resolution = resolveAbilityCommand(state, command, factory);
         const events = resolution.events.slice();
         const statuses = advanceBattleStatuses(state, resolution, actingSide, factory, events);
+        const scenarioRules = advanceScenarioRules(resolution.scenarioRules || state.scenarioRules, state.actionIndex + 1, factory, state.battleId, events);
         const nextState = Object.freeze({
           ...state,
           position: resolution.position,
           identities: resolution.identities,
           statuses,
           abilities: resolution.abilities || state.abilities,
+          scenarioRules,
           actionIndex: state.actionIndex + 1,
           status: resolution.status,
           result: resolution.result,
@@ -2645,31 +3125,17 @@ var RPChessRuntime = (() => {
       "use strict";
       var { DeterministicIdFactory } = require_determinism();
       var { DomainEnvelopeFactory } = require_domain();
-      var {
-        opposite,
-        createPosition,
-        squareToIndex,
-        indexToSquare,
-        coordinates,
-        indexOf,
-        toFen
-      } = require_position();
+      var { opposite, createPosition, squareToIndex, indexToSquare, coordinates, indexOf, toFen } = require_position();
       var { generateLegalMoves, isInCheck, gameStatus } = require_rules();
       var { identityAt } = require_identity();
-      var { hasStatus, consumeStatus, advanceStatuses } = require_statuses();
-      var {
-        legalBattleCommands,
-        executeBattleCommand,
-        applyBattleStatus
-      } = require_battle();
+      var { hasStatus, statusFor, consumeStatus, advanceStatuses } = require_statuses();
+      var { legalBattleCommands, executeBattleCommand, applyBattleStatus } = require_battle();
+      var { advanceScenarioRules } = require_iron_marches_hooks();
       function freezeArray(items) {
         return Object.freeze(items.slice());
       }
       function envelopeFactory(snapshot) {
-        return new DomainEnvelopeFactory({
-          idFactory: DeterministicIdFactory.fromSnapshot(snapshot.idFactory),
-          sequence: snapshot.sequence
-        });
+        return new DomainEnvelopeFactory({ idFactory: DeterministicIdFactory.fromSnapshot(snapshot.idFactory), sequence: snapshot.sequence });
       }
       function sameMove(move, payload) {
         return indexToSquare(move.from) === payload.from && indexToSquare(move.to) === payload.to && (move.promotion || null) === (payload.promotion || null);
@@ -2680,52 +3146,38 @@ var RPChessRuntime = (() => {
         const { x, y } = coordinates(move.to);
         return indexToSquare(indexOf(x, y + (position.sideToMove === "w" ? 1 : -1)));
       }
-      function wardedTarget(state, request) {
+      function protectedTarget(state, request) {
         if (!request || request.type !== "MovePiece") return null;
-        const move = generateLegalMoves(state.position).find((candidate) => sameMove(candidate, request.payload));
+        const move = generateLegalMoves(state.position, state.scenarioRules || {}).find((candidate) => sameMove(candidate, request.payload));
         if (!move || !move.capture) return null;
         const square = captureSquare(state.position, move);
         const pieceId = identityAt(state.identities, square);
-        return pieceId && hasStatus(state.statuses, pieceId, "ward") ? Object.freeze({ move, square, pieceId }) : null;
+        const status = pieceId ? statusFor(state.statuses, pieceId) : null;
+        if (!status || !["ward", "evasion", "guarded"].includes(status.id)) return null;
+        return Object.freeze({ move, square, pieceId, status, protection: status.id });
+      }
+      function wardedTarget(state, request) {
+        const target = protectedTarget(state, request);
+        return target?.protection === "ward" ? target : null;
       }
       function passActionPosition(position) {
         const actingSide = position.sideToMove;
-        return createPosition({
-          board: position.board,
-          sideToMove: opposite(actingSide),
-          castling: position.castling,
-          enPassant: null,
-          halfmove: position.halfmove + 1,
-          fullmove: position.fullmove + (actingSide === "b" ? 1 : 0)
-        });
+        return createPosition({ board: position.board, sideToMove: opposite(actingSide), castling: position.castling, enPassant: null, halfmove: position.halfmove + 1, fullmove: position.fullmove + (actingSide === "b" ? 1 : 0) });
       }
       function sideByPiece(identities) {
         return Object.fromEntries(Object.entries(identities.metadata).map(([pieceId, metadata]) => [pieceId, metadata.side]));
       }
       function outcome(state, position, factory, events) {
-        const status = gameStatus(position);
+        const status = gameStatus(position, state.scenarioRules || {});
         if (status.state === "check") {
           const kingIndex = position.board.findIndex((value) => value && value.side === position.sideToMove && value.type === "k");
           const kingSquare = indexToSquare(kingIndex);
-          events.push(factory.event("KingChecked", {
-            battleId: state.battleId,
-            checkedSide: position.sideToMove,
-            kingSquare,
-            kingId: identityAt(state.identities, kingSquare)
-          }));
+          events.push(factory.event("KingChecked", { battleId: state.battleId, checkedSide: position.sideToMove, kingSquare, kingId: identityAt(state.identities, kingSquare) }));
           return { status: "active", result: null };
         }
         if (status.state === "checkmate") {
-          const result = {
-            outcome: status.winner === state.playerSide ? "victory" : "defeat",
-            winner: status.winner,
-            reason: "checkmate"
-          };
-          events.push(factory.event("CheckmateDeclared", {
-            battleId: state.battleId,
-            winner: status.winner,
-            loser: position.sideToMove
-          }));
+          const result = { outcome: status.winner === state.playerSide ? "victory" : "defeat", winner: status.winner, reason: "checkmate" };
+          events.push(factory.event("CheckmateDeclared", { battleId: state.battleId, winner: status.winner, loser: position.sideToMove }));
           events.push(factory.event("BattleCompleted", { battleId: state.battleId, ...result }));
           return { status: "completed", result };
         }
@@ -2738,11 +3190,8 @@ var RPChessRuntime = (() => {
         return { status: "active", result: null };
       }
       function legalWardAwareCommands(state) {
-        const inCheck = isInCheck(state.position, state.position.sideToMove);
-        return legalBattleCommands(state).filter((command) => {
-          const target = wardedTarget(state, command);
-          return !(target && inCheck);
-        });
+        const inCheck = isInCheck(state.position, state.position.sideToMove, state.scenarioRules || {});
+        return legalBattleCommands(state).filter((command) => !(protectedTarget(state, command) && inCheck));
       }
       function applyWardStatus(state, pieceId, options = {}) {
         const square = Object.entries(state.identities.bySquare).find(([, id]) => id === pieceId);
@@ -2752,21 +3201,14 @@ var RPChessRuntime = (() => {
         return applyBattleStatus(state, pieceId, "ward", options);
       }
       function executeWardAwareCommand(state, request) {
-        const target = wardedTarget(state, request);
+        const target = protectedTarget(state, request);
         if (!target) return executeBattleCommand(state, request);
-        if (isInCheck(state.position, state.position.sideToMove)) {
-          throw new Error("warded capture cannot be used to leave own king in check");
-        }
+        if (isInCheck(state.position, state.position.sideToMove, state.scenarioRules || {})) throw new Error("protected capture cannot be used to leave own king in check");
         const actingSide = state.position.sideToMove;
         const attackerId = identityAt(state.identities, request.payload.from);
         const factory = envelopeFactory(state.envelope);
-        const command = factory.command("MovePiece", request.payload, {
-          battleId: state.battleId,
-          actorSide: actingSide,
-          actionIndex: state.actionIndex,
-          interceptedByWard: true
-        });
-        const consumed = consumeStatus(state.statuses, target.pieceId, "ward", "capture_prevented");
+        const command = factory.command("MovePiece", request.payload, { battleId: state.battleId, actorSide: actingSide, actionIndex: state.actionIndex, interceptedByProtection: target.protection });
+        const consumed = consumeStatus(state.statuses, target.pieceId, target.protection, "capture_prevented");
         const events = [
           factory.event("CapturePrevented", {
             battleId: state.battleId,
@@ -2775,34 +3217,21 @@ var RPChessRuntime = (() => {
             protectedSquare: target.square,
             attemptedFrom: request.payload.from,
             attemptedTo: request.payload.to,
-            protection: "ward"
+            protection: target.protection,
+            guardianId: target.status.data.guardianId || null
           }),
-          factory.event("StatusRemoved", {
-            battleId: state.battleId,
-            pieceId: target.pieceId,
-            statusId: "ward",
-            reason: "capture_prevented"
-          })
+          factory.event("StatusRemoved", { battleId: state.battleId, pieceId: target.pieceId, statusId: target.protection, reason: "capture_prevented" })
         ];
-        const advanced = advanceStatuses(consumed.state, {
-          actingSide,
-          actedPieceId: attackerId,
-          sideByPiece: sideByPiece(state.identities)
-        });
-        for (const expired of advanced.expired) {
-          events.push(factory.event("StatusExpired", {
-            battleId: state.battleId,
-            pieceId: expired.pieceId,
-            statusId: expired.id,
-            expiryKind: expired.expirationReason
-          }));
-        }
+        const advanced = advanceStatuses(consumed.state, { actingSide, actedPieceId: attackerId, sideByPiece: sideByPiece(state.identities) });
+        for (const expired of advanced.expired) events.push(factory.event("StatusExpired", { battleId: state.battleId, pieceId: expired.pieceId, statusId: expired.id, expiryKind: expired.expirationReason }));
         const position = passActionPosition(state.position);
         const battleOutcome = outcome(state, position, factory, events);
+        const scenarioRules = advanceScenarioRules(state.scenarioRules, state.actionIndex + 1, factory, state.battleId, events);
         const nextState = Object.freeze({
           ...state,
           position,
           statuses: advanced.state,
+          scenarioRules,
           actionIndex: state.actionIndex + 1,
           status: battleOutcome.status,
           result: battleOutcome.result,
@@ -2822,13 +3251,7 @@ var RPChessRuntime = (() => {
         }
         return Object.freeze({ state, events: freezeArray(events), finalFen: toFen(state.position) });
       }
-      module.exports = {
-        wardedTarget,
-        legalWardAwareCommands,
-        applyWardStatus,
-        executeWardAwareCommand,
-        replayWardAware
-      };
+      module.exports = { protectedTarget, wardedTarget, legalWardAwareCommands, applyWardStatus, executeWardAwareCommand, replayWardAware };
     }
   });
 
@@ -7109,6 +7532,7 @@ var RPChessRuntime = (() => {
           identityMetadata: Object.freeze({ ...originalBattle.identities.metadata, ...unitMetadata }),
           statuses: originalBattle.statuses,
           abilities: originalBattle.abilities,
+          scenarioRules: originalBattle.scenarioRules,
           orderPoints: originalBattle.orderPoints,
           reserve: mergedReserve(gate, finalized),
           reserveCells
@@ -8852,9 +9276,22 @@ var RPChessRuntime = (() => {
       "use strict";
       var { indexToSquare } = require_position();
       var { projectArmyBattleOptions } = require_army_roster();
-      var ECHO_SHIELD = "relic.echo_shield";
-      var CIRCLE_WARDING = "relic.circle_warding";
-      var TWIN_COMMAND = "relic.twin_command";
+      var RELICS = Object.freeze({
+        ECHO_SHIELD: "relic.echo_shield",
+        PHANTOM_SPURS: "relic.phantom_spurs",
+        CIRCLE_WARDING: "relic.circle_warding",
+        TWIN_COMMAND: "relic.twin_command",
+        ROYAL_DECREE: "relic.royal_decree",
+        OATH_FALLEN: "relic.oath_fallen"
+      });
+      var HERO_ABILITIES = Object.freeze({
+        "hero.aldric_wall": Object.freeze({ abilityId: "ability.interpose", effectId: "effect.interpose_adjacent_ally", kind: "interpose", orderCost: 1, maxUses: 1 }),
+        "hero.mara_chain": Object.freeze({ abilityId: "ability.chain_formation", effectId: "effect.advance_two_pawns", kind: "chain_formation", orderCost: 1, maxUses: 1 }),
+        "hero.brother_orell": Object.freeze({ abilityId: "ability.forge_line", effectId: "effect.temporary_line_blocker", kind: "forge_line", orderCost: 1, maxUses: 1 }),
+        "hero.vael_hammer": Object.freeze({ abilityId: "ability.previewed_charge", effectId: "effect.two_jump_charge", kind: "previewed_charge", orderCost: 2, maxUses: 1 }),
+        "hero.lady_sorn": Object.freeze({ abilityId: "ability.hostage_tactic", effectId: "effect.mutual_hostage_binding", kind: "hostage_tactic", orderCost: 1, maxUses: 1 }),
+        "hero.tomas_gate": Object.freeze({ abilityId: "ability.gate_command", effectId: "effect.visible_gate_toggle", kind: "gate_command", orderCost: 1, maxUses: 2 })
+      });
       function freezeArray(values) {
         return Object.freeze(values.slice());
       }
@@ -8864,10 +9301,11 @@ var RPChessRuntime = (() => {
         return { ...input.entries || input };
       }
       function existingAbilityParts(input) {
-        if (!input) return { entries: [], modifiers: [] };
+        if (!input) return { entries: [], modifiers: [], passives: [] };
         return {
           entries: [...input.entries || []],
-          modifiers: [...input.modifiers || []]
+          modifiers: [...input.modifiers || []],
+          passives: [...input.passives || []]
         };
       }
       function activeHeroRecords(projected) {
@@ -8879,60 +9317,75 @@ var RPChessRuntime = (() => {
           const pieceId = projected.identitiesBySquare[square];
           const metadata = projected.identityMetadata?.[pieceId] || {};
           if (!pieceId || !metadata.heroId) continue;
-          records.push(Object.freeze({
-            pieceId,
-            side: piece.side,
-            type: piece.type,
-            metadata,
-            location: "active"
-          }));
+          records.push(Object.freeze({ pieceId, side: piece.side, type: piece.type, metadata, location: "active" }));
         }
         return records;
       }
       function reserveHeroRecords(projected) {
-        return (projected.reserve || []).filter((entry) => entry.metadata?.heroId).map((entry) => Object.freeze({
-          pieceId: entry.id,
-          side: entry.side,
-          type: entry.type,
-          metadata: entry.metadata,
-          location: "reserve"
-        }));
+        return (projected.reserve || []).filter((entry) => entry.metadata?.heroId).map((entry) => Object.freeze({ pieceId: entry.id, side: entry.side, type: entry.type, metadata: entry.metadata, location: "reserve" }));
       }
       function allHeroRecords(projected) {
         return freezeArray([...activeHeroRecords(projected), ...reserveHeroRecords(projected)]);
       }
       function addStartingWard(entries, record) {
         const current = entries[record.pieceId];
-        if (current && current.id !== "ward") {
-          throw new Error(`${record.pieceId} cannot receive Echo Shield ward over ${current.id}`);
-        }
+        if (current && current.id !== "ward") throw new Error(`${record.pieceId} cannot receive Echo Shield ward over ${current.id}`);
         entries[record.pieceId] = Object.freeze({
           pieceId: record.pieceId,
           id: "ward",
-          sourceId: ECHO_SHIELD,
+          sourceId: RELICS.ECHO_SHIELD,
           appliedAtAction: 0,
           expiry: null,
-          data: Object.freeze({ effectId: "effect.ward_first_capture", sourceRelicId: ECHO_SHIELD })
+          data: Object.freeze({ effectId: "effect.ward_first_capture", sourceRelicId: RELICS.ECHO_SHIELD })
         });
       }
-      function mechanicsForRecord(record, abilities, statuses) {
+      function addEntry(abilities, record, definition, sourceId, data = {}) {
+        abilities.entries.push(Object.freeze({
+          instanceId: `${definition.abilityId}:${record.pieceId}`,
+          abilityId: definition.abilityId,
+          effectId: definition.effectId,
+          sourceId,
+          ownerId: record.pieceId,
+          side: record.side,
+          kind: definition.kind,
+          orderCost: definition.orderCost,
+          maxUses: definition.maxUses,
+          used: 0,
+          cooldownActions: definition.cooldownActions || 0,
+          lastUsedAction: null,
+          data: Object.freeze({ ...data })
+        }));
+      }
+      function mechanicsForRecord(record, abilities, statuses, projected) {
         const relicIds = record.metadata.relicIds || [];
-        if (relicIds.includes(ECHO_SHIELD)) addStartingWard(statuses, record);
-        if (relicIds.includes(CIRCLE_WARDING)) {
-          abilities.entries.push(Object.freeze({
-            instanceId: `ability.circle_warding:${record.pieceId}`,
-            abilityId: "ability.circle_warding",
-            effectId: "effect.place_adjacent_ward",
-            sourceId: CIRCLE_WARDING,
+        const heroAbility = HERO_ABILITIES[record.metadata.heroId];
+        if (heroAbility) {
+          const gateSquares = projected.scenarioRules?.gateSquares || [];
+          addEntry(abilities, record, heroAbility, record.metadata.heroId, heroAbility.kind === "gate_command" ? { gateSquares } : {});
+        }
+        if (relicIds.includes(RELICS.ECHO_SHIELD)) addStartingWard(statuses, record);
+        if (relicIds.includes(RELICS.PHANTOM_SPURS)) {
+          abilities.passives.push(Object.freeze({
+            instanceId: `effect.visible_evasion_after_non_capture:${record.pieceId}`,
+            effectId: "effect.visible_evasion_after_non_capture",
+            sourceId: RELICS.PHANTOM_SPURS,
             ownerId: record.pieceId,
             side: record.side,
-            kind: "place_adjacent_ward",
-            orderCost: 1,
-            maxUses: 1,
-            used: 0
+            kind: "evasion_after_non_capture",
+            consumed: false,
+            data: Object.freeze({})
           }));
         }
-        if (relicIds.includes(TWIN_COMMAND)) {
+        if (relicIds.includes(RELICS.CIRCLE_WARDING)) {
+          addEntry(abilities, record, Object.freeze({
+            abilityId: "ability.circle_warding",
+            effectId: "effect.place_adjacent_ward",
+            kind: "place_adjacent_ward",
+            orderCost: 1,
+            maxUses: 1
+          }), RELICS.CIRCLE_WARDING);
+        }
+        if (relicIds.includes(RELICS.TWIN_COMMAND)) {
           abilities.modifiers.push(Object.freeze({
             instanceId: `effect.first_ability_order_discount:${record.pieceId}`,
             effectId: "effect.first_ability_order_discount",
@@ -8941,25 +9394,53 @@ var RPChessRuntime = (() => {
             consumed: false
           }));
         }
+        if (relicIds.includes(RELICS.ROYAL_DECREE)) {
+          addEntry(abilities, record, Object.freeze({
+            abilityId: "ability.royal_decree",
+            effectId: "effect.conditional_early_promotion",
+            kind: "early_promotion",
+            orderCost: 2,
+            maxUses: 1
+          }), RELICS.ROYAL_DECREE);
+        }
+        if (relicIds.includes(RELICS.OATH_FALLEN)) {
+          addEntry(abilities, record, Object.freeze({
+            abilityId: "ability.oath_fallen",
+            effectId: "effect.order_after_voluntary_sacrifice",
+            kind: "declare_sacrifice",
+            orderCost: 0,
+            maxUses: 99,
+            cooldownActions: 2
+          }), RELICS.OATH_FALLEN);
+        }
+      }
+      function uniqueByInstance(records) {
+        const seen = /* @__PURE__ */ new Set();
+        return records.filter((record) => {
+          if (seen.has(record.instanceId)) return false;
+          seen.add(record.instanceId);
+          return true;
+        });
       }
       function projectIronMarchesBattleOptions(options, army) {
         const projected = projectArmyBattleOptions(options, army);
         const statuses = statusEntries(projected.statuses);
         const abilities = existingAbilityParts(projected.abilities);
-        for (const record of allHeroRecords(projected)) mechanicsForRecord(record, abilities, statuses);
+        for (const record of allHeroRecords(projected)) mechanicsForRecord(record, abilities, statuses, projected);
         return Object.freeze({
           ...projected,
           statuses: Object.freeze({ entries: Object.freeze(statuses) }),
           abilities: Object.freeze({
-            entries: freezeArray(abilities.entries),
-            modifiers: freezeArray(abilities.modifiers)
+            entries: freezeArray(uniqueByInstance(abilities.entries)),
+            modifiers: freezeArray(uniqueByInstance(abilities.modifiers)),
+            passives: freezeArray(uniqueByInstance(abilities.passives))
           })
         });
       }
       module.exports = {
-        ECHO_SHIELD,
-        CIRCLE_WARDING,
-        TWIN_COMMAND,
+        ...RELICS,
+        RELICS,
+        HERO_ABILITIES,
         activeHeroRecords,
         reserveHeroRecords,
         allHeroRecords,

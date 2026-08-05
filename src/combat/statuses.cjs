@@ -2,6 +2,9 @@
 
 const STATUS_DEFINITIONS = Object.freeze({
   ward: Object.freeze({ id: 'ward', category: 'primary', visible: true, geometryChange: false, defaultExpiry: null, consumable: true }),
+  evasion: Object.freeze({ id: 'evasion', category: 'primary', visible: true, geometryChange: false, defaultExpiry: null, consumable: true }),
+  guarded: Object.freeze({ id: 'guarded', category: 'primary', visible: true, geometryChange: false, defaultExpiry: null, consumable: true }),
+  offered: Object.freeze({ id: 'offered', category: 'primary', visible: true, geometryChange: false, defaultExpiry: Object.freeze({ kind: 'actions', remaining: 2 }), consumable: false }),
   marked: Object.freeze({ id: 'marked', category: 'primary', visible: true, geometryChange: false, defaultExpiry: Object.freeze({ kind: 'side_actions', remaining: 2 }), consumable: false }),
   bound: Object.freeze({ id: 'bound', category: 'primary', visible: true, geometryChange: false, defaultExpiry: Object.freeze({ kind: 'side_actions', remaining: 1 }), consumable: false }),
   silenced: Object.freeze({ id: 'silenced', category: 'primary', visible: true, geometryChange: false, defaultExpiry: Object.freeze({ kind: 'side_actions', remaining: 2 }), consumable: false }),

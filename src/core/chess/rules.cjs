@@ -22,7 +22,29 @@ const PROMOTIONS = ['q', 'r', 'b', 'n'];
 
 const inside = (x, y) => x >= 0 && x < 8 && y >= 0 && y < 8;
 
-function isSquareAttacked(position, square, bySide) {
+function normalizeRulesContext(options = {}) {
+  if (options && options.format === 'rpchess-chess-rules-context') return options;
+  const source = options.blockedSquares || options.blocked || [];
+  if (!Array.isArray(source) && !(source instanceof Set)) throw new Error('blockedSquares must be an array or Set');
+  const blocked = new Set();
+  for (const value of source) blocked.add(squareToIndex(value));
+  return Object.freeze({ format: 'rpchess-chess-rules-context', blocked });
+}
+
+function isBlocked(context, square) {
+  return context.blocked.has(squareToIndex(square));
+}
+
+function assertNoPieceOnBlockedSquare(position, options = {}) {
+  const context = normalizeRulesContext(options);
+  for (const index of context.blocked) {
+    if (position.board[index]) throw new Error(`blocked square contains a piece: ${indexToSquare(index)}`);
+  }
+  return context;
+}
+
+function isSquareAttacked(position, square, bySide, options = {}) {
+  const context = normalizeRulesContext(options);
   const target = squareToIndex(square);
   const { x, y } = coordinates(target);
   const board = position.board;
@@ -31,7 +53,9 @@ function isSquareAttacked(position, square, bySide) {
   const pawnSourceY = y - pawnDirection;
   for (const sourceX of [x - 1, x + 1]) {
     if (!inside(sourceX, pawnSourceY)) continue;
-    const candidate = board[indexOf(sourceX, pawnSourceY)];
+    const source = indexOf(sourceX, pawnSourceY);
+    if (isBlocked(context, source)) continue;
+    const candidate = board[source];
     if (candidate && candidate.side === bySide && candidate.type === 'p') return true;
   }
 
@@ -39,7 +63,9 @@ function isSquareAttacked(position, square, bySide) {
     const sourceX = x + dx;
     const sourceY = y + dy;
     if (!inside(sourceX, sourceY)) continue;
-    const candidate = board[indexOf(sourceX, sourceY)];
+    const source = indexOf(sourceX, sourceY);
+    if (isBlocked(context, source)) continue;
+    const candidate = board[source];
     if (candidate && candidate.side === bySide && candidate.type === 'n') return true;
   }
 
@@ -47,7 +73,9 @@ function isSquareAttacked(position, square, bySide) {
     const sourceX = x + dx;
     const sourceY = y + dy;
     if (!inside(sourceX, sourceY)) continue;
-    const candidate = board[indexOf(sourceX, sourceY)];
+    const source = indexOf(sourceX, sourceY);
+    if (isBlocked(context, source)) continue;
+    const candidate = board[source];
     if (candidate && candidate.side === bySide && candidate.type === 'k') return true;
   }
 
@@ -56,7 +84,9 @@ function isSquareAttacked(position, square, bySide) {
       let sourceX = x + dx;
       let sourceY = y + dy;
       while (inside(sourceX, sourceY)) {
-        const candidate = board[indexOf(sourceX, sourceY)];
+        const source = indexOf(sourceX, sourceY);
+        if (isBlocked(context, source)) break;
+        const candidate = board[source];
         if (candidate) {
           if (candidate.side === bySide && allowedTypes.includes(candidate.type)) return true;
           break;
@@ -71,10 +101,10 @@ function isSquareAttacked(position, square, bySide) {
   return scan(BISHOP_DIRECTIONS, ['b', 'q']) || scan(ROOK_DIRECTIONS, ['r', 'q']);
 }
 
-function isInCheck(position, side = position.sideToMove) {
+function isInCheck(position, side = position.sideToMove, options = {}) {
   const king = findKing(position, side);
   if (king == null) throw new Error(`missing ${side} king`);
-  return isSquareAttacked(position, king, opposite(side));
+  return isSquareAttacked(position, king, opposite(side), options);
 }
 
 function createMove(from, to, options = {}) {
@@ -89,9 +119,11 @@ function createMove(from, to, options = {}) {
   });
 }
 
-function addTargetMove(moves, position, moving, from, x, y, options = {}) {
+function addTargetMove(moves, position, moving, from, x, y, options = {}, rules = {}) {
   if (!inside(x, y)) return false;
+  const context = normalizeRulesContext(rules);
   const to = indexOf(x, y);
+  if (isBlocked(context, to)) return false;
   const target = position.board[to];
   if (target && target.side === moving.side) return false;
   if (target && target.type === 'k') return false;
@@ -99,21 +131,24 @@ function addTargetMove(moves, position, moving, from, x, y, options = {}) {
   return !target;
 }
 
-function generatePawnMoves(position, from, moving, moves) {
+function generatePawnMoves(position, from, moving, moves, rules = {}) {
+  const context = normalizeRulesContext(rules);
   const { x, y } = coordinates(from);
   const direction = moving.side === 'w' ? -1 : 1;
   const startY = moving.side === 'w' ? 6 : 1;
   const promotionY = moving.side === 'w' ? 0 : 7;
   const forwardY = y + direction;
+  const forward = inside(x, forwardY) ? indexOf(x, forwardY) : null;
 
-  if (inside(x, forwardY) && !position.board[indexOf(x, forwardY)]) {
+  if (forward != null && !isBlocked(context, forward) && !position.board[forward]) {
     if (forwardY === promotionY) {
-      for (const promotion of PROMOTIONS) moves.push(createMove(from, indexOf(x, forwardY), { promotion }));
+      for (const promotion of PROMOTIONS) moves.push(createMove(from, forward, { promotion }));
     } else {
-      moves.push(createMove(from, indexOf(x, forwardY)));
+      moves.push(createMove(from, forward));
       const doubleY = y + direction * 2;
-      if (y === startY && !position.board[indexOf(x, doubleY)]) {
-        moves.push(createMove(from, indexOf(x, doubleY), { doublePawn: true }));
+      const double = inside(x, doubleY) ? indexOf(x, doubleY) : null;
+      if (y === startY && double != null && !isBlocked(context, double) && !position.board[double]) {
+        moves.push(createMove(from, double, { doublePawn: true }));
       }
     }
   }
@@ -121,6 +156,7 @@ function generatePawnMoves(position, from, moving, moves) {
   for (const captureX of [x - 1, x + 1]) {
     if (!inside(captureX, forwardY)) continue;
     const to = indexOf(captureX, forwardY);
+    if (isBlocked(context, to)) continue;
     const target = position.board[to];
     if (target && target.side !== moving.side && target.type !== 'k') {
       if (forwardY === promotionY) {
@@ -132,6 +168,7 @@ function generatePawnMoves(position, from, moving, moves) {
     }
     if (position.enPassant === to) {
       const capturedIndex = indexOf(captureX, y);
+      if (isBlocked(context, capturedIndex)) continue;
       const captured = position.board[capturedIndex];
       if (captured && captured.side !== moving.side && captured.type === 'p') {
         moves.push(createMove(from, to, { capture: true, enPassant: true }));
@@ -140,32 +177,33 @@ function generatePawnMoves(position, from, moving, moves) {
   }
 }
 
-function generateStepMoves(position, from, moving, moves, offsets) {
+function generateStepMoves(position, from, moving, moves, offsets, rules = {}) {
   const { x, y } = coordinates(from);
-  for (const [dx, dy] of offsets) addTargetMove(moves, position, moving, from, x + dx, y + dy);
+  for (const [dx, dy] of offsets) addTargetMove(moves, position, moving, from, x + dx, y + dy, {}, rules);
 }
 
-function generateSlidingMoves(position, from, moving, moves, directions) {
+function generateSlidingMoves(position, from, moving, moves, directions, rules = {}) {
   const { x, y } = coordinates(from);
   for (const [dx, dy] of directions) {
     let targetX = x + dx;
     let targetY = y + dy;
     while (inside(targetX, targetY)) {
-      if (!addTargetMove(moves, position, moving, from, targetX, targetY)) break;
+      if (!addTargetMove(moves, position, moving, from, targetX, targetY, {}, rules)) break;
       targetX += dx;
       targetY += dy;
     }
   }
 }
 
-function generateCastlingMoves(position, from, moving, moves) {
+function generateCastlingMoves(position, from, moving, moves, rules = {}) {
   if (moving.type !== 'k') return;
+  const context = normalizeRulesContext(rules);
   const white = moving.side === 'w';
   const rankY = white ? 7 : 0;
   const kingStart = indexOf(4, rankY);
   if (from !== kingStart) return;
   const enemy = opposite(moving.side);
-  if (isSquareAttacked(position, kingStart, enemy)) return;
+  if (isSquareAttacked(position, kingStart, enemy, context)) return;
 
   const options = white
     ? [
@@ -181,26 +219,30 @@ function generateCastlingMoves(position, from, moving, moves) {
     if (!position.castling.includes(option.right)) continue;
     const rook = position.board[indexOf(option.rookX, rankY)];
     if (!rook || rook.side !== moving.side || rook.type !== 'r') continue;
-    if (option.emptyX.some((targetX) => position.board[indexOf(targetX, rankY)])) continue;
-    if (option.safeX.some((targetX) => isSquareAttacked(position, indexOf(targetX, rankY), enemy))) continue;
+    if (option.emptyX.some((targetX) => {
+      const index = indexOf(targetX, rankY);
+      return isBlocked(context, index) || position.board[index];
+    })) continue;
+    if (option.safeX.some((targetX) => isSquareAttacked(position, indexOf(targetX, rankY), enemy, context))) continue;
     moves.push(createMove(from, indexOf(option.toX, rankY), { castle: option.castle }));
   }
 }
 
-function generatePseudoLegalMoves(position, side = position.sideToMove) {
+function generatePseudoLegalMoves(position, side = position.sideToMove, options = {}) {
   validatePosition(position);
+  const context = assertNoPieceOnBlockedSquare(position, options);
   const moves = [];
   for (let from = 0; from < 64; from += 1) {
     const moving = position.board[from];
     if (!moving || moving.side !== side) continue;
-    if (moving.type === 'p') generatePawnMoves(position, from, moving, moves);
-    else if (moving.type === 'n') generateStepMoves(position, from, moving, moves, KNIGHT_OFFSETS);
-    else if (moving.type === 'b') generateSlidingMoves(position, from, moving, moves, BISHOP_DIRECTIONS);
-    else if (moving.type === 'r') generateSlidingMoves(position, from, moving, moves, ROOK_DIRECTIONS);
-    else if (moving.type === 'q') generateSlidingMoves(position, from, moving, moves, QUEEN_DIRECTIONS);
+    if (moving.type === 'p') generatePawnMoves(position, from, moving, moves, context);
+    else if (moving.type === 'n') generateStepMoves(position, from, moving, moves, KNIGHT_OFFSETS, context);
+    else if (moving.type === 'b') generateSlidingMoves(position, from, moving, moves, BISHOP_DIRECTIONS, context);
+    else if (moving.type === 'r') generateSlidingMoves(position, from, moving, moves, ROOK_DIRECTIONS, context);
+    else if (moving.type === 'q') generateSlidingMoves(position, from, moving, moves, QUEEN_DIRECTIONS, context);
     else if (moving.type === 'k') {
-      generateStepMoves(position, from, moving, moves, KING_OFFSETS);
-      generateCastlingMoves(position, from, moving, moves);
+      generateStepMoves(position, from, moving, moves, KING_OFFSETS, context);
+      generateCastlingMoves(position, from, moving, moves, context);
     }
   }
   return moves;
@@ -281,11 +323,12 @@ function applyMoveUnchecked(position, move) {
   });
 }
 
-function generateLegalMoves(position) {
+function generateLegalMoves(position, options = {}) {
+  const context = normalizeRulesContext(options);
   const side = position.sideToMove;
-  return generatePseudoLegalMoves(position, side).filter((move) => {
+  return generatePseudoLegalMoves(position, side, context).filter((move) => {
     const next = applyMoveUnchecked(position, move);
-    return !isInCheck(next, side);
+    return !isInCheck(next, side, context);
   });
 }
 
@@ -293,35 +336,38 @@ function moveKey(move) {
   return `${squareToIndex(move.from)}:${squareToIndex(move.to)}:${move.promotion || ''}`;
 }
 
-function makeMove(position, request) {
+function makeMove(position, request, options = {}) {
   const desired = {
     from: squareToIndex(request.from),
     to: squareToIndex(request.to),
     promotion: request.promotion || null
   };
-  const match = generateLegalMoves(position).find((move) => moveKey(move) === moveKey(desired));
+  const match = generateLegalMoves(position, options).find((move) => moveKey(move) === moveKey(desired));
   if (!match) throw new Error(`illegal move: ${indexToSquare(desired.from)}${indexToSquare(desired.to)}${desired.promotion || ''}`);
   return { position: applyMoveUnchecked(position, match), move: match };
 }
 
-function gameStatus(position) {
-  const legalMoves = generateLegalMoves(position);
-  const check = isInCheck(position, position.sideToMove);
+function gameStatus(position, options = {}) {
+  const legalMoves = generateLegalMoves(position, options);
+  const check = isInCheck(position, position.sideToMove, options);
   if (legalMoves.length) return { state: check ? 'check' : 'active', check, legalMoves: legalMoves.length };
   return { state: check ? 'checkmate' : 'stalemate', check, legalMoves: 0, winner: check ? opposite(position.sideToMove) : null };
 }
 
-function perft(position, depth) {
+function perft(position, depth, options = {}) {
   if (!Number.isInteger(depth) || depth < 0) throw new RangeError('perft depth must be a non-negative integer');
   if (depth === 0) return 1;
   let nodes = 0;
-  for (const move of generateLegalMoves(position)) nodes += perft(applyMoveUnchecked(position, move), depth - 1);
+  for (const move of generateLegalMoves(position, options)) nodes += perft(applyMoveUnchecked(position, move), depth - 1, options);
   return nodes;
 }
 
 module.exports = {
   PROMOTIONS,
   createMove,
+  normalizeRulesContext,
+  isBlocked,
+  assertNoPieceOnBlockedSquare,
   isSquareAttacked,
   isInCheck,
   generatePseudoLegalMoves,
