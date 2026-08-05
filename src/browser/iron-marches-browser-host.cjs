@@ -18,6 +18,12 @@ const {
   runSelectionPresenter,
   runSelectionSnapshot
 } = require('../runtime/run-selection.cjs');
+const {
+  createRuntimeArmy,
+  validateRuntimeArmy,
+  runtimeSelectionFromArmy,
+  projectArmyBattleOptions
+} = require('../runtime/army-roster.cjs');
 const { buildBrowserProductionBundle } = require('./production-content-browser.cjs');
 const { createScenarioDeploymentGate } = require('../runtime/deployment-gate.cjs');
 const {
@@ -102,10 +108,11 @@ function assertBrowserSelection(bundle, selection) {
 }
 
 function createBrowserDependencies(options) {
-  const { bundle, language, aiProfile, aiMaxNodes, aiTimeBudgetMs, saveStore } = options;
+  const { bundle, language, army, aiProfile, aiMaxNodes, aiTimeBudgetMs, saveStore } = options;
   const localization = bundle.localization[language];
   if (!localization) throw new Error(`unsupported Iron Marches language: ${language}`);
   const scenarioTemplates = bundle.scenarioTemplates;
+  const battleProjector = (battleOptions) => projectArmyBattleOptions(battleOptions, army);
 
   const nodeResolver = ({ runtime, node, content }) => {
     if (node.type === 'event') return Object.freeze({ mode: 'event', reward: Object.freeze({ gold: 1, supplies: 1, meta: 0 }) });
@@ -113,14 +120,16 @@ function createBrowserDependencies(options) {
       const created = createEncounterScenario(scenarioTemplates, content.id, {
         seed: hash32(`${runtime.seed}:${node.id}:${content.id}`),
         playerSide: runtime.playerSide,
-        scenarioId: `${content.id.replace(/[^a-z0-9_-]+/g, '_')}_${node.id}`
+        scenarioId: `${content.id.replace(/[^a-z0-9_-]+/g, '_')}_${node.id}`,
+        battleProjector
       });
       return Object.freeze({ mode: 'scenario', scenario: created.scenario, reward: created.reward });
     }
     if (node.type === 'boss') {
       const created = createBossFromTemplates(scenarioTemplates, content.id, {
         seed: hash32(`${runtime.seed}:${node.id}:${content.id}`),
-        playerSide: runtime.playerSide
+        playerSide: runtime.playerSide,
+        battleProjector
       });
       return Object.freeze({ mode: 'boss', boss: created.state, reward: created.reward });
     }
@@ -130,7 +139,8 @@ function createBrowserDependencies(options) {
   const bossPhaseBattleResolver = ({ runtime, bossId, phaseIndex, contentId }) => {
     const created = createBossFromTemplates(scenarioTemplates, contentId || bossId, {
       seed: bossId === runtime.boss?.bossId ? runtime.boss.seed : hash32(`${runtime.seed}:${bossId}`),
-      playerSide: runtime.playerSide
+      playerSide: runtime.playerSide,
+      battleProjector
     });
     return created.battleForPhase(phaseIndex);
   };
@@ -165,14 +175,14 @@ function createBrowserIronMarchesRuntimeHost(options = {}) {
   const nodeCount = options.nodeCount ?? 9;
   const profileId = options.profileId || 'profile-1';
   const saveStore = options.saveStore || createBrowserProfileStore(options);
-  const selection = Object.freeze({
+  const requestedSelection = Object.freeze({
     regionId: options.selection?.regionId || DEFAULT_BROWSER_SELECTION.regionId,
     kingId: options.selection?.kingId || DEFAULT_BROWSER_SELECTION.kingId,
     doctrineId: options.selection?.doctrineId || DEFAULT_BROWSER_SELECTION.doctrineId,
     heroIds: freezeArray(options.selection?.heroIds || DEFAULT_BROWSER_SELECTION.heroIds),
     relicIds: freezeArray(options.selection?.relicIds || DEFAULT_BROWSER_SELECTION.relicIds)
   });
-  assertBrowserSelection(bundle, selection);
+  assertBrowserSelection(bundle, requestedSelection);
 
   let resumeInfo = options.resumeInfo || null;
   let state = options.initialState
@@ -183,6 +193,12 @@ function createBrowserIronMarchesRuntimeHost(options = {}) {
     state = resumeInfo.state;
   }
   const resumed = Boolean(state);
+  const army = state?.army
+    ? validateRuntimeArmy(state.army, bundle.registry, bundle.combatProfiles)
+    : createRuntimeArmy(requestedSelection, bundle.registry, bundle.combatProfiles);
+  const selection = runtimeSelectionFromArmy(army);
+  assertBrowserSelection(bundle, selection);
+
   if (!state) {
     const graph = generateActGraph({
       seed: requestedSeed,
@@ -205,9 +221,11 @@ function createBrowserIronMarchesRuntimeHost(options = {}) {
       contentRegistry: bundle.registry
     });
   }
+  if (state.army !== army) state = Object.freeze({ ...state, army });
   const dependencies = createBrowserDependencies({
     bundle,
     language,
+    army,
     aiProfile: state.aiProfile,
     aiMaxNodes: options.aiMaxNodes ?? 8000,
     aiTimeBudgetMs: options.aiTimeBudgetMs ?? 0,
@@ -219,6 +237,7 @@ function createBrowserIronMarchesRuntimeHost(options = {}) {
   return Object.freeze({
     format: 'rpchess-browser-runtime-host',
     selection,
+    army,
     bundle,
     dependencies,
     saveStore,
@@ -334,7 +353,7 @@ function createBrowserRunSelectionHost(options = {}) {
           kingId: selection.kingId,
           doctrineId: selection.doctrineId,
           heroIds: selection.heroIds,
-          relicIds: DEFAULT_BROWSER_SELECTION.relicIds
+          relicIds: freezeArray([])
         })
       });
       resumeInfo = Object.freeze({ profileId, status: 'saved', revision: runtimeHost.getLastSaveEnvelope()?.revision || 0, savedAt: runtimeHost.getLastSaveEnvelope()?.savedAt || null, recoveredFrom: null, state: runtimeHost.getState() });
