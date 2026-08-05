@@ -1,0 +1,32 @@
+name: RPChess Run Selection CI
+
+on:
+  pull_request:
+    paths:
+      - 'src/runtime/run-selection.cjs'
+      - 'src/runtime/iron-marches-run-setup.cjs'
+      - 'tests/run-selection.cjs'
+      - '.github/workflows/run-selection-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/runtime/run-selection.cjs'
+      - 'src/runtime/iron-marches-run-setup.cjs'
+      - 'tests/run-selection.cjs'
+      - '.github/workflows/run-selection-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  run-selection:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Run pre-run selection tests
+        run: node tests/run-selection.cjs
