@@ -32,7 +32,10 @@ test('bootstrap selection resolves the registered king, doctrine, heroes and rel
   assert.strictEqual(boot.selection.doctrineId, 'doctrine.fortress');
   assert.strictEqual(boot.selection.heroIds.length, 6);
   assert.strictEqual(boot.selection.relicIds.length, 6);
-  assert.throws(() => assertVerticalSliceSelection(boot.bundle, { ...DEFAULT_SELECTION, kingId: 'king.missing' }), /missing selected king/);
+  assert.throws(
+    () => assertVerticalSliceSelection(boot.bundle, { ...DEFAULT_SELECTION, kingId: 'king.missing' }),
+    (error) => Array.isArray(error.details) && error.details.includes('missing selected king: king.missing')
+  );
 });
 
 test('content pools and board themes are built only from compiled production data', () => {
