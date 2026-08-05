@@ -27,8 +27,15 @@ function createBrowserProfileStore(options = {}) {
   });
 }
 
-function inspectBrowserProfile(store, profileIdInput, contentRegistry = null) {
+function runtimeValidationOptions(input = null) {
+  if (!input) return Object.freeze({});
+  if (typeof input.get === 'function') return Object.freeze({ contentRegistry: input });
+  return Object.freeze({ ...input });
+}
+
+function inspectBrowserProfile(store, profileIdInput, validationInput = null) {
   const profileId = normalizeProfileId(profileIdInput);
+  const validation = runtimeValidationOptions(validationInput);
   if (!store) return Object.freeze({
     profileId,
     status: 'unavailable',
@@ -39,7 +46,7 @@ function inspectBrowserProfile(store, profileIdInput, contentRegistry = null) {
     diagnostics: null
   });
   const loaded = loadVerticalSlice(store, profileId, {
-    contentRegistry,
+    ...validation,
     repair: true
   });
   return Object.freeze({
@@ -48,14 +55,15 @@ function inspectBrowserProfile(store, profileIdInput, contentRegistry = null) {
     revision: loaded.envelope?.revision || 0,
     savedAt: loaded.envelope?.savedAt || null,
     recoveredFrom: loaded.recoveredFrom || null,
+    migratedFrom: loaded.migratedFrom || null,
     state: loaded.state || null,
     diagnostics: loaded.diagnostics || null
   });
 }
 
-function listBrowserProfiles(store, contentRegistry = null) {
+function listBrowserProfiles(store, validationInput = null) {
   return Object.freeze(PROFILE_SLOTS.map((profileId) => {
-    const inspected = inspectBrowserProfile(store, profileId, contentRegistry);
+    const inspected = inspectBrowserProfile(store, profileId, validationInput);
     const state = inspected.state;
     return Object.freeze({
       profileId,
@@ -89,6 +97,7 @@ function deleteBrowserProfile(store, profileIdInput) {
 module.exports = {
   BROWSER_SAVE_NAMESPACE,
   resolveBrowserStorage,
+  runtimeValidationOptions,
   createBrowserProfileStore,
   inspectBrowserProfile,
   listBrowserProfiles,
