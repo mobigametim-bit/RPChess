@@ -22,7 +22,7 @@ const test = (name, fn) => tests.push({ name, fn });
 const move = (from, to, promotion = null) => ({ type: 'MovePiece', payload: { from, to, promotion } });
 
 test('all release primary statuses are visible and never hide geometry', () => {
-  assert.deepStrictEqual(Object.keys(STATUS_DEFINITIONS).sort(), ['bound', 'cursed', 'marked', 'provoked', 'silenced', 'ward']);
+  assert.deepStrictEqual(Object.keys(STATUS_DEFINITIONS).sort(), ['bound', 'cursed', 'evasion', 'guarded', 'marked', 'offered', 'provoked', 'silenced', 'ward']);
   for (const definition of Object.values(STATUS_DEFINITIONS)) {
     assert.strictEqual(definition.category, 'primary');
     assert.strictEqual(definition.visible, true);

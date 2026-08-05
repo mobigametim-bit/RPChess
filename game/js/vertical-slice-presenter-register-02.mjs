@@ -1,6 +1,7 @@
 import { VerticalSlicePresenter as BaseVerticalSlicePresenter } from './vertical-slice-presenter.mjs';
 import { heroAssets } from './register-02-assets.mjs';
 import { kingAssets, doctrineAssets } from './register-01-assets.mjs';
+import { relicChipMarkup, installRegister03RelicCodex, ensureRegister03Styles } from './register-03-relic-codex.mjs';
 import {
   heroProfile,
   heroPanelMarkup,
@@ -60,7 +61,7 @@ function armyPanelMarkup(snapshot) {
     const name = hero.name || profile?.name || hero.heroId;
     return `<article class="rp02-army-hero rp02-army-hero--${state.id}">
       ${assets?.portrait ? `<img src="${assets.portrait}" alt="${name}">` : ''}
-      <div><strong>${name}</strong><span>${state.label}</span><small>${hero.relicIds?.length || 0} реликв.</small></div>
+      <div><strong>${name}</strong><span>${state.label}</span>${relicChipMarkup(hero.relicIds, { compact: true })}</div>
     </article>`;
   }).join('');
   return `<aside class="rpvs__panel rp02-army-panel" data-rp02-army-panel>
@@ -140,6 +141,7 @@ class VerticalSlicePresenter extends BaseVerticalSlicePresenter {
   installStyles() {
     super.installStyles();
     ensureCodexStyles(this.root.ownerDocument);
+    ensureRegister03Styles(this.root.ownerDocument);
     ensureArmyStyles(this.root.ownerDocument);
   }
 
@@ -152,6 +154,7 @@ class VerticalSlicePresenter extends BaseVerticalSlicePresenter {
     super.render(snapshotInput);
     installArmyPanel(this.root, snapshotInput);
     installRegister02Codex(this.root, { target: '.rpvs__resources', label: 'Кодекс' });
+    installRegister03RelicCodex(this.root, { target: '.rpvs__resources', label: 'Реликвии · 72' });
   }
 
   renderDeployment(snapshot) {

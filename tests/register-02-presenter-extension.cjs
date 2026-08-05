@@ -33,7 +33,7 @@ const root = path.resolve(__dirname, '..');
     assert.ok(markup.includes('assets/heroes/aldric_wall/piece_badge.png'));
     assert.ok(markup.includes('assets/heroes/aldric_wall/ability_icon.png'));
     assert.ok(markup.includes('★★★'));
-    assert.ok(markup.includes('Эхо-щит'));
+    assert.ok(markup.includes('Щит эха'));
     assert.ok(markup.includes('warded'));
     assert.ok(markup.includes('На поле: a1'));
   });

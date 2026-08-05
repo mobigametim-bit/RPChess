@@ -48,8 +48,20 @@ function commandLabel(command) {
   if (command.type === 'MovePiece') return `${payload.from} → ${payload.to}${payload.promotion ? ` = ${payload.promotion.toUpperCase()}` : ''}`;
   if (command.type === 'DeployReserve') return `Резерв: ${payload.entryId} → ${payload.square}`;
   if (command.type === 'UseAbility') {
-    const name = payload.abilityId === 'ability.circle_warding' ? 'Круг защиты' : payload.abilityId;
-    return `${name} → ${payload.targetSquare || payload.targetId} · ${payload.effectiveOrderCost ?? payload.baseOrderCost ?? 0} ОП`;
+    const names = {
+      'ability.circle_warding': 'Круг защиты',
+      'ability.interpose': 'Перехват',
+      'ability.chain_formation': 'Цепное построение',
+      'ability.forge_line': 'Линия кузни',
+      'ability.previewed_charge': 'Предсказанный натиск',
+      'ability.hostage_tactic': 'Тактика заложника',
+      'ability.gate_command': 'Команда ворот',
+      'ability.royal_decree': 'Королевский указ',
+      'ability.oath_fallen': 'Клятва павших'
+    };
+    const name = names[payload.abilityId] || payload.abilityId;
+    const target = payload.via && payload.to ? `${payload.via} → ${payload.to}` : payload.targetSquare || payload.to || payload.targetId;
+    return `${name} → ${target} · ${payload.effectiveOrderCost ?? payload.baseOrderCost ?? 0} ОП`;
   }
   return command.type;
 }
