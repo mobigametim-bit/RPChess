@@ -11,6 +11,7 @@ const nodeShimPlugin = {
   setup(build) {
     build.onResolve({ filter: /^(?:node:)?fs$/ }, () => ({ path: path.join(shimRoot, 'fs.cjs') }));
     build.onResolve({ filter: /^(?:node:)?path$/ }, () => ({ path: path.join(shimRoot, 'path.cjs') }));
+    build.onResolve({ filter: /^(?:node:)?crypto$/ }, () => ({ path: path.join(shimRoot, 'crypto.cjs') }));
   }
 };
 
