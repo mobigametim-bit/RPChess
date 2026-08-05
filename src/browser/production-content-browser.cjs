@@ -1,0 +1,54 @@
+'use strict';
+
+require('./buffer-shim.cjs');
+
+const { ContentRegistry } = require('../content/index.cjs');
+const {
+  mergeEffectCatalogs,
+  validateEffectCatalog,
+  validateEventEffectReferences,
+  createCatalogEventChoiceResolver
+} = require('../content/effect-catalog.cjs');
+const {
+  validateScenarioTemplateSet,
+  validateScenarioContentReferences
+} = require('../content/scenario-templates.cjs');
+
+const boardThemeManifest = require('../../content/board-themes.json');
+const productionPack = require('../../content/packs/iron_marches_vertical_slice.json');
+const effectCatalog = require('../../content/effects/iron_marches_events.json');
+const localizationRu = require('../../content/localization/ru/iron_marches_vertical_slice.json');
+const localizationEn = require('../../content/localization/en/iron_marches_vertical_slice.json');
+const scenarioTemplateSource = require('../../content/scenarios/iron_marches_vertical_slice.json');
+
+function buildBrowserProductionBundle() {
+  const localization = Object.freeze({
+    ru: Object.freeze({ ...localizationRu }),
+    en: Object.freeze({ ...localizationEn })
+  });
+  const registry = new ContentRegistry({ boardThemeManifest });
+  registry.addPack(productionPack);
+  registry.finalize({ localization });
+
+  const eventEffectCatalog = mergeEffectCatalogs([validateEffectCatalog(effectCatalog)]);
+  validateEventEffectReferences(registry, eventEffectCatalog);
+  const scenarioTemplates = validateScenarioTemplateSet(scenarioTemplateSource);
+  validateScenarioContentReferences(scenarioTemplates, registry);
+
+  return Object.freeze({
+    format: 'rpchess-browser-production-content',
+    schemaVersion: 1,
+    boardThemeManifest,
+    registry,
+    localization,
+    eventEffectCatalog,
+    eventChoiceResolver: createCatalogEventChoiceResolver(eventEffectCatalog),
+    scenarioTemplates,
+    summary: registry.summary(),
+    assetPaths: registry.assetPaths()
+  });
+}
+
+module.exports = {
+  buildBrowserProductionBundle
+};
