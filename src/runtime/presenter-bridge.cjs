@@ -13,13 +13,21 @@ const {
   enterVerticalSliceNode,
   chooseVerticalSliceEvent,
   executeVerticalSlicePlayerTurn,
+  beginVerticalSliceBossPhase,
   claimVerticalSliceReward,
   saveVerticalSlice
 } = require('./vertical-slice.cjs');
 
 const PRESENTER_FORMAT = 'rpchess-presenter-snapshot';
 const PRESENTER_SCHEMA_VERSION = 1;
-const PRESENTER_COMMANDS = Object.freeze(['Travel', 'ChooseEvent', 'PlayerCommand', 'ClaimReward', 'SaveCheckpoint']);
+const PRESENTER_COMMANDS = Object.freeze([
+  'Travel',
+  'ChooseEvent',
+  'PlayerCommand',
+  'BeginBossPhase',
+  'ClaimReward',
+  'SaveCheckpoint'
+]);
 
 function freezeArray(values) {
   return Object.freeze(values.slice());
@@ -102,7 +110,6 @@ function commandKey(command) {
 function pieceSnapshot(battle, square, pieceId) {
   const boardPiece = battle.position.board[squareToIndex(square)];
   const metadata = battle.identities.metadata[pieceId] || {};
-  const status = statusView(battle.statuses, pieceId);
   return Object.freeze({
     pieceId,
     square,
@@ -112,7 +119,31 @@ function pieceSnapshot(battle, square, pieceId) {
     nameKey: metadata.nameKey || null,
     stars: Number.isInteger(metadata.stars) ? metadata.stars : 0,
     relicIds: freezeArray(metadata.relicIds || []),
-    status
+    status: statusView(battle.statuses, pieceId)
+  });
+}
+
+function eventSnapshot(state, dependencies = {}) {
+  if (!state.event) return null;
+  const event = state.event;
+  const localization = dependencies.localization || null;
+  return Object.freeze({
+    eventId: event.eventId,
+    nodeId: event.nodeId,
+    status: event.status,
+    title: localizationValue(localization, event.titleKey, event.eventId),
+    body: localizationValue(localization, event.bodyKey, event.eventId),
+    sceneArt: event.sceneArt,
+    scope: event.scope,
+    selectedChoiceId: event.selectedChoiceId,
+    choices: freezeArray(event.choices.map((choice) => Object.freeze({
+      id: choice.id,
+      label: localizationValue(localization, choice.textKey, choice.id),
+      effectCount: choice.effectIds.length
+    }))),
+    outcome: event.resolution?.outcomeKey
+      ? localizationValue(localization, event.resolution.outcomeKey, event.resolution.outcomeKey)
+      : null
   });
 }
 
@@ -141,33 +172,13 @@ function failureSnapshot(definition, progress, localization) {
   });
 }
 
-function eventSnapshot(state, dependencies = {}) {
-  if (!state.event) return null;
-  const event = state.event;
-  const localization = dependencies.localization || null;
-  return Object.freeze({
-    eventId: event.eventId,
-    nodeId: event.nodeId,
-    status: event.status,
-    title: localizationValue(localization, event.titleKey, event.eventId),
-    body: localizationValue(localization, event.bodyKey, event.eventId),
-    sceneArt: event.sceneArt,
-    scope: event.scope,
-    selectedChoiceId: event.selectedChoiceId,
-    choices: freezeArray(event.choices.map((choice) => Object.freeze({
-      id: choice.id,
-      label: localizationValue(localization, choice.textKey, choice.id),
-      effectCount: choice.effectIds.length
-    }))),
-    outcome: event.resolution?.outcomeKey
-      ? localizationValue(localization, event.resolution.outcomeKey, event.resolution.outcomeKey)
-      : null
-  });
+function activeScenario(state) {
+  return state.scenario || state.boss?.scenario || null;
 }
 
 function scenarioSnapshot(state, dependencies = {}) {
-  if (!state.scenario) return null;
-  const scenario = state.scenario;
+  const scenario = activeScenario(state);
+  if (!scenario) return null;
   const battle = scenario.battle;
   const boardTheme = resolveBoardTheme(state, dependencies);
   const content = currentContent(state, dependencies.contentRegistry);
@@ -178,10 +189,10 @@ function scenarioSnapshot(state, dependencies = {}) {
   const legalCommands = playerTurn
     ? legalWardAwareCommands(battle).map(normalizeCommand).sort((a, b) => commandKey(a).localeCompare(commandKey(b)))
     : [];
+  const localization = dependencies.localization || null;
   const pieces = Object.entries(battle.identities.bySquare)
     .map(([square, pieceId]) => pieceSnapshot(battle, square, pieceId))
     .sort((a, b) => a.square.localeCompare(b.square));
-  const localization = dependencies.localization || null;
   const objectives = scenario.objectives.map((definition, index) => objectiveSnapshot(definition, scenario.objectiveStates[index], localization));
   const failures = scenario.failures.map((definition, index) => failureSnapshot(definition, scenario.failureStates[index], localization));
   const environment = (scenario.environment?.objects || []).map((object) => Object.freeze({
@@ -218,6 +229,33 @@ function scenarioSnapshot(state, dependencies = {}) {
     environment: freezeArray(environment),
     battleEventCount: battle.eventLog.length,
     scenarioEventCount: scenario.eventLog.length
+  });
+}
+
+function bossSnapshot(state, dependencies = {}) {
+  if (!state.boss) return null;
+  const boss = state.boss;
+  const phase = boss.phases[boss.phaseIndex];
+  const nextPhase = boss.phases[boss.phaseIndex + 1] || null;
+  const localization = dependencies.localization || null;
+  return Object.freeze({
+    bossId: boss.bossId,
+    status: boss.status,
+    result: boss.result ? deepFreeze(serializableCopy(boss.result)) : null,
+    phaseIndex: boss.phaseIndex,
+    phaseNumber: boss.phaseIndex + 1,
+    phaseCount: boss.phases.length,
+    currentPhaseId: boss.currentPhaseId,
+    currentPhaseTitle: localizationValue(localization, phase?.titleKey, boss.currentPhaseId),
+    nextPhaseId: nextPhase?.id || null,
+    nextPhaseTitle: nextPhase ? localizationValue(localization, nextPhase.titleKey, nextPhase.id) : null,
+    completedPhases: freezeArray(boss.phaseHistory.map((record) => Object.freeze({
+      phaseIndex: record.phaseIndex,
+      phaseId: record.phaseId,
+      outcome: record.outcome,
+      reason: record.reason,
+      actionCount: record.actionCount
+    })))
   });
 }
 
@@ -269,7 +307,8 @@ function campaignSnapshot(state, dependencies = {}) {
 function presenterActions(state, event, scenario) {
   if (state.status === 'campaign') return freezeArray(['Travel']);
   if (state.status === 'event' && event?.status === 'active') return freezeArray(['ChooseEvent']);
-  if (state.status === 'scenario' && scenario?.playerTurn) return freezeArray(['PlayerCommand']);
+  if (['scenario', 'boss'].includes(state.status) && scenario?.playerTurn) return freezeArray(['PlayerCommand']);
+  if (state.status === 'boss_transition') return freezeArray(['BeginBossPhase']);
   if (state.status === 'reward') return freezeArray(['ClaimReward']);
   return freezeArray([]);
 }
@@ -279,6 +318,7 @@ function createPresenterSnapshot(state, dependencies = {}) {
   const campaign = campaignSnapshot(state, dependencies);
   const event = eventSnapshot(state, dependencies);
   const scenario = scenarioSnapshot(state, dependencies);
+  const boss = bossSnapshot(state, dependencies);
   const content = currentContent(state, dependencies.contentRegistry);
   const reward = state.pendingReward && state.currentNode ? Object.freeze({
     nodeId: state.currentNode.nodeId,
@@ -313,6 +353,7 @@ function createPresenterSnapshot(state, dependencies = {}) {
     currentNode: state.currentNode ? deepFreeze(serializableCopy(state.currentNode)) : null,
     event,
     scenario,
+    boss,
     reward,
     terminal,
     actions: presenterActions(state, event, scenario),
@@ -351,6 +392,7 @@ function dispatchPresenterCommand(state, commandInput, dependencies = {}) {
   if (command.type === 'Travel') nextState = enterVerticalSliceNode(state, command.targetNodeId, dependencies);
   else if (command.type === 'ChooseEvent') nextState = chooseVerticalSliceEvent(state, command.choiceId, dependencies);
   else if (command.type === 'PlayerCommand') nextState = executeVerticalSlicePlayerTurn(state, command.request, dependencies);
+  else if (command.type === 'BeginBossPhase') nextState = beginVerticalSliceBossPhase(state, dependencies);
   else if (command.type === 'ClaimReward') nextState = claimVerticalSliceReward(state);
   else if (command.type === 'SaveCheckpoint') {
     if (!dependencies.saveStore) throw new Error('SaveCheckpoint requires saveStore');
@@ -372,6 +414,7 @@ module.exports = {
   normalizeTileSet,
   resolveBoardTheme,
   commandKey,
+  activeScenario,
   createPresenterSnapshot,
   normalizePresenterCommand,
   dispatchPresenterCommand

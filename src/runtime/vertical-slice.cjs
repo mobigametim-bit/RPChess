@@ -17,10 +17,20 @@ const {
   resolveAuthoredEventChoice,
   applyFlagChanges
 } = require('./authored-event.cjs');
+const { executeBossActionPair, advanceBossPhase } = require('./boss-gate.cjs');
 
 const RUNTIME_FORMAT = 'rpchess-vertical-slice-runtime';
 const RUNTIME_SCHEMA_VERSION = 1;
-const RUNTIME_STATUSES = Object.freeze(['campaign', 'event', 'scenario', 'reward', 'complete', 'failed']);
+const RUNTIME_STATUSES = Object.freeze([
+  'campaign',
+  'event',
+  'scenario',
+  'boss',
+  'boss_transition',
+  'reward',
+  'complete',
+  'failed'
+]);
 
 function freezeArray(values) {
   return Object.freeze(values.slice());
@@ -120,6 +130,7 @@ function createVerticalSliceRuntime(options = {}) {
     currentNode: null,
     event: null,
     scenario: null,
+    boss: null,
     pendingReward: null,
     resources: Object.freeze({ gold: 0, meta: 0 }),
     flags: freezeArray([]),
@@ -139,20 +150,26 @@ function availableVerticalSliceRoutes(state) {
 function normalizeNodeResolution(node, content, resolution) {
   if (!resolution || typeof resolution !== 'object') throw new Error(`node resolver returned no result for ${node.id}`);
   const mode = resolution.mode;
-  if (!['scenario', 'event', 'immediate'].includes(mode)) throw new Error(`node resolver returned invalid mode for ${node.id}`);
+  if (!['scenario', 'boss', 'event', 'immediate'].includes(mode)) throw new Error(`node resolver returned invalid mode for ${node.id}`);
   const reward = normalizeReward(resolution.reward || {});
   if (mode === 'scenario') {
     const scenario = resolution.scenario;
     if (!scenario || scenario.format !== 'rpchess-scenario-state') throw new Error(`${node.id} resolver must return a valid scenario state`);
-    return Object.freeze({ mode, scenario, event: null, reward, contentId: content?.id || node.contentId || null });
+    return Object.freeze({ mode, scenario, boss: null, event: null, reward, contentId: content?.id || node.contentId || null });
+  }
+  if (mode === 'boss') {
+    const boss = resolution.boss;
+    if (node.type !== 'boss') throw new Error(`${node.id} may use boss mode only for a boss node`);
+    if (!boss || boss.format !== 'rpchess-boss-phase-state' || boss.status !== 'active') throw new Error(`${node.id} resolver must return an active boss phase state`);
+    return Object.freeze({ mode, scenario: null, boss, event: null, reward, contentId: content?.id || node.contentId || null });
   }
   if (mode === 'event') {
     if (!content || content.kind !== 'event') throw new Error(`${node.id} event mode requires compiled event content`);
     const event = resolution.event || createAuthoredEventState(content, { nodeId: node.id });
     if (!event || event.format !== 'rpchess-authored-event-state' || event.status !== 'active') throw new Error(`${node.id} resolver must return an active authored event state`);
-    return Object.freeze({ mode, scenario: null, event, reward, contentId: content.id });
+    return Object.freeze({ mode, scenario: null, boss: null, event, reward, contentId: content.id });
   }
-  return Object.freeze({ mode, scenario: null, event: null, reward, contentId: content?.id || node.contentId || null });
+  return Object.freeze({ mode, scenario: null, boss: null, event: null, reward, contentId: content?.id || node.contentId || null });
 }
 
 function enterVerticalSliceNode(state, targetNodeId, dependencies = {}) {
@@ -175,6 +192,9 @@ function enterVerticalSliceNode(state, targetNodeId, dependencies = {}) {
   if (resolution.mode === 'scenario' && resolution.scenario.battle.position.sideToMove !== state.playerSide) {
     throw new Error(`${node.id} scenario must begin on the player side`);
   }
+  if (resolution.mode === 'boss' && resolution.boss.scenario.battle.position.sideToMove !== state.playerSide) {
+    throw new Error(`${node.id} boss must begin on the player side`);
+  }
 
   const operation = Object.freeze({ type: 'Travel', targetNodeId });
   const currentNode = Object.freeze({
@@ -183,7 +203,13 @@ function enterVerticalSliceNode(state, targetNodeId, dependencies = {}) {
     contentId: resolution.contentId,
     reward: resolution.reward
   });
-  const nextStatus = resolution.mode === 'scenario' ? 'scenario' : resolution.mode === 'event' ? 'event' : 'reward';
+  const nextStatus = resolution.mode === 'scenario'
+    ? 'scenario'
+    : resolution.mode === 'boss'
+      ? 'boss'
+      : resolution.mode === 'event'
+        ? 'event'
+        : 'reward';
   return deepFreeze({
     ...state,
     campaign,
@@ -191,6 +217,7 @@ function enterVerticalSliceNode(state, targetNodeId, dependencies = {}) {
     currentNode,
     event: resolution.event,
     scenario: resolution.scenario,
+    boss: resolution.boss,
     pendingReward: resolution.mode === 'immediate' ? resolution.reward : null,
     transcript: freezeArray([...state.transcript, operation]),
     history: freezeArray([...state.history, Object.freeze({
@@ -260,9 +287,8 @@ function copyRequest(request) {
   });
 }
 
-function executeVerticalSlicePlayerTurn(state, request, dependencies = {}) {
-  assertRuntimeState(state);
-  if (state.status !== 'scenario' || !state.scenario) throw new Error('no active vertical slice scenario');
+function executeOrdinaryActionPair(state, request, dependencies) {
+  if (!state.scenario) throw new Error('no active vertical slice scenario');
   if (state.scenario.battle.position.sideToMove !== state.playerSide) throw new Error('it is not the player side turn');
   const playerRequest = copyRequest(request);
   const playerResult = executeScenarioCommand(state.scenario, playerRequest);
@@ -291,25 +317,19 @@ function executeVerticalSlicePlayerTurn(state, request, dependencies = {}) {
 
   let status = 'scenario';
   let pendingReward = null;
-  let campaign = state.campaign;
   if (scenario.status === 'completed') {
     if (scenario.result?.outcome === 'victory') {
       status = 'reward';
       pendingReward = state.currentNode.reward;
-    } else {
-      status = 'failed';
-      if (state.currentNode.type === 'boss' && campaign.status === 'boss_reached') campaign = completeBossNode(campaign, 'defeat');
-    }
+    } else status = 'failed';
   }
 
-  const operation = Object.freeze({ type: 'PlayerCommand', request: playerRequest });
   return deepFreeze({
     ...state,
-    campaign,
     scenario,
     status,
     pendingReward,
-    transcript: freezeArray([...state.transcript, operation]),
+    transcript: freezeArray([...state.transcript, Object.freeze({ type: 'PlayerCommand', request: playerRequest })]),
     history: freezeArray([...state.history, Object.freeze({
       index: state.history.length,
       type: 'action_pair',
@@ -323,6 +343,101 @@ function executeVerticalSlicePlayerTurn(state, request, dependencies = {}) {
       aiScenarioEvents: aiEvents.map((event) => event.type),
       scenarioStatus: scenario.status,
       scenarioResult: scenario.result
+    })])
+  });
+}
+
+function executeBossAction(state, request, dependencies) {
+  if (!state.boss || state.boss.status !== 'active') throw new Error('no active vertical slice boss');
+  const resolution = executeBossActionPair(state.boss, request, {
+    playerSide: state.playerSide,
+    aiProfile: state.aiProfile,
+    aiTimeBudgetMs: dependencies.aiTimeBudgetMs ?? 0,
+    aiMaxNodes: dependencies.aiMaxNodes
+  });
+  const boss = resolution.boss;
+  let status = 'boss';
+  let pendingReward = null;
+  let campaign = state.campaign;
+  if (boss.status === 'awaiting_phase_transition') status = 'boss_transition';
+  else if (boss.status === 'completed') {
+    if (boss.result?.outcome === 'victory') {
+      status = 'reward';
+      pendingReward = state.currentNode.reward;
+    } else {
+      status = 'failed';
+      if (campaign.status === 'boss_reached') campaign = completeBossNode(campaign, 'defeat');
+    }
+  }
+  const playerRequest = resolution.playerRequest;
+  return deepFreeze({
+    ...state,
+    campaign,
+    boss,
+    status,
+    pendingReward,
+    transcript: freezeArray([...state.transcript, Object.freeze({ type: 'PlayerCommand', request: playerRequest })]),
+    history: freezeArray([...state.history, Object.freeze({
+      index: state.history.length,
+      type: 'boss_action_pair',
+      bossId: boss.bossId,
+      phaseIndex: boss.phaseIndex,
+      phaseId: boss.currentPhaseId,
+      playerCommand: playerRequest,
+      playerScenarioEvents: resolution.playerScenarioEvents.map((event) => event.type),
+      playerBossEvents: resolution.playerBossEvents.map((event) => event.type),
+      aiCommand: resolution.aiDecision?.command || null,
+      aiProfile: resolution.aiDecision?.profile || null,
+      aiCompletedDepth: resolution.aiDecision?.completedDepth ?? null,
+      aiNodes: resolution.aiDecision?.nodes ?? 0,
+      aiAbortedBy: resolution.aiDecision?.abortedBy || null,
+      aiScenarioEvents: resolution.aiScenarioEvents.map((event) => event.type),
+      aiBossEvents: resolution.aiBossEvents.map((event) => event.type),
+      bossStatus: boss.status,
+      bossResult: boss.result
+    })])
+  });
+}
+
+function executeVerticalSlicePlayerTurn(state, request, dependencies = {}) {
+  assertRuntimeState(state);
+  if (state.status === 'scenario') return executeOrdinaryActionPair(state, request, dependencies);
+  if (state.status === 'boss') return executeBossAction(state, request, dependencies);
+  throw new Error('no active vertical slice scenario or boss');
+}
+
+function beginVerticalSliceBossPhase(state, dependencies = {}) {
+  assertRuntimeState(state);
+  if (state.status !== 'boss_transition' || !state.boss || state.boss.status !== 'awaiting_phase_transition') {
+    throw new Error('vertical slice boss is not awaiting a phase transition');
+  }
+  if (typeof dependencies.bossPhaseBattleResolver !== 'function') throw new Error('bossPhaseBattleResolver is required');
+  const nextPhaseIndex = state.boss.phaseIndex + 1;
+  const nextPhase = state.boss.phases[nextPhaseIndex];
+  const battle = dependencies.bossPhaseBattleResolver({
+    runtime: state,
+    boss: state.boss,
+    bossId: state.boss.bossId,
+    phaseIndex: nextPhaseIndex,
+    phase: nextPhase,
+    contentId: state.currentNode?.contentId || null
+  });
+  if (!battle || battle.format !== 'rpchess-battle-state') throw new Error('bossPhaseBattleResolver must return a battle state');
+  const transition = advanceBossPhase(state.boss, battle);
+  const boss = transition.state;
+  const operation = Object.freeze({ type: 'BeginBossPhase', phaseIndex: nextPhaseIndex, phaseId: boss.currentPhaseId });
+  return deepFreeze({
+    ...state,
+    boss,
+    status: 'boss',
+    transcript: freezeArray([...state.transcript, operation]),
+    history: freezeArray([...state.history, Object.freeze({
+      index: state.history.length,
+      type: 'boss_phase_started',
+      bossId: boss.bossId,
+      phaseIndex: boss.phaseIndex,
+      phaseId: boss.currentPhaseId,
+      events: transition.events.map((event) => event.type)
     })])
   });
 }
@@ -354,6 +469,7 @@ function claimVerticalSliceReward(state) {
     currentNode: null,
     event: null,
     scenario: null,
+    boss: null,
     pendingReward: null,
     resources,
     rewardLog: freezeArray([...state.rewardLog, rewardRecord]),
@@ -383,6 +499,8 @@ function validateVerticalSliceSnapshot(snapshot, options = {}) {
   }
   if (state.status === 'event' && (!state.event || state.event.status !== 'active')) throw new Error('snapshot active event is invalid');
   if (state.status === 'scenario' && (!state.scenario || state.scenario.status !== 'active')) throw new Error('snapshot active scenario is invalid');
+  if (state.status === 'boss' && (!state.boss || state.boss.status !== 'active')) throw new Error('snapshot active boss is invalid');
+  if (state.status === 'boss_transition' && (!state.boss || state.boss.status !== 'awaiting_phase_transition')) throw new Error('snapshot boss transition is invalid');
   if (state.status === 'reward' && !state.pendingReward) throw new Error('snapshot reward state has no pending reward');
   if (state.status === 'complete' && state.campaign.status !== 'completed') throw new Error('snapshot completion does not match campaign');
   return deepFreeze(state);
@@ -410,6 +528,7 @@ function replayVerticalSlice(initialState, operations, dependencies = {}) {
     if (operation.type === 'Travel') state = enterVerticalSliceNode(state, operation.targetNodeId, dependencies);
     else if (operation.type === 'ChooseEvent') state = chooseVerticalSliceEvent(state, operation.choiceId, dependencies);
     else if (operation.type === 'PlayerCommand') state = executeVerticalSlicePlayerTurn(state, operation.request, dependencies);
+    else if (operation.type === 'BeginBossPhase') state = beginVerticalSliceBossPhase(state, dependencies);
     else if (operation.type === 'ClaimReward') state = claimVerticalSliceReward(state);
     else throw new Error(`unsupported vertical slice replay operation: ${operation.type}`);
   }
@@ -429,6 +548,7 @@ module.exports = {
   enterVerticalSliceNode,
   chooseVerticalSliceEvent,
   executeVerticalSlicePlayerTurn,
+  beginVerticalSliceBossPhase,
   claimVerticalSliceReward,
   snapshotVerticalSlice,
   validateVerticalSliceSnapshot,
