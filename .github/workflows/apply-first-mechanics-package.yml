@@ -4,16 +4,16 @@ on:
   push:
     branches:
       - agent/first-executable-hero-mechanics
-  pull_request:
-    branches:
-      - main
 
 permissions:
   contents: write
 
+concurrency:
+  group: apply-first-mechanics-package
+  cancel-in-progress: false
+
 jobs:
   apply:
-    if: github.event_name == 'push' || github.head_ref == 'agent/first-executable-hero-mechanics'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -64,4 +64,6 @@ jobs:
             src/runtime/deployment-gate.cjs \
             tests/iron-marches-mechanics-readiness.cjs
           git commit -m "Implement first executable Iron Marches mechanics"
+          git fetch origin agent/first-executable-hero-mechanics
+          git rebase origin/agent/first-executable-hero-mechanics
           git push origin HEAD:agent/first-executable-hero-mechanics
