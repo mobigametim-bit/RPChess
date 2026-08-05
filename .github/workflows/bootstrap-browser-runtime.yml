@@ -17,6 +17,22 @@ on:
       - game/vertical-slice.html
       - game/js/vertical-slice-app.mjs
       - tests/browser-production-runtime.cjs
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/bootstrap-browser-runtime.yml
+      - package.json
+      - package-lock.json
+      - scripts/build-browser-runtime.cjs
+      - scripts/build.cjs
+      - src/browser/**
+      - src/runtime/**
+      - src/content/**
+      - content/**
+      - game/vertical-slice.html
+      - game/js/vertical-slice-app.mjs
+      - tests/browser-production-runtime.cjs
 
 permissions:
   contents: write
