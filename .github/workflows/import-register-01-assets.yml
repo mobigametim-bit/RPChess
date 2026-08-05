@@ -1,0 +1,63 @@
+name: Import Register 01 production assets
+
+on:
+  push:
+    branches:
+      - assets/register-01-production
+    paths:
+      - .github/workflows/import-register-01-assets.yml
+      - scripts/import-register-01-assets.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: import-register-01-production-assets
+  cancel-in-progress: false
+
+jobs:
+  import-assets:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out import branch
+        uses: actions/checkout@v4
+        with:
+          ref: assets/register-01-production
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install importer dependencies
+        run: python -m pip install --disable-pip-version-check 'gdown>=5.2,<6' 'Pillow>=11,<12'
+
+      - name: Download, normalize and validate Register 01
+        run: python scripts/import-register-01-assets.py
+
+      - name: Verify complete canonical asset set
+        run: |
+          test -f content/assets/register_01_assets.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          manifest = json.loads(Path('content/assets/register_01_assets.json').read_text(encoding='utf-8'))
+          assert manifest['assetCount'] == 141, manifest['assetCount']
+          missing = [asset['repositoryPath'] for asset in manifest['assets'] if not Path(asset['repositoryPath']).is_file()]
+          assert not missing, missing
+          print(f"Verified {manifest['assetCount']} canonical files, {manifest['totalBytes']} bytes")
+          PY
+
+      - name: Commit normalized binary assets
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add game/assets content/assets/register_01_assets.json content/board-themes.json register/REGISTER_01_FOUNDATIONS.md
+          git diff --cached --stat
+          git diff --cached --quiet && { echo 'Importer produced no changes'; exit 1; }
+          git commit -m 'Import and normalize all 141 Register 01 assets'
+          git push origin HEAD:assets/register-01-production
