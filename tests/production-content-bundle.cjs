@@ -31,6 +31,7 @@ test('canonical production bundle validates board themes, cross references and R
   assert.strictEqual(compiled.boardThemeManifest.themes.some((theme) => theme.id === 'iron_marches'), true);
   assert.strictEqual(compiled.localization.ru['boss.iron_regent.name'], 'Железный Регент');
   assert.strictEqual(compiled.localization.en['boss.iron_regent.name'], 'The Iron Regent');
+  assert.strictEqual(Object.keys(compiled.combatProfiles.heroes).length, 6);
 });
 
 test('vertical slice uses the exact registered king, doctrine, heroes and boss paths', () => {
@@ -46,6 +47,17 @@ test('vertical slice uses the exact registered king, doctrine, heroes and boss p
   assert.strictEqual(compiled.registry.get('hero', 'hero.aldric_wall').pieceType, 'rook');
   assert.strictEqual(boss.assets.arena, 'assets/bosses/iron_regent/arena.jpg');
   assert.strictEqual(boss.phases.length, 2);
+});
+
+test('combat profiles bind authored relics and declare Tomas Gate rook override explicitly', () => {
+  const compiled = bundle();
+  const profiles = compiled.combatProfiles;
+  assert.strictEqual(profiles.regionId, 'region.iron_marches');
+  assert.deepStrictEqual(profiles.heroes['hero.aldric_wall'].relicIds, ['relic.echo_shield']);
+  assert.strictEqual(profiles.heroes['hero.tomas_gate'].contentPieceType, 'king');
+  assert.strictEqual(profiles.heroes['hero.tomas_gate'].battlePieceType, 'rook');
+  assert.strictEqual(profiles.heroes['hero.tomas_gate'].overrideReason, 'escort_scenario_uses_rook_profile');
+  assert.deepStrictEqual(profiles.heroes['hero.tomas_gate'].relicIds, ['relic.twin_command']);
 });
 
 test('all twelve registered Iron Marches events have three meaningful localized choices', () => {
@@ -87,6 +99,7 @@ test('production report keeps the authored slice draft until art, balance and in
   assert.strictEqual(report.statuses.review, 0);
   assert.strictEqual(report.statuses.approved, 0);
   assert.strictEqual(report.assetCount, 45);
+  assert.strictEqual(report.combatProfileCount, 6);
   assert.strictEqual(report.languageCounts.ru, report.languageCounts.en);
 });
 

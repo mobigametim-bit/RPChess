@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "profileSetId": "iron_marches_vertical_slice",
+  "regionId": "region.iron_marches",
+  "heroes": {
+    "hero.aldric_wall": {
+      "contentPieceType": "rook",
+      "battlePieceType": "rook",
+      "relicIds": ["relic.echo_shield"]
+    },
+    "hero.mara_chain": {
+      "contentPieceType": "pawn",
+      "battlePieceType": "pawn",
+      "relicIds": ["relic.royal_decree"]
+    },
+    "hero.brother_orell": {
+      "contentPieceType": "bishop",
+      "battlePieceType": "bishop",
+      "relicIds": ["relic.circle_warding"]
+    },
+    "hero.vael_hammer": {
+      "contentPieceType": "knight",
+      "battlePieceType": "knight",
+      "relicIds": ["relic.phantom_spurs"]
+    },
+    "hero.lady_sorn": {
+      "contentPieceType": "queen",
+      "battlePieceType": "queen",
+      "relicIds": ["relic.oath_fallen"]
+    },
+    "hero.tomas_gate": {
+      "contentPieceType": "king",
+      "battlePieceType": "rook",
+      "relicIds": ["relic.twin_command"],
+      "overrideReason": "escort_scenario_uses_rook_profile"
+    }
+  }
+}

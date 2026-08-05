@@ -22,6 +22,8 @@ async function launch(host) {
   assert.strictEqual(first.getSnapshot().status, 'ready');
   assert.strictEqual(first.getProfile().revision, 1);
   const runtime = first.getRuntimeHost();
+  assert.deepStrictEqual(runtime.getState().army.heroIds, ['hero.aldric_wall']);
+  assert.deepStrictEqual(runtime.selection.relicIds, ['relic.echo_shield']);
   const initialRuntimeSnapshot = runtime.getSnapshot();
   const route = initialRuntimeSnapshot.campaign.routes.find((candidate) => candidate.affordable);
   assert.ok(route);
@@ -33,6 +35,9 @@ async function launch(host) {
   assert.strictEqual(resumed.getSnapshot().status, 'ready');
   assert.strictEqual(resumed.getRuntimeHost().resumed, true);
   assert.deepStrictEqual(resumed.getRuntimeHost().getSnapshot(), savedSnapshot);
+  assert.deepStrictEqual(resumed.getRuntimeHost().getState().army.heroIds, ['hero.aldric_wall']);
+  assert.deepStrictEqual(resumed.getRuntimeHost().selection.heroIds, ['hero.aldric_wall']);
+  assert.deepStrictEqual(resumed.getRuntimeHost().selection.relicIds, ['relic.echo_shield']);
   assert.strictEqual(resumed.getProfile().revision, 2);
 
   const secondProfile = createBrowserRunSelectionHost({ seed: 17002, profileId: 'profile-2', storage, clock, deviceId: 'browser-test' });
@@ -45,6 +50,7 @@ async function launch(host) {
   const recovered = createBrowserRunSelectionHost({ profileId: 'profile-1', storage, clock, deviceId: 'browser-test' });
   assert.strictEqual(recovered.getSnapshot().status, 'ready');
   assert.strictEqual(recovered.getProfile().recoveredFrom, 'backup');
+  assert.deepStrictEqual(recovered.getRuntimeHost().selection.heroIds, ['hero.aldric_wall']);
   assert.strictEqual(inspectBrowserProfile(store, 'profile-1', recovered.bundle.registry).state !== null, true);
 
   const fresh = createBrowserRunSelectionHost({ seed: 17003, profileId: 'profile-1', storage, clock, deviceId: 'browser-test', forceNew: true });

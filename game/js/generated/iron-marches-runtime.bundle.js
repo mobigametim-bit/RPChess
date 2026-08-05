@@ -669,6 +669,114 @@ var RPChessRuntime = (() => {
     }
   });
 
+  // src/content/combat-profiles.cjs
+  var require_combat_profiles = __commonJS({
+    "src/content/combat-profiles.cjs"(exports, module) {
+      "use strict";
+      var fs = require_fs();
+      var COMBAT_PIECE_TYPES = Object.freeze(["pawn", "knight", "bishop", "rook", "queen", "king"]);
+      function deepFreeze(value) {
+        if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
+        Object.freeze(value);
+        for (const child of Object.values(value)) deepFreeze(child);
+        return value;
+      }
+      function assertObject(value, label) {
+        if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`${label} must be an object`);
+        return value;
+      }
+      function assertStableId(value, prefix, label) {
+        const id = String(value || "");
+        if (!new RegExp(`^${prefix}\\.[a-z0-9][a-z0-9_-]*$`).test(id)) throw new Error(`${label} must use ${prefix}.* format`);
+        return id;
+      }
+      function uniqueIds(values, prefix, label) {
+        if (!Array.isArray(values)) throw new Error(`${label} must be an array`);
+        const ids = values.map((value, index) => assertStableId(value, prefix, `${label}[${index}]`));
+        if (new Set(ids).size !== ids.length) throw new Error(`${label} must not contain duplicates`);
+        return ids;
+      }
+      function validateCombatProfileSet(input, registry) {
+        assertObject(input, "combat profile set");
+        if (input.schemaVersion !== 1) throw new Error("unsupported combat profile schemaVersion");
+        if (!registry || typeof registry.get !== "function" || typeof registry.list !== "function") {
+          throw new Error("combat profiles require a finalized content registry");
+        }
+        const profileSetId = String(input.profileSetId || "");
+        if (!/^[a-z0-9][a-z0-9_-]*$/.test(profileSetId)) throw new Error("combat profile set requires a stable profileSetId");
+        const regionId = assertStableId(input.regionId, "region", "combat profile regionId");
+        if (!registry.get("region", regionId)) throw new Error(`combat profile set references missing region: ${regionId}`);
+        assertObject(input.heroes, "combat profile heroes");
+        const heroes = {};
+        for (const [heroIdInput, recordInput] of Object.entries(input.heroes)) {
+          const heroId = assertStableId(heroIdInput, "hero", "combat profile heroId");
+          const record = assertObject(recordInput, heroId);
+          const hero = registry.get("hero", heroId);
+          if (!hero) throw new Error(`combat profile references missing hero: ${heroId}`);
+          if (hero.regionId !== regionId) throw new Error(`${heroId} belongs to ${hero.regionId}, not ${regionId}`);
+          const contentPieceType = String(record.contentPieceType || "");
+          const battlePieceType = String(record.battlePieceType || "");
+          if (!COMBAT_PIECE_TYPES.includes(contentPieceType)) throw new Error(`${heroId}.contentPieceType is invalid`);
+          if (!COMBAT_PIECE_TYPES.includes(battlePieceType)) throw new Error(`${heroId}.battlePieceType is invalid`);
+          if (hero.pieceType !== contentPieceType) {
+            throw new Error(`${heroId}.contentPieceType does not match content registry: ${contentPieceType}/${hero.pieceType}`);
+          }
+          const overrideReason = record.overrideReason == null ? null : String(record.overrideReason).trim();
+          if (battlePieceType !== contentPieceType && !overrideReason) {
+            throw new Error(`${heroId} changes battle piece type without an explicit overrideReason`);
+          }
+          if (battlePieceType === contentPieceType && overrideReason) {
+            throw new Error(`${heroId} has an unnecessary overrideReason`);
+          }
+          const relicIds = uniqueIds(record.relicIds || [], "relic", `${heroId}.relicIds`);
+          for (const relicId of relicIds) {
+            const relic = registry.get("relic", relicId);
+            if (!relic) throw new Error(`${heroId} references missing relic: ${relicId}`);
+            if (!relic.compatibility.some((value) => value === battlePieceType || value === "any" || value === "hero")) {
+              throw new Error(`${relicId} is incompatible with ${heroId} battle piece type ${battlePieceType}`);
+            }
+          }
+          heroes[heroId] = {
+            heroId,
+            contentPieceType,
+            battlePieceType,
+            relicIds,
+            overrideReason
+          };
+        }
+        const regionHeroIds = registry.list("hero").filter((hero) => hero.regionId === regionId).map((hero) => hero.id).sort();
+        const profileHeroIds = Object.keys(heroes).sort();
+        const missing = regionHeroIds.filter((heroId) => !Object.prototype.hasOwnProperty.call(heroes, heroId));
+        const extra = profileHeroIds.filter((heroId) => !regionHeroIds.includes(heroId));
+        if (missing.length || extra.length) {
+          throw new Error(`combat profile coverage mismatch (missing: ${missing.join(", ") || "none"}; extra: ${extra.join(", ") || "none"})`);
+        }
+        return deepFreeze({
+          schemaVersion: 1,
+          profileSetId,
+          regionId,
+          heroes
+        });
+      }
+      function loadCombatProfileSet(filePath, registry) {
+        return validateCombatProfileSet(JSON.parse(fs.readFileSync(filePath, "utf8")), registry);
+      }
+      function combatProfileFor(profileSet, heroIdInput) {
+        if (!profileSet || profileSet.schemaVersion !== 1 || !profileSet.heroes) throw new Error("invalid combat profile set");
+        const heroId = assertStableId(heroIdInput, "hero", "heroId");
+        const profile = profileSet.heroes[heroId];
+        if (!profile) throw new Error(`missing combat profile: ${heroId}`);
+        return profile;
+      }
+      module.exports = {
+        COMBAT_PIECE_TYPES,
+        validateCombatProfileSet,
+        loadCombatProfileSet,
+        combatProfileFor
+      };
+    }
+  });
+
   // src/content/effect-catalog.cjs
   var require_effect_catalog = __commonJS({
     "src/content/effect-catalog.cjs"(exports, module) {
@@ -3198,7 +3306,7 @@ var RPChessRuntime = (() => {
       function createBattleFromTemplate(template, options = {}) {
         const battleId = String(options.battleId || template.id || "battle");
         const seed = Number(options.seed ?? hash32(battleId));
-        return createBattleState({
+        const creationOptions = Object.freeze({
           battleId,
           seed,
           playerSide: options.playerSide || "w",
@@ -3209,6 +3317,11 @@ var RPChessRuntime = (() => {
           reserve: template.battle.reserve,
           reserveCells: template.battle.reserveCells || void 0
         });
+        const projected = typeof options.battleProjector === "function" ? options.battleProjector(creationOptions) : creationOptions;
+        if (!projected || typeof projected !== "object" || !projected.position) {
+          throw new Error(`${battleId} battleProjector must return battle creation options`);
+        }
+        return createBattleState(projected);
       }
       function createEncounterScenario(templateSet, encounterId, options = {}) {
         const template = templateSet.encounters[encounterId];
@@ -3217,7 +3330,8 @@ var RPChessRuntime = (() => {
         const battle = createBattleFromTemplate(template, {
           battleId: options.battleId || `${encounterId}:${seed}`,
           seed,
-          playerSide: options.playerSide || "w"
+          playerSide: options.playerSide || "w",
+          battleProjector: options.battleProjector
         });
         return Object.freeze({
           scenario: createScenarioState({
@@ -3246,7 +3360,8 @@ var RPChessRuntime = (() => {
           return createBattleFromTemplate(phase, {
             battleId: `${bossId}:phase:${phaseIndex + 1}:${seed}`,
             seed: seed + phaseIndex,
-            playerSide
+            playerSide,
+            battleProjector: options.battleProjector
           });
         };
         const phases = template.phases.map((phase) => Object.freeze({
@@ -3861,6 +3976,50 @@ var RPChessRuntime = (() => {
               }
             }
           ]
+        }
+      };
+    }
+  });
+
+  // content/combat-profiles/iron_marches.json
+  var require_iron_marches = __commonJS({
+    "content/combat-profiles/iron_marches.json"(exports, module) {
+      module.exports = {
+        schemaVersion: 1,
+        profileSetId: "iron_marches_vertical_slice",
+        regionId: "region.iron_marches",
+        heroes: {
+          "hero.aldric_wall": {
+            contentPieceType: "rook",
+            battlePieceType: "rook",
+            relicIds: ["relic.echo_shield"]
+          },
+          "hero.mara_chain": {
+            contentPieceType: "pawn",
+            battlePieceType: "pawn",
+            relicIds: ["relic.royal_decree"]
+          },
+          "hero.brother_orell": {
+            contentPieceType: "bishop",
+            battlePieceType: "bishop",
+            relicIds: ["relic.circle_warding"]
+          },
+          "hero.vael_hammer": {
+            contentPieceType: "knight",
+            battlePieceType: "knight",
+            relicIds: ["relic.phantom_spurs"]
+          },
+          "hero.lady_sorn": {
+            contentPieceType: "queen",
+            battlePieceType: "queen",
+            relicIds: ["relic.oath_fallen"]
+          },
+          "hero.tomas_gate": {
+            contentPieceType: "king",
+            battlePieceType: "rook",
+            relicIds: ["relic.twin_command"],
+            overrideReason: "escort_scenario_uses_rook_profile"
+          }
         }
       };
     }
@@ -4740,6 +4899,7 @@ var RPChessRuntime = (() => {
       "use strict";
       require_buffer_shim();
       var { ContentRegistry } = require_content();
+      var { validateCombatProfileSet } = require_combat_profiles();
       var {
         mergeEffectCatalogs,
         validateEffectCatalog,
@@ -4752,6 +4912,7 @@ var RPChessRuntime = (() => {
       } = require_scenario_templates();
       var boardThemeManifest = require_board_themes();
       var productionPack = require_iron_marches_vertical_slice();
+      var combatProfileSource = require_iron_marches();
       var effectCatalog = require_iron_marches_events();
       var localizationRu = require_iron_marches_vertical_slice2();
       var localizationEn = require_iron_marches_vertical_slice3();
@@ -4764,6 +4925,7 @@ var RPChessRuntime = (() => {
         const registry = new ContentRegistry({ boardThemeManifest });
         registry.addPack(productionPack);
         registry.finalize({ localization });
+        const combatProfiles = validateCombatProfileSet(combatProfileSource, registry);
         const eventEffectCatalog = mergeEffectCatalogs([validateEffectCatalog(effectCatalog)]);
         validateEventEffectReferences(registry, eventEffectCatalog);
         const scenarioTemplates = validateScenarioTemplateSet(scenarioTemplateSource);
@@ -4774,6 +4936,7 @@ var RPChessRuntime = (() => {
           boardThemeManifest,
           registry,
           localization,
+          combatProfiles,
           eventEffectCatalog,
           eventChoiceResolver: createCatalogEventChoiceResolver(eventEffectCatalog),
           scenarioTemplates,
@@ -6488,10 +6651,23 @@ var RPChessRuntime = (() => {
             side: boardPiece.side,
             type: boardPiece.type,
             square,
+            source: "active",
+            orderCost: null,
             metadata: scenario.battle.identities.metadata[id] || Object.freeze({})
           }));
         }
         return freezeArray(records);
+      }
+      function reservePieceRecords(scenario) {
+        return freezeArray((scenario.battle.reserve || []).map((entry) => Object.freeze({
+          id: entry.id,
+          side: entry.side,
+          type: entry.type,
+          square: null,
+          source: "reserve",
+          orderCost: entry.orderCost,
+          metadata: entry.metadata || Object.freeze({})
+        })));
       }
       function requiredPlayerIds(scenario, playerRecords) {
         const required = new Set(playerRecords.filter((record) => record.type === "k").map((record) => record.id));
@@ -6521,23 +6697,29 @@ var RPChessRuntime = (() => {
       function createScenarioDeploymentGate(scenarioInput, options = {}) {
         const scenario = assertScenario(scenarioInput);
         const playerSide = options.playerSide || scenario.playerSide;
-        const records = activePieceRecords(scenario);
-        const players = records.filter((record) => record.side === playerSide);
-        const required = requiredPlayerIds(scenario, players);
-        const zone = deploymentZone(scenario, playerSide, records);
-        const units = players.map((record) => Object.freeze({
+        const activeRecords = activePieceRecords(scenario);
+        const reserveRecords = reservePieceRecords(scenario);
+        const activePlayers = activeRecords.filter((record) => record.side === playerSide);
+        const reservePlayers = reserveRecords.filter((record) => record.side === playerSide);
+        const allPlayerIds = [...activePlayers, ...reservePlayers].map((record) => record.id);
+        if (new Set(allPlayerIds).size !== allPlayerIds.length) throw new Error("deployment roster contains an identity active on the field and in reserve");
+        const required = requiredPlayerIds(scenario, activePlayers);
+        const zone = deploymentZone(scenario, playerSide, activeRecords);
+        const units = [...activePlayers, ...reservePlayers].map((record) => Object.freeze({
           id: record.id,
           type: record.type,
           commandCost: PIECE_COMMAND_COST[record.type],
-          required: required.has(record.id),
-          fixedSquare: record.type === "k" ? record.square : null,
+          required: record.source === "active" && required.has(record.id),
+          fixedSquare: record.source === "active" && record.type === "k" ? record.square : null,
           originalSquare: record.square,
+          source: record.source,
+          reserveOrderCost: record.orderCost,
           metadata: record.metadata,
           label: unitLabel(record.metadata, record.id, options.localization)
         }));
-        const commandLimit = units.reduce((total, unit) => total + unit.commandCost, 0);
+        const commandLimit = activePlayers.reduce((total, unit) => total + PIECE_COMMAND_COST[unit.type], 0);
         let plan = createDeploymentPlan({ side: playerSide, commandLimit, zone, roster: units });
-        for (const unit of units) if (!unit.fixedSquare) plan = placeUnit(plan, unit.id, unit.originalSquare);
+        for (const unit of units) if (unit.source === "active" && !unit.fixedSquare) plan = placeUnit(plan, unit.id, unit.originalSquare);
         const gate = {
           format: DEPLOYMENT_GATE_FORMAT,
           schemaVersion: 1,
@@ -6577,19 +6759,21 @@ var RPChessRuntime = (() => {
         return appendGate(gate, removeUnit(gate.plan, command.payload?.unitId), command);
       }
       function mergedReserve(gate, finalized) {
-        const original = gate.scenario.battle.reserve || [];
-        const originalIds = new Set(original.map((entry) => entry.id));
-        const added = finalized.reserve.filter((entry) => !originalIds.has(entry.id)).map((entry) => {
+        const enemyReserve = (gate.scenario.battle.reserve || []).filter((entry) => entry.side !== gate.playerSide);
+        const playerReserve = finalized.reserve.map((entry) => {
           const unit = gate.units.find((candidate) => candidate.id === entry.id);
+          if (!unit) throw new Error(`deployment reserve metadata missing for ${entry.id}`);
           return Object.freeze({
             id: entry.id,
             side: entry.side,
             type: entry.type,
-            orderCost: Math.max(1, entry.commandCost),
-            metadata: Object.freeze({ ...unit?.metadata || {} })
+            orderCost: unit.source === "reserve" ? unit.reserveOrderCost : Math.max(1, entry.commandCost),
+            metadata: Object.freeze({ ...unit.metadata || {} })
           });
         });
-        return freezeArray([...original, ...added]);
+        const combined = [...enemyReserve, ...playerReserve];
+        if (new Set(combined.map((entry) => entry.id)).size !== combined.length) throw new Error("deployment finalized duplicate reserve ids");
+        return freezeArray(combined);
       }
       function finalizeScenarioDeployment(gateInput) {
         const gate = assertGate(gateInput);
@@ -6608,13 +6792,14 @@ var RPChessRuntime = (() => {
           w: freezeArray(gate.playerSide === "w" ? playerReserveCells : originalBattle.reserveCells?.w || []),
           b: freezeArray(gate.playerSide === "b" ? playerReserveCells : originalBattle.reserveCells?.b || [])
         };
+        const unitMetadata = Object.fromEntries(gate.units.map((unit) => [unit.id, unit.metadata]));
         const createdBattle = createBattleState({
           battleId: `${originalBattle.battleId}_deployed_${gate.revision}`,
           seed: gate.seed,
           playerSide: originalBattle.playerSide,
           position: finalized.position,
           identitiesBySquare: finalized.identities,
-          identityMetadata: originalBattle.identities.metadata,
+          identityMetadata: Object.freeze({ ...originalBattle.identities.metadata, ...unitMetadata }),
           statuses: originalBattle.statuses,
           orderPoints: originalBattle.orderPoints,
           reserve: mergedReserve(gate, finalized),
@@ -6651,6 +6836,7 @@ var RPChessRuntime = (() => {
             commandCost: unit.commandCost,
             required: unit.required,
             fixed: Boolean(unit.fixedSquare),
+            source: unit.source,
             originalSquare: unit.originalSquare,
             square: gate.plan.placements[unit.id] || null,
             inReserve: !gate.plan.placements[unit.id],
@@ -6663,6 +6849,7 @@ var RPChessRuntime = (() => {
         PIECE_COMMAND_COST,
         DEPLOYMENT_COMMANDS,
         activePieceRecords,
+        reservePieceRecords,
         requiredPlayerIds,
         deploymentZone,
         createScenarioDeploymentGate,
@@ -7980,6 +8167,257 @@ var RPChessRuntime = (() => {
     }
   });
 
+  // src/runtime/army-roster.cjs
+  var require_army_roster = __commonJS({
+    "src/runtime/army-roster.cjs"(exports, module) {
+      "use strict";
+      var { indexToSquare } = require_position();
+      var RUNTIME_ARMY_FORMAT = "rpchess-runtime-army";
+      var RUNTIME_ARMY_SCHEMA_VERSION = 1;
+      var PIECE_TYPE_CODES = Object.freeze({ pawn: "p", knight: "n", bishop: "b", rook: "r", queen: "q", king: "k" });
+      var PIECE_COMMAND_COST = Object.freeze({ p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 });
+      function freezeArray(values) {
+        return Object.freeze(values.slice());
+      }
+      function deepFreeze(value) {
+        if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
+        Object.freeze(value);
+        for (const child of Object.values(value)) deepFreeze(child);
+        return value;
+      }
+      function assertRegistry(registry) {
+        if (!registry || typeof registry.get !== "function") throw new Error("runtime army requires a content registry");
+        return registry;
+      }
+      function assertProfileSet(profileSet) {
+        if (!profileSet || profileSet.schemaVersion !== 1 || !profileSet.heroes || !profileSet.regionId) {
+          throw new Error("runtime army requires validated combat profiles");
+        }
+        return profileSet;
+      }
+      function stableSelectionIds(values, label) {
+        if (!Array.isArray(values)) throw new Error(`${label} must be an array`);
+        const ids = values.map((value) => String(value || ""));
+        if (ids.some((id) => !id)) throw new Error(`${label} contains an empty id`);
+        if (new Set(ids).size !== ids.length) throw new Error(`${label} must not contain duplicates`);
+        return ids;
+      }
+      function createRuntimeArmy(selectionInput, registryInput, profileSetInput) {
+        const selection = selectionInput || {};
+        const registry = assertRegistry(registryInput);
+        const profileSet = assertProfileSet(profileSetInput);
+        const regionId = String(selection.regionId || "");
+        const kingId = String(selection.kingId || "");
+        const doctrineId = String(selection.doctrineId || "");
+        const heroIds = stableSelectionIds(selection.heroIds || [], "selected heroIds");
+        const region = registry.get("region", regionId);
+        const king = registry.get("king", kingId);
+        const doctrine = registry.get("doctrine", doctrineId);
+        if (!region) throw new Error(`runtime army references missing region: ${regionId}`);
+        if (regionId !== profileSet.regionId) throw new Error(`runtime army region ${regionId} does not match combat profiles ${profileSet.regionId}`);
+        if (!king) throw new Error(`runtime army references missing king: ${kingId}`);
+        if (!doctrine) throw new Error(`runtime army references missing doctrine: ${doctrineId}`);
+        if (!king.doctrineIds.includes(doctrineId)) throw new Error(`${kingId} does not permit ${doctrineId}`);
+        if (!heroIds.length) throw new Error("runtime army requires at least one selected hero");
+        const heroes = heroIds.map((heroId) => {
+          const hero = registry.get("hero", heroId);
+          const profile = profileSet.heroes[heroId];
+          if (!hero) throw new Error(`runtime army references missing hero: ${heroId}`);
+          if (hero.regionId !== regionId) throw new Error(`${heroId} belongs to ${hero.regionId}, not ${regionId}`);
+          if (!profile) throw new Error(`runtime army has no combat profile for ${heroId}`);
+          return Object.freeze({
+            heroId,
+            nameKey: hero.nameKey,
+            contentPieceType: profile.contentPieceType,
+            battlePieceType: profile.battlePieceType,
+            pieceType: PIECE_TYPE_CODES[profile.battlePieceType],
+            relicIds: freezeArray(profile.relicIds),
+            overrideReason: profile.overrideReason || null
+          });
+        });
+        const relicIds = [];
+        for (const hero of heroes) for (const relicId of hero.relicIds) if (!relicIds.includes(relicId)) relicIds.push(relicId);
+        return deepFreeze({
+          format: RUNTIME_ARMY_FORMAT,
+          schemaVersion: RUNTIME_ARMY_SCHEMA_VERSION,
+          profileSetId: profileSet.profileSetId,
+          regionId,
+          kingId,
+          kingNameKey: king.nameKey,
+          doctrineId,
+          heroIds: freezeArray(heroIds),
+          relicIds: freezeArray(relicIds),
+          heroes: freezeArray(heroes)
+        });
+      }
+      function validateRuntimeArmy(snapshot, registry, profileSet) {
+        if (!snapshot || snapshot.format !== RUNTIME_ARMY_FORMAT || snapshot.schemaVersion !== RUNTIME_ARMY_SCHEMA_VERSION) {
+          throw new Error("invalid runtime army snapshot");
+        }
+        const rebuilt = createRuntimeArmy({
+          regionId: snapshot.regionId,
+          kingId: snapshot.kingId,
+          doctrineId: snapshot.doctrineId,
+          heroIds: snapshot.heroIds
+        }, registry, profileSet);
+        if (snapshot.profileSetId !== rebuilt.profileSetId) throw new Error("runtime army combat profile set changed");
+        return rebuilt;
+      }
+      function runtimeSelectionFromArmy(armyInput) {
+        const army = armyInput;
+        if (!army || army.format !== RUNTIME_ARMY_FORMAT) throw new Error("invalid runtime army");
+        return Object.freeze({
+          regionId: army.regionId,
+          kingId: army.kingId,
+          doctrineId: army.doctrineId,
+          heroIds: army.heroIds,
+          relicIds: army.relicIds
+        });
+      }
+      function cleanHeroMetadata(input = {}) {
+        const metadata = { ...input };
+        delete metadata.heroId;
+        delete metadata.nameKey;
+        delete metadata.relicIds;
+        delete metadata.anonymous;
+        delete metadata.armySource;
+        delete metadata.combatPieceType;
+        delete metadata.combatProfileOverride;
+        return metadata;
+      }
+      function selectedHeroMetadata(base, hero) {
+        return Object.freeze({
+          ...cleanHeroMetadata(base),
+          heroId: hero.heroId,
+          nameKey: hero.nameKey,
+          relicIds: hero.relicIds,
+          combatPieceType: hero.battlePieceType,
+          combatProfileOverride: hero.overrideReason,
+          armySource: "selected"
+        });
+      }
+      function anonymousRoleMetadata(base) {
+        return Object.freeze({
+          ...cleanHeroMetadata(base),
+          anonymous: true,
+          armySource: "scenario_role"
+        });
+      }
+      function reserveIdForHero(heroId, usedIds) {
+        const base = `army_${heroId.replace(/[^a-z0-9_-]+/gi, "_").toLowerCase()}`;
+        let id = base;
+        let suffix = 2;
+        while (usedIds.has(id)) {
+          id = `${base}_${suffix}`;
+          suffix += 1;
+        }
+        usedIds.add(id);
+        return id;
+      }
+      function projectArmyBattleOptions(optionsInput, armyInput) {
+        const options = optionsInput;
+        const army = armyInput;
+        if (!options || !options.position || !options.identitiesBySquare) throw new Error("battle projection requires battle creation options");
+        if (!army || army.format !== RUNTIME_ARMY_FORMAT) throw new Error("battle projection requires a runtime army");
+        const playerSide = options.playerSide || "w";
+        const identitiesBySquare = Object.freeze({ ...options.identitiesBySquare });
+        const metadata = { ...options.identityMetadata || {} };
+        const assigned = /* @__PURE__ */ new Set();
+        const selectedById = new Map(army.heroes.map((hero) => [hero.heroId, hero]));
+        const chooseHero = (originalHeroId, pieceType) => {
+          const original = originalHeroId ? selectedById.get(originalHeroId) : null;
+          if (original && !assigned.has(original.heroId) && original.pieceType === pieceType) return original;
+          return army.heroes.find((hero) => !assigned.has(hero.heroId) && hero.pieceType === pieceType) || null;
+        };
+        for (let index = 0; index < 64; index += 1) {
+          const boardPiece = options.position.board[index];
+          if (!boardPiece || boardPiece.side !== playerSide) continue;
+          const square = indexToSquare(index);
+          const pieceId = identitiesBySquare[square];
+          if (!pieceId) throw new Error(`army projection identity missing on ${square}`);
+          const base = metadata[pieceId] || {};
+          if (base.heroId) {
+            const hero = chooseHero(base.heroId, boardPiece.type);
+            if (hero) {
+              assigned.add(hero.heroId);
+              metadata[pieceId] = selectedHeroMetadata(base, hero);
+            } else {
+              metadata[pieceId] = anonymousRoleMetadata(base);
+            }
+          } else if (boardPiece.type === "k") {
+            metadata[pieceId] = Object.freeze({
+              ...base,
+              kingId: army.kingId,
+              nameKey: army.kingNameKey,
+              armySource: "selected_king"
+            });
+          }
+        }
+        const usedIds = /* @__PURE__ */ new Set([...Object.values(identitiesBySquare), ...(options.reserve || []).map((entry) => entry.id)]);
+        const reserve = [];
+        for (const entry of options.reserve || []) {
+          if (entry.side !== playerSide) {
+            reserve.push(entry);
+            continue;
+          }
+          const base = entry.metadata || {};
+          if (!base.heroId) {
+            reserve.push(entry);
+            continue;
+          }
+          const hero = chooseHero(base.heroId, entry.type);
+          if (!hero) continue;
+          assigned.add(hero.heroId);
+          reserve.push(Object.freeze({
+            ...entry,
+            metadata: selectedHeroMetadata(base, hero)
+          }));
+        }
+        for (const hero of army.heroes) {
+          if (assigned.has(hero.heroId)) continue;
+          reserve.push(Object.freeze({
+            id: reserveIdForHero(hero.heroId, usedIds),
+            side: playerSide,
+            type: hero.pieceType,
+            orderCost: Math.max(1, PIECE_COMMAND_COST[hero.pieceType]),
+            metadata: selectedHeroMetadata({}, hero)
+          }));
+          assigned.add(hero.heroId);
+        }
+        const occurrences = [];
+        for (const [pieceId, record] of Object.entries(metadata)) {
+          if (record.heroId) occurrences.push(Object.freeze({ heroId: record.heroId, location: `active:${pieceId}` }));
+        }
+        for (const entry of reserve) {
+          if (entry.metadata?.heroId) occurrences.push(Object.freeze({ heroId: entry.metadata.heroId, location: `reserve:${entry.id}` }));
+        }
+        const occurrenceIds = occurrences.map((entry) => entry.heroId);
+        const unknown = occurrenceIds.filter((heroId) => !army.heroIds.includes(heroId));
+        const duplicates = occurrenceIds.filter((heroId, index) => occurrenceIds.indexOf(heroId) !== index);
+        const missing = army.heroIds.filter((heroId) => !occurrenceIds.includes(heroId));
+        if (unknown.length || duplicates.length || missing.length) {
+          throw new Error(`projected army identity mismatch (unknown: ${[...new Set(unknown)].join(", ") || "none"}; duplicate: ${[...new Set(duplicates)].join(", ") || "none"}; missing: ${missing.join(", ") || "none"})`);
+        }
+        return Object.freeze({
+          ...options,
+          identitiesBySquare,
+          identityMetadata: Object.freeze(metadata),
+          reserve: freezeArray(reserve)
+        });
+      }
+      module.exports = {
+        RUNTIME_ARMY_FORMAT,
+        RUNTIME_ARMY_SCHEMA_VERSION,
+        PIECE_TYPE_CODES,
+        PIECE_COMMAND_COST,
+        createRuntimeArmy,
+        validateRuntimeArmy,
+        runtimeSelectionFromArmy,
+        projectArmyBattleOptions
+      };
+    }
+  });
+
   // src/browser/profile-persistence.cjs
   var require_profile_persistence = __commonJS({
     "src/browser/profile-persistence.cjs"(exports, module) {
@@ -8096,6 +8534,12 @@ var RPChessRuntime = (() => {
         runSelectionPresenter,
         runSelectionSnapshot
       } = require_run_selection();
+      var {
+        createRuntimeArmy,
+        validateRuntimeArmy,
+        runtimeSelectionFromArmy,
+        projectArmyBattleOptions
+      } = require_army_roster();
       var { buildBrowserProductionBundle } = require_production_content_browser();
       var { createScenarioDeploymentGate } = require_deployment_gate();
       var {
@@ -8172,24 +8616,27 @@ var RPChessRuntime = (() => {
         return true;
       }
       function createBrowserDependencies(options) {
-        const { bundle, language, aiProfile, aiMaxNodes, aiTimeBudgetMs, saveStore } = options;
+        const { bundle, language, army, aiProfile, aiMaxNodes, aiTimeBudgetMs, saveStore } = options;
         const localization = bundle.localization[language];
         if (!localization) throw new Error(`unsupported Iron Marches language: ${language}`);
         const scenarioTemplates = bundle.scenarioTemplates;
+        const battleProjector = (battleOptions) => projectArmyBattleOptions(battleOptions, army);
         const nodeResolver = ({ runtime, node, content }) => {
           if (node.type === "event") return Object.freeze({ mode: "event", reward: Object.freeze({ gold: 1, supplies: 1, meta: 0 }) });
           if (node.type === "battle" || node.type === "elite") {
             const created = createEncounterScenario(scenarioTemplates, content.id, {
               seed: hash32(`${runtime.seed}:${node.id}:${content.id}`),
               playerSide: runtime.playerSide,
-              scenarioId: `${content.id.replace(/[^a-z0-9_-]+/g, "_")}_${node.id}`
+              scenarioId: `${content.id.replace(/[^a-z0-9_-]+/g, "_")}_${node.id}`,
+              battleProjector
             });
             return Object.freeze({ mode: "scenario", scenario: created.scenario, reward: created.reward });
           }
           if (node.type === "boss") {
             const created = createBossFromTemplates(scenarioTemplates, content.id, {
               seed: hash32(`${runtime.seed}:${node.id}:${content.id}`),
-              playerSide: runtime.playerSide
+              playerSide: runtime.playerSide,
+              battleProjector
             });
             return Object.freeze({ mode: "boss", boss: created.state, reward: created.reward });
           }
@@ -8198,7 +8645,8 @@ var RPChessRuntime = (() => {
         const bossPhaseBattleResolver = ({ runtime, bossId, phaseIndex, contentId }) => {
           const created = createBossFromTemplates(scenarioTemplates, contentId || bossId, {
             seed: bossId === runtime.boss?.bossId ? runtime.boss.seed : hash32(`${runtime.seed}:${bossId}`),
-            playerSide: runtime.playerSide
+            playerSide: runtime.playerSide,
+            battleProjector
           });
           return created.battleForPhase(phaseIndex);
         };
@@ -8230,14 +8678,14 @@ var RPChessRuntime = (() => {
         const nodeCount = options.nodeCount ?? 9;
         const profileId = options.profileId || "profile-1";
         const saveStore = options.saveStore || createBrowserProfileStore(options);
-        const selection = Object.freeze({
+        const requestedSelection = Object.freeze({
           regionId: options.selection?.regionId || DEFAULT_BROWSER_SELECTION.regionId,
           kingId: options.selection?.kingId || DEFAULT_BROWSER_SELECTION.kingId,
           doctrineId: options.selection?.doctrineId || DEFAULT_BROWSER_SELECTION.doctrineId,
           heroIds: freezeArray(options.selection?.heroIds || DEFAULT_BROWSER_SELECTION.heroIds),
           relicIds: freezeArray(options.selection?.relicIds || DEFAULT_BROWSER_SELECTION.relicIds)
         });
-        assertBrowserSelection(bundle, selection);
+        assertBrowserSelection(bundle, requestedSelection);
         let resumeInfo = options.resumeInfo || null;
         let state = options.initialState ? validateVerticalSliceSnapshot(options.initialState, { contentRegistry: bundle.registry }) : null;
         if (!state && saveStore && options.resume !== false) {
@@ -8245,6 +8693,9 @@ var RPChessRuntime = (() => {
           state = resumeInfo.state;
         }
         const resumed = Boolean(state);
+        const army = state?.army ? validateRuntimeArmy(state.army, bundle.registry, bundle.combatProfiles) : createRuntimeArmy(requestedSelection, bundle.registry, bundle.combatProfiles);
+        const selection = runtimeSelectionFromArmy(army);
+        assertBrowserSelection(bundle, selection);
         if (!state) {
           const graph = generateActGraph({
             seed: requestedSeed,
@@ -8267,9 +8718,11 @@ var RPChessRuntime = (() => {
             contentRegistry: bundle.registry
           });
         }
+        if (state.army !== army) state = Object.freeze({ ...state, army });
         const dependencies = createBrowserDependencies({
           bundle,
           language,
+          army,
           aiProfile: state.aiProfile,
           aiMaxNodes: options.aiMaxNodes ?? 8e3,
           aiTimeBudgetMs: options.aiTimeBudgetMs ?? 0,
@@ -8280,6 +8733,7 @@ var RPChessRuntime = (() => {
         return Object.freeze({
           format: "rpchess-browser-runtime-host",
           selection,
+          army,
           bundle,
           dependencies,
           saveStore,
@@ -8388,7 +8842,7 @@ var RPChessRuntime = (() => {
                 kingId: selection.kingId,
                 doctrineId: selection.doctrineId,
                 heroIds: selection.heroIds,
-                relicIds: DEFAULT_BROWSER_SELECTION.relicIds
+                relicIds: freezeArray([])
               })
             });
             resumeInfo = Object.freeze({ profileId, status: "saved", revision: runtimeHost.getLastSaveEnvelope()?.revision || 0, savedAt: runtimeHost.getLastSaveEnvelope()?.savedAt || null, recoveredFrom: null, state: runtimeHost.getState() });

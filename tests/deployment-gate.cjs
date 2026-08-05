@@ -2,6 +2,7 @@ const assert = require('assert');
 const path = require('path');
 const { buildProductionContentBundle } = require('../src/content/production-bundle.cjs');
 const { createEncounterScenario, loadScenarioTemplateSet } = require('../src/content/scenario-templates.cjs');
+const { createRuntimeArmy, projectArmyBattleOptions } = require('../src/runtime/army-roster.cjs');
 const {
   createScenarioDeploymentGate,
   executeDeploymentEdit,
@@ -20,6 +21,27 @@ function fixture(seed = 19001) {
     seed,
     playerSide: 'w',
     scenarioId: `deployment_fixture_${seed}`
+  });
+  return createScenarioDeploymentGate(created.scenario, {
+    seed,
+    playerSide: 'w',
+    localization: bundle.localization.ru
+  });
+}
+
+function projectedFixture(seed = 19020) {
+  const heroIds = bundle.registry.list('hero').map((hero) => hero.id);
+  const army = createRuntimeArmy({
+    regionId: 'region.iron_marches',
+    kingId: 'king.oathkeeper',
+    doctrineId: 'doctrine.fortress',
+    heroIds
+  }, bundle.registry, bundle.combatProfiles);
+  const created = createEncounterScenario(scenarioTemplates, 'encounter.iron_crossfire_files', {
+    seed,
+    playerSide: 'w',
+    scenarioId: `projected_deployment_fixture_${seed}`,
+    battleProjector: (options) => projectArmyBattleOptions(options, army)
   });
   return createScenarioDeploymentGate(created.scenario, {
     seed,
@@ -67,6 +89,36 @@ test('removed optional unit becomes a battle reserve with legal deployment cells
   assert.strictEqual(reserve.orderCost > 0, true);
   assert.ok(finalized.battle.reserveCells.w.includes('a1'));
   assert.strictEqual(finalized.scenario.actionIndex, 0);
+});
+
+test('selected reserve heroes participate in deployment without appearing twice', () => {
+  const gate = projectedFixture(19021);
+  const initial = deploymentGateSnapshot(gate);
+  const aldric = initial.units.find((unit) => unit.metadata.heroId === 'hero.aldric_wall');
+  const tomas = initial.units.find((unit) => unit.metadata.heroId === 'hero.tomas_gate');
+  assert.ok(aldric);
+  assert.ok(tomas);
+  assert.strictEqual(aldric.inReserve, false);
+  assert.strictEqual(tomas.inReserve, true);
+  assert.strictEqual(tomas.type, 'r');
+  assert.strictEqual(initial.commandLimit, 5);
+  assert.strictEqual(initial.units.filter((unit) => unit.metadata.heroId).length, 6);
+
+  let edited = executeDeploymentEdit(gate, { type: 'RemoveDeploymentUnit', payload: { unitId: aldric.id } });
+  edited = executeDeploymentEdit(edited, { type: 'PlaceDeploymentUnit', payload: { unitId: tomas.id, square: 'a1' } });
+  const finalized = finalizeScenarioDeployment(edited);
+  const activeId = finalized.battle.identities.bySquare.a1;
+  assert.strictEqual(finalized.battle.identities.metadata[activeId].heroId, 'hero.tomas_gate');
+  assert.deepStrictEqual(finalized.battle.identities.metadata[activeId].relicIds, ['relic.twin_command']);
+  const aldricReserve = finalized.battle.reserve.find((entry) => entry.metadata.heroId === 'hero.aldric_wall');
+  assert.ok(aldricReserve);
+
+  const heroIds = [
+    ...Object.values(finalized.battle.identities.metadata).map((metadata) => metadata.heroId).filter(Boolean),
+    ...finalized.battle.reserve.map((entry) => entry.metadata.heroId).filter(Boolean)
+  ];
+  assert.strictEqual(heroIds.length, 6);
+  assert.strictEqual(new Set(heroIds).size, 6);
 });
 
 test('fixed king cannot be removed and required units block confirmation when absent', () => {

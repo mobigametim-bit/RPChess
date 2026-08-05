@@ -38,10 +38,24 @@ function activePieceRecords(scenario) {
       side: boardPiece.side,
       type: boardPiece.type,
       square,
+      source: 'active',
+      orderCost: null,
       metadata: scenario.battle.identities.metadata[id] || Object.freeze({})
     }));
   }
   return freezeArray(records);
+}
+
+function reservePieceRecords(scenario) {
+  return freezeArray((scenario.battle.reserve || []).map((entry) => Object.freeze({
+    id: entry.id,
+    side: entry.side,
+    type: entry.type,
+    square: null,
+    source: 'reserve',
+    orderCost: entry.orderCost,
+    metadata: entry.metadata || Object.freeze({})
+  })));
 }
 
 function requiredPlayerIds(scenario, playerRecords) {
@@ -80,23 +94,29 @@ function unitLabel(metadata, id, localization) {
 function createScenarioDeploymentGate(scenarioInput, options = {}) {
   const scenario = assertScenario(scenarioInput);
   const playerSide = options.playerSide || scenario.playerSide;
-  const records = activePieceRecords(scenario);
-  const players = records.filter((record) => record.side === playerSide);
-  const required = requiredPlayerIds(scenario, players);
-  const zone = deploymentZone(scenario, playerSide, records);
-  const units = players.map((record) => Object.freeze({
+  const activeRecords = activePieceRecords(scenario);
+  const reserveRecords = reservePieceRecords(scenario);
+  const activePlayers = activeRecords.filter((record) => record.side === playerSide);
+  const reservePlayers = reserveRecords.filter((record) => record.side === playerSide);
+  const allPlayerIds = [...activePlayers, ...reservePlayers].map((record) => record.id);
+  if (new Set(allPlayerIds).size !== allPlayerIds.length) throw new Error('deployment roster contains an identity active on the field and in reserve');
+  const required = requiredPlayerIds(scenario, activePlayers);
+  const zone = deploymentZone(scenario, playerSide, activeRecords);
+  const units = [...activePlayers, ...reservePlayers].map((record) => Object.freeze({
     id: record.id,
     type: record.type,
     commandCost: PIECE_COMMAND_COST[record.type],
-    required: required.has(record.id),
-    fixedSquare: record.type === 'k' ? record.square : null,
+    required: record.source === 'active' && required.has(record.id),
+    fixedSquare: record.source === 'active' && record.type === 'k' ? record.square : null,
     originalSquare: record.square,
+    source: record.source,
+    reserveOrderCost: record.orderCost,
     metadata: record.metadata,
     label: unitLabel(record.metadata, record.id, options.localization)
   }));
-  const commandLimit = units.reduce((total, unit) => total + unit.commandCost, 0);
+  const commandLimit = activePlayers.reduce((total, unit) => total + PIECE_COMMAND_COST[unit.type], 0);
   let plan = createDeploymentPlan({ side: playerSide, commandLimit, zone, roster: units });
-  for (const unit of units) if (!unit.fixedSquare) plan = placeUnit(plan, unit.id, unit.originalSquare);
+  for (const unit of units) if (unit.source === 'active' && !unit.fixedSquare) plan = placeUnit(plan, unit.id, unit.originalSquare);
   const gate = {
     format: DEPLOYMENT_GATE_FORMAT,
     schemaVersion: 1,
@@ -140,21 +160,21 @@ function executeDeploymentEdit(gateInput, command) {
 }
 
 function mergedReserve(gate, finalized) {
-  const original = gate.scenario.battle.reserve || [];
-  const originalIds = new Set(original.map((entry) => entry.id));
-  const added = finalized.reserve
-    .filter((entry) => !originalIds.has(entry.id))
-    .map((entry) => {
-      const unit = gate.units.find((candidate) => candidate.id === entry.id);
-      return Object.freeze({
-        id: entry.id,
-        side: entry.side,
-        type: entry.type,
-        orderCost: Math.max(1, entry.commandCost),
-        metadata: Object.freeze({ ...(unit?.metadata || {}) })
-      });
+  const enemyReserve = (gate.scenario.battle.reserve || []).filter((entry) => entry.side !== gate.playerSide);
+  const playerReserve = finalized.reserve.map((entry) => {
+    const unit = gate.units.find((candidate) => candidate.id === entry.id);
+    if (!unit) throw new Error(`deployment reserve metadata missing for ${entry.id}`);
+    return Object.freeze({
+      id: entry.id,
+      side: entry.side,
+      type: entry.type,
+      orderCost: unit.source === 'reserve' ? unit.reserveOrderCost : Math.max(1, entry.commandCost),
+      metadata: Object.freeze({ ...(unit.metadata || {}) })
     });
-  return freezeArray([...original, ...added]);
+  });
+  const combined = [...enemyReserve, ...playerReserve];
+  if (new Set(combined.map((entry) => entry.id)).size !== combined.length) throw new Error('deployment finalized duplicate reserve ids');
+  return freezeArray(combined);
 }
 
 function finalizeScenarioDeployment(gateInput) {
@@ -176,13 +196,14 @@ function finalizeScenarioDeployment(gateInput) {
     w: freezeArray(gate.playerSide === 'w' ? playerReserveCells : (originalBattle.reserveCells?.w || [])),
     b: freezeArray(gate.playerSide === 'b' ? playerReserveCells : (originalBattle.reserveCells?.b || []))
   };
+  const unitMetadata = Object.fromEntries(gate.units.map((unit) => [unit.id, unit.metadata]));
   const createdBattle = createBattleState({
     battleId: `${originalBattle.battleId}_deployed_${gate.revision}`,
     seed: gate.seed,
     playerSide: originalBattle.playerSide,
     position: finalized.position,
     identitiesBySquare: finalized.identities,
-    identityMetadata: originalBattle.identities.metadata,
+    identityMetadata: Object.freeze({ ...originalBattle.identities.metadata, ...unitMetadata }),
     statuses: originalBattle.statuses,
     orderPoints: originalBattle.orderPoints,
     reserve: mergedReserve(gate, finalized),
@@ -220,6 +241,7 @@ function deploymentGateSnapshot(gateInput) {
       commandCost: unit.commandCost,
       required: unit.required,
       fixed: Boolean(unit.fixedSquare),
+      source: unit.source,
       originalSquare: unit.originalSquare,
       square: gate.plan.placements[unit.id] || null,
       inReserve: !gate.plan.placements[unit.id],
@@ -233,6 +255,7 @@ module.exports = {
   PIECE_COMMAND_COST,
   DEPLOYMENT_COMMANDS,
   activePieceRecords,
+  reservePieceRecords,
   requiredPlayerIds,
   deploymentZone,
   createScenarioDeploymentGate,

@@ -118,7 +118,7 @@ function loadScenarioTemplateSet(filePath) {
 function createBattleFromTemplate(template, options = {}) {
   const battleId = String(options.battleId || template.id || 'battle');
   const seed = Number(options.seed ?? hash32(battleId));
-  return createBattleState({
+  const creationOptions = Object.freeze({
     battleId,
     seed,
     playerSide: options.playerSide || 'w',
@@ -129,6 +129,13 @@ function createBattleFromTemplate(template, options = {}) {
     reserve: template.battle.reserve,
     reserveCells: template.battle.reserveCells || undefined
   });
+  const projected = typeof options.battleProjector === 'function'
+    ? options.battleProjector(creationOptions)
+    : creationOptions;
+  if (!projected || typeof projected !== 'object' || !projected.position) {
+    throw new Error(`${battleId} battleProjector must return battle creation options`);
+  }
+  return createBattleState(projected);
 }
 
 function createEncounterScenario(templateSet, encounterId, options = {}) {
@@ -138,7 +145,8 @@ function createEncounterScenario(templateSet, encounterId, options = {}) {
   const battle = createBattleFromTemplate(template, {
     battleId: options.battleId || `${encounterId}:${seed}`,
     seed,
-    playerSide: options.playerSide || 'w'
+    playerSide: options.playerSide || 'w',
+    battleProjector: options.battleProjector
   });
   return Object.freeze({
     scenario: createScenarioState({
@@ -168,7 +176,8 @@ function createBossFromTemplates(templateSet, bossId, options = {}) {
     return createBattleFromTemplate(phase, {
       battleId: `${bossId}:phase:${phaseIndex + 1}:${seed}`,
       seed: seed + phaseIndex,
-      playerSide
+      playerSide,
+      battleProjector: options.battleProjector
     });
   };
   const phases = template.phases.map((phase) => Object.freeze({
