@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "themes": [
+    {
+      "id": "neutral",
+      "biome": "neutral",
+      "priority": "P0",
+      "status": "MISSING",
+      "light": "assets/boards/neutral/tile_light.png",
+      "dark": "assets/boards/neutral/tile_dark.png",
+      "fallbackLight": "#d8d1bd",
+      "fallbackDark": "#596878"
+    },
+    {
+      "id": "iron_marches",
+      "biome": "iron_marches",
+      "priority": "P0",
+      "status": "MISSING",
+      "light": "assets/regions/iron_marches/tile_light.png",
+      "dark": "assets/regions/iron_marches/tile_dark.png",
+      "fallbackLight": "#a99e86",
+      "fallbackDark": "#3f4548"
+    },
+    {
+      "id": "thorn_covenant",
+      "biome": "thorn_covenant",
+      "priority": "P1",
+      "status": "MISSING",
+      "light": "assets/regions/thorn_covenant/tile_light.png",
+      "dark": "assets/regions/thorn_covenant/tile_dark.png",
+      "fallbackLight": "#9e9b72",
+      "fallbackDark": "#3f553d"
+    },
+    {
+      "id": "ashen_dominion",
+      "biome": "ashen_dominion",
+      "priority": "P1",
+      "status": "MISSING",
+      "light": "assets/regions/ashen_dominion/tile_light.png",
+      "dark": "assets/regions/ashen_dominion/tile_dark.png",
+      "fallbackLight": "#a48970",
+      "fallbackDark": "#513a38"
+    },
+    {
+      "id": "sky_khanate",
+      "biome": "sky_khanate",
+      "priority": "P1",
+      "status": "MISSING",
+      "light": "assets/regions/sky_khanate/tile_light.png",
+      "dark": "assets/regions/sky_khanate/tile_dark.png",
+      "fallbackLight": "#b3a883",
+      "fallbackDark": "#476a70"
+    },
+    {
+      "id": "luminous_synod",
+      "biome": "luminous_synod",
+      "priority": "P1",
+      "status": "MISSING",
+      "light": "assets/regions/luminous_synod/tile_light.png",
+      "dark": "assets/regions/luminous_synod/tile_dark.png",
+      "fallbackLight": "#d5cfbd",
+      "fallbackDark": "#607d8a"
+    },
+    {
+      "id": "free_cities",
+      "biome": "free_cities",
+      "priority": "P1",
+      "status": "MISSING",
+      "light": "assets/regions/free_cities/tile_light.png",
+      "dark": "assets/regions/free_cities/tile_dark.png",
+      "fallbackLight": "#b9a67f",
+      "fallbackDark": "#397071"
+    },
+    {
+      "id": "mirror_conclave",
+      "biome": "mirror_conclave",
+      "priority": "P1",
+      "status": "MISSING",
+      "light": "assets/regions/mirror_conclave/tile_light.png",
+      "dark": "assets/regions/mirror_conclave/tile_dark.png",
+      "fallbackLight": "#c5c7d2",
+      "fallbackDark": "#55516f"
+    },
+    {
+      "id": "verdant_exiles",
+      "biome": "verdant_exiles",
+      "priority": "P1",
+      "status": "MISSING",
+      "light": "assets/regions/verdant_exiles/tile_light.png",
+      "dark": "assets/regions/verdant_exiles/tile_dark.png",
+      "fallbackLight": "#c7bea1",
+      "fallbackDark": "#50704e"
+    }
+  ]
+}
