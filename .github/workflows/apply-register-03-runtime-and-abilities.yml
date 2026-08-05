@@ -66,7 +66,7 @@ jobs:
             'ability.forge_line': ('src/combat/abilities.cjs', ['forge_line', 'BoardTopologyChanged']),
             'ability.previewed_charge': ('src/combat/abilities.cjs', ['previewed_charge', 'PreviewedChargeCompleted']),
             'ability.hostage_tactic': ('src/combat/abilities.cjs', ['hostage_tactic', "'bound'"]),
-            'ability.gate_command': ('src/combat/abilities.cjs', ['gate_command', 'visible_gate_toggle']),
+            'ability.gate_command': ('src/combat/abilities.cjs', ['gate_command', 'BoardTopologyChanged']),
             'effect.visible_evasion_after_non_capture': ('src/combat/iron-marches-hooks.cjs', ['evasion_after_non_capture', "'evasion'"]),
             'effect.conditional_early_promotion': ('src/combat/abilities.cjs', ['early_promotion', 'PawnPromoted']),
             'effect.order_after_voluntary_sacrifice': ('src/combat/iron-marches-hooks.cjs', ['VoluntarySacrificeResolved', 'voluntary_sacrifice'])
