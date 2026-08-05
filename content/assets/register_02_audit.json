@@ -1,0 +1,4474 @@
+{
+  "schemaVersion": 1,
+  "register": "register/REGISTER_02_HEROES_AND_POLITICS.md",
+  "manifestAssetCount": 126,
+  "auditedAssetCount": 126,
+  "gate": "PASS",
+  "errorCount": 0,
+  "warningCount": 8,
+  "profileMedianBytes": {
+    "ABILITY-ICON-512": 317994,
+    "HERO-BADGE-512": 276050,
+    "HERO-PORTRAIT-768": 1080047,
+    "POLITICAL-PORTRAIT-768": 1044902
+  },
+  "errors": [],
+  "warnings": [
+    {
+      "code": "content_near_edge",
+      "path": "game/assets/heroes/abbess_celene/piece_badge.png",
+      "safeMarginFraction": 0.0
+    },
+    {
+      "code": "content_near_edge",
+      "path": "game/assets/heroes/deacon_mirel/piece_badge.png",
+      "safeMarginFraction": 0.0
+    },
+    {
+      "code": "content_near_edge",
+      "path": "game/assets/heroes/elio_silk/piece_badge.png",
+      "safeMarginFraction": 0.011719
+    },
+    {
+      "code": "content_near_edge",
+      "path": "game/assets/heroes/nemea_quill/piece_badge.png",
+      "safeMarginFraction": 0.013672
+    },
+    {
+      "code": "content_near_edge",
+      "path": "game/assets/heroes/orion_step/piece_badge.png",
+      "safeMarginFraction": 0.0
+    },
+    {
+      "code": "content_near_edge",
+      "path": "game/assets/heroes/puck_ember/piece_badge.png",
+      "safeMarginFraction": 0.0
+    },
+    {
+      "code": "low_thumbnail_readability",
+      "path": "game/assets/heroes/temur_wind/ability_icon.png",
+      "thumbnail": 160,
+      "entropy": 1.8847,
+      "contrast": 44.1052
+    },
+    {
+      "code": "low_thumbnail_readability",
+      "path": "game/assets/heroes/ivar_lens/ability_icon.png",
+      "thumbnail": 160,
+      "entropy": 1.9536,
+      "contrast": 57.5389
+    }
+  ],
+  "assets": [
+    {
+      "canonicalPath": "assets/heroes/abbess_celene/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/abbess_celene/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 359117,
+      "sha256": "6cc205b4929a9af8037938d49be49c4098ad6406f55338872582e983a52a1feb",
+      "dhash": "049008c80074033d460d8e4e8cc6086e0e4e0c4e861e493e08ec00f000c000a0",
+      "alpha": {
+        "transparentFraction": 0.674065,
+        "visibleFraction": 0.423489,
+        "safeMarginFraction": 0.029297,
+        "contentBox": [
+          50,
+          15,
+          458,
+          497
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 4.2694,
+          "contrast": 64.8808
+        },
+        "64": {
+          "entropy": 4.449,
+          "contrast": 64.7492
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/abbess_celene/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/abbess_celene/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 423782,
+      "sha256": "52f7a23923326c5332127d219f0d4cb52471ccfc2ed903d153eb498da9df426f",
+      "dhash": "0c5d845e8c5e0e8f0e8f1c8f1887118701cf07cf029c207a00e004d008680868",
+      "alpha": {
+        "transparentFraction": 0.469921,
+        "visibleFraction": 0.553196,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          40,
+          0,
+          471,
+          512
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 5.4072,
+          "contrast": 70.2284
+        },
+        "64": {
+          "entropy": 5.5768,
+          "contrast": 67.9281
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/abbess_celene/portrait.png",
+      "repositoryPath": "game/assets/heroes/abbess_celene/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1073327,
+      "sha256": "180f3d4acf701c1ca10dd14ae9825559010287b1528e25d23e3a34a502f01cf8",
+      "dhash": "53755675563554355c355eb58e359c1d38cd30c732c671e373c1d299d148f1c9",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.7172,
+          "contrast": 56.8059
+        },
+        "64": {
+          "entropy": 7.6529,
+          "contrast": 54.8426
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/aldric_wall/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/aldric_wall/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 462838,
+      "sha256": "0b394b6e400817189a8e72d81315ffb7b3c523eb30862174cd0f4f24b1f95f9f",
+      "dhash": "00800043124f183b1c1b3456248f49af299f3c9fb49f9a974c95061b013e0000",
+      "alpha": {
+        "transparentFraction": 0.440735,
+        "visibleFraction": 0.634045,
+        "safeMarginFraction": 0.019531,
+        "contentBox": [
+          10,
+          35,
+          497,
+          474
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 5.5643,
+          "contrast": 48.0349
+        },
+        "64": {
+          "entropy": 5.6453,
+          "contrast": 47.3984
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/aldric_wall/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/aldric_wall/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 399931,
+      "sha256": "8fe05075f6d83f50062dca62f815cf9041e8c44445e20f323f062c1e9bdd7a5e",
+      "dhash": "00f0006e18b6187a384a1c6e0c6e1c6a093a113618660e0c0338007000c00080",
+      "alpha": {
+        "transparentFraction": 0.444286,
+        "visibleFraction": 0.568859,
+        "safeMarginFraction": 0.019531,
+        "contentBox": [
+          63,
+          14,
+          448,
+          502
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 4.981,
+          "contrast": 39.1322
+        },
+        "64": {
+          "entropy": 5.0702,
+          "contrast": 39.3694
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/aldric_wall/portrait.png",
+      "repositoryPath": "game/assets/heroes/aldric_wall/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1067066,
+      "sha256": "0e16167720945d4dbad805beeadcf53acaf5f3eba98d63137801abee720c9a23",
+      "dhash": "0306840e645c641c65586448784b7083e0c3e0a7c18695a7b527b1a695268c66",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.9446,
+          "contrast": 36.2835
+        },
+        "64": {
+          "entropy": 6.8786,
+          "contrast": 35.1256
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/altana_bow/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/altana_bow/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 138593,
+      "sha256": "b9c0450568b979fc0646eddcb5f2099b99713c32b32fa9714b816b16d2873187",
+      "dhash": "00000006011004230306491c187224d80b2d868e0c2e32360088000000000000",
+      "alpha": {
+        "transparentFraction": 0.864948,
+        "visibleFraction": 0.180099,
+        "safeMarginFraction": 0.064453,
+        "contentBox": [
+          33,
+          105,
+          455,
+          350
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 2.2911,
+          "contrast": 45.7959
+        },
+        "64": {
+          "entropy": 2.7886,
+          "contrast": 51.373
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/altana_bow/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/altana_bow/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 216849,
+      "sha256": "322048c809a86a571ff6d2ed165c90c3932a9a07d31011f2596beb5397018aa8",
+      "dhash": "028004d008e8007008f02ce824e824e804f000f010f4017820fa00f808ec08c8",
+      "alpha": {
+        "transparentFraction": 0.6922,
+        "visibleFraction": 0.322994,
+        "safeMarginFraction": 0.03125,
+        "contentBox": [
+          119,
+          16,
+          392,
+          486
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.2116,
+          "contrast": 40.8092
+        },
+        "64": {
+          "entropy": 3.3963,
+          "contrast": 38.7429
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/altana_bow/portrait.png",
+      "repositoryPath": "game/assets/heroes/altana_bow/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1119681,
+      "sha256": "58780b4502070daabe6111d718acd049efa4588142f38ab927ec1ced11443baf",
+      "dhash": "430f271b279a3ccebdce3cce4c866cc668e472996b187adc4cdc1bccb34eb34e",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.6029,
+          "contrast": 50.9473
+        },
+        "64": {
+          "entropy": 7.5374,
+          "contrast": 49.0856
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/batu_cliff/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/batu_cliff/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 422031,
+      "sha256": "3ade01bcee35469c0d9805d6975066e39367bc6d0dfc7cf0f4fb77c3347a16a1",
+      "dhash": "061e186718e716df069f04971cdf10cf196714e712c7194f150f1107901e0000",
+      "alpha": {
+        "transparentFraction": 0.340523,
+        "visibleFraction": 0.672428,
+        "safeMarginFraction": 0.070312,
+        "contentBox": [
+          42,
+          36,
+          470,
+          464
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.1973,
+          "contrast": 71.5376
+        },
+        "64": {
+          "entropy": 6.3398,
+          "contrast": 68.4922
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/batu_cliff/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/batu_cliff/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 306660,
+      "sha256": "fc7f191f3311d3955c6da4c3cbc386844335b054551631ff1040ff1ccae53975",
+      "dhash": "00c004cc44dd407d023c239a21ba22ba207a469d42bd033e81fe10fe00000004",
+      "alpha": {
+        "transparentFraction": 0.591457,
+        "visibleFraction": 0.425003,
+        "safeMarginFraction": 0.046875,
+        "contentBox": [
+          73,
+          24,
+          439,
+          445
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 4.2843,
+          "contrast": 60.7702
+        },
+        "64": {
+          "entropy": 4.4609,
+          "contrast": 58.8196
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/batu_cliff/portrait.png",
+      "repositoryPath": "game/assets/heroes/batu_cliff/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1160268,
+      "sha256": "78b81fb2274ce69a2691813f91fcb9a3c534c15a30b54264467490eba2a763ba",
+      "dhash": "6373173387b097b34f97678fddc35cd3d8e9dbe49864c664e6e4f8746154ca4c",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.5011,
+          "contrast": 53.3896
+        },
+        "64": {
+          "entropy": 7.4318,
+          "contrast": 51.9377
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/briar_sister/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/briar_sister/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 256459,
+      "sha256": "c9557501846cdb4f466a576df8d570639ad3c506260af1c9462af74ba7b8f25c",
+      "dhash": "00002c0442009d042e87260b0b15096718f7671b36cf9f0e0b30140200000000",
+      "alpha": {
+        "transparentFraction": 0.767277,
+        "visibleFraction": 0.317921,
+        "safeMarginFraction": 0.015625,
+        "contentBox": [
+          14,
+          103,
+          504,
+          397
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.3449,
+          "contrast": 52.5755
+        },
+        "64": {
+          "entropy": 3.467,
+          "contrast": 53.2495
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/briar_sister/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/briar_sister/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 271080,
+      "sha256": "bcca180cf63ba8c40058980124bf5bab68bdeb9892aacea8213470205be49c7c",
+      "dhash": "008000f008e800f000f402b40094109a24da24b42438007a045a0478007a0458",
+      "alpha": {
+        "transparentFraction": 0.722458,
+        "visibleFraction": 0.322536,
+        "safeMarginFraction": 0.025391,
+        "contentBox": [
+          125,
+          13,
+          386,
+          494
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.3399,
+          "contrast": 42.4914
+        },
+        "64": {
+          "entropy": 3.4963,
+          "contrast": 41.9293
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/briar_sister/portrait.png",
+      "repositoryPath": "game/assets/heroes/briar_sister/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1143261,
+      "sha256": "41d21ca1601b59f4ef7a2a940a7eebf5e6e1001aef646fa11d8b586334a03cbd",
+      "dhash": "83bdc69dc6ddc4dce4d8e498c6d8d6cce6764667a5d784f70e4b4c6448ac48b4",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.9822,
+          "contrast": 38.7124
+        },
+        "64": {
+          "entropy": 6.8767,
+          "contrast": 36.6198
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/brother_orell/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/brother_orell/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 401411,
+      "sha256": "51a90809a9c2e84f8f40cf443a5cf41216211995f99dd690e30e2c6e51a18a5e",
+      "dhash": "1084029a169d98c633b322bb694b64d324f326b330d31cc6078d233a18640498",
+      "alpha": {
+        "transparentFraction": 0.52681,
+        "visibleFraction": 0.547234,
+        "safeMarginFraction": 0.048828,
+        "contentBox": [
+          40,
+          25,
+          465,
+          475
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 4.8991,
+          "contrast": 52.8824
+        },
+        "64": {
+          "entropy": 4.9366,
+          "contrast": 53.6411
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/brother_orell/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/brother_orell/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 232850,
+      "sha256": "dca2f535f45044151a01863f63b0ac48cccbf47679194f98768678684727d440",
+      "dhash": "008004d000e000a002b010b001b013b404d824da073c096c0aac03fc03fc0810",
+      "alpha": {
+        "transparentFraction": 0.658031,
+        "visibleFraction": 0.367008,
+        "safeMarginFraction": 0.041016,
+        "contentBox": [
+          98,
+          21,
+          414,
+          485
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.1789,
+          "contrast": 23.5533
+        },
+        "64": {
+          "entropy": 3.2246,
+          "contrast": 21.9272
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/brother_orell/portrait.png",
+      "repositoryPath": "game/assets/heroes/brother_orell/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 985382,
+      "sha256": "c5c4838fb568cdb96312bf76f8c179ec9a16bcff6f487040f4948a8b03965b4f",
+      "dhash": "41adc0f705b701b607970dc7194365c968adc9ccc8eec8ce9d8e178730e6b0e6",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.1901,
+          "contrast": 24.0348
+        },
+        "64": {
+          "entropy": 6.1264,
+          "contrast": 22.2297
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/cassian_coin/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/cassian_coin/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 215573,
+      "sha256": "b3ef0a43ca0b030837a9b1e25eecc1fce8e5bcc44a8da0844e2b968e3755c408",
+      "dhash": "00000000140c00211e8e1e0f1c6f526d5adb32179c0e08802402000000000000",
+      "alpha": {
+        "transparentFraction": 0.757618,
+        "visibleFraction": 0.273773,
+        "safeMarginFraction": 0.044922,
+        "contentBox": [
+          23,
+          137,
+          487,
+          354
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 2.9858,
+          "contrast": 52.5412
+        },
+        "64": {
+          "entropy": 3.1722,
+          "contrast": 52.274
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/cassian_coin/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/cassian_coin/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 333291,
+      "sha256": "4e1fb98529a12cb8f81780f1c1167d29cfeeebf9c651329e68d567b1ec49bc09",
+      "dhash": "04d844dd40fd00fc267a207a49ad4cad4aad036d93a60cde017800e404880120",
+      "alpha": {
+        "transparentFraction": 0.587933,
+        "visibleFraction": 0.425743,
+        "safeMarginFraction": 0.064453,
+        "contentBox": [
+          81,
+          33,
+          431,
+          465
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 4.2838,
+          "contrast": 57.564
+        },
+        "64": {
+          "entropy": 4.3979,
+          "contrast": 54.7291
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/cassian_coin/portrait.png",
+      "repositoryPath": "game/assets/heroes/cassian_coin/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1173485,
+      "sha256": "b783bf96098d124a734e49cb3571f6814e56554e1f0a78bdb696e6c60a07be06",
+      "dhash": "9325461d4c8d852e85228d929ecc944fa4a3b0e1f465f465bd738332c333f273",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.5547,
+          "contrast": 64.6512
+        },
+        "64": {
+          "entropy": 7.5282,
+          "contrast": 62.4679
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/daro_last/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/daro_last/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 194389,
+      "sha256": "6df7876b0b45816f1828583482a4b474e51783e237b89485d44f2a4123a45e4c",
+      "dhash": "000008c400f018e608cd46dd123a08f400e000f000f800fc08ec016800000000",
+      "alpha": {
+        "transparentFraction": 0.762638,
+        "visibleFraction": 0.275036,
+        "safeMarginFraction": 0.109375,
+        "contentBox": [
+          88,
+          56,
+          422,
+          430
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 2.7777,
+          "contrast": 37.7138
+        },
+        "64": {
+          "entropy": 2.9775,
+          "contrast": 37.574
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/daro_last/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/daro_last/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 165674,
+      "sha256": "cd3182fbc48df19eddc47e814c9bec3e3bd1f227d2e04169089da6f96f968989",
+      "dhash": "0140000000e009e000e000e000e000e008e000f000f000f801f801f800000080",
+      "alpha": {
+        "transparentFraction": 0.786484,
+        "visibleFraction": 0.224274,
+        "safeMarginFraction": 0.128906,
+        "contentBox": [
+          128,
+          66,
+          385,
+          443
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 2.2875,
+          "contrast": 25.0627
+        },
+        "64": {
+          "entropy": 2.3895,
+          "contrast": 24.5143
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/daro_last/portrait.png",
+      "repositoryPath": "game/assets/heroes/daro_last/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 910286,
+      "sha256": "53d1c7632428bf9df4ec8a375fd335e4371bd60415864cf2578d5c678e83bf0f",
+      "dhash": "c63c5d14188e38cf194f9c6f4ce44c644cc11ca3384d78187632d660d2d09373",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.5242,
+          "contrast": 27.3876
+        },
+        "64": {
+          "entropy": 6.4649,
+          "contrast": 26.8307
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/deacon_mirel/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/deacon_mirel/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 185928,
+      "sha256": "039c1d7d03a4f7d1d6d97460931849172aa5df1c261c192747e4fc60a80e53cb",
+      "dhash": "008002c004e800f800bc00bc00df015d037c00fc0cf048f80ae0068002400000",
+      "alpha": {
+        "transparentFraction": 0.852619,
+        "visibleFraction": 0.244534,
+        "safeMarginFraction": 0.068359,
+        "contentBox": [
+          82,
+          35,
+          426,
+          448
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 2.7251,
+          "contrast": 72.4494
+        },
+        "64": {
+          "entropy": 2.9659,
+          "contrast": 75.6789
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/deacon_mirel/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/deacon_mirel/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 329399,
+      "sha256": "be5ef2c98436a3fc840de1f4562d224c535917e15eba6b6e5c90c84e22e2eb7d",
+      "dhash": "13b41194239a039a43dd039d26da03980390261a245a0ccc4ccf069e10f610f6",
+      "alpha": {
+        "transparentFraction": 0.522682,
+        "visibleFraction": 0.489841,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          87,
+          0,
+          430,
+          512
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 4.7165,
+          "contrast": 50.1766
+        },
+        "64": {
+          "entropy": 4.8931,
+          "contrast": 51.2551
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/deacon_mirel/portrait.png",
+      "repositoryPath": "game/assets/heroes/deacon_mirel/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 944735,
+      "sha256": "d3c4e1b50b185834ced39b14d51582683476c4fd07a72630de0aef98fcdd4157",
+      "dhash": "773a77326392739373d373db73db679b4e8e1e8e6f876bb34f6d9c6b3cf478cc",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.1105,
+          "contrast": 46.5901
+        },
+        "64": {
+          "entropy": 7.0526,
+          "contrast": 45.4821
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/elio_silk/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/elio_silk/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 484610,
+      "sha256": "534d3764bf7dddaaf3d509dddb3b5cf61d5712df4c068e708a3188c48fc24603",
+      "dhash": "000098ed9d1b2a2f202f112f13a762c36d1b18b730e5236b346b846e09fc2000",
+      "alpha": {
+        "transparentFraction": 0.428158,
+        "visibleFraction": 0.635273,
+        "safeMarginFraction": 0.054688,
+        "contentBox": [
+          32,
+          37,
+          484,
+          473
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 5.8301,
+          "contrast": 60.1564
+        },
+        "64": {
+          "entropy": 5.9843,
+          "contrast": 58.8674
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/elio_silk/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/elio_silk/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 276652,
+      "sha256": "11b6d09c0e33c8d23c0e107a5a875aa53f8a56c16805c52564a659ade1c73097",
+      "dhash": "028000c009e009e808e811b401b411f425b82dfa4acc492d496d03bc42fc1084",
+      "alpha": {
+        "transparentFraction": 0.65992,
+        "visibleFraction": 0.353523,
+        "safeMarginFraction": 0.011719,
+        "contentBox": [
+          101,
+          6,
+          410,
+          503
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.5327,
+          "contrast": 42.3543
+        },
+        "64": {
+          "entropy": 3.7179,
+          "contrast": 41.3049
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/elio_silk/portrait.png",
+      "repositoryPath": "game/assets/heroes/elio_silk/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 994572,
+      "sha256": "7bcc1eb5070af6aabeebcec3887ae838dc9f5f57113fdfdbb27a10d2f2ff59c6",
+      "dhash": "9b299f0999cd9ba4dae45ce5c6f4d3b0e7634fcc99a331c7a463ece750c3cac3",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.328,
+          "contrast": 55.4081
+        },
+        "64": {
+          "entropy": 7.2721,
+          "contrast": 54.3937
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/empress_nahla/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/empress_nahla/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 241056,
+      "sha256": "224285a616a3d434affd3d89bf1bc194acfbc2575c0701f91e827ec494dd8c06",
+      "dhash": "008000e000f000b000b011b4153410f400b80cdc0cce0aee08ce087c00c00810",
+      "alpha": {
+        "transparentFraction": 0.746407,
+        "visibleFraction": 0.319649,
+        "safeMarginFraction": 0.039062,
+        "contentBox": [
+          75,
+          20,
+          442,
+          473
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.2707,
+          "contrast": 44.799
+        },
+        "64": {
+          "entropy": 3.5584,
+          "contrast": 43.8346
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/empress_nahla/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/empress_nahla/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 145909,
+      "sha256": "5d34452df91084ea5e53c06ed88a6f189cf2031d901e676fb97de5ceb9d7250a",
+      "dhash": "008000f000f000e000e000e000e000c000e000e000e000f800f804d800d80000",
+      "alpha": {
+        "transparentFraction": 0.805004,
+        "visibleFraction": 0.208641,
+        "safeMarginFraction": 0.060547,
+        "contentBox": [
+          147,
+          31,
+          365,
+          462
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 2.1512,
+          "contrast": 25.5316
+        },
+        "64": {
+          "entropy": 2.3719,
+          "contrast": 26.9578
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/empress_nahla/portrait.png",
+      "repositoryPath": "game/assets/heroes/empress_nahla/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1044394,
+      "sha256": "202417718fa911e0f03c3ccf5b9175ffde306f08ef67c7c239b828d19ad7b107",
+      "dhash": "10f311b110d694d694cab4caf4d2e6d21ec358c17a6d737a9378ba6919e85e68",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.2841,
+          "contrast": 24.3648
+        },
+        "64": {
+          "entropy": 6.183,
+          "contrast": 22.3666
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/ergen_cloud/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/ergen_cloud/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 535816,
+      "sha256": "d9e0baeb7bd655348b66218146ab9459ec145bd60bc63600deea988fea42a6f9",
+      "dhash": "008804cc091f096729bf06b3053712b930f310e7061b2693187710fe036c06c0",
+      "alpha": {
+        "transparentFraction": 0.375587,
+        "visibleFraction": 0.702312,
+        "safeMarginFraction": 0.027344,
+        "contentBox": [
+          28,
+          20,
+          498,
+          487
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.2276,
+          "contrast": 72.5096
+        },
+        "64": {
+          "entropy": 6.2349,
+          "contrast": 70.5424
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/ergen_cloud/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/ergen_cloud/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 348603,
+      "sha256": "d8c8e0f5190c8011d4f8811a281c4968068730296a198da2b2231bd21bfb801b",
+      "dhash": "08200134279a26b413ba239a0eba06bd4c8d4d8e4d8d95ce99a60c2e48ed0212",
+      "alpha": {
+        "transparentFraction": 0.641861,
+        "visibleFraction": 0.442322,
+        "safeMarginFraction": 0.048828,
+        "contentBox": [
+          79,
+          25,
+          440,
+          479
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 4.4807,
+          "contrast": 79.272
+        },
+        "64": {
+          "entropy": 4.6569,
+          "contrast": 82.6037
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/ergen_cloud/portrait.png",
+      "repositoryPath": "game/assets/heroes/ergen_cloud/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1264148,
+      "sha256": "79d6e81f6dc5e0763ad1e9b4c79c62b74e9d446966eb42f95ddef14be7f67a06",
+      "dhash": "863f873e278a3f9b37cb66862e928ce839cc394eb1665e66bb0d291f69726b73",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.66,
+          "contrast": 60.6053
+        },
+        "64": {
+          "entropy": 7.5913,
+          "contrast": 58.5607
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/ivar_lens/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/ivar_lens/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 121303,
+      "sha256": "4bc103ad9ff7b90564d32cc2d7c96709463b2b45bdf10fd799a080fb6ab50525",
+      "dhash": "0000023000c000f404b40078917c8d7c98f400e80ce000e00000004000000000",
+      "alpha": {
+        "transparentFraction": 0.871723,
+        "visibleFraction": 0.160728,
+        "safeMarginFraction": 0.171875,
+        "contentBox": [
+          88,
+          101,
+          367,
+          380
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 1.9536,
+          "contrast": 57.5389
+        },
+        "64": {
+          "entropy": 2.2221,
+          "contrast": 58.393
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/ivar_lens/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/ivar_lens/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 222077,
+      "sha256": "dcde25a91fc86859be20e4928fcbc6712c532f549e9fa7d9ef2f8ed8e54280cb",
+      "dhash": "000004d008e800f449fe0dcd016d00ea116811f400bc21fa00dc08e800c00000",
+      "alpha": {
+        "transparentFraction": 0.72044,
+        "visibleFraction": 0.304565,
+        "safeMarginFraction": 0.066406,
+        "contentBox": [
+          94,
+          34,
+          410,
+          468
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.3863,
+          "contrast": 62.7971
+        },
+        "64": {
+          "entropy": 3.6737,
+          "contrast": 63.1187
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/ivar_lens/portrait.png",
+      "repositoryPath": "game/assets/heroes/ivar_lens/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1088612,
+      "sha256": "baa9f57c6c283b2f102e82f0d79e9ea5489a29440741959ce24c99fb9c1749a6",
+      "dhash": "97121676dc32961397139e938ea6ca6662727222da61d261ca6acb6cc209ca18",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.2702,
+          "contrast": 41.5008
+        },
+        "64": {
+          "entropy": 7.1616,
+          "contrast": 38.8565
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/kael_cinder/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/kael_cinder/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 260823,
+      "sha256": "04cbe5dbad996ca7083ef1aa7372fe6edb65010c97761af89ba95f5bc34a06b8",
+      "dhash": "000030071c031c430e87071f4966023a035a026c026c0b7c033a04b000000020",
+      "alpha": {
+        "transparentFraction": 0.707993,
+        "visibleFraction": 0.350067,
+        "safeMarginFraction": 0.054688,
+        "contentBox": [
+          31,
+          54,
+          484,
+          427
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.426,
+          "contrast": 39.4186
+        },
+        "64": {
+          "entropy": 3.5897,
+          "contrast": 39.3612
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/kael_cinder/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/kael_cinder/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 264619,
+      "sha256": "29ff3b1e0383674d355215704590d4fd9be2a1570f49ee7405d923449605fc71",
+      "dhash": "000000e000e800600070023004d804f808ed48ad0a7c00fe00fe007e09fc0080",
+      "alpha": {
+        "transparentFraction": 0.629013,
+        "visibleFraction": 0.387367,
+        "safeMarginFraction": 0.064453,
+        "contentBox": [
+          82,
+          33,
+          430,
+          476
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.4974,
+          "contrast": 30.9295
+        },
+        "64": {
+          "entropy": 3.7151,
+          "contrast": 29.6149
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/kael_cinder/portrait.png",
+      "repositoryPath": "game/assets/heroes/kael_cinder/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1025436,
+      "sha256": "6aa460a1422b2345ef605bf9000e09aed8d89c51cef388bfa0627335f22d39b5",
+      "dhash": "24993dc9198d9a679965a0a1a3a5a30ece0bce1bd6929333b9333a5534366933",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.0731,
+          "contrast": 21.1246
+        },
+        "64": {
+          "entropy": 6.003,
+          "contrast": 19.2977
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/khulan_star/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/khulan_star/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 355501,
+      "sha256": "f1f599b12d1d3e56e6a74566896594cb496727ab16eeb05ff9f51a0184f3e291",
+      "dhash": "1406008010d698c60cce129613361b2712b718e70ece875601ed043210c40410",
+      "alpha": {
+        "transparentFraction": 0.57193,
+        "visibleFraction": 0.487148,
+        "safeMarginFraction": 0.074219,
+        "contentBox": [
+          38,
+          48,
+          466,
+          442
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 4.8875,
+          "contrast": 74.7683
+        },
+        "64": {
+          "entropy": 5.1027,
+          "contrast": 72.2123
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/khulan_star/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/khulan_star/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 198364,
+      "sha256": "5aab93ed8210c730dfbac79e23a55f1e4c3d1566e6c710742f72dff6b5d81495",
+      "dhash": "000000c000f810f400f012b400f010f411b401b800fa20fa00f800f8000000a0",
+      "alpha": {
+        "transparentFraction": 0.731541,
+        "visibleFraction": 0.281139,
+        "safeMarginFraction": 0.064453,
+        "contentBox": [
+          123,
+          33,
+          390,
+          441
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 2.9729,
+          "contrast": 45.368
+        },
+        "64": {
+          "entropy": 3.22,
+          "contrast": 43.4424
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/khulan_star/portrait.png",
+      "repositoryPath": "game/assets/heroes/khulan_star/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1354849,
+      "sha256": "06b0e17f77a92972eeb8fdfcbd02fae089dcee5ba3753f42e892db2f3fdc0caa",
+      "dhash": "a172d33ac69ce49ee496eccf4c85cdb4c9b9d93d97bc33b77736678665956716",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.6605,
+          "contrast": 61.8749
+        },
+        "64": {
+          "entropy": 7.565,
+          "contrast": 58.165
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/lady_sorn/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/lady_sorn/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 312718,
+      "sha256": "5a18dd91e1ba640636cc9b46862a0c63bc8eccaa9c70b0d943713f4e7882ffc6",
+      "dhash": "008800e002da18e612de123e087c033c026e06dc08ec061c00f8007c00e00080",
+      "alpha": {
+        "transparentFraction": 0.563992,
+        "visibleFraction": 0.451126,
+        "safeMarginFraction": 0.033203,
+        "contentBox": [
+          75,
+          17,
+          437,
+          490
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 4.0293,
+          "contrast": 34.4207
+        },
+        "64": {
+          "entropy": 4.1655,
+          "contrast": 30.3405
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/lady_sorn/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/lady_sorn/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 242288,
+      "sha256": "40c5bde754b9add71320c1184b3d4d738f45f92125034cb875dc2b930ddf81e8",
+      "dhash": "008000e0007000f804d004dc069c007c007c04dc08ec04dc00f000f000f00000",
+      "alpha": {
+        "transparentFraction": 0.667068,
+        "visibleFraction": 0.349792,
+        "safeMarginFraction": 0.027344,
+        "contentBox": [
+          101,
+          14,
+          411,
+          484
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.1244,
+          "contrast": 26.8901
+        },
+        "64": {
+          "entropy": 3.3593,
+          "contrast": 25.2452
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/lady_sorn/portrait.png",
+      "repositoryPath": "game/assets/heroes/lady_sorn/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 828161,
+      "sha256": "73650148acffa1995170700dd95c18c26365e50409dd105fbdf5d941d6e7ddb3",
+      "dhash": "6279217260b0399269cbf9e171c9e8d9eeb0684d6c4d69cde2ece6e4f344f388",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.465,
+          "contrast": 31.8265
+        },
+        "64": {
+          "entropy": 6.3998,
+          "contrast": 30.8546
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/lord_aylen/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/lord_aylen/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 329637,
+      "sha256": "8cf8c70efeed6657c883ea267f1be657cd1070e9553eb5db05a470768d7bd10c",
+      "dhash": "1034000050f540f502bf82be33331b47098f073706df833f086e037800040110",
+      "alpha": {
+        "transparentFraction": 0.538231,
+        "visibleFraction": 0.48243,
+        "safeMarginFraction": 0.087891,
+        "contentBox": [
+          50,
+          63,
+          467,
+          442
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 4.5988,
+          "contrast": 57.5722
+        },
+        "64": {
+          "entropy": 4.8207,
+          "contrast": 53.5068
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/lord_aylen/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/lord_aylen/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 293198,
+      "sha256": "b2c57b23e87087d356a37cf729f1acfaaa81c64a499ae8997c67c545039d9480",
+      "dhash": "029000c810f020780ccc449a469a4a9a469c46ce24da047802fc00fc01380000",
+      "alpha": {
+        "transparentFraction": 0.683472,
+        "visibleFraction": 0.37487,
+        "safeMarginFraction": 0.058594,
+        "contentBox": [
+          111,
+          30,
+          396,
+          469
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.9499,
+          "contrast": 63.743
+        },
+        "64": {
+          "entropy": 4.1517,
+          "contrast": 65.4707
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/lord_aylen/portrait.png",
+      "repositoryPath": "game/assets/heroes/lord_aylen/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1127964,
+      "sha256": "fde1128078562386d2f491a371d0701ddb446c3b02b07753672c95fd5227f27a",
+      "dhash": "80fe833e869c84de845e061d069dc61e4c4d4905306576e670d260d87986718a",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.6734,
+          "contrast": 34.7222
+        },
+        "64": {
+          "entropy": 6.5447,
+          "contrast": 32.6244
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/maeve_root/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/maeve_root/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 262566,
+      "sha256": "544e1be0b329ed6df8de3d9e1cec88a993ab9e543de9fbdad6860125124f2eee",
+      "dhash": "008000c000c004f000f800f804f420fa20fa08ee08cc00d790e719ec01701004",
+      "alpha": {
+        "transparentFraction": 0.731976,
+        "visibleFraction": 0.322979,
+        "safeMarginFraction": 0.064453,
+        "contentBox": [
+          64,
+          33,
+          460,
+          457
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.3511,
+          "contrast": 48.5334
+        },
+        "64": {
+          "entropy": 3.5066,
+          "contrast": 48.2587
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/maeve_root/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/maeve_root/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 347472,
+      "sha256": "eb0fa1364c71b61a4b5a3a37df4ad51ea64e60bce0ada9691b9811329011e6a9",
+      "dhash": "017010f000f001ec09dc04dc42ac41ec04dc27da065c01bc037c06ec09fc0200",
+      "alpha": {
+        "transparentFraction": 0.604542,
+        "visibleFraction": 0.430008,
+        "safeMarginFraction": 0.021484,
+        "contentBox": [
+          93,
+          11,
+          418,
+          486
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 4.0289,
+          "contrast": 34.8939
+        },
+        "64": {
+          "entropy": 4.1328,
+          "contrast": 33.0598
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/maeve_root/portrait.png",
+      "repositoryPath": "game/assets/heroes/maeve_root/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1165113,
+      "sha256": "55b854c6d6fd70760c1abe7e5919c664d1b8cabfb13619388fdf18db417e4c12",
+      "dhash": "2725369d34d925cd25c524c756c31b437c69b87899dd48cd2208163a76392c1c",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.9149,
+          "contrast": 35.1079
+        },
+        "64": {
+          "entropy": 6.8007,
+          "contrast": 32.2738
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/mara_chain/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/mara_chain/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 310621,
+      "sha256": "7992690eb7e42b1564c3ed8cf9dc0ae0657e6f8246fa02abc5ee5c9d70667d90",
+      "dhash": "041008e810f40178033c033d433d0b4e8ace0ace1296129e039c00f000e00000",
+      "alpha": {
+        "transparentFraction": 0.586849,
+        "visibleFraction": 0.435436,
+        "safeMarginFraction": 0.066406,
+        "contentBox": [
+          74,
+          34,
+          437,
+          467
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 4.1855,
+          "contrast": 62.2652
+        },
+        "64": {
+          "entropy": 4.3362,
+          "contrast": 60.3605
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/mara_chain/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/mara_chain/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 388544,
+      "sha256": "00dec96d31d3bef73b53be808b09022f37b72ebcd575e0de593dd157c9657d18",
+      "dhash": "08e0117404b8013e92f690a622af10b720eb08cf849e12b608dc09fc00e00890",
+      "alpha": {
+        "transparentFraction": 0.521278,
+        "visibleFraction": 0.505779,
+        "safeMarginFraction": 0.033203,
+        "contentBox": [
+          49,
+          17,
+          462,
+          489
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 4.5642,
+          "contrast": 36.9427
+        },
+        "64": {
+          "entropy": 4.7014,
+          "contrast": 35.9574
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/mara_chain/portrait.png",
+      "repositoryPath": "game/assets/heroes/mara_chain/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1011092,
+      "sha256": "bc20a50ecf884a3d7c7f34fb3e97bee7b4692ae3ccd48b6f090323f77367cf43",
+      "dhash": "033b069d0cdf2cdb2cdb6c896da96c59b84d334cb4ecd9cec9c6e7e6c8d6f9e6",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.5589,
+          "contrast": 28.2542
+        },
+        "64": {
+          "entropy": 6.4941,
+          "contrast": 26.5149
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/nemea_quill/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/nemea_quill/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 229655,
+      "sha256": "4c702c702ace0e25613409ba299b90383068fef73eb09e6bd916cbdaaf4bc97a",
+      "dhash": "00600410006442b21ccd98ed88f68cde84de04d648fd20fa00f4088802300080",
+      "alpha": {
+        "transparentFraction": 0.790771,
+        "visibleFraction": 0.290871,
+        "safeMarginFraction": 0.136719,
+        "contentBox": [
+          70,
+          76,
+          426,
+          429
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.2976,
+          "contrast": 85.9532
+        },
+        "64": {
+          "entropy": 3.6661,
+          "contrast": 89.1415
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/nemea_quill/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/nemea_quill/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 354021,
+      "sha256": "014aef6b1a55de1255293bdcbf570cf1b3d401afb7e5b58db991e0634309bee4",
+      "dhash": "00c810f4033a061c469d4635473d473e4136058f8cde0c4e043e02dc007001b4",
+      "alpha": {
+        "transparentFraction": 0.53064,
+        "visibleFraction": 0.484615,
+        "safeMarginFraction": 0.013672,
+        "contentBox": [
+          82,
+          7,
+          438,
+          482
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 4.8744,
+          "contrast": 63.1179
+        },
+        "64": {
+          "entropy": 5.0091,
+          "contrast": 61.2594
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/nemea_quill/portrait.png",
+      "repositoryPath": "game/assets/heroes/nemea_quill/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1040031,
+      "sha256": "027e7d90948a3e76c4a3cb137c4d2147d27b19d6adf4a73396fc78c099883a15",
+      "dhash": "613921396399660f6e4f6c9b661947390f19139921916c83ccc73c63270e261d",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.5216,
+          "contrast": 49.5806
+        },
+        "64": {
+          "entropy": 7.442,
+          "contrast": 47.9033
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/old_marin/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/old_marin/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 468450,
+      "sha256": "201be26fe982fd210471d81d2bc8b769d3ed431b5be72a6ea7ffedb60f517dd9",
+      "dhash": "008404da8ccc949634b3215b13df16971ab7196b286b329b9cb34f16239c1002",
+      "alpha": {
+        "transparentFraction": 0.474987,
+        "visibleFraction": 0.576111,
+        "safeMarginFraction": 0.019531,
+        "contentBox": [
+          39,
+          10,
+          473,
+          482
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 5.3842,
+          "contrast": 59.8409
+        },
+        "64": {
+          "entropy": 5.5105,
+          "contrast": 60.8026
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/old_marin/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/old_marin/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 275448,
+      "sha256": "870e8470e15117aa5c03cd0e0e06c4283d4aff826291037964ba768eb11a2e6a",
+      "dhash": "00d000e8006802f412b412b4007a245a093d437546750c2d0298003d003c0020",
+      "alpha": {
+        "transparentFraction": 0.611412,
+        "visibleFraction": 0.401348,
+        "safeMarginFraction": 0.033203,
+        "contentBox": [
+          101,
+          17,
+          411,
+          483
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.7826,
+          "contrast": 37.3015
+        },
+        "64": {
+          "entropy": 3.9624,
+          "contrast": 38.0766
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/old_marin/portrait.png",
+      "repositoryPath": "game/assets/heroes/old_marin/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1071772,
+      "sha256": "40b2eced1df89c4eb534c2c857a70098a56340fe81c76272ca47009dbbb5af3b",
+      "dhash": "99a9dbc999ebbbe97be958e13af21bc9969196a72a51aad394e713e693a7a3a5",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.3979,
+          "contrast": 53.0998
+        },
+        "64": {
+          "entropy": 7.339,
+          "contrast": 51.446
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/orion_step/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/orion_step/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 342145,
+      "sha256": "02f09e38e4950924766d136282433b4f105a4bb16964f0041b8bb5045770089c",
+      "dhash": "048000fc00fa04ce90e694ce10de10f690f6007e00ee88e604de00f800c00218",
+      "alpha": {
+        "transparentFraction": 0.594616,
+        "visibleFraction": 0.457363,
+        "safeMarginFraction": 0.046875,
+        "contentBox": [
+          56,
+          24,
+          462,
+          467
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 4.4989,
+          "contrast": 62.6878
+        },
+        "64": {
+          "entropy": 4.6624,
+          "contrast": 62.1113
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/orion_step/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/orion_step/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 406770,
+      "sha256": "31b0dfa6348ccee132af0d8f994d17588dfb56fb912f954601c12eea38a947d0",
+      "dhash": "02ec01cd090d411a01cd09ee40ad0456484e48ce048e043e203d003d241d003c",
+      "alpha": {
+        "transparentFraction": 0.492088,
+        "visibleFraction": 0.559853,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          91,
+          0,
+          442,
+          512
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 5.2954,
+          "contrast": 64.2984
+        },
+        "64": {
+          "entropy": 5.4158,
+          "contrast": 64.7243
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/orion_step/portrait.png",
+      "repositoryPath": "game/assets/heroes/orion_step/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1110645,
+      "sha256": "6ddc5a2e45864dd11b35325adf1a3535ea0589640530e24b89dbf1ecb622ec88",
+      "dhash": "9318c708ac0a2c1a241a661ac71a1c8a79837181b180a14063686360e3d0a194",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.6209,
+          "contrast": 55.6043
+        },
+        "64": {
+          "entropy": 7.5573,
+          "contrast": 54.3993
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/puck_ember/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/puck_ember/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 443173,
+      "sha256": "2050c0266bb822fb8a9ee882e328e6f2a6f2d67bb418c4f3542d20ae08026438",
+      "dhash": "00c00cf499e6896f2ccf2ccb0ccf007f896f0967133602be04ee0cbc00f800e0",
+      "alpha": {
+        "transparentFraction": 0.518459,
+        "visibleFraction": 0.61607,
+        "safeMarginFraction": 0.046875,
+        "contentBox": [
+          47,
+          24,
+          475,
+          487
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 5.2703,
+          "contrast": 52.5201
+        },
+        "64": {
+          "entropy": 5.2101,
+          "contrast": 50.3143
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/puck_ember/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/puck_ember/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 278188,
+      "sha256": "fb3118596c44cea03b202e119b87ebe74e5ec95d62b73790bda6ac68f7a1ecf9",
+      "dhash": "a2c093e0a7b086b4931c929ca498a660926892f0a4dca45aa46ca87aa87ca6b8",
+      "alpha": {
+        "transparentFraction": 0.722679,
+        "visibleFraction": 0.342007,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          2,
+          0,
+          390,
+          512
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.5542,
+          "contrast": 45.9879
+        },
+        "64": {
+          "entropy": 3.7783,
+          "contrast": 48.0158
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/puck_ember/portrait.png",
+      "repositoryPath": "game/assets/heroes/puck_ember/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1064763,
+      "sha256": "c3b2950197f9f553c8475d1f74c4df5f51822df495c1d5e464981dc7e6a370ce",
+      "dhash": "2cc737b22f8b4d69de65ce6ccc4cd71cfd9ec6dcce5dccadc8a4c8b49990b118",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.2045,
+          "contrast": 43.333
+        },
+        "64": {
+          "entropy": 7.1219,
+          "contrast": 41.1922
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/rath_banner/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/rath_banner/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 268861,
+      "sha256": "3a53da0b7d8bf53bcfbbd1bd0ad876bbd592369235f92f2ddcfb55abd6798777",
+      "dhash": "8080808084dc817892b591762ccb271b071f849e849e15378cce84c880808000",
+      "alpha": {
+        "transparentFraction": 0.561481,
+        "visibleFraction": 0.473431,
+        "safeMarginFraction": 0.03125,
+        "contentBox": [
+          59,
+          16,
+          454,
+          469
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.7969,
+          "contrast": 40.4537
+        },
+        "64": {
+          "entropy": 4.2079,
+          "contrast": 38.978
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/rath_banner/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/rath_banner/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 277892,
+      "sha256": "84a4b4300c7c51b070fc9edeb39514d388856ec7a5f650e293fd8bb2115af630",
+      "dhash": "0c08255a04180e8e18e688ce9cc69c660cc600f6049200f800f800f800000080",
+      "alpha": {
+        "transparentFraction": 0.68552,
+        "visibleFraction": 0.356148,
+        "safeMarginFraction": 0.050781,
+        "contentBox": [
+          69,
+          26,
+          442,
+          442
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.4808,
+          "contrast": 32.6802
+        },
+        "64": {
+          "entropy": 3.7587,
+          "contrast": 34.4696
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/rath_banner/portrait.png",
+      "repositoryPath": "game/assets/heroes/rath_banner/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1031490,
+      "sha256": "1a5f1e1651bb12772b886d5dca5d3d2883667790fc6f8b006af758dafe3fcb27",
+      "dhash": "80362c863524152c94af91a7ab216632e472cc635a334a33dab1e8f1d0734c73",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 5.9283,
+          "contrast": 21.4514
+        },
+        "64": {
+          "entropy": 5.8739,
+          "contrast": 19.9776
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/renzo_bridge/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/renzo_bridge/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 202368,
+      "sha256": "a5382140a1a1ab799a47e6a2d0a543f48632b33f694ed7cb8e36696fcf700aaf",
+      "dhash": "00000800000009038c20891389230c3f087f08f609be037806e4001004400000",
+      "alpha": {
+        "transparentFraction": 0.780174,
+        "visibleFraction": 0.269085,
+        "safeMarginFraction": 0.0625,
+        "contentBox": [
+          32,
+          102,
+          470,
+          416
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.0036,
+          "contrast": 53.3566
+        },
+        "64": {
+          "entropy": 3.2168,
+          "contrast": 55.8429
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/renzo_bridge/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/renzo_bridge/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 249009,
+      "sha256": "3b407131623e8ec1d0c34cb8028516fd0fe5a8332edcbffc03870766abdab02e",
+      "dhash": "000000c000f810b4069c249a249a04d844dc48cd496d49ed02bc02a008080020",
+      "alpha": {
+        "transparentFraction": 0.665405,
+        "visibleFraction": 0.344868,
+        "safeMarginFraction": 0.087891,
+        "contentBox": [
+          104,
+          45,
+          409,
+          434
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.4995,
+          "contrast": 46.5832
+        },
+        "64": {
+          "entropy": 3.6501,
+          "contrast": 45.5843
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/renzo_bridge/portrait.png",
+      "repositoryPath": "game/assets/heroes/renzo_bridge/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1128140,
+      "sha256": "914dd9af352242456cbffc0ded294e7baa9a95053f74cbc822d30e2490d0f7e8",
+      "dhash": "9f0c96068646863496198c5b8d9b9a2d9a651c66bf263946da45f863f037d250",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.562,
+          "contrast": 51.6348
+        },
+        "64": {
+          "entropy": 7.4786,
+          "contrast": 49.089
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/roan_stag/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/roan_stag/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 516522,
+      "sha256": "6c54fd9f101d9deda4b7453c0c92e03043eed4485fe9f16472f073e1fa886a4d",
+      "dhash": "12e426f80c1d190e1056133f134f139f330b331b311330bb207f207f007c2160",
+      "alpha": {
+        "transparentFraction": 0.469646,
+        "visibleFraction": 0.652061,
+        "safeMarginFraction": 0.037109,
+        "contentBox": [
+          37,
+          20,
+          480,
+          493
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 5.8319,
+          "contrast": 61.7862
+        },
+        "64": {
+          "entropy": 5.8518,
+          "contrast": 60.0419
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/roan_stag/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/roan_stag/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 294857,
+      "sha256": "f673aae3600458490741d48b91af9a4fe6e153e9a9dd87f19d5928f45378b2cf",
+      "dhash": "005000f400b8041a001a250c0acd006c0c74481a131a10da08d00478047a0058",
+      "alpha": {
+        "transparentFraction": 0.632706,
+        "visibleFraction": 0.392075,
+        "safeMarginFraction": 0.029297,
+        "contentBox": [
+          89,
+          15,
+          401,
+          491
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.7562,
+          "contrast": 34.5062
+        },
+        "64": {
+          "entropy": 3.9397,
+          "contrast": 34.0107
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/roan_stag/portrait.png",
+      "repositoryPath": "game/assets/heroes/roan_stag/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1219926,
+      "sha256": "257f7ed8e4ece580945a4cf38e961b96f1bf581cad19b75940cfcacfc14b1f1f",
+      "dhash": "237f062706b9063e260e04060d12088b18d919c91945384d74cc2d3c186c59cc",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.2683,
+          "contrast": 47.0211
+        },
+        "64": {
+          "entropy": 7.1761,
+          "contrast": 44.5444
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/saran_dawn/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/saran_dawn/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 211148,
+      "sha256": "b600a84f4b363db28429b262363c982982d5352cd917f9164a5dd415fcc84213",
+      "dhash": "041008e810f420fa433d433d433c433e429d4aad02be00f0086c020000400000",
+      "alpha": {
+        "transparentFraction": 0.734184,
+        "visibleFraction": 0.32943,
+        "safeMarginFraction": 0.099609,
+        "contentBox": [
+          91,
+          51,
+          423,
+          407
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.5304,
+          "contrast": 74.9024
+        },
+        "64": {
+          "entropy": 3.6191,
+          "contrast": 73.7503
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/saran_dawn/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/saran_dawn/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 173264,
+      "sha256": "a5fd644774e8d9dbdf1934996eb47c3123731918ead429c0ce721227cc8e0a47",
+      "dhash": "000004c008e808e800f008e808e808e813b423ba22fa01fc01fc01fc00000188",
+      "alpha": {
+        "transparentFraction": 0.753681,
+        "visibleFraction": 0.2584,
+        "safeMarginFraction": 0.087891,
+        "contentBox": [
+          115,
+          45,
+          398,
+          432
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 2.8846,
+          "contrast": 54.1379
+        },
+        "64": {
+          "entropy": 3.0729,
+          "contrast": 54.5317
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/saran_dawn/portrait.png",
+      "repositoryPath": "game/assets/heroes/saran_dawn/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1013067,
+      "sha256": "beb4eb6c706505e5cd871f41912cf3a2c8999242de37bcb00eeb2fe565ecad48",
+      "dhash": "a324870186912c075e01be1046014c231f243f669c62bcc369c1373319133b9b",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.8958,
+          "contrast": 67.2877
+        },
+        "64": {
+          "entropy": 7.8466,
+          "contrast": 65.8464
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/seraph_lyra/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/seraph_lyra/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 172575,
+      "sha256": "3b6d02c8144443b5540a45e9a1029d7a11adcaa725a6fe7d24acad9b1b8fea85",
+      "dhash": "0200090404800746078d079d073a0c7400fc21c802f400f400c0083001400000",
+      "alpha": {
+        "transparentFraction": 0.857319,
+        "visibleFraction": 0.230526,
+        "safeMarginFraction": 0.158203,
+        "contentBox": [
+          82,
+          85,
+          431,
+          416
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 2.5768,
+          "contrast": 80.9016
+        },
+        "64": {
+          "entropy": 2.8505,
+          "contrast": 83.7358
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/seraph_lyra/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/seraph_lyra/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 246188,
+      "sha256": "b700409481ff98b2c269195eadc1921b489941605a323a9a9e14228c8415727e",
+      "dhash": "008000d004d008681274023a223a233a1234245a0c5a061e061e127210740050",
+      "alpha": {
+        "transparentFraction": 0.698315,
+        "visibleFraction": 0.315426,
+        "safeMarginFraction": 0.023438,
+        "contentBox": [
+          121,
+          12,
+          392,
+          482
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.4663,
+          "contrast": 69.9456
+        },
+        "64": {
+          "entropy": 3.6931,
+          "contrast": 71.7231
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/seraph_lyra/portrait.png",
+      "repositoryPath": "game/assets/heroes/seraph_lyra/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1100272,
+      "sha256": "4511ab583f1ba3c88ee3aff49e825123f7d55a9feaf2fdcb593eb17f476a7366",
+      "dhash": "897f933b261b26194697461767396d395c99149925916c93389b3a917d91d991",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.4317,
+          "contrast": 52.0348
+        },
+        "64": {
+          "entropy": 7.3661,
+          "contrast": 49.951
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/suri_ash/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/suri_ash/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 323271,
+      "sha256": "339256c9a495dfe5e2e7727b796bdd023ed6cb527907808daf17e2d15ac8ef80",
+      "dhash": "00100060003c053a0dac19ac226d354d2c0d1b270b4706cf02f704e6029c0000",
+      "alpha": {
+        "transparentFraction": 0.607388,
+        "visibleFraction": 0.452648,
+        "safeMarginFraction": 0.056641,
+        "contentBox": [
+          29,
+          40,
+          473,
+          477
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 4.1672,
+          "contrast": 39.9204
+        },
+        "64": {
+          "entropy": 4.4784,
+          "contrast": 39.992
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/suri_ash/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/suri_ash/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 218748,
+      "sha256": "adf0c70a53253779aed282968f76c0225c693e18e5fc771e78a9ccb2fac3fd42",
+      "dhash": "00000160097012f80378067804f801f811d8017800f001f0007800f801280000",
+      "alpha": {
+        "transparentFraction": 0.710297,
+        "visibleFraction": 0.307613,
+        "safeMarginFraction": 0.083984,
+        "contentBox": [
+          118,
+          43,
+          381,
+          455
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 2.9068,
+          "contrast": 26.255
+        },
+        "64": {
+          "entropy": 3.0708,
+          "contrast": 25.371
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/suri_ash/portrait.png",
+      "repositoryPath": "game/assets/heroes/suri_ash/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1045919,
+      "sha256": "c0eb9ba56729f96be9cf9dca99940b61bd6f73e52199401c696a6b95a20c3ae6",
+      "dhash": "26380e99199dd9cf69c348e7a8d3ac98ce0cd80691072243624b03c361c966ec",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.202,
+          "contrast": 23.3599
+        },
+        "64": {
+          "entropy": 6.1229,
+          "contrast": 22.2602
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/temur_wind/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/temur_wind/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 111004,
+      "sha256": "692be49c014a7d8bffd7ad865568aa4e87f21b8352865b3fd97e59af4e1bfdab",
+      "dhash": "00000000000010c000120dc085b6095308d319d6240000820000000000000000",
+      "alpha": {
+        "transparentFraction": 0.884079,
+        "visibleFraction": 0.148586,
+        "safeMarginFraction": 0.103516,
+        "contentBox": [
+          53,
+          156,
+          455,
+          319
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 1.8847,
+          "contrast": 44.1052
+        },
+        "64": {
+          "entropy": 2.1446,
+          "contrast": 48.5749
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/temur_wind/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/temur_wind/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 251701,
+      "sha256": "49af66ace203564f5d0ef4816c8b6b796a96d01fdb29dc6e2ca2f635534881e7",
+      "dhash": "000005680878113c02ba04dc4d5d4c6d087c00cd206f24fa20f800fa000000a0",
+      "alpha": {
+        "transparentFraction": 0.674461,
+        "visibleFraction": 0.341362,
+        "safeMarginFraction": 0.066406,
+        "contentBox": [
+          100,
+          34,
+          425,
+          444
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.5071,
+          "contrast": 47.904
+        },
+        "64": {
+          "entropy": 3.737,
+          "contrast": 45.9546
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/temur_wind/portrait.png",
+      "repositoryPath": "game/assets/heroes/temur_wind/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1177783,
+      "sha256": "bd730d30a6bde4730f3aa75f05b6a9c7e910980f2feafb4f17db37e42e9ec153",
+      "dhash": "4b239606cc4ccc42dc66cc67ec60bc98d88cd986b862ea23f0637263e321e0a1",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.6427,
+          "contrast": 54.6785
+        },
+        "64": {
+          "entropy": 7.5673,
+          "contrast": 53.0138
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/tessa_gull/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/tessa_gull/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 581885,
+      "sha256": "16bf4186e821bb401361180cd19874cd127be613e147b14a6262fb01094282fd",
+      "dhash": "6f8b21f504730e3b0c3338651c8519c7594553252e4509d5078f4f1f31150000",
+      "alpha": {
+        "transparentFraction": 0.222679,
+        "visibleFraction": 0.79631,
+        "safeMarginFraction": 0.019531,
+        "contentBox": [
+          21,
+          15,
+          502,
+          474
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.8161,
+          "contrast": 61.6804
+        },
+        "64": {
+          "entropy": 6.8869,
+          "contrast": 57.2554
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/tessa_gull/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/tessa_gull/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 398069,
+      "sha256": "814e3f06b384dc5be6bc03ec2b8ae83484e781316bbe560cefaf34c9db580649",
+      "dhash": "042008781234243a0c9d4ccd8670961a915d8c7c147d991d901d902e003e021e",
+      "alpha": {
+        "transparentFraction": 0.521751,
+        "visibleFraction": 0.497589,
+        "safeMarginFraction": 0.023438,
+        "contentBox": [
+          64,
+          12,
+          435,
+          494
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 4.7938,
+          "contrast": 50.6257
+        },
+        "64": {
+          "entropy": 4.9664,
+          "contrast": 49.3291
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/tessa_gull/portrait.png",
+      "repositoryPath": "game/assets/heroes/tessa_gull/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1129995,
+      "sha256": "7a09cd103953a0c32ac48682e821b200ca6f1c7e72a52eaff307e5568e219816",
+      "dhash": "d71fcecf5b437ba759a6dde1cdf1e3719e8c1f1cbf1c9a1cdf9d9b1d1b9d9a98",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.7429,
+          "contrast": 68.6522
+        },
+        "64": {
+          "entropy": 7.6978,
+          "contrast": 67.1222
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/tomas_gate/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/tomas_gate/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 355859,
+      "sha256": "9929f912cd2d99cffd8756ea03d3c2abdd24444ff30b1551659703077b9c3358",
+      "dhash": "0c0400e00cfc8cc60a6e086e9cc68c472446246e091e09360946059e00000000",
+      "alpha": {
+        "transparentFraction": 0.561131,
+        "visibleFraction": 0.531361,
+        "safeMarginFraction": 0.080078,
+        "contentBox": [
+          70,
+          41,
+          445,
+          447
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 4.5723,
+          "contrast": 44.4982
+        },
+        "64": {
+          "entropy": 4.5211,
+          "contrast": 43.0556
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/tomas_gate/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/tomas_gate/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 218370,
+      "sha256": "daa23b3aec4018a94aefd3e453abec7d71d344c3f979347d0bf479524ef9bb7d",
+      "dhash": "008000e000e000e000e000f000f800f8047802d802dc08fc087c007800e000c0",
+      "alpha": {
+        "transparentFraction": 0.727097,
+        "visibleFraction": 0.348877,
+        "safeMarginFraction": 0.039062,
+        "contentBox": [
+          111,
+          22,
+          402,
+          492
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 2.8287,
+          "contrast": 27.2149
+        },
+        "64": {
+          "entropy": 2.8892,
+          "contrast": 26.7925
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/tomas_gate/portrait.png",
+      "repositoryPath": "game/assets/heroes/tomas_gate/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 945372,
+      "sha256": "ed8aa1ab831f649b5034b3675bd3507e4d4adcc5ef49340be88b30588d6af4cd",
+      "dhash": "3173669966d94c5d469d4e9d3b4f4b670c6b90f9b938d938b9b499309973d4fb",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.64,
+          "contrast": 45.2075
+        },
+        "64": {
+          "entropy": 6.5882,
+          "contrast": 43.7038
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/vael_hammer/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/vael_hammer/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 398364,
+      "sha256": "183d776768cb9f3271e0323b5022004a081495c4a3e350e1d8918de87fda0078",
+      "dhash": "085013c004fc0c9a960d960dbc863cd62e8b633968e924db34db08ce04f920c4",
+      "alpha": {
+        "transparentFraction": 0.513996,
+        "visibleFraction": 0.554165,
+        "safeMarginFraction": 0.017578,
+        "contentBox": [
+          37,
+          15,
+          476,
+          503
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 5.0635,
+          "contrast": 51.1231
+        },
+        "64": {
+          "entropy": 5.1428,
+          "contrast": 51.1974
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/vael_hammer/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/vael_hammer/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 341316,
+      "sha256": "2da00910c7b1c4259ad56aa7ec4361d99a4ffa5d39c7582df6da317cec4cc2b0",
+      "dhash": "048800e000fc04ce0d9e0c1e14ce184e518c4a8c0dcc279c02b806dc02bc0080",
+      "alpha": {
+        "transparentFraction": 0.533157,
+        "visibleFraction": 0.480816,
+        "safeMarginFraction": 0.023438,
+        "contentBox": [
+          78,
+          12,
+          434,
+          496
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 4.1678,
+          "contrast": 31.2593
+        },
+        "64": {
+          "entropy": 4.3303,
+          "contrast": 28.75
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/vael_hammer/portrait.png",
+      "repositoryPath": "game/assets/heroes/vael_hammer/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1086768,
+      "sha256": "8dc67538f210aba3cfc2f6ac781f5bea83eba6ca93a91ca30e5a2fe450447037",
+      "dhash": "f33f163f06ad863e4d97c79195a699c61982733a732a626264b3c9e3926224fa",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.1751,
+          "contrast": 45.7265
+        },
+        "64": {
+          "entropy": 7.1109,
+          "contrast": 44.248
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/velka_urn/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/velka_urn/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 367791,
+      "sha256": "f430b1b06cff7ebfe6d29b1b3fcce5e1a0ba3b2d81bd4323559c46c2ca3446f0",
+      "dhash": "03324ccd98e630fb18fb0cf727a7319f887692f748cd24da04da12b408e804d0",
+      "alpha": {
+        "transparentFraction": 0.52166,
+        "visibleFraction": 0.522591,
+        "safeMarginFraction": 0.048828,
+        "contentBox": [
+          57,
+          25,
+          450,
+          482
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 5.1016,
+          "contrast": 73.7306
+        },
+        "64": {
+          "entropy": 5.2655,
+          "contrast": 74.4822
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/velka_urn/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/velka_urn/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 168839,
+      "sha256": "88b19a28780316df4a6ec0e2e3d7a4b047ec5c19b87c428e40c4db39269e0dc6",
+      "dhash": "008004d000e000e000e000b002b000f000e0006000e000e000f000f000f000e0",
+      "alpha": {
+        "transparentFraction": 0.757732,
+        "visibleFraction": 0.253586,
+        "safeMarginFraction": 0.046875,
+        "contentBox": [
+          155,
+          24,
+          357,
+          486
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 2.3951,
+          "contrast": 22.0964
+        },
+        "64": {
+          "entropy": 2.4931,
+          "contrast": 20.7421
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/velka_urn/portrait.png",
+      "repositoryPath": "game/assets/heroes/velka_urn/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1001111,
+      "sha256": "195d92b60f2ca6ffbd260ee753abbe9801f07b359f8f26226de4598dc21a8c8a",
+      "dhash": "514d9d8d9cbd4cad2ccd9c9f3c875e8766c72943b95b691963186341e179c319",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.2234,
+          "contrast": 22.643
+        },
+        "64": {
+          "entropy": 6.1483,
+          "contrast": 21.1964
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/viola_mask/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/viola_mask/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 220531,
+      "sha256": "9f3a90debdb89aa03da5bf5ec3f505752f8ea0a0328a7dae2a2f35a9b75b7200",
+      "dhash": "014002a000c010f4017d0ccd12b61f870e9f1cc6116202580082010000000000",
+      "alpha": {
+        "transparentFraction": 0.712437,
+        "visibleFraction": 0.304134,
+        "safeMarginFraction": 0.099609,
+        "contentBox": [
+          51,
+          56,
+          461,
+          415
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.3114,
+          "contrast": 54.2505
+        },
+        "64": {
+          "entropy": 3.5339,
+          "contrast": 52.9393
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/viola_mask/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/viola_mask/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 389654,
+      "sha256": "dcc5add88c5fe77bdb11262885949efcb00d12b338ae3cdccf98f305113a92dd",
+      "dhash": "048810e400b8869e9cc69cc69696069f04d794d68cce84de82b600f810c40210",
+      "alpha": {
+        "transparentFraction": 0.528973,
+        "visibleFraction": 0.484253,
+        "safeMarginFraction": 0.041016,
+        "contentBox": [
+          54,
+          21,
+          459,
+          474
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 4.6775,
+          "contrast": 57.0805
+        },
+        "64": {
+          "entropy": 4.8076,
+          "contrast": 52.8885
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/viola_mask/portrait.png",
+      "repositoryPath": "game/assets/heroes/viola_mask/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1135469,
+      "sha256": "b9fd36cf22e4434098864503dc23f62ee224174b9568384366ec35df20175966",
+      "dhash": "9ed3ba533c62386578457864fa3c7959452cc38489c619e719640f251615343d",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.0664,
+          "contrast": 46.2846
+        },
+        "64": {
+          "entropy": 7.0009,
+          "contrast": 43.8919
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/ysra_moss/ability_icon.png",
+      "repositoryPath": "game/assets/heroes/ysra_moss/ability_icon.png",
+      "profile": "ABILITY-ICON-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 378549,
+      "sha256": "02beaa5d4ae4c83126cb4ef12b7a1c9496a739c1a2f85e19323dd98648e2097c",
+      "dhash": "048810e404980cce98e624a719670ce724c7112f18df4cce069a017008880220",
+      "alpha": {
+        "transparentFraction": 0.564323,
+        "visibleFraction": 0.480831,
+        "safeMarginFraction": 0.060547,
+        "contentBox": [
+          34,
+          31,
+          477,
+          457
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 4.7969,
+          "contrast": 60.4873
+        },
+        "64": {
+          "entropy": 4.936,
+          "contrast": 58.9011
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/ysra_moss/piece_badge.png",
+      "repositoryPath": "game/assets/heroes/ysra_moss/piece_badge.png",
+      "profile": "HERO-BADGE-512",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 259719,
+      "sha256": "40e1ec3cf9a9d053f860465b37083be3463f9d9000023cc25ce8d6320815448b",
+      "dhash": "008000f000e000d4009424b426e802d010de24cd01da027a40fd006e027c0000",
+      "alpha": {
+        "transparentFraction": 0.746201,
+        "visibleFraction": 0.302612,
+        "safeMarginFraction": 0.054688,
+        "contentBox": [
+          83,
+          28,
+          429,
+          479
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 3.3449,
+          "contrast": 53.5967
+        },
+        "64": {
+          "entropy": 3.6679,
+          "contrast": 57.4591
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/heroes/ysra_moss/portrait.png",
+      "repositoryPath": "game/assets/heroes/ysra_moss/portrait.png",
+      "profile": "HERO-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1212631,
+      "sha256": "464925c8f465dbce3e21784edc8af9431854b0476d71a8744b261171313cfac4",
+      "dhash": "117742374c594c5b4c5964594e19460d664704674c304cb10d9100f54a6eca0d",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.056,
+          "contrast": 45.6382
+        },
+        "64": {
+          "entropy": 6.978,
+          "contrast": 42.7629
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/politics/admiral_rava.png",
+      "repositoryPath": "game/assets/politics/admiral_rava.png",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1087792,
+      "sha256": "987e98140ac643bf7d0da1c190e869ca2ae6df1e78199018403a986f3f59f726",
+      "dhash": "866c0cec0cf60c360c520c5a06980e9c0d860d265b26125214f8b0e431e431e4",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.3223,
+          "contrast": 49.4968
+        },
+        "64": {
+          "entropy": 7.262,
+          "contrast": 48.3861
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/politics/archivist_noem.png",
+      "repositoryPath": "game/assets/politics/archivist_noem.png",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1044033,
+      "sha256": "7fe38878d3b46ec1a293db6c2a7ca192597812910358fde4b2e475fb5157b38a",
+      "dhash": "59e379e379c3b98f798e7ce6b0df11db03c745cf459f4dfb19e703c623c620e6",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.5682,
+          "contrast": 52.6192
+        },
+        "64": {
+          "entropy": 7.4804,
+          "contrast": 51.0585
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/politics/bride_melis.png",
+      "repositoryPath": "game/assets/politics/bride_melis.png",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1131243,
+      "sha256": "13d668f02948862afd4699fe1f63d1f588f0d0a2af34ccae1f183ec974779651",
+      "dhash": "593453346294669ce698269926db2c4b0c6f4ac5329636d14a1732731c432279",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.9205,
+          "contrast": 39.3349
+        },
+        "64": {
+          "entropy": 6.8026,
+          "contrast": 35.8906
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/politics/consul_marco.png",
+      "repositoryPath": "game/assets/politics/consul_marco.png",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1045771,
+      "sha256": "0d4d2be0746b3e874b5fe8dcae7d04a975d951f13b243a2aed7db219f9b8af46",
+      "dhash": "312b66030c4b484f041f2c2fcc2d54870ec22b11261976cdb2c712635262693d",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.9635,
+          "contrast": 47.5056
+        },
+        "64": {
+          "entropy": 6.9193,
+          "contrast": 46.63
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/politics/empress_nahla_p.png",
+      "repositoryPath": "game/assets/politics/empress_nahla_p.png",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 971153,
+      "sha256": "cc204c9d26e2b15e0cbcf99aefce6f9548e8d8da8b32333a7ee6c9681122bd9f",
+      "dhash": "04b824b3ecd1c4d9e4d1b491a6890f8824d130f3ba4a29eb4cc5b4d4a0e84ce8",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.2544,
+          "contrast": 22.4505
+        },
+        "64": {
+          "entropy": 6.1647,
+          "contrast": 20.2765
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/politics/general_dor.png",
+      "repositoryPath": "game/assets/politics/general_dor.png",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 915192,
+      "sha256": "b5cf00e928369681a009055706ae29949750af1439a35e827002587e73e90e9f",
+      "dhash": "86a724eb206b226f226706c705130c07186630622063e0e664b660336072e472",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.1672,
+          "contrast": 26.961
+        },
+        "64": {
+          "entropy": 6.1067,
+          "contrast": 26.0599
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/politics/guildmaster_borek.png",
+      "repositoryPath": "game/assets/politics/guildmaster_borek.png",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1006281,
+      "sha256": "e48f2b885bd0173b0ef59bc67f6ddb597fa737e12881fae18984702ae019b621",
+      "dhash": "79146c96e8dff8d7f8d7748fcd1cd91ae1326023ca63c343d24fd467c4c3c6cb",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.6908,
+          "contrast": 40.0757
+        },
+        "64": {
+          "entropy": 6.6088,
+          "contrast": 38.6494
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/politics/heir_elda.png",
+      "repositoryPath": "game/assets/politics/heir_elda.png",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 933903,
+      "sha256": "63e2ef845b8746752e64d2965b8ed447fef330a0a5ca88270f29e4140d1382df",
+      "dhash": "199b9e4b3c6b4c73987208720c722c6218d0da504ad29e631d391c58cd1da51c",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.2708,
+          "contrast": 28.4294
+        },
+        "64": {
+          "entropy": 6.1455,
+          "contrast": 27.4824
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/politics/heretic_salos.png",
+      "repositoryPath": "game/assets/politics/heretic_salos.png",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1110587,
+      "sha256": "e64b17a991c1b7c34531e7e2dd6985ae5c457ebd8a49260c0ebac6e93af3f7d9",
+      "dhash": "619f470f4e4f4ced486d08e5484d29cb0cdc12f13b677d6b7f275da75cda6ccb",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.5419,
+          "contrast": 56.894
+        },
+        "64": {
+          "entropy": 7.4869,
+          "contrast": 55.1162
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/politics/huntsman_orr.png",
+      "repositoryPath": "game/assets/politics/huntsman_orr.png",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1112092,
+      "sha256": "aa7d76f9f943e207918b8d10af719fab9d347ff897f1555d41dc9e56df03d7bf",
+      "dhash": "c6c76247f0c218c4184594c1a6a32d231e97144d1264694c6cce0ac620c664cc",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.9137,
+          "contrast": 47.1222
+        },
+        "64": {
+          "entropy": 6.8308,
+          "contrast": 45.428
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/politics/khan_temur.png",
+      "repositoryPath": "game/assets/politics/khan_temur.png",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1125861,
+      "sha256": "6e4b0b2b9aecced29f10d3ca506036fd735c08640ad87d9910ab1c4c3cb2e013",
+      "dhash": "bc889c2096508c788d008ca8ac089c60dd41b908f984d124b348e34ac5a24af5",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.5389,
+          "contrast": 52.5415
+        },
+        "64": {
+          "entropy": 7.4819,
+          "contrast": 51.4792
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/politics/marshal_varn.png",
+      "repositoryPath": "game/assets/politics/marshal_varn.png",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 931789,
+      "sha256": "077af73b0b5fd3eea123995beff8ed6ccf98d9d97d25dfffc32e59d1304beb41",
+      "dhash": "384328e360e1316190e190e3696139c0a6cc1de31e611f111c999c7432343e16",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.3359,
+          "contrast": 29.8868
+        },
+        "64": {
+          "entropy": 6.275,
+          "contrast": 28.3982
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/politics/pontiff_aelia.png",
+      "repositoryPath": "game/assets/politics/pontiff_aelia.png",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1190173,
+      "sha256": "791b5f1215c8ece3dcb7cfe332b175e9bec71d5b8d50243a415fe6276014fc5c",
+      "dhash": "470d0ec50c470c4f0c4f2e0f3e97361726132927092518ac18a490b402d802cc",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.6486,
+          "contrast": 52.1709
+        },
+        "64": {
+          "entropy": 7.5594,
+          "contrast": 50.0153
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/politics/priestess_velka.png",
+      "repositoryPath": "game/assets/politics/priestess_velka.png",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 903118,
+      "sha256": "5ee1c9d7c6a1e98d6aeaba4221faa1bb46e07a67aa0df113e9515fec1c1b61a9",
+      "dhash": "69494ae94cc94c496cd94e994edf5a2552353233323372b132b34299417d4d5d",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 6.2617,
+          "contrast": 22.1729
+        },
+        "64": {
+          "entropy": 6.1643,
+          "contrast": 20.6814
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/politics/princess_khulan.png",
+      "repositoryPath": "game/assets/politics/princess_khulan.png",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1257059,
+      "sha256": "a9b9860da182136a305919ad547f31f319103f209d6fca4b422bf2fd0cb2281b",
+      "dhash": "0d7f473f4e9e4d9e8d9c8d9caccc9da439b53338252a673e7736e736ef24cd49",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.6125,
+          "contrast": 57.9884
+        },
+        "64": {
+          "entropy": 7.5256,
+          "contrast": 55.7911
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/politics/speaker_batu.png",
+      "repositoryPath": "game/assets/politics/speaker_batu.png",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1037226,
+      "sha256": "37c1dcfb14fd765c98af7b11c3a6bce5f70017c7ae602948e758e3c958bff2fd",
+      "dhash": "b57e971c947c8c448ca60c860c4c9d44b8c8d84cc656c642e1c6a1c7d0935191",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.2073,
+          "contrast": 39.6072
+        },
+        "64": {
+          "entropy": 7.1481,
+          "contrast": 38.4303
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/politics/speaker_ines.png",
+      "repositoryPath": "game/assets/politics/speaker_ines.png",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 985437,
+      "sha256": "50a56a848129071adea175ced6a88ff72c90b395552ba0536f18a414469d8588",
+      "dhash": "33fab397759f34cf37d7339e138f13a7132f16672657966794673867b6739653",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.6447,
+          "contrast": 62.2828
+        },
+        "64": {
+          "entropy": 7.605,
+          "contrast": 61.0499
+        }
+      }
+    },
+    {
+      "canonicalPath": "assets/politics/warden_roan.png",
+      "repositoryPath": "game/assets/politics/warden_roan.png",
+      "profile": "POLITICAL-PORTRAIT-768",
+      "size": [
+        768,
+        768
+      ],
+      "mode": "RGBA",
+      "format": "PNG",
+      "bytes": 1079680,
+      "sha256": "1fb1e57ae23153c24efc6e8038c5facc3b13ff2f3e20b632f40e50888c4305ea",
+      "dhash": "07f333c752cf32cf32cfb3c3a7e62de23c923c5b35698e699c383728606ae87e",
+      "alpha": {
+        "transparentFraction": 0.0,
+        "visibleFraction": 1.0,
+        "safeMarginFraction": 0.0,
+        "contentBox": [
+          0,
+          0,
+          768,
+          768
+        ]
+      },
+      "readability": {
+        "160": {
+          "entropy": 7.1883,
+          "contrast": 48.5454
+        },
+        "64": {
+          "entropy": 7.1323,
+          "contrast": 46.7001
+        }
+      }
+    }
+  ]
+}
