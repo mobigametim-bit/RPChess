@@ -7,37 +7,19 @@ on:
       - main
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   verify-web-source:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: agent/domain-army-runtime-migration
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
-      - name: Apply profile inspection compatibility fix
-        run: node scripts/fix-domain-army-validation.cjs
-      - name: Rebuild production browser runtime
-        run: npm run build:browser
-      - name: Commit synchronized runtime
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src/runtime/vertical-slice.cjs game/js/generated/iron-marches-runtime.bundle.js
-          if git diff --cached --quiet; then
-            echo 'Runtime is already synchronized.'
-          else
-            git commit -m 'Preserve metadata-only profile inspection'
-            git push origin HEAD:agent/domain-army-runtime-migration
-          fi
       - name: Verify normalized source
         run: npm run verify
       - name: Run legacy characterization tests
