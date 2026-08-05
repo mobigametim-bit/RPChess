@@ -51,6 +51,20 @@ function nodeTypeWeights(act, layerIndex, middleLayerTotal) {
   return weights;
 }
 
+function forceMandatoryNodeTypes(all, act, rng) {
+  const eventNode = all.find((node) => node.type === 'event') || rng.pick(all);
+  const economyCandidates = all.filter((node) => node !== eventNode);
+  const economyNode = economyCandidates.find((node) => ECONOMY_TYPES.includes(node.type)) || rng.pick(economyCandidates);
+  eventNode.type = 'event';
+  if (!ECONOMY_TYPES.includes(economyNode.type)) economyNode.type = rng.pick(ECONOMY_TYPES);
+
+  if (act >= 2) {
+    const eliteCandidates = all.filter((node) => node !== eventNode && node !== economyNode);
+    const eliteNode = eliteCandidates.find((node) => node.type === 'elite') || rng.pick(eliteCandidates);
+    eliteNode.type = 'elite';
+  }
+}
+
 function assignNodeTypes(layers, act, rng) {
   const middle = layers.slice(1, -1);
   for (let layerOffset = 0; layerOffset < middle.length; layerOffset += 1) {
@@ -59,21 +73,11 @@ function assignNodeTypes(layers, act, rng) {
     }
   }
 
-  const all = middle.flat();
-  if (!all.some((node) => node.type === 'event')) all[rng.int(0, all.length - 1)].type = 'event';
-  if (!all.some((node) => ECONOMY_TYPES.includes(node.type))) {
-    const candidates = all.filter((node) => node.type !== 'event');
-    (candidates.length ? rng.pick(candidates) : rng.pick(all)).type = rng.pick(ECONOMY_TYPES);
-  }
-  if (act >= 2 && !all.some((node) => node.type === 'elite')) {
-    const late = middle.slice(Math.floor(middle.length / 2)).flat().filter((node) => !['event', 'shop', 'service'].includes(node.type));
-    (late.length ? rng.pick(late) : rng.pick(all)).type = 'elite';
-  }
-
   for (const layer of middle) {
     const battles = layer.filter((node) => node.type === 'battle');
     if (battles.length === layer.length && layer.length > 1) rng.pick(battles).type = 'event';
   }
+  forceMandatoryNodeTypes(middle.flat(), act, rng);
 }
 
 function connectLayers(fromLayer, toLayer, rng, edges) {
@@ -195,6 +199,7 @@ module.exports = {
   ECONOMY_TYPES,
   weightedPick,
   middleLayerCounts,
+  forceMandatoryNodeTypes,
   contentPoolKey,
   generateActGraph
 };
