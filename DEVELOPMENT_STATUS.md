@@ -2,7 +2,7 @@
 
 **Updated:** 2026-08-05  
 **Source of truth:** merged code and CI on `main`.  
-**Runtime policy:** new systems remain isolated from the legacy browser battle until the vertical-slice integration gate passes.
+**Runtime policy:** new systems remain isolated from the legacy browser battle until the vertical-slice presentation and content acceptance gates pass.
 
 ## Completed foundations
 
@@ -20,6 +20,7 @@
 | Ward protection | Complete | First legal capture interception with check-safety and en-passant support |
 | Figure progression and relic loadouts | Complete foundation | Three stars, passive policy, hero specialization and figure-bound relic slots |
 | Modular boards | Complete foundation | Runtime cell plan from `tile_light.png` / `tile_dark.png`; arbitrary active-cell masks; no frame/underlay dependency |
+| Browser modular board renderer | Complete foundation | Canvas renderer, high-DPI fitting, technical fallbacks, coordinates, overlay hooks and standalone preview |
 | Asset intake | Complete foundation | Canonical staged paths, PNG validation, safe copy/repair and replacement review |
 | Atomic saves | Complete foundation | Three profiles, checksums, pending/current/backup recovery, migrations and cloud-conflict classification |
 | Data-driven content | Complete foundation | Typed registry for regions, kings, doctrines, heroes, relics, events, encounters and bosses |
@@ -27,6 +28,7 @@
 | Scenario objectives | Complete foundation | Checkmate, escort, capture, hold and survival objectives plus explicit failure conditions |
 | Boss phases | Complete foundation | Explicit two-to-three phase state machine and deterministic phase history |
 | Campaign act graph | Complete foundation | Deterministic 9–12 node acts, safe routes, supplies, scouting and 10,000-seed validation |
+| Vertical-slice runtime | Complete foundation | Campaign → node → scenario → player/AI pair → reward → boss completion with atomic saves and deterministic replay |
 
 ## Current automated acceptance coverage
 
@@ -41,12 +43,18 @@ The CI suite currently covers:
 - statuses and ward interception;
 - progression and relic loadouts;
 - modular board planning;
+- browser/Core board-plan parity;
+- technical and partial-image board fallbacks;
 - generated-asset intake;
 - atomic profile saves and cloud conflicts;
 - typed content packs and localization references;
 - legal AI decisions and action corpora;
 - alternative objectives and boss transitions;
-- 10,000 generated campaign seeds.
+- 10,000 generated campaign seeds;
+- full vertical-slice campaign completion;
+- player/AI action-pair enforcement;
+- byte-equivalent operation replay;
+- vertical-slice checkpoint save, reload and corruption recovery.
 
 Every merged foundation listed above passed CI before merge.
 
@@ -80,15 +88,24 @@ tile_dark.png
 
 Complete board rasters, board frames and decorative underlays are not runtime dependencies.
 
+The browser preview is available at:
+
+```text
+game/tools/modular-board-preview.html
+```
+
+It supports standard 8×8, fractured 8×8 and rectangular 10×6 layouts, board flipping and coordinate toggling. Missing final art is represented by visible technical cells rather than blank space.
+
 ## Next integration sequence
 
-1. Build a vertical-slice runtime adapter that composes campaign, scenario, battle, AI, saves and content registry without replacing the legacy browser path yet.
-2. Add browser-facing modular board rendering with technical fallback cells.
-3. Connect one approved king, doctrine, region, hero set, relic set, events, encounters and boss kit.
-4. Run the full vertical slice through save/reload, replay and deterministic-seed verification.
-5. Switch the public runtime only after regression, accessibility, performance and fallback tests pass.
-6. Scale authored content and final assets after the vertical-slice acceptance gate.
+1. Add a production vertical-slice content pack containing one approved king, doctrine, region, hero set, relic set, events, encounters and boss kit.
+2. Add a browser presenter for campaign routes, scenario HUD, modular board overlays, rewards and completion screens.
+3. Connect the browser presenter to the deterministic vertical-slice runtime through a narrow command/snapshot bridge.
+4. Run the authored vertical slice through save/reload, replay, fallback-art, RU/EN and deterministic-seed verification.
+5. Complete controller focus, accessibility, layout-stress and performance checks for the slice.
+6. Switch the public runtime only after explicit acceptance; keep the legacy path available as rollback until then.
+7. Scale authored content and final assets after the vertical-slice acceptance gate.
 
 ## Intervention gate
 
-No user intervention is currently required for the technical foundations. User input becomes necessary when selecting or approving final visual candidates, confirming balance/content decisions that have multiple valid design directions, and approving the vertical slice before the legacy runtime is replaced.
+No intervention is required for continued presenter, bridge, validation and fallback work. User approval becomes necessary before declaring a specific king/doctrine/region kit canonical, replacing technical visuals with final candidates, locking balance values with multiple valid design directions, or replacing the public legacy runtime.
