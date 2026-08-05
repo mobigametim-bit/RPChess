@@ -1,6 +1,6 @@
 'use strict';
 
-const { parseSquare } = require('../rendering/modular-board.cjs');
+const { parseSquare, fileIndex } = require('../rendering/modular-board.cjs');
 const { identityAt } = require('../combat/identity.cjs');
 
 const OBJECTIVE_TYPES = Object.freeze(['checkmate', 'capture_targets', 'escort', 'occupy_cells', 'survive_actions']);
@@ -36,21 +36,28 @@ function normalizeObjective(record, board, defaultSide) {
 
   if (record.type === 'checkmate') return Object.freeze(common);
   if (record.type === 'capture_targets') return Object.freeze({ ...common, targetPieceIds: uniqueStrings(record.targetPieceIds, `${record.id}.targetPieceIds`) });
-  if (record.type === 'escort') return Object.freeze({
-    ...common,
-    pieceId: String(record.pieceId || ''),
-    targetCells: normalizeCells(record.targetCells, board, `${record.id}.targetCells`)
-  });
+  if (record.type === 'escort') {
+    const pieceId = String(record.pieceId || '');
+    if (!pieceId) throw new Error(`${record.id}.pieceId is required`);
+    return Object.freeze({
+      ...common,
+      pieceId,
+      targetCells: normalizeCells(record.targetCells, board, `${record.id}.targetCells`)
+    });
+  }
   if (record.type === 'occupy_cells') return Object.freeze({
     ...common,
     targetCells: normalizeCells(record.targetCells, board, `${record.id}.targetCells`),
     holdActions: Number.isInteger(record.holdActions) && record.holdActions > 0 ? record.holdActions : 1
   });
-  if (record.type === 'survive_actions') return Object.freeze({
-    ...common,
-    requiredActions: Number.isInteger(record.requiredActions) && record.requiredActions > 0 ? record.requiredActions : (() => { throw new Error(`${record.id}.requiredActions must be positive`); })(),
-    protectedPieceIds: Object.freeze((record.protectedPieceIds || []).map(String))
-  });
+  if (record.type === 'survive_actions') {
+    if (!Number.isInteger(record.requiredActions) || record.requiredActions < 1) throw new Error(`${record.id}.requiredActions must be positive`);
+    return Object.freeze({
+      ...common,
+      requiredActions: record.requiredActions,
+      protectedPieceIds: record.protectedPieceIds ? uniqueStrings(record.protectedPieceIds, `${record.id}.protectedPieceIds`) : Object.freeze([])
+    });
+  }
   throw new Error(`unsupported objective type: ${record.type}`);
 }
 
@@ -87,6 +94,12 @@ function sideOccupies(battle, side, cell) {
   return Boolean(pieceId && battle.identities.metadata[pieceId]?.side === side);
 }
 
+function squareCoordinates(square) {
+  const match = /^([a-z]+)([1-9][0-9]*)$/i.exec(String(square));
+  if (!match) throw new Error(`invalid square: ${square}`);
+  return Object.freeze({ x: fileIndex(match[1]), rank: Number(match[2]) });
+}
+
 function initialObjectiveState(definition) {
   const state = { id: definition.id, type: definition.type, status: 'active', current: 0, target: 1, details: {} };
   if (definition.type === 'capture_targets') {
@@ -115,6 +128,8 @@ function updateObjective(definition, previous, battle, events) {
     for (const event of events) {
       if (event.type === 'PieceCaptured' && definition.targetPieceIds.includes(event.payload.capturedId)) captured.add(event.payload.capturedId);
     }
+    const active = activePieceIds(battle);
+    for (const pieceId of definition.targetPieceIds) if (!active.has(pieceId)) captured.add(pieceId);
     current = captured.size;
     completed = definition.targetPieceIds.every((pieceId) => captured.has(pieceId));
     details = { capturedPieceIds: Object.freeze([...captured].sort()) };
@@ -177,11 +192,11 @@ function objectiveHeuristic(definition, battle, state, perspective) {
   if (definition.type === 'escort') {
     const square = pieceSquare(battle, definition.pieceId);
     if (!square) return sign * -5000;
-    const from = parseSquare(square, 32, 32);
+    const from = squareCoordinates(square);
     let distance = Infinity;
     for (const cell of definition.targetCells) {
-      const to = parseSquare(cell, 32, 32);
-      distance = Math.min(distance, Math.max(Math.abs(from.x - to.x), Math.abs(from.y - to.y)));
+      const to = squareCoordinates(cell);
+      distance = Math.min(distance, Math.max(Math.abs(from.x - to.x), Math.abs(from.rank - to.rank)));
     }
     return sign * (1200 - distance * 90);
   }
@@ -198,6 +213,7 @@ module.exports = {
   activePieceIds,
   pieceSquare,
   sideOccupies,
+  squareCoordinates,
   initialObjectiveState,
   updateObjective,
   initialFailureState,
