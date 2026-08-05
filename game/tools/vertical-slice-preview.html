@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>RPChess Vertical Slice Presenter Preview</title>
+  <style>html,body,#app{height:100%;margin:0}body{background:#080d16}</style>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module">
+    import { RuntimeCommandClient } from '../js/runtime-command-client.mjs';
+    import { VerticalSlicePresenter } from '../js/vertical-slice-presenter.mjs';
+
+    const baseCampaign = {
+      graphId:'preview_act',act:1,regionId:'region.iron_marches',status:'active',currentNodeId:'start',bossNodeId:'boss',supplies:12,scouting:2,
+      visitedNodeIds:['start'],traversedEdgeIds:[],
+      nodes:[
+        {id:'start',layer:0,type:'start',visibility:'content',visited:true,current:true,label:'Лагерь'},
+        {id:'l1_n1',layer:1,type:'battle',visibility:'content',visited:false,current:false,label:'Разбитый перевал'},
+        {id:'l1_n2',layer:1,type:'event',visibility:'content',visited:false,current:false,label:'Молчаливая кузница'},
+        {id:'l2_n1',layer:2,type:'elite',visibility:'type',visited:false,current:false,label:'Элита'},
+        {id:'l2_n2',layer:2,type:'shop',visibility:'type',visited:false,current:false,label:'Магазин'},
+        {id:'boss',layer:3,type:'boss',visibility:'route',visited:false,current:false,label:null}
+      ],
+      routes:[
+        {edgeId:'e1',from:'start',to:'l1_n1',cost:2,affordable:true,visibility:'content',type:'battle',contentId:'encounter.iron_crossfire',label:'Разбитый перевал'},
+        {edgeId:'e2',from:'start',to:'l1_n2',cost:1,affordable:true,visibility:'content',type:'event',contentId:'event.silent_foundry',label:'Молчаливая кузница'}
+      ]
+    };
+
+    const makeSnapshot = (status, overrides={}) => ({
+      format:'rpchess-presenter-snapshot',schemaVersion:1,runtimeId:'preview_runtime',seed:9042,profileId:'profile-1',status,playerSide:'w',
+      resources:{gold:overrides.gold ?? 0,supplies:overrides.supplies ?? 12,meta:overrides.meta ?? 0},
+      campaign:overrides.campaign || baseCampaign,currentNode:overrides.currentNode || null,scenario:overrides.scenario || null,reward:overrides.reward || null,terminal:overrides.terminal || null,
+      actions:status==='campaign'?['Travel']:status==='scenario'?['PlayerCommand']:status==='reward'?['ClaimReward']:[],transcriptLength:overrides.transcriptLength||0,historyLength:overrides.historyLength||0
+    });
+
+    const scenario = {
+      scenarioId:'scenario_preview',status:'active',result:null,actionIndex:0,playerSide:'w',sideToMove:'w',playerTurn:true,
+      board:{width:8,height:8,activeCells:null,flipped:false,themeId:'neutral',tileSet:{id:'neutral',light:'../assets/boards/neutral/tile_light.png',dark:'../assets/boards/neutral/tile_dark.png',fallbackLight:'#d8d1bd',fallbackDark:'#596878'}},
+      positionFen:'4k3/8/8/8/3r4/8/4P3/4K3 w - - 0 1',
+      pieces:[
+        {pieceId:'king_w',square:'e1',side:'w',type:'k',heroId:null,nameKey:null,stars:0,relicIds:[],status:null},
+        {pieceId:'pawn_w',square:'e2',side:'w',type:'p',heroId:'hero.aldric_wall',nameKey:null,stars:1,relicIds:['relic.echo_shield'],status:{id:'ward',remaining:null}},
+        {pieceId:'rook_b',square:'d4',side:'b',type:'r',heroId:null,nameKey:null,stars:0,relicIds:[],status:null},
+        {pieceId:'king_b',square:'e8',side:'b',type:'k',heroId:null,nameKey:null,stars:0,relicIds:[],status:null}
+      ],
+      legalCommands:[
+        {type:'MovePiece',payload:{from:'e2',to:'e3'}},{type:'MovePiece',payload:{from:'e2',to:'e4'}},
+        {type:'MovePiece',payload:{from:'e1',to:'d1'}},{type:'MovePiece',payload:{from:'e1',to:'f1'}}
+      ],
+      objectives:[{id:'objective.survive',type:'survive_actions',mandatory:true,side:'w',status:'active',current:0,target:2,details:{protectedAlive:true},label:'Пережить два действия'}],
+      failures:[{id:'failure.king',type:'piece_lost',side:'w',triggered:false,details:{},label:'Не потерять короля'}],
+      environment:[{id:'environment.altar',type:'altar',cells:['c4'],active:true,passable:true,interaction:'hold',label:'Алтарь приказов',metadata:{}}],
+      battleEventCount:0,scenarioEventCount:0
+    };
+
+    let current = makeSnapshot('campaign');
+    const transport = async (command) => {
+      await new Promise(resolve => setTimeout(resolve,180));
+      if(command.type==='Travel'){
+        current=makeSnapshot('scenario',{supplies:10,currentNode:{nodeId:command.targetNodeId,type:'battle',contentId:'encounter.iron_crossfire',reward:{gold:10,supplies:1,meta:0}},scenario,transcriptLength:1,historyLength:1});
+      }else if(command.type==='PlayerCommand'){
+        current=makeSnapshot('reward',{supplies:10,currentNode:{nodeId:'l1_n1',type:'battle',contentId:'encounter.iron_crossfire',reward:{gold:10,supplies:1,meta:0}},reward:{nodeId:'l1_n1',nodeType:'battle',contentId:'encounter.iron_crossfire',title:'Разбитый перевал',gold:10,supplies:1,meta:0},transcriptLength:2,historyLength:2});
+      }else if(command.type==='ClaimReward'){
+        current=makeSnapshot('complete',{gold:10,supplies:11,terminal:{outcome:'victory',campaignStatus:'completed',rewardsClaimed:1},campaign:{...baseCampaign,status:'completed',currentNodeId:'boss',routes:[],visitedNodeIds:['start','l1_n1','boss']},transcriptLength:3,historyLength:3});
+      }
+      return {snapshot:current};
+    };
+
+    const client=new RuntimeCommandClient({snapshot:current,transport});
+    new VerticalSlicePresenter({root:document.getElementById('app'),client});
+  </script>
+</body>
+</html>
