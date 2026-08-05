@@ -75,6 +75,17 @@ function legalTargets(scenario, selectedSquare) {
   return targets;
 }
 
+function reserveTargets(scenario, selectedReserveEntryId) {
+  if (!scenario || !selectedReserveEntryId) return new Map();
+  const targets = new Map();
+  for (const command of scenario.legalCommands || []) {
+    if (command.type === 'DeployReserve' && command.payload.entryId === selectedReserveEntryId) {
+      targets.set(command.payload.square, command);
+    }
+  }
+  return targets;
+}
+
 function sceneStyle(source, extra = '') {
   if (!source) return extra;
   return `background-image:linear-gradient(90deg,rgba(5,9,16,.92) 0%,rgba(5,9,16,.68) 44%,rgba(5,9,16,.25) 100%),${cssUrl(source)};${extra}`;
@@ -92,6 +103,7 @@ function createPresenterStyles() {
     .rpvs__board-wrap{position:relative;min-height:620px;background-position:center;background-size:cover;isolation:isolate}.rpvs__board-wrap::before{content:"";position:absolute;inset:0;background:rgba(3,7,13,.48);z-index:-1}.rpvs__canvas{display:block;width:100%;height:620px;touch-action:none;outline:none}.rpvs__check{display:flex;align-items:center;gap:7px;color:#ffdf8e;font-weight:700}.rpvs__check img{width:34px;height:34px;object-fit:contain}
     .rpvs__sidebar-section+ .rpvs__sidebar-section{border-top:1px solid rgba(174,147,82,.25);margin-top:14px;padding-top:14px}.rpvs__list{display:grid;gap:8px}.rpvs__item{padding:10px;border-radius:10px;background:rgba(18,28,43,.92);border:1px solid #2f415d}.rpvs__item--done{border-color:#5b9e73}.rpvs__item--danger{border-color:#9f5151}.rpvs__progress{height:6px;margin-top:7px;border-radius:999px;background:#273347;overflow:hidden}.rpvs__progress>span{display:block;height:100%;background:#d7b65a}
     .rpvs__commands{display:grid;gap:7px;max-height:320px;overflow:auto}.rpvs__action,.rpvs__choice{padding:10px 12px;border:1px solid #6b7d99;border-radius:9px;background:rgba(24,38,58,.94);color:#f4ead6;cursor:pointer;text-align:left}.rpvs__action:hover,.rpvs__choice:hover{border-color:#79c9ff}.rpvs__primary{width:100%;padding:13px;border:1px solid #d2ab52;border-radius:10px;background:linear-gradient(#6b5220,#47340f);color:#fff2c7;font-weight:700;cursor:pointer}
+    .rpvs__order{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;padding:9px 11px;border:1px solid #8d7745;border-radius:10px;background:#111d30}.rpvs__order strong{color:#f2cf76;font-size:20px}.rpvs__reserve{display:grid;gap:8px}.rpvs__reserve-card{display:grid;grid-template-columns:42px 1fr auto;align-items:center;gap:9px;width:100%;padding:9px;border:1px solid #526885;border-radius:10px;background:#142239;color:#f4ead6;text-align:left;cursor:pointer}.rpvs__reserve-card[disabled]{opacity:.48;cursor:not-allowed}.rpvs__reserve-card[aria-pressed=true]{border-color:#f2cf76;box-shadow:0 0 0 2px rgba(242,207,118,.22) inset}.rpvs__reserve-piece{display:grid;place-items:center;width:42px;height:42px;border-radius:8px;background:#08111f;font:30px Georgia,serif}.rpvs__reserve-meta{display:grid}.rpvs__reserve-cost{color:#f2cf76;font-weight:800}.rpvs__reserve-hint{margin-top:8px;color:#9fca9f;font-size:13px}
     .rpvs__center{position:relative;min-height:560px;display:grid;place-items:center;padding:34px;text-align:center;background-position:center;background-size:cover}.rpvs__center-card{position:relative;z-index:2;max-width:720px;padding:24px;border:1px solid rgba(194,159,78,.65);border-radius:17px;background:rgba(7,12,21,.84);box-shadow:0 18px 48px rgba(0,0,0,.4);backdrop-filter:blur(8px)}.rpvs__event-copy{font-size:18px;white-space:pre-line}.rpvs__choice-list{display:grid;gap:10px;margin-top:20px}.rpvs__reward-grid{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:22px 0}.rpvs__reward{min-width:110px;padding:18px;border:1px solid #9b8045;border-radius:14px;background:#19243a}.rpvs__reward b{display:block;font-size:26px;color:#f2cf76}
     .rpvs__board-vfx,.rpvs__scene-vfx{position:absolute;z-index:8;pointer-events:none;background-repeat:no-repeat;filter:drop-shadow(0 0 12px rgba(255,210,110,.55))}.rpvs__scene-vfx{left:50%;top:50%;width:230px;height:230px;transform:translate(-50%,-50%)}
     .rpvs__env-sheet{width:100%;aspect-ratio:1;object-fit:contain;border-radius:10px;background:#09111d}.rpvs__toast{position:fixed;right:20px;bottom:20px;max-width:420px;padding:12px 15px;border-radius:10px;background:#151d2a;border:1px solid #9f5151;box-shadow:0 10px 30px rgba(0,0,0,.35);z-index:10}.rpvs__busy{opacity:.65;pointer-events:none}
@@ -108,6 +120,7 @@ class VerticalSlicePresenter {
     this.client = options.client;
     this.assetCache = options.assetCache || new TileImageCache();
     this.selectedSquare = null;
+    this.selectedReserveEntryId = null;
     this.boardPlan = null;
     this.boardReport = null;
     this.resizeObserver = null;
@@ -173,6 +186,7 @@ class VerticalSlicePresenter {
     this.lastSnapshot = snapshot;
     this.queueEffect(snapshot);
     this.selectedSquare = ['scenario', 'boss'].includes(snapshot.status) ? this.selectedSquare : null;
+    this.selectedReserveEntryId = ['scenario', 'boss'].includes(snapshot.status) ? this.selectedReserveEntryId : null;
     this.resizeObserver?.disconnect();
     if (snapshot.status === 'campaign') this.renderCampaign(snapshot);
     else if (snapshot.status === 'event') this.renderEvent(snapshot);
@@ -218,17 +232,35 @@ class VerticalSlicePresenter {
     const art = sceneAsset(snapshot, purpose);
     const objectives = scenario.objectives.map((item) => `<div class="rpvs__item ${item.status === 'completed' ? 'rpvs__item--done' : ''}"><b>${escapeHtml(item.label)}</b><div class="rpvs__muted">${item.current} / ${item.target}</div><div class="rpvs__progress"><span style="width:${Math.min(100, item.target ? item.current / item.target * 100 : 0)}%"></span></div></div>`).join('');
     const failures = scenario.failures.map((item) => `<div class="rpvs__item ${item.triggered ? 'rpvs__item--danger' : ''}"><b>${escapeHtml(item.label)}</b><div class="rpvs__muted">${item.triggered ? 'Сработало' : 'Не допустить'}</div></div>`).join('');
-    const commands = scenario.legalCommands.map((command, index) => `<button class="rpvs__action" data-command-index="${index}">${escapeHtml(commandLabel(command))}</button>`).join('');
+    const moveCommands = scenario.legalCommands.filter((command) => command.type === 'MovePiece');
+    const commands = moveCommands.map((command, index) => `<button class="rpvs__action" data-move-command-index="${index}">${escapeHtml(commandLabel(command))}</button>`).join('');
+    const playerReserve = (scenario.reserve || []).filter((entry) => entry.side === snapshot.playerSide);
+    if (this.selectedReserveEntryId && !playerReserve.some((entry) => entry.entryId === this.selectedReserveEntryId && entry.legalSquares.length)) this.selectedReserveEntryId = null;
+    const reserveCards = playerReserve.map((entry) => {
+      const selected = entry.entryId === this.selectedReserveEntryId;
+      const disabled = !scenario.playerTurn || !entry.affordable || !entry.legalSquares.length;
+      return `<button class="rpvs__reserve-card" data-reserve-entry="${escapeAttribute(entry.entryId)}" aria-pressed="${selected}" ${disabled ? 'disabled' : ''}><span class="rpvs__reserve-piece">${escapeHtml(pieceGlyph({ side: entry.side, type: entry.type }))}</span><span class="rpvs__reserve-meta"><strong>${escapeHtml(entry.label)}</strong><small class="rpvs__muted">${entry.legalSquares.length} доступн. клеток</small></span><span class="rpvs__reserve-cost">${entry.orderCost} ОП</span></button>`;
+    }).join('');
+    const order = scenario.orderPoints?.player || { current: 0, max: 0 };
     const title = snapshot.status === 'boss' ? snapshot.boss?.currentPhaseTitle || snapshot.boss?.bossId : snapshot.currentNode?.contentId || 'Тактический бой';
     const phase = snapshot.status === 'boss' ? `Фаза ${snapshot.boss.phaseNumber} / ${snapshot.boss.phaseCount} · ` : '';
     const check = scenario.chessStatus?.check ? `<span class="rpvs__check"><img src="${escapeAttribute(CORE_ASSETS.vfx.check)}" alt="">Шах</span>` : '';
     const main = `<div class="rpvs__panel-head"><h1 class="rpvs__title">${escapeHtml(title)}</h1><span class="rpvs__muted">${phase}ход: ${scenario.sideToMove === snapshot.playerSide ? 'игрок' : 'противник'} · действие ${scenario.actionIndex}</span>${check}</div><div class="rpvs__board-wrap" style="${sceneStyle(art)}"><canvas class="rpvs__canvas" data-board tabindex="0" aria-label="Шахматная доска"></canvas></div>`;
-    const sidebar = `<div class="rpvs__panel-head"><h2 class="rpvs__title">Задачи</h2></div><div class="rpvs__panel-body"><section class="rpvs__sidebar-section"><div class="rpvs__list">${objectives}</div></section>${failures ? `<section class="rpvs__sidebar-section"><h3>Поражение</h3><div class="rpvs__list">${failures}</div></section>` : ''}<section class="rpvs__sidebar-section"><h3>Легальные действия</h3><div class="rpvs__commands">${commands || '<div class="rpvs__muted">Ожидание противника</div>'}</div></section></div>`;
+    const reserveSection = playerReserve.length ? `<section class="rpvs__sidebar-section"><h3>Резерв</h3><div class="rpvs__order"><span>Очки приказа</span><strong>${order.current} / ${order.max}</strong></div><div class="rpvs__reserve">${reserveCards}</div>${this.selectedReserveEntryId ? '<div class="rpvs__reserve-hint">Выберите подсвеченную клетку ввода на доске.</div>' : ''}</section>` : '';
+    const sidebar = `<div class="rpvs__panel-head"><h2 class="rpvs__title">Задачи</h2></div><div class="rpvs__panel-body"><section class="rpvs__sidebar-section"><div class="rpvs__list">${objectives}</div></section>${failures ? `<section class="rpvs__sidebar-section"><h3>Поражение</h3><div class="rpvs__list">${failures}</div></section>` : ''}${reserveSection}<section class="rpvs__sidebar-section"><h3>Ходы фигур</h3><div class="rpvs__commands">${commands || '<div class="rpvs__muted">Выберите фигуру на доске или ожидайте противника</div>'}</div></section></div>`;
     this.root.innerHTML = this.shell(snapshot, main, sidebar);
-    for (const button of this.root.querySelectorAll('[data-command-index]')) {
+    for (const button of this.root.querySelectorAll('[data-move-command-index]')) {
       button.addEventListener('click', () => {
-        const command = scenario.legalCommands[Number(button.dataset.commandIndex)];
+        const command = moveCommands[Number(button.dataset.moveCommandIndex)];
+        this.selectedReserveEntryId = null;
         this.client.dispatch({ type: 'PlayerCommand', request: command }).catch(() => {});
+      });
+    }
+    for (const button of this.root.querySelectorAll('[data-reserve-entry]')) {
+      button.addEventListener('click', () => {
+        this.selectedReserveEntryId = this.selectedReserveEntryId === button.dataset.reserveEntry ? null : button.dataset.reserveEntry;
+        this.selectedSquare = null;
+        this.renderScenario(snapshot);
       });
     }
     const canvas = this.root.querySelector('[data-board]');
@@ -260,13 +292,15 @@ class VerticalSlicePresenter {
       scenario.board.tileSet.light,
       scenario.board.tileSet.dark,
       CORE_ASSETS.neutralBoard.blocker,
+      CORE_ASSETS.neutralBoard.startZone,
       CORE_ASSETS.vfx.legalMove,
       CORE_ASSETS.vfx.captureMove
     ];
     if (this.pendingEffect) preload.push(this.pendingEffect.source);
     this.assetCache.prime(preload);
     const pieces = new Map(scenario.pieces.map((piece) => [piece.square, piece]));
-    const targets = legalTargets(scenario, this.selectedSquare);
+    const targets = this.selectedReserveEntryId ? new Map() : legalTargets(scenario, this.selectedSquare);
+    const reserveCommands = reserveTargets(scenario, this.selectedReserveEntryId);
     const environment = new Map();
     for (const object of scenario.environment) for (const cell of object.cells) environment.set(cell, object);
     this.boardReport = renderModularBoard(resized.context, this.boardPlan, {
@@ -291,6 +325,13 @@ class VerticalSlicePresenter {
             context.fillText(ENVIRONMENT_GLYPHS[env.type] || '•', rect.x + rect.size - 5, rect.y + 3);
             context.restore();
           }
+        }
+        if (reserveCommands.has(cell.square)) {
+          context.save();
+          const startZone = this.assetCache.get(CORE_ASSETS.neutralBoard.startZone);
+          if (startZone?.status === 'ready') context.drawImage(startZone.image, rect.x, rect.y, rect.size, rect.size);
+          else { context.fillStyle = 'rgba(72,196,115,.34)'; context.fillRect(rect.x, rect.y, rect.size, rect.size); context.strokeStyle = '#7ee2a2'; context.lineWidth = Math.max(2, rect.size * .035); context.strokeRect(rect.x + 4, rect.y + 4, rect.size - 8, rect.size - 8); }
+          context.restore();
         }
         if (cell.square === this.selectedSquare) {
           context.save();
@@ -321,7 +362,7 @@ class VerticalSlicePresenter {
       }
     });
     this.playPendingBoardEffect();
-    if ([scenario.board.tileSet.light, scenario.board.tileSet.dark, CORE_ASSETS.neutralBoard.blocker, CORE_ASSETS.focusRing].some((source) => this.assetCache.status(source) === 'loading')) {
+    if ([scenario.board.tileSet.light, scenario.board.tileSet.dark, CORE_ASSETS.neutralBoard.blocker, CORE_ASSETS.neutralBoard.startZone, CORE_ASSETS.focusRing].some((source) => this.assetCache.status(source) === 'loading')) {
       setTimeout(() => { if (this.lastSnapshot === snapshot) this.drawBoard(); }, 120);
     }
   }
@@ -377,6 +418,14 @@ class VerticalSlicePresenter {
     const cell = this.boardPlan.activeCells.find((candidate) => candidate.displayX === displayX && candidate.displayY === displayY);
     if (!cell) return;
     const scenario = this.lastSnapshot.scenario;
+    if (this.selectedReserveEntryId) {
+      const reserveCommand = reserveTargets(scenario, this.selectedReserveEntryId).get(cell.square);
+      if (reserveCommand) {
+        this.selectedReserveEntryId = null;
+        this.client.dispatch({ type: 'PlayerCommand', request: reserveCommand }).catch(() => {});
+      }
+      return;
+    }
     const targets = legalTargets(scenario, this.selectedSquare);
     const targetCommands = targets.get(cell.square) || [];
     if (targetCommands.length === 1) {
@@ -434,6 +483,7 @@ export {
   commandLabel,
   groupNodesByLayer,
   legalTargets,
+  reserveTargets,
   createPresenterStyles,
   VerticalSlicePresenter
 };

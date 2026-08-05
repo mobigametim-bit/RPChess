@@ -5,141 +5,513 @@
     "encounter.iron_crossfire_files": {
       "battle": {
         "fen": "r3k3/8/8/8/8/8/8/R3K3 w - - 0 1",
-        "identitiesBySquare": {"a1": "aldric_wall", "e1": "oathkeeper", "a8": "enemy_rook_target", "e8": "enemy_king"},
-        "identityMetadata": {"aldric_wall": {"heroId": "hero.aldric_wall", "stars": 1, "relicIds": ["relic.echo_shield"]}}
+        "identitiesBySquare": {
+          "a1": "aldric_wall",
+          "e1": "oathkeeper",
+          "a8": "enemy_rook_target",
+          "e8": "enemy_king"
+        },
+        "identityMetadata": {
+          "aldric_wall": {
+            "heroId": "hero.aldric_wall",
+            "stars": 1,
+            "relicIds": [
+              "relic.echo_shield"
+            ]
+          }
+        }
       },
-      "board": {"width": 8, "height": 8},
+      "board": {
+        "width": 8,
+        "height": 8
+      },
       "completionMode": "all",
       "objectives": [
-        {"id": "objective.capture_crossfire_rook", "type": "capture_targets", "side": "w", "targetPieceIds": ["enemy_rook_target"], "previewKey": "encounter.iron_crossfire_files.objective"}
+        {
+          "id": "objective.capture_crossfire_rook",
+          "type": "capture_targets",
+          "side": "w",
+          "targetPieceIds": [
+            "enemy_rook_target"
+          ],
+          "previewKey": "encounter.iron_crossfire_files.objective"
+        }
       ],
       "failures": [
-        {"id": "failure.lose_oathkeeper", "type": "piece_lost", "side": "w", "targetPieceIds": ["oathkeeper"], "previewKey": "encounter.failure.protect_king"}
+        {
+          "id": "failure.lose_oathkeeper",
+          "type": "piece_lost",
+          "side": "w",
+          "targetPieceIds": [
+            "oathkeeper"
+          ],
+          "previewKey": "encounter.failure.protect_king"
+        }
       ],
       "environment": [
-        {"id": "environment.furnace_line", "type": "hazard", "visible": true, "cells": ["c4", "f5"], "interaction": "preview_only", "metadata": {"theme": "furnace"}}
+        {
+          "id": "environment.furnace_line",
+          "type": "hazard",
+          "visible": true,
+          "cells": [
+            "c4",
+            "f5"
+          ],
+          "interaction": "preview_only",
+          "metadata": {
+            "theme": "furnace"
+          }
+        }
       ],
-      "reward": {"gold": 8, "supplies": 1, "meta": 0}
+      "reward": {
+        "gold": 8,
+        "supplies": 1,
+        "meta": 0
+      }
     },
     "encounter.iron_blocked_diagonal": {
       "battle": {
         "fen": "4k3/8/8/8/8/8/3B4/4K3 w - - 0 1",
-        "identitiesBySquare": {"d2": "orell_bishop", "e1": "oathkeeper", "e8": "enemy_king"},
-        "identityMetadata": {"orell_bishop": {"heroId": "hero.brother_orell", "stars": 1, "relicIds": ["relic.circle_warding"]}}
+        "identitiesBySquare": {
+          "d2": "orell_bishop",
+          "e1": "oathkeeper",
+          "e8": "enemy_king"
+        },
+        "identityMetadata": {
+          "orell_bishop": {
+            "heroId": "hero.brother_orell",
+            "stars": 1,
+            "relicIds": [
+              "relic.circle_warding"
+            ]
+          }
+        }
       },
-      "board": {"width": 8, "height": 8},
+      "board": {
+        "width": 8,
+        "height": 8
+      },
       "completionMode": "all",
       "objectives": [
-        {"id": "objective.reach_clear_diagonal", "type": "escort", "side": "w", "pieceId": "orell_bishop", "targetCells": ["g5"], "previewKey": "encounter.iron_blocked_diagonal.objective"}
+        {
+          "id": "objective.reach_clear_diagonal",
+          "type": "escort",
+          "side": "w",
+          "pieceId": "orell_bishop",
+          "targetCells": [
+            "g5"
+          ],
+          "previewKey": "encounter.iron_blocked_diagonal.objective"
+        }
       ],
       "failures": [
-        {"id": "failure.diagonal_action_limit", "type": "action_limit", "side": "w", "maxActions": 6, "previewKey": "encounter.failure.action_limit"}
+        {
+          "id": "failure.diagonal_action_limit",
+          "type": "action_limit",
+          "side": "w",
+          "maxActions": 6,
+          "previewKey": "encounter.failure.action_limit"
+        }
       ],
       "environment": [
-        {"id": "environment.visible_blocker", "type": "blocker", "visible": true, "cells": ["c4"], "interaction": "blocks_declared_cell", "metadata": {"theme": "iron_pillar"}}
+        {
+          "id": "environment.visible_blocker",
+          "type": "blocker",
+          "visible": true,
+          "cells": [
+            "c4"
+          ],
+          "interaction": "blocks_declared_cell",
+          "metadata": {
+            "theme": "iron_pillar"
+          }
+        }
       ],
-      "reward": {"gold": 7, "supplies": 1, "meta": 0}
+      "reward": {
+        "gold": 7,
+        "supplies": 1,
+        "meta": 0
+      }
     },
     "encounter.iron_broken_formation": {
       "battle": {
         "fen": "4k3/8/8/8/8/8/4P3/4K3 w - - 0 1",
-        "identitiesBySquare": {"e2": "mara_pawn", "e1": "oathkeeper", "e8": "enemy_king"},
-        "identityMetadata": {"mara_pawn": {"heroId": "hero.mara_chain", "stars": 1, "relicIds": ["relic.royal_decree"]}}
+        "identitiesBySquare": {
+          "e2": "mara_pawn",
+          "e1": "oathkeeper",
+          "e8": "enemy_king"
+        },
+        "identityMetadata": {
+          "mara_pawn": {
+            "heroId": "hero.mara_chain",
+            "stars": 1,
+            "relicIds": [
+              "relic.royal_decree"
+            ]
+          }
+        }
       },
-      "board": {"width": 8, "height": 8},
+      "board": {
+        "width": 8,
+        "height": 8
+      },
       "completionMode": "all",
       "objectives": [
-        {"id": "objective.regroup_vanguard", "type": "escort", "side": "w", "pieceId": "mara_pawn", "targetCells": ["e4"], "previewKey": "encounter.iron_broken_formation.objective"}
+        {
+          "id": "objective.regroup_vanguard",
+          "type": "escort",
+          "side": "w",
+          "pieceId": "mara_pawn",
+          "targetCells": [
+            "e4"
+          ],
+          "previewKey": "encounter.iron_broken_formation.objective"
+        }
       ],
       "failures": [
-        {"id": "failure.lose_chain", "type": "piece_lost", "side": "w", "targetPieceIds": ["mara_pawn"], "previewKey": "encounter.failure.protect_escort"}
+        {
+          "id": "failure.lose_chain",
+          "type": "piece_lost",
+          "side": "w",
+          "targetPieceIds": [
+            "mara_pawn"
+          ],
+          "previewKey": "encounter.failure.protect_escort"
+        }
       ],
       "environment": [
-        {"id": "environment.regroup_banner", "type": "objective", "visible": true, "cells": ["e4"], "interaction": "escort_destination", "metadata": {"theme": "banner"}}
+        {
+          "id": "environment.regroup_banner",
+          "type": "objective",
+          "visible": true,
+          "cells": [
+            "e4"
+          ],
+          "interaction": "escort_destination",
+          "metadata": {
+            "theme": "banner"
+          }
+        }
       ],
-      "reward": {"gold": 6, "supplies": 2, "meta": 0}
+      "reward": {
+        "gold": 6,
+        "supplies": 2,
+        "meta": 0
+      }
     },
     "encounter.iron_forward_outpost": {
       "battle": {
         "fen": "4k3/8/8/8/8/5N2/8/4K3 w - - 0 1",
-        "identitiesBySquare": {"f3": "vael_knight", "e1": "oathkeeper", "e8": "enemy_king"},
-        "identityMetadata": {"vael_knight": {"heroId": "hero.vael_hammer", "stars": 1, "relicIds": ["relic.phantom_spurs"]}}
+        "identitiesBySquare": {
+          "f3": "vael_knight",
+          "e1": "oathkeeper",
+          "e8": "enemy_king"
+        },
+        "identityMetadata": {
+          "vael_knight": {
+            "heroId": "hero.vael_hammer",
+            "stars": 1,
+            "relicIds": [
+              "relic.phantom_spurs"
+            ]
+          }
+        },
+        "orderPoints": {
+          "w": {
+            "current": 2,
+            "max": 5
+          },
+          "b": {
+            "current": 0,
+            "max": 5
+          }
+        },
+        "reserve": [
+          {
+            "id": "mara_chain_reserve",
+            "side": "w",
+            "type": "p",
+            "orderCost": 1,
+            "metadata": {
+              "heroId": "hero.mara_chain",
+              "nameKey": "hero.mara_chain.name",
+              "stars": 1,
+              "relicIds": [
+                "relic.royal_decree"
+              ]
+            }
+          }
+        ],
+        "reserveCells": {
+          "w": [
+            "b1",
+            "c1",
+            "d1"
+          ],
+          "b": []
+        }
       },
-      "board": {"width": 8, "height": 8},
+      "board": {
+        "width": 8,
+        "height": 8
+      },
       "completionMode": "all",
       "objectives": [
-        {"id": "objective.hold_forward_outpost", "type": "occupy_cells", "side": "w", "targetCells": ["d4"], "holdActions": 1, "previewKey": "encounter.iron_forward_outpost.objective"}
+        {
+          "id": "objective.hold_forward_outpost",
+          "type": "occupy_cells",
+          "side": "w",
+          "targetCells": [
+            "d4"
+          ],
+          "holdActions": 1,
+          "previewKey": "encounter.iron_forward_outpost.objective"
+        }
       ],
       "failures": [
-        {"id": "failure.outpost_action_limit", "type": "action_limit", "side": "w", "maxActions": 6, "previewKey": "encounter.failure.action_limit"}
+        {
+          "id": "failure.outpost_action_limit",
+          "type": "action_limit",
+          "side": "w",
+          "maxActions": 6,
+          "previewKey": "encounter.failure.action_limit"
+        }
       ],
       "environment": [
-        {"id": "environment.forward_outpost", "type": "objective", "visible": true, "cells": ["d4"], "interaction": "hold", "metadata": {"theme": "outpost"}}
+        {
+          "id": "environment.forward_outpost",
+          "type": "objective",
+          "visible": true,
+          "cells": [
+            "d4"
+          ],
+          "interaction": "hold",
+          "metadata": {
+            "theme": "outpost"
+          }
+        }
       ],
-      "reward": {"gold": 7, "supplies": 1, "meta": 0}
+      "reward": {
+        "gold": 7,
+        "supplies": 1,
+        "meta": 0
+      }
     },
     "encounter.iron_champions_net": {
       "battle": {
         "fen": "3qk3/8/8/8/8/8/8/3RK3 w - - 0 1",
-        "identitiesBySquare": {"d1": "aldric_wall", "e1": "oathkeeper", "d8": "enemy_champion", "e8": "enemy_king"},
-        "identityMetadata": {"aldric_wall": {"heroId": "hero.aldric_wall", "stars": 2, "relicIds": ["relic.echo_shield"]}}
+        "identitiesBySquare": {
+          "d1": "aldric_wall",
+          "e1": "oathkeeper",
+          "d8": "enemy_champion",
+          "e8": "enemy_king"
+        },
+        "identityMetadata": {
+          "aldric_wall": {
+            "heroId": "hero.aldric_wall",
+            "stars": 2,
+            "relicIds": [
+              "relic.echo_shield"
+            ]
+          }
+        }
       },
-      "board": {"width": 8, "height": 8},
+      "board": {
+        "width": 8,
+        "height": 8
+      },
       "completionMode": "all",
       "objectives": [
-        {"id": "objective.capture_enemy_champion", "type": "capture_targets", "side": "w", "targetPieceIds": ["enemy_champion"], "previewKey": "encounter.iron_champions_net.objective"}
+        {
+          "id": "objective.capture_enemy_champion",
+          "type": "capture_targets",
+          "side": "w",
+          "targetPieceIds": [
+            "enemy_champion"
+          ],
+          "previewKey": "encounter.iron_champions_net.objective"
+        }
       ],
       "failures": [
-        {"id": "failure.lose_oathkeeper_elite", "type": "piece_lost", "side": "w", "targetPieceIds": ["oathkeeper"], "previewKey": "encounter.failure.protect_king"}
+        {
+          "id": "failure.lose_oathkeeper_elite",
+          "type": "piece_lost",
+          "side": "w",
+          "targetPieceIds": [
+            "oathkeeper"
+          ],
+          "previewKey": "encounter.failure.protect_king"
+        }
       ],
       "environment": [
-        {"id": "environment.champion_seal", "type": "seal", "visible": true, "cells": ["d8"], "interaction": "capture_target", "metadata": {"theme": "champion"}}
+        {
+          "id": "environment.champion_seal",
+          "type": "seal",
+          "visible": true,
+          "cells": [
+            "d8"
+          ],
+          "interaction": "capture_target",
+          "metadata": {
+            "theme": "champion"
+          }
+        }
       ],
-      "reward": {"gold": 14, "supplies": 2, "meta": 0}
+      "reward": {
+        "gold": 14,
+        "supplies": 2,
+        "meta": 0
+      }
     },
     "encounter.iron_escort_through_check": {
       "battle": {
         "fen": "4k3/8/8/8/8/8/3R4/4K3 w - - 0 1",
-        "identitiesBySquare": {"d2": "tomas_gate", "e1": "oathkeeper", "e8": "enemy_king"},
-        "identityMetadata": {"tomas_gate": {"heroId": "hero.tomas_gate", "stars": 1, "relicIds": ["relic.twin_command"]}}
+        "identitiesBySquare": {
+          "d2": "tomas_gate",
+          "e1": "oathkeeper",
+          "e8": "enemy_king"
+        },
+        "identityMetadata": {
+          "tomas_gate": {
+            "heroId": "hero.tomas_gate",
+            "stars": 1,
+            "relicIds": [
+              "relic.twin_command"
+            ]
+          }
+        }
       },
-      "board": {"width": 8, "height": 8},
+      "board": {
+        "width": 8,
+        "height": 8
+      },
       "completionMode": "all",
       "objectives": [
-        {"id": "objective.escort_tomas", "type": "escort", "side": "w", "pieceId": "tomas_gate", "targetCells": ["d7"], "previewKey": "encounter.iron_escort_through_check.objective"}
+        {
+          "id": "objective.escort_tomas",
+          "type": "escort",
+          "side": "w",
+          "pieceId": "tomas_gate",
+          "targetCells": [
+            "d7"
+          ],
+          "previewKey": "encounter.iron_escort_through_check.objective"
+        }
       ],
       "failures": [
-        {"id": "failure.lose_tomas", "type": "piece_lost", "side": "w", "targetPieceIds": ["tomas_gate"], "previewKey": "encounter.failure.protect_escort"}
+        {
+          "id": "failure.lose_tomas",
+          "type": "piece_lost",
+          "side": "w",
+          "targetPieceIds": [
+            "tomas_gate"
+          ],
+          "previewKey": "encounter.failure.protect_escort"
+        }
       ],
       "environment": [
-        {"id": "environment.evacuation_gate", "type": "objective", "visible": true, "cells": ["d7"], "interaction": "escort_destination", "metadata": {"theme": "gate"}}
+        {
+          "id": "environment.evacuation_gate",
+          "type": "objective",
+          "visible": true,
+          "cells": [
+            "d7"
+          ],
+          "interaction": "escort_destination",
+          "metadata": {
+            "theme": "gate"
+          }
+        }
       ],
-      "reward": {"gold": 10, "supplies": 2, "meta": 0}
+      "reward": {
+        "gold": 10,
+        "supplies": 2,
+        "meta": 0
+      }
     }
   },
   "bosses": {
     "boss.iron_regent": {
-      "reward": {"gold": 30, "supplies": 3, "meta": 1},
+      "reward": {
+        "gold": 30,
+        "supplies": 3,
+        "meta": 1
+      },
       "phases": [
         {
           "id": "furnace_seals",
           "titleKey": "boss.iron_regent.phase.furnace_seals",
           "battle": {
             "fen": "4k3/ppp5/8/8/8/8/8/3QK3 w - - 0 1",
-            "identitiesBySquare": {"d1": "lady_sorn", "e1": "oathkeeper", "a7": "furnace_seal_a", "b7": "furnace_seal_b", "c7": "furnace_seal_c", "e8": "iron_regent"},
-            "identityMetadata": {"lady_sorn": {"heroId": "hero.lady_sorn", "stars": 2, "relicIds": ["relic.oath_fallen"]}}
+            "identitiesBySquare": {
+              "d1": "lady_sorn",
+              "e1": "oathkeeper",
+              "a7": "furnace_seal_a",
+              "b7": "furnace_seal_b",
+              "c7": "furnace_seal_c",
+              "e8": "iron_regent"
+            },
+            "identityMetadata": {
+              "lady_sorn": {
+                "heroId": "hero.lady_sorn",
+                "stars": 2,
+                "relicIds": [
+                  "relic.oath_fallen"
+                ]
+              }
+            }
           },
-          "board": {"width": 8, "height": 8},
+          "board": {
+            "width": 8,
+            "height": 8
+          },
           "completionMode": "all",
           "objectives": [
-            {"id": "objective.break_furnace_seals", "type": "capture_targets", "side": "w", "targetPieceIds": ["furnace_seal_a", "furnace_seal_b", "furnace_seal_c"], "previewKey": "boss.iron_regent.objective.furnace_seals"}
+            {
+              "id": "objective.break_furnace_seals",
+              "type": "capture_targets",
+              "side": "w",
+              "targetPieceIds": [
+                "furnace_seal_a",
+                "furnace_seal_b",
+                "furnace_seal_c"
+              ],
+              "previewKey": "boss.iron_regent.objective.furnace_seals"
+            }
           ],
           "failures": [
-            {"id": "failure.seal_phase_limit", "type": "action_limit", "side": "w", "maxActions": 18, "previewKey": "encounter.failure.action_limit"},
-            {"id": "failure.lose_oathkeeper_boss", "type": "piece_lost", "side": "w", "targetPieceIds": ["oathkeeper"], "previewKey": "encounter.failure.protect_king"}
+            {
+              "id": "failure.seal_phase_limit",
+              "type": "action_limit",
+              "side": "w",
+              "maxActions": 18,
+              "previewKey": "encounter.failure.action_limit"
+            },
+            {
+              "id": "failure.lose_oathkeeper_boss",
+              "type": "piece_lost",
+              "side": "w",
+              "targetPieceIds": [
+                "oathkeeper"
+              ],
+              "previewKey": "encounter.failure.protect_king"
+            }
           ],
           "environment": [
-            {"id": "environment.furnace_seals", "type": "seal", "visible": true, "cells": ["a7", "b7", "c7"], "interaction": "capture_targets", "metadata": {"theme": "furnace_seals"}}
+            {
+              "id": "environment.furnace_seals",
+              "type": "seal",
+              "visible": true,
+              "cells": [
+                "a7",
+                "b7",
+                "c7"
+              ],
+              "interaction": "capture_targets",
+              "metadata": {
+                "theme": "furnace_seals"
+              }
+            }
           ]
         },
         {
@@ -147,19 +519,58 @@
           "titleKey": "boss.iron_regent.phase.collapsing_fortress",
           "battle": {
             "fen": "7k/8/5KQ1/8/8/8/8/8 w - - 0 1",
-            "identitiesBySquare": {"f6": "oathkeeper", "g6": "lady_sorn", "h8": "iron_regent"},
-            "identityMetadata": {"lady_sorn": {"heroId": "hero.lady_sorn", "stars": 3, "relicIds": ["relic.oath_fallen"]}}
+            "identitiesBySquare": {
+              "f6": "oathkeeper",
+              "g6": "lady_sorn",
+              "h8": "iron_regent"
+            },
+            "identityMetadata": {
+              "lady_sorn": {
+                "heroId": "hero.lady_sorn",
+                "stars": 3,
+                "relicIds": [
+                  "relic.oath_fallen"
+                ]
+              }
+            }
           },
-          "board": {"width": 8, "height": 8},
+          "board": {
+            "width": 8,
+            "height": 8
+          },
           "completionMode": "all",
           "objectives": [
-            {"id": "objective.mate_iron_regent", "type": "checkmate", "side": "w", "previewKey": "boss.iron_regent.objective.collapsing_fortress"}
+            {
+              "id": "objective.mate_iron_regent",
+              "type": "checkmate",
+              "side": "w",
+              "previewKey": "boss.iron_regent.objective.collapsing_fortress"
+            }
           ],
           "failures": [
-            {"id": "failure.collapse_limit", "type": "action_limit", "side": "w", "maxActions": 4, "previewKey": "encounter.failure.action_limit"}
+            {
+              "id": "failure.collapse_limit",
+              "type": "action_limit",
+              "side": "w",
+              "maxActions": 4,
+              "previewKey": "encounter.failure.action_limit"
+            }
           ],
           "environment": [
-            {"id": "environment.collapsing_edge", "type": "hazard", "visible": true, "cells": ["a1", "h1", "a8"], "interaction": "preview_only", "metadata": {"theme": "collapse"}}
+            {
+              "id": "environment.collapsing_edge",
+              "type": "hazard",
+              "visible": true,
+              "cells": [
+                "a1",
+                "h1",
+                "a8"
+              ],
+              "interaction": "preview_only",
+              "metadata": {
+                "theme": "collapse"
+              }
+            }
           ]
         }
       ]
