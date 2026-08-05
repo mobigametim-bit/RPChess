@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>RPChess Modular Board Preview</title>
+  <style>
+    :root{color-scheme:dark;font-family:system-ui,sans-serif;background:#091118;color:#e8edf1}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:grid;grid-template-rows:auto 1fr;background:radial-gradient(circle at 50% 20%,#1c3140,#091118 62%)}
+    header{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.12);background:rgba(4,10,14,.78)}
+    strong{margin-right:auto}
+    button,select{border:1px solid rgba(255,255,255,.22);background:#172733;color:#eef5f8;border-radius:8px;padding:9px 12px;font:inherit}
+    main{min-height:0;display:grid;place-items:center;padding:18px}
+    canvas{display:block;max-width:100%;max-height:100%;border-radius:12px;box-shadow:0 24px 70px rgba(0,0,0,.45)}
+    output{min-width:210px;font-size:12px;color:#b9c8d2}
+  </style>
+</head>
+<body>
+  <header>
+    <strong>RPChess modular board preview</strong>
+    <select id="shape" aria-label="Board shape">
+      <option value="standard">Standard 8×8</option>
+      <option value="fractured">Fractured 8×8</option>
+      <option value="arena">Arena 10×6</option>
+    </select>
+    <button id="flip" type="button">Flip board</button>
+    <button id="coordinates" type="button">Toggle coordinates</button>
+    <output id="report"></output>
+  </header>
+  <main><canvas id="board"></canvas></main>
+  <script type="module">
+    import {
+      buildBrowserBoardPlan,
+      renderModularBoard,
+      resizeCanvasForDisplay,
+      technicalTileSet
+    } from '../js/modular-board-renderer.mjs';
+
+    const canvas=document.getElementById('board');
+    const shape=document.getElementById('shape');
+    const report=document.getElementById('report');
+    let flipped=false;
+    let showCoordinates=true;
+
+    const shapes={
+      standard:{width:8,height:8,activeCells:null},
+      fractured:{width:8,height:8,activeCells:['a8','b8','c8','f8','g8','h8','a7','b7','c7','f7','g7','h7','b6','c6','d6','e6','f6','g6','b5','c5','d5','e5','f5','g5','b4','c4','d4','e4','f4','g4','b3','c3','d3','e3','f3','g3','a2','b2','c2','f2','g2','h2','a1','b1','c1','f1','g1','h1']},
+      arena:{width:10,height:6,activeCells:null}
+    };
+
+    function render(){
+      const bounds=document.querySelector('main').getBoundingClientRect();
+      const size=Math.max(280,Math.min(bounds.width-36,bounds.height-36,900));
+      const display=resizeCanvasForDisplay(canvas,size,size,window.devicePixelRatio||1);
+      const selected=shapes[shape.value];
+      const plan=buildBrowserBoardPlan({...selected,flipped,tileSet:technicalTileSet()});
+      const result=renderModularBoard(display.context,plan,{
+        canvasWidth:display.cssWidth,
+        canvasHeight:display.cssHeight,
+        padding:26,
+        background:'#0b171f',
+        showCoordinates
+      });
+      report.textContent=`${result.activeCells} cells • ${result.fallbackCells} technical fallbacks`;
+    }
+
+    document.getElementById('flip').addEventListener('click',()=>{flipped=!flipped;render();});
+    document.getElementById('coordinates').addEventListener('click',()=>{showCoordinates=!showCoordinates;render();});
+    shape.addEventListener('change',render);
+    window.addEventListener('resize',render);
+    render();
+  </script>
+</body>
+</html>
