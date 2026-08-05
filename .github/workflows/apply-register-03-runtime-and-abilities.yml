@@ -44,10 +44,20 @@ jobs:
           source = source.replace('`${abilityId}:${ownerId}`', "abilityId + ':' + ownerId")
           source = source.replace('`missing legal ${abilityId}`', "'missing legal ' + abilityId")
           source = source.replace('patchRelicUi();', '')
+          source = source.replace("'4k3/8/8/8/8/8/3P4/R3K3 w - - 0 1', { a1: 'aldric', d2: 'ally'", "'4k3/8/8/8/8/8/2RP4/4K3 w - - 0 1', { c2: 'aldric', d2: 'ally'")
+          source = source.replace("'4k3/8/8/8/3r4/8/3P4/4K3 w - - 0 1', { d2: 'offering', d4: 'enemy', e1: 'wk', e8: 'bk' }, { offering: { side: 'w' }, enemy: { side: 'b' }, wk: { side: 'w' }, bk: { side: 'b' } }, [entry('declare_sacrifice', 'offering'", "'4k3/8/8/8/3r4/8/3P4/R3K3 w - - 0 1', { a1: 'oath', d2: 'offering', d4: 'enemy', e1: 'wk', e8: 'bk' }, { oath: { side: 'w' }, offering: { side: 'w' }, enemy: { side: 'b' }, wk: { side: 'w' }, bk: { side: 'b' } }, [entry('declare_sacrifice', 'oath'")
+          source = source.replace("const use = command(state, 'ability.oath_fallen', (payload) => payload.targetId === 'offering' || payload.targetId);", "const use = command(state, 'ability.oath_fallen', (payload) => payload.targetId === 'offering');")
           target.write_text(source, encoding='utf-8')
           PY
           node --check scripts/apply-register-03-runtime-and-ui.cjs
           node scripts/apply-register-03-runtime-and-ui.cjs
+          python - <<'PY'
+          from pathlib import Path
+          target = Path('tests/status-system.cjs')
+          source = target.read_text(encoding='utf-8')
+          source = source.replace("['bound', 'cursed', 'marked', 'provoked', 'silenced', 'ward']", "['bound', 'cursed', 'evasion', 'guarded', 'marked', 'offered', 'provoked', 'silenced', 'ward']")
+          target.write_text(source, encoding='utf-8')
+          PY
       - name: Run complete regression suite
         if: steps.guard.outputs.applied == 'false'
         run: npm test
@@ -70,6 +80,7 @@ jobs:
             src/combat/ward-protection.cjs \
             src/core/chess/rules.cjs \
             src/runtime/deployment-gate.cjs \
+            tests/status-system.cjs \
             tests/register-03-relic-assets.cjs \
             tests/remaining-iron-marches-abilities.cjs
           git commit -m "Implement remaining Iron Marches abilities [register03-runtime]"
