@@ -7888,6 +7888,42 @@ var RPChessRuntime = (() => {
           status: statusView(battle.statuses, pieceId)
         });
       }
+      function armySnapshot(state, dependencies = {}) {
+        const army = state.army;
+        if (!army) return null;
+        const registry = dependencies.contentRegistry;
+        const localization = dependencies.localization || null;
+        const king = registry?.get?.("king", army.kingId) || null;
+        const doctrine = registry?.get?.("doctrine", army.doctrineId) || null;
+        const heroes = (army.heroes || []).map((hero) => {
+          const content = registry?.get?.("hero", hero.heroId) || null;
+          const nameKey = content?.nameKey || hero.nameKey || null;
+          return Object.freeze({
+            heroId: hero.heroId,
+            nameKey,
+            name: localizationValue(localization, nameKey, hero.heroId),
+            contentPieceType: hero.contentPieceType,
+            battlePieceType: hero.battlePieceType,
+            pieceType: hero.pieceType,
+            relicIds: freezeArray(hero.relicIds || []),
+            overrideReason: hero.overrideReason || null
+          });
+        });
+        return Object.freeze({
+          regionId: army.regionId,
+          kingId: army.kingId,
+          kingNameKey: king?.nameKey || army.kingNameKey || null,
+          kingName: localizationValue(localization, king?.nameKey || army.kingNameKey, army.kingId),
+          doctrineId: army.doctrineId,
+          doctrineNameKey: doctrine?.nameKey || null,
+          doctrineName: localizationValue(localization, doctrine?.nameKey, army.doctrineId),
+          heroIds: freezeArray(army.heroIds || []),
+          relicIds: freezeArray(army.relicIds || []),
+          heroCount: heroes.length,
+          relicCount: (army.relicIds || []).length,
+          heroes: freezeArray(heroes)
+        });
+      }
       function eventSnapshot(state, dependencies = {}) {
         if (!state.event) return null;
         const event = state.event;
@@ -8130,6 +8166,7 @@ var RPChessRuntime = (() => {
       function createPresenterSnapshot(state, dependencies = {}) {
         assertRuntimeState(state);
         const campaign = campaignSnapshot(state, dependencies);
+        const army = armySnapshot(state, dependencies);
         const event = eventSnapshot(state, dependencies);
         const deployment = state.deployment ? deploymentGateSnapshot(state.deployment) : null;
         const scenario = scenarioSnapshot(state, dependencies);
@@ -8162,6 +8199,7 @@ var RPChessRuntime = (() => {
             supplies: state.campaign.supplies,
             meta: state.resources.meta
           }),
+          army,
           flags: freezeArray(state.flags || []),
           chronicleKeys: freezeArray(state.chronicleKeys || []),
           campaign,
@@ -8241,6 +8279,7 @@ var RPChessRuntime = (() => {
         commandKey,
         activeScenario,
         recentBattleEvents,
+        armySnapshot,
         createPresenterSnapshot,
         normalizePresenterCommand,
         dispatchPresenterCommand
@@ -8531,6 +8570,32 @@ var RPChessRuntime = (() => {
         if (typeof input.get === "function") return Object.freeze({ contentRegistry: input });
         return Object.freeze({ ...input });
       }
+      function profileArmySummary(state) {
+        const army = state?.army;
+        if (!army) return null;
+        const heroes = Object.freeze((army.heroes || []).map((hero) => Object.freeze({
+          heroId: hero.heroId,
+          nameKey: hero.nameKey,
+          contentPieceType: hero.contentPieceType,
+          battlePieceType: hero.battlePieceType,
+          pieceType: hero.pieceType,
+          relicIds: Object.freeze([...hero.relicIds || []]),
+          overrideReason: hero.overrideReason || null
+        })));
+        const heroIds = Object.freeze([...army.heroIds || []]);
+        const relicIds = Object.freeze([...army.relicIds || []]);
+        return Object.freeze({
+          regionId: army.regionId || null,
+          kingId: army.kingId || null,
+          kingNameKey: army.kingNameKey || null,
+          doctrineId: army.doctrineId || null,
+          heroIds,
+          relicIds,
+          heroes,
+          heroCount: heroIds.length,
+          relicCount: relicIds.length
+        });
+      }
       function inspectBrowserProfile(store, profileIdInput, validationInput = null) {
         const profileId = normalizeProfileId(profileIdInput);
         const validation = runtimeValidationOptions(validationInput);
@@ -8575,7 +8640,8 @@ var RPChessRuntime = (() => {
             regionId: state?.campaign?.graph?.regionId || null,
             runtimeStatus: state?.status || null,
             currentNodeId: state?.campaign?.currentNodeId || null,
-            rewardsClaimed: state?.rewardLog?.length || 0
+            rewardsClaimed: state?.rewardLog?.length || 0,
+            army: profileArmySummary(state)
           });
         }));
       }
@@ -8592,6 +8658,7 @@ var RPChessRuntime = (() => {
         BROWSER_SAVE_NAMESPACE,
         resolveBrowserStorage,
         runtimeValidationOptions,
+        profileArmySummary,
         createBrowserProfileStore,
         inspectBrowserProfile,
         listBrowserProfiles,

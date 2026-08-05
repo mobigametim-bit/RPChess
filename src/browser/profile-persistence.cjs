@@ -33,6 +33,33 @@ function runtimeValidationOptions(input = null) {
   return Object.freeze({ ...input });
 }
 
+function profileArmySummary(state) {
+  const army = state?.army;
+  if (!army) return null;
+  const heroes = Object.freeze((army.heroes || []).map((hero) => Object.freeze({
+    heroId: hero.heroId,
+    nameKey: hero.nameKey,
+    contentPieceType: hero.contentPieceType,
+    battlePieceType: hero.battlePieceType,
+    pieceType: hero.pieceType,
+    relicIds: Object.freeze([...(hero.relicIds || [])]),
+    overrideReason: hero.overrideReason || null
+  })));
+  const heroIds = Object.freeze([...(army.heroIds || [])]);
+  const relicIds = Object.freeze([...(army.relicIds || [])]);
+  return Object.freeze({
+    regionId: army.regionId || null,
+    kingId: army.kingId || null,
+    kingNameKey: army.kingNameKey || null,
+    doctrineId: army.doctrineId || null,
+    heroIds,
+    relicIds,
+    heroes,
+    heroCount: heroIds.length,
+    relicCount: relicIds.length
+  });
+}
+
 function inspectBrowserProfile(store, profileIdInput, validationInput = null) {
   const profileId = normalizeProfileId(profileIdInput);
   const validation = runtimeValidationOptions(validationInput);
@@ -78,7 +105,8 @@ function listBrowserProfiles(store, validationInput = null) {
       regionId: state?.campaign?.graph?.regionId || null,
       runtimeStatus: state?.status || null,
       currentNodeId: state?.campaign?.currentNodeId || null,
-      rewardsClaimed: state?.rewardLog?.length || 0
+      rewardsClaimed: state?.rewardLog?.length || 0,
+      army: profileArmySummary(state)
     });
   }));
 }
@@ -98,6 +126,7 @@ module.exports = {
   BROWSER_SAVE_NAMESPACE,
   resolveBrowserStorage,
   runtimeValidationOptions,
+  profileArmySummary,
   createBrowserProfileStore,
   inspectBrowserProfile,
   listBrowserProfiles,
