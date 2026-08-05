@@ -24,9 +24,21 @@ async function main() {
 
   verifySource(dist);
   const runtimeBundle = path.join(dist, 'js/generated/iron-marches-runtime.bundle.js');
-  const entryPoint = path.join(dist, 'vertical-slice.html');
+  const isolatedEntry = path.join(dist, 'vertical-slice.html');
+  const rootEntry = path.join(dist, 'index.html');
   if (!fs.existsSync(runtimeBundle)) throw new Error('production browser runtime bundle is missing from dist');
-  if (!fs.existsSync(entryPoint)) throw new Error('production vertical slice entry is missing from dist');
+  if (!fs.existsSync(isolatedEntry)) throw new Error('production vertical slice entry is missing from dist');
+  if (!fs.existsSync(rootEntry)) throw new Error('root browser entry is missing from dist');
+  const rootHtml = fs.readFileSync(rootEntry, 'utf8');
+  if (!rootHtml.includes('js/generated/iron-marches-runtime.bundle.js') || !rootHtml.includes('js/vertical-slice-app.mjs')) {
+    throw new Error('root browser entry does not launch the production vertical slice');
+  }
+  if (!rootHtml.includes('css/vertical-slice-comfort.css') || !rootHtml.includes('js/vertical-slice-comfort.mjs')) {
+    throw new Error('root browser entry is missing the comfort layer');
+  }
+  if (rootHtml.includes('js/core.js') || rootHtml.includes('js/main.js')) {
+    throw new Error('root browser entry still launches the legacy client');
+  }
   console.log(`Prepared normalized RPChess source from ${source} in ${dist}`);
 }
 
