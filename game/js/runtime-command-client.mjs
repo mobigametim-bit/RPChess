@@ -1,15 +1,18 @@
 const SNAPSHOT_FORMAT = 'rpchess-presenter-snapshot';
 const SNAPSHOT_SCHEMA_VERSION = 1;
-const CLIENT_COMMANDS = Object.freeze(['Travel', 'PlayerCommand', 'ClaimReward', 'SaveCheckpoint']);
+const CLIENT_COMMANDS = Object.freeze(['Travel', 'ChooseEvent', 'PlayerCommand', 'ClaimReward', 'SaveCheckpoint']);
 
 function validatePresenterSnapshot(snapshot) {
   if (!snapshot || snapshot.format !== SNAPSHOT_FORMAT) throw new Error('invalid RPChess presenter snapshot');
   if (snapshot.schemaVersion !== SNAPSHOT_SCHEMA_VERSION) throw new Error('unsupported RPChess presenter snapshot schema');
-  if (!['campaign', 'scenario', 'reward', 'complete', 'failed'].includes(snapshot.status)) {
+  if (!['campaign', 'event', 'scenario', 'reward', 'complete', 'failed'].includes(snapshot.status)) {
     throw new Error(`invalid presenter status: ${snapshot.status}`);
   }
   if (!snapshot.campaign || !Array.isArray(snapshot.campaign.nodes) || !Array.isArray(snapshot.campaign.routes)) {
     throw new Error('presenter snapshot is missing campaign data');
+  }
+  if (snapshot.status === 'event' && (!snapshot.event || !Array.isArray(snapshot.event.choices))) {
+    throw new Error('presenter event snapshot is missing choices');
   }
   return snapshot;
 }
@@ -22,6 +25,11 @@ function normalizeClientCommand(command) {
     const targetNodeId = String(command.targetNodeId || command.payload?.targetNodeId || '');
     if (!targetNodeId) throw new Error('Travel requires targetNodeId');
     return Object.freeze({ type, targetNodeId });
+  }
+  if (type === 'ChooseEvent') {
+    const choiceId = String(command.choiceId || command.payload?.choiceId || '');
+    if (!choiceId) throw new Error('ChooseEvent requires choiceId');
+    return Object.freeze({ type, choiceId });
   }
   if (type === 'PlayerCommand') {
     const request = command.request || command.payload?.request;
