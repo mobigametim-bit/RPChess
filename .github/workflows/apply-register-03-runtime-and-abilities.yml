@@ -52,11 +52,36 @@ jobs:
           node --check scripts/apply-register-03-runtime-and-ui.cjs
           node scripts/apply-register-03-runtime-and-ui.cjs
           python - <<'PY'
+          import json
           from pathlib import Path
-          target = Path('tests/status-system.cjs')
-          source = target.read_text(encoding='utf-8')
-          source = source.replace("['bound', 'cursed', 'marked', 'provoked', 'silenced', 'ward']", "['bound', 'cursed', 'evasion', 'guarded', 'marked', 'offered', 'provoked', 'silenced', 'ward']")
-          target.write_text(source, encoding='utf-8')
+
+          status_test = Path('tests/status-system.cjs')
+          status_source = status_test.read_text(encoding='utf-8')
+          status_source = status_source.replace("['bound', 'cursed', 'marked', 'provoked', 'silenced', 'ward']", "['bound', 'cursed', 'evasion', 'guarded', 'marked', 'offered', 'provoked', 'silenced', 'ward']")
+          status_test.write_text(status_source, encoding='utf-8')
+
+          evidence = {
+            'ability.interpose': ('src/combat/abilities.cjs', ['interpose', 'guarded']),
+            'ability.chain_formation': ('src/combat/abilities.cjs', ['chain_formation', 'FormationAdvanced']),
+            'ability.forge_line': ('src/combat/abilities.cjs', ['forge_line', 'BoardTopologyChanged']),
+            'ability.previewed_charge': ('src/combat/abilities.cjs', ['previewed_charge', 'PreviewedChargeCompleted']),
+            'ability.hostage_tactic': ('src/combat/abilities.cjs', ['hostage_tactic', "'bound'"]),
+            'ability.gate_command': ('src/combat/abilities.cjs', ['gate_command', 'visible_gate_toggle']),
+            'effect.visible_evasion_after_non_capture': ('src/combat/iron-marches-hooks.cjs', ['evasion_after_non_capture', "'evasion'"]),
+            'effect.conditional_early_promotion': ('src/combat/abilities.cjs', ['early_promotion', 'PawnPromoted']),
+            'effect.order_after_voluntary_sacrifice': ('src/combat/iron-marches-hooks.cjs', ['VoluntarySacrificeResolved', 'voluntary_sacrifice'])
+          }
+          audit_path = Path('content/audits/iron_marches_mechanics_readiness.json')
+          audit = json.loads(audit_path.read_text(encoding='utf-8'))
+          for record in [*audit['abilities'], *audit['relicEffects']]:
+              if record['id'] not in evidence:
+                  continue
+              source_path, tokens = evidence[record['id']]
+              record['evidence'] = [
+                  {'path': source_path, 'tokens': tokens},
+                  {'path': 'tests/remaining-iron-marches-abilities.cjs', 'tokens': [record['id']]}
+              ]
+          audit_path.write_text(json.dumps(audit, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
           PY
       - name: Run complete regression suite
         if: steps.guard.outputs.applied == 'false'
