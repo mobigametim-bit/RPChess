@@ -1952,6 +1952,300 @@ var RPChessRuntime = (() => {
     }
   });
 
+  // src/combat/abilities.cjs
+  var require_abilities = __commonJS({
+    "src/combat/abilities.cjs"(exports, module) {
+      "use strict";
+      var {
+        coordinates,
+        indexOf,
+        indexToSquare,
+        squareToIndex,
+        createPosition,
+        opposite
+      } = require_position();
+      var { gameStatus, isInCheck } = require_rules();
+      var { identityAt } = require_identity();
+      var { statusFor, hasStatus, applyPrimaryStatus } = require_statuses();
+      var { spendOrderPoints } = require_order_points();
+      var ABILITY_STATE_FORMAT = "rpchess-ability-state";
+      var ABILITY_STATE_SCHEMA_VERSION = 1;
+      var SUPPORTED_KINDS = Object.freeze(["place_adjacent_ward"]);
+      var FIRST_ABILITY_DISCOUNT = "effect.first_ability_order_discount";
+      function freezeArray(values) {
+        return Object.freeze(values.slice());
+      }
+      function freezeRecord(record) {
+        return Object.freeze({ ...record });
+      }
+      function normalizeEntry(raw, index) {
+        if (!raw || typeof raw !== "object") throw new TypeError(`ability entry ${index} must be an object`);
+        const instanceId = String(raw.instanceId || "");
+        const abilityId = String(raw.abilityId || "");
+        const effectId = String(raw.effectId || "");
+        const ownerId = String(raw.ownerId || "");
+        const side = String(raw.side || "");
+        const kind = String(raw.kind || "");
+        if (!instanceId || !abilityId || !effectId || !ownerId) throw new Error(`ability entry ${index} requires stable ids`);
+        if (!["w", "b"].includes(side)) throw new Error(`${instanceId} requires side w or b`);
+        if (!SUPPORTED_KINDS.includes(kind)) throw new Error(`${instanceId} has unsupported kind: ${kind}`);
+        const orderCost = Number(raw.orderCost);
+        const maxUses = Number(raw.maxUses ?? 1);
+        const used = Number(raw.used ?? 0);
+        if (!Number.isInteger(orderCost) || orderCost < 0) throw new Error(`${instanceId} requires a non-negative orderCost`);
+        if (!Number.isInteger(maxUses) || maxUses < 1) throw new Error(`${instanceId} requires a positive maxUses`);
+        if (!Number.isInteger(used) || used < 0 || used > maxUses) throw new Error(`${instanceId} has invalid used count`);
+        return freezeRecord({
+          instanceId,
+          abilityId,
+          effectId,
+          sourceId: String(raw.sourceId || effectId),
+          ownerId,
+          side,
+          kind,
+          orderCost,
+          maxUses,
+          used
+        });
+      }
+      function normalizeModifier(raw, index) {
+        if (!raw || typeof raw !== "object") throw new TypeError(`ability modifier ${index} must be an object`);
+        const instanceId = String(raw.instanceId || "");
+        const effectId = String(raw.effectId || "");
+        const ownerId = String(raw.ownerId || "");
+        if (!instanceId || !effectId || !ownerId) throw new Error(`ability modifier ${index} requires stable ids`);
+        if (effectId !== FIRST_ABILITY_DISCOUNT) throw new Error(`${instanceId} has unsupported modifier effect: ${effectId}`);
+        const amount = Number(raw.amount ?? 1);
+        if (!Number.isInteger(amount) || amount < 1) throw new Error(`${instanceId} requires a positive discount amount`);
+        return freezeRecord({ instanceId, effectId, ownerId, amount, consumed: Boolean(raw.consumed) });
+      }
+      function createAbilityState(input = {}) {
+        if (input && input.format === ABILITY_STATE_FORMAT) {
+          if (input.schemaVersion !== ABILITY_STATE_SCHEMA_VERSION) throw new Error("unsupported ability state schema");
+        }
+        const entriesInput = Array.isArray(input) ? input : input.entries || [];
+        const modifiersInput = Array.isArray(input) ? [] : input.modifiers || [];
+        const entries = entriesInput.map(normalizeEntry);
+        const modifiers = modifiersInput.map(normalizeModifier);
+        const ids = entries.map((entry) => entry.instanceId);
+        const modifierIds = modifiers.map((modifier) => modifier.instanceId);
+        if (new Set(ids).size !== ids.length) throw new Error("ability instance IDs must be unique");
+        if (new Set(modifierIds).size !== modifierIds.length) throw new Error("ability modifier IDs must be unique");
+        return Object.freeze({
+          format: ABILITY_STATE_FORMAT,
+          schemaVersion: ABILITY_STATE_SCHEMA_VERSION,
+          entries: freezeArray(entries),
+          modifiers: freezeArray(modifiers)
+        });
+      }
+      function activeSquare(identities, pieceId) {
+        const found = Object.entries(identities.bySquare).find(([, id]) => id === pieceId);
+        return found ? found[0] : null;
+      }
+      function modifierForOwner(abilities, ownerId) {
+        return abilities.modifiers.find((modifier) => modifier.ownerId === ownerId && modifier.effectId === FIRST_ABILITY_DISCOUNT && !modifier.consumed) || null;
+      }
+      function effectiveOrderCost(abilities, entry) {
+        const modifier = modifierForOwner(abilities, entry.ownerId);
+        return Math.max(0, entry.orderCost - (modifier?.amount || 0));
+      }
+      function adjacentSquares(square) {
+        const index = squareToIndex(square);
+        const { x, y } = coordinates(index);
+        const result = [];
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx < 0 || nx > 7 || ny < 0 || ny > 7) continue;
+          result.push(indexToSquare(indexOf(nx, ny)));
+        }
+        return result;
+      }
+      function wardTargets(state, entry) {
+        const ownerSquare = activeSquare(state.identities, entry.ownerId);
+        if (!ownerSquare) return [];
+        if (hasStatus(state.statuses, entry.ownerId, "silenced")) return [];
+        const targets = [];
+        for (const square of adjacentSquares(ownerSquare)) {
+          const boardPiece = state.position.board[squareToIndex(square)];
+          if (!boardPiece || boardPiece.side !== entry.side || boardPiece.type === "k") continue;
+          const targetId = identityAt(state.identities, square);
+          if (!targetId || targetId === entry.ownerId || statusFor(state.statuses, targetId)) continue;
+          targets.push(Object.freeze({ targetId, targetSquare: square }));
+        }
+        return targets;
+      }
+      function legalAbilityCommands(state) {
+        const abilities = state.abilities && state.abilities.format === ABILITY_STATE_FORMAT ? state.abilities : createAbilityState();
+        if (state.status !== "active" || isInCheck(state.position, state.position.sideToMove)) return [];
+        const side = state.position.sideToMove;
+        const pool = state.orderPoints?.[side];
+        if (!pool) return [];
+        const commands = [];
+        for (const entry of abilities.entries) {
+          if (entry.side !== side || entry.used >= entry.maxUses || !activeSquare(state.identities, entry.ownerId)) continue;
+          const cost = effectiveOrderCost(abilities, entry);
+          if (pool.current < cost) continue;
+          const targets = entry.kind === "place_adjacent_ward" ? wardTargets(state, entry) : [];
+          for (const target of targets) {
+            commands.push(Object.freeze({
+              type: "UseAbility",
+              payload: Object.freeze({
+                instanceId: entry.instanceId,
+                abilityId: entry.abilityId,
+                effectId: entry.effectId,
+                sourceId: entry.sourceId,
+                ownerId: entry.ownerId,
+                targetId: target.targetId,
+                targetSquare: target.targetSquare,
+                baseOrderCost: entry.orderCost,
+                effectiveOrderCost: cost
+              })
+            }));
+          }
+        }
+        return freezeArray(commands);
+      }
+      function normalizeAbilityRequest(state, request) {
+        if (!request || request.type !== "UseAbility") throw new Error("UseAbility request is required");
+        const payload = request.payload || {};
+        const command = legalAbilityCommands(state).find((candidate) => candidate.payload.instanceId === payload.instanceId && candidate.payload.abilityId === payload.abilityId && candidate.payload.ownerId === payload.ownerId && candidate.payload.targetId === payload.targetId && candidate.payload.targetSquare === payload.targetSquare);
+        if (!command) throw new Error("ability command is not currently legal");
+        return command;
+      }
+      function passActionPosition(position) {
+        const actingSide = position.sideToMove;
+        return createPosition({
+          board: position.board,
+          sideToMove: opposite(actingSide),
+          castling: position.castling,
+          enPassant: null,
+          halfmove: position.halfmove + 1,
+          fullmove: position.fullmove + (actingSide === "b" ? 1 : 0)
+        });
+      }
+      function outcomeForStatus(state, position, identities, factory, events) {
+        const status = gameStatus(position);
+        if (status.state === "check") {
+          const kingIndex = position.board.findIndex((value) => value && value.side === position.sideToMove && value.type === "k");
+          const kingSquare = indexToSquare(kingIndex);
+          events.push(factory.event("KingChecked", {
+            battleId: state.battleId,
+            checkedSide: position.sideToMove,
+            kingSquare,
+            kingId: identityAt(identities, kingSquare)
+          }));
+          return { status: "active", result: null };
+        }
+        if (status.state === "checkmate") {
+          const result = {
+            outcome: status.winner === state.playerSide ? "victory" : "defeat",
+            winner: status.winner,
+            reason: "checkmate"
+          };
+          events.push(factory.event("CheckmateDeclared", {
+            battleId: state.battleId,
+            winner: status.winner,
+            loser: position.sideToMove
+          }));
+          events.push(factory.event("BattleCompleted", { battleId: state.battleId, ...result }));
+          return { status: "completed", result };
+        }
+        if (status.state === "stalemate") {
+          const result = { outcome: "draw", winner: null, reason: "stalemate" };
+          events.push(factory.event("StalemateDeclared", { battleId: state.battleId }));
+          events.push(factory.event("BattleCompleted", { battleId: state.battleId, ...result }));
+          return { status: "completed", result };
+        }
+        return { status: "active", result: null };
+      }
+      function updateAbilityState(abilities, entry, modifier) {
+        return createAbilityState({
+          entries: abilities.entries.map((candidate) => candidate.instanceId === entry.instanceId ? { ...candidate, used: candidate.used + 1 } : candidate),
+          modifiers: abilities.modifiers.map((candidate) => modifier && candidate.instanceId === modifier.instanceId ? { ...candidate, consumed: true } : candidate)
+        });
+      }
+      function resolveAbilityCommand(state, command, factory) {
+        const abilities = state.abilities && state.abilities.format === ABILITY_STATE_FORMAT ? state.abilities : createAbilityState();
+        const entry = abilities.entries.find((candidate) => candidate.instanceId === command.payload.instanceId);
+        if (!entry) throw new Error(`missing ability instance: ${command.payload.instanceId}`);
+        const modifier = modifierForOwner(abilities, entry.ownerId);
+        const cost = effectiveOrderCost(abilities, entry);
+        const spending = spendOrderPoints(state.orderPoints[entry.side], cost, `ability:${entry.abilityId}`);
+        const orderPoints = Object.freeze({ ...state.orderPoints, [entry.side]: spending.pool });
+        const applied = applyPrimaryStatus(state.statuses, command.payload.targetId, "ward", {
+          sourceId: entry.sourceId,
+          actionIndex: state.actionIndex,
+          data: { abilityId: entry.abilityId, effectId: entry.effectId, ownerId: entry.ownerId }
+        });
+        const events = [
+          factory.event("AbilityUsed", {
+            battleId: state.battleId,
+            abilityId: entry.abilityId,
+            effectId: entry.effectId,
+            sourceId: entry.sourceId,
+            ownerId: entry.ownerId,
+            targetId: command.payload.targetId,
+            targetSquare: command.payload.targetSquare,
+            baseOrderCost: entry.orderCost,
+            effectiveOrderCost: cost,
+            useNumber: entry.used + 1,
+            maxUses: entry.maxUses
+          }),
+          factory.event("StatusApplied", {
+            battleId: state.battleId,
+            pieceId: command.payload.targetId,
+            statusId: "ward",
+            sourceId: entry.sourceId,
+            expiry: applied.applied.expiry
+          }),
+          factory.event("OrderPointsChanged", {
+            battleId: state.battleId,
+            side: entry.side,
+            changedBy: spending.changedBy,
+            current: spending.pool.current,
+            reason: `ability:${entry.abilityId}`
+          })
+        ];
+        if (modifier) {
+          events.push(factory.event("RelicEffectConsumed", {
+            battleId: state.battleId,
+            effectId: modifier.effectId,
+            ownerId: modifier.ownerId,
+            amount: modifier.amount,
+            reason: "first_ability_order_discount"
+          }));
+        }
+        const position = passActionPosition(state.position);
+        const outcome = outcomeForStatus(state, position, state.identities, factory, events);
+        return {
+          position,
+          identities: state.identities,
+          statuses: applied.state,
+          abilities: updateAbilityState(abilities, entry, modifier),
+          events,
+          status: outcome.status,
+          result: outcome.result,
+          orderPoints,
+          reserve: state.reserve,
+          actedPieceId: entry.ownerId,
+          capturedId: null
+        };
+      }
+      module.exports = {
+        ABILITY_STATE_FORMAT,
+        ABILITY_STATE_SCHEMA_VERSION,
+        FIRST_ABILITY_DISCOUNT,
+        createAbilityState,
+        activeSquare,
+        effectiveOrderCost,
+        legalAbilityCommands,
+        normalizeAbilityRequest,
+        resolveAbilityCommand
+      };
+    }
+  });
+
   // src/combat/battle.cjs
   var require_battle = __commonJS({
     "src/combat/battle.cjs"(exports, module) {
@@ -1981,6 +2275,12 @@ var RPChessRuntime = (() => {
         removeStatus,
         advanceStatuses
       } = require_statuses();
+      var {
+        createAbilityState,
+        legalAbilityCommands,
+        normalizeAbilityRequest,
+        resolveAbilityCommand
+      } = require_abilities();
       function freezeArray(items) {
         return Object.freeze(items.slice());
       }
@@ -2037,6 +2337,7 @@ var RPChessRuntime = (() => {
           position: options.position,
           identities: normalizeIdentities(options.position, options, battleId, seed),
           statuses: options.statuses && options.statuses.format === "rpchess-status-state" ? options.statuses : createStatusState(options.statuses || {}),
+          abilities: createAbilityState(options.abilities || {}),
           actionIndex: 0,
           status: outcome.status,
           result: outcome.result,
@@ -2065,6 +2366,7 @@ var RPChessRuntime = (() => {
         if (state.status !== "active") return [];
         return [
           ...moveCommands(state),
+          ...legalAbilityCommands(state),
           ...legalReserveDeployments({
             position: state.position,
             reserve: state.reserve,
@@ -2222,7 +2524,7 @@ var RPChessRuntime = (() => {
         return Object.fromEntries(Object.entries(identities.metadata).map(([pieceId, metadata]) => [pieceId, metadata.side]));
       }
       function advanceBattleStatuses(state, resolution, actingSide, factory, events) {
-        let statuses = state.statuses;
+        let statuses = resolution.statuses || state.statuses;
         if (resolution.capturedId && statusFor(statuses, resolution.capturedId)) {
           const removal = removeStatus(statuses, resolution.capturedId, "piece_captured");
           statuses = removal.state;
@@ -2251,17 +2553,21 @@ var RPChessRuntime = (() => {
       function executeBattleCommand(state, request) {
         if (!state || state.format !== "rpchess-battle-state") throw new TypeError("invalid battle state");
         if (state.status !== "active") throw new Error("battle is already completed");
-        if (!request || !["MovePiece", "DeployReserve"].includes(request.type)) {
+        if (!request || !["MovePiece", "DeployReserve", "UseAbility"].includes(request.type)) {
           throw new Error(`unsupported battle command: ${request && request.type}`);
         }
+        const normalizedRequest = request.type === "UseAbility" ? normalizeAbilityRequest(state, request) : request;
         const actingSide = state.position.sideToMove;
         const factory = createEnvelopeFactory(state.envelope);
-        const command = factory.command(request.type, request.payload || {}, {
+        const command = factory.command(normalizedRequest.type, normalizedRequest.payload || {}, {
           battleId: state.battleId,
           actorSide: actingSide,
           actionIndex: state.actionIndex
         });
-        const resolution = request.type === "MovePiece" ? executeMoveCommand(state, command, factory) : executeReserveCommand(state, command, factory);
+        let resolution;
+        if (normalizedRequest.type === "MovePiece") resolution = executeMoveCommand(state, command, factory);
+        else if (normalizedRequest.type === "DeployReserve") resolution = executeReserveCommand(state, command, factory);
+        else resolution = resolveAbilityCommand(state, command, factory);
         const events = resolution.events.slice();
         const statuses = advanceBattleStatuses(state, resolution, actingSide, factory, events);
         const nextState = Object.freeze({
@@ -2269,6 +2575,7 @@ var RPChessRuntime = (() => {
           position: resolution.position,
           identities: resolution.identities,
           statuses,
+          abilities: resolution.abilities || state.abilities,
           actionIndex: state.actionIndex + 1,
           status: resolution.status,
           result: resolution.result,
@@ -6801,6 +7108,7 @@ var RPChessRuntime = (() => {
           identitiesBySquare: finalized.identities,
           identityMetadata: Object.freeze({ ...originalBattle.identities.metadata, ...unitMetadata }),
           statuses: originalBattle.statuses,
+          abilities: originalBattle.abilities,
           orderPoints: originalBattle.orderPoints,
           reserve: mergedReserve(gate, finalized),
           reserveCells
@@ -8538,6 +8846,128 @@ var RPChessRuntime = (() => {
     }
   });
 
+  // src/runtime/iron-marches-mechanics.cjs
+  var require_iron_marches_mechanics = __commonJS({
+    "src/runtime/iron-marches-mechanics.cjs"(exports, module) {
+      "use strict";
+      var { indexToSquare } = require_position();
+      var { projectArmyBattleOptions } = require_army_roster();
+      var ECHO_SHIELD = "relic.echo_shield";
+      var CIRCLE_WARDING = "relic.circle_warding";
+      var TWIN_COMMAND = "relic.twin_command";
+      function freezeArray(values) {
+        return Object.freeze(values.slice());
+      }
+      function statusEntries(input) {
+        if (!input) return {};
+        if (input.format === "rpchess-status-state") return { ...input.entries };
+        return { ...input.entries || input };
+      }
+      function existingAbilityParts(input) {
+        if (!input) return { entries: [], modifiers: [] };
+        return {
+          entries: [...input.entries || []],
+          modifiers: [...input.modifiers || []]
+        };
+      }
+      function activeHeroRecords(projected) {
+        const records = [];
+        for (let index = 0; index < projected.position.board.length; index += 1) {
+          const piece = projected.position.board[index];
+          if (!piece) continue;
+          const square = indexToSquare(index);
+          const pieceId = projected.identitiesBySquare[square];
+          const metadata = projected.identityMetadata?.[pieceId] || {};
+          if (!pieceId || !metadata.heroId) continue;
+          records.push(Object.freeze({
+            pieceId,
+            side: piece.side,
+            type: piece.type,
+            metadata,
+            location: "active"
+          }));
+        }
+        return records;
+      }
+      function reserveHeroRecords(projected) {
+        return (projected.reserve || []).filter((entry) => entry.metadata?.heroId).map((entry) => Object.freeze({
+          pieceId: entry.id,
+          side: entry.side,
+          type: entry.type,
+          metadata: entry.metadata,
+          location: "reserve"
+        }));
+      }
+      function allHeroRecords(projected) {
+        return freezeArray([...activeHeroRecords(projected), ...reserveHeroRecords(projected)]);
+      }
+      function addStartingWard(entries, record) {
+        const current = entries[record.pieceId];
+        if (current && current.id !== "ward") {
+          throw new Error(`${record.pieceId} cannot receive Echo Shield ward over ${current.id}`);
+        }
+        entries[record.pieceId] = Object.freeze({
+          pieceId: record.pieceId,
+          id: "ward",
+          sourceId: ECHO_SHIELD,
+          appliedAtAction: 0,
+          expiry: null,
+          data: Object.freeze({ effectId: "effect.ward_first_capture", sourceRelicId: ECHO_SHIELD })
+        });
+      }
+      function mechanicsForRecord(record, abilities, statuses) {
+        const relicIds = record.metadata.relicIds || [];
+        if (relicIds.includes(ECHO_SHIELD)) addStartingWard(statuses, record);
+        if (relicIds.includes(CIRCLE_WARDING)) {
+          abilities.entries.push(Object.freeze({
+            instanceId: `ability.circle_warding:${record.pieceId}`,
+            abilityId: "ability.circle_warding",
+            effectId: "effect.place_adjacent_ward",
+            sourceId: CIRCLE_WARDING,
+            ownerId: record.pieceId,
+            side: record.side,
+            kind: "place_adjacent_ward",
+            orderCost: 1,
+            maxUses: 1,
+            used: 0
+          }));
+        }
+        if (relicIds.includes(TWIN_COMMAND)) {
+          abilities.modifiers.push(Object.freeze({
+            instanceId: `effect.first_ability_order_discount:${record.pieceId}`,
+            effectId: "effect.first_ability_order_discount",
+            ownerId: record.pieceId,
+            amount: 1,
+            consumed: false
+          }));
+        }
+      }
+      function projectIronMarchesBattleOptions(options, army) {
+        const projected = projectArmyBattleOptions(options, army);
+        const statuses = statusEntries(projected.statuses);
+        const abilities = existingAbilityParts(projected.abilities);
+        for (const record of allHeroRecords(projected)) mechanicsForRecord(record, abilities, statuses);
+        return Object.freeze({
+          ...projected,
+          statuses: Object.freeze({ entries: Object.freeze(statuses) }),
+          abilities: Object.freeze({
+            entries: freezeArray(abilities.entries),
+            modifiers: freezeArray(abilities.modifiers)
+          })
+        });
+      }
+      module.exports = {
+        ECHO_SHIELD,
+        CIRCLE_WARDING,
+        TWIN_COMMAND,
+        activeHeroRecords,
+        reserveHeroRecords,
+        allHeroRecords,
+        projectIronMarchesBattleOptions
+      };
+    }
+  });
+
   // src/browser/profile-persistence.cjs
   var require_profile_persistence = __commonJS({
     "src/browser/profile-persistence.cjs"(exports, module) {
@@ -8693,9 +9123,9 @@ var RPChessRuntime = (() => {
       var {
         createRuntimeArmy,
         validateRuntimeArmy,
-        runtimeSelectionFromArmy,
-        projectArmyBattleOptions
+        runtimeSelectionFromArmy
       } = require_army_roster();
+      var { projectIronMarchesBattleOptions } = require_iron_marches_mechanics();
       var { buildBrowserProductionBundle } = require_production_content_browser();
       var { createScenarioDeploymentGate } = require_deployment_gate();
       var {
@@ -8776,7 +9206,7 @@ var RPChessRuntime = (() => {
         const localization = bundle.localization[language];
         if (!localization) throw new Error(`unsupported Iron Marches language: ${language}`);
         const scenarioTemplates = bundle.scenarioTemplates;
-        const battleProjector = (battleOptions) => projectArmyBattleOptions(battleOptions, army);
+        const battleProjector = (battleOptions) => projectIronMarchesBattleOptions(battleOptions, army);
         const nodeResolver = ({ runtime, node, content }) => {
           if (node.type === "event") return Object.freeze({ mode: "event", reward: Object.freeze({ gold: 1, supplies: 1, meta: 0 }) });
           if (node.type === "battle" || node.type === "elite") {

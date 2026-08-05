@@ -10,8 +10,8 @@ const { auditIronMarchesMechanics } = require('../scripts/audit-iron-marches-mec
   assert.strictEqual(summary.relicEffectCount, 6);
   assert.strictEqual(summary.totalCount, 12);
   assert.strictEqual(summary.counts.PARTIAL, 1);
-  assert.strictEqual(summary.counts.DECLARATIVE, 11);
-  assert.strictEqual(summary.counts.IMPLEMENTED, 0);
+  assert.strictEqual(summary.counts.DECLARATIVE, 9);
+  assert.strictEqual(summary.counts.IMPLEMENTED, 2);
   assert.strictEqual(summary.counts.BLOCKED_BY_DESIGN, 0);
 
   const readiness = await import(pathToFileURL(path.resolve(__dirname, '../game/js/iron-marches-mechanics-readiness.mjs')).href);
@@ -24,16 +24,18 @@ const { auditIronMarchesMechanics } = require('../scripts/audit-iron-marches-mec
     'hero.vael_hammer'
   ]);
   assert.strictEqual(readiness.heroMechanicReadiness('hero.aldric_wall').status, 'DECLARATIVE');
-  assert.strictEqual(readiness.relicMechanicReadiness('relic.echo_shield').status, 'PARTIAL');
+  assert.strictEqual(readiness.relicMechanicReadiness('relic.echo_shield').status, 'IMPLEMENTED');
+  assert.strictEqual(readiness.relicMechanicReadiness('relic.circle_warding').status, 'IMPLEMENTED');
+  assert.strictEqual(readiness.relicMechanicReadiness('relic.twin_command').status, 'PARTIAL');
   assert.strictEqual(readiness.readinessLabel('DECLARATIVE'), 'Пока недоступно');
-  assert.strictEqual(readiness.heroMechanicsSummary('hero.aldric_wall', ['relic.echo_shield']).relics[0].status, 'PARTIAL');
+  assert.strictEqual(readiness.heroMechanicsSummary('hero.aldric_wall', ['relic.echo_shield']).relics[0].status, 'IMPLEMENTED');
 
   const enhancer = await import(pathToFileURL(path.resolve(__dirname, '../game/js/iron-marches-mechanics-readiness-enhancer.mjs')).href);
   const markup = enhancer.heroReadinessMarkup('hero.aldric_wall');
   assert.ok(markup.includes('Перехват'));
   assert.ok(markup.includes('Пока недоступно'));
   assert.ok(markup.includes('Защита от первого взятия'));
-  assert.ok(markup.includes('Частично подключено'));
+  assert.ok(markup.includes('Работает'));
   assert.ok(markup.includes('aria-disabled="true"'));
   assert.strictEqual(enhancer.heroIdFromImageSource('assets/heroes/aldric_wall/portrait.png'), 'hero.aldric_wall');
   assert.strictEqual(enhancer.heroIdFromImageSource('assets/politics/marshal_varn.png'), null);
