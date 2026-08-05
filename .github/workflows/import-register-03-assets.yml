@@ -1,0 +1,39 @@
+name: Import Register 03 relic assets
+
+on:
+  push:
+    branches:
+      - agent/register-03-relics-and-remaining-abilities
+
+permissions:
+  contents: write
+
+concurrency:
+  group: import-register-03-relic-assets
+  cancel-in-progress: false
+
+jobs:
+  import:
+    if: ${{ !contains(github.event.head_commit.message, '[register03-imported]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/register-03-relics-and-remaining-abilities
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install importer dependencies
+        run: python -m pip install --disable-pip-version-check gdown==5.2.0 pillow==11.3.0
+      - name: Import, normalize and audit assets
+        run: python scripts/import-register-03-from-drive.py
+      - name: Commit imported assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add game/assets/relics game/js/register-03-relic-assets.mjs content/manifests/register-03-relics.json content/audits/register_03_relic_assets.json
+          git commit -m "Import Register 03 relic assets [register03-imported]"
+          git fetch origin agent/register-03-relics-and-remaining-abilities
+          git rebase origin/agent/register-03-relics-and-remaining-abilities
+          git push origin HEAD:agent/register-03-relics-and-remaining-abilities
