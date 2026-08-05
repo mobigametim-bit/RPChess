@@ -4,12 +4,16 @@ on:
   push:
     branches:
       - agent/first-executable-hero-mechanics
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
 
 jobs:
   apply:
+    if: github.event_name == 'push' || github.head_ref == 'agent/first-executable-hero-mechanics'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
