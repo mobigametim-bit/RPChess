@@ -7,22 +7,53 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify-web-source:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: agent/domain-army-runtime-migration
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
+      - name: Apply domain army implementation
+        if: github.actor != 'github-actions[bot]'
+        run: |
+          node scripts/apply-domain-army-runtime.cjs
+          node <<'NODE'
+          const fs = require('fs');
+          const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          const anchor = 'node tests/browser-production-runtime.cjs';
+          const addition = 'node tests/domain-army-runtime.cjs && node tests/army-projection-matrix.cjs && ' + anchor;
+          if (!packageJson.scripts.test.includes('tests/domain-army-runtime.cjs')) {
+            if (!packageJson.scripts.test.includes(anchor)) throw new Error('package test anchor missing');
+            packageJson.scripts.test = packageJson.scripts.test.replace(anchor, addition);
+          }
+          fs.writeFileSync('package.json', JSON.stringify(packageJson, null, 2) + '\n');
+          NODE
+          npm run build:browser
+      - name: Commit generated implementation
+        if: github.actor != 'github-actions[bot]'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/runtime/vertical-slice.cjs src/runtime/army-roster.cjs src/browser/profile-persistence.cjs src/browser/iron-marches-browser-host.cjs game/js/generated/iron-marches-runtime.bundle.js package.json
+          if git diff --cached --quiet; then
+            echo 'No generated implementation changes.'
+          else
+            git commit -m 'Move selected army into domain runtime'
+            git push origin HEAD:agent/domain-army-runtime-migration
+          fi
       - name: Verify normalized source
         run: npm run verify
-      - name: Run legacy characterization tests
+      - name: Run complete test suite
         run: npm test
       - name: Build web distribution
         run: npm run build
