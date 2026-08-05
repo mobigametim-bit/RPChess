@@ -1,5 +1,6 @@
 import { validateRunSelectionSnapshot } from './run-selection-client.mjs';
 import { regionAssets } from './register-01-assets.mjs';
+import { heroAssets as registeredHeroAssets } from './register-02-assets.mjs';
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>'"]/g, (character) => ({
@@ -36,9 +37,18 @@ function doctrineCard(item) {
 }
 
 function heroCard(item) {
+  const catalog = registeredHeroAssets(item.id);
+  const assets = Object.freeze({ ...(catalog || {}), ...(item.assets || {}) });
+  const glyph = pieceSymbol(item.pieceType);
   return `
-    <button class="rprs__card${item.selected ? ' is-selected' : ''}" data-toggle-hero="${escapeHtml(item.id)}" aria-pressed="${item.selected}">
-      ${assetMarkup(item.assets?.portrait, item.label, pieceSymbol(item.pieceType), 'rprs__media--portrait')}
+    <button class="rprs__card rprs__card--hero${item.selected ? ' is-selected' : ''}" data-toggle-hero="${escapeHtml(item.id)}" aria-pressed="${item.selected}">
+      <span class="rprs__hero-art">
+        ${assetMarkup(assets.portrait, item.label, glyph, 'rprs__media--portrait')}
+        <span class="rprs__hero-icons" aria-label="Знак фигуры и способность героя">
+          ${assetMarkup(assets.pieceBadge, `${item.label}: знак фигуры`, glyph, 'rprs__media--hero-badge')}
+          ${assetMarkup(assets.abilityIcon, `${item.label}: уникальная способность`, '✦', 'rprs__media--hero-ability')}
+        </span>
+      </span>
       <strong>${escapeHtml(item.label)}</strong>
       <span>${escapeHtml(item.pieceType)}</span>
     </button>`;
