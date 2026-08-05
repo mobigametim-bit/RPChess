@@ -35,7 +35,18 @@ jobs:
         run: npm ci
       - name: Apply runtime and UI package
         if: steps.guard.outputs.applied == 'false'
-        run: node scripts/apply-register-03-runtime-and-ui.cjs
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          target = Path('scripts/apply-register-03-runtime-and-ui.cjs')
+          source = target.read_text(encoding='utf-8')
+          source = source.replace('`${record.filename} must be RGBA`', "record.filename + ' must be RGBA'")
+          source = source.replace('`${abilityId}:${ownerId}`', "abilityId + ':' + ownerId")
+          source = source.replace('`missing legal ${abilityId}`', "'missing legal ' + abilityId")
+          target.write_text(source, encoding='utf-8')
+          PY
+          node --check scripts/apply-register-03-runtime-and-ui.cjs
+          node scripts/apply-register-03-runtime-and-ui.cjs
       - name: Run complete regression suite
         if: steps.guard.outputs.applied == 'false'
         run: npm test
