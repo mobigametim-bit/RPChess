@@ -2,162 +2,134 @@
 
 **Updated:** 2026-08-05  
 **Source of truth:** merged code and CI on `main`.  
-**Runtime policy:** new systems remain isolated from the legacy public battle until the vertical-slice presentation, content, accessibility and acceptance gates pass.
+**Runtime policy:** the new production vertical slice remains isolated at `game/vertical-slice.html`; public legacy `index.html` stays rollback-safe until explicit acceptance.
 
 ## Completed foundations
 
 | Area | Status | Main result |
 |---|---|---|
 | Phase 0 audit and production register | Complete | Audit, target architecture, schemas, test strategy, release checklist and full content/asset register |
-| Repository normalization | Complete | Normal source tree in `game/`; no ZIP/patch-chain source of truth; local required assets |
-| Legacy characterization | Complete | Current playable behavior preserved by regression tests |
+| Repository normalization | Complete | Normal source tree in `game/`; no ZIP/patch-chain source of truth; required local assets |
+| Legacy characterization | Complete | Current public behavior protected by regression tests |
 | Determinism | Complete foundation | Named RNG streams, snapshots, deterministic IDs, command/event envelopes |
 | Legal chess core | Complete foundation | Check, mate, stalemate, castling, en passant, promotion, self-check prevention and perft |
 | Alternating combat | Complete foundation | One player action followed by one opponent action, deterministic replay |
-| Deployment and reserve | Complete foundation | Command budget, legal deployment zone, order points and reserve actions |
-| Persistent piece identity | Complete foundation | Hero/talent/relic identity survives movement, capture history, castling, promotion and reserve |
-| Visible statuses | Complete foundation | One-primary-status rule, durations, events and movement restrictions |
-| Ward protection | Complete | First legal capture interception with check-safety and en-passant support |
+| Deployment and reserve core | Complete foundation | Command budget, legal deployment zones, order points and reserve actions |
+| Persistent piece identity | Complete foundation | Hero/talent/relic identity survives movement, captures, castling, promotion and reserve |
+| Visible statuses and ward | Complete foundation | Closed status set, durations, events, restrictions and first-capture interception |
 | Figure progression and relic loadouts | Complete foundation | Three stars, passive policy, hero specialization and figure-bound relic slots |
-| Modular boards | Complete foundation | Runtime cell plan from `tile_light.png` / `tile_dark.png`; arbitrary active-cell masks; no frame/underlay dependency |
-| Browser modular board renderer | Complete foundation | Canvas renderer, high-DPI fitting, real modular tiles, technical load-error fallbacks, coordinates and overlay hooks |
-| Asset intake | Complete foundation | Canonical staged paths, PNG validation, safe copy/repair and replacement review |
-| Register 01 production asset package | Imported — REVIEW | All 141 candidates normalized into canonical `game/assets/...` paths; 30 register records and 9 board themes moved from `MISSING` to `REVIEW`; no unmapped source images |
-| Register 01 runtime visuals | Integrated in isolated vertical slice | Regional banners/crests/scenes, modular tiles, blocker/focus art, move markers and check/capture/promotion/checkmate VFX replace presenter placeholders; fallbacks remain only for file-load errors |
-| Atomic saves | Complete foundation | Three profiles, checksums, pending/current/backup recovery, migrations and cloud-conflict classification |
-| Data-driven content | Complete foundation | Typed registry for regions, kings, doctrines, heroes, relics, events, encounters and bosses |
-| Iron Marches production content | Vertical-slice draft complete | One region, king, doctrine, six heroes, six relics, twelve authored events, six encounters and a two-phase boss with RU/EN localization |
-| Authored event choices | Complete foundation | Explicit three-to-four choice gate, deterministic consequences, flags, Chronicle hooks, replay and save support |
-| Event effect catalog | Complete foundation | Closed versioned effect vocabulary; unknown effects fail build and execution instead of silently doing nothing |
+| Modular boards | Complete foundation | Runtime cells from `tile_light.png` / `tile_dark.png`; arbitrary masks; no frame/underlay dependency |
+| Browser board renderer | Complete foundation | High-DPI Canvas renderer, real modular tiles, coordinates, overlays and load-error fallbacks |
+| Asset intake | Complete foundation | Canonical staged paths, validation, safe replacement and review states |
+| Register 01 asset package | Imported — REVIEW | All 141 candidates normalized into `game/assets/...`; 30 records and 9 board themes moved to `REVIEW`; no unmapped images |
+| Register 01 runtime visuals | Integrated in isolated slice | Region scenes/crests, modular tiles, blocker/start-zone/focus art, move markers and battle VFX replace placeholders |
+| Atomic saves | Complete foundation | Three profiles, checksums, pending/current/backup recovery, migrations and conflict classification |
+| Browser persistence | Complete | localStorage-backed atomic profiles, autosave per resolved command, recovery and continuation after reload |
+| Browser profile selector | Complete | Three accessible slots with Continue, New Campaign and Delete; profile isolation and recovery metadata |
+| Data-driven content | Complete foundation | Typed regions, kings, doctrines, heroes, relics, events, encounters and bosses |
+| Iron Marches production content | Vertical-slice draft complete | One region, king, doctrine, six heroes/relics, twelve events, six encounters and two-phase boss with RU/EN |
+| Authored event choices and effects | Complete foundation | Explicit choices, deterministic effects, flags, Chronicle hooks and closed effect catalog |
 | Legal AI | Complete foundation | Apprentice/Tactician/Warlord deterministic search, budgets and objective-aware evaluation |
-| Scenario objectives | Complete foundation | Checkmate, escort, capture, hold and survival objectives plus explicit failure conditions |
-| Visible blocker legality | Complete foundation | Active blocker cells alter attacks, legal moves, castling, reserve, ward, AI, presenter, replay and saves through one battle-state rule source |
-| Boss phases | Complete foundation | Explicit two-to-three phase state machine, player/AI pairs, saveable transitions and deterministic phase history |
-| Campaign act graph | Complete foundation | Deterministic 9–12 node acts, safe routes, supplies, scouting and 10,000-seed validation |
-| Vertical-slice runtime | Complete foundation | Campaign → node → event/scenario/boss → player/AI pair → reward → completion with atomic saves and deterministic replay |
-| Iron Marches production bootstrap | Complete foundation | Real compiled content, scenario templates, board themes, localization and effect catalog create the act without test-only fixtures |
-| Pre-run selection | Open integration PR | Deterministic selection state exists on PR #30 but is not yet merged into `main` |
-| Browser pre-run selection | Open integration PR | Host/client/presenter exists on PR #31 but is not yet merged into `main` |
+| Scenario objectives and bosses | Complete foundation | Checkmate, escort, capture, hold, survival, failures and saveable multi-phase bosses |
+| Visible blocker legality | Complete foundation | Blockers affect attacks, moves, castling, reserve, ward, AI, presenter, replay and saves |
+| Campaign act graph | Complete foundation | Deterministic 9–12 node acts, routes, supplies, scouting and 10,000-seed validation |
+| Vertical-slice runtime | Complete foundation | Campaign → event/scenario/boss → player/AI pair → reward → completion with saves/replay |
+| Pre-run selection | Complete | Validated king, doctrine and hero roster selection with Register 01 art and locked runtime handoff |
+| Production browser entry | Complete isolated entry | Reproducible esbuild bundle and real `vertical-slice.html`; no mock runtime and no public-index replacement |
+| Browser reserve presentation | Complete | Order points, reserve cards, legal deployment cells and `start_zone.png` targeting through `PlayerCommand` |
 
 ## Current automated acceptance coverage
 
-The CI suite currently covers:
+The main CI suite covers:
 
-- legacy behavior characterization;
-- deterministic foundations;
-- legal chess/perft;
-- alternating combat and replay;
-- deployment, reserve and order points;
-- persistent identities;
-- statuses and ward interception;
-- progression and relic loadouts;
-- modular board planning;
-- browser/Core board-plan parity;
-- real modular tile integration and technical load-error fallbacks;
-- generated-asset intake;
-- exact Register 01 catalog coverage for 141 unique canonical paths;
-- region, king and doctrine visual-path registration;
-- check/capture/promotion/checkmate VFX event mapping;
-- atomic profile saves and cloud conflicts;
-- typed content packs and localization references;
-- authored event choices and closed effect references;
-- legal AI decisions and action corpora;
-- alternative objectives and boss transitions;
-- 10,000 generated campaign seeds;
-- full vertical-slice campaign completion;
-- player/AI action-pair enforcement;
-- byte-equivalent operation replay;
-- vertical-slice checkpoint save, reload and corruption recovery;
-- production Iron Marches scenario construction;
-- multi-phase boss save/reload/replay and mate objective;
-- opaque blocker legality across chess, scenario, reserve, ward, AI, presenter and saves.
+- legacy behavior and deterministic foundations;
+- legal chess/perft, alternating combat and replay;
+- deployment, reserve, order points and persistent identities;
+- statuses, ward, progression and relic loadouts;
+- modular board planning and browser/Core parity;
+- Register 01 catalog paths, dimensions and VFX mappings;
+- atomic saves, browser SHA-256 parity, autosave, recovery and three-profile isolation;
+- typed content, RU/EN localization and closed event effects;
+- objective-aware AI, scenarios and boss transitions;
+- 10,000 generated campaign seeds and full vertical-slice completion;
+- production Iron Marches bootstrap and browser runtime bundling;
+- pre-run selection, profile selector and runtime handoff;
+- reserve snapshot projection, order-point spending and browser board targeting;
+- full production build containing `vertical-slice.html` and the generated runtime bundle.
 
-Every merged foundation listed above passed its required CI before entering `main`.
+Every merged item above passed its required CI before entering `main`.
 
 ## Asset production interface
 
-The complete Register 01 candidate package is stored under canonical runtime paths:
+Canonical Register 01 assets are stored under:
 
 ```text
 game/assets/<canonical register path>
 ```
 
-Examples:
-
-```text
-game/assets/regions/iron_marches/map_banner.jpg
-game/assets/regions/iron_marches/tile_light.png
-game/assets/kings/oathkeeper/portrait.png
-game/assets/doctrines/fortress/emblem.png
-```
-
-The machine-readable import and normalization report is:
+Machine-readable import report:
 
 ```text
 content/assets/register_01_assets.json
 ```
 
-It records source folder/file, original dimensions and mode, normalized output dimensions and format, byte size and `REVIEW` status for all 141 files.
-
-Generated replacement candidates may still be staged under:
+Replacement candidates may be staged under:
 
 ```text
 game/generated_assets/<canonical register path>
 ```
 
-Audit and intake commands:
+Validation commands:
 
 ```text
 npm run assets:audit
 npm run assets:intake
 ```
 
-Runtime board themes require only paired 512×512 cells:
+Runtime board themes use only paired cells:
 
 ```text
 tile_light.png
 tile_dark.png
 ```
 
-Complete board rasters, board frames and decorative underlays are not runtime dependencies.
+Complete board rasters, frames and underlays are not runtime dependencies. Register 01 remains `REVIEW` until provenance/rights and final in-game/Steam Deck acceptance are recorded.
 
-Browser previews currently merged in `main`:
-
-```text
-game/tools/modular-board-preview.html
-game/tools/vertical-slice-preview.html
-```
-
-A fallback is rendered only when a referenced file cannot be loaded or when a future screen has no approved asset record. Register 01 records remain `REVIEW`, not `APPROVED`, until provenance/rights and final in-game/Steam Deck visual acceptance are recorded.
-
-## Current vertical-slice flow
-
-The production-ready isolated path currently has these gates:
+## Current isolated browser flow
 
 ```text
-deterministic Iron Marches act graph
-→ authored event choice or combat scenario
-→ blocker-aware legal chess action
+three profile slots
+→ continue recovered save OR start a new run
+→ king / doctrine / hero selection
+→ deterministic Iron Marches map
+→ authored event OR combat scenario
+→ blocker-aware legal chess
+→ visible reserve deployment and order-point spending
 → one objective-aware AI response
-→ reward
-→ save / replay / next node
+→ reward and autosave
+→ next node
 → two-phase Iron Regent boss
 → campaign completion
 ```
 
-The public legacy `index.html` is still the rollback-safe default and has not been replaced.
+Direct test launch remains possible with:
+
+```text
+game/vertical-slice.html?profile=profile-1
+```
+
+A fresh selected profile can be forced with `&new=1`. The public legacy `index.html` remains unchanged.
 
 ## Next integration sequence
 
-1. Add a browser entry point that bundles the CommonJS production bootstrap behind the existing snapshot/command boundary without exposing internal mutable state.
-2. Merge and reconcile the pre-run selection state and browser presenter from PRs #30 and #31 against current `main`, using the imported king/doctrine art.
-3. Add deployment and reserve presentation before each production encounter, including the imported start-zone overlay.
-4. Connect pre-run selection, campaign presenter, event screen, combat presenter, boss transitions and rewards into one browser navigation shell.
-5. Run the complete authored Iron Marches act through save/reload, replay, real-art load failure, RU/EN and deterministic-seed verification in the browser build.
-6. Complete controller focus, remapping foundation, text scaling, reduced motion, contrast and Steam Deck layout stress tests.
-7. Perform visual acceptance for the imported Register 01 package and promote individual records from `REVIEW` to `APPROVED` only after provenance/rights and in-game checks pass.
-8. Request explicit acceptance before replacing the public legacy runtime; preserve the legacy path as rollback until the new path passes acceptance.
+1. Add a true pre-battle deployment gate using the existing deployment core and imported `start_zone.png`.
+2. Preserve chosen army composition from pre-run selection into deployment, reserve and encounter identities rather than relying on scenario-only fixture placement.
+3. Add controller-first board navigation, promotion choice UI and non-pointer reserve placement.
+4. Run complete browser act tests across all three profiles, RU/EN, save/reload at every gate and load-error fallbacks.
+5. Add text scaling, remapping foundation, contrast modes and Steam Deck 1280×800 stress coverage.
+6. Perform visual acceptance of Register 01 and promote individual records to `APPROVED` only with provenance and in-game evidence.
+7. Request explicit acceptance before replacing the public legacy runtime; retain rollback until the new route passes release acceptance.
 
 ## Intervention gate
 
-No intervention is required for continued browser bundling, navigation-shell, deployment/reserve presentation, validation, accessibility and fallback work. User approval becomes necessary before promoting specific visual candidates to `APPROVED`, locking disputed balance values, approving the complete vertical slice, or replacing the public legacy runtime.
+No intervention is required for deployment integration, roster propagation, controller navigation, save/reload coverage, accessibility and fallback work. User approval is required before promoting art to `APPROVED`, locking disputed balance values, accepting the complete vertical slice or replacing/removing the public legacy runtime.
