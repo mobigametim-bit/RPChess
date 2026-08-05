@@ -43,19 +43,11 @@ test('after ward is consumed, the next legal capture removes the piece normally'
   state = executeWardAwareCommand(state, move('e8', 'f8')).state;
   const result = executeWardAwareCommand(state, move('e4', 'd5'));
   const eventTypes = result.events.map((event) => event.type);
-  const correct = identityAt(result.state.identities, 'e4') === null
-    && identityAt(result.state.identities, 'd5') === 'pawn_w'
-    && eventTypes[0] === 'PieceMoved'
-    && eventTypes.includes('PieceCaptured')
-    && !eventTypes.includes('CapturePrevented');
-  if (!correct) {
-    throw new Error(`ward restoration diagnostic: ${JSON.stringify({
-      fen: toFen(result.state.position),
-      bySquare: result.state.identities.bySquare,
-      statuses: result.state.statuses,
-      eventTypes
-    })}`);
-  }
+  assert.strictEqual(identityAt(result.state.identities, 'e4'), null);
+  assert.strictEqual(identityAt(result.state.identities, 'd5'), 'pawn_w');
+  assert.strictEqual(eventTypes[0], 'PieceMoved');
+  assert.strictEqual(eventTypes.includes('PieceCaptured'), true);
+  assert.strictEqual(eventTypes.includes('CapturePrevented'), false);
 });
 
 test('ward cannot be applied to either king', () => {
@@ -71,13 +63,13 @@ test('ward cannot be applied to either king', () => {
 test('warded checker cannot be captured as a fake check evasion', () => {
   let state = createBattleState({
     battleId: 'ward-check', seed: 54,
-    position: parseFen('4r1k1/8/8/8/8/8/4R3/4K3 w - - 0 1'),
-    identitiesBySquare: { e1: 'king_w', e2: 'rook_w', e8: 'rook_b', g8: 'king_b' }
+    position: parseFen('R3r1k1/8/8/8/8/8/8/4K3 w - - 0 1'),
+    identitiesBySquare: { e1: 'king_w', a8: 'rook_w', e8: 'rook_b', g8: 'king_b' }
   });
   state = applyWardStatus(state, 'rook_b').state;
   const commands = legalWardAwareCommands(state);
-  assert.strictEqual(commands.some((command) => command.type === 'MovePiece' && command.payload.from === 'e2' && command.payload.to === 'e8'), false);
-  assert.throws(() => executeWardAwareCommand(state, move('e2', 'e8')), /cannot be used to leave own king in check/);
+  assert.strictEqual(commands.some((command) => command.type === 'MovePiece' && command.payload.from === 'a8' && command.payload.to === 'e8'), false);
+  assert.throws(() => executeWardAwareCommand(state, move('a8', 'e8')), /cannot be used to leave own king in check/);
 });
 
 test('ward also protects an en-passant target once', () => {
