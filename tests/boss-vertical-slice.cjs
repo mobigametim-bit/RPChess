@@ -73,7 +73,7 @@ function createTestBoss(seed = 31) {
         titleKey: 'boss.iron_regent.phase.furnace_seals',
         objectives: [{ id: 'objective.capture_test_seal', type: 'capture_targets', side: 'w', targetPieceIds: ['seal_rook'] }],
         failures: [{ id: 'failure.test_king', type: 'piece_lost', side: 'w', targetPieceIds: ['player_king'] }],
-        environment: [{ id: 'environment.test_seal', type: 'seal', visible: true, cells: ['a8'], interaction: 'capture' }]
+        environment: [{ id: 'environment.test_seal', type: 'seal', visible: true, cells: ['a8'], interaction: 'destroy' }]
       },
       {
         id: 'mate_test',
