@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "auditId": "iron_marches_mechanics_readiness_v1",
+  "scope": "region.iron_marches",
+  "statusValues": ["IMPLEMENTED", "PARTIAL", "DECLARATIVE", "BLOCKED_BY_DESIGN"],
+  "abilities": [
+    {
+      "id": "ability.interpose",
+      "heroId": "hero.aldric_wall",
+      "name": "Перехват",
+      "status": "DECLARATIVE",
+      "uiAvailability": "disabled",
+      "reason": "Контент и описание существуют, но runtime-команда, точные цели, стоимость и правило однократного применения не определены исполняемым контрактом."
+    },
+    {
+      "id": "ability.chain_formation",
+      "heroId": "hero.mara_chain",
+      "name": "Цепное построение",
+      "status": "DECLARATIVE",
+      "uiAvailability": "disabled",
+      "reason": "Есть контентный идентификатор, но нет исполняемого обработчика и формального правила построения."
+    },
+    {
+      "id": "ability.forge_line",
+      "heroId": "hero.brother_orell",
+      "name": "Линия кузни",
+      "status": "DECLARATIVE",
+      "uiAvailability": "disabled",
+      "reason": "Есть контентный идентификатор, но не определены точная геометрия линии, цели и runtime-эффект."
+    },
+    {
+      "id": "ability.previewed_charge",
+      "heroId": "hero.vael_hammer",
+      "name": "Предсказанный натиск",
+      "status": "DECLARATIVE",
+      "uiAvailability": "disabled",
+      "reason": "Описание обещает ограниченный видимый натиск, но нет канонических дальности, цены, целей и обработчика."
+    },
+    {
+      "id": "ability.hostage_tactic",
+      "heroId": "hero.lady_sorn",
+      "name": "Тактика заложника",
+      "status": "DECLARATIVE",
+      "uiAvailability": "disabled",
+      "reason": "Идентификатор присутствует в контенте, однако точный боевой эффект и условия применения не заданы."
+    },
+    {
+      "id": "ability.gate_command",
+      "heroId": "hero.tomas_gate",
+      "name": "Команда ворот",
+      "status": "DECLARATIVE",
+      "uiAvailability": "disabled",
+      "reason": "Идентификатор присутствует, но управление воротами и связанная геометрия сценария не оформлены как runtime-команда."
+    }
+  ],
+  "relicEffects": [
+    {
+      "id": "effect.ward_first_capture",
+      "relicId": "relic.echo_shield",
+      "name": "Защита от первого взятия",
+      "status": "PARTIAL",
+      "uiAvailability": "limited",
+      "reason": "Движок умеет видимо предотвращать взятие статуса ward и расходовать его, но отдельное production-связывание реликвии с автоматическим получением ward ещё не оформлено как эффект-каталог.",
+      "evidence": [
+        {
+          "path": "src/combat/ward-protection.cjs",
+          "tokens": ["applyWardStatus", "executeWardAwareCommand", "CapturePrevented"]
+        },
+        {
+          "path": "tests/ward-protection.cjs",
+          "tokens": ["CapturePrevented", "ward"]
+        }
+      ]
+    },
+    {
+      "id": "effect.visible_evasion_after_non_capture",
+      "relicId": "relic.phantom_spurs",
+      "name": "Видимое уклонение после хода без взятия",
+      "status": "DECLARATIVE",
+      "uiAvailability": "disabled",
+      "reason": "Контентная ссылка существует, но статус, длительность, выбор клетки и обработчик отсутствуют."
+    },
+    {
+      "id": "effect.place_adjacent_ward",
+      "relicId": "relic.circle_warding",
+      "name": "Соседний круг защиты",
+      "status": "DECLARATIVE",
+      "uiAvailability": "disabled",
+      "reason": "Ward поддерживается ядром, но размещение защиты на соседней фигуре не имеет команды, стоимости и выбора цели."
+    },
+    {
+      "id": "effect.first_ability_order_discount",
+      "relicId": "relic.twin_command",
+      "name": "Скидка на первый приказ способности",
+      "status": "DECLARATIVE",
+      "uiAvailability": "disabled",
+      "reason": "Зависит от ещё не реализованного общего контура активных способностей и их стоимости в приказах."
+    },
+    {
+      "id": "effect.conditional_early_promotion",
+      "relicId": "relic.royal_decree",
+      "name": "Условное раннее превращение",
+      "status": "DECLARATIVE",
+      "uiAvailability": "disabled",
+      "reason": "Условия раннего превращения и допустимые клетки не определены исполняемыми данными."
+    },
+    {
+      "id": "effect.order_after_voluntary_sacrifice",
+      "relicId": "relic.oath_fallen",
+      "name": "Приказ после добровольной жертвы",
+      "status": "DECLARATIVE",
+      "uiAvailability": "disabled",
+      "reason": "В runtime нет отдельного понятия добровольной жертвы и события, которое однозначно отличает её от обычной потери фигуры."
+    }
+  ]
+}
