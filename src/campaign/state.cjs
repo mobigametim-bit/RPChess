@@ -1,6 +1,6 @@
 'use strict';
 
-const { assertValidActGraph } = require('./validate.cjs');
+const { assertValidActGraph, minimumPathCost } = require('./validate.cjs');
 
 function freezeArray(values) {
   return Object.freeze(values.slice());
@@ -22,7 +22,8 @@ function revealOutgoing(graph, nodeId, scouting, visibility) {
 
 function createCampaignState(graph, options = {}) {
   assertValidActGraph(graph);
-  const supplies = options.supplies ?? 12;
+  const safeDefaultSupplies = minimumPathCost(graph) + 3;
+  const supplies = options.supplies ?? safeDefaultSupplies;
   const scouting = options.scouting ?? 0;
   if (!Number.isInteger(supplies) || supplies < 0) throw new Error('campaign supplies must be a non-negative integer');
   if (!Number.isInteger(scouting) || scouting < 0 || scouting > 2) throw new Error('campaign scouting must be 0, 1 or 2');
@@ -33,6 +34,7 @@ function createCampaignState(graph, options = {}) {
     graph,
     currentNodeId: graph.startNodeId,
     supplies,
+    minimumPathCost: minimumPathCost(graph),
     scouting,
     visibility,
     visitedNodeIds: freezeArray([graph.startNodeId]),
