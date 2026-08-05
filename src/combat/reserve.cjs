@@ -7,7 +7,7 @@ const {
   indexToSquare,
   createPosition
 } = require('../core/chess/position.cjs');
-const { isInCheck } = require('../core/chess/rules.cjs');
+const { isInCheck, normalizeRulesContext, isBlocked } = require('../core/chess/rules.cjs');
 const { spendOrderPoints } = require('./order-points.cjs');
 
 function normalizeReserve(entries = []) {
@@ -47,11 +47,13 @@ function findReserveEntry(reserve, id) {
 
 function deployReserve(options) {
   const { position, reserve, reserveCells, orderPoints, entryId, square } = options;
+  const rules = normalizeRulesContext(options.rules || {});
   const entry = findReserveEntry(reserve, entryId);
   if (entry.side !== position.sideToMove) throw new Error(`${entryId} cannot deploy on ${position.sideToMove} action`);
   const target = indexToSquare(squareToIndex(square));
   if (!(reserveCells[entry.side] || []).includes(target)) throw new Error(`${target} is not a legal reserve cell`);
   const targetIndex = squareToIndex(target);
+  if (isBlocked(rules, targetIndex)) throw new Error(`${target} is blocked by the scenario environment`);
   if (position.board[targetIndex]) throw new Error(`${target} is occupied`);
 
   const spent = spendOrderPoints(orderPoints[entry.side], entry.orderCost, 'reserve_deployment');
@@ -65,7 +67,7 @@ function deployReserve(options) {
     halfmove: position.halfmove + 1,
     fullmove: position.fullmove + (entry.side === 'b' ? 1 : 0)
   });
-  if (isInCheck(nextPosition, entry.side)) throw new Error('reserve deployment leaves own king in check');
+  if (isInCheck(nextPosition, entry.side, rules)) throw new Error('reserve deployment leaves own king in check');
 
   return Object.freeze({
     position: nextPosition,
@@ -86,7 +88,7 @@ function legalReserveDeployments(options) {
     if (orderPoints[side].current < entry.orderCost) continue;
     for (const square of reserveCells[side] || []) {
       try {
-        deployReserve({ position, reserve, reserveCells, orderPoints, entryId: entry.id, square });
+        deployReserve({ ...options, position, reserve, reserveCells, orderPoints, entryId: entry.id, square });
         commands.push(Object.freeze({ type: 'DeployReserve', payload: Object.freeze({ entryId: entry.id, square }) }));
       } catch (error) {
         // Illegal square for the current position; omit it from command discovery.
