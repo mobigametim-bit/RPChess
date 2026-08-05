@@ -1,7 +1,7 @@
 const assert = require('assert');
 const path = require('path');
 const { buildProductionContentBundle } = require('../src/content/production-bundle.cjs');
-const { createEncounterScenario } = require('../src/content/scenario-templates.cjs');
+const { createEncounterScenario, loadScenarioTemplateSet } = require('../src/content/scenario-templates.cjs');
 const {
   createScenarioDeploymentGate,
   executeDeploymentEdit,
@@ -11,10 +11,12 @@ const {
 
 const tests = [];
 const test = (name, fn) => tests.push({ name, fn });
-const bundle = buildProductionContentBundle({ projectRoot: path.resolve(__dirname, '..') });
+const projectRoot = path.resolve(__dirname, '..');
+const bundle = buildProductionContentBundle({ projectRoot });
+const scenarioTemplates = loadScenarioTemplateSet(path.join(projectRoot, 'content/scenarios/iron_marches_vertical_slice.json'));
 
 function fixture(seed = 19001) {
-  const created = createEncounterScenario(bundle.scenarioTemplates, 'encounter.iron_crossfire_files', {
+  const created = createEncounterScenario(scenarioTemplates, 'encounter.iron_crossfire_files', {
     seed,
     playerSide: 'w',
     scenarioId: `deployment_fixture_${seed}`
