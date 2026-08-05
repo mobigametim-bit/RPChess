@@ -1,0 +1,2981 @@
+{
+  "schemaVersion": 1,
+  "register": "register/REGISTER_01_FOUNDATIONS.md",
+  "source": {
+    "provider": "Google Drive",
+    "folderId": "1YRFz0LfXCBh-uGYoOrny4Ub4BrGmyUUi",
+    "folderUrl": "https://drive.google.com/drive/folders/1YRFz0LfXCBh-uGYoOrny4Ub4BrGmyUUi",
+    "providedBy": "project owner",
+    "downloadMode": "sharded-folder-artifacts"
+  },
+  "status": "REVIEW",
+  "approvalNote": "Dimensions and canonical paths are normalized. Rights metadata, visual consistency and in-game/Steam Deck acceptance remain required before APPROVED.",
+  "assetCount": 141,
+  "totalBytes": 90023307,
+  "registerRecordsUpdated": 30,
+  "boardThemesUpdated": 9,
+  "unmappedSourceImages": [],
+  "assets": [
+    {
+      "canonicalPath": "assets/ui/focus_ring.png",
+      "repositoryPath": "game/assets/ui/focus_ring.png",
+      "sourceFolder": "ui",
+      "sourceFile": "focus_ring.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 139131,
+      "index": 1
+    },
+    {
+      "canonicalPath": "assets/boards/neutral/tile_light.png",
+      "repositoryPath": "game/assets/boards/neutral/tile_light.png",
+      "sourceFolder": "neutral",
+      "sourceFile": "tile_light.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "BOARD-TILE-512",
+      "status": "REVIEW",
+      "bytes": 456946,
+      "index": 2
+    },
+    {
+      "canonicalPath": "assets/boards/neutral/tile_dark.png",
+      "repositoryPath": "game/assets/boards/neutral/tile_dark.png",
+      "sourceFolder": "neutral",
+      "sourceFile": "tile_dark.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "BOARD-TILE-512",
+      "status": "REVIEW",
+      "bytes": 384942,
+      "index": 3
+    },
+    {
+      "canonicalPath": "assets/boards/neutral/blocked_cell.png",
+      "repositoryPath": "game/assets/boards/neutral/blocked_cell.png",
+      "sourceFolder": "neutral",
+      "sourceFile": "blocked_cell.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 279156,
+      "index": 4
+    },
+    {
+      "canonicalPath": "assets/boards/neutral/start_zone.png",
+      "repositoryPath": "game/assets/boards/neutral/start_zone.png",
+      "sourceFolder": "neutral",
+      "sourceFile": "start_zone.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 93378,
+      "index": 5
+    },
+    {
+      "canonicalPath": "assets/vfx/check.png",
+      "repositoryPath": "game/assets/vfx/check.png",
+      "sourceFolder": "vfx",
+      "sourceFile": "check.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 207098,
+      "index": 6
+    },
+    {
+      "canonicalPath": "assets/vfx/checkmate.png",
+      "repositoryPath": "game/assets/vfx/checkmate.png",
+      "sourceFolder": "vfx",
+      "sourceFile": "checkmate.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 2048,
+        "height": 2048
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "VFX-SHEET",
+      "status": "REVIEW",
+      "bytes": 3287791,
+      "index": 7
+    },
+    {
+      "canonicalPath": "assets/vfx/piece_capture.png",
+      "repositoryPath": "game/assets/vfx/piece_capture.png",
+      "sourceFolder": "vfx",
+      "sourceFile": "piece_capture.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 2048,
+        "height": 2048
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "VFX-SHEET",
+      "status": "REVIEW",
+      "bytes": 1513056,
+      "index": 8
+    },
+    {
+      "canonicalPath": "assets/vfx/promotion.png",
+      "repositoryPath": "game/assets/vfx/promotion.png",
+      "sourceFolder": "vfx",
+      "sourceFile": "promotion.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 2048,
+        "height": 2048
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "VFX-SHEET",
+      "status": "REVIEW",
+      "bytes": 4547303,
+      "index": 9
+    },
+    {
+      "canonicalPath": "assets/regions/iron_marches/map_banner.jpg",
+      "repositoryPath": "game/assets/regions/iron_marches/map_banner.jpg",
+      "sourceFolder": "iron_marches",
+      "sourceFile": "map_banner.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 240994,
+      "index": 10
+    },
+    {
+      "canonicalPath": "assets/regions/iron_marches/capital.jpg",
+      "repositoryPath": "game/assets/regions/iron_marches/capital.jpg",
+      "sourceFolder": "iron_marches",
+      "sourceFile": "capital.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 261882,
+      "index": 11
+    },
+    {
+      "canonicalPath": "assets/regions/iron_marches/battle.jpg",
+      "repositoryPath": "game/assets/regions/iron_marches/battle.jpg",
+      "sourceFolder": "iron_marches",
+      "sourceFile": "battle.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 243196,
+      "index": 12
+    },
+    {
+      "canonicalPath": "assets/regions/iron_marches/elite.jpg",
+      "repositoryPath": "game/assets/regions/iron_marches/elite.jpg",
+      "sourceFolder": "iron_marches",
+      "sourceFile": "elite.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 219375,
+      "index": 13
+    },
+    {
+      "canonicalPath": "assets/regions/iron_marches/boss_arena.jpg",
+      "repositoryPath": "game/assets/regions/iron_marches/boss_arena.jpg",
+      "sourceFolder": "iron_marches",
+      "sourceFile": "boss_arena.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 262029,
+      "index": 14
+    },
+    {
+      "canonicalPath": "assets/regions/iron_marches/crest.png",
+      "repositoryPath": "game/assets/regions/iron_marches/crest.png",
+      "sourceFolder": "iron_marches",
+      "sourceFile": "crest.png",
+      "sourceSize": {
+        "width": 1536,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 346109,
+      "index": 15
+    },
+    {
+      "canonicalPath": "assets/regions/iron_marches/tile_light.png",
+      "repositoryPath": "game/assets/regions/iron_marches/tile_light.png",
+      "sourceFolder": "iron_marches",
+      "sourceFile": "tile_light.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "BOARD-TILE-512",
+      "status": "REVIEW",
+      "bytes": 559962,
+      "index": 16
+    },
+    {
+      "canonicalPath": "assets/regions/iron_marches/tile_dark.png",
+      "repositoryPath": "game/assets/regions/iron_marches/tile_dark.png",
+      "sourceFolder": "iron_marches",
+      "sourceFile": "tile_dark.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "BOARD-TILE-512",
+      "status": "REVIEW",
+      "bytes": 382816,
+      "index": 17
+    },
+    {
+      "canonicalPath": "assets/regions/iron_marches/environment_sheet.png",
+      "repositoryPath": "game/assets/regions/iron_marches/environment_sheet.png",
+      "sourceFolder": "iron_marches",
+      "sourceFile": "environment_sheet.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 2048,
+        "height": 2048
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "OBJECT-SHEET",
+      "status": "REVIEW",
+      "bytes": 3675692,
+      "index": 18
+    },
+    {
+      "canonicalPath": "assets/regions/thorn_covenant/map_banner.jpg",
+      "repositoryPath": "game/assets/regions/thorn_covenant/map_banner.jpg",
+      "sourceFolder": "thorn_covenant",
+      "sourceFile": "map_banner.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 366053,
+      "index": 19
+    },
+    {
+      "canonicalPath": "assets/regions/thorn_covenant/capital.jpg",
+      "repositoryPath": "game/assets/regions/thorn_covenant/capital.jpg",
+      "sourceFolder": "thorn_covenant",
+      "sourceFile": "capital.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 398585,
+      "index": 20
+    },
+    {
+      "canonicalPath": "assets/regions/thorn_covenant/battle.jpg",
+      "repositoryPath": "game/assets/regions/thorn_covenant/battle.jpg",
+      "sourceFolder": "thorn_covenant",
+      "sourceFile": "battle.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 421777,
+      "index": 21
+    },
+    {
+      "canonicalPath": "assets/regions/thorn_covenant/elite.jpg",
+      "repositoryPath": "game/assets/regions/thorn_covenant/elite.jpg",
+      "sourceFolder": "thorn_covenant",
+      "sourceFile": "elite.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 366949,
+      "index": 22
+    },
+    {
+      "canonicalPath": "assets/regions/thorn_covenant/boss_arena.jpg",
+      "repositoryPath": "game/assets/regions/thorn_covenant/boss_arena.jpg",
+      "sourceFolder": "thorn_covenant",
+      "sourceFile": "boss_arena.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 451436,
+      "index": 23
+    },
+    {
+      "canonicalPath": "assets/regions/thorn_covenant/crest.png",
+      "repositoryPath": "game/assets/regions/thorn_covenant/crest.png",
+      "sourceFolder": "thorn_covenant",
+      "sourceFile": "crest.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 372639,
+      "index": 24
+    },
+    {
+      "canonicalPath": "assets/regions/thorn_covenant/tile_light.png",
+      "repositoryPath": "game/assets/regions/thorn_covenant/tile_light.png",
+      "sourceFolder": "thorn_covenant",
+      "sourceFile": "tile_light.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "BOARD-TILE-512",
+      "status": "REVIEW",
+      "bytes": 675911,
+      "index": 25
+    },
+    {
+      "canonicalPath": "assets/regions/thorn_covenant/tile_dark.png",
+      "repositoryPath": "game/assets/regions/thorn_covenant/tile_dark.png",
+      "sourceFolder": "thorn_covenant",
+      "sourceFile": "tile_dark.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "BOARD-TILE-512",
+      "status": "REVIEW",
+      "bytes": 653157,
+      "index": 26
+    },
+    {
+      "canonicalPath": "assets/regions/thorn_covenant/environment_sheet.png",
+      "repositoryPath": "game/assets/regions/thorn_covenant/environment_sheet.png",
+      "sourceFolder": "thorn_covenant",
+      "sourceFile": "environment_sheet.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 2048,
+        "height": 2048
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "OBJECT-SHEET",
+      "status": "REVIEW",
+      "bytes": 4055238,
+      "index": 27
+    },
+    {
+      "canonicalPath": "assets/regions/ashen_dominion/map_banner.jpg",
+      "repositoryPath": "game/assets/regions/ashen_dominion/map_banner.jpg",
+      "sourceFolder": "ashen_dominion",
+      "sourceFile": "map_banner.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 289735,
+      "index": 28
+    },
+    {
+      "canonicalPath": "assets/regions/ashen_dominion/capital.jpg",
+      "repositoryPath": "game/assets/regions/ashen_dominion/capital.jpg",
+      "sourceFolder": "ashen_dominion",
+      "sourceFile": "capital.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 248359,
+      "index": 29
+    },
+    {
+      "canonicalPath": "assets/regions/ashen_dominion/battle.jpg",
+      "repositoryPath": "game/assets/regions/ashen_dominion/battle.jpg",
+      "sourceFolder": "ashen_dominion",
+      "sourceFile": "battle.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 301026,
+      "index": 30
+    },
+    {
+      "canonicalPath": "assets/regions/ashen_dominion/elite.jpg",
+      "repositoryPath": "game/assets/regions/ashen_dominion/elite.jpg",
+      "sourceFolder": "ashen_dominion",
+      "sourceFile": "elite.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 286304,
+      "index": 31
+    },
+    {
+      "canonicalPath": "assets/regions/ashen_dominion/boss_arena.jpg",
+      "repositoryPath": "game/assets/regions/ashen_dominion/boss_arena.jpg",
+      "sourceFolder": "ashen_dominion",
+      "sourceFile": "boss_arena.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 321453,
+      "index": 32
+    },
+    {
+      "canonicalPath": "assets/regions/ashen_dominion/crest.png",
+      "repositoryPath": "game/assets/regions/ashen_dominion/crest.png",
+      "sourceFolder": "ashen_dominion",
+      "sourceFile": "crest.png",
+      "sourceSize": {
+        "width": 1536,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 410854,
+      "index": 33
+    },
+    {
+      "canonicalPath": "assets/regions/ashen_dominion/tile_light.png",
+      "repositoryPath": "game/assets/regions/ashen_dominion/tile_light.png",
+      "sourceFolder": "ashen_dominion",
+      "sourceFile": "tile_light.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "BOARD-TILE-512",
+      "status": "REVIEW",
+      "bytes": 478258,
+      "index": 34
+    },
+    {
+      "canonicalPath": "assets/regions/ashen_dominion/tile_dark.png",
+      "repositoryPath": "game/assets/regions/ashen_dominion/tile_dark.png",
+      "sourceFolder": "ashen_dominion",
+      "sourceFile": "tile_dark.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "BOARD-TILE-512",
+      "status": "REVIEW",
+      "bytes": 441629,
+      "index": 35
+    },
+    {
+      "canonicalPath": "assets/regions/ashen_dominion/environment_sheet.png",
+      "repositoryPath": "game/assets/regions/ashen_dominion/environment_sheet.png",
+      "sourceFolder": "ashen_dominion",
+      "sourceFile": "environment_sheet.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 2048,
+        "height": 2048
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "OBJECT-SHEET",
+      "status": "REVIEW",
+      "bytes": 3438923,
+      "index": 36
+    },
+    {
+      "canonicalPath": "assets/regions/sky_khanate/map_banner.jpg",
+      "repositoryPath": "game/assets/regions/sky_khanate/map_banner.jpg",
+      "sourceFolder": "sky_khanate",
+      "sourceFile": "map_banner.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 376200,
+      "index": 37
+    },
+    {
+      "canonicalPath": "assets/regions/sky_khanate/capital.jpg",
+      "repositoryPath": "game/assets/regions/sky_khanate/capital.jpg",
+      "sourceFolder": "sky_khanate",
+      "sourceFile": "capital.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 371946,
+      "index": 38
+    },
+    {
+      "canonicalPath": "assets/regions/sky_khanate/battle.jpg",
+      "repositoryPath": "game/assets/regions/sky_khanate/battle.jpg",
+      "sourceFolder": "sky_khanate",
+      "sourceFile": "battle.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 343648,
+      "index": 39
+    },
+    {
+      "canonicalPath": "assets/regions/sky_khanate/elite.jpg",
+      "repositoryPath": "game/assets/regions/sky_khanate/elite.jpg",
+      "sourceFolder": "sky_khanate",
+      "sourceFile": "elite.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 405341,
+      "index": 40
+    },
+    {
+      "canonicalPath": "assets/regions/sky_khanate/boss_arena.jpg",
+      "repositoryPath": "game/assets/regions/sky_khanate/boss_arena.jpg",
+      "sourceFolder": "sky_khanate",
+      "sourceFile": "boss_arena.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 481709,
+      "index": 41
+    },
+    {
+      "canonicalPath": "assets/regions/sky_khanate/crest.png",
+      "repositoryPath": "game/assets/regions/sky_khanate/crest.png",
+      "sourceFolder": "sky_khanate",
+      "sourceFile": "crest.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 389327,
+      "index": 42
+    },
+    {
+      "canonicalPath": "assets/regions/sky_khanate/tile_light.png",
+      "repositoryPath": "game/assets/regions/sky_khanate/tile_light.png",
+      "sourceFolder": "sky_khanate",
+      "sourceFile": "tile_light.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "BOARD-TILE-512",
+      "status": "REVIEW",
+      "bytes": 595238,
+      "index": 43
+    },
+    {
+      "canonicalPath": "assets/regions/sky_khanate/tile_dark.png",
+      "repositoryPath": "game/assets/regions/sky_khanate/tile_dark.png",
+      "sourceFolder": "sky_khanate",
+      "sourceFile": "tile_dark.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "BOARD-TILE-512",
+      "status": "REVIEW",
+      "bytes": 510680,
+      "index": 44
+    },
+    {
+      "canonicalPath": "assets/regions/sky_khanate/environment_sheet.png",
+      "repositoryPath": "game/assets/regions/sky_khanate/environment_sheet.png",
+      "sourceFolder": "sky_khanate",
+      "sourceFile": "environment_sheet.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 2048,
+        "height": 2048
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "OBJECT-SHEET",
+      "status": "REVIEW",
+      "bytes": 4133500,
+      "index": 45
+    },
+    {
+      "canonicalPath": "assets/regions/luminous_synod/map_banner.jpg",
+      "repositoryPath": "game/assets/regions/luminous_synod/map_banner.jpg",
+      "sourceFolder": "luminous_synod",
+      "sourceFile": "map_banner.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 515750,
+      "index": 46
+    },
+    {
+      "canonicalPath": "assets/regions/luminous_synod/capital.jpg",
+      "repositoryPath": "game/assets/regions/luminous_synod/capital.jpg",
+      "sourceFolder": "luminous_synod",
+      "sourceFile": "capital.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 525104,
+      "index": 47
+    },
+    {
+      "canonicalPath": "assets/regions/luminous_synod/battle.jpg",
+      "repositoryPath": "game/assets/regions/luminous_synod/battle.jpg",
+      "sourceFolder": "luminous_synod",
+      "sourceFile": "battle.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 521790,
+      "index": 48
+    },
+    {
+      "canonicalPath": "assets/regions/luminous_synod/elite.jpg",
+      "repositoryPath": "game/assets/regions/luminous_synod/elite.jpg",
+      "sourceFolder": "luminous_synod",
+      "sourceFile": "elite.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 549505,
+      "index": 49
+    },
+    {
+      "canonicalPath": "assets/regions/luminous_synod/boss_arena.jpg",
+      "repositoryPath": "game/assets/regions/luminous_synod/boss_arena.jpg",
+      "sourceFolder": "luminous_synod",
+      "sourceFile": "boss_arena.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 600631,
+      "index": 50
+    },
+    {
+      "canonicalPath": "assets/regions/luminous_synod/crest.png",
+      "repositoryPath": "game/assets/regions/luminous_synod/crest.png",
+      "sourceFolder": "luminous_synod",
+      "sourceFile": "crest.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 286340,
+      "index": 51
+    },
+    {
+      "canonicalPath": "assets/regions/luminous_synod/tile_light.png",
+      "repositoryPath": "game/assets/regions/luminous_synod/tile_light.png",
+      "sourceFolder": "luminous_synod",
+      "sourceFile": "tile_light.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "BOARD-TILE-512",
+      "status": "REVIEW",
+      "bytes": 437984,
+      "index": 52
+    },
+    {
+      "canonicalPath": "assets/regions/luminous_synod/tile_dark.png",
+      "repositoryPath": "game/assets/regions/luminous_synod/tile_dark.png",
+      "sourceFolder": "luminous_synod",
+      "sourceFile": "tile_dark.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "BOARD-TILE-512",
+      "status": "REVIEW",
+      "bytes": 547571,
+      "index": 53
+    },
+    {
+      "canonicalPath": "assets/regions/luminous_synod/environment_sheet.png",
+      "repositoryPath": "game/assets/regions/luminous_synod/environment_sheet.png",
+      "sourceFolder": "luminous_synod",
+      "sourceFile": "environment_sheet.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 2048,
+        "height": 2048
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "OBJECT-SHEET",
+      "status": "REVIEW",
+      "bytes": 3254393,
+      "index": 54
+    },
+    {
+      "canonicalPath": "assets/regions/free_cities/map_banner.jpg",
+      "repositoryPath": "game/assets/regions/free_cities/map_banner.jpg",
+      "sourceFolder": "free_cities",
+      "sourceFile": "map_banner.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 431104,
+      "index": 55
+    },
+    {
+      "canonicalPath": "assets/regions/free_cities/capital.jpg",
+      "repositoryPath": "game/assets/regions/free_cities/capital.jpg",
+      "sourceFolder": "free_cities",
+      "sourceFile": "capital.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 547269,
+      "index": 56
+    },
+    {
+      "canonicalPath": "assets/regions/free_cities/battle.jpg",
+      "repositoryPath": "game/assets/regions/free_cities/battle.jpg",
+      "sourceFolder": "free_cities",
+      "sourceFile": "battle.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 508121,
+      "index": 57
+    },
+    {
+      "canonicalPath": "assets/regions/free_cities/elite.jpg",
+      "repositoryPath": "game/assets/regions/free_cities/elite.jpg",
+      "sourceFolder": "free_cities",
+      "sourceFile": "elite.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 467510,
+      "index": 58
+    },
+    {
+      "canonicalPath": "assets/regions/free_cities/boss_arena.jpg",
+      "repositoryPath": "game/assets/regions/free_cities/boss_arena.jpg",
+      "sourceFolder": "free_cities",
+      "sourceFile": "boss_arena.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 530859,
+      "index": 59
+    },
+    {
+      "canonicalPath": "assets/regions/free_cities/crest.png",
+      "repositoryPath": "game/assets/regions/free_cities/crest.png",
+      "sourceFolder": "free_cities",
+      "sourceFile": "crest.png",
+      "sourceSize": {
+        "width": 1536,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 501347,
+      "index": 60
+    },
+    {
+      "canonicalPath": "assets/regions/free_cities/tile_light.png",
+      "repositoryPath": "game/assets/regions/free_cities/tile_light.png",
+      "sourceFolder": "free_cities",
+      "sourceFile": "tile_light.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "BOARD-TILE-512",
+      "status": "REVIEW",
+      "bytes": 530697,
+      "index": 61
+    },
+    {
+      "canonicalPath": "assets/regions/free_cities/tile_dark.png",
+      "repositoryPath": "game/assets/regions/free_cities/tile_dark.png",
+      "sourceFolder": "free_cities",
+      "sourceFile": "tile_dark.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "BOARD-TILE-512",
+      "status": "REVIEW",
+      "bytes": 502796,
+      "index": 62
+    },
+    {
+      "canonicalPath": "assets/regions/free_cities/environment_sheet.png",
+      "repositoryPath": "game/assets/regions/free_cities/environment_sheet.png",
+      "sourceFolder": "free_cities",
+      "sourceFile": "environment_sheet.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 2048,
+        "height": 2048
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "OBJECT-SHEET",
+      "status": "REVIEW",
+      "bytes": 4038529,
+      "index": 63
+    },
+    {
+      "canonicalPath": "assets/regions/mirror_conclave/map_banner.jpg",
+      "repositoryPath": "game/assets/regions/mirror_conclave/map_banner.jpg",
+      "sourceFolder": "mirror_conclave",
+      "sourceFile": "map_banner.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 516519,
+      "index": 64
+    },
+    {
+      "canonicalPath": "assets/regions/mirror_conclave/battle.jpg",
+      "repositoryPath": "game/assets/regions/mirror_conclave/battle.jpg",
+      "sourceFolder": "mirror_conclave",
+      "sourceFile": "battle.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 579024,
+      "index": 65
+    },
+    {
+      "canonicalPath": "assets/regions/mirror_conclave/boss_arena.jpg",
+      "repositoryPath": "game/assets/regions/mirror_conclave/boss_arena.jpg",
+      "sourceFolder": "mirror_conclave",
+      "sourceFile": "boss_arena.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 575947,
+      "index": 66
+    },
+    {
+      "canonicalPath": "assets/regions/mirror_conclave/crest.png",
+      "repositoryPath": "game/assets/regions/mirror_conclave/crest.png",
+      "sourceFolder": "mirror_conclave",
+      "sourceFile": "crest.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 333378,
+      "index": 67
+    },
+    {
+      "canonicalPath": "assets/regions/mirror_conclave/tile_light.png",
+      "repositoryPath": "game/assets/regions/mirror_conclave/tile_light.png",
+      "sourceFolder": "mirror_conclave",
+      "sourceFile": "tile_light.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "BOARD-TILE-512",
+      "status": "REVIEW",
+      "bytes": 534411,
+      "index": 68
+    },
+    {
+      "canonicalPath": "assets/regions/mirror_conclave/tile_dark.png",
+      "repositoryPath": "game/assets/regions/mirror_conclave/tile_dark.png",
+      "sourceFolder": "mirror_conclave",
+      "sourceFile": "tile_dark.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "BOARD-TILE-512",
+      "status": "REVIEW",
+      "bytes": 513015,
+      "index": 69
+    },
+    {
+      "canonicalPath": "assets/regions/mirror_conclave/environment_sheet.png",
+      "repositoryPath": "game/assets/regions/mirror_conclave/environment_sheet.png",
+      "sourceFolder": "mirror_conclave",
+      "sourceFile": "environment_sheet.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 2048,
+        "height": 2048
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "OBJECT-SHEET",
+      "status": "REVIEW",
+      "bytes": 3928036,
+      "index": 70
+    },
+    {
+      "canonicalPath": "assets/regions/verdant_exiles/map_banner.jpg",
+      "repositoryPath": "game/assets/regions/verdant_exiles/map_banner.jpg",
+      "sourceFolder": "verdant_exiles",
+      "sourceFile": "map_banner.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 560782,
+      "index": 71
+    },
+    {
+      "canonicalPath": "assets/regions/verdant_exiles/battle.jpg",
+      "repositoryPath": "game/assets/regions/verdant_exiles/battle.jpg",
+      "sourceFolder": "verdant_exiles",
+      "sourceFile": "battle.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 526040,
+      "index": 72
+    },
+    {
+      "canonicalPath": "assets/regions/verdant_exiles/boss_arena.jpg",
+      "repositoryPath": "game/assets/regions/verdant_exiles/boss_arena.jpg",
+      "sourceFolder": "verdant_exiles",
+      "sourceFile": "boss_arena.png",
+      "sourceSize": {
+        "width": 1672,
+        "height": 941
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 1600,
+        "height": 900
+      },
+      "outputMode": "RGB",
+      "format": "JPEG",
+      "profile": "SCENE-1600",
+      "status": "REVIEW",
+      "bytes": 486538,
+      "index": 73
+    },
+    {
+      "canonicalPath": "assets/regions/verdant_exiles/crest.png",
+      "repositoryPath": "game/assets/regions/verdant_exiles/crest.png",
+      "sourceFolder": "verdant_exiles",
+      "sourceFile": "crest.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 356820,
+      "index": 74
+    },
+    {
+      "canonicalPath": "assets/regions/verdant_exiles/tile_light.png",
+      "repositoryPath": "game/assets/regions/verdant_exiles/tile_light.png",
+      "sourceFolder": "verdant_exiles",
+      "sourceFile": "tile_light.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "BOARD-TILE-512",
+      "status": "REVIEW",
+      "bytes": 635422,
+      "index": 75
+    },
+    {
+      "canonicalPath": "assets/regions/verdant_exiles/tile_dark.png",
+      "repositoryPath": "game/assets/regions/verdant_exiles/tile_dark.png",
+      "sourceFolder": "verdant_exiles",
+      "sourceFile": "tile_dark.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "BOARD-TILE-512",
+      "status": "REVIEW",
+      "bytes": 611934,
+      "index": 76
+    },
+    {
+      "canonicalPath": "assets/regions/verdant_exiles/environment_sheet.png",
+      "repositoryPath": "game/assets/regions/verdant_exiles/environment_sheet.png",
+      "sourceFolder": "verdant_exiles",
+      "sourceFile": "environment_sheet.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 2048,
+        "height": 2048
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "OBJECT-SHEET",
+      "status": "REVIEW",
+      "bytes": 5564048,
+      "index": 77
+    },
+    {
+      "canonicalPath": "assets/kings/oathkeeper/portrait.png",
+      "repositoryPath": "game/assets/kings/oathkeeper/portrait.png",
+      "sourceFolder": "oathkeeper",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "PORTRAIT-768",
+      "status": "REVIEW",
+      "bytes": 1095540,
+      "index": 78
+    },
+    {
+      "canonicalPath": "assets/kings/oathkeeper/piece.png",
+      "repositoryPath": "game/assets/kings/oathkeeper/piece.png",
+      "sourceFolder": "oathkeeper",
+      "sourceFile": "piece.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "PIECE-512",
+      "status": "REVIEW",
+      "bytes": 285006,
+      "index": 79
+    },
+    {
+      "canonicalPath": "assets/kings/oathkeeper/command_icon.png",
+      "repositoryPath": "game/assets/kings/oathkeeper/command_icon.png",
+      "sourceFolder": "oathkeeper",
+      "sourceFile": "command_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 277133,
+      "index": 80
+    },
+    {
+      "canonicalPath": "assets/kings/oathkeeper/passive_icon.png",
+      "repositoryPath": "game/assets/kings/oathkeeper/passive_icon.png",
+      "sourceFolder": "oathkeeper",
+      "sourceFile": "passive_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 413296,
+      "index": 81
+    },
+    {
+      "canonicalPath": "assets/kings/stone_crown/portrait.png",
+      "repositoryPath": "game/assets/kings/stone_crown/portrait.png",
+      "sourceFolder": "stone_crown",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "PORTRAIT-768",
+      "status": "REVIEW",
+      "bytes": 1204498,
+      "index": 82
+    },
+    {
+      "canonicalPath": "assets/kings/stone_crown/piece.png",
+      "repositoryPath": "game/assets/kings/stone_crown/piece.png",
+      "sourceFolder": "stone_crown",
+      "sourceFile": "piece.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "PIECE-512",
+      "status": "REVIEW",
+      "bytes": 303231,
+      "index": 83
+    },
+    {
+      "canonicalPath": "assets/kings/stone_crown/command_icon.png",
+      "repositoryPath": "game/assets/kings/stone_crown/command_icon.png",
+      "sourceFolder": "stone_crown",
+      "sourceFile": "command_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 506372,
+      "index": 84
+    },
+    {
+      "canonicalPath": "assets/kings/stone_crown/passive_icon.png",
+      "repositoryPath": "game/assets/kings/stone_crown/passive_icon.png",
+      "sourceFolder": "stone_crown",
+      "sourceFile": "passive_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 334367,
+      "index": 85
+    },
+    {
+      "canonicalPath": "assets/kings/wanderer_queen/portrait.png",
+      "repositoryPath": "game/assets/kings/wanderer_queen/portrait.png",
+      "sourceFolder": "wanderer_queen",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "PORTRAIT-768",
+      "status": "REVIEW",
+      "bytes": 1077636,
+      "index": 86
+    },
+    {
+      "canonicalPath": "assets/kings/wanderer_queen/piece.png",
+      "repositoryPath": "game/assets/kings/wanderer_queen/piece.png",
+      "sourceFolder": "wanderer_queen",
+      "sourceFile": "piece.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "PIECE-512",
+      "status": "REVIEW",
+      "bytes": 222395,
+      "index": 87
+    },
+    {
+      "canonicalPath": "assets/kings/wanderer_queen/command_icon.png",
+      "repositoryPath": "game/assets/kings/wanderer_queen/command_icon.png",
+      "sourceFolder": "wanderer_queen",
+      "sourceFile": "command_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 298083,
+      "index": 88
+    },
+    {
+      "canonicalPath": "assets/kings/wanderer_queen/passive_icon.png",
+      "repositoryPath": "game/assets/kings/wanderer_queen/passive_icon.png",
+      "sourceFolder": "wanderer_queen",
+      "sourceFile": "passive_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 310275,
+      "index": 89
+    },
+    {
+      "canonicalPath": "assets/kings/pilgrim/portrait.png",
+      "repositoryPath": "game/assets/kings/pilgrim/portrait.png",
+      "sourceFolder": "pilgrim",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "PORTRAIT-768",
+      "status": "REVIEW",
+      "bytes": 1067795,
+      "index": 90
+    },
+    {
+      "canonicalPath": "assets/kings/pilgrim/piece.png",
+      "repositoryPath": "game/assets/kings/pilgrim/piece.png",
+      "sourceFolder": "pilgrim",
+      "sourceFile": "piece.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "PIECE-512",
+      "status": "REVIEW",
+      "bytes": 187300,
+      "index": 91
+    },
+    {
+      "canonicalPath": "assets/kings/pilgrim/command_icon.png",
+      "repositoryPath": "game/assets/kings/pilgrim/command_icon.png",
+      "sourceFolder": "pilgrim",
+      "sourceFile": "command_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1536
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 260926,
+      "index": 92
+    },
+    {
+      "canonicalPath": "assets/kings/pilgrim/passive_icon.png",
+      "repositoryPath": "game/assets/kings/pilgrim/passive_icon.png",
+      "sourceFolder": "pilgrim",
+      "sourceFile": "passive_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 448094,
+      "index": 93
+    },
+    {
+      "canonicalPath": "assets/kings/fox_prince/portrait.png",
+      "repositoryPath": "game/assets/kings/fox_prince/portrait.png",
+      "sourceFolder": "fox_prince",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "PORTRAIT-768",
+      "status": "REVIEW",
+      "bytes": 1117049,
+      "index": 94
+    },
+    {
+      "canonicalPath": "assets/kings/fox_prince/piece.png",
+      "repositoryPath": "game/assets/kings/fox_prince/piece.png",
+      "sourceFolder": "fox_prince",
+      "sourceFile": "piece.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "PIECE-512",
+      "status": "REVIEW",
+      "bytes": 234642,
+      "index": 95
+    },
+    {
+      "canonicalPath": "assets/kings/fox_prince/command_icon.png",
+      "repositoryPath": "game/assets/kings/fox_prince/command_icon.png",
+      "sourceFolder": "fox_prince",
+      "sourceFile": "command_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 516816,
+      "index": 96
+    },
+    {
+      "canonicalPath": "assets/kings/fox_prince/passive_icon.png",
+      "repositoryPath": "game/assets/kings/fox_prince/passive_icon.png",
+      "sourceFolder": "fox_prince",
+      "sourceFile": "passive_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 446038,
+      "index": 97
+    },
+    {
+      "canonicalPath": "assets/kings/ash_regent/portrait.png",
+      "repositoryPath": "game/assets/kings/ash_regent/portrait.png",
+      "sourceFolder": "ash_regent",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "PORTRAIT-768",
+      "status": "REVIEW",
+      "bytes": 1150763,
+      "index": 98
+    },
+    {
+      "canonicalPath": "assets/kings/ash_regent/piece.png",
+      "repositoryPath": "game/assets/kings/ash_regent/piece.png",
+      "sourceFolder": "ash_regent",
+      "sourceFile": "piece.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "PIECE-512",
+      "status": "REVIEW",
+      "bytes": 252296,
+      "index": 99
+    },
+    {
+      "canonicalPath": "assets/kings/ash_regent/command_icon.png",
+      "repositoryPath": "game/assets/kings/ash_regent/command_icon.png",
+      "sourceFolder": "ash_regent",
+      "sourceFile": "command_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 452455,
+      "index": 100
+    },
+    {
+      "canonicalPath": "assets/kings/ash_regent/passive_icon.png",
+      "repositoryPath": "game/assets/kings/ash_regent/passive_icon.png",
+      "sourceFolder": "ash_regent",
+      "sourceFile": "passive_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 558901,
+      "index": 101
+    },
+    {
+      "canonicalPath": "assets/kings/nameless_heir/portrait.png",
+      "repositoryPath": "game/assets/kings/nameless_heir/portrait.png",
+      "sourceFolder": "nameless_heir",
+      "sourceFile": "portrait.png",
+      "sourceSize": {
+        "width": 1254,
+        "height": 1254
+      },
+      "sourceMode": "RGB",
+      "outputSize": {
+        "width": 768,
+        "height": 768
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "PORTRAIT-768",
+      "status": "REVIEW",
+      "bytes": 1037731,
+      "index": 102
+    },
+    {
+      "canonicalPath": "assets/kings/nameless_heir/piece.png",
+      "repositoryPath": "game/assets/kings/nameless_heir/piece.png",
+      "sourceFolder": "nameless_heir",
+      "sourceFile": "piece.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "PIECE-512",
+      "status": "REVIEW",
+      "bytes": 244149,
+      "index": 103
+    },
+    {
+      "canonicalPath": "assets/kings/nameless_heir/command_icon.png",
+      "repositoryPath": "game/assets/kings/nameless_heir/command_icon.png",
+      "sourceFolder": "nameless_heir",
+      "sourceFile": "command_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 308960,
+      "index": 104
+    },
+    {
+      "canonicalPath": "assets/kings/nameless_heir/passive_icon.png",
+      "repositoryPath": "game/assets/kings/nameless_heir/passive_icon.png",
+      "sourceFolder": "nameless_heir",
+      "sourceFile": "passive_icon.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 441853,
+      "index": 105
+    },
+    {
+      "canonicalPath": "assets/doctrines/fortress/emblem.png",
+      "repositoryPath": "game/assets/doctrines/fortress/emblem.png",
+      "sourceFolder": "fortress",
+      "sourceFile": "emblem.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 330571,
+      "index": 106
+    },
+    {
+      "canonicalPath": "assets/doctrines/fortress/node_01.png",
+      "repositoryPath": "game/assets/doctrines/fortress/node_01.png",
+      "sourceFolder": "fortress",
+      "sourceFile": "node_01.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 73475,
+      "index": 107
+    },
+    {
+      "canonicalPath": "assets/doctrines/fortress/node_02.png",
+      "repositoryPath": "game/assets/doctrines/fortress/node_02.png",
+      "sourceFolder": "fortress",
+      "sourceFile": "node_02.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 95084,
+      "index": 108
+    },
+    {
+      "canonicalPath": "assets/doctrines/fortress/node_03.png",
+      "repositoryPath": "game/assets/doctrines/fortress/node_03.png",
+      "sourceFolder": "fortress",
+      "sourceFile": "node_03.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 106758,
+      "index": 109
+    },
+    {
+      "canonicalPath": "assets/doctrines/fortress/node_04.png",
+      "repositoryPath": "game/assets/doctrines/fortress/node_04.png",
+      "sourceFolder": "fortress",
+      "sourceFile": "node_04.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 105218,
+      "index": 110
+    },
+    {
+      "canonicalPath": "assets/doctrines/fortress/node_05.png",
+      "repositoryPath": "game/assets/doctrines/fortress/node_05.png",
+      "sourceFolder": "fortress",
+      "sourceFile": "node_05.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 83617,
+      "index": 111
+    },
+    {
+      "canonicalPath": "assets/doctrines/cavalry/emblem.png",
+      "repositoryPath": "game/assets/doctrines/cavalry/emblem.png",
+      "sourceFolder": "cavalry",
+      "sourceFile": "emblem.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 396183,
+      "index": 112
+    },
+    {
+      "canonicalPath": "assets/doctrines/cavalry/node_01.png",
+      "repositoryPath": "game/assets/doctrines/cavalry/node_01.png",
+      "sourceFolder": "cavalry",
+      "sourceFile": "node_01.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 93122,
+      "index": 113
+    },
+    {
+      "canonicalPath": "assets/doctrines/cavalry/node_02.png",
+      "repositoryPath": "game/assets/doctrines/cavalry/node_02.png",
+      "sourceFolder": "cavalry",
+      "sourceFile": "node_02.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 91339,
+      "index": 114
+    },
+    {
+      "canonicalPath": "assets/doctrines/cavalry/node_03.png",
+      "repositoryPath": "game/assets/doctrines/cavalry/node_03.png",
+      "sourceFolder": "cavalry",
+      "sourceFile": "node_03.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 135150,
+      "index": 115
+    },
+    {
+      "canonicalPath": "assets/doctrines/cavalry/node_04.png",
+      "repositoryPath": "game/assets/doctrines/cavalry/node_04.png",
+      "sourceFolder": "cavalry",
+      "sourceFile": "node_04.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 112043,
+      "index": 116
+    },
+    {
+      "canonicalPath": "assets/doctrines/cavalry/node_05.png",
+      "repositoryPath": "game/assets/doctrines/cavalry/node_05.png",
+      "sourceFolder": "cavalry",
+      "sourceFile": "node_05.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 109971,
+      "index": 117
+    },
+    {
+      "canonicalPath": "assets/doctrines/sacred_diagonals/emblem.png",
+      "repositoryPath": "game/assets/doctrines/sacred_diagonals/emblem.png",
+      "sourceFolder": "sacred_diagonals",
+      "sourceFile": "emblem.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 373457,
+      "index": 118
+    },
+    {
+      "canonicalPath": "assets/doctrines/sacred_diagonals/node_01.png",
+      "repositoryPath": "game/assets/doctrines/sacred_diagonals/node_01.png",
+      "sourceFolder": "sacred_diagonals",
+      "sourceFile": "node_01.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 97531,
+      "index": 119
+    },
+    {
+      "canonicalPath": "assets/doctrines/sacred_diagonals/node_02.png",
+      "repositoryPath": "game/assets/doctrines/sacred_diagonals/node_02.png",
+      "sourceFolder": "sacred_diagonals",
+      "sourceFile": "node_02.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 103673,
+      "index": 120
+    },
+    {
+      "canonicalPath": "assets/doctrines/sacred_diagonals/node_03.png",
+      "repositoryPath": "game/assets/doctrines/sacred_diagonals/node_03.png",
+      "sourceFolder": "sacred_diagonals",
+      "sourceFile": "node_03.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 111178,
+      "index": 121
+    },
+    {
+      "canonicalPath": "assets/doctrines/sacred_diagonals/node_04.png",
+      "repositoryPath": "game/assets/doctrines/sacred_diagonals/node_04.png",
+      "sourceFolder": "sacred_diagonals",
+      "sourceFile": "node_04.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 114496,
+      "index": 122
+    },
+    {
+      "canonicalPath": "assets/doctrines/sacred_diagonals/node_05.png",
+      "repositoryPath": "game/assets/doctrines/sacred_diagonals/node_05.png",
+      "sourceFolder": "sacred_diagonals",
+      "sourceFile": "node_05.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 113647,
+      "index": 123
+    },
+    {
+      "canonicalPath": "assets/doctrines/pawn_ascension/emblem.png",
+      "repositoryPath": "game/assets/doctrines/pawn_ascension/emblem.png",
+      "sourceFolder": "pawn_ascension",
+      "sourceFile": "emblem.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 282099,
+      "index": 124
+    },
+    {
+      "canonicalPath": "assets/doctrines/pawn_ascension/node_01.png",
+      "repositoryPath": "game/assets/doctrines/pawn_ascension/node_01.png",
+      "sourceFolder": "pawn_ascension",
+      "sourceFile": "node_01.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 90062,
+      "index": 125
+    },
+    {
+      "canonicalPath": "assets/doctrines/pawn_ascension/node_02.png",
+      "repositoryPath": "game/assets/doctrines/pawn_ascension/node_02.png",
+      "sourceFolder": "pawn_ascension",
+      "sourceFile": "node_02.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 89287,
+      "index": 126
+    },
+    {
+      "canonicalPath": "assets/doctrines/pawn_ascension/node_03.png",
+      "repositoryPath": "game/assets/doctrines/pawn_ascension/node_03.png",
+      "sourceFolder": "pawn_ascension",
+      "sourceFile": "node_03.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 100500,
+      "index": 127
+    },
+    {
+      "canonicalPath": "assets/doctrines/pawn_ascension/node_04.png",
+      "repositoryPath": "game/assets/doctrines/pawn_ascension/node_04.png",
+      "sourceFolder": "pawn_ascension",
+      "sourceFile": "node_04.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 63535,
+      "index": 128
+    },
+    {
+      "canonicalPath": "assets/doctrines/pawn_ascension/node_05.png",
+      "repositoryPath": "game/assets/doctrines/pawn_ascension/node_05.png",
+      "sourceFolder": "pawn_ascension",
+      "sourceFile": "node_05.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 99041,
+      "index": 129
+    },
+    {
+      "canonicalPath": "assets/doctrines/royal_court/emblem.png",
+      "repositoryPath": "game/assets/doctrines/royal_court/emblem.png",
+      "sourceFolder": "royal_court",
+      "sourceFile": "emblem.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 373580,
+      "index": 130
+    },
+    {
+      "canonicalPath": "assets/doctrines/royal_court/node_01.png",
+      "repositoryPath": "game/assets/doctrines/royal_court/node_01.png",
+      "sourceFolder": "royal_court",
+      "sourceFile": "node_01.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 112696,
+      "index": 131
+    },
+    {
+      "canonicalPath": "assets/doctrines/royal_court/node_02.png",
+      "repositoryPath": "game/assets/doctrines/royal_court/node_02.png",
+      "sourceFolder": "royal_court",
+      "sourceFile": "node_02.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 114366,
+      "index": 132
+    },
+    {
+      "canonicalPath": "assets/doctrines/royal_court/node_03.png",
+      "repositoryPath": "game/assets/doctrines/royal_court/node_03.png",
+      "sourceFolder": "royal_court",
+      "sourceFile": "node_03.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 104770,
+      "index": 133
+    },
+    {
+      "canonicalPath": "assets/doctrines/royal_court/node_04.png",
+      "repositoryPath": "game/assets/doctrines/royal_court/node_04.png",
+      "sourceFolder": "royal_court",
+      "sourceFile": "node_04.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 110280,
+      "index": 134
+    },
+    {
+      "canonicalPath": "assets/doctrines/royal_court/node_05.png",
+      "repositoryPath": "game/assets/doctrines/royal_court/node_05.png",
+      "sourceFolder": "royal_court",
+      "sourceFile": "node_05.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 111304,
+      "index": 135
+    },
+    {
+      "canonicalPath": "assets/doctrines/gambit/emblem.png",
+      "repositoryPath": "game/assets/doctrines/gambit/emblem.png",
+      "sourceFolder": "gambit",
+      "sourceFile": "emblem.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 512,
+        "height": 512
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "ICON-512",
+      "status": "REVIEW",
+      "bytes": 390701,
+      "index": 136
+    },
+    {
+      "canonicalPath": "assets/doctrines/gambit/node_01.png",
+      "repositoryPath": "game/assets/doctrines/gambit/node_01.png",
+      "sourceFolder": "gambit",
+      "sourceFile": "node_01.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 128795,
+      "index": 137
+    },
+    {
+      "canonicalPath": "assets/doctrines/gambit/node_02.png",
+      "repositoryPath": "game/assets/doctrines/gambit/node_02.png",
+      "sourceFolder": "gambit",
+      "sourceFile": "node_02.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 104342,
+      "index": 138
+    },
+    {
+      "canonicalPath": "assets/doctrines/gambit/node_03.png",
+      "repositoryPath": "game/assets/doctrines/gambit/node_03.png",
+      "sourceFolder": "gambit",
+      "sourceFile": "node_03.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 123108,
+      "index": 139
+    },
+    {
+      "canonicalPath": "assets/doctrines/gambit/node_04.png",
+      "repositoryPath": "game/assets/doctrines/gambit/node_04.png",
+      "sourceFolder": "gambit",
+      "sourceFile": "node_04.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 115722,
+      "index": 140
+    },
+    {
+      "canonicalPath": "assets/doctrines/gambit/node_05.png",
+      "repositoryPath": "game/assets/doctrines/gambit/node_05.png",
+      "sourceFolder": "gambit",
+      "sourceFile": "node_05.png",
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceMode": "RGBA",
+      "outputSize": {
+        "width": 256,
+        "height": 256
+      },
+      "outputMode": "RGBA",
+      "format": "PNG",
+      "profile": "DOCTRINE-NODE-256",
+      "status": "REVIEW",
+      "bytes": 103061,
+      "index": 141
+    }
+  ]
+}
