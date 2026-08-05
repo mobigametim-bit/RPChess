@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { ContentRegistry } = require('./index.cjs');
 const { loadBoardThemeManifest } = require('../assets/board-manifest.cjs');
+const { loadCombatProfileSet } = require('./combat-profiles.cjs');
 const {
   loadEffectCatalog,
   mergeEffectCatalogs,
@@ -14,6 +15,7 @@ const {
 const DEFAULT_BOARD_MANIFEST = 'content/board-themes.json';
 const DEFAULT_PACKS = Object.freeze(['content/packs/iron_marches_vertical_slice.json']);
 const DEFAULT_EFFECT_CATALOGS = Object.freeze(['content/effects/iron_marches_events.json']);
+const DEFAULT_COMBAT_PROFILES = 'content/combat-profiles/iron_marches.json';
 const DEFAULT_LOCALIZATION = Object.freeze({
   ru: Object.freeze(['content/localization/ru/iron_marches_vertical_slice.json']),
   en: Object.freeze(['content/localization/en/iron_marches_vertical_slice.json'])
@@ -54,6 +56,7 @@ function buildProductionContentBundle(options = {}) {
   const boardManifestPath = options.boardManifestPath || DEFAULT_BOARD_MANIFEST;
   const packPaths = options.packPaths || DEFAULT_PACKS;
   const effectCatalogPaths = options.effectCatalogPaths || DEFAULT_EFFECT_CATALOGS;
+  const combatProfilePath = options.combatProfilePath || DEFAULT_COMBAT_PROFILES;
   const localizationPaths = options.localizationPaths || DEFAULT_LOCALIZATION;
   if (!Array.isArray(packPaths) || !packPaths.length) throw new Error('production content requires at least one pack');
   if (!Array.isArray(effectCatalogPaths) || !effectCatalogPaths.length) throw new Error('production content requires at least one effect catalog');
@@ -69,6 +72,7 @@ function buildProductionContentBundle(options = {}) {
   }
   registry.finalize({ localization });
 
+  const combatProfiles = loadCombatProfileSet(resolveProjectPath(projectRoot, combatProfilePath), registry);
   const effectCatalogs = effectCatalogPaths.map((relativePath) => loadEffectCatalog(resolveProjectPath(projectRoot, relativePath)));
   const eventEffectCatalog = mergeEffectCatalogs(effectCatalogs);
   validateEventEffectReferences(registry, eventEffectCatalog);
@@ -82,6 +86,8 @@ function buildProductionContentBundle(options = {}) {
     boardThemeManifest,
     packs: Object.freeze(packs),
     effectCatalogPaths: Object.freeze(effectCatalogPaths.slice()),
+    combatProfilePath,
+    combatProfiles,
     eventEffectCatalog,
     eventChoiceResolver,
     localization,
@@ -108,6 +114,7 @@ function productionContentReport(bundle) {
     languageCounts: Object.freeze(languageCounts),
     effectCatalogs: bundle.effectCatalogPaths.length,
     eventEffectCount: Object.keys(bundle.eventEffectCatalog.effects).length,
+    combatProfileCount: Object.keys(bundle.combatProfiles.heroes).length,
     assetCount: bundle.assetPaths.length,
     missingLocalization: Object.freeze(missingLocalization)
   });
@@ -117,6 +124,7 @@ module.exports = {
   DEFAULT_BOARD_MANIFEST,
   DEFAULT_PACKS,
   DEFAULT_EFFECT_CATALOGS,
+  DEFAULT_COMBAT_PROFILES,
   DEFAULT_LOCALIZATION,
   readJson,
   resolveProjectPath,
