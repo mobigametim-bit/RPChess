@@ -11,6 +11,7 @@ import {
   sceneAsset,
   effectForBattleEvent
 } from './register-01-assets.mjs';
+import { nodeArt, sceneArt as approvedSceneArt, unitArt, humanFailure, humanObjective } from './approved-shell-data.mjs';
 
 const PIECE_GLYPHS = Object.freeze({
   w: Object.freeze({ k: '♔', q: '♕', r: '♖', b: '♗', n: '♘', p: '♙' }),
@@ -41,6 +42,65 @@ function cssUrl(value) {
 
 function pieceGlyph(piece) {
   return PIECE_GLYPHS[piece?.side]?.[piece?.type] || '?';
+}
+
+
+const NODE_TYPE_LABELS = Object.freeze({
+  start: 'Начало пути', battle: 'Сражение', elite: 'Элитный бой', event: 'Событие', shop: 'Лавка', service: 'Служба снабжения', treasure: 'Сокровищница', boss: 'Железный Регент'
+});
+
+function nodeDisplayLabel(node = {}) {
+  const raw = String(node.label || '').trim();
+  const technical = !raw || raw === node.type || ['start', 'battle', 'elite', 'event', 'shop', 'service', 'treasure', 'boss', 'unknown'].includes(raw.toLowerCase());
+  return technical ? (NODE_TYPE_LABELS[node.type] || 'Неизведанный путь') : raw;
+}
+
+function rewardArt(kind) {
+  const map = { gold: 'gold', supplies: 'heal', meta: 'meta' };
+  return `generated_assets/reward_${map[kind] || kind}.png`;
+}
+
+function drawWarriorPiece(context, rect, piece, assetCache) {
+  const source = unitArt(piece);
+  const cached = source ? assetCache.get(source) : null;
+  context.save();
+  if (cached?.status === 'ready' && cached.image) {
+    const inset = rect.size * .035;
+    context.shadowColor = 'rgba(0,0,0,.72)';
+    context.shadowBlur = rect.size * .09;
+    context.shadowOffsetY = rect.size * .055;
+    context.drawImage(cached.image, rect.x + inset, rect.y + inset, rect.size - inset * 2, rect.size - inset * 2);
+  } else {
+    context.fillStyle = piece.side === 'w' ? '#f3e5c1' : '#24334a';
+    context.beginPath();
+    context.arc(rect.x + rect.size / 2, rect.y + rect.size / 2, rect.size * .34, 0, Math.PI * 2);
+    context.fill();
+  }
+  const glyph = pieceGlyph(piece);
+  const glyphSize = Math.max(13, Math.floor(rect.size * .24));
+  const cx = rect.x + rect.size / 2;
+  const cy = rect.y + rect.size * .885;
+  context.shadowColor = 'transparent';
+  context.fillStyle = 'rgba(4,8,14,.88)';
+  context.beginPath();
+  context.roundRect?.(cx - glyphSize * .72, cy - glyphSize * .64, glyphSize * 1.44, glyphSize * 1.02, glyphSize * .28);
+  if (context.roundRect) context.fill();
+  else context.fillRect(cx - glyphSize * .72, cy - glyphSize * .64, glyphSize * 1.44, glyphSize * 1.02);
+  context.fillStyle = piece.side === 'w' ? '#fff4d2' : '#e2ecff';
+  context.strokeStyle = '#05080d';
+  context.lineWidth = Math.max(1, glyphSize * .08);
+  context.font = `700 ${glyphSize}px Georgia,serif`;
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.strokeText(glyph, cx, cy - glyphSize * .04);
+  context.fillText(glyph, cx, cy - glyphSize * .04);
+  if (piece.status) {
+    context.fillStyle = '#f3bf51';
+    context.beginPath();
+    context.arc(rect.x + rect.size * .82, rect.y + rect.size * .18, rect.size * .085, 0, Math.PI * 2);
+    context.fill();
+  }
+  context.restore();
 }
 
 function commandLabel(command) {
@@ -177,14 +237,15 @@ class VerticalSlicePresenter {
   shell(snapshot, main, sidebar = '') {
     const region = regionAssets(snapshot.campaign.regionId);
     const banner = region?.mapBanner;
-    const crest = region?.crest;
+    const regionLabel = snapshot.campaign.regionId === 'region.iron_marches' ? 'Железные Марши' : snapshot.campaign.regionId;
+    const layoutClass = sidebar ? '' : ' rpvs__layout--single';
     return `
-      <section class="rpvs" aria-label="RPChess vertical slice" style="${banner ? `background-image:linear-gradient(rgba(4,8,14,.74),rgba(4,8,14,.88)),${cssUrl(banner)}` : ''}">
+      <section class="rpvs" aria-label="RPChess" style="${banner ? `background-image:linear-gradient(rgba(4,8,14,.78),rgba(4,8,14,.9)),${cssUrl(banner)}` : ''}">
         <header class="rpvs__top">
-          <div class="rpvs__identity">${crest ? `<img class="rpvs__crest" src="${escapeAttribute(crest)}" alt="">` : ''}<div><div class="rpvs__brand">RPChess</div><div class="rpvs__muted">Акт ${snapshot.campaign.act} · ${escapeHtml(snapshot.campaign.regionId)} · seed ${snapshot.seed}</div></div></div>
-          <div class="rpvs__resources" aria-label="Ресурсы"><span class="rpvs__chip">Золото: ${snapshot.resources.gold}</span><span class="rpvs__chip">Припасы: ${snapshot.resources.supplies}</span><span class="rpvs__chip">Мета: ${snapshot.resources.meta}</span></div>
+          <div class="rpvs__identity"><img class="rpvs__crest" src="generated_assets/logo_main.png" alt=""><div><div class="rpvs__brand">RPChess</div><div class="rpvs__muted">${escapeHtml(regionLabel)} · Акт ${snapshot.campaign.act}</div></div></div>
+          <div class="rpvs__resources" aria-label="Ресурсы"><span class="rpvs__chip">Золото · ${snapshot.resources.gold}</span><span class="rpvs__chip">Припасы · ${snapshot.resources.supplies}</span><span class="rpvs__chip">Мета · ${snapshot.resources.meta}</span><button class="rpvs__chip rpa-runtime-menu" data-runtime-menu aria-label="Главное меню">Меню</button></div>
         </header>
-        <div class="rpvs__layout"><main class="rpvs__panel rpvs__panel--scene">${main}</main><aside class="rpvs__panel">${sidebar || '<div class="rpvs__panel-body rpvs__muted">Нет дополнительных действий</div>'}</aside></div>
+        <div class="rpvs__layout${layoutClass}"><main class="rpvs__panel rpvs__panel--scene">${main}</main>${sidebar ? `<aside class="rpvs__panel">${sidebar}</aside>` : ''}</div>
       </section>`;
   }
 
@@ -217,33 +278,25 @@ class VerticalSlicePresenter {
   }
 
   renderCampaign(snapshot) {
-    const region = regionAssets(snapshot.campaign.regionId);
     const routeByNode = new Map(snapshot.campaign.routes.map((route) => [route.to, route]));
     const layers = groupNodesByLayer(snapshot.campaign.nodes);
-    const map = `<div class="rpvs__panel-head"><h1 class="rpvs__title">Карта похода</h1><span class="rpvs__muted">Разведка: ${snapshot.campaign.scouting}</span></div><div class="rpvs__map" style="${sceneStyle(region?.mapBanner)}">${layers.map((group) => `<div class="rpvs__layer" data-layer="${group.layer}">${group.nodes.map((node) => {
+    const map = `<div class="rpvs__panel-head"><h1 class="rpvs__title">Карта похода</h1><span class="rpvs__muted">Разведано путей: ${snapshot.campaign.scouting}</span></div><div class="rpvs__map">${layers.map((group) => `<div class="rpvs__layer" data-layer="${group.layer}">${group.nodes.map((node) => {
       const route = routeByNode.get(node.id);
       const enabled = Boolean(route?.affordable);
       const classes = ['rpvs__node', node.current ? 'rpvs__node--current' : '', node.visited ? 'rpvs__node--visited' : '', route ? 'rpvs__node--route' : ''].filter(Boolean).join(' ');
-      return `<button class="${classes}" data-node-id="${escapeAttribute(node.id)}" ${route && enabled ? '' : 'disabled'} aria-label="${escapeAttribute(node.label || node.type || 'Неизвестный узел')}"><span class="rpvs__node-icon">${NODE_GLYPHS[node.type] || '?'}</span><strong>${escapeHtml(node.label || node.type || 'Неизвестно')}</strong>${route ? `<span class="rpvs__cost">Цена: ${route.cost}${route.affordable ? '' : ' · недостаточно'}</span>` : ''}</button>`;
+      const label = nodeDisplayLabel(node);
+      return `<button class="${classes}" data-node-id="${escapeAttribute(node.id)}" ${route && enabled ? '' : 'disabled'} aria-label="${escapeAttribute(label)}"><img class="rpvs__node-art" src="${escapeAttribute(nodeArt(node.type))}" alt=""><span><strong>${escapeHtml(label)}</strong>${route ? `<span class="rpvs__cost">${route.affordable ? `Потратить припасы: ${route.cost}` : `Нужно припасов: ${route.cost}`}</span>` : node.current ? '<span class="rpvs__cost">Вы находитесь здесь</span>' : ''}</span></button>`;
     }).join('')}</div>`).join('')}</div>`;
-    const sidebar = `<div class="rpvs__panel-head"><h2 class="rpvs__title">Доступные маршруты</h2></div><div class="rpvs__panel-body"><div class="rpvs__list">${snapshot.campaign.routes.map((route) => `<div class="rpvs__item"><b>${escapeHtml(route.label || route.type || route.to)}</b><div class="rpvs__muted">${escapeHtml(route.to)} · ${route.cost} прип.</div></div>`).join('') || '<div class="rpvs__muted">Маршрутов нет</div>'}</div></div>`;
-    this.root.innerHTML = this.shell(snapshot, map, sidebar);
-    for (const button of this.root.querySelectorAll('[data-node-id]:not([disabled])')) {
-      button.addEventListener('click', () => this.client.dispatch({ type: 'Travel', targetNodeId: button.dataset.nodeId }).catch(() => {}));
-    }
+    this.root.innerHTML = this.shell(snapshot, map);
+    for (const button of this.root.querySelectorAll('[data-node-id]:not([disabled])')) button.addEventListener('click', () => this.client.dispatch({ type: 'Travel', targetNodeId: button.dataset.nodeId }).catch(() => {}));
   }
 
   renderEvent(snapshot) {
     const event = snapshot.event;
-    const art = event.sceneArt || sceneAsset(snapshot, 'event');
     const choices = event.choices.map((choice) => `<button class="rpvs__choice" data-choice-id="${escapeAttribute(choice.id)}"><strong>${escapeHtml(choice.label)}</strong></button>`).join('');
-    const main = `<div class="rpvs__center" style="${sceneStyle(art)}"><div class="rpvs__center-card"><div class="rpvs__muted">Событие</div><h1 class="rpvs__title">${escapeHtml(event.title)}</h1><p class="rpvs__event-copy">${escapeHtml(event.body)}</p><div class="rpvs__choice-list">${choices}</div></div></div>`;
-    const region = regionAssets(snapshot.campaign.regionId);
-    const sidebar = `<div class="rpvs__panel-head"><h2 class="rpvs__title">Регион</h2></div><div class="rpvs__panel-body">${region?.environmentSheet ? `<img class="rpvs__env-sheet" src="${escapeAttribute(region.environmentSheet)}" alt="Региональные объекты окружения">` : ''}<p class="rpvs__muted">Выбор записывается в Хронику и детерминированный реплей.</p></div>`;
-    this.root.innerHTML = this.shell(snapshot, main, sidebar);
-    for (const button of this.root.querySelectorAll('[data-choice-id]')) {
-      button.addEventListener('click', () => this.client.dispatch({ type: 'ChooseEvent', choiceId: button.dataset.choiceId }).catch(() => {}));
-    }
+    const main = `<div class="rpvs__event-stage"><div class="rpvs__event-copy-panel"><div class="rpa-eyebrow">СЮЖЕТНОЕ СОБЫТИЕ</div><h1>${escapeHtml(event.title)}</h1><p class="rpvs__event-copy">${escapeHtml(event.body)}</p><div class="rpvs__choice-list">${choices}</div></div><div class="rpvs__event-art-space" aria-hidden="true"></div></div>`;
+    this.root.innerHTML = this.shell(snapshot, main);
+    for (const button of this.root.querySelectorAll('[data-choice-id]')) button.addEventListener('click', () => this.client.dispatch({ type: 'ChooseEvent', choiceId: button.dataset.choiceId }).catch(() => {}));
   }
 
   renderDeployment(snapshot) {
@@ -254,7 +307,7 @@ class VerticalSlicePresenter {
     const units = deployment.units.map((unit) => {
       const selected = unit.id === this.selectedDeploymentUnitId;
       const location = unit.square || 'резерв';
-      return `<div class="rpvs__deployment-unit" role="button" tabindex="${unit.fixed ? -1 : 0}" aria-pressed="${selected}" data-deployment-unit="${escapeAttribute(unit.id)}" ${unit.fixed ? 'aria-disabled="true"' : ''}><span class="rpvs__reserve-piece">${escapeHtml(pieceGlyph({ side: deployment.playerSide, type: unit.type }))}</span><span><strong>${escapeHtml(unit.label)}</strong><small class="rpvs__muted">${escapeHtml(location)} · ${unit.commandCost} ком.</small></span>${!unit.fixed && unit.square ? `<button class="rpvs__deployment-remove" data-deployment-remove="${escapeAttribute(unit.id)}">В резерв</button>` : ''}</div>`;
+      return `<div class="rpvs__deployment-unit" role="button" tabindex="${unit.fixed ? -1 : 0}" aria-pressed="${selected}" data-deployment-unit="${escapeAttribute(unit.id)}" ${unit.fixed ? 'aria-disabled="true"' : ''}><span class="rpvs__reserve-piece"><img src="${escapeAttribute(unitArt({ side: deployment.playerSide, type: unit.type }))}" alt=""><small>${escapeHtml(pieceGlyph({ side: deployment.playerSide, type: unit.type }))}</small></span><span><strong>${escapeHtml(unit.label)}</strong><small class="rpvs__muted">${escapeHtml(location)} · ${unit.commandCost} ком.</small></span>${!unit.fixed && unit.square ? `<button class="rpvs__deployment-remove" data-deployment-remove="${escapeAttribute(unit.id)}">В резерв</button>` : ''}</div>`;
     }).join('');
     const main = `<div class="rpvs__panel-head"><h1 class="rpvs__title">Расстановка армии</h1><span class="rpvs__muted">Выберите фигуру, затем клетку стартовой зоны</span></div><div class="rpvs__board-wrap" style="${sceneStyle(art)}"><canvas class="rpvs__canvas" data-deployment-board tabindex="0" aria-label="Поле расстановки"></canvas></div>`;
     const sidebar = `<div class="rpvs__panel-head"><h2 class="rpvs__title">Состав</h2></div><div class="rpvs__panel-body"><div class="rpvs__deployment-budget"><span>Командование</span><strong>${deployment.commandSpent} / ${deployment.commandLimit}</strong></div><div class="rpvs__deployment-units">${units}</div><p class="rpvs__deployment-help">Обязательные фигуры должны оставаться на поле. Неразмещённые необязательные фигуры переходят в резерв.</p><button class="rpvs__primary" data-confirm-deployment ${deployment.canConfirm ? '' : 'disabled'}>Подтвердить расстановку</button></div>`;
@@ -301,7 +354,7 @@ class VerticalSlicePresenter {
       tileSet: scenario.board.tileSet
     });
     this.boardPlan = plan;
-    this.assetCache.prime([scenario.board.tileSet.light, scenario.board.tileSet.dark, CORE_ASSETS.neutralBoard.blocker, CORE_ASSETS.neutralBoard.startZone, CORE_ASSETS.focusRing]);
+    this.assetCache.prime([scenario.board.tileSet.light, scenario.board.tileSet.dark, CORE_ASSETS.neutralBoard.blocker, CORE_ASSETS.neutralBoard.startZone, CORE_ASSETS.focusRing, ...deployment.units.map((unit) => unitArt({ side: deployment.playerSide, type: unit.type })).filter(Boolean), ...scenario.pieces.map(unitArt).filter(Boolean)]);
     const environment = new Map();
     for (const object of scenario.environment) for (const cell of object.cells) environment.set(cell, object);
     const units = new Map(deployment.units.filter((unit) => unit.square).map((unit) => [unit.square, { ...unit, side: deployment.playerSide }]));
@@ -327,7 +380,7 @@ class VerticalSlicePresenter {
         }
         const unit = units.get(cell.square);
         if (unit) {
-          context.save(); context.fillStyle = unit.side === 'w' ? '#f6ecd2' : '#172032'; context.strokeStyle = unit.side === 'w' ? '#765822' : '#a3b9db'; context.lineWidth = Math.max(2, rect.size * .035); context.beginPath(); context.arc(rect.x + rect.size / 2, rect.y + rect.size / 2, rect.size * .35, 0, Math.PI * 2); context.fill(); context.stroke(); context.fillStyle = unit.side === 'w' ? '#111' : '#f4ead6'; context.font = `${Math.floor(rect.size * .58)}px Georgia,serif`; context.textAlign = 'center'; context.textBaseline = 'middle'; context.fillText(pieceGlyph({ side: unit.side, type: unit.type }), rect.x + rect.size / 2, rect.y + rect.size / 2 + rect.size * .03); context.restore();
+          drawWarriorPiece(context, rect, unit, this.assetCache);
         }
         const selected = deployment.units.find((unit) => unit.id === this.selectedDeploymentUnitId);
         if (selected?.square === cell.square) {
@@ -337,7 +390,7 @@ class VerticalSlicePresenter {
       }
     });
     this.boardReport = report;
-    if ([scenario.board.tileSet.light, scenario.board.tileSet.dark, CORE_ASSETS.neutralBoard.blocker, CORE_ASSETS.neutralBoard.startZone, CORE_ASSETS.focusRing].some((source) => this.assetCache.status(source) === 'loading')) requestAnimationFrame(() => this.drawDeploymentBoard());
+    if ([scenario.board.tileSet.light, scenario.board.tileSet.dark, CORE_ASSETS.neutralBoard.blocker, CORE_ASSETS.neutralBoard.startZone, CORE_ASSETS.focusRing, ...deployment.units.map((unit) => unitArt({ side: deployment.playerSide, type: unit.type })).filter(Boolean), ...scenario.pieces.map(unitArt).filter(Boolean)].some((source) => this.assetCache.status(source) === 'loading')) requestAnimationFrame(() => this.drawDeploymentBoard());
   }
 
   handleDeploymentPointer(event) {
@@ -363,12 +416,8 @@ class VerticalSlicePresenter {
 
   renderScenario(snapshot) {
     const scenario = snapshot.scenario;
-    const purpose = snapshot.status === 'boss' ? 'boss' : snapshot.currentNode?.type === 'elite' ? 'elite' : 'battle';
-    const art = sceneAsset(snapshot, purpose);
-    const objectives = scenario.objectives.map((item) => `<div class="rpvs__item ${item.status === 'completed' ? 'rpvs__item--done' : ''}"><b>${escapeHtml(item.label)}</b><div class="rpvs__muted">${item.current} / ${item.target}</div><div class="rpvs__progress"><span style="width:${Math.min(100, item.target ? item.current / item.target * 100 : 0)}%"></span></div></div>`).join('');
-    const failures = scenario.failures.map((item) => `<div class="rpvs__item ${item.triggered ? 'rpvs__item--danger' : ''}"><b>${escapeHtml(item.label)}</b><div class="rpvs__muted">${item.triggered ? 'Сработало' : 'Не допустить'}</div></div>`).join('');
-    const moveCommands = scenario.legalCommands.filter((command) => command.type === 'MovePiece');
-    const commands = moveCommands.map((command, index) => `<button class="rpvs__action" data-move-command-index="${index}">${escapeHtml(commandLabel(command))}</button>`).join('');
+    const objectives = scenario.objectives.map((item) => `<div class="rpvs__item ${item.status === 'completed' ? 'rpvs__item--done' : ''}"><b>${escapeHtml(humanObjective(item))}</b><div class="rpvs__muted">${item.current} / ${item.target}</div><div class="rpvs__progress"><span style="width:${Math.min(100, item.target ? item.current / item.target * 100 : 0)}%"></span></div></div>`).join('');
+    const failures = scenario.failures.map((item) => `<div class="rpvs__item ${item.triggered ? 'rpvs__item--danger' : ''}"><b>${escapeHtml(humanFailure(item))}</b><div class="rpvs__failure-copy">${item.triggered ? 'Условие поражения выполнено' : 'Не допускайте этого исхода'}</div></div>`).join('');
     const abilityCommands = scenario.legalCommands.filter((command) => command.type === 'UseAbility');
     const abilityButtons = abilityCommands.map((command, index) => `<button class="rpvs__action" data-ability-command-index="${index}">${escapeHtml(commandLabel(command))}</button>`).join('');
     const playerReserve = (scenario.reserve || []).filter((entry) => entry.side === snapshot.playerSide);
@@ -376,46 +425,23 @@ class VerticalSlicePresenter {
     const reserveCards = playerReserve.map((entry) => {
       const selected = entry.entryId === this.selectedReserveEntryId;
       const disabled = !scenario.playerTurn || !entry.affordable || !entry.legalSquares.length;
-      return `<button class="rpvs__reserve-card" data-reserve-entry="${escapeAttribute(entry.entryId)}" aria-pressed="${selected}" ${disabled ? 'disabled' : ''}><span class="rpvs__reserve-piece">${escapeHtml(pieceGlyph({ side: entry.side, type: entry.type }))}</span><span class="rpvs__reserve-meta"><strong>${escapeHtml(entry.label)}</strong><small class="rpvs__muted">${entry.legalSquares.length} доступн. клеток</small></span><span class="rpvs__reserve-cost">${entry.orderCost} ОП</span></button>`;
+      return `<button class="rpvs__reserve-card" data-reserve-entry="${escapeAttribute(entry.entryId)}" aria-pressed="${selected}" ${disabled ? 'disabled' : ''}><span class="rpvs__reserve-piece"><img src="${escapeAttribute(unitArt({ side: entry.side, type: entry.type }))}" alt=""><small>${escapeHtml(pieceGlyph({ side: entry.side, type: entry.type }))}</small></span><span class="rpvs__reserve-meta"><strong>${escapeHtml(entry.label)}</strong><small class="rpvs__muted">Клеток для выхода: ${entry.legalSquares.length}</small></span><span class="rpvs__reserve-cost">${entry.orderCost} ОП</span></button>`;
     }).join('');
     const order = scenario.orderPoints?.player || { current: 0, max: 0 };
-    const title = snapshot.status === 'boss' ? snapshot.boss?.currentPhaseTitle || snapshot.boss?.bossId : snapshot.currentNode?.contentId || 'Тактический бой';
-    const phase = snapshot.status === 'boss' ? `Фаза ${snapshot.boss.phaseNumber} / ${snapshot.boss.phaseCount} · ` : '';
-    const check = scenario.chessStatus?.check ? `<span class="rpvs__check"><img src="${escapeAttribute(CORE_ASSETS.vfx.check)}" alt="">Шах</span>` : '';
-    const main = `<div class="rpvs__panel-head"><h1 class="rpvs__title">${escapeHtml(title)}</h1><span class="rpvs__muted">${phase}ход: ${scenario.sideToMove === snapshot.playerSide ? 'игрок' : 'противник'} · действие ${scenario.actionIndex}</span>${check}</div><div class="rpvs__board-wrap" style="${sceneStyle(art)}"><canvas class="rpvs__canvas" data-board tabindex="0" aria-label="Шахматная доска"></canvas></div>`;
-    const reserveSection = playerReserve.length ? `<section class="rpvs__sidebar-section"><h3>Резерв</h3><div class="rpvs__order"><span>Очки приказа</span><strong>${order.current} / ${order.max}</strong></div><div class="rpvs__reserve">${reserveCards}</div>${this.selectedReserveEntryId ? '<div class="rpvs__reserve-hint">Выберите подсвеченную клетку ввода на доске.</div>' : ''}</section>` : '';
+    const title = snapshot.status === 'boss' ? snapshot.boss?.currentPhaseTitle || 'Железный Регент' : nodeDisplayLabel(snapshot.currentNode || { type: 'battle' });
+    const phase = snapshot.status === 'boss' ? `Фаза ${snapshot.boss.phaseNumber} из ${snapshot.boss.phaseCount} · ` : '';
+    const check = scenario.chessStatus?.check ? `<span class="rpvs__check"><img src="${escapeAttribute(CORE_ASSETS.vfx.check)}" alt="">Вашему королю объявлен шах</span>` : '';
+    const main = `<div class="rpvs__panel-head"><h1 class="rpvs__title">${escapeHtml(title)}</h1><span class="rpvs__muted">${phase}${scenario.sideToMove === snapshot.playerSide ? 'Ваш ход' : 'Ход противника'}</span>${check}</div><div class="rpvs__board-wrap"><canvas class="rpvs__canvas" data-board tabindex="0" aria-label="Тактическая шахматная доска"></canvas></div>`;
+    const reserveSection = playerReserve.length ? `<section class="rpvs__sidebar-section"><h3>Боевой резерв</h3><div class="rpvs__order"><span>Очки приказа</span><strong>${order.current} / ${order.max}</strong></div><div class="rpvs__reserve">${reserveCards}</div>${this.selectedReserveEntryId ? '<div class="rpvs__reserve-hint">Теперь выберите подсвеченную клетку на доске.</div>' : ''}</section>` : '';
     const abilitySection = abilityButtons ? `<section class="rpvs__sidebar-section"><h3>Способности</h3><div class="rpvs__order"><span>Очки приказа</span><strong>${order.current} / ${order.max}</strong></div><div class="rpvs__commands">${abilityButtons}</div></section>` : '';
-    const sidebar = `<div class="rpvs__panel-head"><h2 class="rpvs__title">Задачи</h2></div><div class="rpvs__panel-body"><section class="rpvs__sidebar-section"><div class="rpvs__list">${objectives}</div></section>${failures ? `<section class="rpvs__sidebar-section"><h3>Поражение</h3><div class="rpvs__list">${failures}</div></section>` : ''}${reserveSection}${abilitySection}<section class="rpvs__sidebar-section"><h3>Ходы фигур</h3><div class="rpvs__commands">${commands || '<div class="rpvs__muted">Выберите фигуру на доске или ожидайте противника</div>'}</div></section></div>`;
+    const sidebar = `<div class="rpvs__panel-head"><h2 class="rpvs__title">Задача боя</h2></div><div class="rpvs__panel-body"><section class="rpvs__sidebar-section"><div class="rpvs__list">${objectives}</div></section>${failures ? `<section class="rpvs__sidebar-section"><h3>Поражение</h3><div class="rpvs__list">${failures}</div></section>` : ''}${reserveSection}${abilitySection}<section class="rpvs__sidebar-section"><div class="rpvs__battle-help">Выберите свою фигуру на доске, затем подсвеченную клетку. Технический шахматный символ находится внизу изображения воина.</div></section></div>`;
     this.root.innerHTML = this.shell(snapshot, main, sidebar);
-    for (const button of this.root.querySelectorAll('[data-move-command-index]')) {
-      button.addEventListener('click', () => {
-        const command = moveCommands[Number(button.dataset.moveCommandIndex)];
-        this.selectedReserveEntryId = null;
-        this.client.dispatch({ type: 'PlayerCommand', request: command }).catch(() => {});
-      });
-    }
-    for (const button of this.root.querySelectorAll('[data-ability-command-index]')) {
-      button.addEventListener('click', () => {
-        const command = abilityCommands[Number(button.dataset.abilityCommandIndex)];
-        this.selectedSquare = null;
-        this.selectedReserveEntryId = null;
-        this.client.dispatch({ type: 'PlayerCommand', request: command }).catch(() => {});
-      });
-    }
-    for (const button of this.root.querySelectorAll('[data-reserve-entry]')) {
-      button.addEventListener('click', () => {
-        this.selectedReserveEntryId = this.selectedReserveEntryId === button.dataset.reserveEntry ? null : button.dataset.reserveEntry;
-        this.selectedSquare = null;
-        this.renderScenario(snapshot);
-      });
-    }
+    for (const button of this.root.querySelectorAll('[data-ability-command-index]')) button.addEventListener('click', () => { const command = abilityCommands[Number(button.dataset.abilityCommandIndex)]; this.selectedSquare = null; this.selectedReserveEntryId = null; this.client.dispatch({ type: 'PlayerCommand', request: command }).catch(() => {}); });
+    for (const button of this.root.querySelectorAll('[data-reserve-entry]')) button.addEventListener('click', () => { this.selectedReserveEntryId = this.selectedReserveEntryId === button.dataset.reserveEntry ? null : button.dataset.reserveEntry; this.selectedSquare = null; this.renderScenario(snapshot); });
     const canvas = this.root.querySelector('[data-board]');
     canvas.addEventListener('pointerdown', (event) => this.handleBoardPointer(event));
     this.drawBoard();
-    if (globalThis.ResizeObserver) {
-      this.resizeObserver = new ResizeObserver(() => this.drawBoard());
-      this.resizeObserver.observe(canvas.parentElement);
-    }
+    if (globalThis.ResizeObserver) { this.resizeObserver = new ResizeObserver(() => this.drawBoard()); this.resizeObserver.observe(canvas.parentElement); }
   }
 
   drawBoard() {
@@ -442,6 +468,7 @@ class VerticalSlicePresenter {
       CORE_ASSETS.vfx.legalMove,
       CORE_ASSETS.vfx.captureMove
     ];
+    preload.push(...scenario.pieces.map(unitArt).filter(Boolean));
     if (this.pendingEffect) preload.push(this.pendingEffect.source);
     this.assetCache.prime(preload);
     const pieces = new Map(scenario.pieces.map((piece) => [piece.square, piece]));
@@ -493,22 +520,11 @@ class VerticalSlicePresenter {
           else { context.save(); context.fillStyle = capture ? 'rgba(224,76,89,.48)' : 'rgba(77,203,154,.42)'; context.beginPath(); context.arc(rect.x + rect.size / 2, rect.y + rect.size / 2, rect.size * .16, 0, Math.PI * 2); context.fill(); context.restore(); }
         }
         const piece = pieces.get(cell.square);
-        if (piece) {
-          context.save();
-          context.fillStyle = piece.side === 'w' ? '#fff7df' : '#101722';
-          context.strokeStyle = piece.side === 'w' ? '#172033' : '#e7d9b5';
-          context.lineWidth = Math.max(1, rect.size * .025);
-          context.font = `${Math.floor(rect.size * .7)}px Georgia,serif`;
-          context.textAlign = 'center'; context.textBaseline = 'middle';
-          context.strokeText(pieceGlyph(piece), rect.x + rect.size / 2, rect.y + rect.size * .53);
-          context.fillText(pieceGlyph(piece), rect.x + rect.size / 2, rect.y + rect.size * .53);
-          if (piece.status) { context.fillStyle = '#f3bf51'; context.beginPath(); context.arc(rect.x + rect.size * .82, rect.y + rect.size * .18, rect.size * .09, 0, Math.PI * 2); context.fill(); }
-          context.restore();
-        }
+        if (piece) drawWarriorPiece(context, rect, piece, this.assetCache);
       }
     });
     this.playPendingBoardEffect();
-    if ([scenario.board.tileSet.light, scenario.board.tileSet.dark, CORE_ASSETS.neutralBoard.blocker, CORE_ASSETS.neutralBoard.startZone, CORE_ASSETS.focusRing].some((source) => this.assetCache.status(source) === 'loading')) {
+    if (preload.some((source) => this.assetCache.status(source) === 'loading')) {
       setTimeout(() => { if (this.lastSnapshot === snapshot) this.drawBoard(); }, 120);
     }
   }
@@ -584,30 +600,25 @@ class VerticalSlicePresenter {
   }
 
   renderBossTransition(snapshot) {
-    const art = sceneAsset(snapshot, 'boss');
-    const main = `<div class="rpvs__center" style="${sceneStyle(art)}"><div class="rpvs__center-card"><div class="rpvs__muted">Железный Регент</div><h1 class="rpvs__title">${escapeHtml(snapshot.boss.nextPhaseTitle || snapshot.boss.nextPhaseId || 'Следующая фаза')}</h1><p class="rpvs__muted">Промежуточное состояние можно безопасно сохранить.</p><button class="rpvs__primary" data-begin-phase>Начать следующую фазу</button></div></div>`;
-    this.root.innerHTML = this.shell(snapshot, main, `<div class="rpvs__panel-body"><div class="rpvs__item"><b>Завершено фаз</b><div>${snapshot.boss.completedPhases.length} / ${snapshot.boss.phaseCount}</div></div></div>`);
+    const main = `<div class="rpvs__center" style="background-image:linear-gradient(#040912b8,#040912e8),url('${approvedSceneArt('battle')}')"><div class="rpvs__center-card"><div class="rpa-eyebrow">ЖЕЛЕЗНЫЙ РЕГЕНТ</div><h1 class="rpvs__title">Враг меняет тактику</h1><p class="rpvs__event-copy">Первая линия обороны разрушена, но Регент вступает в следующую фазу. Подготовьтесь к новым правилам поля.</p><button class="rpvs__primary" data-begin-phase>Начать следующую фазу</button></div></div>`;
+    this.root.innerHTML = this.shell(snapshot, main);
     this.root.querySelector('[data-begin-phase]').addEventListener('click', () => this.client.dispatch({ type: 'BeginBossPhase' }).catch(() => {}));
   }
 
   renderReward(snapshot) {
     const reward = snapshot.reward;
-    const art = sceneAsset(snapshot, snapshot.currentNode?.type === 'boss' ? 'boss' : 'reward');
-    const main = `<div class="rpvs__center" style="${sceneStyle(art)}"><div class="rpvs__center-card"><div class="rpvs__muted">Узел завершён</div><h1 class="rpvs__title">${escapeHtml(reward.title || 'Награда')}</h1><div class="rpvs__reward-grid"><div class="rpvs__reward"><b>${reward.gold}</b>золото</div><div class="rpvs__reward"><b>${reward.supplies}</b>припасы</div><div class="rpvs__reward"><b>${reward.meta}</b>мета</div></div><button class="rpvs__primary" data-claim>Забрать награду</button></div>${this.pendingEffect ? '<div class="rpvs__scene-vfx" data-scene-vfx></div>' : ''}</div>`;
-    const sidebar = `<div class="rpvs__panel-head"><h2 class="rpvs__title">Прогресс</h2></div><div class="rpvs__panel-body"><div class="rpvs__item"><b>Посещено узлов</b><div class="rpvs__muted">${snapshot.campaign.visitedNodeIds.length}</div></div></div>`;
-    this.root.innerHTML = this.shell(snapshot, main, sidebar);
+    const main = `<div class="rpvs__center" style="background-image:linear-gradient(#040912c9,#040912e8),url('${approvedSceneArt('reward')}')"><div class="rpvs__center-card"><div class="rpa-eyebrow">ПОБЕДА</div><h1 class="rpvs__title">${escapeHtml(reward.title || 'Награда')}</h1><div class="rpvs__reward-grid"><div class="rpvs__reward"><img src="${rewardArt('gold')}" alt=""><span><b>${reward.gold}</b>золото</span></div><div class="rpvs__reward"><img src="${rewardArt('supplies')}" alt=""><span><b>${reward.supplies}</b>припасы</span></div><div class="rpvs__reward"><img src="${rewardArt('meta')}" alt=""><span><b>${reward.meta}</b>осколки наследия</span></div></div><button class="rpvs__primary" data-claim>Забрать награду</button></div>${this.pendingEffect ? '<div class="rpvs__scene-vfx" data-scene-vfx></div>' : ''}</div>`;
+    this.root.innerHTML = this.shell(snapshot, main);
     this.root.querySelector('[data-claim]').addEventListener('click', () => this.client.dispatch({ type: 'ClaimReward' }).catch(() => {}));
     const effectElement = this.root.querySelector('[data-scene-vfx]');
     if (effectElement && this.pendingEffect) { const effect = this.pendingEffect; this.pendingEffect = null; this.animateSprite(effectElement, effect); }
   }
 
   renderTerminal(snapshot) {
-    const victory = snapshot.terminal?.outcome === 'victory';
-    const art = sceneAsset(snapshot, 'boss');
-    const main = `<div class="rpvs__center" style="${sceneStyle(art)}"><div class="rpvs__center-card"><div style="font-size:72px">${victory ? '♔' : '♚'}</div><h1 class="rpvs__title">${victory ? 'Акт завершён' : 'Поход окончен'}</h1><p class="rpvs__muted">Получено наград: ${snapshot.terminal?.rewardsClaimed || 0}</p></div>${this.pendingEffect ? '<div class="rpvs__scene-vfx" data-scene-vfx></div>' : ''}</div>`;
-    this.root.innerHTML = this.shell(snapshot, main, `<div class="rpvs__panel-body"><div class="rpvs__item"><b>Золото</b><div>${snapshot.resources.gold}</div></div><div class="rpvs__item"><b>Мета</b><div>${snapshot.resources.meta}</div></div></div>`);
-    const effectElement = this.root.querySelector('[data-scene-vfx]');
-    if (effectElement && this.pendingEffect) { const effect = this.pendingEffect; this.pendingEffect = null; this.animateSprite(effectElement, effect); }
+    const victory = snapshot.terminal?.outcome === 'victory' || snapshot.status === 'complete';
+    const background = approvedSceneArt(victory ? 'victory' : 'defeat');
+    const main = `<div class="rpvs__center" style="background-image:linear-gradient(#040912b8,#040912e5),url('${background}')"><div class="rpvs__center-card"><img src="generated_assets/logo_main.png" alt="" style="width:100px;height:100px;object-fit:contain"><div class="rpa-eyebrow">${victory ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ'}</div><h1 class="rpvs__title">${victory ? 'Железные Марши пройдены' : 'Поход окончен'}</h1><p class="rpvs__muted">${victory ? 'Железный Регент повержен. Победа сохранена в Хронике.' : 'Ваш король получил мат. Поход можно начать заново из главного меню.'}</p><button class="rpvs__primary" data-runtime-menu>Вернуться в главное меню</button></div></div>`;
+    this.root.innerHTML = this.shell(snapshot, main);
   }
 
   showError(error) {
@@ -626,6 +637,8 @@ export {
   ENVIRONMENT_GLYPHS,
   escapeHtml,
   pieceGlyph,
+  nodeDisplayLabel,
+  drawWarriorPiece,
   commandLabel,
   groupNodesByLayer,
   legalTargets,

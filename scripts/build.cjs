@@ -33,8 +33,8 @@ async function main() {
   if (!rootHtml.includes('js/generated/iron-marches-runtime.bundle.js') || !rootHtml.includes('js/vertical-slice-app.mjs')) {
     throw new Error('root browser entry does not launch the production vertical slice');
   }
-  if (!rootHtml.includes('css/vertical-slice-comfort.css') || !rootHtml.includes('js/vertical-slice-comfort.mjs')) {
-    throw new Error('root browser entry is missing the comfort layer');
+  if (!rootHtml.includes('style.css') || !rootHtml.includes('css/approved-visual-shell.css')) {
+    throw new Error('root browser entry is missing the approved prototype visual shell');
   }
   if (rootHtml.includes('js/core.js') || rootHtml.includes('js/main.js')) {
     throw new Error('root browser entry still launches the legacy client');

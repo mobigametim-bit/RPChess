@@ -146,7 +146,7 @@ function autoInstall() {
   if (!document) return;
   const install = () => {
     const root = document.querySelector('#app');
-    if (root) installRegister03RelicCodex(root);
+    if (root?.querySelector('.rpvs__resources')) installRegister03RelicCodex(root, { target: '.rpvs__resources' });
   };
   install();
   const observer = new MutationObserver(install);
