@@ -1,11 +1,18 @@
 const SNAPSHOT_FORMAT = 'rpchess-presenter-snapshot';
 const SNAPSHOT_SCHEMA_VERSION = 1;
-const CLIENT_COMMANDS = Object.freeze(['Travel', 'ChooseEvent', 'PlayerCommand', 'ClaimReward', 'SaveCheckpoint']);
+const CLIENT_COMMANDS = Object.freeze([
+  'Travel',
+  'ChooseEvent',
+  'PlayerCommand',
+  'BeginBossPhase',
+  'ClaimReward',
+  'SaveCheckpoint'
+]);
 
 function validatePresenterSnapshot(snapshot) {
   if (!snapshot || snapshot.format !== SNAPSHOT_FORMAT) throw new Error('invalid RPChess presenter snapshot');
   if (snapshot.schemaVersion !== SNAPSHOT_SCHEMA_VERSION) throw new Error('unsupported RPChess presenter snapshot schema');
-  if (!['campaign', 'event', 'scenario', 'reward', 'complete', 'failed'].includes(snapshot.status)) {
+  if (!['campaign', 'event', 'scenario', 'boss', 'boss_transition', 'reward', 'complete', 'failed'].includes(snapshot.status)) {
     throw new Error(`invalid presenter status: ${snapshot.status}`);
   }
   if (!snapshot.campaign || !Array.isArray(snapshot.campaign.nodes) || !Array.isArray(snapshot.campaign.routes)) {
@@ -13,6 +20,12 @@ function validatePresenterSnapshot(snapshot) {
   }
   if (snapshot.status === 'event' && (!snapshot.event || !Array.isArray(snapshot.event.choices))) {
     throw new Error('presenter event snapshot is missing choices');
+  }
+  if (['boss', 'boss_transition'].includes(snapshot.status) && !snapshot.boss) {
+    throw new Error('presenter boss snapshot is missing phase data');
+  }
+  if (snapshot.status === 'boss' && !snapshot.scenario) {
+    throw new Error('presenter boss snapshot is missing active scenario data');
   }
   return snapshot;
 }
@@ -34,7 +47,13 @@ function normalizeClientCommand(command) {
   if (type === 'PlayerCommand') {
     const request = command.request || command.payload?.request;
     if (!request || typeof request.type !== 'string') throw new Error('PlayerCommand requires request');
-    return Object.freeze({ type, request: Object.freeze({ type: request.type, payload: Object.freeze({ ...(request.payload || {}) }) }) });
+    return Object.freeze({
+      type,
+      request: Object.freeze({
+        type: request.type,
+        payload: Object.freeze({ ...(request.payload || {}) })
+      })
+    });
   }
   return Object.freeze({ type });
 }
