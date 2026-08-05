@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <base href="../">
+  <title>RPChess — выбор похода</title>
+  <link rel="stylesheet" href="css/run-selection.css">
+  <style>html,body,#app{min-height:100%;margin:0}</style>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module">
+    import { RunSelectionClient } from 'js/run-selection-client.mjs';
+    import { RunSelectionPresenter } from 'js/run-selection-presenter.mjs';
+
+    const heroes = [
+      ['hero.aldric_wall','Альдрик Стена','rook'],
+      ['hero.mara_chain','Мара Цепь','pawn'],
+      ['hero.brother_orell','Брат Орелл','bishop'],
+      ['hero.vael_hammer','Ваэль Молот','knight'],
+      ['hero.lady_sorn','Леди Сорн','queen'],
+      ['hero.tomas_gate','Томас Врата','king']
+    ].map(([id,label,pieceType]) => ({ id, label, pieceType, selected:false, assets:{} }));
+
+    let snapshot = {
+      format:'rpchess-run-selection-host-snapshot', schemaVersion:1, status:'selecting', runtime:null,
+      selection:{
+        format:'rpchess-run-selection-presenter', schemaVersion:1, status:'selecting', revision:0,
+        region:{id:'region.iron_marches', label:'Железные Марши', boardThemeId:'iron_marches', factionId:'faction.iron_marches'},
+        selectedKing:null, selectedDoctrine:null, selectedHeroIds:[], heroLimit:6, minimumHeroes:1, canLock:false,
+        kings:[{id:'king.oathkeeper', label:'Хранитель Клятвы', selected:false, doctrineIds:['doctrine.fortress'], assets:{portrait:'assets/kings/oathkeeper/portrait.png',piece:'assets/kings/oathkeeper/piece.png',commandIcon:'assets/kings/oathkeeper/command_icon.png',passiveIcon:'assets/kings/oathkeeper/passive_icon.png'}}],
+        doctrines:[{id:'doctrine.fortress', label:'Крепость', selected:false, compatible:false, assets:{emblem:'assets/doctrines/fortress/emblem.png',nodes:['assets/doctrines/fortress/node_01.png','assets/doctrines/fortress/node_02.png','assets/doctrines/fortress/node_03.png','assets/doctrines/fortress/node_04.png','assets/doctrines/fortress/node_05.png']}}],
+        heroes
+      }
+    };
+
+    const recompute = () => {
+      const selection = snapshot.selection;
+      selection.selectedKing = selection.kings.find((item) => item.selected) || null;
+      selection.doctrines[0].compatible = Boolean(selection.selectedKing);
+      if (!selection.doctrines[0].compatible) selection.doctrines[0].selected = false;
+      selection.selectedDoctrine = selection.doctrines.find((item) => item.selected) || null;
+      selection.selectedHeroIds = selection.heroes.filter((item) => item.selected).map((item) => item.id);
+      selection.canLock = Boolean(selection.selectedKing && selection.selectedDoctrine && selection.selectedHeroIds.length >= selection.minimumHeroes);
+      selection.revision += 1;
+    };
+
+    const transport = async (command) => {
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      const selection = snapshot.selection;
+      if (command.type === 'SelectKing') selection.kings.forEach((item) => { item.selected = item.id === command.kingId; });
+      if (command.type === 'SelectDoctrine') selection.doctrines.forEach((item) => { item.selected = item.id === command.doctrineId; });
+      if (command.type === 'ToggleHero') {
+        const hero = selection.heroes.find((item) => item.id === command.heroId);
+        if (hero) hero.selected = !hero.selected;
+      }
+      if (command.type === 'LockSelection') {
+        snapshot = { ...snapshot, status:'ready', runtime:{format:'rpchess-presenter-snapshot',schemaVersion:1,status:'campaign'} };
+      }
+      recompute();
+      return snapshot;
+    };
+
+    recompute();
+    const client = new RunSelectionClient({ transport, snapshot });
+    new RunSelectionPresenter({ root:document.querySelector('#app'), client }).mount();
+  </script>
+</body>
+</html>
