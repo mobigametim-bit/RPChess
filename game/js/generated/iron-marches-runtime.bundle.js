@@ -6869,6 +6869,15 @@ var RPChessRuntime = (() => {
       var RUNTIME_ARMY_SCHEMA_VERSION = 1;
       var PIECE_TYPE_CODES = Object.freeze({ pawn: "p", knight: "n", bishop: "b", rook: "r", queen: "q", king: "k" });
       var PIECE_COMMAND_COST = Object.freeze({ p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 });
+      var HERO_RECORD_KEYS = Object.freeze([
+        "battlePieceType",
+        "contentPieceType",
+        "heroId",
+        "nameKey",
+        "overrideReason",
+        "pieceType",
+        "relicIds"
+      ]);
       function freezeArray(values) {
         return Object.freeze(values.slice());
       }
@@ -6877,6 +6886,19 @@ var RPChessRuntime = (() => {
         Object.freeze(value);
         for (const child of Object.values(value)) deepFreeze(child);
         return value;
+      }
+      function sameStringArray(left, right) {
+        return Array.isArray(left) && Array.isArray(right) && left.length === right.length && left.every((value, index) => value === right[index]);
+      }
+      function sameHeroRecord(left, right) {
+        if (!left || !right || typeof left !== "object" || typeof right !== "object") return false;
+        const leftKeys = Object.keys(left).sort();
+        const rightKeys = Object.keys(right).sort();
+        if (!sameStringArray(leftKeys, HERO_RECORD_KEYS) || !sameStringArray(rightKeys, HERO_RECORD_KEYS)) return false;
+        return left.heroId === right.heroId && left.nameKey === right.nameKey && left.contentPieceType === right.contentPieceType && left.battlePieceType === right.battlePieceType && left.pieceType === right.pieceType && left.overrideReason === right.overrideReason && sameStringArray(left.relicIds, right.relicIds);
+      }
+      function sameHeroRecords(left, right) {
+        return Array.isArray(left) && Array.isArray(right) && left.length === right.length && left.every((hero, index) => sameHeroRecord(hero, right[index]));
       }
       function assertRegistry(registry) {
         if (!registry || typeof registry.get !== "function") throw new Error("runtime army requires a content registry");
@@ -6957,8 +6979,8 @@ var RPChessRuntime = (() => {
           heroIds: snapshot.heroIds
         }, registry, profileSet);
         if (snapshot.profileSetId !== rebuilt.profileSetId) throw new Error("runtime army combat profile set changed");
-        if (JSON.stringify(snapshot.relicIds) !== JSON.stringify(rebuilt.relicIds)) throw new Error("runtime army relic bindings changed");
-        if (JSON.stringify(snapshot.heroes) !== JSON.stringify(rebuilt.heroes)) throw new Error("runtime army hero records changed");
+        if (!sameStringArray(snapshot.relicIds, rebuilt.relicIds)) throw new Error("runtime army relic bindings changed");
+        if (!sameHeroRecords(snapshot.heroes, rebuilt.heroes)) throw new Error("runtime army hero records changed");
         return rebuilt;
       }
       function runtimeSelectionFromArmy(armyInput) {
