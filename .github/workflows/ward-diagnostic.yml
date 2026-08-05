@@ -1,0 +1,43 @@
+name: Ward diagnostic
+
+on:
+  push:
+    branches:
+      - combat/ward-protection
+    paths:
+      - .github/workflows/ward-diagnostic.yml
+      - tests/ward-protection.cjs
+      - src/combat/ward-protection.cjs
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: combat/ward-protection
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run ward tests and capture output
+        shell: bash
+        run: |
+          mkdir -p diagnostics
+          set +e
+          node tests/ward-protection.cjs > diagnostics/ward-ci-output.txt 2>&1
+          code=$?
+          printf '\nEXIT_CODE=%s\n' "$code" >> diagnostics/ward-ci-output.txt
+          exit 0
+      - name: Commit diagnostic output
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diagnostics/ward-ci-output.txt
+          git commit -m 'Record ward CI diagnostic output' || exit 0
+          git push origin HEAD:combat/ward-protection

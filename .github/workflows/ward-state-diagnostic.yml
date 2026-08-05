@@ -1,0 +1,34 @@
+name: Ward state diagnostic
+
+on:
+  push:
+    branches:
+      - combat/ward-protection
+    paths:
+      - .github/workflows/ward-state-diagnostic.yml
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: combat/ward-protection
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate state snapshots
+        run: node scripts/ward-diagnostic.cjs
+      - name: Commit snapshots
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diagnostics/ward-diagnostic.json
+          git commit -m 'Record ward state snapshots' || exit 0
+          git push origin HEAD:combat/ward-protection

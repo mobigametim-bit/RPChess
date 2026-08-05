@@ -1,0 +1,63 @@
+name: Ward sentinel diagnostic
+
+on:
+  push:
+    branches:
+      - combat/ward-protection
+    paths:
+      - .github/workflows/ward-sentinel.yml
+
+permissions:
+  contents: write
+
+jobs:
+  sentinel:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: combat/ward-protection
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate diagnostic sentinels
+        shell: bash
+        run: |
+          rm -rf diagnostics/sentinels
+          mkdir -p diagnostics/sentinels
+          node <<'NODE'
+          const fs=require('fs');
+          const {parseFen,toFen}=require('./src/core/chess/position.cjs');
+          const {identityAt}=require('./src/combat/identity.cjs');
+          const {statusFor}=require('./src/combat/statuses.cjs');
+          const {createBattleState,executeBattleCommand}=require('./src/combat/battle.cjs');
+          const {applyWardStatus,executeWardAwareCommand,wardedTarget}=require('./src/combat/ward-protection.cjs');
+          const move=(from,to,promotion=null)=>({type:'MovePiece',payload:{from,to,promotion}});
+          const safe=(v)=>String(v??'null').replace(/[^a-zA-Z0-9_-]/g,'_');
+          const mark=(name)=>fs.writeFileSync(`diagnostics/sentinels/${name}.txt`,'');
+          let state=createBattleState({battleId:'sentinel',seed:52,position:parseFen('4k3/8/8/3p4/4P3/8/8/4K3 w - - 0 1'),identitiesBySquare:{e1:'king_w',e8:'king_b',e4:'pawn_w',d5:'pawn_b'}});
+          mark(`00_initial_e4_${safe(identityAt(state.identities,'e4'))}_d5_${safe(identityAt(state.identities,'d5'))}`);
+          state=applyWardStatus(state,'pawn_b').state;
+          mark(`01_ward_${safe(statusFor(state.statuses,'pawn_b')?.id)}`);
+          let result=executeWardAwareCommand(state,move('e4','d5'));
+          state=result.state;
+          mark(`02_prevent_e4_${safe(identityAt(state.identities,'e4'))}_d5_${safe(identityAt(state.identities,'d5'))}_ward_${safe(statusFor(state.statuses,'pawn_b')?.id)}_side_${state.position.sideToMove}`);
+          result=executeWardAwareCommand(state,move('e8','f8'));
+          state=result.state;
+          mark(`03_blackmove_e8_${safe(identityAt(state.identities,'e8'))}_f8_${safe(identityAt(state.identities,'f8'))}_side_${state.position.sideToMove}`);
+          const req=move('e4','d5');
+          mark(`04_target_${wardedTarget(state,req)?'warded':'clear'}`);
+          result=executeBattleCommand(state,req);
+          state=result.state;
+          mark(`05_capture_e4_${safe(identityAt(state.identities,'e4'))}_d5_${safe(identityAt(state.identities,'d5'))}_events_${safe(result.events.map(e=>e.type).join('-'))}_fen_${safe(toFen(state.position))}`);
+          NODE
+      - name: Commit sentinel filenames
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diagnostics/sentinels
+          git commit -m 'Record ward sentinel diagnostics' || exit 0
+          git push origin HEAD:combat/ward-protection

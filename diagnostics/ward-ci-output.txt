@@ -1,0 +1,11 @@
+PASS ward prevents one capture, keeps both pieces in place and passes action
+PASS after ward is consumed, the next legal capture removes the piece normally
+PASS ward cannot be applied to either king
+PASS warded checker cannot be captured as a fake check evasion
+PASS ward also protects an en-passant target once
+PASS ward action advances other same-side timed statuses
+PASS ward-aware replay is deterministic including prevented capture events
+
+Ward protection: 7/7 passed.
+
+EXIT_CODE=0

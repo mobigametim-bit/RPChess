@@ -1,0 +1,142 @@
+[
+  {
+    "label": "created",
+    "fen": "4k3/8/8/3p4/4P3/8/8/4K3 w - - 0 1",
+    "sideToMove": "w",
+    "actionIndex": 0,
+    "identities": {
+      "e8": "king_b",
+      "d5": "pawn_b",
+      "e4": "pawn_w",
+      "e1": "king_w"
+    },
+    "statuses": {},
+    "events": []
+  },
+  {
+    "label": "ward-applied",
+    "fen": "4k3/8/8/3p4/4P3/8/8/4K3 w - - 0 1",
+    "sideToMove": "w",
+    "actionIndex": 0,
+    "identities": {
+      "e8": "king_b",
+      "d5": "pawn_b",
+      "e4": "pawn_w",
+      "e1": "king_w"
+    },
+    "statuses": {
+      "pawn_b": {
+        "pieceId": "pawn_b",
+        "id": "ward",
+        "sourceId": null,
+        "appliedAtAction": 0,
+        "expiry": null,
+        "data": {}
+      }
+    },
+    "events": []
+  },
+  {
+    "label": "capture-prevented",
+    "fen": "4k3/8/8/3p4/4P3/8/8/4K3 b - - 1 1",
+    "sideToMove": "b",
+    "actionIndex": 1,
+    "identities": {
+      "e8": "king_b",
+      "d5": "pawn_b",
+      "e4": "pawn_w",
+      "e1": "king_w"
+    },
+    "statuses": {},
+    "events": [
+      {
+        "type": "CapturePrevented",
+        "payload": {
+          "battleId": "ward-diagnostic",
+          "attackerId": "pawn_w",
+          "protectedId": "pawn_b",
+          "protectedSquare": "d5",
+          "attemptedFrom": "e4",
+          "attemptedTo": "d5",
+          "protection": "ward"
+        }
+      },
+      {
+        "type": "StatusRemoved",
+        "payload": {
+          "battleId": "ward-diagnostic",
+          "pieceId": "pawn_b",
+          "statusId": "ward",
+          "reason": "capture_prevented"
+        }
+      }
+    ]
+  },
+  {
+    "label": "black-king-moved",
+    "fen": "5k2/8/8/3p4/4P3/8/8/4K3 w - - 2 2",
+    "sideToMove": "w",
+    "actionIndex": 2,
+    "identities": {
+      "d5": "pawn_b",
+      "e4": "pawn_w",
+      "e1": "king_w",
+      "f8": "king_b"
+    },
+    "statuses": {},
+    "events": [
+      {
+        "type": "PieceMoved",
+        "payload": {
+          "battleId": "ward-diagnostic",
+          "pieceId": "king_b",
+          "side": "b",
+          "pieceType": "k",
+          "from": "e8",
+          "to": "f8",
+          "actionIndex": 1
+        }
+      }
+    ]
+  },
+  {
+    "label": "second-capture",
+    "fen": "5k2/8/8/3P4/8/8/8/4K3 b - - 0 2",
+    "sideToMove": "b",
+    "actionIndex": 3,
+    "identities": {
+      "e1": "king_w",
+      "f8": "king_b",
+      "d5": "pawn_w"
+    },
+    "statuses": {},
+    "events": [
+      {
+        "type": "PieceMoved",
+        "payload": {
+          "battleId": "ward-diagnostic",
+          "pieceId": "pawn_w",
+          "side": "w",
+          "pieceType": "p",
+          "from": "e4",
+          "to": "d5",
+          "actionIndex": 2
+        }
+      },
+      {
+        "type": "PieceCaptured",
+        "payload": {
+          "battleId": "ward-diagnostic",
+          "capturedId": "pawn_b",
+          "capturedSide": "b",
+          "capturedType": "p",
+          "square": "d5",
+          "byId": "pawn_w",
+          "bySide": "w",
+          "byType": "p",
+          "enPassant": false
+        }
+      }
+    ]
+  }
+]
