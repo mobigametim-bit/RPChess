@@ -103,6 +103,7 @@ function createPresenterStyles() {
     .rpvs__board-wrap{position:relative;min-height:620px;background-position:center;background-size:cover;isolation:isolate}.rpvs__board-wrap::before{content:"";position:absolute;inset:0;background:rgba(3,7,13,.48);z-index:-1}.rpvs__canvas{display:block;width:100%;height:620px;touch-action:none;outline:none}.rpvs__check{display:flex;align-items:center;gap:7px;color:#ffdf8e;font-weight:700}.rpvs__check img{width:34px;height:34px;object-fit:contain}
     .rpvs__sidebar-section+ .rpvs__sidebar-section{border-top:1px solid rgba(174,147,82,.25);margin-top:14px;padding-top:14px}.rpvs__list{display:grid;gap:8px}.rpvs__item{padding:10px;border-radius:10px;background:rgba(18,28,43,.92);border:1px solid #2f415d}.rpvs__item--done{border-color:#5b9e73}.rpvs__item--danger{border-color:#9f5151}.rpvs__progress{height:6px;margin-top:7px;border-radius:999px;background:#273347;overflow:hidden}.rpvs__progress>span{display:block;height:100%;background:#d7b65a}
     .rpvs__commands{display:grid;gap:7px;max-height:320px;overflow:auto}.rpvs__action,.rpvs__choice{padding:10px 12px;border:1px solid #6b7d99;border-radius:9px;background:rgba(24,38,58,.94);color:#f4ead6;cursor:pointer;text-align:left}.rpvs__action:hover,.rpvs__choice:hover{border-color:#79c9ff}.rpvs__primary{width:100%;padding:13px;border:1px solid #d2ab52;border-radius:10px;background:linear-gradient(#6b5220,#47340f);color:#fff2c7;font-weight:700;cursor:pointer}
+    .rpvs__deployment-units{display:grid;gap:8px}.rpvs__deployment-unit{display:grid;grid-template-columns:42px 1fr auto;align-items:center;gap:9px;padding:9px;border:1px solid #526885;border-radius:10px;background:#142239;color:#f4ead6;text-align:left;cursor:pointer}.rpvs__deployment-unit[aria-pressed=true]{border-color:#f2cf76;box-shadow:0 0 0 2px rgba(242,207,118,.22) inset}.rpvs__deployment-unit[disabled]{opacity:.55;cursor:not-allowed}.rpvs__deployment-remove{padding:7px;border:1px solid #985858;border-radius:8px;background:#3b1d25;color:#ffd8d8;cursor:pointer}.rpvs__deployment-budget{display:flex;justify-content:space-between;margin-bottom:10px;padding:10px;border:1px solid #8d7745;border-radius:10px;background:#111d30}.rpvs__deployment-help{color:#a8c8a8;font-size:13px}
     .rpvs__order{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;padding:9px 11px;border:1px solid #8d7745;border-radius:10px;background:#111d30}.rpvs__order strong{color:#f2cf76;font-size:20px}.rpvs__reserve{display:grid;gap:8px}.rpvs__reserve-card{display:grid;grid-template-columns:42px 1fr auto;align-items:center;gap:9px;width:100%;padding:9px;border:1px solid #526885;border-radius:10px;background:#142239;color:#f4ead6;text-align:left;cursor:pointer}.rpvs__reserve-card[disabled]{opacity:.48;cursor:not-allowed}.rpvs__reserve-card[aria-pressed=true]{border-color:#f2cf76;box-shadow:0 0 0 2px rgba(242,207,118,.22) inset}.rpvs__reserve-piece{display:grid;place-items:center;width:42px;height:42px;border-radius:8px;background:#08111f;font:30px Georgia,serif}.rpvs__reserve-meta{display:grid}.rpvs__reserve-cost{color:#f2cf76;font-weight:800}.rpvs__reserve-hint{margin-top:8px;color:#9fca9f;font-size:13px}
     .rpvs__center{position:relative;min-height:560px;display:grid;place-items:center;padding:34px;text-align:center;background-position:center;background-size:cover}.rpvs__center-card{position:relative;z-index:2;max-width:720px;padding:24px;border:1px solid rgba(194,159,78,.65);border-radius:17px;background:rgba(7,12,21,.84);box-shadow:0 18px 48px rgba(0,0,0,.4);backdrop-filter:blur(8px)}.rpvs__event-copy{font-size:18px;white-space:pre-line}.rpvs__choice-list{display:grid;gap:10px;margin-top:20px}.rpvs__reward-grid{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:22px 0}.rpvs__reward{min-width:110px;padding:18px;border:1px solid #9b8045;border-radius:14px;background:#19243a}.rpvs__reward b{display:block;font-size:26px;color:#f2cf76}
     .rpvs__board-vfx,.rpvs__scene-vfx{position:absolute;z-index:8;pointer-events:none;background-repeat:no-repeat;filter:drop-shadow(0 0 12px rgba(255,210,110,.55))}.rpvs__scene-vfx{left:50%;top:50%;width:230px;height:230px;transform:translate(-50%,-50%)}
@@ -121,6 +122,7 @@ class VerticalSlicePresenter {
     this.assetCache = options.assetCache || new TileImageCache();
     this.selectedSquare = null;
     this.selectedReserveEntryId = null;
+    this.selectedDeploymentUnitId = null;
     this.boardPlan = null;
     this.boardReport = null;
     this.resizeObserver = null;
@@ -187,9 +189,11 @@ class VerticalSlicePresenter {
     this.queueEffect(snapshot);
     this.selectedSquare = ['scenario', 'boss'].includes(snapshot.status) ? this.selectedSquare : null;
     this.selectedReserveEntryId = ['scenario', 'boss'].includes(snapshot.status) ? this.selectedReserveEntryId : null;
+    this.selectedDeploymentUnitId = snapshot.status === 'deployment' ? this.selectedDeploymentUnitId : null;
     this.resizeObserver?.disconnect();
     if (snapshot.status === 'campaign') this.renderCampaign(snapshot);
     else if (snapshot.status === 'event') this.renderEvent(snapshot);
+    else if (snapshot.status === 'deployment') this.renderDeployment(snapshot);
     else if (['scenario', 'boss'].includes(snapshot.status)) this.renderScenario(snapshot);
     else if (snapshot.status === 'boss_transition') this.renderBossTransition(snapshot);
     else if (snapshot.status === 'reward') this.renderReward(snapshot);
@@ -223,6 +227,121 @@ class VerticalSlicePresenter {
     this.root.innerHTML = this.shell(snapshot, main, sidebar);
     for (const button of this.root.querySelectorAll('[data-choice-id]')) {
       button.addEventListener('click', () => this.client.dispatch({ type: 'ChooseEvent', choiceId: button.dataset.choiceId }).catch(() => {}));
+    }
+  }
+
+  renderDeployment(snapshot) {
+    const deployment = snapshot.deployment;
+    const scenario = snapshot.scenario;
+    const art = sceneAsset(snapshot, snapshot.currentNode?.type === 'elite' ? 'elite' : 'battle');
+    if (this.selectedDeploymentUnitId && !deployment.units.some((unit) => unit.id === this.selectedDeploymentUnitId && !unit.fixed)) this.selectedDeploymentUnitId = null;
+    const units = deployment.units.map((unit) => {
+      const selected = unit.id === this.selectedDeploymentUnitId;
+      const location = unit.square || 'резерв';
+      return `<div class="rpvs__deployment-unit" role="button" tabindex="${unit.fixed ? -1 : 0}" aria-pressed="${selected}" data-deployment-unit="${escapeAttribute(unit.id)}" ${unit.fixed ? 'aria-disabled="true"' : ''}><span class="rpvs__reserve-piece">${escapeHtml(pieceGlyph({ side: deployment.playerSide, type: unit.type }))}</span><span><strong>${escapeHtml(unit.label)}</strong><small class="rpvs__muted">${escapeHtml(location)} · ${unit.commandCost} ком.</small></span>${!unit.fixed && unit.square ? `<button class="rpvs__deployment-remove" data-deployment-remove="${escapeAttribute(unit.id)}">В резерв</button>` : ''}</div>`;
+    }).join('');
+    const main = `<div class="rpvs__panel-head"><h1 class="rpvs__title">Расстановка армии</h1><span class="rpvs__muted">Выберите фигуру, затем клетку стартовой зоны</span></div><div class="rpvs__board-wrap" style="${sceneStyle(art)}"><canvas class="rpvs__canvas" data-deployment-board tabindex="0" aria-label="Поле расстановки"></canvas></div>`;
+    const sidebar = `<div class="rpvs__panel-head"><h2 class="rpvs__title">Состав</h2></div><div class="rpvs__panel-body"><div class="rpvs__deployment-budget"><span>Командование</span><strong>${deployment.commandSpent} / ${deployment.commandLimit}</strong></div><div class="rpvs__deployment-units">${units}</div><p class="rpvs__deployment-help">Обязательные фигуры должны оставаться на поле. Неразмещённые необязательные фигуры переходят в резерв.</p><button class="rpvs__primary" data-confirm-deployment ${deployment.canConfirm ? '' : 'disabled'}>Подтвердить расстановку</button></div>`;
+    this.root.innerHTML = this.shell(snapshot, main, sidebar);
+    for (const card of this.root.querySelectorAll('[data-deployment-unit]')) {
+      const choose = (event) => {
+        if (event.target.closest('[data-deployment-remove]') || card.getAttribute('aria-disabled') === 'true') return;
+        this.selectedDeploymentUnitId = this.selectedDeploymentUnitId === card.dataset.deploymentUnit ? null : card.dataset.deploymentUnit;
+        this.renderDeployment(snapshot);
+      };
+      card.addEventListener('click', choose);
+      card.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); choose(event); } });
+    }
+    for (const button of this.root.querySelectorAll('[data-deployment-remove]')) button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      this.selectedDeploymentUnitId = null;
+      this.client.dispatch({ type: 'RemoveDeploymentUnit', unitId: button.dataset.deploymentRemove }).catch(() => {});
+    });
+    this.root.querySelector('[data-confirm-deployment]')?.addEventListener('click', () => this.client.dispatch({ type: 'ConfirmDeployment' }).catch(() => {}));
+    const canvas = this.root.querySelector('[data-deployment-board]');
+    canvas.addEventListener('pointerdown', (event) => this.handleDeploymentPointer(event));
+    this.drawDeploymentBoard();
+    if (globalThis.ResizeObserver) {
+      this.resizeObserver = new ResizeObserver(() => this.drawDeploymentBoard());
+      this.resizeObserver.observe(canvas.parentElement);
+    }
+  }
+
+  drawDeploymentBoard() {
+    const snapshot = this.lastSnapshot;
+    const scenario = snapshot?.scenario;
+    const deployment = snapshot?.deployment;
+    const canvas = this.root.querySelector('[data-deployment-board]');
+    if (!canvas || !scenario || !deployment) return;
+    const bounds = canvas.parentElement.getBoundingClientRect();
+    const width = Math.max(320, Math.floor(bounds.width));
+    const height = Math.max(320, Math.floor(bounds.height));
+    const resized = resizeCanvasForDisplay(canvas, width, height, globalThis.devicePixelRatio || 1);
+    const plan = buildBrowserBoardPlan({
+      width: scenario.board.width,
+      height: scenario.board.height,
+      activeCells: scenario.board.activeCells,
+      flipped: scenario.board.flipped,
+      tileSet: scenario.board.tileSet
+    });
+    this.boardPlan = plan;
+    this.assetCache.prime([scenario.board.tileSet.light, scenario.board.tileSet.dark, CORE_ASSETS.neutralBoard.blocker, CORE_ASSETS.neutralBoard.startZone, CORE_ASSETS.focusRing]);
+    const environment = new Map();
+    for (const object of scenario.environment) for (const cell of object.cells) environment.set(cell, object);
+    const units = new Map(deployment.units.filter((unit) => unit.square).map((unit) => [unit.square, { ...unit, side: deployment.playerSide }]));
+    for (const piece of scenario.pieces.filter((piece) => piece.side !== deployment.playerSide)) units.set(piece.square, piece);
+    const zone = new Set(deployment.zone);
+    const report = renderModularBoard(resized.context, plan, {
+      assetCache: this.assetCache,
+      canvasWidth: width,
+      canvasHeight: height,
+      padding: 18,
+      showCoordinates: true,
+      background: 'rgba(4,8,14,.72)',
+      drawCellOverlay: (context, cell, rect) => {
+        const object = environment.get(cell.square);
+        if (object?.type === 'blocker') {
+          const blocker = this.assetCache.get(CORE_ASSETS.neutralBoard.blocker);
+          if (blocker?.status === 'ready') context.drawImage(blocker.image, rect.x, rect.y, rect.size, rect.size);
+        }
+        if (zone.has(cell.square)) {
+          const startZone = this.assetCache.get(CORE_ASSETS.neutralBoard.startZone);
+          if (startZone?.status === 'ready') context.drawImage(startZone.image, rect.x, rect.y, rect.size, rect.size);
+          else { context.fillStyle = 'rgba(72,196,115,.18)'; context.fillRect(rect.x, rect.y, rect.size, rect.size); }
+        }
+        const unit = units.get(cell.square);
+        if (unit) {
+          context.save(); context.fillStyle = unit.side === 'w' ? '#f6ecd2' : '#172032'; context.strokeStyle = unit.side === 'w' ? '#765822' : '#a3b9db'; context.lineWidth = Math.max(2, rect.size * .035); context.beginPath(); context.arc(rect.x + rect.size / 2, rect.y + rect.size / 2, rect.size * .35, 0, Math.PI * 2); context.fill(); context.stroke(); context.fillStyle = unit.side === 'w' ? '#111' : '#f4ead6'; context.font = `${Math.floor(rect.size * .58)}px Georgia,serif`; context.textAlign = 'center'; context.textBaseline = 'middle'; context.fillText(pieceGlyph({ side: unit.side, type: unit.type }), rect.x + rect.size / 2, rect.y + rect.size / 2 + rect.size * .03); context.restore();
+        }
+        const selected = deployment.units.find((unit) => unit.id === this.selectedDeploymentUnitId);
+        if (selected?.square === cell.square) {
+          const focus = this.assetCache.get(CORE_ASSETS.focusRing);
+          if (focus?.status === 'ready') context.drawImage(focus.image, rect.x, rect.y, rect.size, rect.size);
+        }
+      }
+    });
+    this.boardReport = report;
+    if ([scenario.board.tileSet.light, scenario.board.tileSet.dark, CORE_ASSETS.neutralBoard.blocker, CORE_ASSETS.neutralBoard.startZone, CORE_ASSETS.focusRing].some((source) => this.assetCache.status(source) === 'loading')) requestAnimationFrame(() => this.drawDeploymentBoard());
+  }
+
+  handleDeploymentPointer(event) {
+    if (this.busy || !this.boardReport || !this.boardPlan || this.lastSnapshot?.status !== 'deployment') return;
+    const canvas = event.currentTarget;
+    const bounds = canvas.getBoundingClientRect();
+    const viewport = this.boardReport.viewport;
+    const displayX = Math.floor((event.clientX - bounds.left - viewport.x) / viewport.cellSize);
+    const displayY = Math.floor((event.clientY - bounds.top - viewport.y) / viewport.cellSize);
+    const cell = this.boardPlan.activeCells.find((candidate) => candidate.displayX === displayX && candidate.displayY === displayY);
+    if (!cell) return;
+    const deployment = this.lastSnapshot.deployment;
+    const occupying = deployment.units.find((unit) => unit.square === cell.square && !unit.fixed);
+    if (occupying) {
+      this.selectedDeploymentUnitId = occupying.id;
+      this.renderDeployment(this.lastSnapshot);
+      return;
+    }
+    if (this.selectedDeploymentUnitId && deployment.zone.includes(cell.square)) {
+      this.client.dispatch({ type: 'PlaceDeploymentUnit', unitId: this.selectedDeploymentUnitId, square: cell.square }).catch(() => {});
     }
   }
 

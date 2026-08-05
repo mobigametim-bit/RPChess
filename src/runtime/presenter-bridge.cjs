@@ -13,16 +13,21 @@ const {
   availableVerticalSliceRoutes,
   enterVerticalSliceNode,
   chooseVerticalSliceEvent,
+  executeVerticalSliceDeployment,
   executeVerticalSlicePlayerTurn,
   beginVerticalSliceBossPhase,
   claimVerticalSliceReward,
   saveVerticalSlice
 } = require('./vertical-slice.cjs');
+const { deploymentGateSnapshot } = require('./deployment-gate.cjs');
 
 const PRESENTER_FORMAT = 'rpchess-presenter-snapshot';
 const PRESENTER_SCHEMA_VERSION = 1;
 const PRESENTER_COMMANDS = Object.freeze([
   'Travel',
+  'PlaceDeploymentUnit',
+  'RemoveDeploymentUnit',
+  'ConfirmDeployment',
   'ChooseEvent',
   'PlayerCommand',
   'BeginBossPhase',
@@ -230,7 +235,7 @@ function scenarioSnapshot(state, dependencies = {}) {
   const width = scenario.board?.width || content?.board?.width || 8;
   const height = scenario.board?.height || content?.board?.height || 8;
   const activeCells = content?.board?.activeCells || null;
-  const playerTurn = battle.position.sideToMove === state.playerSide && scenario.status === 'active';
+  const playerTurn = ['scenario', 'boss'].includes(state.status) && battle.position.sideToMove === state.playerSide && scenario.status === 'active';
   const legalCommands = playerTurn
     ? legalWardAwareCommands(battle).map(normalizeCommand).sort((a, b) => commandKey(a).localeCompare(commandKey(b)))
     : [];
@@ -374,6 +379,7 @@ function campaignSnapshot(state, dependencies = {}) {
 
 function presenterActions(state, event, scenario) {
   if (state.status === 'campaign') return freezeArray(['Travel']);
+  if (state.status === 'deployment') return freezeArray(['PlaceDeploymentUnit', 'RemoveDeploymentUnit', 'ConfirmDeployment']);
   if (state.status === 'event' && event?.status === 'active') return freezeArray(['ChooseEvent']);
   if (['scenario', 'boss'].includes(state.status) && scenario?.playerTurn) return freezeArray(['PlayerCommand']);
   if (state.status === 'boss_transition') return freezeArray(['BeginBossPhase']);
@@ -385,6 +391,7 @@ function createPresenterSnapshot(state, dependencies = {}) {
   assertRuntimeState(state);
   const campaign = campaignSnapshot(state, dependencies);
   const event = eventSnapshot(state, dependencies);
+  const deployment = state.deployment ? deploymentGateSnapshot(state.deployment) : null;
   const scenario = scenarioSnapshot(state, dependencies);
   const boss = bossSnapshot(state, dependencies);
   const content = currentContent(state, dependencies.contentRegistry);
@@ -420,6 +427,7 @@ function createPresenterSnapshot(state, dependencies = {}) {
     campaign,
     currentNode: state.currentNode ? deepFreeze(serializableCopy(state.currentNode)) : null,
     event,
+    deployment,
     scenario,
     boss,
     reward,
@@ -438,6 +446,17 @@ function normalizePresenterCommand(command) {
     const targetNodeId = String(command.targetNodeId || command.payload?.targetNodeId || '');
     if (!targetNodeId) throw new Error('Travel requires targetNodeId');
     return Object.freeze({ type, targetNodeId });
+  }
+  if (type === 'PlaceDeploymentUnit') {
+    const unitId = String(command.unitId || command.payload?.unitId || '');
+    const square = String(command.square || command.payload?.square || '');
+    if (!unitId || !square) throw new Error('PlaceDeploymentUnit requires unitId and square');
+    return Object.freeze({ type, payload: Object.freeze({ unitId, square }) });
+  }
+  if (type === 'RemoveDeploymentUnit') {
+    const unitId = String(command.unitId || command.payload?.unitId || '');
+    if (!unitId) throw new Error('RemoveDeploymentUnit requires unitId');
+    return Object.freeze({ type, payload: Object.freeze({ unitId }) });
   }
   if (type === 'ChooseEvent') {
     const choiceId = String(command.choiceId || command.payload?.choiceId || '');
@@ -458,6 +477,7 @@ function dispatchPresenterCommand(state, commandInput, dependencies = {}) {
   let nextState = state;
   let saveEnvelope = null;
   if (command.type === 'Travel') nextState = enterVerticalSliceNode(state, command.targetNodeId, dependencies);
+  else if (['PlaceDeploymentUnit', 'RemoveDeploymentUnit', 'ConfirmDeployment'].includes(command.type)) nextState = executeVerticalSliceDeployment(state, command, dependencies);
   else if (command.type === 'ChooseEvent') nextState = chooseVerticalSliceEvent(state, command.choiceId, dependencies);
   else if (command.type === 'PlayerCommand') nextState = executeVerticalSlicePlayerTurn(state, command.request, dependencies);
   else if (command.type === 'BeginBossPhase') nextState = beginVerticalSliceBossPhase(state, dependencies);

@@ -6292,6 +6292,387 @@ var RPChessRuntime = (() => {
     }
   });
 
+  // src/combat/deployment.cjs
+  var require_deployment = __commonJS({
+    "src/combat/deployment.cjs"(exports, module) {
+      "use strict";
+      var {
+        opposite,
+        piece,
+        squareToIndex,
+        indexToSquare,
+        createPosition,
+        validatePosition
+      } = require_position();
+      var { isInCheck } = require_rules();
+      var PIECE_TYPES = /* @__PURE__ */ new Set(["p", "n", "b", "r", "q", "k"]);
+      function normalizeUnit(unit) {
+        if (!unit || typeof unit.id !== "string" || !unit.id) throw new TypeError("deployment unit requires a stable id");
+        if (!PIECE_TYPES.has(unit.type)) throw new TypeError(`invalid deployment piece type: ${unit.type}`);
+        if (!Number.isInteger(unit.commandCost) || unit.commandCost < 0) throw new RangeError(`invalid command cost for ${unit.id}`);
+        return Object.freeze({
+          id: unit.id,
+          type: unit.type,
+          commandCost: unit.commandCost,
+          required: Boolean(unit.required),
+          fixedSquare: unit.fixedSquare == null ? null : indexToSquare(squareToIndex(unit.fixedSquare))
+        });
+      }
+      function createDeploymentPlan(options) {
+        if (!options || !Array.isArray(options.roster)) throw new TypeError("deployment roster is required");
+        const side = options.side || "w";
+        if (!["w", "b"].includes(side)) throw new TypeError("deployment side must be w or b");
+        const commandLimit = Number.isInteger(options.commandLimit) && options.commandLimit >= 0 ? options.commandLimit : 0;
+        const zone = [...new Set((options.zone || []).map((square) => indexToSquare(squareToIndex(square))))];
+        if (!zone.length) throw new Error("deployment zone cannot be empty");
+        const roster = options.roster.map(normalizeUnit);
+        if (new Set(roster.map((unit) => unit.id)).size !== roster.length) throw new Error("deployment roster contains duplicate unit ids");
+        const placements = {};
+        for (const unit of roster) {
+          if (!unit.fixedSquare) continue;
+          if (!zone.includes(unit.fixedSquare)) throw new Error(`fixed square ${unit.fixedSquare} is outside deployment zone`);
+          if (Object.values(placements).includes(unit.fixedSquare)) throw new Error(`fixed square ${unit.fixedSquare} is occupied twice`);
+          placements[unit.id] = unit.fixedSquare;
+        }
+        const plan = {
+          format: "rpchess-deployment-plan",
+          side,
+          commandLimit,
+          zone: Object.freeze(zone),
+          roster: Object.freeze(roster),
+          placements: Object.freeze(placements)
+        };
+        validateBudget(plan);
+        return Object.freeze(plan);
+      }
+      function unitById(plan, unitId) {
+        const unit = plan.roster.find((candidate) => candidate.id === unitId);
+        if (!unit) throw new Error(`unknown deployment unit: ${unitId}`);
+        return unit;
+      }
+      function commandSpent(plan) {
+        return Object.keys(plan.placements).reduce((sum, unitId) => sum + unitById(plan, unitId).commandCost, 0);
+      }
+      function validateBudget(plan) {
+        const spent = commandSpent(plan);
+        if (spent > plan.commandLimit) throw new Error(`deployment exceeds command limit: ${spent}/${plan.commandLimit}`);
+        return spent;
+      }
+      function replacePlacements(plan, placements) {
+        const next = Object.freeze({ ...placements });
+        const result = Object.freeze({ ...plan, placements: next });
+        validateBudget(result);
+        return result;
+      }
+      function placeUnit(plan, unitId, square) {
+        if (!plan || plan.format !== "rpchess-deployment-plan") throw new TypeError("invalid deployment plan");
+        const unit = unitById(plan, unitId);
+        const target = indexToSquare(squareToIndex(square));
+        if (!plan.zone.includes(target)) throw new Error(`square ${target} is outside deployment zone`);
+        if (unit.fixedSquare && unit.fixedSquare !== target) throw new Error(`${unitId} is fixed on ${unit.fixedSquare}`);
+        const occupant = Object.entries(plan.placements).find(([otherId, otherSquare]) => otherId !== unitId && otherSquare === target);
+        if (occupant) throw new Error(`square ${target} is already occupied by ${occupant[0]}`);
+        return replacePlacements(plan, { ...plan.placements, [unitId]: target });
+      }
+      function removeUnit(plan, unitId) {
+        if (!plan || plan.format !== "rpchess-deployment-plan") throw new TypeError("invalid deployment plan");
+        const unit = unitById(plan, unitId);
+        if (unit.fixedSquare) throw new Error(`${unitId} is fixed and cannot be removed`);
+        const placements = { ...plan.placements };
+        delete placements[unitId];
+        return replacePlacements(plan, placements);
+      }
+      function deploymentSummary(plan) {
+        const placedIds = Object.keys(plan.placements);
+        const reserveIds = plan.roster.filter((unit) => !placedIds.includes(unit.id)).map((unit) => unit.id);
+        const missingRequired = plan.roster.filter((unit) => unit.required && !placedIds.includes(unit.id)).map((unit) => unit.id);
+        return Object.freeze({
+          commandSpent: commandSpent(plan),
+          commandLimit: plan.commandLimit,
+          placedIds: Object.freeze(placedIds),
+          reserveIds: Object.freeze(reserveIds),
+          missingRequired: Object.freeze(missingRequired)
+        });
+      }
+      function finalizeDeployment(plan, options = {}) {
+        if (!plan || plan.format !== "rpchess-deployment-plan") throw new TypeError("invalid deployment plan");
+        const summary = deploymentSummary(plan);
+        if (summary.missingRequired.length) throw new Error(`required units are not deployed: ${summary.missingRequired.join(", ")}`);
+        const board = new Array(64).fill(null);
+        const identities = {};
+        const place = (id, side, type, square) => {
+          const index = squareToIndex(square);
+          if (board[index]) throw new Error(`deployment square ${indexToSquare(index)} is occupied twice`);
+          board[index] = piece(side, type);
+          identities[indexToSquare(index)] = id;
+        };
+        for (const unit of plan.roster) {
+          const square = plan.placements[unit.id];
+          if (square) place(unit.id, plan.side, unit.type, square);
+        }
+        for (const enemy of options.enemyPieces || []) {
+          if (!enemy || typeof enemy.id !== "string" || !enemy.id) throw new TypeError("enemy deployment piece requires id");
+          if (!PIECE_TYPES.has(enemy.type)) throw new TypeError(`invalid enemy piece type: ${enemy.type}`);
+          place(enemy.id, enemy.side || opposite(plan.side), enemy.type, enemy.square);
+        }
+        const position = createPosition({
+          board,
+          sideToMove: options.sideToMove || plan.side,
+          castling: options.castling || "",
+          enPassant: null,
+          halfmove: 0,
+          fullmove: 1
+        });
+        validatePosition(position);
+        const allowedCheckSides = new Set(options.allowInitialCheckSides || []);
+        for (const side of ["w", "b"]) {
+          if (isInCheck(position, side) && !allowedCheckSides.has(side)) {
+            throw new Error(`${side} king starts in check`);
+          }
+        }
+        const reserve = plan.roster.filter((unit) => !plan.placements[unit.id]).map((unit) => Object.freeze({ id: unit.id, side: plan.side, type: unit.type, commandCost: unit.commandCost }));
+        return Object.freeze({
+          position,
+          identities: Object.freeze(identities),
+          reserve: Object.freeze(reserve),
+          commandSpent: summary.commandSpent,
+          commandLimit: plan.commandLimit
+        });
+      }
+      module.exports = {
+        createDeploymentPlan,
+        placeUnit,
+        removeUnit,
+        commandSpent,
+        deploymentSummary,
+        finalizeDeployment
+      };
+    }
+  });
+
+  // src/runtime/deployment-gate.cjs
+  var require_deployment_gate = __commonJS({
+    "src/runtime/deployment-gate.cjs"(exports, module) {
+      "use strict";
+      var { indexToSquare, squareToIndex } = require_position();
+      var {
+        createDeploymentPlan,
+        placeUnit,
+        removeUnit,
+        deploymentSummary,
+        finalizeDeployment
+      } = require_deployment();
+      var { createBattleState } = require_battle();
+      var DEPLOYMENT_GATE_FORMAT = "rpchess-scenario-deployment-gate";
+      var PIECE_COMMAND_COST = Object.freeze({ p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 });
+      var DEPLOYMENT_COMMANDS = Object.freeze(["PlaceDeploymentUnit", "RemoveDeploymentUnit", "ConfirmDeployment"]);
+      function freezeArray(values) {
+        return Object.freeze(values.slice());
+      }
+      function assertScenario(scenario) {
+        if (!scenario || scenario.format !== "rpchess-scenario-state" || scenario.status !== "active" || scenario.actionIndex !== 0) {
+          throw new Error("deployment requires an unstarted active scenario");
+        }
+        return scenario;
+      }
+      function activePieceRecords(scenario) {
+        const records = [];
+        for (let index = 0; index < 64; index += 1) {
+          const boardPiece = scenario.battle.position.board[index];
+          if (!boardPiece) continue;
+          const square = indexToSquare(index);
+          const id = scenario.battle.identities.bySquare[square];
+          if (!id) throw new Error(`deployment identity missing on ${square}`);
+          records.push(Object.freeze({
+            id,
+            side: boardPiece.side,
+            type: boardPiece.type,
+            square,
+            metadata: scenario.battle.identities.metadata[id] || Object.freeze({})
+          }));
+        }
+        return freezeArray(records);
+      }
+      function requiredPlayerIds(scenario, playerRecords) {
+        const required = new Set(playerRecords.filter((record) => record.type === "k").map((record) => record.id));
+        for (const objective of scenario.objectives) {
+          if (objective.pieceId) required.add(objective.pieceId);
+          for (const id of objective.protectedPieceIds || []) required.add(id);
+        }
+        for (const failure of scenario.failures) for (const id of failure.targetPieceIds || []) required.add(id);
+        return required;
+      }
+      function blockerCells(scenario) {
+        return new Set(scenario.environment.objects.filter((record) => record.type === "blocker" && record.active).flatMap((record) => record.cells));
+      }
+      function deploymentZone(scenario, playerSide, records) {
+        const blocked = blockerCells(scenario);
+        const enemySquares = new Set(records.filter((record) => record.side !== playerSide).map((record) => record.square));
+        const zone = new Set(records.filter((record) => record.side === playerSide).map((record) => record.square));
+        const ranks = playerSide === "w" ? [1, 2] : [7, 8];
+        for (const rank of ranks) for (const file of "abcdefgh") zone.add(`${file}${rank}`);
+        return freezeArray([...zone].filter((square) => !blocked.has(square) && !enemySquares.has(square)).sort((a, b) => squareToIndex(a) - squareToIndex(b)));
+      }
+      function unitLabel(metadata, id, localization) {
+        const key = metadata.nameKey || null;
+        if (key && localization && Object.prototype.hasOwnProperty.call(localization, key)) return localization[key];
+        return metadata.heroId || id;
+      }
+      function createScenarioDeploymentGate(scenarioInput, options = {}) {
+        const scenario = assertScenario(scenarioInput);
+        const playerSide = options.playerSide || scenario.playerSide;
+        const records = activePieceRecords(scenario);
+        const players = records.filter((record) => record.side === playerSide);
+        const required = requiredPlayerIds(scenario, players);
+        const zone = deploymentZone(scenario, playerSide, records);
+        const units = players.map((record) => Object.freeze({
+          id: record.id,
+          type: record.type,
+          commandCost: PIECE_COMMAND_COST[record.type],
+          required: required.has(record.id),
+          fixedSquare: record.type === "k" ? record.square : null,
+          originalSquare: record.square,
+          metadata: record.metadata,
+          label: unitLabel(record.metadata, record.id, options.localization)
+        }));
+        const commandLimit = units.reduce((total, unit) => total + unit.commandCost, 0);
+        let plan = createDeploymentPlan({ side: playerSide, commandLimit, zone, roster: units });
+        for (const unit of units) if (!unit.fixedSquare) plan = placeUnit(plan, unit.id, unit.originalSquare);
+        const gate = {
+          format: DEPLOYMENT_GATE_FORMAT,
+          schemaVersion: 1,
+          gateId: String(options.gateId || `${scenario.scenarioId}_deployment`),
+          seed: Number(options.seed || 1),
+          playerSide,
+          scenario,
+          units: freezeArray(units),
+          plan,
+          revision: 0,
+          history: freezeArray([])
+        };
+        return Object.freeze(gate);
+      }
+      function assertGate(gate) {
+        if (!gate || gate.format !== DEPLOYMENT_GATE_FORMAT || gate.schemaVersion !== 1) throw new Error("invalid scenario deployment gate");
+        return gate;
+      }
+      function appendGate(gate, plan, command) {
+        return Object.freeze({
+          ...gate,
+          plan,
+          revision: gate.revision + 1,
+          history: freezeArray([...gate.history, Object.freeze({
+            revision: gate.revision + 1,
+            type: command.type,
+            payload: Object.freeze({ ...command.payload || {} })
+          })])
+        });
+      }
+      function executeDeploymentEdit(gateInput, command) {
+        const gate = assertGate(gateInput);
+        if (!command || !DEPLOYMENT_COMMANDS.includes(command.type) || command.type === "ConfirmDeployment") throw new Error("invalid deployment edit command");
+        if (command.type === "PlaceDeploymentUnit") {
+          return appendGate(gate, placeUnit(gate.plan, command.payload?.unitId, command.payload?.square), command);
+        }
+        return appendGate(gate, removeUnit(gate.plan, command.payload?.unitId), command);
+      }
+      function mergedReserve(gate, finalized) {
+        const original = gate.scenario.battle.reserve || [];
+        const originalIds = new Set(original.map((entry) => entry.id));
+        const added = finalized.reserve.filter((entry) => !originalIds.has(entry.id)).map((entry) => {
+          const unit = gate.units.find((candidate) => candidate.id === entry.id);
+          return Object.freeze({
+            id: entry.id,
+            side: entry.side,
+            type: entry.type,
+            orderCost: Math.max(1, entry.commandCost),
+            metadata: Object.freeze({ ...unit?.metadata || {} })
+          });
+        });
+        return freezeArray([...original, ...added]);
+      }
+      function finalizeScenarioDeployment(gateInput) {
+        const gate = assertGate(gateInput);
+        const summary = deploymentSummary(gate.plan);
+        if (summary.missingRequired.length) throw new Error(`deployment is missing required units: ${summary.missingRequired.join(", ")}`);
+        const records = activePieceRecords(gate.scenario);
+        const enemyPieces = records.filter((record) => record.side !== gate.playerSide).map((record) => Object.freeze({ id: record.id, side: record.side, type: record.type, square: record.square }));
+        const finalized = finalizeDeployment(gate.plan, {
+          enemyPieces,
+          sideToMove: gate.playerSide,
+          castling: gate.scenario.battle.position.castling || ""
+        });
+        const originalBattle = gate.scenario.battle;
+        const playerReserveCells = [.../* @__PURE__ */ new Set([...originalBattle.reserveCells?.[gate.playerSide] || [], ...gate.plan.zone])];
+        const reserveCells = {
+          w: freezeArray(gate.playerSide === "w" ? playerReserveCells : originalBattle.reserveCells?.w || []),
+          b: freezeArray(gate.playerSide === "b" ? playerReserveCells : originalBattle.reserveCells?.b || [])
+        };
+        const createdBattle = createBattleState({
+          battleId: `${originalBattle.battleId}_deployed_${gate.revision}`,
+          seed: gate.seed,
+          playerSide: originalBattle.playerSide,
+          position: finalized.position,
+          identitiesBySquare: finalized.identities,
+          identityMetadata: originalBattle.identities.metadata,
+          statuses: originalBattle.statuses,
+          orderPoints: originalBattle.orderPoints,
+          reserve: mergedReserve(gate, finalized),
+          reserveCells
+        });
+        const battle = Object.freeze({
+          ...createdBattle,
+          scenarioRules: originalBattle.scenarioRules || createdBattle.scenarioRules
+        });
+        return Object.freeze({
+          scenario: Object.freeze({ ...gate.scenario, battle }),
+          summary,
+          battle
+        });
+      }
+      function deploymentGateSnapshot(gateInput) {
+        const gate = assertGate(gateInput);
+        const summary = deploymentSummary(gate.plan);
+        return Object.freeze({
+          format: "rpchess-deployment-presenter",
+          schemaVersion: 1,
+          gateId: gate.gateId,
+          revision: gate.revision,
+          playerSide: gate.playerSide,
+          zone: gate.plan.zone,
+          commandSpent: summary.commandSpent,
+          commandLimit: summary.commandLimit,
+          canConfirm: summary.missingRequired.length === 0,
+          missingRequired: summary.missingRequired,
+          units: freezeArray(gate.units.map((unit) => Object.freeze({
+            id: unit.id,
+            type: unit.type,
+            label: unit.label,
+            commandCost: unit.commandCost,
+            required: unit.required,
+            fixed: Boolean(unit.fixedSquare),
+            originalSquare: unit.originalSquare,
+            square: gate.plan.placements[unit.id] || null,
+            inReserve: !gate.plan.placements[unit.id],
+            metadata: unit.metadata
+          })))
+        });
+      }
+      module.exports = {
+        DEPLOYMENT_GATE_FORMAT,
+        PIECE_COMMAND_COST,
+        DEPLOYMENT_COMMANDS,
+        activePieceRecords,
+        requiredPlayerIds,
+        deploymentZone,
+        createScenarioDeploymentGate,
+        executeDeploymentEdit,
+        finalizeScenarioDeployment,
+        deploymentGateSnapshot
+      };
+    }
+  });
+
   // src/runtime/vertical-slice.cjs
   var require_vertical_slice = __commonJS({
     "src/runtime/vertical-slice.cjs"(exports, module) {
@@ -6314,10 +6695,16 @@ var RPChessRuntime = (() => {
         applyFlagChanges
       } = require_authored_event();
       var { executeBossActionPair, advanceBossPhase } = require_boss_gate();
+      var {
+        DEPLOYMENT_COMMANDS,
+        executeDeploymentEdit,
+        finalizeScenarioDeployment
+      } = require_deployment_gate();
       var RUNTIME_FORMAT = "rpchess-vertical-slice-runtime";
       var RUNTIME_SCHEMA_VERSION = 1;
       var RUNTIME_STATUSES = Object.freeze([
         "campaign",
+        "deployment",
         "event",
         "scenario",
         "boss",
@@ -6413,6 +6800,7 @@ var RPChessRuntime = (() => {
           campaign,
           status: "campaign",
           currentNode: null,
+          deployment: null,
           event: null,
           scenario: null,
           boss: null,
@@ -6476,6 +6864,7 @@ var RPChessRuntime = (() => {
         if (resolution.mode === "boss" && resolution.boss.scenario.battle.position.sideToMove !== state.playerSide) {
           throw new Error(`${node.id} boss must begin on the player side`);
         }
+        const deployment = resolution.mode === "scenario" && typeof dependencies.deploymentFactory === "function" ? dependencies.deploymentFactory({ runtime: state, campaign, node, content, scenario: resolution.scenario }) : null;
         const operation = Object.freeze({ type: "Travel", targetNodeId });
         const currentNode = Object.freeze({
           nodeId: node.id,
@@ -6483,12 +6872,13 @@ var RPChessRuntime = (() => {
           contentId: resolution.contentId,
           reward: resolution.reward
         });
-        const nextStatus = resolution.mode === "scenario" ? "scenario" : resolution.mode === "boss" ? "boss" : resolution.mode === "event" ? "event" : "reward";
+        const nextStatus = resolution.mode === "scenario" ? deployment ? "deployment" : "scenario" : resolution.mode === "boss" ? "boss" : resolution.mode === "event" ? "event" : "reward";
         return deepFreeze({
           ...state,
           campaign,
           status: nextStatus,
           currentNode,
+          deployment,
           event: resolution.event,
           scenario: resolution.scenario,
           boss: resolution.boss,
@@ -6548,6 +6938,47 @@ var RPChessRuntime = (() => {
             removeFlags: event.resolution.removeFlags,
             chronicleKeys: event.resolution.chronicleKeys,
             outcomeKey: event.resolution.outcomeKey
+          })])
+        });
+      }
+      function executeVerticalSliceDeployment(state, commandInput, dependencies = {}) {
+        assertRuntimeState(state);
+        if (state.status !== "deployment" || !state.deployment || !state.scenario) throw new Error("no active vertical slice deployment");
+        if (!commandInput || !DEPLOYMENT_COMMANDS.includes(commandInput.type)) throw new Error("unsupported vertical slice deployment command");
+        const command = Object.freeze({
+          type: commandInput.type,
+          payload: Object.freeze({ ...commandInput.payload || {} })
+        });
+        if (command.type === "ConfirmDeployment") {
+          const finalized = finalizeScenarioDeployment(state.deployment);
+          return deepFreeze({
+            ...state,
+            status: "scenario",
+            deployment: null,
+            scenario: finalized.scenario,
+            transcript: freezeArray([...state.transcript, command]),
+            history: freezeArray([...state.history, Object.freeze({
+              index: state.history.length,
+              type: "deployment_confirmed",
+              nodeId: state.currentNode.nodeId,
+              commandSpent: finalized.summary.commandSpent,
+              commandLimit: finalized.summary.commandLimit,
+              reserveIds: finalized.summary.reserveIds
+            })])
+          });
+        }
+        const deployment = executeDeploymentEdit(state.deployment, command);
+        return deepFreeze({
+          ...state,
+          deployment,
+          transcript: freezeArray([...state.transcript, command]),
+          history: freezeArray([...state.history, Object.freeze({
+            index: state.history.length,
+            type: "deployment_edited",
+            nodeId: state.currentNode.nodeId,
+            commandType: command.type,
+            payload: command.payload,
+            revision: deployment.revision
           })])
         });
       }
@@ -6729,6 +7160,7 @@ var RPChessRuntime = (() => {
           campaign,
           status: bossCompleted ? "complete" : "campaign",
           currentNode: null,
+          deployment: null,
           event: null,
           scenario: null,
           boss: null,
@@ -6757,6 +7189,7 @@ var RPChessRuntime = (() => {
           if (!node) throw new Error(`snapshot current node is missing: ${state.currentNode.nodeId}`);
           if (node.type !== state.currentNode.type) throw new Error("snapshot current node type mismatch");
         }
+        if (state.status === "deployment" && (!state.deployment || state.deployment.format !== "rpchess-scenario-deployment-gate" || !state.scenario)) throw new Error("snapshot active deployment is invalid");
         if (state.status === "event" && (!state.event || state.event.status !== "active")) throw new Error("snapshot active event is invalid");
         if (state.status === "scenario" && (!state.scenario || state.scenario.status !== "active")) throw new Error("snapshot active scenario is invalid");
         if (state.status === "boss" && (!state.boss || state.boss.status !== "active")) throw new Error("snapshot active boss is invalid");
@@ -6783,6 +7216,7 @@ var RPChessRuntime = (() => {
         for (const operation of operations) {
           if (!operation || typeof operation.type !== "string") throw new Error("invalid vertical slice replay operation");
           if (operation.type === "Travel") state = enterVerticalSliceNode(state, operation.targetNodeId, dependencies);
+          else if (DEPLOYMENT_COMMANDS.includes(operation.type)) state = executeVerticalSliceDeployment(state, operation, dependencies);
           else if (operation.type === "ChooseEvent") state = chooseVerticalSliceEvent(state, operation.choiceId, dependencies);
           else if (operation.type === "PlayerCommand") state = executeVerticalSlicePlayerTurn(state, operation.request, dependencies);
           else if (operation.type === "BeginBossPhase") state = beginVerticalSliceBossPhase(state, dependencies);
@@ -6803,6 +7237,7 @@ var RPChessRuntime = (() => {
         availableVerticalSliceRoutes,
         enterVerticalSliceNode,
         chooseVerticalSliceEvent,
+        executeVerticalSliceDeployment,
         executeVerticalSlicePlayerTurn,
         beginVerticalSliceBossPhase,
         claimVerticalSliceReward,
@@ -6832,15 +7267,20 @@ var RPChessRuntime = (() => {
         availableVerticalSliceRoutes,
         enterVerticalSliceNode,
         chooseVerticalSliceEvent,
+        executeVerticalSliceDeployment,
         executeVerticalSlicePlayerTurn,
         beginVerticalSliceBossPhase,
         claimVerticalSliceReward,
         saveVerticalSlice
       } = require_vertical_slice();
+      var { deploymentGateSnapshot } = require_deployment_gate();
       var PRESENTER_FORMAT = "rpchess-presenter-snapshot";
       var PRESENTER_SCHEMA_VERSION = 1;
       var PRESENTER_COMMANDS = Object.freeze([
         "Travel",
+        "PlaceDeploymentUnit",
+        "RemoveDeploymentUnit",
+        "ConfirmDeployment",
         "ChooseEvent",
         "PlayerCommand",
         "BeginBossPhase",
@@ -7026,7 +7466,7 @@ var RPChessRuntime = (() => {
         const width = scenario.board?.width || content?.board?.width || 8;
         const height = scenario.board?.height || content?.board?.height || 8;
         const activeCells = content?.board?.activeCells || null;
-        const playerTurn = battle.position.sideToMove === state.playerSide && scenario.status === "active";
+        const playerTurn = ["scenario", "boss"].includes(state.status) && battle.position.sideToMove === state.playerSide && scenario.status === "active";
         const legalCommands = playerTurn ? legalWardAwareCommands(battle).map(normalizeCommand).sort((a, b) => commandKey(a).localeCompare(commandKey(b))) : [];
         const localization = dependencies.localization || null;
         const reserve = reserveSnapshot(battle, legalCommands, localization);
@@ -7161,6 +7601,7 @@ var RPChessRuntime = (() => {
       }
       function presenterActions(state, event, scenario) {
         if (state.status === "campaign") return freezeArray(["Travel"]);
+        if (state.status === "deployment") return freezeArray(["PlaceDeploymentUnit", "RemoveDeploymentUnit", "ConfirmDeployment"]);
         if (state.status === "event" && event?.status === "active") return freezeArray(["ChooseEvent"]);
         if (["scenario", "boss"].includes(state.status) && scenario?.playerTurn) return freezeArray(["PlayerCommand"]);
         if (state.status === "boss_transition") return freezeArray(["BeginBossPhase"]);
@@ -7171,6 +7612,7 @@ var RPChessRuntime = (() => {
         assertRuntimeState(state);
         const campaign = campaignSnapshot(state, dependencies);
         const event = eventSnapshot(state, dependencies);
+        const deployment = state.deployment ? deploymentGateSnapshot(state.deployment) : null;
         const scenario = scenarioSnapshot(state, dependencies);
         const boss = bossSnapshot(state, dependencies);
         const content = currentContent(state, dependencies.contentRegistry);
@@ -7206,6 +7648,7 @@ var RPChessRuntime = (() => {
           campaign,
           currentNode: state.currentNode ? deepFreeze(serializableCopy(state.currentNode)) : null,
           event,
+          deployment,
           scenario,
           boss,
           reward,
@@ -7223,6 +7666,17 @@ var RPChessRuntime = (() => {
           const targetNodeId = String(command.targetNodeId || command.payload?.targetNodeId || "");
           if (!targetNodeId) throw new Error("Travel requires targetNodeId");
           return Object.freeze({ type, targetNodeId });
+        }
+        if (type === "PlaceDeploymentUnit") {
+          const unitId = String(command.unitId || command.payload?.unitId || "");
+          const square = String(command.square || command.payload?.square || "");
+          if (!unitId || !square) throw new Error("PlaceDeploymentUnit requires unitId and square");
+          return Object.freeze({ type, payload: Object.freeze({ unitId, square }) });
+        }
+        if (type === "RemoveDeploymentUnit") {
+          const unitId = String(command.unitId || command.payload?.unitId || "");
+          if (!unitId) throw new Error("RemoveDeploymentUnit requires unitId");
+          return Object.freeze({ type, payload: Object.freeze({ unitId }) });
         }
         if (type === "ChooseEvent") {
           const choiceId = String(command.choiceId || command.payload?.choiceId || "");
@@ -7242,6 +7696,7 @@ var RPChessRuntime = (() => {
         let nextState = state;
         let saveEnvelope = null;
         if (command.type === "Travel") nextState = enterVerticalSliceNode(state, command.targetNodeId, dependencies);
+        else if (["PlaceDeploymentUnit", "RemoveDeploymentUnit", "ConfirmDeployment"].includes(command.type)) nextState = executeVerticalSliceDeployment(state, command, dependencies);
         else if (command.type === "ChooseEvent") nextState = chooseVerticalSliceEvent(state, command.choiceId, dependencies);
         else if (command.type === "PlayerCommand") nextState = executeVerticalSlicePlayerTurn(state, command.request, dependencies);
         else if (command.type === "BeginBossPhase") nextState = beginVerticalSliceBossPhase(state, dependencies);
@@ -7642,6 +8097,7 @@ var RPChessRuntime = (() => {
         runSelectionSnapshot
       } = require_run_selection();
       var { buildBrowserProductionBundle } = require_production_content_browser();
+      var { createScenarioDeploymentGate } = require_deployment_gate();
       var {
         createBrowserProfileStore,
         inspectBrowserProfile,
@@ -7746,12 +8202,19 @@ var RPChessRuntime = (() => {
           });
           return created.battleForPhase(phaseIndex);
         };
+        const deploymentFactory = ({ runtime, node, scenario }) => createScenarioDeploymentGate(scenario, {
+          gateId: `${node.id}_deployment`,
+          seed: hash32(`${runtime.seed}:${node.id}:deployment`),
+          playerSide: runtime.playerSide,
+          localization
+        });
         return Object.freeze({
           contentRegistry: bundle.registry,
           localization,
           boardThemes: boardThemeMap(bundle.boardThemeManifest),
           eventChoiceResolver: bundle.eventChoiceResolver,
           nodeResolver,
+          deploymentFactory,
           bossPhaseBattleResolver,
           aiProfile,
           aiMaxNodes,
