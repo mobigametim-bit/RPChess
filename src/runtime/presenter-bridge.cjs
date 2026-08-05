@@ -11,6 +11,7 @@ const {
   contentKindForNode,
   availableVerticalSliceRoutes,
   enterVerticalSliceNode,
+  chooseVerticalSliceEvent,
   executeVerticalSlicePlayerTurn,
   claimVerticalSliceReward,
   saveVerticalSlice
@@ -18,7 +19,7 @@ const {
 
 const PRESENTER_FORMAT = 'rpchess-presenter-snapshot';
 const PRESENTER_SCHEMA_VERSION = 1;
-const PRESENTER_COMMANDS = Object.freeze(['Travel', 'PlayerCommand', 'ClaimReward', 'SaveCheckpoint']);
+const PRESENTER_COMMANDS = Object.freeze(['Travel', 'ChooseEvent', 'PlayerCommand', 'ClaimReward', 'SaveCheckpoint']);
 
 function freezeArray(values) {
   return Object.freeze(values.slice());
@@ -140,6 +141,30 @@ function failureSnapshot(definition, progress, localization) {
   });
 }
 
+function eventSnapshot(state, dependencies = {}) {
+  if (!state.event) return null;
+  const event = state.event;
+  const localization = dependencies.localization || null;
+  return Object.freeze({
+    eventId: event.eventId,
+    nodeId: event.nodeId,
+    status: event.status,
+    title: localizationValue(localization, event.titleKey, event.eventId),
+    body: localizationValue(localization, event.bodyKey, event.eventId),
+    sceneArt: event.sceneArt,
+    scope: event.scope,
+    selectedChoiceId: event.selectedChoiceId,
+    choices: freezeArray(event.choices.map((choice) => Object.freeze({
+      id: choice.id,
+      label: localizationValue(localization, choice.textKey, choice.id),
+      effectCount: choice.effectIds.length
+    }))),
+    outcome: event.resolution?.outcomeKey
+      ? localizationValue(localization, event.resolution.outcomeKey, event.resolution.outcomeKey)
+      : null
+  });
+}
+
 function scenarioSnapshot(state, dependencies = {}) {
   if (!state.scenario) return null;
   const scenario = state.scenario;
@@ -241,8 +266,9 @@ function campaignSnapshot(state, dependencies = {}) {
   });
 }
 
-function presenterActions(state, scenario) {
+function presenterActions(state, event, scenario) {
   if (state.status === 'campaign') return freezeArray(['Travel']);
+  if (state.status === 'event' && event?.status === 'active') return freezeArray(['ChooseEvent']);
   if (state.status === 'scenario' && scenario?.playerTurn) return freezeArray(['PlayerCommand']);
   if (state.status === 'reward') return freezeArray(['ClaimReward']);
   return freezeArray([]);
@@ -251,6 +277,7 @@ function presenterActions(state, scenario) {
 function createPresenterSnapshot(state, dependencies = {}) {
   assertRuntimeState(state);
   const campaign = campaignSnapshot(state, dependencies);
+  const event = eventSnapshot(state, dependencies);
   const scenario = scenarioSnapshot(state, dependencies);
   const content = currentContent(state, dependencies.contentRegistry);
   const reward = state.pendingReward && state.currentNode ? Object.freeze({
@@ -280,12 +307,15 @@ function createPresenterSnapshot(state, dependencies = {}) {
       supplies: state.campaign.supplies,
       meta: state.resources.meta
     }),
+    flags: freezeArray(state.flags || []),
+    chronicleKeys: freezeArray(state.chronicleKeys || []),
     campaign,
     currentNode: state.currentNode ? deepFreeze(serializableCopy(state.currentNode)) : null,
+    event,
     scenario,
     reward,
     terminal,
-    actions: presenterActions(state, scenario),
+    actions: presenterActions(state, event, scenario),
     transcriptLength: state.transcript.length,
     historyLength: state.history.length
   });
@@ -299,6 +329,11 @@ function normalizePresenterCommand(command) {
     const targetNodeId = String(command.targetNodeId || command.payload?.targetNodeId || '');
     if (!targetNodeId) throw new Error('Travel requires targetNodeId');
     return Object.freeze({ type, targetNodeId });
+  }
+  if (type === 'ChooseEvent') {
+    const choiceId = String(command.choiceId || command.payload?.choiceId || '');
+    if (!choiceId) throw new Error('ChooseEvent requires choiceId');
+    return Object.freeze({ type, choiceId });
   }
   if (type === 'PlayerCommand') {
     const request = command.request || command.payload?.request;
@@ -314,6 +349,7 @@ function dispatchPresenterCommand(state, commandInput, dependencies = {}) {
   let nextState = state;
   let saveEnvelope = null;
   if (command.type === 'Travel') nextState = enterVerticalSliceNode(state, command.targetNodeId, dependencies);
+  else if (command.type === 'ChooseEvent') nextState = chooseVerticalSliceEvent(state, command.choiceId, dependencies);
   else if (command.type === 'PlayerCommand') nextState = executeVerticalSlicePlayerTurn(state, command.request, dependencies);
   else if (command.type === 'ClaimReward') nextState = claimVerticalSliceReward(state);
   else if (command.type === 'SaveCheckpoint') {
