@@ -2,8 +2,9 @@
 
 const { DeterministicIdFactory } = require('../core/determinism.cjs');
 const { DomainEnvelopeFactory } = require('../core/domain.cjs');
-const { executeWardAwareCommand } = require('../combat/ward-protection.cjs');
-const { createEnvironmentRegistry } = require('./environment.cjs');
+const { gameStatus, assertNoPieceOnBlockedSquare } = require('../core/chess/rules.cjs');
+const { executeWardAwareCommand, legalWardAwareCommands } = require('../combat/ward-protection.cjs');
+const { createEnvironmentRegistry, blockingCells } = require('./environment.cjs');
 const {
   normalizeObjective,
   normalizeFailure,
@@ -48,13 +49,38 @@ function validateInitialPieceReferences(objectives, failures, battle) {
   }
 }
 
+function outcomeForBattleStatus(battle, status) {
+  if (status.state === 'checkmate') {
+    return Object.freeze({
+      status: 'completed',
+      result: Object.freeze({
+        outcome: status.winner === battle.playerSide ? 'victory' : 'defeat',
+        winner: status.winner,
+        reason: 'checkmate'
+      })
+    });
+  }
+  if (status.state === 'stalemate') {
+    return Object.freeze({ status: 'completed', result: Object.freeze({ outcome: 'draw', winner: null, reason: 'stalemate' }) });
+  }
+  return Object.freeze({ status: 'active', result: null });
+}
+
+function applyScenarioRulesToBattle(battle, rules) {
+  assertNoPieceOnBlockedSquare(battle.position, rules);
+  const status = gameStatus(battle.position, rules);
+  const outcome = outcomeForBattleStatus(battle, status);
+  if (battle.status === outcome.status && JSON.stringify(battle.result) === JSON.stringify(outcome.result)) return battle;
+  return Object.freeze({ ...battle, status: outcome.status, result: outcome.result });
+}
+
 function createScenarioState(options = {}) {
-  const battle = options.battle;
-  if (!battle || battle.format !== 'rpchess-battle-state') throw new Error('scenario requires a valid battle state');
+  const inputBattle = options.battle;
+  if (!inputBattle || inputBattle.format !== 'rpchess-battle-state') throw new Error('scenario requires a valid battle state');
   const scenarioId = String(options.scenarioId || 'scenario');
   if (!/^[a-z0-9][a-z0-9_-]*$/i.test(scenarioId)) throw new Error('scenarioId must be a stable identifier');
   const board = Object.freeze({ width: options.board?.width ?? 8, height: options.board?.height ?? 8 });
-  const playerSide = options.playerSide || battle.playerSide;
+  const playerSide = options.playerSide || inputBattle.playerSide;
   if (!['w', 'b'].includes(playerSide)) throw new Error('scenario playerSide must be w or b');
   const completionMode = options.completionMode || 'all';
   if (!['all', 'any'].includes(completionMode)) throw new Error('scenario completionMode must be all or any');
@@ -63,12 +89,14 @@ function createScenarioState(options = {}) {
   const failures = (options.failures || []).map((record) => normalizeFailure(record, board, playerSide));
   const ids = [...objectives, ...failures].map((record) => record.id);
   if (new Set(ids).size !== ids.length) throw new Error('scenario objective/failure IDs must be unique');
-  validateInitialPieceReferences(objectives, failures, battle);
   const environment = createEnvironmentRegistry({ width: board.width, height: board.height, objects: options.environment || [] });
+  const rules = Object.freeze({ blockedSquares: blockingCells(environment) });
+  const battle = applyScenarioRulesToBattle(inputBattle, rules);
+  validateInitialPieceReferences(objectives, failures, battle);
 
   return Object.freeze({
     format: 'rpchess-scenario-state',
-    schemaVersion: 1,
+    schemaVersion: 2,
     scenarioId,
     playerSide,
     board,
@@ -79,6 +107,7 @@ function createScenarioState(options = {}) {
     failures: freezeArray(failures),
     failureStates: freezeArray(failures.map(initialFailureState)),
     environment,
+    rules,
     status: 'active',
     result: null,
     actionIndex: 0,
@@ -139,10 +168,25 @@ function resolveScenarioResult(state, battle, objectiveStates, failureStates) {
   return { status: 'active', result: null };
 }
 
+function legalScenarioCommands(state) {
+  if (!state || state.format !== 'rpchess-scenario-state') throw new Error('invalid scenario state');
+  if (state.status !== 'active') return freezeArray([]);
+  return freezeArray(legalWardAwareCommands(state.battle, { rules: state.rules }));
+}
+
 function executeScenarioCommand(state, request) {
   if (!state || state.format !== 'rpchess-scenario-state') throw new Error('invalid scenario state');
   if (state.status !== 'active') throw new Error('scenario is already completed');
-  const battleResult = executeWardAwareCommand(state.battle, request);
+  const legal = legalScenarioCommands(state).some((command) =>
+    command.type === request?.type
+    && command.payload.from === request?.payload?.from
+    && command.payload.to === request?.payload?.to
+    && command.payload.entryId === request?.payload?.entryId
+    && command.payload.square === request?.payload?.square
+    && (command.payload.promotion || null) === (request?.payload?.promotion || null)
+  );
+  if (!legal) throw new Error('scenario command is not legal under the active environment rules');
+  const battleResult = executeWardAwareCommand(state.battle, request, { rules: state.rules });
   const objectiveStates = state.objectives.map((definition, index) => updateObjective(definition, state.objectiveStates[index], battleResult.state, battleResult.events));
   const failureStates = state.failures.map((definition, index) => updateFailure(definition, state.failureStates[index], battleResult.state));
   const factory = envelopeFactory(state.envelope);
@@ -206,8 +250,10 @@ function replayScenario(initialState, requests) {
 }
 
 module.exports = {
+  applyScenarioRulesToBattle,
   createScenarioState,
   completionReached,
+  legalScenarioCommands,
   executeScenarioCommand,
   scenarioObjectiveEvaluator,
   replayScenario
