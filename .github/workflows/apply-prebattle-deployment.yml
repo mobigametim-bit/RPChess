@@ -46,6 +46,19 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
+      - name: Repair generated test quoting
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          file = Path('scripts/apply-prebattle-deployment.cjs')
+          text = file.read_text(encoding='utf-8')
+          old = "    } else throw new Error(`unexpected status while seeking deployment: ${snapshot.status}`);"
+          new = "    } else throw new Error('unexpected status while seeking deployment: ' + snapshot.status);"
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one nested template line, found {text.count(old)}')
+          file.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+
       - name: Apply strict deployment patch
         run: node scripts/apply-prebattle-deployment.cjs
 
