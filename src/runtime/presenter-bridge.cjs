@@ -5,7 +5,9 @@ const { statusView } = require('../combat/statuses.cjs');
 const { legalWardAwareCommands } = require('../combat/ward-protection.cjs');
 const { technicalTileSet, validateTileSet } = require('../rendering/modular-board.cjs');
 const {
-  assertRuntimeState,
+  RUNTIME_FORMAT,
+  RUNTIME_SCHEMA_VERSION,
+  RUNTIME_STATUSES,
   contentKindForNode,
   availableVerticalSliceRoutes,
   enterVerticalSliceNode,
@@ -32,6 +34,14 @@ function deepFreeze(value, seen = new Set()) {
 
 function serializableCopy(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function assertRuntimeState(state) {
+  if (!state || state.format !== RUNTIME_FORMAT) throw new Error('invalid vertical slice runtime state');
+  if (state.schemaVersion !== RUNTIME_SCHEMA_VERSION) throw new Error('unsupported vertical slice runtime schema');
+  if (!RUNTIME_STATUSES.includes(state.status)) throw new Error(`invalid vertical slice runtime status: ${state.status}`);
+  if (!state.campaign || state.campaign.format !== 'rpchess-campaign-state') throw new Error('vertical slice runtime requires campaign state');
+  return state;
 }
 
 function localizationValue(localization, key, fallback = null) {
