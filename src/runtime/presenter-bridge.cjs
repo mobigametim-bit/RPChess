@@ -129,6 +129,43 @@ function pieceSnapshot(battle, square, pieceId) {
   });
 }
 
+function armySnapshot(state, dependencies = {}) {
+  const army = state.army;
+  if (!army) return null;
+  const registry = dependencies.contentRegistry;
+  const localization = dependencies.localization || null;
+  const king = registry?.get?.('king', army.kingId) || null;
+  const doctrine = registry?.get?.('doctrine', army.doctrineId) || null;
+  const heroes = (army.heroes || []).map((hero) => {
+    const content = registry?.get?.('hero', hero.heroId) || null;
+    const nameKey = content?.nameKey || hero.nameKey || null;
+    return Object.freeze({
+      heroId: hero.heroId,
+      nameKey,
+      name: localizationValue(localization, nameKey, hero.heroId),
+      contentPieceType: hero.contentPieceType,
+      battlePieceType: hero.battlePieceType,
+      pieceType: hero.pieceType,
+      relicIds: freezeArray(hero.relicIds || []),
+      overrideReason: hero.overrideReason || null
+    });
+  });
+  return Object.freeze({
+    regionId: army.regionId,
+    kingId: army.kingId,
+    kingNameKey: king?.nameKey || army.kingNameKey || null,
+    kingName: localizationValue(localization, king?.nameKey || army.kingNameKey, army.kingId),
+    doctrineId: army.doctrineId,
+    doctrineNameKey: doctrine?.nameKey || null,
+    doctrineName: localizationValue(localization, doctrine?.nameKey, army.doctrineId),
+    heroIds: freezeArray(army.heroIds || []),
+    relicIds: freezeArray(army.relicIds || []),
+    heroCount: heroes.length,
+    relicCount: (army.relicIds || []).length,
+    heroes: freezeArray(heroes)
+  });
+}
+
 function eventSnapshot(state, dependencies = {}) {
   if (!state.event) return null;
   const event = state.event;
@@ -390,6 +427,7 @@ function presenterActions(state, event, scenario) {
 function createPresenterSnapshot(state, dependencies = {}) {
   assertRuntimeState(state);
   const campaign = campaignSnapshot(state, dependencies);
+  const army = armySnapshot(state, dependencies);
   const event = eventSnapshot(state, dependencies);
   const deployment = state.deployment ? deploymentGateSnapshot(state.deployment) : null;
   const scenario = scenarioSnapshot(state, dependencies);
@@ -422,6 +460,7 @@ function createPresenterSnapshot(state, dependencies = {}) {
       supplies: state.campaign.supplies,
       meta: state.resources.meta
     }),
+    army,
     flags: freezeArray(state.flags || []),
     chronicleKeys: freezeArray(state.chronicleKeys || []),
     campaign,
@@ -504,6 +543,7 @@ module.exports = {
   commandKey,
   activeScenario,
   recentBattleEvents,
+  armySnapshot,
   createPresenterSnapshot,
   normalizePresenterCommand,
   dispatchPresenterCommand

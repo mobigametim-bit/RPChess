@@ -1,5 +1,6 @@
 import { VerticalSlicePresenter as BaseVerticalSlicePresenter } from './vertical-slice-presenter.mjs';
 import { heroAssets } from './register-02-assets.mjs';
+import { kingAssets, doctrineAssets } from './register-01-assets.mjs';
 import {
   heroProfile,
   heroPanelMarkup,
@@ -26,6 +27,77 @@ function heroIconMarkup(record, fallback) {
   if (!source) return fallback;
   const label = heroProfile(recordHeroId(record))?.name || recordHeroId(record);
   return `<img class="rp02-piece-image" src="${source}" alt="${label}">`;
+}
+
+function heroArmyState(snapshot, heroId) {
+  if (!heroId) return Object.freeze({ id: 'unknown', label: 'Нет данных' });
+  if (snapshot?.status === 'deployment') {
+    const unit = (snapshot.deployment?.units || []).find((entry) => recordHeroId(entry) === heroId);
+    if (unit?.square) return Object.freeze({ id: 'field', label: `На поле: ${unit.square}` });
+    if (unit) return Object.freeze({ id: 'reserve', label: 'Резерв расстановки' });
+  }
+  if (['scenario', 'boss'].includes(snapshot?.status)) {
+    const piece = (snapshot.scenario?.pieces || []).find((entry) => recordHeroId(entry) === heroId);
+    if (piece?.square) return Object.freeze({ id: 'field', label: `На поле: ${piece.square}` });
+    const reserve = (snapshot.scenario?.reserve || []).find((entry) => recordHeroId(entry) === heroId);
+    if (reserve) return Object.freeze({ id: 'reserve', label: 'В боевом резерве' });
+    return Object.freeze({ id: 'inactive', label: 'Не участвует в текущем бою' });
+  }
+  if (snapshot?.status === 'complete') return Object.freeze({ id: 'complete', label: 'Поход завершён' });
+  if (snapshot?.status === 'failed') return Object.freeze({ id: 'failed', label: 'Поход завершён поражением' });
+  return Object.freeze({ id: 'roster', label: 'В составе похода' });
+}
+
+function armyPanelMarkup(snapshot) {
+  const army = snapshot?.army;
+  if (!army) return '';
+  const king = kingAssets(army.kingId);
+  const doctrine = doctrineAssets(army.doctrineId);
+  const heroes = (army.heroes || []).map((hero) => {
+    const profile = heroProfile(hero.heroId);
+    const assets = heroAssets(hero.heroId);
+    const state = heroArmyState(snapshot, hero.heroId);
+    const name = hero.name || profile?.name || hero.heroId;
+    return `<article class="rp02-army-hero rp02-army-hero--${state.id}">
+      ${assets?.portrait ? `<img src="${assets.portrait}" alt="${name}">` : ''}
+      <div><strong>${name}</strong><span>${state.label}</span><small>${hero.relicIds?.length || 0} реликв.</small></div>
+    </article>`;
+  }).join('');
+  return `<aside class="rpvs__panel rp02-army-panel" data-rp02-army-panel>
+    <div class="rpvs__panel-head"><h2 class="rpvs__title">Армия</h2><span class="rpvs__chip">${army.heroCount} гер.</span></div>
+    <div class="rpvs__panel-body">
+      <div class="rp02-army-command">
+        ${king?.portrait ? `<img src="${king.portrait}" alt="${army.kingName}">` : ''}
+        <div><small>Король</small><strong>${army.kingName}</strong></div>
+        ${doctrine?.emblem ? `<img src="${doctrine.emblem}" alt="${army.doctrineName}">` : ''}
+        <div><small>Доктрина</small><strong>${army.doctrineName}</strong></div>
+      </div>
+      <div class="rp02-army-summary"><span>Героев: ${army.heroCount}</span><span>Реликвий: ${army.relicCount}</span></div>
+      <div class="rp02-army-list">${heroes}</div>
+    </div>
+  </aside>`;
+}
+
+function ensureArmyStyles(document) {
+  if (document.getElementById('rp02-army-styles')) return;
+  const style = document.createElement('style');
+  style.id = 'rp02-army-styles';
+  style.textContent = `
+    .rpvs__layout.rpvs__layout--army{grid-template-columns:minmax(0,1fr) 330px 280px;max-width:1680px}.rp02-army-panel{align-self:start;position:sticky;top:18px;max-height:calc(100vh - 36px);overflow:auto}.rp02-army-command{display:grid;grid-template-columns:48px minmax(0,1fr);gap:7px 9px;align-items:center}.rp02-army-command img{width:48px;height:48px;object-fit:contain;border-radius:9px;background:#08111f}.rp02-army-command div{display:grid;min-width:0}.rp02-army-command small,.rp02-army-hero span,.rp02-army-hero small{color:#aab4c4;font-size:11px}.rp02-army-command strong,.rp02-army-hero strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rp02-army-summary{display:flex;justify-content:space-between;gap:8px;margin:12px 0;color:#f2cf76;font-size:12px}.rp02-army-list{display:grid;gap:7px}.rp02-army-hero{display:grid;grid-template-columns:48px minmax(0,1fr);gap:9px;align-items:center;padding:7px;border:1px solid #3b4f6c;border-radius:10px;background:#111d30}.rp02-army-hero img{width:48px;height:48px;object-fit:cover;border-radius:8px}.rp02-army-hero div{display:grid;min-width:0}.rp02-army-hero--field{border-color:#6ea77e}.rp02-army-hero--reserve{border-color:#b9964c}.rp02-army-hero--inactive{opacity:.66}.rp02-army-hero--failed{border-color:#a75e5e}@media(max-width:1280px){.rpvs__layout.rpvs__layout--army{grid-template-columns:minmax(0,1fr) 330px}.rp02-army-panel{position:static;grid-column:1/-1;max-height:none}.rp02-army-list{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:980px){.rp02-army-list{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:620px){.rp02-army-list{grid-template-columns:1fr}}
+  `;
+  document.head.appendChild(style);
+}
+
+function installArmyPanel(root, snapshot) {
+  const layout = root.querySelector('.rpvs__layout');
+  if (!layout || !snapshot?.army) return null;
+  layout.querySelector('[data-rp02-army-panel]')?.remove();
+  layout.classList.add('rpvs__layout--army');
+  const host = layout.ownerDocument.createElement('div');
+  host.innerHTML = armyPanelMarkup(snapshot);
+  const panel = host.firstElementChild;
+  if (panel) layout.appendChild(panel);
+  return panel;
 }
 
 function deploymentHeroRecord(snapshot, selectedId) {
@@ -68,6 +140,7 @@ class VerticalSlicePresenter extends BaseVerticalSlicePresenter {
   installStyles() {
     super.installStyles();
     ensureCodexStyles(this.root.ownerDocument);
+    ensureArmyStyles(this.root.ownerDocument);
   }
 
   destroy() {
@@ -77,6 +150,7 @@ class VerticalSlicePresenter extends BaseVerticalSlicePresenter {
 
   render(snapshotInput) {
     super.render(snapshotInput);
+    installArmyPanel(this.root, snapshotInput);
     installRegister02Codex(this.root, { target: '.rpvs__resources', label: 'Кодекс' });
   }
 
@@ -188,6 +262,10 @@ export {
   badgeSource,
   portraitSource,
   heroIconMarkup,
+  heroArmyState,
+  armyPanelMarkup,
+  ensureArmyStyles,
+  installArmyPanel,
   deploymentHeroRecord,
   scenarioHeroRecord,
   VerticalSlicePresenter
