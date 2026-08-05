@@ -74,14 +74,29 @@ jobs:
           audit_path = Path('content/audits/iron_marches_mechanics_readiness.json')
           audit = json.loads(audit_path.read_text(encoding='utf-8'))
           for record in [*audit['abilities'], *audit['relicEffects']]:
-              if record['id'] not in evidence:
-                  continue
-              source_path, tokens = evidence[record['id']]
-              record['evidence'] = [
-                  {'path': source_path, 'tokens': tokens},
-                  {'path': 'tests/remaining-iron-marches-abilities.cjs', 'tokens': [record['id']]}
-              ]
+              if record['id'] in evidence:
+                  source_path, tokens = evidence[record['id']]
+                  record['evidence'] = [
+                      {'path': source_path, 'tokens': tokens},
+                      {'path': 'tests/remaining-iron-marches-abilities.cjs', 'tokens': [record['id']]}
+                  ]
+              if record['id'] == 'effect.first_ability_order_discount':
+                  record['status'] = 'IMPLEMENTED'
+                  record['uiAvailability'] = 'enabled'
+                  record['reason'] = 'Скидка исполняется общим контуром активных способностей, а после реализации Команды ворот Томаса production-триггер достижим в каждом бою.'
           audit_path.write_text(json.dumps(audit, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          readiness_test = Path('tests/iron-marches-mechanics-readiness.cjs')
+          source = readiness_test.read_text(encoding='utf-8')
+          source = source.replace("assert.strictEqual(summary.counts.PARTIAL, 1);", "assert.strictEqual(summary.counts.PARTIAL, 0);")
+          source = source.replace("assert.strictEqual(summary.counts.DECLARATIVE, 9);", "assert.strictEqual(summary.counts.DECLARATIVE, 0);")
+          source = source.replace("assert.strictEqual(summary.counts.IMPLEMENTED, 2);", "assert.strictEqual(summary.counts.IMPLEMENTED, 12);")
+          source = source.replace("assert.strictEqual(readiness.heroMechanicReadiness('hero.aldric_wall').status, 'DECLARATIVE');", "assert.strictEqual(readiness.heroMechanicReadiness('hero.aldric_wall').status, 'IMPLEMENTED');")
+          source = source.replace("assert.strictEqual(readiness.relicMechanicReadiness('relic.twin_command').status, 'PARTIAL');", "assert.strictEqual(readiness.relicMechanicReadiness('relic.twin_command').status, 'IMPLEMENTED');")
+          source = source.replace("assert.ok(markup.includes('Пока недоступно'));", "assert.ok(markup.includes('Работает'));")
+          source = source.replace("assert.ok(markup.includes('aria-disabled=\"true\"'));", "assert.ok(!markup.includes('aria-disabled=\"true\"'));")
+          source = source.replace("assert.ok(enhancer.compactReadinessMarkup('hero.tomas_gate').includes('Способность: Пока недоступно'));", "assert.ok(enhancer.compactReadinessMarkup('hero.tomas_gate').includes('Способность: Работает'));")
+          readiness_test.write_text(source, encoding='utf-8')
           PY
       - name: Run complete regression suite
         if: steps.guard.outputs.applied == 'false'
@@ -106,6 +121,7 @@ jobs:
             src/core/chess/rules.cjs \
             src/runtime/deployment-gate.cjs \
             tests/status-system.cjs \
+            tests/iron-marches-mechanics-readiness.cjs \
             tests/register-03-relic-assets.cjs \
             tests/remaining-iron-marches-abilities.cjs
           git commit -m "Implement remaining Iron Marches abilities [register03-runtime]"
