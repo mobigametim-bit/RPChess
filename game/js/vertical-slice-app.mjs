@@ -18,8 +18,15 @@ function readLaunchOptions(location = globalThis.location) {
     seed: Number.isFinite(seedInput) && seedInput > 0 ? Math.floor(seedInput) : 9042,
     language,
     profileId: /^profile-[123]$/.test(profileInput) ? profileInput : 'profile-1',
-    aiProfile: ['apprentice', 'tactician', 'warlord'].includes(params.get('ai')) ? params.get('ai') : 'apprentice'
+    aiProfile: ['apprentice', 'tactician', 'warlord'].includes(params.get('ai')) ? params.get('ai') : 'apprentice',
+    forceNew: params.get('new') === '1',
+    autoSave: params.get('autosave') !== '0'
   });
+}
+
+function resolveLocalStorage(explicit = undefined) {
+  if (explicit !== undefined) return explicit;
+  try { return globalThis.localStorage || null; } catch (_error) { return null; }
 }
 
 function showFatal(root, error) {
@@ -54,43 +61,66 @@ function startVerticalSlice(options = {}) {
   if (!runtimeApi || typeof runtimeApi.createBrowserRunSelectionHost !== 'function') {
     throw new Error('production browser runtime bundle is unavailable');
   }
-  const launchOptions = Object.freeze({ ...readLaunchOptions(), ...(options.launchOptions || {}) });
+  const launchOptions = Object.freeze({
+    ...readLaunchOptions(),
+    ...(options.launchOptions || {}),
+    storage: resolveLocalStorage(options.storage),
+    deviceId: options.deviceId || 'rpchess-browser-v1'
+  });
   const selectionHost = runtimeApi.createBrowserRunSelectionHost(launchOptions);
-  const selectionClient = new RunSelectionClient({
-    transport: createRunSelectionTransport(selectionHost),
-    snapshot: selectionHost.getSnapshot()
-  });
+  let selectionClient = null;
+  let selectionPresenter = null;
   let verticalPresenter = null;
-  const selectionPresenter = new RunSelectionPresenter({
-    root,
-    client: selectionClient,
-    onReady: () => {
-      try {
-        const runtimeHost = selectionHost.getRuntimeHost();
-        if (!runtimeHost) throw new Error('locked selection did not create a runtime host');
-        root.replaceChildren();
-        const runtimeClient = new RuntimeCommandClient({
-          transport: createLocalRuntimeTransport(runtimeHost),
-          snapshot: runtimeHost.getSnapshot()
-        });
-        verticalPresenter = new VerticalSlicePresenter({ root, client: runtimeClient });
-        globalThis.RPChessVerticalSlice = Object.freeze({
-          launchOptions,
-          selectionHost,
-          runtimeHost,
-          runtimeClient,
-          presenter: verticalPresenter
-        });
-      } catch (error) {
-        showFatal(root, error);
+  let runtimeClient = null;
+
+  const mountRuntime = () => {
+    const runtimeHost = selectionHost.getRuntimeHost();
+    if (!runtimeHost) throw new Error('ready selection has no runtime host');
+    root.replaceChildren();
+    runtimeClient = new RuntimeCommandClient({
+      transport: createLocalRuntimeTransport(runtimeHost),
+      snapshot: runtimeHost.getSnapshot()
+    });
+    verticalPresenter = new VerticalSlicePresenter({ root, client: runtimeClient });
+    globalThis.RPChessVerticalSlice = Object.freeze({
+      launchOptions,
+      selectionHost,
+      runtimeHost,
+      runtimeClient,
+      presenter: verticalPresenter
+    });
+    return verticalPresenter;
+  };
+
+  const initial = selectionHost.getSnapshot();
+  if (initial.status === 'ready') {
+    mountRuntime();
+  } else {
+    selectionClient = new RunSelectionClient({
+      transport: createRunSelectionTransport(selectionHost),
+      snapshot: initial
+    });
+    selectionPresenter = new RunSelectionPresenter({
+      root,
+      client: selectionClient,
+      onReady: () => {
+        try { mountRuntime(); } catch (error) { showFatal(root, error); }
       }
-    }
+    });
+    selectionPresenter.mount();
+  }
+  return Object.freeze({
+    launchOptions,
+    selectionHost,
+    getSelectionClient: () => selectionClient,
+    getSelectionPresenter: () => selectionPresenter,
+    getRuntimeClient: () => runtimeClient,
+    getVerticalPresenter: () => verticalPresenter
   });
-  selectionPresenter.mount();
-  return Object.freeze({ selectionHost, selectionClient, selectionPresenter, getVerticalPresenter: () => verticalPresenter });
 }
 
 try {
+  startVerticalSlice();try {
   startVerticalSlice();
 } catch (error) {
   const root = document.getElementById('app') || document.body;
@@ -100,6 +130,7 @@ try {
 
 export {
   readLaunchOptions,
+  resolveLocalStorage,
   showFatal,
   installBootstrapStyles,
   startVerticalSlice
