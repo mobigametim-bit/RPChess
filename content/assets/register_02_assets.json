@@ -14,7 +14,7 @@
   "heroCount": 36,
   "politicalCharacterCount": 18,
   "registerRecordsUpdated": 54,
-  "totalBytes": 79517812,
+  "totalBytes": 79273989,
   "unmappedSourceImages": [],
   "assets": [
     {
@@ -583,8 +583,8 @@
       },
       "outputMode": "RGBA",
       "format": "PNG",
-      "bytes": 354021,
-      "sha256": "014aef6b1a55de1255293bdcbf570cf1b3d401afb7e5b58db991e0634309bee4",
+      "bytes": 345302,
+      "sha256": "0a78c30af1d2909d6a50cc3384a687d25396df375d34e62e73da985021d2c8d7",
       "profile": "HERO-BADGE-512",
       "status": "REVIEW",
       "index": 26
@@ -649,8 +649,8 @@
       },
       "outputMode": "RGBA",
       "format": "PNG",
-      "bytes": 406770,
-      "sha256": "31b0dfa6348ccee132af0d8f994d17588dfb56fb912f954601c12eea38a947d0",
+      "bytes": 346829,
+      "sha256": "32a96ffafc63d49b0f50d9713f14089f7eb1235661861fe2b1d99d65eef1b151",
       "profile": "HERO-BADGE-512",
       "status": "REVIEW",
       "index": 29
@@ -715,8 +715,8 @@
       },
       "outputMode": "RGBA",
       "format": "PNG",
-      "bytes": 423782,
-      "sha256": "52f7a23923326c5332127d219f0d4cb52471ccfc2ed903d153eb498da9df426f",
+      "bytes": 362601,
+      "sha256": "0a7a0ab7c8aa019bb4be10024e8647a4b38af71207ec75dd60ffe9d127befaa3",
       "profile": "HERO-BADGE-512",
       "status": "REVIEW",
       "index": 32
@@ -781,8 +781,8 @@
       },
       "outputMode": "RGBA",
       "format": "PNG",
-      "bytes": 329399,
-      "sha256": "be5ef2c98436a3fc840de1f4562d224c535917e15eba6b6e5c90c84e22e2eb7d",
+      "bytes": 283081,
+      "sha256": "3a31d68bce8b0f71c35a4af7e7be45757ada7cc3479f08d0573f1a619b1c0625",
       "profile": "HERO-BADGE-512",
       "status": "REVIEW",
       "index": 35
@@ -1177,8 +1177,8 @@
       },
       "outputMode": "RGBA",
       "format": "PNG",
-      "bytes": 276652,
-      "sha256": "11b6d09c0e33c8d23c0e107a5a875aa53f8a56c16805c52564a659ade1c73097",
+      "bytes": 248532,
+      "sha256": "887563b266402728e29d8edc140e0bf82d9bad801054f79432777f09374d4215",
       "profile": "HERO-BADGE-512",
       "status": "REVIEW",
       "index": 53
@@ -1441,8 +1441,8 @@
       },
       "outputMode": "RGBA",
       "format": "PNG",
-      "bytes": 278188,
-      "sha256": "fb3118596c44cea03b202e119b87ebe74e5ec95d62b73790bda6ac68f7a1ecf9",
+      "bytes": 238644,
+      "sha256": "98b0cc86203010dbd601f4ad920ed8fc4f29809531779fadbe58e9b4d0bce0c7",
       "profile": "HERO-BADGE-512",
       "status": "REVIEW",
       "index": 65
