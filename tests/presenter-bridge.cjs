@@ -78,7 +78,7 @@ function runtime(seed = 111) {
 }
 
 function nodeResolver() {
-  return ({ runtime: state, node, content }) => {
+  return ({ runtime: state, node }) => {
     if (['battle', 'elite', 'boss'].includes(node.type)) {
       const battle = createBattleState({
         battleId: `battle_${node.id}`,
@@ -158,29 +158,34 @@ test('scenario presenter contains modular board, pieces, objectives, environment
   assert.ok(snapshot.scenario.legalCommands.some((command) => command.type === 'MovePiece' && command.payload.from === 'e2'));
 });
 
-test('bridge dispatches one player/AI pair and returns reward snapshot', () => {
+test('bridge dispatches one player/AI pair and returns the node reward snapshot', () => {
   const fixture = runtime(123);
   const deps = dependencies(fixture.contentRegistry);
   const active = enterUntilScenario(fixture.state, deps);
   const before = createPresenterSnapshot(active, deps);
   const command = before.scenario.legalCommands.find((candidate) => candidate.type === 'MovePiece' && candidate.payload.from === 'e2');
+  const expectedReward = active.currentNode.reward;
   const result = dispatchPresenterCommand(active, { type: 'PlayerCommand', request: command }, deps);
   assert.strictEqual(result.state.status, 'reward');
   assert.strictEqual(result.snapshot.status, 'reward');
-  assert.strictEqual(result.snapshot.reward.gold, 10);
+  assert.deepStrictEqual({ gold: result.snapshot.reward.gold, supplies: result.snapshot.reward.supplies, meta: result.snapshot.reward.meta }, expectedReward);
   assert.deepStrictEqual(result.snapshot.actions, ['ClaimReward']);
 });
 
-test('claim reward returns to campaign and updates presenter resources', () => {
+test('claim reward applies resources and respects ordinary-versus-boss terminal routing', () => {
   const fixture = runtime(124);
   const deps = dependencies(fixture.contentRegistry);
   let state = enterUntilScenario(fixture.state, deps);
   const command = createPresenterSnapshot(state, deps).scenario.legalCommands.find((candidate) => candidate.type === 'MovePiece' && candidate.payload.from === 'e2');
   state = dispatchPresenterCommand(state, { type: 'PlayerCommand', request: command }, deps).state;
+  const reward = state.pendingReward;
+  const suppliesBeforeClaim = state.campaign.supplies;
+  const bossNode = state.currentNode.type === 'boss';
   const claimed = dispatchPresenterCommand(state, { type: 'ClaimReward' }, deps);
-  assert.strictEqual(claimed.snapshot.status, 'campaign');
-  assert.strictEqual(claimed.snapshot.resources.gold, 10);
-  assert.strictEqual(claimed.snapshot.resources.supplies, 99 - claimed.state.campaign.history.find((item) => item.edgeId)?.cost + 1);
+  assert.strictEqual(claimed.snapshot.status, bossNode ? 'complete' : 'campaign');
+  assert.strictEqual(claimed.snapshot.resources.gold, reward.gold);
+  assert.strictEqual(claimed.snapshot.resources.meta, reward.meta);
+  assert.strictEqual(claimed.snapshot.resources.supplies, suppliesBeforeClaim + reward.supplies);
 });
 
 test('save checkpoint uses atomic store without changing runtime state', () => {
