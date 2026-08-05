@@ -67,3 +67,5 @@ jobs:
           fi
           git commit -m 'Move selected army into domain runtime'
           git push origin HEAD:agent/domain-army-runtime-migration
+
+# Retriggered after workflow creation so the push hook observes an existing workflow definition.
