@@ -1,24 +1,11 @@
 PASS ward prevents one capture, keeps both pieces in place and passes action
 PASS after ward is consumed, the next legal capture removes the piece normally
 PASS ward cannot be applied to either king
-FAIL warded checker cannot be captured as a fake check evasion
-AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
-
-true !== false
-
-    at /home/runner/work/RPChess/RPChess/tests/ward-protection.cjs:79:10
-    at Object.<anonymous> (/home/runner/work/RPChess/RPChess/tests/ward-protection.cjs:132:5)
-    at Module._compile (node:internal/modules/cjs/loader:1781:14)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
-    at node:internal/main/run_main_module:36:49
+PASS warded checker cannot be captured as a fake check evasion
 PASS ward also protects an en-passant target once
 PASS ward action advances other same-side timed statuses
 PASS ward-aware replay is deterministic including prevented capture events
 
-Ward protection: 6/7 passed.
+Ward protection: 7/7 passed.
 
-EXIT_CODE=1
+EXIT_CODE=0
