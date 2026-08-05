@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { ContentRegistry } = require('./registry.cjs');
+const { ContentRegistry } = require('./index.cjs');
 const { loadBoardThemeManifest } = require('../assets/board-manifest.cjs');
 
 const DEFAULT_BOARD_MANIFEST = 'content/board-themes.json';
