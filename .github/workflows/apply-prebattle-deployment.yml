@@ -9,6 +9,14 @@ on:
       - scripts/apply-prebattle-deployment.cjs
       - src/runtime/deployment-gate.cjs
       - tests/deployment-gate.cjs
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/apply-prebattle-deployment.yml
+      - scripts/apply-prebattle-deployment.cjs
+      - src/runtime/deployment-gate.cjs
+      - tests/deployment-gate.cjs
 
 permissions:
   contents: write
