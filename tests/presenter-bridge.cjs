@@ -54,7 +54,10 @@ function nodeResolver() {
       battleId: `battle_${node.id}`, seed: hash32(`${runtime.seed}:${node.id}`), playerSide: 'w',
       position: parseFen('4k3/8/8/8/8/8/4P3/4K3 w - - 0 1'),
       identitiesBySquare: { e1: 'king_w', e2: 'pawn_w', e8: 'king_b' },
-      identityMetadata: { pawn_w: { heroId: 'hero.test', stars: 1, relicIds: ['relic.test'] } }
+      identityMetadata: { pawn_w: { heroId: 'hero.test', stars: 1, relicIds: ['relic.test'] } },
+      orderPoints: { w: { current: 2, max: 5 }, b: { current: 0, max: 5 } },
+      reserve: [{ id: 'reserve_knight', side: 'w', type: 'n', orderCost: 1, metadata: { heroId: 'hero.reserve', nameKey: 'hero.reserve.name' } }],
+      reserveCells: { w: ['b1', 'c1'], b: [] }
     });
     const scenario = createScenarioState({
       scenarioId: `scenario_${node.id}`, seed: runtime.seed, playerSide: 'w', battle,
@@ -69,7 +72,7 @@ function nodeResolver() {
 function dependencies(contentRegistry) {
   return {
     contentRegistry, nodeResolver: nodeResolver(), aiMaxNodes: 5000,
-    localization: { 'objective.survive': 'Survive two actions', 'failure.king': 'Protect the king', 'environment.altar': 'Visible altar' },
+    localization: { 'objective.survive': 'Survive two actions', 'failure.king': 'Protect the king', 'environment.altar': 'Visible altar', 'hero.reserve.name': 'Reserve Knight' },
     boardThemes: { neutral: { id: 'neutral', light: 'assets/boards/neutral/tile_light.png', dark: 'assets/boards/neutral/tile_dark.png' } }
   };
 }
@@ -110,7 +113,30 @@ test('scenario snapshot contains board, identities, objectives, environment and 
   assert.strictEqual(snapshot.scenario.pieces.find((piece) => piece.pieceId === 'pawn_w').heroId, 'hero.test');
   assert.strictEqual(snapshot.scenario.objectives[0].label, 'Survive two actions');
   assert.strictEqual(snapshot.scenario.environment[0].cells[0], 'd4');
+  assert.strictEqual(snapshot.scenario.orderPoints.player.current, 2);
+  assert.strictEqual(snapshot.scenario.orderPoints.player.max, 5);
+  assert.strictEqual(snapshot.scenario.reserve[0].label, 'Reserve Knight');
+  assert.deepStrictEqual(snapshot.scenario.reserve[0].legalSquares, ['b1', 'c1']);
+  assert.deepStrictEqual(snapshot.scenario.reserveCells.w, ['b1', 'c1']);
+  assert.ok(snapshot.scenario.legalCommands.some((command) => command.type === 'DeployReserve'));
   assert.ok(playerPawnCommand(state, deps));
+});
+
+
+test('reserve command spends order points and remains inside PlayerCommand boundary', () => {
+  const { contentRegistry, state: initial } = fixture(126);
+  const deps = dependencies(contentRegistry);
+  const active = enterUntilScenario(initial, deps);
+  const snapshot = createPresenterSnapshot(active, deps);
+  const reserveCommand = snapshot.scenario.legalCommands.find((command) => command.type === 'DeployReserve' && command.payload.square === 'b1');
+  assert.ok(reserveCommand);
+  const result = dispatchPresenterCommand(active, { type: 'PlayerCommand', request: reserveCommand }, deps);
+  const reserveEvent = result.state.scenario?.battle.eventLog.find((event) => event.type === 'ReserveDeployed');
+  assert.ok(reserveEvent || result.snapshot.status === 'reward');
+  if (result.snapshot.scenario) {
+    assert.strictEqual(result.snapshot.scenario.orderPoints.player.current, 1);
+    assert.strictEqual(result.snapshot.scenario.reserve.length, 0);
+  }
 });
 
 test('player command resolves one player/AI pair and projects the exact node reward', () => {

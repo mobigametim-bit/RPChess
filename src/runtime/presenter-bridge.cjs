@@ -186,6 +186,41 @@ function recentBattleEvents(battle, limit = 8) {
   })));
 }
 
+function orderPoolSnapshot(pool) {
+  return Object.freeze({
+    current: Number.isInteger(pool?.current) ? pool.current : 0,
+    max: Number.isInteger(pool?.max) ? pool.max : 0
+  });
+}
+
+function reserveSnapshot(battle, legalCommands, localization) {
+  const legalSquaresByEntry = new Map();
+  for (const command of legalCommands) {
+    if (command.type !== 'DeployReserve') continue;
+    const entryId = command.payload.entryId;
+    if (!legalSquaresByEntry.has(entryId)) legalSquaresByEntry.set(entryId, []);
+    legalSquaresByEntry.get(entryId).push(command.payload.square);
+  }
+  return freezeArray((battle.reserve || []).map((entry) => {
+    const metadata = entry.metadata || {};
+    const legalSquares = [...new Set(legalSquaresByEntry.get(entry.id) || [])].sort();
+    const pool = battle.orderPoints?.[entry.side];
+    return Object.freeze({
+      id: entry.id,
+      entryId: entry.id,
+      side: entry.side,
+      type: entry.type,
+      orderCost: entry.orderCost,
+      heroId: metadata.heroId || null,
+      nameKey: metadata.nameKey || null,
+      label: localizationValue(localization, metadata.nameKey, metadata.heroId || entry.id),
+      affordable: Boolean(pool && pool.current >= entry.orderCost),
+      activeTurn: battle.position.sideToMove === entry.side,
+      legalSquares: freezeArray(legalSquares)
+    });
+  }));
+}
+
 function scenarioSnapshot(state, dependencies = {}) {
   const scenario = activeScenario(state);
   if (!scenario) return null;
@@ -200,6 +235,18 @@ function scenarioSnapshot(state, dependencies = {}) {
     ? legalWardAwareCommands(battle).map(normalizeCommand).sort((a, b) => commandKey(a).localeCompare(commandKey(b)))
     : [];
   const localization = dependencies.localization || null;
+  const reserve = reserveSnapshot(battle, legalCommands, localization);
+  const opponentSide = state.playerSide === 'w' ? 'b' : 'w';
+  const orderPoints = Object.freeze({
+    w: orderPoolSnapshot(battle.orderPoints?.w),
+    b: orderPoolSnapshot(battle.orderPoints?.b),
+    player: Object.freeze({ side: state.playerSide, ...orderPoolSnapshot(battle.orderPoints?.[state.playerSide]) }),
+    opponent: Object.freeze({ side: opponentSide, ...orderPoolSnapshot(battle.orderPoints?.[opponentSide]) })
+  });
+  const reserveCells = Object.freeze({
+    w: freezeArray(battle.reserveCells?.w || []),
+    b: freezeArray(battle.reserveCells?.b || [])
+  });
   const pieces = Object.entries(battle.identities.bySquare)
     .map(([square, pieceId]) => pieceSnapshot(battle, square, pieceId))
     .sort((a, b) => a.square.localeCompare(b.square));
@@ -241,6 +288,9 @@ function scenarioSnapshot(state, dependencies = {}) {
     positionFen: toFen(battle.position),
     pieces: freezeArray(pieces),
     legalCommands: freezeArray(legalCommands),
+    orderPoints,
+    reserve,
+    reserveCells,
     objectives: freezeArray(objectives),
     failures: freezeArray(failures),
     environment: freezeArray(environment),
