@@ -1,0 +1,50 @@
+name: Apply first mechanics package
+
+on:
+  push:
+    branches:
+      - agent/first-executable-hero-mechanics
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/first-executable-hero-mechanics
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Stop after package was applied
+        id: guard
+        run: |
+          if grep -q "createAbilityState(options.abilities" src/combat/battle.cjs; then
+            echo "applied=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "applied=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Install dependencies
+        if: steps.guard.outputs.applied == 'false'
+        run: npm ci
+      - name: Apply source package
+        if: steps.guard.outputs.applied == 'false'
+        run: node scripts/apply-first-mechanics-package.cjs
+      - name: Run complete regression suite
+        if: steps.guard.outputs.applied == 'false'
+        run: npm test
+      - name: Build production browser runtime
+        if: steps.guard.outputs.applied == 'false'
+        run: npm run build
+      - name: Commit generated package
+        if: steps.guard.outputs.applied == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Implement first executable Iron Marches mechanics"
+          git push origin HEAD:agent/first-executable-hero-mechanics
