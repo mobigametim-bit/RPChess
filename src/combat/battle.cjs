@@ -3,7 +3,7 @@
 const { DeterministicIdFactory } = require('../core/determinism.cjs');
 const { DomainEnvelopeFactory } = require('../core/domain.cjs');
 const { indexToSquare, squareToIndex, toFen } = require('../core/chess/position.cjs');
-const { generateLegalMoves, makeMove, gameStatus } = require('../core/chess/rules.cjs');
+const { generateLegalMoves, makeMove, gameStatus, normalizeRulesContext } = require('../core/chess/rules.cjs');
 const { createOrderPoints } = require('./order-points.cjs');
 const {
   normalizeReserve,
@@ -78,7 +78,7 @@ function createBattleState(options) {
   const battleId = String(options.battleId || 'battle');
   const seed = options.seed || 1;
   const playerSide = options.playerSide || 'w';
-  const initialStatus = gameStatus(options.position);
+  const initialStatus = gameStatus(options.position, options.rules || {});
   const outcome = outcomeForStatus({ playerSide }, initialStatus);
   return Object.freeze({
     format: 'rpchess-battle-state',
@@ -102,8 +102,8 @@ function createBattleState(options) {
   });
 }
 
-function moveCommands(state) {
-  return generateLegalMoves(state.position)
+function moveCommands(state, rules = {}) {
+  return generateLegalMoves(state.position, rules)
     .filter((move) => {
       const pieceId = identityAt(state.identities, indexToSquare(move.from));
       return !hasStatus(state.statuses, pieceId, 'bound');
@@ -118,15 +118,17 @@ function moveCommands(state) {
     }));
 }
 
-function legalBattleCommands(state) {
+function legalBattleCommands(state, options = {}) {
   if (state.status !== 'active') return [];
+  const rules = normalizeRulesContext(options.rules || options);
   return [
-    ...moveCommands(state),
+    ...moveCommands(state, rules),
     ...legalReserveDeployments({
       position: state.position,
       reserve: state.reserve,
       reserveCells: state.reserveCells,
-      orderPoints: state.orderPoints
+      orderPoints: state.orderPoints,
+      rules
     })
   ];
 }
@@ -142,8 +144,8 @@ function captureDetails(position, move) {
   return { square: to, piece: position.board[to] };
 }
 
-function appendPositionStatusEvents(state, position, identities, factory, events) {
-  const chessStatus = gameStatus(position);
+function appendPositionStatusEvents(state, position, identities, factory, events, rules = {}) {
+  const chessStatus = gameStatus(position, rules);
   const outcome = outcomeForStatus(state, chessStatus);
   if (chessStatus.state === 'check') {
     const kingIndex = position.board.findIndex((value) => value && value.side === position.sideToMove && value.type === 'k');
@@ -170,7 +172,7 @@ function appendPositionStatusEvents(state, position, identities, factory, events
   return outcome;
 }
 
-function executeMoveCommand(state, command, factory) {
+function executeMoveCommand(state, command, factory, rules = {}) {
   const before = state.position;
   const fromSquare = command.payload.from;
   const moving = before.board[squareToIndex(fromSquare)];
@@ -178,7 +180,7 @@ function executeMoveCommand(state, command, factory) {
   const movingId = identityAt(state.identities, fromSquare);
   if (hasStatus(state.statuses, movingId, 'bound')) throw new Error(`${movingId} is bound and cannot move`);
 
-  const result = makeMove(before, command.payload);
+  const result = makeMove(before, command.payload, rules);
   const move = result.move;
   const captured = captureDetails(before, move);
   const identityChange = movePieceIdentities(state.identities, before, move);
@@ -226,7 +228,7 @@ function executeMoveCommand(state, command, factory) {
     }));
   }
 
-  const outcome = appendPositionStatusEvents(state, result.position, identityChange.identities, factory, events);
+  const outcome = appendPositionStatusEvents(state, result.position, identityChange.identities, factory, events, rules);
   return {
     position: result.position,
     identities: identityChange.identities,
@@ -240,7 +242,7 @@ function executeMoveCommand(state, command, factory) {
   };
 }
 
-function executeReserveCommand(state, command, factory) {
+function executeReserveCommand(state, command, factory, rules = {}) {
   const actorSide = state.position.sideToMove;
   const deployed = deployReserve({
     position: state.position,
@@ -248,7 +250,8 @@ function executeReserveCommand(state, command, factory) {
     reserveCells: state.reserveCells,
     orderPoints: state.orderPoints,
     entryId: command.payload.entryId,
-    square: command.payload.square
+    square: command.payload.square,
+    rules
   });
   const identities = deployReserveIdentity(state.identities, deployed.entry, deployed.square);
   const events = [
@@ -269,7 +272,7 @@ function executeReserveCommand(state, command, factory) {
       reason: 'reserve_deployment'
     })
   ];
-  const outcome = appendPositionStatusEvents(state, deployed.position, identities, factory, events);
+  const outcome = appendPositionStatusEvents(state, deployed.position, identities, factory, events, rules);
   return {
     position: deployed.position,
     identities,
@@ -315,13 +318,14 @@ function advanceBattleStatuses(state, resolution, actingSide, factory, events) {
   return advanced.state;
 }
 
-function executeBattleCommand(state, request) {
+function executeBattleCommand(state, request, options = {}) {
   if (!state || state.format !== 'rpchess-battle-state') throw new TypeError('invalid battle state');
   if (state.status !== 'active') throw new Error('battle is already completed');
   if (!request || !['MovePiece', 'DeployReserve'].includes(request.type)) {
     throw new Error(`unsupported battle command: ${request && request.type}`);
   }
 
+  const rules = normalizeRulesContext(options.rules || options);
   const actingSide = state.position.sideToMove;
   const factory = createEnvelopeFactory(state.envelope);
   const command = factory.command(request.type, request.payload || {}, {
@@ -330,8 +334,8 @@ function executeBattleCommand(state, request) {
     actionIndex: state.actionIndex
   });
   const resolution = request.type === 'MovePiece'
-    ? executeMoveCommand(state, command, factory)
-    : executeReserveCommand(state, command, factory);
+    ? executeMoveCommand(state, command, factory, rules)
+    : executeReserveCommand(state, command, factory, rules);
   const events = resolution.events.slice();
   const statuses = advanceBattleStatuses(state, resolution, actingSide, factory, events);
 
@@ -385,11 +389,11 @@ function applyBattleStatus(state, pieceId, statusId, options = {}) {
   return Object.freeze({ state: nextState, events: freezeArray(events) });
 }
 
-function replayBattle(initialState, requests) {
+function replayBattle(initialState, requests, options = {}) {
   let state = initialState;
   const events = [];
   for (const request of requests) {
-    const result = executeBattleCommand(state, request);
+    const result = executeBattleCommand(state, request, options);
     state = result.state;
     events.push(...result.events);
   }
