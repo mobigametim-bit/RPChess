@@ -97,6 +97,14 @@ jobs:
           source = source.replace("assert.ok(markup.includes('aria-disabled=\"true\"'));", "assert.ok(!markup.includes('aria-disabled=\"true\"'));")
           source = source.replace("assert.ok(enhancer.compactReadinessMarkup('hero.tomas_gate').includes('Способность: Пока недоступно'));", "assert.ok(enhancer.compactReadinessMarkup('hero.tomas_gate').includes('Способность: Работает'));")
           readiness_test.write_text(source, encoding='utf-8')
+
+          ability_test = Path('tests/iron-marches-abilities.cjs')
+          source = ability_test.read_text(encoding='utf-8')
+          source = source.replace(
+              "  assert.strictEqual(projected.abilities.entries[0].ownerId, 'orell_role');\n  assert.strictEqual(projected.abilities.entries[0].effectId, 'effect.place_adjacent_ward');",
+              "  const circleWarding = projected.abilities.entries.find((entry) => entry.effectId === 'effect.place_adjacent_ward');\n  assert.ok(circleWarding);\n  assert.strictEqual(circleWarding.ownerId, 'orell_role');"
+          )
+          ability_test.write_text(source, encoding='utf-8')
           PY
       - name: Run complete regression suite
         if: steps.guard.outputs.applied == 'false'
@@ -122,6 +130,7 @@ jobs:
             src/runtime/deployment-gate.cjs \
             tests/status-system.cjs \
             tests/iron-marches-mechanics-readiness.cjs \
+            tests/iron-marches-abilities.cjs \
             tests/register-03-relic-assets.cjs \
             tests/remaining-iron-marches-abilities.cjs
           git commit -m "Implement remaining Iron Marches abilities [register03-runtime]"
