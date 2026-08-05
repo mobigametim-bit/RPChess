@@ -1,0 +1,123 @@
+name: Visual QA approved shell
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    if: ${{ github.head_ref == 'agent/restore-approved-visual-shell' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/restore-approved-visual-shell
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install and build
+        run: |
+          npm ci
+          npm run build
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Run visual journey
+        run: |
+          python -m http.server 4173 --directory dist >/tmp/rpchess-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID' EXIT
+          sleep 2
+          mkdir -p visual-qa
+          cat > /tmp/visual-qa.mjs <<'JS'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+
+          const browser = await chromium.launch({ headless: true });
+          const desktop = await browser.newContext({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 1 });
+          const page = await desktop.newPage();
+          const log = [];
+          page.on('console', (message) => { if (message.type() === 'error') log.push(`console: ${message.text()}`); });
+          page.on('pageerror', (error) => log.push(`pageerror: ${error.message}`));
+          const shot = async (name) => {
+            await page.waitForTimeout(250);
+            await page.screenshot({ path: `visual-qa/${name}.png`, fullPage: true });
+            const overflow = await page.evaluate(() => ({
+              width: document.documentElement.clientWidth,
+              scrollWidth: document.documentElement.scrollWidth,
+              clipped: [...document.querySelectorAll('button, h1, h2, h3, p, strong, small')].filter((el) => el.scrollWidth > el.clientWidth + 2 && getComputedStyle(el).overflowX !== 'visible').slice(0, 20).map((el) => ({ tag: el.tagName, text: el.textContent.trim().slice(0, 100), client: el.clientWidth, scroll: el.scrollWidth }))
+            }));
+            log.push(`${name}: ${JSON.stringify(overflow)}`);
+          };
+
+          await page.goto('http://127.0.0.1:4173/?new=1', { waitUntil: 'networkidle' });
+          await page.waitForSelector('.rpa-menu');
+          await shot('01-main-menu-desktop');
+          await page.click('[data-shell-action="settings"]');
+          await page.waitForSelector('[data-settings-form]');
+          await shot('02-settings-desktop');
+          await page.click('[data-shell-action="menu"]');
+          await page.click('[data-shell-action="profiles"]');
+          await page.waitForSelector('.rpprofile');
+          await shot('03-chronicles-desktop');
+          await page.click('[data-profile-action="start"]');
+          await page.waitForSelector('.rpa-commander-layout');
+          await shot('04-commander-selection-desktop');
+          const locked = await page.locator('[data-commander-id][disabled]').count();
+          const unlocked = await page.locator('[data-commander-id]:not([disabled])').count();
+          log.push(`commanders: unlocked=${unlocked}, locked=${locked}`);
+          await page.click('[data-launch-commander]');
+          await page.waitForSelector('.rpvs', { timeout: 30000 });
+          await shot('05-campaign-desktop');
+
+          for (let step = 0; step < 8; step += 1) {
+            if (await page.locator('[data-choice-id]').count()) {
+              await shot(`06-event-${step}-desktop`);
+              await page.locator('[data-choice-id]').first().click();
+              await page.waitForTimeout(350);
+              continue;
+            }
+            if (await page.locator('[data-confirm-deployment]').count()) {
+              await shot(`07-deployment-${step}-desktop`);
+              if (await page.locator('[data-confirm-deployment]:not([disabled])').count()) {
+                await page.locator('[data-confirm-deployment]').click();
+                await page.waitForTimeout(350);
+                continue;
+              }
+            }
+            if (await page.locator('[data-board]').count()) {
+              await shot(`08-battle-${step}-desktop`);
+              break;
+            }
+            if (await page.locator('[data-node-id]:not([disabled])').count()) {
+              await page.locator('[data-node-id]:not([disabled])').first().click();
+              await page.waitForTimeout(450);
+              continue;
+            }
+            break;
+          }
+
+          const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+          const mobilePage = await mobile.newPage();
+          await mobilePage.goto('http://127.0.0.1:4173/?new=1', { waitUntil: 'networkidle' });
+          await mobilePage.waitForSelector('.rpa-menu');
+          await mobilePage.screenshot({ path: 'visual-qa/09-main-menu-mobile.png', fullPage: true });
+          await mobilePage.click('[data-shell-action="profiles"]');
+          await mobilePage.click('[data-profile-action="start"]');
+          await mobilePage.waitForSelector('.rpa-commander-layout');
+          await mobilePage.screenshot({ path: 'visual-qa/10-commander-selection-mobile.png', fullPage: true });
+
+          fs.writeFileSync('visual-qa/report.txt', log.join('\n') + '\n');
+          await browser.close();
+          if (log.some((line) => line.startsWith('pageerror:'))) process.exitCode = 1;
+          JS
+          node /tmp/visual-qa.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: approved-shell-visual-qa
+          path: visual-qa
+          retention-days: 2
