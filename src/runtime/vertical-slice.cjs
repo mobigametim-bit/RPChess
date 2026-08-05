@@ -23,9 +23,14 @@ const {
   executeDeploymentEdit,
   finalizeScenarioDeployment
 } = require('./deployment-gate.cjs');
+const {
+  RUNTIME_ARMY_FORMAT,
+  validateRuntimeArmy
+} = require('./army-roster.cjs');
 
 const RUNTIME_FORMAT = 'rpchess-vertical-slice-runtime';
-const RUNTIME_SCHEMA_VERSION = 1;
+const LEGACY_RUNTIME_SCHEMA_VERSION = 1;
+const RUNTIME_SCHEMA_VERSION = 2;
 const RUNTIME_STATUSES = Object.freeze([
   'campaign',
   'deployment',
@@ -61,9 +66,48 @@ function cloneSerializable(value) {
   return JSON.parse(text);
 }
 
+function hasOwn(value, key) {
+  return Object.prototype.hasOwnProperty.call(value, key);
+}
+
+function normalizeRuntimeArmy(army, options = {}) {
+  if (army == null) {
+    if (options.requireArmy) throw new Error('vertical slice runtime requires an army');
+    return null;
+  }
+  if (!army || army.format !== RUNTIME_ARMY_FORMAT) throw new Error('vertical slice runtime has an invalid army');
+  if (!options.contentRegistry || !options.combatProfiles) {
+    throw new Error('vertical slice army validation requires contentRegistry and combatProfiles');
+  }
+  return validateRuntimeArmy(army, options.contentRegistry, options.combatProfiles);
+}
+
+function migrationArmy(snapshot, options = {}) {
+  if (snapshot.army) return snapshot.army;
+  if (options.defaultArmy) return options.defaultArmy;
+  if (options.army) return options.army;
+  if (typeof options.armyFactory === 'function') return options.armyFactory(snapshot);
+  return null;
+}
+
+function migrateVerticalSliceSnapshot(snapshot, options = {}) {
+  if (!snapshot || snapshot.format !== RUNTIME_FORMAT) throw new Error('invalid vertical slice runtime state');
+  if (snapshot.schemaVersion === RUNTIME_SCHEMA_VERSION) {
+    if (!hasOwn(snapshot, 'army')) throw new Error('vertical slice runtime schema 2 requires an army field');
+    return snapshot;
+  }
+  if (snapshot.schemaVersion !== LEGACY_RUNTIME_SCHEMA_VERSION) throw new Error('unsupported vertical slice runtime schema');
+  return {
+    ...cloneSerializable(snapshot),
+    schemaVersion: RUNTIME_SCHEMA_VERSION,
+    army: migrationArmy(snapshot, options)
+  };
+}
+
 function assertRuntimeState(state) {
   if (!state || state.format !== RUNTIME_FORMAT) throw new Error('invalid vertical slice runtime state');
   if (state.schemaVersion !== RUNTIME_SCHEMA_VERSION) throw new Error('unsupported vertical slice runtime schema');
+  if (!hasOwn(state, 'army')) throw new Error('vertical slice runtime requires an army field');
   if (!RUNTIME_STATUSES.includes(state.status)) throw new Error(`invalid vertical slice runtime status: ${state.status}`);
   if (!state.campaign || state.campaign.format !== 'rpchess-campaign-state') throw new Error('vertical slice runtime requires campaign state');
   return state;
@@ -122,6 +166,7 @@ function createVerticalSliceRuntime(options = {}) {
   const playerSide = options.playerSide || 'w';
   if (!['w', 'b'].includes(playerSide)) throw new Error('playerSide must be w or b');
   validateGraphContent(campaign.graph, options.contentRegistry);
+  const army = normalizeRuntimeArmy(options.army ?? null, options);
 
   return deepFreeze({
     format: RUNTIME_FORMAT,
@@ -132,6 +177,7 @@ function createVerticalSliceRuntime(options = {}) {
     playerSide,
     aiProfile: String(options.aiProfile || 'tactician'),
     campaign,
+    army,
     status: 'campaign',
     currentNode: null,
     deployment: null,
@@ -543,9 +589,12 @@ function snapshotVerticalSlice(state) {
 }
 
 function validateVerticalSliceSnapshot(snapshot, options = {}) {
-  const state = assertRuntimeState(snapshot);
-  normalizeProfileId(state.profileId);
-  if (options.contentRegistry) validateGraphContent(state.campaign.graph, options.contentRegistry);
+  const migrated = migrateVerticalSliceSnapshot(snapshot, options);
+  const asserted = assertRuntimeState(migrated);
+  normalizeProfileId(asserted.profileId);
+  if (options.contentRegistry) validateGraphContent(asserted.campaign.graph, options.contentRegistry);
+  const army = normalizeRuntimeArmy(asserted.army, options);
+  const state = army === asserted.army ? asserted : { ...asserted, army };
   if (state.currentNode) {
     const node = state.campaign.graph.nodesById[state.currentNode.nodeId];
     if (!node) throw new Error(`snapshot current node is missing: ${state.currentNode.nodeId}`);
@@ -570,14 +619,19 @@ function saveVerticalSlice(store, state) {
 function loadVerticalSlice(store, profileId, options = {}) {
   if (!store || typeof store.load !== 'function') throw new Error('atomic profile store is required');
   const loaded = store.load(profileId, options);
-  if (!loaded.payload) return Object.freeze({ ...loaded, state: null });
+  if (!loaded.payload) return Object.freeze({ ...loaded, state: null, migratedFrom: null });
+  const sourceSchemaVersion = loaded.payload.schemaVersion;
   const state = validateVerticalSliceSnapshot(loaded.payload, options);
-  return Object.freeze({ ...loaded, state });
+  return Object.freeze({
+    ...loaded,
+    state,
+    migratedFrom: sourceSchemaVersion === RUNTIME_SCHEMA_VERSION ? null : sourceSchemaVersion
+  });
 }
 
 function replayVerticalSlice(initialState, operations, dependencies = {}) {
   if (!Array.isArray(operations)) throw new Error('vertical slice replay operations must be an array');
-  let state = assertRuntimeState(initialState);
+  let state = validateVerticalSliceSnapshot(initialState, dependencies);
   for (const operation of operations) {
     if (!operation || typeof operation.type !== 'string') throw new Error('invalid vertical slice replay operation');
     if (operation.type === 'Travel') state = enterVerticalSliceNode(state, operation.targetNodeId, dependencies);
@@ -593,8 +647,11 @@ function replayVerticalSlice(initialState, operations, dependencies = {}) {
 
 module.exports = {
   RUNTIME_FORMAT,
+  LEGACY_RUNTIME_SCHEMA_VERSION,
   RUNTIME_SCHEMA_VERSION,
   RUNTIME_STATUSES,
+  normalizeRuntimeArmy,
+  migrateVerticalSliceSnapshot,
   contentKindForNode,
   resolveNodeContent,
   validateGraphContent,

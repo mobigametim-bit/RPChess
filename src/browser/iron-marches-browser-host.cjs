@@ -183,19 +183,24 @@ function createBrowserIronMarchesRuntimeHost(options = {}) {
     relicIds: freezeArray(options.selection?.relicIds || DEFAULT_BROWSER_SELECTION.relicIds)
   });
   assertBrowserSelection(bundle, requestedSelection);
+  const requestedArmy = createRuntimeArmy(requestedSelection, bundle.registry, bundle.combatProfiles);
+  const runtimeValidation = Object.freeze({
+    contentRegistry: bundle.registry,
+    combatProfiles: bundle.combatProfiles,
+    defaultArmy: requestedArmy,
+    requireArmy: true
+  });
 
   let resumeInfo = options.resumeInfo || null;
   let state = options.initialState
-    ? validateVerticalSliceSnapshot(options.initialState, { contentRegistry: bundle.registry })
+    ? validateVerticalSliceSnapshot(options.initialState, runtimeValidation)
     : null;
   if (!state && saveStore && options.resume !== false) {
-    resumeInfo = inspectBrowserProfile(saveStore, profileId, bundle.registry);
+    resumeInfo = inspectBrowserProfile(saveStore, profileId, runtimeValidation);
     state = resumeInfo.state;
   }
   const resumed = Boolean(state);
-  const army = state?.army
-    ? validateRuntimeArmy(state.army, bundle.registry, bundle.combatProfiles)
-    : createRuntimeArmy(requestedSelection, bundle.registry, bundle.combatProfiles);
+  const army = state?.army || requestedArmy;
   const selection = runtimeSelectionFromArmy(army);
   assertBrowserSelection(bundle, selection);
 
@@ -218,10 +223,12 @@ function createBrowserIronMarchesRuntimeHost(options = {}) {
       playerSide: options.playerSide || 'w',
       aiProfile: options.aiProfile || 'apprentice',
       campaign,
-      contentRegistry: bundle.registry
+      army,
+      contentRegistry: bundle.registry,
+      combatProfiles: bundle.combatProfiles,
+      requireArmy: true
     });
   }
-  if (state.army !== army) state = Object.freeze({ ...state, army });
   const dependencies = createBrowserDependencies({
     bundle,
     language,
@@ -232,7 +239,8 @@ function createBrowserIronMarchesRuntimeHost(options = {}) {
     saveStore
   });
   let lastSaveEnvelope = null;
-  if (!resumed && saveStore && options.saveOnStart === true) lastSaveEnvelope = saveBrowserProfile(saveStore, state);
+  if (resumed && resumeInfo?.migratedFrom && saveStore) lastSaveEnvelope = saveBrowserProfile(saveStore, state);
+  else if (!resumed && saveStore && options.saveOnStart === true) lastSaveEnvelope = saveBrowserProfile(saveStore, state);
 
   return Object.freeze({
     format: 'rpchess-browser-runtime-host',
@@ -290,8 +298,13 @@ function createBrowserRunSelectionHost(options = {}) {
   const saveStore = options.saveStore || createBrowserProfileStore(options);
   if (options.forceNew && saveStore) deleteBrowserProfile(saveStore, profileId);
   let resumeInfo = saveStore && !options.forceNew
-    ? inspectBrowserProfile(saveStore, profileId, bundle.registry)
-    : Object.freeze({ profileId, status: saveStore ? 'empty' : 'unavailable', revision: 0, savedAt: null, recoveredFrom: null, state: null });
+    ? inspectBrowserProfile(saveStore, profileId, {
+      contentRegistry: bundle.registry,
+      combatProfiles: bundle.combatProfiles,
+      defaultArmy: createRuntimeArmy(DEFAULT_BROWSER_SELECTION, bundle.registry, bundle.combatProfiles),
+      requireArmy: true
+    })
+    : Object.freeze({ profileId, status: saveStore ? 'empty' : 'unavailable', revision: 0, savedAt: null, recoveredFrom: null, migratedFrom: null, state: null });
   let selection = createRunSelection({
     contentRegistry: bundle.registry,
     selectionId: options.selectionId || `selection:${options.seed || 1}`,

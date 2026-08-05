@@ -62,6 +62,9 @@ function createRuntimeArmy(selectionInput, registryInput, profileSetInput) {
     if (!hero) throw new Error(`runtime army references missing hero: ${heroId}`);
     if (hero.regionId !== regionId) throw new Error(`${heroId} belongs to ${hero.regionId}, not ${regionId}`);
     if (!profile) throw new Error(`runtime army has no combat profile for ${heroId}`);
+    for (const relicId of profile.relicIds) {
+      if (!registry.get('relic', relicId)) throw new Error(`runtime army references missing relic: ${relicId}`);
+    }
     return Object.freeze({
       heroId,
       nameKey: hero.nameKey,
@@ -100,6 +103,8 @@ function validateRuntimeArmy(snapshot, registry, profileSet) {
     heroIds: snapshot.heroIds
   }, registry, profileSet);
   if (snapshot.profileSetId !== rebuilt.profileSetId) throw new Error('runtime army combat profile set changed');
+  if (JSON.stringify(snapshot.relicIds) !== JSON.stringify(rebuilt.relicIds)) throw new Error('runtime army relic bindings changed');
+  if (JSON.stringify(snapshot.heroes) !== JSON.stringify(rebuilt.heroes)) throw new Error('runtime army hero records changed');
   return rebuilt;
 }
 
