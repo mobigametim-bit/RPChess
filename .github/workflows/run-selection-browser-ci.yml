@@ -1,0 +1,43 @@
+name: RPChess Run Selection Browser CI
+
+on:
+  pull_request:
+    paths:
+      - 'src/runtime/run-selection-host.cjs'
+      - 'game/js/run-selection-client.mjs'
+      - 'game/js/run-selection-presenter.mjs'
+      - 'game/css/run-selection.css'
+      - 'game/tools/run-selection-preview.html'
+      - 'tests/run-selection-browser.cjs'
+      - '.github/workflows/run-selection-browser-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/runtime/run-selection-host.cjs'
+      - 'game/js/run-selection-client.mjs'
+      - 'game/js/run-selection-presenter.mjs'
+      - 'game/css/run-selection.css'
+      - 'game/tools/run-selection-preview.html'
+      - 'tests/run-selection-browser.cjs'
+      - '.github/workflows/run-selection-browser-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  run-selection-browser:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Run selection browser tests
+        run: node tests/run-selection-browser.cjs
+      - name: Verify source and preview assets
+        run: |
+          npm run verify
+          test -f game/tools/run-selection-preview.html
+          test -f game/css/run-selection.css
