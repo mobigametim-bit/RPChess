@@ -107,11 +107,10 @@ test('interrupted commit leaves a valid pending save that is recovered next load
 });
 
 test('sequential migration creates a new revision linked to the old checksum', () => {
-  const migrations = new SaveMigrationRegistry(2).register(1, (payload) => ({
-    ...payload,
-    resources: { gold: payload.gold || 0 },
-    gold: undefined
-  }));
+  const migrations = new SaveMigrationRegistry(2).register(1, (payload) => {
+    const { gold = 0, ...rest } = payload;
+    return { ...rest, resources: { gold } };
+  });
   const storage = new MemoryKeyValueStorage();
   const old = createSaveEnvelope({
     schemaVersion: 1,
