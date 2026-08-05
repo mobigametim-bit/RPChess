@@ -1,0 +1,1543 @@
+{
+  "schemaVersion": 1,
+  "registerId": "REGISTER_03_RELICS",
+  "assetRoot": "assets/relics",
+  "status": "REVIEW",
+  "source": "Google Drive/нейрошахматы/REGISTER_03_RELICS",
+  "runtimeDimensions": [
+    512,
+    512
+  ],
+  "normalization": "alpha content fitted inside 12% safe area with Lanczos resampling; source and runtime SHA-256 retained",
+  "records": [
+    {
+      "registerId": "RELIC-01",
+      "id": "relic.echo_shield",
+      "slug": "echo_shield",
+      "filename": "echo_shield.png",
+      "path": "assets/relics/echo_shield.png",
+      "compatibility": [
+        "rook",
+        "king"
+      ],
+      "priority": "P0",
+      "name": {
+        "ru": "Щит эха",
+        "en": "Echo Shield"
+      },
+      "description": {
+        "en": "negate the first otherwise legal capture once, then break.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "IMPLEMENTED"
+    },
+    {
+      "registerId": "RELIC-02",
+      "id": "relic.phantom_spurs",
+      "slug": "phantom_spurs",
+      "filename": "phantom_spurs.png",
+      "path": "assets/relics/phantom_spurs.png",
+      "compatibility": [
+        "knight"
+      ],
+      "priority": "P0",
+      "name": {
+        "ru": "Призрачные шпоры",
+        "en": "Phantom Spurs"
+      },
+      "description": {
+        "en": "after a non-capture, gain visible evasion rather than hidden position.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-03",
+      "id": "relic.circle_warding",
+      "slug": "circle_warding",
+      "filename": "circle_warding.png",
+      "path": "assets/relics/circle_warding.png",
+      "compatibility": [
+        "bishop",
+        "king"
+      ],
+      "priority": "P0",
+      "name": {
+        "ru": "Круг защиты",
+        "en": "Circle Warding"
+      },
+      "description": {
+        "en": "place a one-use ward on an adjacent ally.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "IMPLEMENTED"
+    },
+    {
+      "registerId": "RELIC-04",
+      "id": "relic.twin_command",
+      "slug": "twin_command",
+      "filename": "twin_command.png",
+      "path": "assets/relics/twin_command.png",
+      "compatibility": [
+        "king",
+        "hero"
+      ],
+      "priority": "P0",
+      "name": {
+        "ru": "Двойной приказ",
+        "en": "Twin Command"
+      },
+      "description": {
+        "en": "first active ability each battle costs one fewer order point.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "PARTIAL"
+    },
+    {
+      "registerId": "RELIC-05",
+      "id": "relic.royal_decree",
+      "slug": "royal_decree",
+      "filename": "royal_decree.png",
+      "path": "assets/relics/royal_decree.png",
+      "compatibility": [
+        "pawn"
+      ],
+      "priority": "P0",
+      "name": {
+        "ru": "Королевский указ",
+        "en": "Royal Decree"
+      },
+      "description": {
+        "en": "one early promotion route under a strict visible condition.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-06",
+      "id": "relic.oath_fallen",
+      "slug": "oath_fallen",
+      "filename": "oath_fallen.png",
+      "path": "assets/relics/oath_fallen.png",
+      "compatibility": [
+        "any"
+      ],
+      "priority": "P0",
+      "name": {
+        "ru": "Клятва павших",
+        "en": "Oath Fallen"
+      },
+      "description": {
+        "en": "one order point after a voluntary sacrifice, once per round.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-07",
+      "id": "relic.second_wind",
+      "slug": "second_wind",
+      "filename": "second_wind.png",
+      "path": "assets/relics/second_wind.png",
+      "compatibility": [
+        "named hero"
+      ],
+      "priority": "P0",
+      "name": {
+        "ru": "Второе дыхание",
+        "en": "Second Wind"
+      },
+      "description": {
+        "en": "one extra action every second round with visible cooldown.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-08",
+      "id": "relic.royal_exchange",
+      "slug": "royal_exchange",
+      "filename": "royal_exchange.png",
+      "path": "assets/relics/royal_exchange.png",
+      "compatibility": [
+        "king"
+      ],
+      "priority": "P0",
+      "name": {
+        "ru": "Королевская рокировка",
+        "en": "Royal Exchange"
+      },
+      "description": {
+        "en": "swap with an ally once if resulting position is legal.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-09",
+      "id": "relic.cursed_trail",
+      "slug": "cursed_trail",
+      "filename": "cursed_trail.png",
+      "path": "assets/relics/cursed_trail.png",
+      "compatibility": [
+        "rook"
+      ],
+      "priority": "P0",
+      "name": {
+        "ru": "Проклятый след",
+        "en": "Cursed Trail"
+      },
+      "description": {
+        "en": "origin cell becomes a visible hostile hazard for one round.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-10",
+      "id": "relic.phoenix_seal",
+      "slug": "phoenix_seal",
+      "filename": "phoenix_seal.png",
+      "path": "assets/relics/phoenix_seal.png",
+      "compatibility": [
+        "any"
+      ],
+      "priority": "P0",
+      "name": {
+        "ru": "Печать феникса",
+        "en": "Phoenix Seal"
+      },
+      "description": {
+        "en": "replace one run defeat with a restart of that battle.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-11",
+      "id": "relic.glass_crown",
+      "slug": "glass_crown",
+      "filename": "glass_crown.png",
+      "path": "assets/relics/glass_crown.png",
+      "compatibility": [
+        "queen"
+      ],
+      "priority": "P0",
+      "name": {
+        "ru": "Стеклянная корона",
+        "en": "Glass Crown"
+      },
+      "description": {
+        "en": "bounded extra tempo but cannot receive wards.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-12",
+      "id": "relic.hearth_blessing",
+      "slug": "hearth_blessing",
+      "filename": "hearth_blessing.png",
+      "path": "assets/relics/hearth_blessing.png",
+      "compatibility": [
+        "any"
+      ],
+      "priority": "P0",
+      "name": {
+        "ru": "Благословение очага",
+        "en": "Hearth Blessing"
+      },
+      "description": {
+        "en": "recover one light injury after battle.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-13",
+      "id": "relic.mason_compass",
+      "slug": "mason_compass",
+      "filename": "mason_compass.png",
+      "path": "assets/relics/mason_compass.png",
+      "compatibility": [
+        "rook"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Компас каменщика",
+        "en": "Mason Compass"
+      },
+      "description": {
+        "en": "rotate one blocking object before battle.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-14",
+      "id": "relic.silver_liturgy",
+      "slug": "silver_liturgy",
+      "filename": "silver_liturgy.png",
+      "path": "assets/relics/silver_liturgy.png",
+      "compatibility": [
+        "bishop"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Серебряная литургия",
+        "en": "Silver Liturgy"
+      },
+      "description": {
+        "en": "cleanse one status along a clear diagonal.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-15",
+      "id": "relic.spur_of_dawn",
+      "slug": "spur_of_dawn",
+      "filename": "spur_of_dawn.png",
+      "path": "assets/relics/spur_of_dawn.png",
+      "compatibility": [
+        "knight"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Шпора рассвета",
+        "en": "Spur Of Dawn"
+      },
+      "description": {
+        "en": "reserve deployment onto one additional marked cell.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-16",
+      "id": "relic.banner_nine",
+      "slug": "banner_nine",
+      "filename": "banner_nine.png",
+      "path": "assets/relics/banner_nine.png",
+      "compatibility": [
+        "pawn"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Знамя Девятого дома",
+        "en": "Banner Nine"
+      },
+      "description": {
+        "en": "pawn formation earns one order point on objective progress.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-17",
+      "id": "relic.merchants_scale",
+      "slug": "merchants_scale",
+      "filename": "merchants_scale.png",
+      "path": "assets/relics/merchants_scale.png",
+      "compatibility": [
+        "any"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Весы купца",
+        "en": "Merchants Scale"
+      },
+      "description": {
+        "en": "rejected relic converts into a gold-or-supplies choice.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-18",
+      "id": "relic.thorn_key",
+      "slug": "thorn_key",
+      "filename": "thorn_key.png",
+      "path": "assets/relics/thorn_key.png",
+      "compatibility": [
+        "knight",
+        "bishop"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Терновый ключ",
+        "en": "Thorn Key"
+      },
+      "description": {
+        "en": "activate one visible portal without moving through it.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-19",
+      "id": "relic.ash_hourglass",
+      "slug": "ash_hourglass",
+      "filename": "ash_hourglass.png",
+      "path": "assets/relics/ash_hourglass.png",
+      "compatibility": [
+        "any"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Пепельные часы",
+        "en": "Ash Hourglass"
+      },
+      "description": {
+        "en": "delay injury recovery for immediate supplies.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-20",
+      "id": "relic.lens_true_line",
+      "slug": "lens_true_line",
+      "filename": "lens_true_line.png",
+      "path": "assets/relics/lens_true_line.png",
+      "compatibility": [
+        "bishop",
+        "rook"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Линза истинной линии",
+        "en": "Lens True Line"
+      },
+      "description": {
+        "en": "reveal an attack line and protect one objective interaction.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-21",
+      "id": "relic.crownless_ring",
+      "slug": "crownless_ring",
+      "filename": "crownless_ring.png",
+      "path": "assets/relics/crownless_ring.png",
+      "compatibility": [
+        "pawn",
+        "knight"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Кольцо без короны",
+        "en": "Crownless Ring"
+      },
+      "description": {
+        "en": "stronger while no queen is deployed.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-22",
+      "id": "relic.regents_chain",
+      "slug": "regents_chain",
+      "filename": "regents_chain.png",
+      "path": "assets/relics/regents_chain.png",
+      "compatibility": [
+        "king"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Цепь регента",
+        "en": "Regents Chain"
+      },
+      "description": {
+        "en": "command gains power but raises its next cost.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-23",
+      "id": "relic.star_map",
+      "slug": "star_map",
+      "filename": "star_map.png",
+      "path": "assets/relics/star_map.png",
+      "compatibility": [
+        "knight"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Звёздная карта",
+        "en": "Star Map"
+      },
+      "description": {
+        "en": "show extra scouting detail on one route.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-24",
+      "id": "relic.quiet_bell",
+      "slug": "quiet_bell",
+      "filename": "quiet_bell.png",
+      "path": "assets/relics/quiet_bell.png",
+      "compatibility": [
+        "bishop"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Тихий колокол",
+        "en": "Quiet Bell"
+      },
+      "description": {
+        "en": "silence one enemy active ability for a visible duration.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-25",
+      "id": "relic.bridge_nail",
+      "slug": "bridge_nail",
+      "filename": "bridge_nail.png",
+      "path": "assets/relics/bridge_nail.png",
+      "compatibility": [
+        "rook"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Гвоздь моста",
+        "en": "Bridge Nail"
+      },
+      "description": {
+        "en": "anchor against forced movement and portals.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-26",
+      "id": "relic.pilgrim_cup",
+      "slug": "pilgrim_cup",
+      "filename": "pilgrim_cup.png",
+      "path": "assets/relics/pilgrim_cup.png",
+      "compatibility": [
+        "any"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Чаша паломника",
+        "en": "Pilgrim Cup"
+      },
+      "description": {
+        "en": "convert one post-battle gold reward into a healing choice.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-27",
+      "id": "relic.mirror_shard",
+      "slug": "mirror_shard",
+      "filename": "mirror_shard.png",
+      "path": "assets/relics/mirror_shard.png",
+      "compatibility": [
+        "any"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Осколок зеркала",
+        "en": "Mirror Shard"
+      },
+      "description": {
+        "en": "copy one compatible passive for one battle, chosen beforehand.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-28",
+      "id": "relic.black_contract",
+      "slug": "black_contract",
+      "filename": "black_contract.png",
+      "path": "assets/relics/black_contract.png",
+      "compatibility": [
+        "queen",
+        "hero"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Чёрный контракт",
+        "en": "Black Contract"
+      },
+      "description": {
+        "en": "gain an order action now and a visible event-debt flag.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-29",
+      "id": "relic.saint_thread",
+      "slug": "saint_thread",
+      "filename": "saint_thread.png",
+      "path": "assets/relics/saint_thread.png",
+      "compatibility": [
+        "pawn"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Нить святой",
+        "en": "Saint Thread"
+      },
+      "description": {
+        "en": "retain one chosen talent through promotion.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-30",
+      "id": "relic.wolf_token",
+      "slug": "wolf_token",
+      "filename": "wolf_token.png",
+      "path": "assets/relics/wolf_token.png",
+      "compatibility": [
+        "knight"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Жетон волка",
+        "en": "Wolf Token"
+      },
+      "description": {
+        "en": "rescuing an ally resets one reserve cooldown.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-31",
+      "id": "relic.citadel_seed",
+      "slug": "citadel_seed",
+      "filename": "citadel_seed.png",
+      "path": "assets/relics/citadel_seed.png",
+      "compatibility": [
+        "rook"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Семя цитадели",
+        "en": "Citadel Seed"
+      },
+      "description": {
+        "en": "create one temporary blocker in the deployment zone.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-32",
+      "id": "relic.open_book",
+      "slug": "open_book",
+      "filename": "open_book.png",
+      "path": "assets/relics/open_book.png",
+      "compatibility": [
+        "bishop"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Открытая книга",
+        "en": "Open Book"
+      },
+      "description": {
+        "en": "first new environment rule gets expanded preview and a small benefit.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-33",
+      "id": "relic.queen_s_lace",
+      "slug": "queen_s_lace",
+      "filename": "queen_s_lace.png",
+      "path": "assets/relics/queen_s_lace.png",
+      "compatibility": [
+        "queen"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Кружево ферзя",
+        "en": "Queen S Lace"
+      },
+      "description": {
+        "en": "move through one allied square once without changing capture rules.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-34",
+      "id": "relic.last_coin",
+      "slug": "last_coin",
+      "filename": "last_coin.png",
+      "path": "assets/relics/last_coin.png",
+      "compatibility": [
+        "any"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Последняя монета",
+        "en": "Last Coin"
+      },
+      "description": {
+        "en": "at zero gold gain one supply, then destroy relic.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-35",
+      "id": "relic.red_wax",
+      "slug": "red_wax",
+      "filename": "red_wax.png",
+      "path": "assets/relics/red_wax.png",
+      "compatibility": [
+        "king",
+        "hero"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Красный воск",
+        "en": "Red Wax"
+      },
+      "description": {
+        "en": "seal one event consequence from repeating this run.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-36",
+      "id": "relic.feather_court",
+      "slug": "feather_court",
+      "filename": "feather_court.png",
+      "path": "assets/relics/feather_court.png",
+      "compatibility": [
+        "named hero"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Перо двора",
+        "en": "Feather Court"
+      },
+      "description": {
+        "en": "personal-event choices create Chronicle memory.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-37",
+      "id": "relic.iron_rosary",
+      "slug": "iron_rosary",
+      "filename": "iron_rosary.png",
+      "path": "assets/relics/iron_rosary.png",
+      "compatibility": [
+        "bishop"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Железные чётки",
+        "en": "Iron Rosary"
+      },
+      "description": {
+        "en": "legal king-check evasions advance a once-per-battle effect.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-38",
+      "id": "relic.broken_lance",
+      "slug": "broken_lance",
+      "filename": "broken_lance.png",
+      "path": "assets/relics/broken_lance.png",
+      "compatibility": [
+        "knight"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Сломанное копьё",
+        "en": "Broken Lance"
+      },
+      "description": {
+        "en": "after a capture, next move cannot capture but costs no order action.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-39",
+      "id": "relic.foundry_heart",
+      "slug": "foundry_heart",
+      "filename": "foundry_heart.png",
+      "path": "assets/relics/foundry_heart.png",
+      "compatibility": [
+        "rook"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Сердце кузни",
+        "en": "Foundry Heart"
+      },
+      "description": {
+        "en": "ward restores after holding the same file for two rounds.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-40",
+      "id": "relic.diplomat_seal",
+      "slug": "diplomat_seal",
+      "filename": "diplomat_seal.png",
+      "path": "assets/relics/diplomat_seal.png",
+      "compatibility": [
+        "queen",
+        "king"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Печать дипломата",
+        "en": "Diplomat Seal"
+      },
+      "description": {
+        "en": "unlock one nonviolent event choice per act.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-41",
+      "id": "relic.grave_lantern",
+      "slug": "grave_lantern",
+      "filename": "grave_lantern.png",
+      "path": "assets/relics/grave_lantern.png",
+      "compatibility": [
+        "pawn",
+        "bishop"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Могильный фонарь",
+        "en": "Grave Lantern"
+      },
+      "description": {
+        "en": "visibly mark where a fallen ally may return.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-42",
+      "id": "relic.salt_crown",
+      "slug": "salt_crown",
+      "filename": "salt_crown.png",
+      "path": "assets/relics/salt_crown.png",
+      "compatibility": [
+        "king"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Соляная корона",
+        "en": "Salt Crown"
+      },
+      "description": {
+        "en": "ignore one curse but lose one scouting option.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-43",
+      "id": "relic.wind_knot",
+      "slug": "wind_knot",
+      "filename": "wind_knot.png",
+      "path": "assets/relics/wind_knot.png",
+      "compatibility": [
+        "knight"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Узел ветра",
+        "en": "Wind Knot"
+      },
+      "description": {
+        "en": "one reserve piece may enter from a side edge.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-44",
+      "id": "relic.amber_eye",
+      "slug": "amber_eye",
+      "filename": "amber_eye.png",
+      "path": "assets/relics/amber_eye.png",
+      "compatibility": [
+        "rook",
+        "bishop"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Янтарный глаз",
+        "en": "Amber Eye"
+      },
+      "description": {
+        "en": "mark one visible enemy at battle start.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-45",
+      "id": "relic.copper_hymn",
+      "slug": "copper_hymn",
+      "filename": "copper_hymn.png",
+      "path": "assets/relics/copper_hymn.png",
+      "compatibility": [
+        "pawn"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Медный гимн",
+        "en": "Copper Hymn"
+      },
+      "description": {
+        "en": "visible formation promotion meter accelerated once.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-46",
+      "id": "relic.veil_cut",
+      "slug": "veil_cut",
+      "filename": "veil_cut.png",
+      "path": "assets/relics/veil_cut.png",
+      "compatibility": [
+        "queen"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Разрез завесы",
+        "en": "Veil Cut"
+      },
+      "description": {
+        "en": "remove one portal pair or magical-terrain rule before battle.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-47",
+      "id": "relic.stone_debt",
+      "slug": "stone_debt",
+      "filename": "stone_debt.png",
+      "path": "assets/relics/stone_debt.png",
+      "compatibility": [
+        "any"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Каменный долг",
+        "en": "Stone Debt"
+      },
+      "description": {
+        "en": "repair a heavy injury at the next service node for fixed cost.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-48",
+      "id": "relic.three_keys",
+      "slug": "three_keys",
+      "filename": "three_keys.png",
+      "path": "assets/relics/three_keys.png",
+      "compatibility": [
+        "any"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Три ключа",
+        "en": "Three Keys"
+      },
+      "description": {
+        "en": "three optional objectives earn one relic reroll.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-49",
+      "id": "relic.hollow_crown",
+      "slug": "hollow_crown",
+      "filename": "hollow_crown.png",
+      "path": "assets/relics/hollow_crown.png",
+      "compatibility": [
+        "king"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Пустая корона",
+        "en": "Hollow Crown"
+      },
+      "description": {
+        "en": "secret high-risk order with all possible outcomes shown.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-50",
+      "id": "relic.moon_saddle",
+      "slug": "moon_saddle",
+      "filename": "moon_saddle.png",
+      "path": "assets/relics/moon_saddle.png",
+      "compatibility": [
+        "knight"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Лунное седло",
+        "en": "Moon Saddle"
+      },
+      "description": {
+        "en": "landing on a marked cell grants guard until next action.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-51",
+      "id": "relic.scribe_knife",
+      "slug": "scribe_knife",
+      "filename": "scribe_knife.png",
+      "path": "assets/relics/scribe_knife.png",
+      "compatibility": [
+        "bishop",
+        "hero"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Нож писца",
+        "en": "Scribe Knife"
+      },
+      "description": {
+        "en": "rewrite one event variable, not the whole result.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-52",
+      "id": "relic.golden_pawn",
+      "slug": "golden_pawn",
+      "filename": "golden_pawn.png",
+      "path": "assets/relics/golden_pawn.png",
+      "compatibility": [
+        "pawn"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Золотая пешка",
+        "en": "Golden Pawn"
+      },
+      "description": {
+        "en": "special scenarios may trade promotion for supplies.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-53",
+      "id": "relic.harbor_chain",
+      "slug": "harbor_chain",
+      "filename": "harbor_chain.png",
+      "path": "assets/relics/harbor_chain.png",
+      "compatibility": [
+        "rook"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Портовая цепь",
+        "en": "Harbor Chain"
+      },
+      "description": {
+        "en": "connect two edge cells as a visible line obstacle.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-54",
+      "id": "relic.oracle_ash",
+      "slug": "oracle_ash",
+      "filename": "oracle_ash.png",
+      "path": "assets/relics/oracle_ash.png",
+      "compatibility": [
+        "bishop"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Пепел оракула",
+        "en": "Oracle Ash"
+      },
+      "description": {
+        "en": "preview one boss-phase rule before entering its node.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-55",
+      "id": "relic.kingmaker_pin",
+      "slug": "kingmaker_pin",
+      "filename": "kingmaker_pin.png",
+      "path": "assets/relics/kingmaker_pin.png",
+      "compatibility": [
+        "queen",
+        "hero"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Булавка коронатора",
+        "en": "Kingmaker Pin"
+      },
+      "description": {
+        "en": "supporting a claimant alters one faction reward pool.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-56",
+      "id": "relic.winter_standard",
+      "slug": "winter_standard",
+      "filename": "winter_standard.png",
+      "path": "assets/relics/winter_standard.png",
+      "compatibility": [
+        "pawn",
+        "rook"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Зимний штандарт",
+        "en": "Winter Standard"
+      },
+      "description": {
+        "en": "hold a zone two turns to create sanctified cells.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-57",
+      "id": "relic.sunken_gem",
+      "slug": "sunken_gem",
+      "filename": "sunken_gem.png",
+      "path": "assets/relics/sunken_gem.png",
+      "compatibility": [
+        "any"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Утопленный самоцвет",
+        "en": "Sunken Gem"
+      },
+      "description": {
+        "en": "spend one supply for an event from a visible shortlist.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-58",
+      "id": "relic.thorn_diadem",
+      "slug": "thorn_diadem",
+      "filename": "thorn_diadem.png",
+      "path": "assets/relics/thorn_diadem.png",
+      "compatibility": [
+        "king",
+        "queen"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Терновая диадема",
+        "en": "Thorn Diadem"
+      },
+      "description": {
+        "en": "power on corrupted cells with explicit injury risk.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-59",
+      "id": "relic.atlas_fold",
+      "slug": "atlas_fold",
+      "filename": "atlas_fold.png",
+      "path": "assets/relics/atlas_fold.png",
+      "compatibility": [
+        "any"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Складка атласа",
+        "en": "Atlas Fold"
+      },
+      "description": {
+        "en": "reveal one hidden route and lock another.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-60",
+      "id": "relic.bell_founder",
+      "slug": "bell_founder",
+      "filename": "bell_founder.png",
+      "path": "assets/relics/bell_founder.png",
+      "compatibility": [
+        "rook"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Колокол основателя",
+        "en": "Bell Founder"
+      },
+      "description": {
+        "en": "declare a protected line for one round.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-61",
+      "id": "relic.saint_splinter",
+      "slug": "saint_splinter",
+      "filename": "saint_splinter.png",
+      "path": "assets/relics/saint_splinter.png",
+      "compatibility": [
+        "bishop"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Щепа святого",
+        "en": "Saint Splinter"
+      },
+      "description": {
+        "en": "convert one cursed cell into a sanctified cell.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-62",
+      "id": "relic.horsehair_oath",
+      "slug": "horsehair_oath",
+      "filename": "horsehair_oath.png",
+      "path": "assets/relics/horsehair_oath.png",
+      "compatibility": [
+        "knight"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Клятва конского волоса",
+        "en": "Horsehair Oath"
+      },
+      "description": {
+        "en": "after reserve, return with one visible status.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-63",
+      "id": "relic.widow_crown",
+      "slug": "widow_crown",
+      "filename": "widow_crown.png",
+      "path": "assets/relics/widow_crown.png",
+      "compatibility": [
+        "queen"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Вдовья корона",
+        "en": "Widow Crown"
+      },
+      "description": {
+        "en": "changes after the king command is spent; no raw damage bonus.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-64",
+      "id": "relic.black_seed",
+      "slug": "black_seed",
+      "filename": "black_seed.png",
+      "path": "assets/relics/black_seed.png",
+      "compatibility": [
+        "pawn"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Чёрное семя",
+        "en": "Black Seed"
+      },
+      "description": {
+        "en": "unlock one deterministic alternative promotion.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-65",
+      "id": "relic.parliament_key",
+      "slug": "parliament_key",
+      "filename": "parliament_key.png",
+      "path": "assets/relics/parliament_key.png",
+      "compatibility": [
+        "hero",
+        "queen"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Ключ парламента",
+        "en": "Parliament Key"
+      },
+      "description": {
+        "en": "political choices expose one extra consequence clue.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-66",
+      "id": "relic.furnace_map",
+      "slug": "furnace_map",
+      "filename": "furnace_map.png",
+      "path": "assets/relics/furnace_map.png",
+      "compatibility": [
+        "rook"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Карта горнов",
+        "en": "Furnace Map"
+      },
+      "description": {
+        "en": "reduce service cost after Iron Marches victories.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-67",
+      "id": "relic.sky_braid",
+      "slug": "sky_braid",
+      "filename": "sky_braid.png",
+      "path": "assets/relics/sky_braid.png",
+      "compatibility": [
+        "knight"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Небесная коса",
+        "en": "Sky Braid"
+      },
+      "description": {
+        "en": "chain one non-capture move with a bounded reserve call.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-68",
+      "id": "relic.choir_mask",
+      "slug": "choir_mask",
+      "filename": "choir_mask.png",
+      "path": "assets/relics/choir_mask.png",
+      "compatibility": [
+        "any"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Маска хора",
+        "en": "Choir Mask"
+      },
+      "description": {
+        "en": "changes event voice, never hidden rules.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-69",
+      "id": "relic.mirror_weight",
+      "slug": "mirror_weight",
+      "filename": "mirror_weight.png",
+      "path": "assets/relics/mirror_weight.png",
+      "compatibility": [
+        "rook",
+        "queen"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Зеркальная гиря",
+        "en": "Mirror Weight"
+      },
+      "description": {
+        "en": "reflect one forced displacement if destination is legal.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-70",
+      "id": "relic.first_crown",
+      "slug": "first_crown",
+      "filename": "first_crown.png",
+      "path": "assets/relics/first_crown.png",
+      "compatibility": [
+        "king"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Первая корона",
+        "en": "First Crown"
+      },
+      "description": {
+        "en": "final-act relic opening one ending option at meaningful cost.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-71",
+      "id": "relic.world_stitch",
+      "slug": "world_stitch",
+      "filename": "world_stitch.png",
+      "path": "assets/relics/world_stitch.png",
+      "compatibility": [
+        "any"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Шов мира",
+        "en": "World Stitch"
+      },
+      "description": {
+        "en": "repair one reality-fracture objective and consume relic permanently.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    },
+    {
+      "registerId": "RELIC-72",
+      "id": "relic.last_archive",
+      "slug": "last_archive",
+      "filename": "last_archive.png",
+      "path": "assets/relics/last_archive.png",
+      "compatibility": [
+        "hero"
+      ],
+      "priority": "P1",
+      "name": {
+        "ru": "Последний архив",
+        "en": "Last Archive"
+      },
+      "description": {
+        "en": "preserve one hero memory and unlock a Chronicle cosmetic.",
+        "ru": null
+      },
+      "assetStatus": "REVIEW",
+      "mechanicsStatus": "DECLARATIVE"
+    }
+  ]
+}

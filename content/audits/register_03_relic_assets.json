@@ -1,0 +1,1598 @@
+{
+  "schemaVersion": 1,
+  "auditId": "register_03_relic_assets_v1",
+  "expectedCount": 72,
+  "verifiedCount": 72,
+  "runtimeDimensions": [
+    512,
+    512
+  ],
+  "runtimeMode": "RGBA",
+  "minimumSafeMarginRatio": 0.1211,
+  "files": [
+    {
+      "file": "echo_shield.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        80,
+        62,
+        81,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "acb370f35338c173f9deb19424765f02e41750c40807f9d748d0735b1502291a",
+      "runtimeSha256": "18e8cb32f95be842f6d8d6ede06b3262885755dc5bf8bbf5c03412156627f2bb",
+      "runtimeBytes": 255386
+    },
+    {
+      "file": "phantom_spurs.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        142,
+        63,
+        142
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "68b8143dc0849381d523a0fcbeb992c726665a47ae371551226350383d802e6f",
+      "runtimeSha256": "51d28fd4ac94fd9e026878bb4c54b6d432e1c5d7e1e30b5aa20c8149ab0180d4",
+      "runtimeBytes": 164744
+    },
+    {
+      "file": "circle_warding.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        67,
+        62,
+        67
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "274cffdd1e192d3c585398145e481fc60597299dffe5cec473916dab45eb84d8",
+      "runtimeSha256": "31597982708d72f5e8771982bd86ecf24c106d5bfb1b034b4c2d8eda1f6ff0d6",
+      "runtimeBytes": 327748
+    },
+    {
+      "file": "twin_command.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        119,
+        62,
+        120,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "7cca75362038b5206a8ce37b304e191171e4c99781886fb9ad380f07bbb15c05",
+      "runtimeSha256": "f58cbc2db55d7b787109942f16f676096cc0646574030c596dc4bdc5301782db",
+      "runtimeBytes": 132913
+    },
+    {
+      "file": "royal_decree.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        176,
+        62,
+        176
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "00862ed10c5f90625281ea863f1c186711b6a7be2af70b2ca9da0d24e2aa9131",
+      "runtimeSha256": "9a11cf5bd3fb7f6091c571f0ac61b9c154471a914655e84712d483a6c635fca7",
+      "runtimeBytes": 108721
+    },
+    {
+      "file": "oath_fallen.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        111,
+        62,
+        112
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "724e5d9b6210922608192cec43778a864145780598c472828071b876427dfca7",
+      "runtimeSha256": "cbd6a611301e70e652de50981dad8dea4897074d7f50b423506014abd9105d44",
+      "runtimeBytes": 253462
+    },
+    {
+      "file": "second_wind.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        94,
+        62,
+        94,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "e97d3ad5324a3cdeb358791e360db58bce55d4a9b5a21e7ebe0c77b8259e2953",
+      "runtimeSha256": "5ee68cb6b423a23c47d2812412073a5e20e78c531cf8f29c1475407899fccc99",
+      "runtimeBytes": 205175
+    },
+    {
+      "file": "royal_exchange.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        72,
+        62,
+        72
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "0bb8204bac001f97f70cc100c2364ec3c2fa418a3965a5c382324dbf0b085c9c",
+      "runtimeSha256": "7375b11957019271a9ef681f6a3ceb6d2a89fd0f79d20fd64321eef8b8d8bff5",
+      "runtimeBytes": 297952
+    },
+    {
+      "file": "cursed_trail.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        82,
+        62,
+        82,
+        63
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "1349c5a0f62dfc9518a7c8dcab1d6e9315c3fc33f8d08ec0688becf498633b20",
+      "runtimeSha256": "ea2e600ad9b064e18f9541c5d8ae1e9140cd84d98025385075a6e23b82bbab95",
+      "runtimeBytes": 249864
+    },
+    {
+      "file": "phoenix_seal.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        131,
+        62,
+        133,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "75bf01167a7909d3b5c5b50a3eabb1e22c85adcee7cf6ff8dfcc7bd4537510b3",
+      "runtimeSha256": "c6a09457671fadebacffbf0756bc592a73e6aa400c9a93c0c1d29d8e131c52f3",
+      "runtimeBytes": 190188
+    },
+    {
+      "file": "glass_crown.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        63,
+        109,
+        62,
+        109
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "1c53ffe638da241bc8cff4b09866962b696d71bd5afa7f0654baa3dd53a822f8",
+      "runtimeSha256": "33fdaf8184c98ccf16cac129f55895a60be93d94cc0dce896c0cb4cb84644032",
+      "runtimeBytes": 204366
+    },
+    {
+      "file": "hearth_blessing.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        127,
+        62,
+        127,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "3a057956cc4171e62ad3bc26ae96e371575e162bbc56a210c18927a02d5da6e5",
+      "runtimeSha256": "3276777c9ff20b308532e1a08409f897a69a62474b59cfa85155a5b0044f7a05",
+      "runtimeBytes": 175240
+    },
+    {
+      "file": "mason_compass.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        114,
+        62,
+        114,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "4d6c2b9a0e724ac7f2d5a6097a068fe2604871821454204823105090d85900a5",
+      "runtimeSha256": "a4042ee6d17058b4ac0150bedfae9acd8f3342ca81c0ccc3bcc54a32b2e436f4",
+      "runtimeBytes": 132569
+    },
+    {
+      "file": "silver_liturgy.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        107,
+        62,
+        106,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "38edeb91dba4021b1d17e377c080c7c9bf9c3cd0806c04f5109fe4539c41f4b7",
+      "runtimeSha256": "4b884ee19e2ee283f8ebb8408f214395e5f5eca4947cb37285c73a0c183d6537",
+      "runtimeBytes": 183125
+    },
+    {
+      "file": "spur_of_dawn.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        128,
+        63,
+        128
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "a9195f125263ca36bd29ea0c14b07f2b73bccc440ae3fef282a39cd36e96bd7c",
+      "runtimeSha256": "65838de193f71fba5bc0cef3564e907524e4873a190f5612b060596515f79cd6",
+      "runtimeBytes": 120462
+    },
+    {
+      "file": "banner_nine.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        70,
+        62,
+        70,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "38427c58b893ef67241455472f2964706e46fc6f3273a3aeb754b31cecdcde65",
+      "runtimeSha256": "fea2c860133f350102301386ca39f459e3c47dea928e26b47dd0743541b7d9a0",
+      "runtimeBytes": 248155
+    },
+    {
+      "file": "merchants_scale.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        94,
+        62,
+        95
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "5b392b9460645852808064f660e8d0f122be125e4f006fd64a1866384baf4c70",
+      "runtimeSha256": "82a104f834d5f889ff5dfefcd52ebce72972d8121843b10d98e0f9e7784c8e34",
+      "runtimeBytes": 167212
+    },
+    {
+      "file": "thorn_key.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        119,
+        62,
+        120,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "5de4f09666bd744ab1ca5f389ed2da79b3d9f7f1d5c18d79a4c750d321c06472",
+      "runtimeSha256": "eb791f76b8e87cfc5c02e7b2aa91bb3624e4b2fcd70ddcda31a5e16e3384ddf3",
+      "runtimeBytes": 134827
+    },
+    {
+      "file": "ash_hourglass.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        140,
+        62,
+        141,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "86de9d2a6565a68e7e611819460073ef5070684765170a9a798e3c5cad03cb36",
+      "runtimeSha256": "9dca09f772400e7c9b96465f4426e056c0e99e5d8f3f67d2e347087a89ed3f5e",
+      "runtimeBytes": 170924
+    },
+    {
+      "file": "lens_true_line.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        63,
+        169,
+        64,
+        169
+      ],
+      "minSafeMarginRatio": 0.123,
+      "sourceSha256": "ea622522e75925d2410c7de211181bd9ef58a3f258b4f78938aacfe95c9be15a",
+      "runtimeSha256": "5c293c02333fd408bbc0fd1bf53267c1c2078d45184e67d28f64cd7c3e023081",
+      "runtimeBytes": 80533
+    },
+    {
+      "file": "crownless_ring.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        92,
+        62,
+        93,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "980177eed619fe102ad3d9da9b20410c34a44e1eb5585d000945c96280e60626",
+      "runtimeSha256": "0b021ed31650a3dbea34764d086c799c8d5cb39d7c17f558478ca9aa23461d53",
+      "runtimeBytes": 187944
+    },
+    {
+      "file": "regents_chain.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        72,
+        62,
+        73
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "156bb534c24e86b5d0766e4dd83df0cd2b8e3bcc2f1f3ac2c8b37ab1d2d55a59",
+      "runtimeSha256": "5afcae28e6fb1d4b9742218b9c3adcfb26e4a4dcdc5ef21dcfab2fcaf77e5fce",
+      "runtimeBytes": 232830
+    },
+    {
+      "file": "star_map.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        62,
+        62,
+        63
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "cc11840c9557d97ce51b22f7e20ac98a2205482552abdb52516913ae5d68a907",
+      "runtimeSha256": "f9bc89b40cff68728727b017f99895d91269a64ef7dda8fc19668b1b31e6a100",
+      "runtimeBytes": 354309
+    },
+    {
+      "file": "quiet_bell.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        96,
+        62,
+        95,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "7231908746e416037abc5c6ae056f62e435ac746b1aa3c47980a3599ed8a840c",
+      "runtimeSha256": "90c57c6d47acee6a1e453b22d87a5347095cd24cc26a1e6f31aa5c33a27a6c01",
+      "runtimeBytes": 209648
+    },
+    {
+      "file": "bridge_nail.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        144,
+        62,
+        145,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "fc3d38aa86682ffe3e6e07f0426909320066399523f448feaac5627f3003c5ff",
+      "runtimeSha256": "5a2f371c2bd4267f254bd4f24218f0e276e67550b81e61a71e05269adb1bfdc5",
+      "runtimeBytes": 116290
+    },
+    {
+      "file": "pilgrim_cup.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        127,
+        62,
+        127,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "e9fd4aea88da67fc38d25dfae781ba286bc0cbb123253e91332ba2a464f0954c",
+      "runtimeSha256": "e0f16111e7d18d71a474c543bfc76980d4ad5c40d1d322ff23b7c074188628ac",
+      "runtimeBytes": 179169
+    },
+    {
+      "file": "mirror_shard.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        126,
+        62,
+        127,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "a1815e67f817237d48474e07612a5069347b864eaa4a365fd693c472cdcf4d77",
+      "runtimeSha256": "1ebd06882c8db1db6e35e12d6eda4959cc7813498fb3c480ba26098f877b3e93",
+      "runtimeBytes": 187221
+    },
+    {
+      "file": "black_contract.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        141,
+        62,
+        139
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "2dabd157a030f7d0a18ad8b93e365b0f2a6a044419fb4b94384d5dd1505d83cb",
+      "runtimeSha256": "e224605d3e32328ae89f57f4635a16eac30c5d4cc01459211c6e0f36a762c347",
+      "runtimeBytes": 116614
+    },
+    {
+      "file": "saint_thread.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        73,
+        62,
+        77,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "ed4f92385ebc6a2400a8fd79fe81b5c75cf8edff8c3e8b37a64249c24e8cad23",
+      "runtimeSha256": "f5c845b5c57dea72fb4f4c0727df9d78c378c5bdcec2feb3791e720f92a4f19f",
+      "runtimeBytes": 248878
+    },
+    {
+      "file": "wolf_token.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        68,
+        62,
+        69,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "4a6ecb8d94dae5dacd6ae16b83f8215614b7a47e308230b4048bbb9503bb3f72",
+      "runtimeSha256": "3ea975acacb71c64168881c29f99f2fc00163b726d39145342ef76c4b57bc352",
+      "runtimeBytes": 312269
+    },
+    {
+      "file": "citadel_seed.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        103,
+        62,
+        104,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "5638ec134a1441a155a15e84cbaf976fe1502b147c1da1d012a2186e37256a6a",
+      "runtimeSha256": "84e74b12a006d4717fcf28b05c8c72bcd2e9f67665c89f5883a6140163ec7259",
+      "runtimeBytes": 228301
+    },
+    {
+      "file": "open_book.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        111,
+        62,
+        111
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "72d0c1e51645ed6f5d5bc3662874836065f5c72d723639f2e418d8b9746c1e87",
+      "runtimeSha256": "752f2dc11ef6b25b2874a01710a7f60539fd7c3979d76ca7c35f5fee340c9a36",
+      "runtimeBytes": 215650
+    },
+    {
+      "file": "queen_s_lace.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        72,
+        62,
+        73
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "35c81a35ff190256d0987e73d6b865a7e8374b96cf8d2cdbece77423d351579d",
+      "runtimeSha256": "286ccbeb05dfa463c61edb3dde90587a9a6d1f529b9b28ffb80cd337b882dcf8",
+      "runtimeBytes": 229130
+    },
+    {
+      "file": "last_coin.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        64,
+        69,
+        64,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "0ca6354de9eaea11fa4e6aecb59dafb60e421636fddc545d98244d2b190527a0",
+      "runtimeSha256": "16aec5377a4396759843e7ec0356e436abb67810d8aa1d972e58c238cd99902f",
+      "runtimeBytes": 323372
+    },
+    {
+      "file": "red_wax.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        63,
+        76,
+        62,
+        76
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "f841b710d65284649f76d84d9c5e4f875da10f6f256c80e34adc448b4c21afff",
+      "runtimeSha256": "347730b78a2d8f77d48fe2347e3015132d315072ffe5a01aa115898a9a9f0a4e",
+      "runtimeBytes": 250076
+    },
+    {
+      "file": "feather_court.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        99,
+        62,
+        100,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "f82db5736345df09f484db08227ff8b33829fa291650278ba04c70b2aea2475d",
+      "runtimeSha256": "fe114e5c7579a98b6333832fe78c300448cd8f1a9d963cf3b0195901b9d0d5d4",
+      "runtimeBytes": 129871
+    },
+    {
+      "file": "iron_rosary.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        102,
+        62,
+        103,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "32ddcd2a2297c99a1cafd06aa8f5adca1b4d14d31278604cc92e02defb484ff0",
+      "runtimeSha256": "da23bd6eec1dff2ccbda1e8f2d076fc87cdae67aa8852939955de75e578926fa",
+      "runtimeBytes": 145416
+    },
+    {
+      "file": "broken_lance.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        71,
+        62,
+        71,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "7a136947e8e2d3744c51c90a2119f4dbf97cec07b8382a31dbce3881a2e79603",
+      "runtimeSha256": "c8b12bb5fcfe32a158638753ed18d4f8d16c4f6ddf97d45f63512078610aa13a",
+      "runtimeBytes": 109613
+    },
+    {
+      "file": "foundry_heart.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        62,
+        62,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "989077a486675258c133c882f5960aec033ddaa4341acc84ec1ac2696dcec998",
+      "runtimeSha256": "ed2223aaaf6fead4505024f1bafe146797b97748ae957e23514252bb25dced44",
+      "runtimeBytes": 248360
+    },
+    {
+      "file": "diplomat_seal.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        66,
+        62,
+        65,
+        64
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "06ecabbf85b3dd109dfde98fb3dbda0dc5755e6147320ad3ad08de8f0ec35339",
+      "runtimeSha256": "8701424c2a56a4850906673f015d6552c373c4c65a086ca9076a50bc28319543",
+      "runtimeBytes": 339936
+    },
+    {
+      "file": "grave_lantern.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        169,
+        62,
+        170,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "62221eabedec270c12fa52338e295b5129dd815326028927e6f78bfa6b7fbfb5",
+      "runtimeSha256": "0f6594d2f6fca7aaa9494ac3961684d18aa4f89e7e58736d067812913e7c9a20",
+      "runtimeBytes": 92312
+    },
+    {
+      "file": "salt_crown.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        112,
+        62,
+        112
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "20b0659da12c199eeaf0b1632ba5dff037bc042d530776b85d20a356962e64dd",
+      "runtimeSha256": "c40478849a17b5732217798db523f74a49187715ce1c872a5667f737228f917e",
+      "runtimeBytes": 191108
+    },
+    {
+      "file": "wind_knot.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        76,
+        62,
+        77
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "42610189f6c5d0f765adca105119799084e115a883a86795427ea5aa8b31ba36",
+      "runtimeSha256": "770c2c5074e29b398478c9a3a19c017f31a84ba674e6dad477d9dc529bd06014",
+      "runtimeBytes": 263892
+    },
+    {
+      "file": "amber_eye.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        97,
+        62,
+        97
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "caac836d7e0f5df837f72ae62e2c29d96fdc06e48f2727e5a4c2f2d3ef834626",
+      "runtimeSha256": "57875b559f71b1fe20fbaeda70cb9a70d385d5792697f421cb24f58594a11b71",
+      "runtimeBytes": 155939
+    },
+    {
+      "file": "copper_hymn.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        91,
+        62,
+        92,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "f210ce7c4341d778b4a347b10d79c00e073b03574a5c9a842c09986d9c745b40",
+      "runtimeSha256": "9c4df99a3ef669046c9110a72e741a851e7274b6cbce9af1fbf7bc5e81e8d3d3",
+      "runtimeBytes": 225069
+    },
+    {
+      "file": "veil_cut.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        71,
+        62,
+        71,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "f0c46489c70a1fccd1818e0d26344fdcc9a3b40f11e2d19041a7f021de4a417f",
+      "runtimeSha256": "3270c4cbf0a1faafd6dd37e10776c88dde1065dd8c1dba684a4ade20b28174ba",
+      "runtimeBytes": 170179
+    },
+    {
+      "file": "stone_debt.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        72,
+        62,
+        72
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "8a05c69ef5a5fedb5ffb257953d2dd28136f36e73024a892aa34b02c3f6b08cc",
+      "runtimeSha256": "834c1dcca5ba9ccd560415b0bd09dbfe42cb868182c05f0a8b63eff94e39b3da",
+      "runtimeBytes": 398127
+    },
+    {
+      "file": "three_keys.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        114,
+        62,
+        114,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "d6e2ced4c630024fb3729f6a29337650702b9b207e7c1c7f115745063d0a0cf9",
+      "runtimeSha256": "68398972673fbbcef25aeddcd663a85e95e5e65c8d4d59acd3d9823ece326c84",
+      "runtimeBytes": 132719
+    },
+    {
+      "file": "hollow_crown.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        71,
+        62,
+        71,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "311e33ea866de1c4a0e65f15e063494fb3a7d6382369236ce6c2fc2b6b7ccd63",
+      "runtimeSha256": "35fe586b5de3ae8c6233e9e37a5e9f95fc3ef51f561e86fa475e2b37aea0db06",
+      "runtimeBytes": 220520
+    },
+    {
+      "file": "moon_saddle.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        70,
+        94,
+        66,
+        95
+      ],
+      "minSafeMarginRatio": 0.1289,
+      "sourceSha256": "a12542a5faa8604e1f9e00eb0e334591bfbfaed076d86763caa5bf8653952042",
+      "runtimeSha256": "fcde67b862b7cbf98902e2d2eadcb2bdade34cf7e4d5a851f7f253df9a3bdac5",
+      "runtimeBytes": 254590
+    },
+    {
+      "file": "scribe_knife.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        185,
+        62,
+        186,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "73b4477fae6c34a7dacc2784d0345e83b6dc68243c08fe9fca1cafe53fbc4b59",
+      "runtimeSha256": "c61f5944a9f63a049ca02a118857b1cb8fa2d0397bec35f91313785cf3d370b8",
+      "runtimeBytes": 82845
+    },
+    {
+      "file": "golden_pawn.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        130,
+        62,
+        131,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "1bb4fbe0099e660f7b767b4d12916891fc3eb065efb6aa6940d384e95c70a08c",
+      "runtimeSha256": "95d1481c3c9a2b389b5e6b2ac9b8e7c4492cc3be21294e2b186c0a7678831f31",
+      "runtimeBytes": 176498
+    },
+    {
+      "file": "harbor_chain.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        215,
+        62,
+        215
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "c6af394bba195f1ed67f703fe42d755c1e28709d306553e86098460849d50af5",
+      "runtimeSha256": "ed730e077a5e137ab2b9d712e3356ad5a73077fb9f92425c6fb49e89fdf6504a",
+      "runtimeBytes": 69035
+    },
+    {
+      "file": "oracle_ash.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        156,
+        63,
+        157,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "87e1f22c8da4d959d3a0ddbe53aed4200d66a1c246cf8cd88541aa71021e6ae3",
+      "runtimeSha256": "7c63ef2ae9104c74bb3c79aa26693a11c392dd9a1c72761523bc1834a16f28c0",
+      "runtimeBytes": 152555
+    },
+    {
+      "file": "kingmaker_pin.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        162,
+        62,
+        162,
+        63
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "65c08d5e307da0348b4f67dd829668232bc5608fc147f3e3687deb923a6c3bd8",
+      "runtimeSha256": "21a3d77edd940b5ba8f88af8e17aec964519b87d443b18466459f537f5eb525a",
+      "runtimeBytes": 86972
+    },
+    {
+      "file": "winter_standard.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        120,
+        62,
+        120,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "5f5b5e37a0fe4b9a6591271d9b4abdf215dec80578925997cc63931e0bd32f45",
+      "runtimeSha256": "4e26709c47e50119f4bf8600d531feb78d84e13c8cc0f52387816eba670de2c8",
+      "runtimeBytes": 199695
+    },
+    {
+      "file": "sunken_gem.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        83,
+        62,
+        84,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "7bee9addf9d9b4dcbbc5a7af2f4bb1bd59376e78cd58a74bb69709d2cc8de469",
+      "runtimeSha256": "5f85fadf1f3cedb433bc2580ca594bf8e404f8f2203f58a53f2dce8e27e518eb",
+      "runtimeBytes": 242996
+    },
+    {
+      "file": "thorn_diadem.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        128,
+        62,
+        128
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "1de7972770a1332668922809f43178d1345080ed373f3c53f56fa376955cde55",
+      "runtimeSha256": "cf81072b88059530f696ca4d28a77d931a4bc9025d6102e78bcbdd3a480b0e18",
+      "runtimeBytes": 174041
+    },
+    {
+      "file": "atlas_fold.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        83,
+        62,
+        83,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "8f9e0b363b89423aa578544e0504f506e6e9c8bee16f247b1286f088f173e239",
+      "runtimeSha256": "e60a05ee99a36169ddb7b24299a19451aefe20018ad47d75695955b75089db5c",
+      "runtimeBytes": 295575
+    },
+    {
+      "file": "bell_founder.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        108,
+        62,
+        109,
+        75
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "ffece0522d7f82a10629877a7c99091f16d96c0f81f8487db4b231c7ea09e1f8",
+      "runtimeSha256": "e74abb1ca3a8c6fb1237e1e4ce44e3b09526ffcfc9fcc9ced029d1d9df5ec579",
+      "runtimeBytes": 174618
+    },
+    {
+      "file": "saint_splinter.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        146,
+        62,
+        146
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "5db9ff737c5e039346426b75a37e12ac7b3b73ade62c3ab8bc9bfedaf8de31a2",
+      "runtimeSha256": "3e974a7f9a6a2a0ce690eeac15ce464be454c5499c386362b71a5a7ac5b046bb",
+      "runtimeBytes": 105728
+    },
+    {
+      "file": "horsehair_oath.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        113,
+        62,
+        115,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "4838fc1294d8cc422e77336d93d1d557344ffb5e76942a4fe01ca9da28f9f062",
+      "runtimeSha256": "d475a494c12138ad8d31ffeb928338854ac93e4050b35c844bdb542eae069b2f",
+      "runtimeBytes": 194558
+    },
+    {
+      "file": "widow_crown.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        74,
+        62,
+        75
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "f1e5a4a9c373bafc18876a9e4465a6c579f193256a140fcbb34c930701660864",
+      "runtimeSha256": "c51279cbf11cadd0882b298dc4013acfb2235eea6c500988d52e66a6d5b186f2",
+      "runtimeBytes": 211938
+    },
+    {
+      "file": "black_seed.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        109,
+        63,
+        111,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "897f9bc2a18dac753dd2426bc17c65fd412bb5016f556449d548e258afaf4f90",
+      "runtimeSha256": "32fd7da92304adf46c28940bc711a0bc4236187b04454b524be84b1056952a72",
+      "runtimeBytes": 210136
+    },
+    {
+      "file": "parliament_key.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        132,
+        62,
+        133,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "410ca57aae17a9872f9300ecbc2c16d6ab8a6a2e4dfdb9662641934fc7382d59",
+      "runtimeSha256": "916766b46d80286d4c0923f4efbefe358e95a9da43444f3bc3db161a139f9fb8",
+      "runtimeBytes": 136415
+    },
+    {
+      "file": "furnace_map.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        85,
+        62,
+        86
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "d88e49f3aa657eeceb6915360d914198f7a177c0ee82557a49319d4bc7adfd56",
+      "runtimeSha256": "669e0a2dadc8f06b4d4c82dd3f4d8c9f9bc8ae7576e6e24c89df6844dfa34fb2",
+      "runtimeBytes": 354201
+    },
+    {
+      "file": "sky_braid.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        152,
+        62,
+        151,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "8734cc0f5423374f08d335878b76b227159d2a822857bfc2016db1ca893f5896",
+      "runtimeSha256": "67eab29cb3c62733ef76be9d965e16619fb028fbce062f30aff1a97401f2d858",
+      "runtimeBytes": 154800
+    },
+    {
+      "file": "choir_mask.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        62,
+        80,
+        63,
+        81
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "43f9d40d52b3f66aa7ec146a7ef2c5e686648c753a493d627c88e1bf034a4057",
+      "runtimeSha256": "5e66d189795218ef5a17a5189f12474d6bb6a686461d281d22b79fe30baaa873",
+      "runtimeBytes": 237895
+    },
+    {
+      "file": "mirror_weight.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        149,
+        62,
+        149,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "cdec7f1d62d6ef2ec29d842858628dbe18109ef612f1d52f61a5cdb600a04554",
+      "runtimeSha256": "4e6a638f9d894c8c1d0d66ec2dd86c758bbad272a3b64e344ea4b064e1c49b3b",
+      "runtimeBytes": 137060
+    },
+    {
+      "file": "first_crown.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        64,
+        62,
+        64,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "647e317b45df3ab29c5716e0cc42dea45c359dcab0a8feb40e12c0234e067ec6",
+      "runtimeSha256": "60915de196454553e7eb1e67a90286f85197798e563e040cb6276b6164abff73",
+      "runtimeBytes": 273662
+    },
+    {
+      "file": "world_stitch.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        72,
+        62,
+        71,
+        64
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "23fb37f88961876e0ef9bada5d85d95fc26a50891a75ba6b7eb9cb691e6211e4",
+      "runtimeSha256": "df54fd4850ae83278194cc141e1b0556ef35c9acdfc4a19805dccee8ff6e8f0f",
+      "runtimeBytes": 194607
+    },
+    {
+      "file": "last_archive.png",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeSize": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "safeMargins": [
+        138,
+        62,
+        139,
+        62
+      ],
+      "minSafeMarginRatio": 0.1211,
+      "sourceSha256": "0c6f0460399428483934f60f7362e97d2656f03b5f625cb4004601a13d648bd7",
+      "runtimeSha256": "36056b48252ff5dacef6fca8f1f12a7506dbe7d82e5a080bfc96a6d872cc2a69",
+      "runtimeBytes": 184336
+    }
+  ]
+}
