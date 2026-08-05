@@ -7525,6 +7525,78 @@ var RPChessRuntime = (() => {
     }
   });
 
+  // src/browser/profile-persistence.cjs
+  var require_profile_persistence = __commonJS({
+    "src/browser/profile-persistence.cjs"(exports, module) {
+      "use strict";
+      var { AtomicProfileStore, normalizeProfileId } = require_profile_store();
+      var { assertStorageAdapter } = require_storage();
+      var { loadVerticalSlice, saveVerticalSlice } = require_vertical_slice();
+      var BROWSER_SAVE_NAMESPACE = "rpchess.vertical-slice.v1";
+      function resolveBrowserStorage(explicit = void 0) {
+        if (explicit !== void 0) return explicit ? assertStorageAdapter(explicit) : null;
+        try {
+          return globalThis.localStorage ? assertStorageAdapter(globalThis.localStorage) : null;
+        } catch (_error) {
+          return null;
+        }
+      }
+      function createBrowserProfileStore(options = {}) {
+        if (options.saveStore) return options.saveStore;
+        const storage = resolveBrowserStorage(options.storage);
+        if (!storage) return null;
+        return new AtomicProfileStore({
+          storage,
+          namespace: options.namespace || BROWSER_SAVE_NAMESPACE,
+          deviceId: String(options.deviceId || "rpchess-browser"),
+          clock: options.clock
+        });
+      }
+      function inspectBrowserProfile(store, profileIdInput, contentRegistry = null) {
+        const profileId = normalizeProfileId(profileIdInput);
+        if (!store) return Object.freeze({
+          profileId,
+          status: "unavailable",
+          revision: 0,
+          savedAt: null,
+          recoveredFrom: null,
+          state: null,
+          diagnostics: null
+        });
+        const loaded = loadVerticalSlice(store, profileId, {
+          contentRegistry,
+          repair: true
+        });
+        return Object.freeze({
+          profileId,
+          status: loaded.status,
+          revision: loaded.envelope?.revision || 0,
+          savedAt: loaded.envelope?.savedAt || null,
+          recoveredFrom: loaded.recoveredFrom || null,
+          state: loaded.state || null,
+          diagnostics: loaded.diagnostics || null
+        });
+      }
+      function saveBrowserProfile(store, state) {
+        if (!store) return null;
+        return saveVerticalSlice(store, state);
+      }
+      function deleteBrowserProfile(store, profileIdInput) {
+        if (!store) return false;
+        store.delete(normalizeProfileId(profileIdInput));
+        return true;
+      }
+      module.exports = {
+        BROWSER_SAVE_NAMESPACE,
+        resolveBrowserStorage,
+        createBrowserProfileStore,
+        inspectBrowserProfile,
+        saveBrowserProfile,
+        deleteBrowserProfile
+      };
+    }
+  });
+
   // src/browser/iron-marches-browser-host.cjs
   var require_iron_marches_browser_host = __commonJS({
     "src/browser/iron-marches-browser-host.cjs"(exports, module) {
@@ -7532,7 +7604,7 @@ var RPChessRuntime = (() => {
       var { hash32 } = require_determinism();
       var { generateActGraph } = require_graph();
       var { createCampaignState } = require_state();
-      var { createVerticalSliceRuntime } = require_vertical_slice();
+      var { createVerticalSliceRuntime, validateVerticalSliceSnapshot } = require_vertical_slice();
       var { createPresenterSnapshot, dispatchPresenterCommand } = require_presenter_bridge();
       var {
         createEncounterScenario,
@@ -7548,6 +7620,12 @@ var RPChessRuntime = (() => {
         runSelectionSnapshot
       } = require_run_selection();
       var { buildBrowserProductionBundle } = require_production_content_browser();
+      var {
+        createBrowserProfileStore,
+        inspectBrowserProfile,
+        saveBrowserProfile,
+        deleteBrowserProfile
+      } = require_profile_persistence();
       var DEFAULT_BROWSER_SELECTION = Object.freeze({
         regionId: "region.iron_marches",
         kingId: "king.oathkeeper",
@@ -7616,7 +7694,7 @@ var RPChessRuntime = (() => {
         return true;
       }
       function createBrowserDependencies(options) {
-        const { bundle, language, aiProfile, aiMaxNodes, aiTimeBudgetMs } = options;
+        const { bundle, language, aiProfile, aiMaxNodes, aiTimeBudgetMs, saveStore } = options;
         const localization = bundle.localization[language];
         if (!localization) throw new Error(`unsupported Iron Marches language: ${language}`);
         const scenarioTemplates = bundle.scenarioTemplates;
@@ -7655,15 +7733,18 @@ var RPChessRuntime = (() => {
           bossPhaseBattleResolver,
           aiProfile,
           aiMaxNodes,
-          aiTimeBudgetMs
+          aiTimeBudgetMs,
+          saveStore
         });
       }
       function createBrowserIronMarchesRuntimeHost(options = {}) {
         const bundle = options.bundle || buildBrowserProductionBundle();
         const language = options.language || "ru";
-        const seed = Number(options.seed ?? 9042);
+        const requestedSeed = Number(options.seed ?? 9042);
         const act = options.act ?? 1;
         const nodeCount = options.nodeCount ?? 9;
+        const profileId = options.profileId || "profile-1";
+        const saveStore = options.saveStore || createBrowserProfileStore(options);
         const selection = Object.freeze({
           regionId: options.selection?.regionId || DEFAULT_BROWSER_SELECTION.regionId,
           kingId: options.selection?.kingId || DEFAULT_BROWSER_SELECTION.kingId,
@@ -7672,44 +7753,65 @@ var RPChessRuntime = (() => {
           relicIds: freezeArray(options.selection?.relicIds || DEFAULT_BROWSER_SELECTION.relicIds)
         });
         assertBrowserSelection(bundle, selection);
-        const graph = generateActGraph({
-          seed,
-          act,
-          nodeCount,
-          regionId: selection.regionId,
-          contentPools: productionContentPools(bundle)
-        });
-        const campaign = createCampaignState(graph, {
-          supplies: options.supplies ?? 18,
-          scouting: options.scouting ?? 1
-        });
-        let state = createVerticalSliceRuntime({
-          runtimeId: options.runtimeId || `iron_marches_browser_${seed}_${act}`,
-          seed,
-          profileId: options.profileId || "profile-1",
-          playerSide: options.playerSide || "w",
-          aiProfile: options.aiProfile || "apprentice",
-          campaign,
-          contentRegistry: bundle.registry
-        });
+        let resumeInfo = options.resumeInfo || null;
+        let state = options.initialState ? validateVerticalSliceSnapshot(options.initialState, { contentRegistry: bundle.registry }) : null;
+        if (!state && saveStore && options.resume !== false) {
+          resumeInfo = inspectBrowserProfile(saveStore, profileId, bundle.registry);
+          state = resumeInfo.state;
+        }
+        const resumed = Boolean(state);
+        if (!state) {
+          const graph = generateActGraph({
+            seed: requestedSeed,
+            act,
+            nodeCount,
+            regionId: selection.regionId,
+            contentPools: productionContentPools(bundle)
+          });
+          const campaign = createCampaignState(graph, {
+            supplies: options.supplies ?? 18,
+            scouting: options.scouting ?? 1
+          });
+          state = createVerticalSliceRuntime({
+            runtimeId: options.runtimeId || `iron_marches_browser_${requestedSeed}_${act}`,
+            seed: requestedSeed,
+            profileId,
+            playerSide: options.playerSide || "w",
+            aiProfile: options.aiProfile || "apprentice",
+            campaign,
+            contentRegistry: bundle.registry
+          });
+        }
         const dependencies = createBrowserDependencies({
           bundle,
           language,
-          aiProfile: options.aiProfile || "apprentice",
+          aiProfile: state.aiProfile,
           aiMaxNodes: options.aiMaxNodes ?? 8e3,
-          aiTimeBudgetMs: options.aiTimeBudgetMs ?? 0
+          aiTimeBudgetMs: options.aiTimeBudgetMs ?? 0,
+          saveStore
         });
+        let lastSaveEnvelope = null;
+        if (!resumed && saveStore && options.saveOnStart === true) lastSaveEnvelope = saveBrowserProfile(saveStore, state);
         return Object.freeze({
           format: "rpchess-browser-runtime-host",
           selection,
           bundle,
           dependencies,
+          saveStore,
+          resumed,
+          resumeInfo,
           getState: () => state,
           getSnapshot: () => createPresenterSnapshot(state, dependencies),
+          getLastSaveEnvelope: () => lastSaveEnvelope,
           dispatch: async (command) => {
             const result = dispatchPresenterCommand(state, command, dependencies);
             state = result.state;
-            return Object.freeze({ snapshot: result.snapshot, saveEnvelope: result.saveEnvelope || null });
+            let saveEnvelope = result.saveEnvelope || null;
+            if (saveStore && options.autoSave !== false && command.type !== "SaveCheckpoint") {
+              saveEnvelope = saveBrowserProfile(saveStore, state);
+            }
+            if (saveEnvelope) lastSaveEnvelope = saveEnvelope;
+            return Object.freeze({ snapshot: createPresenterSnapshot(state, dependencies), saveEnvelope });
           }
         });
       }
@@ -7739,6 +7841,10 @@ var RPChessRuntime = (() => {
         const language = options.language || "ru";
         const localization = bundle.localization[language];
         if (!localization) throw new Error(`unsupported run-selection language: ${language}`);
+        const profileId = options.profileId || "profile-1";
+        const saveStore = options.saveStore || createBrowserProfileStore(options);
+        if (options.forceNew && saveStore) deleteBrowserProfile(saveStore, profileId);
+        let resumeInfo = saveStore && !options.forceNew ? inspectBrowserProfile(saveStore, profileId, bundle.registry) : Object.freeze({ profileId, status: saveStore ? "empty" : "unavailable", revision: 0, savedAt: null, recoveredFrom: null, state: null });
         let selection = createRunSelection({
           contentRegistry: bundle.registry,
           selectionId: options.selectionId || `selection:${options.seed || 1}`,
@@ -7746,13 +7852,33 @@ var RPChessRuntime = (() => {
           heroLimit: options.heroLimit ?? 6,
           minimumHeroes: options.minimumHeroes ?? 1
         });
-        let runtimeHost = null;
+        let runtimeHost = resumeInfo.state ? createBrowserIronMarchesRuntimeHost({
+          ...options,
+          bundle,
+          language,
+          profileId,
+          saveStore,
+          initialState: resumeInfo.state,
+          resume: false,
+          resumeInfo
+        }) : null;
+        function profileSnapshot() {
+          return Object.freeze({
+            profileId,
+            storageAvailable: Boolean(saveStore),
+            status: runtimeHost?.resumed ? "resumed" : resumeInfo.status,
+            revision: runtimeHost?.getLastSaveEnvelope()?.revision || resumeInfo.revision || 0,
+            savedAt: runtimeHost?.getLastSaveEnvelope()?.savedAt || resumeInfo.savedAt || null,
+            recoveredFrom: resumeInfo.recoveredFrom || null
+          });
+        }
         function snapshot() {
           return Object.freeze({
             format: "rpchess-run-selection-host-snapshot",
             schemaVersion: 1,
             status: runtimeHost ? "ready" : selection.status,
             selection: runSelectionPresenter(selection, bundle.registry, localization),
+            profile: profileSnapshot(),
             runtime: runtimeHost?.getSnapshot() || null
           });
         }
@@ -7768,6 +7894,10 @@ var RPChessRuntime = (() => {
               ...options,
               bundle,
               language,
+              profileId,
+              saveStore,
+              resume: false,
+              saveOnStart: true,
               selection: Object.freeze({
                 regionId: selection.regionId,
                 kingId: selection.kingId,
@@ -7776,6 +7906,7 @@ var RPChessRuntime = (() => {
                 relicIds: DEFAULT_BROWSER_SELECTION.relicIds
               })
             });
+            resumeInfo = Object.freeze({ profileId, status: "saved", revision: runtimeHost.getLastSaveEnvelope()?.revision || 0, savedAt: runtimeHost.getLastSaveEnvelope()?.savedAt || null, recoveredFrom: null, state: runtimeHost.getState() });
           }
           return Object.freeze({ command, snapshot: snapshot() });
         }
@@ -7783,10 +7914,12 @@ var RPChessRuntime = (() => {
           format: "rpchess-browser-run-selection-host",
           getSelection: () => runSelectionSnapshot(selection),
           getRuntimeHost: () => runtimeHost,
+          getProfile: profileSnapshot,
           getSnapshot: snapshot,
           dispatch: async (command) => execute(command),
           bundle,
-          localization
+          localization,
+          saveStore
         });
       }
       module.exports = {
