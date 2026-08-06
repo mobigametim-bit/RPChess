@@ -1,9 +1,10 @@
 name: Import Register 04 remaining assets
 
-# Lightweight one-time import run.
+# One-time branch-push execution.
 on:
-  pull_request:
-    branches: [main]
+  push:
+    branches:
+      - agent/register04-assets
     paths:
       - 'scripts/import-register04-remaining.py'
       - '.github/workflows/import-register04-assets.yml'
@@ -17,14 +18,14 @@ concurrency:
 
 jobs:
   import-assets:
-    if: github.event.pull_request.head.ref == 'agent/register04-assets'
+    if: github.ref_name == 'agent/register04-assets'
     runs-on: ubuntu-slim
     timeout-minutes: 15
     steps:
-      - name: Check out pull request branch
+      - name: Check out asset branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
 
       - name: Check whether importer is still present
@@ -58,7 +59,7 @@ jobs:
       - name: Commit imported assets and remove one-time importer
         if: steps.guard.outputs.run_import == 'true'
         env:
-          TARGET_BRANCH: ${{ github.event.pull_request.head.ref }}
+          TARGET_BRANCH: ${{ github.ref_name }}
         run: |
           rm -f scripts/import-register04-remaining.py .github/workflows/import-register04-assets.yml
           git config user.name 'RPChess Asset Importer'
