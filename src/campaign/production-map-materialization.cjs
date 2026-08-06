@@ -76,7 +76,8 @@ function materializeLevel(graph, sourceNodeId, existingByNode = {}, options = {}
 function secretContentType(checkSeed, allowedTypes = null) {
   const allowed = allowedTypes ? new Set(allowedTypes) : null;
   const entries = SECRET_CONTENT_WEIGHTS.filter((entry) => !allowed || allowed.has(entry.value));
-  return weightedPick(new XorShift32(checkSeed), entries);
+  const mixedSeed = hash32(`${Number(checkSeed) >>> 0}:secret-content-type`);
+  return weightedPick(new XorShift32(mixedSeed), entries);
 }
 
 module.exports = { poolForNode, deterministicPoolPick, defaultMaterialization, materializeLevel, secretContentType };
