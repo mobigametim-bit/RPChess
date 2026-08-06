@@ -15,3 +15,16 @@
 @media(max-width:720px){.rpa-menu__secondary{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:460px){.rpa-menu__secondary{grid-template-columns:1fr}}
 .rpa-screen :where(h1,h2,h3,p,span,strong,small,button,label),.rpa-menu :where(h1,h2,h3,p,span,strong,small,button),.rpvs :where(h1,h2,h3,p,span,strong,small,button,figcaption){min-width:0;overflow-wrap:anywhere;word-break:normal;hyphens:auto}
+
+/* approved-shell-visual-qa-v2 */
+.rpa-runtime-menu{width:auto!important;min-width:92px!important;height:auto!important;padding:6px 14px!important;white-space:nowrap!important}
+.rpa-button:not(.rpa-button--primary):not(.rpa-button--danger){color:#29241d!important;text-shadow:0 1px 0 #fff9!important}
+.rpvs__action,.rpvs__choice,.rpvs__deployment-remove{color:#29241d!important;text-shadow:0 1px 0 #fff9!important}
+.rpa-menu__status{padding:28px 28px 48px!important}
+.rpa-onboarding>div:last-child{padding-bottom:26px!important}
+.rpa-commander{min-height:238px!important}
+.rpa-commander__art{min-height:238px!important}
+.rpa-commander__copy{padding:16px 20px 30px!important}
+@media(max-width:1120px){.rpa-menu{display:block!important;min-height:100vh}.rpa-menu__layout{margin:auto!important;align-items:start!important}.rpa-menu,.rpa-subscreen,.rpvs{background-attachment:scroll!important}.rpa-menu::before,.rpa-subscreen::before{position:absolute!important}.rpa-subscreen{overflow:visible!important}.rpa-subscreen__content{min-height:max-content}}
+@media(max-width:720px){.rpa-commander{min-height:190px!important}.rpa-commander__art{min-height:190px!important}.rpa-commander__copy{padding:13px 15px 25px!important}}
+@media(max-width:460px){.rpa-menu__layout{display:grid!important;gap:14px!important}.rpa-menu__status{padding:18px 18px 38px!important}.rpa-commander{min-height:186px!important}.rpa-commander__art{min-height:186px!important}}

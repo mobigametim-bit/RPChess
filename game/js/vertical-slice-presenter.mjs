@@ -243,7 +243,7 @@ class VerticalSlicePresenter {
       <section class="rpvs" aria-label="RPChess" style="${banner ? `background-image:linear-gradient(rgba(4,8,14,.78),rgba(4,8,14,.9)),${cssUrl(banner)}` : ''}">
         <header class="rpvs__top">
           <div class="rpvs__identity"><img class="rpvs__crest" src="generated_assets/logo_main.png" alt=""><div><div class="rpvs__brand">RPChess</div><div class="rpvs__muted">${escapeHtml(regionLabel)} · Акт ${snapshot.campaign.act}</div></div></div>
-          <div class="rpvs__resources" aria-label="Ресурсы"><span class="rpvs__chip">Золото · ${snapshot.resources.gold}</span><span class="rpvs__chip">Припасы · ${snapshot.resources.supplies}</span><span class="rpvs__chip">Мета · ${snapshot.resources.meta}</span><button class="rpvs__chip rpa-runtime-menu" data-runtime-menu aria-label="Главное меню">Меню</button></div>
+          <div class="rpvs__resources" aria-label="Ресурсы"><span class="rpvs__chip">Золото · ${snapshot.resources.gold}</span><span class="rpvs__chip">Припасы · ${snapshot.resources.supplies}</span><span class="rpvs__chip">Мета · ${snapshot.resources.meta}</span><button class="rpvs__chip rpa-runtime-menu" data-runtime-menu aria-label="Главное меню">☰ Меню</button></div>
         </header>
         <div class="rpvs__layout${layoutClass}"><main class="rpvs__panel rpvs__panel--scene">${main}</main>${sidebar ? `<aside class="rpvs__panel">${sidebar}</aside>` : ''}</div>
       </section>`;
