@@ -2,6 +2,7 @@
 
 const { hash32, XorShift32 } = require('../core/determinism.cjs');
 const { SERVICE_TYPES, SECRET_CONTENT_WEIGHTS, freezeArray, deepFreeze, weightedPick, categoryForType } = require('./production-map-contract.cjs');
+const { selectProductionScenario } = require('./production-scenario-selector.cjs');
 
 function poolForNode(type, pools = {}) {
   if (type === 'battle' || type === 'elite') return pools.encounters || [];
@@ -16,22 +17,58 @@ function deterministicPoolPick(pool, seed, excluded = new Set()) {
   if (!source.length) return null;
   return source[hash32(`${seed}:pool`) % source.length];
 }
+function builtInScenarioSelection(node, graph, options, excludedIds) {
+  const candidates = options.contentPools?.scenarioCandidates || [];
+  if (!candidates.length) return null;
+  return selectProductionScenario({
+    seed: node.contentSeed,
+    candidates,
+    excludedScenarioIds: freezeArray([...excludedIds]),
+    context: {
+      regionId: graph.regionId,
+      phase: node.phase,
+      danger: node.danger,
+      branchProfile: node.branchProfile,
+      boardId: options.boardId || null,
+      objectiveId: options.objectiveId || null,
+      environmentId: options.environmentId || null,
+      storyFacts: options.storyFacts || options.flags || []
+    }
+  });
+}
 function defaultMaterialization(node, graph, options, excludedIds) {
   let contentId = null;
   let selectorState = options.selectorState || null;
+  let scenarioSelection = null;
   if (node.type === 'event' && typeof options.selectEvent === 'function') {
     const selected = options.selectEvent({ graph, node, seed: node.contentSeed, excludedEventIds: freezeArray([...excludedIds]), selectorState });
     contentId = selected?.eventId || selected?.contentId || null;
     selectorState = selected?.selectorState ?? selectorState;
   } else if ((node.type === 'battle' || node.type === 'elite') && typeof options.selectScenario === 'function') {
-    const selected = options.selectScenario({ graph, node, seed: node.contentSeed, excludedScenarioIds: freezeArray([...excludedIds]) });
-    contentId = selected?.scenarioId || selected?.contentId || null;
+    scenarioSelection = options.selectScenario({
+      graph,
+      node,
+      seed: node.contentSeed,
+      excludedScenarioIds: freezeArray([...excludedIds]),
+      storyFacts: freezeArray(options.storyFacts || options.flags || [])
+    });
+    contentId = scenarioSelection?.scenarioId || scenarioSelection?.contentId || null;
+  } else if (node.type === 'battle' || node.type === 'elite') {
+    scenarioSelection = builtInScenarioSelection(node, graph, options, excludedIds);
+    contentId = scenarioSelection?.scenarioId || deterministicPoolPick(poolForNode(node.type, options.contentPools), node.contentSeed, excludedIds);
   } else contentId = deterministicPoolPick(poolForNode(node.type, options.contentPools), node.contentSeed, excludedIds);
   const participantIds = options.participantIds || [];
   const participantId = participantIds.length ? participantIds[hash32(`${node.contentSeed}:participant`) % participantIds.length] : null;
   const success = 50 + (hash32(`${node.contentSeed}:percent`) % 41);
   const details = node.type === 'battle' || node.type === 'elite' ? {
     encounterId: contentId,
+    scenarioSelection: scenarioSelection ? deepFreeze({
+      weight: scenarioSelection.weight ?? null,
+      totalWeight: scenarioSelection.totalWeight ?? null,
+      appliedFactors: freezeArray(scenarioSelection.appliedFactors || []),
+      optionalObjectiveRequirements: deepFreeze({ ...(scenarioSelection.optionalObjectiveRequirements || {}) }),
+      metadata: deepFreeze({ ...(scenarioSelection.metadata || {}) })
+    }) : null,
     enemyProfileSeed: hash32(`${node.contentSeed}:enemies`),
     deploymentSeed: hash32(`${node.contentSeed}:deployment`),
     environmentSeed: hash32(`${node.contentSeed}:environment`),
@@ -80,4 +117,4 @@ function secretContentType(checkSeed, allowedTypes = null) {
   return weightedPick(new XorShift32(mixedSeed), entries);
 }
 
-module.exports = { poolForNode, deterministicPoolPick, defaultMaterialization, materializeLevel, secretContentType };
+module.exports = { poolForNode, deterministicPoolPick, builtInScenarioSelection, defaultMaterialization, materializeLevel, secretContentType };
