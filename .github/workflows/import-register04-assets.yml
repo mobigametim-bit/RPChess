@@ -6,9 +6,17 @@ on:
     branches: [main]
     paths:
       - '.github/register04-import-trigger'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/register04-import-trigger'
 
 permissions:
   contents: write
+
+concurrency:
+  group: register-04-asset-import
+  cancel-in-progress: true
 
 jobs:
   import-assets:
