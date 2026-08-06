@@ -76,11 +76,6 @@ function rebuildCard(button, kind) {
   body.append(element(document, 'small', 'rpb-draft-card__eyebrow', kind === 'hero' ? 'ИМЕННОЙ ГЕРОЙ' : 'ПОПОЛНЕНИЕ'));
   body.append(element(document, 'strong', 'rpb-draft-card__title', kind === 'hero' ? originalName : regular.title));
 
-  const classBlock = element(document, 'span', 'rpb-draft-card__class');
-  classBlock.append(element(document, 'small', null, kind === 'hero' ? 'КЛАСС ФИГУРЫ' : 'ОБЫЧНАЯ ФИГУРА'));
-  classBlock.append(element(document, 'b', null, glyph));
-  body.append(classBlock);
-
   const description = kind === 'hero' ? (HERO_COPY[heroId] || TYPE_COPY[type]) : regular.description;
   body.append(element(document, 'span', 'rpb-draft-card__description', description));
   if (kind === 'regular') body.append(element(document, 'span', 'rpb-draft-card__cost', `Командование ${originalCost}`));
@@ -137,7 +132,6 @@ function rebuildTopbar(stage) {
     resourceChip(document, 'generated_assets/reward_gold.png', 'Золото', gold),
     resourceChip(document, 'generated_assets/reward_heal.png', 'Припасы', supplies),
     resourceChip(document, 'generated_assets/reward_meta.png', 'Наследие', meta),
-    resourceChip(document, 'generated_assets/reward_artifact.png', 'Реликвии', '0'),
     menu
   );
 }
