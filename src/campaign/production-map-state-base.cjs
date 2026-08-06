@@ -20,16 +20,18 @@ function visibleNode(state, nodeId) {
   const revealed = state.revealedNodeIds.includes(nodeId) || state.visitedNodeIds.includes(nodeId);
   const landmark = ['elite', 'boss'].includes(node.type);
   if (!revealed && !landmark) return deepFreeze({ id: nodeId, visibility: 'hidden' });
-  const currentOrAdjacent = nodeId === state.currentNodeId || routeRecords(state).some(({ node: target }) => target.id === nodeId);
-  const details = materialized?.details || null;
+  const visited = state.visitedNodeIds.includes(nodeId) || nodeId === state.currentNodeId;
+  const adjacent = routeRecords(state).some(({ node: target }) => target.id === nodeId);
+  const scouted = state.scoutedNodeIds.includes(nodeId);
+  const showContent = visited || scouted;
+  const details = showContent ? materialized?.details || null : null;
+  const visibility = visited || scouted ? 'content' : adjacent ? 'type' : landmark ? 'landmark' : 'history';
   return deepFreeze({
-    id: node.id, layer: node.layer,
-    visibility: currentOrAdjacent || state.visitedNodeIds.includes(nodeId) ? 'available' : landmark ? 'landmark' : 'history',
+    id: node.id, layer: node.layer, visibility,
     type: revealed || landmark ? node.type : null, phase: revealed ? node.phase : null, danger: revealed ? node.danger : null,
     branchLength: revealed ? Math.max(0, state.graph.nodesById[node.emergencyTo]?.layer - node.layer || 0) : null,
     branchProfile: revealed ? node.branchProfile : null, convergence: node.convergence, mandatory: node.mandatory,
-    contentId: revealed ? materialized?.contentId || null : null, materialized: Boolean(materialized), details, intel: details,
-    scouted: state.scoutedNodeIds.includes(nodeId)
+    contentId: showContent ? materialized?.contentId || null : null, materialized: Boolean(materialized), details, intel: details, scouted
   });
 }
 function createProductionCampaignState(graph, options = {}) {
