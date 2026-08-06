@@ -44,10 +44,18 @@ jobs:
           page.on('console', (message) => { if (message.type() === 'error') errors.push(`console: ${message.text()}`); });
           page.on('response', (response) => { if (response.status() >= 400) errors.push(`http ${response.status()}: ${response.url()}`); });
 
-          await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
-          await page.click('[data-shell-action="profiles"]');
-          await page.locator('[data-profile-action="start"]').first().click();
-          await page.waitForSelector('.is-approved-commander-selection .rpa-commander-layout');
+          async function openCommanderSelection() {
+            await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
+            await page.click('[data-shell-action="profiles"]');
+            await page.locator('[data-profile-action="start"]').first().click();
+            await page.waitForSelector('.is-approved-commander-selection .rpa-commander-layout');
+          }
+
+          async function viewportShot(label, locator) {
+            await locator.scrollIntoViewIfNeeded();
+            await page.waitForTimeout(180);
+            await page.screenshot({ path: `visual-qa-commanders/${label}.png`, fullPage: false });
+          }
 
           async function audit(label, expectedColumns, previewMode) {
             await page.waitForTimeout(250);
@@ -93,7 +101,7 @@ jobs:
               };
             });
             fs.appendFileSync('visual-qa-commanders/report.txt', `${label}: ${JSON.stringify(result)}\n`);
-            await page.screenshot({ path: `visual-qa-commanders/${label}.png`, fullPage: true });
+            await page.screenshot({ path: `visual-qa-commanders/${label}-full.png`, fullPage: true });
             if (result.columns !== expectedColumns) throw new Error(`${label}: expected ${expectedColumns} columns, received ${result.columns}`);
             if (result.profileLabel !== 'Профили') throw new Error(`${label}: invalid profile label ${result.profileLabel}`);
             if (result.seedFields !== 0) throw new Error(`${label}: visible seed field remains`);
@@ -108,20 +116,36 @@ jobs:
             return result;
           }
 
-          const desktop = await audit('01-desktop', 2, 'side');
+          await openCommanderSelection();
+          await audit('01-desktop', 2, 'side');
+          await viewportShot('01-desktop-preview', page.locator('.rpa-launch'));
+
+          await page.evaluate(() => localStorage.setItem('rpchess.approved-shell.progress.v1', JSON.stringify({
+            unlockPoints: 7,
+            victories: 0,
+            discoveries: 7,
+            milestones: {},
+            lastProfileId: 'profile-1',
+            lastCommanderId: 'warlord'
+          })));
+          await openCommanderSelection();
           const available = page.locator('[data-commander-id]:not([disabled])');
-          if (await available.count() > 1) {
-            const before = desktop.previewName;
-            await available.nth(1).click();
-            await page.waitForTimeout(120);
-            const after = await page.locator('[data-preview-name]').textContent();
-            if (!after?.trim() || after.trim() === before) throw new Error(`one-click selection did not update preview: ${before}/${after}`);
-          }
+          if (await available.count() < 2) throw new Error('visual QA could not unlock a second commander');
+          const before = (await page.locator('[data-preview-name]').textContent())?.trim();
+          await available.nth(1).click();
+          await page.waitForTimeout(120);
+          const after = (await page.locator('[data-preview-name]').textContent())?.trim();
+          if (!after || after === before) throw new Error(`one-click selection did not update preview: ${before}/${after}`);
+          fs.appendFileSync('visual-qa-commanders/report.txt', `one-click: ${before} -> ${after}\n`);
 
           await page.setViewportSize({ width: 1000, height: 1000 });
           await audit('02-tablet', 2, 'stacked');
+          await viewportShot('02-tablet-preview', page.locator('.rpa-launch'));
+
           await page.setViewportSize({ width: 390, height: 844 });
           await audit('03-mobile', 1, 'stacked');
+          await viewportShot('03-mobile-second-card', page.locator('.rpa-commander').nth(1));
+          await viewportShot('03-mobile-preview', page.locator('.rpa-launch'));
 
           if (errors.length) throw new Error(errors.join('\n'));
           await browser.close();
