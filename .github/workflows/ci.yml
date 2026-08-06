@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   verify-web-source:
-    if: ${{ !((github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/register04-assets') || (github.event_name == 'push' && github.event.head_commit.message == 'Cancel stale CI queue for Register 04 import')) }}
+    if: ${{ !((github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/register04-assets') || (github.event_name == 'push' && (github.event.head_commit.message == 'Cancel stale CI queue for Register 04 import' || github.event.head_commit.message == 'Prepare Register 04 asset transfer without CI' || github.event.head_commit.message == 'Start Register 04 asset transfer' || github.event.head_commit.message == 'Import and apply remaining Register 04 event art'))) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
