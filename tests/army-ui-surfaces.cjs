@@ -48,9 +48,10 @@ const {
   assert.ok(markup.includes('assets/kings/oathkeeper/portrait.png'));
   assert.ok(markup.includes('assets/doctrines/fortress/emblem.png'));
   assert.ok(markup.includes('assets/heroes/aldric_wall/portrait.png'));
-  assert.ok(markup.includes('Профиль 2'));
-  assert.ok(markup.includes('Герои:'));
-  assert.ok(markup.includes('Реликвии:'));
+  assert.ok(markup.includes('Хроника 2'));
+  assert.ok(markup.includes('Командир'));
+  assert.strictEqual(markup.includes('Героев:'), false);
+  assert.strictEqual(markup.includes('Реликвий:'), false);
 
   const snapshot = runtime.getSnapshot();
   assert.ok(snapshot.army);
@@ -60,12 +61,10 @@ const {
   assert.strictEqual(snapshot.army.heroCount, DEFAULT_BROWSER_SELECTION.heroIds.length);
   assert.strictEqual(snapshot.army.heroes[0].name.length > 0, true);
 
-  const panel = presenter.armyPanelMarkup(snapshot);
-  assert.ok(panel.includes('data-rp02-army-panel'));
-  assert.ok(panel.includes('assets/kings/oathkeeper/portrait.png'));
-  assert.ok(panel.includes('assets/doctrines/fortress/emblem.png'));
-  assert.ok(panel.includes('assets/heroes/aldric_wall/portrait.png'));
-  assert.ok(panel.includes('В составе похода'));
+  const extensionSource = require('fs').readFileSync(path.resolve(__dirname, '../game/js/vertical-slice-presenter-register-02.mjs'), 'utf8');
+  const renderBody = extensionSource.slice(extensionSource.indexOf('render(snapshotInput)'), extensionSource.indexOf('renderDeployment(snapshot)'));
+  assert.strictEqual(renderBody.includes('installArmyPanel(this.root'), false);
+  assert.ok(renderBody.includes("querySelector('[data-rp02-army-panel]')?.remove()"));
 
   const [firstHero, secondHero, thirdHero] = snapshot.army.heroIds;
   const tactical = {

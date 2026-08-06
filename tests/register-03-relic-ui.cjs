@@ -16,10 +16,12 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   const moduleSource = read('game/js/register-03-relic-codex.mjs');
 
   assert.strictEqual(manifest.records.length, 72);
-  assert(presenter.includes("relicChipMarkup(hero.relicIds, { compact: true })"));
-  assert(!presenter.includes("hero.relicIds?.length || 0} реликв."));
+  assert(presenter.includes("this.root.querySelector('[data-rp02-army-panel]')?.remove()"));
+  assert(!presenter.includes("installArmyPanel(this.root, snapshotInput)"));
   assert(presenter.includes('installRegister03RelicCodex'));
-  assert(heroCodex.includes('relicChipMarkup(relicIds)'));
+  assert(heroCodex.includes('relicSlotMarkup'));
+  assert(heroCodex.includes('relicAsset(relicId)'));
+  assert(heroCodex.includes('Пассивная реликвия'));
   assert(html.includes('js/register-03-relic-codex.mjs'));
   assert(moduleSource.includes('Реликвии · ${RELIC_ROWS.length}'));
 

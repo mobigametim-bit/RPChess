@@ -5,6 +5,8 @@ import {
   politicalAssets
 } from './register-02-assets.mjs';
 import { relicChipMarkup } from './register-03-relic-codex.mjs';
+import { relicProfile, relicAsset } from './register-03-relic-assets.mjs';
+import { humanStatus } from './approved-shell-data.mjs';
 
 const FACTIONS = Object.freeze({
   iron_marches: Object.freeze({ id: 'iron_marches', label: 'Железные Марши' }),
@@ -143,18 +145,52 @@ function heroAssetMarkup(source, label, className, fallback = '♟') {
   return `<span class="rp02-media ${className}"><span aria-hidden="true">${escapeHtml(fallback)}</span><img src="${escapeAttribute(source || '')}" alt="${escapeAttribute(label)}" loading="lazy" onload="this.parentElement.classList.add('is-loaded')" onerror="this.remove()"></span>`;
 }
 
+const HERO_MECHANICS = Object.freeze({
+  'hero.aldric_wall': Object.freeze({ name: 'Перехват', description: 'Выберите соседнего союзника. Альдрик прикроет его и отменит первое направленное в него взятие.', kind: 'active' }),
+  'hero.mara_chain': Object.freeze({ name: 'Цепное построение', description: 'Мара и соседняя союзная пешка одновременно продвигаются на одну свободную клетку вперёд.', kind: 'active' }),
+  'hero.brother_orell': Object.freeze({ name: 'Линия кузни', description: 'Создаёт на видимой диагональной клетке временную преграду, меняющую линии движения и шаха.', kind: 'active' }),
+  'hero.vael_hammer': Object.freeze({ name: 'Предсказанный натиск', description: 'Выполняет два заранее показанных прыжка коня. Маршрут и итоговая клетка видны до подтверждения.', kind: 'active' }),
+  'hero.lady_sorn': Object.freeze({ name: 'Тактика заложника', description: 'Связывает Леди Сорн с соседней вражеской фигурой: обе временно лишаются возможности двигаться.', kind: 'active' }),
+  'hero.tomas_gate': Object.freeze({ name: 'Команда ворот', description: 'Открывает или закрывает выбранные ворота, изменяя доступные пути и линии атаки.', kind: 'active' })
+});
+
+const RELIC_MECHANICS = Object.freeze({
+  'relic.echo_shield': Object.freeze({ name: 'Защита от первого взятия', description: 'Первое законное взятие владельца отменяется. Щит после этого разрушается.', kind: 'passive' }),
+  'relic.phantom_spurs': Object.freeze({ name: 'Призрачное уклонение', description: 'После первого хода коня без взятия следующая попытка взять его отменяется.', kind: 'passive' }),
+  'relic.circle_warding': Object.freeze({ name: 'Круг защиты', description: 'За одно очко приказа накладывает одноразовую защиту на соседнего союзника.', kind: 'active' }),
+  'relic.twin_command': Object.freeze({ name: 'Двойной приказ', description: 'Первая способность владельца в каждом бою стоит на одно очко приказа меньше.', kind: 'passive' }),
+  'relic.royal_decree': Object.freeze({ name: 'Королевский указ', description: 'Позволяет один раз превратить пешку на предпоследней линии за два очка приказа.', kind: 'active' }),
+  'relic.oath_fallen': Object.freeze({ name: 'Клятва павших', description: 'Пометьте добровольную жертву. Если её возьмут до следующего хода, армия получает очки приказа.', kind: 'active' })
+});
+
 function statusLabels(status) {
   if (!status) return Object.freeze([]);
-  if (Array.isArray(status)) return Object.freeze(status.map(String).filter(Boolean));
-  if (typeof status === 'string') return Object.freeze(status ? [status] : []);
+  if (Array.isArray(status)) return Object.freeze(status.map((value) => humanStatus(typeof value === 'object' ? value.id : value)).filter(Boolean));
+  if (typeof status === 'string') return Object.freeze(status ? [humanStatus(status)] : []);
   if (typeof status !== 'object') return Object.freeze([]);
+  if (status.id) return Object.freeze([humanStatus(status.id)]);
   const result = [];
   for (const [key, value] of Object.entries(status)) {
-    if (value == null || value === false || value === 0 || (Array.isArray(value) && !value.length)) continue;
-    if (key === 'pieceId') continue;
-    result.push(typeof value === 'boolean' ? key : `${key}: ${Array.isArray(value) ? value.join(', ') : value}`);
+    if (value == null || value === false || value === 0 || (Array.isArray(value) && !value.length) || key === 'pieceId') continue;
+    if (key === 'id') result.push(humanStatus(value));
+    else result.push(humanStatus(key));
   }
-  return Object.freeze(result);
+  return Object.freeze([...new Set(result)]);
+}
+
+function mechanicCardMarkup(mechanic, image, typeLabel, modifier = '') {
+  if (!mechanic) return '';
+  return `<article class="rp02-mechanic-card rp02-mechanic-card--${escapeAttribute(mechanic.kind || 'passive')} ${modifier}">
+    <img src="${escapeAttribute(image || '')}" alt="">
+    <div><div class="rp02-eyebrow">${escapeHtml(typeLabel)}</div><strong>${escapeHtml(mechanic.name)}</strong><small>${escapeHtml(mechanic.description)}</small></div>
+  </article>`;
+}
+
+
+function relicSlotMarkup(relicId, mechanic) {
+  const relic = relicId ? relicProfile(relicId) : null;
+  if (!relic) return '';
+  return `<article class="rp02-relic-slot rp02-mechanic-card--${escapeAttribute(mechanic?.kind || 'passive')}"><img src="${escapeAttribute(relicAsset(relicId))}" alt=""><div><div class="rp02-eyebrow">${mechanic?.kind === 'active' ? 'Активная реликвия' : 'Пассивная реликвия'}</div><strong>${escapeHtml(relic.nameRu)}</strong><small>${escapeHtml(mechanic?.description || 'Реликвия сопровождает героя в этом походе.')}</small></div></article>`;
 }
 
 function heroPanelMarkup(recordInput, options = {}) {
@@ -166,23 +202,32 @@ function heroPanelMarkup(recordInput, options = {}) {
   const relicIds = record.relicIds || record.metadata?.relicIds || [];
   const statuses = statusLabels(record.status || record.metadata?.status);
   const pieceType = record.type || record.pieceType || record.metadata?.combatPieceType || profile.pieceType;
-  const state = options.state || (record.inReserve ? 'В резерве' : record.square ? `На поле: ${record.square}` : 'Готов к развёртыванию');
+  const heroMechanic = HERO_MECHANICS[profile.id];
+  const relicId = relicIds[0] || null;
+  const relic = relicId ? relicProfile(relicId) : null;
+  const relicMechanic = relicId ? RELIC_MECHANICS[relicId] : null;
+  const activeCards = [
+    mechanicCardMarkup(heroMechanic, assets?.abilityIcon, 'Активная способность'),
+    relicMechanic?.kind === 'active' ? relicSlotMarkup(relicId, relicMechanic) : ''
+  ].filter(Boolean).join('');
+  const passiveCards = [
+    relicMechanic?.kind === 'passive' ? relicSlotMarkup(relicId, relicMechanic) : '',
+    ...statuses.map((status) => mechanicCardMarkup({ name: status, description: 'Действующий боевой эффект отображается на фигуре и учитывается правилами боя.', kind: 'passive' }, assets?.pieceBadge, 'Текущий эффект'))
+  ].filter(Boolean).join('');
+  const starLine = stars ? '★'.repeat(Math.min(stars, 5)) : '☆';
   return `<section class="rp02-hero-panel" aria-label="Панель героя ${escapeAttribute(profile.name)}">
-    <div class="rp02-hero-panel__portrait">${heroAssetMarkup(assets?.portrait, profile.name, 'rp02-media--portrait', '♚')}</div>
+    <div class="rp02-hero-panel__portrait">
+      ${heroAssetMarkup(assets?.portrait, profile.name, 'rp02-media--portrait', '♚')}
+      <div class="rp02-hero-panel__stars" aria-label="${stars || 0} звёзд">${starLine}</div>
+    </div>
     <div class="rp02-hero-panel__body">
       <div class="rp02-eyebrow">${escapeHtml(profile.faction)} · ${escapeHtml(PIECE_LABELS[pieceType] || pieceType)}</div>
       <h3>${escapeHtml(profile.name)}</h3>
       <p>${escapeHtml(profile.brief)}</p>
-      <div class="rp02-hero-panel__icons">
-        ${heroAssetMarkup(assets?.pieceBadge, `${profile.name}: знак фигуры`, 'rp02-media--badge', '♟')}
-        ${heroAssetMarkup(assets?.abilityIcon, `${profile.name}: способность`, 'rp02-media--ability', '✦')}
-        <div><strong>Состояние</strong><span>${escapeHtml(state)}</span></div>
+      <div class="rp02-hero-loadout">
+        ${activeCards}
+        ${passiveCards ? `<div class="rp02-eyebrow">Пассивные эффекты</div>${passiveCards}` : ''}
       </div>
-      <dl class="rp02-hero-panel__facts">
-        <div><dt>Звёзды</dt><dd>${stars ? '★'.repeat(Math.min(stars, 5)) : '—'}</dd></div>
-        <div><dt>Реликвии</dt><dd>${relicChipMarkup(relicIds)}</dd></div>
-        <div><dt>Эффекты</dt><dd>${statuses.length ? statuses.map(escapeHtml).join(', ') : 'Нет активных'}</dd></div>
-      </dl>
     </div>
   </section>`;
 }

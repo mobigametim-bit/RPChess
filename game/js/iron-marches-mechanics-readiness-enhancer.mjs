@@ -103,10 +103,8 @@ function decorateHeroCard(card) {
 function refreshMechanicsReadiness(root) {
   if (!root?.querySelectorAll) return 0;
   let changes = 0;
-  for (const panel of root.querySelectorAll('.rp02-hero-panel')) changes += Number(decorateHeroPanel(panel));
-  for (const card of root.querySelectorAll('[data-toggle-hero]')) changes += Number(decorateSelectionCard(card));
-  for (const card of root.querySelectorAll('.rp02-codex-card:not([data-rp02-faction="politics"])')) changes += Number(decorateHeroCard(card));
-  for (const card of root.querySelectorAll('.rp02-army-hero')) changes += Number(decorateHeroCard(card));
+  for (const element of root.querySelectorAll('.rpmech-summary,.rpmech-compact')) { element.remove(); changes += 1; }
+  for (const icon of root.querySelectorAll('.rpmech-ability-disabled')) { icon.classList.remove('rpmech-ability-disabled'); icon.removeAttribute('aria-disabled'); changes += 1; }
   return changes;
 }
 

@@ -20,22 +20,28 @@ const root = path.resolve(__dirname, '..');
     assert.strictEqual(codex.politicalProfile('politics.empress_nahla_p').name, 'Императрица Нахла');
   });
 
-  test('hero panel binds runtime stars, relics and statuses to imported art', () => {
+  test('hero panel uses the approved portrait-stars-active-passive hierarchy', () => {
     const markup = codex.heroPanelMarkup({
       heroId: 'hero.aldric_wall',
       type: 'r',
       square: 'a1',
       stars: 3,
       relicIds: ['relic.echo_shield'],
-      status: { warded: true }
+      status: { id: 'ward', visible: true, sourceId: 'relic.echo_shield' }
     });
     assert.ok(markup.includes('assets/heroes/aldric_wall/portrait.png'));
-    assert.ok(markup.includes('assets/heroes/aldric_wall/piece_badge.png'));
     assert.ok(markup.includes('assets/heroes/aldric_wall/ability_icon.png'));
+    assert.ok(markup.includes('assets/relics/echo_shield.png'));
     assert.ok(markup.includes('★★★'));
+    assert.ok(markup.includes('Активная способность'));
+    assert.ok(markup.includes('Перехват'));
+    assert.ok(markup.includes('Пассивная реликвия'));
     assert.ok(markup.includes('Щит эха'));
-    assert.ok(markup.includes('warded'));
-    assert.ok(markup.includes('На поле: a1'));
+    assert.ok(markup.includes('Защита от первого взятия'));
+    assert.strictEqual(markup.includes('Состояние'), false);
+    assert.strictEqual(markup.includes('На поле:'), false);
+    assert.strictEqual(markup.includes('Звёзды'), false);
+    assert.ok(markup.indexOf('Активная способность') < markup.indexOf('Пассивные эффекты'));
   });
 
   test('codex renders separate hero and political catalogs with faction filtering', () => {
