@@ -39,7 +39,10 @@ function addEdge(edges, keys, from, to, attributes = {}) {
 function connectLayerPair(fromLayer, toLayer, style, rng, edges, mirrored) {
   const keys = new Set(edges.map((edge) => `${edge.from}->${edge.to}`));
   if (toLayer.length === 1) { for (const from of fromLayer) addEdge(edges, keys, from, toLayer[0]); return; }
-  if (fromLayer.length === 1) { for (const to of toLayer) addEdge(edges, keys, fromLayer[0], to); return; }
+  if (fromLayer.length === 1) {
+    for (const to of toLayer) addEdge(edges, keys, fromLayer[0], to, { reopenable: to.index > 0 });
+    return;
+  }
   const targetIndex = (fromIndex, offset = 0) => {
     const base = Math.min(toLayer.length - 1, Math.floor(fromIndex * toLayer.length / fromLayer.length));
     const adjusted = (base + offset + toLayer.length) % toLayer.length;
