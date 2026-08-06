@@ -40,8 +40,17 @@ function travelTo(state, targetNodeId, options = {}) {
     forcedMarch = { consecutiveCount: state.forcedMarch.consecutiveCount + 1, totalCount: state.forcedMarch.totalCount + 1, lastChoice: choice };
   }
   const routeRecordsBeforeTravel = routeRecords(state);
-  const siblings = routeRecordsBeforeTravel.map(({ node }) => node.id).filter((id) => id !== targetNodeId);
+  const siblingRecords = routeRecordsBeforeTravel.filter(({ node }) => node.id !== targetNodeId);
+  const siblings = siblingRecords.map(({ node }) => node.id);
   const closedNodeIds = [...new Set([...state.closedNodeIds, ...siblings])].sort();
+  const closedBranchRecordsByNode = { ...(state.closedBranchRecordsByNode || {}) };
+  for (const { edge, node } of siblingRecords) closedBranchRecordsByNode[node.id] = deepFreeze({
+    nodeId: node.id,
+    closedFromNodeId: state.currentNodeId,
+    originalEdgeId: edge.id,
+    reopenable: Boolean(edge.reopenable),
+    closedAtHistoryIndex: state.history.length
+  });
   const visitedNodeIds = state.visitedNodeIds.includes(targetNodeId) ? state.visitedNodeIds : [...state.visitedNodeIds, targetNodeId];
   let selectorState = callbackSelectorState(options.onBranchesClosed, {
     graph: state.graph, state: state.selectorState, nodeIds: freezeArray(siblings),
@@ -63,7 +72,8 @@ function travelTo(state, targetNodeId, options = {}) {
     status: targetNodeId === state.graph.bossNodeId ? 'boss_reached' : 'active',
     supplies, gold, forcedMarch: deepFreeze(forcedMarch), scoutingLockedUntilTravel,
     temporaryPenalties: deepFreeze(temporaryPenalties),
-    closedNodeIds: freezeArray(closedNodeIds), visitedNodeIds: freezeArray(visitedNodeIds),
+    closedNodeIds: freezeArray(closedNodeIds), closedBranchRecordsByNode: deepFreeze(closedBranchRecordsByNode),
+    visitedNodeIds: freezeArray(visitedNodeIds),
     traversedEdgeIds: freezeArray([...state.traversedEdgeIds, route.edgeId]),
     rareRoute: route.rare ? deepFreeze({ ...state.rareRoute, status: 'used' }) : state.rareRoute,
     revealedNodeIds: freezeArray(revealedNodeIds), revealedLevelIds: freezeArray(revealedLevelIds),
@@ -99,6 +109,8 @@ function reopenBranch(state, nodeId, options = {}) {
   if (state.completedNodeIds.includes(nodeId) || state.rewardsClaimedNodeIds.includes(nodeId)) throw new Error('completed nodes cannot be reopened for another reward');
   const node = state.graph.nodesById[nodeId];
   if (!node || ['elite', 'boss'].includes(node.type)) throw new Error('rare branch reopening cannot target elite or boss');
+  const closedRecord = state.closedBranchRecordsByNode?.[nodeId];
+  if (!closedRecord?.reopenable) throw new Error(`${nodeId} is not an authored rare-reopen position`);
   const selectorState = callbackSelectorState(options.onBranchReopened, {
     graph: state.graph, state: state.selectorState, nodeId,
     materializedContent: state.materializedContentByNode[nodeId] || null
@@ -107,6 +119,7 @@ function reopenBranch(state, nodeId, options = {}) {
     edgeId: `rare_${state.currentNodeId}_${nodeId}_${state.history.length}`,
     fromNodeId: state.currentNodeId,
     targetNodeId: nodeId,
+    originalEdgeId: closedRecord.originalEdgeId,
     cost: 1,
     status: 'open'
   });
@@ -114,7 +127,7 @@ function reopenBranch(state, nodeId, options = {}) {
     closedNodeIds: freezeArray(state.closedNodeIds.filter((id) => id !== nodeId)),
     reopenedNodeIds: freezeArray([...new Set([...state.reopenedNodeIds, nodeId])]),
     revealedNodeIds: freezeArray([...new Set([...state.revealedNodeIds, nodeId])].sort()),
-    history: freezeArray([...state.history, deepFreeze({ index: state.history.length, type: 'branch_reopened', nodeId, rareEdgeId: rareRoute.edgeId, preservedContentId: state.materializedContentByNode[nodeId]?.contentId || null })]) });
+    history: freezeArray([...state.history, deepFreeze({ index: state.history.length, type: 'branch_reopened', nodeId, rareEdgeId: rareRoute.edgeId, originalEdgeId: closedRecord.originalEdgeId, preservedContentId: state.materializedContentByNode[nodeId]?.contentId || null })]) });
 }
 
 module.exports = { forcedMarchEffect, travelTo, scoutNode, completeNode, reopenBranch };
