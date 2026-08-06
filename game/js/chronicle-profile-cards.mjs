@@ -45,7 +45,8 @@ function compactLabel(language, key) {
         remove: 'Delete',
         more: 'More chronicle actions',
         renamePrompt: 'Chronicle name',
-        fallback: 'Chronicle'
+        fallback: 'Chronicle',
+        saved: 'Campaign saved'
       }
     : {
         title: 'Выберите хронику похода',
@@ -60,9 +61,44 @@ function compactLabel(language, key) {
         remove: 'Удалить',
         more: 'Дополнительные действия с хроникой',
         renamePrompt: 'Название хроники',
-        fallback: 'Хроника'
+        fallback: 'Хроника',
+        saved: 'Поход сохранён'
       };
   return labels[key] || key;
+}
+
+function humanChronicleStatus(value, language = 'ru') {
+  const source = String(value || '').trim();
+  if (!source) return compactLabel(language, 'saved');
+  const english = language === 'en';
+  const replacements = english
+    ? [
+        [/\bdraft\b/gi, 'Army formation'],
+        [/\bcampaign\b/gi, 'Campaign map'],
+        [/\bdeployment\b/gi, 'Battle deployment'],
+        [/\bbattle\b/gi, 'Battle'],
+        [/\breward_choice\b|\breward\b/gi, 'Reward choice'],
+        [/\bevent\b/gi, 'Event'],
+        [/\bservice\b/gi, 'Service'],
+        [/\bretreat\b/gi, 'Royal retreat'],
+        [/\bact_outcome\b/gi, 'Act outcome'],
+        [/\breorganization\b/gi, 'Army reorganization'],
+        [/\bterminal\b/gi, 'Campaign complete']
+      ]
+    : [
+        [/\bdraft\b/gi, 'Формирование отряда'],
+        [/\bcampaign\b/gi, 'Карта похода'],
+        [/\bdeployment\b/gi, 'Расстановка перед боем'],
+        [/\bbattle\b/gi, 'Сражение'],
+        [/\breward_choice\b|\breward\b/gi, 'Выбор награды'],
+        [/\bevent\b/gi, 'Событие'],
+        [/\bservice\b/gi, 'Сервисный узел'],
+        [/\bretreat\b/gi, 'Королевское отступление'],
+        [/\bact_outcome\b/gi, 'Итоги акта'],
+        [/\breorganization\b/gi, 'Реорганизация армии'],
+        [/\bterminal\b/gi, 'Поход завершён']
+      ];
+  return replacements.reduce((result, [pattern, replacement]) => result.replace(pattern, replacement), source);
 }
 
 function buttonWithText(button, text) {
@@ -103,7 +139,9 @@ function createContent(document, card, available, title, language) {
   const originalStatus = card.querySelector('.rpprofile__summary > strong');
   const status = document.createElement('strong');
   status.className = 'rpprofile__approved-status';
-  status.textContent = available ? originalStatus?.textContent?.trim() || '' : compactLabel(language, 'empty');
+  status.textContent = available
+    ? humanChronicleStatus(originalStatus?.textContent, language)
+    : compactLabel(language, 'empty');
   content.append(status);
 
   if (available) {
@@ -275,6 +313,7 @@ export {
   writeChronicleNames,
   romanChronicleNumber,
   compactLabel,
+  humanChronicleStatus,
   enhanceProfileCard,
   enhanceChronicleSelection,
   installChronicleProfileCards
