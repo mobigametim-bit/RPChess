@@ -9,8 +9,13 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: rpchess-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify-web-source:
+    if: ${{ !((github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/register04-assets') || (github.event_name == 'push' && github.event.head_commit.message == 'Cancel stale CI queue for Register 04 import')) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
