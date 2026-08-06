@@ -1,11 +1,8 @@
 name: Import Register 04 remaining assets
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'scripts/import-register04-remaining.py'
-      - '.github/workflows/import-register04-assets.yml'
+  pull_request_target:
+    types: [opened, reopened]
 
 permissions:
   contents: write
@@ -16,11 +13,11 @@ concurrency:
 
 jobs:
   import-assets:
-    if: github.event.head_commit.message == 'Start Register 04 asset transfer'
+    if: github.event.pull_request.number == 54 && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-slim
     timeout-minutes: 15
     steps:
-      - name: Check out main
+      - name: Check out trusted main branch
         uses: actions/checkout@v4
         with:
           ref: main
