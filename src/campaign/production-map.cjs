@@ -5,5 +5,6 @@ module.exports = {
   ...require('./production-map-topology.cjs'),
   ...require('./production-map-validation.cjs'),
   ...require('./production-map-graph.cjs'),
+  ...require('./production-scenario-selector.cjs'),
   ...require('./production-map-materialization.cjs')
 };
