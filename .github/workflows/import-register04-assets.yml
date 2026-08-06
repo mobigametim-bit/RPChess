@@ -1,5 +1,6 @@
 name: Import Register 04 remaining assets
 
+# One-time workflow: this update deliberately triggers the importer now that the workflow exists on main.
 on:
   push:
     branches: [main]
