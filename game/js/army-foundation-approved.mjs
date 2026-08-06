@@ -63,6 +63,7 @@ function rebuildCard(button, kind) {
   const regular = REGULAR_COPY[type] || REGULAR_COPY.p;
 
   button.classList.add('rpb-draft-card', `rpb-draft-card--${kind}`);
+  button.dataset.commandCost = String(originalCost);
   button.setAttribute('aria-label', `${kind === 'hero' ? 'Именной герой' : 'Пополнение'}: ${kind === 'hero' ? originalName : regular.title}`);
   button.replaceChildren();
 
@@ -96,6 +97,14 @@ function resourceChip(document, icon, label, value) {
   image.alt = '';
   node.append(image, element(document, 'strong', null, value));
   return node;
+}
+
+function removeRelicResourceChips(root = document) {
+  const resources = root.querySelectorAll?.('.rpvs__resources .rpvs__chip') || [];
+  for (const chip of resources) {
+    const label = `${chip.getAttribute('aria-label') || ''} ${chip.textContent || ''}`.toLowerCase();
+    if (label.includes('реликв')) chip.remove();
+  }
 }
 
 function rebuildTopbar(stage) {
@@ -136,7 +145,56 @@ function rebuildTopbar(stage) {
   );
 }
 
+function commandTotalFromBadge(stage) {
+  const value = stage.querySelector('.rpb-stage__header .rpb-badge')?.textContent?.match(/\d+/)?.[0];
+  return Math.max(1, Number(value || 1));
+}
+
+function updateCommandCounter(stage) {
+  const counter = stage.querySelector('[data-draft-command-counter]');
+  if (!counter) return;
+  const total = Math.max(1, Number(stage.dataset.commandLimit || 1));
+  const base = Math.max(0, Number(stage.dataset.commandBase || 0));
+  const selected = stage.querySelector('[data-draft-regular][aria-pressed="true"]');
+  const selectedCost = Math.max(0, Number(selected?.dataset.commandCost || 0));
+  const used = base + selectedCost;
+  counter.textContent = `${used}/${total}`;
+  counter.setAttribute('aria-label', `Использовано очков командования: ${used} из ${total}`);
+  counter.classList.toggle('rpb-command-counter--over', used > total);
+}
+
+function prepareDraftHeader(stage) {
+  const document = stage.ownerDocument;
+  const header = stage.querySelector('.rpb-stage__header');
+  const heading = header?.querySelector('h1');
+  if (!header || !heading) return;
+
+  const total = commandTotalFromBadge(stage);
+  stage.dataset.commandLimit = String(total);
+  stage.dataset.commandBase = String(Math.max(0, total - 1));
+
+  const headingRow = element(document, 'div', 'rpb-draft-heading-row');
+  heading.before(headingRow);
+  headingRow.append(heading);
+  const counter = element(document, 'span', 'rpb-command-counter');
+  counter.dataset.draftCommandCounter = '';
+  headingRow.append(counter);
+
+  header.querySelector('.rpb-badge')?.remove();
+  const confirm = stage.querySelector('[data-confirm-draft]');
+  if (confirm) {
+    confirm.classList.add('rpb-draft-confirm');
+    header.append(confirm);
+  }
+
+  stage.querySelector('.rpb-warning')?.remove();
+  const actions = stage.querySelector('.rpb-actions');
+  if (actions && !actions.children.length) actions.remove();
+  updateCommandCounter(stage);
+}
+
 function upgradeDraft(root = document) {
+  removeRelicResourceChips(root);
   const stages = root.querySelectorAll?.('.rpb-stage') || [];
   for (const stage of stages) {
     if (stage.dataset.armyFoundationApproved === 'true') continue;
@@ -151,6 +209,7 @@ function upgradeDraft(root = document) {
     if (headings[1]) headings[1].textContent = 'Пополнение: выберите одну фигуру';
     heroButtons.forEach((button) => rebuildCard(button, 'hero'));
     regularButtons.forEach((button) => rebuildCard(button, 'regular'));
+    prepareDraftHeader(stage);
     rebuildTopbar(stage);
   }
 }
@@ -166,4 +225,16 @@ function installArmyFoundationApproved(root = document) {
 
 if (typeof document !== 'undefined') installArmyFoundationApproved(document);
 
-export { PIECE_GLYPHS, REGULAR_COPY, roman, pieceType, rebuildCard, rebuildTopbar, upgradeDraft, installArmyFoundationApproved };
+export {
+  PIECE_GLYPHS,
+  REGULAR_COPY,
+  roman,
+  pieceType,
+  rebuildCard,
+  removeRelicResourceChips,
+  rebuildTopbar,
+  updateCommandCounter,
+  prepareDraftHeader,
+  upgradeDraft,
+  installArmyFoundationApproved
+};
