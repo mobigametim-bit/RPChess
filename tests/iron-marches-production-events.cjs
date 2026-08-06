@@ -9,6 +9,7 @@ const {
   selectProductionParticipant
 } = require('../src/content/production-events.cjs');
 const { buildProductionContentBundle } = require('../src/content/production-bundle.cjs');
+const { buildBrowserProductionBundle } = require('../src/browser/production-content-browser.cjs');
 
 const projectRoot = path.resolve(__dirname, '..');
 const library = loadProductionEventLibrary(path.join(projectRoot, 'content/events/iron_marches_production.json'));
@@ -32,6 +33,16 @@ assert.strictEqual(bundle.registry.get('event', 'event.miners_on_strike').choice
 assert.strictEqual(bundle.registry.get('event', 'event.miners_on_strike').status, 'approved');
 assert.strictEqual(bundle.localization.ru[bundle.registry.get('event', 'event.empty_armory').bodyKey].includes('арсенала'), true);
 assert.strictEqual(bundle.localization.en[bundle.registry.get('event', 'event.miners_on_strike').titleKey], "The Miners' Strike");
+assert.strictEqual(bundle.registry.get('event', 'event.empty_armory').sceneArt, 'assets/events/register-04/empty_armory.png');
+
+const browserBundle = buildBrowserProductionBundle();
+assert.strictEqual(browserBundle.registry.list('event').length, 7);
+assert.deepStrictEqual(
+  browserBundle.registry.list('event').map((event) => event.id).sort(),
+  library.events.map((event) => event.id).sort()
+);
+assert.strictEqual(browserBundle.sourceRegistry.list('event').length, 12);
+assert.strictEqual(browserBundle.summary.event, 7);
 
 const linkedFurnace = createProductionEventState(library, 'event.furnace_oath', {
   seed: 10,
