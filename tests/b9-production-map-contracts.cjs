@@ -22,12 +22,18 @@ function pools(size = 80) {
 const samples = 10000;
 const phaseCounts = Object.fromEntries(['early', 'mid', 'late'].map((phase) => [phase, { battle: 0, event: 0, service: 0 }]));
 const serviceCounts = { shop: 0, hospital: 0, forge: 0, camp: 0 };
+let secretDiscoveries = 0;
 for (let seed = 1; seed <= samples; seed += 1) {
   const graph = generateProductionActGraph({ rootSeed: seed });
   for (const node of graph.nodes) {
     if (['start', 'elite', 'boss'].includes(node.type) || (node.layer === 1 && node.index === 0)) continue;
     phaseCounts[node.phase][node.category] += 1;
     if (Object.prototype.hasOwnProperty.call(serviceCounts, node.type)) serviceCounts[node.type] += 1;
+  }
+  const sourceNodeId = Object.keys(graph.secretChecks).sort()[0];
+  if (sourceNodeId) {
+    const checked = checkSecretAfterNode(createProductionCampaignState(graph, { supplies: 20, contentPools: pools() }), sourceNodeId);
+    if (checked.secret.pendingDecision) secretDiscoveries += 1;
   }
 }
 for (const phase of ['early', 'mid', 'late']) {
@@ -42,6 +48,8 @@ for (const [service, value] of Object.entries(serviceCounts)) {
   const actual = value / serviceTotal * 100;
   assert.ok(Math.abs(actual - 25) < 2.5, `${service}: ${actual.toFixed(2)}% differs from 25%`);
 }
+const secretDiscoveryRate = secretDiscoveries / samples * 100;
+assert.ok(Math.abs(secretDiscoveryRate - 10) < 1.5, `secret discovery rate ${secretDiscoveryRate.toFixed(2)}% differs from 10%`);
 
 const secretCounts = Object.fromEntries(SECRET_CONTENT_WEIGHTS.map((entry) => [entry.value, 0]));
 for (let seed = 1; seed <= samples; seed += 1) secretCounts[secretContentType(seed)] += 1;
@@ -59,12 +67,12 @@ function selectEvent({ node, selectorState, excludedEventIds }) {
   return { eventId: candidates[node.contentSeed % candidates.length], selectorState: { revision, lastNodeId: node.id } };
 }
 let state = createProductionCampaignState(graph, { supplies: 30, contentPools: pools(), selectEvent });
-assert.ok(selectorCalls >= 0);
 const initialMaterialization = JSON.parse(JSON.stringify(state.materializedContentByNode));
 const firstRoutes = availableRoutes(state);
 assert.ok(firstRoutes.length >= 2);
 const chosen = firstRoutes[0];
-const closedTarget = firstRoutes[1].to;
+const closedTarget = firstRoutes.find((route) => route.to !== chosen.to && graph.edgesById[route.edgeId].reopenable)?.to;
+assert.ok(closedTarget, 'the template must expose an authored rare-reopen position');
 state = travelTo(state, chosen.to, { selectEvent });
 assert.ok(state.closedNodeIds.includes(closedTarget));
 assert.deepStrictEqual(state.materializedContentByNode[closedTarget], initialMaterialization[closedTarget]);
@@ -82,11 +90,37 @@ assert.deepStrictEqual(state.materializedContentByNode[closedTarget], preserved)
 state = completeNode(state, closedTarget);
 assert.throws(() => reopenBranch({ ...state, closedNodeIds: [...state.closedNodeIds, closedTarget] }, closedTarget), /completed nodes/);
 
+// A closed branch is reopenable only where the selected macro-template explicitly allowed it.
+let nonAuthoredState = createProductionCampaignState(graph, { supplies: 30, contentPools: pools() });
+const nonAuthoredRoutes = availableRoutes(nonAuthoredState);
+const nonAuthoredTarget = nonAuthoredRoutes.find((route) => !graph.edgesById[route.edgeId].reopenable)?.to;
+const alternative = nonAuthoredRoutes.find((route) => route.to !== nonAuthoredTarget)?.to;
+assert.ok(nonAuthoredTarget && alternative);
+nonAuthoredState = travelTo(nonAuthoredState, alternative);
+assert.strictEqual(nonAuthoredState.closedBranchRecordsByNode[nonAuthoredTarget].reopenable, false);
+assert.throws(() => reopenBranch(nonAuthoredState, nonAuthoredTarget), /not an authored rare-reopen position/);
+
 // Materialization is stable across action order, and selector state is stored with the campaign.
 const levelFromChosenA = materializeLevel(graph, chosen.to, initialMaterialization, { contentPools: pools(), selectEvent, selectorState: { revision: 0 } });
 const levelFromChosenB = materializeLevel(graph, chosen.to, initialMaterialization, { contentPools: pools(), selectEvent, selectorState: { revision: 0 }, army: { wounds: 99, gold: 0 } });
 assert.deepStrictEqual(levelFromChosenA.materializedByNode, levelFromChosenB.materializedByNode);
 assert.deepStrictEqual(levelFromChosenA.selectorState, levelFromChosenB.selectorState);
+
+// Exact scenario/event IDs may not repeat on adjacent visited nodes of the same category.
+for (let seed = 1; seed <= 250; seed += 1) {
+  let routeState = createProductionCampaignState(generateProductionActGraph({ rootSeed: seed }), { supplies: 20, contentPools: pools(4) });
+  let previous = null;
+  while (routeState.currentNodeId !== routeState.graph.bossNodeId) {
+    const route = availableRoutes(routeState)[seed % availableRoutes(routeState).length];
+    routeState = travelTo(routeState, route.to);
+    const node = routeState.graph.nodesById[routeState.currentNodeId];
+    const content = routeState.materializedContentByNode[node.id];
+    if (previous && previous.category === node.category && ['battle', 'event'].includes(node.category)) {
+      assert.notStrictEqual(content.contentId, previous.contentId, `seed ${seed} repeated ${content.contentId} on adjacent nodes`);
+    }
+    previous = { category: node.category, contentId: content?.contentId || null };
+  }
+}
 
 // Declining a discovered secret is permanent for the act.
 let secretState = null;
@@ -117,5 +151,5 @@ while (bossState.currentNodeId !== bossState.graph.bossNodeId) {
 assert.strictEqual(bossState.status, 'boss_reached');
 assert.strictEqual(bossState.supplies, 10);
 
-console.log(JSON.stringify({ phaseCounts, serviceCounts, secretCounts, selectorCalls }, null, 2));
-console.log('B9 production map contracts: 10,000-seed distributions, services, secret pool, rare route, selector state and boss route passed.');
+console.log(JSON.stringify({ phaseCounts, serviceCounts, secretDiscoveries, secretDiscoveryRate, secretCounts, selectorCalls }, null, 2));
+console.log('B9 production map contracts: 10,000-seed distributions, services, secret discovery/pool, authored rare routes, adjacent repeats, selector state and boss route passed.');
