@@ -12,6 +12,7 @@ function migrateProductionCampaignState(snapshot) {
   if (snapshot.schemaVersion === PRODUCTION_CAMPAIGN_SCHEMA_VERSION && snapshot.generatorVersion === 3) return deepFreeze({
     ...snapshot,
     materializationContext: deepFreeze(snapshot.materializationContext || { contentPools: {}, participantIds: [] }),
+    closedBranchRecordsByNode: deepFreeze(snapshot.closedBranchRecordsByNode || {}),
     rareRoute: snapshot.rareRoute || null,
     status: snapshot.status || 'active',
     minimumPathCost: Number.isInteger(snapshot.minimumPathCost) ? snapshot.minimumPathCost : 10,
@@ -42,7 +43,9 @@ function migrateProductionCampaignState(snapshot) {
     revealedNodeIds: freezeArray(snapshot.revealedNodeIds || Object.keys(snapshot.visibility || {}).filter((id) => snapshot.visibility[id] > 0)),
     materializedContentByNode: deepFreeze(materializedContentByNode), selectorState: snapshot.selectorState || null,
     reopenedNodeIds: freezeArray(snapshot.reopenedNodeIds || []), completedNodeIds: freezeArray(snapshot.completedNodeIds || []),
-    rewardsClaimedNodeIds: freezeArray(snapshot.rewardsClaimedNodeIds || []), rareRoute: snapshot.rareRoute || null,
+    rewardsClaimedNodeIds: freezeArray(snapshot.rewardsClaimedNodeIds || []),
+    closedBranchRecordsByNode: deepFreeze(snapshot.closedBranchRecordsByNode || {}),
+    rareRoute: snapshot.rareRoute || null,
     scoutedNodeIds: freezeArray(snapshot.scoutedNodeIds || []), scoutAttemptsByFork: deepFreeze(snapshot.scoutAttemptsByFork || {}),
     scoutingModifiers: deepFreeze(snapshot.scoutingModifiers || { costDiscount: 0, thirdScoutAllowed: false }),
     scoutingLockedUntilTravel: Boolean(snapshot.scoutingLockedUntilTravel),
