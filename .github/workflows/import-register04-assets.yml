@@ -6,9 +6,15 @@ on:
     branches: [main]
     paths:
       - '.github/register04-import-trigger'
+  schedule:
+    - cron: '*/15 * * * *'
 
 permissions:
   contents: write
+
+concurrency:
+  group: register-04-asset-import
+  cancel-in-progress: false
 
 jobs:
   import-assets:
@@ -47,10 +53,12 @@ jobs:
             git config user.name 'RPChess Asset Importer'
             git config user.email 'actions@users.noreply.github.com'
             git add .github/register04-import-failure.log
-            git commit -m 'Record Register 04 importer failure'
-            git fetch origin main
-            git rebase origin/main
-            git push origin HEAD:main
+            if ! git diff --cached --quiet; then
+              git commit -m 'Record Register 04 importer failure'
+              git fetch origin main
+              git rebase origin/main
+              git push origin HEAD:main
+            fi
             exit "$status"
           fi
 
@@ -62,12 +70,12 @@ jobs:
           npm ci
           npm run build
 
-      - name: Commit imported assets safely
+      - name: Commit imported assets and remove one-time machinery
         run: |
-          rm -f .github/register04-import-failure.log
+          rm -f .github/register04-import-failure.log scripts/import-register04-remaining.py .github/workflows/import-register04-assets.yml .github/register04-import-trigger
           git config user.name 'RPChess Asset Importer'
           git config user.email 'actions@users.noreply.github.com'
-          git add game/assets/events/register-04 content/manifests/register-04-events.json content/audits/register_04_event_assets.json game/js/register-04-event-assets.mjs tests/register-04-event-assets.cjs .github/register04-import-failure.log
+          git add -A -- game/assets/events/register-04 content/manifests/register-04-events.json content/audits/register_04_event_assets.json game/js/register-04-event-assets.mjs tests/register-04-event-assets.cjs .github/register04-import-failure.log scripts/import-register04-remaining.py .github/workflows/import-register04-assets.yml .github/register04-import-trigger
           git commit -m 'Import and apply remaining Register 04 event art'
           git fetch origin main
           git rebase origin/main
