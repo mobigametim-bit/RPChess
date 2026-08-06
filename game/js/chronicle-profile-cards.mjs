@@ -36,6 +36,7 @@ function compactLabel(language, key) {
         title: 'Choose a campaign chronicle',
         subtitle: 'Three independent stories. Continue an existing campaign or begin a new one.',
         empty: 'Empty slot',
+        newChronicle: 'New chronicle',
         emptyCopy: 'Begin a new campaign by choosing a king, doctrine and starting army.',
         continue: 'Continue',
         create: 'Create',
@@ -50,6 +51,7 @@ function compactLabel(language, key) {
         title: 'Выберите хронику похода',
         subtitle: 'Три независимые истории. Продолжите существующий поход или начните новый.',
         empty: 'Пустой слот',
+        newChronicle: 'Новая хроника',
         emptyCopy: 'Начните новый поход с выбором короля, доктрины и стартового отряда.',
         continue: 'Продолжить',
         create: 'Создать',
@@ -162,7 +164,9 @@ function enhanceProfileCard(card, index, options = {}) {
   const profileId = card.dataset.profileId || `profile-${index + 1}`;
   const available = card.dataset.profilePrimary === 'continue';
   const defaultTitle = `${compactLabel(language, 'fallback')} ${romanChronicleNumber(index)}`;
-  const title = String(names[profileId] || defaultTitle).trim() || defaultTitle;
+  const title = available
+    ? String(names[profileId] || defaultTitle).trim() || defaultTitle
+    : compactLabel(language, 'newChronicle');
 
   const actions = card.querySelector('.rpprofile__actions');
   const primary = card.querySelector('[data-profile-action="continue"], [data-profile-action="start"]');
