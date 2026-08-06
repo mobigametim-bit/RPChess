@@ -18,9 +18,9 @@ const PHASE_WEIGHTS = Object.freeze({
 const DANGER_RANGES = Object.freeze({
   early: Object.freeze([1, 2]),
   mid: Object.freeze([2, 4]),
-  late: Object.freeze([3, 5]),
+  late: Object.freeze([4, 5]),
   elite: Object.freeze([5, 5]),
-  boss: Object.freeze([6, 6])
+  boss: Object.freeze([5, 5])
 });
 const SECRET_CONTENT_WEIGHTS = Object.freeze([
   Object.freeze({ value: 'event', weight: 25 }),
