@@ -76,6 +76,9 @@ if (!globalThis[INSTALL_KEY]) {
     return restoreProductionCampaign(validated, productionCampaign);
   };
 
+  function appendStageBHistory(stageB, type, payload) {
+    return freezeArray([...(stageB.history || []), deepFreeze({ index: stageB.history?.length || 0, type, payload: deepFreeze(payload || {}) })]);
+  }
   function applyForcedMarchInjury(stageB, count, seed) {
     if (!count || !stageB?.roster?.length) return stageB;
     const eligible = stageB.roster.filter((entry) => entry.kind !== 'king' && entry.available && entry.injury !== 'heavy').sort((a, b) => a.id.localeCompare(b.id));
@@ -85,24 +88,62 @@ if (!globalThis[INSTALL_KEY]) {
     return deepFreeze({
       ...stageB,
       roster: freezeArray(stageB.roster.map((entry) => injuredIds.has(entry.id) ? deepFreeze({ ...entry, injury: 'light', skipBattles: Math.max(1, entry.skipBattles || 0), available: false }) : entry)),
-      history: freezeArray([...(stageB.history || []), deepFreeze({ index: stageB.history?.length || 0, type: 'forced_march_injury', payload: deepFreeze({ rosterIds: freezeArray([...injuredIds]) }) })])
+      history: appendStageBHistory(stageB, 'forced_march_injury', { rosterIds: freezeArray([...injuredIds]) })
     });
+  }
+  function applyNextBattlePenalty(stageB, count) {
+    if (!count || !stageB) return stageB;
+    const effectId = `effect.forced_march.next_battle_penalty.${count}`;
+    const briefing = stageB.briefing ? deepFreeze({
+      ...stageB.briefing,
+      forcedMarchPenalty: count,
+      warning: `${stageB.briefing.warning} Форсированный марш: штраф следующего боя ×${count}.`
+    }) : stageB.briefing;
+    return deepFreeze({
+      ...stageB,
+      briefing,
+      temporaryEffects: freezeArray([...new Set([...(stageB.temporaryEffects || []), effectId])]),
+      history: appendStageBHistory(stageB, 'forced_march_next_battle_penalty_applied', { count, effectId })
+    });
+  }
+  function applyRewardChoiceReduction(runtime) {
+    const reduction = Number(runtime.campaign?.temporaryPenalties?.rewardChoiceReduction || 0);
+    const offers = runtime.stageB?.pendingRewardOffers || [];
+    if (runtime.status !== 'reward_choice' || reduction <= 0 || offers.length <= 1) return runtime;
+    const visibleCount = Math.max(1, offers.length - reduction);
+    const stageB = deepFreeze({
+      ...runtime.stageB,
+      pendingRewardOffers: freezeArray(offers.slice(0, visibleCount)),
+      history: appendStageBHistory(runtime.stageB, 'forced_march_reward_choice_reduced', { reduction, visibleCount })
+    });
+    const campaign = deepFreeze({
+      ...runtime.campaign,
+      temporaryPenalties: deepFreeze({ ...runtime.campaign.temporaryPenalties, rewardChoiceReduction: 0 })
+    });
+    return deepFreeze({ ...runtime, stageB, campaign });
   }
   vertical.enterVerticalSliceNode = function enterB9VerticalSliceNode(state, targetNodeId, dependencies = {}, travelOptions = {}) {
     if (!runtimeState.isProductionState(state.campaign)) return originalEnterNode(state, targetNodeId, dependencies);
     const route = runtimeState.availableRoutes(state.campaign).find((candidate) => candidate.to === targetNodeId);
     if (!route) throw new Error(`${targetNodeId} is not an available route`);
     if (route.requiresForcedMarch && !travelOptions.forcedMarchChoice) throw new Error('forced march consequence must be chosen before travel');
+    const targetNode = state.campaign.graph.nodesById[targetNodeId];
     const campaignWithGold = deepFreeze({ ...state.campaign, gold: state.resources.gold });
-    const campaign = runtimeState.travelTo(campaignWithGold, targetNodeId, { ...(dependencies.campaignMaterialization || {}), ...travelOptions });
+    let campaign = runtimeState.travelTo(campaignWithGold, targetNodeId, { ...(dependencies.campaignMaterialization || {}), ...travelOptions });
     const compatibilitySource = compatibilityCampaign(campaignWithGold, false);
     const resolutionSource = route.requiresForcedMarch ? deepFreeze({ ...compatibilitySource, supplies: 1 }) : compatibilitySource;
     const resolved = originalEnterNode(deepFreeze({ ...state, campaign: resolutionSource }), targetNodeId, dependencies);
     const travelRecord = campaign.history.at(-1) || {};
     const lightInjuryCount = Number(travelRecord.externalEffects?.lightInjuryCount || 0);
-    const stageB = applyForcedMarchInjury(resolved.stageB, lightInjuryCount, `${campaign.rootSeed}:${campaign.history.length}`);
+    const battlePenalty = ['battle', 'elite', 'boss'].includes(targetNode.type) ? Number(campaign.temporaryPenalties.nextBattle || 0) : 0;
+    let stageB = applyForcedMarchInjury(resolved.stageB, lightInjuryCount, `${campaign.rootSeed}:${campaign.history.length}`);
+    stageB = applyNextBattlePenalty(stageB, battlePenalty);
+    if (battlePenalty > 0) campaign = deepFreeze({
+      ...campaign,
+      temporaryPenalties: deepFreeze({ ...campaign.temporaryPenalties, nextBattle: 0 })
+    });
     const transcript = resolved.transcript?.length
-      ? freezeArray([...resolved.transcript.slice(0, -1), deepFreeze({ ...resolved.transcript.at(-1), forcedMarchChoice: travelOptions.forcedMarchChoice || null })])
+      ? freezeArray([...resolved.transcript.slice(0, -1), deepFreeze({ ...resolved.transcript.at(-1), forcedMarchChoice: travelOptions.forcedMarchChoice || null, forcedMarchBattlePenalty: battlePenalty })])
       : resolved.transcript;
     return deepFreeze({
       ...resolved,
@@ -130,6 +171,7 @@ if (!globalThis[INSTALL_KEY]) {
       const view = source?.node || {};
       return deepFreeze({
         ...route,
+        rare: Boolean(source?.rare),
         requiresForcedMarch: Boolean(source?.requiresForcedMarch),
         forcedMarchChoices: source?.requiresForcedMarch ? stateModule.FORCED_MARCH_CHOICES || require('../campaign/production-map-state.cjs').FORCED_MARCH_CHOICES : freezeArray([]),
         branchProfile: view.branchProfile || null,
@@ -140,6 +182,10 @@ if (!globalThis[INSTALL_KEY]) {
       const view = runtimeState.visibleNode(state.campaign, node.id) || {};
       return deepFreeze({ ...node, branchProfile: view.branchProfile || null, phase: view.phase || null });
     });
+    const reopenableNodeIds = Object.values(state.campaign.closedBranchRecordsByNode || {})
+      .filter((entry) => entry.reopenable && state.campaign.closedNodeIds.includes(entry.nodeId) && !state.campaign.completedNodeIds.includes(entry.nodeId))
+      .map((entry) => entry.nodeId)
+      .sort();
     let actions = snapshot.actions;
     if (pending) actions = freezeArray(['DecideSecret']);
     else if (active) actions = freezeArray(['CompleteSecret']);
@@ -156,6 +202,8 @@ if (!globalThis[INSTALL_KEY]) {
         currentLevel: state.campaign.currentLevel,
         forcedMarch: state.campaign.forcedMarch,
         temporaryPenalties: state.campaign.temporaryPenalties,
+        reopenableNodeIds: freezeArray(reopenableNodeIds),
+        rareRoute: state.campaign.rareRoute,
         secret: pending ? deepFreeze({ status: 'pending', symbol: '?', type: null, risk: null, reward: null, enterCost: 1, canEnter: state.campaign.supplies >= 1 })
           : active ? deepFreeze({ status: 'active', symbol: '?', type: active.contentType, returnNodeId: active.returnNodeId })
             : deepFreeze({ status: state.campaign.secret.completed ? 'completed' : state.campaign.secret.declined ? 'declined' : 'none' }),
@@ -189,7 +237,7 @@ if (!globalThis[INSTALL_KEY]) {
     const returnedToMap = previousNodeId && !next.currentNode && ['campaign', 'act_outcome', 'complete'].includes(next.status);
     if (!returnedToMap || next.campaign.completedNodeIds.includes(previousNodeId)) return next;
     let campaign = runtimeState.completeNode(next.campaign, previousNodeId, { ...(dependencies.campaignMaterialization || {}), rewardClaimed: command.type !== 'ContinueRoyalRetreat' });
-    campaign = runtimeState.checkSecretAfterNode(campaign, previousNodeId);
+    if (command.type !== 'ContinueRoyalRetreat') campaign = runtimeState.checkSecretAfterNode(campaign, previousNodeId);
     return deepFreeze({ ...next, campaign });
   }
   presenter.dispatchPresenterCommand = function dispatchB9PresenterCommand(state, commandInput, dependencies = {}) {
@@ -205,6 +253,7 @@ if (!globalThis[INSTALL_KEY]) {
       nextState = result.state;
       saveEnvelope = result.saveEnvelope || null;
     }
+    nextState = applyRewardChoiceReduction(nextState);
     nextState = finalizeReturnedNode(state, nextState, dependencies, command);
     return Object.freeze({ state: nextState, snapshot: presenter.createPresenterSnapshot(nextState, dependencies), command, saveEnvelope });
   };
