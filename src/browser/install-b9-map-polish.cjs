@@ -119,6 +119,18 @@ if (!globalThis[INSTALL_KEY]) {
     return deepFreeze({ ...next, stageB });
   }
 
+  function compatibleServiceNodeResolver(nodeResolver) {
+    if (typeof nodeResolver !== 'function') return nodeResolver;
+    return (payload) => {
+      const node = payload?.node;
+      if (!node || !['hospital', 'forge', 'camp'].includes(node.type)) return nodeResolver(payload);
+      return nodeResolver({
+        ...payload,
+        node: deepFreeze({ ...node, type: 'service', specializedServiceType: node.type })
+      });
+    };
+  }
+
   function materializationDependencies(state, dependencies) {
     if (!runtimeState.isProductionState(state?.campaign)) return dependencies;
     const storyFacts = [...new Set([
@@ -127,6 +139,7 @@ if (!globalThis[INSTALL_KEY]) {
     ])].sort();
     return {
       ...dependencies,
+      nodeResolver: compatibleServiceNodeResolver(dependencies.nodeResolver),
       campaignMaterialization: {
         ...(dependencies.campaignMaterialization || {}),
         storyFacts: freezeArray(storyFacts)
