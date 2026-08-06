@@ -13,9 +13,10 @@ const {
 const {
   validateProductionEventLibrary,
   compileProductionEventPack,
-  compileProductionLocalization,
-  createProductionEventChoiceResolver
+  compileProductionLocalization
 } = require('../content/production-events.cjs');
+const { createCompatibleProductionEventChoiceResolver } = require('../content/production-event-runtime.cjs');
+const { bindRegister04EventArt } = require('../content/register-04-event-assets.cjs');
 const {
   validateScenarioTemplateSet,
   validateScenarioContentReferences
@@ -32,7 +33,7 @@ const scenarioTemplateSource = require('../../content/scenarios/iron_marches_ver
 
 function buildBrowserProductionBundle() {
   const productionEvents = validateProductionEventLibrary(productionEventSource);
-  const productionPack = compileProductionEventPack(productionPackSource, productionEvents);
+  const productionPack = bindRegister04EventArt(compileProductionEventPack(productionPackSource, productionEvents));
   const localization = Object.freeze({
     ru: Object.freeze({ ...localizationRu, ...compileProductionLocalization(productionEvents, 'ru') }),
     en: Object.freeze({ ...localizationEn, ...compileProductionLocalization(productionEvents, 'en') })
@@ -57,7 +58,7 @@ function buildBrowserProductionBundle() {
     productionEvents,
     combatProfiles,
     eventEffectCatalog,
-    eventChoiceResolver: createProductionEventChoiceResolver(productionEvents, catalogEventChoiceResolver),
+    eventChoiceResolver: createCompatibleProductionEventChoiceResolver(productionEvents, catalogEventChoiceResolver),
     scenarioTemplates,
     summary: registry.summary(),
     assetPaths: registry.assetPaths()
