@@ -3,3 +3,4 @@ REGISTER_04_EVENTS asset transfer
 resilient merged trigger
 diagnostic import run 3
 retry after Drive deduplication
+retry after permissions update
