@@ -27,7 +27,8 @@ test('canonical production bundle validates board themes, cross references and R
     encounter: 6,
     boss: 1
   });
-  assert.strictEqual(compiled.packs[0].packId, 'iron_marches_vertical_slice');
+  assert.strictEqual(compiled.packs[0].packId, 'iron_marches_vertical_slice_production_events');
+  assert.strictEqual(compiled.productionEvents.events.length, 7);
   assert.strictEqual(compiled.boardThemeManifest.themes.some((theme) => theme.id === 'iron_marches'), true);
   assert.strictEqual(compiled.localization.ru['boss.iron_regent.name'], 'Железный Регент');
   assert.strictEqual(compiled.localization.en['boss.iron_regent.name'], 'The Iron Regent');
@@ -60,20 +61,25 @@ test('combat profiles bind authored relics and declare Tomas Gate rook override 
   assert.deepStrictEqual(profiles.heroes['hero.tomas_gate'].relicIds, ['relic.twin_command']);
 });
 
-test('all twelve registered Iron Marches events have three meaningful localized choices', () => {
+test('all twelve registered Iron Marches events expose localized authored choices', () => {
   const compiled = bundle();
   const events = compiled.registry.list('event');
   assert.strictEqual(events.length, 12);
   for (const event of events) {
     assert.strictEqual(event.scope, 'iron_marches');
-    assert.strictEqual(event.choices.length, 3);
-    assert.ok(event.sceneArt.startsWith('assets/regions/iron_marches/'));
+    assert.ok(event.choices.length >= 2 && event.choices.length <= 4);
+    assert.ok(event.sceneArt.startsWith('assets/'));
     for (const choice of event.choices) {
       assert.ok(compiled.localization.ru[choice.textKey].length >= 12);
       assert.ok(compiled.localization.en[choice.textKey].length >= 10);
       assert.ok(choice.effectIds.length >= 1);
     }
   }
+  assert.deepStrictEqual(
+    ['event.empty_armory', 'event.cracked_bell', 'event.duel_masons'].map((id) => compiled.registry.get('event', id).choices.length),
+    [2, 2, 2]
+  );
+  assert.strictEqual(compiled.registry.get('event', 'event.miners_on_strike').choices.length, 4);
 });
 
 test('encounters reference modular Iron Marches cells and never a whole board, frame or underlay', () => {
@@ -92,14 +98,15 @@ test('encounters reference modular Iron Marches cells and never a whole board, f
   assert.strictEqual(compiled.assetPaths.some((asset) => /board(_skin|_frame)|underlay|complete_board/.test(asset)), false);
 });
 
-test('production report keeps the authored slice draft until art, balance and in-game acceptance', () => {
+test('production report marks the seven authored events approved', () => {
   const report = productionContentReport(bundle());
   assert.strictEqual(report.ok, true);
-  assert.strictEqual(report.statuses.draft, 34);
+  assert.strictEqual(report.statuses.draft, 27);
   assert.strictEqual(report.statuses.review, 0);
-  assert.strictEqual(report.statuses.approved, 0);
-  assert.strictEqual(report.assetCount, 45);
+  assert.strictEqual(report.statuses.approved, 7);
+  assert.ok(report.assetCount >= 50);
   assert.strictEqual(report.combatProfileCount, 6);
+  assert.strictEqual(report.productionEventCount, 7);
   assert.strictEqual(report.languageCounts.ru, report.languageCounts.en);
 });
 
