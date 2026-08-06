@@ -18,6 +18,7 @@ function callbackSelectorState(callback, payload, fallback) {
   return result?.selectorState ?? result ?? fallback;
 }
 function travelTo(state, targetNodeId, options = {}) {
+  const materializationOptions = { ...(state.materializationContext || {}), ...options };
   const requirement = travelRequirement(state, targetNodeId);
   const route = availableRoutes(state).find((entry) => entry.to === targetNodeId);
   let supplies = state.supplies; let gold = state.gold;
@@ -45,7 +46,7 @@ function travelTo(state, targetNodeId, options = {}) {
     graph: state.graph, state: state.selectorState, nodeIds: freezeArray(siblings),
     materializedContentByNode: state.materializedContentByNode
   }, state.selectorState);
-  const levelResult = materializeLevel(state.graph, targetNodeId, state.materializedContentByNode, { ...options, selectorState });
+  const levelResult = materializeLevel(state.graph, targetNodeId, state.materializedContentByNode, { ...materializationOptions, selectorState });
   selectorState = levelResult.selectorState;
   const revealedNodeIds = [...new Set([...state.revealedNodeIds, targetNodeId, ...levelResult.materializedNodeIds])].sort();
   const revealedLevelIds = [...new Set([...state.revealedLevelIds, state.graph.nodesById[targetNodeId].layer + 1].filter((layer) => layer <= 10))].sort((a, b) => a - b);
