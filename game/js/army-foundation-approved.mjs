@@ -1,6 +1,7 @@
 import { heroAssets } from './register-02-assets.mjs';
 
 const PIECE_GLYPHS = Object.freeze({ k: '♔', q: '♕', r: '♖', b: '♗', n: '♘', p: '♙' });
+const COMMAND_COSTS = Object.freeze({ k: 0, q: 5, r: 3, b: 2, n: 2, p: 1 });
 const LABEL_TO_TYPE = Object.freeze({ Король: 'k', Ферзь: 'q', Ладья: 'r', Слон: 'b', Конь: 'n', Пешка: 'p' });
 const FILE_TO_TYPE = Object.freeze({ king: 'k', queen: 'q', rook: 'r', bishop: 'b', knight: 'n', pawn: 'p' });
 const REGULAR_COPY = Object.freeze({
@@ -57,14 +58,15 @@ function rebuildCard(button, kind) {
   const glyph = PIECE_GLYPHS[type] || '?';
   const originalName = button.querySelector('h3')?.textContent?.trim() || 'Неизвестная фигура';
   const originalImage = button.querySelector('img')?.getAttribute('src') || 'generated_assets/unit_pawn_player.png';
-  const originalCost = Number(button.querySelector('p')?.textContent?.match(/\d+/)?.[0] || 0);
+  const listedCost = Number(button.querySelector('p')?.textContent?.match(/\d+/)?.[0] || 0);
+  const commandCost = kind === 'hero' ? (COMMAND_COSTS[type] ?? 1) : (listedCost || COMMAND_COSTS[type] || 1);
   const heroId = button.dataset.draftHero || null;
   const heroArt = heroId ? heroAssets(heroId)?.portrait : null;
   const regular = REGULAR_COPY[type] || REGULAR_COPY.p;
 
   button.classList.add('rpb-draft-card', `rpb-draft-card--${kind}`);
-  button.dataset.commandCost = String(originalCost);
-  button.setAttribute('aria-label', `${kind === 'hero' ? 'Именной герой' : 'Пополнение'}: ${kind === 'hero' ? originalName : regular.title}`);
+  button.dataset.commandCost = String(commandCost);
+  button.setAttribute('aria-label', `${kind === 'hero' ? 'Именной герой' : 'Пополнение'}: ${kind === 'hero' ? originalName : regular.title}. Командование ${commandCost}`);
   button.replaceChildren();
 
   const image = element(document, 'img', 'rpb-draft-card__art');
@@ -79,7 +81,7 @@ function rebuildCard(button, kind) {
 
   const description = kind === 'hero' ? (HERO_COPY[heroId] || TYPE_COPY[type]) : regular.description;
   body.append(element(document, 'span', 'rpb-draft-card__description', description));
-  if (kind === 'regular') body.append(element(document, 'span', 'rpb-draft-card__cost', `Командование ${originalCost}`));
+  body.append(element(document, 'span', 'rpb-draft-card__cost', `Командование ${commandCost}`));
   button.append(body);
   button.append(element(document, 'span', 'rpb-draft-card__glyph', glyph));
 }
@@ -100,10 +102,10 @@ function resourceChip(document, icon, label, value) {
 }
 
 function removeRelicResourceChips(root = document) {
-  const resources = root.querySelectorAll?.('.rpvs__resources .rpvs__chip') || [];
+  const resources = root.querySelectorAll?.('.rpvs__resources .rpvs__chip, .rpvs__resources .rp03-codex-launch, .rpvs__resources [data-rp03-codex-launch]') || [];
   for (const chip of resources) {
     const label = `${chip.getAttribute('aria-label') || ''} ${chip.textContent || ''}`.toLowerCase();
-    if (label.includes('реликв')) chip.remove();
+    if (label.includes('реликв') || chip.matches?.('[data-rp03-codex-launch]')) chip.remove();
   }
 }
 
@@ -154,10 +156,8 @@ function updateCommandCounter(stage) {
   const counter = stage.querySelector('[data-draft-command-counter]');
   if (!counter) return;
   const total = Math.max(1, Number(stage.dataset.commandLimit || 1));
-  const base = Math.max(0, Number(stage.dataset.commandBase || 0));
-  const selected = stage.querySelector('[data-draft-regular][aria-pressed="true"]');
-  const selectedCost = Math.max(0, Number(selected?.dataset.commandCost || 0));
-  const used = base + selectedCost;
+  const selected = [...stage.querySelectorAll('[data-draft-hero][aria-pressed="true"], [data-draft-regular][aria-pressed="true"]')];
+  const used = selected.reduce((sum, card) => sum + Math.max(0, Number(card.dataset.commandCost || 0)), 0);
   counter.textContent = `${used}/${total}`;
   counter.setAttribute('aria-label', `Использовано очков командования: ${used} из ${total}`);
   counter.classList.toggle('rpb-command-counter--over', used > total);
@@ -171,7 +171,6 @@ function prepareDraftHeader(stage) {
 
   const total = commandTotalFromBadge(stage);
   stage.dataset.commandLimit = String(total);
-  stage.dataset.commandBase = String(Math.max(0, total - 1));
 
   const headingRow = element(document, 'div', 'rpb-draft-heading-row');
   heading.before(headingRow);
@@ -227,6 +226,7 @@ if (typeof document !== 'undefined') installArmyFoundationApproved(document);
 
 export {
   PIECE_GLYPHS,
+  COMMAND_COSTS,
   REGULAR_COPY,
   roman,
   pieceType,
