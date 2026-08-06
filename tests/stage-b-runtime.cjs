@@ -2,7 +2,7 @@
 
 const assert = require('assert');
 const { MemoryKeyValueStorage } = require('../src/save/storage.cjs');
-const { createBrowserRunSelectionHost } = require('../src/browser/iron-marches-browser-host.cjs');
+const { createBrowserRunSelectionHost } = require('../src/browser/iron-marches-browser-host-b9.cjs');
 
 async function launchStageB(storage) {
   const host = createBrowserRunSelectionHost({
@@ -36,12 +36,17 @@ async function launchStageB(storage) {
   await runtime.dispatch({ type: 'ConfirmDraft' });
   snapshot = runtime.getSnapshot();
   assert.strictEqual(snapshot.status, 'campaign');
+  assert.strictEqual(snapshot.campaign.generatorVersion, 3);
+  assert.ok(snapshot.campaign.macroTemplateId);
+  assert.strictEqual(typeof snapshot.campaign.isMirrored, 'boolean');
   assert.ok(snapshot.campaign.nodes.length >= 18 && snapshot.campaign.nodes.length <= 24);
   assert.ok(snapshot.stageB.roster.length >= 6 && snapshot.stageB.roster.length <= 8);
   assert.strictEqual(snapshot.resources.supplies, 20);
+  assert.strictEqual(snapshot.campaign.nodes.filter((node) => node.visibility !== 'hidden' && node.visibility !== 'landmark').every((node) => node.layer <= 1), true);
 
   const route = snapshot.campaign.routes.find((entry) => entry.affordable && entry.type === 'battle');
   assert.ok(route);
+  assert.strictEqual(route.visibility, 'type');
   await runtime.dispatch({ type: 'ScoutNode', nodeId: route.to });
   snapshot = runtime.getSnapshot();
   const scouted = snapshot.campaign.routes.find((entry) => entry.to === route.to);
@@ -72,5 +77,5 @@ async function launchStageB(storage) {
   assert.strictEqual(resumedSelection.getSnapshot().status, 'ready');
   assert.strictEqual(resumedSelection.getRuntimeHost().resumed, true);
   assert.deepStrictEqual(resumedSelection.getRuntimeHost().getSnapshot(), snapshot);
-  console.log('Stage B runtime: draft, scouting, briefing, deployment and browser resume passed.');
+  console.log('Stage B runtime: B9 map, draft, scouting, briefing, deployment and browser resume passed.');
 })().catch((error) => { console.error(error.stack || error); process.exitCode = 1; });
