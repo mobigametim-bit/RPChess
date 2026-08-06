@@ -1,448 +1,82 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 3,
   "register": "REGISTER_04_EVENTS",
   "assetRoot": "game/assets/events/register-04",
-  "count": 20,
+  "count": 74,
   "assets": [
-    {
-      "id": "EVENT-034",
-      "slug": "ship_of_empty_names",
-      "region": "free_cities",
-      "path": "game/assets/events/register-04/ship_of_empty_names.png",
-      "source_drive_id": "1OC1EQXsTzvzWrH1qLT6yoSeXySbnJAs0",
-      "source_drive_name": "ship_of_empty_names.png",
-      "source_size": [
-        1672,
-        941
-      ],
-      "source_mode": "RGB",
-      "runtime_size": [
-        1600,
-        900
-      ],
-      "runtime_mode": "RGB",
-      "source_sha256": "abfbfbbc35d931075e2eebcc589f833ed30703ead014741b8043cac1b16e3afb",
-      "runtime_sha256": "9f05917dbb35ecf8db835207ff84e2dfb4eb53a85b877d91ecfa17e0293ebe72",
-      "bytes": 2066427,
-      "status": "IMPORTED"
-    },
-    {
-      "id": "EVENT-031",
-      "slug": "votes_at_midnight",
-      "region": "free_cities",
-      "path": "game/assets/events/register-04/votes_at_midnight.png",
-      "source_drive_id": "16jz1qmCOS1o390iP9iAfjpomBiYDB2X3",
-      "source_drive_name": "votes_at_midnight.png",
-      "source_size": [
-        1672,
-        941
-      ],
-      "source_mode": "RGB",
-      "runtime_size": [
-        1600,
-        900
-      ],
-      "runtime_mode": "RGB",
-      "source_sha256": "794ae24ed2265eb4b7b7c01750bb43bd3bd4a261efbe0de28eb8138b4836e80b",
-      "runtime_sha256": "267c27f00ca25b4de8eede87fdef98e60dabf9ede5d23213c5700673b33ad78d",
-      "bytes": 1969247,
-      "status": "IMPORTED"
-    },
-    {
-      "id": "EVENT-028",
-      "slug": "counterfeit_hero",
-      "region": "free_cities",
-      "path": "game/assets/events/register-04/counterfeit_hero.png",
-      "source_drive_id": "1eXTK8u8Dm3YJ0vedvKNh35PCPvQOX2ZU",
-      "source_drive_name": "counterfeit_hero.png",
-      "source_size": [
-        1672,
-        941
-      ],
-      "source_mode": "RGB",
-      "runtime_size": [
-        1600,
-        900
-      ],
-      "runtime_mode": "RGB",
-      "source_sha256": "c874c7a7e94bd67c1283b358b8cb10c52ce9df9a7219d7b0d11001f7fecc54f7",
-      "runtime_sha256": "ad8749c9e5d5bf808e68c1f3c52f23e18ac2f2cce412887928ce235e03403462",
-      "bytes": 2041912,
-      "status": "IMPORTED"
-    },
-    {
-      "id": "EVENT-027",
-      "slug": "contract_three_seals",
-      "region": "free_cities",
-      "path": "game/assets/events/register-04/contract_three_seals.png",
-      "source_drive_id": "1N3IJzCqSSTin1IgtcPHgW3JPNOzfkQ1C",
-      "source_drive_name": "contract_three_seals.png",
-      "source_size": [
-        1672,
-        941
-      ],
-      "source_mode": "RGB",
-      "runtime_size": [
-        1600,
-        900
-      ],
-      "runtime_mode": "RGB",
-      "source_sha256": "7c94e0ab539c2c551ea84d5a07110eb59bd75fbf8e57605edb7fdb8150a314ae",
-      "runtime_sha256": "3c21cbea160c0c675f7f79d24bfbb171552a69f6cd8a72a3fe77247dff8ac4cf",
-      "bytes": 2199234,
-      "status": "IMPORTED"
-    },
-    {
-      "id": "EVENT-024",
-      "slug": "last_honest_oracle",
-      "region": "luminous_synod",
-      "path": "game/assets/events/register-04/last_honest_oracle.png",
-      "source_drive_id": "1D012h1COkHfkcZnQFnXYQwZyVoe_CFCA",
-      "source_drive_name": "last_honest_oracle.png",
-      "source_size": [
-        1672,
-        941
-      ],
-      "source_mode": "RGB",
-      "runtime_size": [
-        1600,
-        900
-      ],
-      "runtime_mode": "RGB",
-      "source_sha256": "205b11027a81c52e8616e57fca956ad7b7065ce90fc49eb477033e0b0b5bfeaa",
-      "runtime_sha256": "57d51cb353e6711b5dcee892c4362b1ebcb00628ec84dd118533c5ff779616ce",
-      "bytes": 1900616,
-      "status": "IMPORTED"
-    },
-    {
-      "id": "EVENT-025",
-      "slug": "auction_of_a_crown",
-      "region": "free_cities",
-      "path": "game/assets/events/register-04/auction_of_a_crown.png",
-      "source_drive_id": "1I4MOpK3kIyt02THGzZQItfsddGOx1cEF",
-      "source_drive_name": "auction_of_a_crown.png",
-      "source_size": [
-        1672,
-        941
-      ],
-      "source_mode": "RGB",
-      "runtime_size": [
-        1600,
-        900
-      ],
-      "runtime_mode": "RGB",
-      "source_sha256": "9a17b9afa88cbc2202c1cdeaddbd92b3d53bbf415345175233ace26365537d5e",
-      "runtime_sha256": "a7b18f7d87d77f91136e5a4341e319fef992433c8070aca2179494b4fd00d46b",
-      "bytes": 2209048,
-      "status": "IMPORTED"
-    },
-    {
-      "id": "EVENT-022",
-      "slug": "unlit_altar",
-      "region": "luminous_synod",
-      "path": "game/assets/events/register-04/unlit_altar.png",
-      "source_drive_id": "1F50jL-fJdpeHHvM4yTW6GLXZq93fCniD",
-      "source_drive_name": "unlit_altar.png",
-      "source_size": [
-        1672,
-        941
-      ],
-      "source_mode": "RGB",
-      "runtime_size": [
-        1600,
-        900
-      ],
-      "runtime_mode": "RGB",
-      "source_sha256": "8fbe2ecabafd2edd3e9fd188c7303248cf14ea153571164886f60e47a3b9bffd",
-      "runtime_sha256": "0dde4c14ffbbbda4e605dfc8be082dc6efd1293e12ee3e4055187dbcbc58e811",
-      "bytes": 2070119,
-      "status": "IMPORTED"
-    },
-    {
-      "id": "EVENT-019",
-      "slug": "choirs_equation",
-      "region": "luminous_synod",
-      "path": "game/assets/events/register-04/choirs_equation.png",
-      "source_drive_id": "1s2A4-SRLm2Pnu6V_JC80OyHEAT61EiAb",
-      "source_drive_name": "choirs_equation.png",
-      "source_size": [
-        1672,
-        941
-      ],
-      "source_mode": "RGB",
-      "runtime_size": [
-        1600,
-        900
-      ],
-      "runtime_mode": "RGB",
-      "source_sha256": "7b7770e6aba91ce96b757f6fb25d3696cbe56a009d7e1ce211b1dab2e4fe8486",
-      "runtime_sha256": "3984b6e7f51c9edb487f4bcc26e6d2a146a5d0bcd384f56e5703c1fe00d9ce10",
-      "bytes": 2313587,
-      "status": "IMPORTED"
-    },
-    {
-      "id": "EVENT-018",
-      "slug": "broken_reliquary",
-      "region": "luminous_synod",
-      "path": "game/assets/events/register-04/broken_reliquary.png",
-      "source_drive_id": "1R5cLB8NkKejmQkzS2IiLbWi7_tUsOy1a",
-      "source_drive_name": "broken_reliquary.png",
-      "source_size": [
-        1672,
-        941
-      ],
-      "source_mode": "RGB",
-      "runtime_size": [
-        1600,
-        900
-      ],
-      "runtime_mode": "RGB",
-      "source_sha256": "a187398884a89a330b98b0b3ec5f334fc8a20461585c194cac50bca3e4d1aaa0",
-      "runtime_sha256": "650fe01b2a4f35881fd5010588a2a00466036df35f7b7f10cd713be3b910a2b3",
-      "bytes": 2181845,
-      "status": "IMPORTED"
-    },
-    {
-      "id": "EVENT-016",
-      "slug": "sleeping_observatory",
-      "region": "luminous_synod",
-      "path": "game/assets/events/register-04/sleeping_observatory.png",
-      "source_drive_id": "14ZV32HGA03FZNb0HbgF4FyBM3GJYub4o",
-      "source_drive_name": "sleeping_observatory.png",
-      "source_size": [
-        1672,
-        941
-      ],
-      "source_mode": "RGB",
-      "runtime_size": [
-        1600,
-        900
-      ],
-      "runtime_mode": "RGB",
-      "source_sha256": "4dafeb0da3b995628b5625221b4583f78997019c2a752461c05c5bc9c6549b6e",
-      "runtime_sha256": "2d0f6ee2cf32710578110f6aaba4bb0d24f465cd32ef7961290bac7d22c2be7c",
-      "bytes": 2045321,
-      "status": "IMPORTED"
-    },
-    {
-      "id": "EVENT-013",
-      "slug": "missing_star_chart",
-      "region": "luminous_synod",
-      "path": "game/assets/events/register-04/missing_star_chart.png",
-      "source_drive_id": "1ZjcatzAaV-wMnFeoX8hsDG9nv7P-9tci",
-      "source_drive_name": "missing_star_chart.png",
-      "source_size": [
-        1672,
-        941
-      ],
-      "source_mode": "RGB",
-      "runtime_size": [
-        1600,
-        900
-      ],
-      "runtime_mode": "RGB",
-      "source_sha256": "0d8ad09c02a3928caf9d2d56eafbdd53ef3048fa09db900bef567161275c14df",
-      "runtime_sha256": "bb69752eb03941f9ad919a9271f535dabacad946c779c95985d94e3f153aa12c",
-      "bytes": 2091407,
-      "status": "IMPORTED"
-    },
-    {
-      "id": "EVENT-014",
-      "slug": "trial_blue_glass",
-      "region": "luminous_synod",
-      "path": "game/assets/events/register-04/trial_blue_glass.png",
-      "source_drive_id": "1YZox2hqbQRXB9bPSVWNQus-UxhHM4yzc",
-      "source_drive_name": "trial_blue_glass.png",
-      "source_size": [
-        1672,
-        941
-      ],
-      "source_mode": "RGB",
-      "runtime_size": [
-        1600,
-        900
-      ],
-      "runtime_mode": "RGB",
-      "source_sha256": "a75617fcf9785d2f7410e0089224660521ba644b4079dfd089b0de72f4c49204",
-      "runtime_sha256": "6cc22ea7c484e8efca017277e85aa5f58d0deec9570c386261877ede00eeb92f",
-      "bytes": 2181646,
-      "status": "IMPORTED"
-    },
-    {
-      "id": "EVENT-015",
-      "slug": "heretics_margin",
-      "region": "luminous_synod",
-      "path": "game/assets/events/register-04/heretics_margin.png",
-      "source_drive_id": "1kJk6ArVNQbtyaisVDhx8INbRsOzeJOn-",
-      "source_drive_name": "heretics_margin.png",
-      "source_size": [
-        1672,
-        941
-      ],
-      "source_mode": "RGB",
-      "runtime_size": [
-        1600,
-        900
-      ],
-      "runtime_mode": "RGB",
-      "source_sha256": "36b3a390331cf2079fb6cb6eee06193a6b70b80fdcf6ee93ec1c59d8f6def771",
-      "runtime_sha256": "617302f20638766923f6cb5380c951b01d8ed3544f213e668e262d3be0d021a8",
-      "bytes": 2374431,
-      "status": "IMPORTED"
-    },
-    {
-      "id": "EVENT-012",
-      "slug": "disputed_standard",
-      "region": "iron_marches",
-      "path": "game/assets/events/register-04/disputed_standard.png",
-      "source_drive_id": "12TwwZ7sRp-XHHEhybNR2QX0bWx1a3y8N",
-      "source_drive_name": "disputed_standard.png",
-      "source_size": [
-        1672,
-        941
-      ],
-      "source_mode": "RGB",
-      "runtime_size": [
-        1600,
-        900
-      ],
-      "runtime_mode": "RGB",
-      "source_sha256": "079b6d4e923843e3d9d56ab0413e25c7a83c1a5247eb90c1898cb6c06075455d",
-      "runtime_sha256": "d3af2ea0ea9cebe7e6514ab48fcdd260db19f95e015ef80af4009ccc913eecaf",
-      "bytes": 2031453,
-      "status": "IMPORTED"
-    },
-    {
-      "id": "EVENT-010",
-      "slug": "furnace_oath",
-      "region": "iron_marches",
-      "path": "game/assets/events/register-04/furnace_oath.png",
-      "source_drive_id": "1R7GioaxbkKspS-ADpaDX_tN7N9prd1S0",
-      "source_drive_name": "furnace_oath.png",
-      "source_size": [
-        1672,
-        941
-      ],
-      "source_mode": "RGB",
-      "runtime_size": [
-        1600,
-        900
-      ],
-      "runtime_mode": "RGB",
-      "source_sha256": "36d3450416c4235104ac2aaec059605958031c0f66b68115b8babe9e9c529fe3",
-      "runtime_sha256": "8dcd1539e0e9243fe122e5c1e78ae03eca2e656ad5eaf96a6d50c1f71cdd9dc1",
-      "bytes": 1755471,
-      "status": "IMPORTED"
-    },
-    {
-      "id": "EVENT-009",
-      "slug": "duel_of_masons",
-      "region": "iron_marches",
-      "path": "game/assets/events/register-04/duel_of_masons.png",
-      "source_drive_id": "1nriSjc6sjUU8khhwFEK8yPijwuSL8L_s",
-      "source_drive_name": "duel_of_masons.png",
-      "source_size": [
-        1672,
-        941
-      ],
-      "source_mode": "RGB",
-      "runtime_size": [
-        1600,
-        900
-      ],
-      "runtime_mode": "RGB",
-      "source_sha256": "511ff4fda4b93167795bb709931808a7e372f56cd5793d9af5b4de30bad51f0d",
-      "runtime_sha256": "b831330fd0cd88c2464ce9b013d985d5b844904f795f4611c68c0d37bff6e5e9",
-      "bytes": 2209202,
-      "status": "IMPORTED"
-    },
-    {
-      "id": "EVENT-007",
-      "slug": "prisoners_of_the_pass",
-      "region": "iron_marches",
-      "path": "game/assets/events/register-04/prisoners_of_the_pass.png",
-      "source_drive_id": "1rqV5e4b_Q7yFv5ujHT4JhP7ELOIhtWGg",
-      "source_drive_name": "prisoners_of_the_pass.png",
-      "source_size": [
-        1672,
-        941
-      ],
-      "source_mode": "RGB",
-      "runtime_size": [
-        1600,
-        900
-      ],
-      "runtime_mode": "RGB",
-      "source_sha256": "c207900d9c93efb87689f158bcb8c279dc9f30e4e9caa5c7b47f4d27721c3b8a",
-      "runtime_sha256": "28136310d6bac46dcf7db4baf60e88778a0d160517a72835924b36d20cc7320c",
-      "bytes": 2080316,
-      "status": "IMPORTED"
-    },
-    {
-      "id": "EVENT-008",
-      "slug": "empty_armory",
-      "region": "iron_marches",
-      "path": "game/assets/events/register-04/empty_armory.png",
-      "source_drive_id": "192VcP1DQqKIWLOBpf4Y_oBr7L11YkGJd",
-      "source_drive_name": "empty_armory.png",
-      "source_size": [
-        1672,
-        941
-      ],
-      "source_mode": "RGB",
-      "runtime_size": [
-        1600,
-        900
-      ],
-      "runtime_mode": "RGB",
-      "source_sha256": "2da1412494c9a8c6180f6ff3abadc7f2d506c9a7421a0a45dba71c4a979f3517",
-      "runtime_sha256": "48363b33ac552c7fa3e7fd1aaa7d57dcf83c6b0a6740515325bd2f1db0cce92d",
-      "bytes": 2148938,
-      "status": "IMPORTED"
-    },
-    {
-      "id": "EVENT-005",
-      "slug": "cracked_bell",
-      "region": "iron_marches",
-      "path": "game/assets/events/register-04/cracked_bell.png",
-      "source_drive_id": "1WfeI4p1Fvhdr_2yN0VcDP_YT9GhRc6II",
-      "source_drive_name": "cracked_bell.png",
-      "source_size": [
-        1672,
-        941
-      ],
-      "source_mode": "RGB",
-      "runtime_size": [
-        1600,
-        900
-      ],
-      "runtime_mode": "RGB",
-      "source_sha256": "0b1a3c0a9948b15470cfc5c3c3feadb84f9a031af42d6831862e2ffa987a654e",
-      "runtime_sha256": "cb6ae36f70ef66aa1070092141f695301f6e2b6ab4b30d1fdf5f04ce3c283dfc",
-      "bytes": 2133120,
-      "status": "IMPORTED"
-    },
-    {
-      "id": "EVENT-003",
-      "slug": "miners_on_strike",
-      "region": "iron_marches",
-      "path": "game/assets/events/register-04/miners_on_strike.png",
-      "source_drive_id": "1tR_kgsGEBgz8CvSB-hK_LhhwOBnqwBld",
-      "source_drive_name": "miners_on_strike.png",
-      "source_size": [
-        1672,
-        941
-      ],
-      "source_mode": "RGB",
-      "runtime_size": [
-        1600,
-        900
-      ],
-      "runtime_mode": "RGB",
-      "source_sha256": "b7b396a8639820db17a2acd414f6cc54018e1d02b7f213ccee0db63658380fd0",
-      "runtime_sha256": "9c03d9dbac0c32dc565da5f91337573d0745f78f96560d0ef14f3fecd1ecf147",
-      "bytes": 2231517,
-      "status": "IMPORTED"
-    }
+    {"id":"EVENT-003","slug":"miners_on_strike","region":"iron_marches","path":"game/assets/events/register-04/miners_on_strike.png","status":"IMPORTED"},
+    {"id":"EVENT-005","slug":"cracked_bell","region":"iron_marches","path":"game/assets/events/register-04/cracked_bell.png","status":"IMPORTED"},
+    {"id":"EVENT-007","slug":"prisoners_of_the_pass","region":"iron_marches","path":"game/assets/events/register-04/prisoners_of_the_pass.png","status":"IMPORTED"},
+    {"id":"EVENT-008","slug":"empty_armory","region":"iron_marches","path":"game/assets/events/register-04/empty_armory.png","status":"IMPORTED"},
+    {"id":"EVENT-009","slug":"duel_of_masons","region":"iron_marches","path":"game/assets/events/register-04/duel_of_masons.png","status":"IMPORTED"},
+    {"id":"EVENT-010","slug":"furnace_oath","region":"iron_marches","path":"game/assets/events/register-04/furnace_oath.png","status":"IMPORTED"},
+    {"id":"EVENT-012","slug":"disputed_standard","region":"iron_marches","path":"game/assets/events/register-04/disputed_standard.png","status":"IMPORTED"},
+    {"id":"EVENT-013","slug":"missing_star_chart","region":"luminous_synod","path":"game/assets/events/register-04/missing_star_chart.png","status":"IMPORTED"},
+    {"id":"EVENT-014","slug":"trial_blue_glass","region":"luminous_synod","path":"game/assets/events/register-04/trial_blue_glass.png","status":"IMPORTED"},
+    {"id":"EVENT-015","slug":"heretics_margin","region":"luminous_synod","path":"game/assets/events/register-04/heretics_margin.png","status":"IMPORTED"},
+    {"id":"EVENT-016","slug":"sleeping_observatory","region":"luminous_synod","path":"game/assets/events/register-04/sleeping_observatory.png","status":"IMPORTED"},
+    {"id":"EVENT-018","slug":"broken_reliquary","region":"luminous_synod","path":"game/assets/events/register-04/broken_reliquary.png","status":"IMPORTED"},
+    {"id":"EVENT-019","slug":"choirs_equation","region":"luminous_synod","path":"game/assets/events/register-04/choirs_equation.png","status":"IMPORTED"},
+    {"id":"EVENT-022","slug":"unlit_altar","region":"luminous_synod","path":"game/assets/events/register-04/unlit_altar.png","status":"IMPORTED"},
+    {"id":"EVENT-024","slug":"last_honest_oracle","region":"luminous_synod","path":"game/assets/events/register-04/last_honest_oracle.png","status":"IMPORTED"},
+    {"id":"EVENT-025","slug":"auction_of_a_crown","region":"free_cities","path":"game/assets/events/register-04/auction_of_a_crown.png","status":"IMPORTED"},
+    {"id":"EVENT-027","slug":"contract_three_seals","region":"free_cities","path":"game/assets/events/register-04/contract_three_seals.png","status":"IMPORTED"},
+    {"id":"EVENT-028","slug":"counterfeit_hero","region":"free_cities","path":"game/assets/events/register-04/counterfeit_hero.png","status":"IMPORTED"},
+    {"id":"EVENT-031","slug":"votes_at_midnight","region":"free_cities","path":"game/assets/events/register-04/votes_at_midnight.png","status":"IMPORTED"},
+    {"id":"EVENT-034","slug":"ship_of_empty_names","region":"free_cities","path":"game/assets/events/register-04/ship_of_empty_names.png","status":"IMPORTED"},
+    {"id":"EVENT-037","slug":"tree_that_remembers","region":"thorn_covenant","path":"game/assets/events/register-04/thorn_covenant/tree_that_remembers.png","status":"IMPORTED"},
+    {"id":"EVENT-038","slug":"knight_between_gates","region":"thorn_covenant","path":"game/assets/events/register-04/thorn_covenant/knight_between_gates.png","status":"IMPORTED"},
+    {"id":"EVENT-039","slug":"thorn_wedding","region":"thorn_covenant","path":"game/assets/events/register-04/thorn_covenant/thorn_wedding.png","status":"IMPORTED"},
+    {"id":"EVENT-045","slug":"moss_tribunal","region":"thorn_covenant","path":"game/assets/events/register-04/thorn_covenant/moss_tribunal.png","status":"IMPORTED"},
+    {"id":"EVENT-048","slug":"seed_dead_king","region":"thorn_covenant","path":"game/assets/events/register-04/thorn_covenant/seed_dead_king.png","status":"IMPORTED"},
+    {"id":"EVENT-052","slug":"emperors_empty_urn","region":"ashen_dominion","path":"game/assets/events/register-04/ashen_dominion/emperors_empty_urn.png","status":"IMPORTED"},
+    {"id":"EVENT-055","slug":"general_refuses_death","region":"ashen_dominion","path":"game/assets/events/register-04/ashen_dominion/general_refuses_death.png","status":"IMPORTED"},
+    {"id":"EVENT-056","slug":"red_succession","region":"ashen_dominion","path":"game/assets/events/register-04/ashen_dominion/red_succession.png","status":"IMPORTED"},
+    {"id":"EVENT-057","slug":"unburned_letter","region":"ashen_dominion","path":"game/assets/events/register-04/ashen_dominion/unburned_letter.png","status":"IMPORTED"},
+    {"id":"EVENT-061","slug":"fallen_sky_banner","region":"sky_khanate","path":"game/assets/events/register-04/sky_khanate/fallen_sky_banner.png","status":"IMPORTED"},
+    {"id":"EVENT-062","slug":"horse_without_rider","region":"sky_khanate","path":"game/assets/events/register-04/sky_khanate/horse_without_rider.png","status":"IMPORTED"},
+    {"id":"EVENT-063","slug":"cliff_parliament","region":"sky_khanate","path":"game/assets/events/register-04/sky_khanate/cliff_parliament.png","status":"IMPORTED"},
+    {"id":"EVENT-064","slug":"storm_over_caravan","region":"sky_khanate","path":"game/assets/events/register-04/sky_khanate/storm_over_caravan.png","status":"IMPORTED"},
+    {"id":"EVENT-073","slug":"abandoned_chess_hall","region":"generic","path":"game/assets/events/register-04/generic/abandoned_chess_hall.png","status":"IMPORTED"},
+    {"id":"EVENT-074","slug":"three_roads_at_dawn","region":"generic","path":"game/assets/events/register-04/generic/three_roads_at_dawn.png","status":"IMPORTED"},
+    {"id":"EVENT-075","slug":"veterans_map","region":"generic","path":"game/assets/events/register-04/generic/veterans_map.png","status":"IMPORTED"},
+    {"id":"EVENT-076","slug":"shrine_to_no_king","region":"generic","path":"game/assets/events/register-04/generic/shrine_to_no_king.png","status":"IMPORTED"},
+    {"id":"EVENT-077","slug":"hungry_company","region":"generic","path":"game/assets/events/register-04/generic/hungry_company.png","status":"IMPORTED"},
+    {"id":"EVENT-078","slug":"honest_bandit","region":"generic","path":"game/assets/events/register-04/generic/honest_bandit.png","status":"IMPORTED"},
+    {"id":"EVENT-079","slug":"village_under_check","region":"generic","path":"game/assets/events/register-04/generic/village_under_check.png","status":"IMPORTED"},
+    {"id":"EVENT-088","slug":"refugee_council","region":"generic","path":"game/assets/events/register-04/generic/refugee_council.png","status":"IMPORTED"},
+    {"id":"EVENT-089","slug":"broken_crownsmith","region":"generic","path":"game/assets/events/register-04/generic/broken_crownsmith.png","status":"IMPORTED"},
+    {"id":"EVENT-093","slug":"council_six_empty_chairs","region":"political","path":"game/assets/events/register-04/political/council_six_empty_chairs.png","status":"IMPORTED"},
+    {"id":"EVENT-095","slug":"treaty_written_in_ash","region":"political","path":"game/assets/events/register-04/political/treaty_written_in_ash.png","status":"IMPORTED"},
+    {"id":"EVENT-096","slug":"hostage_exchange","region":"political","path":"game/assets/events/register-04/political/hostage_exchange.png","status":"IMPORTED"},
+    {"id":"EVENT-103","slug":"trial_of_treason","region":"political","path":"game/assets/events/register-04/political/trial_of_treason.png","status":"IMPORTED"},
+    {"id":"EVENT-106","slug":"city_requests_protection","region":"political","path":"game/assets/events/register-04/political/city_requests_protection.png","status":"IMPORTED"},
+    {"id":"EVENT-107","slug":"price_of_recognition","region":"political","path":"game/assets/events/register-04/political/price_of_recognition.png","status":"IMPORTED"},
+    {"id":"EVENT-108","slug":"crown_in_escrow","region":"political","path":"game/assets/events/register-04/political/crown_in_escrow.png","status":"IMPORTED"},
+    {"id":"EVENT-109","slug":"neutral_ambassador","region":"political","path":"game/assets/events/register-04/political/neutral_ambassador.png","status":"IMPORTED"},
+    {"id":"EVENT-110","slug":"funeral_without_body","region":"political","path":"game/assets/events/register-04/political/funeral_without_body.png","status":"IMPORTED"},
+    {"id":"EVENT-111","slug":"rebels_amnesty","region":"political","path":"game/assets/events/register-04/political/rebels_amnesty.png","status":"IMPORTED"},
+    {"id":"EVENT-113","slug":"failed_assassination","region":"political","path":"game/assets/events/register-04/political/failed_assassination.png","status":"IMPORTED"},
+    {"id":"EVENT-115","slug":"divided_army","region":"political","path":"game/assets/events/register-04/political/divided_army.png","status":"IMPORTED"},
+    {"id":"EVENT-116","slug":"peoples_petition","region":"political","path":"game/assets/events/register-04/political/peoples_petition.png","status":"IMPORTED"},
+    {"id":"EVENT-122","slug":"banner_of_surrender","region":"political","path":"game/assets/events/register-04/political/banner_of_surrender.png","status":"IMPORTED"},
+    {"id":"EVENT-123","slug":"aldrics_unfinished_wall","region":"heroes","path":"game/assets/events/register-04/heroes/aldrics_unfinished_wall.png","status":"IMPORTED"},
+    {"id":"EVENT-124","slug":"lyras_forbidden_hymn","region":"heroes","path":"game/assets/events/register-04/heroes/lyras_forbidden_hymn.png","status":"IMPORTED"},
+    {"id":"EVENT-125","slug":"viola_removes_the_mask","region":"heroes","path":"game/assets/events/register-04/heroes/viola_removes_the_mask.png","status":"IMPORTED"},
+    {"id":"EVENT-126","slug":"roan_returns_to_the_grove","region":"heroes","path":"game/assets/events/register-04/heroes/roan_returns_to_the_grove.png","status":"IMPORTED"},
+    {"id":"EVENT-127","slug":"nahlas_private_debt","region":"heroes","path":"game/assets/events/register-04/heroes/nahlas_private_debt.png","status":"IMPORTED"},
+    {"id":"EVENT-128","slug":"temurs_last_race","region":"heroes","path":"game/assets/events/register-04/heroes/temurs_last_race.png","status":"IMPORTED"},
+    {"id":"EVENT-129","slug":"mara_names_the_dead","region":"heroes","path":"game/assets/events/register-04/heroes/mara_names_the_dead.png","status":"IMPORTED"},
+    {"id":"EVENT-130","slug":"ivar_breaks_the_lens","region":"heroes","path":"game/assets/events/register-04/heroes/ivar_breaks_the_lens.png","status":"IMPORTED"},
+    {"id":"EVENT-131","slug":"tessas_smuggled_passenger","region":"heroes","path":"game/assets/events/register-04/heroes/tessas_smuggled_passenger.png","status":"IMPORTED"},
+    {"id":"EVENT-132","slug":"velka_opens_the_urn","region":"heroes","path":"game/assets/events/register-04/heroes/velka_opens_the_urn.png","status":"IMPORTED"},
+    {"id":"EVENT-133","slug":"mirror_speaks_first","region":"secret","path":"game/assets/events/register-04/secret/mirror_speaks_first.png","status":"IMPORTED"},
+    {"id":"EVENT-134","slug":"board_beyond_board","region":"secret","path":"game/assets/events/register-04/secret/board_beyond_board.png","status":"IMPORTED"},
+    {"id":"EVENT-135","slug":"seventh_throne","region":"secret","path":"game/assets/events/register-04/secret/seventh_throne.png","status":"IMPORTED"},
+    {"id":"EVENT-136","slug":"hollow_choir_rehearses","region":"secret","path":"game/assets/events/register-04/secret/hollow_choir_rehearses.png","status":"IMPORTED"},
+    {"id":"EVENT-137","slug":"move_never_happened","region":"secret","path":"game/assets/events/register-04/secret/move_never_happened.png","status":"IMPORTED"},
+    {"id":"EVENT-138","slug":"pawn_with_your_face","region":"secret","path":"game/assets/events/register-04/secret/pawn_with_your_face.png","status":"IMPORTED"},
+    {"id":"EVENT-139","slug":"door_behind_victory","region":"secret","path":"game/assets/events/register-04/secret/door_behind_victory.png","status":"IMPORTED"},
+    {"id":"EVENT-140","slug":"worlds_missing_square","region":"secret","path":"game/assets/events/register-04/secret/worlds_missing_square.png","status":"IMPORTED"}
   ]
 }
