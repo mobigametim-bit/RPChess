@@ -8,6 +8,10 @@ const {
   resolveProductionEventChoice,
   selectProductionParticipant
 } = require('../src/content/production-events.cjs');
+const {
+  assertProductionEventPolicy,
+  productionEventPolicyReport
+} = require('../src/content/production-event-policy.cjs');
 const { buildProductionContentBundle } = require('../src/content/production-bundle.cjs');
 const { buildBrowserProductionBundle } = require('../src/browser/production-content-browser.cjs');
 const {
@@ -26,6 +30,17 @@ const {
 const projectRoot = path.resolve(__dirname, '..');
 const library = loadProductionEventLibrary(path.join(projectRoot, 'content/events/iron_marches_production.json'));
 
+assert.strictEqual(assertProductionEventPolicy(library), library);
+const policyReport = productionEventPolicyReport(library);
+assert.deepStrictEqual(policyReport, {
+  ok: true,
+  eventCount: 7,
+  combatChoices: 3,
+  probabilisticChoices: 9,
+  permanentChoices: 0,
+  chainCount: 2,
+  metaPersistence: false
+});
 assert.strictEqual(library.events.length, 7);
 assert.strictEqual(library.metaPersistence, false);
 assert.deepStrictEqual(
@@ -35,6 +50,7 @@ assert.deepStrictEqual(
 
 const bundle = buildProductionContentBundle({ projectRoot });
 assert.strictEqual(bundle.productionEvents.events.length, 7);
+assert.deepStrictEqual(bundle.eventPolicyReport, policyReport);
 assert.strictEqual(bundle.registry.get('event', 'event.empty_armory').choices.length, 2);
 assert.strictEqual(bundle.registry.get('event', 'event.cracked_bell').choices.length, 2);
 assert.strictEqual(bundle.registry.get('event', 'event.duel_masons').choices.length, 2);
@@ -49,6 +65,7 @@ assert.strictEqual(bundle.registry.get('event', 'event.empty_armory').sceneArt, 
 
 const browserBundle = buildBrowserProductionBundle();
 assert.strictEqual(browserBundle.registry.list('event').length, 7);
+assert.deepStrictEqual(browserBundle.eventPolicyReport, policyReport);
 assert.deepStrictEqual(
   browserBundle.registry.list('event').map((event) => event.id).sort(),
   library.events.map((event) => event.id).sort()
@@ -210,4 +227,4 @@ const resolvedCompatibility = bundle.eventChoiceResolver({
 assert.strictEqual(Number.isInteger(resolvedCompatibility.resourceDelta.supplies), true);
 assert.strictEqual(resolvedCompatibility.chronicleKeys.length > 0, true);
 
-console.log('Iron Marches production events: seven authored events, weighted selector, chains, deterministic checks, sessions and combat hooks passed.');
+console.log('Iron Marches production events: policy, seven authored events, weighted selector, chains, deterministic checks, sessions and combat hooks passed.');
