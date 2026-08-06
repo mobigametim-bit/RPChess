@@ -6,7 +6,7 @@ const { PRODUCTION_CAMPAIGN_SCHEMA_VERSION } = require('./production-map-state-b
 
 function migrateProductionCampaignState(snapshot) {
   if (!snapshot || snapshot.format !== 'rpchess-campaign-state') throw new Error('invalid campaign state');
-  if (snapshot.schemaVersion === PRODUCTION_CAMPAIGN_SCHEMA_VERSION && snapshot.generatorVersion === 3) return snapshot;
+  if (snapshot.schemaVersion === PRODUCTION_CAMPAIGN_SCHEMA_VERSION && snapshot.generatorVersion === 3) return deepFreeze(snapshot);
   const graph = snapshot.graph;
   const materializedContentByNode = { ...(snapshot.materializedContentByNode || {}) };
   for (const node of graph?.nodes || []) {
