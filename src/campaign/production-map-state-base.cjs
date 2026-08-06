@@ -18,16 +18,17 @@ function visibleNode(state, nodeId) {
   if (!node) return null;
   const materialized = state.materializedContentByNode[nodeId] || null;
   const revealed = state.revealedNodeIds.includes(nodeId) || state.visitedNodeIds.includes(nodeId);
-  if (!revealed) return deepFreeze({ id: nodeId, visibility: 'hidden' });
-  const currentOrAdjacent = nodeId === state.currentNodeId || routeRecords(state).some(({ node: target }) => target.id === nodeId);
   const landmark = ['elite', 'boss'].includes(node.type);
+  if (!revealed && !landmark) return deepFreeze({ id: nodeId, visibility: 'hidden' });
+  const currentOrAdjacent = nodeId === state.currentNodeId || routeRecords(state).some(({ node: target }) => target.id === nodeId);
+  const details = materialized?.details || null;
   return deepFreeze({
     id: node.id, layer: node.layer,
     visibility: currentOrAdjacent || state.visitedNodeIds.includes(nodeId) ? 'available' : landmark ? 'landmark' : 'history',
-    type: node.type, phase: node.phase, danger: node.danger,
-    branchLength: Math.max(0, state.graph.nodesById[node.emergencyTo]?.layer - node.layer || 0),
-    branchProfile: node.branchProfile, convergence: node.convergence, mandatory: node.mandatory,
-    contentId: materialized?.contentId || null, materialized: Boolean(materialized), details: materialized?.details || null,
+    type: revealed || landmark ? node.type : null, phase: revealed ? node.phase : null, danger: revealed ? node.danger : null,
+    branchLength: revealed ? Math.max(0, state.graph.nodesById[node.emergencyTo]?.layer - node.layer || 0) : null,
+    branchProfile: revealed ? node.branchProfile : null, convergence: node.convergence, mandatory: node.mandatory,
+    contentId: revealed ? materialized?.contentId || null : null, materialized: Boolean(materialized), details, intel: details,
     scouted: state.scoutedNodeIds.includes(nodeId)
   });
 }
@@ -38,7 +39,7 @@ function createProductionCampaignState(graph, options = {}) {
     format: 'rpchess-campaign-state', schemaVersion: PRODUCTION_CAMPAIGN_SCHEMA_VERSION,
     generatorVersion: graph.generatorVersion, rootSeed: graph.rootSeed, attemptIndex: graph.attemptIndex,
     macroTemplateId: graph.macroTemplateId, isMirrored: graph.isMirrored,
-    graph, currentNodeId: graph.startNodeId, currentLevel: 0,
+    graph, currentNodeId: graph.startNodeId, currentLevel: 0, status: 'active', minimumPathCost: 10, scouting: 0,
     supplies: Number.isInteger(options.supplies) ? options.supplies : 10,
     gold: Number.isInteger(options.gold) ? options.gold : 0,
     revealedLevelIds: freezeArray([0, 1]), revealedNodeIds: freezeArray([graph.startNodeId, ...initial.materializedNodeIds]),
@@ -54,7 +55,7 @@ function createProductionCampaignState(graph, options = {}) {
   });
 }
 function availableRoutes(state) {
-  if (state.secret.active) return freezeArray([]);
+  if (state.status !== 'active' || state.secret.active || state.secret.pendingDecision) return freezeArray([]);
   return freezeArray(routeRecords(state).map(({ edge, node }) => deepFreeze({
     edgeId: edge.id, from: edge.from, to: edge.to, cost: 1,
     affordable: state.supplies >= 1, requiresForcedMarch: state.supplies === 0,
