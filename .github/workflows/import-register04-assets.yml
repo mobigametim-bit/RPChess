@@ -1,5 +1,6 @@
 name: Import Register 04 remaining assets
 
+# Dedicated one-time branch execution.
 on:
   push:
     branches:
