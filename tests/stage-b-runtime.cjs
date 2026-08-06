@@ -39,10 +39,13 @@ async function launchStageB(storage) {
   assert.strictEqual(snapshot.campaign.generatorVersion, 3);
   assert.ok(snapshot.campaign.macroTemplateId);
   assert.strictEqual(typeof snapshot.campaign.isMirrored, 'boolean');
-  assert.ok(snapshot.campaign.nodes.length >= 18 && snapshot.campaign.nodes.length <= 24);
+  assert.ok(runtime.getState().campaign.graph.nodes.length >= 18 && runtime.getState().campaign.graph.nodes.length <= 24);
   assert.ok(snapshot.stageB.roster.length >= 6 && snapshot.stageB.roster.length <= 8);
   assert.strictEqual(snapshot.resources.supplies, 20);
-  assert.strictEqual(snapshot.campaign.nodes.filter((node) => node.visibility !== 'hidden' && node.visibility !== 'landmark').every((node) => node.layer <= 1), true);
+  assert.strictEqual(snapshot.campaign.nodes.some((node) => node.visibility === 'hidden'), false);
+  assert.strictEqual(snapshot.campaign.nodes.filter((node) => node.visibility !== 'landmark').every((node) => node.layer <= 1), true);
+  assert.strictEqual(snapshot.campaign.nodes.filter((node) => node.visibility === 'landmark').every((node) => ['elite', 'boss'].includes(node.type)), true);
+  assert.ok(snapshot.campaign.nodes.length < runtime.getState().campaign.graph.nodes.length, 'presenter must hide unopened topology');
 
   const route = snapshot.campaign.routes.find((entry) => entry.affordable && entry.type === 'battle');
   assert.ok(route);
@@ -77,5 +80,5 @@ async function launchStageB(storage) {
   assert.strictEqual(resumedSelection.getSnapshot().status, 'ready');
   assert.strictEqual(resumedSelection.getRuntimeHost().resumed, true);
   assert.deepStrictEqual(resumedSelection.getRuntimeHost().getSnapshot(), snapshot);
-  console.log('Stage B runtime: B9 map, draft, scouting, briefing, deployment and browser resume passed.');
+  console.log('Stage B runtime: B9 map visibility, draft, scouting, briefing, deployment and browser resume passed.');
 })().catch((error) => { console.error(error.stack || error); process.exitCode = 1; });
