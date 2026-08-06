@@ -54,7 +54,7 @@ function royalRetreatToConvergence(state, lostNodeId, options = {}) {
   const destinationId = node.emergencyTo || state.graph.bossNodeId;
   const destination = state.graph.nodesById[destinationId];
   if (!destination || destination.layer <= node.layer) throw new Error('royal retreat has no valid forward convergence');
-  const levelResult = materializeLevel(state.graph, destinationId, state.materializedContentByNode, { ...options, selectorState: state.selectorState });
+  const levelResult = materializeLevel(state.graph, destinationId, state.materializedContentByNode, { ...(state.materializationContext || {}), ...options, selectorState: state.selectorState });
   const revealedNodeIds = [...new Set([...state.revealedNodeIds, destinationId, ...levelResult.materializedNodeIds])].sort();
   const revealedLevelIds = [...new Set([...state.revealedLevelIds, destination.layer, destination.layer + 1].filter((layer) => layer <= 10))].sort((a, b) => a - b);
   return deepFreeze({
