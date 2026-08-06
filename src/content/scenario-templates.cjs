@@ -127,7 +127,11 @@ function createBattleFromTemplate(template, options = {}) {
     identityMetadata: template.battle.identityMetadata,
     orderPoints: template.battle.orderPoints || undefined,
     reserve: template.battle.reserve,
-    reserveCells: template.battle.reserveCells || undefined
+    reserveCells: template.battle.reserveCells || undefined,
+    requiredPieceIds: Object.freeze([...new Set([
+      ...(template.objectives || []).flatMap((objective) => [objective.pieceId, ...(objective.targetPieceIds || []), ...(objective.protectedPieceIds || [])]),
+      ...(template.failures || []).flatMap((failure) => failure.targetPieceIds || [])
+    ].filter(Boolean))])
   });
   const projected = typeof options.battleProjector === 'function'
     ? options.battleProjector(creationOptions)

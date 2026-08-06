@@ -129,11 +129,16 @@ function injectPanel(sidebar, markup) {
   sidebar.querySelector('[data-rp02-hero-panel]')?.remove();
   const host = sidebar.ownerDocument.createElement('div');
   host.dataset.rp02HeroPanel = '';
-  host.className = 'rpvs__panel-body';
+  host.className = 'rp02-hero-panel-host';
   host.innerHTML = markup;
-  const head = sidebar.querySelector('.rpvs__panel-head');
-  if (head) head.insertAdjacentElement('afterend', host);
-  else sidebar.prepend(host);
+  const scroll = sidebar.querySelector('.rpvs__battle-sidebar-scroll');
+  if (scroll) scroll.prepend(host);
+  else {
+    host.classList.add('rpvs__panel-body');
+    const head = sidebar.querySelector('.rpvs__panel-head');
+    if (head) head.insertAdjacentElement('afterend', host);
+    else sidebar.prepend(host);
+  }
   return host;
 }
 

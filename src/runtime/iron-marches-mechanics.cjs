@@ -162,8 +162,8 @@ function uniqueByInstance(records) {
   });
 }
 
-function projectIronMarchesBattleOptions(options, army) {
-  const projected = projectArmyBattleOptions(options, army);
+function projectIronMarchesBattleOptions(options, army, stageB = null) {
+  const projected = projectArmyBattleOptions(options, army, stageB);
   const statuses = statusEntries(projected.statuses);
   const abilities = existingAbilityParts(projected.abilities);
   for (const record of allHeroRecords(projected)) mechanicsForRecord(record, abilities, statuses, projected);

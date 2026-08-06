@@ -12,6 +12,7 @@ import {
   effectForBattleEvent
 } from './register-01-assets.mjs';
 import { nodeArt, sceneArt as approvedSceneArt, unitArt, humanFailure, humanObjective } from './approved-shell-data.mjs';
+import { register04EventAsset } from './register-04-event-assets.mjs';
 
 const PIECE_GLYPHS = Object.freeze({
   w: Object.freeze({ k: '♔', q: '♕', r: '♖', b: '♗', n: '♘', p: '♙' }),
@@ -19,7 +20,7 @@ const PIECE_GLYPHS = Object.freeze({
 });
 
 const NODE_GLYPHS = Object.freeze({
-  start: '⌂', battle: '⚔', elite: '♛', event: '✦', shop: '¤', service: '⚒', treasure: '◆', boss: '♚'
+  start: '⌂', battle: '⚔', elite: '♛', event: '✦', shop: '¤', service: '⚒', hospital: '✚', forge: '⚒', camp: '♨', recovery: '✚', treasure: '◆', boss: '♚'
 });
 
 const ENVIRONMENT_GLYPHS = Object.freeze({
@@ -46,7 +47,7 @@ function pieceGlyph(piece) {
 
 
 const NODE_TYPE_LABELS = Object.freeze({
-  start: 'Начало пути', battle: 'Сражение', elite: 'Элитный бой', event: 'Событие', shop: 'Лавка', service: 'Служба снабжения', treasure: 'Сокровищница', boss: 'Железный Регент'
+  start: 'Начало пути', battle: 'Сражение', elite: 'Элитный бой', event: 'Событие', shop: 'Лавка', service: 'Служба снабжения', hospital: 'Полевой госпиталь', forge: 'Кузница', camp: 'Лагерь', recovery: 'Передышка', treasure: 'Сокровищница', boss: 'Железный Регент'
 });
 
 function nodeDisplayLabel(node = {}) {
@@ -189,6 +190,34 @@ function createPresenterStyles() {
   `;
 }
 
+
+const ROSTER_TYPE_LABELS = Object.freeze({ k: 'Король', q: 'Ферзь', r: 'Ладья', b: 'Слон', n: 'Конь', p: 'Пешка' });
+const SERVICE_LABELS = Object.freeze({ shop: 'Походная лавка', hospital: 'Полевой госпиталь', forge: 'Кузница реликвий', camp: 'Военный лагерь' });
+const REWARD_IMAGES = Object.freeze({ relic: 'artifact', recruit: 'recruit', supplies: 'heal', gold: 'gold', heal: 'heal', temporary: 'upgrade', scouting: 'experience', risky_event: 'meta' });
+
+function rosterImage(entry) {
+  if (!entry) return 'generated_assets/unit_pawn_player.png';
+  return unitArt({ side: 'w', type: entry.type || 'p' });
+}
+function rosterStateLabel(entry) {
+  if (entry.injury === 'heavy') return 'Тяжёлое ранение';
+  if (entry.injury === 'light') return `Лёгкое ранение${entry.skipBattles ? ` · пропуск боёв: ${entry.skipBattles}` : ''}`;
+  if (!entry.available) return 'Недоступен';
+  return entry.active ? 'Основной состав' : 'Резерв';
+}
+function talentChoicesMarkup(stageB) {
+  const entries = (stageB?.roster || []).filter((entry) => entry.talentChoices?.length);
+  if (!entries.length) return '';
+  return `<section class="rpb-stage"><div class="rpb-warning">Новые звёзды открыли выбор талантов. Выбранный талант закрепляется навсегда.</div><div class="rpb-grid">${entries.map((entry) => {
+    const pending = entry.talentChoices[0];
+    return `<article class="rpb-card rpb-talent"><h3>${escapeHtml(entry.name)} · ★${pending.star}</h3><div class="rpb-talent-options">${pending.options.map((option) => `<button class="rpvs__action" data-talent-roster="${escapeAttribute(entry.id)}" data-talent-id="${escapeAttribute(option.id)}"><strong>${escapeHtml(option.name)}</strong><small>${escapeHtml(option.description)}</small></button>`).join('')}</div></article>`;
+  }).join('')}</div></section>`;
+}
+function bindTalentButtons(root, client) {
+  for (const button of root.querySelectorAll('[data-talent-id]')) button.addEventListener('click', () => client.dispatch({ type: 'ChooseTalent', rosterId: button.dataset.talentRoster, talentId: button.dataset.talentId }).catch(() => {}));
+}
+function battleEventKey(event) { return event?.id || `${event?.sequence || 0}:${event?.type || 'event'}`; }
+
 class VerticalSlicePresenter {
   constructor(options = {}) {
     if (!options.root || typeof options.root.appendChild !== 'function') throw new Error('VerticalSlicePresenter requires a root element');
@@ -207,6 +236,9 @@ class VerticalSlicePresenter {
     this.pendingEffect = null;
     this.lastEffectEventId = null;
     this.effectFrameRequest = null;
+    this.animationRunning = false;
+    this.hiddenAnimatedPieceIds = new Set();
+    this.animationToken = 0;
     this.onSnapshot = (event) => this.render(event.detail);
     this.onPending = (event) => { this.busy = Boolean(event.detail.pending); this.root.classList.toggle('rpvs__busy', this.busy); };
     this.onError = (event) => this.showError(event.detail.error);
@@ -231,6 +263,7 @@ class VerticalSlicePresenter {
     this.client.removeEventListener('error', this.onError);
     this.resizeObserver?.disconnect();
     if (this.effectFrameRequest) (globalThis.cancelAnimationFrame || clearTimeout)(this.effectFrameRequest);
+    this.animationToken += 1;
     this.root.replaceChildren();
   }
 
@@ -238,10 +271,11 @@ class VerticalSlicePresenter {
     const region = regionAssets(snapshot.campaign.regionId);
     const banner = region?.mapBanner;
     const regionLabel = snapshot.campaign.regionId === 'region.iron_marches' ? 'Железные Марши' : snapshot.campaign.regionId;
-    const layoutClass = sidebar ? '' : ' rpvs__layout--single';
+    const tactical = ['scenario', 'boss'].includes(snapshot.status);
+    const layoutClass = `${sidebar ? '' : ' rpvs__layout--single'}${tactical ? ' rpvs__layout--battle' : ''}`;
     return `
-      <section class="rpvs" aria-label="RPChess" style="${banner ? `background-image:linear-gradient(rgba(4,8,14,.78),rgba(4,8,14,.9)),${cssUrl(banner)}` : ''}">
-        <header class="rpvs__top">
+      <section class="rpvs${tactical ? ' rpvs--battle' : ''}" aria-label="RPChess" style="${banner ? `background-image:linear-gradient(rgba(4,8,14,.78),rgba(4,8,14,.9)),${cssUrl(banner)}` : ''}">
+        <header class="rpvs__top${tactical ? ' rpvs__top--battle' : ''}">
           <div class="rpvs__identity"><img class="rpvs__crest" src="generated_assets/logo_main.png" alt=""><div><div class="rpvs__brand">RPChess</div><div class="rpvs__muted">${escapeHtml(regionLabel)} · Акт ${snapshot.campaign.act}</div></div></div>
           <div class="rpvs__resources" aria-label="Ресурсы"><span class="rpvs__chip">Золото · ${snapshot.resources.gold}</span><span class="rpvs__chip">Припасы · ${snapshot.resources.supplies}</span><span class="rpvs__chip">Мета · ${snapshot.resources.meta}</span><button class="rpvs__chip rpa-runtime-menu" data-runtime-menu aria-label="Главное меню">☰ Меню</button></div>
         </header>
@@ -262,39 +296,80 @@ class VerticalSlicePresenter {
 
   render(snapshotInput) {
     const snapshot = validatePresenterSnapshot(snapshotInput);
+    const previous = this.lastSnapshot;
     this.lastSnapshot = snapshot;
     this.queueEffect(snapshot);
     this.selectedSquare = ['scenario', 'boss'].includes(snapshot.status) ? this.selectedSquare : null;
     this.selectedReserveEntryId = ['scenario', 'boss'].includes(snapshot.status) ? this.selectedReserveEntryId : null;
     this.selectedDeploymentUnitId = snapshot.status === 'deployment' ? this.selectedDeploymentUnitId : null;
     this.resizeObserver?.disconnect();
-    if (snapshot.status === 'campaign') this.renderCampaign(snapshot);
+    if (snapshot.status === 'draft') this.renderDraft(snapshot);
+    else if (snapshot.status === 'campaign') this.renderCampaign(snapshot);
+    else if (snapshot.status === 'briefing') this.renderBriefing(snapshot);
     else if (snapshot.status === 'event') this.renderEvent(snapshot);
     else if (snapshot.status === 'deployment') this.renderDeployment(snapshot);
     else if (['scenario', 'boss'].includes(snapshot.status)) this.renderScenario(snapshot);
     else if (snapshot.status === 'boss_transition') this.renderBossTransition(snapshot);
     else if (snapshot.status === 'reward') this.renderReward(snapshot);
+    else if (snapshot.status === 'reward_choice') this.renderRewardChoice(snapshot);
+    else if (snapshot.status === 'service') this.renderService(snapshot);
+    else if (snapshot.status === 'retreat') this.renderRetreat(snapshot);
+    else if (snapshot.status === 'act_outcome') this.renderActOutcome(snapshot);
+    else if (snapshot.status === 'reorganization') this.renderReorganization(snapshot);
     else this.renderTerminal(snapshot);
+    if (['scenario', 'boss'].includes(snapshot.status)) this.animateBattleChanges(previous, snapshot);
+  }
+
+  renderDraft(snapshot) {
+    const stage = snapshot.stageB;
+    const selectedHero = stage.draft.selectedHeroId;
+    const selectedRegular = stage.draft.selectedRegularId;
+    const heroCards = stage.draft.heroOffers.map((offer) => `<button class="rpb-card" data-draft-hero="${escapeAttribute(offer.id)}" aria-pressed="${offer.id === selectedHero}"><img src="${escapeAttribute(rosterImage({ type: String(offer.pieceType || 'p').slice(0,1).toLowerCase() }))}" alt=""><h3>${escapeHtml(offer.name)}</h3><p>${escapeHtml(ROSTER_TYPE_LABELS[String(offer.pieceType || 'p').slice(0,1).toLowerCase()] || offer.pieceType)}</p></button>`).join('');
+    const regularCards = stage.draft.regularOffers.map((offer) => `<button class="rpb-card" data-draft-regular="${escapeAttribute(offer.id)}" aria-pressed="${offer.id === selectedRegular}"><img src="${escapeAttribute(rosterImage({ type: offer.type }))}" alt=""><h3>${escapeHtml(offer.name)}</h3><p>Стоимость командования: ${offer.commandCost}</p></button>`).join('');
+    const main = `<section class="rpb-stage"><header class="rpb-stage__header"><div><div class="rpa-eyebrow">ЭТАП B · СТАРТОВЫЙ ДРАФТ</div><h1>Соберите основу армии</h1><p>Доктрина уже дала основной костяк. Выберите одного именного героя и одну обычную фигуру из предложенных вариантов.</p></div><span class="rpb-badge">Командование ${stage.commandLimit}</span></header><h2>Именной герой · выберите одного</h2><div class="rpb-grid">${heroCards}</div><h2>Пополнение · выберите одну фигуру</h2><div class="rpb-grid">${regularCards}</div><div class="rpb-warning">${escapeHtml(stage.draft.warning)}</div><div class="rpb-actions"><button class="rpvs__primary" data-confirm-draft ${selectedHero && selectedRegular ? '' : 'disabled'}>Подтвердить состав</button></div></section>`;
+    this.root.innerHTML = this.shell(snapshot, main);
+    this.root.querySelectorAll('[data-draft-hero]').forEach((button) => button.addEventListener('click', () => this.client.dispatch({ type: 'ChooseDraftHero', heroId: button.dataset.draftHero }).catch(() => {})));
+    this.root.querySelectorAll('[data-draft-regular]').forEach((button) => button.addEventListener('click', () => this.client.dispatch({ type: 'ChooseDraftRegular', regularId: button.dataset.draftRegular }).catch(() => {})));
+    this.root.querySelector('[data-confirm-draft]')?.addEventListener('click', () => this.client.dispatch({ type: 'ConfirmDraft' }).catch(() => {}));
   }
 
   renderCampaign(snapshot) {
     const routeByNode = new Map(snapshot.campaign.routes.map((route) => [route.to, route]));
     const layers = groupNodesByLayer(snapshot.campaign.nodes);
-    const map = `<div class="rpvs__panel-head"><h1 class="rpvs__title">Карта похода</h1><span class="rpvs__muted">Разведано путей: ${snapshot.campaign.scouting}</span></div><div class="rpvs__map">${layers.map((group) => `<div class="rpvs__layer" data-layer="${group.layer}">${group.nodes.map((node) => {
+    const map = `<div class="rpvs__panel-head"><h1 class="rpvs__title">Карта похода</h1><span class="rpvs__muted">Пройдено: ${snapshot.campaign.visitedNodeIds.length}/${snapshot.campaign.nodes.length} · Разведка ${snapshot.campaign.scouting}</span></div><div class="rpvs__map">${layers.map((group) => `<div class="rpvs__layer" data-layer="${group.layer}">${group.nodes.map((node) => {
       const route = routeByNode.get(node.id);
       const enabled = Boolean(route?.affordable);
-      const classes = ['rpvs__node', node.current ? 'rpvs__node--current' : '', node.visited ? 'rpvs__node--visited' : '', route ? 'rpvs__node--route' : ''].filter(Boolean).join(' ');
-      const label = nodeDisplayLabel(node);
-      return `<button class="${classes}" data-node-id="${escapeAttribute(node.id)}" ${route && enabled ? '' : 'disabled'} aria-label="${escapeAttribute(label)}"><img class="rpvs__node-art" src="${escapeAttribute(nodeArt(node.type))}" alt=""><span><strong>${escapeHtml(label)}</strong>${route ? `<span class="rpvs__cost">${route.affordable ? `Потратить припасы: ${route.cost}` : `Нужно припасов: ${route.cost}`}</span>` : node.current ? '<span class="rpvs__cost">Вы находитесь здесь</span>' : ''}</span></button>`;
-    }).join('')}</div>`).join('')}</div>`;
+      const classes = ['rpvs__node', node.current ? 'rpvs__node--current' : '', node.visited ? 'rpvs__node--visited' : '', route ? 'rpvs__node--route' : '', node.closed ? 'rpvs__node--closed' : '', node.scouted ? 'rpvs__node--scouted' : ''].filter(Boolean).join(' ');
+      const label = node.visibility === 'hidden' ? 'Скрытый путь' : nodeDisplayLabel(node);
+      const intel = node.intel ? `<span class="rpvs__node-intel"><span>Опасность: ${node.danger || 1}</span><span>${escapeHtml(node.intel.missionType || node.intel.rewardCategory || '')}</span></span>` : node.danger ? `<span class="rpvs__node-intel">Опасность: ${node.danger}</span>` : '';
+      const scout = route && route.scoutCost != null && !node.scouted ? `<button class="rpvs__scout" data-scout-node="${escapeAttribute(node.id)}" ${snapshot.resources.supplies >= route.scoutCost ? '' : 'disabled'}>Разведать · ${route.scoutCost} прип.</button>` : '';
+      return `<div class="${classes}" data-node-card="${escapeAttribute(node.id)}"><button class="rpvs__node-main" data-node-id="${escapeAttribute(node.id)}" ${route && enabled ? '' : 'disabled'} aria-label="${escapeAttribute(label)}"><img class="rpvs__node-art" src="${escapeAttribute(nodeArt(node.type || 'event'))}" alt=""><span><strong>${escapeHtml(label)}</strong>${route ? `<span class="rpvs__cost">${route.affordable ? `Переход: ${route.cost} прип.` : `Нужно припасов: ${route.cost}`}</span>` : node.current ? '<span class="rpvs__cost">Вы находитесь здесь</span>' : ''}${intel}</span></button>${node.secret ? '<span class="rpvs__node-secret">✦</span>' : ''}${scout}</div>`;
+    }).join('')}</div>`).join('')}</div>${talentChoicesMarkup(snapshot.stageB)}`;
     this.root.innerHTML = this.shell(snapshot, map);
     for (const button of this.root.querySelectorAll('[data-node-id]:not([disabled])')) button.addEventListener('click', () => this.client.dispatch({ type: 'Travel', targetNodeId: button.dataset.nodeId }).catch(() => {}));
+    for (const button of this.root.querySelectorAll('[data-scout-node]:not([disabled])')) button.addEventListener('click', (event) => { event.stopPropagation(); this.client.dispatch({ type: 'ScoutNode', nodeId: button.dataset.scoutNode }).catch(() => {}); });
+    bindTalentButtons(this.root, this.client);
+  }
+
+  renderBriefing(snapshot) {
+    const stage = snapshot.stageB;
+    const briefing = stage.briefing;
+    const selected = new Set(briefing.activeRosterIds || []);
+    const rows = stage.roster.filter((entry) => entry.available && entry.skipBattles <= 0).map((entry) => `<label class="rpb-roster-row"><input type="checkbox" data-briefing-roster="${escapeAttribute(entry.id)}" ${selected.has(entry.id) ? 'checked' : ''} ${briefing.fixedRosterIds.includes(entry.id) ? 'disabled' : ''}><img src="${escapeAttribute(rosterImage(entry))}" alt=""><span><strong>${escapeHtml(entry.name)}</strong><small>${escapeHtml(ROSTER_TYPE_LABELS[entry.type] || entry.type)} · ${escapeHtml(rosterStateLabel(entry))}</small></span><span class="rpb-badge">${entry.kind === 'king' ? 'обязателен' : `${({p:1,n:2,b:2,r:3,q:5}[entry.type] || 1)} ком.`}</span></label>`).join('');
+    const list = (values) => values?.length ? values.map((value) => `<li>${escapeHtml(value)}</li>`).join('') : '<li>Нет дополнительных сведений</li>';
+    const main = `<section class="rpb-stage"><header class="rpb-stage__header"><div><div class="rpa-eyebrow">ПРЕДБОЕВОЙ БРИФИНГ</div><h1>${escapeHtml(briefing.title)}</h1><p>${escapeHtml(briefing.missionType)}</p></div><span class="rpb-badge">Опасность ${briefing.danger}</span></header><div class="rpb-briefing"><div><div class="rpb-intel"><div><span>Противник</span><strong>${escapeHtml((briefing.enemies || []).join(', ') || 'Состав уточняется')}</strong></div><div><span>Инициатива</span><strong>${briefing.initiative === 'player' ? 'Первый ход ваш' : 'Первым ходит противник'}</strong></div><div><span>Объекты</span><strong>${escapeHtml((briefing.objects || []).join(', ') || 'Нет')}</strong></div><div><span>Особые клетки</span><strong>${[...(briefing.blockedCells || []), ...(briefing.dangerCells || [])].join(', ') || 'Нет'}</strong></div></div><h3>Победа</h3><ul>${list(briefing.winConditions)}</ul><h3>Поражение</h3><ul>${list(briefing.lossConditions)}</ul></div><aside><h2>Основной состав</h2><div class="rpb-roster">${rows}</div></aside></div><div class="rpb-warning">${escapeHtml(briefing.warning)}</div><div class="rpb-actions"><button class="rpvs__primary" data-save-briefing>Применить состав</button><button class="rpvs__primary" data-confirm-briefing>Зафиксировать и перейти к расстановке</button></div></section>${talentChoicesMarkup(stage)}`;
+    this.root.innerHTML = this.shell(snapshot, main);
+    const activeIds = () => [...this.root.querySelectorAll('[data-briefing-roster]:checked')].map((input) => input.dataset.briefingRoster);
+    this.root.querySelector('[data-save-briefing]')?.addEventListener('click', () => this.client.dispatch({ type: 'SetBriefingRoster', activeRosterIds: activeIds() }).catch(() => {}));
+    this.root.querySelector('[data-confirm-briefing]')?.addEventListener('click', async () => { try { await this.client.dispatch({ type: 'SetBriefingRoster', activeRosterIds: activeIds() }); await this.client.dispatch({ type: 'ConfirmBriefing' }); } catch (_error) {} });
+    bindTalentButtons(this.root, this.client);
   }
 
   renderEvent(snapshot) {
     const event = snapshot.event;
+    const art = register04EventAsset(event.eventId, event.sceneArt || approvedSceneArt('event'));
     const choices = event.choices.map((choice) => `<button class="rpvs__choice" data-choice-id="${escapeAttribute(choice.id)}"><strong>${escapeHtml(choice.label)}</strong></button>`).join('');
-    const main = `<div class="rpvs__event-stage"><div class="rpvs__event-copy-panel"><div class="rpa-eyebrow">СЮЖЕТНОЕ СОБЫТИЕ</div><h1>${escapeHtml(event.title)}</h1><p class="rpvs__event-copy">${escapeHtml(event.body)}</p><div class="rpvs__choice-list">${choices}</div></div><div class="rpvs__event-art-space" aria-hidden="true"></div></div>`;
+    const main = `<div class="rpvs__event-stage" style="background-image:linear-gradient(90deg,#040913ef 0%,#040913d8 48%,#04091355 74%,#04091390),url('${escapeAttribute(art)}')"><div class="rpvs__event-copy-panel"><div class="rpa-eyebrow">СЮЖЕТНОЕ СОБЫТИЕ</div><h1>${escapeHtml(event.title)}</h1><p class="rpvs__event-copy">${escapeHtml(event.body)}</p><div class="rpvs__choice-list">${choices}</div></div><div class="rpvs__event-art-space" aria-hidden="true"></div></div>`;
     this.root.innerHTML = this.shell(snapshot, main);
     for (const button of this.root.querySelectorAll('[data-choice-id]')) button.addEventListener('click', () => this.client.dispatch({ type: 'ChooseEvent', choiceId: button.dataset.choiceId }).catch(() => {}));
   }
@@ -394,7 +469,7 @@ class VerticalSlicePresenter {
   }
 
   handleDeploymentPointer(event) {
-    if (this.busy || !this.boardReport || !this.boardPlan || this.lastSnapshot?.status !== 'deployment') return;
+    if (this.busy || this.animationRunning || !this.boardReport || !this.boardPlan || this.lastSnapshot?.status !== 'deployment') return;
     const canvas = event.currentTarget;
     const bounds = canvas.getBoundingClientRect();
     const viewport = this.boardReport.viewport;
@@ -431,17 +506,28 @@ class VerticalSlicePresenter {
     const title = snapshot.status === 'boss' ? snapshot.boss?.currentPhaseTitle || 'Железный Регент' : nodeDisplayLabel(snapshot.currentNode || { type: 'battle' });
     const phase = snapshot.status === 'boss' ? `Фаза ${snapshot.boss.phaseNumber} из ${snapshot.boss.phaseCount} · ` : '';
     const check = scenario.chessStatus?.check ? `<span class="rpvs__check"><img src="${escapeAttribute(CORE_ASSETS.vfx.check)}" alt="">Вашему королю объявлен шах</span>` : '';
-    const main = `<div class="rpvs__panel-head"><h1 class="rpvs__title">${escapeHtml(title)}</h1><span class="rpvs__muted">${phase}${scenario.sideToMove === snapshot.playerSide ? 'Ваш ход' : 'Ход противника'}</span>${check}</div><div class="rpvs__board-wrap"><canvas class="rpvs__canvas" data-board tabindex="0" aria-label="Тактическая шахматная доска"></canvas></div>`;
+    const main = `<div class="rpvs__panel-head rpvs__battle-header"><h1 class="rpvs__title">${escapeHtml(title)}</h1><span class="rpvs__turn-pill">${phase}${scenario.sideToMove === snapshot.playerSide ? 'Ваш ход' : 'Ход противника'}</span>${check}</div><div class="rpvs__board-wrap"><canvas class="rpvs__canvas" data-board tabindex="0" aria-label="Тактическая шахматная доска"></canvas></div>`;
     const reserveSection = playerReserve.length ? `<section class="rpvs__sidebar-section"><h3>Боевой резерв</h3><div class="rpvs__order"><span>Очки приказа</span><strong>${order.current} / ${order.max}</strong></div><div class="rpvs__reserve">${reserveCards}</div>${this.selectedReserveEntryId ? '<div class="rpvs__reserve-hint">Теперь выберите подсвеченную клетку на доске.</div>' : ''}</section>` : '';
-    const abilitySection = abilityButtons ? `<section class="rpvs__sidebar-section"><h3>Способности</h3><div class="rpvs__order"><span>Очки приказа</span><strong>${order.current} / ${order.max}</strong></div><div class="rpvs__commands">${abilityButtons}</div></section>` : '';
-    const sidebar = `<div class="rpvs__panel-head"><h2 class="rpvs__title">Задача боя</h2></div><div class="rpvs__panel-body"><section class="rpvs__sidebar-section"><div class="rpvs__list">${objectives}</div></section>${failures ? `<section class="rpvs__sidebar-section"><h3>Поражение</h3><div class="rpvs__list">${failures}</div></section>` : ''}${reserveSection}${abilitySection}<section class="rpvs__sidebar-section"><div class="rpvs__battle-help">Выберите свою фигуру на доске, затем подсвеченную клетку. Технический шахматный символ находится внизу изображения воина.</div></section></div>`;
+    const abilitySection = abilityButtons ? `<section class="rpvs__sidebar-section"><h3>Способности и особые действия</h3><div class="rpvs__commands">${abilityButtons}</div></section>` : '';
+    const recent = (scenario.recentBattleEvents || []).slice(-8).reverse().map((event) => `<div class="rpvs__item"><b>${escapeHtml(this.humanBattleEvent(event))}</b></div>`).join('');
+    const sidebar = `<div class="rpvs__panel-head"><h2 class="rpvs__title">Задача боя</h2><span class="rpvs__chip">ОП ${order.current}/${order.max}</span></div><div class="rpvs__panel-body rpvs__battle-sidebar-scroll"><section class="rpvs__sidebar-section"><div class="rpvs__list">${objectives}</div></section>${failures ? `<section class="rpvs__sidebar-section"><h3>Поражение</h3><div class="rpvs__list">${failures}</div></section>` : ''}${abilitySection}${reserveSection}${recent ? `<section class="rpvs__sidebar-section"><h3>Последние ходы</h3><div class="rpvs__list">${recent}</div></section>` : ''}<section class="rpvs__sidebar-section"><div class="rpvs__battle-help">Выберите фигуру, затем подсвеченную клетку. Ходы игрока и противника показываются последовательно.</div></section></div>`;
     this.root.innerHTML = this.shell(snapshot, main, sidebar);
-    for (const button of this.root.querySelectorAll('[data-ability-command-index]')) button.addEventListener('click', () => { const command = abilityCommands[Number(button.dataset.abilityCommandIndex)]; this.selectedSquare = null; this.selectedReserveEntryId = null; this.client.dispatch({ type: 'PlayerCommand', request: command }).catch(() => {}); });
-    for (const button of this.root.querySelectorAll('[data-reserve-entry]')) button.addEventListener('click', () => { this.selectedReserveEntryId = this.selectedReserveEntryId === button.dataset.reserveEntry ? null : button.dataset.reserveEntry; this.selectedSquare = null; this.renderScenario(snapshot); });
+    for (const button of this.root.querySelectorAll('[data-ability-command-index]')) button.addEventListener('click', () => { if (this.animationRunning) return; const command = abilityCommands[Number(button.dataset.abilityCommandIndex)]; this.selectedSquare = null; this.selectedReserveEntryId = null; this.client.dispatch({ type: 'PlayerCommand', request: command }).catch(() => {}); });
+    for (const button of this.root.querySelectorAll('[data-reserve-entry]')) button.addEventListener('click', () => { if (this.animationRunning) return; this.selectedReserveEntryId = this.selectedReserveEntryId === button.dataset.reserveEntry ? null : button.dataset.reserveEntry; this.selectedSquare = null; this.renderScenario(snapshot); });
     const canvas = this.root.querySelector('[data-board]');
     canvas.addEventListener('pointerdown', (event) => this.handleBoardPointer(event));
     this.drawBoard();
     if (globalThis.ResizeObserver) { this.resizeObserver = new ResizeObserver(() => this.drawBoard()); this.resizeObserver.observe(canvas.parentElement); }
+  }
+
+  humanBattleEvent(event) {
+    const payload = event?.payload || {};
+    if (event?.type === 'PieceMoved') return `${payload.side === 'w' ? 'Союзник' : 'Противник'}: ${payload.from} → ${payload.to}`;
+    if (event?.type === 'PieceCaptured') return `${payload.capturedSide === 'w' ? 'Союзная' : 'Вражеская'} фигура взята на ${payload.square}`;
+    if (event?.type === 'CheckDeclared') return payload.side === 'w' ? 'Вашему королю объявлен шах' : 'Вражескому королю объявлен шах';
+    if (event?.type === 'AbilityUsed') return 'Применена особая способность';
+    if (event?.type === 'CapturePrevented') return 'Защита предотвратила взятие';
+    return String(event?.type || 'Боевой эффект').replace(/([a-z])([A-Z])/g, '$1 $2');
   }
 
   drawBoard() {
@@ -520,7 +606,7 @@ class VerticalSlicePresenter {
           else { context.save(); context.fillStyle = capture ? 'rgba(224,76,89,.48)' : 'rgba(77,203,154,.42)'; context.beginPath(); context.arc(rect.x + rect.size / 2, rect.y + rect.size / 2, rect.size * .16, 0, Math.PI * 2); context.fill(); context.restore(); }
         }
         const piece = pieces.get(cell.square);
-        if (piece) drawWarriorPiece(context, rect, piece, this.assetCache);
+        if (piece && !this.hiddenAnimatedPieceIds.has(piece.id || piece.pieceId)) drawWarriorPiece(context, rect, piece, this.assetCache);
       }
     });
     this.playPendingBoardEffect();
@@ -569,7 +655,7 @@ class VerticalSlicePresenter {
   }
 
   handleBoardPointer(event) {
-    if (this.busy || !this.boardReport || !this.boardPlan || !['scenario', 'boss'].includes(this.lastSnapshot?.status)) return;
+    if (this.busy || this.animationRunning || !this.boardReport || !this.boardPlan || !['scenario', 'boss'].includes(this.lastSnapshot?.status)) return;
     const canvas = event.currentTarget;
     const bounds = canvas.getBoundingClientRect();
     const x = event.clientX - bounds.left;
@@ -597,6 +683,129 @@ class VerticalSlicePresenter {
     const movable = scenario.legalCommands.some((command) => command.type === 'MovePiece' && command.payload.from === cell.square);
     this.selectedSquare = movable ? cell.square : null;
     this.drawBoard();
+  }
+
+  async animateBattleChanges(previous, snapshot) {
+    if (!previous?.scenario || !snapshot?.scenario || !['scenario', 'boss'].includes(previous.status)) return;
+    const previousKeys = new Set((previous.scenario.recentBattleEvents || []).map(battleEventKey));
+    const events = (snapshot.scenario.recentBattleEvents || []).filter((event) => !previousKeys.has(battleEventKey(event)));
+    const moves = events.filter((event) => event.type === 'PieceMoved' && event.payload?.from && event.payload?.to);
+    if (!moves.length || !this.boardReport || !this.boardPlan) return;
+    const token = ++this.animationToken;
+    this.animationRunning = true;
+    this.hiddenAnimatedPieceIds = new Set(moves.map((move) => move.payload.pieceId).filter(Boolean));
+    this.root.classList.add('rpvs__animating');
+    this.drawBoard();
+    try {
+      for (let index = 0; index < moves.length; index += 1) {
+        if (token !== this.animationToken) break;
+        const move = moves[index];
+        const hasLaterMove = moves.slice(index + 1).some((entry) => entry.payload.pieceId === move.payload.pieceId);
+        await this.animateSingleMove(move, previous, snapshot, events, token, hasLaterMove);
+      }
+    } finally {
+      if (token === this.animationToken) {
+        this.animationRunning = false;
+        this.hiddenAnimatedPieceIds.clear();
+        this.root.classList.remove('rpvs__animating');
+        this.drawBoard();
+      }
+    }
+  }
+
+  animateSingleMove(move, previous, snapshot, events, token, hasLaterMove = false) {
+    const fromCell = this.boardPlan.activeCells.find((cell) => cell.square === move.payload.from);
+    const toCell = this.boardPlan.activeCells.find((cell) => cell.square === move.payload.to);
+    const wrap = this.root.querySelector('.rpvs__board-wrap');
+    if (!fromCell || !toCell || !wrap) return Promise.resolve();
+    const piece = (snapshot.scenario.pieces || []).find((entry) => (entry.id || entry.pieceId) === move.payload.pieceId) || (previous.scenario.pieces || []).find((entry) => (entry.id || entry.pieceId) === move.payload.pieceId) || { side: move.payload.side, type: move.payload.pieceType };
+    const viewport = this.boardReport.viewport;
+    const cellSize = viewport.cellSize;
+    const element = this.root.ownerDocument.createElement('div');
+    element.className = 'rpvs__moving-piece';
+    element.style.left = `${viewport.x + fromCell.displayX * cellSize}px`;
+    element.style.top = `${viewport.y + fromCell.displayY * cellSize}px`;
+    element.style.width = `${cellSize}px`;
+    element.style.height = `${cellSize}px`;
+    element.innerHTML = `<img src="${escapeAttribute(unitArt(piece))}" alt=""><small>${escapeHtml(pieceGlyph(piece))}</small>`;
+    wrap.appendChild(element);
+    const capture = events.find((event) => event.type === 'PieceCaptured' && event.payload?.byId === move.payload.pieceId && event.payload?.square === move.payload.to);
+    return new Promise((resolve) => {
+      const duration = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 170 : 520;
+      const finish = () => {
+        if (token !== this.animationToken) { element.remove(); resolve(); return; }
+        element.remove();
+        if (capture) {
+          const pulse = this.root.ownerDocument.createElement('div');
+          pulse.className = 'rpvs__capture-pulse';
+          pulse.style.left = `${viewport.x + toCell.displayX * cellSize + cellSize * .15}px`;
+          pulse.style.top = `${viewport.y + toCell.displayY * cellSize + cellSize * .15}px`;
+          pulse.style.width = `${cellSize * .7}px`;
+          pulse.style.height = `${cellSize * .7}px`;
+          wrap.appendChild(pulse);
+          setTimeout(() => pulse.remove(), 460);
+        }
+        if (!hasLaterMove) this.hiddenAnimatedPieceIds.delete(move.payload.pieceId);
+        this.drawBoard();
+        setTimeout(resolve, capture ? 160 : 80);
+      };
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        element.style.transitionDuration = `${duration}ms`;
+        element.style.transform = `translate(${(toCell.displayX - fromCell.displayX) * cellSize}px,${(toCell.displayY - fromCell.displayY) * cellSize}px)`;
+      }));
+      setTimeout(finish, duration + 45);
+    });
+  }
+
+  renderRewardChoice(snapshot) {
+    const offers = snapshot.stageB.rewardOffers || [];
+    const injured = (snapshot.stageB.roster || []).filter((entry) => entry.injury);
+    const targets = (snapshot.stageB.roster || []).filter((entry) => entry.available || entry.injury).map((entry) => `<option value="${escapeAttribute(entry.id)}">${escapeHtml(entry.name)} · ${escapeHtml(rosterStateLabel(entry))}</option>`).join('');
+    const cards = offers.map((offer) => `<article class="rpb-card rpb-offer"><img class="rpb-offer__icon" src="generated_assets/reward_${REWARD_IMAGES[offer.type] || 'artifact'}.png" alt=""><h3>${escapeHtml(offer.title)}</h3><p>${escapeHtml(offer.description)}</p>${offer.improved ? '<span class="rpb-badge">Улучшено дополнительной целью</span>' : ''}${['heal','relic'].includes(offer.type) ? `<label>Получатель<select class="rpb-target-select" data-reward-target="${escapeAttribute(offer.id)}">${targets}</select></label>` : ''}<button class="rpvs__primary" data-reward-offer="${escapeAttribute(offer.id)}">Выбрать</button></article>`).join('');
+    const main = `<section class="rpb-stage"><header class="rpb-stage__header"><div><div class="rpa-eyebrow">НАГРАДА ЗА СРАЖЕНИЕ</div><h1>Выберите одну из трёх наград</h1><p>Предложения учитывают состав армии, недавние награды и выполнение дополнительных целей.</p></div></header><div class="rpb-offer-grid">${cards}</div>${injured.length ? `<div class="rpb-warning">Раненые: ${injured.map((entry) => escapeHtml(entry.name)).join(', ')}</div>` : ''}</section>${talentChoicesMarkup(snapshot.stageB)}`;
+    this.root.innerHTML = this.shell(snapshot, main);
+    this.root.querySelectorAll('[data-reward-offer]').forEach((button) => button.addEventListener('click', () => { const target = this.root.querySelector(`[data-reward-target="${CSS.escape(button.dataset.rewardOffer)}"]`)?.value || null; this.client.dispatch({ type: 'ChooseRewardOffer', offerId: button.dataset.rewardOffer, targetRosterId: target }).catch(() => {}); }));
+    bindTalentButtons(this.root, this.client);
+  }
+
+  renderService(snapshot) {
+    const service = snapshot.stageB.service;
+    const targets = (snapshot.stageB.roster || []).map((entry) => `<option value="${escapeAttribute(entry.id)}">${escapeHtml(entry.name)} · ${escapeHtml(rosterStateLabel(entry))}</option>`).join('');
+    const offers = (service.offers || []).map((offer) => `<article class="rpb-card"><h3>${escapeHtml(offer.title)}</h3><p>Стоимость: ${offer.cost} золота</p><label>Фигура<select class="rpb-target-select" data-service-target="${escapeAttribute(offer.id)}">${targets}</select></label><button class="rpvs__primary" data-service-offer="${escapeAttribute(offer.id)}" ${snapshot.resources.gold >= offer.cost ? '' : 'disabled'}>Получить услугу</button></article>`).join('');
+    const main = `<section class="rpb-stage"><header class="rpb-stage__header"><div><div class="rpa-eyebrow">УСЛУГИ</div><h1>${escapeHtml(SERVICE_LABELS[service.type] || service.type)}</h1><p>${escapeHtml(service.warning)}</p></div><span class="rpb-badge">Золото ${snapshot.resources.gold}</span></header><div class="rpb-service-layout"><div class="rpb-grid">${offers}</div><aside><h2>Состояние армии</h2><div class="rpb-roster">${snapshot.stageB.roster.map((entry) => `<div class="rpb-roster-row"><span></span><img src="${escapeAttribute(rosterImage(entry))}" alt=""><span><strong>${escapeHtml(entry.name)}</strong><small>${escapeHtml(rosterStateLabel(entry))}</small></span><span class="rpb-badge">★${entry.stars}</span></div>`).join('')}</div></aside></div><div class="rpb-actions"><button class="rpvs__primary" data-leave-service>Покинуть место</button></div></section>${talentChoicesMarkup(snapshot.stageB)}`;
+    this.root.innerHTML = this.shell(snapshot, main);
+    this.root.querySelectorAll('[data-service-offer]').forEach((button) => button.addEventListener('click', () => { const target = this.root.querySelector(`[data-service-target="${CSS.escape(button.dataset.serviceOffer)}"]`)?.value || null; this.client.dispatch({ type: 'UseService', offerId: button.dataset.serviceOffer, targetRosterId: target }).catch(() => {}); }));
+    this.root.querySelector('[data-leave-service]')?.addEventListener('click', () => this.client.dispatch({ type: 'LeaveService' }).catch(() => {}));
+    bindTalentButtons(this.root, this.client);
+  }
+
+  renderRetreat(snapshot) {
+    const retreat = snapshot.stageB.royalRetreat;
+    const main = `<div class="rpvs__center" style="background-image:linear-gradient(#16080ac7,#060a12ee),url('${approvedSceneArt('defeat')}')"><div class="rpvs__center-card"><div class="rpa-eyebrow">КОРОЛЕВСКОЕ ОТСТУПЛЕНИЕ</div><h1 class="rpvs__title">Армия вырвалась из окружения</h1><p>Первое поражение не завершает обычный поход. Потерянный узел закрывается, награда утрачена, а армия отходит к следующей точке схождения.</p><ul>${retreat.consequences.map((value) => `<li>${escapeHtml(value)}</li>`).join('')}</ul><div class="rpb-warning rpb-danger">Следующее поражение завершит поход.</div><button class="rpvs__primary" data-continue-retreat>Продолжить отступление</button></div></div>`;
+    this.root.innerHTML = this.shell(snapshot, main);
+    this.root.querySelector('[data-continue-retreat]')?.addEventListener('click', () => this.client.dispatch({ type: 'ContinueRoyalRetreat' }).catch(() => {}));
+  }
+
+  renderActOutcome(snapshot) {
+    const outcome = snapshot.stageB.actOutcome;
+    const cards = outcome.choices.map((choice) => `<button class="rpb-card" data-act-choice="${escapeAttribute(choice.id)}"><h3>${escapeHtml(choice.title)}</h3><p>${escapeHtml(choice.consequence)}</p></button>`).join('');
+    const main = `<section class="rpb-stage"><header class="rpb-stage__header"><div><div class="rpa-eyebrow">ИТОГ АКТА</div><h1>Судьба Железных Маршей</h1><p>${escapeHtml(outcome.summary)}</p></div></header><div class="rpb-grid">${cards}</div><div class="rpb-warning">После решения к армии присоединится региональный рекрут, а затем начнётся межактовая реорганизация.</div></section>${talentChoicesMarkup(snapshot.stageB)}`;
+    this.root.innerHTML = this.shell(snapshot, main);
+    this.root.querySelectorAll('[data-act-choice]').forEach((button) => button.addEventListener('click', () => this.client.dispatch({ type: 'ChooseActOutcome', choiceId: button.dataset.actChoice }).catch(() => {})));
+    bindTalentButtons(this.root, this.client);
+  }
+
+  renderReorganization(snapshot) {
+    const stage = snapshot.stageB;
+    const active = new Set(stage.reorganization.activeRosterIds || []);
+    const rows = stage.roster.map((entry) => `<label class="rpb-roster-row ${entry.available ? '' : 'rpb-danger'}"><input type="checkbox" data-reorg-roster="${escapeAttribute(entry.id)}" ${active.has(entry.id) ? 'checked' : ''} ${entry.kind === 'king' || !entry.available ? 'disabled' : ''}><img src="${escapeAttribute(rosterImage(entry))}" alt=""><span><strong>${escapeHtml(entry.name)}</strong><small>${escapeHtml(rosterStateLabel(entry))} · талантов ${entry.talents.length}</small></span><span class="rpb-badge">★${entry.stars}</span></label>`).join('');
+    const scale = stage.reorganization.nextRegionScaling;
+    const main = `<section class="rpb-stage"><header class="rpb-stage__header"><div><div class="rpa-eyebrow">МЕЖАКТОВАЯ РЕОРГАНИЗАЦИЯ</div><h1>Подготовьте армию к следующему региону</h1><p>Лёгкие ранения сняты. Тяжёлые сохраняются. Таланты закреплены и бесплатно не сбрасываются.</p></div></header><div class="rpb-summary"><div><span>Лимит снабжения</span><strong>${stage.reorganization.supplyCarryCap}</strong></div><div><span>Компенсация излишков</span><strong>${stage.reorganization.excessSupplyCompensation}</strong></div><div><span>Сила армии</span><strong>${scale.armyStrength}</strong></div><div><span>Усиление врага</span><strong>+${scale.enemyBonus}</strong></div></div><div class="rpb-roster">${rows}</div><div class="rpb-actions"><button class="rpvs__primary" data-save-reorganization>Применить состав</button><button class="rpvs__primary" data-confirm-reorganization>Завершить акт</button></div></section>${talentChoicesMarkup(stage)}`;
+    this.root.innerHTML = this.shell(snapshot, main);
+    const ids = () => [...this.root.querySelectorAll('[data-reorg-roster]:checked')].map((input) => input.dataset.reorgRoster);
+    this.root.querySelector('[data-save-reorganization]')?.addEventListener('click', () => this.client.dispatch({ type: 'SetReorganization', activeRosterIds: ids() }).catch(() => {}));
+    this.root.querySelector('[data-confirm-reorganization]')?.addEventListener('click', async () => { try { await this.client.dispatch({ type: 'SetReorganization', activeRosterIds: ids() }); await this.client.dispatch({ type: 'ConfirmReorganization' }); } catch (_error) {} });
+    bindTalentButtons(this.root, this.client);
   }
 
   renderBossTransition(snapshot) {
