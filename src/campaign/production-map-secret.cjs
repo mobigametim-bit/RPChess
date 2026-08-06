@@ -37,9 +37,12 @@ function decideSecret(state, decision) {
     secret: deepFreeze({ ...state.secret, pendingDecision: null, declined: true }),
     history: freezeArray([...state.history, deepFreeze({ index: state.history.length, type: 'secret_declined', nodeId: state.secret.discovered.id })]) });
   if (state.supplies < 1) throw new Error('entering the secret node requires 1 supply');
-  return deepFreeze({ ...state, supplies: state.supplies - 1,
+  const secretNodeId = state.secret.discovered.id;
+  return deepFreeze({ ...state,
+    supplies: state.supplies - 1,
+    visitedNodeIds: freezeArray(state.visitedNodeIds.includes(secretNodeId) ? state.visitedNodeIds : [...state.visitedNodeIds, secretNodeId]),
     secret: deepFreeze({ ...state.secret, pendingDecision: null, active: deepFreeze({ ...state.secret.discovered, returnNodeId: state.currentNodeId }) }),
-    history: freezeArray([...state.history, deepFreeze({ index: state.history.length, type: 'secret_entered', nodeId: state.secret.discovered.id, cost: 1 })]) });
+    history: freezeArray([...state.history, deepFreeze({ index: state.history.length, type: 'secret_entered', nodeId: secretNodeId, cost: 1, routeNodeCount: state.visitedNodeIds.length + 1 })]) });
 }
 function completeSecret(state) {
   if (!state.secret.active) throw new Error('no secret node is active');
