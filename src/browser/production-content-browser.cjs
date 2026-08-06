@@ -47,7 +47,8 @@ function playableRegistry(registry, productionEvents) {
 function buildBrowserProductionBundle() {
   const productionEvents = assertProductionEventPolicy(validateProductionEventLibrary(productionEventSource));
   const eventPolicyReport = productionEventPolicyReport(productionEvents);
-  const productionPack = bindRegister04EventArt(compileProductionEventPack(productionPackSource, productionEvents));
+  const compiled = compileProductionEventPack(productionPackSource, productionEvents);
+  const productionPack = bindRegister04EventArt({ ...compiled, packId: productionPackSource.packId });
   const localization = Object.freeze({
     ru: Object.freeze({ ...localizationRu, ...compileProductionLocalization(productionEvents, 'ru') }),
     en: Object.freeze({ ...localizationEn, ...compileProductionLocalization(productionEvents, 'en') })
