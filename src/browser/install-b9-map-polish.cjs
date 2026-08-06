@@ -72,6 +72,21 @@ if (!globalThis[INSTALL_KEY]) {
     const nodes = campaignSnapshot?.nodes || [];
     return freezeArray(nodes.filter((node) => node.visibility !== 'hidden'));
   }
+  function scenarioRoutePreview(route) {
+    if (!route.scouted || !route.intel?.scenarioSelection) return route;
+    const selection = route.intel.scenarioSelection;
+    return deepFreeze({
+      ...route,
+      optionalObjectiveRequirements: selection.optionalObjectiveRequirements || null,
+      scenarioPreview: selection.metadata ? deepFreeze({
+        encounterId: selection.metadata.encounterId || route.contentId || null,
+        board: selection.metadata.board || null,
+        objectives: selection.metadata.objectives || [],
+        failures: selection.metadata.failures || [],
+        environment: selection.metadata.environment || []
+      }) : null
+    });
+  }
 
   presenter.createPresenterSnapshot = function createB9PolishedSnapshot(state, dependencies = {}) {
     const snapshot = originalCreatePresenterSnapshot(state, dependencies);
@@ -80,7 +95,8 @@ if (!globalThis[INSTALL_KEY]) {
       ...snapshot,
       campaign: {
         ...snapshot.campaign,
-        nodes: visibleMapNodes(snapshot.campaign)
+        nodes: visibleMapNodes(snapshot.campaign),
+        routes: freezeArray((snapshot.campaign.routes || []).map(scenarioRoutePreview))
       }
     });
   };
