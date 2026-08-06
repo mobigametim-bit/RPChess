@@ -15,6 +15,7 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   const extension = read('game/js/vertical-slice-presenter-register-02.mjs');
   const css = read('game/css/stage-b-ui.css');
   const armyFoundationCss = read('game/css/army-foundation-approved.css');
+  const armyFoundationRefinements = read('game/css/army-foundation-test-refinements.css');
   const armyFoundation = read('game/js/army-foundation-approved.mjs');
   const index = read('game/index.html');
   const isolated = read('game/vertical-slice.html');
@@ -22,6 +23,7 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   for (const html of [index, isolated]) {
     assert(html.includes('css/stage-b-ui.css'));
     assert(html.includes('css/army-foundation-approved.css'));
+    assert(html.includes('css/army-foundation-test-refinements.css'));
     assert(html.includes('js/army-foundation-approved.mjs'));
   }
   assert(app.includes('rpa-menu__main--open'));
@@ -80,6 +82,15 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert(armyFoundation.includes("Железные марши Акт ${roman(act)}"));
   assert(armyFoundation.includes("headings[0].textContent = 'Именной герой: выберите одного'"));
   assert(armyFoundation.includes("headings[1].textContent = 'Пополнение: выберите одну фигуру'"));
+  assert(armyFoundation.includes('function removeRelicResourceChips'));
+  assert(armyFoundation.includes("label.includes('реликв')"));
+  assert(armyFoundation.includes('function updateCommandCounter'));
+  assert(armyFoundation.includes('stage.dataset.commandBase = String(Math.max(0, total - 1))'));
+  assert(armyFoundation.includes('counter.textContent = `${used}/${total}`'));
+  assert(armyFoundation.includes("header.querySelector('.rpb-badge')?.remove()"));
+  assert(armyFoundation.includes("confirm.classList.add('rpb-draft-confirm')"));
+  assert(armyFoundation.includes("stage.querySelector('.rpb-warning')?.remove()"));
+
   assert(armyFoundationCss.includes("url('../generated_assets/splash_poster.jpg')"));
   assert(armyFoundationCss.includes("url('../generated_assets/ui_panel_frame.png')"));
   assert(armyFoundationCss.includes("url('../generated_assets/ui_chip.png')"));
@@ -89,6 +100,12 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert(armyFoundationCss.includes('body{min-height:100%;height:auto!important;overflow-x:hidden!important;overflow-y:auto!important}'));
   assert(armyFoundationCss.includes('#app{min-height:100vh!important;height:auto!important;overflow:visible!important}'));
   assert.strictEqual(armyFoundationCss.includes('.rpb-draft-card__class'), false);
+
+  assert(armyFoundationRefinements.includes('.rpb-draft-heading-row'));
+  assert(armyFoundationRefinements.includes('.rpb-command-counter'));
+  assert(armyFoundationRefinements.includes('.rpb-draft-confirm'));
+  assert(armyFoundationRefinements.includes('>.rpb-warning'));
+  assert(armyFoundationRefinements.includes('display:none!important'));
 
   const appModule = await import(pathToFileURL(path.join(root, 'game/js/vertical-slice-app.mjs')).href);
   const progress = appModule.readShellProgress({ getItem: () => null });
@@ -103,5 +120,5 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert.strictEqual(armyFoundationModule.roman(1), 'I');
   assert.strictEqual(armyFoundationModule.roman(4), 'IV');
   assert.strictEqual(armyFoundationModule.REGULAR_COPY.r.title, 'Щитоносец');
-  console.log('Stage B UI: menu, chronicle, tested army draft, global scrolling, battle panel and animations passed.');
+  console.log('Stage B UI: tested draft controls, global scrolling, battle panel and animations passed.');
 })().catch((error) => { console.error(error.stack || error); process.exitCode = 1; });
