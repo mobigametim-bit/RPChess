@@ -36,3 +36,19 @@
 .rpvs__moving-piece{transition-property:transform;transition-timing-function:cubic-bezier(.18,.72,.19,1);filter:drop-shadow(0 8px 9px #000c)}
 @media(max-width:720px){.rpvs__node-main{grid-template-columns:62px minmax(0,1fr)}}
 @media(max-width:460px){.rpvs__node-main{grid-template-columns:52px minmax(0,1fr);min-height:92px}.rp02-mechanic-card,.rp02-relic-slot{grid-template-columns:50px minmax(0,1fr)!important}.rp02-mechanic-card>img,.rp02-relic-slot>img{width:50px!important;height:50px!important}}
+
+
+/* stage-b-visual-qa-polish-v2 */
+.rpa-chronicle-card__copy{align-self:stretch!important;margin:9px 0!important;padding:14px 20px!important;border:1px solid #526987!important;border-radius:10px!important;background:linear-gradient(135deg,#101f34f5,#081422f5)!important;box-shadow:inset 0 0 24px #0006!important;color:#f7edda!important}
+.rpa-chronicle-card__copy strong{color:#fff4cf!important;text-shadow:0 2px 5px #000!important}.rpa-chronicle-card__copy small{color:#f1c95d!important}.rpa-chronicle-card__copy>span:last-child{color:#d4deeb!important}
+.rpa-chronicle-card__action{min-width:112px!important;margin:0 18px!important;padding:11px 16px!important;border:10px solid transparent!important;border-image:url('../generated_assets/ui_button_primary.png') 26 fill stretch!important;color:#fff6d4!important;text-align:center!important;text-shadow:0 2px 4px #000!important}
+.rpvs__layout--battle{height:calc(100dvh - 108px)!important;max-height:calc(100dvh - 108px)!important;min-height:620px!important;overflow:hidden!important}
+.rpvs__layout--battle>aside.rpvs__panel{height:100%!important;max-height:100%!important;min-height:0!important;overflow:hidden!important}
+.rpvs__battle-sidebar-scroll{height:auto!important;max-height:calc(100dvh - 205px)!important;overflow-y:auto!important;overflow-x:hidden!important}
+.rpvs__battle-sidebar-scroll .rpvs__sidebar-section{margin:0 0 10px!important;padding:11px!important;border:1px solid #526987!important;border-radius:10px!important;background:linear-gradient(145deg,#101e31f5,#08131ff5)!important;color:#f4ead7!important;box-shadow:inset 0 0 18px #0005!important}
+.rpvs__battle-sidebar-scroll .rpvs__sidebar-section :where(h3,p,strong,small,span){color:inherit!important;text-shadow:none!important}
+.rp02-hero-panel{grid-template-columns:76px minmax(0,1fr)!important;grid-auto-rows:auto!important;align-items:start!important}.rp02-hero-panel__portrait{grid-column:1!important;grid-row:1 / span 4!important}.rp02-hero-panel__body{display:contents!important}
+.rp02-hero-panel__body>.rp02-eyebrow,.rp02-hero-panel__body>h3,.rp02-hero-panel__body>p{grid-column:2!important;min-width:0!important}.rp02-hero-panel__body>h3{margin-top:0!important}.rp02-hero-panel__body>p{margin:.2em 0 .55em!important}
+.rp02-hero-loadout{grid-column:1/-1!important;width:100%!important;margin-top:4px!important}.rp02-mechanic-card,.rp02-relic-slot{grid-template-columns:58px minmax(0,1fr)!important;min-height:82px!important;width:100%!important;max-width:100%!important}
+@media(max-width:900px){.rpvs__layout--battle{height:auto!important;max-height:none!important;overflow:visible!important}.rpvs__layout--battle>aside.rpvs__panel{height:auto!important;max-height:72vh!important}.rpvs__battle-sidebar-scroll{max-height:calc(72vh - 90px)!important}}
+@media(max-width:620px){.rpa-chronicle-card__copy{margin:0 9px 9px!important}.rpa-chronicle-card__action{margin:0 10px 12px!important}}

@@ -553,7 +553,7 @@ class VerticalSlicePresenter {
       CORE_ASSETS.neutralBoard.startZone,
       CORE_ASSETS.vfx.legalMove,
       CORE_ASSETS.vfx.captureMove
-    ];
+    ].filter(Boolean);
     preload.push(...scenario.pieces.map(unitArt).filter(Boolean));
     if (this.pendingEffect) preload.push(this.pendingEffect.source);
     this.assetCache.prime(preload);
@@ -601,7 +601,8 @@ class VerticalSlicePresenter {
         }
         if (targets.has(cell.square)) {
           const capture = pieces.has(cell.square);
-          const marker = this.assetCache.get(capture ? CORE_ASSETS.vfx.captureMove : CORE_ASSETS.vfx.legalMove);
+          const markerSource = capture ? CORE_ASSETS.vfx.captureMove : CORE_ASSETS.vfx.legalMove;
+          const marker = markerSource ? this.assetCache.get(markerSource) : null;
           if (marker?.status === 'ready') context.drawImage(marker.image, rect.x, rect.y, rect.size, rect.size);
           else { context.save(); context.fillStyle = capture ? 'rgba(224,76,89,.48)' : 'rgba(77,203,154,.42)'; context.beginPath(); context.arc(rect.x + rect.size / 2, rect.y + rect.size / 2, rect.size * .16, 0, Math.PI * 2); context.fill(); context.restore(); }
         }
