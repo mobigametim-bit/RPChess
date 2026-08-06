@@ -27,8 +27,9 @@ test('canonical production bundle validates board themes, cross references and R
     encounter: 6,
     boss: 1
   });
-  assert.strictEqual(compiled.packs[0].packId, 'iron_marches_vertical_slice_production_events');
+  assert.strictEqual(compiled.packs[0].packId, 'iron_marches_vertical_slice');
   assert.strictEqual(compiled.productionEvents.events.length, 7);
+  assert.strictEqual(compiled.eventPolicyReport.ok, true);
   assert.strictEqual(compiled.boardThemeManifest.themes.some((theme) => theme.id === 'iron_marches'), true);
   assert.strictEqual(compiled.localization.ru['boss.iron_regent.name'], 'Железный Регент');
   assert.strictEqual(compiled.localization.en['boss.iron_regent.name'], 'The Iron Regent');
@@ -107,6 +108,7 @@ test('production report marks the seven authored events approved', () => {
   assert.ok(report.assetCount >= 50);
   assert.strictEqual(report.combatProfileCount, 6);
   assert.strictEqual(report.productionEventCount, 7);
+  assert.strictEqual(report.eventPolicyReport.ok, true);
   assert.strictEqual(report.languageCounts.ru, report.languageCounts.en);
 });
 
