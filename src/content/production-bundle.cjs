@@ -14,9 +14,10 @@ const {
 const {
   loadProductionEventLibrary,
   compileProductionEventPack,
-  compileProductionLocalization,
-  createProductionEventChoiceResolver
+  compileProductionLocalization
 } = require('./production-events.cjs');
+const { createCompatibleProductionEventChoiceResolver } = require('./production-event-runtime.cjs');
+const { bindRegister04EventArt } = require('./register-04-event-assets.cjs');
 
 const DEFAULT_BOARD_MANIFEST = 'content/board-themes.json';
 const DEFAULT_PACKS = Object.freeze(['content/packs/iron_marches_vertical_slice.json']);
@@ -83,7 +84,7 @@ function buildProductionContentBundle(options = {}) {
   const packs = [];
   for (const relativePath of packPaths) {
     const source = readJson(resolveProjectPath(projectRoot, relativePath));
-    const pack = compileProductionEventPack(source, productionEvents);
+    const pack = bindRegister04EventArt(compileProductionEventPack(source, productionEvents));
     registry.addPack(pack);
     packs.push(Object.freeze({ packId: pack.packId, path: relativePath }));
   }
@@ -94,7 +95,7 @@ function buildProductionContentBundle(options = {}) {
   const eventEffectCatalog = mergeEffectCatalogs(effectCatalogs);
   validateEventEffectReferences(registry, eventEffectCatalog);
   const catalogEventChoiceResolver = createCatalogEventChoiceResolver(eventEffectCatalog);
-  const eventChoiceResolver = createProductionEventChoiceResolver(productionEvents, catalogEventChoiceResolver);
+  const eventChoiceResolver = createCompatibleProductionEventChoiceResolver(productionEvents, catalogEventChoiceResolver);
 
   return Object.freeze({
     format: 'rpchess-production-content-bundle',
