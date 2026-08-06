@@ -2,10 +2,47 @@
 
 const { deepFreeze, freezeArray } = require('../campaign/production-map-contract.cjs');
 const runtimeState = require('../campaign/runtime-state.cjs');
+const ironMarchesPack = require('../../content/packs/iron_marches_vertical_slice.json');
+const ironMarchesScenarios = require('../../content/scenarios/iron_marches_vertical_slice.json');
 
 const INSTALL_KEY = Symbol.for('rpchess.b9-map-polish-installed');
 if (!globalThis[INSTALL_KEY]) {
   globalThis[INSTALL_KEY] = true;
+
+  const authoredEncounterById = new Map((ironMarchesPack.content?.encounters || []).map((entry) => [entry.id, entry]));
+  function authoredScenarioCandidate(id) {
+    const encounter = authoredEncounterById.get(id) || {};
+    const scenario = ironMarchesScenarios.encounters?.[id] || {};
+    const objectiveIds = (scenario.objectives || []).map((objective) => objective.id).filter(Boolean);
+    const environmentIds = (scenario.environment || []).map((entry) => entry.id).filter(Boolean);
+    const optionalObjectives = (scenario.objectives || []).filter((objective) => objective.optional === true);
+    return {
+      id,
+      baseWeight: Number(encounter.baseWeight || 1),
+      regionIds: encounter.regionId ? [encounter.regionId] : [],
+      boardIds: encounter.board?.themeId ? [encounter.board.themeId] : [],
+      objectiveIds,
+      environmentIds,
+      factorWeights: encounter.factorWeights || {},
+      requiredFacts: encounter.requiredFacts || [],
+      excludedFacts: encounter.excludedFacts || [],
+      incompatibleScenarioIds: encounter.incompatibleScenarioIds || [],
+      optionalObjectiveRequirements: {
+        objectiveIds: optionalObjectives.map((objective) => objective.id),
+        previews: optionalObjectives.map((objective) => objective.previewKey).filter(Boolean)
+      },
+      metadata: {
+        encounterId: id,
+        tags: encounter.tags || [],
+        board: scenario.board || encounter.board || null,
+        battle: scenario.battle || null,
+        objectives: scenario.objectives || [],
+        failures: scenario.failures || [],
+        environment: scenario.environment || [],
+        reward: scenario.reward || null
+      }
+    };
+  }
 
   const graphModule = require('../campaign/graph.cjs');
   const originalGenerateActGraph = graphModule.generateActGraph;
@@ -22,7 +59,7 @@ if (!globalThis[INSTALL_KEY]) {
         hospital: pools.hospital || services,
         forge: pools.forge || services,
         camp: pools.camp || services,
-        scenarioCandidates: pools.scenarioCandidates || encounters.map((id) => ({ id, baseWeight: 1 }))
+        scenarioCandidates: pools.scenarioCandidates || encounters.map(authoredScenarioCandidate)
       }
     });
   };
