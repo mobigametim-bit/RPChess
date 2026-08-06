@@ -104,8 +104,16 @@ function resourceChip(document, icon, label, value) {
 function removeRelicResourceChips(root = document) {
   const resources = root.querySelectorAll?.('.rpvs__resources .rpvs__chip, .rpvs__resources .rp03-codex-launch, .rpvs__resources [data-rp03-codex-launch]') || [];
   for (const chip of resources) {
+    const isCodexLaunch = chip.matches?.('[data-rp03-codex-launch], .rp03-codex-launch');
     const label = `${chip.getAttribute('aria-label') || ''} ${chip.textContent || ''}`.toLowerCase();
-    if (label.includes('реликв') || chip.matches?.('[data-rp03-codex-launch]')) chip.remove();
+    if (isCodexLaunch) {
+      chip.hidden = true;
+      chip.setAttribute('aria-hidden', 'true');
+      chip.tabIndex = -1;
+      chip.style.display = 'none';
+    } else if (label.includes('реликв')) {
+      chip.remove();
+    }
   }
 }
 
