@@ -1,9 +1,9 @@
 name: Import Register 04 remaining assets
 
-# One-time workflow: this update deliberately triggers the importer now that the workflow exists on main.
 on:
   push:
-    branches: [main]
+    branches:
+      - agent/register04-assets
     paths:
       - 'scripts/import-register04-remaining.py'
       - '.github/workflows/import-register04-assets.yml'
@@ -20,9 +20,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
-      - name: Check out repository
+      - name: Check out repository branch
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
 
       - name: Set up Python
@@ -51,4 +52,4 @@ jobs:
           git config user.email 'actions@users.noreply.github.com'
           git add -A
           git commit -m 'Import and apply remaining Register 04 event art'
-          git push origin HEAD:main
+          git push origin "HEAD:${GITHUB_REF_NAME}"
