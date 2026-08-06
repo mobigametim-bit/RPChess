@@ -72,9 +72,25 @@ function environmentObject(registry, id) {
   return registry.byId[id] || null;
 }
 
+function blockingCells(registry) {
+  if (!registry || registry.format !== 'rpchess-environment-registry') throw new Error('invalid environment registry');
+  const cells = [];
+  const seen = new Set();
+  for (const object of registry.objects) {
+    if (object.type !== 'blocker' || object.visible !== true || object.active !== true || object.passable !== false) continue;
+    for (const cell of object.cells) {
+      if (seen.has(cell)) continue;
+      seen.add(cell);
+      cells.push(cell);
+    }
+  }
+  return Object.freeze(cells);
+}
+
 module.exports = {
   ENVIRONMENT_TYPES,
   normalizeEnvironmentObject,
   createEnvironmentRegistry,
-  environmentObject
+  environmentObject,
+  blockingCells
 };
