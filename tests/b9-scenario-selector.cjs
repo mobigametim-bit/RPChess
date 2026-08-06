@@ -5,6 +5,7 @@ const {
   normalizeScenarioCandidate,
   scenarioEligibility,
   scenarioWeight,
+  symmetricIncompatibilities,
   selectProductionScenario,
   generateProductionActGraph,
   materializeLevel
@@ -77,6 +78,13 @@ assert.strictEqual(selectedA.scenarioId, 'scenario.iron_hold');
 assert.deepStrictEqual(selectedA.optionalObjectiveRequirements, { minimumRosterSize: 5, requiredPieceTypes: ['r'] });
 assert.strictEqual(selectProductionScenario({ seed: 1, candidates, excludedScenarioIds: ['scenario.iron_hold'], context }), null);
 
+const asymmetric = [
+  { id: 'scenario.a', baseWeight: 1, incompatibleScenarioIds: ['scenario.b'] },
+  { id: 'scenario.b', baseWeight: 1 }
+];
+assert.deepStrictEqual(symmetricIncompatibilities(asymmetric.map(normalizeScenarioCandidate), ['scenario.a']), ['scenario.b']);
+assert.strictEqual(selectProductionScenario({ seed: 1, candidates: asymmetric, excludedScenarioIds: ['scenario.a'], context: {} }), null, 'a declared incompatibility must block b even when b does not repeat it');
+
 const graph = generateProductionActGraph({ rootSeed: 7007, regionId: 'region.iron_marches' });
 const source = graph.nodes.find((node) => (graph.outgoing[node.id] || []).some((edgeId) => {
   const target = graph.nodesById[graph.edgesById[edgeId].to];
@@ -113,4 +121,4 @@ for (const entry of battleEntries) {
 }
 assert.strictEqual(new Set(battleEntries.map((entry) => entry.contentId)).size, battleEntries.length, 'sibling scenario IDs must be distinct');
 
-console.log('B9 scenario selector: eligibility, author-driven factor weights, incompatibilities, deterministic selection and materialization passed.');
+console.log('B9 scenario selector: eligibility, author-driven factor weights, symmetric incompatibilities, deterministic selection and materialization passed.');
