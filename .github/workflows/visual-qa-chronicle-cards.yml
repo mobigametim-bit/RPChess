@@ -32,7 +32,7 @@ jobs:
           trap 'kill $SERVER_PID' EXIT
           sleep 2
           mkdir -p visual-qa-chronicles
-          cat > /tmp/chronicle-cards.mjs <<'JS'
+          cat > chronicle-cards-visual-runner.mjs <<'JS'
           import { chromium } from 'playwright';
           import fs from 'node:fs';
 
@@ -106,7 +106,7 @@ jobs:
           if (errors.length) throw new Error(errors.join('\n'));
           await browser.close();
           JS
-          node /tmp/chronicle-cards.mjs
+          node chronicle-cards-visual-runner.mjs
       - uses: actions/upload-artifact@v4
         with:
           name: chronicle-card-visual-qa
