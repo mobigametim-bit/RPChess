@@ -4,11 +4,13 @@ const { hash32, XorShift32 } = require('../core/determinism.cjs');
 const { deepFreeze, freezeArray } = require('./production-map-contract.cjs');
 
 const FACTOR_KEYS = Object.freeze(['region', 'phase', 'danger', 'branchProfile', 'board', 'objective', 'environment']);
+const SCENARIO_CANDIDATE_FORMAT = 'rpchess-production-scenario-candidate';
 
 function stringArray(value) {
   return freezeArray(Array.isArray(value) ? value.map(String) : value == null ? [] : [String(value)]);
 }
 function normalizeScenarioCandidate(input) {
+  if (input?.format === SCENARIO_CANDIDATE_FORMAT && input.schemaVersion === 1) return input;
   if (!input || typeof input !== 'object') throw new Error('scenario candidate must be an object');
   const id = String(input.id || input.scenarioId || '');
   if (!id) throw new Error('scenario candidate requires id');
@@ -18,6 +20,8 @@ function normalizeScenarioCandidate(input) {
   const factorWeights = {};
   for (const key of FACTOR_KEYS) factorWeights[key] = deepFreeze({ ...(input.factorWeights?.[key] || {}) });
   return deepFreeze({
+    format: SCENARIO_CANDIDATE_FORMAT,
+    schemaVersion: 1,
     id,
     baseWeight,
     regionIds: stringArray(input.regionIds),
@@ -50,7 +54,7 @@ function matchesRestriction(values, value) {
   return !values.length || value == null || values.includes(String(value));
 }
 function scenarioEligibility(candidateInput, context = {}) {
-  const candidate = candidateInput.factorWeights ? candidateInput : normalizeScenarioCandidate(candidateInput);
+  const candidate = normalizeScenarioCandidate(candidateInput);
   const facts = new Set(context.storyFacts || context.flags || []);
   const excluded = new Set(context.excludedScenarioIds || []);
   const adjacent = new Set(context.adjacentScenarioIds || []);
@@ -68,7 +72,7 @@ function scenarioEligibility(candidateInput, context = {}) {
   return deepFreeze({ eligible: candidate.baseWeight > 0, reason: candidate.baseWeight > 0 ? null : 'zero_weight' });
 }
 function scenarioWeight(candidateInput, context = {}) {
-  const candidate = candidateInput.factorWeights ? candidateInput : normalizeScenarioCandidate(candidateInput);
+  const candidate = normalizeScenarioCandidate(candidateInput);
   const eligibility = scenarioEligibility(candidate, context);
   if (!eligibility.eligible) return deepFreeze({ candidate, eligible: false, weight: 0, factors: freezeArray([]), reason: eligibility.reason });
   let weight = candidate.baseWeight;
@@ -110,6 +114,7 @@ function selectProductionScenario(options = {}) {
 
 module.exports = {
   FACTOR_KEYS,
+  SCENARIO_CANDIDATE_FORMAT,
   normalizeScenarioCandidate,
   scenarioEligibility,
   scenarioWeight,
