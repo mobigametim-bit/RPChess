@@ -61,6 +61,11 @@ function freezeArray(values) {
   return Object.freeze(values.slice());
 }
 
+function localizationValueSafe(localization, key, fallback) {
+  if (!key) return fallback;
+  return localization?.[key] ?? fallback;
+}
+
 function boardThemeMap(manifest) {
   return Object.freeze(Object.fromEntries(manifest.themes.map((theme) => [theme.id, Object.freeze({
     id: theme.id,
@@ -108,13 +113,13 @@ function assertBrowserSelection(bundle, selection) {
 }
 
 function createBrowserDependencies(options) {
-  const { bundle, language, army, aiProfile, aiMaxNodes, aiTimeBudgetMs, saveStore } = options;
+  const { bundle, language, aiProfile, aiMaxNodes, aiTimeBudgetMs, saveStore } = options;
   const localization = bundle.localization[language];
   if (!localization) throw new Error(`unsupported Iron Marches language: ${language}`);
   const scenarioTemplates = bundle.scenarioTemplates;
-  const battleProjector = (battleOptions) => projectIronMarchesBattleOptions(battleOptions, army);
 
   const nodeResolver = ({ runtime, node, content }) => {
+    const battleProjector = (battleOptions) => projectIronMarchesBattleOptions(battleOptions, runtime.army, runtime.stageB);
     if (node.type === 'event') return Object.freeze({ mode: 'event', reward: Object.freeze({ gold: 1, supplies: 1, meta: 0 }) });
     if (node.type === 'battle' || node.type === 'elite') {
       const created = createEncounterScenario(scenarioTemplates, content.id, {
@@ -137,6 +142,7 @@ function createBrowserDependencies(options) {
   };
 
   const bossPhaseBattleResolver = ({ runtime, bossId, phaseIndex, contentId }) => {
+    const battleProjector = (battleOptions) => projectIronMarchesBattleOptions(battleOptions, runtime.army, runtime.stageB);
     const created = createBossFromTemplates(scenarioTemplates, contentId || bossId, {
       seed: bossId === runtime.boss?.bossId ? runtime.boss.seed : hash32(`${runtime.seed}:${bossId}`),
       playerSide: runtime.playerSide,
@@ -154,6 +160,7 @@ function createBrowserDependencies(options) {
 
   return Object.freeze({
     contentRegistry: bundle.registry,
+    combatProfiles: bundle.combatProfiles,
     localization,
     boardThemes: boardThemeMap(bundle.boardThemeManifest),
     eventChoiceResolver: bundle.eventChoiceResolver,
@@ -172,7 +179,8 @@ function createBrowserIronMarchesRuntimeHost(options = {}) {
   const language = options.language || 'ru';
   const requestedSeed = Number(options.seed ?? 9042);
   const act = options.act ?? 1;
-  const nodeCount = options.nodeCount ?? 9;
+  const stageBEnabled = options.stageB === true;
+  const nodeCount = options.nodeCount ?? (stageBEnabled ? null : 9);
   const profileId = options.profileId || 'profile-1';
   const saveStore = options.saveStore || createBrowserProfileStore(options);
   const requestedSelection = Object.freeze({
@@ -188,6 +196,7 @@ function createBrowserIronMarchesRuntimeHost(options = {}) {
     contentRegistry: bundle.registry,
     combatProfiles: bundle.combatProfiles,
     defaultArmy: requestedArmy,
+    heroCatalog: (options.availableHeroIds || requestedSelection.heroIds).map((heroId) => { const hero = bundle.registry.get('hero', heroId); const profile = bundle.combatProfiles.heroes[heroId]; return { id: heroId, name: localizationValueSafe(bundle.localization[language], hero?.nameKey, heroId), pieceType: profile?.battlePieceType || hero?.pieceType || 'pawn', relicIds: profile?.relicIds || [] }; }),
     requireArmy: true
   });
 
@@ -208,7 +217,8 @@ function createBrowserIronMarchesRuntimeHost(options = {}) {
     const graph = generateActGraph({
       seed: requestedSeed,
       act,
-      nodeCount,
+      ...(nodeCount ? { nodeCount } : {}),
+      stageB: stageBEnabled,
       regionId: selection.regionId,
       contentPools: productionContentPools(bundle)
     });
@@ -226,13 +236,15 @@ function createBrowserIronMarchesRuntimeHost(options = {}) {
       army,
       contentRegistry: bundle.registry,
       combatProfiles: bundle.combatProfiles,
+      heroCatalog: (options.availableHeroIds || requestedSelection.heroIds).map((heroId) => { const hero = bundle.registry.get('hero', heroId); const profile = bundle.combatProfiles.heroes[heroId]; return { id: heroId, name: localizationValueSafe(bundle.localization[language], hero?.nameKey, heroId), pieceType: profile?.battlePieceType || hero?.pieceType || 'pawn', relicIds: profile?.relicIds || [] }; }),
+      preferredHeroId: requestedSelection.heroIds[0],
+      preselectPreferredHero: true,
       requireArmy: true
     });
   }
   const dependencies = createBrowserDependencies({
     bundle,
     language,
-    army,
     aiProfile: state.aiProfile,
     aiMaxNodes: options.aiMaxNodes ?? 8000,
     aiTimeBudgetMs: options.aiTimeBudgetMs ?? 0,

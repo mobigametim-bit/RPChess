@@ -33,9 +33,11 @@ async function main() {
   if (!rootHtml.includes('js/generated/iron-marches-runtime.bundle.js') || !rootHtml.includes('js/vertical-slice-app.mjs')) {
     throw new Error('root browser entry does not launch the production vertical slice');
   }
-  if (!rootHtml.includes('style.css') || !rootHtml.includes('css/approved-visual-shell.css')) {
-    throw new Error('root browser entry is missing the approved prototype visual shell');
+  if (!rootHtml.includes('style.css') || !rootHtml.includes('css/approved-visual-shell.css') || !rootHtml.includes('css/stage-b-ui.css')) {
+    throw new Error('root browser entry is missing the approved prototype or Stage B visual shell');
   }
+  if (!fs.existsSync(path.join(dist, 'js/register-04-event-assets.mjs'))) throw new Error('Register 04 event resolver is missing from dist');
+  if (!fs.existsSync(path.join(dist, 'assets/events/register-04/miners_on_strike.png'))) throw new Error('Register 04 runtime event art is missing from dist');
   if (rootHtml.includes('js/core.js') || rootHtml.includes('js/main.js')) {
     throw new Error('root browser entry still launches the legacy client');
   }

@@ -5,12 +5,21 @@ const { gameStatus } = require('../core/chess/rules.cjs');
 const { statusView } = require('../combat/statuses.cjs');
 const { legalWardAwareCommands } = require('../combat/ward-protection.cjs');
 const { technicalTileSet, validateTileSet } = require('../rendering/modular-board.cjs');
+const { visibleNode, scoutingCost } = require('../campaign/state.cjs');
 const {
   RUNTIME_FORMAT,
   RUNTIME_SCHEMA_VERSION,
   RUNTIME_STATUSES,
   contentKindForNode,
   availableVerticalSliceRoutes,
+  executeVerticalSliceDraft,
+  scoutVerticalSliceNode,
+  executeVerticalSliceBriefing,
+  chooseVerticalSliceRewardOffer,
+  executeVerticalSliceService,
+  executeVerticalSliceRetreat,
+  executeVerticalSliceTalent,
+  executeVerticalSliceActOutcome,
   enterVerticalSliceNode,
   chooseVerticalSliceEvent,
   executeVerticalSliceDeployment,
@@ -24,7 +33,13 @@ const { deploymentGateSnapshot } = require('./deployment-gate.cjs');
 const PRESENTER_FORMAT = 'rpchess-presenter-snapshot';
 const PRESENTER_SCHEMA_VERSION = 1;
 const PRESENTER_COMMANDS = Object.freeze([
+  'ChooseDraftHero',
+  'ChooseDraftRegular',
+  'ConfirmDraft',
   'Travel',
+  'ScoutNode',
+  'SetBriefingRoster',
+  'ConfirmBriefing',
   'PlaceDeploymentUnit',
   'RemoveDeploymentUnit',
   'ConfirmDeployment',
@@ -32,6 +47,14 @@ const PRESENTER_COMMANDS = Object.freeze([
   'PlayerCommand',
   'BeginBossPhase',
   'ClaimReward',
+  'ChooseRewardOffer',
+  'UseService',
+  'LeaveService',
+  'ContinueRoyalRetreat',
+  'ChooseTalent',
+  'ChooseActOutcome',
+  'SetReorganization',
+  'ConfirmReorganization',
   'SaveCheckpoint'
 ]);
 
@@ -369,6 +392,32 @@ function bossSnapshot(state, dependencies = {}) {
   });
 }
 
+function stageBPresenterSnapshot(state) {
+  const stageB = state.stageB;
+  if (!stageB) return null;
+  return deepFreeze(serializableCopy({
+    status: stageB.status,
+    act: stageB.act,
+    difficulty: stageB.difficulty,
+    commandLimit: stageB.commandLimit,
+    activeLimit: stageB.activeLimit,
+    draft: stageB.draft,
+    roster: stageB.roster,
+    briefing: stageB.briefing,
+    rewardOffers: stageB.pendingRewardOffers,
+    rewardHistory: stageB.rewardHistory,
+    service: stageB.service,
+    royalRetreat: stageB.royalRetreat,
+    actOutcome: stageB.actOutcome,
+    reorganization: stageB.reorganization,
+    storyFlags: stageB.storyFlags,
+    politicalChoices: stageB.politicalChoices,
+    regionalRecruits: stageB.regionalRecruits,
+    temporaryEffects: stageB.temporaryEffects,
+    economy: stageB.economy
+  }));
+}
+
 function campaignSnapshot(state, dependencies = {}) {
   const localization = dependencies.localization || null;
   const graph = state.campaign.graph;
@@ -381,21 +430,35 @@ function campaignSnapshot(state, dependencies = {}) {
     visibility: route.node.visibility,
     type: route.node.type,
     contentId: route.node.contentId,
+    danger: route.node.danger ?? null,
+    branchLength: route.node.branchLength ?? null,
+    scouted: Boolean(route.node.scouted),
+    intel: route.node.intel || null,
+    scoutCost: (() => { try { return scoutingCost(state.campaign, route.to); } catch (_error) { return null; } })(),
     label: localizationValue(localization, route.node.contentId ? `${route.node.contentId}.name` : null, route.node.type || route.to)
   }));
   const nodes = graph.nodes.map((node) => {
-    const visible = state.campaign.visibility[node.id] || (node.id === graph.startNodeId ? 3 : 0);
+    const view = visibleNode(state.campaign, node.id) || { visibility: 'hidden' };
     return Object.freeze({
       id: node.id,
       layer: node.layer,
-      type: visible >= 2 ? node.type : null,
-      contentId: visible >= 3 ? node.contentId : null,
-      visibility: visible === 0 ? 'hidden' : visible === 1 ? 'route' : visible === 2 ? 'type' : 'content',
+      index: node.index,
+      type: view.type || null,
+      contentId: view.contentId || null,
+      visibility: view.visibility,
+      danger: view.danger ?? null,
+      branchLength: view.branchLength ?? null,
+      convergence: Boolean(node.convergence),
+      mandatory: Boolean(node.mandatory),
+      secret: Boolean(node.secret),
+      scouted: Boolean(view.scouted),
+      intel: view.intel || null,
+      closed: (state.campaign.closedNodeIds || []).includes(node.id),
       visited: state.campaign.visitedNodeIds.includes(node.id),
       current: state.campaign.currentNodeId === node.id,
-      label: visible >= 3 && node.contentId
-        ? localizationValue(localization, `${node.contentId}.name`, node.type)
-        : visible >= 2 ? node.type : null
+      label: view.contentId
+        ? localizationValue(localization, `${view.contentId}.name`, view.type)
+        : view.type || null
     });
   });
   return Object.freeze({
@@ -409,21 +472,30 @@ function campaignSnapshot(state, dependencies = {}) {
     scouting: state.campaign.scouting,
     visitedNodeIds: freezeArray(state.campaign.visitedNodeIds),
     traversedEdgeIds: freezeArray(state.campaign.traversedEdgeIds),
+    closedNodeIds: freezeArray(state.campaign.closedNodeIds || []),
+    scoutedNodeIds: freezeArray(state.campaign.scoutedNodeIds || []),
+    secretNodeIdsDiscovered: freezeArray(state.campaign.secretNodeIdsDiscovered || []),
     nodes: freezeArray(nodes),
     routes: freezeArray(routes)
   });
 }
 
 function presenterActions(state, event, scenario) {
-  if (state.status === 'campaign') return freezeArray(['Travel']);
+  if (state.status === 'draft') return freezeArray(['ChooseDraftHero', 'ChooseDraftRegular', 'ConfirmDraft']);
+  if (state.status === 'campaign') return state.campaign.graph.stageB ? freezeArray(['Travel', 'ScoutNode', 'ChooseTalent']) : freezeArray(['Travel']);
+  if (state.status === 'briefing') return freezeArray(['SetBriefingRoster', 'ConfirmBriefing', 'ChooseTalent']);
   if (state.status === 'deployment') return freezeArray(['PlaceDeploymentUnit', 'RemoveDeploymentUnit', 'ConfirmDeployment']);
   if (state.status === 'event' && event?.status === 'active') return freezeArray(['ChooseEvent']);
   if (['scenario', 'boss'].includes(state.status) && scenario?.playerTurn) return freezeArray(['PlayerCommand']);
   if (state.status === 'boss_transition') return freezeArray(['BeginBossPhase']);
   if (state.status === 'reward') return freezeArray(['ClaimReward']);
+  if (state.status === 'reward_choice') return freezeArray(['ChooseRewardOffer', 'ChooseTalent']);
+  if (state.status === 'service') return freezeArray(['UseService', 'LeaveService', 'ChooseTalent']);
+  if (state.status === 'retreat') return freezeArray(['ContinueRoyalRetreat']);
+  if (state.status === 'act_outcome') return freezeArray(['ChooseActOutcome', 'ChooseTalent']);
+  if (state.status === 'reorganization') return freezeArray(['SetReorganization', 'ConfirmReorganization', 'ChooseTalent']);
   return freezeArray([]);
 }
-
 function createPresenterSnapshot(state, dependencies = {}) {
   assertRuntimeState(state);
   const campaign = campaignSnapshot(state, dependencies);
@@ -445,7 +517,8 @@ function createPresenterSnapshot(state, dependencies = {}) {
   const terminal = ['complete', 'failed'].includes(state.status) ? Object.freeze({
     outcome: state.status === 'complete' ? 'victory' : 'defeat',
     campaignStatus: state.campaign.status,
-    rewardsClaimed: state.rewardLog.length
+    rewardsClaimed: state.rewardLog.length,
+    reason: state.status === 'failed' ? (state.campaign.status === 'failed' ? 'Мат вашему королю' : 'Поход завершён поражением') : 'Железный Регент повержен'
   }) : null;
   return deepFreeze({
     format: PRESENTER_FORMAT,
@@ -461,6 +534,7 @@ function createPresenterSnapshot(state, dependencies = {}) {
       meta: state.resources.meta
     }),
     army,
+    stageB: stageBPresenterSnapshot(state),
     flags: freezeArray(state.flags || []),
     chronicleKeys: freezeArray(state.chronicleKeys || []),
     campaign,
@@ -481,10 +555,50 @@ function normalizePresenterCommand(command) {
   if (!command || typeof command !== 'object') throw new Error('presenter command is required');
   const type = String(command.type || '');
   if (!PRESENTER_COMMANDS.includes(type)) throw new Error(`unsupported presenter command: ${type}`);
+  if (type === 'ChooseDraftHero') {
+    const heroId = String(command.heroId || command.payload?.heroId || '');
+    if (!heroId) throw new Error('ChooseDraftHero requires heroId');
+    return Object.freeze({ type, heroId });
+  }
+  if (type === 'ChooseDraftRegular') {
+    const regularId = String(command.regularId || command.payload?.regularId || '');
+    if (!regularId) throw new Error('ChooseDraftRegular requires regularId');
+    return Object.freeze({ type, regularId });
+  }
   if (type === 'Travel') {
     const targetNodeId = String(command.targetNodeId || command.payload?.targetNodeId || '');
     if (!targetNodeId) throw new Error('Travel requires targetNodeId');
     return Object.freeze({ type, targetNodeId });
+  }
+  if (type === 'ScoutNode') {
+    const nodeId = String(command.nodeId || command.payload?.nodeId || '');
+    if (!nodeId) throw new Error('ScoutNode requires nodeId');
+    return Object.freeze({ type, nodeId });
+  }
+  if (type === 'SetBriefingRoster' || type === 'SetReorganization') {
+    const activeRosterIds = (command.activeRosterIds || command.payload?.activeRosterIds || []).map(String);
+    return Object.freeze({ type, activeRosterIds: freezeArray(activeRosterIds) });
+  }
+  if (type === 'ChooseRewardOffer') {
+    const offerId = String(command.offerId || command.payload?.offerId || '');
+    if (!offerId) throw new Error('ChooseRewardOffer requires offerId');
+    return Object.freeze({ type, offerId, targetRosterId: command.targetRosterId || command.payload?.targetRosterId || null });
+  }
+  if (type === 'UseService') {
+    const offerId = String(command.offerId || command.payload?.offerId || '');
+    if (!offerId) throw new Error('UseService requires offerId');
+    return Object.freeze({ type, offerId, targetRosterId: command.targetRosterId || command.payload?.targetRosterId || null });
+  }
+  if (type === 'ChooseTalent') {
+    const rosterId = String(command.rosterId || command.payload?.rosterId || '');
+    const talentId = String(command.talentId || command.payload?.talentId || '');
+    if (!rosterId || !talentId) throw new Error('ChooseTalent requires rosterId and talentId');
+    return Object.freeze({ type, rosterId, talentId });
+  }
+  if (type === 'ChooseActOutcome') {
+    const choiceId = String(command.choiceId || command.payload?.choiceId || '');
+    if (!choiceId) throw new Error('ChooseActOutcome requires choiceId');
+    return Object.freeze({ type, choiceId });
   }
   if (type === 'PlaceDeploymentUnit') {
     const unitId = String(command.unitId || command.payload?.unitId || '');
@@ -515,12 +629,20 @@ function dispatchPresenterCommand(state, commandInput, dependencies = {}) {
   const command = normalizePresenterCommand(commandInput);
   let nextState = state;
   let saveEnvelope = null;
-  if (command.type === 'Travel') nextState = enterVerticalSliceNode(state, command.targetNodeId, dependencies);
+  if (['ChooseDraftHero', 'ChooseDraftRegular', 'ConfirmDraft'].includes(command.type)) nextState = executeVerticalSliceDraft(state, command, dependencies);
+  else if (command.type === 'Travel') nextState = enterVerticalSliceNode(state, command.targetNodeId, dependencies);
+  else if (command.type === 'ScoutNode') nextState = scoutVerticalSliceNode(state, command.nodeId);
+  else if (['SetBriefingRoster', 'ConfirmBriefing'].includes(command.type)) nextState = executeVerticalSliceBriefing(state, command);
   else if (['PlaceDeploymentUnit', 'RemoveDeploymentUnit', 'ConfirmDeployment'].includes(command.type)) nextState = executeVerticalSliceDeployment(state, command, dependencies);
   else if (command.type === 'ChooseEvent') nextState = chooseVerticalSliceEvent(state, command.choiceId, dependencies);
   else if (command.type === 'PlayerCommand') nextState = executeVerticalSlicePlayerTurn(state, command.request, dependencies);
   else if (command.type === 'BeginBossPhase') nextState = beginVerticalSliceBossPhase(state, dependencies);
   else if (command.type === 'ClaimReward') nextState = claimVerticalSliceReward(state);
+  else if (command.type === 'ChooseRewardOffer') nextState = chooseVerticalSliceRewardOffer(state, command.offerId, command);
+  else if (['UseService', 'LeaveService'].includes(command.type)) nextState = executeVerticalSliceService(state, command);
+  else if (command.type === 'ContinueRoyalRetreat') nextState = executeVerticalSliceRetreat(state);
+  else if (command.type === 'ChooseTalent') nextState = executeVerticalSliceTalent(state, command);
+  else if (['ChooseActOutcome', 'SetReorganization', 'ConfirmReorganization'].includes(command.type)) nextState = executeVerticalSliceActOutcome(state, command);
   else if (command.type === 'SaveCheckpoint') {
     if (!dependencies.saveStore) throw new Error('SaveCheckpoint requires saveStore');
     saveEnvelope = saveVerticalSlice(dependencies.saveStore, state);
@@ -544,6 +666,7 @@ module.exports = {
   activeScenario,
   recentBattleEvents,
   armySnapshot,
+  stageBPresenterSnapshot,
   createPresenterSnapshot,
   normalizePresenterCommand,
   dispatchPresenterCommand

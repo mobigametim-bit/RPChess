@@ -9,8 +9,8 @@ const CORE_ASSETS = Object.freeze({
     startZone: `${ASSET_ROOT}/boards/neutral/start_zone.png`
   }),
   vfx: Object.freeze({
-    legalMove: `${ASSET_ROOT}/vfx/legal_move.png`,
-    captureMove: `${ASSET_ROOT}/vfx/capture_move.png`,
+    legalMove: null,
+    captureMove: null,
     check: `${ASSET_ROOT}/vfx/check.png`,
     checkmate: Object.freeze({ source: `${ASSET_ROOT}/vfx/checkmate.png`, columns: 8, rows: 8, frames: 24, durationMs: 720 }),
     pieceCapture: Object.freeze({ source: `${ASSET_ROOT}/vfx/piece_capture.png`, columns: 8, rows: 8, frames: 28, durationMs: 430 }),

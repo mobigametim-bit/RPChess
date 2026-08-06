@@ -1,6 +1,6 @@
 'use strict';
 
-const { indexToSquare } = require('../core/chess/position.cjs');
+const { indexToSquare, createPosition } = require('../core/chess/position.cjs');
 
 const RUNTIME_ARMY_FORMAT = 'rpchess-runtime-army';
 const RUNTIME_ARMY_SCHEMA_VERSION = 1;
@@ -201,7 +201,114 @@ function reserveIdForHero(heroId, usedIds) {
   return id;
 }
 
-function projectArmyBattleOptions(optionsInput, armyInput) {
+function stageBRosterMetadata(base, entry) {
+  return Object.freeze({
+    ...cleanHeroMetadata(base),
+    ...(entry.kind === 'hero' ? { heroId: entry.id } : {}),
+    ...(entry.kind === 'king' ? { kingId: entry.contentId || entry.id } : {}),
+    nameKey: base?.nameKey || null,
+    displayName: entry.name,
+    relicIds: freezeArray(entry.relicIds || []),
+    stageBRosterId: entry.id,
+    stars: entry.stars || 0,
+    merits: entry.merits || 0,
+    talentIds: freezeArray(entry.talents || []),
+    injury: entry.injury || null,
+    combatPieceType: entry.type,
+    armySource: entry.kind === 'hero' ? 'stage_b_hero' : entry.kind === 'king' ? 'stage_b_king' : 'stage_b_regular'
+  });
+}
+
+function stageBReserveId(entry, usedIds) {
+  const base = `stage_b_${entry.id.replace(/[^a-z0-9_-]+/gi, '_').toLowerCase()}`;
+  let id = base;
+  let suffix = 2;
+  while (usedIds.has(id)) { id = `${base}_${suffix}`; suffix += 1; }
+  usedIds.add(id);
+  return id;
+}
+
+function projectStageBRoster(projectedInput, stageB, playerSide) {
+  if (!stageB?.roster) return projectedInput;
+  const projected = projectedInput;
+  const active = stageB.roster.filter((entry) => entry.active && entry.available && entry.skipBattles <= 0);
+  const activeById = new Map(active.map((entry) => [entry.id, entry]));
+  const unassigned = new Map(active.map((entry) => [entry.id, entry]));
+  const board = projected.position.board.slice();
+  const identitiesBySquare = { ...projected.identitiesBySquare };
+  const metadata = { ...(projected.identityMetadata || {}) };
+  const usedIds = new Set([...Object.values(identitiesBySquare), ...(projected.reserve || []).map((entry) => entry.id)]);
+  const requiredPieceIds = new Set(projected.requiredPieceIds || []);
+
+  const takeMatching = (type, kind = null) => {
+    const entry = [...unassigned.values()].find((candidate) => candidate.type === type && (!kind || candidate.kind === kind));
+    if (entry) unassigned.delete(entry.id);
+    return entry || null;
+  };
+
+  for (let index = 0; index < board.length; index += 1) {
+    const piece = board[index];
+    if (!piece || piece.side !== playerSide) continue;
+    const square = indexToSquare(index);
+    const pieceId = identitiesBySquare[square];
+    const base = metadata[pieceId] || {};
+    let entry = null;
+    if (piece.type === 'k') entry = [...unassigned.values()].find((candidate) => candidate.kind === 'king') || null;
+    if (!entry && base.heroId && activeById.has(base.heroId)) entry = activeById.get(base.heroId);
+    if (!entry) entry = takeMatching(piece.type, 'regular');
+    else unassigned.delete(entry.id);
+    if (!entry) {
+      if (requiredPieceIds.has(pieceId)) {
+        metadata[pieceId] = anonymousRoleMetadata({ ...base, fixedScenarioRole: true });
+        continue;
+      }
+      board[index] = null;
+      delete identitiesBySquare[square];
+      delete metadata[pieceId];
+      continue;
+    }
+    metadata[pieceId] = stageBRosterMetadata(base, entry);
+  }
+
+  const reserve = [];
+  for (const existing of projected.reserve || []) {
+    if (existing.side !== playerSide) { reserve.push(existing); continue; }
+    const base = existing.metadata || {};
+    let entry = base.stageBRosterId ? unassigned.get(base.stageBRosterId) : null;
+    if (!entry && base.heroId && activeById.has(base.heroId)) entry = activeById.get(base.heroId);
+    if (!entry) entry = takeMatching(existing.type, 'regular');
+    else unassigned.delete(entry.id);
+    if (!entry) continue;
+    reserve.push(Object.freeze({ ...existing, metadata: stageBRosterMetadata(base, entry), orderCost: Math.max(1, PIECE_COMMAND_COST[entry.type] || existing.orderCost || 1) }));
+  }
+  for (const entry of unassigned.values()) {
+    if (entry.kind === 'king') continue;
+    reserve.push(Object.freeze({
+      id: stageBReserveId(entry, usedIds),
+      side: playerSide,
+      type: entry.type,
+      orderCost: Math.max(1, PIECE_COMMAND_COST[entry.type] || 1),
+      metadata: stageBRosterMetadata({}, entry)
+    }));
+  }
+
+  return Object.freeze({
+    ...projected,
+    position: createPosition({
+      board,
+      sideToMove: projected.position.sideToMove,
+      castling: projected.position.castling,
+      enPassant: projected.position.enPassant == null ? null : indexToSquare(projected.position.enPassant),
+      halfmove: projected.position.halfmove,
+      fullmove: projected.position.fullmove
+    }),
+    identitiesBySquare: Object.freeze(identitiesBySquare),
+    identityMetadata: Object.freeze(metadata),
+    reserve: freezeArray(reserve)
+  });
+}
+
+function projectArmyBattleOptions(optionsInput, armyInput, stageB = null) {
   const options = optionsInput;
   const army = armyInput;
   if (!options || !options.position || !options.identitiesBySquare) throw new Error('battle projection requires battle creation options');
@@ -291,12 +398,13 @@ function projectArmyBattleOptions(optionsInput, armyInput) {
     throw new Error(`projected army identity mismatch (unknown: ${[...new Set(unknown)].join(', ') || 'none'}; duplicate: ${[...new Set(duplicates)].join(', ') || 'none'}; missing: ${missing.join(', ') || 'none'})`);
   }
 
-  return Object.freeze({
+  const projected = Object.freeze({
     ...options,
     identitiesBySquare,
     identityMetadata: Object.freeze(metadata),
     reserve: freezeArray(reserve)
   });
+  return projectStageBRoster(projected, stageB, playerSide);
 }
 
 module.exports = {
@@ -307,5 +415,6 @@ module.exports = {
   createRuntimeArmy,
   validateRuntimeArmy,
   runtimeSelectionFromArmy,
+  projectStageBRoster,
   projectArmyBattleOptions
 };

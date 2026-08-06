@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "status": "IMPLEMENTED",
+  "verifiedAt": "2026-08-06",
+  "scope": [
+    "board canvas pieces",
+    "deployment and reserve pieces",
+    "animated moving pieces",
+    "fallback portrait glyphs"
+  ],
+  "contract": {
+    "anchor": "top-left",
+    "scaleChange": 1.1,
+    "overflow": "visible",
+    "boardGlyphSizeFactor": 0.264,
+    "movingGlyphWidthPercent": 33,
+    "reserveGlyphFontPx": 14.3
+  },
+  "regressions": [
+    "tests/approved-visual-contract.cjs",
+    "tests/stage-b-ui.cjs",
+    ".github/workflows/visual-qa-stage-b.yml"
+  ]
+}

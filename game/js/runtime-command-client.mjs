@@ -1,7 +1,13 @@
 const SNAPSHOT_FORMAT = 'rpchess-presenter-snapshot';
 const SNAPSHOT_SCHEMA_VERSION = 1;
 const CLIENT_COMMANDS = Object.freeze([
+  'ChooseDraftHero',
+  'ChooseDraftRegular',
+  'ConfirmDraft',
   'Travel',
+  'ScoutNode',
+  'SetBriefingRoster',
+  'ConfirmBriefing',
   'PlaceDeploymentUnit',
   'RemoveDeploymentUnit',
   'ConfirmDeployment',
@@ -9,13 +15,21 @@ const CLIENT_COMMANDS = Object.freeze([
   'PlayerCommand',
   'BeginBossPhase',
   'ClaimReward',
+  'ChooseRewardOffer',
+  'UseService',
+  'LeaveService',
+  'ContinueRoyalRetreat',
+  'ChooseTalent',
+  'ChooseActOutcome',
+  'SetReorganization',
+  'ConfirmReorganization',
   'SaveCheckpoint'
 ]);
 
 function validatePresenterSnapshot(snapshot) {
   if (!snapshot || snapshot.format !== SNAPSHOT_FORMAT) throw new Error('invalid RPChess presenter snapshot');
   if (snapshot.schemaVersion !== SNAPSHOT_SCHEMA_VERSION) throw new Error('unsupported RPChess presenter snapshot schema');
-  if (!['campaign', 'deployment', 'event', 'scenario', 'boss', 'boss_transition', 'reward', 'complete', 'failed'].includes(snapshot.status)) {
+  if (!['draft', 'campaign', 'briefing', 'deployment', 'event', 'scenario', 'boss', 'boss_transition', 'reward', 'reward_choice', 'service', 'retreat', 'act_outcome', 'reorganization', 'complete', 'failed'].includes(snapshot.status)) {
     throw new Error(`invalid presenter status: ${snapshot.status}`);
   }
   if (!snapshot.campaign || !Array.isArray(snapshot.campaign.nodes) || !Array.isArray(snapshot.campaign.routes)) {
@@ -38,10 +52,50 @@ function normalizeClientCommand(command) {
   if (!command || typeof command !== 'object') throw new Error('runtime command is required');
   const type = String(command.type || '');
   if (!CLIENT_COMMANDS.includes(type)) throw new Error(`unsupported runtime command: ${type}`);
+  if (type === 'ChooseDraftHero') {
+    const heroId = String(command.heroId || command.payload?.heroId || '');
+    if (!heroId) throw new Error('ChooseDraftHero requires heroId');
+    return Object.freeze({ type, heroId });
+  }
+  if (type === 'ChooseDraftRegular') {
+    const regularId = String(command.regularId || command.payload?.regularId || '');
+    if (!regularId) throw new Error('ChooseDraftRegular requires regularId');
+    return Object.freeze({ type, regularId });
+  }
   if (type === 'Travel') {
     const targetNodeId = String(command.targetNodeId || command.payload?.targetNodeId || '');
     if (!targetNodeId) throw new Error('Travel requires targetNodeId');
     return Object.freeze({ type, targetNodeId });
+  }
+  if (type === 'ScoutNode') {
+    const nodeId = String(command.nodeId || command.payload?.nodeId || '');
+    if (!nodeId) throw new Error('ScoutNode requires nodeId');
+    return Object.freeze({ type, nodeId });
+  }
+  if (type === 'SetBriefingRoster' || type === 'SetReorganization') {
+    const activeRosterIds = (command.activeRosterIds || command.payload?.activeRosterIds || []).map(String);
+    return Object.freeze({ type, activeRosterIds: Object.freeze(activeRosterIds) });
+  }
+  if (type === 'ChooseRewardOffer') {
+    const offerId = String(command.offerId || command.payload?.offerId || '');
+    if (!offerId) throw new Error('ChooseRewardOffer requires offerId');
+    return Object.freeze({ type, offerId, targetRosterId: command.targetRosterId || command.payload?.targetRosterId || null });
+  }
+  if (type === 'UseService') {
+    const offerId = String(command.offerId || command.payload?.offerId || '');
+    if (!offerId) throw new Error('UseService requires offerId');
+    return Object.freeze({ type, offerId, targetRosterId: command.targetRosterId || command.payload?.targetRosterId || null });
+  }
+  if (type === 'ChooseTalent') {
+    const rosterId = String(command.rosterId || command.payload?.rosterId || '');
+    const talentId = String(command.talentId || command.payload?.talentId || '');
+    if (!rosterId || !talentId) throw new Error('ChooseTalent requires rosterId and talentId');
+    return Object.freeze({ type, rosterId, talentId });
+  }
+  if (type === 'ChooseActOutcome') {
+    const choiceId = String(command.choiceId || command.payload?.choiceId || '');
+    if (!choiceId) throw new Error('ChooseActOutcome requires choiceId');
+    return Object.freeze({ type, choiceId });
   }
   if (type === 'PlaceDeploymentUnit') {
     const unitId = String(command.unitId || command.payload?.unitId || '');

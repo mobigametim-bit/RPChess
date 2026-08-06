@@ -150,12 +150,19 @@ function profileSelectionMarkup(profiles, options = {}) {
   const cards = profiles.map((profile, index) => {
     const number = index + 1;
     const available = Boolean(profile.available);
+    const primaryAction = available ? 'continue' : 'start';
     const status = !storageAvailable ? copy.unavailable : available ? `${copy.act} ${profile.act || 1} · ${profileRuntimeStatus(profile.runtimeStatus, options.language)}` : copy.empty;
-    const details = available ? `<div class="rpprofile__facts"><span>${copy.rewards}: ${profile.rewardsClaimed}</span><span>${copy.revision}: ${profile.revision}</span></div>${profileArmyMarkup(profile, options)}` : `<p class="rpprofile__muted">${escapeHtml(status)}</p>`;
-    const actions = available
-      ? `<button class="rpa-button rpa-button--primary" data-profile-action="continue" data-profile-id="${profile.profileId}">${copy.continue}</button><button class="rpa-button" data-profile-action="new" data-profile-id="${profile.profileId}">${copy.fresh}</button><button class="rpa-button rpa-button--danger" data-profile-action="delete" data-profile-id="${profile.profileId}">${copy.remove}</button>`
-      : `<button class="rpa-button rpa-button--primary" data-profile-action="start" data-profile-id="${profile.profileId}">${copy.start}</button>`;
-    return `<article class="rpprofile__card rpa-profile-card rpa-panel rpa-panel--frame"><div class="rpprofile__number">${number}</div><div><h2>${options.language === 'en' ? 'Chronicle' : 'Хроника'} ${number}</h2><strong>${escapeHtml(status)}</strong>${details}</div><div class="rpprofile__actions rpa-profile-card__actions">${actions}</div></article>`;
+    const details = available
+      ? `<div class="rpprofile__facts"><span>${copy.rewards}: ${profile.rewardsClaimed}</span><span>${copy.revision}: ${profile.revision}</span></div>${profileArmyMarkup(profile, options)}`
+      : `<p class="rpprofile__muted">${escapeHtml(options.language === 'en' ? 'Click the chronicle to begin a new campaign.' : 'Щёлкните по хронике, чтобы начать новый поход.')}</p>`;
+    const secondary = available
+      ? `<button class="rpa-button" data-profile-action="new" data-profile-id="${profile.profileId}">${copy.fresh}</button><button class="rpa-button rpa-button--danger" data-profile-action="delete" data-profile-id="${profile.profileId}">${copy.remove}</button>`
+      : '';
+    return `<article class="rpprofile__card rpa-profile-card rpa-panel rpa-panel--frame" data-profile-primary="${primaryAction}" data-profile-id="${profile.profileId}" role="button" tabindex="0" aria-label="${escapeHtml((options.language === 'en' ? 'Chronicle ' : 'Хроника ') + number + ': ' + status)}">
+      <div class="rpprofile__number">${number}</div>
+      <div class="rpprofile__summary"><h2>${options.language === 'en' ? 'Chronicle' : 'Хроника'} ${number}</h2><strong>${escapeHtml(status)}</strong>${details}</div>
+      <div class="rpprofile__actions rpa-profile-card__actions"><button class="rpa-button rpa-button--primary" data-profile-action="${primaryAction}" data-profile-id="${profile.profileId}">${available ? copy.continue : copy.start}</button>${secondary}</div>
+    </article>`;
   }).join('');
   return `<main class="rpprofile rpa-subscreen" style="background-image:url('${sceneArt('codex')}')"><section class="rpa-subscreen__content"><header class="rpa-screen-header"><div><div class="rpa-eyebrow">RPCHESS · ХРОНИКИ</div><h1>${copy.title}</h1><p>${copy.subtitle}</p></div><button class="rpa-button" data-shell-action="menu">← ${options.language === 'en' ? 'Main menu' : 'Главное меню'}</button></header>${storageAvailable ? '' : `<div class="rpprofile__warning" role="status">${copy.warning}</div>`}<div class="rpprofile__grid rpa-profile-list">${cards}</div></section></main>`;
 }
@@ -163,12 +170,11 @@ function profileSelectionMarkup(profiles, options = {}) {
 function menuMarkup(profiles, progress, language = 'ru') {
   const active = profiles.filter((profile) => profile.available).sort((a, b) => Number(b.savedAt || 0) - Number(a.savedAt || 0))[0] || null;
   const unlocked = unlockedCommanders(progress).length;
-  return `<main class="rpa-menu">
+  return `<main class="rpa-menu rpa-menu--prototype">
     <div class="rpa-menu__layout">
-      <section class="rpa-menu__main rpa-panel">
+      <section class="rpa-menu__main rpa-menu__main--open">
         <div class="rpa-menu__eyebrow">FANTASY TACTICAL CHESS ROGUELITE</div>
         <img class="rpa-wordmark" src="generated_assets/title_wordmark.png" alt="RPChess">
-        <p class="rpa-menu__lead">${language === 'en' ? 'Lead a living chess army through the Iron Marches. Every warrior, oath and relic changes the rules of the board.' : 'Проведите живую шахматную армию через Железные Марши. Каждый воин, клятва и реликвия меняют правила доски.'}</p>
         <div class="rpa-menu__actions">
           ${active ? `<button class="rpa-button rpa-button--primary" data-shell-action="continue" data-profile-id="${active.profileId}">${language === 'en' ? 'Continue campaign' : 'Продолжить поход'}<small>${profileRuntimeStatus(active.runtimeStatus, language)} · ${language === 'en' ? 'Act' : 'Акт'} ${active.act || 1}</small></button>` : ''}
           <button class="rpa-button rpa-button--primary" data-shell-action="profiles">${language === 'en' ? 'New campaign' : 'Новый поход'}<small>${language === 'en' ? 'Choose a chronicle and commander' : 'Выбрать хронику и командира'}</small></button>
@@ -176,7 +182,7 @@ function menuMarkup(profiles, progress, language = 'ru') {
         </div>
       </section>
       <aside class="rpa-menu__status rpa-panel rpa-panel--frame">
-        <img src="generated_assets/logo_main.png" alt="" style="width:82px;height:82px;object-fit:contain">
+        <img src="generated_assets/logo_main.png" alt="" class="rpa-menu__crest">
         <h2>${language === 'en' ? 'Your war council' : 'Ваш военный совет'}</h2>
         <div class="rpa-menu__stats"><div><span>${language === 'en' ? 'Commanders' : 'Командиры'}</span><strong>${unlocked}/${COMMANDERS.length}</strong></div><div><span>${language === 'en' ? 'Discoveries' : 'Открытия'}</span><strong>${progress.discoveries}</strong></div><div><span>${language === 'en' ? 'Victories' : 'Победы'}</span><strong>${progress.victories}</strong></div></div>
         <div class="rpa-onboarding"><div><strong>1</strong><span>${language === 'en' ? 'Choose one commander. Others unlock through discoveries.' : 'Выберите одного командира. Остальные открываются через находки и решения.'}</span></div><div><strong>2</strong><span>${language === 'en' ? 'Travel, resolve events and fight on a living board.' : 'Путешествуйте, принимайте решения и сражайтесь на живой доске.'}</span></div><div><strong>3</strong><span>${language === 'en' ? 'Reach the Iron Regent and defeat both phases.' : 'Доберитесь до Железного Регента и победите обе фазы.'}</span></div></div>
@@ -198,7 +204,7 @@ function commanderSelectionMarkup(profileId, progress, selectedCommanderId, bund
   }).join('');
   const hero = bundle.registry.get('hero', selected.heroId);
   const heroName = profileLocalizedValue({ localization: bundle.localization?.[language] }, hero?.nameKey, selected.heroName);
-  return `<main class="rpa-subscreen" style="background-image:url('${sceneArt('campaign')}')"><section class="rpa-subscreen__content"><header class="rpa-screen-header"><div><div class="rpa-eyebrow">${language === 'en' ? 'NEW CAMPAIGN' : 'НОВЫЙ ПОХОД'}</div><h1>${language === 'en' ? 'Choose who leads the army' : 'Выберите, за кого играть'}</h1><p>${language === 'en' ? 'Only one named commander joins at the start. New leaders unlock through events, services, shops and completed campaigns.' : 'В начале похода доступен один именной командир. Новые лидеры открываются через события, услуги, лавки и завершённые походы.'}</p></div><button class="rpa-button" data-shell-action="profiles">← ${language === 'en' ? 'Profiles' : 'Профили'}</button></header><div class="rpa-commander-layout"><div class="rpa-commander-grid">${cards}</div><aside class="rpa-launch rpa-panel rpa-panel--frame"><div class="rpa-launch__portrait" style="background-image:linear-gradient(#0001,#000c),url('${selected.portrait}')"></div><div class="rpa-launch__body"><div class="rpa-eyebrow">${language === 'en' ? 'STARTING COMMANDER' : 'СТАРТОВЫЙ КОМАНДИР'}</div><h2>${escapeHtml(language === 'en' ? selected.nameEn : selected.name)}</h2><p>${escapeHtml(heroName)}</p><div class="rpa-loadout"><div><img src="${king?.portrait || ''}" alt=""><span><small>${language === 'en' ? 'King' : 'Король'}</small><strong>${language === 'en' ? 'Oathkeeper' : 'Хранитель Клятвы'}</strong></span></div><div><img src="${doctrine?.emblem || ''}" alt=""><span><small>${language === 'en' ? 'Doctrine' : 'Доктрина'}</small><strong>${language === 'en' ? 'Fortress' : 'Крепость'}</strong></span></div></div><label class="rpa-field">${language === 'en' ? 'World seed' : 'Предначертание мира'}<input inputmode="numeric" data-world-seed value="9042" maxlength="10"></label><button class="rpa-button rpa-button--primary" data-launch-commander data-profile-id="${profileId}">${language === 'en' ? 'Begin campaign' : 'Начать поход'}</button></div></aside></div></section></main>`;
+  return `<main class="rpa-subscreen" style="background-image:url('${sceneArt('campaign')}')"><section class="rpa-subscreen__content"><header class="rpa-screen-header"><div><div class="rpa-eyebrow">${language === 'en' ? 'NEW CAMPAIGN' : 'НОВЫЙ ПОХОД'}</div><h1>${language === 'en' ? 'Choose who leads the army' : 'Выберите, за кого играть'}</h1><p>${language === 'en' ? 'Only one named commander joins at the start. New leaders unlock through events, services, shops and completed campaigns.' : 'В начале похода доступен один именной командир. Новые лидеры открываются через события, услуги, лавки и завершённые походы.'}</p></div><button class="rpa-button" data-shell-action="profiles">← ${language === 'en' ? 'Profiles' : 'Профили'}</button></header><div class="rpa-commander-layout"><div class="rpa-commander-grid">${cards}</div><aside class="rpa-launch rpa-panel rpa-panel--frame" data-commander-preview><div class="rpa-launch__portrait" data-preview-portrait style="background-image:linear-gradient(#0001,#000c),url('${selected.portrait}')"></div><div class="rpa-launch__body"><div class="rpa-eyebrow">${language === 'en' ? 'STARTING COMMANDER' : 'СТАРТОВЫЙ КОМАНДИР'}</div><h2 data-preview-name>${escapeHtml(language === 'en' ? selected.nameEn : selected.name)}</h2><p data-preview-hero>${escapeHtml(heroName)}</p><div class="rpa-loadout"><div><img data-preview-king src="${king?.portrait || ''}" alt=""><span><small>${language === 'en' ? 'King' : 'Король'}</small><strong>${language === 'en' ? 'Oathkeeper' : 'Хранитель Клятвы'}</strong></span></div><div><img data-preview-doctrine src="${doctrine?.emblem || ''}" alt=""><span><small>${language === 'en' ? 'Doctrine' : 'Доктрина'}</small><strong>${language === 'en' ? 'Fortress' : 'Крепость'}</strong></span></div></div><label class="rpa-field">${language === 'en' ? 'World seed' : 'Предначертание мира'}<input inputmode="numeric" data-world-seed value="9042" maxlength="10"></label><button class="rpa-button rpa-button--primary" data-launch-commander data-profile-id="${profileId}">${language === 'en' ? 'Begin campaign' : 'Начать поход'}</button></div></aside></div></section></main>`;
 }
 
 function settingsMarkup(settings, language = 'ru') {
@@ -208,9 +214,15 @@ function settingsMarkup(settings, language = 'ru') {
 function chronicleMarkup(progress, language = 'ru') {
   const items = COMMANDERS.map((commander) => {
     const unlocked = progress.unlockPoints >= commander.unlock;
-    return `<article class="rpa-achievement ${unlocked ? '' : 'is-locked'}"><img src="${commander.portrait}" alt=""><div><h3>${escapeHtml(language === 'en' ? commander.nameEn : commander.name)}</h3><p>${unlocked ? (language === 'en' ? `Available · ${commander.heroName}` : `Доступен · ${commander.heroName}`) : (language === 'en' ? `Locked: ${progress.unlockPoints}/${commander.unlock} discoveries` : `Закрыт: ${progress.unlockPoints}/${commander.unlock} открытий`)}</p></div></article>`;
+    const status = unlocked
+      ? (language === 'en' ? `Available · ${commander.heroName}` : `Доступен · ${commander.heroName}`)
+      : (language === 'en' ? `Locked: ${progress.unlockPoints}/${commander.unlock} discoveries` : `Закрыт: ${progress.unlockPoints}/${commander.unlock} открытий`);
+    const body = `<img src="${commander.portrait}" alt=""><span class="rpa-chronicle-card__copy"><span class="rpa-eyebrow">${unlocked ? (language === 'en' ? 'AVAILABLE COMMANDER' : 'ДОСТУПНЫЙ КОМАНДИР') : (language === 'en' ? 'LOCKED' : 'ЗАКРЫТО')}</span><strong>${escapeHtml(language === 'en' ? commander.nameEn : commander.name)}</strong><small>${escapeHtml(status)}</small><span>${escapeHtml(language === 'en' ? commander.descriptionEn : commander.description)}</span></span>${unlocked ? `<span class="rpa-chronicle-card__action">${language === 'en' ? 'Choose' : 'Выбрать'} →</span>` : `<span class="rpa-lock">${escapeHtml(status)}</span>`}`;
+    return unlocked
+      ? `<button class="rpa-chronicle-card" data-chronicle-commander="${commander.id}">${body}</button>`
+      : `<article class="rpa-chronicle-card is-locked" aria-disabled="true">${body}</article>`;
   }).join('');
-  return `<main class="rpa-subscreen" style="background-image:url('${sceneArt('achievements')}')"><section class="rpa-subscreen__content"><header class="rpa-screen-header"><div><div class="rpa-eyebrow">${language === 'en' ? 'CHRONICLE' : 'ХРОНИКА'}</div><h1>${language === 'en' ? 'Commanders and discoveries' : 'Командиры и открытия'}</h1><p>${language === 'en' ? 'Events, services, shops and victories expand the available war council.' : 'События, услуги, лавки и победы расширяют доступный военный совет.'}</p></div><button class="rpa-button" data-shell-action="menu">← ${language === 'en' ? 'Main menu' : 'Главное меню'}</button></header><div class="rpa-menu__stats" style="margin-bottom:14px"><div><span>${language === 'en' ? 'Discoveries' : 'Открытия'}</span><strong>${progress.discoveries}</strong></div><div><span>${language === 'en' ? 'Victories' : 'Победы'}</span><strong>${progress.victories}</strong></div><div><span>${language === 'en' ? 'Commanders' : 'Командиры'}</span><strong>${unlockedCommanders(progress).length}/${COMMANDERS.length}</strong></div></div><div class="rpa-panel rpa-achievement-grid">${items}</div></section></main>`;
+  return `<main class="rpa-subscreen" style="background-image:url('${sceneArt('achievements')}')"><section class="rpa-subscreen__content"><header class="rpa-screen-header"><div><div class="rpa-eyebrow">${language === 'en' ? 'CHRONICLE' : 'ХРОНИКА'}</div><h1>${language === 'en' ? 'Commanders and discoveries' : 'Командиры и открытия'}</h1><p>${language === 'en' ? 'Choose an unlocked commander or review the next discovery goal.' : 'Выберите открытого командира или посмотрите условие следующего открытия.'}</p></div><button class="rpa-button" data-shell-action="menu">← ${language === 'en' ? 'Main menu' : 'Главное меню'}</button></header><div class="rpa-menu__stats rpa-chronicle-stats"><div><span>${language === 'en' ? 'Discoveries' : 'Открытия'}</span><strong>${progress.discoveries}</strong></div><div><span>${language === 'en' ? 'Victories' : 'Победы'}</span><strong>${progress.victories}</strong></div><div><span>${language === 'en' ? 'Commanders' : 'Командиры'}</span><strong>${unlockedCommanders(progress).length}/${COMMANDERS.length}</strong></div></div><div class="rpa-chronicle-list">${items}</div></section></main>`;
 }
 
 function showFatal(root, error) {
@@ -298,7 +310,7 @@ function startVerticalSlice(options = {}) {
     currentProfileId = profileId;
     progress = Object.freeze({ ...progress, lastProfileId: profileId, lastCommanderId: commanderId || progress.lastCommanderId });
     writeShellProgress(baseOptions.storage, progress);
-    selectionHost = runtimeApi.createBrowserRunSelectionHost({ ...baseOptions, seed, profileId, forceNew, heroLimit: 1, minimumHeroes: 1 });
+    selectionHost = runtimeApi.createBrowserRunSelectionHost({ ...baseOptions, stageB: true, seed, profileId, forceNew, heroLimit: 1, minimumHeroes: 1, availableHeroIds: unlockedCommanders(progress).map((commander) => commander.heroId) });
     const initial = selectionHost.getSnapshot();
     if (initial.status === 'ready') { mountRuntime(); return; }
     if (!commanderId) { renderCommanderSelection(profileId); return; }
@@ -335,7 +347,43 @@ function startVerticalSlice(options = {}) {
       else if (action === 'new' && globalThis.confirm?.(copy.confirmFresh) !== false) renderCommanderSelection(profileId);
       else if (action === 'delete' && globalThis.confirm?.(copy.confirmDelete) !== false) { runtimeApi.deleteBrowserProfile(store, profileId); renderProfiles(); }
     }));
-    root.querySelectorAll('[data-commander-id]').forEach((button) => button.addEventListener('click', () => { selectedCommanderId = button.dataset.commanderId; audio.click(); renderCommanderSelection(currentProfileId); }));
+    root.querySelectorAll('[data-commander-id]').forEach((button) => button.addEventListener('click', () => {
+      selectedCommanderId = button.dataset.commanderId;
+      audio.activate(); audio.click();
+      root.querySelectorAll('[data-commander-id]').forEach((card) => card.setAttribute('aria-pressed', String(card === button)));
+      const commander = commanderById(selectedCommanderId);
+      const preview = root.querySelector('[data-commander-preview]');
+      if (!preview || !commander) return;
+      const hero = bundle.registry.get('hero', commander.heroId);
+      const heroName = profileLocalizedValue({ localization: bundle.localization?.[baseOptions.language] }, hero?.nameKey, commander.heroName);
+      const king = kingAssets(commander.kingId);
+      const doctrine = doctrineAssets(commander.doctrineId);
+      const portrait = preview.querySelector('[data-preview-portrait]');
+      if (portrait) portrait.style.backgroundImage = `linear-gradient(#0001,#000c),url('${commander.portrait}')`;
+      const name = preview.querySelector('[data-preview-name]'); if (name) name.textContent = baseOptions.language === 'en' ? commander.nameEn : commander.name;
+      const heroCopy = preview.querySelector('[data-preview-hero]'); if (heroCopy) heroCopy.textContent = heroName;
+      const kingImage = preview.querySelector('[data-preview-king]'); if (kingImage) kingImage.src = king?.portrait || '';
+      const doctrineImage = preview.querySelector('[data-preview-doctrine]'); if (doctrineImage) doctrineImage.src = doctrine?.emblem || '';
+    }));
+    root.querySelectorAll('[data-chronicle-commander]').forEach((button) => button.addEventListener('click', () => {
+      selectedCommanderId = button.dataset.chronicleCommander;
+      progress = Object.freeze({ ...progress, lastCommanderId: selectedCommanderId });
+      writeShellProgress(baseOptions.storage, progress);
+      audio.activate(); audio.click();
+      renderProfiles();
+    }));
+    root.querySelectorAll('[data-profile-primary]').forEach((card) => {
+      const activate = (event) => {
+        if (event.target.closest('button')) return;
+        const action = card.dataset.profilePrimary;
+        const profileId = card.dataset.profileId;
+        audio.activate(); audio.click();
+        if (action === 'continue') mountProfile(profileId, false);
+        else renderCommanderSelection(profileId);
+      };
+      card.addEventListener('click', activate);
+      card.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); activate(event); } });
+    });
     root.querySelector('[data-launch-commander]')?.addEventListener('click', () => {
       audio.activate(); audio.ability();
       const seedInput = Number(root.querySelector('[data-world-seed]')?.value);
