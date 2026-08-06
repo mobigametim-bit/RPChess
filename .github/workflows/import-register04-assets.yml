@@ -1,6 +1,6 @@
 name: Import Register 04 remaining assets
 
-# One-time branch-push execution.
+# Branch marker used to trigger the trusted pull_request_target importer.
 on:
   push:
     branches:
