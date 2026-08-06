@@ -17,8 +17,8 @@ concurrency:
 jobs:
   import-assets:
     if: github.event.pull_request.head.ref == 'agent/register04-assets'
-    runs-on: ubuntu-latest
-    timeout-minutes: 40
+    runs-on: ubuntu-slim
+    timeout-minutes: 15
     steps:
       - name: Check out pull request branch
         uses: actions/checkout@v4
@@ -53,12 +53,6 @@ jobs:
       - name: Validate Register 04 resolver and assets
         if: steps.guard.outputs.run_import == 'true'
         run: node tests/register-04-event-assets.cjs
-
-      - name: Build production browser distribution
-        if: steps.guard.outputs.run_import == 'true'
-        run: |
-          npm ci
-          npm run build
 
       - name: Commit imported assets and remove one-time importer
         if: steps.guard.outputs.run_import == 'true'
