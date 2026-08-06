@@ -55,22 +55,34 @@ jobs:
                 const rect = card.getBoundingClientRect();
                 return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
               });
-              const rows = [...new Set(rects.map((rect) => Math.round(rect.y)))];
-              const clipped = [...document.querySelectorAll('.rpa-profile-card--approved h2,.rpa-profile-card--approved strong,.rpa-profile-card--approved p,.rpa-profile-card--approved span,.rpa-profile-card--approved button')]
+              const gridTemplateColumns = grid ? getComputedStyle(grid).gridTemplateColumns : '';
+              const textSelector = '.rpprofile__approved-title,.rpprofile__approved-status,.rpprofile__approved-content p,.rpprofile__approved-chips span,.rpprofile__approved-actions button';
+              const textElements = [...document.querySelectorAll(textSelector)];
+              const clipped = textElements
                 .filter((element) => element.scrollWidth > element.clientWidth + 3 || element.scrollHeight > element.clientHeight + 3)
                 .map((element) => ({ text: element.textContent.trim().slice(0, 100), client: [element.clientWidth, element.clientHeight], scroll: [element.scrollWidth, element.scrollHeight] }));
+              const unsafeText = textElements.flatMap((element) => {
+                const card = element.closest('.rpa-profile-card--approved');
+                if (!card) return [];
+                const elementRect = element.getBoundingClientRect();
+                const cardRect = card.getBoundingClientRect();
+                const safeInset = innerWidth <= 480 ? 28 : innerWidth <= 760 ? 34 : 40;
+                const unsafe = elementRect.left < cardRect.left + safeInset - 2 || elementRect.right > cardRect.right - safeInset + 2;
+                return unsafe ? [{ text: element.textContent.trim().slice(0, 100), element: [elementRect.left, elementRect.right], card: [cardRect.left, cardRect.right], safeInset }] : [];
+              });
               return {
                 count: cards.length,
                 rects,
-                columns: Math.max(...rows.map((row) => rects.filter((rect) => Math.round(rect.y) === row).length)),
+                columns: gridTemplateColumns.trim() ? gridTemplateColumns.trim().split(/\s+/).length : 0,
                 viewport: [innerWidth, innerHeight],
                 documentWidth: document.documentElement.scrollWidth,
                 gridWidth: grid?.getBoundingClientRect().width || 0,
                 contentWidth: content?.getBoundingClientRect().width || 0,
-                gridTemplateColumns: grid ? getComputedStyle(grid).gridTemplateColumns : '',
+                gridTemplateColumns,
                 gridDisplay: grid ? getComputedStyle(grid).display : '',
                 rootFontSize: getComputedStyle(document.documentElement).fontSize,
                 clipped,
+                unsafeText,
                 createButtons: document.querySelectorAll('[data-profile-action="start"]').length
               };
             });
@@ -78,9 +90,10 @@ jobs:
             await page.screenshot({ path: `visual-qa-chronicles/${label}.png`, fullPage: true });
             if (result.count !== 3) throw new Error(`${label}: expected 3 cards, received ${result.count}`);
             if (result.columns !== expectedColumns) throw new Error(`${label}: expected ${expectedColumns} columns, received ${result.columns}; ${JSON.stringify(result)}`);
-            if (result.rects.some((rect) => rect.width > 520 || rect.height > 610)) throw new Error(`${label}: oversized card ${JSON.stringify(result.rects)}`);
+            if (result.rects.some((rect) => rect.width > 520 || rect.height > 590)) throw new Error(`${label}: oversized card ${JSON.stringify(result.rects)}`);
             if (result.documentWidth > result.viewport[0] + 3) throw new Error(`${label}: horizontal overflow ${result.documentWidth}/${result.viewport[0]}`);
             if (result.clipped.length) throw new Error(`${label}: clipped text ${JSON.stringify(result.clipped)}`);
+            if (result.unsafeText.length) throw new Error(`${label}: text crossed decorative frame safe area ${JSON.stringify(result.unsafeText)}`);
             if (result.createButtons < 1) throw new Error(`${label}: create actions are missing`);
           }
 
