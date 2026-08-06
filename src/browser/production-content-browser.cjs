@@ -15,6 +15,7 @@ const {
   compileProductionEventPack,
   compileProductionLocalization
 } = require('../content/production-events.cjs');
+const { assertProductionEventPolicy, productionEventPolicyReport } = require('../content/production-event-policy.cjs');
 const { createCompatibleProductionEventChoiceResolver } = require('../content/production-event-runtime.cjs');
 const { bindRegister04EventArt } = require('../content/register-04-event-assets.cjs');
 const {
@@ -44,7 +45,8 @@ function playableRegistry(registry, productionEvents) {
 }
 
 function buildBrowserProductionBundle() {
-  const productionEvents = validateProductionEventLibrary(productionEventSource);
+  const productionEvents = assertProductionEventPolicy(validateProductionEventLibrary(productionEventSource));
+  const eventPolicyReport = productionEventPolicyReport(productionEvents);
   const productionPack = bindRegister04EventArt(compileProductionEventPack(productionPackSource, productionEvents));
   const localization = Object.freeze({
     ru: Object.freeze({ ...localizationRu, ...compileProductionLocalization(productionEvents, 'ru') }),
@@ -70,6 +72,7 @@ function buildBrowserProductionBundle() {
     sourceRegistry,
     localization,
     productionEvents,
+    eventPolicyReport,
     combatProfiles,
     eventEffectCatalog,
     eventChoiceResolver: createCompatibleProductionEventChoiceResolver(productionEvents, catalogEventChoiceResolver),
