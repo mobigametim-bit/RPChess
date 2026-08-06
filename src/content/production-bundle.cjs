@@ -16,6 +16,7 @@ const {
   compileProductionEventPack,
   compileProductionLocalization
 } = require('./production-events.cjs');
+const { assertProductionEventPolicy, productionEventPolicyReport } = require('./production-event-policy.cjs');
 const { createCompatibleProductionEventChoiceResolver } = require('./production-event-runtime.cjs');
 const { bindRegister04EventArt } = require('./register-04-event-assets.cjs');
 
@@ -78,7 +79,8 @@ function buildProductionContentBundle(options = {}) {
   if (!Array.isArray(effectCatalogPaths) || !effectCatalogPaths.length) throw new Error('production content requires at least one effect catalog');
 
   const boardThemeManifest = loadBoardThemeManifest(resolveProjectPath(projectRoot, boardManifestPath));
-  const productionEvents = loadProductionEventLibrary(resolveProjectPath(projectRoot, productionEventPath));
+  const productionEvents = assertProductionEventPolicy(loadProductionEventLibrary(resolveProjectPath(projectRoot, productionEventPath)));
+  const eventPolicyReport = productionEventPolicyReport(productionEvents);
   const localization = mergeProductionLocalization(mergeLocalization(projectRoot, localizationPaths), productionEvents);
   const registry = new ContentRegistry({ boardThemeManifest });
   const packs = [];
@@ -108,6 +110,7 @@ function buildProductionContentBundle(options = {}) {
     combatProfilePath,
     productionEventPath,
     productionEvents,
+    eventPolicyReport,
     combatProfiles,
     eventEffectCatalog,
     eventChoiceResolver,
@@ -128,7 +131,7 @@ function productionContentReport(bundle) {
   const languageCounts = {};
   for (const language of ['ru', 'en']) languageCounts[language] = Object.keys(bundle.localization[language]).length;
   return Object.freeze({
-    ok: missingLocalization.length === 0,
+    ok: missingLocalization.length === 0 && bundle.eventPolicyReport.ok,
     packs: bundle.packs.length,
     summary: bundle.summary,
     statuses: Object.freeze(statuses),
@@ -136,6 +139,7 @@ function productionContentReport(bundle) {
     effectCatalogs: bundle.effectCatalogPaths.length,
     eventEffectCount: Object.keys(bundle.eventEffectCatalog.effects).length,
     productionEventCount: bundle.productionEvents.events.length,
+    eventPolicyReport: bundle.eventPolicyReport,
     combatProfileCount: Object.keys(bundle.combatProfiles.heroes).length,
     assetCount: bundle.assetPaths.length,
     missingLocalization: Object.freeze(missingLocalization)
