@@ -23,6 +23,8 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert(css.includes('grid-template-rows:190px minmax(142px,1fr) auto!important'));
   assert(css.includes('padding:18px 38px 28px!important'));
   assert(css.includes("font:700 clamp(23px,1.8vw,28px)/1.15 Georgia"));
+  assert(css.includes('@media(max-width:1120px)'));
+  assert(css.includes('grid-template-columns:1fr}.rpprofile--approved-cards .rpprofile__approved-button{white-space:nowrap!important}'));
   assert(css.includes('ui_panel_frame.png'));
   assert(css.includes('.rpprofile__approved-visual--empty'));
   assert(css.includes('.rpprofile__approved-actions'));
@@ -37,6 +39,7 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert(source.includes("'Переименовать'"));
   assert(source.includes("'Начать заново'"));
   assert(source.includes("'Удалить'"));
+  assert(source.includes('humanChronicleStatus(originalStatus?.textContent, language)'));
   assert(source.includes('card.replaceChildren(visual, content, approvedActions)'));
   assert(source.includes('commanderPortrait(card)'));
   assert(source.includes("generated_assets/logo_main.png"));
@@ -50,6 +53,9 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert.strictEqual(module.compactLabel('ru', 'subtitle'), 'Три независимые истории. Продолжите существующий поход или начните новый.');
   assert.strictEqual(module.compactLabel('ru', 'newChronicle'), 'Новая хроника');
   assert.strictEqual(module.compactLabel('en', 'create'), 'Create');
+  assert.strictEqual(module.humanChronicleStatus('Акт 1 · draft', 'ru'), 'Акт 1 · Формирование отряда');
+  assert.strictEqual(module.humanChronicleStatus('Act 2 · battle', 'en'), 'Act 2 · Battle');
+  assert.strictEqual(module.humanChronicleStatus('', 'ru'), 'Поход сохранён');
 
   const memory = new Map();
   const storage = {
