@@ -1,0 +1,50 @@
+name: Fix mobile commander cards
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: ${{ github.head_ref == 'agent/restore-approved-visual-shell' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/restore-approved-visual-shell
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('game/css/approved-visual-shell.css')
+          css = path.read_text(encoding='utf-8')
+          marker = '/* mobile-commander-readable-v3 */'
+          if marker not in css:
+              css += '''\n/* mobile-commander-readable-v3 */
+          @media(max-width:460px){
+            .rpa-commander{grid-template-columns:1fr!important;min-height:0!important}
+            .rpa-commander__art{height:220px!important;min-height:220px!important;background-position:center 18%!important}
+            .rpa-commander__copy{padding:16px 18px 36px!important}
+            .rpa-commander h3{font-size:27px!important}
+            .rpa-commander p{font-size:15px!important;line-height:1.5!important}
+            .rpa-commander__hero,.rpa-lock{display:block!important;margin-top:13px!important}
+          }
+          '''
+              path.write_text(css, encoding='utf-8')
+          PY
+          npm ci
+          npm test
+          npm run build
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add game/css/approved-visual-shell.css
+          git commit -m "Make mobile commander cards fully readable [mobile-cards-v3]"
+          git push origin HEAD:agent/restore-approved-visual-shell
