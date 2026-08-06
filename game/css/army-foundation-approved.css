@@ -1,5 +1,11 @@
 /* Approved army-foundation draft composition. Loaded after Stage B styles. */
-.rpvs.rpvs--army-foundation{min-height:100vh!important;position:relative!important;isolation:isolate;background:#050a12 url('../generated_assets/splash_poster.jpg') center/cover fixed no-repeat!important}
+html{min-height:100%;overflow-y:auto!important;overscroll-behavior-y:auto}
+body{min-height:100%;height:auto!important;overflow-x:hidden!important;overflow-y:auto!important}
+body.rpa-modal-open{overflow:hidden!important}
+#app{min-height:100vh!important;height:auto!important;overflow:visible!important}
+.rpa-menu,.rpa-subscreen,.rpa-screen,.rpvs{height:auto!important;min-height:100vh!important}
+
+.rpvs.rpvs--army-foundation{min-height:100vh!important;position:relative!important;isolation:isolate;overflow:visible!important;background:#050a12 url('../generated_assets/splash_poster.jpg') center/cover fixed no-repeat!important}
 .rpvs.rpvs--army-foundation::before{content:""!important;position:fixed!important;z-index:0!important;inset:0!important;background:linear-gradient(90deg,#030710f7 0%,#060b15dc 47%,#06101a75 78%,#030710bf),linear-gradient(0deg,#030711e8,#03071120 55%)!important;pointer-events:none!important}
 .rpvs.rpvs--army-foundation>*{position:relative;z-index:1}
 .rpvs--army-foundation .rpvs__top{max-width:none!important;min-height:104px;margin:-10px -12px 20px!important;padding:10px 34px 8px!important;border:0!important;border-image:none!important;border-radius:0!important;background:#040a13a8!important;box-shadow:0 1px 0 #6194be55!important;backdrop-filter:blur(5px)!important}
@@ -12,9 +18,9 @@
 .rpvs--army-foundation .rpb-resource-chip strong{display:block;min-width:3ch;color:#ffe8aa;font-size:18px;line-height:1;font-variant-numeric:tabular-nums;text-align:center}
 .rpvs--army-foundation .rpb-resource-chip--menu{display:grid!important;place-items:center!important;width:112px!important;min-width:112px!important;grid-template-columns:1fr!important;cursor:pointer!important}
 .rpb-menu-glyph{font:900 31px/1 system-ui,sans-serif;color:#ecf3fa}
-.rpvs--army-foundation .rpvs__layout{width:min(1840px,100%)!important;max-width:1840px!important;margin:auto!important;grid-template-columns:minmax(0,1fr)!important}
+.rpvs--army-foundation .rpvs__layout{width:min(1840px,100%)!important;max-width:1840px!important;margin:auto!important;grid-template-columns:minmax(0,1fr)!important;overflow:visible!important}
 .rpvs--army-foundation .rpvs__panel--scene{overflow:visible!important;border:0!important;border-image:none!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
-.rpvs--army-foundation .rpb-draft-approved{padding:0 18px 100px!important}
+.rpvs--army-foundation .rpb-draft-approved{padding:0 18px 100px!important;overflow:visible!important}
 .rpvs--army-foundation .rpb-draft-approved .rpb-stage__header{display:flex!important;align-items:flex-start!important;justify-content:space-between!important;gap:24px!important;margin:0 0 22px!important;padding:0 4px!important}
 .rpvs--army-foundation .rpb-draft-approved .rpb-stage__header h1{margin:0 0 6px!important;color:#f8f0dc!important;font:700 clamp(38px,3.15vw,54px)/1.02 BrahmsGotischCyr,Georgia,serif!important;text-shadow:0 5px 18px #000}
 .rpvs--army-foundation .rpb-draft-approved .rpb-stage__header p{max-width:1100px!important;margin:0!important;color:#d6dfea!important;font-size:17px!important;line-height:1.5!important;text-shadow:0 3px 10px #000}
@@ -26,13 +32,10 @@
 .rpvs--army-foundation .rpb-draft-approved .rpb-card.rpb-draft-card[aria-pressed=true]{filter:brightness(1.12)!important;box-shadow:0 0 0 2px #48b8f4,0 0 34px #35b7ff55,0 16px 42px #000a!important}
 .rpb-draft-card__art{display:block!important;width:140px!important;height:170px!important;align-self:center!important;object-fit:cover!important;object-position:center 22%!important;border:2px solid #4d85ae!important;border-radius:10px!important;background:#07101b!important;box-shadow:0 9px 20px #0009!important}
 .rpb-draft-card--regular .rpb-draft-card__art{object-fit:contain!important;object-position:center!important;padding:4px!important}
-.rpb-draft-card__body{display:grid!important;align-content:center!important;gap:5px!important;min-width:0!important;padding-right:34px!important}
+.rpb-draft-card__body{display:grid!important;align-content:center!important;gap:8px!important;min-width:0!important;padding-right:34px!important}
 .rpb-draft-card__eyebrow{color:#f5c24e!important;font-size:13px!important;font-weight:900!important;letter-spacing:.04em!important}
 .rpb-draft-card__title{display:block!important;color:#f9f1e0!important;font:700 clamp(22px,1.65vw,29px)/1.05 BrahmsGotischCyr,Georgia,serif!important;overflow-wrap:anywhere!important}
-.rpb-draft-card__class{display:flex!important;align-items:center!important;gap:10px!important;margin-top:7px!important;color:#e8d8a8!important}
-.rpb-draft-card__class small{color:#85a4c1!important;font-size:10px!important;font-weight:900!important;letter-spacing:.08em!important}
-.rpb-draft-card__class b{color:#efe0b4!important;font:400 27px/1 "Noto Sans Symbols 2","Segoe UI Symbol",serif!important}
-.rpb-draft-card__description{display:block!important;max-width:360px!important;margin-top:4px!important;color:#c3d0df!important;font-size:14px!important;line-height:1.45!important}
+.rpb-draft-card__description{display:block!important;max-width:380px!important;margin-top:8px!important;color:#c3d0df!important;font-size:14px!important;line-height:1.45!important}
 .rpb-draft-card__cost{display:inline-flex!important;justify-self:start!important;margin-top:6px!important;padding:4px 9px!important;border:1px solid #8a743e!important;border-radius:999px!important;color:#f3d77d!important;font-size:12px!important;font-weight:850!important}
 .rpb-draft-card__glyph{position:absolute!important;z-index:2!important;right:52px!important;top:46px!important;color:#e1ebf7!important;font:400 39px/1 "Noto Sans Symbols 2","Segoe UI Symbol",serif!important;text-shadow:0 3px 9px #000!important}
 .rpvs--army-foundation .rpb-draft-approved .rpb-warning{margin:20px 8px 0!important;border:14px solid transparent!important;border-image:url('../generated_assets/ui_panel_wide.png') 28 fill stretch!important;border-radius:0!important;background:transparent!important;color:#ffe2a8!important}
