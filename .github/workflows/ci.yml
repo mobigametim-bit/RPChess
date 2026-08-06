@@ -1,6 +1,7 @@
 name: RPChess CI
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches:
