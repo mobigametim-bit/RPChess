@@ -13,6 +13,7 @@ if (!globalThis[INSTALL_KEY]) {
     if (options.stageB !== true) return originalGenerateActGraph(options);
     const pools = options.contentPools || {};
     const services = pools.services || [];
+    const encounters = pools.encounters || [];
     return originalGenerateActGraph({
       ...options,
       contentPools: {
@@ -20,7 +21,8 @@ if (!globalThis[INSTALL_KEY]) {
         shop: pools.shop || pools.shops || services,
         hospital: pools.hospital || services,
         forge: pools.forge || services,
-        camp: pools.camp || services
+        camp: pools.camp || services,
+        scenarioCandidates: pools.scenarioCandidates || encounters.map((id) => ({ id, baseWeight: 1 }))
       }
     });
   };
@@ -64,14 +66,30 @@ if (!globalThis[INSTALL_KEY]) {
     return deepFreeze({ ...next, stageB });
   }
 
+  function materializationDependencies(state, dependencies) {
+    if (!runtimeState.isProductionState(state?.campaign)) return dependencies;
+    const storyFacts = [...new Set([
+      ...(state.flags || []),
+      ...(state.stageB?.storyFlags || [])
+    ])].sort();
+    return {
+      ...dependencies,
+      campaignMaterialization: {
+        ...(dependencies.campaignMaterialization || {}),
+        storyFacts: freezeArray(storyFacts)
+      }
+    };
+  }
+
   presenter.dispatchPresenterCommand = function dispatchB9PolishedCommand(state, commandInput, dependencies = {}) {
-    const result = originalDispatchPresenterCommand(state, commandInput, dependencies);
+    const resolvedDependencies = materializationDependencies(state, dependencies);
+    const result = originalDispatchPresenterCommand(state, commandInput, resolvedDependencies);
     const nextState = consumeForcedMarchBattleEffect(state, result.state);
     if (nextState === result.state) return result;
     return Object.freeze({
       ...result,
       state: nextState,
-      snapshot: presenter.createPresenterSnapshot(nextState, dependencies)
+      snapshot: presenter.createPresenterSnapshot(nextState, resolvedDependencies)
     });
   };
 }
