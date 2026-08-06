@@ -14,6 +14,14 @@ const {
   createProductionEventSession,
   restoreProductionEventSession
 } = require('../src/runtime/production-event-session.cjs');
+const {
+  createProductionEventSelectorState,
+  eventWeight,
+  reserveProductionEvents,
+  releaseProductionEventReservations,
+  reopenProductionEventReservation,
+  completeProductionEventReservation
+} = require('../src/campaign/production-event-selector.cjs');
 
 const projectRoot = path.resolve(__dirname, '..');
 const library = loadProductionEventLibrary(path.join(projectRoot, 'content/events/iron_marches_production.json'));
@@ -47,6 +55,31 @@ assert.deepStrictEqual(
 );
 assert.strictEqual(browserBundle.sourceRegistry.list('event').length, 12);
 assert.strictEqual(browserBundle.summary.event, 7);
+
+const selectorStart = createProductionEventSelectorState(library, { seed: 8123 });
+const reservedBatch = reserveProductionEvents(library, selectorStart, [
+  { nodeId: 'l2_n1', phase: 'early' },
+  { nodeId: 'l2_n2', phase: 'early' }
+]);
+assert.strictEqual(reservedBatch.assignments.length, 2);
+assert.notStrictEqual(reservedBatch.assignments[0].eventId, reservedBatch.assignments[1].eventId);
+assert.strictEqual(reservedBatch.state.assignments.every((entry) => entry.status === 'reserved'), true);
+const released = releaseProductionEventReservations(library, reservedBatch.state, ['l2_n2']);
+assert.strictEqual(released.assignments.find((entry) => entry.nodeId === 'l2_n2').status, 'released');
+const reopened = reopenProductionEventReservation(library, released, 'l2_n2');
+assert.strictEqual(reopened.assignments.find((entry) => entry.nodeId === 'l2_n2').status, 'reserved');
+const completedFirst = completeProductionEventReservation(library, reopened, 'l2_n1');
+assert.strictEqual(completedFirst.completedEventIds.includes(reservedBatch.assignments[0].eventId), true);
+
+const strikeReserved = createProductionEventSelectorState(library, {
+  seed: 44,
+  assignments: [{ nodeId: 'strike_node', eventId: 'event.miners_on_strike', phase: 'mid', status: 'reserved' }]
+});
+const strikeCompleted = completeProductionEventReservation(library, strikeReserved, 'strike_node');
+assert.strictEqual(strikeCompleted.activeChainIds.includes('chain.iron_marches.iron_and_bread'), true);
+const furnace = library.eventsById['event.furnace_oath'];
+assert.strictEqual(eventWeight(furnace, 'mid', new Set()), 3);
+assert.strictEqual(eventWeight(furnace, 'mid', new Set(strikeCompleted.activeChainIds)), 6);
 
 const linkedFurnace = createProductionEventState(library, 'event.furnace_oath', {
   seed: 10,
@@ -177,4 +210,4 @@ const resolvedCompatibility = bundle.eventChoiceResolver({
 assert.strictEqual(Number.isInteger(resolvedCompatibility.resourceDelta.supplies), true);
 assert.strictEqual(resolvedCompatibility.chronicleKeys.length > 0, true);
 
-console.log('Iron Marches production events: seven authored events, chains, deterministic checks, sessions and combat hooks passed.');
+console.log('Iron Marches production events: seven authored events, weighted selector, chains, deterministic checks, sessions and combat hooks passed.');
