@@ -32,7 +32,7 @@ jobs:
           trap 'kill $SERVER_PID' EXIT
           sleep 2
           mkdir -p visual-qa
-          cat > /tmp/visual-qa.mjs <<'JS'
+          cat > visual-qa-runner.mjs <<'JS'
           import { chromium } from 'playwright';
           import fs from 'node:fs';
 
@@ -114,7 +114,8 @@ jobs:
           await browser.close();
           if (log.some((line) => line.startsWith('pageerror:'))) process.exitCode = 1;
           JS
-          node /tmp/visual-qa.mjs
+          node visual-qa-runner.mjs
+          rm visual-qa-runner.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
