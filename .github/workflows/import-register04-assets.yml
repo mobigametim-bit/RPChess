@@ -11,8 +11,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: register-04-asset-import-${{ github.event.pull_request.number }}
-  cancel-in-progress: false
+  group: register-04-asset-import
+  cancel-in-progress: true
 
 jobs:
   import-assets:
