@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 2,
   "register": "REGISTER_04_EVENTS",
   "assetRoot": "game/assets/events/register-04",
   "count": 74,
