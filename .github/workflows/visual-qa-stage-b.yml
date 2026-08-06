@@ -1,0 +1,197 @@
+name: Visual QA Stage B
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  visual:
+    if: ${{ github.head_ref == 'agent/stage-b-events-ui' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/stage-b-events-ui
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Build and install browser
+        run: |
+          npm ci
+          npm run build
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Run player journey
+        run: |
+          python -m http.server 4173 --directory dist >/tmp/rpchess-stage-b-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID' EXIT
+          sleep 2
+          mkdir -p visual-qa-stage-b
+          cat > stage-b-visual-runner.mjs <<'JS'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+
+          const browser = await chromium.launch({ headless: true });
+          const report = [];
+          const errors = [];
+          const context = await browser.newContext({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 1 });
+          await context.addInitScript(() => {
+            localStorage.clear();
+            localStorage.setItem('rpchess.approved-shell.progress.v1', JSON.stringify({ unlockPoints: 7, discoveries: 7, victories: 2, milestones: {}, lastProfileId: 'profile-1', lastCommanderId: 'warlord' }));
+          });
+          const page = await context.newPage();
+          page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
+          page.on('console', (message) => { if (message.type() === 'error') errors.push(`console: ${message.text()}`); });
+          page.on('response', (response) => { if (response.status() >= 400) errors.push(`http ${response.status()}: ${response.url()}`); });
+
+          async function audit(name) {
+            await page.waitForTimeout(180);
+            const result = await page.evaluate(() => {
+              const elements = [...document.querySelectorAll('button,h1,h2,h3,p,strong,small,label,span')];
+              const clipped = elements.filter((element) => {
+                const style = getComputedStyle(element);
+                return (element.scrollWidth > element.clientWidth + 3 && style.overflowX !== 'visible') || (element.scrollHeight > element.clientHeight + 3 && style.overflowY === 'hidden');
+              }).slice(0, 25).map((element) => ({ tag: element.tagName, text: element.textContent.trim().slice(0, 100), client: [element.clientWidth, element.clientHeight], scroll: [element.scrollWidth, element.scrollHeight] }));
+              return { viewport: [innerWidth, innerHeight], documentWidth: document.documentElement.scrollWidth, clipped };
+            });
+            report.push(`${name}: ${JSON.stringify(result)}`);
+            if (result.documentWidth > result.viewport[0] + 3) throw new Error(`${name}: horizontal page overflow ${result.documentWidth}/${result.viewport[0]}`);
+            if (result.clipped.length) throw new Error(`${name}: clipped text ${JSON.stringify(result.clipped)}`);
+            await page.screenshot({ path: `visual-qa-stage-b/${name}.png`, fullPage: true });
+          }
+
+          await page.goto('http://127.0.0.1:4173/?new=1', { waitUntil: 'networkidle' });
+          await page.waitForSelector('.rpa-menu__main--open');
+          const menu = await page.evaluate(() => ({
+            forbiddenText: document.body.textContent.includes('Проведите живую шахматную армию через Железные Марши'),
+            hasRearFrame: document.querySelector('.rpa-menu__main--open')?.classList.contains('rpa-panel'),
+            secondaryCount: document.querySelectorAll('.rpa-menu__secondary button').length
+          }));
+          if (menu.forbiddenText || menu.hasRearFrame || menu.secondaryCount < 4) throw new Error(`main menu contract failed: ${JSON.stringify(menu)}`);
+          report.push(`menu: ${JSON.stringify(menu)}`);
+          await audit('01-main-menu');
+
+          await page.click('[data-shell-action="chronicle"]');
+          await page.waitForSelector('.rpa-chronicle-list');
+          const chronicle = await page.evaluate(() => {
+            const cards = [...document.querySelectorAll('.rpa-chronicle-card')];
+            const rect = cards[0]?.getBoundingClientRect();
+            return { count: cards.length, first: rect ? [rect.width, rect.height] : null, interactive: document.querySelectorAll('[data-chronicle-commander]').length };
+          });
+          if (chronicle.count !== 6 || chronicle.interactive !== 6 || chronicle.first[0] <= chronicle.first[1]) throw new Error(`chronicle contract failed: ${JSON.stringify(chronicle)}`);
+          report.push(`chronicle: ${JSON.stringify(chronicle)}`);
+          await audit('02-chronicle');
+          await page.click('[data-chronicle-commander="engineer"]');
+          await page.waitForSelector('.rpprofile');
+          await audit('03-profiles');
+          await page.locator('[data-profile-action="start"]').first().click();
+          await page.waitForSelector('.rpa-commander-layout');
+
+          const beforeName = await page.locator('[data-preview-name]').textContent();
+          await page.click('[data-commander-id="necromancer"]');
+          const oneClick = await page.evaluate(() => ({ selected: document.querySelector('[data-commander-id="necromancer"]')?.getAttribute('aria-pressed'), preview: document.querySelector('[data-preview-name]')?.textContent?.trim() }));
+          if (oneClick.selected !== 'true' || oneClick.preview !== 'Некромант' || beforeName === oneClick.preview) throw new Error(`single-click selection failed: ${JSON.stringify(oneClick)}`);
+          report.push(`one-click: ${JSON.stringify(oneClick)}`);
+          await audit('04-commander-selection');
+
+          await page.click('[data-launch-commander]');
+          await page.waitForSelector('[data-confirm-draft]', { timeout: 30000 });
+          await audit('05-stage-b-draft');
+          await page.locator('[data-draft-hero]').first().click();
+          await page.locator('[data-draft-regular]').first().click();
+          await page.locator('[data-confirm-draft]:not([disabled])').click();
+          await page.waitForSelector('[data-node-id]');
+          const mapCount = await page.locator('[data-node-card]').count();
+          if (mapCount < 18 || mapCount > 24) throw new Error(`Stage B map has ${mapCount} nodes`);
+          report.push(`map nodes: ${mapCount}`);
+          await audit('06-stage-b-map');
+
+          await page.evaluate(async () => {
+            const client = globalThis.RPChessVerticalSlice.runtimeClient;
+            const snapshot = client.getSnapshot();
+            const route = snapshot.campaign.routes.find((entry) => entry.affordable && entry.type === 'battle');
+            if (!route) throw new Error('no affordable battle route');
+            await client.dispatch({ type: 'ScoutNode', nodeId: route.to });
+            await client.dispatch({ type: 'Travel', targetNodeId: route.to });
+          });
+          await page.waitForSelector('[data-confirm-briefing]');
+          await audit('07-briefing');
+          await page.click('[data-confirm-briefing]');
+          await page.waitForSelector('[data-confirm-deployment]');
+          await audit('08-deployment');
+          await page.click('[data-confirm-deployment]:not([disabled])');
+          await page.waitForSelector('[data-board]', { timeout: 30000 });
+          await page.waitForTimeout(400);
+
+          const battle = await page.evaluate(() => {
+            const top = document.querySelector('.rpvs__top--battle');
+            const sidebar = document.querySelector('.rpvs__battle-sidebar-scroll');
+            const cards = [...document.querySelectorAll('.rp02-mechanic-card,.rp02-relic-slot')];
+            const sideRect = sidebar?.getBoundingClientRect();
+            return {
+              topBorder: top ? getComputedStyle(top).borderTopWidth : null,
+              topBackground: top ? getComputedStyle(top).backgroundColor : null,
+              overflowY: sidebar ? getComputedStyle(sidebar).overflowY : null,
+              scroll: sidebar ? [sidebar.clientHeight, sidebar.scrollHeight] : null,
+              cards: cards.map((card) => { const rect = card.getBoundingClientRect(); return { width: rect.width, height: rect.height, fits: !sideRect || (rect.left >= sideRect.left - 2 && rect.right <= sideRect.right + 2) }; })
+            };
+          });
+          if (battle.topBorder !== '0px' || battle.overflowY !== 'auto' || battle.cards.some((card) => !card.fits || card.width <= card.height)) throw new Error(`battle panel contract failed: ${JSON.stringify(battle)}`);
+          report.push(`battle panel: ${JSON.stringify(battle)}`);
+          await audit('09-battle');
+
+          const animationStarted = page.waitForSelector('.rpvs__moving-piece', { timeout: 7000 });
+          await page.evaluate(async () => {
+            const client = globalThis.RPChessVerticalSlice.runtimeClient;
+            const snapshot = client.getSnapshot();
+            const command = snapshot.scenario.legalCommands.find((entry) => entry.type === 'MovePiece');
+            if (!command) throw new Error('no legal move for animation test');
+            globalThis.__animationDispatchAt = performance.now();
+            client.dispatch({ type: 'PlayerCommand', request: command }).catch((error) => { globalThis.__animationError = error.message; });
+          });
+          const moving = await animationStarted;
+          const startedAt = Date.now();
+          const from = await moving.boundingBox();
+          await page.waitForTimeout(220);
+          const middle = await moving.boundingBox();
+          await page.screenshot({ path: 'visual-qa-stage-b/10-battle-moving.png', fullPage: true });
+          await page.waitForSelector('.rpvs__moving-piece', { state: 'detached', timeout: 9000 });
+          const duration = Date.now() - startedAt;
+          const distance = from && middle ? Math.hypot(middle.x - from.x, middle.y - from.y) : 0;
+          if (duration < 430 || distance < 4) throw new Error(`move animation incomplete: duration=${duration}, distance=${distance}`);
+          report.push(`move animation: duration=${duration}, distance=${distance.toFixed(1)}`);
+          await page.waitForTimeout(900);
+          await audit('11-battle-after-turn');
+
+          const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+          await mobile.addInitScript(() => localStorage.setItem('rpchess.approved-shell.progress.v1', JSON.stringify({ unlockPoints: 7, discoveries: 7, victories: 2, milestones: {}, lastProfileId: 'profile-1', lastCommanderId: 'warlord' })));
+          const mobilePage = await mobile.newPage();
+          await mobilePage.goto('http://127.0.0.1:4173/?new=1', { waitUntil: 'networkidle' });
+          await mobilePage.waitForSelector('.rpa-menu__main--open');
+          const mobileMenu = await mobilePage.evaluate(() => ({ width: innerWidth, scrollWidth: document.documentElement.scrollWidth }));
+          if (mobileMenu.scrollWidth > mobileMenu.width + 3) throw new Error(`mobile menu overflow: ${JSON.stringify(mobileMenu)}`);
+          await mobilePage.screenshot({ path: 'visual-qa-stage-b/12-mobile-menu.png', fullPage: true });
+          await mobilePage.click('[data-shell-action="chronicle"]');
+          await mobilePage.waitForSelector('.rpa-chronicle-list');
+          const mobileChronicle = await mobilePage.evaluate(() => ({ width: innerWidth, scrollWidth: document.documentElement.scrollWidth, cards: document.querySelectorAll('.rpa-chronicle-card').length }));
+          if (mobileChronicle.scrollWidth > mobileChronicle.width + 3 || mobileChronicle.cards !== 6) throw new Error(`mobile chronicle failed: ${JSON.stringify(mobileChronicle)}`);
+          await mobilePage.screenshot({ path: 'visual-qa-stage-b/13-mobile-chronicle.png', fullPage: true });
+          await mobile.close();
+
+          fs.writeFileSync('visual-qa-stage-b/report.txt', [...report, ...errors].join('\n') + '\n');
+          await browser.close();
+          if (errors.length) throw new Error(errors.join('\n'));
+          JS
+          node stage-b-visual-runner.mjs
+          rm stage-b-visual-runner.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stage-b-visual-qa
+          path: visual-qa-stage-b
+          retention-days: 2
