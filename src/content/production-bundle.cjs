@@ -86,7 +86,8 @@ function buildProductionContentBundle(options = {}) {
   const packs = [];
   for (const relativePath of packPaths) {
     const source = readJson(resolveProjectPath(projectRoot, relativePath));
-    const pack = bindRegister04EventArt(compileProductionEventPack(source, productionEvents));
+    const compiled = compileProductionEventPack(source, productionEvents);
+    const pack = bindRegister04EventArt({ ...compiled, packId: source.packId });
     registry.addPack(pack);
     packs.push(Object.freeze({ packId: pack.packId, path: relativePath }));
   }
