@@ -64,7 +64,7 @@ const context = {
 };
 const weight = scenarioWeight(candidates[0], context);
 assert.strictEqual(weight.eligible, true);
-assert.strictEqual(weight.weight, 108);
+assert.strictEqual(weight.weight, 135);
 assert.strictEqual(weight.factors.length, 7);
 assert.strictEqual(scenarioEligibility(candidates[0], { ...context, storyFacts: ['story.wall_fallen'] }).eligible, false);
 assert.strictEqual(scenarioEligibility(candidates[2], context).reason, 'region');
@@ -83,17 +83,24 @@ const source = graph.nodes.find((node) => (graph.outgoing[node.id] || []).some((
   return target.type === 'battle' || target.type === 'elite';
 }));
 assert.ok(source);
+const materializationCandidates = [{
+  id: 'scenario.any',
+  baseWeight: 1,
+  optionalObjectiveRequirements: { marked: true },
+  metadata: { source: 'test' }
+}];
 const materialized = materializeLevel(graph, source.id, {}, {
-  contentPools: { scenarioCandidates: candidates, encounters: candidates.map((candidate) => candidate.id) },
+  contentPools: { scenarioCandidates: materializationCandidates, encounters: ['scenario.any'] },
   storyFacts: ['story.wall_intact'],
   boardId: 'compact',
   objectiveId: 'hold',
   environmentId: 'battlement'
 });
 for (const entry of Object.values(materialized.materializedByNode).filter((value) => ['battle', 'elite'].includes(value.type))) {
-  assert.ok(entry.contentId);
+  assert.strictEqual(entry.contentId, 'scenario.any');
   assert.ok(entry.details.scenarioSelection);
   assert.ok(Array.isArray(entry.details.scenarioSelection.appliedFactors));
+  assert.strictEqual(entry.details.scenarioSelection.optionalObjectiveRequirements.marked, true);
 }
 
 console.log('B9 scenario selector: eligibility, author-driven factor weights, incompatibilities, deterministic selection and materialization passed.');
