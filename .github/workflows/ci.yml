@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - feature/b9-map-generator-rebuild
 
 permissions:
   contents: read
@@ -26,7 +27,9 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Verify normalized source
         run: npm run verify
-      - name: Run legacy characterization tests
+      - name: Validate production content
+        run: npm run content:validate
+      - name: Run complete test suite
         run: npm test
       - name: Build web distribution
         run: npm run build
