@@ -20,7 +20,9 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   }
 
   assert(css.includes('grid-template-columns:repeat(3,minmax(0,1fr))!important'));
-  assert(css.includes('grid-template-rows:205px minmax(150px,1fr) auto!important'));
+  assert(css.includes('grid-template-rows:190px minmax(142px,1fr) auto!important'));
+  assert(css.includes('padding:18px 38px 28px!important'));
+  assert(css.includes("font:700 clamp(23px,1.8vw,28px)/1.15 Georgia"));
   assert(css.includes('ui_panel_frame.png'));
   assert(css.includes('.rpprofile__approved-visual--empty'));
   assert(css.includes('.rpprofile__approved-actions'));
@@ -29,6 +31,7 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert(css.includes('@media(max-width:760px)'));
   assert(css.includes('@media(max-width:480px)'));
 
+  assert(source.includes("newChronicle: 'Новая хроника'"));
   assert(source.includes("'Продолжить'"));
   assert(source.includes("'Создать'"));
   assert(source.includes("'Переименовать'"));
@@ -38,12 +41,14 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert(source.includes('commanderPortrait(card)'));
   assert(source.includes("generated_assets/logo_main.png"));
   assert(source.includes('MutationObserver'));
+  assert(source.includes("if (heading && heading.textContent !== titleCopy)"));
 
   const module = await import(pathToFileURL(path.join(root, 'game/js/chronicle-profile-cards.mjs')).href);
   assert.strictEqual(module.romanChronicleNumber(0), 'I');
   assert.strictEqual(module.romanChronicleNumber(1), 'II');
   assert.strictEqual(module.romanChronicleNumber(2), 'III');
   assert.strictEqual(module.compactLabel('ru', 'subtitle'), 'Три независимые истории. Продолжите существующий поход или начните новый.');
+  assert.strictEqual(module.compactLabel('ru', 'newChronicle'), 'Новая хроника');
   assert.strictEqual(module.compactLabel('en', 'create'), 'Create');
 
   const memory = new Map();
