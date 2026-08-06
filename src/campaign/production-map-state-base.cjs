@@ -34,7 +34,11 @@ function visibleNode(state, nodeId) {
 }
 function createProductionCampaignState(graph, options = {}) {
   if (!graph || graph.generatorVersion !== 3) throw new Error('production campaign requires generatorVersion 3 graph');
-  const initial = materializeLevel(graph, graph.startNodeId, {}, options);
+  const materializationContext = deepFreeze({
+    contentPools: deepFreeze({ ...(options.contentPools || graph.materializationContext?.contentPools || {}) }),
+    participantIds: freezeArray(options.participantIds || graph.materializationContext?.participantIds || [])
+  });
+  const initial = materializeLevel(graph, graph.startNodeId, {}, { ...materializationContext, ...options });
   return deepFreeze({
     format: 'rpchess-campaign-state', schemaVersion: PRODUCTION_CAMPAIGN_SCHEMA_VERSION,
     generatorVersion: graph.generatorVersion, rootSeed: graph.rootSeed, attemptIndex: graph.attemptIndex,
@@ -42,6 +46,7 @@ function createProductionCampaignState(graph, options = {}) {
     graph, currentNodeId: graph.startNodeId, currentLevel: 0, status: 'active', minimumPathCost: 10, scouting: 0,
     supplies: Number.isInteger(options.supplies) ? options.supplies : 10,
     gold: Number.isInteger(options.gold) ? options.gold : 0,
+    materializationContext,
     revealedLevelIds: freezeArray([0, 1]), revealedNodeIds: freezeArray([graph.startNodeId, ...initial.materializedNodeIds]),
     materializedContentByNode: initial.materializedByNode, selectorState: initial.selectorState || null,
     visitedNodeIds: freezeArray([graph.startNodeId]), traversedEdgeIds: freezeArray([]),
