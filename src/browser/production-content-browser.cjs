@@ -31,6 +31,18 @@ const localizationRu = require('../../content/localization/ru/iron_marches_verti
 const localizationEn = require('../../content/localization/en/iron_marches_vertical_slice.json');
 const scenarioTemplateSource = require('../../content/scenarios/iron_marches_vertical_slice.json');
 
+function playableRegistry(registry, productionEvents) {
+  const productionIds = new Set(productionEvents.events.map((event) => event.id));
+  return Object.freeze({
+    get: (kind, id) => registry.get(kind, id),
+    list: (kind) => kind === 'event'
+      ? Object.freeze(registry.list(kind).filter((record) => productionIds.has(record.id)))
+      : registry.list(kind),
+    summary: () => Object.freeze({ ...registry.summary(), event: productionIds.size }),
+    assetPaths: () => registry.assetPaths()
+  });
+}
+
 function buildBrowserProductionBundle() {
   const productionEvents = validateProductionEventLibrary(productionEventSource);
   const productionPack = bindRegister04EventArt(compileProductionEventPack(productionPackSource, productionEvents));
@@ -38,22 +50,24 @@ function buildBrowserProductionBundle() {
     ru: Object.freeze({ ...localizationRu, ...compileProductionLocalization(productionEvents, 'ru') }),
     en: Object.freeze({ ...localizationEn, ...compileProductionLocalization(productionEvents, 'en') })
   });
-  const registry = new ContentRegistry({ boardThemeManifest });
-  registry.addPack(productionPack);
-  registry.finalize({ localization });
+  const sourceRegistry = new ContentRegistry({ boardThemeManifest });
+  sourceRegistry.addPack(productionPack);
+  sourceRegistry.finalize({ localization });
 
-  const combatProfiles = validateCombatProfileSet(combatProfileSource, registry);
+  const combatProfiles = validateCombatProfileSet(combatProfileSource, sourceRegistry);
   const eventEffectCatalog = mergeEffectCatalogs([validateEffectCatalog(effectCatalog)]);
-  validateEventEffectReferences(registry, eventEffectCatalog);
+  validateEventEffectReferences(sourceRegistry, eventEffectCatalog);
   const scenarioTemplates = validateScenarioTemplateSet(scenarioTemplateSource);
-  validateScenarioContentReferences(scenarioTemplates, registry);
+  validateScenarioContentReferences(scenarioTemplates, sourceRegistry);
   const catalogEventChoiceResolver = createCatalogEventChoiceResolver(eventEffectCatalog);
+  const registry = playableRegistry(sourceRegistry, productionEvents);
 
   return Object.freeze({
     format: 'rpchess-browser-production-content',
     schemaVersion: 1,
     boardThemeManifest,
     registry,
+    sourceRegistry,
     localization,
     productionEvents,
     combatProfiles,
@@ -61,10 +75,11 @@ function buildBrowserProductionBundle() {
     eventChoiceResolver: createCompatibleProductionEventChoiceResolver(productionEvents, catalogEventChoiceResolver),
     scenarioTemplates,
     summary: registry.summary(),
-    assetPaths: registry.assetPaths()
+    assetPaths: sourceRegistry.assetPaths()
   });
 }
 
 module.exports = {
+  playableRegistry,
   buildBrowserProductionBundle
 };
