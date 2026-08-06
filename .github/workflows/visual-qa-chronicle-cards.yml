@@ -48,6 +48,8 @@ jobs:
             await page.waitForSelector('.rpa-profile-card--approved');
             await page.waitForTimeout(250);
             const result = await page.evaluate(() => {
+              const grid = document.querySelector('.rpa-profile-list');
+              const content = document.querySelector('.rpa-subscreen__content');
               const cards = [...document.querySelectorAll('.rpa-profile-card--approved')];
               const rects = cards.map((card) => {
                 const rect = card.getBoundingClientRect();
@@ -61,20 +63,25 @@ jobs:
                 count: cards.length,
                 rects,
                 columns: Math.max(...rows.map((row) => rects.filter((rect) => Math.round(rect.y) === row).length)),
+                viewport: [innerWidth, innerHeight],
                 documentWidth: document.documentElement.scrollWidth,
-                viewportWidth: innerWidth,
+                gridWidth: grid?.getBoundingClientRect().width || 0,
+                contentWidth: content?.getBoundingClientRect().width || 0,
+                gridTemplateColumns: grid ? getComputedStyle(grid).gridTemplateColumns : '',
+                gridDisplay: grid ? getComputedStyle(grid).display : '',
+                rootFontSize: getComputedStyle(document.documentElement).fontSize,
                 clipped,
                 createButtons: document.querySelectorAll('[data-profile-action="start"]').length
               };
             });
-            if (result.count !== 3) throw new Error(`${label}: expected 3 cards, received ${result.count}`);
-            if (result.columns !== expectedColumns) throw new Error(`${label}: expected ${expectedColumns} columns, received ${result.columns}`);
-            if (result.rects.some((rect) => rect.width > 520 || rect.height > 610)) throw new Error(`${label}: oversized card ${JSON.stringify(result.rects)}`);
-            if (result.documentWidth > result.viewportWidth + 3) throw new Error(`${label}: horizontal overflow ${result.documentWidth}/${result.viewportWidth}`);
-            if (result.clipped.length) throw new Error(`${label}: clipped text ${JSON.stringify(result.clipped)}`);
-            if (result.createButtons < 1) throw new Error(`${label}: create actions are missing`);
             fs.appendFileSync('visual-qa-chronicles/report.txt', `${label}: ${JSON.stringify(result)}\n`);
             await page.screenshot({ path: `visual-qa-chronicles/${label}.png`, fullPage: true });
+            if (result.count !== 3) throw new Error(`${label}: expected 3 cards, received ${result.count}`);
+            if (result.columns !== expectedColumns) throw new Error(`${label}: expected ${expectedColumns} columns, received ${result.columns}; ${JSON.stringify(result)}`);
+            if (result.rects.some((rect) => rect.width > 520 || rect.height > 610)) throw new Error(`${label}: oversized card ${JSON.stringify(result.rects)}`);
+            if (result.documentWidth > result.viewport[0] + 3) throw new Error(`${label}: horizontal overflow ${result.documentWidth}/${result.viewport[0]}`);
+            if (result.clipped.length) throw new Error(`${label}: clipped text ${JSON.stringify(result.clipped)}`);
+            if (result.createButtons < 1) throw new Error(`${label}: create actions are missing`);
           }
 
           await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
@@ -108,6 +115,7 @@ jobs:
           JS
           node chronicle-cards-visual-runner.mjs
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: chronicle-card-visual-qa
           path: visual-qa-chronicles
