@@ -6,7 +6,13 @@ const { secretContentType } = require('./production-map-materialization.cjs');
 
 function eligibleSecretSource(state, nodeId) {
   const node = state.graph.nodesById[nodeId];
-  return Boolean(node && state.graph.secretChecks[nodeId] && !SERVICE_TYPES.includes(node.type) && !['elite', 'boss', 'start'].includes(node.type));
+  return Boolean(
+    node
+    && state.graph.secretChecks[nodeId]
+    && state.completedNodeIds.includes(nodeId)
+    && !SERVICE_TYPES.includes(node.type)
+    && !['elite', 'boss', 'start'].includes(node.type)
+  );
 }
 function checkSecretAfterNode(state, nodeId) {
   if (state.secret.discovered || state.secret.completed || state.secret.declined) return state;
