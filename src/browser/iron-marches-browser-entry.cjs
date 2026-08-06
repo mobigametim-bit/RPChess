@@ -3,7 +3,7 @@
 require('./buffer-shim.cjs');
 
 const content = require('./production-content-browser.cjs');
-const hosts = require('./iron-marches-browser-host.cjs');
+const hosts = require('./iron-marches-browser-host-b9.cjs');
 const profiles = require('./profile-persistence.cjs');
 
 module.exports = Object.freeze({
