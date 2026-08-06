@@ -58,8 +58,9 @@ function scenarioEligibility(candidateInput, context = {}) {
   const facts = new Set(context.storyFacts || context.flags || []);
   const excluded = new Set(context.excludedScenarioIds || []);
   const adjacent = new Set(context.adjacentScenarioIds || []);
+  const incompatible = new Set(context.incompatibleScenarioIds || []);
   if (excluded.has(candidate.id) || adjacent.has(candidate.id)) return deepFreeze({ eligible: false, reason: 'exact_repeat' });
-  if (candidate.incompatibleScenarioIds.some((id) => excluded.has(id) || adjacent.has(id))) return deepFreeze({ eligible: false, reason: 'scenario_incompatibility' });
+  if (incompatible.has(candidate.id) || candidate.incompatibleScenarioIds.some((id) => excluded.has(id) || adjacent.has(id))) return deepFreeze({ eligible: false, reason: 'scenario_incompatibility' });
   if (!matchesRestriction(candidate.regionIds, context.regionId)) return deepFreeze({ eligible: false, reason: 'region' });
   if (!matchesRestriction(candidate.phases, context.phase)) return deepFreeze({ eligible: false, reason: 'phase' });
   if (!matchesRestriction(candidate.branchProfiles, context.branchProfile)) return deepFreeze({ eligible: false, reason: 'branch_profile' });
@@ -88,10 +89,24 @@ function scenarioWeight(candidateInput, context = {}) {
   }
   return deepFreeze({ candidate, eligible: weight > 0, weight, factors: freezeArray(factors), reason: weight > 0 ? null : 'factor_zero' });
 }
+function symmetricIncompatibilities(candidates, selectedIds) {
+  const selected = new Set(selectedIds || []);
+  const blocked = new Set();
+  for (const candidate of candidates) {
+    if (!selected.has(candidate.id)) continue;
+    for (const incompatibleId of candidate.incompatibleScenarioIds) blocked.add(incompatibleId);
+  }
+  return freezeArray([...blocked].sort());
+}
 function selectProductionScenario(options = {}) {
   const candidates = (options.candidates || []).map(normalizeScenarioCandidate);
   if (!candidates.length) return null;
-  const context = deepFreeze({ ...(options.context || {}), excludedScenarioIds: freezeArray(options.excludedScenarioIds || options.context?.excludedScenarioIds || []) });
+  const excludedScenarioIds = freezeArray(options.excludedScenarioIds || options.context?.excludedScenarioIds || []);
+  const context = deepFreeze({
+    ...(options.context || {}),
+    excludedScenarioIds,
+    incompatibleScenarioIds: symmetricIncompatibilities(candidates, excludedScenarioIds)
+  });
   const weighted = candidates.map((candidate) => scenarioWeight(candidate, context)).filter((entry) => entry.eligible && entry.weight > 0);
   if (!weighted.length) return null;
   const total = weighted.reduce((sum, entry) => sum + entry.weight, 0);
@@ -118,5 +133,6 @@ module.exports = {
   normalizeScenarioCandidate,
   scenarioEligibility,
   scenarioWeight,
+  symmetricIncompatibilities,
   selectProductionScenario
 };
