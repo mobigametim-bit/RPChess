@@ -1,6 +1,6 @@
 name: Import Register 04 remaining assets
 
-# Branch sync used to start the latest one-time import run.
+# Restarted after stale CI queue cleanup.
 on:
   pull_request:
     branches: [main]
