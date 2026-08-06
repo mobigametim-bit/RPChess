@@ -1,0 +1,72 @@
+name: Mobile layout diagnostic
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: ${{ github.head_ref == 'agent/restore-approved-visual-shell' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/restore-approved-visual-shell
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: |
+          npm ci
+          npm run build
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+      - name: Diagnose mobile flow
+        run: |
+          python -m http.server 4173 --directory dist >/tmp/server.log 2>&1 &
+          PID=$!
+          trap 'kill $PID' EXIT
+          sleep 2
+          mkdir -p mobile-diagnostic
+          cat > mobile-diagnostic-runner.mjs <<'JS'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+          const browser = await chromium.launch({headless:true});
+          const page = await browser.newPage({viewport:{width:390,height:844}});
+          await page.goto('http://127.0.0.1:4173/?new=1',{waitUntil:'networkidle'});
+          await page.click('[data-shell-action="profiles"]');
+          await page.click('[data-profile-action="start"]');
+          await page.waitForSelector('.rpa-commander-layout');
+          const report = await page.evaluate(() => ({
+            viewport:{w:innerWidth,h:innerHeight},
+            body:{clientHeight:document.body.clientHeight,scrollHeight:document.body.scrollHeight,overflow:getComputedStyle(document.body).overflow},
+            html:{clientHeight:document.documentElement.clientHeight,scrollHeight:document.documentElement.scrollHeight,overflow:getComputedStyle(document.documentElement).overflow},
+            subscreen: (()=>{const e=document.querySelector('.rpa-subscreen');const r=e.getBoundingClientRect();return {top:r.top,bottom:r.bottom,height:r.height,overflow:getComputedStyle(e).overflow,position:getComputedStyle(e).position}})(),
+            content: (()=>{const e=document.querySelector('.rpa-subscreen__content');const r=e.getBoundingClientRect();return {top:r.top,bottom:r.bottom,height:r.height,overflow:getComputedStyle(e).overflow}})(),
+            layout: (()=>{const e=document.querySelector('.rpa-commander-layout');const r=e.getBoundingClientRect();return {top:r.top,bottom:r.bottom,height:r.height,overflow:getComputedStyle(e).overflow,display:getComputedStyle(e).display}})(),
+            grid: (()=>{const e=document.querySelector('.rpa-commander-grid');const r=e.getBoundingClientRect();return {top:r.top,bottom:r.bottom,height:r.height,overflow:getComputedStyle(e).overflow,display:getComputedStyle(e).display}})(),
+            cards:[...document.querySelectorAll('.rpa-commander')].map((e,i)=>{const r=e.getBoundingClientRect();return {i,top:r.top,bottom:r.bottom,height:r.height,display:getComputedStyle(e).display,visibility:getComputedStyle(e).visibility,opacity:getComputedStyle(e).opacity}}),
+            launch:(()=>{const e=document.querySelector('.rpa-launch');const r=e.getBoundingClientRect();return {top:r.top,bottom:r.bottom,height:r.height,display:getComputedStyle(e).display}})()
+          }));
+          fs.writeFileSync('mobile-diagnostic/report.json',JSON.stringify(report,null,2));
+          await page.screenshot({path:'mobile-diagnostic/01-top.png'});
+          for (const [index, card] of [...(await page.locator('.rpa-commander').all())].entries()) {
+            await card.scrollIntoViewIfNeeded();
+            await page.waitForTimeout(80);
+            await page.screenshot({path:`mobile-diagnostic/card-${index}.png`});
+          }
+          await page.locator('.rpa-launch').scrollIntoViewIfNeeded();
+          await page.screenshot({path:'mobile-diagnostic/99-launch.png'});
+          await browser.close();
+          JS
+          node mobile-diagnostic-runner.mjs
+          rm mobile-diagnostic-runner.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-layout-diagnostic
+          path: mobile-diagnostic
+          retention-days: 1
