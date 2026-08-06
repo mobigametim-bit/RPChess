@@ -34,7 +34,13 @@ assert.strictEqual(app.includes('Проведите живую шахматну�
 assert(presenter.includes('drawWarriorPiece'));
 assert(presenter.includes('unitArt(piece)'));
 assert(presenter.includes('pieceGlyph(piece)'));
-assert(presenter.includes("glyphSize = Math.max(13, Math.floor(rect.size * .24))"));
+assert(presenter.includes("glyphSize = Math.max(14, Math.floor(rect.size * .264))"));
+assert(presenter.includes('const glyphInset = rect.size * .035'));
+assert(presenter.includes('const cx = rect.x + glyphInset + glyphSize * .72'));
+assert(presenter.includes('const cy = rect.y + glyphInset + glyphSize * .64'));
+assert(stageCss.includes('.rpvs__reserve-piece small{position:absolute;left:3px;top:3px'));
+assert(stageCss.includes('.rpvs__moving-piece small{position:absolute;left:4%;top:4%'));
+assert(stageCss.includes('.rp02-media>span{line-height:.84!important;overflow:visible!important}'));
 assert(presenter.includes("nodeArt(node.type || 'event')"));
 assert.strictEqual(presenter.includes('Доступные маршруты'), false);
 assert.strictEqual(presenter.includes('region.environmentSheet'), false);

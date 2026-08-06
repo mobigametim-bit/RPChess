@@ -78,9 +78,10 @@ function drawWarriorPiece(context, rect, piece, assetCache) {
     context.fill();
   }
   const glyph = pieceGlyph(piece);
-  const glyphSize = Math.max(13, Math.floor(rect.size * .24));
-  const cx = rect.x + rect.size / 2;
-  const cy = rect.y + rect.size * .885;
+  const glyphSize = Math.max(14, Math.floor(rect.size * .264));
+  const glyphInset = rect.size * .035;
+  const cx = rect.x + glyphInset + glyphSize * .72;
+  const cy = rect.y + glyphInset + glyphSize * .64;
   context.shadowColor = 'transparent';
   context.fillStyle = 'rgba(4,8,14,.88)';
   context.beginPath();
