@@ -8,10 +8,19 @@ const FORCED_MARCH_CHOICES = Object.freeze(['gold_loss', 'light_injury', 'next_b
 
 function routeRecords(state) {
   const closed = new Set(state.closedNodeIds);
-  return (state.graph.outgoing[state.currentNodeId] || []).map((edgeId) => {
+  const routes = (state.graph.outgoing[state.currentNodeId] || []).map((edgeId) => {
     const edge = state.graph.edgesById[edgeId];
     return { edge, node: state.graph.nodesById[edge.to] };
   }).filter(({ node }) => !closed.has(node.id));
+  const rare = state.rareRoute;
+  if (rare?.status === 'open' && rare.fromNodeId === state.currentNodeId) {
+    const node = state.graph.nodesById[rare.targetNodeId];
+    const alreadyPresent = routes.some(({ node: routeNode }) => routeNode.id === rare.targetNodeId);
+    if (node && !alreadyPresent && !state.completedNodeIds.includes(node.id) && !state.rewardsClaimedNodeIds.includes(node.id)) {
+      routes.push({ edge: deepFreeze({ id: rare.edgeId, from: rare.fromNodeId, to: rare.targetNodeId, cost: 1, rare: true, reopenable: true }), node });
+    }
+  }
+  return routes;
 }
 function visibleNode(state, nodeId) {
   const node = state.graph.nodesById[nodeId];
@@ -53,7 +62,8 @@ function createProductionCampaignState(graph, options = {}) {
     materializedContentByNode: initial.materializedByNode, selectorState: initial.selectorState || null,
     visitedNodeIds: freezeArray([graph.startNodeId]), traversedEdgeIds: freezeArray([]),
     closedNodeIds: freezeArray([]), reopenedNodeIds: freezeArray([]), completedNodeIds: freezeArray([]),
-    rewardsClaimedNodeIds: freezeArray([]), scoutedNodeIds: freezeArray([]), scoutAttemptsByFork: deepFreeze({}),
+    rewardsClaimedNodeIds: freezeArray([]), rareRoute: null,
+    scoutedNodeIds: freezeArray([]), scoutAttemptsByFork: deepFreeze({}),
     scoutingModifiers: deepFreeze({ costDiscount: 0, thirdScoutAllowed: false }), scoutingLockedUntilTravel: false,
     temporaryPenalties: deepFreeze({ nextBattle: 0, rewardChoiceReduction: 0 }),
     forcedMarch: deepFreeze({ consecutiveCount: 0, totalCount: 0, lastChoice: null }),
@@ -64,7 +74,7 @@ function createProductionCampaignState(graph, options = {}) {
 function availableRoutes(state) {
   if (state.status !== 'active' || state.secret.active || state.secret.pendingDecision) return freezeArray([]);
   return freezeArray(routeRecords(state).map(({ edge, node }) => deepFreeze({
-    edgeId: edge.id, from: edge.from, to: edge.to, cost: 1,
+    edgeId: edge.id, from: edge.from, to: edge.to, cost: 1, rare: Boolean(edge.rare),
     affordable: state.supplies >= 1, requiresForcedMarch: state.supplies === 0,
     node: visibleNode(state, node.id)
   })));
