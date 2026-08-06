@@ -1,8 +1,7 @@
 name: Import Register 04 remaining assets
 
 on:
-  pull_request_target:
-    types: [opened, reopened]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -13,11 +12,10 @@ concurrency:
 
 jobs:
   import-assets:
-    if: github.event.pull_request.number == 54 && github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-slim
-    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
-      - name: Check out trusted main branch
+      - name: Check out main
         uses: actions/checkout@v4
         with:
           ref: main
@@ -36,6 +34,11 @@ jobs:
 
       - name: Validate Register 04 resolver and assets
         run: node tests/register-04-event-assets.cjs
+
+      - name: Build production browser distribution
+        run: |
+          npm ci
+          npm run build
 
       - name: Commit imported assets and remove one-time importer
         run: |
