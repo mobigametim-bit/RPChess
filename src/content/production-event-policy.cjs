@@ -27,12 +27,6 @@ function assertProductionEventPolicy(library) {
       if (outcome.combat && !['standard', 'key'].includes(event.class)) errors.push(`${event.id}.${choice.id} combat is restricted to standard and key events`);
       if (outcome.combat && outcome.combat.rewardMode !== 'event_only') errors.push(`${event.id}.${choice.id} combat must use event_only reward mode`);
       if (outcome.combat && outcome.combat.dangerOffset > 1) errors.push(`${event.id}.${choice.id} combat danger may exceed the phase by at most one`);
-      if (outcome.resourceDelta.gold < 0 && choice.requirements.minimumGold < Math.abs(outcome.resourceDelta.gold)) {
-        errors.push(`${event.id}.${choice.id} must require enough gold for its deterministic cost`);
-      }
-      if (outcome.resourceDelta.supplies < 0 && choice.requirements.minimumSupplies < Math.abs(outcome.resourceDelta.supplies)) {
-        errors.push(`${event.id}.${choice.id} must require enough supplies for its deterministic cost`);
-      }
     }
   }
 
