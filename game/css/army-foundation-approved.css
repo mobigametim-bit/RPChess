@@ -1,0 +1,53 @@
+/* Approved army-foundation draft composition. Loaded after Stage B styles. */
+.rpvs.rpvs--army-foundation{min-height:100vh!important;position:relative!important;isolation:isolate;background:#050a12 url('../generated_assets/splash_poster.jpg') center/cover fixed no-repeat!important}
+.rpvs.rpvs--army-foundation::before{content:""!important;position:fixed!important;z-index:0!important;inset:0!important;background:linear-gradient(90deg,#030710f7 0%,#060b15dc 47%,#06101a75 78%,#030710bf),linear-gradient(0deg,#030711e8,#03071120 55%)!important;pointer-events:none!important}
+.rpvs.rpvs--army-foundation>*{position:relative;z-index:1}
+.rpvs--army-foundation .rpvs__top{max-width:none!important;min-height:104px;margin:-10px -12px 20px!important;padding:10px 34px 8px!important;border:0!important;border-image:none!important;border-radius:0!important;background:#040a13a8!important;box-shadow:0 1px 0 #6194be55!important;backdrop-filter:blur(5px)!important}
+.rpvs--army-foundation .rpvs__identity{display:flex!important;align-items:center!important;gap:26px!important;min-width:0!important}
+.rpb-topbar__wordmark{display:block;width:280px;height:82px;object-fit:contain;filter:drop-shadow(0 8px 24px #000c)}
+.rpb-topbar__act{color:#f8f0dc;font:700 clamp(31px,2.15vw,41px)/1 BrahmsGotischCyr,Georgia,serif;white-space:nowrap;text-shadow:0 4px 14px #000}
+.rpvs--army-foundation .rpvs__resources{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:6px!important;flex-wrap:nowrap!important;margin-left:auto!important}
+.rpvs--army-foundation .rpb-resource-chip{display:grid!important;grid-template-columns:48px minmax(3ch,1fr)!important;align-items:center!important;gap:7px!important;width:142px!important;min-width:142px!important;min-height:70px!important;padding:4px 15px!important;border:12px solid transparent!important;border-image:url('../generated_assets/ui_chip.png') 24 fill stretch!important;border-radius:0!important;background:transparent!important;color:#ffe8aa!important;text-align:center!important}
+.rpvs--army-foundation .rpb-resource-chip img{width:48px!important;height:48px!important;object-fit:cover!important;border-radius:12px!important}
+.rpvs--army-foundation .rpb-resource-chip strong{display:block;min-width:3ch;color:#ffe8aa;font-size:18px;line-height:1;font-variant-numeric:tabular-nums;text-align:center}
+.rpvs--army-foundation .rpb-resource-chip--menu{display:grid!important;place-items:center!important;width:112px!important;min-width:112px!important;grid-template-columns:1fr!important;cursor:pointer!important}
+.rpb-menu-glyph{font:900 31px/1 system-ui,sans-serif;color:#ecf3fa}
+.rpvs--army-foundation .rpvs__layout{width:min(1840px,100%)!important;max-width:1840px!important;margin:auto!important;grid-template-columns:minmax(0,1fr)!important}
+.rpvs--army-foundation .rpvs__panel--scene{overflow:visible!important;border:0!important;border-image:none!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+.rpvs--army-foundation .rpb-draft-approved{padding:0 18px 100px!important}
+.rpvs--army-foundation .rpb-draft-approved .rpb-stage__header{display:flex!important;align-items:flex-start!important;justify-content:space-between!important;gap:24px!important;margin:0 0 22px!important;padding:0 4px!important}
+.rpvs--army-foundation .rpb-draft-approved .rpb-stage__header h1{margin:0 0 6px!important;color:#f8f0dc!important;font:700 clamp(38px,3.15vw,54px)/1.02 BrahmsGotischCyr,Georgia,serif!important;text-shadow:0 5px 18px #000}
+.rpvs--army-foundation .rpb-draft-approved .rpb-stage__header p{max-width:1100px!important;margin:0!important;color:#d6dfea!important;font-size:17px!important;line-height:1.5!important;text-shadow:0 3px 10px #000}
+.rpvs--army-foundation .rpb-draft-approved .rpb-stage__header .rpb-badge{align-self:center!important;min-width:230px!important;min-height:64px!important;padding:11px 28px!important;border:12px solid transparent!important;border-image:url('../generated_assets/ui_chip.png') 24 fill stretch!important;border-radius:0!important;background:transparent!important;color:#ffe8aa!important;font-size:14px!important;text-transform:uppercase!important;text-align:center!important;white-space:nowrap!important}
+.rpvs--army-foundation .rpb-draft-approved>h2{margin:18px 8px 10px!important;color:#f8f0dc!important;font:700 clamp(27px,2vw,34px)/1.08 BrahmsGotischCyr,Georgia,serif!important;text-shadow:0 4px 16px #000}
+.rpvs--army-foundation .rpb-draft-approved .rpb-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:18px!important;margin-bottom:14px!important}
+.rpvs--army-foundation .rpb-draft-approved .rpb-card.rpb-draft-card{position:relative!important;display:grid!important;grid-template-columns:140px minmax(0,1fr)!important;align-items:stretch!important;gap:24px!important;min-width:0!important;min-height:250px!important;padding:31px 38px!important;border:24px solid transparent!important;border-image:url('../generated_assets/ui_panel_frame.png') 30 fill stretch!important;border-radius:0!important;background:#06121fe8!important;color:#f8f0dc!important;text-align:left!important;overflow:hidden!important;box-shadow:0 16px 42px #000a!important;transition:filter .16s ease,transform .16s ease!important}
+.rpvs--army-foundation .rpb-draft-approved .rpb-card.rpb-draft-card:hover{filter:brightness(1.1)!important;transform:translateY(-2px)!important}
+.rpvs--army-foundation .rpb-draft-approved .rpb-card.rpb-draft-card[aria-pressed=true]{filter:brightness(1.12)!important;box-shadow:0 0 0 2px #48b8f4,0 0 34px #35b7ff55,0 16px 42px #000a!important}
+.rpb-draft-card__art{display:block!important;width:140px!important;height:170px!important;align-self:center!important;object-fit:cover!important;object-position:center 22%!important;border:2px solid #4d85ae!important;border-radius:10px!important;background:#07101b!important;box-shadow:0 9px 20px #0009!important}
+.rpb-draft-card--regular .rpb-draft-card__art{object-fit:contain!important;object-position:center!important;padding:4px!important}
+.rpb-draft-card__body{display:grid!important;align-content:center!important;gap:5px!important;min-width:0!important;padding-right:34px!important}
+.rpb-draft-card__eyebrow{color:#f5c24e!important;font-size:13px!important;font-weight:900!important;letter-spacing:.04em!important}
+.rpb-draft-card__title{display:block!important;color:#f9f1e0!important;font:700 clamp(22px,1.65vw,29px)/1.05 BrahmsGotischCyr,Georgia,serif!important;overflow-wrap:anywhere!important}
+.rpb-draft-card__class{display:flex!important;align-items:center!important;gap:10px!important;margin-top:7px!important;color:#e8d8a8!important}
+.rpb-draft-card__class small{color:#85a4c1!important;font-size:10px!important;font-weight:900!important;letter-spacing:.08em!important}
+.rpb-draft-card__class b{color:#efe0b4!important;font:400 27px/1 "Noto Sans Symbols 2","Segoe UI Symbol",serif!important}
+.rpb-draft-card__description{display:block!important;max-width:360px!important;margin-top:4px!important;color:#c3d0df!important;font-size:14px!important;line-height:1.45!important}
+.rpb-draft-card__cost{display:inline-flex!important;justify-self:start!important;margin-top:6px!important;padding:4px 9px!important;border:1px solid #8a743e!important;border-radius:999px!important;color:#f3d77d!important;font-size:12px!important;font-weight:850!important}
+.rpb-draft-card__glyph{position:absolute!important;z-index:2!important;right:52px!important;top:46px!important;color:#e1ebf7!important;font:400 39px/1 "Noto Sans Symbols 2","Segoe UI Symbol",serif!important;text-shadow:0 3px 9px #000!important}
+.rpvs--army-foundation .rpb-draft-approved .rpb-warning{margin:20px 8px 0!important;border:14px solid transparent!important;border-image:url('../generated_assets/ui_panel_wide.png') 28 fill stretch!important;border-radius:0!important;background:transparent!important;color:#ffe2a8!important}
+.rpvs--army-foundation .rpb-draft-approved .rpb-actions{justify-content:center!important;margin-top:12px!important}
+.rpvs--army-foundation .rpb-draft-approved .rpb-actions .rpvs__primary{width:auto!important;min-width:320px!important}
+@media(max-width:1500px){
+  .rpb-topbar__wordmark{width:235px}.rpb-topbar__act{font-size:30px}.rpvs--army-foundation .rpb-resource-chip{width:124px!important;min-width:124px!important;grid-template-columns:42px minmax(3ch,1fr)!important}.rpvs--army-foundation .rpb-resource-chip img{width:42px!important;height:42px!important}
+  .rpvs--army-foundation .rpb-draft-approved .rpb-card.rpb-draft-card{grid-template-columns:112px minmax(0,1fr)!important;gap:17px!important;padding:29px 31px!important}.rpb-draft-card__art{width:112px!important;height:158px!important}.rpb-draft-card__glyph{right:42px!important}
+}
+@media(max-width:1180px){
+  .rpvs--army-foundation .rpvs__top{flex-wrap:wrap!important}.rpvs--army-foundation .rpvs__resources{width:100%!important;justify-content:flex-start!important;overflow-x:auto!important;padding-bottom:4px!important}.rpvs--army-foundation .rpb-draft-approved .rpb-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:760px){
+  .rpvs--army-foundation .rpvs__top{margin:-10px -10px 16px!important;padding:10px 14px!important}.rpvs--army-foundation .rpvs__identity{gap:12px!important;flex-wrap:wrap!important}.rpb-topbar__wordmark{width:190px;height:62px}.rpb-topbar__act{font-size:27px}.rpvs--army-foundation .rpb-draft-approved{padding:0 2px 70px!important}.rpvs--army-foundation .rpb-draft-approved .rpb-stage__header{display:block!important}.rpvs--army-foundation .rpb-draft-approved .rpb-stage__header .rpb-badge{display:inline-flex!important;margin-top:12px!important}.rpvs--army-foundation .rpb-draft-approved .rpb-grid{grid-template-columns:1fr!important}.rpvs--army-foundation .rpb-draft-approved .rpb-card.rpb-draft-card{grid-template-columns:100px minmax(0,1fr)!important;min-height:220px!important;padding:27px 25px!important}.rpb-draft-card__art{width:100px!important;height:145px!important}.rpb-draft-card__body{padding-right:24px!important}.rpb-draft-card__glyph{right:32px!important;top:42px!important;font-size:32px!important}
+}
+@media(max-width:480px){
+  .rpvs--army-foundation .rpb-draft-approved .rpb-card.rpb-draft-card{grid-template-columns:1fr!important}.rpb-draft-card__art{width:100%!important;height:185px!important}.rpb-draft-card__body{padding-right:0!important}.rpb-draft-card__glyph{right:34px!important;top:45px!important}
+}
