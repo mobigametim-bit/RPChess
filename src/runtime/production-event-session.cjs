@@ -3,7 +3,8 @@
 const {
   createProductionEventState,
   resolveProductionEventChoice,
-  applyProbabilityModifiers
+  applyProbabilityModifiers,
+  conditionMatches
 } = require('../content/production-events.cjs');
 
 function freezeArray(values) {
@@ -45,11 +46,34 @@ function mergeContext(base, patch = {}) {
   });
 }
 
+function applyOutcomeContext(context, outcome) {
+  if (!outcome) return context;
+  const gold = context.gold + (outcome.resourceDelta?.gold || 0);
+  const supplies = context.supplies + (outcome.resourceDelta?.supplies || 0);
+  if (gold < 0 || supplies < 0) throw new Error('event outcome would make resources negative');
+  const flags = new Set(context.flags || []);
+  for (const flag of outcome.removeFlags || []) flags.delete(flag);
+  for (const flag of outcome.addFlags || []) flags.add(flag);
+  return mergeContext(context, {
+    gold,
+    supplies,
+    flags: [...flags].sort()
+  });
+}
+
 function definitionForState(library, state) {
   const event = library.eventsById[state.eventId];
   const variant = event.variants.find((candidate) => candidate.id === state.variantId);
   const stage = variant.stages.find((candidate) => candidate.id === state.stageId);
   return Object.freeze({ event, variant, stage });
+}
+
+function refreshVisibleChoices(library, state, context) {
+  if (state.status !== 'active') return state;
+  const { stage } = definitionForState(library, state);
+  const choices = stage.choices.filter((choice) => conditionMatches(choice.requirements, context));
+  if (!choices.length) throw new Error(`${state.eventId}.${state.stageId} has no visible choices after applying the previous outcome`);
+  return Object.freeze({ ...state, choices: freezeArray(choices) });
 }
 
 function choiceView(choice, context, language) {
@@ -80,7 +104,7 @@ function choiceView(choice, context, language) {
   });
 }
 
-function productionEventView(library, state, context, language = 'ru', pendingCombat = null) {
+function productionEventView(library, state, context, language = 'ru', pendingCombat = null, combatHistory = []) {
   const definition = definitionForState(library, state);
   const resolution = state.resolution?.outcome || null;
   return Object.freeze({
@@ -95,10 +119,13 @@ function productionEventView(library, state, context, language = 'ru', pendingCo
     title: localized(state.title, language),
     body: localized(state.body, language),
     participant: state.participant,
+    resources: Object.freeze({ gold: context.gold, supplies: context.supplies }),
+    knownFlags: context.flags,
     choices: pendingCombat || state.status !== 'active'
       ? freezeArray([])
       : freezeArray(state.choices.map((choice) => choiceView(choice, context, language))),
     history: state.history,
+    combatHistory: freezeArray(combatHistory),
     resolution: resolution ? Object.freeze({
       outcomeId: resolution.id,
       journal: localized(resolution.journal, language),
@@ -108,6 +135,7 @@ function productionEventView(library, state, context, language = 'ru', pendingCo
       chronicleKeys: resolution.chronicleKeys,
       severity: resolution.severity,
       terminal: state.resolution.terminal,
+      combatResult: state.resolution.combatResult || null,
       combat: resolution.combat ? Object.freeze({
         encounterId: resolution.combat.encounterId,
         dangerOffset: resolution.combat.dangerOffset,
@@ -121,15 +149,12 @@ function productionEventView(library, state, context, language = 'ru', pendingCo
   });
 }
 
-function createProductionEventSession(options = {}) {
-  const library = options.library?.eventsById ? options.library : null;
-  if (!library) throw new Error('validated production event library is required');
-  const eventId = String(options.eventId || '');
-  let context = contextSnapshot(options.context || {});
-  let state = createProductionEventState(library, eventId, context);
-  let pendingCombat = null;
-  let combatHistory = freezeArray([]);
-  const language = options.language === 'en' ? 'en' : 'ru';
+function sessionFromState(library, initialSnapshot) {
+  let context = contextSnapshot(initialSnapshot.context);
+  let state = initialSnapshot.state;
+  let pendingCombat = initialSnapshot.pendingCombat || null;
+  let combatHistory = freezeArray(initialSnapshot.combatHistory || []);
+  const language = initialSnapshot.language === 'en' ? 'en' : 'ru';
 
   function snapshot() {
     return Object.freeze({
@@ -144,7 +169,7 @@ function createProductionEventSession(options = {}) {
   }
 
   function view() {
-    return productionEventView(library, state, context, language, pendingCombat);
+    return productionEventView(library, state, context, language, pendingCombat, combatHistory);
   }
 
   function choose(choiceId, contextPatch = {}) {
@@ -152,7 +177,10 @@ function createProductionEventSession(options = {}) {
     if (state.status !== 'active') throw new Error('event session is already resolved');
     context = mergeContext(context, contextPatch);
     state = resolveProductionEventChoice(library, state, String(choiceId), context);
-    const combat = state.resolution?.outcome?.combat || null;
+    const outcome = state.resolution?.outcome || null;
+    context = applyOutcomeContext(context, outcome);
+    state = refreshVisibleChoices(library, state, context);
+    const combat = outcome?.combat || null;
     if (combat) {
       pendingCombat = Object.freeze({
         eventId: state.eventId,
@@ -179,26 +207,44 @@ function createProductionEventSession(options = {}) {
     })]);
     pendingCombat = null;
     if (result === 'defeat') {
-      const currentResolution = state.resolution;
       state = Object.freeze({
         ...state,
         status: 'resolved',
         choices: freezeArray([]),
         resolution: Object.freeze({
-          ...currentResolution,
+          ...state.resolution,
           terminal: true,
           combatResult: 'defeat'
         })
+      });
+    } else if (state.resolution) {
+      state = Object.freeze({
+        ...state,
+        resolution: Object.freeze({ ...state.resolution, combatResult: 'victory' })
       });
     }
     return view();
   }
 
-  return Object.freeze({
-    view,
-    choose,
-    completeCombat,
-    snapshot
+  return Object.freeze({ view, choose, completeCombat, snapshot });
+}
+
+function createProductionEventSession(options = {}) {
+  const library = options.library?.eventsById ? options.library : null;
+  if (!library) throw new Error('validated production event library is required');
+  let context = contextSnapshot(options.context || {});
+  const state = createProductionEventState(library, String(options.eventId || ''), context);
+  if (state.participant?.id) {
+    context = mergeContext(context, {
+      participatedRosterIds: [...new Set([...context.participatedRosterIds, state.participant.id])]
+    });
+  }
+  return sessionFromState(library, {
+    language: options.language,
+    context,
+    state,
+    pendingCombat: null,
+    combatHistory: []
   });
 }
 
@@ -208,61 +254,16 @@ function restoreProductionEventSession(options = {}) {
   if (!library || !snapshot || snapshot.format !== 'rpchess-production-event-session' || snapshot.schemaVersion !== 1) {
     throw new Error('valid production event session snapshot is required');
   }
-  let context = contextSnapshot(snapshot.context);
-  let state = snapshot.state;
-  let pendingCombat = snapshot.pendingCombat || null;
-  let combatHistory = freezeArray(snapshot.combatHistory || []);
-  const language = snapshot.language === 'en' ? 'en' : 'ru';
-
-  function view() {
-    return productionEventView(library, state, context, language, pendingCombat);
-  }
-
-  function choose(choiceId, contextPatch = {}) {
-    if (pendingCombat) throw new Error('event choice is unavailable while combat is pending');
-    if (state.status !== 'active') throw new Error('event session is already resolved');
-    context = mergeContext(context, contextPatch);
-    state = resolveProductionEventChoice(library, state, String(choiceId), context);
-    const combat = state.resolution?.outcome?.combat || null;
-    if (combat) pendingCombat = Object.freeze({
-      eventId: state.eventId,
-      stageId: state.history.at(-1).stageId,
-      choiceId: state.history.at(-1).choiceId,
-      outcomeId: state.history.at(-1).outcomeId,
-      encounterId: combat.encounterId,
-      dangerOffset: combat.dangerOffset,
-      rewardMode: combat.rewardMode,
-      warning: localized(combat.warning, language),
-      objective: localized(combat.objective, language)
-    });
-    return view();
-  }
-
-  function completeCombat(result, details = {}) {
-    if (!pendingCombat) throw new Error('event session has no pending combat');
-    if (!['victory', 'defeat'].includes(result)) throw new Error('event combat result must be victory or defeat');
-    combatHistory = freezeArray([...combatHistory, Object.freeze({ ...pendingCombat, result, details: Object.freeze({ ...(details || {}) }) })]);
-    pendingCombat = null;
-    if (result === 'defeat') state = Object.freeze({
-      ...state,
-      status: 'resolved',
-      choices: freezeArray([]),
-      resolution: Object.freeze({ ...state.resolution, terminal: true, combatResult: 'defeat' })
-    });
-    return view();
-  }
-
-  function nextSnapshot() {
-    return Object.freeze({ format: 'rpchess-production-event-session', schemaVersion: 1, language, context, state, pendingCombat, combatHistory });
-  }
-
-  return Object.freeze({ view, choose, completeCombat, snapshot: nextSnapshot });
+  return sessionFromState(library, snapshot);
 }
 
 module.exports = {
   localized,
   contextSnapshot,
   mergeContext,
+  applyOutcomeContext,
+  definitionForState,
+  refreshVisibleChoices,
   choiceView,
   productionEventView,
   createProductionEventSession,
