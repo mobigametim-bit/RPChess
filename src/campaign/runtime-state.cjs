@@ -1,6 +1,19 @@
 'use strict';
 
-const legacy = require('./state.cjs');
+const legacyModule = require('./state.cjs');
+const legacy = Object.freeze({
+  createCampaignState: legacyModule.createCampaignState,
+  migrateCampaignState: legacyModule.migrateCampaignState,
+  visibleNode: legacyModule.visibleNode,
+  availableRoutes: legacyModule.availableRoutes,
+  scoutingCost: legacyModule.scoutingCost,
+  scoutNode: legacyModule.scoutNode,
+  travelTo: legacyModule.travelTo,
+  gainSupplies: legacyModule.gainSupplies,
+  gainScouting: legacyModule.gainScouting,
+  royalRetreatToConvergence: legacyModule.royalRetreatToConvergence,
+  completeBossNode: legacyModule.completeBossNode
+});
 const production = require('./production-map-state.cjs');
 const { materializeLevel } = require('./production-map-materialization.cjs');
 const { freezeArray, deepFreeze } = require('./production-map-contract.cjs');
