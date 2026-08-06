@@ -32,7 +32,9 @@ for (let seed = 1; seed <= samples; seed += 1) {
   }
   const sourceNodeId = Object.keys(graph.secretChecks).sort()[0];
   if (sourceNodeId) {
-    const checked = checkSecretAfterNode(createProductionCampaignState(graph, { supplies: 20, contentPools: pools() }), sourceNodeId);
+    let checked = createProductionCampaignState(graph, { supplies: 20, contentPools: pools() });
+    checked = completeNode(checked, sourceNodeId, { rewardClaimed: false });
+    checked = checkSecretAfterNode(checked, sourceNodeId);
     if (checked.secret.pendingDecision) secretDiscoveries += 1;
   }
 }
@@ -111,7 +113,8 @@ for (let seed = 1; seed <= 250; seed += 1) {
   let routeState = createProductionCampaignState(generateProductionActGraph({ rootSeed: seed }), { supplies: 20, contentPools: pools(4) });
   let previous = null;
   while (routeState.currentNodeId !== routeState.graph.bossNodeId) {
-    const route = availableRoutes(routeState)[seed % availableRoutes(routeState).length];
+    const routes = availableRoutes(routeState);
+    const route = routes[seed % routes.length];
     routeState = travelTo(routeState, route.to);
     const node = routeState.graph.nodesById[routeState.currentNodeId];
     const content = routeState.materializedContentByNode[node.id];
@@ -128,8 +131,12 @@ for (let seed = 1; seed <= samples && !secretState; seed += 1) {
   const candidateGraph = generateProductionActGraph({ rootSeed: seed });
   let candidate = createProductionCampaignState(candidateGraph, { supplies: 20, contentPools: pools() });
   for (const nodeId of Object.keys(candidateGraph.secretChecks)) {
+    if (!candidate.completedNodeIds.includes(nodeId)) candidate = completeNode(candidate, nodeId, { rewardClaimed: false });
     candidate = checkSecretAfterNode(candidate, nodeId);
-    if (candidate.secret.pendingDecision) { secretState = candidate; break; }
+    if (candidate.secret.pendingDecision) {
+      secretState = candidate;
+      break;
+    }
   }
 }
 assert.ok(secretState);
@@ -152,4 +159,4 @@ assert.strictEqual(bossState.status, 'boss_reached');
 assert.strictEqual(bossState.supplies, 10);
 
 console.log(JSON.stringify({ phaseCounts, serviceCounts, secretDiscoveries, secretDiscoveryRate, secretCounts, selectorCalls }, null, 2));
-console.log('B9 production map contracts: 10,000-seed distributions, services, secret discovery/pool, authored rare routes, adjacent repeats, selector state and boss route passed.');
+console.log('B9 production map contracts: 10,000-seed distributions, services, completed-node secret discovery/pool, authored rare routes, adjacent repeats, selector state and boss route passed.');
