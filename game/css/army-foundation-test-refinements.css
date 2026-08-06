@@ -1,0 +1,20 @@
+/* Follow-up refinements from the in-game draft test. */
+.rpvs--army-foundation .rpb-draft-approved .rpb-stage__header{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important;gap:30px!important}
+.rpvs--army-foundation .rpb-draft-approved .rpb-stage__header>div{min-width:0!important}
+.rpb-draft-heading-row{display:flex!important;align-items:baseline!important;gap:22px!important;min-width:0!important;flex-wrap:wrap!important}
+.rpvs--army-foundation .rpb-draft-heading-row h1{margin:0!important}
+.rpb-command-counter{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-width:82px!important;padding:4px 10px!important;border:1px solid #8a743e!important;border-radius:999px!important;background:#071423cc!important;color:#f4d77d!important;font:800 19px/1.1 system-ui,sans-serif!important;font-variant-numeric:tabular-nums!important;white-space:nowrap!important;box-shadow:0 4px 13px #0007!important}
+.rpb-command-counter--over{border-color:#bd5b55!important;color:#ffd1c9!important;background:#32151bcc!important}
+.rpvs--army-foundation .rpb-draft-approved .rpb-stage__header>.rpb-badge{display:none!important}
+.rpvs--army-foundation .rpb-draft-confirm{align-self:center!important;justify-self:end!important;width:auto!important;min-width:230px!important;min-height:64px!important;margin:0!important;padding:13px 30px!important;white-space:nowrap!important}
+.rpvs--army-foundation .rpb-draft-approved>.rpb-warning,
+.rpvs--army-foundation .rpb-draft-approved>.rpb-actions{display:none!important}
+@media(max-width:900px){
+  .rpvs--army-foundation .rpb-draft-approved .rpb-stage__header{grid-template-columns:1fr!important;align-items:start!important}
+  .rpvs--army-foundation .rpb-draft-confirm{justify-self:start!important}
+}
+@media(max-width:520px){
+  .rpb-draft-heading-row{gap:12px!important}
+  .rpb-command-counter{font-size:17px!important;min-width:72px!important}
+  .rpvs--army-foundation .rpb-draft-confirm{width:100%!important;min-width:0!important}
+}
