@@ -1,0 +1,97 @@
+name: Apply glyph placement polish
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: ${{ github.head_ref == 'agent/stage-b-events-ui' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/stage-b-events-ui
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Apply top-left technical glyph contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              file = Path(path)
+              text = file.read_text(encoding='utf-8')
+              if new in text:
+                  return False
+              if old not in text:
+                  raise SystemExit(f'Expected source fragment not found in {path}')
+              file.write_text(text.replace(old, new, 1), encoding='utf-8')
+              return True
+
+          replace_once(
+              'game/js/vertical-slice-presenter.mjs',
+              """  const glyph = pieceGlyph(piece);\n  const glyphSize = Math.max(13, Math.floor(rect.size * .24));\n  const cx = rect.x + rect.size / 2;\n  const cy = rect.y + rect.size * .885;""",
+              """  const glyph = pieceGlyph(piece);\n  const glyphSize = Math.max(14, Math.floor(rect.size * .264));\n  const glyphInset = rect.size * .035;\n  const cx = rect.x + glyphInset + glyphSize * .72;\n  const cy = rect.y + glyphInset + glyphSize * .64;"""
+          )
+
+          stage = Path('game/css/stage-b-ui.css')
+          css = stage.read_text(encoding='utf-8')
+          if '.rp02-media>span{line-height:.84!important;overflow:visible!important}' not in css:
+              old = '.rp02-media--portrait{width:82px!important}'
+              new = old + '.rp02-media>span{line-height:.84!important;overflow:visible!important}'
+              if old not in css:
+                  raise SystemExit('Portrait marker not found in stage-b-ui.css')
+              css = css.replace(old, new, 1)
+          reserve_rule = '.rpvs__reserve-piece small{position:absolute;left:3px;top:3px;bottom:auto;transform:none;display:grid;place-items:center;min-width:22px;height:19px;padding:0 4px;border-radius:6px;background:#03070dd9;color:#fff0d1;font:700 14.3px/.9 Georgia,serif;overflow:visible}'
+          if reserve_rule not in css:
+              css += '\n' + reserve_rule + '\n'
+          old_moving = '.rpvs__moving-piece small{position:absolute;left:50%;bottom:4%;transform:translateX(-50%);display:grid;place-items:center;width:30%;aspect-ratio:1.35;border-radius:35%;background:#060b12df;color:#fff1cd;font:700 18px Georgia,serif}'
+          new_moving = '.rpvs__moving-piece small{position:absolute;left:4%;top:4%;bottom:auto;transform:none;display:grid;place-items:center;width:33%;aspect-ratio:1.35;border-radius:35%;background:#060b12df;color:#fff1cd;font:700 20px/.9 Georgia,serif;overflow:visible}'
+          if new_moving not in css:
+              if old_moving not in css:
+                  raise SystemExit('Moving-piece glyph rule not found in stage-b-ui.css')
+              css = css.replace(old_moving, new_moving, 1)
+          stage.write_text(css, encoding='utf-8')
+
+          visual_test = Path('tests/approved-visual-contract.cjs')
+          text = visual_test.read_text(encoding='utf-8')
+          old_assert = 'assert(presenter.includes("glyphSize = Math.max(13, Math.floor(rect.size * .24))"));'
+          new_asserts = """assert(presenter.includes(\"glyphSize = Math.max(14, Math.floor(rect.size * .264))\"));\nassert(presenter.includes('const glyphInset = rect.size * .035'));\nassert(presenter.includes('const cx = rect.x + glyphInset + glyphSize * .72'));\nassert(presenter.includes('const cy = rect.y + glyphInset + glyphSize * .64'));\nassert(stageCss.includes('.rpvs__reserve-piece small{position:absolute;left:3px;top:3px'));\nassert(stageCss.includes('.rpvs__moving-piece small{position:absolute;left:4%;top:4%'));\nassert(stageCss.includes('.rp02-media>span{line-height:.84!important;overflow:visible!important}'));"""
+          if new_asserts not in text:
+              if old_assert not in text:
+                  raise SystemExit('Old visual glyph assertion not found')
+              text = text.replace(old_assert, new_asserts, 1)
+          visual_test.write_text(text, encoding='utf-8')
+
+          stage_test = Path('tests/stage-b-ui.cjs')
+          text = stage_test.read_text(encoding='utf-8')
+          marker = "  assert(css.includes('.rpvs__moving-piece'));"
+          additions = """  assert(css.includes('.rpvs__moving-piece'));\n  assert(css.includes('.rpvs__moving-piece small{position:absolute;left:4%;top:4%'));\n  assert(css.includes('width:33%;aspect-ratio:1.35'));\n  assert(css.includes('font:700 20px/.9 Georgia,serif'));\n  assert(css.includes('.rpvs__reserve-piece small{position:absolute;left:3px;top:3px'));\n  assert(css.includes('.rp02-media>span{line-height:.84!important;overflow:visible!important}'));\n  assert(presenter.includes('const glyphSize = Math.max(14, Math.floor(rect.size * .264))'));\n  assert(presenter.includes('const cx = rect.x + glyphInset + glyphSize * .72'));"""
+          if additions not in text:
+              if marker not in text:
+                  raise SystemExit('Stage B moving-piece assertion marker not found')
+              text = text.replace(marker, additions, 1)
+          stage_test.write_text(text, encoding='utf-8')
+          PY
+      - name: Validate glyph changes
+        run: |
+          node tests/approved-visual-contract.cjs
+          node tests/stage-b-ui.cjs
+      - name: Commit verified glyph polish
+        run: |
+          if git diff --quiet; then
+            echo 'Glyph polish already applied.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add game/js/vertical-slice-presenter.mjs game/css/stage-b-ui.css tests/approved-visual-contract.cjs tests/stage-b-ui.cjs
+          git commit -m 'Move technical piece glyphs to top left'
+          git push origin HEAD:agent/stage-b-events-ui
