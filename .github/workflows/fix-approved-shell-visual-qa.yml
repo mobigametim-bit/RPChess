@@ -1,0 +1,60 @@
+name: Fix approved shell visual QA
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: ${{ github.head_ref == 'agent/restore-approved-visual-shell' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/restore-approved-visual-shell
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Apply visual QA corrections
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          css_path = Path('game/css/approved-visual-shell.css')
+          css = css_path.read_text(encoding='utf-8')
+          marker = '/* approved-shell-visual-qa-v2 */'
+          if marker not in css:
+              css += '''\n/* approved-shell-visual-qa-v2 */
+          .rpa-runtime-menu{width:auto!important;min-width:92px!important;height:auto!important;padding:6px 14px!important;white-space:nowrap!important}
+          .rpa-button:not(.rpa-button--primary):not(.rpa-button--danger){color:#29241d!important;text-shadow:0 1px 0 #fff9!important}
+          .rpvs__action,.rpvs__choice,.rpvs__deployment-remove{color:#29241d!important;text-shadow:0 1px 0 #fff9!important}
+          .rpa-menu__status{padding:28px 28px 48px!important}
+          .rpa-onboarding>div:last-child{padding-bottom:26px!important}
+          .rpa-commander{min-height:238px!important}
+          .rpa-commander__art{min-height:238px!important}
+          .rpa-commander__copy{padding:16px 20px 30px!important}
+          @media(max-width:1120px){.rpa-menu{display:block!important;min-height:100vh}.rpa-menu__layout{margin:auto!important;align-items:start!important}.rpa-menu,.rpa-subscreen,.rpvs{background-attachment:scroll!important}.rpa-menu::before,.rpa-subscreen::before{position:absolute!important}.rpa-subscreen{overflow:visible!important}.rpa-subscreen__content{min-height:max-content}}
+          @media(max-width:720px){.rpa-commander{min-height:190px!important}.rpa-commander__art{min-height:190px!important}.rpa-commander__copy{padding:13px 15px 25px!important}}
+          @media(max-width:460px){.rpa-menu__layout{display:grid!important;gap:14px!important}.rpa-menu__status{padding:18px 18px 38px!important}.rpa-commander{min-height:186px!important}.rpa-commander__art{min-height:186px!important}}
+          '''
+              css_path.write_text(css, encoding='utf-8')
+          presenter = Path('game/js/vertical-slice-presenter.mjs')
+          source = presenter.read_text(encoding='utf-8')
+          source = source.replace('aria-label="Главное меню">Меню</button>', 'aria-label="Главное меню">☰ Меню</button>')
+          presenter.write_text(source, encoding='utf-8')
+          PY
+          node --check game/js/vertical-slice-presenter.mjs
+          npm ci
+          npm test
+          npm run build
+      - name: Commit corrections
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add game/css/approved-visual-shell.css game/js/vertical-slice-presenter.mjs
+          git commit -m "Polish approved shell after visual QA [visual-qa-v2]"
+          git push origin HEAD:agent/restore-approved-visual-shell
