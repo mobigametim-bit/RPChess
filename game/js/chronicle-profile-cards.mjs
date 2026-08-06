@@ -220,8 +220,10 @@ function enhanceChronicleSelection(root = globalThis.document, options = {}) {
   screen.classList.add('rpprofile--approved-cards');
   const heading = screen.querySelector('.rpa-screen-header h1');
   const subtitle = screen.querySelector('.rpa-screen-header p');
-  if (heading) heading.textContent = compactLabel(language, 'title');
-  if (subtitle) subtitle.textContent = compactLabel(language, 'subtitle');
+  const titleCopy = compactLabel(language, 'title');
+  const subtitleCopy = compactLabel(language, 'subtitle');
+  if (heading && heading.textContent !== titleCopy) heading.textContent = titleCopy;
+  if (subtitle && subtitle.textContent !== subtitleCopy) subtitle.textContent = subtitleCopy;
   const cards = [...screen.querySelectorAll('.rpa-profile-card')];
   return cards.reduce((count, card, index) => count + Number(enhanceProfileCard(card, index, { ...options, document, language })), 0);
 }
