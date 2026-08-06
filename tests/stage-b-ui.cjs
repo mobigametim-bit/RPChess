@@ -10,6 +10,7 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
 (async () => {
   const app = read('game/js/vertical-slice-app.mjs');
   const presenter = read('game/js/vertical-slice-presenter.mjs');
+  const clientSource = read('game/js/runtime-command-client.mjs');
   const extension = read('game/js/vertical-slice-presenter-register-02.mjs');
   const css = read('game/css/stage-b-ui.css');
   const index = read('game/index.html');
@@ -41,6 +42,11 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert(presenter.includes('renderReorganization(snapshot)'));
   assert(presenter.includes('register04EventAsset(event.eventId'));
   assert(extension.includes("sidebar.querySelector('.rpvs__battle-sidebar-scroll')"));
+  assert(clientSource.includes("'ChooseDraftHero'"));
+  assert(clientSource.includes("'ScoutNode'"));
+  assert(clientSource.includes("'ChooseRewardOffer'"));
+  assert(clientSource.includes("'ConfirmReorganization'"));
+  assert(clientSource.includes("'reward_choice'"));
 
   const appModule = await import(pathToFileURL(path.join(root, 'game/js/vertical-slice-app.mjs')).href);
   const progress = appModule.readShellProgress({ getItem: () => null });
