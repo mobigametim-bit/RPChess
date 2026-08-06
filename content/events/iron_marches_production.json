@@ -1,0 +1,503 @@
+{
+  "schemaVersion": 1,
+  "libraryId": "iron_marches_production_events",
+  "metaPersistence": false,
+  "events": [
+    {
+      "id": "event.empty_armory",
+      "class": "small",
+      "scope": "iron_marches",
+      "sceneArt": "assets/events/iron_marches/empty_armory.jpg",
+      "tags": ["supply", "fortress", "small"],
+      "phaseWeights": {"early": 5, "mid": 2, "late": 0},
+      "chain": {"role": "standalone"},
+      "defaultVariantId": "default",
+      "variants": [
+        {
+          "id": "default",
+          "condition": {},
+          "stages": [
+            {
+              "id": "decision",
+              "title": {"ru": "Пустой арсенал", "en": "The Empty Armory"},
+              "body": {"ru": "За опечатанными дверями крепостного арсенала — пустые стойки, свежая каменная пыль и узкий провал под северной стеной. Гарнизон утверждает, что оружие исчезло за одну ночь.", "en": "Behind the sealed armory doors stand empty racks, fresh stone dust, and a narrow breach beneath the north wall. The garrison claims the weapons vanished in a single night."},
+              "choices": [
+                {
+                  "id": "search",
+                  "label": {"ru": "Спуститься в пролом", "en": "Enter the breach"},
+                  "preview": {"ru": "70% найти тайный запас; 30% обрушить проход. Возможна потеря припасов.", "en": "70% to find a hidden cache; 30% to collapse the passage. Supplies may be lost."},
+                  "effectIds": ["effect.scouting_gain", "effect.flag_armory_tunnel"],
+                  "participant": {"mode": "random", "allowedKinds": ["regular", "hero"], "allowKing": false},
+                  "outcomes": [
+                    {
+                      "id": "cache_found",
+                      "probability": 70,
+                      "resourceDelta": {"supplies": 3},
+                      "addFlags": ["story.iron_marches.armory_cache_found", "knowledge.iron_marches.armory_tunnel"],
+                      "chronicleKeys": ["chronicle.empty_armory.cache_found"],
+                      "consequences": ["gain_supplies", "discover_tunnel"],
+                      "severity": "none",
+                      "journal": {"ru": "Под арсеналом найден старый резерв гарнизона и забытый служебный тоннель.", "en": "An old garrison reserve and a forgotten service tunnel were found beneath the armory."}
+                    },
+                    {
+                      "id": "passage_collapsed",
+                      "probability": 30,
+                      "resourceDelta": {"supplies": -1},
+                      "addFlags": ["story.iron_marches.armory_passage_collapsed"],
+                      "chronicleKeys": ["chronicle.empty_armory.collapse"],
+                      "consequences": ["lose_supplies", "close_tunnel"],
+                      "severity": "low",
+                      "journal": {"ru": "Проход обрушился. Часть снаряжения пришлось бросить под камнями.", "en": "The passage collapsed, forcing part of the equipment to be abandoned beneath the rubble."}
+                    }
+                  ]
+                },
+                {
+                  "id": "seal",
+                  "label": {"ru": "Опечатать пролом и разобрать остатки", "en": "Seal the breach and salvage the remains"},
+                  "preview": {"ru": "Гарантированно получить 20 золота. Причина исчезновения оружия останется неизвестной.", "en": "Guaranteed 20 gold. The cause of the missing weapons will remain unknown."},
+                  "effectIds": ["effect.reputation_crown", "effect.encounter_weight_down"],
+                  "outcomes": [
+                    {
+                      "id": "armory_sealed",
+                      "probability": 100,
+                      "resourceDelta": {"gold": 20},
+                      "addFlags": ["story.iron_marches.armory_sealed"],
+                      "chronicleKeys": ["chronicle.empty_armory.sealed"],
+                      "consequences": ["gain_gold", "seal_mystery"],
+                      "severity": "none",
+                      "journal": {"ru": "Арсенал разобран на полезный металл, а пролом навсегда заложен гранитом.", "en": "The armory was stripped for useful metal and the breach was permanently sealed with granite."}
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "event.cracked_bell",
+      "class": "small",
+      "scope": "iron_marches",
+      "sceneArt": "assets/events/iron_marches/cracked_bell.jpg",
+      "tags": ["memory", "workers", "small"],
+      "phaseWeights": {"early": 4, "mid": 2, "late": 0},
+      "chain": {"role": "standalone"},
+      "defaultVariantId": "default",
+      "variants": [
+        {
+          "id": "default",
+          "condition": {},
+          "stages": [
+            {
+              "id": "decision",
+              "title": {"ru": "Треснувший колокол", "en": "The Cracked Bell"},
+              "body": {"ru": "Колокол, созывавший Марши к обороне три столетия, раскололся после последнего удара. Старейшины требуют сохранить святыню, литейщики просят переплавить её в нужный армии металл.", "en": "The bell that summoned the Marches to war for three centuries cracked after its final toll. Elders demand the relic be preserved; foundry workers ask to melt it into metal the army needs."},
+              "choices": [
+                {
+                  "id": "repair",
+                  "label": {"ru": "Укрепить трещину золотой скобой", "en": "Bind the crack with a golden brace"},
+                  "preview": {"ru": "Потратить 1 припас. Память Маршей будет сохранена.", "en": "Spend 1 supply. The memory of the Marches will be preserved."},
+                  "effectIds": ["effect.supplies_loss_small", "effect.flag_bell_repaired"],
+                  "outcomes": [
+                    {
+                      "id": "bell_preserved",
+                      "probability": 100,
+                      "resourceDelta": {"supplies": -1},
+                      "addFlags": ["story.iron_marches.bell_preserved"],
+                      "chronicleKeys": ["chronicle.cracked_bell.repaired"],
+                      "consequences": ["lose_supplies", "preserve_memory"],
+                      "severity": "none",
+                      "journal": {"ru": "Колокол больше не звучит чисто, но его голос остаётся голосом Маршей.", "en": "The bell no longer rings clearly, but its voice remains the voice of the Marches."}
+                    }
+                  ]
+                },
+                {
+                  "id": "melt",
+                  "label": {"ru": "Переплавить колокол", "en": "Melt the bell down"},
+                  "preview": {"ru": "Получить 2 припаса. Решение вызовет недовольство хранителей традиции.", "en": "Gain 2 supplies. Keepers of tradition will resent the decision."},
+                  "effectIds": ["effect.supplies_gain", "effect.reputation_workers_loss"],
+                  "outcomes": [
+                    {
+                      "id": "bell_melted",
+                      "probability": 100,
+                      "resourceDelta": {"supplies": 2},
+                      "addFlags": ["story.iron_marches.bell_melted", "politics.iron_marches.traditionalists_alienated"],
+                      "chronicleKeys": ["chronicle.cracked_bell.melted"],
+                      "consequences": ["gain_supplies", "alienate_traditionalists"],
+                      "severity": "none",
+                      "journal": {"ru": "Бронза колокола стала оружием. На башне осталась пустая перекладина.", "en": "The bell's bronze became weapons. Only an empty beam remains in the tower."}
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "event.duel_masons",
+      "class": "small",
+      "scope": "iron_marches",
+      "sceneArt": "assets/events/iron_marches/duel_masons.jpg",
+      "tags": ["guild", "fortification", "small"],
+      "phaseWeights": {"early": 2, "mid": 3, "late": 2},
+      "chain": {"role": "standalone"},
+      "defaultVariantId": "default",
+      "variants": [
+        {
+          "id": "default",
+          "condition": {},
+          "stages": [
+            {
+              "id": "decision",
+              "title": {"ru": "Дуэль каменщиков", "en": "The Masons' Duel"},
+              "body": {"ru": "Два мастера спорят, чья кладка удержит новый бастион. По обычаю Маршей спор решает корона: старый ступенчатый свод или молодой монолитный контрфорс.", "en": "Two masters dispute whose masonry should hold the new bastion. By Marcher custom, the crown must choose: the old stepped vault or the young mason's monolithic buttress."},
+              "choices": [
+                {
+                  "id": "first",
+                  "label": {"ru": "Поддержать старую школу", "en": "Support the old school"},
+                  "preview": {"ru": "Гарантированная скидка на следующую услугу. Молодые мастера будут отстранены.", "en": "Guaranteed discount on the next service. The young masters will be sidelined."},
+                  "effectIds": ["effect.reputation_guild_a", "effect.service_discount"],
+                  "outcomes": [
+                    {
+                      "id": "old_school",
+                      "probability": 100,
+                      "addFlags": ["politics.iron_marches.old_masons_supported", "economy.service_discount"],
+                      "chronicleKeys": ["chronicle.duel_masons.old_school"],
+                      "consequences": ["service_discount", "support_old_guild"],
+                      "severity": "none",
+                      "journal": {"ru": "Корона утвердила старую школу каменной кладки.", "en": "The crown endorsed the old school of masonry."}
+                    }
+                  ]
+                },
+                {
+                  "id": "second",
+                  "label": {"ru": "Довериться молодому мастеру", "en": "Trust the young master"},
+                  "preview": {"ru": "Открыть сведения об объектах следующего боя. Старшая гильдия воспримет это как унижение.", "en": "Reveal information about objects in the next battle. The senior guild will take it as an insult."},
+                  "effectIds": ["effect.reputation_guild_b", "effect.board_object_preview"],
+                  "outcomes": [
+                    {
+                      "id": "young_school",
+                      "probability": 100,
+                      "addFlags": ["politics.iron_marches.young_masons_supported", "battle.board_object_preview"],
+                      "chronicleKeys": ["chronicle.duel_masons.young_school"],
+                      "consequences": ["preview_board_objects", "support_young_guild"],
+                      "severity": "none",
+                      "journal": {"ru": "Новый контрфорс получил королевскую печать, а вместе с ней — шанс изменить крепости Маршей.", "en": "The new buttress received the royal seal and a chance to reshape the fortresses of the Marches."}
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "event.disputed_standard",
+      "class": "standard",
+      "scope": "iron_marches",
+      "sceneArt": "assets/events/iron_marches/disputed_standard.jpg",
+      "tags": ["honor", "succession", "standard"],
+      "phaseWeights": {"early": 3, "mid": 4, "late": 0},
+      "chain": {"id": "chain.iron_marches.honor", "role": "start", "followupId": "event.prisoners_pass", "weightMultiplier": 2},
+      "defaultVariantId": "default",
+      "variants": [
+        {
+          "id": "default",
+          "condition": {},
+          "stages": [
+            {
+              "id": "claimants",
+              "title": {"ru": "Оспариваемое знамя", "en": "The Disputed Standard"},
+              "body": {"ru": "После гибели командира три претендента требуют знамя Четвёртой стены: маршал Варн, наследница Эльда и выборный мастер Борек. Каждый обещает порядок — и каждый понимает его по-своему.", "en": "After the commander's death, three claimants demand the banner of the Fourth Wall: Marshal Varn, heir Elda, and elected master Borek. Each promises order, and each means something different by it."},
+              "choices": [
+                {
+                  "id": "marshal",
+                  "label": {"ru": "Передать знамя маршалу Варну", "en": "Give the standard to Marshal Varn"},
+                  "preview": {"ru": "Армия получит ясное командование. Реформисты будут оттеснены.", "en": "The army gains clear command. Reformers will be pushed aside."},
+                  "effectIds": ["effect.flag_support_varn", "effect.reputation_army"],
+                  "outcomes": [
+                    {"id": "varn_named", "probability": 100, "addFlags": ["politics.iron_marches.standard.varn"], "chronicleKeys": ["chronicle.disputed_standard.varn"], "consequences": ["name_varn", "strengthen_army"], "severity": "none", "journal": {"ru": "Знамя вручено Варну под молчаливое одобрение строевых офицеров.", "en": "The standard was handed to Varn under the silent approval of the line officers."}, "nextStageId": "terms"}
+                  ],
+                  "compatibilityOutcome": {"addFlags": ["politics.iron_marches.standard.varn"], "chronicleKeys": ["chronicle.disputed_standard.varn"]}
+                },
+                {
+                  "id": "heir",
+                  "label": {"ru": "Признать наследницу Эльду", "en": "Recognize heir Elda"},
+                  "preview": {"ru": "Откроется путь к реформе командования. Старшие офицеры усомнятся в решении.", "en": "A path to command reform opens. Senior officers will question the decision."},
+                  "effectIds": ["effect.flag_support_elda", "effect.reputation_reform"],
+                  "outcomes": [
+                    {"id": "elda_named", "probability": 100, "addFlags": ["politics.iron_marches.standard.elda"], "chronicleKeys": ["chronicle.disputed_standard.elda"], "consequences": ["name_elda", "open_reform"], "severity": "none", "journal": {"ru": "Эльда приняла знамя и пообещала изменить порядок назначения командиров.", "en": "Elda accepted the standard and promised to change how commanders are appointed."}, "nextStageId": "terms"}
+                  ],
+                  "compatibilityOutcome": {"addFlags": ["politics.iron_marches.standard.elda"], "chronicleKeys": ["chronicle.disputed_standard.elda"]}
+                },
+                {
+                  "id": "council",
+                  "label": {"ru": "Отдать знамя выборному совету", "en": "Entrust the standard to an elected council"},
+                  "preview": {"ru": "65% совет удержит единство; 35% спор расколет гарнизон.", "en": "65% the council preserves unity; 35% the dispute fractures the garrison."},
+                  "effectIds": ["effect.flag_support_borek", "effect.reputation_workers"],
+                  "outcomes": [
+                    {"id": "council_united", "probability": 65, "addFlags": ["politics.iron_marches.standard.borek", "politics.iron_marches.garrison_united"], "chronicleKeys": ["chronicle.disputed_standard.council_united"], "consequences": ["name_borek", "unite_garrison"], "severity": "none", "journal": {"ru": "Борек убедил роты принять общий совет хранителей знамени.", "en": "Borek persuaded the companies to accept a common council of standard-bearers."}, "nextStageId": "terms"},
+                    {"id": "council_split", "probability": 35, "addFlags": ["politics.iron_marches.standard.borek", "politics.iron_marches.garrison_divided"], "chronicleKeys": ["chronicle.disputed_standard.council_split"], "consequences": ["name_borek", "divide_garrison"], "severity": "low", "journal": {"ru": "Совет создан, но две роты отказались признавать его старшинство.", "en": "The council was formed, but two companies refused to recognize its authority."}, "nextStageId": "terms"}
+                  ],
+                  "compatibilityOutcome": {"addFlags": ["politics.iron_marches.standard.borek"], "chronicleKeys": ["chronicle.disputed_standard.borek"]}
+                }
+              ]
+            },
+            {
+              "id": "terms",
+              "title": {"ru": "Цена знамени", "en": "The Price of the Standard"},
+              "body": {"ru": "Новый хранитель просит закрепить полномочия письменно. Формальная клятва даст силу приказам, но свяжет корону обещанием.", "en": "The new bearer asks for written authority. A formal oath will strengthen orders but bind the crown to a promise."},
+              "choices": [
+                {
+                  "id": "ratify",
+                  "label": {"ru": "Закрепить полномочия клятвой", "en": "Ratify the authority by oath"},
+                  "preview": {"ru": "Создать постоянное обязательство короны перед командованием.", "en": "Create a permanent obligation between the crown and the command."},
+                  "effectIds": ["effect.flag_furnace_oath"],
+                  "outcomes": [
+                    {"id": "authority_ratified", "probability": 100, "addFlags": ["obligation.iron_marches.standard_ratified"], "chronicleKeys": ["chronicle.disputed_standard.ratified"], "consequences": ["create_obligation"], "severity": "none", "journal": {"ru": "Полномочия хранителя знамени закреплены королевской клятвой.", "en": "The standard-bearer's authority was sealed by royal oath."}}
+                  ]
+                },
+                {
+                  "id": "provisional",
+                  "label": {"ru": "Оставить назначение временным", "en": "Keep the appointment provisional"},
+                  "preview": {"ru": "Корона сохранит свободу, но командование останется хрупким.", "en": "The crown keeps its freedom, but command remains fragile."},
+                  "effectIds": ["effect.reputation_independent"],
+                  "outcomes": [
+                    {"id": "authority_provisional", "probability": 100, "addFlags": ["politics.iron_marches.standard_provisional"], "chronicleKeys": ["chronicle.disputed_standard.provisional"], "consequences": ["keep_authority_fragile"], "severity": "none", "journal": {"ru": "Знамя передано без постоянной клятвы; спор лишь отложен.", "en": "The standard was handed over without a permanent oath; the dispute was only postponed."}}
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "event.furnace_oath",
+      "class": "standard",
+      "scope": "iron_marches",
+      "sceneArt": "assets/events/iron_marches/furnace_oath.jpg",
+      "tags": ["labor", "oath", "standard"],
+      "phaseWeights": {"early": 0, "mid": 3, "late": 5},
+      "chain": {"id": "chain.iron_marches.iron_and_bread", "role": "followup", "weightMultiplier": 2},
+      "defaultVariantId": "standalone",
+      "variants": [
+        {
+          "id": "linked_favorable",
+          "condition": {"anyFlags": ["story.iron_marches.strike_compromise", "story.iron_marches.strike_workers_backed"]},
+          "stages": [
+            {
+              "id": "promise",
+              "title": {"ru": "Клятва у горна", "en": "Oath at the Furnace"},
+              "body": {"ru": "Шахтёры и литейщики собрались у главного горна, чтобы услышать исполнение данных им обещаний. Они готовы признать власть короны — если слова станут законом.", "en": "Miners and foundry workers gather at the great furnace to hear whether the promises made to them will be honored. They are ready to recognize the crown if words become law."},
+              "choices": [
+                {"id": "swear", "label": {"ru": "Подтвердить обещания", "en": "Confirm the promises"}, "preview": {"ru": "Создать обязательство перед рабочими и укрепить их поддержку.", "en": "Create an obligation to the workers and strengthen their support."}, "effectIds": ["effect.flag_furnace_oath", "effect.order_bonus_once"], "outcomes": [{"id": "promise_kept", "probability": 100, "addFlags": ["obligation.iron_marches.workers_protected", "politics.iron_marches.workers_support_crown"], "chronicleKeys": ["chronicle.furnace_oath.promise_kept"], "consequences": ["create_worker_obligation", "gain_worker_support"], "severity": "none", "journal": {"ru": "Корона подтвердила обещания перед огнём главного горна.", "en": "The crown confirmed its promises before the fire of the great furnace."}, "nextStageId": "seal"}], "compatibilityOutcome": {"addFlags": ["obligation.iron_marches.workers_protected", "politics.iron_marches.workers_support_crown"], "chronicleKeys": ["chronicle.furnace_oath.promise_kept"]}},
+                {"id": "decline", "label": {"ru": "Отложить решение", "en": "Postpone the decision"}, "preview": {"ru": "Сохранить свободу короны. Рабочие сочтут обещания пустыми.", "en": "Preserve the crown's freedom. Workers will consider the promises hollow."}, "effectIds": ["effect.reputation_independent", "effect.shop_price_up"], "outcomes": [{"id": "promise_delayed", "probability": 100, "addFlags": ["politics.iron_marches.workers_disappointed"], "chronicleKeys": ["chronicle.furnace_oath.promise_delayed"], "consequences": ["disappoint_workers"], "severity": "none", "journal": {"ru": "Корона отказалась закреплять обещания, и площадь у горна быстро опустела.", "en": "The crown refused to formalize its promises, and the furnace square quickly emptied."}, "nextStageId": "seal"}], "compatibilityOutcome": {"addFlags": ["politics.iron_marches.workers_disappointed"], "chronicleKeys": ["chronicle.furnace_oath.promise_delayed"]}},
+                {"id": "rewrite", "label": {"ru": "Предложить совместную хартию", "en": "Offer a joint charter"}, "preview": {"ru": "75% договориться; 25% вызвать новый спор. Точная цена известна заранее: 20 золота.", "en": "75% to reach agreement; 25% to trigger a new dispute. Exact cost: 20 gold."}, "effectIds": ["effect.gold_loss_small", "effect.flag_oath_reformed"], "requirements": {"minimumGold": 20}, "outcomes": [{"id": "charter_agreed", "probability": 75, "resourceDelta": {"gold": -20}, "addFlags": ["politics.iron_marches.joint_furnace_charter"], "chronicleKeys": ["chronicle.furnace_oath.charter_agreed"], "consequences": ["lose_gold", "create_joint_charter"], "severity": "none", "journal": {"ru": "Хартия разделила ответственность между короной, мастерами и рабочими.", "en": "The charter divided responsibility among crown, masters, and workers."}, "nextStageId": "seal"}, {"id": "charter_disputed", "probability": 25, "resourceDelta": {"gold": -20}, "addFlags": ["politics.iron_marches.charter_disputed"], "chronicleKeys": ["chronicle.furnace_oath.charter_disputed"], "consequences": ["lose_gold", "renew_dispute"], "severity": "low", "journal": {"ru": "Золото ушло на подготовку хартии, но подписи так и не были поставлены.", "en": "Gold was spent drafting the charter, but the signatures were never given."}, "nextStageId": "seal"}], "compatibilityOutcome": {"resourceDelta": {"gold": -20}, "addFlags": ["politics.iron_marches.joint_furnace_charter"], "chronicleKeys": ["chronicle.furnace_oath.charter_agreed"]}}
+              ]
+            },
+            {
+              "id": "seal",
+              "title": {"ru": "Печать горна", "en": "The Furnace Seal"},
+              "body": {"ru": "Последнее слово должно определить, кому принадлежит контроль над производством: короне или совместному совету Маршей.", "en": "The final word must decide who controls production: the crown or a joint council of the Marches."},
+              "choices": [
+                {"id": "crown_seal", "label": {"ru": "Оставить печать у короны", "en": "Keep the seal with the crown"}, "preview": {"ru": "Корона сохранит прямой контроль над кузницами.", "en": "The crown retains direct control over the forges."}, "effectIds": ["effect.reputation_crown"], "outcomes": [{"id": "crown_controls_forges", "probability": 100, "addFlags": ["control.iron_marches.forges_crown"], "chronicleKeys": ["chronicle.furnace_oath.crown_control"], "consequences": ["crown_controls_forges"], "severity": "none", "journal": {"ru": "Печать горна осталась собственностью короны.", "en": "The furnace seal remained property of the crown."}}]},
+                {"id": "shared_seal", "label": {"ru": "Разделить печать с советом", "en": "Share the seal with the council"}, "preview": {"ru": "Совет рабочих и мастеров получит долю власти.", "en": "A council of workers and masters gains a share of power."}, "effectIds": ["effect.reputation_workers"], "outcomes": [{"id": "council_controls_forges", "probability": 100, "addFlags": ["control.iron_marches.forges_shared"], "chronicleKeys": ["chronicle.furnace_oath.shared_control"], "consequences": ["share_forge_control"], "severity": "none", "journal": {"ru": "Печать разделили между короной и советом горна.", "en": "The furnace seal was divided between crown and council."}}]}
+              ]
+            }
+          ]
+        },
+        {
+          "id": "linked_crisis",
+          "condition": {"anyFlags": ["story.strike_broken", "story.iron_marches.strike_failed", "politics.iron_marches.workers_hostile"]},
+          "stages": [
+            {
+              "id": "promise",
+              "title": {"ru": "Клятва у погасшего горна", "en": "Oath at the Cold Furnace"},
+              "body": {"ru": "Горн погашен, шахтёры заперлись в цехах, а совет требует показательных арестов. Любое слово короны теперь прозвучит как приказ или признание вины.", "en": "The furnace is cold, miners have barricaded the workshops, and the council demands exemplary arrests. Any word from the crown will now sound like an order or an admission of guilt."},
+              "choices": [
+                {"id": "swear", "label": {"ru": "Обещать амнистию", "en": "Promise amnesty"}, "preview": {"ru": "Снизить напряжение, но взять обязательство защитить участников стачки.", "en": "Reduce tension, but accept an obligation to protect the strikers."}, "effectIds": ["effect.flag_furnace_oath"], "outcomes": [{"id": "amnesty_promised", "probability": 100, "addFlags": ["obligation.iron_marches.strike_amnesty", "politics.iron_marches.crisis_softened"], "chronicleKeys": ["chronicle.furnace_oath.amnesty"], "consequences": ["promise_amnesty", "soften_crisis"], "severity": "none", "journal": {"ru": "Корона пообещала амнистию тем, кто сложит инструменты и откроет ворота.", "en": "The crown promised amnesty to those who laid down their tools and opened the gates."}, "nextStageId": "seal"}], "compatibilityOutcome": {"addFlags": ["obligation.iron_marches.strike_amnesty", "politics.iron_marches.crisis_softened"], "chronicleKeys": ["chronicle.furnace_oath.amnesty"]}},
+                {"id": "decline", "label": {"ru": "Поддержать аресты", "en": "Support the arrests"}, "preview": {"ru": "Укрепить совет. Рабочие станут открыто враждебны.", "en": "Strengthen the council. Workers become openly hostile."}, "effectIds": ["effect.reputation_crown", "effect.shop_price_up"], "outcomes": [{"id": "arrests_supported", "probability": 100, "addFlags": ["politics.iron_marches.workers_hostile", "politics.iron_marches.council_emboldened"], "chronicleKeys": ["chronicle.furnace_oath.arrests"], "consequences": ["support_arrests", "make_workers_hostile"], "severity": "serious", "journal": {"ru": "Корона одобрила аресты лидеров стачки.", "en": "The crown approved the arrest of the strike leaders."}, "nextStageId": "seal"}], "compatibilityOutcome": {"addFlags": ["politics.iron_marches.workers_hostile", "politics.iron_marches.council_emboldened"], "chronicleKeys": ["chronicle.furnace_oath.arrests"]}},
+                {"id": "rewrite", "label": {"ru": "Ввести временное совместное управление", "en": "Impose temporary joint administration"}, "preview": {"ru": "60% остановить кризис; 40% обе стороны отвергнут решение.", "en": "60% to halt the crisis; 40% both sides reject the decision."}, "effectIds": ["effect.flag_oath_reformed"], "outcomes": [{"id": "administration_accepted", "probability": 60, "addFlags": ["control.iron_marches.forges_temporary_joint"], "chronicleKeys": ["chronicle.furnace_oath.temporary_joint"], "consequences": ["create_joint_administration"], "severity": "none", "journal": {"ru": "Временный совет получил ключи от горна до окончания расследования.", "en": "A temporary council received the furnace keys until the investigation ends."}, "nextStageId": "seal"}, {"id": "administration_rejected", "probability": 40, "addFlags": ["politics.iron_marches.forge_deadlock"], "chronicleKeys": ["chronicle.furnace_oath.deadlock"], "consequences": ["create_deadlock"], "severity": "low", "journal": {"ru": "Обе стороны отвергли временный совет, и горн остался холодным.", "en": "Both sides rejected the temporary council, and the furnace remained cold."}, "nextStageId": "seal"}], "compatibilityOutcome": {"addFlags": ["control.iron_marches.forges_temporary_joint"], "chronicleKeys": ["chronicle.furnace_oath.temporary_joint"]}}
+              ]
+            },
+            {
+              "id": "seal",
+              "title": {"ru": "Кому достанутся ключи", "en": "Who Takes the Keys"},
+              "body": {"ru": "Ключи от погасшего горна лежат на наковальне. Их новый владелец определит, станет ли кризис перемирием или расколом.", "en": "The keys to the cold furnace lie on the anvil. Their new owner will decide whether the crisis becomes a truce or a rupture."},
+              "choices": [
+                {"id": "crown_seal", "label": {"ru": "Забрать ключи короне", "en": "Take the keys for the crown"}, "preview": {"ru": "Прямой контроль и высокая ответственность короны.", "en": "Direct control and direct responsibility for the crown."}, "effectIds": ["effect.reputation_crown"], "outcomes": [{"id": "crown_emergency_control", "probability": 100, "addFlags": ["control.iron_marches.forges_crown_emergency"], "chronicleKeys": ["chronicle.furnace_oath.emergency_control"], "consequences": ["crown_emergency_control"], "severity": "none", "journal": {"ru": "Корона приняла ключи и ответственность за запуск горна.", "en": "The crown accepted the keys and responsibility for restarting the furnace."}}]},
+                {"id": "shared_seal", "label": {"ru": "Передать ключи временному совету", "en": "Give the keys to the temporary council"}, "preview": {"ru": "Разделить власть между мастерами и рабочими.", "en": "Divide authority between masters and workers."}, "effectIds": ["effect.reputation_workers"], "outcomes": [{"id": "council_emergency_control", "probability": 100, "addFlags": ["control.iron_marches.forges_council_emergency"], "chronicleKeys": ["chronicle.furnace_oath.council_emergency"], "consequences": ["council_emergency_control"], "severity": "none", "journal": {"ru": "Ключи получил временный совет из мастеров и рабочих.", "en": "A temporary council of masters and workers received the keys."}}]}
+              ]
+            }
+          ]
+        },
+        {
+          "id": "standalone",
+          "condition": {},
+          "stages": [
+            {
+              "id": "promise",
+              "title": {"ru": "Клятва у горна", "en": "Oath at the Furnace"},
+              "body": {"ru": "Мастера предлагают короне древнюю клятву: гарантировать поставки руды в обмен на право самим распределять труд и металл.", "en": "The masters offer the crown an ancient oath: guaranteed ore deliveries in exchange for the right to allocate labor and metal themselves."},
+              "choices": [
+                {"id": "swear", "label": {"ru": "Принять старую клятву", "en": "Accept the old oath"}, "preview": {"ru": "Получить разовый бонус приказов и создать обязательство перед мастерами.", "en": "Gain a one-use order bonus and create an obligation to the masters."}, "effectIds": ["effect.flag_furnace_oath", "effect.order_bonus_once"], "outcomes": [{"id": "old_oath_sworn", "probability": 100, "addFlags": ["obligation.iron_marches.furnace_old_oath", "battle.order_bonus_once"], "chronicleKeys": ["chronicle.furnace_oath.old_oath"], "consequences": ["gain_order_bonus", "create_master_obligation"], "severity": "none", "journal": {"ru": "Корона приняла древнюю клятву мастеров горна.", "en": "The crown accepted the ancient oath of the furnace masters."}, "nextStageId": "seal"}], "compatibilityOutcome": {"addFlags": ["obligation.iron_marches.furnace_old_oath", "battle.order_bonus_once"], "chronicleKeys": ["chronicle.furnace_oath.old_oath"]}},
+                {"id": "decline", "label": {"ru": "Отклонить клятву", "en": "Reject the oath"}, "preview": {"ru": "Сохранить независимость короны. Цены в лавках Маршей вырастут.", "en": "Preserve the crown's independence. Prices in Marcher shops will rise."}, "effectIds": ["effect.reputation_independent", "effect.shop_price_up"], "outcomes": [{"id": "oath_declined", "probability": 100, "addFlags": ["politics.iron_marches.furnace_independent", "economy.shop_price_up"], "chronicleKeys": ["chronicle.furnace_oath.declined"], "consequences": ["keep_independence", "raise_shop_prices"], "severity": "none", "journal": {"ru": "Корона отказалась связывать себя старой клятвой.", "en": "The crown refused to bind itself to the old oath."}, "nextStageId": "seal"}], "compatibilityOutcome": {"addFlags": ["politics.iron_marches.furnace_independent", "economy.shop_price_up"], "chronicleKeys": ["chronicle.furnace_oath.declined"]}},
+                {"id": "rewrite", "label": {"ru": "Переписать клятву", "en": "Rewrite the oath"}, "preview": {"ru": "70% принять новую хартию; 30% сорвать переговоры. Стоимость: 20 золота.", "en": "70% to adopt a new charter; 30% to break negotiations. Cost: 20 gold."}, "effectIds": ["effect.gold_loss_small", "effect.flag_oath_reformed"], "requirements": {"minimumGold": 20}, "outcomes": [{"id": "oath_reformed", "probability": 70, "resourceDelta": {"gold": -20}, "addFlags": ["politics.iron_marches.furnace_reformed"], "chronicleKeys": ["chronicle.furnace_oath.reformed"], "consequences": ["lose_gold", "reform_oath"], "severity": "none", "journal": {"ru": "Старая клятва стала новой хартией с обязанностями обеих сторон.", "en": "The old oath became a new charter with obligations on both sides."}, "nextStageId": "seal"}, {"id": "rewrite_failed", "probability": 30, "resourceDelta": {"gold": -20}, "addFlags": ["politics.iron_marches.furnace_talks_failed"], "chronicleKeys": ["chronicle.furnace_oath.rewrite_failed"], "consequences": ["lose_gold", "break_negotiations"], "severity": "low", "journal": {"ru": "Проект новой клятвы сгорел в горне вместе с потраченным золотом.", "en": "The draft oath burned in the furnace along with the gold spent on it."}, "nextStageId": "seal"}], "compatibilityOutcome": {"resourceDelta": {"gold": -20}, "addFlags": ["politics.iron_marches.furnace_reformed"], "chronicleKeys": ["chronicle.furnace_oath.reformed"]}}
+              ]
+            },
+            {
+              "id": "seal",
+              "title": {"ru": "Печать производства", "en": "The Seal of Production"},
+              "body": {"ru": "Остаётся решить, кто будет хранить печать, без которой ни один караван металла не покинет цитадель.", "en": "One question remains: who will keep the seal without which no metal caravan may leave the citadel?"},
+              "choices": [
+                {"id": "crown_seal", "label": {"ru": "Хранить печать в казне", "en": "Keep the seal in the treasury"}, "preview": {"ru": "Корона получит прямой контроль над поставками.", "en": "The crown gains direct control over shipments."}, "effectIds": ["effect.reputation_crown"], "outcomes": [{"id": "seal_to_crown", "probability": 100, "addFlags": ["control.iron_marches.forges_crown"], "chronicleKeys": ["chronicle.furnace_oath.seal_crown"], "consequences": ["crown_controls_shipments"], "severity": "none", "journal": {"ru": "Печать производства передана в королевскую казну.", "en": "The seal of production was placed in the royal treasury."}}]},
+                {"id": "shared_seal", "label": {"ru": "Оставить печать у мастеров", "en": "Leave the seal with the masters"}, "preview": {"ru": "Мастера сохранят автономию и ответственность за поставки.", "en": "The masters retain autonomy and responsibility for shipments."}, "effectIds": ["effect.reputation_guild"], "outcomes": [{"id": "seal_to_masters", "probability": 100, "addFlags": ["control.iron_marches.forges_masters"], "chronicleKeys": ["chronicle.furnace_oath.seal_masters"], "consequences": ["masters_control_shipments"], "severity": "none", "journal": {"ru": "Печать осталась у совета мастеров горна.", "en": "The seal remained with the council of furnace masters."}}]}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "event.prisoners_pass",
+      "class": "standard",
+      "scope": "iron_marches",
+      "sceneArt": "assets/events/iron_marches/prisoners_pass.jpg",
+      "tags": ["honor", "prisoners", "standard"],
+      "phaseWeights": {"early": 0, "mid": 3, "late": 5},
+      "chain": {"id": "chain.iron_marches.honor", "role": "followup", "weightMultiplier": 2},
+      "defaultVariantId": "standalone",
+      "variants": [
+        {
+          "id": "linked_favorable",
+          "condition": {"anyFlags": ["obligation.iron_marches.standard_ratified", "politics.iron_marches.garrison_united"]},
+          "stages": [
+            {
+              "id": "custody",
+              "title": {"ru": "Пленники перевала", "en": "Prisoners of the Pass"},
+              "body": {"ru": "Новый хранитель знамени просит корону решить судьбу пленных разведчиков. Гарнизон готов подчиниться, но каждый выбор станет образцом воинского закона.", "en": "The new standard-bearer asks the crown to decide the fate of captured scouts. The garrison will obey, but the choice will become a precedent of military law."},
+              "choices": [
+                {"id": "release", "label": {"ru": "Освободить под честное слово", "en": "Release them on parole"}, "preview": {"ru": "Начнётся бой против офицеров, отказавшихся исполнить приказ. Награда — только исход события.", "en": "A battle begins against officers refusing the order. Reward comes only from the event outcome."}, "effectIds": ["effect.reputation_workers", "effect.gold_loss_small"], "outcomes": [{"id": "release_contested", "probability": 100, "addFlags": ["fate.iron_marches.prisoners_released"], "chronicleKeys": ["chronicle.prisoners.release_contested"], "consequences": ["release_prisoners", "start_battle"], "severity": "serious", "journal": {"ru": "Приказ об освобождении вызвал вооружённое неповиновение части офицеров.", "en": "The release order triggered armed disobedience among part of the officer corps."}, "nextStageId": "aftermath", "combat": {"encounterId": "encounter.iron_escort_through_check", "dangerOffset": 1, "warning": {"ru": "Начнётся бой без подготовки текущим активным составом.", "en": "A battle begins immediately with the current active roster."}, "objective": {"ru": "Вывести пленных через линию мятежных офицеров.", "en": "Escort the prisoners through the mutinous officers."}}}], "compatibilityOutcome": {"addFlags": ["fate.iron_marches.prisoners_released"], "chronicleKeys": ["chronicle.prisoners.released"]}},
+                {"id": "recruit", "label": {"ru": "Предложить службу в обмен на свободу", "en": "Offer service in exchange for freedom"}, "preview": {"ru": "65% получить добровольцев; 35% пленники откажутся.", "en": "65% to gain volunteers; 35% the prisoners refuse."}, "effectIds": ["effect.recruit_pool_pawn", "effect.flag_prisoner_oath"], "outcomes": [{"id": "oath_accepted", "probability": 65, "addFlags": ["fate.iron_marches.prisoners_recruited", "army.recruit_pool_pawn"], "chronicleKeys": ["chronicle.prisoners.oath_accepted"], "consequences": ["recruit_prisoners"], "severity": "none", "journal": {"ru": "Часть пленных принесла новую клятву и вступила в войско.", "en": "Some prisoners swore a new oath and entered the army."}, "nextStageId": "aftermath"}, {"id": "oath_refused", "probability": 35, "addFlags": ["fate.iron_marches.prisoners_refused_service"], "chronicleKeys": ["chronicle.prisoners.oath_refused"], "consequences": ["prisoners_refuse"], "severity": "none", "journal": {"ru": "Пленные отказались менять одну присягу на другую.", "en": "The prisoners refused to exchange one oath for another."}, "nextStageId": "aftermath"}], "compatibilityOutcome": {"addFlags": ["fate.iron_marches.prisoners_recruited", "army.recruit_pool_pawn"], "chronicleKeys": ["chronicle.prisoners.oath_accepted"]}},
+                {"id": "exchange", "label": {"ru": "Обменять на захваченных солдат", "en": "Exchange them for captured soldiers"}, "preview": {"ru": "Получить 30 золота и укрепить военную законность.", "en": "Gain 30 gold and reinforce military legitimacy."}, "effectIds": ["effect.gold_gain_small", "effect.reputation_crown"], "outcomes": [{"id": "prisoners_exchanged", "probability": 100, "resourceDelta": {"gold": 30}, "addFlags": ["fate.iron_marches.prisoners_exchanged"], "chronicleKeys": ["chronicle.prisoners.exchanged"], "consequences": ["gain_gold", "exchange_prisoners"], "severity": "none", "journal": {"ru": "Пленных обменяли на солдат гарнизона и выкуп.", "en": "The prisoners were exchanged for garrison soldiers and ransom."}, "nextStageId": "aftermath"}], "compatibilityOutcome": {"resourceDelta": {"gold": 30}, "addFlags": ["fate.iron_marches.prisoners_exchanged"], "chronicleKeys": ["chronicle.prisoners.exchanged"]}}
+              ]
+            },
+            {
+              "id": "aftermath",
+              "title": {"ru": "Запись в воинском законе", "en": "A Precedent of War"},
+              "body": {"ru": "Командование просит записать решение как обязательный прецедент или оставить его исключением этого похода.", "en": "The command asks whether the decision should become binding precedent or remain an exception of this campaign."},
+              "choices": [
+                {"id": "law", "label": {"ru": "Внести решение в воинский закон", "en": "Enter the decision into military law"}, "preview": {"ru": "Создать постоянный региональный факт воинского права.", "en": "Create a permanent regional fact of military law."}, "effectIds": ["effect.reputation_army"], "outcomes": [{"id": "precedent_written", "probability": 100, "addFlags": ["law.iron_marches.prisoner_precedent"], "chronicleKeys": ["chronicle.prisoners.precedent"], "consequences": ["write_military_precedent"], "severity": "none", "journal": {"ru": "Решение внесли в новый свод правил обращения с пленными.", "en": "The decision was entered into a new code governing prisoners."}}]},
+                {"id": "exception", "label": {"ru": "Оставить решение исключением", "en": "Keep the decision exceptional"}, "preview": {"ru": "Не связывать будущих командиров единым правилом.", "en": "Do not bind future commanders to one rule."}, "effectIds": ["effect.reputation_independent"], "outcomes": [{"id": "precedent_denied", "probability": 100, "addFlags": ["law.iron_marches.prisoner_exception"], "chronicleKeys": ["chronicle.prisoners.exception"], "consequences": ["keep_case_exceptional"], "severity": "none", "journal": {"ru": "Случай закрыли без изменения воинского закона.", "en": "The case was closed without changing military law."}}]}
+              ]
+            }
+          ]
+        },
+        {
+          "id": "linked_crisis",
+          "condition": {"anyFlags": ["politics.iron_marches.garrison_divided", "politics.iron_marches.standard_provisional"]},
+          "stages": [
+            {
+              "id": "custody",
+              "title": {"ru": "Пленники расколотого перевала", "en": "Prisoners of a Divided Pass"},
+              "body": {"ru": "Две роты спорят, кому принадлежат пленные и чьи приказы считать законными. Пленники стали заложниками внутреннего раскола.", "en": "Two companies dispute who owns the prisoners and whose orders are lawful. The captives have become hostages to an internal fracture."},
+              "choices": [
+                {"id": "release", "label": {"ru": "Вывести пленных силой", "en": "Extract the prisoners by force"}, "preview": {"ru": "Начнётся бой без подготовки. Цель — вывести пленных, не уничтожая гарнизон.", "en": "A battle begins without preparation. The objective is to extract the prisoners without destroying the garrison."}, "effectIds": ["effect.reputation_workers"], "outcomes": [{"id": "forced_release", "probability": 100, "addFlags": ["fate.iron_marches.prisoners_released", "politics.iron_marches.officer_mutiny"], "chronicleKeys": ["chronicle.prisoners.forced_release"], "consequences": ["release_prisoners", "start_battle", "create_mutiny"], "severity": "serious", "journal": {"ru": "Пленных пришлось выводить через строй мятежной роты.", "en": "The prisoners had to be extracted through a mutinous company."}, "nextStageId": "aftermath", "combat": {"encounterId": "encounter.iron_escort_through_check", "dangerOffset": 1, "warning": {"ru": "Начнётся немедленный событийный бой.", "en": "An immediate event battle begins."}, "objective": {"ru": "Сопроводить пленных к выходу.", "en": "Escort the prisoners to the exit."}}}], "compatibilityOutcome": {"addFlags": ["fate.iron_marches.prisoners_released", "politics.iron_marches.officer_mutiny"], "chronicleKeys": ["chronicle.prisoners.forced_release"]}},
+                {"id": "recruit", "label": {"ru": "Передать пленных выборной роте", "en": "Give the prisoners to the elected company"}, "preview": {"ru": "Укрепить выборное командование. Сторонники старого порядка будут враждебны.", "en": "Strengthen elected command. Supporters of the old order become hostile."}, "effectIds": ["effect.flag_prisoner_oath"], "outcomes": [{"id": "prisoners_to_elected", "probability": 100, "addFlags": ["fate.iron_marches.prisoners_to_elected", "politics.iron_marches.old_officers_hostile"], "chronicleKeys": ["chronicle.prisoners.elected_company"], "consequences": ["empower_elected_company", "alienate_old_officers"], "severity": "none", "journal": {"ru": "Пленных передали выборной роте, усилив её претензии на законность.", "en": "The prisoners were given to the elected company, strengthening its claim to legitimacy."}, "nextStageId": "aftermath"}], "compatibilityOutcome": {"addFlags": ["fate.iron_marches.prisoners_to_elected", "politics.iron_marches.old_officers_hostile"], "chronicleKeys": ["chronicle.prisoners.elected_company"]}},
+                {"id": "exchange", "label": {"ru": "Продать право на обмен обеим ротам", "en": "Sell exchange rights to both companies"}, "preview": {"ru": "Получить 40 золота. Раскол гарнизона усилится.", "en": "Gain 40 gold. The garrison's division deepens."}, "effectIds": ["effect.gold_gain_small", "effect.reputation_crown"], "outcomes": [{"id": "exchange_rights_sold", "probability": 100, "resourceDelta": {"gold": 40}, "addFlags": ["politics.iron_marches.garrison_divided_deep", "fate.iron_marches.prisoners_exchanged"], "chronicleKeys": ["chronicle.prisoners.rights_sold"], "consequences": ["gain_gold", "deepen_garrison_split"], "severity": "low", "journal": {"ru": "Обе роты заплатили за право считать обмен своей победой.", "en": "Both companies paid for the right to call the exchange their victory."}, "nextStageId": "aftermath"}], "compatibilityOutcome": {"resourceDelta": {"gold": 40}, "addFlags": ["politics.iron_marches.garrison_divided_deep", "fate.iron_marches.prisoners_exchanged"], "chronicleKeys": ["chronicle.prisoners.rights_sold"]}}
+              ]
+            },
+            {
+              "id": "aftermath",
+              "title": {"ru": "Чей приказ был законным", "en": "Whose Order Was Lawful"},
+              "body": {"ru": "После решения обе роты требуют признать именно их толкование закона.", "en": "After the decision, both companies demand that their interpretation of the law be recognized."},
+              "choices": [
+                {"id": "law", "label": {"ru": "Признать приказ назначенного командира", "en": "Recognize the appointed commander's order"}, "preview": {"ru": "Поддержать формальное командование.", "en": "Support formal command."}, "effectIds": ["effect.reputation_army"], "outcomes": [{"id": "appointed_order_lawful", "probability": 100, "addFlags": ["law.iron_marches.appointed_command"], "chronicleKeys": ["chronicle.prisoners.appointed_law"], "consequences": ["support_appointed_command"], "severity": "none", "journal": {"ru": "Законным признан приказ назначенного командования.", "en": "The appointed commander's order was declared lawful."}}]},
+                {"id": "exception", "label": {"ru": "Не признавать ни одну сторону", "en": "Recognize neither side"}, "preview": {"ru": "Сохранить спор открытым до политического финала.", "en": "Keep the dispute open until the political finale."}, "effectIds": ["effect.reputation_independent"], "outcomes": [{"id": "order_unresolved", "probability": 100, "addFlags": ["law.iron_marches.command_unresolved"], "chronicleKeys": ["chronicle.prisoners.unresolved_law"], "consequences": ["leave_command_dispute_open"], "severity": "none", "journal": {"ru": "Корона отказалась признавать законность приказов любой из рот.", "en": "The crown refused to recognize either company's orders as lawful."}}]}
+              ]
+            }
+          ]
+        },
+        {
+          "id": "standalone",
+          "condition": {},
+          "stages": [
+            {
+              "id": "custody",
+              "title": {"ru": "Пленники перевала", "en": "Prisoners of the Pass"},
+              "body": {"ru": "На перевале задержан отряд вражеских разведчиков. Офицеры требуют казни, купцы предлагают обмен, а сами пленные готовы принести новую клятву.", "en": "A group of enemy scouts has been captured at the pass. Officers demand execution, merchants offer an exchange, and the prisoners themselves offer a new oath."},
+              "choices": [
+                {"id": "release", "label": {"ru": "Освободить под честное слово", "en": "Release them on parole"}, "preview": {"ru": "Получить политическую поддержку сторонников милосердия. Потратить 10 золота на сопровождение.", "en": "Gain support from advocates of mercy. Spend 10 gold on escort."}, "effectIds": ["effect.reputation_workers", "effect.gold_loss_small"], "requirements": {"minimumGold": 10}, "outcomes": [{"id": "released_on_parole", "probability": 100, "resourceDelta": {"gold": -10}, "addFlags": ["fate.iron_marches.prisoners_released"], "chronicleKeys": ["chronicle.prisoners.parole"], "consequences": ["lose_gold", "release_prisoners"], "severity": "none", "journal": {"ru": "Пленных отпустили под честное слово и вооружённым сопровождением вывели за перевал.", "en": "The prisoners were released on parole and escorted beyond the pass."}, "nextStageId": "aftermath"}], "compatibilityOutcome": {"resourceDelta": {"gold": -10}, "addFlags": ["fate.iron_marches.prisoners_released"], "chronicleKeys": ["chronicle.prisoners.parole"]}},
+                {"id": "recruit", "label": {"ru": "Принять новую клятву", "en": "Accept a new oath"}, "preview": {"ru": "65% получить рекрутов; 35% раскрыть попытку обмана.", "en": "65% to gain recruits; 35% to uncover an attempted deception."}, "effectIds": ["effect.recruit_pool_pawn", "effect.flag_prisoner_oath"], "outcomes": [{"id": "new_oath", "probability": 65, "addFlags": ["fate.iron_marches.prisoners_recruited", "army.recruit_pool_pawn"], "chronicleKeys": ["chronicle.prisoners.new_oath"], "consequences": ["gain_recruits"], "severity": "none", "journal": {"ru": "Часть пленных принесла новую клятву и вошла в строй.", "en": "Some prisoners swore a new oath and joined the ranks."}, "nextStageId": "aftermath"}, {"id": "false_oath", "probability": 35, "addFlags": ["knowledge.iron_marches.false_prisoner_oath"], "chronicleKeys": ["chronicle.prisoners.false_oath"], "consequences": ["discover_deception"], "severity": "none", "journal": {"ru": "Попытка ложной клятвы была раскрыта до освобождения пленных.", "en": "The false oath was exposed before the prisoners were released."}, "nextStageId": "aftermath"}], "compatibilityOutcome": {"addFlags": ["fate.iron_marches.prisoners_recruited", "army.recruit_pool_pawn"], "chronicleKeys": ["chronicle.prisoners.new_oath"]}},
+                {"id": "exchange", "label": {"ru": "Провести обмен", "en": "Arrange an exchange"}, "preview": {"ru": "Гарантированно получить 30 золота и вернуть солдат Маршей.", "en": "Guaranteed 30 gold and the return of Marcher soldiers."}, "effectIds": ["effect.gold_gain_small", "effect.reputation_crown"], "outcomes": [{"id": "standard_exchange", "probability": 100, "resourceDelta": {"gold": 30}, "addFlags": ["fate.iron_marches.prisoners_exchanged"], "chronicleKeys": ["chronicle.prisoners.standard_exchange"], "consequences": ["gain_gold", "return_soldiers"], "severity": "none", "journal": {"ru": "Обмен вернул гарнизону солдат и принёс короне выкуп.", "en": "The exchange returned soldiers to the garrison and brought ransom to the crown."}, "nextStageId": "aftermath"}], "compatibilityOutcome": {"resourceDelta": {"gold": 30}, "addFlags": ["fate.iron_marches.prisoners_exchanged"], "chronicleKeys": ["chronicle.prisoners.standard_exchange"]}}
+              ]
+            },
+            {
+              "id": "aftermath",
+              "title": {"ru": "Правило перевала", "en": "The Rule of the Pass"},
+              "body": {"ru": "Офицеры просят определить, станет ли это решение общим правилом или останется исключением.", "en": "The officers ask whether the decision should become general law or remain an exception."},
+              "choices": [
+                {"id": "law", "label": {"ru": "Сделать решение правилом", "en": "Make the decision a rule"}, "preview": {"ru": "Создать известный политический факт воинского права.", "en": "Create a known political fact of military law."}, "effectIds": ["effect.reputation_army"], "outcomes": [{"id": "rule_written", "probability": 100, "addFlags": ["law.iron_marches.prisoner_rule"], "chronicleKeys": ["chronicle.prisoners.rule_written"], "consequences": ["write_prisoner_rule"], "severity": "none", "journal": {"ru": "Решение стало правилом для всех гарнизонов перевала.", "en": "The decision became a rule for every garrison of the pass."}}]},
+                {"id": "exception", "label": {"ru": "Оставить исключением", "en": "Keep it an exception"}, "preview": {"ru": "Не связывать будущие решения единым законом.", "en": "Do not bind future decisions to one law."}, "effectIds": ["effect.reputation_independent"], "outcomes": [{"id": "case_exception", "probability": 100, "addFlags": ["law.iron_marches.prisoner_exception"], "chronicleKeys": ["chronicle.prisoners.case_exception"], "consequences": ["keep_case_exceptional"], "severity": "none", "journal": {"ru": "Случай оставили исключением без общего закона.", "en": "The case remained an exception without general law."}}]}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "event.miners_on_strike",
+      "class": "key",
+      "scope": "iron_marches",
+      "sceneArt": "assets/events/iron_marches/miners_on_strike.jpg",
+      "tags": ["labor", "politics", "key"],
+      "phaseWeights": {"early": 2, "mid": 4, "late": 0},
+      "chain": {"id": "chain.iron_marches.iron_and_bread", "role": "start", "followupId": "event.furnace_oath", "weightMultiplier": 2},
+      "defaultVariantId": "default",
+      "variants": [
+        {
+          "id": "default",
+          "condition": {},
+          "stages": [
+            {
+              "id": "square",
+              "title": {"ru": "Забастовка шахтёров", "en": "The Miners' Strike"},
+              "body": {"ru": "Главная шахта Маршей остановлена. Рабочие требуют сократить смены и открыть книги поставок; военный совет называет это мятежом перед осадой. Между сторонами стоят закрытые вагонетки с рудой и ваша корона.", "en": "The main mine of the Marches has stopped. Workers demand shorter shifts and open supply ledgers; the war council calls it mutiny before a siege. Sealed ore carts and your crown stand between them."},
+              "choices": [
+                {"id": "accept", "label": {"ru": "Поддержать требования шахтёров", "en": "Support the miners' demands"}, "preview": {"ru": "Потратить 20 золота на компенсации. Рабочие поддержат корону; совет будет недоволен.", "en": "Spend 20 gold on compensation. Workers support the crown; the council will resent it."}, "effectIds": ["effect.gold_loss_small", "effect.reputation_workers"], "requirements": {"minimumGold": 20}, "outcomes": [{"id": "workers_backed", "probability": 100, "resourceDelta": {"gold": -20}, "addFlags": ["story.iron_marches.strike_workers_backed", "politics.iron_marches.workers_support_crown", "politics.iron_marches.council_resentful"], "chronicleKeys": ["chronicle.miners.workers_backed"], "consequences": ["lose_gold", "gain_worker_support", "anger_council"], "severity": "none", "journal": {"ru": "Корона поддержала требования шахтёров и выделила компенсации.", "en": "The crown supported the miners' demands and funded compensation."}, "nextStageId": "terms"}], "compatibilityOutcome": {"resourceDelta": {"gold": -20}, "addFlags": ["story.iron_marches.strike_workers_backed", "politics.iron_marches.workers_support_crown"], "chronicleKeys": ["chronicle.miners.workers_backed"]}},
+                {"id": "guards", "label": {"ru": "Приказать очистить шахту", "en": "Order the mine cleared"}, "preview": {"ru": "Начнётся немедленный бой текущим составом. Возможны тяжёлые политические последствия.", "en": "An immediate battle begins with the current roster. Serious political consequences are possible."}, "effectIds": ["effect.reputation_crown", "effect.flag_strike_broken"], "outcomes": [{"id": "clearance_ordered", "probability": 100, "addFlags": ["story.strike_broken", "politics.iron_marches.workers_hostile"], "chronicleKeys": ["chronicle.miners.clearance_ordered"], "consequences": ["start_battle", "break_strike", "make_workers_hostile"], "severity": "serious", "journal": {"ru": "Корона приказала силой очистить шахту от бастующих.", "en": "The crown ordered the mine cleared by force."}, "nextStageId": "terms", "combat": {"encounterId": "encounter.iron_broken_formation", "dangerOffset": 1, "warning": {"ru": "Бой начнётся без брифинга и смены активного состава.", "en": "The battle begins without briefing or roster changes."}, "objective": {"ru": "Занять вход шахты, не допустив падения короля.", "en": "Secure the mine entrance without losing the king."}}}], "compatibilityOutcome": {"addFlags": ["story.strike_broken", "politics.iron_marches.workers_hostile"], "chronicleKeys": ["chronicle.miners.clearance_ordered"]}},
+                {"id": "audit", "label": {"ru": "Открыть королевский аудит", "en": "Open a royal audit"}, "preview": {"ru": "70% найти злоупотребления; 30% не обнаружить доказательств. Производство останется остановлено.", "en": "70% to uncover abuses; 30% to find no proof. Production remains halted."}, "effectIds": ["effect.scouting_gain", "effect.flag_mine_audit"], "outcomes": [{"id": "abuse_found", "probability": 70, "addFlags": ["knowledge.iron_marches.mine_abuse_proven", "story.iron_marches.strike_audit"], "chronicleKeys": ["chronicle.miners.audit_proven"], "consequences": ["prove_abuse", "keep_mine_closed"], "severity": "none", "journal": {"ru": "Аудит обнаружил подлог норм выработки и тайные поставки совета.", "en": "The audit uncovered falsified quotas and secret council shipments."}, "nextStageId": "terms"}, {"id": "audit_inconclusive", "probability": 30, "addFlags": ["knowledge.iron_marches.mine_audit_inconclusive", "story.iron_marches.strike_audit"], "chronicleKeys": ["chronicle.miners.audit_inconclusive"], "consequences": ["fail_to_prove_abuse", "keep_mine_closed"], "severity": "low", "journal": {"ru": "Аудит не нашёл доказательств, способных убедить обе стороны.", "en": "The audit found no evidence strong enough to convince both sides."}, "nextStageId": "terms"}], "compatibilityOutcome": {"addFlags": ["story.iron_marches.strike_audit", "knowledge.iron_marches.mine_abuse_proven"], "chronicleKeys": ["chronicle.miners.audit_proven"]}},
+                {"id": "mediate", "label": {"ru": "Созвать переговоры у вагонеток", "en": "Call negotiations at the ore carts"}, "preview": {"ru": "60% достичь компромисса; 40% переговоры сорвутся. Профильный герой или доктрина могут изменить шанс.", "en": "60% to reach compromise; 40% talks collapse. A fitting hero or doctrine may change the chance."}, "effectIds": ["effect.flag_foundry_mediated", "effect.supplies_trade"], "modifiers": [{"id": "fortress_discipline", "condition": {"requiredDoctrineIds": ["doctrine.fortress"]}, "delta": 10, "label": {"ru": "Доктрина крепости: +10%", "en": "Fortress doctrine: +10%"}}, {"id": "lady_sorn", "condition": {"requiredHeroIds": ["hero.lady_sorn"]}, "delta": 15, "label": {"ru": "Леди Сорн: +15%", "en": "Lady Sorn: +15%"}}, {"id": "council_resentful", "condition": {"allFlags": ["politics.iron_marches.council_resentful"]}, "delta": -10, "label": {"ru": "Недовольство совета: −10%", "en": "Council resentment: -10%"}}], "outcomes": [{"id": "compromise_reached", "probability": 60, "resourceDelta": {"supplies": 2}, "addFlags": ["story.iron_marches.strike_compromise", "politics.iron_marches.workers_neutral"], "chronicleKeys": ["chronicle.miners.compromise"], "consequences": ["gain_supplies", "reach_compromise"], "severity": "none", "journal": {"ru": "Стороны согласились на временные нормы и совместную проверку поставок.", "en": "Both sides accepted temporary quotas and a joint review of shipments."}, "nextStageId": "terms"}, {"id": "talks_failed", "probability": 40, "addFlags": ["story.iron_marches.strike_failed", "politics.iron_marches.workers_hostile", "politics.iron_marches.council_emboldened"], "chronicleKeys": ["chronicle.miners.talks_failed"], "consequences": ["fail_negotiations", "polarize_sides"], "severity": "low", "journal": {"ru": "Переговоры сорвались, и обе стороны обвинили корону в слабости.", "en": "The talks collapsed, and both sides accused the crown of weakness."}, "nextStageId": "terms"}], "compatibilityOutcome": {"resourceDelta": {"supplies": 2}, "addFlags": ["story.iron_marches.strike_compromise"], "chronicleKeys": ["chronicle.miners.compromise"]}}
+              ]
+            },
+            {
+              "id": "terms",
+              "title": {"ru": "Кому принадлежат книги", "en": "Who Owns the Ledgers"},
+              "body": {"ru": "После первого решения спор сосредоточился на книгах поставок. Совет требует сохранить их закрытыми, рабочие — передать копии выборным представителям.", "en": "After the first decision, the dispute centers on the supply ledgers. The council wants them sealed; workers demand copies for elected representatives."},
+              "choices": [
+                {"id": "open_ledgers", "label": {"ru": "Открыть книги поставок", "en": "Open the supply ledgers"}, "preview": {"ru": "Рабочие получат доступ к данным. Совет потеряет часть контроля.", "en": "Workers gain access to the records. The council loses some control."}, "effectIds": ["effect.reputation_workers"], "outcomes": [{"id": "ledgers_opened", "probability": 100, "addFlags": ["knowledge.iron_marches.ledgers_public", "control.iron_marches.supply_oversight_shared"], "chronicleKeys": ["chronicle.miners.ledgers_opened"], "consequences": ["open_ledgers", "share_oversight"], "severity": "none", "journal": {"ru": "Копии книг поставок передали выборным представителям шахт.", "en": "Copies of the supply ledgers were given to elected mine representatives."}, "nextStageId": "settlement"}]},
+                {"id": "seal_ledgers", "label": {"ru": "Оставить книги у совета", "en": "Leave the ledgers with the council"}, "preview": {"ru": "Совет сохранит контроль. Рабочие будут считать решение несправедливым.", "en": "The council retains control. Workers will consider the decision unjust."}, "effectIds": ["effect.reputation_crown"], "outcomes": [{"id": "ledgers_sealed", "probability": 100, "addFlags": ["control.iron_marches.supply_oversight_council", "politics.iron_marches.workers_disappointed"], "chronicleKeys": ["chronicle.miners.ledgers_sealed"], "consequences": ["keep_ledgers_closed", "disappoint_workers"], "severity": "none", "journal": {"ru": "Книги остались под печатью военного совета.", "en": "The ledgers remained under the war council's seal."}, "nextStageId": "settlement"}]},
+                {"id": "crown_copies", "label": {"ru": "Изъять книги в королевский архив", "en": "Seize the ledgers for the royal archive"}, "preview": {"ru": "Корона получит контроль над расследованием, но обе стороны утратят прямой доступ.", "en": "The crown controls the investigation, but both sides lose direct access."}, "effectIds": ["effect.chronicle_memory"], "outcomes": [{"id": "ledgers_to_crown", "probability": 100, "addFlags": ["control.iron_marches.supply_oversight_crown", "knowledge.iron_marches.ledgers_seized"], "chronicleKeys": ["chronicle.miners.ledgers_to_crown"], "consequences": ["crown_controls_ledgers"], "severity": "none", "journal": {"ru": "Книги изъяли в королевский архив до завершения расследования.", "en": "The ledgers were seized into the royal archive pending investigation."}, "nextStageId": "settlement"}]}
+              ]
+            },
+            {
+              "id": "settlement",
+              "title": {"ru": "Цена возобновления работ", "en": "The Price of Returning to Work"},
+              "body": {"ru": "Чтобы шахта снова открылась, корона должна определить, что важнее: немедленная руда, безопасность смен или право рабочих остановить опасные работы.", "en": "To reopen the mine, the crown must decide what matters most: immediate ore, safer shifts, or the workers' right to halt dangerous labor."},
+              "choices": [
+                {"id": "production_first", "label": {"ru": "Возобновить прежние нормы", "en": "Restore the old quotas"}, "preview": {"ru": "Немедленно получить 3 припаса. Рабочие останутся недовольны.", "en": "Immediately gain 3 supplies. Workers remain dissatisfied."}, "effectIds": ["effect.supplies_gain"], "outcomes": [{"id": "old_quotas", "probability": 100, "resourceDelta": {"supplies": 3}, "addFlags": ["control.iron_marches.mine_council", "politics.iron_marches.workers_disappointed"], "chronicleKeys": ["chronicle.miners.old_quotas"], "consequences": ["gain_supplies", "restore_old_quotas"], "severity": "none", "journal": {"ru": "Шахта открылась по прежним нормам выработки.", "en": "The mine reopened under the old quotas."}}]},
+                {"id": "safety_first", "label": {"ru": "Сократить смены и усилить крепления", "en": "Shorten shifts and reinforce supports"}, "preview": {"ru": "Потратить 20 золота. Рабочие поддержат корону.", "en": "Spend 20 gold. Workers support the crown."}, "effectIds": ["effect.gold_loss_small", "effect.reputation_workers"], "requirements": {"minimumGold": 20}, "outcomes": [{"id": "safe_shifts", "probability": 100, "resourceDelta": {"gold": -20}, "addFlags": ["control.iron_marches.mine_shared", "politics.iron_marches.workers_support_crown"], "chronicleKeys": ["chronicle.miners.safe_shifts"], "consequences": ["lose_gold", "establish_safe_shifts"], "severity": "none", "journal": {"ru": "Шахта открылась с сокращёнными сменами и новыми креплениями.", "en": "The mine reopened with shorter shifts and reinforced supports."}}]},
+                {"id": "right_to_stop", "label": {"ru": "Признать право остановить опасные работы", "en": "Recognize the right to halt unsafe work"}, "preview": {"ru": "Открыть новый политический исход региона. Поставки станут менее предсказуемыми.", "en": "Open a new political outcome for the region. Deliveries become less predictable."}, "effectIds": ["effect.flag_oath_reformed"], "outcomes": [{"id": "workers_right", "probability": 100, "addFlags": ["law.iron_marches.workers_right_to_stop", "control.iron_marches.mine_workers"], "chronicleKeys": ["chronicle.miners.right_to_stop"], "consequences": ["recognize_worker_right", "shift_mine_control"], "severity": "none", "journal": {"ru": "Корона признала право смены остановить работы при смертельной опасности.", "en": "The crown recognized the shift's right to halt work in mortal danger."}}]}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
