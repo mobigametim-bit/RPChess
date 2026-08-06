@@ -10,6 +10,10 @@ const {
 } = require('../src/content/production-events.cjs');
 const { buildProductionContentBundle } = require('../src/content/production-bundle.cjs');
 const { buildBrowserProductionBundle } = require('../src/browser/production-content-browser.cjs');
+const {
+  createProductionEventSession,
+  restoreProductionEventSession
+} = require('../src/runtime/production-event-session.cjs');
 
 const projectRoot = path.resolve(__dirname, '..');
 const library = loadProductionEventLibrary(path.join(projectRoot, 'content/events/iron_marches_production.json'));
@@ -115,6 +119,44 @@ assert.strictEqual(settled.status, 'resolved');
 assert.strictEqual(settled.resolution.outcome.addFlags.includes('law.iron_marches.workers_right_to_stop'), true);
 assert.strictEqual(settled.history.length, 3);
 
+const session = createProductionEventSession({
+  library,
+  eventId: 'event.miners_on_strike',
+  language: 'ru',
+  context: {
+    seed: 9042,
+    gold: 100,
+    supplies: 10,
+    doctrineId: 'doctrine.fortress',
+    heroIds: ['hero.lady_sorn']
+  }
+});
+assert.strictEqual(session.view().choices.find((choice) => choice.id === 'mediate').probabilities[0].probability, 85);
+assert.strictEqual(session.choose('mediate').stageId, 'terms');
+assert.strictEqual(session.view().resources.supplies, 12);
+assert.strictEqual(session.view().knownFlags.includes('story.iron_marches.strike_compromise'), true);
+const restored = restoreProductionEventSession({ library, snapshot: session.snapshot() });
+assert.strictEqual(restored.view().stageId, 'terms');
+assert.strictEqual(restored.choose('open_ledgers').stageId, 'settlement');
+const sessionResolved = restored.choose('safety_first');
+assert.strictEqual(sessionResolved.status, 'resolved');
+assert.strictEqual(sessionResolved.resources.gold, 80);
+assert.strictEqual(sessionResolved.knownFlags.includes('control.iron_marches.mine_shared'), true);
+
+const combatSession = createProductionEventSession({
+  library,
+  eventId: 'event.miners_on_strike',
+  context: { seed: 500, gold: 100, supplies: 10 }
+});
+const combatPending = combatSession.choose('guards');
+assert.strictEqual(combatPending.status, 'combat_pending');
+assert.strictEqual(combatPending.pendingCombat.encounterId, 'encounter.iron_broken_formation');
+assert.strictEqual(combatPending.choices.length, 0);
+const combatVictory = combatSession.completeCombat('victory');
+assert.strictEqual(combatVictory.status, 'active');
+assert.strictEqual(combatVictory.stageId, 'terms');
+assert.strictEqual(combatVictory.resolution.combatResult, 'victory');
+
 const prisonerEvent = library.eventsById['event.prisoners_pass'];
 const favorablePrisoners = prisonerEvent.variants.find((variant) => variant.id === 'linked_favorable');
 const releaseCombat = favorablePrisoners.stages[0].choices.find((choice) => choice.id === 'release').outcomes[0].combat;
@@ -135,4 +177,4 @@ const resolvedCompatibility = bundle.eventChoiceResolver({
 assert.strictEqual(Number.isInteger(resolvedCompatibility.resourceDelta.supplies), true);
 assert.strictEqual(resolvedCompatibility.chronicleKeys.length > 0, true);
 
-console.log('Iron Marches production events: seven authored events, chains, deterministic checks and combat hooks passed.');
+console.log('Iron Marches production events: seven authored events, chains, deterministic checks, sessions and combat hooks passed.');
