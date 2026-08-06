@@ -14,10 +14,16 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   const clientSource = read('game/js/runtime-command-client.mjs');
   const extension = read('game/js/vertical-slice-presenter-register-02.mjs');
   const css = read('game/css/stage-b-ui.css');
+  const armyFoundationCss = read('game/css/army-foundation-approved.css');
+  const armyFoundation = read('game/js/army-foundation-approved.mjs');
   const index = read('game/index.html');
   const isolated = read('game/vertical-slice.html');
 
-  for (const html of [index, isolated]) assert(html.includes('css/stage-b-ui.css'));
+  for (const html of [index, isolated]) {
+    assert(html.includes('css/stage-b-ui.css'));
+    assert(html.includes('css/army-foundation-approved.css'));
+    assert(html.includes('js/army-foundation-approved.mjs'));
+  }
   assert(app.includes('rpa-menu__main--open'));
   assert.strictEqual(app.includes('Проведите живую шахматную армию через Железные Марши'), false);
   assert(app.includes('data-profile-primary'));
@@ -65,6 +71,17 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert(clientSource.includes("'ConfirmReorganization'"));
   assert(clientSource.includes("'reward_choice'"));
 
+  assert(armyFoundation.includes("heroAssets(heroId)?.portrait"));
+  assert(armyFoundation.includes("generated_assets/reward_artifact.png"));
+  assert(armyFoundation.includes("Железные марши Акт ${roman(act)}"));
+  assert(armyFoundation.includes("headings[0].textContent = 'Именной герой: выберите одного'"));
+  assert(armyFoundation.includes("headings[1].textContent = 'Пополнение: выберите одну фигуру'"));
+  assert(armyFoundationCss.includes("url('../generated_assets/splash_poster.jpg')"));
+  assert(armyFoundationCss.includes("url('../generated_assets/ui_panel_frame.png')"));
+  assert(armyFoundationCss.includes("url('../generated_assets/ui_chip.png')"));
+  assert(armyFoundationCss.includes('width:142px!important;min-width:142px!important'));
+  assert(armyFoundationCss.includes('font:700 clamp(31px,2.15vw,41px)/1 BrahmsGotischCyr'));
+
   const appModule = await import(pathToFileURL(path.join(root, 'game/js/vertical-slice-app.mjs')).href);
   const progress = appModule.readShellProgress({ getItem: () => null });
   const menu = appModule.menuMarkup([], progress, 'ru');
@@ -73,5 +90,10 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   const chronicle = appModule.chronicleMarkup(progress, 'ru');
   assert(chronicle.includes('data-chronicle-commander'));
   assert(chronicle.includes('rpa-chronicle-list'));
-  console.log('Stage B UI: menu, chronicle, battle panel, scrolling and animations passed.');
+
+  const armyFoundationModule = await import(pathToFileURL(path.join(root, 'game/js/army-foundation-approved.mjs')).href);
+  assert.strictEqual(armyFoundationModule.roman(1), 'I');
+  assert.strictEqual(armyFoundationModule.roman(4), 'IV');
+  assert.strictEqual(armyFoundationModule.REGULAR_COPY.r.title, 'Щитоносец');
+  console.log('Stage B UI: menu, chronicle, approved army draft, battle panel, scrolling and animations passed.');
 })().catch((error) => { console.error(error.stack || error); process.exitCode = 1; });
