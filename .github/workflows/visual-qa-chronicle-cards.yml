@@ -1,0 +1,114 @@
+name: Visual QA Chronicle Cards
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  visual:
+    if: ${{ github.head_ref == 'agent/approved-chronicle-card-layout' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/approved-chronicle-card-layout
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Build and install Chromium
+        run: |
+          npm ci
+          npm run build
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Verify approved profile-card composition
+        run: |
+          python -m http.server 4173 --directory dist >/tmp/rpchess-chronicle-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID' EXIT
+          sleep 2
+          mkdir -p visual-qa-chronicles
+          cat > /tmp/chronicle-cards.mjs <<'JS'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+
+          const browser = await chromium.launch({ headless: true });
+          const errors = [];
+          const context = await browser.newContext({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 1 });
+          const page = await context.newPage();
+          page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
+          page.on('console', (message) => { if (message.type() === 'error') errors.push(`console: ${message.text()}`); });
+          page.on('response', (response) => { if (response.status() >= 400) errors.push(`http ${response.status()}: ${response.url()}`); });
+
+          async function audit(label, expectedColumns) {
+            await page.waitForSelector('.rpa-profile-card--approved');
+            await page.waitForTimeout(250);
+            const result = await page.evaluate(() => {
+              const cards = [...document.querySelectorAll('.rpa-profile-card--approved')];
+              const rects = cards.map((card) => {
+                const rect = card.getBoundingClientRect();
+                return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+              });
+              const rows = [...new Set(rects.map((rect) => Math.round(rect.y)))];
+              const clipped = [...document.querySelectorAll('.rpa-profile-card--approved h2,.rpa-profile-card--approved strong,.rpa-profile-card--approved p,.rpa-profile-card--approved span,.rpa-profile-card--approved button')]
+                .filter((element) => element.scrollWidth > element.clientWidth + 3 || element.scrollHeight > element.clientHeight + 3)
+                .map((element) => ({ text: element.textContent.trim().slice(0, 100), client: [element.clientWidth, element.clientHeight], scroll: [element.scrollWidth, element.scrollHeight] }));
+              return {
+                count: cards.length,
+                rects,
+                columns: Math.max(...rows.map((row) => rects.filter((rect) => Math.round(rect.y) === row).length)),
+                documentWidth: document.documentElement.scrollWidth,
+                viewportWidth: innerWidth,
+                clipped,
+                createButtons: document.querySelectorAll('[data-profile-action="start"]').length
+              };
+            });
+            if (result.count !== 3) throw new Error(`${label}: expected 3 cards, received ${result.count}`);
+            if (result.columns !== expectedColumns) throw new Error(`${label}: expected ${expectedColumns} columns, received ${result.columns}`);
+            if (result.rects.some((rect) => rect.width > 520 || rect.height > 610)) throw new Error(`${label}: oversized card ${JSON.stringify(result.rects)}`);
+            if (result.documentWidth > result.viewportWidth + 3) throw new Error(`${label}: horizontal overflow ${result.documentWidth}/${result.viewportWidth}`);
+            if (result.clipped.length) throw new Error(`${label}: clipped text ${JSON.stringify(result.clipped)}`);
+            if (result.createButtons < 1) throw new Error(`${label}: create actions are missing`);
+            fs.appendFileSync('visual-qa-chronicles/report.txt', `${label}: ${JSON.stringify(result)}\n`);
+            await page.screenshot({ path: `visual-qa-chronicles/${label}.png`, fullPage: true });
+          }
+
+          await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
+          await page.click('[data-shell-action="profiles"]');
+          await audit('01-desktop-empty', 3);
+
+          await page.locator('[data-profile-action="start"]').first().click();
+          await page.waitForSelector('[data-commander-id]');
+          await page.locator('[data-commander-id]:not([disabled])').first().click();
+          await page.click('[data-launch-commander]');
+          await page.waitForTimeout(1200);
+          await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
+          await page.click('[data-shell-action="profiles"]');
+          await page.waitForSelector('.rpa-profile-card--approved');
+          const saved = await page.evaluate(() => ({
+            continueButtons: document.querySelectorAll('[data-profile-action="continue"]').length,
+            portrait: document.querySelector('.rpa-profile-card--approved [data-profile-action="continue"]')?.closest('.rpa-profile-card--approved')?.querySelector('.rpprofile__approved-visual img')?.getAttribute('src') || '',
+            rename: document.querySelectorAll('.rpprofile__approved-rename').length
+          }));
+          if (saved.continueButtons < 1 || !saved.portrait || saved.rename < 1) throw new Error(`saved chronicle contract failed: ${JSON.stringify(saved)}`);
+          fs.appendFileSync('visual-qa-chronicles/report.txt', `saved: ${JSON.stringify(saved)}\n`);
+          await audit('02-desktop-saved', 3);
+
+          await page.setViewportSize({ width: 920, height: 900 });
+          await audit('03-tablet', 2);
+          await page.setViewportSize({ width: 390, height: 844 });
+          await audit('04-mobile', 1);
+
+          if (errors.length) throw new Error(errors.join('\n'));
+          await browser.close();
+          JS
+          node /tmp/chronicle-cards.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chronicle-card-visual-qa
+          path: visual-qa-chronicles
+          retention-days: 2
