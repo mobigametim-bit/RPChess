@@ -83,24 +83,34 @@ const source = graph.nodes.find((node) => (graph.outgoing[node.id] || []).some((
   return target.type === 'battle' || target.type === 'elite';
 }));
 assert.ok(source);
-const materializationCandidates = [{
-  id: 'scenario.any',
-  baseWeight: 1,
-  optionalObjectiveRequirements: { marked: true },
-  metadata: { source: 'test' }
-}];
+const materializationCandidates = [
+  {
+    id: 'scenario.any_a',
+    baseWeight: 1,
+    optionalObjectiveRequirements: { marked: true },
+    metadata: { source: 'test-a' }
+  },
+  {
+    id: 'scenario.any_b',
+    baseWeight: 1,
+    optionalObjectiveRequirements: { marked: true },
+    metadata: { source: 'test-b' }
+  }
+];
 const materialized = materializeLevel(graph, source.id, {}, {
-  contentPools: { scenarioCandidates: materializationCandidates, encounters: ['scenario.any'] },
+  contentPools: { scenarioCandidates: materializationCandidates, encounters: materializationCandidates.map((candidate) => candidate.id) },
   storyFacts: ['story.wall_intact'],
   boardId: 'compact',
   objectiveId: 'hold',
   environmentId: 'battlement'
 });
-for (const entry of Object.values(materialized.materializedByNode).filter((value) => ['battle', 'elite'].includes(value.type))) {
-  assert.strictEqual(entry.contentId, 'scenario.any');
+const battleEntries = Object.values(materialized.materializedByNode).filter((value) => ['battle', 'elite'].includes(value.type));
+for (const entry of battleEntries) {
+  assert.ok(materializationCandidates.some((candidate) => candidate.id === entry.contentId));
   assert.ok(entry.details.scenarioSelection);
   assert.ok(Array.isArray(entry.details.scenarioSelection.appliedFactors));
   assert.strictEqual(entry.details.scenarioSelection.optionalObjectiveRequirements.marked, true);
 }
+assert.strictEqual(new Set(battleEntries.map((entry) => entry.contentId)).size, battleEntries.length, 'sibling scenario IDs must be distinct');
 
 console.log('B9 scenario selector: eligibility, author-driven factor weights, incompatibilities, deterministic selection and materialization passed.');
