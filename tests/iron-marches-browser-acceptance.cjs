@@ -11,6 +11,7 @@ const VIEWPORTS = [[1600,1000],[1366,768],[760,900],[390,844]];
 const FORBIDDEN = [/\[object Object\]/i,/\bundefined\b/i,/\bNaN\b/i,/fate\.iron_marches/i,/politics\.iron_marches/i,/obligation\.iron_marches/i];
 const SCENARIO_TEMPLATES = buildBrowserProductionBundle().scenarioTemplates;
 const moveVisits = new Map();
+const servicePurchases = new Set();
 const seen = {
   statuses:new Set(), viewports:new Set(), movers:new Set(), events:new Set(), services:new Set(),
   scout:false, capture:false, ai:false, orders:false, talent:false, boss:false, bossTransition:false,
@@ -31,10 +32,8 @@ async function snapshot(page) {
 async function realClick(page, target) {
   const locator = typeof target === 'string' ? page.locator(target).first() : (target.first ? target.first() : target);
   await locator.waitFor({ state:'visible', timeout:5000 });
-  await locator.scrollIntoViewIfNeeded().catch(() => {});
-  const box = await locator.boundingBox();
-  assert.ok(box, `pointer target has no box: ${typeof target === 'string' ? target : 'locator'}`);
-  await page.mouse.click(box.x + box.width/2, box.y + box.height/2);
+  await locator.scrollIntoViewIfNeeded();
+  await locator.click({ timeout:5000 });
 }
 async function clickIf(page, selector) {
   const locator = page.locator(selector).first();
@@ -43,6 +42,9 @@ async function clickIf(page, selector) {
     return true;
   }
   return false;
+}
+async function waitClientIdle(page) {
+  await page.waitForFunction(() => !globalThis.RPChessVerticalSlice?.runtimeClient?.pending, null, { timeout:7000 });
 }
 function captureErrors(page, errors) {
   page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
@@ -90,13 +92,17 @@ async function setup(page, seed) {
   const lock = page.locator('[data-lock-selection]');
   assert.strictEqual(await lock.isEnabled(), false, 'setup locked before king/doctrine');
   await realClick(page, '[data-king-id]:not([disabled])');
+  await waitClientIdle(page);
   await realClick(page, '[data-doctrine-id]:not([disabled])');
+  await waitClientIdle(page);
   assert.strictEqual(await lock.isEnabled(), true, 'setup did not unlock after king/doctrine');
   await realClick(page, lock);
   await page.locator('[data-draft-hero]').first().waitFor({ state:'visible', timeout:10000 });
   assert.strictEqual(await page.locator('[data-draft-hero]').count(), 3, 'Stage B must expose exactly three hero offers');
   await realClick(page, '[data-draft-hero]');
+  await waitClientIdle(page);
   await realClick(page, '[data-draft-regular]');
+  await waitClientIdle(page);
   await realClick(page, '[data-confirm-draft]');
   await page.waitForFunction(() => globalThis.RPChessVerticalSlice?.runtimeHost?.getSnapshot?.()?.status === 'campaign', null, { timeout:10000 });
   await qaSurface(page, 'campaign');
@@ -287,6 +293,7 @@ async function maybeTalent(page) {
     seen.talent=true;
     log('talent-choice');
     await realClick(page,modal.locator('[data-talent-id]').first());
+    await waitClientIdle(page);
     return true;
   }
   return false;
@@ -294,32 +301,38 @@ async function maybeTalent(page) {
 async function campaign(page,state) {
   if (state.campaign?.secret?.status==='pending') {
     seen.secret=true; log('secret-pending');
-    if (await clickIf(page,'[data-secret-decision="enter"]')) return;
-    await clickIf(page,'[data-secret-decision="decline"]'); return;
+    if (await clickIf(page,'[data-secret-decision="enter"]')) { await waitClientIdle(page); return; }
+    await clickIf(page,'[data-secret-decision="decline"]'); await waitClientIdle(page); return;
   }
-  if (state.campaign?.secret?.status==='active') { seen.secret=true; log('secret-active'); await clickIf(page,'[data-complete-secret]'); return; }
-  if ((state.campaign?.reopenableNodeIds||[]).length && await clickIf(page,'[data-reopen-node]')) { seen.reopen=true; log('rare-reopen'); return; }
-  if (!seen.scout && await clickIf(page,'[data-rpu-scout]:not([disabled])')) { seen.scout=true; log('scout'); return; }
-  if (await page.locator('[data-rpu-forced-choice]').count()) { seen.forced=true; log('forced-march'); await realClick(page,'[data-rpu-travel]:not([disabled])'); return; }
+  if (state.campaign?.secret?.status==='active') { seen.secret=true; log('secret-active'); await clickIf(page,'[data-complete-secret]'); await waitClientIdle(page); return; }
+  if ((state.campaign?.reopenableNodeIds||[]).length && await clickIf(page,'[data-reopen-node]')) { seen.reopen=true; log('rare-reopen'); await waitClientIdle(page); return; }
+  if (!seen.scout && await clickIf(page,'[data-rpu-scout]:not([disabled])')) { seen.scout=true; log('scout'); await waitClientIdle(page); return; }
+  if (await page.locator('[data-rpu-forced-choice]').count()) { seen.forced=true; log('forced-march'); await realClick(page,'[data-rpu-travel]:not([disabled])'); await waitClientIdle(page); return; }
   const routes=page.locator('.rpu-map-node.is-route [data-node-id]:not([disabled])');
   if (await routes.count()) await realClick(page,routes.first());
-  if (await clickIf(page,'[data-rpu-travel]:not([disabled])')) return;
-  if (await clickIf(page,'[data-forced-travel]:not([disabled])')) { seen.forced=true; log('forced-march-fallback'); return; }
+  if (await clickIf(page,'[data-rpu-travel]:not([disabled])')) { await waitClientIdle(page); return; }
+  if (await clickIf(page,'[data-forced-travel]:not([disabled])')) { seen.forced=true; log('forced-march-fallback'); await waitClientIdle(page); return; }
   throw new Error('campaign has no user-reachable action');
 }
 async function service(page,state) {
-  seen.services.add(state.stageB?.service?.type || 'service');
-  log('service', state.stageB?.service?.type || 'service');
-  if (await page.locator('[data-service-offer]:not([disabled])').count()) {
+  const type = state.stageB?.service?.type || 'service';
+  seen.services.add(type);
+  const visitKey = `${state.currentNode?.nodeId || state.campaign?.currentNodeId || 'node'}:${type}`;
+  log('service', type);
+  if (!servicePurchases.has(visitKey) && await page.locator('[data-service-offer]:not([disabled])').count()) {
     await realClick(page,'[data-service-offer]:not([disabled])');
+    servicePurchases.add(visitKey);
+    await waitClientIdle(page);
     await delay(40);
   }
   assert.ok(await clickIf(page,'[data-leave-service]'), 'service has no leave control');
+  await page.waitForFunction(() => globalThis.RPChessVerticalSlice?.runtimeHost?.getSnapshot?.()?.status !== 'service', null, { timeout:7000 });
+  await waitClientIdle(page);
 }
 async function drive(page, seed) {
   await setup(page,seed);
   let previousStatus='';
-  for (let guard=0; guard<160; guard+=1) {
+  for (let guard=0; guard<220; guard+=1) {
     if (await maybeTalent(page)) continue;
     const state=await snapshot(page);
     assert.ok(state,'runtime snapshot missing');
@@ -330,37 +343,42 @@ async function drive(page, seed) {
     if (state.status==='complete') return state;
     if (state.status==='failed') throw new Error(`run failed ${JSON.stringify(state.failure||state.scenario?.result||{})}`);
     if (state.status==='campaign') await campaign(page,state);
-    else if (state.status==='briefing') await realClick(page,'[data-confirm-briefing]');
+    else if (state.status==='briefing') { await realClick(page,'[data-confirm-briefing]'); await waitClientIdle(page); }
     else if (state.status==='deployment') {
       const confirm=page.locator('[data-confirm-deployment]');
-      if (await confirm.isEnabled().catch(()=>false)) await realClick(page,confirm);
+      if (await confirm.isEnabled().catch(()=>false)) { await realClick(page,confirm); await waitClientIdle(page); }
       else throw new Error('deployment requires placement; acceptance must implement that user path');
     }
     else if (state.status==='scenario' || state.status==='boss') await battle(page,state);
     else if (state.status==='boss_transition') {
       seen.bossTransition=true;
-      assert.ok(await clickIf(page,'[data-begin-boss-phase],[data-resume-boss],[data-boss-transition]'),'boss transition lacks UI control');
+      assert.ok(await clickIf(page,'[data-begin-phase],[data-begin-boss-phase],[data-resume-boss],[data-boss-transition]'),'boss transition lacks UI control');
+      await waitClientIdle(page);
     }
     else if (state.status==='event') {
       const choices=page.locator('[data-event-choice]:not([disabled]),[data-choice-id]:not([disabled])');
       assert.ok(await choices.count(),'event has no visible production choice');
       await realClick(page,choices.first());
+      await waitClientIdle(page);
     }
-    else if (state.status==='reward') await realClick(page,'[data-claim]');
+    else if (state.status==='reward') { await realClick(page,'[data-claim]'); await waitClientIdle(page); }
     else if (state.status==='reward_choice') {
       if (state.politicalFinaleB14?.stage==='act_reward') seen.actReward=true;
       await realClick(page,'[data-reward-offer]:not([disabled])');
+      await waitClientIdle(page);
     }
     else if (state.status==='service') await service(page,state);
     else if (state.status==='act_outcome') {
       const choice=page.locator('[data-act-choice]:not([disabled])').first();
       assert.ok(await choice.count(),'political stage has no available choice');
       await realClick(page,choice);
+      await waitClientIdle(page);
     }
     else if (state.status==='reorganization') {
       seen.interAct=true;
       assert.ok(await page.locator('[data-interact-conversion]').count(),'inter-act conversion is not bound');
       await realClick(page,'[data-confirm-reorganization]');
+      await waitClientIdle(page);
     }
     else throw new Error(`unhandled production status ${state.status}`);
     await delay(50);
@@ -381,7 +399,9 @@ async function responsive(browser) {
     await page.locator('.rprs').waitFor({state:'visible'});
     await qaSurface(page,`${width}x${height}:setup`);
     await realClick(page,'[data-king-id]:not([disabled])');
+    await waitClientIdle(page);
     await realClick(page,'[data-doctrine-id]:not([disabled])');
+    await waitClientIdle(page);
     await realClick(page,'[data-lock-selection]');
     await page.locator('[data-draft-hero]').first().waitFor({state:'visible'});
     await qaSurface(page,`${width}x${height}:draft`);
