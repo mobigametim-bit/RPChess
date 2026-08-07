@@ -26,6 +26,23 @@ class VerticalSlicePresenter extends ApprovedVerticalSlicePresenter {
     const effectElement = this.root.querySelector('[data-scene-vfx]');
     if (effectElement && this.pendingEffect) { const effect = this.pendingEffect; this.pendingEffect = null; this.animateSprite(effectElement,effect); }
   }
+
+  renderReorganization(snapshot) {
+    super.renderReorganization(snapshot);
+    if (snapshot.politicalFinaleB14?.stage !== 'interact') return;
+    const preview = snapshot.stageB?.reorganization?.interActConversionPreview || snapshot.interActPreview;
+    if (!preview) return;
+    const aside = this.root.querySelector('.rpu-interact-layout aside');
+    const list = aside?.querySelector('dl');
+    if (list) {
+      list.innerHTML = `<div><dt>Осталось припасов</dt><dd>${escapeHtml(preview.convertedSupplies)}</dd></div><div><dt>Конвертация</dt><dd>${escapeHtml(preview.formula)} золота</dd></div><div><dt>Золото следующего акта</dt><dd>${escapeHtml(preview.nextGold)}</dd></div><div><dt>Припасы следующего акта</dt><dd>${escapeHtml(preview.nextSupplies)}</dd></div>`;
+      list.setAttribute('data-interact-conversion', '');
+    }
+    const heading = aside?.querySelector('h2');
+    if (heading) heading.textContent = 'ПЕРЕНОС МЕЖДУ АКТАМИ';
+    const confirm = aside?.querySelector('[data-confirm-reorganization]');
+    if (confirm) confirm.textContent = 'ПОДТВЕРДИТЬ И ПЕРЕЙТИ К СЛЕДУЮЩЕМУ АКТУ';
+  }
 }
 
 export { VerticalSlicePresenter };
