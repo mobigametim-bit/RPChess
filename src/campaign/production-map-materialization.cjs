@@ -53,7 +53,16 @@ function defaultMaterialization(node, graph, options, excludedIds) {
       seed: node.contentSeed,
       contentVersion: node.contentVersion,
       excludedEventIds: freezeArray([...excludedIds]),
-      selectorState
+      selectorState,
+      storyFacts: freezeArray(options.storyFacts || options.flags || []),
+      heroIds: freezeArray(options.heroIds || []),
+      doctrineIds: freezeArray(options.doctrineIds || []),
+      relicIds: freezeArray(options.relicIds || []),
+      roster: freezeArray(options.roster || []),
+      participatedRosterIds: freezeArray(options.participatedRosterIds || []),
+      gold: options.gold,
+      supplies: options.supplies,
+      eventContext: options.eventContext || null
     });
     contentId = eventSelection?.eventId || eventSelection?.contentId || null;
     selectorState = eventSelection?.selectorState ?? selectorState;
