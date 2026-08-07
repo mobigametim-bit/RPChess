@@ -1,9 +1,16 @@
 /* Final chronicle cards: accepted glass composition, no decorative frame around the whole card. */
+.rpprofile--approved-cards .rpa-screen-header h1{font-size:0!important}
+.rpprofile--approved-cards .rpa-screen-header h1::after{content:'Выберите хронику';font-family:RPChessTitle,Georgia,serif;font-size:clamp(42px,4.2vw,58px);line-height:1;color:#f3ead8}
+.rpprofile--approved-cards .rpa-screen-header p{font-size:0!important}
+.rpprofile--approved-cards .rpa-screen-header p::after{content:'Каждая хроника хранит отдельный поход, состав армии и принятые решения.';font-size:16px;line-height:1.45;color:#aebdcd}
+.rpprofile--approved-cards .rpa-screen-header .rpa-button{font-size:0!important}
+.rpprofile--approved-cards .rpa-screen-header .rpa-button::after{content:'ГЛАВНОЕ МЕНЮ';font-size:14px;font-weight:850;color:#fff0c7}
 .rpprofile--approved-cards .rpa-profile-list{width:100%;max-width:1400px;margin:0 auto;gap:22px!important}
 .rpprofile--approved-cards .rpa-profile-card--approved{position:relative;display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:240px minmax(0,1fr) auto!important;min-height:586px!important;padding:0!important;border:1px solid rgba(101,127,153,.48)!important;border-image:none!important;border-radius:20px!important;background:linear-gradient(180deg,rgba(5,17,30,.92),rgba(3,12,22,.94))!important;box-shadow:0 22px 52px rgba(0,0,0,.44)!important;overflow:hidden!important;transform:none!important}
-.rpprofile--approved-cards .rpa-profile-card--approved::before{content:attr(data-chronicle-number)!important;position:absolute;z-index:8;left:18px;top:17px;width:40px;height:40px;display:grid;place-items:center;border:1px solid rgba(221,183,93,.72);border-radius:50%;background:rgba(5,15,25,.84);color:#f1d47e;font:700 18px/1 Georgia,serif;box-shadow:0 5px 16px rgba(0,0,0,.32);pointer-events:none}
+.rpprofile--approved-cards .rpa-profile-card--approved::before{position:absolute;z-index:8;left:18px;top:17px;width:40px;height:40px;display:grid;place-items:center;border:1px solid rgba(221,183,93,.72);border-radius:50%;background:rgba(5,15,25,.84);color:#f1d47e;font:700 18px/1 Georgia,serif;box-shadow:0 5px 16px rgba(0,0,0,.32);pointer-events:none}
+.rpprofile--approved-cards .rpa-profile-card--approved:nth-child(1)::before{content:'I'!important}.rpprofile--approved-cards .rpa-profile-card--approved:nth-child(2)::before{content:'II'!important}.rpprofile--approved-cards .rpa-profile-card--approved:nth-child(3)::before{content:'III'!important}
 .rpprofile--approved-cards .rpa-profile-card--approved::after{display:none!important}
-.rpprofile--approved-cards .rpa-profile-card--approved.is-available{border-color:rgba(213,176,84,.65)!important}
+.rpprofile--approved-cards .rpa-profile-card--approved[data-profile-primary="continue"]{border-color:rgba(213,176,84,.65)!important}
 .rpprofile--approved-cards .rpa-profile-card--approved:hover{transform:translateY(-2px)!important;filter:brightness(1.035);box-shadow:0 26px 58px rgba(0,0,0,.5)!important}
 .rpprofile--approved-cards .rpprofile__approved-visual{height:240px!important;min-height:240px!important;margin:0!important;border:0!important;border-radius:0!important;background:linear-gradient(180deg,rgba(19,47,79,.72),rgba(5,17,30,.86))!important}
 .rpprofile--approved-cards .rpprofile__approved-visual::after{height:46%;background:linear-gradient(transparent,rgba(3,11,20,.96))!important}
@@ -15,9 +22,10 @@
 .rpprofile--approved-cards .rpprofile__approved-title{font-family:RPChessTitle,Georgia,serif!important;font-size:31px!important;line-height:1.05!important;color:#fff1d4!important}
 .rpprofile--approved-cards .rpprofile__approved-status{color:#e5bd5b!important;font-size:12px!important;font-weight:900!important;letter-spacing:.05em;text-transform:uppercase}
 .rpprofile--approved-cards .rpprofile__approved-content p{max-width:340px;margin-top:5px!important;color:#aebdcd!important;font-size:14px!important;line-height:1.5!important}
-.rpprofile--approved-cards .rpa-profile-card--approved.is-empty .rpprofile__approved-content{text-align:center;justify-items:center;padding-top:20px!important}
-.rpprofile--approved-cards .rpa-profile-card--approved.is-empty .rpprofile__approved-title{font-size:30px!important}
-.rpprofile--approved-cards .rpa-profile-card--approved.is-empty .rpprofile__approved-content p{text-align:center}
+.rpprofile--approved-cards .rpa-profile-card--approved[data-profile-primary="start"] .rpprofile__approved-content{text-align:center;justify-items:center;padding-top:20px!important}
+.rpprofile--approved-cards .rpa-profile-card--approved[data-profile-primary="start"] .rpprofile__approved-title{font-size:30px!important}
+.rpprofile--approved-cards .rpa-profile-card--approved[data-profile-primary="start"] .rpprofile__approved-content p{font-size:0!important;text-align:center}
+.rpprofile--approved-cards .rpa-profile-card--approved[data-profile-primary="start"] .rpprofile__approved-content p::after{content:'Начните отдельный поход и выберите нового командира.';font-size:14px;line-height:1.5;color:#aebdcd}
 .rpprofile--approved-cards .rpprofile__approved-chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:9px}
 .rpprofile--approved-cards .rpprofile__approved-chips span{justify-content:center;min-height:54px;border-radius:10px;background:rgba(11,29,48,.86);border-color:rgba(91,120,151,.42);text-align:center}
 .rpprofile--approved-cards .rpprofile__approved-actions{padding:0 22px 22px!important;gap:10px!important}
