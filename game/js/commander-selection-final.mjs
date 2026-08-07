@@ -1,4 +1,10 @@
 function setText(node,value){if(node&&node.textContent!==value)node.textContent=value;}
+function commanderScreen(root=document){
+  const layout=root.querySelector?.('.rpa-commander-layout');
+  const screen=layout?.closest?.('.rpa-subscreen')||null;
+  if(screen&&!screen.classList.contains('is-approved-commander-selection'))screen.classList.add('is-approved-commander-selection');
+  return screen;
+}
 function syncCommanderPreview(screen){
   const selected=screen.querySelector('.rpa-commander[aria-pressed="true"]');
   const preview=screen.querySelector('.rpa-launch');
@@ -7,23 +13,23 @@ function syncCommanderPreview(screen){
   const hero=preview.querySelector('[data-preview-hero]');
   const description=selected.querySelector('.rpa-commander__copy p')?.textContent?.trim()||'';
   let copy=preview.querySelector('.rpu-commander-preview-description');
-  if(!copy){copy=document.createElement('p');copy.className='rpu-commander-preview-description';hero?.after(copy);}
+  if(!copy){copy=screen.ownerDocument.createElement('p');copy.className='rpu-commander-preview-description';hero?.after(copy);}
   setText(copy,description);
 }
 function applyCommanderFinal(root=document){
-  const screen=root.querySelector?.('.is-approved-commander-selection');
+  const screen=commanderScreen(root);
   if(!screen)return 0;
   setText(screen.querySelector('.rpa-screen-header h1'),'Выберите командира');
   setText(screen.querySelector('.rpa-screen-header p'),'Командир задаёт стартовый стиль похода. Остальные открываются через решения, победы и находки.');
   const header=screen.querySelector('.rpa-screen-header');
   if(header&&!header.querySelector('.rpu-commander-version')){
-    const version=document.createElement('span');version.className='rpu-commander-version';version.textContent='v1.3.9';header.append(version);
+    const version=screen.ownerDocument.createElement('span');version.className='rpu-commander-version';version.textContent='v1.3.9';header.append(version);
   }
   [...screen.querySelectorAll('.rpa-commander')].forEach(card=>{
     const hero=card.querySelector('.rpa-commander__hero');
     if(hero){
       const cached=hero.dataset.finalHeroName;
-      const parsed=(cached||hero.textContent.replace(/^Именной герой:\s*/i,'').replace(/^ИМЕННОЙ ГЕРОЙ\s*·\s*/i,'').trim());
+      const parsed=cached||hero.textContent.replace(/^Именной герой:\s*/i,'').replace(/^ИМЕННОЙ ГЕРОЙ\s*·\s*/i,'').trim();
       if(!cached)hero.dataset.finalHeroName=parsed;
       setText(hero,`ИМЕННОЙ ГЕРОЙ · ${parsed}`);
     }
@@ -49,4 +55,4 @@ function install(){
   return observer;
 }
 if(typeof document!=='undefined'){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();}
-export{applyCommanderFinal,syncCommanderPreview,install};
+export{commanderScreen,applyCommanderFinal,syncCommanderPreview,install};
