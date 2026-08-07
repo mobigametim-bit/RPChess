@@ -40,7 +40,9 @@ function travelTo(state, targetNodeId, options = {}) {
     forcedMarch = { consecutiveCount: state.forcedMarch.consecutiveCount + 1, totalCount: state.forcedMarch.totalCount + 1, lastChoice: choice };
   }
   const routeRecordsBeforeTravel = routeRecords(state);
-  const siblingRecords = routeRecordsBeforeTravel.filter(({ node }) => node.id !== targetNodeId);
+  // A reopened route is a one-node detour. Entering it must not close the
+  // forward routes of the main campaign position from which the detour opened.
+  const siblingRecords = route.rare ? [] : routeRecordsBeforeTravel.filter(({ node }) => node.id !== targetNodeId);
   const siblings = siblingRecords.map(({ node }) => node.id);
   const closedNodeIds = [...new Set([...state.closedNodeIds, ...siblings])].sort();
   const closedBranchRecordsByNode = { ...(state.closedBranchRecordsByNode || {}) };
@@ -75,7 +77,7 @@ function travelTo(state, targetNodeId, options = {}) {
     closedNodeIds: freezeArray(closedNodeIds), closedBranchRecordsByNode: deepFreeze(closedBranchRecordsByNode),
     visitedNodeIds: freezeArray(visitedNodeIds),
     traversedEdgeIds: freezeArray([...state.traversedEdgeIds, route.edgeId]),
-    rareRoute: route.rare ? deepFreeze({ ...state.rareRoute, status: 'used' }) : state.rareRoute,
+    rareRoute: route.rare ? deepFreeze({ ...state.rareRoute, status: 'used', returnNodeId: state.currentNodeId }) : state.rareRoute,
     revealedNodeIds: freezeArray(revealedNodeIds), revealedLevelIds: freezeArray(revealedLevelIds),
     materializedContentByNode: levelResult.materializedByNode, selectorState,
     history: freezeArray([...state.history, record])
@@ -98,10 +100,27 @@ function completeNode(state, nodeId, options = {}) {
     graph: state.graph, state: state.selectorState, nodeId,
     materializedContent: state.materializedContentByNode[nodeId] || null
   }, state.selectorState);
-  return deepFreeze({ ...state, selectorState,
-    completedNodeIds: freezeArray([...state.completedNodeIds, nodeId]),
-    rewardsClaimedNodeIds: freezeArray(options.rewardClaimed === false ? state.rewardsClaimedNodeIds : [...state.rewardsClaimedNodeIds, nodeId]),
-    history: freezeArray([...state.history, deepFreeze({ index: state.history.length, type: 'node_completed', nodeId, rewardClaimed: options.rewardClaimed !== false })]) });
+  const completedNodeIds = freezeArray([...state.completedNodeIds, nodeId]);
+  const rewardsClaimedNodeIds = freezeArray(options.rewardClaimed === false ? state.rewardsClaimedNodeIds : [...state.rewardsClaimedNodeIds, nodeId]);
+  const completedRecord = deepFreeze({ index: state.history.length, type: 'node_completed', nodeId, rewardClaimed: options.rewardClaimed !== false });
+  const rare = state.rareRoute;
+  const returningFromRare = Boolean(rare?.status === 'used' && rare.targetNodeId === nodeId && rare.returnNodeId && state.currentNodeId === nodeId);
+  if (!returningFromRare) return deepFreeze({ ...state, selectorState, completedNodeIds, rewardsClaimedNodeIds, history: freezeArray([...state.history, completedRecord]) });
+
+  const returnNode = state.graph.nodesById[rare.returnNodeId];
+  if (!returnNode) throw new Error(`rare route return node is missing: ${rare.returnNodeId}`);
+  const returnedRecord = deepFreeze({ index: state.history.length + 1, type: 'rare_route_returned', from: nodeId, to: rare.returnNodeId, rareEdgeId: rare.edgeId });
+  return deepFreeze({
+    ...state,
+    selectorState,
+    currentNodeId: rare.returnNodeId,
+    currentLevel: returnNode.layer,
+    status: 'active',
+    completedNodeIds,
+    rewardsClaimedNodeIds,
+    rareRoute: deepFreeze({ ...rare, status: 'completed' }),
+    history: freezeArray([...state.history, completedRecord, returnedRecord])
+  });
 }
 function reopenBranch(state, nodeId, options = {}) {
   if (state.rareRoute?.status === 'open') throw new Error('only one rare reopened route may be active');
@@ -118,6 +137,7 @@ function reopenBranch(state, nodeId, options = {}) {
   const rareRoute = deepFreeze({
     edgeId: `rare_${state.currentNodeId}_${nodeId}_${state.history.length}`,
     fromNodeId: state.currentNodeId,
+    returnNodeId: state.currentNodeId,
     targetNodeId: nodeId,
     originalEdgeId: closedRecord.originalEdgeId,
     cost: 1,
