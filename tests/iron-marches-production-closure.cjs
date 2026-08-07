@@ -54,7 +54,6 @@ function finaleGate(state, lines = { iron_and_bread:'favorable', honor_of_the_ma
 function dispatch(state, command) { return presenter.dispatchPresenterCommand(state, command, {}); }
 
 (async () => {
-  // Source-of-truth rule: no numeric cabinet price exists until explicitly authored.
   for (const force of Object.values(b14.FORCE_DEFINITIONS)) {
     assert.strictEqual(force.demand.costGold, 0);
     assert.strictEqual(force.demand.costSupplies, 0);
@@ -79,8 +78,6 @@ function dispatch(state, command) { return presenter.dispatchPresenterCommand(st
     for (const reason of choice.reasons || []) assert.strictEqual(/[._][a-z]/i.test(reason), false, `technical coalition reason leaked: ${reason}`);
   }
 
-  // Every authored regime keeps its five-law pool and deterministically offers exactly
-  // three distinct categories with at least two universally valid laws.
   for (const governmentId of b14.GOVERNMENT_IDS) {
     assert.strictEqual(b14.LAW_POOLS[governmentId].length, 5, `${governmentId} must retain five authored laws`);
     const fake = { finaleSeed:123456, factIds:[], governmentId };
@@ -93,7 +90,6 @@ function dispatch(state, command) { return presenter.dispatchPresenterCommand(st
   const substituted = b14.materializeLaws({ finaleSeed:17, factIds:['story.iron_marches.strike_compromise'] }, 'crown');
   assert.ok(substituted.some((entry)=>entry.id === 'charter_safe_work_stop'), 'authored unsafe-work substitution must be materialized');
 
-  // Epilogue translates line states and notable facts instead of exposing runtime ids/status tokens.
   let epilogueFinale = b14.createPoliticalFinale({
     seed:77,
     narrative:narrative('fate.iron_marches.prisoners_released'),
@@ -104,8 +100,6 @@ function dispatch(state, command) { return presenter.dispatchPresenterCommand(st
   epilogueFinale = b14.chooseLaw(epilogueFinale, epilogueFinale.lawOffers[0].id);
   noTechnicalLeak(b14.finaleSurface(epilogueFinale, {}));
 
-  // Dedicated Act Reward is exactly three, deterministic, non-numeric, and independent
-  // from political government/doctrine inputs by construction.
   const offersA = actReward.materializeActRewardOffers({ seed:9042, act:1 });
   const offersB = actReward.materializeActRewardOffers({ seed:9042, act:1 });
   assert.strictEqual(offersA.length, 3);
@@ -114,14 +108,12 @@ function dispatch(state, command) { return presenter.dispatchPresenterCommand(st
   assert.strictEqual(new Set(offersA.filter((entry)=>entry.type==='relic').map((entry)=>entry.payload.relicId)).size, 2);
   assert.ok(offersA.every((entry)=>entry.id.startsWith('act_reward:iron_marches:')));
 
-  // Browser runtime integration: Stage 1 -> Stage 2 -> Stage 3 -> epilogue -> dedicated
-  // Act Reward -> inter-act preview -> confirmed conversion -> complete.
   let state = finaleGate(await launchedState());
   let snapshot = presenter.createPresenterSnapshot(state, {});
   while (snapshot.politicalFinaleB14.stage === 'cabinet') {
     const choice = snapshot.politicalFinaleB14.choices.find((entry)=>entry.available !== false);
-    const result = dispatch(state, { type:'ChooseActOutcome', choiceId:choice.id });
-    state = result.state; snapshot = result.snapshot;
+    const step = dispatch(state, { type:'ChooseActOutcome', choiceId:choice.id });
+    state = step.state; snapshot = step.snapshot;
   }
   let result = dispatch(state, { type:'ChooseActOutcome', choiceId:'crown' });
   state = result.state; snapshot = result.snapshot;
@@ -164,6 +156,15 @@ function dispatch(state, command) { return presenter.dispatchPresenterCommand(st
   assert.ok(finalPresenter.includes('data-interact-conversion'));
   assert.ok(finalPresenter.includes('Осталось припасов'));
   assert.ok(finalPresenter.includes('Золото следующего акта'));
+  assert.ok(finalPresenter.includes('data-service-relic'));
+  assert.ok(finalPresenter.includes('targetRelicId'));
+  assert.ok(finalPresenter.includes('Нет подходящей фигуры'));
+  assert.ok(finalPresenter.includes('Нет подходящей реликвии'));
 
-  console.log('Iron Marches production closure: B14 authored costs, human surfaces, all 8 law pools, dedicated Act Reward, reload stability and real inter-act conversion binding passed.');
+  const explicitSetup = fs.readFileSync(path.resolve(__dirname, '../game/js/explicit-run-setup.mjs'), 'utf8');
+  assert.ok(explicitSetup.includes('Stage B still materializes three deterministic offers'));
+  assert.ok(explicitSetup.includes('createProgressObserver'));
+  assert.ok(explicitSetup.includes('victories:next.victories+1'));
+
+  console.log('Iron Marches production closure: B14 rules, human surfaces, all 8 law pools, dedicated Act Reward, reload stability, inter-act conversion, explicit setup and production service bindings passed.');
 })().catch((error)=>{ console.error(error.stack || error); process.exitCode=1; });
