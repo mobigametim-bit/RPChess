@@ -7,7 +7,7 @@ const { createBrowserRunSelectionHost } = require('../src/browser/iron-marches-b
 async function launch() {
   const host = createBrowserRunSelectionHost({
     seed: 12026,
-    profileId: 'b10-b13-browser',
+    profileId: 'profile-1',
     storage: new MemoryKeyValueStorage(),
     deviceId: 'b10-b13-browser-test',
     stageB: true,
