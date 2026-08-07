@@ -36,7 +36,6 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
     assert.strictEqual(html.includes('css/army-foundation-approved.css'), false);
   }
 
-  // Existing gameplay surfaces remain in the underlying presenter.
   for (const method of ['renderDraft(snapshot)', 'renderBriefing(snapshot)', 'renderRewardChoice(snapshot)', 'renderService(snapshot)', 'renderRetreat(snapshot)', 'renderActOutcome(snapshot)', 'renderReorganization(snapshot)']) {
     assert(legacyPresenter.includes(method), `legacy gameplay presenter must retain ${method}`);
   }
@@ -48,7 +47,6 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert.strictEqual(register01.includes('legal_move.png'), false);
   assert.strictEqual(register01.includes('capture_move.png'), false);
 
-  // Approved v2 architecture: one runtime shell, icon resources, B14 and true talent modal.
   assert(presenterV2.includes('class VerticalSlicePresenter extends LegacyVerticalSlicePresenter'));
   assert(presenterV2.includes('rpu-topbar'));
   assert(presenterV2.includes("resourceChip('gold'"));
@@ -67,7 +65,6 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert(presenterV2.includes('bossAssets('));
   assert(presenterV2.includes('bossPhaseSigil('));
 
-  // Design system contracts from the approved mockups.
   assert(uiCss.includes("url('../generated_assets/splash_poster.jpg')"));
   assert(uiCss.includes("url('../generated_assets/ui_button_primary.png')"));
   assert(uiCss.includes("url('../generated_assets/ui_button_danger.png')") || shellCss.includes("url('../generated_assets/ui_button_danger.png')"));
@@ -80,7 +77,6 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert(uiCss.includes('@media(max-width:620px)'));
   assert(uiCss.includes('@media(prefers-reduced-motion:reduce)'));
 
-  // No native prompt/confirm should be exposed to the user; the compatibility replay is behind the system modal.
   assert(uiSystem.includes('function createSystemModal'));
   assert(uiSystem.includes('ПЕРЕИМЕНОВАТЬ ХРОНИКУ'));
   assert(uiSystem.includes('УДАЛИТЬ ХРОНИКУ?'));
@@ -88,7 +84,6 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert(uiSystem.includes("root.querySelectorAll('[data-shell-action=\"chronicle\"]')"));
   assert(uiSystem.includes("back.innerHTML = '<img src=\"generated_assets/logo_main.png\" alt=\"RPChess\">'"));
 
-  // Codices are master/detail and no longer auto-inject buttons into the runtime topbar.
   assert(register02V2.includes('rpu-codex__layout'));
   assert(register02V2.includes('rpu-person-detail'));
   assert.strictEqual(register02V2.includes('autoInstall()'), false);
@@ -102,7 +97,6 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert(clientSource.includes("'ConfirmReorganization'"));
   assert(clientSource.includes("'reward_choice'"));
 
-  // Shell behavior still exposes the dynamic Continue button and profile selection.
   const appModule = await import(pathToFileURL(path.join(root, 'game/js/vertical-slice-app.mjs')).href);
   const progress = appModule.readShellProgress({ getItem: () => null });
   const menu = appModule.menuMarkup([], progress, 'ru');
@@ -110,7 +104,7 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert(!menu.includes('rpa-menu__lead'));
   assert(app.includes('data-profile-primary'));
   assert(app.includes('data-chronicle-commander'));
-  assert(app.includes('ПРОДОЛЖИТЬ ПОХОД'));
+  assert(app.includes('Продолжить поход'));
 
   console.log('Stage B UI: unified design system, retired enhancers, dynamic shell, B14 surfaces and responsive contracts passed.');
 })().catch((error) => { console.error(error.stack || error); process.exitCode = 1; });
