@@ -6,4 +6,5 @@ require('./install-b9-production-events.cjs');
 require('./install-b9-profile-load.cjs');
 require('./install-b9-map-polish.cjs');
 require('./install-b10-b13-production-runtime.cjs');
+require('./install-b10-b13-presenter-polish.cjs');
 module.exports = require('./iron-marches-browser-host.cjs');
