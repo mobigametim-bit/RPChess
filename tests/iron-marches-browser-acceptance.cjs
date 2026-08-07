@@ -14,7 +14,7 @@ const FORBIDDEN_TEXT = [/\[object Object\]/i, /\bundefined\b/i, /\bNaN\b/i, /fat
 const observed = {
   statuses:new Set(), viewports:new Set(), battlePieceTypes:new Set(), eventIds:new Set(), serviceTypes:new Set(),
   sawScouting:false, sawCapture:false, sawAiTurn:false, sawOrderPoints:false, sawTalent:false,
-  sawBoss:false, sawBossTransition:false, sawActReward:false, sawInterAct:false, sawSaveReload:false,
+  sawBoss:false, sawBossTransition:false, sawActReward:false, sawInterAct:false,
   sawSecret:false, sawForcedMarch:false, sawReopen:false
 };
 
@@ -56,7 +56,7 @@ async function bodyLeakCheck(page,label) {
   const metrics=await page.evaluate(()=>({
     innerWidth:window.innerWidth,
     scrollWidth:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth),
-    dialogs:[...document.querySelectorAll('[role="dialog"],.rpu-modal__window')].filter((node)=>node.getClientRects().length).map((node)=>{const r=node.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom};})
+    dialogs:[...document.querySelectorAll('[role="dialog"],.rpu-modal__window')].filter((node)=>node.getClientRects().length).map((node)=>{const r=node.getBoundingClientRect();return {left:r.left,right:r.right};})
   }));
   assert.ok(metrics.scrollWidth<=metrics.innerWidth+3,`${label}: horizontal overflow ${metrics.scrollWidth} > ${metrics.innerWidth}`);
   for (const dialog of metrics.dialogs) assert.ok(dialog.right<=metrics.innerWidth+3 && dialog.left>=-3,`${label}: modal exceeds horizontal viewport`);
@@ -67,13 +67,14 @@ function installFailureCapture(page,errors) {
   page.on('requestfailed',(request)=>{ if(!request.url().startsWith('data:')) errors.push(`requestfailed: ${request.failure()?.errorText || ''} ${request.url()}`); });
 }
 async function freshCommanderScreen(page,seed) {
+  page.setDefaultTimeout(10000);
   await page.goto(`${BASE_URL}/index.html?new=1&seed=${seed}&autosave=1`,{waitUntil:'networkidle'});
   await page.evaluate(()=>localStorage.clear());
   await page.reload({waitUntil:'networkidle'});
   await realClick(page,'[data-shell-action="profiles"]');
   await page.locator('[data-profile-action="start"]').first().waitFor({state:'visible'});
   await realClick(page,page.locator('[data-profile-action="start"]').first());
-  await page.locator('[data-launch-commander]').waitFor({state:'visible',timeout:10000});
+  await page.locator('[data-launch-commander]').waitFor({state:'visible'});
   await bodyLeakCheck(page,'commander-selection');
 }
 async function explicitSetup(page,seed) {
@@ -133,20 +134,23 @@ function chooseObjectiveCommand(snapshot) {
   if (destinationSquares.length) return legal.slice().sort((a,b)=>Math.min(...destinationSquares.map((t)=>squareDistance(a.payload.to,t)))-Math.min(...destinationSquares.map((t)=>squareDistance(b.payload.to,t))))[0];
   return legal[0];
 }
-async function canvasSquarePoint(page,selector,square) {
-  const box=await page.locator(selector).first().boundingBox();
+async function canvasSquarePoint(page,square,selector='[data-board]') {
+  const locator=page.locator(selector).first();
+  const box=await locator.boundingBox();
   assert.ok(box,`missing canvas ${selector}`);
-  const padding=24;
-  const cell=Math.max(1,Math.floor(Math.min((box.width-padding*2)/8,(box.height-padding*2)/8)));
-  const boardWidth=cell*8,boardHeight=cell*8;
-  const originX=box.x+Math.floor((box.width-boardWidth)/2),originY=box.y+Math.floor((box.height-boardHeight)/2);
-  const x=String(square).charCodeAt(0)-97,rank=Number(String(square).slice(1)),y=8-rank;
-  return {x:originX+(x+.5)*cell,y:originY+(y+.5)*cell};
+  const geometry=await page.evaluate((wanted)=>{
+    const presenter=globalThis.RPChessVerticalSlice?.presenter;
+    const plan=presenter?.boardPlan;
+    const viewport=presenter?.boardReport?.viewport;
+    const cell=plan?.activeCells?.find((entry)=>entry.square===wanted);
+    return cell && viewport ? { x:viewport.x+(cell.displayX+.5)*viewport.cellSize, y:viewport.y+(cell.displayY+.5)*viewport.cellSize } : null;
+  },square);
+  assert.ok(geometry,`presenter has no rendered geometry for ${square}`);
+  return {x:box.x+geometry.x,y:box.y+geometry.y};
 }
 async function pointerMove(page,command,before) {
-  const selector='[data-board],.rpvs__canvas:not([data-deployment-board])';
-  const from=await canvasSquarePoint(page,selector,command.payload.from);
-  const to=await canvasSquarePoint(page,selector,command.payload.to);
+  const from=await canvasSquarePoint(page,command.payload.from);
+  const to=await canvasSquarePoint(page,command.payload.to);
   await page.mouse.click(from.x,from.y);
   await page.mouse.click(to.x,to.y);
   await page.waitForFunction((actionIndex)=>{
@@ -161,7 +165,7 @@ async function handleBattle(page,snapshot) {
   if (order) {
     observed.sawOrderPoints=true;
     const body=await page.locator('body').innerText();
-    assert.ok(body.includes(String(order.current)) && body.includes(String(order.max)),'battle UI must expose current/max order points');
+    assert.ok(body.includes(`${order.current} / ${order.max}`) || body.includes(`ОП ${order.current}/${order.max}`),'battle UI must expose current/max order points');
   }
   if (await clickIf(page,'[data-finalize-scenario],[data-finalize]')) return;
   const command=chooseObjectiveCommand(snapshot);
@@ -241,12 +245,27 @@ async function driveFullRun(page,seed) {
       observed.sawBossTransition=true;
       if (!await clickIf(page,'[data-begin-boss-phase],[data-resume-boss],[data-boss-transition]')) throw new Error('boss transition lacks UI control');
     }
-    else if (snapshot.status==='event') { const choices=page.locator('[data-choice-id]:not([disabled])'); assert.ok(await choices.count(),'event has no visible choice'); await realClick(page,choices.first()); }
+    else if (snapshot.status==='event') {
+      const choices=page.locator('[data-event-choice]:not([disabled]),[data-choice-id]:not([disabled])');
+      assert.ok(await choices.count(),'event has no visible production choice');
+      await realClick(page,choices.first());
+    }
     else if (snapshot.status==='reward') await realClick(page,'[data-claim]');
-    else if (snapshot.status==='reward_choice') { if(snapshot.politicalFinaleB14?.stage==='act_reward') observed.sawActReward=true; await realClick(page,'[data-reward-offer]:not([disabled])'); }
+    else if (snapshot.status==='reward_choice') {
+      if(snapshot.politicalFinaleB14?.stage==='act_reward') observed.sawActReward=true;
+      await realClick(page,'[data-reward-offer]:not([disabled])');
+    }
     else if (snapshot.status==='service') await serviceAction(page,snapshot);
-    else if (snapshot.status==='act_outcome') { const choice=page.locator('[data-act-choice]:not([disabled])').first(); assert.ok(await choice.count(),'political stage has no available UI choice'); await realClick(page,choice); }
-    else if (snapshot.status==='reorganization') { observed.sawInterAct=true; assert.ok(await page.locator('[data-interact-conversion]').count(),'inter-act UI lacks real conversion binding'); await realClick(page,'[data-confirm-reorganization]'); }
+    else if (snapshot.status==='act_outcome') {
+      const choice=page.locator('[data-act-choice]:not([disabled])').first();
+      assert.ok(await choice.count(),'political stage has no available UI choice');
+      await realClick(page,choice);
+    }
+    else if (snapshot.status==='reorganization') {
+      observed.sawInterAct=true;
+      assert.ok(await page.locator('[data-interact-conversion]').count(),'inter-act UI lacks real conversion binding');
+      await realClick(page,'[data-confirm-reorganization]');
+    }
     else throw new Error(`unhandled production UI status: ${snapshot.status}`);
     await delay(60);
   }
@@ -255,6 +274,7 @@ async function driveFullRun(page,seed) {
 async function responsiveAcceptance(browser) {
   for (const viewport of VIEWPORTS) {
     const page=await browser.newPage({viewport:{width:viewport.width,height:viewport.height}});
+    page.setDefaultTimeout(10000);
     const errors=[];
     installFailureCapture(page,errors);
     await freshCommanderScreen(page,9042);
@@ -278,6 +298,7 @@ async function responsiveAcceptance(browser) {
   try {
     await responsiveAcceptance(browser);
     const page=await browser.newPage({viewport:{width:1366,height:768}});
+    page.setDefaultTimeout(10000);
     const errors=[];
     installFailureCapture(page,errors);
     const completed=await driveFullRun(page,9042);
