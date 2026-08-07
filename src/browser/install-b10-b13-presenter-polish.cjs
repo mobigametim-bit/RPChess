@@ -30,9 +30,11 @@ if (!globalThis[INSTALL_KEY]) {
   presenter.createPresenterSnapshot = function createB10B13PresenterSnapshot(state, dependencies = {}) {
     const snapshot = originalSnapshot(state, dependencies);
     if (!productionRun(state)) return snapshot;
+    const equippedRelicIds = (state.stageB?.roster || []).flatMap((entry) => entry.relicIds || []);
+    const relicInventory = [...new Set([...(state.stageB?.relicInventory || []), ...equippedRelicIds])].sort();
     const stageB = snapshot.stageB ? deepFreeze({
       ...snapshot.stageB,
-      relicInventory: freezeArray(state.stageB?.relicInventory || []),
+      relicInventory: freezeArray(relicInventory),
       relicUpgrades: deepFreeze({ ...(state.stageB?.relicUpgrades || {}) }),
       lastServiceTransaction: state.stageB?.lastServiceTransaction || null
     }) : null;
