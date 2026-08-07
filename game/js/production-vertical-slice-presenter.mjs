@@ -62,12 +62,15 @@ class ProductionVerticalSlicePresenter extends EventAwareVerticalSlicePresenter 
       const portrait = assets?.portrait
         ? `<img src="${escapeHtml(assets.portrait)}" alt="" aria-hidden="true" style="width:48px;height:48px;border-radius:50%;object-fit:contain;background:#080d16" onerror="this.remove()">`
         : '';
+      const piece = assets?.piece
+        ? `<img src="${escapeHtml(assets.piece)}" alt="" aria-hidden="true" style="width:42px;height:42px;object-fit:contain;filter:drop-shadow(0 5px 10px #000a)" onerror="this.remove()">`
+        : '';
       const sigilSource = bossPhaseSigil(bossId, snapshot.boss.phaseNumber);
       const sigil = sigilSource
         ? `<img src="${escapeHtml(sigilSource)}" alt="" aria-hidden="true" style="width:36px;height:36px;object-fit:contain" onerror="this.remove()">`
         : '';
       head.insertAdjacentHTML('afterbegin', `
-        ${portrait}
+        ${portrait}${piece}
         <div class="rpvs__chip" aria-label="Фаза босса">
           ${sigil}${escapeHtml(bossPhaseLabel(snapshot.boss))}
         </div>`);
@@ -87,10 +90,13 @@ class ProductionVerticalSlicePresenter extends EventAwareVerticalSlicePresenter 
     const portrait = assets?.portrait
       ? `<img src="${escapeHtml(assets.portrait)}" alt="" aria-hidden="true" style="width:84px;height:84px;object-fit:contain;margin-bottom:10px" onerror="this.remove()">`
       : '';
+    const piece = assets?.piece
+      ? `<img src="${escapeHtml(assets.piece)}" alt="" aria-hidden="true" style="width:72px;height:72px;object-fit:contain;margin:0 0 10px 8px;filter:drop-shadow(0 6px 12px #000a)" onerror="this.remove()">`
+      : '';
     const sidebar = `
       <div class="rpvs__panel-head"><h2 class="rpvs__title">${escapeHtml(bossDisplayName(boss.bossId || snapshot.currentNode?.contentId))}</h2></div>
       <div class="rpvs__panel-body">
-        ${portrait}
+        <div style="display:flex;align-items:center;gap:8px">${portrait}${piece}</div>
         <div class="rpvs__item rpvs__item--done">
           <b>${escapeHtml(completed?.phaseId || boss.currentPhaseId)}</b>
           <div class="rpvs__muted">Действий: ${completed?.actionCount ?? 0}</div>
