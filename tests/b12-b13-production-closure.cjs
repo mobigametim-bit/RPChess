@@ -83,7 +83,7 @@ let selector = createProductionEventSelectorState(library, {
 });
 selector = completeProductionEventReservation(library, selector, 'honor-start');
 selector = completeProductionEventReservation(library, selector, 'bread-start');
-assert.deepStrictEqual(selector.activeChainIds.sort(), ['chain.iron_marches.honor_of_the_marches', 'chain.iron_marches.iron_and_bread'].sort());
+assert.deepStrictEqual([...selector.activeChainIds].sort(), ['chain.iron_marches.honor_of_the_marches', 'chain.iron_marches.iron_and_bread'].sort());
 
 const unfinishedNarrative = createNarrativeState();
 const unfinishedFinale = buildIronMarchesFinale(unfinishedNarrative, { gold: 0 });
