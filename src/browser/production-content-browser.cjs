@@ -44,6 +44,28 @@ function playableRegistry(registry, productionEvents) {
   });
 }
 
+function normalizeScenarioRoleMetadata(source) {
+  const normalizeObjective = (objective) => {
+    if (!objective || objective.type === 'escort' || !objective.pieceId) return { ...objective };
+    const protectedPieceIds = [...new Set([...(objective.protectedPieceIds || []), objective.pieceId])];
+    const normalized = { ...objective, protectedPieceIds };
+    delete normalized.pieceId;
+    return normalized;
+  };
+  const encounters = Object.fromEntries(Object.entries(source.encounters || {}).map(([id, record]) => [id, {
+    ...record,
+    objectives: (record.objectives || []).map(normalizeObjective)
+  }]));
+  const bosses = Object.fromEntries(Object.entries(source.bosses || {}).map(([id, record]) => [id, {
+    ...record,
+    phases: (record.phases || []).map((phase) => ({
+      ...phase,
+      objectives: (phase.objectives || []).map(normalizeObjective)
+    }))
+  }]));
+  return { ...source, encounters, bosses };
+}
+
 function buildBrowserProductionBundle() {
   const productionEvents = assertProductionEventPolicy(validateProductionEventLibrary(productionEventSource));
   const eventPolicyReport = productionEventPolicyReport(productionEvents);
@@ -60,7 +82,7 @@ function buildBrowserProductionBundle() {
   const combatProfiles = validateCombatProfileSet(combatProfileSource, sourceRegistry);
   const eventEffectCatalog = mergeEffectCatalogs([validateEffectCatalog(effectCatalog)]);
   validateEventEffectReferences(sourceRegistry, eventEffectCatalog);
-  const scenarioTemplates = validateScenarioTemplateSet(scenarioTemplateSource);
+  const scenarioTemplates = validateScenarioTemplateSet(normalizeScenarioRoleMetadata(scenarioTemplateSource));
   validateScenarioContentReferences(scenarioTemplates, sourceRegistry);
   const catalogEventChoiceResolver = createCatalogEventChoiceResolver(eventEffectCatalog);
   const registry = playableRegistry(sourceRegistry, productionEvents);
@@ -85,5 +107,6 @@ function buildBrowserProductionBundle() {
 
 module.exports = {
   playableRegistry,
+  normalizeScenarioRoleMetadata,
   buildBrowserProductionBundle
 };
