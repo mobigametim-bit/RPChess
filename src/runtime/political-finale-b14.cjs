@@ -21,11 +21,14 @@ function idsFromNarrative(narrative) {
 function hasAny(ids, needles) { return needles.some((needle) => ids.some((id) => id === needle || id.includes(needle))); }
 function deterministicOrder(values, seed, salt) { return values.slice().sort((a, b) => hash32(`${seed}:${salt}:${a.id}`) - hash32(`${seed}:${salt}:${b.id}`) || a.id.localeCompare(b.id)); }
 
+// The B14 authoring specifies which resource domains a crisis may touch, but does not
+// authorize numeric cabinet prices yet. Keep the numeric contract at zero instead of
+// inventing values; future authored content can add exact costs atomically.
 const FORCE_DEFINITIONS = deepFreeze({
-  crown: { id:'crown', name:'Корона', direction:'казна, официальные ресурсы, дипломатия', portrait:'assets/politics/heir_elda.png', crisisNeedles:['crown_delegitimized','crown_illegitimate','royal_mandate_rejected'], demand:{ title:'Признать арбитраж Короны', description:'Сохранить ограниченное право назначения и формальное признание королевского мандата.', costGold:10, costSupplies:0, acceptedFact:'obligation.iron_marches.royal_arbitration', refusedFact:'politics.iron_marches.crown_crisis_unresolved', risk:'Отказ ослабит королевские коалиции и изменит эпилог.' } },
-  military_council: { id:'military_council', name:'Военный совет', direction:'разведка, военная подготовка, оборонная помощь', portrait:'assets/politics/marshal_varn.png', crisisNeedles:['garrison_divided','officer_revolt','council_resentful'], demand:{ title:'Сохранить переходное командование', description:'На переходный срок сохранить непрерывность командования гарнизонами.', costGold:0, costSupplies:1, acceptedFact:'obligation.iron_marches.garrison_transition', refusedFact:'politics.iron_marches.military_crisis_unresolved', risk:'Отказ ухудшит военные коалиции и доступность оборонной помощи.' } },
-  forge_council: { id:'forge_council', name:'Совет горна', direction:'производство, ремонт, припасы', portrait:'assets/politics/guildmaster_borek.png', crisisNeedles:['workers_hostile','strike_broken','mine_abuse_proven'], demand:{ title:'Гарантировать трудовой компромисс', description:'Амнистия, компенсация и признание участия мастеров в управлении производством.', costGold:20, costSupplies:0, acceptedFact:'obligation.iron_marches.forge_amnesty', refusedFact:'politics.iron_marches.forge_crisis_unresolved', risk:'Отказ ухудшит производственные коалиции и социальные события.' } },
-  marches_charter: { id:'marches_charter', name:'Хартия Маршей', direction:'информация, политические связи, гражданская поддержка', portrait:'assets/events/register-04/political/peoples_petition.png', crisisNeedles:['illegal_purge','emergency_indefinite','lawless_command','charter_rejected'], demand:{ title:'Ограничить чрезвычайную власть', description:'Установить срок чрезвычайных полномочий и признать правовую процедуру финального собрания.', costGold:0, costSupplies:0, acceptedFact:'obligation.iron_marches.emergency_term', refusedFact:'politics.iron_marches.charter_crisis_unresolved', risk:'Отказ ухудшит правовые коалиции и изменит гражданский эпилог.' } }
+  crown: { id:'crown', name:'Корона', direction:'казна, официальные ресурсы, дипломатия', portrait:'assets/politics/heir_elda.png', crisisNeedles:['crown_delegitimized','crown_illegitimate','royal_mandate_rejected'], demand:{ title:'Признать арбитраж Короны', description:'Сохранить ограниченное право назначения и формальное признание королевского мандата.', resourceTypes:['gold'], costGold:0, costSupplies:0, acceptedFact:'obligation.iron_marches.royal_arbitration', refusedFact:'politics.iron_marches.crown_crisis_unresolved', risk:'Отказ ослабит королевские коалиции и изменит эпилог.' } },
+  military_council: { id:'military_council', name:'Военный совет', direction:'разведка, военная подготовка, оборонная помощь', portrait:'assets/politics/marshal_varn.png', crisisNeedles:['garrison_divided','officer_revolt','council_resentful'], demand:{ title:'Сохранить переходное командование', description:'На переходный срок сохранить непрерывность командования гарнизонами.', resourceTypes:['supplies'], costGold:0, costSupplies:0, acceptedFact:'obligation.iron_marches.garrison_transition', refusedFact:'politics.iron_marches.military_crisis_unresolved', risk:'Отказ ухудшит военные коалиции и доступность оборонной помощи.' } },
+  forge_council: { id:'forge_council', name:'Совет горна', direction:'производство, ремонт, припасы', portrait:'assets/politics/guildmaster_borek.png', crisisNeedles:['workers_hostile','strike_broken','mine_abuse_proven'], demand:{ title:'Гарантировать трудовой компромисс', description:'Амнистия, компенсация и признание участия мастеров в управлении производством.', resourceTypes:['gold'], costGold:0, costSupplies:0, acceptedFact:'obligation.iron_marches.forge_amnesty', refusedFact:'politics.iron_marches.forge_crisis_unresolved', risk:'Отказ ухудшит производственные коалиции и социальные события.' } },
+  marches_charter: { id:'marches_charter', name:'Хартия Маршей', direction:'информация, политические связи, гражданская поддержка', portrait:'assets/events/register-04/political/peoples_petition.png', crisisNeedles:['illegal_purge','emergency_indefinite','lawless_command','charter_rejected'], demand:{ title:'Ограничить чрезвычайную власть', description:'Установить срок чрезвычайных полномочий и признать правовую процедуру финального собрания.', resourceTypes:[], costGold:0, costSupplies:0, acceptedFact:'obligation.iron_marches.emergency_term', refusedFact:'politics.iron_marches.charter_crisis_unresolved', risk:'Отказ ухудшит правовые коалиции и изменит гражданский эпилог.' } }
 });
 
 const GOVERNMENTS = deepFreeze({
@@ -40,13 +43,39 @@ const GOVERNMENTS = deepFreeze({
 });
 
 const COALITION_RULES = deepFreeze({
-  crown_forge:{ strong:['labor_rights','furnace_oath','strike_compromise','strike_workers_backed','shared_forge','forge_amnesty'], normal:['workers_support_crown','mine_audit'], block:['workers_hostile','strike_broken','forge_crisis_unresolved'] },
-  crown_charter:{ strong:['legal_procedure','emergency_term','lawful','charter','royal_arbitration'], normal:['standard_ratified','public_ledger'], block:['illegal_purge','crown_delegitimized','charter_crisis_unresolved'] },
-  military_forge:{ strong:['mobilization','supply_compact','workers_defense','garrison_forge','forge_amnesty'], normal:['garrison_united','furnace_oath'], block:['workers_hostile','strike_broken','supply_sabotage','forge_crisis_unresolved'] },
-  military_charter:{ strong:['legal_command','army_reform','garrison_united','standard_ratified','emergency_term'], normal:['prisoners','lawful'], block:['garrison_divided','officer_revolt','military_crisis_unresolved','charter_crisis_unresolved'] }
+  crown_forge:{ strong:['labor_rights','furnace_oath','strike_compromise','strike_workers_backed','shared_forge','forge_amnesty'], normal:['workers_support_crown','mine_audit'], weak:[], block:['workers_hostile','strike_broken','forge_crisis_unresolved'] },
+  crown_charter:{ strong:['legal_procedure','emergency_term','lawful','charter','royal_arbitration'], normal:['standard_ratified','public_ledger'], weak:[], block:['illegal_purge','crown_delegitimized','charter_crisis_unresolved'] },
+  military_forge:{ strong:['mobilization','supply_compact','workers_defense','garrison_forge','forge_amnesty'], normal:['garrison_united','furnace_oath'], weak:[], block:['workers_hostile','strike_broken','supply_sabotage','forge_crisis_unresolved'] },
+  military_charter:{ strong:['legal_command','army_reform','garrison_united','standard_ratified','emergency_term'], normal:['prisoners','lawful'], weak:[], block:['garrison_divided','officer_revolt','military_crisis_unresolved','charter_crisis_unresolved'] }
 });
 
-function law(id, name, category, advantage, cost) { return deepFreeze({ id, name, category, advantage, cost }); }
+const REASON_COPY = deepFreeze({
+  labor_rights:'Рабочие права уже признаны решениями этого похода.',
+  furnace_oath:'Решения у горна создали основу для совместного управления производством.',
+  strike_compromise:'Компромисс в шахтах дал Короне и мастерам общий политический фундамент.',
+  strike_workers_backed:'Поддержка шахтёров связывает Корону с производственными советами.',
+  shared_forge:'Контроль горнов уже разделён между сторонами.',
+  forge_amnesty:'Трудовой компромисс и амнистия позволяют заключить устойчивый союз.',
+  workers_support_crown:'Рабочие сохранили поддержку Короны.',
+  mine_audit:'Аудит шахт создал почву для договорного контроля производства.',
+  legal_procedure:'Поход закрепил правовую процедуру принятия чрезвычайных решений.',
+  emergency_term:'Чрезвычайные полномочия уже ограничены признанным сроком.',
+  lawful:'Предыдущие решения укрепили законный порядок.',
+  charter:'Хартия получила политическое признание в ходе акта.',
+  royal_arbitration:'Королевский арбитраж признан законной частью нового порядка.',
+  standard_ratified:'Полномочия хранителя знамени закреплены формальной клятвой.',
+  public_ledger:'Открытые книги усилили запрос на подотчётное управление.',
+  mobilization:'Производство и гарнизоны уже связаны общими мобилизационными решениями.',
+  supply_compact:'Снабжение опирается на совместный договор военных и мастеров.',
+  workers_defense:'Защита рабочих стала частью оборонного соглашения.',
+  garrison_forge:'Гарнизон и горны уже действуют как единая система снабжения.',
+  garrison_united:'Гарнизон сохранил единство и способен принять общий мандат.',
+  legal_command:'Командование уже связано признанной правовой процедурой.',
+  army_reform:'Военные решения похода создали основу для ограниченного мандата армии.',
+  prisoners:'Решение о пленных стало прецедентом для военного закона.'
+});
+
+function law(id, name, category, advantage, cost) { return deepFreeze({ id, name, category, advantage, cost, universallyValid:true }); }
 const LAW_POOLS = deepFreeze({
   crown:[
     law('royal_command','Королевское назначение командиров','command','Дешевле одна военная подготовка или разведка в каждом последующем акте.','Гражданские политические услуги чаще требуют дополнительного золота.'),
@@ -106,19 +135,23 @@ function deriveForceStates(narrative) {
     return [id, { id, name:force.name, direction:force.direction, portrait:force.portrait, status:crisis ? 'crisis' : 'normal', demand:crisis ? force.demand : null }];
   })));
 }
+function reasonCopy(needle) { return REASON_COPY[needle] || 'Решения похода создали основание для этого союза.'; }
 function coalitionAnalysis(governmentId, facts, forceStates) {
   const rule = COALITION_RULES[governmentId]; const ids = facts;
-  const block = hasAny(ids, rule.block); const strong = rule.strong.filter((needle) => hasAny(ids,[needle])); const normal = rule.normal.filter((needle) => hasAny(ids,[needle]));
+  const block = hasAny(ids, rule.block);
+  const strong = rule.strong.filter((needle) => hasAny(ids,[needle]));
+  const normal = rule.normal.filter((needle) => hasAny(ids,[needle]));
+  const weak = (rule.weak || []).filter((needle) => hasAny(ids,[needle]));
   const crises = GOVERNMENTS[governmentId].forces.filter((id) => forceStates[id]?.status === 'crisis').length;
   const available = strong.length > 0 && !block;
-  const reasons = [...strong.slice(0,2).map((id)=>`Сильное основание: ${id.replaceAll('_',' ')}`), ...normal.slice(0,1).map((id)=>`Основание: ${id.replaceAll('_',' ')}`)];
-  return { id:governmentId, available, strong:strong.length, normal:normal.length, weak:0, crises, reasons, blocked:block };
+  const reasons = [...strong.slice(0,2), ...normal.slice(0,1)].slice(0,3).map(reasonCopy);
+  return { id:governmentId, available, strong:strong.length, normal:normal.length, weak:weak.length, crises, reasons, blocked:block };
 }
 function availableGovernments(finale) {
   const ids = [...finale.factIds, ...Object.values(finale.cabinetResolutions || {}).map((v)=>v.factId).filter(Boolean)];
   const base = ['crown','military_council','forge_council','marches_charter'].map((id)=>({ ...GOVERNMENTS[id], available:true, reasons:[], variant:finale.forceStates[id]?.status === 'crisis' ? 'crisis' : 'normal', costGold:0, costSupplies:0 }));
   let coalitions = ['crown_forge','crown_charter','military_forge','military_charter'].map((id)=>({ ...GOVERNMENTS[id], ...coalitionAnalysis(id,ids,finale.forceStates) })).filter((entry)=>entry.available);
-  if (coalitions.length > 3) coalitions = coalitions.sort((a,b)=>b.strong-a.strong || b.normal-a.normal || a.crises-b.crises || hash32(`${finale.finaleSeed}:${a.id}`)-hash32(`${finale.finaleSeed}:${b.id}`)).slice(0,3);
+  if (coalitions.length > 3) coalitions = coalitions.sort((a,b)=>b.strong-a.strong || b.normal-a.normal || a.crises-b.crises || b.weak-a.weak || hash32(`${finale.finaleSeed}:${a.id}`)-hash32(`${finale.finaleSeed}:${b.id}`)).slice(0,3);
   return deepFreeze([...base,...coalitions]);
 }
 function materializeLaws(finale, governmentId) {
@@ -128,20 +161,44 @@ function materializeLaws(finale, governmentId) {
     const index = pool.findIndex((entry)=>entry.category === 'labor_production');
     if (index >= 0) pool[index] = law('charter_safe_work_stop','Закрепить право остановки опасных работ в Хартии Маршей','labor_production','Меньше тяжёлых последствий производственных событий.','Экстренные производственные и военные решения требуют большего ресурса.');
   }
-  const ordered = deterministicOrder(pool, finale.finaleSeed, `laws:${governmentId}`); const selected=[]; const categories=new Set();
+  // No additional incompatibility numbers or predicates are authored on 12.8 yet.
+  // Keep the baseline pool intact rather than inventing exclusions.
+  const ordered = deterministicOrder(pool, finale.finaleSeed, `laws:${governmentId}`);
+  const selected=[]; const categories=new Set();
   for (const entry of ordered) { if (categories.has(entry.category)) continue; selected.push(entry); categories.add(entry.category); if (selected.length===3) break; }
+  if (selected.length !== 3 || new Set(selected.map((entry)=>entry.category)).size !== 3) throw new Error('B14 must materialize exactly three laws from distinct categories');
+  if (selected.filter((entry)=>entry.universallyValid !== false).length < 2) throw new Error('B14 must retain at least two universally valid laws');
   return deepFreeze(selected);
+}
+function regionalLineCopy(lineId, status) {
+  const names = lineId === 'iron_and_bread' ? 'Шахты, горны и трудовой договор' : 'Гарнизоны, знамя и воинский закон';
+  const endings = {
+    favorable:'завершились устойчивым соглашением, которое признали участники конфликта.',
+    crisis:'завершились после тяжёлого кризиса; новый порядок сохраняет следы раскола.',
+    standalone:'получили самостоятельное решение в ходе похода и закреплены финальным устройством региона.',
+    incomplete:'не были доведены до отдельной развязки и теперь закрыты итоговым политическим решением.',
+    unstarted:'не стали отдельной линией этого похода; их судьбу определило финальное устройство Маршей.'
+  };
+  return `${names} ${endings[status] || endings.incomplete}`;
+}
+function notableOutcomeCopy(id) {
+  if (id.includes('prisoners_released')) return 'Пленные перевала были освобождены, и решение стало частью памяти Маршей.';
+  if (id.includes('prisoners_recruited')) return 'Часть пленных принесла новую клятву и вошла в войско.';
+  if (id.includes('prisoners_exchanged')) return 'Судьбу пленных решил обмен, закрепив новый военный прецедент.';
+  if (id.includes('amnesty')) return 'Амнистия стала одним из условий послевоенного примирения.';
+  if (id.includes('hero.')) return 'Судьба одного из героев заметно повлияла на итог Железных Маршей.';
+  return null;
 }
 function buildEpilogue(finale) {
   const government = GOVERNMENTS[finale.governmentId]; const selectedLaw = finale.lawOffers.find((entry)=>entry.id===finale.legacyLawId) || null;
   const cards=[
     { id:'government', title:'Новая власть', body:`${government?.name || 'Новая власть'}. ${government?.description || ''}` },
     { id:'law', title:'Принятый закон', body:selectedLaw ? `${selectedLaw.name}. Преимущество: ${selectedLaw.advantage} Цена: ${selectedLaw.cost}` : 'Основной закон ещё не выбран.' },
-    { id:'iron_and_bread', title:'Железо и хлеб', body:`Линия производства и социальных обязательств завершена со статусом: ${finale.regionalLines?.iron_and_bread || 'unstarted'}.` },
-    { id:'honor_of_marches', title:'Честь Маршей', body:`Линия армии, знамен и гарнизонов завершена со статусом: ${finale.regionalLines?.honor_of_the_marches || 'unstarted'}.` }
+    { id:'iron_and_bread', title:'Железо и хлеб', body:regionalLineCopy('iron_and_bread', finale.regionalLines?.iron_and_bread || 'unstarted') },
+    { id:'honor_of_marches', title:'Честь Маршей', body:regionalLineCopy('honor_of_marches', finale.regionalLines?.honor_of_the_marches || 'unstarted') }
   ];
-  const notable = finale.factIds.filter((id)=>id.includes('hero.') || id.includes('fate.') || id.includes('prisoner') || id.includes('amnesty')).slice(0,3);
-  if (notable.length) cards.push({ id:'people', title:'Люди и последствия', body:notable.join(' · ') });
+  const notable = finale.factIds.map(notableOutcomeCopy).filter(Boolean).filter((value,index,array)=>array.indexOf(value)===index).slice(0,3);
+  if (notable.length) cards.push({ id:'people', title:'Люди и последствия', body:notable.join(' ') });
   return deepFreeze(cards);
 }
 function createPoliticalFinale(options={}) {
@@ -155,7 +212,7 @@ function cabinetChoices(finale, resources={}) {
   if (!forceId || !demand) return deepFreeze([{ id:'cabinet_confirm', title:'Утвердить чрезвычайный кабинет', consequence:'Распределить временные полномочия между четырьмя силами и перейти к выбору постоянной власти.', available:true, costGold:0, costSupplies:0, supporters:FORCE_IDS }]);
   const affordable=Number(resources.gold||0)>=demand.costGold && Number(resources.supplies||0)>=demand.costSupplies;
   return deepFreeze([
-    { id:`cabinet_accept:${forceId}`, title:demand.title, consequence:`${demand.description} Цена: ${demand.costGold ? `${demand.costGold} золота` : demand.costSupplies ? `${demand.costSupplies} припасов` : 'без ресурсной цены'}.`, available:affordable, costGold:demand.costGold, costSupplies:demand.costSupplies, supporters:[forceId], risk:demand.risk },
+    { id:`cabinet_accept:${forceId}`, title:demand.title, consequence:`${demand.description} Точная числовая ресурсная цена пока не авторизована; дополнительных ресурсов не списывается.`, available:affordable, costGold:demand.costGold, costSupplies:demand.costSupplies, supporters:[forceId], risk:demand.risk },
     { id:`cabinet_refuse:${forceId}`, title:`Отказать: ${FORCE_DEFINITIONS[forceId].name}`, consequence:`Не выполнять требование. ${demand.risk}`, available:true, costGold:0, costSupplies:0, supporters:[] }
   ]);
 }
@@ -176,12 +233,15 @@ function chooseLaw(finaleInput, lawId) {
   const finale=clone(finaleInput); if(finale.stage!=='law') throw new Error('law stage is not active'); const selected=(finale.lawOffers||[]).find((entry)=>entry.id===lawId); if(!selected) throw new Error('law is unavailable'); finale.legacyLawId=lawId; finale.support={ regionId:'region.iron_marches', charges:1, maximum:2, directions:freezeArray((GOVERNMENTS[finale.governmentId]?.forces||[]).map((id)=>FORCE_DEFINITIONS[id].direction)) }; finale.stage='epilogue'; finale.epilogueCards=buildEpilogue(finale); return deepFreeze(finale);
 }
 function finishEpilogue(finaleInput) { const finale=clone(finaleInput); if(finale.stage!=='epilogue') throw new Error('epilogue is not active'); finale.stage='act_reward'; return deepFreeze(finale); }
-function finishActReward(finaleInput, rewardId) { const finale=clone(finaleInput); if(finale.stage!=='act_reward') throw new Error('act reward is not active'); finale.actRewardClaimed=true; finale.actRewardId=String(rewardId||''); finale.stage='interact'; return deepFreeze(finale); }
+function finishActReward(finaleInput, rewardId) { const finale=clone(finaleInput); if(finale.stage!=='act_reward') throw new Error('act reward is not active'); if (!rewardId) throw new Error('act reward id is required'); finale.actRewardClaimed=true; finale.actRewardId=String(rewardId); finale.stage='interact'; return deepFreeze(finale); }
 function completeFinale(finaleInput) { const finale=clone(finaleInput); if(finale.stage!=='interact') throw new Error('inter-act state is not active'); finale.stage='complete'; finale.completed=true; return deepFreeze(finale); }
+function playerGovernmentChoice(choice) {
+  return deepFreeze({ id:choice.id, name:choice.name, subtitle:choice.subtitle || null, kind:choice.kind, description:choice.description || '', warning:choice.warning || '', reasons:freezeArray(choice.reasons || []), available:choice.available !== false, variant:choice.variant || 'normal', costGold:Number(choice.costGold || 0), costSupplies:Number(choice.costSupplies || 0) });
+}
 function finaleSurface(finale, resources={}) {
   if(!finale) return null;
   if(finale.stage==='cabinet') return deepFreeze({ stage:'cabinet', title:'Чрезвычайный кабинет', summary:'После падения Железного Регента четыре силы должны превратить военный приказ во временный законный порядок.', forces:Object.values(finale.forceStates), choices:cabinetChoices(finale,resources) });
-  if(finale.stage==='government') return deepFreeze({ stage:'government', title:'Форма власти', summary:'Выберите постоянную модель власти. Четыре базовых пути всегда доступны; коалиции зависят от истории прохождения.', choices:finale.governmentOffers });
+  if(finale.stage==='government') return deepFreeze({ stage:'government', title:'Форма власти', summary:'Выберите постоянную модель власти. Четыре базовых пути всегда доступны; коалиции зависят от истории прохождения.', choices:finale.governmentOffers.map(playerGovernmentChoice) });
   if(finale.stage==='law') return deepFreeze({ stage:'law', title:'Фундаментальный закон', summary:'Выберите один из трёх законов разных категорий. Он станет единственным механическим наследием Железных Маршей.', choices:finale.lawOffers });
   if(finale.stage==='epilogue') return deepFreeze({ stage:'epilogue', title:'Эпилог Железных Маршей', summary:'Регион запоминает новую власть, закон и последствия ваших решений.', cards:finale.epilogueCards, choices:[{ id:'epilogue_continue', title:'Продолжить', consequence:'Перейти к крупной награде за завершение акта.', available:true }] });
   if(finale.stage==='act_reward') return deepFreeze({ stage:'act_reward', title:'Награда за завершение акта', summary:'Выберите одну крупную награду. Политический режим не определяет состав предложений.', choices:[] });
@@ -189,4 +249,4 @@ function finaleSurface(finale, resources={}) {
   return deepFreeze({ stage:finale.stage, title:'Политический финал', summary:'Финал завершён.', choices:[] });
 }
 
-module.exports={ B14_FORMAT,B14_SCHEMA_VERSION,FORCE_IDS,GOVERNMENT_IDS,FORCE_DEFINITIONS,GOVERNMENTS,LAW_POOLS,deriveForceStates,availableGovernments,materializeLaws,buildEpilogue,createPoliticalFinale,currentCabinetDemand,cabinetChoices,resolveCabinet,chooseGovernment,chooseLaw,finishEpilogue,finishActReward,completeFinale,finaleSurface };
+module.exports={ B14_FORMAT,B14_SCHEMA_VERSION,FORCE_IDS,GOVERNMENT_IDS,FORCE_DEFINITIONS,GOVERNMENTS,COALITION_RULES,LAW_POOLS,deriveForceStates,coalitionAnalysis,availableGovernments,materializeLaws,buildEpilogue,createPoliticalFinale,currentCabinetDemand,cabinetChoices,resolveCabinet,chooseGovernment,chooseLaw,finishEpilogue,finishActReward,completeFinale,finaleSurface };
