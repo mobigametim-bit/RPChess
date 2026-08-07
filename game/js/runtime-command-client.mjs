@@ -61,7 +61,7 @@ function normalizeClientCommand(command) {
     const targetNodeId = String(command.targetNodeId || command.payload?.targetNodeId || '');
     if (!targetNodeId) throw new Error('Travel requires targetNodeId');
     const forcedMarchChoice = command.forcedMarchChoice || command.payload?.forcedMarchChoice || null;
-    return Object.freeze({ type, targetNodeId, forcedMarchChoice });
+    return Object.freeze(forcedMarchChoice ? { type, targetNodeId, forcedMarchChoice } : { type, targetNodeId });
   }
   if (type === 'ScoutNode') {
     const nodeId = String(command.nodeId || command.payload?.nodeId || '');
