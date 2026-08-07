@@ -54,6 +54,7 @@ jobs:
             if curl --fail --silent http://127.0.0.1:4173/index.html >/dev/null; then break; fi
             sleep 1
           done
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/battle-ui-input-regression.cjs 2>&1 | tee /tmp/rpchess-battle-input.log
           RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-acceptance.cjs 2>&1 | tee /tmp/rpchess-acceptance.log
       - name: Upload Chromium acceptance trace
         if: always()
@@ -62,6 +63,7 @@ jobs:
           name: iron-marches-chromium-trace
           path: |
             /tmp/rpchess-acceptance.log
+            /tmp/rpchess-battle-input.log
             /tmp/rpchess-http.log
           if-no-files-found: warn
           retention-days: 3
