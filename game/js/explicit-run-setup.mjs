@@ -52,6 +52,8 @@ function polishSelection(root, offerIds) {
   if (kingHeading) kingHeading.textContent = '1. Выберите короля';
   const doctrineHeading = root.querySelector('#rprs-doctrines');
   if (doctrineHeading) doctrineHeading.textContent = '2. Выберите доктрину';
+  for (const button of root.querySelectorAll('[data-select-king]')) button.dataset.kingId = button.dataset.selectKing;
+  for (const button of root.querySelectorAll('[data-select-doctrine]')) button.dataset.doctrineId = button.dataset.selectDoctrine;
   const launch = root.querySelector('[data-lock-selection]');
   if (launch) launch.textContent = 'ПОДТВЕРДИТЬ И ПЕРЕЙТИ К СТАРТОВОМУ РОСТЕРУ';
 }
