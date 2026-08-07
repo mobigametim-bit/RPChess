@@ -105,11 +105,11 @@ function selectEventForSlot(libraryInput, stateInput, slot, excludedIds = new Se
   return index < 0 ? null : candidates[index].event.id;
 }
 
-function reserveProductionEvents(libraryInput, stateInput, slots = []) {
+function reserveProductionEvents(libraryInput, stateInput, slots = [], options = {}) {
   const library = assertLibrary(libraryInput);
   let state = assertSelectorState(stateInput, library);
   if (!Array.isArray(slots)) throw new Error('event slots must be an array');
-  const batchIds = new Set();
+  const batchIds = new Set(options.excludedEventIds || []);
   const assignments = [...state.assignments];
   const results = [];
   for (const slot of slots) {
