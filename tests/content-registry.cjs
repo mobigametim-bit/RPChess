@@ -136,9 +136,14 @@ test('encounter board shapes are validated against the modular board planner', (
   assert.throws(() => new ContentRegistry({ boardThemeManifest }).addPack(invalid), /invalid square|outside board/);
 });
 
-test('events require three or four authored choices and unique choice IDs', () => {
+test('events expose two to four authored choices and unique choice IDs', () => {
+  const twoChoices = samplePack();
+  twoChoices.content.events[0].choices = twoChoices.content.events[0].choices.slice(0, 2);
+  const registry = new ContentRegistry({ boardThemeManifest }).addPack(twoChoices).finalize({ localization: completeLocalization() });
+  assert.strictEqual(registry.get('event', 'event.silent_foundry').choices.length, 2);
+
   const tooShort = samplePack();
-  tooShort.content.events[0].choices = tooShort.content.events[0].choices.slice(0, 2);
+  tooShort.content.events[0].choices = tooShort.content.events[0].choices.slice(0, 1);
   assert.throws(() => new ContentRegistry({ boardThemeManifest }).addPack(tooShort), /3 or 4 choices/);
 
   const duplicateChoice = samplePack();

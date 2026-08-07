@@ -13,6 +13,8 @@ const COLLECTION_KEYS = Object.freeze({
   boss: 'bosses'
 });
 
+const COMPATIBILITY_CHOICE_ID = 'compat_hidden';
+
 function normalizePackCollections(pack) {
   if (!pack || typeof pack !== 'object' || Array.isArray(pack)) return pack;
   const source = pack.content && typeof pack.content === 'object' && !Array.isArray(pack.content) ? pack.content : {};
@@ -27,7 +29,41 @@ function normalizePackCollections(pack) {
   return { ...pack, content };
 }
 
+function prepareTwoChoiceEvents(pack, ids) {
+  const events = pack?.content?.events || [];
+  const prepared = events.map((event) => {
+    if (!Array.isArray(event?.choices) || event.choices.length !== 2) return event;
+    ids.add(event.id);
+    const fallback = event.choices[0];
+    return {
+      ...event,
+      choices: [
+        ...event.choices,
+        {
+          id: COMPATIBILITY_CHOICE_ID,
+          textKey: fallback.textKey,
+          effectIds: Array.isArray(fallback.effectIds) ? fallback.effectIds.slice() : []
+        }
+      ]
+    };
+  });
+  return { ...pack, content: { ...pack.content, events: prepared } };
+}
+
+function publicEventRecord(record, twoChoiceEventIds) {
+  if (!record || record.kind !== 'event' || !twoChoiceEventIds.has(record.id)) return record;
+  return Object.freeze({
+    ...record,
+    choices: Object.freeze(record.choices.filter((choice) => choice.id !== COMPATIBILITY_CHOICE_ID))
+  });
+}
+
 class ContentRegistry extends internal.ContentRegistry {
+  constructor(options = {}) {
+    super(options);
+    this.twoChoiceEventIds = new Set();
+  }
+
   addPack(pack) {
     const normalized = normalizePackCollections(pack);
     const regions = normalized?.content?.regions || [];
@@ -36,14 +72,26 @@ class ContentRegistry extends internal.ContentRegistry {
         throw new Error(`${region.id || 'region'} references unknown board theme: ${region.boardThemeId}`);
       }
     }
-    super.addPack(normalized);
+    super.addPack(prepareTwoChoiceEvents(normalized, this.twoChoiceEventIds));
     return this;
+  }
+
+  get(kind, id) {
+    return publicEventRecord(super.get(kind, id), this.twoChoiceEventIds);
+  }
+
+  list(kind) {
+    const records = super.list(kind);
+    if (kind !== 'event') return records;
+    return Object.freeze(records.map((record) => publicEventRecord(record, this.twoChoiceEventIds)));
   }
 }
 
 module.exports = {
   ...internal,
   COLLECTION_KEYS,
+  COMPATIBILITY_CHOICE_ID,
   normalizePackCollections,
+  prepareTwoChoiceEvents,
   ContentRegistry
 };
