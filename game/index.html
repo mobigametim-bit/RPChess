@@ -15,8 +15,17 @@
   <link rel="stylesheet" href="css/b10-b13-production-ui.css">
   <link rel="stylesheet" href="css/chronicle-profile-cards.css">
   <link rel="stylesheet" href="css/commander-selection-approved.css">
-  <link rel="stylesheet" href="css/army-foundation-approved.css">
-  <link rel="stylesheet" href="css/army-foundation-test-refinements.css">
+  <link rel="stylesheet" href="css/ui-system-v2.css">
+  <link rel="stylesheet" href="css/ui-system-v2-shell.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "./js/vertical-slice-presenter.mjs": "./js/vertical-slice-presenter-v2.mjs",
+      "./js/register-02-codex.mjs": "./js/register-02-codex-v2.mjs",
+      "./js/register-03-relic-codex.mjs": "./js/register-03-relic-codex-v2.mjs"
+    }
+  }
+  </script>
 </head>
 <body>
   <div id="app" aria-live="polite">
@@ -27,11 +36,8 @@
   <script src="js/generated/iron-marches-runtime.bundle.js"></script>
   <script type="module" src="js/b10-b13-production-ui.mjs"></script>
   <script type="module" src="js/vertical-slice-app.mjs"></script>
-  <script type="module" src="js/register-02-runtime-enhancer.mjs"></script>
-  <script type="module" src="js/register-03-relic-codex.mjs"></script>
   <script type="module" src="js/iron-marches-mechanics-readiness-enhancer.mjs"></script>
   <script type="module" src="js/chronicle-profile-cards.mjs"></script>
-  <script type="module" src="js/commander-selection-approved.mjs"></script>
-  <script type="module" src="js/army-foundation-approved.mjs"></script>
+  <script type="module" src="js/ui-system-v2.mjs"></script>
 </body>
 </html>
