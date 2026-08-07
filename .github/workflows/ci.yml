@@ -37,6 +37,7 @@ jobs:
       - name: Verify distribution entry
         run: test -f dist/index.html && test -f dist/SFX/win_fanfare.mp3
       - name: Run real Chromium Iron Marches acceptance
+        timeout-minutes: 8
         shell: bash
         run: |
           set -euo pipefail
