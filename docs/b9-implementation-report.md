@@ -2,7 +2,7 @@
 
 Дата: 7 августа 2026.
 
-Статус: реализация завершена на уровне кода; полный CI, production build и browser acceptance ещё не подтверждены.
+Статус: реализация завершена, полный репозиторный CI и production browser build подтверждены. Отдельный ручной desktop/mobile smoke-check остаётся acceptance-проверкой интерфейса.
 
 ## Реализованные контракты
 
@@ -86,7 +86,9 @@
 - Показываются история, текущий уровень, соседние варианты и удалённые ориентиры элиты/босса.
 - Существующий browser runtime получает adapter без изменения старых сохранений и replay.
 
-## Проверки, выполненные в изолированном локальном окружении
+## Проверки
+
+Изолированные и полные проверки включают:
 
 - Детерминированность topology.
 - Все шесть шаблонов и обе ориентации.
@@ -103,32 +105,44 @@
 - Rare reopen с сохранённым содержимым.
 - Запрет соседних точных повторов.
 - Многофакторный selector и симметричные несовместимости.
+- Browser profile reload с отложенной materialization.
 
-Эти результаты не заменяют полный `npm test`: изолированное окружение содержит только подсистему B9.
+Полный `RPChess CI #391` для B9 успешно выполнил:
 
-## Не подтверждено
-
-- `npm ci --no-audit --no-fund` на полном checkout.
-- `npm run verify`.
-- `npm run content:validate`.
-- Полный `npm test`.
-- `npm run build`.
-- Cloudflare preview последнего commit.
-- Desktop browser acceptance.
-- Mobile browser acceptance.
+- `npm ci --no-audit --no-fund`;
+- `npm run verify`;
+- `npm run content:validate`;
+- полный `npm test`;
+- `npm run build`;
+- проверку production distribution entry.
 
 ## Техническое решение без нового игрового правила
 
 Notion фиксирует «временный штраф следующего боя», но не задаёт его числовую формулу. B9 хранит типизированный одноразовый effect contract, показывает предупреждение в briefing и гарантирует одноразовое потребление. Числовая тактическая интерпретация не была придумана самовольно; её должен определить утверждённый общий battle-effect contract Roadmap либо отдельное продуктовое решение.
 
-## Интеграция PR №58
+## Интеграция production-событий
 
-После слияния B9 PR №58 должен перейти с собственного хранения event assignment на:
+PR №58 после слияния B9 был перебазирован на актуальный `main` и переведён на:
 
 - `materializedContentByNode`;
 - `contentSeed` и `contentVersion`;
 - selector callbacks `selectEvent`, `onBranchesClosed`, `onBranchReopened`, `onNodeCompleted`;
 - сохраняемый `selectorState`;
-- первоначальную event materialization при reopening.
+- первоначальную event materialization при rare reopening.
 
-До этого PR №58 остаётся Draft и не сливается.
+Добавлен отдельный `b9-production-events-integration.cjs`, который проверяет соседние reservations без дублей, event snapshots, reload, release закрытой ветви, exact restore при reopening и completion/exclusion.
+
+Полный `RPChess CI #393` прошёл успешно. PR №58 слит squash-коммитом `900ee0bd77bb34b64cb5eb1548bebf9ee7bc307d`.
+
+## GitHub
+
+- B9: PR №59, squash merge `d0d2d86df45d47d45b105fc7bab28921760757fa`.
+- Production events + B9 integration: PR №58, squash merge `900ee0bd77bb34b64cb5eb1548bebf9ee7bc307d`.
+
+## Остаточная ручная acceptance-проверка
+
+- Cloudflare preview последнего объединённого дерева отдельно не создавался.
+- Desktop browser smoke-check не выполнялся вручную.
+- Mobile browser smoke-check не выполнялся вручную.
+
+Production browser build и runtime contracts текущего дерева подтверждены полным CI; ручная acceptance-проверка остаётся отдельной визуальной проверкой интерфейса.
