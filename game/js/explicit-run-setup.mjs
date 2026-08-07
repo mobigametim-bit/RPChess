@@ -15,19 +15,11 @@ function readProgress(storage) {
 function setTextIfChanged(node, value) {
   if (node && node.textContent !== value) node.textContent = value;
 }
-function fnv1a(value) {
-  let hash = 0x811c9dc5;
-  for (const char of String(value)) { hash ^= char.charCodeAt(0); hash = Math.imul(hash, 0x01000193) >>> 0; }
-  return hash >>> 0;
-}
-function deterministicHeroOfferIds(seed, heroes, preferredHeroId) {
-  const available = (heroes || []).map((entry)=>entry.id).filter(Boolean);
-  const preferred = available.includes(preferredHeroId) ? [preferredHeroId] : [];
-  return [...preferred, ...available.filter((id)=>id!==preferredHeroId).sort((a,b)=>fnv1a(`${seed}:${a}:hero-draft`)-fnv1a(`${seed}:${b}:hero-draft`) || a.localeCompare(b))].slice(0,3);
-}
 function launchOptions() {
   const params = new URLSearchParams(globalThis.location?.search || '');
+  const requestedSeed = Number(params.get('seed'));
   return {
+    seed:Number.isFinite(requestedSeed) && requestedSeed > 0 ? Math.floor(requestedSeed) : 9042,
     aiProfile:['apprentice','tactician','warlord'].includes(params.get('ai')) ? params.get('ai') : 'apprentice',
     autoSave:params.get('autosave') !== '0',
     language:params.get('lang') === 'en' ? 'en' : 'ru'
@@ -38,19 +30,19 @@ function decorateCommanderScreen(root = document) {
   if (!launch) return;
   setTextIfChanged(launch, 'К ВЫБОРУ КОРОЛЯ И ДОКТРИНЫ');
   const heading = root.querySelector('.rpa-screen-header p');
-  setTextIfChanged(heading, 'Командир задаёт рекомендованный стиль похода. Короля и доктрину вы подтвердите отдельно, а три героя для стартового драфта материализуются из seed.');
+  setTextIfChanged(heading, 'Командир задаёт рекомендованный стиль похода. Короля и доктрину вы подтвердите отдельно, а героя выберете из трёх вариантов стартового драфта.');
   const loadoutLabels = [...root.querySelectorAll('.rpa-loadout small')];
   setTextIfChanged(loadoutLabels[0], 'Рекомендованный король');
   setTextIfChanged(loadoutLabels[1], 'Рекомендованная доктрина');
 }
-function polishSelection(root, offerIds) {
+function polishSelection(root) {
   const main = root.querySelector('.rprs');
   if (!main) return;
   main.classList.add('rprs--production-closure');
   const heroes = root.querySelector('section[aria-labelledby="rprs-heroes"]');
   if (heroes) heroes.hidden = true;
   const counter = root.querySelector('.rprs__counter');
-  setTextIfChanged(counter, `Герои для драфта: ${offerIds.length}`);
+  setTextIfChanged(counter, 'Следом: драфт из 3 героев');
   const kingHeading = root.querySelector('#rprs-kings');
   setTextIfChanged(kingHeading, '1. Выберите короля');
   const doctrineHeading = root.querySelector('#rprs-doctrines');
@@ -67,6 +59,8 @@ function polishSelection(root, offerIds) {
 function mountProductionRuntime(root, selectionHost) {
   const runtimeHost = selectionHost.getRuntimeHost();
   if (!runtimeHost) throw new Error('explicit run setup did not produce a runtime host');
+  const heroOffers = runtimeHost.getState()?.stageB?.draft?.heroOffers || [];
+  if (heroOffers.length !== 3) throw new Error('fresh Iron Marches run must materialize exactly three Stage B hero offers');
   root.replaceChildren();
   const runtimeClient = new RuntimeCommandClient({ transport:createLocalRuntimeTransport(runtimeHost), snapshot:runtimeHost.getSnapshot() });
   const presenter = new VerticalSlicePresenter({ root, client:runtimeClient });
@@ -81,27 +75,28 @@ async function beginExplicitSetup(button) {
   const progress = readProgress(storage);
   const selectedCommanderId = root.querySelector('[data-commander-id][aria-pressed="true"]')?.dataset.commanderId || progress.lastCommanderId || 'warlord';
   const commander = commanderById(selectedCommanderId);
+  if (!commander) throw new Error('selected commander is unavailable');
   const seedInput = Number(root.querySelector('[data-world-seed]')?.value);
-  const seed = Number.isFinite(seedInput) && seedInput > 0 ? Math.floor(seedInput) : 9042;
-  const profileId = button.dataset.profileId || progress.lastProfileId || 'profile-1';
   const options = launchOptions();
+  const seed = Number.isFinite(seedInput) && seedInput > 0 ? Math.floor(seedInput) : options.seed;
+  const profileId = button.dataset.profileId || progress.lastProfileId || 'profile-1';
   const availableHeroIds = COMMANDERS.map((entry)=>entry.heroId);
   const selectionHost = runtimeApi.createBrowserRunSelectionHost({
     seed, profileId, forceNew:true, stageB:true, storage, deviceId:'rpchess-browser-v2',
     language:options.language, aiProfile:options.aiProfile, autoSave:options.autoSave,
-    heroLimit:3, minimumHeroes:3, availableHeroIds
+    heroLimit:1, minimumHeroes:1, availableHeroIds
   });
-  const initialHeroes = selectionHost.getSnapshot().selection.heroes;
-  const offerIds = deterministicHeroOfferIds(seed, initialHeroes, commander.heroId);
-  if (offerIds.length !== 3) throw new Error('fresh Iron Marches run must materialize exactly three hero offers');
-  for (const heroId of offerIds) await selectionHost.dispatch({ type:'ToggleHero', heroId });
+  // Run selection currently requires one preferred hero to bootstrap the production army.
+  // That preference is not the player-facing hero choice: Stage B materializes three
+  // deterministic offers from the full catalog and the player picks one there.
+  await selectionHost.dispatch({ type:'ToggleHero', heroId:commander.heroId });
 
   const client = new RunSelectionClient({ transport:createRunSelectionTransport(selectionHost), snapshot:selectionHost.getSnapshot() });
   const selectionPresenter = new RunSelectionPresenter({ root, client, onReady:()=>mountProductionRuntime(root, selectionHost) });
-  client.addEventListener('snapshot', ()=>queueMicrotask(()=>polishSelection(root, offerIds)));
+  client.addEventListener('snapshot', ()=>queueMicrotask(()=>polishSelection(root)));
   selectionPresenter.mount();
-  polishSelection(root, offerIds);
-  globalThis.RPChessRunSetup = Object.freeze({ selectionHost, client, presenter:selectionPresenter, heroOfferIds:Object.freeze(offerIds.slice()), profileId, seed });
+  polishSelection(root);
+  globalThis.RPChessRunSetup = Object.freeze({ selectionHost, client, presenter:selectionPresenter, preferredHeroId:commander.heroId, profileId, seed });
 }
 
 function installExplicitRunSetup() {
@@ -124,4 +119,4 @@ function installExplicitRunSetup() {
 
 if (typeof document !== 'undefined') installExplicitRunSetup();
 
-export { fnv1a, deterministicHeroOfferIds, decorateCommanderScreen, polishSelection, beginExplicitSetup, installExplicitRunSetup };
+export { decorateCommanderScreen, polishSelection, beginExplicitSetup, installExplicitRunSetup };
