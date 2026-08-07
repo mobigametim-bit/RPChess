@@ -46,6 +46,7 @@ function stateFor(seed) {
 
 const emptySelector = createProductionEventSelectorState(library, { seed: 7 });
 assert.strictEqual(emptySelector.format, 'rpchess-production-event-selector');
+assert.strictEqual(emptySelector.schemaVersion, 2);
 
 let siblingFixture = null;
 let reopenFixture = null;
@@ -85,7 +86,7 @@ assert.ok(reopenFixture, 'a deterministic seed must expose an authored reopenabl
 const originalContent = reopenFixture.state.materializedContentByNode[reopenFixture.reopenableEvent.to];
 let branched = travelTo(reopenFixture.state, reopenFixture.alternative.to, callbacks);
 assert.ok(branched.closedNodeIds.includes(reopenFixture.reopenableEvent.to));
-assert.strictEqual(selectorAssignment(branched.selectorState, reopenFixture.reopenableEvent.to).status, 'released');
+assert.strictEqual(selectorAssignment(branched.selectorState, reopenFixture.reopenableEvent.to).status, 'available');
 branched = reopenBranch(branched, reopenFixture.reopenableEvent.to, callbacks);
 assert.strictEqual(selectorAssignment(branched.selectorState, reopenFixture.reopenableEvent.to).status, 'reserved');
 assert.deepStrictEqual(branched.materializedContentByNode[reopenFixture.reopenableEvent.to], originalContent, 'rare reopening must restore the exact original event materialization');
@@ -98,4 +99,4 @@ completion = completeNode(completion, completedEventNodeId, callbacks);
 assert.strictEqual(selectorAssignment(completion.selectorState, completedEventNodeId).status, 'completed');
 assert.ok(completion.selectorState.completedEventIds.includes(completedEventId));
 
-console.log(`B9 production event integration: sibling reservations, snapshots, reload, branch release/reopen and completion passed (seeds ${siblingFixture.seed}/${reopenFixture.seed}).`);
+console.log(`B9 production event integration: sibling reservations, snapshots, reload, branch available/reopen and completion passed (seeds ${siblingFixture.seed}/${reopenFixture.seed}).`);

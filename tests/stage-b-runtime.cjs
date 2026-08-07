@@ -41,7 +41,8 @@ async function launchStageB(storage) {
   assert.strictEqual(typeof snapshot.campaign.isMirrored, 'boolean');
   assert.ok(runtime.getState().campaign.graph.nodes.length >= 18 && runtime.getState().campaign.graph.nodes.length <= 24);
   assert.ok(snapshot.stageB.roster.length >= 6 && snapshot.stageB.roster.length <= 8);
-  assert.strictEqual(snapshot.resources.supplies, 20);
+  assert.strictEqual(snapshot.resources.supplies, 10);
+  assert.strictEqual(snapshot.resources.gold, 80);
   assert.strictEqual(snapshot.campaign.nodes.some((node) => node.visibility === 'hidden'), false);
   assert.strictEqual(snapshot.campaign.nodes.filter((node) => node.visibility !== 'landmark').every((node) => node.layer <= 1), true);
   assert.strictEqual(snapshot.campaign.nodes.filter((node) => node.visibility === 'landmark').every((node) => ['elite', 'boss'].includes(node.type)), true);
@@ -80,5 +81,5 @@ async function launchStageB(storage) {
   assert.strictEqual(resumedSelection.getSnapshot().status, 'ready');
   assert.strictEqual(resumedSelection.getRuntimeHost().resumed, true);
   assert.deepStrictEqual(resumedSelection.getRuntimeHost().getSnapshot(), snapshot);
-  console.log('Stage B runtime: B9 map visibility, draft, scouting, briefing, deployment and browser resume passed.');
+  console.log('Stage B runtime: B10 start economy, B9 map visibility, scouting, briefing, deployment and browser resume passed.');
 })().catch((error) => { console.error(error.stack || error); process.exitCode = 1; });

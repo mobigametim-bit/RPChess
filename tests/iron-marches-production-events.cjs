@@ -24,7 +24,8 @@ const {
   reserveProductionEvents,
   releaseProductionEventReservations,
   reopenProductionEventReservation,
-  completeProductionEventReservation
+  completeProductionEventReservation,
+  canonicalChainId
 } = require('../src/campaign/production-event-selector.cjs');
 
 const projectRoot = path.resolve(__dirname, '..');
@@ -74,6 +75,7 @@ assert.strictEqual(browserBundle.sourceRegistry.list('event').length, 12);
 assert.strictEqual(browserBundle.summary.event, 7);
 
 const selectorStart = createProductionEventSelectorState(library, { seed: 8123 });
+assert.strictEqual(selectorStart.schemaVersion, 2);
 const reservedBatch = reserveProductionEvents(library, selectorStart, [
   { nodeId: 'l2_n1', phase: 'early' },
   { nodeId: 'l2_n2', phase: 'early' }
@@ -82,11 +84,20 @@ assert.strictEqual(reservedBatch.assignments.length, 2);
 assert.notStrictEqual(reservedBatch.assignments[0].eventId, reservedBatch.assignments[1].eventId);
 assert.strictEqual(reservedBatch.state.assignments.every((entry) => entry.status === 'reserved'), true);
 const released = releaseProductionEventReservations(library, reservedBatch.state, ['l2_n2']);
-assert.strictEqual(released.assignments.find((entry) => entry.nodeId === 'l2_n2').status, 'released');
+assert.strictEqual(released.assignments.find((entry) => entry.nodeId === 'l2_n2').status, 'available');
 const reopened = reopenProductionEventReservation(library, released, 'l2_n2');
 assert.strictEqual(reopened.assignments.find((entry) => entry.nodeId === 'l2_n2').status, 'reserved');
 const completedFirst = completeProductionEventReservation(library, reopened, 'l2_n1');
 assert.strictEqual(completedFirst.completedEventIds.includes(reservedBatch.assignments[0].eventId), true);
+
+const legacySelector = createProductionEventSelectorState(library, {
+  seed: 91,
+  assignments: [{ nodeId: 'legacy', eventId: 'event.empty_armory', phase: 'early', status: 'released' }],
+  activeChainIds: ['chain.iron_marches.honor']
+});
+assert.strictEqual(legacySelector.assignments[0].status, 'available');
+assert.strictEqual(legacySelector.activeChainIds[0], 'chain.iron_marches.honor_of_the_marches');
+assert.strictEqual(canonicalChainId('chain.iron_marches.honor'), 'chain.iron_marches.honor_of_the_marches');
 
 const strikeReserved = createProductionEventSelectorState(library, {
   seed: 44,
@@ -227,4 +238,4 @@ const resolvedCompatibility = bundle.eventChoiceResolver({
 assert.strictEqual(Number.isInteger(resolvedCompatibility.resourceDelta.supplies), true);
 assert.strictEqual(resolvedCompatibility.chronicleKeys.length > 0, true);
 
-console.log('Iron Marches production events: policy, seven authored events, weighted selector, chains, deterministic checks, sessions and combat hooks passed.');
+console.log('Iron Marches production events: policy, seven authored events, canonical reservation lifecycle, weighted selector, chains, deterministic checks, sessions and combat hooks passed.');
