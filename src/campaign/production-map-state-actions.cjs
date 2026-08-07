@@ -40,8 +40,6 @@ function travelTo(state, targetNodeId, options = {}) {
     forcedMarch = { consecutiveCount: state.forcedMarch.consecutiveCount + 1, totalCount: state.forcedMarch.totalCount + 1, lastChoice: choice };
   }
   const routeRecordsBeforeTravel = routeRecords(state);
-  // A reopened route is a one-node detour. Entering it must not close the
-  // forward routes of the main campaign position from which the detour opened.
   const siblingRecords = route.rare ? [] : routeRecordsBeforeTravel.filter(({ node }) => node.id !== targetNodeId);
   const siblings = siblingRecords.map(({ node }) => node.id);
   const closedNodeIds = [...new Set([...state.closedNodeIds, ...siblings])].sort();
@@ -104,21 +102,22 @@ function completeNode(state, nodeId, options = {}) {
   const rewardsClaimedNodeIds = freezeArray(options.rewardClaimed === false ? state.rewardsClaimedNodeIds : [...state.rewardsClaimedNodeIds, nodeId]);
   const completedRecord = deepFreeze({ index: state.history.length, type: 'node_completed', nodeId, rewardClaimed: options.rewardClaimed !== false });
   const rare = state.rareRoute;
-  const returningFromRare = Boolean(rare?.status === 'used' && rare.targetNodeId === nodeId && rare.returnNodeId && state.currentNodeId === nodeId);
+  const returnNodeId = rare?.returnNodeId || rare?.fromNodeId || null;
+  const returningFromRare = Boolean(rare?.status === 'used' && rare.targetNodeId === nodeId && returnNodeId && state.currentNodeId === nodeId);
   if (!returningFromRare) return deepFreeze({ ...state, selectorState, completedNodeIds, rewardsClaimedNodeIds, history: freezeArray([...state.history, completedRecord]) });
 
-  const returnNode = state.graph.nodesById[rare.returnNodeId];
-  if (!returnNode) throw new Error(`rare route return node is missing: ${rare.returnNodeId}`);
-  const returnedRecord = deepFreeze({ index: state.history.length + 1, type: 'rare_route_returned', from: nodeId, to: rare.returnNodeId, rareEdgeId: rare.edgeId });
+  const returnNode = state.graph.nodesById[returnNodeId];
+  if (!returnNode) throw new Error(`rare route return node is missing: ${returnNodeId}`);
+  const returnedRecord = deepFreeze({ index: state.history.length + 1, type: 'rare_route_returned', from: nodeId, to: returnNodeId, rareEdgeId: rare.edgeId });
   return deepFreeze({
     ...state,
     selectorState,
-    currentNodeId: rare.returnNodeId,
+    currentNodeId: returnNodeId,
     currentLevel: returnNode.layer,
     status: 'active',
     completedNodeIds,
     rewardsClaimedNodeIds,
-    rareRoute: deepFreeze({ ...rare, status: 'completed' }),
+    rareRoute: deepFreeze({ ...rare, returnNodeId, status: 'completed' }),
     history: freezeArray([...state.history, completedRecord, returnedRecord])
   });
 }
