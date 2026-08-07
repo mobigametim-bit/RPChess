@@ -36,13 +36,16 @@ jobs:
         run: npm run build
       - name: Verify distribution entry
         run: test -f dist/index.html && test -f dist/SFX/win_fanfare.mp3
+      - name: Install Playwright and Chromium
+        timeout-minutes: 10
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
       - name: Run real Chromium Iron Marches acceptance
-        timeout-minutes: 8
+        timeout-minutes: 5
         shell: bash
         run: |
           set -euo pipefail
-          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
-          npx playwright install --with-deps chromium
           python3 -m http.server 4173 --bind 127.0.0.1 --directory dist > /tmp/rpchess-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
