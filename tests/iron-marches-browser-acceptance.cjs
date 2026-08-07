@@ -18,7 +18,7 @@ function log(message, data = '') {
 }
 function delay(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 function distance(a,b) {
-  return Math.abs(String(a).charCodeAt(0)-String(b).charCodeAt(0)) + Math.abs(Number(String(a).slice(1))-Number(String(b).slice(1)));
+  return Math.abs(String(a).charCodeAt(0)-String(b).charCodeAt(0)) + Math.abs(Number(String(a).slice(1))-Number(String(b).slice(1));
 }
 async function snapshot(page) {
   return page.evaluate(() => globalThis.RPChessVerticalSlice?.runtimeHost?.getSnapshot?.() || globalThis.RPChessVerticalSlice?.runtimeClient?.getSnapshot?.() || null);
@@ -184,15 +184,19 @@ async function boardMove(page, command, before) {
   log('battle-move', `${mover.type}:${command.payload.from}->${command.payload.to}`);
   const from = await squarePoint(page, command.payload.from);
   const to = await squarePoint(page, command.payload.to);
+  const beforeIndex = actionIndex(before);
   await page.mouse.click(from.x, from.y);
   await page.mouse.click(to.x, to.y);
-  await page.waitForFunction(({pieceId,to,status}) => {
+  await page.waitForFunction(({status,beforeIndex}) => {
     const current=globalThis.RPChessVerticalSlice?.runtimeHost?.getSnapshot?.();
     if (!current) return false;
     if (current.status !== status) return true;
-    const pieces=current.scenario?.pieces || [];
-    return pieces.some((piece)=>String(piece.pieceId||piece.id)===pieceId && piece.square===to);
-  }, { pieceId:String(mover.pieceId||mover.id), to:command.payload.to, status:before.status }, { timeout:4000 });
+    const scenario=current.scenario;
+    const currentIndex=Number(scenario?.actionIndex ?? scenario?.battle?.actionIndex ?? 0);
+    return currentIndex > beforeIndex && Boolean(scenario?.playerTurn);
+  }, { status:before.status, beforeIndex }, { timeout:5000 });
+  const resolved = await snapshot(page);
+  if (resolved?.scenario && actionIndex(resolved) >= beforeIndex + 2) seen.ai = true;
   await page.waitForFunction(() => Boolean(globalThis.RPChessVerticalSlice?.presenter?.animationRunning) || !['scenario','boss'].includes(globalThis.RPChessVerticalSlice?.runtimeHost?.getSnapshot?.()?.status), null, { timeout:1200 }).catch(() => {});
   await verifyAnimationInputBlock(page);
   await waitForAnimation(page);
