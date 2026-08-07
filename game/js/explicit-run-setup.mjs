@@ -12,6 +12,9 @@ function readProgress(storage) {
   try { return JSON.parse(storage?.getItem?.(PROGRESS_KEY) || '{}') || {}; }
   catch (_error) { return {}; }
 }
+function setTextIfChanged(node, value) {
+  if (node && node.textContent !== value) node.textContent = value;
+}
 function fnv1a(value) {
   let hash = 0x811c9dc5;
   for (const char of String(value)) { hash ^= char.charCodeAt(0); hash = Math.imul(hash, 0x01000193) >>> 0; }
@@ -33,12 +36,12 @@ function launchOptions() {
 function decorateCommanderScreen(root = document) {
   const launch = root.querySelector?.('[data-launch-commander]');
   if (!launch) return;
-  launch.textContent = 'К ВЫБОРУ КОРОЛЯ И ДОКТРИНЫ';
+  setTextIfChanged(launch, 'К ВЫБОРУ КОРОЛЯ И ДОКТРИНЫ');
   const heading = root.querySelector('.rpa-screen-header p');
-  if (heading) heading.textContent = 'Командир задаёт рекомендованный стиль похода. Короля и доктрину вы подтвердите отдельно, а три героя для стартового драфта материализуются из seed.';
+  setTextIfChanged(heading, 'Командир задаёт рекомендованный стиль похода. Короля и доктрину вы подтвердите отдельно, а три героя для стартового драфта материализуются из seed.');
   const loadoutLabels = [...root.querySelectorAll('.rpa-loadout small')];
-  if (loadoutLabels[0]) loadoutLabels[0].textContent = 'Рекомендованный король';
-  if (loadoutLabels[1]) loadoutLabels[1].textContent = 'Рекомендованная доктрина';
+  setTextIfChanged(loadoutLabels[0], 'Рекомендованный король');
+  setTextIfChanged(loadoutLabels[1], 'Рекомендованная доктрина');
 }
 function polishSelection(root, offerIds) {
   const main = root.querySelector('.rprs');
@@ -47,15 +50,19 @@ function polishSelection(root, offerIds) {
   const heroes = root.querySelector('section[aria-labelledby="rprs-heroes"]');
   if (heroes) heroes.hidden = true;
   const counter = root.querySelector('.rprs__counter');
-  if (counter) counter.textContent = `Герои для драфта: ${offerIds.length}`;
+  setTextIfChanged(counter, `Герои для драфта: ${offerIds.length}`);
   const kingHeading = root.querySelector('#rprs-kings');
-  if (kingHeading) kingHeading.textContent = '1. Выберите короля';
+  setTextIfChanged(kingHeading, '1. Выберите короля');
   const doctrineHeading = root.querySelector('#rprs-doctrines');
-  if (doctrineHeading) doctrineHeading.textContent = '2. Выберите доктрину';
-  for (const button of root.querySelectorAll('[data-select-king]')) button.dataset.kingId = button.dataset.selectKing;
-  for (const button of root.querySelectorAll('[data-select-doctrine]')) button.dataset.doctrineId = button.dataset.selectDoctrine;
+  setTextIfChanged(doctrineHeading, '2. Выберите доктрину');
+  for (const button of root.querySelectorAll('[data-select-king]')) {
+    if (button.dataset.kingId !== button.dataset.selectKing) button.dataset.kingId = button.dataset.selectKing;
+  }
+  for (const button of root.querySelectorAll('[data-select-doctrine]')) {
+    if (button.dataset.doctrineId !== button.dataset.selectDoctrine) button.dataset.doctrineId = button.dataset.selectDoctrine;
+  }
   const launch = root.querySelector('[data-lock-selection]');
-  if (launch) launch.textContent = 'ПОДТВЕРДИТЬ И ПЕРЕЙТИ К СТАРТОВОМУ РОСТЕРУ';
+  setTextIfChanged(launch, 'ПОДТВЕРДИТЬ И ПЕРЕЙТИ К СТАРТОВОМУ РОСТЕРУ');
 }
 function mountProductionRuntime(root, selectionHost) {
   const runtimeHost = selectionHost.getRuntimeHost();
