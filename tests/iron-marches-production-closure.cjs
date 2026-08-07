@@ -59,6 +59,24 @@ function dispatch(state, command) { return presenter.dispatchPresenterCommand(st
     assert.strictEqual(force.demand.costSupplies, 0);
   }
 
+  // 12.8: accepting a crisis concession returns that force to normal participation;
+  // refusing it leaves the force in crisis. This must affect coalition scoring immediately.
+  const crisisNarrative = narrative('politics.iron_marches.crown_delegitimized');
+  const crisisBase = Object.freeze({ ...finaleGate(await launchedState(14115)), narrative:crisisNarrative });
+  let crisisSnapshot = presenter.createPresenterSnapshot(crisisBase, {});
+  assert.strictEqual(crisisSnapshot.politicalFinaleB14.stage, 'cabinet');
+  assert.ok(crisisSnapshot.politicalFinaleB14.forces.some((force)=>force.id==='crown' && force.status==='crisis'));
+  let crisisResult = dispatch(crisisBase, { type:'ChooseActOutcome', choiceId:'cabinet_accept:crown' });
+  assert.strictEqual(crisisResult.state.politicalFinaleB14.forceStates.crown.status, 'normal', 'accepted concession must normalize the Crown');
+  const acceptedCrown = crisisResult.state.politicalFinaleB14.forceStates.crown;
+  assert.strictEqual(acceptedCrown.demand, null, 'fulfilled crisis demand must not remain pending');
+  const acceptedOffers = crisisResult.state.politicalFinaleB14.governmentOffers;
+  assert.ok(Array.isArray(acceptedOffers) && acceptedOffers.length >= 4, 'government offers must be recomputed after concession normalization');
+
+  const refusalBase = Object.freeze({ ...finaleGate(await launchedState(14116)), narrative:crisisNarrative });
+  crisisResult = dispatch(refusalBase, { type:'ChooseActOutcome', choiceId:'cabinet_refuse:crown' });
+  assert.strictEqual(crisisResult.state.politicalFinaleB14.forceStates.crown.status, 'crisis', 'refused concession must leave the Crown in crisis');
+
   const factRich = narrative(
     'story.iron_marches.strike_compromise', 'obligation.iron_marches.standard_ratified',
     'politics.iron_marches.garrison_united', 'obligation.iron_marches.emergency_term',
@@ -105,7 +123,8 @@ function dispatch(state, command) { return presenter.dispatchPresenterCommand(st
   assert.strictEqual(offersA.length, 3);
   assert.deepStrictEqual(offersB, offersA);
   assert.deepStrictEqual(offersA.map((entry)=>entry.type).sort(), ['recruit','relic','relic']);
-  assert.strictEqual(new Set(offersA.filter((entry)=>entry.type==='relic').map((entry)=>entry.payload.relicId)).size, 2);
+  const actRelicIds = offersA.filter((entry)=>entry.type==='relic').map((entry)=>entry.payload.relicId).sort();
+  assert.deepStrictEqual(actRelicIds, ['relic.circle_warding','relic.echo_shield'], 'Act Reward must use authored Register 03 implemented relic IDs');
   assert.ok(offersA.every((entry)=>entry.id.startsWith('act_reward:iron_marches:')));
 
   let state = finaleGate(await launchedState());
@@ -158,6 +177,7 @@ function dispatch(state, command) { return presenter.dispatchPresenterCommand(st
   assert.ok(finalPresenter.includes('Золото следующего акта'));
   assert.ok(finalPresenter.includes('dataset.serviceRelic'));
   assert.ok(finalPresenter.includes('targetRelicId'));
+  assert.ok(finalPresenter.includes("['piece_upgrade'"), 'piece upgrade must require a roster target');
   assert.ok(finalPresenter.includes('Нет подходящей фигуры'));
   assert.ok(finalPresenter.includes('Нет подходящей реликвии'));
 
@@ -166,5 +186,5 @@ function dispatch(state, command) { return presenter.dispatchPresenterCommand(st
   assert.ok(explicitSetup.includes('createProgressObserver'));
   assert.ok(explicitSetup.includes('victories:next.victories+1'));
 
-  console.log('Iron Marches production closure: B14 rules, human surfaces, all 8 law pools, dedicated Act Reward, reload stability, inter-act conversion, explicit setup and production service bindings passed.');
+  console.log('Iron Marches production closure: B14 crisis concessions, human political surfaces, all 8 law pools, authored Act Reward, reload stability, inter-act conversion, explicit setup and service target bindings passed.');
 })().catch((error)=>{ console.error(error.stack || error); process.exitCode=1; });
