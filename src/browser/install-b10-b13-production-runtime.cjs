@@ -266,17 +266,83 @@ if (!globalThis[INSTALL_KEY]) {
     });
     return customResult(next, command, dependencies);
   }
+  function applyRewardBonus(previous, next, command) {
+    const offerId = command.offerId || command.payload?.offerId;
+    const offer = previous.stageB?.pendingRewardOffers?.find((entry) => entry.id === offerId);
+    if (!offer?.bonus) return next;
+    if (offer.bonus.type === 'gold') return deepFreeze({ ...next, resources: { ...next.resources, gold: next.resources.gold + offer.bonus.amount } });
+    if (offer.bonus.type === 'supplies') return deepFreeze({ ...next, campaign: { ...next.campaign, supplies: next.campaign.supplies + offer.bonus.amount } });
+    return next;
+  }
+  function installFinale(state) {
+    if (state.status !== 'act_outcome' || !state.stageB?.actOutcome) return state;
+    const finale = narrative.buildIronMarchesFinale(state.narrative || narrative.createNarrativeState(), state.resources || {});
+    return deepFreeze({ ...state, stageB: { ...state.stageB, actOutcome: finale } });
+  }
+  function finalizeEventCombat(previous, next, resultType) {
+    if (!previous.currentNode?.eventCombat || !previous.productionEvent) return next;
+    if (next.status === 'scenario') return deepFreeze({ ...next, productionEvent: previous.productionEvent });
+    const session = restoreProductionEventSession({ library, snapshot: previous.productionEvent });
+    const result = resultType || (next.status === 'reward_choice' ? 'victory' : 'defeat');
+    session.completeCombat(result);
+    const sessionSnapshot = session.snapshot();
+    if (result === 'victory') {
+      let stageB = next.stageB;
+      if (stageB.status === 'reward_choice') stageB = deepFreeze({ ...stageB, status: 'campaign', pendingRewardOffers: freezeArray([]) });
+      return deepFreeze({
+        ...applySessionContext(next, sessionSnapshot, null),
+        stageB,
+        status: sessionSnapshot.state.status === 'resolved' ? 'campaign' : 'event',
+        scenario: null,
+        currentNode: sessionSnapshot.state.status === 'resolved' ? null : previous.currentNode,
+        productionEvent: sessionSnapshot.state.status === 'resolved' ? null : sessionSnapshot,
+        campaign: sessionSnapshot.state.status === 'resolved'
+          ? runtimeState.completeNode(next.campaign, previous.currentNode.nodeId, { rewardClaimed: false })
+          : next.campaign
+      });
+    }
+    return deepFreeze({ ...next, productionEvent: sessionSnapshot, currentNode: previous.currentNode });
+  }
 
   presenter.dispatchPresenterCommand = function dispatchProductionPresenterCommand(stateInput, commandInput, dependencies = {}) {
-    let state = productionizeRuntime(stateInput);
-    if (!productionRun(state)) return originalDispatchPresenterCommand(stateInput, commandInput, dependencies);
+    const state = productionizeRuntime(stateInput);
     const command = normalizedCommand(commandInput);
-    if (state.status === 'event' && state.productionEvent && command.type === 'ChooseEvent') return dispatchProductionEvent(state, command, dependencies);
+    if (!productionRun(state)) return originalDispatchPresenterCommand(stateInput, commandInput, dependencies);
+    if (state.productionEvent && state.status === 'event' && command.type === 'ChooseEvent') return dispatchProductionEvent(state, command, dependencies);
     if (state.status === 'service' && ['UseService', 'LeaveService'].includes(command.type)) return dispatchProductionService(state, command, dependencies);
-    const result = originalDispatchPresenterCommand(state, command, dependencies);
-    state = productionizeRuntime(result.state);
-    if (state.status === 'event' && !state.productionEvent) state = startProductionEvent(state);
-    return customResult(state, command, dependencies, result.saveEnvelope || null);
+    if (command.type === 'ChooseActOutcome' && state.stageB?.actOutcome) {
+      const choiceId = command.choiceId || command.payload?.choiceId;
+      const choice = state.stageB.actOutcome.choices.find((entry) => entry.id === choiceId);
+      if (!choice) throw new Error('political finale choice is unavailable');
+      if (!choice.available) throw new Error('political finale choice requirements are not met');
+      if (state.resources.gold < Number(choice.costGold || 0)) throw new Error('not enough gold for political finale choice');
+      const result = originalDispatchPresenterCommand(state, commandInput, dependencies);
+      const selected = narrative.selectIronMarchesFinale(state.narrative, state.stageB.actOutcome, choiceId, state.resources);
+      const next = deepFreeze({ ...result.state, narrative: selected.narrative, resources: selected.resources });
+      return customResult(next, result.command || command, dependencies, result.saveEnvelope || null);
+    }
+
+    const result = originalDispatchPresenterCommand(state, commandInput, dependencies);
+    let next = productionizeRuntime(result.state);
+    if (command.type === 'Travel' && next.status === 'event' && productionEventIds.has(next.currentNode?.contentId)) next = startProductionEvent(next);
+    if (command.type === 'ChooseRewardOffer') {
+      next = applyRewardBonus(state, next, command);
+      next = installFinale(next);
+    }
+    if (command.type === 'PlayerCommand' && state.currentNode?.eventCombat) next = finalizeEventCombat(state, next);
+    if (command.type === 'ContinueRoyalRetreat' && state.currentNode?.eventCombat && state.productionEvent) {
+      if (!next.campaign.completedNodeIds.includes(state.currentNode.nodeId)) next = deepFreeze({ ...next, campaign: runtimeState.completeNode(next.campaign, state.currentNode.nodeId, { rewardClaimed: false }), productionEvent: null });
+    }
+    if (command.type === 'ConfirmReorganization' && next.status === 'complete') {
+      const conversion = economy.interActConversion(next.resources, next.campaign);
+      next = deepFreeze({
+        ...next,
+        resources: { ...next.resources, gold: conversion.nextGold },
+        campaign: { ...next.campaign, supplies: conversion.nextSupplies },
+        interActConversion: conversion
+      });
+    }
+    return customResult(next, result.command || command, dependencies, result.saveEnvelope || null);
   };
 }
 
