@@ -9,6 +9,7 @@ const FORCED_MARCH_LABELS = Object.freeze({
   scouting_lock: 'Запретить следующую разведку'
 });
 const BRANCH_LABELS = Object.freeze({ fortified:'укреплённая', direct:'прямая', resource:'ресурсная', volatile:'рискованная' });
+const SECRET_LABELS = Object.freeze({ event:'Тайное событие', cache:'Скрытый тайник', battle:'Тайный бой', special_service:'Особая услуга', political_meeting:'Закрытая политическая встреча', recruit:'Тайный рекрут' });
 
 function after(methodName, enhance) {
   const original = VerticalSlicePresenter.prototype[methodName];
@@ -67,6 +68,12 @@ after('renderCampaign', function enhanceCampaign(snapshot) {
     panel.innerHTML = `<div><span class="b10-secret-mark">?</span><strong>Обнаружен тайный путь</strong><p>Содержимое, риск и награда неизвестны до входа. Вход стоит 1 припас, возврат после прохождения бесплатный.</p></div><div><button class="rpvs__primary" data-secret-decision="enter" ${secret.canEnter ? '' : 'disabled'}>Войти · 1 припас</button><button data-secret-decision="decline">Отказаться навсегда</button></div>`;
     root.querySelector('.rpvs__map')?.after(panel);
     panel.querySelectorAll('[data-secret-decision]').forEach((button) => button.addEventListener('click', () => this.client.dispatch({ type:'DecideSecret', decision:button.dataset.secretDecision }).catch(() => {})));
+  } else if (secret?.status === 'active') {
+    const panel = root.ownerDocument.createElement('section');
+    panel.className = 'b10-secret-decision b10-secret-active';
+    panel.innerHTML = `<div><span class="b10-secret-mark">?</span><strong>${escapeHtml(SECRET_LABELS[secret.type] || 'Тайный узел')}</strong><p>Вы вошли в тайный узел. После завершения вы бесплатно вернётесь в исходную точку карты.</p></div><div><button class="rpvs__primary" data-complete-secret>Завершить тайный узел</button></div>`;
+    root.querySelector('.rpvs__map')?.after(panel);
+    panel.querySelector('[data-complete-secret]')?.addEventListener('click', () => this.client.dispatch({ type:'CompleteSecret' }).catch(() => {}));
   }
 
   const reopenable = snapshot.campaign?.reopenableNodeIds || [];
@@ -182,4 +189,4 @@ after('renderReorganization', function enhanceReorganization(snapshot) {
   summary.innerHTML = `<div><span>Остаток припасов</span><strong>${conversion.convertedSupplies}</strong></div><div><span>Конвертация 1 → 5</span><strong>${escapeHtml(conversion.formula)}</strong></div><div><span>Золото следующего акта</span><strong>${conversion.nextGold}</strong></div><div><span>Припасы следующего акта</span><strong>${conversion.nextSupplies}</strong></div>`;
 });
 
-export { FORCED_MARCH_LABELS, BRANCH_LABELS };
+export { FORCED_MARCH_LABELS, BRANCH_LABELS, SECRET_LABELS };
