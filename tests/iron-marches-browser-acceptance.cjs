@@ -2,10 +2,15 @@
 
 const assert = require('assert');
 const { chromium } = require('playwright');
+const { buildBrowserProductionBundle } = require('../src/browser/production-content-browser.cjs');
+const { parseFen } = require('../src/core/chess/position.cjs');
+const { makeMove, gameStatus } = require('../src/core/chess/rules.cjs');
 
 const BASE_URL = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
 const VIEWPORTS = [[1600,1000],[1366,768],[760,900],[390,844]];
 const FORBIDDEN = [/\[object Object\]/i,/\bundefined\b/i,/\bNaN\b/i,/fate\.iron_marches/i,/politics\.iron_marches/i,/obligation\.iron_marches/i];
+const SCENARIO_TEMPLATES = buildBrowserProductionBundle().scenarioTemplates;
+const moveVisits = new Map();
 const seen = {
   statuses:new Set(), viewports:new Set(), movers:new Set(), events:new Set(), services:new Set(),
   scout:false, capture:false, ai:false, orders:false, talent:false, boss:false, bossTransition:false,
@@ -98,37 +103,87 @@ async function setup(page, seed) {
   log('fresh-run-ready');
 }
 
+function activeObjectiveIndex(state) {
+  const objectives = state.scenario?.objectives || [];
+  const index = objectives.findIndex((entry) => entry.mandatory !== false && entry.status !== 'completed');
+  return index >= 0 ? index : 0;
+}
+function authoredObjective(state) {
+  const index = activeObjectiveIndex(state);
+  if (state.status === 'boss') {
+    const bossId = state.boss?.bossId || state.currentNode?.contentId;
+    const phaseIndex = Number(state.boss?.phaseIndex || 0);
+    return SCENARIO_TEMPLATES.bosses?.[bossId]?.phases?.[phaseIndex]?.objectives?.[index] || null;
+  }
+  const encounterId = state.currentNode?.contentId;
+  return SCENARIO_TEMPLATES.encounters?.[encounterId]?.objectives?.[index] || null;
+}
+function visitCount(state, command) {
+  return moveVisits.get(`${state.scenario?.scenarioId}:${command.payload.from}:${command.payload.to}:${command.payload.promotion || '-'}`) || 0;
+}
+function recordVisit(state, command) {
+  const key = `${state.scenario?.scenarioId}:${command.payload.from}:${command.payload.to}:${command.payload.promotion || '-'}`;
+  moveVisits.set(key, (moveVisits.get(key) || 0) + 1);
+}
+function leastVisited(state, commands) {
+  return commands.slice().sort((a,b) => visitCount(state,a)-visitCount(state,b) || `${a.payload.from}:${a.payload.to}`.localeCompare(`${b.payload.from}:${b.payload.to}`))[0] || null;
+}
+function mateInOne(state, legal) {
+  if (!state.scenario?.positionFen) return null;
+  const blockedSquares = (state.scenario.environment || []).filter((entry) => entry.passable === false).flatMap((entry) => entry.cells || []);
+  const position = parseFen(state.scenario.positionFen);
+  for (const command of legal) {
+    try {
+      const result = makeMove(position, command.payload, { blockedSquares });
+      const status = gameStatus(result.position, { blockedSquares });
+      if (status.state === 'checkmate' && status.winner === state.scenario.playerSide) return command;
+    } catch (_error) {}
+  }
+  return null;
+}
 function objectiveMove(state) {
   const scenario = state.scenario;
   const legal = (scenario?.legalCommands || []).filter((command) => command.type === 'MovePiece');
   if (!legal.length) return null;
+  const progress = scenario.objectives?.[activeObjectiveIndex(state)] || null;
+  const definition = authoredObjective(state) || progress || {};
   const pieces = scenario.pieces || [];
-  const objective = (scenario.objectives || []).find((entry) => !entry.complete && !entry.completed && entry.status !== 'completed') || scenario.objectives?.[0] || null;
   const piece = (id) => pieces.find((entry) => entry.pieceId === id || entry.id === id);
-  const targets = (objective?.targetPieceIds || []).map((id) => piece(id)?.square).filter(Boolean);
-  const cells = (objective?.targetCells || objective?.cells || []).filter(Boolean);
-  const escort = objective?.pieceId ? piece(objective.pieceId)?.square : null;
-  const direct = legal.find((command) => (targets.includes(command.payload.to) || cells.includes(command.payload.to)) && (!escort || command.payload.from === escort));
-  if (direct) return direct;
-  if (objective?.type === 'checkmate') {
-    const authoredMate = legal.find((command) => command.payload.from === 'g6' && command.payload.to === 'g7');
-    if (authoredMate) return authoredMate;
+  const targets = (definition.targetPieceIds || []).map((id) => piece(id)?.square).filter(Boolean);
+  const cells = (definition.targetCells || definition.cells || []).filter(Boolean);
+  const escortSquare = definition.pieceId ? piece(definition.pieceId)?.square : null;
+
+  if (definition.type === 'checkmate') {
+    const mate = mateInOne(state, legal);
+    if (mate) return mate;
   }
-  if (escort && cells.length) {
-    return legal.filter((command) => command.payload.from === escort)
-      .sort((a,b) => Math.min(...cells.map((target) => distance(a.payload.to,target))) - Math.min(...cells.map((target) => distance(b.payload.to,target))))[0] || legal[0];
+  if (definition.type === 'survive_actions') return leastVisited(state, legal);
+  if (definition.type === 'occupy_cells' && cells.length) {
+    const occupied = cells.filter((cell) => pieces.some((entry) => entry.square === cell && entry.side === scenario.playerSide));
+    if (occupied.length === cells.length) {
+      const preserving = legal.filter((command) => !cells.includes(command.payload.from));
+      if (preserving.length) return leastVisited(state, preserving);
+    }
+  }
+
+  const direct = legal.find((command) => (targets.includes(command.payload.to) || cells.includes(command.payload.to)) && (!escortSquare || command.payload.from === escortSquare));
+  if (direct) return direct;
+  if (escortSquare && cells.length) {
+    const escortMoves = legal.filter((command) => command.payload.from === escortSquare);
+    if (escortMoves.length) return escortMoves.slice().sort((a,b) => Math.min(...cells.map((target) => distance(a.payload.to,target))) - Math.min(...cells.map((target) => distance(b.payload.to,target))) || visitCount(state,a)-visitCount(state,b))[0];
   }
   if (targets.length) {
     return legal.slice().sort((a,b) => {
-      const aScore=(targets.includes(a.payload.to)?-1000:0)+Math.min(...targets.map((target)=>distance(a.payload.to,target)));
-      const bScore=(targets.includes(b.payload.to)?-1000:0)+Math.min(...targets.map((target)=>distance(b.payload.to,target)));
+      const aScore=(targets.includes(a.payload.to)?-1000:0)+Math.min(...targets.map((target)=>distance(a.payload.to,target)))+visitCount(state,a)*20;
+      const bScore=(targets.includes(b.payload.to)?-1000:0)+Math.min(...targets.map((target)=>distance(b.payload.to,target)))+visitCount(state,b)*20;
       return aScore-bScore;
     })[0];
   }
   if (cells.length) {
-    return legal.slice().sort((a,b) => Math.min(...cells.map((target)=>distance(a.payload.to,target))) - Math.min(...cells.map((target)=>distance(b.payload.to,target))))[0];
+    return legal.slice().sort((a,b) => Math.min(...cells.map((target)=>distance(a.payload.to,target))) - Math.min(...cells.map((target)=>distance(b.payload.to,target))) || visitCount(state,a)-visitCount(state,b))[0];
   }
-  return legal[0];
+  const capture = legal.filter((command) => pieces.some((entry) => entry.square === command.payload.to && entry.side !== scenario.playerSide));
+  return leastVisited(state, capture.length ? capture : legal);
 }
 async function squarePoint(page, square) {
   const canvas = page.locator('[data-board]').first();
@@ -185,6 +240,7 @@ async function boardMove(page, command, before) {
   const from = await squarePoint(page, command.payload.from);
   const to = await squarePoint(page, command.payload.to);
   const beforeIndex = actionIndex(before);
+  recordVisit(before,command);
   await page.mouse.click(from.x, from.y);
   await page.mouse.click(to.x, to.y);
   await page.waitForFunction(({status,beforeIndex}) => {
@@ -215,7 +271,7 @@ async function battle(page, state) {
     if (await clickIf(page,'[data-end-turn]')) return;
     throw new Error(`No legal UI move in ${state.scenario?.scenarioId || state.status}`);
   }
-  if ((state.scenario?.pieces||[]).some((piece)=>piece.square===command.payload.to && piece.side!=='w')) seen.capture=true;
+  if ((state.scenario?.pieces||[]).some((piece)=>piece.square===command.payload.to && piece.side!==state.scenario?.playerSide)) seen.capture=true;
   const beforeActions=actionIndex(state);
   await boardMove(page,command,state);
   const after=await snapshot(page);
