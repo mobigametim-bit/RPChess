@@ -25,9 +25,26 @@ This implementation promotes seven authored events into the production content b
 - The library does not persist discovered event knowledge between runs.
 - `production-event-policy.cjs` validates the accepted class, combat, loss, chain, and persistence rules in both Node and browser bundles.
 
-## Event selection
+## B9 materialization integration
 
-`src/campaign/production-event-selector.cjs` implements the production selector independently of the legacy content queue:
+The production selector is now integrated directly into the B9 campaign lifecycle rather than running as a parallel content queue.
+
+`src/campaign/production-event-b9-adapter.cjs` connects the event library to the B9 callback contract:
+
+- `selectEvent` chooses and reserves the event when a map level is revealed;
+- `onBranchesClosed` releases reservations belonging to normally closed alternatives;
+- `onBranchReopened` restores the original reservation for an authored rare reopening;
+- `onNodeCompleted` permanently completes the assignment and activates chain state.
+
+The B9 materialized node stores the stable `contentSeed`, `contentVersion`, event ID, variant ID, participant ID when available, displayed probabilities, and an authored event snapshot. `selectorState` is serialized with campaign state, so reload never rerolls an already revealed event.
+
+Simultaneously revealed event nodes are reserved as one deterministic batch and cannot receive the same event ID. Rare reopening reuses the original `materializedContentByNode` entry rather than selecting again.
+
+`src/browser/install-b9-production-events.cjs` installs the callbacks before the production browser host loads and recreates them after save/load without serializing functions into the profile.
+
+## Event selection policy
+
+`src/campaign/production-event-selector.cjs` provides:
 
 - authored early, middle, and late phase weights;
 - a `×2` multiplier for an active chain follow-up;
@@ -37,8 +54,6 @@ This implementation promotes seven authored events into the production content b
 - release of a reservation when its normal branch closes;
 - restoration of the exact saved event when a rare effect reopens the branch;
 - permanent exclusion after the event is completed.
-
-The browser entry exports the selector state and mutation functions so the campaign-map integration can persist them alongside the act state.
 
 ## Multi-stage runtime
 
@@ -53,13 +68,19 @@ The browser entry exports the selector state and mutation functions so the campa
 - emits `combat_pending` with the authored encounter contract;
 - resumes the next event stage after victory or closes the branch after defeat.
 
-The browser entry exports `createProductionEventSession` and `restoreProductionEventSession` for a dedicated event surface.
+The browser entry exports `createProductionEventSession` and `restoreProductionEventSession` for a dedicated event surface, while the B9 map owns event assignment and persistence.
 
 ## Legacy compatibility
 
-The current campaign presenter still consumes a one-step authored-event contract. The production bundle therefore compiles the first stage into that contract and uses a compatibility resolver, while the complete session and selector APIs remain available for direct integration without changing old saves.
+The existing campaign presenter still consumes a one-step authored-event contract. The production bundle therefore compiles the first stage into that contract and uses a compatibility resolver, while the complete multi-stage session remains available without changing old saves.
 
 The browser gameplay pool contains only the seven production events. The source registry retains the five earlier vertical-slice event records for old references and regression tests.
+
+## Verification
+
+The rebased B9/event branch passed `RPChess CI #393`, including source verification, production content validation, the complete test suite, browser production build, and distribution verification.
+
+`tests/b9-production-events-integration.cjs` additionally verifies sibling reservations, versioned event snapshots, deterministic reload, branch release, exact rare reopening, and completion/exclusion behavior.
 
 ## Artwork
 
