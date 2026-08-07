@@ -6,6 +6,9 @@ const CLIENT_COMMANDS = Object.freeze([
   'ConfirmDraft',
   'Travel',
   'ScoutNode',
+  'DecideSecret',
+  'CompleteSecret',
+  'ReopenBranch',
   'SetBriefingRoster',
   'ConfirmBriefing',
   'PlaceDeploymentUnit',
@@ -32,19 +35,11 @@ function validatePresenterSnapshot(snapshot) {
   if (!['draft', 'campaign', 'briefing', 'deployment', 'event', 'scenario', 'boss', 'boss_transition', 'reward', 'reward_choice', 'service', 'retreat', 'act_outcome', 'reorganization', 'complete', 'failed'].includes(snapshot.status)) {
     throw new Error(`invalid presenter status: ${snapshot.status}`);
   }
-  if (!snapshot.campaign || !Array.isArray(snapshot.campaign.nodes) || !Array.isArray(snapshot.campaign.routes)) {
-    throw new Error('presenter snapshot is missing campaign data');
-  }
+  if (!snapshot.campaign || !Array.isArray(snapshot.campaign.nodes) || !Array.isArray(snapshot.campaign.routes)) throw new Error('presenter snapshot is missing campaign data');
   if (snapshot.status === 'deployment' && (!snapshot.deployment || !snapshot.scenario)) throw new Error('presenter deployment snapshot is incomplete');
-  if (snapshot.status === 'event' && (!snapshot.event || !Array.isArray(snapshot.event.choices))) {
-    throw new Error('presenter event snapshot is missing choices');
-  }
-  if (['boss', 'boss_transition'].includes(snapshot.status) && !snapshot.boss) {
-    throw new Error('presenter boss snapshot is missing phase data');
-  }
-  if (snapshot.status === 'boss' && !snapshot.scenario) {
-    throw new Error('presenter boss snapshot is missing active scenario data');
-  }
+  if (snapshot.status === 'event' && (!snapshot.event || !Array.isArray(snapshot.event.choices))) throw new Error('presenter event snapshot is missing choices');
+  if (['boss', 'boss_transition'].includes(snapshot.status) && !snapshot.boss) throw new Error('presenter boss snapshot is missing phase data');
+  if (snapshot.status === 'boss' && !snapshot.scenario) throw new Error('presenter boss snapshot is missing active scenario data');
   return snapshot;
 }
 
@@ -65,11 +60,22 @@ function normalizeClientCommand(command) {
   if (type === 'Travel') {
     const targetNodeId = String(command.targetNodeId || command.payload?.targetNodeId || '');
     if (!targetNodeId) throw new Error('Travel requires targetNodeId');
-    return Object.freeze({ type, targetNodeId });
+    const forcedMarchChoice = command.forcedMarchChoice || command.payload?.forcedMarchChoice || null;
+    return Object.freeze({ type, targetNodeId, forcedMarchChoice });
   }
   if (type === 'ScoutNode') {
     const nodeId = String(command.nodeId || command.payload?.nodeId || '');
     if (!nodeId) throw new Error('ScoutNode requires nodeId');
+    return Object.freeze({ type, nodeId });
+  }
+  if (type === 'DecideSecret') {
+    const decision = String(command.decision || command.payload?.decision || '');
+    if (!['enter', 'decline'].includes(decision)) throw new Error('DecideSecret requires enter or decline');
+    return Object.freeze({ type, decision });
+  }
+  if (type === 'ReopenBranch') {
+    const nodeId = String(command.nodeId || command.payload?.nodeId || '');
+    if (!nodeId) throw new Error('ReopenBranch requires nodeId');
     return Object.freeze({ type, nodeId });
   }
   if (type === 'SetBriefingRoster' || type === 'SetReorganization') {
@@ -84,7 +90,12 @@ function normalizeClientCommand(command) {
   if (type === 'UseService') {
     const offerId = String(command.offerId || command.payload?.offerId || '');
     if (!offerId) throw new Error('UseService requires offerId');
-    return Object.freeze({ type, offerId, targetRosterId: command.targetRosterId || command.payload?.targetRosterId || null });
+    return Object.freeze({
+      type,
+      offerId,
+      targetRosterId: command.targetRosterId || command.payload?.targetRosterId || null,
+      targetRelicId: command.targetRelicId || command.payload?.targetRelicId || null
+    });
   }
   if (type === 'ChooseTalent') {
     const rosterId = String(command.rosterId || command.payload?.rosterId || '');
@@ -116,13 +127,7 @@ function normalizeClientCommand(command) {
   if (type === 'PlayerCommand') {
     const request = command.request || command.payload?.request;
     if (!request || typeof request.type !== 'string') throw new Error('PlayerCommand requires request');
-    return Object.freeze({
-      type,
-      request: Object.freeze({
-        type: request.type,
-        payload: Object.freeze({ ...(request.payload || {}) })
-      })
-    });
+    return Object.freeze({ type, request: Object.freeze({ type: request.type, payload: Object.freeze({ ...(request.payload || {}) }) }) });
   }
   return Object.freeze({ type });
 }
@@ -136,17 +141,12 @@ class RuntimeCommandClient extends EventTarget {
     this.pending = false;
     this.sequence = 0;
   }
-
-  getSnapshot() {
-    return this.snapshot;
-  }
-
+  getSnapshot() { return this.snapshot; }
   setSnapshot(snapshot) {
     this.snapshot = validatePresenterSnapshot(snapshot);
     this.dispatchEvent(new CustomEvent('snapshot', { detail: this.snapshot }));
     return this.snapshot;
   }
-
   async dispatch(commandInput) {
     if (this.pending) throw new Error('a runtime command is already pending');
     const command = normalizeClientCommand(commandInput);
@@ -175,12 +175,4 @@ function createLocalRuntimeTransport(host) {
   return async (command) => host.dispatch(command);
 }
 
-export {
-  SNAPSHOT_FORMAT,
-  SNAPSHOT_SCHEMA_VERSION,
-  CLIENT_COMMANDS,
-  validatePresenterSnapshot,
-  normalizeClientCommand,
-  RuntimeCommandClient,
-  createLocalRuntimeTransport
-};
+export { SNAPSHOT_FORMAT, SNAPSHOT_SCHEMA_VERSION, CLIENT_COMMANDS, validatePresenterSnapshot, normalizeClientCommand, RuntimeCommandClient, createLocalRuntimeTransport };
