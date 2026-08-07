@@ -62,6 +62,10 @@ function finaleGate(state) {
   assert.strictEqual(firstSnapshot.status, 'act_outcome');
   assert.strictEqual(firstSnapshot.politicalFinaleB14.stage, 'cabinet');
   assert.ok(firstSnapshot.politicalFinaleB14.choices.length >= 1);
+  for (const cabinetChoice of firstSnapshot.politicalFinaleB14.choices) {
+    assert.strictEqual(Number(cabinetChoice.costGold || 0), 0, 'cabinet must not invent a gold price');
+    assert.strictEqual(Number(cabinetChoice.costSupplies || 0), 0, 'cabinet must not invent a supplies price');
+  }
 
   let choice = firstSnapshot.politicalFinaleB14.choices.find((entry) => entry.available !== false);
   let result = dispatch(state, { type: 'ChooseActOutcome', choiceId: choice.id });
@@ -70,6 +74,10 @@ function finaleGate(state) {
 
   while (state.politicalFinaleB14.stage === 'cabinet') {
     const snapshot = presenter.createPresenterSnapshot(state, {});
+    for (const cabinetChoice of snapshot.politicalFinaleB14.choices) {
+      assert.strictEqual(Number(cabinetChoice.costGold || 0), 0);
+      assert.strictEqual(Number(cabinetChoice.costSupplies || 0), 0);
+    }
     choice = snapshot.politicalFinaleB14.choices.find((entry) => entry.available !== false);
     result = dispatch(state, { type: 'ChooseActOutcome', choiceId: choice.id });
     state = result.state;
@@ -118,5 +126,5 @@ function finaleGate(state) {
   assert.strictEqual(roundTrip.legacyLawId, lawId);
   assert.strictEqual(roundTrip.completed, true);
 
-  console.log('B14 browser runtime: cabinet, government, law, epilogue, Act Reward, inter-act reorganization and presenter snapshot validation passed.');
+  console.log('B14 browser runtime: cabinet, authored costs, government, law, epilogue, Act Reward, inter-act reorganization and presenter snapshot validation passed.');
 })().catch((error) => { console.error(error.stack || error); process.exitCode = 1; });
