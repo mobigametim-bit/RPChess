@@ -36,6 +36,20 @@ jobs:
         run: npm run build
       - name: Verify distribution entry
         run: test -f dist/index.html && test -f dist/SFX/win_fanfare.mp3
+      - name: Run real Chromium Iron Marches acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory dist > /tmp/rpchess-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4173/index.html >/dev/null; then break; fi
+            sleep 1
+          done
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 node tests/iron-marches-browser-acceptance.cjs
       - name: Upload browser distribution
         uses: actions/upload-artifact@v4
         with:
