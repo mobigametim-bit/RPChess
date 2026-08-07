@@ -9,7 +9,7 @@ const FORBIDDEN = [/\[object Object\]/i,/\bundefined\b/i,/\bNaN\b/i,/fate\.iron_
 const seen = {
   statuses:new Set(), viewports:new Set(), movers:new Set(), events:new Set(), services:new Set(),
   scout:false, capture:false, ai:false, orders:false, talent:false, boss:false, bossTransition:false,
-  actReward:false, interAct:false, secret:false, forced:false, reopen:false
+  actReward:false, interAct:false, secret:false, forced:false, reopen:false, animationInputBlocked:false
 };
 
 function log(message, data = '') {
@@ -153,6 +153,30 @@ async function squarePoint(page, square) {
   assert.ok(rendered, `no rendered geometry for ${square}`);
   return { x:box.x+rendered.x, y:box.y+rendered.y };
 }
+function actionIndex(state) {
+  return Number(state?.scenario?.actionIndex ?? state?.scenario?.battle?.actionIndex ?? 0);
+}
+async function verifyAnimationInputBlock(page) {
+  if (seen.animationInputBlocked) return;
+  const animating = await page.evaluate(() => Boolean(globalThis.RPChessVerticalSlice?.presenter?.animationRunning));
+  if (!animating) return;
+  const during = await snapshot(page);
+  const next = objectiveMove(during || {});
+  if (!next) return;
+  const beforeIndex = actionIndex(during);
+  const from = await squarePoint(page,next.payload.from);
+  const to = await squarePoint(page,next.payload.to);
+  await page.mouse.click(from.x,from.y);
+  await page.mouse.click(to.x,to.y);
+  await delay(100);
+  const after = await snapshot(page);
+  assert.strictEqual(actionIndex(after),beforeIndex,'battle accepted a second player input while movement animation was resolving');
+  seen.animationInputBlocked=true;
+  log('animation-input-blocked');
+}
+async function waitForAnimation(page) {
+  await page.waitForFunction(() => !globalThis.RPChessVerticalSlice?.presenter?.animationRunning && !document.getElementById('app')?.classList.contains('rpvs__animating'), null, { timeout:5000 });
+}
 async function boardMove(page, command, before) {
   const mover = (before.scenario?.pieces || []).find((piece) => piece.square === command.payload.from);
   assert.ok(mover, `no mover at ${command.payload.from}`);
@@ -169,6 +193,9 @@ async function boardMove(page, command, before) {
     const pieces=current.scenario?.pieces || [];
     return pieces.some((piece)=>String(piece.pieceId||piece.id)===pieceId && piece.square===to);
   }, { pieceId:String(mover.pieceId||mover.id), to:command.payload.to, status:before.status }, { timeout:4000 });
+  await page.waitForFunction(() => Boolean(globalThis.RPChessVerticalSlice?.presenter?.animationRunning) || !['scenario','boss'].includes(globalThis.RPChessVerticalSlice?.runtimeHost?.getSnapshot?.()?.status), null, { timeout:1200 }).catch(() => {});
+  await verifyAnimationInputBlock(page);
+  await waitForAnimation(page);
 }
 async function battle(page, state) {
   seen.boss ||= state.status === 'boss';
@@ -185,11 +212,11 @@ async function battle(page, state) {
     throw new Error(`No legal UI move in ${state.scenario?.scenarioId || state.status}`);
   }
   if ((state.scenario?.pieces||[]).some((piece)=>piece.square===command.payload.to && piece.side!=='w')) seen.capture=true;
-  const beforeActions=Number(state.scenario?.actionIndex ?? state.scenario?.battle?.actionIndex ?? 0);
+  const beforeActions=actionIndex(state);
   await boardMove(page,command,state);
   const after=await snapshot(page);
   if (after?.scenario) {
-    const afterActions=Number(after.scenario.actionIndex ?? after.scenario.battle?.actionIndex ?? beforeActions);
+    const afterActions=actionIndex(after);
     assert.ok(afterActions>=beforeActions && afterActions<=beforeActions+2, 'one UI input resolved more than player/AI action pair');
     if (afterActions===beforeActions+2) seen.ai=true;
   }
@@ -319,12 +346,13 @@ async function responsive(browser) {
     assert.ok(seen.interAct,'inter-act not exercised');
     assert.ok(seen.orders,'current/max order points not verified');
     assert.ok(seen.capture,'capture not performed through canvas pointer');
+    assert.ok(seen.animationInputBlocked,'double input was not verified during a live battle animation');
     assert.deepStrictEqual(errors,[],errors.join('\n'));
     console.log('Iron Marches Chromium acceptance PASS');
     console.log(JSON.stringify({
       viewports:[...seen.viewports], statuses:[...seen.statuses], movedPieceTypes:[...seen.movers],
       eventIds:[...seen.events], serviceTypes:[...seen.services], scouting:seen.scout, capture:seen.capture,
-      aiTurn:seen.ai, orderPoints:seen.orders, talent:seen.talent, boss:seen.boss,
+      aiTurn:seen.ai, orderPoints:seen.orders, animationInputBlocked:seen.animationInputBlocked, talent:seen.talent, boss:seen.boss,
       bossTransition:seen.bossTransition, actReward:seen.actReward, interAct:seen.interAct,
       secret:seen.secret, forcedMarch:seen.forced, reopen:seen.reopen
     },null,2));
