@@ -1,10 +1,18 @@
 import { VerticalSlicePresenter as ApprovedVerticalSlicePresenter } from './vertical-slice-presenter-approved.mjs';
 import { sceneArt as approvedSceneArt } from './approved-shell-data.mjs';
+import { renderCampaignApproved, renderBriefingApproved } from './ui-approved-campaign.mjs';
+import { renderDeploymentApproved } from './ui-approved-deployment.mjs';
+import { renderScenarioApproved } from './ui-approved-battle.mjs';
 
 function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[character]); }
 function escapeAttribute(value) { return escapeHtml(value).replace(/`/g, '&#96;'); }
 
 class VerticalSlicePresenter extends ApprovedVerticalSlicePresenter {
+  renderCampaign(snapshot) { return renderCampaignApproved(this, snapshot); }
+  renderBriefing(snapshot) { return renderBriefingApproved(this, snapshot); }
+  renderDeployment(snapshot) { return renderDeploymentApproved(this, snapshot); }
+  renderScenario(snapshot) { return renderScenarioApproved(this, snapshot); }
+
   renderReward(snapshot) {
     const reward = snapshot.reward;
     const resources = [
