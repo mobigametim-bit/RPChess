@@ -9,4 +9,5 @@ require('./install-b10-b13-production-runtime.cjs');
 require('./install-b10-b13-presenter-polish.cjs');
 require('./install-b14-political-finale.cjs');
 require('./install-b14-authored-costs.cjs');
+require('./install-iron-marches-production-closure.cjs');
 module.exports = require('./iron-marches-browser-host.cjs');
