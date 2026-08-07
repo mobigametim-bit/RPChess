@@ -2,7 +2,8 @@
 
 const b14 = require('../runtime/political-finale-b14.cjs');
 const narrative = require('../runtime/production-narrative.cjs');
-const stageBAct = require('../runtime/stage-b-act.cjs');
+const actReward = require('../runtime/b14-act-reward.cjs');
+const economy = require('../runtime/production-economy.cjs');
 
 const INSTALL_KEY = Symbol.for('rpchess.b14-political-finale-installed');
 if (!globalThis[INSTALL_KEY]) {
@@ -91,12 +92,10 @@ if (!globalThis[INSTALL_KEY]) {
     }], [], { source: 'iron_marches_b14', eventClass: 'regional_finale' });
     return deepFreeze({ ...state, narrative: narrative.withRegionalLines(nextNarrative) });
   }
-  function createB14Reorganization(stageB) {
+  function createB14Reorganization(stageB, interActConversionPreview) {
     const roster = (stageB.roster || []).map((entry) => entry.injury === 'light'
       ? Object.freeze({ ...entry, injury: null, skipBattles: 0, available: true })
       : entry);
-    const carrySupplyCap = 10;
-    const compensation = Math.max(0, Number(stageB.economy?.suppliesEarned || 0) - Number(stageB.economy?.suppliesSpent || 0) - carrySupplyCap);
     const stars = roster.reduce((sum, entry) => sum + Number(entry.stars || 0), 0);
     const armyStrength = roster.reduce((sum, entry) => sum + Number(entry.stars || 0) + (entry.kind === 'hero' ? 2 : 1), 0);
     const activeRosterIds = roster.filter((entry) => entry.active && entry.available).map((entry) => entry.id);
@@ -106,8 +105,7 @@ if (!globalThis[INSTALL_KEY]) {
       activeRosterIds: freezeArray(activeRosterIds),
       reserveRosterIds: freezeArray(roster.map((entry) => entry.id).filter((id) => !activeRosterIds.includes(id))),
       commandLimit: stageB.commandLimit,
-      supplyCarryCap: carrySupplyCap,
-      excessSupplyCompensation: compensation,
+      interActConversionPreview,
       heavyInjuries: freezeArray(roster.filter((entry) => entry.injury === 'heavy').map((entry) => entry.id)),
       temporaryEffectsCleared: freezeArray(stageB.temporaryEffects || []),
       nextRegionScaling: Object.freeze({ act: Number(stageB.act || 1) + 1, armyStrength, enemyBonus: Math.max(0, Math.min(3, Math.floor(stars / 5))) }),
@@ -145,7 +143,7 @@ if (!globalThis[INSTALL_KEY]) {
     } else if (finale.stage === 'epilogue') {
       if (choiceId !== 'epilogue_continue') throw new Error('epilogue continuation is unavailable');
       finale = b14.finishEpilogue(finale);
-      const stageB = stageBAct.generateRewardOffers(state.stageB, { nodeId: 'act_reward:iron_marches', elite: true, sideObjectiveCompleted: true, doctrineId: state.army?.doctrineId || null });
+      const stageB = actReward.installActRewardOffers(state.stageB, { seed:state.seed, act:state.campaign?.act || state.stageB?.act || 1 });
       state = deepFreeze({ ...state, politicalFinaleB14: finale, stageB, status: 'reward_choice', transcript: appendTranscript(state, { type: 'ChooseActOutcome', choiceId }) });
       return customResult(state, command, dependencies);
     } else throw new Error(`B14 choice is unavailable during ${finale.stage}`);
@@ -178,7 +176,8 @@ if (!globalThis[INSTALL_KEY]) {
       const result = originalDispatchPresenterCommand(state, commandInput, dependencies);
       let next = result.state;
       const finale = b14.finishActReward(state.politicalFinaleB14, command.offerId || command.payload?.offerId);
-      const stageB = createB14Reorganization(next.stageB);
+      const interActConversionPreview = economy.interActConversion(next.resources, next.campaign);
+      const stageB = createB14Reorganization(next.stageB, interActConversionPreview);
       next = deepFreeze({ ...next, politicalFinaleB14: finale, stageB, status: 'reorganization' });
       return customResult(next, result.command || command, dependencies, result.saveEnvelope || null);
     }
