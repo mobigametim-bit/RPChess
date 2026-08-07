@@ -46,6 +46,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          : > /tmp/rpchess-acceptance.log
           python3 -m http.server 4173 --bind 127.0.0.1 --directory dist > /tmp/rpchess-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
@@ -53,8 +54,19 @@ jobs:
             if curl --fail --silent http://127.0.0.1:4173/index.html >/dev/null; then break; fi
             sleep 1
           done
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 node tests/iron-marches-browser-acceptance.cjs
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-acceptance.cjs 2>&1 | tee /tmp/rpchess-acceptance.log
+      - name: Upload Chromium acceptance trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: iron-marches-chromium-trace
+          path: |
+            /tmp/rpchess-acceptance.log
+            /tmp/rpchess-http.log
+          if-no-files-found: warn
+          retention-days: 3
       - name: Upload browser distribution
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: rpchess-browser-dist
