@@ -1,0 +1,35 @@
+/* Last-mile visual QA overrides. Keep this file narrow and deterministic. */
+.rpprofile--approved-cards .rpa-profile-card--approved::before{display:grid!important}
+
+.rpa-subscreen.is-approved-commander-selection .rpa-screen-header{padding:64px 0 18px!important}
+.rpa-subscreen.is-approved-commander-selection .rpa-screen-header .rpa-eyebrow{display:none!important}
+.rpa-subscreen.is-approved-commander-selection .rpa-commander{border-image:none!important}
+.rpa-subscreen.is-approved-commander-selection .rpa-launch{border-image:none!important}
+.rpa-subscreen.is-approved-commander-selection .rpa-commander[aria-pressed="true"]::after{content:'ВЫБРАН';display:block!important;position:absolute!important;z-index:6;inset:auto 14px auto auto!important;left:auto!important;right:14px!important;top:14px!important;bottom:auto!important;width:max-content!important;height:auto!important;min-width:0!important;min-height:0!important;padding:5px 9px!important;border:1px solid rgba(110,205,255,.68)!important;border-radius:999px!important;background:#1b72a8!important;color:#effaff!important;font:900 9px/1 system-ui,sans-serif!important;letter-spacing:.05em;pointer-events:none}
+.rpa-subscreen.is-approved-commander-selection .rpa-commander[aria-pressed="true"] .rpa-commander__copy::before{display:none!important}
+
+.rpa-subscreen:has(.rpa-settings-grid) .rpa-screen-header{padding:84px 0 20px!important}
+.rpa-subscreen:has(.rpa-settings-grid) .rpu-settings-version{position:fixed!important;right:56px!important;top:44px!important;color:#a8b5c4!important}
+
+@media(max-height:820px) and (min-width:981px){
+  .rpa-subscreen.is-approved-commander-selection .rpa-screen-header{padding:46px 0 8px!important;margin-bottom:8px!important}
+  .rpa-subscreen.is-approved-commander-selection .rpa-screen-header h1{font-size:44px!important}
+  .rpa-subscreen.is-approved-commander-selection .rpa-screen-header p{font-size:13px!important;line-height:1.35!important}
+  .rpa-subscreen.is-approved-commander-selection .rpa-commander-layout{gap:16px!important}
+  .rpa-subscreen.is-approved-commander-selection .rpa-commander-grid{gap:10px!important}
+  .rpa-subscreen.is-approved-commander-selection .rpa-commander{min-height:225px!important}
+  .rpa-subscreen.is-approved-commander-selection .rpa-commander h3{font-size:23px!important}
+  .rpa-subscreen.is-approved-commander-selection .rpa-launch__portrait{height:238px!important;min-height:238px!important}
+  .rpa-subscreen.is-approved-commander-selection .rpa-launch__body{padding:14px 18px 16px!important;gap:6px!important}
+  .rpa-subscreen.is-approved-commander-selection .rpa-launch h2{font-size:30px!important}
+  .rpa-subscreen.is-approved-commander-selection [data-launch-commander]{min-height:48px!important}
+  .rpa-subscreen:has(.rpa-settings-grid) .rpa-screen-header{padding:32px 0 12px!important;margin-bottom:12px!important}
+  .rpa-subscreen:has(.rpa-settings-grid) .rpa-screen-header h1{font-size:48px!important}
+  .rpa-subscreen:has(.rpa-settings-grid) .rpa-settings-grid{padding-top:18px!important;padding-bottom:16px!important}
+  .rpa-subscreen:has(.rpa-settings-grid) .rpa-setting{min-height:50px!important;padding:7px 0!important}
+}
+@media(max-width:700px){
+  .rpa-subscreen.is-approved-commander-selection .rpa-screen-header{padding-top:58px!important}
+  .rpa-subscreen:has(.rpa-settings-grid) .rpa-screen-header{padding-top:64px!important}
+  .rpa-subscreen:has(.rpa-settings-grid) .rpu-settings-version{right:18px!important;top:28px!important}
+}

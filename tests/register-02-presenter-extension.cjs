@@ -44,7 +44,7 @@ const root = path.resolve(__dirname, '..');
     assert.ok(markup.indexOf('Активная способность') < markup.indexOf('Пассивные эффекты'));
   });
 
-  test('codex renders separate hero and political catalogs with faction filtering', () => {
+  test('legacy codex data still renders separate hero and political catalogs with faction filtering', () => {
     const heroes = codex.codexMarkup('heroes', 'iron_marches');
     const politics = codex.codexMarkup('politics', 'iron_marches');
     assert.ok(heroes.includes('Герои · 36'));
@@ -55,7 +55,7 @@ const root = path.resolve(__dirname, '..');
     assert.strictEqual(politics.includes('Понтифик Элия'), false);
   });
 
-  test('runtime extension selects actual hero records for field, reserve and deployment panels', () => {
+  test('runtime extension helpers still select actual hero records for gameplay projections', () => {
     const scenarioSnapshot = {
       playerSide: 'w',
       scenario: {
@@ -70,12 +70,17 @@ const root = path.resolve(__dirname, '..');
     assert.strictEqual(extension.badgeSource({ heroId: 'hero.aldric_wall' }), 'assets/heroes/aldric_wall/piece_badge.png');
   });
 
-  test('browser entry loads the non-invasive Register 02 enhancer after the production app', () => {
-    const html = fs.readFileSync(path.join(root, 'game/vertical-slice.html'), 'utf8');
-    const enhancer = fs.readFileSync(path.join(root, 'game/js/register-02-runtime-enhancer.mjs'), 'utf8');
-    assert.ok(html.indexOf('js/vertical-slice-app.mjs') < html.indexOf('js/register-02-runtime-enhancer.mjs'));
-    assert.ok(enhancer.includes('Object.setPrototypeOf'));
-    assert.ok(enhancer.includes('VerticalSlicePresenter.prototype'));
+  test('browser entries map Register 02 to the redesigned codex and retire prototype mutation enhancer', () => {
+    for (const relative of ['game/index.html', 'game/vertical-slice.html']) {
+      const html = fs.readFileSync(path.join(root, relative), 'utf8');
+      assert.ok(html.includes('register-02-codex-v2.mjs'));
+      assert.strictEqual(html.includes('js/register-02-runtime-enhancer.mjs'), false);
+    }
+    const redesigned = fs.readFileSync(path.join(root, 'game/js/register-02-codex-v2.mjs'), 'utf8');
+    assert.ok(redesigned.includes('rpu-codex__layout'));
+    assert.ok(redesigned.includes('rpu-person-detail'));
+    assert.ok(redesigned.includes('politicalAssets(profile.id)'));
+    assert.strictEqual(redesigned.includes('MutationObserver'), false);
   });
 
   let failures = 0;
