@@ -1,0 +1,29 @@
+/* Final chronicle cards: accepted glass composition, no decorative frame around the whole card. */
+.rpprofile--approved-cards .rpa-profile-list{width:100%;max-width:1400px;margin:0 auto;gap:22px!important}
+.rpprofile--approved-cards .rpa-profile-card--approved{position:relative;display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:240px minmax(0,1fr) auto!important;min-height:586px!important;padding:0!important;border:1px solid rgba(101,127,153,.48)!important;border-image:none!important;border-radius:20px!important;background:linear-gradient(180deg,rgba(5,17,30,.92),rgba(3,12,22,.94))!important;box-shadow:0 22px 52px rgba(0,0,0,.44)!important;overflow:hidden!important;transform:none!important}
+.rpprofile--approved-cards .rpa-profile-card--approved::before{content:attr(data-chronicle-number)!important;position:absolute;z-index:8;left:18px;top:17px;width:40px;height:40px;display:grid;place-items:center;border:1px solid rgba(221,183,93,.72);border-radius:50%;background:rgba(5,15,25,.84);color:#f1d47e;font:700 18px/1 Georgia,serif;box-shadow:0 5px 16px rgba(0,0,0,.32);pointer-events:none}
+.rpprofile--approved-cards .rpa-profile-card--approved::after{display:none!important}
+.rpprofile--approved-cards .rpa-profile-card--approved.is-available{border-color:rgba(213,176,84,.65)!important}
+.rpprofile--approved-cards .rpa-profile-card--approved:hover{transform:translateY(-2px)!important;filter:brightness(1.035);box-shadow:0 26px 58px rgba(0,0,0,.5)!important}
+.rpprofile--approved-cards .rpprofile__approved-visual{height:240px!important;min-height:240px!important;margin:0!important;border:0!important;border-radius:0!important;background:linear-gradient(180deg,rgba(19,47,79,.72),rgba(5,17,30,.86))!important}
+.rpprofile--approved-cards .rpprofile__approved-visual::after{height:46%;background:linear-gradient(transparent,rgba(3,11,20,.96))!important}
+.rpprofile--approved-cards .rpprofile__approved-visual img{width:100%;height:100%;object-fit:cover;object-position:center 22%}
+.rpprofile--approved-cards .rpprofile__approved-visual--empty{display:grid!important;place-items:center!important;background:linear-gradient(180deg,rgba(10,28,47,.84),rgba(4,14,25,.96))!important}
+.rpprofile--approved-cards .rpprofile__approved-visual--empty img{width:108px!important;height:108px!important;object-fit:contain!important;opacity:.72!important;filter:drop-shadow(0 0 24px rgba(63,174,240,.28))!important}
+.rpprofile--approved-cards .rpprofile__approved-visual--empty span{display:none!important}
+.rpprofile--approved-cards .rpprofile__approved-content{align-content:start;gap:8px;padding:22px 22px 14px!important}
+.rpprofile--approved-cards .rpprofile__approved-title{font-family:RPChessTitle,Georgia,serif!important;font-size:31px!important;line-height:1.05!important;color:#fff1d4!important}
+.rpprofile--approved-cards .rpprofile__approved-status{color:#e5bd5b!important;font-size:12px!important;font-weight:900!important;letter-spacing:.05em;text-transform:uppercase}
+.rpprofile--approved-cards .rpprofile__approved-content p{max-width:340px;margin-top:5px!important;color:#aebdcd!important;font-size:14px!important;line-height:1.5!important}
+.rpprofile--approved-cards .rpa-profile-card--approved.is-empty .rpprofile__approved-content{text-align:center;justify-items:center;padding-top:20px!important}
+.rpprofile--approved-cards .rpa-profile-card--approved.is-empty .rpprofile__approved-title{font-size:30px!important}
+.rpprofile--approved-cards .rpa-profile-card--approved.is-empty .rpprofile__approved-content p{text-align:center}
+.rpprofile--approved-cards .rpprofile__approved-chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:9px}
+.rpprofile--approved-cards .rpprofile__approved-chips span{justify-content:center;min-height:54px;border-radius:10px;background:rgba(11,29,48,.86);border-color:rgba(91,120,151,.42);text-align:center}
+.rpprofile--approved-cards .rpprofile__approved-actions{padding:0 22px 22px!important;gap:10px!important}
+.rpprofile--approved-cards .rpprofile__approved-button{min-height:52px!important;padding:10px 18px!important}
+.rpprofile--approved-cards .rpprofile__approved-more{right:18px!important;top:17px!important}
+.rpprofile--approved-cards .rpprofile__approved-more-toggle{width:40px;height:40px;min-height:40px;background:rgba(5,15,25,.84);border-color:rgba(221,183,93,.72)}
+@media(max-width:1120px){.rpprofile--approved-cards .rpa-profile-card--approved{min-height:560px!important}.rpprofile--approved-cards .rpprofile__approved-visual{height:220px!important;min-height:220px!important}.rpprofile--approved-cards .rpa-profile-card--approved{grid-template-rows:220px minmax(0,1fr) auto!important}}
+@media(max-width:760px){.rpprofile--approved-cards .rpa-profile-card--approved{grid-template-rows:210px minmax(0,1fr) auto!important;min-height:520px!important}.rpprofile--approved-cards .rpprofile__approved-visual{height:210px!important;min-height:210px!important}.rpprofile--approved-cards .rpprofile__approved-title{font-size:28px!important}}
+@media(max-width:480px){.rpprofile--approved-cards .rpa-profile-card--approved{min-height:500px!important}.rpprofile--approved-cards .rpprofile__approved-content{padding-inline:18px!important}.rpprofile--approved-cards .rpprofile__approved-actions{padding-inline:18px!important}.rpprofile--approved-cards .rpa-profile-card--approved::before{left:14px;top:14px}.rpprofile--approved-cards .rpprofile__approved-more{right:14px!important;top:14px!important}}
