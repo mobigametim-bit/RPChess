@@ -48,8 +48,10 @@ function launchOptions() {
 function decorateCommanderScreen(root=document) {
   const launch=root.querySelector?.('[data-launch-commander]');
   if (!launch) return;
+  // The approved commander module owns the screen heading/subheading. Do not mutate
+  // those nodes here: both modules observe child-list changes and competing copy
+  // creates a synchronous MutationObserver feedback loop that freezes the UI.
   setTextIfChanged(launch,'К ВЫБОРУ КОРОЛЯ И ДОКТРИНЫ');
-  setTextIfChanged(root.querySelector('.rpa-screen-header p'),'Командир задаёт рекомендованный стиль похода. Короля и доктрину вы подтвердите отдельно, а героя выберете из трёх вариантов стартового драфта.');
   const labels=[...root.querySelectorAll('.rpa-loadout small')];
   setTextIfChanged(labels[0],'Рекомендованный король');
   setTextIfChanged(labels[1],'Рекомендованная доктрина');
