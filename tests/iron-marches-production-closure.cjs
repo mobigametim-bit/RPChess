@@ -156,7 +156,7 @@ function dispatch(state, command) { return presenter.dispatchPresenterCommand(st
   assert.ok(finalPresenter.includes('data-interact-conversion'));
   assert.ok(finalPresenter.includes('Осталось припасов'));
   assert.ok(finalPresenter.includes('Золото следующего акта'));
-  assert.ok(finalPresenter.includes('data-service-relic'));
+  assert.ok(finalPresenter.includes('dataset.serviceRelic'));
   assert.ok(finalPresenter.includes('targetRelicId'));
   assert.ok(finalPresenter.includes('Нет подходящей фигуры'));
   assert.ok(finalPresenter.includes('Нет подходящей реликвии'));
