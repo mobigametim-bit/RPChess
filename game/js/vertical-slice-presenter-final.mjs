@@ -52,7 +52,7 @@ class VerticalSlicePresenter extends ApprovedVerticalSlicePresenter {
       if (action === 'remove_relic' || action === 'reforge_relic') return roster.filter((entry) => (entry.relicIds || []).length);
       return roster;
     };
-    const targetRequired = (action) => ['heal_light_one','heal_hero_heavy','emergency_operation','camp_heal_light','remove_relic','reforge_relic'].includes(action);
+    const targetRequired = (action) => ['piece_upgrade','heal_light_one','heal_hero_heavy','emergency_operation','camp_heal_light','remove_relic','reforge_relic'].includes(action);
     const relicRequired = (action) => ['upgrade_relic','remove_relic','reforge_relic'].includes(action);
 
     for (const offer of service.offers || []) {
