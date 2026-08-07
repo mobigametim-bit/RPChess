@@ -11,11 +11,20 @@ const {
   validateEventEffectReferences,
   createCatalogEventChoiceResolver
 } = require('./effect-catalog.cjs');
+const {
+  loadProductionEventLibrary,
+  compileProductionEventPack,
+  compileProductionLocalization
+} = require('./production-events.cjs');
+const { assertProductionEventPolicy, productionEventPolicyReport } = require('./production-event-policy.cjs');
+const { createCompatibleProductionEventChoiceResolver } = require('./production-event-runtime.cjs');
+const { bindRegister04EventArt } = require('./register-04-event-assets.cjs');
 
 const DEFAULT_BOARD_MANIFEST = 'content/board-themes.json';
 const DEFAULT_PACKS = Object.freeze(['content/packs/iron_marches_vertical_slice.json']);
 const DEFAULT_EFFECT_CATALOGS = Object.freeze(['content/effects/iron_marches_events.json']);
 const DEFAULT_COMBAT_PROFILES = 'content/combat-profiles/iron_marches.json';
+const DEFAULT_PRODUCTION_EVENTS = 'content/events/iron_marches_production.json';
 const DEFAULT_LOCALIZATION = Object.freeze({
   ru: Object.freeze(['content/localization/ru/iron_marches_vertical_slice.json']),
   en: Object.freeze(['content/localization/en/iron_marches_vertical_slice.json'])
@@ -51,22 +60,34 @@ function mergeLocalization(projectRoot, pathsByLanguage) {
   return Object.freeze(localization);
 }
 
+function mergeProductionLocalization(base, productionEvents) {
+  return Object.freeze({
+    ru: Object.freeze({ ...base.ru, ...compileProductionLocalization(productionEvents, 'ru') }),
+    en: Object.freeze({ ...base.en, ...compileProductionLocalization(productionEvents, 'en') })
+  });
+}
+
 function buildProductionContentBundle(options = {}) {
   const projectRoot = path.resolve(options.projectRoot || path.resolve(__dirname, '../..'));
   const boardManifestPath = options.boardManifestPath || DEFAULT_BOARD_MANIFEST;
   const packPaths = options.packPaths || DEFAULT_PACKS;
   const effectCatalogPaths = options.effectCatalogPaths || DEFAULT_EFFECT_CATALOGS;
   const combatProfilePath = options.combatProfilePath || DEFAULT_COMBAT_PROFILES;
+  const productionEventPath = options.productionEventPath || DEFAULT_PRODUCTION_EVENTS;
   const localizationPaths = options.localizationPaths || DEFAULT_LOCALIZATION;
   if (!Array.isArray(packPaths) || !packPaths.length) throw new Error('production content requires at least one pack');
   if (!Array.isArray(effectCatalogPaths) || !effectCatalogPaths.length) throw new Error('production content requires at least one effect catalog');
 
   const boardThemeManifest = loadBoardThemeManifest(resolveProjectPath(projectRoot, boardManifestPath));
-  const localization = mergeLocalization(projectRoot, localizationPaths);
+  const productionEvents = assertProductionEventPolicy(loadProductionEventLibrary(resolveProjectPath(projectRoot, productionEventPath)));
+  const eventPolicyReport = productionEventPolicyReport(productionEvents);
+  const localization = mergeProductionLocalization(mergeLocalization(projectRoot, localizationPaths), productionEvents);
   const registry = new ContentRegistry({ boardThemeManifest });
   const packs = [];
   for (const relativePath of packPaths) {
-    const pack = readJson(resolveProjectPath(projectRoot, relativePath));
+    const source = readJson(resolveProjectPath(projectRoot, relativePath));
+    const compiled = compileProductionEventPack(source, productionEvents);
+    const pack = bindRegister04EventArt({ ...compiled, packId: source.packId });
     registry.addPack(pack);
     packs.push(Object.freeze({ packId: pack.packId, path: relativePath }));
   }
@@ -76,7 +97,8 @@ function buildProductionContentBundle(options = {}) {
   const effectCatalogs = effectCatalogPaths.map((relativePath) => loadEffectCatalog(resolveProjectPath(projectRoot, relativePath)));
   const eventEffectCatalog = mergeEffectCatalogs(effectCatalogs);
   validateEventEffectReferences(registry, eventEffectCatalog);
-  const eventChoiceResolver = createCatalogEventChoiceResolver(eventEffectCatalog);
+  const catalogEventChoiceResolver = createCatalogEventChoiceResolver(eventEffectCatalog);
+  const eventChoiceResolver = createCompatibleProductionEventChoiceResolver(productionEvents, catalogEventChoiceResolver);
 
   return Object.freeze({
     format: 'rpchess-production-content-bundle',
@@ -87,6 +109,9 @@ function buildProductionContentBundle(options = {}) {
     packs: Object.freeze(packs),
     effectCatalogPaths: Object.freeze(effectCatalogPaths.slice()),
     combatProfilePath,
+    productionEventPath,
+    productionEvents,
+    eventPolicyReport,
     combatProfiles,
     eventEffectCatalog,
     eventChoiceResolver,
@@ -107,13 +132,15 @@ function productionContentReport(bundle) {
   const languageCounts = {};
   for (const language of ['ru', 'en']) languageCounts[language] = Object.keys(bundle.localization[language]).length;
   return Object.freeze({
-    ok: missingLocalization.length === 0,
+    ok: missingLocalization.length === 0 && bundle.eventPolicyReport.ok,
     packs: bundle.packs.length,
     summary: bundle.summary,
     statuses: Object.freeze(statuses),
     languageCounts: Object.freeze(languageCounts),
     effectCatalogs: bundle.effectCatalogPaths.length,
     eventEffectCount: Object.keys(bundle.eventEffectCatalog.effects).length,
+    productionEventCount: bundle.productionEvents.events.length,
+    eventPolicyReport: bundle.eventPolicyReport,
     combatProfileCount: Object.keys(bundle.combatProfiles.heroes).length,
     assetCount: bundle.assetPaths.length,
     missingLocalization: Object.freeze(missingLocalization)
@@ -125,10 +152,12 @@ module.exports = {
   DEFAULT_PACKS,
   DEFAULT_EFFECT_CATALOGS,
   DEFAULT_COMBAT_PROFILES,
+  DEFAULT_PRODUCTION_EVENTS,
   DEFAULT_LOCALIZATION,
   readJson,
   resolveProjectPath,
   mergeLocalization,
+  mergeProductionLocalization,
   buildProductionContentBundle,
   productionContentReport
 };
