@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "register": "REGISTER_05_ENCOUNTERS_AND_BOSSES",
+  "registerPath": "register/REGISTER_05_ENCOUNTERS_AND_BOSSES.md",
+  "assetRoot": "game/assets/bosses",
+  "status": "SUPPLIED_ART_COMPLETE",
+  "bossCount": 15,
+  "assetCount": 105,
+  "note": "This manifest covers the visual boss-kit assets only. Encounter YAML/JSON modules, boss gameplay data, AI profiles, localization and validation fixtures remain separate content records.",
+  "bosses": [
+    {"id":"boss.iron_regent","slug":"iron_regent","regionId":"region.iron_marches"},
+    {"id":"boss.widow_general","slug":"widow_general","regionId":"region.iron_marches"},
+    {"id":"boss.blue_pontiff","slug":"blue_pontiff","regionId":"region.luminous_synod"},
+    {"id":"boss.heretic_astronomer","slug":"heretic_astronomer","regionId":"region.luminous_synod"},
+    {"id":"boss.first_consul","slug":"first_consul","regionId":"region.free_cities"},
+    {"id":"boss.guild_of_three","slug":"guild_of_three","regionId":"region.free_cities"},
+    {"id":"boss.antler_king","slug":"antler_king","regionId":"region.thorn_covenant"},
+    {"id":"boss.thorn_bride","slug":"thorn_bride","regionId":"region.thorn_covenant"},
+    {"id":"boss.cinder_emperor","slug":"cinder_emperor","regionId":"region.ashen_dominion"},
+    {"id":"boss.last_legion","slug":"last_legion","regionId":"region.ashen_dominion"},
+    {"id":"boss.sky_khan","slug":"sky_khan","regionId":"region.sky_khanate"},
+    {"id":"boss.storm_sister","slug":"storm_sister","regionId":"region.sky_khanate"},
+    {"id":"boss.hollow_sovereign","slug":"hollow_sovereign","regionId":"region.secret"},
+    {"id":"boss.mirror_self","slug":"mirror_self","regionId":"region.secret"},
+    {"id":"boss.war_beyond_crown","slug":"war_beyond_crown","regionId":"region.final"}
+  ],
+  "requiredFiles": [
+    {"filename":"portrait.png","width":768,"height":768,"format":"PNG"},
+    {"filename":"piece.png","width":512,"height":512,"format":"PNG","mode":"RGBA"},
+    {"filename":"arena.jpg","width":1600,"height":900,"format":"JPEG"},
+    {"filename":"phase_01.png","width":512,"height":512,"format":"PNG"},
+    {"filename":"phase_02.png","width":512,"height":512,"format":"PNG"},
+    {"filename":"phase_03.png","width":512,"height":512,"format":"PNG"},
+    {"filename":"phase_transition.png","width":1024,"height":1024,"format":"PNG","mode":"RGBA"}
+  ]
+}

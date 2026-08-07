@@ -15,6 +15,26 @@
 | [REGISTER_05_ENCOUNTERS_AND_BOSSES.md](register/REGISTER_05_ENCOUNTERS_AND_BOSSES.md) | Combat scenario modules, logical board configurations and boss kits | 96 encounters, 15 boss kits |
 | [REGISTER_06_AUDIO_UI_STEAM.md](register/REGISTER_06_AUDIO_UI_STEAM.md) | Additional visual series, modular board cosmetics, audio, Steam store assets and workflow | release audio/UI/store set |
 
+## Verified supplied visual assets — Registers 01–05
+
+The repository contains and validates all visual files supplied by the project owner for Registers 01–05. This status is about **asset-file availability and canonical runtime references**, not automatic completion of gameplay/data/localization records described by the same annex.
+
+| Register | Supplied visual coverage | Canonical manifest/catalog | Runtime status |
+|---|---:|---|---|
+| Register 01 | 141 / 141 supplied foundation assets | `content/assets/register_01_assets.json`, `game/js/register-01-assets.mjs` | Board, region, king/doctrine and VFX catalogs connected; currently implemented content consumes the relevant subset. |
+| Register 02 | 126 / 126 supplied hero/political assets | `content/assets/register_02_assets.json`, `game/js/register-02-assets.mjs` | Hero selection, hero detail/codex and political portrait catalog connected. |
+| Register 03 | 72 / 72 relic icons | `content/manifests/register-03-relics.json`, `game/js/register-03-relic-assets.mjs` | Relic UI/codex and figure-bound relic presentation connected. |
+| Register 04 | 74 / 74 supplied unique event illustrations | `content/manifests/register-04-events.json`, `game/js/register-04-event-assets.mjs` | All supplied illustrations resolve; only authored events implemented by gameplay are instantiated at runtime. |
+| Register 05 | 105 / 105 supplied boss-kit visual files (15 × 7) | `content/manifests/register-05-boss-assets.json`, `game/js/register-05-boss-assets.mjs` | Boss arena, portrait, phase sigils and transition art connected to the production boss presenter. |
+
+The cross-register regression `tests/register-01-05-integrity.cjs` validates the five annex links, all 518 supplied visual repository paths and their canonical browser catalogs. `tests/register-05-boss-assets.cjs` additionally validates dimensions for every supplied boss file.
+
+Important scope distinction:
+
+- Register 04 defines 140 **event content records**, but only 74 unique illustrations were supplied as art; missing event data/authoring is not an asset-file failure.
+- Register 05 defines 96 **encounter modules** plus boss gameplay data/AI/localization/fixtures. The 105 supplied files cover the fifteen boss visual kits only; encounter YAML/JSON and boss gameplay records remain separate production work.
+- Future-region/P1 art may be fully present and catalogued before the corresponding gameplay region is implemented. Such art is intentionally not forced into unrelated current Iron Marches screens merely to increase a usage count.
+
 ## Board asset policy
 
 Runtime boards are assembled from modular square cells. Every board theme consists of a paired light-cell texture and dark-cell texture plus separate gameplay overlays and environment objects. The production register does not require complete pre-rendered board images, board frames or underlays. Coordinates, active-cell masks, highlights and non-standard board shapes are rendered by the game.

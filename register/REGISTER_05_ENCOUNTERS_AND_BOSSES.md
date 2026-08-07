@@ -73,7 +73,7 @@ A slot only counts as a new module when its regional mechanic changes tactical d
 ## Twelve generic/rare modules — `ENCOUNTER-085…096`
 
 | ID / file | Priority | Tactical brief | Status |
-|---|---|---|---|---|
+|---|---|---|---|
 | 085 `fractured_board_01.yaml` | P1 | **Fractured Board** — separated legal board components connected by declared passages and rendered from the same modular tile pair. | MISSING |
 | 086 `mirror_rank_01.yaml` | P1 | **Mirrored Rank** — visible symmetry constraint; no AI information advantage. | MISSING |
 | 087 `portal_cross_01.yaml` | P1 | **Four Portals** — four paired, previewed portal endpoints. | MISSING |
@@ -104,25 +104,31 @@ Boss battle boards use the region/theme modular tile pair unless the data declar
 
 **Acceptance:** 2–3 phases; phase rules displayed before activation; no ordinary HP bar; surviving composition/injuries preserved according to explicit transition; reference completion replay; all phase positions legal/reachable; modular tile references valid; assets consistent and rights recorded.
 
+### Supplied boss visual asset coverage
+
+All fifteen visual boss kits have been supplied and are stored at `game/assets/bosses/<slug>/`. The canonical manifest is `content/manifests/register-05-boss-assets.json`, and browser/runtime resolution is owned by `game/js/register-05-boss-assets.mjs`. The 105 visual files are in `REVIEW`: technical existence/dimensions and runtime references are validated automatically, while provenance and final in-game visual acceptance are still required before `APPROVED`.
+
+This visual status does **not** imply that every boss gameplay-data record, AI profile, localization set or validation fixture is implemented. Those remain separate acceptance requirements.
+
 ## Fifteen boss records
 
 | ID / folder | Region | Priority | Phase brief | Status |
 |---|---|---|---|---|
-| BOSS-01 `iron_regent/` | Iron Marches | P0 | **Железный Регент** — break furnace seals, then legal mate in a collapsing fortress. | MISSING |
-| BOSS-02 `widow_general/` | Iron Marches | P0 | **Вдовствующая Генеральша** — escort and duel phases around rook lines. | MISSING |
-| BOSS-03 `blue_pontiff/` | Luminous Synod | P1 | **Лазурный Понтифик** — altar activation, visible silence, diagonal mate. | MISSING |
-| BOSS-04 `heretic_astronomer/` | Luminous Synod | P1 | **Еретик-Астроном** — rotating rune lines and recruit-or-defeat route. | MISSING |
-| BOSS-05 `first_consul/` | Free Cities | P1 | **Первый Консул** — contract objectives and shifting neutral pieces. | MISSING |
-| BOSS-06 `guild_of_three/` | Free Cities | P1 | **Гильдия Троих** — three linked leaders and political victory options. | MISSING |
-| BOSS-07 `antler_king/` | Thorn Covenant | P1 | **Король Оленьих Рогов** — portal hunt, grove defense, then mate. | MISSING |
-| BOSS-08 `thorn_bride/` | Thorn Covenant | P1 | **Терновая Невеста** — escort/choice boss who can become an ally. | MISSING |
-| BOSS-09 `cinder_emperor/` | Ashen Dominion | P1 | **Пепельный Император** — formation-sacrifice seals and succession decision. | MISSING |
-| BOSS-10 `last_legion/` | Ashen Dominion | P1 | **Последний Легион** — survival and command-banner objective. | MISSING |
-| BOSS-11 `sky_khan/` | Sky Khanate | P1 | **Небесный Каган** — mobile reserve waves and cliff-edge files. | MISSING |
-| BOSS-12 `storm_sister/` | Sky Khanate | P1 | **Сестра Бури** — race objective and mounted duel. | MISSING |
-| BOSS-13 `hollow_sovereign/` | secret/final | P1 | **Пустой Суверен** — reality fracture across two logical boards assembled from approved modular tiles. | MISSING |
-| BOSS-14 `mirror_self/` | secret | P1 | **Зеркальный Двойник** — copies visible legal patterns without hidden cheating. | MISSING |
-| BOSS-15 `war_beyond_crown/` | final | P1 | **Война за Короной** — political coalition determined by faction outcomes. | MISSING |
+| BOSS-01 `iron_regent/` | Iron Marches | P0 | **Железный Регент** — break furnace seals, then legal mate in a collapsing fortress. | REVIEW |
+| BOSS-02 `widow_general/` | Iron Marches | P0 | **Вдовствующая Генеральша** — escort and duel phases around rook lines. | REVIEW |
+| BOSS-03 `blue_pontiff/` | Luminous Synod | P1 | **Лазурный Понтифик** — altar activation, visible silence, diagonal mate. | REVIEW |
+| BOSS-04 `heretic_astronomer/` | Luminous Synod | P1 | **Еретик-Астроном** — rotating rune lines and recruit-or-defeat route. | REVIEW |
+| BOSS-05 `first_consul/` | Free Cities | P1 | **Первый Консул** — contract objectives and shifting neutral pieces. | REVIEW |
+| BOSS-06 `guild_of_three/` | Free Cities | P1 | **Гильдия Троих** — three linked leaders and political victory options. | REVIEW |
+| BOSS-07 `antler_king/` | Thorn Covenant | P1 | **Король Оленьих Рогов** — portal hunt, grove defense, then mate. | REVIEW |
+| BOSS-08 `thorn_bride/` | Thorn Covenant | P1 | **Терновая Невеста** — escort/choice boss who can become an ally. | REVIEW |
+| BOSS-09 `cinder_emperor/` | Ashen Dominion | P1 | **Пепельный Император** — formation-sacrifice seals and succession decision. | REVIEW |
+| BOSS-10 `last_legion/` | Ashen Dominion | P1 | **Последний Легион** — survival and command-banner objective. | REVIEW |
+| BOSS-11 `sky_khan/` | Sky Khanate | P1 | **Небесный Каган** — mobile reserve waves and cliff-edge files. | REVIEW |
+| BOSS-12 `storm_sister/` | Sky Khanate | P1 | **Сестра Бури** — race objective and mounted duel. | REVIEW |
+| BOSS-13 `hollow_sovereign/` | secret/final | P1 | **Пустой Суверен** — reality fracture across two logical boards assembled from approved modular tiles. | REVIEW |
+| BOSS-14 `mirror_self/` | secret | P1 | **Зеркальный Двойник** — copies visible legal patterns without hidden cheating. | REVIEW |
+| BOSS-15 `war_beyond_crown/` | final | P1 | **Война за Короной** — political coalition determined by faction outcomes. | REVIEW |
 
 ## Count and release gate
 
@@ -130,5 +136,6 @@ Boss battle boards use the region/theme modular tile pair unless the data declar
 - 12 rare/generic modules;
 - 96 recommended total, exceeding the mandatory minimum of 70;
 - 12 regional primary/alternative boss kits plus 3 final/secret kits;
+- 15/15 boss visual kits and 105/105 supplied boss visual files are present in the repository and catalogued for runtime use;
 - no module enters release count before schema validation, deterministic fixture, modular tile-reference validation, automated reachability checks and a designer completion replay;
-- the current prototype boss is a reference/placeholder and does not automatically satisfy any P1 boss record.
+- the current prototype boss is a reference/placeholder and does not automatically satisfy any P1 boss gameplay record.
