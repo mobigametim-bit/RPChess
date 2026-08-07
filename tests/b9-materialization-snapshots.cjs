@@ -40,7 +40,7 @@ assert.strictEqual(event.contentId, 'event.production');
 assert.strictEqual(event.contentVersion, 7);
 assert.strictEqual(event.details.eventVersion, 7);
 assert.strictEqual(event.details.variantId, 'linked_favorable');
-assert.strictEqual(event.details.participantId, 'hero.aldric.wall');
+assert.strictEqual(event.details.participantId, 'hero.aldric_wall');
 assert.deepStrictEqual(event.details.percentages, [65, 35]);
 assert.deepStrictEqual(event.details.snapshot, { stageId: 'decision', visibleChoiceIds: ['a', 'b'] });
 assert.deepStrictEqual(event.selectorState, { revision: 3, assignedNodeId: 'node.event' });
