@@ -6,7 +6,7 @@ const { pathToFileURL } = require('url');
 
 (async () => {
   const load = (relative) => import(pathToFileURL(path.resolve(__dirname, '..', relative)).href);
-  const presenter = await load('game/js/vertical-slice-presenter-approved.mjs');
+  const presenter = await load('game/js/vertical-slice-presenter-final.mjs');
   const codex = await load('game/js/register-02-codex-v2.mjs');
   const relics = await load('game/js/register-03-relic-codex-v2.mjs');
   assert.strictEqual(typeof presenter.VerticalSlicePresenter, 'function');
