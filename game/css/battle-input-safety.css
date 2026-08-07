@@ -6,3 +6,20 @@
 .rpvs__scene-vfx {
   pointer-events: none !important;
 }
+
+/* The base presenter uses a fixed 620px board. On short desktop viewports that
+   pushes the last rank below the window once the shell and battle header are
+   accounted for, making legal bottom-rank targets impossible to click. Keep
+   the approved 620px size when space permits, but fit the complete board into
+   the available desktop viewport on shorter screens. */
+@media (min-width: 981px) {
+  .rpvs--battle .rpvs__board-wrap {
+    min-height: 0 !important;
+    height: min(620px, calc(100dvh - 190px)) !important;
+  }
+
+  .rpvs--battle .rpvs__canvas {
+    min-height: 0 !important;
+    height: 100% !important;
+  }
+}
