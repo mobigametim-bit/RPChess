@@ -9,126 +9,108 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
 
 (async () => {
   const app = read('game/js/vertical-slice-app.mjs');
-  const presenter = read('game/js/vertical-slice-presenter.mjs');
-  const register01 = read('game/js/register-01-assets.mjs');
+  const legacyPresenter = read('game/js/vertical-slice-presenter.mjs');
+  const presenterV2 = read('game/js/vertical-slice-presenter-v2.mjs');
+  const uiSystem = read('game/js/ui-system-v2.mjs');
   const clientSource = read('game/js/runtime-command-client.mjs');
-  const extension = read('game/js/vertical-slice-presenter-register-02.mjs');
+  const register01 = read('game/js/register-01-assets.mjs');
+  const register02V2 = read('game/js/register-02-codex-v2.mjs');
+  const register03V2 = read('game/js/register-03-relic-codex-v2.mjs');
   const css = read('game/css/stage-b-ui.css');
-  const armyFoundationCss = read('game/css/army-foundation-approved.css');
-  const armyFoundationRefinements = read('game/css/army-foundation-test-refinements.css');
-  const armyFoundation = read('game/js/army-foundation-approved.mjs');
+  const uiCss = read('game/css/ui-system-v2.css');
+  const shellCss = read('game/css/ui-system-v2-shell.css');
   const index = read('game/index.html');
   const isolated = read('game/vertical-slice.html');
 
   for (const html of [index, isolated]) {
     assert(html.includes('css/stage-b-ui.css'));
-    assert(html.includes('css/army-foundation-approved.css'));
-    assert(html.includes('css/army-foundation-test-refinements.css'));
-    assert(html.includes('js/army-foundation-approved.mjs'));
+    assert(html.includes('css/ui-system-v2.css'));
+    assert(html.includes('css/ui-system-v2-shell.css'));
+    assert(html.includes('js/ui-system-v2.mjs'));
+    assert(html.includes('vertical-slice-presenter-v2.mjs'));
+    assert(html.includes('register-02-codex-v2.mjs'));
+    assert(html.includes('register-03-relic-codex-v2.mjs'));
+    assert.strictEqual(html.includes('js/army-foundation-approved.mjs'), false);
+    assert.strictEqual(html.includes('js/register-02-runtime-enhancer.mjs'), false);
+    assert.strictEqual(html.includes('js/register-03-relic-codex.mjs"></script>'), false);
+    assert.strictEqual(html.includes('css/army-foundation-approved.css'), false);
   }
-  assert(app.includes('rpa-menu__main--open'));
-  assert.strictEqual(app.includes('Проведите живую шахматную армию через Железные Марши'), false);
-  assert(app.includes('data-profile-primary'));
-  assert(app.includes('data-chronicle-commander'));
-  assert(app.includes("card.setAttribute('aria-pressed'"));
-  assert(css.includes('.rpa-menu__main--open'));
-  assert(css.includes('border-image:none!important'));
-  assert(css.includes('.rpa-chronicle-card{display:grid;grid-template-columns:190px minmax(0,1fr) auto'));
-  assert(css.includes('.rpa-chronicle-card__copy{align-self:stretch!important'));
-  assert(css.includes('background:linear-gradient(135deg,#101f34f5,#081422f5)!important'));
-  assert(css.includes('.rpvs__top--battle{border:0!important'));
-  assert(css.includes('.rpvs__battle-sidebar-scroll'));
-  assert(css.includes('overflow-y:auto'));
-  assert(css.includes('max-height:calc(100dvh - 205px)'));
-  assert(css.includes('.rp02-mechanic-card,.rp02-relic-slot{display:grid!important;grid-template-columns:58px minmax(0,1fr)'));
-  assert(css.includes('.rp02-hero-panel__body{display:contents!important}'));
-  assert(css.includes('.rpvs__moving-piece'));
-  assert(css.includes('.rpvs__moving-piece small{position:absolute;left:4%;top:4%'));
-  assert(css.includes('width:33%;aspect-ratio:1.35'));
-  assert(css.includes('font:700 20px/.9 Georgia,serif'));
-  assert(css.includes('.rpvs__reserve-piece small{position:absolute;left:3px;top:3px'));
-  assert(css.includes('.rp02-media>span{line-height:.84!important;overflow:visible!important}'));
-  assert(presenter.includes('const glyphSize = Math.max(14, Math.floor(rect.size * .264))'));
-  assert(presenter.includes('const cx = rect.x + glyphInset + glyphSize * .72'));
-  assert(presenter.includes('animateBattleChanges(previous, snapshot)'));
+
+  // Existing gameplay surfaces remain in the underlying presenter.
+  for (const method of ['renderDraft(snapshot)', 'renderBriefing(snapshot)', 'renderRewardChoice(snapshot)', 'renderService(snapshot)', 'renderRetreat(snapshot)', 'renderActOutcome(snapshot)', 'renderReorganization(snapshot)']) {
+    assert(legacyPresenter.includes(method), `legacy gameplay presenter must retain ${method}`);
+  }
+  assert(legacyPresenter.includes('register04EventAsset(event.eventId'));
+  assert(legacyPresenter.includes('animateBattleChanges(previous, snapshot)'));
+  assert(legacyPresenter.includes('this.hiddenAnimatedPieceIds = new Set'));
+  assert(legacyPresenter.includes("event.type === 'PieceMoved'"));
+  assert(legacyPresenter.includes('const glyphSize = Math.max(14, Math.floor(rect.size * .264))'));
   assert.strictEqual(register01.includes('legal_move.png'), false);
   assert.strictEqual(register01.includes('capture_move.png'), false);
-  assert(presenter.includes('].filter(Boolean)'));
-  assert(presenter.includes('markerSource ? this.assetCache.get(markerSource) : null'));
-  assert(css.includes('stage-b-visual-qa-polish-v2'));
-  assert(presenter.includes('this.hiddenAnimatedPieceIds = new Set'));
-  assert(presenter.includes("event.type === 'PieceMoved'"));
-  assert(presenter.includes('renderDraft(snapshot)'));
-  assert(presenter.includes('renderBriefing(snapshot)'));
-  assert(presenter.includes('renderRewardChoice(snapshot)'));
-  assert(presenter.includes('renderService(snapshot)'));
-  assert(presenter.includes('renderRetreat(snapshot)'));
-  assert(presenter.includes('renderActOutcome(snapshot)'));
-  assert(presenter.includes('renderReorganization(snapshot)'));
-  assert(presenter.includes('register04EventAsset(event.eventId'));
-  assert(extension.includes("sidebar.querySelector('.rpvs__battle-sidebar-scroll')"));
+
+  // Approved v2 architecture: one runtime shell, icon resources, B14 and true talent modal.
+  assert(presenterV2.includes('class VerticalSlicePresenter extends LegacyVerticalSlicePresenter'));
+  assert(presenterV2.includes('rpu-topbar'));
+  assert(presenterV2.includes("resourceChip('gold'"));
+  assert(presenterV2.includes("resourceChip('supplies'"));
+  assert(presenterV2.includes("resourceChip('meta'"));
+  assert(presenterV2.includes('data-runtime-menu'));
+  assert.strictEqual(presenterV2.includes('data-rp02-codex-launch'), false);
+  assert.strictEqual(presenterV2.includes('data-rp03-codex-launch'), false);
+  assert(presenterV2.includes('rpu-talent-modal'));
+  assert(presenterV2.includes('ВЫБОР НЕОБРАТИМ'));
+  assert(presenterV2.includes("finale.stage === 'cabinet'"));
+  assert(presenterV2.includes("finale.stage === 'government'"));
+  assert(presenterV2.includes("finale.stage === 'law'"));
+  assert(presenterV2.includes('НАГРАДА ЗА ЗАВЕРШЕНИЕ АКТА'));
+  assert(presenterV2.includes('МЕЖАКТОВОЕ СОСТОЯНИЕ'));
+  assert(presenterV2.includes('bossAssets('));
+  assert(presenterV2.includes('bossPhaseSigil('));
+
+  // Design system contracts from the approved mockups.
+  assert(uiCss.includes("url('../generated_assets/splash_poster.jpg')"));
+  assert(uiCss.includes("url('../generated_assets/ui_button_primary.png')"));
+  assert(uiCss.includes("url('../generated_assets/ui_button_danger.png')") || shellCss.includes("url('../generated_assets/ui_button_danger.png')"));
+  assert(uiCss.includes('.rpa-menu [data-shell-action="chronicle"]{display:none!important}'));
+  assert(uiCss.includes('.rpu-topbar__resources'));
+  assert(uiCss.includes('.rpu-government-grid'));
+  assert(uiCss.includes('.rpu-law-grid'));
+  assert(uiCss.includes('.rpu-talent-options'));
+  assert(uiCss.includes('.rpu-codex__layout'));
+  assert(uiCss.includes('@media(max-width:620px)'));
+  assert(uiCss.includes('@media(prefers-reduced-motion:reduce)'));
+
+  // No native prompt/confirm should be exposed to the user; the compatibility replay is behind the system modal.
+  assert(uiSystem.includes('function createSystemModal'));
+  assert(uiSystem.includes('ПЕРЕИМЕНОВАТЬ ХРОНИКУ'));
+  assert(uiSystem.includes('УДАЛИТЬ ХРОНИКУ?'));
+  assert(uiSystem.includes('НАЧАТЬ ЗАНОВО?'));
+  assert(uiSystem.includes("root.querySelectorAll('[data-shell-action=\"chronicle\"]')"));
+  assert(uiSystem.includes("back.innerHTML = '<img src=\"generated_assets/logo_main.png\" alt=\"RPChess\">'"));
+
+  // Codices are master/detail and no longer auto-inject buttons into the runtime topbar.
+  assert(register02V2.includes('rpu-codex__layout'));
+  assert(register02V2.includes('rpu-person-detail'));
+  assert.strictEqual(register02V2.includes('autoInstall()'), false);
+  assert(register03V2.includes('rpu-relic-detail'));
+  assert(register03V2.includes('rpu-relic-list-card'));
+  assert.strictEqual(register03V2.includes('autoInstall()'), false);
+
   assert(clientSource.includes("'ChooseDraftHero'"));
   assert(clientSource.includes("'ScoutNode'"));
   assert(clientSource.includes("'ChooseRewardOffer'"));
   assert(clientSource.includes("'ConfirmReorganization'"));
   assert(clientSource.includes("'reward_choice'"));
 
-  assert(armyFoundation.includes("heroAssets(heroId)?.portrait"));
-  assert(armyFoundation.includes("generated_assets/reward_gold.png"));
-  assert(armyFoundation.includes("generated_assets/reward_heal.png"));
-  assert(armyFoundation.includes("generated_assets/reward_meta.png"));
-  assert.strictEqual(armyFoundation.includes("generated_assets/reward_artifact.png"), false);
-  assert.strictEqual(armyFoundation.includes("rpb-draft-card__class"), false);
-  assert(armyFoundation.includes("const COMMAND_COSTS = Object.freeze({ k: 0, q: 5, r: 3, b: 2, n: 2, p: 1 })"));
-  assert(armyFoundation.includes("const commandCost = kind === 'hero'"));
-  assert(armyFoundation.includes("body.append(element(document, 'span', 'rpb-draft-card__cost', `Командование ${commandCost}`))"));
-  assert(armyFoundation.includes("Железные марши Акт ${roman(act)}"));
-  assert(armyFoundation.includes("headings[0].textContent = 'Именной герой: выберите одного'"));
-  assert(armyFoundation.includes("headings[1].textContent = 'Пополнение: выберите одну фигуру'"));
-  assert(armyFoundation.includes('function removeRelicResourceChips'));
-  assert(armyFoundation.includes("chip.matches?.('[data-rp03-codex-launch], .rp03-codex-launch')"));
-  assert(armyFoundation.includes("chip.style.display = 'none'"));
-  assert(armyFoundation.includes('function updateCommandCounter'));
-  assert(armyFoundation.includes("[data-draft-hero][aria-pressed=\"true\"], [data-draft-regular][aria-pressed=\"true\"]"));
-  assert(armyFoundation.includes('selected.reduce((sum, card) => sum + Math.max(0, Number(card.dataset.commandCost || 0)), 0)'));
-  assert.strictEqual(armyFoundation.includes('stage.dataset.commandBase'), false);
-  assert(armyFoundation.includes('counter.textContent = `${used}/${total}`'));
-  assert(armyFoundation.includes("header.querySelector('.rpb-badge')?.remove()"));
-  assert(armyFoundation.includes("confirm.classList.add('rpb-draft-confirm')"));
-  assert(armyFoundation.includes("stage.querySelector('.rpb-warning')?.remove()"));
-
-  assert(armyFoundationCss.includes("url('../generated_assets/splash_poster.jpg')"));
-  assert(armyFoundationCss.includes("url('../generated_assets/ui_panel_frame.png')"));
-  assert(armyFoundationCss.includes("url('../generated_assets/ui_chip.png')"));
-  assert(armyFoundationCss.includes('width:142px!important;min-width:142px!important'));
-  assert(armyFoundationCss.includes('font:700 clamp(31px,2.15vw,41px)/1 BrahmsGotischCyr'));
-  assert(armyFoundationCss.includes('html{min-height:100%;overflow-y:auto!important'));
-  assert(armyFoundationCss.includes('body{min-height:100%;height:auto!important;overflow-x:hidden!important;overflow-y:auto!important}'));
-  assert(armyFoundationCss.includes('#app{min-height:100vh!important;height:auto!important;overflow:visible!important}'));
-  assert.strictEqual(armyFoundationCss.includes('.rpb-draft-card__class'), false);
-
-  assert(armyFoundationRefinements.includes('.rpb-draft-heading-row'));
-  assert(armyFoundationRefinements.includes('.rpb-command-counter'));
-  assert(armyFoundationRefinements.includes('.rpb-draft-confirm'));
-  assert(armyFoundationRefinements.includes('.rp03-codex-launch'));
-  assert(armyFoundationRefinements.includes('>.rpb-warning'));
-  assert(armyFoundationRefinements.includes('display:none!important'));
-
+  // Shell behavior still exposes the dynamic Continue button and profile selection.
   const appModule = await import(pathToFileURL(path.join(root, 'game/js/vertical-slice-app.mjs')).href);
   const progress = appModule.readShellProgress({ getItem: () => null });
   const menu = appModule.menuMarkup([], progress, 'ru');
   assert(menu.includes('rpa-menu__main--open'));
   assert(!menu.includes('rpa-menu__lead'));
-  const chronicle = appModule.chronicleMarkup(progress, 'ru');
-  assert(chronicle.includes('data-chronicle-commander'));
-  assert(chronicle.includes('rpa-chronicle-list'));
+  assert(app.includes('data-profile-primary'));
+  assert(app.includes('data-chronicle-commander'));
+  assert(app.includes('ПРОДОЛЖИТЬ ПОХОД'));
 
-  const armyFoundationModule = await import(pathToFileURL(path.join(root, 'game/js/army-foundation-approved.mjs')).href);
-  assert.strictEqual(armyFoundationModule.roman(1), 'I');
-  assert.strictEqual(armyFoundationModule.roman(4), 'IV');
-  assert.strictEqual(armyFoundationModule.COMMAND_COSTS.r, 3);
-  assert.strictEqual(armyFoundationModule.COMMAND_COSTS.b, 2);
-  assert.strictEqual(armyFoundationModule.COMMAND_COSTS.p, 1);
-  assert.strictEqual(armyFoundationModule.REGULAR_COPY.r.title, 'Щитоносец');
-  console.log('Stage B UI: hero costs, selected-card command counter, hidden relic launcher, scrolling and battle UI passed.');
+  console.log('Stage B UI: unified design system, retired enhancers, dynamic shell, B14 surfaces and responsive contracts passed.');
 })().catch((error) => { console.error(error.stack || error); process.exitCode = 1; });
