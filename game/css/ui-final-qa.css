@@ -1,0 +1,4 @@
+/* Last-mile visual QA overrides. Keep this file narrow and deterministic. */
+.rpprofile--approved-cards .rpa-profile-card--approved::before{display:grid!important}
+.rpa-subscreen.is-approved-commander-selection .rpa-commander{border-image:none!important}
+.rpa-subscreen.is-approved-commander-selection .rpa-launch{border-image:none!important}
