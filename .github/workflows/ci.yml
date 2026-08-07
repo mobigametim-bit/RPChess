@@ -36,3 +36,10 @@ jobs:
         run: npm run build
       - name: Verify distribution entry
         run: test -f dist/index.html && test -f dist/SFX/win_fanfare.mp3
+      - name: Upload browser distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpchess-browser-dist
+          path: dist
+          if-no-files-found: error
+          retention-days: 3
