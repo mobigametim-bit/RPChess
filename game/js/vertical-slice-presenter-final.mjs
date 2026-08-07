@@ -4,7 +4,7 @@ import { renderCampaignApproved, renderBriefingApproved } from './ui-approved-ca
 import { renderDeploymentApproved } from './ui-approved-deployment.mjs';
 import { renderScenarioApproved } from './ui-approved-battle.mjs';
 
-function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[character]); }
+function escapeHtml(value) { return String(value ?? '').replace(/[&<>'\"]/g, (character) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[character]); }
 function escapeAttribute(value) { return escapeHtml(value).replace(/`/g, '&#96;'); }
 function rosterLabel(entry) {
   if (entry.injury === 'heavy') return 'Тяжёлое ранение';
@@ -21,6 +21,55 @@ class VerticalSlicePresenter extends ApprovedVerticalSlicePresenter {
   renderBriefing(snapshot) { return renderBriefingApproved(this, snapshot); }
   renderDeployment(snapshot) { return renderDeploymentApproved(this, snapshot); }
   renderScenario(snapshot) { return renderScenarioApproved(this, snapshot); }
+
+  handleBoardPointer(event) {
+    if (this.busy || this.animationRunning || !this.boardReport || !this.boardPlan || !['scenario', 'boss'].includes(this.lastSnapshot?.status)) return;
+    const scenario = this.lastSnapshot.scenario;
+    if (!scenario?.playerTurn) return;
+    const canvas = event.currentTarget;
+    const bounds = canvas.getBoundingClientRect();
+    const viewport = this.boardReport.viewport;
+    const displayX = Math.floor((event.clientX - bounds.left - viewport.x) / viewport.cellSize);
+    const displayY = Math.floor((event.clientY - bounds.top - viewport.y) / viewport.cellSize);
+    const cell = this.boardPlan.activeCells.find((candidate) => candidate.displayX === displayX && candidate.displayY === displayY);
+    if (!cell) return;
+
+    if (this.selectedReserveEntryId) {
+      const command = (scenario.legalCommands || []).find((entry) =>
+        entry.type === 'DeployReserve'
+        && entry.payload?.entryId === this.selectedReserveEntryId
+        && (entry.payload?.square === cell.square || entry.payload?.to === cell.square)
+      );
+      if (command) {
+        this.selectedReserveEntryId = null;
+        this.selectedSquare = null;
+        this.client.dispatch({ type: 'PlayerCommand', request: command }).catch(() => {});
+      }
+      return;
+    }
+
+    const selectedSquare = this.selectedSquare;
+    const targetCommands = selectedSquare
+      ? (scenario.legalCommands || []).filter((entry) =>
+          entry.type === 'MovePiece'
+          && entry.payload?.from === selectedSquare
+          && entry.payload?.to === cell.square
+        )
+      : [];
+    if (targetCommands.length === 1) {
+      this.selectedSquare = null;
+      this.selectedReserveEntryId = null;
+      this.drawBoard();
+      this.client.dispatch({ type: 'PlayerCommand', request: targetCommands[0] }).catch(() => {});
+      return;
+    }
+
+    const movable = (scenario.legalCommands || []).some((entry) =>
+      entry.type === 'MovePiece' && entry.payload?.from === cell.square
+    );
+    this.selectedSquare = movable ? cell.square : null;
+    this.drawBoard();
+  }
 
   renderReward(snapshot) {
     const reward = snapshot.reward;
