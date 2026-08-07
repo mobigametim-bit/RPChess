@@ -1,4 +1,13 @@
 /* Last-mile visual QA overrides. Keep this file narrow and deterministic. */
 .rpprofile--approved-cards .rpa-profile-card--approved::before{display:grid!important}
+
+.rpa-subscreen.is-approved-commander-selection .rpa-screen-header{padding:82px 0 20px!important}
+.rpa-subscreen.is-approved-commander-selection .rpa-screen-header .rpa-eyebrow{display:none!important}
 .rpa-subscreen.is-approved-commander-selection .rpa-commander{border-image:none!important}
 .rpa-subscreen.is-approved-commander-selection .rpa-launch{border-image:none!important}
+.rpa-subscreen.is-approved-commander-selection .rpa-commander[aria-pressed="true"]::after{content:'ВЫБРАН';display:block!important;position:absolute;z-index:6;right:14px;top:14px;width:auto;height:auto;padding:5px 9px;border:1px solid rgba(110,205,255,.68);border-radius:999px;background:#1b72a8;color:#effaff;font:900 9px/1 system-ui,sans-serif;letter-spacing:.05em;pointer-events:none}
+.rpa-subscreen.is-approved-commander-selection .rpa-commander[aria-pressed="true"] .rpa-commander__copy::before{display:none!important}
+
+.rpa-subscreen:has(.rpa-settings-grid) .rpa-screen-header{padding:82px 0 20px!important}
+.rpa-subscreen:has(.rpa-settings-grid) .rpu-settings-version{position:fixed!important;right:56px!important;top:44px!important;color:#a8b5c4!important}
+@media(max-width:700px){.rpa-subscreen.is-approved-commander-selection .rpa-screen-header,.rpa-subscreen:has(.rpa-settings-grid) .rpa-screen-header{padding-top:76px!important}.rpa-subscreen:has(.rpa-settings-grid) .rpu-settings-version{right:18px!important;top:28px!important}}
