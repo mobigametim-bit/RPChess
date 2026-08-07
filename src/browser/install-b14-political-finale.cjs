@@ -148,11 +148,6 @@ if (!globalThis[INSTALL_KEY]) {
       const stageB = stageBAct.generateRewardOffers(state.stageB, { nodeId: 'act_reward:iron_marches', elite: true, sideObjectiveCompleted: true, doctrineId: state.army?.doctrineId || null });
       state = deepFreeze({ ...state, politicalFinaleB14: finale, stageB, status: 'reward_choice', transcript: appendTranscript(state, { type: 'ChooseActOutcome', choiceId }) });
       return customResult(state, command, dependencies);
-    } else if (finale.stage === 'interact') {
-      if (choiceId !== 'interact_continue') throw new Error('inter-act continuation is unavailable');
-      finale = b14.completeFinale(finale);
-      const stageB = createB14Reorganization(state.stageB);
-      state = deepFreeze({ ...state, politicalFinaleB14: finale, stageB, status: 'reorganization' });
     } else throw new Error(`B14 choice is unavailable during ${finale.stage}`);
 
     state = deepFreeze({ ...state, transcript: appendTranscript(state, { type: 'ChooseActOutcome', choiceId, b14Stage: state.politicalFinaleB14?.stage || finale.stage }) });
@@ -183,14 +178,23 @@ if (!globalThis[INSTALL_KEY]) {
       const result = originalDispatchPresenterCommand(state, commandInput, dependencies);
       let next = result.state;
       const finale = b14.finishActReward(state.politicalFinaleB14, command.offerId || command.payload?.offerId);
-      next = deepFreeze({ ...next, politicalFinaleB14: finale, status: 'act_outcome', stageB: { ...next.stageB, status: 'act_outcome', actOutcome: surfaceOutcome(finale, next) } });
+      const stageB = createB14Reorganization(next.stageB);
+      next = deepFreeze({ ...next, politicalFinaleB14: finale, stageB, status: 'reorganization' });
+      return customResult(next, result.command || command, dependencies, result.saveEnvelope || null);
+    }
+
+    if (state.politicalFinaleB14?.stage === 'interact' && state.status === 'reorganization' && ['SetReorganization', 'ConfirmReorganization'].includes(command.type)) {
+      const result = originalDispatchPresenterCommand(state, commandInput, dependencies);
+      if (command.type !== 'ConfirmReorganization') return result;
+      const finale = b14.completeFinale(state.politicalFinaleB14);
+      const next = deepFreeze({ ...result.state, politicalFinaleB14: finale });
       return customResult(next, result.command || command, dependencies, result.saveEnvelope || null);
     }
 
     const result = originalDispatchPresenterCommand(state, commandInput, dependencies);
-    let next = maybeStartB14(result.state);
+    const next = maybeStartB14(result.state);
     return next === result.state ? result : customResult(next, result.command || command, dependencies, result.saveEnvelope || null);
   };
 }
 
-module.exports = require('./iron-marches-browser-host.cjs');
+module.exports = Object.freeze({ installed: true });
