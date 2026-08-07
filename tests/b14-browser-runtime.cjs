@@ -57,20 +57,17 @@ function finaleGate(state) {
 
   let state = finaleGate(await launchedState());
 
-  // Snapshot creation itself materializes the B14 gate deterministically.
   const firstSnapshot = presenter.createPresenterSnapshot(state, {});
   validatePresenterSnapshot(firstSnapshot);
   assert.strictEqual(firstSnapshot.status, 'act_outcome');
   assert.strictEqual(firstSnapshot.politicalFinaleB14.stage, 'cabinet');
   assert.ok(firstSnapshot.politicalFinaleB14.choices.length >= 1);
 
-  // First command starts from the same unmaterialized state and must enter the same materialized finale.
   let choice = firstSnapshot.politicalFinaleB14.choices.find((entry) => entry.available !== false);
   let result = dispatch(state, { type: 'ChooseActOutcome', choiceId: choice.id });
   state = result.state;
   assert.ok(state.politicalFinaleB14);
 
-  // Resolve remaining cabinet demands / confirmation.
   while (state.politicalFinaleB14.stage === 'cabinet') {
     const snapshot = presenter.createPresenterSnapshot(state, {});
     choice = snapshot.politicalFinaleB14.choices.find((entry) => entry.available !== false);
@@ -80,7 +77,6 @@ function finaleGate(state) {
   assert.strictEqual(state.politicalFinaleB14.stage, 'government');
   assert.strictEqual(state.politicalFinaleB14.governmentOffers.filter((entry) => entry.kind === 'base').length, 4);
 
-  // Choose a base government so the test is never dependent on optional coalition facts.
   result = dispatch(state, { type: 'ChooseActOutcome', choiceId: 'crown' });
   state = result.state;
   assert.strictEqual(state.politicalFinaleB14.stage, 'law');
@@ -98,9 +94,10 @@ function finaleGate(state) {
   state = result.state;
   assert.strictEqual(state.status, 'reward_choice');
   assert.strictEqual(state.politicalFinaleB14.stage, 'act_reward');
-  assert.strictEqual(state.stageB.rewardOffers.length, 3);
+  assert.strictEqual(state.stageB.pendingRewardOffers.length, 3);
+  assert.strictEqual(result.snapshot.stageB.rewardOffers.length, 3);
 
-  const offer = state.stageB.rewardOffers[0];
+  const offer = state.stageB.pendingRewardOffers[0];
   const targetRosterId = state.stageB.roster.find((entry) => entry.available || entry.injury)?.id || null;
   result = dispatch(state, { type: 'ChooseRewardOffer', offerId: offer.id, targetRosterId });
   state = result.state;
@@ -116,7 +113,6 @@ function finaleGate(state) {
   assert.strictEqual(state.politicalFinaleB14.stage, 'complete');
   assert.strictEqual(state.politicalFinaleB14.completed, true);
 
-  // Serialization/reload contract: plain JSON round-trip does not change confirmed political materialization.
   const roundTrip = JSON.parse(JSON.stringify(state.politicalFinaleB14));
   assert.strictEqual(roundTrip.governmentId, 'crown');
   assert.strictEqual(roundTrip.legacyLawId, lawId);
