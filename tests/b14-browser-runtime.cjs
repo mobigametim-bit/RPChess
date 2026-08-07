@@ -1,10 +1,11 @@
 'use strict';
 
 const assert = require('assert');
+const path = require('path');
+const { pathToFileURL } = require('url');
 const { MemoryKeyValueStorage } = require('../src/save/storage.cjs');
 const { createBrowserRunSelectionHost } = require('../src/browser/iron-marches-browser-host-b9.cjs');
 const presenter = require('../src/runtime/presenter-bridge.cjs');
-const { validatePresenterSnapshot } = require('../src/browser/presenter-snapshot-validator.cjs');
 
 async function launchedState() {
   const host = createBrowserRunSelectionHost({
@@ -45,13 +46,15 @@ function finaleGate(state) {
   });
 }
 
-function dispatch(state, command) {
-  const result = presenter.dispatchPresenterCommand(state, command, {});
-  validatePresenterSnapshot(result.snapshot);
-  return result;
-}
-
 (async () => {
+  const clientModule = await import(pathToFileURL(path.resolve(__dirname, '../game/js/runtime-command-client.mjs')).href);
+  const validatePresenterSnapshot = clientModule.validatePresenterSnapshot;
+  const dispatch = (state, command) => {
+    const result = presenter.dispatchPresenterCommand(state, command, {});
+    validatePresenterSnapshot(result.snapshot);
+    return result;
+  };
+
   let state = finaleGate(await launchedState());
 
   // Snapshot creation itself materializes the B14 gate deterministically.
@@ -61,7 +64,7 @@ function dispatch(state, command) {
   assert.strictEqual(firstSnapshot.politicalFinaleB14.stage, 'cabinet');
   assert.ok(firstSnapshot.politicalFinaleB14.choices.length >= 1);
 
-  // First command starts from the same unmaterialized state and must produce the same finale seed.
+  // First command starts from the same unmaterialized state and must enter the same materialized finale.
   let choice = firstSnapshot.politicalFinaleB14.choices.find((entry) => entry.available !== false);
   let result = dispatch(state, { type: 'ChooseActOutcome', choiceId: choice.id });
   state = result.state;
@@ -115,9 +118,9 @@ function dispatch(state, command) {
 
   // Serialization/reload contract: plain JSON round-trip does not change confirmed political materialization.
   const roundTrip = JSON.parse(JSON.stringify(state.politicalFinaleB14));
-  assert.deepStrictEqual(roundTrip, JSON.parse(JSON.stringify(state.politicalFinaleB14)));
   assert.strictEqual(roundTrip.governmentId, 'crown');
   assert.strictEqual(roundTrip.legacyLawId, lawId);
+  assert.strictEqual(roundTrip.completed, true);
 
   console.log('B14 browser runtime: cabinet, government, law, epilogue, Act Reward, inter-act reorganization and presenter snapshot validation passed.');
 })().catch((error) => { console.error(error.stack || error); process.exitCode = 1; });
