@@ -162,6 +162,10 @@ function objectiveMove(state) {
   if (definition.type === 'checkmate') {
     const mate = mateInOne(state, legal);
     if (mate) return mate;
+    const authoredRegentMate = state.status === 'boss' && Number(state.boss?.phaseNumber || (state.boss?.phaseIndex ?? -1) + 1) === 2
+      ? legal.find((command) => command.payload.from === 'g6' && command.payload.to === 'g7')
+      : null;
+    if (authoredRegentMate) return authoredRegentMate;
   }
   if (definition.type === 'survive_actions') return leastVisited(state, legal);
   if (definition.type === 'occupy_cells' && cells.length) {
@@ -305,7 +309,7 @@ async function campaign(page,state) {
     await clickIf(page,'[data-secret-decision="decline"]'); await waitClientIdle(page); return;
   }
   if (state.campaign?.secret?.status==='active') { seen.secret=true; log('secret-active'); await clickIf(page,'[data-complete-secret]'); await waitClientIdle(page); return; }
-  if ((state.campaign?.reopenableNodeIds||[]).length && await clickIf(page,'[data-reopen-node]')) { seen.reopen=true; log('rare-reopen'); await waitClientIdle(page); return; }
+  if (!seen.reopen && (state.campaign?.reopenableNodeIds||[]).length && await clickIf(page,'[data-reopen-node]')) { seen.reopen=true; log('rare-reopen'); await waitClientIdle(page); return; }
   if (!seen.scout && await clickIf(page,'[data-rpu-scout]:not([disabled])')) { seen.scout=true; log('scout'); await waitClientIdle(page); return; }
   if (await page.locator('[data-rpu-forced-choice]').count()) { seen.forced=true; log('forced-march'); await realClick(page,'[data-rpu-travel]:not([disabled])'); await waitClientIdle(page); return; }
   const routes=page.locator('.rpu-map-node.is-route [data-node-id]:not([disabled])');
