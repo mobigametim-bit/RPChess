@@ -2,6 +2,7 @@
 
 const actReward = require('../runtime/b14-act-reward.cjs');
 const economy = require('../runtime/production-economy.cjs');
+const b14 = require('../runtime/political-finale-b14.cjs');
 
 const INSTALL_KEY = Symbol.for('rpchess.iron-marches-production-closure-installed');
 if (!globalThis[INSTALL_KEY]) {
@@ -10,10 +11,28 @@ if (!globalThis[INSTALL_KEY]) {
   const innerSnapshot = presenter.createPresenterSnapshot;
   const innerDispatch = presenter.dispatchPresenterCommand;
 
-  function freezeArray(values) { return Object.freeze((values || []).slice()); }
   function deepFreeze(value, seen = new Set()) {
     if (!value || typeof value !== 'object' || Object.isFrozen(value) || seen.has(value)) return value;
     seen.add(value); Object.freeze(value); for (const child of Object.values(value)) deepFreeze(child, seen); return value;
+  }
+
+  function normalizeCabinetResolutions(state) {
+    const finale = state?.politicalFinaleB14;
+    const resolutions = finale?.cabinetResolutions || {};
+    if (!finale || !Object.keys(resolutions).length) return state;
+    let changed = false;
+    const forceStates = Object.fromEntries(Object.entries(finale.forceStates || {}).map(([forceId, force]) => {
+      const resolution = resolutions[forceId];
+      if (!resolution?.accepted || force?.status !== 'crisis') return [forceId, force];
+      changed = true;
+      return [forceId, deepFreeze({ ...force, status:'normal', demand:null })];
+    }));
+    if (!changed) return state;
+    let nextFinale = deepFreeze({ ...finale, forceStates:deepFreeze(forceStates) });
+    if (nextFinale.stage === 'government' && !nextFinale.governmentId) {
+      nextFinale = deepFreeze({ ...nextFinale, governmentOffers:b14.availableGovernments(nextFinale) });
+    }
+    return deepFreeze({ ...state, politicalFinaleB14:nextFinale });
   }
 
   function needsB14ActReward(state) {
@@ -41,7 +60,7 @@ if (!globalThis[INSTALL_KEY]) {
   }
 
   function normalizeClosureState(state) {
-    return installInterActPreview(installReward(state));
+    return installInterActPreview(installReward(normalizeCabinetResolutions(state)));
   }
 
   function closureSnapshot(state, dependencies) {
@@ -71,8 +90,6 @@ if (!globalThis[INSTALL_KEY]) {
       ...result,
       state:next,
       snapshot:closureSnapshot(next, dependencies),
-      // The underlying save layer remains authoritative. Reload normalization is
-      // deterministic, so older post-epilogue envelopes cannot reroll Act Reward.
       saveEnvelope:result.saveEnvelope || null
     });
   };
