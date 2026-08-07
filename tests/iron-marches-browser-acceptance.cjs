@@ -18,7 +18,7 @@ function log(message, data = '') {
 }
 function delay(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 function distance(a,b) {
-  return Math.abs(String(a).charCodeAt(0)-String(b).charCodeAt(0)) + Math.abs(Number(String(a).slice(1))-Number(String(b).slice(1));
+  return Math.abs(String(a).charCodeAt(0)-String(b).charCodeAt(0)) + Math.abs(Number(String(a).slice(1))-Number(String(b).slice(1)));
 }
 async function snapshot(page) {
   return page.evaluate(() => globalThis.RPChessVerticalSlice?.runtimeHost?.getSnapshot?.() || globalThis.RPChessVerticalSlice?.runtimeClient?.getSnapshot?.() || null);
