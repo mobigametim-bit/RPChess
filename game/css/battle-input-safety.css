@@ -1,0 +1,8 @@
+/* Decorative battle layers must never steal board pointer input.
+   Runtime input locking is owned by VerticalSlicePresenter.animationRunning. */
+.rpvs__moving-piece,
+.rpvs__capture-pulse,
+.rpvs__board-vfx,
+.rpvs__scene-vfx {
+  pointer-events: none !important;
+}
