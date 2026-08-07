@@ -12,6 +12,7 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   const legacyPresenter = read('game/js/vertical-slice-presenter.mjs');
   const presenterV2 = read('game/js/vertical-slice-presenter-v2.mjs');
   const approvedPresenter = read('game/js/vertical-slice-presenter-approved.mjs');
+  const finalPresenter = read('game/js/vertical-slice-presenter-final.mjs');
   const uiSystem = read('game/js/ui-system-v2.mjs');
   const clientSource = read('game/js/runtime-command-client.mjs');
   const register01 = read('game/js/register-01-assets.mjs');
@@ -29,7 +30,7 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
     assert(html.includes('css/ui-system-v2-shell.css'));
     assert(html.includes('css/ui-approved-screens.css'));
     assert(html.includes('js/ui-system-v2.mjs'));
-    assert(html.includes('vertical-slice-presenter-approved.mjs'));
+    assert(html.includes('vertical-slice-presenter-final.mjs'));
     assert(html.includes('register-02-codex-v2.mjs'));
     assert(html.includes('register-03-relic-codex-v2.mjs'));
     assert.strictEqual(html.includes('js/army-foundation-approved.mjs'), false);
@@ -77,6 +78,11 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert(approvedPresenter.includes('PIECE_GLYPHS'));
   assert(approvedPresenter.includes('unitArt({ side:\'w\''));
 
+  assert(finalPresenter.includes('class VerticalSlicePresenter extends ApprovedVerticalSlicePresenter'));
+  assert(finalPresenter.includes('reward_gold.png'));
+  assert(finalPresenter.includes('reward_heal.png'));
+  assert(finalPresenter.includes('reward_meta.png'));
+
   assert(uiCss.includes("url('../generated_assets/splash_poster.jpg')"));
   assert(uiCss.includes("url('../generated_assets/ui_button_primary.png')"));
   assert(uiCss.includes("url('../generated_assets/ui_button_danger.png')") || shellCss.includes("url('../generated_assets/ui_button_danger.png')"));
@@ -122,5 +128,5 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert(app.includes('data-chronicle-commander'));
   assert(app.includes('Продолжить поход'));
 
-  console.log('Stage B UI: unified design system, approved gameplay presenter, retired enhancers, B14 surfaces and responsive contracts passed.');
+  console.log('Stage B UI: unified design system, final approved gameplay presenter, retired enhancers, B14 surfaces and responsive contracts passed.');
 })().catch((error) => { console.error(error.stack || error); process.exitCode = 1; });
