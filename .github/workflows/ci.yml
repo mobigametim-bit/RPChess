@@ -48,7 +48,7 @@ jobs:
           set -euo pipefail
           : > /tmp/rpchess-acceptance.log
           : > /tmp/rpchess-reload.log
-          : > /tmp/rpchess-targeted.log
+          : > /tmp/rpchess-secret-forced.log
           : > /tmp/rpchess-direct-events.log
           : > /tmp/rpchess-chain-events.log
           : > /tmp/rpchess-special-rules.log
@@ -62,7 +62,7 @@ jobs:
           RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/battle-ui-input-regression.cjs 2>&1 | tee /tmp/rpchess-battle-input.log
           RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-closure-e2e.cjs 2>&1 | tee /tmp/rpchess-acceptance.log
           RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-reload-matrix-runner.cjs 2>&1 | tee /tmp/rpchess-reload.log
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-targeted-coverage.cjs 2>&1 | tee /tmp/rpchess-targeted.log
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-secret-forced.cjs 2>&1 | tee /tmp/rpchess-secret-forced.log
           RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-direct-events.cjs 2>&1 | tee /tmp/rpchess-direct-events.log
           RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-chain-events.cjs 2>&1 | tee /tmp/rpchess-chain-events.log
           RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/chess-special-rules-ui-regression.cjs 2>&1 | tee /tmp/rpchess-special-rules.log
@@ -74,7 +74,7 @@ jobs:
           path: |
             /tmp/rpchess-acceptance.log
             /tmp/rpchess-reload.log
-            /tmp/rpchess-targeted.log
+            /tmp/rpchess-secret-forced.log
             /tmp/rpchess-direct-events.log
             /tmp/rpchess-chain-events.log
             /tmp/rpchess-special-rules.log
