@@ -35,7 +35,7 @@ async function checkpoint(page, seed, label) {
   log(`reload:${label}`);
 }
 
-async function freshRun(page, seed, draftHeroId = null) {
+async function freshRun(page, seed, draftHeroId = null, draftRegularType = null) {
   await page.goto(`${BASE_URL}/index.html?new=1&seed=${seed}&autosave=1`, { waitUntil:'domcontentloaded', timeout:15000 });
   await page.evaluate(() => localStorage.clear());
   await page.reload({ waitUntil:'domcontentloaded', timeout:15000 });
@@ -52,7 +52,14 @@ async function freshRun(page, seed, draftHeroId = null) {
   if (draftHeroId && await page.locator(`[data-draft-hero="${draftHeroId}"]`).count()) await click(page, `[data-draft-hero="${draftHeroId}"]`);
   else await click(page, '[data-draft-hero]');
   await idle(page);
-  await click(page, '[data-draft-regular]');
+  if (draftRegularType) {
+    const state = await snapshot(page);
+    const offer = state.stageB?.draft?.regularOffers?.find((entry) => entry.type === draftRegularType);
+    assert.ok(offer, `draft has no regular ${draftRegularType} offer`);
+    await click(page, `[data-draft-regular="${offer.id}"]`);
+  } else {
+    await click(page, '[data-draft-regular]');
+  }
   await idle(page);
   await click(page, '[data-confirm-draft]');
   await page.waitForFunction(() => globalThis.RPChessVerticalSlice?.runtimeHost?.getSnapshot?.()?.status === 'campaign', null, { timeout:10000 });
@@ -69,7 +76,7 @@ async function handleTalent(page) {
   return false;
 }
 
-async function squarePoint(page, square) {
+async function battleSquarePoint(page, square) {
   const canvas = page.locator('[data-board]').first();
   const box = await canvas.boundingBox();
   assert.ok(box, `board is not visible for ${square}`);
@@ -91,12 +98,30 @@ async function squarePoint(page, square) {
   return { x:box.x + point.x, y:box.y + point.y };
 }
 
+async function deploymentSquarePoint(page, square) {
+  const canvas = page.locator('[data-deployment-board]').first();
+  const box = await canvas.boundingBox();
+  assert.ok(box, `deployment board is not visible for ${square}`);
+  const point = await page.evaluate((wanted) => {
+    const presenter = globalThis.RPChessVerticalSlice?.presenter;
+    const viewport = presenter?.boardReport?.viewport;
+    const cell = presenter?.boardPlan?.activeCells?.find((entry) => entry.square === wanted);
+    if (!viewport || !cell) return null;
+    return {
+      x:viewport.x + (cell.displayX + .5) * viewport.cellSize,
+      y:viewport.y + (cell.displayY + .5) * viewport.cellSize
+    };
+  }, square);
+  assert.ok(point, `missing deployment geometry for ${square}`);
+  return { x:box.x + point.x, y:box.y + point.y };
+}
+
 function scenarioIndex(state) { return Number(state?.scenario?.actionIndex ?? state?.scenario?.battle?.actionIndex ?? 0); }
 async function realMove(page, command) {
   const state = await snapshot(page);
   const before = scenarioIndex(state);
-  const from = await squarePoint(page, command.payload.from);
-  const to = await squarePoint(page, command.payload.to);
+  const from = await battleSquarePoint(page, command.payload.from);
+  const to = await battleSquarePoint(page, command.payload.to);
   await page.mouse.click(from.x, from.y);
   await page.mouse.click(to.x, to.y);
   await page.waitForFunction(({ status, before }) => {
@@ -107,6 +132,45 @@ async function realMove(page, command) {
   }, { status:state.status, before }, { timeout:9000 });
   await page.waitForFunction(() => !globalThis.RPChessVerticalSlice?.presenter?.animationRunning, null, { timeout:8000 });
   await idle(page);
+}
+
+async function ensureDeploymentPiece(page, pieceType) {
+  let state = await snapshot(page);
+  assert.strictEqual(state.status, 'deployment');
+  let unit = state.deployment?.units?.find((entry) => entry.type === pieceType && !entry.fixed && String(entry.id).includes('draft'))
+    || state.deployment?.units?.find((entry) => entry.type === pieceType && !entry.fixed);
+  assert.ok(unit, `deployment has no optional ${pieceType} unit`);
+  if (unit.square) return unit;
+
+  while (Number(state.deployment.commandSpent || 0) + Number(unit.commandCost || 0) > Number(state.deployment.commandLimit || 0)) {
+    const removable = (state.deployment.units || [])
+      .filter((entry) => !entry.fixed && entry.square && entry.id !== unit.id)
+      .sort((a,b) => Number(b.commandCost || 0) - Number(a.commandCost || 0))[0];
+    assert.ok(removable, `cannot free command budget for ${pieceType}`);
+    await click(page, `[data-deployment-remove="${removable.id}"]`);
+    await idle(page);
+    state = await snapshot(page);
+    unit = state.deployment.units.find((entry) => entry.id === unit.id);
+  }
+
+  const occupied = new Set((state.deployment.units || []).map((entry) => entry.square).filter(Boolean));
+  const blocked = new Set((state.scenario?.environment || [])
+    .filter((entry) => entry.passable === false || entry.type === 'blocker')
+    .flatMap((entry) => entry.cells || []));
+  const square = (state.deployment.zone || []).find((cell) => !occupied.has(cell) && !blocked.has(cell));
+  assert.ok(square, `no free deployment square for ${pieceType}`);
+  await click(page, `[data-deployment-unit="${unit.id}"]`);
+  const point = await deploymentSquarePoint(page, square);
+  await page.mouse.click(point.x, point.y);
+  await page.waitForFunction(({ unitId, square }) => {
+    const state = globalThis.RPChessVerticalSlice?.runtimeHost?.getSnapshot?.();
+    return state?.deployment?.units?.some((entry) => entry.id === unitId && entry.square === square);
+  }, { unitId:unit.id, square }, { timeout:8000 });
+  await idle(page);
+  state = await snapshot(page);
+  unit = state.deployment.units.find((entry) => entry.id === unit.id);
+  assert.strictEqual(unit?.square, square, `${pieceType} was not placed through deployment UI`);
+  return unit;
 }
 
 async function finishScenario(page) {
@@ -292,7 +356,7 @@ async function coverSecret(page) {
   log('secret:PASS');
 }
 
-async function coverPiece(page, label, fixture, pieceType) {
+async function coverPinnedPiece(page, label, fixture, pieceType) {
   await freshRun(page, fixture.seed, fixture.draftHeroId);
   await reachPathTarget(page, fixture.path);
   assert.strictEqual((await snapshot(page)).status, 'briefing');
@@ -312,6 +376,31 @@ async function coverPiece(page, label, fixture, pieceType) {
   log(`piece:${label}:${fixture.move.from}->${fixture.move.to}:PASS`);
 }
 
+async function coverKnight(page, fixture) {
+  await freshRun(page, fixture.seed, null, 'n');
+  await reachPathTarget(page, fixture.path);
+  assert.strictEqual((await snapshot(page)).status, 'briefing');
+  await click(page, '[data-confirm-briefing]');
+  await idle(page);
+  assert.strictEqual((await snapshot(page)).status, 'deployment');
+  await ensureDeploymentPiece(page, 'n');
+  assert.ok(await visibleEnabled(page, '[data-confirm-deployment]'), 'deployment cannot be confirmed after placing knight');
+  await click(page, '[data-confirm-deployment]');
+  await idle(page);
+  const state = await snapshot(page);
+  assert.strictEqual(state.status, 'scenario');
+  const bySquare = new Map((state.scenario.pieces || []).map((piece) => [piece.square, piece]));
+  const legal = (state.scenario.legalCommands || []).find((command) => command.type === 'MovePiece'
+    && bySquare.get(command.payload.from)?.side === state.scenario.playerSide
+    && bySquare.get(command.payload.from)?.type === 'n');
+  assert.ok(legal, 'deployed knight has no legal UI move');
+  const before = scenarioIndex(state);
+  await realMove(page, legal);
+  const after = await snapshot(page);
+  assert.ok(after.status !== 'scenario' || scenarioIndex(after) > before, 'knight real canvas move was not accepted');
+  log(`piece:knight:${legal.payload.from}->${legal.payload.to}:PASS`);
+}
+
 async function coverForcedMarch(page) {
   const fixture = FIXTURES.services.camp;
   await freshRun(page, fixture.seed);
@@ -319,7 +408,10 @@ async function coverForcedMarch(page) {
   const scoutTargets = (state.campaign?.routes || []).slice(0,2);
   for (const route of scoutTargets) {
     await click(page, `[data-node-id="${route.to}"]`);
-    if (await visibleEnabled(page, '[data-rpu-scout]:not([disabled])')) { await click(page, '[data-rpu-scout]:not([disabled])'); await idle(page); }
+    if (await visibleEnabled(page, '[data-rpu-scout]:not([disabled])')) {
+      await click(page, '[data-rpu-scout]:not([disabled])');
+      await idle(page);
+    }
   }
   let used = false;
   const preferredPath = [...fixture.path];
@@ -363,8 +455,8 @@ async function coverForcedMarch(page) {
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
 
-    await coverPiece(page, 'pawn', FIXTURES.pieces.pawn, 'p');
-    await coverPiece(page, 'knight', FIXTURES.pieces.knight, 'n');
+    await coverPinnedPiece(page, 'pawn', FIXTURES.pieces.pawn, 'p');
+    await coverKnight(page, FIXTURES.pieces.knight);
     await coverService(page, 'forge', FIXTURES.services.forge);
     await coverService(page, 'camp', FIXTURES.services.camp);
     for (const eventId of EVENT_IDS) await coverEvent(page, eventId, FIXTURES.events[eventId]);
