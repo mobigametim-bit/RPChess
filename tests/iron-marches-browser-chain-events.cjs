@@ -1,14 +1,11 @@
 'use strict';
-
 const assert = require('assert');
 const { chromium } = require('playwright');
 const { buildBrowserProductionBundle } = require('../src/browser/production-content-browser.cjs');
 const { chooseObjectiveBrowserCommand } = require('./helpers/objective-browser-guide.cjs');
 const FIXTURES = require('./fixtures/iron-marches-targeted.cjs');
-
 const BASE_URL = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
 const TEMPLATES = buildBrowserProductionBundle().scenarioTemplates;
-
 function log(message) { console.log(`[chain-events] ${message}`); }
 async function snap(page) { return page.evaluate(() => globalThis.RPChessVerticalSlice?.runtimeHost?.getSnapshot?.() || null); }
 async function idle(page) { await page.waitForFunction(() => !globalThis.RPChessVerticalSlice?.runtimeClient?.pending, null, { timeout:8000 }); }
@@ -60,10 +57,7 @@ async function point(page, square) {
     const element = document.querySelector('[data-board]');
     if (!viewport || !cell || !element) return null;
     const rect = element.getBoundingClientRect();
-    return {
-      x:(viewport.x + (cell.displayX + .5) * viewport.cellSize) * rect.width / (element.width || rect.width),
-      y:(viewport.y + (cell.displayY + .5) * viewport.cellSize) * rect.height / (element.height || rect.height)
-    };
+    return { x:(viewport.x + (cell.displayX + .5) * viewport.cellSize) * rect.width / (element.width || rect.width), y:(viewport.y + (cell.displayY + .5) * viewport.cellSize) * rect.height / (element.height || rect.height) };
   }, square);
   assert.ok(p, `missing board point ${square}`);
   return { x:box.x+p.x, y:box.y+p.y };
@@ -97,9 +91,7 @@ async function finishBattle(page) {
 }
 async function talent(page) {
   const modal = page.locator('[data-rpu-talent-modal]');
-  if (await modal.count() && await modal.isVisible().catch(() => false)) {
-    await click(page, modal.locator('[data-talent-id]').first()); await idle(page); return true;
-  }
+  if (await modal.count() && await modal.isVisible().catch(() => false)) { await click(page, modal.locator('[data-talent-id]').first()); await idle(page); return true; }
   return false;
 }
 async function reward(page) {
@@ -109,7 +101,7 @@ async function reward(page) {
   if (state.status === 'reward_choice') { await click(page, '[data-reward-offer]:not([disabled])'); await idle(page); }
 }
 async function event(page, options = {}) {
-  let stageSeen = new Set();
+  const stageSeen = new Set();
   for (let guard=0; guard<20; guard+=1) {
     await talent(page);
     const state = await snap(page);
@@ -119,10 +111,7 @@ async function event(page, options = {}) {
     assert.strictEqual(state.status, 'event', `${options.eventId}: unexpected ${state.status}`);
     assert.strictEqual(state.event?.eventId, options.eventId);
     const stage = Number(state.event?.stageIndex || 0);
-    if (options.reloadStages && !stageSeen.has(stage)) {
-      stageSeen.add(stage);
-      await checkpoint(page, options.seed, `${options.eventId}:stage${stage+1}`);
-    }
+    if (options.reloadStages && !stageSeen.has(stage)) { stageSeen.add(stage); await checkpoint(page, options.seed, `${options.eventId}:stage${stage+1}`); }
     let selector = '[data-choice-id]:not([disabled])';
     if (options.firstChoiceId && stage === 0 && await page.locator(`[data-choice-id="${options.firstChoiceId}"]:not([disabled])`).count()) selector = `[data-choice-id="${options.firstChoiceId}"]:not([disabled])`;
     await click(page, selector); await idle(page);
@@ -143,6 +132,11 @@ async function resolveNode(page) {
     if (['reward','reward_choice'].includes(state.status)) { await reward(page); continue; }
     if (state.status === 'service') { await click(page, '[data-leave-service]'); await idle(page); continue; }
     if (state.status === 'event') { await event(page, { eventId:state.event.eventId, seed:state.seed }); continue; }
+    if (state.status === 'boss') {
+      const selector = state.campaign?.selectorState || {};
+      const followups = (selector.assignments || []).filter((entry) => String(entry.eventId).startsWith('event.')).map((entry) => `${entry.nodeId}:${entry.eventId}:${entry.status}`);
+      throw new Error(`unhandled chain node boss; current=${state.campaign?.currentNodeId}; activeChains=${JSON.stringify(selector.activeChainIds || [])}; followups=${JSON.stringify(followups)}; routes=${JSON.stringify((state.campaign?.routes || []).map((route) => ({to:route.to,type:route.type,contentId:route.contentId})))}`);
+    }
     throw new Error(`unhandled chain node ${state.status}`);
   }
   throw new Error('chain node did not resolve');
@@ -166,13 +160,8 @@ async function coverChain(page, targetId, fixture) {
   let state = await snap(page);
   assert.strictEqual(state.status, 'event');
   assert.strictEqual(state.event?.eventId, fixture.chainStart);
-  await event(page, {
-    eventId:fixture.chainStart,
-    seed:fixture.seed,
-    firstChoiceId:fixture.chainStart === 'event.miners_on_strike' ? 'guards' : null
-  });
+  await event(page, { eventId:fixture.chainStart, seed:fixture.seed, firstChoiceId:fixture.chainStart === 'event.miners_on_strike' ? 'guards' : null });
   log(`chain-start:${fixture.chainStart}:PASS`);
-
   for (let depth=0; depth<14; depth+=1) {
     state = await snap(page);
     assert.strictEqual(state.status, 'campaign');
@@ -193,7 +182,6 @@ async function coverChain(page, targetId, fixture) {
   }
   throw new Error(`${targetId}: authored follow-up did not materialize in 14 traversals`);
 }
-
 (async()=>{
   const browser = await chromium.launch({ headless:true });
   try {
