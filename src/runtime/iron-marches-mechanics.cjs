@@ -12,6 +12,8 @@ const RELICS = Object.freeze({
   OATH_FALLEN: 'relic.oath_fallen'
 });
 
+const PIECE_COMMAND_COST = Object.freeze({ p:1, n:3, b:3, r:5, q:9, k:0 });
+
 const HERO_ABILITIES = Object.freeze({
   'hero.aldric_wall': Object.freeze({ abilityId: 'ability.interpose', effectId: 'effect.interpose_adjacent_ally', kind: 'interpose', orderCost: 1, maxUses: 1 }),
   'hero.mara_chain': Object.freeze({ abilityId: 'ability.chain_formation', effectId: 'effect.advance_two_pawns', kind: 'chain_formation', orderCost: 1, maxUses: 1 }),
@@ -60,6 +62,69 @@ function reserveHeroRecords(projected) {
 
 function allHeroRecords(projected) {
   return freezeArray([...activeHeroRecords(projected), ...reserveHeroRecords(projected)]);
+}
+
+function stageBReserveId(entry, usedIds) {
+  const base = `stage_b_${String(entry.id).replace(/[^a-z0-9_-]+/gi, '_').toLowerCase()}`;
+  let id = base;
+  let suffix = 2;
+  while (usedIds.has(id)) { id = `${base}_${suffix}`; suffix += 1; }
+  usedIds.add(id);
+  return id;
+}
+
+function stageBReserveMetadata(entry) {
+  return Object.freeze({
+    ...(entry.kind === 'hero' ? { heroId:entry.id } : {}),
+    ...(entry.kind === 'king' ? { kingId:entry.contentId || entry.id } : {}),
+    nameKey:null,
+    displayName:entry.name,
+    relicIds:freezeArray(entry.relicIds || []),
+    stageBRosterId:entry.id,
+    stars:Number(entry.stars || 0),
+    merits:Number(entry.merits || 0),
+    talentIds:freezeArray(entry.talents || []),
+    injury:entry.injury || null,
+    combatPieceType:entry.type,
+    armySource:entry.kind === 'hero' ? 'stage_b_hero' : entry.kind === 'king' ? 'stage_b_king' : 'stage_b_regular'
+  });
+}
+
+function restoreEligibleStageBReserve(projected, stageB, playerSide) {
+  if (!stageB?.roster) return projected;
+  const represented = new Set();
+  for (let index=0; index<projected.position.board.length; index+=1) {
+    const piece=projected.position.board[index];
+    if (!piece || piece.side !== playerSide) continue;
+    const square=indexToSquare(index);
+    const pieceId=projected.identitiesBySquare[square];
+    const rosterId=projected.identityMetadata?.[pieceId]?.stageBRosterId;
+    if (rosterId) represented.add(rosterId);
+  }
+  for (const entry of projected.reserve || []) {
+    if (entry.side !== playerSide) continue;
+    const rosterId=entry.metadata?.stageBRosterId;
+    if (rosterId) represented.add(rosterId);
+  }
+
+  const missing=(stageB.roster || []).filter((entry) => entry.kind !== 'king'
+    && entry.available !== false
+    && Number(entry.skipBattles || 0) <= 0
+    && !represented.has(entry.id));
+  if (!missing.length) return projected;
+
+  const usedIds=new Set([
+    ...Object.values(projected.identitiesBySquare || {}),
+    ...(projected.reserve || []).map((entry) => entry.id)
+  ]);
+  const added=missing.map((entry) => Object.freeze({
+    id:stageBReserveId(entry,usedIds),
+    side:playerSide,
+    type:entry.type,
+    orderCost:Math.max(1,PIECE_COMMAND_COST[entry.type] || 1),
+    metadata:stageBReserveMetadata(entry)
+  }));
+  return Object.freeze({ ...projected, reserve:freezeArray([...(projected.reserve || []), ...added]) });
 }
 
 function addStartingWard(entries, record) {
@@ -163,7 +228,8 @@ function uniqueByInstance(records) {
 }
 
 function projectIronMarchesBattleOptions(options, army, stageB = null) {
-  const projected = projectArmyBattleOptions(options, army, stageB);
+  const baseProjected = projectArmyBattleOptions(options, army, stageB);
+  const projected = restoreEligibleStageBReserve(baseProjected, stageB, options.playerSide || 'w');
   const statuses = statusEntries(projected.statuses);
   const abilities = existingAbilityParts(projected.abilities);
   for (const record of allHeroRecords(projected)) mechanicsForRecord(record, abilities, statuses, projected);
@@ -185,5 +251,6 @@ module.exports = {
   activeHeroRecords,
   reserveHeroRecords,
   allHeroRecords,
+  restoreEligibleStageBReserve,
   projectIronMarchesBattleOptions
 };
