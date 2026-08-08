@@ -144,11 +144,22 @@ async function resolveNode(page, stopAtPendingSecret = false) {
   }
   throw new Error('node did not resolve');
 }
+async function waitRouteRendered(page, nodeId) {
+  await page.waitForFunction((wanted) => {
+    const state = globalThis.RPChessVerticalSlice?.runtimeHost?.getSnapshot?.();
+    const button = [...document.querySelectorAll('[data-node-id]')].find((entry) => entry.dataset.nodeId === wanted);
+    return Boolean(state?.status === 'campaign'
+      && state.campaign?.routes?.some((route) => route.to === wanted)
+      && button
+      && !button.disabled);
+  }, nodeId, { timeout:10000 });
+}
 async function selectAndTravel(page, nodeId) {
   const before = await snap(page);
   assert.strictEqual(before.status, 'campaign');
   const route = (before.campaign?.routes || []).find((entry) => entry.to === nodeId);
   assert.ok(route, `route ${nodeId} missing from ${before.campaign?.currentNodeId}`);
+  await waitRouteRendered(page, nodeId);
   await click(page, `[data-node-id="${nodeId}"]`);
   await page.waitForFunction((wanted) => globalThis.RPChessVerticalSlice?.presenter?.selectedCampaignNodeId === wanted, nodeId, { timeout:5000 });
   await click(page, '[data-rpu-travel]');
@@ -183,6 +194,7 @@ async function coverForced(page) {
   let state = await snap(page);
   const initialRoutes = (state.campaign?.routes || []).slice(0,2);
   for (const route of initialRoutes) {
+    await waitRouteRendered(page, route.to);
     await click(page, `[data-node-id="${route.to}"]`);
     await page.waitForFunction((wanted) => globalThis.RPChessVerticalSlice?.presenter?.selectedCampaignNodeId === wanted, route.to, { timeout:5000 });
     if (await visible(page, '[data-rpu-scout]:not([disabled])')) { await click(page, '[data-rpu-scout]:not([disabled])'); await idle(page); }
@@ -193,10 +205,13 @@ async function coverForced(page) {
     if (state.campaign?.secret?.status === 'pending' && await visible(page, '[data-secret-decision="decline"]')) { await click(page, '[data-secret-decision="decline"]'); await idle(page); continue; }
     const forced = (state.campaign?.routes || []).find((route) => route.requiresForcedMarch);
     if (forced) {
+      await waitRouteRendered(page, forced.to);
       await click(page, `[data-node-id="${forced.to}"]`);
       await page.waitForFunction((wanted) => globalThis.RPChessVerticalSlice?.presenter?.selectedCampaignNodeId === wanted, forced.to, { timeout:5000 });
-      const button = page.locator(`[data-forced-travel="${forced.to}"]`).first();
+      const button = page.locator('[data-rpu-travel]').first();
       await button.waitFor({ state:'visible', timeout:5000 });
+      assert.strictEqual(await button.isEnabled(), true, 'forced march CTA must be enabled');
+      assert.match((await button.textContent()) || '', /ФОРСИРОВАННЫЙ МАРШ/i);
       await button.click();
       await page.waitForFunction(() => Number(globalThis.RPChessVerticalSlice?.runtimeHost?.getSnapshot?.()?.campaign?.forcedMarch?.consecutiveCount || 0) >= 1, null, { timeout:10000 });
       await idle(page);
