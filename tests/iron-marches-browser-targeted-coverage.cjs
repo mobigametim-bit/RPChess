@@ -290,12 +290,20 @@ async function travelExact(page, nodeId) {
   let state = await snapshot(page);
   assert.strictEqual(state.status, 'campaign');
   if (state.campaign?.secret?.status === 'pending' && await visibleEnabled(page, '[data-secret-decision="decline"]')) {
-    await click(page, '[data-secret-decision="decline"]'); await idle(page); state = await snapshot(page);
+    await click(page, '[data-secret-decision="decline"]');
+    await idle(page);
+    state = await snapshot(page);
   }
   const route = (state.campaign?.routes || []).find((entry) => entry.to === nodeId);
   assert.ok(route, `route ${nodeId} is not available from ${state.campaign?.currentNodeId}`);
+  const beforeNodeId = state.campaign?.currentNodeId;
   await click(page, `[data-node-id="${nodeId}"]`);
   await click(page, '[data-rpu-travel]');
+  await page.waitForFunction(({ beforeNodeId, nodeId }) => {
+    const next = globalThis.RPChessVerticalSlice?.runtimeHost?.getSnapshot?.();
+    if (!next) return false;
+    return next.status !== 'campaign' || next.campaign?.currentNodeId === nodeId || next.campaign?.currentNodeId !== beforeNodeId;
+  }, { beforeNodeId, nodeId }, { timeout:8000 });
   await idle(page);
 }
 
