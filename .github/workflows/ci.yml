@@ -57,7 +57,7 @@ jobs:
           done
           RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/battle-ui-input-regression.cjs 2>&1 | tee /tmp/rpchess-battle-input.log
           RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-closure-e2e.cjs 2>&1 | tee /tmp/rpchess-acceptance.log
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-reload-matrix.cjs 2>&1 | tee /tmp/rpchess-reload.log
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-reload-matrix-runner.cjs 2>&1 | tee /tmp/rpchess-reload.log
       - name: Upload Chromium acceptance trace
         if: always()
         uses: actions/upload-artifact@v4
