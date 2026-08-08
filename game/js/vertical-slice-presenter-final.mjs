@@ -16,11 +16,60 @@ function optionMarkup(entries) {
   return entries.map((entry) => `<option value="${escapeAttribute(entry.id)}">${escapeHtml(entry.name)} · ${escapeHtml(rosterLabel(entry))}</option>`).join('');
 }
 
+const PROMOTION_OPTIONS = Object.freeze({
+  q: Object.freeze({ glyph:'♕', label:'Ферзь' }),
+  r: Object.freeze({ glyph:'♖', label:'Ладья' }),
+  b: Object.freeze({ glyph:'♗', label:'Слон' }),
+  n: Object.freeze({ glyph:'♘', label:'Конь' })
+});
+
 class VerticalSlicePresenter extends ApprovedVerticalSlicePresenter {
   renderCampaign(snapshot) { return renderCampaignApproved(this, snapshot); }
   renderBriefing(snapshot) { return renderBriefingApproved(this, snapshot); }
   renderDeployment(snapshot) { return renderDeploymentApproved(this, snapshot); }
   renderScenario(snapshot) { return renderScenarioApproved(this, snapshot); }
+
+  clearPromotionChooser() {
+    this.root.querySelector('[data-promotion-chooser]')?.remove();
+  }
+
+  showPromotionChooser(commands) {
+    this.clearPromotionChooser();
+    const available = commands
+      .map((command) => ({ command, promotion:String(command.payload?.promotion || '').toLowerCase() }))
+      .filter((entry) => PROMOTION_OPTIONS[entry.promotion]);
+    if (!available.length) return;
+    const document = this.root.ownerDocument;
+    const overlay = document.createElement('div');
+    overlay.dataset.promotionChooser = '';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'Выбор повышения пешки');
+    overlay.style.cssText = 'position:absolute;inset:0;z-index:40;display:grid;place-items:center;background:rgba(2,6,12,.72);backdrop-filter:blur(4px);padding:20px;';
+    const buttons = available.map(({ promotion }) => {
+      const option = PROMOTION_OPTIONS[promotion];
+      return `<button type="button" class="rpa-button" data-promotion-piece="${escapeAttribute(promotion)}" style="min-width:112px;min-height:96px;display:grid;place-items:center;gap:4px;font-size:15px"><span aria-hidden="true" style="font:700 38px Georgia,serif">${option.glyph}</span><strong>${escapeHtml(option.label)}</strong></button>`;
+    }).join('');
+    overlay.innerHTML = `<section class="rpb-card" style="width:min(560px,100%);padding:24px;display:grid;gap:18px;background:rgba(7,14,24,.98);border:1px solid rgba(232,194,111,.55);box-shadow:0 24px 80px rgba(0,0,0,.62)"><div><span class="rpu-kicker">ПОВЫШЕНИЕ ПЕШКИ</span><h2 style="margin:.35rem 0">Выберите новую фигуру</h2><p style="margin:0;color:#b8c3d3">Ход завершится только после выбора.</p></div><div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">${buttons}</div><button type="button" class="rpa-button" data-promotion-cancel>ОТМЕНА</button></section>`;
+    const scene = this.root.querySelector('.rpvs__panel--scene') || this.root;
+    if (globalThis.getComputedStyle?.(scene)?.position === 'static') scene.style.position = 'relative';
+    scene.appendChild(overlay);
+    overlay.querySelectorAll('[data-promotion-piece]').forEach((button) => button.addEventListener('click', () => {
+      const selected = available.find((entry) => entry.promotion === button.dataset.promotionPiece)?.command;
+      if (!selected) return;
+      this.clearPromotionChooser();
+      this.selectedSquare = null;
+      this.selectedReserveEntryId = null;
+      this.drawBoard();
+      this.client.dispatch({ type:'PlayerCommand', request:selected }).catch(() => {});
+    }));
+    overlay.querySelector('[data-promotion-cancel]')?.addEventListener('click', () => {
+      this.clearPromotionChooser();
+      this.selectedSquare = null;
+      this.drawBoard();
+    });
+    overlay.querySelector('[data-promotion-piece]')?.focus();
+  }
 
   handleBoardPointer(event) {
     if (this.busy || this.animationRunning || !this.boardReport || !this.boardPlan || !['scenario', 'boss'].includes(this.lastSnapshot?.status)) return;
@@ -61,6 +110,10 @@ class VerticalSlicePresenter extends ApprovedVerticalSlicePresenter {
       this.selectedReserveEntryId = null;
       this.drawBoard();
       this.client.dispatch({ type: 'PlayerCommand', request: targetCommands[0] }).catch(() => {});
+      return;
+    }
+    if (targetCommands.length > 1 && targetCommands.every((entry) => PROMOTION_OPTIONS[String(entry.payload?.promotion || '').toLowerCase()])) {
+      this.showPromotionChooser(targetCommands);
       return;
     }
 
