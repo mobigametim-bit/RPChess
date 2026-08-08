@@ -37,8 +37,16 @@ if (!globalThis[INSTALL_KEY]) {
       campaign: { ...state.campaign, supplies: Math.max(0, Number(values.supplies ?? state.campaign?.supplies ?? 0)) }
     });
   }
+  function canonicalB14Surface(surface) {
+    if (!surface || surface.stage !== 'cabinet') return surface;
+    const byId = new Map((surface.forces || []).map((entry) => [entry.id, entry]));
+    return deepFreeze({
+      ...surface,
+      forces: freezeArray((b14.FORCE_IDS || []).map((id) => byId.get(id)).filter(Boolean))
+    });
+  }
   function surfaceOutcome(finale, state) {
-    const surface = b14.finaleSurface(finale, b14Resources(state));
+    const surface = canonicalB14Surface(b14.finaleSurface(finale, b14Resources(state)));
     const choices = (surface?.choices || []).map((choice) => Object.freeze({
       ...choice,
       id: String(choice.id),
@@ -156,7 +164,7 @@ if (!globalThis[INSTALL_KEY]) {
     const state = maybeStartB14(stateInput);
     let snapshot = originalCreatePresenterSnapshot(state, dependencies);
     if (!state.politicalFinaleB14) return snapshot;
-    const surface = b14.finaleSurface(state.politicalFinaleB14, b14Resources(state));
+    const surface = canonicalB14Surface(b14.finaleSurface(state.politicalFinaleB14, b14Resources(state)));
     snapshot = deepFreeze({
       ...snapshot,
       politicalFinaleB14: surface,
