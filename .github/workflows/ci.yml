@@ -42,13 +42,14 @@ jobs:
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
       - name: Run real Chromium Iron Marches acceptance
-        timeout-minutes: 14
+        timeout-minutes: 18
         shell: bash
         run: |
           set -euo pipefail
           : > /tmp/rpchess-acceptance.log
           : > /tmp/rpchess-reload.log
           : > /tmp/rpchess-targeted.log
+          : > /tmp/rpchess-chain-events.log
           python3 -m http.server 4173 --bind 127.0.0.1 --directory dist > /tmp/rpchess-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
@@ -60,6 +61,7 @@ jobs:
           RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-closure-e2e.cjs 2>&1 | tee /tmp/rpchess-acceptance.log
           RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-reload-matrix-runner.cjs 2>&1 | tee /tmp/rpchess-reload.log
           RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-targeted-coverage.cjs 2>&1 | tee /tmp/rpchess-targeted.log
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-chain-events.cjs 2>&1 | tee /tmp/rpchess-chain-events.log
       - name: Upload Chromium acceptance trace
         if: always()
         uses: actions/upload-artifact@v4
@@ -69,6 +71,7 @@ jobs:
             /tmp/rpchess-acceptance.log
             /tmp/rpchess-reload.log
             /tmp/rpchess-targeted.log
+            /tmp/rpchess-chain-events.log
             /tmp/rpchess-battle-input.log
             /tmp/rpchess-http.log
           if-no-files-found: warn
