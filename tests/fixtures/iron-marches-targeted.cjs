@@ -1,7 +1,8 @@
 'use strict';
 
 module.exports = Object.freeze({
-  events:Object.freeze({
+  events:Object.freeze({}),
+  directEvents:Object.freeze({
     'event.cracked_bell':Object.freeze({seed:1,path:Object.freeze(['l1_n2'])}),
     'event.miners_on_strike':Object.freeze({seed:4,path:Object.freeze(['l1_n2'])}),
     'event.duel_masons':Object.freeze({seed:4,path:Object.freeze(['l1_n3'])}),
