@@ -9,12 +9,12 @@ const eventSource = require('../content/events/iron_marches_production.json');
 const EVENT_IDS = eventSource.events.map((event) => event.id).sort();
 const MAX_SEED = 350;
 
-async function startCampaign(seed) {
+async function startCampaign(seed, preferredDraftHeroId = null) {
   const host = createBrowserRunSelectionHost({
     seed,
     profileId:'profile-1',
     storage:new MemoryKeyValueStorage(),
-    deviceId:`target-fixture-${seed}`,
+    deviceId:`target-fixture-${seed}-${preferredDraftHeroId || 'default'}`,
     stageB:true,
     availableHeroIds:['hero.aldric_wall','hero.mara_chain','hero.vael_hammer']
   });
@@ -24,7 +24,8 @@ async function startCampaign(seed) {
   await host.dispatch({ type:'LockSelection' });
   const runtime = host.getRuntimeHost();
   let snapshot = runtime.getSnapshot();
-  await runtime.dispatch({ type:'ChooseDraftHero', heroId:snapshot.stageB.draft.heroOffers[0].id });
+  const heroOffer = snapshot.stageB.draft.heroOffers.find((entry)=>entry.id === preferredDraftHeroId) || snapshot.stageB.draft.heroOffers[0];
+  await runtime.dispatch({ type:'ChooseDraftHero', heroId:heroOffer.id });
   snapshot = runtime.getSnapshot();
   await runtime.dispatch({ type:'ChooseDraftRegular', regularId:snapshot.stageB.draft.regularOffers[0].id });
   await runtime.dispatch({ type:'ConfirmDraft' });
@@ -86,9 +87,9 @@ function discoverAlongGreedyPath(initialCampaign, seed, fixtures) {
   }
 }
 
-async function findPieceFixture(type) {
+async function findPieceFixture(type, preferredDraftHeroId = null) {
   for (let seed=1; seed<=MAX_SEED; seed+=1) {
-    const runtime = await startCampaign(seed);
+    const runtime = await startCampaign(seed, preferredDraftHeroId);
     let snapshot = runtime.getSnapshot();
     const battleRoute = snapshot.campaign.routes.find((route)=>['battle','elite'].includes(route.type));
     if (!battleRoute) continue;
@@ -103,7 +104,7 @@ async function findPieceFixture(type) {
     if (snapshot.status !== 'scenario') continue;
     const bySquare = new Map((snapshot.scenario.pieces || []).map((piece)=>[piece.square,piece]));
     const command = (snapshot.scenario.legalCommands || []).find((candidate)=>candidate.type === 'MovePiece' && bySquare.get(candidate.payload.from)?.type === type);
-    if (command) return { seed, path:[battleRoute.to], move:command.payload, scenarioId:snapshot.scenario.scenarioId };
+    if (command) return { seed, path:[battleRoute.to], move:command.payload, scenarioId:snapshot.scenario.scenarioId, draftHeroId:preferredDraftHeroId };
   }
   return null;
 }
@@ -116,9 +117,11 @@ async function findPieceFixture(type) {
     const completeEvents = EVENT_IDS.every((id)=>fixtures.events[id]);
     if (completeEvents && fixtures.services.forge && fixtures.services.camp && fixtures.secret) break;
   }
-  fixtures.pieces.pawn = await findPieceFixture('p');
-  fixtures.pieces.knight = await findPieceFixture('n');
+  fixtures.pieces.pawn = await findPieceFixture('p', 'hero.mara_chain');
+  fixtures.pieces.knight = await findPieceFixture('n', 'hero.vael_hammer');
 
+  console.log('[target-fixtures]');
+  console.log(JSON.stringify(fixtures,null,2));
   for (const id of EVENT_IDS) assert.ok(fixtures.events[id], `missing deterministic path for ${id}`);
   assert.ok(fixtures.services.forge, 'missing forge fixture');
   assert.ok(fixtures.services.camp, 'missing camp fixture');
@@ -126,5 +129,4 @@ async function findPieceFixture(type) {
   assert.ok(fixtures.pieces.pawn, 'missing pawn move fixture');
   assert.ok(fixtures.pieces.knight, 'missing knight move fixture');
   console.log('Iron Marches targeted fixture plan: PASS');
-  console.log(JSON.stringify(fixtures,null,2));
 })().catch((error)=>{console.error(error.stack||error);process.exitCode=1;});
