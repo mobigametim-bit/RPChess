@@ -16,7 +16,9 @@ function currentObjective(snapshot, templates) {
     const bossId = snapshot.boss?.bossId || snapshot.currentNode?.contentId;
     return templates.bosses?.[bossId]?.phases?.[Number(snapshot.boss?.phaseIndex || 0)]?.objectives?.[index] || null;
   }
-  return templates.encounters?.[snapshot.currentNode?.contentId]?.objectives?.[index] || null;
+  const eventCombatId = snapshot.currentNode?.eventCombat ? snapshot.event?.pendingCombat?.encounterId : null;
+  const encounterId = eventCombatId || snapshot.currentNode?.contentId;
+  return templates.encounters?.[encounterId]?.objectives?.[index] || null;
 }
 function remainingObjective(definition, snapshot) {
   if (!definition) return null;
