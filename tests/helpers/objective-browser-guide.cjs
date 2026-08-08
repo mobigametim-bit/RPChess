@@ -8,8 +8,8 @@ const { hash32 } = require('../../src/core/determinism.cjs');
 
 const GUIDE_PROFILE = Object.freeze({
   id:'browser-objective-guide',
-  depth:3,
-  maxNodes:60000,
+  depth:2,
+  maxNodes:18000,
   timeBudgetMs:0,
   rootNoise:0,
   reserveDiscount:0.85,
