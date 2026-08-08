@@ -6,7 +6,9 @@ module.exports = Object.freeze({
     'event.miners_on_strike':Object.freeze({seed:4,path:Object.freeze(['l1_n2'])}),
     'event.duel_masons':Object.freeze({seed:4,path:Object.freeze(['l1_n3'])}),
     'event.empty_armory':Object.freeze({seed:12,path:Object.freeze(['l1_n3'])}),
-    'event.disputed_standard':Object.freeze({seed:43,path:Object.freeze(['l1_n2'])}),
+    'event.disputed_standard':Object.freeze({seed:43,path:Object.freeze(['l1_n2'])})
+  }),
+  chainEvents:Object.freeze({
     'event.furnace_oath':Object.freeze({seed:4,chainStart:'event.miners_on_strike',startPath:Object.freeze(['l1_n2'])}),
     'event.prisoners_pass':Object.freeze({seed:43,chainStart:'event.disputed_standard',startPath:Object.freeze(['l1_n2'])})
   }),
