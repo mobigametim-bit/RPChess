@@ -229,7 +229,14 @@ function uniqueByInstance(records) {
 
 function projectIronMarchesBattleOptions(options, army, stageB = null) {
   const baseProjected = projectArmyBattleOptions(options, army, stageB);
-  const projected = restoreEligibleStageBReserve(baseProjected, stageB, options.playerSide || 'w');
+  const reserveProjected = restoreEligibleStageBReserve(baseProjected, stageB, options.playerSide || 'w');
+  const projected = stageB?.commandLimit == null ? reserveProjected : Object.freeze({
+    ...reserveProjected,
+    scenarioRules: Object.freeze({
+      ...(reserveProjected.scenarioRules || {}),
+      deploymentCommandLimit: Number(stageB.commandLimit)
+    })
+  });
   const statuses = statusEntries(projected.statuses);
   const abilities = existingAbilityParts(projected.abilities);
   for (const record of allHeroRecords(projected)) mechanicsForRecord(record, abilities, statuses, projected);
