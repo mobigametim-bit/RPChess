@@ -31,6 +31,9 @@ const HERO_IDS = Object.freeze([
   await runtime.dispatch({type:'ChooseDraftRegular',regularId:knightOffer.id});
   await runtime.dispatch({type:'ConfirmDraft'});
   snapshot=runtime.getSnapshot();
+  const draftedKnight=snapshot.stageB.roster.find((entry)=>entry.kind==='regular'&&entry.type==='n'&&entry.source==='draft');
+  assert.ok(draftedKnight,'confirmed Stage B roster must contain the drafted knight');
+  assert.strictEqual(draftedKnight.active,false,'Fortress default command budget should initially leave this knight in reserve');
   const battleRoute=snapshot.campaign.routes.find((route)=>['battle','elite'].includes(route.type));
   assert.ok(battleRoute,'opening campaign must expose a battle route');
   await runtime.dispatch({type:'Travel',targetNodeId:battleRoute.to});
@@ -39,7 +42,7 @@ const HERO_IDS = Object.freeze([
   await runtime.dispatch({type:'ConfirmBriefing'});
   snapshot=runtime.getSnapshot();
   assert.strictEqual(snapshot.status,'deployment');
-  const knight=snapshot.deployment.units.find((unit)=>unit.type==='n'&&unit.metadata?.stageBRosterId===knightOffer.id);
+  const knight=snapshot.deployment.units.find((unit)=>unit.type==='n'&&unit.metadata?.stageBRosterId===draftedKnight.id);
   assert.ok(knight,'drafted knight must remain available to the pre-battle deployment roster');
   assert.strictEqual(knight.inReserve,true,'inactive drafted knight should enter deployment as reserve until the player places it');
   assert.strictEqual(knight.source,'reserve');
