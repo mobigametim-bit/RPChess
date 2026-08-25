@@ -42,7 +42,7 @@ jobs:
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
       - name: Run real Chromium Iron Marches acceptance
-        timeout-minutes: 22
+        timeout-minutes: 28
         shell: bash
         run: |
           set -euo pipefail
@@ -60,3 +60,7 @@ jobs:
           RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-secret-forced.cjs
           RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-closure-e2e.cjs
           RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-reload-matrix-runner.cjs
+          echo '--- mobile 390x844 event/map acceptance ---'
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node -r ./tests/helpers/playwright-mobile-preload.cjs tests/iron-marches-browser-direct-events.cjs
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node -r ./tests/helpers/playwright-mobile-preload.cjs tests/iron-marches-browser-chain-events.cjs
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node -r ./tests/helpers/playwright-mobile-preload.cjs tests/iron-marches-browser-secret-forced.cjs
