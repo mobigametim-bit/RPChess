@@ -11,7 +11,7 @@ module.exports = Object.freeze({
   }),
   chainEvents:Object.freeze({
     'event.furnace_oath':Object.freeze({seed:4,chainStart:'event.miners_on_strike',startPath:Object.freeze(['l1_n2'])}),
-    'event.prisoners_pass':Object.freeze({seed:43,chainStart:'event.disputed_standard',startPath:Object.freeze(['l1_n2'])})
+    'event.prisoners_pass':Object.freeze({seed:45,chainStart:'event.disputed_standard',startPath:Object.freeze(['l1_n2']),followupPath:Object.freeze(['l2_n2','l3_n1','l4_n3'])})
   }),
   services:Object.freeze({
     forge:Object.freeze({seed:6,path:Object.freeze(['l1_n2']),type:'forge'}),
