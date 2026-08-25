@@ -81,8 +81,13 @@ function installBattlePointerCoordinateSafety(Presenter = VerticalSlicePresenter
       }
     }
 
-    const clientX = point.bounds.left + point.x * (point.bounds.width / point.logicalWidth);
-    const clientY = point.bounds.top + point.y * (point.bounds.height / point.logicalHeight);
+    // The legacy presenter performs its own `client - bounds` subtraction but
+    // assumes the result is already in logical canvas CSS pixels. Feed it the
+    // normalized logical coordinate directly. Re-scaling back to the original
+    // CSS event coordinate would reintroduce the mobile/zoom offset for target
+    // clicks after a source piece has already been selected.
+    const clientX = point.bounds.left + point.x;
+    const clientY = point.bounds.top + point.y;
     return original.call(this, { currentTarget:canvas, clientX, clientY });
   };
 
