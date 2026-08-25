@@ -1,6 +1,8 @@
 'use strict';
 
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 const { chromium } = require('playwright');
 
 const BASE_URL = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
@@ -8,6 +10,12 @@ function delay(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 function actionIndex(state) { return Number(state?.scenario?.actionIndex ?? state?.scenario?.battle?.actionIndex ?? 0); }
 function distance(a,b) { return Math.abs(String(a).charCodeAt(0)-String(b).charCodeAt(0)) + Math.abs(Number(String(a).slice(1))-Number(String(b).slice(1))); }
 function log(label, value = '') { console.log(`[battle-input-regression] ${label}${value === '' ? '' : ` ${JSON.stringify(value)}`}`); }
+
+const battleUiSource = fs.readFileSync(path.resolve(__dirname, '../game/js/ui-approved-battle.mjs'), 'utf8');
+assert.ok(battleUiSource.includes("s.playerTurn?'ВАШ ХОД':'ХОД ПРОТИВНИКА'"), 'battle turn label must use presenter playerTurn');
+assert.strictEqual(battleUiSource.includes('s.turnSide===snapshot.playerSide'), false, 'battle UI must not read the nonexistent turnSide field');
+assert.ok(battleUiSource.includes("type:'PlayerCommand',request:c"), 'button abilities must use the PlayerCommand scheduler');
+assert.ok(battleUiSource.includes("type:'PlayerCommand',request:{type:'EndTurn',payload:{}}"), 'end turn must use the PlayerCommand scheduler');
 
 async function realClick(page, selector) {
   const locator = typeof selector === 'string' ? page.locator(selector).first() : selector.first();
@@ -90,6 +98,30 @@ async function debugState(page, fromPoint = null, toPoint = null) {
   }, {fromPoint,toPoint});
 }
 
+async function verifyBriefingCardToggle(page) {
+  assert.strictEqual(await page.locator('input[type="checkbox"][data-briefing-roster]').count(), 0, 'briefing roster must not render checkboxes');
+  assert.strictEqual(await page.locator('[data-save-briefing]').count(), 0, 'briefing roster must not render an apply button');
+  const toggle = page.locator('[data-briefing-roster][aria-disabled="false"].is-selected').first();
+  await toggle.waitFor({ state:'visible', timeout:7000 });
+  const id = await toggle.getAttribute('data-briefing-roster');
+  assert.ok(id, 'toggleable selected roster card missing id');
+  assert.strictEqual(await toggle.getAttribute('aria-pressed'), 'true');
+  await realClick(page, toggle);
+  await page.waitForFunction((rosterId) => {
+    const current = globalThis.RPChessVerticalSlice?.runtimeHost?.getSnapshot?.();
+    return current?.status === 'briefing' && !current.stageB?.briefing?.activeRosterIds?.includes(rosterId);
+  }, id, { timeout:7000 });
+  const deselected = page.locator(`[data-briefing-roster="${id}"]`).first();
+  assert.strictEqual(await deselected.getAttribute('aria-pressed'), 'false', 'second render must visibly deselect the card');
+  await realClick(page, deselected);
+  await page.waitForFunction((rosterId) => {
+    const current = globalThis.RPChessVerticalSlice?.runtimeHost?.getSnapshot?.();
+    return current?.status === 'briefing' && current.stageB?.briefing?.activeRosterIds?.includes(rosterId);
+  }, id, { timeout:7000 });
+  const reselected = page.locator(`[data-briefing-roster="${id}"]`).first();
+  assert.strictEqual(await reselected.getAttribute('aria-pressed'), 'true', 'repeat click must reselect the card');
+}
+
 async function launchToBattle(page) {
   await page.goto(`${BASE_URL}/index.html?new=1&seed=9042&autosave=1`, { waitUntil:'domcontentloaded', timeout:15000 });
   await page.evaluate(() => localStorage.clear());
@@ -112,12 +144,16 @@ async function launchToBattle(page) {
   await realClick(page, route);
   await realClick(page, '[data-rpu-travel]:not([disabled])');
   await page.waitForFunction(() => globalThis.RPChessVerticalSlice?.runtimeHost?.getSnapshot?.()?.status === 'briefing', null, { timeout:10000 });
+  await verifyBriefingCardToggle(page);
   await realClick(page, '[data-confirm-briefing]');
   await page.waitForFunction(() => globalThis.RPChessVerticalSlice?.runtimeHost?.getSnapshot?.()?.status === 'deployment', null, { timeout:10000 });
   const confirm = page.locator('[data-confirm-deployment]');
   assert.strictEqual(await confirm.isEnabled(), true, 'default deployment unexpectedly requires edits');
   await realClick(page, confirm);
   await page.waitForFunction(() => ['scenario','boss'].includes(globalThis.RPChessVerticalSlice?.runtimeHost?.getSnapshot?.()?.status), null, { timeout:10000 });
+  await page.waitForFunction(() => globalThis.RPChessVerticalSlice?.runtimeHost?.getSnapshot?.()?.scenario?.playerTurn === true, null, { timeout:7000 });
+  const turnLabel = (await page.locator('.rpu-battle__heading strong').first().textContent() || '').trim();
+  assert.strictEqual(turnLabel, 'ВАШ ХОД', 'battle UI must agree with the runtime player turn');
 }
 
 async function moveThroughCanvas(page, ordinal) {
@@ -178,7 +214,7 @@ async function moveThroughCanvas(page, ordinal) {
     await moveThroughCanvas(page,'first');
     await moveThroughCanvas(page,'second');
     assert.deepStrictEqual(errors,[],errors.join('\n'));
-    console.log('Battle UI sequential input regression: PASS');
+    console.log('Battle UI turn label, briefing toggle and sequential input regression: PASS');
   } finally {
     await browser.close();
   }
