@@ -1,6 +1,6 @@
 'use strict';
 
-const verticalSlice = require('../runtime/vertical-slice.cjs');
+const profilePersistence = require('./profile-persistence.cjs');
 
 const PATCH = Symbol.for('rpchess.browser.staleOpponentTurnRepair');
 
@@ -36,14 +36,20 @@ function repairStaleOpponentTurn(state) {
   return repaired;
 }
 
-if (!verticalSlice[PATCH]) {
-  const originalValidate = verticalSlice.validateVerticalSliceSnapshot;
-  verticalSlice.validateVerticalSliceSnapshot = function validateVerticalSliceSnapshotWithTurnRepair(snapshot, options = {}) {
-    const validated = originalValidate(snapshot, options);
-    const repaired = repairStaleOpponentTurn(validated);
-    return repaired === validated ? validated : originalValidate(repaired, options);
+if (!profilePersistence[PATCH]) {
+  const originalInspect = profilePersistence.inspectBrowserProfile;
+  profilePersistence.inspectBrowserProfile = function inspectBrowserProfileWithTurnRepair(store, profileId, validationInput = null) {
+    const inspected = originalInspect(store, profileId, validationInput);
+    if (!inspected?.state) return inspected;
+    const repaired = repairStaleOpponentTurn(inspected.state);
+    if (repaired === inspected.state) return inspected;
+    return Object.freeze({
+      ...inspected,
+      state: repaired,
+      migratedFrom: inspected.migratedFrom || 'stale_opponent_turn'
+    });
   };
-  Object.defineProperty(verticalSlice, PATCH, { value: true, enumerable: false });
+  Object.defineProperty(profilePersistence, PATCH, { value: true, enumerable: false });
 }
 
 module.exports = { repairStaleOpponentTurn };
