@@ -10,10 +10,11 @@ const HERO_IDS = Object.freeze([
 ]);
 
 (async()=>{
+  const storage=new MemoryKeyValueStorage();
   const host=createBrowserRunSelectionHost({
     seed:1,
     profileId:'profile-1',
-    storage:new MemoryKeyValueStorage(),
+    storage,
     deviceId:'production-event-travel',
     stageB:true,
     forceNew:true,
@@ -39,5 +40,20 @@ const HERO_IDS = Object.freeze([
   assert.strictEqual(snapshot.event?.eventId,'event.cracked_bell');
   assert.ok(snapshot.event?.choices?.length>=2,'production event must expose choices');
   assert.strictEqual(runtime.getState().productionEvent?.state?.eventId,'event.cracked_bell');
-  console.log('Production event browser travel: 1/1 passed.');
+  assert.strictEqual(runtime.getState().event,null,'production event session must be authoritative over the legacy authored-event field');
+
+  const resumed=createBrowserRunSelectionHost({
+    seed:99999,
+    profileId:'profile-1',
+    storage,
+    deviceId:'production-event-travel',
+    stageB:true,
+    availableHeroIds:HERO_IDS
+  });
+  assert.strictEqual(resumed.getSnapshot().status,'ready');
+  assert.strictEqual(resumed.getRuntimeHost().resumed,true);
+  assert.deepStrictEqual(resumed.getRuntimeHost().getSnapshot(),snapshot,'production event presenter snapshot must survive profile reload byte-equivalently');
+  assert.strictEqual(resumed.getRuntimeHost().getState().productionEvent?.state?.eventId,'event.cracked_bell');
+  assert.strictEqual(resumed.getRuntimeHost().getState().event,null,'reload must not revive legacy event authority');
+  console.log('Production event browser travel + reload: 2/2 passed.');
 })().catch((error)=>{console.error(error.stack||error);process.exitCode=1;});
