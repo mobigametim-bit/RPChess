@@ -19,7 +19,7 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
 
   for (const html of [index, isolated]) {
     assert(html.includes('js/generated/iron-marches-runtime.bundle.js?v=20260826-1'));
-    assert(html.includes('js/battle-pointer-coordinate-safety.mjs'));
+    assert(html.includes('js/battle-pointer-coordinate-safety.mjs?v=20260826-1'));
     assert(html.includes('js/vertical-slice-app.mjs?v=20260826-1'));
     assert(html.includes('js/vertical-slice-presenter-final.mjs?v=20260826-1'));
     assert(html.includes('js/ui-approved-campaign.mjs?v=20260826-1'));
@@ -50,6 +50,7 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert(presenter.includes('generated_assets/logo_main.png'));
   assert.strictEqual(presenter.includes('Доступные маршруты'), false);
   assert.strictEqual(presenter.includes('region.environmentSheet'), false);
+  assert(pointerSafety.includes("./vertical-slice-presenter-final.mjs?v=20260826-1"));
   assert(pointerSafety.includes('logicalWidth / bounds.width'));
   assert(pointerSafety.includes('logicalHeight / bounds.height'));
   assert(pointerSafety.includes("Symbol.for('rpchess.battle-pointer-coordinate-safety.installed')"));
