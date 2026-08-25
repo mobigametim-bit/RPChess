@@ -1,4 +1,4 @@
-import { VerticalSlicePresenter } from './vertical-slice-presenter-final.mjs';
+import { VerticalSlicePresenter } from './vertical-slice-presenter-final.mjs?v=20260826-1';
 
 const INSTALL_KEY = Symbol.for('rpchess.battle-pointer-coordinate-safety.installed');
 
