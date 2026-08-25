@@ -1,0 +1,55 @@
+/* Release hotfix 2026-08-26: briefing selection must never expose checkbox UI. */
+.rpu-brief-roster-card,
+.rpb-roster-row {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  position: relative !important;
+}
+
+.rpu-brief-roster-card::before,
+.rpb-roster-row::before {
+  content: none !important;
+  display: none !important;
+}
+
+.rpu-brief-roster-card > input[type="checkbox"],
+.rpb-roster-row > input[type="checkbox"] {
+  display: none !important;
+}
+
+.rpu-brief-roster-card {
+  grid-template-columns: 62px minmax(0,1fr) auto !important;
+}
+.rpu-brief-roster-card > img { grid-column: 1 !important; }
+.rpu-brief-roster-card > div { grid-column: 2 !important; }
+.rpu-brief-roster-card > b { grid-column: 3 !important; }
+
+/* Legacy renderer fallback: the whole row remains the selection control,
+   while the checkbox itself is completely absent visually. */
+.rpb-roster-row:has(> input[type="checkbox"]) {
+  display: grid !important;
+  grid-template-columns: 62px minmax(0,1fr) auto !important;
+  gap: 8px !important;
+  align-items: center !important;
+  padding: 8px !important;
+  border: 1px solid rgba(104,132,165,.26) !important;
+  border-radius: 11px !important;
+  background: rgba(9,25,42,.7) !important;
+  cursor: pointer !important;
+}
+.rpb-roster-row:has(> input[type="checkbox"]) > img {
+  width: 62px !important;
+  height: 62px !important;
+  object-fit: contain !important;
+}
+.rpb-roster-row:has(> input[type="checkbox"]:checked),
+.rpu-brief-roster-card.is-selected,
+.rpu-brief-roster-card[aria-pressed="true"] {
+  border-color: #e4bd66 !important;
+  box-shadow: 0 0 0 2px rgba(228,189,102,.18) inset !important;
+}
+
+/* There is exactly one continuation action in the approved briefing. */
+[data-save-briefing] {
+  display: none !important;
+}
