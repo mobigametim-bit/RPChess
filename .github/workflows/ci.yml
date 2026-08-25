@@ -64,11 +64,13 @@ jobs:
           RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node -r ./tests/helpers/playwright-mobile-preload.cjs tests/iron-marches-browser-direct-events.cjs
           RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node -r ./tests/helpers/playwright-mobile-preload.cjs tests/iron-marches-browser-chain-events.cjs
           RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node -r ./tests/helpers/playwright-mobile-preload.cjs tests/iron-marches-browser-secret-forced.cjs
-      - name: Upload briefing QA screenshot
+      - name: Expose briefing QA screenshot
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: briefing-active-roster
-          path: artifacts/qa/briefing-active-roster.jpg
-          if-no-files-found: error
-          retention-days: 7
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f artifacts/qa/briefing-active-roster.jpg
+          echo 'BRIEFING_QA_JPEG_BASE64_BEGIN'
+          base64 -w0 artifacts/qa/briefing-active-roster.jpg
+          echo
+          echo 'BRIEFING_QA_JPEG_BASE64_END'
