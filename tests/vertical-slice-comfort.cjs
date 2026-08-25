@@ -13,10 +13,12 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   const stageCss = read('game/css/stage-b-ui.css');
   const app = read('game/js/vertical-slice-app.mjs');
   const presenter = read('game/js/vertical-slice-presenter.mjs');
+  const pointerSafety = read('game/js/battle-pointer-coordinate-safety.mjs');
   const build = read('scripts/build.cjs');
 
   for (const html of [index, isolated]) {
     assert(html.includes('js/generated/iron-marches-runtime.bundle.js'));
+    assert(html.includes('js/battle-pointer-coordinate-safety.mjs'));
     assert(html.includes('js/vertical-slice-app.mjs'));
     assert(html.includes('style.css'));
     assert(html.includes('css/approved-visual-shell.css'));
@@ -40,6 +42,9 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert(presenter.includes('generated_assets/logo_main.png'));
   assert.strictEqual(presenter.includes('Доступные маршруты'), false);
   assert.strictEqual(presenter.includes('region.environmentSheet'), false);
+  assert(pointerSafety.includes('logicalWidth / bounds.width'));
+  assert(pointerSafety.includes('logicalHeight / bounds.height'));
+  assert(pointerSafety.includes("Symbol.for('rpchess.battle-pointer-coordinate-safety.installed')"));
   assert(build.includes("path.join(dist, 'index.html')"));
 
   const appModule = await import(pathToFileURL(path.join(root, 'game/js/vertical-slice-app.mjs')).href);
