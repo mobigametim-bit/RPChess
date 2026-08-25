@@ -12,10 +12,16 @@ function distance(a,b) { return Math.abs(String(a).charCodeAt(0)-String(b).charC
 function log(label, value = '') { console.log(`[battle-input-regression] ${label}${value === '' ? '' : ` ${JSON.stringify(value)}`}`); }
 
 const battleUiSource = fs.readFileSync(path.resolve(__dirname, '../game/js/ui-approved-battle.mjs'), 'utf8');
+const briefingHotfixSource = fs.readFileSync(path.resolve(__dirname, '../game/css/briefing-battle-hotfix-20260826.css'), 'utf8');
+const pointerSafetySource = fs.readFileSync(path.resolve(__dirname, '../game/js/battle-pointer-coordinate-safety-20260826.mjs'), 'utf8');
 assert.ok(battleUiSource.includes("s.playerTurn?'ВАШ ХОД':'ХОД ПРОТИВНИКА'"), 'battle turn label must use presenter playerTurn');
 assert.strictEqual(battleUiSource.includes('s.turnSide===snapshot.playerSide'), false, 'battle UI must not read the nonexistent turnSide field');
 assert.ok(battleUiSource.includes("type:'PlayerCommand',request:c"), 'button abilities must use the PlayerCommand scheduler');
 assert.ok(battleUiSource.includes("type:'PlayerCommand',request:{type:'EndTurn',payload:{}}"), 'end turn must use the PlayerCommand scheduler');
+assert.ok(briefingHotfixSource.includes('[data-save-briefing]'), 'briefing hotfix must retire legacy apply button');
+assert.ok(briefingHotfixSource.includes('display: none !important'), 'briefing hotfix must fully hide checkbox controls');
+assert.ok(pointerSafetySource.includes('movableVisualSquare'), 'battle pointer safety must include visible-piece hit testing');
+assert.ok(pointerSafetySource.includes('hitTop = top - size * 0.36'), 'visible-piece hit target must extend above the logical square');
 
 async function realClick(page, selector) {
   const locator = typeof selector === 'string' ? page.locator(selector).first() : selector.first();
@@ -54,21 +60,27 @@ function objectiveMove(state) {
   if (cells.length) return legal.slice().sort((a,b) => Math.min(...cells.map((target) => distance(a.payload.to,target))) - Math.min(...cells.map((target) => distance(b.payload.to,target))))[0];
   return legal[0];
 }
-async function point(page, square) {
+async function point(page, square, anchor = { x:.5, y:.5 }) {
   const canvas = page.locator('[data-board]').first();
   const box = await canvas.boundingBox();
   assert.ok(box, 'canvas missing');
-  const local = await page.evaluate((wanted) => {
+  const local = await page.evaluate(({ wanted, anchor }) => {
     const presenter = globalThis.RPChessVerticalSlice?.presenter;
     const viewport = presenter?.boardReport?.viewport;
     const cell = presenter?.boardPlan?.activeCells?.find((entry) => entry.square === wanted);
     const element = document.querySelector('[data-board]');
     if (!viewport || !cell || !element) return null;
     const rect = element.getBoundingClientRect();
-    const scaleX = rect.width / (element.width || rect.width);
-    const scaleY = rect.height / (element.height || rect.height);
-    return { x:(viewport.x + (cell.displayX + .5) * viewport.cellSize) * scaleX, y:(viewport.y + (cell.displayY + .5) * viewport.cellSize) * scaleY };
-  }, square);
+    const dpr = Math.max(1, Number(devicePixelRatio) || 1);
+    const logicalWidth = element.width / dpr;
+    const logicalHeight = element.height / dpr;
+    const scaleX = rect.width / logicalWidth;
+    const scaleY = rect.height / logicalHeight;
+    return {
+      x:(viewport.x + (cell.displayX + Number(anchor.x)) * viewport.cellSize) * scaleX,
+      y:(viewport.y + (cell.displayY + Number(anchor.y)) * viewport.cellSize) * scaleY
+    };
+  }, { wanted:square, anchor });
   assert.ok(local, `missing geometry ${square}`);
   return { x:box.x + local.x, y:box.y + local.y };
 }
@@ -98,9 +110,34 @@ async function debugState(page, fromPoint = null, toPoint = null) {
   }, {fromPoint,toPoint});
 }
 
+async function captureBriefingRoster(page) {
+  const roster = page.locator('.rpu-brief-roster').first();
+  await roster.waitFor({ state:'visible', timeout:7000 });
+  const audit = await roster.evaluate((node) => {
+    const cards = [...node.querySelectorAll('[data-briefing-roster]')];
+    return {
+      cardCount: cards.length,
+      cardTags: cards.map((card) => card.tagName),
+      checkboxCount: node.querySelectorAll('input[type="checkbox"]').length,
+      firstBefore: cards[0] ? getComputedStyle(cards[0], '::before').content : null,
+      firstAppearance: cards[0] ? getComputedStyle(cards[0]).appearance : null
+    };
+  });
+  assert.ok(audit.cardCount >= 1, 'briefing roster must contain selectable cards');
+  assert.ok(audit.cardTags.every((tag) => tag === 'BUTTON'), `briefing roster must use button cards, got ${audit.cardTags.join(',')}`);
+  assert.strictEqual(audit.checkboxCount, 0, 'briefing roster screenshot must contain no checkbox controls');
+  assert.ok(audit.firstBefore === 'none' || audit.firstBefore === 'normal' || audit.firstBefore === '""', `briefing card pseudo-marker must be absent, got ${audit.firstBefore}`);
+  assert.strictEqual(await page.locator('[data-save-briefing]').count(), 0, 'briefing screenshot must contain no apply button');
+  const output = path.resolve(__dirname, '../artifacts/qa/briefing-active-roster.jpg');
+  fs.mkdirSync(path.dirname(output), { recursive:true });
+  await roster.screenshot({ path:output, type:'jpeg', quality:68 });
+  console.log(`[briefing-visual] screenshot=${output}`);
+}
+
 async function verifyBriefingCardToggle(page) {
   assert.strictEqual(await page.locator('input[type="checkbox"][data-briefing-roster]').count(), 0, 'briefing roster must not render checkboxes');
   assert.strictEqual(await page.locator('[data-save-briefing]').count(), 0, 'briefing roster must not render an apply button');
+  await captureBriefingRoster(page);
   const toggle = page.locator('[data-briefing-roster][aria-disabled="false"].is-selected').first();
   await toggle.waitFor({ state:'visible', timeout:7000 });
   const id = await toggle.getAttribute('data-briefing-roster');
@@ -156,15 +193,15 @@ async function launchToBattle(page) {
   assert.strictEqual(turnLabel, 'ВАШ ХОД', 'battle UI must agree with the runtime player turn');
 }
 
-async function moveThroughCanvas(page, ordinal) {
+async function moveThroughCanvas(page, ordinal, sourceAnchor = {x:.5,y:.5}) {
   const before = await snapshot(page);
   assert.ok(before?.scenario?.playerTurn, `${ordinal}: runtime is not on player turn`);
   const command = objectiveMove(before);
   assert.ok(command, `${ordinal}: no legal player move`);
-  const from = await point(page, command.payload.from);
+  const from = await point(page, command.payload.from, sourceAnchor);
   const to = await point(page, command.payload.to);
   const start = await debugState(page, from, to);
-  log(`${ordinal}-before`, { command:`${command.payload.from}->${command.payload.to}`, ...start });
+  log(`${ordinal}-before`, { command:`${command.payload.from}->${command.payload.to}`, sourceAnchor, ...start });
   assert.strictEqual(start.busy, false, `${ordinal}: presenter busy before input`);
   assert.strictEqual(start.animationRunning, false, `${ordinal}: animation active before input`);
   assert.strictEqual(start.presenterPlayerTurn, true, `${ordinal}: presenter has stale non-player turn`);
@@ -204,17 +241,20 @@ async function moveThroughCanvas(page, ordinal) {
 
 (async () => {
   const browser = await chromium.launch({headless:true});
-  const page = await browser.newPage({viewport:{width:1366,height:768}});
+  const page = await browser.newPage({viewport:{width:1366,height:768},deviceScaleFactor:1.25});
   page.setDefaultTimeout(7000);
   const errors=[];
   page.on('pageerror',(error)=>errors.push(`pageerror: ${error.message}`));
   page.on('console',(message)=>{ if(message.type()==='error') errors.push(`console: ${message.text()}`); });
   try {
     await launchToBattle(page);
-    await moveThroughCanvas(page,'first');
+    // Exercise the upper silhouette tolerance: the click is intentionally above
+    // the logical cell centre, matching the manual report that the visible unit
+    // art could otherwise require a click lower than the figure itself.
+    await moveThroughCanvas(page,'first',{x:.5,y:-.18});
     await moveThroughCanvas(page,'second');
     assert.deepStrictEqual(errors,[],errors.join('\n'));
-    console.log('Battle UI turn label, briefing toggle and sequential input regression: PASS');
+    console.log('Battle UI visible-piece hit area, turn label, briefing card toggle and sequential input regression: PASS');
   } finally {
     await browser.close();
   }
