@@ -46,12 +46,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          : > /tmp/rpchess-acceptance.log
-          : > /tmp/rpchess-reload.log
-          : > /tmp/rpchess-secret-forced.log
-          : > /tmp/rpchess-direct-events.log
-          : > /tmp/rpchess-chain-events.log
-          : > /tmp/rpchess-special-rules.log
           python3 -m http.server 4173 --bind 127.0.0.1 --directory dist > /tmp/rpchess-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
@@ -59,34 +53,10 @@ jobs:
             if curl --fail --silent http://127.0.0.1:4173/index.html >/dev/null; then break; fi
             sleep 1
           done
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/battle-ui-input-regression.cjs 2>&1 | tee /tmp/rpchess-battle-input.log
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-closure-e2e.cjs 2>&1 | tee /tmp/rpchess-acceptance.log
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-reload-matrix-runner.cjs 2>&1 | tee /tmp/rpchess-reload.log
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-secret-forced.cjs 2>&1 | tee /tmp/rpchess-secret-forced.log
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-direct-events.cjs 2>&1 | tee /tmp/rpchess-direct-events.log
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-chain-events.cjs 2>&1 | tee /tmp/rpchess-chain-events.log
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/chess-special-rules-ui-regression.cjs 2>&1 | tee /tmp/rpchess-special-rules.log
-      - name: Upload Chromium acceptance trace
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: iron-marches-chromium-trace
-          path: |
-            /tmp/rpchess-acceptance.log
-            /tmp/rpchess-reload.log
-            /tmp/rpchess-secret-forced.log
-            /tmp/rpchess-direct-events.log
-            /tmp/rpchess-chain-events.log
-            /tmp/rpchess-special-rules.log
-            /tmp/rpchess-battle-input.log
-            /tmp/rpchess-http.log
-          if-no-files-found: warn
-          retention-days: 3
-      - name: Upload browser distribution
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: rpchess-browser-dist
-          path: dist
-          if-no-files-found: error
-          retention-days: 3
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/battle-ui-input-regression.cjs
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-direct-events.cjs
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-chain-events.cjs
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/chess-special-rules-ui-regression.cjs
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-secret-forced.cjs
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-closure-e2e.cjs
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-reload-matrix-runner.cjs
