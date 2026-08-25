@@ -76,6 +76,18 @@ async function commandAfter(page, commands, from, to, promotionChoice = null) {
       globalThis.__rpchessSpecial = { root, canvas, client, presenter, configure };
     });
 
+    const pawn = await commandAfter(page, [
+      { type:'MovePiece', payload:{ from:'e2', to:'e3', promotion:null } }
+    ], 'e2', 'e3');
+    assert.deepStrictEqual(pawn, { type:'PlayerCommand', request:{ type:'MovePiece', payload:{ from:'e2', to:'e3', promotion:null } } });
+    console.log('PASS final UI emits pawn MovePiece e2->e3');
+
+    const knight = await commandAfter(page, [
+      { type:'MovePiece', payload:{ from:'g1', to:'f3', promotion:null } }
+    ], 'g1', 'f3');
+    assert.deepStrictEqual(knight, { type:'PlayerCommand', request:{ type:'MovePiece', payload:{ from:'g1', to:'f3', promotion:null } } });
+    console.log('PASS final UI emits knight MovePiece g1->f3');
+
     const castle = await commandAfter(page, [
       { type:'MovePiece', payload:{ from:'e1', to:'g1', promotion:null } }
     ], 'e1', 'g1');
@@ -94,6 +106,6 @@ async function commandAfter(page, commands, from, to, promotionChoice = null) {
     assert.strictEqual(await page.locator('[data-promotion-chooser]').count(), 0, 'promotion chooser must close after selection');
     console.log('PASS final UI promotion chooser emits selected knight promotion');
 
-    console.log('Chess special-rules final UI regression: 3/3 passed.');
+    console.log('Chess piece/special-rules final UI regression: 5/5 passed.');
   } finally { await browser.close(); }
 })().catch((error)=>{ console.error(error.stack || error); process.exitCode=1; });
