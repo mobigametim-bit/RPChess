@@ -18,13 +18,23 @@ const MOBILE_BOARD_VISIBILITY_SCRIPT = () => {
   };
 
   const schedule = () => requestAnimationFrame(() => requestAnimationFrame(ensureBoardVisible));
+  const installObserver = () => {
+    const root = document.documentElement;
+    if (!root) {
+      addEventListener('DOMContentLoaded', installObserver, { once:true });
+      return;
+    }
+    new MutationObserver(schedule).observe(root, {
+      subtree:true,
+      childList:true,
+      attributes:true,
+      attributeFilter:['class']
+    });
+    schedule();
+  };
+
   addEventListener('load', schedule, { once:true });
-  new MutationObserver(schedule).observe(document.documentElement, {
-    subtree:true,
-    childList:true,
-    attributes:true,
-    attributeFilter:['class']
-  });
+  installObserver();
 };
 
 chromium.launch = async function launchWithMobileAcceptance(options = {}) {
