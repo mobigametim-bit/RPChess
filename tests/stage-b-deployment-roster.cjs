@@ -1,6 +1,8 @@
 'use strict';
 
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 const { MemoryKeyValueStorage } = require('../src/save/storage.cjs');
 const { createBrowserRunSelectionHost } = require('../src/browser/iron-marches-browser-host-b9.cjs');
 
@@ -8,6 +10,13 @@ const HERO_IDS = Object.freeze([
   'hero.aldric_wall','hero.mara_chain','hero.brother_orell',
   'hero.vael_hammer','hero.lady_sorn','hero.tomas_gate'
 ]);
+
+const briefingUi = fs.readFileSync(path.resolve(__dirname, '../game/js/ui-approved-campaign.mjs'), 'utf8');
+assert.strictEqual(briefingUi.includes('type="checkbox"'), false, 'pre-battle roster must not use checkboxes');
+assert.strictEqual(briefingUi.includes('data-save-briefing'), false, 'pre-battle roster must not require an apply button');
+assert.ok(briefingUi.includes('aria-pressed='), 'pre-battle roster cards must expose toggle selection state');
+assert.ok(briefingUi.includes('next.size>=Number(stage.activeLimit'), 'pre-battle cards must guard the active figure limit before dispatch');
+assert.ok(briefingUi.includes('nextSpent>Number(stage.commandLimit'), 'pre-battle cards must guard the command limit before dispatch');
 
 (async()=>{
   const host=createBrowserRunSelectionHost({
@@ -39,6 +48,33 @@ const HERO_IDS = Object.freeze([
   await runtime.dispatch({type:'Travel',targetNodeId:battleRoute.to});
   snapshot=runtime.getSnapshot();
   assert.strictEqual(snapshot.status,'briefing');
+
+  const fixedIds=snapshot.stageB.briefing.fixedRosterIds;
+  const defaultIds=snapshot.stageB.briefing.activeRosterIds;
+  assert.ok(fixedIds.length>=1,'briefing must expose at least one fixed mandatory figure');
+  await assert.rejects(
+    runtime.dispatch({type:'SetBriefingRoster',activeRosterIds:defaultIds.filter((id)=>!fixedIds.includes(id))}),
+    /fixed figure/,
+    'mandatory figure must not be removable from the briefing roster'
+  );
+  const allAvailableIds=snapshot.stageB.roster.filter((entry)=>entry.available&&Number(entry.skipBattles||0)<=0).map((entry)=>entry.id);
+  if(allAvailableIds.length>snapshot.stageB.activeLimit){
+    await assert.rejects(
+      runtime.dispatch({type:'SetBriefingRoster',activeRosterIds:allAvailableIds}),
+      /active roster exceeds limit/,
+      'briefing roster must reject selections beyond the active figure limit'
+    );
+  }else{
+    const cost=(entry)=>({p:1,n:2,b:2,r:3,q:5,k:0})[String(entry.type||'p').slice(0,1)]||1;
+    const total=allAvailableIds.reduce((sum,id)=>sum+cost(snapshot.stageB.roster.find((entry)=>entry.id===id)),0);
+    assert.ok(total>snapshot.stageB.commandLimit,'fixture must exceed either active or command limit');
+    await assert.rejects(
+      runtime.dispatch({type:'SetBriefingRoster',activeRosterIds:allAvailableIds}),
+      /command limit/,
+      'briefing roster must reject selections beyond the command limit'
+    );
+  }
+
   await runtime.dispatch({type:'ConfirmBriefing'});
   snapshot=runtime.getSnapshot();
   assert.strictEqual(snapshot.status,'deployment');
@@ -56,5 +92,5 @@ const HERO_IDS = Object.freeze([
   knight=snapshot.deployment.units.find((unit)=>unit.id===knight.id);
   assert.strictEqual(knight.square,target,'drafted knight must be placeable from reserve');
   assert.strictEqual(snapshot.deployment.commandSpent,knight.commandCost,'placing the reserve knight must spend its command cost');
-  console.log('Stage B deployment roster availability: 2/2 passed.');
+  console.log('Stage B briefing toggle constraints and deployment roster availability: PASS');
 })().catch((error)=>{console.error(error.stack||error);process.exitCode=1;});
