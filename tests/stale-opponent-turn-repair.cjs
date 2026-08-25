@@ -6,6 +6,10 @@ const {
   createBrowserRunSelectionHost,
   createBrowserIronMarchesRuntimeHost
 } = require('../src/browser/iron-marches-browser-host-b9.cjs');
+const {
+  createBrowserProfileStore,
+  saveBrowserProfile
+} = require('../src/browser/profile-persistence.cjs');
 
 const HERO_IDS = Object.freeze([
   'hero.aldric_wall','hero.mara_chain','hero.brother_orell',
@@ -54,26 +58,31 @@ const HERO_IDS = Object.freeze([
   stale.scenario.battle.position.sideToMove = opponent;
   const oldHistoryLength = stale.history.length;
 
+  const staleStore = createBrowserProfileStore({
+    storage: new MemoryKeyValueStorage(),
+    deviceId: 'stale-opponent-turn-persisted'
+  });
+  saveBrowserProfile(staleStore, stale);
+
   const repairedHost = createBrowserIronMarchesRuntimeHost({
-    initialState: stale,
-    resume: false,
+    saveStore: staleStore,
+    resume: true,
     seed: 3,
     profileId: stale.profileId,
-    storage: new MemoryKeyValueStorage(),
-    deviceId: 'stale-opponent-turn-repair',
     stageB: true,
     availableHeroIds: HERO_IDS
   });
   const repaired = repairedHost.getState();
   const repairedSnapshot = repairedHost.getSnapshot();
 
+  assert.strictEqual(repairedHost.resumed, true, 'fixture must resume the persisted stale profile');
   assert.strictEqual(repaired.scenario.battle.position.sideToMove, repaired.playerSide, 'resumed stale battle must return control to player');
   assert.strictEqual(repairedSnapshot.scenario.playerTurn, true, 'presenter snapshot must expose player turn after repair');
   assert.strictEqual(repaired.history.length, oldHistoryLength + 1, 'repair must be auditable in runtime history');
   assert.strictEqual(repaired.history.at(-1).type, 'stale_opponent_turn_repaired');
   assert.strictEqual(repaired.history.at(-1).previousSide, opponent);
   assert.strictEqual(repaired.history.at(-1).restoredSide, repaired.playerSide);
-  assert.strictEqual(stale.scenario.battle.position.sideToMove, opponent, 'repair must not mutate the supplied snapshot');
+  assert.strictEqual(stale.scenario.battle.position.sideToMove, opponent, 'repair must not mutate the persisted source object');
 
   console.log('Stale autosave opponent-turn repair: PASS');
 })().catch((error) => {
