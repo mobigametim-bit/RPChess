@@ -1,6 +1,7 @@
 'use strict';
 
 require('../runtime/install-production-economy-stageb.cjs');
+require('./install-stale-opponent-turn-repair.cjs');
 require('./install-b9-map-runtime.cjs');
 require('./install-b9-production-events.cjs');
 require('./install-b9-profile-load.cjs');
