@@ -49,32 +49,54 @@ async function checkpoint(page, seed, label) {
   assert.deepStrictEqual(await snap(page), before, `${label}: changed across reload`);
   log(`reload:${label}`);
 }
-async function point(page, square) {
-  const canvas = page.locator('[data-board]').first();
-  const box = await canvas.boundingBox();
-  assert.ok(box);
-  const p = await page.evaluate((wanted) => {
+async function clickBoardSquare(page, square) {
+  const point = await page.evaluate((wanted) => {
     const presenter = globalThis.RPChessVerticalSlice?.presenter;
     const viewport = presenter?.boardReport?.viewport;
     const cell = presenter?.boardPlan?.activeCells?.find((entry) => entry.square === wanted);
     const element = document.querySelector('[data-board]');
-    if (!viewport || !cell || !element) return null;
-    const rect = element.getBoundingClientRect();
+    if (!viewport || !cell || !element || !element.getClientRects().length) return null;
+
+    element.scrollIntoView({ block:'center', inline:'center', behavior:'auto' });
+    const locate = () => {
+      const rect = element.getBoundingClientRect();
+      const scaleX = rect.width / (element.width || rect.width);
+      const scaleY = rect.height / (element.height || rect.height);
+      return {
+        x:rect.left + (viewport.x + (cell.displayX + .5) * viewport.cellSize) * scaleX,
+        y:rect.top + (viewport.y + (cell.displayY + .5) * viewport.cellSize) * scaleY
+      };
+    };
+
+    let target = locate();
+    const margin = 8;
+    if (target.y < margin || target.y > innerHeight - margin) {
+      scrollBy({ top:target.y - innerHeight / 2, left:0, behavior:'auto' });
+      target = locate();
+    }
+    if (target.x < margin || target.x > innerWidth - margin) {
+      scrollBy({ top:0, left:target.x - innerWidth / 2, behavior:'auto' });
+      target = locate();
+    }
+    const hit = document.elementFromPoint(target.x, target.y);
     return {
-      x:(viewport.x + (cell.displayX + .5) * viewport.cellSize) * rect.width / (element.width || rect.width),
-      y:(viewport.y + (cell.displayY + .5) * viewport.cellSize) * rect.height / (element.height || rect.height)
+      ...target,
+      width:innerWidth,
+      height:innerHeight,
+      hitBoard:Boolean(hit?.matches?.('[data-board]'))
     };
   }, square);
-  assert.ok(p, `missing board geometry ${square}`);
-  return { x:box.x+p.x, y:box.y+p.y };
+  assert.ok(point, `missing geometry ${square}`);
+  assert.ok(point.x >= 0 && point.x <= point.width && point.y >= 0 && point.y <= point.height, `${square}: board target outside viewport ${JSON.stringify(point)}`);
+  assert.strictEqual(point.hitBoard, true, `${square}: board target is not pointer-reachable ${JSON.stringify(point)}`);
+  await page.mouse.click(point.x, point.y);
 }
 function actionIndex(state) { return Number(state?.scenario?.actionIndex ?? state?.scenario?.battle?.actionIndex ?? 0); }
 async function move(page, command) {
   const beforeState = await snap(page);
   const before = actionIndex(beforeState);
-  const from = await point(page, command.payload.from);
-  const to = await point(page, command.payload.to);
-  await page.mouse.click(from.x, from.y); await page.mouse.click(to.x, to.y);
+  await clickBoardSquare(page, command.payload.from);
+  await clickBoardSquare(page, command.payload.to);
   await page.waitForFunction(({ status, before }) => {
     const state = globalThis.RPChessVerticalSlice?.runtimeHost?.getSnapshot?.();
     if (!state) return false;
