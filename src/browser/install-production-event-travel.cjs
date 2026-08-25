@@ -2,13 +2,16 @@
 
 const { validateProductionEventLibrary } = require('../content/production-events.cjs');
 const { createProductionEventSession } = require('../runtime/production-event-session.cjs');
+const { createAuthoredEventState } = require('../runtime/authored-event.cjs');
 const eventSource = require('../../content/events/iron_marches_production.json');
 
 const INSTALL_KEY = Symbol.for('rpchess.production-event-travel-installed');
 if (!globalThis[INSTALL_KEY]) {
   globalThis[INSTALL_KEY] = true;
 
+  const vertical = require('../runtime/vertical-slice.cjs');
   const presenter = require('../runtime/presenter-bridge.cjs');
+  const innerValidate = vertical.validateVerticalSliceSnapshot;
   const innerDispatch = presenter.dispatchPresenterCommand;
   const library = validateProductionEventLibrary(eventSource);
   const eventIds = new Set(library.events.map((event) => event.id));
@@ -24,6 +27,25 @@ if (!globalThis[INSTALL_KEY]) {
   function productionRun(state) {
     return Boolean(state?.campaign?.graph?.generatorVersion === 3 && state.campaign.graph.regionId === 'region.iron_marches');
   }
+
+  function productionEventId(state) {
+    return state?.productionEvent?.state?.eventId || state?.productionEvent?.eventId || null;
+  }
+
+  function compatibilityEvent(state, options = {}) {
+    const eventId = productionEventId(state);
+    if (!productionRun(state) || state.status !== 'event' || !eventId || !eventIds.has(eventId)) return null;
+    const content = options.contentRegistry?.get?.('event', eventId);
+    if (!content) throw new Error(`production event reload references missing compiled event: ${eventId}`);
+    return createAuthoredEventState(content, { nodeId:state.currentNode?.nodeId || state.campaign?.currentNodeId || '' });
+  }
+
+  vertical.validateVerticalSliceSnapshot = function validateProductionEventSnapshot(snapshot, options = {}) {
+    const shim = compatibilityEvent(snapshot, options);
+    if (!shim || snapshot.event) return innerValidate(snapshot, options);
+    const validated = innerValidate({ ...snapshot, event:shim }, options);
+    return deepFreeze({ ...validated, event:null, productionEvent:snapshot.productionEvent });
+  };
 
   function eventTarget(state, commandInput) {
     if (!productionRun(state) || state.status !== 'campaign' || String(commandInput?.type || '') !== 'Travel') return null;
