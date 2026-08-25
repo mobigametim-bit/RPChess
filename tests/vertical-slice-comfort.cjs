@@ -11,15 +11,20 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   const isolated = read('game/vertical-slice.html');
   const approvedCss = read('game/css/approved-visual-shell.css');
   const stageCss = read('game/css/stage-b-ui.css');
+  const finalQaCss = read('game/css/ui-final-qa.css');
   const app = read('game/js/vertical-slice-app.mjs');
   const presenter = read('game/js/vertical-slice-presenter.mjs');
   const pointerSafety = read('game/js/battle-pointer-coordinate-safety.mjs');
   const build = read('scripts/build.cjs');
 
   for (const html of [index, isolated]) {
-    assert(html.includes('js/generated/iron-marches-runtime.bundle.js'));
+    assert(html.includes('js/generated/iron-marches-runtime.bundle.js?v=20260826-1'));
     assert(html.includes('js/battle-pointer-coordinate-safety.mjs'));
-    assert(html.includes('js/vertical-slice-app.mjs'));
+    assert(html.includes('js/vertical-slice-app.mjs?v=20260826-1'));
+    assert(html.includes('js/vertical-slice-presenter-final.mjs?v=20260826-1'));
+    assert(html.includes('js/ui-approved-campaign.mjs?v=20260826-1'));
+    assert(html.includes('js/ui-approved-battle.mjs?v=20260826-1'));
+    assert(html.includes('css/ui-final-qa.css?v=20260826-1'));
     assert(html.includes('style.css'));
     assert(html.includes('css/approved-visual-shell.css'));
     assert(html.includes('css/stage-b-ui.css'));
@@ -34,6 +39,9 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert(approvedCss.includes('@media(max-width:460px)'));
   assert(stageCss.includes('overflow-y:auto'));
   assert(stageCss.includes('.rp02-mechanic-card,.rp02-relic-slot'));
+  assert(finalQaCss.includes('.rpu-brief-roster>[data-save-briefing]{display:none!important}'));
+  assert(finalQaCss.includes(':has(>input[type="checkbox"]:checked)'));
+  assert(finalQaCss.includes('opacity:0!important'));
   assert(app.includes('commanderSelectionMarkup'));
   assert(app.includes('unlockedCommanders'));
   assert(app.includes('VerticalSliceAudio'));
@@ -62,7 +70,7 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert(selection.includes('Начать поход'));
   assert(selection.includes('disabled'));
 
-  console.log('Vertical slice comfort: approved prototype shell and responsive contracts passed.');
+  console.log('Vertical slice comfort: approved prototype shell, preview cache bust and responsive contracts passed.');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;
