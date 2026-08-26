@@ -21,11 +21,15 @@ module.exports = function verifySource(root) {
     'BUILD_INFO.json',
     'css/reboot-foundation.css',
     'js/reboot-foundation.mjs',
+    'js/reboot-audio.mjs',
     'fonts/BrahmsGotischCyr.otf',
     'generated_assets/logo_main.png',
     'generated_assets/title_wordmark.png',
     'generated_assets/splash_poster.jpg',
-    'generated_assets/scene_campaign.jpg'
+    'music/echoes_iron_throne_01.mp3',
+    'music/echoes_iron_throne_02.mp3',
+    'music/echoes_iron_throne_03.mp3',
+    'music/echoes_iron_throne_04.mp3'
   ];
 
   for (const relative of required) {
@@ -65,6 +69,14 @@ module.exports = function verifySource(root) {
   const css = fs.readFileSync(path.join(root, 'css/reboot-foundation.css'), 'utf8');
   if (!/html\s*\{[\s\S]*overflow-y:\s*auto/i.test(css) || !/body\s*\{[\s\S]*overflow-y:\s*auto/i.test(css)) {
     fail('global vertical scroll contract is missing');
+  }
+
+  const runtime = fs.readFileSync(path.join(root, 'js/reboot-foundation.mjs'), 'utf8');
+  if (!runtime.includes("from './reboot-audio.mjs'")) fail('Reboot runtime does not load the production audio layer');
+
+  const audio = fs.readFileSync(path.join(root, 'js/reboot-audio.mjs'), 'utf8');
+  for (const track of required.filter((item) => item.startsWith('music/'))) {
+    if (!audio.includes(track)) fail(`Reboot audio playlist does not reference ${track}`);
   }
 
   const textExtensions = new Set(['.html', '.css', '.js', '.mjs', '.json', '.md']);
