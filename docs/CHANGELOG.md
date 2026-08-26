@@ -1,5 +1,15 @@
 # RPChess Reboot Changelog
 
+## 2026-08-26 — Classic Chess human playtest passed; scene switching corrected
+- Пользователь подтвердил успешное прохождение всех запрошенных пунктов Classic Chess playtest: board interaction, legal move highlighting, turn flow, castling, en passant, promotion, check/mate, settings/audio, menu controls и mobile/narrow viewport.
+- Единственный найденный defect был presentation-level: после `Новая игра` главное меню оставалось в layout, поэтому шахматная сцена появлялась ниже него вместо полноценной смены сцены.
+- Root cause: author CSS `.reboot-menu-screen { display: grid; }` перекрывал браузерное отображение HTML `hidden` для menu root.
+- Исправлен общий scene visibility contract: `[data-reboot-foundation][hidden]` и `[data-classic-screen][hidden]` принудительно удаляются из layout через `display: none !important`.
+- Обновлён cache-busting query для Foundation stylesheet, чтобы исправление гарантированно подхватывалось в deploy preview.
+- Усилены static и Chromium regression tests: перед стартом видимо только меню; после `Новая игра` видима только шахматная сцена; после `Главное меню` снова видимо только меню; тот же invariant проверяется на mobile.
+- Preview version: `2.1.0-classic-chess.preview.3`.
+- Final Human Accepted пока не отмечается: требуется только короткий spot-check смены сцен на новом preview. После него Classic Chess можно закрывать как DONE и переходить к Chess AI.
+
 ## 2026-08-26 — Classic Chess preview ready for human playtest
 - Реализован новый standalone Classic Chess runtime без загрузки gameplay-кода Iron Marches.
 - `Новая игра` запускает полноценную локальную партию на классической доске 8×8 с production-ассетами 12 стандартных фигур.
