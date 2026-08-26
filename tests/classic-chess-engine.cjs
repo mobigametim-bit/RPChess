@@ -37,6 +37,18 @@ const { pathToFileURL } = require('url');
     assert.deepStrictEqual(destinations(engine, 'e2'), ['e3', 'e4']);
     assert.deepStrictEqual(destinations(engine, 'g1'), ['f3', 'h3']);
     assert.strictEqual(perft(engine.fen(), 2), 400, 'initial perft(2) must equal 400');
+    assert.strictEqual(perft(engine.fen(), 3), 8902, 'initial perft(3) must equal 8902');
+  }
+
+  {
+    const kiwipete = 'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1';
+    assert.strictEqual(perft(kiwipete, 1), 48, 'Kiwipete perft(1) must equal 48');
+    assert.strictEqual(perft(kiwipete, 2), 2039, 'Kiwipete perft(2) must equal 2039');
+  }
+
+  {
+    const endgame = '8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1';
+    assert.strictEqual(perft(endgame, 3), 2812, 'canonical endgame perft(3) must equal 2812');
   }
 
   {
