@@ -25,6 +25,7 @@ async function main() {
     'BUILD_INFO.json',
     'css/reboot-foundation.css',
     'css/classic-chess.css',
+    'css/chess-ai-polish.css',
     'js/reboot-foundation.mjs',
     'js/reboot-audio.mjs',
     'js/classic-chess-engine.mjs',
@@ -48,6 +49,7 @@ async function main() {
 
   for (const relative of [
     'css/classic-chess.css',
+    'css/chess-ai-polish.css',
     'js/classic-chess-engine.mjs',
     'js/classic-chess-app.mjs',
     'js/chess-ai-adapter.mjs',
