@@ -20,15 +20,17 @@ async function main() {
   fs.rmSync(dist, { recursive: true, force: true });
   fs.mkdirSync(dist, { recursive: true });
 
-  // Reboot Foundation ships only the active shell and reusable visual assets.
-  // Legacy Iron Marches gameplay remains preserved in archive/iron-marches-v1,
-  // but is deliberately excluded from the production distribution.
+  // Reboot ships only active runtime modules plus intentionally reused production assets.
+  // Legacy Iron Marches gameplay remains preserved in archive/iron-marches-v1 and is
+  // deliberately excluded from the production distribution.
   copy('index.html');
   copy('BUILD_INFO.json');
   copy('css/reboot-foundation.css');
   copy('js/reboot-foundation.mjs');
+  copy('js/reboot-audio.mjs');
   copy('fonts');
   copy('generated_assets');
+  copy('music');
 
   verifySource(dist);
 
@@ -45,6 +47,16 @@ async function main() {
 
   if (fs.existsSync(path.join(dist, 'js/generated/iron-marches-runtime.bundle.js'))) {
     throw new Error('legacy Iron Marches runtime was accidentally packaged into Reboot dist');
+  }
+
+  for (const relative of [
+    'js/reboot-audio.mjs',
+    'music/echoes_iron_throne_01.mp3',
+    'music/echoes_iron_throne_02.mp3',
+    'music/echoes_iron_throne_03.mp3',
+    'music/echoes_iron_throne_04.mp3'
+  ]) {
+    if (!fs.existsSync(path.join(dist, relative))) throw new Error(`Reboot audio asset missing from dist: ${relative}`);
   }
 
   console.log(`Prepared RPChess Reboot Foundation distribution in ${dist}`);
