@@ -8,7 +8,8 @@
   <meta name="description" content="RPChess — фэнтезийный шахматный roguelite">
   <title>RPChess</title>
   <link rel="stylesheet" href="css/reboot-foundation.css?v=20260826-reboot-3">
-  <link rel="stylesheet" href="css/classic-chess.css?v=20260826-ai-1">
+  <link rel="stylesheet" href="css/classic-chess.css?v=20260827-ai-2">
+  <link rel="stylesheet" href="css/chess-ai-polish.css?v=20260827-ai-2">
 </head>
 <body>
   <div id="app">
@@ -55,13 +56,25 @@
           <section class="classic-panel">
             <h2>Партия</h2>
             <p class="classic-opponent" data-game-mode>Локальная партия</p>
+            <div class="classic-material" aria-label="Взятые фигуры и перевес по материалу">
+              <div class="classic-material-row">
+                <span class="classic-material-side">Белые</span>
+                <div class="classic-captured-list" data-captured-by-white aria-label="Фигуры, взятые белыми"></div>
+                <strong class="classic-material-advantage" data-material-white></strong>
+              </div>
+              <div class="classic-material-row">
+                <span class="classic-material-side">Чёрные</span>
+                <div class="classic-captured-list" data-captured-by-black aria-label="Фигуры, взятые чёрными"></div>
+                <strong class="classic-material-advantage" data-material-black></strong>
+              </div>
+            </div>
             <p class="classic-side-state" data-classic-summary><strong>Белые</strong> начинают партию.</p>
             <div class="classic-result" data-game-result hidden>
               <h3 class="classic-result__title" data-result-title></h3>
               <p class="classic-result__text" data-result-text></p>
               <div class="classic-result__actions">
                 <button class="reboot-button reboot-button--primary" type="button" data-result-rematch>Новая партия</button>
-                <button class="reboot-button" type="button" data-result-menu>Главное меню</button>
+                <button class="reboot-button reboot-button--primary" type="button" data-result-menu>Главное меню</button>
               </div>
             </div>
           </section>
@@ -78,7 +91,7 @@
   </div>
 
   <div class="reboot-modal" data-game-setup-modal hidden>
-    <section class="reboot-modal__panel classic-setup-panel" role="dialog" aria-modal="true" aria-labelledby="game-setup-title">
+    <section class="reboot-modal__panel classic-commander-panel classic-setup-panel" role="dialog" aria-modal="true" aria-labelledby="game-setup-title">
       <header class="reboot-modal__header">
         <div>
           <div class="reboot-eyebrow">НОВАЯ ПАРТИЯ</div>
@@ -132,7 +145,7 @@
   </div>
 
   <div class="reboot-modal" data-promotion-modal data-modal-static hidden>
-    <section class="reboot-modal__panel" role="dialog" aria-modal="true" aria-labelledby="promotion-title">
+    <section class="reboot-modal__panel classic-commander-panel" role="dialog" aria-modal="true" aria-labelledby="promotion-title">
       <header class="reboot-modal__header">
         <div>
           <div class="reboot-eyebrow">ПРЕВРАЩЕНИЕ</div>
@@ -144,7 +157,7 @@
   </div>
 
   <div class="reboot-modal" data-settings-modal hidden>
-    <section class="reboot-modal__panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <section class="reboot-modal__panel classic-commander-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
       <header class="reboot-modal__header">
         <div>
           <div class="reboot-eyebrow">RPCHESS</div>
@@ -161,6 +174,6 @@
   </div>
 
   <script type="module" src="js/reboot-foundation.mjs?v=20260826-reboot-3"></script>
-  <script type="module" src="js/classic-chess-app.mjs?v=20260826-ai-1"></script>
+  <script type="module" src="js/classic-chess-app.mjs?v=20260827-ai-2"></script>
 </body>
 </html>
