@@ -40,7 +40,7 @@ function openModal(modal, audio) {
 }
 
 function closeModal(modal, audio) {
-  if (!modal) return;
+  if (!modal || modal.hasAttribute('data-modal-static')) return;
   modal.hidden = true;
   document.body.classList.remove('reboot-modal-open');
   audio?.close();
@@ -83,7 +83,7 @@ document.querySelectorAll('[data-close-modal]').forEach((button) => {
   button.addEventListener('click', () => closeModal(button.closest('.reboot-modal'), audio));
 });
 
-document.querySelectorAll('.reboot-modal').forEach((modal) => {
+document.querySelectorAll('.reboot-modal:not([data-modal-static])').forEach((modal) => {
   modal.addEventListener('click', (event) => {
     if (event.target === modal) closeModal(modal, audio);
   });
@@ -91,7 +91,7 @@ document.querySelectorAll('.reboot-modal').forEach((modal) => {
 
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return;
-  const open = [...document.querySelectorAll('.reboot-modal')].find((modal) => !modal.hidden);
+  const open = [...document.querySelectorAll('.reboot-modal:not([data-modal-static])')].find((modal) => !modal.hidden);
   if (open) closeModal(open, audio);
 });
 
