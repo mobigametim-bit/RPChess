@@ -1,3 +1,5 @@
+import { RebootAudio } from './reboot-audio.mjs';
+
 const REBOOT_INIT_KEY = 'rpchess.reboot.v1.initialized';
 const SETTINGS_KEY = 'rpchess.reboot.v1.settings';
 
@@ -29,21 +31,26 @@ function writeSettings(settings) {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
 
-function openModal(modal) {
+function openModal(modal, audio) {
+  if (!modal) return;
   modal.hidden = false;
-  document.body.style.overflow = 'hidden';
+  document.body.classList.add('reboot-modal-open');
+  audio?.open();
   const focusTarget = modal.querySelector('button, input');
   focusTarget?.focus();
 }
 
-function closeModal(modal) {
+function closeModal(modal, audio) {
+  if (!modal) return;
   modal.hidden = true;
-  document.body.style.overflow = '';
+  document.body.classList.remove('reboot-modal-open');
+  audio?.close();
 }
 
 clearLegacySavesOnce();
 
 const settings = readSettings();
+const audio = new RebootAudio(settings);
 const settingsModal = document.querySelector('[data-settings-modal]');
 const foundationModal = document.querySelector('[data-foundation-modal]');
 const music = document.querySelector('[data-music-volume]');
@@ -55,33 +62,56 @@ if (sfx) sfx.value = String(settings.sfx);
 if (reducedMotion) reducedMotion.checked = settings.reducedMotion;
 document.documentElement.dataset.reducedMotion = settings.reducedMotion ? '1' : '0';
 
-document.querySelector('[data-new-game]')?.addEventListener('click', () => openModal(foundationModal));
-document.querySelector('[data-settings]')?.addEventListener('click', () => openModal(settingsModal));
+globalThis.RPChessRebootAudio = audio;
+
+function activateAudio() {
+  audio.activate();
+}
+
+document.addEventListener('pointerdown', activateAudio, { once: true, capture: true });
+document.addEventListener('keydown', activateAudio, { once: true, capture: true });
+
+document.querySelector('[data-new-game]')?.addEventListener('click', () => {
+  audio.click();
+  openModal(foundationModal, audio);
+});
+
+document.querySelector('[data-settings]')?.addEventListener('click', () => {
+  audio.click();
+  openModal(settingsModal, audio);
+});
 
 document.querySelectorAll('[data-close-modal]').forEach((button) => {
-  button.addEventListener('click', () => closeModal(button.closest('.reboot-modal')));
+  button.addEventListener('click', () => closeModal(button.closest('.reboot-modal'), audio));
 });
 
 document.querySelectorAll('.reboot-modal').forEach((modal) => {
   modal.addEventListener('click', (event) => {
-    if (event.target === modal) closeModal(modal);
+    if (event.target === modal) closeModal(modal, audio);
   });
 });
 
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return;
   const open = [...document.querySelectorAll('.reboot-modal')].find((modal) => !modal.hidden);
-  if (open) closeModal(open);
+  if (open) closeModal(open, audio);
 });
 
-function saveSettings() {
+function saveSettings({ previewSfx = false } = {}) {
   settings.music = Number(music?.value ?? settings.music);
   settings.sfx = Number(sfx?.value ?? settings.sfx);
   settings.reducedMotion = Boolean(reducedMotion?.checked);
   writeSettings(settings);
   document.documentElement.dataset.reducedMotion = settings.reducedMotion ? '1' : '0';
+  audio.applySettings(settings);
+  if (previewSfx) audio.adjust();
 }
 
-music?.addEventListener('input', saveSettings);
-sfx?.addEventListener('input', saveSettings);
-reducedMotion?.addEventListener('change', saveSettings);
+music?.addEventListener('input', () => saveSettings());
+sfx?.addEventListener('input', () => saveSettings({ previewSfx: true }));
+reducedMotion?.addEventListener('change', () => {
+  audio.click();
+  saveSettings();
+});
+
+addEventListener('beforeunload', () => audio.destroy(), { once: true });
