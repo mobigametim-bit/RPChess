@@ -1,5 +1,17 @@
 # RPChess Reboot Changelog
 
+## 2026-08-27 — Chess AI final UI polish corrections
+- После второго live spot-check пользователь подтвердил всё, кроме пяти UI-компоновочных замечаний.
+- Technical role glyph уменьшен, окружность/подложка убрана, glyph перенесён в крайний левый верхний угол клетки; white side использует белый glyph, black side — чёрный.
+- Увеличена safe-area padding внутри commander-style рамок, чтобы текст и элементы оставались в тёмной области и не пересекались с декоративной рамкой.
+- Широкая status-плашка `Партия завершена…` удалена из визуальной композиции.
+- Duplicate post-game `Новая партия / Главное меню` внутри панели `Партия` удалены; верхний toolbar остаётся единственным action set.
+- Desktop-layout изменён на `Партия` слева / доска по центру / `Ходы` справа.
+- SAN/figurines, captured material, smooth movement и blue CTA сохранены без изменения.
+- Версия поднята до `2.2.0-chess-ai.preview.3`.
+- Static contract усилен на final layout, marker style, hidden status plaque и отсутствие duplicate post-game CTA.
+- Следующий gate: exact-head GitHub Actions + Cloudflare SUCCESS, затем короткий human spot-check только этих пяти UI corrections.
+
 ## 2026-08-27 — Chess AI gameplay test passed; production polish implemented
 - Пользователь подтвердил, что Chess AI gameplay и все основные пункты теста работают корректно.
 - Перед финальным acceptance запросил production polish интерфейса партии.
@@ -12,7 +24,6 @@
 - Все action-кнопки используют синий `ui_button_primary.png`; light/secondary action frame в polish layer не используется.
 - Версия поднята до `2.2.0-chess-ai.preview.2`.
 - Static/source/build и Chromium contracts расширены на markers, SAN/figurines, captured material, animation, commander surfaces и blue CTA.
-- Следующий gate: exact-head `npm test && npm run build` в Cloudflare, затем короткий human polish spot-check. Chess AI остаётся Draft и не закрывается до этого подтверждения.
 
 ## 2026-08-26 — Chess AI implementation ready for deployment gate
 - После merge принятого Classic Chess создана `feature/chess-ai` от exact `main` commit `6df1a65ffca36413d99415eab1f0e5ccddbd5dbe`.
