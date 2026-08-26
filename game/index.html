@@ -4,74 +4,60 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="color-scheme" content="dark">
-  <meta name="theme-color" content="#07111e">
-  <meta name="description" content="RPChess Reboot — фэнтезийный шахматный roguelite на классических правилах">
-  <title>RPChess Reboot</title>
-  <link rel="stylesheet" href="css/reboot-foundation.css?v=20260826-reboot-1">
+  <meta name="theme-color" content="#050a12">
+  <meta name="description" content="RPChess — фэнтезийный шахматный roguelite">
+  <title>RPChess</title>
+  <link rel="stylesheet" href="css/reboot-foundation.css?v=20260826-reboot-2">
 </head>
 <body>
   <div id="app">
-    <main class="reboot-shell" data-reboot-foundation>
-      <header class="reboot-topbar">
-        <div class="reboot-brand" aria-label="RPChess">
-          <img class="reboot-brand__logo" src="generated_assets/logo_main.png" alt="">
-          <img class="reboot-brand__wordmark" src="generated_assets/title_wordmark.png" alt="RPChess">
-        </div>
-        <div class="reboot-version">Reboot Foundation · 0.1</div>
-      </header>
-
-      <section class="reboot-hero" aria-labelledby="reboot-title">
-        <div class="reboot-hero__copy">
-          <div class="reboot-kicker">Новый путь RPChess</div>
-          <h1 class="reboot-title" id="reboot-title">Живые шахматы</h1>
-          <p class="reboot-lead">Классические шахматы, персонализированные фигуры и опасное фэнтезийное путешествие. Простые правила на доске — сложные решения между партиями.</p>
-          <div class="reboot-pillars" aria-label="Основы новой версии">
-            <span class="reboot-pill">Классическая доска 8×8</span>
-            <span class="reboot-pill">Мат — цель боя</span>
-            <span class="reboot-pill">Персонализированный отряд</span>
-            <span class="reboot-pill">Roguelite-путешествие</span>
+    <main class="reboot-menu-screen" data-reboot-foundation aria-label="Главное меню RPChess">
+      <div class="reboot-menu-screen__layout">
+        <section class="reboot-menu-screen__main">
+          <div class="reboot-eyebrow">FANTASY TACTICAL CHESS ROGUELITE</div>
+          <img class="reboot-wordmark" src="generated_assets/title_wordmark.png" alt="RPChess">
+          <div class="reboot-menu-actions" aria-label="Главное меню">
+            <button class="reboot-button reboot-button--primary" type="button" data-new-game>Новая игра</button>
+            <button class="reboot-button" type="button" disabled aria-disabled="true">Продолжить</button>
+            <div class="reboot-menu-secondary">
+              <button class="reboot-button" type="button" data-settings>Настройки</button>
+            </div>
           </div>
-        </div>
-
-        <aside class="reboot-menu" aria-label="Главное меню">
-          <h2 class="reboot-menu__title">Главное меню</h2>
-          <p class="reboot-menu__note">Фундамент новой версии активен. Следующая feature подключит полноценную классическую партию.</p>
-          <div class="reboot-menu__actions">
-            <button class="reboot-button" type="button" data-new-game>Новая игра</button>
-            <button class="reboot-button reboot-button--secondary" type="button" disabled aria-disabled="true">Продолжить</button>
-            <button class="reboot-button reboot-button--secondary" type="button" data-settings>Настройки</button>
-          </div>
-          <div class="reboot-status">
-            <strong>Reboot Foundation.</strong><br>
-            Сейчас проверяется новый visual shell, адаптивность, скролл страниц и чистый старт новой архитектуры.
-          </div>
-        </aside>
-      </section>
-
-      <footer class="reboot-footer">RPChess Reboot · feature-by-feature development · human playtest required before acceptance</footer>
+        </section>
+      </div>
     </main>
   </div>
 
   <div class="reboot-modal" data-foundation-modal hidden>
     <section class="reboot-modal__panel" role="dialog" aria-modal="true" aria-labelledby="foundation-title">
-      <h2 id="foundation-title">Следующая feature — классические шахматы</h2>
-      <p>Кнопка «Новая игра» уже принадлежит новой версии. Полноценную партию мы подключим следующим отдельным этапом, вместо того чтобы временно возвращать старый боевой runtime.</p>
-      <div class="reboot-notice">На этом этапе важно проверить сам новый shell: визуальный стиль, масштаб, вертикальный скролл и главное меню.</div>
-      <p><button class="reboot-button" type="button" data-close-modal>Понятно</button></p>
+      <header class="reboot-modal__header">
+        <div>
+          <div class="reboot-eyebrow">НОВАЯ ИГРА</div>
+          <h2 id="foundation-title">Классические шахматы</h2>
+        </div>
+        <button class="reboot-close" type="button" data-close-modal aria-label="Закрыть">×</button>
+      </header>
+      <p>Режим пока недоступен в этой сборке.</p>
     </section>
   </div>
 
   <div class="reboot-modal" data-settings-modal hidden>
     <section class="reboot-modal__panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
-      <h2 id="settings-title">Настройки</h2>
-      <p>Минимальный shell настроек сохраняется в новом Reboot namespace.</p>
-      <label class="reboot-setting"><span>Музыка</span><input type="range" min="0" max="100" step="1" data-music-volume></label>
-      <label class="reboot-setting"><span>Звуки</span><input type="range" min="0" max="100" step="1" data-sfx-volume></label>
-      <label class="reboot-setting"><span>Уменьшить анимации</span><input type="checkbox" data-reduced-motion></label>
-      <p><button class="reboot-button" type="button" data-close-modal>Закрыть</button></p>
+      <header class="reboot-modal__header">
+        <div>
+          <div class="reboot-eyebrow">RPCHESS</div>
+          <h2 id="settings-title">Настройки</h2>
+        </div>
+        <button class="reboot-close" type="button" data-close-modal aria-label="Закрыть">×</button>
+      </header>
+      <div class="reboot-settings-grid">
+        <label class="reboot-setting"><span>Музыка</span><input type="range" min="0" max="100" step="1" data-music-volume></label>
+        <label class="reboot-setting"><span>Звуки</span><input type="range" min="0" max="100" step="1" data-sfx-volume></label>
+        <label class="reboot-setting reboot-setting--toggle"><span>Уменьшить анимации</span><input type="checkbox" data-reduced-motion></label>
+      </div>
     </section>
   </div>
 
-  <script type="module" src="js/reboot-foundation.mjs?v=20260826-reboot-1"></script>
+  <script type="module" src="js/reboot-foundation.mjs?v=20260826-reboot-2"></script>
 </body>
 </html>
