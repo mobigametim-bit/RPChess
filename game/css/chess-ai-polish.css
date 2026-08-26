@@ -1,0 +1,144 @@
+/* Chess AI production polish — based on the approved legacy commander-selection treatment. */
+
+/* One blue CTA language everywhere: reuse the exact primary frame from the main menu. */
+.reboot-button,
+.reboot-button--primary,
+.reboot-close,
+.classic-mini-button,
+.classic-promotion-option {
+  border-image-source: url('../generated_assets/ui_button_primary.png') !important;
+  background: #10253d;
+  color: #fff4c9;
+}
+.reboot-button:disabled { opacity: .38; filter: saturate(.35) brightness(.72); }
+
+/* Legacy commander-selection surface: dark body, framed edge, restrained inner keyline. */
+.classic-panel,
+.reboot-modal__panel.classic-commander-panel {
+  position: relative;
+  border: 14px solid transparent;
+  border-image: url('../generated_assets/ui_panel_frame.png') 28 fill stretch;
+  background: #091524;
+  box-shadow: 0 16px 44px rgba(0,0,0,.62);
+  overflow: hidden;
+}
+.reboot-modal__panel.classic-commander-panel { border-width: 18px; }
+.classic-panel::after,
+.reboot-modal__panel.classic-commander-panel::after {
+  content: '';
+  position: absolute;
+  inset: 18px;
+  border: 1px solid rgba(71,112,149,.34);
+  border-radius: 9px;
+  pointer-events: none;
+  z-index: 0;
+}
+.classic-panel > *,
+.reboot-modal__panel.classic-commander-panel > * { position: relative; z-index: 1; }
+
+/* A technical role glyph lives in the top-left of every fantasy piece. */
+.classic-piece-marker {
+  position: absolute;
+  z-index: 7;
+  top: 4px;
+  left: 4px;
+  display: grid;
+  place-items: center;
+  width: clamp(20px, 2.1vw, 30px);
+  height: clamp(20px, 2.1vw, 30px);
+  border: 1px solid rgba(235,205,118,.78);
+  border-radius: 50%;
+  background: rgba(5,13,23,.90);
+  color: #fff2c4;
+  font-family: 'Segoe UI Symbol','Noto Sans Symbols 2',serif;
+  font-size: clamp(15px, 1.55vw, 22px);
+  line-height: 1;
+  text-shadow: 0 1px 3px #000;
+  box-shadow: 0 2px 7px rgba(0,0,0,.62), inset 0 0 0 1px rgba(85,151,207,.22);
+  pointer-events: none;
+  user-select: none;
+}
+.classic-piece-marker--b { color: #d4e5fa; }
+/* Rank coordinates move to the top-right so they never collide with the role marker. */
+.classic-coordinate--rank { left: auto; right: 4px; top: 3px; }
+
+/* Figurine/SAN move list. */
+.classic-move {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: Inter, system-ui, sans-serif;
+  font-weight: 760;
+}
+.classic-san-figurine {
+  display: inline-block;
+  min-width: 1.05em;
+  font-family: 'Segoe UI Symbol','Noto Sans Symbols 2',serif;
+  font-size: 1.23em;
+  line-height: .8;
+  text-align: center;
+}
+.classic-san-figurine--w { color: #fff0bf; text-shadow: 0 1px 2px #000; }
+.classic-san-figurine--b { color: #b9d0ea; text-shadow: 0 1px 2px #000; }
+
+/* Captured material, following conventional online-chess placement. */
+.classic-material {
+  display: grid;
+  gap: 7px;
+  margin: 12px 0 10px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(212,180,93,.22);
+  border-bottom: 1px solid rgba(212,180,93,.22);
+}
+.classic-material-row {
+  display: grid;
+  grid-template-columns: 48px minmax(0,1fr) auto;
+  align-items: center;
+  min-height: 26px;
+  gap: 7px;
+}
+.classic-material-side { color: #91a3b8; font-size: 11px; font-weight: 850; text-transform: uppercase; }
+.classic-captured-list { display: flex; align-items: center; flex-wrap: wrap; min-width: 0; gap: 0; }
+.classic-captured-piece {
+  display: inline-block;
+  width: .78em;
+  overflow: visible;
+  font-family: 'Segoe UI Symbol','Noto Sans Symbols 2',serif;
+  font-size: 24px;
+  line-height: 1;
+  text-shadow: 0 1px 2px #000;
+}
+.classic-captured-piece--w { color: #fff0bf; }
+.classic-captured-piece--b { color: #b9d0ea; }
+.classic-captured-empty { color: #64788e; }
+.classic-material-advantage { min-width: 25px; color: #f2ce68; font-size: 13px; font-weight: 900; text-align: right; }
+
+/* Thinking remains announced in the status bar; remove the large board-covering plaque. */
+.classic-thinking { display: none !important; }
+
+/* Smooth movement overlay. The authoritative piece is hidden until the flyer lands. */
+.classic-piece--arriving { visibility: hidden; }
+.classic-piece-flyer,
+.classic-captured-ghost {
+  position: fixed;
+  z-index: 2500;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  will-change: transform, opacity;
+}
+.classic-piece-flyer { filter: drop-shadow(0 7px 7px rgba(0,0,0,.68)); }
+.classic-captured-ghost { z-index: 2499; filter: drop-shadow(0 5px 5px rgba(0,0,0,.58)); }
+.classic-board.is-locked { filter: none; }
+
+/* Result and setup copy stay dark; no parchment-like slab behind the content. */
+.classic-result { margin-top: 14px; padding: 14px 4px 4px; }
+.classic-result__actions { gap: 10px; }
+.classic-setup-field { padding-inline: 8px; }
+
+@media (max-width: 620px) {
+  .classic-piece-marker { top: 2px; left: 2px; width: 20px; height: 20px; font-size: 15px; }
+  .classic-coordinate--rank { right: 2px; top: 2px; }
+  .classic-material-row { grid-template-columns: 42px minmax(0,1fr) auto; }
+  .classic-captured-piece { font-size: 21px; }
+}
