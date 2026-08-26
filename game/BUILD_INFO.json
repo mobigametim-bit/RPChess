@@ -1,33 +1,16 @@
 {
-  "title": "RPChess",
-  "edition": "Fantasy Edition",
-  "version": "1.3.9",
-  "build_date": "2026-08-04",
-  "runtime": "Offline HTML5 / Canvas / WebAudio",
-  "entry_point_windows": "START_GAME.bat",
-  "entry_point_portable": "RPChess.html",
+  "title": "RPChess Reboot",
+  "edition": "Reboot Foundation",
+  "version": "2.0.0-foundation.2",
+  "build_date": "2026-08-26",
+  "runtime": "Offline HTML5 / ES modules",
   "requires_internet": false,
   "requires_installation": false,
-  "visual_theme": "Stylized fantasy chess",
-  "piece_names": [
-    "Pawn",
-    "Knight",
-    "Bishop",
-    "Rook",
-    "Queen",
-    "King"
-  ],
-  "tested_with": [
-    "Node.js gameplay smoke tests",
-    "UI render tests",
-    "UI static contract tests",
-    "Fantasy asset audit",
-    "JavaScript syntax validation",
-    "Image integrity validation",
-    "Manual screenshot review of menu, run setup, campaign, and battle",
-    "Cyrillic bitmap font coverage and packaging audit"
-  ],
-  "font_system": "Rasterized Cyrillic display glyphs generated from user-provided Brahms Gotisch Cyr",
-  "build_name": "RPChess Fantasy Edition 1.3.9 Win Fanfare Asset",
-  "notes": "Uses the supplied win_fanfare.mp3 on every post-battle reward screen and on the final victory screen, once per completed battle."
+  "visual_theme": "Approved RPChess fantasy menu shell",
+  "gameplay_state": "Reboot Foundation accepted; Classic Chess is the next feature",
+  "legacy_branch": "archive/iron-marches-v1",
+  "legacy_commit": "035fb817a93f53047a1d20f7cdfc9093b0f7d611",
+  "active_docs": "docs/00_PRODUCT_VISION.md through docs/17_TECH_ARCHITECTURE.md",
+  "human_acceptance_required": true,
+  "human_acceptance": "2026-08-26: accepted with production-menu and audio corrections"
 }

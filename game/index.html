@@ -5,56 +5,59 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#050a12">
-  <meta name="description" content="RPChess — фэнтезийный тактический шахматный рогалик">
+  <meta name="description" content="RPChess — фэнтезийный шахматный roguelite">
   <title>RPChess</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="css/run-selection.css">
-  <link rel="stylesheet" href="css/vertical-slice-comfort.css">
-  <link rel="stylesheet" href="css/approved-visual-shell.css">
-  <link rel="stylesheet" href="css/stage-b-ui.css">
-  <link rel="stylesheet" href="css/b10-b13-production-ui.css">
-  <link rel="stylesheet" href="css/chronicle-profile-cards.css">
-  <link rel="stylesheet" href="css/commander-selection-approved.css">
-  <link rel="stylesheet" href="css/ui-system-v2.css">
-  <link rel="stylesheet" href="css/ui-system-v2-shell.css">
-  <link rel="stylesheet" href="css/ui-approved-screens.css">
-  <link rel="stylesheet" href="css/ui-runtime-approved.css">
-  <link rel="stylesheet" href="css/chronicle-profile-final.css">
-  <link rel="stylesheet" href="css/commander-selection-final.css">
-  <link rel="stylesheet" href="css/settings-final.css">
-  <link rel="stylesheet" href="css/ui-final-qa.css?v=20260826-2">
-  <link rel="stylesheet" href="css/battle-input-safety.css?v=20260826-2">
-  <link rel="stylesheet" href="css/briefing-battle-hotfix-20260826.css">
-  <script type="importmap">
-  {
-    "imports": {
-      "./js/vertical-slice-presenter.mjs": "./js/vertical-slice-presenter-final.mjs?v=20260826-2",
-      "./js/ui-approved-campaign.mjs": "./js/ui-approved-campaign.mjs?v=20260826-2",
-      "./js/ui-approved-battle.mjs": "./js/ui-approved-battle.mjs?v=20260826-2",
-      "./js/register-02-codex.mjs": "./js/register-02-codex-v2.mjs",
-      "./js/register-03-relic-codex.mjs": "./js/register-03-relic-codex-v2.mjs"
-    }
-  }
-  </script>
+  <link rel="stylesheet" href="css/reboot-foundation.css?v=20260826-reboot-2">
 </head>
 <body>
-  <div id="app" aria-live="polite">
-    <main class="rpboot" role="status">
-      <div class="rpboot__card"><img src="generated_assets/logo_main.png" alt="" style="width:96px;height:96px;object-fit:contain"><h1>RPChess</h1><p>Пробуждаем Железные Марши…</p></div>
+  <div id="app">
+    <main class="reboot-menu-screen" data-reboot-foundation aria-label="Главное меню RPChess">
+      <div class="reboot-menu-screen__layout">
+        <section class="reboot-menu-screen__main">
+          <div class="reboot-eyebrow">FANTASY TACTICAL CHESS ROGUELITE</div>
+          <img class="reboot-wordmark" src="generated_assets/title_wordmark.png" alt="RPChess">
+          <div class="reboot-menu-actions" aria-label="Главное меню">
+            <button class="reboot-button reboot-button--primary" type="button" data-new-game>Новая игра</button>
+            <button class="reboot-button" type="button" disabled aria-disabled="true">Продолжить</button>
+            <div class="reboot-menu-secondary">
+              <button class="reboot-button" type="button" data-settings>Настройки</button>
+            </div>
+          </div>
+        </section>
+      </div>
     </main>
   </div>
-  <script src="js/generated/iron-marches-runtime.bundle.js?v=20260826-2"></script>
-  <script type="module" src="js/b10-b13-production-ui.mjs?v=20260826-2"></script>
-  <script type="module" src="js/ui-production-v2.mjs?v=20260826-2"></script>
-  <script type="module" src="js/rare-route-ui-final.mjs?v=20260826-2"></script>
-  <script type="module" src="js/battle-pointer-coordinate-safety-20260826.mjs"></script>
-  <script type="module" src="js/vertical-slice-app.mjs?v=20260826-2"></script>
-  <script type="module" src="js/explicit-run-setup.mjs?v=20260826-2"></script>
-  <script type="module" src="js/iron-marches-mechanics-readiness-enhancer.mjs?v=20260826-2"></script>
-  <script type="module" src="js/chronicle-profile-cards.mjs?v=20260826-2"></script>
-  <script type="module" src="js/commander-selection-final.mjs?v=20260826-2"></script>
-  <script type="module" src="js/settings-final.mjs?v=20260826-2"></script>
-  <script type="module" src="js/ui-final-runtime-sanitize.mjs?v=20260826-2"></script>
-  <script type="module" src="js/ui-system-v2.mjs?v=20260826-2"></script>
+
+  <div class="reboot-modal" data-foundation-modal hidden>
+    <section class="reboot-modal__panel" role="dialog" aria-modal="true" aria-labelledby="foundation-title">
+      <header class="reboot-modal__header">
+        <div>
+          <div class="reboot-eyebrow">НОВАЯ ИГРА</div>
+          <h2 id="foundation-title">Классические шахматы</h2>
+        </div>
+        <button class="reboot-close" type="button" data-close-modal aria-label="Закрыть">×</button>
+      </header>
+      <p>Режим пока недоступен в этой сборке.</p>
+    </section>
+  </div>
+
+  <div class="reboot-modal" data-settings-modal hidden>
+    <section class="reboot-modal__panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <header class="reboot-modal__header">
+        <div>
+          <div class="reboot-eyebrow">RPCHESS</div>
+          <h2 id="settings-title">Настройки</h2>
+        </div>
+        <button class="reboot-close" type="button" data-close-modal aria-label="Закрыть">×</button>
+      </header>
+      <div class="reboot-settings-grid">
+        <label class="reboot-setting"><span>Музыка</span><input type="range" min="0" max="100" step="1" data-music-volume></label>
+        <label class="reboot-setting"><span>Звуки</span><input type="range" min="0" max="100" step="1" data-sfx-volume></label>
+        <label class="reboot-setting reboot-setting--toggle"><span>Уменьшить анимации</span><input type="checkbox" data-reduced-motion></label>
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="js/reboot-foundation.mjs?v=20260826-reboot-2"></script>
 </body>
 </html>

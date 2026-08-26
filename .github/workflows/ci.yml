@@ -1,4 +1,4 @@
-name: RPChess CI
+name: RPChess Reboot CI
 
 on:
   workflow_dispatch:
@@ -6,17 +6,17 @@ on:
   push:
     branches:
       - main
-      - feature/b9-map-generator-rebuild
+      - feature/reboot-foundation
 
 permissions:
   contents: read
 
 concurrency:
-  group: rpchess-ci-${{ github.ref }}
+  group: rpchess-reboot-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  verify-web-source:
+  verify-reboot-foundation:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,51 +26,39 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
-      - name: Verify normalized source
+      - name: Verify Reboot source contract
         run: npm run verify
-      - name: Validate production content
-        run: npm run content:validate
-      - name: Run complete test suite
+      - name: Run Reboot Foundation static tests
         run: npm test
-      - name: Build web distribution
+      - name: Build Reboot web distribution
         run: npm run build
-      - name: Verify distribution entry
-        run: test -f dist/index.html && test -f dist/SFX/win_fanfare.mp3
+      - name: Verify clean distribution boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f dist/index.html
+          test -f dist/css/reboot-foundation.css
+          test -f dist/js/reboot-foundation.mjs
+          test -f dist/generated_assets/logo_main.png
+          test -f dist/generated_assets/scene_campaign.jpg
+          test ! -e dist/js/generated/iron-marches-runtime.bundle.js
+          ! grep -q 'vertical-slice-app.mjs' dist/index.html
+          ! grep -q 'iron-marches-runtime.bundle.js' dist/index.html
       - name: Install Playwright and Chromium
         timeout-minutes: 10
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
-      - name: Run real Chromium Iron Marches acceptance
-        timeout-minutes: 28
+      - name: Run real Chromium Reboot Foundation acceptance
+        timeout-minutes: 8
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m http.server 4173 --bind 127.0.0.1 --directory dist > /tmp/rpchess-http.log 2>&1 &
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory dist > /tmp/rpchess-reboot-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           for attempt in $(seq 1 30); do
             if curl --fail --silent http://127.0.0.1:4173/index.html >/dev/null; then break; fi
             sleep 1
           done
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/battle-ui-input-regression.cjs
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-direct-events.cjs
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-chain-events.cjs
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/chess-special-rules-ui-regression.cjs
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-secret-forced.cjs
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-closure-e2e.cjs
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-reload-matrix-runner.cjs
-          echo '--- mobile 390x844 event/map acceptance ---'
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node -r ./tests/helpers/playwright-mobile-preload.cjs tests/iron-marches-browser-direct-events.cjs
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node -r ./tests/helpers/playwright-mobile-preload.cjs tests/iron-marches-browser-chain-events.cjs
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node -r ./tests/helpers/playwright-mobile-preload.cjs tests/iron-marches-browser-secret-forced.cjs
-      - name: Expose briefing QA screenshot
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -f artifacts/qa/briefing-active-roster.jpg
-          echo 'BRIEFING_QA_JPEG_BASE64_BEGIN'
-          base64 -w0 artifacts/qa/briefing-active-roster.jpg
-          echo
-          echo 'BRIEFING_QA_JPEG_BASE64_END'
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/reboot-foundation-browser.cjs
