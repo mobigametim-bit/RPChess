@@ -1,18 +1,18 @@
 {
   "title": "RPChess Reboot",
   "edition": "Classic Chess",
-  "version": "2.1.0-classic-chess.preview.3",
+  "version": "2.1.0-classic-chess",
   "build_date": "2026-08-26",
   "runtime": "Offline HTML5 / ES modules",
   "requires_internet": false,
   "requires_installation": false,
   "visual_theme": "Approved RPChess fantasy UI with production chess piece assets",
-  "gameplay_state": "Classic Chess gameplay human-tested successfully; scene-switch visibility defect fixed and awaiting a short human spot-check; canonical engine acceptance passed; hosted Chromium CI remains blocked by unavailable GitHub runner",
+  "gameplay_state": "Classic Chess completed and human accepted, including final exclusive scene-switch spot-check; canonical engine acceptance passed; hosted Chromium CI remains blocked by unavailable GitHub runner",
   "legacy_branch": "archive/iron-marches-v1",
   "legacy_commit": "035fb817a93f53047a1d20f7cdfc9093b0f7d611",
   "foundation_merge": "416cfbcd332366c10d6dd27a44123c0dd7ea7da0",
   "active_feature_branch": "feature/classic-chess",
   "active_docs": "docs/00_PRODUCT_VISION.md through docs/17_TECH_ARCHITECTURE.md",
   "human_acceptance_required": true,
-  "human_acceptance": "gameplay_passed_scene_switch_spotcheck_pending"
+  "human_acceptance": "accepted"
 }
