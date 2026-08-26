@@ -182,6 +182,13 @@ function inCheck(state, color) {
   return king >= 0 && isSquareAttacked(state, king, opposite(color));
 }
 
+function kingTransitSafe(state, from, transit, color) {
+  const copy = { ...state, board: cloneBoard(state.board), castling: { ...state.castling } };
+  copy.board[transit] = copy.board[from];
+  copy.board[from] = null;
+  return !isSquareAttacked(copy, transit, opposite(color));
+}
+
 function pseudoMovesFor(state, from, includeCastling = true) {
   const piece = state.board[from];
   if (!piece) return [];
@@ -216,9 +223,7 @@ function pseudoMovesFor(state, from, includeCastling = true) {
       } else if (state.enPassant === to) {
         const captured = indexOf(targetFile, rank);
         const capturedPiece = state.board[captured];
-        if (capturedPiece?.color === opposite(piece.color) && capturedPiece.type === 'p') {
-          moves.push({ from, to, capture: captured, enPassant: true });
-        }
+        if (capturedPiece?.color === opposite(piece.color) && capturedPiece.type === 'p') moves.push({ from, to, capture: captured, enPassant: true });
       }
     }
   }
@@ -253,21 +258,20 @@ function pseudoMovesFor(state, from, includeCastling = true) {
     if (includeCastling) {
       const homeRank = piece.color === 'w' ? 0 : 7;
       const kingHome = indexOf(4, homeRank);
-      const enemy = opposite(piece.color);
-      if (from === kingHome && !isSquareAttacked(state, kingHome, enemy)) {
+      if (from === kingHome && !isSquareAttacked(state, kingHome, opposite(piece.color))) {
         const kingSideRight = piece.color === 'w' ? 'K' : 'k';
         const queenSideRight = piece.color === 'w' ? 'Q' : 'q';
         const rookKing = state.board[indexOf(7, homeRank)];
-        if (state.castling[kingSideRight] && rookKing?.type === 'r' && rookKing.color === piece.color &&
-            !state.board[indexOf(5, homeRank)] && !state.board[indexOf(6, homeRank)] &&
-            !isSquareAttacked(state, indexOf(5, homeRank), enemy) && !isSquareAttacked(state, indexOf(6, homeRank), enemy)) {
-          moves.push({ from, to: indexOf(6, homeRank), castle: 'K' });
+        const kingTransit = indexOf(5, homeRank);
+        const kingDestination = indexOf(6, homeRank);
+        if (state.castling[kingSideRight] && rookKing?.type === 'r' && rookKing.color === piece.color && !state.board[kingTransit] && !state.board[kingDestination] && kingTransitSafe(state, from, kingTransit, piece.color)) {
+          moves.push({ from, to: kingDestination, castle: 'K' });
         }
         const rookQueen = state.board[indexOf(0, homeRank)];
-        if (state.castling[queenSideRight] && rookQueen?.type === 'r' && rookQueen.color === piece.color &&
-            !state.board[indexOf(1, homeRank)] && !state.board[indexOf(2, homeRank)] && !state.board[indexOf(3, homeRank)] &&
-            !isSquareAttacked(state, indexOf(3, homeRank), enemy) && !isSquareAttacked(state, indexOf(2, homeRank), enemy)) {
-          moves.push({ from, to: indexOf(2, homeRank), castle: 'Q' });
+        const queenTransit = indexOf(3, homeRank);
+        const queenDestination = indexOf(2, homeRank);
+        if (state.castling[queenSideRight] && rookQueen?.type === 'r' && rookQueen.color === piece.color && !state.board[indexOf(1, homeRank)] && !state.board[queenDestination] && !state.board[queenTransit] && kingTransitSafe(state, from, queenTransit, piece.color)) {
+          moves.push({ from, to: queenDestination, castle: 'Q' });
         }
       }
     }
@@ -280,11 +284,7 @@ function applyMoveToState(state, move, { record = false } = {}) {
   if (!piece) throw new Error('No piece on source square');
   const moving = clonePiece(piece);
   const capturedPiece = move.capture != null ? clonePiece(state.board[move.capture]) : clonePiece(state.board[move.to]);
-  const previous = record ? {
-    fen: stateToFEN(state),
-    move: state.lastMove ? { ...state.lastMove } : null,
-    repetition: new Map(state.repetition)
-  } : null;
+  const previous = record ? { fen: stateToFEN(state), move: state.lastMove ? { ...state.lastMove } : null, repetition: new Map(state.repetition) } : null;
 
   state.board[move.from] = null;
   if (move.capture != null && move.capture !== move.to) state.board[move.capture] = null;
@@ -316,33 +316,17 @@ function applyMoveToState(state, move, { record = false } = {}) {
     if (capturedAt === squareToIndex('h8')) state.castling.k = false;
   }
 
-  state.enPassant = moving.type === 'p' && Math.abs(rankOf(move.to) - rankOf(move.from)) === 2
-    ? indexOf(fileOf(move.from), (rankOf(move.from) + rankOf(move.to)) / 2)
-    : null;
+  state.enPassant = moving.type === 'p' && Math.abs(rankOf(move.to) - rankOf(move.from)) === 2 ? indexOf(fileOf(move.from), (rankOf(move.from) + rankOf(move.to)) / 2) : null;
   state.halfmove = moving.type === 'p' || capturedPiece ? 0 : state.halfmove + 1;
   if (moving.color === 'b') state.fullmove += 1;
   state.turn = opposite(moving.color);
-  state.lastMove = {
-    from: move.from,
-    to: move.to,
-    piece: moving.type,
-    color: moving.color,
-    capture: capturedPiece?.type || null,
-    promotion: move.promotion || null,
-    castle: move.castle || null,
-    enPassant: Boolean(move.enPassant)
-  };
+  state.lastMove = { from: move.from, to: move.to, piece: moving.type, color: moving.color, capture: capturedPiece?.type || null, promotion: move.promotion || null, castle: move.castle || null, enPassant: Boolean(move.enPassant) };
   if (record && previous) state.history.push(previous);
   return state;
 }
 
 function moveLeavesKingSafe(state, move, color) {
-  const copy = {
-    ...state,
-    board: cloneBoard(state.board),
-    castling: { ...state.castling },
-    repetition: state.repetition
-  };
+  const copy = { ...state, board: cloneBoard(state.board), castling: { ...state.castling }, repetition: state.repetition };
   applyMoveToState(copy, move);
   return !inCheck(copy, color);
 }
@@ -354,9 +338,7 @@ function legalMoves(state, fromSquare = null) {
     if (fromFilter != null && from !== fromFilter) continue;
     const piece = state.board[from];
     if (!piece || piece.color !== state.turn) continue;
-    for (const move of pseudoMovesFor(state, from, true)) {
-      if (moveLeavesKingSafe(state, move, piece.color)) moves.push(move);
-    }
+    for (const move of pseudoMovesFor(state, from, true)) if (moveLeavesKingSafe(state, move, piece.color)) moves.push(move);
   }
   return moves;
 }
@@ -366,9 +348,7 @@ function legalEnPassantExists(state) {
   for (let from = 0; from < 64; from += 1) {
     const piece = state.board[from];
     if (piece?.color !== state.turn || piece.type !== 'p') continue;
-    for (const move of pseudoMovesFor(state, from, false)) {
-      if (move.enPassant && moveLeavesKingSafe(state, move, piece.color)) return true;
-    }
+    for (const move of pseudoMovesFor(state, from, false)) if (move.enPassant && moveLeavesKingSafe(state, move, piece.color)) return true;
   }
   return false;
 }
@@ -382,8 +362,7 @@ function insufficientMaterial(state) {
   const pieces = state.board.map((piece, index) => ({ piece, index })).filter(({ piece }) => piece);
   if (pieces.some(({ piece }) => ['p', 'q', 'r'].includes(piece.type))) return false;
   const minors = pieces.filter(({ piece }) => ['b', 'n'].includes(piece.type));
-  if (minors.length === 0) return true;
-  if (minors.length === 1) return true;
+  if (minors.length === 0 || minors.length === 1) return true;
   if (minors.every(({ piece }) => piece.type === 'b')) {
     const colors = minors.map(({ index }) => (fileOf(index) + rankOf(index)) % 2);
     return colors.every((color) => color === colors[0]);
@@ -394,10 +373,7 @@ function insufficientMaterial(state) {
 function gameStatus(state) {
   const moves = legalMoves(state);
   const checked = inCheck(state, state.turn);
-  if (!moves.length) {
-    if (checked) return { over: true, type: 'checkmate', winner: opposite(state.turn), checked: true };
-    return { over: true, type: 'stalemate', winner: null, checked: false };
-  }
+  if (!moves.length) return checked ? { over: true, type: 'checkmate', winner: opposite(state.turn), checked: true } : { over: true, type: 'stalemate', winner: null, checked: false };
   if (insufficientMaterial(state)) return { over: true, type: 'draw_insufficient', winner: null, checked };
   if (state.halfmove >= 100) return { over: true, type: 'draw_50_move', winner: null, checked };
   if ((state.repetition.get(positionKey(state)) || 0) >= 3) return { over: true, type: 'draw_threefold', winner: null, checked };
@@ -405,12 +381,7 @@ function gameStatus(state) {
 }
 
 function moveToPublic(move) {
-  return {
-    ...move,
-    from: indexToSquare(move.from),
-    to: indexToSquare(move.to),
-    capture: move.capture == null ? null : indexToSquare(move.capture)
-  };
+  return { ...move, from: indexToSquare(move.from), to: indexToSquare(move.to), capture: move.capture == null ? null : indexToSquare(move.capture) };
 }
 
 class ClassicChessEngine {
@@ -419,32 +390,24 @@ class ClassicChessEngine {
     this.state.repetition = new Map();
     this.recordPosition();
   }
-
   recordPosition() {
     const key = positionKey(this.state);
     this.state.repetition.set(key, (this.state.repetition.get(key) || 0) + 1);
   }
-
   reset(fen = null) {
     this.state = fen ? parseFEN(fen) : createInitialState();
     this.state.repetition = new Map();
     this.recordPosition();
     return this.snapshot();
   }
-
   fen() { return stateToFEN(this.state); }
   turn() { return this.state.turn; }
   pieceAt(square) { return clonePiece(this.state.board[squareToIndex(square)]); }
   isCheck(color = this.state.turn) { return inCheck(this.state, color); }
   status() { return gameStatus(this.state); }
   positionKey() { return positionKey(this.state); }
-
   legalMoves(square = null) { return legalMoves(this.state, square).map(moveToPublic); }
-
-  promotionChoices(from, to) {
-    return this.legalMoves(from).filter((move) => move.to === to && move.promotion).map((move) => move.promotion);
-  }
-
+  promotionChoices(from, to) { return this.legalMoves(from).filter((move) => move.to === to && move.promotion).map((move) => move.promotion); }
   move(fromSquare, toSquare, promotion = null) {
     const from = squareToIndex(fromSquare);
     const to = squareToIndex(toSquare);
@@ -453,48 +416,21 @@ class ClassicChessEngine {
     if (!candidates.length) return { ok: false, reason: 'illegal_move' };
     const promotions = candidates.filter((move) => move.promotion);
     if (promotions.length && !promotion) return { ok: false, reason: 'promotion_required', choices: PROMOTIONS.slice() };
-    const chosen = promotions.length
-      ? promotions.find((move) => move.promotion === String(promotion).toLowerCase())
-      : candidates[0];
+    const chosen = promotions.length ? promotions.find((move) => move.promotion === String(promotion).toLowerCase()) : candidates[0];
     if (!chosen) return { ok: false, reason: 'invalid_promotion', choices: PROMOTIONS.slice() };
     applyMoveToState(this.state, chosen, { record: true });
     this.recordPosition();
     return { ok: true, move: moveToPublic(chosen), status: this.status(), fen: this.fen() };
   }
-
   snapshot() {
     return {
-      fen: this.fen(),
-      turn: this.state.turn,
-      castling: { ...this.state.castling },
+      fen: this.fen(), turn: this.state.turn, castling: { ...this.state.castling },
       enPassant: this.state.enPassant == null ? null : indexToSquare(this.state.enPassant),
-      halfmove: this.state.halfmove,
-      fullmove: this.state.fullmove,
-      lastMove: this.state.lastMove ? {
-        ...this.state.lastMove,
-        from: indexToSquare(this.state.lastMove.from),
-        to: indexToSquare(this.state.lastMove.to)
-      } : null,
-      board: this.state.board.map(clonePiece),
-      status: this.status()
+      halfmove: this.state.halfmove, fullmove: this.state.fullmove,
+      lastMove: this.state.lastMove ? { ...this.state.lastMove, from: indexToSquare(this.state.lastMove.from), to: indexToSquare(this.state.lastMove.to) } : null,
+      board: this.state.board.map(clonePiece), status: this.status()
     };
   }
 }
 
-export {
-  COLORS,
-  PIECES,
-  PROMOTIONS,
-  ClassicChessEngine,
-  createInitialState,
-  gameStatus,
-  inCheck,
-  indexToSquare,
-  insufficientMaterial,
-  isSquareAttacked,
-  legalMoves,
-  parseFEN,
-  positionKey,
-  squareToIndex,
-  stateToFEN
-};
+export { COLORS, PIECES, PROMOTIONS, ClassicChessEngine, createInitialState, gameStatus, inCheck, indexToSquare, insufficientMaterial, isSquareAttacked, legalMoves, parseFEN, positionKey, squareToIndex, stateToFEN };
