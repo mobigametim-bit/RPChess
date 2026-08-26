@@ -3,7 +3,7 @@
 - [x] Концепция Reboot утверждена.
 - [x] Legacy branch создан до изменения gameplay.
 - [x] Reboot Foundation — production-ready visual shell без старых gameplay-систем. Human accepted 2026-08-26; production-menu и audio corrections included.
-- [ ] Classic Chess — полный локальный классический шахматный runtime.
+- [ ] Classic Chess — полный локальный классический шахматный runtime. **IMPLEMENTED → ENGINE-AUTOTESTED → DEPLOYED; HUMAN ACCEPTED pending.** Canonical perft: start d3 = 8902; Kiwipete d1/d2/d3 = 48/2039/97862; canonical endgame d3 = 2812. Real Chromium suite authored, но GitHub Actions runner сейчас завершается до первого step, поэтому hosted browser acceptance не отмечается как выполненный.
 - [ ] Chess AI — Stockfish adapter и уровни Elo.
 - [ ] Roster — персонализированный король и фигуры.
 - [ ] Skirmish — ≤16 фигур, ≤39 очков, adaptive enemy.
@@ -25,7 +25,7 @@
 - [ ] Metaprogression — только после подтверждения core loop.
 
 ## Current phase
-**Classic Chess** — следующий изолированный feature после принятого Reboot Foundation.
+**Classic Chess — HUMAN PLAYTEST GATE.** Runtime реализован и Cloudflare-deployed. Следующая feature, Chess AI, не начинается до живой приёмки Classic Chess.
 
 ## Статусы feature
 `IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE`
