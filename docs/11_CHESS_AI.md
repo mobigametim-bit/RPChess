@@ -74,19 +74,24 @@ Distribution build загружает закреплённые release-файл�
 
 Во время расчёта:
 - поле блокирует пользовательский ввод;
-- состояние расчёта остаётся ненавязчивым в статусной строке;
+- состояние расчёта остаётся ненавязчивым в панели `Партия`;
 - большая центральная плашка `Компьютер думает…` визуально не показывается;
 - рассчитанный ход воспроизводится плавной анимацией перемещения фигуры;
 - после хода AI управление автоматически возвращается игроку.
 
 ## Production UI шахматной партии
-После первого живого Chess AI playtest зафиксирован обязательный polish-контракт:
-- каждая fantasy-фигура на доске имеет в верхнем левом углу маленький технический шахматный glyph своей роли: pawn / knight / bishop / rook / queen / king;
-- панель `Ходы` использует стандартную SAN-запись с figurine-представлением фигур в UI;
-- SAN поддерживает `x` для взятия, `+` для шаха, `#` для мата, `O-O` / `O-O-O`, promotion и disambiguation одинаковых фигур;
-- рядом с состоянием партии показываются взятые фигуры техническими glyph и текущий перевес материала;
-- все action-кнопки используют синий `ui_button_primary.png`; светлые action-кнопки не используются;
-- карточки/модальные подложки используют тёмное решение утверждённого legacy commander-selection UI: `ui_panel_frame.png`, тёмный центр `#091524` и тонкий внутренний keyline вместо светлой parchment-подложки;
+После живых playtest зафиксирован обязательный контракт:
+- каждая fantasy-фигура имеет небольшой bare technical chess glyph своей роли в крайнем левом верхнем углу клетки;
+- вокруг technical glyph нет окружности, рамки или фоновой плашки;
+- glyph белой стороны — белый, glyph чёрной — чёрный;
+- панель `Ходы` использует стандартную SAN-запись с figurine-представлением фигур;
+- SAN поддерживает `x`, `+`, `#`, `O-O`, `O-O-O`, promotion и disambiguation одинаковых фигур;
+- показываются взятые фигуры и текущий material advantage;
+- desktop-layout: `Партия` слева от доски, доска по центру, `Ходы` справа;
+- широкая status-плашка `Партия завершена…` удалена из визуальной композиции;
+- дублирующие post-game `Новая партия / Главное меню` внутри панели `Партия` удалены; единственный action set остаётся в верхнем toolbar;
+- все action-кнопки используют синий `ui_button_primary.png`;
+- карточки/модальные панели используют тёмный commander-selection treatment: `ui_panel_frame.png`, центр `#091524`, inner keyline и увеличенную safe-area padding, чтобы контент не заходил на декоративные края;
 - при включённом `Уменьшить анимации` или системном reduced-motion плавное перемещение может быть отключено.
 
 ## Отказоустойчивость
@@ -104,18 +109,29 @@ Distribution build загружает закреплённые release-файл�
 - SAN / figurine move-list contract;
 - captured-piece/material UI;
 - smooth-move animation contract;
-- единый blue-CTA и commander-style panel contract;
-- реальный Stockfish Worker browser flow в Chromium suite, когда runner доступен.
+- blue-CTA и commander-style panel contract;
+- финальный three-column layout и отсутствие duplicate post-game CTA;
+- реальный Stockfish Worker browser flow.
+
+На exact head `5acf01cbf3332d366ff040773b186b38f83d0df6` GitHub Actions run `33024841637`, job `98363670741` полностью прошёл, включая real Chromium + Stockfish acceptance.
 
 ## Human Playtest Gate
-Первый живой Chess AI gameplay test пройден: пользователь подтвердил AI/gameplay как рабочие и запросил только production UI polish.
+AI gameplay уже принят пользователем. Перед закрытием Chess AI как `DONE` нужен только короткий финальный spot-check версии `2.2.0-chess-ai.preview.3`:
+- уменьшенные bare white/black technical glyph;
+- safe-area контента внутри рамок;
+- отсутствие широкой `Партия завершена…` status-плашки;
+- отсутствие дублирующих post-game CTA внутри панели `Партия`;
+- desktop-layout `Партия` слева / доска / `Ходы` справа.
 
-Перед закрытием Chess AI как `DONE` нужен короткий повторный spot-check версии `2.2.0-chess-ai.preview.2`:
-- технические значки на фигурах;
-- SAN/figurine панель ходов;
-- взятые фигуры и material advantage;
-- плавное движение AI;
-- commander-style тёмные панели;
-- только синие action-кнопки.
+## Deployment Gate — exact head
+- Статус feature: **IMPLEMENTED → AUTOTESTED → DEPLOYED → gameplay HUMAN TEST PASSED → final UI spot-check pending**.
+- Current head: `5acf01cbf3332d366ff040773b186b38f83d0df6`.
+- Base / merge base: `6df1a65ffca36413d99415eab1f0e5ccddbd5dbe`.
+- GitHub Actions run: `33024841637` — **SUCCESS**.
+- GitHub Actions job: `98363670741` — **SUCCESS**.
+- Cloudflare build: `403a746d-4dd9-4acb-a459-a2dedd314a93` — **SUCCESS**.
+- Cloudflare Version ID: `6a6eb962-5837-462b-bce0-0e8bb05327f1`.
+- Exact preview: `https://6a6eb962-rpchess.mobigametim.workers.dev`.
+- Branch preview: `https://feature-chess-ai-rpchess.mobigametim.workers.dev`.
 
-Roster не начинается до этого финального human acceptance.
+Roster не начинается до финального human acceptance.
