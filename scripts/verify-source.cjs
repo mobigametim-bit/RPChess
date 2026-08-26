@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 function fail(message) {
-  throw new Error(`[source verification] ${message}`);
+  throw new Error(`[reboot source verification] ${message}`);
 }
 
 function walk(dir) {
@@ -18,13 +18,14 @@ function walk(dir) {
 module.exports = function verifySource(root) {
   const required = [
     'index.html',
-    'style.css',
     'BUILD_INFO.json',
-    'js/data.js',
-    'js/core.js',
-    'js/ui.js',
-    'js/main.js',
-    'SFX/win_fanfare.mp3'
+    'css/reboot-foundation.css',
+    'js/reboot-foundation.mjs',
+    'fonts/BrahmsGotischCyr.otf',
+    'generated_assets/logo_main.png',
+    'generated_assets/title_wordmark.png',
+    'generated_assets/splash_poster.jpg',
+    'generated_assets/scene_campaign.jpg'
   ];
 
   for (const relative of required) {
@@ -33,18 +34,40 @@ module.exports = function verifySource(root) {
     if (!fs.statSync(full).isFile()) fail(`required path is not a file: ${relative}`);
   }
 
-  const fanfare = path.join(root, 'SFX', 'win_fanfare.mp3');
-  if (fs.statSync(fanfare).size < 10000) fail('win_fanfare.mp3 is unexpectedly small');
-
-  const musicDir = path.join(root, 'music');
-  if (!fs.existsSync(musicDir)) fail('music directory is missing');
-  const tracks = fs.readdirSync(musicDir).filter((name) => /\.(mp3|ogg|wav)$/i.test(name));
-  if (tracks.length < 4) fail(`expected at least four music tracks, found ${tracks.length}`);
-
   const info = JSON.parse(fs.readFileSync(path.join(root, 'BUILD_INFO.json'), 'utf8'));
-  if (!info.version) fail('BUILD_INFO.json has no version');
+  if (!String(info.version || '').startsWith('2.0.0-foundation')) {
+    fail(`unexpected reboot version: ${info.version || 'missing'}`);
+  }
 
-  const textExtensions = new Set(['.html', '.css', '.js', '.json', '.md']);
+  const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  if (!index.includes('css/reboot-foundation.css') || !index.includes('js/reboot-foundation.mjs')) {
+    fail('index.html does not launch the Reboot Foundation shell');
+  }
+
+  const forbiddenEntryRefs = [
+    'iron-marches-runtime.bundle.js',
+    'vertical-slice-app.mjs',
+    'ui-approved-campaign.mjs',
+    'b10-b13-production-ui.mjs',
+    'explicit-run-setup.mjs',
+    'commander-selection-final.mjs'
+  ];
+  for (const forbidden of forbiddenEntryRefs) {
+    if (index.includes(forbidden)) fail(`index.html still references legacy runtime: ${forbidden}`);
+  }
+
+  const localRefs = [...index.matchAll(/(?:src|href)=["']([^"'#?]+)["']/g)].map((match) => match[1]);
+  for (const ref of localRefs) {
+    if (/^(?:https?:|data:|blob:)/i.test(ref)) continue;
+    if (!fs.existsSync(path.join(root, ref))) fail(`index.html references missing local file: ${ref}`);
+  }
+
+  const css = fs.readFileSync(path.join(root, 'css/reboot-foundation.css'), 'utf8');
+  if (!/html\s*\{[\s\S]*overflow-y:\s*auto/i.test(css) || !/body\s*\{[\s\S]*overflow-y:\s*auto/i.test(css)) {
+    fail('global vertical scroll contract is missing');
+  }
+
+  const textExtensions = new Set(['.html', '.css', '.js', '.mjs', '.json', '.md']);
   const forbiddenNetworkDependencies = [
     'drive.google.com/uc?export=download',
     'drive.google.com/file/d/',
@@ -63,13 +86,6 @@ module.exports = function verifySource(root) {
     }
   }
 
-  const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  const localRefs = [...index.matchAll(/(?:src|href)=["']([^"'#?]+)["']/g)].map((match) => match[1]);
-  for (const ref of localRefs) {
-    if (/^(?:https?:|data:|blob:)/i.test(ref)) continue;
-    if (!fs.existsSync(path.join(root, ref))) fail(`index.html references missing local file: ${ref}`);
-  }
-
-  console.log(`[source verification] ${path.relative(process.cwd(), root) || '.'}: ${walk(root).length} files, ${tracks.length} music tracks, build ${info.version}`);
+  console.log(`[reboot source verification] ${path.relative(process.cwd(), root) || '.'}: ${walk(root).length} files, build ${info.version}`);
   return true;
 };
