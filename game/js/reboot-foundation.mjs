@@ -36,12 +36,11 @@ function openModal(modal, audio) {
   modal.hidden = false;
   document.body.classList.add('reboot-modal-open');
   audio?.open();
-  const focusTarget = modal.querySelector('button, input');
-  focusTarget?.focus();
+  modal.querySelector('button, input')?.focus();
 }
 
 function closeModal(modal, audio) {
-  if (!modal) return;
+  if (!modal || modal.hasAttribute('data-modal-static')) return;
   modal.hidden = true;
   document.body.classList.remove('reboot-modal-open');
   audio?.close();
@@ -52,7 +51,6 @@ clearLegacySavesOnce();
 const settings = readSettings();
 const audio = new RebootAudio(settings);
 const settingsModal = document.querySelector('[data-settings-modal]');
-const foundationModal = document.querySelector('[data-foundation-modal]');
 const music = document.querySelector('[data-music-volume]');
 const sfx = document.querySelector('[data-sfx-volume]');
 const reducedMotion = document.querySelector('[data-reduced-motion]');
@@ -63,29 +61,29 @@ if (reducedMotion) reducedMotion.checked = settings.reducedMotion;
 document.documentElement.dataset.reducedMotion = settings.reducedMotion ? '1' : '0';
 
 globalThis.RPChessRebootAudio = audio;
+globalThis.RPChessOpenSettings = () => openModal(settingsModal, audio);
 
-function activateAudio() {
-  audio.activate();
-}
-
+function activateAudio() { audio.activate(); }
 document.addEventListener('pointerdown', activateAudio, { once: true, capture: true });
 document.addEventListener('keydown', activateAudio, { once: true, capture: true });
 
 document.querySelector('[data-new-game]')?.addEventListener('click', () => {
   audio.click();
-  openModal(foundationModal, audio);
+  globalThis.dispatchEvent(new CustomEvent('rpchess:new-game'));
 });
 
-document.querySelector('[data-settings]')?.addEventListener('click', () => {
-  audio.click();
-  openModal(settingsModal, audio);
+document.querySelectorAll('[data-settings]').forEach((button) => {
+  button.addEventListener('click', () => {
+    audio.click();
+    openModal(settingsModal, audio);
+  });
 });
 
 document.querySelectorAll('[data-close-modal]').forEach((button) => {
   button.addEventListener('click', () => closeModal(button.closest('.reboot-modal'), audio));
 });
 
-document.querySelectorAll('.reboot-modal').forEach((modal) => {
+document.querySelectorAll('.reboot-modal:not([data-modal-static])').forEach((modal) => {
   modal.addEventListener('click', (event) => {
     if (event.target === modal) closeModal(modal, audio);
   });
@@ -93,7 +91,7 @@ document.querySelectorAll('.reboot-modal').forEach((modal) => {
 
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return;
-  const open = [...document.querySelectorAll('.reboot-modal')].find((modal) => !modal.hidden);
+  const open = [...document.querySelectorAll('.reboot-modal:not([data-modal-static])')].find((modal) => !modal.hidden);
   if (open) closeModal(open, audio);
 });
 

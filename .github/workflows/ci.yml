@@ -6,7 +6,7 @@ on:
   push:
     branches:
       - main
-      - feature/reboot-foundation
+      - feature/classic-chess
 
 permissions:
   contents: read
@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify-reboot-foundation:
+  verify-classic-chess:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,29 +28,42 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Verify Reboot source contract
         run: npm run verify
-      - name: Run Reboot Foundation static tests
+      - name: Run retained Foundation and Classic Chess tests
         run: npm test
-      - name: Build Reboot web distribution
+      - name: Build Classic Chess web distribution
         run: npm run build
-      - name: Verify clean distribution boundary
+      - name: Verify clean Classic Chess distribution boundary
         shell: bash
         run: |
           set -euo pipefail
           test -f dist/index.html
           test -f dist/css/reboot-foundation.css
+          test -f dist/css/classic-chess.css
           test -f dist/js/reboot-foundation.mjs
+          test -f dist/js/reboot-audio.mjs
+          test -f dist/js/classic-chess-engine.mjs
+          test -f dist/js/classic-chess-app.mjs
           test -f dist/generated_assets/logo_main.png
-          test -f dist/generated_assets/scene_campaign.jpg
+          test -f dist/generated_assets/title_wordmark.png
+          test -f dist/generated_assets/splash_poster.jpg
+          for piece in pawn knight bishop rook queen king; do
+            test -f "dist/generated_assets/unit_${piece}_player.png"
+            test -f "dist/generated_assets/unit_${piece}_enemy.png"
+          done
+          for track in 01 02 03 04; do
+            test -f "dist/music/echoes_iron_throne_${track}.mp3"
+          done
           test ! -e dist/js/generated/iron-marches-runtime.bundle.js
           ! grep -q 'vertical-slice-app.mjs' dist/index.html
           ! grep -q 'iron-marches-runtime.bundle.js' dist/index.html
+          ! grep -q 'explicit-run-setup.mjs' dist/index.html
       - name: Install Playwright and Chromium
         timeout-minutes: 10
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
-      - name: Run real Chromium Reboot Foundation acceptance
-        timeout-minutes: 8
+      - name: Run real Chromium Foundation and Classic Chess acceptance
+        timeout-minutes: 10
         shell: bash
         run: |
           set -euo pipefail
@@ -61,4 +74,6 @@ jobs:
             if curl --fail --silent http://127.0.0.1:4173/index.html >/dev/null; then break; fi
             sleep 1
           done
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/reboot-foundation-browser.cjs
+          export RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173
+          stdbuf -oL -eL node tests/reboot-foundation-browser.cjs
+          stdbuf -oL -eL node tests/classic-chess-browser.cjs

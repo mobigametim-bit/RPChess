@@ -91,6 +91,9 @@ class RebootAudio {
   open() { this.tone(680, 0.07, 'triangle', 0.042); }
   close() { this.tone(360, 0.055, 'triangle', 0.028); }
   adjust() { this.tone(760, 0.025, 'sine', 0.018); }
+  move() { this.tone(430, 0.05, 'triangle', 0.026); }
+  capture() { this.tone(245, 0.085, 'triangle', 0.045); }
+  check() { this.tone(720, 0.095, 'square', 0.04); }
 
   destroy() {
     this.music?.pause();

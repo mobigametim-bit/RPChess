@@ -16,50 +16,47 @@ function copy(relative) {
 
 async function main() {
   verifySource(source);
-
   fs.rmSync(dist, { recursive: true, force: true });
   fs.mkdirSync(dist, { recursive: true });
 
-  // Reboot ships only active runtime modules plus intentionally reused production assets.
-  // Legacy Iron Marches gameplay remains preserved in archive/iron-marches-v1 and is
-  // deliberately excluded from the production distribution.
-  copy('index.html');
-  copy('BUILD_INFO.json');
-  copy('css/reboot-foundation.css');
-  copy('js/reboot-foundation.mjs');
-  copy('js/reboot-audio.mjs');
-  copy('fonts');
-  copy('generated_assets');
-  copy('music');
+  for (const relative of [
+    'index.html',
+    'BUILD_INFO.json',
+    'css/reboot-foundation.css',
+    'css/classic-chess.css',
+    'js/reboot-foundation.mjs',
+    'js/reboot-audio.mjs',
+    'js/classic-chess-engine.mjs',
+    'js/classic-chess-app.mjs',
+    'fonts',
+    'generated_assets',
+    'music'
+  ]) copy(relative);
 
   verifySource(dist);
 
   const rootHtml = fs.readFileSync(path.join(dist, 'index.html'), 'utf8');
-  const forbidden = [
-    'iron-marches-runtime.bundle.js',
-    'vertical-slice-app.mjs',
-    'explicit-run-setup.mjs',
-    'ui-approved-campaign.mjs'
-  ];
-  for (const token of forbidden) {
+  for (const token of ['iron-marches-runtime.bundle.js', 'vertical-slice-app.mjs', 'explicit-run-setup.mjs', 'ui-approved-campaign.mjs']) {
     if (rootHtml.includes(token)) throw new Error(`dist entry still contains legacy token: ${token}`);
   }
-
   if (fs.existsSync(path.join(dist, 'js/generated/iron-marches-runtime.bundle.js'))) {
     throw new Error('legacy Iron Marches runtime was accidentally packaged into Reboot dist');
   }
 
   for (const relative of [
+    'css/classic-chess.css',
+    'js/classic-chess-engine.mjs',
+    'js/classic-chess-app.mjs',
     'js/reboot-audio.mjs',
     'music/echoes_iron_throne_01.mp3',
     'music/echoes_iron_throne_02.mp3',
     'music/echoes_iron_throne_03.mp3',
     'music/echoes_iron_throne_04.mp3'
   ]) {
-    if (!fs.existsSync(path.join(dist, relative))) throw new Error(`Reboot audio asset missing from dist: ${relative}`);
+    if (!fs.existsSync(path.join(dist, relative))) throw new Error(`Classic Chess build output missing: ${relative}`);
   }
 
-  console.log(`Prepared RPChess Reboot Foundation distribution in ${dist}`);
+  console.log(`Prepared RPChess Classic Chess distribution in ${dist}`);
 }
 
 main().catch((error) => {

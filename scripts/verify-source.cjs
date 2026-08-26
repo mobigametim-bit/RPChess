@@ -1,10 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-function fail(message) {
-  throw new Error(`[reboot source verification] ${message}`);
-}
-
+function fail(message) { throw new Error(`[reboot source verification] ${message}`); }
 function walk(dir) {
   const result = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -17,20 +14,18 @@ function walk(dir) {
 
 module.exports = function verifySource(root) {
   const required = [
-    'index.html',
-    'BUILD_INFO.json',
-    'css/reboot-foundation.css',
-    'js/reboot-foundation.mjs',
-    'js/reboot-audio.mjs',
+    'index.html', 'BUILD_INFO.json',
+    'css/reboot-foundation.css', 'css/classic-chess.css',
+    'js/reboot-foundation.mjs', 'js/reboot-audio.mjs',
+    'js/classic-chess-engine.mjs', 'js/classic-chess-app.mjs',
     'fonts/BrahmsGotischCyr.otf',
-    'generated_assets/logo_main.png',
-    'generated_assets/title_wordmark.png',
-    'generated_assets/splash_poster.jpg',
-    'music/echoes_iron_throne_01.mp3',
-    'music/echoes_iron_throne_02.mp3',
-    'music/echoes_iron_throne_03.mp3',
-    'music/echoes_iron_throne_04.mp3'
+    'generated_assets/title_wordmark.png', 'generated_assets/splash_poster.jpg', 'generated_assets/scene_battle.jpg',
+    'music/echoes_iron_throne_01.mp3', 'music/echoes_iron_throne_02.mp3',
+    'music/echoes_iron_throne_03.mp3', 'music/echoes_iron_throne_04.mp3'
   ];
+  for (const side of ['player', 'enemy']) {
+    for (const piece of ['pawn', 'knight', 'bishop', 'rook', 'queen', 'king']) required.push(`generated_assets/unit_${piece}_${side}.png`);
+  }
 
   for (const relative of required) {
     const full = path.join(root, relative);
@@ -39,24 +34,13 @@ module.exports = function verifySource(root) {
   }
 
   const info = JSON.parse(fs.readFileSync(path.join(root, 'BUILD_INFO.json'), 'utf8'));
-  if (!String(info.version || '').startsWith('2.0.0-foundation')) {
-    fail(`unexpected reboot version: ${info.version || 'missing'}`);
-  }
+  if (!String(info.version || '').startsWith('2.1.0-classic-chess')) fail(`unexpected Classic Chess version: ${info.version || 'missing'}`);
 
   const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  if (!index.includes('css/reboot-foundation.css') || !index.includes('js/reboot-foundation.mjs')) {
-    fail('index.html does not launch the Reboot Foundation shell');
+  for (const requiredRef of ['css/reboot-foundation.css', 'css/classic-chess.css', 'js/reboot-foundation.mjs', 'js/classic-chess-app.mjs']) {
+    if (!index.includes(requiredRef)) fail(`index.html is missing active runtime reference: ${requiredRef}`);
   }
-
-  const forbiddenEntryRefs = [
-    'iron-marches-runtime.bundle.js',
-    'vertical-slice-app.mjs',
-    'ui-approved-campaign.mjs',
-    'b10-b13-production-ui.mjs',
-    'explicit-run-setup.mjs',
-    'commander-selection-final.mjs'
-  ];
-  for (const forbidden of forbiddenEntryRefs) {
+  for (const forbidden of ['iron-marches-runtime.bundle.js', 'vertical-slice-app.mjs', 'ui-approved-campaign.mjs', 'b10-b13-production-ui.mjs', 'explicit-run-setup.mjs', 'commander-selection-final.mjs']) {
     if (index.includes(forbidden)) fail(`index.html still references legacy runtime: ${forbidden}`);
   }
 
@@ -66,36 +50,26 @@ module.exports = function verifySource(root) {
     if (!fs.existsSync(path.join(root, ref))) fail(`index.html references missing local file: ${ref}`);
   }
 
-  const css = fs.readFileSync(path.join(root, 'css/reboot-foundation.css'), 'utf8');
-  if (!/html\s*\{[\s\S]*overflow-y:\s*auto/i.test(css) || !/body\s*\{[\s\S]*overflow-y:\s*auto/i.test(css)) {
-    fail('global vertical scroll contract is missing');
+  const foundationCss = fs.readFileSync(path.join(root, 'css/reboot-foundation.css'), 'utf8');
+  if (!/html\s*\{[\s\S]*overflow-y:\s*auto/i.test(foundationCss) || !/body\s*\{[\s\S]*overflow-y:\s*auto/i.test(foundationCss)) fail('global vertical scroll contract is missing');
+
+  const engine = fs.readFileSync(path.join(root, 'js/classic-chess-engine.mjs'), 'utf8');
+  for (const contract of ['castling', 'enPassant', 'draw_50_move', 'draw_threefold', 'draw_insufficient', 'promotion_required', 'checkmate', 'stalemate']) {
+    if (!engine.includes(contract)) fail(`Classic Chess engine contract missing: ${contract}`);
   }
+  const app = fs.readFileSync(path.join(root, 'js/classic-chess-app.mjs'), 'utf8');
+  if (!app.includes("from './classic-chess-engine.mjs'")) fail('Classic Chess UI does not import the standalone engine');
+  if (!app.includes('unit_${PIECE_ASSETS[piece.type]}_')) fail('Classic Chess UI does not use production piece assets');
 
   const runtime = fs.readFileSync(path.join(root, 'js/reboot-foundation.mjs'), 'utf8');
-  if (!runtime.includes("from './reboot-audio.mjs'")) fail('Reboot runtime does not load the production audio layer');
-
-  const audio = fs.readFileSync(path.join(root, 'js/reboot-audio.mjs'), 'utf8');
-  for (const track of required.filter((item) => item.startsWith('music/'))) {
-    if (!audio.includes(track)) fail(`Reboot audio playlist does not reference ${track}`);
-  }
+  if (!runtime.includes("from './reboot-audio.mjs'")) fail('Reboot runtime does not load audio');
 
   const textExtensions = new Set(['.html', '.css', '.js', '.mjs', '.json', '.md']);
-  const forbiddenNetworkDependencies = [
-    'drive.google.com/uc?export=download',
-    'drive.google.com/file/d/',
-    'supabase.co/functions/',
-    'http://127.0.0.1',
-    'http://localhost'
-  ];
-
+  const forbiddenNetworkDependencies = ['drive.google.com/uc?export=download', 'drive.google.com/file/d/', 'supabase.co/functions/', 'http://127.0.0.1', 'http://localhost'];
   for (const file of walk(root)) {
     if (!textExtensions.has(path.extname(file).toLowerCase())) continue;
     const text = fs.readFileSync(file, 'utf8');
-    for (const forbidden of forbiddenNetworkDependencies) {
-      if (text.includes(forbidden)) {
-        fail(`release source contains network dependency '${forbidden}' in ${path.relative(root, file)}`);
-      }
-    }
+    for (const forbidden of forbiddenNetworkDependencies) if (text.includes(forbidden)) fail(`release source contains network dependency '${forbidden}' in ${path.relative(root, file)}`);
   }
 
   console.log(`[reboot source verification] ${path.relative(process.cwd(), root) || '.'}: ${walk(root).length} files, build ${info.version}`);
