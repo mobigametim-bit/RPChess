@@ -1,16 +1,18 @@
 {
   "title": "RPChess Reboot",
-  "edition": "Reboot Foundation",
-  "version": "2.0.0-foundation.2",
+  "edition": "Classic Chess",
+  "version": "2.1.0-classic-chess.preview.1",
   "build_date": "2026-08-26",
   "runtime": "Offline HTML5 / ES modules",
   "requires_internet": false,
   "requires_installation": false,
-  "visual_theme": "Approved RPChess fantasy menu shell",
-  "gameplay_state": "Reboot Foundation accepted; Classic Chess is the next feature",
+  "visual_theme": "Approved RPChess fantasy UI with production chess piece assets",
+  "gameplay_state": "Classic Chess implemented; awaiting automated and human acceptance",
   "legacy_branch": "archive/iron-marches-v1",
   "legacy_commit": "035fb817a93f53047a1d20f7cdfc9093b0f7d611",
+  "foundation_merge": "416cfbcd332366c10d6dd27a44123c0dd7ea7da0",
+  "active_feature_branch": "feature/classic-chess",
   "active_docs": "docs/00_PRODUCT_VISION.md through docs/17_TECH_ARCHITECTURE.md",
   "human_acceptance_required": true,
-  "human_acceptance": "2026-08-26: accepted with production-menu and audio corrections"
+  "human_acceptance": "pending"
 }
