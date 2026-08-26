@@ -22,7 +22,7 @@ const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
     const scripts = await page.locator('script[src]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('src')));
     assert.deepStrictEqual(scripts, [
       'js/reboot-foundation.mjs?v=20260826-reboot-3',
-      'js/classic-chess-app.mjs?v=20260826-classic-1'
+      'js/classic-chess-app.mjs?v=20260826-ai-1'
     ], `unexpected runtime scripts: ${scripts.join(', ')}`);
 
     const runtimeState = await page.evaluate(() => ({
@@ -30,6 +30,7 @@ const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
       ironMarches: Boolean(window.RPChessIronMarchesRuntime),
       rebootAudio: Boolean(window.RPChessRebootAudio),
       classicChess: Boolean(window.RPChessClassicChess),
+      chessAI: Boolean(window.RPChessChessAI),
       musicSrc: window.RPChessRebootAudio?.music?.src || '',
       activated: Boolean(window.RPChessRebootAudio?.activated)
     }));
@@ -37,6 +38,7 @@ const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
     assert.strictEqual(runtimeState.ironMarches, false, 'legacy Iron Marches global must not be active');
     assert.strictEqual(runtimeState.rebootAudio, true, 'Reboot audio layer must be active');
     assert.strictEqual(runtimeState.classicChess, true, 'Classic Chess runtime must coexist with the retained Foundation menu');
+    assert.strictEqual(runtimeState.chessAI, true, 'Chess AI adapter surface must be active');
     assert(runtimeState.musicSrc.includes('music/echoes_iron_throne_01.mp3'), `unexpected first music track: ${runtimeState.musicSrc}`);
     assert.strictEqual(runtimeState.activated, false, 'audio must wait for the first browser-approved user gesture');
 
@@ -49,10 +51,7 @@ const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
       input.dispatchEvent(new Event('input', { bubbles: true }));
     });
     assert.strictEqual(await page.locator('[data-music-volume]').inputValue(), '33', 'music setting must be interactive');
-    const appliedMusic = await page.evaluate(() => ({
-      setting: window.RPChessRebootAudio.settings.music,
-      volume: window.RPChessRebootAudio.music?.volume
-    }));
+    const appliedMusic = await page.evaluate(() => ({ setting: window.RPChessRebootAudio.settings.music, volume: window.RPChessRebootAudio.music?.volume }));
     assert.strictEqual(appliedMusic.setting, 33, 'music setting must reach the live audio layer');
     assert(appliedMusic.volume > 0 && appliedMusic.volume < 0.3, `unexpected live music volume: ${appliedMusic.volume}`);
 
@@ -61,14 +60,17 @@ const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
       input.dispatchEvent(new Event('input', { bubbles: true }));
     });
     assert.strictEqual(await page.evaluate(() => window.RPChessRebootAudio.settings.sfx), 45, 'SFX setting must reach the live audio layer');
-
     await page.locator('[data-settings-modal] [data-close-modal]').click();
-    assert.strictEqual(await page.locator('[data-settings-modal]').getAttribute('hidden'), '', 'settings modal must close');
 
     await menu.locator('[data-new-game]').click();
+    await page.locator('[data-game-setup-modal]:not([hidden])').waitFor();
+    assert.strictEqual(await menu.isVisible(), true, 'new-game setup must open over the menu, not append a board below it');
+    assert.strictEqual(await page.locator('[data-classic-screen]').isHidden(), true, 'game scene must stay hidden until setup is confirmed');
+    await page.locator('[data-game-mode-select]').selectOption('local');
+    await page.locator('[data-start-game]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     assert.strictEqual(await menu.isHidden(), true, 'Foundation menu must hide when Classic Chess begins');
-    assert.strictEqual(await page.locator('[data-chess-board] [data-square]').count(), 64, 'New Game must open the real 8x8 Classic Chess board');
+    assert.strictEqual(await page.locator('[data-chess-board] [data-square]').count(), 64, 'confirmed New Game must open the real 8x8 board');
     await page.locator('[data-classic-menu]').click();
     assert.strictEqual(await menu.isVisible(), true, 'main menu must remain reachable from Classic Chess');
 
