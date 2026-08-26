@@ -22,7 +22,7 @@ const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
     const scripts = await page.locator('script[src]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('src')));
     assert.deepStrictEqual(scripts, [
       'js/reboot-foundation.mjs?v=20260826-reboot-3',
-      'js/classic-chess-app.mjs?v=20260826-ai-1'
+      'js/classic-chess-app.mjs?v=20260827-ai-2'
     ], `unexpected runtime scripts: ${scripts.join(', ')}`);
 
     const runtimeState = await page.evaluate(() => ({
