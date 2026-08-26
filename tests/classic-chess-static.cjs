@@ -5,6 +5,7 @@ const assert = require('assert');
 const root = path.resolve(__dirname, '..');
 const game = path.join(root, 'game');
 const html = fs.readFileSync(path.join(game, 'index.html'), 'utf8');
+const foundationCss = fs.readFileSync(path.join(game, 'css/reboot-foundation.css'), 'utf8');
 const css = fs.readFileSync(path.join(game, 'css/classic-chess.css'), 'utf8');
 const app = fs.readFileSync(path.join(game, 'js/classic-chess-app.mjs'), 'utf8');
 const engine = fs.readFileSync(path.join(game, 'js/classic-chess-engine.mjs'), 'utf8');
@@ -22,6 +23,9 @@ assert(app.includes('generated_assets/unit_${PIECE_ASSETS[piece.type]}_'), 'prod
 assert(css.includes('grid-template-columns: repeat(8, 1fr)'), 'board is not an 8-column grid');
 assert(css.includes('grid-template-rows: repeat(8, 1fr)'), 'board is not an 8-row grid');
 assert(html.includes('data-modal-static'), 'promotion modal must be mandatory');
+assert(foundationCss.includes('[data-reboot-foundation][hidden]'), 'main menu scene has no explicit hidden-state override');
+assert(foundationCss.includes('[data-classic-screen][hidden]'), 'Classic Chess scene has no explicit hidden-state override');
+assert(/\[data-reboot-foundation\]\[hidden\][\s\S]*display:\s*none\s*!important/i.test(foundationCss), 'scene visibility contract must force hidden roots out of layout');
 
 for (const rule of ['promotion_required', 'draw_50_move', 'draw_threefold', 'draw_insufficient', 'checkmate', 'stalemate', 'kingTransitSafe']) {
   assert(engine.includes(rule), `engine rule missing: ${rule}`);
