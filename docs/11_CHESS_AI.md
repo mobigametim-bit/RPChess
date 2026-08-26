@@ -113,8 +113,6 @@ Distribution build загружает закреплённые release-файл�
 - финальный three-column layout и отсутствие duplicate post-game CTA;
 - реальный Stockfish Worker browser flow.
 
-На exact head `5acf01cbf3332d366ff040773b186b38f83d0df6` GitHub Actions run `33024841637`, job `98363670741` полностью прошёл, включая real Chromium + Stockfish acceptance.
-
 ## Human Playtest Gate
 AI gameplay уже принят пользователем. Перед закрытием Chess AI как `DONE` нужен только короткий финальный spot-check версии `2.2.0-chess-ai.preview.3`:
 - уменьшенные bare white/black technical glyph;
@@ -123,15 +121,13 @@ AI gameplay уже принят пользователем. Перед закр�
 - отсутствие дублирующих post-game CTA внутри панели `Партия`;
 - desktop-layout `Партия` слева / доска / `Ходы` справа.
 
-## Deployment Gate — exact head
-- Статус feature: **IMPLEMENTED → AUTOTESTED → DEPLOYED → gameplay HUMAN TEST PASSED → final UI spot-check pending**.
-- Current head: `5acf01cbf3332d366ff040773b186b38f83d0df6`.
-- Base / merge base: `6df1a65ffca36413d99415eab1f0e5ccddbd5dbe`.
-- GitHub Actions run: `33024841637` — **SUCCESS**.
-- GitHub Actions job: `98363670741` — **SUCCESS**.
-- Cloudflare build: `403a746d-4dd9-4acb-a459-a2dedd314a93` — **SUCCESS**.
-- Cloudflare Version ID: `6a6eb962-5837-462b-bce0-0e8bb05327f1`.
-- Exact preview: `https://6a6eb962-rpchess.mobigametim.workers.dev`.
-- Branch preview: `https://feature-chess-ai-rpchess.mobigametim.workers.dev`.
+## Deployment Gate
+Перед передачей финального UI spot-check точный head ветки обязан одновременно пройти:
+- GitHub Actions source/static/engine/adapter tests;
+- production build + distribution boundary;
+- real Chromium + real Stockfish acceptance;
+- Cloudflare Workers exact-head build.
+
+Точные SHA / run / build / preview IDs фиксируются в PR #66 и Notion после последнего commit, чтобы документационный commit сам не делал зафиксированный SHA устаревшим.
 
 Roster не начинается до финального human acceptance.
