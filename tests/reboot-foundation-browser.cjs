@@ -29,8 +29,12 @@ const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
 
     await page.locator('[data-settings]').click();
     await page.locator('[data-settings-modal]:not([hidden])').waitFor();
-    await page.locator('[data-music-volume]').fill('33');
-    await page.locator('[data-close-modal]').last().click();
+    await page.locator('[data-music-volume]').evaluate((input) => {
+      input.value = '33';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    assert.strictEqual(await page.locator('[data-music-volume]').inputValue(), '33', 'music setting must be interactive');
+    await page.locator('[data-settings-modal] [data-close-modal]').click();
     assert.strictEqual(await page.locator('[data-settings-modal]').getAttribute('hidden'), '', 'settings modal must close');
 
     await page.locator('[data-new-game]').click();
@@ -39,6 +43,8 @@ const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
     await page.locator('[data-foundation-modal] [data-close-modal]').click();
 
     const mobile = await browser.newPage({ viewport: { width: 390, height: 500 } });
+    const mobileErrors = [];
+    mobile.on('pageerror', (error) => mobileErrors.push(String(error.stack || error)));
     await mobile.goto(url, { waitUntil: 'networkidle' });
     const scrollContract = await mobile.evaluate(() => ({
       htmlOverflow: getComputedStyle(document.documentElement).overflowY,
@@ -53,7 +59,8 @@ const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
     await mobile.waitForTimeout(80);
     assert((await mobile.evaluate(() => window.scrollY)) > 0, 'page must actually scroll vertically');
 
-    assert.deepStrictEqual(errors, [], `browser errors:\n${errors.join('\n')}`);
+    assert.deepStrictEqual(errors, [], `desktop browser errors:\n${errors.join('\n')}`);
+    assert.deepStrictEqual(mobileErrors, [], `mobile browser errors:\n${mobileErrors.join('\n')}`);
     console.log('Reboot Foundation real Chromium acceptance: PASS');
   } finally {
     await browser.close();
