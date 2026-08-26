@@ -20,11 +20,15 @@ async function pieceSrc(page, square) {
     page.on('pageerror', (error) => errors.push(String(error.stack || error)));
 
     await page.goto(url, { waitUntil: 'networkidle' });
+    assert.strictEqual(await page.locator('[data-reboot-foundation]').isVisible(), true, 'menu scene must be visible before starting a game');
+    assert.strictEqual(await page.locator('[data-classic-screen]').isHidden(), true, 'Classic Chess scene must be hidden before starting a game');
+
     await page.locator('[data-new-game]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     assert.strictEqual(await page.locator('[data-chess-board] [data-square]').count(), 64, 'board must contain 64 squares');
     assert.strictEqual(await page.locator('[data-chess-board] .classic-piece').count(), 32, 'initial position must render 32 pieces');
-    assert.strictEqual(await page.locator('[data-reboot-foundation]').isHidden(), true, 'menu must hide during a game');
+    assert.strictEqual(await page.locator('[data-reboot-foundation]').isHidden(), true, 'menu scene must be fully hidden during a game');
+    assert.strictEqual(await page.locator('[data-classic-screen]').isVisible(), true, 'Classic Chess scene must be the active scene during a game');
 
     await page.locator('[data-square="e2"]').click();
     assert(await page.locator('[data-square="e3"]').evaluate((node) => node.classList.contains('classic-square--legal')), 'e3 must be highlighted as legal');
@@ -78,14 +82,17 @@ async function pieceSrc(page, square) {
     await page.locator('[data-settings-modal]:not([hidden])').waitFor();
     await page.locator('[data-settings-modal] [data-close-modal]').click();
     await page.locator('[data-classic-menu]').click();
-    assert.strictEqual(await page.locator('[data-reboot-foundation]').isVisible(), true, 'main menu must be reachable from Classic Chess');
+    assert.strictEqual(await page.locator('[data-reboot-foundation]').isVisible(), true, 'main menu scene must be visible after leaving Classic Chess');
+    assert.strictEqual(await page.locator('[data-classic-screen]').isHidden(), true, 'Classic Chess scene must be fully hidden after returning to menu');
 
     const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
     const mobileErrors = [];
     mobile.on('pageerror', (error) => mobileErrors.push(String(error.stack || error)));
     await mobile.goto(url, { waitUntil: 'networkidle' });
+    assert.strictEqual(await mobile.locator('[data-classic-screen]').isHidden(), true, 'mobile Classic Chess scene must start hidden');
     await mobile.locator('[data-new-game]').click();
     await mobile.locator('[data-classic-screen]:not([hidden])').waitFor();
+    assert.strictEqual(await mobile.locator('[data-reboot-foundation]').isHidden(), true, 'mobile menu scene must hide completely during Classic Chess');
     assert.strictEqual(await mobile.locator('[data-chess-board] [data-square]').count(), 64, 'mobile board must have 64 squares');
     const boardBox = await mobile.locator('[data-chess-board]').boundingBox();
     assert(boardBox && boardBox.width > 300 && boardBox.width <= 390, `mobile board width must fit viewport: ${boardBox?.width}`);
