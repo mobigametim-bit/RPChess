@@ -1,5 +1,15 @@
 # RPChess Reboot Changelog
 
+## 2026-08-26 — Reboot Foundation human accepted
+- Reboot Foundation принят после живого preview-теста.
+- Главное меню возвращено к production-ready композиции предыдущей RPChess; исключены только системы, которых ещё нет в Reboot.
+- Удалён prototype/dev explanatory copy из основного игрового экрана.
+- Восстановлен реальный музыкальный слой на четырёх существующих треках и UI SFX с управлением через настройки.
+- Сохранён глобальный vertical-scroll contract для узких и низких viewport.
+- `Продолжить` остаётся отключён до появления Reboot save-flow; `Новая игра` не загружает legacy gameplay.
+- Foundation version: `2.0.0-foundation.2`.
+- Cloudflare production build текущего Foundation head успешно проходит; GitHub Actions runner остаётся отдельной инфраструктурной проблемой (job завершается до первого step).
+
 ## 2026-08-26 — Reboot approved
 - Утверждён полный перезапуск gameplay при сохранении текущего UI и ассетов.
 - Зафиксированы классические шахматы 8×8 без спецспособностей.
