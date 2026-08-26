@@ -4,6 +4,12 @@ import { ChessAIAdapter, ELO_LEVELS, profileForElo } from './chess-ai-adapter.mj
 const FILES = 'abcdefgh';
 const PIECE_NAMES = Object.freeze({ p: 'Пешка', n: 'Конь', b: 'Слон', r: 'Ладья', q: 'Ферзь', k: 'Король' });
 const PIECE_ASSETS = Object.freeze({ p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' });
+const PIECE_LETTERS = Object.freeze({ n: 'N', b: 'B', r: 'R', q: 'Q', k: 'K' });
+const PIECE_VALUES = Object.freeze({ p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 });
+const PIECE_GLYPHS = Object.freeze({
+  w: Object.freeze({ p: '♙', n: '♘', b: '♗', r: '♖', q: '♕', k: '♔' }),
+  b: Object.freeze({ p: '♟', n: '♞', b: '♝', r: '♜', q: '♛', k: '♚' })
+});
 const PROMOTION_LABELS = Object.freeze({ q: 'Ферзь', r: 'Ладья', b: 'Слон', n: 'Конь' });
 
 const menu = document.querySelector('[data-reboot-foundation]');
@@ -27,6 +33,10 @@ const colorField = document.querySelector('[data-player-color-field]');
 const startGameButton = document.querySelector('[data-start-game]');
 const modeLabel = document.querySelector('[data-game-mode]');
 const thinkingLabel = document.querySelector('[data-ai-thinking]');
+const capturedByWhiteRoot = document.querySelector('[data-captured-by-white]');
+const capturedByBlackRoot = document.querySelector('[data-captured-by-black]');
+const materialWhiteRoot = document.querySelector('[data-material-white]');
+const materialBlackRoot = document.querySelector('[data-material-black]');
 
 let engine = new ClassicChessEngine();
 let selected = null;
@@ -34,6 +44,7 @@ let selectedMoves = [];
 let moveLog = [];
 let pendingPromotion = null;
 let aiThinking = false;
+let visualAnimating = false;
 let gameGeneration = 0;
 let gameConfig = { mode: 'local', playerColor: 'w', aiColor: null, aiElo: 800 };
 let aiAdapter = new ChessAIAdapter();
@@ -45,15 +56,35 @@ function opposite(color) { return color === 'w' ? 'b' : 'w'; }
 function squareFromIndex(index) { return `${FILES[index % 8]}${Math.floor(index / 8) + 1}`; }
 function pieceAsset(piece) { return `generated_assets/unit_${PIECE_ASSETS[piece.type]}_${piece.color === 'w' ? 'player' : 'enemy'}.png`; }
 function uciParts(uci) { return { from: uci?.slice(0, 2), to: uci?.slice(2, 4), promotion: uci?.slice(4, 5) || null }; }
+function prefersReducedMotion() { return document.documentElement.dataset.reducedMotion === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches; }
 
-function moveNotation(move, status) {
-  if (move.castle === 'K') return `O-O${status.type === 'checkmate' ? '#' : status.checked ? '+' : ''}`;
-  if (move.castle === 'Q') return `O-O-O${status.type === 'checkmate' ? '#' : status.checked ? '+' : ''}`;
-  const symbol = move.piece === 'p' ? '' : ({ n: 'N', b: 'B', r: 'R', q: 'Q', k: 'K' }[move.piece]);
-  const separator = move.capture ? '×' : '–';
-  const promotion = move.promotion ? `=${move.promotion.toUpperCase()}` : '';
+function sanNotation({ moving, from, to, promotion, resultMove, status, legalBefore }) {
   const suffix = status.type === 'checkmate' ? '#' : status.checked ? '+' : '';
-  return `${symbol}${move.from}${separator}${move.to}${promotion}${suffix}`;
+  if (resultMove.castle === 'K') return `O-O${suffix}`;
+  if (resultMove.castle === 'Q') return `O-O-O${suffix}`;
+
+  const capture = resultMove.capture != null;
+  let prefix = '';
+  if (moving.type === 'p') {
+    if (capture) prefix = from[0];
+  } else {
+    prefix = PIECE_LETTERS[moving.type] || '';
+    const alternatives = legalBefore.filter((candidate) => {
+      if (candidate.to !== to || candidate.from === from) return false;
+      const candidatePiece = engine.pieceAt(candidate.from);
+      return candidatePiece?.color === moving.color && candidatePiece.type === moving.type;
+    });
+    if (alternatives.length) {
+      const sameFile = alternatives.some((candidate) => candidate.from[0] === from[0]);
+      const sameRank = alternatives.some((candidate) => candidate.from[1] === from[1]);
+      if (!sameFile) prefix += from[0];
+      else if (!sameRank) prefix += from[1];
+      else prefix += from;
+    }
+  }
+
+  const promotionSuffix = promotion ? `=${String(promotion).toUpperCase()}` : '';
+  return `${prefix}${capture ? 'x' : ''}${to}${promotionSuffix}${suffix}`;
 }
 
 function describeStatus(status) {
@@ -66,6 +97,28 @@ function describeStatus(status) {
     case 'draw_insufficient': return { state: 'Ничья — недостаточно материала', title: 'Ничья', text: 'На доске недостаточно материала для мата.' };
     default: return { state: 'Партия продолжается', title: '', text: '' };
   }
+}
+
+function appendFigurineSAN(root, entry) {
+  if (!entry) {
+    root.textContent = '…';
+    return;
+  }
+  root.dataset.san = entry.san;
+  root.setAttribute('aria-label', entry.san);
+  const first = entry.san[0];
+  const type = ({ N: 'n', B: 'b', R: 'r', Q: 'q', K: 'k' })[first];
+  if (!type) {
+    root.textContent = entry.san;
+    return;
+  }
+  const glyph = document.createElement('span');
+  glyph.className = `classic-san-figurine classic-san-figurine--${entry.color}`;
+  glyph.textContent = PIECE_GLYPHS[entry.color][type];
+  glyph.setAttribute('aria-hidden', 'true');
+  const rest = document.createElement('span');
+  rest.textContent = entry.san.slice(1);
+  root.append(glyph, rest);
 }
 
 function renderHistory() {
@@ -85,11 +138,44 @@ function renderHistory() {
     for (let offset = 0; offset < 2; offset += 1) {
       const item = document.createElement('div');
       item.className = 'classic-move';
-      item.textContent = moveLog[index + offset]?.notation || '…';
+      appendFigurineSAN(item, moveLog[index + offset]);
       historyRoot.append(item);
     }
   }
   historyRoot.scrollTop = historyRoot.scrollHeight;
+}
+
+function renderCapturedRow(root, entries) {
+  if (!root) return;
+  root.replaceChildren();
+  const ordered = entries.slice().sort((a, b) => PIECE_VALUES[b.type] - PIECE_VALUES[a.type]);
+  for (const piece of ordered) {
+    const icon = document.createElement('span');
+    icon.className = `classic-captured-piece classic-captured-piece--${piece.color}`;
+    icon.textContent = PIECE_GLYPHS[piece.color][piece.type];
+    icon.title = PIECE_NAMES[piece.type];
+    root.append(icon);
+  }
+  if (!ordered.length) {
+    const empty = document.createElement('span');
+    empty.className = 'classic-captured-empty';
+    empty.textContent = '—';
+    root.append(empty);
+  }
+}
+
+function renderMaterial() {
+  const whiteCaptured = moveLog.filter((entry) => entry.color === 'w' && entry.captured).map((entry) => entry.captured);
+  const blackCaptured = moveLog.filter((entry) => entry.color === 'b' && entry.captured).map((entry) => entry.captured);
+  renderCapturedRow(capturedByWhiteRoot, whiteCaptured);
+  renderCapturedRow(capturedByBlackRoot, blackCaptured);
+
+  const snapshot = engine.snapshot();
+  const totals = { w: 0, b: 0 };
+  for (const piece of snapshot.board) if (piece) totals[piece.color] += PIECE_VALUES[piece.type] || 0;
+  const advantage = totals.w - totals.b;
+  if (materialWhiteRoot) materialWhiteRoot.textContent = advantage > 0 ? `+${advantage}` : '';
+  if (materialBlackRoot) materialBlackRoot.textContent = advantage < 0 ? `+${Math.abs(advantage)}` : '';
 }
 
 function renderMode() {
@@ -107,11 +193,11 @@ function renderStatus() {
   const status = snapshot.status;
   const description = describeStatus(status);
   turnLabel.textContent = status.over ? 'Партия завершена' : `Ход ${sideName(snapshot.turn)}`;
-  stateLabel.textContent = aiThinking ? 'Компьютер думает…' : description.state;
+  stateLabel.textContent = aiThinking ? 'Компьютер думает…' : visualAnimating ? 'Ход выполняется' : description.state;
   summary.innerHTML = status.over
-    ? `<strong>${description.title}</strong><br>${description.text}`
+    ? description.text
     : aiThinking
-      ? `<strong>${sideNameTitle(snapshot.turn)}</strong> обдумывают ход.`
+      ? `<strong>${sideNameTitle(snapshot.turn)}</strong> выбирают ход.`
       : status.checked
         ? `<strong>${sideNameTitle(snapshot.turn)}</strong> под шахом. Нужно защитить короля.`
         : `<strong>${sideNameTitle(snapshot.turn)}</strong> делают ход.`;
@@ -170,7 +256,13 @@ function renderBoard() {
         image.src = pieceAsset(piece);
         image.alt = '';
         image.draggable = false;
-        button.append(image);
+        const marker = document.createElement('span');
+        marker.className = `classic-piece-marker classic-piece-marker--${piece.color}`;
+        marker.dataset.pieceMarker = piece.type;
+        marker.textContent = PIECE_GLYPHS[piece.color][piece.type];
+        marker.title = PIECE_NAMES[piece.type];
+        marker.setAttribute('aria-hidden', 'true');
+        button.append(image, marker);
       }
 
       if (rankPosition === 7) {
@@ -190,7 +282,7 @@ function renderBoard() {
       board.append(button);
     }
   }
-  board.classList.toggle('is-locked', aiThinking || (gameConfig.mode === 'ai' && engine.turn() !== gameConfig.playerColor));
+  board.classList.toggle('is-locked', aiThinking || visualAnimating || (gameConfig.mode === 'ai' && engine.turn() !== gameConfig.playerColor));
   thinkingLabel.hidden = !aiThinking;
 }
 
@@ -198,6 +290,7 @@ function render() {
   renderBoard();
   renderStatus();
   renderHistory();
+  renderMaterial();
 }
 
 function closePromotion() {
@@ -240,8 +333,86 @@ function setThinking(value) {
   renderStatus();
 }
 
+function captureAnimationGeometry(from, to, moving, capturedPiece) {
+  if (prefersReducedMotion()) return null;
+  const sourceImage = board.querySelector(`[data-square="${from}"] .classic-piece`);
+  const targetImage = board.querySelector(`[data-square="${to}"] .classic-piece`);
+  if (!sourceImage) return null;
+  return {
+    source: sourceImage.getBoundingClientRect(),
+    target: board.querySelector(`[data-square="${to}"]`)?.getBoundingClientRect() || null,
+    moving: { ...moving },
+    capturedPiece: capturedPiece ? { ...capturedPiece } : null,
+    capturedRect: targetImage?.getBoundingClientRect() || null
+  };
+}
+
+function animateCommittedMove(geometry, to, onDone) {
+  if (!geometry?.source || !geometry?.target || typeof Element.prototype.animate !== 'function') {
+    visualAnimating = false;
+    renderBoard();
+    renderStatus();
+    onDone?.();
+    return;
+  }
+
+  const destinationImage = board.querySelector(`[data-square="${to}"] .classic-piece`);
+  destinationImage?.classList.add('classic-piece--arriving');
+  const flyer = document.createElement('img');
+  flyer.className = 'classic-piece-flyer';
+  flyer.src = pieceAsset(geometry.moving);
+  flyer.alt = '';
+  flyer.style.left = `${geometry.source.left}px`;
+  flyer.style.top = `${geometry.source.top}px`;
+  flyer.style.width = `${geometry.source.width}px`;
+  flyer.style.height = `${geometry.source.height}px`;
+  document.body.append(flyer);
+
+  let capturedGhost = null;
+  if (geometry.capturedPiece && geometry.capturedRect) {
+    capturedGhost = document.createElement('img');
+    capturedGhost.className = 'classic-captured-ghost';
+    capturedGhost.src = pieceAsset(geometry.capturedPiece);
+    capturedGhost.alt = '';
+    capturedGhost.style.left = `${geometry.capturedRect.left}px`;
+    capturedGhost.style.top = `${geometry.capturedRect.top}px`;
+    capturedGhost.style.width = `${geometry.capturedRect.width}px`;
+    capturedGhost.style.height = `${geometry.capturedRect.height}px`;
+    document.body.append(capturedGhost);
+    capturedGhost.animate([
+      { opacity: 1, transform: 'scale(1)' },
+      { opacity: 0, transform: 'scale(.72)' }
+    ], { duration: 190, easing: 'ease-out', fill: 'forwards' });
+  }
+
+  const targetImage = destinationImage?.getBoundingClientRect();
+  const targetLeft = targetImage ? targetImage.left : geometry.target.left + (geometry.target.width - geometry.source.width) / 2;
+  const targetTop = targetImage ? targetImage.top : geometry.target.top + (geometry.target.height - geometry.source.height) / 2;
+  const dx = targetLeft - geometry.source.left;
+  const dy = targetTop - geometry.source.top;
+  const animation = flyer.animate([
+    { transform: 'translate3d(0,0,0) scale(1)', filter: 'drop-shadow(0 5px 5px rgba(0,0,0,.6))' },
+    { transform: `translate3d(${dx}px,${dy}px,0) scale(1.025)`, filter: 'drop-shadow(0 10px 8px rgba(0,0,0,.72))' }
+  ], { duration: 230, easing: 'cubic-bezier(.22,.8,.24,1)', fill: 'forwards' });
+
+  animation.finished.catch(() => {}).finally(() => {
+    flyer.remove();
+    capturedGhost?.remove();
+    destinationImage?.classList.remove('classic-piece--arriving');
+    visualAnimating = false;
+    renderBoard();
+    renderStatus();
+    onDone?.();
+  });
+}
+
 function executeMove(from, to, promotion = null, { triggerAI = true } = {}) {
   const moving = engine.pieceAt(from);
+  if (!moving) return false;
+  const legalBefore = engine.legalMoves();
+  const candidate = legalBefore.find((move) => move.from === from && move.to === to && (!move.promotion || move.promotion === promotion));
+  const capturedPiece = candidate?.capture ? engine.pieceAt(candidate.capture) : engine.pieceAt(to);
+  const geometry = candidate ? captureAnimationGeometry(from, to, moving, capturedPiece) : null;
   const result = engine.move(from, to, promotion);
   if (!result.ok) {
     if (result.reason === 'promotion_required') {
@@ -251,19 +422,28 @@ function executeMove(from, to, promotion = null, { triggerAI = true } = {}) {
     return false;
   }
 
-  moveLog.push({ color: moving.color, notation: moveNotation(result.move, result.status), move: result.move });
+  const san = sanNotation({ moving, from, to, promotion: result.move.promotion, resultMove: result.move, status: result.status, legalBefore });
+  moveLog.push({ color: moving.color, san, notation: san, move: result.move, captured: capturedPiece });
   selected = null;
   selectedMoves = [];
   if (result.move.capture) audio()?.capture?.() || audio()?.tone?.(250, .08, 'triangle', .04);
   else audio()?.move?.() || audio()?.tone?.(430, .045, 'triangle', .025);
   if (result.status.checked) setTimeout(() => audio()?.check?.() || audio()?.tone?.(720, .09, 'square', .04), 45);
+
+  visualAnimating = Boolean(geometry);
   render();
-  if (triggerAI) void maybeScheduleAI();
+  const afterVisual = () => { if (triggerAI) void maybeScheduleAI(); };
+  if (geometry) animateCommittedMove(geometry, to, afterVisual);
+  else {
+    visualAnimating = false;
+    renderBoard();
+    afterVisual();
+  }
   return true;
 }
 
 function handleSquare(square) {
-  if (pendingPromotion || aiThinking || engine.status().over) return;
+  if (pendingPromotion || aiThinking || visualAnimating || engine.status().over) return;
   if (gameConfig.mode === 'ai' && engine.turn() !== gameConfig.playerColor) return;
   const piece = engine.pieceAt(square);
   const turn = engine.turn();
@@ -305,7 +485,7 @@ async function maybeScheduleAI() {
   setThinking(true);
   const started = performance.now();
   const uci = await aiAdapter.chooseMove({ fen, elo: gameConfig.aiElo, legalMoves });
-  const remainingDelay = Math.max(0, 240 - (performance.now() - started));
+  const remainingDelay = Math.max(0, 180 - (performance.now() - started));
   if (remainingDelay) await new Promise((resolve) => setTimeout(resolve, remainingDelay));
   if (generation !== gameGeneration || gameConfig.mode !== 'ai' || engine.turn() !== gameConfig.aiColor) return;
   setThinking(false);
@@ -325,6 +505,8 @@ function cancelAI() {
   gameGeneration += 1;
   aiAdapter.stop();
   aiThinking = false;
+  visualAnimating = false;
+  document.querySelectorAll('.classic-piece-flyer,.classic-captured-ghost').forEach((node) => node.remove());
 }
 
 function showMenu() {
@@ -410,7 +592,7 @@ globalThis.RPChessChessAI = {
   get config() { return { ...gameConfig }; },
   get thinking() { return aiThinking; },
   get adapter() { return aiAdapter; },
-  snapshot() { return { ...aiAdapter.snapshot(), config: { ...gameConfig }, thinking: aiThinking }; },
+  snapshot() { return { ...aiAdapter.snapshot(), config: { ...gameConfig }, thinking: aiThinking, animating: visualAnimating }; },
   replaceAdapter(adapter) { aiAdapter.destroy(); aiAdapter = adapter; return aiAdapter; }
 };
 
