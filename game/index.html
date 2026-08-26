@@ -8,6 +8,7 @@
   <meta name="description" content="RPChess — фэнтезийный шахматный roguelite">
   <title>RPChess</title>
   <link rel="stylesheet" href="css/reboot-foundation.css?v=20260826-reboot-2">
+  <link rel="stylesheet" href="css/classic-chess.css?v=20260826-classic-1">
 </head>
 <body>
   <div id="app">
@@ -26,18 +27,63 @@
         </section>
       </div>
     </main>
+
+    <main class="classic-screen" data-classic-screen aria-label="Классические шахматы" hidden>
+      <div class="classic-shell">
+        <section class="classic-main">
+          <header class="classic-topbar">
+            <img class="classic-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
+            <div class="classic-toolbar">
+              <button class="classic-mini-button" type="button" data-classic-new>Новая партия</button>
+              <button class="classic-mini-button" type="button" data-settings>Настройки</button>
+              <button class="classic-mini-button" type="button" data-classic-menu>Главное меню</button>
+            </div>
+          </header>
+
+          <div class="classic-statusbar" aria-live="polite">
+            <div class="classic-turn" data-classic-turn>Ход белых</div>
+            <div class="classic-state" data-classic-state>Партия началась</div>
+          </div>
+
+          <div class="classic-board-wrap">
+            <div class="classic-board" data-chess-board role="grid" aria-label="Шахматная доска 8 на 8"></div>
+          </div>
+        </section>
+
+        <aside class="classic-sidebar" aria-label="Состояние партии">
+          <section class="classic-panel">
+            <h2>Партия</h2>
+            <p class="classic-side-state" data-classic-summary><strong>Белые</strong> начинают партию.</p>
+            <div class="classic-result" data-game-result hidden>
+              <h3 class="classic-result__title" data-result-title></h3>
+              <p class="classic-result__text" data-result-text></p>
+              <div class="classic-result__actions">
+                <button class="reboot-button reboot-button--primary" type="button" data-result-rematch>Новая партия</button>
+                <button class="reboot-button" type="button" data-result-menu>Главное меню</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="classic-panel classic-panel--moves">
+            <h3>Ходы</h3>
+            <div class="classic-moves" data-move-history aria-live="polite">
+              <div class="classic-empty">Ходов пока нет</div>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </main>
   </div>
 
-  <div class="reboot-modal" data-foundation-modal hidden>
-    <section class="reboot-modal__panel" role="dialog" aria-modal="true" aria-labelledby="foundation-title">
+  <div class="reboot-modal" data-promotion-modal hidden>
+    <section class="reboot-modal__panel" role="dialog" aria-modal="true" aria-labelledby="promotion-title">
       <header class="reboot-modal__header">
         <div>
-          <div class="reboot-eyebrow">НОВАЯ ИГРА</div>
-          <h2 id="foundation-title">Классические шахматы</h2>
+          <div class="reboot-eyebrow">ПРЕВРАЩЕНИЕ</div>
+          <h2 id="promotion-title">Выберите фигуру</h2>
         </div>
-        <button class="reboot-close" type="button" data-close-modal aria-label="Закрыть">×</button>
       </header>
-      <p>Режим пока недоступен в этой сборке.</p>
+      <div class="classic-promotion-grid" data-promotion-options></div>
     </section>
   </div>
 
@@ -58,6 +104,7 @@
     </section>
   </div>
 
-  <script type="module" src="js/reboot-foundation.mjs?v=20260826-reboot-2"></script>
+  <script type="module" src="js/reboot-foundation.mjs?v=20260826-reboot-3"></script>
+  <script type="module" src="js/classic-chess-app.mjs?v=20260826-classic-1"></script>
 </body>
 </html>
