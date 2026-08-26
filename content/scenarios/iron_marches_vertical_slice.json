@@ -471,6 +471,7 @@
               "id": "objective.break_furnace_seals",
               "type": "capture_targets",
               "side": "w",
+              "pieceId": "lady_sorn",
               "targetPieceIds": [
                 "furnace_seal_a",
                 "furnace_seal_b",
@@ -544,6 +545,7 @@
               "id": "objective.mate_iron_regent",
               "type": "checkmate",
               "side": "w",
+              "pieceId": "lady_sorn",
               "previewKey": "boss.iron_regent.objective.collapsing_fortress"
             }
           ],

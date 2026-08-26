@@ -11,16 +11,27 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   const isolated = read('game/vertical-slice.html');
   const approvedCss = read('game/css/approved-visual-shell.css');
   const stageCss = read('game/css/stage-b-ui.css');
+  const finalQaCss = read('game/css/ui-final-qa.css');
+  const hotfixCss = read('game/css/briefing-battle-hotfix-20260826.css');
   const app = read('game/js/vertical-slice-app.mjs');
   const presenter = read('game/js/vertical-slice-presenter.mjs');
+  const pointerSafety = read('game/js/battle-pointer-coordinate-safety-20260826.mjs');
   const build = read('scripts/build.cjs');
 
   for (const html of [index, isolated]) {
-    assert(html.includes('js/generated/iron-marches-runtime.bundle.js'));
-    assert(html.includes('js/vertical-slice-app.mjs'));
+    assert(html.includes('js/generated/iron-marches-runtime.bundle.js?v=20260826-2'));
+    assert(html.includes('js/battle-pointer-coordinate-safety-20260826.mjs'));
+    assert(html.includes('js/vertical-slice-app.mjs?v=20260826-2'));
+    assert(html.includes('js/vertical-slice-presenter-final.mjs?v=20260826-2'));
+    assert(html.includes('js/ui-approved-campaign.mjs?v=20260826-2'));
+    assert(html.includes('js/ui-approved-battle.mjs?v=20260826-2'));
+    assert(html.includes('css/ui-final-qa.css?v=20260826-2'));
+    assert(html.includes('css/battle-input-safety.css?v=20260826-2'));
+    assert(html.includes('css/briefing-battle-hotfix-20260826.css'));
     assert(html.includes('style.css'));
     assert(html.includes('css/approved-visual-shell.css'));
     assert(html.includes('css/stage-b-ui.css'));
+    assert(!html.includes('js/battle-pointer-coordinate-safety.mjs?v=20260826-1'));
     assert(!html.includes('js/core.js'));
     assert(!html.includes('js/main.js'));
   }
@@ -32,6 +43,10 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert(approvedCss.includes('@media(max-width:460px)'));
   assert(stageCss.includes('overflow-y:auto'));
   assert(stageCss.includes('.rp02-mechanic-card,.rp02-relic-slot'));
+  assert(finalQaCss.includes('.rpu-brief-roster>[data-save-briefing]{display:none!important}'));
+  assert(hotfixCss.includes('.rpu-brief-roster-card > input[type="checkbox"]'));
+  assert(hotfixCss.includes('display: none !important'));
+  assert(hotfixCss.includes('[data-save-briefing]'));
   assert(app.includes('commanderSelectionMarkup'));
   assert(app.includes('unlockedCommanders'));
   assert(app.includes('VerticalSliceAudio'));
@@ -40,6 +55,12 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert(presenter.includes('generated_assets/logo_main.png'));
   assert.strictEqual(presenter.includes('Доступные маршруты'), false);
   assert.strictEqual(presenter.includes('region.environmentSheet'), false);
+  assert(pointerSafety.includes("./vertical-slice-presenter-final.mjs?v=20260826-2"));
+  assert(pointerSafety.includes('logicalWidth / bounds.width'));
+  assert(pointerSafety.includes('logicalHeight / bounds.height'));
+  assert(pointerSafety.includes('movableVisualSquare'));
+  assert(pointerSafety.includes('hitTop = top - size * 0.36'));
+  assert(pointerSafety.includes("Symbol.for('rpchess.battle-pointer-coordinate-safety.20260826')"));
   assert(build.includes("path.join(dist, 'index.html')"));
 
   const appModule = await import(pathToFileURL(path.join(root, 'game/js/vertical-slice-app.mjs')).href);
@@ -57,7 +78,7 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
   assert(selection.includes('Начать поход'));
   assert(selection.includes('disabled'));
 
-  console.log('Vertical slice comfort: approved prototype shell and responsive contracts passed.');
+  console.log('Vertical slice comfort: approved prototype shell, hotfix asset pinning and responsive contracts passed.');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;

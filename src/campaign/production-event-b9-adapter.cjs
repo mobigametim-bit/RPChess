@@ -99,7 +99,6 @@ function createProductionEventMaterializationCallbacks(library, baseContext = {}
 
   function onNodeCompleted(payload = {}) {
     const state = selectorStateFor(library, payload.state, payload.graph?.rootSeed);
-    if (payload.materializedContent?.type !== 'event') return Object.freeze({ selectorState: state });
     const assignment = selectorAssignment(state, payload.nodeId);
     if (!assignment || assignment.status !== 'reserved') return Object.freeze({ selectorState: state });
     return Object.freeze({ selectorState: completeProductionEventReservation(library, state, payload.nodeId) });

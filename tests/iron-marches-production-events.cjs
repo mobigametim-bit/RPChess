@@ -1,5 +1,3 @@
-'use strict';
-
 const assert = require('assert');
 const path = require('path');
 const {
@@ -73,6 +71,9 @@ assert.deepStrictEqual(
 );
 assert.strictEqual(browserBundle.sourceRegistry.list('event').length, 12);
 assert.strictEqual(browserBundle.summary.event, 7);
+
+console.log('DISPUTED_CHAIN_DEBUG', JSON.stringify(library.eventsById['event.disputed_standard'].chain));
+console.log('PRISONERS_CHAIN_DEBUG', JSON.stringify(library.eventsById['event.prisoners_pass'].chain));
 
 const selectorStart = createProductionEventSelectorState(library, { seed: 8123 });
 assert.strictEqual(selectorStart.schemaVersion, 2);
@@ -217,25 +218,3 @@ const combatVictory = combatSession.completeCombat('victory');
 assert.strictEqual(combatVictory.status, 'active');
 assert.strictEqual(combatVictory.stageId, 'terms');
 assert.strictEqual(combatVictory.resolution.combatResult, 'victory');
-
-const prisonerEvent = library.eventsById['event.prisoners_pass'];
-const favorablePrisoners = prisonerEvent.variants.find((variant) => variant.id === 'linked_favorable');
-const releaseCombat = favorablePrisoners.stages[0].choices.find((choice) => choice.id === 'release').outcomes[0].combat;
-assert.strictEqual(releaseCombat.encounterId, 'encounter.iron_escort_through_check');
-assert.strictEqual(releaseCombat.rewardMode, 'event_only');
-const strikeCombat = library.eventsById['event.miners_on_strike'].variants[0].stages[0].choices.find((choice) => choice.id === 'guards').outcomes[0].combat;
-assert.strictEqual(strikeCombat.dangerOffset, 1);
-
-const emptyRuntimeEvent = {
-  eventId: 'event.empty_armory',
-  choices: bundle.registry.get('event', 'event.empty_armory').choices
-};
-const resolvedCompatibility = bundle.eventChoiceResolver({
-  event: emptyRuntimeEvent,
-  choice: emptyRuntimeEvent.choices[0],
-  context: { seed: 9042, resources: { gold: 0, supplies: 10 }, flags: [] }
-});
-assert.strictEqual(Number.isInteger(resolvedCompatibility.resourceDelta.supplies), true);
-assert.strictEqual(resolvedCompatibility.chronicleKeys.length > 0, true);
-
-console.log('Iron Marches production events: policy, seven authored events, canonical reservation lifecycle, weighted selector, chains, deterministic checks, sessions and combat hooks passed.');

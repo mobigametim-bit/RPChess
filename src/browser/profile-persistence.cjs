@@ -4,7 +4,9 @@ const { AtomicProfileStore, PROFILE_SLOTS, normalizeProfileId } = require('../sa
 const { assertStorageAdapter } = require('../save/storage.cjs');
 const { loadVerticalSlice, saveVerticalSlice } = require('../runtime/vertical-slice.cjs');
 
-const BROWSER_SAVE_NAMESPACE = 'rpchess.vertical-slice.v1';
+// 2026-08-26 UI/input reset. Old v1 browser autosaves are intentionally ignored
+// so stale battle/briefing state cannot leak into the corrected release preview.
+const BROWSER_SAVE_NAMESPACE = 'rpchess.vertical-slice.v2';
 
 function resolveBrowserStorage(explicit = undefined) {
   if (explicit !== undefined) return explicit ? assertStorageAdapter(explicit) : null;

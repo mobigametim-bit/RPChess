@@ -26,7 +26,7 @@ function normalizeFlags(values = []) {
 
 function createAuthoredEventState(content, options = {}) {
   if (!content || content.kind !== 'event') throw new Error('authored event requires a compiled event record');
-  if (!Array.isArray(content.choices) || content.choices.length < 3 || content.choices.length > 4) throw new Error(`${content.id} must expose three or four choices`);
+  if (!Array.isArray(content.choices) || content.choices.length < 2 || content.choices.length > 4) throw new Error(`${content.id} must expose two, three or four choices`);
   return Object.freeze({
     format: 'rpchess-authored-event-state',
     schemaVersion: 1,

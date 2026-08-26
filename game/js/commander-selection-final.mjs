@@ -20,7 +20,7 @@ function applyCommanderFinal(root=document){
   const screen=commanderScreen(root);
   if(!screen)return 0;
   setText(screen.querySelector('.rpa-screen-header h1'),'Выберите командира');
-  setText(screen.querySelector('.rpa-screen-header p'),'Командир задаёт стартовый стиль похода. Остальные открываются через решения, победы и находки.');
+  setText(screen.querySelector('.rpa-screen-header p'),'Командир задаёт рекомендованный стиль похода. Короля и доктрину вы подтвердите отдельно, а героя выберете из трёх вариантов стартового драфта.');
   const header=screen.querySelector('.rpa-screen-header');
   if(header&&!header.querySelector('.rpu-commander-version')){
     const version=screen.ownerDocument.createElement('span');version.className='rpu-commander-version';version.textContent='v1.3.9';header.append(version);

@@ -69,6 +69,16 @@ test('compiled event state exposes exactly the authored choices and no resolved 
   assert.strictEqual(state.resolution, null);
 });
 
+test('two-choice production event is accepted by authored event runtime', () => {
+  const bundle = production();
+  const content = bundle.registry.get('event', 'event.cracked_bell');
+  const state = createAuthoredEventState(content, { nodeId: 'l1_n2' });
+  assert.strictEqual(state.eventId, 'event.cracked_bell');
+  assert.strictEqual(state.choices.length, 2);
+  assert.deepStrictEqual(state.choices.map((choice) => choice.id), ['repair', 'melt']);
+  assert.strictEqual(state.status, 'active');
+});
+
 test('choice resolution preserves declared effects and deterministic resource/flag changes', () => {
   const bundle = production();
   const event = createAuthoredEventState(bundle.registry.get('event', 'event.silent_foundry'), { nodeId: 'node' });

@@ -1,6 +1,6 @@
 import { VerticalSlicePresenter } from './vertical-slice-presenter.mjs';
 
-const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;' })[character]);
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;',"'":'&#39;','"':'&quot;' })[character]);
 const FORCED_MARCH_LABELS = Object.freeze({
   gold_loss: 'Потерять золото',
   light_injury: 'Получить лёгкое ранение',
@@ -32,6 +32,7 @@ after('renderCampaign', function enhanceCampaign(snapshot) {
   const root = this.root;
   addResourceStrip(root, snapshot, root.querySelector('.rpvs__panel-head'));
   const routes = new Map((snapshot.campaign?.routes || []).map((route) => [route.to, route]));
+  const approvedRoutePanel = Boolean(root.querySelector('.rpu-route-panel'));
   for (const [nodeId, route] of routes) {
     const card = root.querySelector(`[data-node-card="${CSS.escape(nodeId)}"]`);
     if (!card) continue;
@@ -41,7 +42,7 @@ after('renderCampaign', function enhanceCampaign(snapshot) {
       meta.textContent = `${route.branchProfile ? `Профиль: ${BRANCH_LABELS[route.branchProfile] || route.branchProfile}` : ''}${route.branchLength != null ? `${route.branchProfile ? ' · ' : ''}До схождения: ~${route.branchLength}` : ''}`;
       card.appendChild(meta);
     }
-    if (!route.requiresForcedMarch) continue;
+    if (!route.requiresForcedMarch || approvedRoutePanel) continue;
     const main = card.querySelector('[data-node-id]');
     if (main) {
       const clone = main.cloneNode(true);

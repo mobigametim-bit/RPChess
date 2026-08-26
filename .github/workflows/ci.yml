@@ -36,10 +36,41 @@ jobs:
         run: npm run build
       - name: Verify distribution entry
         run: test -f dist/index.html && test -f dist/SFX/win_fanfare.mp3
-      - name: Upload browser distribution
-        uses: actions/upload-artifact@v4
-        with:
-          name: rpchess-browser-dist
-          path: dist
-          if-no-files-found: error
-          retention-days: 3
+      - name: Install Playwright and Chromium
+        timeout-minutes: 10
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+      - name: Run real Chromium Iron Marches acceptance
+        timeout-minutes: 28
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory dist > /tmp/rpchess-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4173/index.html >/dev/null; then break; fi
+            sleep 1
+          done
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/battle-ui-input-regression.cjs
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-direct-events.cjs
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-chain-events.cjs
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/chess-special-rules-ui-regression.cjs
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-secret-forced.cjs
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-closure-e2e.cjs
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node tests/iron-marches-browser-reload-matrix-runner.cjs
+          echo '--- mobile 390x844 event/map acceptance ---'
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node -r ./tests/helpers/playwright-mobile-preload.cjs tests/iron-marches-browser-direct-events.cjs
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node -r ./tests/helpers/playwright-mobile-preload.cjs tests/iron-marches-browser-chain-events.cjs
+          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 stdbuf -oL -eL node -r ./tests/helpers/playwright-mobile-preload.cjs tests/iron-marches-browser-secret-forced.cjs
+      - name: Expose briefing QA screenshot
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f artifacts/qa/briefing-active-roster.jpg
+          echo 'BRIEFING_QA_JPEG_BASE64_BEGIN'
+          base64 -w0 artifacts/qa/briefing-active-roster.jpg
+          echo
+          echo 'BRIEFING_QA_JPEG_BASE64_END'

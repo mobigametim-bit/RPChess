@@ -110,7 +110,7 @@ if (!globalThis[INSTALL_KEY]) {
     return deepFreeze({
       ...state,
       campaign,
-      status: campaign.secret.pendingDecision ? 'campaign' : 'campaign',
+      status: 'campaign',
       currentNode: null,
       event: null,
       scenario: null,
@@ -232,8 +232,14 @@ if (!globalThis[INSTALL_KEY]) {
   }
   function dispatchProductionService(state, command, dependencies) {
     if (command.type === 'LeaveService') {
+      const nodeId = state.currentNode?.nodeId || state.campaign.currentNodeId;
+      let campaign = state.campaign;
+      const rare = campaign.rareRoute;
+      if (rare?.status === 'used' && rare.targetNodeId === nodeId && !campaign.completedNodeIds.includes(nodeId)) {
+        campaign = runtimeState.completeNode(campaign, nodeId, { rewardClaimed: true });
+      }
       const stageB = deepFreeze({ ...state.stageB, status: 'campaign', service: null });
-      const next = deepFreeze({ ...state, stageB, status: 'campaign', currentNode: null, transcript: freezeArray([...(state.transcript || []), deepFreeze({ type: 'LeaveService' })]) });
+      const next = deepFreeze({ ...state, campaign, stageB, status: 'campaign', currentNode: null, transcript: freezeArray([...(state.transcript || []), deepFreeze({ type: 'LeaveService' })]) });
       return customResult(next, command, dependencies);
     }
     const offerId = command.offerId || command.payload?.offerId;

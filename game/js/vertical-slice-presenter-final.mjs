@@ -4,14 +4,125 @@ import { renderCampaignApproved, renderBriefingApproved } from './ui-approved-ca
 import { renderDeploymentApproved } from './ui-approved-deployment.mjs';
 import { renderScenarioApproved } from './ui-approved-battle.mjs';
 
-function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[character]); }
+function escapeHtml(value) { return String(value ?? '').replace(/[&<>'\"]/g, (character) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[character]); }
 function escapeAttribute(value) { return escapeHtml(value).replace(/`/g, '&#96;'); }
+function rosterLabel(entry) {
+  if (entry.injury === 'heavy') return 'Тяжёлое ранение';
+  if (entry.injury === 'light') return 'Лёгкое ранение';
+  if (!entry.available) return 'Недоступна';
+  return entry.active ? 'Активный состав' : 'Резерв';
+}
+function optionMarkup(entries) {
+  return entries.map((entry) => `<option value="${escapeAttribute(entry.id)}">${escapeHtml(entry.name)} · ${escapeHtml(rosterLabel(entry))}</option>`).join('');
+}
+
+const PROMOTION_OPTIONS = Object.freeze({
+  q: Object.freeze({ glyph:'♕', label:'Ферзь' }),
+  r: Object.freeze({ glyph:'♖', label:'Ладья' }),
+  b: Object.freeze({ glyph:'♗', label:'Слон' }),
+  n: Object.freeze({ glyph:'♘', label:'Конь' })
+});
 
 class VerticalSlicePresenter extends ApprovedVerticalSlicePresenter {
   renderCampaign(snapshot) { return renderCampaignApproved(this, snapshot); }
   renderBriefing(snapshot) { return renderBriefingApproved(this, snapshot); }
   renderDeployment(snapshot) { return renderDeploymentApproved(this, snapshot); }
   renderScenario(snapshot) { return renderScenarioApproved(this, snapshot); }
+
+  clearPromotionChooser() {
+    this.root.querySelector('[data-promotion-chooser]')?.remove();
+  }
+
+  showPromotionChooser(commands) {
+    this.clearPromotionChooser();
+    const available = commands
+      .map((command) => ({ command, promotion:String(command.payload?.promotion || '').toLowerCase() }))
+      .filter((entry) => PROMOTION_OPTIONS[entry.promotion]);
+    if (!available.length) return;
+    const document = this.root.ownerDocument;
+    const overlay = document.createElement('div');
+    overlay.dataset.promotionChooser = '';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'Выбор повышения пешки');
+    overlay.style.cssText = 'position:absolute;inset:0;z-index:40;display:grid;place-items:center;background:rgba(2,6,12,.72);backdrop-filter:blur(4px);padding:20px;';
+    const buttons = available.map(({ promotion }) => {
+      const option = PROMOTION_OPTIONS[promotion];
+      return `<button type="button" class="rpa-button" data-promotion-piece="${escapeAttribute(promotion)}" style="min-width:112px;min-height:96px;display:grid;place-items:center;gap:4px;font-size:15px"><span aria-hidden="true" style="font:700 38px Georgia,serif">${option.glyph}</span><strong>${escapeHtml(option.label)}</strong></button>`;
+    }).join('');
+    overlay.innerHTML = `<section class="rpb-card" style="width:min(560px,100%);padding:24px;display:grid;gap:18px;background:rgba(7,14,24,.98);border:1px solid rgba(232,194,111,.55);box-shadow:0 24px 80px rgba(0,0,0,.62)"><div><span class="rpu-kicker">ПОВЫШЕНИЕ ПЕШКИ</span><h2 style="margin:.35rem 0">Выберите новую фигуру</h2><p style="margin:0;color:#b8c3d3">Ход завершится только после выбора.</p></div><div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">${buttons}</div><button type="button" class="rpa-button" data-promotion-cancel>ОТМЕНА</button></section>`;
+    const scene = this.root.querySelector('.rpvs__panel--scene') || this.root;
+    if (globalThis.getComputedStyle?.(scene)?.position === 'static') scene.style.position = 'relative';
+    scene.appendChild(overlay);
+    overlay.querySelectorAll('[data-promotion-piece]').forEach((button) => button.addEventListener('click', () => {
+      const selected = available.find((entry) => entry.promotion === button.dataset.promotionPiece)?.command;
+      if (!selected) return;
+      this.clearPromotionChooser();
+      this.selectedSquare = null;
+      this.selectedReserveEntryId = null;
+      this.drawBoard();
+      this.client.dispatch({ type:'PlayerCommand', request:selected }).catch(() => {});
+    }));
+    overlay.querySelector('[data-promotion-cancel]')?.addEventListener('click', () => {
+      this.clearPromotionChooser();
+      this.selectedSquare = null;
+      this.drawBoard();
+    });
+    overlay.querySelector('[data-promotion-piece]')?.focus();
+  }
+
+  handleBoardPointer(event) {
+    if (this.busy || this.animationRunning || !this.boardReport || !this.boardPlan || !['scenario', 'boss'].includes(this.lastSnapshot?.status)) return;
+    const scenario = this.lastSnapshot.scenario;
+    if (!scenario?.playerTurn) return;
+    const canvas = event.currentTarget;
+    const bounds = canvas.getBoundingClientRect();
+    const viewport = this.boardReport.viewport;
+    const displayX = Math.floor((event.clientX - bounds.left - viewport.x) / viewport.cellSize);
+    const displayY = Math.floor((event.clientY - bounds.top - viewport.y) / viewport.cellSize);
+    const cell = this.boardPlan.activeCells.find((candidate) => candidate.displayX === displayX && candidate.displayY === displayY);
+    if (!cell) return;
+
+    if (this.selectedReserveEntryId) {
+      const command = (scenario.legalCommands || []).find((entry) =>
+        entry.type === 'DeployReserve'
+        && entry.payload?.entryId === this.selectedReserveEntryId
+        && (entry.payload?.square === cell.square || entry.payload?.to === cell.square)
+      );
+      if (command) {
+        this.selectedReserveEntryId = null;
+        this.selectedSquare = null;
+        this.client.dispatch({ type: 'PlayerCommand', request: command }).catch(() => {});
+      }
+      return;
+    }
+
+    const selectedSquare = this.selectedSquare;
+    const targetCommands = selectedSquare
+      ? (scenario.legalCommands || []).filter((entry) =>
+          entry.type === 'MovePiece'
+          && entry.payload?.from === selectedSquare
+          && entry.payload?.to === cell.square
+        )
+      : [];
+    if (targetCommands.length === 1) {
+      this.selectedSquare = null;
+      this.selectedReserveEntryId = null;
+      this.drawBoard();
+      this.client.dispatch({ type: 'PlayerCommand', request: targetCommands[0] }).catch(() => {});
+      return;
+    }
+    if (targetCommands.length > 1 && targetCommands.every((entry) => PROMOTION_OPTIONS[String(entry.payload?.promotion || '').toLowerCase()])) {
+      this.showPromotionChooser(targetCommands);
+      return;
+    }
+
+    const movable = (scenario.legalCommands || []).some((entry) =>
+      entry.type === 'MovePiece' && entry.payload?.from === cell.square
+    );
+    this.selectedSquare = movable ? cell.square : null;
+    this.drawBoard();
+  }
 
   renderReward(snapshot) {
     const reward = snapshot.reward;
@@ -25,6 +136,98 @@ class VerticalSlicePresenter extends ApprovedVerticalSlicePresenter {
     this.root.querySelector('[data-claim]')?.addEventListener('click', () => this.client.dispatch({ type:'ClaimReward' }).catch(() => {}));
     const effectElement = this.root.querySelector('[data-scene-vfx]');
     if (effectElement && this.pendingEffect) { const effect = this.pendingEffect; this.pendingEffect = null; this.animateSprite(effectElement,effect); }
+  }
+
+  renderService(snapshot) {
+    super.renderService(snapshot);
+    const service = snapshot.stageB?.service;
+    if (!service) return;
+    const roster = snapshot.stageB?.roster || [];
+    const allRelics = [...new Set([...(snapshot.stageB?.relicInventory || []), ...roster.flatMap((entry) => entry.relicIds || [])])].sort();
+    const used = new Set(service.usedOfferIds || []);
+    const campConsumed = Boolean(service.oneActionOnly && used.size);
+
+    const relevantTargets = (action) => {
+      if (action === 'heal_light_one') return roster.filter((entry) => entry.injury === 'light');
+      if (action === 'heal_hero_heavy' || action === 'emergency_operation') return roster.filter((entry) => entry.kind === 'hero' && entry.injury === 'heavy');
+      if (action === 'camp_heal_light') return roster.filter((entry) => entry.kind === 'regular' && entry.injury === 'light');
+      if (action === 'remove_relic' || action === 'reforge_relic') return roster.filter((entry) => (entry.relicIds || []).length);
+      return roster;
+    };
+    const targetRequired = (action) => ['piece_upgrade','heal_light_one','heal_hero_heavy','emergency_operation','camp_heal_light','remove_relic','reforge_relic'].includes(action);
+    const relicRequired = (action) => ['upgrade_relic','remove_relic','reforge_relic'].includes(action);
+
+    for (const offer of service.offers || []) {
+      const oldButton = this.root.querySelector(`[data-service-offer="${CSS.escape(offer.id)}"]`);
+      if (!oldButton) continue;
+      const card = oldButton.closest('.rpb-card');
+      const figureSelect = card?.querySelector(`[data-service-target="${CSS.escape(offer.id)}"]`);
+      const targets = relevantTargets(offer.action);
+      if (figureSelect) {
+        if (targetRequired(offer.action)) {
+          figureSelect.innerHTML = optionMarkup(targets);
+          figureSelect.closest('label')?.removeAttribute('hidden');
+        } else {
+          figureSelect.closest('label')?.setAttribute('hidden','');
+        }
+      }
+
+      let relicSelect = null;
+      if (relicRequired(offer.action) && card) {
+        const label = this.root.ownerDocument.createElement('label');
+        label.textContent = 'Реликвия';
+        relicSelect = this.root.ownerDocument.createElement('select');
+        relicSelect.className = 'rpb-target-select';
+        relicSelect.dataset.serviceRelic = offer.id;
+        label.appendChild(relicSelect);
+        oldButton.before(label);
+        const fillRelics = () => {
+          const ids = offer.action === 'upgrade_relic'
+            ? allRelics
+            : (roster.find((entry) => entry.id === figureSelect?.value)?.relicIds || []);
+          relicSelect.innerHTML = ids.map((id) => `<option value="${escapeAttribute(id)}">${escapeHtml(id.replace(/^relic\./,'').replaceAll('_',' '))}</option>`).join('');
+          return ids;
+        };
+        fillRelics();
+        figureSelect?.addEventListener('change', fillRelics);
+      }
+
+      const eligibleTargets = !targetRequired(offer.action) || targets.length > 0;
+      const eligibleRelics = !relicRequired(offer.action) || (offer.action === 'upgrade_relic' ? allRelics.length > 0 : targets.some((entry) => (entry.relicIds || []).length > 0));
+      const affordable = Number(snapshot.resources?.gold || 0) >= Number(offer.cost || 0);
+      const available = affordable && !used.has(offer.id) && !campConsumed && eligibleTargets && eligibleRelics;
+      const button = oldButton.cloneNode(true);
+      button.disabled = !available;
+      button.toggleAttribute('aria-disabled', !available);
+      if (!available) {
+        const reason = !affordable ? 'Недостаточно золота' : used.has(offer.id) || campConsumed ? 'Уже использовано в этом посещении' : !eligibleTargets ? 'Нет подходящей фигуры' : 'Нет подходящей реликвии';
+        button.title = reason;
+        card?.setAttribute('data-unavailable-reason', reason);
+      }
+      oldButton.replaceWith(button);
+      button.addEventListener('click', () => {
+        const targetRosterId = targetRequired(offer.action) ? (figureSelect?.value || null) : null;
+        const targetRelicId = relicRequired(offer.action) ? (relicSelect?.value || null) : null;
+        this.client.dispatch({ type:'UseService', offerId:offer.id, targetRosterId, targetRelicId }).catch(() => {});
+      });
+    }
+  }
+
+  renderReorganization(snapshot) {
+    super.renderReorganization(snapshot);
+    if (snapshot.politicalFinaleB14?.stage !== 'interact') return;
+    const preview = snapshot.stageB?.reorganization?.interActConversionPreview || snapshot.interActPreview;
+    if (!preview) return;
+    const aside = this.root.querySelector('.rpu-interact-layout aside');
+    const list = aside?.querySelector('dl');
+    if (list) {
+      list.innerHTML = `<div><dt>Осталось припасов</dt><dd>${escapeHtml(preview.convertedSupplies)}</dd></div><div><dt>Конвертация</dt><dd>${escapeHtml(preview.formula)} золота</dd></div><div><dt>Золото следующего акта</dt><dd>${escapeHtml(preview.nextGold)}</dd></div><div><dt>Припасы следующего акта</dt><dd>${escapeHtml(preview.nextSupplies)}</dd></div>`;
+      list.setAttribute('data-interact-conversion', '');
+    }
+    const heading = aside?.querySelector('h2');
+    if (heading) heading.textContent = 'ПЕРЕНОС МЕЖДУ АКТАМИ';
+    const confirm = aside?.querySelector('[data-confirm-reorganization]');
+    if (confirm) confirm.textContent = 'ПОДТВЕРДИТЬ И ПЕРЕЙТИ К СЛЕДУЮЩЕМУ АКТУ';
   }
 }
 

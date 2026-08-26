@@ -114,7 +114,10 @@ function createScenarioDeploymentGate(scenarioInput, options = {}) {
     metadata: record.metadata,
     label: unitLabel(record.metadata, record.id, options.localization)
   }));
-  const commandLimit = activePlayers.reduce((total, unit) => total + PIECE_COMMAND_COST[unit.type], 0);
+  const derivedCommandLimit = activePlayers.reduce((total, unit) => total + PIECE_COMMAND_COST[unit.type], 0);
+  const requestedCommandLimit = options.commandLimit ?? scenario.battle.scenarioRules?.deploymentCommandLimit;
+  const commandLimit = requestedCommandLimit == null ? derivedCommandLimit : Number(requestedCommandLimit);
+  if (!Number.isInteger(commandLimit) || commandLimit < 0) throw new Error('deployment commandLimit must be a non-negative integer');
   let plan = createDeploymentPlan({ side: playerSide, commandLimit, zone, roster: units });
   for (const unit of units) if (unit.source === 'active' && !unit.fixedSquare) plan = placeUnit(plan, unit.id, unit.originalSquare);
   const gate = {

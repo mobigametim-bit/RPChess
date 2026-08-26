@@ -11,6 +11,13 @@
 .rpa-subscreen:has(.rpa-settings-grid) .rpa-screen-header{padding:84px 0 20px!important}
 .rpa-subscreen:has(.rpa-settings-grid) .rpu-settings-version{position:fixed!important;right:56px!important;top:44px!important;color:#a8b5c4!important}
 
+/* Briefing fallback: stale pre-fix markup must still present the approved card-toggle UX. */
+.rpu-brief-roster-card>input[type="checkbox"]{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;clip-path:inset(50%)!important}
+.rpu-brief-roster-card:has(>input[type="checkbox"]){grid-template-columns:62px minmax(0,1fr) auto!important;cursor:pointer!important;color:inherit!important;text-align:left!important}
+.rpu-brief-roster-card:has(>input[type="checkbox"]:checked){border-color:#e4bd66!important;box-shadow:0 0 0 2px rgba(228,189,102,.18) inset!important}
+.rpu-brief-roster-card:has(>input[type="checkbox"]:disabled){cursor:default!important}
+.rpu-brief-roster>[data-save-briefing]{display:none!important}
+
 @media(max-height:820px) and (min-width:981px){
   .rpa-subscreen.is-approved-commander-selection .rpa-screen-header{padding:46px 0 8px!important;margin-bottom:8px!important}
   .rpa-subscreen.is-approved-commander-selection .rpa-screen-header h1{font-size:44px!important}
