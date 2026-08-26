@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const verifySource = require('./verify-source.cjs');
+const { prepareStockfishAssets } = require('./stockfish-assets.cjs');
 
 const root = path.resolve(__dirname, '..');
 const source = path.join(root, 'game');
@@ -28,11 +29,13 @@ async function main() {
     'js/reboot-audio.mjs',
     'js/classic-chess-engine.mjs',
     'js/classic-chess-app.mjs',
+    'js/chess-ai-adapter.mjs',
     'fonts',
     'generated_assets',
     'music'
   ]) copy(relative);
 
+  const stockfish = await prepareStockfishAssets(dist);
   verifySource(dist);
 
   const rootHtml = fs.readFileSync(path.join(dist, 'index.html'), 'utf8');
@@ -47,16 +50,21 @@ async function main() {
     'css/classic-chess.css',
     'js/classic-chess-engine.mjs',
     'js/classic-chess-app.mjs',
+    'js/chess-ai-adapter.mjs',
     'js/reboot-audio.mjs',
     'music/echoes_iron_throne_01.mp3',
     'music/echoes_iron_throne_02.mp3',
     'music/echoes_iron_throne_03.mp3',
-    'music/echoes_iron_throne_04.mp3'
+    'music/echoes_iron_throne_04.mp3',
+    'vendor/stockfish/stockfish-18-lite-single.js',
+    'vendor/stockfish/stockfish-18-lite-single.wasm',
+    'vendor/stockfish/COPYING.txt',
+    'vendor/stockfish/SOURCE.txt'
   ]) {
-    if (!fs.existsSync(path.join(dist, relative))) throw new Error(`Classic Chess build output missing: ${relative}`);
+    if (!fs.existsSync(path.join(dist, relative))) throw new Error(`Chess AI build output missing: ${relative}`);
   }
 
-  console.log(`Prepared RPChess Classic Chess distribution in ${dist}`);
+  console.log(`Prepared RPChess Chess AI distribution in ${dist}; Stockfish ${stockfish.version}`);
 }
 
 main().catch((error) => {
