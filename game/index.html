@@ -9,7 +9,7 @@
   <title>RPChess</title>
   <link rel="stylesheet" href="css/reboot-foundation.css?v=20260826-reboot-3">
   <link rel="stylesheet" href="css/classic-chess.css?v=20260827-ai-2">
-  <link rel="stylesheet" href="css/chess-ai-polish.css?v=20260827-ai-2">
+  <link rel="stylesheet" href="css/chess-ai-polish.css?v=20260827-ai-3">
 </head>
 <body>
   <div id="app">
@@ -31,16 +31,38 @@
 
     <main class="classic-screen" data-classic-screen aria-label="Классические шахматы" hidden>
       <div class="classic-shell">
-        <section class="classic-main">
-          <header class="classic-topbar">
-            <img class="classic-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
-            <div class="classic-toolbar">
-              <button class="classic-mini-button" type="button" data-classic-new>Новая партия</button>
-              <button class="classic-mini-button" type="button" data-settings>Настройки</button>
-              <button class="classic-mini-button" type="button" data-classic-menu>Главное меню</button>
-            </div>
-          </header>
+        <header class="classic-topbar">
+          <img class="classic-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
+          <div class="classic-toolbar">
+            <button class="classic-mini-button" type="button" data-classic-new>Новая партия</button>
+            <button class="classic-mini-button" type="button" data-settings>Настройки</button>
+            <button class="classic-mini-button" type="button" data-classic-menu>Главное меню</button>
+          </div>
+        </header>
 
+        <aside class="classic-panel classic-party-panel" aria-label="Партия">
+          <h2>Партия</h2>
+          <p class="classic-opponent" data-game-mode>Локальная партия</p>
+          <div class="classic-material" aria-label="Взятые фигуры и перевес по материалу">
+            <div class="classic-material-row">
+              <span class="classic-material-side">Белые</span>
+              <div class="classic-captured-list" data-captured-by-white aria-label="Фигуры, взятые белыми"></div>
+              <strong class="classic-material-advantage" data-material-white></strong>
+            </div>
+            <div class="classic-material-row">
+              <span class="classic-material-side">Чёрные</span>
+              <div class="classic-captured-list" data-captured-by-black aria-label="Фигуры, взятые чёрными"></div>
+              <strong class="classic-material-advantage" data-material-black></strong>
+            </div>
+          </div>
+          <p class="classic-side-state" data-classic-summary><strong>Белые</strong> начинают партию.</p>
+          <div class="classic-result" data-game-result hidden>
+            <h3 class="classic-result__title" data-result-title></h3>
+            <p class="classic-result__text" data-result-text></p>
+          </div>
+        </aside>
+
+        <section class="classic-main">
           <div class="classic-statusbar" aria-live="polite">
             <div class="classic-turn" data-classic-turn>Ход белых</div>
             <div class="classic-state" data-classic-state>Партия началась</div>
@@ -52,39 +74,11 @@
           </div>
         </section>
 
-        <aside class="classic-sidebar" aria-label="Состояние партии">
-          <section class="classic-panel">
-            <h2>Партия</h2>
-            <p class="classic-opponent" data-game-mode>Локальная партия</p>
-            <div class="classic-material" aria-label="Взятые фигуры и перевес по материалу">
-              <div class="classic-material-row">
-                <span class="classic-material-side">Белые</span>
-                <div class="classic-captured-list" data-captured-by-white aria-label="Фигуры, взятые белыми"></div>
-                <strong class="classic-material-advantage" data-material-white></strong>
-              </div>
-              <div class="classic-material-row">
-                <span class="classic-material-side">Чёрные</span>
-                <div class="classic-captured-list" data-captured-by-black aria-label="Фигуры, взятые чёрными"></div>
-                <strong class="classic-material-advantage" data-material-black></strong>
-              </div>
-            </div>
-            <p class="classic-side-state" data-classic-summary><strong>Белые</strong> начинают партию.</p>
-            <div class="classic-result" data-game-result hidden>
-              <h3 class="classic-result__title" data-result-title></h3>
-              <p class="classic-result__text" data-result-text></p>
-              <div class="classic-result__actions">
-                <button class="reboot-button reboot-button--primary" type="button" data-result-rematch>Новая партия</button>
-                <button class="reboot-button reboot-button--primary" type="button" data-result-menu>Главное меню</button>
-              </div>
-            </div>
-          </section>
-
-          <section class="classic-panel classic-panel--moves">
-            <h3>Ходы</h3>
-            <div class="classic-moves" data-move-history aria-live="polite">
-              <div class="classic-empty">Ходов пока нет</div>
-            </div>
-          </section>
+        <aside class="classic-panel classic-panel--moves" aria-label="Ходы партии">
+          <h3>Ходы</h3>
+          <div class="classic-moves" data-move-history aria-live="polite">
+            <div class="classic-empty">Ходов пока нет</div>
+          </div>
         </aside>
       </div>
     </main>
