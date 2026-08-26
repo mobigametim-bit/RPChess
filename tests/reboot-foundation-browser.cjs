@@ -16,30 +16,52 @@ const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
     assert.strictEqual(await page.locator('[data-new-game]').count(), 1, 'New Game button must exist once');
     assert.strictEqual(await page.getByRole('button', { name: 'Продолжить' }).isDisabled(), true, 'Continue must be disabled before a Reboot save exists');
     assert.strictEqual(await page.locator('[data-settings]').count(), 1, 'Settings button must exist once');
+    assert.strictEqual(await page.getByText('Новый путь RPChess').count(), 0, 'prototype marketing copy must not appear in production menu');
 
     const scripts = await page.locator('script[src]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('src')));
-    assert.deepStrictEqual(scripts, ['js/reboot-foundation.mjs?v=20260826-reboot-1'], `unexpected runtime scripts: ${scripts.join(', ')}`);
+    assert.deepStrictEqual(scripts, ['js/reboot-foundation.mjs?v=20260826-reboot-2'], `unexpected runtime scripts: ${scripts.join(', ')}`);
 
-    const oldRuntimeGlobals = await page.evaluate(() => ({
+    const runtimeState = await page.evaluate(() => ({
       verticalSlice: Boolean(window.RPChessVerticalSlice),
-      ironMarches: Boolean(window.RPChessIronMarchesRuntime)
+      ironMarches: Boolean(window.RPChessIronMarchesRuntime),
+      rebootAudio: Boolean(window.RPChessRebootAudio),
+      musicSrc: window.RPChessRebootAudio?.music?.src || '',
+      activated: Boolean(window.RPChessRebootAudio?.activated)
     }));
-    assert.strictEqual(oldRuntimeGlobals.verticalSlice, false, 'legacy vertical slice global must not be active');
-    assert.strictEqual(oldRuntimeGlobals.ironMarches, false, 'legacy Iron Marches global must not be active');
+    assert.strictEqual(runtimeState.verticalSlice, false, 'legacy vertical slice global must not be active');
+    assert.strictEqual(runtimeState.ironMarches, false, 'legacy Iron Marches global must not be active');
+    assert.strictEqual(runtimeState.rebootAudio, true, 'Reboot audio layer must be active');
+    assert(runtimeState.musicSrc.includes('music/echoes_iron_throne_01.mp3'), `unexpected first music track: ${runtimeState.musicSrc}`);
+    assert.strictEqual(runtimeState.activated, false, 'audio must wait for the first browser-approved user gesture');
 
     await page.locator('[data-settings]').click();
     await page.locator('[data-settings-modal]:not([hidden])').waitFor();
+    assert.strictEqual(await page.evaluate(() => window.RPChessRebootAudio.activated), true, 'opening settings must activate music/SFX after a user gesture');
+
     await page.locator('[data-music-volume]').evaluate((input) => {
       input.value = '33';
       input.dispatchEvent(new Event('input', { bubbles: true }));
     });
     assert.strictEqual(await page.locator('[data-music-volume]').inputValue(), '33', 'music setting must be interactive');
+    const appliedMusic = await page.evaluate(() => ({
+      setting: window.RPChessRebootAudio.settings.music,
+      volume: window.RPChessRebootAudio.music?.volume
+    }));
+    assert.strictEqual(appliedMusic.setting, 33, 'music setting must reach the live audio layer');
+    assert(appliedMusic.volume > 0 && appliedMusic.volume < 0.3, `unexpected live music volume: ${appliedMusic.volume}`);
+
+    await page.locator('[data-sfx-volume]').evaluate((input) => {
+      input.value = '45';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    assert.strictEqual(await page.evaluate(() => window.RPChessRebootAudio.settings.sfx), 45, 'SFX setting must reach the live audio layer');
+
     await page.locator('[data-settings-modal] [data-close-modal]').click();
     assert.strictEqual(await page.locator('[data-settings-modal]').getAttribute('hidden'), '', 'settings modal must close');
 
     await page.locator('[data-new-game]').click();
     await page.locator('[data-foundation-modal]:not([hidden])').waitFor();
-    assert((await page.locator('[data-foundation-modal]').innerText()).includes('классические шахматы'), 'New Game must lead to the next-feature boundary, not legacy gameplay');
+    assert((await page.locator('[data-foundation-modal]').innerText()).includes('Классические шахматы'), 'New Game must lead to the next feature boundary, not legacy gameplay');
     await page.locator('[data-foundation-modal] [data-close-modal]').click();
 
     const mobile = await browser.newPage({ viewport: { width: 390, height: 500 } });
@@ -61,7 +83,7 @@ const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
 
     assert.deepStrictEqual(errors, [], `desktop browser errors:\n${errors.join('\n')}`);
     assert.deepStrictEqual(mobileErrors, [], `mobile browser errors:\n${mobileErrors.join('\n')}`);
-    console.log('Reboot Foundation real Chromium acceptance: PASS');
+    console.log('Reboot Foundation production-menu Chromium acceptance: PASS');
   } finally {
     await browser.close();
   }
