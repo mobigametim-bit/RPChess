@@ -15,7 +15,7 @@ function walk(dir) {
 module.exports = function verifySource(root) {
   const required = [
     'index.html', 'BUILD_INFO.json',
-    'css/reboot-foundation.css', 'css/classic-chess.css',
+    'css/reboot-foundation.css', 'css/classic-chess.css', 'css/chess-ai-polish.css',
     'js/reboot-foundation.mjs', 'js/reboot-audio.mjs',
     'js/classic-chess-engine.mjs', 'js/classic-chess-app.mjs', 'js/chess-ai-adapter.mjs',
     'fonts/BrahmsGotischCyr.otf',
@@ -37,7 +37,7 @@ module.exports = function verifySource(root) {
   if (!String(info.version || '').startsWith('2.2.0-chess-ai')) fail(`unexpected Chess AI version: ${info.version || 'missing'}`);
 
   const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  for (const requiredRef of ['css/reboot-foundation.css', 'css/classic-chess.css', 'js/reboot-foundation.mjs', 'js/classic-chess-app.mjs', 'data-game-setup-modal', 'data-ai-elo']) {
+  for (const requiredRef of ['css/reboot-foundation.css', 'css/classic-chess.css', 'css/chess-ai-polish.css', 'js/reboot-foundation.mjs', 'js/classic-chess-app.mjs', 'data-game-setup-modal', 'data-ai-elo', 'data-captured-by-white', 'data-captured-by-black']) {
     if (!index.includes(requiredRef)) fail(`index.html is missing active AI runtime/UI reference: ${requiredRef}`);
   }
   for (const forbidden of ['iron-marches-runtime.bundle.js', 'vertical-slice-app.mjs', 'ui-approved-campaign.mjs', 'b10-b13-production-ui.mjs', 'explicit-run-setup.mjs', 'commander-selection-final.mjs']) {
@@ -67,6 +67,14 @@ module.exports = function verifySource(root) {
   if (!app.includes('unit_${PIECE_ASSETS[piece.type]}_')) fail('Classic Chess UI does not use production piece assets');
   for (const aiContract of ['maybeScheduleAI', 'aiThinking', 'data-game-setup-modal', 'Stockfish 18 lite']) {
     if (!app.includes(aiContract) && !index.includes(aiContract)) fail(`Chess AI UI contract missing: ${aiContract}`);
+  }
+  for (const polishContract of ['sanNotation', 'classic-piece-marker', 'renderMaterial', 'animateCommittedMove', 'PIECE_GLYPHS']) {
+    if (!app.includes(polishContract)) fail(`Chess AI polish runtime contract missing: ${polishContract}`);
+  }
+
+  const polishCss = fs.readFileSync(path.join(root, 'css/chess-ai-polish.css'), 'utf8');
+  for (const polishContract of ['ui_button_primary.png', 'ui_panel_frame.png', '.classic-piece-marker', '.classic-san-figurine', '.classic-captured-piece', '.classic-piece-flyer', '.classic-thinking']) {
+    if (!polishCss.includes(polishContract)) fail(`Chess AI polish CSS contract missing: ${polishContract}`);
   }
 
   const adapter = fs.readFileSync(path.join(root, 'js/chess-ai-adapter.mjs'), 'utf8');
