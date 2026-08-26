@@ -1,47 +1,53 @@
 const fs = require('fs');
 const path = require('path');
 const verifySource = require('./verify-source.cjs');
-const buildBrowserRuntime = require('./build-browser-runtime.cjs');
 
 const root = path.resolve(__dirname, '..');
 const source = path.join(root, 'game');
 const dist = path.join(root, 'dist');
 
+function copy(relative) {
+  const from = path.join(source, relative);
+  const to = path.join(dist, relative);
+  if (!fs.existsSync(from)) throw new Error(`missing Reboot build input: ${relative}`);
+  fs.mkdirSync(path.dirname(to), { recursive: true });
+  fs.cpSync(from, to, { recursive: true, force: true });
+}
+
 async function main() {
-  await buildBrowserRuntime();
   verifySource(source);
 
   fs.rmSync(dist, { recursive: true, force: true });
   fs.mkdirSync(dist, { recursive: true });
 
-  for (const entry of fs.readdirSync(source, { withFileTypes: true })) {
-    if (entry.name === 'SOURCE_BASELINE.md') continue;
-    fs.cpSync(path.join(source, entry.name), path.join(dist, entry.name), {
-      recursive: true,
-      force: true
-    });
-  }
+  // Reboot Foundation ships only the active shell and reusable visual assets.
+  // Legacy Iron Marches gameplay remains preserved in archive/iron-marches-v1,
+  // but is deliberately excluded from the production distribution.
+  copy('index.html');
+  copy('BUILD_INFO.json');
+  copy('css/reboot-foundation.css');
+  copy('js/reboot-foundation.mjs');
+  copy('fonts');
+  copy('generated_assets');
 
   verifySource(dist);
-  const runtimeBundle = path.join(dist, 'js/generated/iron-marches-runtime.bundle.js');
-  const isolatedEntry = path.join(dist, 'vertical-slice.html');
-  const rootEntry = path.join(dist, 'index.html');
-  if (!fs.existsSync(runtimeBundle)) throw new Error('production browser runtime bundle is missing from dist');
-  if (!fs.existsSync(isolatedEntry)) throw new Error('production vertical slice entry is missing from dist');
-  if (!fs.existsSync(rootEntry)) throw new Error('root browser entry is missing from dist');
-  const rootHtml = fs.readFileSync(rootEntry, 'utf8');
-  if (!rootHtml.includes('js/generated/iron-marches-runtime.bundle.js') || !rootHtml.includes('js/vertical-slice-app.mjs')) {
-    throw new Error('root browser entry does not launch the production vertical slice');
+
+  const rootHtml = fs.readFileSync(path.join(dist, 'index.html'), 'utf8');
+  const forbidden = [
+    'iron-marches-runtime.bundle.js',
+    'vertical-slice-app.mjs',
+    'explicit-run-setup.mjs',
+    'ui-approved-campaign.mjs'
+  ];
+  for (const token of forbidden) {
+    if (rootHtml.includes(token)) throw new Error(`dist entry still contains legacy token: ${token}`);
   }
-  if (!rootHtml.includes('style.css') || !rootHtml.includes('css/approved-visual-shell.css') || !rootHtml.includes('css/stage-b-ui.css')) {
-    throw new Error('root browser entry is missing the approved prototype or Stage B visual shell');
+
+  if (fs.existsSync(path.join(dist, 'js/generated/iron-marches-runtime.bundle.js'))) {
+    throw new Error('legacy Iron Marches runtime was accidentally packaged into Reboot dist');
   }
-  if (!fs.existsSync(path.join(dist, 'js/register-04-event-assets.mjs'))) throw new Error('Register 04 event resolver is missing from dist');
-  if (!fs.existsSync(path.join(dist, 'assets/events/register-04/miners_on_strike.png'))) throw new Error('Register 04 runtime event art is missing from dist');
-  if (rootHtml.includes('js/core.js') || rootHtml.includes('js/main.js')) {
-    throw new Error('root browser entry still launches the legacy client');
-  }
-  console.log(`Prepared normalized RPChess source from ${source} in ${dist}`);
+
+  console.log(`Prepared RPChess Reboot Foundation distribution in ${dist}`);
 }
 
 main().catch((error) => {
