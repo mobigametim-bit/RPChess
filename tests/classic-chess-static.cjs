@@ -7,6 +7,7 @@ const game = path.join(root, 'game');
 const html = fs.readFileSync(path.join(game, 'index.html'), 'utf8');
 const foundationCss = fs.readFileSync(path.join(game, 'css/reboot-foundation.css'), 'utf8');
 const css = fs.readFileSync(path.join(game, 'css/classic-chess.css'), 'utf8');
+const polishCss = fs.readFileSync(path.join(game, 'css/chess-ai-polish.css'), 'utf8');
 const app = fs.readFileSync(path.join(game, 'js/classic-chess-app.mjs'), 'utf8');
 const engine = fs.readFileSync(path.join(game, 'js/classic-chess-engine.mjs'), 'utf8');
 const ai = fs.readFileSync(path.join(game, 'js/chess-ai-adapter.mjs'), 'utf8');
@@ -15,10 +16,12 @@ for (const token of [
   'data-classic-screen', 'data-chess-board', 'data-classic-new', 'data-classic-menu',
   'data-move-history', 'data-game-result', 'data-promotion-modal', 'data-promotion-options',
   'data-game-setup-modal', 'data-game-mode-select', 'data-ai-elo', 'data-player-color',
-  'data-start-game', 'data-ai-thinking', 'data-game-mode'
+  'data-start-game', 'data-ai-thinking', 'data-game-mode',
+  'data-captured-by-white', 'data-captured-by-black', 'data-material-white', 'data-material-black'
 ]) assert(html.includes(token), `Classic Chess / AI UI token missing: ${token}`);
 
 assert(html.includes('css/classic-chess.css'), 'Classic Chess stylesheet is not loaded');
+assert(html.includes('css/chess-ai-polish.css'), 'Chess AI polish stylesheet is not loaded');
 assert(html.includes('js/classic-chess-app.mjs'), 'Classic Chess app is not loaded');
 assert(app.includes("from './classic-chess-engine.mjs'"), 'Classic app does not use standalone engine');
 assert(app.includes("from './chess-ai-adapter.mjs'"), 'Classic app does not use ChessAIAdapter boundary');
@@ -44,10 +47,19 @@ for (const contract of ['class ChessAIAdapter', 'UCI_LimitStrength', 'UCI_Elo', 
   assert(ai.includes(contract), `Chess AI adapter contract missing: ${contract}`);
 }
 
+for (const contract of ['sanNotation', 'PIECE_GLYPHS', 'PIECE_VALUES', 'renderMaterial', 'animateCommittedMove', 'classic-piece-marker']) {
+  assert(app.includes(contract), `Chess AI production polish runtime missing: ${contract}`);
+}
+for (const contract of ['ui_button_primary.png', 'ui_panel_frame.png', '.classic-piece-marker', '.classic-san-figurine', '.classic-captured-piece', '.classic-piece-flyer', '.classic-thinking { display: none !important; }']) {
+  assert(polishCss.includes(contract), `Chess AI production polish CSS missing: ${contract}`);
+}
+assert(!polishCss.includes("ui_button_secondary.png"), 'polish layer must not introduce light/secondary button frames');
+assert(html.includes('classic-commander-panel'), 'approved commander-selection dark surface is not applied to modals');
+
 for (const side of ['player', 'enemy']) {
   for (const piece of ['pawn', 'knight', 'bishop', 'rook', 'queen', 'king']) {
     assert(fs.existsSync(path.join(game, 'generated_assets', `unit_${piece}_${side}.png`)), `piece asset missing: ${piece}_${side}`);
   }
 }
 
-console.log('Classic Chess + AI UI static contract: PASS');
+console.log('Classic Chess + AI production polish static contract: PASS');
