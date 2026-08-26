@@ -1,5 +1,19 @@
 # RPChess Reboot Changelog
 
+## 2026-08-27 — Chess AI gameplay test passed; production polish implemented
+- Пользователь подтвердил, что Chess AI gameplay и все основные пункты теста работают корректно.
+- Перед финальным acceptance запросил production polish интерфейса партии.
+- На каждую fantasy-фигуру добавлен технический шахматный marker в верхнем левом углу.
+- История переведена на стандартную SAN-запись с figurine rendering для фигур; поддерживаются capture `x`, check `+`, mate `#`, castling, promotion и disambiguation.
+- Добавлены технические glyph взятых фигур и material advantage.
+- Большая центральная плашка `Компьютер думает…` убрана из визуального слоя; AI turn остаётся в status line.
+- Ходы фигур получили плавную 230ms-анимацию с отдельным capture fade; reduced-motion отключает переходы.
+- Панели и модальные окна переведены на тёмный approved commander-selection treatment: `ui_panel_frame.png` + `#091524` + inner keyline вместо светлой parchment-подложки.
+- Все action-кнопки используют синий `ui_button_primary.png`; light/secondary action frame в polish layer не используется.
+- Версия поднята до `2.2.0-chess-ai.preview.2`.
+- Static/source/build и Chromium contracts расширены на markers, SAN/figurines, captured material, animation, commander surfaces и blue CTA.
+- Следующий gate: exact-head `npm test && npm run build` в Cloudflare, затем короткий human polish spot-check. Chess AI остаётся Draft и не закрывается до этого подтверждения.
+
 ## 2026-08-26 — Chess AI implementation ready for deployment gate
 - После merge принятого Classic Chess создана `feature/chess-ai` от exact `main` commit `6df1a65ffca36413d99415eab1f0e5ccddbd5dbe`.
 - Добавлен `ChessAIAdapter`; игровой runtime не зависит напрямую от Stockfish implementation.
@@ -9,7 +23,7 @@
 - Для 400–1200 используется MultiPV + контролируемый выбор слабых/случайных легальных ходов; для 1400+ — `UCI_LimitStrength` / `UCI_Elo`.
 - Добавлено production-ready окно новой партии: компьютер/локально, Elo, белые/чёрные/случайно.
 - При игре за чёрных доска разворачивается, Stockfish автоматически делает первый ход.
-- Во время AI turn доска блокируется и отображает `Компьютер думает…`.
+- Во время AI turn доска блокируется; после расчёта управление возвращается игроку.
 - Сохранён локальный режим двух игроков и все ранее принятые classical rules.
 - Добавлены deterministic adapter tests и real-Stockfish Chromium acceptance contract.
 - Cloudflare build gate усилен: перед deploy выполняется `npm test && npm run build`.
