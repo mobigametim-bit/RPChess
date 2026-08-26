@@ -1,0 +1,310 @@
+@font-face {
+  font-family: 'RPChessDisplay';
+  src: url('../fonts/BrahmsGotischCyr.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: dark;
+  --bg: #07111e;
+  --panel: rgba(6, 18, 31, 0.91);
+  --panel-strong: rgba(7, 22, 38, 0.97);
+  --line: rgba(103, 142, 177, 0.32);
+  --gold: #efc75e;
+  --gold-soft: #b7933f;
+  --blue: #4aa8df;
+  --text: #f2eee3;
+  --muted: #aab7c5;
+  --danger: #d56a65;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  min-height: 100%;
+  background: var(--bg);
+  overflow-y: auto;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  color: var(--text);
+  background:
+    linear-gradient(90deg, rgba(3, 9, 16, .82), rgba(3, 9, 16, .34) 45%, rgba(3, 9, 16, .72)),
+    url('../generated_assets/splash_poster.jpg') center / cover fixed,
+    var(--bg);
+}
+
+button, input { font: inherit; }
+button { cursor: pointer; }
+button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+
+#app { min-height: 100vh; }
+
+.reboot-shell {
+  width: min(1480px, calc(100% - 48px));
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 28px 0 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.reboot-topbar {
+  min-height: 78px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 12px 18px;
+  border: 1px solid var(--line);
+  border-bottom-color: rgba(239, 199, 94, .35);
+  background: linear-gradient(180deg, rgba(10, 22, 37, .96), rgba(7, 17, 30, .96));
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .28);
+}
+
+.reboot-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.reboot-brand__logo { width: 58px; height: 58px; object-fit: contain; }
+.reboot-brand__wordmark { width: min(220px, 35vw); height: 52px; object-fit: contain; object-position: left center; }
+
+.reboot-version {
+  margin-left: auto;
+  padding: 8px 12px;
+  border: 1px solid rgba(239, 199, 94, .22);
+  border-radius: 10px;
+  color: var(--muted);
+  background: rgba(5, 14, 25, .6);
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.reboot-hero {
+  flex: 1;
+  min-height: 680px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 480px);
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid rgba(239, 199, 94, .34);
+  border-radius: 24px;
+  background:
+    linear-gradient(90deg, rgba(5, 15, 26, .97), rgba(5, 15, 26, .78) 46%, rgba(5, 15, 26, .34)),
+    url('../generated_assets/scene_campaign.jpg') center / cover;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, .42), inset 0 0 70px rgba(0, 0, 0, .28);
+}
+
+.reboot-hero__copy {
+  min-height: 100%;
+  padding: clamp(42px, 7vw, 92px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  max-width: 820px;
+}
+
+.reboot-kicker {
+  color: var(--gold);
+  font-weight: 800;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: .18em;
+}
+
+.reboot-title {
+  margin: 14px 0 12px;
+  font-family: 'RPChessDisplay', Georgia, serif;
+  font-size: clamp(58px, 8vw, 110px);
+  line-height: .88;
+  font-weight: 400;
+  text-shadow: 0 12px 38px rgba(0, 0, 0, .75);
+}
+
+.reboot-lead {
+  max-width: 680px;
+  margin: 0;
+  color: #d2d9df;
+  font-size: clamp(17px, 1.7vw, 22px);
+  line-height: 1.6;
+}
+
+.reboot-pillars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 26px;
+}
+
+.reboot-pill {
+  padding: 8px 11px;
+  border: 1px solid rgba(239, 199, 94, .24);
+  border-radius: 999px;
+  background: rgba(5, 15, 26, .66);
+  color: #d6cda8;
+  font-size: 12px;
+  letter-spacing: .05em;
+}
+
+.reboot-menu {
+  margin: 28px;
+  padding: 30px;
+  align-self: center;
+  border: 1px solid rgba(81, 133, 174, .34);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(7, 23, 39, .96), rgba(5, 15, 27, .97));
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .42);
+}
+
+.reboot-menu__title {
+  margin: 0 0 6px;
+  font-family: 'RPChessDisplay', Georgia, serif;
+  font-size: 38px;
+  font-weight: 400;
+}
+
+.reboot-menu__note {
+  margin: 0 0 22px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.reboot-menu__actions { display: grid; gap: 12px; }
+
+.reboot-button {
+  position: relative;
+  width: 100%;
+  min-height: 62px;
+  padding: 13px 24px;
+  border: 1px solid rgba(239, 199, 94, .52);
+  border-radius: 10px;
+  color: var(--text);
+  background:
+    linear-gradient(180deg, rgba(24, 72, 109, .9), rgba(9, 37, 63, .96));
+  box-shadow: inset 0 0 0 1px rgba(108, 176, 224, .14), 0 8px 22px rgba(0, 0, 0, .2);
+  font-weight: 800;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+  transition: transform .12s ease, filter .12s ease, border-color .12s ease;
+}
+
+.reboot-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.12);
+  border-color: var(--gold);
+}
+
+.reboot-button--secondary {
+  background: linear-gradient(180deg, rgba(18, 39, 59, .96), rgba(9, 24, 39, .96));
+  border-color: rgba(94, 138, 172, .5);
+}
+
+.reboot-button:disabled {
+  cursor: not-allowed;
+  opacity: .42;
+  filter: saturate(.4);
+}
+
+.reboot-status {
+  margin-top: 20px;
+  padding: 14px;
+  border: 1px solid rgba(239, 199, 94, .18);
+  border-radius: 10px;
+  background: rgba(5, 14, 24, .55);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.reboot-footer {
+  padding: 0 8px;
+  color: rgba(209, 220, 229, .58);
+  font-size: 12px;
+  text-align: center;
+}
+
+.reboot-modal[hidden] { display: none; }
+.reboot-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, .72);
+  backdrop-filter: blur(7px);
+}
+
+.reboot-modal__panel {
+  width: min(640px, 100%);
+  max-height: min(720px, calc(100vh - 48px));
+  overflow-y: auto;
+  padding: 28px;
+  border: 1px solid rgba(239, 199, 94, .4);
+  border-radius: 18px;
+  background: var(--panel-strong);
+  box-shadow: 0 28px 80px rgba(0,0,0,.55);
+}
+
+.reboot-modal__panel h2 {
+  margin: 0 0 10px;
+  font-family: 'RPChessDisplay', Georgia, serif;
+  font-size: 38px;
+  font-weight: 400;
+}
+
+.reboot-modal__panel p { color: var(--muted); line-height: 1.55; }
+
+.reboot-setting {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 0;
+  border-top: 1px solid rgba(103,142,177,.18);
+}
+
+.reboot-setting input { width: 180px; }
+
+.reboot-notice {
+  margin-top: 20px;
+  padding: 14px;
+  border-left: 3px solid var(--gold);
+  background: rgba(239,199,94,.07);
+  color: #ddd3b1;
+  line-height: 1.5;
+}
+
+@media (max-width: 980px) {
+  .reboot-shell { width: min(100% - 28px, 900px); padding-top: 14px; }
+  .reboot-hero { grid-template-columns: 1fr; min-height: auto; }
+  .reboot-hero__copy { min-height: 540px; padding: 56px 36px; }
+  .reboot-menu { width: auto; margin: 0 24px 30px; }
+}
+
+@media (max-width: 620px) {
+  .reboot-shell { width: calc(100% - 16px); gap: 12px; }
+  .reboot-topbar { min-height: 64px; padding: 8px 10px; }
+  .reboot-brand__logo { width: 46px; height: 46px; }
+  .reboot-brand__wordmark { width: 165px; }
+  .reboot-version { display: none; }
+  .reboot-hero { border-radius: 16px; }
+  .reboot-hero__copy { min-height: 480px; padding: 42px 24px; }
+  .reboot-title { font-size: clamp(52px, 18vw, 76px); }
+  .reboot-menu { margin: 0 12px 20px; padding: 22px 16px; }
+  .reboot-modal { padding: 12px; }
+  .reboot-modal__panel { max-height: calc(100vh - 24px); padding: 22px 18px; }
+  .reboot-setting { grid-template-columns: 1fr; }
+  .reboot-setting input { width: 100%; }
+}
