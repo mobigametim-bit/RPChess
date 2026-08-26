@@ -1,5 +1,17 @@
 # RPChess Reboot Changelog
 
+## 2026-08-26 — Classic Chess preview ready for human playtest
+- Реализован новый standalone Classic Chess runtime без загрузки gameplay-кода Iron Marches.
+- `Новая игра` запускает полноценную локальную партию на классической доске 8×8 с production-ассетами 12 стандартных фигур.
+- Реализованы обычные ходы, шах, мат, пат, рокировка, взятие на проходе, обязательное превращение в Q/R/B/N, запрет оставлять собственного короля под шахом, правило 50 ходов, троекратное повторение и недостаточный материал.
+- Добавлены production board states: выбор фигуры, legal/capture targets, последний ход, шах, история ходов и финальные состояния партии.
+- Сохранены музыка, UI/game SFX, настройки и responsive/vertical-scroll contract.
+- Canonical engine acceptance: стартовая позиция perft(3) = 8902; Kiwipete = 48 / 2039 / 97862 на глубинах 1/2/3; canonical endgame perft(3) = 2812.
+- Cloudflare exact-head build проходит production build/source/distribution verification.
+- Real Chromium desktop/mobile acceptance suite добавлен в CI, но GitHub Actions runner сейчас завершается до первого workflow step; hosted Chromium execution поэтому остаётся инфраструктурно заблокированным и не помечается как пройденный.
+- Preview version: `2.1.0-classic-chess.preview.2`.
+- PR #65 остаётся Draft до живого HUMAN PLAYTEST. Chess AI до принятия этого gate не начинается.
+
 ## 2026-08-26 — Reboot Foundation human accepted
 - Reboot Foundation принят после живого preview-теста.
 - Главное меню возвращено к production-ready композиции предыдущей RPChess; исключены только системы, которых ещё нет в Reboot.
