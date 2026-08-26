@@ -1,9 +1,11 @@
 {
   "name": "rpchess",
   "private": true,
-  "version": "2.0.0-foundation.1",
+  "version": "1.3.9",
   "description": "RPChess Reboot — fantasy roguelite built on classical chess",
   "devDependencies": {
+    "adm-zip": "^0.5.16",
+    "esbuild": "0.25.8",
     "wrangler": "^4.0.0"
   },
   "scripts": {
