@@ -35,6 +35,12 @@ button { min-height: 44px; }
 button:focus-visible { outline: 3px solid #8bcfff; outline-offset: 3px; }
 #app { min-height: 100vh; }
 
+/* Scene roots are mutually exclusive. Author display rules must never override the hidden state. */
+[data-reboot-foundation][hidden],
+[data-classic-screen][hidden] {
+  display: none !important;
+}
+
 .reboot-menu-screen {
   position: relative;
   min-height: max(100vh, 620px);
