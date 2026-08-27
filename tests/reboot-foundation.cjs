@@ -19,9 +19,9 @@ assert(html.includes('generated_assets/title_wordmark.png'), 'approved RPChess w
 assert(html.includes('css/reboot-foundation.css?v=20260827-frameless-1'), 'frameless Foundation stylesheet cache bust is not pinned');
 assert(html.includes('css/classic-chess.css?v=20260827-frameless-1'), 'frameless Classic Chess stylesheet cache bust is not pinned');
 assert(html.includes('css/chess-ai-polish.css?v=20260827-frameless-1'), 'frameless Chess AI polish cache bust is not pinned');
-assert(html.includes('css/roster.css?v=20260827-frameless-1'), 'frameless Roster stylesheet cache bust is not pinned');
+assert(html.includes('css/roster.css?v=20260827-roster-2'), 'corrected Roster stylesheet cache bust is not pinned');
 assert(html.includes('js/reboot-foundation.mjs?v=20260827-roster-1'), 'Roster Foundation runtime cache bust is not pinned');
-assert(html.includes('js/roster-app.mjs?v=20260827-roster-1'), 'Roster runtime is not loaded');
+assert(html.includes('js/roster-app.mjs?v=20260827-roster-2'), 'corrected Roster runtime is not loaded');
 
 for (const forbidden of ['iron-marches-runtime.bundle.js', 'vertical-slice-app.mjs', 'explicit-run-setup.mjs', 'ui-approved-campaign.mjs', 'commander-selection-final.mjs']) {
   assert(!html.includes(forbidden), `legacy runtime is still referenced: ${forbidden}`);
