@@ -36,6 +36,10 @@ const RUN_KEY = 'rpchess.reboot.v1.run';
       rebootAudio: Boolean(window.RPChessRebootAudio),
       roster: Boolean(window.RPChessRoster),
       skirmish: Boolean(window.RPChessSkirmish),
+      battle: Boolean(window.RPChessBattle),
+      travelChoice: Boolean(window.RPChessTravelChoice),
+      travelScreen: Boolean(document.querySelector('[data-travel-choice-screen]')),
+      directBattleShortcut: Boolean(document.querySelector('[data-roster-battle]')),
       classicChess: Boolean(window.RPChessClassicChess),
       chessAI: Boolean(window.RPChessChessAI),
       musicSrc: window.RPChessRebootAudio?.music?.src || '',
@@ -46,6 +50,10 @@ const RUN_KEY = 'rpchess.reboot.v1.run';
     assert.strictEqual(runtimeState.rebootAudio, true, 'Reboot audio layer must be active');
     assert.strictEqual(runtimeState.roster, true, 'Roster runtime must coexist with the retained Foundation menu');
     assert.strictEqual(runtimeState.skirmish, true, 'Skirmish runtime must load with the run shell');
+    assert.strictEqual(runtimeState.battle, true, 'Battle runtime must remain available for Travel encounters');
+    assert.strictEqual(runtimeState.travelChoice, true, 'Travel Choice runtime must load with the run shell');
+    assert.strictEqual(runtimeState.travelScreen, true, 'Travel Choice scene must be prepared at bootstrap');
+    assert.strictEqual(runtimeState.directBattleShortcut, false, 'temporary direct Battle shortcut must be gone');
     assert.strictEqual(runtimeState.classicChess, true, 'Classic Chess runtime must remain available for encounters');
     assert.strictEqual(runtimeState.chessAI, true, 'Chess AI adapter surface must remain available');
     assert(runtimeState.musicSrc.includes('music/echoes_iron_throne_01.mp3'), `unexpected first music track: ${runtimeState.musicSrc}`);
@@ -64,7 +72,8 @@ const RUN_KEY = 'rpchess.reboot.v1.run';
     await menu.locator('[data-new-game]').click();
     await page.locator('[data-roster-screen]:not([hidden])').waitFor();
     assert.strictEqual(await menu.isHidden(), true, 'New Game must replace the main menu with the Roster scene');
-    assert.strictEqual(await page.locator('[data-skirmish-screen]').isHidden(), true, 'Skirmish must wait for Start Journey');
+    assert.strictEqual(await page.locator('[data-travel-choice-screen]').isHidden(), true, 'Travel Choice must wait for Start Journey');
+    assert.strictEqual(await page.locator('[data-skirmish-screen]').isHidden(), true, 'Skirmish must wait for a route choice');
     assert.strictEqual(await page.locator('[data-classic-screen]').isHidden(), true, 'Classic Chess must not open before an encounter exists');
     assert.strictEqual(await page.locator('[data-game-setup-modal]').isHidden(), true, 'standalone Chess setup must not open from product New Game');
     assert.strictEqual(await page.locator('[data-roster-card]').count(), 6, 'New Game must create the approved starter roster');
@@ -92,7 +101,7 @@ const RUN_KEY = 'rpchess.reboot.v1.run';
 
     assert.deepStrictEqual(errors, [], `desktop browser errors:\n${errors.join('\n')}`);
     assert.deepStrictEqual(mobileErrors, [], `mobile browser errors:\n${mobileErrors.join('\n')}`);
-    console.log('Reboot Foundation product-menu to Roster with Skirmish runtime Chromium acceptance: PASS');
+    console.log('Reboot Foundation product-menu to Roster with Skirmish/Battle/Travel runtimes Chromium acceptance: PASS');
   } finally {
     await browser.close();
   }

@@ -2,6 +2,7 @@ import { createStarterRoster } from './roster-data.mjs';
 
 const RUN_STORAGE_KEY = 'rpchess.reboot.v1.run';
 const RUN_SCHEMA_VERSION = 1;
+const TRAVEL_TYPES = new Set(['skirmish', 'battle', 'event', 'settlement', 'puzzle']);
 
 function resolveStorage(storage) {
   if (storage) return storage;
@@ -13,6 +14,19 @@ function runId(now = Date.now()) {
   return `run-${Number(now).toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function isStoredTravelChoice(value) {
+  if (!value || typeof value !== 'object') return false;
+  if (!value.id || typeof value.id !== 'string') return false;
+  if (!TRAVEL_TYPES.has(value.type)) return false;
+  if (!Number.isInteger(value.step) || value.step < 1) return false;
+  if (!Number.isInteger(value.stars) || value.stars < 1 || value.stars > 5) return false;
+  if (!value.seed || typeof value.seed !== 'string') return false;
+  if (!value.flavor || typeof value.flavor !== 'string') return false;
+  if (!value.mechanicalHint || typeof value.mechanicalHint !== 'string') return false;
+  if (value.combatCountAtSelection != null && (!Number.isInteger(value.combatCountAtSelection) || value.combatCountAtSelection < 0)) return false;
+  return true;
+}
+
 function isValidRun(value) {
   if (!value || typeof value !== 'object') return false;
   if (value.schemaVersion !== RUN_SCHEMA_VERSION) return false;
@@ -21,6 +35,9 @@ function isValidRun(value) {
   if (value.ended != null && typeof value.ended !== 'boolean') return false;
   if (value.skirmishCount != null && (!Number.isInteger(value.skirmishCount) || value.skirmishCount < 0)) return false;
   if (value.battleCount != null && (!Number.isInteger(value.battleCount) || value.battleCount < 0)) return false;
+  if (value.journeyStep != null && (!Number.isInteger(value.journeyStep) || value.journeyStep < 0)) return false;
+  if (value.currentTravelChoices != null && (!Array.isArray(value.currentTravelChoices) || value.currentTravelChoices.length !== 3 || !value.currentTravelChoices.every(isStoredTravelChoice))) return false;
+  if (value.activeTravelChoice != null && !isStoredTravelChoice(value.activeTravelChoice)) return false;
   const ids = new Set();
   let kingCount = 0;
   for (const character of value.roster) {
@@ -41,6 +58,9 @@ function hydrateCurrentRosterCopy(run) {
     battleCount: Number.isInteger(run.battleCount) ? run.battleCount : 0,
     lastSkirmish: run.lastSkirmish || null,
     lastBattle: run.lastBattle || null,
+    journeyStep: Number.isInteger(run.journeyStep) ? run.journeyStep : 0,
+    currentTravelChoices: Array.isArray(run.currentTravelChoices) ? run.currentTravelChoices : null,
+    activeTravelChoice: isStoredTravelChoice(run.activeTravelChoice) ? run.activeTravelChoice : null,
     roster: run.roster.map((character) => {
       const current = currentTemplates.get(character.id);
       if (!current) return character;
@@ -63,7 +83,10 @@ function createRun({ now = Date.now(), id = null } = {}) {
     skirmishCount: 0,
     lastSkirmish: null,
     battleCount: 0,
-    lastBattle: null
+    lastBattle: null,
+    journeyStep: 0,
+    currentTravelChoices: null,
+    activeTravelChoice: null
   };
 }
 
@@ -93,4 +116,4 @@ function clearRun(storage = null) {
   resolveStorage(storage)?.removeItem(RUN_STORAGE_KEY);
 }
 
-export { RUN_STORAGE_KEY, RUN_SCHEMA_VERSION, createRun, readRun, writeRun, clearRun, isValidRun };
+export { RUN_STORAGE_KEY, RUN_SCHEMA_VERSION, createRun, readRun, writeRun, clearRun, isValidRun, isStoredTravelChoice };

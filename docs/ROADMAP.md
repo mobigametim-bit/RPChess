@@ -9,7 +9,7 @@
 - [x] Skirmish — ≤16 фигур, ≤39 очков, adaptive enemy. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Пользователь принял corrected preview 2026-08-27. Персонализированные фигуры используют собственный `pieceArt` непосредственно на доске, обычный aftermath показывает только выживших/тяжело раненых, а мат игроку открывает отдельный run-end summary `КОРОЛЬ ПОГИБ`.
 - [x] **PLAYTEST GATE C: интересность собственного состава и corrected Skirmish flow подтверждены пользователем.**
 - [x] Battle — полный классический комплект + временные фигуры. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Пользователь принял Battle preview 2026-08-27. Стандартная армия всегда 16 фигур / 39 очков + King 0; HEALTHY named-фигуры заменяют standard slots своего типа, generic slots остаются временными, персональная identity сохраняется на доске, а captured named non-King получают `wounded`.
-- [ ] Travel Choice — три случайных следующих пути после каждой встречи.
+- [x] Travel Choice — три случайных следующих пути после каждой встречи. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Пользователь принял preview 2026-08-27. Ровно 3 persistent deterministic cards; card click сразу фиксирует необратимый выбор и запускает encounter; Roster/reload не перегенерируют развилку; текущий playable pool — Skirmish + Battle; aftermath возвращает в следующую тройку через `Продолжить путь`.
 - [ ] Resources — Gold + Supplies.
 - [ ] Settlement — лечение, найм, снабжение.
 - [ ] Starvation — случайная смерть фигуры при переходе без припасов.
@@ -25,7 +25,18 @@
 - [ ] Metaprogression — только после подтверждения core loop.
 
 ## Current phase
-**Battle — HUMAN ACCEPTED → DONE.** Следующая feature — **Travel Choice**. Реализация Travel Choice начинается только после merge Battle PR в `main` и успешной post-merge проверки CI/Cloudflare.
+**Travel Choice — IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Пользователь завершил живой playtest и подтвердил: **«всё хорошо»**. PR #70 merge выполняется только после acceptance-docs exact-head CI/Cloudflare SUCCESS; затем обязательна post-merge проверка `main`. Следующая feature — **Resources (Gold + Supplies)**, но её реализация не начинается до полного merge closure Travel Choice.
+
+Current `main` before Travel Choice: `6a5f4b7cc2c920afc1309a876a5a44c43eac1b06`.
+
+Accepted Travel Choice gameplay head: `d76fca5ad5e02260a836400c7398158c1657a6f6`.
+Accepted Travel Choice docs-synchronized preview head before acceptance commit: `7775750690b5a9e2a947baf5d9091b3b898a6241`.
+Accepted Travel Choice version: `2.6.0-travel-choice.preview.1`.
+Travel Choice gameplay CI: `33080571104` / #898 — **SUCCESS**, включая full real Chromium regression-suite Foundation → Classic Chess → Stockfish → Roster → Skirmish → Battle → Travel Choice.
+Travel Choice pre-acceptance docs-head CI: `33081722542` / #903 — **SUCCESS**, включая full real Chromium regression-suite.
+Accepted Travel Choice Cloudflare build: `e5b0d01e-433c-44f7-81b9-df10a2127e23` — **SUCCESS**; Version `7047b3fb-ffc9-4e69-88cb-39566293ec66`.
+Accepted Travel Choice preview: `https://7047b3fb-rpchess.mobigametim.workers.dev`.
+Travel Choice branch alias: `https://feature-travel-choice-rpchess.mobigametim.workers.dev`.
 
 Accepted Roster gameplay head: `21486014ca110062fdcb776d5119b23dbe3418cf`.
 Accepted Roster version: `2.3.0-roster.preview.3`.

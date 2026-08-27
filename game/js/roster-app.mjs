@@ -6,6 +6,7 @@ const classicScreen = document.querySelector('[data-classic-screen]');
 const rosterScreen = document.querySelector('[data-roster-screen]');
 const skirmishScreen = document.querySelector('[data-skirmish-screen]');
 const aftermathScreen = document.querySelector('[data-skirmish-aftermath]');
+const travelScreen = document.querySelector('[data-travel-choice-screen]');
 const continueButton = document.querySelector('[data-continue-run]');
 const journeyButton = document.querySelector('[data-roster-travel]');
 const rosterList = document.querySelector('[data-roster-list]');
@@ -24,6 +25,7 @@ function setScene(target) {
   if (rosterScreen) rosterScreen.hidden = target !== 'roster';
   if (skirmishScreen) skirmishScreen.hidden = target !== 'skirmish';
   if (aftermathScreen) aftermathScreen.hidden = target !== 'aftermath';
+  if (travelScreen) travelScreen.hidden = target !== 'travel';
   document.body.classList.toggle('roster-active', target === 'roster');
   if (target === 'roster') window.scrollTo(0, 0);
 }
@@ -206,7 +208,7 @@ function beginJourney() {
   if (!activeRun || activeRun.ended) return;
   audio()?.click();
   setScene('menu');
-  globalThis.dispatchEvent(new CustomEvent('rpchess:skirmish-open', { detail: { source: 'roster', runId: activeRun.id } }));
+  globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open', { detail: { source: 'roster', runId: activeRun.id } }));
 }
 
 function returnToMenu() {
