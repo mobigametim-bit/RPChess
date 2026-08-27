@@ -1,7 +1,7 @@
 # 11 — Chess AI
 
 ## Цель feature
-Добавить компьютерного соперника поверх уже принятого классического шахматного ядра, не меняя правила шахмат и не связывая игровой runtime напрямую с конкретным движком.
+Добавить компьютерного соперника поверх принятого классического шахматного ядра, не меняя правила шахмат и не связывая игровой runtime напрямую с конкретным движком.
 
 ## Архитектура
 
@@ -15,19 +15,10 @@ Stockfish 18 lite single-threaded
  Web Worker + WASM
 ```
 
-`classic-chess-app.mjs` работает только через `ChessAIAdapter`. Замена движка в будущем не должна требовать переписывания шахматных правил или UI доски.
+`classic-chess-app.mjs` работает только через `ChessAIAdapter`.
 
 ## Движок
-Используется Stockfish.js / Stockfish 18 `lite single-threaded`.
-
-Причины выбора:
-- современный Stockfish;
-- Web Worker не блокирует UI;
-- single-threaded вариант не требует cross-origin isolation;
-- lite WASM существенно меньше полной NNUE-сборки и подходит браузерной игре;
-- мощности достаточно для верхнего требуемого диапазона сложности.
-
-Distribution build загружает закреплённые release-файлы Stockfish 18.0.0 и проверяет SHA-256 перед упаковкой. В `dist/vendor/stockfish/` также поставляются `COPYING.txt` и `SOURCE.txt` с указанием соответствующего исходного кода.
+Используется Stockfish.js / Stockfish 18 `lite single-threaded`. Distribution build загружает закреплённые release-файлы Stockfish 18.0.0, проверяет SHA-256 и поставляет Worker/WASM вместе с GPLv3 `COPYING.txt` и `SOURCE.txt`.
 
 ## Шкала сложности
 
@@ -46,87 +37,65 @@ Distribution build загружает закреплённые release-файл�
 | Очень сильный | ≈2400 Elo |
 | Гроссмейстер | ≈2600 Elo |
 
-Это игровые ориентиры сложности, а не обещание точной турнирной рейтинговой калибровки.
+Это игровые ориентиры, а не обещание точной турнирной рейтинговой калибровки.
 
-## Ослабление ниже нативного диапазона Stockfish
-Нативный `UCI_LimitStrength / UCI_Elo` используется начиная примерно с диапазона Stockfish 1320+.
-
-Для уровней 400–1200 используется двухслойное ослабление:
-1. Stockfish рассчитывает несколько линий через `MultiPV`.
-2. Адаптер контролируемо выбирает не только лучший вариант; на самых низких уровнях дополнительно допускается небольшой шанс случайного **легального** хода.
-
-Таким образом новичковый AI ошибается, но никогда не нарушает классические правила.
-
-## Верхние уровни
-Для 1400–2600:
-- `UCI_LimitStrength = true`;
-- `UCI_Elo = выбранный уровень`;
-- основной ход берётся из `bestmove` Stockfish;
-- время анализа постепенно увеличивается вместе с уровнем.
+## Ослабление AI
+Для 400–1200 Stockfish рассчитывает несколько линий через `MultiPV`, после чего адаптер контролируемо выбирает более слабые, но всегда легальные варианты. Для 1400–2600 используются `UCI_LimitStrength`, `UCI_Elo` и основной `bestmove` Stockfish.
 
 ## UI новой партии
-Перед партией игрок выбирает:
+Игрок выбирает:
 - `Против компьютера` или `Локальная партия`;
 - уровень AI;
-- свои фигуры: белые / чёрные / случайно.
+- белые / чёрные / случайный цвет.
 
-При игре чёрными доска разворачивается к игроку, а компьютер автоматически делает первый ход.
-
-Во время расчёта:
-- поле блокирует пользовательский ввод;
-- состояние расчёта остаётся ненавязчивым в панели `Партия`;
-- большая центральная плашка `Компьютер думает…` визуально не показывается;
-- рассчитанный ход воспроизводится плавной анимацией перемещения фигуры;
-- после хода AI управление автоматически возвращается игроку.
+При игре чёрными доска разворачивается к игроку, компьютер автоматически делает первый ход. На ходе AI пользовательский ввод блокируется, но большая плашка `Компьютер думает…` не перекрывает доску. Рассчитанный ход воспроизводится плавным перемещением фигуры.
 
 ## Production UI шахматной партии
-После живых playtest зафиксирован обязательный контракт:
-- каждая fantasy-фигура имеет небольшой bare technical chess glyph своей роли в крайнем левом верхнем углу клетки;
-- вокруг technical glyph нет окружности, рамки или фоновой плашки;
-- glyph белой стороны — белый, glyph чёрной — чёрный;
-- панель `Ходы` использует стандартную SAN-запись с figurine-представлением фигур;
-- SAN поддерживает `x`, `+`, `#`, `O-O`, `O-O-O`, promotion и disambiguation одинаковых фигур;
-- показываются взятые фигуры и текущий material advantage;
-- desktop-layout: `Партия` слева от доски, доска по центру, `Ходы` справа;
-- широкая status-плашка `Партия завершена…` удалена из визуальной композиции;
-- дублирующие post-game `Новая партия / Главное меню` внутри панели `Партия` удалены; единственный action set остаётся в верхнем toolbar;
-- все action-кнопки используют синий `ui_button_primary.png`;
-- framed content подчиняется общему game-wide safe-area contract из `16_UI_UX.md`: весь текст и controls остаются внутри тёмной рабочей области, не касаются декоративной рамки, а слева используется дополнительный внутренний отступ;
-- при включённом `Уменьшить анимации` или системном reduced-motion плавное перемещение может быть отключено.
+Зафиксирован принятый контракт:
+- fantasy-фигуры имеют небольшой bare technical chess glyph в верхнем левом углу клетки;
+- white glyph — белый, black glyph — чёрный, без окружности/подложки;
+- `Ходы` используют SAN + figurine notation, включая `x`, `+`, `#`, `O-O`, `O-O-O`, promotion и disambiguation;
+- показываются взятые фигуры и material advantage;
+- desktop: `Партия` слева / доска по центру / `Ходы` справа;
+- широкая `Партия завершена…` status-плашка и duplicate post-game CTA отсутствуют;
+- action-кнопки используют синий `ui_button_primary.png`;
+- все framed surfaces подчиняются game-wide safe-area contract из `16_UI_UX.md`: текст/controls не касаются декоративной рамки, левый inset немного больше правого;
+- reduced-motion может отключать плавное перемещение.
 
 ## Отказоустойчивость
-Если Worker/WASM не может инициализироваться, адаптер не создаёт незаконных ходов: используется легальный fallback. UI помечает такой режим как резервный. Это аварийная защита, а не нормальный режим работы production-сборки.
+Если Worker/WASM не инициализируется, адаптер использует только легальный fallback-ход и не нарушает шахматные правила.
 
 ## Тестовый контракт
 Автоматически проверяются:
 - 12 профилей Elo;
-- команды UCI strength / MultiPV;
-- детерминированное ослабление низких уровней;
+- UCI strength / MultiPV;
+- контролируемое ослабление низких уровней;
 - только легальные fallback-ходы;
-- game setup contract;
-- блокировка ввода во время AI turn;
-- technical piece markers;
-- SAN / figurine move-list contract;
-- captured-piece/material UI;
-- smooth-move animation contract;
-- blue-CTA и commander-style panel contract;
-- global framed-content safe-area variables и binding текущих panel families;
-- финальный three-column layout и отсутствие duplicate post-game CTA;
-- реальный Stockfish Worker browser flow.
+- setup, board rotation и input lock;
+- technical markers;
+- SAN/figurines;
+- captured material;
+- smooth animation;
+- blue CTA и commander-style surfaces;
+- global framed-content safe-area;
+- real Stockfish Worker browser flow.
 
 ## Human Playtest Gate
-AI gameplay и предыдущий UI polish уже приняты пользователем. Перед закрытием Chess AI как `DONE` нужен только короткий spot-check версии `2.2.0-chess-ai.preview.4`:
-- окно `Новая партия`, `Настройки`, `Партия` и `Ходы` держат весь текст/controls внутри внутренней тёмной области рамки;
-- слева есть заметный небольшой дополнительный inset;
-- остальные ранее принятые UI/gameplay решения не регрессировали.
+**HUMAN ACCEPTED → DONE.** Пользователь подтвердил:
+- AI gameplay на разных уровнях сложности;
+- игру белыми/чёрными и board rotation;
+- production polish;
+- SAN/figurines и captured material;
+- плавные AI-ходы;
+- финальный global framed-content safe-area spot-check.
 
-## Deployment Gate
-Перед передачей финального UI spot-check точный head ветки обязан одновременно пройти:
-- GitHub Actions source/static/engine/adapter tests;
-- production build + distribution boundary;
-- real Chromium + real Stockfish acceptance;
-- Cloudflare Workers exact-head build.
+Дополнительных замечаний по Chess AI не осталось.
 
-Точные SHA / run / build / preview IDs фиксируются в PR #66 и Notion после последнего commit, чтобы документационный commit сам не делал зафиксированный SHA устаревшим.
+## Accepted deployment evidence
+- Accepted preview version: `2.2.0-chess-ai.preview.4`.
+- Accepted gameplay/UI exact head: `556423dd31778def0d6245a4de1d221dc5a2299c`.
+- GitHub Actions run `33026697784`, job `98369639263`: **SUCCESS**, включая real Chromium + real Stockfish.
+- Cloudflare build `af7b2919-b1c2-44a4-be56-167453070c99`: **SUCCESS**.
+- Cloudflare Version `7bf7d0e6-1cbb-4e91-8203-7b66319e7e14`.
 
-Roster не начинается до финального human acceptance.
+Следующий этап — Roster. После merge Chess AI создаётся `feature/roster`, но реализация начинается только после отдельного согласования UX с пользователем.
