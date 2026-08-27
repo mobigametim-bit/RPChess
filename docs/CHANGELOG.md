@@ -1,5 +1,13 @@
 # RPChess Reboot Changelog
 
+## 2026-08-27 — Chess AI HUMAN ACCEPTED → DONE
+- Пользователь подтвердил финальный global framed-content safe-area spot-check без дополнительных замечаний.
+- Chess AI закрыт как **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**.
+- Accepted preview: `2.2.0-chess-ai.preview.4`; accepted gameplay/UI head: `556423dd31778def0d6245a4de1d221dc5a2299c`.
+- GitHub Actions run `33026697784`, job `98369639263`: **SUCCESS**, включая real Chromium + Stockfish acceptance.
+- Cloudflare build `af7b2919-b1c2-44a4-be56-167453070c99`: **SUCCESS**; Version `7bf7d0e6-1cbb-4e91-8203-7b66319e7e14`.
+- Следующий этап: Roster. До реализации сначала согласуется UX с пользователем.
+
 ## 2026-08-27 — Global framed-content safe-area invariant
 - После финального UI spot-check пользователь подтвердил весь Chess AI polish и добавил одно обязательное правило для **всей игры**: текст и интерактивные элементы во всех декоративных фреймах должны оставаться внутри внутренней рабочей области и визуально не касаться рамки.
 - В `reboot-foundation.css` введён централизованный `--ui-frame-safe-*` contract и reusable `.ui-frame-safe` utility для текущих и будущих сцен.
@@ -57,19 +65,6 @@
 - Classic Chess закрыт как **HUMAN ACCEPTED → DONE**.
 - Финальный accepted feature version: `2.1.0-classic-chess`.
 - Classic Chess squash merge: `6df1a65ffca36413d99415eab1f0e5ccddbd5dbe`.
-
-## 2026-08-26 — Classic Chess human playtest passed; scene switching corrected
-- Пользователь подтвердил успешное прохождение всех запрошенных пунктов Classic Chess playtest: board interaction, legal move highlighting, turn flow, castling, en passant, promotion, check/mate, settings/audio, menu controls и mobile/narrow viewport.
-- Единственный найденный defect был presentation-level: после `Новая игра` главное меню оставалось в layout, поэтому шахматная сцена появлялась ниже него вместо полноценной смены сцены.
-- Root cause: author CSS `.reboot-menu-screen { display: grid; }` перекрывал браузерное отображение HTML `hidden` для menu root.
-- Исправлен общий scene visibility contract: `[data-reboot-foundation][hidden]` и `[data-classic-screen][hidden]` принудительно удаляются из layout через `display: none !important`.
-- Обновлён cache-busting query для Foundation stylesheet.
-- Усилены static и Chromium regression tests.
-
-## 2026-08-26 — Classic Chess preview ready for human playtest
-- Реализован standalone Classic Chess runtime без загрузки gameplay-кода Iron Marches.
-- Реализованы обычные ходы, шах, мат, пат, рокировка, en passant, promotion Q/R/B/N, правило 50 ходов, троекратное повторение и недостаточный материал.
-- Canonical engine acceptance: стартовая позиция perft(3) = 8902; Kiwipete = 48 / 2039 / 97862; canonical endgame perft(3) = 2812.
 
 ## 2026-08-26 — Reboot Foundation human accepted
 - Reboot Foundation принят после живого preview-теста.
