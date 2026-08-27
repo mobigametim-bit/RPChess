@@ -5,9 +5,9 @@
 - [x] Reboot Foundation — production-ready visual shell без старых gameplay-систем. Human accepted 2026-08-26; production-menu и audio corrections included.
 - [x] Classic Chess — полный локальный классический шахматный runtime. **IMPLEMENTED → ENGINE-AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Пользователь успешно прошёл полный gameplay/UX playtest и финальный scene-switch spot-check. Исправлен exclusive scene visibility contract. Canonical perft: start d3 = 8902; Kiwipete d1/d2/d3 = 48/2039/97862; canonical endgame d3 = 2812.
 - [x] Chess AI — Stockfish adapter и уровни Elo. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Stockfish 18 lite single-threaded работает через отдельный Web Worker/WASM adapter; 12 уровней ≈400–2600 Elo. Пользователь подтвердил AI gameplay, SAN/figurines, captured material и плавные ходы.
-- [x] Roster — персонализированный король и фигуры. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Отдельная сцена `Отряд`: detail + каталог, обязательный Хранитель Клятвы, 6 стартовых персонализированных фигур, классическая стоимость 1/3/3/5/9/0, статусы healthy/wounded/dead, memorial `Погибшие`, локальный persistent run, рабочая кнопка `Продолжить` и временный playable bridge `Начать путешествие → Classic Chess / Stockfish`. Пользователь принял исправленный preview 2026-08-27. Game-wide frameless panel standard остаётся обязательным для всех следующих feature.
-- [ ] Skirmish — ≤16 фигур, ≤39 очков, adaptive enemy. **IMPLEMENTATION BLOCKED UNTIL UX IS DISCUSSED AND HUMAN-APPROVED.**
-- [ ] **PLAYTEST GATE: интересность собственного состава.**
+- [x] Roster — персонализированный король и фигуры. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Отдельная сцена `Отряд`: detail + каталог, обязательный Хранитель Клятвы, 6 стартовых персонализированных фигур, классическая стоимость 1/3/3/5/9/0, статусы healthy/wounded/dead, memorial `Погибшие`, локальный persistent run и рабочая кнопка `Продолжить`. Пользователь принял исправленный preview 2026-08-27. Game-wide frameless panel standard остаётся обязательным для всех следующих feature.
+- [x] Skirmish — ≤16 фигур, ≤39 очков, adaptive enemy. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Пользователь принял corrected preview 2026-08-27. Персонализированные фигуры используют собственный `pieceArt` непосредственно на доске, обычный aftermath показывает только выживших/тяжело раненых, а мат игроку открывает отдельный run-end summary `КОРОЛЬ ПОГИБ`.
+- [x] **PLAYTEST GATE C: интересность собственного состава и corrected Skirmish flow подтверждены пользователем.**
 - [ ] Battle — полный классический комплект + временные фигуры.
 - [ ] Travel Choice — три случайных следующих пути после каждой встречи.
 - [ ] Resources — Gold + Supplies.
@@ -25,11 +25,19 @@
 - [ ] Metaprogression — только после подтверждения core loop.
 
 ## Current phase
-**Roster — DONE. Следующая работа: UX-проектирование Skirmish.** Реализация Skirmish не начинается до отдельного обсуждения и явного утверждения UX пользователем.
+**Skirmish — HUMAN ACCEPTED → DONE.** Следующая feature — **Battle**. Реализация Battle начинается только после merge PR #68 в `main` и успешной post-merge проверки CI/Cloudflare.
 
 Accepted Roster gameplay head: `21486014ca110062fdcb776d5119b23dbe3418cf`.
-Accepted version: `2.3.0-roster.preview.3`.
-Accepted preview: `https://78461dc1-rpchess.mobigametim.workers.dev`.
+Accepted Roster version: `2.3.0-roster.preview.3`.
+Accepted Roster preview: `https://78461dc1-rpchess.mobigametim.workers.dev`.
+
+Accepted Skirmish corrected gameplay head: `b11f712e63366a70f35c0de8fd0b823159dad0cd`.
+Accepted Skirmish docs-synchronized head: `40b093eeb601097afe9fa0da0990594a8fcc2ffc`.
+Accepted Skirmish version: `2.4.0-skirmish.preview.2`.
+Accepted Skirmish push CI: `33068848497` / #882 — **SUCCESS**, including real Chromium.
+Accepted Skirmish PR CI: `33069287273` / #883 — **SUCCESS**, including real Chromium.
+Accepted Skirmish Cloudflare build: `f575d3d6-d62f-48bc-907d-4873e67ac154` — **SUCCESS**; Version `0727f70c-24a7-4dbc-aa1f-6559f968fd1e`.
+Accepted Skirmish preview: `https://0727f70c-rpchess.mobigametim.workers.dev`.
 
 ## Статусы feature
 `IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE`

@@ -7,6 +7,7 @@ on:
     branches:
       - main
       - feature/roster
+      - feature/skirmish
 
 permissions:
   contents: read
@@ -16,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify-roster:
+  verify-skirmish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,11 +29,11 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Verify Reboot source contract
         run: npm run verify
-      - name: Run Foundation, chess, AI and Roster tests
+      - name: Run Foundation, chess, AI, Roster and Skirmish tests
         run: npm test
-      - name: Build Roster web distribution
+      - name: Build Skirmish web distribution
         run: npm run build
-      - name: Verify clean Roster distribution boundary
+      - name: Verify clean Skirmish distribution boundary
         shell: bash
         run: |
           set -euo pipefail
@@ -41,6 +42,7 @@ jobs:
           test -f dist/css/classic-chess.css
           test -f dist/css/chess-ai-polish.css
           test -f dist/css/roster.css
+          test -f dist/css/skirmish.css
           test -f dist/js/reboot-foundation.mjs
           test -f dist/js/reboot-audio.mjs
           test -f dist/js/classic-chess-engine.mjs
@@ -49,6 +51,8 @@ jobs:
           test -f dist/js/roster-data.mjs
           test -f dist/js/run-persistence.mjs
           test -f dist/js/roster-app.mjs
+          test -f dist/js/skirmish-core.mjs
+          test -f dist/js/skirmish-app.mjs
           test -f dist/assets/kings/oathkeeper/portrait.png
           test -f dist/assets/kings/oathkeeper/piece.png
           for hero in aldric_wall mara_chain nemea_quill brother_orell vael_hammer; do
@@ -78,8 +82,8 @@ jobs:
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
-      - name: Run real Chromium Foundation, chess, Stockfish and Roster acceptance
-        timeout-minutes: 15
+      - name: Run real Chromium Foundation, chess, Stockfish, Roster and Skirmish acceptance
+        timeout-minutes: 18
         shell: bash
         run: |
           set -euo pipefail
@@ -94,3 +98,4 @@ jobs:
           stdbuf -oL -eL node tests/reboot-foundation-browser.cjs
           stdbuf -oL -eL node tests/classic-chess-browser.cjs
           stdbuf -oL -eL node tests/roster-browser.cjs
+          stdbuf -oL -eL node tests/skirmish-browser.cjs

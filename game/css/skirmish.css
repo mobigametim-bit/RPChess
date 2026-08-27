@@ -1,0 +1,247 @@
+.skirmish-screen,
+.skirmish-aftermath {
+  min-height: 100vh;
+  padding: clamp(16px, 2.4vw, 38px);
+  background:
+    linear-gradient(90deg, rgba(3, 7, 16, .96), rgba(6, 12, 22, .72) 52%, rgba(3, 7, 16, .92)),
+    #050a12 url('../generated_assets/splash_poster.jpg') center / cover fixed no-repeat;
+}
+
+[data-skirmish-screen][hidden],
+[data-skirmish-aftermath][hidden],
+[data-skirmish-toast][hidden] { display: none !important; }
+
+.skirmish-shell,
+.skirmish-aftermath-shell { width: min(1500px, 100%); margin: 0 auto; }
+
+.skirmish-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+.skirmish-logo { width: min(290px, 45vw); height: auto; filter: drop-shadow(0 6px 18px #000); }
+.skirmish-topbar .reboot-button { width: auto; min-width: 190px; }
+
+.skirmish-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: end;
+  margin-bottom: 20px;
+  padding-inline: 6px;
+}
+.skirmish-heading h1,
+.skirmish-aftermath-panel h1 {
+  margin: 4px 0 8px;
+  font: 400 clamp(42px, 5vw, 68px) / 1 'BrahmsGotischCyr', Georgia, serif;
+  color: #fff2d8;
+  text-shadow: 0 4px 15px #000;
+}
+.skirmish-heading p,
+.skirmish-aftermath-panel > p { margin: 0; color: #b7c7da; line-height: 1.5; }
+.skirmish-threat-card {
+  min-width: 250px;
+  display: grid;
+  gap: 4px;
+  padding: 13px 16px;
+  border: 1px solid rgba(108, 158, 195, .38);
+  border-radius: 8px;
+  background: rgba(6, 18, 31, .9);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .3);
+}
+.skirmish-threat-card strong { color: #e8c665; letter-spacing: .1em; font-size: 21px; }
+.skirmish-threat-card span { color: #eef4fb; font-weight: 800; }
+.skirmish-threat-card small { color: #8fa3b8; }
+
+.skirmish-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(340px, .8fr);
+  gap: clamp(16px, 2vw, 28px);
+  align-items: start;
+}
+.skirmish-available,
+.skirmish-selection,
+.skirmish-aftermath-panel {
+  min-width: 0;
+  border: 1px solid var(--ui-panel-border);
+  border-radius: var(--ui-panel-radius);
+  background: var(--ui-panel-bg);
+  box-shadow: var(--ui-panel-shadow);
+}
+.skirmish-section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+.skirmish-section-head h2,
+.skirmish-aftermath-columns h2 { margin: 3px 0 0; font: 400 clamp(27px, 3vw, 39px) / 1 'BrahmsGotischCyr', Georgia, serif; }
+.skirmish-section-head > span { max-width: 320px; color: #91a5ba; font-size: 13px; line-height: 1.4; text-align: right; }
+
+.skirmish-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px; }
+.skirmish-card {
+  min-width: 0;
+  min-height: 250px;
+  display: grid;
+  grid-template-rows: minmax(150px, 1fr) auto;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(103, 157, 196, .35);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(14, 38, 60, .94), rgba(6, 18, 30, .98));
+  color: #eef4fb;
+  text-align: left;
+  cursor: pointer;
+  transition: transform .12s ease, border-color .12s ease, filter .12s ease;
+}
+.skirmish-card:hover:not(:disabled) { transform: translateY(-2px); border-color: rgba(225, 190, 95, .75); }
+.skirmish-card.is-selected { border-color: #e4bd52; box-shadow: inset 0 0 0 2px rgba(238,197,80,.18), 0 0 22px rgba(38,121,177,.15); }
+.skirmish-card:disabled { cursor: not-allowed; filter: grayscale(.75) brightness(.62); }
+.skirmish-card__art { width: 100%; height: 100%; min-height: 150px; object-fit: contain; background: radial-gradient(circle, rgba(35,72,102,.34), rgba(4,11,20,.72)); }
+.skirmish-card__body { display: grid; gap: 5px; min-width: 0; padding: 10px 12px 12px; border-top: 1px solid rgba(110,159,193,.23); }
+.skirmish-card__body strong { color: #fff2d2; font-size: 15px; line-height: 1.18; }
+.skirmish-card__meta { color: #a8b9ca; font-size: 12px; }
+.skirmish-card__status { width: fit-content; color: #79d39b; font-size: 10px; font-weight: 900; letter-spacing: .06em; }
+.skirmish-card__status--wounded { color: #f0b45f; }
+.skirmish-card__status--dead { color: #9aa1ac; }
+
+.skirmish-selected { display: grid; gap: 7px; }
+.skirmish-selected-row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: center;
+  min-height: 42px;
+  padding: 7px 10px;
+  border: 1px solid rgba(104, 153, 189, .3);
+  border-radius: 6px;
+  background: rgba(10, 28, 46, .84);
+  color: #eef4fb;
+  text-align: left;
+  cursor: pointer;
+}
+.skirmish-selected-row:not(:disabled):hover { border-color: #d4af4d; }
+.skirmish-selected-row:disabled { cursor: default; opacity: 1; }
+.skirmish-selected-row__glyph { color: #fff2bd; font-size: 24px; line-height: 1; }
+.skirmish-selected-row > span:last-child { color: #d9b95c; font-size: 11px; font-weight: 900; }
+
+.skirmish-formation-block { margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(104,153,189,.24); }
+.skirmish-formation-head { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 9px; color: #dce8f4; }
+.skirmish-formation-head span { color: #8fa3b8; font-size: 12px; }
+.skirmish-formation { display: grid; grid-template-columns: repeat(8, minmax(0,1fr)); gap: 3px; }
+.skirmish-formation-cell {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(95,142,180,.23);
+  border-radius: 3px;
+  background: rgba(6,19,32,.8);
+  color: #fff0bd;
+  font-size: clamp(15px, 2vw, 23px);
+}
+
+.skirmish-notice {
+  margin: 14px 0 0;
+  padding: 9px 12px;
+  border: 1px solid rgba(221, 167, 78, .48);
+  border-radius: 6px;
+  background: rgba(92, 50, 17, .28);
+  color: #f3c978;
+  font-weight: 800;
+}
+.skirmish-actionbar {
+  position: sticky;
+  bottom: 10px;
+  z-index: 8;
+  display: grid;
+  grid-template-columns: auto auto minmax(220px, 1fr);
+  gap: 12px;
+  align-items: center;
+  margin-top: 18px;
+  padding: 12px;
+  border: 1px solid rgba(102,153,191,.48);
+  border-radius: 9px;
+  background: rgba(4, 14, 25, .96);
+  box-shadow: 0 16px 38px rgba(0,0,0,.45);
+  backdrop-filter: blur(10px);
+}
+.skirmish-counter { min-width: 150px; display: grid; gap: 2px; }
+.skirmish-counter span { color: #8fa3b8; font-size: 10px; font-weight: 900; letter-spacing: .08em; }
+.skirmish-counter strong { color: #fff1c8; font-size: 19px; }
+.skirmish-start { justify-self: end; width: min(300px, 100%); }
+
+.skirmish-toast {
+  position: fixed;
+  z-index: 80;
+  left: 50%;
+  bottom: max(22px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  max-width: min(540px, calc(100vw - 24px));
+  padding: 11px 16px;
+  border: 1px solid rgba(232, 180, 95, .62);
+  border-radius: 7px;
+  background: rgba(46, 24, 10, .94);
+  color: #ffd28b;
+  font-weight: 900;
+  box-shadow: 0 14px 38px rgba(0,0,0,.55);
+}
+
+.skirmish-aftermath-shell { display: grid; gap: 22px; }
+.skirmish-aftermath-panel { width: min(1180px, 100%); margin: 0 auto; }
+.skirmish-aftermath-panel > p { max-width: 760px; }
+.skirmish-aftermath-columns { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; margin-top: 24px; }
+.skirmish-aftermath-columns > section { min-width: 0; padding: 14px; border: 1px solid rgba(102,153,191,.25); border-radius: 7px; background: rgba(8,24,40,.7); }
+.skirmish-aftermath-columns h2 { font-size: clamp(25px,2.6vw,34px); margin-bottom: 12px; }
+.skirmish-aftermath-list { display: grid; gap: 8px; }
+.skirmish-aftermath-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0,1fr) auto;
+  gap: 9px;
+  align-items: center;
+  min-height: 48px;
+  padding: 6px 8px;
+  border: 1px solid rgba(100,150,187,.2);
+  border-radius: 6px;
+  background: rgba(5,17,29,.76);
+}
+.skirmish-aftermath-row img { width: 42px; height: 42px; object-fit: contain; }
+.skirmish-aftermath-row strong { min-width: 0; color: #f6ead0; }
+.skirmish-aftermath-row span { color: #9fb1c4; font-size: 10px; font-weight: 900; text-align: right; }
+.skirmish-aftermath-empty { color: #8294a8; font-size: 13px; line-height: 1.4; }
+.skirmish-aftermath-button { width: min(340px,100%); margin-top: 22px; }
+
+@media (max-width: 1120px) {
+  .skirmish-layout { grid-template-columns: minmax(0,1.35fr) minmax(300px,.8fr); }
+  .skirmish-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+
+@media (max-width: 780px) {
+  .skirmish-screen, .skirmish-aftermath { padding: 12px; }
+  .skirmish-topbar { align-items: flex-start; }
+  .skirmish-topbar .reboot-button { min-width: 0; width: min(210px,48vw); }
+  .skirmish-heading { grid-template-columns: 1fr; align-items: start; }
+  .skirmish-threat-card { min-width: 0; width: 100%; }
+  .skirmish-layout { grid-template-columns: 1fr; }
+  .skirmish-selection { order: 0; }
+  .skirmish-available { order: 1; }
+  .skirmish-section-head { align-items: start; flex-direction: column; }
+  .skirmish-section-head > span { text-align: left; }
+  .skirmish-actionbar { bottom: max(8px, env(safe-area-inset-bottom)); grid-template-columns: 1fr 1fr; }
+  .skirmish-start { grid-column: 1 / -1; width: 100%; justify-self: stretch; }
+  .skirmish-counter { min-width: 0; }
+  .skirmish-aftermath-columns { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .skirmish-logo { width: 45vw; }
+  .skirmish-heading h1, .skirmish-aftermath-panel h1 { font-size: 43px; }
+  .skirmish-grid { grid-template-columns: 1fr; }
+  .skirmish-card { min-height: 280px; }
+  .skirmish-actionbar { gap: 8px; padding: 9px; }
+  .skirmish-counter strong { font-size: 16px; }
+  .skirmish-aftermath-row { grid-template-columns: 38px minmax(0,1fr); }
+  .skirmish-aftermath-row span { grid-column: 2; text-align: left; }
+}

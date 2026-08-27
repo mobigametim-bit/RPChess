@@ -27,6 +27,7 @@ async function main() {
     'css/classic-chess.css',
     'css/chess-ai-polish.css',
     'css/roster.css',
+    'css/skirmish.css',
     'js/reboot-foundation.mjs',
     'js/reboot-audio.mjs',
     'js/classic-chess-engine.mjs',
@@ -35,6 +36,8 @@ async function main() {
     'js/roster-data.mjs',
     'js/run-persistence.mjs',
     'js/roster-app.mjs',
+    'js/skirmish-core.mjs',
+    'js/skirmish-app.mjs',
     'assets/kings/oathkeeper',
     'assets/heroes/aldric_wall',
     'assets/heroes/mara_chain',
@@ -61,12 +64,15 @@ async function main() {
     'css/classic-chess.css',
     'css/chess-ai-polish.css',
     'css/roster.css',
+    'css/skirmish.css',
     'js/classic-chess-engine.mjs',
     'js/classic-chess-app.mjs',
     'js/chess-ai-adapter.mjs',
     'js/roster-data.mjs',
     'js/run-persistence.mjs',
     'js/roster-app.mjs',
+    'js/skirmish-core.mjs',
+    'js/skirmish-app.mjs',
     'js/reboot-audio.mjs',
     'assets/kings/oathkeeper/portrait.png',
     'assets/kings/oathkeeper/piece.png',
@@ -89,10 +95,10 @@ async function main() {
     'vendor/stockfish/COPYING.txt',
     'vendor/stockfish/SOURCE.txt'
   ]) {
-    if (!fs.existsSync(path.join(dist, relative))) throw new Error(`Roster build output missing: ${relative}`);
+    if (!fs.existsSync(path.join(dist, relative))) throw new Error(`Skirmish build output missing: ${relative}`);
   }
 
-  console.log(`Prepared RPChess Roster distribution in ${dist}; Stockfish ${stockfish.version}`);
+  console.log(`Prepared RPChess Skirmish distribution in ${dist}; Stockfish ${stockfish.version}`);
 }
 
 main().catch((error) => {
