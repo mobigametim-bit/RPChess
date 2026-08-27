@@ -1,5 +1,16 @@
 # RPChess Reboot Changelog
 
+## 2026-08-27 — Battle HUMAN ACCEPTED → DONE
+- Пользователь завершил живой Battle playtest и подтвердил: **«все хорошо»**.
+- Battle закрыт как **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**.
+- Подтверждены стандартная армия 16 фигур / 39 очков + обязательный King стоимостью 0, автоматическая замена standard slots персонализированными HEALTHY фигурами своего типа, generic replacement при снятии named-участника, personalized `pieceArt` и identity на шахматной доске, persistence `participants / battleCount / lastBattle`, ранения captured named non-King и отдельный King-death run end.
+- Accepted gameplay head: `40f234740783699b564dc53db7783d36d5ae5e7f`.
+- Accepted version: `2.5.0-battle.preview.1`.
+- GitHub Actions push run `33073454223` / #891: **SUCCESS**, включая source verification, deterministic tests, production build, clean distribution boundary и full real Chromium regression-suite Foundation → Classic Chess → Stockfish → Roster → Skirmish → Battle.
+- Cloudflare accepted build `855b8d21-3dbf-42e2-9dac-3646c2061d41`: **SUCCESS**; Version `9ba31509-3bf7-4853-b7af-ac77a9664f85`.
+- Accepted preview: `https://9ba31509-rpchess.mobigametim.workers.dev`.
+- Следующий этап — **Travel Choice**, только после merge Battle PR и успешной post-merge проверки `main`.
+
 ## 2026-08-27 — Skirmish HUMAN ACCEPTED → DONE
 - Пользователь завершил повторный живой тест исправленного Skirmish preview и подтвердил: **«всё хорошо»**.
 - Skirmish закрыт как **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**.

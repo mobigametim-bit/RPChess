@@ -1,4 +1,5 @@
 import { RebootAudio } from './reboot-audio.mjs';
+import './battle-route.mjs';
 
 const REBOOT_INIT_KEY = 'rpchess.reboot.v1.initialized';
 const SETTINGS_KEY = 'rpchess.reboot.v1.settings';

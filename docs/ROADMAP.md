@@ -8,7 +8,7 @@
 - [x] Roster — персонализированный король и фигуры. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Отдельная сцена `Отряд`: detail + каталог, обязательный Хранитель Клятвы, 6 стартовых персонализированных фигур, классическая стоимость 1/3/3/5/9/0, статусы healthy/wounded/dead, memorial `Погибшие`, локальный persistent run и рабочая кнопка `Продолжить`. Пользователь принял исправленный preview 2026-08-27. Game-wide frameless panel standard остаётся обязательным для всех следующих feature.
 - [x] Skirmish — ≤16 фигур, ≤39 очков, adaptive enemy. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Пользователь принял corrected preview 2026-08-27. Персонализированные фигуры используют собственный `pieceArt` непосредственно на доске, обычный aftermath показывает только выживших/тяжело раненых, а мат игроку открывает отдельный run-end summary `КОРОЛЬ ПОГИБ`.
 - [x] **PLAYTEST GATE C: интересность собственного состава и corrected Skirmish flow подтверждены пользователем.**
-- [ ] Battle — полный классический комплект + временные фигуры.
+- [x] Battle — полный классический комплект + временные фигуры. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Пользователь принял Battle preview 2026-08-27. Стандартная армия всегда 16 фигур / 39 очков + King 0; HEALTHY named-фигуры заменяют standard slots своего типа, generic slots остаются временными, персональная identity сохраняется на доске, а captured named non-King получают `wounded`.
 - [ ] Travel Choice — три случайных следующих пути после каждой встречи.
 - [ ] Resources — Gold + Supplies.
 - [ ] Settlement — лечение, найм, снабжение.
@@ -25,7 +25,7 @@
 - [ ] Metaprogression — только после подтверждения core loop.
 
 ## Current phase
-**Skirmish — HUMAN ACCEPTED → DONE.** Следующая feature — **Battle**. Реализация Battle начинается только после merge PR #68 в `main` и успешной post-merge проверки CI/Cloudflare.
+**Battle — HUMAN ACCEPTED → DONE.** Следующая feature — **Travel Choice**. Реализация Travel Choice начинается только после merge Battle PR в `main` и успешной post-merge проверки CI/Cloudflare.
 
 Accepted Roster gameplay head: `21486014ca110062fdcb776d5119b23dbe3418cf`.
 Accepted Roster version: `2.3.0-roster.preview.3`.
@@ -38,6 +38,12 @@ Accepted Skirmish push CI: `33068848497` / #882 — **SUCCESS**, including real 
 Accepted Skirmish PR CI: `33069287273` / #883 — **SUCCESS**, including real Chromium.
 Accepted Skirmish Cloudflare build: `f575d3d6-d62f-48bc-907d-4873e67ac154` — **SUCCESS**; Version `0727f70c-24a7-4dbc-aa1f-6559f968fd1e`.
 Accepted Skirmish preview: `https://0727f70c-rpchess.mobigametim.workers.dev`.
+
+Accepted Battle gameplay head: `40f234740783699b564dc53db7783d36d5ae5e7f`.
+Accepted Battle version: `2.5.0-battle.preview.1`.
+Accepted Battle push CI: `33073454223` / #891 — **SUCCESS**, including full real Chromium regression acceptance.
+Accepted Battle Cloudflare build: `855b8d21-3dbf-42e2-9dac-3646c2061d41` — **SUCCESS**; Version `9ba31509-3bf7-4853-b7af-ac77a9664f85`.
+Accepted Battle preview: `https://9ba31509-rpchess.mobigametim.workers.dev`.
 
 ## Статусы feature
 `IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE`

@@ -15,11 +15,12 @@ function walk(dir) {
 module.exports = function verifySource(root) {
   const required = [
     'index.html', 'BUILD_INFO.json',
-    'css/reboot-foundation.css', 'css/classic-chess.css', 'css/chess-ai-polish.css', 'css/roster.css', 'css/skirmish.css',
+    'css/reboot-foundation.css', 'css/classic-chess.css', 'css/chess-ai-polish.css', 'css/roster.css', 'css/skirmish.css', 'css/battle.css',
     'js/reboot-foundation.mjs', 'js/reboot-audio.mjs',
     'js/classic-chess-engine.mjs', 'js/classic-chess-app.mjs', 'js/chess-ai-adapter.mjs',
     'js/roster-data.mjs', 'js/run-persistence.mjs', 'js/roster-app.mjs',
     'js/skirmish-core.mjs', 'js/skirmish-app.mjs',
+    'js/battle-core.mjs', 'js/battle-app.mjs', 'js/battle-route.mjs',
     'fonts/BrahmsGotischCyr.otf',
     'generated_assets/title_wordmark.png', 'generated_assets/splash_poster.jpg', 'generated_assets/scene_battle.jpg',
     'music/echoes_iron_throne_01.mp3', 'music/echoes_iron_throne_02.mp3',
@@ -42,7 +43,7 @@ module.exports = function verifySource(root) {
   }
 
   const info = JSON.parse(fs.readFileSync(path.join(root, 'BUILD_INFO.json'), 'utf8'));
-  if (!String(info.version || '').startsWith('2.4.0-skirmish')) fail(`unexpected Skirmish version: ${info.version || 'missing'}`);
+  if (!String(info.version || '').startsWith('2.5.0-battle')) fail(`unexpected Battle version: ${info.version || 'missing'}`);
 
   const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   for (const requiredRef of [
@@ -102,6 +103,7 @@ module.exports = function verifySource(root) {
 
   const runtime = fs.readFileSync(path.join(root, 'js/reboot-foundation.mjs'), 'utf8');
   if (!runtime.includes("from './reboot-audio.mjs'")) fail('Reboot runtime does not load audio');
+  if (!runtime.includes("import './battle-route.mjs'")) fail('Reboot runtime does not load Battle route');
   if (!runtime.includes("CustomEvent('rpchess:run-new')")) fail('main New Game is not routed into new-run Roster flow');
   if (!runtime.includes("CustomEvent('rpchess:run-continue')")) fail('Continue is not routed into persistent Roster flow');
 
@@ -112,9 +114,15 @@ module.exports = function verifySource(root) {
   for (const contract of ['king.oathkeeper', 'hero.aldric_wall', 'hero.mara_chain', 'hero.nemea_quill', 'hero.brother_orell', 'hero.vael_hammer', 'createStarterRoster']) {
     if (!rosterData.includes(contract)) fail(`Roster data contract missing: ${contract}`);
   }
-  for (const contract of ['rpchess.reboot.v1.run', 'createRun', 'readRun', 'writeRun', 'schemaVersion', 'skirmishCount', 'ended']) if (!persistence.includes(contract)) fail(`run persistence contract missing: ${contract}`);
-  for (const contract of ['rpchess:run-new', 'rpchess:run-continue', 'rpchess:skirmish-open', 'dataset.rosterCard', 'selectedCharacterId', '[data-roster-filter]']) if (!rosterApp.includes(contract)) fail(`Roster runtime contract missing: ${contract}`);
-  for (const contract of ['var(--ui-panel-border)', 'var(--ui-panel-bg)', '.roster-card', '.roster-detail', '.roster-grid']) if (!rosterCss.includes(contract)) fail(`Roster CSS contract missing: ${contract}`);
+  for (const contract of ['rpchess.reboot.v1.run', 'createRun', 'readRun', 'writeRun', 'schemaVersion', 'skirmishCount', 'lastSkirmish', 'battleCount', 'lastBattle', 'ended']) {
+    if (!persistence.includes(contract)) fail(`run persistence contract missing: ${contract}`);
+  }
+  for (const contract of ['rpchess:run-new', 'rpchess:run-continue', 'rpchess:skirmish-open', 'dataset.rosterCard', 'selectedCharacterId', '[data-roster-filter]']) {
+    if (!rosterApp.includes(contract)) fail(`Roster runtime contract missing: ${contract}`);
+  }
+  for (const contract of ['var(--ui-panel-border)', 'var(--ui-panel-bg)', '.roster-card', '.roster-detail', '.roster-grid']) {
+    if (!rosterCss.includes(contract)) fail(`Roster CSS contract missing: ${contract}`);
+  }
 
   const skirmishCore = fs.readFileSync(path.join(root, 'js/skirmish-core.mjs'), 'utf8');
   const skirmishApp = fs.readFileSync(path.join(root, 'js/skirmish-app.mjs'), 'utf8');
@@ -129,12 +137,30 @@ module.exports = function verifySource(root) {
     if (!skirmishCss.includes(contract)) fail(`Skirmish CSS contract missing: ${contract}`);
   }
 
+  const battleCore = fs.readFileSync(path.join(root, 'js/battle-core.mjs'), 'utf8');
+  const battleApp = fs.readFileSync(path.join(root, 'js/battle-app.mjs'), 'utf8');
+  const battleRoute = fs.readFileSync(path.join(root, 'js/battle-route.mjs'), 'utf8');
+  const battleCss = fs.readFileSync(path.join(root, 'css/battle.css'), 'utf8');
+  for (const contract of ['BATTLE_PIECE_COUNT', 'BATTLE_ARMY_POINTS', 'STANDARD_FEN', 'SLOT_CAPACITY', 'defaultBattleSelection', 'validateBattleSelection', 'formationFor', 'createBattlePlan', 'applyBattleOutcome', 'participants', 'king_dead']) {
+    if (!battleCore.includes(contract)) fail(`Battle core contract missing: ${contract}`);
+  }
+  for (const contract of ['RPChessClassicChess', 'dataset.battleScreen', 'data-battle-start', 'dataset.battleAftermath', 'dataset.battleRunEnd', 'battleCount', 'lastBattle', 'finishBattle', 'MutationObserver']) {
+    if (!battleApp.includes(contract)) fail(`Battle runtime contract missing: ${contract}`);
+  }
+  for (const contract of ["import './battle-app.mjs'", 'dataRosterBattle', 'Начать битву', 'RPChessBattle']) {
+    if (!battleRoute.includes(contract)) fail(`Battle route contract missing: ${contract}`);
+  }
+  for (const contract of ['var(--ui-panel-border)', 'var(--ui-panel-bg)', '.battle-card', '.battle-actionbar', '.battle-aftermath-panel', '@media(max-width:900px)']) {
+    if (!battleCss.includes(contract)) fail(`Battle CSS contract missing: ${contract}`);
+  }
+
   for (const [name, source] of [
     ['foundation', foundationCss],
     ['classic', fs.readFileSync(path.join(root, 'css/classic-chess.css'), 'utf8')],
     ['polish', polishCss],
     ['roster', rosterCss],
-    ['skirmish', skirmishCss]
+    ['skirmish', skirmishCss],
+    ['battle', battleCss]
   ]) {
     if (source.includes('ui_panel_frame.png') || source.includes('ui_panel_wide.png')) fail(`${name} CSS still uses forbidden ornate panel frame assets`);
   }
