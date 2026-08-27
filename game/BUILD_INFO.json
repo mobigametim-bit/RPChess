@@ -1,13 +1,13 @@
 {
   "title": "RPChess Reboot",
   "edition": "Roster",
-  "version": "2.3.0-roster.preview.1",
+  "version": "2.3.0-roster.preview.2",
   "build_date": "2026-08-27",
   "runtime": "Offline HTML5 / ES modules + local run persistence + local Stockfish 18 WASM worker",
   "requires_internet": false,
   "requires_installation": false,
-  "visual_theme": "Approved RPChess fantasy UI with global framed-content safe areas, blue CTA frames, personalized legacy character art and classical chess role glyphs",
-  "gameplay_state": "Classic Chess and Chess AI human accepted; Roster implemented for human playtest",
+  "visual_theme": "Approved RPChess fantasy UI with global frameless dark panel surfaces, safe-area insets, blue CTA frames, personalized legacy character art and classical chess role glyphs",
+  "gameplay_state": "Classic Chess and Chess AI human accepted; Roster implemented for human playtest with global ornate panel-frame removal",
   "legacy_branch": "archive/iron-marches-v1",
   "legacy_commit": "035fb817a93f53047a1d20f7cdfc9093b0f7d611",
   "foundation_merge": "416cfbcd332366c10d6dd27a44123c0dd7ea7da0",
@@ -18,5 +18,5 @@
   "stockfish_license": "GPLv3",
   "active_docs": "docs/00_PRODUCT_VISION.md through docs/17_TECH_ARCHITECTURE.md",
   "human_acceptance_required": true,
-  "human_acceptance": "pending-roster-playtest"
+  "human_acceptance": "pending-roster-frameless-playtest"
 }
