@@ -30,6 +30,8 @@ const startButton = document.querySelector('[data-skirmish-start]');
 const notice = document.querySelector('[data-skirmish-notice]');
 const toast = document.querySelector('[data-skirmish-toast]');
 const board = document.querySelector('[data-chess-board]');
+const classicNewButton = document.querySelector('[data-classic-new]');
+const classicMenuButton = document.querySelector('[data-classic-menu]');
 const aftermathResult = document.querySelector('[data-aftermath-result]');
 const aftermathText = document.querySelector('[data-aftermath-text]');
 const aftermathSurvivors = document.querySelector('[data-aftermath-survivors]');
@@ -59,6 +61,14 @@ function showOnly(target) {
   document.body.classList.toggle('skirmish-active', target === 'skirmish' || target === 'aftermath');
   if (target !== 'classic') document.body.classList.remove('classic-chess-active');
   window.scrollTo({ top: 0, behavior: 'auto' });
+}
+
+function setBattleNavigationLocked(locked) {
+  for (const button of [classicNewButton, classicMenuButton]) {
+    if (!button) continue;
+    button.hidden = Boolean(locked);
+    button.setAttribute('aria-hidden', locked ? 'true' : 'false');
+  }
 }
 
 function setNotice(text = '') {
@@ -234,6 +244,7 @@ function openSkirmish() {
   processedMoves = 0;
   battleFinalized = false;
   clearTimeout(finalizeTimer);
+  setBattleNavigationLocked(false);
   setNotice('');
   renderEncounter();
   renderComposition();
@@ -242,6 +253,7 @@ function openSkirmish() {
 
 function returnToRoster() {
   audio()?.click?.();
+  setBattleNavigationLocked(false);
   showOnly('menu');
   globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue'));
 }
@@ -263,6 +275,7 @@ function startBattle() {
   audio()?.click?.();
   skirmishScreen.hidden = true;
   document.body.classList.remove('skirmish-active');
+  setBattleNavigationLocked(true);
   globalThis.RPChessClassicChess?.newGame(battlePlan.fen, {
     mode: 'ai',
     playerColor: 'w',
@@ -383,6 +396,7 @@ function finishBattle(status) {
       enemyPoints: battlePlan.enemyPoints
     }
   });
+  setBattleNavigationLocked(false);
   globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
   if (classicScreen) classicScreen.hidden = true;
   renderAftermath(status);
@@ -398,6 +412,7 @@ function leaveAftermath() {
   processedMoves = 0;
   clearTimeout(finalizeTimer);
   finalizeTimer = null;
+  setBattleNavigationLocked(false);
   if (ended) {
     showOnly('menu');
     globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
