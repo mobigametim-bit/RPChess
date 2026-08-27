@@ -43,6 +43,8 @@ class MemoryStorage {
   const run = persistence.createRun({ now: 1000, id: 'run-test' });
   assert.strictEqual(run.id, 'run-test');
   assert.strictEqual(run.selectedCharacterId, 'king.oathkeeper');
+  assert.strictEqual(run.ended, false, 'new run must start active');
+  assert.strictEqual(run.skirmishCount, 0, 'new run must start before the first Skirmish');
   assert.strictEqual(persistence.readRun(storage), null, 'empty storage must not invent a run');
   const saved = persistence.writeRun(run, storage, 1200);
   assert.strictEqual(saved.updatedAt, 1200);
@@ -63,10 +65,14 @@ class MemoryStorage {
   const staleCopy = persistence.createRun({ now: 1500, id: 'run-stale-copy' });
   staleCopy.roster[0].description = 'Король отряда и центральная фигура текущего забега. Его гибель завершает путешествие.';
   staleCopy.roster.find((entry) => entry.id === 'hero.mara_chain').status = 'wounded';
+  delete staleCopy.ended;
+  delete staleCopy.skirmishCount;
   storage.setItem(persistence.RUN_STORAGE_KEY, JSON.stringify(staleCopy));
   const hydratedCopy = persistence.readRun(storage);
   assert(hydratedCopy.roster[0].description.includes('Последний хранитель древней присяги'), 'saved runs must hydrate current Oathkeeper character copy');
   assert.strictEqual(hydratedCopy.roster.find((entry) => entry.id === 'hero.mara_chain').status, 'wounded', 'saved-run hydration must preserve gameplay status');
+  assert.strictEqual(hydratedCopy.ended, false, 'pre-Skirmish Roster save must hydrate as active');
+  assert.strictEqual(hydratedCopy.skirmishCount, 0, 'pre-Skirmish Roster save must hydrate with zero Skirmishes');
 
   storage.setItem(persistence.RUN_STORAGE_KEY, '{broken');
   assert.strictEqual(persistence.readRun(storage), null, 'corrupted run JSON must fail closed');
@@ -79,20 +85,20 @@ class MemoryStorage {
   for (const token of ['data-roster-screen', 'data-continue-run', 'data-roster-detail', 'data-roster-list', 'data-roster-filter="dead"', 'data-roster-travel', 'Начать путешествие', 'js/roster-app.mjs', 'css/roster.css']) {
     assert(html.includes(token), `Roster HTML contract missing: ${token}`);
   }
-  for (const forbidden of ['Применить состав', '39/39', '16/16', 'В ПУТЬ', 'Именные фигуры, которые путешествуют вместе с вашим королём', 'Обязательная фигура текущего забега.', 'Готов к участию в будущих сражениях.']) {
-    assert(!html.includes(forbidden) && !app.includes(forbidden), `removed/future Roster copy leaked into runtime: ${forbidden}`);
+  for (const forbidden of ['Применить состав', 'Именные фигуры, которые путешествуют вместе с вашим королём', 'Обязательная фигура текущего забега.', 'Готов к участию в будущих сражениях.']) {
+    assert(!app.includes(forbidden), `removed Roster copy leaked into runtime: ${forbidden}`);
   }
   assert(!/data-roster[^>]*type=["']checkbox/i.test(html), 'Roster must not use checkbox selection');
   assert(app.includes("rpchess.reboot.v1.run") || persistenceSource.includes("rpchess.reboot.v1.run"), 'Roster run persistence key missing');
   assert(persistenceSource.includes('hydrateCurrentRosterCopy'), 'saved runs must refresh current static character copy');
-  assert(app.includes("new CustomEvent('rpchess:new-game'"), 'Start Journey must route into the current playable chess setup');
+  assert(app.includes("new CustomEvent('rpchess:skirmish-open'"), 'Start Journey must route into the Skirmish preparation scene');
   assert(html.includes('ui-panel-safe'), 'Roster panels must use the global frameless safe-area contract');
   assert(css.includes('border: 1px solid var(--ui-panel-border)'), 'Roster must use CSS-only panel edges');
   assert(css.includes('background: var(--ui-panel-bg)'), 'Roster must use global frameless panel surface tokens');
   assert(foundationCss.includes('--ui-panel-safe-left'), 'global frameless safe-area tokens are missing');
   assert(!css.includes('ui_panel_frame.png') && !css.includes('ui_panel_wide.png'), 'Roster must never use ornate panel frame assets');
 
-  console.log('Roster model, persistence hydration, concise copy, journey routing and frameless static UX contract: PASS');
+  console.log('Roster model, persistence hydration, concise copy, Skirmish routing and frameless static UX contract: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;
