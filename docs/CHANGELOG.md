@@ -1,14 +1,15 @@
 # RPChess Reboot Changelog
 
-## 2026-08-27 — Resources HUMAN ACCEPTED
-- Пользователь завершил живой Resources playtest и подтвердил: **«все работает, золото начисляется, припасы тратятся»**.
-- Human Gate Resources закрыт: начисление Gold после боя и расход Supplies на Travel подтверждены в live preview.
-- Accepted gameplay head: `e162c347efe7ec1e55c1f76df7999c90469f1906`.
-- Version: `2.7.0-resources.preview.1`.
+## 2026-08-27 — Resources merged to main → DONE
+- Пользователь ранее завершил живой Resources playtest и подтвердил: **«все работает, золото начисляется, припасы тратятся»**.
+- Accepted gameplay head: `e162c347efe7ec1e55c1f76df7999c90469f1906`; version `2.7.0-resources.preview.1`.
 - Accepted Cloudflare build `34063395-1b82-44b2-b93c-caef6f4c0e5f`: **SUCCESS**; Version `da19ea4e-60ef-467a-85e4-5137a2e76c15`; preview `https://da19ea4e-rpchess.mobigametim.workers.dev`.
-- Последующий commit `44766f3e5e0bd6fa98684ada50ce19fb043e8c6a` исправляет только область Chromium assertion и не меняет gameplay/runtime.
-- Статус: **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED**; DONE наступает только после финального docs-synchronized exact-head CI/Cloudflare, Ready/merge PR #71 и post-merge verification `main`.
-- Settlement не начинается до полного closure Resources.
+- Финальный exact-head gate прошёл; PR #71 был переведён из Draft в Ready и squash-merged.
+- Merge/current `main` SHA: `c4e98b7f2bdbf926727ceec7bee15099919ea19d`.
+- Post-merge GitHub Actions `33105645405` / #942: **SUCCESS**, включая полный real Chromium regression-suite Foundation → Classic Chess → Stockfish → Roster → Skirmish → Battle → Travel Choice → Resources.
+- Post-merge Cloudflare production build `bb7e0099-3513-45d2-a151-b7ecc057770b`: **SUCCESS**; Version `69a291d3-8b0e-4e3f-9715-9cce1c9f4d86`.
+- Resources окончательно закрыт как **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**.
+- Следующий этап — **Settlement**; implementation начинается только после UX/spec approval.
 
 ## 2026-08-27 — Travel Choice HUMAN ACCEPTED → DONE
 - Пользователь завершил живой Travel Choice playtest и подтвердил: **«всё хорошо»**.
