@@ -15,10 +15,11 @@ function walk(dir) {
 module.exports = function verifySource(root) {
   const required = [
     'index.html', 'BUILD_INFO.json',
-    'css/reboot-foundation.css', 'css/classic-chess.css', 'css/chess-ai-polish.css', 'css/roster.css',
+    'css/reboot-foundation.css', 'css/classic-chess.css', 'css/chess-ai-polish.css', 'css/roster.css', 'css/skirmish.css',
     'js/reboot-foundation.mjs', 'js/reboot-audio.mjs',
     'js/classic-chess-engine.mjs', 'js/classic-chess-app.mjs', 'js/chess-ai-adapter.mjs',
     'js/roster-data.mjs', 'js/run-persistence.mjs', 'js/roster-app.mjs',
+    'js/skirmish-core.mjs', 'js/skirmish-app.mjs',
     'fonts/BrahmsGotischCyr.otf',
     'generated_assets/title_wordmark.png', 'generated_assets/splash_poster.jpg', 'generated_assets/scene_battle.jpg',
     'music/echoes_iron_throne_01.mp3', 'music/echoes_iron_throne_02.mp3',
@@ -41,22 +42,21 @@ module.exports = function verifySource(root) {
   }
 
   const info = JSON.parse(fs.readFileSync(path.join(root, 'BUILD_INFO.json'), 'utf8'));
-  if (!String(info.version || '').startsWith('2.3.0-roster')) fail(`unexpected Roster version: ${info.version || 'missing'}`);
+  if (!String(info.version || '').startsWith('2.4.0-skirmish')) fail(`unexpected Skirmish version: ${info.version || 'missing'}`);
 
   const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   for (const requiredRef of [
-    'css/reboot-foundation.css', 'css/classic-chess.css', 'css/chess-ai-polish.css', 'css/roster.css',
-    'js/reboot-foundation.mjs', 'js/roster-app.mjs', 'js/classic-chess-app.mjs',
+    'css/reboot-foundation.css', 'css/classic-chess.css', 'css/chess-ai-polish.css', 'css/roster.css', 'css/skirmish.css',
+    'js/reboot-foundation.mjs', 'js/roster-app.mjs', 'js/classic-chess-app.mjs', 'js/skirmish-app.mjs',
     'data-game-setup-modal', 'data-ai-elo', 'data-captured-by-white', 'data-captured-by-black',
     'data-roster-screen', 'data-continue-run', 'data-roster-detail', 'data-roster-list', 'data-roster-filter="dead"',
+    'data-skirmish-screen', 'data-skirmish-available', 'data-skirmish-selected', 'data-skirmish-piece-count', 'data-skirmish-point-count',
+    'data-skirmish-start', 'data-skirmish-aftermath', 'data-aftermath-result', 'data-aftermath-continue',
     'ui-panel-safe'
   ]) if (!index.includes(requiredRef)) fail(`index.html is missing active Reboot reference: ${requiredRef}`);
 
   for (const forbidden of ['iron-marches-runtime.bundle.js', 'vertical-slice-app.mjs', 'ui-approved-campaign.mjs', 'b10-b13-production-ui.mjs', 'explicit-run-setup.mjs', 'commander-selection-final.mjs']) {
     if (index.includes(forbidden)) fail(`index.html still references legacy runtime: ${forbidden}`);
-  }
-  for (const forbiddenRoster of ['Применить состав', '39/39', '16/16', 'В ПУТЬ']) {
-    if (index.includes(forbiddenRoster)) fail(`future composition/travel UI leaked into Roster: ${forbiddenRoster}`);
   }
 
   const localRefs = [...index.matchAll(/(?:src|href)=["']([^"'#?]+)["']/g)].map((match) => match[1]);
@@ -112,15 +112,29 @@ module.exports = function verifySource(root) {
   for (const contract of ['king.oathkeeper', 'hero.aldric_wall', 'hero.mara_chain', 'hero.nemea_quill', 'hero.brother_orell', 'hero.vael_hammer', 'createStarterRoster']) {
     if (!rosterData.includes(contract)) fail(`Roster data contract missing: ${contract}`);
   }
-  for (const contract of ['rpchess.reboot.v1.run', 'createRun', 'readRun', 'writeRun', 'schemaVersion']) if (!persistence.includes(contract)) fail(`run persistence contract missing: ${contract}`);
-  for (const contract of ['rpchess:run-new', 'rpchess:run-continue', 'dataset.rosterCard', 'selectedCharacterId', '[data-roster-filter]']) if (!rosterApp.includes(contract)) fail(`Roster runtime contract missing: ${contract}`);
+  for (const contract of ['rpchess.reboot.v1.run', 'createRun', 'readRun', 'writeRun', 'schemaVersion', 'skirmishCount', 'ended']) if (!persistence.includes(contract)) fail(`run persistence contract missing: ${contract}`);
+  for (const contract of ['rpchess:run-new', 'rpchess:run-continue', 'rpchess:skirmish-open', 'dataset.rosterCard', 'selectedCharacterId', '[data-roster-filter]']) if (!rosterApp.includes(contract)) fail(`Roster runtime contract missing: ${contract}`);
   for (const contract of ['var(--ui-panel-border)', 'var(--ui-panel-bg)', '.roster-card', '.roster-detail', '.roster-grid']) if (!rosterCss.includes(contract)) fail(`Roster CSS contract missing: ${contract}`);
+
+  const skirmishCore = fs.readFileSync(path.join(root, 'js/skirmish-core.mjs'), 'utf8');
+  const skirmishApp = fs.readFileSync(path.join(root, 'js/skirmish-app.mjs'), 'utf8');
+  const skirmishCss = fs.readFileSync(path.join(root, 'css/skirmish.css'), 'utf8');
+  for (const contract of ['MAX_SKIRMISH_PIECES', 'MAX_SKIRMISH_POINTS', 'defaultCombatSelection', 'validateSelection', 'generateEnemyArmy', 'createBattlePlan', 'applyBattleOutcome', 'king_dead']) {
+    if (!skirmishCore.includes(contract)) fail(`Skirmish core contract missing: ${contract}`);
+  }
+  for (const contract of ['rpchess:skirmish-open', 'MutationObserver', 'RPChessClassicChess', 'writeRun', 'data-skirmish-start', 'finishBattle']) {
+    if (!skirmishApp.includes(contract)) fail(`Skirmish runtime contract missing: ${contract}`);
+  }
+  for (const contract of ['var(--ui-panel-border)', 'var(--ui-panel-bg)', '.skirmish-card', '.skirmish-actionbar', '.skirmish-aftermath-panel']) {
+    if (!skirmishCss.includes(contract)) fail(`Skirmish CSS contract missing: ${contract}`);
+  }
 
   for (const [name, source] of [
     ['foundation', foundationCss],
     ['classic', fs.readFileSync(path.join(root, 'css/classic-chess.css'), 'utf8')],
     ['polish', polishCss],
-    ['roster', rosterCss]
+    ['roster', rosterCss],
+    ['skirmish', skirmishCss]
   ]) {
     if (source.includes('ui_panel_frame.png') || source.includes('ui_panel_wide.png')) fail(`${name} CSS still uses forbidden ornate panel frame assets`);
   }
