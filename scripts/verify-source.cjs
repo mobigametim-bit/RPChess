@@ -144,7 +144,7 @@ module.exports = function verifySource(root) {
   for (const contract of ['BATTLE_PIECE_COUNT', 'BATTLE_ARMY_POINTS', 'STANDARD_FEN', 'SLOT_CAPACITY', 'defaultBattleSelection', 'validateBattleSelection', 'formationFor', 'createBattlePlan', 'applyBattleOutcome', 'participants', 'king_dead']) {
     if (!battleCore.includes(contract)) fail(`Battle core contract missing: ${contract}`);
   }
-  for (const contract of ['RPChessClassicChess', 'data-battle-screen', 'data-battle-start', 'data-battle-aftermath', 'data-battle-run-end', 'battleCount', 'lastBattle', 'finishBattle', 'MutationObserver']) {
+  for (const contract of ['RPChessClassicChess', 'dataset.battleScreen', 'data-battle-start', 'dataset.battleAftermath', 'dataset.battleRunEnd', 'battleCount', 'lastBattle', 'finishBattle', 'MutationObserver']) {
     if (!battleApp.includes(contract)) fail(`Battle runtime contract missing: ${contract}`);
   }
   for (const contract of ["import './battle-app.mjs'", 'dataRosterBattle', 'Начать битву', 'RPChessBattle']) {
