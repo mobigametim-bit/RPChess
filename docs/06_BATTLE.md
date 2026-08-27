@@ -16,8 +16,12 @@ Battle — полноценная классическая партия с по�
 - одинаковый набор участников всегда занимает одинаковые слоты в стабильном roster order;
 - action bar показывает количество именных участников, `16 ФИГУР`, `39 ОЧКОВ` и CTA `Начать битву`.
 
-## Временный bridge до Travel Choice
-Пока Travel Choice ещё не реализован, экран Roster получает отдельную кнопку `Начать битву` рядом с существующим `Начать путешествие`. Это временный preview/test bridge: существующий `Начать путешествие → Skirmish` сохраняется для regression и не считается реализацией Travel Choice.
+## Вход через Travel Choice
+Battle больше не использует временный прямой bridge из Roster. Игрок попадает в Battle preparation после выбора карточки типа `БИТВА` в Travel Choice.
+
+Travel Choice передаёт Battle deterministic route seed и выбранную угрозу `★1–5`. Battle использует их для выбора утверждённого encounter tier / Stockfish Elo, поэтому информация на карточке пути соответствует реально запущенному encounter.
+
+Если игрок после выбора Battle возвращается в Roster или перезагружает страницу до завершения encounter, решение не отменяется: `Начать путешествие` снова возобновляет этот же выбранный Battle.
 
 ## Стартовая позиция
 Battle всегда использует каноническую стартовую FEN:
@@ -50,14 +54,18 @@ Battle сохраняет `participants` — список именных пер�
 ## Aftermath
 После победы или ничьей показываются только судьбы персонализированных участников: `ПОБЕДА` или `НИЧЬЯ`, `Выжили`, `Тяжело ранены`. Generic casualties не перечисляются. Блока `Погибли` нет. Мат игроку открывает отдельный `ЗАБЕГ ЗАВЕРШЁН / КОРОЛЬ ПОГИБ`.
 
+В обычном не-финальном aftermath CTA — **`Продолжить путь`**. Он завершает активный Travel Choice encounter и открывает новую тройку путей.
+
 ## Persistence
-Схема `rpchess.reboot.v1.run` остаётся обратно совместимой и получает `battleCount`, `lastBattle`, `lastBattle.participants` и outcome metadata. Старые сохранения гидратируются `battleCount=0`, `lastBattle=null` без сброса Roster/Skirmish данных.
+Схема `rpchess.reboot.v1.run` остаётся обратно совместимой и содержит `battleCount`, `lastBattle`, `lastBattle.participants` и outcome metadata. Travel Choice отдельно хранит активный выбранный маршрут и считает Battle завершённым только после увеличения `battleCount`.
 
 ## Mobile
 Full-army preview и выбранные именные участники идут перед каталогом; action bar sticky; только vertical scroll; horizontal overflow запрещён.
 
-## Границы v1
-Не входят: ручная расстановка, изменение 39-point army, способности, equipment modifiers, special objectives, fog of war, другие размеры доски, permanent promotion, persistence generic casualties, Travel Choice, Resources, Settlement.
+## Границы Battle v1
+Не входят: ручная расстановка, изменение 39-point army, способности, equipment modifiers, special objectives, fog of war, другие размеры доски, permanent promotion, persistence generic casualties, Resources, Settlement.
+
+Travel Choice уже является внешней orchestration-системой Battle, но не изменяет его шахматные правила или roster consequences.
 
 ## Human Acceptance
 Пользователь завершил живой Battle playtest 2026-08-27 и подтвердил: **«все хорошо»**.
@@ -67,7 +75,4 @@ Accepted version: `2.5.0-battle.preview.1`.
 Accepted GitHub Actions push run: `33073454223` / #891 — **SUCCESS**, включая source verification, deterministic tests, production build, clean distribution boundary и полный real Chromium regression-suite Foundation → Classic Chess → Stockfish → Roster → Skirmish → Battle.
 Accepted Cloudflare build: `855b8d21-3dbf-42e2-9dac-3646c2061d41` — **SUCCESS**; Version `9ba31509-3bf7-4853-b7af-ac77a9664f85`.
 Accepted preview: `https://9ba31509-rpchess.mobigametim.workers.dev`.
-
-## Статус реализации
-Feature branch: `feature/battle`.
-Статус: **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**. Merge в `main` выполняется только после финального docs-synchronized exact-head CI/Cloudflare gate.
+Battle squash-merged в `main`; current accepted Battle lifecycle: **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**.
