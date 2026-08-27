@@ -26,11 +26,21 @@ async function main() {
     'css/reboot-foundation.css',
     'css/classic-chess.css',
     'css/chess-ai-polish.css',
+    'css/roster.css',
     'js/reboot-foundation.mjs',
     'js/reboot-audio.mjs',
     'js/classic-chess-engine.mjs',
     'js/classic-chess-app.mjs',
     'js/chess-ai-adapter.mjs',
+    'js/roster-data.mjs',
+    'js/run-persistence.mjs',
+    'js/roster-app.mjs',
+    'assets/kings/oathkeeper',
+    'assets/heroes/aldric_wall',
+    'assets/heroes/mara_chain',
+    'assets/heroes/nemea_quill',
+    'assets/heroes/brother_orell',
+    'assets/heroes/vael_hammer',
     'fonts',
     'generated_assets',
     'music'
@@ -50,10 +60,26 @@ async function main() {
   for (const relative of [
     'css/classic-chess.css',
     'css/chess-ai-polish.css',
+    'css/roster.css',
     'js/classic-chess-engine.mjs',
     'js/classic-chess-app.mjs',
     'js/chess-ai-adapter.mjs',
+    'js/roster-data.mjs',
+    'js/run-persistence.mjs',
+    'js/roster-app.mjs',
     'js/reboot-audio.mjs',
+    'assets/kings/oathkeeper/portrait.png',
+    'assets/kings/oathkeeper/piece.png',
+    'assets/heroes/aldric_wall/portrait.png',
+    'assets/heroes/aldric_wall/piece_badge.png',
+    'assets/heroes/mara_chain/portrait.png',
+    'assets/heroes/mara_chain/piece_badge.png',
+    'assets/heroes/nemea_quill/portrait.png',
+    'assets/heroes/nemea_quill/piece_badge.png',
+    'assets/heroes/brother_orell/portrait.png',
+    'assets/heroes/brother_orell/piece_badge.png',
+    'assets/heroes/vael_hammer/portrait.png',
+    'assets/heroes/vael_hammer/piece_badge.png',
     'music/echoes_iron_throne_01.mp3',
     'music/echoes_iron_throne_02.mp3',
     'music/echoes_iron_throne_03.mp3',
@@ -63,10 +89,10 @@ async function main() {
     'vendor/stockfish/COPYING.txt',
     'vendor/stockfish/SOURCE.txt'
   ]) {
-    if (!fs.existsSync(path.join(dist, relative))) throw new Error(`Chess AI build output missing: ${relative}`);
+    if (!fs.existsSync(path.join(dist, relative))) throw new Error(`Roster build output missing: ${relative}`);
   }
 
-  console.log(`Prepared RPChess Chess AI distribution in ${dist}; Stockfish ${stockfish.version}`);
+  console.log(`Prepared RPChess Roster distribution in ${dist}; Stockfish ${stockfish.version}`);
 }
 
 main().catch((error) => {
