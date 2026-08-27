@@ -4,6 +4,8 @@ import { createRun, readRun, writeRun } from './run-persistence.mjs';
 const menu = document.querySelector('[data-reboot-foundation]');
 const classicScreen = document.querySelector('[data-classic-screen]');
 const rosterScreen = document.querySelector('[data-roster-screen]');
+const skirmishScreen = document.querySelector('[data-skirmish-screen]');
+const aftermathScreen = document.querySelector('[data-skirmish-aftermath]');
 const continueButton = document.querySelector('[data-continue-run]');
 const journeyButton = document.querySelector('[data-roster-travel]');
 const rosterList = document.querySelector('[data-roster-list]');
@@ -20,6 +22,8 @@ function setScene(target) {
   if (menu) menu.hidden = target !== 'menu';
   if (classicScreen) classicScreen.hidden = target !== 'classic';
   if (rosterScreen) rosterScreen.hidden = target !== 'roster';
+  if (skirmishScreen) skirmishScreen.hidden = target !== 'skirmish';
+  if (aftermathScreen) aftermathScreen.hidden = target !== 'aftermath';
   document.body.classList.toggle('roster-active', target === 'roster');
   if (target === 'roster') window.scrollTo(0, 0);
 }
@@ -27,7 +31,7 @@ function setScene(target) {
 function updateContinueState() {
   activeRun = readRun();
   if (!continueButton) return;
-  const enabled = Boolean(activeRun);
+  const enabled = Boolean(activeRun && !activeRun.ended);
   continueButton.disabled = !enabled;
   continueButton.setAttribute('aria-disabled', enabled ? 'false' : 'true');
 }
@@ -188,7 +192,7 @@ function beginRun() {
 
 function continueRun() {
   activeRun = readRun();
-  if (!activeRun) {
+  if (!activeRun || activeRun.ended) {
     updateContinueState();
     return;
   }
@@ -198,16 +202,23 @@ function continueRun() {
 }
 
 function beginJourney() {
-  if (!activeRun) return;
+  activeRun = readRun();
+  if (!activeRun || activeRun.ended) return;
   audio()?.click();
   setScene('menu');
-  globalThis.dispatchEvent(new CustomEvent('rpchess:new-game', { detail: { source: 'roster' } }));
+  globalThis.dispatchEvent(new CustomEvent('rpchess:skirmish-open', { detail: { source: 'roster', runId: activeRun.id } }));
 }
 
 function returnToMenu() {
   audio()?.click();
   updateContinueState();
   setScene('menu');
+}
+
+function syncRun() {
+  activeRun = readRun();
+  updateContinueState();
+  if (rosterScreen && !rosterScreen.hidden && activeRun && !activeRun.ended) renderRoster();
 }
 
 filterButtons.forEach((button) => button.addEventListener('click', () => {
@@ -220,6 +231,7 @@ document.querySelector('[data-roster-menu]')?.addEventListener('click', returnTo
 journeyButton?.addEventListener('click', beginJourney);
 addEventListener('rpchess:run-new', beginRun);
 addEventListener('rpchess:run-continue', continueRun);
+addEventListener('rpchess:run-updated', syncRun);
 
 updateContinueState();
 
@@ -230,5 +242,6 @@ globalThis.RPChessRoster = Object.freeze({
   beginRun,
   continueRun,
   beginJourney,
-  returnToMenu
+  returnToMenu,
+  syncRun
 });
