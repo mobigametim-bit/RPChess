@@ -1,4 +1,5 @@
 import { readRun, writeRun } from './run-persistence.mjs';
+import { TRAVEL_SUPPLY_COST, applyTravelSupplyCost } from './resources-core.mjs';
 import {
   PLAYABLE_TRAVEL_TYPES,
   TRAVEL_CHOICE_COUNT,
@@ -45,7 +46,7 @@ function ensureScreen() {
         <p data-travel-step>Шаг путешествия 1</p>
       </header>
       <section class="travel-choice-routes" data-travel-routes aria-label="Три возможных пути"></section>
-      <p class="travel-choice-footnote">Выбор пути окончателен. Нажмите на карточку, чтобы сразу отправиться навстречу событию.</p>
+      <p class="travel-choice-footnote">Выбор пути окончателен. Каждый переход расходует 1 припас. Нажмите на карточку, чтобы сразу отправиться навстречу событию.</p>
     </div>`;
   app.append(screen);
 
@@ -69,6 +70,7 @@ function showTravel() {
   root.hidden = false;
   document.body.classList.add('travel-choice-active');
   window.scrollTo({ top: 0, behavior: 'auto' });
+  globalThis.RPChessResources?.render?.();
 }
 
 function hideTravel() {
@@ -100,7 +102,7 @@ function routeCard(choice) {
   button.dataset.travelChoice = choice.id;
   button.dataset.travelType = choice.type;
   button.dataset.travelStars = String(choice.stars);
-  button.setAttribute('aria-label', `${choice.label}. Угроза ${choice.stars} из 5. ${choice.flavor} Нажмите, чтобы выбрать путь.`);
+  button.setAttribute('aria-label', `${choice.label}. Угроза ${choice.stars} из 5. Стоимость пути ${TRAVEL_SUPPLY_COST} припас. ${choice.flavor} Нажмите, чтобы выбрать путь.`);
 
   const visual = document.createElement('span');
   visual.className = 'travel-choice-card__visual';
@@ -126,10 +128,17 @@ function routeCard(choice) {
   const hint = document.createElement('span');
   hint.className = 'travel-choice-card__hint';
   hint.textContent = choice.mechanicalHint;
+  const cost = document.createElement('span');
+  cost.className = 'travel-choice-card__cost';
+  const noSupplies = (activeRun?.supplies || 0) < TRAVEL_SUPPLY_COST;
+  cost.classList.toggle('is-empty', noSupplies);
+  cost.textContent = noSupplies
+    ? 'ПРИПАСОВ НЕТ · ПЕРЕХОД БЕЗ СПИСАНИЯ'
+    : `СТОИМОСТЬ ПУТИ · ${TRAVEL_SUPPLY_COST} ПРИПАС`;
   const action = document.createElement('span');
   action.className = 'travel-choice-card__action';
   action.textContent = 'ВЫБРАТЬ ПУТЬ →';
-  body.append(type, threat, flavor, hint, action);
+  body.append(type, threat, flavor, hint, cost, action);
   button.append(visual, body);
   button.addEventListener('click', () => chooseChoice(choice, button));
   return button;
@@ -178,14 +187,26 @@ function chooseChoice(choice, button) {
   for (const card of screen?.querySelectorAll('[data-travel-choice]') || []) card.disabled = true;
   button?.classList.add('is-chosen');
   audio()?.click?.();
-  const activeChoice = { ...choice, combatCountAtSelection: combatCount(current, choice) };
+
+  const travelPayment = applyTravelSupplyCost(current);
+  const activeChoice = {
+    ...choice,
+    combatCountAtSelection: combatCount(current, choice),
+    supplyCostAtSelection: travelPayment.requested,
+    supplyPaid: travelPayment.paid
+  };
   activeRun = writeRun({
-    ...current,
+    ...travelPayment.run,
     journeyStep: choice.step,
     currentTravelChoices: null,
     activeTravelChoice: activeChoice
   });
   globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
+  if (travelPayment.paid > 0) {
+    globalThis.RPChessResources?.showChange?.({ suppliesDelta: -travelPayment.paid, label: 'ПЕРЕХОД' });
+  } else {
+    globalThis.RPChessResources?.showChange?.({ label: 'ПРИПАСОВ НЕТ · ИСТОЩЕНИЕ БУДЕТ ДОБАВЛЕНО НА ЭТАПЕ STARVATION' });
+  }
 
   const delay = document.documentElement.dataset.reducedMotion === '1' ? 0 : 180;
   setTimeout(() => {
