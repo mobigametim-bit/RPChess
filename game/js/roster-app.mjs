@@ -20,7 +20,7 @@ function setScene(target) {
   if (classicScreen) classicScreen.hidden = target !== 'classic';
   if (rosterScreen) rosterScreen.hidden = target !== 'roster';
   document.body.classList.toggle('roster-active', target === 'roster');
-  if (target === 'roster') window.scrollTo({ top: 0, behavior: 'instant' });
+  if (target === 'roster') window.scrollTo(0, 0);
 }
 
 function updateContinueState() {
