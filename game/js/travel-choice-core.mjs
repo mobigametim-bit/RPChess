@@ -1,5 +1,5 @@
 const TRAVEL_ENCOUNTER_TYPES = Object.freeze(['skirmish', 'battle', 'event', 'settlement', 'puzzle']);
-const PLAYABLE_TRAVEL_TYPES = Object.freeze(['skirmish', 'battle']);
+const PLAYABLE_TRAVEL_TYPES = Object.freeze(['skirmish', 'battle', 'settlement']);
 const TRAVEL_CHOICE_COUNT = 3;
 
 const ENCOUNTER_LABELS = Object.freeze({
@@ -156,6 +156,9 @@ function createTravelChoices({ runId, step = 1, types = PLAYABLE_TRAVEL_TYPES } 
   let typeSequence;
   if (allowed.length === 1) {
     typeSequence = Array(TRAVEL_CHOICE_COUNT).fill(allowed[0]);
+  } else if (allowed.includes('skirmish') && allowed.includes('battle')) {
+    const third = allowed[Math.floor(random() * allowed.length)];
+    typeSequence = shuffled(['skirmish', 'battle', third], random);
   } else {
     typeSequence = [allowed[0], allowed[1], allowed[Math.floor(random() * allowed.length)]];
     typeSequence = shuffled(typeSequence, random);

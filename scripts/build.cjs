@@ -31,6 +31,7 @@ async function main() {
     'css/battle.css',
     'css/travel-choice.css',
     'css/resources.css',
+    'css/settlement.css',
     'js/reboot-foundation.mjs',
     'js/reboot-audio.mjs',
     'js/classic-chess-engine.mjs',
@@ -48,12 +49,10 @@ async function main() {
     'js/travel-choice-app.mjs',
     'js/resources-core.mjs',
     'js/resources-app.mjs',
+    'js/settlement-core.mjs',
+    'js/settlement-app.mjs',
     'assets/kings/oathkeeper',
-    'assets/heroes/aldric_wall',
-    'assets/heroes/mara_chain',
-    'assets/heroes/nemea_quill',
-    'assets/heroes/brother_orell',
-    'assets/heroes/vael_hammer',
+    'assets/heroes',
     'fonts',
     'generated_assets',
     'music'
@@ -78,6 +77,7 @@ async function main() {
     'css/battle.css',
     'css/travel-choice.css',
     'css/resources.css',
+    'css/settlement.css',
     'js/classic-chess-engine.mjs',
     'js/classic-chess-app.mjs',
     'js/chess-ai-adapter.mjs',
@@ -93,20 +93,19 @@ async function main() {
     'js/travel-choice-app.mjs',
     'js/resources-core.mjs',
     'js/resources-app.mjs',
+    'js/settlement-core.mjs',
+    'js/settlement-app.mjs',
     'js/reboot-audio.mjs',
     'assets/kings/oathkeeper/portrait.png',
     'assets/kings/oathkeeper/piece.png',
     'assets/heroes/aldric_wall/portrait.png',
     'assets/heroes/aldric_wall/piece_badge.png',
-    'assets/heroes/mara_chain/portrait.png',
-    'assets/heroes/mara_chain/piece_badge.png',
-    'assets/heroes/nemea_quill/portrait.png',
-    'assets/heroes/nemea_quill/piece_badge.png',
-    'assets/heroes/brother_orell/portrait.png',
-    'assets/heroes/brother_orell/piece_badge.png',
-    'assets/heroes/vael_hammer/portrait.png',
-    'assets/heroes/vael_hammer/piece_badge.png',
+    'assets/heroes/lady_sorn/portrait.png',
+    'assets/heroes/lady_sorn/piece_badge.png',
+    'assets/heroes/khulan_star/portrait.png',
+    'assets/heroes/khulan_star/piece_badge.png',
     'generated_assets/reward_gold.png',
+    'generated_assets/node_shop.png',
     'music/echoes_iron_throne_01.mp3',
     'music/echoes_iron_throne_02.mp3',
     'music/echoes_iron_throne_03.mp3',
@@ -116,10 +115,10 @@ async function main() {
     'vendor/stockfish/COPYING.txt',
     'vendor/stockfish/SOURCE.txt'
   ]) {
-    if (!fs.existsSync(path.join(dist, relative))) throw new Error(`Resources build output missing: ${relative}`);
+    if (!fs.existsSync(path.join(dist, relative))) throw new Error(`Settlement build output missing: ${relative}`);
   }
 
-  console.log(`Prepared RPChess Resources distribution in ${dist}; Stockfish ${stockfish.version}`);
+  console.log(`Prepared RPChess Settlement distribution in ${dist}; Stockfish ${stockfish.version}`);
 }
 
 main().catch((error) => {

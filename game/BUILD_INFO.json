@@ -1,13 +1,13 @@
 {
   "title": "RPChess Reboot",
-  "edition": "Resources",
-  "version": "2.7.0-resources.preview.1",
+  "edition": "Settlement",
+  "version": "2.8.0-settlement.preview.1",
   "build_date": "2026-08-27",
   "runtime": "Offline HTML5 / ES modules + local run persistence + local Stockfish 18 WASM worker",
   "requires_internet": false,
   "requires_installation": false,
   "visual_theme": "Approved RPChess fantasy UI with global frameless dark panel surfaces, safe-area insets, blue CTA frames, personalized character art and classical chess role glyphs",
-  "gameplay_state": "Resources implemented: persistent Gold and Supplies, 80/10 starting economy, one-Supply travel cost, deterministic one-time combat Gold rewards and frameless resource HUD; human playtest required before DONE",
+  "gameplay_state": "Settlement implemented, autotested, deployed and human accepted: safe Travel route, deterministic three-hero tavern offers, wounded-unit healing, finite Supply shop stock, persistent purchases and return-to-Travel flow; feature merge/post-merge closure pending before DONE",
   "legacy_branch": "archive/iron-marches-v1",
   "legacy_commit": "035fb817a93f53047a1d20f7cdfc9093b0f7d611",
   "foundation_merge": "416cfbcd332366c10d6dd27a44123c0dd7ea7da0",
@@ -17,10 +17,12 @@
   "skirmish_merge": "b7767a7d19433f9c4fb1cf27e8c7628ac30feb61",
   "battle_merge": "6a5f4b7cc2c920afc1309a876a5a44c43eac1b06",
   "travel_choice_merge": "ee7d1b348ac88ebafcd334acb84167f6b5a12bdc",
-  "active_feature_branch": "feature/resources",
+  "resources_merge": "c4e98b7f2bdbf926727ceec7bee15099919ea19d",
+  "active_feature_branch": "feature/settlement",
+  "acceptance_gate": "exact-head-closure",
   "stockfish_version": "18.0.0 lite single-threaded",
   "stockfish_license": "GPLv3",
   "active_docs": "docs/00_PRODUCT_VISION.md through docs/17_TECH_ARCHITECTURE.md",
   "human_acceptance_required": true,
-  "human_acceptance": "pending-resources-playtest"
+  "human_acceptance": "accepted-2026-08-27"
 }
