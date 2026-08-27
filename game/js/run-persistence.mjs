@@ -29,6 +29,18 @@ function isValidRun(value) {
   return kingCount === 1 && ids.has(value.selectedCharacterId);
 }
 
+function hydrateCurrentRosterCopy(run) {
+  const currentTemplates = new Map(createStarterRoster().map((character) => [character.id, character]));
+  return {
+    ...run,
+    roster: run.roster.map((character) => {
+      const current = currentTemplates.get(character.id);
+      if (!current) return character;
+      return { ...character, ...current, status: character.status };
+    })
+  };
+}
+
 function createRun({ now = Date.now(), id = null } = {}) {
   const roster = createStarterRoster();
   return {
@@ -46,7 +58,9 @@ function readRun(storage = null) {
   if (!target) return null;
   try {
     const parsed = JSON.parse(target.getItem(RUN_STORAGE_KEY) || 'null');
-    return isValidRun(parsed) ? parsed : null;
+    if (!isValidRun(parsed)) return null;
+    const hydrated = hydrateCurrentRosterCopy(parsed);
+    return isValidRun(hydrated) ? hydrated : null;
   } catch {
     return null;
   }
