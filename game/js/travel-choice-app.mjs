@@ -60,7 +60,7 @@ function ensureScreen() {
 
 function hideAllScenes() {
   for (const main of document.querySelectorAll('#app > main')) main.hidden = true;
-  document.body.classList.remove('roster-active', 'skirmish-active', 'battle-active', 'classic-chess-active');
+  document.body.classList.remove('roster-active', 'skirmish-active', 'battle-active', 'classic-chess-active', 'settlement-active');
 }
 
 function showTravel() {
@@ -102,7 +102,9 @@ function routeCard(choice) {
   button.dataset.travelChoice = choice.id;
   button.dataset.travelType = choice.type;
   button.dataset.travelStars = String(choice.stars);
-  button.setAttribute('aria-label', `${choice.label}. Угроза ${choice.stars} из 5. Стоимость пути ${TRAVEL_SUPPLY_COST} припас. ${choice.flavor} Нажмите, чтобы выбрать путь.`);
+  button.setAttribute('aria-label', choice.type === 'settlement'
+    ? `${choice.label}. Безопасное место. Лечение, найм и снабжение. Стоимость пути ${TRAVEL_SUPPLY_COST} припас. ${choice.flavor} Нажмите, чтобы выбрать путь.`
+    : `${choice.label}. Угроза ${choice.stars} из 5. Стоимость пути ${TRAVEL_SUPPLY_COST} припас. ${choice.flavor} Нажмите, чтобы выбрать путь.`);
 
   const visual = document.createElement('span');
   visual.className = 'travel-choice-card__visual';
@@ -119,9 +121,18 @@ function routeCard(choice) {
   const type = document.createElement('strong');
   type.className = 'travel-choice-card__type';
   type.textContent = choice.label;
-  const threat = document.createElement('span');
-  threat.className = 'travel-choice-card__threat';
-  threat.innerHTML = `<strong>${starsText(choice.stars)}</strong><small>${choice.threatLabel} УГРОЗА</small>`;
+
+  let dangerOrSafe;
+  if (choice.type === 'settlement') {
+    dangerOrSafe = document.createElement('span');
+    dangerOrSafe.className = 'travel-choice-card__safe';
+    dangerOrSafe.innerHTML = '<strong>БЕЗОПАСНОЕ МЕСТО</strong><small>ЛЕЧЕНИЕ · НАЙМ · СНАБЖЕНИЕ</small>';
+  } else {
+    dangerOrSafe = document.createElement('span');
+    dangerOrSafe.className = 'travel-choice-card__threat';
+    dangerOrSafe.innerHTML = `<strong>${starsText(choice.stars)}</strong><small>${choice.threatLabel} УГРОЗА</small>`;
+  }
+
   const flavor = document.createElement('span');
   flavor.className = 'travel-choice-card__flavor';
   flavor.textContent = choice.flavor;
@@ -138,7 +149,7 @@ function routeCard(choice) {
   const action = document.createElement('span');
   action.className = 'travel-choice-card__action';
   action.textContent = 'ВЫБРАТЬ ПУТЬ →';
-  body.append(type, threat, flavor, hint, cost, action);
+  body.append(type, dangerOrSafe, flavor, hint, cost, action);
   button.append(visual, body);
   button.addEventListener('click', () => chooseChoice(choice, button));
   return button;
@@ -156,15 +167,19 @@ function renderChoices() {
 }
 
 function combatCount(run, choice) {
-  return choice?.type === 'battle'
-    ? (Number.isInteger(run?.battleCount) ? run.battleCount : 0)
-    : (Number.isInteger(run?.skirmishCount) ? run.skirmishCount : 0);
+  if (choice?.type === 'battle') return Number.isInteger(run?.battleCount) ? run.battleCount : 0;
+  if (choice?.type === 'skirmish') return Number.isInteger(run?.skirmishCount) ? run.skirmishCount : 0;
+  return null;
 }
 
 function dispatchEncounter(choice) {
   hideTravel();
-  globalThis.RPChessTravelEncounterOverride = choice;
   const detail = { source: 'travel-choice', runId: activeRun?.id || null, choice };
+  if (choice.type === 'skirmish' || choice.type === 'battle') {
+    globalThis.RPChessTravelEncounterOverride = choice;
+  } else {
+    delete globalThis.RPChessTravelEncounterOverride;
+  }
   if (choice.type === 'skirmish') {
     globalThis.dispatchEvent(new CustomEvent('rpchess:skirmish-open', { detail }));
     return;
@@ -173,7 +188,10 @@ function dispatchEncounter(choice) {
     globalThis.dispatchEvent(new CustomEvent('rpchess:battle-open', { detail }));
     return;
   }
-  delete globalThis.RPChessTravelEncounterOverride;
+  if (choice.type === 'settlement') {
+    globalThis.dispatchEvent(new CustomEvent('rpchess:settlement-open', { detail }));
+    return;
+  }
   throw new Error(`Travel Choice encounter type is not playable yet: ${choice.type}`);
 }
 
@@ -189,9 +207,10 @@ function chooseChoice(choice, button) {
   audio()?.click?.();
 
   const travelPayment = applyTravelSupplyCost(current);
+  const count = combatCount(current, choice);
   const activeChoice = {
     ...choice,
-    combatCountAtSelection: combatCount(current, choice),
+    ...(Number.isInteger(count) ? { combatCountAtSelection: count } : {}),
     supplyCostAtSelection: travelPayment.requested,
     supplyPaid: travelPayment.paid
   };
@@ -239,7 +258,7 @@ function openRoster() {
 
 function activeChoiceCompleted(run) {
   const choice = run?.activeTravelChoice;
-  if (!isTravelChoice(choice) || !Number.isInteger(choice.combatCountAtSelection)) return false;
+  if (!isTravelChoice(choice) || !['skirmish', 'battle'].includes(choice.type) || !Number.isInteger(choice.combatCountAtSelection)) return false;
   return combatCount(run, choice) > choice.combatCountAtSelection;
 }
 
