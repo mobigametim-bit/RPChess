@@ -30,6 +30,14 @@ function isStoredTravelChoice(value) {
   return true;
 }
 
+function isResourceRewardState(value) {
+  if (value == null) return true;
+  if (!value || typeof value !== 'object') return false;
+  if (!Number.isInteger(value.skirmishCount) || value.skirmishCount < 0) return false;
+  if (!Number.isInteger(value.battleCount) || value.battleCount < 0) return false;
+  return true;
+}
+
 function isValidRun(value) {
   if (!value || typeof value !== 'object') return false;
   if (value.schemaVersion !== RUN_SCHEMA_VERSION) return false;
@@ -38,6 +46,7 @@ function isValidRun(value) {
   if (value.ended != null && typeof value.ended !== 'boolean') return false;
   if (!Number.isInteger(value.gold) || value.gold < 0) return false;
   if (!Number.isInteger(value.supplies) || value.supplies < 0) return false;
+  if (!isResourceRewardState(value.resourceRewards)) return false;
   if (value.skirmishCount != null && (!Number.isInteger(value.skirmishCount) || value.skirmishCount < 0)) return false;
   if (value.battleCount != null && (!Number.isInteger(value.battleCount) || value.battleCount < 0)) return false;
   if (value.journeyStep != null && (!Number.isInteger(value.journeyStep) || value.journeyStep < 0)) return false;
@@ -59,6 +68,10 @@ function hydrateCurrentRosterCopy(run) {
   const resources = hydrateResources(run);
   return {
     ...resources,
+    resourceRewards: {
+      skirmishCount: Number.isInteger(run.resourceRewards?.skirmishCount) ? run.resourceRewards.skirmishCount : 0,
+      battleCount: Number.isInteger(run.resourceRewards?.battleCount) ? run.resourceRewards.battleCount : 0
+    },
     ended: Boolean(run.ended),
     skirmishCount: Number.isInteger(run.skirmishCount) ? run.skirmishCount : 0,
     battleCount: Number.isInteger(run.battleCount) ? run.battleCount : 0,
@@ -86,6 +99,7 @@ function createRun({ now = Date.now(), id = null } = {}) {
     roster,
     gold: STARTING_GOLD,
     supplies: STARTING_SUPPLIES,
+    resourceRewards: { skirmishCount: 0, battleCount: 0 },
     ended: false,
     endReason: null,
     skirmishCount: 0,
