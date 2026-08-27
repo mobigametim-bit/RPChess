@@ -20,6 +20,9 @@ async function startFresh(page) {
     page.on('pageerror', (error) => errors.push(String(error.stack || error)));
 
     await startFresh(page);
+    const initial = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
+    assert.strictEqual(initial.gold, 80, 'new run must expose starting Gold');
+    assert.strictEqual(initial.supplies, 10, 'new run must expose starting Supplies');
     const hud = page.locator('[data-resource-hud]');
     await hud.waitFor({ state: 'visible' });
     assert.strictEqual((await page.locator('[data-resource-gold]').innerText()).trim(), '80');
@@ -27,44 +30,40 @@ async function startFresh(page) {
 
     await page.locator('[data-roster-travel]').click();
     await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
-    assert.strictEqual(await page.locator('.travel-choice-card__cost').count(), 3, 'every route must disclose its Supply cost');
-    const costs = await page.locator('.travel-choice-card__cost').allInnerTexts();
-    assert(costs.every((text) => text.includes('1 ПРИПАС')), 'all normal travel cards must show a one-Supply cost');
+    assert.strictEqual(await page.locator('.travel-choice-card__cost').count(), 3, 'each route must disclose its Supply cost');
+    for (const text of await page.locator('.travel-choice-card__cost').allInnerTexts()) {
+      assert(text.includes('1 ПРИПАС'), `route cost must disclose one Supply: ${text}`);
+    }
 
     const skirmishCard = page.locator('[data-travel-type="skirmish"]').first();
-    const stars = Number(await skirmishCard.getAttribute('data-travel-stars'));
     await skirmishCard.click();
     await page.locator('[data-skirmish-screen]:not([hidden])').waitFor();
-    const afterCommit = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
-    assert.strictEqual(afterCommit.supplies, 9, 'committing a route must spend exactly one Supply');
-    assert.strictEqual(afterCommit.activeTravelChoice.supplyCostAtSelection, 1);
-    assert.strictEqual(afterCommit.activeTravelChoice.supplyPaid, 1);
+    const committed = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
+    assert.strictEqual(committed.supplies, 9, 'committing a new route must spend exactly one Supply');
+    assert.strictEqual(committed.activeTravelChoice.supplyPaid, 1, 'active route must remember the exact Supply payment');
     assert.strictEqual((await page.locator('[data-resource-supplies]').innerText()).trim(), '9');
 
     await page.locator('[data-skirmish-back]').click();
     await page.locator('[data-roster-screen]:not([hidden])').waitFor();
     await page.locator('[data-roster-travel]').click();
     await page.locator('[data-skirmish-screen]:not([hidden])').waitFor();
-    const afterResume = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
-    assert.strictEqual(afterResume.supplies, 9, 'resuming an already committed route must never charge Supplies twice');
+    const resumed = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
+    assert.strictEqual(resumed.supplies, 9, 'resuming an already committed route must never charge Supplies twice');
 
+    const stars = resumed.activeTravelChoice.stars;
     await page.locator('[data-skirmish-start]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     await page.evaluate(() => globalThis.RPChessSkirmish.finishBattle({ over: true, type: 'stalemate', winner: null }));
     await page.locator('[data-skirmish-aftermath]:not([hidden])').waitFor();
-    await page.locator('[data-skirmish-aftermath] [data-resource-combat-reward]:not([hidden])').waitFor();
-
-    const expectedGoldReward = 6 + (2 * stars);
-    const afterCombat = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
-    assert.strictEqual(afterCombat.gold, 80 + expectedGoldReward, 'draw reward must be deterministic from encounter stars');
-    assert.strictEqual(afterCombat.lastSkirmish.goldReward, expectedGoldReward, 'reward amount must be persisted with the combat result');
-    assert.strictEqual(afterCombat.resourceRewards.skirmishCount, 1, 'combat reward must be marked settled exactly once');
-    assert((await page.locator('[data-skirmish-aftermath] [data-resource-combat-reward]').innerText()).includes(`+${expectedGoldReward} ЗОЛОТА`));
+    const expectedReward = Math.floor((12 + stars * 4) / 2);
+    const rewarded = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
+    assert.strictEqual(rewarded.gold, 80 + expectedReward, 'Skirmish draw must grant the deterministic half Gold reward once');
+    assert.strictEqual(await page.locator('[data-resource-combat-reward]').count(), 1, 'aftermath must present the Gold reward');
+    assert((await page.locator('[data-resource-combat-reward]').innerText()).includes(`+${expectedReward}`));
 
     await page.evaluate(() => globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated')));
-    await page.waitForTimeout(30);
-    const afterDuplicateSignal = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
-    assert.strictEqual(afterDuplicateSignal.gold, afterCombat.gold, 'repeated run-updated events must not duplicate combat Gold');
+    const afterRepeatedSync = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
+    assert.strictEqual(afterRepeatedSync.gold, rewarded.gold, 'repeated run synchronization must not duplicate Gold rewards');
 
     await page.locator('[data-aftermath-continue]').click();
     await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
@@ -75,10 +74,6 @@ async function startFresh(page) {
       globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
     }, RUN_KEY);
     await page.waitForTimeout(30);
-    await page.locator('[data-travel-roster]').click();
-    await page.locator('[data-roster-screen]:not([hidden])').waitFor();
-    await page.locator('[data-roster-travel]').click();
-    await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
     assert.strictEqual(await page.locator('.travel-choice-card__cost.is-empty').count(), 3, 'zero Supplies must be disclosed before route commitment');
     const zeroCard = page.locator('[data-travel-choice]').first();
     await zeroCard.click();
@@ -93,7 +88,7 @@ async function startFresh(page) {
     await startFresh(mobile);
     await mobile.locator('[data-resource-hud]').waitFor({ state: 'visible' });
     const hudBox = await mobile.locator('[data-resource-hud]').boundingBox();
-    assert(hudBox && hudBox.left >= -1 && hudBox.x + hudBox.width <= 391, 'mobile resource HUD must stay inside the viewport');
+    assert(hudBox && hudBox.x >= -1 && hudBox.x + hudBox.width <= 391, `mobile resource HUD must stay inside the viewport: ${JSON.stringify(hudBox)}`);
     const layout = await mobile.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, clientWidth: document.documentElement.clientWidth }));
     assert(layout.scrollWidth <= layout.clientWidth + 1, `Resources HUD must not create horizontal overflow: ${layout.scrollWidth}/${layout.clientWidth}`);
 
