@@ -1,5 +1,18 @@
 # RPChess Reboot Changelog
 
+## 2026-08-27 — Roster implementation ready for human playtest
+- Пользователь утвердил UX Roster и все предложенные решения: отдельная сцена `Отряд`, автоматический стартовый Король, memorial `Погибшие`, классическая стоимость фигур и локальное сохранение run.
+- `Новая игра` теперь создаёт persistent Reboot run и открывает `Отряд` отдельной сценой вместо standalone chess setup.
+- `Продолжить` становится рабочей кнопкой после создания run и восстанавливает текущий roster после reload.
+- Стартовый отряд состоит из 6 персонализированных фигур: Хранитель Клятвы, Альдрик Стена, Мара Цепь, Немея Перо, Брат Орелл и Ваэль Молот.
+- Состав стартовых ролей: King + 2 Pawn + Knight + Bishop + Rook = 13 классических командных очков + обязательный King. Queen оставлен как будущий ценный recruit.
+- Используются реальные legacy/current repository assets: portrait для detail и piece/piece_badge для карточек; новые изображения для этой feature не генерировались.
+- Добавлены состояния `healthy / wounded / dead`, фильтры `Все / Здоровы / Ранены / Погибшие` и memorial поведение: погибший персонаж остаётся в истории текущего забега.
+- Roster намеренно не содержит checkbox, `Применить состав`, лимиты `16/16` или `39/39`, drag-and-drop, стартовые клетки и `В ПУТЬ`; эти задачи принадлежат будущим Skirmish/Travel feature.
+- Добавлены `roster-data.mjs`, `run-persistence.mjs`, `roster-app.mjs`, `roster.css`, deterministic persistence/static tests и real-Chromium Roster acceptance.
+- Build/version: `2.3.0-roster.preview.1`.
+- Skirmish заблокирован до живого **HUMAN ACCEPTED → DONE** Roster preview.
+
 ## 2026-08-27 — Chess AI HUMAN ACCEPTED → DONE
 - Пользователь подтвердил финальный global framed-content safe-area spot-check без дополнительных замечаний.
 - Chess AI закрыт как **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**.
