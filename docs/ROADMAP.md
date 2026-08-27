@@ -10,7 +10,7 @@
 - [x] **PLAYTEST GATE C: интересность собственного состава и corrected Skirmish flow подтверждены пользователем.**
 - [x] Battle — полный классический комплект + временные фигуры. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Пользователь принял Battle preview 2026-08-27. Стандартная армия всегда 16 фигур / 39 очков + King 0; HEALTHY named-фигуры заменяют standard slots своего типа, generic slots остаются временными, персональная identity сохраняется на доске, а captured named non-King получают `wounded`.
 - [x] Travel Choice — три случайных следующих пути после каждой встречи. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Пользователь принял preview 2026-08-27. Ровно 3 persistent deterministic cards; card click сразу фиксирует необратимый выбор и запускает encounter; Roster/reload не перегенерируют развилку; текущий playable pool — Skirmish + Battle; aftermath возвращает в следующую тройку через `Продолжить путь`.
-- [ ] Resources — Gold + Supplies. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED; final exact-head CI/Cloudflare + merge closure pending.** New run: 80 Gold / 10 Supplies; новый committed travel transition стоит 1 Supply; Skirmish/Battle дают deterministic Gold reward один раз; resource HUD persistent; Starvation casualty намеренно остаётся отдельным этапом после Settlement. Пользователь подтвердил live preview 2026-08-27: «все работает, золото начисляется, припасы тратятся».
+- [x] Resources — Gold + Supplies. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** New run: 80 Gold / 10 Supplies; новый committed travel transition стоит 1 Supply; Skirmish/Battle дают deterministic Gold reward один раз; resource HUD persistent; Starvation casualty намеренно остаётся отдельным этапом после Settlement. Пользователь подтвердил live preview 2026-08-27: «все работает, золото начисляется, припасы тратятся». PR #71 squash-merged в `main`; post-merge CI и Cloudflare production прошли SUCCESS.
 - [ ] Settlement — лечение, найм, снабжение.
 - [ ] Starvation — случайная смерть фигуры при переходе без припасов.
 - [ ] Events — первый пакет 20–30 мгновенных событий.
@@ -25,7 +25,7 @@
 - [ ] Metaprogression — только после подтверждения core loop.
 
 ## Current phase
-**Resources closure — HUMAN ACCEPTED; final exact-head GitHub Actions + Cloudflare and merge/post-merge verification pending.**
+**Settlement — UX/spec discussion and approval next. Implementation has not started.**
 
 Текущий Resources v1 contract:
 - new run: `Gold 80`, `Supplies 10`;
@@ -37,14 +37,16 @@
 - reward settlement idempotent;
 - at 0 Supplies Resources itself does not kill a character yet: canonical death consequence remains isolated to the later **Starvation** feature.
 
-Current base `main`: `ee7d1b348ac88ebafcd334acb84167f6b5a12bdc` (Travel Choice merged).  
-Resources branch: `feature/resources`.  
+Current `main`: `c4e98b7f2bdbf926727ceec7bee15099919ea19d` (Resources merged).  
 Resources version: `2.7.0-resources.preview.1`.  
-Draft PR: #71 until final exact-head gate is green.  
+PR #71: **squash-merged**.  
 Human acceptance: **accepted 2026-08-27**.  
 Accepted gameplay head: `e162c347efe7ec1e55c1f76df7999c90469f1906`.  
 Accepted Cloudflare build: `34063395-1b82-44b2-b93c-caef6f4c0e5f`; Version `da19ea4e-60ef-467a-85e4-5137a2e76c15`.  
-Accepted preview: `https://da19ea4e-rpchess.mobigametim.workers.dev`.
+Accepted preview: `https://da19ea4e-rpchess.mobigametim.workers.dev`.  
+Resources merge SHA: `c4e98b7f2bdbf926727ceec7bee15099919ea19d`.  
+Post-merge GitHub Actions: `33105645405` / #942 — **SUCCESS**, включая full real Chromium regression Foundation → Classic Chess → Stockfish → Roster → Skirmish → Battle → Travel Choice → Resources.  
+Post-merge Cloudflare build: `bb7e0099-3513-45d2-a151-b7ecc057770b` — **SUCCESS**; production Version `69a291d3-8b0e-4e3f-9715-9cce1c9f4d86`.
 
 Accepted Travel Choice gameplay head: `d76fca5ad5e02260a836400c7398158c1657a6f6`.  
 Accepted Travel Choice version: `2.6.0-travel-choice.preview.1`.  
