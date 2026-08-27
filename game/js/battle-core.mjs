@@ -43,12 +43,23 @@ function hashSeed(input) {
   return hash >>> 0;
 }
 
+function takeTravelEncounterOverride(expectedType) {
+  if (typeof globalThis === 'undefined') return null;
+  const override = globalThis.RPChessTravelEncounterOverride;
+  if (!override || override.type !== expectedType || !override.seed) return null;
+  try { delete globalThis.RPChessTravelEncounterOverride; } catch { globalThis.RPChessTravelEncounterOverride = null; }
+  return override;
+}
+
 function createBattleEncounter({ seed = 'rpchess-battle', stars = 2 } = {}) {
-  const normalizedStars = clamp(Math.round(Number(stars) || 2), 1, 5);
+  const override = takeTravelEncounterOverride('battle');
+  const resolvedSeed = override?.seed || seed;
+  const resolvedStars = override?.stars ?? stars;
+  const normalizedStars = clamp(Math.round(Number(resolvedStars) || 2), 1, 5);
   const tier = BATTLE_TIERS[normalizedStars];
   return Object.freeze({
-    id: `battle-${hashSeed(seed).toString(36)}-${normalizedStars}`,
-    seed: String(seed),
+    id: `battle-${hashSeed(resolvedSeed).toString(36)}-${normalizedStars}`,
+    seed: String(resolvedSeed),
     stars: normalizedStars,
     label: tier.label,
     aiElo: tier.elo,
