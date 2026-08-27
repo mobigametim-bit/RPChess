@@ -1,7 +1,7 @@
 # Resources — Gold + Supplies
 
-**Feature status:** IMPLEMENTED on `feature/resources`; automated and deployed gates must pass before human acceptance.  
-**Lifecycle:** IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN PLAYTEST REQUIRED → DONE.
+**Feature status:** HUMAN ACCEPTED on `feature/resources`; final exact-head CI/Cloudflare and merge closure pending.  
+**Lifecycle:** IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE after merge + post-merge verification.
 
 ## 1. Canonical resources
 RPChess Reboot uses only two run resources:
@@ -97,7 +97,7 @@ These stay in later roadmap stages:
 - resource-based chess modifiers or abilities.
 
 ## 8. Acceptance contract
-Resources cannot become DONE until all of the following are true:
+Resources acceptance requires all of the following:
 
 - Node tests pass for defaults, hydration, persistence, travel cost, zero-floor and reward formulas;
 - real Chromium confirms visible 80/10 starting HUD;
@@ -110,3 +110,19 @@ Resources cannot become DONE until all of the following are true:
 - full Foundation → Classic Chess → Stockfish → Roster → Skirmish → Battle → Travel Choice regression remains green;
 - Cloudflare preview deploy succeeds;
 - user completes live playtest and explicitly accepts the preview.
+
+## 9. Human acceptance — 2026-08-27
+The user completed the live Resources playtest and explicitly confirmed: **«все работает, золото начисляется, припасы тратятся»**.
+
+Human Gate is therefore closed. Confirmed in live gameplay:
+- Gold is awarded after combat;
+- Supplies are consumed on travel;
+- the Resources economy loop is functioning as intended.
+
+Accepted gameplay preview runtime: version `2.7.0-resources.preview.1`.  
+Accepted gameplay head: `e162c347efe7ec1e55c1f76df7999c90469f1906`.  
+Accepted Cloudflare build: `34063395-1b82-44b2-b93c-caef6f4c0e5f`.  
+Accepted Cloudflare Version: `da19ea4e-60ef-467a-85e4-5137a2e76c15`.  
+Accepted preview: `https://da19ea4e-rpchess.mobigametim.workers.dev`.
+
+Subsequent commit `44766f3e5e0bd6fa98684ada50ce19fb043e8c6a` changes only the Chromium test assertion scope and does not alter gameplay/runtime behavior. Resources must still pass the final docs-synchronized exact-head GitHub Actions + Cloudflare gates before PR #71 is marked Ready and merged.
