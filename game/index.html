@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="css/reboot-foundation.css?v=20260827-frameless-1">
   <link rel="stylesheet" href="css/classic-chess.css?v=20260827-frameless-1">
   <link rel="stylesheet" href="css/chess-ai-polish.css?v=20260827-frameless-1">
-  <link rel="stylesheet" href="css/roster.css?v=20260827-frameless-1">
+  <link rel="stylesheet" href="css/roster.css?v=20260827-roster-2">
 </head>
 <body>
   <div id="app">
@@ -35,6 +35,7 @@
         <header class="roster-topbar">
           <img class="roster-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
           <div class="roster-topbar__actions">
+            <button class="reboot-button reboot-button--primary roster-journey-button" type="button" data-roster-travel>Начать путешествие</button>
             <button class="reboot-button reboot-button--primary" type="button" data-settings>Настройки</button>
             <button class="reboot-button reboot-button--primary" type="button" data-roster-menu>Главное меню</button>
           </div>
@@ -43,7 +44,6 @@
         <header class="roster-heading">
           <div class="reboot-eyebrow">ТЕКУЩИЙ ЗАБЕГ</div>
           <h1>Отряд</h1>
-          <p>Именные фигуры, которые путешествуют вместе с вашим королём. Здесь отображается их шахматная роль и текущее состояние.</p>
         </header>
 
         <div class="roster-layout">
@@ -205,7 +205,7 @@
   </div>
 
   <script type="module" src="js/reboot-foundation.mjs?v=20260827-roster-1"></script>
-  <script type="module" src="js/roster-app.mjs?v=20260827-roster-1"></script>
+  <script type="module" src="js/roster-app.mjs?v=20260827-roster-2"></script>
   <script type="module" src="js/classic-chess-app.mjs?v=20260827-ai-2"></script>
 </body>
 </html>
