@@ -8,6 +8,7 @@ const html = fs.readFileSync(path.join(game, 'index.html'), 'utf8');
 const foundationCss = fs.readFileSync(path.join(game, 'css/reboot-foundation.css'), 'utf8');
 const css = fs.readFileSync(path.join(game, 'css/classic-chess.css'), 'utf8');
 const polishCss = fs.readFileSync(path.join(game, 'css/chess-ai-polish.css'), 'utf8');
+const rosterCss = fs.readFileSync(path.join(game, 'css/roster.css'), 'utf8');
 const app = fs.readFileSync(path.join(game, 'js/classic-chess-app.mjs'), 'utf8');
 const engine = fs.readFileSync(path.join(game, 'js/classic-chess-engine.mjs'), 'utf8');
 const ai = fs.readFileSync(path.join(game, 'js/chess-ai-adapter.mjs'), 'utf8');
@@ -21,8 +22,8 @@ for (const token of [
   'classic-party-panel', 'classic-panel--moves'
 ]) assert(html.includes(token), `Classic Chess / AI UI token missing: ${token}`);
 
-assert(html.includes('css/classic-chess.css'), 'Classic Chess stylesheet is not loaded');
-assert(html.includes('css/chess-ai-polish.css?v=20260827-ai-3'), 'final Chess AI polish cache-bust is not loaded');
+assert(html.includes('css/classic-chess.css?v=20260827-frameless-1'), 'frameless Classic Chess stylesheet is not pinned');
+assert(html.includes('css/chess-ai-polish.css?v=20260827-frameless-1'), 'frameless Chess AI polish cache-bust is not pinned');
 assert(html.includes('js/classic-chess-app.mjs'), 'Classic Chess app is not loaded');
 assert(app.includes("from './classic-chess-engine.mjs'"), 'Classic app does not use standalone engine');
 assert(app.includes("from './chess-ai-adapter.mjs'"), 'Classic app does not use ChessAIAdapter boundary');
@@ -52,19 +53,25 @@ for (const contract of ['sanNotation', 'PIECE_GLYPHS', 'PIECE_VALUES', 'renderMa
   assert(app.includes(contract), `Chess AI production polish runtime missing: ${contract}`);
 }
 for (const contract of [
-  'ui_button_primary.png', 'ui_panel_frame.png', '.classic-piece-marker', '.classic-san-figurine',
+  'ui_button_primary.png', '.classic-piece-marker', '.classic-san-figurine',
   '.classic-captured-piece', '.classic-piece-flyer', '.classic-thinking { display: none !important; }',
   '.classic-statusbar { display: none !important; }', '.classic-party-panel', '.classic-panel--moves',
-  '.classic-result__actions { display: none !important; }', 'border-radius: 0', 'background: transparent'
-]) assert(polishCss.includes(contract), `Chess AI final polish CSS missing: ${contract}`);
+  '.classic-result__actions { display: none !important; }', 'border-radius: 0', 'background: transparent',
+  'border: 1px solid var(--ui-panel-border)', 'background: var(--ui-panel-bg)'
+]) assert(polishCss.includes(contract), `Chess AI frameless polish CSS missing: ${contract}`);
 
 assert(polishCss.includes('grid-template-columns: minmax(240px, 300px) minmax(0, 860px) minmax(270px, 330px)'), 'desktop layout must be Party / board / Moves');
 assert(polishCss.includes('.classic-piece-marker--w') && polishCss.includes('color: #fff'), 'white technical marker must be plain white');
 assert(polishCss.includes('.classic-piece-marker--b') && polishCss.includes('color: #050505'), 'black technical marker must be plain black');
 assert(!polishCss.includes("ui_button_secondary.png"), 'polish layer must not introduce light/secondary button frames');
-assert(html.includes('classic-commander-panel'), 'approved commander-selection dark surface is not applied to modals');
-assert(!html.includes('data-result-rematch'), 'post-game rematch button must not be duplicated inside the Party frame');
-assert(!html.includes('data-result-menu'), 'post-game main-menu button must not be duplicated inside the Party frame');
+assert(!html.includes('data-result-rematch'), 'post-game rematch button must not be duplicated inside the Party panel');
+assert(!html.includes('data-result-menu'), 'post-game main-menu button must not be duplicated inside the Party panel');
+
+for (const source of [foundationCss, css, polishCss, rosterCss]) {
+  assert(!source.includes('ui_panel_frame.png'), 'active Reboot CSS must not use ornate ui_panel_frame.png');
+  assert(!source.includes('ui_panel_wide.png'), 'active Reboot CSS must not use ornate ui_panel_wide.png');
+}
+assert(css.includes('.classic-board-wrap') && css.includes('border: 1px solid rgba(102, 157, 199, .5)'), 'board wrapper must use a CSS-only frameless edge');
 
 for (const side of ['player', 'enemy']) {
   for (const piece of ['pawn', 'knight', 'bishop', 'rook', 'queen', 'king']) {
@@ -72,4 +79,4 @@ for (const side of ['player', 'enemy']) {
   }
 }
 
-console.log('Classic Chess + AI final production polish static contract: PASS');
+console.log('Classic Chess + AI frameless production polish static contract: PASS');

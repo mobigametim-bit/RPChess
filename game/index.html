@@ -7,9 +7,10 @@
   <meta name="theme-color" content="#050a12">
   <meta name="description" content="RPChess — фэнтезийный шахматный roguelite">
   <title>RPChess</title>
-  <link rel="stylesheet" href="css/reboot-foundation.css?v=20260827-reboot-4">
-  <link rel="stylesheet" href="css/classic-chess.css?v=20260827-ai-2">
-  <link rel="stylesheet" href="css/chess-ai-polish.css?v=20260827-ai-3">
+  <link rel="stylesheet" href="css/reboot-foundation.css?v=20260827-frameless-1">
+  <link rel="stylesheet" href="css/classic-chess.css?v=20260827-frameless-1">
+  <link rel="stylesheet" href="css/chess-ai-polish.css?v=20260827-frameless-1">
+  <link rel="stylesheet" href="css/roster.css?v=20260827-roster-2">
 </head>
 <body>
   <div id="app">
@@ -20,12 +21,48 @@
           <img class="reboot-wordmark" src="generated_assets/title_wordmark.png" alt="RPChess">
           <div class="reboot-menu-actions" aria-label="Главное меню">
             <button class="reboot-button reboot-button--primary" type="button" data-new-game>Новая игра</button>
-            <button class="reboot-button" type="button" disabled aria-disabled="true">Продолжить</button>
+            <button class="reboot-button reboot-button--primary" type="button" data-continue-run disabled aria-disabled="true">Продолжить</button>
             <div class="reboot-menu-secondary">
-              <button class="reboot-button" type="button" data-settings>Настройки</button>
+              <button class="reboot-button reboot-button--primary" type="button" data-settings>Настройки</button>
             </div>
           </div>
         </section>
+      </div>
+    </main>
+
+    <main class="roster-screen" data-roster-screen aria-label="Отряд текущего забега" hidden>
+      <div class="roster-shell">
+        <header class="roster-topbar">
+          <img class="roster-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
+          <div class="roster-topbar__actions">
+            <button class="reboot-button reboot-button--primary roster-journey-button" type="button" data-roster-travel>Начать путешествие</button>
+            <button class="reboot-button reboot-button--primary" type="button" data-settings>Настройки</button>
+            <button class="reboot-button reboot-button--primary" type="button" data-roster-menu>Главное меню</button>
+          </div>
+        </header>
+
+        <header class="roster-heading">
+          <div class="reboot-eyebrow">ТЕКУЩИЙ ЗАБЕГ</div>
+          <h1>Отряд</h1>
+        </header>
+
+        <div class="roster-layout">
+          <article class="roster-detail ui-panel-safe" data-roster-detail aria-live="polite"></article>
+
+          <section class="roster-catalog ui-panel-safe" aria-label="Ваш отряд">
+            <header class="roster-catalog__head">
+              <h2>Ваш отряд</h2>
+              <span class="roster-catalog__count" data-roster-count></span>
+            </header>
+            <nav class="roster-filters" aria-label="Фильтр состояния фигур">
+              <button class="roster-filter is-active" type="button" data-roster-filter="all" data-roster-filter-label="ВСЕ" aria-pressed="true">ВСЕ</button>
+              <button class="roster-filter" type="button" data-roster-filter="healthy" data-roster-filter-label="ЗДОРОВЫ" aria-pressed="false">ЗДОРОВЫ</button>
+              <button class="roster-filter" type="button" data-roster-filter="wounded" data-roster-filter-label="РАНЕНЫ" aria-pressed="false">РАНЕНЫ</button>
+              <button class="roster-filter" type="button" data-roster-filter="dead" data-roster-filter-label="ПОГИБШИЕ" aria-pressed="false">ПОГИБШИЕ</button>
+            </nav>
+            <div class="roster-grid" data-roster-list></div>
+          </section>
+        </div>
       </div>
     </main>
 
@@ -167,7 +204,8 @@
     </section>
   </div>
 
-  <script type="module" src="js/reboot-foundation.mjs?v=20260826-reboot-3"></script>
+  <script type="module" src="js/reboot-foundation.mjs?v=20260827-roster-1"></script>
+  <script type="module" src="js/roster-app.mjs?v=20260827-roster-2"></script>
   <script type="module" src="js/classic-chess-app.mjs?v=20260827-ai-2"></script>
 </body>
 </html>

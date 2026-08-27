@@ -1,48 +1,67 @@
 # RPChess Reboot Changelog
 
+## 2026-08-27 — Roster HUMAN ACCEPTED → DONE
+- Пользователь завершил повторный живой тест исправленного Roster preview и подтвердил: **«всё хорошо»**.
+- Roster закрыт как **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**.
+- Accepted gameplay head: `21486014ca110062fdcb776d5119b23dbe3418cf`.
+- Accepted version: `2.3.0-roster.preview.3`.
+- GitHub Actions exact-head run `33059487594`: **SUCCESS**, включая source/static/persistence checks, production build, real Chromium Foundation, Classic Chess, Stockfish и полный Roster journey flow.
+- Cloudflare accepted gameplay build `7f7d60f8-ce9c-4b8b-8680-3bc80e4fe33a`: **SUCCESS**; Version `78461dc1-d43a-4392-ae01-f04af95a70e2`.
+- Accepted preview: `https://78461dc1-rpchess.mobigametim.workers.dev`.
+- Проверены финальные live corrections: новая мини-история Хранителя Клятвы, отсутствие служебных healthy/king фраз и рабочий маршрут `Продолжить → Отряд → Начать путешествие → выбор партии → Начать партию → шахматная доска`.
+- `docs/04_ROSTER.md` проверен и остаётся актуальной спецификацией; Roadmap переведён на Roster `DONE`.
+- Следующий этап — **только UX-проектирование Skirmish**. Реализация Skirmish не начинается до отдельного обсуждения и явного утверждения UX пользователем.
+
+## 2026-08-27 — Game-wide ornate panel-frame removal
+- После Roster preview пользователь утвердил новое постоянное правило: декоративные panel-frame assets больше не используются ни в одной active Reboot сцене и не должны использоваться в будущих feature.
+- `ui_panel_frame.png` и `ui_panel_wide.png` удалены из активных CSS references Foundation, Classic Chess, Chess AI polish и Roster.
+- Модалки, `Партия`, `Ходы`, Roster detail/catalog и внешняя обкладка шахматной доски переведены на CSS-only frameless surfaces: тёмная подложка, тонкая синяя/сдержанная золотистая граница и мягкая тень.
+- Введён новый глобальный `--ui-panel-*` visual contract и `--ui-panel-safe-*` / `.ui-panel-safe` safe-area contract.
+- Левый safe inset остаётся немного больше правого; текст и интерактивные элементы не касаются внешней границы surface.
+- Approved blue CTA `ui_button_primary.png` сохранён; запрет касается panel-frame assets, а не кнопок.
+- Static/source verification теперь считает любое возвращение `ui_panel_frame.png` / `ui_panel_wide.png` в active Reboot CSS регрессией.
+- Все active CSS получили новый cache-bust `20260827-frameless-1`.
+- Roster preview version поднята до `2.3.0-roster.preview.2`.
+- Skirmish по-прежнему заблокирован до финального живого Roster acceptance.
+
+## 2026-08-27 — Roster implementation ready for human playtest
+- Пользователь утвердил UX Roster и все предложенные решения: отдельная сцена `Отряд`, автоматический стартовый Король, memorial `Погибшие`, классическая стоимость фигур и локальное сохранение run.
+- `Новая игра` теперь создаёт persistent Reboot run и открывает `Отряд` отдельной сценой вместо standalone chess setup.
+- `Продолжить` становится рабочей кнопкой после создания run и восстанавливает текущий roster после reload.
+- Стартовый отряд состоит из 6 персонализированных фигур: Хранитель Клятвы, Альдрик Стена, Мара Цепь, Немея Перо, Брат Орелл и Ваэль Молот.
+- Состав стартовых ролей: King + 2 Pawn + Knight + Bishop + Rook = 13 классических командных очков + обязательный King. Queen оставлен как будущий ценный recruit.
+- Используются реальные legacy/current repository assets: portrait для detail и piece/piece_badge для карточек; новые изображения для этой feature не генерировались.
+- Добавлены состояния `healthy / wounded / dead`, фильтры `Все / Здоровы / Ранены / Погибшие` и memorial поведение: погибший персонаж остаётся в истории текущего забега.
+- Roster намеренно не содержит checkbox, `Применить состав`, лимиты `16/16` или `39/39`, drag-and-drop, стартовые клетки и `В ПУТЬ`; эти задачи принадлежат будущим Skirmish/Travel feature.
+- Добавлены `roster-data.mjs`, `run-persistence.mjs`, `roster-app.mjs`, `roster.css`, deterministic persistence/static tests и real-Chromium Roster acceptance.
+- Начальная preview version: `2.3.0-roster.preview.1`.
+- Skirmish заблокирован до живого **HUMAN ACCEPTED → DONE** Roster preview.
+
 ## 2026-08-27 — Chess AI HUMAN ACCEPTED → DONE
-- Пользователь подтвердил финальный global framed-content safe-area spot-check без дополнительных замечаний.
+- Пользователь подтвердил финальный UI spot-check без дополнительных gameplay замечаний.
 - Chess AI закрыт как **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**.
 - Accepted preview: `2.2.0-chess-ai.preview.4`; accepted gameplay/UI head: `556423dd31778def0d6245a4de1d221dc5a2299c`.
 - GitHub Actions run `33026697784`, job `98369639263`: **SUCCESS**, включая real Chromium + Stockfish acceptance.
 - Cloudflare build `af7b2919-b1c2-44a4-be56-167453070c99`: **SUCCESS**; Version `7bf7d0e6-1cbb-4e91-8203-7b66319e7e14`.
-- Следующий этап: Roster. До реализации сначала согласуется UX с пользователем.
-
-## 2026-08-27 — Global framed-content safe-area invariant
-- После финального UI spot-check пользователь подтвердил весь Chess AI polish и добавил одно обязательное правило для **всей игры**: текст и интерактивные элементы во всех декоративных фреймах должны оставаться внутри внутренней рабочей области и визуально не касаться рамки.
-- В `reboot-foundation.css` введён централизованный `--ui-frame-safe-*` contract и reusable `.ui-frame-safe` utility для текущих и будущих сцен.
-- `.reboot-modal__panel` и `.classic-panel` подключены к этому контракту глобально.
-- Левый safe-area inset намеренно больше правого, чтобы текст не стоял вплотную к декоративной кромке.
-- Добавлены ограничения `min-width: 0`, `max-width: 100%` и безопасный перенос длинного текста внутри framed surfaces.
-- Mobile получает отдельные компактные, но ненулевые safe-area значения.
-- Cache-bust Foundation stylesheet поднят до `20260827-reboot-4`.
-- Preview version поднята до `2.2.0-chess-ai.preview.4`.
-- `16_UI_UX.md` закрепляет правило как game-wide invariant для всех последующих feature.
-- Reboot Foundation static contract теперь проверяет наличие safe-area variables, reusable utility, binding текущих panel families и отдельный левый inset.
+- Следующий этап: Roster.
 
 ## 2026-08-27 — Chess AI final UI polish corrections
-- После второго live spot-check пользователь подтвердил всё, кроме пяти UI-компоновочных замечаний.
 - Technical role glyph уменьшен, окружность/подложка убрана, glyph перенесён в крайний левый верхний угол клетки; white side использует белый glyph, black side — чёрный.
-- Увеличена safe-area padding внутри commander-style рамок, чтобы текст и элементы оставались в тёмной области и не пересекались с декоративной рамкой.
 - Широкая status-плашка `Партия завершена…` удалена из визуальной композиции.
 - Duplicate post-game `Новая партия / Главное меню` внутри панели `Партия` удалены; верхний toolbar остаётся единственным action set.
 - Desktop-layout изменён на `Партия` слева / доска по центру / `Ходы` справа.
 - SAN/figurines, captured material, smooth movement и blue CTA сохранены без изменения.
 - Версия поднята до `2.2.0-chess-ai.preview.3`.
-- Static contract усилен на final layout, marker style, hidden status plaque и отсутствие duplicate post-game CTA.
 
 ## 2026-08-27 — Chess AI gameplay test passed; production polish implemented
 - Пользователь подтвердил, что Chess AI gameplay и все основные пункты теста работают корректно.
-- Перед финальным acceptance запросил production polish интерфейса партии.
 - На каждую fantasy-фигуру добавлен технический шахматный marker в верхнем левом углу.
 - История переведена на стандартную SAN-запись с figurine rendering для фигур; поддерживаются capture `x`, check `+`, mate `#`, castling, promotion и disambiguation.
 - Добавлены технические glyph взятых фигур и material advantage.
 - Большая центральная плашка `Компьютер думает…` убрана из визуального слоя; AI turn остаётся в status line.
 - Ходы фигур получили плавную 230ms-анимацию с отдельным capture fade; reduced-motion отключает переходы.
-- Панели и модальные окна переведены на тёмный approved commander-selection treatment: `ui_panel_frame.png` + `#091524` + inner keyline вместо светлой parchment-подложки.
-- Все action-кнопки используют синий `ui_button_primary.png`; light/secondary action frame в polish layer не используется.
+- Все action-кнопки используют синий `ui_button_primary.png`.
 - Версия поднята до `2.2.0-chess-ai.preview.2`.
-- Static/source/build и Chromium contracts расширены на markers, SAN/figurines, captured material, animation, commander surfaces и blue CTA.
 
 ## 2026-08-26 — Chess AI implementation ready for deployment gate
 - После merge принятого Classic Chess создана `feature/chess-ai` от exact `main` commit `6df1a65ffca36413d99415eab1f0e5ccddbd5dbe`.

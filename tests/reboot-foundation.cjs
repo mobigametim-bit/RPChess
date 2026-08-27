@@ -13,11 +13,15 @@ const info = JSON.parse(fs.readFileSync(path.join(game, 'BUILD_INFO.json'), 'utf
 
 assert(html.includes('data-reboot-foundation'), 'Reboot Foundation root is missing');
 assert(html.includes('data-new-game'), 'New Game action is missing');
-assert(html.includes('>Продолжить<'), 'Continue action is missing');
+assert(html.includes('data-continue-run'), 'persistent Continue action is missing');
 assert(html.includes('data-settings'), 'Settings action is missing');
 assert(html.includes('generated_assets/title_wordmark.png'), 'approved RPChess wordmark is missing from menu');
-assert(html.includes('css/reboot-foundation.css?v=20260827-reboot-4'), 'global UI safe-area stylesheet cache bust is not pinned');
-assert(html.includes('js/reboot-foundation.mjs'), 'Reboot runtime is not loaded');
+assert(html.includes('css/reboot-foundation.css?v=20260827-frameless-1'), 'frameless Foundation stylesheet cache bust is not pinned');
+assert(html.includes('css/classic-chess.css?v=20260827-frameless-1'), 'frameless Classic Chess stylesheet cache bust is not pinned');
+assert(html.includes('css/chess-ai-polish.css?v=20260827-frameless-1'), 'frameless Chess AI polish cache bust is not pinned');
+assert(html.includes('css/roster.css?v=20260827-roster-2'), 'corrected Roster stylesheet cache bust is not pinned');
+assert(html.includes('js/reboot-foundation.mjs?v=20260827-roster-1'), 'Roster Foundation runtime cache bust is not pinned');
+assert(html.includes('js/roster-app.mjs?v=20260827-roster-2'), 'corrected Roster runtime is not loaded');
 
 for (const forbidden of ['iron-marches-runtime.bundle.js', 'vertical-slice-app.mjs', 'explicit-run-setup.mjs', 'ui-approved-campaign.mjs', 'commander-selection-final.mjs']) {
   assert(!html.includes(forbidden), `legacy runtime is still referenced: ${forbidden}`);
@@ -31,19 +35,25 @@ for (const prototypeCopy of ['Новый путь RPChess', 'Reboot Foundation.'
 
 assert(/html\s*\{[\s\S]*overflow-y:\s*auto/i.test(css), 'html must permit vertical scrolling');
 assert(/body\s*\{[\s\S]*overflow-y:\s*auto/i.test(css), 'body must permit vertical scrolling');
-assert(css.includes('--ui-frame-safe-left'), 'global framed-surface left safe-area variable is missing');
-assert(css.includes('--ui-frame-safe-right'), 'global framed-surface right safe-area variable is missing');
-assert(css.includes('.ui-frame-safe'), 'future scenes have no reusable framed safe-area utility');
-assert(/\.ui-frame-safe,[\s\S]*\.reboot-modal__panel,[\s\S]*\.classic-panel[\s\S]*padding-left:\s*var\(--ui-frame-safe-left\)\s*!important/i.test(css), 'current framed surfaces are not bound to the global left safe-area contract');
-assert(/--ui-frame-safe-left:\s*clamp\(40px/i.test(css), 'desktop framed surfaces need a deliberate left inset');
-assert(/@media \(max-width: 760px\)[\s\S]*--ui-frame-safe-left:\s*32px/i.test(css), 'mobile framed surfaces need a deliberate left inset');
+assert(css.includes('--ui-panel-safe-left'), 'global frameless panel left safe-area variable is missing');
+assert(css.includes('--ui-panel-safe-right'), 'global frameless panel right safe-area variable is missing');
+assert(css.includes('.ui-panel-safe'), 'future scenes have no reusable frameless safe-area utility');
+assert(/\.ui-panel-safe,[\s\S]*\.reboot-modal__panel,[\s\S]*\.classic-panel[\s\S]*padding-left:\s*var\(--ui-panel-safe-left\)\s*!important/i.test(css), 'current panel surfaces are not bound to the global left safe-area contract');
+assert(/--ui-panel-safe-left:\s*clamp\(30px/i.test(css), 'desktop surfaces need a deliberate left inset');
+assert(/@media \(max-width: 760px\)[\s\S]*--ui-panel-safe-left:\s*26px/i.test(css), 'mobile surfaces need a deliberate left inset');
+assert(css.includes('.ui-panel-surface'), 'global frameless panel surface utility is missing');
+assert(css.includes('--ui-panel-border'), 'frameless panel border token is missing');
+assert(!css.includes('ui_panel_frame.png'), 'Foundation CSS must never use ornate panel frame assets');
+assert(!css.includes('ui_panel_wide.png'), 'Foundation CSS must never use ornate wide panel frame assets');
 assert(css.includes('ui_button_primary.png'), 'approved primary button asset must style the menu');
 assert(css.includes('splash_poster.jpg'), 'approved splash art must style the menu');
 assert(js.includes("key.startsWith('rpchess.')"), 'legacy save cleanup is missing');
 assert(js.includes("!key.startsWith('rpchess.reboot.')"), 'reboot saves must be protected from cleanup');
 assert(js.includes('new RebootAudio(settings)'), 'Reboot audio layer is not initialized');
 assert(js.includes("document.addEventListener('pointerdown', activateAudio"), 'audio must activate after a browser-approved user gesture');
-assert(String(info.version).startsWith('2.'), 'Reboot v2 build version is missing');
+assert(js.includes("CustomEvent('rpchess:run-new')"), 'New Game must begin a reboot run instead of opening standalone chess setup');
+assert(js.includes("CustomEvent('rpchess:run-continue')"), 'Continue must reopen a persistent run');
+assert(String(info.version).startsWith('2.3.0-roster'), 'Roster v2.3 build version is missing');
 
 for (const track of ['echoes_iron_throne_01.mp3', 'echoes_iron_throne_02.mp3', 'echoes_iron_throne_03.mp3', 'echoes_iron_throne_04.mp3']) {
   assert(audio.includes(`music/${track}`), `music playlist is missing ${track}`);
@@ -53,4 +63,4 @@ for (const relative of ['generated_assets/logo_main.png', 'generated_assets/titl
   assert(fs.existsSync(path.join(game, relative)), `required reused asset is missing: ${relative}`);
 }
 
-console.log('Reboot Foundation retained contract: PASS');
+console.log('Reboot Foundation frameless production contract with Roster entry: PASS');

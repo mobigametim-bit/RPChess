@@ -1,7 +1,7 @@
 {
   "name": "rpchess",
   "private": true,
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "RPChess Reboot — fantasy roguelite built on classical chess",
   "devDependencies": {
     "adm-zip": "^0.5.16",
@@ -10,10 +10,11 @@
   },
   "scripts": {
     "verify": "node -e \"require('./scripts/verify-source.cjs')(require('path').resolve('game'))\"",
-    "test": "node tests/reboot-foundation.cjs && node tests/classic-chess-static.cjs && node tests/classic-chess-engine.cjs && node tests/chess-ai-adapter.cjs",
+    "test": "node tests/reboot-foundation.cjs && node tests/classic-chess-static.cjs && node tests/classic-chess-engine.cjs && node tests/chess-ai-adapter.cjs && node tests/roster.cjs",
     "test:foundation": "node tests/reboot-foundation.cjs",
     "test:classic": "node tests/classic-chess-static.cjs && node tests/classic-chess-engine.cjs",
     "test:ai": "node tests/chess-ai-adapter.cjs",
+    "test:roster": "node tests/roster.cjs",
     "build": "node scripts/build.cjs",
     "deploy": "wrangler deploy"
   }

@@ -6,7 +6,7 @@ on:
   push:
     branches:
       - main
-      - feature/chess-ai
+      - feature/roster
 
 permissions:
   contents: read
@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify-chess-ai:
+  verify-roster:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,22 +28,33 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Verify Reboot source contract
         run: npm run verify
-      - name: Run Foundation, Classic Chess and Chess AI tests
+      - name: Run Foundation, chess, AI and Roster tests
         run: npm test
-      - name: Build Chess AI web distribution
+      - name: Build Roster web distribution
         run: npm run build
-      - name: Verify clean Chess AI distribution boundary
+      - name: Verify clean Roster distribution boundary
         shell: bash
         run: |
           set -euo pipefail
           test -f dist/index.html
           test -f dist/css/reboot-foundation.css
           test -f dist/css/classic-chess.css
+          test -f dist/css/chess-ai-polish.css
+          test -f dist/css/roster.css
           test -f dist/js/reboot-foundation.mjs
           test -f dist/js/reboot-audio.mjs
           test -f dist/js/classic-chess-engine.mjs
           test -f dist/js/classic-chess-app.mjs
           test -f dist/js/chess-ai-adapter.mjs
+          test -f dist/js/roster-data.mjs
+          test -f dist/js/run-persistence.mjs
+          test -f dist/js/roster-app.mjs
+          test -f dist/assets/kings/oathkeeper/portrait.png
+          test -f dist/assets/kings/oathkeeper/piece.png
+          for hero in aldric_wall mara_chain nemea_quill brother_orell vael_hammer; do
+            test -f "dist/assets/heroes/${hero}/portrait.png"
+            test -f "dist/assets/heroes/${hero}/piece_badge.png"
+          done
           test -f dist/vendor/stockfish/stockfish-18-lite-single.js
           test -f dist/vendor/stockfish/stockfish-18-lite-single.wasm
           test -f dist/vendor/stockfish/COPYING.txt
@@ -67,7 +78,7 @@ jobs:
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
-      - name: Run real Chromium Foundation, Classic Chess and Stockfish acceptance
+      - name: Run real Chromium Foundation, chess, Stockfish and Roster acceptance
         timeout-minutes: 15
         shell: bash
         run: |
@@ -82,3 +93,4 @@ jobs:
           export RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173
           stdbuf -oL -eL node tests/reboot-foundation-browser.cjs
           stdbuf -oL -eL node tests/classic-chess-browser.cjs
+          stdbuf -oL -eL node tests/roster-browser.cjs

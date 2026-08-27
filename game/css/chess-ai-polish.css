@@ -1,4 +1,4 @@
-/* Chess AI production polish — based on the approved legacy commander-selection treatment. */
+/* Chess AI production polish — frameless production surfaces + approved blue CTA language. */
 
 /* One blue CTA language everywhere: reuse the exact primary frame from the main menu. */
 .reboot-button,
@@ -45,38 +45,19 @@
 /* The old wide status plaque is intentionally removed from the visual hierarchy. */
 .classic-statusbar { display: none !important; }
 
-/* Legacy commander-selection surface: dark body, framed edge, restrained inner keyline. */
+/* Global production panel surface: no ornate frame image anywhere. */
 .classic-panel,
 .reboot-modal__panel.classic-commander-panel {
   position: relative;
   box-sizing: border-box;
-  border: 14px solid transparent;
-  border-image: url('../generated_assets/ui_panel_frame.png') 28 fill stretch;
-  background: #091524;
-  box-shadow: 0 16px 44px rgba(0,0,0,.62);
+  border: 1px solid var(--ui-panel-border);
+  border-radius: var(--ui-panel-radius);
+  background: var(--ui-panel-bg);
+  box-shadow: var(--ui-panel-shadow);
   overflow: hidden;
 }
-.classic-panel {
-  padding: 30px 26px 28px;
-}
-.reboot-modal__panel.classic-commander-panel {
-  border-width: 18px;
-  padding: 32px 30px 28px;
-}
-.classic-panel::after,
-.reboot-modal__panel.classic-commander-panel::after {
-  content: '';
-  position: absolute;
-  inset: 18px;
-  border: 1px solid rgba(71,112,149,.34);
-  border-radius: 9px;
-  pointer-events: none;
-  z-index: 0;
-}
-.classic-panel > *,
-.reboot-modal__panel.classic-commander-panel > * { position: relative; z-index: 1; }
 .classic-panel h2,
-.classic-panel h3 { margin-top: 4px; }
+.classic-panel h3 { margin-top: 0; }
 .classic-panel--moves .classic-moves {
   max-height: min(62vh, 620px);
   padding-right: 4px;
@@ -188,9 +169,9 @@
 .classic-captured-ghost { z-index: 2499; filter: drop-shadow(0 5px 5px rgba(0,0,0,.58)); }
 .classic-board.is-locked { filter: none; }
 
-/* Setup fields also remain inside the dark safe area of their decorative frame. */
-.classic-setup-field { padding-inline: 8px; }
-.classic-setup-footer { padding: 0 4px 4px; }
+/* Setup fields remain inside the global safe area. */
+.classic-setup-field { padding-inline: 0; }
+.classic-setup-footer { padding: 0; }
 
 @media (max-width: 1180px) {
   .classic-shell {
@@ -213,7 +194,6 @@
   .classic-main { order: 2; }
   .classic-party-panel { order: 3; }
   .classic-panel--moves { order: 4; }
-  .classic-panel { padding: 28px 24px 24px; }
 }
 
 @media (max-width: 620px) {
@@ -221,5 +201,4 @@
   .classic-coordinate--rank { right: 2px; top: 2px; }
   .classic-material-row { grid-template-columns: 42px minmax(0,1fr) auto; }
   .classic-captured-piece { font-size: 21px; }
-  .reboot-modal__panel.classic-commander-panel { padding: 28px 23px 23px; }
 }

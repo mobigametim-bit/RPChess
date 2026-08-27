@@ -14,11 +14,17 @@
   --panel: rgba(11, 21, 35, .94);
   --text: #f4ead7;
   --muted: #b6c4d7;
-  /* Global framed-surface safe area. Left is intentionally larger so copy never hugs the decorative edge. */
-  --ui-frame-safe-top: clamp(30px, 3vw, 40px);
-  --ui-frame-safe-right: clamp(32px, 3.4vw, 46px);
-  --ui-frame-safe-bottom: clamp(30px, 3vw, 40px);
-  --ui-frame-safe-left: clamp(40px, 4vw, 54px);
+
+  /* Global frameless panel contract. Left is intentionally larger so copy never hugs the edge. */
+  --ui-panel-safe-top: clamp(24px, 2.2vw, 34px);
+  --ui-panel-safe-right: clamp(24px, 2.5vw, 36px);
+  --ui-panel-safe-bottom: clamp(24px, 2.2vw, 34px);
+  --ui-panel-safe-left: clamp(30px, 3vw, 44px);
+  --ui-panel-border: rgba(102, 157, 199, .42);
+  --ui-panel-border-gold: rgba(222, 187, 92, .34);
+  --ui-panel-bg: linear-gradient(145deg, rgba(10, 24, 40, .97), rgba(5, 14, 25, .985));
+  --ui-panel-shadow: 0 18px 54px rgba(0, 0, 0, .52), inset 0 0 0 1px rgba(139, 202, 240, .055);
+  --ui-panel-radius: 12px;
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -42,31 +48,39 @@ button:focus-visible { outline: 3px solid #8bcfff; outline-offset: 3px; }
 
 /*
  * GLOBAL UI INVARIANT
- * Any framed content surface must keep text and interactive elements inside the visual inner field.
- * New scenes should use .ui-frame-safe. Existing production panel families are opted in here centrally.
+ * Production content surfaces are frameless. Text and controls stay inside a reusable safe area.
+ * New scenes use .ui-panel-safe and may use .ui-panel-surface for the shared dark treatment.
  */
-.ui-frame-safe,
+.ui-panel-safe,
 .reboot-modal__panel,
 .classic-panel {
-  padding-top: var(--ui-frame-safe-top) !important;
-  padding-right: var(--ui-frame-safe-right) !important;
-  padding-bottom: var(--ui-frame-safe-bottom) !important;
-  padding-left: var(--ui-frame-safe-left) !important;
+  padding-top: var(--ui-panel-safe-top) !important;
+  padding-right: var(--ui-panel-safe-right) !important;
+  padding-bottom: var(--ui-panel-safe-bottom) !important;
+  padding-left: var(--ui-panel-safe-left) !important;
 }
-.ui-frame-safe > *,
+.ui-panel-safe > *,
 .reboot-modal__panel > *,
 .classic-panel > * {
   min-width: 0;
   max-width: 100%;
 }
-.ui-frame-safe :where(h1, h2, h3, h4, p, label, a, button, input, select),
+.ui-panel-safe :where(h1, h2, h3, h4, p, label, a, button, input, select),
 .reboot-modal__panel :where(h1, h2, h3, h4, p, label, a, button, input, select),
 .classic-panel :where(h1, h2, h3, h4, p, label, a, button, input, select) {
   overflow-wrap: anywhere;
 }
+.ui-panel-surface,
+.reboot-modal__panel {
+  border: 1px solid var(--ui-panel-border);
+  border-radius: var(--ui-panel-radius);
+  background: var(--ui-panel-bg);
+  box-shadow: var(--ui-panel-shadow);
+}
 
 /* Scene roots are mutually exclusive. Author display rules must never override the hidden state. */
 [data-reboot-foundation][hidden],
+[data-roster-screen][hidden],
 [data-classic-screen][hidden] {
   display: none !important;
 }
@@ -140,9 +154,9 @@ button:focus-visible { outline: 3px solid #8bcfff; outline-offset: 3px; }
   min-height: 52px;
   padding: 11px 22px;
   border: 13px solid transparent;
-  border-image: url('../generated_assets/ui_button_secondary.png') 28 fill stretch;
-  background: #17263b;
-  color: #f7edda;
+  border-image: url('../generated_assets/ui_button_primary.png') 28 fill stretch;
+  background: #10253d;
+  color: #fff4c9;
   font-weight: 850;
   letter-spacing: .015em;
   cursor: pointer;
@@ -153,7 +167,7 @@ button:focus-visible { outline: 3px solid #8bcfff; outline-offset: 3px; }
 }
 
 .reboot-button:hover:not(:disabled) { filter: brightness(1.12); transform: translateY(-1px); }
-.reboot-button--primary { border-image-source: url('../generated_assets/ui_button_primary.png'); color: #fff4c9; }
+.reboot-button--primary { color: #fff4c9; }
 .reboot-button:disabled { opacity: .43; filter: saturate(.45); cursor: not-allowed; }
 
 .reboot-modal[hidden] { display: none; }
@@ -173,10 +187,6 @@ button:focus-visible { outline: 3px solid #8bcfff; outline-offset: 3px; }
   width: min(760px, 100%);
   max-height: calc(100dvh - 28px);
   overflow-y: auto;
-  border: 18px solid transparent;
-  border-image: url('../generated_assets/ui_panel_wide.png') 30 fill stretch;
-  background: linear-gradient(145deg, rgba(16, 28, 44, .96), rgba(7, 16, 27, .98));
-  box-shadow: 0 24px 80px rgba(0, 0, 0, .8);
 }
 
 .reboot-modal__header {
@@ -185,8 +195,8 @@ button:focus-visible { outline: 3px solid #8bcfff; outline-offset: 3px; }
   justify-content: space-between;
   gap: 18px;
   min-width: 0;
-  padding: 2px 2px 14px 4px;
-  background: url('../generated_assets/ui_divider.png') center bottom / 100% 8px no-repeat;
+  padding: 0 0 15px;
+  border-bottom: 1px solid rgba(208, 174, 82, .34);
 }
 .reboot-modal__header > * { min-width: 0; }
 
@@ -204,8 +214,8 @@ button:focus-visible { outline: 3px solid #8bcfff; outline-offset: 3px; }
   min-height: 46px;
   padding: 0;
   border: 11px solid transparent;
-  border-image: url('../generated_assets/ui_button_secondary.png') 28 fill stretch;
-  background: #17263b;
+  border-image: url('../generated_assets/ui_button_primary.png') 28 fill stretch;
+  background: #10253d;
   color: var(--text);
   font-size: 25px;
   line-height: 1;
@@ -220,7 +230,7 @@ button:focus-visible { outline: 3px solid #8bcfff; outline-offset: 3px; }
   gap: 18px;
   align-items: center;
   min-height: 64px;
-  padding: 14px 8px;
+  padding: 14px 0;
   border-bottom: 1px solid rgba(122, 103, 59, .45);
   color: #d8e1ed;
 }
@@ -238,10 +248,10 @@ html[data-reduced-motion='1'] *::after {
 
 @media (max-width: 760px) {
   :root {
-    --ui-frame-safe-top: 28px;
-    --ui-frame-safe-right: 24px;
-    --ui-frame-safe-bottom: 28px;
-    --ui-frame-safe-left: 32px;
+    --ui-panel-safe-top: 22px;
+    --ui-panel-safe-right: 20px;
+    --ui-panel-safe-bottom: 22px;
+    --ui-panel-safe-left: 26px;
   }
   .reboot-menu-screen { min-height: max(100vh, 620px); padding: 12px; place-items: start center; }
   .reboot-menu-screen__layout { grid-template-columns: 1fr; min-height: 596px; align-items: center; }
