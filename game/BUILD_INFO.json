@@ -1,13 +1,13 @@
 {
   "title": "RPChess Reboot",
   "edition": "Chess AI",
-  "version": "2.2.0-chess-ai.preview.4",
+  "version": "2.2.0-chess-ai",
   "build_date": "2026-08-27",
   "runtime": "Offline HTML5 / ES modules + local Stockfish 18 WASM worker",
   "requires_internet": false,
   "requires_installation": false,
   "visual_theme": "Approved RPChess fantasy UI with commander-style dark surfaces, blue CTA frames, compact white/black technical piece markers, global framed-content safe areas and production chess piece assets",
-  "gameplay_state": "Classic Chess human accepted; Chess AI gameplay passed live playtest; final UI spot-check pending after game-wide framed-content safe-area invariant",
+  "gameplay_state": "Classic Chess and Chess AI human accepted; production polish and global framed-content safe-area invariant accepted",
   "legacy_branch": "archive/iron-marches-v1",
   "legacy_commit": "035fb817a93f53047a1d20f7cdfc9093b0f7d611",
   "foundation_merge": "416cfbcd332366c10d6dd27a44123c0dd7ea7da0",
@@ -17,5 +17,5 @@
   "stockfish_license": "GPLv3",
   "active_docs": "docs/00_PRODUCT_VISION.md through docs/17_TECH_ARCHITECTURE.md",
   "human_acceptance_required": true,
-  "human_acceptance": "pending-global-safe-area-spot-check"
+  "human_acceptance": "accepted"
 }
