@@ -25,7 +25,7 @@ const RUN_KEY = 'rpchess.reboot.v1.run';
     const scripts = await page.locator('script[src]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('src')));
     assert.deepStrictEqual(scripts, [
       'js/reboot-foundation.mjs?v=20260827-roster-1',
-      'js/roster-app.mjs?v=20260827-roster-1',
+      'js/roster-app.mjs?v=20260827-roster-2',
       'js/classic-chess-app.mjs?v=20260827-ai-2'
     ], `unexpected runtime scripts: ${scripts.join(', ')}`);
 
