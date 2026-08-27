@@ -59,7 +59,7 @@ assert(js.includes("CustomEvent('rpchess:run-continue')"), 'Continue must reopen
 assert(js.includes("import './battle-route.mjs'"), 'Battle/Travel bootstrap is not loaded from Foundation');
 assert(route.includes("import './battle-app.mjs'"), 'Battle runtime must remain loaded through the shared route bootstrap');
 assert(route.includes("import './travel-choice-app.mjs'"), 'Travel Choice runtime must load through the shared route bootstrap');
-assert(String(info.version).startsWith('2.6.0-travel-choice'), 'Travel Choice v2.6 build version is missing');
+assert(String(info.version).startsWith('2.7.0-resources'), 'Resources v2.7 build version is missing');
 
 for (const track of ['echoes_iron_throne_01.mp3', 'echoes_iron_throne_02.mp3', 'echoes_iron_throne_03.mp3', 'echoes_iron_throne_04.mp3']) {
   assert(audio.includes(`music/${track}`), `music playlist is missing ${track}`);
