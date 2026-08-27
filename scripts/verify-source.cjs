@@ -110,7 +110,7 @@ module.exports = function verifySource(root) {
     if (!rosterData.includes(contract)) fail(`Roster data contract missing: ${contract}`);
   }
   for (const contract of ['rpchess.reboot.v1.run', 'createRun', 'readRun', 'writeRun', 'schemaVersion']) if (!persistence.includes(contract)) fail(`run persistence contract missing: ${contract}`);
-  for (const contract of ['rpchess:run-new', 'rpchess:run-continue', 'data-roster-card', 'selectedCharacterId', 'data-roster-filter']) if (!rosterApp.includes(contract)) fail(`Roster runtime contract missing: ${contract}`);
+  for (const contract of ['rpchess:run-new', 'rpchess:run-continue', 'dataset.rosterCard', 'selectedCharacterId', '[data-roster-filter]']) if (!rosterApp.includes(contract)) fail(`Roster runtime contract missing: ${contract}`);
   for (const contract of ['ui_panel_frame.png', '.roster-card', '.roster-detail', '.roster-grid']) if (!rosterCss.includes(contract)) fail(`Roster CSS contract missing: ${contract}`);
 
   if (fs.existsSync(path.join(root, 'vendor', 'stockfish'))) {
