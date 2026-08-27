@@ -58,8 +58,9 @@ async function startFresh(page) {
     const expectedReward = Math.floor((12 + stars * 4) / 2);
     const rewarded = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
     assert.strictEqual(rewarded.gold, 80 + expectedReward, 'Skirmish draw must grant the deterministic half Gold reward once');
-    assert.strictEqual(await page.locator('[data-resource-combat-reward]').count(), 1, 'aftermath must present the Gold reward');
-    assert((await page.locator('[data-resource-combat-reward]').innerText()).includes(`+${expectedReward}`));
+    const visibleReward = page.locator('[data-skirmish-aftermath]:not([hidden]) [data-resource-combat-reward]:not([hidden])');
+    assert.strictEqual(await visibleReward.count(), 1, 'active aftermath must present exactly one visible Gold reward');
+    assert((await visibleReward.innerText()).includes(`+${expectedReward}`));
 
     await page.evaluate(() => globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated')));
     const afterRepeatedSync = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
