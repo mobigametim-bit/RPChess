@@ -1,4 +1,5 @@
 import { createStarterRoster } from './roster-data.mjs';
+import { STARTING_GOLD, STARTING_SUPPLIES, hydrateResources } from './resources-core.mjs';
 
 const RUN_STORAGE_KEY = 'rpchess.reboot.v1.run';
 const RUN_SCHEMA_VERSION = 1;
@@ -24,6 +25,16 @@ function isStoredTravelChoice(value) {
   if (!value.flavor || typeof value.flavor !== 'string') return false;
   if (!value.mechanicalHint || typeof value.mechanicalHint !== 'string') return false;
   if (value.combatCountAtSelection != null && (!Number.isInteger(value.combatCountAtSelection) || value.combatCountAtSelection < 0)) return false;
+  if (value.supplyCostAtSelection != null && (!Number.isInteger(value.supplyCostAtSelection) || value.supplyCostAtSelection < 0)) return false;
+  if (value.supplyPaid != null && (!Number.isInteger(value.supplyPaid) || value.supplyPaid < 0)) return false;
+  return true;
+}
+
+function isResourceRewardState(value) {
+  if (value == null) return true;
+  if (!value || typeof value !== 'object') return false;
+  if (!Number.isInteger(value.skirmishCount) || value.skirmishCount < 0) return false;
+  if (!Number.isInteger(value.battleCount) || value.battleCount < 0) return false;
   return true;
 }
 
@@ -33,6 +44,9 @@ function isValidRun(value) {
   if (!Array.isArray(value.roster) || value.roster.length < 1) return false;
   if (!value.id || !value.selectedCharacterId) return false;
   if (value.ended != null && typeof value.ended !== 'boolean') return false;
+  if (!Number.isInteger(value.gold) || value.gold < 0) return false;
+  if (!Number.isInteger(value.supplies) || value.supplies < 0) return false;
+  if (!isResourceRewardState(value.resourceRewards)) return false;
   if (value.skirmishCount != null && (!Number.isInteger(value.skirmishCount) || value.skirmishCount < 0)) return false;
   if (value.battleCount != null && (!Number.isInteger(value.battleCount) || value.battleCount < 0)) return false;
   if (value.journeyStep != null && (!Number.isInteger(value.journeyStep) || value.journeyStep < 0)) return false;
@@ -51,11 +65,18 @@ function isValidRun(value) {
 
 function hydrateCurrentRosterCopy(run) {
   const currentTemplates = new Map(createStarterRoster().map((character) => [character.id, character]));
+  const resources = hydrateResources(run);
+  const existingSkirmishes = Number.isInteger(run.skirmishCount) ? run.skirmishCount : 0;
+  const existingBattles = Number.isInteger(run.battleCount) ? run.battleCount : 0;
   return {
-    ...run,
+    ...resources,
+    resourceRewards: {
+      skirmishCount: Number.isInteger(run.resourceRewards?.skirmishCount) ? run.resourceRewards.skirmishCount : existingSkirmishes,
+      battleCount: Number.isInteger(run.resourceRewards?.battleCount) ? run.resourceRewards.battleCount : existingBattles
+    },
     ended: Boolean(run.ended),
-    skirmishCount: Number.isInteger(run.skirmishCount) ? run.skirmishCount : 0,
-    battleCount: Number.isInteger(run.battleCount) ? run.battleCount : 0,
+    skirmishCount: existingSkirmishes,
+    battleCount: existingBattles,
     lastSkirmish: run.lastSkirmish || null,
     lastBattle: run.lastBattle || null,
     journeyStep: Number.isInteger(run.journeyStep) ? run.journeyStep : 0,
@@ -78,6 +99,9 @@ function createRun({ now = Date.now(), id = null } = {}) {
     updatedAt: Number(now),
     selectedCharacterId: roster[0].id,
     roster,
+    gold: STARTING_GOLD,
+    supplies: STARTING_SUPPLIES,
+    resourceRewards: { skirmishCount: 0, battleCount: 0 },
     ended: false,
     endReason: null,
     skirmishCount: 0,
@@ -95,7 +119,7 @@ function readRun(storage = null) {
   if (!target) return null;
   try {
     const parsed = JSON.parse(target.getItem(RUN_STORAGE_KEY) || 'null');
-    if (!isValidRun(parsed)) return null;
+    if (!parsed || typeof parsed !== 'object' || parsed.schemaVersion !== RUN_SCHEMA_VERSION) return null;
     const hydrated = hydrateCurrentRosterCopy(parsed);
     return isValidRun(hydrated) ? hydrated : null;
   } catch {
@@ -106,7 +130,7 @@ function readRun(storage = null) {
 function writeRun(run, storage = null, now = Date.now()) {
   const target = resolveStorage(storage);
   if (!target) return run;
-  const next = { ...run, updatedAt: Number(now) };
+  const next = { ...hydrateResources(run), updatedAt: Number(now) };
   if (!isValidRun(next)) throw new Error('Cannot persist invalid RPChess run state');
   target.setItem(RUN_STORAGE_KEY, JSON.stringify(next));
   return next;

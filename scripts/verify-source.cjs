@@ -15,16 +15,17 @@ function walk(dir) {
 module.exports = function verifySource(root) {
   const required = [
     'index.html', 'BUILD_INFO.json',
-    'css/reboot-foundation.css', 'css/classic-chess.css', 'css/chess-ai-polish.css', 'css/roster.css', 'css/skirmish.css', 'css/battle.css', 'css/travel-choice.css',
+    'css/reboot-foundation.css', 'css/classic-chess.css', 'css/chess-ai-polish.css', 'css/roster.css', 'css/skirmish.css', 'css/battle.css', 'css/travel-choice.css', 'css/resources.css',
     'js/reboot-foundation.mjs', 'js/reboot-audio.mjs',
     'js/classic-chess-engine.mjs', 'js/classic-chess-app.mjs', 'js/chess-ai-adapter.mjs',
     'js/roster-data.mjs', 'js/run-persistence.mjs', 'js/roster-app.mjs',
     'js/skirmish-core.mjs', 'js/skirmish-app.mjs',
     'js/battle-core.mjs', 'js/battle-app.mjs', 'js/battle-route.mjs',
     'js/travel-choice-core.mjs', 'js/travel-choice-app.mjs',
+    'js/resources-core.mjs', 'js/resources-app.mjs',
     'fonts/BrahmsGotischCyr.otf',
     'generated_assets/title_wordmark.png', 'generated_assets/splash_poster.jpg', 'generated_assets/scene_battle.jpg',
-    'generated_assets/node_battle.png', 'generated_assets/node_elite.png',
+    'generated_assets/node_battle.png', 'generated_assets/node_elite.png', 'generated_assets/reward_gold.png',
     'music/echoes_iron_throne_01.mp3', 'music/echoes_iron_throne_02.mp3',
     'music/echoes_iron_throne_03.mp3', 'music/echoes_iron_throne_04.mp3',
     'assets/kings/oathkeeper/portrait.png', 'assets/kings/oathkeeper/piece.png',
@@ -45,7 +46,7 @@ module.exports = function verifySource(root) {
   }
 
   const info = JSON.parse(fs.readFileSync(path.join(root, 'BUILD_INFO.json'), 'utf8'));
-  if (!String(info.version || '').startsWith('2.6.0-travel-choice')) fail(`unexpected Travel Choice version: ${info.version || 'missing'}`);
+  if (!String(info.version || '').startsWith('2.7.0-resources')) fail(`unexpected Resources version: ${info.version || 'missing'}`);
 
   const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   for (const requiredRef of [
@@ -116,7 +117,7 @@ module.exports = function verifySource(root) {
   for (const contract of ['king.oathkeeper', 'hero.aldric_wall', 'hero.mara_chain', 'hero.nemea_quill', 'hero.brother_orell', 'hero.vael_hammer', 'createStarterRoster']) {
     if (!rosterData.includes(contract)) fail(`Roster data contract missing: ${contract}`);
   }
-  for (const contract of ['rpchess.reboot.v1.run', 'createRun', 'readRun', 'writeRun', 'schemaVersion', 'skirmishCount', 'lastSkirmish', 'battleCount', 'lastBattle', 'journeyStep', 'currentTravelChoices', 'activeTravelChoice', 'ended']) {
+  for (const contract of ['rpchess.reboot.v1.run', 'createRun', 'readRun', 'writeRun', 'schemaVersion', 'skirmishCount', 'lastSkirmish', 'battleCount', 'lastBattle', 'journeyStep', 'currentTravelChoices', 'activeTravelChoice', 'ended', 'gold', 'supplies', 'resourceRewards']) {
     if (!persistence.includes(contract)) fail(`run persistence contract missing: ${contract}`);
   }
   for (const contract of ['rpchess:run-new', 'rpchess:run-continue', 'rpchess:travel-open', 'dataset.rosterCard', 'selectedCharacterId', '[data-roster-filter]']) {
@@ -150,8 +151,8 @@ module.exports = function verifySource(root) {
   for (const contract of ['RPChessClassicChess', 'dataset.battleScreen', 'data-battle-start', 'dataset.battleAftermath', 'dataset.battleRunEnd', 'battleCount', 'lastBattle', 'finishBattle', 'MutationObserver']) {
     if (!battleApp.includes(contract)) fail(`Battle runtime contract missing: ${contract}`);
   }
-  for (const contract of ["import './battle-app.mjs'", "import './travel-choice-app.mjs'", 'travel-choice.css']) {
-    if (!battleRoute.includes(contract)) fail(`Battle/Travel route bootstrap contract missing: ${contract}`);
+  for (const contract of ["import './resources-app.mjs'", "import './battle-app.mjs'", "import './travel-choice-app.mjs'", 'travel-choice.css']) {
+    if (!battleRoute.includes(contract)) fail(`Battle/Travel/Resources route bootstrap contract missing: ${contract}`);
   }
   if (battleRoute.includes('dataRosterBattle') || battleRoute.includes('Начать битву')) fail('temporary direct Battle shortcut must be removed after Travel Choice integration');
   for (const contract of ['var(--ui-panel-border)', 'var(--ui-panel-bg)', '.battle-card', '.battle-actionbar', '.battle-aftermath-panel', '@media(max-width:900px)']) {
@@ -164,12 +165,25 @@ module.exports = function verifySource(root) {
   for (const contract of ['TRAVEL_CHOICE_COUNT', 'PLAYABLE_TRAVEL_TYPES', 'FLAVOR_POOLS', 'createTravelChoices', 'isTravelChoice', 'skirmish', 'battle', 'event', 'settlement', 'puzzle']) {
     if (!travelCore.includes(contract)) fail(`Travel Choice core contract missing: ${contract}`);
   }
-  for (const contract of ['dataset.travelChoiceScreen', 'data-travel-choice', 'rpchess:travel-open', 'rpchess:skirmish-open', 'rpchess:battle-open', 'currentTravelChoices', 'activeTravelChoice', 'RPChessTravelEncounterOverride', 'Продолжить путь']) {
+  for (const contract of ['dataset.travelChoiceScreen', 'data-travel-choice', 'rpchess:travel-open', 'rpchess:skirmish-open', 'rpchess:battle-open', 'currentTravelChoices', 'activeTravelChoice', 'RPChessTravelEncounterOverride', 'Продолжить путь', 'applyTravelSupplyCost', 'supplyPaid', 'СТОИМОСТЬ ПУТИ']) {
     if (!travelApp.includes(contract)) fail(`Travel Choice runtime contract missing: ${contract}`);
   }
   if (travelApp.includes('Отправиться')) fail('Travel Choice must select immediately on card click without a second CTA');
   for (const contract of ['var(--ui-panel-border)', 'var(--ui-panel-bg)', '.travel-choice-card', '.travel-choice-routes', '@media(max-width:900px)']) {
     if (!travelCss.includes(contract)) fail(`Travel Choice CSS contract missing: ${contract}`);
+  }
+
+  const resourcesCore = fs.readFileSync(path.join(root, 'js/resources-core.mjs'), 'utf8');
+  const resourcesApp = fs.readFileSync(path.join(root, 'js/resources-app.mjs'), 'utf8');
+  const resourcesCss = fs.readFileSync(path.join(root, 'css/resources.css'), 'utf8');
+  for (const contract of ['STARTING_GOLD', 'STARTING_SUPPLIES', 'TRAVEL_SUPPLY_COST', 'hydrateResources', 'applyTravelSupplyCost', 'combatGoldReward', 'applyGoldReward']) {
+    if (!resourcesCore.includes(contract)) fail(`Resources core contract missing: ${contract}`);
+  }
+  for (const contract of ['dataset.resourceHud', 'data-resource-gold', 'data-resource-supplies', 'resourceRewards', 'goldReward', 'settleCombatRewards', 'renderCombatReward', 'rpchess:resources-updated']) {
+    if (!resourcesApp.includes(contract)) fail(`Resources runtime contract missing: ${contract}`);
+  }
+  for (const contract of ['.resource-hud', '.resource-chip', '.resource-combat-reward', '.travel-choice-card__cost', '@media (max-width: 700px)']) {
+    if (!resourcesCss.includes(contract)) fail(`Resources CSS contract missing: ${contract}`);
   }
 
   for (const [name, source] of [
@@ -179,7 +193,8 @@ module.exports = function verifySource(root) {
     ['roster', rosterCss],
     ['skirmish', skirmishCss],
     ['battle', battleCss],
-    ['travel', travelCss]
+    ['travel', travelCss],
+    ['resources', resourcesCss]
   ]) {
     if (source.includes('ui_panel_frame.png') || source.includes('ui_panel_wide.png')) fail(`${name} CSS still uses forbidden ornate panel frame assets`);
   }

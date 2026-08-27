@@ -1,5 +1,15 @@
 # RPChess Reboot Changelog
 
+## 2026-08-27 — Resources HUMAN ACCEPTED
+- Пользователь завершил живой Resources playtest и подтвердил: **«все работает, золото начисляется, припасы тратятся»**.
+- Human Gate Resources закрыт: начисление Gold после боя и расход Supplies на Travel подтверждены в live preview.
+- Accepted gameplay head: `e162c347efe7ec1e55c1f76df7999c90469f1906`.
+- Version: `2.7.0-resources.preview.1`.
+- Accepted Cloudflare build `34063395-1b82-44b2-b93c-caef6f4c0e5f`: **SUCCESS**; Version `da19ea4e-60ef-467a-85e4-5137a2e76c15`; preview `https://da19ea4e-rpchess.mobigametim.workers.dev`.
+- Последующий commit `44766f3e5e0bd6fa98684ada50ce19fb043e8c6a` исправляет только область Chromium assertion и не меняет gameplay/runtime.
+- Статус: **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED**; DONE наступает только после финального docs-synchronized exact-head CI/Cloudflare, Ready/merge PR #71 и post-merge verification `main`.
+- Settlement не начинается до полного closure Resources.
+
 ## 2026-08-27 — Travel Choice HUMAN ACCEPTED → DONE
 - Пользователь завершил живой Travel Choice playtest и подтвердил: **«всё хорошо»**.
 - Travel Choice закрыт как **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**.
