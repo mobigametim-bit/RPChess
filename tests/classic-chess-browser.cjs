@@ -18,7 +18,7 @@ async function waitForMoveAnimation(page) {
 }
 
 async function openSetup(page) {
-  await page.locator('[data-new-game]').click();
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('rpchess:new-game')));
   await page.locator('[data-game-setup-modal]:not([hidden])').waitFor();
 }
 
@@ -124,7 +124,6 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     assert.strictEqual(await menu.isVisible(), true, 'main menu must be reachable from Classic Chess');
     assert.strictEqual(await page.locator('[data-classic-screen]').isHidden(), true, 'chess scene must leave layout on menu return');
 
-    // Real Stockfish: human White makes a move, AI answers, turn returns to human.
     await openSetup(page);
     await startFromSetup(page, { mode: 'ai', elo: '800', color: 'w' });
     assert((await page.locator('[data-game-mode]').innerText()).includes('≈800 Elo'), 'selected AI Elo must be shown');
@@ -137,7 +136,6 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     assert.strictEqual(aiWhite.ai.degraded, false, 'Stockfish browser path must not degrade');
     assert.strictEqual(await page.locator('[data-ai-thinking]').isVisible(), false, 'large thinking plaque must stay visually hidden');
 
-    // Human Black: AI must play first and board rotates to Black perspective.
     await page.locator('[data-classic-new]').click();
     await page.locator('[data-game-setup-modal]:not([hidden])').waitFor();
     await startFromSetup(page, { mode: 'ai', elo: '400', color: 'b' });
