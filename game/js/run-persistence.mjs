@@ -20,6 +20,7 @@ function isValidRun(value) {
   if (!value.id || !value.selectedCharacterId) return false;
   if (value.ended != null && typeof value.ended !== 'boolean') return false;
   if (value.skirmishCount != null && (!Number.isInteger(value.skirmishCount) || value.skirmishCount < 0)) return false;
+  if (value.battleCount != null && (!Number.isInteger(value.battleCount) || value.battleCount < 0)) return false;
   const ids = new Set();
   let kingCount = 0;
   for (const character of value.roster) {
@@ -37,6 +38,9 @@ function hydrateCurrentRosterCopy(run) {
     ...run,
     ended: Boolean(run.ended),
     skirmishCount: Number.isInteger(run.skirmishCount) ? run.skirmishCount : 0,
+    battleCount: Number.isInteger(run.battleCount) ? run.battleCount : 0,
+    lastSkirmish: run.lastSkirmish || null,
+    lastBattle: run.lastBattle || null,
     roster: run.roster.map((character) => {
       const current = currentTemplates.get(character.id);
       if (!current) return character;
@@ -57,7 +61,9 @@ function createRun({ now = Date.now(), id = null } = {}) {
     ended: false,
     endReason: null,
     skirmishCount: 0,
-    lastSkirmish: null
+    lastSkirmish: null,
+    battleCount: 0,
+    lastBattle: null
   };
 }
 
