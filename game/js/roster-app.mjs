@@ -38,6 +38,11 @@ function updateContinueState() {
   continueButton.setAttribute('aria-disabled', enabled ? 'false' : 'true');
 }
 
+function updateJourneyLabel() {
+  if (!journeyButton) return;
+  journeyButton.textContent = activeRun?.activeTravelChoice?.type === 'settlement' ? 'Вернуться в поселение' : 'Начать путешествие';
+}
+
 function filteredRoster() {
   const roster = activeRun?.roster || [];
   if (activeFilter === 'all') return roster;
@@ -169,6 +174,7 @@ function renderFilters() {
 
 function renderRoster() {
   if (!activeRun || !rosterList) return;
+  updateJourneyLabel();
   renderFilters();
   renderDetail();
   rosterList.replaceChildren();
@@ -220,6 +226,7 @@ function returnToMenu() {
 function syncRun() {
   activeRun = readRun();
   updateContinueState();
+  updateJourneyLabel();
   if (rosterScreen && !rosterScreen.hidden && activeRun && !activeRun.ended) renderRoster();
 }
 
@@ -236,6 +243,7 @@ addEventListener('rpchess:run-continue', continueRun);
 addEventListener('rpchess:run-updated', syncRun);
 
 updateContinueState();
+updateJourneyLabel();
 
 globalThis.RPChessRoster = Object.freeze({
   get run() { return activeRun; },
