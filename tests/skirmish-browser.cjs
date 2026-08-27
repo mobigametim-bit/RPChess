@@ -3,6 +3,14 @@ const { chromium } = require('playwright');
 
 const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
 const RUN_KEY = 'rpchess.reboot.v1.run';
+const EXPECTED_PERSONALIZED_ART = Object.freeze({
+  'king.oathkeeper': 'assets/kings/oathkeeper/piece.png',
+  'hero.aldric_wall': 'assets/heroes/aldric_wall/piece_badge.png',
+  'hero.mara_chain': 'assets/heroes/mara_chain/piece_badge.png',
+  'hero.nemea_quill': 'assets/heroes/nemea_quill/piece_badge.png',
+  'hero.brother_orell': 'assets/heroes/brother_orell/piece_badge.png',
+  'hero.vael_hammer': 'assets/heroes/vael_hammer/piece_badge.png'
+});
 
 async function freshRun(page) {
   await page.goto(url, { waitUntil: 'networkidle' });
@@ -20,6 +28,12 @@ async function freshRun(page) {
     page.on('pageerror', (error) => errors.push(String(error.stack || error)));
 
     await freshRun(page);
+    assert.strictEqual(
+      await page.locator('[data-aftermath-dead]').evaluate((node) => node.closest('section').hidden),
+      true,
+      'ordinary Skirmish aftermath must not expose a dead-pieces frame'
+    );
+
     await page.locator('[data-roster-travel]').click();
     const skirmish = page.locator('[data-skirmish-screen]');
     await skirmish.waitFor({ state: 'visible' });
@@ -51,18 +65,34 @@ async function freshRun(page) {
     const started = await page.evaluate(() => ({
       fen: globalThis.RPChessClassicChess.snapshot().fen,
       config: globalThis.RPChessChessAI.config,
-      battleFen: globalThis.RPChessSkirmish.battlePlan.fen
+      battleFen: globalThis.RPChessSkirmish.battlePlan.fen,
+      personalized: globalThis.RPChessSkirmish.battlePlan.playerFormation.map(({ id, square }) => {
+        const image = document.querySelector(`[data-square="${square}"] .classic-piece`);
+        return {
+          id,
+          square,
+          src: image?.getAttribute('src') || '',
+          personalizedId: image?.dataset.personalizedId || ''
+        };
+      })
     }));
     assert.strictEqual(started.fen, started.battleFen, 'real chess engine must start from Skirmish-generated FEN');
     assert.notStrictEqual(started.fen.split(' ')[0], 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR', 'Skirmish start position must be non-standard');
     assert.strictEqual(started.config.mode, 'ai');
     assert.strictEqual(started.config.playerColor, 'w');
+    assert.strictEqual(started.personalized.length, 6, 'all selected starter characters must have personalized board identities');
+    for (const piece of started.personalized) {
+      assert.strictEqual(piece.personalizedId, piece.id, `${piece.id} must keep its personalized identity on the board`);
+      assert.strictEqual(piece.src, EXPECTED_PERSONALIZED_ART[piece.id], `${piece.id} must render its approved personalized board art`);
+    }
 
     await page.evaluate(() => globalThis.RPChessSkirmish.finishBattle({ over: true, type: 'checkmate', winner: 'b', checked: true }));
-    const aftermath = page.locator('[data-skirmish-aftermath]');
-    await aftermath.waitFor({ state: 'visible' });
-    assert.strictEqual((await page.locator('[data-aftermath-result]').innerText()).trim(), 'ПОРАЖЕНИЕ');
-    assert((await page.locator('[data-aftermath-dead]').innerText()).includes('Хранитель Клятвы'), 'player mate must put personalized King in dead aftermath list');
+    const runEnd = page.locator('[data-skirmish-run-end]');
+    await runEnd.waitFor({ state: 'visible' });
+    assert.strictEqual(await page.locator('[data-skirmish-aftermath]').isHidden(), true, 'King death must not use the ordinary Skirmish aftermath screen');
+    assert.strictEqual((await page.locator('[data-run-end-title]').innerText()).trim(), 'КОРОЛЬ ПОГИБ');
+    assert((await page.locator('[data-run-end-text]').innerText()).includes('Хранитель Клятвы'), 'run-end summary must identify the fallen personalized King');
+    assert.strictEqual((await page.locator('[data-run-end-metric="skirmishes"]').innerText()).trim(), '1', 'run-end summary must count the completed Skirmish');
     const ended = await page.evaluate((key) => {
       const run = JSON.parse(localStorage.getItem(key));
       return {
@@ -73,8 +103,8 @@ async function freshRun(page) {
       };
     }, RUN_KEY);
     assert.deepStrictEqual(ended, { ended: true, reason: 'king_dead', king: 'dead', count: 1 });
-    assert.strictEqual((await page.locator('[data-aftermath-continue]').innerText()).trim(), 'Главное меню');
-    await page.locator('[data-aftermath-continue]').click();
+    assert.strictEqual((await page.locator('[data-run-end-continue]').innerText()).trim(), 'Главное меню');
+    await page.locator('[data-run-end-continue]').click();
     await page.locator('[data-reboot-foundation]').waitFor({ state: 'visible' });
     assert.strictEqual(await page.locator('[data-continue-run]').isDisabled(), true, 'ended run must not be continuable');
     const navigationUnlocked = await page.evaluate(() => ({
@@ -129,7 +159,7 @@ async function freshRun(page) {
     assert.deepStrictEqual(errors, [], `Skirmish desktop page errors:\n${errors.join('\n')}`);
     assert.deepStrictEqual(woundedErrors, [], `Skirmish wounded-state page errors:\n${woundedErrors.join('\n')}`);
     assert.deepStrictEqual(mobileErrors, [], `Skirmish mobile page errors:\n${mobileErrors.join('\n')}`);
-    console.log('Skirmish composition, non-standard chess start, locked battle navigation, King-death aftermath and mobile Chromium acceptance: PASS');
+    console.log('Skirmish composition, personalized board art, separate King-death run summary and mobile Chromium acceptance: PASS');
   } finally {
     await browser.close();
   }
