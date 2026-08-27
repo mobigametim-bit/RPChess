@@ -7,7 +7,7 @@
   "requires_internet": false,
   "requires_installation": false,
   "visual_theme": "Approved RPChess fantasy UI with global frameless dark panel surfaces, safe-area insets, blue CTA frames, personalized legacy character art and classical chess role glyphs",
-  "gameplay_state": "Roster human accepted; Skirmish is implemented/autotested/deployed for Gate C retest with personalized board art, persistent wounds, and a separate King-death run summary",
+  "gameplay_state": "Roster and Skirmish human accepted; Skirmish is DONE with personalized board art, persistent wounds, ordinary aftermath without death block, and a separate King-death run summary; next feature is Battle after merge/post-merge verification",
   "legacy_branch": "archive/iron-marches-v1",
   "legacy_commit": "035fb817a93f53047a1d20f7cdfc9093b0f7d611",
   "foundation_merge": "416cfbcd332366c10d6dd27a44123c0dd7ea7da0",
@@ -18,6 +18,6 @@
   "stockfish_version": "18.0.0 lite single-threaded",
   "stockfish_license": "GPLv3",
   "active_docs": "docs/00_PRODUCT_VISION.md through docs/17_TECH_ARCHITECTURE.md",
-  "human_acceptance_required": true,
-  "human_acceptance": "pending-skirmish-corrections-retest"
+  "human_acceptance_required": false,
+  "human_acceptance": "accepted-skirmish-2026-08-27"
 }

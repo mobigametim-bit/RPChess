@@ -15,7 +15,7 @@ Skirmish — главный оригинальный режим RPChess и сл�
 - неправильный выбор блокируется сразу с понятной причиной;
 - выбранный боевой состав отображается отдельно от каталога доступных фигур;
 - перед боем показывается компактный неинтерактивный preview автоматической расстановки;
-- ручной drag-and-drop расстановки и отдельного confirmation-screen нет;
+- ручного drag-and-drop расстановки и отдельного confirmation-screen нет;
 - `Начать стычку` сразу создаёт стартовую позицию и открывает существующую шахматную доску;
 - минимального состава кроме обязательного King нет.
 
@@ -116,19 +116,23 @@ Feature branch: `feature/skirmish`.
 
 Version: `2.4.0-skirmish.preview.2`.
 
-Gameplay corrections head перед docs-only синхронизацией: `b11f712e63366a70f35c0de8fd0b823159dad0cd`.
-GitHub Actions run `33068231777`: **SUCCESS**, включая real Chromium Foundation, Classic Chess, Stockfish, Roster и Skirmish acceptance.
-Cloudflare build `d357a056-1850-407d-9421-76b151c062e8`: **SUCCESS**; Version `e8815edb-0617-43de-8449-f7f09cbbcea8`.
-Gameplay preview: `https://e8815edb-rpchess.mobigametim.workers.dev`.
+Corrected gameplay head: `b11f712e63366a70f35c0de8fd0b823159dad0cd`.
+Corrected docs-synchronized accepted preview head: `40b093eeb601097afe9fa0da0990594a8fcc2ffc`.
+GitHub Actions push run `33068848497` / #882: **SUCCESS**, включая полный real Chromium acceptance.
+GitHub Actions PR run `33069287273` / #883: **SUCCESS** на том же exact head.
+Cloudflare build `f575d3d6-d62f-48bc-907d-4873e67ac154`: **SUCCESS**; Version `0727f70c-24a7-4dbc-aa1f-6559f968fd1e`.
+Accepted preview: `https://0727f70c-rpchess.mobigametim.workers.dev`.
 
-## Human Playtest Gate C
-Skirmish не закрывается и Battle не начинается, пока пользователь не подтвердит исправленный preview. Основной UX уже прошёл первый живой тест; пользователь отдельно подтвердил, что всё работает, кроме двух исправленных пунктов: normal aftermath и personalized board visuals.
+## Human Playtest Gate C — ACCEPTED
+Пользователь завершил повторный живой тест исправленного Skirmish preview 2026-08-27 и подтвердил: **«всё хорошо»**.
 
-Повторный короткий Gate C должен проверить:
+Подтверждены:
 1. персонализированные фигуры отображаются на доске своими `pieceArt`;
 2. после хода персональный art остаётся у той же фигуры;
 3. обычный aftermath не содержит блока `Погибли`;
 4. мат игроку открывает отдельный экран `КОРОЛЬ ПОГИБ` / итог забега;
-5. ранее подтверждённый Skirmish flow не получил регрессий.
+5. ранее принятый Skirmish flow работает без замечаний.
 
-Статус: **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED pending**.
+Статус: **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**.
+
+Следующая feature — **Battle**. Её реализация начинается только после merge принятого Skirmish в `main` и проверки post-merge CI/deploy.

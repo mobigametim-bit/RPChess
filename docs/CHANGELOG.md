@@ -1,5 +1,18 @@
 # RPChess Reboot Changelog
 
+## 2026-08-27 — Skirmish HUMAN ACCEPTED → DONE
+- Пользователь завершил повторный живой тест исправленного Skirmish preview и подтвердил: **«всё хорошо»**.
+- Skirmish закрыт как **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**.
+- Подтверждены personalized `pieceArt` на шахматной доске и сохранение identity после хода, ordinary aftermath без блока `Погибли`, отдельный run-ending экран `ЗАБЕГ ЗАВЕРШЁН / КОРОЛЬ ПОГИБ` и отсутствие регрессий в ранее принятом Skirmish flow.
+- Accepted corrected gameplay head: `b11f712e63366a70f35c0de8fd0b823159dad0cd`.
+- Accepted docs-synchronized preview head: `40b093eeb601097afe9fa0da0990594a8fcc2ffc`.
+- Accepted version: `2.4.0-skirmish.preview.2`.
+- GitHub Actions push run `33068848497` / #882: **SUCCESS**, включая full real Chromium acceptance.
+- GitHub Actions PR run `33069287273` / #883: **SUCCESS** на том же exact head.
+- Cloudflare accepted build `f575d3d6-d62f-48bc-907d-4873e67ac154`: **SUCCESS**; Version `0727f70c-24a7-4dbc-aa1f-6559f968fd1e`.
+- Accepted preview: `https://0727f70c-rpchess.mobigametim.workers.dev`.
+- Следующий этап — **Battle**, только после merge PR #68 и успешной post-merge проверки `main`.
+
 ## 2026-08-27 — Skirmish corrections implemented for Gate C retest
 - Пользователь завершил первый живой Skirmish playtest и подтвердил, что основной режим работает; осталось два точечных замечания.
 - В обычном aftermath удалён блок `Погибли`: не-King персонализированные фигуры после взятия получают `ТЯЖЕЛО РАНЕН`, а не погибают.
