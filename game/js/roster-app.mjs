@@ -200,6 +200,7 @@ function continueRun() {
 function beginJourney() {
   if (!activeRun) return;
   audio()?.click();
+  setScene('menu');
   globalThis.dispatchEvent(new CustomEvent('rpchess:new-game', { detail: { source: 'roster' } }));
 }
 
