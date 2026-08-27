@@ -55,7 +55,8 @@ assert(js.includes('new RebootAudio(settings)'), 'Reboot audio layer is not init
 assert(js.includes("document.addEventListener('pointerdown', activateAudio"), 'audio must activate after a browser-approved user gesture');
 assert(js.includes("CustomEvent('rpchess:run-new')"), 'New Game must begin a reboot run instead of opening standalone chess setup');
 assert(js.includes("CustomEvent('rpchess:run-continue')"), 'Continue must reopen a persistent run');
-assert(String(info.version).startsWith('2.4.0-skirmish'), 'Skirmish v2.4 build version is missing');
+assert(js.includes("import './battle-route.mjs'"), 'Battle preview route is not loaded without replacing accepted Skirmish entry');
+assert(String(info.version).startsWith('2.5.0-battle'), 'Battle v2.5 build version is missing');
 
 for (const track of ['echoes_iron_throne_01.mp3', 'echoes_iron_throne_02.mp3', 'echoes_iron_throne_03.mp3', 'echoes_iron_throne_04.mp3']) {
   assert(audio.includes(`music/${track}`), `music playlist is missing ${track}`);
@@ -65,4 +66,4 @@ for (const relative of ['generated_assets/logo_main.png', 'generated_assets/titl
   assert(fs.existsSync(path.join(game, relative)), `required reused asset is missing: ${relative}`);
 }
 
-console.log('Reboot Foundation frameless production contract with Skirmish entry: PASS');
+console.log('Reboot Foundation frameless production contract with Skirmish preserved and Battle route loaded: PASS');
