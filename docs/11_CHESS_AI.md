@@ -91,7 +91,7 @@ Distribution build загружает закреплённые release-файл�
 - широкая status-плашка `Партия завершена…` удалена из визуальной композиции;
 - дублирующие post-game `Новая партия / Главное меню` внутри панели `Партия` удалены; единственный action set остаётся в верхнем toolbar;
 - все action-кнопки используют синий `ui_button_primary.png`;
-- карточки/модальные панели используют тёмный commander-selection treatment: `ui_panel_frame.png`, центр `#091524`, inner keyline и увеличенную safe-area padding, чтобы контент не заходил на декоративные края;
+- framed content подчиняется общему game-wide safe-area contract из `16_UI_UX.md`: весь текст и controls остаются внутри тёмной рабочей области, не касаются декоративной рамки, а слева используется дополнительный внутренний отступ;
 - при включённом `Уменьшить анимации` или системном reduced-motion плавное перемещение может быть отключено.
 
 ## Отказоустойчивость
@@ -110,16 +110,15 @@ Distribution build загружает закреплённые release-файл�
 - captured-piece/material UI;
 - smooth-move animation contract;
 - blue-CTA и commander-style panel contract;
+- global framed-content safe-area variables и binding текущих panel families;
 - финальный three-column layout и отсутствие duplicate post-game CTA;
 - реальный Stockfish Worker browser flow.
 
 ## Human Playtest Gate
-AI gameplay уже принят пользователем. Перед закрытием Chess AI как `DONE` нужен только короткий финальный spot-check версии `2.2.0-chess-ai.preview.3`:
-- уменьшенные bare white/black technical glyph;
-- safe-area контента внутри рамок;
-- отсутствие широкой `Партия завершена…` status-плашки;
-- отсутствие дублирующих post-game CTA внутри панели `Партия`;
-- desktop-layout `Партия` слева / доска / `Ходы` справа.
+AI gameplay и предыдущий UI polish уже приняты пользователем. Перед закрытием Chess AI как `DONE` нужен только короткий spot-check версии `2.2.0-chess-ai.preview.4`:
+- окно `Новая партия`, `Настройки`, `Партия` и `Ходы` держат весь текст/controls внутри внутренней тёмной области рамки;
+- слева есть заметный небольшой дополнительный inset;
+- остальные ранее принятые UI/gameplay решения не регрессировали.
 
 ## Deployment Gate
 Перед передачей финального UI spot-check точный head ветки обязан одновременно пройти:
