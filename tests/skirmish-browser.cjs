@@ -46,6 +46,8 @@ async function freshRun(page) {
     await classic.waitFor({ state: 'visible' });
     assert.strictEqual(await skirmish.isHidden(), true, 'starting Skirmish must replace composition scene with chess board');
     assert.strictEqual(await page.locator('[data-chess-board] [data-square]').count(), 64, 'Skirmish must reuse the real 64-square chess board');
+    assert.strictEqual(await page.locator('[data-classic-new]').isHidden(), true, 'active Skirmish must hide standalone New Game navigation');
+    assert.strictEqual(await page.locator('[data-classic-menu]').isHidden(), true, 'active Skirmish must hide standalone Main Menu navigation');
     const started = await page.evaluate(() => ({
       fen: globalThis.RPChessClassicChess.snapshot().fen,
       config: globalThis.RPChessChessAI.config,
@@ -75,6 +77,7 @@ async function freshRun(page) {
     await page.locator('[data-aftermath-continue]').click();
     await page.locator('[data-reboot-foundation]').waitFor({ state: 'visible' });
     assert.strictEqual(await page.locator('[data-continue-run]').isDisabled(), true, 'ended run must not be continuable');
+    assert.strictEqual(await page.locator('[data-classic-new]').isHidden(), false, 'standalone chess navigation must be restored after Skirmish ends');
 
     const woundedPage = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     const woundedErrors = [];
@@ -115,7 +118,7 @@ async function freshRun(page) {
     assert.deepStrictEqual(errors, [], `Skirmish desktop page errors:\n${errors.join('\n')}`);
     assert.deepStrictEqual(woundedErrors, [], `Skirmish wounded-state page errors:\n${woundedErrors.join('\n')}`);
     assert.deepStrictEqual(mobileErrors, [], `Skirmish mobile page errors:\n${mobileErrors.join('\n')}`);
-    console.log('Skirmish composition, non-standard chess start, King-death aftermath and mobile Chromium acceptance: PASS');
+    console.log('Skirmish composition, non-standard chess start, locked battle navigation, King-death aftermath and mobile Chromium acceptance: PASS');
   } finally {
     await browser.close();
   }
