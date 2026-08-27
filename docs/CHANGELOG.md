@@ -1,5 +1,17 @@
 # RPChess Reboot Changelog
 
+## 2026-08-27 — Travel Choice HUMAN ACCEPTED → DONE
+- Пользователь завершил живой Travel Choice playtest и подтвердил: **«всё хорошо»**.
+- Travel Choice закрыт как **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**.
+- Подтверждены: ровно 3 route cards; мгновенный необратимый выбор карточки без второго CTA; persistence набора через Roster/reload; возобновление уже выбранного encounter вместо повторного выбора; корректная маршрутизация Skirmish/Battle; `Продолжить путь` после ordinary aftermath; mobile vertical flow без horizontal overflow.
+- Accepted gameplay head: `d76fca5ad5e02260a836400c7398158c1657a6f6`.
+- Accepted docs-synchronized preview head before acceptance commit: `7775750690b5a9e2a947baf5d9091b3b898a6241`.
+- Version: `2.6.0-travel-choice.preview.1`.
+- Gameplay GitHub Actions `33080571104` / #898: **SUCCESS**, включая полный real Chromium regression-suite Foundation → Classic Chess → Stockfish → Roster → Skirmish → Battle → Travel Choice.
+- Pre-acceptance docs-head GitHub Actions `33081722542` / #903: **SUCCESS**, включая полный real Chromium regression-suite.
+- Accepted Cloudflare build `e5b0d01e-433c-44f7-81b9-df10a2127e23`: **SUCCESS**; Version `7047b3fb-ffc9-4e69-88cb-39566293ec66`; preview `https://7047b3fb-rpchess.mobigametim.workers.dev`.
+- PR #70 остаётся unmerged только до финального acceptance-docs exact-head CI/Cloudflare gate. Resources не начинается до post-merge closure `main`.
+
 ## 2026-08-27 — Travel Choice implementation ready for human playtest
 - Реализована каноническая петля `Отряд → Travel Choice → encounter → aftermath → Продолжить путь → следующий Travel Choice`.
 - `Начать путешествие` теперь открывает отдельную сцену с **ровно 3** карточками; временный прямой Battle shortcut удалён.

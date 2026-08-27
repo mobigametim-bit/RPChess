@@ -88,13 +88,21 @@ King-death run end остаётся отдельным финальным экр
 ## Границы Travel Choice v1
 Не входят: Gold/Supplies cost, starvation, healing/recruitment/shop economy, Event resolution, Puzzle engine, полноценные weighted encounter tables, anti-streak rules и региональные модификаторы генерации.
 
-## Статус реализации
-Feature branch: `feature/travel-choice`.
+## Human Acceptance
+Пользователь завершил живой Travel Choice playtest 2026-08-27 и подтвердил: **«всё хорошо»**.
+
+Подтверждены: три route cards, мгновенный выбор карточки без второго CTA, persistence набора через Roster/reload, необратимость уже выбранного пути, корректная маршрутизация Skirmish/Battle, `Продолжить путь` после ordinary aftermath и mobile vertical flow.
+
+Accepted gameplay head: `d76fca5ad5e02260a836400c7398158c1657a6f6`.
+Accepted docs-synchronized preview head before acceptance commit: `7775750690b5a9e2a947baf5d9091b3b898a6241`.
 Version: `2.6.0-travel-choice.preview.1`.
-Gameplay head: `d76fca5ad5e02260a836400c7398158c1657a6f6`.
-GitHub Actions run `33080571104` / #898: **SUCCESS**, включая source verification, deterministic tests, production build, clean distribution boundary и полный real Chromium regression-suite Foundation → Classic Chess → Stockfish → Roster → Skirmish → Battle → Travel Choice.
-Cloudflare gameplay build `0550b45c-ca7c-4104-8907-fafc2dda0b13`: **SUCCESS**; Version `48116a6f-9290-4108-8166-0b9ab5d4cb7c`.
-Gameplay preview: `https://48116a6f-rpchess.mobigametim.workers.dev`.
+Gameplay GitHub Actions `33080571104` / #898: **SUCCESS**, включая полный real Chromium regression-suite.
+Pre-acceptance docs-head GitHub Actions `33081722542` / #903: **SUCCESS**, включая полный real Chromium regression-suite.
+Accepted Cloudflare build `e5b0d01e-433c-44f7-81b9-df10a2127e23`: **SUCCESS**; Version `7047b3fb-ffc9-4e69-88cb-39566293ec66`.
+Accepted preview: `https://7047b3fb-rpchess.mobigametim.workers.dev`.
 Alias: `https://feature-travel-choice-rpchess.mobigametim.workers.dev`.
 
-Статус: **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED pending**.
+## Статус реализации
+Feature branch: `feature/travel-choice`.
+Статус: **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**.
+PR #70 остаётся unmerged до финального acceptance-docs exact-head CI/Cloudflare gate; после зелёного gate выполняется squash merge и post-merge проверка `main`.
