@@ -31,6 +31,7 @@ async function panelStyle(locator) {
     await startFresh(page);
     const menu = page.locator('[data-reboot-foundation]');
     const roster = page.locator('[data-roster-screen]');
+    const travel = page.locator('[data-travel-choice-screen]');
     const skirmish = page.locator('[data-skirmish-screen]');
     const classic = page.locator('[data-classic-screen]');
     const continueButton = page.locator('[data-continue-run]');
@@ -45,6 +46,7 @@ async function panelStyle(locator) {
     assert.strictEqual(await page.locator('[data-roster-card]').count(), 6, 'starter run must render six personalized characters');
     assert.strictEqual(await page.locator('[data-run-king="true"]').count(), 1, 'starter roster must contain one run king');
     assert.strictEqual(await page.locator('[data-roster-card="king.oathkeeper"]').getAttribute('aria-pressed'), 'true');
+    assert.strictEqual(await page.locator('[data-roster-battle]').count(), 0, 'temporary direct Battle bridge must be removed');
 
     const oathkeeperDetail = await page.locator('[data-roster-detail]').innerText();
     assert(oathkeeperDetail.includes('Хранитель Клятвы'));
@@ -61,10 +63,16 @@ async function panelStyle(locator) {
     }
 
     await page.locator('[data-roster-travel]').click();
-    await skirmish.waitFor({ state: 'visible' });
+    await travel.waitFor({ state: 'visible' });
     assert.strictEqual(await roster.isHidden(), true, 'Start Journey must leave Roster');
-    assert.strictEqual(await menu.isHidden(), true, 'Skirmish must be an exclusive scene');
-    assert.strictEqual(await classic.isHidden(), true, 'Chess board must not open before Skirmish confirmation');
+    assert.strictEqual(await menu.isHidden(), true, 'Travel Choice must be an exclusive scene');
+    assert.strictEqual(await classic.isHidden(), true, 'Chess board must not open before a route is selected');
+    assert.strictEqual(await page.locator('[data-travel-choice]').count(), 3, 'Start Journey must present exactly three routes');
+    assert.strictEqual(await page.locator('[data-travel-type="skirmish"]').count() >= 1, true, 'Travel fork must include a playable Skirmish');
+
+    await page.locator('[data-travel-type="skirmish"]').first().click();
+    await skirmish.waitFor({ state: 'visible' });
+    assert.strictEqual(await travel.isHidden(), true, 'route click must immediately leave Travel Choice');
     assert.strictEqual((await page.locator('[data-skirmish-piece-count]').innerText()).trim(), '6 / 16');
     assert.strictEqual((await page.locator('[data-skirmish-point-count]').innerText()).trim(), '13 / 39');
 
@@ -128,7 +136,7 @@ async function panelStyle(locator) {
 
     assert.deepStrictEqual(errors, [], `desktop Roster page errors:\n${errors.join('\n')}`);
     assert.deepStrictEqual(mobileErrors, [], `mobile Roster page errors:\n${mobileErrors.join('\n')}`);
-    console.log('Roster persistence, frameless surfaces and Roster-to-Skirmish Chromium acceptance: PASS');
+    console.log('Roster persistence, frameless surfaces and Roster-to-Travel-to-Skirmish Chromium acceptance: PASS');
   } finally {
     await browser.close();
   }
