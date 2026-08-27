@@ -11,7 +11,7 @@ const STARTER_TEMPLATES = Object.freeze([
     origin: 'Железные Марши',
     portrait: 'assets/kings/oathkeeper/portrait.png',
     pieceArt: 'assets/kings/oathkeeper/piece.png',
-    description: 'Король отряда и центральная фигура текущего забега. Его гибель завершает путешествие.',
+    description: 'Последний хранитель древней присяги Железных Маршей. После падения родовой крепости он покинул её стены и собрал вокруг себя тех, кто ещё верит, что данное слово важнее трона.',
     isRunKing: true
   }),
   Object.freeze({
