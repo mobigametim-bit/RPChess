@@ -37,6 +37,7 @@ const aftermathText = document.querySelector('[data-aftermath-text]');
 const aftermathSurvivors = document.querySelector('[data-aftermath-survivors]');
 const aftermathWounded = document.querySelector('[data-aftermath-wounded]');
 const aftermathDead = document.querySelector('[data-aftermath-dead]');
+const aftermathDeadSection = aftermathDead?.closest('section') || null;
 const aftermathButton = document.querySelector('[data-aftermath-continue]');
 
 let activeRun = null;
@@ -49,8 +50,70 @@ let processedMoves = 0;
 let battleFinalized = false;
 let finalizeTimer = null;
 let toastTimer = null;
+let lastCapturedVisual = null;
+let runEndScreen = null;
+
+if (aftermathDeadSection) aftermathDeadSection.hidden = true;
 
 function audio() { return globalThis.RPChessRebootAudio; }
+
+function characterForId(id) {
+  return activeRun?.roster?.find((character) => character.id === id) || null;
+}
+
+function ensureRunEndScreen() {
+  if (runEndScreen) return runEndScreen;
+  const root = document.createElement('main');
+  root.className = 'skirmish-aftermath skirmish-run-end';
+  root.dataset.skirmishRunEnd = '';
+  root.setAttribute('aria-label', 'Итоги завершённого забега');
+  root.hidden = true;
+
+  const shell = document.createElement('div');
+  shell.className = 'skirmish-aftermath-shell';
+  const logo = document.createElement('img');
+  logo.className = 'skirmish-logo';
+  logo.src = 'generated_assets/title_wordmark.png';
+  logo.alt = 'RPChess';
+
+  const panel = document.createElement('section');
+  panel.className = 'skirmish-aftermath-panel ui-panel-safe';
+  const eyebrow = document.createElement('div');
+  eyebrow.className = 'reboot-eyebrow';
+  eyebrow.textContent = 'ЗАБЕГ ЗАВЕРШЁН';
+  const title = document.createElement('h1');
+  title.dataset.runEndTitle = '';
+  title.textContent = 'КОРОЛЬ ПОГИБ';
+  const text = document.createElement('p');
+  text.dataset.runEndText = '';
+
+  const columns = document.createElement('div');
+  columns.className = 'skirmish-aftermath-columns';
+  for (const [label, key] of [['Стычек завершено', 'skirmishes'], ['Сохранили строй', 'healthy'], ['Тяжело ранены', 'wounded']]) {
+    const section = document.createElement('section');
+    const heading = document.createElement('h2');
+    heading.textContent = label;
+    const value = document.createElement('div');
+    value.className = 'skirmish-aftermath-empty';
+    value.dataset.runEndMetric = key;
+    section.append(heading, value);
+    columns.append(section);
+  }
+
+  const button = document.createElement('button');
+  button.className = 'reboot-button reboot-button--primary skirmish-aftermath-button';
+  button.type = 'button';
+  button.dataset.runEndContinue = '';
+  button.textContent = 'Главное меню';
+  button.addEventListener('click', leaveRunEnd);
+
+  panel.append(eyebrow, title, text, columns, button);
+  shell.append(logo, panel);
+  root.append(shell);
+  document.querySelector('#app')?.append(root);
+  runEndScreen = root;
+  return root;
+}
 
 function showOnly(target) {
   if (menu) menu.hidden = target !== 'menu';
@@ -58,7 +121,8 @@ function showOnly(target) {
   if (classicScreen) classicScreen.hidden = target !== 'classic';
   if (skirmishScreen) skirmishScreen.hidden = target !== 'skirmish';
   if (aftermathScreen) aftermathScreen.hidden = target !== 'aftermath';
-  document.body.classList.toggle('skirmish-active', target === 'skirmish' || target === 'aftermath');
+  if (runEndScreen) runEndScreen.hidden = target !== 'runEnd';
+  document.body.classList.toggle('skirmish-active', target === 'skirmish' || target === 'aftermath' || target === 'runEnd');
   if (target !== 'classic') document.body.classList.remove('classic-chess-active');
   window.scrollTo({ top: 0, behavior: 'auto' });
 }
@@ -243,6 +307,7 @@ function openSkirmish() {
   capturedIds = new Set();
   processedMoves = 0;
   battleFinalized = false;
+  lastCapturedVisual = null;
   clearTimeout(finalizeTimer);
   setBattleNavigationLocked(false);
   setNotice('');
@@ -258,6 +323,49 @@ function returnToRoster() {
   globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue'));
 }
 
+function applyPersonalizedBoardArt() {
+  if (!board || !activeRun || !battlePlan) return;
+  for (const [square, id] of identityBySquare) {
+    const character = characterForId(id);
+    if (!character?.pieceArt) continue;
+    const cell = board.querySelector(`[data-square="${square}"]`);
+    const image = cell?.querySelector('.classic-piece');
+    if (!cell || !image) continue;
+    image.src = character.pieceArt;
+    image.dataset.personalizedId = id;
+    image.classList.add('classic-piece--personalized');
+    cell.dataset.personalizedId = id;
+    cell.setAttribute('aria-label', `${square}: ${character.name}, ${PIECE_LABELS[character.pieceType] || character.pieceType}`);
+  }
+}
+
+function patchTransientBattleArt() {
+  if (!battlePlan || !activeRun || !globalThis.RPChessClassicChess) return;
+  const log = globalThis.RPChessClassicChess.moveLog || [];
+  const last = log[log.length - 1];
+  if (!last) return;
+
+  for (const flyer of document.querySelectorAll('.classic-piece-flyer:not([data-skirmish-visualized])')) {
+    if (last.color === 'w') {
+      const id = identityBySquare.get(last.move?.to) || identityBySquare.get(last.move?.from);
+      const character = characterForId(id);
+      if (character?.pieceArt) {
+        flyer.src = character.pieceArt;
+        flyer.dataset.personalizedId = id;
+      }
+    }
+    flyer.dataset.skirmishVisualized = '1';
+  }
+
+  for (const ghost of document.querySelectorAll('.classic-captured-ghost:not([data-skirmish-visualized])')) {
+    if (last.color === 'b' && lastCapturedVisual?.logLength === log.length && lastCapturedVisual.art) {
+      ghost.src = lastCapturedVisual.art;
+      ghost.dataset.personalizedId = lastCapturedVisual.id;
+    }
+    ghost.dataset.skirmishVisualized = '1';
+  }
+}
+
 function startBattle() {
   activeRun = readRun();
   if (!activeRun || activeRun.ended) return;
@@ -271,6 +379,7 @@ function startBattle() {
   capturedIds = new Set();
   processedMoves = 0;
   battleFinalized = false;
+  lastCapturedVisual = null;
   clearTimeout(finalizeTimer);
   audio()?.click?.();
   skirmishScreen.hidden = true;
@@ -281,13 +390,14 @@ function startBattle() {
     playerColor: 'w',
     aiElo: encounter.aiElo
   });
+  applyPersonalizedBoardArt();
   const mode = document.querySelector('[data-game-mode]');
   if (mode) mode.textContent = `Стычка · ${encounter.label} · Тактика: ${encounter.tactic}`;
 }
 
 function showWoundToast(id) {
   if (!toast || !activeRun) return;
-  const character = activeRun.roster.find((item) => item.id === id);
+  const character = characterForId(id);
   if (!character) return;
   toast.textContent = `${character.name} — ТЯЖЕЛО РАНЕН`;
   toast.hidden = false;
@@ -308,8 +418,9 @@ function processMove(entry) {
     const capturedSquare = capture || to;
     const id = identityBySquare.get(capturedSquare);
     if (id) {
+      const character = characterForId(id);
+      lastCapturedVisual = character ? { id, art: character.pieceArt, logLength: processedMoves + 1 } : null;
       identityBySquare.delete(capturedSquare);
-      const character = activeRun?.roster.find((item) => item.id === id);
       if (character && !character.isRunKing) {
         capturedIds.add(id);
         showWoundToast(id);
@@ -325,6 +436,7 @@ function syncBattleFromChess() {
     processMove(log[processedMoves]);
     processedMoves += 1;
   }
+  applyPersonalizedBoardArt();
   const mode = document.querySelector('[data-game-mode]');
   if (mode && encounter) mode.textContent = `Стычка · ${encounter.label} · Тактика: ${encounter.tactic}`;
   const status = globalThis.RPChessClassicChess.snapshot()?.status;
@@ -363,19 +475,36 @@ function renderAftermath(status) {
   const chosen = battlePlan.selectedIds.map((id) => activeRun.roster.find((character) => character.id === id)).filter(Boolean);
   const survivors = chosen.filter((character) => character.status === 'healthy');
   const wounded = chosen.filter((character) => character.status === 'wounded');
-  const dead = chosen.filter((character) => character.status === 'dead');
   const victory = status?.type === 'checkmate' && status.winner === 'w';
-  const defeat = status?.type === 'checkmate' && status.winner === 'b';
-  if (aftermathResult) aftermathResult.textContent = victory ? 'ПОБЕДА' : defeat ? 'ПОРАЖЕНИЕ' : 'НИЧЬЯ';
-  if (aftermathText) aftermathText.textContent = defeat
-    ? 'Хранитель Клятвы погиб. Этот забег завершён.'
-    : wounded.length
-      ? 'Стычка окончена. Раненые бойцы больше не смогут участвовать до лечения.'
-      : 'Стычка окончена. Отряд сохранил боеспособность.';
+  if (aftermathResult) aftermathResult.textContent = victory ? 'ПОБЕДА' : 'НИЧЬЯ';
+  if (aftermathText) aftermathText.textContent = wounded.length
+    ? 'Стычка окончена. Раненые бойцы больше не смогут участвовать до лечения.'
+    : 'Стычка окончена. Отряд сохранил боеспособность.';
   renderCharacterList(aftermathSurvivors, survivors, 'Нет невредимых участников.');
   renderCharacterList(aftermathWounded, wounded, 'Никто не получил тяжёлых ранений.');
-  renderCharacterList(aftermathDead, dead, 'В этой стычке никто не погиб.');
-  if (aftermathButton) aftermathButton.textContent = activeRun.ended ? 'Главное меню' : 'Вернуться к отряду';
+  if (aftermathDead) aftermathDead.replaceChildren();
+  if (aftermathDeadSection) aftermathDeadSection.hidden = true;
+  if (aftermathButton) aftermathButton.textContent = 'Вернуться к отряду';
+}
+
+function renderRunEnd() {
+  if (!activeRun) return;
+  const root = ensureRunEndScreen();
+  const king = activeRun.roster.find((character) => character.isRunKing);
+  const healthy = activeRun.roster.filter((character) => !character.isRunKing && character.status === 'healthy').length;
+  const wounded = activeRun.roster.filter((character) => character.status === 'wounded').length;
+  const title = root.querySelector('[data-run-end-title]');
+  const text = root.querySelector('[data-run-end-text]');
+  if (title) title.textContent = 'КОРОЛЬ ПОГИБ';
+  if (text) text.textContent = `${king?.name || 'Король'} пал в стычке. Путешествие этого отряда завершено.`;
+  const values = {
+    skirmishes: String(activeRun.skirmishCount || 0),
+    healthy: String(healthy),
+    wounded: String(wounded)
+  };
+  for (const metric of root.querySelectorAll('[data-run-end-metric]')) {
+    metric.textContent = values[metric.dataset.runEndMetric] || '0';
+  }
 }
 
 function finishBattle(status) {
@@ -399,27 +528,38 @@ function finishBattle(status) {
   setBattleNavigationLocked(false);
   globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
   if (classicScreen) classicScreen.hidden = true;
+  if (activeRun.ended) {
+    renderRunEnd();
+    showOnly('runEnd');
+    return;
+  }
   renderAftermath(status);
   showOnly('aftermath');
 }
 
-function leaveAftermath() {
-  audio()?.click?.();
-  const ended = Boolean(activeRun?.ended);
+function resetBattleState() {
   battlePlan = null;
   identityBySquare = new Map();
   capturedIds = new Set();
   processedMoves = 0;
+  lastCapturedVisual = null;
   clearTimeout(finalizeTimer);
   finalizeTimer = null;
   setBattleNavigationLocked(false);
-  if (ended) {
-    showOnly('menu');
-    globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
-    return;
-  }
+}
+
+function leaveAftermath() {
+  audio()?.click?.();
+  resetBattleState();
   showOnly('menu');
   globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue'));
+}
+
+function leaveRunEnd() {
+  audio()?.click?.();
+  resetBattleState();
+  showOnly('menu');
+  globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
 }
 
 startButton?.addEventListener('click', startBattle);
@@ -429,6 +569,14 @@ addEventListener('rpchess:skirmish-open', openSkirmish);
 
 if (board && typeof MutationObserver !== 'undefined') {
   new MutationObserver(syncBattleFromChess).observe(board, { childList: true, subtree: true });
+}
+
+if (typeof MutationObserver !== 'undefined' && document.body) {
+  new MutationObserver(() => {
+    if (!battlePlan) return;
+    if (!document.querySelector('.classic-piece-flyer:not([data-skirmish-visualized]),.classic-captured-ghost:not([data-skirmish-visualized])')) return;
+    queueMicrotask(patchTransientBattleArt);
+  }).observe(document.body, { childList: true, subtree: true });
 }
 
 globalThis.RPChessSkirmish = Object.freeze({
