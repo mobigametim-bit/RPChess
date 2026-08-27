@@ -1,5 +1,17 @@
 # RPChess Reboot Changelog
 
+## 2026-08-27 — Roster HUMAN ACCEPTED → DONE
+- Пользователь завершил повторный живой тест исправленного Roster preview и подтвердил: **«всё хорошо»**.
+- Roster закрыт как **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**.
+- Accepted gameplay head: `21486014ca110062fdcb776d5119b23dbe3418cf`.
+- Accepted version: `2.3.0-roster.preview.3`.
+- GitHub Actions exact-head run `33059487594`: **SUCCESS**, включая source/static/persistence checks, production build, real Chromium Foundation, Classic Chess, Stockfish и полный Roster journey flow.
+- Cloudflare accepted gameplay build `7f7d60f8-ce9c-4b8b-8680-3bc80e4fe33a`: **SUCCESS**; Version `78461dc1-d43a-4392-ae01-f04af95a70e2`.
+- Accepted preview: `https://78461dc1-rpchess.mobigametim.workers.dev`.
+- Проверены финальные live corrections: новая мини-история Хранителя Клятвы, отсутствие служебных healthy/king фраз и рабочий маршрут `Продолжить → Отряд → Начать путешествие → выбор партии → Начать партию → шахматная доска`.
+- `docs/04_ROSTER.md` проверен и остаётся актуальной спецификацией; Roadmap переведён на Roster `DONE`.
+- Следующий этап — **только UX-проектирование Skirmish**. Реализация Skirmish не начинается до отдельного обсуждения и явного утверждения UX пользователем.
+
 ## 2026-08-27 — Game-wide ornate panel-frame removal
 - После Roster preview пользователь утвердил новое постоянное правило: декоративные panel-frame assets больше не используются ни в одной active Reboot сцене и не должны использоваться в будущих feature.
 - `ui_panel_frame.png` и `ui_panel_wide.png` удалены из активных CSS references Foundation, Classic Chess, Chess AI polish и Roster.
