@@ -1,5 +1,17 @@
 # RPChess Reboot Changelog
 
+## 2026-08-27 — Global framed-content safe-area invariant
+- После финального UI spot-check пользователь подтвердил весь Chess AI polish и добавил одно обязательное правило для **всей игры**: текст и интерактивные элементы во всех декоративных фреймах должны оставаться внутри внутренней рабочей области и визуально не касаться рамки.
+- В `reboot-foundation.css` введён централизованный `--ui-frame-safe-*` contract и reusable `.ui-frame-safe` utility для текущих и будущих сцен.
+- `.reboot-modal__panel` и `.classic-panel` подключены к этому контракту глобально.
+- Левый safe-area inset намеренно больше правого, чтобы текст не стоял вплотную к декоративной кромке.
+- Добавлены ограничения `min-width: 0`, `max-width: 100%` и безопасный перенос длинного текста внутри framed surfaces.
+- Mobile получает отдельные компактные, но ненулевые safe-area значения.
+- Cache-bust Foundation stylesheet поднят до `20260827-reboot-4`.
+- Preview version поднята до `2.2.0-chess-ai.preview.4`.
+- `16_UI_UX.md` закрепляет правило как game-wide invariant для всех последующих feature.
+- Reboot Foundation static contract теперь проверяет наличие safe-area variables, reusable utility, binding текущих panel families и отдельный левый inset.
+
 ## 2026-08-27 — Chess AI final UI polish corrections
 - После второго live spot-check пользователь подтвердил всё, кроме пяти UI-компоновочных замечаний.
 - Technical role glyph уменьшен, окружность/подложка убрана, glyph перенесён в крайний левый верхний угол клетки; white side использует белый glyph, black side — чёрный.
@@ -10,7 +22,6 @@
 - SAN/figurines, captured material, smooth movement и blue CTA сохранены без изменения.
 - Версия поднята до `2.2.0-chess-ai.preview.3`.
 - Static contract усилен на final layout, marker style, hidden status plaque и отсутствие duplicate post-game CTA.
-- Следующий gate: exact-head GitHub Actions + Cloudflare SUCCESS, затем короткий human spot-check только этих пяти UI corrections.
 
 ## 2026-08-27 — Chess AI gameplay test passed; production polish implemented
 - Пользователь подтвердил, что Chess AI gameplay и все основные пункты теста работают корректно.
