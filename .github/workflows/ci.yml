@@ -9,6 +9,7 @@ on:
       - feature/roster
       - feature/skirmish
       - feature/battle
+      - feature/travel-choice
 
 permissions:
   contents: read
@@ -18,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify-battle:
+  verify-travel-choice:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,11 +31,11 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Verify Reboot source contract
         run: npm run verify
-      - name: Run Foundation, chess, AI, Roster, Skirmish and Battle tests
+      - name: Run Foundation, chess, AI, Roster, Skirmish, Battle and Travel Choice tests
         run: npm test
-      - name: Build Battle web distribution
+      - name: Build Travel Choice web distribution
         run: npm run build
-      - name: Verify clean Battle distribution boundary
+      - name: Verify clean Travel Choice distribution boundary
         shell: bash
         run: |
           set -euo pipefail
@@ -45,6 +46,7 @@ jobs:
           test -f dist/css/roster.css
           test -f dist/css/skirmish.css
           test -f dist/css/battle.css
+          test -f dist/css/travel-choice.css
           test -f dist/js/reboot-foundation.mjs
           test -f dist/js/reboot-audio.mjs
           test -f dist/js/classic-chess-engine.mjs
@@ -58,6 +60,8 @@ jobs:
           test -f dist/js/battle-core.mjs
           test -f dist/js/battle-app.mjs
           test -f dist/js/battle-route.mjs
+          test -f dist/js/travel-choice-core.mjs
+          test -f dist/js/travel-choice-app.mjs
           test -f dist/assets/kings/oathkeeper/portrait.png
           test -f dist/assets/kings/oathkeeper/piece.png
           for hero in aldric_wall mara_chain nemea_quill brother_orell vael_hammer; do
@@ -71,6 +75,8 @@ jobs:
           test -f dist/generated_assets/logo_main.png
           test -f dist/generated_assets/title_wordmark.png
           test -f dist/generated_assets/splash_poster.jpg
+          test -f dist/generated_assets/node_battle.png
+          test -f dist/generated_assets/node_elite.png
           for piece in pawn knight bishop rook queen king; do
             test -f "dist/generated_assets/unit_${piece}_player.png"
             test -f "dist/generated_assets/unit_${piece}_enemy.png"
@@ -87,8 +93,8 @@ jobs:
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
-      - name: Run real Chromium Foundation, chess, Stockfish, Roster, Skirmish and Battle acceptance
-        timeout-minutes: 20
+      - name: Run real Chromium Foundation, chess, Stockfish, Roster, Skirmish, Battle and Travel Choice acceptance
+        timeout-minutes: 25
         shell: bash
         run: |
           set -euo pipefail
@@ -105,3 +111,4 @@ jobs:
           stdbuf -oL -eL node tests/roster-browser.cjs
           stdbuf -oL -eL node tests/skirmish-browser.cjs
           stdbuf -oL -eL node tests/battle-browser.cjs
+          stdbuf -oL -eL node tests/travel-choice-browser.cjs
