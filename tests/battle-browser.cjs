@@ -18,6 +18,17 @@ async function freshRun(page) {
   await page.locator('[data-new-game]').click();
   await page.locator('[data-roster-screen]:not([hidden])').waitFor();
 }
+async function enterBattleFromTravel(page) {
+  assert.strictEqual(await page.locator('[data-roster-battle]').count(), 0, 'temporary direct Battle bridge must stay removed');
+  await page.locator('[data-roster-travel]').click();
+  await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
+  const card = page.locator('[data-travel-type="battle"]').first();
+  assert.strictEqual(await card.count(), 1, 'Travel Choice must offer a Battle route');
+  const chosen = await card.evaluate((node) => ({ id: node.dataset.travelChoice, stars: Number(node.dataset.travelStars) }));
+  await card.click();
+  await page.locator('[data-battle-screen]:not([hidden])').waitFor();
+  return chosen;
+}
 (async () => {
   const browser = await chromium.launch({ headless: true });
   try {
@@ -25,9 +36,14 @@ async function freshRun(page) {
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e.stack || e)));
     await freshRun(page);
-    assert.strictEqual(await page.locator('[data-roster-battle]').isVisible(), true, 'temporary Battle bridge must be visible beside Journey until Travel Choice exists');
-    await page.locator('[data-roster-battle]').click();
-    await page.locator('[data-battle-screen]:not([hidden])').waitFor();
+    const chosenBattle = await enterBattleFromTravel(page);
+    const persistedChoice = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).activeTravelChoice, RUN_KEY);
+    assert.strictEqual(persistedChoice.id, chosenBattle.id);
+    assert.strictEqual(persistedChoice.type, 'battle');
+    assert.strictEqual(globalThis === undefined, false);
+    const encounterStars = await page.evaluate(() => globalThis.RPChessBattle.encounter.stars);
+    assert.strictEqual(encounterStars, chosenBattle.stars, 'Travel threat must reach Battle encounter');
+
     assert.strictEqual(await page.locator('[data-battle-character]').count(), 6);
     assert.strictEqual(await page.locator('[data-battle-participant]').count(), 6);
     assert.strictEqual((await page.locator('[data-battle-personalized-count]').innerText()).trim(), '6');
@@ -68,15 +84,17 @@ async function freshRun(page) {
     await page.locator('[data-battle-aftermath]:not([hidden])').waitFor();
     assert.strictEqual((await page.locator('[data-battle-aftermath-result]').innerText()).trim(), 'ПОБЕДА');
     assert.strictEqual(await page.locator('[data-battle-aftermath]').getByText('Погибли', { exact: true }).count(), 0);
+    assert.strictEqual((await page.locator('[data-battle-continue]').innerText()).trim(), 'Продолжить путь');
     const persisted = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
     assert.strictEqual(persisted.battleCount, 1);
     assert.strictEqual(persisted.lastBattle.participants.length, 6);
+    assert.strictEqual(persisted.activeTravelChoice, null, 'completed Battle must release the selected travel path');
 
     const loss = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     const lossErrors = [];
     loss.on('pageerror', (e) => lossErrors.push(String(e.stack || e)));
     await freshRun(loss);
-    await loss.locator('[data-roster-battle]').click();
+    await enterBattleFromTravel(loss);
     await loss.locator('[data-battle-start]').click();
     await loss.locator('[data-classic-screen]:not([hidden])').waitFor();
     await loss.evaluate(() => globalThis.RPChessBattle.finishBattle({ over: true, type: 'checkmate', winner: 'b', checked: true }));
@@ -89,7 +107,7 @@ async function freshRun(page) {
     const mobileErrors = [];
     mobile.on('pageerror', (e) => mobileErrors.push(String(e.stack || e)));
     await freshRun(mobile);
-    await mobile.locator('[data-roster-battle]').click();
+    await enterBattleFromTravel(mobile);
     await mobile.locator('[data-battle-screen]:not([hidden])').waitFor();
     const mobileState = await mobile.evaluate(() => ({ sh:document.documentElement.scrollHeight, ch:document.documentElement.clientHeight, sw:document.documentElement.scrollWidth, cw:document.documentElement.clientWidth, pos:getComputedStyle(document.querySelector('.battle-actionbar')).position }));
     assert(mobileState.sh > mobileState.ch);
@@ -100,6 +118,6 @@ async function freshRun(page) {
     assert.deepStrictEqual(errors, []);
     assert.deepStrictEqual(lossErrors, []);
     assert.deepStrictEqual(mobileErrors, []);
-    console.log('Battle standard-army replacement, personalized art, persistence, King-death and mobile Chromium acceptance: PASS');
+    console.log('Travel-routed Battle standard-army replacement, personalized art, persistence, King-death and mobile Chromium acceptance: PASS');
   } finally { await browser.close(); }
 })().catch((error) => { console.error(error.stack || error); process.exitCode = 1; });
