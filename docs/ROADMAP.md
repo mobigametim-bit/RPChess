@@ -11,7 +11,7 @@
 - [x] Battle — полный классический комплект + временные фигуры. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Пользователь принял Battle preview 2026-08-27. Стандартная армия всегда 16 фигур / 39 очков + King 0; HEALTHY named-фигуры заменяют standard slots своего типа, generic slots остаются временными, персональная identity сохраняется на доске, а captured named non-King получают `wounded`.
 - [x] Travel Choice — три случайных следующих пути после каждой встречи. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Пользователь принял preview 2026-08-27. Ровно 3 persistent deterministic cards; card click сразу фиксирует необратимый выбор и запускает encounter; Roster/reload не перегенерируют развилку; текущий playable pool — Skirmish + Battle; aftermath возвращает в следующую тройку через `Продолжить путь`.
 - [x] Resources — Gold + Supplies. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** New run: 80 Gold / 10 Supplies; новый committed travel transition стоит 1 Supply; Skirmish/Battle дают deterministic Gold reward один раз; resource HUD persistent; Starvation casualty намеренно остаётся отдельным этапом после Settlement. Пользователь подтвердил live preview 2026-08-27: «все работает, золото начисляется, припасы тратятся». PR #71 squash-merged в `main`; post-merge CI и Cloudflare production прошли SUCCESS.
-- [ ] Settlement — лечение, найм, снабжение.
+- [ ] Settlement — лечение, найм, снабжение. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED.** Пользователь завершил live playtest 2026-08-27 и подтвердил: «проверил, все хорошо, все работает». Safe Settlement route, healer, deterministic tavern recruits, finite Supply shop, persistence/reload и mobile flow приняты. Остались feature PR squash-merge и post-merge production gates; только после них пункт станет DONE.
 - [ ] Starvation — случайная смерть фигуры при переходе без припасов.
 - [ ] Events — первый пакет 20–30 мгновенных событий.
 - [ ] Puzzles — FEN/solution engine и импорт задач.
@@ -25,7 +25,25 @@
 - [ ] Metaprogression — только после подтверждения core loop.
 
 ## Current phase
-**Settlement — UX/spec discussion and approval next. Implementation has not started.**
+**Settlement closure. HUMAN ACCEPTED получен 2026-08-27; merge/post-merge exact-head gates обязательны до DONE. Starvation не начинается до полного closure Settlement.**
+
+Текущий Settlement v1 contract:
+- Travel playable pool: `Skirmish / Battle / Settlement`, при этом каждая тройка гарантирует минимум одну Стычку и одну Битву;
+- Settlement route стоит обычный `-1 Supply`, безопасная карточка скрывает combat stars/threat;
+- healer: wounded → healthy за Pawn 10 / Knight 18 / Bishop 18 / Rook 26 / Queen 42 Gold;
+- tavern: 3 deterministic offers из 33 non-King named heroes; цены Pawn 24 / Knight 42 / Bishop 42 / Rook 64 / Queen 96 Gold;
+- supply shop: 12 Gold за 1 Supply, локальный stock 4;
+- purchases, offers и stock persist через reload/Roster;
+- `ПРОДОЛЖИТЬ ПУТЬ` возвращает к следующей Travel Choice без дополнительного Supply charge;
+- mobile 390×844 — vertical layout без horizontal overflow.
+
+Settlement accepted gameplay head: `92e9387d5afe806af47f05a23105622309742be4`.  
+Settlement version: `2.8.0-settlement.preview.1`.  
+GitHub Actions `33114651996` / #946 — **SUCCESS**, включая full real Chromium regression Foundation → Classic Chess → Stockfish → Roster → Skirmish → Battle → Travel Choice → Resources → Settlement.  
+Cloudflare build `1aaa73d9-064b-4e01-ae51-62abfb0ec9a9` — **SUCCESS**; Version `a79ca435-1006-4f3e-bd0a-c2cac5dd8f4b`.  
+Accepted preview: `https://a79ca435-rpchess.mobigametim.workers.dev`.  
+Human acceptance: **accepted 2026-08-27**.  
+Pre-Settlement production `main`: `1f3cac1bc9cd6231d4796eeb70e9bc19ccdd154f`.
 
 Текущий Resources v1 contract:
 - new run: `Gold 80`, `Supplies 10`;
@@ -37,16 +55,9 @@
 - reward settlement idempotent;
 - at 0 Supplies Resources itself does not kill a character yet: canonical death consequence remains isolated to the later **Starvation** feature.
 
-Current `main`: `c4e98b7f2bdbf926727ceec7bee15099919ea19d` (Resources merged).  
-Resources version: `2.7.0-resources.preview.1`.  
-PR #71: **squash-merged**.  
-Human acceptance: **accepted 2026-08-27**.  
-Accepted gameplay head: `e162c347efe7ec1e55c1f76df7999c90469f1906`.  
-Accepted Cloudflare build: `34063395-1b82-44b2-b93c-caef6f4c0e5f`; Version `da19ea4e-60ef-467a-85e4-5137a2e76c15`.  
-Accepted preview: `https://da19ea4e-rpchess.mobigametim.workers.dev`.  
 Resources merge SHA: `c4e98b7f2bdbf926727ceec7bee15099919ea19d`.  
-Post-merge GitHub Actions: `33105645405` / #942 — **SUCCESS**, включая full real Chromium regression Foundation → Classic Chess → Stockfish → Roster → Skirmish → Battle → Travel Choice → Resources.  
-Post-merge Cloudflare build: `bb7e0099-3513-45d2-a151-b7ecc057770b` — **SUCCESS**; production Version `69a291d3-8b0e-4e3f-9715-9cce1c9f4d86`.
+Resources post-merge docs/current main before Settlement: `1f3cac1bc9cd6231d4796eeb70e9bc19ccdd154f`.  
+Resources post-merge GitHub Actions `33110864306` / #944 — **SUCCESS**.
 
 Accepted Travel Choice gameplay head: `d76fca5ad5e02260a836400c7398158c1657a6f6`.  
 Accepted Travel Choice version: `2.6.0-travel-choice.preview.1`.  
@@ -68,7 +79,7 @@ Accepted Battle preview: `https://9ba31509-rpchess.mobigametim.workers.dev`.
 `IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE`
 
 ## Правило разработки
-После каждой feature создаётся deploy preview. Следующая feature не начинается, пока пользователь не проведёт живой playtest там, где feature требует human acceptance.
+После каждой feature создаётся deploy preview. Следующая feature не начинается, пока пользователь не проведёт живой playtest там, где feature требует human acceptance, и текущая feature не закрыта merge/post-merge gates.
 
 ## Global UI invariant
 Все текущие и будущие production surfaces являются **frameless CSS-only panels**. Активный Reboot UI не использует `ui_panel_frame.png` или `ui_panel_wide.png`. Панели используют общий `--ui-panel-*` visual contract и `--ui-panel-safe-*` / `.ui-panel-safe` safe-area contract. Контент не касается внешней границы; левый внутренний отступ немного больше правого. Синий `ui_button_primary.png` остаётся approved CTA asset.
