@@ -36,7 +36,7 @@ function openModal(modal, audio) {
   modal.hidden = false;
   document.body.classList.add('reboot-modal-open');
   audio?.open();
-  modal.querySelector('button, input')?.focus();
+  modal.querySelector('button, input, select')?.focus();
 }
 
 function closeModal(modal, audio) {
@@ -69,7 +69,13 @@ document.addEventListener('keydown', activateAudio, { once: true, capture: true 
 
 document.querySelector('[data-new-game]')?.addEventListener('click', () => {
   audio.click();
-  globalThis.dispatchEvent(new CustomEvent('rpchess:new-game'));
+  globalThis.dispatchEvent(new CustomEvent('rpchess:run-new'));
+});
+
+document.querySelector('[data-continue-run]')?.addEventListener('click', (event) => {
+  if (event.currentTarget.disabled) return;
+  audio.click();
+  globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue'));
 });
 
 document.querySelectorAll('[data-settings]').forEach((button) => {
