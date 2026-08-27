@@ -20,8 +20,10 @@ assert(html.includes('css/reboot-foundation.css?v=20260827-frameless-1'), 'frame
 assert(html.includes('css/classic-chess.css?v=20260827-frameless-1'), 'frameless Classic Chess stylesheet cache bust is not pinned');
 assert(html.includes('css/chess-ai-polish.css?v=20260827-frameless-1'), 'frameless Chess AI polish cache bust is not pinned');
 assert(html.includes('css/roster.css?v=20260827-roster-2'), 'corrected Roster stylesheet cache bust is not pinned');
+assert(html.includes('css/skirmish.css?v=20260827-skirmish-1'), 'Skirmish stylesheet cache bust is not pinned');
 assert(html.includes('js/reboot-foundation.mjs?v=20260827-roster-1'), 'Roster Foundation runtime cache bust is not pinned');
-assert(html.includes('js/roster-app.mjs?v=20260827-roster-2'), 'corrected Roster runtime is not loaded');
+assert(html.includes('js/roster-app.mjs?v=20260827-skirmish-1'), 'Skirmish-aware Roster runtime is not loaded');
+assert(html.includes('js/skirmish-app.mjs?v=20260827-skirmish-1'), 'Skirmish runtime is not loaded');
 
 for (const forbidden of ['iron-marches-runtime.bundle.js', 'vertical-slice-app.mjs', 'explicit-run-setup.mjs', 'ui-approved-campaign.mjs', 'commander-selection-final.mjs']) {
   assert(!html.includes(forbidden), `legacy runtime is still referenced: ${forbidden}`);
@@ -53,7 +55,7 @@ assert(js.includes('new RebootAudio(settings)'), 'Reboot audio layer is not init
 assert(js.includes("document.addEventListener('pointerdown', activateAudio"), 'audio must activate after a browser-approved user gesture');
 assert(js.includes("CustomEvent('rpchess:run-new')"), 'New Game must begin a reboot run instead of opening standalone chess setup');
 assert(js.includes("CustomEvent('rpchess:run-continue')"), 'Continue must reopen a persistent run');
-assert(String(info.version).startsWith('2.3.0-roster'), 'Roster v2.3 build version is missing');
+assert(String(info.version).startsWith('2.4.0-skirmish'), 'Skirmish v2.4 build version is missing');
 
 for (const track of ['echoes_iron_throne_01.mp3', 'echoes_iron_throne_02.mp3', 'echoes_iron_throne_03.mp3', 'echoes_iron_throne_04.mp3']) {
   assert(audio.includes(`music/${track}`), `music playlist is missing ${track}`);
@@ -63,4 +65,4 @@ for (const relative of ['generated_assets/logo_main.png', 'generated_assets/titl
   assert(fs.existsSync(path.join(game, relative)), `required reused asset is missing: ${relative}`);
 }
 
-console.log('Reboot Foundation frameless production contract with Roster entry: PASS');
+console.log('Reboot Foundation frameless production contract with Skirmish entry: PASS');
