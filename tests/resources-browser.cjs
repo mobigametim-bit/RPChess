@@ -31,9 +31,7 @@ async function startFresh(page) {
     await page.locator('[data-roster-travel]').click();
     await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
     assert.strictEqual(await page.locator('.travel-choice-card__cost').count(), 3, 'each route must disclose its Supply cost');
-    for (const text of await page.locator('.travel-choice-card__cost').allInnerTexts()) {
-      assert(text.includes('1 ПРИПАС'), `route cost must disclose one Supply: ${text}`);
-    }
+    for (const text of await page.locator('.travel-choice-card__cost').allInnerTexts()) assert(text.includes('1 ПРИПАС'), `route cost must disclose one Supply: ${text}`);
 
     const skirmishCard = page.locator('[data-travel-type="skirmish"]').first();
     await skirmishCard.click();
@@ -76,7 +74,7 @@ async function startFresh(page) {
     }, RUN_KEY);
     await page.waitForTimeout(30);
     assert.strictEqual(await page.locator('.travel-choice-card__cost.is-empty').count(), 3, 'zero Supplies must be disclosed before route commitment');
-    const zeroCard = page.locator('[data-travel-choice]').first();
+    const zeroCard = page.locator('[data-travel-type="skirmish"], [data-travel-type="battle"]').first();
     await zeroCard.click();
     await page.locator('[data-skirmish-screen]:not([hidden]), [data-battle-screen]:not([hidden])').first().waitFor();
     const zeroState = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
