@@ -1,7 +1,7 @@
 # Resources — Gold + Supplies
 
-**Feature status:** HUMAN ACCEPTED on `feature/resources`; final exact-head CI/Cloudflare and merge closure pending.  
-**Lifecycle:** IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE after merge + post-merge verification.
+**Feature status:** DONE on `main`.  
+**Lifecycle:** IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.
 
 ## 1. Canonical resources
 RPChess Reboot uses only two run resources:
@@ -125,4 +125,15 @@ Accepted Cloudflare build: `34063395-1b82-44b2-b93c-caef6f4c0e5f`.
 Accepted Cloudflare Version: `da19ea4e-60ef-467a-85e4-5137a2e76c15`.  
 Accepted preview: `https://da19ea4e-rpchess.mobigametim.workers.dev`.
 
-Subsequent commit `44766f3e5e0bd6fa98684ada50ce19fb043e8c6a` changes only the Chromium test assertion scope and does not alter gameplay/runtime behavior. Resources must still pass the final docs-synchronized exact-head GitHub Actions + Cloudflare gates before PR #71 is marked Ready and merged.
+Subsequent commit `44766f3e5e0bd6fa98684ada50ce19fb043e8c6a` changes only the Chromium test assertion scope and does not alter gameplay/runtime behavior.
+
+## 10. Merge and post-merge closure — 2026-08-27
+PR #71 `Resources: persistent Gold and Supplies economy` passed its final exact-head GitHub Actions and Cloudflare gates, was marked Ready, and was squash-merged into `main`.
+
+- Resources merge SHA / resulting `main`: `c4e98b7f2bdbf926727ceec7bee15099919ea19d`
+- post-merge GitHub Actions: `33105645405` / #942 — **SUCCESS**
+- post-merge real Chromium regression: **SUCCESS** across Foundation → Classic Chess → Stockfish → Roster → Skirmish → Battle → Travel Choice → Resources
+- post-merge Cloudflare build: `bb7e0099-3513-45d2-a151-b7ecc057770b` — **SUCCESS**
+- production Cloudflare Version: `69a291d3-8b0e-4e3f-9715-9cce1c9f4d86`
+
+Resources is therefore fully closed as **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**. The next roadmap stage is **Settlement**, beginning with UX/spec approval before implementation.
