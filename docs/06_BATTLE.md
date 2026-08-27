@@ -59,6 +59,15 @@ Full-army preview и выбранные именные участники иду
 ## Границы v1
 Не входят: ручная расстановка, изменение 39-point army, способности, equipment modifiers, special objectives, fog of war, другие размеры доски, permanent promotion, persistence generic casualties, Travel Choice, Resources, Settlement.
 
+## Human Acceptance
+Пользователь завершил живой Battle playtest 2026-08-27 и подтвердил: **«все хорошо»**.
+
+Accepted gameplay head: `40f234740783699b564dc53db7783d36d5ae5e7f`.
+Accepted version: `2.5.0-battle.preview.1`.
+Accepted GitHub Actions push run: `33073454223` / #891 — **SUCCESS**, включая source verification, deterministic tests, production build, clean distribution boundary и полный real Chromium regression-suite Foundation → Classic Chess → Stockfish → Roster → Skirmish → Battle.
+Accepted Cloudflare build: `855b8d21-3dbf-42e2-9dac-3646c2061d41` — **SUCCESS**; Version `9ba31509-3bf7-4853-b7af-ac77a9664f85`.
+Accepted preview: `https://9ba31509-rpchess.mobigametim.workers.dev`.
+
 ## Статус реализации
 Feature branch: `feature/battle`.
-Статус: **IMPLEMENTING / HUMAN ACCEPTANCE pending**.
+Статус: **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**. Merge в `main` выполняется только после финального docs-synchronized exact-head CI/Cloudflare gate.
