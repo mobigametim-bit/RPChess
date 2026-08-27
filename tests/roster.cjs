@@ -30,6 +30,8 @@ class MemoryStorage {
   assert.strictEqual(data.rosterMaterialTotal(roster), 13, 'starter personalized non-king material total must be 13');
   assert.strictEqual(new Set(roster.map((entry) => entry.id)).size, roster.length, 'starter character IDs must be unique');
   assert(roster.every((entry) => entry.status === 'healthy'), 'all starter characters must begin healthy');
+  assert(roster[0].description.includes('Последний хранитель древней присяги'), 'Oathkeeper must have character history instead of mechanical death copy');
+  assert(!roster[0].description.includes('Его гибель завершает путешествие'), 'Oathkeeper detail must not repeat mechanical run-failure copy');
 
   for (const entry of roster) {
     assert(fs.existsSync(path.join(game, entry.portrait)), `starter portrait missing: ${entry.portrait}`);
@@ -65,19 +67,22 @@ class MemoryStorage {
   const app = fs.readFileSync(path.join(game, 'js/roster-app.mjs'), 'utf8');
   const css = fs.readFileSync(path.join(game, 'css/roster.css'), 'utf8');
   const foundationCss = fs.readFileSync(path.join(game, 'css/reboot-foundation.css'), 'utf8');
-  for (const token of ['data-roster-screen', 'data-continue-run', 'data-roster-detail', 'data-roster-list', 'data-roster-filter="dead"', 'js/roster-app.mjs', 'css/roster.css']) {
+  for (const token of ['data-roster-screen', 'data-continue-run', 'data-roster-detail', 'data-roster-list', 'data-roster-filter="dead"', 'data-roster-travel', 'Начать путешествие', 'js/roster-app.mjs', 'css/roster.css']) {
     assert(html.includes(token), `Roster HTML contract missing: ${token}`);
   }
-  for (const forbidden of ['Применить состав', '39/39', '16/16', 'В ПУТЬ']) assert(!html.includes(forbidden), `future composition/travel UI leaked into Roster: ${forbidden}`);
+  for (const forbidden of ['Применить состав', '39/39', '16/16', 'В ПУТЬ', 'Именные фигуры, которые путешествуют вместе с вашим королём', 'Обязательная фигура текущего забега.', 'Готов к участию в будущих сражениях.']) {
+    assert(!html.includes(forbidden) && !app.includes(forbidden), `removed/future Roster copy leaked into runtime: ${forbidden}`);
+  }
   assert(!/data-roster[^>]*type=["']checkbox/i.test(html), 'Roster must not use checkbox selection');
   assert(app.includes("rpchess.reboot.v1.run") || fs.readFileSync(path.join(game, 'js/run-persistence.mjs'), 'utf8').includes("rpchess.reboot.v1.run"), 'Roster run persistence key missing');
+  assert(app.includes("new CustomEvent('rpchess:new-game'"), 'Start Journey must route into the current playable chess setup');
   assert(html.includes('ui-panel-safe'), 'Roster panels must use the global frameless safe-area contract');
   assert(css.includes('border: 1px solid var(--ui-panel-border)'), 'Roster must use CSS-only panel edges');
   assert(css.includes('background: var(--ui-panel-bg)'), 'Roster must use global frameless panel surface tokens');
   assert(foundationCss.includes('--ui-panel-safe-left'), 'global frameless safe-area tokens are missing');
   assert(!css.includes('ui_panel_frame.png') && !css.includes('ui_panel_wide.png'), 'Roster must never use ornate panel frame assets');
 
-  console.log('Roster model, persistence and frameless static UX contract: PASS');
+  console.log('Roster model, persistence, concise copy, journey routing and frameless static UX contract: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;
