@@ -10,7 +10,7 @@
 - [x] **PLAYTEST GATE C: интересность собственного состава и corrected Skirmish flow подтверждены пользователем.**
 - [x] Battle — полный классический комплект + временные фигуры. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Пользователь принял Battle preview 2026-08-27. Стандартная армия всегда 16 фигур / 39 очков + King 0; HEALTHY named-фигуры заменяют standard slots своего типа, generic slots остаются временными, персональная identity сохраняется на доске, а captured named non-King получают `wounded`.
 - [x] Travel Choice — три случайных следующих пути после каждой встречи. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Пользователь принял preview 2026-08-27. Ровно 3 persistent deterministic cards; card click сразу фиксирует необратимый выбор и запускает encounter; Roster/reload не перегенерируют развилку; текущий playable pool — Skirmish + Battle; aftermath возвращает в следующую тройку через `Продолжить путь`.
-- [ ] Resources — Gold + Supplies.
+- [ ] Resources — Gold + Supplies. **IMPLEMENTED on `feature/resources`; AUTOTEST/DEPLOY gates выполняются; HUMAN PLAYTEST REQUIRED до DONE.** New run: 80 Gold / 10 Supplies; новый committed travel transition стоит 1 Supply; Skirmish/Battle дают deterministic Gold reward один раз; resource HUD persistent; Starvation casualty намеренно остаётся отдельным следующим economy-stage после Settlement.
 - [ ] Settlement — лечение, найм, снабжение.
 - [ ] Starvation — случайная смерть фигуры при переходе без припасов.
 - [ ] Events — первый пакет 20–30 мгновенных событий.
@@ -25,35 +25,38 @@
 - [ ] Metaprogression — только после подтверждения core loop.
 
 ## Current phase
-**Travel Choice — IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Пользователь завершил живой playtest и подтвердил: **«всё хорошо»**. PR #70 merge выполняется только после acceptance-docs exact-head CI/Cloudflare SUCCESS; затем обязательна post-merge проверка `main`. Следующая feature — **Resources (Gold + Supplies)**, но её реализация не начинается до полного merge closure Travel Choice.
+**Resources — IMPLEMENTED; automated/deploy exact-head gates and human playtest are required before DONE.**
 
-Current `main` before Travel Choice: `6a5f4b7cc2c920afc1309a876a5a44c43eac1b06`.
+Текущий Resources v1 contract:
+- new run: `Gold 80`, `Supplies 10`;
+- every newly committed Travel Choice route: `-1 Supply`;
+- resuming/reloading an already committed route: no second charge;
+- Supplies never negative;
+- Skirmish victory `12 + 4×stars`, draw half, loss 0;
+- Battle victory `20 + 6×stars`, draw half, loss 0;
+- reward settlement idempotent;
+- at 0 Supplies Resources itself does not kill a character yet: canonical death consequence remains isolated to the later **Starvation** feature.
 
-Accepted Travel Choice gameplay head: `d76fca5ad5e02260a836400c7398158c1657a6f6`.
-Accepted Travel Choice docs-synchronized preview head before acceptance commit: `7775750690b5a9e2a947baf5d9091b3b898a6241`.
-Accepted Travel Choice version: `2.6.0-travel-choice.preview.1`.
-Travel Choice gameplay CI: `33080571104` / #898 — **SUCCESS**, включая full real Chromium regression-suite Foundation → Classic Chess → Stockfish → Roster → Skirmish → Battle → Travel Choice.
-Travel Choice pre-acceptance docs-head CI: `33081722542` / #903 — **SUCCESS**, включая full real Chromium regression-suite.
-Accepted Travel Choice Cloudflare build: `e5b0d01e-433c-44f7-81b9-df10a2127e23` — **SUCCESS**; Version `7047b3fb-ffc9-4e69-88cb-39566293ec66`.
+Current base `main`: `ee7d1b348ac88ebafcd334acb84167f6b5a12bdc` (Travel Choice merged).  
+Resources branch: `feature/resources`.  
+Resources version: `2.7.0-resources.preview.1`.  
+Draft PR: #71.  
+Human acceptance: **pending**.
+
+Accepted Travel Choice gameplay head: `d76fca5ad5e02260a836400c7398158c1657a6f6`.  
+Accepted Travel Choice version: `2.6.0-travel-choice.preview.1`.  
 Accepted Travel Choice preview: `https://7047b3fb-rpchess.mobigametim.workers.dev`.
-Travel Choice branch alias: `https://feature-travel-choice-rpchess.mobigametim.workers.dev`.
 
-Accepted Roster gameplay head: `21486014ca110062fdcb776d5119b23dbe3418cf`.
-Accepted Roster version: `2.3.0-roster.preview.3`.
+Accepted Roster gameplay head: `21486014ca110062fdcb776d5119b23dbe3418cf`.  
+Accepted Roster version: `2.3.0-roster.preview.3`.  
 Accepted Roster preview: `https://78461dc1-rpchess.mobigametim.workers.dev`.
 
-Accepted Skirmish corrected gameplay head: `b11f712e63366a70f35c0de8fd0b823159dad0cd`.
-Accepted Skirmish docs-synchronized head: `40b093eeb601097afe9fa0da0990594a8fcc2ffc`.
-Accepted Skirmish version: `2.4.0-skirmish.preview.2`.
-Accepted Skirmish push CI: `33068848497` / #882 — **SUCCESS**, including real Chromium.
-Accepted Skirmish PR CI: `33069287273` / #883 — **SUCCESS**, including real Chromium.
-Accepted Skirmish Cloudflare build: `f575d3d6-d62f-48bc-907d-4873e67ac154` — **SUCCESS**; Version `0727f70c-24a7-4dbc-aa1f-6559f968fd1e`.
+Accepted Skirmish corrected gameplay head: `b11f712e63366a70f35c0de8fd0b823159dad0cd`.  
+Accepted Skirmish version: `2.4.0-skirmish.preview.2`.  
 Accepted Skirmish preview: `https://0727f70c-rpchess.mobigametim.workers.dev`.
 
-Accepted Battle gameplay head: `40f234740783699b564dc53db7783d36d5ae5e7f`.
-Accepted Battle version: `2.5.0-battle.preview.1`.
-Accepted Battle push CI: `33073454223` / #891 — **SUCCESS**, including full real Chromium regression acceptance.
-Accepted Battle Cloudflare build: `855b8d21-3dbf-42e2-9dac-3646c2061d41` — **SUCCESS**; Version `9ba31509-3bf7-4853-b7af-ac77a9664f85`.
+Accepted Battle gameplay head: `40f234740783699b564dc53db7783d36d5ae5e7f`.  
+Accepted Battle version: `2.5.0-battle.preview.1`.  
 Accepted Battle preview: `https://9ba31509-rpchess.mobigametim.workers.dev`.
 
 ## Статусы feature
