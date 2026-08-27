@@ -81,7 +81,7 @@ class MemoryStorage {
   assert(travelSource.includes('supplyPaid'), 'committed route must persist the exact Supply payment');
   assert(travelSource.includes('СТОИМОСТЬ ПУТИ'), 'route cards must disclose the travel cost before commitment');
   assert(appSource.includes('resourceRewards'), 'combat rewards must have one-time settlement bookkeeping');
-  assert(appSource.includes('data-resource-hud') || appSource.includes('data.resourceHud'), 'Resources HUD contract missing');
+  assert(appSource.includes('dataset.resourceHud'), 'Resources HUD contract missing');
   assert(!css.includes('ui_panel_frame.png') && !css.includes('ui_panel_wide.png'), 'Resources UI must remain CSS-only and frameless');
 
   console.log('Resources persistence, travel cost, deterministic Gold rewards and frameless UX contract: PASS');
