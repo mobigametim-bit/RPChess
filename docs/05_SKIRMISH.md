@@ -35,6 +35,16 @@ Skirmish — главный оригинальный режим RPChess и сл�
 - после старта действуют только классические шахматные правила;
 - Skirmish не создаёт второй chess engine и использует существующий `ClassicChessEngine` через FEN.
 
+## Персонализированное отображение на доске
+Персонализированная фигура обязана сохранять свою личность не только в Roster/Skirmish composition, но и непосредственно на шахматной доске.
+
+- выбранные именные фигуры игрока используют собственный `pieceArt`, а не стандартный `unit_*_player.png`;
+- текущий стартовый roster использует `assets/kings/oathkeeper/piece.png` и `assets/heroes/*/piece_badge.png`;
+- безымянные временные фигуры и армия противника продолжают использовать стандартные battle assets;
+- identity Skirmish-слоя следует за фигурой при ходе и удаляется при взятии;
+- персональный арт сохраняется в статическом состоянии клетки, при move animation и capture feedback;
+- шахматный тип, legality, SAN и Stockfish по-прежнему определяются классическим движком, а персональный art является presentation/identity layer.
+
 ## Adaptive enemy v1
 Сложность встречи фиксируется до выбора состава игрока. До боя показываются только тип встречи, звёзды и приблизительный диапазон силы.
 
@@ -56,15 +66,27 @@ Skirmish — главный оригинальный режим RPChess и сл�
 ## Feedback во время боя
 Взятие именной фигуры не останавливает игру модальным окном. Показывается короткий non-blocking toast вида `Имя — ТЯЖЕЛО РАНЕН`.
 
-## Aftermath
-После окончания партии открывается отдельный экран итогов:
-- `ПОБЕДА`, `ПОРАЖЕНИЕ` или `НИЧЬЯ`;
+## Обычный Aftermath
+После победы или ничьей открывается обычный экран итогов стычки:
+- `ПОБЕДА` или `НИЧЬЯ`;
 - список выживших;
-- список тяжело раненых;
-- список погибших;
-- при смерти King явно сообщается, что run завершён.
+- список тяжело раненых.
 
-Gold/XP и другие будущие награды здесь пока не выдумываются до реализации Resources/reward systems.
+Отдельного блока `Погибли` в обычном aftermath **нет**, потому что в текущей модели Skirmish не-King персонализированные фигуры при взятии получают тяжёлое ранение, а не погибают.
+
+Gold/XP и другие будущие награды здесь пока не добавляются до реализации Resources/reward systems.
+
+## Гибель King и завершение забега
+Мат игроку не открывает обычный aftermath Skirmish. Вместо него появляется отдельное окно итогов забега:
+- `ЗАБЕГ ЗАВЕРШЁН`;
+- `КОРОЛЬ ПОГИБ`;
+- имя погибшего персонализированного King;
+- число завершённых стычек;
+- число оставшихся здоровыми бойцов;
+- число тяжело раненых;
+- CTA `Главное меню`.
+
+Это отдельная run-ending surface. Более полный итог забега может расширяться будущими системами Travel/Resources/Rewards, но обычный aftermath и run-end summary не должны смешиваться.
 
 ## Persistence
 Run schema остаётся совместимой с `rpchess.reboot.v1.run` и получает дополнительные поля:
@@ -82,28 +104,31 @@ Run schema остаётся совместимой с `rpchess.reboot.v1.run` и
 - только вертикальный scroll;
 - horizontal overflow запрещён.
 
-## Реализация preview.1
+## Реализация preview.2
 Feature branch: `feature/skirmish`.
 
 Основные модули:
 - `game/js/skirmish-core.mjs` — ограничения, deterministic encounter/enemy, auto-placement, FEN, последствия;
-- `game/js/skirmish-app.mjs` — composition UI, связь с Roster/Classic Chess, capture tracking, aftermath;
+- `game/js/skirmish-app.mjs` — composition UI, связь с Roster/Classic Chess, personalized board identity, capture tracking, обычный aftermath и run-end summary;
 - `game/css/skirmish.css` — frameless responsive layout;
 - `tests/skirmish.cjs` — deterministic core tests;
-- `tests/skirmish-browser.cjs` — real Chromium UX/gameflow acceptance.
+- `tests/skirmish-browser.cjs` — real Chromium UX/gameflow acceptance, включая personalized board art и отдельный King-death flow.
 
-Version: `2.4.0-skirmish.preview.1`.
+Version: `2.4.0-skirmish.preview.2`.
+
+Gameplay corrections head перед docs-only синхронизацией: `b11f712e63366a70f35c0de8fd0b823159dad0cd`.
+GitHub Actions run `33068231777`: **SUCCESS**, включая real Chromium Foundation, Classic Chess, Stockfish, Roster и Skirmish acceptance.
+Cloudflare build `d357a056-1850-407d-9421-76b151c062e8`: **SUCCESS**; Version `e8815edb-0617-43de-8449-f7f09cbbcea8`.
+Gameplay preview: `https://e8815edb-rpchess.mobigametim.workers.dev`.
 
 ## Human Playtest Gate C
-Skirmish не закрывается и Battle не начинается, пока пользователь не проверит preview:
-1. выбор/снятие здоровых именных фигур;
-2. обязательный King;
-3. лимиты 16 фигур / 39 очков;
-4. видимые, но disabled wounded/dead;
-5. прямой старт в реальную нестандартную шахматную позицию;
-6. adaptive enemy + Stockfish;
-7. сохранение wounded после взятия;
-8. мат игроку → King dead → run over;
-9. aftermath;
-10. desktop/mobile layout;
-11. главный вопрос Gate C — интересна ли сама идея собирать и рисковать своим персонализированным шахматным отрядом.
+Skirmish не закрывается и Battle не начинается, пока пользователь не подтвердит исправленный preview. Основной UX уже прошёл первый живой тест; пользователь отдельно подтвердил, что всё работает, кроме двух исправленных пунктов: normal aftermath и personalized board visuals.
+
+Повторный короткий Gate C должен проверить:
+1. персонализированные фигуры отображаются на доске своими `pieceArt`;
+2. после хода персональный art остаётся у той же фигуры;
+3. обычный aftermath не содержит блока `Погибли`;
+4. мат игроку открывает отдельный экран `КОРОЛЬ ПОГИБ` / итог забега;
+5. ранее подтверждённый Skirmish flow не получил регрессий.
+
+Статус: **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED pending**.
