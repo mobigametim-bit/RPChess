@@ -205,7 +205,7 @@ function chooseChoice(choice, button) {
   if (travelPayment.paid > 0) {
     globalThis.RPChessResources?.showChange?.({ suppliesDelta: -travelPayment.paid, label: 'ПЕРЕХОД' });
   } else {
-    globalThis.RPChessResources?.showChange?.({ label: 'ПРИПАСОВ НЕТ · ИСТОЩЕНИЕ БУДЕТ ДОБАВЛЕНО НА ЭТАПЕ STARVATION' });
+    globalThis.RPChessResources?.showChange?.({ label: 'ПРИПАСОВ НЕТ' });
   }
 
   const delay = document.documentElement.dataset.reducedMotion === '1' ? 0 : 180;
