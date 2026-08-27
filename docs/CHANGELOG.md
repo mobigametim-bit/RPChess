@@ -1,5 +1,17 @@
 # RPChess Reboot Changelog
 
+## 2026-08-27 — Skirmish corrections implemented for Gate C retest
+- Пользователь завершил первый живой Skirmish playtest и подтвердил, что основной режим работает; осталось два точечных замечания.
+- В обычном aftermath удалён блок `Погибли`: не-King персонализированные фигуры после взятия получают `ТЯЖЕЛО РАНЕН`, а не погибают.
+- Мат игроку больше не использует обычный aftermath: смерть персонализированного King открывает отдельный run-end summary `ЗАБЕГ ЗАВЕРШЁН / КОРОЛЬ ПОГИБ` с краткими итогами забега и возвратом в главное меню.
+- Персонализированные фигуры игрока теперь используют на самой шахматной доске собственный `pieceArt` из Roster (`oathkeeper/piece.png`, hero `piece_badge.png`), а не стандартные `unit_*_player.png`.
+- Piece identity следует за фигурой при перемещении; персональный art сохраняется также в move/capture presentation. Безымянные/вражеские фигуры остаются на стандартных battle assets.
+- Corrected gameplay head: `b11f712e63366a70f35c0de8fd0b823159dad0cd`.
+- GitHub Actions run `33068231777` / #878: **SUCCESS**, включая source/static/core tests, build/distribution и real Chromium Foundation + Classic Chess + Stockfish + Roster + исправленный Skirmish flow.
+- Cloudflare gameplay build `d357a056-1850-407d-9421-76b151c062e8`: **SUCCESS**; Version `e8815edb-0617-43de-8449-f7f09cbbcea8`; gameplay preview `https://e8815edb-rpchess.mobigametim.workers.dev`.
+- Версия исправленного preview поднята до `2.4.0-skirmish.preview.2`; финальный docs-only exact-head gate выполняется перед повторным human test.
+- Статус: **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED pending**. Battle не начинается и Skirmish не merge-ится до повторного подтверждения пользователя.
+
 ## 2026-08-27 — Roster HUMAN ACCEPTED → DONE
 - Пользователь завершил повторный живой тест исправленного Roster preview и подтвердил: **«всё хорошо»**.
 - Roster закрыт как **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**.
