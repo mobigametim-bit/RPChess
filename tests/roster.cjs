@@ -64,16 +64,20 @@ class MemoryStorage {
   const html = fs.readFileSync(path.join(game, 'index.html'), 'utf8');
   const app = fs.readFileSync(path.join(game, 'js/roster-app.mjs'), 'utf8');
   const css = fs.readFileSync(path.join(game, 'css/roster.css'), 'utf8');
+  const foundationCss = fs.readFileSync(path.join(game, 'css/reboot-foundation.css'), 'utf8');
   for (const token of ['data-roster-screen', 'data-continue-run', 'data-roster-detail', 'data-roster-list', 'data-roster-filter="dead"', 'js/roster-app.mjs', 'css/roster.css']) {
     assert(html.includes(token), `Roster HTML contract missing: ${token}`);
   }
   for (const forbidden of ['Применить состав', '39/39', '16/16', 'В ПУТЬ']) assert(!html.includes(forbidden), `future composition/travel UI leaked into Roster: ${forbidden}`);
   assert(!/data-roster[^>]*type=["']checkbox/i.test(html), 'Roster must not use checkbox selection');
   assert(app.includes("rpchess.reboot.v1.run") || fs.readFileSync(path.join(game, 'js/run-persistence.mjs'), 'utf8').includes("rpchess.reboot.v1.run"), 'Roster run persistence key missing');
-  assert(css.includes('ui_panel_frame.png'), 'Roster framed panels must reuse approved dark frame treatment');
-  assert(html.includes('ui-frame-safe'), 'Roster panels must use global framed safe-area contract');
+  assert(html.includes('ui-panel-safe'), 'Roster panels must use the global frameless safe-area contract');
+  assert(css.includes('border: 1px solid var(--ui-panel-border)'), 'Roster must use CSS-only panel edges');
+  assert(css.includes('background: var(--ui-panel-bg)'), 'Roster must use global frameless panel surface tokens');
+  assert(foundationCss.includes('--ui-panel-safe-left'), 'global frameless safe-area tokens are missing');
+  assert(!css.includes('ui_panel_frame.png') && !css.includes('ui_panel_wide.png'), 'Roster must never use ornate panel frame assets');
 
-  console.log('Roster model, persistence and static UX contract: PASS');
+  console.log('Roster model, persistence and frameless static UX contract: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;
