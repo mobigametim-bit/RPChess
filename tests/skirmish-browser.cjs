@@ -20,6 +20,17 @@ async function freshRun(page) {
   await page.locator('[data-roster-screen]:not([hidden])').waitFor();
 }
 
+async function enterSkirmishFromTravel(page) {
+  await page.locator('[data-roster-travel]').click();
+  await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
+  const card = page.locator('[data-travel-type="skirmish"]').first();
+  assert.strictEqual(await card.count(), 1, 'Travel Choice must offer a Skirmish route');
+  const chosen = await card.evaluate((node) => ({ id: node.dataset.travelChoice, stars: Number(node.dataset.travelStars) }));
+  await card.click();
+  await page.locator('[data-skirmish-screen]:not([hidden])').waitFor();
+  return chosen;
+}
+
 (async () => {
   const browser = await chromium.launch({ headless: true });
   try {
@@ -34,9 +45,10 @@ async function freshRun(page) {
       'ordinary Skirmish aftermath must not expose a dead-pieces frame'
     );
 
-    await page.locator('[data-roster-travel]').click();
+    const chosenSkirmish = await enterSkirmishFromTravel(page);
     const skirmish = page.locator('[data-skirmish-screen]');
-    await skirmish.waitFor({ state: 'visible' });
+    const routedStars = await page.evaluate(() => globalThis.RPChessSkirmish.encounter.stars);
+    assert.strictEqual(routedStars, chosenSkirmish.stars, 'Travel threat must reach Skirmish encounter');
 
     assert.strictEqual(await page.locator('[data-skirmish-available] [data-skirmish-character]').count(), 6, 'Skirmish must show all starter roster members');
     assert.strictEqual(await page.locator('[data-skirmish-selected] [data-selected-character]').count(), 6, 'all healthy starter pieces should be preselected');
@@ -68,12 +80,7 @@ async function freshRun(page) {
       battleFen: globalThis.RPChessSkirmish.battlePlan.fen,
       personalized: globalThis.RPChessSkirmish.battlePlan.playerFormation.map(({ id, square }) => {
         const image = document.querySelector(`[data-square="${square}"] .classic-piece`);
-        return {
-          id,
-          square,
-          src: image?.getAttribute('src') || '',
-          personalizedId: image?.dataset.personalizedId || ''
-        };
+        return { id, square, src: image?.getAttribute('src') || '', personalizedId: image?.dataset.personalizedId || '' };
       })
     }));
     assert.strictEqual(started.fen, started.battleFen, 'real chess engine must start from Skirmish-generated FEN');
@@ -95,12 +102,7 @@ async function freshRun(page) {
     assert.strictEqual((await page.locator('[data-run-end-metric="skirmishes"]').innerText()).trim(), '1', 'run-end summary must count the completed Skirmish');
     const ended = await page.evaluate((key) => {
       const run = JSON.parse(localStorage.getItem(key));
-      return {
-        ended: run.ended,
-        reason: run.endReason,
-        king: run.roster.find((character) => character.isRunKing).status,
-        count: run.skirmishCount
-      };
+      return { ended: run.ended, reason: run.endReason, king: run.roster.find((character) => character.isRunKing).status, count: run.skirmishCount };
     }, RUN_KEY);
     assert.deepStrictEqual(ended, { ended: true, reason: 'king_dead', king: 'dead', count: 1 });
     assert.strictEqual((await page.locator('[data-run-end-continue]').innerText()).trim(), 'Главное меню');
@@ -113,12 +115,7 @@ async function freshRun(page) {
       newAriaHidden: document.querySelector('[data-classic-new]').getAttribute('aria-hidden'),
       menuAriaHidden: document.querySelector('[data-classic-menu]').getAttribute('aria-hidden')
     }));
-    assert.deepStrictEqual(navigationUnlocked, {
-      newHidden: false,
-      menuHidden: false,
-      newAriaHidden: 'false',
-      menuAriaHidden: 'false'
-    }, 'standalone chess navigation must be unlocked after Skirmish ends even while the chess scene itself is not visible');
+    assert.deepStrictEqual(navigationUnlocked, { newHidden: false, menuHidden: false, newAriaHidden: 'false', menuAriaHidden: 'false' }, 'standalone chess navigation must be unlocked after Skirmish ends even while the chess scene itself is not visible');
 
     const woundedPage = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     const woundedErrors = [];
@@ -132,8 +129,7 @@ async function freshRun(page) {
     }, RUN_KEY);
     await woundedPage.reload({ waitUntil: 'networkidle' });
     await woundedPage.locator('[data-continue-run]').click();
-    await woundedPage.locator('[data-roster-travel]').click();
-    await woundedPage.locator('[data-skirmish-screen]:not([hidden])').waitFor();
+    await enterSkirmishFromTravel(woundedPage);
     assert.strictEqual(await woundedPage.locator('[data-skirmish-character="hero.mara_chain"]').isDisabled(), true, 'wounded piece must stay visible but disabled');
     assert.strictEqual(await woundedPage.locator('[data-skirmish-character="hero.nemea_quill"]').isDisabled(), true, 'dead piece must stay visible but disabled');
     assert.strictEqual((await woundedPage.locator('[data-skirmish-piece-count]').innerText()).trim(), '4 / 16', 'default selection must exclude unavailable pieces');
@@ -142,8 +138,7 @@ async function freshRun(page) {
     const mobileErrors = [];
     mobile.on('pageerror', (error) => mobileErrors.push(String(error.stack || error)));
     await freshRun(mobile);
-    await mobile.locator('[data-roster-travel]').click();
-    await mobile.locator('[data-skirmish-screen]:not([hidden])').waitFor();
+    await enterSkirmishFromTravel(mobile);
     assert.strictEqual(await mobile.locator('[data-skirmish-start]').isVisible(), true, 'mobile sticky action must expose Start Skirmish');
     const mobileState = await mobile.evaluate(() => ({
       scrollHeight: document.documentElement.scrollHeight,
@@ -159,7 +154,7 @@ async function freshRun(page) {
     assert.deepStrictEqual(errors, [], `Skirmish desktop page errors:\n${errors.join('\n')}`);
     assert.deepStrictEqual(woundedErrors, [], `Skirmish wounded-state page errors:\n${woundedErrors.join('\n')}`);
     assert.deepStrictEqual(mobileErrors, [], `Skirmish mobile page errors:\n${mobileErrors.join('\n')}`);
-    console.log('Skirmish composition, personalized board art, separate King-death run summary and mobile Chromium acceptance: PASS');
+    console.log('Travel-routed Skirmish composition, personalized board art, separate King-death run summary and mobile Chromium acceptance: PASS');
   } finally {
     await browser.close();
   }
