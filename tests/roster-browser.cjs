@@ -10,6 +10,19 @@ async function startFresh(page) {
   await page.reload({ waitUntil: 'networkidle' });
 }
 
+async function panelStyle(locator) {
+  return locator.evaluate((node) => {
+    const style = getComputedStyle(node);
+    return {
+      borderImageSource: style.borderImageSource,
+      borderLeftWidth: style.borderLeftWidth,
+      paddingLeft: style.paddingLeft,
+      backgroundImage: style.backgroundImage,
+      borderRadius: style.borderRadius
+    };
+  });
+}
+
 (async () => {
   const browser = await chromium.launch({ headless: true });
   try {
@@ -37,6 +50,21 @@ async function startFresh(page) {
     assert((await page.locator('[data-roster-detail]').innerText()).includes('КОРОЛЬ ОТРЯДА'), 'run king must be explicitly identified');
     assert.strictEqual((await page.locator('[data-roster-card="hero.aldric_wall"] .roster-card__value').innerText()).trim(), '5', 'rook must expose classic value 5');
     assert.strictEqual((await page.locator('[data-roster-card="hero.mara_chain"] .roster-card__value').innerText()).trim(), '1', 'pawn must expose classic value 1');
+
+    for (const panel of [page.locator('[data-roster-detail]'), page.locator('.roster-catalog')]) {
+      const style = await panelStyle(panel);
+      assert.strictEqual(style.borderImageSource, 'none', 'Roster production panels must not render an ornate border image');
+      assert(parseFloat(style.borderLeftWidth) <= 2, `Roster production panel edge must remain thin: ${style.borderLeftWidth}`);
+      assert(parseFloat(style.paddingLeft) >= 30, `desktop Roster panel needs deliberate left safe-area inset: ${style.paddingLeft}`);
+    }
+
+    await page.locator('[data-roster-screen] [data-settings]').click();
+    const settingsPanel = page.locator('[data-settings-modal]:not([hidden]) .reboot-modal__panel');
+    await settingsPanel.waitFor();
+    const settingsStyle = await panelStyle(settingsPanel);
+    assert.strictEqual(settingsStyle.borderImageSource, 'none', 'settings modal must use the global frameless surface');
+    assert(parseFloat(settingsStyle.borderLeftWidth) <= 2, `settings modal edge must stay thin: ${settingsStyle.borderLeftWidth}`);
+    await page.locator('[data-settings-modal] [data-close-modal]').click();
 
     await page.locator('[data-roster-card="hero.aldric_wall"]').click();
     assert((await page.locator('[data-roster-detail]').innerText()).includes('Альдрик Стена'), 'clicking a card must change selected-character detail');
@@ -92,6 +120,9 @@ async function startFresh(page) {
     await mobile.locator('[data-continue-run]').click();
     await mobile.locator('[data-roster-screen]:not([hidden])').waitFor();
     assert.strictEqual(await mobile.locator('[data-roster-card]').count(), 6, 'mobile Roster must render the same run');
+    const mobilePanelStyle = await panelStyle(mobile.locator('[data-roster-detail]'));
+    assert.strictEqual(mobilePanelStyle.borderImageSource, 'none', 'mobile Roster must remain frameless');
+    assert(parseFloat(mobilePanelStyle.paddingLeft) >= 26, `mobile Roster needs a deliberate safe left inset: ${mobilePanelStyle.paddingLeft}`);
     const mobileState = await mobile.evaluate(() => ({
       scrollHeight: document.documentElement.scrollHeight,
       clientHeight: document.documentElement.clientHeight,
@@ -103,7 +134,7 @@ async function startFresh(page) {
 
     assert.deepStrictEqual(errors, [], `desktop Roster page errors:\n${errors.join('\n')}`);
     assert.deepStrictEqual(mobileErrors, [], `mobile Roster page errors:\n${mobileErrors.join('\n')}`);
-    console.log('Roster new-run, persistence, status filters and responsive Chromium acceptance: PASS');
+    console.log('Roster new-run, persistence, frameless surfaces, status filters and responsive Chromium acceptance: PASS');
   } finally {
     await browser.close();
   }
