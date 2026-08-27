@@ -1,0 +1,68 @@
+import { createStarterRoster } from './roster-data.mjs';
+
+const RUN_STORAGE_KEY = 'rpchess.reboot.v1.run';
+const RUN_SCHEMA_VERSION = 1;
+
+function resolveStorage(storage) {
+  if (storage) return storage;
+  if (typeof localStorage !== 'undefined') return localStorage;
+  return null;
+}
+
+function runId(now = Date.now()) {
+  return `run-${Number(now).toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function isValidRun(value) {
+  if (!value || typeof value !== 'object') return false;
+  if (value.schemaVersion !== RUN_SCHEMA_VERSION) return false;
+  if (!Array.isArray(value.roster) || value.roster.length < 1) return false;
+  if (!value.id || !value.selectedCharacterId) return false;
+  const ids = new Set();
+  let kingCount = 0;
+  for (const character of value.roster) {
+    if (!character || typeof character !== 'object' || !character.id || ids.has(character.id)) return false;
+    ids.add(character.id);
+    if (character.isRunKing) kingCount += 1;
+    if (!['healthy', 'wounded', 'dead'].includes(character.status)) return false;
+  }
+  return kingCount === 1 && ids.has(value.selectedCharacterId);
+}
+
+function createRun({ now = Date.now(), id = null } = {}) {
+  const roster = createStarterRoster();
+  return {
+    schemaVersion: RUN_SCHEMA_VERSION,
+    id: id || runId(now),
+    createdAt: Number(now),
+    updatedAt: Number(now),
+    selectedCharacterId: roster[0].id,
+    roster
+  };
+}
+
+function readRun(storage = null) {
+  const target = resolveStorage(storage);
+  if (!target) return null;
+  try {
+    const parsed = JSON.parse(target.getItem(RUN_STORAGE_KEY) || 'null');
+    return isValidRun(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeRun(run, storage = null, now = Date.now()) {
+  const target = resolveStorage(storage);
+  if (!target) return run;
+  const next = { ...run, updatedAt: Number(now) };
+  if (!isValidRun(next)) throw new Error('Cannot persist invalid RPChess run state');
+  target.setItem(RUN_STORAGE_KEY, JSON.stringify(next));
+  return next;
+}
+
+function clearRun(storage = null) {
+  resolveStorage(storage)?.removeItem(RUN_STORAGE_KEY);
+}
+
+export { RUN_STORAGE_KEY, RUN_SCHEMA_VERSION, createRun, readRun, writeRun, clearRun, isValidRun };
