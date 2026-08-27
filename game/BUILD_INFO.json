@@ -19,6 +19,7 @@
   "travel_choice_merge": "ee7d1b348ac88ebafcd334acb84167f6b5a12bdc",
   "resources_merge": "c4e98b7f2bdbf926727ceec7bee15099919ea19d",
   "active_feature_branch": "feature/settlement",
+  "acceptance_gate": "exact-head-closure",
   "stockfish_version": "18.0.0 lite single-threaded",
   "stockfish_license": "GPLv3",
   "active_docs": "docs/00_PRODUCT_VISION.md through docs/17_TECH_ARCHITECTURE.md",
