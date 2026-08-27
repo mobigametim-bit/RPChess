@@ -222,11 +222,19 @@ function activeChoiceCompleted(run) {
   return combatCount(run, choice) > choice.combatCountAtSelection;
 }
 
+function applyAftermathTravelLabels() {
+  const skirmishContinue = document.querySelector('[data-aftermath-continue]');
+  const battleContinue = document.querySelector('[data-battle-continue]');
+  if (skirmishContinue) skirmishContinue.textContent = 'Продолжить путь';
+  if (battleContinue) battleContinue.textContent = 'Продолжить путь';
+}
+
 function syncRun() {
   activeRun = readRun();
   if (!activeRun) return;
   if (activeChoiceCompleted(activeRun)) {
     activeRun = writeRun({ ...activeRun, activeTravelChoice: null });
+    queueMicrotask(applyAftermathTravelLabels);
   }
   if (screen && !screen.hidden && activeRun && !activeRun.ended && !activeRun.activeTravelChoice) {
     activeRun = ensureChoices(activeRun);
@@ -235,10 +243,7 @@ function syncRun() {
 }
 
 function wireAftermathTravel() {
-  const skirmishContinue = document.querySelector('[data-aftermath-continue]');
-  const battleContinue = document.querySelector('[data-battle-continue]');
-  if (skirmishContinue) skirmishContinue.textContent = 'Продолжить путь';
-  if (battleContinue) battleContinue.textContent = 'Продолжить путь';
+  applyAftermathTravelLabels();
   document.addEventListener('click', (event) => {
     const button = event.target?.closest?.('[data-aftermath-continue],[data-battle-continue]');
     if (!button) return;
