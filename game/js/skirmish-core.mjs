@@ -36,12 +36,23 @@ function seededRandom(seed) {
   };
 }
 
+function takeTravelEncounterOverride(expectedType) {
+  if (typeof globalThis === 'undefined') return null;
+  const override = globalThis.RPChessTravelEncounterOverride;
+  if (!override || override.type !== expectedType || !override.seed) return null;
+  try { delete globalThis.RPChessTravelEncounterOverride; } catch { globalThis.RPChessTravelEncounterOverride = null; }
+  return override;
+}
+
 function createEncounter({ seed = 'rpchess-skirmish', stars = 2 } = {}) {
-  const normalizedStars = clamp(Math.round(Number(stars) || 2), 1, 5);
+  const override = takeTravelEncounterOverride('skirmish');
+  const resolvedSeed = override?.seed || seed;
+  const resolvedStars = override?.stars ?? stars;
+  const normalizedStars = clamp(Math.round(Number(resolvedStars) || 2), 1, 5);
   const tier = ENCOUNTER_TIERS[normalizedStars];
   return Object.freeze({
-    id: `skirmish-${hashSeed(seed).toString(36)}-${normalizedStars}`,
-    seed: String(seed),
+    id: `skirmish-${hashSeed(resolvedSeed).toString(36)}-${normalizedStars}`,
+    seed: String(resolvedSeed),
     stars: normalizedStars,
     label: tier.label,
     threat: tier.threat,
