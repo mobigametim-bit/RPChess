@@ -48,7 +48,8 @@ module.exports = function verifySource(root) {
     'css/reboot-foundation.css', 'css/classic-chess.css', 'css/chess-ai-polish.css', 'css/roster.css',
     'js/reboot-foundation.mjs', 'js/roster-app.mjs', 'js/classic-chess-app.mjs',
     'data-game-setup-modal', 'data-ai-elo', 'data-captured-by-white', 'data-captured-by-black',
-    'data-roster-screen', 'data-continue-run', 'data-roster-detail', 'data-roster-list', 'data-roster-filter="dead"'
+    'data-roster-screen', 'data-continue-run', 'data-roster-detail', 'data-roster-list', 'data-roster-filter="dead"',
+    'ui-panel-safe'
   ]) if (!index.includes(requiredRef)) fail(`index.html is missing active Reboot reference: ${requiredRef}`);
 
   for (const forbidden of ['iron-marches-runtime.bundle.js', 'vertical-slice-app.mjs', 'ui-approved-campaign.mjs', 'b10-b13-production-ui.mjs', 'explicit-run-setup.mjs', 'commander-selection-final.mjs']) {
@@ -70,7 +71,9 @@ module.exports = function verifySource(root) {
 
   const foundationCss = fs.readFileSync(path.join(root, 'css/reboot-foundation.css'), 'utf8');
   if (!/html\s*\{[\s\S]*overflow-y:\s*auto/i.test(foundationCss) || !/body\s*\{[\s\S]*overflow-y:\s*auto/i.test(foundationCss)) fail('global vertical scroll contract is missing');
-  for (const contract of ['--ui-frame-safe-left', '--ui-frame-safe-right', '.ui-frame-safe']) if (!foundationCss.includes(contract)) fail(`global framed safe-area contract missing: ${contract}`);
+  for (const contract of ['--ui-panel-safe-left', '--ui-panel-safe-right', '.ui-panel-safe', '.ui-panel-surface', '--ui-panel-border', '--ui-panel-bg']) {
+    if (!foundationCss.includes(contract)) fail(`global frameless panel contract missing: ${contract}`);
+  }
 
   const engine = fs.readFileSync(path.join(root, 'js/classic-chess-engine.mjs'), 'utf8');
   for (const contract of ['castling', 'enPassant', 'draw_50_move', 'draw_threefold', 'draw_insufficient', 'promotion_required', 'checkmate', 'stalemate']) {
@@ -88,7 +91,7 @@ module.exports = function verifySource(root) {
   }
 
   const polishCss = fs.readFileSync(path.join(root, 'css/chess-ai-polish.css'), 'utf8');
-  for (const polishContract of ['ui_button_primary.png', 'ui_panel_frame.png', '.classic-piece-marker', '.classic-san-figurine', '.classic-captured-piece', '.classic-piece-flyer', '.classic-thinking']) {
+  for (const polishContract of ['ui_button_primary.png', '.classic-piece-marker', '.classic-san-figurine', '.classic-captured-piece', '.classic-piece-flyer', '.classic-thinking', 'var(--ui-panel-border)', 'var(--ui-panel-bg)']) {
     if (!polishCss.includes(polishContract)) fail(`Chess AI polish CSS contract missing: ${polishContract}`);
   }
 
@@ -111,7 +114,16 @@ module.exports = function verifySource(root) {
   }
   for (const contract of ['rpchess.reboot.v1.run', 'createRun', 'readRun', 'writeRun', 'schemaVersion']) if (!persistence.includes(contract)) fail(`run persistence contract missing: ${contract}`);
   for (const contract of ['rpchess:run-new', 'rpchess:run-continue', 'dataset.rosterCard', 'selectedCharacterId', '[data-roster-filter]']) if (!rosterApp.includes(contract)) fail(`Roster runtime contract missing: ${contract}`);
-  for (const contract of ['ui_panel_frame.png', '.roster-card', '.roster-detail', '.roster-grid']) if (!rosterCss.includes(contract)) fail(`Roster CSS contract missing: ${contract}`);
+  for (const contract of ['var(--ui-panel-border)', 'var(--ui-panel-bg)', '.roster-card', '.roster-detail', '.roster-grid']) if (!rosterCss.includes(contract)) fail(`Roster CSS contract missing: ${contract}`);
+
+  for (const [name, source] of [
+    ['foundation', foundationCss],
+    ['classic', fs.readFileSync(path.join(root, 'css/classic-chess.css'), 'utf8')],
+    ['polish', polishCss],
+    ['roster', rosterCss]
+  ]) {
+    if (source.includes('ui_panel_frame.png') || source.includes('ui_panel_wide.png')) fail(`${name} CSS still uses forbidden ornate panel frame assets`);
+  }
 
   if (fs.existsSync(path.join(root, 'vendor', 'stockfish'))) {
     for (const relative of [
