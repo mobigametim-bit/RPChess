@@ -16,7 +16,7 @@ assert(html.includes('data-new-game'), 'New Game action is missing');
 assert(html.includes('>Продолжить<'), 'Continue action is missing');
 assert(html.includes('data-settings'), 'Settings action is missing');
 assert(html.includes('generated_assets/title_wordmark.png'), 'approved RPChess wordmark is missing from menu');
-assert(html.includes('css/reboot-foundation.css'), 'Reboot stylesheet is not loaded');
+assert(html.includes('css/reboot-foundation.css?v=20260827-reboot-4'), 'global UI safe-area stylesheet cache bust is not pinned');
 assert(html.includes('js/reboot-foundation.mjs'), 'Reboot runtime is not loaded');
 
 for (const forbidden of ['iron-marches-runtime.bundle.js', 'vertical-slice-app.mjs', 'explicit-run-setup.mjs', 'ui-approved-campaign.mjs', 'commander-selection-final.mjs']) {
@@ -31,6 +31,12 @@ for (const prototypeCopy of ['Новый путь RPChess', 'Reboot Foundation.'
 
 assert(/html\s*\{[\s\S]*overflow-y:\s*auto/i.test(css), 'html must permit vertical scrolling');
 assert(/body\s*\{[\s\S]*overflow-y:\s*auto/i.test(css), 'body must permit vertical scrolling');
+assert(css.includes('--ui-frame-safe-left'), 'global framed-surface left safe-area variable is missing');
+assert(css.includes('--ui-frame-safe-right'), 'global framed-surface right safe-area variable is missing');
+assert(css.includes('.ui-frame-safe'), 'future scenes have no reusable framed safe-area utility');
+assert(/\.ui-frame-safe,[\s\S]*\.reboot-modal__panel,[\s\S]*\.classic-panel[\s\S]*padding-left:\s*var\(--ui-frame-safe-left\)\s*!important/i.test(css), 'current framed surfaces are not bound to the global left safe-area contract');
+assert(/--ui-frame-safe-left:\s*clamp\(40px/i.test(css), 'desktop framed surfaces need a deliberate left inset');
+assert(/@media \(max-width: 760px\)[\s\S]*--ui-frame-safe-left:\s*32px/i.test(css), 'mobile framed surfaces need a deliberate left inset');
 assert(css.includes('ui_button_primary.png'), 'approved primary button asset must style the menu');
 assert(css.includes('splash_poster.jpg'), 'approved splash art must style the menu');
 assert(js.includes("key.startsWith('rpchess.')"), 'legacy save cleanup is missing');

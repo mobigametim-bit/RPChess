@@ -6,7 +6,7 @@ on:
   push:
     branches:
       - main
-      - feature/classic-chess
+      - feature/chess-ai
 
 permissions:
   contents: read
@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify-classic-chess:
+  verify-chess-ai:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,11 +28,11 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Verify Reboot source contract
         run: npm run verify
-      - name: Run retained Foundation and Classic Chess tests
+      - name: Run Foundation, Classic Chess and Chess AI tests
         run: npm test
-      - name: Build Classic Chess web distribution
+      - name: Build Chess AI web distribution
         run: npm run build
-      - name: Verify clean Classic Chess distribution boundary
+      - name: Verify clean Chess AI distribution boundary
         shell: bash
         run: |
           set -euo pipefail
@@ -43,6 +43,11 @@ jobs:
           test -f dist/js/reboot-audio.mjs
           test -f dist/js/classic-chess-engine.mjs
           test -f dist/js/classic-chess-app.mjs
+          test -f dist/js/chess-ai-adapter.mjs
+          test -f dist/vendor/stockfish/stockfish-18-lite-single.js
+          test -f dist/vendor/stockfish/stockfish-18-lite-single.wasm
+          test -f dist/vendor/stockfish/COPYING.txt
+          test -f dist/vendor/stockfish/SOURCE.txt
           test -f dist/generated_assets/logo_main.png
           test -f dist/generated_assets/title_wordmark.png
           test -f dist/generated_assets/splash_poster.jpg
@@ -62,8 +67,8 @@ jobs:
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
-      - name: Run real Chromium Foundation and Classic Chess acceptance
-        timeout-minutes: 10
+      - name: Run real Chromium Foundation, Classic Chess and Stockfish acceptance
+        timeout-minutes: 15
         shell: bash
         run: |
           set -euo pipefail

@@ -1,0 +1,225 @@
+/* Chess AI production polish — based on the approved legacy commander-selection treatment. */
+
+/* One blue CTA language everywhere: reuse the exact primary frame from the main menu. */
+.reboot-button,
+.reboot-button--primary,
+.reboot-close,
+.classic-mini-button,
+.classic-promotion-option {
+  border-image-source: url('../generated_assets/ui_button_primary.png') !important;
+  background: #10253d;
+  color: #fff4c9;
+}
+.reboot-button:disabled { opacity: .38; filter: saturate(.35) brightness(.72); }
+
+/* Desktop game composition: Party left, board centre, Moves right. */
+.classic-shell {
+  width: min(1760px, 100%);
+  grid-template-columns: minmax(240px, 300px) minmax(0, 860px) minmax(270px, 330px);
+  grid-template-rows: auto auto;
+  column-gap: clamp(14px, 1.5vw, 24px);
+  row-gap: 12px;
+  justify-content: center;
+}
+.classic-topbar {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  margin-bottom: 0;
+}
+.classic-main {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+}
+.classic-party-panel {
+  grid-column: 1;
+  grid-row: 2;
+  align-self: start;
+}
+.classic-panel--moves {
+  grid-column: 3;
+  grid-row: 2;
+  align-self: start;
+}
+
+/* The old wide status plaque is intentionally removed from the visual hierarchy. */
+.classic-statusbar { display: none !important; }
+
+/* Legacy commander-selection surface: dark body, framed edge, restrained inner keyline. */
+.classic-panel,
+.reboot-modal__panel.classic-commander-panel {
+  position: relative;
+  box-sizing: border-box;
+  border: 14px solid transparent;
+  border-image: url('../generated_assets/ui_panel_frame.png') 28 fill stretch;
+  background: #091524;
+  box-shadow: 0 16px 44px rgba(0,0,0,.62);
+  overflow: hidden;
+}
+.classic-panel {
+  padding: 30px 26px 28px;
+}
+.reboot-modal__panel.classic-commander-panel {
+  border-width: 18px;
+  padding: 32px 30px 28px;
+}
+.classic-panel::after,
+.reboot-modal__panel.classic-commander-panel::after {
+  content: '';
+  position: absolute;
+  inset: 18px;
+  border: 1px solid rgba(71,112,149,.34);
+  border-radius: 9px;
+  pointer-events: none;
+  z-index: 0;
+}
+.classic-panel > *,
+.reboot-modal__panel.classic-commander-panel > * { position: relative; z-index: 1; }
+.classic-panel h2,
+.classic-panel h3 { margin-top: 4px; }
+.classic-panel--moves .classic-moves {
+  max-height: min(62vh, 620px);
+  padding-right: 4px;
+}
+
+/* No duplicate post-game CTA set inside the side panel; toolbar remains authoritative. */
+.classic-result__actions { display: none !important; }
+.classic-result { margin-top: 14px; padding: 14px 0 2px; }
+
+/* Technical role glyph: small, bare, tucked into the extreme upper-left of the square. */
+.classic-piece-marker {
+  position: absolute;
+  z-index: 7;
+  top: 1px;
+  left: 2px;
+  display: block;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-family: 'Segoe UI Symbol','Noto Sans Symbols 2',serif;
+  font-size: clamp(13px, 1.05vw, 17px);
+  font-weight: 400;
+  line-height: 1;
+  box-shadow: none;
+  pointer-events: none;
+  user-select: none;
+}
+.classic-piece-marker--w {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,.95);
+}
+.classic-piece-marker--b {
+  color: #050505;
+  text-shadow: 0 0 1px rgba(255,255,255,.72), 0 1px 1px rgba(255,255,255,.32);
+}
+/* Rank coordinates stay top-right, away from the role marker. */
+.classic-coordinate--rank { left: auto; right: 4px; top: 3px; }
+
+/* Figurine/SAN move list. */
+.classic-move {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: Inter, system-ui, sans-serif;
+  font-weight: 760;
+}
+.classic-san-figurine {
+  display: inline-block;
+  min-width: 1.05em;
+  font-family: 'Segoe UI Symbol','Noto Sans Symbols 2',serif;
+  font-size: 1.23em;
+  line-height: .8;
+  text-align: center;
+}
+.classic-san-figurine--w { color: #fff; text-shadow: 0 1px 2px #000; }
+.classic-san-figurine--b { color: #050505; text-shadow: 0 0 1px rgba(255,255,255,.65); }
+
+/* Captured material. */
+.classic-material {
+  display: grid;
+  gap: 7px;
+  margin: 12px 0 10px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(212,180,93,.22);
+  border-bottom: 1px solid rgba(212,180,93,.22);
+}
+.classic-material-row {
+  display: grid;
+  grid-template-columns: 48px minmax(0,1fr) auto;
+  align-items: center;
+  min-height: 26px;
+  gap: 7px;
+}
+.classic-material-side { color: #91a3b8; font-size: 11px; font-weight: 850; text-transform: uppercase; }
+.classic-captured-list { display: flex; align-items: center; flex-wrap: wrap; min-width: 0; gap: 0; }
+.classic-captured-piece {
+  display: inline-block;
+  width: .78em;
+  overflow: visible;
+  font-family: 'Segoe UI Symbol','Noto Sans Symbols 2',serif;
+  font-size: 24px;
+  line-height: 1;
+  text-shadow: 0 1px 2px #000;
+}
+.classic-captured-piece--w { color: #fff; }
+.classic-captured-piece--b { color: #050505; text-shadow: 0 0 1px rgba(255,255,255,.65); }
+.classic-captured-empty { color: #64788e; }
+.classic-material-advantage { min-width: 25px; color: #f2ce68; font-size: 13px; font-weight: 900; text-align: right; }
+
+/* Thinking remains announced in the compact party text; remove the large board-covering plaque. */
+.classic-thinking { display: none !important; }
+
+/* Smooth movement overlay. The authoritative piece is hidden until the flyer lands. */
+.classic-piece--arriving { visibility: hidden; }
+.classic-piece-flyer,
+.classic-captured-ghost {
+  position: fixed;
+  z-index: 2500;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  will-change: transform, opacity;
+}
+.classic-piece-flyer { filter: drop-shadow(0 7px 7px rgba(0,0,0,.68)); }
+.classic-captured-ghost { z-index: 2499; filter: drop-shadow(0 5px 5px rgba(0,0,0,.58)); }
+.classic-board.is-locked { filter: none; }
+
+/* Setup fields also remain inside the dark safe area of their decorative frame. */
+.classic-setup-field { padding-inline: 8px; }
+.classic-setup-footer { padding: 0 4px 4px; }
+
+@media (max-width: 1180px) {
+  .classic-shell {
+    grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+  }
+  .classic-topbar { grid-column: 1 / -1; grid-row: 1; }
+  .classic-party-panel { grid-column: 1; grid-row: 2; }
+  .classic-main { grid-column: 2; grid-row: 2 / 4; }
+  .classic-panel--moves { grid-column: 1; grid-row: 3; }
+  .classic-panel--moves .classic-moves { max-height: 320px; }
+}
+
+@media (max-width: 760px) {
+  .classic-shell { display: grid; grid-template-columns: 1fr; grid-template-rows: auto; }
+  .classic-topbar,
+  .classic-party-panel,
+  .classic-main,
+  .classic-panel--moves { grid-column: 1; grid-row: auto; }
+  .classic-main { order: 2; }
+  .classic-party-panel { order: 3; }
+  .classic-panel--moves { order: 4; }
+  .classic-panel { padding: 28px 24px 24px; }
+}
+
+@media (max-width: 620px) {
+  .classic-piece-marker { top: 1px; left: 1px; font-size: 13px; }
+  .classic-coordinate--rank { right: 2px; top: 2px; }
+  .classic-material-row { grid-template-columns: 42px minmax(0,1fr) auto; }
+  .classic-captured-piece { font-size: 21px; }
+  .reboot-modal__panel.classic-commander-panel { padding: 28px 23px 23px; }
+}

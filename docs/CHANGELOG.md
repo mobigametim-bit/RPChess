@@ -1,38 +1,76 @@
 # RPChess Reboot Changelog
 
+## 2026-08-27 — Chess AI HUMAN ACCEPTED → DONE
+- Пользователь подтвердил финальный global framed-content safe-area spot-check без дополнительных замечаний.
+- Chess AI закрыт как **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**.
+- Accepted preview: `2.2.0-chess-ai.preview.4`; accepted gameplay/UI head: `556423dd31778def0d6245a4de1d221dc5a2299c`.
+- GitHub Actions run `33026697784`, job `98369639263`: **SUCCESS**, включая real Chromium + Stockfish acceptance.
+- Cloudflare build `af7b2919-b1c2-44a4-be56-167453070c99`: **SUCCESS**; Version `7bf7d0e6-1cbb-4e91-8203-7b66319e7e14`.
+- Следующий этап: Roster. До реализации сначала согласуется UX с пользователем.
+
+## 2026-08-27 — Global framed-content safe-area invariant
+- После финального UI spot-check пользователь подтвердил весь Chess AI polish и добавил одно обязательное правило для **всей игры**: текст и интерактивные элементы во всех декоративных фреймах должны оставаться внутри внутренней рабочей области и визуально не касаться рамки.
+- В `reboot-foundation.css` введён централизованный `--ui-frame-safe-*` contract и reusable `.ui-frame-safe` utility для текущих и будущих сцен.
+- `.reboot-modal__panel` и `.classic-panel` подключены к этому контракту глобально.
+- Левый safe-area inset намеренно больше правого, чтобы текст не стоял вплотную к декоративной кромке.
+- Добавлены ограничения `min-width: 0`, `max-width: 100%` и безопасный перенос длинного текста внутри framed surfaces.
+- Mobile получает отдельные компактные, но ненулевые safe-area значения.
+- Cache-bust Foundation stylesheet поднят до `20260827-reboot-4`.
+- Preview version поднята до `2.2.0-chess-ai.preview.4`.
+- `16_UI_UX.md` закрепляет правило как game-wide invariant для всех последующих feature.
+- Reboot Foundation static contract теперь проверяет наличие safe-area variables, reusable utility, binding текущих panel families и отдельный левый inset.
+
+## 2026-08-27 — Chess AI final UI polish corrections
+- После второго live spot-check пользователь подтвердил всё, кроме пяти UI-компоновочных замечаний.
+- Technical role glyph уменьшен, окружность/подложка убрана, glyph перенесён в крайний левый верхний угол клетки; white side использует белый glyph, black side — чёрный.
+- Увеличена safe-area padding внутри commander-style рамок, чтобы текст и элементы оставались в тёмной области и не пересекались с декоративной рамкой.
+- Широкая status-плашка `Партия завершена…` удалена из визуальной композиции.
+- Duplicate post-game `Новая партия / Главное меню` внутри панели `Партия` удалены; верхний toolbar остаётся единственным action set.
+- Desktop-layout изменён на `Партия` слева / доска по центру / `Ходы` справа.
+- SAN/figurines, captured material, smooth movement и blue CTA сохранены без изменения.
+- Версия поднята до `2.2.0-chess-ai.preview.3`.
+- Static contract усилен на final layout, marker style, hidden status plaque и отсутствие duplicate post-game CTA.
+
+## 2026-08-27 — Chess AI gameplay test passed; production polish implemented
+- Пользователь подтвердил, что Chess AI gameplay и все основные пункты теста работают корректно.
+- Перед финальным acceptance запросил production polish интерфейса партии.
+- На каждую fantasy-фигуру добавлен технический шахматный marker в верхнем левом углу.
+- История переведена на стандартную SAN-запись с figurine rendering для фигур; поддерживаются capture `x`, check `+`, mate `#`, castling, promotion и disambiguation.
+- Добавлены технические glyph взятых фигур и material advantage.
+- Большая центральная плашка `Компьютер думает…` убрана из визуального слоя; AI turn остаётся в status line.
+- Ходы фигур получили плавную 230ms-анимацию с отдельным capture fade; reduced-motion отключает переходы.
+- Панели и модальные окна переведены на тёмный approved commander-selection treatment: `ui_panel_frame.png` + `#091524` + inner keyline вместо светлой parchment-подложки.
+- Все action-кнопки используют синий `ui_button_primary.png`; light/secondary action frame в polish layer не используется.
+- Версия поднята до `2.2.0-chess-ai.preview.2`.
+- Static/source/build и Chromium contracts расширены на markers, SAN/figurines, captured material, animation, commander surfaces и blue CTA.
+
+## 2026-08-26 — Chess AI implementation ready for deployment gate
+- После merge принятого Classic Chess создана `feature/chess-ai` от exact `main` commit `6df1a65ffca36413d99415eab1f0e5ccddbd5dbe`.
+- Добавлен `ChessAIAdapter`; игровой runtime не зависит напрямую от Stockfish implementation.
+- Выбран Stockfish.js / Stockfish 18 lite single-threaded Web Worker + WASM.
+- Build pipeline загружает закреплённые release binaries Stockfish 18.0.0, проверяет SHA-256 и поставляет GPLv3 `COPYING.txt` + `SOURCE.txt`.
+- Добавлены 12 уровней сложности от ≈400 до ≈2600 Elo.
+- Для 400–1200 используется MultiPV + контролируемый выбор слабых/случайных легальных ходов; для 1400+ — `UCI_LimitStrength` / `UCI_Elo`.
+- Добавлено production-ready окно новой партии: компьютер/локально, Elo, белые/чёрные/случайно.
+- При игре за чёрных доска разворачивается, Stockfish автоматически делает первый ход.
+- Во время AI turn доска блокируется; после расчёта управление возвращается игроку.
+- Сохранён локальный режим двух игроков и все ранее принятые classical rules.
+- Добавлены deterministic adapter tests и real-Stockfish Chromium acceptance contract.
+- Cloudflare build gate усилен: перед deploy выполняется `npm test && npm run build`.
+- Preview version: `2.2.0-chess-ai.preview.1`; human acceptance pending.
+
 ## 2026-08-26 — Classic Chess HUMAN ACCEPTED → DONE
 - Пользователь успешно завершил полный Classic Chess playtest.
 - После исправления scene-switch дефекта пользователь отдельно подтвердил финальный spot-check: `Новая игра` полностью заменяет главное меню шахматной сценой, а `Главное меню` полностью возвращает menu scene.
 - Classic Chess закрыт как **HUMAN ACCEPTED → DONE**.
 - Финальный accepted feature version: `2.1.0-classic-chess`.
-- Следующий этап после merge в `main`: Chess AI / Stockfish adapter и уровни Elo.
-
-## 2026-08-26 — Classic Chess human playtest passed; scene switching corrected
-- Пользователь подтвердил успешное прохождение всех запрошенных пунктов Classic Chess playtest: board interaction, legal move highlighting, turn flow, castling, en passant, promotion, check/mate, settings/audio, menu controls и mobile/narrow viewport.
-- Единственный найденный defect был presentation-level: после `Новая игра` главное меню оставалось в layout, поэтому шахматная сцена появлялась ниже него вместо полноценной смены сцены.
-- Root cause: author CSS `.reboot-menu-screen { display: grid; }` перекрывал браузерное отображение HTML `hidden` для menu root.
-- Исправлен общий scene visibility contract: `[data-reboot-foundation][hidden]` и `[data-classic-screen][hidden]` принудительно удаляются из layout через `display: none !important`.
-- Обновлён cache-busting query для Foundation stylesheet, чтобы исправление гарантированно подхватывалось в deploy preview.
-- Усилены static и Chromium regression tests: перед стартом видимо только меню; после `Новая игра` видима только шахматная сцена; после `Главное меню` снова видимо только меню; тот же invariant проверяется на mobile.
-- Preview version: `2.1.0-classic-chess.preview.3`.
-
-## 2026-08-26 — Classic Chess preview ready for human playtest
-- Реализован новый standalone Classic Chess runtime без загрузки gameplay-кода Iron Marches.
-- `Новая игра` запускает полноценную локальную партию на классической доске 8×8 с production-ассетами 12 стандартных фигур.
-- Реализованы обычные ходы, шах, мат, пат, рокировка, взятие на проходе, обязательное превращение в Q/R/B/N, запрет оставлять собственного короля под шахом, правило 50 ходов, троекратное повторение и недостаточный материал.
-- Добавлены production board states: выбор фигуры, legal/capture targets, последний ход, шах, история ходов и финальные состояния партии.
-- Сохранены музыка, UI/game SFX, настройки и responsive/vertical-scroll contract.
-- Canonical engine acceptance: стартовая позиция perft(3) = 8902; Kiwipete = 48 / 2039 / 97862 на глубинах 1/2/3; canonical endgame perft(3) = 2812.
-- Cloudflare exact-head build проходит production build/source/distribution verification.
-- Real Chromium desktop/mobile acceptance suite добавлен в CI, но GitHub Actions runner сейчас завершается до первого workflow step; hosted Chromium execution поэтому остаётся инфраструктурно заблокированным и не помечается как пройденный.
+- Classic Chess squash merge: `6df1a65ffca36413d99415eab1f0e5ccddbd5dbe`.
 
 ## 2026-08-26 — Reboot Foundation human accepted
 - Reboot Foundation принят после живого preview-теста.
-- Главное меню возвращено к production-ready композиции предыдущей RPChess; исключены только системы, которых ещё нет в Reboot.
-- Удалён prototype/dev explanatory copy из основного игрового экрана.
-- Восстановлен реальный музыкальный слой на четырёх существующих треках и UI SFX с управлением через настройки.
-- Сохранён глобальный vertical-scroll contract для узких и низких viewport.
-- `Продолжить` остаётся отключён до появления Reboot save-flow; `Новая игра` не загружает legacy gameplay.
+- Главное меню возвращено к production-ready композиции предыдущей RPChess.
+- Восстановлен реальный музыкальный слой и UI SFX.
+- Сохранён глобальный vertical-scroll contract.
 - Foundation version: `2.0.0-foundation.2`.
 
 ## 2026-08-26 — Reboot approved
