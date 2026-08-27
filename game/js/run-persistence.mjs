@@ -66,15 +66,17 @@ function isValidRun(value) {
 function hydrateCurrentRosterCopy(run) {
   const currentTemplates = new Map(createStarterRoster().map((character) => [character.id, character]));
   const resources = hydrateResources(run);
+  const existingSkirmishes = Number.isInteger(run.skirmishCount) ? run.skirmishCount : 0;
+  const existingBattles = Number.isInteger(run.battleCount) ? run.battleCount : 0;
   return {
     ...resources,
     resourceRewards: {
-      skirmishCount: Number.isInteger(run.resourceRewards?.skirmishCount) ? run.resourceRewards.skirmishCount : 0,
-      battleCount: Number.isInteger(run.resourceRewards?.battleCount) ? run.resourceRewards.battleCount : 0
+      skirmishCount: Number.isInteger(run.resourceRewards?.skirmishCount) ? run.resourceRewards.skirmishCount : existingSkirmishes,
+      battleCount: Number.isInteger(run.resourceRewards?.battleCount) ? run.resourceRewards.battleCount : existingBattles
     },
     ended: Boolean(run.ended),
-    skirmishCount: Number.isInteger(run.skirmishCount) ? run.skirmishCount : 0,
-    battleCount: Number.isInteger(run.battleCount) ? run.battleCount : 0,
+    skirmishCount: existingSkirmishes,
+    battleCount: existingBattles,
     lastSkirmish: run.lastSkirmish || null,
     lastBattle: run.lastBattle || null,
     journeyStep: Number.isInteger(run.journeyStep) ? run.journeyStep : 0,
