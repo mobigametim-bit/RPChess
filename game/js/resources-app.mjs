@@ -1,8 +1,10 @@
-import { readRun } from './run-persistence.mjs';
+import { readRun, writeRun } from './run-persistence.mjs';
+import { applyGoldReward, combatGoldReward } from './resources-core.mjs';
 
 let hud = null;
 let toast = null;
 let toastTimer = null;
+let settling = false;
 
 function activeRunSceneVisible() {
   const visible = [...document.querySelectorAll('#app > main')].find((main) => !main.hidden);
@@ -86,7 +88,74 @@ function clearCombatReward(root) {
   root?.querySelector('[data-resource-combat-reward]')?.remove();
 }
 
+function statusFromRecord(record) {
+  return {
+    over: true,
+    type: record?.result || 'unknown',
+    winner: record?.winner || null
+  };
+}
+
+function renderLastCombatRewards(run = readRun()) {
+  if (!run) return;
+  renderCombatReward(document.querySelector('[data-skirmish-aftermath]'), run.lastSkirmish?.goldReward || 0);
+  renderCombatReward(document.querySelector('[data-battle-aftermath]'), run.lastBattle?.goldReward || 0);
+}
+
+function settleCombatRewards() {
+  if (settling) return;
+  const run = readRun();
+  if (!run) return;
+  const rewarded = run.resourceRewards || { skirmishCount: run.skirmishCount || 0, battleCount: run.battleCount || 0 };
+  const pendingSkirmish = (run.skirmishCount || 0) > rewarded.skirmishCount;
+  const pendingBattle = (run.battleCount || 0) > rewarded.battleCount;
+  if (!pendingSkirmish && !pendingBattle) {
+    setTimeout(() => renderLastCombatRewards(run), 0);
+    return;
+  }
+
+  settling = true;
+  let next = { ...run };
+  let totalReward = 0;
+  const nextRewarded = { ...rewarded };
+
+  if (pendingSkirmish) {
+    const reward = run.ended ? 0 : combatGoldReward({
+      encounterType: 'skirmish',
+      stars: run.lastSkirmish?.encounterStars,
+      status: statusFromRecord(run.lastSkirmish),
+      playerColor: 'w'
+    });
+    next = applyGoldReward(next, reward);
+    next.lastSkirmish = { ...(next.lastSkirmish || {}), goldReward: reward };
+    nextRewarded.skirmishCount = run.skirmishCount || 0;
+    totalReward += reward;
+  }
+
+  if (pendingBattle) {
+    const reward = run.ended ? 0 : combatGoldReward({
+      encounterType: 'battle',
+      stars: run.lastBattle?.encounterStars,
+      status: statusFromRecord(run.lastBattle),
+      playerColor: 'w'
+    });
+    next = applyGoldReward(next, reward);
+    next.lastBattle = { ...(next.lastBattle || {}), goldReward: reward };
+    nextRewarded.battleCount = run.battleCount || 0;
+    totalReward += reward;
+  }
+
+  next.resourceRewards = nextRewarded;
+  const saved = writeRun(next);
+  settling = false;
+  render();
+  setTimeout(() => renderLastCombatRewards(saved), 0);
+  if (totalReward > 0) showChange({ goldDelta: totalReward, label: 'НАГРАДА ЗА БОЙ' });
+  globalThis.dispatchEvent(new CustomEvent('rpchess:resources-updated', { detail: { goldReward: totalReward } }));
+}
+
 function syncSoon() {
+  settleCombatRewards();
   queueMicrotask(render);
   setTimeout(render, 0);
 }
@@ -104,6 +173,7 @@ addEventListener('rpchess:run-updated', syncSoon);
 addEventListener('rpchess:run-new', syncSoon);
 addEventListener('rpchess:run-continue', syncSoon);
 addEventListener('rpchess:travel-open', syncSoon);
+addEventListener('rpchess:resources-updated', () => { render(); setTimeout(renderLastCombatRewards, 0); });
 document.addEventListener('click', () => setTimeout(render, 0));
 if (typeof MutationObserver !== 'undefined') {
   new MutationObserver(render).observe(document.querySelector('#app') || document.body, {
@@ -120,5 +190,6 @@ globalThis.RPChessResources = Object.freeze({
   showChange,
   renderCombatReward,
   clearCombatReward,
+  settleCombatRewards,
   get run() { return readRun(); }
 });
