@@ -143,7 +143,7 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     assert.strictEqual(await page.evaluate(() => window.RPChessClassicChess.snapshot().turn), 'b', 'AI first move must hand turn to Black player');
     assert.strictEqual(await page.locator('[data-chess-board] [data-square]').first().getAttribute('data-square'), 'h1', 'Black player view must rotate board');
 
-    await page.locator('[data-settings]').nth(1).click();
+    await page.locator('[data-classic-screen] [data-settings]').click();
     await page.locator('[data-settings-modal]:not([hidden])').waitFor();
     await page.locator('[data-settings-modal] [data-close-modal]').click();
     await page.locator('[data-classic-menu]').click();
