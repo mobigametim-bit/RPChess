@@ -1,5 +1,6 @@
 import { createStarterRoster } from './roster-data.mjs';
 import { STARTING_GOLD, STARTING_SUPPLIES, hydrateResources } from './resources-core.mjs';
+import { isSettlementState } from './settlement-core.mjs';
 
 const RUN_STORAGE_KEY = 'rpchess.reboot.v1.run';
 const RUN_SCHEMA_VERSION = 1;
@@ -52,6 +53,7 @@ function isValidRun(value) {
   if (value.journeyStep != null && (!Number.isInteger(value.journeyStep) || value.journeyStep < 0)) return false;
   if (value.currentTravelChoices != null && (!Array.isArray(value.currentTravelChoices) || value.currentTravelChoices.length !== 3 || !value.currentTravelChoices.every(isStoredTravelChoice))) return false;
   if (value.activeTravelChoice != null && !isStoredTravelChoice(value.activeTravelChoice)) return false;
+  if (value.currentSettlement != null && !isSettlementState(value.currentSettlement)) return false;
   const ids = new Set();
   let kingCount = 0;
   for (const character of value.roster) {
@@ -82,6 +84,7 @@ function hydrateCurrentRosterCopy(run) {
     journeyStep: Number.isInteger(run.journeyStep) ? run.journeyStep : 0,
     currentTravelChoices: Array.isArray(run.currentTravelChoices) ? run.currentTravelChoices : null,
     activeTravelChoice: isStoredTravelChoice(run.activeTravelChoice) ? run.activeTravelChoice : null,
+    currentSettlement: isSettlementState(run.currentSettlement) ? run.currentSettlement : null,
     roster: run.roster.map((character) => {
       const current = currentTemplates.get(character.id);
       if (!current) return character;
@@ -110,7 +113,8 @@ function createRun({ now = Date.now(), id = null } = {}) {
     lastBattle: null,
     journeyStep: 0,
     currentTravelChoices: null,
-    activeTravelChoice: null
+    activeTravelChoice: null,
+    currentSettlement: null
   };
 }
 
@@ -130,7 +134,7 @@ function readRun(storage = null) {
 function writeRun(run, storage = null, now = Date.now()) {
   const target = resolveStorage(storage);
   if (!target) return run;
-  const next = { ...hydrateResources(run), updatedAt: Number(now) };
+  const next = { ...hydrateResources(run), currentSettlement: isSettlementState(run?.currentSettlement) ? run.currentSettlement : null, updatedAt: Number(now) };
   if (!isValidRun(next)) throw new Error('Cannot persist invalid RPChess run state');
   target.setItem(RUN_STORAGE_KEY, JSON.stringify(next));
   return next;
