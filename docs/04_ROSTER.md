@@ -10,16 +10,18 @@ Desktop:
 - слева — крупная карточка выбранного персонажа;
 - справа — каталог карточек всего отряда;
 - вся карточка персонажа кликабельна;
-- selected-state передаётся рамкой и `aria-pressed`;
+- selected-state передаётся CSS-подсветкой и `aria-pressed`;
 - используются реальные legacy portrait / piece assets из сохранённой предыдущей версии RPChess;
-- все framed surfaces наследуют game-wide `.ui-frame-safe` contract;
-- action-кнопки используют синий primary frame.
+- detail/catalog и все системные surfaces используют game-wide frameless `.ui-panel-safe` / `--ui-panel-*` contract;
+- ornate assets `ui_panel_frame.png` и `ui_panel_wide.png` запрещены;
+- action-кнопки используют approved синий `ui_button_primary.png`.
 
 Mobile:
 - detail выбранного персонажа идёт первым;
 - затем фильтры и карточки;
 - экран естественно прокручивается вертикально;
-- горизонтальный overflow не допускается.
+- горизонтальный overflow не допускается;
+- safe-area остаётся обязательной и на узком viewport.
 
 ## Стартовый отряд
 Новая игра автоматически создаёт один постоянный run с шестью персонализированными фигурами:
@@ -106,6 +108,7 @@ Feature branch: `feature/roster`.
 3. Карточки используют разные legacy assets и показывают роль/стоимость.
 4. Клик по карточке меняет detail без checkbox/подтверждения состава.
 5. `Главное меню → Продолжить` и reload восстанавливают run.
-6. Layout корректен на desktop/mobile и соблюдает global safe-area/scroll contract.
+6. Layout корректен на desktop/mobile и соблюдает global frameless safe-area/scroll contract.
+7. Roster, системные модалки, `Партия`, `Ходы` и внешняя обкладка доски не используют ornate panel-frame assets.
 
 Skirmish не начинается до **HUMAN ACCEPTED → DONE** для Roster.
