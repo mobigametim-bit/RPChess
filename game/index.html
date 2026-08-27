@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="css/classic-chess.css?v=20260827-frameless-1">
   <link rel="stylesheet" href="css/chess-ai-polish.css?v=20260827-frameless-1">
   <link rel="stylesheet" href="css/roster.css?v=20260827-roster-2">
+  <link rel="stylesheet" href="css/skirmish.css?v=20260827-skirmish-1">
 </head>
 <body>
   <div id="app">
@@ -63,6 +64,91 @@
             <div class="roster-grid" data-roster-list></div>
           </section>
         </div>
+      </div>
+    </main>
+
+    <main class="skirmish-screen" data-skirmish-screen aria-label="Подготовка к стычке" hidden>
+      <div class="skirmish-shell">
+        <header class="skirmish-topbar">
+          <img class="skirmish-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
+          <button class="reboot-button reboot-button--primary" type="button" data-skirmish-back>Вернуться к отряду</button>
+        </header>
+
+        <header class="skirmish-heading">
+          <div>
+            <div class="reboot-eyebrow">ПОДГОТОВКА К СТЫЧКЕ</div>
+            <h1 data-skirmish-title>Стычка</h1>
+            <p data-skirmish-description></p>
+          </div>
+          <div class="skirmish-threat-card" aria-label="Оценка угрозы">
+            <strong data-skirmish-stars>☆☆☆☆☆</strong>
+            <span data-skirmish-threat>Сила: примерно —</span>
+            <small>Точный состав противника неизвестен</small>
+          </div>
+        </header>
+
+        <div class="skirmish-layout">
+          <section class="skirmish-available ui-panel-safe" aria-label="Доступные бойцы">
+            <header class="skirmish-section-head">
+              <div>
+                <div class="reboot-eyebrow">РОСТЕР</div>
+                <h2>Доступные бойцы</h2>
+              </div>
+              <span>Кликните по здоровой фигуре, чтобы добавить или убрать её.</span>
+            </header>
+            <div class="skirmish-grid" data-skirmish-available></div>
+          </section>
+
+          <aside class="skirmish-selection ui-panel-safe" aria-label="Боевой отряд">
+            <header class="skirmish-section-head">
+              <div>
+                <div class="reboot-eyebrow">В ЭТУ БИТВУ</div>
+                <h2>Боевой отряд</h2>
+              </div>
+            </header>
+            <div class="skirmish-selected" data-skirmish-selected></div>
+            <div class="skirmish-formation-block">
+              <div class="skirmish-formation-head">
+                <strong>Автоматическая расстановка</strong>
+                <span>1–2 горизонтали</span>
+              </div>
+              <div class="skirmish-formation" data-skirmish-formation aria-label="Предпросмотр автоматической расстановки"></div>
+            </div>
+          </aside>
+        </div>
+
+        <div class="skirmish-notice" data-skirmish-notice role="status" hidden></div>
+        <footer class="skirmish-actionbar" aria-label="Параметры боевого отряда">
+          <div class="skirmish-counter"><span>ФИГУРЫ</span><strong data-skirmish-piece-count>1 / 16</strong></div>
+          <div class="skirmish-counter"><span>КОМАНДОВАНИЕ</span><strong data-skirmish-point-count>0 / 39</strong></div>
+          <button class="reboot-button reboot-button--primary skirmish-start" type="button" data-skirmish-start>Начать стычку</button>
+        </footer>
+      </div>
+    </main>
+
+    <main class="skirmish-aftermath" data-skirmish-aftermath aria-label="Итоги стычки" hidden>
+      <div class="skirmish-aftermath-shell">
+        <img class="skirmish-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
+        <section class="skirmish-aftermath-panel ui-panel-safe">
+          <div class="reboot-eyebrow">СТЫЧКА ЗАВЕРШЕНА</div>
+          <h1 data-aftermath-result>ИТОГ</h1>
+          <p data-aftermath-text></p>
+          <div class="skirmish-aftermath-columns">
+            <section>
+              <h2>Выжили</h2>
+              <div class="skirmish-aftermath-list" data-aftermath-survivors></div>
+            </section>
+            <section>
+              <h2>Тяжело ранены</h2>
+              <div class="skirmish-aftermath-list" data-aftermath-wounded></div>
+            </section>
+            <section>
+              <h2>Погибли</h2>
+              <div class="skirmish-aftermath-list" data-aftermath-dead></div>
+            </section>
+          </div>
+          <button class="reboot-button reboot-button--primary skirmish-aftermath-button" type="button" data-aftermath-continue>Вернуться к отряду</button>
+        </section>
       </div>
     </main>
 
@@ -120,6 +206,8 @@
       </div>
     </main>
   </div>
+
+  <div class="skirmish-toast" data-skirmish-toast role="status" aria-live="polite" hidden></div>
 
   <div class="reboot-modal" data-game-setup-modal hidden>
     <section class="reboot-modal__panel classic-commander-panel classic-setup-panel" role="dialog" aria-modal="true" aria-labelledby="game-setup-title">
@@ -205,7 +293,8 @@
   </div>
 
   <script type="module" src="js/reboot-foundation.mjs?v=20260827-roster-1"></script>
-  <script type="module" src="js/roster-app.mjs?v=20260827-roster-2"></script>
+  <script type="module" src="js/roster-app.mjs?v=20260827-skirmish-1"></script>
   <script type="module" src="js/classic-chess-app.mjs?v=20260827-ai-2"></script>
+  <script type="module" src="js/skirmish-app.mjs?v=20260827-skirmish-1"></script>
 </body>
 </html>
