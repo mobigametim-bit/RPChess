@@ -146,8 +146,15 @@ function renderChoices() {
   for (const choice of activeRun.currentTravelChoices || []) routes.append(routeCard(choice));
 }
 
+function combatCount(run, choice) {
+  return choice?.type === 'battle'
+    ? (Number.isInteger(run?.battleCount) ? run.battleCount : 0)
+    : (Number.isInteger(run?.skirmishCount) ? run.skirmishCount : 0);
+}
+
 function dispatchEncounter(choice) {
   hideTravel();
+  globalThis.RPChessTravelEncounterOverride = choice;
   const detail = { source: 'travel-choice', runId: activeRun?.id || null, choice };
   if (choice.type === 'skirmish') {
     globalThis.dispatchEvent(new CustomEvent('rpchess:skirmish-open', { detail }));
@@ -157,6 +164,7 @@ function dispatchEncounter(choice) {
     globalThis.dispatchEvent(new CustomEvent('rpchess:battle-open', { detail }));
     return;
   }
+  delete globalThis.RPChessTravelEncounterOverride;
   throw new Error(`Travel Choice encounter type is not playable yet: ${choice.type}`);
 }
 
@@ -170,18 +178,19 @@ function chooseChoice(choice, button) {
   for (const card of screen?.querySelectorAll('[data-travel-choice]') || []) card.disabled = true;
   button?.classList.add('is-chosen');
   audio()?.click?.();
+  const activeChoice = { ...choice, combatCountAtSelection: combatCount(current, choice) };
   activeRun = writeRun({
     ...current,
     journeyStep: choice.step,
     currentTravelChoices: null,
-    activeTravelChoice: choice
+    activeTravelChoice: activeChoice
   });
   globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
 
   const delay = document.documentElement.dataset.reducedMotion === '1' ? 0 : 180;
   setTimeout(() => {
     routing = false;
-    dispatchEncounter(choice);
+    dispatchEncounter(activeChoice);
   }, delay);
 }
 
@@ -207,15 +216,38 @@ function openRoster() {
   globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue'));
 }
 
+function activeChoiceCompleted(run) {
+  const choice = run?.activeTravelChoice;
+  if (!isTravelChoice(choice) || !Number.isInteger(choice.combatCountAtSelection)) return false;
+  return combatCount(run, choice) > choice.combatCountAtSelection;
+}
+
 function syncRun() {
   activeRun = readRun();
-  if (screen && !screen.hidden && activeRun && !activeRun.ended) {
+  if (!activeRun) return;
+  if (activeChoiceCompleted(activeRun)) {
+    activeRun = writeRun({ ...activeRun, activeTravelChoice: null });
+  }
+  if (screen && !screen.hidden && activeRun && !activeRun.ended && !activeRun.activeTravelChoice) {
     activeRun = ensureChoices(activeRun);
     renderChoices();
   }
 }
 
+function wireAftermathTravel() {
+  const skirmishContinue = document.querySelector('[data-aftermath-continue]');
+  const battleContinue = document.querySelector('[data-battle-continue]');
+  if (skirmishContinue) skirmishContinue.textContent = 'Продолжить путь';
+  if (battleContinue) battleContinue.textContent = 'Продолжить путь';
+  document.addEventListener('click', (event) => {
+    const button = event.target?.closest?.('[data-aftermath-continue],[data-battle-continue]');
+    if (!button) return;
+    queueMicrotask(() => openTravel());
+  });
+}
+
 ensureScreen();
+wireAftermathTravel();
 addEventListener('rpchess:travel-open', openTravel);
 addEventListener('rpchess:run-updated', syncRun);
 
