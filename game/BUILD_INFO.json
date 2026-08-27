@@ -7,7 +7,7 @@
   "requires_internet": false,
   "requires_installation": false,
   "visual_theme": "Approved RPChess fantasy UI with global frameless dark panel surfaces, safe-area insets, blue CTA frames, personalized character art and classical chess role glyphs",
-  "gameplay_state": "Settlement implemented: safe Travel route, deterministic three-hero tavern offers, wounded-unit healing, finite Supply shop stock, persistent purchases and return-to-Travel flow; human playtest required before DONE",
+  "gameplay_state": "Settlement implemented, autotested, deployed and human accepted: safe Travel route, deterministic three-hero tavern offers, wounded-unit healing, finite Supply shop stock, persistent purchases and return-to-Travel flow; feature merge/post-merge closure pending before DONE",
   "legacy_branch": "archive/iron-marches-v1",
   "legacy_commit": "035fb817a93f53047a1d20f7cdfc9093b0f7d611",
   "foundation_merge": "416cfbcd332366c10d6dd27a44123c0dd7ea7da0",
@@ -23,5 +23,5 @@
   "stockfish_license": "GPLv3",
   "active_docs": "docs/00_PRODUCT_VISION.md through docs/17_TECH_ARCHITECTURE.md",
   "human_acceptance_required": true,
-  "human_acceptance": "pending-settlement-playtest"
+  "human_acceptance": "accepted-2026-08-27"
 }
