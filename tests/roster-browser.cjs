@@ -82,10 +82,13 @@ async function startFresh(page) {
     const detailContentBounds = await page.locator('[data-roster-detail] .roster-detail__media').boundingBox();
     assert(detailBounds && detailContentBounds && detailContentBounds.x > detailBounds.x + 25, 'Roster detail content must respect global left safe area');
 
+    const serializedRun = await page.evaluate((key) => localStorage.getItem(key), RUN_KEY);
     const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
     const mobileErrors = [];
     mobile.on('pageerror', (error) => mobileErrors.push(String(error.stack || error)));
     await mobile.goto(url, { waitUntil: 'networkidle' });
+    await mobile.evaluate(([key, value]) => localStorage.setItem(key, value), [RUN_KEY, serializedRun]);
+    await mobile.reload({ waitUntil: 'networkidle' });
     await mobile.locator('[data-continue-run]').click();
     await mobile.locator('[data-roster-screen]:not([hidden])').waitFor();
     assert.strictEqual(await mobile.locator('[data-roster-card]').count(), 6, 'mobile Roster must render the same run');
