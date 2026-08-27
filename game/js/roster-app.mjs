@@ -5,6 +5,7 @@ const menu = document.querySelector('[data-reboot-foundation]');
 const classicScreen = document.querySelector('[data-classic-screen]');
 const rosterScreen = document.querySelector('[data-roster-screen]');
 const continueButton = document.querySelector('[data-continue-run]');
+const journeyButton = document.querySelector('[data-roster-travel]');
 const rosterList = document.querySelector('[data-roster-list]');
 const rosterDetail = document.querySelector('[data-roster-detail]');
 const rosterCount = document.querySelector('[data-roster-count]');
@@ -48,8 +49,7 @@ function selectedCharacter() {
 function statusNote(character) {
   if (character.status === 'wounded') return 'Не может участвовать в сражениях до лечения.';
   if (character.status === 'dead') return 'Погиб в текущем забеге и остаётся в памяти отряда.';
-  if (character.isRunKing) return 'Обязательная фигура текущего забега.';
-  return 'Готов к участию в будущих сражениях.';
+  return '';
 }
 
 function renderDetail() {
@@ -84,14 +84,19 @@ function renderDetail() {
   const status = document.createElement('div');
   status.className = `roster-status roster-status--${character.status}`;
   status.textContent = STATUS_LABELS[character.status] || character.status;
-  const note = document.createElement('p');
-  note.className = 'roster-status-note';
-  note.textContent = statusNote(character);
   const description = document.createElement('p');
   description.className = 'roster-detail__description';
   description.textContent = character.description;
 
-  body.append(eyebrow, title, facts, status, note, description);
+  body.append(eyebrow, title, facts, status);
+  const noteText = statusNote(character);
+  if (noteText) {
+    const note = document.createElement('p');
+    note.className = 'roster-status-note';
+    note.textContent = noteText;
+    body.append(note);
+  }
+  body.append(description);
   rosterDetail.append(media, body);
 }
 
@@ -192,6 +197,12 @@ function continueRun() {
   renderRoster();
 }
 
+function beginJourney() {
+  if (!activeRun) return;
+  audio()?.click();
+  globalThis.dispatchEvent(new CustomEvent('rpchess:new-game', { detail: { source: 'roster' } }));
+}
+
 function returnToMenu() {
   audio()?.click();
   updateContinueState();
@@ -205,6 +216,7 @@ filterButtons.forEach((button) => button.addEventListener('click', () => {
 }));
 
 document.querySelector('[data-roster-menu]')?.addEventListener('click', returnToMenu);
+journeyButton?.addEventListener('click', beginJourney);
 addEventListener('rpchess:run-new', beginRun);
 addEventListener('rpchess:run-continue', continueRun);
 
@@ -216,5 +228,6 @@ globalThis.RPChessRoster = Object.freeze({
   render: renderRoster,
   beginRun,
   continueRun,
+  beginJourney,
   returnToMenu
 });
