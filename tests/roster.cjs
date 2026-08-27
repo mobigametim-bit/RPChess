@@ -45,6 +45,10 @@ class MemoryStorage {
   assert.strictEqual(run.selectedCharacterId, 'king.oathkeeper');
   assert.strictEqual(run.ended, false, 'new run must start active');
   assert.strictEqual(run.skirmishCount, 0, 'new run must start before the first Skirmish');
+  assert.strictEqual(run.battleCount, 0, 'new run must start before the first Battle');
+  assert.strictEqual(run.journeyStep, 0, 'new run must start before the first Travel fork');
+  assert.strictEqual(run.currentTravelChoices, null);
+  assert.strictEqual(run.activeTravelChoice, null);
   assert.strictEqual(persistence.readRun(storage), null, 'empty storage must not invent a run');
   const saved = persistence.writeRun(run, storage, 1200);
   assert.strictEqual(saved.updatedAt, 1200);
@@ -67,12 +71,20 @@ class MemoryStorage {
   staleCopy.roster.find((entry) => entry.id === 'hero.mara_chain').status = 'wounded';
   delete staleCopy.ended;
   delete staleCopy.skirmishCount;
+  delete staleCopy.battleCount;
+  delete staleCopy.journeyStep;
+  delete staleCopy.currentTravelChoices;
+  delete staleCopy.activeTravelChoice;
   storage.setItem(persistence.RUN_STORAGE_KEY, JSON.stringify(staleCopy));
   const hydratedCopy = persistence.readRun(storage);
   assert(hydratedCopy.roster[0].description.includes('Последний хранитель древней присяги'), 'saved runs must hydrate current Oathkeeper character copy');
   assert.strictEqual(hydratedCopy.roster.find((entry) => entry.id === 'hero.mara_chain').status, 'wounded', 'saved-run hydration must preserve gameplay status');
   assert.strictEqual(hydratedCopy.ended, false, 'pre-Skirmish Roster save must hydrate as active');
   assert.strictEqual(hydratedCopy.skirmishCount, 0, 'pre-Skirmish Roster save must hydrate with zero Skirmishes');
+  assert.strictEqual(hydratedCopy.battleCount, 0, 'pre-Battle Roster save must hydrate with zero Battles');
+  assert.strictEqual(hydratedCopy.journeyStep, 0, 'pre-Travel Roster save must hydrate at journey step zero');
+  assert.strictEqual(hydratedCopy.currentTravelChoices, null);
+  assert.strictEqual(hydratedCopy.activeTravelChoice, null);
 
   storage.setItem(persistence.RUN_STORAGE_KEY, '{broken');
   assert.strictEqual(persistence.readRun(storage), null, 'corrupted run JSON must fail closed');
@@ -91,14 +103,15 @@ class MemoryStorage {
   assert(!/data-roster[^>]*type=["']checkbox/i.test(html), 'Roster must not use checkbox selection');
   assert(app.includes("rpchess.reboot.v1.run") || persistenceSource.includes("rpchess.reboot.v1.run"), 'Roster run persistence key missing');
   assert(persistenceSource.includes('hydrateCurrentRosterCopy'), 'saved runs must refresh current static character copy');
-  assert(app.includes("new CustomEvent('rpchess:skirmish-open'"), 'Start Journey must route into the Skirmish preparation scene');
+  assert(app.includes("new CustomEvent('rpchess:travel-open'"), 'Start Journey must route into Travel Choice');
+  assert(!app.includes("new CustomEvent('rpchess:skirmish-open'"), 'Roster must no longer bypass Travel Choice with direct Skirmish routing');
   assert(html.includes('ui-panel-safe'), 'Roster panels must use the global frameless safe-area contract');
   assert(css.includes('border: 1px solid var(--ui-panel-border)'), 'Roster must use CSS-only panel edges');
   assert(css.includes('background: var(--ui-panel-bg)'), 'Roster must use global frameless panel surface tokens');
   assert(foundationCss.includes('--ui-panel-safe-left'), 'global frameless safe-area tokens are missing');
   assert(!css.includes('ui_panel_frame.png') && !css.includes('ui_panel_wide.png'), 'Roster must never use ornate panel frame assets');
 
-  console.log('Roster model, persistence hydration, concise copy, Skirmish routing and frameless static UX contract: PASS');
+  console.log('Roster model, persistence hydration, concise copy, Travel Choice routing and frameless static UX contract: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;
