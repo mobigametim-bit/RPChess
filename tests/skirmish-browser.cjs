@@ -77,7 +77,18 @@ async function freshRun(page) {
     await page.locator('[data-aftermath-continue]').click();
     await page.locator('[data-reboot-foundation]').waitFor({ state: 'visible' });
     assert.strictEqual(await page.locator('[data-continue-run]').isDisabled(), true, 'ended run must not be continuable');
-    assert.strictEqual(await page.locator('[data-classic-new]').isHidden(), false, 'standalone chess navigation must be restored after Skirmish ends');
+    const navigationUnlocked = await page.evaluate(() => ({
+      newHidden: document.querySelector('[data-classic-new]').hidden,
+      menuHidden: document.querySelector('[data-classic-menu]').hidden,
+      newAriaHidden: document.querySelector('[data-classic-new]').getAttribute('aria-hidden'),
+      menuAriaHidden: document.querySelector('[data-classic-menu]').getAttribute('aria-hidden')
+    }));
+    assert.deepStrictEqual(navigationUnlocked, {
+      newHidden: false,
+      menuHidden: false,
+      newAriaHidden: 'false',
+      menuAriaHidden: 'false'
+    }, 'standalone chess navigation must be unlocked after Skirmish ends even while the chess scene itself is not visible');
 
     const woundedPage = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     const woundedErrors = [];
