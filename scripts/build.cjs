@@ -30,6 +30,7 @@ async function main() {
     'css/skirmish.css',
     'css/battle.css',
     'css/travel-choice.css',
+    'css/resources.css',
     'js/reboot-foundation.mjs',
     'js/reboot-audio.mjs',
     'js/classic-chess-engine.mjs',
@@ -45,6 +46,8 @@ async function main() {
     'js/battle-route.mjs',
     'js/travel-choice-core.mjs',
     'js/travel-choice-app.mjs',
+    'js/resources-core.mjs',
+    'js/resources-app.mjs',
     'assets/kings/oathkeeper',
     'assets/heroes/aldric_wall',
     'assets/heroes/mara_chain',
@@ -74,6 +77,7 @@ async function main() {
     'css/skirmish.css',
     'css/battle.css',
     'css/travel-choice.css',
+    'css/resources.css',
     'js/classic-chess-engine.mjs',
     'js/classic-chess-app.mjs',
     'js/chess-ai-adapter.mjs',
@@ -87,6 +91,8 @@ async function main() {
     'js/battle-route.mjs',
     'js/travel-choice-core.mjs',
     'js/travel-choice-app.mjs',
+    'js/resources-core.mjs',
+    'js/resources-app.mjs',
     'js/reboot-audio.mjs',
     'assets/kings/oathkeeper/portrait.png',
     'assets/kings/oathkeeper/piece.png',
@@ -100,6 +106,7 @@ async function main() {
     'assets/heroes/brother_orell/piece_badge.png',
     'assets/heroes/vael_hammer/portrait.png',
     'assets/heroes/vael_hammer/piece_badge.png',
+    'generated_assets/reward_gold.png',
     'music/echoes_iron_throne_01.mp3',
     'music/echoes_iron_throne_02.mp3',
     'music/echoes_iron_throne_03.mp3',
@@ -109,10 +116,10 @@ async function main() {
     'vendor/stockfish/COPYING.txt',
     'vendor/stockfish/SOURCE.txt'
   ]) {
-    if (!fs.existsSync(path.join(dist, relative))) throw new Error(`Travel Choice build output missing: ${relative}`);
+    if (!fs.existsSync(path.join(dist, relative))) throw new Error(`Resources build output missing: ${relative}`);
   }
 
-  console.log(`Prepared RPChess Travel Choice distribution in ${dist}; Stockfish ${stockfish.version}`);
+  console.log(`Prepared RPChess Resources distribution in ${dist}; Stockfish ${stockfish.version}`);
 }
 
 main().catch((error) => {
