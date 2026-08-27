@@ -56,7 +56,7 @@ assert(route.includes("import './travel-choice-app.mjs'"), 'Travel Choice runtim
 assert(route.includes("import './resources-app.mjs'"), 'Resources runtime must load through the shared route bootstrap');
 assert(route.includes("import './settlement-app.mjs'"), 'Settlement runtime must load through the shared route bootstrap');
 assert(String(info.version).startsWith('2.8.0-settlement'), 'Settlement v2.8 build version is missing');
-assert.strictEqual(info.human_acceptance, 'pending-settlement-playtest');
+assert.strictEqual(info.human_acceptance, 'accepted-2026-08-27');
 
 for (const track of ['echoes_iron_throne_01.mp3', 'echoes_iron_throne_02.mp3', 'echoes_iron_throne_03.mp3', 'echoes_iron_throne_04.mp3']) {
   assert(audio.includes(`music/${track}`), `music playlist is missing ${track}`);
