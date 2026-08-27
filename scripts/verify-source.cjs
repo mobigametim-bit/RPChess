@@ -15,13 +15,20 @@ function walk(dir) {
 module.exports = function verifySource(root) {
   const required = [
     'index.html', 'BUILD_INFO.json',
-    'css/reboot-foundation.css', 'css/classic-chess.css', 'css/chess-ai-polish.css',
+    'css/reboot-foundation.css', 'css/classic-chess.css', 'css/chess-ai-polish.css', 'css/roster.css',
     'js/reboot-foundation.mjs', 'js/reboot-audio.mjs',
     'js/classic-chess-engine.mjs', 'js/classic-chess-app.mjs', 'js/chess-ai-adapter.mjs',
+    'js/roster-data.mjs', 'js/run-persistence.mjs', 'js/roster-app.mjs',
     'fonts/BrahmsGotischCyr.otf',
     'generated_assets/title_wordmark.png', 'generated_assets/splash_poster.jpg', 'generated_assets/scene_battle.jpg',
     'music/echoes_iron_throne_01.mp3', 'music/echoes_iron_throne_02.mp3',
-    'music/echoes_iron_throne_03.mp3', 'music/echoes_iron_throne_04.mp3'
+    'music/echoes_iron_throne_03.mp3', 'music/echoes_iron_throne_04.mp3',
+    'assets/kings/oathkeeper/portrait.png', 'assets/kings/oathkeeper/piece.png',
+    'assets/heroes/aldric_wall/portrait.png', 'assets/heroes/aldric_wall/piece_badge.png',
+    'assets/heroes/mara_chain/portrait.png', 'assets/heroes/mara_chain/piece_badge.png',
+    'assets/heroes/nemea_quill/portrait.png', 'assets/heroes/nemea_quill/piece_badge.png',
+    'assets/heroes/brother_orell/portrait.png', 'assets/heroes/brother_orell/piece_badge.png',
+    'assets/heroes/vael_hammer/portrait.png', 'assets/heroes/vael_hammer/piece_badge.png'
   ];
   for (const side of ['player', 'enemy']) {
     for (const piece of ['pawn', 'knight', 'bishop', 'rook', 'queen', 'king']) required.push(`generated_assets/unit_${piece}_${side}.png`);
@@ -34,14 +41,21 @@ module.exports = function verifySource(root) {
   }
 
   const info = JSON.parse(fs.readFileSync(path.join(root, 'BUILD_INFO.json'), 'utf8'));
-  if (!String(info.version || '').startsWith('2.2.0-chess-ai')) fail(`unexpected Chess AI version: ${info.version || 'missing'}`);
+  if (!String(info.version || '').startsWith('2.3.0-roster')) fail(`unexpected Roster version: ${info.version || 'missing'}`);
 
   const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  for (const requiredRef of ['css/reboot-foundation.css', 'css/classic-chess.css', 'css/chess-ai-polish.css', 'js/reboot-foundation.mjs', 'js/classic-chess-app.mjs', 'data-game-setup-modal', 'data-ai-elo', 'data-captured-by-white', 'data-captured-by-black']) {
-    if (!index.includes(requiredRef)) fail(`index.html is missing active AI runtime/UI reference: ${requiredRef}`);
-  }
+  for (const requiredRef of [
+    'css/reboot-foundation.css', 'css/classic-chess.css', 'css/chess-ai-polish.css', 'css/roster.css',
+    'js/reboot-foundation.mjs', 'js/roster-app.mjs', 'js/classic-chess-app.mjs',
+    'data-game-setup-modal', 'data-ai-elo', 'data-captured-by-white', 'data-captured-by-black',
+    'data-roster-screen', 'data-continue-run', 'data-roster-detail', 'data-roster-list', 'data-roster-filter="dead"'
+  ]) if (!index.includes(requiredRef)) fail(`index.html is missing active Reboot reference: ${requiredRef}`);
+
   for (const forbidden of ['iron-marches-runtime.bundle.js', 'vertical-slice-app.mjs', 'ui-approved-campaign.mjs', 'b10-b13-production-ui.mjs', 'explicit-run-setup.mjs', 'commander-selection-final.mjs']) {
     if (index.includes(forbidden)) fail(`index.html still references legacy runtime: ${forbidden}`);
+  }
+  for (const forbiddenRoster of ['Применить состав', '39/39', '16/16', 'В ПУТЬ']) {
+    if (index.includes(forbiddenRoster)) fail(`future composition/travel UI leaked into Roster: ${forbiddenRoster}`);
   }
 
   const localRefs = [...index.matchAll(/(?:src|href)=["']([^"'#?]+)["']/g)].map((match) => match[1]);
@@ -56,6 +70,7 @@ module.exports = function verifySource(root) {
 
   const foundationCss = fs.readFileSync(path.join(root, 'css/reboot-foundation.css'), 'utf8');
   if (!/html\s*\{[\s\S]*overflow-y:\s*auto/i.test(foundationCss) || !/body\s*\{[\s\S]*overflow-y:\s*auto/i.test(foundationCss)) fail('global vertical scroll contract is missing');
+  for (const contract of ['--ui-frame-safe-left', '--ui-frame-safe-right', '.ui-frame-safe']) if (!foundationCss.includes(contract)) fail(`global framed safe-area contract missing: ${contract}`);
 
   const engine = fs.readFileSync(path.join(root, 'js/classic-chess-engine.mjs'), 'utf8');
   for (const contract of ['castling', 'enPassant', 'draw_50_move', 'draw_threefold', 'draw_insufficient', 'promotion_required', 'checkmate', 'stalemate']) {
@@ -84,6 +99,19 @@ module.exports = function verifySource(root) {
 
   const runtime = fs.readFileSync(path.join(root, 'js/reboot-foundation.mjs'), 'utf8');
   if (!runtime.includes("from './reboot-audio.mjs'")) fail('Reboot runtime does not load audio');
+  if (!runtime.includes("CustomEvent('rpchess:run-new')")) fail('main New Game is not routed into new-run Roster flow');
+  if (!runtime.includes("CustomEvent('rpchess:run-continue')")) fail('Continue is not routed into persistent Roster flow');
+
+  const rosterData = fs.readFileSync(path.join(root, 'js/roster-data.mjs'), 'utf8');
+  const persistence = fs.readFileSync(path.join(root, 'js/run-persistence.mjs'), 'utf8');
+  const rosterApp = fs.readFileSync(path.join(root, 'js/roster-app.mjs'), 'utf8');
+  const rosterCss = fs.readFileSync(path.join(root, 'css/roster.css'), 'utf8');
+  for (const contract of ['king.oathkeeper', 'hero.aldric_wall', 'hero.mara_chain', 'hero.nemea_quill', 'hero.brother_orell', 'hero.vael_hammer', 'createStarterRoster']) {
+    if (!rosterData.includes(contract)) fail(`Roster data contract missing: ${contract}`);
+  }
+  for (const contract of ['rpchess.reboot.v1.run', 'createRun', 'readRun', 'writeRun', 'schemaVersion']) if (!persistence.includes(contract)) fail(`run persistence contract missing: ${contract}`);
+  for (const contract of ['rpchess:run-new', 'rpchess:run-continue', 'data-roster-card', 'selectedCharacterId', 'data-roster-filter']) if (!rosterApp.includes(contract)) fail(`Roster runtime contract missing: ${contract}`);
+  for (const contract of ['ui_panel_frame.png', '.roster-card', '.roster-detail', '.roster-grid']) if (!rosterCss.includes(contract)) fail(`Roster CSS contract missing: ${contract}`);
 
   if (fs.existsSync(path.join(root, 'vendor', 'stockfish'))) {
     for (const relative of [
