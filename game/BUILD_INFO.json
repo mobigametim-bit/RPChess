@@ -22,7 +22,7 @@
   "settlement_post_merge_ci": "33125831513",
   "settlement_post_merge_cloudflare_build": "6c973861-a04d-415b-b1fa-df1c110ee6d2",
   "settlement_post_merge_cloudflare_version": "86a0ce13-e9eb-4366-b853-dc456ec7ba97",
-  "active_feature_branch": "none",
+  "active_feature_branch": "feature/settlement",
   "next_stage": "starvation-ux-spec",
   "acceptance_gate": "closed",
   "stockfish_version": "18.0.0 lite single-threaded",
