@@ -76,10 +76,11 @@ async function startFresh(page) {
     assert.strictEqual(await page.locator('.travel-choice-card__cost.is-empty').count(), 3, 'zero Supplies must be disclosed before route commitment');
     const zeroCard = page.locator('[data-travel-type="skirmish"], [data-travel-type="battle"]').first();
     await zeroCard.click();
-    await page.locator('[data-skirmish-screen]:not([hidden]), [data-battle-screen]:not([hidden])').first().waitFor();
+    await page.locator('[data-starvation-screen]:not([hidden])').waitFor();
     const zeroState = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
-    assert.strictEqual(zeroState.supplies, 0, 'Resources stage must not allow negative Supplies');
+    assert.strictEqual(zeroState.supplies, 0, 'Resources must not allow negative Supplies when Starvation resolves the shortage');
     assert.strictEqual(zeroState.activeTravelChoice.supplyPaid, 0, 'zero-Supply transition must record that no Supply was paid');
+    assert(zeroState.activeTravelChoice.starvationVictimId, 'zero-Supply transition must hand off to the Starvation consequence layer');
 
     const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
     const mobileErrors = [];
@@ -93,7 +94,7 @@ async function startFresh(page) {
 
     assert.deepStrictEqual(errors, [], `desktop Resources page errors:\n${errors.join('\n')}`);
     assert.deepStrictEqual(mobileErrors, [], `mobile Resources page errors:\n${mobileErrors.join('\n')}`);
-    console.log('Resources HUD, one-Supply travel cost, no double-charge, deterministic Gold reward and mobile Chromium acceptance: PASS');
+    console.log('Resources HUD, one-Supply travel cost, no double-charge, deterministic Gold reward, Starvation handoff and mobile Chromium acceptance: PASS');
   } finally {
     await browser.close();
   }
