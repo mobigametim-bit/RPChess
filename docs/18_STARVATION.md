@@ -1,6 +1,6 @@
 # 18 — Starvation
 
-**Статус:** IMPLEMENTED → AUTOTEST/DEPLOY gates in progress → HUMAN ACCEPTED pending.
+**Статус:** IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED. Merge/post-merge closure pending before DONE.
 
 Starvation — отдельный слой последствий перехода без припасов. Он не меняет шахматные правила, Skirmish/Battle generators или Settlement economy: механика срабатывает только между необратимым выбором Travel route и запуском уже выбранного encounter.
 
@@ -83,7 +83,7 @@ Starvation использует только frameless CSS surface:
 
 ## Acceptance contract
 
-Автоматические gates должны подтвердить:
+Автоматические gates подтвердили:
 
 - casualty только при insufficient Supplies;
 - `healthy + wounded + King` в пуле;
@@ -97,10 +97,16 @@ Starvation использует только frameless CSS surface:
 - mobile 390×844;
 - полный real Chromium regression Foundation → Classic Chess → Stockfish → Roster → Skirmish → Battle → Travel Choice → Resources → Settlement → Starvation.
 
-После зелёных exact-head GitHub Actions + Cloudflare создаётся/обновляется deploy preview для живого теста. Starvation не merge-ится и не становится DONE до явного HUMAN ACCEPTED пользователя.
+Пользователь выполнил живой playtest и 2026-08-28 подтвердил: **«все хорошо, ручной тест провел»**. Starvation считается HUMAN ACCEPTED. До статуса DONE остаются только acceptance-docs exact-head gates, merge PR #75 и post-merge production verification `main`.
 
-## Preview metadata
+## Accepted preview metadata
 
 Feature branch: `feature/starvation`.  
 Version: `2.9.0-starvation.preview.1`.  
-Human acceptance: **pending**.
+Accepted gameplay head: `f8178ec8cf44600b7e49f46c50b9c94dadcd202a`.  
+GitHub Actions push `33171829543`: **SUCCESS**, включая full real Chromium regression.  
+GitHub Actions PR `33171832251`: **SUCCESS**, включая full real Chromium regression.  
+Cloudflare build `ac8e3a37-701e-433b-b8d5-4c03fa81499e`: **SUCCESS**.  
+Cloudflare Version `18279a28-8e49-4b12-8ea2-4c87cb2c1545`.  
+Accepted preview: `https://18279a28-rpchess.mobigametim.workers.dev`.  
+Human acceptance: **accepted 2026-08-28**.
