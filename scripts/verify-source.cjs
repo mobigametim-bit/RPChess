@@ -43,8 +43,8 @@ module.exports=function verifySource(root){
   for(const forbidden of ['ИСХОД НЕИЗВЕСТЕН','3–5 РЕШЕНИЙ','ВЫБРАТЬ ПУТЬ','Каждая карточка выбирается независимо','Куда двигаться дальше?','Шаг путешествия'])if(travelApp.includes(forbidden))fail(`Travel UX still contains removed copy: ${forbidden}`);
   const travelCss=read(root,'css/travel-choice.css');requireTokens(travelCss,["'BrahmsGotischCyr'",'.travel-choice-heading h1'],'Travel fantasy typography');
 
-  const racesSource=read(root,'js/race-assets.mjs');requireTokens(racesSource,['humans/pieces/${color === \'w\' ? \'white\' : \'black\'}','BACKGROUND_POOLS','eventBackgroundPath','mixedRoleRaces','deterministicPlayerColor','pieceArtForTheme'],'race assets runtime');
-  const eventsData=read(root,'js/events-data.mjs');requireTokens(eventsData,['EVENTS_01','EVENTS_10','EVENT_CATALOG','EVENT_IDS'],'Events catalog index');
+  const racesSource=read(root,'js/race-assets.mjs');requireTokens(racesSource,["humans/pieces/${color==='w'?'white':'black'}",'RACE_TAG_BY_LABEL','BACKGROUND_POOLS','eventBackgroundPath','mixedRoleRaces','deterministicPlayerColor','pieceArtForTheme'],'race assets runtime');
+  const eventsData=read(root,'js/events-data.mjs');requireTokens(eventsData,['EVENTS_01','EVENTS_10','EVENT_CATALOG','EVENT_IDS','normalizeRaceTag'],'Events catalog index');
   const narrative=read(root,'js/event-narrative.mjs');requireTokens(narrative,['literaryStory','dialogue','atmosphere','closing'],'literary Events narrative');
   const eventsCore=read(root,'js/events-core.mjs');requireTokens(eventsCore,['EVENT_COUNT = 100','shuffledEventIds','resolveEventChoice','event_king','markEventCombatStarted','eventCombatCompleted','clampStars','combatTheme'],'Events core');
   const eventsApp=read(root,'js/events-app.mjs');requireTokens(eventsApp,['dataset.eventsScreen','events-outcome-modal','eventBackgroundPath','literaryStory','rpchess:event-open','RPChessEvents'],'Events UI');
