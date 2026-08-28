@@ -32,6 +32,7 @@ async function main() {
     'css/travel-choice.css',
     'css/resources.css',
     'css/settlement.css',
+    'css/starvation.css',
     'js/reboot-foundation.mjs',
     'js/reboot-audio.mjs',
     'js/classic-chess-engine.mjs',
@@ -51,6 +52,8 @@ async function main() {
     'js/resources-app.mjs',
     'js/settlement-core.mjs',
     'js/settlement-app.mjs',
+    'js/starvation-core.mjs',
+    'js/starvation-app.mjs',
     'assets/kings/oathkeeper',
     'assets/heroes',
     'fonts',
@@ -78,6 +81,7 @@ async function main() {
     'css/travel-choice.css',
     'css/resources.css',
     'css/settlement.css',
+    'css/starvation.css',
     'js/classic-chess-engine.mjs',
     'js/classic-chess-app.mjs',
     'js/chess-ai-adapter.mjs',
@@ -95,6 +99,8 @@ async function main() {
     'js/resources-app.mjs',
     'js/settlement-core.mjs',
     'js/settlement-app.mjs',
+    'js/starvation-core.mjs',
+    'js/starvation-app.mjs',
     'js/reboot-audio.mjs',
     'assets/kings/oathkeeper/portrait.png',
     'assets/kings/oathkeeper/piece.png',
@@ -115,10 +121,10 @@ async function main() {
     'vendor/stockfish/COPYING.txt',
     'vendor/stockfish/SOURCE.txt'
   ]) {
-    if (!fs.existsSync(path.join(dist, relative))) throw new Error(`Settlement build output missing: ${relative}`);
+    if (!fs.existsSync(path.join(dist, relative))) throw new Error(`Starvation build output missing: ${relative}`);
   }
 
-  console.log(`Prepared RPChess Settlement distribution in ${dist}; Stockfish ${stockfish.version}`);
+  console.log(`Prepared RPChess Starvation distribution in ${dist}; Stockfish ${stockfish.version}`);
 }
 
 main().catch((error) => {
