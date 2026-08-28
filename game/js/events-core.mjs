@@ -1,11 +1,12 @@
 import { EVENT_CATALOG, EVENT_IDS, eventById } from './events-data.mjs';
 import { RECRUIT_LIBRARY } from './settlement-core.mjs';
 import { hashString, seededRandom } from './travel-choice-core.mjs';
+import { clampStars } from './encounter-difficulty.mjs';
+import { combatTheme } from './race-assets.mjs';
 
 const EVENT_COUNT = 100;
 const ROLE_TYPES = Object.freeze(['pawn', 'knight', 'bishop', 'rook', 'queen']);
 
-function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
 function safeInt(value) { return Number.isInteger(value) ? value : 0; }
 function splitEffects(text) { return String(text || '').split(',').map((part) => part.trim()).filter(Boolean); }
 
@@ -39,15 +40,12 @@ function effectFromToken(token, choice) {
   if (/\bKing\b.*death|death.*\bKing\b/i.test(token)) return { type: 'death', target: 'king', kingRisk: Boolean(choice?.kingRisk) };
   return null;
 }
-
-function parseEffects(text, choice) {
-  return splitEffects(text).map((token) => effectFromToken(token, choice)).filter(Boolean);
-}
+function parseEffects(text, choice) { return splitEffects(text).map((token) => effectFromToken(token, choice)).filter(Boolean); }
 
 function normalizeChoice(choice) {
   return {
     ...choice,
-    chance: clamp(Number(choice?.chance) || 100, 1, 100),
+    chance: Math.max(1, Math.min(100, Number(choice?.chance) || 100)),
     cost: normalizeCost(choice),
     successEffects: Array.isArray(choice?.successEffects) ? choice.successEffects : parseEffects(choice?.success, choice),
     failureEffects: Array.isArray(choice?.failureEffects) ? choice.failureEffects : parseEffects(choice?.failure, choice),
@@ -72,9 +70,7 @@ function shuffledEventIds(runId, cycle = 0) {
   }
   return result;
 }
-
 function eventHistory(run) { return Array.isArray(run?.eventHistory) ? run.eventHistory.filter((id) => EVENT_IDS.includes(id)) : []; }
-
 function nextEventId(run) {
   const history = eventHistory(run);
   const cycle = Math.floor(history.length / EVENT_COUNT);
@@ -117,16 +113,12 @@ function choiceAvailability(run, choice) {
   return { enabled: true, reason: '', hero: null, choice: normalized };
 }
 
-function deterministicRoll(run, state, choice) {
-  return 1 + (hashString(`${run.id}:${run.activeTravelChoice?.seed || state.routeId}:${state.eventId}:${choice.id}:roll`) % 100);
-}
-
+function deterministicRoll(run, state, choice) { return 1 + (hashString(`${run.id}:${run.activeTravelChoice?.seed || state.routeId}:${state.eventId}:${choice.id}:roll`) % 100); }
 function deterministicTarget(run, key, candidates) {
   if (!candidates.length) return null;
   const ordered = [...candidates].sort((a, b) => a.id.localeCompare(b.id));
   return ordered[hashString(`${run.id}:${key}`) % ordered.length];
 }
-
 function recruitCandidate(run, key) {
   const present = new Set((run.roster || []).map((c) => c.id));
   const eligible = RECRUIT_LIBRARY.filter((c) => !present.has(c.id) && !c.isRunKing);
@@ -170,7 +162,7 @@ function applyEffect(run, effect, key) {
       if (target.isRunKing && status === 'dead') next = { ...next, ended: true, endReason: 'event_king' };
     }
   } else if (effect.type === 'combat') {
-    const stars = clamp((next.activeTravelChoice?.stars || 1) + safeInt(effect.threatMod), 1, 5);
+    const stars = clampStars((next.activeTravelChoice?.stars || 1) + safeInt(effect.threatMod));
     combat = { type: effect.combatType, stars, seed: `${next.activeTravelChoice?.seed || key}:event:${key}:${effect.combatType}`, threatMod: safeInt(effect.threatMod) };
     notes.push(effect.combatType === 'battle' ? 'Начинается Битва' : 'Начинается Стычка');
   }
@@ -191,10 +183,7 @@ function resolveEventChoice(run, choiceId) {
   const roll = deterministicRoll(run, state, choice);
   const succeeded = roll <= choice.chance;
   let next = { ...run, gold: Math.max(0, (run.gold || 0) - choice.cost.gold), supplies: Math.max(0, (run.supplies || 0) - choice.cost.supplies) };
-  const effects = [
-    ...(succeeded ? choice.successEffects : choice.failureEffects),
-    ...choice.alwaysEffects
-  ];
+  const effects = [...(succeeded ? choice.successEffects : choice.failureEffects), ...choice.alwaysEffects];
   const notes = [];
   let combat = null;
   effects.forEach((effect, index) => {
@@ -203,17 +192,17 @@ function resolveEventChoice(run, choiceId) {
     notes.push(...applied.notes);
     if (applied.combat) combat = applied.combat;
   });
+  if (combat) {
+    const theme = combatTheme({ seed: combat.seed, raceTag: event?.raceTag || 'mixed', mixed: event?.raceTag === 'mixed' });
+    combat = { ...combat, ...theme, sourceEventId: event.id, sourceEventTitle: event.title, raceTag: event.raceTag || 'mixed' };
+  }
   const outcome = { choiceId: choice.id, roll, chance: choice.chance, success: succeeded, notes, heroId: availability.hero?.id || null, combat };
   const nextState = { ...state, choiceId: choice.id, roll, success: succeeded, resolved: true, outcome, combat };
   next = { ...next, currentEvent: nextState };
   return { run: next, success: true, reason: 'resolved', state: nextState, outcome, event, choice };
 }
 
-function completeEvent(run) {
-  if (!run || run.activeTravelChoice?.type !== 'event') return run;
-  return { ...run, activeTravelChoice: null, currentEvent: null };
-}
-
+function completeEvent(run) { if (!run || run.activeTravelChoice?.type !== 'event') return run; return { ...run, activeTravelChoice: null, currentEvent: null }; }
 function markEventCombatStarted(run) {
   const state = run?.currentEvent;
   const combat = state?.combat;
@@ -221,7 +210,6 @@ function markEventCombatStarted(run) {
   const count = combat.type === 'battle' ? (run.battleCount || 0) : (run.skirmishCount || 0);
   return { ...run, currentEvent: { ...state, combat: { ...combat, started: true, countAtStart: count } } };
 }
-
 function eventCombatCompleted(run) {
   const combat = run?.currentEvent?.combat;
   if (!combat?.started || !Number.isInteger(combat.countAtStart)) return false;
@@ -231,20 +219,4 @@ function eventCombatCompleted(run) {
 
 if (EVENT_CATALOG.length !== EVENT_COUNT) throw new Error(`Events catalog must contain ${EVENT_COUNT} events, got ${EVENT_CATALOG.length}`);
 
-export {
-  EVENT_COUNT,
-  ROLE_TYPES,
-  normalizeChoice,
-  normalizedEvent,
-  shuffledEventIds,
-  nextEventId,
-  isEventState,
-  createEventState,
-  livingRoleHero,
-  choiceAvailability,
-  deterministicRoll,
-  resolveEventChoice,
-  completeEvent,
-  markEventCombatStarted,
-  eventCombatCompleted
-};
+export { EVENT_COUNT, ROLE_TYPES, normalizeChoice, normalizedEvent, shuffledEventIds, nextEventId, isEventState, createEventState, livingRoleHero, choiceAvailability, deterministicRoll, resolveEventChoice, completeEvent, markEventCombatStarted, eventCombatCompleted };
