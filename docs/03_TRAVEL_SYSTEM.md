@@ -5,7 +5,7 @@ RPChess не использует заранее собранную campaign map
 
 Текущий production flow:
 
-`Отряд → Начать путешествие → Travel Choice → encounter → aftermath → Продолжить путь → новый Travel Choice`.
+`Отряд → Начать путешествие → Travel Choice → encounter → aftermath/результат → Продолжить путь → новый Travel Choice`.
 
 Если персонализированный King погибает, run завершается и новый Travel Choice не создаётся.
 
@@ -13,88 +13,127 @@ RPChess не использует заранее собранную campaign map
 - отдельная полноэкранная сцена;
 - desktop: три карточки пути рядом;
 - mobile: три карточки вертикально, только vertical scroll, без horizontal overflow/carousel;
-- каждая карточка показывает тип encounter, угрозу `★1–5`, короткую world-flavor фразу, механический hint и текущую стоимость перехода;
+- каждая карточка показывает тип encounter, короткую world-flavor фразу, механический hint и текущую стоимость перехода;
+- combat-карточки показывают угрозу `★1–5`;
+- Settlement показывается как безопасное место без combat threat;
+- Event показывает неизвестный заранее исход и `3–5 решений` внутри события;
 - **вся карточка является действием выбора**;
 - клик сразу фиксирует выбор и запускает соответствующий encounter;
-- второй CTA, `Подтвердить`, confirmation modal и возможность отмены после выбора отсутствуют;
-- кнопка `Отряд` позволяет открыть Roster до выбора пути;
-- возврат из Roster показывает **тот же набор из трёх карточек**;
-- reload страницы до выбора также восстанавливает тот же набор.
+- второго CTA, `Подтвердить`, confirmation modal и отмены после выбора нет;
+- `Отряд` можно открыть до выбора пути;
+- возврат из Roster и reload до выбора сохраняют **тот же набор из трёх карточек**.
 
 ## Необратимость выбора
-После клика выбранная карточка сохраняется как `activeTravelChoice`, а текущий набор карточек очищается. Пока соответствующий encounter не завершён, возврат через Roster или reload снова открывает **уже выбранный encounter**, а не новую развилку.
+После клика выбранная карточка сохраняется как `activeTravelChoice`, а текущая тройка очищается. Пока соответствующий encounter не завершён, возврат через Roster или reload возобновляет **уже выбранный encounter**, а не новую развилку.
 
-Выбор считается завершённым только когда увеличился счётчик соответствующего combat encounter (`skirmishCount` или `battleCount`). После обычного aftermath `Продолжить путь` создаёт следующую тройку.
+Skirmish/Battle считаются завершёнными после увеличения соответствующего combat counter. Settlement очищает route при выходе через `Продолжить путь`. Event очищает route после разрешения Event и, если Event запустил combat, после окончания связанного боя.
 
-## Resources integration
-После реализации Resources каждый **новый committed transition** расходует **1 Supply**.
+## Resources + Starvation integration
+Каждый **новый committed Travel transition** расходует **1 Supply**.
 
 - стоимость видна на карточке до выбора;
 - списание выполняется в той же persistence operation, которая фиксирует `activeTravelChoice`;
 - выбранный путь сохраняет `supplyCostAtSelection` и `supplyPaid`;
-- возврат через Roster или reload не списывает Supply повторно;
+- возврат через Roster, Event resume или reload не списывает Supply повторно;
 - Supplies никогда не уходят ниже нуля;
-- при `supplies = 0` переход пока остаётся доступным и записывает `supplyPaid = 0`; фактическая случайная гибель персонализированной фигуры вводится только на отдельном roadmap-этапе **Starvation**.
+- если на момент committed transition `supplies = 0`, Starvation детерминированно убивает ровно одну живую персонализированную фигуру до запуска encounter;
+- victim id сохраняется до dispatch, поэтому reload не может перебросить жертву;
+- если погиб King, run завершается немедленно и encounter не запускается;
+- если погиб non-King, после acknowledgement запускается уже выбранный encounter без дополнительного списания Supply.
 
-Текущие Gold/Supplies не меняют генерацию, состав или threat level тройки.
+Gold/Supplies не меняют типы или threat level генерируемой тройки.
 
-## Типы encounter
-Полный канонический набор типов:
+## Канонические типы encounter
+Полный набор:
 - `Puzzle` — шахматная задача;
 - `Skirmish` — стычка;
 - `Battle` — сражение;
 - `Event` — событие;
 - `Settlement` — поселение.
 
-### Playable pool текущей версии
-Сейчас реально маршрутизируются только:
+### Playable pool текущей Events preview
+Реально маршрутизируются:
 - `Skirmish`;
-- `Battle`.
+- `Battle`;
+- `Settlement`;
+- `Event`.
 
-`Event`, `Settlement` и `Puzzle` уже имеют labels, hints и flavor-content в Travel content layer, но **не выдаются игроку**, пока соответствующие gameplay feature не реализованы. Travel Choice не должен отправлять игрока в заглушку.
+`Puzzle` остаётся каноническим типом и имеет label/hint/flavor-content, но **не выдаётся игроку**, пока Puzzle gameplay не реализован. Travel Choice не должен вести в заглушку.
 
-## Генерация v1
+## Генерация текущей версии
 Тройка детерминирована по `run.id + journeyStep`, поэтому одинаковое состояние run создаёт одинаковый набор.
 
-Для текущего playable pool:
-- в тройке гарантированно присутствует хотя бы один `Skirmish` и один `Battle`;
-- третий тип выбирается детерминированно между playable типами;
-- базовая угроза растёт по мере путешествия: `1 + floor((step - 1) / 2)`, clamp `1–5`;
-- три карточки получают перемешанные offsets угрозы `-1 / 0 / +1`, также с clamp `1–5`;
-- каждая карточка получает отдельный deterministic encounter seed;
-- этот seed и выбранное количество звёзд передаются в существующий Skirmish/Battle generator и реально определяют encounter difficulty.
+Каждая из трёх карточек **независимо** выбирает один из четырёх playable типов через deterministic random stream:
+
+`Skirmish / Battle / Settlement / Event`.
+
+Контракт распределения:
+- каждый из четырёх типов имеет долгосрочную вероятность около **25% на каждую карточку**;
+- дубликаты допустимы: одна тройка может содержать 2–3 карточки одного типа;
+- больше нет гарантии хотя бы одного Skirmish или Battle;
+- один и тот же `run.id + journeyStep` всегда воспроизводит ту же тройку;
+- разные шаги используют новые deterministic route seeds.
+
+Для каждой карточки рассчитывается:
+- отдельный deterministic encounter seed;
+- threat stars `1–5`, основанные на journey depth и deterministic offset;
+- world-flavor строка;
+- mechanical hint.
+
+Stars/seed реально передаются в Skirmish/Battle generators. Event использует route seed как часть deterministic Event roll/combat orchestration. Settlement использует route seed для deterministic recruit offers.
 
 ## Flavor-content
-Для каждого из пяти канонических типов предусмотрено минимум **12 уникальных world-flavor фраз**. Фраза выбирается детерминированно по route seed. Если в одной тройке две карточки одного типа, они не получают одинаковую flavor-фразу.
+Для каждого из пяти канонических типов предусмотрен отдельный world-flavor pool. Фраза выбирается детерминированно по route seed. Если в одной тройке несколько карточек одного типа, для них не должна намеренно повторяться одна и та же flavor-фраза, пока pool позволяет выбрать уникальную.
 
 ## Persistence
-Схема `rpchess.reboot.v1.run` содержит:
+Схема `rpchess.reboot.v1.run` остаётся обратно совместимой и содержит travel state:
 - `journeyStep`;
 - `currentTravelChoices`;
 - `activeTravelChoice`;
-- после Resources на committed route: `supplyCostAtSelection`, `supplyPaid`.
+- `supplyCostAtSelection`;
+- `supplyPaid`;
+- Starvation metadata для committed zero-Supply route;
+- encounter-specific state (`currentSettlement`, `currentEvent` и combat aftermath metadata).
 
-Старые saves без travel-полей гидратируются безопасными значениями: `journeyStep=0`, `currentTravelChoices=null`, `activeTravelChoice=null`.
+Старые saves без travel-полей гидратируются безопасными значениями. Уже выбранный route после reload остаётся необратимым.
 
-## Aftermath integration
-Обычный Skirmish/Battle aftermath использует CTA `Продолжить путь`. Travel orchestration очищает завершённый `activeTravelChoice` и открывает следующую развилку. King-death run end остаётся отдельным финальным экраном и не маршрутизируется обратно в Travel Choice.
+## Encounter routing
+### Skirmish
+Travel передаёт route seed/stars в Skirmish generator. После ordinary aftermath `Продолжить путь` открывает следующую тройку.
 
-## Стартовые веса из design draft
-Ранее в концепции были записаны веса Puzzle 20%, Skirmish 25%, Battle 15%, Event 25%, Settlement 15%. Это **future Encounter Generator draft**, а не активный алгоритм Travel Choice v1. Веса будут отдельно реализованы и сбалансированы, когда все пять типов станут playable.
+### Battle
+Travel передаёт route seed/stars в Battle generator. После ordinary aftermath `Продолжить путь` открывает следующую тройку.
 
-## Границы Travel Choice
-Сам Travel Choice не реализует starvation casualty, healing/recruitment/shop economy, Event resolution, Puzzle engine, полноценные weighted encounter tables, anti-streak rules и региональные модификаторы генерации. Supply cost подключён поверх принятого Travel Choice через Resources и не меняет его deterministic routing contract.
+### Settlement
+Безопасный encounter: healer, recruitment и supply shop. Вход оплачивается обычным Travel Supply cost. Выход не списывает второй Supply.
 
-## Human Acceptance Travel Choice
-Пользователь завершил живой Travel Choice playtest 2026-08-27 и подтвердил: **«всё хорошо»**.
+### Event
+Открывает mini-story scene с 3–5 решениями, deterministic roll и persistent outcome. Event может завершиться мгновенным эффектом или запустить Skirmish/Battle. Переход Event → Combat не списывает второй Supply.
+
+### Puzzle
+Пока не входит в playable pool.
+
+## Исторический weighted draft
+Ранее в концепции были записаны веса Puzzle 20% / Skirmish 25% / Battle 15% / Event 25% / Settlement 15%. Этот draft **не является текущим production алгоритмом**.
+
+Текущая Events preview использует независимый равновероятный выбор между четырьмя реализованными типами: приблизительно **25/25/25/25**. Puzzle будет добавлен отдельным этапом с новым балансировочным решением.
+
+## Границы Travel System
+Travel orchestration отвечает за генерацию тройки, committed route, Supply/Starvation gate и dispatch encounter. Внутренняя логика Skirmish, Battle, Settlement и Event принадлежит соответствующим feature-модулям.
+
+Региональные modifiers, anti-streak rules, Puzzle engine и отдельные weighted encounter tables не входят в текущую Events preview.
+
+## Human Acceptance базового Travel Choice
+Базовый Travel Choice был принят пользователем 2026-08-27 и закрыт в `main`.
 
 Accepted gameplay head: `d76fca5ad5e02260a836400c7398158c1657a6f6`.  
-Accepted docs-synchronized preview head before acceptance commit: `7775750690b5a9e2a947baf5d9091b3b898a6241`.  
 Version: `2.6.0-travel-choice.preview.1`.  
-Gameplay GitHub Actions `33080571104` / #898: **SUCCESS**.  
-Pre-acceptance docs-head GitHub Actions `33081722542` / #903: **SUCCESS**.  
-Accepted Cloudflare build `e5b0d01e-433c-44f7-81b9-df10a2127e23`: **SUCCESS**; Version `7047b3fb-ffc9-4e69-88cb-39566293ec66`.  
-Accepted preview: `https://7047b3fb-rpchess.mobigametim.workers.dev`.
+Final acceptance push CI `33084047611` / #905: **SUCCESS**.  
+Final acceptance PR CI `33084052567` / #906: **SUCCESS**.  
+Final exact-head Cloudflare build `b7e9b7dc-9a5c-40aa-b608-6c2c3b438676`: **SUCCESS**; Version `8853fbcc-7e7a-4e49-a83e-c2df68d2f7d5`.  
+PR #70 squash-merged в `main` как `ee7d1b348ac88ebafcd334acb84167f6b5a12bdc`.
 
-## Статус Travel Choice
-**IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**. Travel Choice merged to `main` as `ee7d1b348ac88ebafcd334acb84167f6b5a12bdc`. Resources extends travel with economy persistence without reopening the accepted Travel Choice feature.
+## Текущий lifecycle
+Базовый Travel Choice остаётся **DONE**. Settlement, Resources и Starvation уже расширили его поверх принятого контракта.
+
+Events preview меняет только текущий playable pool/generation contract: добавляет `Event` и переводит четыре реализованных типа на независимый равновероятный deterministic pool с разрешёнными дубликатами. Эта новая Events-часть считается принятой только после exact-head CI/Cloudflare и отдельного живого пользовательского Events playtest.
