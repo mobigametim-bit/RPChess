@@ -1,13 +1,13 @@
 {
   "title": "RPChess Reboot",
   "edition": "Events",
-  "version": "3.0.0-events.preview.1",
-  "build_date": "2026-08-28",
+  "version": "3.0.0-events.preview.2",
+  "build_date": "2026-08-29",
   "runtime": "Offline HTML5 / ES modules + local run persistence + local Stockfish 18 WASM worker",
   "requires_internet": false,
   "requires_installation": false,
-  "visual_theme": "Approved RPChess fantasy UI with global frameless dark panel surfaces, safe-area insets, blue CTA frames, personalized character art and classical chess role glyphs",
-  "gameplay_state": "Events v1 implementation in feature/events: 100 deterministic shuffle-bag events, 415 authored choices, 14 race tags plus mixed events, visible success percentages, persistent outcomes, role-gated choices, resource/recruit/wound/death effects, explicit King-risk decisions, Event-to-Skirmish/Battle routing and independently equiprobable Travel cards.",
+  "visual_theme": "Approved RPChess frameless fantasy UI with BrahmsGotischCyr headings, illustrated Event backgrounds, race-specific armies, personalized character art and classical chess role glyphs",
+  "gameplay_state": "Corrected Events v1 candidate: 100 deterministic shuffle-bag events / 415 choices with literary multi-paragraph scenes, separate outcome modal, 36 universal Event backgrounds, 14 race army libraries plus mixed role armies, player white/black narrative combat, 12-star Stockfish difficulty, deterministic random Skirmish deployment, persistent outcomes and independently equiprobable Travel cards.",
   "foundation_merge": "416cfbcd332366c10d6dd27a44123c0dd7ea7da0",
   "classic_chess_merge": "6df1a65ffca36413d99415eab1f0e5ccddbd5dbe",
   "chess_ai_merge": "3aa95c08f7af8fdcd82cf79cb606e1ecc5ad788c",
@@ -23,11 +23,11 @@
   "starvation_post_merge_cloudflare_build": "928414d1-7f3c-472b-99dd-17b0fbd89114",
   "starvation_post_merge_cloudflare_version": "e0fc8d48-3893-4f8b-ac52-2051966f49d0",
   "active_feature_branch": "feature/events",
-  "next_stage": "events-exact-head-gates-and-human-acceptance",
-  "acceptance_gate": "human-acceptance-pending",
+  "next_stage": "events-corrected-preview-gates-and-human-retest",
+  "acceptance_gate": "human-retest-pending",
   "stockfish_version": "18.0.0 lite single-threaded",
   "stockfish_license": "GPLv3",
-  "active_docs": "docs/00_PRODUCT_VISION.md through docs/18_STARVATION.md plus approved docs/08_EVENTS.md update",
+  "active_docs": "docs/00_PRODUCT_VISION.md through docs/18_STARVATION.md plus Events/Travel/Combat corrections pending final receipt sync",
   "human_acceptance_required": true,
-  "human_acceptance": "pending"
+  "human_acceptance": "pending-corrected-preview"
 }
