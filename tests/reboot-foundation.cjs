@@ -57,7 +57,7 @@ assert(route.includes("import './resources-app.mjs'"), 'Resources runtime must l
 assert(route.includes("import './settlement-app.mjs'"), 'Settlement runtime must load through the shared route bootstrap');
 assert(route.includes("import './starvation-app.mjs'"), 'Starvation runtime must load through the shared route bootstrap');
 assert(String(info.version).startsWith('2.9.0-starvation'), 'Starvation v2.9 build version is missing');
-assert.strictEqual(info.human_acceptance, 'pending', 'Starvation must remain pending until live user acceptance');
+assert.strictEqual(info.human_acceptance, 'accepted-2026-08-28', 'Starvation human acceptance receipt is missing');
 
 for (const track of ['echoes_iron_throne_01.mp3', 'echoes_iron_throne_02.mp3', 'echoes_iron_throne_03.mp3', 'echoes_iron_throne_04.mp3']) {
   assert(audio.includes(`music/${track}`), `music playlist is missing ${track}`);
@@ -71,4 +71,4 @@ for (const relative of [
   assert(fs.existsSync(path.join(game, relative)), `required Starvation/Reboot file is missing: ${relative}`);
 }
 
-console.log('Reboot Foundation frameless production contract with Starvation journey bootstrap loaded: PASS');
+console.log('Reboot Foundation frameless production contract with human-accepted Starvation journey bootstrap loaded: PASS');
