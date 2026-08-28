@@ -16,12 +16,12 @@ module.exports = function verifySource(root) {
   const required = [
     'index.html', 'BUILD_INFO.json',
     'css/reboot-foundation.css', 'css/classic-chess.css', 'css/chess-ai-polish.css', 'css/roster.css',
-    'css/skirmish.css', 'css/battle.css', 'css/travel-choice.css', 'css/resources.css', 'css/settlement.css',
+    'css/skirmish.css', 'css/battle.css', 'css/travel-choice.css', 'css/resources.css', 'css/settlement.css', 'css/starvation.css',
     'js/reboot-foundation.mjs', 'js/reboot-audio.mjs', 'js/classic-chess-engine.mjs', 'js/classic-chess-app.mjs',
     'js/chess-ai-adapter.mjs', 'js/roster-data.mjs', 'js/run-persistence.mjs', 'js/roster-app.mjs',
     'js/skirmish-core.mjs', 'js/skirmish-app.mjs', 'js/battle-core.mjs', 'js/battle-app.mjs', 'js/battle-route.mjs',
     'js/travel-choice-core.mjs', 'js/travel-choice-app.mjs', 'js/resources-core.mjs', 'js/resources-app.mjs',
-    'js/settlement-core.mjs', 'js/settlement-app.mjs',
+    'js/settlement-core.mjs', 'js/settlement-app.mjs', 'js/starvation-core.mjs', 'js/starvation-app.mjs',
     'fonts/BrahmsGotischCyr.otf',
     'generated_assets/title_wordmark.png', 'generated_assets/splash_poster.jpg', 'generated_assets/scene_battle.jpg',
     'generated_assets/node_battle.png', 'generated_assets/node_elite.png', 'generated_assets/node_shop.png', 'generated_assets/reward_gold.png',
@@ -42,8 +42,8 @@ module.exports = function verifySource(root) {
   required.forEach((relative) => requireFile(root, relative));
 
   const info = JSON.parse(read(root, 'BUILD_INFO.json'));
-  if (!String(info.version || '').startsWith('2.8.0-settlement')) fail(`unexpected Settlement version: ${info.version || 'missing'}`);
-  if (info.active_feature_branch !== 'feature/settlement') fail(`unexpected active feature branch: ${info.active_feature_branch || 'missing'}`);
+  if (!String(info.version || '').startsWith('2.9.0-starvation')) fail(`unexpected Starvation version: ${info.version || 'missing'}`);
+  if (info.active_feature_branch !== 'feature/starvation') fail(`unexpected active feature branch: ${info.active_feature_branch || 'missing'}`);
 
   const index = read(root, 'index.html');
   requireTokens(index, [
@@ -96,13 +96,13 @@ module.exports = function verifySource(root) {
   const battleApp = read(root, 'js/battle-app.mjs');
   requireTokens(battleApp, ['RPChessClassicChess', 'dataset.battleScreen', 'battleCount', 'lastBattle', 'finishBattle'], 'Battle runtime');
   const route = read(root, 'js/battle-route.mjs');
-  requireTokens(route, ["import './resources-app.mjs'", "import './battle-app.mjs'", "import './settlement-app.mjs'", "import './travel-choice-app.mjs'"], 'shared route bootstrap');
+  requireTokens(route, ["import './resources-app.mjs'", "import './battle-app.mjs'", "import './settlement-app.mjs'", "import './starvation-app.mjs'", "import './travel-choice-app.mjs'"], 'shared route bootstrap');
   if (route.includes('dataRosterBattle') || route.includes('Начать битву')) fail('temporary direct Battle shortcut must remain removed');
 
   const travelCore = read(root, 'js/travel-choice-core.mjs');
   requireTokens(travelCore, ["Object.freeze(['skirmish', 'battle', 'settlement'])", 'TRAVEL_CHOICE_COUNT', 'FLAVOR_POOLS', 'createTravelChoices', 'isTravelChoice'], 'Travel Choice core');
   const travelApp = read(root, 'js/travel-choice-app.mjs');
-  requireTokens(travelApp, ['dataset.travelChoiceScreen', 'rpchess:skirmish-open', 'rpchess:battle-open', 'rpchess:settlement-open', 'currentTravelChoices', 'activeTravelChoice', 'applyTravelSupplyCost', 'supplyPaid', 'СТОИМОСТЬ ПУТИ', 'БЕЗОПАСНОЕ МЕСТО'], 'Travel Choice runtime');
+  requireTokens(travelApp, ['dataset.travelChoiceScreen', 'rpchess:skirmish-open', 'rpchess:battle-open', 'rpchess:settlement-open', 'currentTravelChoices', 'activeTravelChoice', 'applyTravelSupplyCost', 'supplyPaid', 'resolveStarvation', 'hasPendingStarvation', 'СЛУЧАЙНЫЙ БОЕЦ ПОГИБНЕТ', 'БЕЗОПАСНОЕ МЕСТО'], 'Travel Choice runtime');
   if (travelApp.includes('Отправиться')) fail('Travel Choice must select immediately on card click without a second CTA');
   const travelCss = read(root, 'css/travel-choice.css');
   requireTokens(travelCss, ['var(--ui-panel-border)', 'var(--ui-panel-bg)', '.travel-choice-card', '.travel-choice-card__safe', '.travel-choice-card--settlement'], 'Travel Choice CSS');
@@ -118,9 +118,15 @@ module.exports = function verifySource(root) {
   requireTokens(settlementApp, ['dataset.settlementScreen', 'rpchess:settlement-open', 'ЗНАХАРКА', 'ТАВЕРНА', 'СНАБЖЕНИЕ', 'data-settlement-roster', 'data-settlement-continue', 'Продолжить путь'], 'Settlement runtime');
   const settlementCss = read(root, 'css/settlement.css');
   requireTokens(settlementCss, ['var(--ui-panel-border)', 'var(--ui-panel-bg)', '.settlement-services', '.settlement-recruits', '@media(max-width:760px)'], 'Settlement CSS');
-  if (settlementCss.includes('ui_panel_frame.png') || settlementCss.includes('ui_panel_wide.png')) fail('Settlement must remain frameless CSS-only');
 
-  for (const cssPath of ['css/roster.css', 'css/skirmish.css', 'css/battle.css', 'css/travel-choice.css', 'css/resources.css', 'css/settlement.css']) {
+  const starvationCore = read(root, 'js/starvation-core.mjs');
+  requireTokens(starvationCore, ['livingStarvationCandidates', 'deterministicStarvationVictim', 'resolveStarvation', 'hasPendingStarvation', 'acknowledgeStarvation', 'starvation_king'], 'Starvation core');
+  const starvationApp = read(root, 'js/starvation-app.mjs');
+  requireTokens(starvationApp, ['dataset.starvationScreen', 'КОРОЛЬ ПОГИБ ОТ ГОЛОДА', 'data-starvation-continue', 'rpchess:starvation-continue', 'RPChessStarvation'], 'Starvation runtime');
+  const starvationCss = read(root, 'css/starvation.css');
+  requireTokens(starvationCss, ['var(--ui-panel-border)', 'var(--ui-panel-bg)', '.starvation-panel', '@media (max-width: 520px)'], 'Starvation CSS');
+
+  for (const cssPath of ['css/roster.css', 'css/skirmish.css', 'css/battle.css', 'css/travel-choice.css', 'css/resources.css', 'css/settlement.css', 'css/starvation.css']) {
     const css = read(root, cssPath);
     if (css.includes('ui_panel_frame.png') || css.includes('ui_panel_wide.png')) fail(`${cssPath} violates the frameless panel invariant`);
   }
