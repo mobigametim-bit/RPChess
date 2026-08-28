@@ -1,0 +1,85 @@
+.starvation-screen {
+  min-height: 100vh;
+  padding: clamp(18px, 4vw, 48px);
+  background: radial-gradient(circle at 50% 20%, rgba(94, 48, 28, 0.22), transparent 42%), linear-gradient(180deg, #070b11 0%, #030508 100%);
+}
+
+.starvation-shell {
+  width: min(760px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 18px;
+  justify-items: center;
+}
+
+.starvation-logo {
+  width: min(260px, 62vw);
+  height: auto;
+}
+
+.starvation-panel {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  text-align: center;
+  padding-top: clamp(24px, 5vw, 46px);
+  padding-bottom: clamp(24px, 5vw, 46px);
+  border: 1px solid var(--ui-panel-border);
+  background: var(--ui-panel-bg);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+}
+
+.starvation-panel h1,
+.starvation-panel h2,
+.starvation-panel p {
+  margin: 0;
+}
+
+.starvation-panel h1 {
+  max-width: 620px;
+  font-size: clamp(30px, 6vw, 54px);
+  letter-spacing: 0.04em;
+}
+
+.starvation-panel h2 {
+  font-size: clamp(22px, 4vw, 32px);
+}
+
+.starvation-panel p {
+  max-width: 600px;
+  color: rgba(236, 240, 247, 0.82);
+  line-height: 1.55;
+}
+
+.starvation-portrait {
+  width: min(220px, 54vw);
+  aspect-ratio: 1;
+  object-fit: cover;
+  object-position: center top;
+  border: 1px solid rgba(176, 136, 84, 0.48);
+  background: rgba(0, 0, 0, 0.2);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.34);
+}
+
+.starvation-piece {
+  margin-top: -34px;
+  min-width: 54px;
+  min-height: 54px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(194, 151, 92, 0.5);
+  background: rgba(7, 10, 16, 0.92);
+  font-size: 30px;
+}
+
+.starvation-button {
+  margin-top: 8px;
+  min-width: min(320px, 100%);
+}
+
+@media (max-width: 520px) {
+  .starvation-screen { padding: 14px; }
+  .starvation-panel { gap: 12px; }
+  .starvation-panel p { font-size: 14px; }
+}

@@ -1,5 +1,16 @@
 # RPChess Reboot Changelog
 
+## 2026-08-28 — Starvation HUMAN ACCEPTED; merge closure pending
+- Пользователь завершил живой Starvation playtest и подтвердил: **«все хорошо, ручной тест провел»**.
+- Подтверждены: предупреждение при `0 Supplies`, ровно одна casualty до encounter, persistent deterministic victim без reroll/duplicate death после reload, ordinary `ГОЛОД` acknowledgement flow, King starvation run-end и mobile 390×844 без horizontal overflow.
+- Accepted gameplay head: `f8178ec8cf44600b7e49f46c50b9c94dadcd202a`; version `2.9.0-starvation.preview.1`.
+- GitHub Actions push `33171829543`: **SUCCESS**, включая полный real Chromium regression Foundation → Classic Chess → Stockfish → Roster → Skirmish → Battle → Travel Choice → Resources → Settlement → Starvation.
+- GitHub Actions PR `33171832251`: **SUCCESS**, включая тот же полный real Chromium regression.
+- Cloudflare accepted build `ac8e3a37-701e-433b-b8d5-4c03fa81499e`: **SUCCESS**; Version `18279a28-8e49-4b12-8ea2-4c87cb2c1545`; preview `https://18279a28-rpchess.mobigametim.workers.dev`.
+- Starvation перешёл в **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED**.
+- До `DONE` остаются acceptance-docs exact-head gates, перевод PR #75 из Draft в Ready, squash merge и post-merge GitHub Actions + Cloudflare verification на `main`.
+- Events не начинается до полного post-merge closure Starvation.
+
 ## 2026-08-28 — Settlement merged to main → DONE
 - Пользователь ранее завершил живой Settlement playtest и подтвердил: **«проверил, все хорошо, все работает»**.
 - Accepted gameplay head: `92e9387d5afe806af47f05a23105622309742be4`; version `2.8.0-settlement.preview.1`.

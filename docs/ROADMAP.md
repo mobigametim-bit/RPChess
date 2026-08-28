@@ -10,9 +10,9 @@
 - [x] **PLAYTEST GATE C: интересность собственного состава и corrected Skirmish flow подтверждены пользователем.**
 - [x] Battle — полный классический комплект + временные фигуры. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Пользователь принял Battle preview 2026-08-27. Стандартная армия всегда 16 фигур / 39 очков + King 0; HEALTHY named-фигуры заменяют standard slots своего типа, generic slots остаются временными, персональная identity сохраняется на доске, а captured named non-King получают `wounded`.
 - [x] Travel Choice — три случайных следующих пути после каждой встречи. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Пользователь принял preview 2026-08-27. Ровно 3 persistent deterministic cards; card click сразу фиксирует необратимый выбор и запускает encounter; Roster/reload не перегенерируют развилку; текущий playable pool — Skirmish + Battle; aftermath возвращает в следующую тройку через `Продолжить путь`.
-- [x] Resources — Gold + Supplies. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** New run: 80 Gold / 10 Supplies; новый committed travel transition стоит 1 Supply; Skirmish/Battle дают deterministic Gold reward один раз; resource HUD persistent; Starvation casualty намеренно остаётся отдельным этапом после Settlement. Пользователь подтвердил live preview 2026-08-27: «все работает, золото начисляется, припасы тратятся». PR #71 squash-merged в `main`; post-merge CI и Cloudflare production прошли SUCCESS.
-- [x] Settlement — лечение, найм, снабжение. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Пользователь завершил live playtest 2026-08-27 и подтвердил: «проверил, все хорошо, все работает». Safe Settlement route, healer, deterministic tavern recruits, finite Supply shop, persistence/reload и mobile flow приняты. PR #73 squash-merged; post-merge GitHub Actions #955 и Cloudflare production прошли SUCCESS.
-- [ ] Starvation — случайная смерть фигуры при переходе без припасов.
+- [x] Resources — Gold + Supplies. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** New run: 80 Gold / 10 Supplies; новый committed travel transition стоит 1 Supply; Skirmish/Battle дают deterministic Gold reward один раз; resource HUD persistent. Пользователь подтвердил live preview 2026-08-27: «все работает, золото начисляется, припасы тратятся». PR #71 squash-merged в `main`; post-merge CI и Cloudflare production прошли SUCCESS.
+- [x] Settlement — лечение, найм, снабжение. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Пользователь завершил live playtest 2026-08-27 и подтвердил: «проверил, все хорошо, все работает». Safe Settlement route, healer, deterministic tavern recruits, finite Supply shop, persistence/reload и mobile flow приняты. PR #73 squash-merged; post-merge GitHub Actions и Cloudflare production прошли SUCCESS.
+- [x] Starvation — случайная смерть фигуры при переходе без припасов. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED.** Пользователь завершил live playtest 2026-08-28 и подтвердил: «все хорошо, ручной тест провел». При `0 Supplies` до encounter погибает ровно одна детерминированно выбранная живая персонализированная фигура; reload не reroll-ит жертву и не создаёт duplicate death; смерть King завершает run. До `DONE` остаются acceptance-docs exact-head gate, merge PR #75 и post-merge production verification.
 - [ ] Events — первый пакет 20–30 мгновенных событий.
 - [ ] Puzzles — FEN/solution engine и импорт задач.
 - [ ] Encounter Generator.
@@ -25,7 +25,25 @@
 - [ ] Metaprogression — только после подтверждения core loop.
 
 ## Current phase
-**Settlement полностью закрыт как DONE. Следующий этап — UX/spec discussion для Starvation. Gameplay implementation Starvation ещё не начат.**
+**Starvation HUMAN ACCEPTED. Сейчас выполняется финальный acceptance-docs exact-head gate → merge PR #75 → post-merge verification `main`. Events не начинается до полного закрытия Starvation как DONE.**
+
+Текущий Starvation v1 contract:
+- новый committed Travel transition по-прежнему запрашивает `1 Supply`;
+- при `supplyPaid = 0` погибает ровно одна живая persistent roster figure из `healthy + wounded`, включая King;
+- victim детерминирован по run + route и сохраняется в `activeTravelChoice` до encounter dispatch;
+- reload/retry не меняет victim и не убивает вторую фигуру;
+- ordinary casualty показывает отдельную frameless сцену `ГОЛОД`, после acknowledgement запускается тот же committed encounter;
+- King casualty ставит `ended = true`, `endReason = starvation_king`, encounter не запускается;
+- Supplies не уходят ниже 0;
+- mobile 390×844 — без horizontal overflow.
+
+Starvation accepted gameplay head: `f8178ec8cf44600b7e49f46c50b9c94dadcd202a`.  
+Starvation version: `2.9.0-starvation.preview.1`.  
+Accepted GitHub Actions push `33171829543` — **SUCCESS**, включая full real Chromium regression Foundation → Classic Chess → Stockfish → Roster → Skirmish → Battle → Travel Choice → Resources → Settlement → Starvation.  
+Accepted GitHub Actions PR `33171832251` — **SUCCESS**, включая full real Chromium regression.  
+Accepted Cloudflare build `ac8e3a37-701e-433b-b8d5-4c03fa81499e` — **SUCCESS**; Version `18279a28-8e49-4b12-8ea2-4c87cb2c1545`.  
+Accepted preview: `https://18279a28-rpchess.mobigametim.workers.dev`.  
+Human acceptance: **accepted 2026-08-28**.
 
 Текущий Settlement v1 contract:
 - Travel playable pool: `Skirmish / Battle / Settlement`, при этом каждая тройка гарантирует минимум одну Стычку и одну Битву;
@@ -59,7 +77,7 @@ Post-merge Cloudflare production build `6c973861-a04d-415b-b1fa-df1c110ee6d2` �
 - Skirmish victory `12 + 4×stars`, draw half, loss 0;
 - Battle victory `20 + 6×stars`, draw half, loss 0;
 - reward settlement idempotent;
-- at 0 Supplies Resources itself does not kill a character yet: canonical death consequence remains isolated to the later **Starvation** feature.
+- при `0 Supplies` canonical death consequence теперь реализован отдельным слоем **Starvation**.
 
 Resources merge SHA: `c4e98b7f2bdbf926727ceec7bee15099919ea19d`.  
 Resources post-merge docs/current main before Settlement: `1f3cac1bc9cd6231d4796eeb70e9bc19ccdd154f`.  
