@@ -1,8 +1,8 @@
 # 09 — Settlement
 
-**Статус:** IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED. Feature merge и post-merge production closure ещё обязательны до DONE.
+**Статус:** IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.
 
-Пользователь завершил живой Settlement playtest 2026-08-27 и подтвердил: **«проверил, все хорошо, все работает»**.
+Пользователь завершил живой Settlement playtest 2026-08-27 и подтвердил: **«проверил, все хорошо, все работает»**. Feature squash-merged в `main`, post-merge GitHub Actions и Cloudflare production verification завершились SUCCESS.
 
 Settlement — безопасная остановка внутри Travel loop. V1 содержит ровно три услуги: лечение, найм и снабжение. Отдельной RPG-экипировки, талантов, crafting, abilities или специальной боевой системы нет.
 
@@ -83,13 +83,26 @@ Accepted gameplay head: `92e9387d5afe806af47f05a23105622309742be4`.
 
 Version: `2.8.0-settlement.preview.1`.
 
-GitHub Actions #946 / `33114651996`: **SUCCESS**. Проверены source contract, deterministic Foundation/Chess/AI/Roster/Skirmish/Battle/Travel/Resources/Settlement tests, build/distribution boundary и полный real Chromium regression Foundation → Classic Chess → Stockfish → Roster → Skirmish → Battle → Travel Choice → Resources → Settlement.
+Gameplay GitHub Actions #946 / `33114651996`: **SUCCESS**. Проверены source contract, deterministic Foundation/Chess/AI/Roster/Skirmish/Battle/Travel/Resources/Settlement tests, build/distribution boundary и полный real Chromium regression Foundation → Classic Chess → Stockfish → Roster → Skirmish → Battle → Travel Choice → Resources → Settlement.
 
-Cloudflare Build `1aaa73d9-064b-4e01-ae51-62abfb0ec9a9`: **SUCCESS**. Version `a79ca435-1006-4f3e-bd0a-c2cac5dd8f4b`.
+Accepted gameplay Cloudflare Build `1aaa73d9-064b-4e01-ae51-62abfb0ec9a9`: **SUCCESS**. Version `a79ca435-1006-4f3e-bd0a-c2cac5dd8f4b`.
 
 Accepted preview: `https://a79ca435-rpchess.mobigametim.workers.dev`  
 Alias: `https://feature-settlement-rpchess.mobigametim.workers.dev`
 
+Final feature head: `60c2bcbe616f6d1dc189e70cab8a0211d07274c1`.
+
+Exact-head GitHub Actions #953 / `33118757504`: **SUCCESS**.  
+PR-triggered GitHub Actions #954 / `33125160839`: **SUCCESS**, включая полный real Chromium regression.  
+Exact-head Cloudflare build `9a09d556-0645-424e-83f4-7b2a1b460989`: **SUCCESS**; Version `d6b52b6a-7b66-4b81-950c-f7122dad0551`.
+
+PR #73 `Settlement: healer, tavern recruitment and supply shop` squash-merged 2026-08-27.
+
+Settlement merge / production `main` SHA: `854a0bd4535c6b3006fa11a207a011f3e3e2a0f2`.
+
+Post-merge GitHub Actions #955 / `33125831513`: **SUCCESS**, включая полный real Chromium regression.  
+Post-merge Cloudflare production build `6c973861-a04d-415b-b1fa-df1c110ee6d2`: **SUCCESS**; production Version `86a0ce13-e9eb-4366-b853-dc456ec7ba97`.
+
 Human acceptance: **accepted 2026-08-27**.
 
-Settlement станет **DONE** только после acceptance-docs exact-head CI/Cloudflare, feature PR squash-merge и успешных post-merge `main` gates.
+Settlement lifecycle окончательно закрыт: **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**. Следующий roadmap-этап — **Starvation**; его gameplay implementation начинается только после отдельного UX/spec approval.

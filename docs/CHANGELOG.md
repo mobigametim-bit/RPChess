@@ -1,5 +1,20 @@
 # RPChess Reboot Changelog
 
+## 2026-08-28 — Settlement merged to main → DONE
+- Пользователь ранее завершил живой Settlement playtest и подтвердил: **«проверил, все хорошо, все работает»**.
+- Accepted gameplay head: `92e9387d5afe806af47f05a23105622309742be4`; version `2.8.0-settlement.preview.1`.
+- Gameplay GitHub Actions `33114651996` / #946: **SUCCESS**, включая полный real Chromium regression Foundation → Classic Chess → Stockfish → Roster → Skirmish → Battle → Travel Choice → Resources → Settlement.
+- Accepted gameplay Cloudflare build `1aaa73d9-064b-4e01-ae51-62abfb0ec9a9`: **SUCCESS**; Version `a79ca435-1006-4f3e-bd0a-c2cac5dd8f4b`.
+- Final feature head: `60c2bcbe616f6d1dc189e70cab8a0211d07274c1`.
+- Exact-head GitHub Actions `33118757504` / #953: **SUCCESS**; PR-triggered GitHub Actions `33125160839` / #954: **SUCCESS**.
+- Exact-head Cloudflare build `9a09d556-0645-424e-83f4-7b2a1b460989`: **SUCCESS**; Version `d6b52b6a-7b66-4b81-950c-f7122dad0551`.
+- PR #73 `Settlement: healer, tavern recruitment and supply shop` squash-merged.
+- Settlement merge / production `main` SHA: `854a0bd4535c6b3006fa11a207a011f3e3e2a0f2`.
+- Post-merge GitHub Actions `33125831513` / #955: **SUCCESS**, включая полный real Chromium regression.
+- Post-merge Cloudflare production build `6c973861-a04d-415b-b1fa-df1c110ee6d2`: **SUCCESS**; Version `86a0ce13-e9eb-4366-b853-dc456ec7ba97`.
+- Settlement окончательно закрыт как **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**.
+- Следующий этап — **Starvation UX/spec discussion**; gameplay implementation не начинается до отдельного утверждения правил и UX.
+
 ## 2026-08-27 — Resources merged to main → DONE
 - Пользователь ранее завершил живой Resources playtest и подтвердил: **«все работает, золото начисляется, припасы тратятся»**.
 - Accepted gameplay head: `e162c347efe7ec1e55c1f76df7999c90469f1906`; version `2.7.0-resources.preview.1`.

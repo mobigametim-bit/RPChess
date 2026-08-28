@@ -11,7 +11,7 @@
 - [x] Battle — полный классический комплект + временные фигуры. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Пользователь принял Battle preview 2026-08-27. Стандартная армия всегда 16 фигур / 39 очков + King 0; HEALTHY named-фигуры заменяют standard slots своего типа, generic slots остаются временными, персональная identity сохраняется на доске, а captured named non-King получают `wounded`.
 - [x] Travel Choice — три случайных следующих пути после каждой встречи. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Пользователь принял preview 2026-08-27. Ровно 3 persistent deterministic cards; card click сразу фиксирует необратимый выбор и запускает encounter; Roster/reload не перегенерируют развилку; текущий playable pool — Skirmish + Battle; aftermath возвращает в следующую тройку через `Продолжить путь`.
 - [x] Resources — Gold + Supplies. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** New run: 80 Gold / 10 Supplies; новый committed travel transition стоит 1 Supply; Skirmish/Battle дают deterministic Gold reward один раз; resource HUD persistent; Starvation casualty намеренно остаётся отдельным этапом после Settlement. Пользователь подтвердил live preview 2026-08-27: «все работает, золото начисляется, припасы тратятся». PR #71 squash-merged в `main`; post-merge CI и Cloudflare production прошли SUCCESS.
-- [ ] Settlement — лечение, найм, снабжение. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED.** Пользователь завершил live playtest 2026-08-27 и подтвердил: «проверил, все хорошо, все работает». Safe Settlement route, healer, deterministic tavern recruits, finite Supply shop, persistence/reload и mobile flow приняты. Остались feature PR squash-merge и post-merge production gates; только после них пункт станет DONE.
+- [x] Settlement — лечение, найм, снабжение. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Пользователь завершил live playtest 2026-08-27 и подтвердил: «проверил, все хорошо, все работает». Safe Settlement route, healer, deterministic tavern recruits, finite Supply shop, persistence/reload и mobile flow приняты. PR #73 squash-merged; post-merge GitHub Actions #955 и Cloudflare production прошли SUCCESS.
 - [ ] Starvation — случайная смерть фигуры при переходе без припасов.
 - [ ] Events — первый пакет 20–30 мгновенных событий.
 - [ ] Puzzles — FEN/solution engine и импорт задач.
@@ -25,7 +25,7 @@
 - [ ] Metaprogression — только после подтверждения core loop.
 
 ## Current phase
-**Settlement closure. HUMAN ACCEPTED получен 2026-08-27; merge/post-merge exact-head gates обязательны до DONE. Starvation не начинается до полного closure Settlement.**
+**Settlement полностью закрыт как DONE. Следующий этап — UX/spec discussion для Starvation. Gameplay implementation Starvation ещё не начат.**
 
 Текущий Settlement v1 contract:
 - Travel playable pool: `Skirmish / Battle / Settlement`, при этом каждая тройка гарантирует минимум одну Стычку и одну Битву;
@@ -39,11 +39,17 @@
 
 Settlement accepted gameplay head: `92e9387d5afe806af47f05a23105622309742be4`.  
 Settlement version: `2.8.0-settlement.preview.1`.  
-GitHub Actions `33114651996` / #946 — **SUCCESS**, включая full real Chromium regression Foundation → Classic Chess → Stockfish → Roster → Skirmish → Battle → Travel Choice → Resources → Settlement.  
-Cloudflare build `1aaa73d9-064b-4e01-ae51-62abfb0ec9a9` — **SUCCESS**; Version `a79ca435-1006-4f3e-bd0a-c2cac5dd8f4b`.  
+Gameplay GitHub Actions `33114651996` / #946 — **SUCCESS**, включая full real Chromium regression Foundation → Classic Chess → Stockfish → Roster → Skirmish → Battle → Travel Choice → Resources → Settlement.  
+Accepted gameplay Cloudflare build `1aaa73d9-064b-4e01-ae51-62abfb0ec9a9` — **SUCCESS**; Version `a79ca435-1006-4f3e-bd0a-c2cac5dd8f4b`.  
 Accepted preview: `https://a79ca435-rpchess.mobigametim.workers.dev`.  
 Human acceptance: **accepted 2026-08-27**.  
-Pre-Settlement production `main`: `1f3cac1bc9cd6231d4796eeb70e9bc19ccdd154f`.
+Final feature head: `60c2bcbe616f6d1dc189e70cab8a0211d07274c1`.  
+Exact-head GitHub Actions `33118757504` / #953 — **SUCCESS**.  
+PR-triggered GitHub Actions `33125160839` / #954 — **SUCCESS**.  
+Exact-head Cloudflare build `9a09d556-0645-424e-83f4-7b2a1b460989` — **SUCCESS**; Version `d6b52b6a-7b66-4b81-950c-f7122dad0551`.  
+PR #73 squash-merge / production `main`: `854a0bd4535c6b3006fa11a207a011f3e3e2a0f2`.  
+Post-merge GitHub Actions `33125831513` / #955 — **SUCCESS**.  
+Post-merge Cloudflare production build `6c973861-a04d-415b-b1fa-df1c110ee6d2` — **SUCCESS**; Version `86a0ce13-e9eb-4366-b853-dc456ec7ba97`.
 
 Текущий Resources v1 contract:
 - new run: `Gold 80`, `Supplies 10`;
