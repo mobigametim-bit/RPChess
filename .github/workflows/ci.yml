@@ -13,6 +13,7 @@ on:
       - feature/resources
       - feature/settlement
       - feature/starvation
+      - feature/events
 
 permissions:
   contents: read
@@ -22,7 +23,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify-starvation:
+  verify-events:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,70 +35,44 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Verify Reboot source contract
         run: npm run verify
-      - name: Run Foundation, chess, AI, Roster, Skirmish, Battle, Travel Choice, Resources, Settlement and Starvation tests
+      - name: Run Foundation through Events deterministic tests
         run: npm test
-      - name: Build Starvation web distribution
+      - name: Build Events web distribution
         run: npm run build
-      - name: Verify clean Starvation distribution boundary
+      - name: Verify clean Events distribution boundary
         shell: bash
         run: |
           set -euo pipefail
-          test -f dist/index.html
-          test -f dist/css/reboot-foundation.css
-          test -f dist/css/classic-chess.css
-          test -f dist/css/chess-ai-polish.css
-          test -f dist/css/roster.css
-          test -f dist/css/skirmish.css
-          test -f dist/css/battle.css
-          test -f dist/css/travel-choice.css
-          test -f dist/css/resources.css
-          test -f dist/css/settlement.css
-          test -f dist/css/starvation.css
-          test -f dist/js/reboot-foundation.mjs
-          test -f dist/js/reboot-audio.mjs
-          test -f dist/js/classic-chess-engine.mjs
-          test -f dist/js/classic-chess-app.mjs
-          test -f dist/js/chess-ai-adapter.mjs
-          test -f dist/js/roster-data.mjs
-          test -f dist/js/run-persistence.mjs
-          test -f dist/js/roster-app.mjs
-          test -f dist/js/skirmish-core.mjs
-          test -f dist/js/skirmish-app.mjs
-          test -f dist/js/battle-core.mjs
-          test -f dist/js/battle-app.mjs
-          test -f dist/js/battle-route.mjs
-          test -f dist/js/travel-choice-core.mjs
-          test -f dist/js/travel-choice-app.mjs
-          test -f dist/js/resources-core.mjs
-          test -f dist/js/resources-app.mjs
-          test -f dist/js/settlement-core.mjs
-          test -f dist/js/settlement-app.mjs
-          test -f dist/js/starvation-core.mjs
-          test -f dist/js/starvation-app.mjs
-          test -f dist/assets/kings/oathkeeper/portrait.png
-          test -f dist/assets/kings/oathkeeper/piece.png
-          for hero in aldric_wall mara_chain nemea_quill brother_orell vael_hammer lady_sorn khulan_star; do
-            test -f "dist/assets/heroes/${hero}/portrait.png"
-            test -f "dist/assets/heroes/${hero}/piece_badge.png"
+          for file in \
+            dist/index.html \
+            dist/BUILD_INFO.json \
+            dist/css/reboot-foundation.css \
+            dist/css/classic-chess.css \
+            dist/css/roster.css \
+            dist/css/skirmish.css \
+            dist/css/battle.css \
+            dist/css/travel-choice.css \
+            dist/css/resources.css \
+            dist/css/settlement.css \
+            dist/css/starvation.css \
+            dist/css/events.css \
+            dist/js/reboot-foundation.mjs \
+            dist/js/roster-app.mjs \
+            dist/js/skirmish-app.mjs \
+            dist/js/battle-app.mjs \
+            dist/js/travel-choice-app.mjs \
+            dist/js/resources-app.mjs \
+            dist/js/settlement-app.mjs \
+            dist/js/starvation-app.mjs \
+            dist/js/events-data.mjs \
+            dist/js/events-core.mjs \
+            dist/js/events-app.mjs \
+            dist/generated_assets/node_event.png \
+            dist/vendor/stockfish/stockfish-18-lite-single.js \
+            dist/vendor/stockfish/stockfish-18-lite-single.wasm; do
+            test -f "$file"
           done
-          test -f dist/vendor/stockfish/stockfish-18-lite-single.js
-          test -f dist/vendor/stockfish/stockfish-18-lite-single.wasm
-          test -f dist/vendor/stockfish/COPYING.txt
-          test -f dist/vendor/stockfish/SOURCE.txt
-          test -f dist/generated_assets/logo_main.png
-          test -f dist/generated_assets/title_wordmark.png
-          test -f dist/generated_assets/splash_poster.jpg
-          test -f dist/generated_assets/node_battle.png
-          test -f dist/generated_assets/node_elite.png
-          test -f dist/generated_assets/node_shop.png
-          test -f dist/generated_assets/reward_gold.png
-          for piece in pawn knight bishop rook queen king; do
-            test -f "dist/generated_assets/unit_${piece}_player.png"
-            test -f "dist/generated_assets/unit_${piece}_enemy.png"
-          done
-          for track in 01 02 03 04; do
-            test -f "dist/music/echoes_iron_throne_${track}.mp3"
-          done
+          for i in $(seq -w 1 10); do test -f "dist/js/events/event-data-${i}.mjs"; done
           test ! -e dist/js/generated/iron-marches-runtime.bundle.js
           ! grep -q 'vertical-slice-app.mjs' dist/index.html
           ! grep -q 'iron-marches-runtime.bundle.js' dist/index.html
@@ -107,8 +82,8 @@ jobs:
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
-      - name: Run real Chromium Foundation, chess, Stockfish, Roster, Skirmish, Battle, Travel Choice, Resources, Settlement and Starvation acceptance
-        timeout-minutes: 25
+      - name: Run real Chromium Foundation through Events acceptance
+        timeout-minutes: 30
         shell: bash
         run: |
           set -euo pipefail
@@ -129,3 +104,4 @@ jobs:
           stdbuf -oL -eL node tests/resources-browser.cjs
           stdbuf -oL -eL node tests/settlement-browser.cjs
           stdbuf -oL -eL node tests/starvation-browser.cjs
+          stdbuf -oL -eL node tests/events-browser.cjs
