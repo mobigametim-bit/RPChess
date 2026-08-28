@@ -120,7 +120,7 @@ class MemoryStorage {
   assert(travelSource.includes('СЛУЧАЙНЫЙ БОЕЦ ПОГИБНЕТ'), 'Travel cards must warn about the casualty before commitment');
   assert(travelSource.includes('resolveStarvation'), 'Travel must resolve Starvation atomically with route commitment');
   assert(appSource.includes('КОРОЛЬ ПОГИБ ОТ ГОЛОДА'), 'King starvation run-end copy missing');
-  assert(appSource.includes('data-starvation-screen'), 'Starvation consequence screen contract missing');
+  assert(appSource.includes('dataset.starvationScreen'), 'Starvation consequence screen contract missing');
   assert(!css.includes('ui_panel_frame.png') && !css.includes('ui_panel_wide.png'), 'Starvation UI must remain frameless CSS-only');
 
   console.log('Starvation deterministic casualty, idempotency, King death, persistence and frameless UX contract: PASS');
