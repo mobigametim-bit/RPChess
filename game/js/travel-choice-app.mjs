@@ -1,5 +1,6 @@
 import { readRun, writeRun } from './run-persistence.mjs';
 import { TRAVEL_SUPPLY_COST, applyTravelSupplyCost } from './resources-core.mjs';
+import { hasPendingStarvation, resolveStarvation } from './starvation-core.mjs';
 import {
   PLAYABLE_TRAVEL_TYPES,
   TRAVEL_CHOICE_COUNT,
@@ -46,7 +47,7 @@ function ensureScreen() {
         <p data-travel-step>Шаг путешествия 1</p>
       </header>
       <section class="travel-choice-routes" data-travel-routes aria-label="Три возможных пути"></section>
-      <p class="travel-choice-footnote">Выбор пути окончателен. Каждый переход расходует 1 припас. Нажмите на карточку, чтобы сразу отправиться навстречу событию.</p>
+      <p class="travel-choice-footnote">Выбор пути окончателен. Каждый переход расходует 1 припас. Если припасов нет, случайный живой боец погибает. Нажмите на карточку, чтобы выбрать путь.</p>
     </div>`;
   app.append(screen);
 
@@ -60,7 +61,7 @@ function ensureScreen() {
 
 function hideAllScenes() {
   for (const main of document.querySelectorAll('#app > main')) main.hidden = true;
-  document.body.classList.remove('roster-active', 'skirmish-active', 'battle-active', 'classic-chess-active', 'settlement-active');
+  document.body.classList.remove('roster-active', 'skirmish-active', 'battle-active', 'classic-chess-active', 'settlement-active', 'starvation-active');
 }
 
 function showTravel() {
@@ -102,9 +103,13 @@ function routeCard(choice) {
   button.dataset.travelChoice = choice.id;
   button.dataset.travelType = choice.type;
   button.dataset.travelStars = String(choice.stars);
+  const noSupplies = (activeRun?.supplies || 0) < TRAVEL_SUPPLY_COST;
+  const supplyWarning = noSupplies
+    ? 'Припасов нет. После выбора пути случайный живой боец погибнет.'
+    : `Стоимость пути ${TRAVEL_SUPPLY_COST} припас.`;
   button.setAttribute('aria-label', choice.type === 'settlement'
-    ? `${choice.label}. Безопасное место. Лечение, найм и снабжение. Стоимость пути ${TRAVEL_SUPPLY_COST} припас. ${choice.flavor} Нажмите, чтобы выбрать путь.`
-    : `${choice.label}. Угроза ${choice.stars} из 5. Стоимость пути ${TRAVEL_SUPPLY_COST} припас. ${choice.flavor} Нажмите, чтобы выбрать путь.`);
+    ? `${choice.label}. Безопасное место. Лечение, найм и снабжение. ${supplyWarning} ${choice.flavor} Нажмите, чтобы выбрать путь.`
+    : `${choice.label}. Угроза ${choice.stars} из 5. ${supplyWarning} ${choice.flavor} Нажмите, чтобы выбрать путь.`);
 
   const visual = document.createElement('span');
   visual.className = 'travel-choice-card__visual';
@@ -141,10 +146,9 @@ function routeCard(choice) {
   hint.textContent = choice.mechanicalHint;
   const cost = document.createElement('span');
   cost.className = 'travel-choice-card__cost';
-  const noSupplies = (activeRun?.supplies || 0) < TRAVEL_SUPPLY_COST;
   cost.classList.toggle('is-empty', noSupplies);
   cost.textContent = noSupplies
-    ? 'ПРИПАСОВ НЕТ · ПЕРЕХОД БЕЗ СПИСАНИЯ'
+    ? 'ПРИПАСОВ НЕТ · СЛУЧАЙНЫЙ БОЕЦ ПОГИБНЕТ'
     : `СТОИМОСТЬ ПУТИ · ${TRAVEL_SUPPLY_COST} ПРИПАС`;
   const action = document.createElement('span');
   action.className = 'travel-choice-card__action';
@@ -195,6 +199,12 @@ function dispatchEncounter(choice) {
   throw new Error(`Travel Choice encounter type is not playable yet: ${choice.type}`);
 }
 
+function showPendingStarvation() {
+  if (!activeRun || !hasPendingStarvation(activeRun)) return false;
+  hideTravel();
+  return Boolean(globalThis.RPChessStarvation?.open?.(activeRun));
+}
+
 function chooseChoice(choice, button) {
   if (routing) return;
   const current = readRun();
@@ -208,28 +218,34 @@ function chooseChoice(choice, button) {
 
   const travelPayment = applyTravelSupplyCost(current);
   const count = combatCount(current, choice);
-  const activeChoice = {
+  let activeChoice = {
     ...choice,
     ...(Number.isInteger(count) ? { combatCountAtSelection: count } : {}),
     supplyCostAtSelection: travelPayment.requested,
     supplyPaid: travelPayment.paid
   };
-  activeRun = writeRun({
+  let nextRun = {
     ...travelPayment.run,
     journeyStep: choice.step,
     currentTravelChoices: null,
     activeTravelChoice: activeChoice
-  });
+  };
+  const starvation = resolveStarvation(nextRun, activeChoice);
+  nextRun = starvation.run;
+  activeChoice = starvation.choice;
+  activeRun = writeRun(nextRun);
   globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
   if (travelPayment.paid > 0) {
     globalThis.RPChessResources?.showChange?.({ suppliesDelta: -travelPayment.paid, label: 'ПЕРЕХОД' });
   } else {
-    globalThis.RPChessResources?.showChange?.({ label: 'ПРИПАСОВ НЕТ' });
+    globalThis.RPChessResources?.showChange?.({ label: 'ГОЛОД' });
   }
 
   const delay = document.documentElement.dataset.reducedMotion === '1' ? 0 : 180;
   setTimeout(() => {
     routing = false;
+    if (showPendingStarvation()) return;
+    if (activeRun?.ended) return;
     dispatchEncounter(activeChoice);
   }, delay);
 }
@@ -237,7 +253,9 @@ function chooseChoice(choice, button) {
 function openTravel() {
   routing = false;
   activeRun = readRun();
-  if (!activeRun || activeRun.ended) return;
+  if (!activeRun) return;
+  if (showPendingStarvation()) return;
+  if (activeRun.ended) return;
 
   if (isTravelChoice(activeRun.activeTravelChoice) && PLAYABLE_TRAVEL_TYPES.includes(activeRun.activeTravelChoice.type)) {
     dispatchEncounter(activeRun.activeTravelChoice);
@@ -291,10 +309,18 @@ function wireAftermathTravel() {
   });
 }
 
+function continueAfterStarvation() {
+  activeRun = readRun();
+  const choice = activeRun?.activeTravelChoice;
+  if (!activeRun || activeRun.ended || !isTravelChoice(choice) || choice.starvationAcknowledged !== true) return;
+  dispatchEncounter(choice);
+}
+
 ensureScreen();
 wireAftermathTravel();
 addEventListener('rpchess:travel-open', openTravel);
 addEventListener('rpchess:run-updated', syncRun);
+addEventListener('rpchess:starvation-continue', continueAfterStarvation);
 
 globalThis.RPChessTravelChoice = Object.freeze({
   open: openTravel,
