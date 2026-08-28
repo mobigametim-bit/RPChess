@@ -51,6 +51,7 @@ function normalizeChoice(choice) {
     cost: normalizeCost(choice),
     successEffects: Array.isArray(choice?.successEffects) ? choice.successEffects : parseEffects(choice?.success, choice),
     failureEffects: Array.isArray(choice?.failureEffects) ? choice.failureEffects : parseEffects(choice?.failure, choice),
+    alwaysEffects: Array.isArray(choice?.alwaysEffects) ? choice.alwaysEffects : [],
     warnings: Array.isArray(choice?.warnings) ? choice.warnings : [],
     kingRisk: Boolean(choice?.kingRisk)
   };
@@ -190,7 +191,10 @@ function resolveEventChoice(run, choiceId) {
   const roll = deterministicRoll(run, state, choice);
   const succeeded = roll <= choice.chance;
   let next = { ...run, gold: Math.max(0, (run.gold || 0) - choice.cost.gold), supplies: Math.max(0, (run.supplies || 0) - choice.cost.supplies) };
-  const effects = succeeded ? choice.successEffects : choice.failureEffects;
+  const effects = [
+    ...(succeeded ? choice.successEffects : choice.failureEffects),
+    ...choice.alwaysEffects
+  ];
   const notes = [];
   let combat = null;
   effects.forEach((effect, index) => {
