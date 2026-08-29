@@ -19,10 +19,14 @@ const BACKGROUND_POOLS = Object.freeze({
   dragonborn:Object.freeze(['dragonborn_aerie.png','ember_tribunal.png']),
   beastfolk:Object.freeze(['beastfolk_hunting_camp.png','moon_run_path.png']),
   constructs:Object.freeze(['construct_foundry.png','silent_observatory.png']),
-  animals:Object.freeze(['wild_glen.png','riverbank_tracks.png']),
-  fae:Object.freeze(['fae_ring_garden.png','whispering_meadow.png']),
-  goblins:Object.freeze(['goblin_trade_nook.png','goblin_scrapyard_camp.png'])
+  // The currently uploaded Events asset set does not yet contain the two
+  // approved Animals files. Route Animals through universal woodland scenes
+  // instead of emitting a broken URL; source verification keeps this explicit.
+  animals:Object.freeze(['forest_crossroad.png','old_kings_road.png']),
+  fae:Object.freeze(['fae_moonwell.png','fae_mushroom_court.png']),
+  goblins:Object.freeze(['goblin_bomb_yard.png','goblin_scrap_market.png'])
 });
+const BACKGROUND_FOLDER_BY_RACE = Object.freeze({ animals:'generic' });
 
 function hashString(value) { let hash=2166136261; for(const char of String(value)){hash^=char.charCodeAt(0);hash=Math.imul(hash,16777619);} return hash>>>0; }
 function normalizeRaceTag(value) {
@@ -37,7 +41,7 @@ function racePiecePath(raceTag,pieceType,color='b'){
   const resolved=race==='mixed'?'humans':race;return `assets/races/${resolved}/pieces/${type}.png`;
 }
 function eventBackgroundPath(event){
-  const id=event?.id||event?.eventId||'event',race=normalizeRaceTag(event?.raceTag||event?.race),pool=race==='mixed'?BACKGROUND_POOLS.generic:(BACKGROUND_POOLS[race]||BACKGROUND_POOLS.generic),filename=pool[hashString(`${id}:background`)%pool.length],folder=race==='mixed'?'generic':race;
+  const id=event?.id||event?.eventId||'event',race=normalizeRaceTag(event?.raceTag||event?.race),pool=race==='mixed'?BACKGROUND_POOLS.generic:(BACKGROUND_POOLS[race]||BACKGROUND_POOLS.generic),filename=pool[hashString(`${id}:background`)%pool.length],folder=race==='mixed'?'generic':(BACKGROUND_FOLDER_BY_RACE[race]||race);
   return `assets/events/register-04/backgrounds/${folder}/${filename}`;
 }
 function deterministicPlayerColor(seed,explicit=null){if(explicit==='w'||explicit==='b')return explicit;return hashString(`${seed}:player-color`)%100<36?'b':'w';}
@@ -52,4 +56,4 @@ function combatTheme({seed,raceTag=null,playerColor=null,mixed=false}={}){
 }
 function pieceArtForTheme(theme,pieceType,color){const race=theme?.enemyRoleRaces?.[pieceType]||theme?.enemyRaceTag||'humans';return racePiecePath(race,pieceType,color||theme?.enemyColor||'b');}
 
-export {RACE_TAGS,PIECE_TYPES,RACE_LABELS,RACE_TAG_BY_LABEL,BACKGROUND_POOLS,hashString,normalizeRaceTag,oppositeColor,racePiecePath,eventBackgroundPath,deterministicPlayerColor,deterministicRace,mixedRoleRaces,combatTheme,pieceArtForTheme};
+export {RACE_TAGS,PIECE_TYPES,RACE_LABELS,RACE_TAG_BY_LABEL,BACKGROUND_POOLS,BACKGROUND_FOLDER_BY_RACE,hashString,normalizeRaceTag,oppositeColor,racePiecePath,eventBackgroundPath,deterministicPlayerColor,deterministicRace,mixedRoleRaces,combatTheme,pieceArtForTheme};
