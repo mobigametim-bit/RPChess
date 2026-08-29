@@ -72,7 +72,7 @@
 - Acceptance-docs Cloudflare build: `4bc864ec-93dc-4800-aa3f-c87ba8b2098c` — **SUCCESS**; Version `31dac392-6d39-4d85-9d56-26a8b218de3e`.
 - Original Draft PR #76 was closed unmerged only because the connected Ready mutation failed on a GitHub GraphQL schema incompatibility; the identical exact tree was opened as non-Draft PR #77.
 - PR #77 squash-merge / production `main`: `1e47a4a3121f1156a623a98ae29866b3a07d4cbc`.
-- Post-merge Cloudflare build: `5f137e48-7b8a-42e1-830e-c7826fa8f11a` — **SUCCESS**; Version `45dcd46b-1306-4249-ae14-f48b5cd4f492`.
+- Post-merge Cloudflare build: `5f137e48-7b8a-42e1-830e-c7826fa8f11a` — **SUCCESS**; Version `45dcd46b-1306-4249-ae14-f48b5cd4b492`.
 
 ### Events accepted contract
 
