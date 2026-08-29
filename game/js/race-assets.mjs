@@ -19,14 +19,11 @@ const BACKGROUND_POOLS = Object.freeze({
   dragonborn:Object.freeze(['dragonborn_aerie.png','ember_tribunal.png']),
   beastfolk:Object.freeze(['beastfolk_hunting_camp.png','moon_run_path.png']),
   constructs:Object.freeze(['construct_foundry.png','silent_observatory.png']),
-  // The currently uploaded Events asset set does not yet contain the two
-  // approved Animals files. Route Animals through universal woodland scenes
-  // instead of emitting a broken URL; source verification keeps this explicit.
-  animals:Object.freeze(['forest_crossroad.png','old_kings_road.png']),
-  fae:Object.freeze(['fae_moonwell.png','fae_mushroom_court.png']),
-  goblins:Object.freeze(['goblin_bomb_yard.png','goblin_scrap_market.png'])
+  animals:Object.freeze(['wild_glen.png','riverbank_tracks.png']),
+  fae:Object.freeze(['fae_ring_garden.png','whispering_meadow.png']),
+  goblins:Object.freeze(['goblin_trade_nook.png','goblin_scrapyard_camp.png'])
 });
-const BACKGROUND_FOLDER_BY_RACE = Object.freeze({ animals:'generic' });
+const BACKGROUND_FOLDER_BY_RACE = Object.freeze({});
 
 function hashString(value) { let hash=2166136261; for(const char of String(value)){hash^=char.charCodeAt(0);hash=Math.imul(hash,16777619);} return hash>>>0; }
 function normalizeRaceTag(value) {
