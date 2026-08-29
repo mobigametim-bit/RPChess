@@ -2,6 +2,7 @@ const assert=require('assert'),path=require('path'),{pathToFileURL}=require('url
 (async()=>{
   const root=path.resolve(__dirname,'..');
   const rosterData=await import(pathToFileURL(path.join(root,'game/js/roster-data.mjs')).href);
+  const difficulty=await import(pathToFileURL(path.join(root,'game/js/encounter-difficulty.mjs')).href);
   const skirmish=await import(pathToFileURL(path.join(root,'game/js/skirmish-core.mjs')).href);
   const roster=rosterData.createStarterRoster(),selected=skirmish.defaultCombatSelection(roster);
   assert.strictEqual(selected.length,6);const valid=skirmish.validateSelection(roster,selected);assert.strictEqual(valid.ok,true);assert.strictEqual(valid.points,13);assert.strictEqual(valid.count,6);assert.ok(selected.includes('king.oathkeeper'));
@@ -10,6 +11,10 @@ const assert=require('assert'),path=require('path'),{pathToFileURL}=require('url
   const woundedKing=roster.map(c=>c.isRunKing?{...c,status:'wounded'}:c);assert(skirmish.defaultCombatSelection(woundedKing).includes('king.oathkeeper'));assert.strictEqual(skirmish.validateSelection(woundedKing,skirmish.defaultCombatSelection(woundedKing)).ok,true);
   const oversized=[roster[0],...Array.from({length:16},(_,i)=>({id:`pawn.${i}`,name:`Pawn ${i}`,pieceType:'pawn',commandCost:1,status:'healthy',isRunKing:false}))];assert.strictEqual(skirmish.validateSelection(oversized,oversized.map(x=>x.id)).reason,'piece_limit');
   const expensive=[roster[0],...Array.from({length:5},(_,i)=>({id:`queen.${i}`,name:`Queen ${i}`,pieceType:'queen',commandCost:9,status:'healthy',isRunKing:false}))];assert.strictEqual(skirmish.validateSelection(expensive,expensive.map(x=>x.id)).reason,'point_limit');
+
+  assert.strictEqual(difficulty.starsText(6),'★★★★★★');
+  assert.strictEqual(difficulty.starsText(12),'★★★★★★\u200B★★★★★★','12 stars must expose a single invisible 6+6 wrap point');
+  assert.strictEqual(difficulty.starsText(99),'★★★★★★\u200B★★★★★★','star display must clamp at 12 and preserve the 6+6 fallback');
 
   globalThis.RPChessTravelEncounterOverride={type:'skirmish',seed:'test-seed',stars:12,playerColor:'b',enemyRaceTag:'orcs'};
   const encounter=skirmish.createEncounter({seed:'fallback',stars:2});assert.strictEqual(encounter.stars,12);assert.strictEqual(encounter.aiElo,2600);assert.strictEqual(encounter.playerColor,'b');assert.strictEqual(encounter.enemyRaceTag,'orcs');
@@ -23,5 +28,5 @@ const assert=require('assert'),path=require('path'),{pathToFileURL}=require('url
   const run={id:'run-test',roster,ended:false};
   const winBlack=skirmish.applyBattleOutcome(run,{capturedIds:['hero.aldric_wall'],status:{type:'checkmate',winner:'b'},playerColor:'b'});assert.strictEqual(winBlack.roster.find(c=>c.id==='hero.aldric_wall').status,'wounded');assert.strictEqual(winBlack.roster.find(c=>c.isRunKing).status,'healthy');assert.strictEqual(winBlack.ended,false);
   const lossBlack=skirmish.applyBattleOutcome(run,{capturedIds:[],status:{type:'checkmate',winner:'w'},playerColor:'b'});assert.strictEqual(lossBlack.roster.find(c=>c.isRunKing).status,'dead');assert.strictEqual(lossBlack.ended,true);assert.strictEqual(lossBlack.endReason,'king_dead');
-  console.log('Skirmish 12-level, deterministic random deployment, Black-side and wound contracts: PASS');
+  console.log('Skirmish 12-level, responsive 6+6 stars, deterministic random deployment, Black-side and wound contracts: PASS');
 })().catch(error=>{console.error(error.stack||error);process.exitCode=1});
