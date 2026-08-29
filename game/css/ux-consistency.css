@@ -19,6 +19,8 @@
 .resource-inline-icon--supplies{width:1.34em;height:1.34em}
 .resource-chip__supply-icon{display:grid!important;place-items:center;width:30px!important;height:30px!important}
 .resource-chip__supply-image{width:28px!important;height:28px!important;object-fit:contain!important;filter:drop-shadow(0 2px 3px rgba(0,0,0,.55))!important}
+[aria-labelledby="settlement-supplies-title"] .settlement-service__icon{display:grid;place-items:center}
+[aria-labelledby="settlement-supplies-title"] .settlement-service__icon .resource-chip__supply-image{width:44px!important;height:44px!important}
 .resource-toast .resource-inline-icon,.combat-reward .resource-inline-icon{width:1.45em;height:1.45em}
 .travel-choice-card__cost .resource-inline-icon{width:1.4em;height:1.4em}
 
