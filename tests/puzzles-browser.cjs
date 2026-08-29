@@ -1,0 +1,44 @@
+const assert=require('assert'),{chromium}=require('playwright');
+const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173',RUN_KEY='rpchess.reboot.v1.run';
+const mate1Route={id:'manual.puzzle.mate1',step:1,type:'puzzle',label:'ЗАДАЧА',stars:1,threatLabel:'СЛОЖНОСТЬ ★1',flavor:'На дороге обнаружена позиция, требующая точного решения.',mechanicalHint:'Шахматная задача с конкретной целью.',seed:'manual-puzzle-mate1',supplyCostAtSelection:1,supplyPaid:1};
+const mate2Route={id:'manual.puzzle.resume',step:17,type:'puzzle',label:'ЗАДАЧА',stars:3,threatLabel:'СЛОЖНОСТЬ ★3',flavor:'Древний механизм ждёт точного решения.',mechanicalHint:'Шахматная задача с конкретной целью.',seed:'manual-puzzle-resume',supplyCostAtSelection:1,supplyPaid:1};
+
+async function fresh(page,runId){
+  await page.goto(url,{waitUntil:'networkidle'});
+  await page.evaluate(k=>localStorage.removeItem(k),RUN_KEY);
+  await page.reload({waitUntil:'networkidle'});
+  await page.locator('[data-new-game]').click();
+  await page.locator('[data-roster-screen]:not([hidden])').waitFor();
+  await page.evaluate(({k,runId})=>{const r=JSON.parse(localStorage.getItem(k));r.id=runId;r.currentTravelChoices=null;r.activeTravelChoice=null;r.currentPuzzle=null;r.lastPuzzle=null;localStorage.setItem(k,JSON.stringify(r));dispatchEvent(new CustomEvent('rpchess:run-updated'));},{k:RUN_KEY,runId});
+}
+
+async function seedPuzzleRoute(page,route,currentPuzzle=null){
+  await page.evaluate(({k,route,currentPuzzle})=>{const r=JSON.parse(localStorage.getItem(k));r.supplies=9;r.journeyStep=route.step;r.currentTravelChoices=null;r.activeTravelChoice=route;r.currentPuzzle=currentPuzzle;localStorage.setItem(k,JSON.stringify(r));dispatchEvent(new CustomEvent('rpchess:run-updated'));},{k:RUN_KEY,route,currentPuzzle});
+}
+
+async function clickMove(page,from,to){
+  await page.locator(`[data-puzzle-board] [data-square="${from}"]`).click();
+  await page.locator(`[data-puzzle-board] [data-square="${to}"]`).click();
+}
+
+(async()=>{const browser=await chromium.launch({headless:true});try{
+  const page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];page.on('pageerror',e=>errors.push(String(e.stack||e)));
+  await fresh(page,'puzzles-browser-mate1');await seedPuzzleRoute(page,mate1Route);await page.locator('[data-roster-travel]').click();
+  const screen=page.locator('[data-puzzle-screen]:not([hidden])');await screen.waitFor();
+  assert.strictEqual((await page.locator('[data-puzzle-objective]').innerText()).trim(),'МАТ В 1');
+  assert.strictEqual((await page.locator('[data-puzzle-stars]').innerText()).replace(/\s/g,''),'★');
+  assert((await screen.innerText()).includes('Lichess Open Database · CC0'));
+  assert.strictEqual(await page.locator('[data-puzzle-board] [data-square]').count(),64);
+  const pieceSources=await page.locator('[data-puzzle-board] img.puzzle-piece').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('src')));assert(pieceSources.length>0);assert(pieceSources.every(src=>src&&src.includes('generated_assets/unit_')),'Puzzle board must use standard generic piece art');assert(pieceSources.every(src=>!src.includes('/assets/races/')),'Puzzle board must not use personalized/race combat art');
+  const beforeWrong=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).currentPuzzle,RUN_KEY);await clickMove(page,'d6','e6');await page.locator('[data-puzzle-status]').filter({hasText:'Неверный ход'}).waitFor();const afterWrong=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).currentPuzzle,RUN_KEY);assert.strictEqual(afterWrong.errors,1);assert.strictEqual(afterWrong.currentFen,beforeWrong.currentFen,'wrong move must not advance the persisted position');assert.strictEqual(afterWrong.solutionIndex,0);
+  await clickMove(page,'d6','h2');await page.locator('[data-puzzle-outcome]:not([hidden])').waitFor();assert.strictEqual((await page.locator('[data-puzzle-outcome-title]').innerText()).trim(),'РЕШЕНО');assert((await page.locator('[data-puzzle-outcome-gold]').innerText()).includes('+8 Gold'),'★1 with one error must pay rounded 70% of 12 Gold');
+  const solved=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),RUN_KEY);assert.strictEqual(solved.currentPuzzle.result,'solved');assert.strictEqual(solved.currentPuzzle.errors,1);assert.strictEqual(solved.currentPuzzle.goldReward,8);assert.strictEqual(solved.currentPuzzle.rewardSettled,true);assert.strictEqual(solved.gold,88);assert.strictEqual(solved.lastPuzzle.goldReward,8);
+  const settledSnapshot=JSON.stringify({gold:solved.gold,currentPuzzle:solved.currentPuzzle,lastPuzzle:solved.lastPuzzle});await page.reload({waitUntil:'networkidle'});await page.locator('[data-continue-run]').click();await page.locator('[data-roster-screen]:not([hidden])').waitFor();await page.locator('[data-roster-travel]').click();await page.locator('[data-puzzle-outcome]:not([hidden])').waitFor();const settledReload=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),RUN_KEY);assert.strictEqual(JSON.stringify({gold:settledReload.gold,currentPuzzle:settledReload.currentPuzzle,lastPuzzle:settledReload.lastPuzzle}),settledSnapshot,'reload after solved Puzzle must not duplicate Gold');await page.locator('[data-puzzle-continue]').click();await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();const continued=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),RUN_KEY);assert.strictEqual(continued.currentPuzzle,null);assert.strictEqual(continued.activeTravelChoice,null);assert(Array.isArray(continued.currentTravelChoices)&&continued.currentTravelChoices.length===3);
+
+  const resume=await browser.newPage({viewport:{width:1440,height:900}}),resumeErrors=[];resume.on('pageerror',e=>resumeErrors.push(String(e.stack||e)));await fresh(resume,'puzzles-browser-resume');
+  const pendingReply={routeId:mate2Route.id,puzzleId:'puzzle.001Wz',stars:3,week:17,currentFen:'3R2k1/5ppp/r1p5/p1n1rP2/8/2P2N1P/2P3P1/6K1 b - - 2 22',solutionIndex:1,errors:0,resolved:false,result:null,goldReward:0,rewardSettled:false};await seedPuzzleRoute(resume,mate2Route,pendingReply);await resume.reload({waitUntil:'networkidle'});await resume.locator('[data-continue-run]').click();await resume.locator('[data-roster-screen]:not([hidden])').waitFor();await resume.locator('[data-roster-travel]').click();await resume.locator('[data-puzzle-screen]:not([hidden])').waitFor();await resume.locator('[data-puzzle-status]').filter({hasText:'Ваш ход'}).waitFor({timeout:4000});const resumed=await resume.evaluate(k=>JSON.parse(localStorage.getItem(k)).currentPuzzle,RUN_KEY);assert.strictEqual(resumed.solutionIndex,2,'reload on opponent turn must auto-play exactly one persisted forced reply');assert.strictEqual(resumed.currentFen,'3Rr1k1/5ppp/r1p5/p1n2P2/8/2P2N1P/2P3P1/6K1 w - - 3 23');await clickMove(resume,'d8','e8');await resume.locator('[data-puzzle-outcome]:not([hidden])').waitFor();const resumedSolved=await resume.evaluate(k=>JSON.parse(localStorage.getItem(k)),RUN_KEY);assert.strictEqual(resumedSolved.currentPuzzle.result,'solved');assert.strictEqual(resumedSolved.currentPuzzle.goldReward,18);assert.strictEqual(resumedSolved.currentPuzzle.rewardSettled,true);
+
+  const mobile=await browser.newPage({viewport:{width:390,height:844}}),mobileErrors=[];mobile.on('pageerror',e=>mobileErrors.push(String(e.stack||e)));await fresh(mobile,'puzzles-browser-mobile');await seedPuzzleRoute(mobile,mate1Route);await mobile.locator('[data-roster-travel]').click();await mobile.locator('[data-puzzle-screen]:not([hidden])').waitFor();assert.strictEqual(await mobile.locator('[data-puzzle-board] [data-square]').count(),64);const layout=await mobile.evaluate(()=>{const board=document.querySelector('[data-puzzle-board]').getBoundingClientRect();return{sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,sh:document.documentElement.scrollHeight,ch:document.documentElement.clientHeight,board:{left:board.left,right:board.right,width:board.width}};});assert(layout.sw<=layout.cw+1,`Puzzle mobile must not overflow horizontally: ${layout.sw}/${layout.cw}`);assert(layout.sh>layout.ch,'Puzzle mobile scene should use vertical flow');assert(layout.board.left>=-1&&layout.board.right<=layout.cw+1&&layout.board.width<=layout.cw+1,'Puzzle board must fit 390px viewport');
+
+  assert.deepStrictEqual(errors,[]);assert.deepStrictEqual(resumeErrors,[]);assert.deepStrictEqual(mobileErrors,[]);console.log('Puzzles desktop attempts/reward/idempotency, forced-reply reload resume and 390x844 mobile Chromium acceptance: PASS');
+}finally{await browser.close();}})().catch(e=>{console.error(e.stack||e);process.exitCode=1});
