@@ -1,6 +1,9 @@
-const path=require('path'),assert=require('assert'),{pathToFileURL}=require('url');
+const fs=require('fs'),path=require('path'),assert=require('assert'),{pathToFileURL}=require('url');
 (async()=>{
   const game=path.resolve(__dirname,'..','game');
+  const battleAppSource=fs.readFileSync(path.join(game,'js/battle-app.mjs'),'utf8');
+  assert(battleAppSource.includes('data-battle-continue>Продолжить путь</button>'),'Battle aftermath CTA must say Продолжить путь');
+  assert(battleAppSource.includes("function leaveAftermath(){audio()?.click?.();resetBattleTracking();globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open'"),'Battle aftermath must route directly to Travel Choice');
   const data=await import(pathToFileURL(path.join(game,'js/roster-data.mjs')).href);
   const battle=await import(pathToFileURL(path.join(game,'js/battle-core.mjs')).href);
   const persistence=await import(pathToFileURL(path.join(game,'js/run-persistence.mjs')).href);
@@ -20,5 +23,5 @@ const path=require('path'),assert=require('assert'),{pathToFileURL}=require('url
   const blackWin=battle.applyBattleOutcome(run,{participantIds:selected,capturedIds:['hero.mara_chain'],status:{over:true,type:'checkmate',winner:'b'},playerColor:'b'});assert.strictEqual(blackWin.roster.find(e=>e.id==='hero.mara_chain').status,'wounded');assert.strictEqual(blackWin.roster.find(e=>e.id==='hero.mara_chain').pieceType,'pawn');assert.strictEqual(blackWin.ended,false);assert.deepStrictEqual(blackWin.lastBattle.participants,selected);
   const draw=battle.applyBattleOutcome(run,{participantIds:selected,capturedIds:['hero.vael_hammer'],status:{over:true,type:'stalemate',winner:null},playerColor:'b'});assert.strictEqual(draw.roster.find(e=>e.isRunKing).status,'healthy');assert.strictEqual(draw.roster.find(e=>e.id==='hero.vael_hammer').status,'wounded');
   const blackLoss=battle.applyBattleOutcome(run,{participantIds:selected,capturedIds:[],status:{over:true,type:'checkmate',winner:'w'},playerColor:'b'});assert.strictEqual(blackLoss.roster.find(e=>e.isRunKing).status,'dead');assert.strictEqual(blackLoss.ended,true);assert.strictEqual(blackLoss.endReason,'king_dead');assert.strictEqual(blackLoss.lastBattle.kingDied,true);
-  console.log('Battle standard army, 12-star Black-side, slots, wounds and King-death contract: PASS');
+  console.log('Battle standard army, aftermath→Travel, 12-star Black-side, slots, wounds and King-death contract: PASS');
 })().catch(error=>{console.error(error.stack||error);process.exitCode=1});
