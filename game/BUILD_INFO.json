@@ -7,7 +7,7 @@
   "requires_internet": false,
   "requires_installation": false,
   "visual_theme": "Approved RPChess frameless fantasy UI with BrahmsGotischCyr headings, illustrated Event backgrounds, race-specific armies, personalized character art and classical chess role glyphs",
-  "gameplay_state": "Corrected Events v1 candidate: 100 deterministic shuffle-bag events / 415 choices with literary multi-paragraph scenes, separate outcome modal, 36 universal Event backgrounds, 14 race army libraries plus mixed role armies, player white/black narrative combat, 12-star Stockfish difficulty, deterministic random Skirmish deployment, persistent outcomes and independently equiprobable Travel cards.",
+  "gameplay_state": "Corrected Events v1 candidate: 100 deterministic shuffle-bag events / 415 choices with literary multi-paragraph scenes, separate outcome modal, 36 uploaded Event background PNGs with explicit temporary Animals-to-generic fallback while six approved-name replacements remain asset debt, 14 race army libraries plus mixed role armies, player white/black narrative combat, 12-star Stockfish difficulty with responsive 6+6 wrap fallback, deterministic random Skirmish deployment, persistent outcomes and independently equiprobable Travel cards.",
   "foundation_merge": "416cfbcd332366c10d6dd27a44123c0dd7ea7da0",
   "classic_chess_merge": "6df1a65ffca36413d99415eab1f0e5ccddbd5dbe",
   "chess_ai_merge": "3aa95c08f7af8fdcd82cf79cb606e1ecc5ad788c",
@@ -27,7 +27,7 @@
   "acceptance_gate": "human-retest-pending",
   "stockfish_version": "18.0.0 lite single-threaded",
   "stockfish_license": "GPLv3",
-  "active_docs": "docs/00_PRODUCT_VISION.md through docs/18_STARVATION.md plus Events/Travel/Combat corrections pending final receipt sync",
+  "active_docs": "docs/00_PRODUCT_VISION.md through docs/18_STARVATION.md; corrected Events/Travel/Combat contracts synced, exact-head receipts pending",
   "human_acceptance_required": true,
   "human_acceptance": "pending-corrected-preview"
 }
