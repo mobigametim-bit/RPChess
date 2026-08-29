@@ -52,6 +52,7 @@ function parseArgs(argv){
 function hashString(value){let hash=2166136261;for(const char of String(value)){hash^=char.charCodeAt(0);hash=Math.imul(hash,16777619);}return hash>>>0;}
 function materialScore(snapshot,side){let ours=0,theirs=0;for(const piece of snapshot.board||[]){if(!piece)continue;const value=PIECE_VALUE[piece.type]||0;if(piece.color===side)ours+=value;else theirs+=value;}return ours-theirs;}
 function typeFromThemes(themes){const set=themes instanceof Set?themes:new Set(themes||[]);if(set.has('mateIn1'))return'mate1';if(set.has('mateIn2'))return'mate2';if(set.has('mateIn3'))return'mate3';if(set.has('mate'))return null;for(const theme of MATERIAL_THEMES)if(set.has(theme))return'material';return null;}
+function isMateType(type){return type==='mate1'||type==='mate2'||type==='mate3';}
 function expectedSolutionPlies(type){return type==='mate1'?1:type==='mate2'?3:type==='mate3'?5:null;}
 function allocateStarTotals(count){const base=Math.floor(count/12),remainder=count%12;return Array.from({length:12},(_,i)=>base+(i<remainder?1:0));}
 function allocateMix(total,mix){const entries=Object.entries(mix),raw=entries.map(([type,weight])=>({type,value:total*weight/100,amount:Math.floor(total*weight/100)}));let left=total-raw.reduce((sum,item)=>sum+item.amount,0);raw.sort((a,b)=>(b.value-b.amount)-(a.value-a.amount)||a.type.localeCompare(b.type));for(let i=0;i<left;i+=1)raw[i%raw.length].amount+=1;return Object.fromEntries(raw.map(item=>[item.type,item.amount]));}
@@ -75,7 +76,7 @@ async function normalizeLichessRow(row,{ClassicChessEngine,puzzleBaseGold,diffic
   const startFen=blunderResult.fen,side=sourceEngine.turn(),solution=moves.slice(1).map(uciParts);if(!solution.length||solution.some(move=>!move))return null;
   const engine=new ClassicChessEngine(startFen),initialMaterial=materialScore(engine.snapshot(),side),targets=[];let sawMate=false;
   for(const move of solution){const capturedBefore=engine.pieceAt(move.to),mover=engine.turn(),result=engine.move(move.from,move.to,move.promotion);if(!result.ok)return null;if(mover===side&&capturedBefore&&capturedBefore.color!==side&&TARGET_BY_TYPE[capturedBefore.type])targets.push(TARGET_BY_TYPE[capturedBefore.type]);if(result.status.type==='checkmate')sawMate=true;}
-  if(type.startsWith('mate')){if(engine.status().type!=='checkmate'||engine.status().winner!==side)return null;}else if(sawMate||engine.status().type==='checkmate')return null;
+  if(isMateType(type)){if(engine.status().type!=='checkmate'||engine.status().winner!==side)return null;}else if(sawMate||engine.status().type==='checkmate')return null;
   let targetPiece=null,materialGain=0;
   if(type==='material'){const unique=[...new Set(targets)];if(unique.length!==1)return null;targetPiece=unique[0];materialGain=materialScore(engine.snapshot(),side)-initialMaterial;if(materialGain<=0)return null;}
   return {id:`puzzle.${sourceId}`,sourceId,fen:startFen,side,solution:solution.map(move=>move.uci),type,rating:Math.round(rating),difficulty:star,themes,targetPiece,materialGain:Math.round(materialGain),reward:puzzleBaseGold(star)};
@@ -95,4 +96,4 @@ async function importLichessPuzzles(options){
 }
 async function main(){const options=parseArgs(process.argv.slice(2)),summary=await importLichessPuzzles(options);console.log(`Lichess CC0 importer: scanned ${summary.seen}, cheap-eligible ${summary.cheapEligible}, engine-validated ${summary.engineValidated}, wrote ${summary.written} puzzles -> ${summary.output}`);}
 if(require.main===module)main().catch(error=>{console.error(error.stack||error);process.exitCode=1;});
-module.exports={MATERIAL_THEMES,TARGET_BY_TYPE,parseCsvLine,rowFromHeader,parseArgs,hashString,typeFromThemes,expectedSolutionPlies,allocateStarTotals,allocateMix,closestEligibleStar,preclassifyLichessRow,serializeCatalog,normalizeLichessRow,importLichessPuzzles};
+module.exports={MATERIAL_THEMES,TARGET_BY_TYPE,parseCsvLine,rowFromHeader,parseArgs,hashString,typeFromThemes,isMateType,expectedSolutionPlies,allocateStarTotals,allocateMix,closestEligibleStar,preclassifyLichessRow,serializeCatalog,normalizeLichessRow,importLichessPuzzles};
