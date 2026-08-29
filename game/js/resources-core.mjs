@@ -1,3 +1,5 @@
+import { clampStars } from './encounter-difficulty.mjs';
+
 const STARTING_GOLD = 80;
 const STARTING_SUPPLIES = 10;
 const TRAVEL_SUPPLY_COST = 1;
@@ -35,7 +37,7 @@ function isDrawResult(status) {
 }
 
 function combatGoldReward({ encounterType, stars, status, playerColor = 'w' } = {}) {
-  const level = Math.max(1, Math.min(5, Number.isInteger(stars) ? stars : 1));
+  const level = clampStars(stars);
   const victory = isPlayerVictory(status, playerColor);
   const draw = isDrawResult(status);
   if (!victory && !draw) return 0;
