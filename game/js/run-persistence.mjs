@@ -1,6 +1,7 @@
 import { createStarterRoster } from './roster-data.mjs';
 import { STARTING_GOLD, STARTING_SUPPLIES, hydrateResources } from './resources-core.mjs';
 import { isSettlementState } from './settlement-core.mjs';
+import { MAX_ENCOUNTER_STARS } from './encounter-difficulty.mjs';
 
 const RUN_STORAGE_KEY = 'rpchess.reboot.v1.run';
 const RUN_SCHEMA_VERSION = 1;
@@ -21,7 +22,7 @@ function isStoredTravelChoice(value) {
   if (!value.id || typeof value.id !== 'string') return false;
   if (!TRAVEL_TYPES.has(value.type)) return false;
   if (!Number.isInteger(value.step) || value.step < 1) return false;
-  if (!Number.isInteger(value.stars) || value.stars < 1 || value.stars > 5) return false;
+  if (!Number.isInteger(value.stars) || value.stars < 1 || value.stars > MAX_ENCOUNTER_STARS) return false;
   if (!value.seed || typeof value.seed !== 'string') return false;
   if (!value.flavor || typeof value.flavor !== 'string') return false;
   if (!value.mechanicalHint || typeof value.mechanicalHint !== 'string') return false;
