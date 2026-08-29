@@ -54,15 +54,18 @@ Runtime выбирает фон детерминированно из race-speci
 
 Пользователь подтвердил 2026-08-29, что фоновые изображения Событий видны в live preview.
 
-### Asset debt
+### Canonical asset register
 
-Утверждённый `event_backgrounds.md` задаёт библиотеку 36 PNG 16:9. В текущем репозитории остаётся отдельный контентный долг по именам/составу последних ассетов:
-- отсутствуют `animals/wild_glen.png` и `animals/riverbank_tracks.png`;
-- Fae представлены `fae/fae_moonwell.png` и `fae/fae_mushroom_court.png`;
-- Goblins представлены `goblins/goblin_bomb_yard.png` и `goblins/goblin_scrap_market.png`;
-- дополнительно присутствуют два Merfolk-фона, не входящие в текущий 14-race Event catalog.
+Утверждённый `event_backgrounds.md` задаёт активную библиотеку ровно **36 PNG 16:9**: 8 generic backgrounds + 14 race pools по 2 изображения.
 
-Это не создаёт broken URL: Animals используют generic woodland fallback, а Fae/Goblins — реально загруженные файлы. Этот asset debt не блокирует принятый Events gameplay/runtime и закрывается отдельно как контентная задача.
+Канонический набор полностью присутствует в репозитории и напрямую используется runtime. В частности:
+- Animals: `animals/wild_glen.png`, `animals/riverbank_tracks.png`;
+- Fae: `fae/fae_ring_garden.png`, `fae/whispering_meadow.png`;
+- Goblins: `goblins/goblin_trade_nook.png`, `goblins/goblin_scrapyard_camp.png`.
+
+`tests/events.cjs` и source verification требуют наличие всех 36 канонических файлов и совпадение runtime pools с реестром. Старые fallback/альтернативные имена больше не используются активным runtime.
+
+Дополнительные Merfolk backgrounds могут оставаться упакованными как будущий контент, но не входят в активный 14-race Events v1 contract и не считаются частью канонических 36.
 
 ## Role-gated решения
 
@@ -121,7 +124,7 @@ Persistence умеет восстанавливать старые stale combat 
 
 ## Gates
 
-Канонический deploy gate: `npm run gate:local` = source verification → полный deterministic Node suite → production build. `tests/events-visual.cjs` входит в canonical `npm test` и проверяет explicit backdrop contract. `tests/combat-art-continuity.cjs` проверяет обе рокировки, все четыре promotion choices и post-promotion continuity.
+Канонический deploy gate: `npm run gate:local` = source verification → полный deterministic Node suite → production build. `tests/events-visual.cjs` входит в canonical `npm test` и проверяет explicit backdrop contract. `tests/combat-art-continuity.cjs` проверяет обе рокировки, все четыре promotion choices и post-promotion continuity. `tests/events.cjs` дополнительно проверяет полный канонический реестр 36 Event backgrounds.
 
 Standalone `npm run gate:full` дополнительно содержит real-Chromium regression. GitHub Actions используется как ручная диагностика, а не обязательный deploy gate.
 
