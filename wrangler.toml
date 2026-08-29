@@ -2,7 +2,7 @@ name = "rpchess"
 compatibility_date = "2026-08-04"
 
 [build]
-command = "npm run gate:local"
+command = "node scripts/cloudflare-diagnostic-gate.cjs"
 
 [assets]
 directory = "./dist"
