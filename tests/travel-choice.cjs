@@ -1,7 +1,9 @@
-const path=require('path'),assert=require('assert'),{pathToFileURL}=require('url');
+const fs=require('fs'),path=require('path'),assert=require('assert'),{pathToFileURL}=require('url');
 function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):null,setItem:(k,v)=>d.set(k,String(v)),removeItem:k=>d.delete(k)}}
 (async()=>{
   const game=path.resolve(__dirname,'..','game');
+  const travelAppSource=fs.readFileSync(path.join(game,'js/travel-choice-app.mjs'),'utf8');
+  assert(!travelAppSource.includes("document.addEventListener('click'"),'Travel must not intercept combat aftermath clicks globally; combat scenes route directly to Travel');
   const travel=await import(pathToFileURL(path.join(game,'js/travel-choice-core.mjs')).href);
   const difficulty=await import(pathToFileURL(path.join(game,'js/encounter-difficulty.mjs')).href);
   const persistence=await import(pathToFileURL(path.join(game,'js/run-persistence.mjs')).href);
@@ -23,5 +25,5 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const run=persistence.createRun({id:'travel-run',now:1000}),storage=memoryStorage();persistence.writeRun({...run,currentTravelChoices:first},storage,1100);assert.deepStrictEqual(persistence.readRun(storage).currentTravelChoices,first);
   const manualSkirmish={id:'manual.s',step:1,type:'skirmish',label:'СТЫЧКА',stars:12,threatLabel:'ЛЕГЕНДАРНАЯ',flavor:'Путь.',mechanicalHint:'Нестандартный состав противника.',seed:'manual-s',playerColor:'b',enemyRaceTag:'orcs'};globalThis.RPChessTravelEncounterOverride=manualSkirmish;const rs=skirmish.createEncounter({seed:'fallback',stars:5});assert.strictEqual(rs.seed,'manual-s');assert.strictEqual(rs.stars,12);assert.strictEqual(rs.aiElo,2600);assert.strictEqual(rs.playerColor,'b');assert.strictEqual(rs.enemyRaceTag,'orcs');
   const manualBattle={...manualSkirmish,id:'manual.b',type:'battle',label:'БИТВА',seed:'manual-b'};globalThis.RPChessTravelEncounterOverride=manualBattle;const rb=battle.createBattleEncounter({seed:'fallback',stars:1});assert.strictEqual(rb.seed,'manual-b');assert.strictEqual(rb.stars,12);assert.strictEqual(rb.aiElo,2600);assert.strictEqual(rb.playerColor,'b');
-  console.log('Travel Choice 25% pool, 12-star difficulty, race/side context and persistence: PASS');
+  console.log('Travel Choice 25% pool, direct combat-aftermath routing, 12-star difficulty, race/side context and persistence: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
