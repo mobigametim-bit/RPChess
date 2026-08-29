@@ -75,7 +75,9 @@ jobs:
             dist/assets/races/elves/pieces/queen.png \
             dist/assets/races/orcs/pieces/pawn.png \
             dist/assets/events/register-04/backgrounds/generic/forest_crossroad.png \
-            dist/assets/events/register-04/backgrounds/fae/fae_ring_garden.png \
+            dist/assets/events/register-04/backgrounds/fae/fae_moonwell.png \
+            dist/assets/events/register-04/backgrounds/goblins/goblin_bomb_yard.png \
+            dist/assets/events/register-04/backgrounds/merfolk/merfolk_tide_court.png \
             dist/generated_assets/node_event.png \
             dist/vendor/stockfish/stockfish-18-lite-single.js \
             dist/vendor/stockfish/stockfish-18-lite-single.wasm; do
