@@ -2,7 +2,7 @@ name = "rpchess"
 compatibility_date = "2026-08-04"
 
 [build]
-command = "node scripts/cloudflare-browser-gate.cjs"
+command = "node scripts/cloudflare-browser-probe.cjs package"
 
 [assets]
 directory = "./dist"
