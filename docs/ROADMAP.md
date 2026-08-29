@@ -14,25 +14,15 @@
 - [x] Starvation — deterministic casualty при переходе без припасов. **DONE**; production merge `028e00c44f8e97586b0e5b39c2762ddf2c371835`, post-merge Cloudflare SUCCESS.
 - [x] Events v1 — **100 событий / 415 решений**, 14 расовых групп + mixed, literary scene, role/economy/recruit/wound/death outcomes, 4 explicit King-risk choices, Event→Skirmish/Battle без второго Supply charge, race/mixed armies, black-side play, illustrated backgrounds, castling/promotion combat-art continuity. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE.**
 - [x] Event background register — полный утверждённый набор **36 PNG** подключён напрямую: 8 generic + 14 race pools × 2; Animals/Fae/Goblins больше не используют fallback/альтернативные имена. Source verification и Events tests фиксируют этот контракт.
+- [x] Puzzles v1 — fifth Travel type, Lichess CC0 offline importer/catalog, mate1/2/3 + explicit material targets, 3 attempts, ★1…★12, Gold accuracy rewards, persistent resume/no-repeat, standard-piece board with coordinates/glyphs. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE.** Accepted head `393fa3e6c4dda08186de75a8ae22d6aa442c0957`; accepted Cloudflare build `0942b70f-e0e7-47d0-86c9-2572917cf5de`; production merge PR #81 `9aec0e12d3299656fb3c062b07c592e1d8332aab`.
 - [x] **PLAYTEST GATE C** — интересность собственного состава и corrected Skirmish flow подтверждены пользователем.
 
 ## Current
 
-- [ ] Puzzles v1 — **UX/spec APPROVED 2026-08-29; IMPLEMENTATION ACTIVE in `feature/puzzles`**.
-  - fifth playable Travel type;
-  - current five-type Travel distribution ≈20% each;
-  - normal 1 Supply committed transition + existing Starvation flow;
-  - mate in 1 / mate in 2 / mate in 3 / explicit target-piece material puzzles;
-  - ★1…★12 fixed by journey week, one level every 8 weeks;
-  - Gold formula `9 + 3 × stars`, accuracy 100/70/40/0%;
-  - 3 attempts, no hint mechanic in v1;
-  - offline normalized Lichess Open Database Puzzles / CC0 source;
-  - developer streaming importer + curated runtime catalog;
-  - merge blocked until canonical gate, Cloudflare preview and explicit human acceptance.
+- [ ] Encounter Generator — **UX/spec discussion; implementation not started**.
 
 ## Next
 
-- [ ] Encounter Generator.
 - [ ] Adaptive Skirmish Generator.
 - [ ] Content Framework.
 - [ ] First Complete Endless Run.
@@ -43,9 +33,33 @@
 
 ## Current phase
 
-**Events v1 — DONE. Puzzles v1 — implementation active после утверждённого UX/spec; human acceptance ещё не получен.**
+**Events v1 — DONE. Puzzles v1 — DONE. Current phase: Encounter Generator — UX/spec discussion.**
 
-До merge Puzzles обязательны deterministic tests, persistence/idempotency coverage, desktop + 390×844 browser flow, canonical `gate:local`, Cloudflare preview и отдельный live playtest пользователя.
+Следующая gameplay implementation не начинается до UX/spec approval Encounter Generator.
+
+### Puzzles final receipt
+
+- Human acceptance: **«всё хорошо»** — 2026-08-29.
+- Accepted gameplay head: `393fa3e6c4dda08186de75a8ae22d6aa442c0957`.
+- Accepted version: `3.1.0-puzzles.preview.2`.
+- Accepted-head Cloudflare build: `0942b70f-e0e7-47d0-86c9-2572917cf5de` — **SUCCESS**.
+- Accepted preview: `https://f074203e-rpchess.mobigametim.workers.dev`.
+- Original Draft PR #80 closed unmerged only because the connected Ready mutation failed on GitHub GraphQL `fullDatabaseId`; identical exact tree opened as non-Draft PR #81.
+- PR #81 squash-merge / production `main`: `9aec0e12d3299656fb3c062b07c592e1d8332aab`.
+- Final live-fix contract: Puzzle board coordinates + technical glyphs; persistent no-repeat history with `lastPuzzle` migration; Event→Skirmish enemy generation capped at 8 pawns with broad deterministic seed regression.
+
+### Puzzles accepted contract
+
+- Travel pool: `Skirmish / Battle / Settlement / Event / Puzzle`, ≈20% each per independent card roll; duplicates allowed.
+- Puzzle route расходует обычный `1 Supply`; reload/resume не списывает второй Supply.
+- Types: mate in 1 / mate in 2 / mate in 3 / explicit target-piece material.
+- Difficulty: ★1…★12, currently one level every 8 journey weeks; raw Lichess rating is internal metadata only.
+- 3 attempts; wrong move does not advance the position.
+- Gold: `9 + 3 × stars`, accuracy multiplier 100/70/40/0%.
+- Hint mechanic intentionally excluded from v1.
+- Standard white/black art, with orientation-aware coordinates and technical chess glyph per occupied square.
+- Persistent solution state, idempotent reward settlement and persistent no-repeat Puzzle history.
+- Lichess Open Database Puzzles / CC0 is the production source; runtime is offline and source-agnostic.
 
 ### Events final receipt
 
@@ -58,12 +72,12 @@
 - Acceptance-docs Cloudflare build: `4bc864ec-93dc-4800-aa3f-c87ba8b2098c` — **SUCCESS**; Version `31dac392-6d39-4d85-9d56-26a8b218de3e`.
 - Original Draft PR #76 was closed unmerged only because the connected Ready mutation failed on a GitHub GraphQL schema incompatibility; the identical exact tree was opened as non-Draft PR #77.
 - PR #77 squash-merge / production `main`: `1e47a4a3121f1156a623a98ae29866b3a07d4cbc`.
-- Post-merge Cloudflare build: `5f137e48-7b8a-42e1-830e-c7826fa8f11a` — **SUCCESS**; Version `45dcd46b-1306-4249-ae14-f48b5cd4b492`.
+- Post-merge Cloudflare build: `5f137e48-7b8a-42e1-830e-c7826fa8f11a` — **SUCCESS**; Version `45dcd46b-1306-4249-ae14-f48b5cd4f492`.
 
 ### Events accepted contract
 
 - Historical accepted Travel pool at Events closure: `Skirmish / Battle / Settlement / Event`, ≈25% each.
-- Current journey pool after Puzzles approval: `Skirmish / Battle / Settlement / Event / Puzzle`, ≈20% each; this is a Puzzles-era Travel extension, not a rewrite of the Events acceptance receipt.
+- Current journey pool after Puzzles: `Skirmish / Battle / Settlement / Event / Puzzle`, ≈20% each; this is a Puzzles-era Travel extension, not a rewrite of the Events acceptance receipt.
 - Event route расходует обычный `1 Supply`; Event→Combat не списывает второй Supply.
 - 100 Events / 415 authored choices; deterministic shuffle-bag без повторов до завершения цикла.
 - Persistent/idempotent choice roll, economy and outcomes.
@@ -83,7 +97,7 @@
 
 Feature lifecycle: `UX/SPEC APPROVED → IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE`.
 
-Следующая gameplay feature не начинается до merge/post-merge closure текущей feature. Puzzles сейчас является текущей feature; Encounter Generator не начинается до её human acceptance и closure.
+Следующая gameplay feature не начинается до merge/post-merge closure текущей feature. Puzzles закрыт; Encounter Generator является текущей UX/spec phase.
 
 ## Global UI invariant
 
