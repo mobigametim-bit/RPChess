@@ -17,6 +17,7 @@ function memoryStorage(){const data=new Map();return{getItem:key=>data.has(key)?
   const secondSettlement=core.applyPuzzleReward(firstSettlement.run,firstSettlement.state);
   assert.strictEqual(secondSettlement.changed,false);assert.strictEqual(secondSettlement.reward,0);assert.strictEqual(secondSettlement.run.gold,firstSettlement.run.gold,'reward settlement must be idempotent');
   const storage=memoryStorage();persistence.writeRun(firstSettlement.run,storage,200);const reloaded=persistence.readRun(storage);assert(reloaded);assert.strictEqual(reloaded.currentPuzzle.rewardSettled,true);assert.strictEqual(reloaded.currentPuzzle.result,'solved');assert.strictEqual(reloaded.gold,firstSettlement.run.gold);assert.deepStrictEqual(reloaded.puzzleHistory,[rewardPuzzle.id],'Puzzle history must survive reload');
+  const legacyStorage=memoryStorage(),legacyRun={...baseRun,lastPuzzle:{puzzleId:rewardPuzzle.id,routeId:'legacy-route',result:'solved',errors:0,goldReward:24}};delete legacyRun.puzzleHistory;legacyStorage.setItem(persistence.RUN_STORAGE_KEY,JSON.stringify(legacyRun));const migrated=persistence.readRun(legacyStorage);assert(migrated);assert.deepStrictEqual(migrated.puzzleHistory,[rewardPuzzle.id],'legacy lastPuzzle must migrate into no-repeat history');
   const appSource=fs.readFileSync(path.join(game,'js/puzzles/puzzle-app.mjs'),'utf8'),cssSource=fs.readFileSync(path.join(game,'css/puzzles.css'),'utf8');
   assert(appSource.includes("rpchess:puzzle-open"));
   assert(!/hint/i.test(appSource),'Puzzles v1 must not introduce hint UI/mechanics');
@@ -30,5 +31,5 @@ function memoryStorage(){const data=new Map();return{getItem:key=>data.has(key)?
   assert(appSource.includes('puzzleHistory')&&appSource.includes('excludedIds: history'),'Puzzle route must use persistent no-repeat history');
   assert(appSource.includes('css/puzzles.css?v=20260829-puzzles-3'),'Puzzle annotation CSS cachebuster must advance');
   for(const token of ['.puzzle-piece-marker','.puzzle-coordinate--file','.puzzle-coordinate--rank'])assert(cssSource.includes(token),`Puzzle CSS missing ${token}`);
-  console.log('Puzzles reward/persistence/no-repeat/board-annotation UI contracts: PASS');
+  console.log('Puzzles reward/persistence/history migration/no-repeat/board-annotation UI contracts: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
