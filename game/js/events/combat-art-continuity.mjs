@@ -1,3 +1,5 @@
+const PROMOTION_ASSET_NAMES = Object.freeze({ q: 'queen', r: 'rook', b: 'bishop', n: 'knight' });
+
 function isCustomCombatArt(src) {
   const value = String(src || '');
   return Boolean(value) && !value.includes('/generated_assets/unit_') && !value.includes('generated_assets/unit_');
@@ -11,6 +13,26 @@ function castleRookSquares(move, color) {
     : { from: `a${rank}`, to: `d${rank}` };
 }
 
+function promotedArtSource(src, promotion) {
+  const value = String(src || '');
+  const assetName = PROMOTION_ASSET_NAMES[promotion];
+  if (!value || !assetName) return value;
+
+  // Race/human temporary combat pieces use role filenames such as pawn.png.
+  if (/\/pawn\.png(?:[?#].*)?$/.test(value)) {
+    return value.replace(/\/pawn\.png(?=([?#].*)?$)/, `/${assetName}.png`);
+  }
+
+  // Keep the helper correct for generic Classic assets as well, even though
+  // those are normally recreated directly by classic-chess-app after promotion.
+  if (/unit_pawn_(player|enemy)\.png(?:[?#].*)?$/.test(value)) {
+    return value.replace(/unit_pawn_(player|enemy)\.png(?=([?#].*)?$)/, `unit_${assetName}_$1.png`);
+  }
+
+  // Named/personalized pawns intentionally keep their identity artwork.
+  return value;
+}
+
 function advanceTrackedArt(previous, entry) {
   const next = new Map(previous || []);
   const move = entry?.move;
@@ -20,7 +42,7 @@ function advanceTrackedArt(previous, entry) {
   next.delete(move.from);
   if (move.capture) next.delete(move.capture || move.to);
   else next.delete(move.to);
-  if (movingArt && !move.promotion) next.set(move.to, movingArt);
+  if (movingArt) next.set(move.to, move.promotion ? promotedArtSource(movingArt, move.promotion) : movingArt);
 
   const rookMove = castleRookSquares(move, entry.color);
   if (rookMove) {
@@ -103,4 +125,4 @@ function installCombatArtContinuity() {
 
 const installed = installCombatArtContinuity();
 
-export { isCustomCombatArt, castleRookSquares, advanceTrackedArt, artFromBoard, applyTrackedArt, installCombatArtContinuity, installed };
+export { PROMOTION_ASSET_NAMES, isCustomCombatArt, castleRookSquares, promotedArtSource, advanceTrackedArt, artFromBoard, applyTrackedArt, installCombatArtContinuity, installed };
