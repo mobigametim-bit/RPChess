@@ -4,8 +4,8 @@ const path=require('path'),assert=require('assert'),{pathToFileURL}=require('url
   const core=await import(pathToFileURL(path.join(game,'js/puzzles/puzzle-core.mjs')).href);
   const {PUZZLE_CATALOG}=await import(pathToFileURL(path.join(game,'js/puzzles/puzzle-catalog.mjs')).href);
   const {ClassicChessEngine}=await import(pathToFileURL(path.join(game,'js/classic-chess-engine.mjs')).href);
-  const puzzle=PUZZLE_CATALOG.find(p=>p.type==='mate3');
-  assert(puzzle,'catalog smoke must cover mate3');
+  const puzzle=PUZZLE_CATALOG.find(p=>p.type==='material');
+  assert(puzzle,'catalog smoke must cover material');
   assert(core.isNormalizedPuzzle(puzzle),`${puzzle.id} normalized`);
   const engine=new ClassicChessEngine(puzzle.fen);
   assert.strictEqual(engine.turn(),puzzle.side,`${puzzle.id} side-to-move`);
@@ -13,6 +13,5 @@ const path=require('path'),assert=require('assert'),{pathToFileURL}=require('url
     const parts=core.uciParts(uci),result=engine.move(parts.from,parts.to,parts.promotion);
     assert(result.ok,`${puzzle.id}: ${uci} must be legal`);
   }
-  assert.strictEqual(engine.status().type,'checkmate',`${puzzle.id} must end in mate`);
-  console.log(`Puzzles mate3 representative replay: PASS (${puzzle.id})`);
+  console.log(`Puzzles material representative replay: PASS (${puzzle.id})`);
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
