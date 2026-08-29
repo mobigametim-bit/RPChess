@@ -51,8 +51,10 @@ module.exports=function verifySource(root){
   const eventsData=read(root,'js/events-data.mjs');requireTokens(eventsData,['EVENTS_01','EVENTS_10','EVENT_CATALOG','EVENT_IDS','normalizeRaceTag'],'Events catalog index');
   const narrative=read(root,'js/event-narrative.mjs');requireTokens(narrative,['literaryStory','dialogue','atmosphere','closing'],'literary Events narrative');
   const eventsCore=read(root,'js/events-core.mjs');requireTokens(eventsCore,['EVENT_COUNT = 100','shuffledEventIds','resolveEventChoice','event_king','markEventCombatStarted','eventCombatCompleted','clampStars','combatTheme'],'Events core');
-  const eventsApp=read(root,'js/events-app.mjs');requireTokens(eventsApp,['dataset.eventsScreen','events-outcome-modal','eventBackgroundPath','literaryStory','rpchess:event-open','RPChessEvents'],'Events UI');
-  const eventsCss=read(root,'css/events.css');requireTokens(eventsCss,['--events-background',"'BrahmsGotischCyr'",'.events-outcome-modal','@media(max-width:760px)'],'Events CSS');
+  const eventsApp=read(root,'js/events-app.mjs');requireTokens(eventsApp,['dataset.eventsScreen','events-outcome-modal','eventBackgroundPath','literaryStory','data-events-background','new URL(assetPath, document.baseURI).href','css/events.css?v=20260829-events-4','rpchess:event-open','RPChessEvents'],'Events UI explicit backdrop');
+  if(eventsApp.includes("setProperty('--events-background'"))fail('Events UI still uses legacy CSS-variable background injection');
+  const eventsCss=read(root,'css/events.css');requireTokens(eventsCss,['.events-backdrop','.events-backdrop img',"'BrahmsGotischCyr'",'.events-outcome-modal','@media(max-width:760px)'],'Events CSS explicit backdrop');
+  if(eventsCss.includes('background-image:var(--events-background,none)'))fail('Events CSS still uses legacy background variable renderer');
 
   const skirmishCore=read(root,'js/skirmish-core.mjs');requireTokens(skirmishCore,['MAX_ENCOUNTER_STARS','placeArmy(army,color,{seed','pawns.forEach','playerColor','enemyRoleRaces'],'Skirmish 12-level random deployment');
   const skirmishApp=read(root,'js/skirmish-app.mjs');requireTokens(skirmishApp,['Сложность ${encounter.stars} из 12','battlePlan.playerColor','pieceArtForTheme','оборона чёрными'],'Skirmish black-side/race UI');
