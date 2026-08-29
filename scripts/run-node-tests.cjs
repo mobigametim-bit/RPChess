@@ -22,8 +22,8 @@ const TESTS = Object.freeze([
   'tests/puzzles.cjs'
 ]);
 
-const requested = Number.parseInt(process.env.RPCHESS_TEST_CONCURRENCY || '4', 10);
-const CONCURRENCY = Math.max(1, Math.min(TESTS.length, Number.isFinite(requested) ? requested : 4));
+const requested = Number.parseInt(process.env.RPCHESS_TEST_CONCURRENCY || '2', 10);
+const CONCURRENCY = Math.max(1, Math.min(TESTS.length, Number.isFinite(requested) ? requested : 2));
 const DIAGNOSTIC_PASS = process.env.RPCHESS_DIAGNOSTIC_PASS === '1';
 
 function runTest(relative) {
