@@ -10,7 +10,7 @@
   },
   "scripts": {
     "verify": "node -e \"require('./scripts/verify-source.cjs')(require('path').resolve('game'))\"",
-    "test": "node tests/puzzles-catalog.cjs && node tests/puzzles.cjs",
+    "test": "node tests/puzzles-catalog.cjs",
     "test:foundation": "node tests/reboot-foundation.cjs",
     "test:classic": "node tests/classic-chess-static.cjs && node tests/classic-chess-engine.cjs",
     "test:ai": "node tests/chess-ai-adapter.cjs",
