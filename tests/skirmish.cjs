@@ -28,8 +28,16 @@ const assert=require('assert'),fs=require('fs'),path=require('path'),{pathToFile
   const alternative=skirmish.placeArmy(valid.members,'w',{seed:'random-deploy-other'});assert.notDeepStrictEqual(conventional,alternative,'different encounter seeds should be able to change deployment');
   assert.ok(planA.enemyPoints<=39);assert.ok(planA.enemyFormation.length<=16);
 
+  for(let stars=1;stars<=12;stars++)for(let index=0;index<40;index++){
+    const generated=skirmish.createEncounter({seed:`event-route-regression:${stars}:${index}`,stars});
+    const army=skirmish.generateEnemyArmy({playerPoints:valid.points,playerCount:valid.count,encounter:generated});
+    assert(army.army.filter(piece=>piece.pieceType==='pawn').length<=8,'generated enemy army must fit the single pawn rank');
+    const plan=skirmish.createBattlePlan({roster,selectedIds:selected,encounter:generated});
+    assert(plan.enemyFormation.length<=16);assert(plan.enemyFormation.filter(piece=>piece.pieceType==='pawn').length<=8);
+  }
+
   const run={id:'run-test',roster,ended:false};
   const winBlack=skirmish.applyBattleOutcome(run,{capturedIds:['hero.aldric_wall'],status:{type:'checkmate',winner:'b'},playerColor:'b'});assert.strictEqual(winBlack.roster.find(c=>c.id==='hero.aldric_wall').status,'wounded');assert.strictEqual(winBlack.roster.find(c=>c.isRunKing).status,'healthy');assert.strictEqual(winBlack.ended,false);
   const lossBlack=skirmish.applyBattleOutcome(run,{capturedIds:[],status:{type:'checkmate',winner:'w'},playerColor:'b'});assert.strictEqual(lossBlack.roster.find(c=>c.isRunKing).status,'dead');assert.strictEqual(lossBlack.ended,true);assert.strictEqual(lossBlack.endReason,'king_dead');
-  console.log('Skirmish 12-level, aftermath→Travel, responsive 6+6 stars, deterministic random deployment, Black-side and wound contracts: PASS');
+  console.log('Skirmish 12-level, aftermath→Travel, legal generated formations, deterministic deployment, Black-side and wound contracts: PASS');
 })().catch(error=>{console.error(error.stack||error);process.exitCode=1});
