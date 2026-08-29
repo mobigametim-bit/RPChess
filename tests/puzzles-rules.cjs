@@ -20,5 +20,15 @@ const path=require('path'),assert=require('assert'),{pathToFileURL}=require('url
     assert.strictEqual(a.id,b.id,'selection must be deterministic');
     assert.strictEqual(a.difficulty,stars,'selection should stay in current star pool when available');
   }
-  console.log('Puzzles difficulty/reward/selection rules: PASS');
+  const history=[];
+  for(let index=0;index<catalog.length;index++){
+    const args={runId:'no-repeat',routeId:`route-${index}`,stars:1,week:1,excludedIds:history};
+    const selected=core.selectPuzzle(catalog,args);
+    assert(!history.includes(selected.id),`Puzzle ${selected.id} repeated before catalog exhaustion`);
+    const repeat=core.selectPuzzle(catalog,args);
+    assert.strictEqual(repeat.id,selected.id,'history-aware selection must remain deterministic for same route/history');
+    history.push(selected.id);
+  }
+  assert.strictEqual(new Set(history).size,catalog.length,'sparse preview fallback must exhaust unique tasks before any repeat');
+  console.log('Puzzles difficulty/reward/deterministic no-repeat selection rules: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
