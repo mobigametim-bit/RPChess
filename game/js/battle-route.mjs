@@ -3,6 +3,7 @@ import './battle-app.mjs';
 import './settlement-app.mjs';
 import './starvation-app.mjs';
 import './events-app.mjs';
+import './events/combat-art-continuity.mjs';
 import './travel-choice-app.mjs';
 
 if (!document.querySelector('[data-travel-choice-css]')) {
