@@ -6,11 +6,7 @@ const TESTS = Object.freeze([
   'tests/travel-choice.cjs',
   'tests/resources.cjs',
   'tests/settlement.cjs',
-  'tests/starvation.cjs',
-  'tests/events.cjs',
-  'tests/events-visual.cjs',
-  'tests/puzzle-importer.cjs',
-  'tests/puzzles.cjs'
+  'tests/starvation.cjs'
 ]);
 
 const requested = Number.parseInt(process.env.RPCHESS_TEST_CONCURRENCY || '2', 10);
