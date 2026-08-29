@@ -1,5 +1,15 @@
 import { RebootAudio } from './reboot-audio.mjs';
 
+// Travel Choice is part of the critical run shell. Its stylesheet must be available even if
+// the wider route/content bootstrap fails and Roster has to use the direct Travel fallback.
+if (!document.querySelector('[data-travel-choice-css]')) {
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = 'css/travel-choice.css?v=20260830-acceptance-2';
+  link.dataset.travelChoiceCss = '';
+  document.head.append(link);
+}
+
 // Route/content modules are intentionally bootstrapped asynchronously. The main-menu controls
 // must remain usable even if a secondary encounter/UX module throws during evaluation.
 const routeReady = import('./battle-route.mjs').catch((error) => {
