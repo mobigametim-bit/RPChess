@@ -12,12 +12,12 @@
 - [x] Resources — Gold + Supplies, idempotent combat rewards. **DONE**.
 - [x] Settlement — лечение, найм, Supply shop. **DONE**.
 - [x] Starvation — deterministic casualty при переходе без припасов. **DONE**; production merge `028e00c44f8e97586b0e5b39c2762ddf2c371835`, post-merge Cloudflare SUCCESS.
-- [x] Events v1 — **100 событий / 415 решений**, 14 расовых групп + mixed, literary scene, role/economy/recruit/wound/death outcomes, 4 explicit King-risk choices, Event→Skirmish/Battle без второго Supply charge, race/mixed armies, black-side play, illustrated backgrounds. **HUMAN ACCEPTED 2026-08-29; closure merge pending.**
+- [x] Events v1 — **100 событий / 415 решений**, 14 расовых групп + mixed, literary scene, role/economy/recruit/wound/death outcomes, 4 explicit King-risk choices, Event→Skirmish/Battle без второго Supply charge, race/mixed armies, black-side play, illustrated backgrounds, castling/promotion combat-art continuity. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE.**
 - [x] **PLAYTEST GATE C** — интересность собственного состава и corrected Skirmish flow подтверждены пользователем.
 
 ## Next
 
-- [ ] Puzzles — FEN/solution engine и импорт задач.
+- [ ] Puzzles — FEN/solution engine и импорт задач. **CURRENT: UX/spec discussion, implementation not started.**
 - [ ] Encounter Generator.
 - [ ] Adaptive Skirmish Generator.
 - [ ] Content Framework.
@@ -29,16 +29,20 @@
 
 ## Current phase
 
-**Events v1 HUMAN ACCEPTED. Выполняется closure: acceptance-docs exact-head gate → Ready PR #76 → squash merge → post-merge verification `main`. После полного DONE начинается отдельное обсуждение UX/spec Puzzles.**
+**Events v1 — DONE. Следующий этап: Puzzles UX/spec discussion. Реализация Puzzles не начинается до отдельного утверждения UX/spec пользователем.**
 
-### Accepted Events receipt
+### Events final receipt
 
 - Accepted gameplay head: `5347db734a82639f41188e74874ebee4a15540ea`.
 - Accepted version: `3.0.0-events.preview.6`.
 - Accepted Cloudflare build: `4c5013dc-7e28-41a4-aa01-8684a21c3f8d` — **SUCCESS**.
 - Accepted Cloudflare Version: `56865d3e-18b0-4868-8329-5171cd016ec2`.
-- Accepted preview: `https://56865d3e-rpchess.mobigametim.workers.dev`.
 - Human confirmation: **«всё хорошо и все работает»** — 2026-08-29.
+- Acceptance-docs head: `1b39988a4deeffb88edd379343b5f69ea86f82db`.
+- Acceptance-docs Cloudflare build: `4bc864ec-93dc-4800-aa3f-c87ba8b2098c` — **SUCCESS**; Version `31dac392-6d39-4d85-9d56-26a8b218de3e`.
+- Original Draft PR #76 was closed unmerged only because the connected Ready mutation failed on a GitHub GraphQL schema incompatibility; the identical exact tree was opened as non-Draft PR #77.
+- PR #77 squash-merge / production `main`: `1e47a4a3121f1156a623a98ae29866b3a07d4cbc`.
+- Post-merge Cloudflare build: `5f137e48-7b8a-42e1-830e-c7826fa8f11a` — **SUCCESS**; Version `45dcd46b-1306-4249-ae14-f48b5cd4b492`.
 
 ### Events accepted contract
 
@@ -55,13 +59,13 @@
 
 ### Known non-blocking content debt
 
-Approved Event background register и фактически загруженные последние ассеты частично расходятся: Animals используют generic fallback, Fae/Goblins — реально загруженные альтернативные имена, дополнительно присутствуют Merfolk backgrounds. Broken URLs нет. Этот asset debt закрывается отдельно и не блокирует принятый Events gameplay/runtime.
+Approved Event background register и фактически загруженные последние ассеты частично расходятся: Animals используют generic fallback, Fae/Goblins — реально загруженные альтернативные имена, дополнительно присутствуют Merfolk backgrounds. Broken URLs нет. Этот asset debt закрывается отдельно и не блокирует Events DONE.
 
 ## Development rule
 
 Feature lifecycle: `IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE`.
 
-Следующая gameplay feature не начинается до merge/post-merge closure текущей feature.
+Следующая gameplay feature не начинается до merge/post-merge closure текущей feature; для Puzzles сначала отдельно утверждается UX/spec.
 
 ## Global UI invariant
 
