@@ -24,10 +24,10 @@
     "test:events": "node tests/events.cjs && node tests/events-visual.cjs",
     "test:puzzles": "node tests/puzzle-importer.cjs && node tests/puzzles-rules.cjs && node tests/puzzles-catalog.cjs && node tests/puzzles.cjs",
     "puzzles:import": "node scripts/import-lichess-puzzles.cjs",
-    "puzzles:cloudflare-bootstrap": "node scripts/cloudflare-puzzle-bootstrap.cjs",
+    "puzzles:validate": "node scripts/validate-puzzle-catalog.cjs",
     "test:browser": "node scripts/run-browser-tests.cjs",
     "build": "node scripts/build.cjs",
-    "gate:local": "npm run puzzles:cloudflare-bootstrap && npm run verify && npm test && npm run build",
+    "gate:local": "npm run verify && npm test && npm run build",
     "gate:full": "npm run gate:local && npm run test:browser",
     "deploy": "wrangler deploy"
   }
