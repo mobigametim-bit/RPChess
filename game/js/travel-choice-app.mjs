@@ -37,7 +37,7 @@ function ensureScreen(){
 
 function hideAllScenes(){
   for(const main of document.querySelectorAll('#app > main'))main.hidden=true;
-  document.body.classList.remove('roster-active','skirmish-active','battle-active','classic-chess-active','settlement-active','starvation-active','events-active');
+  document.body.classList.remove('roster-active','skirmish-active','battle-active','classic-chess-active','settlement-active','starvation-active','events-active','travel-choice-active');
 }
 function showTravel(){const root=ensureScreen();if(!root)return;hideAllScenes();root.hidden=false;document.body.classList.add('travel-choice-active');window.scrollTo({top:0,behavior:'auto'});globalThis.RPChessResources?.render?.();}
 function hideTravel(){if(screen)screen.hidden=true;document.body.classList.remove('travel-choice-active');}
@@ -124,7 +124,20 @@ function chooseChoice(choice,button){
   globalThis.RPChessResources?.showChange?.(payment.paid>0?{suppliesDelta:-payment.paid,label:'ПЕРЕХОД'}:{label:'ГОЛОД'});
   setTimeout(()=>{routing=false;if(showPendingStarvation())return;if(activeRun?.ended)return;dispatchEncounter(activeChoice);},document.documentElement.dataset.reducedMotion==='1'?0:180);
 }
-function openTravel(){routing=false;activeRun=readRun();if(!activeRun)return;if(showPendingStarvation()||activeRun.ended)return;if(isTravelChoice(activeRun.activeTravelChoice)&&PLAYABLE_TRAVEL_TYPES.includes(activeRun.activeTravelChoice.type)){dispatchEncounter(activeRun.activeTravelChoice);return;}activeRun=ensureChoices(activeRun);renderChoices();showTravel();}
+function aftermathEncounterType(source){if(source==='skirmish-aftermath')return'skirmish';if(source==='battle-aftermath')return'battle';return null;}
+function recoverAftermathRoute(run,source){const expected=aftermathEncounterType(source);if(!expected||run?.activeTravelChoice?.type!==expected)return run;return writeRun({...run,activeTravelChoice:null,currentTravelChoices:null});}
+function openTravel(event){
+  routing=false;
+  activeRun=readRun();
+  if(!activeRun)return;
+  const source=event?.detail?.source||null;
+  activeRun=recoverAftermathRoute(activeRun,source);
+  if(showPendingStarvation()||activeRun.ended)return;
+  if(isTravelChoice(activeRun.activeTravelChoice)&&PLAYABLE_TRAVEL_TYPES.includes(activeRun.activeTravelChoice.type)){dispatchEncounter(activeRun.activeTravelChoice);return;}
+  activeRun=ensureChoices(activeRun);
+  renderChoices();
+  showTravel();
+}
 function openRoster(){if(routing)return;audio()?.click?.();hideTravel();globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue'));}
 function activeChoiceCompleted(run){const choice=run?.activeTravelChoice;if(!isTravelChoice(choice)||!['skirmish','battle'].includes(choice.type)||!Number.isInteger(choice.combatCountAtSelection))return false;return combatCount(run,choice)>choice.combatCountAtSelection;}
 function applyAftermathTravelLabels(){const a=document.querySelector('[data-aftermath-continue]'),b=document.querySelector('[data-battle-continue]');if(a)a.textContent='Продолжить путь';if(b)b.textContent='Продолжить путь';}
@@ -132,4 +145,4 @@ function syncRun(){activeRun=readRun();if(!activeRun)return;if(activeChoiceCompl
 function continueAfterStarvation(){activeRun=readRun();const choice=activeRun?.activeTravelChoice;if(!activeRun||activeRun.ended||!isTravelChoice(choice)||choice.starvationAcknowledged!==true)return;dispatchEncounter(choice);}
 
 ensureScreen();applyAftermathTravelLabels();addEventListener('rpchess:travel-open',openTravel);addEventListener('rpchess:run-updated',syncRun);addEventListener('rpchess:starvation-continue',continueAfterStarvation);
-globalThis.RPChessTravelChoice=Object.freeze({open:openTravel,openRoster,get run(){return activeRun;},get choices(){return[...(activeRun?.currentTravelChoices||[])];},get activeChoice(){return activeRun?.activeTravelChoice||null;}});
+globalThis.RPChessTravelChoice=Object.freeze({open:openTravel,openRoster,recoverAftermathRoute,get run(){return activeRun;},get choices(){return[...(activeRun?.currentTravelChoices||[])];},get activeChoice(){return activeRun?.activeTravelChoice||null;}});
