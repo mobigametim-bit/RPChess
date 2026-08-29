@@ -25,7 +25,12 @@ function difficultyForStars(stars) {
 }
 
 function starsText(stars) {
-  return '★'.repeat(clampStars(stars));
+  const count = clampStars(stars);
+  const value = '★'.repeat(count);
+  // Keep all 12 levels readable on narrow cards. The zero-width break is
+  // invisible on roomy layouts, but gives the browser one deterministic
+  // fallback point after six stars, producing a clean 6 + 6 mobile wrap.
+  return count > 6 ? `${value.slice(0, 6)}\u200B${value.slice(6)}` : value;
 }
 
 export { DIFFICULTY_LEVELS, MIN_ENCOUNTER_STARS, MAX_ENCOUNTER_STARS, clampStars, difficultyForStars, starsText };
