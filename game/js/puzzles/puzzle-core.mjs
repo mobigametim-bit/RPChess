@@ -78,19 +78,36 @@ function chooseType(stars, seed) {
   return Object.keys(mix).at(-1);
 }
 
-function candidatePool(catalog, stars, type) {
-  const exact = (catalog || []).filter((item) => isNormalizedPuzzle(item) && item.difficulty === stars);
-  const typed = exact.filter((item) => item.type === type);
-  if (typed.length) return typed;
+function candidatePool(catalog, stars, type, excludedIds = []) {
+  const normalized = (catalog || []).filter(isNormalizedPuzzle);
+  const excluded = new Set(Array.isArray(excludedIds) ? excludedIds : []);
+  const exact = normalized.filter((item) => item.difficulty === stars);
+  const exactUnseen = exact.filter((item) => !excluded.has(item.id));
+  const typedExactUnseen = exactUnseen.filter((item) => item.type === type);
+  if (typedExactUnseen.length) return typedExactUnseen;
+  if (exactUnseen.length) return exactUnseen;
+
+  // Sparse preview catalogs can temporarily exhaust an exact-star bucket.
+  // Prefer the closest unseen task rather than immediately repeating one.
+  const unseen = normalized.filter((item) => !excluded.has(item.id));
+  if (unseen.length) {
+    const typedUnseen = unseen.filter((item) => item.type === type);
+    const source = typedUnseen.length ? typedUnseen : unseen;
+    const nearestDistance = Math.min(...source.map((item) => Math.abs(item.difficulty - stars)));
+    return source.filter((item) => Math.abs(item.difficulty - stars) === nearestDistance);
+  }
+
+  const typedExact = exact.filter((item) => item.type === type);
+  if (typedExact.length) return typedExact;
   if (exact.length) return exact;
-  return (catalog || []).filter(isNormalizedPuzzle);
+  return normalized;
 }
 
-function selectPuzzle(catalog, { runId = 'run', routeId = 'route', stars = 1, week = 1 } = {}) {
+function selectPuzzle(catalog, { runId = 'run', routeId = 'route', stars = 1, week = 1, excludedIds = [] } = {}) {
   const resolvedStars = clampStars(stars || puzzleStarsForWeek(week));
   const seed = `${runId}:${routeId}:${resolvedStars}`;
   const type = chooseType(resolvedStars, seed);
-  const pool = candidatePool(catalog, resolvedStars, type);
+  const pool = candidatePool(catalog, resolvedStars, type, excludedIds);
   if (!pool.length) throw new Error('Puzzle catalog is empty');
   return pool[hashString(`${seed}:pick`) % pool.length];
 }
@@ -170,6 +187,7 @@ export {
   uciParts,
   publicMoveUci,
   isNormalizedPuzzle,
+  candidatePool,
   selectPuzzle,
   createPuzzleState,
   isPuzzleState,
