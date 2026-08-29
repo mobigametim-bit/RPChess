@@ -79,18 +79,35 @@ function chooseType(stars, seed) {
   return Object.keys(mix).at(-1);
 }
 
-// `stars` and `type` remain in the signature for compatibility with older callers.
-// Selection now deliberately spans the whole curated catalog: any travel week can roll any difficulty.
 function candidatePool(catalog, stars, type, excludedIds = []) {
   const normalized = (catalog || []).filter(isNormalizedPuzzle);
   const excluded = new Set(Array.isArray(excludedIds) ? excludedIds : []);
+  const exact = normalized.filter((item) => item.difficulty === stars);
+  const exactUnseen = exact.filter((item) => !excluded.has(item.id));
+  const typedExactUnseen = exactUnseen.filter((item) => item.type === type);
+  if (typedExactUnseen.length) return typedExactUnseen;
+  if (exactUnseen.length) return exactUnseen;
+
+  // An endless run can eventually exhaust a small high-star bucket. Preserve no-repeat first,
+  // then fall back across other difficulties rather than forcing an early duplicate.
   const unseen = normalized.filter((item) => !excluded.has(item.id));
-  return unseen.length ? unseen : normalized;
+  if (unseen.length) {
+    const typedUnseen = unseen.filter((item) => item.type === type);
+    return typedUnseen.length ? typedUnseen : unseen;
+  }
+
+  const typedExact = exact.filter((item) => item.type === type);
+  if (typedExact.length) return typedExact;
+  if (exact.length) return exact;
+  return normalized;
 }
 
 function selectPuzzle(catalog, { runId = 'run', routeId = 'route', excludedIds = [] } = {}) {
   const seed = `${runId}:${routeId}:any-difficulty`;
-  const pool = candidatePool(catalog, null, null, excludedIds);
+  // Every Puzzle encounter gets an independent 1..12 roll. Travel week/card difficulty is intentionally ignored.
+  const rolledStars = 1 + (hashString(`${seed}:stars`) % 12);
+  const type = chooseType(rolledStars, seed);
+  const pool = candidatePool(catalog, rolledStars, type, excludedIds);
   if (!pool.length) throw new Error('Puzzle catalog is empty');
   return pool[hashString(`${seed}:pick`) % pool.length];
 }
