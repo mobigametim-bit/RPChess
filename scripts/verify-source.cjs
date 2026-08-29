@@ -21,9 +21,13 @@ module.exports=function verifySource(root){
   for(const piece of pieces){required.push(`assets/races/humans/pieces/white/${piece}.png`);required.push(`assets/races/humans/pieces/black/${piece}.png`);}
   for(const race of races)for(const piece of pieces)required.push(`assets/races/${race}/pieces/${piece}.png`);
 
+  // Verify the exact background files that are currently uploaded on feature/events.
+  // Animals intentionally use the generic woodland fallback in race-assets.mjs until
+  // approved wild_glen.png and riverbank_tracks.png are supplied; the two uploaded
+  // merfolk images remain packaged but are not part of the current 14-race Event pool.
   const backgrounds={
     generic:['forest_crossroad.png','old_kings_road.png','roadside_shrine.png','abandoned_camp.png','ancient_ruins.png','stormy_bridge.png','moonlit_gravefield.png','market_square_twilight.png'],
-    humans:['human_waystation.png','human_chapel_court.png'],elves:['elven_glade.png','elven_waystones.png'],orcs:['orc_war_camp.png','orc_trial_circle.png'],undead:['necropolis_gate.png','bone_court.png'],dark_elves:['obsidian_passage.png','spider_shrine.png'],dwarves:['dwarven_forgehall.png','dwarven_gate_road.png'],demons:['infernal_breach.png','ashen_altar.png'],angels:['sky_sanctuary.png','hall_of_halos.png'],dragonborn:['dragonborn_aerie.png','ember_tribunal.png'],beastfolk:['beastfolk_hunting_camp.png','moon_run_path.png'],constructs:['construct_foundry.png','silent_observatory.png'],animals:['wild_glen.png','riverbank_tracks.png'],fae:['fae_ring_garden.png','whispering_meadow.png'],goblins:['goblin_trade_nook.png','goblin_scrapyard_camp.png']
+    humans:['human_waystation.png','human_chapel_court.png'],elves:['elven_glade.png','elven_waystones.png'],orcs:['orc_war_camp.png','orc_trial_circle.png'],undead:['necropolis_gate.png','bone_court.png'],dark_elves:['obsidian_passage.png','spider_shrine.png'],dwarves:['dwarven_forgehall.png','dwarven_gate_road.png'],demons:['infernal_breach.png','ashen_altar.png'],angels:['sky_sanctuary.png','hall_of_halos.png'],dragonborn:['dragonborn_aerie.png','ember_tribunal.png'],beastfolk:['beastfolk_hunting_camp.png','moon_run_path.png'],constructs:['construct_foundry.png','silent_observatory.png'],fae:['fae_moonwell.png','fae_mushroom_court.png'],goblins:['goblin_bomb_yard.png','goblin_scrap_market.png'],merfolk:['merfolk_tide_court.png','merfolk_wreck_shrine.png']
   };
   for(const [folder,files] of Object.entries(backgrounds))for(const file of files)required.push(`assets/events/register-04/backgrounds/${folder}/${file}`);
   required.forEach(relative=>requireFile(root,relative));
@@ -37,13 +41,13 @@ module.exports=function verifySource(root){
   const foundation=read(root,'css/reboot-foundation.css');requireTokens(foundation,['BrahmsGotischCyr','--ui-panel-safe-left','--ui-panel-safe-right','.ui-panel-safe','.ui-panel-surface'],'frameless foundation');
   const route=read(root,'js/battle-route.mjs');requireTokens(route,["import './resources-app.mjs'","import './battle-app.mjs'","import './settlement-app.mjs'","import './starvation-app.mjs'","import './events-app.mjs'","import './travel-choice-app.mjs'"],'journey bootstrap');
 
-  const difficulty=read(root,'js/encounter-difficulty.mjs');requireTokens(difficulty,['MAX_ENCOUNTER_STARS = 12','elo: 400','elo: 2600','difficultyForStars'],'12-level difficulty');
+  const difficulty=read(root,'js/encounter-difficulty.mjs');requireTokens(difficulty,['MAX_ENCOUNTER_STARS = 12','elo: 400','elo: 2600','difficultyForStars','value.slice(0, 6)'],'12-level difficulty');
   const travel=read(root,'js/travel-choice-core.mjs');requireTokens(travel,['PLAYABLE_TRAVEL_TYPES','skirmish','battle','settlement','event','Array.from({length:TRAVEL_CHOICE_COUNT','MAX_ENCOUNTER_STARS','playerColor','enemyRaceTag'],'Travel equal-pool core');
   const travelApp=read(root,'js/travel-choice-app.mjs');requireTokens(travelApp,['rpchess:event-open','Неделя путешествия','СЛУЧАЙНЫЙ БОЕЦ ПОГИБНЕТ','starsText'],'corrected Travel runtime');
   for(const forbidden of ['ИСХОД НЕИЗВЕСТЕН','3–5 РЕШЕНИЙ','ВЫБРАТЬ ПУТЬ','Каждая карточка выбирается независимо','Куда двигаться дальше?','Шаг путешествия'])if(travelApp.includes(forbidden))fail(`Travel UX still contains removed copy: ${forbidden}`);
   const travelCss=read(root,'css/travel-choice.css');requireTokens(travelCss,["'BrahmsGotischCyr'",'.travel-choice-heading h1'],'Travel fantasy typography');
 
-  const racesSource=read(root,'js/race-assets.mjs');requireTokens(racesSource,["humans/pieces/${color==='w'?'white':'black'}",'RACE_TAG_BY_LABEL','BACKGROUND_POOLS','eventBackgroundPath','mixedRoleRaces','deterministicPlayerColor','pieceArtForTheme'],'race assets runtime');
+  const racesSource=read(root,'js/race-assets.mjs');requireTokens(racesSource,["humans/pieces/${color==='w'?'white':'black'}",'RACE_TAG_BY_LABEL','BACKGROUND_POOLS','BACKGROUND_FOLDER_BY_RACE','eventBackgroundPath','fae_moonwell.png','goblin_bomb_yard.png','mixedRoleRaces','deterministicPlayerColor','pieceArtForTheme'],'race assets runtime');
   const eventsData=read(root,'js/events-data.mjs');requireTokens(eventsData,['EVENTS_01','EVENTS_10','EVENT_CATALOG','EVENT_IDS','normalizeRaceTag'],'Events catalog index');
   const narrative=read(root,'js/event-narrative.mjs');requireTokens(narrative,['literaryStory','dialogue','atmosphere','closing'],'literary Events narrative');
   const eventsCore=read(root,'js/events-core.mjs');requireTokens(eventsCore,['EVENT_COUNT = 100','shuffledEventIds','resolveEventChoice','event_king','markEventCombatStarted','eventCombatCompleted','clampStars','combatTheme'],'Events core');
