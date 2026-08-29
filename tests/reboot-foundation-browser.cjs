@@ -43,6 +43,7 @@ const RUN_KEY = 'rpchess.reboot.v1.run';
       travelChoice: Boolean(window.RPChessTravelChoice),
       settlement: Boolean(window.RPChessSettlement),
       resources: Boolean(window.RPChessResources),
+      sharedUx: Boolean(window.RPChessResourceIcons),
       travelScreen: Boolean(document.querySelector('[data-travel-choice-screen]')),
       settlementScreen: Boolean(document.querySelector('[data-settlement-screen]')),
       directBattleShortcut: Boolean(document.querySelector('[data-roster-battle]')),
@@ -60,6 +61,7 @@ const RUN_KEY = 'rpchess.reboot.v1.run';
     assert.strictEqual(runtimeState.travelChoice, true, 'Travel Choice runtime must load with the run shell');
     assert.strictEqual(runtimeState.settlement, true, 'Settlement runtime must load with the run shell');
     assert.strictEqual(runtimeState.resources, true, 'Resources runtime must remain available across run scenes');
+    assert.strictEqual(runtimeState.sharedUx, true, 'Shared board/resource UX runtime must be present in production dist');
     assert.strictEqual(runtimeState.travelScreen, true, 'Travel Choice scene must be prepared at bootstrap');
     assert.strictEqual(runtimeState.settlementScreen, true, 'Settlement scene must be prepared at bootstrap');
     assert.strictEqual(runtimeState.directBattleShortcut, false, 'temporary direct Battle shortcut must be gone');
@@ -96,9 +98,33 @@ const RUN_KEY = 'rpchess.reboot.v1.run';
     await menu.locator('[data-continue-run]').click();
     await page.locator('[data-roster-screen]:not([hidden])').waitFor();
     await page.locator('[data-roster-travel]').click();
-    await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
+    const travelScreen = page.locator('[data-travel-choice-screen]:not([hidden])');
+    await travelScreen.waitFor();
     assert.strictEqual(await menu.isHidden(), true, 'Start Journey must not flash or fall back to the main menu');
     assert.strictEqual(await page.locator('[data-travel-choice]').count(), 3, 'Start Journey must render the three Travel Choice cards');
+
+    const travelStyle = await page.evaluate(() => {
+      const cssLink = document.querySelector('link[data-travel-choice-css]');
+      const routes = document.querySelector('.travel-choice-routes');
+      const card = document.querySelector('[data-travel-choice]');
+      const screen = document.querySelector('[data-travel-choice-screen]');
+      const routeStyle = routes ? getComputedStyle(routes) : null;
+      const cardStyle = card ? getComputedStyle(card) : null;
+      const screenStyle = screen ? getComputedStyle(screen) : null;
+      return {
+        cssHref: cssLink?.getAttribute('href') || '',
+        routesDisplay: routeStyle?.display || '',
+        routesColumns: routeStyle?.gridTemplateColumns || '',
+        cardMinHeight: Number.parseFloat(cardStyle?.minHeight || '0'),
+        cardBackground: cardStyle?.backgroundColor || '',
+        screenBackground: screenStyle?.backgroundImage || ''
+      };
+    });
+    assert(travelStyle.cssHref.includes('css/travel-choice.css'), `Travel stylesheet link missing: ${travelStyle.cssHref}`);
+    assert.strictEqual(travelStyle.routesDisplay, 'grid', `Travel routes must render as grid, got ${travelStyle.routesDisplay}`);
+    assert(travelStyle.routesColumns.split(' ').length >= 3, `desktop Travel must expose three grid columns, got ${travelStyle.routesColumns}`);
+    assert(travelStyle.cardMinHeight >= 450, `Travel card styling missing; min-height=${travelStyle.cardMinHeight}`);
+    assert(travelStyle.screenBackground && travelStyle.screenBackground !== 'none', 'Travel screen fantasy background styling must be applied');
 
     const mobile = await browser.newPage({ viewport: { width: 390, height: 500 } });
     const mobileErrors = [];
@@ -119,7 +145,7 @@ const RUN_KEY = 'rpchess.reboot.v1.run';
 
     assert.deepStrictEqual(errors, [], `desktop browser errors:\n${errors.join('\n')}`);
     assert.deepStrictEqual(mobileErrors, [], `mobile browser errors:\n${mobileErrors.join('\n')}`);
-    console.log('Reboot Foundation New Game -> Roster -> Start Journey with route-ready Travel Choice Chromium acceptance: PASS');
+    console.log('Reboot Foundation New Game -> Roster -> styled Start Journey Travel Choice Chromium acceptance: PASS');
   } finally {
     await browser.close();
   }
