@@ -19,7 +19,7 @@ module.exports=function verifySource(root){
   const info=JSON.parse(read(root,'BUILD_INFO.json'));
   if(!String(info.version||'').startsWith('3.1.0-puzzles'))fail(`unexpected Puzzles version: ${info.version||'missing'}`);
   if(info.active_feature_branch!=='feature/puzzles')fail(`unexpected active feature branch: ${info.active_feature_branch||'missing'}`);
-  if(!String(info.human_acceptance||'').startsWith('pending-puzzles'))fail('Puzzles preview must remain pending human acceptance before merge');
+  if(!['pending-puzzles-preview.2','accepted-2026-08-29'].includes(String(info.human_acceptance||'')))fail(`unexpected Puzzles human acceptance state: ${info.human_acceptance||'missing'}`);
 
   const index=read(root,'index.html');
   for(const forbidden of ['iron-marches-runtime.bundle.js','vertical-slice-app.mjs','ui-approved-campaign.mjs','explicit-run-setup.mjs'])if(index.includes(forbidden))fail(`index.html still references legacy runtime: ${forbidden}`);
