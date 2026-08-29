@@ -24,7 +24,8 @@ module.exports=function verifySource(root){
   const index=read(root,'index.html');
   for(const forbidden of ['iron-marches-runtime.bundle.js','vertical-slice-app.mjs','ui-approved-campaign.mjs','explicit-run-setup.mjs'])if(index.includes(forbidden))fail(`index.html still references legacy runtime: ${forbidden}`);
   const foundation=read(root,'css/reboot-foundation.css');requireTokens(foundation,['BrahmsGotischCyr','--ui-panel-safe-left','--ui-panel-safe-right','.ui-panel-safe','.ui-panel-surface'],'frameless foundation');
-  const route=read(root,'js/battle-route.mjs');requireTokens(route,["'./resources-app.mjs'","'./battle-app.mjs'","'./settlement-app.mjs'","'./starvation-app.mjs'","'./events-app.mjs'","'./puzzles/puzzle-app.mjs'","'./travel-choice-app.mjs'","'./ux-consistency.mjs'",'Promise.allSettled','css/travel-choice.css','RPChessRouteFailures'],'isolated journey bootstrap');
+  const foundationJs=read(root,'js/reboot-foundation.mjs');requireTokens(foundationJs,["import('./battle-route.mjs')",'RPChessRouteReady','css/travel-choice.css?v=20260830-acceptance-2'],'non-blocking foundation and critical Travel CSS');
+  const route=read(root,'js/battle-route.mjs');requireTokens(route,["import './resources-app.mjs'","import './battle-app.mjs'","import './settlement-app.mjs'","import './starvation-app.mjs'","import './events-app.mjs'","import './puzzles/puzzle-app.mjs'","import './travel-choice-app.mjs'","import './ux-consistency.mjs'"],'journey bootstrap');
 
   const difficulty=read(root,'js/encounter-difficulty.mjs');requireTokens(difficulty,['MAX_ENCOUNTER_STARS = 12','elo: 400','elo: 2600','difficultyForStars','value.slice(0, 6)'],'12-level difficulty');
   const travel=read(root,'js/travel-choice-core.mjs');requireTokens(travel,['PLAYABLE_TRAVEL_TYPES','skirmish','battle','settlement','event','puzzle','puzzleStarsForWeek','Array.from({length:TRAVEL_CHOICE_COUNT','playerColor','enemyRaceTag'],'Travel five-type core');
