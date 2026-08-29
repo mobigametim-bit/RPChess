@@ -1,7 +1,7 @@
 {
   "name": "rpchess",
   "private": true,
-  "version": "2.9.0",
+  "version": "3.0.0",
   "description": "RPChess Reboot — fantasy roguelite built on classical chess",
   "devDependencies": {
     "adm-zip": "^0.5.16",
@@ -10,7 +10,7 @@
   },
   "scripts": {
     "verify": "node -e \"require('./scripts/verify-source.cjs')(require('path').resolve('game'))\"",
-    "test": "node tests/reboot-foundation.cjs && node tests/classic-chess-static.cjs && node tests/classic-chess-engine.cjs && node tests/chess-ai-adapter.cjs && node tests/roster.cjs && node tests/skirmish.cjs && node tests/battle.cjs && node tests/travel-choice.cjs && node tests/resources.cjs && node tests/settlement.cjs && node tests/starvation.cjs",
+    "test": "node tests/reboot-foundation.cjs && node tests/classic-chess-static.cjs && node tests/classic-chess-engine.cjs && node tests/chess-ai-adapter.cjs && node tests/roster.cjs && node tests/skirmish.cjs && node tests/battle.cjs && node tests/combat-art-continuity.cjs && node tests/travel-choice.cjs && node tests/resources.cjs && node tests/settlement.cjs && node tests/starvation.cjs && node tests/events.cjs && node tests/events-visual.cjs",
     "test:foundation": "node tests/reboot-foundation.cjs",
     "test:classic": "node tests/classic-chess-static.cjs && node tests/classic-chess-engine.cjs",
     "test:ai": "node tests/chess-ai-adapter.cjs",
@@ -21,7 +21,11 @@
     "test:resources": "node tests/resources.cjs",
     "test:settlement": "node tests/settlement.cjs",
     "test:starvation": "node tests/starvation.cjs",
+    "test:events": "node tests/events.cjs && node tests/events-visual.cjs",
+    "test:browser": "node scripts/run-browser-tests.cjs",
     "build": "node scripts/build.cjs",
+    "gate:local": "npm run verify && npm test && npm run build",
+    "gate:full": "npm run gate:local && npm run test:browser",
     "deploy": "wrangler deploy"
   }
 }

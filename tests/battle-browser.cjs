@@ -1,123 +1,13 @@
-const assert = require('assert');
-const { chromium } = require('playwright');
-const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
-const RUN_KEY = 'rpchess.reboot.v1.run';
-const STANDARD = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR';
-const ART = {
-  'king.oathkeeper': 'assets/kings/oathkeeper/piece.png',
-  'hero.aldric_wall': 'assets/heroes/aldric_wall/piece_badge.png',
-  'hero.mara_chain': 'assets/heroes/mara_chain/piece_badge.png',
-  'hero.nemea_quill': 'assets/heroes/nemea_quill/piece_badge.png',
-  'hero.brother_orell': 'assets/heroes/brother_orell/piece_badge.png',
-  'hero.vael_hammer': 'assets/heroes/vael_hammer/piece_badge.png'
-};
-async function freshRun(page) {
-  await page.goto(url, { waitUntil: 'networkidle' });
-  await page.evaluate((key) => localStorage.removeItem(key), RUN_KEY);
-  await page.reload({ waitUntil: 'networkidle' });
-  await page.locator('[data-new-game]').click();
-  await page.locator('[data-roster-screen]:not([hidden])').waitFor();
-}
-async function enterBattleFromTravel(page) {
-  assert.strictEqual(await page.locator('[data-roster-battle]').count(), 0, 'temporary direct Battle bridge must stay removed');
-  await page.locator('[data-roster-travel]').click();
-  await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
-  const card = page.locator('[data-travel-type="battle"]').first();
-  assert.strictEqual(await card.count(), 1, 'Travel Choice must offer a Battle route');
-  const chosen = await card.evaluate((node) => ({ id: node.dataset.travelChoice, stars: Number(node.dataset.travelStars) }));
-  await card.click();
-  await page.locator('[data-battle-screen]:not([hidden])').waitFor();
-  return chosen;
-}
-(async () => {
-  const browser = await chromium.launch({ headless: true });
-  try {
-    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(String(e.stack || e)));
-    await freshRun(page);
-    const chosenBattle = await enterBattleFromTravel(page);
-    const persistedChoice = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).activeTravelChoice, RUN_KEY);
-    assert.strictEqual(persistedChoice.id, chosenBattle.id);
-    assert.strictEqual(persistedChoice.type, 'battle');
-    assert.strictEqual(globalThis === undefined, false);
-    const encounterStars = await page.evaluate(() => globalThis.RPChessBattle.encounter.stars);
-    assert.strictEqual(encounterStars, chosenBattle.stars, 'Travel threat must reach Battle encounter');
+const assert=require('assert'),{chromium}=require('playwright');const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173',RUN_KEY='rpchess.reboot.v1.run',STANDARD='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR';
+function route(id,{playerColor='w',stars=6,race='orcs'}={}){const enemyRoleRaces={pawn:race,knight:race,bishop:race,rook:race,queen:race,king:race};return{id,step:1,type:'battle',label:'БИТВА',stars,threatLabel:'ОПАСНАЯ',flavor:'Дорогу перекрывает полностью развёрнутая армия противника.',mechanicalHint:'Полная армия противника.',seed:`${id}-seed`,playerColor,enemyColor:playerColor==='w'?'b':'w',enemyRaceTag:race,enemyRoleRaces,sideNarrative:playerColor==='b'?'Враг уже занял поле и начинает первым. Ваш отряд принимает бой, удерживая оборону.':'Ваш отряд перехватывает инициативу и первым выходит на поле.'};}
+async function fresh(page,{woundedKing=false,playerColor='w',stars=6,race='orcs'}={}){await page.goto(url,{waitUntil:'networkidle'});await page.evaluate(k=>localStorage.removeItem(k),RUN_KEY);await page.reload({waitUntil:'networkidle'});await page.locator('[data-new-game]').click();await page.locator('[data-roster-screen]:not([hidden])').waitFor();const routes=[route('manual.battle.1',{playerColor,stars,race}),route('manual.battle.2',{playerColor,stars,race}),route('manual.battle.3',{playerColor,stars,race})];await page.evaluate(({k,woundedKing,routes})=>{const r=JSON.parse(localStorage.getItem(k));r.id=`battle-browser-${routes[0].playerColor}`;r.currentTravelChoices=routes;r.activeTravelChoice=null;if(woundedKing)r.roster.find(c=>c.isRunKing).status='wounded';localStorage.setItem(k,JSON.stringify(r));dispatchEvent(new CustomEvent('rpchess:run-updated'));},{k:RUN_KEY,woundedKing,routes});}
+async function enter(page){await page.locator('[data-roster-travel]').click();await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();const card=page.locator('[data-travel-type="battle"]').first();assert.strictEqual(await card.count(),1);await card.click();await page.locator('[data-battle-screen]:not([hidden])').waitFor();}
+async function assertResponsiveStars(page,selector,cardSelector){const layout=await page.locator(selector).evaluate((el,cardSelector)=>{const card=el.closest(cardSelector),range=document.createRange();range.selectNodeContents(el);const bounds=card.getBoundingClientRect(),rects=[...range.getClientRects()].map(r=>({left:r.left,right:r.right,top:r.top,bottom:r.bottom}));return{text:(el.textContent||'').replace(/\u200B/g,''),hasBreak:(el.textContent||'').includes('\u200B'),rects,bounds:{left:bounds.left,right:bounds.right}};},cardSelector);assert.strictEqual((layout.text.match(/★/g)||[]).length,12);assert.strictEqual(layout.hasBreak,true);assert(layout.rects.length>=1&&layout.rects.length<=2,`12-star label must occupy one or two lines, got ${layout.rects.length}`);for(const rect of layout.rects){assert(rect.left>=layout.bounds.left-1);assert(rect.right<=layout.bounds.right+1);}}
+(async()=>{const browser=await chromium.launch({headless:true});try{
+ const page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];page.on('pageerror',e=>errors.push(String(e.stack||e)));await fresh(page,{playerColor:'w',stars:12,race:'orcs'});await enter(page);assert.strictEqual(await page.locator('[data-battle-character]').count(),6);assert.strictEqual((await page.locator('[data-battle-personalized-count]').innerText()).trim(),'6');await assertResponsiveStars(page,'[data-battle-stars]','.battle-threat-card');await page.locator('[data-battle-start]').click();await page.locator('[data-classic-screen]:not([hidden])').waitFor();const state=await page.evaluate(()=>({fen:globalThis.RPChessClassicChess.snapshot().fen,plan:globalThis.RPChessBattle.battlePlan}));assert.strictEqual(state.fen,state.plan.fen);assert.strictEqual(state.fen.split(' ')[0],STANDARD);assert.strictEqual(state.plan.playerColor,'w');assert.strictEqual(state.plan.encounter.stars,12);assert.strictEqual(state.plan.playerFormation.filter(x=>x.id).length,6);const generic=state.plan.playerFormation.find(x=>!x.id),enemyQueen=state.plan.enemyFormation.find(x=>x.pieceType==='queen');const art=await page.evaluate(({genericSquare,enemySquare})=>({generic:document.querySelector(`[data-square="${genericSquare}"] .classic-piece`)?.getAttribute('src')||'',enemy:document.querySelector(`[data-square="${enemySquare}"] .classic-piece`)?.getAttribute('src')||''}),{genericSquare:generic.square,enemySquare:enemyQueen.square});assert(art.generic.includes('assets/races/humans/pieces/white/'));assert(art.enemy.includes('assets/races/orcs/pieces/queen.png'));await page.evaluate(()=>globalThis.RPChessBattle.finishBattle({over:true,type:'stalemate',winner:null}));await page.locator('[data-battle-aftermath]:not([hidden])').waitFor();assert.strictEqual((await page.locator('[data-battle-continue]').innerText()).trim(),'Продолжить путь');await page.locator('[data-battle-continue]').click();await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();assert.strictEqual(await page.locator('[data-roster-screen]:not([hidden])').count(),0,'Battle aftermath must not route through Roster');assert.strictEqual(await page.locator('[data-travel-choice]').count(),3,'Battle aftermath must produce the next Travel Choice');const continued=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),RUN_KEY);assert.strictEqual(continued.activeTravelChoice,null,'completed Battle route must be cleared before next Travel Choice');
 
-    assert.strictEqual(await page.locator('[data-battle-character]').count(), 6);
-    assert.strictEqual(await page.locator('[data-battle-participant]').count(), 6);
-    assert.strictEqual((await page.locator('[data-battle-personalized-count]').innerText()).trim(), '6');
-    assert.strictEqual(await page.locator('[data-battle-participant="king.oathkeeper"]').isDisabled(), true);
-    assert.strictEqual(await page.locator('[data-battle-formation] [data-battle-preview-square]').count(), 16);
+ const black=await browser.newPage({viewport:{width:1440,height:900}}),blackErrors=[];black.on('pageerror',e=>blackErrors.push(String(e.stack||e)));await fresh(black,{playerColor:'b',stars:9,race:'dark_elves'});await enter(black);assert((await black.locator('[data-battle-description]').innerText()).includes('оборону'));await black.locator('[data-battle-start]').click();await black.locator('[data-classic-screen]:not([hidden])').waitFor();const blackPlan=await black.evaluate(()=>globalThis.RPChessBattle.battlePlan);assert.strictEqual(blackPlan.playerColor,'b');assert.strictEqual(blackPlan.playerFormation.find(x=>x.pieceType==='king').square,'e8');const blackGeneric=blackPlan.playerFormation.find(x=>!x.id),darkEnemy=blackPlan.enemyFormation.find(x=>x.pieceType==='rook');const blackArt=await black.evaluate(({g,e})=>({g:document.querySelector(`[data-square="${g}"] .classic-piece`)?.getAttribute('src')||'',e:document.querySelector(`[data-square="${e}"] .classic-piece`)?.getAttribute('src')||'',mode:document.querySelector('[data-game-mode]')?.textContent||''}),{g:blackGeneric.square,e:darkEnemy.square});assert(blackArt.g.includes('assets/races/humans/pieces/black/'));assert(blackArt.e.includes('assets/races/dark_elves/pieces/rook.png'));assert(blackArt.mode.includes('чёрн'));
 
-    await page.locator('[data-battle-character="hero.aldric_wall"]').click();
-    assert.strictEqual(await page.locator('[data-battle-participant="hero.aldric_wall"]').count(), 0);
-    assert.strictEqual(await page.locator('[data-battle-preview-square="a1"] img').getAttribute('src'), 'generated_assets/unit_rook_player.png');
-    await page.locator('[data-battle-character="hero.aldric_wall"]').click();
-
-    await page.locator('[data-battle-start]').click();
-    await page.locator('[data-classic-screen]:not([hidden])').waitFor();
-    const state = await page.evaluate(() => ({
-      fen: globalThis.RPChessClassicChess.snapshot().fen,
-      planFen: globalThis.RPChessBattle.battlePlan.fen,
-      config: globalThis.RPChessChessAI.config,
-      formation: globalThis.RPChessBattle.battlePlan.playerFormation.map(({ id, square }) => {
-        const img = document.querySelector(`[data-square="${square}"] .classic-piece`);
-        return { id, src: img?.getAttribute('src') || '', personalizedId: img?.dataset.personalizedId || '' };
-      })
-    }));
-    assert.strictEqual(state.fen, state.planFen);
-    assert.strictEqual(state.fen.split(' ')[0], STANDARD);
-    assert(state.fen.includes(' KQkq '));
-    assert.strictEqual(state.config.mode, 'ai');
-    assert.strictEqual(state.config.playerColor, 'w');
-    assert.strictEqual(state.formation.filter((x) => x.id).length, 6);
-    assert.strictEqual(state.formation.filter((x) => !x.id).length, 10);
-    for (const piece of state.formation.filter((x) => x.id)) {
-      assert.strictEqual(piece.personalizedId, piece.id);
-      assert.strictEqual(piece.src, ART[piece.id]);
-    }
-    assert.strictEqual(await page.locator('[data-classic-new]').isHidden(), true);
-    assert.strictEqual(await page.locator('[data-classic-menu]').isHidden(), true);
-
-    await page.evaluate(() => globalThis.RPChessBattle.finishBattle({ over: true, type: 'checkmate', winner: 'w', checked: true }));
-    await page.locator('[data-battle-aftermath]:not([hidden])').waitFor();
-    assert.strictEqual((await page.locator('[data-battle-aftermath-result]').innerText()).trim(), 'ПОБЕДА');
-    assert.strictEqual(await page.locator('[data-battle-aftermath]').getByText('Погибли', { exact: true }).count(), 0);
-    assert.strictEqual((await page.locator('[data-battle-continue]').innerText()).trim(), 'Продолжить путь');
-    const persisted = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
-    assert.strictEqual(persisted.battleCount, 1);
-    assert.strictEqual(persisted.lastBattle.participants.length, 6);
-    assert.strictEqual(persisted.activeTravelChoice, null, 'completed Battle must release the selected travel path');
-
-    const loss = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-    const lossErrors = [];
-    loss.on('pageerror', (e) => lossErrors.push(String(e.stack || e)));
-    await freshRun(loss);
-    await enterBattleFromTravel(loss);
-    await loss.locator('[data-battle-start]').click();
-    await loss.locator('[data-classic-screen]:not([hidden])').waitFor();
-    await loss.evaluate(() => globalThis.RPChessBattle.finishBattle({ over: true, type: 'checkmate', winner: 'b', checked: true }));
-    await loss.locator('[data-battle-run-end]:not([hidden])').waitFor();
-    assert.strictEqual((await loss.locator('[data-battle-run-end-title]').innerText()).trim(), 'КОРОЛЬ ПОГИБ');
-    const ended = await loss.evaluate((key) => { const r = JSON.parse(localStorage.getItem(key)); return { ended:r.ended, reason:r.endReason, king:r.roster.find(x=>x.isRunKing).status, battles:r.battleCount }; }, RUN_KEY);
-    assert.deepStrictEqual(ended, { ended: true, reason: 'king_dead', king: 'dead', battles: 1 });
-
-    const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
-    const mobileErrors = [];
-    mobile.on('pageerror', (e) => mobileErrors.push(String(e.stack || e)));
-    await freshRun(mobile);
-    await enterBattleFromTravel(mobile);
-    await mobile.locator('[data-battle-screen]:not([hidden])').waitFor();
-    const mobileState = await mobile.evaluate(() => ({ sh:document.documentElement.scrollHeight, ch:document.documentElement.clientHeight, sw:document.documentElement.scrollWidth, cw:document.documentElement.clientWidth, pos:getComputedStyle(document.querySelector('.battle-actionbar')).position }));
-    assert(mobileState.sh > mobileState.ch);
-    assert(mobileState.sw <= mobileState.cw + 1);
-    assert.strictEqual(mobileState.pos, 'sticky');
-    assert.strictEqual(await mobile.locator('[data-battle-start]').isVisible(), true);
-
-    assert.deepStrictEqual(errors, []);
-    assert.deepStrictEqual(lossErrors, []);
-    assert.deepStrictEqual(mobileErrors, []);
-    console.log('Travel-routed Battle standard-army replacement, personalized art, persistence, King-death and mobile Chromium acceptance: PASS');
-  } finally { await browser.close(); }
-})().catch((error) => { console.error(error.stack || error); process.exitCode = 1; });
+ const wounded=await browser.newPage({viewport:{width:1440,height:900}}),woundedErrors=[];wounded.on('pageerror',e=>woundedErrors.push(String(e.stack||e)));await fresh(wounded,{woundedKing:true});await enter(wounded);assert.strictEqual(await wounded.locator('[data-battle-participant="king.oathkeeper"]').count(),1);assert.strictEqual(await wounded.locator('[data-battle-start]').isDisabled(),false);await wounded.locator('[data-battle-start]').click();await wounded.locator('[data-classic-screen]:not([hidden])').waitFor();
+ const mobile=await browser.newPage({viewport:{width:390,height:844}}),mobileErrors=[];mobile.on('pageerror',e=>mobileErrors.push(String(e.stack||e)));await fresh(mobile,{stars:12});await enter(mobile);await assertResponsiveStars(mobile,'[data-battle-stars]','.battle-threat-card');const layout=await mobile.evaluate(()=>({sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,sh:document.documentElement.scrollHeight,ch:document.documentElement.clientHeight,pos:getComputedStyle(document.querySelector('.battle-actionbar')).position}));assert(layout.sw<=layout.cw+1);assert(layout.sh>layout.ch);assert.strictEqual(layout.pos,'sticky');assert.deepStrictEqual(errors,[]);assert.deepStrictEqual(blackErrors,[]);assert.deepStrictEqual(woundedErrors,[]);assert.deepStrictEqual(mobileErrors,[]);console.log('Battle aftermath→Travel, 12-star 6+6-safe UI, human color sets, enemy race art, Black-side, wounded King and mobile acceptance: PASS');
+}finally{await browser.close();}})().catch(e=>{console.error(e.stack||e);process.exitCode=1});

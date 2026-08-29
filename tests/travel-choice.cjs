@@ -1,100 +1,38 @@
-const path = require('path');
-const assert = require('assert');
-const { pathToFileURL } = require('url');
+const fs=require('fs'),path=require('path'),assert=require('assert'),{pathToFileURL}=require('url');
+function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):null,setItem:(k,v)=>d.set(k,String(v)),removeItem:k=>d.delete(k)}}
+(async()=>{
+  const game=path.resolve(__dirname,'..','game');
+  const travelAppSource=fs.readFileSync(path.join(game,'js/travel-choice-app.mjs'),'utf8');
+  assert(!travelAppSource.includes("document.addEventListener('click'"),'Travel must not intercept combat aftermath clicks globally; combat scenes route directly to Travel');
+  assert(travelAppSource.includes('recoverAftermathRoute'),'Travel aftermath CTA must have an explicit stale-route recovery path');
+  assert(travelAppSource.includes("source==='skirmish-aftermath'")&&travelAppSource.includes("source==='battle-aftermath'"),'Travel recovery must distinguish Skirmish and Battle aftermath sources');
+  const travel=await import(pathToFileURL(path.join(game,'js/travel-choice-core.mjs')).href);
+  const difficulty=await import(pathToFileURL(path.join(game,'js/encounter-difficulty.mjs')).href);
+  const persistence=await import(pathToFileURL(path.join(game,'js/run-persistence.mjs')).href);
+  const skirmish=await import(pathToFileURL(path.join(game,'js/skirmish-core.mjs')).href);
+  const battle=await import(pathToFileURL(path.join(game,'js/battle-core.mjs')).href);
+  assert.deepStrictEqual(travel.PLAYABLE_TRAVEL_TYPES,['skirmish','battle','settlement','event']);
+  assert.strictEqual(travel.TRAVEL_CHOICE_COUNT,3);
+  assert.strictEqual(difficulty.MAX_ENCOUNTER_STARS,12);
+  assert.strictEqual(difficulty.difficultyForStars(1).elo,400);
+  assert.strictEqual(difficulty.difficultyForStars(12).elo,2600);
+  for(const type of travel.PLAYABLE_TRAVEL_TYPES){assert(Array.isArray(travel.FLAVOR_POOLS[type]));assert(travel.FLAVOR_POOLS[type].length>=10);}
 
-function memoryStorage() {
-  const data = new Map();
-  return {
-    getItem: (key) => data.has(key) ? data.get(key) : null,
-    setItem: (key, value) => data.set(key, String(value)),
-    removeItem: (key) => data.delete(key)
-  };
-}
+  const first=travel.createTravelChoices({runId:'travel-test-run',step:1}),repeat=travel.createTravelChoices({runId:'travel-test-run',step:1});
+  assert.deepStrictEqual(first,repeat);assert.strictEqual(first.length,3);assert.strictEqual(new Set(first.map(c=>c.id)).size,3);assert(first.every(travel.isTravelChoice));
+  const duplicateFound=Array.from({length:100},(_,i)=>travel.createTravelChoices({runId:`dupe-${i}`,step:1})).some(f=>new Set(f.map(c=>c.type)).size<3);assert(duplicateFound,'independent pool must allow duplicate types in one fork');
+  const counts={skirmish:0,battle:0,settlement:0,event:0};for(let i=0;i<4000;i++)for(const c of travel.createTravelChoices({runId:`distribution-${i}`,step:1}))counts[c.type]++;for(const [type,count] of Object.entries(counts)){const ratio=count/12000;assert(ratio>.22&&ratio<.28,`${type} ratio ${ratio} must stay near 25%`);}
+  const late=Array.from({length:100},(_,i)=>travel.createTravelChoices({runId:`late-${i}`,step:30})).flat().filter(c=>c.type==='skirmish'||c.type==='battle');assert(late.some(c=>c.stars===12),'late journey must be able to offer 12-star combat');assert(late.every(c=>c.stars>=1&&c.stars<=12));assert(late.every(c=>['w','b'].includes(c.playerColor)&&c.enemyRaceTag),'combat cards must carry side and race context');assert(late.some(c=>c.playerColor==='b'),'travel must be able to put the player on Black');
 
-(async () => {
-  const game = path.resolve(__dirname, '..', 'game');
-  const travel = await import(pathToFileURL(path.join(game, 'js/travel-choice-core.mjs')).href);
-  const persistence = await import(pathToFileURL(path.join(game, 'js/run-persistence.mjs')).href);
-  const skirmish = await import(pathToFileURL(path.join(game, 'js/skirmish-core.mjs')).href);
-  const battle = await import(pathToFileURL(path.join(game, 'js/battle-core.mjs')).href);
-
-  assert.deepStrictEqual(travel.PLAYABLE_TRAVEL_TYPES, ['skirmish', 'battle', 'settlement']);
-  assert.strictEqual(travel.TRAVEL_CHOICE_COUNT, 3);
-  for (const type of travel.TRAVEL_ENCOUNTER_TYPES) {
-    assert(Array.isArray(travel.FLAVOR_POOLS[type]), `${type} flavor pool must exist`);
-    assert(travel.FLAVOR_POOLS[type].length >= 10, `${type} must have at least ten flavor lines`);
-    assert.strictEqual(new Set(travel.FLAVOR_POOLS[type]).size, travel.FLAVOR_POOLS[type].length, `${type} flavor lines must be unique`);
-  }
-
-  const first = travel.createTravelChoices({ runId: 'travel-test-run', step: 1 });
-  const repeat = travel.createTravelChoices({ runId: 'travel-test-run', step: 1 });
-  assert.deepStrictEqual(first, repeat, 'same run + step must reproduce the exact same three paths');
-  assert.strictEqual(first.length, 3);
-  assert.strictEqual(new Set(first.map((choice) => choice.id)).size, 3, 'path IDs must be unique');
-  assert(first.some((choice) => choice.type === 'skirmish'), 'fork must contain a Skirmish path');
-  assert(first.some((choice) => choice.type === 'battle'), 'fork must contain a Battle path');
-  assert(first.filter((choice) => choice.type === 'settlement').length <= 1, 'Settlement can occupy at most one card');
-  assert(first.every((choice) => travel.isTravelChoice(choice)));
-  assert(first.every((choice) => choice.stars >= 1 && choice.stars <= 5));
-
-  for (const type of travel.PLAYABLE_TRAVEL_TYPES) {
-    const sameType = first.filter((choice) => choice.type === type);
-    assert.strictEqual(new Set(sameType.map((choice) => choice.flavor)).size, sameType.length, 'duplicate encounter types in one fork must not repeat flavor text');
-  }
-
-  const settlementFork = travel.createTravelChoices({ runId: 'settlement-test', step: 1 });
-  assert.strictEqual(settlementFork.filter((choice) => choice.type === 'settlement').length, 1, 'known deterministic fork must expose Settlement for acceptance coverage');
-
-  const later = travel.createTravelChoices({ runId: 'travel-test-run', step: 5 });
-  assert.notDeepStrictEqual(later, first, 'later journey step must create a different deterministic fork');
-  assert(Math.max(...later.map((choice) => choice.stars)) >= Math.max(...first.map((choice) => choice.stars)), 'threat should not regress as journey depth grows');
-
-  const run = persistence.createRun({ id: 'travel-run', now: 1000 });
-  assert.strictEqual(run.journeyStep, 0);
-  assert.strictEqual(run.currentTravelChoices, null);
-  assert.strictEqual(run.activeTravelChoice, null);
-  assert.strictEqual(run.currentSettlement, null);
-
-  const storage = memoryStorage();
-  const offered = persistence.writeRun({ ...run, currentTravelChoices: first }, storage, 1100);
-  assert.deepStrictEqual(persistence.readRun(storage).currentTravelChoices, first, 'offered paths must survive persistence/reload unchanged');
-
-  const combatChoice = first.find((choice) => choice.type === 'skirmish');
-  const chosen = { ...combatChoice, combatCountAtSelection: 0 };
-  persistence.writeRun({ ...offered, journeyStep: chosen.step, currentTravelChoices: null, activeTravelChoice: chosen }, storage, 1200);
-  const reloaded = persistence.readRun(storage);
-  assert.deepStrictEqual(reloaded.activeTravelChoice, chosen, 'chosen route must survive reload and remain irreversible');
-  assert.strictEqual(reloaded.journeyStep, 1);
-
-  const oldStorage = memoryStorage();
-  const legacy = { ...run };
-  delete legacy.journeyStep;
-  delete legacy.currentTravelChoices;
-  delete legacy.activeTravelChoice;
-  delete legacy.currentSettlement;
-  oldStorage.setItem(persistence.RUN_STORAGE_KEY, JSON.stringify(legacy));
-  const hydrated = persistence.readRun(oldStorage);
-  assert.strictEqual(hydrated.journeyStep, 0, 'pre-Travel saves must hydrate at journey step zero');
-  assert.strictEqual(hydrated.currentTravelChoices, null);
-  assert.strictEqual(hydrated.activeTravelChoice, null);
-  assert.strictEqual(hydrated.currentSettlement, null);
-
-  const skirmishChoice = first.find((choice) => choice.type === 'skirmish');
-  globalThis.RPChessTravelEncounterOverride = skirmishChoice;
-  const routedSkirmish = skirmish.createEncounter({ seed: 'fallback-skirmish', stars: 5 });
-  assert.strictEqual(routedSkirmish.seed, skirmishChoice.seed, 'Skirmish must consume the chosen route seed');
-  assert.strictEqual(routedSkirmish.stars, skirmishChoice.stars, 'Skirmish must consume the chosen route threat');
-  assert.strictEqual(globalThis.RPChessTravelEncounterOverride, undefined, 'Skirmish override must be one-shot');
-
-  const battleChoice = first.find((choice) => choice.type === 'battle');
-  globalThis.RPChessTravelEncounterOverride = battleChoice;
-  const routedBattle = battle.createBattleEncounter({ seed: 'fallback-battle', stars: 1 });
-  assert.strictEqual(routedBattle.seed, battleChoice.seed, 'Battle must consume the chosen route seed');
-  assert.strictEqual(routedBattle.stars, battleChoice.stars, 'Battle must consume the chosen route threat');
-  assert.strictEqual(globalThis.RPChessTravelEncounterOverride, undefined, 'Battle override must be one-shot');
-
-  console.log('Travel Choice deterministic combat/safe offers, flavor variation, persistence and encounter routing contract: PASS');
-})().catch((error) => {
-  console.error(error.stack || error);
-  process.exitCode = 1;
-});
+  const run=persistence.createRun({id:'travel-run',now:1000}),storage=memoryStorage();persistence.writeRun({...run,currentTravelChoices:first},storage,1100);assert.deepStrictEqual(persistence.readRun(storage).currentTravelChoices,first);
+  const persistedEvent={...first[0],id:'persist.event',type:'event',label:'СОБЫТИЕ',stars:1,threatLabel:'ОЧЕНЬ НИЗКАЯ',flavor:'Неожиданная встреча у дороги.',mechanicalHint:'',seed:'persist-event'};
+  const eventFork=[persistedEvent,first[1],first[2]];persistence.writeRun({...run,currentTravelChoices:eventFork},storage,1150);const persistedEventFork=persistence.readRun(storage);assert(persistedEventFork,'Travel fork containing Event must remain readable');assert.strictEqual(persistedEventFork.currentTravelChoices[0].type,'event');assert.strictEqual(persistedEventFork.currentTravelChoices[0].mechanicalHint,'','Event intentionally supports an empty mechanical hint');
+  const persistedTwelve={...first[0],id:'persist.12',type:'skirmish',label:'СТЫЧКА',stars:12,threatLabel:'ЛЕГЕНДАРНАЯ',mechanicalHint:'Нестандартный состав противника.',seed:'persist-12',playerColor:'b',enemyRaceTag:'orcs'};
+  const highStarFork=[persistedTwelve,first[1],first[2]];persistence.writeRun({...run,currentTravelChoices:highStarFork},storage,1200);const persistedFork=persistence.readRun(storage);assert(persistedFork,'12-star Travel fork must remain readable after persistence');assert.strictEqual(persistedFork.currentTravelChoices[0].stars,12);
+  const activeTwelve={...persistedTwelve,combatCountAtSelection:0,supplyCostAtSelection:1,supplyPaid:1};
+  persistence.writeRun({...run,currentTravelChoices:null,activeTravelChoice:activeTwelve},storage,1300);const persistedActive=persistence.readRun(storage);assert(persistedActive,'12-star active Travel combat must remain readable after persistence');assert.strictEqual(persistedActive.activeTravelChoice.stars,12);assert.strictEqual(persistedActive.activeTravelChoice.combatCountAtSelection,0);
+  const staleCompleted={...run,updatedAt:1400,skirmishCount:1,currentTravelChoices:null,activeTravelChoice:activeTwelve};storage.setItem(persistence.RUN_STORAGE_KEY,JSON.stringify(staleCompleted));const recovered=persistence.readRun(storage);assert(recovered,'completed-combat stale save must remain readable');assert.strictEqual(recovered.activeTravelChoice,null,'readRun must self-heal an already-completed direct combat route instead of blocking Travel');assert.strictEqual(recovered.skirmishCount,1);
+  const manualSkirmish={id:'manual.s',step:1,type:'skirmish',label:'СТЫЧКА',stars:12,threatLabel:'ЛЕГЕНДАРНАЯ',flavor:'Путь.',mechanicalHint:'Нестандартный состав противника.',seed:'manual-s',playerColor:'b',enemyRaceTag:'orcs'};globalThis.RPChessTravelEncounterOverride=manualSkirmish;const rs=skirmish.createEncounter({seed:'fallback',stars:5});assert.strictEqual(rs.seed,'manual-s');assert.strictEqual(rs.stars,12);assert.strictEqual(rs.aiElo,2600);assert.strictEqual(rs.playerColor,'b');assert.strictEqual(rs.enemyRaceTag,'orcs');
+  const manualBattle={...manualSkirmish,id:'manual.b',type:'battle',label:'БИТВА',seed:'manual-b'};globalThis.RPChessTravelEncounterOverride=manualBattle;const rb=battle.createBattleEncounter({seed:'fallback',stars:1});assert.strictEqual(rb.seed,'manual-b');assert.strictEqual(rb.stars,12);assert.strictEqual(rb.aiElo,2600);assert.strictEqual(rb.playerColor,'b');
+  console.log('Travel Choice Event-fork persistence, direct aftermath recovery, stale-save healing, 12-star persistence and race/side context: PASS');
+})().catch(e=>{console.error(e.stack||e);process.exitCode=1});

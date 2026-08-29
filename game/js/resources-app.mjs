@@ -124,7 +124,7 @@ function settleCombatRewards() {
       encounterType: 'skirmish',
       stars: run.lastSkirmish?.encounterStars,
       status: statusFromRecord(run.lastSkirmish),
-      playerColor: 'w'
+      playerColor: run.lastSkirmish?.playerColor || 'w'
     });
     next = applyGoldReward(next, reward);
     next.lastSkirmish = { ...(next.lastSkirmish || {}), goldReward: reward };
@@ -137,7 +137,7 @@ function settleCombatRewards() {
       encounterType: 'battle',
       stars: run.lastBattle?.encounterStars,
       status: statusFromRecord(run.lastBattle),
-      playerColor: 'w'
+      playerColor: run.lastBattle?.playerColor || 'w'
     });
     next = applyGoldReward(next, reward);
     next.lastBattle = { ...(next.lastBattle || {}), goldReward: reward };

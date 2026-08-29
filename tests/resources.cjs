@@ -40,6 +40,7 @@ class MemoryStorage {
   assert.strictEqual(empty.run.supplies, 0, 'Resources stage must never create negative Supplies');
 
   const win = { over: true, type: 'checkmate', winner: 'w' };
+  const blackWin = { over: true, type: 'checkmate', winner: 'b' };
   const draw = { over: true, type: 'stalemate', winner: null };
   const loss = { over: true, type: 'checkmate', winner: 'b' };
   assert.strictEqual(core.combatGoldReward({ encounterType: 'skirmish', stars: 1, status: win }), 16);
@@ -48,7 +49,10 @@ class MemoryStorage {
   assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 1, status: win }), 26);
   assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 5, status: win }), 50);
   assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 5, status: draw }), 25);
-  assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 5, status: loss }), 0, 'player loss must never grant Gold');
+  assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 5, status: loss }), 0, 'White-side loss must never grant Gold');
+  assert.strictEqual(core.combatGoldReward({ encounterType: 'skirmish', stars: 12, status: win }), 60, '12-star Skirmish reward must use the full canonical difficulty range');
+  assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 12, status: win }), 92, '12-star Battle reward must use the full canonical difficulty range');
+  assert.strictEqual(core.combatGoldReward({ encounterType: 'skirmish', stars: 12, status: blackWin, playerColor: 'b' }), 60, 'Black-side victory must receive the same deterministic reward');
 
   const rewarded = core.applyGoldReward(run, 32);
   assert.strictEqual(rewarded.gold, 112);
@@ -81,10 +85,11 @@ class MemoryStorage {
   assert(travelSource.includes('supplyPaid'), 'committed route must persist the exact Supply payment');
   assert(travelSource.includes('СТОИМОСТЬ ПУТИ'), 'route cards must disclose the travel cost before commitment');
   assert(appSource.includes('resourceRewards'), 'combat rewards must have one-time settlement bookkeeping');
+  assert(appSource.includes("run.lastSkirmish?.playerColor || 'w'") && appSource.includes("run.lastBattle?.playerColor || 'w'"), 'reward settlement must use the actual side played in combat');
   assert(appSource.includes('dataset.resourceHud'), 'Resources HUD contract missing');
   assert(!css.includes('ui_panel_frame.png') && !css.includes('ui_panel_wide.png'), 'Resources UI must remain CSS-only and frameless');
 
-  console.log('Resources persistence, travel cost, deterministic Gold rewards and frameless UX contract: PASS');
+  console.log('Resources persistence, 12-star/Black-side deterministic rewards, travel cost and frameless UX contract: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;

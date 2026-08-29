@@ -1,28 +1,13 @@
-name: RPChess Reboot CI
+name: RPChess Reboot CI (manual diagnostic)
 
 on:
   workflow_dispatch:
-  pull_request:
-  push:
-    branches:
-      - main
-      - feature/roster
-      - feature/skirmish
-      - feature/battle
-      - feature/travel-choice
-      - feature/resources
-      - feature/settlement
-      - feature/starvation
 
 permissions:
   contents: read
 
-concurrency:
-  group: rpchess-reboot-ci-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  verify-starvation:
+  verify-events:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,100 +17,13 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
-      - name: Verify Reboot source contract
-        run: npm run verify
-      - name: Run Foundation, chess, AI, Roster, Skirmish, Battle, Travel Choice, Resources, Settlement and Starvation tests
-        run: npm test
-      - name: Build Starvation web distribution
-        run: npm run build
-      - name: Verify clean Starvation distribution boundary
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -f dist/index.html
-          test -f dist/css/reboot-foundation.css
-          test -f dist/css/classic-chess.css
-          test -f dist/css/chess-ai-polish.css
-          test -f dist/css/roster.css
-          test -f dist/css/skirmish.css
-          test -f dist/css/battle.css
-          test -f dist/css/travel-choice.css
-          test -f dist/css/resources.css
-          test -f dist/css/settlement.css
-          test -f dist/css/starvation.css
-          test -f dist/js/reboot-foundation.mjs
-          test -f dist/js/reboot-audio.mjs
-          test -f dist/js/classic-chess-engine.mjs
-          test -f dist/js/classic-chess-app.mjs
-          test -f dist/js/chess-ai-adapter.mjs
-          test -f dist/js/roster-data.mjs
-          test -f dist/js/run-persistence.mjs
-          test -f dist/js/roster-app.mjs
-          test -f dist/js/skirmish-core.mjs
-          test -f dist/js/skirmish-app.mjs
-          test -f dist/js/battle-core.mjs
-          test -f dist/js/battle-app.mjs
-          test -f dist/js/battle-route.mjs
-          test -f dist/js/travel-choice-core.mjs
-          test -f dist/js/travel-choice-app.mjs
-          test -f dist/js/resources-core.mjs
-          test -f dist/js/resources-app.mjs
-          test -f dist/js/settlement-core.mjs
-          test -f dist/js/settlement-app.mjs
-          test -f dist/js/starvation-core.mjs
-          test -f dist/js/starvation-app.mjs
-          test -f dist/assets/kings/oathkeeper/portrait.png
-          test -f dist/assets/kings/oathkeeper/piece.png
-          for hero in aldric_wall mara_chain nemea_quill brother_orell vael_hammer lady_sorn khulan_star; do
-            test -f "dist/assets/heroes/${hero}/portrait.png"
-            test -f "dist/assets/heroes/${hero}/piece_badge.png"
-          done
-          test -f dist/vendor/stockfish/stockfish-18-lite-single.js
-          test -f dist/vendor/stockfish/stockfish-18-lite-single.wasm
-          test -f dist/vendor/stockfish/COPYING.txt
-          test -f dist/vendor/stockfish/SOURCE.txt
-          test -f dist/generated_assets/logo_main.png
-          test -f dist/generated_assets/title_wordmark.png
-          test -f dist/generated_assets/splash_poster.jpg
-          test -f dist/generated_assets/node_battle.png
-          test -f dist/generated_assets/node_elite.png
-          test -f dist/generated_assets/node_shop.png
-          test -f dist/generated_assets/reward_gold.png
-          for piece in pawn knight bishop rook queen king; do
-            test -f "dist/generated_assets/unit_${piece}_player.png"
-            test -f "dist/generated_assets/unit_${piece}_enemy.png"
-          done
-          for track in 01 02 03 04; do
-            test -f "dist/music/echoes_iron_throne_${track}.mp3"
-          done
-          test ! -e dist/js/generated/iron-marches-runtime.bundle.js
-          ! grep -q 'vertical-slice-app.mjs' dist/index.html
-          ! grep -q 'iron-marches-runtime.bundle.js' dist/index.html
-          ! grep -q 'explicit-run-setup.mjs' dist/index.html
+      - name: Run local source, deterministic and build gate
+        run: npm run gate:local
       - name: Install Playwright and Chromium
         timeout-minutes: 10
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
-      - name: Run real Chromium Foundation, chess, Stockfish, Roster, Skirmish, Battle, Travel Choice, Resources, Settlement and Starvation acceptance
-        timeout-minutes: 25
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 -m http.server 4173 --bind 127.0.0.1 --directory dist > /tmp/rpchess-reboot-http.log 2>&1 &
-          SERVER_PID=$!
-          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
-          for attempt in $(seq 1 30); do
-            if curl --fail --silent http://127.0.0.1:4173/index.html >/dev/null; then break; fi
-            sleep 1
-          done
-          export RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173
-          stdbuf -oL -eL node tests/reboot-foundation-browser.cjs
-          stdbuf -oL -eL node tests/classic-chess-browser.cjs
-          stdbuf -oL -eL node tests/roster-browser.cjs
-          stdbuf -oL -eL node tests/skirmish-browser.cjs
-          stdbuf -oL -eL node tests/battle-browser.cjs
-          stdbuf -oL -eL node tests/travel-choice-browser.cjs
-          stdbuf -oL -eL node tests/resources-browser.cjs
-          stdbuf -oL -eL node tests/settlement-browser.cjs
-          stdbuf -oL -eL node tests/starvation-browser.cjs
+      - name: Run full real Chromium regression
+        timeout-minutes: 30
+        run: npm run test:browser

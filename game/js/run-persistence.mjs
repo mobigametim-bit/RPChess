@@ -1,6 +1,7 @@
 import { createStarterRoster } from './roster-data.mjs';
 import { STARTING_GOLD, STARTING_SUPPLIES, hydrateResources } from './resources-core.mjs';
 import { isSettlementState } from './settlement-core.mjs';
+import { MAX_ENCOUNTER_STARS } from './encounter-difficulty.mjs';
 
 const RUN_STORAGE_KEY = 'rpchess.reboot.v1.run';
 const RUN_SCHEMA_VERSION = 1;
@@ -21,10 +22,10 @@ function isStoredTravelChoice(value) {
   if (!value.id || typeof value.id !== 'string') return false;
   if (!TRAVEL_TYPES.has(value.type)) return false;
   if (!Number.isInteger(value.step) || value.step < 1) return false;
-  if (!Number.isInteger(value.stars) || value.stars < 1 || value.stars > 5) return false;
+  if (!Number.isInteger(value.stars) || value.stars < 1 || value.stars > MAX_ENCOUNTER_STARS) return false;
   if (!value.seed || typeof value.seed !== 'string') return false;
   if (!value.flavor || typeof value.flavor !== 'string') return false;
-  if (!value.mechanicalHint || typeof value.mechanicalHint !== 'string') return false;
+  if (typeof value.mechanicalHint !== 'string') return false;
   if (value.combatCountAtSelection != null && (!Number.isInteger(value.combatCountAtSelection) || value.combatCountAtSelection < 0)) return false;
   if (value.supplyCostAtSelection != null && (!Number.isInteger(value.supplyCostAtSelection) || value.supplyCostAtSelection < 0)) return false;
   if (value.supplyPaid != null && (!Number.isInteger(value.supplyPaid) || value.supplyPaid < 0)) return false;
@@ -65,11 +66,20 @@ function isValidRun(value) {
   return kingCount === 1 && ids.has(value.selectedCharacterId);
 }
 
+function recoverCompletedCombatChoice(choice, skirmishCount, battleCount) {
+  if (!isStoredTravelChoice(choice) || !Number.isInteger(choice.combatCountAtSelection)) return choice || null;
+  if (choice.type === 'skirmish' && skirmishCount > choice.combatCountAtSelection) return null;
+  if (choice.type === 'battle' && battleCount > choice.combatCountAtSelection) return null;
+  return choice;
+}
+
 function hydrateCurrentRosterCopy(run) {
   const currentTemplates = new Map(createStarterRoster().map((character) => [character.id, character]));
   const resources = hydrateResources(run);
   const existingSkirmishes = Number.isInteger(run.skirmishCount) ? run.skirmishCount : 0;
   const existingBattles = Number.isInteger(run.battleCount) ? run.battleCount : 0;
+  const storedActiveChoice = isStoredTravelChoice(run.activeTravelChoice) ? run.activeTravelChoice : null;
+  const recoveredActiveChoice = recoverCompletedCombatChoice(storedActiveChoice, existingSkirmishes, existingBattles);
   return {
     ...resources,
     resourceRewards: {
@@ -83,7 +93,7 @@ function hydrateCurrentRosterCopy(run) {
     lastBattle: run.lastBattle || null,
     journeyStep: Number.isInteger(run.journeyStep) ? run.journeyStep : 0,
     currentTravelChoices: Array.isArray(run.currentTravelChoices) ? run.currentTravelChoices : null,
-    activeTravelChoice: isStoredTravelChoice(run.activeTravelChoice) ? run.activeTravelChoice : null,
+    activeTravelChoice: recoveredActiveChoice,
     currentSettlement: isSettlementState(run.currentSettlement) ? run.currentSettlement : null,
     roster: run.roster.map((character) => {
       const current = currentTemplates.get(character.id);
@@ -144,4 +154,4 @@ function clearRun(storage = null) {
   resolveStorage(storage)?.removeItem(RUN_STORAGE_KEY);
 }
 
-export { RUN_STORAGE_KEY, RUN_SCHEMA_VERSION, createRun, readRun, writeRun, clearRun, isValidRun, isStoredTravelChoice };
+export { RUN_STORAGE_KEY, RUN_SCHEMA_VERSION, createRun, readRun, writeRun, clearRun, isValidRun, isStoredTravelChoice, recoverCompletedCombatChoice };
