@@ -95,10 +95,12 @@ class MemoryStorage {
   assert(uxSource.includes("generated_assets/node_shop.png"), 'supplies must reuse the existing shop/supply asset instead of the diamond glyph');
   assert(uxSource.includes('RESOURCE_PATTERN') && uxSource.includes('resource-inline'), 'numeric Gold/Supply mentions must be iconized consistently');
   assert(uxSource.includes('.resource-chip__supply-icon'), 'legacy HUD supply diamond holder must be replaced by the supply asset at runtime');
+  assert(uxSource.includes('discloseRandomPuzzleDifficulty'), 'Puzzle route cards must explicitly disclose independent random difficulty');
+  assert(uxSource.includes('★1–★12') && uxSource.includes('СЛУЧАЙНАЯ СЛОЖНОСТЬ'), 'Puzzle route card must show the complete random ★1–★12 range');
   assert(uxCss.includes('.resource-inline-icon') && uxCss.includes('.travel-choice-card__cost .resource-inline-icon'), 'resource icons must be styled for rewards and travel cost cards');
   for(const source of [css,uxCss]) assert(!source.includes('ui_panel_frame.png') && !source.includes('ui_panel_wide.png'), 'Resources UI must remain CSS-only and frameless');
 
-  console.log('Resources persistence, icon-based rewards/costs, travel cost and frameless UX contract: PASS');
+  console.log('Resources persistence, icon-based rewards/costs, random Puzzle disclosure and frameless UX contract: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;
