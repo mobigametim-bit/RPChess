@@ -52,7 +52,7 @@ Runtime выбирает фон детерминированно из race-speci
 
 После live corrections фон больше не зависит от CSS custom-property renderer. `events-app.mjs` создаёт отдельный полноэкранный `<img data-events-background>`, URL явно вычисляется через `new URL(assetPath, document.baseURI).href`, а desktop reading panel ограничен `min(980px, 68vw)`, чтобы значительная часть иллюстрации оставалась открытой.
 
-Пользователь подтвердил 2026-08-29, что фоновые изображения Событий теперь видны в live preview.
+Пользователь подтвердил 2026-08-29, что фоновые изображения Событий видны в live preview.
 
 ### Asset debt
 
@@ -62,7 +62,7 @@ Runtime выбирает фон детерминированно из race-speci
 - Goblins представлены `goblins/goblin_bomb_yard.png` и `goblins/goblin_scrap_market.png`;
 - дополнительно присутствуют два Merfolk-фона, не входящие в текущий 14-race Event catalog.
 
-Это не создаёт broken URL: Animals используют generic woodland fallback, а Fae/Goblins — реально загруженные файлы. Этот asset debt не блокирует принятый Events gameplay/runtime и должен закрываться отдельно как контентная задача.
+Это не создаёт broken URL: Animals используют generic woodland fallback, а Fae/Goblins — реально загруженные файлы. Этот asset debt не блокирует принятый Events gameplay/runtime и закрывается отдельно как контентная задача.
 
 ## Role-gated решения
 
@@ -109,7 +109,7 @@ Event создаёт combat override с типом боя, stars с clamp **1–
 
 Human temporary pieces используют `assets/races/humans/pieces/white/` и `black/`; race themes используют соответствующие PNG по шахматной роли; mixed encounters могут брать разные роли из разных race sets.
 
-Combat-art continuity сохраняет race/custom ассеты при ререндере доски. Рокировка переносит также visual identity ладьи для обеих сторон. Для **неименной временной пешки** promotion немедленно заменяет pawn art на выбранный `queen / rook / bishop / knight` и сохраняет новый арт на последующих ходах. Именной персонаж сохраняет персональный identity-art.
+Combat-art continuity сохраняет race/custom ассеты при ререндере доски. Рокировка переносит visual identity ладьи для обеих сторон. Для **неименной временной пешки** promotion немедленно заменяет pawn art на выбранный `queen / rook / bishop / knight` и сохраняет новый арт на последующих ходах. Именной персонаж сохраняет персональный identity-art.
 
 Пользователь подтвердил в live preview корректную рокировку без смены ассета и корректную смену ассета при promotion неименной пешки.
 
@@ -145,8 +145,18 @@ Accepted Cloudflare Version: `56865d3e-18b0-4868-8329-5171cd016ec2`.
 
 Accepted preview: `https://56865d3e-rpchess.mobigametim.workers.dev`.
 
+## Production closure
+
+Acceptance-docs exact head `1b39988a4deeffb88edd379343b5f69ea86f82db` прошёл Cloudflare build `4bc864ec-93dc-4800-aa3f-c87ba8b2098c` — **SUCCESS**, Version `31dac392-6d39-4d85-9d56-26a8b218de3e`.
+
+Из-за ошибки GitHub connector Ready mutation (`fullDatabaseId`) исходный Draft PR #76 был закрыт без merge; тот же exact tree был открыт как non-Draft PR #77 и squash-merged без изменений gameplay tree.
+
+Events production merge SHA: `1e47a4a3121f1156a623a98ae29866b3a07d4cbc`.
+
+Post-merge Cloudflare build: `5f137e48-7b8a-42e1-830e-c7826fa8f11a` — **SUCCESS**; Version `45dcd46b-1306-4249-ae14-f48b5cd4b492`.
+
 ## Lifecycle
 
-**IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED.**
+**IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE.**
 
-До полного `DONE` остаются только acceptance-docs exact-head gate, перевод PR #76 в Ready, squash merge и post-merge verification `main`. После closure следующий этап — **Puzzles UX/spec discussion**.
+Следующий этап — **Puzzles UX/spec discussion**. Реализация Puzzles начинается только после отдельного согласования UX/spec.
