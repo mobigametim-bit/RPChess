@@ -2,7 +2,22 @@
 
 ## Статус
 
-Puzzles v1 UX/spec **утверждён пользователем 2026-08-29**. Реализация ведётся в `feature/puzzles`; feature нельзя сливать до deploy preview и отдельного human playtest/acceptance.
+Puzzles v1 — **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE**.
+
+- UX/spec approved: 2026-08-29.
+- Human acceptance: 2026-08-29 — пользователь подтвердил финальный retest: «всё хорошо».
+- Exact accepted gameplay head: `393fa3e6c4dda08186de75a8ae22d6aa442c0957`.
+- Accepted-head Cloudflare build: `0942b70f-e0e7-47d0-86c9-2572917cf5de` — **SUCCESS**.
+- Accepted preview: `https://f074203e-rpchess.mobigametim.workers.dev`.
+- Draft PR #80 закрыт без merge только из-за connector GitHub GraphQL Draft→Ready incompatibility (`fullDatabaseId`).
+- Тот же exact tree/head открыт как non-Draft PR #81 и squash-merged без промежуточных gameplay changes.
+- Production merge: `9aec0e12d3299656fb3c062b07c592e1d8332aab`.
+- Следующий этап: **Encounter Generator — UX/spec discussion**; implementation не начат.
+
+Финальный live retest дополнительно закрыл три acceptance-blocker:
+1. на Puzzle-board восстановлены orientation-aware координаты и технический шахматный глиф в левом верхнем углу каждой занятой клетки;
+2. добавлен persistent no-repeat history задач с migration из старого `lastPuzzle`;
+3. Event→Skirmish start исправлен в корне: enemy generator теперь не может создать больше 8 пешек, что соответствует физической formation; добавлен широкий deterministic seed regression.
 
 ## Поддерживаемые типы v1
 
@@ -96,6 +111,8 @@ Travel card показывает `ЗАДАЧА` и ★-сложность. Puzzl
 
 Puzzle использует обычную 8×8 шахматную доску RPChess, но не является полной партией. Позиция воспроизводится стандартными белыми/чёрными фигурами; персонализированный roster не подменяет фигуры задачи.
 
+Puzzle-board сохраняет обычный chess-board reading contract: orientation-aware координаты `a–h / 1–8` и технический chess glyph каждой занятой клетки отображаются в левом верхнем углу.
+
 Игрок делает ход непосредственно на доске. После правильного хода forced reply соперника выполняется автоматически, затем управление возвращается игроку.
 
 Неверный легальный ход:
@@ -128,20 +145,30 @@ Accuracy multiplier:
 
 **Hint-механика не входит в Puzzles v1.** Не добавлять кнопку подсказки, стандартный hint cost, автонамёки или раскрытие solution. Для подсказок будет отдельная будущая механика и отдельное UX-обсуждение.
 
-## Persistence
+## Persistence / no-repeat
 
-Выбранная Puzzle-встреча и прогресс решения переживают reload/resume. Нужно сохранять как минимум puzzle id, route id, current FEN/solution index, errors, resolved/result и reward settlement receipt. Один committed Puzzle route всегда восстанавливает ту же задачу.
+Выбранная Puzzle-встреча и прогресс решения переживают reload/resume. Сохраняются puzzle id, route id, current FEN/solution index, errors, resolved/result и reward settlement receipt. Один committed Puzzle route всегда восстанавливает ту же задачу.
 
-## Acceptance gate
+Забег дополнительно хранит persistent history уже сыгранных Puzzle. Selection исключает просмотренные задачи до исчерпания доступного пула; после этого допускается новый цикл. Для совместимости сохранение предыдущего preview автоматически переносит `lastPuzzle` в history.
 
-До merge обязательны:
+## Event→Skirmish compatibility
+
+Event-origin combat использует тот же Skirmish formation contract. Генератор enemy army обязан соблюдать `pawnCount <= 8`, потому что пешки размещаются на одной front rank. Этот invariant закрывает runtime exception при `Начать стычку`; deterministic regression покрывает широкий набор seed/★ комбинаций.
+
+## Acceptance gate — CLOSED
+
+Закрыты:
 - deterministic tests для difficulty, type selection, source/normalized catalog validation, UCI line progression, mate-in-1 multi-solution rule, attempts и Gold formula;
-- persistence/idempotency tests;
+- persistence/idempotency + no-repeat migration tests;
 - Travel pool regression с 5 playable types и Puzzle route resume;
-- desktop + 390×844 browser flow;
+- desktop + 390×844 browser coverage;
+- board coordinate/glyph contract;
+- broad Skirmish formation seed regression;
 - canonical source verification + production build;
-- Cloudflare preview;
+- Cloudflare accepted-head preview;
 - живой пользовательский playtest и explicit acceptance.
+
+Human acceptance получен 2026-08-29; Puzzles v1 находится в `main`.
 
 ## Архитектурное правило
 
