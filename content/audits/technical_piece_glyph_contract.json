@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "status": "IMPLEMENTED",
-  "verifiedAt": "2026-08-06",
+  "verifiedAt": "2026-08-30",
   "scope": [
     "board canvas pieces",
     "deployment and reserve pieces",
@@ -16,9 +16,19 @@
     "movingGlyphWidthPercent": 33,
     "reserveGlyphFontPx": 14.3
   },
+  "rebootAcceptance": {
+    "requestedScaleChange": 1.5,
+    "boardGlyphCss": "clamp(19.5px, 1.575vw, 25.5px)",
+    "mobileGlyphPx": 19.5,
+    "appliesTo": [
+      "classic-piece-marker",
+      "puzzle-piece-marker"
+    ]
+  },
   "regressions": [
     "tests/approved-visual-contract.cjs",
     "tests/stage-b-ui.cjs",
-    ".github/workflows/visual-qa-stage-b.yml"
+    ".github/workflows/visual-qa-stage-b.yml",
+    "tests/cross-scene-visuals.cjs"
   ]
 }
