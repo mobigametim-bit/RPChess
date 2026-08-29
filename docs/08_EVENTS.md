@@ -1,6 +1,6 @@
 # 08 — Events
 
-Events v1 — короткие фэнтезийные текстовые встречи внутри канонического journey loop. Каждое событие открывает мини-сцену, предлагает несколько решений и разрешается сразу: длинных event chains, политической системы и скрытых многошаговых квестовых веток нет.
+Events v1 — короткие фэнтезийные текстовые встречи внутри канонического journey loop. Каждое событие открывает отдельную литературную сцену, предлагает несколько решений и разрешается сразу: длинных event chains, политической системы и скрытых многошаговых квестовых веток нет.
 
 ## Travel integration
 
@@ -51,14 +51,33 @@ Event открывается как отдельная полноэкранна�
 Игрок видит:
 - название события;
 - расу/тематику;
-- мини-рассказ;
+- атмосферный иллюстрированный фон;
+- литературную сцену из нескольких абзацев, включая реплики персонажей;
 - 3–5 решений;
 - шанс успеха для рискованных решений или пометку гарантированного исхода;
 - role requirement, если решение требует конкретный тип фигуры;
 - стоимость Gold/Supplies, если она есть;
 - явные предупреждения о ранении, смерти, начале Skirmish/Battle и риске для Короля.
 
+После выбора результат **не дописывается внутрь исходной карточки**: итог показывается в отдельном outcome modal, после чего игрок продолжает путь или переходит в связанный combat.
+
 На mobile 390×844 используется vertical flow без горизонтального overflow.
+
+## Event backgrounds
+
+Утверждённый `event_backgrounds.md` задаёт библиотеку **36 PNG 16:9**: 8 generic + по 2 фона для Humans, Elves, Orcs, Undead, Dark Elves, Dwarves, Demons, Angels, Dragonborn, Beastfolk, Constructs, Animals, Fae и Goblins.
+
+Runtime выбирает фон детерминированно из race-specific pool по `event.id`; нейтральные/смешанные Events используют `generic`.
+
+### Текущее состояние загруженных файлов
+
+В `feature/events` физически загружено 36 PNG, однако последние шесть не совпадают с утверждённым реестром `event_backgrounds.md`:
+- отсутствуют `animals/wild_glen.png` и `animals/riverbank_tracks.png`;
+- вместо утверждённых Fae-файлов загружены `fae/fae_moonwell.png` и `fae/fae_mushroom_court.png`;
+- вместо утверждённых Goblin-файлов загружены `goblins/goblin_bomb_yard.png` и `goblins/goblin_scrap_market.png`;
+- дополнительно загружены не входящие в текущий 14-race Event catalog `merfolk/merfolk_tide_court.png` и `merfolk/merfolk_wreck_shrine.png`.
+
+До замены этих шести ассетов runtime не выдаёт broken URL: Animals временно используют generic woodland backgrounds, а Fae/Goblins используют реально загруженные файлы. Это **asset debt corrected-preview**, а не изменение утверждённого реестра.
 
 ## Role-gated решения
 
@@ -118,11 +137,21 @@ Event открывается как отдельная полноэкранна�
 
 Event создаёт combat override с:
 - типом боя;
-- stars, рассчитанными от выбранной Travel угрозы с clamp `1–5`;
+- stars, рассчитанными от выбранной Travel угрозы и authored threat modifier с clamp **`1–12`**;
 - deterministic seed;
-- threat modifier из authored choice.
+- race theme события или deterministic mixed theme;
+- deterministic player color (`w` или `b`);
+- enemy role-race map для race-specific или смешанной армии.
+
+Если игрок получает чёрных, белый противник начинает первым, а narrative оформляет бой как оборону/внезапное нападение.
 
 Переход Event → Combat **не списывает дополнительный Supply**. После завершения боя Event orchestration возвращает игрока в обычный journey loop.
+
+## Combat visual contract
+
+Общая шкала сложности Skirmish/Battle содержит **12 уровней Stockfish: 400…2600 Elo**. В интерфейсе это `★1…★12`; при недостатке ширины доступна чистая переносимая компоновка **6 + 6** звёзд без изменения фактического уровня.
+
+Human temporary pieces используют отдельные `assets/races/humans/pieces/white/` и `black/` наборы. Остальные race themes используют соответствующие PNG по шахматной роли. Mixed encounters могут брать Pawn/Knight/Bishop/Rook/Queen/King из разных race sets.
 
 ## Persistence
 
@@ -143,11 +172,11 @@ Reload/resume не меняет Event, не повторяет roll, не спи
 
 Events contract покрывается deterministic Node tests и real-Chromium regression Foundation → Classic Chess/Stockfish → Roster → Skirmish → Battle → Travel Choice → Resources → Settlement → Starvation → Events.
 
-Проверяются 100/415 catalog, 14×6 race distribution + 16 mixed, 3–5 решений, mini-story copy, ~25% Travel distribution, duplicate allowance, shuffle-bag uniqueness, economy idempotency, role gating, четыре explicit King-risk решения, wounded-King continuity, Event→Combat no-double-charge и mobile 390×844.
+Проверяются 100/415 catalog, 14×6 race distribution + 16 mixed, 3–5 решений, literary scene/dialogue contract, ~25% Travel distribution, duplicate allowance, shuffle-bag uniqueness, economy idempotency, role gating, четыре explicit King-risk решения, wounded-King continuity, Event→Combat no-double-charge, 12-star ceiling, race assets, black-side combat и mobile 390×844.
 
 ## Lifecycle
 
-Version: `3.0.0-events.preview.1`.
+Version: `3.0.0-events.preview.2`.
 
 Текущая ветка: `feature/events`.
 
