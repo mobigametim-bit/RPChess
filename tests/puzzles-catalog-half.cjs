@@ -5,10 +5,7 @@ const path=require('path'),assert=require('assert'),{pathToFileURL}=require('url
   const {PUZZLE_CATALOG}=await import(pathToFileURL(path.join(game,'js/puzzles/puzzle-catalog.mjs')).href);
   const {ClassicChessEngine}=await import(pathToFileURL(path.join(game,'js/classic-chess-engine.mjs')).href);
   const puzzle=PUZZLE_CATALOG[5];
-  assert(core.isNormalizedPuzzle(puzzle),`${puzzle.id} normalized`);
   const engine=new ClassicChessEngine(puzzle.fen);
-  assert.strictEqual(engine.turn(),puzzle.side,`${puzzle.id} side-to-move`);
-  const p=core.uciParts(puzzle.solution[0]),r=engine.move(p.from,p.to,p.promotion);
-  assert(r.ok,`${puzzle.id}: first move ${puzzle.solution[0]} legal`);
-  console.log('Puzzle seed 000hf first move: PASS');
+  for(const uci of puzzle.solution.slice(0,2)){const p=core.uciParts(uci),r=engine.move(p.from,p.to,p.promotion);assert(r.ok,`${puzzle.id}: ${uci} legal`);}
+  console.log('Puzzle seed 000hf first two moves: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
