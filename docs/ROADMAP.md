@@ -13,6 +13,7 @@
 - [x] Settlement — лечение, найм, Supply shop. **DONE**.
 - [x] Starvation — deterministic casualty при переходе без припасов. **DONE**; production merge `028e00c44f8e97586b0e5b39c2762ddf2c371835`, post-merge Cloudflare SUCCESS.
 - [x] Events v1 — **100 событий / 415 решений**, 14 расовых групп + mixed, literary scene, role/economy/recruit/wound/death outcomes, 4 explicit King-risk choices, Event→Skirmish/Battle без второго Supply charge, race/mixed armies, black-side play, illustrated backgrounds, castling/promotion combat-art continuity. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE.**
+- [x] Event background register — полный утверждённый набор **36 PNG** подключён напрямую: 8 generic + 14 race pools × 2; Animals/Fae/Goblins больше не используют fallback/альтернативные имена. Source verification и Events tests фиксируют этот контракт.
 - [x] **PLAYTEST GATE C** — интересность собственного состава и corrected Skirmish flow подтверждены пользователем.
 
 ## Next
@@ -29,7 +30,7 @@
 
 ## Current phase
 
-**Events v1 — DONE. Следующий этап: Puzzles UX/spec discussion. Реализация Puzzles не начинается до отдельного утверждения UX/spec пользователем.**
+**Events v1 — DONE, включая закрытый Event-background asset debt. Следующий этап: Puzzles UX/spec discussion. Реализация Puzzles не начинается до отдельного утверждения UX/spec пользователем.**
 
 ### Events final receipt
 
@@ -56,10 +57,11 @@
 - Combat-art continuity сохраняет race/custom rook asset после рокировки.
 - Неименная временная пешка при promotion получает art выбранной `queen / rook / bishop / knight` и сохраняет его после следующих ходов.
 - Live scene transitions aftermath → Travel → Event подтверждены.
+- Event background register: ровно 36 канонических active files; runtime pools, tests и source verification используют утверждённые имена.
 
-### Known non-blocking content debt
+### Event background register — CLOSED
 
-Approved Event background register и фактически загруженные последние ассеты частично расходятся: Animals используют generic fallback, Fae/Goblins — реально загруженные альтернативные имена, дополнительно присутствуют Merfolk backgrounds. Broken URLs нет. Этот asset debt закрывается отдельно и не блокирует Events DONE.
+Канонический набор состоит из 8 generic backgrounds и двух backgrounds для каждой из 14 рас. Animals используют `wild_glen.png` / `riverbank_tracks.png`; Fae — `fae_ring_garden.png` / `whispering_meadow.png`; Goblins — `goblin_trade_nook.png` / `goblin_scrapyard_camp.png`. Старые fallback/альтернативные имена выведены из active runtime. Дополнительные Merfolk assets могут храниться для будущего контента, но не входят в активные 36.
 
 ## Development rule
 
