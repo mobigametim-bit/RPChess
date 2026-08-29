@@ -1,6 +1,9 @@
-const assert=require('assert'),path=require('path'),{pathToFileURL}=require('url');
+const assert=require('assert'),fs=require('fs'),path=require('path'),{pathToFileURL}=require('url');
 (async()=>{
   const root=path.resolve(__dirname,'..');
+  const skirmishAppSource=fs.readFileSync(path.join(root,'game/js/skirmish-app.mjs'),'utf8');
+  assert(skirmishAppSource.includes("aftermathButton.textContent='Продолжить путь'"),'Skirmish aftermath CTA must say Продолжить путь');
+  assert(skirmishAppSource.includes("function leaveAftermath(){audio()?.click?.();resetBattleState();globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open'"),'Skirmish aftermath must route directly to Travel Choice');
   const rosterData=await import(pathToFileURL(path.join(root,'game/js/roster-data.mjs')).href);
   const difficulty=await import(pathToFileURL(path.join(root,'game/js/encounter-difficulty.mjs')).href);
   const skirmish=await import(pathToFileURL(path.join(root,'game/js/skirmish-core.mjs')).href);
@@ -28,5 +31,5 @@ const assert=require('assert'),path=require('path'),{pathToFileURL}=require('url
   const run={id:'run-test',roster,ended:false};
   const winBlack=skirmish.applyBattleOutcome(run,{capturedIds:['hero.aldric_wall'],status:{type:'checkmate',winner:'b'},playerColor:'b'});assert.strictEqual(winBlack.roster.find(c=>c.id==='hero.aldric_wall').status,'wounded');assert.strictEqual(winBlack.roster.find(c=>c.isRunKing).status,'healthy');assert.strictEqual(winBlack.ended,false);
   const lossBlack=skirmish.applyBattleOutcome(run,{capturedIds:[],status:{type:'checkmate',winner:'w'},playerColor:'b'});assert.strictEqual(lossBlack.roster.find(c=>c.isRunKing).status,'dead');assert.strictEqual(lossBlack.ended,true);assert.strictEqual(lossBlack.endReason,'king_dead');
-  console.log('Skirmish 12-level, responsive 6+6 stars, deterministic random deployment, Black-side and wound contracts: PASS');
+  console.log('Skirmish 12-level, aftermath→Travel, responsive 6+6 stars, deterministic random deployment, Black-side and wound contracts: PASS');
 })().catch(error=>{console.error(error.stack||error);process.exitCode=1});
