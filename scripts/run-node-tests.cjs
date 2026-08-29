@@ -3,10 +3,8 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const TESTS = Object.freeze([
-  'tests/travel-choice.cjs',
-  'tests/resources.cjs',
-  'tests/settlement.cjs',
-  'tests/starvation.cjs'
+  'tests/events.cjs',
+  'tests/events-visual.cjs'
 ]);
 
 const requested = Number.parseInt(process.env.RPCHESS_TEST_CONCURRENCY || '2', 10);
