@@ -37,3 +37,10 @@ Each gzip JSON row is an array with exactly ten fields:
 `scripts/materialize-puzzle-catalog.cjs` verifies the committed gzip SHA-256 and exact distributions before deterministically producing the runtime `puzzle-catalog.mjs` module. The regular build performs only this local integrity/materialization step plus lightweight catalog checks; it does **not** replay all 11,498 solutions through the chess engine.
 
 Committed gzip SHA-256: `dc3d10ee765e8e9a76f07bee010c672cb576e8c11a3e191693e9b3f221ac770c`.
+
+## Verification
+
+A one-off exact-head Cloudflare build replayed all **11,498/11,498** curated solution lines through the RPChess `ClassicChessEngine` and completed successfully before the full replay was removed from the regular build gate.
+
+- Full replay build: `5182f356-3ae7-460b-ae7f-5864b76e091b`
+- Full replay deployed version: `1653f129-5268-4e8e-87ea-41c0913e96e4`
