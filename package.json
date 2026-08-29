@@ -26,7 +26,7 @@
     "puzzles:import": "node scripts/import-lichess-puzzles.cjs",
     "test:browser": "node scripts/run-browser-tests.cjs",
     "build": "node scripts/build.cjs",
-    "gate:local": "npm run verify && node tests/reboot-foundation.cjs && node tests/classic-chess-static.cjs && node tests/classic-chess-engine.cjs && node tests/chess-ai-adapter.cjs && node tests/roster.cjs && node tests/skirmish.cjs && node tests/battle.cjs && node tests/combat-art-continuity.cjs && npm run build",
+    "gate:local": "npm run verify && npm test && npm run build",
     "gate:full": "npm run gate:local && npm run test:browser",
     "deploy": "wrangler deploy"
   }
