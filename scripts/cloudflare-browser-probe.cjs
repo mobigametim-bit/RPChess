@@ -30,8 +30,8 @@ if (!['package','chromium','smoke','full'].includes(stage)) {
 run('install Playwright package', npm, ['install', '--no-save', '--package-lock=false', '--ignore-scripts', 'playwright@1.54.2']);
 if (stage === 'package') { placeholder('playwright-package'); process.exit(0); }
 
-run('install Chromium binary', npx, ['playwright', 'install', 'chromium']);
-if (stage === 'chromium') { placeholder('chromium-install'); process.exit(0); }
+run('install Chromium with system dependencies', npx, ['playwright', 'install', '--with-deps', 'chromium']);
+if (stage === 'chromium') { placeholder('chromium-install-with-deps'); process.exit(0); }
 
 run('launch Chromium smoke', nodePath(), ['-e', "const {chromium}=require('playwright');(async()=>{const b=await chromium.launch({headless:true});const p=await b.newPage();await p.setContent('<title>ok</title>');await b.close();console.log('chromium smoke PASS')})().catch(e=>{console.error(e);process.exit(1)})"]);
 if (stage === 'smoke') { placeholder('chromium-smoke'); process.exit(0); }
