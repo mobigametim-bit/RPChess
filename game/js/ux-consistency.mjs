@@ -93,6 +93,19 @@ function replaceSupplyDiamonds(root = document) {
   }
 }
 
+function discloseRandomPuzzleDifficulty(root = document) {
+  if (!(root instanceof Element || root instanceof Document || root instanceof DocumentFragment)) return;
+  const cards = [];
+  if (root instanceof Element && root.matches('[data-travel-type="puzzle"]')) cards.push(root);
+  cards.push(...(root.querySelectorAll?.('[data-travel-type="puzzle"]') || []));
+  for (const card of cards) {
+    const meta = card.querySelector('.travel-choice-card__threat');
+    if (!meta || meta.dataset.randomPuzzleDifficulty === '1') continue;
+    meta.innerHTML = '<strong>★1–★12</strong><small>СЛУЧАЙНАЯ СЛОЖНОСТЬ</small>';
+    meta.dataset.randomPuzzleDifficulty = '1';
+  }
+}
+
 function visibleAxes(board) {
   const squares = [...board.querySelectorAll(':scope > [data-square]')];
   if (squares.length !== 64) return null;
@@ -143,6 +156,7 @@ let refreshQueued = false;
 function refresh() {
   refreshQueued = false;
   replaceSupplyDiamonds(document);
+  discloseRandomPuzzleDifficulty(document);
   iconizeText(document.body);
   for (const board of document.querySelectorAll(BOARD_SELECTOR)) syncBoard(board);
 }
@@ -166,6 +180,7 @@ const observer = new MutationObserver((mutations) => {
       if (node.nodeType === Node.TEXT_NODE) iconizeTextNode(node);
       else if (node instanceof Element) {
         replaceSupplyDiamonds(node);
+        discloseRandomPuzzleDifficulty(node);
         iconizeText(node);
         if (node.matches?.(BOARD_SELECTOR) || node.querySelector?.(BOARD_SELECTOR) || node.closest?.(BOARD_SELECTOR)) scheduleRefresh();
       }
