@@ -7,5 +7,6 @@ const path=require('path'),assert=require('assert'),{pathToFileURL}=require('url
   const puzzle=PUZZLE_CATALOG[5];
   const engine=new ClassicChessEngine(puzzle.fen);
   for(const uci of puzzle.solution){const p=core.uciParts(uci),r=engine.move(p.from,p.to,p.promotion);assert(r.ok,`${puzzle.id}: ${uci} legal`);}
-  console.log('Puzzle seed 000hf full move line legal: PASS');
+  assert.strictEqual(engine.status().type,'checkmate',`${puzzle.id} must end in mate`);
+  console.log('Puzzle seed 000hf checkmate: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
