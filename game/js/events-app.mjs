@@ -20,7 +20,11 @@ let syncingCombat = false;
 function audio() { return globalThis.RPChessRebootAudio; }
 function ensureCss() {
   if (document.querySelector('[data-events-css]')) return;
-  const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = 'css/events.css?v=20260829-events-2'; link.dataset.eventsCss = ''; document.head.append(link);
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = 'css/events.css?v=20260829-events-4';
+  link.dataset.eventsCss = '';
+  document.head.append(link);
 }
 
 function ensureScreen() {
@@ -34,6 +38,9 @@ function ensureScreen() {
   screen.hidden = true;
   screen.setAttribute('aria-label', 'Дорожное событие');
   screen.innerHTML = `
+    <div class="events-backdrop" aria-hidden="true">
+      <img data-events-background alt="">
+    </div>
     <div class="events-shell">
       <header class="events-topbar">
         <img class="events-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
@@ -70,7 +77,15 @@ function hideAllScenes() {
   for (const main of document.querySelectorAll('#app > main')) main.hidden = true;
   document.body.classList.remove('roster-active','skirmish-active','battle-active','classic-chess-active','settlement-active','starvation-active','travel-choice-active');
 }
-function showEvents() { const root = ensureScreen(); if (!root) return; hideAllScenes(); root.hidden = false; document.body.classList.add('events-active'); window.scrollTo({ top: 0, behavior: 'auto' }); globalThis.RPChessResources?.render?.(); }
+function showEvents() {
+  const root = ensureScreen();
+  if (!root) return;
+  hideAllScenes();
+  root.hidden = false;
+  document.body.classList.add('events-active');
+  window.scrollTo({ top: 0, behavior: 'auto' });
+  globalThis.RPChessResources?.render?.();
+}
 function hideEvents() { if (screen) screen.hidden = true; document.body.classList.remove('events-active'); }
 
 function riskLabel(choice) {
@@ -78,14 +93,22 @@ function riskLabel(choice) {
   if (choice.kingRisk && !warnings.some((x) => x.includes('КОРОЛЬ'))) warnings.push('КОРОЛЬ МОЖЕТ ПОГИБНУТЬ');
   return warnings.join(' · ');
 }
-function costLabel(choice) { const parts=[]; if(choice.cost?.gold)parts.push(`${choice.cost.gold} Gold`); if(choice.cost?.supplies)parts.push(`${choice.cost.supplies} Supplies`); return parts.join(' · '); }
+function costLabel(choice) {
+  const parts=[];
+  if(choice.cost?.gold)parts.push(`${choice.cost.gold} Gold`);
+  if(choice.cost?.supplies)parts.push(`${choice.cost.supplies} Supplies`);
+  return parts.join(' · ');
+}
 
 function choiceButton(eventChoice) {
   const availability = choiceAvailability(activeRun, eventChoice);
   const choice = availability.choice;
   const button = document.createElement('button');
-  button.type = 'button'; button.className = 'events-choice'; button.dataset.eventChoice = choice.id;
-  button.disabled = !availability.enabled || busy; button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
+  button.type = 'button';
+  button.className = 'events-choice';
+  button.dataset.eventChoice = choice.id;
+  button.disabled = !availability.enabled || busy;
+  button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
   const role = availability.hero ? `${PIECE_GLYPHS[availability.hero.pieceType] || ''} ${availability.hero.name}` : choice.role ? `${PIECE_GLYPHS[choice.role] || ''} ${PIECE_LABELS[choice.role] || choice.role}` : '';
   const chance = choice.chance < 100 ? `${choice.chance}% УСПЕХА` : 'ГАРАНТИРОВАННО';
   const cost = costLabel(choice), risk = riskLabel(choice);
@@ -98,14 +121,34 @@ function renderStory(event) {
   const root = screen?.querySelector('[data-events-story]');
   if (!root) return;
   root.replaceChildren();
-  for (const paragraph of literaryStory(event)) { const p=document.createElement('p'); p.textContent=paragraph; root.append(p); }
+  for (const paragraph of literaryStory(event)) {
+    const p=document.createElement('p');
+    p.textContent=paragraph;
+    root.append(p);
+  }
+}
+
+function renderBackground(event) {
+  const image = screen?.querySelector('[data-events-background]');
+  if (!image) return;
+  const assetPath = eventBackgroundPath(event);
+  const fallbackPath = 'assets/events/register-04/backgrounds/generic/forest_crossroad.png';
+  image.dataset.assetPath = assetPath;
+  image.dataset.fallbackApplied = '0';
+  image.onerror = () => {
+    if (image.dataset.fallbackApplied === '1') return;
+    image.dataset.fallbackApplied = '1';
+    image.src = new URL(fallbackPath, document.baseURI).href;
+  };
+  image.src = new URL(assetPath, document.baseURI).href;
+  screen.dataset.eventsBackgroundPath = assetPath;
 }
 
 function renderEvent() {
   if (!screen || !activeRun?.currentEvent) return;
   const event = normalizedEvent(activeRun.currentEvent.eventId);
   if (!event) return;
-  screen.style.setProperty('--events-background', `url("${eventBackgroundPath(event)}")`);
+  renderBackground(event);
   screen.querySelector('[data-events-title]').textContent = event.title;
   screen.querySelector('[data-events-race]').textContent = String(event.race || 'Смешанное').toUpperCase();
   renderStory(event);
@@ -118,13 +161,26 @@ function renderOutcome(event) {
   const state = activeRun?.currentEvent, outcome = state?.outcome;
   const root = screen?.querySelector('[data-events-outcome]');
   if (!root) return;
-  if (!state?.resolved || !outcome) { root.hidden = true; document.body.classList.remove('events-outcome-open'); return; }
-  root.hidden = false; document.body.classList.add('events-outcome-open');
+  if (!state?.resolved || !outcome) {
+    root.hidden = true;
+    document.body.classList.remove('events-outcome-open');
+    return;
+  }
+  root.hidden = false;
+  document.body.classList.add('events-outcome-open');
   const title=root.querySelector('[data-events-outcome-title]'),roll=root.querySelector('[data-events-roll]'),notes=root.querySelector('[data-events-outcome-notes]'),button=root.querySelector('[data-events-continue]');
   if(title) title.textContent = outcome.success ? 'УСПЕХ' : 'НЕУДАЧА';
   if(roll) roll.textContent = outcome.chance < 100 ? `Бросок: ${outcome.roll} · шанс: ${outcome.chance}%` : 'Гарантированный исход';
-  if(notes){notes.replaceChildren();const list=outcome.notes?.length?outcome.notes:['Ничего не изменилось.'];for(const text of list){const p=document.createElement('p');p.textContent=text;notes.append(p);}}
-  if(button){if(activeRun.ended)button.textContent='ГЛАВНОЕ МЕНЮ';else if(state.combat)button.textContent=state.combat.type==='battle'?'К БИТВЕ':'К СТЫЧКЕ';else button.textContent='ПРОДОЛЖИТЬ ПУТЬ';}
+  if(notes){
+    notes.replaceChildren();
+    const list=outcome.notes?.length?outcome.notes:['Ничего не изменилось.'];
+    for(const text of list){const p=document.createElement('p');p.textContent=text;notes.append(p);}
+  }
+  if(button){
+    if(activeRun.ended)button.textContent='ГЛАВНОЕ МЕНЮ';
+    else if(state.combat)button.textContent=state.combat.type==='battle'?'К БИТВЕ':'К СТЫЧКЕ';
+    else button.textContent='ПРОДОЛЖИТЬ ПУТЬ';
+  }
 }
 
 function handleChoice(event) {
@@ -132,12 +188,15 @@ function handleChoice(event) {
   if (!button || busy) return;
   const current = readRun();
   if (!current || current.ended || current.activeTravelChoice?.type !== 'event' || current.currentEvent?.resolved) return;
-  busy = true; audio()?.click?.();
+  busy = true;
+  audio()?.click?.();
   const result = resolveEventChoice(current, button.dataset.eventChoice);
   if (!result.success) { busy = false; renderEvent(); return; }
   activeRun = writeRun(result.run);
   globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
-  globalThis.RPChessResources?.render?.(); renderEvent(); busy = false;
+  globalThis.RPChessResources?.render?.();
+  renderEvent();
+  busy = false;
 }
 
 function dispatchCombat() {
@@ -146,33 +205,68 @@ function dispatchCombat() {
   activeRun = writeRun(markEventCombatStarted(current));
   const routed = { type:combat.type, stars:combat.stars, seed:combat.seed, playerColor:combat.playerColor, enemyColor:combat.enemyColor, enemyRaceTag:combat.enemyRaceTag, enemyRoleRaces:combat.enemyRoleRaces, mixedArmy:combat.mixedArmy, sideNarrative:combat.sideNarrative, sourceEventId:combat.sourceEventId, sourceEventTitle:combat.sourceEventTitle };
   globalThis.RPChessTravelEncounterOverride = routed;
-  document.body.classList.remove('events-outcome-open'); hideEvents();
+  document.body.classList.remove('events-outcome-open');
+  hideEvents();
   const detail={source:'event',runId:activeRun.id,choice:routed,eventId:activeRun.currentEvent.eventId};
   globalThis.dispatchEvent(new CustomEvent(combat.type==='battle'?'rpchess:battle-open':'rpchess:skirmish-open',{detail}));
 }
 
 function continueOutcome() {
   if (busy) return;
-  const current = readRun(); if (!current?.currentEvent?.resolved) return;
+  const current = readRun();
+  if (!current?.currentEvent?.resolved) return;
   audio()?.click?.();
-  if (current.ended) { document.body.classList.remove('events-outcome-open'); hideEvents(); const menu=document.querySelector('[data-reboot-foundation]'); if(menu)menu.hidden=false; return; }
+  if (current.ended) {
+    document.body.classList.remove('events-outcome-open');
+    hideEvents();
+    const menu=document.querySelector('[data-reboot-foundation]');
+    if(menu)menu.hidden=false;
+    return;
+  }
   if (current.currentEvent.combat) { dispatchCombat(); return; }
-  activeRun=writeRun(completeEvent(current)); globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated')); document.body.classList.remove('events-outcome-open'); hideEvents();
+  activeRun=writeRun(completeEvent(current));
+  globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
+  document.body.classList.remove('events-outcome-open');
+  hideEvents();
   globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open',{detail:{source:'event-complete',runId:activeRun.id}}));
 }
 
-function openRoster() { if(busy)return; audio()?.click?.(); document.body.classList.remove('events-outcome-open'); hideEvents(); globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue',{detail:{source:'event'}})); }
+function openRoster() {
+  if(busy)return;
+  audio()?.click?.();
+  document.body.classList.remove('events-outcome-open');
+  hideEvents();
+  globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue',{detail:{source:'event'}}));
+}
 function openEvent(event=null) {
-  busy=false; activeRun=readRun(); if(!activeRun||activeRun.ended)return;
-  const route=activeRun.activeTravelChoice||event?.detail?.choice; if(!route||route.type!=='event')return;
-  const created=createEventState(activeRun,route); if(created.run!==activeRun){activeRun=writeRun(created.run);globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));}
-  showEvents(); renderEvent();
+  busy=false;
+  activeRun=readRun();
+  if(!activeRun||activeRun.ended)return;
+  const route=activeRun.activeTravelChoice||event?.detail?.choice;
+  if(!route||route.type!=='event')return;
+  const created=createEventState(activeRun,route);
+  if(created.run!==activeRun){
+    activeRun=writeRun(created.run);
+    globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
+  }
+  showEvents();
+  renderEvent();
 }
 function syncRun() {
-  if(syncingCombat)return; activeRun=readRun(); if(!activeRun)return;
-  if(eventCombatCompleted(activeRun)){syncingCombat=true;activeRun=writeRun(completeEvent(activeRun));syncingCombat=false;globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));return;}
+  if(syncingCombat)return;
+  activeRun=readRun();
+  if(!activeRun)return;
+  if(eventCombatCompleted(activeRun)){
+    syncingCombat=true;
+    activeRun=writeRun(completeEvent(activeRun));
+    syncingCombat=false;
+    globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
+    return;
+  }
   if(screen&&!screen.hidden&&activeRun.activeTravelChoice?.type==='event')renderEvent();
 }
 
-ensureScreen(); addEventListener('rpchess:event-open',openEvent); addEventListener('rpchess:run-updated',syncRun);
+ensureScreen();
+addEventListener('rpchess:event-open',openEvent);
+addEventListener('rpchess:run-updated',syncRun);
 globalThis.RPChessEvents=Object.freeze({open:openEvent,render:renderEvent,get run(){return activeRun;},get state(){return activeRun?.currentEvent||null;}});
