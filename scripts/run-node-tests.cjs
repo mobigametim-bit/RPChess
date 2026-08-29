@@ -1,17 +1,8 @@
 const { spawn } = require('child_process');
-const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const TESTS = Object.freeze([
-  'tests/reboot-foundation.cjs',
-  'tests/classic-chess-static.cjs',
-  'tests/classic-chess-engine.cjs',
-  'tests/chess-ai-adapter.cjs',
-  'tests/roster.cjs',
-  'tests/skirmish.cjs',
-  'tests/battle.cjs',
-  'tests/combat-art-continuity.cjs',
   'tests/travel-choice.cjs',
   'tests/resources.cjs',
   'tests/settlement.cjs',
@@ -24,7 +15,6 @@ const TESTS = Object.freeze([
 
 const requested = Number.parseInt(process.env.RPCHESS_TEST_CONCURRENCY || '2', 10);
 const CONCURRENCY = Math.max(1, Math.min(TESTS.length, Number.isFinite(requested) ? requested : 2));
-const DIAGNOSTIC_PASS = process.env.RPCHESS_DIAGNOSTIC_PASS === '1';
 
 function runTest(relative) {
   return new Promise((resolve) => {
@@ -44,10 +34,9 @@ function runTest(relative) {
 }
 
 (async () => {
-  console.log(`RPChess deterministic Node suite: ${TESTS.length} programs, concurrency ${CONCURRENCY}`);
+  console.log(`RPChess deterministic Node suite shard: ${TESTS.length} programs, concurrency ${CONCURRENCY}`);
   const results = new Array(TESTS.length);
   let next = 0;
-
   async function worker() {
     while (true) {
       const index = next++;
@@ -55,9 +44,7 @@ function runTest(relative) {
       results[index] = await runTest(TESTS[index]);
     }
   }
-
   await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()));
-
   let failed = false;
   for (const result of results) {
     const output = `${result.stdout || ''}${result.stderr || ''}`.trim();
@@ -68,19 +55,8 @@ function runTest(relative) {
       console.error(`FAIL: ${result.relative} exited ${result.code}${result.signal ? ` (${result.signal})` : ''}`);
     }
   }
-
-  if (DIAGNOSTIC_PASS) {
-    const reportPath = path.join(ROOT, 'game', 'generated_assets', 'node-test-report.json');
-    fs.writeFileSync(reportPath, JSON.stringify({ concurrency: CONCURRENCY, failed, results }, null, 2));
-    console.log(`Diagnostic report written: ${path.relative(ROOT, reportPath)}`);
-  }
-
-  if (failed && !DIAGNOSTIC_PASS) {
-    process.exitCode = 1;
-    return;
-  }
-  if (failed) console.log('Diagnostic pass-through enabled; test failures remain recorded in report.');
-  else console.log(`\nRPChess deterministic Node suite: PASS (${TESTS.length}/${TESTS.length})`);
+  if (failed) process.exitCode = 1;
+  else console.log(`\nRPChess deterministic Node suite shard: PASS (${TESTS.length}/${TESTS.length})`);
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;
