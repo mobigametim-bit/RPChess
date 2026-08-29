@@ -11,12 +11,14 @@ RPChess не использует заранее собранную campaign map
 
 ## UX Travel Choice
 - отдельная полноэкранная сцена;
+- верхний заголовок содержит только **«Неделя путешествия N»** и использует `BrahmsGotischCyr`;
 - desktop: три карточки пути рядом;
 - mobile: три карточки вертикально, только vertical scroll, без horizontal overflow/carousel;
-- каждая карточка показывает тип encounter, короткую world-flavor фразу, механический hint и текущую стоимость перехода;
-- combat-карточки показывают угрозу `★1–5`;
+- каждая карточка показывает тип encounter, короткую world-flavor фразу и текущую стоимость перехода;
+- combat-карточки показывают угрозу по **12-звёздной шкале `★1–12`**;
+- при недостатке ширины строка звёзд имеет единственную безопасную точку переноса после шестой звезды, поэтому 12 звёзд могут отображаться как **6 + 6** без горизонтального overflow;
 - Settlement показывается как безопасное место без combat threat;
-- Event показывает неизвестный заранее исход и `3–5 решений` внутри события;
+- Event-карточка не раскрывает заранее список решений или отдельный outcome-текст — детали появляются только внутри Event scene;
 - **вся карточка является действием выбора**;
 - клик сразу фиксирует выбор и запускает соответствующий encounter;
 - второго CTA, `Подтвердить`, confirmation modal и отмены после выбора нет;
@@ -76,11 +78,13 @@ Gold/Supplies не меняют типы или threat level генерируе�
 
 Для каждой карточки рассчитывается:
 - отдельный deterministic encounter seed;
-- threat stars `1–5`, основанные на journey depth и deterministic offset;
+- threat stars `1–12`;
+- базовая угроза растёт примерно на одну звезду каждые две недели путешествия: `1 + floor((journeyStep - 1) / 2)` с clamp до 12;
+- к базовой угрозе применяется deterministic offset `-2…+2`, после чего значение снова clamp'ится в `1…12`;
 - world-flavor строка;
-- mechanical hint.
+- внутренний mechanical hint, используемый как metadata, но не обязанный отображаться на Travel-карточке.
 
-Stars/seed реально передаются в Skirmish/Battle generators. Event использует route seed как часть deterministic Event roll/combat orchestration. Settlement использует route seed для deterministic recruit offers.
+Stars/seed реально передаются в Skirmish/Battle generators. Для combat-route также детерминированно выбираются enemy race theme и сторона игрока. Event использует route seed как часть deterministic Event roll/combat orchestration. Settlement использует route seed для deterministic recruit offers.
 
 ## Flavor-content
 Для каждого из пяти канонических типов предусмотрен отдельный world-flavor pool. Фраза выбирается детерминированно по route seed. Если в одной тройке несколько карточек одного типа, для них не должна намеренно повторяться одна и та же flavor-фраза, пока pool позволяет выбрать уникальную.
@@ -99,10 +103,10 @@ Stars/seed реально передаются в Skirmish/Battle generators. Ev
 
 ## Encounter routing
 ### Skirmish
-Travel передаёт route seed/stars в Skirmish generator. После ordinary aftermath `Продолжить путь` открывает следующую тройку.
+Travel передаёт route seed/stars, race theme и player color в Skirmish generator. После ordinary aftermath `Продолжить путь` открывает следующую тройку.
 
 ### Battle
-Travel передаёт route seed/stars в Battle generator. После ordinary aftermath `Продолжить путь` открывает следующую тройку.
+Travel передаёт route seed/stars, race theme и player color в Battle generator. После ordinary aftermath `Продолжить путь` открывает следующую тройку.
 
 ### Settlement
 Безопасный encounter: healer, recruitment и supply shop. Вход оплачивается обычным Travel Supply cost. Выход не списывает второй Supply.
@@ -136,4 +140,4 @@ PR #70 squash-merged в `main` как `ee7d1b348ac88ebafcd334acb84167f6b5a12bdc`
 ## Текущий lifecycle
 Базовый Travel Choice остаётся **DONE**. Settlement, Resources и Starvation уже расширили его поверх принятого контракта.
 
-Events preview меняет только текущий playable pool/generation contract: добавляет `Event` и переводит четыре реализованных типа на независимый равновероятный deterministic pool с разрешёнными дубликатами. Эта новая Events-часть считается принятой только после exact-head CI/Cloudflare и отдельного живого пользовательского Events playtest.
+Events preview меняет текущий playable pool/generation contract: добавляет `Event`, переводит четыре реализованных типа на независимый равновероятный deterministic pool с разрешёнными дубликатами и расширяет боевую угрозу до 12 уровней. Эта новая Events-часть считается принятой только после exact-head CI/Cloudflare и отдельного живого пользовательского Events playtest.
