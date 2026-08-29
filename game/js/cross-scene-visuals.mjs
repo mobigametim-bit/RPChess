@@ -36,7 +36,10 @@ function installStyles() {
     }
     .puzzles-active .puzzle-board-wrap{width:min(100%,820px,calc(100vh - 126px))!important;}
     .skirmish-aftermath.is-victory,.battle-aftermath.is-victory{
-      background:linear-gradient(90deg,rgba(3,7,15,.82),rgba(5,13,21,.52) 52%,rgba(3,7,15,.82)),url('generated_assets/scene_victory.jpg') center/cover fixed no-repeat!important;
+      background:linear-gradient(90deg,rgba(3,7,15,.76),rgba(5,13,21,.45) 52%,rgba(3,7,15,.78)),url('generated_assets/scene_reward.jpg') center/cover fixed no-repeat!important;
+    }
+    .skirmish-aftermath.is-defeat,.battle-aftermath.is-defeat{
+      background:linear-gradient(90deg,rgba(3,7,15,.82),rgba(18,8,11,.54) 52%,rgba(3,7,15,.86)),url('generated_assets/scene_defeat.jpg') center/cover fixed no-repeat!important;
     }
     .skirmish-aftermath.is-victory h1,.battle-aftermath.is-victory h1{
       font-family:'BrahmsGotischCyr',Georgia,serif!important;font-weight:400!important;color:#fff0c5!important;text-shadow:0 4px 18px rgba(0,0,0,.78)!important;
@@ -101,11 +104,16 @@ function playVictoryFanfare(root) {
   fanfare.play().catch(() => {});
 }
 
-function syncVictoryScreens() {
-  for (const root of document.querySelectorAll('[data-skirmish-aftermath],[data-battle-aftermath]')) {
-    const title = root.querySelector('[data-aftermath-result],[data-battle-aftermath-result]');
-    const victory = !root.hidden && String(title?.textContent || '').trim().toUpperCase() === 'ПОБЕДА';
+function syncOutcomeScreens() {
+  for (const root of document.querySelectorAll('[data-skirmish-aftermath],[data-battle-aftermath],[data-skirmish-run-end],[data-battle-run-end]')) {
+    const runEnd = root.matches('[data-skirmish-run-end],[data-battle-run-end]');
+    const title = root.querySelector('[data-aftermath-result],[data-battle-aftermath-result],[data-run-end-title]');
+    const outcome = String(title?.textContent || '').trim().toUpperCase();
+    const visible = !root.hidden;
+    const victory = visible && outcome === 'ПОБЕДА';
+    const defeat = visible && (runEnd || outcome === 'ПОРАЖЕНИЕ');
     root.classList.toggle('is-victory', victory);
+    root.classList.toggle('is-defeat', defeat);
     if (victory) playVictoryFanfare(root);
     else delete root.dataset.victoryFanfarePlayed;
   }
@@ -113,7 +121,7 @@ function syncVictoryScreens() {
 
 function refresh() {
   decorateTravelCards();
-  syncVictoryScreens();
+  syncOutcomeScreens();
 }
 
 installStyles();
