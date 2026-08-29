@@ -8,6 +8,16 @@ const path=require('path'),assert=require('assert'),fs=require('fs'),{pathToFile
   const persistence=await import(pathToFileURL(path.join(game,'js/run-persistence.mjs')).href);
   const travel=await import(pathToFileURL(path.join(game,'js/travel-choice-core.mjs')).href);
 
+  const canonicalBackgrounds={
+    generic:['forest_crossroad.png','old_kings_road.png','roadside_shrine.png','abandoned_camp.png','ancient_ruins.png','stormy_bridge.png','moonlit_gravefield.png','market_square_twilight.png'],
+    humans:['human_waystation.png','human_chapel_court.png'],elves:['elven_glade.png','elven_waystones.png'],orcs:['orc_war_camp.png','orc_trial_circle.png'],undead:['necropolis_gate.png','bone_court.png'],dark_elves:['obsidian_passage.png','spider_shrine.png'],dwarves:['dwarven_forgehall.png','dwarven_gate_road.png'],demons:['infernal_breach.png','ashen_altar.png'],angels:['sky_sanctuary.png','hall_of_halos.png'],dragonborn:['dragonborn_aerie.png','ember_tribunal.png'],beastfolk:['beastfolk_hunting_camp.png','moon_run_path.png'],constructs:['construct_foundry.png','silent_observatory.png'],animals:['wild_glen.png','riverbank_tracks.png'],fae:['fae_ring_garden.png','whispering_meadow.png'],goblins:['goblin_trade_nook.png','goblin_scrapyard_camp.png']
+  };
+  const canonicalFiles=Object.entries(canonicalBackgrounds).flatMap(([folder,files])=>files.map(file=>`assets/events/register-04/backgrounds/${folder}/${file}`));
+  assert.strictEqual(canonicalFiles.length,36,'canonical Event background register must contain exactly 36 files');
+  for(const relative of canonicalFiles)assert(fs.existsSync(path.join(game,relative)),`canonical Event background must exist: ${relative}`);
+  assert.deepStrictEqual(Object.keys(raceAssets.BACKGROUND_POOLS).sort(),Object.keys(canonicalBackgrounds).sort());
+  for(const [folder,files] of Object.entries(canonicalBackgrounds))assert.deepStrictEqual([...raceAssets.BACKGROUND_POOLS[folder]],[...files],`${folder} background pool must match canonical register`);
+
   assert.strictEqual(data.EVENT_CATALOG.length,100);assert.strictEqual(new Set(data.EVENT_IDS).size,100);
   const choices=data.EVENT_CATALOG.flatMap(e=>e.choices);assert.strictEqual(choices.length,415);
   for(const e of data.EVENT_CATALOG){
@@ -15,9 +25,9 @@ const path=require('path'),assert=require('assert'),fs=require('fs'),{pathToFile
     const story=narrative.literaryStory(e);assert(story.length>=4,`${e.id} must render a multi-paragraph literary scene`);assert(story.some(p=>/[«»]/.test(p)),`${e.id} literary scene must contain dialogue`);
     const background=raceAssets.eventBackgroundPath(e);assert(background.startsWith('assets/events/register-04/backgrounds/'));assert(fs.existsSync(path.join(game,background)),`${e.id} background must exist: ${background}`);
   }
-  const animalBackground=raceAssets.eventBackgroundPath({id:'animal-background-contract',race:'Животные'});assert(animalBackground.startsWith('assets/events/register-04/backgrounds/generic/'),'Animals must use an existing generic woodland fallback until approved animal backgrounds land');assert(fs.existsSync(path.join(game,animalBackground)));
-  const faeBackground=raceAssets.eventBackgroundPath({id:'fae-background-contract',race:'Феи'});assert(/^assets\/events\/register-04\/backgrounds\/fae\/(fae_moonwell|fae_mushroom_court)\.png$/.test(faeBackground),`Fae runtime must use currently uploaded files: ${faeBackground}`);assert(fs.existsSync(path.join(game,faeBackground)));
-  const goblinBackground=raceAssets.eventBackgroundPath({id:'goblin-background-contract',race:'Гоблины'});assert(/^assets\/events\/register-04\/backgrounds\/goblins\/(goblin_bomb_yard|goblin_scrap_market)\.png$/.test(goblinBackground),`Goblin runtime must use currently uploaded files: ${goblinBackground}`);assert(fs.existsSync(path.join(game,goblinBackground)));
+  const animalBackground=raceAssets.eventBackgroundPath({id:'animal-background-contract',race:'Животные'});assert(/^assets\/events\/register-04\/backgrounds\/animals\/(wild_glen|riverbank_tracks)\.png$/.test(animalBackground),`Animals runtime must use canonical files: ${animalBackground}`);assert(fs.existsSync(path.join(game,animalBackground)));
+  const faeBackground=raceAssets.eventBackgroundPath({id:'fae-background-contract',race:'Феи'});assert(/^assets\/events\/register-04\/backgrounds\/fae\/(fae_ring_garden|whispering_meadow)\.png$/.test(faeBackground),`Fae runtime must use canonical files: ${faeBackground}`);assert(fs.existsSync(path.join(game,faeBackground)));
+  const goblinBackground=raceAssets.eventBackgroundPath({id:'goblin-background-contract',race:'Гоблины'});assert(/^assets\/events\/register-04\/backgrounds\/goblins\/(goblin_trade_nook|goblin_scrapyard_camp)\.png$/.test(goblinBackground),`Goblin runtime must use canonical files: ${goblinBackground}`);assert(fs.existsSync(path.join(game,goblinBackground)));
   const races=['Люди','Эльфы','Орки','Нежить','Тёмные эльфы','Гномы','Демоны','Ангелы','Дракониды','Зверолюди','Конструкты','Животные','Феи','Гоблины'];for(const race of races)assert.strictEqual(data.EVENT_CATALOG.filter(e=>e.race===race).length,6,`${race} must have six events`);
   const bag=core.shuffledEventIds('bag-test',0);assert.strictEqual(bag.length,100);assert.strictEqual(new Set(bag).size,100);assert.deepStrictEqual(bag,core.shuffledEventIds('bag-test',0));
   assert.deepStrictEqual(travel.PLAYABLE_TRAVEL_TYPES,['skirmish','battle','settlement','event']);const samples={skirmish:0,battle:0,settlement:0,event:0};for(let i=1;i<=4000;i++)for(const c of travel.createTravelChoices({runId:`prob-${i}`,step:1}))samples[c.type]++;for(const type of Object.keys(samples)){const ratio=samples[type]/12000;assert(ratio>.22&&ratio<.28,`${type} empirical ratio ${ratio} is not near 25%`);}
@@ -33,5 +43,5 @@ const path=require('path'),assert=require('assert'),fs=require('fs'),{pathToFile
   const kingRisks=[];for(const e of data.EVENT_CATALOG)for(const raw of e.choices){const c=core.normalizeChoice(raw),all=[...c.successEffects,...c.failureEffects,...c.alwaysEffects],kingDeath=all.some(x=>x.type==='death'&&x.target==='king');if(kingDeath){kingRisks.push(c.id);assert.strictEqual(c.kingRisk,true);assert(c.warnings.some(w=>w.includes('КОРОЛЬ')));}for(const effect of all)if(effect.type==='death'&&effect.target==='randomNonKing')assert.notStrictEqual(effect.target,'king');}assert.strictEqual(kingRisks.length,4);
 
   const base=persistence.createRun({id:'wounded-king',now:3}),woundedKing={...base,roster:base.roster.map(c=>c.isRunKing?{...c,status:'wounded'}:c)};const skirmish=await import(pathToFileURL(path.join(game,'js/skirmish-core.mjs')).href);const battle=await import(pathToFileURL(path.join(game,'js/battle-core.mjs')).href);assert(skirmish.defaultCombatSelection(woundedKing.roster).includes(woundedKing.roster.find(c=>c.isRunKing).id));assert(battle.defaultBattleSelection(woundedKing.roster).includes(woundedKing.roster.find(c=>c.isRunKing).id));
-  console.log('Events 100/415, literary scenes, uploaded-background fallback mapping, 25% Travel, 12-star combat, King risk and persistence: PASS');
+  console.log('Events 100/415, literary scenes, canonical 36-background register, 25% Travel, 12-star combat, King risk and persistence: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
