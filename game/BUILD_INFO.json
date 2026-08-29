@@ -1,13 +1,13 @@
 {
   "title": "RPChess Reboot",
   "edition": "Events",
-  "version": "3.0.0-events.preview.5",
+  "version": "3.0.0-events.preview.6",
   "build_date": "2026-08-29",
   "runtime": "Offline HTML5 / ES modules + local run persistence + local Stockfish 18 WASM worker",
   "requires_internet": false,
   "requires_installation": false,
-  "visual_theme": "Approved RPChess frameless fantasy UI with visibly illustrated Event backgrounds, race-specific armies, personalized character art and classical chess role glyphs",
-  "gameplay_state": "Corrected Events v1 candidate after live retest. Combat custom/race art now has a board-render continuity layer that explicitly tracks both king and rook relocation during king-side and queen-side castling, preventing a castled rook from reverting to the generic chess asset. Authored Event background PNGs remain selected deterministically by event/race but are now visibly exposed by a dedicated background-image layer, reduced fullscreen veil, translucent text panel and cache-busted stylesheet. The previously corrected aftermath-to-Travel recovery remains intact and was human-confirmed in this retest. Events remain final human-acceptance pending for the two visual corrections.",
+  "visual_theme": "Approved RPChess frameless fantasy UI with explicit illustrated Event backdrops, race-specific armies, personalized character art and classical chess role glyphs",
+  "gameplay_state": "Corrected Events v1 candidate after the second live visual retest. Event artwork no longer relies on a CSS custom-property background: runtime now renders a dedicated full-screen image element with an explicitly page-resolved asset URL and a desktop reading panel capped to 68vw/980px so a large artwork rail stays exposed. The Events stylesheet cache-buster is owned by events-app itself and the events visual regression is part of the canonical npm test gate. Combat art continuity still preserves castling rook identity and now also transforms every non-named temporary pawn asset to the selected queen/rook/bishop/knight role asset on promotion, preserving that promoted art on later moves. Scene transitions and opponent castling art were human-confirmed in the previous retest; Events remain final human-acceptance pending for visible backgrounds and temporary-pawn promotion art.",
   "foundation_merge": "416cfbcd332366c10d6dd27a44123c0dd7ea7da0",
   "classic_chess_merge": "6df1a65ffca36413d99415eab1f0e5ccddbd5dbe",
   "chess_ai_merge": "3aa95c08f7af8fdcd82cf79cb606e1ecc5ad788c",
@@ -23,12 +23,12 @@
   "starvation_post_merge_cloudflare_build": "928414d1-7f3c-472b-99dd-17b0fbd89114",
   "starvation_post_merge_cloudflare_version": "e0fc8d48-3893-4f8b-ac52-2051966f49d0",
   "active_feature_branch": "feature/events",
-  "next_stage": "visual-corrections-cloudflare-preview-and-human-retest",
+  "next_stage": "explicit-event-backdrop-and-promotion-art-cloudflare-retest",
   "acceptance_gate": "local-full-gate-plus-cloudflare-plus-human-retest",
   "automation_gate": "GitHub Actions is manual diagnostic only; required gate is npm run gate:full",
   "stockfish_version": "18.0.0 lite single-threaded",
   "stockfish_license": "GPLv3",
-  "active_docs": "docs/00_PRODUCT_VISION.md through docs/18_STARVATION.md; Events live visual corrections pending final human retest",
+  "active_docs": "docs/00_PRODUCT_VISION.md through docs/18_STARVATION.md; Events final visual retest pending",
   "human_acceptance_required": true,
-  "human_acceptance": "pending-visual-correction-retest"
+  "human_acceptance": "pending-background-and-promotion-retest"
 }
