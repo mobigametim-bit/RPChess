@@ -15,6 +15,10 @@ import { starsText } from '../encounter-difficulty.mjs';
 const FILES = 'abcdefgh';
 const PIECE_ASSETS = Object.freeze({ p:'pawn', n:'knight', b:'bishop', r:'rook', q:'queen', k:'king' });
 const PIECE_NAMES = Object.freeze({ p:'пешка', n:'конь', b:'слон', r:'ладья', q:'ферзь', k:'король' });
+const PIECE_GLYPHS = Object.freeze({
+  w:Object.freeze({ p:'♙', n:'♘', b:'♗', r:'♖', q:'♕', k:'♔' }),
+  b:Object.freeze({ p:'♟', n:'♞', b:'♝', r:'♜', q:'♛', k:'♚' })
+});
 const PROMOTION_LABELS = Object.freeze({ q:'Ферзь', r:'Ладья', b:'Слон', n:'Конь' });
 
 let screen = null;
@@ -37,7 +41,7 @@ function ensureCss() {
   if (document.querySelector('[data-puzzles-css]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/puzzles.css?v=20260829-puzzles-2';
+  link.href = 'css/puzzles.css?v=20260829-puzzles-3';
   link.dataset.puzzlesCss = '';
   document.head.append(link);
 }
@@ -130,6 +134,7 @@ function hidePuzzle() {
 }
 
 function findPuzzle(id) { return PUZZLE_CATALOG.find((item) => item.id === id) || null; }
+function puzzleHistory(run) { return Array.isArray(run?.puzzleHistory) ? run.puzzleHistory.filter((id) => Boolean(findPuzzle(id))) : []; }
 
 function persist(nextState = state) {
   state = nextState;
@@ -179,29 +184,53 @@ function renderBoard() {
   const files = reverse ? [7,6,5,4,3,2,1,0] : [0,1,2,3,4,5,6,7];
   board.replaceChildren();
 
-  for (const rank of ranks) for (const file of files) {
-    const index = rank * 8 + file;
-    const square = squareFromIndex(index);
-    const piece = snapshot.board[index];
-    const target = targets.get(square);
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = `puzzle-square puzzle-square--${(file + rank) % 2 === 0 ? 'dark' : 'light'}`;
-    button.dataset.square = square;
-    button.setAttribute('role', 'gridcell');
-    button.setAttribute('aria-label', piece ? `${square}: ${PIECE_NAMES[piece.type]}` : square);
-    if (selected === square) button.classList.add('is-selected');
-    if (target) button.classList.add(target.capture ? 'is-capture' : 'is-legal');
-    if (piece) {
-      const image = document.createElement('img');
-      image.className = 'puzzle-piece';
-      image.src = pieceAsset(piece);
-      image.alt = '';
-      image.draggable = false;
-      button.append(image);
+  for (let rankPosition = 0; rankPosition < 8; rankPosition += 1) {
+    const rank = ranks[rankPosition];
+    for (let filePosition = 0; filePosition < 8; filePosition += 1) {
+      const file = files[filePosition];
+      const index = rank * 8 + file;
+      const square = squareFromIndex(index);
+      const piece = snapshot.board[index];
+      const target = targets.get(square);
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `puzzle-square puzzle-square--${(file + rank) % 2 === 0 ? 'dark' : 'light'}`;
+      button.dataset.square = square;
+      button.setAttribute('role', 'gridcell');
+      button.setAttribute('aria-label', piece ? `${square}: ${PIECE_NAMES[piece.type]}` : square);
+      if (selected === square) button.classList.add('is-selected');
+      if (target) button.classList.add(target.capture ? 'is-capture' : 'is-legal');
+      if (piece) {
+        const image = document.createElement('img');
+        image.className = 'puzzle-piece';
+        image.src = pieceAsset(piece);
+        image.alt = '';
+        image.draggable = false;
+        const marker = document.createElement('span');
+        marker.className = `puzzle-piece-marker puzzle-piece-marker--${piece.color}`;
+        marker.dataset.puzzlePieceMarker = piece.type;
+        marker.textContent = PIECE_GLYPHS[piece.color][piece.type];
+        marker.title = PIECE_NAMES[piece.type];
+        marker.setAttribute('aria-hidden', 'true');
+        button.append(image, marker);
+      }
+      if (rankPosition === 7) {
+        const fileLabel = document.createElement('span');
+        fileLabel.className = 'puzzle-coordinate puzzle-coordinate--file';
+        fileLabel.textContent = FILES[file];
+        fileLabel.setAttribute('aria-hidden', 'true');
+        button.append(fileLabel);
+      }
+      if (filePosition === 0) {
+        const rankLabel = document.createElement('span');
+        rankLabel.className = 'puzzle-coordinate puzzle-coordinate--rank';
+        rankLabel.textContent = String(rank + 1);
+        rankLabel.setAttribute('aria-hidden', 'true');
+        button.append(rankLabel);
+      }
+      button.addEventListener('click', () => clickSquare(square));
+      board.append(button);
     }
-    button.addEventListener('click', () => clickSquare(square));
-    board.append(button);
   }
 }
 
@@ -416,9 +445,11 @@ function openPuzzle(event) {
     state = activeRun.currentPuzzle;
     puzzle = findPuzzle(state.puzzleId);
   } else {
-    puzzle = selectPuzzle(PUZZLE_CATALOG, { runId: activeRun.id, routeId: choice.id, stars: choice.stars, week });
+    let history = puzzleHistory(activeRun);
+    if (history.length >= PUZZLE_CATALOG.length) history = [];
+    puzzle = selectPuzzle(PUZZLE_CATALOG, { runId: activeRun.id, routeId: choice.id, stars: choice.stars, week, excludedIds: history });
     state = createPuzzleState({ puzzle, routeId: choice.id, stars: choice.stars, week });
-    activeRun = writeRun({ ...activeRun, currentPuzzle: state });
+    activeRun = writeRun({ ...activeRun, puzzleHistory:[...history, puzzle.id], currentPuzzle: state });
     globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
   }
 
