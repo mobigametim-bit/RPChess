@@ -23,11 +23,12 @@
   "starvation_post_merge_cloudflare_build": "928414d1-7f3c-472b-99dd-17b0fbd89114",
   "starvation_post_merge_cloudflare_version": "e0fc8d48-3893-4f8b-ac52-2051966f49d0",
   "active_feature_branch": "feature/events",
-  "next_stage": "events-corrected-preview-gates-and-human-retest",
-  "acceptance_gate": "human-retest-pending",
+  "next_stage": "events-local-full-gate-cloudflare-preview-and-human-retest",
+  "acceptance_gate": "local-full-gate-plus-cloudflare-plus-human-retest",
+  "automation_gate": "GitHub Actions is manual diagnostic only; required gate is npm run gate:full",
   "stockfish_version": "18.0.0 lite single-threaded",
   "stockfish_license": "GPLv3",
-  "active_docs": "docs/00_PRODUCT_VISION.md through docs/18_STARVATION.md; corrected Events/Travel/Combat contracts synced, exact-head receipts pending",
+  "active_docs": "docs/00_PRODUCT_VISION.md through docs/18_STARVATION.md; corrected Events/Travel/Combat and non-Actions gate contracts synced, preview receipts pending",
   "human_acceptance_required": true,
   "human_acceptance": "pending-corrected-preview"
 }
