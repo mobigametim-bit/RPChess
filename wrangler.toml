@@ -2,7 +2,7 @@ name = "rpchess"
 compatibility_date = "2026-08-04"
 
 [build]
-command = "node scripts/cloudflare-browser-probe.cjs smoke"
+command = "node scripts/cloudflare-browser-probe.cjs chromium"
 
 [assets]
 directory = "./dist"
