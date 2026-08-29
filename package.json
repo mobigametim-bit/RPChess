@@ -10,7 +10,7 @@
   },
   "scripts": {
     "verify": "node -e \"require('./scripts/verify-source.cjs')(require('path').resolve('game'))\"",
-    "test": "node scripts/puzzle-diagnostic-runner.cjs",
+    "test": "node tests/reboot-foundation.cjs && node tests/classic-chess-static.cjs && node tests/classic-chess-engine.cjs && node tests/chess-ai-adapter.cjs && node tests/roster.cjs && node tests/skirmish.cjs && node tests/battle.cjs && node tests/combat-art-continuity.cjs && node tests/travel-choice.cjs && node tests/resources.cjs && node tests/settlement.cjs && node tests/starvation.cjs && node tests/events.cjs && node tests/events-visual.cjs && node tests/puzzle-importer.cjs && node tests/puzzles-rules.cjs && node tests/puzzles-catalog.cjs && node tests/puzzles.cjs",
     "test:foundation": "node tests/reboot-foundation.cjs",
     "test:classic": "node tests/classic-chess-static.cjs && node tests/classic-chess-engine.cjs",
     "test:ai": "node tests/chess-ai-adapter.cjs",
@@ -22,7 +22,7 @@
     "test:settlement": "node tests/settlement.cjs",
     "test:starvation": "node tests/starvation.cjs",
     "test:events": "node tests/events.cjs && node tests/events-visual.cjs",
-    "test:puzzles": "node tests/puzzle-importer.cjs && node tests/puzzles-rules.cjs && node tests/puzzles-catalog-a.cjs && node tests/puzzles-catalog-b.cjs && node tests/puzzles.cjs",
+    "test:puzzles": "node tests/puzzle-importer.cjs && node tests/puzzles-rules.cjs && node tests/puzzles-catalog.cjs && node tests/puzzles.cjs",
     "puzzles:import": "node scripts/import-lichess-puzzles.cjs",
     "test:browser": "node scripts/run-browser-tests.cjs",
     "build": "node scripts/build.cjs",
