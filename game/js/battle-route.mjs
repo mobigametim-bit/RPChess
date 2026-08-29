@@ -6,6 +6,7 @@ import './events-app.mjs';
 import './events/combat-art-continuity.mjs';
 import './puzzles/puzzle-app.mjs';
 import './travel-choice-app.mjs';
+import './ux-consistency.mjs';
 
 const eventsCss = document.querySelector('[data-events-css]');
 if (eventsCss) eventsCss.href = 'css/events.css?v=20260829-events-3';
