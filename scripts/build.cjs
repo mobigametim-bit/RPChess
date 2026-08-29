@@ -21,7 +21,7 @@ async function main(){
   for(const relative of [
     'css/events.css','css/puzzles.css','css/ux-consistency.css','js/events-data.mjs','js/events-core.mjs','js/events-app.mjs','js/puzzles/puzzle-core.mjs','js/puzzles/puzzle-catalog.mjs','js/puzzles/puzzle-app.mjs','js/ux-consistency.mjs','js/cross-scene-visuals.mjs','js/encounter-difficulty.mjs','js/race-assets.mjs','js/event-narrative.mjs',
     ...Array.from({length:10},(_,i)=>`js/events/event-data-${String(i+1).padStart(2,'0')}.mjs`),
-    'assets/races/humans/pieces/white/king.png','assets/races/humans/pieces/black/king.png','assets/races/orcs/pieces/pawn.png','assets/events/register-04/backgrounds/generic/forest_crossroad.png','generated_assets/node_training.png','generated_assets/scene_campaign.jpg','generated_assets/scene_victory.jpg','SFX/win_fanfare.mp3',
+    'assets/races/humans/pieces/white/king.png','assets/races/humans/pieces/black/king.png','assets/races/orcs/pieces/pawn.png','assets/events/register-04/backgrounds/generic/forest_crossroad.png','generated_assets/node_training.png','generated_assets/node_story.png','generated_assets/scene_campaign.jpg','generated_assets/scene_victory.jpg','generated_assets/scene_reward.jpg','generated_assets/scene_defeat.jpg','SFX/win_fanfare.mp3',
     'vendor/stockfish/stockfish-18-lite-single.js','vendor/stockfish/stockfish-18-lite-single.wasm','vendor/stockfish/COPYING.txt','vendor/stockfish/SOURCE.txt'
   ])if(!fs.existsSync(path.join(dist,relative)))throw new Error(`Puzzles build output missing: ${relative}`);
   console.log(`Prepared RPChess Puzzles distribution in ${dist}; Stockfish ${stockfish.version}`);
