@@ -16,9 +16,22 @@
 - [x] Event background register — полный утверждённый набор **36 PNG** подключён напрямую: 8 generic + 14 race pools × 2; Animals/Fae/Goblins больше не используют fallback/альтернативные имена. Source verification и Events tests фиксируют этот контракт.
 - [x] **PLAYTEST GATE C** — интересность собственного состава и corrected Skirmish flow подтверждены пользователем.
 
+## Current
+
+- [ ] Puzzles v1 — **UX/spec APPROVED 2026-08-29; IMPLEMENTATION ACTIVE in `feature/puzzles`**.
+  - fifth playable Travel type;
+  - current five-type Travel distribution ≈20% each;
+  - normal 1 Supply committed transition + existing Starvation flow;
+  - mate in 1 / mate in 2 / mate in 3 / explicit target-piece material puzzles;
+  - ★1…★12 fixed by journey week, one level every 8 weeks;
+  - Gold formula `9 + 3 × stars`, accuracy 100/70/40/0%;
+  - 3 attempts, no hint mechanic in v1;
+  - offline normalized Lichess Open Database Puzzles / CC0 source;
+  - developer streaming importer + curated runtime catalog;
+  - merge blocked until canonical gate, Cloudflare preview and explicit human acceptance.
+
 ## Next
 
-- [ ] Puzzles — FEN/solution engine и импорт задач. **CURRENT: UX/spec discussion, implementation not started.**
 - [ ] Encounter Generator.
 - [ ] Adaptive Skirmish Generator.
 - [ ] Content Framework.
@@ -30,7 +43,9 @@
 
 ## Current phase
 
-**Events v1 — DONE, включая закрытый Event-background asset debt. Следующий этап: Puzzles UX/spec discussion. Реализация Puzzles не начинается до отдельного утверждения UX/spec пользователем.**
+**Events v1 — DONE. Puzzles v1 — implementation active после утверждённого UX/spec; human acceptance ещё не получен.**
+
+До merge Puzzles обязательны deterministic tests, persistence/idempotency coverage, desktop + 390×844 browser flow, canonical `gate:local`, Cloudflare preview и отдельный live playtest пользователя.
 
 ### Events final receipt
 
@@ -47,7 +62,8 @@
 
 ### Events accepted contract
 
-- Travel playable pool: `Skirmish / Battle / Settlement / Event`; каждая из 3 карточек независимо выбирает тип с долгосрочной долей около 25%, дубликаты допустимы.
+- Historical accepted Travel pool at Events closure: `Skirmish / Battle / Settlement / Event`, ≈25% each.
+- Current journey pool after Puzzles approval: `Skirmish / Battle / Settlement / Event / Puzzle`, ≈20% each; this is a Puzzles-era Travel extension, not a rewrite of the Events acceptance receipt.
 - Event route расходует обычный `1 Supply`; Event→Combat не списывает второй Supply.
 - 100 Events / 415 authored choices; deterministic shuffle-bag без повторов до завершения цикла.
 - Persistent/idempotent choice roll, economy and outcomes.
@@ -65,9 +81,9 @@
 
 ## Development rule
 
-Feature lifecycle: `IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE`.
+Feature lifecycle: `UX/SPEC APPROVED → IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE`.
 
-Следующая gameplay feature не начинается до merge/post-merge closure текущей feature; для Puzzles сначала отдельно утверждается UX/spec.
+Следующая gameplay feature не начинается до merge/post-merge closure текущей feature. Puzzles сейчас является текущей feature; Encounter Generator не начинается до её human acceptance и closure.
 
 ## Global UI invariant
 
@@ -75,7 +91,7 @@ Feature lifecycle: `IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED �
 
 ## Gates
 
-Канонический deploy gate — source verification + deterministic Node suite + production build (`npm run gate:local`) и Cloudflare exact-head SUCCESS. Standalone `gate:full` содержит real-Chromium regression; GitHub Actions используется как ручная диагностика, если hosted runner доступен.
+Канонический deploy gate — source verification + deterministic Node suite + production build (`npm run gate:local`) и Cloudflare exact-head SUCCESS. Standalone `gate:full` содержит real-Chromium regression; GitHub Actions используется только как ручная диагностика, если hosted runner доступен.
 
 ## Legacy boundary
 
