@@ -16,6 +16,7 @@ const filterButtons = [...document.querySelectorAll('[data-roster-filter]')];
 
 let activeRun = readRun();
 let activeFilter = 'all';
+let journeyPending = false;
 
 function audio() { return globalThis.RPChessRebootAudio; }
 
@@ -39,7 +40,7 @@ function updateContinueState() {
 }
 
 function updateJourneyLabel() {
-  if (!journeyButton) return;
+  if (!journeyButton || journeyPending) return;
   journeyButton.textContent = activeRun?.activeTravelChoice?.type === 'settlement' ? 'Вернуться в поселение' : 'Начать путешествие';
 }
 
@@ -209,12 +210,41 @@ function continueRun() {
   renderRoster();
 }
 
-function beginJourney() {
+async function ensureTravelChoiceReady() {
+  const routeReady = globalThis.RPChessRouteReady;
+  if (routeReady && typeof routeReady.then === 'function') await routeReady;
+  if (globalThis.RPChessTravelChoice?.open) return globalThis.RPChessTravelChoice;
+  try {
+    await import('./travel-choice-app.mjs');
+  } catch (error) {
+    console.error('[RPChess] Travel Choice bootstrap failed', error);
+    return null;
+  }
+  return globalThis.RPChessTravelChoice?.open ? globalThis.RPChessTravelChoice : null;
+}
+
+async function beginJourney() {
+  if (journeyPending) return;
   activeRun = readRun();
   if (!activeRun || activeRun.ended) return;
   audio()?.click();
-  setScene('menu');
-  globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open', { detail: { source: 'roster', runId: activeRun.id } }));
+  journeyPending = true;
+  if (journeyButton) {
+    journeyButton.disabled = true;
+    journeyButton.textContent = 'Загрузка пути…';
+  }
+  try {
+    const travelChoice = await ensureTravelChoiceReady();
+    activeRun = readRun();
+    if (!travelChoice || !activeRun || activeRun.ended) return;
+    travelChoice.open({ detail: { source: 'roster', runId: activeRun.id } });
+  } catch (error) {
+    console.error('[RPChess] Start Journey failed', error);
+  } finally {
+    journeyPending = false;
+    if (journeyButton) journeyButton.disabled = false;
+    updateJourneyLabel();
+  }
 }
 
 function returnToMenu() {
