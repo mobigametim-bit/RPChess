@@ -1,14 +1,15 @@
 const GOLD_ICON = 'generated_assets/reward_gold.png';
-// Existing campaign-map shop asset: a supply/merchant pouch-style symbol that remains readable at HUD size.
+// Existing campaign-map shop asset: a merchant pouch / supply-stall symbol designed to stay readable at icon size.
 const SUPPLIES_ICON = 'generated_assets/node_shop.png';
 const BOARD_SELECTOR = '.classic-board[data-chess-board], .puzzle-board[data-puzzle-board]';
 const SKIP_TEXT_PARENTS = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'OPTION', 'NOSCRIPT']);
+const SUPPLY_ICON_HOLDER_SELECTOR = '.resource-chip__supply-icon, [aria-labelledby="settlement-supplies-title"] .settlement-service__icon';
 
 function ensureCss() {
   if (document.querySelector('[data-ux-consistency-css]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/ux-consistency.css?v=20260830-1';
+  link.href = 'css/ux-consistency.css?v=20260830-2';
   link.dataset.uxConsistencyCss = '';
   document.head.append(link);
 }
@@ -40,7 +41,8 @@ function resourceAmount(type, amountText) {
   return span;
 }
 
-const RESOURCE_PATTERN = /([+-]?\d+)\s*(gold|золота|золото|припас(?:ы|а|ов)?)/giu;
+const RESOURCE_WORD = 'gold|золота|золото|припас(?:ы|а|ов)?';
+const RESOURCE_PATTERN = new RegExp(`([+-]?\\d+)\\s*(${RESOURCE_WORD})|(${RESOURCE_WORD})\\s*[:·]?\\s*([+-]?\\d+)`, 'giu');
 
 function iconizeTextNode(node) {
   const parent = node.parentElement;
@@ -54,8 +56,10 @@ function iconizeTextNode(node) {
   for (const match of value.matchAll(RESOURCE_PATTERN)) {
     const index = match.index ?? 0;
     if (index > cursor) fragment.append(document.createTextNode(value.slice(cursor, index)));
-    const type = match[2].toLowerCase() === 'gold' || match[2].toLowerCase().startsWith('золот') ? 'gold' : 'supplies';
-    fragment.append(resourceAmount(type, match[1]));
+    const word = String(match[2] || match[3] || '').toLowerCase();
+    const amountText = match[1] || match[4] || '0';
+    const type = word === 'gold' || word.startsWith('золот') ? 'gold' : 'supplies';
+    fragment.append(resourceAmount(type, amountText));
     cursor = index + match[0].length;
   }
   if (cursor < value.length) fragment.append(document.createTextNode(value.slice(cursor)));
@@ -78,8 +82,8 @@ function iconizeText(root = document.body) {
 function replaceSupplyDiamonds(root = document) {
   if (!(root instanceof Element || root instanceof Document || root instanceof DocumentFragment)) return;
   const candidates = [];
-  if (root instanceof Element && root.matches('.resource-chip__supply-icon')) candidates.push(root);
-  candidates.push(...root.querySelectorAll?.('.resource-chip__supply-icon') || []);
+  if (root instanceof Element && root.matches(SUPPLY_ICON_HOLDER_SELECTOR)) candidates.push(root);
+  candidates.push(...(root.querySelectorAll?.(SUPPLY_ICON_HOLDER_SELECTOR) || []));
   for (const holder of candidates) {
     if (holder.querySelector('img')) continue;
     holder.textContent = '';
