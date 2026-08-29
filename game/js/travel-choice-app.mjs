@@ -7,142 +7,26 @@ import { starsText } from './encounter-difficulty.mjs';
 const ROUTE_ICONS=Object.freeze({skirmish:'generated_assets/node_battle.png',battle:'generated_assets/node_elite.png',event:'generated_assets/node_event.png',settlement:'generated_assets/node_shop.png',puzzle:'generated_assets/node_training.png'});
 let screen=null,activeRun=null,routing=false;
 function audio(){return globalThis.RPChessRebootAudio;}
-
-function ensureScreen(){
-  if(screen)return screen;
-  const app=document.querySelector('#app');
-  if(!app)return null;
-  screen=document.createElement('main');
-  screen.className='travel-choice-screen';
-  screen.dataset.travelChoiceScreen='';
-  screen.setAttribute('aria-label','Выбор следующего пути');
-  screen.hidden=true;
-  screen.innerHTML=`
-    <div class="travel-choice-shell">
-      <header class="travel-choice-topbar">
-        <img class="travel-choice-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
-        <div class="travel-choice-topbar__actions">
-          <button class="reboot-button reboot-button--primary" type="button" data-travel-roster>Отряд</button>
-          <button class="reboot-button reboot-button--primary" type="button" data-travel-settings>Настройки</button>
-        </div>
-      </header>
-      <header class="travel-choice-heading"><h1 data-travel-week>Неделя путешествия 1</h1></header>
-      <section class="travel-choice-routes" data-travel-routes aria-label="Три возможных пути"></section>
-    </div>`;
-  app.append(screen);
-  screen.querySelector('[data-travel-roster]')?.addEventListener('click',openRoster);
-  screen.querySelector('[data-travel-settings]')?.addEventListener('click',()=>{audio()?.click?.();globalThis.RPChessOpenSettings?.();});
-  return screen;
-}
-
-function hideAllScenes(){
-  for(const main of document.querySelectorAll('#app > main'))main.hidden=true;
-  document.body.classList.remove('roster-active','skirmish-active','battle-active','classic-chess-active','settlement-active','starvation-active','events-active','travel-choice-active');
-}
+function ensureScreen(){if(screen)return screen;const app=document.querySelector('#app');if(!app)return null;screen=document.createElement('main');screen.className='travel-choice-screen';screen.dataset.travelChoiceScreen='';screen.setAttribute('aria-label','Выбор следующего пути');screen.hidden=true;screen.innerHTML=`<div class="travel-choice-shell"><header class="travel-choice-topbar"><img class="travel-choice-logo" src="generated_assets/title_wordmark.png" alt="RPChess"><div class="travel-choice-topbar__actions"><button class="reboot-button reboot-button--primary" type="button" data-travel-roster>Отряд</button><button class="reboot-button reboot-button--primary" type="button" data-travel-settings>Настройки</button></div></header><header class="travel-choice-heading"><h1 data-travel-week>Неделя путешествия 1</h1></header><section class="travel-choice-routes" data-travel-routes aria-label="Три возможных пути"></section></div>`;app.append(screen);screen.querySelector('[data-travel-roster]')?.addEventListener('click',openRoster);screen.querySelector('[data-travel-settings]')?.addEventListener('click',()=>{audio()?.click?.();globalThis.RPChessOpenSettings?.();});return screen;}
+function hideAllScenes(){for(const main of document.querySelectorAll('#app > main'))main.hidden=true;document.body.classList.remove('roster-active','skirmish-active','battle-active','classic-chess-active','settlement-active','starvation-active','events-active','puzzles-active','travel-choice-active');}
 function showTravel(){const root=ensureScreen();if(!root)return;hideAllScenes();root.hidden=false;document.body.classList.add('travel-choice-active');window.scrollTo({top:0,behavior:'auto'});globalThis.RPChessResources?.render?.();}
 function hideTravel(){if(screen)screen.hidden=true;document.body.classList.remove('travel-choice-active');}
-function validStoredChoices(run){return Array.isArray(run?.currentTravelChoices)&&run.currentTravelChoices.length===TRAVEL_CHOICE_COUNT&&run.currentTravelChoices.every((choice)=>isTravelChoice(choice)&&PLAYABLE_TRAVEL_TYPES.includes(choice.type));}
+function validStoredChoices(run){return Array.isArray(run?.currentTravelChoices)&&run.currentTravelChoices.length===TRAVEL_CHOICE_COUNT&&run.currentTravelChoices.every(choice=>isTravelChoice(choice)&&PLAYABLE_TRAVEL_TYPES.includes(choice.type));}
 function ensureChoices(run){if(validStoredChoices(run))return run;const step=(Number.isInteger(run?.journeyStep)?run.journeyStep:0)+1;return writeRun({...run,currentTravelChoices:createTravelChoices({runId:run.id,step}),activeTravelChoice:null});}
-
-function routeCard(choice){
-  const button=document.createElement('button');
-  button.type='button';
-  button.className=`travel-choice-card travel-choice-card--${choice.type}`;
-  button.dataset.travelChoice=choice.id;
-  button.dataset.travelType=choice.type;
-  button.dataset.travelStars=String(choice.stars);
-  const noSupplies=(activeRun?.supplies||0)<TRAVEL_SUPPLY_COST;
-  const warning=noSupplies?'ПРИПАСОВ НЕТ · СЛУЧАЙНЫЙ БОЕЦ ПОГИБНЕТ':`СТОИМОСТЬ ПУТИ · ${TRAVEL_SUPPLY_COST} ПРИПАС`;
-
-  const visual=document.createElement('span');
-  visual.className='travel-choice-card__visual';
-  const glow=document.createElement('span'); glow.className='travel-choice-card__glow';
-  const icon=document.createElement('img'); icon.className='travel-choice-card__icon'; icon.src=ROUTE_ICONS[choice.type]||ROUTE_ICONS.skirmish; icon.alt='';
-  visual.append(glow,icon);
-
-  const body=document.createElement('span'); body.className='travel-choice-card__body';
-  const type=document.createElement('strong'); type.className='travel-choice-card__type'; type.textContent=choice.label;
-  body.append(type);
-
-  if(choice.type==='settlement'){
-    const meta=document.createElement('span');
-    meta.className='travel-choice-card__safe';
-    meta.innerHTML='<strong>БЕЗОПАСНОЕ МЕСТО</strong><small>ЛЕЧЕНИЕ · НАЙМ · СНАБЖЕНИЕ</small>';
-    body.append(meta);
-  }else if(choice.type==='skirmish'||choice.type==='battle'){
-    const meta=document.createElement('span');
-    meta.className='travel-choice-card__threat';
-    meta.innerHTML=`<strong>${starsText(choice.stars)}</strong><small>${choice.threatLabel} УГРОЗА</small>`;
-    body.append(meta);
-  }
-
-  const flavor=document.createElement('span'); flavor.className='travel-choice-card__flavor'; flavor.textContent=choice.flavor;
-  const cost=document.createElement('span'); cost.className='travel-choice-card__cost'; cost.classList.toggle('is-empty',noSupplies); cost.textContent=warning;
-  body.append(flavor,cost);
-  button.append(visual,body);
-  button.addEventListener('click',()=>chooseChoice(choice,button));
-  return button;
-}
-
-function renderChoices(){
-  if(!screen||!activeRun)return;
-  const week=(Number.isInteger(activeRun.journeyStep)?activeRun.journeyStep:0)+1;
-  screen.querySelector('[data-travel-week]').textContent=`Неделя путешествия ${week}`;
-  const routes=screen.querySelector('[data-travel-routes]');
-  routes.replaceChildren();
-  for(const choice of activeRun.currentTravelChoices||[])routes.append(routeCard(choice));
-}
+function routeCard(choice){const button=document.createElement('button');button.type='button';button.className=`travel-choice-card travel-choice-card--${choice.type}`;button.dataset.travelChoice=choice.id;button.dataset.travelType=choice.type;button.dataset.travelStars=String(choice.stars);const noSupplies=(activeRun?.supplies||0)<TRAVEL_SUPPLY_COST,warning=noSupplies?'ПРИПАСОВ НЕТ · СЛУЧАЙНЫЙ БОЕЦ ПОГИБНЕТ':`СТОИМОСТЬ ПУТИ · ${TRAVEL_SUPPLY_COST} ПРИПАС`;const visual=document.createElement('span');visual.className='travel-choice-card__visual';const glow=document.createElement('span');glow.className='travel-choice-card__glow';const icon=document.createElement('img');icon.className='travel-choice-card__icon';icon.src=ROUTE_ICONS[choice.type]||ROUTE_ICONS.skirmish;icon.alt='';visual.append(glow,icon);const body=document.createElement('span');body.className='travel-choice-card__body';const type=document.createElement('strong');type.className='travel-choice-card__type';type.textContent=choice.label;body.append(type);
+  if(choice.type==='settlement'){const meta=document.createElement('span');meta.className='travel-choice-card__safe';meta.innerHTML='<strong>БЕЗОПАСНОЕ МЕСТО</strong><small>ЛЕЧЕНИЕ · НАЙМ · СНАБЖЕНИЕ</small>';body.append(meta);}else if(choice.type==='skirmish'||choice.type==='battle'||choice.type==='puzzle'){const meta=document.createElement('span');meta.className='travel-choice-card__threat';meta.innerHTML=choice.type==='puzzle'?`<strong>${starsText(choice.stars)}</strong><small>СЛОЖНОСТЬ ЗАДАЧИ</small>`:`<strong>${starsText(choice.stars)}</strong><small>${choice.threatLabel} УГРОЗА</small>`;body.append(meta);}
+  const flavor=document.createElement('span');flavor.className='travel-choice-card__flavor';flavor.textContent=choice.flavor;const cost=document.createElement('span');cost.className='travel-choice-card__cost';cost.classList.toggle('is-empty',noSupplies);cost.textContent=warning;body.append(flavor,cost);button.append(visual,body);button.addEventListener('click',()=>chooseChoice(choice,button));return button;}
+function renderChoices(){if(!screen||!activeRun)return;const week=(Number.isInteger(activeRun.journeyStep)?activeRun.journeyStep:0)+1;screen.querySelector('[data-travel-week]').textContent=`Неделя путешествия ${week}`;const routes=screen.querySelector('[data-travel-routes]');routes.replaceChildren();for(const choice of activeRun.currentTravelChoices||[])routes.append(routeCard(choice));}
 function combatCount(run,choice){if(choice?.type==='battle')return run?.battleCount||0;if(choice?.type==='skirmish')return run?.skirmishCount||0;return null;}
-function dispatchEncounter(choice){
-  hideTravel();
-  const detail={source:'travel-choice',runId:activeRun?.id||null,choice};
-  if(choice.type==='skirmish'||choice.type==='battle')globalThis.RPChessTravelEncounterOverride=choice;else delete globalThis.RPChessTravelEncounterOverride;
-  if(choice.type==='skirmish')return globalThis.dispatchEvent(new CustomEvent('rpchess:skirmish-open',{detail}));
-  if(choice.type==='battle')return globalThis.dispatchEvent(new CustomEvent('rpchess:battle-open',{detail}));
-  if(choice.type==='settlement')return globalThis.dispatchEvent(new CustomEvent('rpchess:settlement-open',{detail}));
-  if(choice.type==='event')return globalThis.dispatchEvent(new CustomEvent('rpchess:event-open',{detail}));
-  throw new Error(`Travel Choice encounter type is not playable yet: ${choice.type}`);
-}
+function dispatchEncounter(choice){hideTravel();const detail={source:'travel-choice',runId:activeRun?.id||null,choice};if(choice.type==='skirmish'||choice.type==='battle')globalThis.RPChessTravelEncounterOverride=choice;else delete globalThis.RPChessTravelEncounterOverride;if(choice.type==='skirmish')return globalThis.dispatchEvent(new CustomEvent('rpchess:skirmish-open',{detail}));if(choice.type==='battle')return globalThis.dispatchEvent(new CustomEvent('rpchess:battle-open',{detail}));if(choice.type==='settlement')return globalThis.dispatchEvent(new CustomEvent('rpchess:settlement-open',{detail}));if(choice.type==='event')return globalThis.dispatchEvent(new CustomEvent('rpchess:event-open',{detail}));if(choice.type==='puzzle')return globalThis.dispatchEvent(new CustomEvent('rpchess:puzzle-open',{detail}));throw new Error(`Unknown Travel Choice encounter type: ${choice.type}`);}
 function showPendingStarvation(){if(!activeRun||!hasPendingStarvation(activeRun))return false;hideTravel();return Boolean(globalThis.RPChessStarvation?.open?.(activeRun));}
-function chooseChoice(choice,button){
-  if(routing)return;
-  const current=readRun();
-  if(!current||current.ended||current.activeTravelChoice)return;
-  if(!validStoredChoices(current)||!current.currentTravelChoices.some((item)=>item.id===choice.id))return;
-  routing=true;
-  for(const card of screen?.querySelectorAll('[data-travel-choice]')||[])card.disabled=true;
-  button?.classList.add('is-chosen');
-  audio()?.click?.();
-  const payment=applyTravelSupplyCost(current);
-  const count=combatCount(current,choice);
-  let activeChoice={...choice,...(Number.isInteger(count)?{combatCountAtSelection:count}:{}),supplyCostAtSelection:payment.requested,supplyPaid:payment.paid};
-  let nextRun={...payment.run,journeyStep:choice.step,currentTravelChoices:null,activeTravelChoice:activeChoice};
-  const starvation=resolveStarvation(nextRun,activeChoice);
-  nextRun=starvation.run; activeChoice=starvation.choice;
-  activeRun=writeRun(nextRun);
-  globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
-  globalThis.RPChessResources?.showChange?.(payment.paid>0?{suppliesDelta:-payment.paid,label:'ПЕРЕХОД'}:{label:'ГОЛОД'});
-  setTimeout(()=>{routing=false;if(showPendingStarvation())return;if(activeRun?.ended)return;dispatchEncounter(activeChoice);},document.documentElement.dataset.reducedMotion==='1'?0:180);
-}
+function chooseChoice(choice,button){if(routing)return;const current=readRun();if(!current||current.ended||current.activeTravelChoice)return;if(!validStoredChoices(current)||!current.currentTravelChoices.some(item=>item.id===choice.id))return;routing=true;for(const card of screen?.querySelectorAll('[data-travel-choice]')||[])card.disabled=true;button?.classList.add('is-chosen');audio()?.click?.();const payment=applyTravelSupplyCost(current),count=combatCount(current,choice);let activeChoice={...choice,...(Number.isInteger(count)?{combatCountAtSelection:count}:{}),supplyCostAtSelection:payment.requested,supplyPaid:payment.paid},nextRun={...payment.run,journeyStep:choice.step,currentTravelChoices:null,activeTravelChoice:activeChoice};const starvation=resolveStarvation(nextRun,activeChoice);nextRun=starvation.run;activeChoice=starvation.choice;activeRun=writeRun(nextRun);globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));globalThis.RPChessResources?.showChange?.(payment.paid>0?{suppliesDelta:-payment.paid,label:'ПЕРЕХОД'}:{label:'ГОЛОД'});setTimeout(()=>{routing=false;if(showPendingStarvation())return;if(activeRun?.ended)return;dispatchEncounter(activeChoice);},document.documentElement.dataset.reducedMotion==='1'?0:180);}
 function aftermathEncounterType(source){if(source==='skirmish-aftermath')return'skirmish';if(source==='battle-aftermath')return'battle';return null;}
 function recoverAftermathRoute(run,source){const expected=aftermathEncounterType(source);if(!expected||run?.activeTravelChoice?.type!==expected)return run;return writeRun({...run,activeTravelChoice:null,currentTravelChoices:null});}
-function openTravel(event){
-  routing=false;
-  activeRun=readRun();
-  if(!activeRun)return;
-  const source=event?.detail?.source||null;
-  activeRun=recoverAftermathRoute(activeRun,source);
-  if(showPendingStarvation()||activeRun.ended)return;
-  if(isTravelChoice(activeRun.activeTravelChoice)&&PLAYABLE_TRAVEL_TYPES.includes(activeRun.activeTravelChoice.type)){dispatchEncounter(activeRun.activeTravelChoice);return;}
-  activeRun=ensureChoices(activeRun);
-  renderChoices();
-  showTravel();
-}
+function openTravel(event){routing=false;activeRun=readRun();if(!activeRun)return;const source=event?.detail?.source||null;activeRun=recoverAftermathRoute(activeRun,source);if(showPendingStarvation()||activeRun.ended)return;if(isTravelChoice(activeRun.activeTravelChoice)&&PLAYABLE_TRAVEL_TYPES.includes(activeRun.activeTravelChoice.type)){dispatchEncounter(activeRun.activeTravelChoice);return;}activeRun=ensureChoices(activeRun);renderChoices();showTravel();}
 function openRoster(){if(routing)return;audio()?.click?.();hideTravel();globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue'));}
 function activeChoiceCompleted(run){const choice=run?.activeTravelChoice;if(!isTravelChoice(choice)||!['skirmish','battle'].includes(choice.type)||!Number.isInteger(choice.combatCountAtSelection))return false;return combatCount(run,choice)>choice.combatCountAtSelection;}
 function applyAftermathTravelLabels(){const a=document.querySelector('[data-aftermath-continue]'),b=document.querySelector('[data-battle-continue]');if(a)a.textContent='Продолжить путь';if(b)b.textContent='Продолжить путь';}
 function syncRun(){activeRun=readRun();if(!activeRun)return;if(activeChoiceCompleted(activeRun)){activeRun=writeRun({...activeRun,activeTravelChoice:null});queueMicrotask(applyAftermathTravelLabels);}if(screen&&!screen.hidden&&activeRun&&!activeRun.ended&&!activeRun.activeTravelChoice){activeRun=ensureChoices(activeRun);renderChoices();}}
 function continueAfterStarvation(){activeRun=readRun();const choice=activeRun?.activeTravelChoice;if(!activeRun||activeRun.ended||!isTravelChoice(choice)||choice.starvationAcknowledged!==true)return;dispatchEncounter(choice);}
-
-ensureScreen();applyAftermathTravelLabels();addEventListener('rpchess:travel-open',openTravel);addEventListener('rpchess:run-updated',syncRun);addEventListener('rpchess:starvation-continue',continueAfterStarvation);
-globalThis.RPChessTravelChoice=Object.freeze({open:openTravel,openRoster,recoverAftermathRoute,get run(){return activeRun;},get choices(){return[...(activeRun?.currentTravelChoices||[])];},get activeChoice(){return activeRun?.activeTravelChoice||null;}});
+ensureScreen();applyAftermathTravelLabels();addEventListener('rpchess:travel-open',openTravel);addEventListener('rpchess:run-updated',syncRun);addEventListener('rpchess:starvation-continue',continueAfterStarvation);globalThis.RPChessTravelChoice=Object.freeze({open:openTravel,openRoster,recoverAftermathRoute,get run(){return activeRun;},get choices(){return[...(activeRun?.currentTravelChoices||[])];},get activeChoice(){return activeRun?.activeTravelChoice||null;}});

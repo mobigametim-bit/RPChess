@@ -44,7 +44,7 @@ function generateEnemyArmy({playerPoints=0,playerCount=1,encounter}={}){
   const target=clamp(Math.round(Number(playerPoints||0)*scale+resolved.stars*1.65),4,MAX_SKIRMISH_POINTS);
   const army=[{id:'enemy.king',name:'Вражеский король',pieceType:'king',commandCost:0}];let points=0;
   const candidates=resolved.stars>=9?['queen','rook','bishop','knight','pawn']:resolved.stars>=5?['rook','bishop','knight','pawn','pawn']:['bishop','knight','pawn','pawn','pawn'];
-  let guard=0;while(army.length<MAX_SKIRMISH_PIECES&&points<target&&guard<200){guard++;const affordable=candidates.filter((t)=>points+PIECE_VALUES[t]<=target);if(!affordable.length)break;const type=affordable[Math.floor(random()*affordable.length)],cost=PIECE_VALUES[type];army.push({id:`enemy.${type}.${army.length}`,name:`Вражеский ${type}`,pieceType:type,commandCost:cost});points+=cost;}
+  let guard=0;while(army.length<MAX_SKIRMISH_PIECES&&points<target&&guard<200){guard++;const pawnCount=army.reduce((sum,piece)=>sum+(piece.pieceType==='pawn'?1:0),0);const affordable=candidates.filter((t)=>points+PIECE_VALUES[t]<=target&&(t!=='pawn'||pawnCount<8));if(!affordable.length)break;const type=affordable[Math.floor(random()*affordable.length)],cost=PIECE_VALUES[type];army.push({id:`enemy.${type}.${army.length}`,name:`Вражеский ${type}`,pieceType:type,commandCost:cost});points+=cost;}
   return{army,points,target};
 }
 

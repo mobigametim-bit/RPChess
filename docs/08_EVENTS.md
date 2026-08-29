@@ -4,11 +4,13 @@ Events v1 — принятый слой мгновенных фэнтезийн�
 
 ## Travel integration
 
-`Event` входит в playable Travel pool наравне с `Skirmish`, `Battle` и `Settlement`.
+`Event` входит в текущий playable Travel pool наравне с `Skirmish`, `Battle`, `Settlement` и `Puzzle`.
 
-Каждая из трёх карточек Travel Choice независимо получает тип из четырёх playable типов с равной вероятностью. Поэтому долгосрочная доля каждого типа близка к **25%**, а дубликаты одного типа внутри одной тройки допустимы. Отдельной гарантии наличия Skirmish/Battle нет.
+Каждая из трёх карточек Travel Choice независимо получает один из пяти playable типов с равной вероятностью. Поэтому после включения Puzzles долгосрочная доля каждого типа близка к **20%**, а дубликаты одного типа внутри одной тройки допустимы. Отдельной гарантии наличия Skirmish/Battle нет.
 
 Выбор Event-карточки фиксируется как обычный committed transition, расходует обычный `1 Supply` через Resources/Starvation слой и затем маршрутизируется в Events scene. Сам Event не списывает второй Supply.
+
+Исторически Events v1 был принят в четырёхтипном pool ≈25/25/25/25. Этот gameplay contract остаётся частью принятого Events receipt, но текущая journey orchestration после утверждения Puzzles v1 использует five-type pool ≈20/20/20/20/20.
 
 ## Каталог v1
 
@@ -124,7 +126,7 @@ Persistence умеет восстанавливать старые stale combat 
 
 ## Gates
 
-Канонический deploy gate: `npm run gate:local` = source verification → полный deterministic Node suite → production build. `tests/events-visual.cjs` входит в canonical `npm test` и проверяет explicit backdrop contract. `tests/combat-art-continuity.cjs` проверяет обе рокировки, все четыре promotion choices и post-promotion continuity. `tests/events.cjs` дополнительно проверяет полный канонический реестр 36 Event backgrounds.
+Канонический deploy gate: `npm run gate:local` = source verification → полный deterministic Node suite → production build. `tests/events-visual.cjs` входит в canonical `npm test` и проверяет explicit backdrop contract. `tests/combat-art-continuity.cjs` проверяет обе рокировки, все четыре promotion choices и post-promotion continuity. `tests/events.cjs` дополнительно проверяет полный канонический реестр 36 Event backgrounds и регрессию текущего five-type Travel distribution.
 
 Standalone `npm run gate:full` дополнительно содержит real-Chromium regression. GitHub Actions используется как ручная диагностика, а не обязательный deploy gate.
 
@@ -160,6 +162,6 @@ Post-merge Cloudflare build: `5f137e48-7b8a-42e1-830e-c7826fa8f11a` — **SUCCES
 
 ## Lifecycle
 
-**IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE.**
+Events остаётся **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE**.
 
-Следующий этап — **Puzzles UX/spec discussion**. Реализация Puzzles начинается только после отдельного согласования UX/spec.
+Текущий следующий feature — **Puzzles v1**. Его UX/spec утверждён 2026-08-29, реализация активна в `feature/puzzles`, а merge заблокирован до canonical gate, Cloudflare preview и отдельного human acceptance.
