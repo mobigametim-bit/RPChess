@@ -10,7 +10,7 @@
   },
   "scripts": {
     "verify": "node -e \"require('./scripts/verify-source.cjs')(require('path').resolve('game'))\"",
-    "test": "node tests/reboot-foundation.cjs && node tests/classic-chess-static.cjs && node tests/classic-chess-engine.cjs && node tests/chess-ai-adapter.cjs && node tests/roster.cjs && node tests/skirmish.cjs && node tests/battle.cjs && node tests/travel-choice.cjs && node tests/resources.cjs && node tests/settlement.cjs && node tests/starvation.cjs && node tests/events.cjs",
+    "test": "node tests/reboot-foundation.cjs && node tests/classic-chess-static.cjs && node tests/classic-chess-engine.cjs && node tests/chess-ai-adapter.cjs && node tests/roster.cjs && node tests/skirmish.cjs && node tests/battle.cjs && node tests/combat-art-continuity.cjs && node tests/travel-choice.cjs && node tests/resources.cjs && node tests/settlement.cjs && node tests/starvation.cjs && node tests/events.cjs",
     "test:foundation": "node tests/reboot-foundation.cjs",
     "test:classic": "node tests/classic-chess-static.cjs && node tests/classic-chess-engine.cjs",
     "test:ai": "node tests/chess-ai-adapter.cjs",
