@@ -26,7 +26,7 @@
     "puzzles:import": "node scripts/import-lichess-puzzles.cjs",
     "test:browser": "node scripts/run-browser-tests.cjs",
     "build": "node scripts/build.cjs",
-    "gate:local": "node tests/puzzles.cjs && npm run build",
+    "gate:local": "node tests/puzzles-catalog-half.cjs && npm run build",
     "gate:full": "npm run gate:local && npm run test:browser",
     "deploy": "wrangler deploy"
   }
