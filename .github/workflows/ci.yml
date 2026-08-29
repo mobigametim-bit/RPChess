@@ -1,26 +1,10 @@
-name: RPChess Reboot CI
+name: RPChess Reboot CI (manual diagnostic)
 
 on:
   workflow_dispatch:
-  pull_request:
-  push:
-    branches:
-      - main
-      - feature/roster
-      - feature/skirmish
-      - feature/battle
-      - feature/travel-choice
-      - feature/resources
-      - feature/settlement
-      - feature/starvation
-      - feature/events
 
 permissions:
   contents: read
-
-concurrency:
-  group: rpchess-reboot-ci-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   verify-events:
@@ -33,86 +17,13 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
-      - name: Verify Reboot source contract
-        run: npm run verify
-      - name: Run Foundation through Events deterministic tests
-        run: npm test
-      - name: Build Events web distribution
-        run: npm run build
-      - name: Verify clean Events distribution boundary
-        shell: bash
-        run: |
-          set -euo pipefail
-          for file in \
-            dist/index.html \
-            dist/BUILD_INFO.json \
-            dist/css/reboot-foundation.css \
-            dist/css/classic-chess.css \
-            dist/css/roster.css \
-            dist/css/skirmish.css \
-            dist/css/battle.css \
-            dist/css/travel-choice.css \
-            dist/css/resources.css \
-            dist/css/settlement.css \
-            dist/css/starvation.css \
-            dist/css/events.css \
-            dist/js/reboot-foundation.mjs \
-            dist/js/roster-app.mjs \
-            dist/js/encounter-difficulty.mjs \
-            dist/js/race-assets.mjs \
-            dist/js/event-narrative.mjs \
-            dist/js/skirmish-app.mjs \
-            dist/js/battle-app.mjs \
-            dist/js/travel-choice-app.mjs \
-            dist/js/resources-app.mjs \
-            dist/js/settlement-app.mjs \
-            dist/js/starvation-app.mjs \
-            dist/js/events-data.mjs \
-            dist/js/events-core.mjs \
-            dist/js/events-app.mjs \
-            dist/assets/races/humans/pieces/white/king.png \
-            dist/assets/races/humans/pieces/black/king.png \
-            dist/assets/races/elves/pieces/queen.png \
-            dist/assets/races/orcs/pieces/pawn.png \
-            dist/assets/events/register-04/backgrounds/generic/forest_crossroad.png \
-            dist/assets/events/register-04/backgrounds/fae/fae_moonwell.png \
-            dist/assets/events/register-04/backgrounds/goblins/goblin_bomb_yard.png \
-            dist/assets/events/register-04/backgrounds/merfolk/merfolk_tide_court.png \
-            dist/generated_assets/node_event.png \
-            dist/vendor/stockfish/stockfish-18-lite-single.js \
-            dist/vendor/stockfish/stockfish-18-lite-single.wasm; do
-            test -f "$file"
-          done
-          for i in $(seq -w 1 10); do test -f "dist/js/events/event-data-${i}.mjs"; done
-          test ! -e dist/js/generated/iron-marches-runtime.bundle.js
-          ! grep -q 'vertical-slice-app.mjs' dist/index.html
-          ! grep -q 'iron-marches-runtime.bundle.js' dist/index.html
-          ! grep -q 'explicit-run-setup.mjs' dist/index.html
+      - name: Run local source, deterministic and build gate
+        run: npm run gate:local
       - name: Install Playwright and Chromium
         timeout-minutes: 10
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
-      - name: Run real Chromium Foundation through Events acceptance
+      - name: Run full real Chromium regression
         timeout-minutes: 30
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 -m http.server 4173 --bind 127.0.0.1 --directory dist > /tmp/rpchess-reboot-http.log 2>&1 &
-          SERVER_PID=$!
-          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
-          for attempt in $(seq 1 30); do
-            if curl --fail --silent http://127.0.0.1:4173/index.html >/dev/null; then break; fi
-            sleep 1
-          done
-          export RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173
-          stdbuf -oL -eL node tests/reboot-foundation-browser.cjs
-          stdbuf -oL -eL node tests/classic-chess-browser.cjs
-          stdbuf -oL -eL node tests/roster-browser.cjs
-          stdbuf -oL -eL node tests/skirmish-browser.cjs
-          stdbuf -oL -eL node tests/battle-browser.cjs
-          stdbuf -oL -eL node tests/travel-choice-browser.cjs
-          stdbuf -oL -eL node tests/resources-browser.cjs
-          stdbuf -oL -eL node tests/settlement-browser.cjs
-          stdbuf -oL -eL node tests/starvation-browser.cjs
-          stdbuf -oL -eL node tests/events-browser.cjs
+        run: npm run test:browser
