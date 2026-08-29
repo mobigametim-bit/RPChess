@@ -34,6 +34,6 @@ Each gzip JSON row is an array with exactly ten fields:
 
 `[sourceId, fen, side, solutionUciString, type, rating, difficulty, targetPieceOrEmpty, materialGain, themesString]`
 
-`script/materialize-puzzle-catalog.cjs` verifies the committed gzip SHA-256 and exact distributions before deterministically producing the runtime `puzzle-catalog.mjs` module. The regular build performs only this local integrity/materialization step plus lightweight catalog checks; it does **not** replay all 11,498 solutions through the chess engine.
+`scripts/materialize-puzzle-catalog.cjs` verifies the committed gzip SHA-256 and exact distributions before deterministically producing the runtime `puzzle-catalog.mjs` module. The regular build performs only this local integrity/materialization step plus lightweight catalog checks; it does **not** replay all 11,498 solutions through the chess engine.
 
 Committed gzip SHA-256: `dc3d10ee765e8e9a76f07bee010c672cb576e8c11a3e191693e9b3f221ac770c`.
