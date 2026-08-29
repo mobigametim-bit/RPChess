@@ -1,12 +1,12 @@
 # 08 — Events
 
-Events v1 — короткие фэнтезийные текстовые встречи внутри канонического journey loop. Каждое событие открывает отдельную литературную сцену, предлагает несколько решений и разрешается сразу: длинных event chains, политической системы и скрытых многошаговых квестовых веток нет.
+Events v1 — принятый слой мгновенных фэнтезийных встреч внутри канонического journey loop. Каждое событие открывает отдельную литературную сцену, предлагает несколько решений и разрешается сразу: длинных event chains, политической системы и скрытых многошаговых квестовых веток нет.
 
 ## Travel integration
 
-`Event` входит в текущий playable Travel pool наравне с `Skirmish`, `Battle` и `Settlement`.
+`Event` входит в playable Travel pool наравне с `Skirmish`, `Battle` и `Settlement`.
 
-Каждая из трёх карточек Travel Choice независимо получает тип из четырёх playable типов с равной вероятностью. Поэтому долгосрочная доля каждого типа близка к **25%**, а дубликаты одного типа внутри одной тройки допустимы. Отдельной гарантии наличия Skirmish/Battle больше нет.
+Каждая из трёх карточек Travel Choice независимо получает тип из четырёх playable типов с равной вероятностью. Поэтому долгосрочная доля каждого типа близка к **25%**, а дубликаты одного типа внутри одной тройки допустимы. Отдельной гарантии наличия Skirmish/Battle нет.
 
 Выбор Event-карточки фиксируется как обычный committed transition, расходует обычный `1 Supply` через Resources/Starvation слой и затем маршрутизируется в Events scene. Сам Event не списывает второй Supply.
 
@@ -14,35 +14,18 @@ Events v1 — короткие фэнтезийные текстовые вст�
 
 Каталог содержит ровно **100 событий / 415 авторских решений**.
 
-Распределение:
-- Люди — 6;
-- Эльфы — 6;
-- Орки — 6;
-- Нежить — 6;
-- Тёмные эльфы — 6;
-- Гномы — 6;
-- Демоны — 6;
-- Ангелы — 6;
-- Дракониды — 6;
-- Зверолюди — 6;
-- Конструкты — 6;
-- Животные — 6;
-- Феи — 6;
-- Гоблины — 6;
-- нейтральные/смешанные — 16.
+Распределение: 14 расовых групп по 6 событий — Люди, Эльфы, Орки, Нежить, Тёмные эльфы, Гномы, Демоны, Ангелы, Дракониды, Зверолюди, Конструкты, Животные, Феи, Гоблины — плюс 16 нейтральных/смешанных событий.
 
-Все 100 событий имеют уникальный `E001…E100`, мини-рассказ минимум из трёх предложений и **3–5 решений**.
+Все 100 событий имеют уникальный `E001…E100`, литературную сцену из нескольких абзацев и **3–5 решений**.
 
 ## Выбор следующего события
 
 Events используют deterministic shuffle-bag:
 - порядок 100 событий детерминирован по `run.id + cycle`;
 - внутри одного цикла каждое событие появляется ровно один раз;
-- после исчерпания 100 событий начинается новый детерминированный цикл;
+- после исчерпания полного мешка начинается новый детерминированный цикл;
 - reload не меняет уже выбранное событие;
-- история хранится в run state.
-
-Это исключает повтор одного и того же Event до прохождения текущего полного мешка из 100 событий.
+- история хранится в persistent run state.
 
 ## UX сцены
 
@@ -52,38 +35,38 @@ Event открывается как отдельная полноэкранна�
 - название события;
 - расу/тематику;
 - атмосферный иллюстрированный фон;
-- литературную сцену из нескольких абзацев, включая реплики персонажей;
+- литературную сцену из нескольких абзацев, включая реплики;
 - 3–5 решений;
-- шанс успеха для рискованных решений или пометку гарантированного исхода;
-- role requirement, если решение требует конкретный тип фигуры;
+- шанс успеха или гарантированный исход;
+- role requirement, если решение требует конкретную фигуру;
 - стоимость Gold/Supplies, если она есть;
 - явные предупреждения о ранении, смерти, начале Skirmish/Battle и риске для Короля.
 
-После выбора результат **не дописывается внутрь исходной карточки**: итог показывается в отдельном outcome modal, после чего игрок продолжает путь или переходит в связанный combat.
+После выбора итог показывается в отдельном outcome modal, после чего игрок продолжает путь или переходит в связанный combat.
 
 На mobile 390×844 используется vertical flow без горизонтального overflow.
 
 ## Event backgrounds
 
-Утверждённый `event_backgrounds.md` задаёт библиотеку **36 PNG 16:9**: 8 generic + по 2 фона для Humans, Elves, Orcs, Undead, Dark Elves, Dwarves, Demons, Angels, Dragonborn, Beastfolk, Constructs, Animals, Fae и Goblins.
-
 Runtime выбирает фон детерминированно из race-specific pool по `event.id`; нейтральные/смешанные Events используют `generic`.
 
-### Текущее состояние загруженных файлов
+После live corrections фон больше не зависит от CSS custom-property renderer. `events-app.mjs` создаёт отдельный полноэкранный `<img data-events-background>`, URL явно вычисляется через `new URL(assetPath, document.baseURI).href`, а desktop reading panel ограничен `min(980px, 68vw)`, чтобы значительная часть иллюстрации оставалась открытой.
 
-В `feature/events` физически загружено 36 PNG, однако последние шесть не совпадают с утверждённым реестром `event_backgrounds.md`:
+Пользователь подтвердил 2026-08-29, что фоновые изображения Событий теперь видны в live preview.
+
+### Asset debt
+
+Утверждённый `event_backgrounds.md` задаёт библиотеку 36 PNG 16:9. В текущем репозитории остаётся отдельный контентный долг по именам/составу последних ассетов:
 - отсутствуют `animals/wild_glen.png` и `animals/riverbank_tracks.png`;
-- вместо утверждённых Fae-файлов загружены `fae/fae_moonwell.png` и `fae/fae_mushroom_court.png`;
-- вместо утверждённых Goblin-файлов загружены `goblins/goblin_bomb_yard.png` и `goblins/goblin_scrap_market.png`;
-- дополнительно загружены не входящие в текущий 14-race Event catalog `merfolk/merfolk_tide_court.png` и `merfolk/merfolk_wreck_shrine.png`.
+- Fae представлены `fae/fae_moonwell.png` и `fae/fae_mushroom_court.png`;
+- Goblins представлены `goblins/goblin_bomb_yard.png` и `goblins/goblin_scrap_market.png`;
+- дополнительно присутствуют два Merfolk-фона, не входящие в текущий 14-race Event catalog.
 
-До замены этих шести ассетов runtime не выдаёт broken URL: Animals временно используют generic woodland backgrounds, а Fae/Goblins используют реально загруженные файлы. Это **asset debt corrected-preview**, а не изменение утверждённого реестра.
+Это не создаёт broken URL: Animals используют generic woodland fallback, а Fae/Goblins — реально загруженные файлы. Этот asset debt не блокирует принятый Events gameplay/runtime и должен закрываться отдельно как контентная задача.
 
 ## Role-gated решения
 
-Некоторые варианты требуют здорового персонализированного героя конкретной роли: `Pawn`, `Knight`, `Bishop`, `Rook` или `Queen`.
-
-Если подходящего героя нет, решение disabled и показывает причину. Для role-gated проверки берётся живой здоровый non-King герой соответствующей шахматной роли.
+Некоторые варианты требуют здорового персонализированного героя роли `Pawn`, `Knight`, `Bishop`, `Rook` или `Queen`. Если подходящего героя нет, решение disabled и показывает причину.
 
 ## Проверка исхода
 
@@ -92,94 +75,78 @@ Runtime выбирает фон детерминированно из race-speci
 - `roll <= chance` — успех;
 - иначе — неудача;
 - гарантированные решения используют 100%;
-- один и тот же resolved Event не может быть бросен или применён повторно после reload.
+- resolved Event не может быть повторно брошен или применён после reload.
 
-После выбора сохраняются `choiceId`, `roll`, success/failure, итоговые notes и возможный combat outcome.
+Сохраняются `choiceId`, `roll`, success/failure, итоговые notes и возможный combat outcome.
 
 ## Возможные эффекты
 
-Поддерживаются:
-- получить/потерять Gold;
-- получить/потерять Supplies;
-- потратить Gold/Supplies как цену решения;
-- нанять персонализированную non-King фигуру из существующей hero library;
-- тяжело ранить случайную non-King фигуру;
-- мгновенно потерять случайную non-King фигуру;
-- ранить выбранного role hero;
-- потерять выбранного role hero;
-- ранить King;
-- убить King только в явно маркированных King-risk решениях;
-- начать `Skirmish` или `Battle` с модификатором угрозы;
-- не получить эффекта.
+Поддерживаются Gold/Supplies gain/loss/cost, recruit, wound/death случайной non-King фигуры, wound/death выбранного role hero, wound King, explicit King-risk death, запуск `Skirmish` или `Battle` с модификатором угрозы и no-effect outcomes.
 
 Экономика idempotent: цена и награда применяются один раз и не дублируются после reload/resume.
 
 ## Recruitment
 
-`recruit` выбирает детерминированного доступного non-King героя из существующей recruitment library, исключая уже находящихся в roster.
-
-Если свободных рекрутов не осталось, используется безопасный fallback `+18 Gold`, чтобы Event не ломал run state.
+`recruit` выбирает детерминированного доступного non-King героя из существующей recruitment library, исключая уже находящихся в roster. Если свободных рекрутов нет, используется безопасный fallback `+18 Gold`.
 
 ## Ранения и смерть
 
 Обычные случайные death/wound эффекты **никогда не выбирают King**.
 
-В утверждённом каталоге v1 ровно **4 решения**, которые действительно могут убить King. Каждое из них:
-- имеет `kingRisk=true`;
-- содержит явное UI-предупреждение о риске смерти Короля;
-- при смерти King немедленно завершает run с Event end reason.
+В каталоге v1 ровно **4 решения**, которые действительно могут убить King. Каждое имеет `kingRisk=true`, явное UI-предупреждение и при смерти King немедленно завершает run.
 
-Если King только ранен, run продолжается. Wounded King остаётся обязательным и combat-eligible в последующих Skirmish/Battle, чтобы не возникал softlock.
+Wounded King остаётся обязательным и combat-eligible в последующих Skirmish/Battle, чтобы не возникал softlock.
 
 ## Event → Combat
 
-Некоторые success/failure outcomes запускают Skirmish или Battle.
+Event создаёт combat override с типом боя, stars с clamp **1–12**, deterministic seed, race/mixed theme, deterministic player color (`w`/`b`) и enemy role-race map.
 
-Event создаёт combat override с:
-- типом боя;
-- stars, рассчитанными от выбранной Travel угрозы и authored threat modifier с clamp **`1–12`**;
-- deterministic seed;
-- race theme события или deterministic mixed theme;
-- deterministic player color (`w` или `b`);
-- enemy role-race map для race-specific или смешанной армии.
-
-Если игрок получает чёрных, белый противник начинает первым, а narrative оформляет бой как оборону/внезапное нападение.
-
-Переход Event → Combat **не списывает дополнительный Supply**. После завершения боя Event orchestration возвращает игрока в обычный journey loop.
+Если игрок получает чёрных, белый противник начинает первым. Event→Combat **не списывает дополнительный Supply**. После завершения боя orchestration возвращает игрока в обычный journey loop.
 
 ## Combat visual contract
 
-Общая шкала сложности Skirmish/Battle содержит **12 уровней Stockfish: 400…2600 Elo**. В интерфейсе это `★1…★12`; при недостатке ширины доступна чистая переносимая компоновка **6 + 6** звёзд без изменения фактического уровня.
+Общая шкала сложности Skirmish/Battle — **12 уровней Stockfish 400…2600 Elo**.
 
-Human temporary pieces используют отдельные `assets/races/humans/pieces/white/` и `black/` наборы. Остальные race themes используют соответствующие PNG по шахматной роли. Mixed encounters могут брать Pawn/Knight/Bishop/Rook/Queen/King из разных race sets.
+Human temporary pieces используют `assets/races/humans/pieces/white/` и `black/`; race themes используют соответствующие PNG по шахматной роли; mixed encounters могут брать разные роли из разных race sets.
+
+Combat-art continuity сохраняет race/custom ассеты при ререндере доски. Рокировка переносит также visual identity ладьи для обеих сторон. Для **неименной временной пешки** promotion немедленно заменяет pawn art на выбранный `queen / rook / bishop / knight` и сохраняет новый арт на последующих ходах. Именной персонаж сохраняет персональный identity-art.
+
+Пользователь подтвердил в live preview корректную рокировку без смены ассета и корректную смену ассета при promotion неименной пешки.
 
 ## Persistence
 
-Events используют текущую `rpchess.reboot.v1.run` и сохраняют как минимум:
-- `eventHistory`;
-- `currentEvent.routeId`;
-- `currentEvent.eventId`;
-- выбранный `choiceId`;
-- `roll`;
-- `success`;
-- `resolved`;
-- `outcome`;
-- возможный Event combat state.
+Events используют `rpchess.reboot.v1.run` и сохраняют `eventHistory`, `currentEvent`, committed route, choice/roll/outcome и возможный Event combat state.
 
-Reload/resume не меняет Event, не повторяет roll, не списывает стоимость второй раз и не применяет эффект повторно.
+Persistence умеет восстанавливать старые stale combat transients после завершённой Skirmish/Battle. Event-карточки с намеренно пустым `mechanicalHint` валидны. Stars persistence поддерживает весь диапазон `1–12`.
 
-## Автоматические gates
+## Gates
 
-Events contract покрывается deterministic Node tests и real-Chromium regression Foundation → Classic Chess/Stockfish → Roster → Skirmish → Battle → Travel Choice → Resources → Settlement → Starvation → Events.
+Канонический deploy gate: `npm run gate:local` = source verification → полный deterministic Node suite → production build. `tests/events-visual.cjs` входит в canonical `npm test` и проверяет explicit backdrop contract. `tests/combat-art-continuity.cjs` проверяет обе рокировки, все четыре promotion choices и post-promotion continuity.
 
-Проверяются 100/415 catalog, 14×6 race distribution + 16 mixed, 3–5 решений, literary scene/dialogue contract, ~25% Travel distribution, duplicate allowance, shuffle-bag uniqueness, economy idempotency, role gating, четыре explicit King-risk решения, wounded-King continuity, Event→Combat no-double-charge, 12-star ceiling, race assets, black-side combat и mobile 390×844.
+Standalone `npm run gate:full` дополнительно содержит real-Chromium regression. GitHub Actions используется как ручная диагностика, а не обязательный deploy gate.
+
+## Human acceptance
+
+Пользователь завершил live retest 2026-08-29 и подтвердил: **«всё хорошо и все работает»**.
+
+Подтверждено в живой сборке:
+- aftermath → Travel → Event transitions;
+- видимые Event backgrounds;
+- opponent castling без смены race-specific rook asset;
+- promotion неименной пешки со сменой ассета на выбранную фигуру.
+
+Accepted gameplay head: `5347db734a82639f41188e74874ebee4a15540ea`.
+
+Accepted version: `3.0.0-events.preview.6`.
+
+Accepted Cloudflare build: `4c5013dc-7e28-41a4-aa01-8684a21c3f8d` — **SUCCESS**.
+
+Accepted Cloudflare Version: `56865d3e-18b0-4868-8329-5171cd016ec2`.
+
+Accepted preview: `https://56865d3e-rpchess.mobigametim.workers.dev`.
 
 ## Lifecycle
 
-Version: `3.0.0-events.preview.2`.
+**IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED.**
 
-Текущая ветка: `feature/events`.
-
-Статус до ручного preview acceptance: **IMPLEMENTED → AUTOTESTED pending exact-head Chromium → DEPLOYED pending exact-head Cloudflare → HUMAN ACCEPTED pending**.
-
-Events не переводится в DONE и не merge'ится до успешных exact-head gates и отдельного живого пользовательского playtest.
+До полного `DONE` остаются только acceptance-docs exact-head gate, перевод PR #76 в Ready, squash merge и post-merge verification `main`. После closure следующий этап — **Puzzles UX/spec discussion**.
