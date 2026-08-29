@@ -30,6 +30,9 @@ const RUN_KEY = 'rpchess.reboot.v1.run';
       'js/skirmish-app.mjs?v=20260827-skirmish-1'
     ], `unexpected runtime scripts: ${scripts.join(', ')}`);
 
+    await page.evaluate(async () => {
+      if (window.RPChessRouteReady && typeof window.RPChessRouteReady.then === 'function') await window.RPChessRouteReady;
+    });
     const runtimeState = await page.evaluate(() => ({
       verticalSlice: Boolean(window.RPChessVerticalSlice),
       ironMarches: Boolean(window.RPChessIronMarchesRuntime),
@@ -76,7 +79,8 @@ const RUN_KEY = 'rpchess.reboot.v1.run';
     await page.locator('[data-settings-modal] [data-close-modal]').click();
 
     await menu.locator('[data-new-game]').click();
-    await page.locator('[data-roster-screen]:not([hidden])').waitFor();
+    const rosterScreen = page.locator('[data-roster-screen]:not([hidden])');
+    await rosterScreen.waitFor();
     assert.strictEqual(await menu.isHidden(), true, 'New Game must replace the main menu with the Roster scene');
     assert.strictEqual(await page.locator('[data-travel-choice-screen]').isHidden(), true, 'Travel Choice must wait for Start Journey');
     assert.strictEqual(await page.locator('[data-settlement-screen]').isHidden(), true, 'Settlement must wait for a safe route choice');
@@ -88,6 +92,13 @@ const RUN_KEY = 'rpchess.reboot.v1.run';
     await page.locator('[data-roster-menu]').click();
     await menu.waitFor({ state: 'visible' });
     assert.strictEqual(await menu.locator('[data-continue-run]').isDisabled(), false, 'Continue must enable after a run is created');
+
+    await menu.locator('[data-continue-run]').click();
+    await page.locator('[data-roster-screen]:not([hidden])').waitFor();
+    await page.locator('[data-roster-travel]').click();
+    await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
+    assert.strictEqual(await menu.isHidden(), true, 'Start Journey must not flash or fall back to the main menu');
+    assert.strictEqual(await page.locator('[data-travel-choice]').count(), 3, 'Start Journey must render the three Travel Choice cards');
 
     const mobile = await browser.newPage({ viewport: { width: 390, height: 500 } });
     const mobileErrors = [];
@@ -108,7 +119,7 @@ const RUN_KEY = 'rpchess.reboot.v1.run';
 
     assert.deepStrictEqual(errors, [], `desktop browser errors:\n${errors.join('\n')}`);
     assert.deepStrictEqual(mobileErrors, [], `mobile browser errors:\n${mobileErrors.join('\n')}`);
-    console.log('Reboot Foundation product-menu to Roster with Skirmish/Battle/Travel/Resources/Settlement runtimes Chromium acceptance: PASS');
+    console.log('Reboot Foundation New Game -> Roster -> Start Journey with route-ready Travel Choice Chromium acceptance: PASS');
   } finally {
     await browser.close();
   }
