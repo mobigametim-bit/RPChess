@@ -132,6 +132,35 @@ function combatResultScore(status, playerColor = 'w') {
   return 0.5;
 }
 
+function combatCountForKind(run, kind) {
+  if (kind === 'skirmish') return Number.isInteger(run?.skirmishCount) ? run.skirmishCount : 0;
+  if (kind === 'battle') return Number.isInteger(run?.battleCount) ? run.battleCount : 0;
+  return null;
+}
+
+function ratedOutcomeKind(run) {
+  const route = run?.activeTravelChoice;
+  if (!route || route.difficultyModel !== 'power-v1') return null;
+
+  if (route.type === 'skirmish' || route.type === 'battle') {
+    if (!Number.isInteger(route.combatCountAtSelection)) return null;
+    return combatCountForKind(run, route.type) > route.combatCountAtSelection ? route.type : null;
+  }
+
+  if (route.type === 'puzzle') {
+    const state = run?.currentPuzzle;
+    return state?.resolved === true && state.routeId === route.id ? 'puzzle' : null;
+  }
+
+  if (route.type === 'event') {
+    const combat = run?.currentEvent?.combat;
+    if (!combat || !['skirmish','battle'].includes(combat.type) || combat.started !== true || !Number.isInteger(combat.countAtStart)) return null;
+    return combatCountForKind(run, combat.type) > combat.countAtStart ? combat.type : null;
+  }
+
+  return null;
+}
+
 export {
   PLAYER_RATING_STORAGE_KEY,
   PLAYER_RATING_SCHEMA_VERSION,
@@ -149,5 +178,7 @@ export {
   settlePlayerRating,
   adaptiveEncounterStars,
   opponentEloForStars,
-  combatResultScore
+  combatResultScore,
+  combatCountForKind,
+  ratedOutcomeKind
 };
