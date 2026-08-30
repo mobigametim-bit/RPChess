@@ -112,7 +112,7 @@ function ensureChroniclePanel() {
   if (!layout) return null;
   chroniclePanel = document.createElement('aside');
   chroniclePanel.className = 'chronicle-panel ui-panel-safe';
-  chroniclePanel.dataset.chroniclePanel = '';
+  chroniclePanel.setAttribute('data-chronicle-panel', '');
   chroniclePanel.setAttribute('aria-label', 'Летопись походов');
   chroniclePanel.innerHTML = `
     <header class="chronicle-header">
