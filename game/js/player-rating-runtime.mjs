@@ -13,7 +13,7 @@ import {
 if (!document.querySelector('[data-player-rating-css]')) {
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/player-rating.css?v=20260830-power-1';
+  link.href = 'css/player-rating.css?v=20260830-power-2';
   link.dataset.playerRatingCss = '';
   document.head.append(link);
 }
