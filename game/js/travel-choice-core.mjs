@@ -1,6 +1,6 @@
-import { MAX_ENCOUNTER_STARS, clampStars, difficultyForStars } from './encounter-difficulty.mjs';
-import { puzzleStarsForWeek } from './puzzles/puzzle-core.mjs';
+import { MAX_ENCOUNTER_STARS, difficultyForStars } from './encounter-difficulty.mjs';
 import { RACE_TAGS, combatTheme, hashString } from './race-assets.mjs';
+import { STARTING_POWER, adaptiveEncounterStars, threatStarsForPower } from './player-rating.mjs';
 
 const TRAVEL_ENCOUNTER_TYPES = Object.freeze(['skirmish', 'battle', 'event', 'settlement', 'puzzle']);
 const PLAYABLE_TRAVEL_TYPES = Object.freeze(['skirmish', 'battle', 'settlement', 'event', 'puzzle']);
@@ -18,14 +18,16 @@ const FLAVOR_POOLS = Object.freeze({
 });
 function seededRandom(seed){let state=hashString(seed)||1;return()=>{state+=0x6D2B79F5;let t=state;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};}
 function isTravelChoice(value){return Boolean(value&&typeof value==='object'&&typeof value.id==='string'&&value.id&&TRAVEL_ENCOUNTER_TYPES.includes(value.type)&&Number.isInteger(value.step)&&value.step>=1&&Number.isInteger(value.stars)&&value.stars>=1&&value.stars<=MAX_ENCOUNTER_STARS&&typeof value.seed==='string'&&value.seed&&typeof value.flavor==='string'&&value.flavor&&typeof value.mechanicalHint==='string');}
-function createTravelChoices({runId,step=1,types=PLAYABLE_TRAVEL_TYPES}={}){
+function createTravelChoices({runId,step=1,types=PLAYABLE_TRAVEL_TYPES,playerPower=STARTING_POWER}={}){
   if(!runId)throw new Error('Travel Choice requires runId');if(!Number.isInteger(step)||step<1)throw new Error('Travel Choice step must be a positive integer');
   const allowed=[...new Set((types||[]).filter(type=>TRAVEL_ENCOUNTER_TYPES.includes(type)))];if(!allowed.length)throw new Error('Travel Choice requires at least one encounter type');
-  const random=seededRandom(`${runId}:travel:${step}`),typeSequence=Array.from({length:TRAVEL_CHOICE_COUNT},()=>allowed[Math.floor(random()*allowed.length)]),baseThreat=clampStars(1+Math.floor((step-1)/2)),usedFlavorIndexes=new Map();
+  const random=seededRandom(`${runId}:travel:${step}`),typeSequence=Array.from({length:TRAVEL_CHOICE_COUNT},()=>allowed[Math.floor(random()*allowed.length)]),baseThreat=threatStarsForPower(playerPower),usedFlavorIndexes=new Map();
   return typeSequence.map((type,index)=>{
-    const stars=type==='puzzle'?puzzleStarsForWeek(step):clampStars(baseThreat+(Math.floor(random()*5)-2)),seed=`${runId}:travel:${step}:${index+1}:${type}`,pool=FLAVOR_POOLS[type],used=usedFlavorIndexes.get(type)||new Set();let flavorIndex=hashString(`${seed}:flavor`)%pool.length;while(used.has(flavorIndex)&&used.size<pool.length)flavorIndex=(flavorIndex+1)%pool.length;used.add(flavorIndex);usedFlavorIndexes.set(type,used);
+    const seed=`${runId}:travel:${step}:${index+1}:${type}`;
+    const stars=type==='settlement'?baseThreat:adaptiveEncounterStars(playerPower,seed);
+    const pool=FLAVOR_POOLS[type],used=usedFlavorIndexes.get(type)||new Set();let flavorIndex=hashString(`${seed}:flavor`)%pool.length;while(used.has(flavorIndex)&&used.size<pool.length)flavorIndex=(flavorIndex+1)%pool.length;used.add(flavorIndex);usedFlavorIndexes.set(type,used);
     const combat=type==='skirmish'||type==='battle',raceTag=combat?RACE_TAGS[hashString(`${seed}:race`)%RACE_TAGS.length]:null,theme=combat?combatTheme({seed,raceTag}):null;
-    return {id:`travel.${step}.${index+1}.${hashString(seed).toString(36)}`,step,type,label:ENCOUNTER_LABELS[type],stars,threatLabel:type==='puzzle'?`СЛОЖНОСТЬ ★${stars}`:THREAT_LABELS[stars],flavor:pool[flavorIndex],mechanicalHint:MECHANICAL_HINTS[type],seed,...(theme?{playerColor:theme.playerColor,enemyRaceTag:theme.enemyRaceTag,enemyRoleRaces:theme.enemyRoleRaces,sideNarrative:theme.sideNarrative}:{})};
+    return {id:`travel.${step}.${index+1}.${hashString(seed).toString(36)}`,step,type,label:ENCOUNTER_LABELS[type],stars,threatLabel:type==='puzzle'?`СЛОЖНОСТЬ ★${stars}`:THREAT_LABELS[stars],flavor:pool[flavorIndex],mechanicalHint:MECHANICAL_HINTS[type],seed,difficultyModel:'power-v1',...(theme?{playerColor:theme.playerColor,enemyRaceTag:theme.enemyRaceTag,enemyRoleRaces:theme.enemyRoleRaces,sideNarrative:theme.sideNarrative}:{})};
   });
 }
 export {TRAVEL_ENCOUNTER_TYPES,PLAYABLE_TRAVEL_TYPES,TRAVEL_CHOICE_COUNT,ENCOUNTER_LABELS,MECHANICAL_HINTS,THREAT_LABELS,FLAVOR_POOLS,hashString,seededRandom,isTravelChoice,createTravelChoices};
