@@ -7,7 +7,7 @@
 - [x] Chess AI — Stockfish 18 adapter, 12 уровней ≈400–2600 Elo. **DONE**.
 - [x] Roster — персонализированный King и roster figures, persistent statuses. **DONE**.
 - [x] Skirmish — ограниченный состав, adaptive enemy, personalized board art, King-death run end. **DONE**.
-- [x] Battle — полный классический комплект + временные фигуры + named slot replacement. **DONE**.
+- [x] Battle — полный классический комплект + named slot replacement. **DONE**.
 - [x] Travel Choice — 3 persistent deterministic route cards, committed routing. **DONE**.
 - [x] Resources — Gold + Supplies, idempotent combat rewards. **DONE**.
 - [x] Settlement — лечение, найм, Supply shop. **DONE**.
@@ -18,14 +18,26 @@
 - [x] Encounter Generator — persistent Power / Threat + adaptive ★ for Skirmish/Battle/Puzzle. **DONE**.
 - [x] Adaptive Skirmish Generator — **NO CHANGE REQUIRED / CURRENT BEHAVIOR ACCEPTED** after UX review.
 - [x] Content Framework — central `ContentRegistry` + strict content validation. **DONE**.
-- [x] First Complete Endless Run — continuous persistent core loop and unified run summary. Пользователь закрыл feature 2026-08-31. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Historical PR #87 сохраняется только до безопасного переноса его feature-кода в новую branch-схему.
+- [x] First Complete Endless Run — continuous persistent core loop and unified run summary. Пользователь закрыл feature 2026-08-31. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Historical PR #87 сохраняется до безопасного reconciliation его accepted delta с актуальным `main`; прямой merge старого дерева запрещён из-за более новых Events/assets/gameplay changes.
+- [x] Battle Mercenaries Economy — стандартные Battle fillers стали оплачиваемыми Наёмниками с Gold → Supplies fallback и persistent casualty debt. Human accepted 2026-08-31. Accepted head `f2c3c92b3636b593cca97c662be6b8c3f1a692c9`; Cloudflare build `d431ac63-54ec-4757-9be3-16aefc9d0cf4` — **SUCCESS**; PR #93 squash-merged как `33f602b4b8644a9c7612ba18033c4ad0e9ee5941`. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE.**
 - [x] **PLAYTEST GATE C** — интересность собственного состава и corrected Skirmish flow подтверждены пользователем.
 
 ## Current
 
-- [ ] **Battle Mercenaries Economy** — **UX/SPEC APPROVED → IMPLEMENTATION NEXT**.
+- [ ] **First Complete Endless Run production reconciliation** — безопасно перенести accepted delta исторического PR #87 поверх актуального `main`, не перезаписывая Events v4, новые hero assets, Mercenaries Economy и другие поздние изменения.
 
-### Battle Mercenaries Economy — approved contract
+## Next
+
+- [ ] Balance Gate.
+- [ ] Region Content Framework.
+- [ ] Tutorial Campaign — позднее.
+- [ ] Metaprogression — только после подтверждения core loop.
+
+## Current phase
+
+**Events v4 — DONE. Puzzles — DONE. Power / Threat — DONE. Content Framework — DONE. First Complete Endless Run — HUMAN ACCEPTED / DONE. Battle Mercenaries Economy — HUMAN ACCEPTED / DONE. Current technical closure: reconcile accepted Endless Run code with current production tree. После этого — Balance Gate.**
+
+### Battle Mercenaries Economy — accepted contract
 
 Стандартные неименные фигуры, которыми Battle добирает полный классический состав, называются **Наёмники**.
 
@@ -42,22 +54,17 @@
 2. недостающая стоимость покрывается Supplies по курсу **1 Supply = 10 Gold**, целыми единицами с округлением вверх;
 3. если Gold + Supplies всё равно недостаточно, списываются все доступные ресурсы и фиксируется **один casualty debt** независимо от размера остатка.
 
-Casualty debt разрешается после завершения именно этой Battle: погибает ровно **один named non-King hero**. Приоритет кандидатов: `wounded` (тяжело раненые) → `healthy`; dead и King не участвуют; стоимость/тип героя на выбор не влияют. Среди равных кандидат выбирается детерминированно. Если King погиб непосредственно в Battle и run уже завершён, дополнительная casualty не применяется.
+Casualty debt разрешается после завершения именно этой Battle: погибает ровно **один named non-King hero**. Приоритет кандидатов: `wounded` → `healthy`; dead и King не участвуют; стоимость/тип героя на выбор не влияют. Среди равных кандидат выбирается детерминированно. Если run уже завершён terminal RPG-причиной, дополнительная casualty не применяется.
 
-На подготовке нет отдельного warning/confirm. Один клик `Начать битву` запускает Battle. Уже на сцене доски существующий верхний toast показывает фактическое списание Gold/Supplies и, при debt, сообщает о будущей потере героя. Payment/debt должны быть persistent и idempotent, чтобы reload не позволял избежать оплаты или casualty.
+На подготовке нет отдельного warning/confirm. Один клик `Начать битву` запускает Battle. Уже на сцене доски существующий верхний toast показывает фактическое списание Gold/Supplies и, при debt, сообщает о будущей потере героя. Payment/debt persistent и idempotent.
 
-## Next
-
-- [ ] Balance Gate.
-- [ ] Region Content Framework.
-- [ ] Tutorial Campaign — позднее.
-- [ ] Metaprogression — только после подтверждения core loop.
-
-## Current phase
-
-**Events v4 — DONE. Puzzles — DONE. Power / Threat — DONE. Content Framework — DONE. First Complete Endless Run — HUMAN ACCEPTED / DONE. Current phase: Battle Mercenaries Economy — UX/SPEC APPROVED / IMPLEMENTATION NEXT.**
-
-Следующая gameplay implementation — Battle Mercenaries Economy; после её human acceptance и closure проект переходит к Balance Gate.
+Acceptance receipt:
+- Human acceptance: **«всё хорошо» — 2026-08-31**;
+- exact accepted head `f2c3c92b3636b593cca97c662be6b8c3f1a692c9`;
+- Cloudflare exact-head build `d431ac63-54ec-4757-9be3-16aefc9d0cf4` — **SUCCESS**;
+- Draft #92 закрыт unmerged только из-за GraphQL `fullDatabaseId` при Draft → Ready;
+- identical non-Draft PR #93 squash-merged в `main` как `33f602b4b8644a9c7612ba18033c4ad0e9ee5941`;
+- GitHub Actions не использовались.
 
 ### Puzzles final receipt
 
@@ -108,12 +115,7 @@ Casualty debt разрешается после завершения именн�
 
 Feature lifecycle: `UX/SPEC APPROVED → IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE`.
 
-Новая постоянная branch-схема:
-- `main` — только текущая подтверждённая версия игры;
-- `deploy` — единственная рабочая ветка для разработки следующей feature и Cloudflare preview;
-- `Legasy` — неизменяемый архив Iron Marches / Version 1.
-
-После human acceptance feature из `deploy` переносится в `main`, затем `deploy` синхронизируется с новым `main`. Дополнительные feature/fix/tmp/archive branches не являются частью постоянной схемы и должны удаляться после безопасного переноса нужной истории.
+Proposal о постоянной трёхветочной схеме `main / deploy / Legasy` и автоматической очистке остальных веток **отменён пользователем 2026-08-31**. Ветки пользователь почистит самостоятельно; branch-management не является частью текущего roadmap.
 
 ## Global UI invariant
 
@@ -125,4 +127,4 @@ Feature lifecycle: `UX/SPEC APPROVED → IMPLEMENTED → AUTOTESTED → DEPLOYED
 
 ## Legacy boundary
 
-Iron Marches v1 canonical archive SHA: `035fb817a93f53047a1d20f7cdfc9093b0f7d611`. После branch cleanup этот exact commit хранится в постоянной ветке `Legasy`. Reboot не загружает legacy runtime, но может повторно использовать утверждённые asset-library материалы, кроме запрещённых production panel-frame assets.
+Iron Marches v1 canonical archive SHA: `035fb817a93f53047a1d20f7cdfc9093b0f7d611`. Reboot не загружает legacy runtime, но может повторно использовать утверждённые asset-library материалы, кроме запрещённых production panel-frame assets. Branch naming/cleanup пользователь ведёт самостоятельно.
