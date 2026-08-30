@@ -2,7 +2,7 @@ import { readRun, writeRun } from './run-persistence.mjs';
 import { PIECE_GLYPHS, PIECE_LABELS } from './roster-data.mjs';
 import { eventBackgroundPath } from './race-assets.mjs';
 import { literaryStory } from './event-narrative.mjs';
-import { formatHeroReaction } from './events/event-content-v3.mjs';
+import { applyEventContentV3, formatHeroReaction } from './events/event-content-v3.mjs';
 import {
   choiceAvailability,
   completeEvent,
@@ -164,7 +164,7 @@ function renderBackground(event) {
 
 function renderEvent() {
   if (!screen || !activeRun?.currentEvent) return;
-  const event = normalizedEvent(activeRun.currentEvent.eventId);
+  const event = applyEventContentV3(normalizedEvent(activeRun.currentEvent.eventId));
   if (!event) return;
   renderBackground(event);
   screen.querySelector('[data-events-title]').textContent = event.title;
