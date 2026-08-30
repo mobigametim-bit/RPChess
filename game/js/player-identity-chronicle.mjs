@@ -7,8 +7,17 @@ let identityModal = null;
 let chroniclePanel = null;
 
 function audio() { return globalThis.RPChessRebootAudio; }
+function ensureCss() {
+  if (document.querySelector('[data-player-identity-chronicle-css]')) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = 'css/player-identity-chronicle.css?v=20260831-identity-1';
+  link.dataset.playerIdentityChronicleCss = '';
+  document.head.append(link);
+}
 
 function ensureIdentityModal() {
+  ensureCss();
   if (identityModal) return identityModal;
   identityModal = document.createElement('div');
   identityModal.className = 'reboot-modal identity-modal';
@@ -97,6 +106,7 @@ function closeIdentityPrompt({ silent = false } = {}) {
 }
 
 function ensureChroniclePanel() {
+  ensureCss();
   if (chroniclePanel) return chroniclePanel;
   const layout = document.querySelector('.reboot-menu-screen__layout');
   if (!layout) return null;
