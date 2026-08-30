@@ -40,6 +40,8 @@ Puzzles v1 — **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → 
 
 Полная многомиллионная база не поставляется с игрой. Developer importer выбирает и валидирует curated offline subset; runtime не обращается к Lichess во время игры.
 
+Source attribution хранится в проектной документации и metadata, но после live correction 2026-08-31 строка `Задачи: Lichess Open Database · CC0` больше не показывается внутри gameplay-панели Puzzle.
+
 Ориентир первой библиотеки — около **2000 задач**. Точный объём может быть уменьшен, если строгие quality/rating/type фильтры не дают достаточно качественных позиций; требования качества не ослабляются молча ради круглого числа.
 
 ## Lichess import contract
@@ -86,11 +88,21 @@ Puzzle — пятый playable Travel type вместе с `Skirmish`, `Battle`,
 
 Puzzle использует тот же визуальный язык сложности, что Skirmish/Battle. Raw Lichess Rating игроку не показывается.
 
-Текущая временная progression-формула привязана только к номеру недели и в будущем может быть заменена:
+Активный runtime Puzzle difficulty **не определяется номером недели**. Неделя сохраняется только как compatibility/import metadata для старых сохранений и catalog bands.
 
-`stars = min(12, floor((week - 1) / 8) + 1)`
+Текущий runtime contract:
+- базовая сложность вычисляется из текущей `Power` игрока: `baseStars = threatStarsForPower(Power)`;
+- конкретный route получает deterministic adaptive offset `+0 / +1 / +2 / +3` с весами `40% / 30% / 20% / 10%`;
+- итог clamped в диапазоне `★1…★12`;
+- Puzzle выбирается из каталога по **точному итоговому `★N`** route;
+- Travel card показывает конкретное `★N` и подпись `СЛОЖНОСТЬ ЗАДАЧИ`;
+- Puzzle scene показывает тот же `★N` и рассчитывает Gold reward от него.
 
-| ★ | Недели | Lichess Rating | Type mix |
+Формула старого week-based helper `min(12, floor((week - 1) / 8) + 1)` остаётся только для backward compatibility/import tooling и не управляет активным runtime.
+
+Таблица ниже описывает catalog bands для каждого `★N`; колонка «Недели» — legacy/import metadata, а не активная progression-формула.
+
+| ★ | Недели (legacy/import) | Lichess Rating | Type mix |
 |---:|---:|---:|---|
 | ★1 | 1–8 | 600–900 | 70% mate1 / 30% material |
 | ★2 | 9–16 | 800–1050 | 60% mate1 / 40% material |
@@ -105,7 +117,7 @@ Puzzle использует тот же визуальный язык сложн
 | ★11 | 81–88 | 2150–2450 | 15% mate2 / 50% mate3 / 35% material |
 | ★12 | 89+ | 2350–2800 | 10% mate2 / 55% mate3 / 35% material |
 
-Travel card показывает `ЗАДАЧА` и ★-сложность. Puzzle scene показывает конкретную цель и `Сложность ★N`.
+Live correction 2026-08-31 удаляет старый presentation override `★1–★12 / СЛУЧАЙНАЯ СЛОЖНОСТЬ`: он перезаписывал уже корректно рассчитанный Power-based `choice.stars`, не меняя механику выбора задачи.
 
 ## UX решения
 
