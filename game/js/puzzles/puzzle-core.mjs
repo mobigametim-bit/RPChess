@@ -26,7 +26,7 @@ function clampStars(value) {
   return Math.max(1, Math.min(12, Number.isFinite(Number(value)) ? Math.round(Number(value)) : 1));
 }
 
-// Kept as a compatibility helper for old saves/tests. New puzzle selection no longer uses travel week.
+// Compatibility helper for old saves/import tooling. Runtime difficulty is now supplied by player Power.
 function puzzleStarsForWeek(week) {
   const resolved = Math.max(1, Number.isFinite(Number(week)) ? Math.floor(Number(week)) : 1);
   return clampStars(Math.floor((resolved - 1) / 8) + 1);
@@ -83,32 +83,22 @@ function candidatePool(catalog, stars, type, excludedIds = []) {
   const normalized = (catalog || []).filter(isNormalizedPuzzle);
   const excluded = new Set(Array.isArray(excludedIds) ? excludedIds : []);
   const exact = normalized.filter((item) => item.difficulty === stars);
+  if (!exact.length) return [];
   const exactUnseen = exact.filter((item) => !excluded.has(item.id));
   const typedExactUnseen = exactUnseen.filter((item) => item.type === type);
   if (typedExactUnseen.length) return typedExactUnseen;
   if (exactUnseen.length) return exactUnseen;
-
-  // An endless run can eventually exhaust a small high-star bucket. Preserve no-repeat first,
-  // then fall back across other difficulties rather than forcing an early duplicate.
-  const unseen = normalized.filter((item) => !excluded.has(item.id));
-  if (unseen.length) {
-    const typedUnseen = unseen.filter((item) => item.type === type);
-    return typedUnseen.length ? typedUnseen : unseen;
-  }
-
   const typedExact = exact.filter((item) => item.type === type);
   if (typedExact.length) return typedExact;
-  if (exact.length) return exact;
-  return normalized;
+  return exact;
 }
 
-function selectPuzzle(catalog, { runId = 'run', routeId = 'route', excludedIds = [] } = {}) {
-  const seed = `${runId}:${routeId}:any-difficulty`;
-  // Every Puzzle encounter gets an independent 1..12 roll. Travel week/card difficulty is intentionally ignored.
-  const rolledStars = 1 + (hashString(`${seed}:stars`) % 12);
-  const type = chooseType(rolledStars, seed);
-  const pool = candidatePool(catalog, rolledStars, type, excludedIds);
-  if (!pool.length) throw new Error('Puzzle catalog is empty');
+function selectPuzzle(catalog, { runId = 'run', routeId = 'route', stars = 1, excludedIds = [] } = {}) {
+  const resolvedStars = clampStars(stars);
+  const seed = `${runId}:${routeId}:stars:${resolvedStars}`;
+  const type = chooseType(resolvedStars, seed);
+  const pool = candidatePool(catalog, resolvedStars, type, excludedIds);
+  if (!pool.length) throw new Error(`Puzzle catalog has no tasks for difficulty ${resolvedStars}`);
   return pool[hashString(`${seed}:pick`) % pool.length];
 }
 
@@ -117,7 +107,6 @@ function createPuzzleState({ puzzle, routeId, stars, week }) {
   return Object.freeze({
     routeId:String(routeId || ''),
     puzzleId:puzzle.id,
-    // Reward/UI difficulty follows the selected puzzle itself, never the travel week/card.
     stars:clampStars(puzzle.difficulty),
     week:Math.max(1, Math.floor(Number(week) || 1)),
     currentFen:puzzle.fen,
