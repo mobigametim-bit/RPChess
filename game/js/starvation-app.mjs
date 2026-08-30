@@ -83,7 +83,7 @@ function render(run) {
   if (text) text.textContent = kingDied
     ? `${victim.name} пал во время перехода без припасов. Путешествие этого отряда завершено.`
     : `${victim.name} не пережил переход без припасов. Выбранный путь уже зафиксирован, отряд должен двигаться дальше.`;
-  if (button) button.textContent = kingDied ? 'ГЛАВНОЕ МЕНЮ' : 'ПРОДОЛЖИТЬ ПУТЬ';
+  if (button) button.textContent = kingDied ? 'ИТОГИ ЗАБЕГА' : 'ПРОДОЛЖИТЬ ПУТЬ';
   return true;
 }
 
@@ -108,6 +108,8 @@ function continueFromStarvation() {
 
   if (choice.starvationKingDied || current.ended) {
     if (screen) screen.hidden = true;
+    document.body.classList.remove('starvation-active');
+    if (globalThis.RPChessEndlessRun?.open?.(current)) return;
     showMenu();
     globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
     return;
