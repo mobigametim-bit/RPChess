@@ -18,24 +18,23 @@
 - [x] Encounter Generator — persistent Power / Threat + adaptive ★ for Skirmish/Battle/Puzzle. **DONE**.
 - [x] Adaptive Skirmish Generator — **NO CHANGE REQUIRED / CURRENT BEHAVIOR ACCEPTED** after UX review.
 - [x] Content Framework — central `ContentRegistry` + strict content validation. **DONE**.
-- [x] First Complete Endless Run — continuous persistent core loop and unified run summary. Пользователь закрыл feature 2026-08-31. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.** Historical PR #87 сохраняется до безопасного reconciliation его accepted delta с актуальным `main`; прямой merge старого дерева запрещён из-за более новых Events/assets/gameplay changes.
+- [x] First Complete Endless Run — continuous persistent core loop and unified run summary. Пользователь подтвердил интегрированную текущую сборку 2026-08-31: **«всё работает»**. Reconciled accepted head `f29ab08c927f054288302e0c858b0c58d9f3ad15`; Cloudflare exact-head build `19fe6998-51ed-43ac-b7f3-f111017be943` — **SUCCESS**; PR #95 squash-merged в `main` как `1f0540e3239d1ab0bcba7cef0755ba768e067739`. Accepted head и production merge имеют один tree SHA `266e3f8683cd5b43f4a3fbf225339cc70617a092`; исторический PR #87 закрыт как superseded. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → RECONCILED → MERGED → DOCS SYNCED → DONE.**
 - [x] Battle Mercenaries Economy — стандартные Battle fillers стали оплачиваемыми Наёмниками с Gold → Supplies fallback и persistent casualty debt. Human accepted 2026-08-31. Accepted head `f2c3c92b3636b593cca97c662be6b8c3f1a692c9`; Cloudflare build `d431ac63-54ec-4757-9be3-16aefc9d0cf4` — **SUCCESS**; PR #93 squash-merged как `33f602b4b8644a9c7612ba18033c4ad0e9ee5941`. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE.**
 - [x] **PLAYTEST GATE C** — интересность собственного состава и corrected Skirmish flow подтверждены пользователем.
 
 ## Current
 
-- [ ] **First Complete Endless Run production reconciliation** — безопасно перенести accepted delta исторического PR #87 поверх актуального `main`, не перезаписывая Events v4, новые hero assets, Mercenaries Economy и другие поздние изменения.
+- [ ] **Balance Gate** — следующий этап проекта.
 
 ## Next
 
-- [ ] Balance Gate.
 - [ ] Region Content Framework.
 - [ ] Tutorial Campaign — позднее.
 - [ ] Metaprogression — только после подтверждения core loop.
 
 ## Current phase
 
-**Events v4 — DONE. Puzzles — DONE. Power / Threat — DONE. Content Framework — DONE. First Complete Endless Run — HUMAN ACCEPTED / DONE. Battle Mercenaries Economy — HUMAN ACCEPTED / DONE. Current technical closure: reconcile accepted Endless Run code with current production tree. После этого — Balance Gate.**
+**Events v4 — DONE. Puzzles — DONE. Power / Threat — DONE. Content Framework — DONE. First Complete Endless Run — RECONCILED / HUMAN ACCEPTED / DONE. Battle Mercenaries Economy — HUMAN ACCEPTED / DONE. Current phase: Balance Gate.**
 
 ### Battle Mercenaries Economy — accepted contract
 
