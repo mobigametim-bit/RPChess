@@ -182,6 +182,19 @@ Event-origin combat использует тот же Skirmish formation contract
 
 Human acceptance получен 2026-08-29; Puzzles v1 находится в `main`.
 
+## Live correction closure — adaptive Puzzle UX (2026-08-31)
+
+- Human acceptance: **ACCEPTED** — пользователь подтвердил повторный live test: «всё хорошо».
+- Исправлена presentation-ошибка: Power-based difficulty уже рассчитывалась корректно, но поздний UX-layer перезаписывал её на `★1–★12 / СЛУЧАЙНАЯ СЛОЖНОСТЬ`.
+- Теперь Travel card показывает фактическое adaptive `★N`; Puzzle scene использует тот же `★N`.
+- Убрана gameplay-подпись `Задачи: Lichess Open Database · CC0`; source attribution остаётся в docs/metadata.
+- Desktop Roster cards уменьшены примерно вдвое; duplicate named-participant list в Battle preparation скрыт.
+- Human-tested / Cloudflare-gated tree: `ef873c0125c92cf633ce98ecb063adea27f08d81`.
+- Clean accepted UX PR #91 production merge: `f70e0a24ab5ec5ad0a0ff7ce29100484bf5b80ad`.
+- GitHub Actions не использовались.
+
+Итоговый статус correction: **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE**.
+
 ## Архитектурное правило
 
 Puzzle engine не зависит от конкретного источника контента. Source-specific особенности Lichess изолируются в developer importer; runtime работает только с нормализованной offline library и существующим chess rules layer.
