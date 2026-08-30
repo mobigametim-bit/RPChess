@@ -191,12 +191,13 @@ function renderRoster() {
   for (const character of list) rosterList.append(cardFor(character));
 }
 
-function beginRun() {
-  activeRun = writeRun(createRun());
+function beginRun(event = null) {
+  activeRun = writeRun(createRun({ playerName: event?.detail?.playerName }));
   activeFilter = 'all';
   updateContinueState();
   setScene('roster');
   renderRoster();
+  globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated', { detail: { source: 'run-new', runId: activeRun.id } }));
 }
 
 function continueRun() {
