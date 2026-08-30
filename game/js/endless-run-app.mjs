@@ -100,7 +100,7 @@ function hide() {
 function startNewRun() {
   audio()?.click?.();
   hide();
-  globalThis.dispatchEvent(new CustomEvent('rpchess:run-new', { detail: { source: 'endless-run-summary' } }));
+  globalThis.dispatchEvent(new CustomEvent('rpchess:identity-request', { detail: { source: 'endless-run-summary' } }));
 }
 
 function returnToMenu() {
