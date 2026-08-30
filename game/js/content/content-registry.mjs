@@ -82,8 +82,8 @@ const CONTENT_REGISTRY = Object.freeze({
       module: 'js/events-data.mjs',
       presentationModule: 'js/events/event-content-v3.mjs',
       catalog: EVENT_CATALOG,
-      expectedEvents: 100,
-      expectedChoices: 415
+      expectedEvents: 500,
+      expectedChoices: 2114
     }),
     puzzles: Object.freeze({
       module: 'js/puzzles/puzzle-catalog.mjs',
