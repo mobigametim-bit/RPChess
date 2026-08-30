@@ -14,43 +14,43 @@ function playerNameForRun(run) {
 }
 
 const DIRECT_OBJECT_PATTERNS = Object.freeze([
-  /\bвстречают Короля\b/g,
-  /\bвстретить Короля\b/g,
-  /\bпросит Короля\b/g,
-  /\bпросят Короля\b/g,
-  /\bпопросить Короля\b/g,
-  /\bвидит Короля\b/g,
-  /\bвидят Короля\b/g,
-  /\bувидев Короля\b/g,
-  /\bзамечает Короля\b/g,
-  /\bзамечают Короля\b/g,
-  /\bприветствует Короля\b/g,
-  /\bприветствуют Короля\b/g,
-  /\bостанавливает Короля\b/g,
-  /\bостанавливают Короля\b/g,
-  /\bокликает Короля\b/g,
-  /\bокликают Короля\b/g,
-  /\bзовёт Короля\b/g,
-  /\bзовет Короля\b/g,
-  /\bвызывает Короля\b/g,
-  /\bвызывают Короля\b/g
+  /встречают Короля/g,
+  /встретить Короля/g,
+  /просит Короля/g,
+  /просят Короля/g,
+  /попросить Короля/g,
+  /видит Короля/g,
+  /видят Короля/g,
+  /увидев Короля/g,
+  /замечает Короля/g,
+  /замечают Короля/g,
+  /приветствует Короля/g,
+  /приветствуют Короля/g,
+  /останавливает Короля/g,
+  /останавливают Короля/g,
+  /окликает Короля/g,
+  /окликают Короля/g,
+  /зовёт Короля/g,
+  /зовет Короля/g,
+  /вызывает Короля/g,
+  /вызывают Короля/g
 ]);
 
 const OBJECT_FIRST_VERBS = 'встречают|встречает|просит|просят|видит|видят|замечает|замечают|приветствует|приветствуют|останавливает|останавливают|окликает|окликают|зовёт|зовет|зовут|вызывает|вызывают';
 const DATIVE_PATTERNS = Object.freeze([
-  /\bговорит Королю\b/g,
-  /\bговорят Королю\b/g,
-  /\bотвечает Королю\b/g,
-  /\bотвечают Королю\b/g,
-  /\bпередаёт Королю\b/g,
-  /\bпередает Королю\b/g,
-  /\bпередают Королю\b/g,
-  /\bпоказывает Королю\b/g,
-  /\bпоказывают Королю\b/g,
-  /\bпредлагает Королю\b/g,
-  /\bпредлагают Королю\b/g,
-  /\bсоветует Королю\b/g,
-  /\bсоветуют Королю\b/g
+  /говорит Королю/g,
+  /говорят Королю/g,
+  /отвечает Королю/g,
+  /отвечают Королю/g,
+  /передаёт Королю/g,
+  /передает Королю/g,
+  /передают Королю/g,
+  /показывает Королю/g,
+  /показывают Королю/g,
+  /предлагает Королю/g,
+  /предлагают Королю/g,
+  /советует Королю/g,
+  /советуют Королю/g
 ]);
 
 function personalizePlayerNarrative(value, playerName) {
@@ -58,21 +58,22 @@ function personalizePlayerNarrative(value, playerName) {
   if (typeof value !== 'string' || !value) return value;
   let text = value;
 
-  // Oblique forms are only rewritten in grammatical contexts that stay correct for any player name.
+  // Russian Cyrillic does not participate in JavaScript's ASCII-oriented \b/\w boundary semantics,
+  // so these intentionally use exact case-sensitive phrases rather than \b-based patterns.
   text = text
-    .replace(/\bк Королю\b/g, 'к вам')
-    .replace(/\bу Короля\b/g, 'у вас')
-    .replace(/\bдля Короля\b/g, 'для вас')
-    .replace(/\bот Короля\b/g, 'от вас')
-    .replace(/\bо Короле\b/g, 'о вас')
-    .replace(/\bпро Короля\b/g, 'про вас')
-    .replace(/\bс Королём\b/g, 'с вами')
-    .replace(/\bс Королем\b/g, 'с вами')
-    .replace(/\bперед Королём\b/g, 'перед вами')
-    .replace(/\bперед Королем\b/g, 'перед вами')
-    .replace(/\bза Королём\b/g, 'за вами')
-    .replace(/\bза Королем\b/g, 'за вами')
-    .replace(new RegExp(`\\bКороля (?=${OBJECT_FIRST_VERBS}\\b)`, 'g'), 'вас ');
+    .replace(/к Королю/g, 'к вам')
+    .replace(/у Короля/g, 'у вас')
+    .replace(/для Короля/g, 'для вас')
+    .replace(/от Короля/g, 'от вас')
+    .replace(/о Короле/g, 'о вас')
+    .replace(/про Короля/g, 'про вас')
+    .replace(/с Королём/g, 'с вами')
+    .replace(/с Королем/g, 'с вами')
+    .replace(/перед Королём/g, 'перед вами')
+    .replace(/перед Королем/g, 'перед вами')
+    .replace(/за Королём/g, 'за вами')
+    .replace(/за Королем/g, 'за вами')
+    .replace(new RegExp(`Короля (?=${OBJECT_FIRST_VERBS}(?:[\\s.,!?…]|$))`, 'g'), 'вас ');
 
   for (const pattern of DIRECT_OBJECT_PATTERNS) {
     text = text.replace(pattern, (match) => match.replace('Короля', 'вас'));
@@ -81,13 +82,13 @@ function personalizePlayerNarrative(value, playerName) {
     text = text.replace(pattern, (match) => match.replace('Королю', 'вам'));
   }
 
-  // Nominative references identify the protagonist directly and can always use the entered name safely.
-  return text.replace(/\bКороль\b/g, name);
+  // Case-sensitive nominative replacement identifies the protagonist; uppercase system `КОРОЛЬ` stays intact.
+  return text.replace(/Король/g, name);
 }
 
 function personalizePlayerTitle(value, playerName) {
   const name = normalizePlayerName(playerName, LEGACY_PLAYER_NAME);
-  return typeof value === 'string' ? value.replace(/\bКороль\b/g, name) : value;
+  return typeof value === 'string' ? value.replace(/Король/g, name) : value;
 }
 
 export {
