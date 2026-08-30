@@ -17,6 +17,13 @@ if (!document.querySelector('[data-player-rating-css]')) {
   document.head.append(link);
 }
 
+// Player Identity / Chronicle loads asynchronously so the main-menu shell remains independent.
+const identityReady = import('./player-identity-chronicle.mjs').catch((error) => {
+  console.error('[RPChess] Player Identity / Chronicle bootstrap failed', error);
+  return null;
+});
+globalThis.RPChessIdentityReady = identityReady;
+
 // Route/content modules are intentionally bootstrapped asynchronously. The main-menu controls
 // must remain usable even if a secondary encounter/UX module throws during evaluation.
 const routeReady = import('./battle-route.mjs').catch((error) => {
@@ -92,9 +99,10 @@ function activateAudio() { audio.activate(); }
 document.addEventListener('pointerdown', activateAudio, { once: true, capture: true });
 document.addEventListener('keydown', activateAudio, { once: true, capture: true });
 
-document.querySelector('[data-new-game]')?.addEventListener('click', () => {
+document.querySelector('[data-new-game]')?.addEventListener('click', async () => {
   audio.click();
-  globalThis.dispatchEvent(new CustomEvent('rpchess:run-new'));
+  const identity = await identityReady;
+  identity?.openIdentityPrompt?.();
 });
 
 document.querySelector('[data-continue-run]')?.addEventListener('click', (event) => {
