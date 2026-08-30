@@ -3,6 +3,7 @@ import { STARTING_GOLD, STARTING_SUPPLIES, hydrateResources } from './resources-
 import { isSettlementState } from './settlement-core.mjs';
 import { isPuzzleState } from './puzzles/puzzle-core.mjs';
 import { MAX_ENCOUNTER_STARS } from './encounter-difficulty.mjs';
+import { accrueRunStats, emptyRunStats, hydrateRunStats, isRunStats } from './endless-run-core.mjs';
 
 const RUN_STORAGE_KEY = 'rpchess.reboot.v1.run';
 const RUN_SCHEMA_VERSION = 1;
@@ -29,6 +30,7 @@ function isValidRun(value) {
   if (!value || typeof value !== 'object' || value.schemaVersion !== RUN_SCHEMA_VERSION) return false;
   if (!Array.isArray(value.roster) || value.roster.length < 1 || !value.id || !value.selectedCharacterId) return false;
   if (value.ended != null && typeof value.ended !== 'boolean') return false;
+  if (!isRunStats(value.runStats)) return false;
   if (!Number.isInteger(value.gold) || value.gold < 0 || !Number.isInteger(value.supplies) || value.supplies < 0 || !isResourceRewardState(value.resourceRewards)) return false;
   if (value.skirmishCount != null && (!Number.isInteger(value.skirmishCount) || value.skirmishCount < 0)) return false;
   if (value.battleCount != null && (!Number.isInteger(value.battleCount) || value.battleCount < 0)) return false;
@@ -53,13 +55,21 @@ function recoverCompletedCombatChoice(choice, skirmishCount, battleCount) {
 }
 function hydrateCurrentRosterCopy(run) {
   const currentTemplates=new Map(createStarterRoster().map(character=>[character.id,character])),resources=hydrateResources(run),existingSkirmishes=Number.isInteger(run.skirmishCount)?run.skirmishCount:0,existingBattles=Number.isInteger(run.battleCount)?run.battleCount:0,storedActiveChoice=isStoredTravelChoice(run.activeTravelChoice)?run.activeTravelChoice:null,recoveredActiveChoice=recoverCompletedCombatChoice(storedActiveChoice,existingSkirmishes,existingBattles);
-  return {...resources,resourceRewards:{skirmishCount:Number.isInteger(run.resourceRewards?.skirmishCount)?run.resourceRewards.skirmishCount:existingSkirmishes,battleCount:Number.isInteger(run.resourceRewards?.battleCount)?run.resourceRewards.battleCount:existingBattles},ended:Boolean(run.ended),skirmishCount:existingSkirmishes,battleCount:existingBattles,lastSkirmish:run.lastSkirmish||null,lastBattle:run.lastBattle||null,lastPuzzle:run.lastPuzzle||null,puzzleHistory:hydratePuzzleHistory(run),journeyStep:Number.isInteger(run.journeyStep)?run.journeyStep:0,currentTravelChoices:Array.isArray(run.currentTravelChoices)?run.currentTravelChoices:null,activeTravelChoice:recoveredActiveChoice,currentSettlement:isSettlementState(run.currentSettlement)?run.currentSettlement:null,currentPuzzle:isPuzzleState(run.currentPuzzle)?run.currentPuzzle:null,roster:run.roster.map(character=>{const current=currentTemplates.get(character.id);return current?{...character,...current,status:character.status}:character;})};
+  return {...resources,runStats:hydrateRunStats(run),resourceRewards:{skirmishCount:Number.isInteger(run.resourceRewards?.skirmishCount)?run.resourceRewards.skirmishCount:existingSkirmishes,battleCount:Number.isInteger(run.resourceRewards?.battleCount)?run.resourceRewards.battleCount:existingBattles},ended:Boolean(run.ended),skirmishCount:existingSkirmishes,battleCount:existingBattles,lastSkirmish:run.lastSkirmish||null,lastBattle:run.lastBattle||null,lastPuzzle:run.lastPuzzle||null,puzzleHistory:hydratePuzzleHistory(run),journeyStep:Number.isInteger(run.journeyStep)?run.journeyStep:0,currentTravelChoices:Array.isArray(run.currentTravelChoices)?run.currentTravelChoices:null,activeTravelChoice:recoveredActiveChoice,currentSettlement:isSettlementState(run.currentSettlement)?run.currentSettlement:null,currentPuzzle:isPuzzleState(run.currentPuzzle)?run.currentPuzzle:null,roster:run.roster.map(character=>{const current=currentTemplates.get(character.id);return current?{...character,...current,status:character.status}:character;})};
 }
 function createRun({ now = Date.now(), id = null } = {}) {
-  const roster=createStarterRoster(); return {schemaVersion:RUN_SCHEMA_VERSION,id:id||runId(now),createdAt:Number(now),updatedAt:Number(now),selectedCharacterId:roster[0].id,roster,gold:STARTING_GOLD,supplies:STARTING_SUPPLIES,resourceRewards:{skirmishCount:0,battleCount:0},ended:false,endReason:null,skirmishCount:0,lastSkirmish:null,battleCount:0,lastBattle:null,lastPuzzle:null,puzzleHistory:[],journeyStep:0,currentTravelChoices:null,activeTravelChoice:null,currentSettlement:null,currentPuzzle:null};
+  const roster=createStarterRoster(); return {schemaVersion:RUN_SCHEMA_VERSION,id:id||runId(now),createdAt:Number(now),updatedAt:Number(now),selectedCharacterId:roster[0].id,roster,gold:STARTING_GOLD,supplies:STARTING_SUPPLIES,runStats:emptyRunStats(),resourceRewards:{skirmishCount:0,battleCount:0},ended:false,endReason:null,skirmishCount:0,lastSkirmish:null,battleCount:0,lastBattle:null,lastPuzzle:null,puzzleHistory:[],journeyStep:0,currentTravelChoices:null,activeTravelChoice:null,currentSettlement:null,currentPuzzle:null};
 }
 function readRun(storage = null) { const target=resolveStorage(storage); if(!target)return null; try{const parsed=JSON.parse(target.getItem(RUN_STORAGE_KEY)||'null');if(!parsed||typeof parsed!=='object'||parsed.schemaVersion!==RUN_SCHEMA_VERSION)return null;const hydrated=hydrateCurrentRosterCopy(parsed);return isValidRun(hydrated)?hydrated:null;}catch{return null;} }
-function writeRun(run, storage = null, now = Date.now()) { const target=resolveStorage(storage);if(!target)return run;const next={...hydrateResources(run),puzzleHistory:hydratePuzzleHistory(run),currentSettlement:isSettlementState(run?.currentSettlement)?run.currentSettlement:null,currentPuzzle:isPuzzleState(run?.currentPuzzle)?run.currentPuzzle:null,updatedAt:Number(now)};if(!isValidRun(next))throw new Error('Cannot persist invalid RPChess run state');target.setItem(RUN_STORAGE_KEY,JSON.stringify(next));return next; }
+function previousStoredRun(target) { if(!target)return null;try{const parsed=JSON.parse(target.getItem(RUN_STORAGE_KEY)||'null');if(!parsed||typeof parsed!=='object'||parsed.schemaVersion!==RUN_SCHEMA_VERSION)return null;const hydrated=hydrateCurrentRosterCopy(parsed);return isValidRun(hydrated)?hydrated:null;}catch{return null;} }
+function writeRun(run, storage = null, now = Date.now()) {
+  const target=resolveStorage(storage),previous=previousStoredRun(target);
+  const normalized={...hydrateResources(run),runStats:hydrateRunStats(run),puzzleHistory:hydratePuzzleHistory(run),currentSettlement:isSettlementState(run?.currentSettlement)?run.currentSettlement:null,currentPuzzle:isPuzzleState(run?.currentPuzzle)?run.currentPuzzle:null};
+  const next={...accrueRunStats(normalized,previous),updatedAt:Number(now)};
+  if(!isValidRun(next))throw new Error('Cannot persist invalid RPChess run state');
+  if(target)target.setItem(RUN_STORAGE_KEY,JSON.stringify(next));
+  return next;
+}
 function clearRun(storage = null) { resolveStorage(storage)?.removeItem(RUN_STORAGE_KEY); }
 
 export { RUN_STORAGE_KEY, RUN_SCHEMA_VERSION, createRun, readRun, writeRun, clearRun, isValidRun, isStoredTravelChoice, recoverCompletedCombatChoice };

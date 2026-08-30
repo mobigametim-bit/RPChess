@@ -1,4 +1,5 @@
 import './player-rating-runtime.mjs';
+import './endless-run-app.mjs';
 import './resources-app.mjs';
 import './battle-app.mjs';
 import './settlement-app.mjs';
