@@ -6,12 +6,20 @@ const SKIP_TEXT_PARENTS = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'OPTION', 'NOS
 const SUPPLY_ICON_HOLDER_SELECTOR = '.resource-chip__supply-icon, [aria-labelledby="settlement-supplies-title"] .settlement-service__icon';
 
 function ensureCss() {
-  if (document.querySelector('[data-ux-consistency-css]')) return;
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = 'css/ux-consistency.css?v=20260830-2';
-  link.dataset.uxConsistencyCss = '';
-  document.head.append(link);
+  if (!document.querySelector('[data-ux-consistency-css]')) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'css/ux-consistency.css?v=20260831-1';
+    link.dataset.uxConsistencyCss = '';
+    document.head.append(link);
+  }
+  if (!document.querySelector('[data-playtest-fixes-css]')) {
+    const fixes = document.createElement('link');
+    fixes.rel = 'stylesheet';
+    fixes.href = 'css/playtest-fixes.css?v=20260831-1';
+    fixes.dataset.playtestFixesCss = '';
+    document.head.append(fixes);
+  }
 }
 
 function resourceIcon(type) {
@@ -93,19 +101,6 @@ function replaceSupplyDiamonds(root = document) {
   }
 }
 
-function discloseRandomPuzzleDifficulty(root = document) {
-  if (!(root instanceof Element || root instanceof Document || root instanceof DocumentFragment)) return;
-  const cards = [];
-  if (root instanceof Element && root.matches('[data-travel-type="puzzle"]')) cards.push(root);
-  cards.push(...(root.querySelectorAll?.('[data-travel-type="puzzle"]') || []));
-  for (const card of cards) {
-    const meta = card.querySelector('.travel-choice-card__threat');
-    if (!meta || meta.dataset.randomPuzzleDifficulty === '1') continue;
-    meta.innerHTML = '<strong>★1–★12</strong><small>СЛУЧАЙНАЯ СЛОЖНОСТЬ</small>';
-    meta.dataset.randomPuzzleDifficulty = '1';
-  }
-}
-
 function visibleAxes(board) {
   const squares = [...board.querySelectorAll(':scope > [data-square]')];
   if (squares.length !== 64) return null;
@@ -156,7 +151,6 @@ let refreshQueued = false;
 function refresh() {
   refreshQueued = false;
   replaceSupplyDiamonds(document);
-  discloseRandomPuzzleDifficulty(document);
   iconizeText(document.body);
   for (const board of document.querySelectorAll(BOARD_SELECTOR)) syncBoard(board);
 }
@@ -180,7 +174,6 @@ const observer = new MutationObserver((mutations) => {
       if (node.nodeType === Node.TEXT_NODE) iconizeTextNode(node);
       else if (node instanceof Element) {
         replaceSupplyDiamonds(node);
-        discloseRandomPuzzleDifficulty(node);
         iconizeText(node);
         if (node.matches?.(BOARD_SELECTOR) || node.querySelector?.(BOARD_SELECTOR) || node.closest?.(BOARD_SELECTOR)) scheduleRefresh();
       }

@@ -1,0 +1,24 @@
+/* Post-Events live playtest corrections: 2026-08-31. */
+
+/* Puzzle source attribution remains documented in project docs, but is not shown in the gameplay panel. */
+.puzzle-source{display:none!important}
+
+/* The named-participant text list duplicates the selectable cards on the left of Battle prep. */
+.battle-participants{display:none!important}
+
+/* Desktop roster cards are deliberately compact so a normal six-character squad fits without page scrolling. */
+@media(min-width:781px){
+  .roster-grid{gap:8px!important}
+  .roster-card{
+    min-height:158px!important;
+    grid-template-rows:minmax(92px,1fr) auto!important;
+    border-radius:6px!important;
+  }
+  .roster-card__art{width:78%!important;height:100%!important}
+  .roster-card__glyph{top:6px!important;left:7px!important;font-size:19px!important}
+  .roster-card__value{top:6px!important;right:7px!important;min-width:22px!important;padding:2px 5px!important;font-size:12px!important}
+  .roster-card__body{gap:2px!important;padding:6px 8px 7px!important}
+  .roster-card__name{font-size:13px!important;line-height:1.1!important}
+  .roster-card__meta{font-size:10px!important;line-height:1.15!important}
+  .roster-card .roster-status{padding:2px 5px!important;font-size:9px!important;letter-spacing:.04em!important}
+}
