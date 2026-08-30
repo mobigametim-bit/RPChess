@@ -22,7 +22,7 @@ Events — слой мгновенных фэнтезийных встреч в�
 
 ## Events v4 — расширение каталога
 
-В ветке `content/events-v4-400` активный каталог расширен ещё на **400 событий E101…E500 / 1699 решений** из четырёх отдельно просмотренных сотен Events v4.
+В production `main` активный каталог расширен ещё на **400 событий E101…E500 / 1699 решений** из четырёх отдельно просмотренных сотен Events v4.
 
 После расширения runtime-каталог содержит ровно **500 событий / 2114 решений**.
 
@@ -48,9 +48,9 @@ Events v4 хранит narrative непосредственно в новых ev
 
 ### Статус расширения
 
-`IMPLEMENTED → REGRESSION CONTRACT UPDATED → HUMAN ACCEPTANCE PENDING`.
+`IMPLEMENTED → REGRESSION CONTRACT UPDATED → DEPLOYED → HUMAN ACCEPTED → MERGED → DONE`.
 
-Расширение не считается заменой исторического acceptance receipt Events v1 и не должно быть merged до отдельного human playtest.
+Отдельный live human playtest завершён 2026-08-31 подтверждением пользователя: **«всё хорошо»**. Расширение принято как production content change и не меняет исторический acceptance receipt Events v1.
 
 ## Выбор следующего события
 
@@ -200,9 +200,23 @@ Events v1 production merge SHA: `1e47a4a3121f1156a623a98ae29866b3a07d4cbc`.
 
 Post-merge Cloudflare build: `5f137e48-7b8a-42e1-830e-c7826fa8f11a` — **SUCCESS**; Version `45dcd46b-1306-4249-ae14-f48b5cd4b492`.
 
+## Production closure — Events v4
+
+Human acceptance: **2026-08-31 — «всё хорошо»**.
+
+Accepted content head: `76622a890ccf69fc3f47ed88e0a42e9c09d6e814`.
+
+Из-за того же connector Draft→Ready bug (`fullDatabaseId`) принятый Draft PR #88 закрыт без merge; тот же exact head/tree открыт как non-Draft PR #90 и squash-merged без промежуточных gameplay changes.
+
+Events v4 production merge SHA: `8ce9e09b30a23115a2a4660772881b912d4651ef`.
+
+После Events merge принятые post-playtest UX corrections были перенесены в чистый 5-file PR #91; его tree `ef873c0125c92cf633ce98ecb063adea27f08d81` байт-в-байт совпадает с human-tested / Cloudflare-gated tree.
+
+UX cleanup production merge SHA: `f70e0a24ab5ec5ad0a0ff7ce29100484bf5b80ad`.
+
 ## Lifecycle
 
 - Events v1: **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE**.
-- Events v4 catalog expansion: **IMPLEMENTED → REGRESSION CONTRACT UPDATED → HUMAN ACCEPTANCE PENDING**.
+- Events v4 catalog expansion: **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE**.
 
-Events v4 остаётся отдельным content change и не меняет уже принятые правила journey loop или Event mechanics.
+Events v4 расширяет только content catalog и не меняет принятые правила journey loop или Event mechanics.
