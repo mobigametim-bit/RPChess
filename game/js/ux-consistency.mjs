@@ -6,12 +6,20 @@ const SKIP_TEXT_PARENTS = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'OPTION', 'NOS
 const SUPPLY_ICON_HOLDER_SELECTOR = '.resource-chip__supply-icon, [aria-labelledby="settlement-supplies-title"] .settlement-service__icon';
 
 function ensureCss() {
-  if (document.querySelector('[data-ux-consistency-css]')) return;
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = 'css/ux-consistency.css?v=20260831-1';
-  link.dataset.uxConsistencyCss = '';
-  document.head.append(link);
+  if (!document.querySelector('[data-ux-consistency-css]')) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'css/ux-consistency.css?v=20260831-1';
+    link.dataset.uxConsistencyCss = '';
+    document.head.append(link);
+  }
+  if (!document.querySelector('[data-playtest-fixes-css]')) {
+    const fixes = document.createElement('link');
+    fixes.rel = 'stylesheet';
+    fixes.href = 'css/playtest-fixes.css?v=20260831-1';
+    fixes.dataset.playtestFixesCss = '';
+    document.head.append(fixes);
+  }
 }
 
 function resourceIcon(type) {
