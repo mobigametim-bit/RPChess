@@ -20,26 +20,24 @@
 - [x] Content Framework — central `ContentRegistry` + strict content validation. **DONE**.
 - [x] First Complete Endless Run — continuous persistent core loop and unified run summary. Пользователь подтвердил интегрированную текущую сборку 2026-08-31: **«всё работает»**. Reconciled accepted head `f29ab08c927f054288302e0c858b0c58d9f3ad15`; Cloudflare exact-head build `19fe6998-51ed-43ac-b7f3-f111017be943` — **SUCCESS**; PR #95 squash-merged в `main` как `1f0540e3239d1ab0bcba7cef0755ba768e067739`. Accepted head и production merge имеют один tree SHA `266e3f8683cd5b43f4a3fbf225339cc70617a092`; исторический PR #87 закрыт как superseded. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → RECONCILED → MERGED → DOCS SYNCED → DONE.**
 - [x] Battle Mercenaries Economy — стандартные Battle fillers стали оплачиваемыми Наёмниками с Gold → Supplies fallback и persistent casualty debt. Human accepted 2026-08-31. Accepted head `f2c3c92b3636b593cca97c662be6b8c3f1a692c9`; Cloudflare build `d431ac63-54ec-4757-9be3-16aefc9d0cf4` — **SUCCESS**; PR #93 squash-merged как `33f602b4b8644a9c7612ba18033c4ad0e9ee5941`. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE.**
+- [x] Player Identity + Chronicle — `КТО ТЫ, ВОИН?`, persistent `playerName`, Event narrative personalization, main-menu Chronicle и локальная история лучших походов. Слава: `floor(sqrt(week * power) / 10)`. Human accepted 2026-08-31. Accepted head `d2439ba16a98266e87f410272a38d42b9e8424b9`; Cloudflare build `8b81e946-4ce7-4435-97e8-ab7c6c0b28f9` — **SUCCESS**; Draft #96 закрыт unmerged из-за GraphQL `fullDatabaseId`; identical PR #97 squash-merged как `bf071a1a7d99964d848177969657767b380e5167`. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE.**
 - [x] **PLAYTEST GATE C** — интересность собственного состава и corrected Skirmish flow подтверждены пользователем.
 
-## Current — before Balance Gate
+## Current
 
-- [ ] **Player Identity** — после `Новая игра` показывается центральный prompt `КТО ТЫ, ВОИН?` с обязательным именем игрока. Имя сохраняется в run-state и переживает reload. В narrative Event-текстах и реакциях, где `Король` обозначает именно личность игрока, используется имя игрока; предложения при необходимости адаптируются грамматически. Системные/шахматные значения `Король / King` не переименовываются.
-- [ ] **Chronicle / Летопись** — на стартовой странице справа от основного блока кнопок появляется атмосферный frameless-блок. Текущий поход: Имя / Мощь / Неделя / число живых+раненых героев. Лучший завершённый поход: Имя / Слава / Неделя / Мощь. Если записей нет — `ЛЕТОПИСЬ ПУСТА`. Причина окончания похода в Летописи **не показывается**.
-- [ ] **Слава похода** — `floor(sqrt(Неделя × Мощь) / 10)`. Лучший поход определяется максимальной Славой; tie-breaker: большая Неделя, затем большая Мощь. История завершённых походов сохраняется отдельно от active run для будущего расширения рейтингов/мультиплеера.
+- [ ] **Balance Gate** — следующий этап проекта.
 
 ## Next
 
-- [ ] **Balance Gate**.
 - [ ] Region Content Framework.
 - [ ] Tutorial Campaign — позднее.
 - [ ] Metaprogression — только после подтверждения core loop.
 
 ## Current phase
 
-**Events v4 — DONE. Puzzles — DONE. Power / Threat — DONE. Content Framework — DONE. First Complete Endless Run — RECONCILED / HUMAN ACCEPTED / DONE. Battle Mercenaries Economy — HUMAN ACCEPTED / DONE. Current phase: Player Identity + Chronicle. После них — Balance Gate.**
+**Events v4 — DONE. Puzzles — DONE. Power / Threat — DONE. Content Framework — DONE. First Complete Endless Run — RECONCILED / HUMAN ACCEPTED / DONE. Battle Mercenaries Economy — HUMAN ACCEPTED / DONE. Player Identity + Chronicle — HUMAN ACCEPTED / DONE. Current phase: Balance Gate.**
 
-### Player Identity + Chronicle — approved contract 2026-08-31
+### Player Identity + Chronicle — accepted contract 2026-08-31
 
 `Новая игра` больше не создаёт run немедленно. Сначала открывается prompt `КТО ТЫ, ВОИН?` → поле имени → `ПРОДОЛЖИТЬ`; после валидного ввода создаётся новый run и продолжается существующая последовательность сцен. Имя обязательно, trim применяется, пустое значение не принимается; reload активного run имя не теряет.
 
@@ -47,7 +45,17 @@
 
 Летопись на главном экране — player/profile surface, а не economy HUD. Gold/Supplies в ней не показываются. Текущий поход показывает имя, профильную Мощь, текущую неделю и число героев. Лучший завершённый поход показывает имя, Славу, неделю и Мощь. Причина окончания не отображается.
 
-Формула Славы: `floor(sqrt(week * power) / 10)`. По ней выбирается лучший поход. При равной Славе выигрывает большая неделя, затем большая Мощь. Архитектура Chronicle должна допускать будущую замену локального блока на multiplayer leaderboard / top players + позицию текущего игрока без переделки главного меню.
+Формула Славы: `floor(sqrt(week * power) / 10)`. По ней выбирается лучший поход. При равной Славе выигрывает большая неделя, затем большая Мощь. Архитектура Chronicle допускает будущую замену локального блока на multiplayer leaderboard / top players + позицию текущего игрока без переделки главного меню.
+
+Acceptance receipt:
+- Human acceptance: **«все хорошо» — 2026-08-31**;
+- exact accepted head `d2439ba16a98266e87f410272a38d42b9e8424b9`;
+- Cloudflare exact-head build `8b81e946-4ce7-4435-97e8-ab7c6c0b28f9` — **SUCCESS**;
+- accepted preview `https://90254e9f-rpchess.mobigametim.workers.dev`;
+- Draft #96 закрыт unmerged только из-за GraphQL `fullDatabaseId` при Draft → Ready;
+- identical non-Draft PR #97 squash-merged в `main` как `bf071a1a7d99964d848177969657767b380e5167`;
+- feature diff не содержал изменений assets;
+- GitHub Actions не использовались.
 
 ### Battle Mercenaries Economy — accepted contract
 
