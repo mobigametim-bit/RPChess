@@ -34,11 +34,11 @@ Frameless CSS-only scene с постоянным Gold/Supplies HUD.
 Лечение только `wounded → healthy`. Dead не лечатся. King не лечится здесь, поскольку смерть run King уже завершает забег.
 
 Цены:
-- Pawn — **10 Gold**;
-- Knight — **18 Gold**;
-- Bishop — **18 Gold**;
-- Rook — **26 Gold**;
-- Queen — **42 Gold**.
+- Pawn — **20 Gold**;
+- Knight — **36 Gold**;
+- Bishop — **36 Gold**;
+- Rook — **52 Gold**;
+- Queen — **84 Gold**.
 
 Если раненых нет: `Все бойцы готовы к пути.` Покупка выполняется сразу по `ЛЕЧИТЬ`, без второго confirm.
 
@@ -55,11 +55,11 @@ Frameless CSS-only scene с постоянным Gold/Supplies HUD.
 - Legacy abilities не возвращаются: используются identity, имя, origin/faction, classic `pieceType` и visual assets.
 
 Цены:
-- Pawn — **24 Gold**;
-- Knight — **42 Gold**;
-- Bishop — **42 Gold**;
-- Rook — **64 Gold**;
-- Queen — **96 Gold**.
+- Pawn — **72 Gold**;
+- Knight — **126 Gold**;
+- Bishop — **126 Gold**;
+- Rook — **192 Gold**;
+- Queen — **288 Gold**.
 
 Текущая реализация использует deterministic pool из **33 non-King named heroes**.
 
