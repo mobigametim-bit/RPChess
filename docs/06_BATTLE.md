@@ -13,7 +13,7 @@ Battle — полноценная классическая партия с по�
 - если слот типа заполнен, попытка добавить следующего персонажа блокируется понятным сообщением;
 - справа показывается реальный preview стандартных 1–2 горизонталей: personal `pieceArt` на выбранных слотах и стандартные battle assets на слотах Наёмников;
 - ручной drag-and-drop и ручной выбор конкретной стартовой клетки в v1 отсутствуют;
-- одинаковый набор участников всегда занимает одинаковые слоты в стабильном roster order;
+- одинаковый набор участников всегда занимает одинаковые слоты в stable roster order;
 - action bar показывает количество именных участников, `16 ФИГУР`, `39 ОЧКОВ` и CTA `Начать битву`.
 
 ## Вход через Travel Choice
@@ -56,7 +56,7 @@ Battle сохраняет `participants` — список именных пер�
 
 В обычном не-финальном aftermath CTA — **`Продолжить путь`**. Он завершает активный Travel Choice encounter и открывает новую тройку путей.
 
-## Battle Mercenaries Economy — approved extension 2026-08-31
+## Battle Mercenaries Economy — accepted extension 2026-08-31
 
 Стандартные неименные фигуры Battle называются **Наёмники** и автоматически занимают все незаполненные named-слоты полного классического состава.
 
@@ -88,7 +88,15 @@ Battle сохраняет `participants` — список именных пер�
 
 Payment/debt idempotent и persistent. Reload или повторное открытие той же Battle не могут вернуть списанные ресурсы, уменьшить уже зафиксированную стоимость или снять casualty debt. Итоговый payment receipt и возможная casualty записываются в `lastBattle`.
 
-Текущий статус расширения: **UX/SPEC APPROVED → IMPLEMENTED IN `deploy` → AUTOTEST / CLOUDFLARE / HUMAN ACCEPTANCE PENDING**.
+Acceptance receipt:
+- Human acceptance: **«всё хорошо» — 2026-08-31**;
+- accepted exact head: `f2c3c92b3636b593cca97c662be6b8c3f1a692c9`;
+- Cloudflare exact-head build `d431ac63-54ec-4757-9be3-16aefc9d0cf4` — **SUCCESS**;
+- Draft PR #92 закрыт unmerged только из-за GitHub GraphQL `fullDatabaseId` при Draft → Ready;
+- идентичный non-Draft PR #93 squash-merged в production `main` как `33f602b4b8644a9c7612ba18033c4ad0e9ee5941`;
+- GitHub Actions не использовались.
+
+Текущий lifecycle расширения: **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE**.
 
 ## Persistence
 Схема `rpchess.reboot.v1.run` остаётся обратно совместимой и содержит `battleCount`, `lastBattle`, `lastBattle.participants` и outcome metadata. Mercenaries extension добавляет transient `battleMercenaryContract` между `Начать битву` и её settlement; после завершения контракт очищается, а receipt переносится в `lastBattle`.
