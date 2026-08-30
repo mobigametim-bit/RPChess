@@ -1,6 +1,7 @@
 import './player-rating-runtime.mjs';
 import './resources-app.mjs';
 import './battle-app.mjs';
+import './battle-mercenaries.mjs';
 import './settlement-app.mjs';
 import './starvation-app.mjs';
 import './events-app.mjs';
