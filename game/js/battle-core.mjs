@@ -7,7 +7,16 @@ const STANDARD_SLOTS=Object.freeze({w:Object.freeze({rook:Object.freeze(['a1','h
 const BATTLE_TIERS=Object.freeze(Object.fromEntries(Array.from({length:MAX_ENCOUNTER_STARS},(_,i)=>{const stars=i+1,d=difficultyForStars(stars);return[stars,Object.freeze({label:`${d.label} · полевая армия`,elo:d.elo,tactic:d.tactic})];})));
 
 function hashSeed(input){let h=2166136261;for(const c of String(input)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
-function takeTravelEncounterOverride(expectedType){if(typeof globalThis==='undefined')return null;const o=globalThis.RPChessTravelEncounterOverride;if(!o||o.type!==expectedType||!o.seed)return null;try{delete globalThis.RPChessTravelEncounterOverride;}catch{globalThis.RPChessTravelEncounterOverride=null;}return o;}
+function validEncounterOverride(value,expectedType){return Boolean(value&&value.type===expectedType&&value.seed);}
+function takeTravelEncounterOverride(expectedType){
+  if(typeof globalThis==='undefined')return null;
+  const eventOverride=globalThis.RPChessEvents?.state?.combat;
+  const travelOverride=globalThis.RPChessTravelEncounterOverride;
+  const o=validEncounterOverride(eventOverride,expectedType)?eventOverride:(validEncounterOverride(travelOverride,expectedType)?travelOverride:null);
+  if(!o)return null;
+  try{delete globalThis.RPChessTravelEncounterOverride;}catch{globalThis.RPChessTravelEncounterOverride=null;}
+  return o;
+}
 
 function createBattleEncounter({seed='rpchess-battle',stars=2}={}){
   const o=takeTravelEncounterOverride('battle'),resolvedSeed=o?.seed||seed,s=clampStars(o?.stars??stars),tier=BATTLE_TIERS[s];
