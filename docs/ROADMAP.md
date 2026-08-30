@@ -22,19 +22,32 @@
 - [x] Battle Mercenaries Economy — стандартные Battle fillers стали оплачиваемыми Наёмниками с Gold → Supplies fallback и persistent casualty debt. Human accepted 2026-08-31. Accepted head `f2c3c92b3636b593cca97c662be6b8c3f1a692c9`; Cloudflare build `d431ac63-54ec-4757-9be3-16aefc9d0cf4` — **SUCCESS**; PR #93 squash-merged как `33f602b4b8644a9c7612ba18033c4ad0e9ee5941`. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE.**
 - [x] **PLAYTEST GATE C** — интересность собственного состава и corrected Skirmish flow подтверждены пользователем.
 
-## Current
+## Current — before Balance Gate
 
-- [ ] **Balance Gate** — следующий этап проекта.
+- [ ] **Player Identity** — после `Новая игра` показывается центральный prompt `КТО ТЫ, ВОИН?` с обязательным именем игрока. Имя сохраняется в run-state и переживает reload. В narrative Event-текстах и реакциях, где `Король` обозначает именно личность игрока, используется имя игрока; предложения при необходимости адаптируются грамматически. Системные/шахматные значения `Король / King` не переименовываются.
+- [ ] **Chronicle / Летопись** — на стартовой странице справа от основного блока кнопок появляется атмосферный frameless-блок. Текущий поход: Имя / Мощь / Неделя / число живых+раненых героев. Лучший завершённый поход: Имя / Слава / Неделя / Мощь. Если записей нет — `ЛЕТОПИСЬ ПУСТА`. Причина окончания похода в Летописи **не показывается**.
+- [ ] **Слава похода** — `floor(sqrt(Неделя × Мощь) / 10)`. Лучший поход определяется максимальной Славой; tie-breaker: большая Неделя, затем большая Мощь. История завершённых походов сохраняется отдельно от active run для будущего расширения рейтингов/мультиплеера.
 
 ## Next
 
+- [ ] **Balance Gate**.
 - [ ] Region Content Framework.
 - [ ] Tutorial Campaign — позднее.
 - [ ] Metaprogression — только после подтверждения core loop.
 
 ## Current phase
 
-**Events v4 — DONE. Puzzles — DONE. Power / Threat — DONE. Content Framework — DONE. First Complete Endless Run — RECONCILED / HUMAN ACCEPTED / DONE. Battle Mercenaries Economy — HUMAN ACCEPTED / DONE. Current phase: Balance Gate.**
+**Events v4 — DONE. Puzzles — DONE. Power / Threat — DONE. Content Framework — DONE. First Complete Endless Run — RECONCILED / HUMAN ACCEPTED / DONE. Battle Mercenaries Economy — HUMAN ACCEPTED / DONE. Current phase: Player Identity + Chronicle. После них — Balance Gate.**
+
+### Player Identity + Chronicle — approved contract 2026-08-31
+
+`Новая игра` больше не создаёт run немедленно. Сначала открывается prompt `КТО ТЫ, ВОИН?` → поле имени → `ПРОДОЛЖИТЬ`; после валидного ввода создаётся новый run и продолжается существующая последовательность сцен. Имя обязательно, trim применяется, пустое значение не принимается; reload активного run имя не теряет.
+
+В Event narrative имя подставляется только там, где текст говорит о личности/герое игрока. Глобальный blind string replace запрещён: формулировка должна оставаться грамматически корректной. Шахматная фигура, шах/мат, технические статусы и системные сообщения продолжают использовать термин `Король / King`, когда речь именно о механике.
+
+Летопись на главном экране — player/profile surface, а не economy HUD. Gold/Supplies в ней не показываются. Текущий поход показывает имя, профильную Мощь, текущую неделю и число героев. Лучший завершённый поход показывает имя, Славу, неделю и Мощь. Причина окончания не отображается.
+
+Формула Славы: `floor(sqrt(week * power) / 10)`. По ней выбирается лучший поход. При равной Славе выигрывает большая неделя, затем большая Мощь. Архитектура Chronicle должна допускать будущую замену локального блока на multiplayer leaderboard / top players + позицию текущего игрока без переделки главного меню.
 
 ### Battle Mercenaries Economy — accepted contract
 
