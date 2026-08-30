@@ -1,0 +1,140 @@
+/* Cross-mode board and resource presentation fixes from the Puzzle 11.5k acceptance pass. */
+
+.resource-inline{
+  display:inline-flex;
+  align-items:center;
+  gap:.24em;
+  white-space:nowrap;
+  vertical-align:baseline;
+  font-variant-numeric:tabular-nums;
+}
+.resource-inline-icon{
+  width:1.28em;
+  height:1.28em;
+  object-fit:contain;
+  flex:0 0 auto;
+  vertical-align:-.22em;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.48));
+}
+.resource-inline-icon--supplies{width:1.34em;height:1.34em}
+.resource-chip__supply-icon{display:grid!important;place-items:center;width:30px!important;height:30px!important}
+.resource-chip__supply-image{width:28px!important;height:28px!important;object-fit:contain!important;filter:drop-shadow(0 2px 3px rgba(0,0,0,.55))!important}
+[aria-labelledby="settlement-supplies-title"] .settlement-service__icon{display:grid;place-items:center}
+[aria-labelledby="settlement-supplies-title"] .settlement-service__icon .resource-chip__supply-image{width:44px!important;height:44px!important}
+.resource-toast .resource-inline-icon,.combat-reward .resource-inline-icon{width:1.45em;height:1.45em}
+.travel-choice-card__cost .resource-inline-icon{width:1.4em;height:1.4em}
+
+/* Coordinates live in dedicated rails, never on playable squares. */
+.classic-coordinate,.puzzle-coordinate{display:none!important}
+.board-coordinate-frame{
+  --board-coordinate-rail:clamp(18px,1.65vw,25px);
+  width:100%;
+  display:grid;
+  grid-template-columns:var(--board-coordinate-rail) minmax(0,1fr);
+  grid-template-rows:minmax(0,1fr) var(--board-coordinate-rail);
+  align-items:stretch;
+  box-sizing:border-box;
+}
+.board-coordinate-frame>.classic-board,
+.board-coordinate-frame>.puzzle-board{
+  grid-column:2;
+  grid-row:1;
+  width:100%!important;
+  height:auto!important;
+  aspect-ratio:1!important;
+  box-sizing:border-box;
+}
+.board-coordinate-ranks{
+  grid-column:1;
+  grid-row:1;
+  display:grid;
+  grid-template-rows:repeat(8,minmax(0,1fr));
+  min-height:0;
+  color:#c9d4df;
+  font-size:clamp(10px,.85vw,13px);
+  font-weight:900;
+  user-select:none;
+  pointer-events:none;
+}
+.board-coordinate-ranks>span{display:grid;place-items:center end;padding-right:6px}
+.board-coordinate-files{
+  grid-column:2;
+  grid-row:2;
+  display:grid;
+  grid-template-columns:repeat(8,minmax(0,1fr));
+  min-width:0;
+  color:#c9d4df;
+  font-size:clamp(10px,.85vw,13px);
+  font-weight:900;
+  user-select:none;
+  pointer-events:none;
+}
+.board-coordinate-files>span{display:grid;place-items:start center;padding-top:5px}
+
+/* Shared combat-board geometry. The frame contains the rails, the board itself remains a strict square. */
+.classic-board-wrap{
+  aspect-ratio:auto!important;
+  height:auto!important;
+  padding:clamp(7px,.8vw,11px)!important;
+}
+.classic-board-wrap>.board-coordinate-frame{width:100%;}
+.classic-board{
+  grid-template-columns:repeat(8,minmax(0,1fr))!important;
+  grid-template-rows:repeat(8,minmax(0,1fr))!important;
+}
+.classic-square{min-width:0!important;min-height:0!important;aspect-ratio:1;}
+
+/* Puzzle board now uses the exact same board palette, square geometry and piece scale as combat. */
+.puzzles-active .puzzle-layout{
+  grid-template-columns:minmax(250px,.82fr) minmax(360px,820px) minmax(240px,.75fr);
+}
+.puzzles-active .puzzle-board-wrap{
+  position:relative;
+  width:min(100%,820px)!important;
+  margin:auto;
+  padding:clamp(7px,.8vw,11px);
+  border:1px solid rgba(102,157,199,.5);
+  border-radius:10px;
+  background:rgba(7,13,20,.96);
+  box-shadow:0 22px 70px rgba(0,0,0,.7),inset 0 0 0 1px rgba(222,187,92,.12);
+  box-sizing:border-box;
+}
+.puzzles-active .puzzle-board{
+  display:grid!important;
+  grid-template-columns:repeat(8,minmax(0,1fr))!important;
+  grid-template-rows:repeat(8,minmax(0,1fr))!important;
+  width:100%!important;
+  height:auto!important;
+  aspect-ratio:1!important;
+  border:2px solid rgba(229,200,118,.65)!important;
+  box-shadow:inset 0 0 30px rgba(0,0,0,.45)!important;
+}
+.puzzles-active .puzzle-square{
+  min-width:0!important;
+  min-height:0!important;
+  width:auto!important;
+  height:auto!important;
+  aspect-ratio:1;
+  overflow:hidden;
+  isolation:isolate;
+}
+.puzzles-active .puzzle-square--light{background:linear-gradient(145deg,#c5b98e,#9d966f)!important}
+.puzzles-active .puzzle-square--dark{background:linear-gradient(145deg,#526276,#344456)!important}
+.puzzles-active .puzzle-piece{width:90%!important;height:90%!important;filter:drop-shadow(0 5px 5px rgba(0,0,0,.6))!important}
+.puzzles-active .puzzle-square.is-selected{outline:0!important;box-shadow:inset 0 0 0 clamp(3px,.45vw,6px) #f2ce68;background-color:rgba(239,203,95,.18)}
+.puzzles-active .puzzle-square.is-legal:after{background:rgba(235,216,139,.72)!important;box-shadow:0 0 12px rgba(245,218,124,.8)}
+.puzzles-active .puzzle-square.is-capture:after{inset:13%!important;border-color:rgba(232,188,79,.82)!important}
+
+.puzzle-reward strong,.puzzle-current-reward,.puzzle-outcome__gold{font-variant-numeric:tabular-nums}
+
+@media(max-width:1050px){
+  .puzzles-active .puzzle-layout{grid-template-columns:minmax(220px,.7fr) minmax(340px,1.3fr)}
+}
+@media(max-width:700px){
+  .board-coordinate-frame{--board-coordinate-rail:18px}
+  .board-coordinate-ranks,.board-coordinate-files{font-size:10px}
+  .board-coordinate-ranks>span{padding-right:4px}
+  .board-coordinate-files>span{padding-top:4px}
+  .puzzles-active .puzzle-board-wrap{width:100%!important;padding:5px}
+  .puzzles-active .puzzle-layout{display:flex}
+}

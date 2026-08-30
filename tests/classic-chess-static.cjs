@@ -9,6 +9,8 @@ const foundationCss = fs.readFileSync(path.join(game, 'css/reboot-foundation.css
 const css = fs.readFileSync(path.join(game, 'css/classic-chess.css'), 'utf8');
 const polishCss = fs.readFileSync(path.join(game, 'css/chess-ai-polish.css'), 'utf8');
 const rosterCss = fs.readFileSync(path.join(game, 'css/roster.css'), 'utf8');
+const uxCss = fs.readFileSync(path.join(game, 'css/ux-consistency.css'), 'utf8');
+const uxApp = fs.readFileSync(path.join(game, 'js/ux-consistency.mjs'), 'utf8');
 const app = fs.readFileSync(path.join(game, 'js/classic-chess-app.mjs'), 'utf8');
 const engine = fs.readFileSync(path.join(game, 'js/classic-chess-engine.mjs'), 'utf8');
 const ai = fs.readFileSync(path.join(game, 'js/chess-ai-adapter.mjs'), 'utf8');
@@ -67,7 +69,14 @@ assert(!polishCss.includes("ui_button_secondary.png"), 'polish layer must not in
 assert(!html.includes('data-result-rematch'), 'post-game rematch button must not be duplicated inside the Party panel');
 assert(!html.includes('data-result-menu'), 'post-game main-menu button must not be duplicated inside the Party panel');
 
-for (const source of [foundationCss, css, polishCss, rosterCss]) {
+// Shared board shell keeps all 64 playable children untouched and draws coordinates in sibling rails.
+assert(uxApp.includes('board-coordinate-frame') && uxApp.includes('board-coordinate-ranks') && uxApp.includes('board-coordinate-files'), 'shared external board-coordinate renderer missing');
+assert(uxApp.includes(".classic-board[data-chess-board], .puzzle-board[data-puzzle-board]"), 'external coordinate renderer must cover Classic combat and Puzzle boards');
+assert(uxCss.includes('.classic-coordinate,.puzzle-coordinate{display:none!important}'), 'coordinates must no longer be rendered visually inside playable squares');
+assert(uxCss.includes('grid-template-rows:repeat(8,minmax(0,1fr))!important'), 'Puzzle/Classic shared board must force eight equal square rows');
+assert(uxCss.includes('.puzzles-active .puzzle-square--light') && uxCss.includes('.puzzles-active .puzzle-square--dark'), 'Puzzle board must inherit the combat-board palette');
+
+for (const source of [foundationCss, css, polishCss, rosterCss, uxCss]) {
   assert(!source.includes('ui_panel_frame.png'), 'active Reboot CSS must not use ornate ui_panel_frame.png');
   assert(!source.includes('ui_panel_wide.png'), 'active Reboot CSS must not use ornate ui_panel_wide.png');
 }
@@ -79,4 +88,4 @@ for (const side of ['player', 'enemy']) {
   }
 }
 
-console.log('Classic Chess + AI frameless production polish static contract: PASS');
+console.log('Classic Chess + AI external-coordinate / frameless production polish static contract: PASS');

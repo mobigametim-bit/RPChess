@@ -80,16 +80,27 @@ class MemoryStorage {
 
   const travelSource = fs.readFileSync(path.join(game, 'js/travel-choice-app.mjs'), 'utf8');
   const appSource = fs.readFileSync(path.join(game, 'js/resources-app.mjs'), 'utf8');
+  const uxSource = fs.readFileSync(path.join(game, 'js/ux-consistency.mjs'), 'utf8');
+  const routeSource = fs.readFileSync(path.join(game, 'js/battle-route.mjs'), 'utf8');
   const css = fs.readFileSync(path.join(game, 'css/resources.css'), 'utf8');
+  const uxCss = fs.readFileSync(path.join(game, 'css/ux-consistency.css'), 'utf8');
   assert(travelSource.includes('applyTravelSupplyCost'), 'Travel Choice must use the canonical Supply-cost function');
   assert(travelSource.includes('supplyPaid'), 'committed route must persist the exact Supply payment');
   assert(travelSource.includes('СТОИМОСТЬ ПУТИ'), 'route cards must disclose the travel cost before commitment');
   assert(appSource.includes('resourceRewards'), 'combat rewards must have one-time settlement bookkeeping');
   assert(appSource.includes("run.lastSkirmish?.playerColor || 'w'") && appSource.includes("run.lastBattle?.playerColor || 'w'"), 'reward settlement must use the actual side played in combat');
   assert(appSource.includes('dataset.resourceHud'), 'Resources HUD contract missing');
-  assert(!css.includes('ui_panel_frame.png') && !css.includes('ui_panel_wide.png'), 'Resources UI must remain CSS-only and frameless');
+  assert(routeSource.includes("import './ux-consistency.mjs'"), 'shared resource/board presentation layer must load with the run route');
+  assert(uxSource.includes("generated_assets/reward_gold.png"), 'gold amounts must use the existing gold icon asset');
+  assert(uxSource.includes("generated_assets/node_shop.png"), 'supplies must reuse the existing shop/supply asset instead of the diamond glyph');
+  assert(uxSource.includes('RESOURCE_PATTERN') && uxSource.includes('resource-inline'), 'numeric Gold/Supply mentions must be iconized consistently');
+  assert(uxSource.includes('.resource-chip__supply-icon'), 'legacy HUD supply diamond holder must be replaced by the supply asset at runtime');
+  assert(uxSource.includes('discloseRandomPuzzleDifficulty'), 'Puzzle route cards must explicitly disclose independent random difficulty');
+  assert(uxSource.includes('★1–★12') && uxSource.includes('СЛУЧАЙНАЯ СЛОЖНОСТЬ'), 'Puzzle route card must show the complete random ★1–★12 range');
+  assert(uxCss.includes('.resource-inline-icon') && uxCss.includes('.travel-choice-card__cost .resource-inline-icon'), 'resource icons must be styled for rewards and travel cost cards');
+  for(const source of [css,uxCss]) assert(!source.includes('ui_panel_frame.png') && !source.includes('ui_panel_wide.png'), 'Resources UI must remain CSS-only and frameless');
 
-  console.log('Resources persistence, 12-star/Black-side deterministic rewards, travel cost and frameless UX contract: PASS');
+  console.log('Resources persistence, icon-based rewards/costs, random Puzzle disclosure and frameless UX contract: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;

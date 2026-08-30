@@ -103,7 +103,11 @@ class MemoryStorage {
   assert(!/data-roster[^>]*type=["']checkbox/i.test(html), 'Roster must not use checkbox selection');
   assert(app.includes("rpchess.reboot.v1.run") || persistenceSource.includes("rpchess.reboot.v1.run"), 'Roster run persistence key missing');
   assert(persistenceSource.includes('hydrateCurrentRosterCopy'), 'saved runs must refresh current static character copy');
-  assert(app.includes("new CustomEvent('rpchess:travel-open'"), 'Start Journey must route into Travel Choice');
+  assert(app.includes('async function ensureTravelChoiceReady()'), 'Start Journey must have an explicit Travel runtime readiness gate');
+  assert(app.includes('globalThis.RPChessRouteReady'), 'Start Journey must await the asynchronous route bootstrap');
+  assert(app.includes("await import('./travel-choice-app.mjs')"), 'Start Journey must be able to recover Travel Choice independently if the wider route bootstrap fails');
+  assert(app.includes('travelChoice.open({ detail:'), 'Start Journey must open Travel Choice directly after readiness instead of dispatching a lossy early event');
+  assert(!app.includes("setScene('menu');\n  globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open'"), 'Start Journey must never expose the main menu before Travel Choice owns the transition');
   assert(!app.includes("new CustomEvent('rpchess:skirmish-open'"), 'Roster must no longer bypass Travel Choice with direct Skirmish routing');
   assert(html.includes('ui-panel-safe'), 'Roster panels must use the global frameless safe-area contract');
   assert(css.includes('border: 1px solid var(--ui-panel-border)'), 'Roster must use CSS-only panel edges');
@@ -111,7 +115,7 @@ class MemoryStorage {
   assert(foundationCss.includes('--ui-panel-safe-left'), 'global frameless safe-area tokens are missing');
   assert(!css.includes('ui_panel_frame.png') && !css.includes('ui_panel_wide.png'), 'Roster must never use ornate panel frame assets');
 
-  console.log('Roster model, persistence hydration, concise copy, Travel Choice routing and frameless static UX contract: PASS');
+  console.log('Roster model, persistence hydration, race-safe Travel Choice routing and frameless static UX contract: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;

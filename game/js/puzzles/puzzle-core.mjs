@@ -26,6 +26,7 @@ function clampStars(value) {
   return Math.max(1, Math.min(12, Number.isFinite(Number(value)) ? Math.round(Number(value)) : 1));
 }
 
+// Kept as a compatibility helper for old saves/tests. New puzzle selection no longer uses travel week.
 function puzzleStarsForWeek(week) {
   const resolved = Math.max(1, Number.isFinite(Number(week)) ? Math.floor(Number(week)) : 1);
   return clampStars(Math.floor((resolved - 1) / 8) + 1);
@@ -87,14 +88,12 @@ function candidatePool(catalog, stars, type, excludedIds = []) {
   if (typedExactUnseen.length) return typedExactUnseen;
   if (exactUnseen.length) return exactUnseen;
 
-  // Sparse preview catalogs can temporarily exhaust an exact-star bucket.
-  // Prefer the closest unseen task rather than immediately repeating one.
+  // An endless run can eventually exhaust a small high-star bucket. Preserve no-repeat first,
+  // then fall back across other difficulties rather than forcing an early duplicate.
   const unseen = normalized.filter((item) => !excluded.has(item.id));
   if (unseen.length) {
     const typedUnseen = unseen.filter((item) => item.type === type);
-    const source = typedUnseen.length ? typedUnseen : unseen;
-    const nearestDistance = Math.min(...source.map((item) => Math.abs(item.difficulty - stars)));
-    return source.filter((item) => Math.abs(item.difficulty - stars) === nearestDistance);
+    return typedUnseen.length ? typedUnseen : unseen;
   }
 
   const typedExact = exact.filter((item) => item.type === type);
@@ -103,11 +102,12 @@ function candidatePool(catalog, stars, type, excludedIds = []) {
   return normalized;
 }
 
-function selectPuzzle(catalog, { runId = 'run', routeId = 'route', stars = 1, week = 1, excludedIds = [] } = {}) {
-  const resolvedStars = clampStars(stars || puzzleStarsForWeek(week));
-  const seed = `${runId}:${routeId}:${resolvedStars}`;
-  const type = chooseType(resolvedStars, seed);
-  const pool = candidatePool(catalog, resolvedStars, type, excludedIds);
+function selectPuzzle(catalog, { runId = 'run', routeId = 'route', excludedIds = [] } = {}) {
+  const seed = `${runId}:${routeId}:any-difficulty`;
+  // Every Puzzle encounter gets an independent 1..12 roll. Travel week/card difficulty is intentionally ignored.
+  const rolledStars = 1 + (hashString(`${seed}:stars`) % 12);
+  const type = chooseType(rolledStars, seed);
+  const pool = candidatePool(catalog, rolledStars, type, excludedIds);
   if (!pool.length) throw new Error('Puzzle catalog is empty');
   return pool[hashString(`${seed}:pick`) % pool.length];
 }
@@ -117,7 +117,8 @@ function createPuzzleState({ puzzle, routeId, stars, week }) {
   return Object.freeze({
     routeId:String(routeId || ''),
     puzzleId:puzzle.id,
-    stars:clampStars(stars),
+    // Reward/UI difficulty follows the selected puzzle itself, never the travel week/card.
+    stars:clampStars(puzzle.difficulty),
     week:Math.max(1, Math.floor(Number(week) || 1)),
     currentFen:puzzle.fen,
     solutionIndex:0,

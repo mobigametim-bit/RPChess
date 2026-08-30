@@ -2,6 +2,7 @@ import { readRun, writeRun } from './run-persistence.mjs';
 import { PIECE_GLYPHS, PIECE_LABELS } from './roster-data.mjs';
 import { eventBackgroundPath } from './race-assets.mjs';
 import { literaryStory } from './event-narrative.mjs';
+import { applyEventContentV3, formatHeroReaction } from './events/event-content-v3.mjs';
 import {
   choiceAvailability,
   completeEvent,
@@ -22,7 +23,7 @@ function ensureCss() {
   if (document.querySelector('[data-events-css]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/events.css?v=20260829-events-4';
+  link.href = 'css/events.css?v=20260830-events-v3';
   link.dataset.eventsCss = '';
   document.head.append(link);
 }
@@ -53,6 +54,7 @@ function ensureScreen() {
         <div class="events-kicker"><span>СОБЫТИЕ</span><strong data-events-race></strong></div>
         <h1 data-events-title></h1>
         <div class="events-story" data-events-story></div>
+        <div class="events-reaction events-reaction--king" data-events-king-reaction hidden></div>
         <div class="events-choices" data-events-choices></div>
       </section>
     </div>
@@ -99,6 +101,13 @@ function costLabel(choice) {
   if(choice.cost?.supplies)parts.push(`${choice.cost.supplies} Supplies`);
   return parts.join(' · ');
 }
+function reactionHero(choice, availability) {
+  if (availability?.hero) return availability.hero;
+  if (!choice?.role) return null;
+  return (activeRun?.roster || [])
+    .filter((hero) => hero.pieceType === choice.role && hero.status === 'healthy' && !hero.isRunKing)
+    .sort((a,b) => String(a.id).localeCompare(String(b.id)))[0] || null;
+}
 
 function choiceButton(eventChoice) {
   const availability = choiceAvailability(activeRun, eventChoice);
@@ -114,6 +123,13 @@ function choiceButton(eventChoice) {
   const cost = costLabel(choice), risk = riskLabel(choice);
   button.innerHTML = `<span class="events-choice__head"><strong></strong><span>${chance}</span></span><span class="events-choice__meta">${[role,cost,risk].filter(Boolean).map((x)=>`<small>${x}</small>`).join('')}</span>${availability.enabled?'':`<span class="events-choice__disabled">${availability.reason}</span>`}`;
   button.querySelector('strong').textContent = choice.action;
+  const reactionText = formatHeroReaction(choice.heroReaction, reactionHero(choice, availability));
+  if (reactionText) {
+    const reaction = document.createElement('span');
+    reaction.className = 'events-choice__reaction';
+    reaction.textContent = reactionText;
+    button.prepend(reaction);
+  }
   return button;
 }
 
@@ -121,11 +137,20 @@ function renderStory(event) {
   const root = screen?.querySelector('[data-events-story]');
   if (!root) return;
   root.replaceChildren();
-  for (const paragraph of literaryStory(event)) {
+  const paragraphs = Array.isArray(event.storyParagraphs) && event.storyParagraphs.length ? event.storyParagraphs : literaryStory(event);
+  for (const paragraph of paragraphs) {
     const p=document.createElement('p');
     p.textContent=paragraph;
     root.append(p);
   }
+}
+
+function renderKingReaction(event) {
+  const root = screen?.querySelector('[data-events-king-reaction]');
+  if (!root) return;
+  const text = String(event?.kingReaction || '').trim();
+  root.hidden = !text;
+  root.textContent = text;
 }
 
 function renderBackground(event) {
@@ -146,12 +171,13 @@ function renderBackground(event) {
 
 function renderEvent() {
   if (!screen || !activeRun?.currentEvent) return;
-  const event = normalizedEvent(activeRun.currentEvent.eventId);
+  const event = applyEventContentV3(normalizedEvent(activeRun.currentEvent.eventId));
   if (!event) return;
   renderBackground(event);
   screen.querySelector('[data-events-title]').textContent = event.title;
   screen.querySelector('[data-events-race]').textContent = String(event.race || 'Смешанное').toUpperCase();
   renderStory(event);
+  renderKingReaction(event);
   const choices = screen.querySelector('[data-events-choices]');
   choices.replaceChildren(...event.choices.map(choiceButton));
   renderOutcome(event);

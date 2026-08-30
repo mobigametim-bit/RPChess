@@ -6,6 +6,7 @@ const importer=require('../scripts/import-lichess-puzzles.cjs');
   const row=importer.rowFromHeader(header,'fools,"rnbqkbnr/pppp1ppp/8/4p3/8/5P2/PPPPP1PP/RNBQKBNR w KQkq e6 0 2","g2g4 d8h4",700,60,100,999,"mate mateIn1 oneMove",https://lichess.org/test,,2026-01-01');
   assert.strictEqual(row.PuzzleId,'fools');assert.strictEqual(row.DailyDate,'2026-01-01');
   assert.strictEqual(importer.typeFromThemes(new Set(['mate','mateIn1'])),'mate1');assert.strictEqual(importer.typeFromThemes(new Set(['fork','advantage'])),'material');assert.strictEqual(importer.typeFromThemes(new Set(['mate','fork'])),null,'generic mate theme without mateIn1/2/3 must not leak into material');
+  assert.strictEqual(importer.isMateType('mate1'),true);assert.strictEqual(importer.isMateType('mate2'),true);assert.strictEqual(importer.isMateType('mate3'),true);assert.strictEqual(importer.isMateType('material'),false,'material must never be treated as a mate type');
   assert.deepStrictEqual(importer.allocateStarTotals(2000).reduce((a,b)=>a+b,0),2000);assert.strictEqual(Object.values(importer.allocateMix(167,{mate1:70,material:30})).reduce((a,b)=>a+b,0),167);
   const game=path.resolve(__dirname,'..','game'),engineModule=await import(pathToFileURL(path.join(game,'js/classic-chess-engine.mjs')).href),core=await import(pathToFileURL(path.join(game,'js/puzzles/puzzle-core.mjs')).href);
   const normalized=await importer.normalizeLichessRow(row,{ClassicChessEngine:engineModule.ClassicChessEngine,puzzleBaseGold:core.puzzleBaseGold,difficultyTable:core.DIFFICULTY_TABLE});

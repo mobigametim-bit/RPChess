@@ -10,7 +10,16 @@ function hashSeed(input){let h=2166136261;for(const c of String(input)){h^=c.cha
 function seededRandom(seed){let v=hashSeed(seed)||1;return()=>{v+=0x6D2B79F5;let t=v;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};}
 function shuffle(values,seed){const result=[...values],random=seededRandom(seed);for(let i=result.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[result[i],result[j]]=[result[j],result[i]];}return result;}
 
-function takeTravelEncounterOverride(expectedType){if(typeof globalThis==='undefined')return null;const o=globalThis.RPChessTravelEncounterOverride;if(!o||o.type!==expectedType||!o.seed)return null;try{delete globalThis.RPChessTravelEncounterOverride;}catch{globalThis.RPChessTravelEncounterOverride=null;}return o;}
+function validEncounterOverride(value,expectedType){return Boolean(value&&value.type===expectedType&&value.seed);}
+function takeTravelEncounterOverride(expectedType){
+  if(typeof globalThis==='undefined')return null;
+  const eventOverride=globalThis.RPChessEvents?.state?.combat;
+  const travelOverride=globalThis.RPChessTravelEncounterOverride;
+  const o=validEncounterOverride(eventOverride,expectedType)?eventOverride:(validEncounterOverride(travelOverride,expectedType)?travelOverride:null);
+  if(!o)return null;
+  try{delete globalThis.RPChessTravelEncounterOverride;}catch{globalThis.RPChessTravelEncounterOverride=null;}
+  return o;
+}
 
 function createEncounter({seed='rpchess-skirmish',stars=2}={}){
   const o=takeTravelEncounterOverride('skirmish'),resolvedSeed=o?.seed||seed,s=clampStars(o?.stars??stars),tier=ENCOUNTER_TIERS[s];
