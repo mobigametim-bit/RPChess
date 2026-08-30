@@ -1,0 +1,60 @@
+.travel-player-rating{
+  position:relative;
+  align-self:center;
+  display:grid;
+  gap:3px;
+  min-width:220px;
+  min-height:52px;
+  padding:8px 12px 7px 66px;
+  border-left:1px solid rgba(217,178,74,.5);
+  background:linear-gradient(90deg,rgba(8,19,32,.72),rgba(8,19,32,.2));
+  text-shadow:0 2px 8px rgba(0,0,0,.72);
+  box-sizing:border-box;
+}
+.travel-player-rating::before{
+  content:'';
+  position:absolute;
+  left:8px;
+  top:50%;
+  width:46px;
+  height:46px;
+  transform:translateY(-50%);
+  border:1px solid rgba(229,195,100,.62);
+  background:url('../assets/kings/oathkeeper/portrait.png') center 20%/cover no-repeat;
+  box-shadow:0 3px 13px rgba(0,0,0,.56),inset 0 0 0 1px rgba(134,197,239,.14);
+}
+.travel-player-rating__row{display:flex;align-items:center;gap:9px;min-width:0}
+.travel-player-rating__row span{color:rgba(204,216,229,.72);font-size:10px;font-weight:800;letter-spacing:.12em}
+.travel-player-rating__row strong{color:#f3dfaa;font-size:16px;line-height:1;font-variant-numeric:tabular-nums}
+.travel-player-rating__row--threat strong{color:#f2cc61;letter-spacing:.03em;white-space:nowrap}
+
+.power-result{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:9px 14px;
+  width:min(100%,540px);
+  margin:18px auto 20px;
+  padding:12px 16px;
+  border-top:1px solid rgba(153,187,216,.28);
+  border-bottom:1px solid rgba(153,187,216,.28);
+  color:#dce8f3;
+  font-size:13px;
+  letter-spacing:.04em;
+}
+.power-result[hidden]{display:none}
+.power-result__label{color:rgba(210,223,235,.68);font-size:10px;font-weight:900;letter-spacing:.14em}
+.power-result__value{font-weight:900;font-variant-numeric:tabular-nums}
+.power-result__delta{font-weight:900;font-variant-numeric:tabular-nums}
+.power-result__delta.is-positive{color:#e9c95c}
+.power-result__delta.is-negative{color:#d58a86}
+.power-result__threat{width:100%;text-align:center;color:#f2cc61;font-size:11px;font-weight:900;letter-spacing:.08em}
+
+@media(max-width:760px){
+  .travel-player-rating{min-width:176px;min-height:44px;padding:6px 8px 6px 54px}
+  .travel-player-rating::before{left:6px;width:38px;height:38px}
+  .travel-player-rating__row span{font-size:9px}
+  .travel-player-rating__row strong{font-size:14px}
+  .power-result{gap:7px 10px;padding:10px 12px;font-size:12px}
+}

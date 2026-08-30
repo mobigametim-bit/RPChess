@@ -9,6 +9,13 @@ if (!document.querySelector('[data-travel-choice-css]')) {
   link.dataset.travelChoiceCss = '';
   document.head.append(link);
 }
+if (!document.querySelector('[data-player-rating-css]')) {
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = 'css/player-rating.css?v=20260830-power-1';
+  link.dataset.playerRatingCss = '';
+  document.head.append(link);
+}
 
 // Route/content modules are intentionally bootstrapped asynchronously. The main-menu controls
 // must remain usable even if a secondary encounter/UX module throws during evaluation.
