@@ -79,11 +79,13 @@ class MemoryStorage {
   assert.strictEqual(persistence.readRun(storage).supplies, 4, 'Supplies must round-trip through save persistence');
 
   const travelSource = fs.readFileSync(path.join(game, 'js/travel-choice-app.mjs'), 'utf8');
+  const travelCoreSource = fs.readFileSync(path.join(game, 'js/travel-choice-core.mjs'), 'utf8');
   const appSource = fs.readFileSync(path.join(game, 'js/resources-app.mjs'), 'utf8');
   const uxSource = fs.readFileSync(path.join(game, 'js/ux-consistency.mjs'), 'utf8');
   const routeSource = fs.readFileSync(path.join(game, 'js/battle-route.mjs'), 'utf8');
   const css = fs.readFileSync(path.join(game, 'css/resources.css'), 'utf8');
   const uxCss = fs.readFileSync(path.join(game, 'css/ux-consistency.css'), 'utf8');
+  const playtestCss = fs.readFileSync(path.join(game, 'css/playtest-fixes.css'), 'utf8');
   assert(travelSource.includes('applyTravelSupplyCost'), 'Travel Choice must use the canonical Supply-cost function');
   assert(travelSource.includes('supplyPaid'), 'committed route must persist the exact Supply payment');
   assert(travelSource.includes('СТОИМОСТЬ ПУТИ'), 'route cards must disclose the travel cost before commitment');
@@ -95,12 +97,16 @@ class MemoryStorage {
   assert(uxSource.includes("generated_assets/node_shop.png"), 'supplies must reuse the existing shop/supply asset instead of the diamond glyph');
   assert(uxSource.includes('RESOURCE_PATTERN') && uxSource.includes('resource-inline'), 'numeric Gold/Supply mentions must be iconized consistently');
   assert(uxSource.includes('.resource-chip__supply-icon'), 'legacy HUD supply diamond holder must be replaced by the supply asset at runtime');
-  assert(uxSource.includes('discloseRandomPuzzleDifficulty'), 'Puzzle route cards must explicitly disclose independent random difficulty');
-  assert(uxSource.includes('★1–★12') && uxSource.includes('СЛУЧАЙНАЯ СЛОЖНОСТЬ'), 'Puzzle route card must show the complete random ★1–★12 range');
+  assert(!uxSource.includes('discloseRandomPuzzleDifficulty') && !uxSource.includes('СЛУЧАЙНАЯ СЛОЖНОСТЬ'), 'Puzzle difficulty must not be overwritten by the obsolete random-range presentation');
+  assert(travelCoreSource.includes("type==='puzzle'?`СЛОЖНОСТЬ ★${stars}`"), 'Puzzle route cards must expose the adaptive power-derived star value');
+  assert(uxSource.includes('playtest-fixes.css?v=20260831-1'), 'post-playtest visual corrections must be loaded by the shared UX layer');
+  assert(playtestCss.includes('.puzzle-source{display:none!important}'), 'Puzzle source attribution must be hidden from the gameplay panel');
+  assert(playtestCss.includes('.battle-participants{display:none!important}'), 'duplicate named-participant list must be hidden from Battle preparation');
+  assert(playtestCss.includes('.roster-card') && playtestCss.includes('min-height:158px!important'), 'desktop Roster cards must use the compact live-playtest size');
   assert(uxCss.includes('.resource-inline-icon') && uxCss.includes('.travel-choice-card__cost .resource-inline-icon'), 'resource icons must be styled for rewards and travel cost cards');
-  for(const source of [css,uxCss]) assert(!source.includes('ui_panel_frame.png') && !source.includes('ui_panel_wide.png'), 'Resources UI must remain CSS-only and frameless');
+  for(const source of [css,uxCss,playtestCss]) assert(!source.includes('ui_panel_frame.png') && !source.includes('ui_panel_wide.png'), 'Resources UI must remain CSS-only and frameless');
 
-  console.log('Resources persistence, icon-based rewards/costs, random Puzzle disclosure and frameless UX contract: PASS');
+  console.log('Resources persistence, icon-based rewards/costs, adaptive Puzzle disclosure and post-playtest UX cleanup: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;
