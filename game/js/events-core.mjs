@@ -3,6 +3,7 @@ import { RECRUIT_LIBRARY } from './settlement-core.mjs';
 import { hashString, seededRandom } from './travel-choice-core.mjs';
 import { clampStars } from './encounter-difficulty.mjs';
 import { combatTheme } from './race-assets.mjs';
+import { applyEventContentV3 } from './events/event-content-v3.mjs';
 
 const EVENT_COUNT = 100;
 const ROLE_TYPES = Object.freeze(['pawn', 'knight', 'bishop', 'rook', 'queen']);
@@ -58,7 +59,8 @@ function normalizeChoice(choice) {
 function normalizedEvent(id) {
   const source = eventById(id);
   if (!source) return null;
-  return { ...source, choices: source.choices.map(normalizeChoice) };
+  const normalized = { ...source, choices: source.choices.map(normalizeChoice) };
+  return applyEventContentV3(normalized);
 }
 
 function shuffledEventIds(runId, cycle = 0) {
