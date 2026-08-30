@@ -2,7 +2,7 @@
 
 ## Статус
 
-**UX/SPEC APPROVED → IMPLEMENTING.** Фича поставлена перед Balance Gate и объединяет идентичность игрока в конкретном забеге с локальной Летописью походов.
+**UX/SPEC APPROVED → IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE.** Фича завершена перед Balance Gate и объединяет идентичность игрока в конкретном забеге с локальной Летописью походов.
 
 ## Player Identity
 
@@ -90,11 +90,22 @@ Gold и Supplies в Летопись не входят: это не economy HUD,
 
 Фича соблюдает общий Reboot contract: CSS-only frameless surfaces, global safe-area tokens, без `ui_panel_frame.png` / `ui_panel_wide.png`, без новых графических assets.
 
+## Acceptance receipt
+
+- Human acceptance: **«все хорошо» — 2026-08-31**.
+- Exact accepted head: `d2439ba16a98266e87f410272a38d42b9e8424b9`.
+- Cloudflare exact-head build `8b81e946-4ce7-4435-97e8-ab7c6c0b28f9` — **SUCCESS**.
+- Accepted preview: `https://90254e9f-rpchess.mobigametim.workers.dev`.
+- Draft PR #96 закрыт без merge только из-за connected GitHub GraphQL `fullDatabaseId` при Draft → Ready.
+- Identical non-Draft replacement PR #97 использовал тот же exact accepted head и squash-merged в `main` как `bf071a1a7d99964d848177969657767b380e5167`.
+- В feature diff было 14 файлов и **0 asset files**; персонализированные hero assets не затрагивались.
+- GitHub Actions не использовались.
+
 ## Gates
 
 - deterministic regression `tests/player-identity-chronicle.cjs`;
 - canonical `npm test` включает этот regression;
-- `scripts/build.cjs` обязан упаковывать Identity/Chronicle runtime и CSS;
+- `scripts/build.cjs` упаковывает Identity/Chronicle runtime и CSS;
 - canonical deployment gate: `npm run gate:local` + exact-head Cloudflare SUCCESS;
-- human playtest обязателен до merge;
+- human playtest завершён до merge;
 - GitHub Actions не используются.
