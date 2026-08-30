@@ -36,6 +36,7 @@ const DIRECT_OBJECT_PATTERNS = Object.freeze([
   /\bвызывают Короля\b/g
 ]);
 
+const OBJECT_FIRST_VERBS = 'встречают|встречает|просит|просят|видит|видят|замечает|замечают|приветствует|приветствуют|останавливает|останавливают|окликает|окликают|зовёт|зовет|зовут|вызывает|вызывают';
 const DATIVE_PATTERNS = Object.freeze([
   /\bговорит Королю\b/g,
   /\bговорят Королю\b/g,
@@ -70,7 +71,8 @@ function personalizePlayerNarrative(value, playerName) {
     .replace(/\bперед Королём\b/g, 'перед вами')
     .replace(/\bперед Королем\b/g, 'перед вами')
     .replace(/\bза Королём\b/g, 'за вами')
-    .replace(/\bза Королем\b/g, 'за вами');
+    .replace(/\bза Королем\b/g, 'за вами')
+    .replace(new RegExp(`\\bКороля (?=${OBJECT_FIRST_VERBS}\\b)`, 'g'), 'вас ');
 
   for (const pattern of DIRECT_OBJECT_PATTERNS) {
     text = text.replace(pattern, (match) => match.replace('Короля', 'вас'));
