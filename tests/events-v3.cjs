@@ -7,17 +7,19 @@ const path=require('path'),assert=require('assert'),{pathToFileURL}=require('url
 
   const authored=v3.EVENT_CONTENT_V3;
   const ids=Object.keys(authored);
-  assert.strictEqual(ids.length,100,'Events v3 must contain exactly 100 events');
-  assert.deepStrictEqual(ids.sort(),[...data.EVENT_IDS].sort(),'Events v3 IDs must match the canonical event catalog');
+  const legacyIds=data.EVENT_IDS.filter(id=>Number(id.slice(1))<=100);
+  assert.strictEqual(ids.length,100,'Events v3 overlay must remain the accepted 100-event presentation layer');
+  assert.deepStrictEqual(ids.sort(),[...legacyIds].sort(),'Events v3 IDs must match the accepted E001-E100 slice of the expanded catalog');
   const authoredChoices=ids.flatMap(id=>Object.entries(authored[id].choices||{}).map(([choiceId,choice])=>({eventId:id,choiceId,...choice})));
-  assert.strictEqual(authoredChoices.length,415,'Events v3 must contain exactly 415 choice labels');
+  assert.strictEqual(authoredChoices.length,415,'Events v3 must contain exactly 415 accepted choice labels');
   assert.strictEqual(ids.filter(id=>Boolean(authored[id].kingReaction)).length,30,'Events v3 must contain exactly 30 King reactions');
   assert.strictEqual(authoredChoices.filter(choice=>Boolean(choice.heroReaction)).length,103,'Events v3 must contain exactly 103 hero reactions');
   assert(!JSON.stringify(authored).includes('[HERO REACTION]'),'editorial HERO markers must never ship to runtime content');
   assert(!JSON.stringify(authored).includes('[KING REACTION]'),'editorial KING markers must never ship to runtime content');
 
   const mechanicsKeys=['id','chance','role','cost','successCost','successEffects','failureEffects','alwaysEffects','kingRisk','warnings'];
-  for(const sourceEvent of data.EVENT_CATALOG){
+  for(const eventId of legacyIds){
+    const sourceEvent=data.eventById(eventId);
     const base=core.normalizedEvent(sourceEvent.id);
     const shown=v3.applyEventContentV3(base);
     const override=authored[sourceEvent.id];
@@ -39,6 +41,10 @@ const path=require('path'),assert=require('assert'),{pathToFileURL}=require('url
     }
   }
 
+  const v4=data.eventById('E101');
+  assert(v4&&Array.isArray(v4.storyParagraphs),'E101 must exist as inline v4 content');
+  assert.strictEqual(v3.applyEventContentV3(v4),v4,'v3 overlay must leave E101-E500 inline v4 content untouched');
+
   const named=v3.formatHeroReaction({role:'rook',text:'{rookName} держит строй.'},{id:'hero.aldric_wall',name:'Альдрик Стена',portrait:'assets/heroes/aldric_wall/portrait.png'});
   assert.strictEqual(named,'Альдрик Стена держит строй.','named personalized hero must replace the role placeholder');
   const fallback=v3.formatHeroReaction({role:'rook',text:'{rookName} держит строй.'},{id:'unit.rook',name:'Ладья',portrait:'generated_assets/unit_rook_player.png'});
@@ -46,5 +52,5 @@ const path=require('path'),assert=require('assert'),{pathToFileURL}=require('url
   const missing=v3.formatHeroReaction({role:'bishop',text:'{bishopName} изучает знаки.'},null);
   assert.strictEqual(missing,'Ваш Слон изучает знаки.','missing personalized hero must use the role fallback');
 
-  console.log('Events v3 100/415, 30 King reactions, 103 role reactions and mechanics isolation: PASS');
+  console.log('Events v3 legacy overlay 100/415 preserved inside expanded Events v4 500-event catalog: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
