@@ -4,7 +4,7 @@ import { hashString, seededRandom } from './travel-choice-core.mjs';
 import { clampStars } from './encounter-difficulty.mjs';
 import { combatTheme } from './race-assets.mjs';
 
-const EVENT_COUNT = 100;
+const EVENT_COUNT = 500;
 const ROLE_TYPES = Object.freeze(['pawn', 'knight', 'bishop', 'rook', 'queen']);
 
 function safeInt(value) { return Number.isInteger(value) ? value : 0; }
