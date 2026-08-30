@@ -36,7 +36,7 @@ function formationFor(color,roster=[],selectedIds=[],playerColor='w'){
   const validation=isPlayer?validateBattleSelection(roster,selectedIds):null;
   if(isPlayer&&!validation.ok)throw new Error(`Invalid Battle selection: ${validation.reason}`);
   const selected=isPlayer?validation.members:[],byType=new Map();for(const type of Object.keys(SLOT_CAPACITY))byType.set(type,selected.filter((c)=>c.pieceType===type));
-  const placements=[];for(const pieceType of ['rook','knight','bishop','queen','king','pawn']){const chars=byType.get(pieceType)||[],slots=STANDARD_SLOTS[color][pieceType];slots.forEach((square,index)=>{const c=chars[index]||null;placements.push({id:c?.id||null,name:c?.name||`Временная фигура · ${TYPE_LABELS[pieceType]}`,pieceType,type:TYPE_CODE[pieceType],color,square,personalized:Boolean(c)});});}return placements;
+  const placements=[];for(const pieceType of ['rook','knight','bishop','queen','king','pawn']){const chars=byType.get(pieceType)||[],slots=STANDARD_SLOTS[color][pieceType];slots.forEach((square,index)=>{const c=chars[index]||null;placements.push({id:c?.id||null,name:c?.name||`Наёмник · ${TYPE_LABELS[pieceType]}`,pieceType,type:TYPE_CODE[pieceType],color,square,personalized:Boolean(c)});});}return placements;
 }
 
 function createBattlePlan({roster,selectedIds,encounter}={}){
