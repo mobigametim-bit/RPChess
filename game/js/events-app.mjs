@@ -2,6 +2,7 @@ import { readRun, writeRun } from './run-persistence.mjs';
 import { PIECE_GLYPHS, PIECE_LABELS } from './roster-data.mjs';
 import { eventBackgroundPath } from './race-assets.mjs';
 import { literaryStory } from './event-narrative.mjs';
+import { playerNameForRun, personalizePlayerNarrative, personalizePlayerTitle } from './player-identity-core.mjs';
 import { applyEventContentV3, formatHeroReaction } from './events/event-content-v3.mjs';
 import {
   choiceAvailability,
@@ -19,6 +20,7 @@ let busy = false;
 let syncingCombat = false;
 
 function audio() { return globalThis.RPChessRebootAudio; }
+function playerName() { return playerNameForRun(activeRun); }
 function ensureCss() {
   if (document.querySelector('[data-events-css]')) return;
   const link = document.createElement('link');
@@ -122,12 +124,12 @@ function choiceButton(eventChoice) {
   const chance = choice.chance < 100 ? `${choice.chance}% УСПЕХА` : 'ГАРАНТИРОВАННО';
   const cost = costLabel(choice), risk = riskLabel(choice);
   button.innerHTML = `<span class="events-choice__head"><strong></strong><span>${chance}</span></span><span class="events-choice__meta">${[role,cost,risk].filter(Boolean).map((x)=>`<small>${x}</small>`).join('')}</span>${availability.enabled?'':`<span class="events-choice__disabled">${availability.reason}</span>`}`;
-  button.querySelector('strong').textContent = choice.action;
+  button.querySelector('strong').textContent = personalizePlayerNarrative(choice.action, playerName());
   const reactionText = formatHeroReaction(choice.heroReaction, reactionHero(choice, availability));
   if (reactionText) {
     const reaction = document.createElement('span');
     reaction.className = 'events-choice__reaction';
-    reaction.textContent = reactionText;
+    reaction.textContent = personalizePlayerNarrative(reactionText, playerName());
     button.prepend(reaction);
   }
   return button;
@@ -140,7 +142,7 @@ function renderStory(event) {
   const paragraphs = Array.isArray(event.storyParagraphs) && event.storyParagraphs.length ? event.storyParagraphs : literaryStory(event);
   for (const paragraph of paragraphs) {
     const p=document.createElement('p');
-    p.textContent=paragraph;
+    p.textContent=personalizePlayerNarrative(paragraph, playerName());
     root.append(p);
   }
 }
@@ -148,7 +150,7 @@ function renderStory(event) {
 function renderKingReaction(event) {
   const root = screen?.querySelector('[data-events-king-reaction]');
   if (!root) return;
-  const text = String(event?.kingReaction || '').trim();
+  const text = personalizePlayerNarrative(String(event?.kingReaction || '').trim(), playerName());
   root.hidden = !text;
   root.textContent = text;
 }
@@ -174,7 +176,7 @@ function renderEvent() {
   const event = applyEventContentV3(normalizedEvent(activeRun.currentEvent.eventId));
   if (!event) return;
   renderBackground(event);
-  screen.querySelector('[data-events-title]').textContent = event.title;
+  screen.querySelector('[data-events-title]').textContent = personalizePlayerTitle(event.title, playerName());
   screen.querySelector('[data-events-race]').textContent = String(event.race || 'Смешанное').toUpperCase();
   renderStory(event);
   renderKingReaction(event);
