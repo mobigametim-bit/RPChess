@@ -101,6 +101,13 @@ function costLabel(choice) {
   if(choice.cost?.supplies)parts.push(`${choice.cost.supplies} Supplies`);
   return parts.join(' · ');
 }
+function reactionHero(choice, availability) {
+  if (availability?.hero) return availability.hero;
+  if (!choice?.role) return null;
+  return (activeRun?.roster || [])
+    .filter((hero) => hero.pieceType === choice.role && hero.status === 'healthy' && !hero.isRunKing)
+    .sort((a,b) => String(a.id).localeCompare(String(b.id)))[0] || null;
+}
 
 function choiceButton(eventChoice) {
   const availability = choiceAvailability(activeRun, eventChoice);
@@ -116,7 +123,7 @@ function choiceButton(eventChoice) {
   const cost = costLabel(choice), risk = riskLabel(choice);
   button.innerHTML = `<span class="events-choice__head"><strong></strong><span>${chance}</span></span><span class="events-choice__meta">${[role,cost,risk].filter(Boolean).map((x)=>`<small>${x}</small>`).join('')}</span>${availability.enabled?'':`<span class="events-choice__disabled">${availability.reason}</span>`}`;
   button.querySelector('strong').textContent = choice.action;
-  const reactionText = formatHeroReaction(choice.heroReaction, availability.hero);
+  const reactionText = formatHeroReaction(choice.heroReaction, reactionHero(choice, availability));
   if (reactionText) {
     const reaction = document.createElement('span');
     reaction.className = 'events-choice__reaction';
