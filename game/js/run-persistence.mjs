@@ -42,7 +42,15 @@ function isValidRun(value) {
   for (const character of value.roster) { if (!character || typeof character !== 'object' || !character.id || ids.has(character.id)) return false; ids.add(character.id); if (character.isRunKing) kingCount += 1; if (!['healthy','wounded','dead'].includes(character.status)) return false; }
   return kingCount === 1 && ids.has(value.selectedCharacterId);
 }
-function recoverCompletedCombatChoice(choice, skirmishCount, battleCount) { if (!isStoredTravelChoice(choice) || !Number.isInteger(choice.combatCountAtSelection)) return choice || null; if (choice.type === 'skirmish' && skirmishCount > choice.combatCountAtSelection) return null; if (choice.type === 'battle' && battleCount > choice.combatCountAtSelection) return null; return choice; }
+function recoverCompletedCombatChoice(choice, skirmishCount, battleCount) {
+  if (!isStoredTravelChoice(choice) || !Number.isInteger(choice.combatCountAtSelection)) return choice || null;
+  // Rated power-v1 encounters must survive hydration long enough for the Power runtime
+  // to create an idempotent Elo receipt. Travel clears the route immediately after settlement.
+  if (choice.difficultyModel === 'power-v1') return choice;
+  if (choice.type === 'skirmish' && skirmishCount > choice.combatCountAtSelection) return null;
+  if (choice.type === 'battle' && battleCount > choice.combatCountAtSelection) return null;
+  return choice;
+}
 function hydrateCurrentRosterCopy(run) {
   const currentTemplates=new Map(createStarterRoster().map(character=>[character.id,character])),resources=hydrateResources(run),existingSkirmishes=Number.isInteger(run.skirmishCount)?run.skirmishCount:0,existingBattles=Number.isInteger(run.battleCount)?run.battleCount:0,storedActiveChoice=isStoredTravelChoice(run.activeTravelChoice)?run.activeTravelChoice:null,recoveredActiveChoice=recoverCompletedCombatChoice(storedActiveChoice,existingSkirmishes,existingBattles);
   return {...resources,resourceRewards:{skirmishCount:Number.isInteger(run.resourceRewards?.skirmishCount)?run.resourceRewards.skirmishCount:existingSkirmishes,battleCount:Number.isInteger(run.resourceRewards?.battleCount)?run.resourceRewards.battleCount:existingBattles},ended:Boolean(run.ended),skirmishCount:existingSkirmishes,battleCount:existingBattles,lastSkirmish:run.lastSkirmish||null,lastBattle:run.lastBattle||null,lastPuzzle:run.lastPuzzle||null,puzzleHistory:hydratePuzzleHistory(run),journeyStep:Number.isInteger(run.journeyStep)?run.journeyStep:0,currentTravelChoices:Array.isArray(run.currentTravelChoices)?run.currentTravelChoices:null,activeTravelChoice:recoveredActiveChoice,currentSettlement:isSettlementState(run.currentSettlement)?run.currentSettlement:null,currentPuzzle:isPuzzleState(run.currentPuzzle)?run.currentPuzzle:null,roster:run.roster.map(character=>{const current=currentTemplates.get(character.id);return current?{...character,...current,status:character.status}:character;})};
