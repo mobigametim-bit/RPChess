@@ -203,7 +203,7 @@ function renderOutcome(event) {
     for(const text of list){const p=document.createElement('p');p.textContent=text;notes.append(p);}
   }
   if(button){
-    if(activeRun.ended)button.textContent='ГЛАВНОЕ МЕНЮ';
+    if(activeRun.ended)button.textContent='ИТОГИ ЗАБЕГА';
     else if(state.combat)button.textContent=state.combat.type==='battle'?'К БИТВЕ':'К СТЫЧКЕ';
     else button.textContent='ПРОДОЛЖИТЬ ПУТЬ';
   }
@@ -245,6 +245,7 @@ function continueOutcome() {
   if (current.ended) {
     document.body.classList.remove('events-outcome-open');
     hideEvents();
+    if (globalThis.RPChessEndlessRun?.open?.(current)) return;
     const menu=document.querySelector('[data-reboot-foundation]');
     if(menu)menu.hidden=false;
     return;
