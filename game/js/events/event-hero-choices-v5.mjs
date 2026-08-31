@@ -50,6 +50,7 @@ function heroChoiceFromBase(base, spec, occurrence) {
     ...base,
     id: `${spec.eventId}.H${spec.heroCode.slice(-2)}${suffix}`,
     role: null,
+    heroReaction: null,
     requiredHeroId: spec.requiredHeroId,
     requiredHeroName: spec.heroName,
     heroLine: spec.heroLine,
