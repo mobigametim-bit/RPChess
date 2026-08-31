@@ -2,7 +2,7 @@
 
 ## Статус
 
-**PASS 1 — IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE. PASS 2 — IMPLEMENTED, GATES / HUMAN PLAYTEST PENDING.**
+**PASS 1 — IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE. PASS 2 — IMPLEMENTED → REGRESSION UPDATED → CLOUDFLARE GATE SUCCESS → HUMAN PLAYTEST PENDING.**
 
 Balance Gate не добавляет новую шахматную механику. Цель — свести уже существующие Gold / Supplies / Settlement / Battle Mercenaries / Puzzle rewards / Power-Threat в один экономически связный контракт и затем проверять его контролируемыми balance-pass, меняя только диагностически обоснованные ручки.
 
@@ -228,10 +228,24 @@ Skirmish reward и Puzzle reward не меняются.
 - Power / K-factor / adaptive offsets / Elo table;
 - Event economy/content.
 
+## Pass 2 gate receipt
+
+Первый Cloudflare build на head `37137157475c56d5a7fa9b196036434c52693d6d` — `37ceeb64-4909-43c8-b059-20318f4fb54f` — **FAILED**. Причина была в source verification contract: `scripts/verify-source.cjs` требовал исторический literal `kingDied:false`, тогда как первая реализация solo-King consequence записывала поле напрямую как `kingDied:soloKing`.
+
+Runtime исправлен без изменения gameplay-контракта: обычная Battle теперь явно создаёт `lastBattle.kingDied=false`, а solo-King outcome после этого переключает поле в `true`.
+
+Исправленный gameplay exact head: `a02404adc9f7f5949b314c49a47547efd3973cfc`.
+
+Cloudflare Workers build `00ce6b43-53f7-4fda-b775-6c4f3c7c6503` — **SUCCESS**. Version `aa910f09-f439-4470-9f44-1d418416dac7`.
+
+Preview: `https://aa910f09-rpchess.mobigametim.workers.dev`.
+Stable branch preview: `https://feature-balance-gate-pass2-rpchess.mobigametim.workers.dev`.
+
 ## Pass 2 lifecycle
 
-Текущий lifecycle: **CONTRACT APPROVED → IMPLEMENTED → REGRESSION UPDATED → LOCAL/CLOUDFLARE GATES PENDING → HUMAN PLAYTEST PENDING**.
+Текущий lifecycle: **CONTRACT APPROVED → IMPLEMENTED → REGRESSION UPDATED → CLOUDFLARE GATE SUCCESS → HUMAN PLAYTEST PENDING**.
 
 Ветка: `feature/balance-gate-pass2`.
+Draft PR: `#105`.
 
 До human acceptance Pass 2 не сливается в `main`.
