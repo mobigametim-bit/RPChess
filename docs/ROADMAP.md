@@ -21,6 +21,7 @@
 - [x] First Complete Endless Run — continuous persistent core loop and unified run summary. Пользователь подтвердил интегрированную текущую сборку 2026-08-31: **«всё работает»**. Reconciled accepted head `f29ab08c927f054288302e0c858b0c58d9f3ad15`; Cloudflare exact-head build `19fe6998-51ed-43ac-b7f3-f111017be943` — **SUCCESS**; PR #95 squash-merged в `main` как `1f0540e3239d1ab0bcba7cef0755ba768e067739`. Accepted head и production merge имеют один tree SHA `266e3f8683cd5b43f4a3fbf225339cc70617a092`; исторический PR #87 закрыт как superseded. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → RECONCILED → MERGED → DOCS SYNCED → DONE.**
 - [x] Battle Mercenaries Economy — стандартные Battle fillers стали оплачиваемыми Наёмниками с Gold → Supplies fallback и persistent casualty debt. Human accepted 2026-08-31. Accepted head `f2c3c92b3636b593cca97c662be6b8c3f1a692c9`; Cloudflare build `d431ac63-54ec-4757-9be3-16aefc9d0cf4` — **SUCCESS**; PR #93 squash-merged как `33f602b4b8644a9c7612ba18033c4ad0e9ee5941`. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE.**
 - [x] Player Identity + Chronicle — `КТО ТЫ, ВОИН?`, persistent `playerName`, Event narrative personalization, main-menu Chronicle и локальная история лучших походов. Слава: `floor(sqrt(week * power) / 10)`. Human accepted 2026-08-31. Accepted head `d2439ba16a98266e87f410272a38d42b9e8424b9`; Cloudflare build `8b81e946-4ce7-4435-97e8-ab7c6c0b28f9` — **SUCCESS**; Draft #96 закрыт unmerged из-за GraphQL `fullDatabaseId`; identical PR #97 squash-merged как `bf071a1a7d99964d848177969657767b380e5167`. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE.**
+- [x] Hero Notes — 37 канонических character-notes: 36 HERO-01–36 + Хранитель Клятвы; presentation-layer captions в Отряде и Поселении, включая legacy saves. Human accepted 2026-08-31. Accepted head `985865c06032b4e731b8ef120049d0cfd49765b1`; Cloudflare build `42ba300a-3374-49dd-9392-d0f299d08fa5` — **SUCCESS**; Draft #98 закрыт unmerged из-за GraphQL `fullDatabaseId`; identical PR #99 squash-merged как `a6526bc77a0b39241a9b0db2bd5bc62d9a764167`. Accepted head и merge имеют tree SHA `424fe98cc78005c787679a6de676a7082278ca9b`; 0 asset files changed. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE.**
 - [x] **PLAYTEST GATE C** — интересность собственного состава и corrected Skirmish flow подтверждены пользователем.
 
 ## Current
@@ -35,7 +36,7 @@
 
 ## Current phase
 
-**Events v4 — DONE. Puzzles — DONE. Power / Threat — DONE. Content Framework — DONE. First Complete Endless Run — RECONCILED / HUMAN ACCEPTED / DONE. Battle Mercenaries Economy — HUMAN ACCEPTED / DONE. Player Identity + Chronicle — HUMAN ACCEPTED / DONE. Current phase: Balance Gate.**
+**Events v4 — DONE. Puzzles — DONE. Power / Threat — DONE. Content Framework — DONE. First Complete Endless Run — RECONCILED / HUMAN ACCEPTED / DONE. Battle Mercenaries Economy — HUMAN ACCEPTED / DONE. Player Identity + Chronicle — HUMAN ACCEPTED / DONE. Hero Notes — HUMAN ACCEPTED / DONE. Current phase: Balance Gate.**
 
 ### Player Identity + Chronicle — accepted contract 2026-08-31
 
