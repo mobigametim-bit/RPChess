@@ -43,7 +43,7 @@ function combatGoldReward({ encounterType, stars, status, playerColor = 'w' } = 
   if (!victory && !draw) return 0;
 
   let victoryGold = 0;
-  if (encounterType === 'battle') victoryGold = 20 + (6 * level);
+  if (encounterType === 'battle') victoryGold = 36 + (6 * level);
   else if (encounterType === 'skirmish') victoryGold = 12 + (4 * level);
   else return 0;
 

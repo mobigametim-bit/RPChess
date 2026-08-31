@@ -45,6 +45,18 @@ function createBattlePlan({roster,selectedIds,encounter}={}){
   return{encounter:resolved,playerColor,enemyColor,selectedIds:validation.members.map((m)=>m.id),participants:validation.members.map((m)=>m.id),playerFormation:formationFor(playerColor,roster,selectedIds,playerColor),enemyFormation:formationFor(enemyColor,[],[],playerColor),fullArmyPieces:BATTLE_PIECE_COUNT,fullArmyPoints:BATTLE_ARMY_POINTS,fen:STANDARD_FEN};
 }
 
-function applyBattleOutcome(run,{capturedIds=[],status=null,playerColor='w',participantIds=[]}={}){const captured=new Set(capturedIds||[]),participants=[...new Set(participantIds||[])];const roster=(run?.roster||[]).map((c)=>{if(!c.isRunKing&&captured.has(c.id)&&c.status==='healthy')return{...c,status:'wounded'};return{...c};}),woundedIds=roster.filter((c)=>captured.has(c.id)&&!c.isRunKing&&c.status==='wounded').map((c)=>c.id);return{...run,roster,ended:Boolean(run?.ended),endReason:run?.endReason||null,lastBattle:{result:status?.type||'unknown',winner:status?.winner||null,participants,woundedIds,kingDied:false}};}
+function applyBattleOutcome(run,{capturedIds=[],status=null,playerColor='w',participantIds=[]}={}){
+  const captured=new Set(capturedIds||[]),participants=[...new Set(participantIds||[])];
+  const participantSet=new Set(participants),soloKing=participants.length===1&&(run?.roster||[]).some((c)=>c.isRunKing&&participantSet.has(c.id));
+  const roster=(run?.roster||[]).map((c)=>{
+    if(soloKing&&c.isRunKing)return{...c,status:'dead'};
+    if(!c.isRunKing&&captured.has(c.id)&&c.status==='healthy')return{...c,status:'wounded'};
+    return{...c};
+  });
+  const woundedIds=roster.filter((c)=>captured.has(c.id)&&!c.isRunKing&&c.status==='wounded').map((c)=>c.id);
+  const lastBattle={result:status?.type||'unknown',winner:status?.winner||null,participants,woundedIds,kingDied:false};
+  if(soloKing)lastBattle.kingDied=true;
+  return{...run,roster,ended:Boolean(run?.ended||soloKing),endReason:run?.endReason||(soloKing?'king_solo_battle':null),lastBattle};
+}
 
 export {BATTLE_PIECE_COUNT,BATTLE_ARMY_POINTS,STANDARD_FEN,SLOT_CAPACITY,STANDARD_SLOTS,BATTLE_TIERS,combatEligible,createBattleEncounter,selectedTypeCounts,validateBattleSelection,defaultBattleSelection,formationFor,createBattlePlan,applyBattleOutcome};

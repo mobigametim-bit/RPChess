@@ -46,12 +46,12 @@ class MemoryStorage {
   assert.strictEqual(core.combatGoldReward({ encounterType: 'skirmish', stars: 1, status: win }), 16);
   assert.strictEqual(core.combatGoldReward({ encounterType: 'skirmish', stars: 5, status: win }), 32);
   assert.strictEqual(core.combatGoldReward({ encounterType: 'skirmish', stars: 5, status: draw }), 16);
-  assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 1, status: win }), 26);
-  assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 5, status: win }), 50);
-  assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 5, status: draw }), 25);
+  assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 1, status: win }), 42);
+  assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 5, status: win }), 66);
+  assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 5, status: draw }), 33);
   assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 5, status: loss }), 0, 'White-side loss must never grant Gold');
   assert.strictEqual(core.combatGoldReward({ encounterType: 'skirmish', stars: 12, status: win }), 60, '12-star Skirmish reward must use the full canonical difficulty range');
-  assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 12, status: win }), 92, '12-star Battle reward must use the full canonical difficulty range');
+  assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 12, status: win }), 108, '12-star Battle reward must use the Balance Pass 2 formula');
   assert.strictEqual(core.combatGoldReward({ encounterType: 'skirmish', stars: 12, status: blackWin, playerColor: 'b' }), 60, 'Black-side victory must receive the same deterministic reward');
 
   const rewarded = core.applyGoldReward(run, 32);
@@ -106,7 +106,7 @@ class MemoryStorage {
   assert(uxCss.includes('.resource-inline-icon') && uxCss.includes('.travel-choice-card__cost .resource-inline-icon'), 'resource icons must be styled for rewards and travel cost cards');
   for(const source of [css,uxCss,playtestCss]) assert(!source.includes('ui_panel_frame.png') && !source.includes('ui_panel_wide.png'), 'Resources UI must remain CSS-only and frameless');
 
-  console.log('Resources persistence, icon-based rewards/costs, adaptive Puzzle disclosure and post-playtest UX cleanup: PASS');
+  console.log('Resources persistence, Balance Pass 2 rewards, icon-based costs and adaptive Puzzle disclosure: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;

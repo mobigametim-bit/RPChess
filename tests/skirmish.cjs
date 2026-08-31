@@ -8,8 +8,11 @@ const assert=require('assert'),fs=require('fs'),path=require('path'),{pathToFile
   const difficulty=await import(pathToFileURL(path.join(root,'game/js/encounter-difficulty.mjs')).href);
   const skirmish=await import(pathToFileURL(path.join(root,'game/js/skirmish-core.mjs')).href);
   const roster=rosterData.createStarterRoster(),selected=skirmish.defaultCombatSelection(roster);
+  assert.strictEqual(skirmish.MIN_SKIRMISH_PIECES,2,'Skirmish must require King plus at least one named figure');
   assert.strictEqual(selected.length,6);const valid=skirmish.validateSelection(roster,selected);assert.strictEqual(valid.ok,true);assert.strictEqual(valid.points,13);assert.strictEqual(valid.count,6);assert.ok(selected.includes('king.oathkeeper'));
   assert.strictEqual(skirmish.validateSelection(roster,selected.filter(id=>id!=='king.oathkeeper')).reason,'king_required');
+  const kingOnly=['king.oathkeeper'];const minimum=skirmish.validateSelection(roster,kingOnly);assert.strictEqual(minimum.ok,false);assert.strictEqual(minimum.reason,'minimum_force');assert.strictEqual(minimum.minimum,2);assert.strictEqual(minimum.count,1);
+  const kingPlusPawn=['king.oathkeeper','hero.mara_chain'];assert.strictEqual(skirmish.validateSelection(roster,kingPlusPawn).ok,true,'King plus one healthy named figure must be a legal minimum Skirmish force');
   const wounded=roster.map(c=>c.id==='hero.vael_hammer'?{...c,status:'wounded'}:c);assert.strictEqual(skirmish.validateSelection(wounded,selected).reason,'character_unavailable');
   const woundedKing=roster.map(c=>c.isRunKing?{...c,status:'wounded'}:c);assert(skirmish.defaultCombatSelection(woundedKing).includes('king.oathkeeper'));assert.strictEqual(skirmish.validateSelection(woundedKing,skirmish.defaultCombatSelection(woundedKing)).ok,true);
   const oversized=[roster[0],...Array.from({length:16},(_,i)=>({id:`pawn.${i}`,name:`Pawn ${i}`,pieceType:'pawn',commandCost:1,status:'healthy',isRunKing:false}))];assert.strictEqual(skirmish.validateSelection(oversized,oversized.map(x=>x.id)).reason,'piece_limit');
@@ -24,5 +27,5 @@ const assert=require('assert'),fs=require('fs'),path=require('path'),{pathToFile
   const run={id:'run-test',roster,ended:false};
   const winBlack=skirmish.applyBattleOutcome(run,{capturedIds:['hero.aldric_wall'],status:{type:'checkmate',winner:'b'},playerColor:'b'});assert.strictEqual(winBlack.roster.find(c=>c.id==='hero.aldric_wall').status,'wounded');assert.strictEqual(winBlack.roster.find(c=>c.isRunKing).status,'healthy');assert.strictEqual(winBlack.ended,false);
   const lossBlack=skirmish.applyBattleOutcome(run,{capturedIds:[],status:{type:'checkmate',winner:'w'},playerColor:'b'});assert.strictEqual(lossBlack.roster.find(c=>c.isRunKing).status,'healthy','checkmate must not kill the RPG King');assert.strictEqual(lossBlack.ended,false,'Skirmish defeat must continue the run');assert.strictEqual(lossBlack.endReason,null);assert.strictEqual(lossBlack.lastSkirmish.kingDied,false);
-  console.log('Skirmish 12-level, legal formations, Black-side wounds and non-lethal checkmate defeat: PASS');
+  console.log('Skirmish minimum force, 12-level legal formations, Black-side wounds and non-lethal checkmate defeat: PASS');
 })().catch(error=>{console.error(error.stack||error);process.exitCode=1});
