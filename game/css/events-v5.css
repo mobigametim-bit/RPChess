@@ -1,0 +1,43 @@
+/* Events v5 — named hero choices. Additive to the accepted Events presentation. */
+.events-choice--hero{
+  border-color:rgba(218,178,88,.42);
+  background:linear-gradient(100deg,rgba(37,29,14,.76),rgba(4,10,18,.72) 62%);
+}
+.events-choice--hero:hover:not(:disabled),
+.events-choice--hero:focus-visible:not(:disabled){
+  border-color:rgba(242,202,107,.84);
+  background:linear-gradient(100deg,rgba(58,44,19,.82),rgba(16,39,62,.78) 68%);
+}
+.events-choice--hero-locked:disabled{
+  opacity:.78;
+  border-color:rgba(151,128,91,.34);
+  background:linear-gradient(100deg,rgba(25,22,18,.72),rgba(4,10,18,.72) 68%);
+}
+.events-choice__hero{
+  display:grid;
+  gap:7px;
+  margin:-2px 0 14px;
+  padding:0 0 13px;
+  border-bottom:1px solid rgba(238,194,93,.24);
+}
+.events-choice__hero-name{
+  display:block;
+  color:#f0d68e;
+  font-size:13px;
+  line-height:1.35;
+  letter-spacing:.055em;
+  text-transform:uppercase;
+}
+.events-choice--hero-locked .events-choice__hero-name{color:#d8b88b}
+.events-choice__hero-line{
+  display:block;
+  color:#ead7aa;
+  font:italic clamp(13px,1.05vw,15px)/1.58 Georgia,'Times New Roman',serif;
+  text-shadow:0 2px 8px rgba(0,0,0,.72);
+}
+.events-choice--hero-locked .events-choice__hero-line{color:rgba(225,210,177,.82)}
+.events-choice--hero-locked .events-choice__disabled{display:none}
+@media(max-width:760px){
+  .events-choice__hero-line{font-size:13px}
+  .events-choice__hero-name{font-size:12px}
+}

@@ -3,7 +3,7 @@ import { PIECE_GLYPHS, PIECE_LABELS } from './roster-data.mjs';
 import { eventBackgroundPath } from './race-assets.mjs';
 import { literaryStory } from './event-narrative.mjs';
 import { playerNameForRun, personalizePlayerNarrative, personalizePlayerTitle } from './player-identity-core.mjs';
-import { applyEventContentV3, formatHeroReaction } from './events/event-content-v3.mjs';
+import { EVENT_CONTENT_V3, applyEventContentV3, formatHeroReaction } from './events/event-content-v3.mjs';
 import {
   choiceAvailability,
   completeEvent,
@@ -22,12 +22,20 @@ let syncingCombat = false;
 function audio() { return globalThis.RPChessRebootAudio; }
 function playerName() { return playerNameForRun(activeRun); }
 function ensureCss() {
-  if (document.querySelector('[data-events-css]')) return;
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = 'css/events.css?v=20260830-events-v3';
-  link.dataset.eventsCss = '';
-  document.head.append(link);
+  if (!document.querySelector('[data-events-css]')) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'css/events.css?v=20260830-events-v3';
+    link.dataset.eventsCss = '';
+    document.head.append(link);
+  }
+  if (!document.querySelector('[data-events-v5-css]')) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'css/events-v5.css?v=20260831-events-v5';
+    link.dataset.eventsV5Css = '';
+    document.head.append(link);
+  }
 }
 
 function ensureScreen() {
@@ -110,27 +118,58 @@ function reactionHero(choice, availability) {
     .filter((hero) => hero.pieceType === choice.role && hero.status === 'healthy' && !hero.isRunKing)
     .sort((a,b) => String(a.id).localeCompare(String(b.id)))[0] || null;
 }
+function v5HeroState(choice) {
+  if (!choice?.requiredHeroId) return null;
+  const hero = (activeRun?.roster || []).find((entry) => entry?.id === choice.requiredHeroId) || null;
+  const name = choice.requiredHeroName || hero?.name || 'Именной герой';
+  if (!hero) return { hero:null, name, locked:true, label:`🔒 ${name} — НЕТ В ОТРЯДЕ` };
+  if (hero.status === 'dead') return { hero, name, locked:true, label:`🔒 ${name} — ПОГИБ` };
+  if (hero.status !== 'healthy') return { hero, name, locked:true, label:`🔒 ${name} — РАНЕН` };
+  return { hero, name, locked:false, label:name };
+}
+function displayedChoiceAction(choice) {
+  if (!choice?.sourceChoiceId) return choice?.action || '';
+  return EVENT_CONTENT_V3[activeRun?.currentEvent?.eventId]?.choices?.[choice.sourceChoiceId]?.action || choice.action || '';
+}
 
 function choiceButton(eventChoice) {
   const availability = choiceAvailability(activeRun, eventChoice);
   const choice = availability.choice;
+  const heroState = v5HeroState(choice);
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'events-choice';
+  if (heroState) button.classList.add('events-choice--hero');
+  if (heroState?.locked) button.classList.add('events-choice--hero-locked');
   button.dataset.eventChoice = choice.id;
+  if (choice.requiredHeroId) button.dataset.requiredHeroId = choice.requiredHeroId;
   button.disabled = !availability.enabled || busy;
   button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
-  const role = availability.hero ? `${PIECE_GLYPHS[availability.hero.pieceType] || ''} ${availability.hero.name}` : choice.role ? `${PIECE_GLYPHS[choice.role] || ''} ${PIECE_LABELS[choice.role] || choice.role}` : '';
+  const role = heroState ? '' : availability.hero ? `${PIECE_GLYPHS[availability.hero.pieceType] || ''} ${availability.hero.name}` : choice.role ? `${PIECE_GLYPHS[choice.role] || ''} ${PIECE_LABELS[choice.role] || choice.role}` : '';
   const chance = choice.chance < 100 ? `${choice.chance}% УСПЕХА` : 'ГАРАНТИРОВАННО';
   const cost = costLabel(choice), risk = riskLabel(choice);
   button.innerHTML = `<span class="events-choice__head"><strong></strong><span>${chance}</span></span><span class="events-choice__meta">${[role,cost,risk].filter(Boolean).map((x)=>`<small>${x}</small>`).join('')}</span>${availability.enabled?'':`<span class="events-choice__disabled">${availability.reason}</span>`}`;
-  button.querySelector('strong').textContent = personalizePlayerNarrative(choice.action, playerName());
-  const reactionText = formatHeroReaction(choice.heroReaction, reactionHero(choice, availability));
-  if (reactionText) {
-    const reaction = document.createElement('span');
-    reaction.className = 'events-choice__reaction';
-    reaction.textContent = personalizePlayerNarrative(reactionText, playerName());
-    button.prepend(reaction);
+  button.querySelector('strong').textContent = personalizePlayerNarrative(displayedChoiceAction(choice), playerName());
+
+  if (heroState) {
+    const heroBlock = document.createElement('span');
+    heroBlock.className = 'events-choice__hero';
+    const heroName = document.createElement('b');
+    heroName.className = 'events-choice__hero-name';
+    heroName.textContent = heroState.label;
+    const heroLine = document.createElement('span');
+    heroLine.className = 'events-choice__hero-line';
+    heroLine.textContent = `«${personalizePlayerNarrative(String(choice.heroLine || '').trim(), playerName())}»`;
+    heroBlock.append(heroName, heroLine);
+    button.prepend(heroBlock);
+  } else {
+    const reactionText = formatHeroReaction(choice.heroReaction, reactionHero(choice, availability));
+    if (reactionText) {
+      const reaction = document.createElement('span');
+      reaction.className = 'events-choice__reaction';
+      reaction.textContent = personalizePlayerNarrative(reactionText, playerName());
+      button.prepend(reaction);
+    }
   }
   return button;
 }

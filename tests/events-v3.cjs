@@ -1,4 +1,4 @@
-const path=require('path'),assert=require('assert'),{pathToFileURL}=require('url');
+const path=require('path'),assert=require('assert'),fs=require('fs'),{pathToFileURL}=require('url');
 (async()=>{
   const game=path.resolve(__dirname,'..','game');
   const data=await import(pathToFileURL(path.join(game,'js/events-data.mjs')).href);
@@ -27,19 +27,27 @@ const path=require('path'),assert=require('assert'),{pathToFileURL}=require('url
     assert.strictEqual(shown.title,override.title,`${sourceEvent.id} title must come from v3`);
     assert.deepStrictEqual(shown.storyParagraphs,override.storyParagraphs,`${sourceEvent.id} scene must match v3 exactly`);
     assert(shown.storyParagraphs.length>=2,`${sourceEvent.id} v3 scene must have multiple paragraphs`);
-    assert.strictEqual(shown.choices.length,base.choices.length,`${sourceEvent.id} choice count must not change`);
+    assert.strictEqual(shown.choices.length,base.choices.length,`${sourceEvent.id} choice count must not change during v3 presentation`);
     for(const baseChoice of base.choices){
       const presented=shown.choices.find(choice=>choice.id===baseChoice.id);
-      const choiceOverride=override.choices[baseChoice.id];
-      assert(presented&&choiceOverride,`${baseChoice.id} must exist in v3 presentation`);
-      assert.strictEqual(presented.action,choiceOverride.action,`${baseChoice.id} action must use v3 copy`);
+      const sourceChoiceId=baseChoice.sourceChoiceId||baseChoice.id;
+      const choiceOverride=override.choices[sourceChoiceId];
+      assert(presented&&choiceOverride,`${baseChoice.id} must retain a valid v3 source presentation`);
+      if(baseChoice.requiredHeroId){
+        assert.strictEqual(presented.heroReaction,null,`${baseChoice.id} personal v5 choice must not duplicate the old abstract v3 reaction`);
+      }else{
+        assert.strictEqual(presented.action,choiceOverride.action,`${baseChoice.id} ordinary action must use v3 copy`);
+      }
       for(const key of mechanicsKeys)assert.deepStrictEqual(presented[key],baseChoice[key],`${baseChoice.id} must preserve mechanical field ${key}`);
-      if(choiceOverride.heroReaction){
-        assert(baseChoice.role,`${baseChoice.id} hero reaction must be tied to a role-gated choice`);
+      if(choiceOverride.heroReaction&&!baseChoice.requiredHeroId){
+        assert(baseChoice.role,`${baseChoice.id} legacy hero reaction must remain tied to a role-gated choice`);
         assert.strictEqual(choiceOverride.heroReaction.role,baseChoice.role,`${baseChoice.id} hero reaction role must match mechanical role`);
       }
     }
   }
+
+  const app=fs.readFileSync(path.join(game,'js/events-app.mjs'),'utf8');
+  assert(app.includes('choice.sourceChoiceId')&&app.includes('EVENT_CONTENT_V3'),'Events v5 UI must reuse accepted v3 action copy for personal variants');
 
   const v4=data.eventById('E101');
   assert(v4&&Array.isArray(v4.storyParagraphs),'E101 must exist as inline v4 content');
@@ -52,5 +60,5 @@ const path=require('path'),assert=require('assert'),{pathToFileURL}=require('url
   const missing=v3.formatHeroReaction({role:'bishop',text:'{bishopName} изучает знаки.'},null);
   assert.strictEqual(missing,'Ваш Слон изучает знаки.','missing personalized hero must use the role fallback');
 
-  console.log('Events v3 legacy overlay 100/415 preserved inside expanded Events v4 500-event catalog: PASS');
+  console.log('Events v3 accepted presentation preserved under Events v5 named-hero overlay: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
