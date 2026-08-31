@@ -153,7 +153,7 @@ Human balance run должен ответить на вопросы:
 ## Revision receipt
 
 - branch: `feature/balance-gate`;
-- original Pass 1 gameplay candidate: `3724bf7b6264bb9f1806e3f31576e9ef` — **SUPERSEDED**;
+- original Pass 1 gameplay candidate: `3724bf7b6264bb9e8cd6380f1806e3f31576e9ef` — **SUPERSEDED**;
 - revised Settlement candidate: `883cf6cbfe886de5fee25028244c4c8bc5de527d` — **SUPERSEDED by healthy-reserve rule**;
 - Settlement runtime commit: `7be43499f2f537ffeaa0a4a264df395324ff79d7`;
 - Settlement regression commit: `4fe5ae51017d9d7eb02b405cb2c89ab48d4dfaf4`;
