@@ -36,11 +36,7 @@
   text-shadow:0 2px 8px rgba(0,0,0,.72);
 }
 .events-choice--hero-locked .events-choice__hero-line{color:rgba(225,210,177,.82)}
-.events-choice--hero-locked .events-choice__disabled{
-  color:#d8b88b;
-  font-weight:700;
-  letter-spacing:.045em;
-}
+.events-choice--hero-locked .events-choice__disabled{display:none}
 @media(max-width:760px){
   .events-choice__hero-line{font-size:13px}
   .events-choice__hero-name{font-size:12px}
