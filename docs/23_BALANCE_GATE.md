@@ -153,7 +153,7 @@ Human balance run должен ответить на вопросы:
 ## Revision receipt
 
 - branch: `feature/balance-gate`;
-- original Pass 1 gameplay candidate: `3724bf7b6264bb9e8cd6380f1806e3f31576e9ef` — **SUPERSEDED**;
+- original Pass 1 gameplay candidate: `3724bf7b6264bb9f1806e3f31576e9ef` — **SUPERSEDED**;
 - revised Settlement candidate: `883cf6cbfe886de5fee25028244c4c8bc5de527d` — **SUPERSEDED by healthy-reserve rule**;
 - Settlement runtime commit: `7be43499f2f537ffeaa0a4a264df395324ff79d7`;
 - Settlement regression commit: `4fe5ae51017d9d7eb02b405cb2c89ab48d4dfaf4`;
@@ -161,9 +161,9 @@ Human balance run должен ответить на вопросы:
 - healthy-reserve regression / exact gameplay candidate: `46a33ffc10110bd89134bfa8fe86f026945bc4ed`;
 - gameplay Cloudflare build `b5bf6322-3e6b-4410-8e21-32a0b0d0a3f2` — **SUCCESS**;
 - gameplay preview: `https://b8d65a6f-rpchess.mobigametim.workers.dev`;
-- synced docs exact head before this receipt: `bcd242d0239aa396fed17ca6b6e63e1a64bb752f`;
-- synced docs Cloudflare build `3cc6f6f7-21ab-4211-a1a3-7b17ba395d1f` — **SUCCESS**;
-- synced docs preview: `https://29657e38-rpchess.mobigametim.workers.dev`;
+- synced docs exact head: `cfa442f17ecb6568efed59903d30846a9f085fe4`;
+- synced docs Cloudflare build `98a3af5e-bb36-4c2b-acbb-8232f5b1ab68` — **SUCCESS**;
+- synced docs preview: `https://0d19d571-rpchess.mobigametim.workers.dev`;
 - assets changed: **0**;
 - persistence schema version changes: **0**;
 - GitHub Actions: **не используются**.
