@@ -3,6 +3,7 @@ import { RECRUIT_LIBRARY } from './settlement-core.mjs';
 import { hashString, seededRandom } from './travel-choice-core.mjs';
 import { clampStars } from './encounter-difficulty.mjs';
 import { combatTheme } from './race-assets.mjs';
+import { applyEventHeroChoicesV5 } from './events/event-hero-choices-v5.mjs';
 
 const EVENT_COUNT = 500;
 const ROLE_TYPES = Object.freeze(['pawn', 'knight', 'bishop', 'rook', 'queen']);
@@ -58,7 +59,7 @@ function normalizeChoice(choice) {
 function normalizedEvent(id) {
   const source = eventById(id);
   if (!source) return null;
-  return { ...source, choices: source.choices.map(normalizeChoice) };
+  return applyEventHeroChoicesV5({ ...source, choices: source.choices.map(normalizeChoice) });
 }
 
 function shuffledEventIds(runId, cycle = 0) {
@@ -101,10 +102,23 @@ function livingRoleHero(run, role) {
   return (run?.roster || []).filter((c) => c.pieceType === role && c.status === 'healthy' && !c.isRunKing).sort((a, b) => a.id.localeCompare(b.id))[0] || null;
 }
 
+function heroById(run, heroId) {
+  return (run?.roster || []).find((hero) => hero?.id === heroId) || null;
+}
+
 function choiceAvailability(run, choice) {
   const normalized = normalizeChoice(choice);
-  if ((run?.gold || 0) < normalized.cost.gold) return { enabled: false, reason: `Нужно ${normalized.cost.gold} Gold`, hero: null, choice: normalized };
-  if ((run?.supplies || 0) < normalized.cost.supplies) return { enabled: false, reason: `Нужно ${normalized.cost.supplies} Supplies`, hero: null, choice: normalized };
+  let requiredHero = null;
+  if (normalized.requiredHeroId) {
+    requiredHero = heroById(run, normalized.requiredHeroId);
+    const heroName = normalized.requiredHeroName || requiredHero?.name || 'Именной герой';
+    if (!requiredHero) return { enabled: false, reason: `${heroName} — НЕТ В ОТРЯДЕ`, hero: null, choice: normalized };
+    if (requiredHero.status === 'dead') return { enabled: false, reason: `${heroName} — ПОГИБ`, hero: null, choice: normalized };
+    if (requiredHero.status !== 'healthy') return { enabled: false, reason: `${heroName} — РАНЕН`, hero: null, choice: normalized };
+  }
+  if ((run?.gold || 0) < normalized.cost.gold) return { enabled: false, reason: `Нужно ${normalized.cost.gold} Gold`, hero: requiredHero, choice: normalized };
+  if ((run?.supplies || 0) < normalized.cost.supplies) return { enabled: false, reason: `Нужно ${normalized.cost.supplies} Supplies`, hero: requiredHero, choice: normalized };
+  if (requiredHero) return { enabled: true, reason: '', hero: requiredHero, choice: normalized };
   if (normalized.role) {
     const hero = livingRoleHero(run, normalized.role);
     if (!hero) return { enabled: false, reason: `Нужен здоровый ${normalized.role}`, hero: null, choice: normalized };
@@ -149,7 +163,8 @@ function applyEffect(run, effect, key) {
     }
   } else if (effect.type === 'wound' || effect.type === 'death') {
     let target = null;
-    if (effect.target === 'king') target = (next.roster || []).find((c) => c.isRunKing && c.status !== 'dead') || null;
+    if (effect.target === 'heroId') target = (next.roster || []).find((c) => c.id === effect.heroId && c.status !== 'dead') || null;
+    else if (effect.target === 'king') target = (next.roster || []).find((c) => c.isRunKing && c.status !== 'dead') || null;
     else if (effect.target === 'roleHero') target = livingRoleHero(next, effect.role);
     else {
       const candidates = (next.roster || []).filter((c) => !c.isRunKing && (effect.type === 'wound' ? c.status === 'healthy' : c.status !== 'dead'));
