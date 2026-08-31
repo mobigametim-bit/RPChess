@@ -6,19 +6,19 @@ const SETTLEMENT_SUPPLY_PRICE = 12;
 const SETTLEMENT_SUPPLY_STOCK = 4;
 
 const HEAL_COSTS = Object.freeze({
-  pawn: 10,
-  knight: 18,
-  bishop: 18,
-  rook: 26,
-  queen: 42
+  pawn: 20,
+  knight: 36,
+  bishop: 36,
+  rook: 52,
+  queen: 84
 });
 
 const RECRUIT_COSTS = Object.freeze({
-  pawn: 24,
-  knight: 42,
-  bishop: 42,
-  rook: 64,
-  queen: 96
+  pawn: 72,
+  knight: 126,
+  bishop: 126,
+  rook: 192,
+  queen: 288
 });
 
 const ORIGINS = Object.freeze({
