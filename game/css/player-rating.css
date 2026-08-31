@@ -165,30 +165,58 @@
 .skirmish-aftermath .resource-combat-reward img{
   width:52px;
   height:52px;
-  grid-row:auto;
+  grid-column:1;
+  grid-row:1;
   object-fit:contain;
 }
 .skirmish-aftermath .resource-combat-reward span{
   display:none;
 }
 .skirmish-aftermath .resource-combat-reward strong{
-  justify-self:start;
-  color:#f6dc95;
-  font:400 clamp(22px,2vw,28px)/1 'BrahmsGotischCyr',Georgia,serif;
+  display:block !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  grid-column:2;
+  grid-row:1;
+  min-width:0;
+  position:relative;
+  z-index:1;
+  justify-self:start !important;
+  color:#f6dc95 !important;
+  font-family:'BrahmsGotischCyr',Georgia,serif;
+  font-size:clamp(22px,2vw,28px) !important;
+  font-weight:400;
+  line-height:1.08;
   letter-spacing:.02em;
+  white-space:nowrap;
 }
 .skirmish-aftermath .power-result{
+  position:relative;
   grid-area:power;
   width:100%;
   min-height:64px;
   justify-content:flex-start;
   gap:8px 13px;
   margin:0;
-  padding:10px 16px;
+  padding:10px 16px 10px 80px;
   border:1px solid rgba(225,184,89,.28);
   border-radius:7px;
   background:linear-gradient(135deg,rgba(20,21,22,.9),rgba(10,12,15,.96));
   color:#eee2c4;
+}
+.skirmish-aftermath .power-result::before{
+  content:'';
+  position:absolute;
+  left:10px;
+  top:50%;
+  width:52px;
+  height:52px;
+  transform:translateY(-50%);
+  border:1px solid rgba(225,184,89,.38);
+  border-radius:5px;
+  background:url('../assets/kings/oathkeeper/portrait.png') center 20%/cover no-repeat;
+  box-shadow:0 4px 13px rgba(0,0,0,.42),inset 0 0 0 1px rgba(255,235,179,.035);
+  pointer-events:none;
 }
 .skirmish-aftermath .power-result__label{
   display:none;
@@ -277,6 +305,23 @@
   .skirmish-aftermath .resource-combat-reward,
   .skirmish-aftermath .power-result{
     min-height:58px;
+  }
+  .skirmish-aftermath .resource-combat-reward img{
+    width:46px;
+    height:46px;
+  }
+  .skirmish-aftermath .resource-combat-reward{
+    grid-template-columns:46px minmax(0,1fr);
+  }
+  .skirmish-aftermath .resource-combat-reward strong{
+    font-size:22px !important;
+  }
+  .skirmish-aftermath .power-result{
+    padding-left:70px;
+  }
+  .skirmish-aftermath .power-result::before{
+    width:44px;
+    height:44px;
   }
   .skirmish-aftermath .skirmish-aftermath-columns{
     grid-template-columns:1fr;
