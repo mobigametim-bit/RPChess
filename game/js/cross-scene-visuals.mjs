@@ -45,6 +45,31 @@ function installStyles() {
       font-family:'BrahmsGotischCyr',Georgia,serif!important;font-weight:400!important;color:#fff0c5!important;text-shadow:0 4px 18px rgba(0,0,0,.78)!important;
     }
     .classic-piece-marker,.puzzle-piece-marker{font-size:clamp(19.5px,1.575vw,25.5px)!important;}
+    .battle-screen .battle-actionbar{
+      position:static!important;
+      display:flex!important;
+      justify-content:flex-end!important;
+      align-items:center!important;
+      margin-top:12px!important;
+      padding:0!important;
+      border:0!important;
+      border-radius:0!important;
+      background:transparent!important;
+      box-shadow:none!important;
+      backdrop-filter:none!important;
+    }
+    .battle-screen .battle-actionbar>.battle-counter,
+    .battle-screen .battle-actionbar>.battle-action-cost{
+      display:none!important;
+    }
+    .battle-screen .battle-actionbar>.battle-start{
+      width:min(360px,100%)!important;
+      min-height:54px!important;
+      margin-left:auto!important;
+    }
+    @media(max-width:900px){
+      .battle-screen .battle-actionbar>.battle-start{width:100%!important;}
+    }
     @media(max-width:620px){.classic-piece-marker,.puzzle-piece-marker{font-size:19.5px!important;}}
   `;
   document.head.append(style);
