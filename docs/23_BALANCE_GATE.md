@@ -108,7 +108,6 @@ Human balance run должен ответить на вопросы:
 - original Pass 1 gameplay candidate: `3724bf7b6264bb9e8cd6380f1806e3f31576e9ef` — **SUPERSEDED**;
 - revised runtime commit: `7be43499f2f537ffeaa0a4a264df395324ff79d7`;
 - revised regression commit: `4fe5ae51017d9d7eb02b405cb2c89ab48d4dfaf4`;
-- revised docs commit: `7004cec8d2e5c007d2443798ea39db71e73e791c`;
 - feature diff remains limited to Balance doc + Settlement runtime/test;
 - assets changed: **0**;
 - persistence schema changes: **0**;
