@@ -34,7 +34,7 @@ Frameless CSS-only scene с постоянным Gold/Supplies HUD.
 
 Лечение только `wounded → healthy`. Dead не лечатся. King не лечится здесь, поскольку смерть run King уже завершает забег.
 
-**Текущие Balance Gate цены лечения:**
+**Принятые Balance Gate цены лечения:**
 - Pawn — **10 Gold**;
 - Knight — **18 Gold**;
 - Bishop — **18 Gold**;
@@ -57,7 +57,7 @@ Balance Gate сначала тестировал удвоенные healing pric
 - Нанятый герой добавляется `healthy` и использует существующие `portrait.png` + `piece_badge.png`.
 - Legacy abilities не возвращаются: используются identity, имя, origin/faction, classic `pieceType` и visual assets.
 
-**Текущие Balance Gate цены найма:**
+**Принятые Balance Gate цены найма:**
 - Pawn — **50 Gold**;
 - Knight — **88 Gold**;
 - Bishop — **88 Gold**;
@@ -90,15 +90,16 @@ Settlement сохраняет `currentSettlement` с route/seed, тремя recr
 
 Balance Gate меняет только числовые economy constants; version persistence schema не меняется.
 
-## Balance Gate current receipt
+## Balance Gate Pass 1 acceptance receipt
 
 - healing: **10 / 18 / 18 / 26 / 42**;
 - recruitment: **50 / 88 / 88 / 134 / 202**;
 - Settlement runtime revision commit `7be43499f2f537ffeaa0a4a264df395324ff79d7`;
 - Settlement regression commit `4fe5ae51017d9d7eb02b405cb2c89ab48d4dfaf4`;
-- healthy-reserve Battle pricing exact gameplay candidate `46a33ffc10110bd89134bfa8fe86f026945bc4ed`;
-- Cloudflare build `b5bf6322-3e6b-4410-8e21-32a0b0d0a3f2` — **SUCCESS**;
-- human Balance Gate acceptance пока **PENDING**;
+- healthy-reserve Battle pricing gameplay candidate `46a33ffc10110bd89134bfa8fe86f026945bc4ed`;
+- accepted exact head `de819f0aebc0bebf6898bf8d4d26ce172a4b408f`;
+- accepted Cloudflare exact-head build `23be38ab-5524-47eb-97d5-5ff92c6d39d8` — **SUCCESS**;
+- Human acceptance: **«да, отлично, всё хорошо» — 2026-08-31**;
 - GitHub Actions не используются для текущего workflow.
 
 ## Acceptance / technical receipts — historical Settlement v1
@@ -129,4 +130,4 @@ Post-merge Cloudflare production build `6c973861-a04d-415b-b1fa-df1c110ee6d2`: *
 
 Human acceptance: **accepted 2026-08-27**.
 
-Settlement v1 lifecycle окончательно закрыт: **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**. Текущие economy values поверх него проверяются отдельно в **Balance Gate**.
+Settlement v1 lifecycle окончательно закрыт: **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**. Текущие economy values поверх него приняты в **Balance Gate Pass 1**.
