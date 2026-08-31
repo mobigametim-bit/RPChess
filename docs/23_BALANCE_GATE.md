@@ -2,7 +2,7 @@
 
 ## Статус
 
-**PASS 1 — IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE. PASS 2 — IMPLEMENTED → REGRESSION UPDATED → CLOUDFLARE EXACT-HEAD SUCCESS → HUMAN PLAYTEST PENDING.**
+**PASS 1 — IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE. PASS 2 — IMPLEMENTED → REGRESSION UPDATED → CLOUDFLARE EXACT-HEAD SUCCESS → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE.**
 
 Balance Gate не добавляет новую шахматную механику. Цель — свести уже существующие Gold / Supplies / Settlement / Battle Mercenaries / Puzzle rewards / Power-Threat в один экономически связный контракт и затем проверять его контролируемыми balance-pass, меняя только диагностически обоснованные ручки.
 
@@ -15,8 +15,8 @@ Balance Gate не добавляет новую шахматную механи�
 
 ### Награды
 - Skirmish victory: `12 + 4 × stars` → **16…60 Gold** на ★1…★12
-- Battle victory до Pass 2: `20 + 6 × stars` → **26…92 Gold** на ★1…★12
-- draw: половина соответствующей victory-награды
+- Battle victory: `36 + 6 × stars` → **42…108 Gold** на ★1…★12
+- draw: половина соответствующей victory-награды с `floor`
 - Puzzle perfect: `9 + 3 × stars` → **12…45 Gold**; ошибки дают 70% / 40% / 0%
 
 ### Settlement — baseline до Balance Gate
@@ -245,13 +245,26 @@ Cloudflare exact-head build `07ed190a-7387-42f4-8545-915c09504442` — **SUCCESS
 Final preview: `https://f8340437-rpchess.mobigametim.workers.dev`.
 Stable branch preview: `https://feature-balance-gate-pass2-rpchess.mobigametim.workers.dev`.
 
-Diff from production remains **7 files / 0 assets**. Persistence schema unchanged. GitHub Actions не использовались.
+Финальный неизменяемый exact branch head перед human playtest: `f7b7a4363cd1680c2045e746f286ddcd3fe47c94`.
+Cloudflare exact-head build `1892c0c4-2e23-4096-a724-a88bc5e8d413` — **SUCCESS**. Version `adf7630d-0884-4fcb-a604-34980af39443`.
+Accepted preview: `https://adf7630d-rpchess.mobigametim.workers.dev`.
 
-## Pass 2 lifecycle
+Diff from production: **7 files / 0 assets**. Persistence schema unchanged. GitHub Actions не использовались.
 
-Текущий lifecycle: **CONTRACT APPROVED → IMPLEMENTED → REGRESSION UPDATED → CLOUDFLARE EXACT-HEAD SUCCESS → HUMAN PLAYTEST PENDING**.
+## Human acceptance / merge closure — Pass 2
 
-Ветка: `feature/balance-gate-pass2`.
-Draft PR: `#105`.
+Пользователь проверил три обязательных live-сценария и подтвердил: **«всё хорошо» — 2026-08-31**.
 
-До human acceptance Pass 2 не сливается в `main`.
+- accepted exact head: `f7b7a4363cd1680c2045e746f286ddcd3fe47c94`;
+- accepted Cloudflare build: `1892c0c4-2e23-4096-a724-a88bc5e8d413` — **SUCCESS**;
+- accepted Version: `adf7630d-0884-4fcb-a604-34980af39443`;
+- Draft PR #105 закрыт unmerged только потому, что GitHub connector вернул GraphQL compatibility error `fullDatabaseId` при Draft → Ready;
+- создан идентичный non-Draft PR #106 на том же exact head, без изменения кода;
+- PR #106 squash-merged в `main` как `aced637fe6a6cbc7b1b2eeade25039cbcae5501d`;
+- merged diff: **7 files / 0 assets**;
+- persistence schema version changes: **0**;
+- workflow runs для merge SHA отсутствуют; GitHub Actions не использовались.
+
+Pass 2 lifecycle: **CONTRACT APPROVED → IMPLEMENTED → REGRESSION UPDATED → CLOUDFLARE EXACT-HEAD SUCCESS → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE**.
+
+Общий **Balance Gate остаётся текущим этапом**. Следующий balance-pass начинается только при конкретной наблюдаемой проблеме; замороженные ручки не меняются пакетом без диагностической причины.
