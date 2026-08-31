@@ -22,36 +22,39 @@
 - [x] Battle Mercenaries Economy — стандартные Battle fillers стали оплачиваемыми Наёмниками с Gold → Supplies fallback и persistent casualty debt. Human accepted 2026-08-31. Accepted head `f2c3c92b3636b593cca97c662be6b8c3f1a692c9`; Cloudflare build `d431ac63-54ec-4757-9be3-16aefc9d0cf4` — **SUCCESS**; PR #93 squash-merged как `33f602b4b8644a9c7612ba18033c4ad0e9ee5941`. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE.**
 - [x] Player Identity + Chronicle — `КТО ТЫ, ВОИН?`, persistent `playerName`, Event narrative personalization, main-menu Chronicle и локальная история лучших походов. Слава: `floor(sqrt(week * power) / 10)`. Human accepted 2026-08-31. Accepted head `d2439ba16a98266e87f410272a38d42b9e8424b9`; Cloudflare build `8b81e946-4ce7-4435-97e8-ab7c6c0b28f9` — **SUCCESS**; Draft #96 закрыт unmerged из-за GraphQL `fullDatabaseId`; identical PR #97 squash-merged как `bf071a1a7d99964d848177969657767b380e5167`. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE.**
 - [x] Hero Notes — 37 канонических character-notes: 36 HERO-01–36 + Хранитель Клятвы; presentation-layer captions в Отряде и Поселении, включая legacy saves. Human accepted 2026-08-31. Accepted head `985865c06032b4e731b8ef120049d0cfd49765b1`; Cloudflare build `42ba300a-3374-49dd-9392-d0f299d08fa5` — **SUCCESS**; Draft #98 закрыт unmerged из-за GraphQL `fullDatabaseId`; identical PR #99 squash-merged как `a6526bc77a0b39241a9b0db2bd5bc62d9a764167`. Accepted head и merge имеют tree SHA `424fe98cc78005c787679a6de676a7082278ca9b`; 0 asset files changed. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE.**
+- [x] Events v5 Hero Choices — **SOURCE APPROVED → IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE.** 500/500 событий, 537 персональных вариантов, HERO-01–36; missing/wounded/dead герой остаётся видимым locked-choice с именем и authored `heroLine`. Human accepted 2026-08-31. Exact accepted head `4bdd002bf618f73077c74329cc2f16edd48667ac`; Cloudflare exact-head build `90b126d9-1b28-4e60-8919-9b5d565a3f26` — **SUCCESS**; Draft #100 закрыт unmerged для established workaround; identical PR #101 squash-merged как `350e04783e4c4370dc490ff0745207b7f1b2ba11`. Accepted head и production merge имеют одинаковый tree SHA `abe48127ce4a709a22ecfbc86142aefdff493188`; 0 asset files changed.
 - [x] **PLAYTEST GATE C** — интересность собственного состава и corrected Skirmish flow подтверждены пользователем.
 
 ## Current
 
-- [ ] **Events v5 Hero Choices** — **SOURCE APPROVED → IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTANCE PENDING.** 500/500 событий, 537 персональных вариантов, HERO-01–36; missing/wounded/dead герой остаётся видимым locked-choice. Runtime head `8c26cdde4e796dcfc209d7890906e5152fde83f6`; Cloudflare build `b606e10f-69d3-485e-85d4-755b12cf2e64` — **SUCCESS**; Draft PR #100; 0 asset changes.
+- [ ] **Balance Gate** — следующий этап проекта.
 
 ## Next
 
-- [ ] **Balance Gate**.
 - [ ] Region Content Framework.
 - [ ] Tutorial Campaign — позднее.
 - [ ] Metaprogression — только после подтверждения core loop.
 
 ## Current phase
 
-**Events v4 — DONE. Puzzles — DONE. Power / Threat — DONE. Content Framework — DONE. First Complete Endless Run — RECONCILED / HUMAN ACCEPTED / DONE. Battle Mercenaries Economy — HUMAN ACCEPTED / DONE. Player Identity + Chronicle — HUMAN ACCEPTED / DONE. Hero Notes — HUMAN ACCEPTED / DONE. Current phase: Events v5 Hero Choices — AUTOTESTED / DEPLOYED / HUMAN ACCEPTANCE PENDING. Balance Gate follows after acceptance.**
+**Events v4 — DONE. Puzzles — DONE. Power / Threat — DONE. Content Framework — DONE. First Complete Endless Run — RECONCILED / HUMAN ACCEPTED / DONE. Battle Mercenaries Economy — HUMAN ACCEPTED / DONE. Player Identity + Chronicle — HUMAN ACCEPTED / DONE. Hero Notes — HUMAN ACCEPTED / DONE. Events v5 Hero Choices — HUMAN ACCEPTED / MERGED / DONE. Current phase: Balance Gate.**
 
-### Events v5 Hero Choices — current contract 2026-08-31
+### Events v5 Hero Choices — accepted contract 2026-08-31
 
 Утверждённый `events_v5.md` добавляет **537** персональных вариантов к **500 / 500** событиям для HERO-01–HERO-36. В каждом событии есть 1–2 hero-choice. Если конкретного героя нет, он ранен или погиб, вариант не скрывается: игрок видит имя, статус блокировки и авторскую реплику `heroLine`, но не может выбрать вариант.
 
 Новых Event-механик v5 не добавляет. Каждый hero-choice переиспользует `chance / cost / success / failure` существующего `sourceChoiceId` того же события. Abstract role-gated source choice заменяется персональным; обычный source choice остаётся рядом. Role/King-specific wound/death после персонализации нацелен именно на `requiredHeroId`; random non-King последствия остаются random non-King.
 
-Gate receipt до human acceptance:
+Acceptance receipt:
 - source SHA-256 `82eef9b76ac7af36d53cf96c6567449cf5c9fec9d106fd514ca9e5e83c86a191`;
-- runtime/UI head `8c26cdde4e796dcfc209d7890906e5152fde83f6`;
-- Cloudflare exact-head build `b606e10f-69d3-485e-85d4-755b12cf2e64` — **SUCCESS**;
-- preview `https://45550530-rpchess.mobigametim.workers.dev`;
-- Draft PR #100;
-- 0 asset files changed;
+- Human acceptance: **«всё хорошо» — 2026-08-31**;
+- exact accepted head `4bdd002bf618f73077c74329cc2f16edd48667ac`;
+- Cloudflare exact-head build `90b126d9-1b28-4e60-8919-9b5d565a3f26` — **SUCCESS**;
+- accepted preview `https://01ad647c-rpchess.mobigametim.workers.dev`;
+- Draft PR #100 closed unmerged only for the established Draft→Ready workaround;
+- identical non-Draft PR #101 squash-merged в `main` как `350e04783e4c4370dc490ff0745207b7f1b2ba11`;
+- accepted head и production merge имеют одинаковый tree SHA `abe48127ce4a709a22ecfbc86142aefdff493188`;
+- 12 changed files / **0 asset files**;
 - GitHub Actions не использовались.
 
 ### Player Identity + Chronicle — accepted contract 2026-08-31
