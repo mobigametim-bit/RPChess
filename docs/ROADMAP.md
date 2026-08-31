@@ -26,17 +26,33 @@
 
 ## Current
 
-- [ ] **Balance Gate** — следующий этап проекта.
+- [ ] **Events v5 Hero Choices** — **SOURCE APPROVED → IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTANCE PENDING.** 500/500 событий, 537 персональных вариантов, HERO-01–36; missing/wounded/dead герой остаётся видимым locked-choice. Runtime head `8c26cdde4e796dcfc209d7890906e5152fde83f6`; Cloudflare build `b606e10f-69d3-485e-85d4-755b12cf2e64` — **SUCCESS**; Draft PR #100; 0 asset changes.
 
 ## Next
 
+- [ ] **Balance Gate**.
 - [ ] Region Content Framework.
 - [ ] Tutorial Campaign — позднее.
 - [ ] Metaprogression — только после подтверждения core loop.
 
 ## Current phase
 
-**Events v4 — DONE. Puzzles — DONE. Power / Threat — DONE. Content Framework — DONE. First Complete Endless Run — RECONCILED / HUMAN ACCEPTED / DONE. Battle Mercenaries Economy — HUMAN ACCEPTED / DONE. Player Identity + Chronicle — HUMAN ACCEPTED / DONE. Hero Notes — HUMAN ACCEPTED / DONE. Current phase: Balance Gate.**
+**Events v4 — DONE. Puzzles — DONE. Power / Threat — DONE. Content Framework — DONE. First Complete Endless Run — RECONCILED / HUMAN ACCEPTED / DONE. Battle Mercenaries Economy — HUMAN ACCEPTED / DONE. Player Identity + Chronicle — HUMAN ACCEPTED / DONE. Hero Notes — HUMAN ACCEPTED / DONE. Current phase: Events v5 Hero Choices — AUTOTESTED / DEPLOYED / HUMAN ACCEPTANCE PENDING. Balance Gate follows after acceptance.**
+
+### Events v5 Hero Choices — current contract 2026-08-31
+
+Утверждённый `events_v5.md` добавляет **537** персональных вариантов к **500 / 500** событиям для HERO-01–HERO-36. В каждом событии есть 1–2 hero-choice. Если конкретного героя нет, он ранен или погиб, вариант не скрывается: игрок видит имя, статус блокировки и авторскую реплику `heroLine`, но не может выбрать вариант.
+
+Новых Event-механик v5 не добавляет. Каждый hero-choice переиспользует `chance / cost / success / failure` существующего `sourceChoiceId` того же события. Abstract role-gated source choice заменяется персональным; обычный source choice остаётся рядом. Role/King-specific wound/death после персонализации нацелен именно на `requiredHeroId`; random non-King последствия остаются random non-King.
+
+Gate receipt до human acceptance:
+- source SHA-256 `82eef9b76ac7af36d53cf96c6567449cf5c9fec9d106fd514ca9e5e83c86a191`;
+- runtime/UI head `8c26cdde4e796dcfc209d7890906e5152fde83f6`;
+- Cloudflare exact-head build `b606e10f-69d3-485e-85d4-755b12cf2e64` — **SUCCESS**;
+- preview `https://45550530-rpchess.mobigametim.workers.dev`;
+- Draft PR #100;
+- 0 asset files changed;
+- GitHub Actions не использовались.
 
 ### Player Identity + Chronicle — accepted contract 2026-08-31
 
