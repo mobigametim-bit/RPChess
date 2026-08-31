@@ -2,7 +2,7 @@
 
 ## Статус
 
-**AUDIT COMPLETE → PASS 1 APPROVED → IMPLEMENTED → AUTOTEST PENDING → DEPLOY PENDING → HUMAN BALANCE RUN PENDING.**
+**AUDIT COMPLETE → PASS 1 APPROVED → IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN BALANCE RUN PENDING.**
 
 Balance Gate не добавляет новую механику. Цель — свести уже существующие Gold / Supplies / Settlement / Battle Mercenaries / Puzzle rewards / Power-Threat в один экономически связный контракт и затем проверить его длинным живым забегом.
 
@@ -109,14 +109,18 @@ Human balance run должен ответить на вопросы:
 
 Только по наблюдаемой проблеме открывается Pass 2. Возможные отдельные ручки: combat reward slope/base, Puzzle reward, Supply price/stock, Mercenary price, Power K/base/offset. Их нельзя менять пакетом без диагностической причины.
 
-## Implementation receipt до gate
+## Gate / deploy receipt
 
 - branch: `feature/balance-gate`;
 - Balance contract commit: `f1f00ade5e3bf785a058806b940af89575fe5f98`;
 - runtime costs commit: `129abc66d9803fbb0f7891185ef0b6266568b18e`;
 - regression commit: `fcc6ac22f5f4fa40ef396f69f52d2e3fa3e87984`;
-- runtime files changed: `game/js/settlement-core.mjs`, `tests/settlement.cjs`;
-- assets changed: **0**;
+- exact tested/deployed head: `3724bf7b6264bb9e8cd6380f1806e3f31576e9ef`;
+- Cloudflare build: `dae9184e-3db3-418a-9054-ea8bc8eebd71` — **SUCCESS**;
+- commit preview: `https://46893cb4-rpchess.mobigametim.workers.dev`;
+- branch preview: `https://feature-balance-gate-rpchess.mobigametim.workers.dev`;
+- Cloudflare uses `npm run gate:local`, so exact-head SUCCESS includes source verification, deterministic Node tests and production build;
+- feature diff: **3 files / 0 assets**;
 - persistence schema changes: **0**;
 - GitHub Actions: **не используются**.
 
