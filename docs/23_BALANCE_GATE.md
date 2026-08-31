@@ -159,8 +159,11 @@ Human balance run должен ответить на вопросы:
 - Settlement regression commit: `4fe5ae51017d9d7eb02b405cb2c89ab48d4dfaf4`;
 - healthy-reserve runtime commit: `689bdeec1754425e5f61b75535e06ed6fb119d4d`;
 - healthy-reserve regression / exact gameplay candidate: `46a33ffc10110bd89134bfa8fe86f026945bc4ed`;
-- Cloudflare build `b5bf6322-3e6b-4410-8e21-32a0b0d0a3f2` — **SUCCESS**;
+- gameplay Cloudflare build `b5bf6322-3e6b-4410-8e21-32a0b0d0a3f2` — **SUCCESS**;
 - gameplay preview: `https://b8d65a6f-rpchess.mobigametim.workers.dev`;
+- synced docs exact head before this receipt: `bcd242d0239aa396fed17ca6b6e63e1a64bb752f`;
+- synced docs Cloudflare build `3cc6f6f7-21ab-4211-a1a3-7b17ba395d1f` — **SUCCESS**;
+- synced docs preview: `https://29657e38-rpchess.mobigametim.workers.dev`;
 - assets changed: **0**;
 - persistence schema version changes: **0**;
 - GitHub Actions: **не используются**.
