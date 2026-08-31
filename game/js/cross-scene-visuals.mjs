@@ -29,7 +29,7 @@ function installStyles() {
       background:linear-gradient(180deg,rgba(3,10,8,.54),rgba(3,8,12,.90)),var(--settlement-scene-backdrop,url('generated_assets/scene_shop.jpg')) center/cover fixed no-repeat!important;
     }
     .classic-screen{
-      background:linear-gradient(90deg,rgba(3,7,15,.92),rgba(7,15,26,.60) 46%,rgba(3,7,15,.86)),var(--classic-scene-backdrop,url('generated_assets/scene_battle.jpg')) center/cover fixed no-repeat!important;
+      background:linear-gradient(90deg,rgba(3,7,15,.62),rgba(7,15,26,.30) 46%,rgba(3,7,15,.58)),var(--classic-scene-backdrop,url('generated_assets/scene_battle.jpg')) center/cover fixed no-repeat!important;
     }
     .puzzle-screen{
       background:linear-gradient(90deg,rgba(3,7,15,.90),rgba(7,15,26,.62) 48%,rgba(3,7,15,.88)),url('generated_assets/splash_poster.jpg') center/cover fixed no-repeat!important;
