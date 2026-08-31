@@ -173,20 +173,17 @@
   display:none;
 }
 .skirmish-aftermath .resource-combat-reward strong{
-  display:block !important;
-  visibility:visible !important;
-  opacity:1 !important;
+  display:none !important;
+}
+.skirmish-aftermath .resource-combat-reward::after{
+  content:attr(data-resource-combat-reward-text);
+  display:block;
   grid-column:2;
   grid-row:1;
   min-width:0;
-  position:relative;
-  z-index:1;
-  justify-self:start !important;
-  color:#f6dc95 !important;
-  font-family:'BrahmsGotischCyr',Georgia,serif;
-  font-size:clamp(22px,2vw,28px) !important;
-  font-weight:400;
-  line-height:1.08;
+  justify-self:start;
+  color:#f6dc95;
+  font:400 clamp(22px,2vw,28px)/1.08 'BrahmsGotischCyr',Georgia,serif;
   letter-spacing:.02em;
   white-space:nowrap;
 }
@@ -313,8 +310,8 @@
   .skirmish-aftermath .resource-combat-reward{
     grid-template-columns:46px minmax(0,1fr);
   }
-  .skirmish-aftermath .resource-combat-reward strong{
-    font-size:22px !important;
+  .skirmish-aftermath .resource-combat-reward::after{
+    font-size:22px;
   }
   .skirmish-aftermath .power-result{
     padding-left:70px;
