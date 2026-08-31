@@ -161,9 +161,7 @@ Human balance run должен ответить на вопросы:
 - healthy-reserve regression / exact gameplay candidate: `46a33ffc10110bd89134bfa8fe86f026945bc4ed`;
 - gameplay Cloudflare build `b5bf6322-3e6b-4410-8e21-32a0b0d0a3f2` — **SUCCESS**;
 - gameplay preview: `https://b8d65a6f-rpchess.mobigametim.workers.dev`;
-- synced docs exact head: `cfa442f17ecb6568efed59903d30846a9f085fe4`;
-- synced docs Cloudflare build `98a3af5e-bb36-4c2b-acbb-8232f5b1ab68` — **SUCCESS**;
-- synced docs preview: `https://0d19d571-rpchess.mobigametim.workers.dev`;
+- docs sync candidate `f2daf92e414ffa1acfdd0ebdbdc84504871c2b23` прошёл Cloudflare build `26a924e2-94bf-4674-91bc-a56c1cb3edb2` — **SUCCESS**; preview `https://20777a70-rpchess.mobigametim.workers.dev`;
 - assets changed: **0**;
 - persistence schema version changes: **0**;
 - GitHub Actions: **не используются**.
