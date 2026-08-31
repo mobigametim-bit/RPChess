@@ -2,7 +2,7 @@
 
 ## Статус
 
-**PASS 1 — IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE. PASS 2 — IMPLEMENTED → REGRESSION UPDATED → CLOUDFLARE GATE SUCCESS → HUMAN PLAYTEST PENDING.**
+**PASS 1 — IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE. PASS 2 — IMPLEMENTED → REGRESSION UPDATED → CLOUDFLARE EXACT-HEAD SUCCESS → HUMAN PLAYTEST PENDING.**
 
 Balance Gate не добавляет новую шахматную механику. Цель — свести уже существующие Gold / Supplies / Settlement / Battle Mercenaries / Puzzle rewards / Power-Threat в один экономически связный контракт и затем проверять его контролируемыми balance-pass, меняя только диагностически обоснованные ручки.
 
@@ -234,16 +234,20 @@ Skirmish reward и Puzzle reward не меняются.
 
 Runtime исправлен без изменения gameplay-контракта: обычная Battle теперь явно создаёт `lastBattle.kingDied=false`, а solo-King outcome после этого переключает поле в `true`.
 
-Исправленный gameplay exact head: `a02404adc9f7f5949b314c49a47547efd3973cfc`.
-
+Исправленный gameplay head: `a02404adc9f7f5949b314c49a47547efd3973cfc`.
 Cloudflare Workers build `00ce6b43-53f7-4fda-b775-6c4f3c7c6503` — **SUCCESS**. Version `aa910f09-f439-4470-9f44-1d418416dac7`.
+Gameplay preview: `https://aa910f09-rpchess.mobigametim.workers.dev`.
 
-Preview: `https://aa910f09-rpchess.mobigametim.workers.dev`.
+После этого добавлен только docs receipt. Final exact branch head: `8685baca0816c31c6812388dbb611a339b2b02f3`.
+Cloudflare exact-head build `41feed2b-eadf-4ddc-a573-2f825378c3d4` — **SUCCESS**. Version `421d642d-0c0d-4fdc-a88c-9e06fc49f8d1`.
+Final preview: `https://421d642d-rpchess.mobigametim.workers.dev`.
 Stable branch preview: `https://feature-balance-gate-pass2-rpchess.mobigametim.workers.dev`.
+
+Diff from production remains **7 files / 0 assets**. Persistence schema unchanged. GitHub Actions не использовались.
 
 ## Pass 2 lifecycle
 
-Текущий lifecycle: **CONTRACT APPROVED → IMPLEMENTED → REGRESSION UPDATED → CLOUDFLARE GATE SUCCESS → HUMAN PLAYTEST PENDING**.
+Текущий lifecycle: **CONTRACT APPROVED → IMPLEMENTED → REGRESSION UPDATED → CLOUDFLARE EXACT-HEAD SUCCESS → HUMAN PLAYTEST PENDING**.
 
 Ветка: `feature/balance-gate-pass2`.
 Draft PR: `#105`.
