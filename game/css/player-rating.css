@@ -51,6 +51,56 @@
 .power-result__delta.is-negative{color:#d58a86}
 .power-result__threat{width:100%;text-align:center;color:#f2cc61;font-size:11px;font-weight:900;letter-spacing:.08em}
 
+/* Approved Travel header adjustment: keep the existing DOM/runtime hooks and only
+   move + scale the Power/Threat presentation on desktop. */
+@media(min-width:901px){
+  .travel-choice-screen .travel-choice-topbar{
+    grid-template-columns:auto auto 1fr !important;
+    align-items:center;
+    column-gap:18px;
+    min-height:82px;
+  }
+
+  .travel-choice-screen .travel-choice-logo{
+    grid-column:1;
+    justify-self:start;
+  }
+
+  .travel-choice-screen .travel-player-rating{
+    grid-column:2 !important;
+    grid-row:1 !important;
+    justify-self:start;
+    min-width:312px !important;
+    min-height:75px !important;
+    gap:4px;
+    padding:10px 17px 10px 94px !important;
+  }
+
+  .travel-choice-screen .travel-player-rating::before{
+    left:10px !important;
+    width:62px !important;
+    height:62px !important;
+  }
+
+  .travel-choice-screen .travel-player-rating__row{
+    gap:12px;
+  }
+
+  .travel-choice-screen .travel-player-rating__row span{
+    font-size:13px !important;
+  }
+
+  .travel-choice-screen .travel-player-rating__row strong{
+    font-size:21px !important;
+  }
+
+  .travel-choice-screen .travel-choice-topbar__actions{
+    grid-column:3 !important;
+    grid-row:1 !important;
+    justify-self:end;
+  }
+}
+
 @media(max-width:760px){
   .travel-player-rating{min-width:176px;min-height:44px;padding:6px 8px 6px 54px}
   .travel-player-rating::before{left:6px;width:38px;height:38px}
