@@ -2,7 +2,7 @@
 
 ## Статус
 
-**PASS 1 — IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE. BALANCE GATE CONTINUES.**
+**PASS 1 — IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE. PASS 2 — IMPLEMENTED, GATES / HUMAN PLAYTEST PENDING.**
 
 Balance Gate не добавляет новую шахматную механику. Цель — свести уже существующие Gold / Supplies / Settlement / Battle Mercenaries / Puzzle rewards / Power-Threat в один экономически связный контракт и затем проверять его контролируемыми balance-pass, меняя только диагностически обоснованные ручки.
 
@@ -15,7 +15,7 @@ Balance Gate не добавляет новую шахматную механи�
 
 ### Награды
 - Skirmish victory: `12 + 4 × stars` → **16…60 Gold** на ★1…★12
-- Battle victory: `20 + 6 × stars` → **26…92 Gold** на ★1…★12
+- Battle victory до Pass 2: `20 + 6 × stars` → **26…92 Gold** на ★1…★12
 - draw: половина соответствующей victory-награды
 - Puzzle perfect: `9 + 3 × stars` → **12…45 Gold**; ошибки дают 70% / 40% / 0%
 
@@ -88,7 +88,7 @@ Supplies:
 - Knight **18 Gold**
 - Bishop **18 Gold**
 - Rook **26 Gold**
-- Queen **42 Gold**
+- Queen **42 Gold**.
 
 Правило считается поштучно. Wounded/dead не создают premium; отсутствие героя также оставляет базовую цену. King системой Наёмников не заменяется.
 
@@ -109,7 +109,7 @@ Supplies:
 - Power 500, K=32, star/Elo table и adaptive offset;
 - Event economy/content.
 
-## Regression
+## Regression — Pass 1
 
 Settlement regression закрепляет полный `HEAL_COSTS` / `RECRUIT_COSTS`, включая Queen 42 / 202, и фактическое списание 10 Gold за лечение Pawn.
 
@@ -144,6 +144,94 @@ Accepted preview: `https://235d7c21-rpchess.mobigametim.workers.dev`.
 - manual `game/assets/heroes/*/piece_badge.png` не затронуты;
 - GitHub Actions не использовались.
 
-## После Pass 1
+## Balance Pass 2 — утверждённый contract 2026-08-31
 
-Balance Gate как общий этап остаётся открыт. Любой Pass 2 начинается только при конкретной наблюдаемой проблеме. Возможные отдельные ручки: combat reward slope/base, Puzzle reward, Supply price/stock, Mercenary base price, Power K/base/offset. Их нельзя менять пакетом без диагностической причины.
+После диагностики пользователь утвердил следующие решения.
+
+### 1. Ранний Battle не запрещается
+Даже если ранний Battle экономически или тактически невыгоден, это допустимый выбор. Игрок сам решает, когда он готов нажать Battle. Дополнительные запреты, forced routing или anti-avoidance правила не вводятся.
+
+### 2. King-only Battle — смертельный исход после боя
+Battle preparation по-прежнему разрешает снять всех non-King именных героев и выйти в полноценную Battle только с персонализированным King и Наёмниками.
+
+Но если в `participants` этой Battle находится **ровно один именной участник и это run King**, то после завершения партии:
+- King получает `status = dead`;
+- run получает `ended = true`;
+- `endReason = king_solo_battle`;
+- `lastBattle.kingDied = true`;
+- открывается существующий Battle run-end flow `КОРОЛЬ ПОГИБ`.
+
+Правило не зависит от результата партии и не зависит от наличия/отсутствия Mercenary debt. Оно срабатывает именно после завершённой Battle.
+
+Если вместе с King участвует хотя бы **один** другой именной герой, этот специальный исход не применяется.
+
+### 3. Adaptive route choice не меняется
+Игрок может сознательно выбирать более лёгкие карточки. Adaptive offset, три независимые route cards и Power/Threat contract не меняются.
+
+### 4. Supplies / Settlement / Starvation не меняются
+Остаются текущие значения:
+- старт 10 Supplies;
+- Travel = 1 Supply;
+- Settlement Supply price = 12 Gold;
+- stock = 4;
+- текущий Starvation contract без изменений.
+
+### 5. Минимальный Skirmish состав
+Skirmish больше нельзя начинать одним King.
+
+Минимум:
+- обязательный run King;
+- **+ минимум 1 другая доступная именная фигура**.
+
+То есть минимальный состав Skirmish = **2 именные фигуры: King + 1**. Лимиты 16 фигур / 39 очков сохраняются.
+
+### 6. Battle victory reward
+Единственная изменяемая reward-ручка Pass 2:
+
+`Battle victory = 36 + 6 × stars`
+
+Диапазон ★1…★12:
+- ★1 = **42 Gold**;
+- ★12 = **108 Gold**.
+
+Battle draw остаётся половиной соответствующей victory reward с `floor`, loss = 0.
+
+Skirmish reward и Puzzle reward не меняются.
+
+## Pass 2 regression contract
+
+Обязательные проверки:
+- Battle ★1 victory = 42 Gold;
+- Battle ★5 victory = 66 Gold;
+- Battle ★5 draw = 33 Gold;
+- Battle ★12 victory = 108 Gold;
+- Skirmish reward formula не изменилась;
+- Skirmish `King only` отклоняется как `minimum_force`;
+- Skirmish `King + 1 healthy named` валиден;
+- обычная Battle с King + хотя бы 1 named не завершает run только из-за состава;
+- King-only Battle после завершения делает King `dead`, ставит `ended=true`, `endReason=king_solo_battle` и `lastBattle.kingDied=true`;
+- Mercenary pricing Pass 1 остаётся 1/3/3/5/9 и 10/18/18/26/42;
+- persistence schema version не меняется;
+- assets не меняются;
+- GitHub Actions не используются.
+
+## Замороженные ручки Pass 2
+
+Без изменений:
+- Starting Gold / Supplies;
+- Travel Supply cost;
+- healing / recruitment;
+- Settlement Supply price / stock;
+- Skirmish reward;
+- Puzzle reward;
+- Mercenary base/replacement prices и Supply fallback;
+- Power / K-factor / adaptive offsets / Elo table;
+- Event economy/content.
+
+## Pass 2 lifecycle
+
+Текущий lifecycle: **CONTRACT APPROVED → IMPLEMENTED → REGRESSION UPDATED → LOCAL/CLOUDFLARE GATES PENDING → HUMAN PLAYTEST PENDING**.
+
+Ветка: `feature/balance-gate-pass2`.
+
+До human acceptance Pass 2 не сливается в `main`.
