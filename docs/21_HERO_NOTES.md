@@ -2,9 +2,11 @@
 
 ## Статус
 
-**SOURCE APPROVED → IMPLEMENTED → AUTOTEST PENDING → DEPLOY PENDING → HUMAN ACCEPTANCE PENDING.**
+**SOURCE APPROVED → IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE.**
 
 Фича закрывает player-facing короткие подписи именных героев перед Balance Gate. Источник текста — утверждённый `heroes_note.md`: 36 героев `HERO-01`–`HERO-36` из Register 02 и отдельно текущий Король стартового отряда — Хранитель Клятвы.
+
+Human acceptance: **«всё хорошо» — 2026-08-31**. Exact accepted head `985865c06032b4e731b8ef120049d0cfd49765b1`; Cloudflare exact-head build `42ba300a-3374-49dd-9392-d0f299d08fa5` — **SUCCESS**. Draft PR #98 закрыт unmerged только из-за GitHub GraphQL `Repository.fullDatabaseId`; identical non-Draft PR #99 squash-merged в `main` как `a6526bc77a0b39241a9b0db2bd5bc62d9a764167`. Accepted head и production merge имеют один tree SHA `424fe98cc78005c787679a6de676a7082278ca9b`. Feature diff: 6 файлов, **0 asset files**. GitHub Actions не использовались.
 
 ## Принцип
 
@@ -53,4 +55,4 @@
 - загрузку runtime через journey bootstrap;
 - применение к Roster и Settlement presentation.
 
-Canonical gate остаётся `npm run gate:local` + Cloudflare exact-head SUCCESS, затем human acceptance перед merge.
+Canonical gate: `npm run gate:local` + Cloudflare exact-head SUCCESS + human acceptance перед merge — закрыт.
