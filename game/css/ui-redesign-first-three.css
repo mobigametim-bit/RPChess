@@ -405,11 +405,6 @@ body.roster-active .resource-chip strong{color:#f0d99e}
   color:rgba(223,214,193,.76);
   font-size:10px;
 }
-.travel-choice-screen .travel-choice-card__cost::before{
-  content:'◆';
-  margin-right:9px;
-  color:#d7ad51;
-}
 .travel-choice-screen .travel-choice-card__cost.is-empty{color:#dfa88f}
 body.travel-choice-active .resource-chip{
   border-color:rgba(218,178,88,.36);
