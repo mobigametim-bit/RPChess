@@ -122,11 +122,13 @@ Acceptance receipt исходного Mercenaries extension:
 
 Battle preparation теперь текстом объясняет: `Свободный слот — дешёвый Наёмник. Замена оставленного в резерве здорового героя стоит как его лечение.`
 
-Balance Gate runtime receipt:
+Balance Gate Pass 1 acceptance receipt:
 - runtime commit `689bdeec1754425e5f61b75535e06ed6fb119d4d`;
-- regression/exact gameplay head `46a33ffc10110bd89134bfa8fe86f026945bc4ed`;
-- Cloudflare build `b5bf6322-3e6b-4410-8e21-32a0b0d0a3f2` — **SUCCESS**;
-- human balance acceptance нового pricing contract пока **PENDING**;
+- regression/gameplay candidate `46a33ffc10110bd89134bfa8fe86f026945bc4ed`;
+- gameplay Cloudflare build `b5bf6322-3e6b-4410-8e21-32a0b0d0a3f2` — **SUCCESS**;
+- accepted exact head `de819f0aebc0bebf6898bf8d4d26ce172a4b408f`;
+- accepted exact-head Cloudflare build `23be38ab-5524-47eb-97d5-5ff92c6d39d8` — **SUCCESS**;
+- Human acceptance: **«да, отлично, всё хорошо» — 2026-08-31**;
 - GitHub Actions не используются.
 
 ## Persistence
