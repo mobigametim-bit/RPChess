@@ -238,9 +238,11 @@ Runtime исправлен без изменения gameplay-контракта
 Cloudflare Workers build `00ce6b43-53f7-4fda-b775-6c4f3c7c6503` — **SUCCESS**. Version `aa910f09-f439-4470-9f44-1d418416dac7`.
 Gameplay preview: `https://aa910f09-rpchess.mobigametim.workers.dev`.
 
-После этого добавлен только docs receipt. Final exact branch head: `8685baca0816c31c6812388dbb611a339b2b02f3`.
-Cloudflare exact-head build `41feed2b-eadf-4ddc-a573-2f825378c3d4` — **SUCCESS**. Version `421d642d-0c0d-4fdc-a88c-9e06fc49f8d1`.
-Final preview: `https://421d642d-rpchess.mobigametim.workers.dev`.
+Docs receipt head `8685baca0816c31c6812388dbb611a339b2b02f3` прошёл build `41feed2b-eadf-4ddc-a573-2f825378c3d4` — **SUCCESS**.
+
+Final exact branch head: `ba7908b776a9729fb36d63147093116388baaf14`.
+Cloudflare exact-head build `07ed190a-7387-42f4-8545-915c09504442` — **SUCCESS**. Version `f8340437-4c6b-4295-a0ab-bf29864ed928`.
+Final preview: `https://f8340437-rpchess.mobigametim.workers.dev`.
 Stable branch preview: `https://feature-balance-gate-pass2-rpchess.mobigametim.workers.dev`.
 
 Diff from production remains **7 files / 0 assets**. Persistence schema unchanged. GitHub Actions не использовались.
