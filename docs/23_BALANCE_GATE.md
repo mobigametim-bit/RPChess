@@ -2,7 +2,7 @@
 
 ## Статус
 
-**AUDIT COMPLETE → PASS 1 APPROVED → IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN BALANCE RUN PENDING.**
+**AUDIT COMPLETE → PASS 1 REVISED BY USER → IMPLEMENTED → GATE/DEPLOY PENDING → HUMAN BALANCE RUN PENDING.**
 
 Balance Gate не добавляет новую механику. Цель — свести уже существующие Gold / Supplies / Settlement / Battle Mercenaries / Puzzle rewards / Power-Threat в один экономически связный контракт и затем проверить его длинным живым забегом.
 
@@ -19,7 +19,7 @@ Balance Gate не добавляет новую механику. Цель — �
 - draw: половина соответствующей victory-награды
 - Puzzle perfect: `9 + 3 × stars` → **12…45 Gold**; ошибки дают 70% / 40% / 0%
 
-### Settlement — baseline до Pass 1
+### Settlement — baseline до Balance Gate
 Healing:
 - Pawn 10
 - Knight 18
@@ -51,37 +51,31 @@ Supplies:
 - adaptive route offset: +0 / +1 / +2 / +3 с вероятностями **40% / 30% / 20% / 10%**
 - при Power 500 обычный боевой/Puzzle route получает ★1…★4 с распределением 40/30/20/10
 
-## Найденный разрыв
+## История Pass 1
 
-Ранее был согласован повышенный Settlement tuning, но при Endless Run reconciliation он намеренно не был перенесён поверх production economy и поэтому до Balance Pass 1 не действовал.
+Первый вариант Pass 1 поднимал healing до 20/36/36/52/84 и recruitment до 72/126/126/192/288. После первого preview пользователь изменил направление: **лечение откатить к baseline, стоимость найма снизить на 30% от текущего Pass 1**.
 
-## Balance Pass 1 — утверждён и реализован
+## Balance Pass 1 — актуальная ревизия
 
-Пользователь 2026-08-31 утвердил предложение командой **«действуй»**.
+Healing возвращён к baseline:
+- Pawn **10**
+- Knight **18**
+- Bishop **18**
+- Rook **26**
+- Queen **42**
 
-Изменены только Settlement healing/recruitment costs:
+Recruitment уменьшен на 30% от предыдущих значений 72/126/126/192/288. После округления до ближайшего целого Gold:
+- Pawn **50** (`72 × 0.7 = 50.4`)
+- Knight **88** (`126 × 0.7 = 88.2`)
+- Bishop **88** (`126 × 0.7 = 88.2`)
+- Rook **134** (`192 × 0.7 = 134.4`)
+- Queen **202** (`288 × 0.7 = 201.6`)
 
-Healing:
-- Pawn **20**
-- Knight **36**
-- Bishop **36**
-- Rook **52**
-- Queen **84**
-
-Recruitment:
-- Pawn **72**
-- Knight **126**
-- Bishop **126**
-- Rook **192**
-- Queen **288**
-
-Набор сохраняет лечение примерно на уровне 27–29% стоимости нового героя соответствующего класса и делает найм долгосрочным решением, а не покупкой после одной удачной встречи.
-
-Regression закрепляет полный набор `HEAL_COSTS` / `RECRUIT_COSTS`, включая Queen 84 / 288, и фактическое списание 20 Gold за лечение Pawn.
+Regression закрепляет полный `HEAL_COSTS` / `RECRUIT_COSTS`, включая Queen 42 / 202, и фактическое списание 10 Gold за лечение Pawn.
 
 ## Замороженные ручки Pass 1
 
-На первом pass без изменений:
+Без изменений:
 - старт 80 Gold / 10 Supplies;
 - Travel = 1 Supply;
 - Supply shop = 12 Gold, stock 4;
@@ -91,36 +85,31 @@ Regression закрепляет полный набор `HEAL_COSTS` / `RECRUIT_
 - Power 500, K=32, star/Elo table и adaptive offset;
 - Event economy/content.
 
-Причина: текущие остальные формулы образуют полезные контрольные точки. Например, стартовый Battle требует 26 Gold на Наёмников, а ★1 Battle даёт 26 Gold за победу — ранняя Битва не является бесплатной Gold-фермой. Одновременная правка rewards, mercenary costs, Supplies и Settlement уничтожила бы возможность понять, какая именно ручка улучшила или ухудшила забег.
-
-## Что проверяем после Pass 1
+## Что проверяем после ревизии
 
 Human balance run должен ответить на вопросы:
-- Gold приходится выбирать между healing / recruitment / Supplies / Battle mercenaries, а не покупать всё сразу;
-- Pawn recruit достижим сравнительно рано, Queen recruit остаётся заметной долгосрочной целью;
-- лечение ощутимо дешевле замены погибшего героя, но не бесплатное;
-- Supplies требуют планирования, однако не заставляют постоянно выбирать Settlement;
-- Battle экономически рискованнее Skirmish, но более высокая reward-кривая компенсирует риск на больших stars;
+- лечение остаётся доступной операцией восстановления и не конкурирует слишком жёстко с развитием;
+- найм требует накопления, но Pawn/Knight/Bishop не ощущаются чрезмерно далёкими целями;
+- Queen за 202 Gold остаётся дорогой, но достижимой покупкой в длинном забеге;
+- Gold приходится распределять между recruitment / Supplies / Battle mercenaries;
+- Supplies требуют планирования, но не заставляют постоянно выбирать Settlement;
+- Battle экономически рискованнее Skirmish, но reward компенсирует риск;
 - рост Power не создаёт резкого скачка сложности;
-- Puzzle не становится очевидно лучшим или худшим способом добычи Gold;
-- Events не ломают экономику единичными чрезмерными выплатами/штрафами.
+- Puzzle не становится доминирующей или бесполезной Gold-стратегией;
+- Events не ломают экономику чрезмерными выплатами/штрафами.
 
 ## После human run
 
 Только по наблюдаемой проблеме открывается Pass 2. Возможные отдельные ручки: combat reward slope/base, Puzzle reward, Supply price/stock, Mercenary price, Power K/base/offset. Их нельзя менять пакетом без диагностической причины.
 
-## Gate / deploy receipt
+## Revision receipt
 
 - branch: `feature/balance-gate`;
-- Balance contract commit: `f1f00ade5e3bf785a058806b940af89575fe5f98`;
-- runtime costs commit: `129abc66d9803fbb0f7891185ef0b6266568b18e`;
-- regression commit: `fcc6ac22f5f4fa40ef396f69f52d2e3fa3e87984`;
-- exact tested/deployed head: `3724bf7b6264bb9e8cd6380f1806e3f31576e9ef`;
-- Cloudflare build: `dae9184e-3db3-418a-9054-ea8bc8eebd71` — **SUCCESS**;
-- commit preview: `https://46893cb4-rpchess.mobigametim.workers.dev`;
-- branch preview: `https://feature-balance-gate-rpchess.mobigametim.workers.dev`;
-- Cloudflare uses `npm run gate:local`, so exact-head SUCCESS includes source verification, deterministic Node tests and production build;
-- feature diff: **3 files / 0 assets**;
+- original Pass 1 gameplay candidate: `3724bf7b6264bb9e8cd6380f1806e3f31576e9ef` — **SUPERSEDED**;
+- revised runtime commit: `7be43499f2f537ffeaa0a4a264df395324ff79d7`;
+- revised regression commit: `4fe5ae51017d9d7eb02b405cb2c89ab48d4dfaf4`;
+- feature diff remains limited to Balance doc + Settlement runtime/test;
+- assets changed: **0**;
 - persistence schema changes: **0**;
 - GitHub Actions: **не используются**.
 
