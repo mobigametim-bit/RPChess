@@ -2,7 +2,7 @@
 
 ## Статус
 
-**AUDIT COMPLETE → TUNING CONTRACT PENDING USER APPROVAL.**
+**AUDIT COMPLETE → PASS 1 APPROVED → IMPLEMENTED → AUTOTEST PENDING → DEPLOY PENDING → HUMAN BALANCE RUN PENDING.**
 
 Balance Gate не добавляет новую механику. Цель — свести уже существующие Gold / Supplies / Settlement / Battle Mercenaries / Puzzle rewards / Power-Threat в один экономически связный контракт и затем проверить его длинным живым забегом.
 
@@ -19,7 +19,7 @@ Balance Gate не добавляет новую механику. Цель — �
 - draw: половина соответствующей victory-награды
 - Puzzle perfect: `9 + 3 × stars` → **12…45 Gold**; ошибки дают 70% / 40% / 0%
 
-### Settlement — текущие production цены
+### Settlement — baseline до Pass 1
 Healing:
 - Pawn 10
 - Knight 18
@@ -49,13 +49,17 @@ Supplies:
 - K-factor: **32**
 - base threat: `floor((Power - 400) / 200) + 1`, clamp ★1…★12
 - adaptive route offset: +0 / +1 / +2 / +3 с вероятностями **40% / 30% / 20% / 10%**
-- при Power 500 обычный боевой/Puzzle route поэтому получает ★1…★4 с распределением 40/30/20/10
+- при Power 500 обычный боевой/Puzzle route получает ★1…★4 с распределением 40/30/20/10
 
 ## Найденный разрыв
 
-Ранее был согласован повышенный Settlement tuning, но при Endless Run reconciliation он намеренно не был перенесён поверх production economy и поэтому сейчас не действует.
+Ранее был согласован повышенный Settlement tuning, но при Endless Run reconciliation он намеренно не был перенесён поверх production economy и поэтому до Balance Pass 1 не действовал.
 
-Согласованный повышенный набор:
+## Balance Pass 1 — утверждён и реализован
+
+Пользователь 2026-08-31 утвердил предложение командой **«действуй»**.
+
+Изменены только Settlement healing/recruitment costs:
 
 Healing:
 - Pawn **20**
@@ -71,13 +75,13 @@ Recruitment:
 - Rook **192**
 - Queen **288**
 
-Этот набор сохраняет лечение примерно на уровне 27–29% стоимости нового героя соответствующего класса и делает найм долгосрочным решением, а не покупкой после одной удачной встречи.
+Набор сохраняет лечение примерно на уровне 27–29% стоимости нового героя соответствующего класса и делает найм долгосрочным решением, а не покупкой после одной удачной встречи.
 
-## Предлагаемый Balance Pass 1
+Regression закрепляет полный набор `HEAL_COSTS` / `RECRUIT_COSTS`, включая Queen 84 / 288, и фактическое списание 20 Gold за лечение Pawn.
 
-**Изменить только Settlement healing/recruitment на ранее согласованные повышенные значения.**
+## Замороженные ручки Pass 1
 
-На первом pass оставить без изменений:
+На первом pass без изменений:
 - старт 80 Gold / 10 Supplies;
 - Travel = 1 Supply;
 - Supply shop = 12 Gold, stock 4;
@@ -87,7 +91,7 @@ Recruitment:
 - Power 500, K=32, star/Elo table и adaptive offset;
 - Event economy/content.
 
-Причина: текущие остальные формулы уже образуют полезные контрольные точки. Например, стартовый Battle требует 26 Gold на Наёмников, а ★1 Battle даёт 26 Gold за победу — ранняя Битва не является бесплатной Gold-фермой. Одновременная правка rewards, mercenary costs, Supplies и Settlement уничтожит возможность понять, какая именно ручка улучшила или ухудшила забег.
+Причина: текущие остальные формулы образуют полезные контрольные точки. Например, стартовый Battle требует 26 Gold на Наёмников, а ★1 Battle даёт 26 Gold за победу — ранняя Битва не является бесплатной Gold-фермой. Одновременная правка rewards, mercenary costs, Supplies и Settlement уничтожила бы возможность понять, какая именно ручка улучшила или ухудшила забег.
 
 ## Что проверяем после Pass 1
 
@@ -104,6 +108,17 @@ Human balance run должен ответить на вопросы:
 ## После human run
 
 Только по наблюдаемой проблеме открывается Pass 2. Возможные отдельные ручки: combat reward slope/base, Puzzle reward, Supply price/stock, Mercenary price, Power K/base/offset. Их нельзя менять пакетом без диагностической причины.
+
+## Implementation receipt до gate
+
+- branch: `feature/balance-gate`;
+- Balance contract commit: `f1f00ade5e3bf785a058806b940af89575fe5f98`;
+- runtime costs commit: `129abc66d9803fbb0f7891185ef0b6266568b18e`;
+- regression commit: `fcc6ac22f5f4fa40ef396f69f52d2e3fa3e87984`;
+- runtime files changed: `game/js/settlement-core.mjs`, `tests/settlement.cjs`;
+- assets changed: **0**;
+- persistence schema changes: **0**;
+- GitHub Actions: **не используются**.
 
 ## Safety
 
