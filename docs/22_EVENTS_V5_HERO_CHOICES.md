@@ -2,7 +2,7 @@
 
 ## Статус
 
-**SOURCE APPROVED → IMPLEMENTED → AUTOTEST PENDING → DEPLOY PENDING → HUMAN ACCEPTANCE PENDING.**
+**SOURCE APPROVED → IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTANCE PENDING.**
 
 Источник — утверждённый пользователем `events_v5.md`. SHA-256 исходного Markdown: `82eef9b76ac7af36d53cf96c6567449cf5c9fec9d106fd514ca9e5e83c86a191`.
 
@@ -81,3 +81,13 @@ Random non-King последствия остаются random non-King: Events 
 - наличие v5 UI/CSS-контракта.
 
 Canonical deploy gate: `npm run gate:local` + Cloudflare exact-head **SUCCESS**, затем обязательный human acceptance перед merge.
+
+## Deploy receipt перед human acceptance
+
+- runtime/UI head `8c26cdde4e796dcfc209d7890906e5152fde83f6`;
+- Cloudflare exact-head build `b606e10f-69d3-485e-85d4-755b12cf2e64` — **SUCCESS**;
+- commit preview: `https://45550530-rpchess.mobigametim.workers.dev`;
+- stable branch preview: `https://feature-events-v5-hero-choices-rpchess.mobigametim.workers.dev`;
+- Draft PR #100;
+- feature diff: **0 asset files**;
+- GitHub Actions не использовались.
