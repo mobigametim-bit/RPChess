@@ -83,6 +83,16 @@ function setCombatBackdrop(choice = null) {
   screen.dataset.combatBackdrop = path;
 }
 
+function setBattlePrepBackdrop(choice = null) {
+  const screen = document.querySelector('[data-battle-screen]');
+  if (!screen) return;
+  const resolved = choice || globalThis.RPChessBattle?.encounter || globalThis.RPChessTravelEncounterOverride || null;
+  const seed = resolved?.seed || resolved?.id || 'rpchess:battle-prep';
+  const path = backdropPath(seed, resolved?.enemyRaceTag || null);
+  screen.style.setProperty('--battle-scene-backdrop', `url("${path}")`);
+  screen.dataset.battleBackdrop = path;
+}
+
 function setSettlementBackdrop(choice = null) {
   const screen = document.querySelector('[data-settlement-screen]');
   if (!screen) return;
@@ -129,7 +139,11 @@ queueMicrotask(refresh);
 addEventListener('rpchess:travel-open', () => queueMicrotask(decorateTravelCards));
 addEventListener('rpchess:run-updated', () => queueMicrotask(refresh));
 addEventListener('rpchess:skirmish-open', (event) => setCombatBackdrop(event?.detail?.choice));
-addEventListener('rpchess:battle-open', (event) => setCombatBackdrop(event?.detail?.choice));
+addEventListener('rpchess:battle-open', (event) => {
+  const choice = event?.detail?.choice || null;
+  setCombatBackdrop(choice);
+  queueMicrotask(() => setBattlePrepBackdrop(choice));
+});
 addEventListener('rpchess:settlement-open', (event) => setSettlementBackdrop(event?.detail?.choice));
 
 const observer = new MutationObserver(() => queueMicrotask(refresh));
@@ -140,6 +154,7 @@ globalThis.RPChessSceneVisuals = Object.freeze({
   backdropPath,
   decorateTravelCards,
   setCombatBackdrop,
+  setBattlePrepBackdrop,
   setSettlementBackdrop,
   refresh
 });
