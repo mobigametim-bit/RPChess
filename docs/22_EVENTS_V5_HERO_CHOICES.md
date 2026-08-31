@@ -2,7 +2,7 @@
 
 ## Статус
 
-**SOURCE APPROVED → IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTANCE PENDING.**
+**SOURCE APPROVED → IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE.**
 
 Источник — утверждённый пользователем `events_v5.md`. SHA-256 исходного Markdown: `82eef9b76ac7af36d53cf96c6567449cf5c9fec9d106fd514ca9e5e83c86a191`.
 
@@ -82,12 +82,16 @@ Random non-King последствия остаются random non-King: Events 
 
 Canonical deploy gate: `npm run gate:local` + Cloudflare exact-head **SUCCESS**, затем обязательный human acceptance перед merge.
 
-## Deploy receipt перед human acceptance
+## Acceptance / merge receipt
 
-- runtime/UI head `8c26cdde4e796dcfc209d7890906e5152fde83f6`;
-- Cloudflare exact-head build `b606e10f-69d3-485e-85d4-755b12cf2e64` — **SUCCESS**;
-- commit preview: `https://45550530-rpchess.mobigametim.workers.dev`;
+- Human acceptance: **«всё хорошо» — 2026-08-31**;
+- exact accepted head: `4bdd002bf618f73077c74329cc2f16edd48667ac`;
+- Cloudflare exact-head build: `90b126d9-1b28-4e60-8919-9b5d565a3f26` — **SUCCESS**;
+- accepted commit preview: `https://01ad647c-rpchess.mobigametim.workers.dev`;
 - stable branch preview: `https://feature-events-v5-hero-choices-rpchess.mobigametim.workers.dev`;
-- Draft PR #100;
-- feature diff: **0 asset files**;
+- Draft PR #100 закрыт unmerged только для established Draft→Ready workaround;
+- identical non-Draft PR #101 squash-merged в `main` как `350e04783e4c4370dc490ff0745207b7f1b2ba11`;
+- accepted head и production merge имеют одинаковый tree SHA `abe48127ce4a709a22ecfbc86142aefdff493188`;
+- feature diff: **12 files / 0 asset files**;
+- ручные hero assets сохранены;
 - GitHub Actions не использовались.
