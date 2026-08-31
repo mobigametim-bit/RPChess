@@ -1,43 +1,52 @@
-/* Events v5 — named hero choices. Additive to the accepted Events presentation. */
+/* Events v5 — named hero choices. Presentation only; functional hooks stay unchanged. */
 .events-choice--hero{
-  border-color:rgba(218,178,88,.42);
-  background:linear-gradient(100deg,rgba(37,29,14,.76),rgba(4,10,18,.72) 62%);
+  position:relative;
+  padding-left:20px;
+  border-color:rgba(218,178,88,.50);
+  background:linear-gradient(100deg,rgba(37,29,14,.82),rgba(10,14,20,.86) 62%);
+  box-shadow:0 8px 26px rgba(0,0,0,.22),inset 3px 0 0 rgba(229,190,99,.72);
 }
 .events-choice--hero:hover:not(:disabled),
 .events-choice--hero:focus-visible:not(:disabled){
   border-color:rgba(242,202,107,.84);
-  background:linear-gradient(100deg,rgba(58,44,19,.82),rgba(16,39,62,.78) 68%);
+  background:linear-gradient(100deg,rgba(57,43,19,.88),rgba(22,19,14,.91) 68%);
+  box-shadow:0 11px 30px rgba(0,0,0,.30),inset 3px 0 0 rgba(242,202,107,.9);
 }
 .events-choice--hero-locked:disabled{
-  opacity:.78;
+  opacity:.76;
   border-color:rgba(151,128,91,.34);
-  background:linear-gradient(100deg,rgba(25,22,18,.72),rgba(4,10,18,.72) 68%);
+  background:linear-gradient(100deg,rgba(24,21,17,.82),rgba(10,12,16,.84) 68%);
+  box-shadow:0 7px 22px rgba(0,0,0,.18),inset 3px 0 0 rgba(151,128,91,.38);
 }
 .events-choice__hero{
   display:grid;
-  gap:7px;
-  margin:-2px 0 14px;
-  padding:0 0 13px;
+  gap:6px;
+  margin:-1px 0 12px;
+  padding:0 0 11px;
   border-bottom:1px solid rgba(238,194,93,.24);
 }
 .events-choice__hero-name{
   display:block;
   color:#f0d68e;
-  font-size:13px;
+  font-size:12px;
   line-height:1.35;
   letter-spacing:.055em;
   text-transform:uppercase;
 }
-.events-choice--hero-locked .events-choice__hero-name{color:#d8b88b}
+.events-choice--hero-locked .events-choice__hero-name{color:#c5a77e}
 .events-choice__hero-line{
   display:block;
+  max-width:760px;
   color:#ead7aa;
-  font:italic clamp(13px,1.05vw,15px)/1.58 Georgia,'Times New Roman',serif;
+  font:italic clamp(13px,1vw,15px)/1.52 Georgia,'Times New Roman',serif;
   text-shadow:0 2px 8px rgba(0,0,0,.72);
 }
-.events-choice--hero-locked .events-choice__hero-line{color:rgba(225,210,177,.82)}
+.events-choice--hero-locked .events-choice__hero-line{color:rgba(205,193,168,.72)}
+.events-choice--hero-locked .events-choice__head strong{color:rgba(196,188,174,.70)}
+.events-choice--hero-locked .events-choice__head>span{color:rgba(169,148,105,.68)}
 .events-choice--hero-locked .events-choice__disabled{display:none}
 @media(max-width:760px){
+  .events-choice--hero{padding-left:17px}
   .events-choice__hero-line{font-size:13px}
-  .events-choice__hero-name{font-size:12px}
+  .events-choice__hero-name{font-size:11px}
 }
