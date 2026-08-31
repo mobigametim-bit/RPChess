@@ -1,9 +1,11 @@
 import { readRun, writeRun } from './run-persistence.mjs';
 import { SLOT_CAPACITY, selectedTypeCounts, validateBattleSelection } from './battle-core.mjs';
+import { HEAL_COSTS } from './settlement-core.mjs';
 
 const SUPPLY_GOLD_VALUE = 10;
 const MERCENARY_COSTS = Object.freeze({ pawn: 1, knight: 3, bishop: 3, rook: 5, queen: 9, king: 0 });
 const MERCENARY_TYPES = Object.freeze(['queen', 'rook', 'bishop', 'knight', 'pawn']);
+const RESERVE_REPLACEMENT_COSTS = Object.freeze(Object.fromEntries(MERCENARY_TYPES.map((pieceType) => [pieceType, Math.max(MERCENARY_COSTS[pieceType] || 0, HEAL_COSTS[pieceType] || 0)])));
 
 function safeInteger(value) { return Number.isInteger(value) && value >= 0 ? value : 0; }
 function hashSeed(input) { let h=2166136261; for(const c of String(input)){ h^=c.charCodeAt(0); h=Math.imul(h,16777619); } return h>>>0; }
@@ -13,16 +15,32 @@ function mercenaryCounts(roster = [], selectedIds = []) {
   return Object.freeze(Object.fromEntries(MERCENARY_TYPES.map((pieceType) => [pieceType, Math.max(0, (SLOT_CAPACITY[pieceType] || 0) - (named[pieceType] || 0))])));
 }
 
-function mercenaryGoldCost(roster = [], selectedIds = []) {
-  const counts = mercenaryCounts(roster, selectedIds);
-  return MERCENARY_TYPES.reduce((sum, pieceType) => sum + (counts[pieceType] * MERCENARY_COSTS[pieceType]), 0);
+function healthyReserveCounts(roster = [], selectedIds = []) {
+  const selected = new Set(selectedIds || []);
+  const counts = Object.fromEntries(MERCENARY_TYPES.map((pieceType) => [pieceType, 0]));
+  for (const character of roster || []) {
+    if (!character || character.isRunKing || character.status !== 'healthy' || selected.has(character.id)) continue;
+    if (!Object.prototype.hasOwnProperty.call(counts, character.pieceType)) continue;
+    counts[character.pieceType] += 1;
+  }
+  return Object.freeze(counts);
 }
 
 function mercenaryQuote(roster = [], selectedIds = []) {
   const counts = mercenaryCounts(roster, selectedIds);
-  const totalCost = MERCENARY_TYPES.reduce((sum, pieceType) => sum + (counts[pieceType] * MERCENARY_COSTS[pieceType]), 0);
+  const healthyReserve = healthyReserveCounts(roster, selectedIds);
+  const reserveReplacementCounts = Object.freeze(Object.fromEntries(MERCENARY_TYPES.map((pieceType) => [pieceType, Math.min(counts[pieceType], healthyReserve[pieceType])])));
+  const baseCounts = Object.freeze(Object.fromEntries(MERCENARY_TYPES.map((pieceType) => [pieceType, counts[pieceType] - reserveReplacementCounts[pieceType]])));
+  const totalCost = MERCENARY_TYPES.reduce((sum, pieceType) => sum
+    + (baseCounts[pieceType] * MERCENARY_COSTS[pieceType])
+    + (reserveReplacementCounts[pieceType] * RESERVE_REPLACEMENT_COSTS[pieceType]), 0);
   const totalCount = MERCENARY_TYPES.reduce((sum, pieceType) => sum + counts[pieceType], 0);
-  return Object.freeze({ counts, totalCost, totalCount });
+  const reserveReplacementCount = MERCENARY_TYPES.reduce((sum, pieceType) => sum + reserveReplacementCounts[pieceType], 0);
+  return Object.freeze({ counts, baseCounts, reserveReplacementCounts, totalCost, totalCount, reserveReplacementCount });
+}
+
+function mercenaryGoldCost(roster = [], selectedIds = []) {
+  return mercenaryQuote(roster, selectedIds).totalCost;
 }
 
 function samePendingContract(contract, encounterId, battleCountAtCharge) {
@@ -52,7 +70,10 @@ function chargeBattleMercenaries(run, { roster = run?.roster || [], selectedIds 
     battleCountAtCharge,
     selectedIds: [...new Set(selectedIds)],
     mercenaryCounts: quote.counts,
+    baseMercenaryCounts: quote.baseCounts,
+    reserveReplacementCounts: quote.reserveReplacementCounts,
     mercenaryCount: quote.totalCount,
+    reserveReplacementCount: quote.reserveReplacementCount,
     totalCost,
     goldPaid,
     suppliesPaid,
@@ -89,6 +110,7 @@ function resolveBattleMercenaryDebt(run) {
   }
   const payment = {
     mercenaryCount: safeInteger(contract.mercenaryCount),
+    reserveReplacementCount: safeInteger(contract.reserveReplacementCount),
     totalCost: safeInteger(contract.totalCost),
     goldPaid: safeInteger(contract.goldPaid),
     suppliesPaid: safeInteger(contract.suppliesPaid),
@@ -124,7 +146,10 @@ function resolveBattleMercenaryDebt(run) {
 
 function paymentToast(result) {
   const debt = Boolean(result?.contract?.casualtyDebt);
-  const label = debt ? 'НАЁМНИКИ · НЕ ХВАТИЛО РЕСУРСОВ — ПОСЛЕ БИТВЫ ПОГИБНЕТ ОДИН ГЕРОЙ' : 'НАЁМНИКИ';
+  const protectedReserve = safeInteger(result?.contract?.reserveReplacementCount);
+  const label = debt
+    ? 'НАЁМНИКИ · НЕ ХВАТИЛО РЕСУРСОВ — ПОСЛЕ БИТВЫ ПОГИБНЕТ ОДИН ГЕРОЙ'
+    : protectedReserve > 0 ? `НАЁМНИКИ · ${protectedReserve} ЗАМЕНА ЗДОРОВЫХ ГЕРОЕВ` : 'НАЁМНИКИ';
   setTimeout(() => globalThis.RPChessResources?.showChange?.({ goldDelta: -safeInteger(result?.chargedGold), suppliesDelta: -safeInteger(result?.chargedSupplies), label }), 80);
 }
 
@@ -133,7 +158,7 @@ function normalizeBattleCopy() {
   const eyebrow = army?.querySelector('.reboot-eyebrow');
   const note = army?.querySelector('.battle-section-head > span');
   if (eyebrow) eyebrow.textContent = 'НАЁМНИКИ';
-  if (note) note.textContent = 'Персональные бойцы заменяют Наёмников того же типа.';
+  if (note) note.textContent = 'Свободный слот — дешёвый Наёмник. Замена оставленного в резерве здорового героя стоит как его лечение.';
 }
 
 function patchAftermath(casualty) {
@@ -188,8 +213,10 @@ if (typeof document !== 'undefined') {
 
 globalThis.RPChessBattleMercenaries = Object.freeze({
   MERCENARY_COSTS,
+  RESERVE_REPLACEMENT_COSTS,
   SUPPLY_GOLD_VALUE,
   mercenaryCounts,
+  healthyReserveCounts,
   mercenaryGoldCost,
   mercenaryQuote,
   chargeBattleMercenaries,
@@ -197,4 +224,4 @@ globalThis.RPChessBattleMercenaries = Object.freeze({
   resolveBattleMercenaryDebt
 });
 
-export { MERCENARY_COSTS, SUPPLY_GOLD_VALUE, mercenaryCounts, mercenaryGoldCost, mercenaryQuote, chargeBattleMercenaries, deterministicMercenaryCasualty, resolveBattleMercenaryDebt };
+export { MERCENARY_COSTS, RESERVE_REPLACEMENT_COSTS, SUPPLY_GOLD_VALUE, mercenaryCounts, healthyReserveCounts, mercenaryGoldCost, mercenaryQuote, chargeBattleMercenaries, deterministicMercenaryCasualty, resolveBattleMercenaryDebt };

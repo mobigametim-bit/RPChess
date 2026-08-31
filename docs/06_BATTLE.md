@@ -60,7 +60,7 @@ Battle сохраняет `participants` — список именных пер�
 
 Стандартные неименные фигуры Battle называются **Наёмники** и автоматически занимают все незаполненные named-слоты полного классического состава.
 
-Стоимость одного Наёмника:
+Базовая стоимость одного Наёмника при реальной нехватке именной фигуры:
 - Pawn — **1 Gold**;
 - Knight — **3 Gold**;
 - Bishop — **3 Gold**;
@@ -68,7 +68,7 @@ Battle сохраняет `participants` — список именных пер�
 - Queen — **9 Gold**;
 - King в системе Наёмников не участвует.
 
-Стоимость зависит только от фактически незаполненных named-слотов при нажатии `Начать битву`. Для стартового roster/default selection требуется 10 Наёмников общей стоимостью **26 Gold**.
+Для стартового roster/default selection требуется 10 Наёмников общей стоимостью **26 Gold**.
 
 Оплата происходит автоматически и атомарно при единственном клике `Начать битву`:
 1. сначала списывается доступное Gold;
@@ -88,7 +88,7 @@ Battle сохраняет `participants` — список именных пер�
 
 Payment/debt idempotent и persistent. Reload или повторное открытие той же Battle не могут вернуть списанные ресурсы, уменьшить уже зафиксированную стоимость или снять casualty debt. Итоговый payment receipt и возможная casualty записываются в `lastBattle`.
 
-Acceptance receipt:
+Acceptance receipt исходного Mercenaries extension:
 - Human acceptance: **«всё хорошо» — 2026-08-31**;
 - accepted exact head: `f2c3c92b3636b593cca97c662be6b8c3f1a692c9`;
 - Cloudflare exact-head build `d431ac63-54ec-4757-9be3-16aefc9d0cf4` — **SUCCESS**;
@@ -96,10 +96,43 @@ Acceptance receipt:
 - идентичный non-Draft PR #93 squash-merged в production `main` как `33f602b4b8644a9c7612ba18033c4ad0e9ee5941`;
 - GitHub Actions не использовались.
 
-Текущий lifecycle расширения: **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE**.
+Исходный lifecycle расширения: **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE**.
+
+## Balance Gate override — healthy reserve pricing
+
+Во время Balance Gate 2026-08-31 найден exploit: здоровых именных героев можно было сознательно снять с Battle и заменить дешёвыми Наёмниками, полностью избегая риска ранения roster.
+
+Утверждённый anti-exploit contract сохраняет свободу deselect, но различает **реальную нехватку состава** и **добровольную замену здорового героя**.
+
+Если здоровый именной герой подходящего типа есть в roster, но оставлен в резерве, каждый Наёмник, реально занимающий его освободившийся standard slot, стоит не меньше healing cost этого типа. В текущем Balance Pass 1 replacement prices равны healing costs:
+- Pawn — **10 Gold**;
+- Knight — **18 Gold**;
+- Bishop — **18 Gold**;
+- Rook — **26 Gold**;
+- Queen — **42 Gold**.
+
+Правило применяется поштучно. Если Battle требует две Rook, у игрока есть только одна healthy named Rook и она снята с выбора, одна Rook-наёмник стоит 26 Gold, а вторая закрывает реальную нехватку и стоит обычные 5 Gold.
+
+`wounded` и `dead` не считаются здоровым резервом. Если соответствующего healthy героя нет, используется обычная цена 1/3/3/5/9.
+
+Контрольные примеры для стартового roster:
+- default selection → 10 Наёмников / **26 Gold**;
+- только King → 15 Наёмников / **108 Gold**;
+- если одна стартовая Pawn wounded и выбран только King → **99 Gold**.
+
+Battle preparation теперь текстом объясняет: `Свободный слот — дешёвый Наёмник. Замена оставленного в резерве здорового героя стоит как его лечение.`
+
+Balance Gate Pass 1 acceptance receipt:
+- runtime commit `689bdeec1754425e5f61b75535e06ed6fb119d4d`;
+- regression/gameplay candidate `46a33ffc10110bd89134bfa8fe86f026945bc4ed`;
+- gameplay Cloudflare build `b5bf6322-3e6b-4410-8e21-32a0b0d0a3f2` — **SUCCESS**;
+- accepted exact head `de819f0aebc0bebf6898bf8d4d26ce172a4b408f`;
+- accepted exact-head Cloudflare build `23be38ab-5524-47eb-97d5-5ff92c6d39d8` — **SUCCESS**;
+- Human acceptance: **«да, отлично, всё хорошо» — 2026-08-31**;
+- GitHub Actions не используются.
 
 ## Persistence
-Схема `rpchess.reboot.v1.run` остаётся обратно совместимой и содержит `battleCount`, `lastBattle`, `lastBattle.participants` и outcome metadata. Mercenaries extension добавляет transient `battleMercenaryContract` между `Начать битву` и её settlement; после завершения контракт очищается, а receipt переносится в `lastBattle`.
+Схема `rpchess.reboot.v1.run` остаётся обратно совместимой и содержит `battleCount`, `lastBattle`, `lastBattle.participants` и outcome metadata. Mercenaries extension добавляет transient `battleMercenaryContract` между `Начать битву` и её settlement; после завершения контракт очищается, а receipt переносится в `lastBattle`. Balance Gate добавляет в transient contract breakdown `baseMercenaryCounts` / `reserveReplacementCounts`, не меняя version persistence schema.
 
 ## Mobile
 Full-army preview и выбранные именные участники идут перед каталогом; action bar sticky; только vertical scroll; horizontal overflow запрещён.

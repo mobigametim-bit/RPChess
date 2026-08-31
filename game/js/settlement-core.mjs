@@ -14,11 +14,11 @@ const HEAL_COSTS = Object.freeze({
 });
 
 const RECRUIT_COSTS = Object.freeze({
-  pawn: 24,
-  knight: 42,
-  bishop: 42,
-  rook: 64,
-  queen: 96
+  pawn: 50,
+  knight: 88,
+  bishop: 88,
+  rook: 134,
+  queen: 202
 });
 
 const ORIGINS = Object.freeze({
