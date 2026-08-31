@@ -54,7 +54,9 @@ function applyBattleOutcome(run,{capturedIds=[],status=null,playerColor='w',part
     return{...c};
   });
   const woundedIds=roster.filter((c)=>captured.has(c.id)&&!c.isRunKing&&c.status==='wounded').map((c)=>c.id);
-  return{...run,roster,ended:Boolean(run?.ended||soloKing),endReason:run?.endReason||(soloKing?'king_solo_battle':null),lastBattle:{result:status?.type||'unknown',winner:status?.winner||null,participants,woundedIds,kingDied:soloKing}};
+  const lastBattle={result:status?.type||'unknown',winner:status?.winner||null,participants,woundedIds,kingDied:false};
+  if(soloKing)lastBattle.kingDied=true;
+  return{...run,roster,ended:Boolean(run?.ended||soloKing),endReason:run?.endReason||(soloKing?'king_solo_battle':null),lastBattle};
 }
 
 export {BATTLE_PIECE_COUNT,BATTLE_ARMY_POINTS,STANDARD_FEN,SLOT_CAPACITY,STANDARD_SLOTS,BATTLE_TIERS,combatEligible,createBattleEncounter,selectedTypeCounts,validateBattleSelection,defaultBattleSelection,formationFor,createBattlePlan,applyBattleOutcome};
