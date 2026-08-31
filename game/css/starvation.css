@@ -1,33 +1,68 @@
 .starvation-screen {
   min-height: 100vh;
-  padding: clamp(18px, 4vw, 48px);
-  background: radial-gradient(circle at 50% 20%, rgba(94, 48, 28, 0.22), transparent 42%), linear-gradient(180deg, #070b11 0%, #030508 100%);
+  padding: clamp(16px, 2.4vw, 38px);
+  background:
+    linear-gradient(90deg, rgba(3, 7, 15, .56), rgba(18, 8, 11, .28) 52%, rgba(3, 7, 15, .45)),
+    url('../generated_assets/scene_defeat.jpg') center / cover fixed no-repeat;
 }
 
 .starvation-shell {
-  width: min(760px, 100%);
+  width: min(1510px, 100%);
+  min-height: calc(100vh - clamp(32px, 4.8vw, 76px));
   margin: 0 auto;
   display: grid;
-  gap: 18px;
-  justify-items: center;
+  grid-template-rows: auto 1fr;
+  align-content: start;
+  gap: 14px;
 }
 
 .starvation-logo {
-  width: min(260px, 62vw);
+  position: relative;
+  z-index: 3;
+  justify-self: start;
+  width: min(235px, 39vw);
   height: auto;
+  filter: drop-shadow(0 6px 18px #000);
 }
 
 .starvation-panel {
-  width: 100%;
+  position: relative;
+  isolation: isolate;
+  width: min(1260px, 100%);
+  min-height: 580px;
   display: grid;
-  justify-items: center;
-  gap: 14px;
-  text-align: center;
-  padding-top: clamp(24px, 5vw, 46px);
-  padding-bottom: clamp(24px, 5vw, 46px);
-  border: 1px solid var(--ui-panel-border);
-  background: var(--ui-panel-bg);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+  grid-template-columns: minmax(300px, 400px) minmax(0, 1fr);
+  grid-template-areas:
+    'portrait eyebrow'
+    'portrait title'
+    'portrait name'
+    'portrait text'
+    'portrait button';
+  grid-template-rows: auto auto auto 1fr auto;
+  column-gap: clamp(38px, 5vw, 72px);
+  row-gap: 12px;
+  align-items: start;
+  justify-items: start;
+  margin: 0 auto;
+  padding: clamp(42px, 5vw, 70px);
+  overflow: hidden;
+  text-align: left;
+  border: 1px solid rgba(203, 157, 80, .36) !important;
+  border-radius: 8px !important;
+  background:
+    linear-gradient(90deg, rgba(5, 8, 12, .95) 0%, rgba(5, 8, 12, .88) 54%, rgba(5, 8, 12, .78) 100%) !important;
+  box-shadow: 0 22px 58px rgba(0, 0, 0, .38), inset 0 1px rgba(255, 235, 178, .025) !important;
+}
+
+.starvation-panel > .reboot-eyebrow {
+  grid-area: eyebrow;
+  align-self: end;
+  margin: 4px 0 0;
+  color: #ce9178;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .14em;
+  text-transform: uppercase;
 }
 
 .starvation-panel h1,
@@ -37,49 +72,202 @@
 }
 
 .starvation-panel h1 {
-  max-width: 620px;
-  font-size: clamp(30px, 6vw, 54px);
-  letter-spacing: 0.04em;
+  grid-area: title;
+  align-self: end;
+  max-width: 760px;
+  color: #f3ddb7;
+  font: 400 clamp(52px, 5.4vw, 74px) / .94 'BrahmsGotischCyr', Georgia, serif;
+  letter-spacing: .01em;
+  text-shadow: 0 6px 20px rgba(0, 0, 0, .76);
 }
 
 .starvation-panel h2 {
-  font-size: clamp(22px, 4vw, 32px);
+  grid-area: name;
+  margin-top: 20px;
+  color: #f4e5c1;
+  font: 400 clamp(30px, 3vw, 40px) / 1 'BrahmsGotischCyr', Georgia, serif;
+  letter-spacing: .01em;
 }
 
 .starvation-panel p {
-  max-width: 600px;
-  color: rgba(236, 240, 247, 0.82);
+  grid-area: text;
+  max-width: 690px;
+  color: #c9d0d6;
+  font-size: 15px;
   line-height: 1.55;
 }
 
 .starvation-portrait {
-  width: min(220px, 54vw);
-  aspect-ratio: 1;
+  grid-area: portrait;
+  align-self: stretch;
+  justify-self: stretch;
+  width: 100%;
+  height: 100%;
+  min-height: 440px;
+  max-height: 470px;
   object-fit: cover;
   object-position: center top;
-  border: 1px solid rgba(176, 136, 84, 0.48);
-  background: rgba(0, 0, 0, 0.2);
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.34);
+  border: 1px solid rgba(216, 177, 93, .62);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, .24);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, .42), inset 0 0 0 1px rgba(255, 232, 175, .025);
+  filter: saturate(.82) brightness(.84);
 }
 
 .starvation-piece {
-  margin-top: -34px;
-  min-width: 54px;
-  min-height: 54px;
+  grid-area: portrait;
+  align-self: end;
+  justify-self: end;
+  z-index: 2;
+  width: 58px;
+  height: 58px;
+  min-width: 58px;
+  min-height: 58px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(194, 151, 92, 0.5);
-  background: rgba(7, 10, 16, 0.92);
-  font-size: 30px;
+  margin: 0 14px 14px 0;
+  border: 1px solid rgba(216, 177, 93, .72);
+  border-radius: 4px;
+  background: rgba(7, 10, 15, .95);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .38), inset 0 0 0 1px rgba(255, 235, 183, .04);
+  color: #f5e2ad;
+  font-size: 32px;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, .75);
 }
 
 .starvation-button {
-  margin-top: 8px;
-  min-width: min(320px, 100%);
+  grid-area: button;
+  justify-self: start;
+  width: min(390px, 100%);
+  min-height: 56px;
+  margin: 24px 0 0;
 }
 
-@media (max-width: 520px) {
-  .starvation-screen { padding: 14px; }
-  .starvation-panel { gap: 12px; }
-  .starvation-panel p { font-size: 14px; }
+/* Keep Starvation on the same approved CSS-only button language as the redesigned combat screens. */
+.starvation-screen .reboot-button {
+  position: relative;
+  border: 1px solid #d8b15d;
+  border-image: none;
+  border-radius: 0;
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
+  background: linear-gradient(180deg, rgba(58, 45, 27, .72) 0%, rgba(27, 28, 31, .97) 48%, rgba(8, 11, 15, .99) 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 235, 183, .08), inset 0 7px 18px rgba(239, 195, 102, .04), 0 10px 26px rgba(0, 0, 0, .28);
+  color: #f5e2ad;
+  font-family: 'BrahmsGotischCyr', Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(18px, 1.35vw, 23px);
+  letter-spacing: .025em;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, .82);
+  transition: transform .14s ease, filter .14s ease, border-color .14s ease, box-shadow .14s ease;
+}
+
+.starvation-screen .reboot-button::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  clip-path: polygon(7px 0, calc(100% - 7px) 0, 100% 7px, 100% calc(100% - 7px), calc(100% - 7px) 100%, 7px 100%, 0 calc(100% - 7px), 0 7px);
+  border: 1px solid rgba(247, 220, 156, .22);
+  pointer-events: none;
+}
+
+.starvation-screen .reboot-button:hover:not(:disabled),
+.starvation-screen .reboot-button:focus-visible {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+  border-color: #edcb7a;
+  box-shadow: inset 0 0 0 1px rgba(255, 235, 183, .12), inset 0 8px 22px rgba(239, 195, 102, .07), 0 13px 30px rgba(0, 0, 0, .34), 0 0 18px rgba(214, 171, 80, .07);
+}
+
+.starvation-screen .reboot-button:disabled {
+  opacity: .42;
+  filter: saturate(.32) brightness(.72);
+}
+
+@media (max-width: 900px) {
+  .starvation-screen {
+    background-attachment: scroll;
+  }
+
+  .starvation-shell {
+    gap: 10px;
+  }
+
+  .starvation-panel {
+    min-height: 0;
+    grid-template-columns: minmax(190px, 34vw) minmax(0, 1fr);
+    column-gap: 24px;
+    padding: 28px 22px 34px;
+  }
+
+  .starvation-portrait {
+    min-height: 360px;
+    max-height: 420px;
+  }
+
+  .starvation-panel h1 {
+    font-size: clamp(44px, 7.4vw, 62px);
+  }
+}
+
+@media (max-width: 680px) {
+  .starvation-screen {
+    padding: 12px;
+  }
+
+  .starvation-logo {
+    width: min(205px, 52vw);
+  }
+
+  .starvation-panel {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'eyebrow'
+      'title'
+      'portrait'
+      'name'
+      'text'
+      'button';
+    row-gap: 10px;
+    padding: 24px 14px 30px;
+  }
+
+  .starvation-panel > .reboot-eyebrow {
+    margin-top: 0;
+  }
+
+  .starvation-panel h1 {
+    font-size: clamp(44px, 13vw, 58px);
+  }
+
+  .starvation-portrait {
+    width: min(100%, 390px);
+    min-height: 0;
+    max-height: none;
+    aspect-ratio: 4 / 5;
+    justify-self: center;
+    margin-top: 8px;
+  }
+
+  .starvation-piece {
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    min-height: 52px;
+    margin: 0 max(10px, calc((100% - min(100%, 390px)) / 2 + 10px)) 10px 0;
+    font-size: 28px;
+  }
+
+  .starvation-panel h2 {
+    margin-top: 12px;
+    font-size: 32px;
+  }
+
+  .starvation-panel p {
+    font-size: 14px;
+  }
+
+  .starvation-button {
+    width: 100%;
+    margin-top: 18px;
+  }
 }
