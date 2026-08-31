@@ -2,7 +2,7 @@
 
 ## Статус
 
-**AUDIT COMPLETE → PASS 1 REVISED BY USER → IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN BALANCE RUN PENDING.**
+**AUDIT COMPLETE → PASS 1 REVISED BY USER → IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → MERGE PENDING.**
 
 Balance Gate не добавляет новую шахматную механику. Цель — свести уже существующие Gold / Supplies / Settlement / Battle Mercenaries / Puzzle rewards / Power-Threat в один экономически связный контракт и затем проверить его длинным живым забегом.
 
@@ -57,7 +57,7 @@ Supplies:
 
 Затем при ручной проверке был найден отдельный Battle exploit: игрок может снять всех здоровых именных героев, оставить только King и купить дешёвую generic-армию, полностью избегая риска ранения roster. Пользователь утвердил anti-exploit правило: **Наёмник, заменяющий сознательно оставленного в резерве здорового именного героя, должен стоить не меньше лечения героя того же типа.**
 
-## Balance Pass 1 — актуальная ревизия
+## Balance Pass 1 — принятый контракт
 
 ### Settlement healing
 Healing возвращён к baseline:
@@ -93,7 +93,7 @@ Recruitment уменьшен на 30% от предыдущих значений
 - Queen **42 Gold**
 
 Правило считается **поштучно**:
-- premium применяется только к числу здоровых unselected heroes данного типа;
+- premium применяется только к числу healthy unselected heroes данного типа;
 - premium не может примениться к большему числу фигур, чем реально пустых standard slots;
 - wounded/dead не создают premium: замена такой фигуры остаётся обычным дешёвым Наёмником;
 - отсутствие героя данного типа также оставляет обычную цену;
@@ -103,7 +103,7 @@ Recruitment уменьшен на 30% от предыдущих значений
 - стартовый roster/default selection: **10 Наёмников / 26 Gold**, без premium;
 - `King only` со стартовым здоровым roster: **15 Наёмников / 108 Gold**;
 - в King-only составе premium получают Rook + Bishop + Knight + 2 Pawn, остальные 10 фигур остаются обычными Наёмниками;
-- если одна стартовая Pawn wounded, King-only quote снижается до **99 Gold**, потому что wounded Pawn больше не считается здоровым резервом.
+- если одна стартовая Pawn wounded, King-only quote снижается до **99 Gold**.
 
 UI Battle preparation явно сообщает правило: свободный слот — дешёвый Наёмник; замена оставленного в резерве здорового героя стоит как его лечение.
 
@@ -132,23 +132,19 @@ Battle regression закрепляет:
 - wounded hero не считается healthy reserve;
 - payment/debt/persistence остаются совместимыми.
 
-## Что проверяем в human balance run
+## Human acceptance — Pass 1
 
-Human balance run должен ответить на вопросы:
-- лечение остаётся доступной операцией восстановления;
-- Pawn/Knight/Bishop доступны для найма без чрезмерного гринда;
-- Queen за 202 Gold остаётся дорогой, но достижимой целью;
-- сознательное сохранение здоровых героев в резерве остаётся допустимой, но дорогой стратегией, а не экономическим exploit;
-- игроку по-прежнему выгодно использовать roster, но дешёвые Наёмники спасают при реальной нехватке фигур;
-- Gold приходится распределять между recruitment / healing / Supplies / Battle mercenaries;
-- Supplies требуют планирования, но не душат забег;
-- Battle/Skirmish/Puzzle rewards не создают очевидную доминирующую Gold-стратегию;
-- рост Power не создаёт резкого скачка сложности;
-- Events не ломают экономику чрезмерными выплатами/штрафами.
+Пользователь проверил финальный Balance Pass 1 preview и подтвердил: **«да, отлично, всё хорошо» — 2026-08-31**.
 
-## После human run
+Accepted exact head: `de819f0aebc0bebf6898bf8d4d26ce172a4b408f`.
+Accepted Cloudflare exact-head build: `23be38ab-5524-47eb-97d5-5ff92c6d39d8` — **SUCCESS**.
+Accepted preview: `https://235d7c21-rpchess.mobigametim.workers.dev`.
 
-Только по наблюдаемой проблеме открывается Pass 2. Возможные отдельные ручки: combat reward slope/base, Puzzle reward, Supply price/stock, Mercenary base price, Power K/base/offset. Их нельзя менять пакетом без диагностической причины.
+Принятие распространяется на текущий Pass 1 contract: healing 10/18/18/26/42, recruitment 50/88/88/134/202 и healthy-reserve Mercenary pricing 10/18/18/26/42 при сохранении базовых цен 1/3/3/5/9 для реальной нехватки состава.
+
+## После Pass 1
+
+Balance Gate как общий этап остаётся открыт. Любой Pass 2 должен появляться только по наблюдаемой проблеме. Возможные отдельные ручки: combat reward slope/base, Puzzle reward, Supply price/stock, Mercenary base price, Power K/base/offset. Их нельзя менять пакетом без диагностической причины.
 
 ## Revision receipt
 
@@ -158,10 +154,10 @@ Human balance run должен ответить на вопросы:
 - Settlement runtime commit: `7be43499f2f537ffeaa0a4a264df395324ff79d7`;
 - Settlement regression commit: `4fe5ae51017d9d7eb02b405cb2c89ab48d4dfaf4`;
 - healthy-reserve runtime commit: `689bdeec1754425e5f61b75535e06ed6fb119d4d`;
-- healthy-reserve regression / exact gameplay candidate: `46a33ffc10110bd89134bfa8fe86f026945bc4ed`;
+- healthy-reserve regression / gameplay candidate: `46a33ffc10110bd89134bfa8fe86f026945bc4ed`;
 - gameplay Cloudflare build `b5bf6322-3e6b-4410-8e21-32a0b0d0a3f2` — **SUCCESS**;
-- gameplay preview: `https://b8d65a6f-rpchess.mobigametim.workers.dev`;
-- docs sync candidate `f2daf92e414ffa1acfdd0ebdbdc84504871c2b23` прошёл Cloudflare build `26a924e2-94bf-4674-91bc-a56c1cb3edb2` — **SUCCESS**; preview `https://20777a70-rpchess.mobigametim.workers.dev`;
+- final accepted exact head: `de819f0aebc0bebf6898bf8d4d26ce172a4b408f`;
+- accepted exact-head Cloudflare build `23be38ab-5524-47eb-97d5-5ff92c6d39d8` — **SUCCESS**;
 - assets changed: **0**;
 - persistence schema version changes: **0**;
 - GitHub Actions: **не используются**.
@@ -173,4 +169,4 @@ Human balance run должен ответить на вопросы:
 - assets не трогаются;
 - manual `game/assets/heroes/*/piece_badge.png` не трогаются;
 - GitHub Actions не используются;
-- canonical gate: Cloudflare exact-head через `npm run gate:local` + human acceptance перед merge.
+- merge выполняется только для дерева, содержащего принятый gameplay runtime без дополнительных gameplay-изменений.
