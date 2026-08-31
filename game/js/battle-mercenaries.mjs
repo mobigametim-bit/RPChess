@@ -129,11 +129,63 @@ function paymentToast(result) {
 }
 
 function normalizeBattleCopy() {
-  const army = document.querySelector('[data-battle-screen] .battle-army');
-  const eyebrow = army?.querySelector('.reboot-eyebrow');
-  const note = army?.querySelector('.battle-section-head > span');
-  if (eyebrow) eyebrow.textContent = 'НАЁМНИКИ';
-  if (note) note.textContent = 'Персональные бойцы заменяют Наёмников того же типа.';
+  const screen = document.querySelector('[data-battle-screen]');
+  const roster = screen?.querySelector('.battle-roster');
+  const army = screen?.querySelector('.battle-army');
+  const rosterEyebrow = roster?.querySelector('.reboot-eyebrow');
+  const rosterTitle = roster?.querySelector('.battle-section-head h2');
+  const rosterNote = roster?.querySelector('.battle-section-head > span');
+  const armyEyebrow = army?.querySelector('.reboot-eyebrow');
+  const armyTitle = army?.querySelector('.battle-section-head h2');
+  const armyNote = army?.querySelector('.battle-section-head > span');
+  if (rosterEyebrow) rosterEyebrow.textContent = 'ИМЕННЫЕ ГЕРОИ';
+  if (rosterTitle) rosterTitle.textContent = 'Кого вести в бой';
+  if (rosterNote) rosterNote.textContent = 'Снятый герой остаётся в забеге и не рискует в этой Битве.';
+  if (armyEyebrow) armyEyebrow.textContent = 'ПОЛНАЯ АРМИЯ';
+  if (armyTitle) armyTitle.textContent = 'Боевой строй';
+  if (armyNote) armyNote.textContent = 'Персональные бойцы заменяют Наёмников того же типа.';
+}
+
+function renderBattlePrepQuote() {
+  const screen = document.querySelector('[data-battle-screen]');
+  const run = readRun();
+  const selectedIds = globalThis.RPChessBattle?.selectedIds || [];
+  if (!screen || !run || run.ended) return;
+  const validation = validateBattleSelection(run.roster, selectedIds);
+  const quote = mercenaryQuote(run.roster, selectedIds);
+  const personalizedCount = validation.ok ? validation.members.length : selectedIds.length;
+  const army = screen.querySelector('.battle-army');
+  const participants = screen.querySelector('[data-battle-participants]');
+  if (!army) return;
+
+  let root = screen.querySelector('[data-battle-mercenary-quote]');
+  if (!root) {
+    root = document.createElement('div');
+    root.className = 'battle-mercenary-quote';
+    root.dataset.battleMercenaryQuote = '';
+    if (participants?.parentNode === army) participants.insertAdjacentElement('afterend', root);
+    else army.append(root);
+  }
+  root.innerHTML = `
+    <div class="battle-mercenary-quote__title">СОСТАВ И ОПЛАТА НАЁМНИКОВ</div>
+    <div class="battle-mercenary-quote__row"><span>Именные герои</span><strong>${personalizedCount}</strong></div>
+    <div class="battle-mercenary-quote__row"><span>Наёмники</span><strong>${quote.totalCount}</strong></div>
+    <div class="battle-mercenary-quote__row battle-mercenary-quote__row--cost"><span>Стоимость найма</span><strong>${quote.totalCost} ЗОЛОТА</strong></div>`;
+
+  const actionbar = screen.querySelector('.battle-actionbar');
+  const start = screen.querySelector('[data-battle-start]');
+  if (actionbar && start) {
+    let actionCost = screen.querySelector('[data-battle-mercenary-action-cost]');
+    if (!actionCost) {
+      actionCost = document.createElement('div');
+      actionCost.className = 'battle-action-cost';
+      actionCost.dataset.battleMercenaryActionCost = '';
+      actionbar.insertBefore(actionCost, start);
+    }
+    actionCost.innerHTML = `<span>НАЁМНИКИ</span><strong>${quote.totalCost}</strong>`;
+    actionCost.setAttribute('aria-label', `Стоимость Наёмников: ${quote.totalCost} золота`);
+  }
+  screen.dataset.battleMercenaryCost = String(quote.totalCost);
 }
 
 function patchAftermath(casualty) {
@@ -164,6 +216,11 @@ function handleBattleStartCapture(event) {
   if (charged.chargedGold || charged.chargedSupplies || charged.contract?.casualtyDebt) paymentToast(charged);
 }
 
+function handleBattleSelectionRefresh(event) {
+  if (!event.target?.closest?.('[data-battle-character],[data-battle-participant]')) return;
+  setTimeout(renderBattlePrepQuote, 0);
+}
+
 let settlementTimer = null;
 function settlePendingDebtSoon() {
   clearTimeout(settlementTimer);
@@ -180,8 +237,10 @@ function settlePendingDebtSoon() {
 
 if (typeof document !== 'undefined') {
   normalizeBattleCopy();
+  renderBattlePrepQuote();
   document.addEventListener('click', handleBattleStartCapture, true);
-  globalThis.addEventListener?.('rpchess:battle-open', () => setTimeout(normalizeBattleCopy, 0));
+  document.addEventListener('click', handleBattleSelectionRefresh);
+  globalThis.addEventListener?.('rpchess:battle-open', () => setTimeout(() => { normalizeBattleCopy(); renderBattlePrepQuote(); }, 0));
   globalThis.addEventListener?.('rpchess:run-updated', settlePendingDebtSoon);
   setTimeout(settlePendingDebtSoon, 0);
 }
