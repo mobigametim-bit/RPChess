@@ -1,0 +1,173 @@
+/* 2026-09-02 live-playtest UI pass 4.
+   Presentation-only corrections for Settlement and Events. Runtime hooks stay intact. */
+
+/* Settlement: back off the oversized experiment by 30% and keep service art above copy. */
+@media (min-width:901px){
+  body.settlement-active .settlement-service__icon{
+    width:101px!important;
+    height:101px!important;
+    top:-36px!important;
+    right:8px!important;
+    z-index:8!important;
+  }
+}
+
+/* Events: navigation actions are not part of the event decision screen. */
+body.events-active [data-events-roster],
+body.events-active [data-events-settings]{
+  display:none!important;
+}
+
+@media (min-width:901px){
+  body.events-active{
+    overflow:hidden!important;
+  }
+  body.events-active .events-screen{
+    height:100svh!important;
+    min-height:0!important;
+    overflow:hidden!important;
+    padding:16px 20px!important;
+    box-sizing:border-box!important;
+  }
+  body.events-active .events-shell{
+    position:relative!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    margin:0!important;
+  }
+  body.events-active .events-topbar{
+    position:absolute!important;
+    z-index:8!important;
+    top:0!important;
+    left:0!important;
+    right:auto!important;
+    margin:0!important;
+  }
+  body.events-active .events-topbar__actions{
+    display:none!important;
+  }
+  body.events-active .events-logo{
+    width:min(230px,19vw)!important;
+  }
+  body.events-active .events-panel{
+    position:absolute!important;
+    z-index:6!important;
+    right:0!important;
+    bottom:0!important;
+    width:min(760px,46vw)!important;
+    max-width:calc(100vw - 40px)!important;
+    max-height:calc(100svh - 32px)!important;
+    display:flex!important;
+    flex-direction:column!important;
+    justify-content:flex-end!important;
+    gap:10px!important;
+    margin:0!important;
+    padding:0!important;
+    border:0!important;
+    border-image:none!important;
+    border-radius:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    backdrop-filter:none!important;
+    overflow:visible!important;
+  }
+  body.events-active .events-panel::before{
+    display:none!important;
+  }
+  body.events-active .events-copy-frame,
+  body.events-active .events-choice-frame{
+    position:relative!important;
+    min-height:0!important;
+    border:1px solid rgba(218,178,88,.44)!important;
+    border-radius:8px!important;
+    background:linear-gradient(110deg,rgba(7,10,15,.95),rgba(7,10,15,.89))!important;
+    box-shadow:0 18px 54px rgba(0,0,0,.46),inset 0 0 0 1px rgba(245,217,151,.018)!important;
+    backdrop-filter:blur(3px)!important;
+  }
+  body.events-active .events-copy-frame::before,
+  body.events-active .events-choice-frame::before{
+    content:'';
+    position:absolute;
+    top:-1px;
+    left:16px;
+    width:132px;
+    height:2px;
+    background:linear-gradient(90deg,#edcb7a,#c79840);
+    pointer-events:none;
+  }
+  body.events-active .events-copy-frame{
+    max-height:42svh!important;
+    overflow-y:auto!important;
+    overscroll-behavior:contain;
+    padding:18px 20px 16px!important;
+  }
+  body.events-active .events-choice-frame{
+    max-height:42svh!important;
+    overflow-y:auto!important;
+    overscroll-behavior:contain;
+    padding:12px!important;
+  }
+  body.events-active .events-kicker{
+    font-size:10px!important;
+  }
+  body.events-active .events-panel h1{
+    margin:.16em 0 .30em!important;
+    font-size:clamp(34px,3.15vw,48px)!important;
+    line-height:.96!important;
+  }
+  body.events-active .events-story{
+    max-width:none!important;
+    margin:0!important;
+    padding-top:12px!important;
+    font-size:clamp(13px,1vw,16px)!important;
+    line-height:1.48!important;
+  }
+  body.events-active .events-story p{
+    margin:0 0 .72em!important;
+  }
+  body.events-active .events-reaction--king{
+    max-width:none!important;
+    margin:8px 0 0!important;
+    padding:9px 12px!important;
+    font-size:13px!important;
+    line-height:1.42!important;
+  }
+  body.events-active .events-choices{
+    max-width:none!important;
+    gap:8px!important;
+  }
+  body.events-active .events-choice{
+    padding:10px 12px!important;
+  }
+  body.events-active .events-choice__reaction,
+  body.events-active .events-choice__hero{
+    margin-bottom:8px!important;
+    padding-bottom:8px!important;
+  }
+  body.events-active .events-choice__head strong{
+    font-size:15px!important;
+    line-height:1.28!important;
+  }
+  body.events-active .events-choice__meta{
+    margin-top:7px!important;
+  }
+}
+
+@media (min-width:901px) and (max-height:760px){
+  body.events-active .events-copy-frame{
+    max-height:39svh!important;
+    padding:14px 16px 12px!important;
+  }
+  body.events-active .events-choice-frame{
+    max-height:43svh!important;
+    padding:10px!important;
+  }
+  body.events-active .events-panel h1{
+    font-size:36px!important;
+  }
+  body.events-active .events-story{
+    font-size:13px!important;
+    line-height:1.4!important;
+  }
+}
