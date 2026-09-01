@@ -1,4 +1,4 @@
-const CSS_HREF = 'css/compact-ui-pass3.css?v=20260902-1';
+const CSS_HREF = 'css/compact-ui-pass3.css?v=20260902-2';
 let queued = false;
 
 function ensureCss() {
