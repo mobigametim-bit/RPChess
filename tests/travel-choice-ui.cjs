@@ -9,6 +9,9 @@ const combatUi=fs.readFileSync(path.join(game,'js/compact-combat-ui-pass.mjs'),'
 const pass3Css=fs.readFileSync(path.join(game,'css/compact-ui-pass3.css'),'utf8');
 const pass3Ui=fs.readFileSync(path.join(game,'js/compact-ui-pass3.mjs'),'utf8');
 const loader=fs.readFileSync(path.join(game,'js/post-redesign-playtest-pass1b.mjs'),'utf8');
+const rosterApp=fs.readFileSync(path.join(game,'js/roster-app.mjs'),'utf8');
+const audio=fs.readFileSync(path.join(game,'js/reboot-audio.mjs'),'utf8');
+const starvation=fs.readFileSync(path.join(game,'js/starvation-app.mjs'),'utf8');
 const build=fs.readFileSync(path.join(root,'scripts/build.cjs'),'utf8');
 
 assert(loader.includes("import './travel-choice-commandbar-pass.mjs'"),'Travel command-bar pass must load with the accepted presentation layer');
@@ -52,15 +55,25 @@ assert(combatUi.includes('battle-card__tech-glyph'),'Battle Prep cards must add 
 assert(combatUi.includes("quote.insertAdjacentElement('afterend', start)")||combatUi.includes('army.append(start)'),'Battle Start button must move under the mercenary quote inside the army frame');
 assert(!combatUi.includes('writeRun')&&!combatUi.includes('applyTravelSupplyCost'),'compact combat UI module must remain presentation-only');
 
-assert(pass3Css.includes('font-size:24px!important'),'latest Roster detail description must override older small typography with the requested doubled size');
+assert(pass3Css.includes('font-size:24px!important'),'latest Roster detail description must request the doubled size');
+assert(postCss.includes('body.roster-active .roster-detail__description { font-size: 24px !important'),'the final late CSS layer must no longer overwrite Roster description back to 12px');
+assert(postCss.includes('body.roster-active .roster-detail__description { font-size: 22px !important'),'short-height desktop must retain the doubled Roster description size');
+assert(rosterApp.includes("? 'Вернуться в поселение' : 'В путь'"),'Roster journey CTA must use the shorter В путь label');
 assert(pass3Css.includes('grid-template-columns:repeat(3,minmax(0,1fr))!important'),'latest Skirmish cards must fill three columns with only small gaps');
 assert(pass3Css.includes('.skirmish-card__tech-glyph')&&pass3Ui.includes('skirmish-card__tech-glyph'),'Skirmish Prep cards must add a large technical role glyph while hiding the old meta row');
+assert(pass3Css.includes('.skirmish-threat-card')&&pass3Css.includes('data-compact-stars')&&pass3Ui.includes('syncSkirmishHeadingStars'),'Skirmish scout frame must disappear while stars stay beside the encounter title');
 assert(pass3Css.includes('grid-template-columns:minmax(0,1.6fr) minmax(520px,1fr)!important'),'Battle Prep must shorten the left hero frame and expand the right army/payment frame');
+assert(pass3Css.includes('section[hidden]')&&pass3Css.includes('display:none!important'),'Aftermath hidden/dead sections must stay hidden despite compact flex layout');
 assert(pass3Css.includes('body.compact-aftermath-active .resource-hud')&&pass3Css.includes('overflow-y:auto!important'),'Battle/Skirmish aftermath must fit the viewport and scroll participant lists internally');
-assert(pass3Css.includes('body.settlement-active .settlement-heading>.reboot-eyebrow')&&pass3Css.includes('body.settlement-active .settlement-footer p'),'Settlement must remove the requested descriptive copy while keeping its runtime DOM');
+assert(pass3Css.includes('width:144px!important')&&pass3Css.includes('top:-52px!important'),'Settlement service icons must be doubled and lifted clear of their text');
 assert(pass3Css.includes('body.settlement-active .settlement-healer-list')&&pass3Css.includes('body.settlement-active .settlement-recruits'),'Settlement service contents must scroll inside their own frames');
-assert(pass3Ui.includes('css/compact-ui-pass3.css?v=20260902-2'),'latest compact pass must use the refreshed CSS cache key');
-assert(!pass3Ui.includes('writeRun')&&!pass3Ui.includes('applyTravelSupplyCost'),'compact UI pass 3 must remain presentation-only');
+assert(pass3Css.includes('body.puzzles-active.compact-puzzle-active .puzzle-status'),'Puzzle status text must stay offscreen below the coordinate rail');
+assert(pass3Ui.includes("import { readRun } from './run-persistence.mjs'")&&pass3Ui.includes('hasHealthySkirmishCompanion'),'Travel UI must read roster health to disable impossible Skirmish routes');
+assert(pass3Ui.includes('is-skirmish-unavailable')&&pass3Css.includes('is-skirmish-unavailable'),'Skirmish route cards must become disabled and visibly grey without a healthy non-King hero');
+assert(pass3Ui.includes('css/compact-ui-pass3.css?v=20260902-3'),'latest compact pass must use the refreshed CSS cache key');
+assert(!pass3Ui.includes('writeRun')&&!pass3Ui.includes('applyTravelSupplyCost'),'compact UI pass 3 may read eligibility but must not mutate persisted run/economy state');
+assert(audio.includes('this.musicIndex = randomMusicIndex()')&&audio.includes('Math.random()'),'music playback must start from a random track instead of always track 1');
+assert(starvation.includes('Ваш соратник ${victim.name} умер от голода.'),'non-King starvation must use the approved memorial copy');
 assert(build.includes("'css/compact-combat-ui-pass.css'")&&build.includes("'js/compact-combat-ui-pass.mjs'"),'production build must package and verify compact combat UI files');
 assert(build.includes("'css/compact-ui-pass3.css'")&&build.includes("'js/compact-ui-pass3.mjs'"),'production build must package and verify compact UI pass 3 files');
 
