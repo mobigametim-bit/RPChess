@@ -84,8 +84,10 @@ function syncHeaderResources(root, run = readRun()) {
   if (!root || !run) return;
   const gold = root.querySelector('[data-travel-inline-gold]');
   const supplies = root.querySelector('[data-travel-inline-supplies]');
-  if (gold) gold.textContent = String(run.gold ?? 0);
-  if (supplies) supplies.textContent = String(run.supplies ?? 0);
+  const goldText = String(run.gold ?? 0);
+  const suppliesText = String(run.supplies ?? 0);
+  if (gold && gold.textContent !== goldText) gold.textContent = goldText;
+  if (supplies && supplies.textContent !== suppliesText) supplies.textContent = suppliesText;
   root.querySelector('.travel-choice-inline-resource--supplies')?.classList.toggle('is-empty', Number(run.supplies || 0) <= 0);
 }
 
