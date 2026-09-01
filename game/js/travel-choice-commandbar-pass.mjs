@@ -5,13 +5,18 @@ const GOLD_ICON = 'generated_assets/reward_gold.png';
 const SUPPLIES_ICON = 'generated_assets/node_shop.png';
 let queued = false;
 
-function ensureCss() {
-  if (document.querySelector('[data-travel-commandbar-css]')) return;
+function ensureStylesheet(selector, href, datasetKey) {
+  if (document.querySelector(selector)) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/travel-choice-commandbar-pass.css?v=20260901-1';
-  link.dataset.travelCommandbarCss = '';
+  link.href = href;
+  link.dataset[datasetKey] = '';
   document.head.append(link);
+}
+
+function ensureCss() {
+  ensureStylesheet('[data-travel-commandbar-css]', 'css/travel-choice-commandbar-pass.css?v=20260901-1', 'travelCommandbarCss');
+  ensureStylesheet('[data-compact-run-screens-css]', 'css/compact-run-screens-pass.css?v=20260901-1', 'compactRunScreensCss');
 }
 
 function resourceImage(src, className) {
