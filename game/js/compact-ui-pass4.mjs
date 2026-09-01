@@ -1,7 +1,6 @@
 const CSS_HREF = 'css/compact-ui-pass4.css?v=20260902-2';
 const LIVE_OVERRIDE_CSS = `
 @media (min-width:901px){
-  /* Events: make both information frames 30% more transparent and keep choice typography at reading size. */
   body.events-active .events-panel{--event-reading-size:clamp(18px,1.22vw,22px)}
   body.events-active .events-copy-frame,
   body.events-active .events-choice-frame{
@@ -22,7 +21,6 @@ const LIVE_OVERRIDE_CSS = `
     --event-reading-size:clamp(16px,1.05vw,18px);
   }
 
-  /* Travel: title/meta belongs to the image; only route flavour remains below it. */
   body.travel-choice-active .travel-choice-routes{
     height:auto!important;
     align-items:start!important;
@@ -140,7 +138,7 @@ function ensureEventFrames() {
   }
 }
 
-function restoreTravelCardBody(card, overlay, type, meta, body) {
+function restoreTravelCardBody(overlay, type, meta, body) {
   if (!overlay || !body) return;
   const flavor = body.querySelector('.travel-choice-card__flavor');
   if (type && type.parentElement === overlay) body.insertBefore(type, flavor || null);
@@ -155,9 +153,9 @@ function ensureTravelCardOverlays() {
     const body = card.querySelector('.travel-choice-card__body');
     const type = card.querySelector('.travel-choice-card__type');
     const meta = card.querySelector('.travel-choice-card__threat, .travel-choice-card__safe, .travel-choice-card__meta--cost-only');
-    let overlay = card.querySelector(':scope .travel-choice-card__overlay');
+    let overlay = card.querySelector('.travel-choice-card__overlay');
     if (!desktop) {
-      restoreTravelCardBody(card, overlay, type, meta, body);
+      restoreTravelCardBody(overlay, type, meta, body);
       continue;
     }
     if (!visual || !body || !type) continue;
