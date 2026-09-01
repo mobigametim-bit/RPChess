@@ -142,6 +142,10 @@ body.compact-aftermath-active .resource-hud{display:none!important}
     flex-direction:column!important;
     overflow:hidden!important;
   }
+  [data-battle-aftermath]:not([hidden]) .battle-aftermath-columns>section[hidden],
+  [data-skirmish-aftermath]:not([hidden]) .skirmish-aftermath-columns>section[hidden]{
+    display:none!important;
+  }
   [data-battle-aftermath]:not([hidden]) .battle-aftermath-list,
   [data-skirmish-aftermath]:not([hidden]) .skirmish-aftermath-list{
     min-height:0!important;
@@ -207,8 +211,15 @@ body.compact-aftermath-active .resource-hud{display:none!important}
     height:100%!important;
     display:flex!important;
     flex-direction:column!important;
-    overflow:hidden!important;
+    overflow:visible!important;
     padding:22px!important;
+  }
+  body.settlement-active .settlement-service__icon{
+    width:144px!important;
+    height:144px!important;
+    top:-52px!important;
+    right:-14px!important;
+    z-index:8!important;
   }
   body.settlement-active .settlement-service h2{
     flex:0 0 auto!important;
@@ -250,4 +261,53 @@ body.compact-aftermath-active .resource-hud{display:none!important}
   body.settlement-active .settlement-logo{
     display:none!important;
   }
+}
+
+/* --------------------------------------------------------------------------
+   Skirmish heading: remove scout report frame; keep difficulty beside title.
+   -------------------------------------------------------------------------- */
+@media (min-width:901px){
+  body.skirmish-active .skirmish-heading{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  body.skirmish-active .skirmish-threat-card{
+    display:none!important;
+  }
+  body.skirmish-active [data-skirmish-title]{
+    display:flex!important;
+    align-items:baseline!important;
+    flex-wrap:wrap!important;
+    gap:10px 16px!important;
+  }
+  body.skirmish-active [data-skirmish-title]::after{
+    content:attr(data-compact-stars);
+    color:#f2bc4f;
+    font-family:Inter,system-ui,sans-serif;
+    font-size:.7em;
+    font-weight:900;
+    letter-spacing:.06em;
+    line-height:1;
+    text-shadow:0 2px 6px rgba(0,0,0,.7);
+  }
+}
+
+/* Training board status stays in DOM for runtime/accessibility, but no text sits below coordinates. */
+body.puzzles-active.compact-puzzle-active .puzzle-status{
+  position:absolute!important;
+  width:1px!important;
+  height:1px!important;
+  overflow:hidden!important;
+  clip-path:inset(50%)!important;
+  white-space:nowrap!important;
+}
+
+/* A Skirmish needs the King plus at least one other healthy named hero. */
+.travel-choice-screen .travel-choice-card.is-skirmish-unavailable{
+  filter:grayscale(.92) saturate(.18) brightness(.58)!important;
+  opacity:.66!important;
+  cursor:not-allowed!important;
+  box-shadow:none!important;
+}
+.travel-choice-screen .travel-choice-card.is-skirmish-unavailable:hover{
+  transform:none!important;
 }
