@@ -41,7 +41,7 @@ function updateContinueState() {
 
 function updateJourneyLabel() {
   if (!journeyButton || journeyPending) return;
-  journeyButton.textContent = activeRun?.activeTravelChoice?.type === 'settlement' ? 'Вернуться в поселение' : 'Начать путешествие';
+  journeyButton.textContent = activeRun?.activeTravelChoice?.type === 'settlement' ? 'Вернуться в поселение' : 'В путь';
 }
 
 function filteredRoster() {
