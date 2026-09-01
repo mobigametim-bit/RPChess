@@ -2,7 +2,7 @@ name = "rpchess"
 compatibility_date = "2026-08-04"
 
 [build]
-command = "npm run build && (command -v chromium || command -v chromium-browser || command -v google-chrome || command -v google-chrome-stable)"
+command = "npm run build && npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2 @sparticuz/chromium@140.0.0 && NODE_OPTIONS='--require=./scripts/playwright-sparticuz.cjs' npm run test:browser"
 
 [assets]
 directory = "./dist"
