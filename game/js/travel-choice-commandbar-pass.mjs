@@ -91,15 +91,22 @@ function syncHeaderResources(root, run = readRun()) {
 
 function normalizeCost(cost, noSupplies) {
   if (!cost) return;
-  cost.dataset.travelInlineCost = String(TRAVEL_SUPPLY_COST);
+  const expected = String(TRAVEL_SUPPLY_COST);
   cost.classList.toggle('is-empty', noSupplies);
-  cost.replaceChildren();
 
-  const amount = document.createElement('span');
-  amount.className = 'travel-choice-card__cost-amount';
-  amount.textContent = `-${TRAVEL_SUPPLY_COST}`;
-  const icon = resourceImage(SUPPLIES_ICON, 'travel-choice-card__cost-icon');
-  cost.append(amount, icon);
+  let amount = cost.querySelector('.travel-choice-card__cost-amount');
+  let icon = cost.querySelector('.travel-choice-card__cost-icon');
+  if (cost.dataset.travelInlineCost !== expected || !amount || !icon) {
+    cost.replaceChildren();
+    amount = document.createElement('span');
+    amount.className = 'travel-choice-card__cost-amount';
+    icon = resourceImage(SUPPLIES_ICON, 'travel-choice-card__cost-icon');
+    cost.append(amount, icon);
+    cost.dataset.travelInlineCost = expected;
+  }
+  const text = `-${TRAVEL_SUPPLY_COST}`;
+  if (amount.textContent !== text) amount.textContent = text;
+  if (icon.getAttribute('src') !== SUPPLIES_ICON) icon.setAttribute('src', SUPPLIES_ICON);
 
   const warning = noSupplies
     ? `Стоимость пути: ${TRAVEL_SUPPLY_COST} припас. Припасов нет — при переходе сработает голод.`
