@@ -50,18 +50,17 @@ body.events-active [data-events-settings]{
   body.events-active .events-logo{
     width:min(230px,19vw)!important;
   }
+
+  /* The source panel becomes only a full-screen positioning layer. */
   body.events-active .events-panel{
     position:absolute!important;
     z-index:6!important;
-    right:0!important;
-    bottom:0!important;
-    width:min(760px,46vw)!important;
-    max-width:calc(100vw - 40px)!important;
-    max-height:calc(100svh - 32px)!important;
-    display:flex!important;
-    flex-direction:column!important;
-    justify-content:flex-end!important;
-    gap:10px!important;
+    inset:0!important;
+    width:100%!important;
+    height:100%!important;
+    max-width:none!important;
+    max-height:none!important;
+    display:block!important;
     margin:0!important;
     padding:0!important;
     border:0!important;
@@ -71,19 +70,22 @@ body.events-active [data-events-settings]{
     box-shadow:none!important;
     backdrop-filter:none!important;
     overflow:visible!important;
+    pointer-events:none!important;
   }
   body.events-active .events-panel::before{
     display:none!important;
   }
+
   body.events-active .events-copy-frame,
   body.events-active .events-choice-frame{
-    position:relative!important;
+    position:absolute!important;
     min-height:0!important;
     border:1px solid rgba(218,178,88,.44)!important;
     border-radius:8px!important;
     background:linear-gradient(110deg,rgba(7,10,15,.95),rgba(7,10,15,.89))!important;
     box-shadow:0 18px 54px rgba(0,0,0,.46),inset 0 0 0 1px rgba(245,217,151,.018)!important;
     backdrop-filter:blur(3px)!important;
+    pointer-events:auto!important;
   }
   body.events-active .events-copy-frame::before,
   body.events-active .events-choice-frame::before{
@@ -96,78 +98,165 @@ body.events-active [data-events-settings]{
     background:linear-gradient(90deg,#edcb7a,#c79840);
     pointer-events:none;
   }
+
+  /* Literary copy lives in the lower-left quadrant, as requested. */
   body.events-active .events-copy-frame{
-    max-height:42svh!important;
+    left:0!important;
+    bottom:0!important;
+    width:min(860px,49vw)!important;
+    max-height:54svh!important;
     overflow-y:auto!important;
     overscroll-behavior:contain;
-    padding:18px 20px 16px!important;
+    padding:22px 24px 20px!important;
   }
+
+  /* Choices live in the lower-right quadrant and never scroll. */
   body.events-active .events-choice-frame{
-    max-height:42svh!important;
-    overflow-y:auto!important;
-    overscroll-behavior:contain;
+    right:0!important;
+    bottom:0!important;
+    width:min(820px,46vw)!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
     padding:12px!important;
   }
+
   body.events-active .events-kicker{
-    font-size:10px!important;
+    font-size:11px!important;
   }
   body.events-active .events-panel h1{
     margin:.16em 0 .30em!important;
-    font-size:clamp(34px,3.15vw,48px)!important;
+    font-size:clamp(42px,3.5vw,58px)!important;
     line-height:.96!important;
   }
   body.events-active .events-story{
     max-width:none!important;
     margin:0!important;
-    padding-top:12px!important;
-    font-size:clamp(13px,1vw,16px)!important;
-    line-height:1.48!important;
+    padding-top:14px!important;
+    font-size:clamp(18px,1.22vw,22px)!important;
+    line-height:1.56!important;
   }
   body.events-active .events-story p{
-    margin:0 0 .72em!important;
+    margin:0 0 .78em!important;
   }
   body.events-active .events-reaction--king{
     max-width:none!important;
-    margin:8px 0 0!important;
-    padding:9px 12px!important;
-    font-size:13px!important;
-    line-height:1.42!important;
+    margin:10px 0 0!important;
+    padding:10px 13px!important;
+    font-size:15px!important;
+    line-height:1.46!important;
   }
+
+  /* Two choice cards per row. An odd final card spans the full frame width. */
   body.events-active .events-choices{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    grid-auto-flow:row!important;
+    align-items:stretch!important;
     max-width:none!important;
-    gap:8px!important;
+    gap:10px!important;
+  }
+  body.events-active .events-choice:last-child:nth-child(odd){
+    grid-column:1 / -1!important;
   }
   body.events-active .events-choice{
-    padding:10px 12px!important;
+    min-width:0!important;
+    min-height:84px!important;
+    height:auto!important;
+    padding:11px 13px!important;
+    box-sizing:border-box!important;
   }
   body.events-active .events-choice__reaction,
   body.events-active .events-choice__hero{
     margin-bottom:8px!important;
-    padding-bottom:8px!important;
+    padding-bottom:7px!important;
+  }
+  body.events-active .events-choice__head{
+    gap:10px!important;
   }
   body.events-active .events-choice__head strong{
     font-size:15px!important;
-    line-height:1.28!important;
+    line-height:1.25!important;
+  }
+  body.events-active .events-choice__head>span{
+    font-size:10px!important;
   }
   body.events-active .events-choice__meta{
-    margin-top:7px!important;
+    margin-top:6px!important;
+    gap:5px!important;
+  }
+  body.events-active .events-choice__meta small{
+    padding:3px 5px!important;
+    font-size:9px!important;
+  }
+  body.events-active .events-choice__reaction,
+  body.events-active .events-choice__hero-line{
+    font-size:12px!important;
+    line-height:1.35!important;
+  }
+  body.events-active .events-choice__hero-name{
+    font-size:10px!important;
+  }
+
+  /* Denser events automatically compact their cards instead of introducing a scrollbar. */
+  body.events-active .events-choice-frame[data-choice-count="5"] .events-choice,
+  body.events-active .events-choice-frame[data-choice-count="6"] .events-choice{
+    min-height:72px!important;
+    padding:9px 11px!important;
+  }
+  body.events-active .events-choice-frame[data-choice-count="5"] .events-choice__reaction,
+  body.events-active .events-choice-frame[data-choice-count="5"] .events-choice__hero,
+  body.events-active .events-choice-frame[data-choice-count="6"] .events-choice__reaction,
+  body.events-active .events-choice-frame[data-choice-count="6"] .events-choice__hero{
+    margin-bottom:6px!important;
+    padding-bottom:5px!important;
+  }
+  body.events-active .events-choice-frame[data-choice-count="5"] .events-choice__head strong,
+  body.events-active .events-choice-frame[data-choice-count="6"] .events-choice__head strong{
+    font-size:14px!important;
+  }
+  body.events-active .events-choice-frame[data-choice-count="5"] .events-choice__reaction,
+  body.events-active .events-choice-frame[data-choice-count="5"] .events-choice__hero-line,
+  body.events-active .events-choice-frame[data-choice-count="6"] .events-choice__reaction,
+  body.events-active .events-choice-frame[data-choice-count="6"] .events-choice__hero-line{
+    font-size:11px!important;
+    line-height:1.28!important;
   }
 }
 
 @media (min-width:901px) and (max-height:760px){
   body.events-active .events-copy-frame{
-    max-height:39svh!important;
-    padding:14px 16px 12px!important;
+    width:min(800px,48vw)!important;
+    max-height:52svh!important;
+    padding:16px 18px 14px!important;
   }
   body.events-active .events-choice-frame{
-    max-height:43svh!important;
-    padding:10px!important;
+    width:min(840px,47vw)!important;
+    padding:9px!important;
   }
   body.events-active .events-panel h1{
-    font-size:36px!important;
+    font-size:40px!important;
   }
   body.events-active .events-story{
+    font-size:17px!important;
+    line-height:1.43!important;
+  }
+  body.events-active .events-choices{
+    gap:7px!important;
+  }
+  body.events-active .events-choice{
+    min-height:68px!important;
+    padding:8px 10px!important;
+  }
+  body.events-active .events-choice__head strong{
     font-size:13px!important;
-    line-height:1.4!important;
+  }
+  body.events-active .events-choice__reaction,
+  body.events-active .events-choice__hero-line{
+    font-size:10px!important;
+    line-height:1.25!important;
+  }
+  body.events-active .events-choice__meta small{
+    font-size:8px!important;
   }
 }
