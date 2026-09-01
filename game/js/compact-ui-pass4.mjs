@@ -21,17 +21,26 @@ const LIVE_OVERRIDE_CSS = `
     --event-reading-size:clamp(16px,1.05vw,18px);
   }
 
+  /* Travel: preserve the original landscape artwork proportions. The card height
+     follows its content; only title/meta move over the lower edge of the image. */
   body.travel-choice-active .travel-choice-routes{
     height:auto!important;
+    min-height:0!important;
     align-items:start!important;
   }
   body.travel-choice-active .travel-choice-card{
-    height:min(660px,calc(100svh - 128px))!important;
-    max-height:660px!important;
-    grid-template-rows:minmax(0,1fr) auto!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    align-self:start!important;
+    grid-template-rows:auto auto!important;
   }
   body.travel-choice-active .travel-choice-card__visual{
+    position:relative!important;
+    width:100%!important;
+    height:auto!important;
     min-height:0!important;
+    aspect-ratio:3 / 2!important;
     overflow:hidden!important;
   }
   body.travel-choice-active .travel-choice-card__overlay{
@@ -43,8 +52,8 @@ const LIVE_OVERRIDE_CSS = `
     display:flex!important;
     flex-direction:column!important;
     gap:6px!important;
-    padding:86px 26px 15px!important;
-    background:linear-gradient(180deg,rgba(3,7,12,0) 0%,rgba(3,7,12,.50) 38%,rgba(3,7,12,.92) 100%)!important;
+    padding:72px 24px 14px!important;
+    background:linear-gradient(180deg,rgba(3,7,12,0) 0%,rgba(3,7,12,.48) 38%,rgba(3,7,12,.94) 100%)!important;
     pointer-events:none!important;
   }
   body.travel-choice-active .travel-choice-card__overlay .travel-choice-card__type{
@@ -60,8 +69,9 @@ const LIVE_OVERRIDE_CSS = `
     min-height:26px!important;
   }
   body.travel-choice-active .travel-choice-card__body{
-    min-height:96px!important;
-    padding:14px 26px 17px!important;
+    height:auto!important;
+    min-height:0!important;
+    padding:13px 24px 15px!important;
     overflow:hidden!important;
     justify-content:flex-start!important;
   }
@@ -77,16 +87,12 @@ const LIVE_OVERRIDE_CSS = `
 }
 @media (min-width:901px) and (max-height:760px){
   body.events-active .events-panel{--event-reading-size:16px}
-  body.travel-choice-active .travel-choice-card{
-    height:min(590px,calc(100svh - 104px))!important;
-    max-height:590px!important;
-  }
   body.travel-choice-active .travel-choice-card__overlay{
-    padding:66px 20px 12px!important;
+    padding:58px 18px 11px!important;
   }
   body.travel-choice-active .travel-choice-card__body{
-    min-height:82px!important;
-    padding:11px 20px 13px!important;
+    min-height:0!important;
+    padding:10px 18px 12px!important;
   }
 }
 `;
