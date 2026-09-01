@@ -1,14 +1,114 @@
 const CSS_HREF = 'css/compact-ui-pass4.css?v=20260902-2';
+const LIVE_OVERRIDE_CSS = `
+@media (min-width:901px){
+  /* Events: make both information frames 30% more transparent and keep choice typography at reading size. */
+  body.events-active .events-panel{--event-reading-size:clamp(18px,1.22vw,22px)}
+  body.events-active .events-copy-frame,
+  body.events-active .events-choice-frame{
+    background:linear-gradient(110deg,rgba(7,10,15,.67),rgba(7,10,15,.62))!important;
+  }
+  body.events-active .events-story,
+  body.events-active .events-choice{
+    font-size:var(--event-reading-size)!important;
+  }
+  body.events-active .events-choice__head strong,
+  body.events-active .events-choice__reaction,
+  body.events-active .events-choice__hero-line{
+    font-size:1em!important;
+    line-height:1.34!important;
+  }
+  body.events-active:has(.events-choice-frame[data-choice-count="5"]) .events-panel,
+  body.events-active:has(.events-choice-frame[data-choice-count="6"]) .events-panel{
+    --event-reading-size:clamp(16px,1.05vw,18px);
+  }
+
+  /* Travel: title/meta belongs to the image; only route flavour remains below it. */
+  body.travel-choice-active .travel-choice-routes{
+    height:auto!important;
+    align-items:start!important;
+  }
+  body.travel-choice-active .travel-choice-card{
+    height:min(660px,calc(100svh - 128px))!important;
+    max-height:660px!important;
+    grid-template-rows:minmax(0,1fr) auto!important;
+  }
+  body.travel-choice-active .travel-choice-card__visual{
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  body.travel-choice-active .travel-choice-card__overlay{
+    position:absolute!important;
+    z-index:5!important;
+    left:0!important;
+    right:0!important;
+    bottom:0!important;
+    display:flex!important;
+    flex-direction:column!important;
+    gap:6px!important;
+    padding:86px 26px 15px!important;
+    background:linear-gradient(180deg,rgba(3,7,12,0) 0%,rgba(3,7,12,.50) 38%,rgba(3,7,12,.92) 100%)!important;
+    pointer-events:none!important;
+  }
+  body.travel-choice-active .travel-choice-card__overlay .travel-choice-card__type{
+    font-size:clamp(28px,2vw,35px)!important;
+    line-height:1!important;
+  }
+  body.travel-choice-active .travel-choice-card__overlay .travel-choice-card__threat,
+  body.travel-choice-active .travel-choice-card__overlay .travel-choice-card__safe,
+  body.travel-choice-active .travel-choice-card__overlay .travel-choice-card__meta--cost-only{
+    margin:3px 0 0!important;
+    padding:0!important;
+    border:0!important;
+    min-height:26px!important;
+  }
+  body.travel-choice-active .travel-choice-card__body{
+    min-height:96px!important;
+    padding:14px 26px 17px!important;
+    overflow:hidden!important;
+    justify-content:flex-start!important;
+  }
+  body.travel-choice-active .travel-choice-card__flavor{
+    margin:0!important;
+    font-size:clamp(15px,1.03vw,18px)!important;
+    line-height:1.42!important;
+    display:-webkit-box!important;
+    -webkit-box-orient:vertical!important;
+    -webkit-line-clamp:2!important;
+    overflow:hidden!important;
+  }
+}
+@media (min-width:901px) and (max-height:760px){
+  body.events-active .events-panel{--event-reading-size:16px}
+  body.travel-choice-active .travel-choice-card{
+    height:min(590px,calc(100svh - 104px))!important;
+    max-height:590px!important;
+  }
+  body.travel-choice-active .travel-choice-card__overlay{
+    padding:66px 20px 12px!important;
+  }
+  body.travel-choice-active .travel-choice-card__body{
+    min-height:82px!important;
+    padding:11px 20px 13px!important;
+  }
+}
+`;
 let queued = false;
 let resetEventScroll = false;
 
 function ensureCss() {
-  if (document.querySelector('[data-compact-ui-pass4-css]')) return;
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = CSS_HREF;
-  link.dataset.compactUiPass4Css = '';
-  document.head.append(link);
+  if (!document.querySelector('[data-compact-ui-pass4-css]')) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = CSS_HREF;
+    link.dataset.compactUiPass4Css = '';
+    document.head.append(link);
+  }
+  if (!document.querySelector('[data-compact-ui-pass4-live-overrides]')) {
+    const style = document.createElement('style');
+    style.dataset.compactUiPass4LiveOverrides = '';
+    style.textContent = LIVE_OVERRIDE_CSS;
+    document.head.append(style);
+  }
 }
 
 function ensureEventFrames() {
@@ -40,9 +140,41 @@ function ensureEventFrames() {
   }
 }
 
+function restoreTravelCardBody(card, overlay, type, meta, body) {
+  if (!overlay || !body) return;
+  const flavor = body.querySelector('.travel-choice-card__flavor');
+  if (type && type.parentElement === overlay) body.insertBefore(type, flavor || null);
+  if (meta && meta.parentElement === overlay) body.insertBefore(meta, flavor || null);
+  overlay.remove();
+}
+
+function ensureTravelCardOverlays() {
+  const desktop = matchMedia('(min-width: 901px)').matches;
+  for (const card of document.querySelectorAll('[data-travel-choice]')) {
+    const visual = card.querySelector('.travel-choice-card__visual');
+    const body = card.querySelector('.travel-choice-card__body');
+    const type = card.querySelector('.travel-choice-card__type');
+    const meta = card.querySelector('.travel-choice-card__threat, .travel-choice-card__safe, .travel-choice-card__meta--cost-only');
+    let overlay = card.querySelector(':scope .travel-choice-card__overlay');
+    if (!desktop) {
+      restoreTravelCardBody(card, overlay, type, meta, body);
+      continue;
+    }
+    if (!visual || !body || !type) continue;
+    if (!overlay) {
+      overlay = document.createElement('span');
+      overlay.className = 'travel-choice-card__overlay';
+      visual.append(overlay);
+    }
+    if (type.parentElement !== overlay) overlay.append(type);
+    if (meta && meta.parentElement !== overlay) overlay.append(meta);
+  }
+}
+
 function refresh() {
   queued = false;
   ensureEventFrames();
+  ensureTravelCardOverlays();
 }
 
 function schedule() {
@@ -59,17 +191,18 @@ addEventListener('rpchess:event-open', () => {
   resetEventScroll = true;
   queueMicrotask(schedule);
 });
+addEventListener('rpchess:travel-open', () => queueMicrotask(schedule));
 addEventListener('resize', schedule, { passive: true });
 
 new MutationObserver((mutations) => {
   for (const mutation of mutations) {
     if (mutation.type === 'attributes') {
-      if (mutation.target instanceof Element && mutation.target.matches?.('[data-events-screen]')) return schedule();
+      if (mutation.target instanceof Element && mutation.target.matches?.('[data-events-screen],[data-travel-choice-screen]')) return schedule();
       continue;
     }
     for (const node of mutation.addedNodes) {
       if (!(node instanceof Element)) continue;
-      if (node.matches?.('[data-events-screen],[data-events-choices],[data-event-choice]') || node.querySelector?.('[data-events-screen],[data-events-choices],[data-event-choice]')) return schedule();
+      if (node.matches?.('[data-events-screen],[data-events-choices],[data-event-choice],[data-travel-choice],.travel-choice-card__meta--cost-only') || node.querySelector?.('[data-events-screen],[data-events-choices],[data-event-choice],[data-travel-choice],.travel-choice-card__meta--cost-only')) return schedule();
     }
   }
 }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
