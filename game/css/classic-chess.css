@@ -108,7 +108,7 @@ body.classic-chess-active { background: #050a12; }
   place-items: center;
   cursor: pointer;
   overflow: hidden;
-  isolation: isolate;
+  isolation:isolate;
 }
 .classic-square--light { background: linear-gradient(145deg, #c5b98e, #9d966f); }
 .classic-square--dark { background: linear-gradient(145deg, #526276, #344456); }
@@ -266,4 +266,121 @@ body.classic-chess-active { background: #050a12; }
   .classic-panel--moves { grid-column: auto; }
   .classic-promotion-grid { grid-template-columns: repeat(2, 1fr); }
   .classic-setup-field { grid-template-columns: 1fr; gap: 7px; }
+}
+
+/* --------------------------------------------------------------------------
+   Global/modal UI 03 — Promotion Modal
+   Presentation only. Promotion remains a required, runtime-owned selection.
+   -------------------------------------------------------------------------- */
+[data-promotion-modal] {
+  background: rgba(2,5,9,.93);
+  backdrop-filter: blur(10px);
+}
+[data-promotion-modal] .reboot-modal__panel.classic-commander-panel {
+  width: min(810px,100%);
+  padding: 28px 32px 32px !important;
+  border: 1px solid rgba(216,177,93,.72) !important;
+  border-radius: 7px !important;
+  background: linear-gradient(145deg,rgba(7,10,14,.99),rgba(4,6,9,.99)) !important;
+  box-shadow: 0 28px 80px rgba(0,0,0,.68),inset 0 0 0 1px rgba(255,232,174,.025) !important;
+  overflow: visible;
+}
+[data-promotion-modal] .reboot-modal__panel.classic-commander-panel::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 22px;
+  width: 260px;
+  height: 2px;
+  background: linear-gradient(90deg,#e8bf60,rgba(232,191,96,0));
+  pointer-events: none;
+}
+[data-promotion-modal] .reboot-modal__header {
+  padding: 0 0 18px;
+  border-bottom: 1px solid rgba(216,177,93,.28);
+}
+[data-promotion-modal] .reboot-eyebrow { display: none !important; }
+[data-promotion-modal] #promotion-title {
+  margin: 0;
+  color: #f5e2ad;
+  font: 400 clamp(38px,4vw,52px)/1.02 'BrahmsGotischCyr',Georgia,serif;
+  text-shadow: 0 3px 14px rgba(0,0,0,.62);
+}
+[data-promotion-modal] .classic-promotion-grid {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 18px;
+  margin-top: 26px;
+}
+[data-promotion-modal] .classic-promotion-option {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(0,1fr) auto;
+  align-items: center;
+  min-width: 0;
+  min-height: 178px !important;
+  padding: 14px 12px 16px !important;
+  border: 1px solid rgba(216,177,93,.48) !important;
+  border-image: none !important;
+  border-radius: 8px !important;
+  clip-path: none !important;
+  background: linear-gradient(180deg,rgba(20,18,14,.98),rgba(7,10,14,.99)) !important;
+  color: #f5e2ad !important;
+  box-shadow: inset 0 0 0 1px rgba(255,235,183,.035),0 14px 32px rgba(0,0,0,.28) !important;
+  cursor: pointer;
+  transition: transform .14s ease,filter .14s ease,border-color .14s ease,box-shadow .14s ease;
+}
+[data-promotion-modal] .classic-promotion-option::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 14px;
+  width: 88px;
+  height: 2px;
+  background: linear-gradient(90deg,rgba(230,189,98,.88),rgba(230,189,98,0));
+  opacity: .48;
+  pointer-events: none;
+}
+[data-promotion-modal] .classic-promotion-option:hover,
+[data-promotion-modal] .classic-promotion-option:focus-visible {
+  transform: translateY(-2px) !important;
+  filter: brightness(1.08) !important;
+  border-color: #edcb7a !important;
+  box-shadow: inset 0 0 0 1px rgba(255,235,183,.10),0 17px 38px rgba(0,0,0,.38),0 0 18px rgba(214,171,80,.07) !important;
+  outline: none;
+}
+[data-promotion-modal] .classic-promotion-option img {
+  display: block;
+  width: 100% !important;
+  height: 118px !important;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 7px 8px rgba(0,0,0,.58));
+}
+[data-promotion-modal] .classic-promotion-option span {
+  display: block;
+  margin-top: 8px;
+  color: #f3e1b5 !important;
+  font: 400 20px/1.05 'BrahmsGotischCyr',Georgia,serif !important;
+  letter-spacing: .02em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+@media (max-width: 700px) {
+  [data-promotion-modal] .reboot-modal__panel.classic-commander-panel {
+    width: min(520px,100%);
+    padding: 24px 20px 24px !important;
+  }
+  [data-promotion-modal] .classic-promotion-grid {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 12px;
+    margin-top: 20px;
+  }
+  [data-promotion-modal] .classic-promotion-option {
+    min-height: 150px !important;
+    padding: 10px !important;
+  }
+  [data-promotion-modal] .classic-promotion-option img { height: 94px !important; }
+  [data-promotion-modal] .classic-promotion-option span { font-size: 18px !important; }
 }
