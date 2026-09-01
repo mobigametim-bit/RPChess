@@ -59,6 +59,7 @@ assert(pass3Css.includes('grid-template-columns:minmax(0,1.6fr) minmax(520px,1fr
 assert(pass3Css.includes('body.compact-aftermath-active .resource-hud')&&pass3Css.includes('overflow-y:auto!important'),'Battle/Skirmish aftermath must fit the viewport and scroll participant lists internally');
 assert(pass3Css.includes('body.settlement-active .settlement-heading>.reboot-eyebrow')&&pass3Css.includes('body.settlement-active .settlement-footer p'),'Settlement must remove the requested descriptive copy while keeping its runtime DOM');
 assert(pass3Css.includes('body.settlement-active .settlement-healer-list')&&pass3Css.includes('body.settlement-active .settlement-recruits'),'Settlement service contents must scroll inside their own frames');
+assert(pass3Ui.includes('css/compact-ui-pass3.css?v=20260902-2'),'latest compact pass must use the refreshed CSS cache key');
 assert(!pass3Ui.includes('writeRun')&&!pass3Ui.includes('applyTravelSupplyCost'),'compact UI pass 3 must remain presentation-only');
 assert(build.includes("'css/compact-combat-ui-pass.css'")&&build.includes("'js/compact-combat-ui-pass.mjs'"),'production build must package and verify compact combat UI files');
 assert(build.includes("'css/compact-ui-pass3.css'")&&build.includes("'js/compact-ui-pass3.mjs'"),'production build must package and verify compact UI pass 3 files');
