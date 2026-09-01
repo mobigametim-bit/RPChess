@@ -83,6 +83,7 @@ function scheduleSync() {
 }
 
 ensureCss();
+import('./compact-ui-pass4.mjs').catch((error) => console.error('[RPChess] compact UI pass 4 failed to load', error));
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scheduleSync, { once: true });
 else scheduleSync();
 
