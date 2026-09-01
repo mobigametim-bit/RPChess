@@ -4,10 +4,13 @@ const source=fs.readFileSync(path.join(game,'js/travel-choice-commandbar-pass.mj
 const css=fs.readFileSync(path.join(game,'css/travel-choice-commandbar-pass.css'),'utf8');
 const compactCss=fs.readFileSync(path.join(game,'css/compact-run-screens-pass.css'),'utf8');
 const postCss=fs.readFileSync(path.join(game,'css/post-redesign-playtest-pass1b.css'),'utf8');
+const combatCss=fs.readFileSync(path.join(game,'css/compact-combat-ui-pass.css'),'utf8');
+const combatUi=fs.readFileSync(path.join(game,'js/compact-combat-ui-pass.mjs'),'utf8');
 const loader=fs.readFileSync(path.join(game,'js/post-redesign-playtest-pass1b.mjs'),'utf8');
 const build=fs.readFileSync(path.join(root,'scripts/build.cjs'),'utf8');
 
 assert(loader.includes("import './travel-choice-commandbar-pass.mjs'"),'Travel command-bar pass must load with the accepted presentation layer');
+assert(loader.includes("import './compact-combat-ui-pass.mjs'"),'compact combat UI pass must load with the accepted presentation layer');
 assert(source.includes("import { readRun } from './run-persistence.mjs'"),'Travel command bar must read current run resources');
 assert(source.includes("import { TRAVEL_SUPPLY_COST } from './resources-core.mjs'"),'Travel inline route cost must reuse the canonical Supply cost');
 assert(!source.includes('writeRun')&&!source.includes('applyTravelSupplyCost'),'Travel command-bar pass must remain presentation-only');
@@ -27,15 +30,24 @@ assert(compactCss.includes('body.roster-active .roster-grid')&&compactCss.includ
 assert(compactCss.includes('body.skirmish-active .resource-hud')&&compactCss.includes('body.skirmish-active [data-skirmish-back]'),'Skirmish Prep must visually remove the global HUD and back control without deleting hooks');
 assert(compactCss.includes('body.skirmish-active .skirmish-grid')&&compactCss.includes('overflow-y:auto!important'),'Skirmish available roster must scroll inside its frame');
 assert(postCss.includes('body.roster-active .roster-heading .reboot-eyebrow')&&postCss.includes('display: none !important'),'Roster must remove the redundant Текущий забег label visually');
-assert(postCss.includes('grid-template-rows: minmax(190px, 42%) minmax(0, 1fr)'),'Roster selected portrait must become a shorter rectangular media region so detail text remains visible');
-assert(postCss.includes('body.roster-active .roster-card__art')&&postCss.includes('width: 66% !important'),'Roster catalog hero art must be scaled down to fit fully inside cards');
 assert(postCss.includes('body.skirmish-active .skirmish-available::before')&&postCss.includes('display: none !important'),'compact Skirmish decorative pseudo-elements must not consume grid rows');
-assert(postCss.includes('body.skirmish-active .skirmish-available .skirmish-section-head .reboot-eyebrow'),'Skirmish must remove the redundant Ростер eyebrow');
-assert(postCss.includes('body.skirmish-active .skirmish-selection .skirmish-section-head h2'),'Skirmish must remove the redundant Боевой отряд heading');
-assert(postCss.includes('grid-template-columns: repeat(3, minmax(245px, 350px)) !important'),'Skirmish available heroes must use three narrower cards per row on desktop');
 assert(loader.includes('selection.append(skirmishActionbar)')&&loader.includes("matchMedia('(min-width: 901px)')"),'Skirmish action controls must move into the right selection frame on desktop');
 assert(!loader.includes('writeRun'),'Skirmish compact placement pass must not mutate persisted run state');
-assert(postCss.includes('.skirmish-selection > .skirmish-actionbar')&&postCss.includes('grid-column: 1 / -1 !important'),'Skirmish counters and Start button must live under formation inside the right frame');
-assert(build.includes("'css/travel-choice-commandbar-pass.css'")&&build.includes("'css/compact-run-screens-pass.css'")&&build.includes("'js/travel-choice-commandbar-pass.mjs'"),'production build must package and verify the Travel and compact run-screen passes');
 
-console.log('Travel command bar plus compact Roster/Skirmish viewport-fit presentation contract: PASS');
+assert(combatCss.includes('font-size:clamp(18px,1.22vw,22px)!important'),'Roster selected-character description must be substantially larger');
+assert(combatCss.includes('.roster-card__meta{display:none!important}'),'Roster hero cards must remove role/faction secondary text');
+assert(combatCss.includes('font-size:52px!important'),'Roster technical piece glyph must be enlarged');
+assert(combatCss.includes('repeat(3,minmax(0,285px))'),'Skirmish and Battle Prep hero cards must use genuinely short three-column cards');
+assert(combatCss.includes('body.compact-combat-active .resource-hud')&&combatCss.includes('body.compact-combat-active .classic-logo'),'roguelite combat board must remove fixed resources and RPChess logo visually');
+assert(combatUi.includes("party.append(movePanel)"),'combat move journal must move inside the left party panel');
+assert(combatCss.includes('width:min(calc(100svh - 20px),calc(100vw - 385px),940px)!important'),'combat board including coordinate rails must fit viewport height');
+assert(combatCss.includes('body.puzzles-active.compact-puzzle-active .puzzle-logo')&&combatCss.includes('[data-puzzle-roster]'),'Puzzle must remove logo and Roster button while preserving hooks');
+assert(combatCss.includes('puzzle-resolved-compact')&&combatUi.includes('data-puzzle-outcome'),'Puzzle result must replace the Condition panel visually');
+assert(combatCss.includes('body.battle-prep-compact-active .battle-logo')&&combatCss.includes('[data-battle-back]'),'Battle Prep must remove logo and back control visually');
+assert(combatUi.includes('Победа решится по классическим шахматным правилам'),'Battle Prep presentation must strip the requested explanatory sentence without changing encounter data');
+assert(combatUi.includes('battle-card__tech-glyph'),'Battle Prep cards must add a large technical role glyph without changing runtime character data');
+assert(combatUi.includes("quote.insertAdjacentElement('afterend', start)")||combatUi.includes('army.append(start)'),'Battle Start button must move under the mercenary quote inside the army frame');
+assert(!combatUi.includes('writeRun')&&!combatUi.includes('applyTravelSupplyCost'),'compact combat UI module must remain presentation-only');
+assert(build.includes("'css/compact-combat-ui-pass.css'")&&build.includes("'js/compact-combat-ui-pass.mjs'"),'production build must package and verify compact combat UI files');
+
+console.log('Travel + compact Roster/Skirmish/Combat/Puzzle/Battle Prep presentation contract: PASS');
