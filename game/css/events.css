@@ -82,3 +82,173 @@ body.events-active .resource-chip strong{color:#f0d99e}
   .events-outcome-card{max-height:calc(100dvh - 20px);padding:26px 20px!important}
 }
 @media(prefers-reduced-motion:reduce){.events-choice,.events-screen .reboot-button{transition:none}}
+
+/* --------------------------------------------------------------------------
+   Global modal 04 — Event outcome
+   Presentation-only. Outcome resolution, resource deltas and route transitions
+   remain owned by the existing Events runtime.
+   -------------------------------------------------------------------------- */
+.events-outcome-modal{
+  padding:18px;
+  background:rgba(2,3,5,.86);
+  backdrop-filter:blur(10px);
+}
+.events-outcome-card{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  column-gap:28px;
+  row-gap:0;
+  width:min(790px,100%);
+  padding:46px 48px 40px!important;
+  border-color:rgba(216,177,93,.50)!important;
+  border-radius:7px;
+  background:linear-gradient(145deg,rgba(7,10,14,.992),rgba(4,7,10,.994))!important;
+  box-shadow:0 30px 94px rgba(0,0,0,.76),inset 0 0 0 1px rgba(255,235,183,.025)!important;
+}
+.events-outcome-card::before{
+  left:24px;
+  width:min(260px,38%);
+  background:linear-gradient(90deg,#e8bf60,rgba(232,191,96,0));
+}
+.events-outcome-card .reboot-eyebrow{
+  display:none;
+}
+.events-outcome-card h2{
+  grid-column:1;
+  grid-row:1;
+  align-self:end;
+  margin:0;
+  color:#f5e2ad;
+  font:400 clamp(58px,6vw,78px)/.94 'BrahmsGotischCyr',Georgia,serif;
+  letter-spacing:.01em;
+  text-shadow:0 4px 18px rgba(0,0,0,.74);
+}
+.events-outcome-card .events-roll{
+  grid-column:2;
+  grid-row:1;
+  align-self:end;
+  justify-self:end;
+  padding-bottom:8px;
+  color:#d2ad61;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.07em;
+  white-space:nowrap;
+}
+.events-outcome-notes{
+  grid-column:1 / -1;
+  position:relative;
+  display:grid;
+  gap:0;
+  margin:30px 0 32px;
+  padding-top:40px;
+  border-top:1px solid rgba(216,177,93,.24);
+}
+.events-outcome-notes::before{
+  content:'ПОСЛЕДСТВИЯ';
+  position:absolute;
+  top:18px;
+  left:0;
+  color:#929aa4;
+  font:800 10px/1 Inter,system-ui,sans-serif;
+  letter-spacing:.14em;
+}
+.events-outcome-notes p{
+  position:relative;
+  min-height:58px;
+  margin:0;
+  padding:16px 4px 15px 23px;
+  border:0;
+  border-bottom:1px solid rgba(216,177,93,.14);
+  background:transparent;
+  color:#ece6da;
+  font-size:17px;
+  line-height:1.5;
+}
+.events-outcome-notes p::before{
+  content:'';
+  position:absolute;
+  left:0;
+  top:17px;
+  width:3px;
+  height:26px;
+  background:rgba(216,177,93,.70);
+}
+.events-outcome-notes p:last-child{
+  border-bottom-color:rgba(216,177,93,.20);
+}
+.events-outcome-notes .resource-inline{
+  gap:10px;
+  color:#f0d99e;
+  font-size:20px;
+  font-weight:900;
+  line-height:1;
+}
+.events-outcome-notes .resource-inline-icon{
+  order:-1;
+  width:34px;
+  height:34px;
+  object-fit:contain;
+  filter:drop-shadow(0 3px 5px rgba(0,0,0,.55));
+}
+.events-outcome-notes .resource-inline-icon--supplies{
+  width:36px;
+  height:36px;
+}
+.events-outcome-notes .resource-inline__amount{
+  min-width:3ch;
+  font-variant-numeric:tabular-nums;
+}
+.events-outcome-card .events-continue{
+  grid-column:1 / -1;
+  width:100%;
+  min-width:0;
+  min-height:60px;
+  margin:0;
+  font-size:clamp(20px,1.55vw,25px);
+}
+@media(max-width:640px){
+  .events-outcome-card{
+    grid-template-columns:1fr;
+    width:100%;
+    padding:32px 24px 26px!important;
+  }
+  .events-outcome-card h2{
+    grid-column:1;
+    grid-row:1;
+    font-size:clamp(50px,15vw,68px);
+  }
+  .events-outcome-card .events-roll{
+    grid-column:1;
+    grid-row:2;
+    justify-self:start;
+    margin-top:12px;
+    padding-bottom:0;
+    white-space:normal;
+  }
+  .events-outcome-notes{
+    grid-column:1;
+    margin-top:24px;
+  }
+  .events-outcome-notes p{
+    min-height:54px;
+    padding:14px 2px 13px 20px;
+    font-size:16px;
+  }
+  .events-outcome-notes p::before{
+    top:15px;
+    height:24px;
+  }
+  .events-outcome-notes .resource-inline-icon{
+    width:31px;
+    height:31px;
+  }
+  .events-outcome-notes .resource-inline-icon--supplies{
+    width:33px;
+    height:33px;
+  }
+  .events-outcome-card .events-continue{
+    grid-column:1;
+    min-height:56px;
+  }
+}
