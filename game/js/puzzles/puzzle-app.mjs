@@ -41,7 +41,7 @@ function ensureCss() {
   if (document.querySelector('[data-puzzles-css]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/puzzles.css?v=20260829-puzzles-3';
+  link.href = 'css/puzzles.css?v=20260901-puzzles-redesign-1';
   link.dataset.puzzlesCss = '';
   document.head.append(link);
 }

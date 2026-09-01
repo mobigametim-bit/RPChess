@@ -1,0 +1,515 @@
+:root{
+  --redesign-gold:#d8b15d;
+  --redesign-gold-strong:#f1d58f;
+  --redesign-obsidian:#080b10;
+  --redesign-panel:rgba(8,11,16,.94);
+  --redesign-panel-soft:rgba(10,13,19,.88);
+  --redesign-muted:#9fa9b5;
+}
+
+/* Approved shared button language — scoped to the first three redesigned screens only. */
+:is(.reboot-menu-screen,.roster-screen,.travel-choice-screen) .reboot-button{
+  border:1px solid var(--redesign-gold);
+  border-image:none;
+  border-radius:0;
+  clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 10px,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 10px),0 10px);
+  background:
+    linear-gradient(180deg,rgba(58,45,27,.72) 0%,rgba(27,28,31,.97) 48%,rgba(8,11,15,.99) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,235,183,.08),
+    inset 0 7px 18px rgba(239,195,102,.04),
+    0 10px 26px rgba(0,0,0,.28);
+  color:#f5e2ad;
+  font-family:'BrahmsGotischCyr',Georgia,serif;
+  font-weight:400;
+  font-size:clamp(19px,1.45vw,24px);
+  letter-spacing:.025em;
+  text-shadow:0 2px 5px rgba(0,0,0,.82);
+  transition:transform .14s ease,filter .14s ease,border-color .14s ease,box-shadow .14s ease;
+}
+:is(.reboot-menu-screen,.roster-screen,.travel-choice-screen) .reboot-button::before{
+  content:'';
+  position:absolute;
+  inset:4px;
+  clip-path:polygon(7px 0,calc(100% - 7px) 0,100% 7px,100% calc(100% - 7px),calc(100% - 7px) 100%,7px 100%,0 calc(100% - 7px),0 7px);
+  border:1px solid rgba(247,220,156,.22);
+  pointer-events:none;
+}
+:is(.reboot-menu-screen,.roster-screen,.travel-choice-screen) .reboot-button:hover:not(:disabled),
+:is(.reboot-menu-screen,.roster-screen,.travel-choice-screen) .reboot-button:focus-visible{
+  transform:translateY(-1px);
+  filter:brightness(1.08);
+  border-color:#edcb7a;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,235,183,.12),
+    inset 0 8px 22px rgba(239,195,102,.07),
+    0 13px 30px rgba(0,0,0,.34),
+    0 0 18px rgba(214,171,80,.07);
+}
+:is(.reboot-menu-screen,.roster-screen,.travel-choice-screen) .reboot-button:disabled{
+  opacity:.42;
+  filter:saturate(.32) brightness(.72);
+}
+:is(.reboot-menu-screen,.roster-screen,.travel-choice-screen) .reboot-button:disabled::before{opacity:.35}
+
+/* --------------------------------------------------------------------------
+   01 — Main Menu / Chronicle
+   -------------------------------------------------------------------------- */
+.reboot-menu-screen.reboot-menu-screen{
+  padding:clamp(18px,2.6vw,42px);
+}
+.reboot-menu-screen.reboot-menu-screen::before{
+  background:
+    radial-gradient(circle at 29% 18%,rgba(151,105,43,.08),transparent 27%),
+    linear-gradient(90deg,rgba(4,5,9,.96) 0%,rgba(7,8,13,.80) 43%,rgba(9,9,15,.40) 76%,rgba(4,5,9,.65) 100%),
+    linear-gradient(0deg,rgba(3,4,8,.88),rgba(5,6,10,.10) 57%);
+}
+.reboot-menu-screen .reboot-menu-screen__layout{
+  width:min(1500px,100%);
+  min-height:min(780px,calc(100vh - 52px));
+  grid-template-columns:minmax(720px,760px) minmax(360px,1fr);
+  align-items:center;
+}
+.reboot-menu-screen .reboot-menu-screen__main{
+  align-self:stretch;
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  padding:clamp(18px,2vw,28px);
+}
+.reboot-menu-screen .reboot-menu-screen__main>.reboot-eyebrow{
+  margin:0;
+  color:#e1ba68;
+}
+.reboot-menu-screen .reboot-wordmark{
+  width:min(500px,78vw);
+  margin:8px 0 0;
+  filter:drop-shadow(0 9px 24px rgba(0,0,0,.82));
+}
+.reboot-menu-screen .reboot-menu-actions{
+  width:min(556px,calc(100% - 124px));
+  max-width:556px;
+  margin-top:auto;
+  margin-right:0;
+  margin-bottom:clamp(34px,9vh,92px);
+  margin-left:124px;
+  gap:12px;
+}
+.reboot-menu-screen .reboot-menu-secondary{margin-top:10px}
+.reboot-menu-screen .reboot-menu-actions .reboot-button{min-height:58px}
+
+.reboot-menu-screen .chronicle-panel{
+  align-self:center;
+  justify-self:end;
+  width:min(440px,100%);
+  border:1px solid rgba(217,177,91,.34);
+  border-left-color:rgba(232,194,103,.48);
+  border-right-color:rgba(217,177,91,.18);
+  background:
+    linear-gradient(145deg,rgba(11,14,20,.92),rgba(5,8,13,.88));
+  box-shadow:
+    0 20px 58px rgba(0,0,0,.42),
+    inset 0 0 0 1px rgba(255,230,170,.025),
+    inset 0 18px 42px rgba(126,88,34,.035);
+  backdrop-filter:blur(8px);
+}
+.reboot-menu-screen .chronicle-header{border-bottom-color:rgba(221,181,91,.27)}
+.reboot-menu-screen .chronicle-header .reboot-eyebrow{color:#dcb45f}
+.reboot-menu-screen .chronicle-header h2{color:#f2e6cf}
+.reboot-menu-screen .chronicle-section-label{color:#9fa9b5}
+.reboot-menu-screen .chronicle-current h3,
+.reboot-menu-screen .chronicle-best h3{color:#f5e2b5}
+.reboot-menu-screen .chronicle-divider{
+  background:linear-gradient(90deg,rgba(222,181,89,.64),rgba(222,181,89,.16),transparent);
+}
+.reboot-menu-screen .chronicle-metric{border-bottom-color:rgba(154,119,53,.27)}
+.reboot-menu-screen .chronicle-metric span,
+.reboot-menu-screen .chronicle-empty-copy{color:#a6adb8}
+.reboot-menu-screen .chronicle-metric strong{color:#f2d996}
+
+/* --------------------------------------------------------------------------
+   02 — Roster
+   -------------------------------------------------------------------------- */
+.roster-screen.roster-screen{
+  padding:clamp(18px,2.3vw,34px);
+  background:
+    radial-gradient(circle at 30% 18%,rgba(139,96,39,.055),transparent 30%),
+    linear-gradient(90deg,rgba(4,5,9,.94),rgba(7,8,13,.63) 49%,rgba(4,5,9,.88)),
+    #05070b url('../generated_assets/splash_poster.jpg') center/cover fixed no-repeat;
+}
+.roster-screen .roster-shell{width:min(1500px,100%)}
+.roster-screen .roster-topbar{
+  min-height:66px;
+  margin-bottom:14px;
+}
+.roster-screen .roster-logo{
+  width:min(255px,42vw);
+  filter:drop-shadow(0 7px 18px rgba(0,0,0,.78));
+}
+.roster-screen .roster-topbar__actions{gap:9px}
+.roster-screen .roster-topbar .reboot-button{
+  min-width:150px;
+  min-height:46px;
+  padding:7px 18px;
+  font-size:18px;
+}
+.roster-screen .roster-journey-button{min-width:220px!important}
+.roster-screen .roster-heading{margin:0 0 14px;padding-inline:4px}
+.roster-screen .roster-heading .reboot-eyebrow{color:#dcb45f;font-size:10px}
+.roster-screen .roster-heading h1{
+  margin:2px 0 0;
+  font-size:clamp(42px,4.8vw,62px);
+  color:#f5e6c9;
+  text-shadow:0 4px 16px rgba(0,0,0,.74);
+}
+.roster-screen .roster-layout{
+  grid-template-columns:minmax(350px,.82fr) minmax(620px,1.85fr);
+  gap:18px;
+}
+.roster-screen .roster-detail,
+.roster-screen .roster-catalog{
+  border-color:rgba(215,176,88,.28);
+  background:linear-gradient(145deg,rgba(10,13,18,.94),rgba(6,9,14,.96));
+  box-shadow:0 18px 50px rgba(0,0,0,.42),inset 0 0 0 1px rgba(245,217,151,.018);
+  backdrop-filter:blur(7px);
+}
+.roster-screen .roster-detail{gap:16px}
+.roster-screen .roster-detail__media{
+  min-height:300px;
+  border-color:rgba(217,178,88,.32);
+  background:radial-gradient(circle at 50% 24%,rgba(106,77,40,.22),rgba(5,9,14,.76) 70%);
+  box-shadow:inset 0 0 40px rgba(0,0,0,.18);
+}
+.roster-screen .roster-detail__portrait{max-height:430px}
+.roster-screen .roster-kicker{color:#dcb45f;font-size:10px}
+.roster-screen .roster-detail h2{
+  margin:4px 0 12px;
+  color:#f3e4c6;
+  font-size:clamp(31px,3.2vw,43px);
+}
+.roster-screen .roster-detail__facts{gap:8px;margin-bottom:12px}
+.roster-screen .roster-detail__facts>span{
+  padding:9px 11px;
+  border-color:rgba(213,174,85,.18);
+  background:rgba(13,16,21,.84);
+}
+.roster-screen .roster-detail__facts strong{color:#f2dfad}
+.roster-screen .roster-detail__facts small{color:#959eaa}
+.roster-screen .roster-detail__description,
+.roster-screen .roster-status-note{color:#adb5c0}
+.roster-screen .roster-catalog__head{margin-bottom:12px}
+.roster-screen .roster-catalog__head h2{color:#f2e3c5;font-size:clamp(29px,2.8vw,38px)}
+.roster-screen .roster-catalog__count{color:#dcb45f;font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+.roster-screen .roster-filters{gap:7px;margin-bottom:14px}
+.roster-screen .roster-filter{
+  min-height:34px;
+  padding:6px 12px;
+  border-color:rgba(137,144,153,.25);
+  background:rgba(11,15,21,.80);
+  color:#a7afb9;
+  font-size:10px;
+}
+.roster-screen .roster-filter:hover,
+.roster-screen .roster-filter.is-active{
+  color:#f4dfa9;
+  border-color:rgba(220,180,88,.78);
+  background:rgba(45,36,22,.72);
+}
+.roster-screen .roster-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+}
+.roster-screen .roster-card{
+  min-height:245px;
+  grid-template-rows:minmax(152px,165px) auto;
+  border-color:rgba(132,139,148,.22);
+  background:linear-gradient(180deg,rgba(15,19,25,.96),rgba(7,10,15,.99));
+  box-shadow:0 10px 24px rgba(0,0,0,.16);
+}
+.roster-screen .roster-card:hover{
+  transform:translateY(-2px);
+  border-color:rgba(219,179,89,.62);
+  box-shadow:0 14px 28px rgba(0,0,0,.25);
+}
+.roster-screen .roster-card[aria-pressed='true']{
+  border-color:#ddb75f;
+  box-shadow:inset 0 0 0 1px rgba(238,202,116,.18),0 0 24px rgba(210,164,70,.08);
+}
+.roster-screen .roster-card__art-wrap{
+  background:radial-gradient(circle at 50% 46%,rgba(106,78,43,.18),rgba(5,9,14,.76) 70%);
+}
+.roster-screen .roster-card__art{width:89%;height:100%}
+.roster-screen .roster-card__glyph{color:#f2dda8;font-size:23px}
+.roster-screen .roster-card__value{
+  color:#f2dda8;
+  background:rgba(6,9,13,.84);
+  border-color:rgba(220,180,88,.42);
+}
+.roster-screen .roster-card__body{
+  gap:4px;
+  padding:10px 12px 12px;
+  border-top-color:rgba(212,174,85,.14);
+}
+.roster-screen .roster-card__name{
+  color:#f1dfb9;
+  font-family:'BrahmsGotischCyr',Georgia,serif;
+  font-size:19px;
+  font-weight:400;
+}
+.roster-screen .roster-card__meta{color:#9ba4af;font-size:11px}
+.roster-screen .roster-empty{color:#9da6b0;border-color:rgba(215,176,88,.20)}
+body.roster-active .resource-chip{
+  border-color:rgba(218,178,88,.34);
+  background:rgba(7,10,15,.91);
+  box-shadow:0 7px 20px rgba(0,0,0,.35),inset 0 0 18px rgba(205,160,69,.035);
+}
+body.roster-active .resource-chip span:not(.resource-chip__supply-icon){color:rgba(216,220,226,.66)}
+body.roster-active .resource-chip strong{color:#f0d99e}
+
+/* --------------------------------------------------------------------------
+   03 — Travel Choice
+   -------------------------------------------------------------------------- */
+.travel-choice-screen.travel-choice-screen{
+  padding:clamp(18px,2.25vw,34px);
+  color:#f1f3f6;
+}
+.travel-choice-screen .travel-choice-shell{width:min(1460px,100%)}
+.travel-choice-screen .travel-choice-topbar{
+  display:grid;
+  grid-template-columns:minmax(220px,1fr) auto auto;
+  align-items:center;
+  gap:14px;
+  min-height:66px;
+  margin-bottom:18px;
+}
+.travel-choice-screen .travel-choice-logo{
+  width:min(225px,38vw);
+  filter:drop-shadow(0 7px 18px rgba(0,0,0,.78));
+}
+.travel-choice-screen .travel-choice-topbar__actions{
+  gap:9px;
+  flex-wrap:nowrap;
+}
+.travel-choice-screen .travel-choice-topbar__actions .reboot-button{
+  min-width:150px;
+  width:auto;
+  min-height:46px;
+  padding:7px 18px;
+  font-size:18px;
+}
+.travel-choice-screen .travel-player-rating{
+  min-width:240px;
+  min-height:58px;
+  padding:8px 13px 8px 72px;
+  border:1px solid rgba(218,178,88,.50);
+  border-left-color:rgba(231,191,96,.72);
+  border-radius:0;
+  background:linear-gradient(90deg,rgba(8,11,16,.94),rgba(14,15,17,.82));
+  box-shadow:0 9px 22px rgba(0,0,0,.26),inset 0 0 0 1px rgba(248,221,158,.025);
+}
+.travel-choice-screen .travel-player-rating::before{
+  left:8px;
+  width:48px;
+  height:48px;
+  border-color:rgba(229,190,96,.68);
+  box-shadow:0 4px 14px rgba(0,0,0,.58),inset 0 0 0 1px rgba(235,198,111,.06);
+}
+.travel-choice-screen .travel-player-rating__row span{color:rgba(207,212,219,.70)}
+.travel-choice-screen .travel-player-rating__row strong{color:#f0dba5}
+.travel-choice-screen .travel-player-rating__row--threat strong{color:#e9c75f}
+.travel-choice-screen .travel-choice-heading{
+  max-width:none;
+  margin:0 0 22px;
+  text-align:left;
+}
+.travel-choice-screen .travel-choice-heading h1{
+  margin:0;
+  font-size:clamp(44px,4.8vw,64px);
+  color:#f2e2bf;
+  text-shadow:0 4px 18px rgba(0,0,0,.72);
+}
+.travel-choice-screen .travel-choice-heading::after{
+  content:'';
+  display:block;
+  width:min(680px,70vw);
+  height:1px;
+  margin-top:14px;
+  background:linear-gradient(90deg,rgba(229,190,94,.90),rgba(229,190,94,.28),transparent);
+  pointer-events:none;
+}
+.travel-choice-screen .travel-choice-routes{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:22px;
+}
+.travel-choice-screen .travel-choice-card{
+  min-height:560px;
+  border:1px solid rgba(219,179,89,.70);
+  border-radius:10px;
+  background:linear-gradient(180deg,rgba(11,14,19,.93),rgba(6,9,14,.985));
+  box-shadow:0 18px 48px rgba(0,0,0,.34),inset 0 0 0 1px rgba(246,218,153,.018);
+}
+.travel-choice-screen .travel-choice-card:hover,
+.travel-choice-screen .travel-choice-card:focus-visible{
+  transform:translateY(-4px);
+  border-color:rgba(237,201,111,.90);
+  box-shadow:0 24px 52px rgba(0,0,0,.42),0 0 0 1px rgba(228,187,91,.08);
+}
+.travel-choice-screen .travel-choice-card__visual{
+  height:300px;
+  border-bottom:1px solid rgba(216,176,87,.16);
+}
+.travel-choice-screen .travel-choice-card__glow{
+  background:linear-gradient(180deg,rgba(4,7,11,.03) 20%,rgba(5,8,13,.20) 58%,rgba(5,8,13,.96) 100%)!important;
+}
+.travel-choice-screen .travel-choice-card__icon{
+  left:18px;
+  top:18px;
+  width:92px;
+  height:92px;
+  transform:none;
+  object-fit:contain;
+  mix-blend-mode:screen;
+  opacity:.96;
+  filter:drop-shadow(0 7px 12px rgba(0,0,0,.48));
+}
+.travel-choice-screen .travel-choice-card__body{
+  padding:322px 26px 24px;
+}
+.travel-choice-screen .travel-choice-card__type{
+  color:#f2e0b5;
+  font-size:clamp(29px,2.25vw,36px);
+  letter-spacing:.025em;
+}
+.travel-choice-screen .travel-choice-card__threat,
+.travel-choice-screen .travel-choice-card__safe{
+  margin:12px 0 17px;
+  padding-bottom:13px;
+  border-bottom-color:rgba(222,181,89,.30);
+}
+.travel-choice-screen .travel-choice-card__threat strong{color:#e8c45f}
+.travel-choice-screen .travel-choice-card__threat small{color:rgba(207,213,220,.70)}
+.travel-choice-screen .travel-choice-card__safe{color:#a8d5ae}
+.travel-choice-screen .travel-choice-card__safe small{color:rgba(174,205,180,.72)}
+.travel-choice-screen .travel-choice-card__flavor{
+  margin-top:17px;
+  color:#e8ebef;
+  font-size:clamp(15px,1.15vw,17px);
+  line-height:1.5;
+}
+.travel-choice-screen .travel-choice-card__threat+.travel-choice-card__flavor,
+.travel-choice-screen .travel-choice-card__safe+.travel-choice-card__flavor{margin-top:0}
+.travel-choice-screen .travel-choice-card__cost{
+  margin-top:auto;
+  padding-top:18px;
+  border-top-color:rgba(222,181,89,.18);
+  color:rgba(223,214,193,.76);
+  font-size:10px;
+}
+.travel-choice-screen .travel-choice-card__cost.is-empty{color:#dfa88f}
+body.travel-choice-active .resource-chip{
+  border-color:rgba(218,178,88,.36);
+  background:rgba(7,10,15,.93);
+  box-shadow:0 7px 20px rgba(0,0,0,.35),inset 0 0 18px rgba(205,160,69,.035);
+}
+body.travel-choice-active .resource-chip span:not(.resource-chip__supply-icon){color:rgba(216,220,226,.66)}
+body.travel-choice-active .resource-chip strong{color:#f0d99e}
+
+@media(max-width:1120px){
+  .reboot-menu-screen .reboot-menu-screen__layout{
+    width:min(820px,100%);
+    min-height:auto;
+    grid-template-columns:1fr;
+    gap:18px;
+  }
+  .reboot-menu-screen .reboot-menu-screen__main{
+    min-height:560px;
+    padding:28px 22px;
+  }
+  .reboot-menu-screen .reboot-menu-actions{
+    width:min(556px,100%);
+    margin:34px 0 0;
+  }
+  .reboot-menu-screen .chronicle-panel{
+    justify-self:stretch;
+    width:auto;
+    margin:0 22px 28px;
+  }
+
+  .roster-screen .roster-layout{grid-template-columns:minmax(300px,.9fr) minmax(430px,1.4fr)}
+  .roster-screen .roster-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+  .travel-choice-screen .travel-choice-topbar{
+    grid-template-columns:minmax(180px,1fr) auto;
+  }
+  .travel-choice-screen .travel-player-rating{
+    grid-column:2;
+    grid-row:1;
+  }
+  .travel-choice-screen .travel-choice-topbar__actions{
+    grid-column:1/-1;
+    justify-self:end;
+  }
+}
+
+@media(max-width:900px){
+  .travel-choice-screen .travel-choice-routes{grid-template-columns:1fr;gap:14px}
+  .travel-choice-screen .travel-choice-card{min-height:320px}
+  .travel-choice-screen .travel-choice-card__visual{
+    width:40%;
+    height:100%;
+    right:auto;
+    border-right:1px solid rgba(216,176,87,.16);
+    border-bottom:0;
+  }
+  .travel-choice-screen .travel-choice-card__body{
+    min-height:320px;
+    padding:24px 22px 22px calc(40% + 24px);
+  }
+  .travel-choice-screen .travel-choice-card__icon{width:78px;height:78px;left:14px;top:14px}
+  .travel-choice-screen .travel-choice-heading h1{font-size:clamp(40px,9vw,56px)}
+}
+
+@media(max-width:780px){
+  .roster-screen.roster-screen{padding:12px}
+  .roster-screen .roster-topbar{align-items:flex-start}
+  .roster-screen .roster-topbar__actions{flex-direction:column;width:min(200px,47vw)}
+  .roster-screen .roster-topbar .reboot-button{width:100%;min-width:0}
+  .roster-screen .roster-journey-button{min-width:0!important}
+  .roster-screen .roster-layout{grid-template-columns:1fr}
+  .roster-screen .roster-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media(max-width:620px){
+  .reboot-menu-screen.reboot-menu-screen{padding:12px;place-items:start center}
+  .reboot-menu-screen .reboot-menu-screen__layout{width:100%;gap:12px}
+  .reboot-menu-screen .reboot-menu-screen__main{min-height:auto;padding:30px 18px}
+  .reboot-menu-screen .reboot-wordmark{width:min(480px,96%)}
+  .reboot-menu-screen .reboot-menu-actions{margin-top:28px}
+  .reboot-menu-screen .chronicle-panel{margin:0 18px 28px}
+
+  .travel-choice-screen.travel-choice-screen{padding:12px 12px 24px}
+  .travel-choice-screen .travel-choice-topbar{display:grid;grid-template-columns:1fr;gap:10px}
+  .travel-choice-screen .travel-choice-logo{width:min(210px,52vw)}
+  .travel-choice-screen .travel-player-rating{grid-column:1;grid-row:auto;justify-self:stretch;width:100%}
+  .travel-choice-screen .travel-choice-topbar__actions{grid-column:1;justify-self:stretch}
+  .travel-choice-screen .travel-choice-topbar__actions .reboot-button{flex:1;min-width:0}
+  .travel-choice-screen .travel-choice-heading{margin-bottom:18px}
+  .travel-choice-screen .travel-choice-heading::after{width:100%}
+  .travel-choice-screen .travel-choice-card{min-height:430px;display:block}
+  .travel-choice-screen .travel-choice-card__visual{
+    position:relative;
+    width:100%;
+    height:190px;
+    border-right:0;
+    border-bottom:1px solid rgba(216,176,87,.16);
+  }
+  .travel-choice-screen .travel-choice-card__body{min-height:240px;padding:20px 22px 22px}
+  .travel-choice-screen .travel-choice-card__icon{width:72px;height:72px}
+}
+
+@media(max-width:500px){
+  .roster-screen .roster-logo{width:44vw}
+  .roster-screen .roster-topbar__actions{width:49vw}
+  .roster-screen .roster-grid{grid-template-columns:1fr}
+  .roster-screen .roster-card{min-height:300px;grid-template-rows:minmax(190px,1fr) auto}
+}

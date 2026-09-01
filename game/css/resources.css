@@ -139,6 +139,85 @@
   color: #ffaaa5;
 }
 
+/* Approved Travel redesign corrections.
+   Keep the runtime copy/route metadata untouched: this layer only changes presentation. */
+body.travel-choice-active .travel-choice-card__icon {
+  z-index: 2;
+  opacity: 1 !important;
+  mix-blend-mode: normal !important;
+  filter: saturate(1.06) contrast(1.04) drop-shadow(0 7px 12px rgba(0, 0, 0, 0.58)) !important;
+}
+
+body.travel-choice-active .travel-choice-card__cost {
+  display: inline-flex !important;
+  align-items: center;
+  width: fit-content;
+  margin-top: auto !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #e5c573;
+  font-size: 0 !important;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+body.travel-choice-active .travel-choice-card__cost:not(.is-empty) .resource-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #e5c573;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.06em;
+}
+
+body.travel-choice-active .travel-choice-card__cost:not(.is-empty) .resource-inline-icon--supplies {
+  order: 0;
+  width: 20px;
+  height: 20px;
+  opacity: 1;
+  mix-blend-mode: normal;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.58));
+}
+
+body.travel-choice-active .travel-choice-card__cost:not(.is-empty) .resource-inline__amount {
+  order: 1;
+}
+
+body.travel-choice-active .travel-choice-card__cost:not(.is-empty) .resource-inline::after {
+  content: 'ПРИПАС';
+  order: 2;
+  font: inherit;
+  color: inherit;
+}
+
+body.travel-choice-active .travel-choice-card__cost.is-empty {
+  color: #dfa88f;
+  font-size: 10px !important;
+  line-height: 1.25;
+}
+
+/* Settlement safe marker is presentation-only; keep the runtime node/hooks intact. */
+body.travel-choice-active .travel-choice-card--settlement .travel-choice-card__safe > strong {
+  display: none;
+}
+
+/* Keep persisted puzzle choice.label backward-compatible while presenting the approved route name. */
+body.travel-choice-active .travel-choice-card--puzzle .travel-choice-card__type {
+  font-size: 0 !important;
+}
+
+body.travel-choice-active .travel-choice-card--puzzle .travel-choice-card__type::after {
+  content: 'ТРЕНИРОВКА';
+  font: 400 clamp(29px, 2.25vw, 36px)/1 'BrahmsGotischCyr', Georgia, serif;
+  letter-spacing: .025em;
+  color: #f2e0b5;
+}
+
 @media (max-width: 700px) {
   .resource-hud {
     top: max(7px, env(safe-area-inset-top));

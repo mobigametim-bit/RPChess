@@ -29,7 +29,7 @@ function installStyles() {
       background:linear-gradient(180deg,rgba(3,10,8,.54),rgba(3,8,12,.90)),var(--settlement-scene-backdrop,url('generated_assets/scene_shop.jpg')) center/cover fixed no-repeat!important;
     }
     .classic-screen{
-      background:linear-gradient(90deg,rgba(3,7,15,.92),rgba(7,15,26,.60) 46%,rgba(3,7,15,.86)),var(--classic-scene-backdrop,url('generated_assets/scene_battle.jpg')) center/cover fixed no-repeat!important;
+      background:linear-gradient(90deg,rgba(3,7,15,.62),rgba(7,15,26,.30) 46%,rgba(3,7,15,.58)),var(--classic-scene-backdrop,url('generated_assets/scene_battle.jpg')) center/cover fixed no-repeat!important;
     }
     .puzzle-screen{
       background:linear-gradient(90deg,rgba(3,7,15,.90),rgba(7,15,26,.62) 48%,rgba(3,7,15,.88)),url('generated_assets/splash_poster.jpg') center/cover fixed no-repeat!important;
@@ -45,6 +45,31 @@ function installStyles() {
       font-family:'BrahmsGotischCyr',Georgia,serif!important;font-weight:400!important;color:#fff0c5!important;text-shadow:0 4px 18px rgba(0,0,0,.78)!important;
     }
     .classic-piece-marker,.puzzle-piece-marker{font-size:clamp(19.5px,1.575vw,25.5px)!important;}
+    .battle-screen .battle-actionbar{
+      position:static!important;
+      display:flex!important;
+      justify-content:flex-end!important;
+      align-items:center!important;
+      margin-top:12px!important;
+      padding:0!important;
+      border:0!important;
+      border-radius:0!important;
+      background:transparent!important;
+      box-shadow:none!important;
+      backdrop-filter:none!important;
+    }
+    .battle-screen .battle-actionbar>.battle-counter,
+    .battle-screen .battle-actionbar>.battle-action-cost{
+      display:none!important;
+    }
+    .battle-screen .battle-actionbar>.battle-start{
+      width:min(360px,100%)!important;
+      min-height:54px!important;
+      margin-left:auto!important;
+    }
+    @media(max-width:900px){
+      .battle-screen .battle-actionbar>.battle-start{width:100%!important;}
+    }
     @media(max-width:620px){.classic-piece-marker,.puzzle-piece-marker{font-size:19.5px!important;}}
   `;
   document.head.append(style);
@@ -81,6 +106,16 @@ function setCombatBackdrop(choice = null) {
   const path = backdropPath(seed, resolved?.enemyRaceTag || null);
   screen.style.setProperty('--classic-scene-backdrop', `url("${path}")`);
   screen.dataset.combatBackdrop = path;
+}
+
+function setBattlePrepBackdrop(choice = null) {
+  const screen = document.querySelector('[data-battle-screen]');
+  if (!screen) return;
+  const resolved = choice || globalThis.RPChessBattle?.encounter || globalThis.RPChessTravelEncounterOverride || null;
+  const seed = resolved?.seed || resolved?.id || 'rpchess:battle-prep';
+  const path = backdropPath(seed, resolved?.enemyRaceTag || null);
+  screen.style.setProperty('--battle-scene-backdrop', `url("${path}")`);
+  screen.dataset.battleBackdrop = path;
 }
 
 function setSettlementBackdrop(choice = null) {
@@ -129,7 +164,11 @@ queueMicrotask(refresh);
 addEventListener('rpchess:travel-open', () => queueMicrotask(decorateTravelCards));
 addEventListener('rpchess:run-updated', () => queueMicrotask(refresh));
 addEventListener('rpchess:skirmish-open', (event) => setCombatBackdrop(event?.detail?.choice));
-addEventListener('rpchess:battle-open', (event) => setCombatBackdrop(event?.detail?.choice));
+addEventListener('rpchess:battle-open', (event) => {
+  const choice = event?.detail?.choice || null;
+  setCombatBackdrop(choice);
+  queueMicrotask(() => setBattlePrepBackdrop(choice));
+});
 addEventListener('rpchess:settlement-open', (event) => setSettlementBackdrop(event?.detail?.choice));
 
 const observer = new MutationObserver(() => queueMicrotask(refresh));
@@ -140,6 +179,7 @@ globalThis.RPChessSceneVisuals = Object.freeze({
   backdropPath,
   decorateTravelCards,
   setCombatBackdrop,
+  setBattlePrepBackdrop,
   setSettlementBackdrop,
   refresh
 });
