@@ -1,15 +1,22 @@
+import { readRun } from './run-persistence.mjs';
+import { placeArmy } from './skirmish-core.mjs';
+import { combatGoldReward } from './resources-core.mjs';
+import { puzzleBaseGold } from './puzzles/puzzle-core.mjs';
+
 const GOLD_ICON = 'generated_assets/reward_gold.png';
 // Existing campaign-map shop asset: a merchant pouch / supply-stall symbol designed to stay readable at icon size.
 const SUPPLIES_ICON = 'generated_assets/node_shop.png';
 const BOARD_SELECTOR = '.classic-board[data-chess-board], .puzzle-board[data-puzzle-board]';
 const SKIP_TEXT_PARENTS = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'OPTION', 'NOSCRIPT']);
 const SUPPLY_ICON_HOLDER_SELECTOR = '.resource-chip__supply-icon, [aria-labelledby="settlement-supplies-title"] .settlement-service__icon';
+const SKIRMISH_GLYPHS = Object.freeze({ pawn:'♙', knight:'♘', bishop:'♗', rook:'♖', queen:'♕', king:'♔' });
+let activeCombatPresentation = null;
 
 function ensureCss() {
   if (!document.querySelector('[data-ux-consistency-css]')) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'css/ux-consistency.css?v=20260831-1';
+    link.href = 'css/ux-consistency.css?v=20260901-playtest-pass1';
     link.dataset.uxConsistencyCss = '';
     document.head.append(link);
   }
@@ -147,9 +154,105 @@ function syncBoard(board) {
   frame.dataset.orientation = values.files[0] === 'h' ? 'black' : 'white';
 }
 
+function syncSkirmishFormationPreview() {
+  const root = document.querySelector('[data-skirmish-formation]');
+  const api = globalThis.RPChessSkirmish;
+  const encounter = api?.encounter;
+  const selectedIds = api?.selectedIds;
+  const run = readRun();
+  if (!root || root.closest('[data-skirmish-screen]')?.hidden || !encounter || !run || !Array.isArray(selectedIds)) return;
+  const selected = new Set(selectedIds);
+  const members = (run.roster || []).filter((character) => selected.has(character.id));
+  const color = encounter.playerColor === 'b' ? 'b' : 'w';
+  let placements = [];
+  try { placements = placeArmy(members, color, { seed:`${encounter.seed}:player` }); } catch { return; }
+  const bySquare = new Map(placements.map((piece) => [piece.square, piece]));
+  const ranks = color === 'w' ? ['2','1'] : ['7','8'];
+  const cells = [...root.querySelectorAll('.skirmish-formation-cell')];
+  if (cells.length !== 16) return;
+  let index = 0;
+  for (const rank of ranks) {
+    for (const file of 'abcdefgh') {
+      const cell = cells[index++];
+      const square = `${file}${rank}`;
+      const piece = bySquare.get(square);
+      const text = piece ? (SKIRMISH_GLYPHS[piece.pieceType] || '') : '·';
+      const title = piece?.name || square;
+      if (cell.textContent !== text) cell.textContent = text;
+      if (cell.title !== title) cell.title = title;
+    }
+  }
+}
+
+function difficultyLabel(encounter) {
+  return String(encounter?.label || '').split(' · ')[0].trim();
+}
+
+function syncCombatSummary() {
+  const classic = document.querySelector('[data-classic-screen]');
+  if (!classic || classic.hidden || !activeCombatPresentation) return;
+  const api = activeCombatPresentation === 'battle' ? globalThis.RPChessBattle : globalThis.RPChessSkirmish;
+  if (!api?.battlePlan) return;
+  const heading = classic.querySelector('.classic-party-panel h2');
+  const mode = classic.querySelector('[data-game-mode]');
+  const title = activeCombatPresentation === 'battle' ? 'Битва' : 'Стычка';
+  const difficulty = difficultyLabel(api.encounter || api.battlePlan?.encounter);
+  if (heading && heading.textContent !== title) heading.textContent = title;
+  if (mode && difficulty && mode.textContent !== difficulty) mode.textContent = difficulty;
+}
+
+function travelChoiceForCard(card) {
+  const id = card?.dataset.travelChoice;
+  return globalThis.RPChessTravelChoice?.choices?.find?.((choice) => choice.id === id) || null;
+}
+
+function victoryReward(choice, type, stars) {
+  if (type === 'puzzle') return puzzleBaseGold(stars);
+  const playerColor = choice?.playerColor === 'b' ? 'b' : 'w';
+  return combatGoldReward({ encounterType:type, stars, playerColor, status:{ over:true, type:'checkmate', winner:playerColor } });
+}
+
+function syncTravelPresentation() {
+  const week = document.querySelector('[data-travel-week]');
+  if (week) {
+    const match = week.textContent.trim().match(/^Неделя(?:\s+путешествия)?\s+(\d+)$/i);
+    if (match) {
+      const text = `Неделя ${match[1]}`;
+      if (week.textContent !== text) week.textContent = text;
+    }
+  }
+  for (const card of document.querySelectorAll('[data-travel-choice]')) {
+    const type = card.dataset.travelType;
+    if (!['skirmish','battle','puzzle'].includes(type)) continue;
+    const stars = Number(card.dataset.travelStars || 1);
+    const choice = travelChoiceForCard(card);
+    const reward = victoryReward(choice, type, stars);
+    const label = card.querySelector('.travel-choice-card__threat small');
+    if (!label || label.dataset.travelReward === String(reward)) continue;
+    label.dataset.travelReward = String(reward);
+    label.className = 'travel-choice-card__reward';
+    label.replaceChildren();
+    const amount = document.createElement('strong');
+    amount.className = 'travel-choice-card__reward-amount';
+    amount.textContent = `+${reward}`;
+    const icon = resourceIcon('gold');
+    icon.classList.add('travel-choice-card__reward-icon');
+    label.append(amount, icon);
+  }
+}
+
+function syncPuzzlePresentation() {
+  const status = document.querySelector('[data-puzzle-status]');
+  if (status?.textContent.trim() === 'Ваш ход') status.textContent = '';
+}
+
 let refreshQueued = false;
 function refresh() {
   refreshQueued = false;
+  syncSkirmishFormationPreview();
+  syncCombatSummary();
+  syncTravelPresentation();
+  syncPuzzlePresentation();
   replaceSupplyDiamonds(document);
   iconizeText(document.body);
   for (const board of document.querySelectorAll(BOARD_SELECTOR)) syncBoard(board);
@@ -160,14 +263,24 @@ function scheduleRefresh() {
   requestAnimationFrame(refresh);
 }
 
+document.addEventListener('click', (event) => {
+  const target = event.target instanceof Element ? event.target : null;
+  if (target?.closest('[data-skirmish-start]')) activeCombatPresentation = 'skirmish';
+  else if (target?.closest('[data-battle-start]')) activeCombatPresentation = 'battle';
+  else return;
+  queueMicrotask(scheduleRefresh);
+}, true);
+
 ensureCss();
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scheduleRefresh, { once:true });
 else scheduleRefresh();
 
 const observer = new MutationObserver((mutations) => {
+  let shouldRefresh = false;
   for (const mutation of mutations) {
     if (mutation.type === 'characterData') {
       iconizeTextNode(mutation.target);
+      shouldRefresh = true;
       continue;
     }
     for (const node of mutation.addedNodes) {
@@ -175,11 +288,13 @@ const observer = new MutationObserver((mutations) => {
       else if (node instanceof Element) {
         replaceSupplyDiamonds(node);
         iconizeText(node);
-        if (node.matches?.(BOARD_SELECTOR) || node.querySelector?.(BOARD_SELECTOR) || node.closest?.(BOARD_SELECTOR)) scheduleRefresh();
+        if (node.matches?.(BOARD_SELECTOR) || node.querySelector?.(BOARD_SELECTOR) || node.closest?.(BOARD_SELECTOR)) shouldRefresh = true;
+        if (node.matches?.('[data-skirmish-formation], [data-travel-choice], [data-puzzle-status], [data-game-mode]') || node.querySelector?.('[data-skirmish-formation], [data-travel-choice], [data-puzzle-status], [data-game-mode]')) shouldRefresh = true;
       }
     }
-    if (mutation.target instanceof Element && mutation.target.matches?.(BOARD_SELECTOR)) scheduleRefresh();
+    if (mutation.target instanceof Element && mutation.target.matches?.(`${BOARD_SELECTOR}, [data-skirmish-formation], [data-travel-week], [data-puzzle-status], [data-game-mode]`)) shouldRefresh = true;
   }
+  if (shouldRefresh) scheduleRefresh();
 });
 observer.observe(document.documentElement, { childList:true, subtree:true, characterData:true });
 

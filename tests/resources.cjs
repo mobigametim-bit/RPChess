@@ -100,13 +100,19 @@ class MemoryStorage {
   assert(!uxSource.includes('discloseRandomPuzzleDifficulty') && !uxSource.includes('СЛУЧАЙНАЯ СЛОЖНОСТЬ'), 'Puzzle difficulty must not be overwritten by the obsolete random-range presentation');
   assert(travelCoreSource.includes("type==='puzzle'?`СЛОЖНОСТЬ ★${stars}`"), 'Puzzle route cards must expose the adaptive power-derived star value');
   assert(uxSource.includes('playtest-fixes.css?v=20260831-1'), 'post-playtest visual corrections must be loaded by the shared UX layer');
+  assert(uxSource.includes("import { combatGoldReward } from './resources-core.mjs'") && uxSource.includes("import { puzzleBaseGold } from './puzzles/puzzle-core.mjs'"), 'Travel reward preview must reuse canonical combat and Puzzle reward formulas');
+  assert(uxSource.includes("text = `Неделя ${match[1]}`"), 'Travel heading presentation must be shortened to Неделя N');
+  assert(uxSource.includes("title = activeCombatPresentation === 'battle' ? 'Битва' : 'Стычка'"), 'combat summary heading must present the actual encounter type');
   assert(playtestCss.includes('.puzzle-source{display:none!important}'), 'Puzzle source attribution must be hidden from the gameplay panel');
   assert(playtestCss.includes('.battle-participants{display:none!important}'), 'duplicate named-participant list must be hidden from Battle preparation');
   assert(playtestCss.includes('.roster-card') && playtestCss.includes('min-height:158px!important'), 'desktop Roster cards must use the compact live-playtest size');
   assert(uxCss.includes('.resource-inline-icon') && uxCss.includes('.travel-choice-card__cost .resource-inline-icon'), 'resource icons must be styled for rewards and travel cost cards');
+  assert(uxCss.includes('.resource-chip--gold') && uxCss.includes('width:148px!important'), 'Gold and Supplies HUD frames must share one desktop width');
+  assert(uxCss.includes('.travel-choice-card__reward') && uxCss.includes('.travel-choice-card__reward-icon'), 'Travel combat/Puzzle cards must style the Gold reward preview');
+  assert(uxCss.includes('.puzzles-active .puzzle-difficulty span{display:none!important}') && uxCss.includes('calc(100vh - 225px)'), 'Puzzle layout must hide the redundant difficulty caption and cap the raised board to viewport height');
   for(const source of [css,uxCss,playtestCss]) assert(!source.includes('ui_panel_frame.png') && !source.includes('ui_panel_wide.png'), 'Resources UI must remain CSS-only and frameless');
 
-  console.log('Resources persistence, Balance Pass 2 rewards, icon-based costs and adaptive Puzzle disclosure: PASS');
+  console.log('Resources persistence, Balance Pass 2 rewards, equal HUD chips and canonical Travel reward previews: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;
