@@ -29,7 +29,7 @@ function memoryStorage(){const data=new Map();return{getItem:key=>data.has(key)?
   assert(appSource.includes('PIECE_GLYPHS')&&appSource.includes('puzzle-piece-marker'),'Puzzle board must expose top-left technical piece glyphs');
   assert(appSource.includes('puzzle-coordinate--file')&&appSource.includes('puzzle-coordinate--rank'),'Puzzle board must render orientation-aware coordinates');
   assert(appSource.includes('puzzleHistory')&&appSource.includes('excludedIds: history'),'Puzzle route must use persistent no-repeat history');
-  assert(appSource.includes('css/puzzles.css?v=20260829-puzzles-3'),'Puzzle annotation CSS cachebuster must advance');
+  assert(appSource.includes('css/puzzles.css?v=20260901-puzzles-redesign-1'),'Puzzle annotation CSS cachebuster must advance');
   for(const token of ['.puzzle-piece-marker','.puzzle-coordinate--file','.puzzle-coordinate--rank'])assert(cssSource.includes(token),`Puzzle CSS missing ${token}`);
   console.log('Puzzles reward/persistence/history migration/no-repeat/board-annotation UI contracts: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});

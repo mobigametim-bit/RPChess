@@ -78,9 +78,12 @@ function renderCombatReward(root, amount) {
     else root.append(reward);
   }
   const gold = Number.isInteger(amount) && amount > 0 ? amount : 0;
+  const rewardText = gold > 0 ? `+${gold} ЗОЛОТА` : '';
   reward.hidden = gold <= 0;
+  if (rewardText) reward.dataset.resourceCombatRewardText = rewardText;
+  else delete reward.dataset.resourceCombatRewardText;
   reward.innerHTML = gold > 0
-    ? `<img src="generated_assets/reward_gold.png" alt=""><span>НАГРАДА</span><strong>+${gold} ЗОЛОТА</strong>`
+    ? `<img src="generated_assets/reward_gold.png" alt=""><span>НАГРАДА</span><strong>${rewardText}</strong>`
     : '';
 }
 
