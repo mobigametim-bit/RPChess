@@ -1,3 +1,4 @@
+import './travel-choice-commandbar-pass.mjs';
 import { readRun } from './run-persistence.mjs';
 import { placeArmy } from './skirmish-core.mjs';
 
