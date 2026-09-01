@@ -127,6 +127,58 @@
 
 .puzzle-reward strong,.puzzle-current-reward,.puzzle-outcome__gold{font-variant-numeric:tabular-nums}
 
+/* 2026-09-01 post-redesign live-playtest corrections. */
+.classic-party-panel h2::before{content:none!important;display:none!important}
+
+.resource-chip--gold,
+.resource-chip--supplies{
+  width:148px!important;
+  box-sizing:border-box;
+  grid-template-columns:30px minmax(0,1fr) auto!important;
+  padding-left:7px!important;
+  padding-right:11px!important;
+}
+.resource-chip--gold>img{width:28px!important;height:28px!important;justify-self:center}
+.resource-chip--supplies>.resource-chip__supply-icon{width:30px!important;height:30px!important;justify-self:center}
+
+.travel-choice-card__reward{
+  display:inline-flex!important;
+  align-items:center;
+  justify-content:flex-end;
+  gap:6px;
+  margin-left:auto;
+  color:#e8bd5f!important;
+  font-size:0!important;
+  line-height:1!important;
+  letter-spacing:0!important;
+  text-transform:none!important;
+  white-space:nowrap;
+}
+.travel-choice-card__reward-amount{
+  color:#e8bd5f;
+  font:800 13px/1 Inter,system-ui,sans-serif;
+  letter-spacing:.02em;
+}
+.travel-choice-card__reward-icon{
+  width:22px!important;
+  height:22px!important;
+  vertical-align:middle!important;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.58))!important;
+}
+
+.puzzles-active .puzzle-difficulty span{display:none!important}
+.puzzles-active .puzzle-status:empty{display:none!important;min-height:0!important;margin:0!important}
+
+@media(min-width:1051px){
+  .puzzles-active .puzzle-layout{
+    grid-template-columns:minmax(250px,.82fr) minmax(360px,700px) minmax(240px,.75fr);
+  }
+  .puzzles-active .puzzle-board-wrap{
+    width:min(100%,calc(100vh - 225px),700px)!important;
+    margin:clamp(-150px,-8.5vw,-120px) auto 0!important;
+  }
+}
+
 @media(max-width:1050px){
   .puzzles-active .puzzle-layout{grid-template-columns:minmax(220px,.7fr) minmax(340px,1.3fr)}
 }
@@ -137,4 +189,6 @@
   .board-coordinate-files>span{padding-top:4px}
   .puzzles-active .puzzle-board-wrap{width:100%!important;padding:5px}
   .puzzles-active .puzzle-layout{display:flex}
+  .resource-chip--gold,
+  .resource-chip--supplies{width:clamp(136px,38vw,148px)!important}
 }
