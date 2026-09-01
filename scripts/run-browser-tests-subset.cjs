@@ -1,0 +1,43 @@
+const fs=require('fs');
+const http=require('http');
+const path=require('path');
+const {spawn}=require('child_process');
+
+const ROOT=path.resolve(__dirname,'..');
+const DIST=path.join(ROOT,'dist');
+const HOST='127.0.0.1';
+const PORT=Number(process.env.RPCHESS_GATE_PORT||4173);
+const BASE=`http://${HOST}:${PORT}`;
+const ALL=[
+  'reboot-foundation-browser.cjs',
+  'classic-chess-browser.cjs',
+  'roster-browser.cjs',
+  'skirmish-browser.cjs',
+  'battle-browser.cjs',
+  'travel-choice-browser.cjs',
+  'resources-browser.cjs',
+  'settlement-browser.cjs',
+  'starvation-browser.cjs',
+  'events-browser.cjs',
+  'puzzles-browser.cjs'
+];
+const requested=String(process.env.RPCHESS_BROWSER_TESTS||'').split(',').map(x=>x.trim()).filter(Boolean);
+const TESTS=requested.length?requested:ALL;
+const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.svg':'image/svg+xml','.mp3':'audio/mpeg','.wasm':'application/wasm','.otf':'font/otf'};
+
+function requirePrerequisites(){
+  if(!fs.existsSync(path.join(DIST,'index.html')))throw new Error('dist/index.html is missing. Run npm run build first.');
+  require.resolve('playwright',{paths:[ROOT]});
+  for(const test of TESTS)if(!ALL.includes(test))throw new Error(`Unknown browser test: ${test}`);
+}
+function safeFile(url){
+  const raw=decodeURIComponent(String(url||'/').split('?')[0]);
+  const requestedPath=raw==='/'?'index.html':raw.replace(/^\/+/, '');
+  const resolved=path.resolve(DIST,requestedPath);
+  if(!resolved.startsWith(`${DIST}${path.sep}`)&&resolved!==DIST)return null;
+  if(fs.existsSync(resolved)&&fs.statSync(resolved).isFile())return resolved;
+  return path.join(DIST,'index.html');
+}
+function server(){return http.createServer((req,res)=>{const file=safeFile(req.url);if(!file){res.writeHead(403);res.end('Forbidden');return;}fs.readFile(file,(error,buffer)=>{if(error){res.writeHead(500);res.end(String(error));return;}res.writeHead(200,{'Content-Type':MIME[path.extname(file).toLowerCase()]||'application/octet-stream','Cache-Control':'no-store'});res.end(buffer);});});}
+function run(test){return new Promise((resolve,reject)=>{const child=spawn(process.execPath,[path.join(ROOT,'tests',test)],{cwd:ROOT,stdio:'inherit',env:{...process.env,RPCHESS_ACCEPTANCE_URL:BASE}});child.on('error',reject);child.on('exit',(code,signal)=>code===0?resolve():reject(new Error(`${test} failed with ${signal||`exit ${code}`}`)));});}
+(async()=>{requirePrerequisites();const app=server();await new Promise((resolve,reject)=>{app.once('error',reject);app.listen(PORT,HOST,resolve);});console.log(`[browser subset] ${BASE} :: ${TESTS.join(', ')}`);try{for(const test of TESTS){console.log(`\n[browser subset] ${test}`);await run(test);}console.log(`\nRPChess Chromium subset PASS: ${TESTS.join(', ')}`);}finally{await new Promise(resolve=>app.close(resolve));}})().catch(error=>{console.error(error.stack||error);process.exitCode=1;});
