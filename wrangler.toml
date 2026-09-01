@@ -2,7 +2,7 @@ name = "rpchess"
 compatibility_date = "2026-08-04"
 
 [build]
-command = "npm run gate:local"
+command = "npm run build && npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2 && npx playwright install chromium && npm run test:browser"
 
 [assets]
 directory = "./dist"
