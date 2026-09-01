@@ -1,0 +1,443 @@
+/* Compact combat / Puzzle / Battle Prep live-playtest pass.
+   Presentation only: preserve runtime hooks, engine state, economy and persistence. */
+
+/* --------------------------------------------------------------------------
+   Roster follow-up
+   -------------------------------------------------------------------------- */
+@media (min-width:901px){
+  body.roster-active .roster-detail__description{
+    font-size:clamp(18px,1.22vw,22px)!important;
+    line-height:1.42!important;
+    color:#c3cbd4!important;
+  }
+  body.roster-active .roster-status-note{
+    font-size:14px!important;
+    line-height:1.35!important;
+  }
+  body.roster-active .roster-card__body{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    align-items:center!important;
+    gap:6px 10px!important;
+    padding:8px 10px!important;
+  }
+  body.roster-active .roster-card__name{
+    grid-column:1!important;
+    grid-row:1!important;
+    min-width:0;
+    font-size:15px!important;
+    line-height:1.15!important;
+  }
+  body.roster-active .roster-card__meta{display:none!important}
+  body.roster-active .roster-card__body>.roster-status{
+    grid-column:2!important;
+    grid-row:1!important;
+    margin:0!important;
+    padding:2px 6px!important;
+    font-size:9px!important;
+    white-space:nowrap;
+  }
+  body.roster-active .roster-card__glyph{
+    top:7px!important;
+    left:8px!important;
+    font-size:52px!important;
+    line-height:.9!important;
+  }
+  body.roster-active .roster-card__art{
+    width:58%!important;
+    height:90%!important;
+    object-fit:contain!important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Skirmish Prep follow-up: genuinely short cards.
+   -------------------------------------------------------------------------- */
+@media (min-width:901px){
+  body.skirmish-active .skirmish-grid{
+    grid-template-columns:repeat(3,minmax(0,285px))!important;
+    justify-content:start!important;
+    align-content:start!important;
+    gap:8px!important;
+  }
+  body.skirmish-active .skirmish-card{
+    width:100%!important;
+    max-width:285px!important;
+    min-height:76px!important;
+    grid-template-columns:76px minmax(0,1fr)!important;
+  }
+  body.skirmish-active .skirmish-card__art{
+    width:76px!important;
+    min-height:74px!important;
+  }
+  body.skirmish-active .skirmish-card__body{
+    padding:6px 7px!important;
+    gap:2px!important;
+  }
+  body.skirmish-active .skirmish-card__body strong{font-size:14px!important}
+  body.skirmish-active .skirmish-card__meta{font-size:9px!important}
+  body.skirmish-active .skirmish-card__status{font-size:8px!important}
+}
+
+/* --------------------------------------------------------------------------
+   Shared Skirmish / Battle board UI.
+   Activated only while roguelite combat owns the Classic Chess board.
+   -------------------------------------------------------------------------- */
+body.compact-combat-active{
+  overflow:hidden!important;
+}
+body.compact-combat-active .resource-hud,
+body.compact-combat-active .classic-logo,
+body.compact-combat-active [data-classic-new],
+body.compact-combat-active [data-classic-menu]{
+  display:none!important;
+}
+@media (min-width:901px){
+  body.compact-combat-active .classic-screen{
+    height:100svh!important;
+    min-height:0!important;
+    overflow:hidden!important;
+    padding:10px 14px!important;
+  }
+  body.compact-combat-active .classic-shell{
+    width:min(1460px,100%)!important;
+    height:100%!important;
+    min-height:0!important;
+    display:grid!important;
+    grid-template-columns:minmax(285px,340px) minmax(0,1fr)!important;
+    grid-template-rows:52px minmax(0,1fr)!important;
+    gap:10px 18px!important;
+    align-items:stretch!important;
+  }
+  body.compact-combat-active .classic-topbar{
+    grid-column:1!important;
+    grid-row:1!important;
+    margin:0!important;
+    min-height:0!important;
+    align-items:start!important;
+    justify-content:flex-start!important;
+  }
+  body.compact-combat-active .classic-toolbar{
+    width:100%!important;
+    justify-content:flex-start!important;
+  }
+  body.compact-combat-active .classic-toolbar [data-settings]{
+    min-width:160px!important;
+    min-height:44px!important;
+  }
+  body.compact-combat-active .classic-party-panel{
+    grid-column:1!important;
+    grid-row:2!important;
+    align-self:stretch!important;
+    height:100%!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    padding:18px 18px 16px!important;
+  }
+  body.compact-combat-active .classic-main{
+    grid-column:2!important;
+    grid-row:1 / 3!important;
+    min-height:0!important;
+    height:100%!important;
+    display:grid!important;
+    place-items:center!important;
+  }
+  body.compact-combat-active .classic-board-wrap{
+    width:min(calc(100svh - 20px),calc(100vw - 385px),940px)!important;
+    max-width:none!important;
+    min-width:0!important;
+    margin:0 auto!important;
+    padding:8px!important;
+  }
+  body.compact-combat-active .classic-board-wrap>.board-coordinate-frame{
+    width:100%!important;
+  }
+  body.compact-combat-active .classic-party-panel h2{
+    margin-bottom:8px!important;
+  }
+  body.compact-combat-active .classic-opponent{
+    margin-bottom:10px!important;
+    padding-bottom:10px!important;
+  }
+  body.compact-combat-active .classic-material{
+    margin:10px 0!important;
+    padding:9px 0!important;
+  }
+  body.compact-combat-active .classic-side-state{
+    margin:8px 0 0!important;
+    font-size:15px!important;
+    line-height:1.42!important;
+  }
+  body.compact-combat-active .classic-party-panel>.classic-panel--moves{
+    margin-top:14px!important;
+    padding:13px 0 0!important;
+    border:0!important;
+    border-top:1px solid rgba(218,177,86,.25)!important;
+    border-radius:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    backdrop-filter:none!important;
+    overflow:visible!important;
+  }
+  body.compact-combat-active .classic-party-panel>.classic-panel--moves::before{display:none!important}
+  body.compact-combat-active .classic-party-panel>.classic-panel--moves h3{
+    margin:0 0 8px!important;
+    font-size:25px!important;
+  }
+  body.compact-combat-active .classic-party-panel>.classic-panel--moves .classic-moves{
+    max-height:min(26svh,250px)!important;
+    overflow-y:auto!important;
+    padding-right:3px!important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Puzzle / Training compact full-height board.
+   -------------------------------------------------------------------------- */
+body.puzzles-active.compact-puzzle-active{
+  overflow:hidden!important;
+}
+body.puzzles-active.compact-puzzle-active .resource-hud,
+body.puzzles-active.compact-puzzle-active .puzzle-logo,
+body.puzzles-active.compact-puzzle-active [data-puzzle-roster]{
+  display:none!important;
+}
+@media (min-width:901px){
+  body.puzzles-active.compact-puzzle-active .puzzle-screen{
+    height:100svh!important;
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  body.puzzles-active.compact-puzzle-active .puzzle-shell{
+    position:relative!important;
+    width:min(1460px,100%)!important;
+    height:100%!important;
+    min-height:0!important;
+    padding:10px 16px!important;
+  }
+  body.puzzles-active.compact-puzzle-active .puzzle-topbar{
+    position:absolute!important;
+    z-index:20!important;
+    left:20px!important;
+    top:14px!important;
+    margin:0!important;
+  }
+  body.puzzles-active.compact-puzzle-active .puzzle-topbar__actions{
+    display:block!important;
+  }
+  body.puzzles-active.compact-puzzle-active [data-puzzle-settings]{
+    min-width:160px!important;
+    min-height:44px!important;
+  }
+  body.puzzles-active.compact-puzzle-active .puzzle-heading{
+    position:absolute!important;
+    z-index:5!important;
+    left:20px!important;
+    top:92px!important;
+    width:360px!important;
+    max-width:360px!important;
+    margin:0!important;
+    padding:0 0 14px!important;
+    gap:18px!important;
+  }
+  body.puzzles-active.compact-puzzle-active .puzzle-heading h1{
+    font-size:clamp(42px,3.4vw,56px)!important;
+  }
+  body.puzzles-active.compact-puzzle-active .puzzle-layout{
+    height:100%!important;
+    min-height:0!important;
+    display:grid!important;
+    grid-template-columns:390px minmax(0,1fr)!important;
+    grid-template-rows:minmax(0,1fr)!important;
+    gap:24px!important;
+    align-items:center!important;
+    padding:0!important;
+  }
+  body.puzzles-active.compact-puzzle-active .puzzle-layout>.puzzle-panel:not(.puzzle-outcome),
+  body.puzzles-active.compact-puzzle-active .puzzle-outcome{
+    grid-column:1!important;
+    grid-row:1!important;
+    width:100%!important;
+    margin-top:220px!important;
+    align-self:center!important;
+    padding:22px!important;
+  }
+  body.puzzles-active.compact-puzzle-active.puzzle-resolved-compact .puzzle-layout>.puzzle-panel:not(.puzzle-outcome){
+    display:none!important;
+  }
+  body.puzzles-active.compact-puzzle-active .puzzle-outcome[hidden]{display:none!important}
+  body.puzzles-active.compact-puzzle-active .puzzle-board-wrap{
+    grid-column:2!important;
+    grid-row:1!important;
+    align-self:center!important;
+    width:min(calc(100svh - 20px),calc(100vw - 455px),930px)!important;
+    max-width:none!important;
+    margin:0 auto!important;
+    padding:8px!important;
+  }
+  body.puzzles-active.compact-puzzle-active .puzzle-status{
+    min-height:0!important;
+    margin:0!important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Battle Prep compact layout.
+   -------------------------------------------------------------------------- */
+body.battle-prep-compact-active{
+  overflow:hidden!important;
+}
+body.battle-prep-compact-active .resource-hud,
+body.battle-prep-compact-active .battle-logo,
+body.battle-prep-compact-active [data-battle-back]{
+  display:none!important;
+}
+@media (min-width:901px){
+  body.battle-prep-compact-active .battle-screen{
+    height:100svh!important;
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  body.battle-prep-compact-active .battle-shell{
+    width:min(1760px,100%)!important;
+    height:100%!important;
+    min-height:0!important;
+    display:grid!important;
+    grid-template-rows:auto minmax(0,1fr)!important;
+    gap:10px!important;
+    padding:12px 16px!important;
+  }
+  body.battle-prep-compact-active .battle-topbar{display:none!important}
+  body.battle-prep-compact-active .battle-heading{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    align-items:end!important;
+    gap:14px!important;
+    margin:0!important;
+    padding:0 4px 9px!important;
+  }
+  body.battle-prep-compact-active .battle-heading h1{
+    margin:2px 0 5px!important;
+    font-size:clamp(33px,2.7vw,44px)!important;
+  }
+  body.battle-prep-compact-active .battle-heading p{
+    max-width:1050px!important;
+    font-size:12px!important;
+    line-height:1.35!important;
+  }
+  body.battle-prep-compact-active .battle-threat-card{
+    min-width:50px!important;
+    min-height:0!important;
+    display:block!important;
+    align-self:end!important;
+    padding:0 4px 3px!important;
+    border:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+  }
+  body.battle-prep-compact-active .battle-threat-card::before,
+  body.battle-prep-compact-active .battle-threat-card span,
+  body.battle-prep-compact-active .battle-threat-card small{display:none!important}
+  body.battle-prep-compact-active .battle-threat-card strong{
+    display:block!important;
+    font-size:25px!important;
+    letter-spacing:.06em!important;
+  }
+  body.battle-prep-compact-active .battle-layout{
+    min-height:0!important;
+    height:100%!important;
+    grid-template-columns:minmax(0,2.15fr) minmax(430px,.95fr)!important;
+    gap:14px!important;
+    align-items:stretch!important;
+  }
+  body.battle-prep-compact-active .battle-roster,
+  body.battle-prep-compact-active .battle-army{
+    height:100%!important;
+    min-height:0!important;
+    overflow:hidden!important;
+    padding:12px!important;
+  }
+  body.battle-prep-compact-active .battle-roster{
+    display:grid!important;
+    grid-template-rows:auto minmax(0,1fr)!important;
+  }
+  body.battle-prep-compact-active .battle-roster::before,
+  body.battle-prep-compact-active .battle-army::before{display:none!important}
+  body.battle-prep-compact-active .battle-roster .reboot-eyebrow,
+  body.battle-prep-compact-active .battle-army .reboot-eyebrow{display:none!important}
+  body.battle-prep-compact-active .battle-section-head{
+    margin:0 0 8px!important;
+    align-items:center!important;
+  }
+  body.battle-prep-compact-active .battle-section-head h2{
+    margin:0!important;
+    font-size:clamp(26px,2vw,32px)!important;
+    white-space:nowrap;
+  }
+  body.battle-prep-compact-active .battle-grid{
+    min-height:0!important;
+    height:100%!important;
+    max-height:none!important;
+    grid-template-columns:repeat(3,minmax(0,285px))!important;
+    justify-content:start!important;
+    align-content:start!important;
+    gap:8px!important;
+    overflow-y:auto!important;
+  }
+  body.battle-prep-compact-active .battle-card{
+    position:relative!important;
+    width:100%!important;
+    max-width:285px!important;
+    min-height:78px!important;
+    grid-template-columns:76px minmax(0,1fr) 46px!important;
+    gap:6px!important;
+    padding:0!important;
+  }
+  body.battle-prep-compact-active .battle-card__art{
+    width:76px!important;
+    height:76px!important;
+    padding:3px!important;
+    object-fit:contain!important;
+  }
+  body.battle-prep-compact-active .battle-card__body{
+    min-width:0!important;
+    gap:3px!important;
+    padding:6px 0!important;
+  }
+  body.battle-prep-compact-active .battle-card__body strong{font-size:14px!important}
+  body.battle-prep-compact-active .battle-card__meta{display:none!important}
+  body.battle-prep-compact-active .battle-card__status{font-size:8px!important}
+  body.battle-prep-compact-active .battle-card__tech-glyph{
+    grid-column:3!important;
+    align-self:center!important;
+    justify-self:center!important;
+    color:#f1d88f;
+    font-family:'Segoe UI Symbol','Noto Sans Symbols 2',serif;
+    font-size:40px;
+    line-height:1;
+    text-shadow:0 2px 5px #000;
+    pointer-events:none;
+  }
+  body.battle-prep-compact-active .battle-army{
+    display:flex!important;
+    flex-direction:column!important;
+  }
+  body.battle-prep-compact-active .battle-army .battle-section-head>span{
+    font-size:10px!important;
+    max-width:260px!important;
+  }
+  body.battle-prep-compact-active .battle-slot-summary{margin-bottom:8px!important}
+  body.battle-prep-compact-active .battle-formation{margin:6px 0 9px!important}
+  body.battle-prep-compact-active .battle-participants{
+    max-height:120px!important;
+    overflow-y:auto!important;
+  }
+  body.battle-prep-compact-active .battle-mercenary-quote{margin-top:8px!important}
+  body.battle-prep-compact-active .battle-army>[data-battle-start]{
+    width:100%!important;
+    min-height:46px!important;
+    margin-top:9px!important;
+    flex:0 0 auto!important;
+  }
+  body.battle-prep-compact-active .battle-actionbar{display:none!important}
+}
