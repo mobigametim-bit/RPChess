@@ -16,11 +16,17 @@ assert(css.includes('grid-template-columns:repeat(2,minmax(0,1fr))!important'),'
 assert(css.includes('.events-choice:last-child:nth-child(odd)')&&css.includes('grid-column:1 / -1!important'),'Odd final Event choice must span the full choice-frame width');
 assert(css.includes('body.events-active .events-choice-frame{')&&css.includes('overflow:visible!important'),'Event choice frame must show every option without an internal scrollbar');
 assert(css.includes('font-size:clamp(18px,1.22vw,22px)!important'),'Event literary copy must use the larger approved desktop typography');
+assert(ui.includes('rgba(7,10,15,.67)')&&ui.includes('rgba(7,10,15,.62)'),'Event copy and choice frames must be about 30% more transparent than the previous treatment');
+assert(ui.includes('--event-reading-size:clamp(18px,1.22vw,22px)')&&ui.includes('.events-choice__head strong'),'Event choice labels must share the literary reading-size typography');
+assert(ui.includes("overlay.className = 'travel-choice-card__overlay'")&&ui.includes('visual.append(overlay)'),'Travel title/meta must move into a dedicated overlay on the route artwork');
+assert(ui.includes('overlay.append(type)')&&ui.includes('overlay.append(meta)'),'Travel route type and reward/cost metadata must move over the artwork');
+assert(ui.includes('grid-template-rows:minmax(0,1fr) auto!important')&&ui.includes('min-height:96px!important'),'Travel card must reserve only a compact lower row for the route description');
+assert(ui.includes("matchMedia('(min-width: 901px)')")&&ui.includes('restoreTravelCardBody'),'Travel overlay must restore the original mobile DOM layout below desktop width');
 assert(ui.includes("copyFrame.className = 'events-copy-frame'")&&ui.includes("choiceFrame.className = 'events-choice-frame'"),'Event presentation module must create separate copy and choice wrappers');
 assert(ui.includes('choiceFrame.append(choices)'),'Existing runtime choice container must be reparented rather than replaced');
 assert(ui.includes('choiceFrame.dataset.choiceCount = String(choiceCount)'),'Event presentation must expose option count for adaptive dense layouts');
-assert(!ui.includes('writeRun')&&!ui.includes('resolveEventChoice'),'Event presentation pass must not change event resolution or persistence');
+assert(!ui.includes('writeRun')&&!ui.includes('resolveEventChoice')&&!ui.includes('applyTravelSupplyCost'),'Event/Travel presentation pass must not change resolution, economy or persistence');
 assert(loader.indexOf('ensureCss();') < loader.indexOf("import('./compact-ui-pass4.mjs')"),'Pass 4 must load after the late playtest stylesheet so its corrections win the cascade');
 assert(build.includes("'css/compact-ui-pass4.css'")&&build.includes("'js/compact-ui-pass4.mjs'"),'Production build must package pass 4 CSS and JS');
 
-console.log('Compact UI pass 4 Settlement/Event contract: PASS');
+console.log('Compact UI pass 4 Settlement/Event/Travel contract: PASS');
