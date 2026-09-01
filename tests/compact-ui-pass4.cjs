@@ -19,7 +19,10 @@ assert(ui.includes('rgba(7,10,15,.67)')&&ui.includes('rgba(7,10,15,.62)'),'Event
 assert(ui.includes('--event-reading-size:clamp(18px,1.22vw,22px)')&&ui.includes('.events-choice__head strong'),'Event choice labels must share the literary reading-size typography');
 assert(ui.includes("overlay.className = 'travel-choice-card__overlay'")&&ui.includes('visual.append(overlay)'),'Travel title/meta must move into a dedicated overlay on the route artwork');
 assert(ui.includes('overlay.append(type)')&&ui.includes('overlay.append(meta)'),'Travel route type and reward/cost metadata must move over the artwork');
-assert(ui.includes('grid-template-rows:minmax(0,1fr) auto!important')&&ui.includes('min-height:96px!important'),'Travel card must reserve only a compact lower row for the route description');
+assert(ui.includes('aspect-ratio:3 / 2!important'),'Travel artwork must remain landscape instead of stretching vertically with the viewport');
+assert(ui.includes('grid-template-rows:auto auto!important')&&ui.includes('height:auto!important')&&ui.includes('min-height:0!important'),'Travel card height must follow landscape artwork plus description content');
+assert(ui.includes('.travel-choice-card__body{')&&ui.includes('padding:13px 24px 15px!important'),'Travel description row must stay compact beneath the artwork');
+assert(!ui.includes('height:min(660px,calc(100svh - 128px))'),'Travel card must not be forced into the old tall viewport-filling geometry');
 assert(ui.includes("matchMedia('(min-width: 901px)')")&&ui.includes('restoreTravelCardBody'),'Travel overlay must restore the original mobile DOM layout below desktop width');
 assert(ui.includes("copyFrame.className = 'events-copy-frame'")&&ui.includes("choiceFrame.className = 'events-choice-frame'"),'Event presentation module must create separate copy and choice wrappers');
 assert(ui.includes('choiceFrame.append(choices)'),'Existing runtime choice container must be reparented rather than replaced');
