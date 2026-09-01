@@ -4,7 +4,6 @@ const css=fs.readFileSync(path.join(game,'css/compact-ui-pass4.css'),'utf8');
 const ui=fs.readFileSync(path.join(game,'js/compact-ui-pass4.mjs'),'utf8');
 const loader=fs.readFileSync(path.join(game,'js/post-redesign-playtest-pass1b.mjs'),'utf8');
 const build=fs.readFileSync(path.join(root,'scripts/build.cjs'),'utf8');
-
 assert(css.includes('width:101px!important')&&css.includes('height:101px!important'),'Settlement service icons must be reduced by about 30% from the 144px experiment');
 assert(css.includes('top:-36px!important'),'Settlement service icons must sit above descriptive copy instead of overlapping it');
 assert(css.includes('body.events-active [data-events-roster]')&&css.includes('body.events-active [data-events-settings]'),'Event Roster and Settings controls must be hidden visually while preserving their hooks');
@@ -28,5 +27,4 @@ assert(ui.includes('choiceFrame.dataset.choiceCount = String(choiceCount)'),'Eve
 assert(!ui.includes('writeRun')&&!ui.includes('resolveEventChoice')&&!ui.includes('applyTravelSupplyCost'),'Event/Travel presentation pass must not change resolution, economy or persistence');
 assert(loader.indexOf('ensureCss();') < loader.indexOf("import('./compact-ui-pass4.mjs')"),'Pass 4 must load after the late playtest stylesheet so its corrections win the cascade');
 assert(build.includes("'css/compact-ui-pass4.css'")&&build.includes("'js/compact-ui-pass4.mjs'"),'Production build must package pass 4 CSS and JS');
-
 console.log('Compact UI pass 4 Settlement/Event/Travel contract: PASS');
