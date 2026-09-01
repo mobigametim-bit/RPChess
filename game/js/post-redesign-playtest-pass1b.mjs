@@ -13,7 +13,7 @@ function ensureCss() {
   if (document.querySelector('[data-post-redesign-playtest-pass1b-css]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/post-redesign-playtest-pass1b.css?v=20260901-4';
+  link.href = 'css/post-redesign-playtest-pass1b.css?v=20260902-1';
   link.dataset.postRedesignPlaytestPass1bCss = '';
   document.head.append(link);
 }
