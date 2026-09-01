@@ -1,4 +1,4 @@
-const CSS_HREF = 'css/compact-ui-pass4.css?v=20260902-1';
+const CSS_HREF = 'css/compact-ui-pass4.css?v=20260902-2';
 let queued = false;
 let resetEventScroll = false;
 
@@ -31,9 +31,11 @@ function ensureEventFrames() {
     panel.dataset.compactEventFrames = 'true';
   }
 
+  const choiceCount = choices.querySelectorAll(':scope > [data-event-choice]').length;
+  choiceFrame.dataset.choiceCount = String(choiceCount);
+
   if (resetEventScroll) {
     copyFrame.scrollTop = 0;
-    choiceFrame.scrollTop = 0;
     resetEventScroll = false;
   }
 }
@@ -67,7 +69,7 @@ new MutationObserver((mutations) => {
     }
     for (const node of mutation.addedNodes) {
       if (!(node instanceof Element)) continue;
-      if (node.matches?.('[data-events-screen],[data-events-choices]') || node.querySelector?.('[data-events-screen],[data-events-choices]')) return schedule();
+      if (node.matches?.('[data-events-screen],[data-events-choices],[data-event-choice]') || node.querySelector?.('[data-events-screen],[data-events-choices],[data-event-choice]')) return schedule();
     }
   }
 }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
