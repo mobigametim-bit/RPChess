@@ -2,11 +2,16 @@ import './travel-choice-commandbar-pass.mjs';
 import { readRun } from './run-persistence.mjs';
 import { placeArmy } from './skirmish-core.mjs';
 
+const skirmishScreen = document.querySelector('[data-skirmish-screen]');
+const skirmishActionbar = skirmishScreen?.querySelector('.skirmish-actionbar') || null;
+const skirmishActionbarHome = skirmishActionbar?.parentElement || null;
+const skirmishActionbarNext = skirmishActionbar?.nextSibling || null;
+
 function ensureCss() {
   if (document.querySelector('[data-post-redesign-playtest-pass1b-css]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/post-redesign-playtest-pass1b.css?v=20260901-3';
+  link.href = 'css/post-redesign-playtest-pass1b.css?v=20260901-4';
   link.dataset.postRedesignPlaytestPass1bCss = '';
   document.head.append(link);
 }
@@ -48,12 +53,29 @@ function syncFormationMetadata() {
   }
 }
 
+function syncSkirmishActionbarPlacement() {
+  if (!skirmishScreen || !skirmishActionbar || !skirmishActionbarHome) return;
+  const selection = skirmishScreen.querySelector('.skirmish-selection');
+  const desktop = matchMedia('(min-width: 901px)').matches;
+
+  if (desktop && selection) {
+    if (skirmishActionbar.parentElement !== selection) selection.append(skirmishActionbar);
+    return;
+  }
+
+  if (skirmishActionbar.parentElement !== skirmishActionbarHome) {
+    const anchor = skirmishActionbarNext?.parentNode === skirmishActionbarHome ? skirmishActionbarNext : null;
+    skirmishActionbarHome.insertBefore(skirmishActionbar, anchor);
+  }
+}
+
 let queued = false;
 function scheduleSync() {
   if (queued) return;
   queued = true;
   requestAnimationFrame(() => {
     queued = false;
+    syncSkirmishActionbarPlacement();
     syncFormationMetadata();
   });
 }
@@ -63,6 +85,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 else scheduleSync();
 
 addEventListener('rpchess:skirmish-open', () => queueMicrotask(scheduleSync));
+addEventListener('resize', scheduleSync, { passive: true });
 document.addEventListener('click', (event) => {
   const target = event.target instanceof Element ? event.target : null;
   if (target?.closest('[data-skirmish-character], [data-selected-character]')) queueMicrotask(scheduleSync);
