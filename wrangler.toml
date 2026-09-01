@@ -2,7 +2,7 @@ name = "rpchess"
 compatibility_date = "2026-08-04"
 
 [build]
-command = "echo diagnostic-group-one-branch && npm run build && npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2 @sparticuz/chromium@140.0.0 && RPCHESS_BROWSER_TESTS='reboot-foundation-browser.cjs,classic-chess-browser.cjs,roster-browser.cjs,skirmish-browser.cjs,battle-browser.cjs' NODE_OPTIONS='--require=./scripts/playwright-sparticuz.cjs' node scripts/run-browser-tests-subset.cjs"
+command = "echo diagnostic-reboot-foundation && npm run build && npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2 @sparticuz/chromium@140.0.0 && RPCHESS_BROWSER_TESTS='reboot-foundation-browser.cjs' NODE_OPTIONS='--require=./scripts/playwright-sparticuz.cjs' node scripts/run-browser-tests-subset.cjs"
 
 [assets]
 directory = "./dist"
