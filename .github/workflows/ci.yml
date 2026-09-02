@@ -1,4 +1,4 @@
-name: RPChess Reboot CI (cleanup canonical diagnostic)
+name: RPChess Reboot CI (cleanup canonical diagnostic 2)
 
 on:
   workflow_dispatch:
