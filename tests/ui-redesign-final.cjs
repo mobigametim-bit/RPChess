@@ -5,6 +5,7 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
 (async()=>{
   const finalUi=read('game/js/ui-redesign-final.mjs');
   const finalCss=read('game/css/ui-redesign-final.css');
+  const resourcesCss=read('game/css/resources.css');
   const loader=read('game/js/post-redesign-playtest-pass1b.mjs');
   const travelApp=read('game/js/travel-choice-app.mjs');
   const travelCoreSource=read('game/js/travel-choice-core.mjs');
@@ -26,8 +27,11 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   assert(!finalUi.includes('MutationObserver')&&!finalUi.includes('LIVE_OVERRIDE_CSS'),'final redesign module must not rely on global observers or live injected CSS');
   assert(finalUi.includes('RPChessBattle?.battlePlan')&&finalUi.includes('RPChessSkirmish?.battlePlan'),'combat presentation must derive from canonical battlePlan state');
   assert(finalUi.includes("import { placeArmy } from './skirmish-core.mjs'")&&finalUi.includes('BLACK_GLYPHS'),'Skirmish preview must use canonical formation data and preserve black-side glyphs without observers');
+  assert(finalUi.includes('OBSOLETE_HIDDEN_CONTROLS')&&finalUi.includes('removeObsoleteHiddenControls()'),'deprecated invisible scene controls must be removed from the runtime DOM instead of being kept as hidden hooks');
+  for(const selector of ['[data-skirmish-back]','[data-battle-back]','[data-puzzle-roster]','[data-settlement-roster]','[data-settlement-settings]','[data-events-roster]','[data-events-settings]'])assert(finalUi.includes(`'${selector}'`),`${selector} must be included in invisible-control cleanup`);
   assert(finalCss.includes('.travel-choice-topbar--command')&&finalCss.includes('.events-copy-frame')&&finalCss.includes('.events-choice-frame'),'approved Travel and Events structures must live in one final stylesheet');
   assert(!finalCss.includes("content:'Тренировка'")&&!finalCss.includes('font-size:0'),'final stylesheet must not use text-replacement hacks for Training or hidden semantic labels');
+  assert(!resourcesCss.includes('.travel-choice-card--puzzle .travel-choice-card__type')&&!resourcesCss.includes("content: 'ТРЕНИРОВКА'"),'legacy Resources CSS must not replace the semantic Training label with font-size:0 + ::after');
   const battleActionbarStyle=crossScene.match(/\.battle-screen \.battle-actionbar\s*\{([\s\S]*?)\}/)?.[1]||'';
   assert(battleActionbarStyle.includes('display:none!important')&&!battleActionbarStyle.includes('display:flex!important'),'cross-scene visuals must not revive the legacy Battle actionbar on mobile');
   assert(!crossScene.includes('MutationObserver'),'cross-scene visual refresh must be lifecycle-driven, not a global subtree observer');
@@ -57,8 +61,8 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   assert(events.includes("state:'missing'")&&events.includes("state:'wounded'")&&events.includes("state:'dead'")&&events.includes('button.dataset.heroState = heroState.state'),'Event hero locks must expose distinct semantic states');
   assert(events.includes("if (!hero) return { hero:null, name, state:'missing', locked:true, label:'🔒' }"),'missing Event hero must show only the lock in the upper strip');
   assert(!battleCore.includes('Победа решится по классическим шахматным правилам.'),'Battle copy cleanup must live in encounter data rather than presentation regex replacement');
-  assert(!battleMercenaries.includes('normalizeBattleCopy')&&!battleMercenaries.includes('Победа решится по классическим шахматным правилам.'),'Mercenary presentation must not rewrite canonical Battle description text');
-  assert(battleMercenaries.includes('start?.parentNode === actionbar'),'Mercenary action-cost hook must tolerate the consolidated UI relocating the Battle Start CTA');
+  assert(!battleMercenaries.includes('normalizeBattleCopy')&&!battleMercenaries.includes("replace(/\\s*Победа решится"),'Battle Mercenaries runtime must not rewrite canonical Battle copy with presentation regexes');
+  assert(battleMercenaries.includes('if (start?.parentNode === actionbar) actionbar.insertBefore(actionCost, start);')&&battleMercenaries.includes('else actionbar.append(actionCost);'),'Mercenary action-cost hook must tolerate the Start CTA being relocated out of the legacy actionbar');
 
   for(const obsolete of ['travel-choice-commandbar-pass','compact-run-screens-pass','compact-combat-ui-pass','compact-ui-pass3','compact-ui-pass4']) assert(!build.includes(obsolete),`build must not package obsolete ${obsolete} layers`);
   assert(build.includes("'css/ui-redesign-final.css'")&&build.includes("'js/ui-redesign-final.mjs'"),'production build must package the consolidated redesign');
@@ -66,4 +70,4 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   assert(!pkg.scripts.test.includes('travel-choice-ui.cjs')&&!pkg.scripts.test.includes('compact-ui-pass4.cjs'),'main test command must not require superseded UI tests');
 
   console.log('Consolidated UI redesign contracts, canonical Travel gating and lifecycle presentation: PASS');
-})().catch((error)=>{console.error(error.stack||error);process.exitCode=1;});
+})().catch((error)=>{console.error(error.stack||error);process.exitCode=1});
