@@ -119,14 +119,15 @@ async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
     await startFresh(page);
     await seedZeroSupplyTravel(page, { kingOnly: true });
     await page.locator('[data-roster-travel]').click();
-    await page.locator('[data-travel-choice="manual.starvation.skirmish"]').click();
+    assert.strictEqual(await page.locator('[data-travel-choice="manual.starvation.skirmish"]').isDisabled(), true, 'King-only run must respect canonical Skirmish companion gating');
+    await page.locator('[data-travel-choice="manual.starvation.battle"]').click();
     await page.locator('[data-starvation-screen]:not([hidden])').waitFor();
     assert.strictEqual((await page.locator('[data-starvation-title]').innerText()).trim(), 'КОРОЛЬ ПОГИБ ОТ ГОЛОДА');
     const kingState = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
     assert.strictEqual(kingState.ended, true, 'King starvation casualty must end the run immediately');
     assert.strictEqual(kingState.endReason, 'starvation_king');
     assert.strictEqual(kingState.roster.find((character) => character.isRunKing).status, 'dead');
-    assert.strictEqual(await page.locator('[data-skirmish-screen]:not([hidden])').count(), 0, 'King death must prevent the selected encounter from starting');
+    assert.strictEqual(await page.locator('[data-battle-screen]:not([hidden])').count(), 0, 'King death must prevent the selected Battle from starting');
     await page.locator('[data-starvation-continue]').click();
     await page.locator('[data-reboot-foundation]:not([hidden])').waitFor();
 
@@ -145,7 +146,7 @@ async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
 
     assert.deepStrictEqual(errors, [], `desktop Starvation page errors:\n${errors.join('\n')}`);
     assert.deepStrictEqual(mobileErrors, [], `mobile Starvation page errors:\n${mobileErrors.join('\n')}`);
-    console.log('Starvation compact warning, deterministic casualty, removed legacy back dependency, reload idempotency, encounter gate, King run-end and mobile Chromium acceptance: PASS');
+    console.log('Starvation compact warning, deterministic casualty, canonical Skirmish gating, reload idempotency, encounter gate, King run-end and mobile Chromium acceptance: PASS');
   } finally {
     await browser.close();
   }
