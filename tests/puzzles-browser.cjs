@@ -16,6 +16,11 @@ async function seedPuzzleRoute(page,route,currentPuzzle=null){
   await page.evaluate(({k,route,currentPuzzle})=>{const r=JSON.parse(localStorage.getItem(k));r.supplies=9;r.journeyStep=route.step;r.currentTravelChoices=null;r.activeTravelChoice=route;r.currentPuzzle=currentPuzzle;if(currentPuzzle?.puzzleId)r.puzzleHistory=[...new Set([...(r.puzzleHistory||[]),currentPuzzle.puzzleId])];localStorage.setItem(k,JSON.stringify(r));dispatchEvent(new CustomEvent('rpchess:run-updated'));},{k:RUN_KEY,route,currentPuzzle});
 }
 
+async function pinPuzzleFixture(page,fixture){
+  await page.evaluate(({k,fixture})=>{const r=JSON.parse(localStorage.getItem(k));r.currentPuzzle=fixture;r.puzzleHistory=[fixture.puzzleId];localStorage.setItem(k,JSON.stringify(r));dispatchEvent(new CustomEvent('rpchess:puzzle-open',{detail:{choice:r.activeTravelChoice}}));},{k:RUN_KEY,fixture});
+  await page.waitForFunction(({k,id})=>JSON.parse(localStorage.getItem(k))?.currentPuzzle?.puzzleId===id,{k:RUN_KEY,id:fixture.puzzleId});
+}
+
 async function clickMove(page,from,to){
   await page.locator(`[data-puzzle-board] [data-square="${from}"]`).click();
   await page.locator(`[data-puzzle-board] [data-square="${to}"]`).click();
@@ -23,8 +28,8 @@ async function clickMove(page,from,to){
 
 (async()=>{const browser=await chromium.launch({headless:true});try{
   const page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];page.on('pageerror',e=>errors.push(String(e.stack||e)));
-  await fresh(page,'puzzles-browser-mate1');await seedPuzzleRoute(page,mate1Route,mate1Fixture);await page.locator('[data-roster-travel]').click();
-  const screen=page.locator('[data-puzzle-screen]:not([hidden])');await screen.waitFor();
+  await fresh(page,'puzzles-browser-mate1');await seedPuzzleRoute(page,mate1Route);await page.locator('[data-roster-travel]').click();
+  const screen=page.locator('[data-puzzle-screen]:not([hidden])');await screen.waitFor();await pinPuzzleFixture(page,mate1Fixture);
   assert.strictEqual(await page.locator('[data-puzzle-roster]').count(),0,'obsolete Puzzle Roster shortcut must be absent from the runtime DOM');
   assert.strictEqual((await page.locator('[data-puzzle-objective]').innerText()).trim(),'МАТ В 1');
   assert.strictEqual((await page.locator('[data-puzzle-stars]').innerText()).replace(/\s/g,''),'★');
@@ -46,5 +51,5 @@ async function clickMove(page,from,to){
 
   const mobile=await browser.newPage({viewport:{width:390,height:844}}),mobileErrors=[];mobile.on('pageerror',e=>mobileErrors.push(String(e.stack||e)));await fresh(mobile,'puzzles-browser-mobile');await seedPuzzleRoute(mobile,mate1Route);await mobile.locator('[data-roster-travel]').click();await mobile.locator('[data-puzzle-screen]:not([hidden])').waitFor();assert.strictEqual(await mobile.locator('[data-puzzle-roster]').count(),0,'obsolete Puzzle Roster shortcut must stay absent on mobile');assert.strictEqual(await mobile.locator('[data-puzzle-board] [data-square]').count(),64);assert.strictEqual(await mobile.locator('[data-puzzle-board] .puzzle-coordinate--file').count(),8);assert.strictEqual(await mobile.locator('[data-puzzle-board] .puzzle-coordinate--rank').count(),8);const layout=await mobile.evaluate(()=>{const board=document.querySelector('[data-puzzle-board]').getBoundingClientRect();return{sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,sh:document.documentElement.scrollHeight,ch:document.documentElement.clientHeight,board:{left:board.left,right:board.right,width:board.width}};});assert(layout.sw<=layout.cw+1,`Puzzle mobile must not overflow horizontally: ${layout.sw}/${layout.cw}`);assert(layout.sh>layout.ch,'Puzzle mobile scene should use vertical flow');assert(layout.board.left>=-1&&layout.board.right<=layout.cw+1&&layout.board.width<=layout.cw+1,'Puzzle board must fit 390px viewport');
 
-  assert.deepStrictEqual(errors,[]);assert.deepStrictEqual(resumeErrors,[]);assert.deepStrictEqual(mobileErrors,[]);console.log('Puzzles identity flow, pinned move fixture, accepted hidden source attribution, canonical wrong-move/resume state, removed obsolete Roster shortcut, compact hidden status, no-repeat history, reward/idempotency, reload resume and mobile acceptance: PASS');
+  assert.deepStrictEqual(errors,[]);assert.deepStrictEqual(resumeErrors,[]);assert.deepStrictEqual(mobileErrors,[]);console.log('Puzzles identity flow, canonical route open + pinned move fixture, accepted hidden source attribution, canonical wrong-move/resume state, removed obsolete Roster shortcut, compact hidden status, no-repeat history, reward/idempotency, reload resume and mobile acceptance: PASS');
 }finally{await browser.close();}})().catch(e=>{console.error(e.stack||e);process.exitCode=1});
