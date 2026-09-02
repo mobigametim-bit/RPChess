@@ -34,7 +34,7 @@
     "puzzles:validate:full": "npm run puzzles:materialize && node scripts/validate-puzzle-catalog-full.cjs",
     "test:browser": "node scripts/run-browser-tests.cjs",
     "build": "npm run puzzles:materialize && node scripts/build.cjs",
-    "gate:local": "npm run verify && npm run build",
+    "gate:local": "npm run verify && npm run test:ui && npm run build",
     "gate:full": "npm run gate:local && npm run test:browser",
     "deploy": "wrangler deploy"
   }
