@@ -130,7 +130,7 @@ async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
     assert.strictEqual(await page.locator('[data-battle-screen]:not([hidden])').count(), 0, 'King death must prevent the selected Battle from starting');
     await page.locator('[data-starvation-continue]').click();
     await page.locator('[data-endless-run-screen]:not([hidden])').waitFor();
-    assert((await page.locator('[data-endless-run-reason]').innerText()).toLowerCase().includes('голод'), 'King starvation must route into the canonical run summary');
+    assert((await page.locator('[data-endless-run-reason]').innerText()).includes('без припасов'), 'King starvation summary must expose the canonical no-supplies reason');
     assert.strictEqual(await page.locator('[data-reboot-foundation]:not([hidden])').count(), 0, 'run summary must appear before returning to the main menu');
     await page.locator('[data-endless-run-menu]').click();
     await page.locator('[data-reboot-foundation]:not([hidden])').waitFor();
