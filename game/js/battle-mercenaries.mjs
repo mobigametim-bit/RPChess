@@ -1,172 +1,147 @@
 import { readRun, writeRun } from './run-persistence.mjs';
-import { SLOT_CAPACITY, selectedTypeCounts, validateBattleSelection } from './battle-core.mjs';
-import { HEAL_COSTS } from './settlement-core.mjs';
+import { validateBattleSelection, SLOT_CAPACITY } from './battle-core.mjs';
 
+const MERCENARY_COSTS = Object.freeze({ pawn:1, knight:3, bishop:3, rook:5, queen:9, king:0 });
+const RESERVE_REPLACEMENT_COSTS = Object.freeze({ queen:42, rook:26, bishop:18, knight:18, pawn:10 });
 const SUPPLY_GOLD_VALUE = 10;
-const MERCENARY_COSTS = Object.freeze({ pawn: 1, knight: 3, bishop: 3, rook: 5, queen: 9, king: 0 });
-const MERCENARY_TYPES = Object.freeze(['queen', 'rook', 'bishop', 'knight', 'pawn']);
-const RESERVE_REPLACEMENT_COSTS = Object.freeze(Object.fromEntries(MERCENARY_TYPES.map((pieceType) => [pieceType, Math.max(MERCENARY_COSTS[pieceType] || 0, HEAL_COSTS[pieceType] || 0)])));
 
-function safeInteger(value) { return Number.isInteger(value) && value >= 0 ? value : 0; }
-function hashSeed(input) { let h=2166136261; for(const c of String(input)){ h^=c.charCodeAt(0); h=Math.imul(h,16777619); } return h>>>0; }
-
-function mercenaryCounts(roster = [], selectedIds = []) {
-  const named = selectedTypeCounts(roster, selectedIds);
-  return Object.freeze(Object.fromEntries(MERCENARY_TYPES.map((pieceType) => [pieceType, Math.max(0, (SLOT_CAPACITY[pieceType] || 0) - (named[pieceType] || 0))])));
+function countSelectedTypes(roster = [], selectedIds = []) {
+  const selected = new Set(selectedIds);
+  const counts = { king:0, queen:0, rook:0, bishop:0, knight:0, pawn:0 };
+  for (const character of roster) if (selected.has(character.id) && counts[character.pieceType] !== undefined) counts[character.pieceType] += 1;
+  return counts;
 }
 
 function healthyReserveCounts(roster = [], selectedIds = []) {
-  const selected = new Set(selectedIds || []);
-  const counts = Object.fromEntries(MERCENARY_TYPES.map((pieceType) => [pieceType, 0]));
-  for (const character of roster || []) {
-    if (!character || character.isRunKing || character.status !== 'healthy' || selected.has(character.id)) continue;
-    if (!Object.prototype.hasOwnProperty.call(counts, character.pieceType)) continue;
-    counts[character.pieceType] += 1;
+  const selected = new Set(selectedIds);
+  const counts = { queen:0, rook:0, bishop:0, knight:0, pawn:0 };
+  for (const character of roster) {
+    if (character.isRunKing || character.status !== 'healthy' || selected.has(character.id)) continue;
+    if (counts[character.pieceType] !== undefined) counts[character.pieceType] += 1;
   }
-  return Object.freeze(counts);
+  return counts;
+}
+
+function mercenaryCounts(roster = [], selectedIds = []) {
+  const selected = countSelectedTypes(roster, selectedIds);
+  return {
+    queen:Math.max(0,SLOT_CAPACITY.queen-selected.queen),
+    rook:Math.max(0,SLOT_CAPACITY.rook-selected.rook),
+    bishop:Math.max(0,SLOT_CAPACITY.bishop-selected.bishop),
+    knight:Math.max(0,SLOT_CAPACITY.knight-selected.knight),
+    pawn:Math.max(0,SLOT_CAPACITY.pawn-selected.pawn)
+  };
+}
+
+function mercenaryGoldCost(counts = {}) {
+  return Object.entries(MERCENARY_COSTS).reduce((sum,[piece,cost])=>sum+(Number(counts[piece])||0)*cost,0);
 }
 
 function mercenaryQuote(roster = [], selectedIds = []) {
   const counts = mercenaryCounts(roster, selectedIds);
-  const healthyReserve = healthyReserveCounts(roster, selectedIds);
-  const reserveReplacementCounts = Object.freeze(Object.fromEntries(MERCENARY_TYPES.map((pieceType) => [pieceType, Math.min(counts[pieceType], healthyReserve[pieceType])])));
-  const baseCounts = Object.freeze(Object.fromEntries(MERCENARY_TYPES.map((pieceType) => [pieceType, counts[pieceType] - reserveReplacementCounts[pieceType]])));
-  const totalCost = MERCENARY_TYPES.reduce((sum, pieceType) => sum
-    + (baseCounts[pieceType] * MERCENARY_COSTS[pieceType])
-    + (reserveReplacementCounts[pieceType] * RESERVE_REPLACEMENT_COSTS[pieceType]), 0);
-  const totalCount = MERCENARY_TYPES.reduce((sum, pieceType) => sum + counts[pieceType], 0);
-  const reserveReplacementCount = MERCENARY_TYPES.reduce((sum, pieceType) => sum + reserveReplacementCounts[pieceType], 0);
-  return Object.freeze({ counts, baseCounts, reserveReplacementCounts, totalCost, totalCount, reserveReplacementCount });
+  const reserve = healthyReserveCounts(roster, selectedIds);
+  const reserveReplacementCounts = {};
+  const baseCounts = {};
+  let reserveReplacementCount = 0, reserveReplacementCost = 0, baseCost = 0;
+  for (const pieceType of ['queen','rook','bishop','knight','pawn']) {
+    const premiumCount = Math.min(counts[pieceType] || 0, reserve[pieceType] || 0);
+    const baseCount = Math.max(0,(counts[pieceType] || 0)-premiumCount);
+    reserveReplacementCounts[pieceType]=premiumCount;
+    baseCounts[pieceType]=baseCount;
+    reserveReplacementCount+=premiumCount;
+    reserveReplacementCost+=premiumCount*RESERVE_REPLACEMENT_COSTS[pieceType];
+    baseCost+=baseCount*MERCENARY_COSTS[pieceType];
+  }
+  return {
+    counts,
+    baseCounts,
+    reserveReplacementCounts,
+    totalCount:Object.values(counts).reduce((sum,count)=>sum+count,0),
+    reserveReplacementCount,
+    baseCost,
+    reserveReplacementCost,
+    totalCost:baseCost+reserveReplacementCost
+  };
 }
 
-function mercenaryGoldCost(roster = [], selectedIds = []) {
-  return mercenaryQuote(roster, selectedIds).totalCost;
+function spendForMercenaries(run, totalCost) {
+  const gold=Math.max(0,Number(run?.gold)||0),supplies=Math.max(0,Number(run?.supplies)||0);
+  const chargedGold=Math.min(gold,totalCost),remaining=Math.max(0,totalCost-chargedGold),requiredSupplies=Math.ceil(remaining/SUPPLY_GOLD_VALUE),chargedSupplies=Math.min(supplies,requiredSupplies),coveredValue=chargedGold+chargedSupplies*SUPPLY_GOLD_VALUE,unpaidValue=Math.max(0,totalCost-coveredValue);
+  return { chargedGold, chargedSupplies, unpaidValue, casualtyDebt:unpaidValue>0 };
 }
 
-function samePendingContract(contract, encounterId, battleCountAtCharge) {
-  return Boolean(contract && contract.encounterId === encounterId && contract.battleCountAtCharge === battleCountAtCharge && !contract.settled);
-}
-
-function chargeBattleMercenaries(run, { roster = run?.roster || [], selectedIds = [], encounterId = '', battleCountAtCharge = run?.battleCount || 0 } = {}) {
-  if (!run || !encounterId) return { run, chargedGold: 0, chargedSupplies: 0, contract: null, quote: mercenaryQuote(roster, selectedIds) };
-  const quote = mercenaryQuote(roster, selectedIds);
-  const previous = samePendingContract(run.battleMercenaryContract, encounterId, battleCountAtCharge) ? run.battleMercenaryContract : null;
-  const totalCost = Math.max(safeInteger(previous?.totalCost), quote.totalCost);
-  const previousGoldPaid = safeInteger(previous?.goldPaid);
-  const previousSuppliesPaid = safeInteger(previous?.suppliesPaid);
-  const previousCoverage = previousGoldPaid + (previousSuppliesPaid * SUPPLY_GOLD_VALUE);
-  const outstanding = Math.max(0, totalCost - previousCoverage);
-  const chargedGold = Math.min(safeInteger(run.gold), outstanding);
-  const afterGold = Math.max(0, outstanding - chargedGold);
-  const suppliesNeeded = afterGold > 0 ? Math.ceil(afterGold / SUPPLY_GOLD_VALUE) : 0;
-  const chargedSupplies = Math.min(safeInteger(run.supplies), suppliesNeeded);
-  const goldPaid = previousGoldPaid + chargedGold;
-  const suppliesPaid = previousSuppliesPaid + chargedSupplies;
-  const coverage = goldPaid + (suppliesPaid * SUPPLY_GOLD_VALUE);
-  const unpaidValue = Math.max(0, totalCost - coverage);
-  const casualtyDebt = Boolean(previous?.casualtyDebt || unpaidValue > 0);
-  const contract = {
+function chargeBattleMercenaries(run,{roster=run?.roster||[],selectedIds=[],encounterId='',battleCountAtCharge=run?.battleCount||0}={}) {
+  if (!run) return { run, chargedGold:0, chargedSupplies:0, contract:null };
+  const existing=run.battleMercenaryContract;
+  if (existing?.encounterId===encounterId) return { run, chargedGold:0, chargedSupplies:0, contract:existing };
+  const quote=mercenaryQuote(roster,selectedIds),payment=spendForMercenaries(run,quote.totalCost);
+  const contract={
     encounterId,
+    totalCost:quote.totalCost,
+    totalCount:quote.totalCount,
+    counts:quote.counts,
+    baseCounts:quote.baseCounts,
+    reserveReplacementCounts:quote.reserveReplacementCounts,
+    reserveReplacementCount:quote.reserveReplacementCount,
+    reserveReplacementCost:quote.reserveReplacementCost,
+    chargedGold:payment.chargedGold,
+    chargedSupplies:payment.chargedSupplies,
+    unpaidValue:payment.unpaidValue,
+    casualtyDebt:payment.casualtyDebt,
     battleCountAtCharge,
-    selectedIds: [...new Set(selectedIds)],
-    mercenaryCounts: quote.counts,
-    baseMercenaryCounts: quote.baseCounts,
-    reserveReplacementCounts: quote.reserveReplacementCounts,
-    mercenaryCount: quote.totalCount,
-    reserveReplacementCount: quote.reserveReplacementCount,
-    totalCost,
-    goldPaid,
-    suppliesPaid,
-    unpaidValue,
-    casualtyDebt,
-    settled: false
+    settled:false
   };
   return {
-    run: { ...run, gold: safeInteger(run.gold) - chargedGold, supplies: safeInteger(run.supplies) - chargedSupplies, battleMercenaryContract: contract },
-    chargedGold,
-    chargedSupplies,
-    contract,
-    quote
+    run:{...run,gold:Math.max(0,(Number(run.gold)||0)-payment.chargedGold),supplies:Math.max(0,(Number(run.supplies)||0)-payment.chargedSupplies),battleMercenaryContract:contract},
+    chargedGold:payment.chargedGold,
+    chargedSupplies:payment.chargedSupplies,
+    contract
   };
 }
 
-function casualtyCandidates(roster = []) {
-  const living = roster.filter((character) => character && !character.isRunKing && character.status !== 'dead');
-  const wounded = living.filter((character) => character.status === 'wounded');
-  const healthy = living.filter((character) => character.status === 'healthy');
-  return wounded.length ? wounded : healthy;
-}
-
-function deterministicMercenaryCasualty(roster = [], seed = '') {
-  const candidates = casualtyCandidates(roster).slice().sort((a, b) => String(a.id).localeCompare(String(b.id)));
+function deterministicMercenaryCasualty(roster = [], contract = {}) {
+  const candidates=roster.filter((character)=>!character.isRunKing&&character.status!=='dead');
   if (!candidates.length) return null;
-  return candidates[hashSeed(`${seed}:mercenary-casualty`) % candidates.length];
+  candidates.sort((a,b)=>{
+    const aW=a.status==='wounded'?0:1,bW=b.status==='wounded'?0:1;
+    if(aW!==bW)return aW-bW;
+    const priority={pawn:0,knight:1,bishop:2,rook:3,queen:4,king:5};
+    const pd=(priority[a.pieceType]??9)-(priority[b.pieceType]??9);
+    return pd||String(a.id).localeCompare(String(b.id));
+  });
+  return candidates[0];
 }
 
 function resolveBattleMercenaryDebt(run) {
-  const contract = run?.battleMercenaryContract;
-  if (!run || !contract || contract.settled || !Number.isInteger(contract.battleCountAtCharge) || (run.battleCount || 0) <= contract.battleCountAtCharge) {
-    return { run, resolved: false, casualty: null };
+  const contract=run?.battleMercenaryContract;
+  if(!run||!contract||contract.settled)return{run,resolved:false,casualty:null};
+  if((Number(run.battleCount)||0)<=Number(contract.battleCountAtCharge||0))return{run,resolved:false,casualty:null};
+  let next={...run},casualty=null;
+  if(contract.casualtyDebt&&!run.ended){
+    casualty=deterministicMercenaryCasualty(run.roster,contract);
+    if(casualty)next={...next,roster:run.roster.map((character)=>character.id===casualty.id?{...character,status:'dead'}:character)};
   }
-  const payment = {
-    mercenaryCount: safeInteger(contract.mercenaryCount),
-    reserveReplacementCount: safeInteger(contract.reserveReplacementCount),
-    totalCost: safeInteger(contract.totalCost),
-    goldPaid: safeInteger(contract.goldPaid),
-    suppliesPaid: safeInteger(contract.suppliesPaid),
-    unpaidValue: safeInteger(contract.unpaidValue),
-    casualtyDebt: Boolean(contract.casualtyDebt)
-  };
-  if (run.ended || !contract.casualtyDebt) {
-    return {
-      run: { ...run, battleMercenaryContract: null, lastBattle: { ...(run.lastBattle || {}), mercenaryPayment: payment, mercenaryCasualtyId: null } },
-      resolved: true,
-      casualty: null
-    };
-  }
-  const casualty = deterministicMercenaryCasualty(run.roster || [], contract.encounterId);
-  if (!casualty) {
-    return {
-      run: { ...run, battleMercenaryContract: null, lastBattle: { ...(run.lastBattle || {}), mercenaryPayment: payment, mercenaryCasualtyId: null, mercenaryCasualtyUnresolved: true } },
-      resolved: true,
-      casualty: null
-    };
-  }
-  return {
-    run: {
-      ...run,
-      roster: (run.roster || []).map((character) => character.id === casualty.id ? { ...character, status: 'dead' } : character),
-      battleMercenaryContract: null,
-      lastBattle: { ...(run.lastBattle || {}), mercenaryPayment: payment, mercenaryCasualtyId: casualty.id, mercenaryCasualtyName: casualty.name }
-    },
-    resolved: true,
-    casualty
-  };
+  const payment={...contract,settled:true,casualtyId:casualty?.id||null};
+  next={...next,battleMercenaryContract:null,lastBattle:next.lastBattle?{...next.lastBattle,mercenaryPayment:payment}:next.lastBattle};
+  return{run:next,resolved:true,casualty};
 }
 
-function paymentToast(result) {
-  const debt = Boolean(result?.contract?.casualtyDebt);
-  const protectedReserve = safeInteger(result?.contract?.reserveReplacementCount);
-  const label = debt
-    ? 'НАЁМНИКИ · НЕ ХВАТИЛО РЕСУРСОВ — ПОСЛЕ БИТВЫ ПОГИБНЕТ ОДИН ГЕРОЙ'
-    : protectedReserve > 0 ? `НАЁМНИКИ · ${protectedReserve} ЗАМЕНА ЗДОРОВЫХ ГЕРОЕВ` : 'НАЁМНИКИ';
-  setTimeout(() => globalThis.RPChessResources?.showChange?.({ goldDelta: -safeInteger(result?.chargedGold), suppliesDelta: -safeInteger(result?.chargedSupplies), label }), 80);
+function paymentToast(charged) {
+  if(!charged?.contract)return;
+  const root=document.createElement('div');
+  root.className='battle-toast';
+  const pieces=[];
+  if(charged.chargedGold)pieces.push(`${charged.chargedGold} золота`);
+  if(charged.chargedSupplies)pieces.push(`${charged.chargedSupplies} припас${charged.chargedSupplies===1?'':'а'}`);
+  root.textContent=charged.contract.casualtyDebt?`Наёмники получили всё, что было: ${pieces.join(' + ')||'ничего'}. После Битвы погибнет один именной герой.`:`Наёмники оплачены: ${pieces.join(' + ')||'0'}.`;
+  document.body.append(root);setTimeout(()=>root.remove(),4200);
 }
 
 function normalizeBattleCopy() {
-  const screen = document.querySelector('[data-battle-screen]');
-  const roster = screen?.querySelector('.battle-roster');
-  const army = screen?.querySelector('.battle-army');
-  const rosterEyebrow = roster?.querySelector('.reboot-eyebrow');
-  const rosterTitle = roster?.querySelector('.battle-section-head h2');
-  const rosterNote = roster?.querySelector('.battle-section-head > span');
-  const armyEyebrow = army?.querySelector('.reboot-eyebrow');
-  const armyTitle = army?.querySelector('.battle-section-head h2');
-  const armyNote = army?.querySelector('.battle-section-head > span');
-  if (rosterEyebrow) rosterEyebrow.textContent = 'ИМЕННЫЕ ГЕРОИ';
-  if (rosterTitle) rosterTitle.textContent = 'Кого вести в бой';
-  if (rosterNote) rosterNote.textContent = 'Снятый герой остаётся в забеге и не рискует в этой Битве.';
-  if (armyEyebrow) armyEyebrow.textContent = 'ПОЛНАЯ АРМИЯ';
+  const desc=document.querySelector('[data-battle-description]');
+  if(desc&&desc.textContent.includes('Победа решится по классическим шахматным правилам.'))desc.textContent=desc.textContent.replace(/\s*Победа решится по классическим шахматным правилам\.?/g,'').trim();
+  const armyTitle=document.querySelector('.battle-army .battle-section-head h2');
+  const armyNote=document.querySelector('.battle-army .battle-section-head>span');
   if (armyTitle) armyTitle.textContent = 'Боевой строй';
   if (armyNote) armyNote.textContent = 'Свободный слот — дешёвый Наёмник. Замена оставленного в резерве здорового героя стоит как его лечение.';
 }
@@ -199,13 +174,14 @@ function renderBattlePrepQuote() {
 
   const actionbar = screen.querySelector('.battle-actionbar');
   const start = screen.querySelector('[data-battle-start]');
-  if (actionbar && start) {
+  if (actionbar) {
     let actionCost = screen.querySelector('[data-battle-mercenary-action-cost]');
     if (!actionCost) {
       actionCost = document.createElement('div');
       actionCost.className = 'battle-action-cost';
       actionCost.dataset.battleMercenaryActionCost = '';
-      actionbar.insertBefore(actionCost, start);
+      if (start?.parentNode === actionbar) actionbar.insertBefore(actionCost, start);
+      else actionbar.append(actionCost);
     }
     actionCost.innerHTML = `<span>НАЁМНИКИ</span><strong>${quote.totalCost}</strong>`;
     actionCost.setAttribute('aria-label', `Стоимость Наёмников: ${quote.totalCost} золота`);
