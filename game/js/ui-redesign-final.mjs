@@ -48,7 +48,7 @@ function syncBattleStart(screen,active){const start=screen?.querySelector('[data
 function syncBattlePrep(){const screen=document.querySelector('[data-battle-screen]'),active=visible(screen);document.body.classList.toggle('battle-prep-compact-active',active);if(active)ensureCardGlyphs('[data-battle-screen] [data-battle-character]','battle-card__tech-glyph');syncBattleStart(screen,active);}
 function syncAftermath(){const battle=document.querySelector('[data-battle-aftermath]'),skirmish=document.querySelector('[data-skirmish-aftermath]');document.body.classList.toggle('compact-aftermath-active',visible(battle)||visible(skirmish));}
 function refresh(){queued=false;removeObsoleteHiddenControls();syncCombatBoard();syncPuzzle();syncSkirmishPrep();syncBattlePrep();syncAftermath();}
-function schedule(){if(queued)return;queued=true;requestAnimationFrame(refresh);}
+function schedule(){removeObsoleteHiddenControls();if(queued)return;queued=true;requestAnimationFrame(refresh);}
 
 ensureCss();
 removeObsoleteHiddenControls();
