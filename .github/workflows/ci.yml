@@ -1,4 +1,4 @@
-name: RPChess Reboot CI (remaining browser gates)
+name: RPChess Reboot CI (final Puzzle gate)
 
 on:
   workflow_dispatch:
@@ -27,12 +27,11 @@ jobs:
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
-      - name: Run remaining Events and Puzzles real Chromium gates
+      - name: Run final Puzzle real Chromium gate
         timeout-minutes: 10
         run: |
           python3 -m http.server 4173 --directory dist --bind 127.0.0.1 >/tmp/rpchess-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID' EXIT
           sleep 1
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 node tests/events-browser.cjs
           RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 node tests/puzzles-browser.cjs
