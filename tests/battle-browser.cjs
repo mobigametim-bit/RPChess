@@ -57,6 +57,7 @@ async function enter(page) {
   assert.strictEqual(await card.count(), 1);
   await card.click();
   await page.locator('[data-battle-screen]:not([hidden])').waitFor();
+  assert.strictEqual(await page.locator('[data-battle-back]').count(), 0, 'approved Battle prep must not retain an invisible legacy back control');
 }
 
 async function assertResponsiveStars(page, selector, cardSelector) {
@@ -191,7 +192,7 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     assert.deepStrictEqual(blackErrors, []);
     assert.deepStrictEqual(woundedErrors, []);
     assert.deepStrictEqual(mobileErrors, []);
-    console.log('Battle aftermath→Travel, compact desktop prep, canonical combat summary, standalone mobile CTA, human color sets, enemy race art, Black-side and wounded King acceptance: PASS');
+    console.log('Battle aftermath→Travel, removed legacy back control, compact desktop prep, canonical combat summary, standalone mobile CTA, human color sets, enemy race art, Black-side and wounded King acceptance: PASS');
   } finally {
     await browser.close();
   }
