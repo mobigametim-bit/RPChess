@@ -34,7 +34,7 @@
     "puzzles:validate:full": "npm run puzzles:materialize && node scripts/validate-puzzle-catalog-full.cjs",
     "test:browser": "node scripts/run-browser-tests.cjs",
     "build": "npm run puzzles:materialize && node scripts/build.cjs",
-    "gate:local": "npm run verify && npm test && npm run build",
+    "gate:local": "npm run verify && npm run puzzles:materialize && node tests/reboot-foundation.cjs && node tests/cross-scene-visuals.cjs && node tests/content-framework.cjs && node tests/endless-run.cjs && node tests/player-identity-chronicle.cjs && node tests/classic-chess-static.cjs && node tests/classic-chess-engine.cjs && node tests/chess-ai-adapter.cjs && node tests/roster.cjs && node tests/hero-notes.cjs && node tests/player-rating.cjs && node tests/skirmish.cjs && node tests/battle.cjs && node tests/combat-art-continuity.cjs && node tests/travel-choice.cjs && node tests/ui-redesign-final.cjs && npm run build",
     "gate:full": "npm run gate:local && npm run test:browser",
     "deploy": "wrangler deploy"
   }
