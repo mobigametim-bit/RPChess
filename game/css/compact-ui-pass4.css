@@ -1,7 +1,6 @@
 /* 2026-09-02 live-playtest UI pass 4.
    Presentation-only corrections for Settlement and Events. Runtime hooks stay intact. */
 
-/* Settlement: back off the oversized experiment by 30% and keep service art above copy. */
 @media (min-width:901px){
   body.settlement-active .settlement-service__icon{
     width:101px!important;
@@ -12,16 +11,11 @@
   }
 }
 
-/* Events: navigation actions are not part of the event decision screen. */
 body.events-active [data-events-roster],
-body.events-active [data-events-settings]{
-  display:none!important;
-}
+body.events-active [data-events-settings]{display:none!important;}
 
 @media (min-width:901px){
-  body.events-active{
-    overflow:hidden!important;
-  }
+  body.events-active{overflow:hidden!important;}
   body.events-active .events-screen{
     height:100svh!important;
     min-height:0!important;
@@ -44,14 +38,8 @@ body.events-active [data-events-settings]{
     right:auto!important;
     margin:0!important;
   }
-  body.events-active .events-topbar__actions{
-    display:none!important;
-  }
-  body.events-active .events-logo{
-    width:min(230px,19vw)!important;
-  }
-
-  /* The source panel becomes only a full-screen positioning layer. */
+  body.events-active .events-topbar__actions{display:none!important;}
+  body.events-active .events-logo{width:min(230px,19vw)!important;}
   body.events-active .events-panel{
     position:absolute!important;
     z-index:6!important;
@@ -72,10 +60,7 @@ body.events-active [data-events-settings]{
     overflow:visible!important;
     pointer-events:none!important;
   }
-  body.events-active .events-panel::before{
-    display:none!important;
-  }
-
+  body.events-active .events-panel::before{display:none!important;}
   body.events-active .events-copy-frame,
   body.events-active .events-choice-frame{
     position:absolute!important;
@@ -98,7 +83,6 @@ body.events-active [data-events-settings]{
     background:linear-gradient(90deg,#edcb7a,#c79840);
     pointer-events:none;
   }
-
   body.events-active .events-copy-frame{
     left:0!important;
     bottom:0!important;
@@ -108,7 +92,6 @@ body.events-active [data-events-settings]{
     overscroll-behavior:contain;
     padding:22px 24px 20px!important;
   }
-
   body.events-active .events-choice-frame{
     right:0!important;
     bottom:0!important;
@@ -118,50 +101,16 @@ body.events-active [data-events-settings]{
     overflow:visible!important;
     padding:12px!important;
   }
-
   body.events-active .events-kicker{font-size:11px!important;}
-  body.events-active .events-panel h1{
-    margin:.16em 0 .30em!important;
-    font-size:clamp(42px,3.5vw,58px)!important;
-    line-height:.96!important;
-  }
-  body.events-active .events-story{
-    max-width:none!important;
-    margin:0!important;
-    padding-top:14px!important;
-    font-size:clamp(18px,1.22vw,22px)!important;
-    line-height:1.56!important;
-  }
+  body.events-active .events-panel h1{margin:.16em 0 .30em!important;font-size:clamp(42px,3.5vw,58px)!important;line-height:.96!important;}
+  body.events-active .events-story{max-width:none!important;margin:0!important;padding-top:14px!important;font-size:clamp(18px,1.22vw,22px)!important;line-height:1.56!important;}
   body.events-active .events-story p{margin:0 0 .78em!important;}
-  body.events-active .events-reaction--king{
-    max-width:none!important;
-    margin:10px 0 0!important;
-    padding:10px 13px!important;
-    font-size:15px!important;
-    line-height:1.46!important;
-  }
-
-  body.events-active .events-choices{
-    display:grid!important;
-    grid-template-columns:repeat(2,minmax(0,1fr))!important;
-    grid-auto-flow:row!important;
-    align-items:stretch!important;
-    max-width:none!important;
-    gap:10px!important;
-  }
+  body.events-active .events-reaction--king{max-width:none!important;margin:10px 0 0!important;padding:10px 13px!important;font-size:15px!important;line-height:1.46!important;}
+  body.events-active .events-choices{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-flow:row!important;align-items:stretch!important;max-width:none!important;gap:10px!important;}
   body.events-active .events-choice:last-child:nth-child(odd){grid-column:1 / -1!important;}
-  body.events-active .events-choice{
-    min-width:0!important;
-    min-height:84px!important;
-    height:auto!important;
-    padding:11px 13px!important;
-    box-sizing:border-box!important;
-  }
+  body.events-active .events-choice{min-width:0!important;min-height:84px!important;height:auto!important;padding:11px 13px!important;box-sizing:border-box!important;}
   body.events-active .events-choice__reaction,
-  body.events-active .events-choice__hero{
-    margin-bottom:8px!important;
-    padding-bottom:7px!important;
-  }
+  body.events-active .events-choice__hero{margin-bottom:8px!important;padding-bottom:7px!important;}
   body.events-active .events-choice__head{gap:10px!important;}
   body.events-active .events-choice__head strong{font-size:15px!important;line-height:1.25!important;}
   body.events-active .events-choice__head>span{font-size:10px!important;}
@@ -170,28 +119,18 @@ body.events-active [data-events-settings]{
   body.events-active .events-choice__reaction,
   body.events-active .events-choice__hero-line{font-size:12px!important;line-height:1.35!important;}
   body.events-active .events-choice__hero-name{font-size:10px!important;}
-
   body.events-active .events-choice-frame[data-choice-count="5"] .events-choice,
-  body.events-active .events-choice-frame[data-choice-count="6"] .events-choice{
-    min-height:72px!important;
-    padding:9px 11px!important;
-  }
+  body.events-active .events-choice-frame[data-choice-count="6"] .events-choice{min-height:72px!important;padding:9px 11px!important;}
   body.events-active .events-choice-frame[data-choice-count="5"] .events-choice__reaction,
   body.events-active .events-choice-frame[data-choice-count="5"] .events-choice__hero,
   body.events-active .events-choice-frame[data-choice-count="6"] .events-choice__reaction,
-  body.events-active .events-choice-frame[data-choice-count="6"] .events-choice__hero{
-    margin-bottom:6px!important;
-    padding-bottom:5px!important;
-  }
+  body.events-active .events-choice-frame[data-choice-count="6"] .events-choice__hero{margin-bottom:6px!important;padding-bottom:5px!important;}
   body.events-active .events-choice-frame[data-choice-count="5"] .events-choice__head strong,
   body.events-active .events-choice-frame[data-choice-count="6"] .events-choice__head strong{font-size:14px!important;}
   body.events-active .events-choice-frame[data-choice-count="5"] .events-choice__reaction,
   body.events-active .events-choice-frame[data-choice-count="5"] .events-choice__hero-line,
   body.events-active .events-choice-frame[data-choice-count="6"] .events-choice__reaction,
-  body.events-active .events-choice-frame[data-choice-count="6"] .events-choice__hero-line{
-    font-size:11px!important;
-    line-height:1.28!important;
-  }
+  body.events-active .events-choice-frame[data-choice-count="6"] .events-choice__hero-line{font-size:11px!important;line-height:1.28!important;}
 }
 
 @media (min-width:901px) and (max-height:760px){
@@ -207,7 +146,6 @@ body.events-active [data-events-settings]{
   body.events-active .events-choice__meta small{font-size:8px!important;}
 }
 
-/* Accepted Travel card geometry follow-up. */
 @media (min-width:901px){
   html body.travel-choice-active .travel-choice-screen .travel-choice-shell{
     grid-template-rows:auto minmax(0,1fr)!important;
@@ -245,21 +183,12 @@ body.events-active [data-events-settings]{
     margin:0!important;
     -webkit-line-clamp:2!important;
   }
-
-  html body.travel-choice-active .travel-choice-card--puzzle .travel-choice-card__overlay .travel-choice-card__type{
-    font-size:0!important;
-  }
+  html body.travel-choice-active .travel-choice-card--puzzle .travel-choice-card__overlay .travel-choice-card__type{font-size:0!important;}
   html body.travel-choice-active .travel-choice-card--puzzle .travel-choice-card__overlay .travel-choice-card__type::after{
     content:'Тренировка'!important;
     font:400 clamp(28px,2vw,35px)/1 'BrahmsGotischCyr',Georgia,serif!important;
     letter-spacing:.025em!important;
   }
-
-  html body.events-active .events-choice--hero-locked .events-choice__hero-name{
-    font-size:0!important;
-  }
-  html body.events-active .events-choice--hero-locked .events-choice__hero-name::before{
-    content:'🔒'!important;
-    font:400 1rem/1 system-ui,sans-serif!important;
-  }
+  html body.events-active .events-choice--hero-locked .events-choice__hero-name{font-size:0!important;}
+  html body.events-active .events-choice--hero-locked .events-choice__hero-name::before{content:'🔒'!important;font:400 1rem/1 system-ui,sans-serif!important;}
 }
