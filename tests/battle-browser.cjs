@@ -162,22 +162,36 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     await fresh(mobile, { stars: 12 });
     await enter(mobile);
     await assertResponsiveStars(mobile, '[data-battle-stars]', '.battle-threat-card');
-    const layout = await mobile.evaluate(() => ({
-      sw: document.documentElement.scrollWidth,
-      cw: document.documentElement.clientWidth,
-      sh: document.documentElement.scrollHeight,
-      ch: document.documentElement.clientHeight,
-      pos: getComputedStyle(document.querySelector('.battle-actionbar')).position
-    }));
+    const layout = await mobile.evaluate(() => {
+      const start = document.querySelector('[data-battle-start]');
+      const army = document.querySelector('.battle-army');
+      const actionbar = document.querySelector('.battle-actionbar');
+      const startBox = start?.getBoundingClientRect();
+      const armyBox = army?.getBoundingClientRect();
+      return {
+        sw: document.documentElement.scrollWidth,
+        cw: document.documentElement.clientWidth,
+        sh: document.documentElement.scrollHeight,
+        ch: document.documentElement.clientHeight,
+        actionbarHidden: Boolean(actionbar?.hidden),
+        actionbarVisible: Boolean(actionbar && getComputedStyle(actionbar).display !== 'none' && actionbar.getClientRects().length),
+        startParent: start?.parentElement?.className || '',
+        startWidth: startBox?.width || 0,
+        armyWidth: armyBox?.width || 0
+      };
+    });
     assert(layout.sw <= layout.cw + 1);
     assert(layout.sh > layout.ch);
-    assert.strictEqual(layout.pos, 'sticky');
+    assert.strictEqual(layout.actionbarHidden, true, 'mobile Battle prep must keep the legacy duplicate actionbar hidden');
+    assert.strictEqual(layout.actionbarVisible, false, 'mobile Battle prep must not show duplicate counters below the army panel');
+    assert(layout.startParent.includes('battle-army'), 'mobile Battle Start CTA must live in the army panel');
+    assert(layout.startWidth >= layout.armyWidth - 40, `mobile Battle Start CTA must be effectively full width: ${layout.startWidth}/${layout.armyWidth}`);
 
     assert.deepStrictEqual(errors, []);
     assert.deepStrictEqual(blackErrors, []);
     assert.deepStrictEqual(woundedErrors, []);
     assert.deepStrictEqual(mobileErrors, []);
-    console.log('Battle aftermath→Travel, compact desktop prep, canonical combat summary, human color sets, enemy race art, Black-side, wounded King and mobile acceptance: PASS');
+    console.log('Battle aftermath→Travel, compact desktop prep, canonical combat summary, standalone mobile CTA, human color sets, enemy race art, Black-side and wounded King acceptance: PASS');
   } finally {
     await browser.close();
   }
