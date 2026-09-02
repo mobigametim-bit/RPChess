@@ -18,6 +18,12 @@ const FLAVOR_POOLS = Object.freeze({
 });
 function seededRandom(seed){let state=hashString(seed)||1;return()=>{state+=0x6D2B79F5;let t=state;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};}
 function isTravelChoice(value){return Boolean(value&&typeof value==='object'&&typeof value.id==='string'&&value.id&&TRAVEL_ENCOUNTER_TYPES.includes(value.type)&&Number.isInteger(value.step)&&value.step>=1&&Number.isInteger(value.stars)&&value.stars>=1&&value.stars<=MAX_ENCOUNTER_STARS&&typeof value.seed==='string'&&value.seed&&typeof value.flavor==='string'&&value.flavor&&typeof value.mechanicalHint==='string');}
+function hasHealthySkirmishCompanion(run){return Boolean((run?.roster||[]).some((character)=>!character?.isRunKing&&character?.status==='healthy'));}
+function canSelectTravelChoice(run,choice){
+  if(!isTravelChoice(choice))return Object.freeze({ok:false,reason:'invalid_choice'});
+  if(choice.type==='skirmish'&&!hasHealthySkirmishCompanion(run))return Object.freeze({ok:false,reason:'skirmish_requires_companion'});
+  return Object.freeze({ok:true,reason:null});
+}
 function createTravelChoices({runId,step=1,types=PLAYABLE_TRAVEL_TYPES,playerPower=STARTING_POWER}={}){
   if(!runId)throw new Error('Travel Choice requires runId');if(!Number.isInteger(step)||step<1)throw new Error('Travel Choice step must be a positive integer');
   const allowed=[...new Set((types||[]).filter(type=>TRAVEL_ENCOUNTER_TYPES.includes(type)))];if(!allowed.length)throw new Error('Travel Choice requires at least one encounter type');
@@ -30,4 +36,4 @@ function createTravelChoices({runId,step=1,types=PLAYABLE_TRAVEL_TYPES,playerPow
     return {id:`travel.${step}.${index+1}.${hashString(seed).toString(36)}`,step,type,label:ENCOUNTER_LABELS[type],stars,threatLabel:type==='puzzle'?`СЛОЖНОСТЬ ★${stars}`:THREAT_LABELS[stars],flavor:pool[flavorIndex],mechanicalHint:MECHANICAL_HINTS[type],seed,difficultyModel:'power-v1',...(theme?{playerColor:theme.playerColor,enemyRaceTag:theme.enemyRaceTag,enemyRoleRaces:theme.enemyRoleRaces,sideNarrative:theme.sideNarrative}:{})};
   });
 }
-export {TRAVEL_ENCOUNTER_TYPES,PLAYABLE_TRAVEL_TYPES,TRAVEL_CHOICE_COUNT,ENCOUNTER_LABELS,MECHANICAL_HINTS,THREAT_LABELS,FLAVOR_POOLS,hashString,seededRandom,isTravelChoice,createTravelChoices};
+export {TRAVEL_ENCOUNTER_TYPES,PLAYABLE_TRAVEL_TYPES,TRAVEL_CHOICE_COUNT,ENCOUNTER_LABELS,MECHANICAL_HINTS,THREAT_LABELS,FLAVOR_POOLS,hashString,seededRandom,isTravelChoice,hasHealthySkirmishCompanion,canSelectTravelChoice,createTravelChoices};
