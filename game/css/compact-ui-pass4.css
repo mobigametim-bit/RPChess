@@ -260,3 +260,66 @@ body.events-active [data-events-settings]{
     font-size:8px!important;
   }
 }
+
+/* 2026-09-02 accepted Travel card geometry follow-up.
+   Keep all three desktop cards the same height, use the approved landscape artwork,
+   and center the complete three-card row vertically in the remaining viewport. */
+@media (min-width:901px){
+  html body.travel-choice-active .travel-choice-screen .travel-choice-shell{
+    grid-template-rows:auto minmax(0,1fr)!important;
+    align-content:stretch!important;
+  }
+  html body.travel-choice-active .travel-choice-screen .travel-choice-routes{
+    height:100%!important;
+    min-height:0!important;
+    align-items:center!important;
+  }
+  html body.travel-choice-active .travel-choice-screen .travel-choice-card{
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    align-self:center!important;
+    grid-template-rows:auto 74px!important;
+  }
+  html body.travel-choice-active .travel-choice-screen .travel-choice-card__visual{
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    aspect-ratio:3 / 2!important;
+  }
+  html body.travel-choice-active .travel-choice-screen .travel-choice-card__body{
+    height:74px!important;
+    min-height:74px!important;
+    max-height:74px!important;
+    padding:11px 22px!important;
+    display:flex!important;
+    align-items:flex-start!important;
+    box-sizing:border-box!important;
+  }
+  html body.travel-choice-active .travel-choice-screen .travel-choice-card__flavor{
+    width:100%!important;
+    margin:0!important;
+    -webkit-line-clamp:2!important;
+  }
+
+  /* Puzzle cards used to expose both the source label "ЗАДАЧА" and the redesign
+     pseudo-label "ТРЕНИРОВКА" after the title was moved into the artwork overlay. */
+  html body.travel-choice-active .travel-choice-card--puzzle .travel-choice-card__overlay .travel-choice-card__type{
+    font-size:0!important;
+  }
+  html body.travel-choice-active .travel-choice-card--puzzle .travel-choice-card__overlay .travel-choice-card__type::after{
+    content:'Тренировка'!important;
+    font:400 clamp(28px,2vw,35px)/1 'BrahmsGotischCyr',Georgia,serif!important;
+    letter-spacing:.025em!important;
+  }
+
+  /* Missing/dead/wounded required heroes already have one explicit disabled reason
+     at the bottom of the card. Keep only the lock marker in the upper hero strip. */
+  html body.events-active .events-choice--hero-locked .events-choice__hero-name{
+    font-size:0!important;
+  }
+  html body.events-active .events-choice--hero-locked .events-choice__hero-name::before{
+    content:'🔒'!important;
+    font:400 1rem/1 system-ui,sans-serif!important;
+  }
+}
