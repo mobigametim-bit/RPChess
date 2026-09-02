@@ -8,12 +8,13 @@ const DIST=path.join(ROOT,'dist');
 const HOST='127.0.0.1';
 const PORT=Number(process.env.RPCHESS_GATE_PORT||4173);
 const BASE=`http://${HOST}:${PORT}`;
-const TESTS=[
+const DEFAULT_TESTS=[
   'reboot-foundation-browser.cjs',
   'classic-chess-browser.cjs',
   'roster-browser.cjs',
   'skirmish-browser.cjs',
   'battle-browser.cjs',
+  'battle-animation-art-browser.cjs',
   'travel-choice-browser.cjs',
   'resources-browser.cjs',
   'settlement-browser.cjs',
@@ -21,6 +22,9 @@ const TESTS=[
   'events-browser.cjs',
   'puzzles-browser.cjs'
 ];
+const requested=String(process.env.RPCHESS_BROWSER_TEST||'').trim();
+const TESTS=requested?requested.split(',').map(item=>item.trim()).filter(Boolean):DEFAULT_TESTS;
+for(const test of TESTS)if(!DEFAULT_TESTS.includes(test))throw new Error(`Unknown RPChess browser test: ${test}`);
 const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.svg':'image/svg+xml','.mp3':'audio/mpeg','.wasm':'application/wasm','.otf':'font/otf'};
 
 function requirePrerequisites(){
@@ -62,7 +66,7 @@ function run(test){
   console.log(`[browser gate] ${BASE}`);
   try{
     for(const test of TESTS){console.log(`\n[browser gate] ${test}`);await run(test);}
-    console.log('\nRPChess full real-Chromium regression: PASS');
+    console.log(`\nRPChess ${requested?'targeted':'full'} real-Chromium regression: PASS`);
   }finally{
     await new Promise(resolve=>app.close(resolve));
   }
