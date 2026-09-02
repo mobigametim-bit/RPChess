@@ -9,6 +9,7 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   const travelApp=read('game/js/travel-choice-app.mjs');
   const travelCoreSource=read('game/js/travel-choice-core.mjs');
   const ux=read('game/js/ux-consistency.mjs');
+  const crossScene=read('game/js/cross-scene-visuals.mjs');
   const events=read('game/js/events-app.mjs');
   const battleCore=read('game/js/battle-core.mjs');
   const build=read('scripts/build.cjs');
@@ -26,6 +27,8 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   assert(finalUi.includes("import { placeArmy } from './skirmish-core.mjs'")&&finalUi.includes('BLACK_GLYPHS'),'Skirmish preview must use canonical formation data and preserve black-side glyphs without observers');
   assert(finalCss.includes('.travel-choice-topbar--command')&&finalCss.includes('.events-copy-frame')&&finalCss.includes('.events-choice-frame'),'approved Travel and Events structures must live in one final stylesheet');
   assert(!finalCss.includes("content:'Тренировка'")&&!finalCss.includes('font-size:0'),'final stylesheet must not use text-replacement hacks for Training or hidden semantic labels');
+  const battleActionbarStyle=crossScene.match(/\.battle-screen \.battle-actionbar\s*\{([\s\S]*?)\}/)?.[1]||'';
+  assert(battleActionbarStyle.includes('display:none!important')&&!battleActionbarStyle.includes('display:flex!important'),'cross-scene visuals must not revive the legacy Battle actionbar on mobile');
 
   const gateIndex=travelApp.indexOf('if(!canSelectTravelChoice(current,choice).ok)');
   const paymentIndex=travelApp.indexOf('applyTravelSupplyCost(current)');
@@ -58,4 +61,4 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   assert(!pkg.scripts.test.includes('travel-choice-ui.cjs')&&!pkg.scripts.test.includes('compact-ui-pass4.cjs'),'main test command must not require superseded UI tests');
 
   console.log('Consolidated UI redesign contracts, canonical Travel gating and lifecycle presentation: PASS');
-})().catch((error)=>{console.error(error.stack||error);process.exitCode=1;});
+})().catch((error)=>{console.error(error.stack||error);process.exitCode=1});
