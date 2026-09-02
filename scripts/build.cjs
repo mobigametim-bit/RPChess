@@ -1,4 +1,4 @@
-const fs=require('fs'),path=require('path'),verifySource=require('./verify-source.cjs'),{prepareStockfishAssets}=require('./stockfish-assets.cjs');
+const fs=require('fs'),path=require('path'),verifySource=require('./verify-source.cjs'),{prepareStockfishAssets}=require('./stockfish-assets.cjs'),{optimizePieceAssets,assertPieceAssetBudget,formatBytes}=require('./piece-asset-runtime.cjs');
 const root=path.resolve(__dirname,'..'),source=path.join(root,'game'),dist=path.join(root,'dist');
 function copy(relative){const from=path.join(source,relative),to=path.join(dist,relative);if(!fs.existsSync(from))throw new Error(`missing Reboot build input: ${relative}`);fs.mkdirSync(path.dirname(to),{recursive:true});fs.cpSync(from,to,{recursive:true,force:true});}
 async function main(){
@@ -13,6 +13,9 @@ async function main(){
     'js/resources-core.mjs','js/resources-app.mjs','js/settlement-core.mjs','js/settlement-app.mjs','js/starvation-core.mjs','js/starvation-app.mjs','js/events-data.mjs','js/events-core.mjs','js/events-app.mjs','js/events','js/puzzles',
     'assets/kings/oathkeeper','assets/heroes','assets/races','assets/events','fonts','generated_assets','music','SFX'
   ])copy(relative);
+  const pieceReport=optimizePieceAssets(dist);
+  assertPieceAssetBudget(dist);
+  console.log(`Runtime piece assets: ${pieceReport.count}; ${formatBytes(pieceReport.beforeBytes)} -> ${formatBytes(pieceReport.afterBytes)}; saved ${formatBytes(pieceReport.savedBytes)} (${pieceReport.savedPercent.toFixed(1)}%)`);
   const stockfish=await prepareStockfishAssets(dist);
   verifySource(dist);
   const rootHtml=fs.readFileSync(path.join(dist,'index.html'),'utf8');
