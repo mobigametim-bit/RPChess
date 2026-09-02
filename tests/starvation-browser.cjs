@@ -1,5 +1,6 @@
 const assert = require('assert');
 const { chromium } = require('playwright');
+const { startNewRun } = require('./browser-test-helpers.cjs');
 
 const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
 const RUN_KEY = 'rpchess.reboot.v1.run';
@@ -35,8 +36,7 @@ async function startFresh(page) {
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.evaluate((key) => localStorage.removeItem(key), RUN_KEY);
   await page.reload({ waitUntil: 'networkidle' });
-  await page.locator('[data-new-game]').click();
-  await page.locator('[data-roster-screen]:not([hidden])').waitFor();
+  await startNewRun(page);
 }
 
 async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
@@ -74,9 +74,15 @@ async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
     await seedZeroSupplyTravel(page);
     await page.locator('[data-roster-travel]').click();
     await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
-    assert.strictEqual(await page.locator('.travel-choice-card__cost.is-empty').count(), 3, 'all zero-Supply route cards must show the starvation warning');
-    for (const text of await page.locator('.travel-choice-card__cost.is-empty').allInnerTexts()) {
-      assert(text.includes('СЛУЧАЙНЫЙ БОЕЦ ПОГИБНЕТ'), `missing casualty warning: ${text}`);
+    assert.strictEqual(await page.locator('.travel-choice-card__cost.is-empty').count(), 3, 'all zero-Supply route cards must expose the starvation state');
+    for (const warning of await page.locator('.travel-choice-card__cost.is-empty').evaluateAll((nodes) => nodes.map((node) => ({
+      amount: node.querySelector('.travel-choice-card__cost-amount')?.textContent?.trim() || '',
+      aria: node.getAttribute('aria-label') || '',
+      title: node.getAttribute('title') || ''
+    })))) {
+      assert.strictEqual(warning.amount, '-1');
+      assert(warning.aria.includes('Припасов нет — при переходе сработает голод.'), `missing accessible starvation warning: ${warning.aria}`);
+      assert.strictEqual(warning.title, warning.aria, 'compact starvation tooltip and aria warning must stay synchronized');
     }
 
     await page.locator('[data-travel-choice="manual.starvation.skirmish"]').click();
@@ -109,7 +115,8 @@ async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
     assert.strictEqual(acknowledged.activeTravelChoice.starvationAcknowledged, true, 'ordinary casualty must be acknowledged exactly once');
     assert.strictEqual(acknowledged.roster.filter((character) => character.status === 'dead').length, 1);
 
-    await page.locator('[data-skirmish-back]').click();
+    assert.strictEqual(await page.locator('[data-skirmish-back]').isVisible(), false, 'compact Skirmish keeps the legacy back hook hidden');
+    await page.evaluate(() => document.querySelector('[data-skirmish-back]')?.click());
     await page.locator('[data-roster-screen]:not([hidden])').waitFor();
     await page.evaluate((key) => {
       const run = JSON.parse(localStorage.getItem(key));
@@ -147,7 +154,7 @@ async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
 
     assert.deepStrictEqual(errors, [], `desktop Starvation page errors:\n${errors.join('\n')}`);
     assert.deepStrictEqual(mobileErrors, [], `mobile Starvation page errors:\n${mobileErrors.join('\n')}`);
-    console.log('Starvation warning, deterministic casualty, reload idempotency, encounter gate, King run-end and mobile Chromium acceptance: PASS');
+    console.log('Starvation compact warning, deterministic casualty, reload idempotency, encounter gate, King run-end and mobile Chromium acceptance: PASS');
   } finally {
     await browser.close();
   }
