@@ -129,6 +129,10 @@ async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
     assert.strictEqual(kingState.roster.find((character) => character.isRunKing).status, 'dead');
     assert.strictEqual(await page.locator('[data-battle-screen]:not([hidden])').count(), 0, 'King death must prevent the selected Battle from starting');
     await page.locator('[data-starvation-continue]').click();
+    await page.locator('[data-endless-run-screen]:not([hidden])').waitFor();
+    assert((await page.locator('[data-endless-run-reason]').innerText()).toLowerCase().includes('голод'), 'King starvation must route into the canonical run summary');
+    assert.strictEqual(await page.locator('[data-reboot-foundation]:not([hidden])').count(), 0, 'run summary must appear before returning to the main menu');
+    await page.locator('[data-endless-run-menu]').click();
     await page.locator('[data-reboot-foundation]:not([hidden])').waitFor();
 
     const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
@@ -146,7 +150,7 @@ async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
 
     assert.deepStrictEqual(errors, [], `desktop Starvation page errors:\n${errors.join('\n')}`);
     assert.deepStrictEqual(mobileErrors, [], `mobile Starvation page errors:\n${mobileErrors.join('\n')}`);
-    console.log('Starvation compact warning, deterministic casualty, canonical Skirmish gating, reload idempotency, encounter gate, King run-end and mobile Chromium acceptance: PASS');
+    console.log('Starvation compact warning, deterministic casualty, canonical Skirmish gating, reload idempotency, encounter gate, King run summary and mobile Chromium acceptance: PASS');
   } finally {
     await browser.close();
   }
