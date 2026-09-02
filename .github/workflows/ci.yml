@@ -1,7 +1,10 @@
-name: RPChess Reboot CI (manual diagnostic)
+name: RPChess Reboot CI (branch diagnostic)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - ui/travel-choice-commandbar-pass
 
 permissions:
   contents: read
