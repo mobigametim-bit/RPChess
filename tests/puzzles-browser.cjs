@@ -2,6 +2,7 @@ const assert=require('assert'),{chromium}=require('playwright'),{startNewRun}=re
 const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173',RUN_KEY='rpchess.reboot.v1.run';
 const mate1Route={id:'manual.puzzle.mate1',step:1,type:'puzzle',label:'ЗАДАЧА',stars:1,threatLabel:'СЛОЖНОСТЬ ★1',flavor:'На дороге обнаружена позиция, требующая точного решения.',mechanicalHint:'Шахматная задача с конкретной целью.',seed:'manual-puzzle-mate1',supplyCostAtSelection:1,supplyPaid:1};
 const mate2Route={id:'manual.puzzle.resume',step:17,type:'puzzle',label:'ЗАДАЧА',stars:3,threatLabel:'СЛОЖНОСТЬ ★3',flavor:'Древний механизм ждёт точного решения.',mechanicalHint:'Шахматная задача с конкретной целью.',seed:'manual-puzzle-resume',supplyCostAtSelection:1,supplyPaid:1};
+const mate1Fixture={routeId:mate1Route.id,puzzleId:'puzzle.000rZ',stars:1,week:1,currentFen:'2kr1b1r/p1p2pp1/2pqN3/7p/6n1/2NPB3/PPP2PPP/R2Q1RK1 b - - 3 13',solutionIndex:0,errors:0,resolved:false,result:null,goldReward:0,rewardSettled:false};
 
 async function fresh(page,runId){
   await page.goto(url,{waitUntil:'networkidle'});
@@ -12,7 +13,7 @@ async function fresh(page,runId){
 }
 
 async function seedPuzzleRoute(page,route,currentPuzzle=null){
-  await page.evaluate(({k,route,currentPuzzle})=>{const r=JSON.parse(localStorage.getItem(k));r.supplies=9;r.journeyStep=route.step;r.currentTravelChoices=null;r.activeTravelChoice=route;r.currentPuzzle=currentPuzzle;localStorage.setItem(k,JSON.stringify(r));dispatchEvent(new CustomEvent('rpchess:run-updated'));},{k:RUN_KEY,route,currentPuzzle});
+  await page.evaluate(({k,route,currentPuzzle})=>{const r=JSON.parse(localStorage.getItem(k));r.supplies=9;r.journeyStep=route.step;r.currentTravelChoices=null;r.activeTravelChoice=route;r.currentPuzzle=currentPuzzle;if(currentPuzzle?.puzzleId)r.puzzleHistory=[...new Set([...(r.puzzleHistory||[]),currentPuzzle.puzzleId])];localStorage.setItem(k,JSON.stringify(r));dispatchEvent(new CustomEvent('rpchess:run-updated'));},{k:RUN_KEY,route,currentPuzzle});
 }
 
 async function clickMove(page,from,to){
@@ -22,7 +23,7 @@ async function clickMove(page,from,to){
 
 (async()=>{const browser=await chromium.launch({headless:true});try{
   const page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];page.on('pageerror',e=>errors.push(String(e.stack||e)));
-  await fresh(page,'puzzles-browser-mate1');await seedPuzzleRoute(page,mate1Route);await page.locator('[data-roster-travel]').click();
+  await fresh(page,'puzzles-browser-mate1');await seedPuzzleRoute(page,mate1Route,mate1Fixture);await page.locator('[data-roster-travel]').click();
   const screen=page.locator('[data-puzzle-screen]:not([hidden])');await screen.waitFor();
   assert.strictEqual(await page.locator('[data-puzzle-roster]').count(),0,'obsolete Puzzle Roster shortcut must be absent from the runtime DOM');
   assert.strictEqual((await page.locator('[data-puzzle-objective]').innerText()).trim(),'МАТ В 1');
@@ -32,7 +33,7 @@ async function clickMove(page,from,to){
   assert.strictEqual(await page.locator('[data-puzzle-board] [data-square]').count(),64);
   const pieceSources=await page.locator('[data-puzzle-board] img.puzzle-piece').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('src')));assert(pieceSources.length>0);assert(pieceSources.every(src=>src&&src.includes('generated_assets/unit_')),'Puzzle board must use standard generic piece art');assert(pieceSources.every(src=>!src.includes('/assets/races/')),'Puzzle board must not use personalized/race combat art');
   assert.strictEqual(await page.locator('[data-puzzle-board] .puzzle-piece-marker').count(),pieceSources.length,'every occupied Puzzle square must expose a technical chess glyph');assert.strictEqual(await page.locator('[data-puzzle-board] .puzzle-coordinate--file').count(),8,'Puzzle board must show all eight file coordinates');assert.strictEqual(await page.locator('[data-puzzle-board] .puzzle-coordinate--rank').count(),8,'Puzzle board must show all eight rank coordinates');
-  const opened=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),RUN_KEY);assert(Array.isArray(opened.puzzleHistory)&&opened.puzzleHistory.includes(opened.currentPuzzle.puzzleId),'opened Puzzle must be recorded in persistent no-repeat history');
+  const opened=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),RUN_KEY);assert.strictEqual(opened.currentPuzzle.puzzleId,'puzzle.000rZ','move/reward acceptance must use the pinned mate-in-1 fixture');assert(Array.isArray(opened.puzzleHistory)&&opened.puzzleHistory.includes(opened.currentPuzzle.puzzleId),'opened Puzzle must be recorded in persistent no-repeat history');
   const firstPuzzleId=opened.currentPuzzle.puzzleId;
   const beforeWrong=opened.currentPuzzle;await clickMove(page,'d6','e6');await page.waitForFunction(k=>{const run=JSON.parse(localStorage.getItem(k));return run?.currentPuzzle?.errors===1;},RUN_KEY);const afterWrong=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).currentPuzzle,RUN_KEY);assert.strictEqual(afterWrong.errors,1);assert.strictEqual(afterWrong.currentFen,beforeWrong.currentFen,'wrong move must not advance the persisted position');assert.strictEqual(afterWrong.solutionIndex,0);
   await clickMove(page,'d6','h2');await page.locator('[data-puzzle-outcome]:not([hidden])').waitFor();assert.strictEqual((await page.locator('[data-puzzle-outcome-title]').innerText()).trim(),'РЕШЕНО');assert((await page.locator('[data-puzzle-outcome-gold]').innerText()).includes('+8 Gold'),'★1 with one error must pay rounded 70% of 12 Gold');
@@ -45,5 +46,5 @@ async function clickMove(page,from,to){
 
   const mobile=await browser.newPage({viewport:{width:390,height:844}}),mobileErrors=[];mobile.on('pageerror',e=>mobileErrors.push(String(e.stack||e)));await fresh(mobile,'puzzles-browser-mobile');await seedPuzzleRoute(mobile,mate1Route);await mobile.locator('[data-roster-travel]').click();await mobile.locator('[data-puzzle-screen]:not([hidden])').waitFor();assert.strictEqual(await mobile.locator('[data-puzzle-roster]').count(),0,'obsolete Puzzle Roster shortcut must stay absent on mobile');assert.strictEqual(await mobile.locator('[data-puzzle-board] [data-square]').count(),64);assert.strictEqual(await mobile.locator('[data-puzzle-board] .puzzle-coordinate--file').count(),8);assert.strictEqual(await mobile.locator('[data-puzzle-board] .puzzle-coordinate--rank').count(),8);const layout=await mobile.evaluate(()=>{const board=document.querySelector('[data-puzzle-board]').getBoundingClientRect();return{sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,sh:document.documentElement.scrollHeight,ch:document.documentElement.clientHeight,board:{left:board.left,right:board.right,width:board.width}};});assert(layout.sw<=layout.cw+1,`Puzzle mobile must not overflow horizontally: ${layout.sw}/${layout.cw}`);assert(layout.sh>layout.ch,'Puzzle mobile scene should use vertical flow');assert(layout.board.left>=-1&&layout.board.right<=layout.cw+1&&layout.board.width<=layout.cw+1,'Puzzle board must fit 390px viewport');
 
-  assert.deepStrictEqual(errors,[]);assert.deepStrictEqual(resumeErrors,[]);assert.deepStrictEqual(mobileErrors,[]);console.log('Puzzles identity flow, accepted hidden source attribution, canonical wrong-move/resume state, removed obsolete Roster shortcut, compact hidden status, no-repeat history, reward/idempotency, reload resume and mobile acceptance: PASS');
+  assert.deepStrictEqual(errors,[]);assert.deepStrictEqual(resumeErrors,[]);assert.deepStrictEqual(mobileErrors,[]);console.log('Puzzles identity flow, pinned move fixture, accepted hidden source attribution, canonical wrong-move/resume state, removed obsolete Roster shortcut, compact hidden status, no-repeat history, reward/idempotency, reload resume and mobile acceptance: PASS');
 }finally{await browser.close();}})().catch(e=>{console.error(e.stack||e);process.exitCode=1});
