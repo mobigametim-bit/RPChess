@@ -117,13 +117,14 @@ class MemoryStorage {
   const travelSource = fs.readFileSync(path.join(game, 'js/travel-choice-app.mjs'), 'utf8');
   const appSource = fs.readFileSync(path.join(game, 'js/starvation-app.mjs'), 'utf8');
   const css = fs.readFileSync(path.join(game, 'css/starvation.css'), 'utf8');
-  assert(travelSource.includes('СЛУЧАЙНЫЙ БОЕЦ ПОГИБНЕТ'), 'Travel cards must warn about the casualty before commitment');
+  assert(travelSource.includes('Припасов нет — при переходе сработает голод.'), 'Travel cards must warn about Starvation before commitment');
+  assert(travelSource.includes("cost.setAttribute('aria-label',warning)") && travelSource.includes('cost.title=warning'), 'Travel Starvation warning must remain accessible in the compact cost presentation');
   assert(travelSource.includes('resolveStarvation'), 'Travel must resolve Starvation atomically with route commitment');
   assert(appSource.includes('КОРОЛЬ ПОГИБ ОТ ГОЛОДА'), 'King starvation run-end copy missing');
   assert(appSource.includes('dataset.starvationScreen'), 'Starvation consequence screen contract missing');
   assert(!css.includes('ui_panel_frame.png') && !css.includes('ui_panel_wide.png'), 'Starvation UI must remain frameless CSS-only');
 
-  console.log('Starvation deterministic casualty, idempotency, King death, persistence and frameless UX contract: PASS');
+  console.log('Starvation deterministic casualty, idempotency, King death, persistence and compact accessible UX contract: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;

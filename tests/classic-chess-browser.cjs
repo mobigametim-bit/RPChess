@@ -52,7 +52,9 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     assert.strictEqual(await page.locator('[data-chess-board] .classic-piece').count(), 32, 'initial position must render 32 pieces');
     assert.strictEqual(await page.locator('[data-chess-board] [data-piece-marker]').count(), 32, 'every initial fantasy piece must carry a technical chess marker');
     assert.strictEqual(await menu.isHidden(), true, 'menu must leave layout during game');
-    assert((await page.locator('[data-game-mode]').innerText()).includes('Локальная'), 'local mode label must render');
+    const localMode = page.locator('[data-game-mode]');
+    assert.strictEqual(await localMode.isVisible(), true, 'local mode label must remain visible');
+    assert((await localMode.textContent()).includes('Локальная'), 'local mode semantic label must render');
 
     await page.locator('[data-square="e2"]').click();
     assert(await page.locator('[data-square="e3"]').evaluate((node) => node.classList.contains('classic-square--legal')), 'e3 must be highlighted as legal');
@@ -126,7 +128,9 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
 
     await openSetup(page);
     await startFromSetup(page, { mode: 'ai', elo: '800', color: 'w' });
-    assert((await page.locator('[data-game-mode]').innerText()).includes('≈800 Elo'), 'selected AI Elo must be shown');
+    const aiMode = page.locator('[data-game-mode]');
+    assert.strictEqual(await aiMode.isVisible(), true, 'AI mode label must remain visible');
+    assert((await aiMode.textContent()).includes('≈800 Elo'), 'selected AI Elo must be shown semantically');
     await clickMove(page, 'e2', 'e4');
     await page.waitForFunction(() => window.RPChessClassicChess.moveLog.length >= 2 && !window.RPChessChessAI.thinking && !window.RPChessChessAI.snapshot().animating, null, { timeout: 20000 });
     const aiWhite = await page.evaluate(() => ({ turn: window.RPChessClassicChess.snapshot().turn, moves: window.RPChessClassicChess.moveLog.length, ai: window.RPChessChessAI.snapshot() }));

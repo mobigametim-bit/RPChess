@@ -2,10 +2,10 @@ const assert=require('assert'),fs=require('fs'),path=require('path'),{pathToFile
 (async()=>{
   const root=path.resolve(__dirname,'..');
   const skirmishAppSource=fs.readFileSync(path.join(root,'game/js/skirmish-app.mjs'),'utf8');
-  const uxSource=fs.readFileSync(path.join(root,'game/js/ux-consistency.mjs'),'utf8');
+  const finalUiSource=fs.readFileSync(path.join(root,'game/js/ui-redesign-final.mjs'),'utf8');
   assert(skirmishAppSource.includes("aftermathButton.textContent='Продолжить путь'"),'Skirmish aftermath CTA must say Продолжить путь');
   assert(skirmishAppSource.includes("function leaveAftermath(){audio()?.click?.();resetBattleState();globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open'"),'Skirmish aftermath must route directly to Travel Choice');
-  assert(uxSource.includes("placeArmy(members, color, { seed:`${encounter.seed}:player` })"),'Skirmish preview must use the exact player-formation seed used by the real battle plan');
+  assert(finalUiSource.includes("import { placeArmy } from './skirmish-core.mjs'")&&finalUiSource.includes("placeArmy(members,color,{seed:`${encounter.seed}:player`})"),'Skirmish preview must use canonical placeArmy with the exact player-formation seed used by the real battle plan');
   const rosterData=await import(pathToFileURL(path.join(root,'game/js/roster-data.mjs')).href);
   const difficulty=await import(pathToFileURL(path.join(root,'game/js/encounter-difficulty.mjs')).href);
   const skirmish=await import(pathToFileURL(path.join(root,'game/js/skirmish-core.mjs')).href);

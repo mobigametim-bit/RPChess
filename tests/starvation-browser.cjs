@@ -1,5 +1,6 @@
 const assert = require('assert');
 const { chromium } = require('playwright');
+const { startNewRun } = require('./browser-test-helpers.cjs');
 
 const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
 const RUN_KEY = 'rpchess.reboot.v1.run';
@@ -35,8 +36,7 @@ async function startFresh(page) {
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.evaluate((key) => localStorage.removeItem(key), RUN_KEY);
   await page.reload({ waitUntil: 'networkidle' });
-  await page.locator('[data-new-game]').click();
-  await page.locator('[data-roster-screen]:not([hidden])').waitFor();
+  await startNewRun(page);
 }
 
 async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
@@ -74,9 +74,15 @@ async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
     await seedZeroSupplyTravel(page);
     await page.locator('[data-roster-travel]').click();
     await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
-    assert.strictEqual(await page.locator('.travel-choice-card__cost.is-empty').count(), 3, 'all zero-Supply route cards must show the starvation warning');
-    for (const text of await page.locator('.travel-choice-card__cost.is-empty').allInnerTexts()) {
-      assert(text.includes('СЛУЧАЙНЫЙ БОЕЦ ПОГИБНЕТ'), `missing casualty warning: ${text}`);
+    assert.strictEqual(await page.locator('.travel-choice-card__cost.is-empty').count(), 3, 'all zero-Supply route cards must expose the starvation state');
+    for (const warning of await page.locator('.travel-choice-card__cost.is-empty').evaluateAll((nodes) => nodes.map((node) => ({
+      amount: node.querySelector('.travel-choice-card__cost-amount')?.textContent?.trim() || '',
+      aria: node.getAttribute('aria-label') || '',
+      title: node.getAttribute('title') || ''
+    })))) {
+      assert.strictEqual(warning.amount, '-1');
+      assert(warning.aria.includes('Припасов нет — при переходе сработает голод.'), `missing accessible starvation warning: ${warning.aria}`);
+      assert.strictEqual(warning.title, warning.aria, 'compact starvation tooltip and aria warning must stay synchronized');
     }
 
     await page.locator('[data-travel-choice="manual.starvation.skirmish"]').click();
@@ -108,28 +114,25 @@ async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
     const acknowledged = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
     assert.strictEqual(acknowledged.activeTravelChoice.starvationAcknowledged, true, 'ordinary casualty must be acknowledged exactly once');
     assert.strictEqual(acknowledged.roster.filter((character) => character.status === 'dead').length, 1);
-
-    await page.locator('[data-skirmish-back]').click();
-    await page.locator('[data-roster-screen]:not([hidden])').waitFor();
-    await page.evaluate((key) => {
-      const run = JSON.parse(localStorage.getItem(key));
-      run.activeTravelChoice = null;
-      run.currentTravelChoices = null;
-      localStorage.setItem(key, JSON.stringify(run));
-    }, RUN_KEY);
+    assert.strictEqual(await page.locator('[data-skirmish-back]').count(), 0, 'obsolete Skirmish back control must stay absent after Starvation routing');
 
     await startFresh(page);
     await seedZeroSupplyTravel(page, { kingOnly: true });
     await page.locator('[data-roster-travel]').click();
-    await page.locator('[data-travel-choice="manual.starvation.skirmish"]').click();
+    assert.strictEqual(await page.locator('[data-travel-choice="manual.starvation.skirmish"]').isDisabled(), true, 'King-only run must respect canonical Skirmish companion gating');
+    await page.locator('[data-travel-choice="manual.starvation.battle"]').click();
     await page.locator('[data-starvation-screen]:not([hidden])').waitFor();
     assert.strictEqual((await page.locator('[data-starvation-title]').innerText()).trim(), 'КОРОЛЬ ПОГИБ ОТ ГОЛОДА');
     const kingState = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
     assert.strictEqual(kingState.ended, true, 'King starvation casualty must end the run immediately');
     assert.strictEqual(kingState.endReason, 'starvation_king');
     assert.strictEqual(kingState.roster.find((character) => character.isRunKing).status, 'dead');
-    assert.strictEqual(await page.locator('[data-skirmish-screen]:not([hidden])').count(), 0, 'King death must prevent the selected encounter from starting');
+    assert.strictEqual(await page.locator('[data-battle-screen]:not([hidden])').count(), 0, 'King death must prevent the selected Battle from starting');
     await page.locator('[data-starvation-continue]').click();
+    await page.locator('[data-endless-run-screen]:not([hidden])').waitFor();
+    assert((await page.locator('[data-endless-run-reason]').innerText()).includes('без припасов'), 'King starvation summary must expose the canonical no-supplies reason');
+    assert.strictEqual(await page.locator('[data-reboot-foundation]:not([hidden])').count(), 0, 'run summary must appear before returning to the main menu');
+    await page.locator('[data-endless-run-menu]').click();
     await page.locator('[data-reboot-foundation]:not([hidden])').waitFor();
 
     const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
@@ -147,7 +150,7 @@ async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
 
     assert.deepStrictEqual(errors, [], `desktop Starvation page errors:\n${errors.join('\n')}`);
     assert.deepStrictEqual(mobileErrors, [], `mobile Starvation page errors:\n${mobileErrors.join('\n')}`);
-    console.log('Starvation warning, deterministic casualty, reload idempotency, encounter gate, King run-end and mobile Chromium acceptance: PASS');
+    console.log('Starvation compact warning, deterministic casualty, canonical Skirmish gating, reload idempotency, encounter gate, King run summary and mobile Chromium acceptance: PASS');
   } finally {
     await browser.close();
   }

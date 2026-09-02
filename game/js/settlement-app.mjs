@@ -41,10 +41,6 @@ function ensureScreen() {
     <div class="settlement-shell">
       <header class="settlement-topbar">
         <img class="settlement-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
-        <div class="settlement-topbar__actions">
-          <button class="reboot-button reboot-button--primary" type="button" data-settlement-roster>Отряд</button>
-          <button class="reboot-button reboot-button--primary" type="button" data-settlement-settings>Настройки</button>
-        </div>
       </header>
       <header class="settlement-heading">
         <div class="reboot-eyebrow">БЕЗОПАСНАЯ ОСТАНОВКА</div>
@@ -55,21 +51,21 @@ function ensureScreen() {
         <section class="settlement-service ui-panel-safe" aria-labelledby="settlement-healer-title">
           <div class="settlement-service__icon" aria-hidden="true">✚</div>
           <div class="reboot-eyebrow">ЗНАХАРКА</div>
-          <h2 id="settlement-healer-title">Лечение</h2>
+          <h2 id="settlement-healer-title">Знахарка</h2>
           <p class="settlement-service__intro">Тяжело раненые бойцы могут вернуться в строй за золото.</p>
           <div class="settlement-healer-list" data-settlement-healer-list></div>
         </section>
         <section class="settlement-service settlement-service--tavern ui-panel-safe" aria-labelledby="settlement-tavern-title">
           <div class="settlement-service__icon" aria-hidden="true">♙</div>
           <div class="reboot-eyebrow">ТАВЕРНА</div>
-          <h2 id="settlement-tavern-title">Найм</h2>
+          <h2 id="settlement-tavern-title">Таверна</h2>
           <p class="settlement-service__intro">Три путника готовы присоединиться к походу. Предложения этого поселения не меняются.</p>
           <div class="settlement-recruits" data-settlement-recruits></div>
         </section>
         <section class="settlement-service ui-panel-safe" aria-labelledby="settlement-supplies-title">
           <div class="settlement-service__icon" aria-hidden="true">◆</div>
           <div class="reboot-eyebrow">СНАБЖЕНИЕ</div>
-          <h2 id="settlement-supplies-title">Припасы</h2>
+          <h2 id="settlement-supplies-title">Рынок</h2>
           <p class="settlement-service__intro">Запасы ограничены, но каждый купленный припас остаётся с отрядом.</p>
           <div class="settlement-supply-card" data-settlement-supply-card></div>
         </section>
@@ -81,11 +77,6 @@ function ensureScreen() {
     </div>`;
   app.append(screen);
 
-  screen.querySelector('[data-settlement-roster]')?.addEventListener('click', openRoster);
-  screen.querySelector('[data-settlement-settings]')?.addEventListener('click', () => {
-    audio()?.click?.();
-    globalThis.RPChessOpenSettings?.();
-  });
   screen.querySelector('[data-settlement-continue]')?.addEventListener('click', continuePath);
   screen.addEventListener('click', handleServiceAction);
   return screen;
@@ -230,13 +221,6 @@ function openSettlement(event) {
   renderSettlement();
 }
 
-function openRoster() {
-  if (busy) return;
-  audio()?.click?.();
-  hideSettlement();
-  globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue', { detail: { source: 'settlement' } }));
-}
-
 function continuePath() {
   if (busy) return;
   activeRun = readRun();
@@ -268,7 +252,6 @@ addEventListener('rpchess:run-updated', syncRun);
 
 globalThis.RPChessSettlement = Object.freeze({
   open: openSettlement,
-  openRoster,
   continuePath,
   render: renderSettlement,
   get run() { return activeRun; }

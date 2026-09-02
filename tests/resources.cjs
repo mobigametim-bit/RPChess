@@ -88,7 +88,7 @@ class MemoryStorage {
   const playtestCss = fs.readFileSync(path.join(game, 'css/playtest-fixes.css'), 'utf8');
   assert(travelSource.includes('applyTravelSupplyCost'), 'Travel Choice must use the canonical Supply-cost function');
   assert(travelSource.includes('supplyPaid'), 'committed route must persist the exact Supply payment');
-  assert(travelSource.includes('СТОИМОСТЬ ПУТИ'), 'route cards must disclose the travel cost before commitment');
+  assert(travelSource.includes('Стоимость пути'), 'route cards must disclose the travel cost before commitment');
   assert(appSource.includes('resourceRewards'), 'combat rewards must have one-time settlement bookkeeping');
   assert(appSource.includes("run.lastSkirmish?.playerColor || 'w'") && appSource.includes("run.lastBattle?.playerColor || 'w'"), 'reward settlement must use the actual side played in combat');
   assert(appSource.includes('dataset.resourceHud'), 'Resources HUD contract missing');
@@ -100,9 +100,10 @@ class MemoryStorage {
   assert(!uxSource.includes('discloseRandomPuzzleDifficulty') && !uxSource.includes('СЛУЧАЙНАЯ СЛОЖНОСТЬ'), 'Puzzle difficulty must not be overwritten by the obsolete random-range presentation');
   assert(travelCoreSource.includes("type==='puzzle'?`СЛОЖНОСТЬ ★${stars}`"), 'Puzzle route cards must expose the adaptive power-derived star value');
   assert(uxSource.includes('playtest-fixes.css?v=20260831-1'), 'post-playtest visual corrections must be loaded by the shared UX layer');
-  assert(uxSource.includes("import { combatGoldReward } from './resources-core.mjs'") && uxSource.includes("import { puzzleBaseGold } from './puzzles/puzzle-core.mjs'"), 'Travel reward preview must reuse canonical combat and Puzzle reward formulas');
-  assert(uxSource.includes("text = `Неделя ${match[1]}`"), 'Travel heading presentation must be shortened to Неделя N');
-  assert(uxSource.includes("title = activeCombatPresentation === 'battle' ? 'Битва' : 'Стычка'"), 'combat summary heading must present the actual encounter type');
+  assert(travelSource.includes("combatGoldReward } from './resources-core.mjs'") && travelSource.includes("import { puzzleBaseGold } from './puzzles/puzzle-core.mjs'"), 'Travel reward preview must reuse canonical combat and Puzzle reward formulas directly');
+  assert(travelSource.includes('textContent=`Неделя ${week}`'), 'Travel heading must render the approved shortened Неделя N copy directly');
+  assert(uxSource.includes('function activeCombat()') && uxSource.includes("title:'Битва'") && uxSource.includes("title:'Стычка'"), 'combat summary heading must derive the actual encounter type from runtime battlePlan');
+  assert(!uxSource.includes('activeCombatPresentation') && !uxSource.includes('MutationObserver'), 'shared resource/board presentation must not keep click-state or a global subtree observer');
   assert(playtestCss.includes('.puzzle-source{display:none!important}'), 'Puzzle source attribution must be hidden from the gameplay panel');
   assert(playtestCss.includes('.battle-participants{display:none!important}'), 'duplicate named-participant list must be hidden from Battle preparation');
   assert(playtestCss.includes('.roster-card') && playtestCss.includes('min-height:158px!important'), 'desktop Roster cards must use the compact live-playtest size');

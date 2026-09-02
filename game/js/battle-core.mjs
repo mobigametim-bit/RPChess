@@ -22,7 +22,7 @@ function createBattleEncounter({seed='rpchess-battle',stars=2}={}){
   const o=takeTravelEncounterOverride('battle'),resolvedSeed=o?.seed||seed,s=clampStars(o?.stars??stars),tier=BATTLE_TIERS[s];
   const generatedTheme=combatTheme({seed:resolvedSeed,raceTag:o?.enemyRaceTag||null,playerColor:o?.playerColor,mixed:Boolean(o?.mixedArmy)});
   const theme={...generatedTheme,...(o?.enemyRoleRaces?{enemyRoleRaces:o.enemyRoleRaces}:{}),...(o?.enemyRaceTag?{enemyRaceTag:o.enemyRaceTag}:{}),...(o?.sideNarrative?{sideNarrative:o.sideNarrative}:{})};
-  return Object.freeze({id:`battle-${hashSeed(resolvedSeed).toString(36)}-${s}`,seed:String(resolvedSeed),stars:s,label:tier.label,aiElo:tier.elo,tactic:tier.tactic,description:s<=3?'Впереди развёрнута полноценная армия. Победа решится по классическим шахматным правилам.':s<=7?'Опытный противник вывел полный комплект фигур и готов к открытому сражению.':'Перед вами элитная армия. Каждый неточный ход будет наказан.',...theme});
+  return Object.freeze({id:`battle-${hashSeed(resolvedSeed).toString(36)}-${s}`,seed:String(resolvedSeed),stars:s,label:tier.label,aiElo:tier.elo,tactic:tier.tactic,description:s<=3?'Впереди развёрнута полноценная армия.':s<=7?'Опытный противник вывел полный комплект фигур и готов к открытому сражению.':'Перед вами элитная армия. Каждый неточный ход будет наказан.',...theme});
 }
 
 function combatEligible(character){return Boolean(character&&(character.status==='healthy'||(character.isRunKing&&character.status==='wounded')));}

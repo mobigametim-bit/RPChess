@@ -10,13 +10,18 @@ function clampPercent(value, fallback) {
   return Number.isFinite(number) ? Math.max(0, Math.min(100, number)) : fallback;
 }
 
+function randomMusicIndex() {
+  if (MUSIC_TRACKS.length <= 1) return 0;
+  return Math.floor(Math.random() * MUSIC_TRACKS.length);
+}
+
 class RebootAudio {
   constructor(settings = {}) {
     this.settings = {
       music: clampPercent(settings.music, 70),
       sfx: clampPercent(settings.sfx, 80)
     };
-    this.musicIndex = 0;
+    this.musicIndex = randomMusicIndex();
     this.activated = false;
     this.context = null;
     this.music = typeof Audio === 'function' ? new Audio() : null;

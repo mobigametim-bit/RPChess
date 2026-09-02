@@ -46,17 +46,7 @@ function installStyles() {
     }
     .classic-piece-marker,.puzzle-piece-marker{font-size:clamp(19.5px,1.575vw,25.5px)!important;}
     .battle-screen .battle-actionbar{
-      position:static!important;
-      display:flex!important;
-      justify-content:flex-end!important;
-      align-items:center!important;
-      margin-top:12px!important;
-      padding:0!important;
-      border:0!important;
-      border-radius:0!important;
-      background:transparent!important;
-      box-shadow:none!important;
-      backdrop-filter:none!important;
+      display:none!important;
     }
     .battle-screen .battle-actionbar>.battle-counter,
     .battle-screen .battle-actionbar>.battle-action-cost{
@@ -230,8 +220,10 @@ function refresh() {
 
 installStyles();
 queueMicrotask(refresh);
+addEventListener('rpchess:travel-rendered', decorateTravelCards);
 addEventListener('rpchess:travel-open', () => queueMicrotask(decorateTravelCards));
 addEventListener('rpchess:run-updated', () => queueMicrotask(refresh));
+for (const name of ['rpchess:event-open','rpchess:puzzle-open','rpchess:run-continue']) addEventListener(name, () => queueMicrotask(refresh));
 addEventListener('rpchess:skirmish-open', (event) => setCombatBackdrop(event?.detail?.choice));
 addEventListener('rpchess:battle-open', (event) => {
   const choice = event?.detail?.choice || null;
@@ -239,9 +231,6 @@ addEventListener('rpchess:battle-open', (event) => {
   queueMicrotask(() => setBattlePrepBackdrop(choice));
 });
 addEventListener('rpchess:settlement-open', (event) => setSettlementBackdrop(event?.detail?.choice));
-
-const observer = new MutationObserver(() => queueMicrotask(refresh));
-observer.observe(document.documentElement, { subtree:true, childList:true, characterData:true, attributes:true, attributeFilter:['hidden'] });
 
 globalThis.RPChessSceneVisuals = Object.freeze({
   VICTORY_FANFARE,

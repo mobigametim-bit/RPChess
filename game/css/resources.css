@@ -206,18 +206,6 @@ body.travel-choice-active .travel-choice-card--settlement .travel-choice-card__s
   display: none;
 }
 
-/* Keep persisted puzzle choice.label backward-compatible while presenting the approved route name. */
-body.travel-choice-active .travel-choice-card--puzzle .travel-choice-card__type {
-  font-size: 0 !important;
-}
-
-body.travel-choice-active .travel-choice-card--puzzle .travel-choice-card__type::after {
-  content: 'ТРЕНИРОВКА';
-  font: 400 clamp(29px, 2.25vw, 36px)/1 'BrahmsGotischCyr', Georgia, serif;
-  letter-spacing: .025em;
-  color: #f2e0b5;
-}
-
 @media (max-width: 700px) {
   .resource-hud {
     top: max(7px, env(safe-area-inset-top));

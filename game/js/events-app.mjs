@@ -60,12 +60,16 @@ function ensureScreen() {
           <button class="reboot-button reboot-button--primary" type="button" data-events-settings>Настройки</button>
         </div>
       </header>
-      <section class="events-panel ui-panel-safe">
-        <div class="events-kicker"><span>СОБЫТИЕ</span><strong data-events-race></strong></div>
-        <h1 data-events-title></h1>
-        <div class="events-story" data-events-story></div>
-        <div class="events-reaction events-reaction--king" data-events-king-reaction hidden></div>
-        <div class="events-choices" data-events-choices></div>
+      <section class="events-panel">
+        <div class="events-copy-frame ui-panel-safe">
+          <div class="events-kicker"><span>СОБЫТИЕ</span><strong data-events-race></strong></div>
+          <h1 data-events-title></h1>
+          <div class="events-story" data-events-story></div>
+          <div class="events-reaction events-reaction--king" data-events-king-reaction hidden></div>
+        </div>
+        <div class="events-choice-frame ui-panel-safe" data-events-choice-frame>
+          <div class="events-choices" data-events-choices></div>
+        </div>
       </section>
     </div>
     <div class="events-outcome-modal" data-events-outcome hidden>
@@ -122,10 +126,10 @@ function v5HeroState(choice) {
   if (!choice?.requiredHeroId) return null;
   const hero = (activeRun?.roster || []).find((entry) => entry?.id === choice.requiredHeroId) || null;
   const name = choice.requiredHeroName || hero?.name || 'Именной герой';
-  if (!hero) return { hero:null, name, locked:true, label:`🔒 ${name} — НЕТ В ОТРЯДЕ` };
-  if (hero.status === 'dead') return { hero, name, locked:true, label:`🔒 ${name} — ПОГИБ` };
-  if (hero.status !== 'healthy') return { hero, name, locked:true, label:`🔒 ${name} — РАНЕН` };
-  return { hero, name, locked:false, label:name };
+  if (!hero) return { hero:null, name, state:'missing', locked:true, label:'🔒' };
+  if (hero.status === 'dead') return { hero, name, state:'dead', locked:true, label:`🔒 ${name} — ПОГИБ` };
+  if (hero.status !== 'healthy') return { hero, name, state:'wounded', locked:true, label:`🔒 ${name} — РАНЕН` };
+  return { hero, name, state:'healthy', locked:false, label:name };
 }
 function displayedChoiceAction(choice) {
   if (!choice?.sourceChoiceId) return choice?.action || '';
@@ -139,10 +143,11 @@ function choiceButton(eventChoice) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'events-choice';
-  if (heroState) button.classList.add('events-choice--hero');
+  if (heroState) button.classList.add('events-choice--hero', `events-choice--hero-${heroState.state}`);
   if (heroState?.locked) button.classList.add('events-choice--hero-locked');
   button.dataset.eventChoice = choice.id;
   if (choice.requiredHeroId) button.dataset.requiredHeroId = choice.requiredHeroId;
+  if (heroState?.state) button.dataset.heroState = heroState.state;
   button.disabled = !availability.enabled || busy;
   button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
   const role = heroState ? '' : availability.hero ? `${PIECE_GLYPHS[availability.hero.pieceType] || ''} ${availability.hero.name}` : choice.role ? `${PIECE_GLYPHS[choice.role] || ''} ${PIECE_LABELS[choice.role] || choice.role}` : '';
@@ -221,6 +226,10 @@ function renderEvent() {
   renderKingReaction(event);
   const choices = screen.querySelector('[data-events-choices]');
   choices.replaceChildren(...event.choices.map(choiceButton));
+  const choiceFrame=screen.querySelector('[data-events-choice-frame]');
+  if(choiceFrame)choiceFrame.dataset.choiceCount=String(event.choices.length);
+  const copyFrame=screen.querySelector('.events-copy-frame');
+  if(copyFrame)copyFrame.scrollTop=0;
   renderOutcome(event);
 }
 
