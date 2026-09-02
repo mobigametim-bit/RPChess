@@ -1,4 +1,4 @@
-const CSS_HREF = 'css/compact-ui-pass4.css?v=20260902-2';
+const CSS_HREF = 'css/compact-ui-pass4.css?v=20260902-3';
 const LIVE_OVERRIDE_CSS = `
 @media (min-width:901px){
   body.events-active .events-panel{--event-reading-size:clamp(18px,1.22vw,22px)}
@@ -21,8 +21,6 @@ const LIVE_OVERRIDE_CSS = `
     --event-reading-size:clamp(16px,1.05vw,18px);
   }
 
-  /* Travel: preserve the original landscape artwork proportions. The card height
-     follows its content; only title/meta move over the lower edge of the image. */
   body.travel-choice-active .travel-choice-routes{
     height:auto!important;
     min-height:0!important;
@@ -87,13 +85,8 @@ const LIVE_OVERRIDE_CSS = `
 }
 @media (min-width:901px) and (max-height:760px){
   body.events-active .events-panel{--event-reading-size:16px}
-  body.travel-choice-active .travel-choice-card__overlay{
-    padding:58px 18px 11px!important;
-  }
-  body.travel-choice-active .travel-choice-card__body{
-    min-height:0!important;
-    padding:10px 18px 12px!important;
-  }
+  body.travel-choice-active .travel-choice-card__overlay{padding:58px 18px 11px!important;}
+  body.travel-choice-active .travel-choice-card__body{min-height:0!important;padding:10px 18px 12px!important;}
 }
 `;
 let queued = false;
