@@ -1,5 +1,5 @@
-const CSS_HREF = 'css/compact-ui-pass4.css?v=20260902-3';
-const LIVE_OVERRIDE_CSS = `
+const CSS_HREF='css/compact-ui-pass4.css?v=20260902-3';
+const LIVE_OVERRIDE_CSS=`
 @media (min-width:901px){
   body.events-active .events-panel{--event-reading-size:clamp(18px,1.22vw,22px)}
   body.events-active .events-copy-frame,
@@ -30,66 +30,13 @@ const LIVE_OVERRIDE_CSS = `
 `;
 let queued=false;
 let resetEventScroll=false;
-function ensureCss(){
-  if(!document.querySelector('[data-compact-ui-pass4-css]')){const link=document.createElement('link');link.rel='stylesheet';link.href=CSS_HREF;link.dataset.compactUiPass4Css='';document.head.append(link);}
-  if(!document.querySelector('[data-compact-ui-pass4-live-overrides]')){const style=document.createElement('style');style.dataset.compactUiPass4LiveOverrides='';style.textContent=LIVE_OVERRIDE_CSS;document.head.append(style);}
-}
-function ensureEventFrames(){
-  const screen=document.querySelector('[data-events-screen]');
-  const panel=screen?.querySelector('.events-panel');
-  const choices=panel?.querySelector('[data-events-choices]');
-  if(!panel||!choices)return;
-  let copyFrame=panel.querySelector(':scope > .events-copy-frame');
-  let choiceFrame=panel.querySelector(':scope > .events-choice-frame');
-  if(!copyFrame||!choiceFrame){
-    const copyNodes=[...panel.children].filter((node)=>node!==choices&&!node.classList.contains('events-choice-frame'));
-    copyFrame=document.createElement('div');copyFrame.className='events-copy-frame';
-    choiceFrame=document.createElement('div');choiceFrame.className='events-choice-frame';
-    copyFrame.append(...copyNodes);choiceFrame.append(choices);panel.replaceChildren(copyFrame,choiceFrame);panel.dataset.compactEventFrames='true';
-  }
-  const choiceCount=choices.querySelectorAll(':scope > [data-event-choice]').length;
-  choiceFrame.dataset.choiceCount=String(choiceCount);
-  if(resetEventScroll){copyFrame.scrollTop=0;resetEventScroll=false;}
-}
-function restoreTravelCardBody(overlay,type,meta,body){
-  if(!overlay||!body)return;
-  const flavor=body.querySelector('.travel-choice-card__flavor');
-  if(type&&type.parentElement===overlay)body.insertBefore(type,flavor||null);
-  if(meta&&meta.parentElement===overlay)body.insertBefore(meta,flavor||null);
-  overlay.remove();
-}
-function ensureTravelCardOverlays(){
-  const desktop=matchMedia('(min-width: 901px)').matches;
-  for(const card of document.querySelectorAll('[data-travel-choice]')){
-    const visual=card.querySelector('.travel-choice-card__visual');
-    const body=card.querySelector('.travel-choice-card__body');
-    const type=card.querySelector('.travel-choice-card__type');
-    const meta=card.querySelector('.travel-choice-card__threat, .travel-choice-card__safe, .travel-choice-card__meta--cost-only');
-    let overlay=card.querySelector('.travel-choice-card__overlay');
-    if(!desktop){restoreTravelCardBody(overlay,type,meta,body);continue;}
-    if(!visual||!body||!type)continue;
-    if(!overlay){overlay=document.createElement('span');overlay.className='travel-choice-card__overlay';visual.append(overlay);}
-    if(type.parentElement!==overlay)overlay.append(type);
-    if(meta&&meta.parentElement!==overlay)overlay.append(meta);
-  }
-}
+function ensureCss(){if(!document.querySelector('[data-compact-ui-pass4-css]')){const link=document.createElement('link');link.rel='stylesheet';link.href=CSS_HREF;link.dataset.compactUiPass4Css='';document.head.append(link);}if(!document.querySelector('[data-compact-ui-pass4-live-overrides]')){const style=document.createElement('style');style.dataset.compactUiPass4LiveOverrides='';style.textContent=LIVE_OVERRIDE_CSS;document.head.append(style);}}
+function ensureEventFrames(){const screen=document.querySelector('[data-events-screen]');const panel=screen?.querySelector('.events-panel');const choices=panel?.querySelector('[data-events-choices]');if(!panel||!choices)return;let copyFrame=panel.querySelector(':scope > .events-copy-frame');let choiceFrame=panel.querySelector(':scope > .events-choice-frame');if(!copyFrame||!choiceFrame){const copyNodes=[...panel.children].filter((node)=>node!==choices&&!node.classList.contains('events-choice-frame'));copyFrame=document.createElement('div');copyFrame.className='events-copy-frame';choiceFrame=document.createElement('div');choiceFrame.className='events-choice-frame';copyFrame.append(...copyNodes);choiceFrame.append(choices);panel.replaceChildren(copyFrame,choiceFrame);panel.dataset.compactEventFrames='true';}const choiceCount=choices.querySelectorAll(':scope > [data-event-choice]').length;choiceFrame.dataset.choiceCount=String(choiceCount);if(resetEventScroll){copyFrame.scrollTop=0;resetEventScroll=false;}}
+function restoreTravelCardBody(overlay,type,meta,body){if(!overlay||!body)return;const flavor=body.querySelector('.travel-choice-card__flavor');if(type&&type.parentElement===overlay)body.insertBefore(type,flavor||null);if(meta&&meta.parentElement===overlay)body.insertBefore(meta,flavor||null);overlay.remove();}
+function ensureTravelCardOverlays(){const desktop=matchMedia('(min-width: 901px)').matches;for(const card of document.querySelectorAll('[data-travel-choice]')){const visual=card.querySelector('.travel-choice-card__visual');const body=card.querySelector('.travel-choice-card__body');const type=card.querySelector('.travel-choice-card__type');const meta=card.querySelector('.travel-choice-card__threat, .travel-choice-card__safe, .travel-choice-card__meta--cost-only');let overlay=card.querySelector('.travel-choice-card__overlay');if(!desktop){restoreTravelCardBody(overlay,type,meta,body);continue;}if(!visual||!body||!type)continue;if(!overlay){overlay=document.createElement('span');overlay.className='travel-choice-card__overlay';visual.append(overlay);}if(type.parentElement!==overlay)overlay.append(type);if(meta&&meta.parentElement!==overlay)overlay.append(meta);}}
 function refresh(){queued=false;ensureEventFrames();ensureTravelCardOverlays();}
 function schedule(){if(queued)return;queued=true;requestAnimationFrame(refresh);}
-ensureCss();
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
-addEventListener('rpchess:event-open',()=>{resetEventScroll=true;queueMicrotask(schedule);});
-addEventListener('rpchess:travel-open',()=>queueMicrotask(schedule));
-addEventListener('resize',schedule,{passive:true});
-new MutationObserver((mutations)=>{
-  for(const mutation of mutations){
-    if(mutation.type==='attributes'){
-      if(mutation.target instanceof Element&&mutation.target.matches?.('[data-events-screen],[data-travel-choice-screen]'))return schedule();
-      continue;
-    }
-    for(const node of mutation.addedNodes){
-      if(!(node instanceof Element))continue;
-      if(node.matches?.('[data-events-screen],[data-events-choices],[data-event-choice],[data-travel-choice],.travel-choice-card__meta--cost-only')||node.querySelector?.('[data-events-screen],[data-events-choices],[data-event-choice],[data-travel-choice],.travel-choice-card__meta--cost-only'))return schedule();
-    }
-  }
-}).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
+ensureCss();if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
+addEventListener('rpchess:event-open',()=>{resetEventScroll=true;queueMicrotask(schedule);});addEventListener('rpchess:travel-open',()=>queueMicrotask(schedule));addEventListener('resize',schedule,{passive:true});
+new MutationObserver((mutations)=>{for(const mutation of mutations){if(mutation.type==='attributes'){if(mutation.target instanceof Element&&mutation.target.matches?.('[data-events-screen],[data-travel-choice-screen]'))return schedule();continue;}for(const node of mutation.addedNodes){if(!(node instanceof Element))continue;if(node.matches?.('[data-events-screen],[data-events-choices],[data-event-choice],[data-travel-choice],.travel-choice-card__meta--cost-only')||node.querySelector?.('[data-events-screen],[data-events-choices],[data-event-choice],[data-travel-choice],.travel-choice-card__meta--cost-only'))return schedule();}}}).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
 globalThis.RPChessCompactUIPass4=Object.freeze({refresh:schedule});
