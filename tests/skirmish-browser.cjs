@@ -152,10 +152,10 @@ async function assertCompactDesktopStars(page) {
     assert.strictEqual(blackState.mode, 'Расчётливый Воевода', 'shared combat summary must render the canonical difficulty label');
     const blackEnemy = await black.evaluate(() => {
       const plan = globalThis.RPChessSkirmish.battlePlan;
-      const piece = plan.enemyFormation.find((entry) => entry.pieceType === 'queen');
+      const piece = plan.enemyFormation.find((entry) => entry.pieceType === 'king');
       return document.querySelector(`[data-square="${piece.square}"] .classic-piece`)?.getAttribute('src') || '';
     });
-    assert(blackEnemy.includes('assets/races/elves/pieces/queen.png'));
+    assert(blackEnemy.includes('assets/races/elves/pieces/king.png'));
 
     const wounded = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     const woundedErrors = [];
