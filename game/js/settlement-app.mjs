@@ -41,10 +41,6 @@ function ensureScreen() {
     <div class="settlement-shell">
       <header class="settlement-topbar">
         <img class="settlement-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
-        <div class="settlement-topbar__actions">
-          <button class="reboot-button reboot-button--primary" type="button" data-settlement-roster>Отряд</button>
-          <button class="reboot-button reboot-button--primary" type="button" data-settlement-settings>Настройки</button>
-        </div>
       </header>
       <header class="settlement-heading">
         <div class="reboot-eyebrow">БЕЗОПАСНАЯ ОСТАНОВКА</div>
@@ -81,11 +77,6 @@ function ensureScreen() {
     </div>`;
   app.append(screen);
 
-  screen.querySelector('[data-settlement-roster]')?.addEventListener('click', openRoster);
-  screen.querySelector('[data-settlement-settings]')?.addEventListener('click', () => {
-    audio()?.click?.();
-    globalThis.RPChessOpenSettings?.();
-  });
   screen.querySelector('[data-settlement-continue]')?.addEventListener('click', continuePath);
   screen.addEventListener('click', handleServiceAction);
   return screen;
@@ -230,13 +221,6 @@ function openSettlement(event) {
   renderSettlement();
 }
 
-function openRoster() {
-  if (busy) return;
-  audio()?.click?.();
-  hideSettlement();
-  globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue', { detail: { source: 'settlement' } }));
-}
-
 function continuePath() {
   if (busy) return;
   activeRun = readRun();
@@ -268,7 +252,6 @@ addEventListener('rpchess:run-updated', syncRun);
 
 globalThis.RPChessSettlement = Object.freeze({
   open: openSettlement,
-  openRoster,
   continuePath,
   render: renderSettlement,
   get run() { return activeRun; }
