@@ -34,7 +34,7 @@
     "puzzles:validate:full": "npm run puzzles:materialize && node scripts/validate-puzzle-catalog-full.cjs",
     "test:browser": "node scripts/run-browser-tests.cjs",
     "build": "npm run puzzles:materialize && node scripts/build.cjs",
-    "gate:local": "npm run verify && npm run puzzles:materialize && node tests/resources.cjs && node tests/settlement.cjs && node tests/starvation.cjs && node tests/events.cjs && node tests/events-v3.cjs && node tests/events-v5.cjs && node tests/event-combat-race.cjs && node tests/events-visual.cjs && node tests/puzzle-importer.cjs && node tests/puzzles-rules.cjs && node tests/puzzles-catalog.cjs && node tests/puzzles.cjs && npm run build",
+    "gate:local": "npm run verify && npm test && npm run build",
     "gate:full": "npm run gate:local && npm run test:browser",
     "deploy": "wrangler deploy"
   }
