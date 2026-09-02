@@ -5,6 +5,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
 const RUN_KEY='rpchess.reboot.v1.run';
 
 function route(type,id){return{id,step:1,type,label:type==='battle'?'БИТВА':'СТЫЧКА',stars:6,threatLabel:'ОПАСНАЯ',flavor:'Проверка краткой боевой сводки.',mechanicalHint:'',seed:`${id}-seed`,difficultyModel:'power-v1',playerColor:'w',enemyColor:'b',enemyRaceTag:'orcs',enemyRoleRaces:{pawn:'orcs',knight:'orcs',bishop:'orcs',rook:'orcs',queen:'orcs',king:'orcs'},sideNarrative:'Ваш отряд первым выходит на поле.'};}
+function concise(label){return String(label||'').split(' · ')[0].trim();}
 
 async function openCombat(page,type){
   await page.goto(url,{waitUntil:'networkidle'});
@@ -24,20 +25,21 @@ async function openCombat(page,type){
 
 async function assertSummarySurvivesMove(page,type){
   const api=type==='battle'?'RPChessBattle':'RPChessSkirmish';
-  const before=await page.evaluate(api=>{const combat=globalThis[api];return{expected:combat.encounter.label,heading:document.querySelector('.classic-party-panel h2')?.textContent||'',mode:document.querySelector('[data-game-mode]')?.textContent||''};},api);
+  const before=await page.evaluate(api=>{const combat=globalThis[api];return{label:combat.encounter.label,heading:document.querySelector('.classic-party-panel h2')?.textContent||'',mode:document.querySelector('[data-game-mode]')?.textContent||''};},api);
+  const expected=concise(before.label);
   assert.strictEqual(before.heading,type==='battle'?'Битва':'Стычка');
-  assert.strictEqual(before.mode,before.expected);
+  assert.strictEqual(before.mode,expected);
   assert(!before.mode.includes('·'));
   const moved=await page.evaluate(()=>{const engine=globalThis.RPChessClassicChess.engine;const move=engine.legalMoves()[0];if(!move)return false;return globalThis.RPChessClassicChess.move(move.from,move.to,move.promotion||null).ok;});
   assert.strictEqual(moved,true,'fixture must execute a legal first move');
   await page.waitForTimeout(650);
-  const after=await page.evaluate(api=>{globalThis[api].syncBattleFromChess();return{expected:globalThis[api].encounter.label,mode:document.querySelector('[data-game-mode]')?.textContent||''};},api);
-  assert.strictEqual(after.mode,after.expected,`${type} summary must remain the canonical difficulty label after combat refresh`);
+  const after=await page.evaluate(api=>{globalThis[api].syncBattleFromChess();return{label:globalThis[api].encounter.label,mode:document.querySelector('[data-game-mode]')?.textContent||''};},api);
+  assert.strictEqual(after.mode,concise(after.label),`${type} summary must remain only the difficulty-rank segment after combat refresh`);
   assert(!after.mode.includes('·'),`${type} summary must not restore the old technical sentence`);
 }
 
 (async()=>{const browser=await chromium.launch({headless:true});try{
   const skirmish=await browser.newPage({viewport:{width:1440,height:900}}),skirmishErrors=[];skirmish.on('pageerror',e=>skirmishErrors.push(String(e.stack||e)));await openCombat(skirmish,'skirmish');await assertSummarySurvivesMove(skirmish,'skirmish');assert.deepStrictEqual(skirmishErrors,[]);
   const battle=await browser.newPage({viewport:{width:1440,height:900}}),battleErrors=[];battle.on('pageerror',e=>battleErrors.push(String(e.stack||e)));await openCombat(battle,'battle');await assertSummarySurvivesMove(battle,'battle');assert.deepStrictEqual(battleErrors,[]);
-  console.log('Skirmish/Battle canonical difficulty summary survives first move and combat refresh: PASS');
+  console.log('Skirmish/Battle concise difficulty summary survives first move and combat refresh: PASS');
 }finally{await browser.close();}})().catch(e=>{console.error(e.stack||e);process.exitCode=1});
