@@ -29,6 +29,8 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   assert(!finalCss.includes("content:'Тренировка'")&&!finalCss.includes('font-size:0'),'final stylesheet must not use text-replacement hacks for Training or hidden semantic labels');
   const battleActionbarStyle=crossScene.match(/\.battle-screen \.battle-actionbar\s*\{([\s\S]*?)\}/)?.[1]||'';
   assert(battleActionbarStyle.includes('display:none!important')&&!battleActionbarStyle.includes('display:flex!important'),'cross-scene visuals must not revive the legacy Battle actionbar on mobile');
+  assert(!crossScene.includes('MutationObserver'),'cross-scene visual refresh must be lifecycle-driven, not a global subtree observer');
+  assert(crossScene.includes("'rpchess:run-updated'")&&crossScene.includes("'rpchess:event-open'")&&crossScene.includes("'rpchess:run-continue'"),'cross-scene visual refresh must subscribe to canonical lifecycle events');
 
   const gateIndex=travelApp.indexOf('if(!canSelectTravelChoice(current,choice).ok)');
   const paymentIndex=travelApp.indexOf('applyTravelSupplyCost(current)');
