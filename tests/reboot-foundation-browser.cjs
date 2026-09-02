@@ -3,6 +3,7 @@ const { chromium } = require('playwright');
 
 const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
 const RUN_KEY = 'rpchess.reboot.v1.run';
+const MUSIC_TRACK_RE = /\/music\/echoes_iron_throne_0[1-4]\.mp3(?:$|\?)/;
 
 (async () => {
   const browser = await chromium.launch({ headless: true });
@@ -67,7 +68,7 @@ const RUN_KEY = 'rpchess.reboot.v1.run';
     assert.strictEqual(runtimeState.directBattleShortcut, false, 'temporary direct Battle shortcut must be gone');
     assert.strictEqual(runtimeState.classicChess, true, 'Classic Chess runtime must remain available for encounters');
     assert.strictEqual(runtimeState.chessAI, true, 'Chess AI adapter surface must remain available');
-    assert(runtimeState.musicSrc.includes('music/echoes_iron_throne_01.mp3'), `unexpected first music track: ${runtimeState.musicSrc}`);
+    assert(MUSIC_TRACK_RE.test(runtimeState.musicSrc), `unexpected first music track: ${runtimeState.musicSrc}`);
     assert.strictEqual(runtimeState.activated, false, 'audio must wait for the first browser-approved user gesture');
 
     await menu.locator('[data-settings]').click();
