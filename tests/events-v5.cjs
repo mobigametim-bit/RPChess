@@ -101,8 +101,9 @@ const path=require('path'),assert=require('assert'),fs=require('fs'),{pathToFile
   const app=fs.readFileSync(path.join(game,'js/events-app.mjs'),'utf8');
   const css=fs.readFileSync(path.join(game,'css/events-v5.css'),'utf8');
   assert(app.includes('data-required-hero-id')||app.includes('dataset.requiredHeroId'),'Events UI must tag named hero choices');
-  assert(app.includes('НЕТ В ОТРЯДЕ')&&app.includes('choice.heroLine'),'Events UI must show locked hero identity and hero line');
+  assert(app.includes("state:'missing'")&&app.includes("state:'wounded'")&&app.includes("state:'dead'")&&app.includes('dataset.heroState'),'Events UI must expose separate missing/wounded/dead states instead of inferring them from copy');
+  assert(app.includes("state:'missing', locked:true, label:'🔒'")&&app.includes('choice.heroLine'),'missing hero upper strip must stay lock-only while the hero line remains present');
   assert(css.includes('.events-choice--hero-locked:disabled')&&css.includes('opacity:.78'),'locked hero choice must remain readable');
 
-  console.log('Events v5 500/537 named-hero variants, locked visibility, exact hero risk and mechanic reuse: PASS');
+  console.log('Events v5 500/537 named-hero variants, semantic locked visibility, exact hero risk and mechanic reuse: PASS');
 })().catch((error)=>{console.error(error.stack||error);process.exitCode=1;});
