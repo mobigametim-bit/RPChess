@@ -114,16 +114,7 @@ async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
     const acknowledged = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
     assert.strictEqual(acknowledged.activeTravelChoice.starvationAcknowledged, true, 'ordinary casualty must be acknowledged exactly once');
     assert.strictEqual(acknowledged.roster.filter((character) => character.status === 'dead').length, 1);
-
-    assert.strictEqual(await page.locator('[data-skirmish-back]').isVisible(), false, 'compact Skirmish keeps the legacy back hook hidden');
-    await page.evaluate(() => document.querySelector('[data-skirmish-back]')?.click());
-    await page.locator('[data-roster-screen]:not([hidden])').waitFor();
-    await page.evaluate((key) => {
-      const run = JSON.parse(localStorage.getItem(key));
-      run.activeTravelChoice = null;
-      run.currentTravelChoices = null;
-      localStorage.setItem(key, JSON.stringify(run));
-    }, RUN_KEY);
+    assert.strictEqual(await page.locator('[data-skirmish-back]').count(), 0, 'obsolete Skirmish back control must stay absent after Starvation routing');
 
     await startFresh(page);
     await seedZeroSupplyTravel(page, { kingOnly: true });
@@ -154,7 +145,7 @@ async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
 
     assert.deepStrictEqual(errors, [], `desktop Starvation page errors:\n${errors.join('\n')}`);
     assert.deepStrictEqual(mobileErrors, [], `mobile Starvation page errors:\n${mobileErrors.join('\n')}`);
-    console.log('Starvation compact warning, deterministic casualty, reload idempotency, encounter gate, King run-end and mobile Chromium acceptance: PASS');
+    console.log('Starvation compact warning, deterministic casualty, removed legacy back dependency, reload idempotency, encounter gate, King run-end and mobile Chromium acceptance: PASS');
   } finally {
     await browser.close();
   }
