@@ -24,6 +24,7 @@ assert(css.includes('grid-template-rows:auto 74px!important')&&css.includes('hei
 assert(css.includes('grid-template-rows:auto minmax(0,1fr)!important')&&css.includes('align-items:center!important')&&css.includes('align-self:center!important'),'The three-card Travel row must be vertically centered in the remaining viewport');
 assert(css.includes("content:'Тренировка'!important")&&css.includes('.travel-choice-card--puzzle .travel-choice-card__overlay .travel-choice-card__type'),'Puzzle route overlay must show only the approved label Тренировка');
 assert(css.includes('.events-choice--hero-locked .events-choice__hero-name')&&css.includes("content:'🔒'!important"),'Locked Event hero choices must keep only the lock in the upper strip and leave the explicit reason below');
+assert(ui.includes("CSS_HREF = 'css/compact-ui-pass4.css?v=20260902-3'"),'Pass 4 CSS cache key must include the latest accepted Travel/Event follow-up');
 assert(!ui.includes('height:min(660px,calc(100svh - 128px))'),'Travel card must not be forced into the old tall viewport-filling geometry');
 assert(ui.includes("matchMedia('(min-width: 901px)')")&&ui.includes('restoreTravelCardBody'),'Travel overlay must restore the original mobile DOM layout below desktop width');
 assert(ui.includes("copyFrame.className = 'events-copy-frame'")&&ui.includes("choiceFrame.className = 'events-choice-frame'"),'Event presentation module must create separate copy and choice wrappers');
