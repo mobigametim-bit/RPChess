@@ -220,6 +220,7 @@ function refresh() {
 
 installStyles();
 queueMicrotask(refresh);
+addEventListener('rpchess:travel-rendered', decorateTravelCards);
 addEventListener('rpchess:travel-open', () => queueMicrotask(decorateTravelCards));
 addEventListener('rpchess:run-updated', () => queueMicrotask(refresh));
 for (const name of ['rpchess:event-open','rpchess:puzzle-open','rpchess:run-continue']) addEventListener(name, () => queueMicrotask(refresh));
