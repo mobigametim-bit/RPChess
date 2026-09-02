@@ -342,7 +342,9 @@ function captureAnimationGeometry(from, to, moving, capturedPiece) {
     source: sourceImage.getBoundingClientRect(),
     target: board.querySelector(`[data-square="${to}"]`)?.getBoundingClientRect() || null,
     moving: { ...moving },
+    movingSrc: sourceImage.getAttribute('src') || sourceImage.currentSrc || sourceImage.src || pieceAsset(moving),
     capturedPiece: capturedPiece ? { ...capturedPiece } : null,
+    capturedSrc: targetImage?.getAttribute('src') || targetImage?.currentSrc || targetImage?.src || (capturedPiece ? pieceAsset(capturedPiece) : null),
     capturedRect: targetImage?.getBoundingClientRect() || null
   };
 }
@@ -360,7 +362,7 @@ function animateCommittedMove(geometry, to, onDone) {
   destinationImage?.classList.add('classic-piece--arriving');
   const flyer = document.createElement('img');
   flyer.className = 'classic-piece-flyer';
-  flyer.src = pieceAsset(geometry.moving);
+  flyer.src = geometry.movingSrc || pieceAsset(geometry.moving);
   flyer.alt = '';
   flyer.style.left = `${geometry.source.left}px`;
   flyer.style.top = `${geometry.source.top}px`;
@@ -372,7 +374,7 @@ function animateCommittedMove(geometry, to, onDone) {
   if (geometry.capturedPiece && geometry.capturedRect) {
     capturedGhost = document.createElement('img');
     capturedGhost.className = 'classic-captured-ghost';
-    capturedGhost.src = pieceAsset(geometry.capturedPiece);
+    capturedGhost.src = geometry.capturedSrc || pieceAsset(geometry.capturedPiece);
     capturedGhost.alt = '';
     capturedGhost.style.left = `${geometry.capturedRect.left}px`;
     capturedGhost.style.top = `${geometry.capturedRect.top}px`;
