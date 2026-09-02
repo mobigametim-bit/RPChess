@@ -49,7 +49,7 @@ async function clickMove(page,from,to,promotion=null){
 (async()=>{const browser=await chromium.launch({headless:true});try{
   const page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];page.on('pageerror',e=>errors.push(String(e.stack||e)));
   await fresh(page,'puzzles-browser-mate1');await seedPuzzleRoute(page,mate1Route);await page.locator('[data-roster-travel]').click();
-  const screen=page.locator('[data-puzzle-screen]:not([hidden])');await screen.waitFor();
+  const screen=page.locator('[data-puzzle-screen]:not([hidden])');await screen.waitFor();await page.waitForFunction(()=>document.body.classList.contains('compact-puzzle-active'));
   assert.strictEqual(await page.locator('[data-puzzle-roster]').count(),0,'obsolete Puzzle Roster shortcut must be absent from the runtime DOM');
   assert.strictEqual((await page.locator('[data-puzzle-objective]').innerText()).trim(),'МАТ В 1');
   assert.strictEqual((await page.locator('[data-puzzle-stars]').innerText()).replace(/\s/g,''),'★');
