@@ -1,10 +1,7 @@
-name: RPChess Reboot CI (targeted combat summary gate)
+name: RPChess Reboot CI (manual diagnostic)
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - ui/travel-choice-commandbar-pass
 
 permissions:
   contents: read
@@ -27,11 +24,6 @@ jobs:
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
-      - name: Run targeted combat summary real Chromium gate
-        timeout-minutes: 15
-        run: |
-          python3 -m http.server 4173 --directory dist --bind 127.0.0.1 >/tmp/rpchess-http.log 2>&1 &
-          SERVER_PID=$!
-          trap 'kill $SERVER_PID' EXIT
-          sleep 1
-          RPCHESS_ACCEPTANCE_URL=http://127.0.0.1:4173 node tests/combat-summary-refresh-browser.cjs
+      - name: Run full real Chromium regression
+        timeout-minutes: 30
+        run: npm run test:browser
