@@ -1,5 +1,4 @@
-/* 2026-09-02 live-playtest UI pass 4.
-   Presentation-only corrections for Settlement and Events. Runtime hooks stay intact. */
+/* 2026-09-02 live-playtest UI pass 4. Presentation-only corrections. */
 @media (min-width:901px){body.settlement-active .settlement-service__icon{width:101px!important;height:101px!important;top:-36px!important;right:8px!important;z-index:8!important;}}
 body.events-active [data-events-roster],body.events-active [data-events-settings]{display:none!important;}
 @media (min-width:901px){
