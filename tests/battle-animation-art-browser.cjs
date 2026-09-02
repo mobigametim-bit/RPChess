@@ -52,7 +52,7 @@ function route(id) {
     await page.locator('[data-battle-start]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
 
-    await page.evaluate(() => {
+    await page.evaluate((fen) => {
       const plan = globalThis.RPChessBattle.battlePlan;
       plan.encounter.enemyRaceTag = 'animals';
       plan.encounter.enemyRoleRaces = { pawn:'animals', knight:'animals', bishop:'animals', rook:'animals', queen:'animals', king:'animals' };
@@ -62,9 +62,9 @@ function route(id) {
         snapshot() { return { degraded:false }; },
         async chooseMove() { return null; }
       });
-      globalThis.RPChessClassicChess.loadFen(OPEN_ROOK_FEN, { mode:'ai', playerColor:'w', aiElo:800 });
+      globalThis.RPChessClassicChess.loadFen(fen, { mode:'ai', playerColor:'w', aiElo:800 });
       globalThis.RPChessBattle.syncBattleFromChess();
-    });
+    }, OPEN_ROOK_FEN);
 
     await page.waitForFunction(() => {
       const src = document.querySelector('[data-square="a8"] .classic-piece')?.getAttribute('src') || '';
