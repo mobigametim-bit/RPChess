@@ -82,15 +82,21 @@ const MUSIC_TRACK_RE = /\/music\/echoes_iron_throne_0[1-4]\.mp3(?:$|\?)/;
     await page.locator('[data-settings-modal] [data-close-modal]').click();
 
     await menu.locator('[data-new-game]').click();
+    const identityModal = page.locator('[data-player-identity-modal]:not([hidden])');
+    await identityModal.waitFor();
+    await identityModal.locator('[data-player-identity-input]').fill('Browser Tester');
+    assert.strictEqual(await identityModal.locator('[data-player-identity-submit]').isDisabled(), false, 'valid player name must enable New Run confirmation');
+    await identityModal.locator('[data-player-identity-submit]').click();
     const rosterScreen = page.locator('[data-roster-screen]:not([hidden])');
     await rosterScreen.waitFor();
-    assert.strictEqual(await menu.isHidden(), true, 'New Game must replace the main menu with the Roster scene');
+    assert.strictEqual(await menu.isHidden(), true, 'confirmed New Game identity must replace the main menu with the Roster scene');
     assert.strictEqual(await page.locator('[data-travel-choice-screen]').isHidden(), true, 'Travel Choice must wait for Start Journey');
     assert.strictEqual(await page.locator('[data-settlement-screen]').isHidden(), true, 'Settlement must wait for a safe route choice');
     assert.strictEqual(await page.locator('[data-skirmish-screen]').isHidden(), true, 'Skirmish must wait for a route choice');
     assert.strictEqual(await page.locator('[data-classic-screen]').isHidden(), true, 'Classic Chess must not open before an encounter exists');
     assert.strictEqual(await page.locator('[data-game-setup-modal]').isHidden(), true, 'standalone Chess setup must not open from product New Game');
     assert.strictEqual(await page.locator('[data-roster-card]').count(), 6, 'New Game must create the approved starter roster');
+    assert.strictEqual(await page.evaluate((key) => JSON.parse(localStorage.getItem(key))?.playerName, RUN_KEY), 'Browser Tester', 'Player Identity must persist into the new run');
 
     await page.locator('[data-roster-menu]').click();
     await menu.waitFor({ state: 'visible' });
@@ -108,23 +114,31 @@ const MUSIC_TRACK_RE = /\/music\/echoes_iron_throne_0[1-4]\.mp3(?:$|\?)/;
       const cssLink = document.querySelector('link[data-travel-choice-css]');
       const routes = document.querySelector('.travel-choice-routes');
       const card = document.querySelector('[data-travel-choice]');
+      const cardBody = card?.querySelector('.travel-choice-card__body');
       const screen = document.querySelector('[data-travel-choice-screen]');
       const routeStyle = routes ? getComputedStyle(routes) : null;
       const cardStyle = card ? getComputedStyle(card) : null;
+      const bodyStyle = cardBody ? getComputedStyle(cardBody) : null;
       const screenStyle = screen ? getComputedStyle(screen) : null;
       return {
         cssHref: cssLink?.getAttribute('href') || '',
         routesDisplay: routeStyle?.display || '',
         routesColumns: routeStyle?.gridTemplateColumns || '',
+        cardDisplay: cardStyle?.display || '',
         cardMinHeight: Number.parseFloat(cardStyle?.minHeight || '0'),
-        cardBackground: cardStyle?.backgroundColor || '',
+        cardBodyHeight: Number.parseFloat(bodyStyle?.height || '0'),
+        screenHeight: screen?.getBoundingClientRect().height || 0,
+        viewportHeight: window.innerHeight,
         screenBackground: screenStyle?.backgroundImage || ''
       };
     });
     assert(travelStyle.cssHref.includes('css/travel-choice.css'), `Travel stylesheet link missing: ${travelStyle.cssHref}`);
     assert.strictEqual(travelStyle.routesDisplay, 'grid', `Travel routes must render as grid, got ${travelStyle.routesDisplay}`);
     assert(travelStyle.routesColumns.split(' ').length >= 3, `desktop Travel must expose three grid columns, got ${travelStyle.routesColumns}`);
-    assert(travelStyle.cardMinHeight >= 450, `Travel card styling missing; min-height=${travelStyle.cardMinHeight}`);
+    assert.strictEqual(travelStyle.cardDisplay, 'grid', `compact desktop Travel cards must use the final grid contract, got ${travelStyle.cardDisplay}`);
+    assert(travelStyle.cardMinHeight <= 1, `compact Travel cards must not retain the obsolete 500px minimum, got ${travelStyle.cardMinHeight}`);
+    assert(travelStyle.cardBodyHeight >= 70 && travelStyle.cardBodyHeight <= 78, `compact Travel copy row must stay near the approved 74px height, got ${travelStyle.cardBodyHeight}`);
+    assert(travelStyle.screenHeight <= travelStyle.viewportHeight + 1, `desktop Travel must fit the viewport, got ${travelStyle.screenHeight}/${travelStyle.viewportHeight}`);
     assert(travelStyle.screenBackground && travelStyle.screenBackground !== 'none', 'Travel screen fantasy background styling must be applied');
 
     const mobile = await browser.newPage({ viewport: { width: 390, height: 500 } });
@@ -146,7 +160,7 @@ const MUSIC_TRACK_RE = /\/music\/echoes_iron_throne_0[1-4]\.mp3(?:$|\?)/;
 
     assert.deepStrictEqual(errors, [], `desktop browser errors:\n${errors.join('\n')}`);
     assert.deepStrictEqual(mobileErrors, [], `mobile browser errors:\n${mobileErrors.join('\n')}`);
-    console.log('Reboot Foundation New Game -> Roster -> styled Start Journey Travel Choice Chromium acceptance: PASS');
+    console.log('Reboot Foundation identity -> Roster -> compact Start Journey Travel Choice Chromium acceptance: PASS');
   } finally {
     await browser.close();
   }
