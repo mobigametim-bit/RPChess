@@ -46,17 +46,7 @@ function installStyles() {
     }
     .classic-piece-marker,.puzzle-piece-marker{font-size:clamp(19.5px,1.575vw,25.5px)!important;}
     .battle-screen .battle-actionbar{
-      position:static!important;
-      display:flex!important;
-      justify-content:flex-end!important;
-      align-items:center!important;
-      margin-top:12px!important;
-      padding:0!important;
-      border:0!important;
-      border-radius:0!important;
-      background:transparent!important;
-      box-shadow:none!important;
-      backdrop-filter:none!important;
+      display:none!important;
     }
     .battle-screen .battle-actionbar>.battle-counter,
     .battle-screen .battle-actionbar>.battle-action-cost{
