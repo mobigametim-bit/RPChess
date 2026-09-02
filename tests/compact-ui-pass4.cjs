@@ -20,8 +20,10 @@ assert(ui.includes('--event-reading-size:clamp(18px,1.22vw,22px)')&&ui.includes(
 assert(ui.includes("overlay.className = 'travel-choice-card__overlay'")&&ui.includes('visual.append(overlay)'),'Travel title/meta must move into a dedicated overlay on the route artwork');
 assert(ui.includes('overlay.append(type)')&&ui.includes('overlay.append(meta)'),'Travel route type and reward/cost metadata must move over the artwork');
 assert(ui.includes('aspect-ratio:3 / 2!important'),'Travel artwork must remain landscape instead of stretching vertically with the viewport');
-assert(ui.includes('grid-template-rows:auto auto!important')&&ui.includes('height:auto!important')&&ui.includes('min-height:0!important'),'Travel card height must follow landscape artwork plus description content');
-assert(ui.includes('.travel-choice-card__body{')&&ui.includes('padding:13px 24px 15px!important'),'Travel description row must stay compact beneath the artwork');
+assert(css.includes('grid-template-rows:auto 74px!important')&&css.includes('height:74px!important')&&css.includes('min-height:74px!important')&&css.includes('max-height:74px!important'),'All three desktop Travel cards must use the same fixed description-row height');
+assert(css.includes('grid-template-rows:auto minmax(0,1fr)!important')&&css.includes('align-items:center!important')&&css.includes('align-self:center!important'),'The three-card Travel row must be vertically centered in the remaining viewport');
+assert(css.includes("content:'Тренировка'!important")&&css.includes('.travel-choice-card--puzzle .travel-choice-card__overlay .travel-choice-card__type'),'Puzzle route overlay must show only the approved label Тренировка');
+assert(css.includes('.events-choice--hero-locked .events-choice__hero-name')&&css.includes("content:'🔒'!important"),'Locked Event hero choices must keep only the lock in the upper strip and leave the explicit reason below');
 assert(!ui.includes('height:min(660px,calc(100svh - 128px))'),'Travel card must not be forced into the old tall viewport-filling geometry');
 assert(ui.includes("matchMedia('(min-width: 901px)')")&&ui.includes('restoreTravelCardBody'),'Travel overlay must restore the original mobile DOM layout below desktop width');
 assert(ui.includes("copyFrame.className = 'events-copy-frame'")&&ui.includes("choiceFrame.className = 'events-choice-frame'"),'Event presentation module must create separate copy and choice wrappers');
