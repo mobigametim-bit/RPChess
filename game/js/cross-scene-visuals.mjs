@@ -222,6 +222,7 @@ installStyles();
 queueMicrotask(refresh);
 addEventListener('rpchess:travel-open', () => queueMicrotask(decorateTravelCards));
 addEventListener('rpchess:run-updated', () => queueMicrotask(refresh));
+for (const name of ['rpchess:event-open','rpchess:puzzle-open','rpchess:run-continue']) addEventListener(name, () => queueMicrotask(refresh));
 addEventListener('rpchess:skirmish-open', (event) => setCombatBackdrop(event?.detail?.choice));
 addEventListener('rpchess:battle-open', (event) => {
   const choice = event?.detail?.choice || null;
@@ -229,9 +230,6 @@ addEventListener('rpchess:battle-open', (event) => {
   queueMicrotask(() => setBattlePrepBackdrop(choice));
 });
 addEventListener('rpchess:settlement-open', (event) => setSettlementBackdrop(event?.detail?.choice));
-
-const observer = new MutationObserver(() => queueMicrotask(refresh));
-observer.observe(document.documentElement, { subtree:true, childList:true, characterData:true, attributes:true, attributeFilter:['hidden'] });
 
 globalThis.RPChessSceneVisuals = Object.freeze({
   VICTORY_FANFARE,
