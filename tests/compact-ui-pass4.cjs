@@ -29,7 +29,7 @@ assert(!ui.includes('height:min(660px,calc(100svh - 128px))'),'Travel card must 
 assert(ui.includes("matchMedia('(min-width: 901px)')")&&ui.includes('restoreTravelCardBody'),'Travel overlay must restore the original mobile DOM layout below desktop width');
 assert(ui.includes("copyFrame.className='events-copy-frame'")&&ui.includes("choiceFrame.className='events-choice-frame'"),'Event presentation module must create separate copy and choice wrappers');
 assert(ui.includes('choiceFrame.append(choices)'),'Existing runtime choice container must be reparented rather than replaced');
-assert(ui.includes('choiceFrame.dataset.choiceCount=String(choiceCount)'),'Event presentation must expose option count for adaptive dense layouts');
+assert(ui.includes('choiceFrame.dataset.choiceCount=String(choices.querySelectorAll'),'Event presentation must expose option count for adaptive dense layouts');
 assert(!ui.includes('writeRun')&&!ui.includes('resolveEventChoice')&&!ui.includes('applyTravelSupplyCost'),'Event/Travel presentation pass must not change resolution, economy or persistence');
 assert(loader.indexOf('ensureCss();') < loader.indexOf("import('./compact-ui-pass4.mjs')"),'Pass 4 must load after the late playtest stylesheet so its corrections win the cascade');
 assert(build.includes("'css/compact-ui-pass4.css'")&&build.includes("'js/compact-ui-pass4.mjs'"),'Production build must package pass 4 CSS and JS');
