@@ -33,7 +33,16 @@ function rewardPreview(choice){const reward=document.createElement('small');rewa
 function choiceMeta(choice,noSupplies){
   const cost=travelCost(noSupplies);
   if(choice.type==='settlement'){const meta=document.createElement('span');meta.className='travel-choice-card__safe';const services=document.createElement('small');services.textContent='ЛЕЧЕНИЕ · НАЙМ · СНАБЖЕНИЕ';meta.append(services,cost);return meta;}
-  if(choice.type==='skirmish'||choice.type==='battle'||choice.type==='puzzle'){const meta=document.createElement('span');meta.className='travel-choice-card__threat';const stars=document.createElement('strong');stars.textContent=starsText(choice.stars);meta.append(stars,cost,rewardPreview(choice));return meta;}
+  if(choice.type==='skirmish'||choice.type==='battle'||choice.type==='puzzle'){
+    const meta=document.createElement('span');meta.className='travel-choice-card__threat';
+    const stars=document.createElement('strong');stars.textContent=starsText(choice.stars);
+    if(choice.type==='puzzle'){
+      const difficulty=document.createElement('span');difficulty.className='travel-choice-card__difficulty';
+      const label=document.createElement('small');label.textContent='СЛОЖНОСТЬ';
+      difficulty.append(stars,label);meta.append(difficulty,cost,rewardPreview(choice));
+    }else meta.append(stars,cost,rewardPreview(choice));
+    return meta;
+  }
   const meta=document.createElement('span');meta.className='travel-choice-card__meta travel-choice-card__meta--cost-only';meta.append(cost);return meta;
 }
 function applyChoiceAvailability(button,choice,run){const eligibility=canSelectTravelChoice(run,choice),locked=!eligibility.ok;button.disabled=locked;button.setAttribute('aria-disabled',locked?'true':'false');button.classList.toggle('is-skirmish-unavailable',eligibility.reason==='skirmish_requires_companion');if(eligibility.reason==='skirmish_requires_companion')button.title='Недоступно: для стычки нужен хотя бы один здоровый герой кроме короля.';else button.removeAttribute('title');return eligibility;}
