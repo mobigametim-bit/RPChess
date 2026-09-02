@@ -1,4 +1,4 @@
-name: RPChess Reboot CI (branch diagnostic)
+name: RPChess Reboot CI (cleanup canonical diagnostic)
 
 on:
   workflow_dispatch:
