@@ -137,9 +137,7 @@ function paymentToast(charged) {
   document.body.append(root);setTimeout(()=>root.remove(),4200);
 }
 
-function normalizeBattleCopy() {
-  const desc=document.querySelector('[data-battle-description]');
-  if(desc&&desc.textContent.includes('Победа решится по классическим шахматным правилам.'))desc.textContent=desc.textContent.replace(/\s*Победа решится по классическим шахматным правилам\.?/g,'').trim();
+function renderBattleLabels() {
   const armyTitle=document.querySelector('.battle-army .battle-section-head h2');
   const armyNote=document.querySelector('.battle-army .battle-section-head>span');
   if (armyTitle) armyTitle.textContent = 'Боевой строй';
@@ -237,11 +235,11 @@ function settlePendingDebtSoon() {
 }
 
 if (typeof document !== 'undefined') {
-  normalizeBattleCopy();
+  renderBattleLabels();
   renderBattlePrepQuote();
   document.addEventListener('click', handleBattleStartCapture, true);
   document.addEventListener('click', handleBattleSelectionRefresh);
-  globalThis.addEventListener?.('rpchess:battle-open', () => setTimeout(() => { normalizeBattleCopy(); renderBattlePrepQuote(); }, 0));
+  globalThis.addEventListener?.('rpchess:battle-open', () => setTimeout(() => { renderBattleLabels(); renderBattlePrepQuote(); }, 0));
   globalThis.addEventListener?.('rpchess:run-updated', settlePendingDebtSoon);
   setTimeout(settlePendingDebtSoon, 0);
 }
