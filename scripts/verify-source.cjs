@@ -73,12 +73,12 @@ module.exports=function verifySource(root){
 
   const skirmishCore=read(root,'js/skirmish-core.mjs');requireTokens(skirmishCore,['MAX_ENCOUNTER_STARS','placeArmy(army,color,{seed','pawns.forEach','playerColor','enemyRoleRaces','kingDied:false'],'Skirmish 12-level non-lethal checkmate contract');
   if(skirmishCore.includes("kingDied=true;return{...c,status:'dead'}"))fail('Skirmish checkmate must not kill the RPG King');
-  const skirmishApp=read(root,'js/skirmish-app.mjs');requireTokens(skirmishApp,['Сложность ${encounter.stars} из 12','battlePlan.playerColor','pieceArtForTheme','mode.textContent=encounter.label'],'Skirmish black-side/race/concise-summary UI');
+  const skirmishApp=read(root,'js/skirmish-app.mjs');requireTokens(skirmishApp,['Сложность ${encounter.stars} из 12','battlePlan.playerColor','pieceArtForTheme','function combatDifficultyLabel()','split(\' · \')[0].trim()','mode.textContent=combatDifficultyLabel()'],'Skirmish black-side/race/difficulty-rank-only UI');
   if(skirmishApp.includes('mode.textContent=`Стычка ·'))fail('Skirmish combat refresh must not restore the old technical summary sentence');
   const battleCore=read(root,'js/battle-core.mjs');requireTokens(battleCore,['MAX_ENCOUNTER_STARS','playerColor','enemyRaceTag','BATTLE_TIERS','kingDied:false'],'Battle 12-level non-lethal checkmate core');
   if(battleCore.includes("kingDied=true;return{...c,status:'dead'}"))fail('Battle checkmate must not kill the RPG King');
   if(battleCore.includes('Победа решится по классическим шахматным правилам.'))fail('Battle encounter copy must not rely on presentation-time regex cleanup');
-  const battleApp=read(root,'js/battle-app.mjs');requireTokens(battleApp,['Сложность ${encounter.stars} из 12','battlePlan.playerColor','racePiecePath','pieceArtForTheme','mode.textContent=encounter.label'],'Battle black-side/race/concise-summary UI');
+  const battleApp=read(root,'js/battle-app.mjs');requireTokens(battleApp,['Сложность ${encounter.stars} из 12','battlePlan.playerColor','racePiecePath','pieceArtForTheme','function combatDifficultyLabel()','split(\' · \')[0].trim()','mode.textContent=combatDifficultyLabel()'],'Battle black-side/race/difficulty-rank-only UI');
   if(battleApp.includes('mode.textContent=`Битва ·'))fail('Battle combat refresh must not restore the old technical summary sentence');
 
   for(const cssPath of ['css/roster.css','css/skirmish.css','css/battle.css','css/travel-choice.css','css/ui-redesign-final.css','css/player-rating.css','css/resources.css','css/settlement.css','css/starvation.css','css/events.css','css/events-v5.css','css/puzzles.css','css/ux-consistency.css']){
