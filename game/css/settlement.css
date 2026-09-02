@@ -21,11 +21,7 @@
 .settlement-services>.settlement-service:nth-child(1) .settlement-service__icon{background-image:url('../generated_assets/reward_heal.png')}
 .settlement-services>.settlement-service:nth-child(2) .settlement-service__icon{background-image:url('../generated_assets/reward_recruit.png')}
 .settlement-services>.settlement-service:nth-child(3) .settlement-service__icon{background-image:url('../generated_assets/node_shop.png')}
-.settlement-service h2{margin:0 88px .45em 0;min-height:42px;font-family:'BrahmsGotischCyr',Georgia,serif;font-weight:400;font-size:0;line-height:1;color:#f5e4bc;text-shadow:0 3px 12px rgba(0,0,0,.72)}
-.settlement-service h2::after{display:block;font-size:clamp(29px,2.3vw,36px);line-height:1.1}
-.settlement-services>.settlement-service:nth-child(1) h2::after{content:'Знахарка'}
-.settlement-services>.settlement-service:nth-child(2) h2::after{content:'Таверна'}
-.settlement-services>.settlement-service:nth-child(3) h2::after{content:'Рынок'}
+.settlement-service h2{margin:0 88px .45em 0;min-height:42px;font-family:'BrahmsGotischCyr',Georgia,serif;font-weight:400;font-size:clamp(29px,2.3vw,36px);line-height:1.1;color:#f5e4bc;text-shadow:0 3px 12px rgba(0,0,0,.72)}
 .settlement-service__intro{margin:0 0 22px;color:rgba(190,199,208,.82);line-height:1.5}
 .settlement-empty{margin:28px 0 0;padding:18px;border:1px dashed rgba(215,176,88,.22);color:rgba(205,212,219,.72);text-align:center}
 .settlement-healer-list{display:grid;gap:10px}
