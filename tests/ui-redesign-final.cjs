@@ -12,6 +12,7 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   const crossScene=read('game/js/cross-scene-visuals.mjs');
   const events=read('game/js/events-app.mjs');
   const battleCore=read('game/js/battle-core.mjs');
+  const battleMercenaries=read('game/js/battle-mercenaries.mjs');
   const build=read('scripts/build.cjs');
   const pkg=JSON.parse(read('package.json'));
 
@@ -56,6 +57,8 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   assert(events.includes("state:'missing'")&&events.includes("state:'wounded'")&&events.includes("state:'dead'")&&events.includes('button.dataset.heroState = heroState.state'),'Event hero locks must expose distinct semantic states');
   assert(events.includes("if (!hero) return { hero:null, name, state:'missing', locked:true, label:'🔒' }"),'missing Event hero must show only the lock in the upper strip');
   assert(!battleCore.includes('Победа решится по классическим шахматным правилам.'),'Battle copy cleanup must live in encounter data rather than presentation regex replacement');
+  assert(!battleMercenaries.includes('normalizeBattleCopy')&&!battleMercenaries.includes('Победа решится по классическим шахматным правилам.'),'Mercenary presentation must not rewrite canonical Battle description text');
+  assert(battleMercenaries.includes('start?.parentNode === actionbar'),'Mercenary action-cost hook must tolerate the consolidated UI relocating the Battle Start CTA');
 
   for(const obsolete of ['travel-choice-commandbar-pass','compact-run-screens-pass','compact-combat-ui-pass','compact-ui-pass3','compact-ui-pass4']) assert(!build.includes(obsolete),`build must not package obsolete ${obsolete} layers`);
   assert(build.includes("'css/ui-redesign-final.css'")&&build.includes("'js/ui-redesign-final.mjs'"),'production build must package the consolidated redesign');
@@ -63,4 +66,4 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   assert(!pkg.scripts.test.includes('travel-choice-ui.cjs')&&!pkg.scripts.test.includes('compact-ui-pass4.cjs'),'main test command must not require superseded UI tests');
 
   console.log('Consolidated UI redesign contracts, canonical Travel gating and lifecycle presentation: PASS');
-})().catch((error)=>{console.error(error.stack||error);process.exitCode=1});
+})().catch((error)=>{console.error(error.stack||error);process.exitCode=1;});
