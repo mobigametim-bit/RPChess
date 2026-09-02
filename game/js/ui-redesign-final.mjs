@@ -1,7 +1,9 @@
 import { readRun } from './run-persistence.mjs';
 import { PIECE_GLYPHS } from './roster-data.mjs';
+import { placeArmy } from './skirmish-core.mjs';
 
-const CSS_HREF='css/ui-redesign-final.css?v=20260902-cleanup1';
+const CSS_HREF='css/ui-redesign-final.css?v=20260902-cleanup2';
+const BLACK_GLYPHS=Object.freeze({pawn:'♟',knight:'♞',bishop:'♝',rook:'♜',queen:'♛',king:'♚'});
 const classicScreen=document.querySelector('[data-classic-screen]');
 const movePanel=classicScreen?.querySelector('.classic-panel--moves')||null;
 const movePanelHome=movePanel?.parentElement||null;
@@ -21,8 +23,17 @@ function syncCombatBoard(){const kind=activeCombatKind();document.body.classList
 function syncPuzzle(){const puzzle=document.querySelector('[data-puzzle-screen]'),active=visible(puzzle);document.body.classList.toggle('compact-puzzle-active',active);const outcome=puzzle?.querySelector('[data-puzzle-outcome]');document.body.classList.toggle('puzzle-resolved-compact',Boolean(active&&outcome&&!outcome.hidden));}
 function characterGlyph(card,run){const id=card?.dataset.skirmishCharacter||card?.dataset.battleCharacter;const character=run?.roster?.find((entry)=>entry.id===id);return character?PIECE_GLYPHS[character.pieceType]||'':'';}
 function ensureCardGlyphs(selector,className){const run=readRun();for(const card of document.querySelectorAll(selector)){let mark=card.querySelector(`.${className}`);const glyph=characterGlyph(card,run);if(!glyph){mark?.remove();continue;}if(!mark){mark=document.createElement('span');mark.className=className;mark.setAttribute('aria-hidden','true');card.append(mark);}if(mark.textContent!==glyph)mark.textContent=glyph;}}
-function syncSkirmishFormationOrientation(){const root=skirmishScreen?.querySelector('[data-skirmish-formation]'),encounter=globalThis.RPChessSkirmish?.encounter;if(!root||!encounter)return;const color=encounter.playerColor==='b'?'b':'w';root.dataset.playerColor=color;root.dir=color==='b'?'rtl':'ltr';}
-function syncSkirmishPrep(){if(!skirmishScreen)return;const active=visible(skirmishScreen);if(active){ensureCardGlyphs('[data-skirmish-screen] [data-skirmish-character]','skirmish-card__tech-glyph');const title=skirmishScreen.querySelector('[data-skirmish-title]'),stars=skirmishScreen.querySelector('[data-skirmish-stars]');if(title&&stars)title.dataset.compactStars=stars.textContent.trim();syncSkirmishFormationOrientation();}const selection=skirmishScreen.querySelector('.skirmish-selection');if(active&&desktop()&&selection&&skirmishActionbar&&skirmishActionbar.parentElement!==selection)selection.append(skirmishActionbar);else restore(skirmishActionbar,skirmishActionbarHome,skirmishActionbarNext);}
+function syncSkirmishFormation(){
+  const root=skirmishScreen?.querySelector('[data-skirmish-formation]'),api=globalThis.RPChessSkirmish,encounter=api?.encounter,selectedIds=api?.selectedIds,run=readRun();
+  if(!root||!encounter||!run||!Array.isArray(selectedIds))return;
+  const color=encounter.playerColor==='b'?'b':'w',selected=new Set(selectedIds),members=(run.roster||[]).filter((character)=>selected.has(character.id));
+  let placements=[];try{placements=placeArmy(members,color,{seed:`${encounter.seed}:player`});}catch{return;}
+  root.dataset.playerColor=color;root.dir=color==='b'?'rtl':'ltr';
+  const bySquare=new Map(placements.map((piece)=>[piece.square,piece])),ranks=color==='w'?['2','1']:['7','8'],glyphs=color==='b'?BLACK_GLYPHS:PIECE_GLYPHS,cells=[...root.querySelectorAll('.skirmish-formation-cell')];
+  if(cells.length!==16)return;
+  let index=0;for(const rank of ranks)for(const file of 'abcdefgh'){const cell=cells[index++],square=`${file}${rank}`,piece=bySquare.get(square);cell.textContent=piece?(glyphs[piece.pieceType]||''):'·';cell.title=piece?.name||square;if(piece?.pieceType)cell.dataset.previewPiece=piece.pieceType;else delete cell.dataset.previewPiece;}
+}
+function syncSkirmishPrep(){if(!skirmishScreen)return;const active=visible(skirmishScreen);if(active){ensureCardGlyphs('[data-skirmish-screen] [data-skirmish-character]','skirmish-card__tech-glyph');const title=skirmishScreen.querySelector('[data-skirmish-title]'),stars=skirmishScreen.querySelector('[data-skirmish-stars]');if(title&&stars)title.dataset.compactStars=stars.textContent.trim();syncSkirmishFormation();}const selection=skirmishScreen.querySelector('.skirmish-selection');if(active&&desktop()&&selection&&skirmishActionbar&&skirmishActionbar.parentElement!==selection)selection.append(skirmishActionbar);else restore(skirmishActionbar,skirmishActionbarHome,skirmishActionbarNext);}
 function syncBattleStart(screen,active){const start=screen?.querySelector('[data-battle-start]'),actionbar=screen?.querySelector('.battle-actionbar'),army=screen?.querySelector('.battle-army');if(!start||!actionbar)return;if(!battleStartHome){battleStartHome=actionbar;battleStartNext=start.nextSibling;}if(active&&desktop()&&army){const quote=army.querySelector('[data-battle-mercenary-quote]');if(start.parentElement!==army){if(quote)quote.insertAdjacentElement('afterend',start);else army.append(start);}else if(quote&&start.previousElementSibling!==quote)quote.insertAdjacentElement('afterend',start);return;}restore(start,battleStartHome,battleStartNext);}
 function syncBattlePrep(){const screen=document.querySelector('[data-battle-screen]'),active=visible(screen);document.body.classList.toggle('battle-prep-compact-active',active);if(active)ensureCardGlyphs('[data-battle-screen] [data-battle-character]','battle-card__tech-glyph');syncBattleStart(screen,active);}
 function syncAftermath(){const battle=document.querySelector('[data-battle-aftermath]'),skirmish=document.querySelector('[data-skirmish-aftermath]');document.body.classList.toggle('compact-aftermath-active',visible(battle)||visible(skirmish));}
