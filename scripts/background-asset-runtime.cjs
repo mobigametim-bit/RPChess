@@ -3,10 +3,27 @@ const path = require('path');
 const zlib = require('zlib');
 const { decodePng, parsePng, formatBytes } = require('./piece-asset-runtime.cjs');
 
-const BACKGROUND_RUNTIME_EXPECTED_COUNT = 36;
 const BACKGROUND_RUNTIME_WIDTH = 1600;
 const BACKGROUND_RUNTIME_HEIGHT = 900;
-const BACKGROUND_RUNTIME_CHANNEL_BITS = 5;
+const BACKGROUND_RUNTIME_CHANNEL_BITS = 6;
+const CANONICAL_BACKGROUND_FILES = Object.freeze({
+  generic:['forest_crossroad.png','old_kings_road.png','roadside_shrine.png','abandoned_camp.png','ancient_ruins.png','stormy_bridge.png','moonlit_gravefield.png','market_square_twilight.png'],
+  humans:['human_waystation.png','human_chapel_court.png'],
+  elves:['elven_glade.png','elven_waystones.png'],
+  orcs:['orc_war_camp.png','orc_trial_circle.png'],
+  undead:['necropolis_gate.png','bone_court.png'],
+  dark_elves:['obsidian_passage.png','spider_shrine.png'],
+  dwarves:['dwarven_forgehall.png','dwarven_gate_road.png'],
+  demons:['infernal_breach.png','ashen_altar.png'],
+  angels:['sky_sanctuary.png','hall_of_halos.png'],
+  dragonborn:['dragonborn_aerie.png','ember_tribunal.png'],
+  beastfolk:['beastfolk_hunting_camp.png','moon_run_path.png'],
+  constructs:['construct_foundry.png','silent_observatory.png'],
+  animals:['wild_glen.png','riverbank_tracks.png'],
+  fae:['fae_ring_garden.png','whispering_meadow.png'],
+  goblins:['goblin_trade_nook.png','goblin_scrapyard_camp.png']
+});
+const BACKGROUND_RUNTIME_EXPECTED_COUNT = Object.values(CANONICAL_BACKGROUND_FILES).reduce((sum, files) => sum + files.length, 0);
 const PNG_SIGNATURE = Buffer.from([137,80,78,71,13,10,26,10]);
 
 const CRC_TABLE = (() => {
@@ -93,72 +110,93 @@ function quantizeChannel(value, bits) {
 }
 
 function collectBackgroundAssetPaths(root) {
-  const base = path.join(root, 'assets/events/register-04/backgrounds');
-  const output = [];
-  function walk(full, relative) {
-    if (!fs.existsSync(full)) return;
-    for (const entry of fs.readdirSync(full, { withFileTypes: true })) {
-      const child = path.join(full, entry.name);
-      const rel = path.join(relative, entry.name);
-      if (entry.isDirectory()) walk(child, rel);
-      else if (entry.isFile() && entry.name.toLowerCase().endsWith('.png')) output.push(rel.split(path.sep).join('/'));
+  const paths = [];
+  for (const [folder, files] of Object.entries(CANONICAL_BACKGROUND_FILES)) {
+    for (const file of files) paths.push(`assets/events/register-04/backgrounds/${folder}/${file}`);
+  }
+  const missing = paths.filter((relative) => !fs.existsSync(path.join(root, relative)));
+  if (missing.length) throw new Error(`[background asset contract] missing canonical backgrounds:\n${missing.join('\n')}`);
+  return paths.sort();
+}
+
+function validateOpaque(rgba, pixels) {
+  for (let i = 0, offset = 3; i < pixels; i++, offset += 4) {
+    if (rgba[offset] !== 255) throw new Error(`background contains transparency at pixel ${i}`);
+  }
+}
+
+function resizeAndQuantizeRgb(rgba, srcWidth, srcHeight, dstWidth, dstHeight, bits) {
+  const out = Buffer.allocUnsafe(dstWidth * dstHeight * 3);
+  const sxScale = srcWidth / dstWidth;
+  const syScale = srcHeight / dstHeight;
+  const x0 = new Int32Array(dstWidth), x1 = new Int32Array(dstWidth), fx = new Float64Array(dstWidth);
+  for (let x = 0; x < dstWidth; x++) {
+    const sx = Math.max(0, Math.min(srcWidth - 1, (x + 0.5) * sxScale - 0.5));
+    x0[x] = Math.floor(sx);
+    x1[x] = Math.min(srcWidth - 1, x0[x] + 1);
+    fx[x] = sx - x0[x];
+  }
+  let dst = 0;
+  for (let y = 0; y < dstHeight; y++) {
+    const sy = Math.max(0, Math.min(srcHeight - 1, (y + 0.5) * syScale - 0.5));
+    const y0 = Math.floor(sy), y1 = Math.min(srcHeight - 1, y0 + 1), fy = sy - y0;
+    for (let x = 0; x < dstWidth; x++) {
+      const ax = fx[x], bx = 1 - ax, by = 1 - fy;
+      const i00 = (y0 * srcWidth + x0[x]) * 4;
+      const i10 = (y0 * srcWidth + x1[x]) * 4;
+      const i01 = (y1 * srcWidth + x0[x]) * 4;
+      const i11 = (y1 * srcWidth + x1[x]) * 4;
+      for (let c = 0; c < 3; c++) {
+        const top = rgba[i00 + c] * bx + rgba[i10 + c] * ax;
+        const bottom = rgba[i01 + c] * bx + rgba[i11 + c] * ax;
+        out[dst++] = quantizeChannel(Math.round(top * by + bottom * fy), bits);
+      }
     }
   }
-  walk(base, 'assets/events/register-04/backgrounds');
-  return output.sort();
+  return out;
 }
 
 function optimizeBackgroundBuffer(buffer, channelBits = BACKGROUND_RUNTIME_CHANNEL_BITS) {
   if (!Number.isInteger(channelBits) || channelBits < 4 || channelBits > 8) throw new Error(`invalid background channelBits ${channelBits}`);
   const decoded = decodePng(buffer);
-  const rgb = Buffer.allocUnsafe(decoded.width * decoded.height * 3);
-  let src = 0, dst = 0;
-  for (let i = 0; i < decoded.width * decoded.height; i++) {
-    const r = decoded.rgba[src++], g = decoded.rgba[src++], b = decoded.rgba[src++], a = decoded.rgba[src++];
-    if (a !== 255) throw new Error(`background contains transparency at pixel ${i}`);
-    rgb[dst++] = quantizeChannel(r, channelBits);
-    rgb[dst++] = quantizeChannel(g, channelBits);
-    rgb[dst++] = quantizeChannel(b, channelBits);
+  if (decoded.width < BACKGROUND_RUNTIME_WIDTH || decoded.height < BACKGROUND_RUNTIME_HEIGHT) {
+    throw new Error(`background ${decoded.width}x${decoded.height} is smaller than runtime target ${BACKGROUND_RUNTIME_WIDTH}x${BACKGROUND_RUNTIME_HEIGHT}`);
   }
+  validateOpaque(decoded.rgba, decoded.width * decoded.height);
+  const rgb = resizeAndQuantizeRgb(decoded.rgba, decoded.width, decoded.height, BACKGROUND_RUNTIME_WIDTH, BACKGROUND_RUNTIME_HEIGHT, channelBits);
   return {
-    buffer: encodeRgbPng(decoded.width, decoded.height, rgb),
-    width: decoded.width,
-    height: decoded.height,
+    buffer: encodeRgbPng(BACKGROUND_RUNTIME_WIDTH, BACKGROUND_RUNTIME_HEIGHT, rgb),
+    width: BACKGROUND_RUNTIME_WIDTH,
+    height: BACKGROUND_RUNTIME_HEIGHT,
+    sourceWidth: decoded.width,
+    sourceHeight: decoded.height,
     channelBits
   };
 }
 
-function inspectBackgroundAssets(root, { expectedCount = BACKGROUND_RUNTIME_EXPECTED_COUNT } = {}) {
+function inspectBackgroundAssets(root) {
   const paths = collectBackgroundAssetPaths(root);
-  const failures = [];
-  if (paths.length !== expectedCount) failures.push(`expected ${expectedCount} event backgrounds, found ${paths.length}`);
   let totalBytes = 0;
+  const records = [];
   for (const relative of paths) {
     const full = path.join(root, relative);
     const buffer = fs.readFileSync(full);
     const png = parsePng(buffer);
     totalBytes += buffer.length;
-    if (png.width !== BACKGROUND_RUNTIME_WIDTH || png.height !== BACKGROUND_RUNTIME_HEIGHT) failures.push(`${relative}: expected ${BACKGROUND_RUNTIME_WIDTH}x${BACKGROUND_RUNTIME_HEIGHT}, found ${png.width}x${png.height}`);
+    records.push({ path: relative, bytes: buffer.length, width: png.width, height: png.height });
   }
-  if (failures.length) throw new Error(`[background asset contract] ${failures.join('\n')}`);
-  return { count: paths.length, totalBytes, paths };
+  return { count: paths.length, totalBytes, paths, records };
 }
 
-function optimizeBackgroundAssets(root, {
-  write = false,
-  channelBits = BACKGROUND_RUNTIME_CHANNEL_BITS,
-  expectedCount = BACKGROUND_RUNTIME_EXPECTED_COUNT
-} = {}) {
-  const contract = inspectBackgroundAssets(root, { expectedCount });
+function optimizeBackgroundAssets(root, { write = false, channelBits = BACKGROUND_RUNTIME_CHANNEL_BITS } = {}) {
+  const contract = inspectBackgroundAssets(root);
   const records = [];
   for (const relative of contract.paths) {
     const full = path.join(root, relative);
     const source = fs.readFileSync(full);
     const optimized = optimizeBackgroundBuffer(source, channelBits);
-    const keepSource = optimized.buffer.length >= source.length;
-    const output = keepSource ? source : optimized.buffer;
-    if (write && !keepSource) fs.writeFileSync(full, output);
-    records.push({ path: relative, before: source.length, after: output.length, width: optimized.width, height: optimized.height, skipped: keepSource });
+    if (write) fs.writeFileSync(full, optimized.buffer);
+    records.push({ path: relative, before: source.length, after: optimized.buffer.length, width: optimized.width, height: optimized.height, sourceWidth: optimized.sourceWidth, sourceHeight: optimized.sourceHeight, skipped: false });
   }
   const beforeBytes = records.reduce((sum, item) => sum + item.before, 0);
   const afterBytes = records.reduce((sum, item) => sum + item.after, 0);
@@ -174,12 +212,12 @@ function optimizeBackgroundAssets(root, {
 }
 
 function printReport(report) {
-  console.log(`Background assets: ${report.count}; RGB channel bits: ${report.channelBits}`);
+  console.log(`Background assets: ${report.count}; target: ${BACKGROUND_RUNTIME_WIDTH}x${BACKGROUND_RUNTIME_HEIGHT}; RGB channel bits: ${report.channelBits}`);
   console.log(`Before: ${formatBytes(report.beforeBytes)}`);
   console.log(`Projected: ${formatBytes(report.afterBytes)}`);
   console.log(`Saved: ${formatBytes(report.savedBytes)} (${report.savedPercent.toFixed(1)}%)`);
   for (const item of [...report.records].sort((a, b) => (b.before - b.after) - (a.before - a.after)).slice(0, 12)) {
-    console.log(`${item.path}: ${formatBytes(item.before)} -> ${formatBytes(item.after)}${item.skipped ? ' (kept source)' : ''}`);
+    console.log(`${item.path}: ${item.sourceWidth}x${item.sourceHeight} ${formatBytes(item.before)} -> ${item.width}x${item.height} ${formatBytes(item.after)}`);
   }
 }
 
@@ -195,6 +233,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  CANONICAL_BACKGROUND_FILES,
   BACKGROUND_RUNTIME_EXPECTED_COUNT,
   BACKGROUND_RUNTIME_WIDTH,
   BACKGROUND_RUNTIME_HEIGHT,
