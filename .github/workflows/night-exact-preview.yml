@@ -1,0 +1,28 @@
+name: Night exact-head preview
+
+on:
+  push:
+    branches:
+      - night/verification
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: bcfadb2dd18e1ec86d58d36c5ff0c9849bd529ca
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build and deploy exact-head temporary preview
+        run: npx wrangler deploy --temporary
