@@ -2,9 +2,6 @@ name: RPChess Reboot CI (manual diagnostic)
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feature/race-board-themes
 
 permissions:
   contents: read
