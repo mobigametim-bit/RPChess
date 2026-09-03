@@ -106,7 +106,7 @@ function installPinIceStyles(){
   const style=document.createElement('style');style.id=PIN_ICE_STYLE_ID;
   style.textContent=`
 .classic-pin-ice{position:absolute;z-index:3;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;opacity:.5;transform-origin:center;animation:rpchess-pin-ice-in 160ms ease-out both}
-@keyframes rpchess-pin-ice-in{from{opacity:0;transform:scale(.92)}to{opacity:.5;transform:scale(1)}}
+@keyframes rpchess-pin-ice-in{from{transform:scale(.92)}to{transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){.classic-pin-ice{animation:none}}
 `;
   document.head.append(style);return true;
