@@ -4,7 +4,7 @@ const { parsePng, optimizePngBuffer, formatBytes } = require('./piece-asset-runt
 
 const PORTRAIT_RUNTIME_MAX_SIDE = 640;
 const PORTRAIT_RUNTIME_MAX_BYTES = 1536 * 1024;
-const PORTRAIT_RUNTIME_MAX_TOTAL_BYTES = 40 * 1024 * 1024;
+const PORTRAIT_RUNTIME_MAX_TOTAL_BYTES = 30 * 1024 * 1024;
 const PORTRAIT_RUNTIME_EXPECTED_COUNT = 37;
 
 function collectPortraitAssetPaths(root) {
