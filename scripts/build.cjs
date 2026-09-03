@@ -1,4 +1,4 @@
-const fs=require('fs'),path=require('path'),verifySource=require('./verify-source.cjs'),{prepareStockfishAssets}=require('./stockfish-assets.cjs'),{optimizePieceAssets,assertPieceAssetBudget,formatBytes}=require('./piece-asset-runtime.cjs'),{optimizePortraitAssets,assertPortraitAssetBudget}=require('./portrait-asset-runtime.cjs');
+const fs=require('fs'),path=require('path'),verifySource=require('./verify-source.cjs'),{prepareStockfishAssets}=require('./stockfish-assets.cjs'),{optimizePieceAssets,assertPieceAssetBudget,formatBytes}=require('./piece-asset-runtime.cjs'),{optimizePortraitAssets,assertPortraitAssetBudget}=require('./portrait-asset-runtime.cjs'),{optimizeBackgroundAssets,assertBackgroundAssetBudget}=require('./background-asset-runtime.cjs');
 const root=path.resolve(__dirname,'..'),source=path.join(root,'game'),dist=path.join(root,'dist');
 function copy(relative){const from=path.join(source,relative),to=path.join(dist,relative);if(!fs.existsSync(from))throw new Error(`missing Reboot build input: ${relative}`);fs.mkdirSync(path.dirname(to),{recursive:true});fs.cpSync(from,to,{recursive:true,force:true});}
 async function main(){
@@ -19,6 +19,9 @@ async function main(){
   const portraitReport=optimizePortraitAssets(dist);
   assertPortraitAssetBudget(dist);
   console.log(`Runtime portrait assets: ${portraitReport.count}; ${formatBytes(portraitReport.beforeBytes)} -> ${formatBytes(portraitReport.afterBytes)}; saved ${formatBytes(portraitReport.savedBytes)} (${portraitReport.savedPercent.toFixed(1)}%)`);
+  const backgroundReport=optimizeBackgroundAssets(dist,{write:true});
+  assertBackgroundAssetBudget(dist);
+  console.log(`Runtime background assets: ${backgroundReport.count}; ${formatBytes(backgroundReport.beforeBytes)} -> ${formatBytes(backgroundReport.afterBytes)}; saved ${formatBytes(backgroundReport.savedBytes)} (${backgroundReport.savedPercent.toFixed(1)}%)`);
   const stockfish=await prepareStockfishAssets(dist);
   verifySource(dist);
   const rootHtml=fs.readFileSync(path.join(dist,'index.html'),'utf8');
