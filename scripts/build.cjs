@@ -11,7 +11,7 @@ async function main(){
     'js/encounter-difficulty.mjs','js/player-rating.mjs','js/player-rating-runtime.mjs','js/endless-run-core.mjs','js/endless-run-app.mjs','js/race-assets.mjs','js/event-narrative.mjs','js/content',
     'js/skirmish-core.mjs','js/skirmish-app.mjs','js/battle-core.mjs','js/battle-app.mjs','js/battle-mercenaries.mjs','js/battle-route.mjs','js/travel-choice-core.mjs','js/travel-choice-app.mjs','js/ux-consistency.mjs','js/post-redesign-playtest-pass1b.mjs','js/ui-redesign-final.mjs','js/cross-scene-visuals.mjs',
     'js/resources-core.mjs','js/resources-app.mjs','js/settlement-core.mjs','js/settlement-app.mjs','js/starvation-core.mjs','js/starvation-app.mjs','js/events-data.mjs','js/events-core.mjs','js/events-app.mjs','js/events','js/puzzles',
-    'assets/kings/oathkeeper','assets/heroes','assets/races','assets/events','assets/vfx','fonts','generated_assets','music','SFX'
+    'assets/kings/oathkeeper','assets/heroes','assets/races','assets/events','assets/vfx/pin_ice_full.png','assets/vfx/pin_ice_partial.png','fonts','generated_assets','music','SFX'
   ])copy(relative);
   const boardReport=optimizeBoardAssets(dist,{write:true});
   assertBoardAssetBudget(dist);
