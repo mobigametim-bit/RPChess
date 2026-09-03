@@ -6,7 +6,7 @@ const { decodePng, parsePng, formatBytes } = require('./piece-asset-runtime.cjs'
 const BACKGROUND_RUNTIME_WIDTH = 1600;
 const BACKGROUND_RUNTIME_HEIGHT = 900;
 const BACKGROUND_RUNTIME_CHANNEL_BITS = 6;
-const BACKGROUND_RUNTIME_MAX_BYTES = 1792 * 1024;
+const BACKGROUND_RUNTIME_MAX_BYTES = 2048 * 1024;
 const BACKGROUND_RUNTIME_MAX_TOTAL_BYTES = 45 * 1024 * 1024;
 const CANONICAL_BACKGROUND_FILES = Object.freeze({
   generic:['forest_crossroad.png','old_kings_road.png','roadside_shrine.png','abandoned_camp.png','ancient_ruins.png','stormy_bridge.png','moonlit_gravefield.png','market_square_twilight.png'],
