@@ -44,6 +44,20 @@ function raceBoardTiles(raceTag){
   const root=`assets/races/${race}/board`;
   return Object.freeze({ raceTag:race, light:`${root}/${BOARD_TILE_FILES.light}`, dark:`${root}/${BOARD_TILE_FILES.dark}` });
 }
+function applyRaceBoardTheme(board,raceTag){
+  if(!board)return null;
+  const tiles=raceBoardTiles(raceTag);
+  if(!tiles){
+    delete board.dataset.boardRace;
+    board.style.removeProperty('--board-light-tile');
+    board.style.removeProperty('--board-dark-tile');
+    return null;
+  }
+  board.dataset.boardRace=tiles.raceTag;
+  board.style.setProperty('--board-light-tile',`url("${tiles.light}")`);
+  board.style.setProperty('--board-dark-tile',`url("${tiles.dark}")`);
+  return tiles;
+}
 function eventBackgroundPath(event){
   const id=event?.id||event?.eventId||'event',race=normalizeRaceTag(event?.raceTag||event?.race),pool=race==='mixed'?BACKGROUND_POOLS.generic:(BACKGROUND_POOLS[race]||BACKGROUND_POOLS.generic),filename=pool[hashString(`${id}:background`)%pool.length],folder=race==='mixed'?'generic':(BACKGROUND_FOLDER_BY_RACE[race]||race);
   return `assets/events/register-04/backgrounds/${folder}/${filename}`;
@@ -60,4 +74,4 @@ function combatTheme({seed,raceTag=null,playerColor=null,mixed=false}={}){
 }
 function pieceArtForTheme(theme,pieceType,color){const race=theme?.enemyRoleRaces?.[pieceType]||theme?.enemyRaceTag||'humans';return racePiecePath(race,pieceType,color||theme?.enemyColor||'b');}
 
-export {RACE_TAGS,PIECE_TYPES,BOARD_TILE_FILES,RACE_LABELS,RACE_TAG_BY_LABEL,BACKGROUND_POOLS,BACKGROUND_FOLDER_BY_RACE,hashString,normalizeRaceTag,oppositeColor,racePiecePath,raceBoardTiles,eventBackgroundPath,deterministicPlayerColor,deterministicRace,mixedRoleRaces,combatTheme,pieceArtForTheme};
+export {RACE_TAGS,PIECE_TYPES,BOARD_TILE_FILES,RACE_LABELS,RACE_TAG_BY_LABEL,BACKGROUND_POOLS,BACKGROUND_FOLDER_BY_RACE,hashString,normalizeRaceTag,oppositeColor,racePiecePath,raceBoardTiles,applyRaceBoardTheme,eventBackgroundPath,deterministicPlayerColor,deterministicRace,mixedRoleRaces,combatTheme,pieceArtForTheme};
