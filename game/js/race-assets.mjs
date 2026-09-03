@@ -1,6 +1,10 @@
 const RACE_TAGS = Object.freeze(['humans','elves','orcs','undead','dark_elves','dwarves','demons','angels','dragonborn','beastfolk','constructs','animals','fae','goblins']);
 const PIECE_TYPES = Object.freeze(['pawn','knight','bishop','rook','queen','king']);
 const BOARD_TILE_FILES = Object.freeze({ light:'white.png', dark:'black.png' });
+const BOARD_FALLBACKS = Object.freeze({
+  light:'linear-gradient(145deg,#c3b995,#aa9f7c)',
+  dark:'linear-gradient(145deg,#4d585d,#374349)'
+});
 
 const RACE_LABELS = Object.freeze({
   humans:'Люди', elves:'Эльфы', orcs:'Орки', undead:'Нежить', dark_elves:'Тёмные эльфы', dwarves:'Гномы', demons:'Демоны', angels:'Ангелы', dragonborn:'Дракониды', beastfolk:'Зверолюди', constructs:'Конструкты', animals:'Животные', fae:'Феи', goblins:'Гоблины', mixed:'Нейтральные и смешанные'
@@ -44,19 +48,60 @@ function raceBoardTiles(raceTag){
   const root=`assets/races/${race}/board`;
   return Object.freeze({ raceTag:race, light:`${root}/${BOARD_TILE_FILES.light}`, dark:`${root}/${BOARD_TILE_FILES.dark}` });
 }
+function paintRaceBoardTheme(board,tiles){
+  if(!board)return;
+  for(const cell of board.querySelectorAll('.classic-square--light')){
+    cell.style.backgroundImage=tiles?`url("${tiles.light}"),${BOARD_FALLBACKS.light}`:'';
+    cell.style.backgroundSize=tiles?'cover,cover':'';
+    cell.style.backgroundPosition=tiles?'center,center':'';
+    cell.style.backgroundRepeat=tiles?'no-repeat,no-repeat':'';
+  }
+  for(const cell of board.querySelectorAll('.classic-square--dark')){
+    cell.style.backgroundImage=tiles?`url("${tiles.dark}"),${BOARD_FALLBACKS.dark}`:'';
+    cell.style.backgroundSize=tiles?'cover,cover':'';
+    cell.style.backgroundPosition=tiles?'center,center':'';
+    cell.style.backgroundRepeat=tiles?'no-repeat,no-repeat':'';
+  }
+}
+function ensureRaceBoardObserver(board){
+  if(!board||board.__rpchessRaceBoardObserver||typeof MutationObserver==='undefined')return;
+  const observer=new MutationObserver(()=>paintRaceBoardTheme(board,board.__rpchessRaceBoardTiles||null));
+  observer.observe(board,{childList:true});
+  board.__rpchessRaceBoardObserver=observer;
+}
 function applyRaceBoardTheme(board,raceTag){
   if(!board)return null;
   const tiles=raceBoardTiles(raceTag);
-  if(!tiles){
-    delete board.dataset.boardRace;
-    board.style.removeProperty('--board-light-tile');
-    board.style.removeProperty('--board-dark-tile');
-    return null;
-  }
-  board.dataset.boardRace=tiles.raceTag;
-  board.style.setProperty('--board-light-tile',`url("${tiles.light}")`);
-  board.style.setProperty('--board-dark-tile',`url("${tiles.dark}")`);
+  board.__rpchessRaceBoardTiles=tiles;
+  if(tiles)board.dataset.boardRace=tiles.raceTag;else delete board.dataset.boardRace;
+  ensureRaceBoardObserver(board);
+  paintRaceBoardTheme(board,tiles);
   return tiles;
+}
+function currentCombatBoardRace(){
+  const battle=globalThis.RPChessBattle?.battlePlan;
+  if(battle)return battle.encounter?.enemyRaceTag||globalThis.RPChessBattle?.encounter?.enemyRaceTag||null;
+  const skirmish=globalThis.RPChessSkirmish?.battlePlan;
+  if(skirmish)return skirmish.encounter?.enemyRaceTag||globalThis.RPChessSkirmish?.encounter?.enemyRaceTag||null;
+  return null;
+}
+function installRaceBoardRuntime(){
+  if(typeof document==='undefined')return false;
+  const board=document.querySelector('[data-chess-board]');
+  const api=globalThis.RPChessClassicChess;
+  if(!board||!api?.newGame||api.__raceBoardThemeInstalled)return false;
+  const originalNewGame=api.newGame.bind(api);
+  api.newGame=(fen=null,options={})=>{
+    const snapshot=originalNewGame(fen,options);
+    applyRaceBoardTheme(board,currentCombatBoardRace());
+    return snapshot;
+  };
+  Object.defineProperty(api,'__raceBoardThemeInstalled',{value:true,enumerable:false});
+  const clear=()=>applyRaceBoardTheme(board,null);
+  addEventListener('rpchess:new-game',clear);
+  document.querySelector('[data-classic-new]')?.addEventListener('click',clear,{capture:true});
+  document.querySelector('[data-result-rematch]')?.addEventListener('click',clear,{capture:true});
+  return true;
 }
 function eventBackgroundPath(event){
   const id=event?.id||event?.eventId||'event',race=normalizeRaceTag(event?.raceTag||event?.race),pool=race==='mixed'?BACKGROUND_POOLS.generic:(BACKGROUND_POOLS[race]||BACKGROUND_POOLS.generic),filename=pool[hashString(`${id}:background`)%pool.length],folder=race==='mixed'?'generic':(BACKGROUND_FOLDER_BY_RACE[race]||race);
@@ -74,4 +119,6 @@ function combatTheme({seed,raceTag=null,playerColor=null,mixed=false}={}){
 }
 function pieceArtForTheme(theme,pieceType,color){const race=theme?.enemyRoleRaces?.[pieceType]||theme?.enemyRaceTag||'humans';return racePiecePath(race,pieceType,color||theme?.enemyColor||'b');}
 
-export {RACE_TAGS,PIECE_TYPES,BOARD_TILE_FILES,RACE_LABELS,RACE_TAG_BY_LABEL,BACKGROUND_POOLS,BACKGROUND_FOLDER_BY_RACE,hashString,normalizeRaceTag,oppositeColor,racePiecePath,raceBoardTiles,applyRaceBoardTheme,eventBackgroundPath,deterministicPlayerColor,deterministicRace,mixedRoleRaces,combatTheme,pieceArtForTheme};
+installRaceBoardRuntime();
+
+export {RACE_TAGS,PIECE_TYPES,BOARD_TILE_FILES,BOARD_FALLBACKS,RACE_LABELS,RACE_TAG_BY_LABEL,BACKGROUND_POOLS,BACKGROUND_FOLDER_BY_RACE,hashString,normalizeRaceTag,oppositeColor,racePiecePath,raceBoardTiles,paintRaceBoardTheme,applyRaceBoardTheme,currentCombatBoardRace,installRaceBoardRuntime,eventBackgroundPath,deterministicPlayerColor,deterministicRace,mixedRoleRaces,combatTheme,pieceArtForTheme};
