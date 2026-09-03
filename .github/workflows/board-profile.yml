@@ -1,0 +1,19 @@
+name: Race Board Asset Profile
+
+on:
+  push:
+    branches:
+      - feature/race-board-themes
+
+permissions:
+  contents: read
+
+jobs:
+  profile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Profile 256 and 384 runtime tiles
+        run: |
+          node scripts/board-asset-runtime.cjs --root game --max-side 256
+          node scripts/board-asset-runtime.cjs --root game --max-side 384
