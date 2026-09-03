@@ -1,4 +1,4 @@
-const fs=require('fs'),path=require('path'),verifySource=require('./verify-source.cjs'),{prepareStockfishAssets}=require('./stockfish-assets.cjs'),{optimizePieceAssets,assertPieceAssetBudget,formatBytes}=require('./piece-asset-runtime.cjs'),{optimizePortraitAssets,assertPortraitAssetBudget}=require('./portrait-asset-runtime.cjs'),{optimizeBackgroundAssets,assertBackgroundAssetBudget}=require('./background-asset-runtime.cjs'),{optimizeBoardAssets,assertBoardAssetBudget}=require('./board-asset-runtime.cjs'),{optimizePinIceAssets,assertPinIceAssetBudget}=require('./pin-ice-asset-runtime.cjs');
+const fs=require('fs'),path=require('path'),verifySource=require('./verify-source.cjs'),{prepareStockfishAssets}=require('./stockfish-assets.cjs'),{assertPieceAssetBudget,formatBytes}=require('./piece-asset-runtime.cjs'),{assertPortraitAssetBudget}=require('./portrait-asset-runtime.cjs'),{assertBackgroundAssetBudget}=require('./background-asset-runtime.cjs'),{assertBoardAssetBudget}=require('./board-asset-runtime.cjs'),{assertPinIceAssetBudget}=require('./pin-ice-asset-runtime.cjs'),{materializeRuntimeAssets,cacheText}=require('./runtime-assets-build.cjs'),{inspectRuntimeAssetCache}=require('./runtime-asset-cache.cjs');
 const root=path.resolve(__dirname,'..'),source=path.join(root,'game'),dist=path.join(root,'dist');
 function copy(relative){const from=path.join(source,relative),to=path.join(dist,relative);if(!fs.existsSync(from))throw new Error(`missing Reboot build input: ${relative}`);fs.mkdirSync(path.dirname(to),{recursive:true});fs.cpSync(from,to,{recursive:true,force:true});}
 async function main(){
@@ -13,21 +13,19 @@ async function main(){
     'js/resources-core.mjs','js/resources-app.mjs','js/settlement-core.mjs','js/settlement-app.mjs','js/starvation-core.mjs','js/starvation-app.mjs','js/events-data.mjs','js/events-core.mjs','js/events-app.mjs','js/events','js/puzzles',
     'assets/kings/oathkeeper','assets/heroes','assets/races','assets/events','assets/vfx/pin_ice_full.png','assets/vfx/pin_ice_partial.png','fonts','generated_assets','music','SFX'
   ])copy(relative);
-  const boardReport=optimizeBoardAssets(dist,{write:true});
+  const runtime=materializeRuntimeAssets(dist);
   assertBoardAssetBudget(dist);
-  console.log(`Runtime board assets: ${boardReport.count}; ${formatBytes(boardReport.beforeBytes)} -> ${formatBytes(boardReport.afterBytes)}; saved ${formatBytes(boardReport.savedBytes)} (${boardReport.savedPercent.toFixed(1)}%)`);
-  const pinIceReport=optimizePinIceAssets(dist,{write:true});
   assertPinIceAssetBudget(dist);
-  console.log(`Runtime pin ice assets: ${pinIceReport.count}; ${formatBytes(pinIceReport.beforeBytes)} -> ${formatBytes(pinIceReport.afterBytes)}; saved ${formatBytes(pinIceReport.savedBytes)} (${pinIceReport.savedPercent.toFixed(1)}%)`);
-  const pieceReport=optimizePieceAssets(dist);
   assertPieceAssetBudget(dist);
-  console.log(`Runtime piece assets: ${pieceReport.count}; ${formatBytes(pieceReport.beforeBytes)} -> ${formatBytes(pieceReport.afterBytes)}; saved ${formatBytes(pieceReport.savedBytes)} (${pieceReport.savedPercent.toFixed(1)}%)`);
-  const portraitReport=optimizePortraitAssets(dist);
   assertPortraitAssetBudget(dist);
-  console.log(`Runtime portrait assets: ${portraitReport.count}; ${formatBytes(portraitReport.beforeBytes)} -> ${formatBytes(portraitReport.afterBytes)}; saved ${formatBytes(portraitReport.savedBytes)} (${portraitReport.savedPercent.toFixed(1)}%)`);
-  const backgroundReport=optimizeBackgroundAssets(dist,{write:true});
   assertBackgroundAssetBudget(dist);
-  console.log(`Runtime background assets: ${backgroundReport.count}; ${formatBytes(backgroundReport.beforeBytes)} -> ${formatBytes(backgroundReport.afterBytes)}; saved ${formatBytes(backgroundReport.savedBytes)} (${backgroundReport.savedPercent.toFixed(1)}%)`);
+  console.log(`Runtime board assets: ${runtime.boards.count}; ${formatBytes(runtime.boards.beforeBytes)} -> ${formatBytes(runtime.boards.afterBytes)}; saved ${formatBytes(runtime.boards.savedBytes)} (${runtime.boards.savedPercent.toFixed(1)}%); cache ${cacheText(runtime.boards)}`);
+  console.log(`Runtime pin ice assets: ${runtime.pinIce.count}; ${formatBytes(runtime.pinIce.beforeBytes)} -> ${formatBytes(runtime.pinIce.afterBytes)}; saved ${formatBytes(runtime.pinIce.savedBytes)} (${runtime.pinIce.savedPercent.toFixed(1)}%); cache ${cacheText(runtime.pinIce)}`);
+  console.log(`Runtime piece assets: ${runtime.pieces.count}; ${formatBytes(runtime.pieces.beforeBytes)} -> ${formatBytes(runtime.pieces.afterBytes)}; saved ${formatBytes(runtime.pieces.savedBytes)} (${runtime.pieces.savedPercent.toFixed(1)}%); cache ${cacheText(runtime.pieces)}`);
+  console.log(`Runtime portrait assets: ${runtime.portraits.count}; ${formatBytes(runtime.portraits.beforeBytes)} -> ${formatBytes(runtime.portraits.afterBytes)}; saved ${formatBytes(runtime.portraits.savedBytes)} (${runtime.portraits.savedPercent.toFixed(1)}%); cache ${cacheText(runtime.portraits)}`);
+  console.log(`Runtime background assets: ${runtime.backgrounds.count}; ${formatBytes(runtime.backgrounds.beforeBytes)} -> ${formatBytes(runtime.backgrounds.afterBytes)}; saved ${formatBytes(runtime.backgrounds.savedBytes)} (${runtime.backgrounds.savedPercent.toFixed(1)}%); cache ${cacheText(runtime.backgrounds)}`);
+  const cacheInfo=inspectRuntimeAssetCache();
+  console.log(`Runtime asset cache: ${cacheInfo.files} entries, ${formatBytes(cacheInfo.bytes)}, ${cacheInfo.root}`);
   const stockfish=await prepareStockfishAssets(dist);
   verifySource(dist);
   const rootHtml=fs.readFileSync(path.join(dist,'index.html'),'utf8');
