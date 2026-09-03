@@ -16,6 +16,8 @@ const DEFAULT_TESTS=[
   'roster-browser.cjs',
   'skirmish-browser.cjs',
   'battle-browser.cjs',
+  'combat-side-colors-browser.cjs',
+  'combat-aura-move-sync-browser.cjs',
   'battle-animation-art-browser.cjs',
   'travel-choice-browser.cjs',
   'resources-browser.cjs',
