@@ -1,5 +1,8 @@
 const RACE_TAGS = Object.freeze(['humans','elves','orcs','undead','dark_elves','dwarves','demons','angels','dragonborn','beastfolk','constructs','animals','fae','goblins']);
 const PIECE_TYPES = Object.freeze(['pawn','knight','bishop','rook','queen','king']);
+const BOARD_TILE_FILES = Object.freeze({ light:'white.png', dark:'black.png' });
+const BOARD_THEME_STYLE_ID='rpchess-race-board-theme-style';
+let boardRuntimeInstallQueued=false;
 
 const RACE_LABELS = Object.freeze({
   humans:'Люди', elves:'Эльфы', orcs:'Орки', undead:'Нежить', dark_elves:'Тёмные эльфы', dwarves:'Гномы', demons:'Демоны', angels:'Ангелы', dragonborn:'Дракониды', beastfolk:'Зверолюди', constructs:'Конструкты', animals:'Животные', fae:'Феи', goblins:'Гоблины', mixed:'Нейтральные и смешанные'
@@ -37,6 +40,82 @@ function racePiecePath(raceTag,pieceType,color='b'){
   if(race==='humans')return `assets/races/humans/pieces/${color==='w'?'white':'black'}/${type}.png`;
   const resolved=race==='mixed'?'humans':race;return `assets/races/${resolved}/pieces/${type}.png`;
 }
+function raceBoardTiles(raceTag){
+  const race=normalizeRaceTag(raceTag);
+  if(race==='mixed')return null;
+  const root=`assets/races/${race}/board`;
+  return Object.freeze({ raceTag:race, light:`${root}/${BOARD_TILE_FILES.light}`, dark:`${root}/${BOARD_TILE_FILES.dark}` });
+}
+function installRaceBoardStyles(){
+  if(typeof document==='undefined')return false;
+  if(document.getElementById(BOARD_THEME_STYLE_ID))return true;
+  const style=document.createElement('style');
+  style.id=BOARD_THEME_STYLE_ID;
+  style.textContent=`
+.classic-board[data-board-race] .classic-square--light{background-image:var(--board-light-tile),linear-gradient(145deg,#c3b995,#aa9f7c);background-size:cover,cover;background-position:center,center;background-repeat:no-repeat,no-repeat}
+.classic-board[data-board-race] .classic-square--dark{background-image:var(--board-dark-tile),linear-gradient(145deg,#4d585d,#374349);background-size:cover,cover;background-position:center,center;background-repeat:no-repeat,no-repeat}
+`;
+  document.head.append(style);
+  return true;
+}
+function applyRaceBoardTheme(board,raceTag){
+  if(!board)return null;
+  installRaceBoardStyles();
+  const tiles=raceBoardTiles(raceTag);
+  if(!tiles){
+    delete board.dataset.boardRace;
+    board.style.removeProperty('--board-light-tile');
+    board.style.removeProperty('--board-dark-tile');
+    return null;
+  }
+  board.dataset.boardRace=tiles.raceTag;
+  board.style.setProperty('--board-light-tile',`url("${tiles.light}")`);
+  board.style.setProperty('--board-dark-tile',`url("${tiles.dark}")`);
+  return tiles;
+}
+function currentCombatBoardRace(){
+  const battle=globalThis.RPChessBattle?.battlePlan;
+  if(battle)return battle.encounter?.enemyRaceTag||globalThis.RPChessBattle?.encounter?.enemyRaceTag||null;
+  const skirmish=globalThis.RPChessSkirmish?.battlePlan;
+  if(skirmish)return skirmish.encounter?.enemyRaceTag||globalThis.RPChessSkirmish?.encounter?.enemyRaceTag||null;
+  return null;
+}
+function queueRaceBoardRuntimeInstall(){
+  if(typeof document==='undefined'||boardRuntimeInstallQueued)return false;
+  boardRuntimeInstallQueued=true;
+  let installed=false;
+  const retry=()=>{
+    if(installed)return;
+    if(!globalThis.RPChessClassicChess?.newGame)return;
+    installed=true;
+    boardRuntimeInstallQueued=false;
+    installRaceBoardRuntime();
+  };
+  if(document.readyState!=='complete')document.addEventListener('DOMContentLoaded',retry,{once:true});
+  setTimeout(retry,0);
+  return true;
+}
+function installRaceBoardRuntime(){
+  if(typeof document==='undefined')return false;
+  const board=document.querySelector('[data-chess-board]');
+  const api=globalThis.RPChessClassicChess;
+  if(!board)return false;
+  if(!api?.newGame){queueRaceBoardRuntimeInstall();return false;}
+  if(api.__raceBoardThemeInstalled)return true;
+  installRaceBoardStyles();
+  const originalNewGame=api.newGame.bind(api);
+  api.newGame=(fen=null,options={})=>{
+    const snapshot=originalNewGame(fen,options);
+    applyRaceBoardTheme(board,currentCombatBoardRace());
+    return snapshot;
+  };
+  Object.defineProperty(api,'__raceBoardThemeInstalled',{value:true,enumerable:false});
+  const clear=()=>applyRaceBoardTheme(board,null);
+  addEventListener('rpchess:new-game',clear);
+  document.querySelector('[data-classic-new]')?.addEventListener('click',clear,{capture:true});
+  document.querySelector('[data-result-rematch]')?.addEventListener('click',clear,{capture:true});
+  return true;
+}
 function eventBackgroundPath(event){
   const id=event?.id||event?.eventId||'event',race=normalizeRaceTag(event?.raceTag||event?.race),pool=race==='mixed'?BACKGROUND_POOLS.generic:(BACKGROUND_POOLS[race]||BACKGROUND_POOLS.generic),filename=pool[hashString(`${id}:background`)%pool.length],folder=race==='mixed'?'generic':(BACKGROUND_FOLDER_BY_RACE[race]||race);
   return `assets/events/register-04/backgrounds/${folder}/${filename}`;
@@ -53,4 +132,6 @@ function combatTheme({seed,raceTag=null,playerColor=null,mixed=false}={}){
 }
 function pieceArtForTheme(theme,pieceType,color){const race=theme?.enemyRoleRaces?.[pieceType]||theme?.enemyRaceTag||'humans';return racePiecePath(race,pieceType,color||theme?.enemyColor||'b');}
 
-export {RACE_TAGS,PIECE_TYPES,RACE_LABELS,RACE_TAG_BY_LABEL,BACKGROUND_POOLS,BACKGROUND_FOLDER_BY_RACE,hashString,normalizeRaceTag,oppositeColor,racePiecePath,eventBackgroundPath,deterministicPlayerColor,deterministicRace,mixedRoleRaces,combatTheme,pieceArtForTheme};
+installRaceBoardRuntime();
+
+export {RACE_TAGS,PIECE_TYPES,BOARD_TILE_FILES,BOARD_THEME_STYLE_ID,RACE_LABELS,RACE_TAG_BY_LABEL,BACKGROUND_POOLS,BACKGROUND_FOLDER_BY_RACE,hashString,normalizeRaceTag,oppositeColor,racePiecePath,raceBoardTiles,installRaceBoardStyles,applyRaceBoardTheme,currentCombatBoardRace,queueRaceBoardRuntimeInstall,installRaceBoardRuntime,eventBackgroundPath,deterministicPlayerColor,deterministicRace,mixedRoleRaces,combatTheme,pieceArtForTheme};
