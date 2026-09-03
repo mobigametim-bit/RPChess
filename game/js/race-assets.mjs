@@ -1,3 +1,5 @@
+import './king-pin-ice.mjs';
+
 const RACE_TAGS = Object.freeze(['humans','elves','orcs','undead','dark_elves','dwarves','demons','angels','dragonborn','beastfolk','constructs','animals','fae','goblins']);
 const PIECE_TYPES = Object.freeze(['pawn','knight','bishop','rook','queen','king']);
 const BOARD_TILE_FILES = Object.freeze({ light:'white.png', dark:'black.png' });
