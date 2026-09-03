@@ -6,6 +6,8 @@ const { decodePng, parsePng, formatBytes } = require('./piece-asset-runtime.cjs'
 const BACKGROUND_RUNTIME_WIDTH = 1600;
 const BACKGROUND_RUNTIME_HEIGHT = 900;
 const BACKGROUND_RUNTIME_CHANNEL_BITS = 6;
+const BACKGROUND_RUNTIME_MAX_BYTES = 1792 * 1024;
+const BACKGROUND_RUNTIME_MAX_TOTAL_BYTES = 45 * 1024 * 1024;
 const CANONICAL_BACKGROUND_FILES = Object.freeze({
   generic:['forest_crossroad.png','old_kings_road.png','roadside_shrine.png','abandoned_camp.png','ancient_ruins.png','stormy_bridge.png','moonlit_gravefield.png','market_square_twilight.png'],
   humans:['human_waystation.png','human_chapel_court.png'],
@@ -188,6 +190,26 @@ function inspectBackgroundAssets(root) {
   return { count: paths.length, totalBytes, paths, records };
 }
 
+function assertBackgroundAssetBudget(root, {
+  maxBytes = BACKGROUND_RUNTIME_MAX_BYTES,
+  maxTotalBytes = BACKGROUND_RUNTIME_MAX_TOTAL_BYTES
+} = {}) {
+  const contract = inspectBackgroundAssets(root);
+  const failures = [];
+  let totalBytes = 0;
+  for (const record of contract.records) {
+    totalBytes += record.bytes;
+    const full = path.join(root, record.path);
+    const png = parsePng(fs.readFileSync(full));
+    if (record.width !== BACKGROUND_RUNTIME_WIDTH || record.height !== BACKGROUND_RUNTIME_HEIGHT) failures.push(`${record.path}: ${record.width}x${record.height}, expected ${BACKGROUND_RUNTIME_WIDTH}x${BACKGROUND_RUNTIME_HEIGHT}`);
+    if (record.bytes > maxBytes) failures.push(`${record.path}: ${formatBytes(record.bytes)} exceeds ${formatBytes(maxBytes)}`);
+    if (png.colorType !== 2) failures.push(`${record.path}: expected opaque RGB PNG colorType=2, found ${png.colorType}`);
+  }
+  if (totalBytes > maxTotalBytes) failures.push(`aggregate ${formatBytes(totalBytes)} exceeds ${formatBytes(maxTotalBytes)}`);
+  if (failures.length) throw new Error(`[background asset budget] runtime backgrounds exceed budget:\n${failures.join('\n')}`);
+  return { count: contract.count, totalBytes };
+}
+
 function optimizeBackgroundAssets(root, { write = false, channelBits = BACKGROUND_RUNTIME_CHANNEL_BITS } = {}) {
   const contract = inspectBackgroundAssets(root);
   const records = [];
@@ -228,8 +250,15 @@ if (require.main === module) {
   const root = path.resolve(rootIndex >= 0 && args[rootIndex + 1] ? args[rootIndex + 1] : 'game');
   const channelBits = bitsIndex >= 0 && args[bitsIndex + 1] ? Number(args[bitsIndex + 1]) : BACKGROUND_RUNTIME_CHANNEL_BITS;
   const write = args.includes('--write');
-  const report = optimizeBackgroundAssets(root, { write, channelBits });
-  printReport(report);
+  const verifyOnly = args.includes('--verify-only');
+  if (verifyOnly) {
+    const budget = assertBackgroundAssetBudget(root);
+    console.log(`Background asset budget PASS: ${budget.count}/${BACKGROUND_RUNTIME_EXPECTED_COUNT}, ${BACKGROUND_RUNTIME_WIDTH}x${BACKGROUND_RUNTIME_HEIGHT}, <=${formatBytes(BACKGROUND_RUNTIME_MAX_BYTES)} each, <=${formatBytes(BACKGROUND_RUNTIME_MAX_TOTAL_BYTES)} aggregate`);
+  } else {
+    const report = optimizeBackgroundAssets(root, { write, channelBits });
+    printReport(report);
+    if (write) assertBackgroundAssetBudget(root);
+  }
 }
 
 module.exports = {
@@ -238,8 +267,11 @@ module.exports = {
   BACKGROUND_RUNTIME_WIDTH,
   BACKGROUND_RUNTIME_HEIGHT,
   BACKGROUND_RUNTIME_CHANNEL_BITS,
+  BACKGROUND_RUNTIME_MAX_BYTES,
+  BACKGROUND_RUNTIME_MAX_TOTAL_BYTES,
   collectBackgroundAssetPaths,
   inspectBackgroundAssets,
+  assertBackgroundAssetBudget,
   optimizeBackgroundBuffer,
   optimizeBackgroundAssets,
   printReport
