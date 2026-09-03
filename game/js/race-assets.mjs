@@ -1,5 +1,6 @@
 const RACE_TAGS = Object.freeze(['humans','elves','orcs','undead','dark_elves','dwarves','demons','angels','dragonborn','beastfolk','constructs','animals','fae','goblins']);
 const PIECE_TYPES = Object.freeze(['pawn','knight','bishop','rook','queen','king']);
+const BOARD_TILE_FILES = Object.freeze({ light:'white.png', dark:'black.png' });
 
 const RACE_LABELS = Object.freeze({
   humans:'Люди', elves:'Эльфы', orcs:'Орки', undead:'Нежить', dark_elves:'Тёмные эльфы', dwarves:'Гномы', demons:'Демоны', angels:'Ангелы', dragonborn:'Дракониды', beastfolk:'Зверолюди', constructs:'Конструкты', animals:'Животные', fae:'Феи', goblins:'Гоблины', mixed:'Нейтральные и смешанные'
@@ -37,6 +38,12 @@ function racePiecePath(raceTag,pieceType,color='b'){
   if(race==='humans')return `assets/races/humans/pieces/${color==='w'?'white':'black'}/${type}.png`;
   const resolved=race==='mixed'?'humans':race;return `assets/races/${resolved}/pieces/${type}.png`;
 }
+function raceBoardTiles(raceTag){
+  const race=normalizeRaceTag(raceTag);
+  if(race==='mixed')return null;
+  const root=`assets/races/${race}/board`;
+  return Object.freeze({ raceTag:race, light:`${root}/${BOARD_TILE_FILES.light}`, dark:`${root}/${BOARD_TILE_FILES.dark}` });
+}
 function eventBackgroundPath(event){
   const id=event?.id||event?.eventId||'event',race=normalizeRaceTag(event?.raceTag||event?.race),pool=race==='mixed'?BACKGROUND_POOLS.generic:(BACKGROUND_POOLS[race]||BACKGROUND_POOLS.generic),filename=pool[hashString(`${id}:background`)%pool.length],folder=race==='mixed'?'generic':(BACKGROUND_FOLDER_BY_RACE[race]||race);
   return `assets/events/register-04/backgrounds/${folder}/${filename}`;
@@ -53,4 +60,4 @@ function combatTheme({seed,raceTag=null,playerColor=null,mixed=false}={}){
 }
 function pieceArtForTheme(theme,pieceType,color){const race=theme?.enemyRoleRaces?.[pieceType]||theme?.enemyRaceTag||'humans';return racePiecePath(race,pieceType,color||theme?.enemyColor||'b');}
 
-export {RACE_TAGS,PIECE_TYPES,RACE_LABELS,RACE_TAG_BY_LABEL,BACKGROUND_POOLS,BACKGROUND_FOLDER_BY_RACE,hashString,normalizeRaceTag,oppositeColor,racePiecePath,eventBackgroundPath,deterministicPlayerColor,deterministicRace,mixedRoleRaces,combatTheme,pieceArtForTheme};
+export {RACE_TAGS,PIECE_TYPES,BOARD_TILE_FILES,RACE_LABELS,RACE_TAG_BY_LABEL,BACKGROUND_POOLS,BACKGROUND_FOLDER_BY_RACE,hashString,normalizeRaceTag,oppositeColor,racePiecePath,raceBoardTiles,eventBackgroundPath,deterministicPlayerColor,deterministicRace,mixedRoleRaces,combatTheme,pieceArtForTheme};
