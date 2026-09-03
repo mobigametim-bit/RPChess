@@ -10,7 +10,7 @@
   },
   "scripts": {
     "verify": "node -e \"require('./scripts/verify-source.cjs')(require('path').resolve('game'))\"",
-    "test": "npm run puzzles:materialize && node tests/piece-asset-runtime.cjs && node tests/portrait-asset-runtime.cjs && node tests/background-asset-runtime.cjs && node tests/race-board-themes.cjs && node tests/pin-ice-asset-runtime.cjs && node tests/king-pin-ice.cjs && node tests/reboot-foundation.cjs && node tests/cross-scene-visuals.cjs && node tests/content-framework.cjs && node tests/endless-run.cjs && node tests/player-identity-chronicle.cjs && node tests/classic-chess-static.cjs && node tests/classic-chess-engine.cjs && node tests/chess-ai-adapter.cjs && node tests/roster.cjs && node tests/hero-notes.cjs && node tests/player-rating.cjs && node tests/skirmish.cjs && node tests/battle.cjs && node tests/combat-art-continuity.cjs && node tests/travel-choice.cjs && node tests/ui-redesign-final.cjs && node tests/resources.cjs && node tests/settlement.cjs && node tests/starvation.cjs && node tests/events.cjs && node tests/events-v3.cjs && node tests/events-v5.cjs && node tests/event-combat-race.cjs && node tests/events-visual.cjs && node tests/puzzle-importer.cjs && node tests/puzzles-rules.cjs && node tests/puzzles-catalog.cjs && node tests/puzzles.cjs",
+    "test": "npm run puzzles:materialize && node tests/runtime-asset-cache.cjs && node tests/piece-asset-runtime.cjs && node tests/portrait-asset-runtime.cjs && node tests/background-asset-runtime.cjs && node tests/race-board-themes.cjs && node tests/pin-ice-asset-runtime.cjs && node tests/king-pin-ice.cjs && node tests/reboot-foundation.cjs && node tests/cross-scene-visuals.cjs && node tests/content-framework.cjs && node tests/endless-run.cjs && node tests/player-identity-chronicle.cjs && node tests/classic-chess-static.cjs && node tests/classic-chess-engine.cjs && node tests/chess-ai-adapter.cjs && node tests/roster.cjs && node tests/hero-notes.cjs && node tests/player-rating.cjs && node tests/skirmish.cjs && node tests/battle.cjs && node tests/combat-art-continuity.cjs && node tests/travel-choice.cjs && node tests/ui-redesign-final.cjs && node tests/resources.cjs && node tests/settlement.cjs && node tests/starvation.cjs && node tests/events.cjs && node tests/events-v3.cjs && node tests/events-v5.cjs && node tests/event-combat-race.cjs && node tests/events-visual.cjs && node tests/puzzle-importer.cjs && node tests/puzzles-rules.cjs && node tests/puzzles-catalog.cjs && node tests/puzzles.cjs",
     "test:foundation": "node tests/reboot-foundation.cjs",
     "test:classic": "node tests/classic-chess-static.cjs && node tests/classic-chess-engine.cjs && node tests/king-pin-ice.cjs",
     "test:ai": "node tests/chess-ai-adapter.cjs",
@@ -27,11 +27,14 @@
     "test:starvation": "node tests/starvation.cjs",
     "test:events": "node tests/events.cjs && node tests/events-v3.cjs && node tests/events-v5.cjs && node tests/event-combat-race.cjs && node tests/events-visual.cjs",
     "test:puzzles": "npm run puzzles:materialize && node tests/puzzle-importer.cjs && node tests/puzzles-rules.cjs && node tests/puzzles-catalog.cjs && node tests/puzzles.cjs",
+    "test:asset-cache-build": "node tests/runtime-assets-build.cjs",
     "content:validate": "node scripts/validate-content.cjs",
     "puzzles:import": "node scripts/import-lichess-puzzles.cjs",
     "puzzles:materialize": "node scripts/materialize-puzzle-catalog.cjs",
     "puzzles:validate": "npm run puzzles:materialize && node scripts/validate-puzzle-catalog.cjs",
     "puzzles:validate:full": "npm run puzzles:materialize && node scripts/validate-puzzle-catalog-full.cjs",
+    "assets:cache:info": "node scripts/runtime-asset-cache.cjs",
+    "assets:cache:clear": "node scripts/runtime-asset-cache.cjs --clear",
     "assets:pieces:report": "node scripts/optimize-piece-assets.cjs --root game",
     "assets:pieces:verify": "node scripts/optimize-piece-assets.cjs --root dist --verify-only",
     "assets:portraits:report": "node scripts/optimize-portrait-assets.cjs --root game",
@@ -44,7 +47,7 @@
     "assets:pin-ice:verify": "node scripts/pin-ice-asset-runtime.cjs --root dist --verify-only --max-side 384",
     "test:browser": "node scripts/run-browser-tests.cjs",
     "build": "npm run puzzles:materialize && node scripts/build.cjs",
-    "gate:local": "npm run verify && npm test && npm run content:validate && npm run puzzles:validate && npm run build",
+    "gate:local": "npm run verify && npm test && npm run content:validate && npm run puzzles:validate && npm run build && npm run test:asset-cache-build",
     "gate:full": "npm run gate:local && npm run test:browser",
     "deploy": "wrangler deploy"
   }
