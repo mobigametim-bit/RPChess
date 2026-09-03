@@ -50,6 +50,7 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   assert.strictEqual(summary.heroesRecruited,1);
   assert.strictEqual(summary.finalPower,777);
   assert(summary.endReasonLabel.includes('припас'));
+  assert.strictEqual(endless.endReasonLabel('king_solo_battle'),'Наемники не посчитались со словами одинокого короля без королевства и повесили вас на суку ближайшего дерева');
 
   rating.writePlayerRating({power:777,receipts:[]},storage);
   const nextRun=persistence.writeRun(persistence.createRun({now:2000,id:'endless-new-run'}),storage,2000);
