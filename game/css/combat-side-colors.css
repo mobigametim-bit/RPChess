@@ -1,0 +1,65 @@
+/* Battle/Skirmish side-color language: prep glyphs + persistent combat auras. */
+
+body.skirmish-active .skirmish-card__tech-glyph[data-piece-color="w"],
+body.battle-prep-compact-active .battle-card__tech-glyph[data-piece-color="w"]{
+  color:#f7f7f5!important;
+  text-shadow:0 0 6px rgba(255,255,255,.34),0 2px 7px rgba(0,0,0,.78)!important;
+}
+body.skirmish-active .skirmish-card__tech-glyph[data-piece-color="b"],
+body.battle-prep-compact-active .battle-card__tech-glyph[data-piece-color="b"]{
+  color:#08090b!important;
+  text-shadow:0 0 1px rgba(255,255,255,.42),0 2px 7px rgba(0,0,0,.92)!important;
+}
+
+body.skirmish-active .skirmish-formation-cell[data-piece-color="w"],
+body.battle-prep-compact-active .battle-formation-cell span[data-piece-color="w"]{
+  color:#f7f7f5!important;
+  text-shadow:0 0 4px rgba(255,255,255,.28),0 1px 2px rgba(0,0,0,.82)!important;
+}
+body.skirmish-active .skirmish-formation-cell[data-piece-color="b"],
+body.battle-prep-compact-active .battle-formation-cell span[data-piece-color="b"]{
+  color:#08090b!important;
+  text-shadow:0 0 1px rgba(255,255,255,.4),0 1px 2px rgba(0,0,0,.92)!important;
+}
+
+/* Persistent art aura under every combat piece, keyed to canonical engine color. */
+body.run-combat-board-active .classic-square:has(.classic-piece-marker--w){
+  --combat-piece-glow-side:white;
+  --combat-aura-image:url('../assets/vfx/aura_white.png');
+}
+body.run-combat-board-active .classic-square:has(.classic-piece-marker--b){
+  --combat-piece-glow-side:black;
+  --combat-aura-image:url('../assets/vfx/aura_black.png');
+}
+body.run-combat-board-active .classic-square:has(.classic-piece-marker)::after{
+  background-image:var(--combat-aura-image)!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+  background-size:100% 100%!important;
+}
+/* The authoritative destination piece is hidden while its 230ms flyer is moving.
+   Keep its aura hidden for the same interval so aura and piece land in one frame. */
+body.run-combat-board-active .classic-square:has(.classic-piece--arriving)::after{
+  opacity:0!important;
+}
+/* Keep existing move-state language while retaining the aura. */
+body.run-combat-board-active .classic-square--last:has(.classic-piece-marker)::after{
+  background:linear-gradient(rgba(246,212,92,.16),rgba(246,212,92,.16)),var(--combat-aura-image) center/100% 100% no-repeat!important;
+}
+body.run-combat-board-active .classic-square--selected:has(.classic-piece-marker)::after{
+  background:var(--combat-aura-image) center/100% 100% no-repeat!important;
+  box-shadow:inset 0 0 0 clamp(3px,.45vw,6px) #f2ce68!important;
+}
+body.run-combat-board-active .classic-square--selected.classic-square--last:has(.classic-piece-marker)::after{
+  background:linear-gradient(rgba(246,212,92,.16),rgba(246,212,92,.16)),var(--combat-aura-image) center/100% 100% no-repeat!important;
+}
+/* Check is the strongest state and replaces white/black art with the red aura. */
+body.run-combat-board-active .classic-square--check:has(.classic-piece-marker){
+  --combat-piece-glow-side:red;
+  --combat-aura-image:url('../assets/vfx/aura_red.png');
+}
+body.run-combat-board-active .classic-square--check:has(.classic-piece-marker)::after,
+body.run-combat-board-active .classic-square--check.classic-square--selected:has(.classic-piece-marker)::after,
+body.run-combat-board-active .classic-square--check.classic-square--last:has(.classic-piece-marker)::after{
+  background:var(--combat-aura-image) center/100% 100% no-repeat!important;
+}

@@ -11,12 +11,14 @@ const portrait=require('./portrait-asset-runtime.cjs');
 const board=require('./board-asset-runtime.cjs');
 const background=require('./background-asset-runtime.cjs');
 const pinIce=require('./pin-ice-asset-runtime.cjs');
+const aura=require('./aura-asset-runtime.cjs');
 
 const PIECE_FILE=require.resolve('./piece-asset-runtime.cjs');
 const PORTRAIT_FILE=require.resolve('./portrait-asset-runtime.cjs');
 const BOARD_FILE=require.resolve('./board-asset-runtime.cjs');
 const BACKGROUND_FILE=require.resolve('./background-asset-runtime.cjs');
 const PIN_ICE_FILE=require.resolve('./pin-ice-asset-runtime.cjs');
+const AURA_FILE=require.resolve('./aura-asset-runtime.cjs');
 const ORCHESTRATOR_FILE=__filename;
 const BOARD_MAX_SIDE=384,BOARD_MAX_BYTES=512*1024,BOARD_MAX_TOTAL_BYTES=10*1024*1024;
 
@@ -86,6 +88,17 @@ function materializePinIce(root){
   }
   const result=report(records);if(result.afterBytes>pinIce.PIN_ICE_RUNTIME_MAX_TOTAL_BYTES)throw new Error(`[pin ice asset budget] aggregate ${piece.formatBytes(result.afterBytes)} exceeds ${piece.formatBytes(pinIce.PIN_ICE_RUNTIME_MAX_TOTAL_BYTES)}`);return result;
 }
+function materializeAuras(root){
+  const version=fingerprintFiles([ORCHESTRATOR_FILE,PIECE_FILE,AURA_FILE]),records=[];
+  for(const item of aura.inspectAuraAssets(root).records){
+    if(item.width!==item.height)throw new Error(`[aura asset contract] ${item.path}: source must be square, got ${item.width}x${item.height}`);
+    const full=path.join(root,item.path),source=fs.readFileSync(full),before=source.length;
+    const cached=cachedPng(source,{namespace:'auras',version,maxSide:aura.AURA_RUNTIME_MAX_SIDE,maxBytes:aura.AURA_RUNTIME_MAX_BYTES,validateExtra:(png)=>{if(png.width!==png.height)throw new Error('cached aura is not square');if(![3,4,6].includes(png.colorType))throw new Error(`cached aura lost transparency capability: colorType=${png.colorType}`);}});
+    const out=piece.parsePng(cached.buffer);fs.writeFileSync(full,cached.buffer);
+    records.push({path:item.path,before,after:cached.buffer.length,width:out.width,height:out.height,sourceWidth:item.width,sourceHeight:item.height,skipped:false,cacheHit:cached.cacheHit,cacheKey:cached.cacheKey,cachePath:cached.cachePath});
+  }
+  const result=report(records);if(result.afterBytes>aura.AURA_RUNTIME_MAX_TOTAL_BYTES)throw new Error(`[aura asset budget] aggregate ${piece.formatBytes(result.afterBytes)} exceeds ${piece.formatBytes(aura.AURA_RUNTIME_MAX_TOTAL_BYTES)}`);return result;
+}
 function materializeBackgrounds(root){
   const version=fingerprintFiles([ORCHESTRATOR_FILE,PIECE_FILE,BACKGROUND_FILE]),records=[];
   for(const relative of background.collectBackgroundAssetPaths(root)){
@@ -104,6 +117,7 @@ function materializeRuntimeAssets(root){
   const groups={
     boards:materializeBoards(root),
     pinIce:materializePinIce(root),
+    auras:materializeAuras(root),
     pieces:materializePieces(root),
     portraits:materializePortraits(root),
     backgrounds:materializeBackgrounds(root)
@@ -114,4 +128,4 @@ function materializeRuntimeAssets(root){
 }
 function cacheText(group){return group.cache.total?`${group.cache.hits} hit / ${group.cache.misses} miss`:'no transforms';}
 
-module.exports={BOARD_MAX_SIDE,BOARD_MAX_BYTES,BOARD_MAX_TOTAL_BYTES,materializePieces,materializePortraits,materializeBoards,materializePinIce,materializeBackgrounds,materializeRuntimeAssets,cacheText};
+module.exports={BOARD_MAX_SIDE,BOARD_MAX_BYTES,BOARD_MAX_TOTAL_BYTES,materializePieces,materializePortraits,materializeBoards,materializePinIce,materializeAuras,materializeBackgrounds,materializeRuntimeAssets,cacheText};

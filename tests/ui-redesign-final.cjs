@@ -5,6 +5,7 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
 (async()=>{
   const finalUi=read('game/js/ui-redesign-final.mjs');
   const finalCss=read('game/css/ui-redesign-final.css');
+  const sideColorsCss=read('game/css/combat-side-colors.css');
   const resourcesCss=read('game/css/resources.css');
   const loader=read('game/js/post-redesign-playtest-pass1b.mjs');
   const travelApp=read('game/js/travel-choice-app.mjs');
@@ -24,9 +25,18 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
 
   assert.strictEqual(loader.trim(),"import './ui-redesign-final.mjs';",'legacy loader may only delegate to the consolidated final redesign module');
   assert(finalUi.includes("CSS_HREF='css/ui-redesign-final.css?v=20260902-cleanup2'"),'final redesign stylesheet must be cache-busted');
+  assert(finalUi.includes("SIDE_COLORS_CSS_HREF='css/combat-side-colors.css?v=20260903-aura1'"),'combat aura stylesheet must be cache-busted independently');
   assert(!finalUi.includes('MutationObserver')&&!finalUi.includes('LIVE_OVERRIDE_CSS'),'final redesign module must not rely on global observers or live injected CSS');
   assert(finalUi.includes('RPChessBattle?.battlePlan')&&finalUi.includes('RPChessSkirmish?.battlePlan'),'combat presentation must derive from canonical battlePlan state');
   assert(finalUi.includes("import { placeArmy } from './skirmish-core.mjs'")&&finalUi.includes('BLACK_GLYPHS'),'Skirmish preview must use canonical formation data and preserve black-side glyphs without observers');
+  assert(finalUi.includes('GLYPHS_BY_COLOR')&&finalUi.includes('mark.dataset.pieceColor=side')&&finalUi.includes('syncBattleFormation(screen,color)'),'Battle/Skirmish prep technical glyphs must derive from encounter player color');
+  assert(finalUi.includes("document.body.classList.toggle('run-combat-board-active',Boolean(kind))"),'persistent side aura must be enabled only while the shared board is an active run combat');
+  assert(sideColorsCss.includes('.skirmish-card__tech-glyph[data-piece-color="w"]')&&sideColorsCss.includes('.battle-card__tech-glyph[data-piece-color="b"]'),'prep card glyphs must expose white/black presentation states');
+  assert(sideColorsCss.includes('.skirmish-formation-cell[data-piece-color="b"]')&&sideColorsCss.includes('.battle-formation-cell span[data-piece-color="w"]'),'formation preview glyphs must expose white/black presentation states');
+  assert(sideColorsCss.includes("--combat-aura-image:url('../assets/vfx/aura_white.png')")&&sideColorsCss.includes("--combat-aura-image:url('../assets/vfx/aura_black.png')"),'white/black combat pieces must use the supplied aura art');
+  assert(!sideColorsCss.includes('radial-gradient'),'procedural radial combat glow must be fully replaced by aura assets');
+  assert(sideColorsCss.includes('.classic-square--check:has(.classic-piece-marker)')&&sideColorsCss.includes("--combat-aura-image:url('../assets/vfx/aura_red.png')"),'check must replace side art with the supplied red aura');
+  assert(sideColorsCss.includes('background-size:100% 100%'),'combat aura must fit the board square without changing its geometry');
   assert(finalUi.includes('OBSOLETE_HIDDEN_CONTROLS')&&finalUi.includes('removeObsoleteHiddenControls()'),'deprecated invisible scene controls must be removed from the runtime DOM instead of being kept as hidden hooks');
   for(const selector of ['[data-skirmish-back]','[data-battle-back]','[data-puzzle-roster]','[data-settlement-roster]','[data-settlement-settings]','[data-events-roster]','[data-events-settings]'])assert(finalUi.includes(`'${selector}'`),`${selector} must be included in invisible-control cleanup`);
   assert(finalCss.includes('.travel-choice-topbar--command')&&finalCss.includes('.events-copy-frame')&&finalCss.includes('.events-choice-frame'),'approved Travel and Events structures must live in one final stylesheet');
@@ -65,9 +75,11 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   assert(battleMercenaries.includes('if (start?.parentNode === actionbar) actionbar.insertBefore(actionCost, start);')&&battleMercenaries.includes('else actionbar.append(actionCost);'),'Mercenary action-cost hook must tolerate the Start CTA being relocated out of the legacy actionbar');
 
   for(const obsolete of ['travel-choice-commandbar-pass','compact-run-screens-pass','compact-combat-ui-pass','compact-ui-pass3','compact-ui-pass4']) assert(!build.includes(obsolete),`build must not package obsolete ${obsolete} layers`);
-  assert(build.includes("'css/ui-redesign-final.css'")&&build.includes("'js/ui-redesign-final.mjs'"),'production build must package the consolidated redesign');
+  assert(build.includes("'css/ui-redesign-final.css'")&&build.includes("'css/combat-side-colors.css'")&&build.includes("'js/ui-redesign-final.mjs'"),'production build must package the consolidated redesign and combat aura layer');
+  for(const aura of ['aura_white.png','aura_black.png','aura_red.png'])assert(build.includes(`'assets/vfx/${aura}'`),`production build must package ${aura}`);
   assert(pkg.scripts['test:ui']==='node tests/ui-redesign-final.cjs','package must expose one final UI contract test');
+  assert(pkg.scripts.test.includes('tests/aura-asset-runtime.cjs'),'main test command must verify combat aura source assets');
   assert(!pkg.scripts.test.includes('travel-choice-ui.cjs')&&!pkg.scripts.test.includes('compact-ui-pass4.cjs'),'main test command must not require superseded UI tests');
 
-  console.log('Consolidated UI redesign contracts, canonical Travel gating and lifecycle presentation: PASS');
+  console.log('Consolidated UI redesign contracts, side-colored aura presentation, canonical Travel gating and lifecycle presentation: PASS');
 })().catch((error)=>{console.error(error.stack||error);process.exitCode=1});
