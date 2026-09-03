@@ -1,0 +1,34 @@
+name: Night exact-head verification
+
+on:
+  push:
+    branches:
+      - night/verification
+
+permissions:
+  contents: read
+
+jobs:
+  full-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: bcfadb2dd18e1ec86d58d36c5ff0c9849bd529ca
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Run source, deterministic and production build gate
+        run: npm run gate:local
+      - name: Install Playwright and Chromium
+        timeout-minutes: 10
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+      - name: Run full browser regression
+        timeout-minutes: 30
+        run: npm run test:browser
