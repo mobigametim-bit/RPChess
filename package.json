@@ -38,6 +38,8 @@
     "assets:portraits:verify": "node scripts/optimize-portrait-assets.cjs --root dist --verify-only",
     "assets:backgrounds:report": "node scripts/background-asset-runtime.cjs --root game",
     "assets:backgrounds:verify": "node scripts/background-asset-runtime.cjs --root dist --verify-only",
+    "assets:boards:report": "node scripts/board-asset-runtime.cjs --root game --max-side 384",
+    "assets:boards:verify": "node scripts/board-asset-runtime.cjs --root dist --verify-only --max-side 384",
     "test:browser": "node scripts/run-browser-tests.cjs",
     "build": "npm run puzzles:materialize && node scripts/build.cjs",
     "gate:local": "npm run verify && npm test && npm run content:validate && npm run puzzles:validate && npm run build",
