@@ -1,10 +1,7 @@
 const RACE_TAGS = Object.freeze(['humans','elves','orcs','undead','dark_elves','dwarves','demons','angels','dragonborn','beastfolk','constructs','animals','fae','goblins']);
 const PIECE_TYPES = Object.freeze(['pawn','knight','bishop','rook','queen','king']);
 const BOARD_TILE_FILES = Object.freeze({ light:'white.png', dark:'black.png' });
-const BOARD_FALLBACKS = Object.freeze({
-  light:'linear-gradient(145deg,#c3b995,#aa9f7c)',
-  dark:'linear-gradient(145deg,#4d585d,#374349)'
-});
+const BOARD_THEME_STYLE_ID='rpchess-race-board-theme-style';
 
 const RACE_LABELS = Object.freeze({
   humans:'Люди', elves:'Эльфы', orcs:'Орки', undead:'Нежить', dark_elves:'Тёмные эльфы', dwarves:'Гномы', demons:'Демоны', angels:'Ангелы', dragonborn:'Дракониды', beastfolk:'Зверолюди', constructs:'Конструкты', animals:'Животные', fae:'Феи', goblins:'Гоблины', mixed:'Нейтральные и смешанные'
@@ -48,34 +45,31 @@ function raceBoardTiles(raceTag){
   const root=`assets/races/${race}/board`;
   return Object.freeze({ raceTag:race, light:`${root}/${BOARD_TILE_FILES.light}`, dark:`${root}/${BOARD_TILE_FILES.dark}` });
 }
-function paintRaceBoardTheme(board,tiles){
-  if(!board)return;
-  for(const cell of board.querySelectorAll('.classic-square--light')){
-    cell.style.backgroundImage=tiles?`url("${tiles.light}"),${BOARD_FALLBACKS.light}`:'';
-    cell.style.backgroundSize=tiles?'cover,cover':'';
-    cell.style.backgroundPosition=tiles?'center,center':'';
-    cell.style.backgroundRepeat=tiles?'no-repeat,no-repeat':'';
-  }
-  for(const cell of board.querySelectorAll('.classic-square--dark')){
-    cell.style.backgroundImage=tiles?`url("${tiles.dark}"),${BOARD_FALLBACKS.dark}`:'';
-    cell.style.backgroundSize=tiles?'cover,cover':'';
-    cell.style.backgroundPosition=tiles?'center,center':'';
-    cell.style.backgroundRepeat=tiles?'no-repeat,no-repeat':'';
-  }
-}
-function ensureRaceBoardObserver(board){
-  if(!board||board.__rpchessRaceBoardObserver||typeof MutationObserver==='undefined')return;
-  const observer=new MutationObserver(()=>paintRaceBoardTheme(board,board.__rpchessRaceBoardTiles||null));
-  observer.observe(board,{childList:true});
-  board.__rpchessRaceBoardObserver=observer;
+function installRaceBoardStyles(){
+  if(typeof document==='undefined')return false;
+  if(document.getElementById(BOARD_THEME_STYLE_ID))return true;
+  const style=document.createElement('style');
+  style.id=BOARD_THEME_STYLE_ID;
+  style.textContent=`
+.classic-board[data-board-race] .classic-square--light{background-image:var(--board-light-tile),linear-gradient(145deg,#c3b995,#aa9f7c);background-size:cover,cover;background-position:center,center;background-repeat:no-repeat,no-repeat}
+.classic-board[data-board-race] .classic-square--dark{background-image:var(--board-dark-tile),linear-gradient(145deg,#4d585d,#374349);background-size:cover,cover;background-position:center,center;background-repeat:no-repeat,no-repeat}
+`;
+  document.head.append(style);
+  return true;
 }
 function applyRaceBoardTheme(board,raceTag){
   if(!board)return null;
+  installRaceBoardStyles();
   const tiles=raceBoardTiles(raceTag);
-  board.__rpchessRaceBoardTiles=tiles;
-  if(tiles)board.dataset.boardRace=tiles.raceTag;else delete board.dataset.boardRace;
-  ensureRaceBoardObserver(board);
-  paintRaceBoardTheme(board,tiles);
+  if(!tiles){
+    delete board.dataset.boardRace;
+    board.style.removeProperty('--board-light-tile');
+    board.style.removeProperty('--board-dark-tile');
+    return null;
+  }
+  board.dataset.boardRace=tiles.raceTag;
+  board.style.setProperty('--board-light-tile',`url("${tiles.light}")`);
+  board.style.setProperty('--board-dark-tile',`url("${tiles.dark}")`);
   return tiles;
 }
 function currentCombatBoardRace(){
@@ -90,6 +84,7 @@ function installRaceBoardRuntime(){
   const board=document.querySelector('[data-chess-board]');
   const api=globalThis.RPChessClassicChess;
   if(!board||!api?.newGame||api.__raceBoardThemeInstalled)return false;
+  installRaceBoardStyles();
   const originalNewGame=api.newGame.bind(api);
   api.newGame=(fen=null,options={})=>{
     const snapshot=originalNewGame(fen,options);
@@ -121,4 +116,4 @@ function pieceArtForTheme(theme,pieceType,color){const race=theme?.enemyRoleRace
 
 installRaceBoardRuntime();
 
-export {RACE_TAGS,PIECE_TYPES,BOARD_TILE_FILES,BOARD_FALLBACKS,RACE_LABELS,RACE_TAG_BY_LABEL,BACKGROUND_POOLS,BACKGROUND_FOLDER_BY_RACE,hashString,normalizeRaceTag,oppositeColor,racePiecePath,raceBoardTiles,paintRaceBoardTheme,applyRaceBoardTheme,currentCombatBoardRace,installRaceBoardRuntime,eventBackgroundPath,deterministicPlayerColor,deterministicRace,mixedRoleRaces,combatTheme,pieceArtForTheme};
+export {RACE_TAGS,PIECE_TYPES,BOARD_TILE_FILES,BOARD_THEME_STYLE_ID,RACE_LABELS,RACE_TAG_BY_LABEL,BACKGROUND_POOLS,BACKGROUND_FOLDER_BY_RACE,hashString,normalizeRaceTag,oppositeColor,racePiecePath,raceBoardTiles,installRaceBoardStyles,applyRaceBoardTheme,currentCombatBoardRace,installRaceBoardRuntime,eventBackgroundPath,deterministicPlayerColor,deterministicRace,mixedRoleRaces,combatTheme,pieceArtForTheme};
