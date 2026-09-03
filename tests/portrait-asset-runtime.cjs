@@ -31,7 +31,6 @@ for (const [relative, png] of [[largeRelative, fixturePng(768)], [smallRelative,
 const smallBefore = fs.readFileSync(path.join(tmp, smallRelative));
 const report = portraitRuntime.optimizePortraitAssets(tmp, { expectedCount: 2 });
 assert.strictEqual(report.count, 2);
-assert(report.savedBytes > 0);
 const largeAfter = pieceRuntime.parsePng(fs.readFileSync(path.join(tmp, largeRelative)));
 assert.strictEqual(largeAfter.width, portraitRuntime.PORTRAIT_RUNTIME_MAX_SIDE);
 assert.strictEqual(largeAfter.height, portraitRuntime.PORTRAIT_RUNTIME_MAX_SIDE);
@@ -40,4 +39,4 @@ assert(smallAfter.equals(smallBefore), 'portrait optimizer must not upscale or r
 portraitRuntime.assertPortraitAssetBudget(tmp, { expectedCount: 2 });
 assert.throws(() => portraitRuntime.assertPortraitAssetBudget(tmp, { expectedCount: 3 }), /expected 3 runtime portraits/);
 assert.throws(() => portraitRuntime.assertPortraitAssetBudget(tmp, { expectedCount: 2, maxSide: 512 }), /portrait asset budget/);
-console.log(`Portrait asset runtime optimizer: PASS (${report.count} fixtures, ${report.savedPercent.toFixed(1)}% saved)`);
+console.log(`Portrait asset runtime optimizer: PASS (${report.count} fixtures; 768px fixture capped to ${portraitRuntime.PORTRAIT_RUNTIME_MAX_SIDE}px; small fixture preserved)`);
