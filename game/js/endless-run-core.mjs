@@ -3,6 +3,7 @@ import { STARTER_TEMPLATES } from './roster-data.mjs';
 const END_REASON_LABELS = Object.freeze({
   starvation_king: 'Король погиб во время перехода без припасов.',
   event_king: 'Король погиб из-за принятого решения в событии.',
+  king_solo_battle: 'Наемники не посчитались со словами одинокого короля без королевства и повесили вас на суку ближайшего дерева',
   king_dead: 'Король погиб. Путешествие завершено.'
 });
 
