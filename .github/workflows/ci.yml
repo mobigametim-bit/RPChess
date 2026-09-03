@@ -1,16 +1,13 @@
-name: RPChess portrait runtime gate
+name: RPChess Reboot CI (manual diagnostic)
 
 on:
-  push:
-    branches:
-      - perf/portrait-asset-runtime-budget
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  verify-portrait-runtime:
+  verify-events:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,3 +19,11 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Run local source, deterministic and build gate
         run: npm run gate:local
+      - name: Install Playwright and Chromium
+        timeout-minutes: 10
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+      - name: Run full real Chromium regression
+        timeout-minutes: 30
+        run: npm run test:browser
