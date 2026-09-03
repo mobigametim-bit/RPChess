@@ -2,6 +2,9 @@ name: RPChess Reboot CI (manual diagnostic)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feature/race-board-themes
 
 permissions:
   contents: read
@@ -17,6 +20,10 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
+      - name: Profile race board runtime candidates
+        run: |
+          node scripts/board-asset-runtime.cjs --root game --max-side 256
+          node scripts/board-asset-runtime.cjs --root game --max-side 384
       - name: Run local source, deterministic and build gate
         run: npm run gate:local
       - name: Install Playwright and Chromium
