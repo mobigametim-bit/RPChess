@@ -2,6 +2,7 @@ const RACE_TAGS = Object.freeze(['humans','elves','orcs','undead','dark_elves','
 const PIECE_TYPES = Object.freeze(['pawn','knight','bishop','rook','queen','king']);
 const BOARD_TILE_FILES = Object.freeze({ light:'white.png', dark:'black.png' });
 const BOARD_THEME_STYLE_ID='rpchess-race-board-theme-style';
+let boardRuntimeInstallQueued=false;
 
 const RACE_LABELS = Object.freeze({
   humans:'Люди', elves:'Эльфы', orcs:'Орки', undead:'Нежить', dark_elves:'Тёмные эльфы', dwarves:'Гномы', demons:'Демоны', angels:'Ангелы', dragonborn:'Дракониды', beastfolk:'Зверолюди', constructs:'Конструкты', animals:'Животные', fae:'Феи', goblins:'Гоблины', mixed:'Нейтральные и смешанные'
@@ -79,11 +80,28 @@ function currentCombatBoardRace(){
   if(skirmish)return skirmish.encounter?.enemyRaceTag||globalThis.RPChessSkirmish?.encounter?.enemyRaceTag||null;
   return null;
 }
+function queueRaceBoardRuntimeInstall(){
+  if(typeof document==='undefined'||boardRuntimeInstallQueued)return false;
+  boardRuntimeInstallQueued=true;
+  let installed=false;
+  const retry=()=>{
+    if(installed)return;
+    if(!globalThis.RPChessClassicChess?.newGame)return;
+    installed=true;
+    boardRuntimeInstallQueued=false;
+    installRaceBoardRuntime();
+  };
+  if(document.readyState!=='complete')document.addEventListener('DOMContentLoaded',retry,{once:true});
+  setTimeout(retry,0);
+  return true;
+}
 function installRaceBoardRuntime(){
   if(typeof document==='undefined')return false;
   const board=document.querySelector('[data-chess-board]');
   const api=globalThis.RPChessClassicChess;
-  if(!board||!api?.newGame||api.__raceBoardThemeInstalled)return false;
+  if(!board)return false;
+  if(!api?.newGame){queueRaceBoardRuntimeInstall();return false;}
+  if(api.__raceBoardThemeInstalled)return true;
   installRaceBoardStyles();
   const originalNewGame=api.newGame.bind(api);
   api.newGame=(fen=null,options={})=>{
@@ -116,4 +134,4 @@ function pieceArtForTheme(theme,pieceType,color){const race=theme?.enemyRoleRace
 
 installRaceBoardRuntime();
 
-export {RACE_TAGS,PIECE_TYPES,BOARD_TILE_FILES,BOARD_THEME_STYLE_ID,RACE_LABELS,RACE_TAG_BY_LABEL,BACKGROUND_POOLS,BACKGROUND_FOLDER_BY_RACE,hashString,normalizeRaceTag,oppositeColor,racePiecePath,raceBoardTiles,installRaceBoardStyles,applyRaceBoardTheme,currentCombatBoardRace,installRaceBoardRuntime,eventBackgroundPath,deterministicPlayerColor,deterministicRace,mixedRoleRaces,combatTheme,pieceArtForTheme};
+export {RACE_TAGS,PIECE_TYPES,BOARD_TILE_FILES,BOARD_THEME_STYLE_ID,RACE_LABELS,RACE_TAG_BY_LABEL,BACKGROUND_POOLS,BACKGROUND_FOLDER_BY_RACE,hashString,normalizeRaceTag,oppositeColor,racePiecePath,raceBoardTiles,installRaceBoardStyles,applyRaceBoardTheme,currentCombatBoardRace,queueRaceBoardRuntimeInstall,installRaceBoardRuntime,eventBackgroundPath,deterministicPlayerColor,deterministicRace,mixedRoleRaces,combatTheme,pieceArtForTheme};
