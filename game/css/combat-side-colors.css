@@ -36,6 +36,7 @@ body.run-combat-board-active .classic-square:has(.classic-piece-marker)::after{
   background-position:center!important;
   background-repeat:no-repeat!important;
   background-size:100% 100%!important;
+  opacity:.6!important;
 }
 /* The authoritative destination piece is hidden while its 230ms flyer is moving.
    Keep its aura hidden for the same interval so aura and piece land in one frame. */
