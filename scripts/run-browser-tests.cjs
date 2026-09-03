@@ -11,6 +11,7 @@ const BASE=`http://${HOST}:${PORT}`;
 const DEFAULT_TESTS=[
   'reboot-foundation-browser.cjs',
   'classic-chess-browser.cjs',
+  'race-board-themes-browser.cjs',
   'roster-browser.cjs',
   'skirmish-browser.cjs',
   'battle-browser.cjs',
