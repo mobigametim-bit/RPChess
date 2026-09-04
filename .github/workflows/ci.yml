@@ -1,18 +1,13 @@
-name: RPChess full localization acceptance diagnostic v2
+name: RPChess Reboot CI (manual diagnostic)
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feature/localisation-completion
-    paths:
-      - .github/workflows/ci.yml
 
 permissions:
   contents: read
 
 jobs:
-  full-gate:
+  verify-events:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
