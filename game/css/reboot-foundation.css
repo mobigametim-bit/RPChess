@@ -239,6 +239,36 @@ button:focus-visible { outline: 3px solid #8bcfff; outline-offset: 3px; }
 .reboot-setting input[type='range'] { width: 100%; accent-color: #d6b45f; }
 .reboot-setting--toggle input { justify-self: end; width: 22px; height: 22px; accent-color: #d6b45f; }
 
+.reboot-language-panel { width: min(640px, 100%); }
+.reboot-language-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 22px;
+}
+.reboot-language-option {
+  display: grid;
+  gap: 6px;
+  align-content: center;
+  min-height: 104px;
+  padding: 18px;
+  border: 1px solid rgba(216, 177, 93, .38);
+  border-radius: 7px;
+  background: linear-gradient(145deg, rgba(18, 31, 44, .96), rgba(7, 13, 21, .99));
+  color: #e7dfcc;
+  cursor: pointer;
+  text-align: left;
+}
+.reboot-language-option strong { color: #fff4c9; font-size: 20px; }
+.reboot-language-option span { color: var(--muted); font-size: 13px; }
+.reboot-language-option:hover { border-color: #d8b15d; filter: brightness(1.08); }
+.reboot-language-option.is-selected {
+  border-color: #f1d58f;
+  background: linear-gradient(145deg, rgba(74, 57, 28, .94), rgba(17, 20, 22, .99));
+  box-shadow: inset 0 0 0 1px rgba(241, 213, 143, .2);
+}
+.reboot-language-back { margin-top: 18px; }
+
 /* Approved Settings modal: local obsidian/gold presentation only. */
 [data-settings-modal] .reboot-modal__panel {
   width: min(700px, 100%);
@@ -418,4 +448,6 @@ html[data-reduced-motion='1'] *::after {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
   }
+  .reboot-language-options { grid-template-columns: 1fr; }
+  .reboot-language-option { min-height: 82px; }
 }

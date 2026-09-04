@@ -3,6 +3,7 @@ const { chromium } = require('playwright');
 
 const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
 const RUN_KEY = 'rpchess.reboot.v1.run';
+const SETTINGS_KEY = 'rpchess.reboot.v1.settings';
 const MUSIC_TRACK_RE = /\/music\/echoes_iron_throne_0[1-4]\.mp3(?:$|\?)/;
 
 (async () => {
@@ -13,7 +14,10 @@ const MUSIC_TRACK_RE = /\/music\/echoes_iron_throne_0[1-4]\.mp3(?:$|\?)/;
     page.on('pageerror', (error) => errors.push(String(error.stack || error)));
 
     await page.goto(url, { waitUntil: 'networkidle' });
-    await page.evaluate((key) => localStorage.removeItem(key), RUN_KEY);
+    await page.evaluate(([runKey, settingsKey]) => {
+      localStorage.removeItem(runKey);
+      localStorage.removeItem(settingsKey);
+    }, [RUN_KEY, SETTINGS_KEY]);
     await page.reload({ waitUntil: 'networkidle' });
     const menu = page.locator('[data-reboot-foundation]');
     await menu.waitFor();
@@ -21,6 +25,12 @@ const MUSIC_TRACK_RE = /\/music\/echoes_iron_throne_0[1-4]\.mp3(?:$|\?)/;
     assert.strictEqual(await menu.locator('[data-new-game]').count(), 1, 'New Game button must exist once in the main menu');
     assert.strictEqual(await menu.locator('[data-continue-run]').isDisabled(), true, 'Continue must be disabled before a Reboot run exists');
     assert.strictEqual(await menu.locator('[data-settings]').count(), 1, 'Settings button must exist once in the main menu');
+    assert.strictEqual(await menu.locator('[data-language]').count(), 1, 'Language button must exist once in the main menu');
+    assert.deepStrictEqual(
+      await menu.locator('.reboot-menu-secondary > button').evaluateAll((buttons) => buttons.map((button) => button.dataset.settings !== undefined ? 'settings' : button.dataset.language !== undefined ? 'language' : 'unknown')),
+      ['settings', 'language'],
+      'Language must appear directly after Settings'
+    );
     assert.strictEqual(await page.getByText('Новый путь RPChess').count(), 0, 'prototype marketing copy must not appear in production menu');
 
     const scripts = await page.locator('script[src]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('src')));
@@ -80,6 +90,43 @@ const MUSIC_TRACK_RE = /\/music\/echoes_iron_throne_0[1-4]\.mp3(?:$|\?)/;
     });
     assert.strictEqual(await page.locator('[data-music-volume]').inputValue(), '33', 'music setting must be interactive');
     await page.locator('[data-settings-modal] [data-close-modal]').click();
+
+    const navigationCount = await page.evaluate(() => performance.getEntriesByType('navigation').length);
+    await menu.locator('[data-language]').click();
+    const languageModal = page.locator('[data-language-modal]:not([hidden])');
+    await languageModal.waitFor();
+    assert.strictEqual(await languageModal.locator('[data-language-option="ru"] strong').textContent(), 'Русский');
+    assert.strictEqual(await languageModal.locator('[data-language-option="en"] strong').textContent(), 'English');
+    assert.strictEqual(await languageModal.locator('[data-language-option="ru"]').getAttribute('aria-pressed'), 'true', 'RU must be selected by default');
+    await languageModal.locator('[data-language-option="en"]').click();
+    await page.waitForFunction(() => document.documentElement.lang === 'en');
+    assert.strictEqual(await menu.locator('[data-new-game]').textContent(), 'New Game');
+    assert.strictEqual(await menu.locator('[data-continue-run]').textContent(), 'Continue');
+    assert.strictEqual(await menu.locator('[data-settings]').textContent(), 'Settings');
+    assert.strictEqual(await menu.locator('[data-language]').textContent(), 'Language');
+    assert.strictEqual(await languageModal.locator('[data-language-option="en"]').getAttribute('aria-pressed'), 'true', 'EN selection must update immediately');
+    assert.strictEqual(await languageModal.locator('[data-language-current]:visible').textContent(), 'Selected: English');
+    assert.strictEqual(await languageModal.locator('[data-close-modal].reboot-language-back').textContent(), 'Back');
+    assert.strictEqual(await page.evaluate(() => performance.getEntriesByType('navigation').length), navigationCount, 'language switching must not reload the game');
+    assert.strictEqual(await page.evaluate((key) => localStorage.getItem(key), RUN_KEY), null, 'language switching must not create or mutate run state');
+    assert.deepStrictEqual(
+      await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), SETTINGS_KEY),
+      { music: 33, sfx: 80, reducedMotion: false, language: 'en' },
+      'language must persist alongside existing audio settings'
+    );
+    await languageModal.locator('[data-close-modal].reboot-language-back').click();
+    await menu.locator('[data-settings]').click();
+    const openSettings = page.locator('[data-settings-modal]:not([hidden])');
+    await openSettings.waitFor();
+    assert.strictEqual(await openSettings.locator('#settings-title').textContent(), 'Settings');
+    assert.deepStrictEqual(await openSettings.locator('.reboot-setting > span').allTextContents(), ['Music', 'Sound', 'Reduce motion']);
+    await openSettings.locator('[data-close-modal]').click();
+
+    await page.reload({ waitUntil: 'networkidle' });
+    await menu.waitFor();
+    assert.strictEqual(await page.getAttribute('html', 'lang'), 'en', 'language must survive page reload');
+    assert.strictEqual(await menu.locator('[data-new-game]').textContent(), 'New Game', 'persisted language must localize the menu on boot');
+    assert.strictEqual(await page.locator('[data-music-volume]').inputValue(), '33', 'language reload must preserve audio settings');
 
     await menu.locator('[data-new-game]').click();
     const identityModal = page.locator('[data-player-identity-modal]:not([hidden])');

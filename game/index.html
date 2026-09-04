@@ -15,16 +15,17 @@
 </head>
 <body>
   <div id="app">
-    <main class="reboot-menu-screen" data-reboot-foundation aria-label="Главное меню RPChess">
+    <main class="reboot-menu-screen" data-reboot-foundation aria-label="Главное меню RPChess" data-i18n-aria-label="menu.ariaLabel">
       <div class="reboot-menu-screen__layout">
         <section class="reboot-menu-screen__main">
           <div class="reboot-eyebrow">FANTASY TACTICAL CHESS ROGUELITE</div>
           <img class="reboot-wordmark" src="generated_assets/title_wordmark.png" alt="RPChess">
-          <div class="reboot-menu-actions" aria-label="Главное меню">
-            <button class="reboot-button reboot-button--primary" type="button" data-new-game>Новая игра</button>
-            <button class="reboot-button reboot-button--primary" type="button" data-continue-run disabled aria-disabled="true">Продолжить</button>
+          <div class="reboot-menu-actions" aria-label="Главное меню" data-i18n-aria-label="menu.actionsLabel">
+            <button class="reboot-button reboot-button--primary" type="button" data-new-game data-i18n="menu.newGame">Новая игра</button>
+            <button class="reboot-button reboot-button--primary" type="button" data-continue-run data-i18n="menu.continue" disabled aria-disabled="true">Продолжить</button>
             <div class="reboot-menu-secondary">
-              <button class="reboot-button reboot-button--primary" type="button" data-settings>Настройки</button>
+              <button class="reboot-button reboot-button--primary" type="button" data-settings data-i18n="menu.settings">Настройки</button>
+              <button class="reboot-button reboot-button--primary" type="button" data-language data-i18n="menu.language">Язык</button>
             </div>
           </div>
         </section>
@@ -37,7 +38,7 @@
           <img class="roster-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
           <div class="roster-topbar__actions">
             <button class="reboot-button reboot-button--primary roster-journey-button" type="button" data-roster-travel>Начать путешествие</button>
-            <button class="reboot-button reboot-button--primary" type="button" data-settings>Настройки</button>
+            <button class="reboot-button reboot-button--primary" type="button" data-settings data-i18n="menu.settings">Настройки</button>
             <button class="reboot-button reboot-button--primary" type="button" data-roster-menu>Главное меню</button>
           </div>
         </header>
@@ -158,7 +159,7 @@
           <img class="classic-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
           <div class="classic-toolbar">
             <button class="classic-mini-button" type="button" data-classic-new>Новая партия</button>
-            <button class="classic-mini-button" type="button" data-settings>Настройки</button>
+            <button class="classic-mini-button" type="button" data-settings data-i18n="menu.settings">Настройки</button>
             <button class="classic-mini-button" type="button" data-classic-menu>Главное меню</button>
           </div>
         </header>
@@ -280,15 +281,38 @@
       <header class="reboot-modal__header">
         <div>
           <div class="reboot-eyebrow">RPCHESS</div>
-          <h2 id="settings-title">Настройки</h2>
+          <h2 id="settings-title" data-i18n="settings.title">Настройки</h2>
         </div>
-        <button class="reboot-close" type="button" data-close-modal aria-label="Закрыть">×</button>
+        <button class="reboot-close" type="button" data-close-modal aria-label="Закрыть настройки" data-i18n-aria-label="settings.close">×</button>
       </header>
       <div class="reboot-settings-grid">
-        <label class="reboot-setting"><span>Музыка</span><input type="range" min="0" max="100" step="1" data-music-volume></label>
-        <label class="reboot-setting"><span>Звуки</span><input type="range" min="0" max="100" step="1" data-sfx-volume></label>
-        <label class="reboot-setting reboot-setting--toggle"><span>Уменьшить анимации</span><input type="checkbox" data-reduced-motion></label>
+        <label class="reboot-setting"><span data-i18n="settings.music">Музыка</span><input type="range" min="0" max="100" step="1" data-music-volume></label>
+        <label class="reboot-setting"><span data-i18n="settings.sfx">Звуки</span><input type="range" min="0" max="100" step="1" data-sfx-volume></label>
+        <label class="reboot-setting reboot-setting--toggle"><span data-i18n="settings.reducedMotion">Уменьшить анимации</span><input type="checkbox" data-reduced-motion></label>
       </div>
+    </section>
+  </div>
+
+  <div class="reboot-modal" data-language-modal hidden>
+    <section class="reboot-modal__panel reboot-language-panel" role="dialog" aria-modal="true" aria-labelledby="language-title">
+      <header class="reboot-modal__header">
+        <div>
+          <div class="reboot-eyebrow" data-i18n="language.kicker">ЯЗЫК</div>
+          <h2 id="language-title" data-i18n="language.title">Язык</h2>
+        </div>
+        <button class="reboot-close" type="button" data-close-modal aria-label="Закрыть выбор языка" data-i18n-aria-label="language.close">×</button>
+      </header>
+      <div class="reboot-language-options" role="group" aria-label="Доступные языки" data-i18n-aria-label="language.optionsLabel">
+        <button class="reboot-language-option" type="button" data-language-option="ru" aria-pressed="true">
+          <strong>Русский</strong>
+          <span data-language-current>Выбран: Русский</span>
+        </button>
+        <button class="reboot-language-option" type="button" data-language-option="en" aria-pressed="false">
+          <strong>English</strong>
+          <span data-language-current hidden>Selected: English</span>
+        </button>
+      </div>
+      <button class="reboot-button reboot-language-back" type="button" data-close-modal data-i18n="common.back">Назад</button>
     </section>
   </div>
 

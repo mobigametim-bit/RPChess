@@ -1,4 +1,12 @@
 import { RebootAudio } from './reboot-audio.mjs';
+import {
+  availableLanguages,
+  currentLanguage,
+  localizeDocument,
+  setLanguage,
+  subscribe,
+  t
+} from './i18n.mjs';
 
 // Travel Choice is part of the critical run shell. Its stylesheet must be available even if
 // the wider route/content bootstrap fails and Roster has to use the direct Travel fallback.
@@ -52,10 +60,11 @@ function readSettings() {
     return {
       music: Number.isFinite(value.music) ? value.music : 70,
       sfx: Number.isFinite(value.sfx) ? value.sfx : 80,
-      reducedMotion: Boolean(value.reducedMotion)
+      reducedMotion: Boolean(value.reducedMotion),
+      language: currentLanguage()
     };
   } catch {
-    return { music: 70, sfx: 80, reducedMotion: false };
+    return { music: 70, sfx: 80, reducedMotion: false, language: currentLanguage() };
   }
 }
 
@@ -83,6 +92,7 @@ clearLegacySavesOnce();
 const settings = readSettings();
 const audio = new RebootAudio(settings);
 const settingsModal = document.querySelector('[data-settings-modal]');
+const languageModal = document.querySelector('[data-language-modal]');
 const music = document.querySelector('[data-music-volume]');
 const sfx = document.querySelector('[data-sfx-volume]');
 const reducedMotion = document.querySelector('[data-reduced-motion]');
@@ -94,6 +104,28 @@ document.documentElement.dataset.reducedMotion = settings.reducedMotion ? '1' : 
 
 globalThis.RPChessRebootAudio = audio;
 globalThis.RPChessOpenSettings = () => openModal(settingsModal, audio);
+
+function syncLanguageUi() {
+  const language = currentLanguage();
+  const labels = new Map(availableLanguages().map((entry) => [entry.code, entry.label]));
+  localizeDocument(document);
+  document.querySelectorAll('[data-language-option]').forEach((button) => {
+    const selected = button.dataset.languageOption === language;
+    button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    button.classList.toggle('is-selected', selected);
+    const marker = button.querySelector('[data-language-current]');
+    if (marker) {
+      marker.hidden = !selected;
+      marker.textContent = t('language.current', { language: labels.get(language) || language });
+    }
+  });
+}
+
+syncLanguageUi();
+subscribe((language) => {
+  settings.language = language;
+  syncLanguageUi();
+});
 
 function activateAudio() { audio.activate(); }
 document.addEventListener('pointerdown', activateAudio, { once: true, capture: true });
@@ -115,6 +147,20 @@ document.querySelectorAll('[data-settings]').forEach((button) => {
   button.addEventListener('click', () => {
     audio.click();
     openModal(settingsModal, audio);
+  });
+});
+
+document.querySelectorAll('[data-language]').forEach((button) => {
+  button.addEventListener('click', () => {
+    audio.click();
+    openModal(languageModal, audio);
+  });
+});
+
+document.querySelectorAll('[data-language-option]').forEach((button) => {
+  button.addEventListener('click', () => {
+    audio.click();
+    setLanguage(button.dataset.languageOption);
   });
 });
 
