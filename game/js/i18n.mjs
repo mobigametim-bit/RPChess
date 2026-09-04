@@ -123,8 +123,18 @@ function ignoredElement(element) {
 }
 
 function sourceForText(node) {
-  if (!textSources.has(node)) textSources.set(node, node.nodeValue || '');
-  return textSources.get(node) || '';
+  const current = node.nodeValue || '';
+  if (!textSources.has(node)) {
+    textSources.set(node, current);
+    return current;
+  }
+  const source = textSources.get(node) || '';
+  const rendered = translateLegacy(source);
+  if (current !== source && current !== rendered) {
+    textSources.set(node, current);
+    return current;
+  }
+  return source;
 }
 
 function sourceForAttribute(element, attribute) {
@@ -133,8 +143,18 @@ function sourceForAttribute(element, attribute) {
     sources = new Map();
     attributeSources.set(element, sources);
   }
-  if (!sources.has(attribute)) sources.set(attribute, element.getAttribute(attribute) || '');
-  return sources.get(attribute) || '';
+  const current = element.getAttribute(attribute) || '';
+  if (!sources.has(attribute)) {
+    sources.set(attribute, current);
+    return current;
+  }
+  const source = sources.get(attribute) || '';
+  const rendered = translateLegacy(source);
+  if (current !== source && current !== rendered) {
+    sources.set(attribute, current);
+    return current;
+  }
+  return source;
 }
 
 function localizeTextNode(node) {
