@@ -7,6 +7,11 @@ on:
       - feature/localisation-completion
     paths:
       - .github/workflows/ui-matrix.yml
+      - game/index.html
+      - game/css/language.css
+      - scripts/build.cjs
+      - scripts/capture-ui-matrix.cjs
+      - tests/reboot-foundation.cjs
 
 permissions:
   contents: read
