@@ -1,4 +1,5 @@
 const assert = require('assert');
+const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
 
@@ -33,6 +34,32 @@ class MemoryStorage {
     assert.deepStrictEqual(Object.keys(UI_MESSAGES[language.code]).sort(), referenceKeys, `${language.code} keys must match RU`);
     for (const key of referenceKeys) assert(String(UI_MESSAGES[language.code][key]).trim(), `${language.code}.${key} must not be empty`);
   }
+
+  const eventLocalizationDir = path.join(root, 'game/localization/events');
+  const eventDictionaryFiles = fs.readdirSync(eventLocalizationDir)
+    .filter((file) => /^en-(?:v3|v4c|v5)-\d+\.mjs$/.test(file))
+    .sort();
+  assert.strictEqual(eventDictionaryFiles.filter((file) => file.startsWith('en-v3-')).length, 10, 'Events v3 must ship exactly 10 English dictionary chunks');
+  assert.strictEqual(eventDictionaryFiles.filter((file) => file.startsWith('en-v4c-')).length, 25, 'Events v4c must ship exactly 25 English dictionary chunks');
+  assert.strictEqual(eventDictionaryFiles.filter((file) => file.startsWith('en-v5-')).length, 11, 'Events v5 must ship exactly 11 English dictionary chunks');
+
+  const placeholders = (value) => [...String(value).matchAll(/\{[a-zA-Z0-9_]+\}/g)].map((match) => match[0]).sort();
+  const cyrillic = /[А-Яа-яЁё]/u;
+  let v5HeroLineCount = 0;
+  for (const file of eventDictionaryFiles) {
+    const module = await import(pathToFileURL(path.join(eventLocalizationDir, file)).href);
+    const dictionary = Object.values(module).find((value) => value && typeof value === 'object' && !Array.isArray(value));
+    assert(dictionary, `${file} must export an event translation dictionary`);
+    const entries = Object.entries(dictionary);
+    assert(entries.length > 0, `${file} must not be empty`);
+    if (file.startsWith('en-v5-')) v5HeroLineCount += entries.length;
+    for (const [source, translation] of entries) {
+      assert(String(translation).trim(), `${file} translation must not be empty: ${source}`);
+      assert.strictEqual(cyrillic.test(String(translation)), false, `${file} English translation must not contain Cyrillic: ${source}`);
+      assert.deepStrictEqual(placeholders(translation), placeholders(source), `${file} must preserve placeholders: ${source}`);
+    }
+  }
+  assert.strictEqual(v5HeroLineCount, 537, 'Events v5 must cover all 537 hero-specific lines');
 
   const i18n = await import(`${i18nUrl}?contract=default`);
   assert.strictEqual(i18n.currentLanguage(), 'ru', 'RU must be the default without browser-language detection');
@@ -78,7 +105,7 @@ class MemoryStorage {
 
   delete globalThis.document;
   delete globalThis.localStorage;
-  console.log(`Localization foundation API, RU/EN parity and merged persistence (${referenceKeys.length} keys): PASS`);
+  console.log(`Localization foundation API, RU/EN parity, event dictionaries and merged persistence (${referenceKeys.length} UI keys, ${v5HeroLineCount} v5 hero lines): PASS`);
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;
