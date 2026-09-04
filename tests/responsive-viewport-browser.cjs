@@ -101,6 +101,7 @@ async function auditPrepAndCombat(browser, width, height) {
 
     await page.evaluate(() => dispatchEvent(new CustomEvent('rpchess:battle-open')));
     await page.locator('[data-battle-screen]:not([hidden])').waitFor();
+    await page.waitForFunction(() => document.body.classList.contains('battle-prep-compact-active'));
     await assertNoHorizontalOverflow(page, `${label} Battle prep`);
     const battleColumns = await page.locator('.battle-grid').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length);
     assert.strictEqual(battleColumns, 2, `${label}: Battle prep must use two card columns at intermediate width`);

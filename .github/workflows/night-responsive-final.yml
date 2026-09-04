@@ -1,0 +1,42 @@
+name: Night responsive final exact-head
+
+on:
+  push:
+    branches: [night/verification]
+
+permissions:
+  contents: read
+
+jobs:
+  responsive-final:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: d97591f5341ef3fd84da832331d00e6a1670264a
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Run focused source and gameplay checks
+        run: |
+          node tests/code-health-runtime.cjs
+          node tests/ui-redesign-final.cjs
+          node tests/travel-choice.cjs
+          node tests/skirmish.cjs
+          node tests/battle.cjs
+      - name: Build exact production tree
+        run: npm run build
+      - name: Install Playwright and Chromium
+        timeout-minutes: 10
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+      - name: Run parameterized viewport matrix
+        timeout-minutes: 15
+        env:
+          RPCHESS_BROWSER_TEST: responsive-viewport-browser.cjs
+        run: npm run test:browser
