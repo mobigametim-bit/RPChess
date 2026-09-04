@@ -46,6 +46,7 @@ import { EVENT_EN_V5_08 } from './en-v5-08.mjs';
 import { EVENT_EN_V5_09 } from './en-v5-09.mjs';
 import { EVENT_EN_V5_10 } from './en-v5-10.mjs';
 import { EVENT_EN_V5_11 } from './en-v5-11.mjs';
+import { EVENT_EN_V5_NAMES } from './en-v5-names.mjs';
 
 const EVENT_EN_EXACT = Object.freeze(Object.assign({},
   EVENT_EN_V4C_01, EVENT_EN_V4C_02, EVENT_EN_V4C_03, EVENT_EN_V4C_04, EVENT_EN_V4C_05,
@@ -56,7 +57,8 @@ const EVENT_EN_EXACT = Object.freeze(Object.assign({},
   EVENT_EN_V3_01, EVENT_EN_V3_02, EVENT_EN_V3_03, EVENT_EN_V3_04, EVENT_EN_V3_05,
   EVENT_EN_V3_06, EVENT_EN_V3_07, EVENT_EN_V3_08, EVENT_EN_V3_09, EVENT_EN_V3_10,
   EVENT_EN_V5_01, EVENT_EN_V5_02, EVENT_EN_V5_03, EVENT_EN_V5_04, EVENT_EN_V5_05,
-  EVENT_EN_V5_06, EVENT_EN_V5_07, EVENT_EN_V5_08, EVENT_EN_V5_09, EVENT_EN_V5_10, EVENT_EN_V5_11
+  EVENT_EN_V5_06, EVENT_EN_V5_07, EVENT_EN_V5_08, EVENT_EN_V5_09, EVENT_EN_V5_10, EVENT_EN_V5_11,
+  EVENT_EN_V5_NAMES
 ));
 
 export { EVENT_EN_EXACT };
