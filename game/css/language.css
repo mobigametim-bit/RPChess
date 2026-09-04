@@ -2,7 +2,8 @@
 [data-language-modal] .reboot-button {
   position: relative;
   border: 1px solid #d8b15d;
-  border-image: none;
+  border-image: none !important;
+  border-image-source: none !important;
   border-radius: 0;
   clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
   background: linear-gradient(180deg, rgba(58,45,27,.72) 0%, rgba(27,28,31,.97) 48%, rgba(8,11,15,.99) 100%);
@@ -39,7 +40,8 @@
   min-height: 48px;
   padding: 0;
   border: 1px solid rgba(216,177,93,.78);
-  border-image: none;
+  border-image: none !important;
+  border-image-source: none !important;
   border-radius: 0;
   clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
   background: linear-gradient(180deg, rgba(44,35,23,.74), rgba(10,12,15,.98));
