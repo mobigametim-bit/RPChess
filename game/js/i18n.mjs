@@ -3,6 +3,7 @@ import { EN_EXACT as LEGACY_EN_EXACT, legacyTranslate } from '../localization/le
 import { GAMEPLAY_EN_EXACT } from '../localization/legacy-gameplay.mjs';
 import { EXTRA_EN_EXACT, EXTRA_EN_PATTERNS } from '../localization/legacy-ui-extra.mjs';
 import { ROSTER_CONTENT_EN_EXACT } from '../localization/roster-content-en.mjs';
+import { EVENT_NARRATIVE_EN_EXACT } from '../localization/event-narrative-en.mjs';
 import { EVENT_EN_EXACT } from '../localization/events/en.mjs';
 import { EVENT_EN_V5_NAMES } from '../localization/events/en-v5-names.mjs';
 
@@ -61,6 +62,7 @@ function translateKnownToken(value) {
   const source = String(value ?? '');
   const direct = EVENT_EN_V5_NAMES[source]
     || EVENT_EN_EXACT[source]
+    || EVENT_NARRATIVE_EN_EXACT[source]
     || ROSTER_CONTENT_EN_EXACT[source]
     || GAMEPLAY_EN_EXACT[source]
     || EXTRA_EN_EXACT[source]
@@ -129,7 +131,7 @@ function translatedSide(value) {
 
 function translateGeneratedGameplay(value) {
   const source = String(value ?? '');
-  const direct = ROSTER_CONTENT_EN_EXACT[source] || GAMEPLAY_EN_EXACT[source] || EXTRA_EN_EXACT[source] || UPPERCASE_EN_EXACT[source];
+  const direct = EVENT_NARRATIVE_EN_EXACT[source] || ROSTER_CONTENT_EN_EXACT[source] || GAMEPLAY_EN_EXACT[source] || EXTRA_EN_EXACT[source] || UPPERCASE_EN_EXACT[source];
   if (direct) return direct;
 
   let match = source.match(/^(.+) присоединяется к отряду$/u);
