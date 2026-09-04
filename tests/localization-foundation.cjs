@@ -155,9 +155,21 @@ class MemoryStorage {
   assert.strictEqual(i18n.translateLegacy('Ход соперника…'), 'Opponent’s move…', 'dynamic Puzzle status must localize');
   assert.strictEqual(i18n.translateLegacy('Задача решена'), 'Puzzle solved', 'Puzzle solved status must localize');
   assert.deepStrictEqual(
-    [i18n.translateLegacy('Сила: примерно СМЕРТЕЛЬНАЯ'), i18n.translateLegacy('Тактика противника: Безжалостный')],
-    ['Strength: about DEADLY', 'Enemy tactic: Ruthless'],
-    'nested combat metadata tokens must localize inside generated labels'
+    [
+      i18n.translateLegacy('Сила: примерно СМЕРТЕЛЬНАЯ'),
+      i18n.translateLegacy('Тактика противника: Безжалостный'),
+      i18n.translateLegacy('Тактика противника: Мастерский'),
+      i18n.translateLegacy('Stockfish 18 lite · Мастерский · ≈2000 Elo'),
+      i18n.translateLegacy('Перед вами элитная армия. Каждый неточный ход будет наказан. Враг уже занял поле и начинает первым. Ваш отряд принимает бой, удерживая оборону.')
+    ],
+    [
+      'Strength: about DEADLY',
+      'Enemy tactic: Ruthless',
+      'Enemy tactic: Masterful',
+      'Stockfish 18 lite · Master Level · ≈2000 Elo',
+      'An elite army stands before you. Every inaccurate move will be punished. The enemy already controls the field and moves first. Your roster takes the fight on the defensive.'
+    ],
+    'nested and contextual combat metadata must localize without changing domain terminology'
   );
   assert.deepStrictEqual(
     [i18n.translateLegacy('МАТ В 3'), i18n.translateLegacy('ВЫИГРАЙТЕ ФЕРЗЯ'), i18n.translateLegacy('e4: пешка')],
@@ -165,9 +177,15 @@ class MemoryStorage {
     'Puzzle objective and board accessibility copy must localize'
   );
   assert.deepStrictEqual(
-    [i18n.translateLegacy(' выбирают ход.'), i18n.translateLegacy('+1 припас')],
-    [' are choosing a move.', '+1 supply'],
-    'split Classic summary and signed resource accessibility fragments must localize'
+    [
+      i18n.translateLegacy(' выбирают ход.'),
+      i18n.translateLegacy('+1 припас'),
+      i18n.translateLegacy('♔ Король 1 / 1'),
+      i18n.translateLegacy('ЗДОРОВЫ 5'),
+      i18n.translateLegacy('УГРОЗА ★★★')
+    ],
+    [' are choosing a move.', '+1 supply', '♔ King 1 / 1', 'HEALTHY 5', 'THREAT ★★★'],
+    'split Classic copy and compact runtime labels must localize'
   );
   assert.deepStrictEqual(JSON.parse(storage.getItem(settingsKey)), {
     music: 33,
