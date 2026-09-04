@@ -189,8 +189,8 @@ function renderBattlePrepQuote() {
 
 function patchAftermath(casualty) {
   const text = document.querySelector('[data-battle-aftermath-text]');
+  const i18n = globalThis.RPChessI18n;
   if (text) {
-    const i18n = globalThis.RPChessI18n;
     const mercenariesDismissed = i18n?.translateLegacy?.('Наёмники распущены') || 'Наёмники распущены';
     text.textContent = text.textContent
       .replace('Временная армия распущена', mercenariesDismissed)
@@ -204,8 +204,10 @@ function patchAftermath(casualty) {
     }
   }
   if (!casualty) return;
+  const localizedName = i18n?.translateLegacy?.(casualty.name) || casualty.name;
   for (const row of document.querySelectorAll('[data-battle-aftermath] .battle-aftermath-row')) {
-    if (row.querySelector('strong')?.textContent === casualty.name) row.remove();
+    const renderedName = row.querySelector('strong')?.textContent || '';
+    if (renderedName === casualty.name || renderedName === localizedName) row.remove();
   }
 }
 
