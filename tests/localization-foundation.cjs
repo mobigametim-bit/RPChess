@@ -116,6 +116,16 @@ class MemoryStorage {
     'Abbess Celene: severely wounded',
     'Event outcome notes must translate generated named-hero status copy'
   );
+  assert.strictEqual(i18n.translateLegacy('Небесный Каганат'), 'Sky Khanate', 'late-game recruit origins must be localized');
+  assert.strictEqual(
+    i18n.translateLegacy('Амбициозная претендентка, привыкшая превращать любой поход в проверку лидерства.'),
+    'An ambitious claimant accustomed to turning every campaign into a test of leadership.',
+    'late-game recruit biographies must be localized'
+  );
+  assert.strictEqual(i18n.translateLegacy('ВСЕ 2 СЛОТА · ЛАДЬЯ ЗАНЯТЫ'), 'ALL 2 SLOTS · ROOK FULL', 'uppercased Battle slot composites must localize the role token');
+  assert.strictEqual(i18n.translateLegacy('Мат — победа белых'), 'Checkmate — White wins', 'Classic Chess result composites must localize dynamically');
+  assert.strictEqual(i18n.translateLegacy('Кто ты, воин?'), 'Who are you, warrior?', 'Player Identity copy must be localized');
+  assert.strictEqual(i18n.translateLegacy('Бату Утёс — ТЯЖЕЛО РАНЕН'), 'Batu Cliff — SEVERELY WOUNDED', 'combat wound toasts must localize named heroes');
   assert.deepStrictEqual(JSON.parse(storage.getItem(settingsKey)), {
     music: 33,
     sfx: 80,
