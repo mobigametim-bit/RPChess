@@ -79,6 +79,31 @@ function translateKnownToken(value) {
   return legacy !== source ? legacy : source;
 }
 
+const COMPOSABLE_EN_ENTRIES = Object.freeze(Object.entries({
+  ...LEGACY_EN_EXACT,
+  ...GAMEPLAY_EN_EXACT,
+  ...EXTRA_EN_EXACT,
+  ...ROSTER_CONTENT_EN_EXACT,
+  ...RUNTIME_STATUS_EN_EXACT,
+  ...RUNTIME_COMPOSED_EN_EXACT
+}).filter(([source, translation]) => source && translation && source.trim() === source)
+  .sort(([a], [b]) => b.length - a.length));
+
+function translateKnownSequence(value) {
+  const source = String(value ?? '');
+  let remaining = source;
+  const parts = [];
+  while (remaining) {
+    const entry = COMPOSABLE_EN_ENTRIES.find(([token]) => remaining === token || remaining.startsWith(`${token} `));
+    if (!entry) return source;
+    const [token, translation] = entry;
+    parts.push(translation);
+    if (remaining === token) return parts.join(' ');
+    remaining = remaining.slice(token.length + 1);
+  }
+  return source;
+}
+
 function escapeRegex(value) { return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 const EVENT_TEMPLATE_PATTERNS = Object.freeze(Object.entries(EVENT_EN_EXACT)
   .filter(([source]) => /\{[a-zA-Z0-9_]+\}/.test(source))
@@ -140,6 +165,9 @@ function translateGeneratedGameplay(value) {
   const direct = EVENT_NARRATIVE_EN_EXACT[source] || RUNTIME_STATUS_EN_EXACT[source] || RUNTIME_COMPOSED_EN_EXACT[source] || ROSTER_CONTENT_EN_EXACT[source] || GAMEPLAY_EN_EXACT[source] || EXTRA_EN_EXACT[source] || UPPERCASE_EN_EXACT[source];
   if (direct) return direct;
 
+  const sequence = translateKnownSequence(source);
+  if (sequence !== source) return sequence;
+
   let match = source.match(/^(.+) присоединяется к отряду$/u);
   if (match) return `${translateKnownToken(match[1])} joins the roster`;
   match = source.match(/^(.+): (погиб|тяжело ранен)$/u);
@@ -180,6 +208,8 @@ function translateGeneratedGameplay(value) {
   if (match) return `${match[1]}: ${translateKnownToken(match[2])}`;
   match = source.match(/^(.+), (Пешка|Конь|Слон|Ладья|Ферзь|Король), (ЗДОРОВ|ТЯЖЕЛО РАНЕН|ПОГИБ)$/u);
   if (match) return `${translateKnownToken(match[1])}, ${translateKnownToken(match[2])}, ${translateKnownToken(match[3])}`;
+  match = source.match(/^(\S+)\s+(Пешка|Конь|Слон|Ладья|Ферзь|Король)\s+(\d+)\s*\/\s*(\d+)$/u);
+  if (match) return `${match[1]} ${translateKnownToken(match[2])} ${match[3]} / ${match[4]}`;
 
   match = source.match(/^Мат — победа (белых|чёрных)$/u);
   if (match) return `Checkmate — ${translatedSide(match[1])} wins`;
@@ -198,6 +228,10 @@ function translateGeneratedGameplay(value) {
   if (match) return `Strength: ${translateKnownToken(match[1])}`;
   match = source.match(/^Тактика противника:\s*(.+)$/u);
   if (match) return `Enemy tactic: ${translateKnownToken(match[1])}`;
+  match = source.match(/^(ВСЕ|ЗДОРОВЫ|РАНЕНЫ|ПОГИБШИЕ)\s+(\d+)$/u);
+  if (match) return `${translateKnownToken(match[1])} ${match[2]}`;
+  match = source.match(/^УГРОЗА\s+(★+)$/u);
+  if (match) return `THREAT ${match[1]}`;
   match = source.match(/^([+-]?\d+) золота$/u);
   if (match) return `${match[1]} gold`;
   match = source.match(/^([+-]?\d+) припас(?:а|ов)?$/u);
