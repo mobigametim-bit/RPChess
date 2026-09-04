@@ -7,6 +7,9 @@ export const RUNTIME_COMPOSED_EN_EXACT = Object.freeze({
   'ВЫИГРАЙТЕ СЛОНА': 'WIN THE BISHOP',
   'ВЫИГРАЙТЕ КОНЯ': 'WIN THE KNIGHT',
   'ИМЕННОЙ': 'NAMED',
+  'Тренировка': 'Training',
+  'ТЯЖЕЛО РАНЕН': 'SEVERELY WOUNDED',
+  'РИСК РАНЕНИЯ КОРОЛЯ': 'KING WOUND RISK',
 
   // Classic Chess summary sentences are split by a <strong> side label,
   // so these tail fragments are localized as independent text nodes.
