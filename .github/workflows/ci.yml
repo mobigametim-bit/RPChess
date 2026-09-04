@@ -1,4 +1,4 @@
-name: RPChess local integration diagnostic
+name: RPChess full localization acceptance diagnostic
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 jobs:
-  local-gate:
+  full-gate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,5 +29,13 @@ jobs:
             rpchess-runtime-assets-v1-${{ runner.os }}-
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
-      - name: Run local integration gate
+      - name: Run local source, deterministic and build gate
         run: npm run gate:local
+      - name: Install Playwright and Chromium
+        timeout-minutes: 10
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+      - name: Run full real Chromium regression
+        timeout-minutes: 30
+        run: npm run test:browser
