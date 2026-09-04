@@ -203,8 +203,8 @@ function syncOutcomeScreens() {
     const title = root.querySelector('[data-aftermath-result],[data-battle-aftermath-result],[data-run-end-title]');
     const outcome = String(title?.textContent || '').trim().toUpperCase();
     const visible = !root.hidden;
-    const victory = visible && outcome === 'ПОБЕДА';
-    const defeat = visible && (runEnd || outcome === 'ПОРАЖЕНИЕ');
+    const victory = visible && (outcome === 'ПОБЕДА' || outcome === 'VICTORY');
+    const defeat = visible && (runEnd || outcome === 'ПОРАЖЕНИЕ' || outcome === 'DEFEAT');
     root.classList.toggle('is-victory', victory);
     root.classList.toggle('is-defeat', defeat);
     if (victory) playVictoryFanfare(root);
