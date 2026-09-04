@@ -1,4 +1,4 @@
-name: RPChess localization diagnostic
+name: RPChess local integration diagnostic
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 jobs:
-  localization:
+  local-gate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,7 +20,14 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      - name: Restore runtime asset cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
-      - name: Run localization regression
-        run: npm run test:localization
+      - name: Run local integration gate
+        run: npm run gate:local
