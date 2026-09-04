@@ -2,6 +2,7 @@ import { LANGUAGES, UI_MESSAGES } from '../localization/ui.mjs';
 import { EN_EXACT as LEGACY_EN_EXACT, legacyTranslate } from '../localization/legacy-ui.mjs';
 import { GAMEPLAY_EN_EXACT } from '../localization/legacy-gameplay.mjs';
 import { EXTRA_EN_EXACT, EXTRA_EN_PATTERNS } from '../localization/legacy-ui-extra.mjs';
+import { ROSTER_CONTENT_EN_EXACT } from '../localization/roster-content-en.mjs';
 import { EVENT_EN_EXACT } from '../localization/events/en.mjs';
 import { EVENT_EN_V5_NAMES } from '../localization/events/en-v5-names.mjs';
 
@@ -45,7 +46,12 @@ function applyPatterns(source, patterns) {
 
 function translateKnownToken(value) {
   const source = String(value ?? '');
-  const direct = EVENT_EN_V5_NAMES[source] || EVENT_EN_EXACT[source] || GAMEPLAY_EN_EXACT[source] || EXTRA_EN_EXACT[source] || LEGACY_EN_EXACT[source];
+  const direct = EVENT_EN_V5_NAMES[source]
+    || EVENT_EN_EXACT[source]
+    || ROSTER_CONTENT_EN_EXACT[source]
+    || GAMEPLAY_EN_EXACT[source]
+    || EXTRA_EN_EXACT[source]
+    || LEGACY_EN_EXACT[source];
   if (direct) return direct;
   const legacy = legacyTranslate(source, 'en');
   return legacy !== source ? legacy : source;
@@ -55,6 +61,7 @@ const UPPERCASE_EN_EXACT = Object.freeze(Object.entries({
   ...LEGACY_EN_EXACT,
   ...GAMEPLAY_EN_EXACT,
   ...EXTRA_EN_EXACT,
+  ...ROSTER_CONTENT_EN_EXACT,
   ...EVENT_EN_V5_NAMES
 }).reduce((acc, [source, translation]) => {
   if (!/[А-Яа-яЁё]/u.test(source)) return acc;
@@ -115,15 +122,64 @@ function translateEventPresentation(source) {
   return source;
 }
 
+function translatedSide(value) {
+  return ({ 'белых':'White', 'чёрных':'Black', 'Белые':'White', 'Чёрные':'Black' })[value] || value;
+}
+
 function translateGeneratedGameplay(value) {
   const source = String(value ?? '');
-  const direct = GAMEPLAY_EN_EXACT[source] || EXTRA_EN_EXACT[source] || UPPERCASE_EN_EXACT[source];
+  const direct = ROSTER_CONTENT_EN_EXACT[source] || GAMEPLAY_EN_EXACT[source] || EXTRA_EN_EXACT[source] || UPPERCASE_EN_EXACT[source];
   if (direct) return direct;
 
   let match = source.match(/^(.+) присоединяется к отряду$/u);
   if (match) return `${translateKnownToken(match[1])} joins the roster`;
   match = source.match(/^(.+): (погиб|тяжело ранен)$/u);
   if (match) return `${translateKnownToken(match[1])}: ${match[2] === 'погиб' ? 'dead' : 'severely wounded'}`;
+  match = source.match(/^(.+) — ТЯЖЕЛО РАНЕН$/u);
+  if (match) return `${translateKnownToken(match[1])} — SEVERELY WOUNDED`;
+
+  match = source.match(/^(.+) пал во время перехода без припасов\. Путешествие этого отряда завершено\.$/u);
+  if (match) return `${translateKnownToken(match[1])} fell while travelling without supplies. This roster’s journey is over.`;
+  match = source.match(/^Ваш соратник (.+) умер от голода\. Похоронив его и водрузив на могилу памятный камень, отряд отправляется дальше с тяжелым сердцем\.$/u);
+  if (match) return `Your companion ${translateKnownToken(match[1])} died of starvation. After burying them and raising a memorial stone, the roster continues with heavy hearts.`;
+  match = source.match(/^(.+) пал в битве\. Забег завершён\.$/u);
+  if (match) return `${translateKnownToken(match[1])} fell in battle. The run is over.`;
+  match = source.match(/^(.+) пал в стычке\. Путешествие этого отряда завершено\.$/u);
+  if (match) return `${translateKnownToken(match[1])} fell in the skirmish. This roster’s journey is over.`;
+
+  match = source.match(/^(.+?)\. (.+)$/u);
+  if (match) {
+    const first = translateKnownToken(match[1]);
+    const rest = translateKnownToken(match[2]);
+    if (first !== match[1] && rest !== match[2]) return `${first}. ${rest}`;
+  }
+
+  match = source.match(/^ВСЕ (\d+) СЛОТА · (.+) ЗАНЯТЫ$/u);
+  if (match) return `ALL ${match[1]} SLOTS · ${translateKnownToken(match[2])} FULL`;
+  match = source.match(/^слот (Пешка|Конь|Слон|Ладья|Ферзь|Король): (\d+)$/u);
+  if (match) return `slot ${translateKnownToken(match[1])}: ${match[2]}`;
+  match = source.match(/^(.+), король обязателен$/u);
+  if (match) return `${translateKnownToken(match[1])}, King required`;
+  match = source.match(/^Убрать (.+) из боевого отряда$/u);
+  if (match) return `Remove ${translateKnownToken(match[1])} from the battle roster`;
+
+  match = source.match(/^([a-h][1-8]): (.+), (белых|чёрных)$/u);
+  if (match) return `${match[1]}: ${translateKnownToken(match[2])}, ${translatedSide(match[3])}`;
+  match = source.match(/^([a-h][1-8]): (.+), (Пешка|Конь|Слон|Ладья|Ферзь|Король)$/u);
+  if (match) return `${match[1]}: ${translateKnownToken(match[2])}, ${translateKnownToken(match[3])}`;
+  match = source.match(/^(.+), (Пешка|Конь|Слон|Ладья|Ферзь|Король), (ЗДОРОВ|ТЯЖЕЛО РАНЕН|ПОГИБ)$/u);
+  if (match) return `${translateKnownToken(match[1])}, ${translateKnownToken(match[2])}, ${translateKnownToken(match[3])}`;
+
+  match = source.match(/^Мат — победа (белых|чёрных)$/u);
+  if (match) return `Checkmate — ${translatedSide(match[1])} wins`;
+  match = source.match(/^(Белые|Чёрные) победили\.$/u);
+  if (match) return `${translatedSide(match[1])} won.`;
+  match = source.match(/^(Белые|Чёрные) выбирают ход\.$/u);
+  if (match) return `${translatedSide(match[1])} are choosing a move.`;
+  match = source.match(/^(Белые|Чёрные) под шахом\. Нужно защитить короля\.$/u);
+  if (match) return `${translatedSide(match[1])} are in check. The King must be defended.`;
+  match = source.match(/^(Белые|Чёрные) делают ход\.$/u);
+  if (match) return `${translatedSide(match[1])} to move.`;
 
   const extra = applyPatterns(source, EXTRA_EN_PATTERNS);
   if (extra !== source) return extra;
@@ -145,10 +201,10 @@ export function translateLegacy(value, language = activeLanguage) {
   if (normalized !== 'en') return source;
   const eventTranslation = translateEventPresentation(source);
   if (eventTranslation !== source) return eventTranslation;
-  const legacy = legacyTranslate(source, normalized);
-  if (legacy !== source) return legacy;
   const generated = translateGeneratedGameplay(source);
   if (generated !== source) return generated;
+  const legacy = legacyTranslate(source, normalized);
+  if (legacy !== source) return legacy;
   if (source.includes(' · ')) {
     const parts = source.split(' · ');
     const translated = parts.map((part) => translateLegacy(part, normalized));
