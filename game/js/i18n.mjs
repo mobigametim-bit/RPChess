@@ -5,6 +5,7 @@ import { EXTRA_EN_EXACT, EXTRA_EN_PATTERNS } from '../localization/legacy-ui-ext
 import { ROSTER_CONTENT_EN_EXACT } from '../localization/roster-content-en.mjs';
 import { EVENT_NARRATIVE_EN_EXACT } from '../localization/event-narrative-en.mjs';
 import { RUNTIME_STATUS_EN_EXACT } from '../localization/runtime-status-en.mjs';
+import { RUNTIME_COMPOSED_EN_EXACT } from '../localization/runtime-composed-en.mjs';
 import { EVENT_EN_EXACT } from '../localization/events/en.mjs';
 import { EVENT_EN_V5_NAMES } from '../localization/events/en-v5-names.mjs';
 
@@ -52,6 +53,7 @@ const UPPERCASE_EN_EXACT = Object.freeze(Object.entries({
   ...EXTRA_EN_EXACT,
   ...ROSTER_CONTENT_EN_EXACT,
   ...RUNTIME_STATUS_EN_EXACT,
+  ...RUNTIME_COMPOSED_EN_EXACT,
   ...EVENT_EN_V5_NAMES
 }).reduce((acc, [source, translation]) => {
   if (!/[А-Яа-яЁё]/u.test(source)) return acc;
@@ -66,6 +68,7 @@ function translateKnownToken(value) {
     || EVENT_EN_EXACT[source]
     || EVENT_NARRATIVE_EN_EXACT[source]
     || RUNTIME_STATUS_EN_EXACT[source]
+    || RUNTIME_COMPOSED_EN_EXACT[source]
     || ROSTER_CONTENT_EN_EXACT[source]
     || GAMEPLAY_EN_EXACT[source]
     || EXTRA_EN_EXACT[source]
@@ -134,7 +137,7 @@ function translatedSide(value) {
 
 function translateGeneratedGameplay(value) {
   const source = String(value ?? '');
-  const direct = EVENT_NARRATIVE_EN_EXACT[source] || RUNTIME_STATUS_EN_EXACT[source] || ROSTER_CONTENT_EN_EXACT[source] || GAMEPLAY_EN_EXACT[source] || EXTRA_EN_EXACT[source] || UPPERCASE_EN_EXACT[source];
+  const direct = EVENT_NARRATIVE_EN_EXACT[source] || RUNTIME_STATUS_EN_EXACT[source] || RUNTIME_COMPOSED_EN_EXACT[source] || ROSTER_CONTENT_EN_EXACT[source] || GAMEPLAY_EN_EXACT[source] || EXTRA_EN_EXACT[source] || UPPERCASE_EN_EXACT[source];
   if (direct) return direct;
 
   let match = source.match(/^(.+) присоединяется к отряду$/u);
@@ -173,6 +176,8 @@ function translateGeneratedGameplay(value) {
   if (match) return `${match[1]}: ${translateKnownToken(match[2])}, ${translatedSide(match[3])}`;
   match = source.match(/^([a-h][1-8]): (.+), (Пешка|Конь|Слон|Ладья|Ферзь|Король)$/u);
   if (match) return `${match[1]}: ${translateKnownToken(match[2])}, ${translateKnownToken(match[3])}`;
+  match = source.match(/^([a-h][1-8]): (пешка|конь|слон|ладья|ферзь|король)$/u);
+  if (match) return `${match[1]}: ${translateKnownToken(match[2])}`;
   match = source.match(/^(.+), (Пешка|Конь|Слон|Ладья|Ферзь|Король), (ЗДОРОВ|ТЯЖЕЛО РАНЕН|ПОГИБ)$/u);
   if (match) return `${translateKnownToken(match[1])}, ${translateKnownToken(match[2])}, ${translateKnownToken(match[3])}`;
 
@@ -186,6 +191,17 @@ function translateGeneratedGameplay(value) {
   if (match) return `${translatedSide(match[1])} are in check. The King must be defended.`;
   match = source.match(/^(Белые|Чёрные) делают ход\.$/u);
   if (match) return `${translatedSide(match[1])} to move.`;
+
+  match = source.match(/^Сила:\s*примерно\s*(.+)$/u);
+  if (match) return `Strength: about ${translateKnownToken(match[1])}`;
+  match = source.match(/^Сила:\s*(.+)$/u);
+  if (match) return `Strength: ${translateKnownToken(match[1])}`;
+  match = source.match(/^Тактика противника:\s*(.+)$/u);
+  if (match) return `Enemy tactic: ${translateKnownToken(match[1])}`;
+  match = source.match(/^([+-]?\d+) золота$/u);
+  if (match) return `${match[1]} gold`;
+  match = source.match(/^([+-]?\d+) припас(?:а|ов)?$/u);
+  if (match) return `${match[1]} ${Math.abs(Number(match[1])) === 1 ? 'supply' : 'supplies'}`;
 
   const extra = applyPatterns(source, EXTRA_EN_PATTERNS);
   if (extra !== source) return extra;
