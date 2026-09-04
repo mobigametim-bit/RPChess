@@ -15,7 +15,7 @@ class MemoryStorage {
 
   const importFile = (relative) => import(pathToFileURL(path.join(root, relative)).href);
   const i18n = await importFile('game/js/i18n.mjs');
-  const { applyEventContentV3 } = await importFile('game/js/events/event-content-v3.mjs');
+  const { EVENT_CONTENT_V3, applyEventContentV3 } = await importFile('game/js/events/event-content-v3.mjs');
   const { applyEventHeroChoicesV5 } = await importFile('game/js/events/event-hero-choices-v5.mjs');
   const { personalizePlayerNarrative, personalizePlayerTitle } = await importFile('game/js/player-identity-core.mjs');
 
@@ -43,6 +43,10 @@ class MemoryStorage {
   i18n.setLanguage('en');
   const cyrillic = /[А-Яа-яЁё]/u;
   const placeholders = (value) => [...String(value).matchAll(/\{[a-zA-Z0-9_]+\}/g)].map((match) => match[0]).sort();
+  const displayedAction = (eventId, choice) => {
+    if (!choice?.sourceChoiceId) return choice?.action || '';
+    return EVENT_CONTENT_V3[eventId]?.choices?.[choice.sourceChoiceId]?.action || choice.action || '';
+  };
   let auditedStrings = 0;
 
   for (const sourceEvent of catalog) {
@@ -55,7 +59,7 @@ class MemoryStorage {
     ];
 
     for (const choice of event.choices || []) {
-      visible.push([`${choice.id}.action`, choice.action]);
+      visible.push([`${choice.id}.action`, displayedAction(event.id, choice)]);
       for (const warning of choice.warnings || []) visible.push([`${choice.id}.warning`, warning]);
       if (choice.heroReaction?.text) visible.push([`${choice.id}.heroReaction`, choice.heroReaction.text]);
       if (choice.heroLine) visible.push([`${choice.id}.heroLine`, choice.heroLine]);
@@ -81,10 +85,10 @@ class MemoryStorage {
   const e147 = applyEventContentV3(applyEventHeroChoicesV5(catalog[146]));
   assert.strictEqual(i18n.translateLegacy(e147.title), 'The Pilgrim Who Walks Backward', 'acceptance Event E147 title must be English');
   assert(e147.storyParagraphs.every((line) => !cyrillic.test(i18n.translateLegacy(line))), 'acceptance Event E147 story must be fully English');
-  assert(e147.choices.every((choice) => !cyrillic.test(i18n.translateLegacy(choice.action))), 'acceptance Event E147 choices must be fully English');
+  assert(e147.choices.every((choice) => !cyrillic.test(i18n.translateLegacy(displayedAction(e147.id, choice)))), 'acceptance Event E147 choices must be fully English');
 
   const e291 = applyEventContentV3(applyEventHeroChoicesV5(catalog[290]));
-  const e291Visible = [e291.title, ...(e291.storyParagraphs || []), e291.kingReaction, ...e291.choices.map((choice) => choice.action)].filter(Boolean);
+  const e291Visible = [e291.title, ...(e291.storyParagraphs || []), e291.kingReaction, ...e291.choices.map((choice) => displayedAction(e291.id, choice))].filter(Boolean);
   assert(e291Visible.every((line) => !cyrillic.test(i18n.translateLegacy(line))), 'acceptance Event E291 source copy must be fully English');
   const e291Personalized = personalizePlayerNarrative(i18n.translateLegacy(e291.storyParagraphs[1]), 'Qw');
   assert.strictEqual(cyrillic.test(e291Personalized), false, 'E291 must stay English after player-name personalization');
