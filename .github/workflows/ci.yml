@@ -1,4 +1,4 @@
-name: RPChess full localization acceptance diagnostic
+name: RPChess full localization acceptance diagnostic v2
 
 on:
   workflow_dispatch:
