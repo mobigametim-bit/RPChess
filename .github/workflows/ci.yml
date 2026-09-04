@@ -1,7 +1,12 @@
-name: RPChess Reboot CI (manual diagnostic)
+name: RPChess Reboot CI (final branch diagnostic)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feature/localisation-completion
+    paths:
+      - .github/workflows/ci.yml
 
 permissions:
   contents: read
