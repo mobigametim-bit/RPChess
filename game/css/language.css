@@ -1,28 +1,81 @@
-/* Language selector follows the canonical RPChess CTA button treatment. */
+/* Language selector follows the approved obsidian / gold CSS button language. */
+[data-language-modal] .reboot-button {
+  position: relative;
+  border: 1px solid #d8b15d;
+  border-image: none;
+  border-radius: 0;
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
+  background: linear-gradient(180deg, rgba(58,45,27,.72) 0%, rgba(27,28,31,.97) 48%, rgba(8,11,15,.99) 100%);
+  box-shadow: inset 0 0 0 1px rgba(255,235,183,.08), inset 0 7px 18px rgba(239,195,102,.04), 0 10px 26px rgba(0,0,0,.28);
+  color: #f5e2ad;
+  font-family: 'BrahmsGotischCyr', Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(19px, 1.45vw, 24px);
+  letter-spacing: .025em;
+  text-shadow: 0 2px 5px rgba(0,0,0,.82);
+  transition: transform .14s ease, filter .14s ease, border-color .14s ease, box-shadow .14s ease;
+}
+[data-language-modal] .reboot-button::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  clip-path: polygon(7px 0, calc(100% - 7px) 0, 100% 7px, 100% calc(100% - 7px), calc(100% - 7px) 100%, 7px 100%, 0 calc(100% - 7px), 0 7px);
+  border: 1px solid rgba(247,220,156,.22);
+  pointer-events: none;
+}
+[data-language-modal] .reboot-button:hover:not(:disabled),
+[data-language-modal] .reboot-button:focus-visible {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+  border-color: #edcb7a;
+  box-shadow: inset 0 0 0 1px rgba(255,235,183,.12), inset 0 8px 22px rgba(239,195,102,.07), 0 13px 30px rgba(0,0,0,.34), 0 0 18px rgba(214,171,80,.07);
+}
+
+[data-language-modal] .reboot-close {
+  position: relative;
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  min-height: 48px;
+  padding: 0;
+  border: 1px solid rgba(216,177,93,.78);
+  border-image: none;
+  border-radius: 0;
+  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+  background: linear-gradient(180deg, rgba(44,35,23,.74), rgba(10,12,15,.98));
+  color: #f5e2ad;
+  font-family: Georgia, serif;
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1;
+  box-shadow: inset 0 0 0 1px rgba(255,235,183,.055);
+  text-shadow: 0 2px 4px rgba(0,0,0,.8);
+  transition: transform .14s ease, filter .14s ease, border-color .14s ease;
+}
+[data-language-modal] .reboot-close:hover,
+[data-language-modal] .reboot-close:focus-visible {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+  border-color: #edcb7a;
+}
+
 .reboot-language-option {
   display: grid;
   gap: 6px;
   align-content: center;
   justify-items: start;
   min-height: 104px;
-  padding: 18px;
-  border: 13px solid transparent;
-  border-image: url('../generated_assets/ui_button_primary.png') 28 fill stretch;
-  border-radius: 0;
-  background: #10253d;
-  color: #e7dfcc;
-  cursor: pointer;
+  padding: 18px 22px;
   text-align: left;
 }
-.reboot-language-option strong { color: #fff4c9; font-size: 20px; }
-.reboot-language-option span { color: var(--muted); font-size: 13px; }
-.reboot-language-option:hover:not(:disabled) { border-color: transparent; }
+.reboot-language-option strong { color: #f5e2ad; font-size: 22px; font-weight: 400; }
+.reboot-language-option span { color: var(--muted); font-family: Inter, system-ui, sans-serif; font-size: 13px; letter-spacing: 0; text-shadow: none; }
 .reboot-language-option.is-selected {
-  border-color: transparent;
-  background: #10253d;
-  box-shadow: 0 0 0 2px rgba(241, 213, 143, .48), 0 10px 28px rgba(0, 0, 0, .34);
-  filter: brightness(1.12);
+  border-color: #f1d58f;
+  box-shadow: inset 0 0 0 1px rgba(255,235,183,.14), inset 0 8px 22px rgba(239,195,102,.08), 0 13px 30px rgba(0,0,0,.34), 0 0 20px rgba(214,171,80,.10);
+  filter: brightness(1.08);
 }
+.reboot-language-back { margin-top: 18px; }
 
 @media (max-width: 760px) {
   .reboot-language-option { min-height: 82px; }
