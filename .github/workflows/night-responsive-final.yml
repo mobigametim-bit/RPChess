@@ -1,4 +1,4 @@
-name: Night responsive final exact-head
+name: Night localization foundation exact-head
 
 on:
   push:
@@ -8,26 +8,24 @@ permissions:
   contents: read
 
 jobs:
-  responsive-final:
+  localization-foundation:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: d97591f5341ef3fd84da832331d00e6a1670264a
+          ref: aa8fc2c88c03d3d75633b44ec77572885b86fc08
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
-      - name: Run focused source and gameplay checks
+      - name: Run focused localization and inherited source checks
         run: |
+          npm run test:localization
+          node tests/reboot-foundation.cjs
           node tests/code-health-runtime.cjs
-          node tests/ui-redesign-final.cjs
-          node tests/travel-choice.cjs
-          node tests/skirmish.cjs
-          node tests/battle.cjs
       - name: Build exact production tree
         run: npm run build
       - name: Install Playwright and Chromium
@@ -35,8 +33,8 @@ jobs:
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
-      - name: Run parameterized viewport matrix
-        timeout-minutes: 15
+      - name: Run existing Foundation and viewport browser regressions
+        timeout-minutes: 20
         env:
-          RPCHESS_BROWSER_TEST: responsive-viewport-browser.cjs
+          RPCHESS_BROWSER_TEST: reboot-foundation-browser.cjs,responsive-viewport-browser.cjs
         run: npm run test:browser
