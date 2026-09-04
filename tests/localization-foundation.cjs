@@ -45,6 +45,14 @@ class MemoryStorage {
 
   const placeholders = (value) => [...String(value).matchAll(/\{[a-zA-Z0-9_]+\}/g)].map((match) => match[0]).sort();
   const cyrillic = /[А-Яа-яЁё]/u;
+  const narrativeUrl = pathToFileURL(path.join(root, 'game/localization/event-narrative-en.mjs')).href;
+  const { EVENT_NARRATIVE_EN_EXACT } = await import(narrativeUrl);
+  assert.strictEqual(Object.keys(EVENT_NARRATIVE_EN_EXACT).length, 129, 'generated Event narrative must cover all 14 race voices plus the default voice');
+  for (const [source, translation] of Object.entries(EVENT_NARRATIVE_EN_EXACT)) {
+    assert(String(translation).trim(), `generated Event narrative translation must not be empty: ${source}`);
+    assert.strictEqual(cyrillic.test(String(translation)), false, `generated Event narrative English translation must not contain Cyrillic: ${source}`);
+  }
+
   let v5HeroLineCount = 0;
   for (const file of eventDictionaryFiles) {
     const module = await import(pathToFileURL(path.join(eventLocalizationDir, file)).href);
@@ -116,6 +124,16 @@ class MemoryStorage {
     'Abbess Celene: severely wounded',
     'Event outcome notes must translate generated named-hero status copy'
   );
+  assert.strictEqual(
+    i18n.translateLegacy('Дорога здесь хранит следы слишком многих сапог: солдатских, купеческих и босых крестьянских. Над изгородями тянется дым, и всякий встречный сперва смотрит на оружие, а уже потом — в лицо.'),
+    'The road here bears the tracks of too many boots: soldiers, merchants, and barefoot peasants. Smoke drifts above the hedges, and every passer-by looks at weapons before faces.',
+    'generated Event atmosphere must be available through the runtime translator'
+  );
+  assert.strictEqual(
+    i18n.translateLegacy('Из соседней палатки раздаётся хлопок, дым и радостное «Получилось!».'),
+    'A bang, a cloud of smoke, and a delighted “It worked!” come from the next tent.',
+    'late-race generated Event closing copy must be localized'
+  );
   assert.strictEqual(i18n.translateLegacy('Небесный Каганат'), 'Sky Khanate', 'late-game recruit origins must be localized');
   assert.strictEqual(
     i18n.translateLegacy('Амбициозная претендентка, привыкшая превращать любой поход в проверку лидерства.'),
@@ -134,6 +152,8 @@ class MemoryStorage {
   assert.strictEqual(i18n.translateLegacy('+1 ПРИПАС'), '+1 SUPPLY', 'resource toasts must localize supply deltas');
   assert.strictEqual(i18n.translateLegacy('Стоимость Наёмников: 42 золота'), 'Mercenary cost: 42 gold', 'Mercenary cost accessibility copy must localize');
   assert.strictEqual(i18n.translateLegacy('Горизонтали доски'), 'Board ranks', 'board coordinate accessibility labels must localize');
+  assert.strictEqual(i18n.translateLegacy('Ход соперника…'), 'Opponent’s move…', 'dynamic Puzzle status must localize');
+  assert.strictEqual(i18n.translateLegacy('Задача решена'), 'Puzzle solved', 'Puzzle solved status must localize');
   assert.deepStrictEqual(JSON.parse(storage.getItem(settingsKey)), {
     music: 33,
     sfx: 80,
@@ -150,7 +170,7 @@ class MemoryStorage {
 
   delete globalThis.document;
   delete globalThis.localStorage;
-  console.log(`Localization foundation API, RU/EN parity, event dictionaries and merged persistence (${referenceKeys.length} UI keys, ${v5HeroLineCount} v5 hero lines): PASS`);
+  console.log(`Localization foundation API, RU/EN parity, event dictionaries and merged persistence (${referenceKeys.length} UI keys, ${v5HeroLineCount} v5 hero lines, ${Object.keys(EVENT_NARRATIVE_EN_EXACT).length} generated Event voice lines): PASS`);
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;
