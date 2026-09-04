@@ -79,22 +79,17 @@ function translateKnownToken(value) {
   return legacy !== source ? legacy : source;
 }
 
-const COMPOSABLE_EN_ENTRIES = Object.freeze(Object.entries({
-  ...LEGACY_EN_EXACT,
-  ...GAMEPLAY_EN_EXACT,
-  ...EXTRA_EN_EXACT,
-  ...ROSTER_CONTENT_EN_EXACT,
-  ...RUNTIME_STATUS_EN_EXACT,
-  ...RUNTIME_COMPOSED_EN_EXACT
-}).filter(([source, translation]) => source && translation && source.trim() === source)
+const GAMEPLAY_SEQUENCE_ENTRIES = Object.freeze(Object.entries(GAMEPLAY_EN_EXACT)
+  .filter(([source, translation]) => source && translation && source.trim() === source)
   .sort(([a], [b]) => b.length - a.length));
 
-function translateKnownSequence(value) {
+function translateGameplaySequence(value) {
   const source = String(value ?? '');
+  if (!/[А-Яа-яЁё]/u.test(source) || !source.includes('. ')) return source;
   let remaining = source;
   const parts = [];
   while (remaining) {
-    const entry = COMPOSABLE_EN_ENTRIES.find(([token]) => remaining === token || remaining.startsWith(`${token} `));
+    const entry = GAMEPLAY_SEQUENCE_ENTRIES.find(([token]) => remaining === token || remaining.startsWith(`${token} `));
     if (!entry) return source;
     const [token, translation] = entry;
     parts.push(translation);
@@ -160,12 +155,27 @@ function translatedSide(value) {
   return ({ 'белых':'White', 'чёрных':'Black', 'Белые':'White', 'Чёрные':'Black' })[value] || value;
 }
 
+const AI_PROFILE_EN = Object.freeze({
+  'Новичок I':'Beginner I',
+  'Новичок II':'Beginner II',
+  'Любитель':'Amateur',
+  'Любитель+':'Amateur+',
+  'Клубный новичок':'Club Beginner',
+  'Клубный':'Club Player',
+  'Сильный клубный':'Strong Club Player',
+  'Эксперт':'Expert',
+  'Мастерский':'Master Level',
+  'Мастер+':'Master+',
+  'Очень сильный':'Very Strong',
+  'Гроссмейстер':'Grandmaster'
+});
+
 function translateGeneratedGameplay(value) {
   const source = String(value ?? '');
   const direct = EVENT_NARRATIVE_EN_EXACT[source] || RUNTIME_STATUS_EN_EXACT[source] || RUNTIME_COMPOSED_EN_EXACT[source] || ROSTER_CONTENT_EN_EXACT[source] || GAMEPLAY_EN_EXACT[source] || EXTRA_EN_EXACT[source] || UPPERCASE_EN_EXACT[source];
   if (direct) return direct;
 
-  const sequence = translateKnownSequence(source);
+  const sequence = translateGameplaySequence(source);
   if (sequence !== source) return sequence;
 
   let match = source.match(/^(.+) присоединяется к отряду$/u);
@@ -222,6 +232,8 @@ function translateGeneratedGameplay(value) {
   match = source.match(/^(Белые|Чёрные) делают ход\.$/u);
   if (match) return `${translatedSide(match[1])} to move.`;
 
+  match = source.match(/^Stockfish 18 lite · (.+) · ≈(\d+) Elo( · резервный ход)?$/u);
+  if (match) return `Stockfish 18 lite · ${AI_PROFILE_EN[match[1]] || translateKnownToken(match[1])} · ≈${match[2]} Elo${match[3] ? ' · fallback move' : ''}`;
   match = source.match(/^Сила:\s*примерно\s*(.+)$/u);
   if (match) return `Strength: about ${translateKnownToken(match[1])}`;
   match = source.match(/^Сила:\s*(.+)$/u);
