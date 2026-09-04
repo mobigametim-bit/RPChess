@@ -1,5 +1,5 @@
 import { LANGUAGES, UI_MESSAGES } from '../localization/ui.mjs';
-import { legacyTranslate } from '../localization/legacy-ui.mjs';
+import { EN_EXACT as LEGACY_EN_EXACT, legacyTranslate } from '../localization/legacy-ui.mjs';
 import { GAMEPLAY_EN_EXACT } from '../localization/legacy-gameplay.mjs';
 import { EXTRA_EN_EXACT, EXTRA_EN_PATTERNS } from '../localization/legacy-ui-extra.mjs';
 import { EVENT_EN_EXACT } from '../localization/events/en.mjs';
@@ -43,6 +43,26 @@ function applyPatterns(source, patterns) {
   return source;
 }
 
+function translateKnownToken(value) {
+  const source = String(value ?? '');
+  const direct = EVENT_EN_V5_NAMES[source] || EVENT_EN_EXACT[source] || GAMEPLAY_EN_EXACT[source] || EXTRA_EN_EXACT[source] || LEGACY_EN_EXACT[source];
+  if (direct) return direct;
+  const legacy = legacyTranslate(source, 'en');
+  return legacy !== source ? legacy : source;
+}
+
+const UPPERCASE_EN_EXACT = Object.freeze(Object.entries({
+  ...LEGACY_EN_EXACT,
+  ...GAMEPLAY_EN_EXACT,
+  ...EXTRA_EN_EXACT,
+  ...EVENT_EN_V5_NAMES
+}).reduce((acc, [source, translation]) => {
+  if (!/[А-Яа-яЁё]/u.test(source)) return acc;
+  const upper = source.toLocaleUpperCase('ru-RU');
+  if (upper !== source) acc[upper] = String(translation).toUpperCase();
+  return acc;
+}, {}));
+
 function escapeRegex(value) { return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 const EVENT_TEMPLATE_PATTERNS = Object.freeze(Object.entries(EVENT_EN_EXACT)
   .filter(([source]) => /\{[a-zA-Z0-9_]+\}/.test(source))
@@ -76,8 +96,7 @@ function translateEventPresentation(source) {
   match = source.match(/^(🔒\s*)?(.+?) — (НЕТ В ОТРЯДЕ|ПОГИБ|РАНЕН)$/u);
   if (match) {
     const status = { 'НЕТ В ОТРЯДЕ':'NOT IN ROSTER', 'ПОГИБ':'DEAD', 'РАНЕН':'WOUNDED' }[match[3]];
-    const name = EVENT_EN_V5_NAMES[match[2]] || match[2];
-    return `${match[1] || ''}${name} — ${status}`;
+    return `${match[1] || ''}${translateKnownToken(match[2])} — ${status}`;
   }
 
   match = source.match(/^(\S+)\s+(.+)$/u);
@@ -87,7 +106,7 @@ function translateEventPresentation(source) {
     const rendered = source.match(template.pattern);
     if (!rendered) continue;
     const params = {};
-    template.names.forEach((name, index) => { params[name] = EVENT_EN_V5_NAMES[rendered[index + 1]] || rendered[index + 1]; });
+    template.names.forEach((name, index) => { params[name] = translateKnownToken(rendered[index + 1]); });
     return interpolate(template.translation, params);
   }
   return source;
@@ -95,18 +114,24 @@ function translateEventPresentation(source) {
 
 function translateGeneratedGameplay(value) {
   const source = String(value ?? '');
-  const direct = GAMEPLAY_EN_EXACT[source] || EXTRA_EN_EXACT[source];
+  const direct = GAMEPLAY_EN_EXACT[source] || EXTRA_EN_EXACT[source] || UPPERCASE_EN_EXACT[source];
   if (direct) return direct;
+
+  let match = source.match(/^(.+) присоединяется к отряду$/u);
+  if (match) return `${translateKnownToken(match[1])} joins the roster`;
+  match = source.match(/^(.+): (погиб|тяжело ранен)$/u);
+  if (match) return `${translateKnownToken(match[1])}: ${match[2] === 'погиб' ? 'dead' : 'severely wounded'}`;
+
   const extra = applyPatterns(source, EXTRA_EN_PATTERNS);
   if (extra !== source) return extra;
-  let match = source.match(/^(.+) · дорожный отряд$/u);
-  if (match) return `${GAMEPLAY_EN_EXACT[match[1]] || match[1]} · road force`;
+  match = source.match(/^(.+) · дорожный отряд$/u);
+  if (match) return `${translateKnownToken(match[1])} · road force`;
   match = source.match(/^(.+) · полевая армия$/u);
-  if (match) return `${GAMEPLAY_EN_EXACT[match[1]] || match[1]} · field army`;
+  if (match) return `${translateKnownToken(match[1])} · field army`;
   match = source.match(/^СЛОЖНОСТЬ (★+)$/u);
   if (match) return `DIFFICULTY ${match[1]}`;
   match = source.match(/^Наёмник · (.+)$/u);
-  if (match) return `Mercenary · ${GAMEPLAY_EN_EXACT[match[1]] || EXTRA_EN_EXACT[match[1]] || EVENT_EN_V5_NAMES[match[1]] || legacyTranslate(match[1], 'en')}`;
+  if (match) return `Mercenary · ${translateKnownToken(match[1])}`;
   return source;
 }
 
@@ -118,7 +143,15 @@ export function translateLegacy(value, language = activeLanguage) {
   const eventTranslation = translateEventPresentation(source);
   if (eventTranslation !== source) return eventTranslation;
   const legacy = legacyTranslate(source, normalized);
-  return legacy !== source ? legacy : translateGeneratedGameplay(source);
+  if (legacy !== source) return legacy;
+  const generated = translateGeneratedGameplay(source);
+  if (generated !== source) return generated;
+  if (source.includes(' · ')) {
+    const parts = source.split(' · ');
+    const translated = parts.map((part) => translateLegacy(part, normalized));
+    if (translated.some((part, index) => part !== parts[index])) return translated.join(' · ');
+  }
+  return source;
 }
 export function setLanguage(code) {
   const language = normalizeLanguage(code);
