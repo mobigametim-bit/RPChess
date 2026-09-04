@@ -65,7 +65,7 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   for(const token of ['ЗАБЕГ ЗАВЕРШЁН','ЗАРАБОТАНО ЗОЛОТА','ИТОГОВАЯ МОЩЬ','НОВАЯ ИГРА','ГЛАВНОЕ МЕНЮ','scene_defeat.jpg','queueMicrotask(() => open(storedRun))','RPChessEndlessRun'])assert(app.includes(token),`endless app missing ${token}`);
   assert(starvation.includes("button.textContent = kingDied ? 'ИТОГИ ЗАБЕГА'"));
   assert(starvation.includes('RPChessEndlessRun?.open?.(current)'));
-  assert(events.includes("if(activeRun.ended)button.textContent='ИТОГИ ЗАБЕГА'"));
+  assert(events.includes("if(activeRun.ended)button.textContent=localizeEventSource('ИТОГИ ЗАБЕГА')"),'Event end-of-run CTA must stay localized while preserving Endless Run routing');
   assert(events.includes('RPChessEndlessRun?.open?.(current)'));
   assert(route.includes("import './endless-run-app.mjs'"));
   assert(!css.includes('ui_panel_frame.png')&&!css.includes('ui_panel_wide.png'));
