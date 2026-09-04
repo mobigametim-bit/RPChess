@@ -1,5 +1,6 @@
 import { LANGUAGES, UI_MESSAGES } from '../localization/ui.mjs';
 import { legacyTranslate } from '../localization/legacy-ui.mjs';
+import { GAMEPLAY_EN_EXACT } from '../localization/legacy-gameplay.mjs';
 
 const SETTINGS_KEY = 'rpchess.reboot.v1.settings';
 const DEFAULT_LANGUAGE = 'ru';
@@ -55,12 +56,34 @@ function interpolate(message, params = {}) {
   ));
 }
 
+function translateGeneratedGameplay(value) {
+  const source = String(value ?? '');
+  const direct = GAMEPLAY_EN_EXACT[source];
+  if (direct) return direct;
+  let match = source.match(/^(.+) · дорожный отряд$/u);
+  if (match) return `${GAMEPLAY_EN_EXACT[match[1]] || match[1]} · road force`;
+  match = source.match(/^(.+) · полевая армия$/u);
+  if (match) return `${GAMEPLAY_EN_EXACT[match[1]] || match[1]} · field army`;
+  match = source.match(/^СЛОЖНОСТЬ (★+)$/u);
+  if (match) return `DIFFICULTY ${match[1]}`;
+  match = source.match(/^Наёмник · (.+)$/u);
+  if (match) return `Mercenary · ${GAMEPLAY_EN_EXACT[match[1]] || legacyTranslate(match[1], 'en')}`;
+  if (source === 'Вражеский король') return 'Enemy King';
+  match = source.match(/^Вражеский (pawn|knight|bishop|rook|queen|king)$/u);
+  if (match) return `Enemy ${match[1]}`;
+  return source;
+}
+
 export function currentLanguage() {
   return activeLanguage;
 }
 
 export function translateLegacy(value, language = activeLanguage) {
-  return legacyTranslate(value, normalizeLanguage(language));
+  const normalized = normalizeLanguage(language);
+  const source = String(value ?? '');
+  if (normalized !== 'en') return source;
+  const legacy = legacyTranslate(source, normalized);
+  return legacy !== source ? legacy : translateGeneratedGameplay(source);
 }
 
 export function setLanguage(code) {
