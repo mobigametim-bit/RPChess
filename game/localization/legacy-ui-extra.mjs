@@ -1,3 +1,10 @@
+function translateResourcePhrase(value) {
+  return String(value || '')
+    .replace(/золота/giu, 'gold')
+    .replace(/припас(?:а|ов)?/giu, 'supplies')
+    .replace(/ничего/giu, 'nothing');
+}
+
 export const EXTRA_EN_EXACT = Object.freeze({
   'Последствия голода': 'Starvation Consequences',
   'ПРИПАСЫ ЗАКОНЧИЛИСЬ': 'OUT OF SUPPLIES',
@@ -135,6 +142,20 @@ export const EXTRA_EN_EXACT = Object.freeze({
   'Летопись пуста': 'The Chronicle is empty',
   'Ни одно имя ещё не вписано в её страницы.': 'No name has yet been written in its pages.',
 
+  'НАГРАДА': 'REWARD',
+  'НАГРАДА ЗА БОЙ': 'BATTLE REWARD',
+  'Горизонтали доски': 'Board ranks',
+  'Вертикали доски': 'Board files',
+  'Боевой строй': 'Battle Formation',
+  'Свободный слот — дешёвый Наёмник. Замена оставленного в резерве здорового героя стоит как его лечение.': 'An open slot uses a cheap Mercenary. Replacing a healthy hero left in reserve costs as much as healing them.',
+  'СОСТАВ И ОПЛАТА НАЁМНИКОВ': 'MERCENARY ROSTER AND PAYMENT',
+  'Именные герои': 'Named Heroes',
+  'Наёмники': 'Mercenaries',
+  'НАЁМНИКИ': 'MERCENARIES',
+  'Стоимость найма': 'Hiring Cost',
+  'Наёмники распущены': 'The mercenaries have been dismissed',
+  'Временная армия распущена': 'The temporary army has been disbanded',
+
   'Хроника': 'Chronicle',
   'Герои': 'Heroes',
   'Реликвии': 'Relics',
@@ -164,5 +185,13 @@ export const EXTRA_EN_PATTERNS = Object.freeze([
   [/^(.+) — ПОГИБ$/u, (_m, name) => `${name} — DEAD`],
   [/^(.+) — РАНЕН$/u, (_m, name) => `${name} — WOUNDED`],
   [/^Лимит (\d+) фигур\.$/u, (_m, count) => `Limit: ${count} pieces.`],
-  [/^Лимит (\d+) командных очков\.$/u, (_m, count) => `Limit: ${count} command points.`]
+  [/^Лимит (\d+) командных очков\.$/u, (_m, count) => `Limit: ${count} command points.`],
+  [/^([+-]?\d+) ЗОЛОТА$/u, (_m, amount) => `${amount} GOLD`],
+  [/^([+-]?\d+) ПРИПАС$/u, (_m, amount) => `${amount} SUPPLY`],
+  [/^(\d+) золота$/u, (_m, amount) => `${amount} gold`],
+  [/^(\d+) припас(?:а|ов)?$/u, (_m, amount) => `${amount} ${amount === '1' ? 'supply' : 'supplies'}`],
+  [/^Стоимость Наёмников: (\d+) золота$/u, (_m, amount) => `Mercenary cost: ${amount} gold`],
+  [/^Наёмники оплачены: (.+)\.$/u, (_m, payment) => `Mercenaries paid: ${translateResourcePhrase(payment)}.`],
+  [/^Наёмники получили всё, что было: (.+)\. После Битвы погибнет один именной герой\.$/u, (_m, payment) => `The mercenaries took everything available: ${translateResourcePhrase(payment)}. One named hero will die after the Battle.`],
+  [/^Неоплаченные Наёмники потребовали цену: (.+) погиб\.$/u, (_m, name) => `The unpaid mercenaries exacted their price: ${name} died.`]
 ]);
