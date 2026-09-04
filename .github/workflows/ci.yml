@@ -1,4 +1,4 @@
-name: RPChess Event localization diagnostic v4
+name: RPChess Event localization diagnostic v5
 
 on:
   workflow_dispatch:
