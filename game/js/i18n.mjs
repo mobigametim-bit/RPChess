@@ -44,19 +44,6 @@ function applyPatterns(source, patterns) {
   return source;
 }
 
-function translateKnownToken(value) {
-  const source = String(value ?? '');
-  const direct = EVENT_EN_V5_NAMES[source]
-    || EVENT_EN_EXACT[source]
-    || ROSTER_CONTENT_EN_EXACT[source]
-    || GAMEPLAY_EN_EXACT[source]
-    || EXTRA_EN_EXACT[source]
-    || LEGACY_EN_EXACT[source];
-  if (direct) return direct;
-  const legacy = legacyTranslate(source, 'en');
-  return legacy !== source ? legacy : source;
-}
-
 const UPPERCASE_EN_EXACT = Object.freeze(Object.entries({
   ...LEGACY_EN_EXACT,
   ...GAMEPLAY_EN_EXACT,
@@ -69,6 +56,20 @@ const UPPERCASE_EN_EXACT = Object.freeze(Object.entries({
   if (upper !== source) acc[upper] = String(translation).toUpperCase();
   return acc;
 }, {}));
+
+function translateKnownToken(value) {
+  const source = String(value ?? '');
+  const direct = EVENT_EN_V5_NAMES[source]
+    || EVENT_EN_EXACT[source]
+    || ROSTER_CONTENT_EN_EXACT[source]
+    || GAMEPLAY_EN_EXACT[source]
+    || EXTRA_EN_EXACT[source]
+    || LEGACY_EN_EXACT[source]
+    || UPPERCASE_EN_EXACT[source];
+  if (direct) return direct;
+  const legacy = legacyTranslate(source, 'en');
+  return legacy !== source ? legacy : source;
+}
 
 function escapeRegex(value) { return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 const EVENT_TEMPLATE_PATTERNS = Object.freeze(Object.entries(EVENT_EN_EXACT)
@@ -290,8 +291,8 @@ function localizeLegacyElement(element) {
     let node = walker.nextNode();
     while (node) { localizeTextNode(node); node = walker.nextNode(); }
   }
-  for (const target of [element, ...(element.querySelectorAll?.('[aria-label],[title],[placeholder]') || [])]) {
-    for (const attribute of ['aria-label', 'title', 'placeholder']) {
+  for (const target of [element, ...(element.querySelectorAll?.('[aria-label],[title],[placeholder],[alt]') || [])]) {
+    for (const attribute of ['aria-label', 'title', 'placeholder', 'alt']) {
       if (!target.hasAttribute?.(attribute)) continue;
       const translated = translateLegacy(sourceForAttribute(target, attribute));
       if (target.getAttribute(attribute) !== translated) target.setAttribute(attribute, translated);
@@ -322,7 +323,7 @@ function installLegacyObserver() {
     if (!targets.size) return;
     queueMicrotask(() => { for (const target of targets) localizeLegacyDocument(target); });
   });
-  observer.observe(document.documentElement, { subtree:true, childList:true, characterData:true, attributes:true, attributeFilter:['aria-label','title','placeholder'] });
+  observer.observe(document.documentElement, { subtree:true, childList:true, characterData:true, attributes:true, attributeFilter:['aria-label','title','placeholder','alt'] });
 }
 
 updateDocumentLanguage();
