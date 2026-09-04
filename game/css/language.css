@@ -1,0 +1,29 @@
+/* Language selector follows the canonical RPChess CTA button treatment. */
+.reboot-language-option {
+  display: grid;
+  gap: 6px;
+  align-content: center;
+  justify-items: start;
+  min-height: 104px;
+  padding: 18px;
+  border: 13px solid transparent;
+  border-image: url('../generated_assets/ui_button_primary.png') 28 fill stretch;
+  border-radius: 0;
+  background: #10253d;
+  color: #e7dfcc;
+  cursor: pointer;
+  text-align: left;
+}
+.reboot-language-option strong { color: #fff4c9; font-size: 20px; }
+.reboot-language-option span { color: var(--muted); font-size: 13px; }
+.reboot-language-option:hover:not(:disabled) { border-color: transparent; }
+.reboot-language-option.is-selected {
+  border-color: transparent;
+  background: #10253d;
+  box-shadow: 0 0 0 2px rgba(241, 213, 143, .48), 0 10px 28px rgba(0, 0, 0, .34);
+  filter: brightness(1.12);
+}
+
+@media (max-width: 760px) {
+  .reboot-language-option { min-height: 82px; }
+}
