@@ -1,4 +1,4 @@
-name: RPChess Event localization diagnostic
+name: RPChess Event localization diagnostic v2
 
 on:
   workflow_dispatch:
@@ -22,5 +22,7 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
-      - name: Audit complete RU/EN localization
+      - name: Audit localization foundation
         run: npm run test:localization
+      - name: Audit all 500 active Events
+        run: node tests/event-localization-corpus.cjs
