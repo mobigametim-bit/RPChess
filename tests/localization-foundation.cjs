@@ -154,6 +154,21 @@ class MemoryStorage {
   assert.strictEqual(i18n.translateLegacy('Горизонтали доски'), 'Board ranks', 'board coordinate accessibility labels must localize');
   assert.strictEqual(i18n.translateLegacy('Ход соперника…'), 'Opponent’s move…', 'dynamic Puzzle status must localize');
   assert.strictEqual(i18n.translateLegacy('Задача решена'), 'Puzzle solved', 'Puzzle solved status must localize');
+  assert.deepStrictEqual(
+    [i18n.translateLegacy('Сила: примерно СМЕРТЕЛЬНАЯ'), i18n.translateLegacy('Тактика противника: Безжалостный')],
+    ['Strength: about DEADLY', 'Enemy tactic: Ruthless'],
+    'nested combat metadata tokens must localize inside generated labels'
+  );
+  assert.deepStrictEqual(
+    [i18n.translateLegacy('МАТ В 3'), i18n.translateLegacy('ВЫИГРАЙТЕ ФЕРЗЯ'), i18n.translateLegacy('e4: пешка')],
+    ['MATE IN 3', 'WIN THE QUEEN', 'e4: pawn'],
+    'Puzzle objective and board accessibility copy must localize'
+  );
+  assert.deepStrictEqual(
+    [i18n.translateLegacy(' выбирают ход.'), i18n.translateLegacy('+1 припас')],
+    [' are choosing a move.', '+1 supply'],
+    'split Classic summary and signed resource accessibility fragments must localize'
+  );
   assert.deepStrictEqual(JSON.parse(storage.getItem(settingsKey)), {
     music: 33,
     sfx: 80,
