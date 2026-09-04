@@ -3,9 +3,11 @@ name: Night localization foundation exact-head
 on:
   push:
     branches: [night/verification]
+    paths:
+      - .github/workflows/night-responsive-final.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   localization-foundation:
@@ -38,3 +40,9 @@ jobs:
         env:
           RPCHESS_BROWSER_TEST: reboot-foundation-browser.cjs,responsive-viewport-browser.cjs
         run: npm run test:browser
+      - name: Publish exact-head success receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          receipt=$(printf 'HEAD=aa8fc2c88c03d3d75633b44ec77572885b86fc08\nRESULT=SUCCESS\nRUN=https://github.com/%s/actions/runs/%s\n' '${{ github.repository }}' '${{ github.run_id }}' | base64 -w0)
+          gh api --method PUT repos/${{ github.repository }}/contents/verification/localization-aa8fc2c8.txt -f message='ci: record localization exact-head success' -f content="$receipt" -f branch=night/verification
