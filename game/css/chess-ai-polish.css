@@ -1,16 +1,7 @@
-/* Chess AI production polish — frameless production surfaces + approved blue CTA language. */
+/* Chess AI production polish — frameless production surfaces + CSS-only action controls. */
 
-/* One blue CTA language everywhere: reuse the exact primary frame from the main menu. */
-.reboot-button,
-.reboot-button--primary,
-.reboot-close,
-.classic-mini-button,
-.classic-promotion-option {
-  border-image-source: url('../generated_assets/ui_button_primary.png') !important;
-  background: #10253d;
-  color: #fff4c9;
-}
-.reboot-button:disabled { opacity: .38; filter: saturate(.35) brightness(.72); }
+/* Generic action controls are owned by the shared CSS-only contract. This file styles
+   Classic-specific composition, panels and interaction surfaces only. */
 
 /* Desktop game composition: Party left, board centre, Moves right. */
 .classic-shell {
