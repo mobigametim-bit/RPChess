@@ -100,7 +100,10 @@ function translateEventPresentation(source) {
   }
 
   match = source.match(/^(\S+)\s+(.+)$/u);
-  if (match && EVENT_EN_V5_NAMES[match[2]]) return `${match[1]} ${EVENT_EN_V5_NAMES[match[2]]}`;
+  if (match) {
+    const label = translateKnownToken(match[2]);
+    if (label !== match[2]) return `${match[1]} ${label}`;
+  }
 
   for (const template of EVENT_TEMPLATE_PATTERNS) {
     const rendered = source.match(template.pattern);
