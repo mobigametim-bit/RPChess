@@ -252,7 +252,6 @@
           <select data-player-color>
             <option value="w" selected>Белые</option>
             <option value="b">Чёрные</option>
-            <option value="random">Случайно</option>
           </select>
         </label>
       </div>
@@ -303,16 +302,16 @@
         <button class="reboot-close" type="button" data-close-modal aria-label="Закрыть выбор языка" data-i18n-aria-label="language.close">×</button>
       </header>
       <div class="reboot-language-options" role="group" aria-label="Доступные языки" data-i18n-aria-label="language.optionsLabel">
-        <button class="reboot-language-option" type="button" data-language-option="ru" aria-pressed="true">
+        <button class="reboot-button reboot-button--primary reboot-language-option" type="button" data-language-option="ru" aria-pressed="true">
           <strong>Русский</strong>
           <span data-language-current>Выбран: Русский</span>
         </button>
-        <button class="reboot-language-option" type="button" data-language-option="en" aria-pressed="false">
+        <button class="reboot-button reboot-button--primary reboot-language-option" type="button" data-language-option="en" aria-pressed="false">
           <strong>English</strong>
           <span data-language-current hidden>Selected: English</span>
         </button>
       </div>
-      <button class="reboot-button reboot-language-back" type="button" data-close-modal data-i18n="common.back">Назад</button>
+      <button class="reboot-button reboot-button--primary reboot-language-back" type="button" data-close-modal data-i18n="common.back">Назад</button>
     </section>
   </div>
 
