@@ -47,6 +47,13 @@ class MemoryStorage {
     if (!choice?.sourceChoiceId) return choice?.action || '';
     return EVENT_CONTENT_V3[eventId]?.choices?.[choice.sourceChoiceId]?.action || choice.action || '';
   };
+  const leaks = new Map();
+  const placeholderErrors = [];
+  const recordLeak = (source, context) => {
+    if (!leaks.has(source)) leaks.set(source, []);
+    const contexts = leaks.get(source);
+    if (contexts.length < 4) contexts.push(context);
+  };
   let auditedStrings = 0;
 
   for (const sourceEvent of catalog) {
@@ -70,16 +77,26 @@ class MemoryStorage {
       if (raw == null || raw === '') continue;
       const source = String(raw);
       const translated = i18n.translateLegacy(source);
-      assert.strictEqual(cyrillic.test(translated), false, `${event.id} ${field} leaks Cyrillic in EN: ${source}`);
-      assert.deepStrictEqual(placeholders(translated), placeholders(source), `${event.id} ${field} must preserve placeholders`);
+      if (cyrillic.test(translated)) recordLeak(source, `${event.id} ${field}`);
+      if (JSON.stringify(placeholders(translated)) !== JSON.stringify(placeholders(source))) {
+        placeholderErrors.push(`${event.id} ${field}: ${source}`);
+      }
       if (source.includes('Король')) {
         const personalized = field === 'title'
           ? personalizePlayerTitle(translated, 'Qw')
           : personalizePlayerNarrative(translated, 'Qw');
-        assert.strictEqual(cyrillic.test(personalized), false, `${event.id} ${field} leaks Cyrillic after player personalization`);
+        if (cyrillic.test(personalized)) recordLeak(source, `${event.id} ${field} after personalization`);
       }
       auditedStrings += 1;
     }
+  }
+
+  if (placeholderErrors.length) {
+    throw new Error(`Event localization placeholder mismatches (${placeholderErrors.length}):\n${placeholderErrors.slice(0, 100).join('\n')}`);
+  }
+  if (leaks.size) {
+    const report = [...leaks.entries()].map(([source, contexts], index) => `${index + 1}. ${contexts.join(', ')} :: ${source}`).join('\n');
+    throw new Error(`Event localization Cyrillic leaks: ${leaks.size} unique source strings across 500 Events\n${report}`);
   }
 
   const e147 = applyEventContentV3(applyEventHeroChoicesV5(catalog[146]));
