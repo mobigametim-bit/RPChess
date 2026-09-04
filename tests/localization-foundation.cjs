@@ -50,6 +50,18 @@ class MemoryStorage {
   assert.strictEqual(i18n.currentLanguage(), 'en');
   assert.strictEqual(globalThis.document.documentElement.lang, 'en');
   assert.strictEqual(i18n.t('menu.newGame'), 'New Game');
+  assert.strictEqual(i18n.translateLegacy('Дорога просит цену'), 'The Road Demands a Price', 'Events v3 E100 must be available through the runtime translator');
+  assert.strictEqual(i18n.translateLegacy('Пятнадцатый спутник'), 'The Fifteenth Companion', 'Events v4c E500 must be available through the runtime translator');
+  assert.strictEqual(
+    i18n.translateLegacy('Я знаю каждого, кого вижу. Проблема в том, что счёт всё равно говорит, будто здесь есть ещё кто-то'),
+    'I know everyone I can see. The problem is that the count still says someone else is here',
+    'Events v5 final hero line must be available through the runtime translator'
+  );
+  assert.strictEqual(
+    i18n.translateLegacy('{pawnName} пересчитывает людей ещё раз и замолкает. «Я знаю каждого, кого вижу. Проблема в том, что счёт всё равно говорит, будто здесь есть ещё кто-то».'),
+    '{pawnName} counts everyone again and falls silent. “I know everyone I can see. The problem is the count still says someone else is here.”',
+    'event presentation translation must preserve hero placeholders'
+  );
   assert.deepStrictEqual(JSON.parse(storage.getItem(settingsKey)), {
     music: 33,
     sfx: 80,
