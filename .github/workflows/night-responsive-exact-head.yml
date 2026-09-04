@@ -1,0 +1,42 @@
+name: Night responsive exact-head verification
+
+on:
+  push:
+    branches: [night/verification]
+
+permissions:
+  contents: read
+
+jobs:
+  responsive-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 88e619c9cc006b30844914a714c5ecba25904993
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Restore runtime asset cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: night-rpchess-assets-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            night-rpchess-assets-${{ runner.os }}-
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Run source, deterministic and production build gate
+        run: npm run gate:local
+      - name: Install Playwright and Chromium
+        timeout-minutes: 10
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+      - name: Run responsive and affected-flow browser regression
+        timeout-minutes: 30
+        env:
+          RPCHESS_BROWSER_TEST: responsive-viewport-browser.cjs,reboot-foundation-browser.cjs,roster-browser.cjs,skirmish-browser.cjs,battle-browser.cjs,travel-choice-browser.cjs,settlement-browser.cjs,events-browser.cjs,puzzles-browser.cjs
+        run: npm run test:browser
