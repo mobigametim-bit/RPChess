@@ -86,7 +86,7 @@ class MemoryStorage {
   );
   assert.strictEqual(
     i18n.translateLegacy('{pawnName} пересчитывает людей ещё раз и замолкает. «Я знаю каждого, кого вижу. Проблема в том, что счёт всё равно говорит, будто здесь есть ещё кто-то».'),
-    '{pawnName} counts everyone again and falls silent. “I know everyone I can see. The problem is the count still says someone else is here.”',
+    '{pawnName} counts everyone again and falls silent. “I know everyone I can see. The problem is that the count still says someone else is here.”',
     'event presentation translation must preserve hero placeholders'
   );
   assert.strictEqual(
@@ -104,6 +104,17 @@ class MemoryStorage {
     '🔒 Abbess Celene — WOUNDED',
     'rendered named-hero status labels must translate the hero name and state together'
   );
+  assert.strictEqual(i18n.translateLegacy('СМЕШАННОЕ'), 'MIXED', 'uppercased Event race labels must translate after presentation casing');
+  assert.strictEqual(
+    i18n.translateLegacy('КОРОЛЬ МОЖЕТ ПОГИБНУТЬ · РИСК РАНЕНИЯ'),
+    'THE KING MAY DIE · WOUND RISK',
+    'joined Event warnings must translate segment by segment'
+  );
+  assert.strictEqual(
+    i18n.translateLegacy('Аббатиса Селена: тяжело ранен'),
+    'Abbess Celene: severely wounded',
+    'Event outcome notes must translate generated named-hero status copy'
+  );
   assert.deepStrictEqual(JSON.parse(storage.getItem(settingsKey)), {
     music: 33,
     sfx: 80,
@@ -115,7 +126,7 @@ class MemoryStorage {
   const reloaded = await import(`${i18nUrl}?contract=persisted`);
   assert.strictEqual(reloaded.currentLanguage(), 'en', 'persisted language must survive module reload');
   unsubscribe();
-  assert.strictEqual(i18n.setLanguage('unsupported'), 'ru', 'invalid language codes must fall back RU');
+  assert.strictEqual(i18n.setLanguage('unsupported'), 'ru', 'invalid language codes must fall back to RU');
   assert.deepStrictEqual(notifications, ['en'], 'unsubscribe() must stop notifications');
 
   delete globalThis.document;
