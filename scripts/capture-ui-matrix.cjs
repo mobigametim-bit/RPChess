@@ -41,7 +41,7 @@ async function openCombatPrep(page,type){await run(page);const routes=[1,2,3].ma
 async function openClassicSetup(page){await blank(page);await page.evaluate(()=>dispatchEvent(new CustomEvent('rpchess:new-game')));await page.locator('[data-game-setup-modal]:not([hidden])').waitFor();}
 async function startClassicLocal(page){await openClassicSetup(page);await page.locator('[data-game-mode-select]').selectOption('local');await page.locator('[data-start-game]').click();await page.locator('[data-classic-screen]:not([hidden])').waitFor();}
 async function captureViewportSet(page,screen){const files=[];for(const vp of VIEWPORTS){await page.setViewportSize({width:vp.width,height:vp.height});await page.evaluate(()=>scrollTo(0,0));await page.waitForTimeout(120);const filename=`${String(screen.index).padStart(2,'0')}-${screen.id}-${vp.id}.jpg`;const file=path.join(SHOTS,filename);await page.screenshot({path:file,type:'jpeg',quality:76,fullPage:false});files.push({...vp,filename});}return files;}
-function esc(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+function esc(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[ch]));}
 function rel(file){return `screens/${file}`;}
 async function makePdf(browser,manifest){const audit=[
   'Canonical action language: CSS-only obsidian/gold buttons with angular corners, subtle inner stroke and gold focus/hover treatment.',
@@ -59,9 +59,9 @@ async function makePdf(browser,manifest){const audit=[
 
 const SCREENS=[
   {id:'main-menu',title:'Main Menu + Chronicle',prepare:async p=>blank(p)},
-  {id:'settings',title:'Settings modal',prepare:async p=>{await blank(p);await p.locator('[data-settings]').click();await p.locator('[data-settings-modal]:not([hidden])').waitFor();}},
-  {id:'language',title:'Language modal',note:'Language controls are now explicitly CSS-only and use the same obsidian/gold interaction language as the accepted redesign.',prepare:async p=>{await blank(p);await p.locator('[data-language]').click();await p.locator('[data-language-modal]:not([hidden])').waitFor();}},
-  {id:'identity',title:'Player Identity modal',prepare:async p=>{await blank(p);await p.locator('[data-new-game]').click();await p.locator('[data-player-identity-modal]:not([hidden])').waitFor();}},
+  {id:'settings',title:'Settings modal',prepare:async p=>{await blank(p);await p.locator('.reboot-menu-screen [data-settings]').click();await p.locator('[data-settings-modal]:not([hidden])').waitFor();}},
+  {id:'language',title:'Language modal',note:'Language controls are now explicitly CSS-only and use the same obsidian/gold interaction language as the accepted redesign.',prepare:async p=>{await blank(p);await p.locator('.reboot-menu-screen [data-language]').click();await p.locator('[data-language-modal]:not([hidden])').waitFor();}},
+  {id:'identity',title:'Player Identity modal',prepare:async p=>{await blank(p);await p.locator('.reboot-menu-screen [data-new-game]').click();await p.locator('[data-player-identity-modal]:not([hidden])').waitFor();}},
   {id:'roster',title:'Roster',prepare:async p=>run(p)},
   {id:'travel',title:'Travel Choice',prepare:async p=>{await run(p);await openTravel(p,[EVENT_ROUTE,PUZZLE_ROUTE,combatRoute('battle','manual.capture.travel.battle',{stars:7,race:'demons'})]);}},
   {id:'event',title:'Event',prepare:async p=>{await run(p);await patchRun(p,{id:'capture-event-run',supplies:9,journeyStep:1,currentTravelChoices:null,activeTravelChoice:EVENT_ROUTE,currentEvent:{routeId:EVENT_ROUTE.id,eventId:'E147',choiceId:null,roll:null,success:null,resolved:false,outcome:null,combat:null},currentPuzzle:null,currentSettlement:null});await p.locator('[data-roster-travel]').click();await p.locator('[data-events-screen]:not([hidden])').waitFor();}},
