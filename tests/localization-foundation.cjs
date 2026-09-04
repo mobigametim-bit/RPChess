@@ -114,6 +114,16 @@ class MemoryStorage {
   );
   assert.strictEqual(i18n.translateLegacy('♗ Слон'), '♗ Bishop', 'Event role labels must translate while preserving their piece glyph');
   assert.strictEqual(i18n.translateLegacy('СМЕШАННОЕ'), 'MIXED', 'uppercased Event race labels must translate after presentation casing');
+  assert.deepStrictEqual(
+    [
+      i18n.translateLegacy('ЛУЧШАЯ ЛЕТОПИСЬ'),
+      i18n.translateLegacy('ТЯЖЕЛО РАНЕН'),
+      i18n.translateLegacy('СМЕШАННОЕ — ЗВЕРОЛЮДИ / ЛЮДИ'),
+      i18n.translateLegacy('РИСК РАНЕНИЯ КОРОЛЯ')
+    ],
+    ['BEST CHRONICLE', 'SEVERELY WOUNDED', 'MIXED — BEASTFOLK / HUMANS', 'KING WOUND RISK'],
+    'acceptance-test composed labels must remain fully localized instead of leaking partial Cyrillic'
+  );
   assert.strictEqual(
     i18n.translateLegacy('КОРОЛЬ МОЖЕТ ПОГИБНУТЬ · РИСК РАНЕНИЯ'),
     'THE KING MAY DIE · WOUND RISK',
