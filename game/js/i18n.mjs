@@ -2,6 +2,7 @@ import { LANGUAGES, UI_MESSAGES } from '../localization/ui.mjs';
 import { legacyTranslate } from '../localization/legacy-ui.mjs';
 import { GAMEPLAY_EN_EXACT } from '../localization/legacy-gameplay.mjs';
 import { EXTRA_EN_EXACT, EXTRA_EN_PATTERNS } from '../localization/legacy-ui-extra.mjs';
+import { EVENT_EN_EXACT } from '../localization/events/en.mjs';
 
 const SETTINGS_KEY = 'rpchess.reboot.v1.settings';
 const DEFAULT_LANGUAGE = 'ru';
@@ -63,6 +64,8 @@ export function translateLegacy(value, language = activeLanguage) {
   const normalized = normalizeLanguage(language);
   const source = String(value ?? '');
   if (normalized !== 'en') return source;
+  const eventTranslation = EVENT_EN_EXACT[source];
+  if (eventTranslation) return eventTranslation;
   const legacy = legacyTranslate(source, normalized);
   return legacy !== source ? legacy : translateGeneratedGameplay(source);
 }
