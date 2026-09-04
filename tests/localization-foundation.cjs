@@ -86,7 +86,7 @@ class MemoryStorage {
   );
   assert.strictEqual(
     i18n.translateLegacy('{pawnName} пересчитывает людей ещё раз и замолкает. «Я знаю каждого, кого вижу. Проблема в том, что счёт всё равно говорит, будто здесь есть ещё кто-то».'),
-    '{pawnName} counts everyone again and falls silent. “I know everyone I can see. The problem is that the count still says someone else is here.”',
+    '{pawnName} counts everyone again and falls silent. “I know everyone I can see. The problem is the count still says someone else is here.”',
     'event presentation translation must preserve hero placeholders'
   );
   assert.strictEqual(
@@ -104,6 +104,7 @@ class MemoryStorage {
     '🔒 Abbess Celene — WOUNDED',
     'rendered named-hero status labels must translate the hero name and state together'
   );
+  assert.strictEqual(i18n.translateLegacy('♗ Слон'), '♗ Bishop', 'Event role labels must translate while preserving their piece glyph');
   assert.strictEqual(i18n.translateLegacy('СМЕШАННОЕ'), 'MIXED', 'uppercased Event race labels must translate after presentation casing');
   assert.strictEqual(
     i18n.translateLegacy('КОРОЛЬ МОЖЕТ ПОГИБНУТЬ · РИСК РАНЕНИЯ'),
