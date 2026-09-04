@@ -3,6 +3,7 @@ import { legacyTranslate } from '../localization/legacy-ui.mjs';
 import { GAMEPLAY_EN_EXACT } from '../localization/legacy-gameplay.mjs';
 import { EXTRA_EN_EXACT, EXTRA_EN_PATTERNS } from '../localization/legacy-ui-extra.mjs';
 import { EVENT_EN_EXACT } from '../localization/events/en.mjs';
+import { EVENT_EN_V5_NAMES } from '../localization/events/en-v5-names.mjs';
 
 const SETTINGS_KEY = 'rpchess.reboot.v1.settings';
 const DEFAULT_LANGUAGE = 'ru';
@@ -42,6 +43,56 @@ function applyPatterns(source, patterns) {
   return source;
 }
 
+function escapeRegex(value) { return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+const EVENT_TEMPLATE_PATTERNS = Object.freeze(Object.entries(EVENT_EN_EXACT)
+  .filter(([source]) => /\{[a-zA-Z0-9_]+\}/.test(source))
+  .map(([source, translation]) => {
+    const names = [];
+    const token = /\{([a-zA-Z0-9_]+)\}/g;
+    let pattern = '^';
+    let cursor = 0;
+    let match = token.exec(source);
+    while (match) {
+      pattern += escapeRegex(source.slice(cursor, match.index));
+      pattern += '(.+?)';
+      names.push(match[1]);
+      cursor = match.index + match[0].length;
+      match = token.exec(source);
+    }
+    pattern += `${escapeRegex(source.slice(cursor))}$`;
+    return Object.freeze({ pattern: new RegExp(pattern, 'u'), names: Object.freeze(names), translation });
+  }));
+
+function translateEventPresentation(source) {
+  const direct = EVENT_EN_EXACT[source];
+  if (direct) return direct;
+
+  let match = source.match(/^«([\s\S]+)»$/u);
+  if (match) {
+    const translated = translateEventPresentation(match[1]);
+    if (translated !== match[1]) return `“${translated}”`;
+  }
+
+  match = source.match(/^(🔒\s*)?(.+?) — (НЕТ В ОТРЯДЕ|ПОГИБ|РАНЕН)$/u);
+  if (match) {
+    const status = { 'НЕТ В ОТРЯДЕ':'NOT IN ROSTER', 'ПОГИБ':'DEAD', 'РАНЕН':'WOUNDED' }[match[3]];
+    const name = EVENT_EN_V5_NAMES[match[2]] || match[2];
+    return `${match[1] || ''}${name} — ${status}`;
+  }
+
+  match = source.match(/^(\S+)\s+(.+)$/u);
+  if (match && EVENT_EN_V5_NAMES[match[2]]) return `${match[1]} ${EVENT_EN_V5_NAMES[match[2]]}`;
+
+  for (const template of EVENT_TEMPLATE_PATTERNS) {
+    const rendered = source.match(template.pattern);
+    if (!rendered) continue;
+    const params = {};
+    template.names.forEach((name, index) => { params[name] = EVENT_EN_V5_NAMES[rendered[index + 1]] || rendered[index + 1]; });
+    return interpolate(template.translation, params);
+  }
+  return source;
+}
+
 function translateGeneratedGameplay(value) {
   const source = String(value ?? '');
   const direct = GAMEPLAY_EN_EXACT[source] || EXTRA_EN_EXACT[source];
@@ -55,7 +106,7 @@ function translateGeneratedGameplay(value) {
   match = source.match(/^СЛОЖНОСТЬ (★+)$/u);
   if (match) return `DIFFICULTY ${match[1]}`;
   match = source.match(/^Наёмник · (.+)$/u);
-  if (match) return `Mercenary · ${GAMEPLAY_EN_EXACT[match[1]] || EXTRA_EN_EXACT[match[1]] || legacyTranslate(match[1], 'en')}`;
+  if (match) return `Mercenary · ${GAMEPLAY_EN_EXACT[match[1]] || EXTRA_EN_EXACT[match[1]] || EVENT_EN_V5_NAMES[match[1]] || legacyTranslate(match[1], 'en')}`;
   return source;
 }
 
@@ -64,8 +115,8 @@ export function translateLegacy(value, language = activeLanguage) {
   const normalized = normalizeLanguage(language);
   const source = String(value ?? '');
   if (normalized !== 'en') return source;
-  const eventTranslation = EVENT_EN_EXACT[source];
-  if (eventTranslation) return eventTranslation;
+  const eventTranslation = translateEventPresentation(source);
+  if (eventTranslation !== source) return eventTranslation;
   const legacy = legacyTranslate(source, normalized);
   return legacy !== source ? legacy : translateGeneratedGameplay(source);
 }
