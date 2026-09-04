@@ -34,4 +34,14 @@ Canonical UI language codes: `ru` (default) and `en`. Language names are self-la
 
 ## Current coverage boundary
 
-Localization Foundation covers the Main Menu, Settings and Language selector. Roster/Chronicle/Travel, gameplay screens and the 500-Event content catalog remain explicit later phases; this glossary does not mark them as translated.
+On `feature/localisation-completion`, the English runtime layer now covers the shell/UI and legacy or dynamically rendered gameplay surfaces already routed through `game/js/i18n.mjs`.
+
+Event presentation coverage is complete at the dictionary level for:
+
+- the primary event catalog, **E001–E500**;
+- **Events v3 E001–E100** narrative/content overlay;
+- all **537 Events v5 hero-specific lines**.
+
+Event localization remains presentation-only: event IDs, chances, costs, effects, warnings and state transitions stay sourced from the existing gameplay data.
+
+This coverage statement is not a release/acceptance statement. Final acceptance still requires the localization regression gate, RU/EN browser and responsive regression, production build, preview deployment and Human Acceptance.
