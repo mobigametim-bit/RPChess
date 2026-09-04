@@ -23,7 +23,18 @@
 
 Текущие `.reboot-modal__panel`, `.classic-panel`, Roster detail/catalog и внешняя обкладка шахматной доски приведены к frameless CSS-only treatment.
 
-Синий `ui_button_primary.png` остаётся approved CTA asset и не относится к запрету на panel-frame assets.
+## Глобальный button contract
+Все обычные CTA/action controls в production UI должны быть **CSS-only** и визуально наследовать утверждённый obsidian/gold язык главного меню и Settings:
+- тёмный obsidian/gold gradient;
+- тонкая золотая внешняя граница;
+- угловая геометрия без image-frame;
+- сдержанный внутренний stroke;
+- золотой hover/focus treatment;
+- BrahmsGotischCyr для основных action labels, если конкретная сцена не задаёт более специальный typography contract.
+
+`ui_button_primary.png` и другие image-border CTA assets не являются частью текущего каноничного production button contract. Они могут оставаться в репозитории только как legacy/unused assets и не должны возвращаться в активные `.reboot-button` / `.reboot-close` rules.
+
+Специализированные selection controls — карточки маршрутов/событий, Roster cards/filters, выбор бойцов, клетки доски и аналогичные purpose-built элементы — не обязаны выглядеть как primary CTA, если их отдельный interaction language уже утверждён.
 
 ## Общие правила
 - любая страница должна вертикально скроллиться, если не помещается во viewport;
