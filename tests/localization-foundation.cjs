@@ -122,10 +122,18 @@ class MemoryStorage {
     'An ambitious claimant accustomed to turning every campaign into a test of leadership.',
     'late-game recruit biographies must be localized'
   );
+  assert.strictEqual(
+    i18n.translateLegacy('Хулан никогда не спорит за право идти первой — она просто оказывается там раньше остальных. Для неё власть начинается с темпа.'),
+    'Khulan never argues for the right to go first — she simply gets there before everyone else. To her, authority begins with tempo.',
+    'canonical hero notes must be localized'
+  );
   assert.strictEqual(i18n.translateLegacy('ВСЕ 2 СЛОТА · ЛАДЬЯ ЗАНЯТЫ'), 'ALL 2 SLOTS · ROOK FULL', 'uppercased Battle slot composites must localize the role token');
   assert.strictEqual(i18n.translateLegacy('Мат — победа белых'), 'Checkmate — White wins', 'Classic Chess result composites must localize dynamically');
   assert.strictEqual(i18n.translateLegacy('Кто ты, воин?'), 'Who are you, warrior?', 'Player Identity copy must be localized');
   assert.strictEqual(i18n.translateLegacy('Бату Утёс — ТЯЖЕЛО РАНЕН'), 'Batu Cliff — SEVERELY WOUNDED', 'combat wound toasts must localize named heroes');
+  assert.strictEqual(i18n.translateLegacy('+1 ПРИПАС'), '+1 SUPPLY', 'resource toasts must localize supply deltas');
+  assert.strictEqual(i18n.translateLegacy('Стоимость Наёмников: 42 золота'), 'Mercenary cost: 42 gold', 'Mercenary cost accessibility copy must localize');
+  assert.strictEqual(i18n.translateLegacy('Горизонтали доски'), 'Board ranks', 'board coordinate accessibility labels must localize');
   assert.deepStrictEqual(JSON.parse(storage.getItem(settingsKey)), {
     music: 33,
     sfx: 80,
