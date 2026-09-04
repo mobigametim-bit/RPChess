@@ -1,9 +1,14 @@
 import { LANGUAGES, UI_MESSAGES } from '../localization/ui.mjs';
+import { legacyTranslate } from '../localization/legacy-ui.mjs';
 
 const SETTINGS_KEY = 'rpchess.reboot.v1.settings';
 const DEFAULT_LANGUAGE = 'ru';
 const LANGUAGE_CODES = new Set(LANGUAGES.map(({ code }) => code));
 const listeners = new Set();
+const textSources = new WeakMap();
+const attributeSources = new WeakMap();
+let observer = null;
+let applyingLegacyLocalization = false;
 
 function normalizeLanguage(code) {
   return LANGUAGE_CODES.has(code) ? code : DEFAULT_LANGUAGE;
@@ -54,12 +59,17 @@ export function currentLanguage() {
   return activeLanguage;
 }
 
+export function translateLegacy(value, language = activeLanguage) {
+  return legacyTranslate(value, normalizeLanguage(language));
+}
+
 export function setLanguage(code) {
   const language = normalizeLanguage(code);
   const changed = language !== activeLanguage;
   activeLanguage = language;
   persistLanguage(language);
   updateDocumentLanguage();
+  refreshLocalization();
   if (changed) {
     for (const listener of [...listeners]) listener(language);
     if (typeof globalThis.dispatchEvent === 'function' && typeof globalThis.CustomEvent === 'function') {
@@ -107,7 +117,100 @@ export function localizeDocument(root = globalThis.document) {
   }
 }
 
+function ignoredElement(element) {
+  const tag = element?.tagName;
+  return tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT';
+}
+
+function sourceForText(node) {
+  if (!textSources.has(node)) textSources.set(node, node.nodeValue || '');
+  return textSources.get(node) || '';
+}
+
+function sourceForAttribute(element, attribute) {
+  let sources = attributeSources.get(element);
+  if (!sources) {
+    sources = new Map();
+    attributeSources.set(element, sources);
+  }
+  if (!sources.has(attribute)) sources.set(attribute, element.getAttribute(attribute) || '');
+  return sources.get(attribute) || '';
+}
+
+function localizeTextNode(node) {
+  if (!node || node.nodeType !== 3 || ignoredElement(node.parentElement)) return;
+  const source = sourceForText(node);
+  const translated = translateLegacy(source);
+  if (node.nodeValue !== translated) node.nodeValue = translated;
+}
+
+function localizeLegacyElement(element) {
+  if (!element || element.nodeType !== 1 || ignoredElement(element)) return;
+  const walker = globalThis.document?.createTreeWalker?.(element, globalThis.NodeFilter?.SHOW_TEXT ?? 4);
+  if (walker) {
+    let node = walker.nextNode();
+    while (node) {
+      localizeTextNode(node);
+      node = walker.nextNode();
+    }
+  }
+  for (const target of [element, ...(element.querySelectorAll?.('[aria-label],[title],[placeholder]') || [])]) {
+    for (const attribute of ['aria-label', 'title', 'placeholder']) {
+      if (!target.hasAttribute?.(attribute)) continue;
+      const source = sourceForAttribute(target, attribute);
+      const translated = translateLegacy(source);
+      if (target.getAttribute(attribute) !== translated) target.setAttribute(attribute, translated);
+    }
+  }
+}
+
+export function localizeLegacyDocument(root = globalThis.document) {
+  if (!root || applyingLegacyLocalization) return;
+  applyingLegacyLocalization = true;
+  try {
+    if (root.nodeType === 3) localizeTextNode(root);
+    else if (root.nodeType === 1) localizeLegacyElement(root);
+    else if (root.documentElement) localizeLegacyElement(root.documentElement);
+  } finally {
+    applyingLegacyLocalization = false;
+  }
+}
+
+export function refreshLocalization(root = globalThis.document) {
+  localizeDocument(root);
+  localizeLegacyDocument(root);
+}
+
+function installLegacyObserver() {
+  const document = globalThis.document;
+  if (!document?.documentElement || typeof globalThis.MutationObserver !== 'function' || observer) return;
+  observer = new MutationObserver((mutations) => {
+    if (applyingLegacyLocalization) return;
+    const targets = new Set();
+    for (const mutation of mutations) {
+      if (mutation.type === 'characterData') targets.add(mutation.target);
+      for (const node of mutation.addedNodes || []) targets.add(node);
+      if (mutation.type === 'attributes') targets.add(mutation.target);
+    }
+    if (!targets.size) return;
+    queueMicrotask(() => {
+      for (const target of targets) localizeLegacyDocument(target);
+    });
+  });
+  observer.observe(document.documentElement, {
+    subtree: true,
+    childList: true,
+    characterData: true,
+    attributes: true,
+    attributeFilter: ['aria-label', 'title', 'placeholder']
+  });
+}
+
 updateDocumentLanguage();
+queueMicrotask(() => {
+  refreshLocalization();
+  installLegacyObserver();
+});
 
 globalThis.RPChessI18n = Object.freeze({
   currentLanguage,
@@ -115,5 +218,7 @@ globalThis.RPChessI18n = Object.freeze({
   t,
   has,
   availableLanguages,
-  subscribe
+  subscribe,
+  translateLegacy,
+  refreshLocalization
 });
