@@ -135,7 +135,7 @@ function translateEventPresentation(source) {
     return `${match[1] || ''}${translateKnownToken(match[2])} — ${status}`;
   }
 
-  match = source.match(/^(\S+)\s+(.+)$/u);
+  match = source.match(/^([^\p{L}\p{N}]+)\s+(.+)$/u);
   if (match) {
     const label = translateKnownToken(match[2]);
     if (label !== match[2]) return `${match[1]} ${label}`;
@@ -178,7 +178,14 @@ function translateGeneratedGameplay(value) {
   const sequence = translateGameplaySequence(source);
   if (sequence !== source) return sequence;
 
-  let match = source.match(/^(.+) присоединяется к отряду$/u);
+  let match = source.match(/^СМЕШАННОЕ — (.+)$/iu);
+  if (match) {
+    const parts = match[1].split(/(\s(?:\/|\+)\s)/u);
+    const races = parts.map((part) => (part === ' / ' || part === ' + ') ? part : translateKnownToken(part)).join('');
+    return `MIXED — ${races}`;
+  }
+
+  match = source.match(/^(.+) присоединяется к отряду$/u);
   if (match) return `${translateKnownToken(match[1])} joins the roster`;
   match = source.match(/^(.+): (погиб|тяжело ранен)$/u);
   if (match) return `${translateKnownToken(match[1])}: ${match[2] === 'погиб' ? 'dead' : 'severely wounded'}`;
