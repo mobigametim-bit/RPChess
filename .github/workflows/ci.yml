@@ -1,4 +1,4 @@
-name: RPChess post-audit full diagnostic
+name: RPChess post-audit full diagnostic v2
 
 on:
   workflow_dispatch:
