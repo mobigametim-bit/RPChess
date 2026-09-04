@@ -8,6 +8,7 @@ body.puzzles-active{overflow:auto;background:#05070a}
 .puzzle-heading:after{content:'';position:absolute;left:0;bottom:-1px;width:250px;height:2px;background:linear-gradient(90deg,#e0b65a,rgba(224,182,90,0))}
 .puzzle-heading .reboot-eyebrow{font-size:0;color:#dfb75f;letter-spacing:.18em;text-transform:uppercase;font-weight:800}
 .puzzle-heading .reboot-eyebrow:after{content:'ТРЕНИРОВКА';font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:10px;letter-spacing:.18em;color:#dfb75f}
+html[lang="en"] .puzzle-heading .reboot-eyebrow:after{content:'TRAINING'}
 .puzzle-heading h1{margin:.22rem 0 0;font-family:'BrahmsGotischCyr',Georgia,serif;font-size:clamp(38px,4.1vw,58px);font-weight:400;line-height:.95;text-transform:uppercase;color:#f3e4bd;text-shadow:0 2px 14px rgba(0,0,0,.48)}
 .puzzle-difficulty{text-align:left;padding-bottom:1px}
 .puzzle-difficulty strong{display:block;color:#e8bd5f;font-size:clamp(20px,2vw,27px);letter-spacing:.06em;line-height:1.1}
