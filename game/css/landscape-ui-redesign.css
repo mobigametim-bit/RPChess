@@ -1,0 +1,949 @@
+/* RPChess landscape-only responsive presentation layer.
+   Desktop remains canonical except board-first screens, whose accepted contract is edge-to-edge.
+   This file is loaded last so it can override legacy responsive rules without changing gameplay DOM hooks. */
+
+html[data-landscape-ui='1'],
+html[data-landscape-ui='1'] body {
+  width: 100%;
+  min-width: 320px;
+}
+
+.landscape-orientation-lock { display: none; }
+
+@media (orientation: portrait) and (max-width: 1180px) {
+  html[data-landscape-ui='1'],
+  html[data-landscape-ui='1'] body {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    overflow: hidden !important;
+    background: #05080d;
+  }
+  html[data-landscape-ui='1'] body > :not(.landscape-orientation-lock) {
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+  .landscape-orientation-lock {
+    position: fixed;
+    z-index: 100000;
+    inset: 0;
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-areas:
+      'device rotate'
+      'label label';
+    place-content: center;
+    align-items: center;
+    gap: clamp(16px, 4vw, 28px);
+    padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+    visibility: visible !important;
+    pointer-events: auto !important;
+    color: #f5e2ad;
+    background:
+      radial-gradient(circle at 50% 34%, rgba(66, 92, 120, .18), transparent 42%),
+      linear-gradient(160deg, #0a1119, #03070c 72%);
+  }
+  .landscape-orientation-lock__device {
+    grid-area: device;
+    position: relative;
+    width: clamp(92px, 20vw, 132px);
+    aspect-ratio: .56;
+    border: 3px solid #d8b15d;
+    border-radius: 18px;
+    box-shadow: 0 0 0 1px rgba(255,235,183,.12), 0 18px 44px rgba(0,0,0,.52), inset 0 0 22px rgba(139,202,240,.04);
+    background: #07101a;
+  }
+  .landscape-orientation-lock__device::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 30%;
+    height: 4px;
+    transform: translateX(-50%);
+    border-radius: 99px;
+    background: rgba(245,226,173,.72);
+  }
+  .landscape-orientation-lock__screen {
+    position: absolute;
+    inset: 18px 9px 13px;
+    border: 1px solid rgba(139,202,240,.32);
+    border-radius: 9px;
+    background: linear-gradient(145deg, rgba(23,48,73,.74), rgba(6,14,24,.95));
+  }
+  .landscape-orientation-lock__rotate {
+    grid-area: rotate;
+    color: #e8bf60;
+    font: 400 clamp(54px, 12vw, 78px)/1 Georgia, serif;
+    transform: rotate(-24deg);
+    text-shadow: 0 6px 20px rgba(0,0,0,.7);
+  }
+  .landscape-orientation-lock strong {
+    grid-area: label;
+    text-align: center;
+    font: 400 clamp(28px, 6vw, 42px)/1.05 'BrahmsGotischCyr', Georgia, serif;
+    letter-spacing: .02em;
+  }
+  html[data-orientation-language='ru'] .landscape-orientation-lock__en,
+  html[data-orientation-language='en'] .landscape-orientation-lock__ru { display: none; }
+}
+
+/* --------------------------------------------------------------------------
+   Board-first contract: Puzzle, Skirmish/Battle combat and Classic Chess.
+   The 8x8 board is exactly viewport-height, square, and flush to top/bottom/right.
+   -------------------------------------------------------------------------- */
+@media (orientation: landscape) {
+  body.puzzles-active,
+  body.classic-chess-active {
+    overflow: hidden !important;
+  }
+
+  .classic-screen {
+    width: 100vw !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+  .classic-shell {
+    width: 100vw !important;
+    max-width: none !important;
+    height: 100dvh !important;
+    margin: 0 !important;
+    display: grid !important;
+    grid-template-columns: calc(100vw - 100dvh) 100dvh !important;
+    grid-template-rows: auto minmax(0, 1fr) minmax(86px, .42fr) !important;
+    gap: 0 !important;
+    align-items: stretch !important;
+  }
+  .classic-topbar {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: clamp(8px, 1.4vh, 16px) clamp(10px, 1.3vw, 22px) !important;
+    border-bottom: 1px solid rgba(216,177,93,.20);
+    background: rgba(4,8,13,.88);
+  }
+  .classic-logo { display: none !important; }
+  .classic-toolbar {
+    width: 100%;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    gap: 6px !important;
+  }
+  .classic-mini-button {
+    min-height: 36px !important;
+    padding: 6px 10px !important;
+    border: 1px solid #d8b15d !important;
+    border-image: none !important;
+    background: linear-gradient(180deg, rgba(58,45,27,.72), rgba(14,16,19,.98)) !important;
+    color: #f5e2ad !important;
+    font-family: 'BrahmsGotischCyr', Georgia, serif !important;
+  }
+  .classic-party-panel {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    min-height: 0 !important;
+    overflow: auto !important;
+    border-radius: 0 !important;
+    border-width: 0 1px 1px 0 !important;
+    box-shadow: none !important;
+  }
+  .classic-panel--moves {
+    grid-column: 1 !important;
+    grid-row: 3 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    border-radius: 0 !important;
+    border-width: 0 1px 0 0 !important;
+    box-shadow: none !important;
+  }
+  .classic-panel--moves .classic-moves {
+    height: 100% !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+  }
+  .classic-main {
+    position: relative !important;
+    grid-column: 2 !important;
+    grid-row: 1 / 4 !important;
+    width: 100dvh !important;
+    height: 100dvh !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+  .classic-statusbar {
+    position: absolute !important;
+    z-index: 32 !important;
+    top: max(4px, env(safe-area-inset-top)) !important;
+    left: 50% !important;
+    width: max-content !important;
+    max-width: 72% !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 5px 10px !important;
+    transform: translateX(-50%) !important;
+    gap: 8px !important;
+    border-radius: 5px !important;
+    background: rgba(5,10,16,.88) !important;
+    backdrop-filter: blur(6px);
+    pointer-events: none;
+  }
+  .classic-turn,
+  .classic-state { font-size: clamp(10px, 1.4vh, 14px) !important; }
+  .classic-board-wrap {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100dvh !important;
+    height: 100dvh !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    aspect-ratio: 1 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #070b10 !important;
+  }
+  .classic-board {
+    width: 100dvh !important;
+    height: 100dvh !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+  .classic-coordinate { display: none !important; }
+
+  .puzzle-screen {
+    width: 100vw !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+  .puzzle-shell {
+    width: 100vw !important;
+    max-width: none !important;
+    height: 100dvh !important;
+    margin: 0 !important;
+    display: grid !important;
+    grid-template-columns: calc(100vw - 100dvh) 100dvh !important;
+    grid-template-rows: auto auto minmax(0, 1fr) !important;
+    gap: 0 !important;
+    align-items: stretch !important;
+  }
+  .puzzle-topbar {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: clamp(8px, 1.4vh, 16px) clamp(10px, 1.3vw, 22px) !important;
+    background: rgba(4,8,13,.86);
+  }
+  .puzzle-logo { display: none !important; }
+  .puzzle-topbar__actions {
+    width: 100%;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    gap: 6px !important;
+  }
+  .puzzle-topbar .reboot-button {
+    width: auto !important;
+    min-width: 0 !important;
+    min-height: 36px !important;
+    padding: 6px 11px !important;
+  }
+  .puzzle-heading {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: clamp(10px, 1.8vh, 18px) clamp(12px, 1.4vw, 24px) !important;
+    border-bottom: 1px solid rgba(216,177,93,.20);
+    background: rgba(4,8,13,.86);
+  }
+  .puzzle-heading h1 { font-size: clamp(30px, 4.4vh, 52px) !important; }
+  .puzzle-difficulty { margin-top: 4px !important; }
+  .puzzle-layout { display: contents !important; }
+  .puzzle-layout > .puzzle-panel:first-child {
+    grid-column: 1 !important;
+    grid-row: 3 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    overflow-y: auto !important;
+    border-radius: 0 !important;
+    border-width: 0 1px 0 0 !important;
+    box-shadow: none !important;
+  }
+  .puzzle-board-wrap {
+    position: relative !important;
+    grid-column: 2 !important;
+    grid-row: 1 / 4 !important;
+    width: 100dvh !important;
+    height: 100dvh !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    aspect-ratio: 1 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+  }
+  .puzzle-board {
+    width: 100dvh !important;
+    height: 100dvh !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+  .puzzle-coordinate { display: none !important; }
+  .puzzle-outcome {
+    position: absolute !important;
+    z-index: 40 !important;
+    left: clamp(10px, 1.2vw, 20px) !important;
+    bottom: clamp(10px, 1.8vh, 18px) !important;
+    width: min(430px, calc(100vw - 100dvh - 20px)) !important;
+    max-height: 54dvh !important;
+    overflow-y: auto !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Tablet landscape: 1024x768 class and nearby laptop/tablet viewports.
+   -------------------------------------------------------------------------- */
+@media (orientation: landscape) and (max-width: 1180px) {
+  html[data-landscape-ui='1'],
+  html[data-landscape-ui='1'] body,
+  #app { height: 100dvh; min-height: 0 !important; overflow: hidden !important; }
+  #app > main:not([hidden]) { height: 100dvh !important; min-height: 0 !important; max-height: 100dvh !important; overflow: hidden !important; }
+
+  :root {
+    --ui-panel-safe-top: clamp(12px, 1.7vh, 18px);
+    --ui-panel-safe-right: clamp(12px, 1.5vw, 18px);
+    --ui-panel-safe-bottom: clamp(12px, 1.7vh, 18px);
+    --ui-panel-safe-left: clamp(14px, 1.8vw, 22px);
+  }
+
+  /* Main Menu / Chronicle */
+  .reboot-menu-screen {
+    min-height: 0 !important;
+    height: 100dvh !important;
+    padding: clamp(10px, 1.6vw, 20px) !important;
+  }
+  .reboot-menu-screen__layout {
+    width: min(1120px, 100%) !important;
+    height: 100% !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.12fr) minmax(280px, .88fr) !important;
+    gap: clamp(10px, 1.7vw, 22px) !important;
+    align-items: center !important;
+  }
+  .reboot-menu-screen__main { padding: clamp(10px, 2vw, 24px) !important; }
+  .reboot-wordmark { width: min(470px, 92%) !important; margin: 8px 0 14px !important; }
+  .reboot-menu-actions { gap: 7px !important; max-width: 500px !important; }
+  .reboot-menu-secondary { margin-top: 2px !important; gap: 7px !important; }
+  .reboot-menu-actions .reboot-button { min-height: 44px !important; padding-block: 7px !important; }
+  .chronicle-panel {
+    align-self: center !important;
+    justify-self: stretch !important;
+    width: auto !important;
+    max-height: calc(100dvh - 36px) !important;
+    margin: 0 !important;
+    overflow-y: auto !important;
+  }
+
+  /* Modals */
+  .reboot-modal { padding: 10px !important; }
+  .reboot-modal__panel { max-height: calc(100dvh - 20px) !important; overflow-y: auto !important; }
+  [data-settings-modal] .reboot-modal__panel,
+  .identity-modal .identity-panel,
+  .reboot-language-panel,
+  .classic-setup-panel { width: min(700px, calc(100vw - 24px)) !important; }
+  [data-settings-modal] .reboot-setting { min-height: 70px !important; padding: 14px 4px !important; }
+  .identity-copy { margin-top: 14px !important; }
+  .identity-form { margin-top: 16px !important; }
+  .identity-field input { min-height: 48px !important; }
+  .classic-setup-grid { margin-top: 10px !important; gap: 6px !important; }
+  .classic-setup-field { min-height: 50px !important; padding: 6px 2px !important; }
+
+  /* Roster */
+  .roster-screen { padding: 10px 12px !important; }
+  .roster-shell {
+    height: 100% !important;
+    display: grid !important;
+    grid-template-rows: auto auto minmax(0, 1fr) !important;
+  }
+  .roster-topbar { margin-bottom: 5px !important; min-height: 40px !important; }
+  .roster-logo { width: min(190px, 22vw) !important; }
+  .roster-topbar__actions { gap: 6px !important; }
+  .roster-topbar .reboot-button { min-width: 0 !important; min-height: 36px !important; padding: 5px 10px !important; }
+  .roster-heading { margin: 0 0 7px !important; }
+  .roster-heading .reboot-eyebrow { display: none !important; }
+  .roster-heading h1 { margin: 0 !important; font-size: clamp(31px, 4.8vh, 44px) !important; }
+  .roster-layout {
+    min-height: 0 !important;
+    height: 100% !important;
+    grid-template-columns: minmax(230px, .72fr) minmax(0, 1.8fr) !important;
+    gap: 9px !important;
+    align-items: stretch !important;
+  }
+  .roster-detail,
+  .roster-catalog { min-height: 0 !important; overflow: hidden !important; }
+  .roster-detail { gap: 8px !important; overflow-y: auto !important; }
+  .roster-detail__media { min-height: 0 !important; height: clamp(190px, 34dvh, 300px) !important; }
+  .roster-detail h2 { font-size: clamp(26px, 3.7vh, 38px) !important; margin-bottom: 8px !important; }
+  .roster-detail__facts { gap: 5px !important; margin-bottom: 6px !important; }
+  .roster-detail__facts > span { padding: 6px 7px !important; }
+  .roster-detail__description,
+  .roster-status-note { font-size: 12px !important; line-height: 1.35 !important; }
+  .roster-catalog { display: grid !important; grid-template-rows: auto auto minmax(0, 1fr) !important; }
+  .roster-catalog__head { margin-bottom: 6px !important; }
+  .roster-catalog__head h2 { font-size: clamp(24px, 3.2vh, 32px) !important; }
+  .roster-filters { margin-bottom: 7px !important; gap: 5px !important; flex-wrap: nowrap !important; overflow-x: auto !important; }
+  .roster-filter { min-height: 32px !important; padding: 4px 8px !important; font-size: 10px !important; white-space: nowrap !important; }
+  .roster-grid {
+    min-height: 0 !important;
+    height: 100% !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-auto-rows: minmax(0, 1fr) !important;
+    gap: 7px !important;
+    overflow-y: auto !important;
+  }
+  .roster-card { min-height: 0 !important; grid-template-rows: minmax(90px, 1fr) auto !important; }
+  .roster-card__body { padding: 7px 8px 8px !important; }
+  .roster-card__name { font-size: 13px !important; }
+  .roster-card__meta { font-size: 10px !important; }
+
+  /* Travel */
+  .travel-choice-screen { height: 100dvh !important; min-height: 0 !important; padding: 10px 12px !important; overflow: hidden !important; }
+  .travel-choice-shell { height: 100% !important; display: grid !important; grid-template-rows: auto minmax(0, 1fr) !important; gap: 8px !important; }
+  .travel-choice-topbar { min-height: 58px !important; margin: 0 !important; align-items: center !important; }
+  .travel-choice-heading { margin: 0 !important; text-align: left !important; }
+  .travel-choice-heading h1 { font-size: clamp(34px, 5.2vh, 50px) !important; }
+  .travel-choice-commandbar { min-width: 0 !important; gap: 8px !important; }
+  .travel-choice-topbar__actions { flex-wrap: nowrap !important; gap: 6px !important; }
+  .travel-choice-topbar__actions .reboot-button { min-height: 36px !important; padding: 5px 9px !important; }
+  .travel-choice-routes { min-height: 0 !important; height: 100% !important; gap: 10px !important; }
+  .travel-choice-card { min-height: 0 !important; height: 100% !important; }
+  .travel-choice-card__body { padding-bottom: 14px !important; }
+
+  /* Events */
+  .events-screen { height: 100dvh !important; min-height: 0 !important; overflow: hidden !important; }
+  .events-shell { height: 100% !important; display: grid !important; grid-template-rows: auto minmax(0, 1fr) !important; padding: 10px 12px !important; }
+  .events-topbar { min-height: 48px !important; margin: 0 0 7px !important; }
+  .events-logo { width: min(190px, 22vw) !important; }
+  .events-topbar__actions .reboot-button { min-height: 36px !important; padding: 5px 10px !important; }
+  .events-panel { min-height: 0 !important; height: 100% !important; display: grid !important; grid-template-columns: minmax(0, 1.08fr) minmax(330px, .92fr) !important; gap: 10px !important; align-items: stretch !important; }
+  .events-copy-frame,
+  .events-choice-frame { min-height: 0 !important; max-height: none !important; overflow-y: auto !important; }
+  .events-copy-frame h1 { font-size: clamp(31px, 4.2vh, 46px) !important; }
+  .events-story { line-height: 1.42 !important; }
+  .events-choices { min-height: 0 !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 7px !important; }
+  .events-choice { min-height: 0 !important; padding: 10px !important; }
+
+  /* Skirmish prep */
+  .skirmish-screen { height: 100dvh !important; min-height: 0 !important; padding: 9px 12px !important; overflow: hidden !important; }
+  .skirmish-shell { position: relative !important; height: 100% !important; display: grid !important; grid-template-rows: auto auto minmax(0, 1fr) !important; }
+  .skirmish-topbar { min-height: 38px !important; margin: 0 !important; }
+  .skirmish-logo { display: none !important; }
+  .skirmish-topbar .reboot-button { min-width: 0 !important; min-height: 34px !important; padding: 4px 9px !important; }
+  .skirmish-heading { grid-template-columns: minmax(0,1fr) auto !important; gap: 10px !important; margin: 0 0 7px !important; padding: 0 2px 6px !important; }
+  .skirmish-heading h1 { font-size: clamp(28px, 4vh, 40px) !important; margin: 1px 0 3px !important; }
+  .skirmish-heading p { font-size: 11px !important; line-height: 1.25 !important; }
+  .skirmish-threat-card { min-height: 0 !important; padding: 6px 9px !important; }
+  .skirmish-layout { min-height: 0 !important; height: 100% !important; grid-template-columns: minmax(0, 2.05fr) minmax(280px, .95fr) !important; gap: 9px !important; }
+  .skirmish-available,
+  .skirmish-selection { min-height: 0 !important; padding: 9px !important; overflow: hidden !important; }
+  .skirmish-section-head { margin-bottom: 6px !important; }
+  .skirmish-section-head h2 { font-size: clamp(21px, 3vh, 28px) !important; }
+  .skirmish-section-head > span { font-size: 9px !important; }
+  .skirmish-grid { max-height: none !important; height: calc(100% - 42px) !important; gap: 7px !important; }
+  .skirmish-card { min-height: 80px !important; grid-template-columns: 70px minmax(0,1fr) !important; }
+  .skirmish-card__art { width: 70px !important; min-height: 78px !important; }
+  .skirmish-card__body { gap: 3px !important; padding: 7px 8px !important; }
+  .skirmish-card__body strong { font-size: 15px !important; }
+  .skirmish-selected { max-height: none !important; height: min(36dvh, 270px) !important; }
+  .skirmish-selected-row { min-height: 34px !important; padding: 4px 7px !important; }
+  .skirmish-formation-block { margin-top: 7px !important; padding-top: 7px !important; }
+  .skirmish-formation-head { margin-bottom: 5px !important; }
+  .skirmish-actionbar {
+    position: absolute !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: calc(31.8% - 2px) !important;
+    margin: 0 !important;
+    padding: 7px !important;
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+    gap: 6px !important;
+  }
+  .skirmish-actionbar .skirmish-start { grid-column: 1 / -1 !important; width: 100% !important; min-height: 40px !important; }
+  .skirmish-selection { padding-bottom: 116px !important; }
+
+  /* Battle prep */
+  .battle-screen { height: 100dvh !important; min-height: 0 !important; padding: 9px 12px !important; overflow: hidden !important; }
+  .battle-shell { position: relative !important; height: 100% !important; display: grid !important; grid-template-rows: auto auto minmax(0, 1fr) !important; }
+  .battle-topbar { min-height: 36px !important; margin: 0 !important; }
+  .battle-logo { display: none !important; }
+  .battle-topbar .reboot-button { min-width: 0 !important; min-height: 34px !important; padding: 4px 9px !important; }
+  .battle-heading { grid-template-columns: minmax(0,1fr) auto !important; gap: 10px !important; margin: 0 0 7px !important; padding: 0 2px 6px !important; }
+  .battle-heading h1 { font-size: clamp(27px, 3.8vh, 39px) !important; margin: 1px 0 3px !important; }
+  .battle-heading p { font-size: 10px !important; line-height: 1.24 !important; }
+  .battle-threat-card { min-height: 0 !important; padding: 6px 9px !important; }
+  .battle-layout { min-height: 0 !important; height: 100% !important; grid-template-columns: minmax(0, 2.05fr) minmax(300px, .95fr) !important; gap: 9px !important; }
+  .battle-roster,
+  .battle-army { min-height: 0 !important; padding: 9px !important; overflow: hidden !important; }
+  .battle-section-head { margin-bottom: 6px !important; }
+  .battle-section-head h2 { font-size: clamp(21px, 3vh, 28px) !important; }
+  .battle-section-head > span { font-size: 9px !important; }
+  .battle-grid { max-height: none !important; height: calc(100% - 42px) !important; grid-template-columns: repeat(3, minmax(0,1fr)) !important; gap: 7px !important; overflow-y: auto !important; }
+  .battle-card { min-height: 80px !important; grid-template-columns: 70px minmax(0,1fr) !important; }
+  .battle-card__art { width: 70px !important; min-height: 78px !important; }
+  .battle-card__body { gap: 3px !important; padding: 7px 8px !important; }
+  .battle-card__body strong { font-size: 15px !important; }
+  .battle-slot-summary { gap: 4px !important; }
+  .battle-formation { margin-top: 6px !important; }
+  .battle-participants { max-height: min(20dvh, 150px) !important; overflow-y: auto !important; }
+  .battle-actionbar {
+    position: absolute !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: calc(31.8% - 2px) !important;
+    margin: 0 !important;
+    padding: 7px !important;
+    grid-template-columns: 1fr !important;
+  }
+  .battle-actionbar .battle-counter { display: none !important; }
+  .battle-actionbar .battle-start { width: 100% !important; min-height: 40px !important; }
+  .battle-army { padding-bottom: 64px !important; }
+
+  /* Settlement */
+  .settlement-screen { height: 100dvh !important; min-height: 0 !important; padding: 9px 12px !important; overflow: hidden !important; }
+  .settlement-shell { position: relative !important; height: 100% !important; display: grid !important; grid-template-rows: auto auto minmax(0, 1fr) !important; }
+  .settlement-topbar { min-height: 38px !important; margin: 0 !important; }
+  .settlement-logo { display: none !important; }
+  .settlement-heading { margin: 0 0 7px !important; }
+  .settlement-heading .reboot-eyebrow,
+  .settlement-heading > p { display: none !important; }
+  .settlement-heading h1 { margin: 0 !important; font-size: clamp(30px, 4.3vh, 42px) !important; }
+  .settlement-services {
+    min-height: 0 !important;
+    height: 100% !important;
+    grid-template-columns: minmax(0, .92fr) minmax(0, 1.55fr) minmax(0, .92fr) !important;
+    gap: 8px !important;
+    align-items: stretch !important;
+  }
+  .settlement-service { min-height: 0 !important; overflow: hidden !important; }
+  .settlement-service h2 { margin-bottom: 5px !important; font-size: clamp(24px, 3.4vh, 34px) !important; }
+  .settlement-service__intro { margin-bottom: 7px !important; font-size: 11px !important; line-height: 1.3 !important; }
+  .settlement-healer-list,
+  .settlement-recruits { min-height: 0 !important; max-height: none !important; overflow-y: auto !important; }
+  .settlement-service--tavern { display: grid !important; grid-template-rows: auto auto auto minmax(0,1fr) !important; }
+  .settlement-recruit { min-height: 0 !important; }
+  .settlement-footer {
+    position: absolute !important;
+    z-index: 20 !important;
+    top: 0 !important;
+    right: 0 !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+  .settlement-footer > p { display: none !important; }
+  .settlement-continue { width: auto !important; min-width: 150px !important; min-height: 36px !important; padding: 5px 12px !important; }
+
+  /* Aftermath / starvation / run summary */
+  .skirmish-aftermath,
+  .battle-aftermath,
+  .starvation-screen,
+  .endless-run-screen { height: 100dvh !important; min-height: 0 !important; padding: 10px 12px !important; overflow: hidden !important; }
+  .skirmish-aftermath-shell,
+  .battle-aftermath-shell,
+  .starvation-shell,
+  .endless-run-shell { height: 100% !important; min-height: 0 !important; display: grid !important; place-items: center !important; }
+  .skirmish-aftermath-shell > .skirmish-logo,
+  .battle-aftermath-shell > .battle-logo,
+  .starvation-logo,
+  .endless-run-logo { position: absolute !important; top: 9px !important; left: 12px !important; width: min(150px, 18vw) !important; z-index: 3 !important; }
+  .skirmish-aftermath-panel,
+  .battle-aftermath-panel { width: min(900px, 88vw) !important; max-height: calc(100dvh - 28px) !important; overflow-y: auto !important; }
+  .skirmish-aftermath-panel h1,
+  .battle-aftermath-panel h1 { font-size: clamp(32px, 5.5vh, 50px) !important; }
+  .skirmish-aftermath-columns,
+  .battle-aftermath-columns { gap: 8px !important; }
+  .starvation-panel {
+    width: min(1000px, 90vw) !important;
+    max-height: calc(100dvh - 28px) !important;
+    display: grid !important;
+    grid-template-columns: minmax(210px, .72fr) minmax(0, 1.28fr) !important;
+    grid-template-rows: auto auto auto minmax(0,1fr) auto !important;
+    column-gap: 22px !important;
+    overflow: hidden !important;
+  }
+  .starvation-panel > .reboot-eyebrow { grid-column: 2 !important; grid-row: 1 !important; }
+  .starvation-panel > h1 { grid-column: 2 !important; grid-row: 2 !important; margin-bottom: 4px !important; }
+  .starvation-portrait { grid-column: 1 !important; grid-row: 1 / 6 !important; width: 100% !important; height: 100% !important; min-height: 0 !important; object-fit: cover !important; }
+  .starvation-piece { grid-column: 1 !important; grid-row: 5 !important; align-self: end !important; justify-self: end !important; z-index: 2 !important; }
+  .starvation-panel > h2 { grid-column: 2 !important; grid-row: 3 !important; }
+  .starvation-panel > p { grid-column: 2 !important; grid-row: 4 !important; min-height: 0 !important; overflow-y: auto !important; }
+  .starvation-button { grid-column: 2 !important; grid-row: 5 !important; align-self: end !important; }
+  .endless-run-panel {
+    width: min(1050px, 92vw) !important;
+    max-height: calc(100dvh - 28px) !important;
+    display: grid !important;
+    grid-template-columns: minmax(260px, .85fr) minmax(0, 1.15fr) !important;
+    grid-template-rows: auto auto minmax(0,1fr) auto !important;
+    gap: 8px 20px !important;
+    overflow: hidden !important;
+  }
+  .endless-run-panel > .reboot-eyebrow,
+  .endless-run-panel > h1,
+  .endless-run-reason,
+  .endless-run-actions { grid-column: 1 !important; }
+  .endless-run-panel > .reboot-eyebrow { grid-row: 1 !important; }
+  .endless-run-panel > h1 { grid-row: 2 !important; }
+  .endless-run-reason { grid-row: 3 !important; overflow-y: auto !important; }
+  .endless-run-actions { grid-row: 4 !important; }
+  .endless-run-metrics { grid-column: 2 !important; grid-row: 1 / 5 !important; min-height: 0 !important; height: 100% !important; gap: 8px !important; }
+  .endless-run-metric { min-height: 0 !important; padding: 10px 12px !important; }
+}
+
+/* --------------------------------------------------------------------------
+   Phone landscape: 844x390 class. Everything important stays within one viewport.
+   -------------------------------------------------------------------------- */
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 980px) {
+  :root {
+    --ui-panel-safe-top: 8px;
+    --ui-panel-safe-right: 9px;
+    --ui-panel-safe-bottom: 8px;
+    --ui-panel-safe-left: 10px;
+  }
+  button { min-height: 34px; }
+
+  /* Main Menu */
+  .reboot-menu-screen { padding: 6px 10px !important; }
+  .reboot-menu-screen__layout { grid-template-columns: minmax(0, 1.04fr) minmax(300px, .96fr) !important; gap: 8px !important; }
+  .reboot-menu-screen__main { padding: 6px 10px !important; }
+  .reboot-eyebrow { font-size: 8px !important; }
+  .reboot-wordmark { width: min(350px, 88%) !important; margin: 4px 0 7px !important; }
+  .reboot-menu-actions { gap: 4px !important; }
+  .reboot-menu-secondary { gap: 4px !important; margin-top: 0 !important; }
+  .reboot-menu-actions .reboot-button { min-height: 36px !important; padding: 4px 8px !important; font-size: 15px !important; }
+  .chronicle-panel { max-height: calc(100dvh - 12px) !important; padding: 12px 14px !important; }
+  .chronicle-header h2 { font-size: 26px !important; }
+  .chronicle-current,
+  .chronicle-best { padding: 8px 0 2px !important; }
+  .chronicle-current h3,
+  .chronicle-best h3 { margin: 3px 0 6px !important; font-size: 20px !important; }
+  .chronicle-metric { min-height: 24px !important; padding: 2px 0 !important; }
+  .chronicle-metric strong { font-size: 14px !important; }
+  .chronicle-empty-copy { font-size: 11px !important; line-height: 1.25 !important; }
+
+  /* Roster: compact detail + horizontal hero carousel */
+  .roster-screen { padding: 5px 7px !important; }
+  .roster-shell { grid-template-rows: auto auto minmax(0,1fr) !important; }
+  .roster-topbar { min-height: 32px !important; }
+  .roster-logo { display: none !important; }
+  .roster-topbar__actions { margin-left: auto !important; gap: 4px !important; flex-direction: row !important; width: auto !important; }
+  .roster-topbar .reboot-button { min-height: 30px !important; padding: 3px 8px !important; font-size: 11px !important; }
+  .roster-heading { position: absolute !important; top: 8px !important; left: 10px !important; z-index: 4 !important; }
+  .roster-heading h1 { font-size: 28px !important; }
+  .roster-layout { grid-template-columns: minmax(190px, 27%) minmax(0,1fr) !important; gap: 6px !important; }
+  .roster-detail { padding: 7px !important; gap: 4px !important; }
+  .roster-detail__media { height: 39dvh !important; min-height: 0 !important; }
+  .roster-kicker { font-size: 8px !important; }
+  .roster-detail h2 { font-size: 21px !important; margin: 2px 0 4px !important; }
+  .roster-detail__facts { grid-template-columns: 1fr 1fr !important; gap: 3px !important; margin-bottom: 3px !important; }
+  .roster-detail__facts > span { padding: 3px 4px !important; }
+  .roster-detail__facts strong { font-size: 11px !important; }
+  .roster-detail__facts small { font-size: 7px !important; }
+  .roster-status { padding: 2px 4px !important; font-size: 7px !important; }
+  .roster-detail__description,
+  .roster-status-note { font-size: 9px !important; line-height: 1.22 !important; }
+  .roster-catalog { padding: 7px !important; }
+  .roster-catalog__head { display: none !important; }
+  .roster-filters { margin-bottom: 4px !important; }
+  .roster-filter { min-height: 27px !important; padding: 2px 6px !important; font-size: 8px !important; }
+  .roster-grid {
+    display: grid !important;
+    grid-template-columns: none !important;
+    grid-template-rows: 1fr !important;
+    grid-auto-flow: column !important;
+    grid-auto-columns: minmax(150px, 31%) !important;
+    grid-auto-rows: 1fr !important;
+    gap: 6px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scroll-snap-type: x mandatory;
+  }
+  .roster-card { height: 100% !important; min-height: 0 !important; scroll-snap-align: start; grid-template-rows: minmax(70px,1fr) auto !important; }
+  .roster-card__glyph { font-size: 17px !important; }
+  .roster-card__value { font-size: 8px !important; min-width: 19px !important; padding: 1px 4px !important; }
+  .roster-card__body { padding: 4px 5px 5px !important; gap: 2px !important; }
+  .roster-card__name { font-size: 10px !important; }
+  .roster-card__meta { font-size: 8px !important; }
+
+  /* Travel: three horizontal cards stacked vertically, all visible. */
+  .travel-choice-screen { padding: 5px 8px !important; }
+  .travel-choice-shell { gap: 5px !important; }
+  .travel-choice-topbar { min-height: 48px !important; gap: 6px !important; }
+  .travel-choice-heading h1 { font-size: 30px !important; white-space: nowrap !important; }
+  .travel-player-rating,
+  .travel-choice-inline-resources { transform: scale(.86); transform-origin: center; }
+  .travel-choice-topbar__actions .reboot-button { min-height: 30px !important; padding: 3px 7px !important; font-size: 10px !important; }
+  .travel-choice-routes {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    grid-template-rows: repeat(3, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+    overflow: hidden !important;
+  }
+  .travel-choice-card {
+    display: grid !important;
+    grid-template-columns: 37% minmax(0,1fr) !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+  .travel-choice-card__visual {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+  .travel-choice-card__icon { left: 12% !important; top: 10% !important; width: 42px !important; height: 42px !important; transform: none !important; }
+  .travel-choice-card__overlay { position: absolute !important; inset: 6px 7px 6px !important; display: flex !important; flex-direction: column !important; justify-content: flex-end !important; }
+  .travel-choice-card__type { font-size: 20px !important; line-height: 1 !important; }
+  .travel-choice-card__threat,
+  .travel-choice-card__safe,
+  .travel-choice-card__meta { margin: 3px 0 0 !important; padding: 0 !important; border: 0 !important; gap: 4px !important; }
+  .travel-choice-card__threat strong { font-size: 9px !important; }
+  .travel-choice-card__body { min-height: 0 !important; height: 100% !important; padding: 8px 10px !important; justify-content: center !important; }
+  .travel-choice-card__flavor { font-size: 11px !important; line-height: 1.25 !important; }
+  .travel-choice-card__cost-amount,
+  .travel-choice-card__reward-amount { font-size: 10px !important; height: 16px !important; line-height: 16px !important; }
+  .travel-choice-card__cost-icon,
+  .travel-choice-card__reward-icon { width: 16px !important; height: 16px !important; flex-basis: 16px !important; }
+
+  /* Events */
+  .events-shell { padding: 5px 7px !important; }
+  .events-topbar { min-height: 34px !important; margin-bottom: 4px !important; }
+  .events-logo { width: 125px !important; }
+  .events-topbar__actions { gap: 4px !important; }
+  .events-topbar__actions .reboot-button { min-height: 29px !important; padding: 3px 7px !important; font-size: 10px !important; }
+  .events-panel { grid-template-columns: minmax(0, 1.04fr) minmax(0, .96fr) !important; gap: 6px !important; }
+  .events-copy-frame,
+  .events-choice-frame { padding: 8px 10px !important; }
+  .events-kicker { font-size: 8px !important; }
+  .events-copy-frame h1 { font-size: 27px !important; margin: 3px 0 6px !important; }
+  .events-story { font-size: 10px !important; line-height: 1.24 !important; }
+  .events-story p { margin: 0 0 6px !important; }
+  .events-reaction { font-size: 9px !important; padding: 6px !important; }
+  .events-choices { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 5px !important; align-content: start !important; }
+  .events-choice { padding: 7px !important; font-size: 9px !important; }
+  .events-choice__head { gap: 5px !important; }
+  .events-choice__head strong { font-size: 10px !important; line-height: 1.18 !important; }
+  .events-choice__meta small,
+  .events-choice__disabled,
+  .events-choice__reaction,
+  .events-choice__hero-line { font-size: 7px !important; line-height: 1.16 !important; }
+
+  /* Puzzle side column */
+  .puzzle-topbar { padding: 5px 7px !important; }
+  .puzzle-topbar .reboot-button { min-height: 29px !important; padding: 3px 7px !important; font-size: 10px !important; }
+  .puzzle-heading { padding: 6px 8px !important; }
+  .puzzle-heading h1 { font-size: 27px !important; }
+  .puzzle-difficulty { font-size: 9px !important; }
+  .puzzle-layout > .puzzle-panel:first-child { padding: 8px 9px !important; }
+  .puzzle-panel h2 { font-size: 22px !important; }
+  .puzzle-panel p { font-size: 10px !important; line-height: 1.25 !important; }
+  .puzzle-reward { margin-top: 8px !important; padding-top: 8px !important; }
+  .puzzle-source { display: none !important; }
+
+  /* Classic side column */
+  .classic-topbar { padding: 5px 7px !important; }
+  .classic-mini-button { min-height: 29px !important; padding: 3px 7px !important; font-size: 10px !important; }
+  .classic-party-panel,
+  .classic-panel--moves { padding: 8px 9px !important; }
+  .classic-panel h2 { font-size: 23px !important; }
+  .classic-panel h3 { font-size: 20px !important; }
+  .classic-opponent,
+  .classic-side-state,
+  .classic-material { font-size: 9px !important; }
+  .classic-moves { font-size: 9px !important; }
+
+  /* Skirmish prep */
+  .skirmish-screen { padding: 5px 7px !important; }
+  .skirmish-topbar { display: none !important; }
+  .skirmish-shell { grid-template-rows: auto minmax(0,1fr) !important; }
+  .skirmish-heading { grid-row: 1 !important; margin-bottom: 4px !important; padding-bottom: 4px !important; }
+  .skirmish-heading h1 { font-size: 25px !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+  .skirmish-heading p { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+  .skirmish-threat-card { transform: scale(.82); transform-origin: right center; }
+  .skirmish-layout { grid-row: 2 !important; grid-template-columns: minmax(0, 1.9fr) minmax(280px, .81fr) !important; gap: 6px !important; }
+  .skirmish-available,
+  .skirmish-selection { padding: 6px !important; }
+  .skirmish-section-head { margin-bottom: 4px !important; }
+  .skirmish-section-head .reboot-eyebrow { display: none !important; }
+  .skirmish-section-head h2 { font-size: 20px !important; }
+  .skirmish-section-head > span { font-size: 8px !important; }
+  .skirmish-grid { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 5px !important; }
+  .skirmish-card { min-height: 59px !important; grid-template-columns: 52px minmax(0,1fr) !important; }
+  .skirmish-card__art { width: 52px !important; min-height: 57px !important; }
+  .skirmish-card__body { padding: 4px 5px !important; gap: 2px !important; }
+  .skirmish-card__body strong { font-size: 12px !important; }
+  .skirmish-card__meta { font-size: 8px !important; }
+  .skirmish-card__status { font-size: 7px !important; }
+  .skirmish-selected { height: 34dvh !important; gap: 3px !important; }
+  .skirmish-selected-row { min-height: 27px !important; padding: 2px 5px !important; font-size: 9px !important; }
+  .skirmish-selected-row__glyph { font-size: 15px !important; }
+  .skirmish-formation-block { margin-top: 4px !important; padding-top: 4px !important; }
+  .skirmish-formation-head { margin-bottom: 3px !important; }
+  .skirmish-formation-cell { font-size: 13px !important; }
+  .skirmish-selection { padding-bottom: 84px !important; }
+  .skirmish-actionbar { width: calc(34.2% - 2px) !important; padding: 4px !important; gap: 3px !important; }
+  .skirmish-counter span { font-size: 7px !important; }
+  .skirmish-counter strong { font-size: 14px !important; }
+  .skirmish-actionbar .skirmish-start { min-height: 34px !important; font-size: 14px !important; }
+
+  /* Battle prep */
+  .battle-screen { padding: 5px 7px !important; }
+  .battle-topbar { display: none !important; }
+  .battle-shell { grid-template-rows: auto minmax(0,1fr) !important; }
+  .battle-heading { grid-row: 1 !important; margin-bottom: 4px !important; padding-bottom: 4px !important; }
+  .battle-heading h1 { font-size: 24px !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+  .battle-heading p { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+  .battle-threat-card { transform: scale(.8); transform-origin: right center; }
+  .battle-layout { grid-row: 2 !important; grid-template-columns: minmax(0, 1.9fr) minmax(280px, .81fr) !important; gap: 6px !important; }
+  .battle-roster,
+  .battle-army { padding: 6px !important; }
+  .battle-section-head { margin-bottom: 4px !important; }
+  .battle-section-head .reboot-eyebrow { display: none !important; }
+  .battle-section-head h2 { font-size: 20px !important; }
+  .battle-section-head > span { font-size: 8px !important; }
+  .battle-grid { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 5px !important; }
+  .battle-card { min-height: 58px !important; grid-template-columns: 50px minmax(0,1fr) !important; }
+  .battle-card__art { width: 50px !important; min-height: 56px !important; }
+  .battle-card__body { padding: 4px 5px !important; gap: 2px !important; }
+  .battle-card__body strong { font-size: 11px !important; }
+  .battle-card__meta,
+  .battle-card__status { font-size: 7px !important; }
+  .battle-slot-summary { display: flex !important; flex-wrap: nowrap !important; overflow-x: auto !important; }
+  .battle-slot-chip { font-size: 7px !important; padding: 2px 4px !important; white-space: nowrap !important; }
+  .battle-formation { margin-top: 4px !important; }
+  .battle-formation-cell { font-size: 11px !important; }
+  .battle-participants { font-size: 8px !important; max-height: 80px !important; }
+  .battle-army { padding-bottom: 48px !important; }
+  .battle-actionbar { width: calc(34.2% - 2px) !important; padding: 4px !important; }
+  .battle-actionbar .battle-start { min-height: 34px !important; font-size: 14px !important; }
+
+  /* Settlement: Tavern on left, Healer and Market stacked on right. */
+  .settlement-screen { padding: 5px 7px !important; }
+  .settlement-shell { grid-template-rows: auto minmax(0,1fr) !important; }
+  .settlement-heading { grid-row: 1 !important; margin-bottom: 4px !important; padding-right: 155px !important; }
+  .settlement-heading h1 { font-size: 27px !important; }
+  .settlement-services {
+    grid-row: 2 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.72fr) minmax(250px, .88fr) !important;
+    grid-template-rows: repeat(2, minmax(0,1fr)) !important;
+    gap: 6px !important;
+  }
+  .settlement-service:nth-child(1) { grid-column: 2 !important; grid-row: 1 !important; }
+  .settlement-service--tavern { grid-column: 1 !important; grid-row: 1 / 3 !important; }
+  .settlement-service:nth-child(3) { grid-column: 2 !important; grid-row: 2 !important; }
+  .settlement-service { padding: 7px 8px !important; }
+  .settlement-service .reboot-eyebrow { display: none !important; }
+  .settlement-service h2 { margin: 0 0 2px !important; font-size: 20px !important; }
+  .settlement-service__icon { transform: scale(.7); transform-origin: top right; }
+  .settlement-service__intro { margin: 0 0 4px !important; font-size: 8px !important; line-height: 1.18 !important; }
+  .settlement-empty { font-size: 9px !important; }
+  .settlement-recruits { display: grid !important; grid-template-rows: repeat(3, minmax(0,1fr)) !important; gap: 4px !important; }
+  .settlement-recruit { min-height: 0 !important; padding: 4px !important; }
+  .settlement-recruit__portrait { width: 42px !important; height: 100% !important; }
+  .settlement-recruit__body { gap: 1px !important; }
+  .settlement-recruit__head strong { font-size: 10px !important; }
+  .settlement-recruit__body small,
+  .settlement-recruit__body p { font-size: 7px !important; line-height: 1.12 !important; margin: 0 !important; }
+  .settlement-recruit__footer .reboot-button { min-height: 24px !important; padding: 2px 6px !important; font-size: 8px !important; }
+  .settlement-price { font-size: 8px !important; }
+  .settlement-supply-card { gap: 3px !important; }
+  .settlement-supply-card__stock strong { font-size: 19px !important; }
+  .settlement-supply-card .reboot-button { min-height: 27px !important; padding: 3px 6px !important; font-size: 9px !important; }
+  .settlement-continue { min-width: 132px !important; min-height: 29px !important; padding: 3px 8px !important; font-size: 10px !important; }
+
+  /* Aftermath */
+  .skirmish-aftermath,
+  .battle-aftermath { padding: 5px 7px !important; }
+  .skirmish-aftermath-shell > .skirmish-logo,
+  .battle-aftermath-shell > .battle-logo { display: none !important; }
+  .skirmish-aftermath-panel,
+  .battle-aftermath-panel { width: min(780px, 96vw) !important; max-height: calc(100dvh - 10px) !important; padding: 9px 11px !important; }
+  .skirmish-aftermath-panel h1,
+  .battle-aftermath-panel h1 { margin: 1px 0 3px !important; font-size: 27px !important; }
+  .skirmish-aftermath-panel > p,
+  .battle-aftermath-panel > p { margin: 0 0 5px !important; font-size: 9px !important; }
+  .skirmish-aftermath-columns,
+  .battle-aftermath-columns { gap: 5px !important; }
+  .skirmish-aftermath-columns h2,
+  .battle-aftermath-columns h2 { font-size: 18px !important; margin-bottom: 3px !important; }
+  .skirmish-aftermath-list,
+  .battle-aftermath-list { font-size: 8px !important; }
+  .skirmish-aftermath-button,
+  .battle-aftermath-button { min-height: 31px !important; margin-top: 5px !important; padding: 3px 8px !important; font-size: 11px !important; }
+
+  /* Starvation */
+  .starvation-screen { padding: 5px 7px !important; }
+  .starvation-logo { width: 120px !important; }
+  .starvation-panel { width: min(760px, 96vw) !important; max-height: calc(100dvh - 10px) !important; grid-template-columns: minmax(165px, .66fr) minmax(0, 1.34fr) !important; column-gap: 12px !important; padding: 9px 11px !important; }
+  .starvation-panel > .reboot-eyebrow { font-size: 8px !important; }
+  .starvation-panel > h1 { font-size: 31px !important; margin: 1px 0 !important; }
+  .starvation-panel > h2 { font-size: 21px !important; margin: 2px 0 !important; }
+  .starvation-panel > p { font-size: 10px !important; line-height: 1.25 !important; margin: 2px 0 !important; }
+  .starvation-button { min-height: 32px !important; font-size: 12px !important; }
+
+  /* Run summary */
+  .endless-run-screen { padding: 5px 7px !important; }
+  .endless-run-logo { width: 120px !important; }
+  .endless-run-panel { width: min(800px, 96vw) !important; max-height: calc(100dvh - 10px) !important; grid-template-columns: minmax(230px, .8fr) minmax(0, 1.2fr) !important; gap: 5px 10px !important; padding: 9px 11px !important; }
+  .endless-run-panel > h1 { font-size: 35px !important; margin: 2px 0 !important; }
+  .endless-run-reason { font-size: 9px !important; line-height: 1.25 !important; }
+  .endless-run-metrics { grid-template-columns: repeat(2,minmax(0,1fr)) !important; grid-template-rows: repeat(4,minmax(0,1fr)) !important; gap: 4px !important; }
+  .endless-run-metric { padding: 5px 7px !important; }
+  .endless-run-metric span { font-size: 7px !important; }
+  .endless-run-metric strong { font-size: 20px !important; }
+  .endless-run-actions { gap: 4px !important; }
+  .endless-run-actions .reboot-button { min-height: 31px !important; padding: 3px 8px !important; font-size: 11px !important; }
+
+  /* Compact settings/language/identity/classic setup/promotion */
+  .reboot-modal { padding: 5px !important; }
+  .reboot-modal__panel { max-height: calc(100dvh - 10px) !important; padding: 10px 12px !important; }
+  .reboot-modal__header { padding-bottom: 7px !important; }
+  .reboot-modal__header h2,
+  [data-settings-modal] .reboot-modal__header h2,
+  .identity-modal .reboot-modal__header h2 { font-size: 28px !important; }
+  [data-settings-modal] .reboot-settings-grid { margin-top: 5px !important; }
+  [data-settings-modal] .reboot-setting { grid-template-columns: minmax(0,1fr) minmax(180px,1fr) !important; min-height: 42px !important; padding: 5px 2px !important; font-size: 12px !important; }
+  .reboot-language-options { margin-top: 7px !important; gap: 6px !important; }
+  .reboot-language-option { min-height: 62px !important; padding: 8px !important; }
+  .reboot-language-option strong { font-size: 16px !important; }
+  .reboot-language-option span { font-size: 9px !important; }
+  .reboot-language-back { margin-top: 6px !important; min-height: 31px !important; }
+  .identity-copy { margin-top: 7px !important; font-size: 10px !important; }
+  .identity-form { margin-top: 8px !important; gap: 6px !important; }
+  .identity-field { gap: 4px !important; font-size: 8px !important; }
+  .identity-field input { min-height: 34px !important; padding: 5px 8px !important; font-size: 14px !important; }
+  .identity-submit { min-height: 34px !important; }
+  .classic-setup-field { grid-template-columns: 130px minmax(0,1fr) !important; min-height: 36px !important; padding: 3px 2px !important; gap: 8px !important; font-size: 10px !important; }
+  .classic-setup-field select { min-height: 32px !important; padding: 4px 28px 4px 7px !important; font-size: 11px !important; }
+  .classic-setup-footer { margin-top: 6px !important; gap: 5px !important; }
+  .classic-engine-credit { font-size: 8px !important; }
+  [data-promotion-modal] .classic-promotion-grid { grid-template-columns: repeat(4,minmax(0,1fr)) !important; gap: 5px !important; margin-top: 7px !important; }
+  [data-promotion-modal] .classic-promotion-option { min-height: 72px !important; }
+  [data-promotion-modal] .classic-promotion-option img { height: 48px !important; }
+}
