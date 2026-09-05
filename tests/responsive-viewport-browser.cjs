@@ -105,6 +105,56 @@ async function auditViewport(browser, width, height) {
   }
 }
 
+async function auditEventLayout(browser, width, height) {
+  const page = await browser.newPage({ viewport: { width, height } });
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(String(error.stack || error)));
+  const label = `${width}x${height}`;
+  try {
+    await freshMenu(page);
+    await startNewRun(page, { playerName: `Event ${width}` });
+    await page.evaluate((key) => {
+      const run = JSON.parse(localStorage.getItem(key));
+      const route = {
+        id:'responsive.event.route', step:1, type:'event', label:'СОБЫТИЕ', stars:6,
+        threatLabel:'ОПАСНАЯ', flavor:'Необычная встреча на дороге.', mechanicalHint:'',
+        seed:'responsive-event-seed', difficultyModel:'power-v1', supplyCostAtSelection:1, supplyPaid:1
+      };
+      run.supplies = Math.max(5, Number(run.supplies || 0));
+      run.journeyStep = 1;
+      run.currentTravelChoices = null;
+      run.activeTravelChoice = route;
+      run.currentEvent = { routeId:route.id, eventId:'E147', choiceId:null, roll:null, success:null, resolved:false, outcome:null, combat:null };
+      localStorage.setItem(key, JSON.stringify(run));
+      dispatchEvent(new CustomEvent('rpchess:run-updated'));
+      dispatchEvent(new CustomEvent('rpchess:event-open', { detail:{ choice:route } }));
+    }, RUN_KEY);
+    await page.locator('[data-events-screen]:not([hidden])').waitFor();
+    await assertNoHorizontalOverflow(page, `${label} Event`);
+    const layout = await page.evaluate(() => {
+      const choices = document.querySelector('.events-choices');
+      const frame = document.querySelector('.events-choice-frame');
+      const first = document.querySelector('.events-choice__head strong');
+      const columns = choices ? getComputedStyle(choices).gridTemplateColumns.split(' ').filter(Boolean).length : 0;
+      const frameRect = frame?.getBoundingClientRect();
+      const firstRect = first?.getBoundingClientRect();
+      return {
+        columns,
+        frame: frameRect ? { left:frameRect.left, right:frameRect.right, top:frameRect.top, bottom:frameRect.bottom, width:frameRect.width, height:frameRect.height } : null,
+        firstWidth:firstRect?.width || 0,
+        vw:innerWidth,
+        vh:innerHeight
+      };
+    });
+    assert.strictEqual(layout.columns, 1, `${label}: Event choices must use one readable column in the right rail`);
+    assert(layout.firstWidth >= 180, `${label}: Event choice text rail is too narrow (${layout.firstWidth}px)`);
+    assert(layout.frame && layout.frame.right <= width + 1 && layout.frame.bottom <= height + 1, `${label}: Event choice frame must stay inside viewport`);
+    assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
+  } finally {
+    await page.close();
+  }
+}
+
 async function auditPrepAndCombat(browser, width, height) {
   const page = await browser.newPage({ viewport: { width, height } });
   const errors = [];
@@ -148,6 +198,19 @@ async function auditPrepAndCombat(browser, width, height) {
     await page.evaluate(() => globalThis.RPChessSkirmish.finishBattle({ over: true, type: 'stalemate', winner: null }));
     await page.locator('[data-skirmish-aftermath]:not([hidden])').waitFor();
     await assertNoHorizontalOverflow(page, `${label} Skirmish aftermath`);
+    if (width <= 980 && height <= 520) {
+      const aftermath = await page.evaluate(() => {
+        const button = document.querySelector('[data-aftermath-continue]')?.getBoundingClientRect();
+        const rows = [...document.querySelectorAll('[data-aftermath-survivors] .skirmish-aftermath-row')].map((row) => {
+          const rect = row.getBoundingClientRect();
+          return { top:rect.top, bottom:rect.bottom };
+        });
+        return { button:button ? { top:button.top, bottom:button.bottom } : null, rows, vh:innerHeight };
+      });
+      assert(aftermath.button && aftermath.button.top >= -1 && aftermath.button.bottom <= aftermath.vh + 1, `${label}: aftermath CTA must be visible without scrolling`);
+      assert.strictEqual(aftermath.rows.length, 6, `${label}: all six named survivors must remain present`);
+      assert(aftermath.rows.every((row) => row.top >= -1 && row.bottom <= aftermath.vh + 1), `${label}: all six survivor rows must be visible without page scrolling`);
+    }
     await assertReachable(page, '[data-aftermath-continue]', `${label} Skirmish aftermath CTA`);
 
     await page.evaluate(() => dispatchEvent(new CustomEvent('rpchess:battle-open')));
@@ -166,9 +229,10 @@ async function auditPrepAndCombat(browser, width, height) {
 (async () => {
   const browser = await chromium.launch({ headless: true });
   try {
-    for (const [width, height] of [[1180, 820], [1024, 768], [932, 430]]) await auditPrepAndCombat(browser, width, height);
+    for (const [width, height] of [[1180, 820], [1024, 768], [844, 390]]) await auditPrepAndCombat(browser, width, height);
+    for (const [width, height] of [[1024, 768], [844, 390]]) await auditEventLayout(browser, width, height);
     for (const [width, height] of MATRIX) await auditViewport(browser, width, height);
-    console.log(`Responsive viewport browser: PASS — landscape matrix, portrait lock, stacked mobile Travel, edge-to-edge board and prep/aftermath contracts`);
+    console.log(`Responsive viewport browser: PASS — landscape matrix, portrait lock, readable Event rail, stacked mobile Travel, edge-to-edge board and no-scroll aftermath contracts`);
   } finally {
     await browser.close();
   }
