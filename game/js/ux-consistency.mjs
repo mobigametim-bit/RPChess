@@ -135,7 +135,18 @@ function ensureBoardFrame(board) {
   return frame;
 }
 
+function removeBoardFrame(board) {
+  const frame = board.parentElement?.matches('.board-coordinate-frame') ? board.parentElement : null;
+  if (!frame || !frame.parentNode) return;
+  frame.parentNode.insertBefore(board, frame);
+  frame.remove();
+}
+
 function syncBoard(board) {
+  if (document.documentElement.dataset.landscapeUi === '1') {
+    removeBoardFrame(board);
+    return;
+  }
   const values = visibleAxes(board);
   if (!values) return;
   const frame = ensureBoardFrame(board);
