@@ -312,3 +312,20 @@ if (!document.querySelector('[data-landscape-battle-prep-viewport-fix]')) {
 }`;
   document.head.append(style);
 }
+
+// ui-redesign-final batches its lifecycle refresh in requestAnimationFrame. Keep the two compact
+// scene flags in sync on hidden-attribute mutations as well so a newly visible screen never paints
+// one transient legacy frame (and geometry checks do not race that frame).
+if (!globalThis.__RPChessLandscapeVisibilitySync) {
+  const syncVisibilityClasses = () => {
+    const skirmishAftermath = document.querySelector('[data-skirmish-aftermath]');
+    const battleAftermath = document.querySelector('[data-battle-aftermath]');
+    const battlePrep = document.querySelector('[data-battle-screen]');
+    document.body.classList.toggle('compact-aftermath-active', Boolean((skirmishAftermath && !skirmishAftermath.hidden) || (battleAftermath && !battleAftermath.hidden)));
+    document.body.classList.toggle('battle-prep-compact-active', Boolean(battlePrep && !battlePrep.hidden));
+  };
+  const app = document.querySelector('#app') || document.body;
+  new MutationObserver(syncVisibilityClasses).observe(app, { subtree:true, childList:true, attributes:true, attributeFilter:['hidden'] });
+  syncVisibilityClasses();
+  globalThis.__RPChessLandscapeVisibilitySync = true;
+}
