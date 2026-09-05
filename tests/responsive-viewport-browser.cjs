@@ -219,6 +219,32 @@ async function auditPrepAndCombat(browser, width, height) {
     await assertNoHorizontalOverflow(page, `${label} Battle prep`);
     const battleColumns = await page.locator('.battle-grid').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length);
     assert.strictEqual(battleColumns, 2, `${label}: Battle prep must keep two card columns at tablet/mobile landscape widths`);
+    if (width <= 980 && height <= 520) {
+      const prep = await page.evaluate(() => {
+        const buttonRect = document.querySelector('[data-battle-start]')?.getBoundingClientRect();
+        const cards = [...document.querySelectorAll('[data-battle-character]')].map((card) => {
+          const rect = card.getBoundingClientRect();
+          return { top:rect.top, bottom:rect.bottom, left:rect.left, right:rect.right };
+        });
+        const rosterRect = document.querySelector('.battle-roster')?.getBoundingClientRect();
+        const armyRect = document.querySelector('.battle-army')?.getBoundingClientRect();
+        return {
+          button:buttonRect ? { top:buttonRect.top, bottom:buttonRect.bottom, left:buttonRect.left, right:buttonRect.right } : null,
+          cards,
+          roster:rosterRect ? { top:rosterRect.top, bottom:rosterRect.bottom, left:rosterRect.left, right:rosterRect.right } : null,
+          army:armyRect ? { top:armyRect.top, bottom:armyRect.bottom, left:armyRect.left, right:armyRect.right } : null,
+          documentHeight:document.documentElement.scrollHeight,
+          bodyHeight:document.body.scrollHeight,
+          vw:innerWidth,
+          vh:innerHeight
+        };
+      });
+      assert(prep.button && prep.button.top >= -1 && prep.button.bottom <= prep.vh + 1, `${label}: Battle start CTA must be visible without scrolling`);
+      assert.strictEqual(prep.cards.length, 6, `${label}: Battle prep must keep all six personal fighter cards present`);
+      assert(prep.cards.every((card) => card.top >= -1 && card.bottom <= prep.vh + 1), `${label}: all six Battle prep fighter cards must be visible without page scrolling`);
+      assert(prep.roster && prep.army && prep.roster.right <= prep.army.left + 1, `${label}: Battle prep must keep roster and army side-by-side`);
+      assert(prep.documentHeight <= prep.vh + 1 && prep.bodyHeight <= prep.vh + 1, `${label}: Battle prep must not require page scrolling`);
+    }
     await assertReachable(page, '[data-battle-start]', `${label} Battle start`);
     assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
   } finally {
@@ -232,7 +258,7 @@ async function auditPrepAndCombat(browser, width, height) {
     for (const [width, height] of [[1180, 820], [1024, 768], [844, 390]]) await auditPrepAndCombat(browser, width, height);
     for (const [width, height] of [[1024, 768], [844, 390]]) await auditEventLayout(browser, width, height);
     for (const [width, height] of MATRIX) await auditViewport(browser, width, height);
-    console.log(`Responsive viewport browser: PASS — landscape matrix, portrait lock, readable Event rail, stacked mobile Travel, edge-to-edge board and no-scroll aftermath contracts`);
+    console.log(`Responsive viewport browser: PASS — landscape matrix, portrait lock, readable Event rail, stacked mobile Travel, edge-to-edge board, no-scroll aftermath and no-scroll Battle prep contracts`);
   } finally {
     await browser.close();
   }
