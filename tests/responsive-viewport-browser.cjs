@@ -124,19 +124,27 @@ async function auditPrepAndCombat(browser, width, height) {
     const board = await page.locator('[data-chess-board]').evaluate((element) => {
       const rect = element.getBoundingClientRect();
       const square = element.querySelector('[data-square]')?.getBoundingClientRect();
+      const wrap = element.closest('[data-board-wrap]')?.getBoundingClientRect();
+      const frame = element.parentElement?.getBoundingClientRect();
       const visibleCoordinates = [...element.querySelectorAll('.classic-coordinate')].filter((node) => getComputedStyle(node).display !== 'none').length;
+      const style = getComputedStyle(element);
       return {
         left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom,
         width: rect.width, height: rect.height, squareWidth: square?.width || 0, squareHeight: square?.height || 0,
+        wrap: wrap ? { left:wrap.left, right:wrap.right, top:wrap.top, bottom:wrap.bottom, width:wrap.width, height:wrap.height } : null,
+        frame: frame ? { left:frame.left, right:frame.right, top:frame.top, bottom:frame.bottom, width:frame.width, height:frame.height } : null,
+        computed: { width:style.width, height:style.height, boxSizing:style.boxSizing, display:style.display },
         visibleCoordinates, vw: innerWidth, vh: innerHeight
       };
     });
-    assert(Math.abs(board.width - board.height) <= 2, `${label}: combat board lost square aspect`);
-    assert(Math.abs(board.width - board.vh) <= 2, `${label}: combat board must use full viewport height (${board.width}/${board.vh})`);
-    assert(Math.abs(board.top) <= 1 && Math.abs(board.bottom - board.vh) <= 1, `${label}: combat board must touch top and bottom viewport edges`);
-    assert(Math.abs(board.right - board.vw) <= 1, `${label}: combat board must touch right viewport edge`);
-    assert(Math.abs(board.squareWidth - board.squareHeight) <= 1, `${label}: board cells lost square aspect`);
-    assert.strictEqual(board.visibleCoordinates, 0, `${label}: board coordinate labels must be hidden`);
+    console.log(`[responsive-board] ${label} ${JSON.stringify(board)}`);
+    const geometry = JSON.stringify(board);
+    assert(Math.abs(board.width - board.height) <= 2, `${label}: combat board lost square aspect ${geometry}`);
+    assert(Math.abs(board.width - board.vh) <= 2, `${label}: combat board must use full viewport height ${geometry}`);
+    assert(Math.abs(board.top) <= 1 && Math.abs(board.bottom - board.vh) <= 1, `${label}: combat board must touch top and bottom viewport edges ${geometry}`);
+    assert(Math.abs(board.right - board.vw) <= 1, `${label}: combat board must touch right viewport edge ${geometry}`);
+    assert(Math.abs(board.squareWidth - board.squareHeight) <= 1, `${label}: board cells lost square aspect ${geometry}`);
+    assert.strictEqual(board.visibleCoordinates, 0, `${label}: board coordinate labels must be hidden ${geometry}`);
     await page.evaluate(() => globalThis.RPChessSkirmish.finishBattle({ over: true, type: 'stalemate', winner: null }));
     await page.locator('[data-skirmish-aftermath]:not([hidden])').waitFor();
     await assertNoHorizontalOverflow(page, `${label} Skirmish aftermath`);
@@ -159,8 +167,8 @@ async function auditPrepAndCombat(browser, width, height) {
 (async () => {
   const browser = await chromium.launch({ headless: true });
   try {
-    for (const [width, height] of MATRIX) await auditViewport(browser, width, height);
     for (const [width, height] of [[1180, 820], [1024, 768], [932, 430]]) await auditPrepAndCombat(browser, width, height);
+    for (const [width, height] of MATRIX) await auditViewport(browser, width, height);
     console.log(`Responsive viewport browser: PASS — landscape matrix, portrait lock, stacked mobile Travel, edge-to-edge board and prep/aftermath contracts`);
   } finally {
     await browser.close();
