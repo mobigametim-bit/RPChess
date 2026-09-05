@@ -59,6 +59,17 @@ jobs:
           if(!s.includes(slowWait)) throw new Error('capture load-state marker not found');
           s=s.replaceAll(slowWait,"waitUntil:'load'");
 
+          // The capture opens fresh pages rapidly. Wait for combat modules to install their global
+          // listeners before dispatching the synthetic review events so the event cannot be lost.
+          const skirmishOpenOld="async function openSkirmish(page) {\n  await freshRun(page);\n  await page.evaluate(() => dispatchEvent(new CustomEvent('rpchess:skirmish-open')));";
+          const skirmishOpenNew="async function openSkirmish(page) {\n  await freshRun(page);\n  await page.waitForFunction(() => Boolean(globalThis.RPChessSkirmish));\n  await page.evaluate(() => dispatchEvent(new CustomEvent('rpchess:skirmish-open')));";
+          if(!s.includes(skirmishOpenOld)) throw new Error('capture skirmish-open marker not found');
+          s=s.replace(skirmishOpenOld,skirmishOpenNew);
+          const battleOpenOld="async function openBattle(page) {\n  await freshRun(page);\n  await page.evaluate(() => dispatchEvent(new CustomEvent('rpchess:battle-open')));";
+          const battleOpenNew="async function openBattle(page) {\n  await freshRun(page);\n  await page.waitForFunction(() => Boolean(globalThis.RPChessBattle));\n  await page.evaluate(() => dispatchEvent(new CustomEvent('rpchess:battle-open')));";
+          if(!s.includes(battleOpenOld)) throw new Error('capture battle-open marker not found');
+          s=s.replace(battleOpenOld,battleOpenNew);
+
           const skirmishOld="    await page.evaluate(() => globalThis.RPChessSkirmish.finishBattle({ over:true, type:'checkmate', winner:'w' }));\n    await page.locator('[data-skirmish-aftermath]:not([hidden])').waitFor();";
           const skirmishNew="    await page.evaluate(() => { const api=globalThis.RPChessSkirmish; const winner=api?.encounter?.playerColor || 'w'; api.finishBattle({ over:true, type:'checkmate', winner }); });\n    await page.locator('[data-skirmish-aftermath]:not([hidden])').waitFor();\n    await page.evaluate(() => { const key='rpchess.reboot.v1.run'; globalThis.RPChessResources?.settleCombatRewards?.(); const run=JSON.parse(localStorage.getItem(key)); run.activeTravelChoice={id:'review.rated.skirmish',type:'skirmish',difficultyModel:'power-v1',combatCountAtSelection:Math.max(0,(run.skirmishCount||0)-1)}; localStorage.setItem(key,JSON.stringify(run)); globalThis.RPChessPower?.settle?.(run); globalThis.RPChessPower?.render?.(run); });\n    await page.locator('[data-skirmish-aftermath] [data-resource-combat-reward]:not([hidden])').waitFor({ state:'visible' });\n    await page.locator('[data-skirmish-aftermath] [data-power-result]:not([hidden])').waitFor({ state:'visible' });";
           if(!s.includes(skirmishOld)) throw new Error('capture skirmish aftermath marker not found');
