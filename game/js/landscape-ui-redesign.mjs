@@ -1,6 +1,7 @@
 import { currentLanguage, subscribe } from './i18n.mjs';
 
 const CSS_MARKER = 'data-landscape-ui-css';
+const BOARD_EDGE_STYLE_MARKER = 'data-landscape-board-edge-style';
 
 function ensureStylesheet() {
   if (document.querySelector(`[${CSS_MARKER}]`)) return;
@@ -9,6 +10,36 @@ function ensureStylesheet() {
   link.href = 'css/landscape-ui-redesign.css?v=20260905-1';
   link.setAttribute(CSS_MARKER, '');
   document.head.append(link);
+}
+
+function ensureBoardEdgeStyle() {
+  if (document.querySelector(`[${BOARD_EDGE_STYLE_MARKER}]`)) return;
+  const style = document.createElement('style');
+  style.setAttribute(BOARD_EDGE_STYLE_MARKER, '');
+  style.textContent = `
+@media (orientation: landscape) {
+  .classic-board-wrap > .board-coordinate-frame,
+  .puzzle-board-wrap > .board-coordinate-frame {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+    box-sizing: border-box !important;
+  }
+  .board-coordinate-ranks,
+  .board-coordinate-files {
+    display: none !important;
+  }
+  .board-coordinate-frame > .classic-board,
+  .board-coordinate-frame > .puzzle-board {
+    width: 100% !important;
+    height: 100% !important;
+    aspect-ratio: 1 !important;
+    box-sizing: border-box !important;
+  }
+}`;
+  document.head.append(style);
 }
 
 function ensureOrientationLock() {
@@ -35,6 +66,7 @@ function syncLanguage(language = currentLanguage()) {
 }
 
 ensureStylesheet();
+ensureBoardEdgeStyle();
 ensureOrientationLock();
 document.documentElement.dataset.landscapeUi = '1';
 syncLanguage();
