@@ -14,3 +14,5 @@ import './post-redesign-playtest-pass1b.mjs';
 import './content/hero-notes-runtime.mjs';
 // Acceptance pass 5: themed scene backgrounds, matched board sizing and victory presentation.
 import './cross-scene-visuals.mjs';
+// Approved landscape-only presentation layer is evaluated last so it can override legacy responsive rules.
+import './landscape-ui-redesign.mjs';
