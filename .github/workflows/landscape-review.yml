@@ -57,7 +57,19 @@ jobs:
           s=s.replace(duplicateRunReset,singleRunReset);
           const slowWait="waitUntil:'networkidle'";
           if(!s.includes(slowWait)) throw new Error('capture load-state marker not found');
-          fs.writeFileSync(p,s.replaceAll(slowWait,"waitUntil:'load'"));
+          s=s.replaceAll(slowWait,"waitUntil:'load'");
+
+          const skirmishOld="    await page.evaluate(() => globalThis.RPChessSkirmish.finishBattle({ over:true, type:'checkmate', winner:'w' }));\n    await page.locator('[data-skirmish-aftermath]:not([hidden])').waitFor();";
+          const skirmishNew="    await page.evaluate(() => { const api=globalThis.RPChessSkirmish; const winner=api?.encounter?.playerColor || 'w'; api.finishBattle({ over:true, type:'checkmate', winner }); });\n    await page.locator('[data-skirmish-aftermath]:not([hidden])').waitFor();\n    await page.evaluate(() => { globalThis.RPChessResources?.settleCombatRewards?.(); globalThis.RPChessPower?.settle?.(); globalThis.RPChessPower?.render?.(); });\n    await page.locator('[data-skirmish-aftermath] [data-resource-combat-reward]:not([hidden])').waitFor({ state:'visible' });\n    await page.locator('[data-skirmish-aftermath] [data-power-result]:not([hidden])').waitFor({ state:'visible' });";
+          if(!s.includes(skirmishOld)) throw new Error('capture skirmish aftermath marker not found');
+          s=s.replace(skirmishOld,skirmishNew);
+
+          const battleOld="    await page.evaluate(() => globalThis.RPChessBattle.finishBattle({ over:true, type:'checkmate', winner:'w' }));\n    await page.locator('[data-battle-aftermath]:not([hidden])').waitFor();";
+          const battleNew="    await page.evaluate(() => { const api=globalThis.RPChessBattle; const winner=api?.encounter?.playerColor || 'w'; api.finishBattle({ over:true, type:'checkmate', winner }); });\n    await page.locator('[data-battle-aftermath]:not([hidden])').waitFor();\n    await page.evaluate(() => { globalThis.RPChessResources?.settleCombatRewards?.(); globalThis.RPChessPower?.settle?.(); globalThis.RPChessPower?.render?.(); });\n    await page.locator('[data-battle-aftermath] [data-resource-combat-reward]:not([hidden])').waitFor({ state:'visible' });\n    await page.locator('[data-battle-aftermath] [data-power-result]:not([hidden])').waitFor({ state:'visible' });";
+          if(!s.includes(battleOld)) throw new Error('capture battle aftermath marker not found');
+          s=s.replace(battleOld,battleNew);
+
+          fs.writeFileSync(p,s);
           NODE
           node scripts/capture-landscape-review.cjs
       - name: Upload landscape review screenshots
