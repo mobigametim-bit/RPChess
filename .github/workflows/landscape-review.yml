@@ -38,7 +38,17 @@ jobs:
           RPCHESS_BROWSER_TEST: responsive-viewport-browser.cjs
         run: npm run test:browser
       - name: Capture current landscape UI matrix
-        run: node scripts/capture-landscape-review.cjs
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const p='scripts/capture-landscape-review.cjs';
+          let s=fs.readFileSync(p,'utf8');
+          const old="  await page.locator('[data-reboot-foundation]:not([hidden])').waitFor();";
+          const replacement="  if (await page.evaluate(() => innerHeight > innerWidth && innerWidth <= 1180)) await page.locator('[data-orientation-lock]').waitFor({ state:'visible' }); else await page.locator('[data-reboot-foundation]:not([hidden])').waitFor();";
+          if(!s.includes(old)) throw new Error('capture bootstrap marker not found');
+          fs.writeFileSync(p,s.replace(old,replacement));
+          NODE
+          node scripts/capture-landscape-review.cjs
       - name: Upload landscape review screenshots
         uses: actions/upload-artifact@v4
         with:
