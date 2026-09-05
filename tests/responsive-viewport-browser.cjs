@@ -155,8 +155,7 @@ async function auditPrepAndCombat(browser, width, height) {
     await page.waitForFunction(() => document.body.classList.contains('battle-prep-compact-active'));
     await assertNoHorizontalOverflow(page, `${label} Battle prep`);
     const battleColumns = await page.locator('.battle-grid').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length);
-    const expectedBattleColumns = height <= 520 ? 2 : 3;
-    assert.strictEqual(battleColumns, expectedBattleColumns, `${label}: Battle prep card columns must match approved landscape layout`);
+    assert.strictEqual(battleColumns, 2, `${label}: Battle prep must keep two card columns at tablet/mobile landscape widths`);
     await assertReachable(page, '[data-battle-start]', `${label} Battle start`);
     assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
   } finally {
