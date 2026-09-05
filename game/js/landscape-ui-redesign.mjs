@@ -44,19 +44,25 @@ function ensureBoardEdgeStyle() {
     grid-template-rows: auto auto minmax(0, 1fr) !important;
   }
   .classic-main {
-    position: relative !important;
-    grid-column: 2 !important;
-    grid-row: 1 / 4 !important;
+    position: fixed !important;
+    z-index: 20 !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: auto !important;
+    left: auto !important;
+    grid-column: auto !important;
+    grid-row: auto !important;
     width: 100dvh !important;
     height: 100dvh !important;
     min-width: 0 !important;
     min-height: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: hidden !important;
   }
-  .classic-board-wrap,
-  .puzzle-board-wrap {
+  .classic-board-wrap {
     position: absolute !important;
     inset: 0 !important;
     width: 100dvh !important;
@@ -75,8 +81,28 @@ function ensureBoardEdgeStyle() {
     box-sizing: border-box !important;
   }
   .puzzle-board-wrap {
-    grid-column: 2 !important;
-    grid-row: 1 / 4 !important;
+    position: fixed !important;
+    z-index: 20 !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: auto !important;
+    left: auto !important;
+    grid-column: auto !important;
+    grid-row: auto !important;
+    width: 100dvh !important;
+    height: 100dvh !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    aspect-ratio: 1 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
   }
   .classic-board-wrap > .board-coordinate-frame,
   .puzzle-board-wrap > .board-coordinate-frame {
