@@ -152,22 +152,22 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     await page.locator('[data-settings-modal] [data-close-modal]').click();
     await page.locator('[data-classic-menu]').click();
 
-    const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    const mobile = await browser.newPage({ viewport: { width: 844, height: 390 } });
     const mobileErrors = [];
     mobile.on('pageerror', (error) => mobileErrors.push(String(error.stack || error)));
     await mobile.goto(url, { waitUntil: 'networkidle' });
     await openSetup(mobile);
     await startFromSetup(mobile, { mode: 'local' });
-    assert.strictEqual(await mobile.locator('[data-reboot-foundation]').isHidden(), true, 'mobile menu scene must hide during game');
-    assert.strictEqual(await mobile.locator('[data-chess-board] [data-square]').count(), 64, 'mobile board must have 64 squares');
-    assert.strictEqual(await mobile.locator('[data-piece-marker]').count(), 32, 'mobile pieces must retain technical markers');
+    assert.strictEqual(await mobile.locator('[data-reboot-foundation]').isHidden(), true, 'mobile landscape menu scene must hide during game');
+    assert.strictEqual(await mobile.locator('[data-chess-board] [data-square]').count(), 64, 'mobile landscape board must have 64 squares');
+    assert.strictEqual(await mobile.locator('[data-piece-marker]').count(), 32, 'mobile landscape pieces must retain technical markers');
     const boardBox = await mobile.locator('[data-chess-board]').boundingBox();
-    assert(boardBox && boardBox.width > 300 && boardBox.width <= 390, `mobile board width must fit viewport: ${boardBox?.width}`);
+    assert(boardBox && boardBox.width > 300 && boardBox.width <= 390, `mobile landscape board width must match viewport height: ${boardBox?.width}`);
     await clickMove(mobile, 'e2', 'e4');
     await waitForMoveAnimation(mobile);
-    assert((await pieceSrc(mobile, 'e4')).includes('unit_pawn_player.png'), 'mobile board interaction must move pieces');
+    assert((await pieceSrc(mobile, 'e4')).includes('unit_pawn_player.png'), 'mobile landscape board interaction must move pieces');
     const scrollState = await mobile.evaluate(() => ({ scrollHeight: document.documentElement.scrollHeight, clientHeight: document.documentElement.clientHeight }));
-    assert(scrollState.scrollHeight > scrollState.clientHeight, 'mobile Classic Chess screen must remain vertically scrollable');
+    assert(scrollState.scrollHeight <= scrollState.clientHeight + 1, 'mobile landscape Classic Chess must fit the viewport without page scrolling');
 
     assert.deepStrictEqual(errors, [], `desktop page errors:\n${errors.join('\n')}`);
     assert.deepStrictEqual(mobileErrors, [], `mobile page errors:\n${mobileErrors.join('\n')}`);

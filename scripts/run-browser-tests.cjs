@@ -7,7 +7,9 @@ const ROOT=path.resolve(__dirname,'..');
 const DIST=path.join(ROOT,'dist');
 const HOST='127.0.0.1';
 const PORT=Number(process.env.RPCHESS_GATE_PORT||4173);
-const BASE=`http://${HOST}:${PORT}`;
+const RAW_PREFIX=String(process.env.RPCHESS_GATE_PREFIX||'').trim();
+const PREFIX=RAW_PREFIX?`/${RAW_PREFIX.replace(/^\/+|\/+$/g,'')}`:'';
+const BASE=`http://${HOST}:${PORT}${PREFIX}${PREFIX?'/':''}`;
 const DEFAULT_TESTS=[
   'reboot-foundation-browser.cjs',
   'classic-chess-browser.cjs',
@@ -39,7 +41,12 @@ function requirePrerequisites(){
   }
 }
 function safeFile(url){
-  const raw=decodeURIComponent(String(url||'/').split('?')[0]);
+  let raw=decodeURIComponent(String(url||'/').split('?')[0]);
+  if(PREFIX){
+    if(raw===PREFIX)raw=`${PREFIX}/`;
+    if(!raw.startsWith(`${PREFIX}/`))return null;
+    raw=raw.slice(PREFIX.length);
+  }
   const requested=raw==='/'?'index.html':raw.replace(/^\/+/, '');
   const resolved=path.resolve(DIST,requested);
   if(!resolved.startsWith(`${DIST}${path.sep}`)&&resolved!==DIST)return null;
@@ -49,7 +56,7 @@ function safeFile(url){
 function server(){
   return http.createServer((req,res)=>{
     const file=safeFile(req.url);
-    if(!file){res.writeHead(403);res.end('Forbidden');return;}
+    if(!file){res.writeHead(404);res.end('Not Found');return;}
     fs.readFile(file,(error,buffer)=>{
       if(error){res.writeHead(500);res.end(String(error));return;}
       res.writeHead(200,{'Content-Type':MIME[path.extname(file).toLowerCase()]||'application/octet-stream','Cache-Control':'no-store'});
