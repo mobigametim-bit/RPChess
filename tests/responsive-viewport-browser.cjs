@@ -43,7 +43,9 @@ async function auditPortraitLock(browser, width, height) {
   page.on('pageerror', (error) => errors.push(String(error.stack || error)));
   const label = `${width}x${height}`;
   try {
-    await freshMenu(page);
+    await page.goto(url, { waitUntil: 'networkidle' });
+    await page.evaluate((key) => localStorage.removeItem(key), RUN_KEY);
+    await page.reload({ waitUntil: 'networkidle' });
     const lock = page.locator('[data-orientation-lock]');
     await lock.waitFor({ state: 'visible' });
     const geometry = await lock.evaluate((element) => {
