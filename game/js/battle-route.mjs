@@ -17,12 +17,22 @@ import './cross-scene-visuals.mjs';
 // Approved landscape-only presentation layer is evaluated last so it can override legacy responsive rules.
 import './landscape-ui-redesign.mjs';
 
-// The phone-landscape aftermath panel is sized against the viewport. Make the screen itself
-// border-box so its 5px safe-area padding cannot add 10px beyond 100dvh and push the CTA offscreen.
+// Aftermath already contains the reward and Power result. Suppress transient reward/payment toasts
+// there so they cannot cover those canonical result cards, and preserve semantic hidden sections.
 if (!document.querySelector('[data-landscape-aftermath-viewport-fix]')) {
   const style = document.createElement('style');
   style.dataset.landscapeAftermathViewportFix = '';
   style.textContent = `
+@media (orientation: landscape) {
+  html[data-landscape-ui='1'] body.compact-aftermath-active .resource-toast,
+  html[data-landscape-ui='1'] body.compact-aftermath-active .battle-toast {
+    display: none !important;
+  }
+  html[data-landscape-ui='1'] body.compact-aftermath-active .skirmish-aftermath-columns > section[hidden],
+  html[data-landscape-ui='1'] body.compact-aftermath-active .battle-aftermath-columns > section[hidden] {
+    display: none !important;
+  }
+}
 @media (orientation: landscape) and (max-width: 980px) and (max-height: 520px) {
   html[data-landscape-ui='1'] body.compact-aftermath-active .skirmish-aftermath,
   html[data-landscape-ui='1'] body.compact-aftermath-active .battle-aftermath {
