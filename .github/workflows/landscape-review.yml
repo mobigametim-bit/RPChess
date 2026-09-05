@@ -1,0 +1,39 @@
+name: RPChess Landscape Review
+
+on:
+  push:
+    branches:
+      - feature/landscape-ui-redesign
+
+permissions:
+  contents: read
+
+jobs:
+  responsive-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Restore runtime asset cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Run deterministic/build gate
+        run: npm run gate:local
+      - name: Install Playwright and Chromium
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+      - name: Run landscape responsive contract
+        env:
+          RPCHESS_BROWSER_TEST: responsive-viewport-browser.cjs
+        run: npm run test:browser
