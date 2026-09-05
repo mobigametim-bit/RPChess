@@ -43,10 +43,14 @@ jobs:
           const fs=require('fs');
           const p='scripts/capture-landscape-review.cjs';
           let s=fs.readFileSync(p,'utf8');
-          const old="  await page.locator('[data-reboot-foundation]:not([hidden])').waitFor();";
-          const replacement="  if (await page.evaluate(() => innerHeight > innerWidth && innerWidth <= 1180)) await page.locator('[data-orientation-lock]').waitFor({ state:'visible' }); else await page.locator('[data-reboot-foundation]:not([hidden])').waitFor();";
-          if(!s.includes(old)) throw new Error('capture bootstrap marker not found');
-          fs.writeFileSync(p,s.replace(old,replacement));
+          const oldBootstrap="  await page.locator('[data-reboot-foundation]:not([hidden])').waitFor();";
+          const portraitAwareBootstrap="  if (await page.evaluate(() => innerHeight > innerWidth && innerWidth <= 1180)) await page.locator('[data-orientation-lock]').waitFor({ state:'visible' }); else await page.locator('[data-reboot-foundation]:not([hidden])').waitFor();";
+          if(!s.includes(oldBootstrap)) throw new Error('capture bootstrap marker not found');
+          s=s.replace(oldBootstrap,portraitAwareBootstrap);
+          const duplicateRunReset="async function freshRun(page) {\n  await freshMenu(page);\n  await startNewRun(page, { playerName:'Тестовый Хранитель' });\n}";
+          const singleRunReset="async function freshRun(page) {\n  await startNewRun(page, { playerName:'Тестовый Хранитель' });\n}";
+          if(!s.includes(duplicateRunReset)) throw new Error('capture freshRun marker not found');
+          fs.writeFileSync(p,s.replace(duplicateRunReset,singleRunReset));
           NODE
           node scripts/capture-landscape-review.cjs
       - name: Upload landscape review screenshots
