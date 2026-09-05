@@ -18,6 +18,66 @@ function ensureBoardEdgeStyle() {
   style.setAttribute(BOARD_EDGE_STYLE_MARKER, '');
   style.textContent = `
 @media (orientation: landscape) {
+  .classic-screen,
+  .puzzle-screen {
+    width: 100vw !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+  .classic-shell,
+  .puzzle-shell {
+    width: 100vw !important;
+    max-width: none !important;
+    height: 100dvh !important;
+    margin: 0 !important;
+    display: grid !important;
+    grid-template-columns: calc(100vw - 100dvh) 100dvh !important;
+    gap: 0 !important;
+    align-items: stretch !important;
+  }
+  .classic-shell {
+    grid-template-rows: auto minmax(0, 1fr) minmax(86px, .42fr) !important;
+  }
+  .puzzle-shell {
+    grid-template-rows: auto auto minmax(0, 1fr) !important;
+  }
+  .classic-main {
+    position: relative !important;
+    grid-column: 2 !important;
+    grid-row: 1 / 4 !important;
+    width: 100dvh !important;
+    height: 100dvh !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+  .classic-board-wrap,
+  .puzzle-board-wrap {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100dvh !important;
+    height: 100dvh !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    aspect-ratio: 1 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+  .puzzle-board-wrap {
+    grid-column: 2 !important;
+    grid-row: 1 / 4 !important;
+  }
   .classic-board-wrap > .board-coordinate-frame,
   .puzzle-board-wrap > .board-coordinate-frame {
     position: absolute !important;
@@ -28,14 +88,24 @@ function ensureBoardEdgeStyle() {
     box-sizing: border-box !important;
   }
   .board-coordinate-ranks,
-  .board-coordinate-files {
+  .board-coordinate-files,
+  .classic-coordinate,
+  .puzzle-coordinate {
     display: none !important;
   }
   .board-coordinate-frame > .classic-board,
-  .board-coordinate-frame > .puzzle-board {
+  .board-coordinate-frame > .puzzle-board,
+  .classic-board,
+  .puzzle-board {
     width: 100% !important;
     height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
     aspect-ratio: 1 !important;
+    margin: 0 !important;
+    padding: 0 !important;
     box-sizing: border-box !important;
   }
 }`;
