@@ -63,7 +63,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert.notStrictEqual(after.pieceVisibility,'hidden','destination piece must become visible on landing');
     assert.strictEqual(after.flyer,false,'piece flyer must be removed on landing');
     assert(after.auraImage.includes('aura_white.png'),'landed piece must retain the white aura');
-    assert.strictEqual(after.auraOpacity,'1','destination aura must become visible in the same landed frame');
+    assert.strictEqual(after.auraOpacity,'0.6','destination aura must return to the canonical visible opacity in the same landed frame');
     assert.deepStrictEqual(errors,[]);
 
     console.log('Combat aura move sync: PASS — destination aura stays hidden for the 230ms flyer and appears with the landed piece');

@@ -189,13 +189,25 @@ function renderBattlePrepQuote() {
 
 function patchAftermath(casualty) {
   const text = document.querySelector('[data-battle-aftermath-text]');
+  const i18n = globalThis.RPChessI18n;
   if (text) {
-    text.textContent = text.textContent.replace('Временная армия распущена', 'Наёмники распущены');
-    if (casualty) text.textContent = `${text.textContent} Неоплаченные Наёмники потребовали цену: ${casualty.name} погиб.`;
+    const mercenariesDismissed = i18n?.translateLegacy?.('Наёмники распущены') || 'Наёмники распущены';
+    text.textContent = text.textContent
+      .replace('Временная армия распущена', mercenariesDismissed)
+      .replace('The temporary army has been disbanded', mercenariesDismissed);
+    if (casualty) {
+      const name = i18n?.translateLegacy?.(casualty.name) || casualty.name;
+      const debt = i18n?.currentLanguage?.() === 'en'
+        ? `The unpaid mercenaries exacted their price: ${name} died.`
+        : `Неоплаченные Наёмники потребовали цену: ${casualty.name} погиб.`;
+      text.textContent = `${text.textContent} ${debt}`;
+    }
   }
   if (!casualty) return;
+  const localizedName = i18n?.translateLegacy?.(casualty.name) || casualty.name;
   for (const row of document.querySelectorAll('[data-battle-aftermath] .battle-aftermath-row')) {
-    if (row.querySelector('strong')?.textContent === casualty.name) row.remove();
+    const renderedName = row.querySelector('strong')?.textContent || '';
+    if (renderedName === casualty.name || renderedName === localizedName) row.remove();
   }
 }
 

@@ -53,6 +53,13 @@ const DATIVE_PATTERNS = Object.freeze([
   /советуют Королю/g
 ]);
 
+function personalizeEnglishKing(value, name) {
+  return String(value)
+    .replace(/\bthe King\b/g, name)
+    .replace(/\bThe King\b/g, name)
+    .replace(/\bKing\b/g, name);
+}
+
 function personalizePlayerNarrative(value, playerName) {
   const name = normalizePlayerName(playerName, LEGACY_PLAYER_NAME);
   if (typeof value !== 'string' || !value) return value;
@@ -82,13 +89,15 @@ function personalizePlayerNarrative(value, playerName) {
     text = text.replace(pattern, (match) => match.replace('Королю', 'вам'));
   }
 
-  // Case-sensitive nominative replacement identifies the protagonist; uppercase system `КОРОЛЬ` stays intact.
-  return text.replace(/Король/g, name);
+  // Case-sensitive protagonist replacements intentionally leave uppercase system `КОРОЛЬ` intact.
+  text = text.replace(/Король/g, name);
+  return personalizeEnglishKing(text, name);
 }
 
 function personalizePlayerTitle(value, playerName) {
   const name = normalizePlayerName(playerName, LEGACY_PLAYER_NAME);
-  return typeof value === 'string' ? value.replace(/Король/g, name) : value;
+  if (typeof value !== 'string') return value;
+  return personalizeEnglishKing(value.replace(/Король/g, name), name);
 }
 
 export {

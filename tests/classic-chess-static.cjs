@@ -59,7 +59,7 @@ for (const contract of ['sanNotation', 'PIECE_GLYPHS', 'PIECE_VALUES', 'renderMa
   assert(app.includes(contract), `Chess AI production polish runtime missing: ${contract}`);
 }
 for (const contract of [
-  'ui_button_primary.png', '.classic-piece-marker', '.classic-san-figurine',
+  '.classic-piece-marker', '.classic-san-figurine',
   '.classic-captured-piece', '.classic-piece-flyer', '.classic-thinking { display: none !important; }',
   '.classic-statusbar { display: none !important; }', '.classic-party-panel', '.classic-panel--moves',
   '.classic-result__actions { display: none !important; }', 'border-radius: 0', 'background: transparent',
@@ -69,6 +69,7 @@ for (const contract of [
 assert(polishCss.includes('grid-template-columns: minmax(240px, 300px) minmax(0, 860px) minmax(270px, 330px)'), 'desktop layout must be Party / board / Moves');
 assert(polishCss.includes('.classic-piece-marker--w') && polishCss.includes('color: #fff'), 'white technical marker must be plain white');
 assert(polishCss.includes('.classic-piece-marker--b') && polishCss.includes('color: #050505'), 'black technical marker must be plain black');
+assert(!polishCss.includes("ui_button_primary.png"), 'Chess AI polish must not reintroduce the legacy primary image-button override');
 assert(!polishCss.includes("ui_button_secondary.png"), 'polish layer must not introduce light/secondary button frames');
 assert(!html.includes('data-result-rematch'), 'post-game rematch button must not be duplicated inside the Party panel');
 assert(!html.includes('data-result-menu'), 'post-game main-menu button must not be duplicated inside the Party panel');

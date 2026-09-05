@@ -13,6 +13,7 @@ const DEFAULT_TESTS=[
   'classic-chess-browser.cjs',
   'race-board-themes-browser.cjs',
   'king-pin-ice-browser.cjs',
+  'responsive-viewport-browser.cjs',
   'roster-browser.cjs',
   'skirmish-browser.cjs',
   'battle-browser.cjs',

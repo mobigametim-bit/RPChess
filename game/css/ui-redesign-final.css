@@ -346,3 +346,29 @@ body.events-active [data-events-roster],body.events-active [data-events-settings
   body.events-active .events-choice{min-height:68px!important;padding:8px 10px!important;font-size:16px!important;}
   body.events-active .events-choice__meta small{font-size:8px!important;}
 }
+
+/* --------------------------------------------------------------------------
+   Intermediate desktop/tablet widths. Keep the accepted wide-screen layouts,
+   but remove the 901–1180px cliffs caused by the final desktop overrides.
+   -------------------------------------------------------------------------- */
+@media(min-width:901px) and (max-width:1180px){
+  .travel-choice-screen .travel-choice-topbar--command{grid-template-columns:1fr!important;}
+  .travel-choice-screen .travel-choice-heading{grid-column:1!important;padding:10px 18px!important;border-right:0!important;border-bottom:1px solid rgba(218,178,88,.24)!important;}
+  .travel-choice-screen .travel-choice-heading h1{font-size:clamp(38px,5vw,52px)!important;}
+  .travel-choice-screen .travel-choice-commandbar{grid-column:1!important;min-height:0!important;flex-wrap:wrap!important;}
+  .travel-choice-screen .travel-choice-commandbar .travel-player-rating{flex:1 1 280px!important;min-width:240px!important;min-height:72px!important;}
+  .travel-choice-inline-resources{flex:0 1 auto!important;border-right:0!important;}
+  .travel-choice-screen .travel-choice-commandbar .travel-choice-topbar__actions{flex:1 1 100%!important;border-top:1px solid rgba(218,178,88,.20)!important;}
+
+  body.skirmish-active .skirmish-layout{grid-template-columns:minmax(0,1fr) minmax(320px,.72fr)!important;}
+  body.skirmish-active .skirmish-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+
+  body.battle-prep-compact-active .battle-layout{grid-template-columns:minmax(0,1fr) minmax(360px,.8fr)!important;gap:12px!important;}
+  body.battle-prep-compact-active .battle-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+}
+
+@media(pointer:coarse){
+  .roster-filter,
+  .puzzle-topbar .reboot-button,
+  .skirmish-selection>.skirmish-actionbar .skirmish-start{min-height:44px!important;}
+}

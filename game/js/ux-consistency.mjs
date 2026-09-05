@@ -170,7 +170,9 @@ function syncCombatSummary() {
 
 function syncPuzzlePresentation() {
   const status = document.querySelector('[data-puzzle-status]');
-  if (status?.textContent.trim() === 'Ваш ход') status.textContent = '';
+  const source = 'Ваш ход';
+  const localized = globalThis.RPChessI18n?.translateLegacy?.(source) || source;
+  if (status && [source, localized].includes(status.textContent.trim())) status.textContent = '';
 }
 
 let refreshQueued = false;
