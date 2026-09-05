@@ -192,3 +192,56 @@
   .resource-chip--gold,
   .resource-chip--supplies{width:clamp(136px,38vw,148px)!important}
 }
+
+/* Approved landscape-only board-first contract. This is intentionally placed at the
+   end of the legacy consistency layer so none of its old coordinate/padding rules can
+   shrink the playable 8x8 surface. */
+@media (orientation: landscape) {
+  html[data-landscape-ui='1'] body.classic-chess-active .classic-main,
+  html[data-landscape-ui='1'] body.classic-chess-active .classic-board-wrap,
+  html[data-landscape-ui='1'] body.classic-chess-active .classic-board,
+  html[data-landscape-ui='1'] body.puzzles-active .puzzle-board-wrap,
+  html[data-landscape-ui='1'] body.puzzles-active .puzzle-board {
+    position:fixed!important;
+    top:0!important;
+    right:0!important;
+    bottom:auto!important;
+    left:auto!important;
+    width:100dvh!important;
+    height:100dvh!important;
+    min-width:0!important;
+    min-height:0!important;
+    max-width:none!important;
+    max-height:none!important;
+    margin:0!important;
+    padding:0!important;
+    border:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+    aspect-ratio:1!important;
+    transform:none!important;
+    box-sizing:border-box!important;
+  }
+  html[data-landscape-ui='1'] body.classic-chess-active .classic-main,
+  html[data-landscape-ui='1'] body.puzzles-active .puzzle-board-wrap { z-index:20!important; }
+  html[data-landscape-ui='1'] body.classic-chess-active .classic-board,
+  html[data-landscape-ui='1'] body.puzzles-active .puzzle-board {
+    z-index:21!important;
+    display:grid!important;
+    grid-template-columns:repeat(8,minmax(0,1fr))!important;
+    grid-template-rows:repeat(8,minmax(0,1fr))!important;
+  }
+  html[data-landscape-ui='1'] body.classic-chess-active .classic-square,
+  html[data-landscape-ui='1'] body.puzzles-active .puzzle-square {
+    width:auto!important;
+    height:auto!important;
+    min-width:0!important;
+    min-height:0!important;
+    aspect-ratio:auto!important;
+  }
+  html[data-landscape-ui='1'] .board-coordinate-frame,
+  html[data-landscape-ui='1'] .board-coordinate-ranks,
+  html[data-landscape-ui='1'] .board-coordinate-files,
+  html[data-landscape-ui='1'] .classic-coordinate,
+  html[data-landscape-ui='1'] .puzzle-coordinate { display:none!important; }
+}
