@@ -11,7 +11,7 @@ permissions:
 jobs:
   responsive-gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -37,3 +37,12 @@ jobs:
         env:
           RPCHESS_BROWSER_TEST: responsive-viewport-browser.cjs
         run: npm run test:browser
+      - name: Capture current landscape UI matrix
+        run: node scripts/capture-landscape-review.cjs
+      - name: Upload landscape review screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: landscape-review-${{ github.sha }}
+          path: artifacts/landscape-review
+          if-no-files-found: error
+          retention-days: 14
