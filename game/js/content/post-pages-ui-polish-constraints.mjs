@@ -5,6 +5,12 @@ function ensureConstraints(){
   const style=document.createElement('style');
   style.setAttribute(MARKER,'');
   style.textContent=`
+@media (orientation:landscape) {
+  /* The accepted Training information frame contains only objective/stars, condition,
+     attempts and the current gold reward. Source credit remains in repository notices. */
+  html[data-landscape-ui='1'] body.puzzles-active .puzzle-source { display:none!important; }
+}
+
 @media (orientation:landscape) and (max-width:1180px) {
   html[data-landscape-ui='1'] body.run-combat-board-active .classic-party-panel {
     width:calc(100% - 18px)!important;
