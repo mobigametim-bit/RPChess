@@ -48,6 +48,43 @@ function ensureTrainingLayout(){
     margin:0!important;
     overflow:hidden!important;
   }
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-outcome {
+    left:8px!important;
+    width:min(380px,calc(100vw - 100dvh - 28px))!important;
+    max-width:calc(100vw - 100dvh - 28px)!important;
+    min-width:0!important;
+    box-sizing:border-box!important;
+  }
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-outcome:not([hidden]) {
+    display:grid!important;
+    grid-template-columns:minmax(0,.72fr) minmax(150px,1.28fr)!important;
+    grid-template-areas:
+      'title title'
+      'copy copy'
+      'gold continue'
+      'power power'!important;
+    column-gap:14px!important;
+    row-gap:8px!important;
+    align-items:center!important;
+  }
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-outcome>h2 {grid-area:title!important}
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-outcome>p {grid-area:copy!important}
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-outcome>.puzzle-outcome__gold {
+    grid-area:gold!important;
+    margin:8px 0!important;
+    min-width:0!important;
+  }
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-outcome>[data-puzzle-continue] {
+    grid-area:continue!important;
+    width:100%!important;
+    min-width:0!important;
+    margin:0!important;
+  }
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-outcome>[data-power-result] {
+    grid-area:power!important;
+    width:100%!important;
+    margin:0!important;
+  }
 }
 
 @media (orientation:landscape) and (max-width:1180px) {
@@ -57,11 +94,14 @@ function ensureTrainingLayout(){
     width:calc(100vw - 100dvh - 24px)!important;
     max-width:calc(100vw - 100dvh - 24px)!important;
   }
-  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-layout>.puzzle-panel:first-child {
-    top:58px!important;
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-layout>.puzzle-panel:first-child,
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-outcome {
     left:8px!important;
     width:calc(100vw - 100dvh - 24px)!important;
     max-width:calc(100vw - 100dvh - 24px)!important;
+  }
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-layout>.puzzle-panel:first-child {
+    top:58px!important;
   }
 }
 
@@ -72,11 +112,24 @@ function ensureTrainingLayout(){
     width:calc(100vw - 100dvh - 26px)!important;
     max-width:calc(100vw - 100dvh - 26px)!important;
   }
-  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-layout>.puzzle-panel:first-child {
-    top:52px!important;
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-layout>.puzzle-panel:first-child,
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-outcome {
     left:8px!important;
     width:calc(100vw - 100dvh - 26px)!important;
     max-width:calc(100vw - 100dvh - 26px)!important;
+  }
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-layout>.puzzle-panel:first-child {
+    top:52px!important;
+  }
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-outcome:not([hidden]) {
+    grid-template-columns:minmax(0,.62fr) minmax(138px,1.38fr)!important;
+    column-gap:8px!important;
+    row-gap:5px!important;
+  }
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-outcome>[data-puzzle-continue] {
+    min-height:38px!important;
+    padding-inline:8px!important;
+    font-size:13px!important;
   }
 }
 `;
