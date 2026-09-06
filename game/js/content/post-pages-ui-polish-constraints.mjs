@@ -68,24 +68,33 @@ function ensureConstraints(){
     justify-self:start!important;
   }
 
-  /* Travel uses one deterministic command row on tablet/mobile. The old Power widget painted
-     its own king portrait through ::before; the explicit run portrait now owns that slot. */
+  /* Travel uses one deterministic command row on tablet/mobile. Reset the earlier responsive
+     grid placements before laying the commandbar out; otherwise the old second-row action rule
+     silently pushes Roster/Settings out of the fixed 48px header. */
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-topbar--command {
     width:100%!important;
     min-width:0!important;
     height:48px!important;
     min-height:48px!important;
     display:grid!important;
-    grid-template-columns:auto minmax(0,1fr)!important;
+    grid-template-columns:max-content minmax(0,1fr)!important;
+    grid-template-rows:48px!important;
     align-items:center!important;
     gap:8px!important;
     padding:4px 7px!important;
+    margin:0!important;
     overflow:hidden!important;
     box-sizing:border-box!important;
   }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-heading {
+    grid-column:1!important;
+    grid-row:1!important;
+    align-self:center!important;
     min-width:0!important;
     margin:0!important;
+  }
+  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-heading::after {
+    display:none!important;
   }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-heading h1 {
     margin:0!important;
@@ -94,17 +103,24 @@ function ensureConstraints(){
     white-space:nowrap!important;
   }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-commandbar {
+    grid-column:2!important;
+    grid-row:1!important;
+    justify-self:stretch!important;
+    align-self:center!important;
     width:100%!important;
     min-width:0!important;
     height:40px!important;
     display:grid!important;
-    grid-template-columns:36px minmax(92px,118px) auto auto!important;
+    grid-template-columns:36px 110px 92px 142px!important;
+    grid-template-rows:40px!important;
     align-items:center!important;
     justify-content:end!important;
     gap:6px!important;
     overflow:hidden!important;
   }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-run-portrait {
+    grid-column:1!important;
+    grid-row:1!important;
     width:36px!important;
     height:36px!important;
     min-width:36px!important;
@@ -114,7 +130,11 @@ function ensureConstraints(){
     object-fit:cover!important;
   }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-player-rating {
-    width:100%!important;
+    grid-column:2!important;
+    grid-row:1!important;
+    justify-self:stretch!important;
+    align-self:center!important;
+    width:110px!important;
     min-width:0!important;
     min-height:0!important;
     height:36px!important;
@@ -144,9 +164,15 @@ function ensureConstraints(){
     font-size:10px!important;
   }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-inline-resources {
+    grid-column:3!important;
+    grid-row:1!important;
+    justify-self:stretch!important;
+    align-self:center!important;
+    width:92px!important;
     min-width:0!important;
     display:flex!important;
     align-items:center!important;
+    justify-content:center!important;
     gap:4px!important;
     transform:none!important;
   }
@@ -163,17 +189,22 @@ function ensureConstraints(){
     font-size:10px!important;
   }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-topbar__actions {
+    grid-column:4!important;
+    grid-row:1!important;
+    justify-self:stretch!important;
+    align-self:center!important;
+    width:142px!important;
     min-width:0!important;
-    display:flex!important;
-    align-items:center!important;
-    justify-content:flex-end!important;
-    flex-wrap:nowrap!important;
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
     gap:4px!important;
+    flex-wrap:nowrap!important;
   }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-topbar__actions .reboot-button {
+    width:100%!important;
     min-width:0!important;
     min-height:30px!important;
-    padding:3px 7px!important;
+    padding:3px 5px!important;
     font-size:9px!important;
     white-space:nowrap!important;
   }
@@ -198,7 +229,8 @@ function ensureConstraints(){
 
 @media (orientation:landscape) and (max-width:980px) and (max-height:520px) {
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-topbar--command {
-    grid-template-columns:auto minmax(0,1fr)!important;
+    grid-template-columns:max-content minmax(0,1fr)!important;
+    grid-template-rows:48px!important;
     gap:5px!important;
     padding:3px 5px!important;
   }
@@ -207,7 +239,8 @@ function ensureConstraints(){
   }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-commandbar {
     height:38px!important;
-    grid-template-columns:32px 90px auto auto!important;
+    grid-template-columns:32px 86px 76px 126px!important;
+    grid-template-rows:38px!important;
     gap:4px!important;
   }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-run-portrait {
@@ -216,18 +249,26 @@ function ensureConstraints(){
     min-width:32px!important;
   }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-player-rating {
+    width:86px!important;
     height:32px!important;
   }
+  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-inline-resources {
+    width:76px!important;
+  }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-inline-resource {
-    padding:1px 3px!important;
+    padding:1px 2px!important;
+    gap:2px!important;
   }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-inline-resource__icon {
     width:17px!important;
     height:17px!important;
   }
+  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-topbar__actions {
+    width:126px!important;
+  }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-topbar__actions .reboot-button {
     min-height:28px!important;
-    padding:2px 5px!important;
+    padding:2px 3px!important;
     font-size:8px!important;
   }
 
