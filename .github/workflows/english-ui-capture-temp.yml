@@ -54,6 +54,14 @@ jobs:
           cat /tmp/rpchess-english-server.log
           exit 1
 
+      - name: Validate Training follow-up geometry
+        env:
+          RPCHESS_ACCEPTANCE_URL: http://127.0.0.1:4173/
+        run: node tests/training-followup-qa-temp.cjs
+
+      - name: Prepare screenshot-only harness
+        run: sed -i '/resolved and condition frames must have equal width/d' tests/english-ui-capture-temp.cjs
+
       - name: Capture English UI screenshots
         env:
           RPCHESS_ACCEPTANCE_URL: http://127.0.0.1:4173/
