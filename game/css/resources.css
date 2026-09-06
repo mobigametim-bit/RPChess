@@ -18,6 +18,13 @@
   display: none !important;
 }
 
+/* Run resources belong to navigation/economy screens, not Skirmish/Battle UI. */
+body.skirmish-active .resource-hud,
+body.battle-active .resource-hud,
+body.run-combat-board-active .resource-hud {
+  display: none !important;
+}
+
 .resource-chip {
   min-width: 0;
   min-height: 36px;
