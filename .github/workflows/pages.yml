@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - feature/post-pages-ui-polish
   workflow_dispatch:
 
 permissions:
