@@ -51,6 +51,12 @@ for (const eventName of ['rpchess:run-updated', 'rpchess:run-continue', 'rpchess
   addEventListener(eventName, scheduleApply);
 }
 
+// Battle's mercenary quote is intentionally rendered in a zero-delay task after the open event.
+// Refresh the presentation after that task so the cost is immediately normalized to icon + value.
+addEventListener('rpchess:battle-open', () => {
+  setTimeout(() => globalThis.RPChessPostPagesUIPolish?.refresh?.(), 0);
+});
+
 applyHeroNotes(document);
 
 globalThis.RPChessHeroNotes = Object.freeze({ apply: applyHeroNotes, noteForId: heroNoteForId });
