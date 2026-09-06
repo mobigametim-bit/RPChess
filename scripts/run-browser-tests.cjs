@@ -27,7 +27,8 @@ const DEFAULT_TESTS=[
   'settlement-browser.cjs',
   'starvation-browser.cjs',
   'events-browser.cjs',
-  'puzzles-browser.cjs'
+  'puzzles-browser.cjs',
+  'ui-audit-capture.cjs'
 ];
 const requested=String(process.env.RPCHESS_BROWSER_TEST||'').trim();
 const TESTS=requested?requested.split(',').map(item=>item.trim()).filter(Boolean):DEFAULT_TESTS;
