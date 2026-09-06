@@ -3,6 +3,7 @@ import '../post-pages-ui-polish.mjs';
 import './post-pages-ui-review2.mjs';
 import './post-pages-ui-review3.mjs';
 import './post-pages-ui-review4.mjs';
+import './post-pages-ui-review5.mjs';
 import { heroNoteForId } from './hero-notes.mjs';
 
 function acceptedNote(note, current) {
