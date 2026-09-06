@@ -32,14 +32,17 @@ function ensureConstraints(){
 }
 
 @media (orientation:landscape) and (max-width:1180px) {
-  /* Left-rail panels use viewport-derived width instead of percentage sizing. The rail itself is
-     exactly (100vw - 100dvh), so this guarantees a real visual gutter before the edge-to-edge board. */
-  html[data-landscape-ui='1'] body.${COMBAT_CLASS} .classic-party-panel {
+  /* Run-combat is structurally identified once its move log is folded into the information panel.
+     This avoids lifecycle-class timing races while preserving standalone Classic Chess. */
+  html[data-landscape-ui='1'] .classic-party-panel:has(> .classic-panel--moves) {
     width:calc(100vw - 100dvh - 24px)!important;
     max-width:calc(100vw - 100dvh - 24px)!important;
     min-width:0!important;
+    margin-left:8px!important;
+    margin-right:0!important;
     box-sizing:border-box!important;
     justify-self:start!important;
+    transform:none!important;
   }
   html[data-landscape-ui='1'] body.puzzles-active .puzzle-layout>.puzzle-panel:first-child {
     width:calc(100vw - 100dvh - 24px)!important;
