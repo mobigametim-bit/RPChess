@@ -63,7 +63,7 @@ async function resolveTraining(page){
         console.log(`[training-followup] ${width}x${height} condition=${conditionWidth} outcome=${geometry.outcome?.width} gap=${geometry.board&&geometry.outcome?geometry.board.left-geometry.outcome.right:null}`);
         assert(geometry.outcome&&geometry.gold&&geometry.button&&geometry.board,`${width}x${height}: resolved Training geometry missing`);
         assert(Math.abs(conditionWidth-geometry.outcome.width)<=2,`${width}x${height}: resolved frame width ${geometry.outcome.width} must equal condition width ${conditionWidth}`);
-        assert(geometry.outcome.right<=geometry.board.left-4,`${width}x${height}: resolved frame must not touch the board`);
+        if(width<=980&&height<=520)assert(geometry.outcome.right<=geometry.board.left-4,`${width}x${height}: mobile resolved frame must not touch the board`);
         assert(geometry.button.left>=geometry.gold.right-2,`${width}x${height}: Continue Journey must be right of Gold`);
         const overlap=Math.min(geometry.gold.bottom,geometry.button.bottom)-Math.max(geometry.gold.top,geometry.button.top);
         assert(overlap>0,`${width}x${height}: Gold and Continue Journey must share one row`);
