@@ -6,6 +6,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ui-audit-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   capture-feature:
     runs-on: ubuntu-latest
