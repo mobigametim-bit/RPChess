@@ -62,23 +62,6 @@ jobs:
           RPCHESS_BROWSER_TEST: classic-chess-browser.cjs,responsive-viewport-browser.cjs
         run: npm run test:browser
 
-      - name: Capture temporary UI audit matrix
-        if: github.event_name == 'pull_request'
-        env:
-          RPCHESS_GATE_PREFIX: /RPChess
-          RPCHESS_BROWSER_TEST: ui-audit-capture.cjs
-          RPCHESS_UI_AUDIT_DIR: ui-audit
-        run: npm run test:browser
-
-      - name: Upload temporary UI audit screenshots
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ui-audit-${{ github.event.pull_request.head.sha }}
-          path: ui-audit
-          if-no-files-found: error
-          retention-days: 1
-
       - name: Configure Pages
         if: github.event_name != 'pull_request'
         uses: actions/configure-pages@v5
