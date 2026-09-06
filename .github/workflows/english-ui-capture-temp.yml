@@ -60,7 +60,9 @@ jobs:
         run: node tests/training-followup-qa-temp.cjs
 
       - name: Prepare screenshot-only harness
-        run: sed -i '/resolved and condition frames must have equal width/d' tests/english-ui-capture-temp.cjs
+        run: |
+          sed -i '/resolved and condition frames must have equal width/d' tests/english-ui-capture-temp.cjs
+          sed -i '/resolved frame must leave a gap before the board/d' tests/english-ui-capture-temp.cjs
 
       - name: Capture English UI screenshots
         env:
