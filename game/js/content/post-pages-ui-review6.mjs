@@ -5,6 +5,11 @@ function ensureStyle(){
   const style=document.createElement('style');
   style.setAttribute(MARKER,'');
   style.textContent=`
+/* The Classic combat polish owns these captions through CSS pseudo-elements.
+   Keep them language-aware so the English UI never leaks Russian labels. */
+html[lang='en'] .classic-party-panel h2::before { content:'COMBAT SUMMARY'!important; }
+html[lang='en'] .classic-panel--moves h3::before { content:'COMBAT LOG'!important; }
+
 @media (orientation:landscape) and (max-width:980px) and (max-height:520px) {
   /* Use viewport units directly so transformed ancestors cannot shrink the Training frame. */
   html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-layout>.puzzle-panel:first-child {
