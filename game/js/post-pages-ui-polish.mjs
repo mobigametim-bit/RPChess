@@ -2,8 +2,10 @@ const GOLD_ICON='generated_assets/reward_gold.png';
 const SUPPLIES_ICON='generated_assets/node_shop.png';
 const STYLE_MARKER='data-post-pages-ui-polish-style';
 const RUN_KEY='rpchess.reboot.v1.run';
+const COMPACT_QUERY='(orientation: landscape) and (max-width: 1180px)';
 
 function visible(node){return Boolean(node&&!node.hidden);}
+function compactLayout(){return Boolean(globalThis.matchMedia?.(COMPACT_QUERY)?.matches);}
 function run(){try{return JSON.parse(localStorage.getItem(RUN_KEY)||'null');}catch{return null;}}
 function img(src,className=''){const node=document.createElement('img');node.src=src;node.alt='';node.draggable=false;if(className)node.className=className;node.setAttribute('aria-hidden','true');return node;}
 function numberFrom(value){const match=String(value||'').match(/-?\d+/);return match?Number(match[0]):0;}
@@ -188,14 +190,13 @@ function ensureStyle(){
 
 function syncTravel(){
   const screen=document.querySelector('[data-travel-choice-screen]');if(!visible(screen))return;
-  const command=screen.querySelector('[data-travel-commandbar]');
-  if(command){
-    let portrait=command.querySelector('[data-travel-run-portrait]');
-    if(!portrait){portrait=document.createElement('img');portrait.className='travel-choice-run-portrait';portrait.dataset.travelRunPortrait='';command.prepend(portrait);}
-    const current=globalThis.RPChessTravelChoice?.run||run();
-    const king=current?.roster?.find((character)=>character?.isRunKing)||current?.roster?.find((character)=>character?.pieceType==='king');
-    portrait.src=king?.portrait||'assets/kings/oathkeeper/portrait.png';portrait.alt=king?.name||'Король';
-  }
+  const command=screen.querySelector('[data-travel-commandbar]');if(!command)return;
+  let portrait=command.querySelector('[data-travel-run-portrait]');
+  if(!compactLayout()){portrait?.remove();return;}
+  if(!portrait){portrait=document.createElement('img');portrait.className='travel-choice-run-portrait';portrait.dataset.travelRunPortrait='';command.prepend(portrait);}
+  const current=globalThis.RPChessTravelChoice?.run||run();
+  const king=current?.roster?.find((character)=>character?.isRunKing)||current?.roster?.find((character)=>character?.pieceType==='king');
+  portrait.src=king?.portrait||'assets/kings/oathkeeper/portrait.png';portrait.alt=king?.name||'Король';
 }
 
 function syncPuzzle(){
@@ -235,12 +236,20 @@ function syncBattleCost(){
 function syncSettlement(){
   const screen=document.querySelector('[data-settlement-screen]');if(!visible(screen))return;
   const card=screen.querySelector('[data-settlement-supply-card]');if(!card)return;
+  if(!compactLayout()){
+    if(card.dataset.postPagesCompact==='1'){
+      delete card.dataset.postPagesCompact;
+      globalThis.RPChessSettlement?.render?.();
+    }
+    return;
+  }
   const stock=numberFrom(card.querySelector('[data-settlement-supply-stock]')?.textContent||card.textContent);
   const price=numberFrom(card.querySelector('.settlement-price')?.textContent||'0');
   const existingButton=card.querySelector('[data-settlement-buy-supply]');
   if(!existingButton)return;
   const disabled=existingButton.disabled,label=existingButton.textContent;
   card.replaceChildren();
+  card.dataset.postPagesCompact='1';
   const row=document.createElement('div');row.className='settlement-supply-card__compact';
   const supplyImg=img(SUPPLIES_ICON),stockText=document.createElement('strong');stockText.dataset.settlementSupplyStock='';stockText.textContent=`${stock}/4`;
   const separator=document.createElement('span');separator.textContent='за';
