@@ -1,3 +1,10 @@
+import './post-pages-ui-polish-constraints.mjs';
+import '../post-pages-ui-polish.mjs';
+import './post-pages-ui-review2.mjs';
+import './post-pages-ui-review3.mjs';
+import './post-pages-ui-review4.mjs';
+import './post-pages-ui-review5.mjs';
+import './post-pages-ui-review6.mjs';
 import { heroNoteForId } from './hero-notes.mjs';
 
 function acceptedNote(note, current) {
@@ -17,6 +24,11 @@ function applySettlementNotes(root = document) {
     const note = heroNoteForId(card.dataset?.settlementRecruitCard || '');
     const description = card.querySelector('.settlement-recruit__body > p');
     if (description && note && !acceptedNote(note, description.textContent)) description.textContent = note;
+  }
+  // The compact Market row is presentation-only. Mark its price node so repeated lifecycle
+  // refreshes preserve the same price until the real Settlement renderer updates the stock.
+  for (const price of root.querySelectorAll?.('.settlement-supply-card__compact > strong:last-child') || []) {
+    price.classList.add('settlement-price');
   }
 }
 
@@ -44,6 +56,12 @@ if (app && typeof MutationObserver !== 'undefined') {
 for (const eventName of ['rpchess:run-updated', 'rpchess:run-continue', 'rpchess:settlement-open']) {
   addEventListener(eventName, scheduleApply);
 }
+
+// Battle's mercenary quote is intentionally rendered in a zero-delay task after the open event.
+// Refresh the presentation after that task so the cost is immediately normalized to icon + value.
+addEventListener('rpchess:battle-open', () => {
+  setTimeout(() => globalThis.RPChessPostPagesUIPolish?.refresh?.(), 0);
+});
 
 applyHeroNotes(document);
 

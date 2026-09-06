@@ -90,6 +90,11 @@ async function auditViewport(browser, width, height) {
     await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
     await assertNoHorizontalOverflow(page, `${label} Travel`);
     await assertReachable(page, '[data-travel-choice]', `${label} Travel route`);
+    if (width <= 1180) {
+      await page.locator('[data-travel-run-portrait]').waitFor({ state:'visible' });
+      const difficultyLabelVisible = await page.locator('.travel-choice-card--puzzle .travel-choice-card__difficulty small').evaluateAll((nodes) => nodes.some((node) => getComputedStyle(node).display !== 'none'));
+      assert.strictEqual(difficultyLabelVisible, false, `${label}: Training route must not show the difficulty caption under stars`);
+    }
     if (width <= 980 && height <= 520) {
       const cards = await page.locator('[data-travel-choice]').evaluateAll((elements) => elements.map((element) => {
         const rect = element.getBoundingClientRect();
@@ -97,7 +102,8 @@ async function auditViewport(browser, width, height) {
       }));
       assert.strictEqual(cards.length, 3, `${label}: Travel must render exactly three choices`);
       assert(cards.every((card) => card.top >= -1 && card.bottom <= height + 1), `${label}: all three Travel choices must be visible without page scroll`);
-      assert(cards[1].top >= cards[0].bottom - 2 && cards[2].top >= cards[1].bottom - 2, `${label}: mobile Travel choices must be vertically stacked`);
+      assert(cards.every((card) => Math.abs(card.top - cards[0].top) <= 2), `${label}: mobile Travel choices must share one tablet-style row`);
+      assert(cards[1].left >= cards[0].right - 2 && cards[2].left >= cards[1].right - 2, `${label}: mobile Travel choices must be laid out left-to-right`);
     }
     assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
   } finally {
@@ -168,9 +174,22 @@ async function auditPrepAndCombat(browser, width, height) {
     await assertNoHorizontalOverflow(page, `${label} Skirmish prep`);
     const skirmishColumns = await page.locator('.skirmish-grid').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length);
     assert.strictEqual(skirmishColumns, 2, `${label}: Skirmish prep must keep two selectable card columns`);
+    if (width <= 980 && height <= 520) {
+      const formation = await page.locator('[data-skirmish-formation]').evaluate((element) => {
+        const rect=element.getBoundingClientRect();return { top:rect.top,bottom:rect.bottom,left:rect.left,right:rect.right,vw:innerWidth,vh:innerHeight };
+      });
+      assert(formation.top >= -1 && formation.bottom <= formation.vh + 1 && formation.left >= -1 && formation.right <= formation.vw + 1, `${label}: full Skirmish formation preview must fit in the viewport`);
+    }
     await assertReachable(page, '[data-skirmish-start]', `${label} Skirmish start`);
     await page.locator('[data-skirmish-start]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
+    const combatPanel = await page.evaluate(() => {
+      const party=document.querySelector('.classic-party-panel');const moves=document.querySelector('.classic-panel--moves');const board=document.querySelector('[data-chess-board]');
+      const p=party?.getBoundingClientRect(),b=board?.getBoundingClientRect();
+      return { movesInside:Boolean(party&&moves&&moves.parentElement===party),gap:p&&b?b.left-p.right:0 };
+    });
+    assert(combatPanel.movesInside, `${label}: run combat must use the desktop information-panel structure`);
+    assert(combatPanel.gap >= 4, `${label}: combat information panel must not touch the board`);
     const board = await page.locator('[data-chess-board]').evaluate((element) => {
       const rect = element.getBoundingClientRect();
       const square = element.querySelector('[data-square]')?.getBoundingClientRect();
@@ -219,6 +238,8 @@ async function auditPrepAndCombat(browser, width, height) {
     await assertNoHorizontalOverflow(page, `${label} Battle prep`);
     const battleColumns = await page.locator('.battle-grid').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length);
     assert.strictEqual(battleColumns, 2, `${label}: Battle prep must keep two card columns at tablet/mobile landscape widths`);
+    const hireCost = await page.locator('.battle-mercenary-quote__row--cost strong').evaluate((element) => ({ icon:Boolean(element.querySelector('img')),text:element.textContent.trim() }));
+    assert(hireCost.icon && /^\d+$/.test(hireCost.text), `${label}: hiring cost must render as gold icon + numeric value`);
     if (width <= 980 && height <= 520) {
       const prep = await page.evaluate(() => {
         const buttonRect = document.querySelector('[data-battle-start]')?.getBoundingClientRect();
@@ -258,7 +279,7 @@ async function auditPrepAndCombat(browser, width, height) {
     for (const [width, height] of [[1180, 820], [1024, 768], [844, 390]]) await auditPrepAndCombat(browser, width, height);
     for (const [width, height] of [[1024, 768], [844, 390]]) await auditEventLayout(browser, width, height);
     for (const [width, height] of MATRIX) await auditViewport(browser, width, height);
-    console.log(`Responsive viewport browser: PASS — landscape matrix, portrait lock, readable Event rail, stacked mobile Travel, edge-to-edge board, no-scroll aftermath and no-scroll Battle prep contracts`);
+    console.log(`Responsive viewport browser: PASS — landscape matrix, portrait lock, readable Event rail, tablet-style mobile Travel, full Skirmish formation, desktop-style run combat panel, edge-to-edge board, no-scroll aftermath and no-scroll Battle prep contracts`);
   } finally {
     await browser.close();
   }
