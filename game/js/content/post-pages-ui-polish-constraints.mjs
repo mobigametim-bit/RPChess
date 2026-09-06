@@ -26,12 +26,8 @@ function ensureConstraints(){
   style.setAttribute(MARKER,'');
   style.textContent=`
 @media (orientation:landscape) {
-  /* The accepted Training information frame contains only objective/stars, condition,
-     attempts and the current gold reward. Source credit remains in repository notices. */
   html[data-landscape-ui='1'] body.puzzles-active .puzzle-source { display:none!important; }
 
-  /* Battle Prep cost presentation replaces the legacy generated pseudo-icon with one
-     real runtime image. Keep that image tactical-scale at every landscape breakpoint. */
   html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-mercenary-quote__row--cost strong::before,
   html[data-landscape-ui='1'] .battle-mercenary-quote__row--cost strong::before {
     content:none!important;
@@ -48,8 +44,6 @@ function ensureConstraints(){
 }
 
 @media (orientation:landscape) and (max-width:1180px) {
-  /* Run-combat is structurally identified once its move log is folded into the information panel.
-     Reserve a fixed visual gutter before the edge-to-edge board while preserving Classic Chess. */
   html[data-landscape-ui='1'] .classic-party-panel:has(> .classic-panel--moves) {
     width:calc(100vw - 100dvh - 32px)!important;
     max-width:calc(100vw - 100dvh - 32px)!important;
@@ -68,9 +62,6 @@ function ensureConstraints(){
     justify-self:start!important;
   }
 
-  /* Travel uses one deterministic command row on tablet/mobile. Reset the earlier responsive
-     grid placements before laying the commandbar out; otherwise the old second-row action rule
-     silently pushes Roster/Settings out of the fixed 48px header. */
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-topbar--command {
     width:100%!important;
     min-width:0!important;
@@ -93,9 +84,7 @@ function ensureConstraints(){
     min-width:0!important;
     margin:0!important;
   }
-  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-heading::after {
-    display:none!important;
-  }
+  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-heading::after { display:none!important; }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-heading h1 {
     margin:0!important;
     font-size:clamp(18px,2.4vw,28px)!important;
@@ -160,9 +149,7 @@ function ensureConstraints(){
     font-size:7px!important;
     letter-spacing:.06em!important;
   }
-  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-player-rating__row strong {
-    font-size:10px!important;
-  }
+  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-player-rating__row strong { font-size:10px!important; }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-inline-resources {
     grid-column:3!important;
     grid-row:1!important;
@@ -185,9 +172,7 @@ function ensureConstraints(){
     width:20px!important;
     height:20px!important;
   }
-  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-inline-resource strong {
-    font-size:10px!important;
-  }
+  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-inline-resource strong { font-size:10px!important; }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-topbar__actions {
     grid-column:4!important;
     grid-row:1!important;
@@ -209,8 +194,6 @@ function ensureConstraints(){
     white-space:nowrap!important;
   }
 
-  /* Battle Prep quote is a child of the right rail; its rows must never inherit intrinsic
-     image width or extend beyond that rail. */
   html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army .battle-mercenary-quote,
   html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army .battle-mercenary-quote__row {
     width:100%!important;
@@ -218,13 +201,9 @@ function ensureConstraints(){
     min-width:0!important;
     box-sizing:border-box!important;
   }
-  html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army .battle-mercenary-quote {
-    overflow:hidden!important;
-  }
+  html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army .battle-mercenary-quote { overflow:hidden!important; }
   html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army .battle-mercenary-quote__row > span,
-  html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army .battle-mercenary-quote__row > strong {
-    min-width:0!important;
-  }
+  html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army .battle-mercenary-quote__row > strong { min-width:0!important; }
 }
 
 @media (orientation:landscape) and (max-width:980px) and (max-height:520px) {
@@ -234,9 +213,7 @@ function ensureConstraints(){
     gap:5px!important;
     padding:3px 5px!important;
   }
-  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-heading h1 {
-    font-size:18px!important;
-  }
+  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-heading h1 { font-size:18px!important; }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-commandbar {
     height:38px!important;
     grid-template-columns:32px 86px 76px 126px!important;
@@ -252,9 +229,7 @@ function ensureConstraints(){
     width:86px!important;
     height:32px!important;
   }
-  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-inline-resources {
-    width:76px!important;
-  }
+  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-inline-resources { width:76px!important; }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-inline-resource {
     padding:1px 2px!important;
     gap:2px!important;
@@ -263,17 +238,24 @@ function ensureConstraints(){
     width:17px!important;
     height:17px!important;
   }
-  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-topbar__actions {
-    width:126px!important;
-  }
+  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-topbar__actions { width:126px!important; }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-topbar__actions .reboot-button {
     min-height:28px!important;
     padding:2px 3px!important;
     font-size:8px!important;
   }
 
-  /* The canonical Battle runtime keeps the action bar in the right rail. Constrain the actual
-     quote and cost icon rather than positioning a second start control over the composition. */
+  /* The three mobile Travel choices use the same vertical card composition as tablet.
+     Reset the older phone rule that turns every card itself into a 37/63 horizontal split. */
+  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-card {
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:minmax(0,1fr) auto!important;
+  }
+  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-card__body {
+    height:auto!important;
+    min-height:44px!important;
+  }
+
   html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army {
     position:relative!important;
     padding-bottom:48px!important;
@@ -296,9 +278,7 @@ function ensureConstraints(){
     font-size:7px!important;
     line-height:1!important;
   }
-  html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army .battle-mercenary-quote__row strong {
-    font-size:9px!important;
-  }
+  html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army .battle-mercenary-quote__row strong { font-size:9px!important; }
   html[data-landscape-ui='1'] body.battle-prep-compact-active .post-pages-gold-icon {
     width:14px!important;
     height:14px!important;
