@@ -60,7 +60,23 @@ jobs:
         env:
           RPCHESS_GATE_PREFIX: /RPChess
           RPCHESS_BROWSER_TEST: classic-chess-browser.cjs,responsive-viewport-browser.cjs
-        run: npm run test:browser
+        run: |
+          # Branch-only diagnostic instrumentation. It changes only the runner workspace and will
+          # be removed after the responsive panel geometry is proven green.
+          node - <<'NODE'
+          const fs=require('fs');
+          const p='tests/responsive-viewport-browser.cjs';
+          let s=fs.readFileSync(p,'utf8');
+          const oldReturn="      return { movesInside:Boolean(party&&moves&&moves.parentElement===party),gap:p&&b?b.left-p.right:0 };";
+          const newReturn="      const style=party?getComputedStyle(party):null; return { movesInside:Boolean(party&&moves&&moves.parentElement===party),gap:p&&b?b.left-p.right:0,party:p?{left:p.left,right:p.right,width:p.width}:null,board:b?{left:b.left,right:b.right,width:b.width}:null,style:style?{width:style.width,maxWidth:style.maxWidth,minWidth:style.minWidth,marginLeft:style.marginLeft,marginRight:style.marginRight,boxSizing:style.boxSizing,justifySelf:style.justifySelf,transform:style.transform}:null,bodyClass:document.body.className,hasConstraintStyle:Boolean(document.querySelector('[data-post-pages-ui-polish-constraints]')) };";
+          if(!s.includes(oldReturn))throw new Error('responsive combat diagnostic marker not found');
+          s=s.replace(oldReturn,newReturn);
+          const oldAssert="    assert(combatPanel.movesInside, `${label}: run combat must use the desktop information-panel structure`);";
+          const newAssert="    console.log(`[combat-panel] ${label} ${JSON.stringify(combatPanel)}`);\n"+oldAssert;
+          s=s.replace(oldAssert,newAssert);
+          fs.writeFileSync(p,s);
+          NODE
+          npm run test:browser
 
       - name: Configure Pages
         if: github.event_name != 'pull_request'
