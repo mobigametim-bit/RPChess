@@ -25,15 +25,25 @@ function route(type, stars, label) {
 }
 
 async function fresh(page) {
-  await page.goto(url, { waitUntil:'networkidle' });
-  await page.evaluate((key) => localStorage.removeItem(key), RUN_KEY);
-  await page.reload({ waitUntil:'networkidle' });
+  // Clear the run before app scripts execute. This avoids the old goto -> clear -> reload cycle,
+  // which doubled every navigation in the 30-shot audit while preserving an identical fresh-run state.
+  await page.addInitScript((key) => localStorage.removeItem(key), RUN_KEY);
+  await page.goto(url, { waitUntil:'domcontentloaded' });
   await page.locator('[data-reboot-foundation]:not([hidden])').waitFor();
+}
+
+async function visualReady(page) {
+  await page.evaluate(async () => { if (document.fonts?.ready) await document.fonts.ready; });
+  await page.waitForFunction(() => [...document.images].filter((image) => {
+    const style=getComputedStyle(image),rect=image.getBoundingClientRect();
+    return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0;
+  }).every((image) => image.complete), null, { timeout:5000 }).catch(() => {});
+  await page.waitForTimeout(180);
 }
 
 async function runStart(page, label) {
   await startNewRun(page, { playerName:`UI Audit ${label}` });
-  await page.waitForTimeout(150);
+  await page.waitForTimeout(80);
 }
 
 async function setRoute(page, nextRoute) {
@@ -170,7 +180,7 @@ async function metrics(page) {
         page.on('pageerror', (error) => pageErrors.push(String(error.stack || error)));
         try {
           await openScreen(page, name);
-          await page.waitForTimeout(500);
+          await visualReady(page);
           const file = `${String(index + 1).padStart(2,'0')}-${name}.png`;
           await page.screenshot({ path:path.join(dir, file), fullPage:false });
           manifest.captures[adaptation][name] = { file, pageErrors, metrics:await metrics(page) };
