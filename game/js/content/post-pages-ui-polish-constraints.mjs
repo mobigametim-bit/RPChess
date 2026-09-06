@@ -52,6 +52,27 @@ function ensureConstraints(){
     justify-self:start!important;
   }
 }
+
+@media (orientation:landscape) and (max-width:980px) and (max-height:520px) {
+  /* The canonical Battle runtime moves the real start button into the army panel.
+     Pin that same control to the bottom of the compact panel so it cannot fall below
+     the fixed-height phone viewport while the six roster cards remain fully visible. */
+  html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army {
+    position:relative!important;
+    padding-bottom:48px!important;
+    overflow:hidden!important;
+  }
+  html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army > [data-battle-start] {
+    position:absolute!important;
+    z-index:8!important;
+    left:8px!important;
+    right:8px!important;
+    bottom:8px!important;
+    width:auto!important;
+    min-height:34px!important;
+    margin:0!important;
+  }
+}
 `;
   document.head.append(style);
 }
