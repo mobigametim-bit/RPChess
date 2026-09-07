@@ -7,7 +7,9 @@ function ensureStyle(){
   style.textContent=`
 /* Live-device visual follow-up: desktop Settlement service emblems + board role glyphs. */
 @media (orientation:landscape) and (min-width:1181px) {
-  html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-service__icon {
+  html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-services>.settlement-service:nth-child(1) .settlement-service__icon,
+  html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-services>.settlement-service:nth-child(2) .settlement-service__icon,
+  html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-services>.settlement-service:nth-child(3) .settlement-service__icon {
     background-color:transparent!important;
     border:0!important;
     border-radius:0!important;
