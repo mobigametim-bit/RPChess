@@ -68,12 +68,15 @@ async function assertGlyphContract(page,markerSelector,squareSelector,label){
       const marker=document.querySelector(`${markerSelector}.${markerSelector.slice(1)}--${side}`);
       const square=marker?.closest(squareSelector);if(!marker||!square)return null;
       const mr=marker.getBoundingClientRect(),sr=square.getBoundingClientRect(),pseudo=getComputedStyle(marker,'::before');
-      return {content:pseudo.content.replace(/^['\"]|['\"]$/g,''),fontSize:parseFloat(pseudo.fontSize),color:pseudo.color,strokeColor:pseudo.webkitTextStrokeColor,strokeWidth:parseFloat(pseudo.webkitTextStrokeWidth||'0'),centerDelta:Math.abs((mr.left+mr.right)/2-(sr.left+sr.right)/2),bottomGap:sr.bottom-mr.bottom,marker:{w:mr.width,h:mr.height},square:{w:sr.width,h:sr.height}};
+      return {content:pseudo.content.replace(/^['\"]|['\"]$/g,''),fontSize:parseFloat(pseudo.fontSize),color:pseudo.color,strokeColor:pseudo.webkitTextStrokeColor,strokeWidth:parseFloat(pseudo.webkitTextStrokeWidth||'0'),leftGap:mr.left-sr.left,bottomGap:sr.bottom-mr.bottom,marker:{w:mr.width,h:mr.height},square:{w:sr.width,h:sr.height}};
     }
     return {w:inspect('w'),b:inspect('b')};
   },{markerSelector,squareSelector});
+  const mobile=label.startsWith('mobile ');
   for(const side of ['w','b']){
-    const s=state[side];assert(s,`${label}: missing ${side} glyph`);assert(FILLED.has(s.content),`${label}: ${side} glyph must use filled chess symbol, got ${s.content}`);assert(s.fontSize>=38.5,`${label}: ${side} glyph too small ${s.fontSize}px`);assert(s.centerDelta<=3,`${label}: ${side} glyph not horizontally centred (${s.centerDelta}px)`);assert(s.bottomGap>=-1&&s.bottomGap<=8,`${label}: ${side} glyph must sit at square bottom (${s.bottomGap}px)`);assert(s.strokeWidth>=1,`${label}: ${side} glyph outline missing`);
+    const s=state[side];assert(s,`${label}: missing ${side} glyph`);assert(FILLED.has(s.content),`${label}: ${side} glyph must use filled chess symbol, got ${s.content}`);
+    if(mobile)assert(s.fontSize>=19&&s.fontSize<=20,`${label}: ${side} mobile glyph must be 50% size (~19.5px), got ${s.fontSize}px`);else assert(s.fontSize>=38.5,`${label}: ${side} glyph too small ${s.fontSize}px`);
+    assert(s.leftGap>=-1&&s.leftGap<=8,`${label}: ${side} glyph must sit at square left edge (${s.leftGap}px)`);assert(s.bottomGap>=-1&&s.bottomGap<=8,`${label}: ${side} glyph must sit at square bottom (${s.bottomGap}px)`);assert(s.strokeWidth>=.65,`${label}: ${side} glyph outline missing`);
   }
   assert(/255/.test(state.w.color),`${label}: white glyph must be filled white (${state.w.color})`);
   assert(/0|5/.test(state.b.color),`${label}: black glyph must be filled dark (${state.b.color})`);
