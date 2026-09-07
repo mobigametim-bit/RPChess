@@ -17,19 +17,19 @@ function ensureStyle(){
   }
 }
 
-/* Battle / Skirmish / Training board role glyphs: twice the accepted size, bottom-centred,
-   filled on both sides and outlined with the opposing colour for readability. */
+/* Battle / Skirmish / Training board role glyphs: filled on both sides, outlined with the
+   opposing colour, and anchored in the lower-left corner of every square. */
 html body .classic-piece-marker,
 html body .puzzle-piece-marker {
   top:auto!important;
-  left:50%!important;
+  left:clamp(1px,.25vw,4px)!important;
   right:auto!important;
   bottom:clamp(1px,.25vw,4px)!important;
   width:auto!important;
   height:auto!important;
   margin:0!important;
   padding:0!important;
-  transform:translateX(-50%)!important;
+  transform:none!important;
   font-size:0!important;
   line-height:1!important;
   overflow:visible!important;
@@ -41,7 +41,7 @@ html body .puzzle-piece-marker::before {
   font-size:clamp(39px,3.15vw,51px)!important;
   font-weight:400;
   line-height:.88;
-  text-align:center;
+  text-align:left;
   paint-order:stroke fill;
 }
 html body .classic-piece-marker[data-piece-marker='p']::before,
@@ -72,9 +72,16 @@ html body .puzzle-piece-marker--b::before {
 
 @media (orientation:landscape) and (max-width:980px) and (max-height:520px) {
   html body .classic-piece-marker,
-  html body .puzzle-piece-marker {bottom:0!important}
+  html body .puzzle-piece-marker {
+    left:0!important;
+    bottom:0!important;
+  }
   html body .classic-piece-marker::before,
-  html body .puzzle-piece-marker::before {font-size:39px!important}
+  html body .puzzle-piece-marker::before {font-size:19.5px!important}
+  html body .classic-piece-marker--w::before,
+  html body .puzzle-piece-marker--w::before {-webkit-text-stroke:.75px #050505}
+  html body .classic-piece-marker--b::before,
+  html body .puzzle-piece-marker--b::before {-webkit-text-stroke:.75px #fff}
 }
 `;
   document.head.append(style);
