@@ -6,6 +6,7 @@ import './post-pages-ui-review4.mjs';
 import './post-pages-ui-review5.mjs';
 import './post-pages-ui-review6.mjs';
 import './post-pages-ui-review7.mjs';
+import './supplies-resource-icon.mjs';
 import { heroNoteForId } from './hero-notes.mjs';
 
 function acceptedNote(note, current) {
