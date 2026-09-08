@@ -29,13 +29,18 @@ const game = path.join(root, 'game');
   }
 
   const routeSource = fs.readFileSync(path.join(game, 'js/battle-route.mjs'), 'utf8');
-  const runtimeSource = fs.readFileSync(path.join(game, 'js/content/hero-notes-runtime.mjs'), 'utf8');
-  assert(routeSource.includes("import './content/hero-notes-runtime.mjs'"), 'Hero Notes runtime must load with the journey bootstrap');
-  assert(runtimeSource.includes('[data-roster-card][aria-pressed="true"]'), 'Roster detail must receive the canonical note');
-  assert(runtimeSource.includes('[data-settlement-recruit-card]'), 'Settlement recruitment cards must receive the canonical note');
-  assert(runtimeSource.includes('MutationObserver'), 'Hero Notes must survive rerenders and legacy save presentation');
+  const rosterSource = fs.readFileSync(path.join(game, 'js/roster-app.mjs'), 'utf8');
+  const settlementSource = fs.readFileSync(path.join(game, 'js/settlement-app.mjs'), 'utf8');
+  const legacyRuntime = path.join(game, 'js/content/hero-notes-runtime.mjs');
 
-  console.log('Hero Notes: 36 registered heroes + Oathkeeper, roster/settlement presentation: PASS');
+  assert(!fs.existsSync(legacyRuntime), 'Hero Notes must not require a MutationObserver presentation runtime');
+  assert(!routeSource.includes('hero-notes-runtime.mjs'), 'journey bootstrap must not depend on Hero Notes for presentation patches');
+  assert(rosterSource.includes("import { heroNoteForId } from './content/hero-notes.mjs'"), 'Roster must own Hero Notes rendering');
+  assert(rosterSource.includes('heroNoteForId(character.id) || character.description'), 'Roster detail must render the canonical note directly');
+  assert(settlementSource.includes("import { heroNoteForId } from './content/hero-notes.mjs'"), 'Settlement must own Hero Notes rendering');
+  assert(settlementSource.includes('heroNoteForId(candidate.id) || candidate.description'), 'Settlement recruit cards must render the canonical note directly');
+
+  console.log('Hero Notes: 36 registered heroes + Oathkeeper, owner-level Roster/Settlement presentation: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;
