@@ -2,6 +2,7 @@ const SUPPLIES_ICON='generated_assets/reward_supplies.png';
 
 function setSuppliesIcon(image){
   if(!(image instanceof HTMLImageElement))return;
+  if(image.closest('.settlement-service__icon'))return;
   const current=image.getAttribute('src')||'';
   if(current===SUPPLIES_ICON||current.endsWith('/reward_supplies.png'))return;
   image.src=SUPPLIES_ICON;
@@ -12,7 +13,7 @@ function patchSuppliesIcons(root=document){
 
   for(const image of root.querySelectorAll?.([
     '.resource-inline-icon--supplies',
-    '.resource-chip__supply-image',
+    '.resource-chip__supply-icon .resource-chip__supply-image',
     '.settlement-market-row__item-icon',
     '.events-outcome-resource--supplies .events-outcome-resource__icon'
   ].join(','))||[])setSuppliesIcon(image);
