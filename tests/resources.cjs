@@ -83,6 +83,7 @@ class MemoryStorage {
   const appSource = fs.readFileSync(path.join(game, 'js/resources-app.mjs'), 'utf8');
   const uxSource = fs.readFileSync(path.join(game, 'js/ux-consistency.mjs'), 'utf8');
   const suppliesIconSource = fs.readFileSync(path.join(game, 'js/content/supplies-resource-icon.mjs'), 'utf8');
+  const marketRowSource = fs.readFileSync(path.join(game, 'js/content/post-pages-ui-review4.mjs'), 'utf8');
   const routeSource = fs.readFileSync(path.join(game, 'js/battle-route.mjs'), 'utf8');
   const css = fs.readFileSync(path.join(game, 'css/resources.css'), 'utf8');
   const uxCss = fs.readFileSync(path.join(game, 'css/ux-consistency.css'), 'utf8');
@@ -100,7 +101,8 @@ class MemoryStorage {
   assert(fs.existsSync(suppliesIconPath), 'dedicated supplies icon asset must exist');
   assert(suppliesIconSource.includes("generated_assets/reward_supplies.png"), 'Supplies must use the dedicated reward_supplies icon');
   assert(suppliesIconSource.includes('.resource-inline-icon--supplies') && suppliesIconSource.includes('.resource-chip__supply-image') && suppliesIconSource.includes('.settlement-market-row__item-icon'), 'dedicated supplies icon must cover shared resource, HUD and Market product presentations');
-  assert(!suppliesIconSource.includes('.settlement-service__icon'), 'Market service emblem must remain the shop icon and must not be replaced by the Supplies resource icon');
+  assert(suppliesIconSource.includes("const MARKET_ICON='generated_assets/node_shop.png'") && suppliesIconSource.includes("if(image.closest('.settlement-service__icon'))return") && suppliesIconSource.includes('.settlement-service__icon > img'), 'Market service emblem must stay on node_shop and be isolated from Supplies replacement');
+  assert(marketRowSource.includes("const SUPPLY_ICON='generated_assets/reward_supplies.png'") && marketRowSource.includes("english?'for':'за'") && marketRowSource.includes("english?'Buy':'Купить'"), 'Market purchase row must use dedicated Supplies art and localized purchase copy');
   assert(packageJson.scripts.build.includes('resource-icon-asset-runtime.cjs --root dist'), 'production build must optimize the dedicated Supplies icon');
   assert(uxSource.includes('RESOURCE_PATTERN') && uxSource.includes('resource-inline'), 'numeric Gold/Supply mentions must be iconized consistently');
   assert(uxSource.includes('.resource-chip__supply-icon'), 'legacy HUD supply diamond holder must be replaced by the supply asset at runtime');

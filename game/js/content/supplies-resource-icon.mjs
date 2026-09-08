@@ -1,7 +1,28 @@
 const SUPPLIES_ICON='generated_assets/reward_supplies.png';
+const MARKET_ICON='generated_assets/node_shop.png';
+const MARKET_STYLE_MARKER='data-supplies-market-icon-scope';
+
+function ensureMarketIconStyle(){
+  if(document.querySelector(`[${MARKET_STYLE_MARKER}]`))return;
+  const style=document.createElement('style');
+  style.setAttribute(MARKET_STYLE_MARKER,'');
+  style.textContent=`
+html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen [aria-labelledby="settlement-supplies-title"] .settlement-service__icon {
+  background-image:url('${MARKET_ICON}')!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+  background-size:contain!important;
+}
+html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen [aria-labelledby="settlement-supplies-title"] .settlement-service__icon > img {
+  display:none!important;
+}
+`;
+  document.head.append(style);
+}
 
 function setSuppliesIcon(image){
   if(!(image instanceof HTMLImageElement))return;
+  if(image.closest('.settlement-service__icon'))return;
   const current=image.getAttribute('src')||'';
   if(current===SUPPLIES_ICON||current.endsWith('/reward_supplies.png'))return;
   image.src=SUPPLIES_ICON;
@@ -9,10 +30,11 @@ function setSuppliesIcon(image){
 
 function patchSuppliesIcons(root=document){
   if(!(root instanceof Document||root instanceof DocumentFragment||root instanceof Element))return;
+  ensureMarketIconStyle();
 
   for(const image of root.querySelectorAll?.([
     '.resource-inline-icon--supplies',
-    '.resource-chip__supply-image',
+    '.resource-chip__supply-icon .resource-chip__supply-image',
     '.settlement-market-row__item-icon',
     '.events-outcome-resource--supplies .events-outcome-resource__icon'
   ].join(','))||[])setSuppliesIcon(image);
@@ -52,6 +74,6 @@ document.addEventListener('click',(event)=>{
   if(target?.closest('button,[data-travel-choice],[data-event-choice]'))schedulePatch();
 },true);
 
-globalThis.RPChessSuppliesIcon=Object.freeze({SUPPLIES_ICON,refresh:schedulePatch});
+globalThis.RPChessSuppliesIcon=Object.freeze({SUPPLIES_ICON,MARKET_ICON,refresh:schedulePatch});
 
-export { SUPPLIES_ICON, patchSuppliesIcons, schedulePatch };
+export { SUPPLIES_ICON, MARKET_ICON, patchSuppliesIcons, schedulePatch };

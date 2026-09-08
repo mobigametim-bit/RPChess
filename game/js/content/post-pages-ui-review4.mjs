@@ -1,10 +1,11 @@
 const MARKER='data-post-pages-ui-review4';
 const GOLD_ICON='generated_assets/reward_gold.png';
-const SUPPLY_ICON='generated_assets/node_shop.png';
+const SUPPLY_ICON='generated_assets/reward_supplies.png';
 
 function visible(node){return Boolean(node&&!node.hidden);}
 function numberFrom(value){const match=String(value||'').match(/-?\d+/);return match?Number(match[0]):0;}
 function icon(src,className){const image=document.createElement('img');image.src=src;image.alt='';image.draggable=false;image.className=className;image.setAttribute('aria-hidden','true');return image;}
+function marketLanguage(){return globalThis.RPChessI18n?.currentLanguage?.()==='en'?'en':'ru';}
 
 function syncMarketRow(){
   const screen=document.querySelector('[data-settlement-screen]');
@@ -18,8 +19,10 @@ function syncMarketRow(){
   const priceNode=card.querySelector('.settlement-price')||card.querySelector('.settlement-supply-card__compact strong:last-child');
   const price=numberFrom(priceNode?.textContent||card.textContent);
   const disabled=existingButton.disabled;
+  const language=marketLanguage();
+  const english=language==='en';
 
-  if(card.dataset.review4MarketRow==='1'&&card.dataset.review4Stock===String(stock)&&card.dataset.review4Price===String(price)&&card.querySelector('.settlement-market-row__product'))return;
+  if(card.dataset.review4MarketRow==='1'&&card.dataset.review4Stock===String(stock)&&card.dataset.review4Price===String(price)&&card.dataset.review4Language===language&&card.querySelector('.settlement-market-row__product'))return;
 
   const product=document.createElement('div');
   product.className='settlement-market-row__product';
@@ -28,7 +31,7 @@ function syncMarketRow(){
   stockText.textContent=`${stock}/4`;
   const separator=document.createElement('span');
   separator.className='settlement-market-row__separator';
-  separator.textContent='за';
+  separator.textContent=english?'for':'за';
   const priceText=document.createElement('strong');
   priceText.className='settlement-price settlement-market-row__price';
   priceText.textContent=String(price);
@@ -39,12 +42,13 @@ function syncMarketRow(){
   button.className='reboot-button reboot-button--primary';
   button.dataset.settlementBuySupply='';
   button.disabled=disabled;
-  button.textContent=stock<=0?'Распродано':'Купить';
+  button.textContent=stock<=0?(english?'Sold out':'Распродано'):(english?'Buy':'Купить');
 
   card.replaceChildren(product,button);
   card.dataset.review4MarketRow='1';
   card.dataset.review4Stock=String(stock);
   card.dataset.review4Price=String(price);
+  card.dataset.review4Language=language;
 }
 
 function scheduleMarketRow(){
@@ -72,6 +76,7 @@ function ensureStyle(){
     margin:8px 0 0!important;
     text-align:left!important;
     box-sizing:border-box!important;
+    overflow:hidden!important;
   }
   html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-market-row__product {
     display:flex!important;
@@ -79,31 +84,35 @@ function ensureStyle(){
     justify-content:flex-start!important;
     gap:7px!important;
     min-width:0!important;
+    max-width:100%!important;
     white-space:nowrap!important;
     color:#f0d28b!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    overscroll-behavior-inline:contain!important;
   }
   html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-market-row__item-icon,
   html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-market-row__gold-icon {
-    width:26px!important;
-    height:26px!important;
-    flex:0 0 26px!important;
+    width:52px!important;
+    height:52px!important;
+    flex:0 0 52px!important;
     object-fit:contain!important;
   }
   html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-market-row__product strong {
-    font-size:16px!important;
+    font-size:32px!important;
     line-height:1!important;
   }
   html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-market-row__separator {
     color:rgba(205,212,219,.74)!important;
-    font-size:13px!important;
+    font-size:26px!important;
   }
   html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-supply-card>[data-settlement-buy-supply] {
     width:auto!important;
     min-width:132px!important;
-    min-height:38px!important;
+    min-height:48px!important;
     margin:0!important;
     padding:5px 14px!important;
-    font-size:15px!important;
+    font-size:30px!important;
     justify-self:end!important;
   }
 }
@@ -115,18 +124,18 @@ function ensureStyle(){
   }
   html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-market-row__item-icon,
   html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-market-row__gold-icon {
-    width:21px!important;
-    height:21px!important;
-    flex-basis:21px!important;
+    width:42px!important;
+    height:42px!important;
+    flex-basis:42px!important;
   }
-  html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-market-row__product strong {font-size:12px!important}
-  html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-market-row__separator {font-size:10px!important}
+  html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-market-row__product strong {font-size:24px!important}
+  html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-market-row__separator {font-size:20px!important}
   html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-supply-card>[data-settlement-buy-supply] {
     width:auto!important;
     min-width:94px!important;
-    min-height:28px!important;
+    min-height:34px!important;
     padding:3px 8px!important;
-    font-size:9px!important;
+    font-size:18px!important;
   }
 }
 
@@ -162,20 +171,20 @@ function ensureStyle(){
   }
   html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-market-row__item-icon,
   html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-market-row__gold-icon {
-    width:18px!important;
-    height:18px!important;
-    flex-basis:18px!important;
+    width:36px!important;
+    height:36px!important;
+    flex-basis:36px!important;
   }
   html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-market-row__product {
     gap:4px!important;
   }
-  html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-market-row__product strong {font-size:10px!important}
-  html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-market-row__separator {font-size:8px!important}
+  html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-market-row__product strong {font-size:20px!important}
+  html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-market-row__separator {font-size:16px!important}
   html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-supply-card>[data-settlement-buy-supply] {
     min-width:78px!important;
-    min-height:26px!important;
+    min-height:32px!important;
     padding:2px 6px!important;
-    font-size:8px!important;
+    font-size:16px!important;
   }
 }
 `;
@@ -185,6 +194,7 @@ function ensureStyle(){
 for(const name of ['rpchess:settlement-open','rpchess:run-updated','rpchess:resources-updated']){
   addEventListener(name,scheduleMarketRow);
 }
+globalThis.RPChessI18n?.subscribe?.(scheduleMarketRow);
 document.addEventListener('click',(event)=>{
   const target=event.target instanceof Element?event.target:null;
   if(target?.closest('[data-settlement-buy-supply]'))setTimeout(scheduleMarketRow,0);
