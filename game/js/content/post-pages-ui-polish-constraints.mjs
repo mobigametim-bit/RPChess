@@ -28,18 +28,14 @@ function ensureConstraints(){
 @media (orientation:landscape) {
   html[data-landscape-ui='1'] body.puzzles-active .puzzle-source { display:none!important; }
 
+  /* Battle owns the semantic numeric cost; battle.css owns the gold icon via ::before. */
   html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-mercenary-quote__row--cost strong::before,
   html[data-landscape-ui='1'] .battle-mercenary-quote__row--cost strong::before {
-    content:none!important;
-    display:none!important;
-  }
-  html[data-landscape-ui='1'] body.battle-prep-compact-active .post-pages-gold-icon,
-  html[data-landscape-ui='1'] .battle-mercenary-quote__row--cost .post-pages-gold-icon {
     width:20px!important;
     height:20px!important;
     min-width:20px!important;
     flex:0 0 20px!important;
-    object-fit:contain!important;
+    background-size:contain!important;
   }
 }
 
@@ -279,7 +275,7 @@ function ensureConstraints(){
     line-height:1!important;
   }
   html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army .battle-mercenary-quote__row strong { font-size:9px!important; }
-  html[data-landscape-ui='1'] body.battle-prep-compact-active .post-pages-gold-icon {
+  html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army .battle-mercenary-quote__row--cost strong::before {
     width:14px!important;
     height:14px!important;
     min-width:14px!important;
