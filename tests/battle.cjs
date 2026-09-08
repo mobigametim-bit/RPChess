@@ -20,9 +20,15 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(key){return this.ma
   assert(battleCompactCss.includes('grid-template-columns:repeat(2,minmax(0,1fr))!important'),'Battle phone prep must preserve the accepted two-column roster');
   assert(battleCompactCss.includes('grid-template-rows:repeat(3,minmax(0,1fr))!important'),'Battle phone prep must preserve three compact roster rows');
   assert(battleCompactCss.includes('width:14px!important')&&battleCompactCss.includes('flex-basis:14px!important'),'Battle phone mercenary Gold icon must preserve the accepted compact size');
+  assert(battleCompactCss.includes('.battle-army > .battle-start'),'Battle compact CSS must style the owner-rendered Start CTA directly');
+  assert(!battleCompactCss.includes('.battle-actionbar'),'Battle compact CSS must not retain the removed legacy actionbar');
   assert(!battleRouteSource.includes('data-landscape-battle-prep-viewport-fix'),'Battle route must not inject Battle Prep presentation CSS');
   assert(!battleRouteSource.includes('battle-prep-compact-active'),'Battle route visibility observer must not own Battle Prep state');
   for(const [name,source] of [['review2',review2],['polish constraints',constraints],['post-pages polish',polish]])assert(!source.includes('body.battle-prep-compact-active'),`${name} must not retain Battle Prep presentation ownership`);
+  assert(battleAppSource.includes('data-battle-participants></div>\n          <button class="reboot-button reboot-button--primary battle-start" type="button" data-battle-start>Начать битву</button>'),'Battle owner must render Start CTA directly after the participants slot');
+  assert(!battleAppSource.includes('battle-actionbar')&&!battleAppSource.includes('data-battle-personalized-count'),'Battle owner must not render the obsolete hidden actionbar/counters');
+  assert(!redesignSource.includes('syncBattleStart')&&!redesignSource.includes('battleStartHome')&&!redesignSource.includes("insertAdjacentElement('afterend',start)"),'shared redesign runtime must not reparent the Battle Start CTA');
+  assert(!mercenarySource.includes('.battle-actionbar')&&!mercenarySource.includes('data-battle-mercenary-action-cost'),'Mercenary presentation must not recreate data for the removed Battle actionbar');
   assert(mercenarySource.includes('Замена оставленного в резерве здорового героя стоит как его лечение.'),'Battle prep must explain healthy-reserve replacement pricing');
   const data=await import(pathToFileURL(path.join(game,'js/roster-data.mjs')).href);
   const battle=await import(pathToFileURL(path.join(game,'js/battle-core.mjs')).href);
@@ -58,5 +64,5 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(key){return this.ma
   const debtAfterBattle={...repeated.run,battleCount:1,roster:repeated.run.roster.map(e=>e.id==='hero.mara_chain'?{...e,status:'wounded'}:e),lastBattle:{result:'checkmate',winner:'w'}};const resolved=mercenaries.resolveBattleMercenaryDebt(debtAfterBattle);assert.strictEqual(resolved.resolved,true);assert.strictEqual(resolved.casualty.id,'hero.mara_chain','Wounded named non-King must die before any healthy hero');assert.strictEqual(resolved.run.roster.find(e=>e.id==='hero.mara_chain').status,'dead');assert.strictEqual(resolved.run.roster.find(e=>e.isRunKing).status,'healthy');assert.strictEqual(resolved.run.battleMercenaryContract,null);assert.strictEqual(resolved.run.lastBattle.mercenaryPayment.totalCost,26);
   const paidFinished=mercenaries.resolveBattleMercenaryDebt({...paid.run,battleCount:1,lastBattle:{result:'stalemate',winner:null}});assert.strictEqual(paidFinished.resolved,true);assert.strictEqual(paidFinished.casualty,null);assert.strictEqual(paidFinished.run.battleMercenaryContract,null);
   const ended=mercenaries.resolveBattleMercenaryDebt({...short.run,battleCount:1,ended:true,endReason:'king-death',lastBattle:{result:'checkmate',winner:'b'}});assert.strictEqual(ended.resolved,true);assert.strictEqual(ended.casualty,null,'Ended run must not receive an extra Mercenary casualty');assert.strictEqual(ended.run.roster.some(e=>!e.isRunKing&&e.status==='dead'),false);
-  console.log('Battle standard army, owner-styled compact prep, solo-King consequence, healthy-reserve Mercenary pricing, economy/debt and 12-star Black-side: PASS');
+  console.log('Battle standard army, owner-styled compact prep and stable Start CTA, solo-King consequence, healthy-reserve Mercenary pricing, economy/debt and 12-star Black-side: PASS');
 })().catch(error=>{console.error(error.stack||error);process.exitCode=1});

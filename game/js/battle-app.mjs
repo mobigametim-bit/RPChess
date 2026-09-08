@@ -101,15 +101,10 @@ function ensureBattleScreens() {
           <div class="battle-slot-summary" data-battle-slot-summary></div>
           <div class="battle-formation" data-battle-formation aria-label="Стандартная стартовая армия"></div>
           <div class="battle-participants" data-battle-participants></div>
+          <button class="reboot-button reboot-button--primary battle-start" type="button" data-battle-start>Начать битву</button>
         </aside>
       </div>
       <div class="battle-notice" data-battle-notice role="status" hidden></div>
-      <footer class="battle-actionbar" aria-label="Параметры полной армии">
-        <div class="battle-counter"><span>ИМЕННЫЕ</span><strong data-battle-personalized-count>1</strong></div>
-        <div class="battle-counter"><span>АРМИЯ</span><strong>16 ФИГУР</strong></div>
-        <div class="battle-counter"><span>МАТЕРИАЛ</span><strong>39 ОЧКОВ</strong></div>
-        <button class="reboot-button reboot-button--primary battle-start" type="button" data-battle-start>Начать битву</button>
-      </footer>
     </div>`;
 
   aftermathScreen = document.createElement('main');
@@ -224,7 +219,7 @@ function renderFormation() {
   for(const rank of ranks)for(const file of 'abcdefgh'){const square=`${file}${rank}`,piece=bySquare.get(square),cell=document.createElement('div');cell.className='battle-formation-cell';cell.dataset.battlePreviewSquare=square;if(piece){const image=document.createElement('img');image.src=piece.id?(characterForId(piece.id)?.pieceArt||playerGenericArt(piece.pieceType,color)):playerGenericArt(piece.pieceType,color);image.alt='';if(piece.id)image.dataset.personalizedId=piece.id;const glyph=document.createElement('span');glyph.textContent=PIECE_GLYPHS[piece.pieceType]||'';cell.append(image,glyph);cell.title=piece.id?(characterForId(piece.id)?.name||piece.name):piece.name;}root.append(cell);}
 }
 function renderParticipants() { const root=prepScreen?.querySelector('[data-battle-participants]'); if(!root||!activeRun)return; root.replaceChildren(); const validation=validateBattleSelection(activeRun.roster,[...selectedIds]);if(!validation.ok)return;for(const c of validation.members){const row=document.createElement('button');row.type='button';row.className='battle-participant-row';row.disabled=c.isRunKing;row.dataset.battleParticipant=c.id;const glyph=document.createElement('span');glyph.textContent=PIECE_GLYPHS[c.pieceType]||'';const name=document.createElement('strong');name.textContent=c.name;const state=document.createElement('small');state.textContent=c.isRunKing?'ОБЯЗАТЕЛЕН':'ИМЕННОЙ';row.append(glyph,name,state);if(!c.isRunKing)row.addEventListener('click',()=>tryToggle(c));root.append(row);} }
-function renderCounters() { const validation=validateBattleSelection(activeRun?.roster||[],[...selectedIds]);const count=prepScreen?.querySelector('[data-battle-personalized-count]');if(count)count.textContent=String(validation.members?.length||0);const start=prepScreen?.querySelector('[data-battle-start]');if(start){start.disabled=!validation.ok;start.setAttribute('aria-disabled',validation.ok?'false':'true');} }
+function renderCounters() { const validation=validateBattleSelection(activeRun?.roster||[],[...selectedIds]);const start=prepScreen?.querySelector('[data-battle-start]');if(start){start.disabled=!validation.ok;start.setAttribute('aria-disabled',validation.ok?'false':'true');} }
 function renderComposition(){renderAvailable();renderSlotSummary();renderFormation();renderParticipants();renderCounters();}
 
 function resetBattleTracking(){battlePlan=null;playerBySquare=new Map();enemyBySquare=new Map();capturedIds=new Set();processedMoves=0;battleFinalized=false;lastCapturedVisual=null;clearTimeout(finalizeTimer);finalizeTimer=null;setBattleNavigationLocked(false);}

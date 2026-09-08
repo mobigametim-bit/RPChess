@@ -1,5 +1,5 @@
 /* Accepted Battle Prep compact presentation. Geometry belongs to Battle-specific CSS;
-   lifecycle/state is still driven by the shared redesign runtime until REV-006 removes CTA reparenting. */
+   lifecycle state remains in the shared redesign runtime until the remaining scene-slot cleanup completes. */
 @media (orientation:landscape) {
   html[data-landscape-ui='1'] body.battle-prep-compact-active #app main.battle-screen .battle-mercenary-quote__row--cost strong {
     display:inline-flex!important;
@@ -12,6 +12,11 @@
     min-width:20px!important;
     flex:0 0 20px!important;
     background-size:contain!important;
+  }
+  html[data-landscape-ui='1'] body.battle-prep-compact-active #app main.battle-screen .battle-army > .battle-start {
+    width:100%!important;
+    max-width:100%!important;
+    align-self:stretch!important;
   }
 }
 
@@ -163,21 +168,5 @@
   html[data-landscape-ui='1'] body.battle-prep-compact-active #app main.battle-screen .battle-mercenary-quote__row {min-height:20px!important;padding:2px 5px!important;gap:12px!important;font-size:7px!important;line-height:1!important;}
   html[data-landscape-ui='1'] body.battle-prep-compact-active #app main.battle-screen .battle-mercenary-quote__row strong {font-size:9px!important;}
   html[data-landscape-ui='1'] body.battle-prep-compact-active #app main.battle-screen .battle-mercenary-quote__row--cost strong::before {width:14px!important;height:14px!important;min-width:14px!important;flex-basis:14px!important;}
-  html[data-landscape-ui='1'] body.battle-prep-compact-active #app main.battle-screen .battle-actionbar {
-    position:absolute!important;
-    z-index:20!important;
-    right:0!important;
-    bottom:0!important;
-    width:34%!important;
-    min-width:280px!important;
-    max-width:34%!important;
-    margin:0!important;
-    padding:4px 6px 5px!important;
-    grid-template-columns:1fr!important;
-    gap:2px!important;
-    box-sizing:border-box!important;
-  }
-  html[data-landscape-ui='1'] body.battle-prep-compact-active #app main.battle-screen .battle-action-cost,
-  html[data-landscape-ui='1'] body.battle-prep-compact-active #app main.battle-screen .battle-counter {display:none!important;}
-  html[data-landscape-ui='1'] body.battle-prep-compact-active #app main.battle-screen .battle-actionbar .battle-start {width:100%!important;height:31px!important;min-height:31px!important;margin:0!important;padding:3px 6px!important;font-size:11px!important;}
+  html[data-landscape-ui='1'] body.battle-prep-compact-active #app main.battle-screen .battle-army > .battle-start {height:31px!important;min-height:31px!important;margin:0!important;padding:3px 6px!important;font-size:11px!important;}
 }

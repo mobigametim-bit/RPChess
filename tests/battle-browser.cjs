@@ -93,10 +93,10 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     await fresh(page, { playerColor: 'w', stars: 12, race: 'orcs' });
     await enter(page);
     assert.strictEqual(await page.locator('[data-battle-character]').count(), 6);
-    assert.strictEqual((await page.locator('[data-battle-personalized-count]').innerText()).trim(), '6');
     await assertResponsiveStars(page, '[data-battle-stars]', '.battle-threat-card');
-    assert.strictEqual(await page.locator('.battle-actionbar').isVisible(), false, 'desktop compact Battle prep replaces the legacy actionbar with the canonical Start button in the army panel');
+    assert.strictEqual(await page.locator('.battle-actionbar').count(), 0, 'Battle owner must not render the obsolete hidden actionbar/counters');
     assert.strictEqual(await page.locator('[data-battle-start]').isVisible(), true);
+    assert.strictEqual(await page.locator('[data-battle-start]').evaluate((node) => node.parentElement?.classList.contains('battle-army')), true, 'Battle Start CTA must be owner-rendered in the army panel');
     await page.locator('[data-battle-start]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     const state = await page.evaluate(() => ({ fen: globalThis.RPChessClassicChess.snapshot().fen, plan: globalThis.RPChessBattle.battlePlan }));
@@ -166,7 +166,6 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     const layout = await mobile.evaluate(() => {
       const start = document.querySelector('[data-battle-start]');
       const army = document.querySelector('.battle-army');
-      const actionbar = document.querySelector('.battle-actionbar');
       const screen = document.querySelector('[data-battle-screen]');
       const startBox = start?.getBoundingClientRect();
       const armyBox = army?.getBoundingClientRect();
@@ -180,8 +179,7 @@ async function assertResponsiveStars(page, selector, cardSelector) {
         cw: document.documentElement.clientWidth,
         sh: document.documentElement.scrollHeight,
         ch: document.documentElement.clientHeight,
-        actionbarHidden: Boolean(actionbar?.hidden),
-        actionbarVisible: Boolean(actionbar && getComputedStyle(actionbar).display !== 'none' && actionbar.getClientRects().length),
+        actionbarCount: document.querySelectorAll('.battle-actionbar').length,
         startParent: start?.parentElement?.className || '',
         startBox: startBox ? { left:startBox.left,right:startBox.right,top:startBox.top,bottom:startBox.bottom,width:startBox.width } : null,
         armyBox: armyBox ? { left:armyBox.left,right:armyBox.right,top:armyBox.top,bottom:armyBox.bottom,width:armyBox.width } : null,
@@ -194,9 +192,8 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     assert(layout.screenBox && layout.screenBox.left >= -1 && layout.screenBox.right <= layout.cw + 1 && layout.screenBox.top >= -1 && layout.screenBox.bottom <= layout.ch + 1, 'Battle screen must stay inside the viewport');
     assert.strictEqual(layout.cards.length, 6);
     assert(layout.cards.every((card) => card.left >= -1 && card.right <= layout.cw + 1 && card.top >= -1 && card.bottom <= layout.ch + 1), 'all six Battle cards must remain inside the viewport');
-    assert.strictEqual(layout.actionbarHidden, true, 'mobile Battle prep must keep the legacy duplicate actionbar hidden');
-    assert.strictEqual(layout.actionbarVisible, false, 'mobile Battle prep must not show duplicate counters below the army panel');
-    assert(layout.startParent.includes('battle-army'), 'mobile Battle Start CTA must live in the army panel');
+    assert.strictEqual(layout.actionbarCount, 0, 'mobile Battle prep must not retain the obsolete duplicate actionbar');
+    assert(layout.startParent.includes('battle-army'), 'mobile Battle Start CTA must be owner-rendered in the army panel');
     assert(layout.startBox && layout.armyBox && layout.startBox.left >= layout.armyBox.left - 1 && layout.startBox.right <= layout.armyBox.right + 1 && layout.startBox.top >= -1 && layout.startBox.bottom <= layout.ch + 1, 'mobile Battle Start CTA must stay inside the army frame and viewport');
     assert(layout.startBox.width >= layout.armyBox.width - 40, `mobile Battle Start CTA must be effectively full width: ${layout.startBox.width}/${layout.armyBox.width}`);
 
@@ -204,7 +201,7 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     assert.deepStrictEqual(blackErrors, []);
     assert.deepStrictEqual(woundedErrors, []);
     assert.deepStrictEqual(mobileErrors, []);
-    console.log('Battle aftermath→Travel, removed legacy back control, compact desktop prep, canonical combat summary, standalone landscape-mobile CTA, human color sets, enemy race art, Black-side and wounded King acceptance: PASS');
+    console.log('Battle aftermath→Travel, removed legacy back/actionbar DOM, compact desktop prep, canonical combat summary, owner-rendered landscape-mobile CTA, human color sets, enemy race art, Black-side and wounded King acceptance: PASS');
   } finally {
     await browser.close();
   }

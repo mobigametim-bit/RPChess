@@ -169,21 +169,6 @@ function renderBattlePrepQuote() {
     <div class="battle-mercenary-quote__row"><span>Именные герои</span><strong>${personalizedCount}</strong></div>
     <div class="battle-mercenary-quote__row"><span>Наёмники</span><strong>${quote.totalCount}</strong></div>
     <div class="battle-mercenary-quote__row battle-mercenary-quote__row--cost"><span>Стоимость найма</span><strong>${quote.totalCost}</strong></div>`;
-
-  const actionbar = screen.querySelector('.battle-actionbar');
-  const start = screen.querySelector('[data-battle-start]');
-  if (actionbar) {
-    let actionCost = screen.querySelector('[data-battle-mercenary-action-cost]');
-    if (!actionCost) {
-      actionCost = document.createElement('div');
-      actionCost.className = 'battle-action-cost';
-      actionCost.dataset.battleMercenaryActionCost = '';
-      if (start?.parentNode === actionbar) actionbar.insertBefore(actionCost, start);
-      else actionbar.append(actionCost);
-    }
-    actionCost.innerHTML = `<span>НАЁМНИКИ</span><strong>${quote.totalCost}</strong>`;
-    actionCost.setAttribute('aria-label', `Стоимость Наёмников: ${quote.totalCost} золота`);
-  }
   screen.dataset.battleMercenaryCost = String(quote.totalCost);
 }
 
