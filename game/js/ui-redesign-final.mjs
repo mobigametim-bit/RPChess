@@ -19,9 +19,6 @@ const OBSOLETE_HIDDEN_CONTROLS=Object.freeze([
 ]);
 const classicScreen=document.querySelector('[data-classic-screen]');
 const skirmishScreen=document.querySelector('[data-skirmish-screen]');
-const skirmishActionbar=skirmishScreen?.querySelector('.skirmish-actionbar')||null;
-const skirmishActionbarHome=skirmishActionbar?.parentElement||null;
-const skirmishActionbarNext=skirmishActionbar?.nextSibling||null;
 let queued=false;
 
 function ensureStylesheet(href,datasetName){if(document.querySelector(`[${datasetName}]`))return;const link=document.createElement('link');link.rel='stylesheet';link.href=href;link.setAttribute(datasetName,'');document.head.append(link);}
@@ -31,7 +28,6 @@ function visible(root){return Boolean(root&&!root.hidden);}
 function desktop(){return matchMedia('(min-width: 901px)').matches;}
 function normalizeColor(value){return value==='b'?'b':'w';}
 function glyphsFor(color){return GLYPHS_BY_COLOR[normalizeColor(color)];}
-function restore(node,home,next){if(!node||!home||node.parentElement===home)return;home.insertBefore(node,next?.parentNode===home?next:null);}
 function activeCombatKind(){if(!visible(classicScreen))return null;if(globalThis.RPChessBattle?.battlePlan)return'battle';if(globalThis.RPChessSkirmish?.battlePlan)return'skirmish';return null;}
 function syncCombatBoard(){const kind=activeCombatKind(),compact=Boolean(kind&&desktop());document.body.classList.toggle('run-combat-board-active',Boolean(kind));document.body.classList.toggle('compact-combat-active',compact);}
 function syncPuzzle(){const puzzle=document.querySelector('[data-puzzle-screen]'),active=visible(puzzle);document.body.classList.toggle('compact-puzzle-active',active);const outcome=puzzle?.querySelector('[data-puzzle-outcome]');document.body.classList.toggle('puzzle-resolved-compact',Boolean(active&&outcome&&!outcome.hidden));}
@@ -48,7 +44,7 @@ function syncSkirmishFormation(){
   let index=0;for(const rank of ranks)for(const file of 'abcdefgh'){const cell=cells[index++],square=`${file}${rank}`,piece=bySquare.get(square);cell.textContent=piece?(glyphs[piece.pieceType]||''):'·';cell.title=piece?.name||square;if(piece?.pieceType){cell.dataset.previewPiece=piece.pieceType;cell.dataset.pieceColor=color;}else{delete cell.dataset.previewPiece;delete cell.dataset.pieceColor;}}
 }
 function syncBattleFormation(screen,color){const root=screen?.querySelector('[data-battle-formation]');if(!root)return;const side=normalizeColor(color),glyphs=glyphsFor(side);root.dataset.playerColor=side;for(const cell of root.querySelectorAll('.battle-formation-cell')){const mark=cell.querySelector('span');if(!mark)continue;const type=TYPE_BY_GLYPH[mark.textContent||''];if(!type){delete mark.dataset.pieceColor;continue;}mark.textContent=glyphs[type]||mark.textContent;mark.dataset.pieceColor=side;}}
-function syncSkirmishPrep(){if(!skirmishScreen)return;const active=visible(skirmishScreen),api=globalThis.RPChessSkirmish,color=normalizeColor(api?.encounter?.playerColor);if(active){ensureCardGlyphs('[data-skirmish-screen] [data-skirmish-character]','skirmish-card__tech-glyph',color);const title=skirmishScreen.querySelector('[data-skirmish-title]'),stars=skirmishScreen.querySelector('[data-skirmish-stars]');if(title&&stars)title.dataset.compactStars=stars.textContent.trim();syncSkirmishFormation();}const selection=skirmishScreen.querySelector('.skirmish-selection');if(active&&desktop()&&selection&&skirmishActionbar&&skirmishActionbar.parentElement!==selection)selection.append(skirmishActionbar);else restore(skirmishActionbar,skirmishActionbarHome,skirmishActionbarNext);}
+function syncSkirmishPrep(){if(!skirmishScreen)return;const active=visible(skirmishScreen),api=globalThis.RPChessSkirmish,color=normalizeColor(api?.encounter?.playerColor);if(active){ensureCardGlyphs('[data-skirmish-screen] [data-skirmish-character]','skirmish-card__tech-glyph',color);const title=skirmishScreen.querySelector('[data-skirmish-title]'),stars=skirmishScreen.querySelector('[data-skirmish-stars]');if(title&&stars)title.dataset.compactStars=stars.textContent.trim();syncSkirmishFormation();}}
 function syncBattlePrep(){const screen=document.querySelector('[data-battle-screen]'),active=visible(screen),api=globalThis.RPChessBattle,color=normalizeColor(api?.encounter?.playerColor);document.body.classList.toggle('battle-prep-compact-active',active);if(active){ensureCardGlyphs('[data-battle-screen] [data-battle-character]','battle-card__tech-glyph',color);syncBattleFormation(screen,color);}}
 function syncAftermath(){const battle=document.querySelector('[data-battle-aftermath]'),skirmish=document.querySelector('[data-skirmish-aftermath]');document.body.classList.toggle('compact-aftermath-active',visible(battle)||visible(skirmish));}
 function refresh(){queued=false;removeObsoleteHiddenControls();syncCombatBoard();syncPuzzle();syncSkirmishPrep();syncBattlePrep();syncAftermath();}
