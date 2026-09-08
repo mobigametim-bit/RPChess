@@ -43,12 +43,13 @@ export const UI_MESSAGES = Object.freeze({
     'resources.ariaLabel': 'Ресурсы текущего забега',
     'resources.gold': 'ЗОЛОТО',
     'resources.supplies': 'ПРИПАСЫ',
+    'resources.goldDelta': 'ЗОЛОТА',
+    'resources.suppliesDelta': 'ПРИПАС',
     'resources.reward': 'НАГРАДА',
     'resources.combatReward': 'НАГРАДА ЗА БОЙ',
     'resources.healing': 'ЛЕЧЕНИЕ',
     'resources.newFighter': 'НОВЫЙ БОЕЦ',
-    'resources.supplyPurchase': 'СНАБЖЕНИЕ',
-    'common.back': 'Назад'
+    'resources.supplyPurchase': 'СНАБЖЕНИЕ'
   }),
   en: Object.freeze({
     'menu.ariaLabel': 'RPChess main menu',
@@ -89,11 +90,12 @@ export const UI_MESSAGES = Object.freeze({
     'resources.ariaLabel': 'Current run resources',
     'resources.gold': 'GOLD',
     'resources.supplies': 'SUPPLIES',
+    'resources.goldDelta': 'GOLD',
+    'resources.suppliesDelta': 'SUPPLY',
     'resources.reward': 'REWARD',
     'resources.combatReward': 'COMBAT REWARD',
     'resources.healing': 'HEALING',
     'resources.newFighter': 'NEW FIGHTER',
-    'resources.supplyPurchase': 'SUPPLIES',
-    'common.back': 'Back'
+    'resources.supplyPurchase': 'SUPPLIES'
   })
 });
