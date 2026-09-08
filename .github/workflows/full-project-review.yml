@@ -11,7 +11,7 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,7 +41,43 @@ jobs:
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
 
-      - name: Run full browser regression matrix
+      - name: Run every browser contract and collect all failures
         env:
           RPCHESS_GATE_PREFIX: /RPChess
-        run: npm run test:browser
+        shell: bash
+        run: |
+          set +e
+          failed=0
+          tests=(
+            reboot-foundation-browser.cjs
+            classic-chess-browser.cjs
+            race-board-themes-browser.cjs
+            king-pin-ice-browser.cjs
+            responsive-viewport-browser.cjs
+            roster-browser.cjs
+            skirmish-browser.cjs
+            battle-browser.cjs
+            combat-side-colors-browser.cjs
+            combat-aura-move-sync-browser.cjs
+            battle-animation-art-browser.cjs
+            travel-choice-browser.cjs
+            resources-browser.cjs
+            settlement-browser.cjs
+            starvation-browser.cjs
+            events-browser.cjs
+            puzzles-browser.cjs
+          )
+          for test in "${tests[@]}"; do
+            echo "::group::AUDIT $test"
+            RPCHESS_BROWSER_TEST="$test" npm run test:browser
+            code=$?
+            echo "::endgroup::"
+            if [ "$code" -eq 0 ]; then
+              echo "AUDIT_RESULT PASS $test"
+            else
+              echo "AUDIT_RESULT FAIL $test exit=$code"
+              failed=$((failed+1))
+            fi
+          done
+          echo "AUDIT_TOTAL_FAILURES=$failed"
+          exit "$failed"
