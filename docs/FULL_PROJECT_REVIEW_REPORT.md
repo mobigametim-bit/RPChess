@@ -87,7 +87,8 @@ Status meanings:
 - **Full Project Review #7** (`34257582147`, head `b0d6b001`) completed with **16/17 Chromium contracts passing**. Reboot Foundation, Classic Chess, race board themes, King pin/ice, responsive viewport, Roster, Skirmish, Battle, combat colours, aura/move sync, battle animation art, Travel, Resources, Starvation, Events and Puzzles passed.
 - The only failure was Settlement at `1024×768 RU`: the compact compatibility CSS used a `background` shorthand on every service icon and erased the Market emblem supplied by `settlement.css`.
 - The root cause is fixed on the current remediation line by limiting that compatibility declaration to `background-color`; `settlement.css` remains the owner of `node_shop.png`. The existing Settlement regression now rejects future compatibility shorthands that erase owner-defined service art.
-- Targeted static/source/build checks and the complete Settlement Chromium RU/EN desktop/tablet/mobile/gameplay contract pass locally. A fresh full 17-contract milestone run on the resulting branch head is still required before the 16 previously passing contracts and the Settlement fix are marked verified together.
+- **Full Project Review #8** ([run `34262502407`](https://github.com/mobigametim-bit/RPChess/actions/runs/34262502407), head `d5820573`) completed with canonical local gate **PASS**, all **17/17 Chromium contracts PASS** and `AUDIT_TOTAL_FAILURES=0`. This verifies the Settlement root-cause fix together with every previously passing browser contract.
+- The later owner-level removal of `review3/5/6/7` is intentionally not attributed to #8; it requires the next milestone run on the current branch head.
 
 ---
 
