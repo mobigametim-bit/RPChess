@@ -29,6 +29,7 @@ function setScene(target) {
   if (travelScreen) travelScreen.hidden = target !== 'travel';
   document.body.classList.toggle('roster-active', target === 'roster');
   if (target === 'roster') window.scrollTo(0, 0);
+  globalThis.dispatchEvent(new CustomEvent('rpchess:scene-changed', { detail:{ scene:target, source:'roster' } }));
 }
 
 function updateContinueState() {
