@@ -68,8 +68,8 @@ class MemoryStorage {
   legacy.battleCount = 2;
   storage.setItem(persistence.RUN_STORAGE_KEY, JSON.stringify(legacy));
   const hydrated = persistence.readRun(storage);
-  assert.strictEqual(hydrated.gold, 80, 'old Reboot saves must hydrate starting Gold');
-  assert.strictEqual(hydrated.supplies, 10, 'old Reboot saves must hydrate starting Supplies');
+  assert.strictEqual(hydrated.gold, 80, 'same-schema Reboot saves must hydrate starting Gold');
+  assert.strictEqual(hydrated.supplies, 10, 'same-schema Reboot saves must hydrate starting Supplies');
   assert.deepStrictEqual(hydrated.resourceRewards, { skirmishCount: 3, battleCount: 2 }, 'old combats must not receive retroactive Gold rewards');
 
   const stored = persistence.writeRun({ ...hydrated, supplies: 4, gold: 137 }, storage, 2500);
@@ -81,15 +81,16 @@ class MemoryStorage {
   const travelSource = fs.readFileSync(path.join(game, 'js/travel-choice-app.mjs'), 'utf8');
   const travelCoreSource = fs.readFileSync(path.join(game, 'js/travel-choice-core.mjs'), 'utf8');
   const appSource = fs.readFileSync(path.join(game, 'js/resources-app.mjs'), 'utf8');
+  const settlementSource = fs.readFileSync(path.join(game, 'js/settlement-app.mjs'), 'utf8');
+  const crossSceneSource = fs.readFileSync(path.join(game, 'js/cross-scene-visuals.mjs'), 'utf8');
   const uxSource = fs.readFileSync(path.join(game, 'js/ux-consistency.mjs'), 'utf8');
-  const suppliesIconSource = fs.readFileSync(path.join(game, 'js/content/supplies-resource-icon.mjs'), 'utf8');
-  const marketRowSource = fs.readFileSync(path.join(game, 'js/content/post-pages-ui-review4.mjs'), 'utf8');
   const routeSource = fs.readFileSync(path.join(game, 'js/battle-route.mjs'), 'utf8');
   const css = fs.readFileSync(path.join(game, 'css/resources.css'), 'utf8');
   const uxCss = fs.readFileSync(path.join(game, 'css/ux-consistency.css'), 'utf8');
   const playtestCss = fs.readFileSync(path.join(game, 'css/playtest-fixes.css'), 'utf8');
   const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
   const suppliesIconPath = path.join(game, 'generated_assets/reward_supplies.png');
+
   assert(travelSource.includes('applyTravelSupplyCost'), 'Travel Choice must use the canonical Supply-cost function');
   assert(travelSource.includes('supplyPaid'), 'committed route must persist the exact Supply payment');
   assert(travelSource.includes('Стоимость пути'), 'route cards must disclose the travel cost before commitment');
@@ -99,13 +100,27 @@ class MemoryStorage {
   assert(routeSource.includes("import './ux-consistency.mjs'"), 'shared resource/board presentation layer must load with the run route');
   assert(uxSource.includes("generated_assets/reward_gold.png"), 'gold amounts must use the existing gold icon asset');
   assert(fs.existsSync(suppliesIconPath), 'dedicated supplies icon asset must exist');
-  assert(suppliesIconSource.includes("generated_assets/reward_supplies.png"), 'Supplies must use the dedicated reward_supplies icon');
-  assert(suppliesIconSource.includes('.resource-inline-icon--supplies') && suppliesIconSource.includes('.resource-chip__supply-image') && suppliesIconSource.includes('.settlement-market-row__item-icon'), 'dedicated supplies icon must cover shared resource, HUD and Market product presentations');
-  assert(suppliesIconSource.includes("const MARKET_ICON='generated_assets/node_shop.png'") && suppliesIconSource.includes("if(image.closest('.settlement-service__icon'))return") && suppliesIconSource.includes('.settlement-service__icon > img'), 'Market service emblem must stay on node_shop and be isolated from Supplies replacement');
-  assert(marketRowSource.includes("const SUPPLY_ICON='generated_assets/reward_supplies.png'") && marketRowSource.includes("english?'for':'за'") && marketRowSource.includes("english?'Buy':'Купить'"), 'Market purchase row must use dedicated Supplies art and localized purchase copy');
-  assert(packageJson.scripts.build.includes('resource-icon-asset-runtime.cjs --root dist'), 'production build must optimize the dedicated Supplies icon');
+
+  for (const [label, source] of [
+    ['Resources HUD', appSource],
+    ['Travel', travelSource],
+    ['Settlement', settlementSource],
+    ['Event outcome', crossSceneSource],
+    ['shared resource markup', uxSource]
+  ]) assert(source.includes("generated_assets/reward_supplies.png"), `${label} must render the dedicated Supplies asset directly`);
+
+  assert(settlementSource.includes("generated_assets/node_shop.png") === false, 'Settlement JS must not patch the Market emblem after render; CSS owns the service emblem');
+  const settlementCss = fs.readFileSync(path.join(game, 'css/settlement.css'), 'utf8');
+  assert(settlementCss.includes("node_shop.png"), 'Market service emblem must remain node_shop.png in Settlement-owned CSS');
+  assert(!fs.existsSync(path.join(game, 'js/content/supplies-resource-icon.mjs')), 'global Supplies image retargeting patch must be removed');
+  assert(!fs.existsSync(path.join(game, 'js/content/post-pages-ui-review4.mjs')), 'Market DOM-rewrite review patch must be removed');
+  assert(!uxSource.includes('replaceSupplyDiamonds') && !uxSource.includes('SUPPLY_ICON_HOLDER_SELECTOR'), 'shared UX must not retarget Supply images by DOM context');
+  assert(!appSource.includes('MutationObserver'), 'Resources HUD must not infer state changes from subtree mutations');
+  assert(!appSource.includes("document.addEventListener('click'"), 'Resources HUD must not refresh after every document click');
+  assert(appSource.includes('scheduleRender') && appSource.includes('rpchess:scene-changed'), 'Resources HUD must use one coalescing scheduler and semantic scene events');
+
+  assert(packageJson.scripts['build:materialized'].includes('resource-icon-asset-runtime.cjs --root dist'), 'production build must optimize/verify the dedicated Supplies icon');
   assert(uxSource.includes('RESOURCE_PATTERN') && uxSource.includes('resource-inline'), 'numeric Gold/Supply mentions must be iconized consistently');
-  assert(uxSource.includes('.resource-chip__supply-icon'), 'legacy HUD supply diamond holder must be replaced by the supply asset at runtime');
   assert(!uxSource.includes('discloseRandomPuzzleDifficulty') && !uxSource.includes('СЛУЧАЙНАЯ СЛОЖНОСТЬ'), 'Puzzle difficulty must not be overwritten by the obsolete random-range presentation');
   assert(travelCoreSource.includes("type==='puzzle'?`СЛОЖНОСТЬ ★${stars}`"), 'Puzzle route cards must expose the adaptive power-derived star value');
   assert(uxSource.includes('playtest-fixes.css?v=20260831-1'), 'post-playtest visual corrections must be loaded by the shared UX layer');
@@ -122,7 +137,7 @@ class MemoryStorage {
   assert(uxCss.includes('.puzzles-active .puzzle-difficulty span{display:none!important}') && uxCss.includes('calc(100vh - 225px)'), 'Puzzle layout must hide the redundant difficulty caption and cap the raised board to viewport height');
   for(const source of [css,uxCss,playtestCss]) assert(!source.includes('ui_panel_frame.png') && !source.includes('ui_panel_wide.png'), 'Resources UI must remain CSS-only and frameless');
 
-  console.log('Resources persistence, Balance Pass 2 rewards, dedicated Supplies icon and canonical Travel reward previews: PASS');
+  console.log('Resources persistence, owner-level Supplies art, Balance Pass 2 rewards and semantic HUD lifecycle: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;
