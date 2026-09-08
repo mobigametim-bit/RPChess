@@ -49,7 +49,7 @@ Status meanings:
 | REV-007 canonical Pages gate covers 3/17 browser contracts | **OPEN** | Test truth must first be restored; then define fast PR smoke gate + broader milestone browser gate. |
 | REV-008 stale browser contract requires page scroll | **DONE — verification pending** | Foundation/Roster audit contracts updated to the accepted one-screen rule instead of requiring page-level vertical scrolling. |
 | REV-009 Supplies/Market global image retargeting | **DONE — verification pending** | HUD, Travel, Settlement, Event outcome and shared resource markup render `reward_supplies.png` directly; Market service retains `node_shop.png`; `supplies-resource-icon.mjs` deleted; shared UX retarget scanner removed. |
-| REV-010 fragmented runtime hotfix CSS | **IN PROGRESS** | Market/review4 dynamic layer removed; Training rule moved into owner CSS; remaining review2/3/5/6, polish layers, `battle-route`, `ux-consistency`, `cross-scene-visuals` and landscape runtime CSS still need consolidation. |
+| REV-010 fragmented runtime hotfix CSS | **IN PROGRESS** | Market/review4 dynamic layer removed; Training rule moved into owner CSS; remaining review2, polish layers, `battle-route`, `ux-consistency`, `cross-scene-visuals` and landscape runtime CSS still need consolidation. |
 | REV-011 Supplies optimizer makes asset larger | **DONE — verification pending** | Resource icon optimizer now keeps the original bytes when transformation is larger while still enforcing dimension/byte budgets. |
 | REV-012 stale CURRENT_STATE SHA | **OPEN** | Intentionally deferred until final accepted remediation SHA. |
 | REV-013 shared browser helper lifecycle drift | **DONE — verification pending** | `startNewRun()` now waits for the visible main menu/Identity/Roster and emits scene diagnostics instead of blindly clicking hidden nodes. Full 17-test rerun still required. |
@@ -75,8 +75,9 @@ Status meanings:
 - Travel and Event outcome direct Supplies art.
 - Shared UX no longer performs global Supplies image replacement.
 - Explicit temporary `presentation-bootstrap.mjs` isolates remaining compatibility UI layers.
-- Deleted `hero-notes-runtime.mjs`, `post-pages-ui-review4.mjs`, `post-pages-ui-review7.mjs`, `supplies-resource-icon.mjs`.
+- Deleted `hero-notes-runtime.mjs`, `post-pages-ui-review3.mjs`, `post-pages-ui-review4.mjs`, `post-pages-ui-review5.mjs`, `post-pages-ui-review6.mjs`, `post-pages-ui-review7.mjs`, `supplies-resource-icon.mjs`.
 - Moved accepted desktop Settlement emblem and Classic/Puzzle role-glyph rules from review7 into their owning CSS files.
+- Folded the review3/5/6 Training geometry cascade into `puzzles.css` and its language-aware Classic captions into `chess-ai-polish.css`.
 - Source verifier and targeted static contracts updated to reject those deleted layers and require the new ownership contracts.
 
 **Important:** the latest combined branch state has not yet completed its milestone regression run. Items marked “DONE — verification pending” are implementation-complete but are not reported as verified until that run finishes.

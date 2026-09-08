@@ -360,6 +360,11 @@
   .classic-mini-button { min-height: 40px; padding: 6px 10px; font-size: 14px; }
 }
 
+/* The Classic combat polish owns these captions through CSS pseudo-elements.
+   Keep them language-aware so the English UI never leaks Russian labels. */
+html[lang='en'] .classic-party-panel h2::before { content:'COMBAT SUMMARY'!important; }
+html[lang='en'] .classic-panel--moves h3::before { content:'COMBAT LOG'!important; }
+
 /* Accepted board role glyph ownership. */
 html body .classic-piece-marker {
   top:auto!important;

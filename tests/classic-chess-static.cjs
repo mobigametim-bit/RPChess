@@ -87,6 +87,7 @@ for (const source of [foundationCss, css, polishCss, rosterCss, uxCss]) {
 }
 assert(css.includes('.classic-board-wrap') && css.includes('border: 1px solid rgba(102, 157, 199, .5)'), 'board wrapper must use a CSS-only frameless edge');
 assert(polishCss.includes(".classic-piece-marker[data-piece-marker='p']::before") && polishCss.includes('paint-order:stroke fill'), 'Classic owner CSS must render accepted role glyphs');
+assert(polishCss.includes("html[lang='en'] .classic-party-panel h2::before { content:'COMBAT SUMMARY'!important; }") && polishCss.includes("content:'COMBAT LOG'!important"), 'Classic owner CSS must own language-aware combat captions');
 
 for (const side of ['player', 'enemy']) {
   for (const piece of ['pawn', 'knight', 'bishop', 'rook', 'queen', 'king']) {
