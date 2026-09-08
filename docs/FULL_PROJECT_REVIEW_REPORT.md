@@ -80,6 +80,13 @@ Status meanings:
 
 **Important:** the latest combined branch state has not yet completed its milestone regression run. Items marked “DONE — verification pending” are implementation-complete but are not reported as verified until that run finishes.
 
+### Latest milestone verification
+
+- **Full Project Review #7** (`34257582147`, head `b0d6b001`) completed with **16/17 Chromium contracts passing**. Reboot Foundation, Classic Chess, race board themes, King pin/ice, responsive viewport, Roster, Skirmish, Battle, combat colours, aura/move sync, battle animation art, Travel, Resources, Starvation, Events and Puzzles passed.
+- The only failure was Settlement at `1024×768 RU`: the compact compatibility CSS used a `background` shorthand on every service icon and erased the Market emblem supplied by `settlement.css`.
+- The root cause is fixed on the current remediation line by limiting that compatibility declaration to `background-color`; `settlement.css` remains the owner of `node_shop.png`. The existing Settlement regression now rejects future compatibility shorthands that erase owner-defined service art.
+- Targeted static/source/build checks and the complete Settlement Chromium RU/EN desktop/tablet/mobile/gameplay contract pass locally. A fresh full 17-contract milestone run on the resulting branch head is still required before the 16 previously passing contracts and the Settlement fix are marked verified together.
+
 ---
 
 # Confirmed findings

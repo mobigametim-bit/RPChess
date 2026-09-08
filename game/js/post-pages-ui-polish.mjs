@@ -113,7 +113,7 @@ function ensureStyle(){
   html[data-landscape-ui='1'] body.settlement-active .settlement-service:nth-child(3){grid-column:2!important;grid-row:2!important}
   html[data-landscape-ui='1'] body.settlement-active .settlement-service__icon{
     position:absolute!important;z-index:5!important;top:-12px!important;right:9px!important;width:42px!important;height:42px!important;
-    transform:none!important;background:rgba(5,10,16,.95)!important;border:1px solid rgba(216,177,93,.42)!important;border-radius:50%!important
+    transform:none!important;background-color:rgba(5,10,16,.95)!important;border:1px solid rgba(216,177,93,.42)!important;border-radius:50%!important
   }
   html[data-landscape-ui='1'] body.settlement-active .settlement-service__intro{font-size:9px!important;line-height:1.15!important;margin:2px 0 5px!important}
   html[data-landscape-ui='1'] body.settlement-active .settlement-footer{position:fixed!important;z-index:95!important;top:7px!important;right:8px!important;width:auto!important;margin:0!important;padding:0!important;border:0!important;background:transparent!important}
