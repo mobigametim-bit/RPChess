@@ -80,8 +80,9 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   assert(build.includes("'css/ui-redesign-final.css'")&&build.includes("'css/combat-side-colors.css'")&&build.includes("'js/ui-redesign-final.mjs'"),'production build must package the consolidated redesign and combat aura layer');
   for(const aura of ['aura_white.png','aura_black.png','aura_red.png'])assert(build.includes(`'assets/vfx/${aura}'`),`production build must package ${aura}`);
   assert(pkg.scripts['test:ui']==='node tests/ui-redesign-final.cjs','package must expose one final UI contract test');
-  assert(pkg.scripts.test.includes('tests/aura-asset-runtime.cjs'),'main test command must verify combat aura source assets');
-  assert(!pkg.scripts.test.includes('travel-choice-ui.cjs')&&!pkg.scripts.test.includes('compact-ui-pass4.cjs'),'main test command must not require superseded UI tests');
+  assert(pkg.scripts.test.includes('puzzles:materialize')&&pkg.scripts.test.includes('test:materialized'),'main test command must materialize once and delegate to the deterministic test set');
+  assert(pkg.scripts['test:materialized'].includes('tests/aura-asset-runtime.cjs'),'materialized test set must verify combat aura source assets');
+  assert(!pkg.scripts['test:materialized'].includes('travel-choice-ui.cjs')&&!pkg.scripts['test:materialized'].includes('compact-ui-pass4.cjs'),'materialized test set must not require superseded UI tests');
 
   console.log('Consolidated UI redesign contracts, side-colored aura presentation, canonical Travel gating and lifecycle presentation: PASS');
 })().catch((error)=>{console.error(error.stack||error);process.exitCode=1});
