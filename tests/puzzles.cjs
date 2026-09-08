@@ -31,5 +31,6 @@ function memoryStorage(){const data=new Map();return{getItem:key=>data.has(key)?
   assert(appSource.includes('puzzleHistory')&&appSource.includes('excludedIds: history'),'Puzzle route must use persistent no-repeat history');
   assert(appSource.includes('css/puzzles.css?v=20260901-puzzles-redesign-1'),'Puzzle annotation CSS cachebuster must advance');
   for(const token of ['.puzzle-piece-marker','.puzzle-coordinate--file','.puzzle-coordinate--rank'])assert(cssSource.includes(token),`Puzzle CSS missing ${token}`);
+  assert(cssSource.includes(".puzzle-piece-marker[data-puzzle-piece-marker='p']::before") && cssSource.includes('paint-order:stroke fill'),'Puzzle owner CSS must render accepted role glyphs');
   console.log('Puzzles reward/persistence/history migration/no-repeat/board-annotation UI contracts: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});

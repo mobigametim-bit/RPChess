@@ -86,6 +86,7 @@ for (const source of [foundationCss, css, polishCss, rosterCss, uxCss]) {
   assert(!source.includes('ui_panel_wide.png'), 'active Reboot CSS must not use ornate ui_panel_wide.png');
 }
 assert(css.includes('.classic-board-wrap') && css.includes('border: 1px solid rgba(102, 157, 199, .5)'), 'board wrapper must use a CSS-only frameless edge');
+assert(polishCss.includes(".classic-piece-marker[data-piece-marker='p']::before") && polishCss.includes('paint-order:stroke fill'), 'Classic owner CSS must render accepted role glyphs');
 
 for (const side of ['player', 'enemy']) {
   for (const piece of ['pawn', 'knight', 'bishop', 'rook', 'queen', 'king']) {

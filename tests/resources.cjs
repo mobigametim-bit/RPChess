@@ -112,6 +112,7 @@ class MemoryStorage {
   assert(settlementSource.includes("generated_assets/node_shop.png") === false, 'Settlement JS must not patch the Market emblem after render; CSS owns the service emblem');
   const settlementCss = fs.readFileSync(path.join(game, 'css/settlement.css'), 'utf8');
   assert(settlementCss.includes("node_shop.png"), 'Market service emblem must remain node_shop.png in Settlement-owned CSS');
+  assert(settlementCss.includes('Accepted desktop service-emblem treatment belongs to Settlement') && settlementCss.includes('background-color:transparent!important'), 'Settlement owner CSS must retain the accepted desktop service-emblem treatment');
   assert(!fs.existsSync(path.join(game, 'js/content/supplies-resource-icon.mjs')), 'global Supplies image retargeting patch must be removed');
   assert(!fs.existsSync(path.join(game, 'js/content/post-pages-ui-review4.mjs')), 'Market DOM-rewrite review patch must be removed');
   assert(!uxSource.includes('replaceSupplyDiamonds') && !uxSource.includes('SUPPLY_ICON_HOLDER_SELECTOR'), 'shared UX must not retarget Supply images by DOM context');

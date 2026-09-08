@@ -7,4 +7,3 @@ import './content/post-pages-ui-review2.mjs';
 import './content/post-pages-ui-review3.mjs';
 import './content/post-pages-ui-review5.mjs';
 import './content/post-pages-ui-review6.mjs';
-import './content/post-pages-ui-review7.mjs';
