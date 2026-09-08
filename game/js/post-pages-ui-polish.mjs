@@ -1,5 +1,4 @@
 const GOLD_ICON='generated_assets/reward_gold.png';
-const SUPPLIES_ICON='generated_assets/node_shop.png';
 const STYLE_MARKER='data-post-pages-ui-polish-style';
 const RUN_KEY='rpchess.reboot.v1.run';
 const COMPACT_QUERY='(orientation: landscape) and (max-width: 1180px)';
@@ -58,10 +57,10 @@ function ensureStyle(){
   }
   html[data-landscape-ui='1'] body.run-combat-board-active .classic-party-panel .classic-moves{max-height:22dvh!important;overflow:auto!important}
 
-  /* 6. Hiring cost is always gold icon then amount. */
+  /* 6. Hiring cost is always gold icon then amount. The Battle owner renders the amount;
+     battle.css owns the icon through the existing ::before asset rule. */
   html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-mercenary-quote__row--cost strong,
   html[data-landscape-ui='1'] .battle-mercenary-quote__row--cost strong{display:inline-flex!important;align-items:center!important;gap:6px!important}
-  html[data-landscape-ui='1'] .battle-mercenary-quote__row--cost .resource-inline-icon{order:-1!important}
 
   /* 10. Final run summary has no floating Gold/Supplies frames. */
   html[data-landscape-ui='1'] body.endless-run-active .resource-hud{display:none!important}
@@ -94,7 +93,8 @@ function ensureStyle(){
   html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-topbar__actions .reboot-button{min-width:0!important;min-height:30px!important;padding:3px 7px!important;font-size:9px!important;white-space:nowrap!important}
   html[data-landscape-ui='1'] body.travel-choice-active .travel-choice-card__difficulty small{display:none!important}
 
-  /* 8. Settlement tablet/mobile share one compact composition. */
+  /* 8. Settlement tablet/mobile share one compact composition. Market row rendering itself is
+     owned by settlement-app + settlement.css; this layer only positions the surrounding frames. */
   html[data-landscape-ui='1'] body.settlement-active .settlement-screen{padding:6px 8px!important;overflow:hidden!important;box-sizing:border-box!important}
   html[data-landscape-ui='1'] body.settlement-active .settlement-shell{height:100%!important;display:grid!important;grid-template-rows:44px minmax(0,1fr)!important;gap:7px!important;overflow:visible!important}
   html[data-landscape-ui='1'] body.settlement-active .settlement-topbar{display:none!important}
@@ -125,10 +125,6 @@ function ensureStyle(){
   html[data-landscape-ui='1'] body.settlement-active .resource-chip img,
   html[data-landscape-ui='1'] body.settlement-active .resource-chip__supply-icon{width:21px!important;height:21px!important}
   html[data-landscape-ui='1'] body.settlement-active .resource-chip strong{font-size:11px!important}
-  html[data-landscape-ui='1'] body.settlement-active .settlement-supply-card{display:grid!important;grid-template-columns:1fr!important;gap:5px!important}
-  html[data-landscape-ui='1'] body.settlement-active .settlement-supply-card__compact{display:flex!important;align-items:center!important;justify-content:center!important;gap:5px!important;font-size:11px!important;white-space:nowrap!important}
-  html[data-landscape-ui='1'] body.settlement-active .settlement-supply-card__compact img{width:21px!important;height:21px!important;object-fit:contain!important}
-  html[data-landscape-ui='1'] body.settlement-active .settlement-supply-card [data-settlement-buy-supply]{width:100%!important;min-height:28px!important;padding:3px 7px!important;font-size:9px!important}
 
   /* 9. Starvation panel starts below the resource HUD. */
   html[data-landscape-ui='1'] body.starvation-active .starvation-screen{padding-top:50px!important;box-sizing:border-box!important}
@@ -226,44 +222,11 @@ function syncCombat(){
   else restore(moves,movesHome,movesNext);
 }
 
-function syncBattleCost(){
-  for(const strong of document.querySelectorAll('.battle-mercenary-quote__row--cost strong')){
-    const value=numberFrom(strong.textContent);if(strong.querySelector('.post-pages-gold-icon'))continue;
-    strong.replaceChildren(img(GOLD_ICON,'post-pages-gold-icon'),document.createTextNode(String(value)));
-  }
-}
-
-function syncSettlement(){
-  const screen=document.querySelector('[data-settlement-screen]');if(!visible(screen))return;
-  const card=screen.querySelector('[data-settlement-supply-card]');if(!card)return;
-  if(!compactLayout()){
-    if(card.dataset.postPagesCompact==='1'){
-      delete card.dataset.postPagesCompact;
-      globalThis.RPChessSettlement?.render?.();
-    }
-    return;
-  }
-  const stock=numberFrom(card.querySelector('[data-settlement-supply-stock]')?.textContent||card.textContent);
-  const price=numberFrom(card.querySelector('.settlement-price')?.textContent||'0');
-  const existingButton=card.querySelector('[data-settlement-buy-supply]');
-  if(!existingButton)return;
-  const disabled=existingButton.disabled,label=existingButton.textContent;
-  card.replaceChildren();
-  card.dataset.postPagesCompact='1';
-  const row=document.createElement('div');row.className='settlement-supply-card__compact';
-  const supplyImg=img(SUPPLIES_ICON),stockText=document.createElement('strong');stockText.dataset.settlementSupplyStock='';stockText.textContent=`${stock}/4`;
-  const separator=document.createElement('span');separator.textContent='за';
-  const goldImg=img(GOLD_ICON),priceText=document.createElement('strong');priceText.textContent=String(price);
-  row.append(supplyImg,stockText,separator,goldImg,priceText);
-  const button=document.createElement('button');button.type='button';button.className='reboot-button reboot-button--primary';button.dataset.settlementBuySupply='';button.disabled=disabled;button.textContent=label||'Купить';
-  card.append(row,button);
-}
-
 let queued=false;
-function refresh(){queued=false;syncTravel();syncPuzzle();syncCombat();syncBattleCost();syncSettlement();}
+function refresh(){queued=false;syncTravel();syncPuzzle();syncCombat();}
 function schedule(){if(queued)return;queued=true;requestAnimationFrame(refresh);}
 
-for(const name of ['rpchess:travel-open','rpchess:puzzle-open','rpchess:skirmish-open','rpchess:battle-open','rpchess:settlement-open','rpchess:run-updated','rpchess:resources-updated'])addEventListener(name,()=>queueMicrotask(schedule));
+for(const name of ['rpchess:travel-open','rpchess:puzzle-open','rpchess:skirmish-open','rpchess:battle-open','rpchess:run-updated','rpchess:resources-updated'])addEventListener(name,()=>queueMicrotask(schedule));
 document.addEventListener('click',()=>queueMicrotask(schedule),true);
 addEventListener('resize',schedule,{passive:true});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
