@@ -238,8 +238,11 @@ async function auditPrepAndCombat(browser, width, height) {
     await assertNoHorizontalOverflow(page, `${label} Battle prep`);
     const battleColumns = await page.locator('.battle-grid').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length);
     assert.strictEqual(battleColumns, 2, `${label}: Battle prep must keep two card columns at tablet/mobile landscape widths`);
-    const hireCost = await page.locator('.battle-mercenary-quote__row--cost strong').evaluate((element) => ({ icon:Boolean(element.querySelector('img')),text:element.textContent.trim() }));
-    assert(hireCost.icon && /^\d+$/.test(hireCost.text), `${label}: hiring cost must render as gold icon + numeric value`);
+    const hireCost = await page.locator('.battle-mercenary-quote__row--cost strong').evaluate((element) => ({
+      background:getComputedStyle(element,'::before').backgroundImage,
+      text:element.textContent.trim()
+    }));
+    assert(hireCost.background.includes('reward_gold.png') && /^\d+$/.test(hireCost.text), `${label}: hiring cost must render as gold icon + numeric value`);
     if (width <= 980 && height <= 520) {
       const prep = await page.evaluate(() => {
         const buttonRect = document.querySelector('[data-battle-start]')?.getBoundingClientRect();
