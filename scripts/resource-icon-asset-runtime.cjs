@@ -33,9 +33,14 @@ function optimize(root,{write=true}={}){
   for(const item of inspect(root)){
     const full=path.join(root,item.path),source=fs.readFileSync(full);
     const optimized=optimizePngBuffer(source,RESOURCE_ICON_RUNTIME_MAX_SIDE);
-    if(optimized.buffer.length>RESOURCE_ICON_RUNTIME_MAX_BYTES)throw new Error(`[resource icon asset budget] ${item.path}: optimized ${optimized.buffer.length} bytes exceeds ${RESOURCE_ICON_RUNTIME_MAX_BYTES}`);
-    if(write)fs.writeFileSync(full,optimized.buffer);
-    records.push({path:item.path,before:item.bytes,after:optimized.buffer.length,sourceWidth:item.width,sourceHeight:item.height,width:optimized.width,height:optimized.height});
+    const sourceFitsDimensions=item.width<=RESOURCE_ICON_RUNTIME_MAX_SIDE&&item.height<=RESOURCE_ICON_RUNTIME_MAX_SIDE;
+    const keepSource=sourceFitsDimensions&&source.length<=optimized.buffer.length;
+    const output=keepSource?source:optimized.buffer;
+    const width=keepSource?item.width:optimized.width;
+    const height=keepSource?item.height:optimized.height;
+    if(output.length>RESOURCE_ICON_RUNTIME_MAX_BYTES)throw new Error(`[resource icon asset budget] ${item.path}: ${output.length} bytes exceeds ${RESOURCE_ICON_RUNTIME_MAX_BYTES}`);
+    if(write)fs.writeFileSync(full,output);
+    records.push({path:item.path,before:item.bytes,after:output.length,sourceWidth:item.width,sourceHeight:item.height,width,height,keptSource:keepSource});
   }
   return records;
 }
