@@ -54,7 +54,7 @@ Status meanings:
 | REV-012 stale CURRENT_STATE SHA | **OPEN** | Intentionally deferred until final accepted remediation SHA. |
 | REV-013 shared browser helper lifecycle drift | **DONE — verification pending** | `startNewRun()` now waits for the visible main menu/Identity/Roster and emits scene diagnostics instead of blindly clicking hidden nodes. Full 17-test rerun still required. |
 | REV-014 responsive gate does not prove one-screen for every screen | **OPEN** | Reusable all-screen frame/viewport/internal-overflow geometry checker still required for RU/EN and breakpoint boundaries. |
-| REV-015 persistence has no migration path | **DECISION CLOSED** | Project owner explicitly approved **not preserving old saves**. Do not build migration machinery. Replace this with an explicit reset-on-schema-change contract and regression test. |
+| REV-015 persistence has no migration path | **DONE — verification pending** | Owner-approved reset-on-unsupported-schema behavior is explicit in `readRun()`: incompatible stored runs are removed and return `null`; no migration/backward-save machinery is introduced. |
 | REV-016 repeated puzzle materialization / duplicate build inputs | **DONE — verification pending** | `gate:local` materializes the catalog once before materialized test/validate/build stages; duplicate Endless build inputs removed. |
 | REV-017 generic Wrangler deploy path looks canonical | **DONE — docs pending** | Generic `npm run deploy` removed. Cloudflare is retained only as explicit manual `npm run deploy:cloudflare`; GitHub Pages remains canonical. |
 | REV-018 legacy Vertical Slice stack | **OPEN — deletion authorized** | Project owner approved deletion after reachability/reference proof. |
@@ -91,6 +91,7 @@ Status meanings:
 - The root cause is fixed on the current remediation line by limiting that compatibility declaration to `background-color`; `settlement.css` remains the owner of `node_shop.png`. The existing Settlement regression now rejects future compatibility shorthands that erase owner-defined service art.
 - **Full Project Review #8** ([run `34262502407`](https://github.com/mobigametim-bit/RPChess/actions/runs/34262502407), head `d5820573`) completed with canonical local gate **PASS**, all **17/17 Chromium contracts PASS** and `AUDIT_TOTAL_FAILURES=0`. This verifies the Settlement root-cause fix together with every previously passing browser contract.
 - The later owner-level removal of `review3/5/6/7` is intentionally not attributed to #8; it requires the next milestone run on the current branch head.
+- **Targeted owner-migration gate #10** ([run `34266676368`](https://github.com/mobigametim-bit/RPChess/actions/runs/34266676368), head `8e7c4675`) completed with canonical local gate **PASS**, Classic/Settlement/Puzzles **3/3 PASS** and `AUDIT_TOTAL_FAILURES=0` after the review2 Puzzle/Settlement split and duplicate lifecycle removal.
 
 ---
 

@@ -21,6 +21,11 @@ class MemoryStorage {
   assert.strictEqual(core.STARTING_SUPPLIES, 10, 'Resources v1 starts with 10 Supplies');
   assert.strictEqual(core.TRAVEL_SUPPLY_COST, 1, 'every travel transition costs exactly one Supply');
 
+  const incompatibleStorage = new MemoryStorage();
+  incompatibleStorage.setItem(persistence.RUN_STORAGE_KEY, JSON.stringify({ schemaVersion: persistence.RUN_SCHEMA_VERSION + 1, id: 'obsolete-run' }));
+  assert.strictEqual(persistence.readRun(incompatibleStorage), null, 'unsupported save schemas must not hydrate');
+  assert.strictEqual(incompatibleStorage.getItem(persistence.RUN_STORAGE_KEY), null, 'unsupported save schemas must be cleared explicitly');
+
   const run = persistence.createRun({ now: 1000, id: 'resources-test' });
   assert.strictEqual(run.gold, 80);
   assert.strictEqual(run.supplies, 10);
