@@ -54,7 +54,7 @@ Status meanings:
 | REV-011 Supplies optimizer makes asset larger | **DONE — verified** | Resource icon optimizer now keeps the original bytes when transformation is larger while still enforcing dimension/byte budgets. |
 | REV-012 stale CURRENT_STATE SHA | **OPEN** | Intentionally deferred until final accepted remediation SHA. |
 | REV-013 shared browser helper lifecycle drift | **DONE — verified** | `startNewRun()` now waits for the visible main menu/Identity/Roster and emits scene diagnostics instead of blindly clicking hidden nodes. Full 17-contract rerun passed in milestone #9. |
-| REV-014 responsive gate does not prove one-screen for every screen | **OPEN** | Reusable all-screen frame/viewport/internal-overflow geometry checker still required for RU/EN and breakpoint boundaries. |
+| REV-014 responsive gate does not prove one-screen for every screen | **IN PROGRESS** | `tests/helpers/viewport-geometry-contract.cjs` now rejects page-level horizontal/vertical overflow, pre-scroll viewport escapes and selected child/frame escapes. `responsive-viewport-browser.cjs` no longer uses `scrollIntoView()`, covers RU/EN, `1180`/`980` breakpoint boundaries and directly checks Language, Identity and Chronicle containment. Targeted Chromium verification and the remaining weak surfaces are still pending. |
 | REV-015 persistence has no migration path | **DONE — verified** | Owner-approved reset-on-unsupported-schema behavior is explicit in `readRun()`: incompatible stored runs are removed and return `null`; no migration/backward-save machinery is introduced. |
 | REV-016 repeated puzzle materialization / duplicate build inputs | **DONE — verified** | `gate:local` materializes the catalog once before materialized test/validate/build stages; duplicate Endless build inputs removed. |
 | REV-017 generic Wrangler deploy path looks canonical | **DONE — docs pending** | Generic `npm run deploy` removed. Cloudflare is retained only as explicit manual `npm run deploy:cloudflare`; GitHub Pages remains canonical. |
@@ -82,8 +82,10 @@ Status meanings:
 - Moved the overlapping Puzzle and Settlement sections of review2 ahead of those accepted owner cascades; review2 now retains only Roster/Travel/Battle/Combat CSS compatibility duties.
 - Removed review2's duplicate combat-panel listeners/reparenting; the remaining single legacy reparent path is isolated in `post-pages-ui-polish.mjs` pending stable owner slots.
 - Source verifier and targeted static contracts updated to reject those deleted layers and require the new ownership contracts.
+- Added reusable pre-scroll page/viewport/frame assertions in `tests/helpers/viewport-geometry-contract.cjs`.
+- Reworked `responsive-viewport-browser.cjs` so it cannot hide one-screen failures via `scrollIntoView()`; the contract now runs RU/EN, tests `1180`/`980` breakpoint boundaries and directly covers Language, Player Identity and Chronicle containment.
 
-**Verification scope:** full milestone #9 covers the review3/5/6/7 owner migration; targeted #10 covers the later review2 Puzzle/Settlement split and lifecycle deduplication; deterministic #11 covers the save-schema reset. Subsequent commits only restore the manual workflow file or update this report and do not alter production code.
+**Verification scope:** full milestone #9 covers the review3/5/6/7 owner migration; targeted #10 covers the later review2 Puzzle/Settlement split and lifecycle deduplication; deterministic #11 covers the save-schema reset. Geometry-test commit `6888beb2` changes test evidence only, not production runtime, and still awaits targeted Chromium verification.
 
 ### Latest milestone verification
 
@@ -94,6 +96,7 @@ Status meanings:
 - **Full Project Review #9** ([run `34265688360`](https://github.com/mobigametim-bit/RPChess/actions/runs/34265688360), head `b63726eb`) completed with canonical local gate **PASS**, all **17/17 Chromium contracts PASS** and `AUDIT_TOTAL_FAILURES=0` after deleting review3/5/6/7 and moving their accepted styles into screen owners.
 - **Targeted owner-migration gate #10** ([run `34266676368`](https://github.com/mobigametim-bit/RPChess/actions/runs/34266676368), head `8e7c4675`) completed with canonical local gate **PASS**, Classic/Settlement/Puzzles **3/3 PASS** and `AUDIT_TOTAL_FAILURES=0` after the review2 Puzzle/Settlement split and duplicate lifecycle removal.
 - **Deterministic save-schema gate #11** ([run `34267715267`](https://github.com/mobigametim-bit/RPChess/actions/runs/34267715267), head `2ced5f67`) completed with canonical local gate **PASS**, the new persistence regression **PASS** and `AUDIT_TOTAL_FAILURES=0`.
+- **Geometry contract remediation #12** (`6888beb2`) is committed with local JS syntax/static checks passing. No Chromium PASS is claimed yet: the strengthened responsive contract still needs a real browser run.
 
 ---
 
@@ -179,9 +182,9 @@ Several feature contracts failed before entering their target scene because a sh
 
 ## REV-014 — P1 — Responsive gate is not yet an exhaustive geometry proof
 
-Existing helpers mostly prove horizontal overflow/reachability; `scrollIntoView()` can conceal page-level vertical overflow.
+Existing helpers mostly proved horizontal overflow/reachability; `scrollIntoView()` could conceal page-level vertical overflow.
 
-**Target:** common assertion must prove document/scene/frame containment and explicitly recognize only deliberate internal scroll/carousel containers.
+**Current remediation:** `tests/helpers/viewport-geometry-contract.cjs` measures the page and visible targets before any scrolling and rejects page-level horizontal/vertical overflow, viewport escapes and selected owning-frame escapes. `responsive-viewport-browser.cjs` now exercises this contract in RU/EN around the `1180` and `980` breakpoints and adds explicit Language, Identity and Chronicle checks. Browser verification and the remaining weak surfaces are still pending.
 
 ## REV-015 — P2 — Persistence version evolution policy was undefined
 
@@ -267,26 +270,26 @@ Legend: **PROVEN** = direct evidence of the required geometry; **PARTIAL** = use
 
 | Screen / surface | Desktop | Tablet 1024×768 | Mobile 844×390 | RU/EN | Gap |
 |---|---:|---:|---:|---:|---|
-| Main menu | PARTIAL | PARTIAL | PARTIAL | PARTIAL | exhaustive vertical/frame assertion pending |
-| Settings modal | PARTIAL | PARTIAL | PARTIAL | PARTIAL | frame containment pending |
-| Language modal | OPEN | OPEN | OPEN | n/a | geometry matrix pending |
-| Player Identity | OPEN | OPEN | OPEN | PARTIAL | explicit frame containment pending |
-| Roster | PARTIAL | PARTIAL | PARTIAL | PARTIAL | updated dedicated contract must rerun |
-| Chronicle | PARTIAL | PARTIAL | PARTIAL | PARTIAL | vertical containment pending |
-| Travel Choice | PARTIAL | PARTIAL | PROVEN compact | PARTIAL | full RU/EN/boundary sweep pending |
-| Skirmish prep | PARTIAL | PARTIAL | PROVEN compact | PARTIAL | full RU/EN/frame sweep pending |
-| Skirmish combat | PROVEN board | PROVEN board | PROVEN board | PARTIAL | language sweep pending |
-| Skirmish aftermath | PARTIAL | PARTIAL | PROVEN compact | PARTIAL | full matrix pending |
-| Battle prep | PARTIAL | PARTIAL | PROVEN compact | PARTIAL | full matrix pending |
+| Main menu | PARTIAL | PARTIAL | PARTIAL | PARTIAL | stronger pre-scroll vertical/frame contract authored; Chromium rerun pending |
+| Settings modal | PARTIAL | PARTIAL | PARTIAL | PARTIAL | frame ownership contract authored; Chromium rerun pending |
+| Language modal | OPEN | OPEN | OPEN | OPEN | RU/EN geometry contract authored; Chromium verification pending |
+| Player Identity | OPEN | OPEN | OPEN | PARTIAL | explicit owner-frame contract authored; Chromium verification pending |
+| Roster | PARTIAL | PARTIAL | PARTIAL | PARTIAL | stronger pre-scroll scene/CTA contract authored; Chromium rerun pending |
+| Chronicle | PARTIAL | PARTIAL | PARTIAL | PARTIAL | pre-scroll vertical containment authored; Chromium rerun pending |
+| Travel Choice | PARTIAL | PARTIAL | PROVEN compact | PARTIAL | RU/EN + `1180`/`980` boundary sweep authored; Chromium rerun pending |
+| Skirmish prep | PARTIAL | PARTIAL | PROVEN compact | PARTIAL | RU/EN pre-scroll sweep authored; Chromium rerun pending |
+| Skirmish combat | PROVEN board | PROVEN board | PROVEN board | PARTIAL | RU/EN page-fit sweep authored; Chromium rerun pending |
+| Skirmish aftermath | PARTIAL | PARTIAL | PROVEN compact | PARTIAL | stronger pre-scroll contract authored; Chromium rerun pending |
+| Battle prep | PARTIAL | PARTIAL | PROVEN compact | PARTIAL | stronger RU/EN pre-scroll contract authored; Chromium rerun pending |
 | Battle combat | PROVEN board | PROVEN board | PROVEN board | PARTIAL | language sweep pending |
 | Battle aftermath | PARTIAL | PARTIAL | PARTIAL | PARTIAL | explicit frame matrix pending |
 | Settlement | PROVEN | PROVEN | PROVEN | PROVEN | rerun required after owner refactor |
-| Event | PARTIAL | PARTIAL | PARTIAL | PARTIAL | full frames/languages/boundaries pending |
+| Event | PARTIAL | PARTIAL | PARTIAL | PARTIAL | RU/EN page/frame sweep authored; Chromium rerun pending |
 | Starvation | BLOCKED (old run) | BLOCKED | BLOCKED | PARTIAL | rerun helper-fixed test + geometry matrix |
 | Puzzle / Training | BLOCKED/PARTIAL | BLOCKED/PARTIAL | BLOCKED/PARTIAL | PARTIAL | rerun + board/panel geometry sweep |
 | Classic setup/game | PARTIAL | PARTIAL | PARTIAL | PARTIAL | setup modal matrix pending |
 | Endless summary | OPEN | OPEN | OPEN | PARTIAL | explicit one-screen/internal-overflow audit pending |
-| Portrait lock | PROVEN | PROVEN where applicable | PROVEN | RU proven; EN verify | EN geometry check pending |
+| Portrait lock | PROVEN | PROVEN where applicable | PROVEN | RU proven; EN pending | EN contract authored; Chromium rerun pending |
 
 ---
 
@@ -296,7 +299,7 @@ Legend: **PROVEN** = direct evidence of the required geometry; **PARTIAL** = use
 2. **Observer/listener/event fan-out:** measure callbacks/render scheduling over repeated full route loops.
 3. **Leak stability:** repeat route loops 10+ times and compare listener/node counts.
 4. **Asset orphan inventory:** build a runtime reference graph for generated assets, music/SFX and legacy masters.
-5. **Latest remediation regression:** run deterministic gate after verifier/test ownership changes, then one full browser milestone run.
+5. **Latest remediation regression:** run `responsive-viewport-browser.cjs` against `6888beb2`, then the deterministic/local gate after any real geometry fixes; run the full 17-contract browser matrix at the next meaningful architecture milestone.
 
 ---
 
@@ -308,10 +311,10 @@ These are the active autonomous remediation steps, ordered to minimize regressio
 
 1. **Run the deterministic local gate on the current combined remediation head** and fix only real contract failures; do not restore deleted architecture just to satisfy stale tests.
 2. Run the repaired 17-contract Chromium suite once at the next milestone and reclassify every result after actual target-scene entry.
-3. Build one reusable geometry checker for every active screen at `1920×1080`, `1366×768`, `1280×720`, `1024×768`, `844×390`, breakpoint boundaries (±1–2px) and portrait lock sizes.
-4. Run the same geometry matrix in **RU and EN**.
+3. **IN PROGRESS:** reusable pre-scroll geometry checker now exists and is wired into the responsive suite for `1920×1080`, `1366×768`, `1280×720`, `1024×768`, `844×390`, `1180`/`980` breakpoint boundaries and portrait sizes; remaining weak surfaces still need integration.
+4. **IN PROGRESS:** the strengthened responsive suite now executes its matrix in **RU and EN**; dedicated weak-surface geometry still remains.
 5. Record overflow ownership for every constrained frame. Any overflowing content without internal scroll/carousel becomes a concrete UI defect.
-6. Explicitly close weak surfaces: Language, Identity, Chronicle, Battle aftermath, Starvation, Puzzle/Training, Classic setup and Endless summary.
+6. Explicitly close weak surfaces: Language, Identity and Chronicle contracts are authored but unverified; Battle aftermath, Starvation, Puzzle/Training, Classic setup and Endless summary still need explicit geometry coverage.
 
 ## Phase B — remove presentation/runtime debt
 
@@ -365,5 +368,13 @@ These are the active autonomous remediation steps, ordered to minimize regressio
 6. Reduce broad event/render fan-out and prove no leaks.
 7. Apply explicit save-reset policy, dependency/asset cleanup and delete Vertical Slice.
 8. Final RU/EN all-screen matrix + Pages gate + documentation synchronization.
+
+## Next actions
+
+1. Run targeted `responsive-viewport-browser.cjs` against head `6888beb2`; fix only real geometry failures and do not relax the one-screen contract to preserve old layouts.
+2. Run `gate:local` on the combined remediation head after any geometry fixes.
+3. Extend the reusable geometry contract to the remaining weak surfaces: Battle aftermath, Starvation, Puzzle/Training, Classic setup and Endless summary.
+4. Continue `REV-010` / `REV-005` / `REV-006`: inventory remaining compatibility CSS/runtime responsibilities, move accepted rules into screen owners, remove obsolete source controls and replace DOM reparenting with stable owner slots.
+5. At the next meaningful architecture milestone, run the full 17-contract Chromium matrix and update tracker/evidence statuses from actual results.
 
 Every subsequent remediation report must update this tracker and include a concrete **Next actions** list.
