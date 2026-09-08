@@ -1,34 +1,23 @@
 const assert = require('assert');
 const { chromium } = require('playwright');
 const { startNewRun } = require('./browser-test-helpers.cjs');
+const {
+  assertFrameContains,
+  assertPageFitsViewport,
+  assertViewportContained
+} = require('./helpers/viewport-geometry-contract.cjs');
 
 const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
 const RUN_KEY = 'rpchess.reboot.v1.run';
-const MATRIX = [
-  [1920, 1080], [1366, 768], [1280, 720], [1024, 768],
-  [768, 1024], [390, 844], [844, 390]
+const LANGUAGES = ['ru', 'en'];
+const LANDSCAPE_MATRIX = [
+  [1920, 1080], [1366, 768], [1280, 720],
+  [1181, 820], [1180, 820], [1179, 820],
+  [1024, 768],
+  [981, 520], [980, 520], [979, 520],
+  [844, 390]
 ];
-
-async function assertNoHorizontalOverflow(page, label) {
-  const metrics = await page.evaluate(() => ({
-    scrollWidth: document.documentElement.scrollWidth,
-    clientWidth: document.documentElement.clientWidth
-  }));
-  assert(metrics.scrollWidth <= metrics.clientWidth + 1, `${label}: horizontal overflow ${metrics.scrollWidth}/${metrics.clientWidth}`);
-}
-
-async function assertReachable(page, selector, label) {
-  const target = page.locator(selector).first();
-  await target.waitFor({ state: 'visible' });
-  await target.evaluate((element) => element.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
-  const geometry = await target.evaluate((element) => {
-    const rect = element.getBoundingClientRect();
-    return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height, vw: innerWidth, vh: innerHeight };
-  });
-  assert(geometry.width > 0 && geometry.height > 0, `${label}: target has no rendered area`);
-  assert(geometry.left >= -1 && geometry.right <= geometry.vw + 1, `${label}: target is outside viewport horizontally`);
-  assert(geometry.top < geometry.vh && geometry.bottom > 0, `${label}: target is not reachable after scrolling`);
-}
+const PORTRAIT_MATRIX = [[768, 1024], [390, 844]];
 
 async function freshMenu(page) {
   await page.goto(url, { waitUntil: 'networkidle' });
@@ -37,25 +26,30 @@ async function freshMenu(page) {
   await page.locator('[data-reboot-foundation]:not([hidden])').waitFor();
 }
 
-async function auditPortraitLock(browser, width, height) {
+async function setLanguage(page, language) {
+  await page.waitForFunction(() => Boolean(globalThis.RPChessI18n?.setLanguage));
+  await page.evaluate((nextLanguage) => globalThis.RPChessI18n.setLanguage(nextLanguage), language);
+  await page.waitForFunction((nextLanguage) => document.documentElement.lang === nextLanguage, language);
+}
+
+async function auditPortraitLock(browser, width, height, language) {
   const page = await browser.newPage({ viewport: { width, height } });
   const errors = [];
   page.on('pageerror', (error) => errors.push(String(error.stack || error)));
-  const label = `${width}x${height}`;
+  const label = `${width}x${height} ${language.toUpperCase()}`;
   try {
-    await page.goto(url, { waitUntil: 'networkidle' });
-    await page.evaluate((key) => localStorage.removeItem(key), RUN_KEY);
-    await page.reload({ waitUntil: 'networkidle' });
+    await freshMenu(page);
+    await setLanguage(page, language);
     const lock = page.locator('[data-orientation-lock]');
     await lock.waitFor({ state: 'visible' });
+    await assertPageFitsViewport(page, `${label} portrait lock`);
+    await assertViewportContained(page, '[data-orientation-lock]', `${label} portrait lock`);
     const geometry = await lock.evaluate((element) => {
       const rect = element.getBoundingClientRect();
       return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, vw: innerWidth, vh: innerHeight };
     });
     assert(Math.abs(geometry.left) <= 1 && Math.abs(geometry.top) <= 1, `${label}: portrait lock must start at viewport origin`);
     assert(Math.abs(geometry.right - geometry.vw) <= 1 && Math.abs(geometry.bottom - geometry.vh) <= 1, `${label}: portrait lock must cover viewport`);
-    const copy = await lock.innerText();
-    assert(copy.includes('Поверните устройство'), `${label}: portrait lock copy missing`);
     assert.strictEqual(await page.locator('.landscape-orientation-lock__device').count(), 1, `${label}: device frame missing`);
     assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
   } finally {
@@ -63,35 +57,61 @@ async function auditPortraitLock(browser, width, height) {
   }
 }
 
-async function auditViewport(browser, width, height) {
-  if (height > width && width <= 1180) return auditPortraitLock(browser, width, height);
+async function auditMenuModals(page, label) {
+  await assertPageFitsViewport(page, `${label} menu`);
+  for (const selector of ['[data-new-game]', '[data-continue-run]', '[data-settings]', '[data-language]']) {
+    await assertViewportContained(page, selector, `${label} ${selector}`);
+  }
+
+  await page.locator('[data-settings]').first().click();
+  await assertViewportContained(page, '[data-settings-modal]:not([hidden]) .reboot-modal__panel', `${label} Settings frame`);
+  await assertFrameContains(page, '[data-settings-modal]:not([hidden]) .reboot-modal__panel', ['button', 'input'], `${label} Settings ownership`);
+  await assertPageFitsViewport(page, `${label} Settings`);
+  await page.locator('[data-settings-modal] [data-close-modal]').click();
+
+  await page.locator('[data-language]').first().click();
+  await assertViewportContained(page, '[data-language-modal]:not([hidden]) .reboot-modal__panel', `${label} Language frame`);
+  await assertFrameContains(page, '[data-language-modal]:not([hidden]) .reboot-modal__panel', ['[data-language-option]', '[data-close-modal]'], `${label} Language ownership`);
+  await assertPageFitsViewport(page, `${label} Language`);
+  await page.locator('[data-language-modal] [data-close-modal]').click();
+
+  await page.locator('[data-new-game]').first().click();
+  await page.locator('[data-player-identity-modal]:not([hidden])').waitFor({ state: 'visible' });
+  await assertViewportContained(page, '[data-player-identity-modal]:not([hidden]) .identity-panel', `${label} Identity frame`);
+  await assertFrameContains(page, '[data-player-identity-modal]:not([hidden]) .identity-panel', ['[data-player-identity-input]', '[data-player-identity-submit]', '[data-player-identity-close]'], `${label} Identity ownership`);
+  await assertPageFitsViewport(page, `${label} Identity`);
+  await page.locator('[data-player-identity-close]').click();
+}
+
+async function auditViewport(browser, width, height, language) {
   const page = await browser.newPage({ viewport: { width, height } });
   const errors = [];
   page.on('pageerror', (error) => errors.push(String(error.stack || error)));
-  const label = `${width}x${height}`;
+  const label = `${width}x${height} ${language.toUpperCase()}`;
   try {
     await freshMenu(page);
-    await assertNoHorizontalOverflow(page, `${label} menu`);
-    for (const selector of ['[data-new-game]', '[data-continue-run]', '[data-settings]']) await assertReachable(page, selector, `${label} ${selector}`);
+    await setLanguage(page, language);
+    await auditMenuModals(page, label);
 
-    await page.locator('[data-settings]').first().click();
-    await assertReachable(page, '[data-settings-modal]:not([hidden]) [data-close-modal]', `${label} Settings close`);
-    await assertNoHorizontalOverflow(page, `${label} Settings`);
-    await page.locator('[data-settings-modal] [data-close-modal]').click();
+    await startNewRun(page, { playerName: `Viewport ${width} ${language}` });
+    await assertPageFitsViewport(page, `${label} Roster`);
+    await assertViewportContained(page, '[data-roster-screen]:not([hidden])', `${label} Roster screen`);
+    await assertViewportContained(page, '[data-roster-travel]', `${label} Roster journey CTA`);
 
-    await startNewRun(page, { playerName: `Viewport ${width}` });
-    await assertNoHorizontalOverflow(page, `${label} Roster`);
-    await assertReachable(page, '[data-roster-travel]', `${label} Roster journey CTA`);
     await page.locator('[data-roster-menu]').click();
-    await assertReachable(page, '[data-chronicle-panel]', `${label} Chronicle`);
-    await assertNoHorizontalOverflow(page, `${label} Chronicle`);
+    await page.locator('[data-chronicle-panel]').waitFor({ state: 'visible' });
+    await assertViewportContained(page, '[data-chronicle-panel]', `${label} Chronicle`);
+    await assertPageFitsViewport(page, `${label} Chronicle`);
+
     await page.locator('[data-continue-run]').click();
     await page.locator('[data-roster-travel]').click();
     await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
-    await assertNoHorizontalOverflow(page, `${label} Travel`);
-    await assertReachable(page, '[data-travel-choice]', `${label} Travel route`);
+    await assertPageFitsViewport(page, `${label} Travel`);
+    await assertViewportContained(page, '[data-travel-choice-screen]:not([hidden])', `${label} Travel screen`);
+    await assertViewportContained(page, '[data-travel-choice]', `${label} Travel route`);
+
     if (width <= 1180) {
-      await page.locator('[data-travel-run-portrait]').waitFor({ state:'visible' });
+      await page.locator('[data-travel-run-portrait]').waitFor({ state: 'visible' });
       const difficultyLabelVisible = await page.locator('.travel-choice-card--puzzle .travel-choice-card__difficulty small').evaluateAll((nodes) => nodes.some((node) => getComputedStyle(node).display !== 'none'));
       assert.strictEqual(difficultyLabelVisible, false, `${label}: Training route must not show the difficulty caption under stars`);
     }
@@ -111,14 +131,15 @@ async function auditViewport(browser, width, height) {
   }
 }
 
-async function auditEventLayout(browser, width, height) {
+async function auditEventLayout(browser, width, height, language) {
   const page = await browser.newPage({ viewport: { width, height } });
   const errors = [];
   page.on('pageerror', (error) => errors.push(String(error.stack || error)));
-  const label = `${width}x${height}`;
+  const label = `${width}x${height} ${language.toUpperCase()}`;
   try {
     await freshMenu(page);
-    await startNewRun(page, { playerName: `Event ${width}` });
+    await setLanguage(page, language);
+    await startNewRun(page, { playerName: `Event ${width} ${language}` });
     await page.evaluate((key) => {
       const run = JSON.parse(localStorage.getItem(key));
       const route = {
@@ -136,55 +157,50 @@ async function auditEventLayout(browser, width, height) {
       dispatchEvent(new CustomEvent('rpchess:event-open', { detail:{ choice:route } }));
     }, RUN_KEY);
     await page.locator('[data-events-screen]:not([hidden])').waitFor();
-    await assertNoHorizontalOverflow(page, `${label} Event`);
+    await assertPageFitsViewport(page, `${label} Event`);
+    await assertViewportContained(page, '[data-events-screen]:not([hidden])', `${label} Event screen`);
+    await assertViewportContained(page, '.events-choice-frame', `${label} Event choice frame`);
     const layout = await page.evaluate(() => {
       const choices = document.querySelector('.events-choices');
-      const frame = document.querySelector('.events-choice-frame');
       const first = document.querySelector('.events-choice__head strong');
       const columns = choices ? getComputedStyle(choices).gridTemplateColumns.split(' ').filter(Boolean).length : 0;
-      const frameRect = frame?.getBoundingClientRect();
       const firstRect = first?.getBoundingClientRect();
-      return {
-        columns,
-        frame: frameRect ? { left:frameRect.left, right:frameRect.right, top:frameRect.top, bottom:frameRect.bottom, width:frameRect.width, height:frameRect.height } : null,
-        firstWidth:firstRect?.width || 0,
-        vw:innerWidth,
-        vh:innerHeight
-      };
+      return { columns, firstWidth:firstRect?.width || 0 };
     });
     assert.strictEqual(layout.columns, 1, `${label}: Event choices must use one readable column in the right rail`);
     assert(layout.firstWidth >= 180, `${label}: Event choice text rail is too narrow (${layout.firstWidth}px)`);
-    assert(layout.frame && layout.frame.right <= width + 1 && layout.frame.bottom <= height + 1, `${label}: Event choice frame must stay inside viewport`);
     assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
   } finally {
     await page.close();
   }
 }
 
-async function auditPrepAndCombat(browser, width, height) {
+async function auditPrepAndCombat(browser, width, height, language) {
   const page = await browser.newPage({ viewport: { width, height } });
   const errors = [];
   page.on('pageerror', (error) => errors.push(String(error.stack || error)));
-  const label = `${width}x${height}`;
+  const label = `${width}x${height} ${language.toUpperCase()}`;
   try {
     await freshMenu(page);
-    await startNewRun(page, { playerName: `Breakpoint ${width}` });
+    await setLanguage(page, language);
+    await startNewRun(page, { playerName: `Breakpoint ${width} ${language}` });
     await page.evaluate(() => dispatchEvent(new CustomEvent('rpchess:skirmish-open')));
     await page.locator('[data-skirmish-screen]:not([hidden])').waitFor();
-    await assertNoHorizontalOverflow(page, `${label} Skirmish prep`);
+    await assertPageFitsViewport(page, `${label} Skirmish prep`);
+    await assertViewportContained(page, '[data-skirmish-screen]:not([hidden])', `${label} Skirmish prep screen`);
     const skirmishColumns = await page.locator('.skirmish-grid').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length);
     assert.strictEqual(skirmishColumns, 2, `${label}: Skirmish prep must keep two selectable card columns`);
     if (width <= 980 && height <= 520) {
-      const formation = await page.locator('[data-skirmish-formation]').evaluate((element) => {
-        const rect=element.getBoundingClientRect();return { top:rect.top,bottom:rect.bottom,left:rect.left,right:rect.right,vw:innerWidth,vh:innerHeight };
-      });
-      assert(formation.top >= -1 && formation.bottom <= formation.vh + 1 && formation.left >= -1 && formation.right <= formation.vw + 1, `${label}: full Skirmish formation preview must fit in the viewport`);
+      await assertViewportContained(page, '[data-skirmish-formation]', `${label} Skirmish formation`);
     }
-    await assertReachable(page, '[data-skirmish-start]', `${label} Skirmish start`);
+    await assertViewportContained(page, '[data-skirmish-start]', `${label} Skirmish start`);
     await page.locator('[data-skirmish-start]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
+    await assertPageFitsViewport(page, `${label} Skirmish combat`);
     const combatPanel = await page.evaluate(() => {
-      const party=document.querySelector('.classic-party-panel');const moves=document.querySelector('.classic-panel--moves');const board=document.querySelector('[data-chess-board]');
+      const party=document.querySelector('.classic-party-panel');
+      const moves=document.querySelector('.classic-panel--moves');
+      const board=document.querySelector('[data-chess-board]');
       const p=party?.getBoundingClientRect(),b=board?.getBoundingClientRect();
       return { movesInside:Boolean(party&&moves&&moves.parentElement===party),gap:p&&b?b.left-p.right:0 };
     });
@@ -193,20 +209,13 @@ async function auditPrepAndCombat(browser, width, height) {
     const board = await page.locator('[data-chess-board]').evaluate((element) => {
       const rect = element.getBoundingClientRect();
       const square = element.querySelector('[data-square]')?.getBoundingClientRect();
-      const wrap = element.closest('[data-board-wrap]')?.getBoundingClientRect();
-      const frame = element.parentElement?.getBoundingClientRect();
       const visibleCoordinates = [...element.querySelectorAll('.classic-coordinate')].filter((node) => getComputedStyle(node).display !== 'none').length;
-      const style = getComputedStyle(element);
       return {
         left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom,
         width: rect.width, height: rect.height, squareWidth: square?.width || 0, squareHeight: square?.height || 0,
-        wrap: wrap ? { left:wrap.left, right:wrap.right, top:wrap.top, bottom:wrap.bottom, width:wrap.width, height:wrap.height } : null,
-        frame: frame ? { left:frame.left, right:frame.right, top:frame.top, bottom:frame.bottom, width:frame.width, height:frame.height } : null,
-        computed: { width:style.width, height:style.height, boxSizing:style.boxSizing, display:style.display },
         visibleCoordinates, vw: innerWidth, vh: innerHeight
       };
     });
-    console.log(`[responsive-board] ${label} ${JSON.stringify(board)}`);
     const geometry = JSON.stringify(board);
     assert(Math.abs(board.width - board.height) <= 2, `${label}: combat board lost square aspect ${geometry}`);
     assert(Math.abs(board.width - board.vh) <= 2, `${label}: combat board must use full viewport height ${geometry}`);
@@ -214,9 +223,11 @@ async function auditPrepAndCombat(browser, width, height) {
     assert(Math.abs(board.right - board.vw) <= 1, `${label}: combat board must touch right viewport edge ${geometry}`);
     assert(Math.abs(board.squareWidth - board.squareHeight) <= 1, `${label}: board cells lost square aspect ${geometry}`);
     assert.strictEqual(board.visibleCoordinates, 0, `${label}: board coordinate labels must be hidden ${geometry}`);
+
     await page.evaluate(() => globalThis.RPChessSkirmish.finishBattle({ over: true, type: 'stalemate', winner: null }));
     await page.locator('[data-skirmish-aftermath]:not([hidden])').waitFor();
-    await assertNoHorizontalOverflow(page, `${label} Skirmish aftermath`);
+    await assertPageFitsViewport(page, `${label} Skirmish aftermath`);
+    await assertViewportContained(page, '[data-skirmish-aftermath]:not([hidden])', `${label} Skirmish aftermath screen`);
     if (width <= 980 && height <= 520) {
       const aftermath = await page.evaluate(() => {
         const button = document.querySelector('[data-aftermath-continue]')?.getBoundingClientRect();
@@ -230,12 +241,13 @@ async function auditPrepAndCombat(browser, width, height) {
       assert.strictEqual(aftermath.rows.length, 6, `${label}: all six named survivors must remain present`);
       assert(aftermath.rows.every((row) => row.top >= -1 && row.bottom <= aftermath.vh + 1), `${label}: all six survivor rows must be visible without page scrolling`);
     }
-    await assertReachable(page, '[data-aftermath-continue]', `${label} Skirmish aftermath CTA`);
+    await assertViewportContained(page, '[data-aftermath-continue]', `${label} Skirmish aftermath CTA`);
 
     await page.evaluate(() => dispatchEvent(new CustomEvent('rpchess:battle-open')));
     await page.locator('[data-battle-screen]:not([hidden])').waitFor();
     await page.waitForFunction(() => document.body.classList.contains('battle-prep-compact-active'));
-    await assertNoHorizontalOverflow(page, `${label} Battle prep`);
+    await assertPageFitsViewport(page, `${label} Battle prep`);
+    await assertViewportContained(page, '[data-battle-screen]:not([hidden])', `${label} Battle prep screen`);
     const battleColumns = await page.locator('.battle-grid').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length);
     assert.strictEqual(battleColumns, 2, `${label}: Battle prep must keep two card columns at tablet/mobile landscape widths`);
     const hireCost = await page.locator('.battle-mercenary-quote__row--cost strong').evaluate((element) => ({
@@ -269,7 +281,7 @@ async function auditPrepAndCombat(browser, width, height) {
       assert(prep.roster && prep.army && prep.roster.right <= prep.army.left + 1, `${label}: Battle prep must keep roster and army side-by-side`);
       assert(prep.documentHeight <= prep.vh + 1 && prep.bodyHeight <= prep.vh + 1, `${label}: Battle prep must not require page scrolling`);
     }
-    await assertReachable(page, '[data-battle-start]', `${label} Battle start`);
+    await assertViewportContained(page, '[data-battle-start]', `${label} Battle start`);
     assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
   } finally {
     await page.close();
@@ -279,10 +291,13 @@ async function auditPrepAndCombat(browser, width, height) {
 (async () => {
   const browser = await chromium.launch({ headless: true });
   try {
-    for (const [width, height] of [[1180, 820], [1024, 768], [844, 390]]) await auditPrepAndCombat(browser, width, height);
-    for (const [width, height] of [[1024, 768], [844, 390]]) await auditEventLayout(browser, width, height);
-    for (const [width, height] of MATRIX) await auditViewport(browser, width, height);
-    console.log(`Responsive viewport browser: PASS — landscape matrix, portrait lock, readable Event rail, tablet-style mobile Travel, full Skirmish formation, desktop-style run combat panel, edge-to-edge board, no-scroll aftermath and no-scroll Battle prep contracts`);
+    for (const language of LANGUAGES) {
+      for (const [width, height] of PORTRAIT_MATRIX) await auditPortraitLock(browser, width, height, language);
+      for (const [width, height] of LANDSCAPE_MATRIX) await auditViewport(browser, width, height, language);
+      for (const [width, height] of [[1024, 768], [844, 390]]) await auditEventLayout(browser, width, height, language);
+      for (const [width, height] of [[1180, 820], [1024, 768], [844, 390]]) await auditPrepAndCombat(browser, width, height, language);
+    }
+    console.log('Responsive viewport browser: PASS — RU/EN one-screen geometry, 1180/980 breakpoint boundaries, portrait lock, Language/Identity/Chronicle frames, Event rail, Travel, Skirmish combat/aftermath and Battle prep contracts');
   } finally {
     await browser.close();
   }
