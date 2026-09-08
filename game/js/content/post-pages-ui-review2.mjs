@@ -1,22 +1,4 @@
 const MARKER='data-post-pages-ui-review2';
-const MOBILE_QUERY='(orientation: landscape) and (max-width: 980px) and (max-height: 520px)';
-
-function activeRunCombat(){
-  const classic=document.querySelector('[data-classic-screen]');
-  return Boolean(classic&&!classic.hidden&&(globalThis.RPChessBattle?.battlePlan||globalThis.RPChessSkirmish?.battlePlan));
-}
-
-function syncMobileCombatPanel(){
-  if(!globalThis.matchMedia?.(MOBILE_QUERY)?.matches||!activeRunCombat())return;
-  const classic=document.querySelector('[data-classic-screen]');
-  const party=classic?.querySelector('.classic-party-panel');
-  const moves=classic?.querySelector('.classic-panel--moves');
-  if(party&&moves&&moves.parentElement!==party)party.append(moves);
-}
-
-function scheduleMobileCombatPanel(){
-  requestAnimationFrame(()=>requestAnimationFrame(syncMobileCombatPanel));
-}
 
 function ensureStyle(){
   if(document.querySelector(`[${MARKER}]`))return;
@@ -145,18 +127,6 @@ function ensureStyle(){
   document.head.append(style);
 }
 
-for(const name of ['rpchess:skirmish-open','rpchess:battle-open','rpchess:run-updated','rpchess:run-continue']){
-  addEventListener(name,scheduleMobileCombatPanel);
-}
-document.addEventListener('click',(event)=>{
-  const target=event.target instanceof Element?event.target:null;
-  if(target?.closest('[data-skirmish-start],[data-battle-start]'))scheduleMobileCombatPanel();
-},true);
-addEventListener('resize',scheduleMobileCombatPanel,{passive:true});
+setTimeout(ensureStyle,0);
 
-setTimeout(()=>{
-  ensureStyle();
-  scheduleMobileCombatPanel();
-},0);
-
-export { ensureStyle, syncMobileCombatPanel };
+export { ensureStyle };

@@ -8,6 +8,7 @@ const html = fs.readFileSync(path.join(game, 'index.html'), 'utf8');
 const foundationCss = fs.readFileSync(path.join(game, 'css/reboot-foundation.css'), 'utf8');
 const css = fs.readFileSync(path.join(game, 'css/classic-chess.css'), 'utf8');
 const polishCss = fs.readFileSync(path.join(game, 'css/chess-ai-polish.css'), 'utf8');
+const review2Source = fs.readFileSync(path.join(game, 'js/content/post-pages-ui-review2.mjs'), 'utf8');
 const rosterCss = fs.readFileSync(path.join(game, 'css/roster.css'), 'utf8');
 const uxCss = fs.readFileSync(path.join(game, 'css/ux-consistency.css'), 'utf8');
 const uxApp = fs.readFileSync(path.join(game, 'js/ux-consistency.mjs'), 'utf8');
@@ -88,6 +89,7 @@ for (const source of [foundationCss, css, polishCss, rosterCss, uxCss]) {
 assert(css.includes('.classic-board-wrap') && css.includes('border: 1px solid rgba(102, 157, 199, .5)'), 'board wrapper must use a CSS-only frameless edge');
 assert(polishCss.includes(".classic-piece-marker[data-piece-marker='p']::before") && polishCss.includes('paint-order:stroke fill'), 'Classic owner CSS must render accepted role glyphs');
 assert(polishCss.includes("html[lang='en'] .classic-party-panel h2::before { content:'COMBAT SUMMARY'!important; }") && polishCss.includes("content:'COMBAT LOG'!important"), 'Classic owner CSS must own language-aware combat captions');
+assert(!review2Source.includes('append(moves)') && !review2Source.includes('scheduleMobileCombatPanel'), 'review2 must not duplicate the combat-panel reparenting lifecycle');
 
 for (const side of ['player', 'enemy']) {
   for (const piece of ['pawn', 'knight', 'bishop', 'rook', 'queen', 'king']) {

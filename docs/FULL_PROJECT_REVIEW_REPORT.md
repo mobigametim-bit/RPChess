@@ -78,7 +78,8 @@ Status meanings:
 - Deleted `hero-notes-runtime.mjs`, `post-pages-ui-review3.mjs`, `post-pages-ui-review4.mjs`, `post-pages-ui-review5.mjs`, `post-pages-ui-review6.mjs`, `post-pages-ui-review7.mjs`, `supplies-resource-icon.mjs`.
 - Moved accepted desktop Settlement emblem and Classic/Puzzle role-glyph rules from review7 into their owning CSS files.
 - Folded the review3/5/6 Training geometry cascade into `puzzles.css` and its language-aware Classic captions into `chess-ai-polish.css`.
-- Moved the overlapping Puzzle and Settlement sections of review2 ahead of those accepted owner cascades; review2 now retains only Roster/Travel/Battle/Combat compatibility duties and its duplicate combat-panel reparenting.
+- Moved the overlapping Puzzle and Settlement sections of review2 ahead of those accepted owner cascades; review2 now retains only Roster/Travel/Battle/Combat CSS compatibility duties.
+- Removed review2's duplicate combat-panel listeners/reparenting; the remaining single legacy reparent path is isolated in `post-pages-ui-polish.mjs` pending stable owner slots.
 - Source verifier and targeted static contracts updated to reject those deleted layers and require the new ownership contracts.
 
 **Important:** the latest combined branch state has not yet completed its milestone regression run. Items marked “DONE — verification pending” are implementation-complete but are not reported as verified until that run finishes.
