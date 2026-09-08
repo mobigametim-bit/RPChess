@@ -3,6 +3,20 @@
 **Feature status:** DONE on `main`.  
 **Lifecycle:** IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE.
 
+## Current production sync — 2026-09-08
+The original Resources v1 acceptance history below is preserved, but several later features now supersede its historical stage boundaries.
+
+Current production contract:
+
+- **Gold** and **Supplies** remain the two run resources.
+- Settlement and Starvation are implemented and accepted; references below that describe them as future work are historical Resources-v1 scope notes.
+- Supplies now use the dedicated art `game/generated_assets/reward_supplies.png` in shared resource UI/HUD, Travel, Settlement Market product rows and Event outcomes.
+- `generated_assets/node_shop.png` is reserved for the **Market service icon** and is no longer the Supplies resource icon.
+- The dedicated Supplies icon is covered by `scripts/resource-icon-asset-runtime.cjs`: production max side **192 px**, max encoded size **128 KiB**, fail-closed during build if the runtime asset remains outside budget.
+- Skirmish and Battle combat screens intentionally hide the floating Gold/Supplies HUD under the accepted live-device UI contract; this does not change resource state or economy mechanics.
+
+For current deployment/UI/asset state also see `CURRENT_STATE.md`. Historical formulas and acceptance receipts remain below.
+
 ## 1. Canonical resources
 RPChess Reboot uses only two run resources:
 
@@ -30,7 +44,7 @@ Rules:
 4. Returning to Roster, reloading, or resuming the already committed route does not charge again.
 5. Supplies never become negative.
 
-At **0 Supplies**, Resources v1 still allows the route to be committed and records `supplyPaid: 0`. This is a temporary stage boundary so the run cannot soft-lock before the dedicated **Starvation** feature is implemented. The canonical starvation casualty rule remains unchanged and will be activated in its own roadmap stage.
+At **0 Supplies**, Resources v1 still allows the route to be committed and records `supplyPaid: 0`. This paragraph describes the historical Resources-v1 stage boundary; the later accepted **Starvation** feature now owns the current zero-Supplies consequence.
 
 ## 4. Combat Gold rewards
 Resources v1 adds deterministic Gold rewards to completed Skirmish and Battle encounters. Reward settlement is idempotent: each completed combat count can pay out only once.
@@ -74,30 +88,31 @@ Pre-Resources Reboot saves are hydrated safely:
 - already completed historical combats are marked as already settled so they do **not** receive retroactive Gold.
 
 ## 6. UI
-A compact frameless resource HUD is visible throughout active run surfaces and displays current Gold and Supplies.
+Resource presentation is frameless and uses approved resource art.
 
-- Gold reuses the approved existing `generated_assets/reward_gold.png` asset.
-- Supplies uses a lightweight CSS/text symbol in v1; no semantically incorrect legacy image is substituted.
+- Gold uses `generated_assets/reward_gold.png`.
+- Supplies uses `generated_assets/reward_supplies.png`.
 - route cards show the 1-Supply travel cost before commitment.
 - combat aftermath shows the Gold payout.
 - resource changes use a short non-blocking status toast.
-- mobile 390×844 must have no horizontal overflow.
+- the floating resource HUD is shown on active run surfaces where appropriate, but is intentionally hidden on accepted Skirmish/Battle combat layouts.
+- responsive landscape contracts are covered by the current browser gate.
 
 All Resources surfaces obey the global frameless CSS-only panel invariant. `ui_panel_frame.png` and `ui_panel_wide.png` remain forbidden in active Reboot UI.
 
-## 7. Explicitly outside Resources v1
-These stay in later roadmap stages:
+## 7. Historical Resources-v1 scope boundary
+The following list is preserved as the scope boundary of the original Resources v1 implementation. These items were later implemented in their own accepted stages:
 
 - starvation casualty selection and death consequences at 0 Supplies;
 - Settlement shops;
 - buying Supplies;
 - healing and recruitment prices;
-- Event costs/rewards;
-- adaptive encounter generation based on economy;
-- resource-based chess modifiers or abilities.
+- Event costs/rewards.
+
+Resource-based chess modifiers or abilities are still not implied by the Resources contract.
 
 ## 8. Acceptance contract
-Resources acceptance requires all of the following:
+Resources acceptance required all of the following:
 
 - Node tests pass for defaults, hydration, persistence, travel cost, zero-floor and reward formulas;
 - real Chromium confirms visible 80/10 starting HUD;
@@ -105,10 +120,10 @@ Resources acceptance requires all of the following:
 - one committed route changes Supplies 10 → 9 exactly once;
 - resuming/reloading that route never charges again;
 - completed combat pays deterministic Gold exactly once and shows it in aftermath;
-- zero Supplies never becomes negative and does not soft-lock Travel during this feature stage;
-- 390×844 has no horizontal overflow;
-- full Foundation → Classic Chess → Stockfish → Roster → Skirmish → Battle → Travel Choice regression remains green;
-- Cloudflare preview deploy succeeds;
+- zero Supplies never becomes negative;
+- responsive layout has no forbidden horizontal overflow;
+- full regression remains green;
+- deployment succeeds;
 - user completes live playtest and explicitly accepts the preview.
 
 ## 9. Human acceptance — 2026-08-27
@@ -136,4 +151,4 @@ PR #71 `Resources: persistent Gold and Supplies economy` passed its final exact-
 - post-merge Cloudflare build: `bb7e0099-3513-45d2-a151-b7ecc057770b` — **SUCCESS**
 - production Cloudflare Version: `69a291d3-8b0e-4e3f-9715-9cce1c9f4d86`
 
-Resources is therefore fully closed as **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**. The next roadmap stage is **Settlement**, beginning with UX/spec approval before implementation.
+Resources is fully closed as **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**. Later accepted features extend the economy/UI while preserving this base resource contract.
