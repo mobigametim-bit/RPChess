@@ -13,8 +13,9 @@ Active development happens through feature branches and human playtest gates bef
 
 ## Active design documentation
 
-The source-of-truth documentation lives under [`docs/`](docs/):
+The source-of-truth documentation lives under [`docs/`](docs/). Start with the current operational snapshot:
 
+- [`CURRENT_STATE.md`](docs/CURRENT_STATE.md) — current accepted production/runtime/deployment state;
 - `00_PRODUCT_VISION.md`
 - `01_CORE_GAME_LOOP.md`
 - `02_CHESS_RULES.md`
@@ -36,13 +37,15 @@ The source-of-truth documentation lives under [`docs/`](docs/):
 - `ROADMAP.md`
 - `CHANGELOG.md`
 
+The numbered documents and changelog intentionally keep historical acceptance receipts. When an old receipt describes a superseded hosting/UI/asset state, `CURRENT_STATE.md` is the operational reference for current production.
+
 GitHub docs and Notion must describe the same accepted version of the game.
 
 ## Development workflow
 
-`SPEC → IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE`
+`SPEC → IMPLEMENTED → AUTOTESTED → HUMAN ACCEPTED (when required) → DOCS SYNCED → MERGED → PRODUCTION VERIFIED`
 
-No later gameplay feature is treated as accepted merely because CI is green.
+No player-facing feature is treated as accepted merely because CI is green.
 
 ## Local verification
 
@@ -52,4 +55,14 @@ npm test
 npm run build
 ```
 
-The live build is deployed automatically through Cloudflare from accepted `main` changes. Feature branches use preview deployments for manual testing before merge.
+For the canonical project gate use `npm run gate:local`. Browser acceptance uses Playwright/Chromium through the repository browser-test runner.
+
+## Production
+
+The accepted `main` build is published automatically to **GitHub Pages**:
+
+https://mobigametim-bit.github.io/RPChess/
+
+`.github/workflows/pages.yml` validates pull requests with the canonical build plus real Chromium checks under the `/RPChess/` project subpath. Pull-request runs do **not** deploy; pushes to accepted `main` publish the optimized `dist/` artifact after the same gate.
+
+Cloudflare configuration remains in the repository for compatibility/legacy preview workflows, but GitHub Pages is the canonical public production host.
