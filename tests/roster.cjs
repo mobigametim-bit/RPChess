@@ -94,6 +94,7 @@ class MemoryStorage {
   const persistenceSource = fs.readFileSync(path.join(game, 'js/run-persistence.mjs'), 'utf8');
   const css = fs.readFileSync(path.join(game, 'css/roster.css'), 'utf8');
   const foundationCss = fs.readFileSync(path.join(game, 'css/reboot-foundation.css'), 'utf8');
+  const review2 = fs.readFileSync(path.join(game, 'js/content/post-pages-ui-review2.mjs'), 'utf8');
   for (const token of ['data-roster-screen', 'data-continue-run', 'data-roster-detail', 'data-roster-list', 'data-roster-filter="dead"', 'data-roster-travel', 'Начать путешествие', 'js/roster-app.mjs', 'css/roster.css']) {
     assert(html.includes(token), `Roster HTML contract missing: ${token}`);
   }
@@ -114,6 +115,9 @@ class MemoryStorage {
   assert(css.includes('background: var(--ui-panel-bg)'), 'Roster must use global frameless panel surface tokens');
   assert(foundationCss.includes('--ui-panel-safe-left'), 'global frameless safe-area tokens are missing');
   assert(!css.includes('ui_panel_frame.png') && !css.includes('ui_panel_wide.png'), 'Roster must never use ornate panel frame assets');
+  assert(css.includes("body.roster-active #app main.roster-screen .roster-catalog"), 'accepted compact Roster catalog layout must live in roster.css');
+  assert(css.includes('grid-template-rows: minmax(145px,1fr) auto !important'), 'accepted compact Roster card height contract must live in roster.css');
+  assert(!review2.includes('body.roster-active'), 'review2 compatibility layer must not retain Roster presentation ownership');
 
   console.log('Roster model, persistence hydration, race-safe Travel Choice routing and frameless static UX contract: PASS');
 })().catch((error) => {

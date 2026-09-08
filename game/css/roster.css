@@ -168,3 +168,27 @@
   .roster-grid { grid-template-columns: 1fr; }
   .roster-card { min-height: 330px; }
 }
+
+/* Accepted Roster phone ownership: the catalog and its six cards fill the available frame. */
+@media (orientation: landscape) and (max-width: 980px) and (max-height: 520px) {
+  html[data-landscape-ui='1'] body.roster-active #app main.roster-screen .roster-catalog {
+    display: grid !important;
+    grid-template-rows: auto minmax(0,1fr) !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+  html[data-landscape-ui='1'] body.roster-active #app main.roster-screen .roster-filters { grid-row: 1 !important; }
+  html[data-landscape-ui='1'] body.roster-active #app main.roster-screen .roster-grid {
+    grid-row: 2 !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    align-content: stretch !important;
+    align-items: stretch !important;
+  }
+  html[data-landscape-ui='1'] body.roster-active #app main.roster-screen .roster-card {
+    height: 100% !important;
+    min-height: 0 !important;
+    align-self: stretch !important;
+    grid-template-rows: minmax(145px,1fr) auto !important;
+  }
+}
