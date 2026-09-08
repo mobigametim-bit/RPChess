@@ -168,7 +168,7 @@ function renderBattlePrepQuote() {
     <div class="battle-mercenary-quote__title">СОСТАВ И ОПЛАТА НАЁМНИКОВ</div>
     <div class="battle-mercenary-quote__row"><span>Именные герои</span><strong>${personalizedCount}</strong></div>
     <div class="battle-mercenary-quote__row"><span>Наёмники</span><strong>${quote.totalCount}</strong></div>
-    <div class="battle-mercenary-quote__row battle-mercenary-quote__row--cost"><span>Стоимость найма</span><strong>${quote.totalCost} ЗОЛОТА</strong></div>`;
+    <div class="battle-mercenary-quote__row battle-mercenary-quote__row--cost"><span>Стоимость найма</span><strong>${quote.totalCost}</strong></div>`;
 
   const actionbar = screen.querySelector('.battle-actionbar');
   const start = screen.querySelector('[data-battle-start]');
