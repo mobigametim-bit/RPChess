@@ -27,16 +27,6 @@ function ensureConstraints(){
   style.textContent=`
 @media (orientation:landscape) {
   html[data-landscape-ui='1'] body.puzzles-active .puzzle-source { display:none!important; }
-
-  /* Battle owns the semantic numeric cost; battle.css owns the gold icon via ::before. */
-  html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-mercenary-quote__row--cost strong::before,
-  html[data-landscape-ui='1'] .battle-mercenary-quote__row--cost strong::before {
-    width:20px!important;
-    height:20px!important;
-    min-width:20px!important;
-    flex:0 0 20px!important;
-    background-size:contain!important;
-  }
 }
 
 @media (orientation:landscape) and (max-width:1180px) {
@@ -56,49 +46,6 @@ function ensureConstraints(){
     min-width:0!important;
     box-sizing:border-box!important;
     justify-self:start!important;
-  }
-
-  html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army .battle-mercenary-quote,
-  html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army .battle-mercenary-quote__row {
-    width:100%!important;
-    max-width:100%!important;
-    min-width:0!important;
-    box-sizing:border-box!important;
-  }
-  html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army .battle-mercenary-quote { overflow:hidden!important; }
-  html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army .battle-mercenary-quote__row > span,
-  html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army .battle-mercenary-quote__row > strong { min-width:0!important; }
-}
-
-@media (orientation:landscape) and (max-width:980px) and (max-height:520px) {
-  html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army {
-    position:relative!important;
-    padding-bottom:48px!important;
-    overflow:hidden!important;
-  }
-  html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army .battle-mercenary-quote {
-    margin-top:3px!important;
-    padding-top:3px!important;
-    gap:2px!important;
-  }
-  html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army .battle-mercenary-quote__title {
-    margin-bottom:1px!important;
-    font-size:6px!important;
-    line-height:1!important;
-  }
-  html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army .battle-mercenary-quote__row {
-    min-height:19px!important;
-    padding:2px 5px!important;
-    gap:5px!important;
-    font-size:7px!important;
-    line-height:1!important;
-  }
-  html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army .battle-mercenary-quote__row strong { font-size:9px!important; }
-  html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-army .battle-mercenary-quote__row--cost strong::before {
-    width:14px!important;
-    height:14px!important;
-    min-width:14px!important;
-    flex-basis:14px!important;
   }
 }
 `;

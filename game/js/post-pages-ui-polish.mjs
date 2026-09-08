@@ -53,10 +53,6 @@ function ensureStyle(){
   }
   html[data-landscape-ui='1'] body.run-combat-board-active .classic-party-panel .classic-moves{max-height:22dvh!important;overflow:auto!important}
 
-  /* Battle owns the semantic numeric cost; battle.css owns the gold icon. */
-  html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-mercenary-quote__row--cost strong,
-  html[data-landscape-ui='1'] .battle-mercenary-quote__row--cost strong{display:inline-flex!important;align-items:center!important;gap:6px!important}
-
   /* Final run summary has no floating Gold/Supplies frames. */
   html[data-landscape-ui='1'] body.endless-run-active .resource-hud{display:none!important}
 }

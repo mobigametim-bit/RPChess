@@ -4,6 +4,7 @@ import { placeArmy } from './skirmish-core.mjs';
 
 const CSS_HREF='css/ui-redesign-final.css?v=20260902-cleanup2';
 const SIDE_COLORS_CSS_HREF='css/combat-side-colors.css?v=20260903-aura1';
+const BATTLE_COMPACT_CSS_HREF='css/battle-compact.css?v=20260908-owner1';
 const BLACK_GLYPHS=Object.freeze({pawn:'♟',knight:'♞',bishop:'♝',rook:'♜',queen:'♛',king:'♚'});
 const GLYPHS_BY_COLOR=Object.freeze({w:PIECE_GLYPHS,b:BLACK_GLYPHS});
 const TYPE_BY_GLYPH=Object.freeze(Object.fromEntries([...Object.entries(PIECE_GLYPHS),...Object.entries(BLACK_GLYPHS)].map(([type,glyph])=>[glyph,type])));
@@ -27,7 +28,7 @@ const skirmishActionbarNext=skirmishActionbar?.nextSibling||null;
 let battleStartHome=null,battleStartNext=null,queued=false;
 
 function ensureStylesheet(href,datasetName){if(document.querySelector(`[${datasetName}]`))return;const link=document.createElement('link');link.rel='stylesheet';link.href=href;link.setAttribute(datasetName,'');document.head.append(link);}
-function ensureCss(){ensureStylesheet(CSS_HREF,'data-ui-redesign-final-css');ensureStylesheet(SIDE_COLORS_CSS_HREF,'data-combat-side-colors-css');}
+function ensureCss(){ensureStylesheet(CSS_HREF,'data-ui-redesign-final-css');ensureStylesheet(SIDE_COLORS_CSS_HREF,'data-combat-side-colors-css');ensureStylesheet(BATTLE_COMPACT_CSS_HREF,'data-battle-compact-css');}
 function removeObsoleteHiddenControls(){for(const selector of OBSOLETE_HIDDEN_CONTROLS)for(const node of document.querySelectorAll(selector))node.remove();}
 function visible(root){return Boolean(root&&!root.hidden);}
 function desktop(){return matchMedia('(min-width: 901px)').matches;}
