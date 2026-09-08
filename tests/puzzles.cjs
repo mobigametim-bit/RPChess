@@ -32,6 +32,8 @@ function memoryStorage(){const data=new Map();return{getItem:key=>data.has(key)?
   assert(appSource.includes('css/puzzles.css?v=20260901-puzzles-redesign-1'),'Puzzle annotation CSS cachebuster must advance');
   for(const token of ['.puzzle-piece-marker','.puzzle-coordinate--file','.puzzle-coordinate--rank'])assert(cssSource.includes(token),`Puzzle CSS missing ${token}`);
   assert(cssSource.includes(".puzzle-piece-marker[data-puzzle-piece-marker='p']::before") && cssSource.includes('paint-order:stroke fill'),'Puzzle owner CSS must render accepted role glyphs');
-  assert(cssSource.includes('Final Training geometry for the second Human Acceptance pass.') && cssSource.includes('width:calc(100vw - 100dvh - 43px)!important'),'Puzzle owner CSS must own the accepted Training geometry cascade');
+  assert(cssSource.includes('Review2 Puzzle geometry moved into the screen owner.') && cssSource.includes('Final Training geometry for the second Human Acceptance pass.') && cssSource.includes('width:calc(100vw - 100dvh - 43px)!important'),'Puzzle owner CSS must own the accepted Training geometry cascade');
+  const review2Source=fs.readFileSync(path.join(game,'js/content/post-pages-ui-review2.mjs'),'utf8');
+  assert(!review2Source.includes('body.puzzles-active'),'review2 runtime must not retain Puzzle CSS after owner migration');
   console.log('Puzzles reward/persistence/history migration/no-repeat/board-annotation UI contracts: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
