@@ -1,5 +1,6 @@
 import { PIECE_GLYPHS, PIECE_LABELS } from './roster-data.mjs';
 import { readRun, writeRun } from './run-persistence.mjs';
+import { subscribe, t } from './i18n.mjs';
 import {
   SETTLEMENT_SUPPLY_PRICE,
   applyHealing,
@@ -12,6 +13,9 @@ import {
   recruitProfile
 } from './settlement-core.mjs';
 
+const GOLD_ICON='generated_assets/reward_gold.png';
+const SUPPLIES_ICON='generated_assets/reward_supplies.png';
+
 let screen = null;
 let activeRun = null;
 let busy = false;
@@ -22,9 +26,30 @@ function ensureCss() {
   if (document.querySelector('[data-settlement-css]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/settlement.css?v=20260827-settlement-1';
+  link.href = 'css/settlement.css?v=20260908-owner-1';
   link.dataset.settlementCss = '';
   document.head.append(link);
+}
+
+function applyStaticCopy() {
+  if (!screen) return;
+  screen.setAttribute('aria-label', t('settlement.ariaLabel'));
+  const values={
+    '[data-settlement-kicker]':'settlement.kicker',
+    '[data-settlement-title]':'settlement.title',
+    '[data-settlement-subtitle]':'settlement.subtitle',
+    '[data-settlement-healer-title]':'settlement.healer.title',
+    '[data-settlement-healer-intro]':'settlement.healer.intro',
+    '[data-settlement-tavern-title]':'settlement.tavern.title',
+    '[data-settlement-tavern-intro]':'settlement.tavern.intro',
+    '[data-settlement-market-title]':'settlement.market.title',
+    '[data-settlement-footer-copy]':'settlement.footer',
+    '[data-settlement-continue]':'settlement.continue'
+  };
+  for(const [selector,key] of Object.entries(values)){
+    const node=screen.querySelector(selector);
+    if(node)node.textContent=t(key);
+  }
 }
 
 function ensureScreen() {
@@ -35,7 +60,6 @@ function ensureScreen() {
   screen = document.createElement('main');
   screen.className = 'settlement-screen';
   screen.dataset.settlementScreen = '';
-  screen.setAttribute('aria-label', 'Поселение');
   screen.hidden = true;
   screen.innerHTML = `
     <div class="settlement-shell">
@@ -43,39 +67,36 @@ function ensureScreen() {
         <img class="settlement-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
       </header>
       <header class="settlement-heading">
-        <div class="reboot-eyebrow">БЕЗОПАСНАЯ ОСТАНОВКА</div>
-        <h1>Поселение</h1>
-        <p>Здесь можно привести отряд в порядок перед следующей дорогой.</p>
+        <div class="reboot-eyebrow" data-settlement-kicker></div>
+        <h1 data-settlement-title></h1>
+        <p data-settlement-subtitle></p>
       </header>
       <div class="settlement-services">
         <section class="settlement-service ui-panel-safe" aria-labelledby="settlement-healer-title">
-          <div class="settlement-service__icon" aria-hidden="true">✚</div>
-          <div class="reboot-eyebrow">ЗНАХАРКА</div>
-          <h2 id="settlement-healer-title">Знахарка</h2>
-          <p class="settlement-service__intro">Тяжело раненые бойцы могут вернуться в строй за золото.</p>
+          <div class="settlement-service__icon settlement-service__icon--healer" aria-hidden="true"></div>
+          <h2 id="settlement-healer-title" data-settlement-healer-title></h2>
+          <p class="settlement-service__intro" data-settlement-healer-intro></p>
           <div class="settlement-healer-list" data-settlement-healer-list></div>
         </section>
         <section class="settlement-service settlement-service--tavern ui-panel-safe" aria-labelledby="settlement-tavern-title">
-          <div class="settlement-service__icon" aria-hidden="true">♙</div>
-          <div class="reboot-eyebrow">ТАВЕРНА</div>
-          <h2 id="settlement-tavern-title">Таверна</h2>
-          <p class="settlement-service__intro">Три путника готовы присоединиться к походу. Предложения этого поселения не меняются.</p>
+          <div class="settlement-service__icon settlement-service__icon--tavern" aria-hidden="true"></div>
+          <h2 id="settlement-tavern-title" data-settlement-tavern-title></h2>
+          <p class="settlement-service__intro" data-settlement-tavern-intro></p>
           <div class="settlement-recruits" data-settlement-recruits></div>
         </section>
-        <section class="settlement-service ui-panel-safe" aria-labelledby="settlement-supplies-title">
-          <div class="settlement-service__icon" aria-hidden="true">◆</div>
-          <div class="reboot-eyebrow">СНАБЖЕНИЕ</div>
-          <h2 id="settlement-supplies-title">Рынок</h2>
-          <p class="settlement-service__intro">Запасы ограничены, но каждый купленный припас остаётся с отрядом.</p>
+        <section class="settlement-service settlement-service--market ui-panel-safe" aria-labelledby="settlement-supplies-title">
+          <div class="settlement-service__icon settlement-service__icon--market" aria-hidden="true"></div>
+          <h2 id="settlement-supplies-title" data-settlement-market-title></h2>
           <div class="settlement-supply-card" data-settlement-supply-card></div>
         </section>
       </div>
       <footer class="settlement-footer">
-        <p>Выход из поселения не расходует дополнительный припас.</p>
-        <button class="reboot-button reboot-button--primary settlement-continue" type="button" data-settlement-continue>Продолжить путь</button>
+        <p data-settlement-footer-copy></p>
+        <button class="reboot-button reboot-button--primary settlement-continue" type="button" data-settlement-continue></button>
       </footer>
     </div>`;
   app.append(screen);
+  applyStaticCopy();
 
   screen.querySelector('[data-settlement-continue]')?.addEventListener('click', continuePath);
   screen.addEventListener('click', handleServiceAction);
@@ -103,7 +124,7 @@ function hideSettlement() {
 }
 
 function goldMarkup(amount) {
-  return `<span class="settlement-price"><img src="generated_assets/reward_gold.png" alt="">${amount}</span>`;
+  return `<span class="settlement-price"><img src="${GOLD_ICON}" alt="">${amount}</span>`;
 }
 
 function renderHealer() {
@@ -114,7 +135,7 @@ function renderHealer() {
   if (!wounded.length) {
     const empty = document.createElement('p');
     empty.className = 'settlement-empty';
-    empty.textContent = 'Все бойцы готовы к пути.';
+    empty.textContent = t('settlement.healer.empty');
     root.append(empty);
     return;
   }
@@ -125,7 +146,7 @@ function renderHealer() {
     row.innerHTML = `
       <img src="${character.portrait}" alt="${character.name}">
       <div><strong>${character.name}</strong><span>${PIECE_GLYPHS[character.pieceType] || ''} ${PIECE_LABELS[character.pieceType] || character.pieceType}</span></div>
-      <div class="settlement-heal-row__action">${goldMarkup(price)}<button class="reboot-button reboot-button--primary" type="button" data-settlement-heal="${character.id}" ${activeRun.gold < price ? 'disabled' : ''}>Лечить</button></div>`;
+      <div class="settlement-heal-row__action">${goldMarkup(price)}<button class="reboot-button reboot-button--primary" type="button" data-settlement-heal="${character.id}" ${activeRun.gold < price ? 'disabled' : ''}>${t('settlement.healer.action')}</button></div>`;
     root.append(row);
   }
 }
@@ -148,7 +169,7 @@ function renderRecruits() {
         <div class="settlement-recruit__head"><strong>${candidate.name}</strong><span>${PIECE_GLYPHS[candidate.pieceType] || ''} ${PIECE_LABELS[candidate.pieceType] || candidate.pieceType}</span></div>
         <small>${candidate.origin}</small>
         <p>${candidate.description}</p>
-        <div class="settlement-recruit__footer">${goldMarkup(price)}<button class="reboot-button reboot-button--primary" type="button" data-settlement-recruit="${candidate.id}" ${alreadyPresent || activeRun.gold < price ? 'disabled' : ''}>${alreadyPresent ? 'В отряде' : 'Нанять'}</button></div>
+        <div class="settlement-recruit__footer">${goldMarkup(price)}<button class="reboot-button reboot-button--primary" type="button" data-settlement-recruit="${candidate.id}" ${alreadyPresent || activeRun.gold < price ? 'disabled' : ''}>${alreadyPresent ? t('settlement.tavern.inRoster') : t('settlement.tavern.hire')}</button></div>
       </div>`;
     root.append(card);
   }
@@ -158,14 +179,21 @@ function renderSupply() {
   const root = screen?.querySelector('[data-settlement-supply-card]');
   if (!root || !activeRun?.currentSettlement) return;
   const stock = activeRun.currentSettlement.supplyStock;
+  const disabled = stock <= 0 || activeRun.gold < SETTLEMENT_SUPPLY_PRICE;
   root.innerHTML = `
-    <div class="settlement-supply-card__stock"><span>ОСТАЛОСЬ</span><strong data-settlement-supply-stock>${stock} / 4</strong></div>
-    <div class="settlement-supply-card__price">${goldMarkup(SETTLEMENT_SUPPLY_PRICE)}<span>за 1 припас</span></div>
-    <button class="reboot-button reboot-button--primary" type="button" data-settlement-buy-supply ${stock <= 0 || activeRun.gold < SETTLEMENT_SUPPLY_PRICE ? 'disabled' : ''}>${stock <= 0 ? 'Распродано' : 'Купить припас'}</button>`;
+    <div class="settlement-market-row__product">
+      <img class="settlement-market-row__item-icon" src="${SUPPLIES_ICON}" alt="" aria-hidden="true">
+      <strong data-settlement-supply-stock>${stock}/4</strong>
+      <span class="settlement-market-row__separator">${t('settlement.market.for')}</span>
+      <img class="settlement-market-row__gold-icon" src="${GOLD_ICON}" alt="" aria-hidden="true">
+      <strong class="settlement-price settlement-market-row__price">${SETTLEMENT_SUPPLY_PRICE}</strong>
+    </div>
+    <button class="reboot-button reboot-button--primary" type="button" data-settlement-buy-supply ${disabled ? 'disabled' : ''}>${stock <= 0 ? t('settlement.market.soldOut') : t('settlement.market.buy')}</button>`;
 }
 
 function renderSettlement() {
   if (!screen || !activeRun) return;
+  applyStaticCopy();
   renderHealer();
   renderRecruits();
   renderSupply();
@@ -175,7 +203,8 @@ function renderSettlement() {
 function persistResult(result, toast) {
   if (!result?.success) return false;
   activeRun = writeRun(result.run);
-  globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
+  globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated', { detail:{ source:'settlement' } }));
+  globalThis.dispatchEvent(new CustomEvent('rpchess:settlement-updated'));
   globalThis.RPChessResources?.showChange?.(toast);
   renderSettlement();
   return true;
@@ -194,13 +223,13 @@ function handleServiceAction(event) {
   let changed = false;
   if (healButton) {
     const result = applyHealing(activeRun, healButton.dataset.settlementHeal);
-    changed = persistResult(result, { goldDelta: -result.spent, label: result.success ? 'ЛЕЧЕНИЕ' : '' });
+    changed = persistResult(result, { goldDelta: -result.spent, label: result.success ? t('resources.healing') : '' });
   } else if (recruitButton) {
     const result = applyRecruitment(activeRun, recruitButton.dataset.settlementRecruit);
-    changed = persistResult(result, { goldDelta: -result.spent, label: result.success ? 'НОВЫЙ БОЕЦ' : '' });
+    changed = persistResult(result, { goldDelta: -result.spent, label: result.success ? t('resources.newFighter') : '' });
   } else if (supplyButton) {
     const result = applySupplyPurchase(activeRun);
-    changed = persistResult(result, { goldDelta: -result.spent, suppliesDelta: result.suppliesAdded, label: result.success ? 'СНАБЖЕНИЕ' : '' });
+    changed = persistResult(result, { goldDelta: -result.spent, suppliesDelta: result.suppliesAdded, label: result.success ? t('resources.supplyPurchase') : '' });
   }
   if (!changed) renderSettlement();
   busy = false;
@@ -215,7 +244,7 @@ function openSettlement(event) {
   const state = createSettlementState(activeRun, choice);
   if (!activeRun.currentSettlement || activeRun.currentSettlement.routeId !== state.routeId) {
     activeRun = writeRun({ ...activeRun, currentSettlement: state });
-    globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
+    globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated', { detail:{ source:'settlement-open' } }));
   }
   showSettlement();
   renderSettlement();
@@ -230,7 +259,7 @@ function continuePath() {
   const suppliesBefore = activeRun.supplies;
   activeRun = writeRun(completeSettlement(activeRun));
   if (activeRun.supplies !== suppliesBefore) throw new Error('Settlement exit must not spend Supplies');
-  globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
+  globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated', { detail:{ source:'settlement-complete' } }));
   hideSettlement();
   busy = false;
   globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open', { detail: { source: 'settlement-complete', runId: activeRun.id } }));
@@ -249,6 +278,7 @@ function syncRun() {
 ensureScreen();
 addEventListener('rpchess:settlement-open', openSettlement);
 addEventListener('rpchess:run-updated', syncRun);
+subscribe(() => { applyStaticCopy(); if(screen && !screen.hidden) renderSettlement(); });
 
 globalThis.RPChessSettlement = Object.freeze({
   open: openSettlement,
