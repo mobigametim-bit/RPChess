@@ -1,45 +1,11 @@
 const MARKER='data-post-pages-ui-polish-constraints';
-const COMBAT_CLASS='post-pages-run-combat-active';
-
-function combatActive(){
-  const classic=document.querySelector('[data-classic-screen]');
-  return Boolean(classic&&!classic.hidden&&(globalThis.RPChessBattle?.battlePlan||globalThis.RPChessSkirmish?.battlePlan));
-}
-
-function syncCombatConstraintState(){
-  document.body?.classList.toggle(COMBAT_CLASS,combatActive());
-}
-
-let stateQueued=false;
-function scheduleCombatConstraintState(){
-  if(stateQueued)return;
-  stateQueued=true;
-  queueMicrotask(()=>{
-    stateQueued=false;
-    syncCombatConstraintState();
-  });
-}
 
 function ensureConstraints(){
   if(document.querySelector(`[${MARKER}]`))return;
   const style=document.createElement('style');
   style.setAttribute(MARKER,'');
   style.textContent=`
-@media (orientation:landscape) {
-  html[data-landscape-ui='1'] body.puzzles-active .puzzle-source { display:none!important; }
-}
-
 @media (orientation:landscape) and (max-width:1180px) {
-  html[data-landscape-ui='1'] .classic-party-panel:has(> .classic-panel--moves) {
-    width:calc(100vw - 100dvh - 32px)!important;
-    max-width:calc(100vw - 100dvh - 32px)!important;
-    min-width:0!important;
-    margin-left:8px!important;
-    margin-right:0!important;
-    box-sizing:border-box!important;
-    justify-self:start!important;
-    transform:none!important;
-  }
   html[data-landscape-ui='1'] body.puzzles-active .puzzle-layout>.puzzle-panel:first-child {
     width:calc(100vw - 100dvh - 32px)!important;
     max-width:calc(100vw - 100dvh - 32px)!important;
@@ -52,20 +18,7 @@ function ensureConstraints(){
   document.head.append(style);
 }
 
-function install(){
-  ensureConstraints();
-  syncCombatConstraintState();
-  for(const name of ['rpchess:skirmish-open','rpchess:battle-open','rpchess:run-updated','rpchess:run-continue']){
-    addEventListener(name,scheduleCombatConstraintState);
-  }
-  document.addEventListener('click',(event)=>{
-    const target=event.target instanceof Element?event.target:null;
-    if(target?.closest('[data-skirmish-start],[data-battle-start],[data-aftermath-continue],[data-battle-continue]'))scheduleCombatConstraintState();
-  },true);
-  addEventListener('resize',scheduleCombatConstraintState,{passive:true});
-}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensureConstraints,{once:true});
+else ensureConstraints();
 
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});
-else install();
-
-export { ensureConstraints, syncCombatConstraintState };
+export { ensureConstraints };

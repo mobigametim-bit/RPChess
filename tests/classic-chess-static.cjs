@@ -9,6 +9,9 @@ const foundationCss = fs.readFileSync(path.join(game, 'css/reboot-foundation.css
 const css = fs.readFileSync(path.join(game, 'css/classic-chess.css'), 'utf8');
 const polishCss = fs.readFileSync(path.join(game, 'css/chess-ai-polish.css'), 'utf8');
 const review2Source = fs.readFileSync(path.join(game, 'js/content/post-pages-ui-review2.mjs'), 'utf8');
+const constraintsSource = fs.readFileSync(path.join(game, 'js/content/post-pages-ui-polish-constraints.mjs'), 'utf8');
+const postPagesSource = fs.readFileSync(path.join(game, 'js/post-pages-ui-polish.mjs'), 'utf8');
+const redesignSource = fs.readFileSync(path.join(game, 'js/ui-redesign-final.mjs'), 'utf8');
 const rosterCss = fs.readFileSync(path.join(game, 'css/roster.css'), 'utf8');
 const uxCss = fs.readFileSync(path.join(game, 'css/ux-consistency.css'), 'utf8');
 const uxApp = fs.readFileSync(path.join(game, 'js/ux-consistency.mjs'), 'utf8');
@@ -89,7 +92,13 @@ for (const source of [foundationCss, css, polishCss, rosterCss, uxCss]) {
 assert(css.includes('.classic-board-wrap') && css.includes('border: 1px solid rgba(102, 157, 199, .5)'), 'board wrapper must use a CSS-only frameless edge');
 assert(polishCss.includes(".classic-piece-marker[data-piece-marker='p']::before") && polishCss.includes('paint-order:stroke fill'), 'Classic owner CSS must render accepted role glyphs');
 assert(polishCss.includes("html[lang='en'] .classic-party-panel h2::before { content:'COMBAT SUMMARY'!important; }") && polishCss.includes("content:'COMBAT LOG'!important"), 'Classic owner CSS must own language-aware combat captions');
-assert(!review2Source.includes('append(moves)') && !review2Source.includes('scheduleMobileCombatPanel'), 'review2 must not duplicate the combat-panel reparenting lifecycle');
+
+// Run combat must keep the Journal in its source-owned sibling slot instead of moving live DOM.
+assert(review2Source.includes('body.run-combat-board-active') && review2Source.includes('.classic-party-panel,') && review2Source.includes('.classic-panel--moves'), 'run-combat compatibility CSS must style stable Party/Journal siblings');
+assert(!review2Source.includes(':has(>.classic-panel--moves)') && !review2Source.includes('>.classic-panel--moves'), 'run-combat CSS must not depend on Journal being reparented into Party');
+assert(!redesignSource.includes('movePanelHome') && !redesignSource.includes('party.append(movePanel)'), 'shared redesign runtime must not reparent Classic Journal');
+assert(!postPagesSource.includes('movesHome') && !postPagesSource.includes('syncCombat()') && !postPagesSource.includes('party.append(moves)'), 'post-pages polish must not keep a second Classic Journal reparent path');
+assert(!constraintsSource.includes('post-pages-run-combat-active') && !constraintsSource.includes('syncCombatConstraintState'), 'constraints layer must not keep dead run-combat lifecycle state');
 
 for (const side of ['player', 'enemy']) {
   for (const piece of ['pawn', 'knight', 'bishop', 'rook', 'queen', 'king']) {
@@ -97,4 +106,4 @@ for (const side of ['player', 'enemy']) {
   }
 }
 
-console.log('Classic Chess + AI external-coordinate / frameless production polish static contract: PASS');
+console.log('Classic Chess + AI external-coordinate / stable-Journal / frameless production polish static contract: PASS');

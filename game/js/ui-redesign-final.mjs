@@ -18,9 +18,6 @@ const OBSOLETE_HIDDEN_CONTROLS=Object.freeze([
   '[data-events-settings]'
 ]);
 const classicScreen=document.querySelector('[data-classic-screen]');
-const movePanel=classicScreen?.querySelector('.classic-panel--moves')||null;
-const movePanelHome=movePanel?.parentElement||null;
-const movePanelNext=movePanel?.nextSibling||null;
 const skirmishScreen=document.querySelector('[data-skirmish-screen]');
 const skirmishActionbar=skirmishScreen?.querySelector('.skirmish-actionbar')||null;
 const skirmishActionbarHome=skirmishActionbar?.parentElement||null;
@@ -36,7 +33,7 @@ function normalizeColor(value){return value==='b'?'b':'w';}
 function glyphsFor(color){return GLYPHS_BY_COLOR[normalizeColor(color)];}
 function restore(node,home,next){if(!node||!home||node.parentElement===home)return;home.insertBefore(node,next?.parentNode===home?next:null);}
 function activeCombatKind(){if(!visible(classicScreen))return null;if(globalThis.RPChessBattle?.battlePlan)return'battle';if(globalThis.RPChessSkirmish?.battlePlan)return'skirmish';return null;}
-function syncCombatBoard(){const kind=activeCombatKind(),compact=Boolean(kind&&desktop());document.body.classList.toggle('run-combat-board-active',Boolean(kind));document.body.classList.toggle('compact-combat-active',compact);if(!compact){restore(movePanel,movePanelHome,movePanelNext);return;}const party=classicScreen?.querySelector('.classic-party-panel');if(party&&movePanel&&movePanel.parentElement!==party)party.append(movePanel);}
+function syncCombatBoard(){const kind=activeCombatKind(),compact=Boolean(kind&&desktop());document.body.classList.toggle('run-combat-board-active',Boolean(kind));document.body.classList.toggle('compact-combat-active',compact);}
 function syncPuzzle(){const puzzle=document.querySelector('[data-puzzle-screen]'),active=visible(puzzle);document.body.classList.toggle('compact-puzzle-active',active);const outcome=puzzle?.querySelector('[data-puzzle-outcome]');document.body.classList.toggle('puzzle-resolved-compact',Boolean(active&&outcome&&!outcome.hidden));}
 function characterGlyph(card,run,color='w'){const id=card?.dataset.skirmishCharacter||card?.dataset.battleCharacter;const character=run?.roster?.find((entry)=>entry.id===id);return character?glyphsFor(color)[character.pieceType]||'':'';}
 function ensureCardGlyphs(selector,className,color='w'){const run=readRun(),side=normalizeColor(color);for(const card of document.querySelectorAll(selector)){let mark=card.querySelector(`.${className}`);const glyph=characterGlyph(card,run,side);if(!glyph){mark?.remove();continue;}if(!mark){mark=document.createElement('span');mark.className=className;mark.setAttribute('aria-hidden','true');card.append(mark);}mark.dataset.pieceColor=side;if(mark.textContent!==glyph)mark.textContent=glyph;}}

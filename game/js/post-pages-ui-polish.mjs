@@ -36,23 +36,6 @@ function ensureStyle(){
   html[data-landscape-ui='1'] body.puzzles-active .puzzle-polish-reward{display:flex!important;align-items:center!important;gap:8px!important;color:#f1cf75!important;font-weight:800!important;font-size:clamp(16px,1.6vw,23px)!important}
   html[data-landscape-ui='1'] body.puzzles-active .puzzle-polish-reward img{width:1.45em!important;height:1.45em!important;object-fit:contain!important}
 
-  /* Run combat information keeps the desktop panel structure at every landscape size. */
-  html[data-landscape-ui='1'] body.run-combat-board-active .classic-topbar{
-    background:transparent!important;border:0!important;box-shadow:none!important;padding:8px 10px!important
-  }
-  html[data-landscape-ui='1'] body.run-combat-board-active .classic-party-panel{
-    margin:0 10px 8px 8px!important;padding:clamp(12px,1.2vw,18px)!important;
-    border:1px solid rgba(216,177,93,.28)!important;border-radius:3px!important;
-    background:rgba(4,8,13,.92)!important;box-shadow:0 12px 34px rgba(0,0,0,.32)!important;
-    overflow:auto!important
-  }
-  html[data-landscape-ui='1'] body.run-combat-board-active .classic-party-panel .classic-panel--moves{
-    display:block!important;position:relative!important;width:100%!important;height:auto!important;min-height:0!important;
-    margin:12px 0 0!important;padding:10px 0 0!important;border:0!important;border-top:1px solid rgba(216,177,93,.20)!important;
-    border-radius:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important
-  }
-  html[data-landscape-ui='1'] body.run-combat-board-active .classic-party-panel .classic-moves{max-height:22dvh!important;overflow:auto!important}
-
   /* Final run summary has no floating Gold/Supplies frames. */
   html[data-landscape-ui='1'] body.endless-run-active .resource-hud{display:none!important}
 }
@@ -141,23 +124,11 @@ function syncPuzzle(){
   reward.querySelector('strong').textContent=String(numberFrom(current?.textContent));
 }
 
-const classic=document.querySelector('[data-classic-screen]');
-const moves=classic?.querySelector('.classic-panel--moves')||null;
-const movesHome=moves?.parentElement||null;
-const movesNext=moves?.nextSibling||null;
-function restore(node,home,next){if(!node||!home||node.parentElement===home)return;home.insertBefore(node,next?.parentNode===home?next:null);}
-function syncCombat(){
-  const active=visible(classic)&&Boolean(globalThis.RPChessBattle?.battlePlan||globalThis.RPChessSkirmish?.battlePlan);
-  if(!moves)return;
-  if(active){const party=classic.querySelector('.classic-party-panel');if(party&&moves.parentElement!==party)party.append(moves);}
-  else restore(moves,movesHome,movesNext);
-}
-
 let queued=false;
-function refresh(){queued=false;syncPuzzle();syncCombat();}
+function refresh(){queued=false;syncPuzzle();}
 function schedule(){if(queued)return;queued=true;requestAnimationFrame(refresh);}
 
-for(const name of ['rpchess:puzzle-open','rpchess:skirmish-open','rpchess:battle-open','rpchess:run-updated','rpchess:resources-updated'])addEventListener(name,()=>queueMicrotask(schedule));
+for(const name of ['rpchess:puzzle-open','rpchess:run-updated','rpchess:resources-updated'])addEventListener(name,()=>queueMicrotask(schedule));
 document.addEventListener('click',()=>queueMicrotask(schedule),true);
 addEventListener('resize',schedule,{passive:true});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
