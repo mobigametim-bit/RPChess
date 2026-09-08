@@ -9,9 +9,11 @@ import { puzzleBaseGold } from './puzzles/puzzle-core.mjs';
 const ROUTE_ICONS=Object.freeze({skirmish:'generated_assets/node_battle.png',battle:'generated_assets/node_elite.png',event:'generated_assets/node_story.png',settlement:'generated_assets/node_shop.png',puzzle:'generated_assets/node_training.png'});
 const GOLD_ICON='generated_assets/reward_gold.png';
 const SUPPLIES_ICON='generated_assets/reward_supplies.png';
+const OWNER_STYLE_HREF='css/travel-choice-compact.css';
 let screen=null,activeRun=null,routing=false;
 function audio(){return globalThis.RPChessRebootAudio;}
 function resourceIcon(src,className){const image=document.createElement('img');image.src=src;image.alt='';image.draggable=false;image.className=className;image.setAttribute('aria-hidden','true');return image;}
+function ensureOwnerStylesheet(){if(document.querySelector('link[data-travel-choice-owner-style]'))return;const link=document.createElement('link');link.rel='stylesheet';link.href=OWNER_STYLE_HREF;link.dataset.travelChoiceOwnerStyle='';document.head?.append(link);}
 function ensureScreen(){
   if(screen)return screen;
   const app=document.querySelector('#app');if(!app)return null;
@@ -74,4 +76,4 @@ function activeChoiceCompleted(run){const choice=run?.activeTravelChoice;if(!isT
 function applyAftermathTravelLabels(){const a=document.querySelector('[data-aftermath-continue]'),b=document.querySelector('[data-battle-continue]');if(a)a.textContent='Продолжить путь';if(b)b.textContent='Продолжить путь';}
 function syncRun(){activeRun=readRun();if(!activeRun)return;globalThis.RPChessPower?.settle?.(activeRun);if(activeChoiceCompleted(activeRun)){activeRun=writeRun({...activeRun,activeTravelChoice:null});queueMicrotask(applyAftermathTravelLabels);}if(screen&&!screen.hidden&&activeRun&&!activeRun.ended&&!activeRun.activeTravelChoice){activeRun=ensureChoices(activeRun);renderChoices();}}
 function continueAfterStarvation(){activeRun=readRun();const choice=activeRun?.activeTravelChoice;if(!activeRun||activeRun.ended||!isTravelChoice(choice)||choice.starvationAcknowledged!==true)return;dispatchEncounter(choice);}
-ensureScreen();applyAftermathTravelLabels();addEventListener('rpchess:travel-open',openTravel);addEventListener('rpchess:run-updated',syncRun);addEventListener('rpchess:resources-updated',()=>{if(screen&&!screen.hidden){activeRun=readRun()||activeRun;renderResources();}});addEventListener('rpchess:starvation-continue',continueAfterStarvation);addEventListener('rpchess:power-updated',()=>{if(screen&&!screen.hidden)renderRating();});globalThis.RPChessTravelChoice=Object.freeze({open:openTravel,openRoster,recoverAftermathRoute,get run(){return activeRun;},get choices(){return[...(activeRun?.currentTravelChoices||[])];},get activeChoice(){return activeRun?.activeTravelChoice||null;}});
+ensureOwnerStylesheet();ensureScreen();applyAftermathTravelLabels();addEventListener('rpchess:travel-open',openTravel);addEventListener('rpchess:run-updated',syncRun);addEventListener('rpchess:resources-updated',()=>{if(screen&&!screen.hidden){activeRun=readRun()||activeRun;renderResources();}});addEventListener('rpchess:starvation-continue',continueAfterStarvation);addEventListener('rpchess:power-updated',()=>{if(screen&&!screen.hidden)renderRating();});globalThis.RPChessTravelChoice=Object.freeze({open:openTravel,openRoster,recoverAftermathRoute,get run(){return activeRun;},get choices(){return[...(activeRun?.currentTravelChoices||[])];},get activeChoice(){return activeRun?.activeTravelChoice||null;}});

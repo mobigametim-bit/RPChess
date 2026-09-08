@@ -6,64 +6,7 @@ function ensureStyle(){
   style.setAttribute(MARKER,'');
   style.textContent=`
 /* Human Acceptance correction pass 2. Presentation-only, no gameplay/state changes. */
-@media (orientation:landscape) and (max-width:1180px) {
-  /* 3. Travel — distribute the command row across the available frame instead of
-     packing portrait/rating/resources against the right edge. */
-  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-topbar--command {
-    grid-template-columns:max-content minmax(0,1fr)!important;
-    column-gap:10px!important;
-  }
-  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-commandbar {
-    width:100%!important;
-    min-width:0!important;
-    grid-template-columns:40px minmax(112px,1fr) minmax(100px,1fr) minmax(148px,1.15fr)!important;
-    justify-content:stretch!important;
-    column-gap:9px!important;
-  }
-  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-run-portrait {
-    width:36px!important;
-    height:36px!important;
-    min-width:36px!important;
-    justify-self:start!important;
-  }
-  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-player-rating,
-  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-inline-resources,
-  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-topbar__actions {
-    width:100%!important;
-    min-width:0!important;
-    transform:none!important;
-  }
-  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-player-rating {
-    justify-self:stretch!important;
-    padding-inline:6px!important;
-  }
-  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-inline-resources {
-    justify-self:stretch!important;
-    justify-content:center!important;
-  }
-  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-topbar__actions {
-    justify-self:stretch!important;
-  }
-}
-
 @media (orientation:landscape) and (max-width:980px) and (max-height:520px) {
-  /* 3. Travel phone uses the same evenly distributed command rhythm as tablet. */
-  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-topbar--command {column-gap:8px!important}
-  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-commandbar {
-    height:38px!important;
-    grid-template-columns:34px minmax(96px,1fr) minmax(88px,1fr) minmax(128px,1.05fr)!important;
-    column-gap:6px!important;
-    justify-content:stretch!important;
-  }
-  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-run-portrait {
-    width:32px!important;
-    height:32px!important;
-    min-width:32px!important;
-  }
-  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-player-rating,
-  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-inline-resources,
-  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen .travel-choice-topbar__actions {width:100%!important}
-
   /* 4. Battle Prep phone: keep the six personal cards directly under the section title. */
   html[data-landscape-ui='1'] body.battle-prep-compact-active #app main.battle-screen .battle-roster {
     align-content:start!important;

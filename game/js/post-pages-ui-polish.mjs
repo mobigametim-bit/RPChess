@@ -1,20 +1,16 @@
 const GOLD_ICON='generated_assets/reward_gold.png';
 const STYLE_MARKER='data-post-pages-ui-polish-style';
-const RUN_KEY='rpchess.reboot.v1.run';
-const COMPACT_QUERY='(orientation: landscape) and (max-width: 1180px)';
 
 function visible(node){return Boolean(node&&!node.hidden);}
-function compactLayout(){return Boolean(globalThis.matchMedia?.(COMPACT_QUERY)?.matches);}
-function run(){try{return JSON.parse(localStorage.getItem(RUN_KEY)||'null');}catch{return null;}}
 function img(src,className=''){const node=document.createElement('img');node.src=src;node.alt='';node.draggable=false;if(className)node.className=className;node.setAttribute('aria-hidden','true');return node;}
 function numberFrom(value){const match=String(value||'').match(/-?\d+/);return match?Number(match[0]):0;}
 
 function ensureStyle(){
   if(document.querySelector(`[${STYLE_MARKER}]`))return;
   const style=document.createElement('style');style.setAttribute(STYLE_MARKER,'');style.textContent=`
-/* Post GitHub-Pages playtest polish: accepted 10-point UI correction pass. */
+/* Post GitHub-Pages playtest polish: accepted UI corrections not yet folded into screen owners. */
 @media (orientation:landscape) {
-  /* 3. Training: one concise information frame, separated from the board. */
+  /* Training: one concise information frame, separated from the board. */
   html[data-landscape-ui='1'] body.puzzles-active .puzzle-heading{display:none!important}
   html[data-landscape-ui='1'] body.puzzles-active .puzzle-layout>.puzzle-panel:first-child{
     margin:8px 10px 8px 8px!important;
@@ -40,7 +36,7 @@ function ensureStyle(){
   html[data-landscape-ui='1'] body.puzzles-active .puzzle-polish-reward{display:flex!important;align-items:center!important;gap:8px!important;color:#f1cf75!important;font-weight:800!important;font-size:clamp(16px,1.6vw,23px)!important}
   html[data-landscape-ui='1'] body.puzzles-active .puzzle-polish-reward img{width:1.45em!important;height:1.45em!important;object-fit:contain!important}
 
-  /* 5 + 7. Run combat information keeps the desktop panel structure at every landscape size. */
+  /* Run combat information keeps the desktop panel structure at every landscape size. */
   html[data-landscape-ui='1'] body.run-combat-board-active .classic-topbar{
     background:transparent!important;border:0!important;box-shadow:none!important;padding:8px 10px!important
   }
@@ -57,43 +53,16 @@ function ensureStyle(){
   }
   html[data-landscape-ui='1'] body.run-combat-board-active .classic-party-panel .classic-moves{max-height:22dvh!important;overflow:auto!important}
 
-  /* 6. Hiring cost is always gold icon then amount. The Battle owner renders the amount;
-     battle.css owns the icon through the existing ::before asset rule. */
+  /* Battle owns the semantic numeric cost; battle.css owns the gold icon. */
   html[data-landscape-ui='1'] body.battle-prep-compact-active .battle-mercenary-quote__row--cost strong,
   html[data-landscape-ui='1'] .battle-mercenary-quote__row--cost strong{display:inline-flex!important;align-items:center!important;gap:6px!important}
 
-  /* 10. Final run summary has no floating Gold/Supplies frames. */
+  /* Final run summary has no floating Gold/Supplies frames. */
   html[data-landscape-ui='1'] body.endless-run-active .resource-hud{display:none!important}
 }
 
 @media (orientation:landscape) and (max-width:1180px) {
-  /* 2. Travel command bar: Week | portrait | Power/Threat | Gold | Supplies | Roster | Settings. */
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-topbar--command{
-    min-height:48px!important;height:48px!important;padding:4px 7px!important;margin:0!important;
-    display:flex!important;align-items:center!important;gap:7px!important;overflow:hidden!important;box-sizing:border-box!important
-  }
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-heading{flex:0 0 auto!important;min-width:0!important}
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-heading h1{margin:0!important;font-size:clamp(16px,2.3vw,24px)!important;line-height:1!important;white-space:nowrap!important}
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-commandbar{
-    flex:1 1 auto!important;min-width:0!important;display:grid!important;
-    grid-template-columns:38px minmax(92px,auto) auto auto!important;align-items:center!important;gap:6px!important
-  }
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-run-portrait{
-    width:36px!important;height:36px!important;border-radius:4px!important;object-fit:cover!important;border:1px solid rgba(216,177,93,.5)!important
-  }
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-player-rating{display:flex!important;align-items:center!important;gap:5px!important;min-width:0!important;padding:0!important}
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-player-rating__row{display:flex!important;align-items:center!important;gap:3px!important;white-space:nowrap!important}
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-player-rating__row span{font-size:7px!important}
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-player-rating__row strong{font-size:10px!important}
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-inline-resources{display:flex!important;gap:4px!important;min-width:0!important}
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-inline-resource{min-width:0!important;padding:2px 4px!important;gap:3px!important}
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-inline-resource__icon{width:20px!important;height:20px!important}
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-inline-resource strong{font-size:10px!important}
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-topbar__actions{display:flex!important;gap:4px!important;justify-content:flex-end!important}
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-topbar__actions .reboot-button{min-width:0!important;min-height:30px!important;padding:3px 7px!important;font-size:9px!important;white-space:nowrap!important}
-  html[data-landscape-ui='1'] body.travel-choice-active .travel-choice-card__difficulty small{display:none!important}
-
-  /* 8. Settlement tablet/mobile share one compact composition. Market row rendering itself is
+  /* Settlement tablet/mobile share one compact composition. Market row rendering itself is
      owned by settlement-app + settlement.css; this layer only positions the surrounding frames. */
   html[data-landscape-ui='1'] body.settlement-active .settlement-screen{padding:6px 8px!important;overflow:hidden!important;box-sizing:border-box!important}
   html[data-landscape-ui='1'] body.settlement-active .settlement-shell{height:100%!important;display:grid!important;grid-template-rows:44px minmax(0,1fr)!important;gap:7px!important;overflow:visible!important}
@@ -126,30 +95,13 @@ function ensureStyle(){
   html[data-landscape-ui='1'] body.settlement-active .resource-chip__supply-icon{width:21px!important;height:21px!important}
   html[data-landscape-ui='1'] body.settlement-active .resource-chip strong{font-size:11px!important}
 
-  /* 9. Starvation panel starts below the resource HUD. */
+  /* Starvation panel starts below the resource HUD. */
   html[data-landscape-ui='1'] body.starvation-active .starvation-screen{padding-top:50px!important;box-sizing:border-box!important}
   html[data-landscape-ui='1'] body.starvation-active .starvation-panel{max-height:calc(100dvh - 58px)!important;margin-top:0!important;overflow:auto!important}
 }
 
 @media (orientation:landscape) and (max-width:980px) and (max-height:520px) {
-  /* 2. Mobile Travel uses the same three-column card treatment as tablet. */
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-shell{grid-template-rows:48px minmax(0,1fr)!important;gap:5px!important}
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-routes{
-    display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;grid-template-rows:minmax(0,1fr)!important;
-    gap:6px!important;overflow:hidden!important
-  }
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-card{height:100%!important;min-height:0!important;display:grid!important;grid-template-rows:minmax(0,1fr) auto!important;overflow:hidden!important}
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-card__visual{width:100%!important;height:auto!important;min-height:0!important;position:relative!important}
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-card__icon{left:50%!important;top:38%!important;width:54px!important;height:54px!important;transform:translate(-50%,-50%)!important;opacity:.95!important}
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-card__overlay{left:7px!important;right:7px!important;top:auto!important;bottom:6px!important;width:auto!important;height:auto!important;padding:0!important;display:block!important}
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-card__type{font-size:15px!important;line-height:1!important}
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-card__threat,
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-card__safe,
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-card__meta{margin-top:3px!important;gap:3px!important;font-size:8px!important}
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-card__body{padding:4px 6px 5px!important;min-height:0!important}
-  html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-card__flavor{font-size:7px!important;line-height:1.1!important;display:-webkit-box!important;-webkit-line-clamp:2!important;-webkit-box-orient:vertical!important;overflow:hidden!important}
-
-  /* 4. Mobile Skirmish prep keeps the full 2x8 formation preview visible. */
+  /* Mobile Skirmish prep keeps the full 2x8 formation preview visible. */
   html[data-landscape-ui='1'] body.skirmish-active .skirmish-selection{display:grid!important;grid-template-rows:auto minmax(72px,.75fr) auto!important;min-height:0!important;overflow:hidden!important}
   html[data-landscape-ui='1'] body.skirmish-active .skirmish-selected{height:auto!important;min-height:0!important;max-height:92px!important;overflow:auto!important}
   html[data-landscape-ui='1'] body.skirmish-active .skirmish-formation-block{margin-top:4px!important;padding-top:4px!important;min-height:64px!important;overflow:visible!important}
@@ -176,17 +128,6 @@ function ensureStyle(){
 }
 `;
   document.head.append(style);
-}
-
-function syncTravel(){
-  const screen=document.querySelector('[data-travel-choice-screen]');if(!visible(screen))return;
-  const command=screen.querySelector('[data-travel-commandbar]');if(!command)return;
-  let portrait=command.querySelector('[data-travel-run-portrait]');
-  if(!compactLayout()){portrait?.remove();return;}
-  if(!portrait){portrait=document.createElement('img');portrait.className='travel-choice-run-portrait';portrait.dataset.travelRunPortrait='';command.prepend(portrait);}
-  const current=globalThis.RPChessTravelChoice?.run||run();
-  const king=current?.roster?.find((character)=>character?.isRunKing)||current?.roster?.find((character)=>character?.pieceType==='king');
-  portrait.src=king?.portrait||'assets/kings/oathkeeper/portrait.png';portrait.alt=king?.name||'Король';
 }
 
 function syncPuzzle(){
@@ -217,10 +158,10 @@ function syncCombat(){
 }
 
 let queued=false;
-function refresh(){queued=false;syncTravel();syncPuzzle();syncCombat();}
+function refresh(){queued=false;syncPuzzle();syncCombat();}
 function schedule(){if(queued)return;queued=true;requestAnimationFrame(refresh);}
 
-for(const name of ['rpchess:travel-open','rpchess:puzzle-open','rpchess:skirmish-open','rpchess:battle-open','rpchess:run-updated','rpchess:resources-updated'])addEventListener(name,()=>queueMicrotask(schedule));
+for(const name of ['rpchess:puzzle-open','rpchess:skirmish-open','rpchess:battle-open','rpchess:run-updated','rpchess:resources-updated'])addEventListener(name,()=>queueMicrotask(schedule));
 document.addEventListener('click',()=>queueMicrotask(schedule),true);
 addEventListener('resize',schedule,{passive:true});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
