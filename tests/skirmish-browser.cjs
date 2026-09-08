@@ -167,28 +167,46 @@ async function assertCompactDesktopStars(page) {
     await wounded.locator('[data-skirmish-start]').click();
     await wounded.locator('[data-classic-screen]:not([hidden])').waitFor();
 
-    const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    const mobile = await browser.newPage({ viewport: { width: 844, height: 390 } });
     const mobileErrors = [];
     mobile.on('pageerror', (error) => mobileErrors.push(String(error.stack || error)));
     await fresh(mobile, { stars: 12 });
     await enter(mobile);
-    await assertResponsiveStars(mobile, '[data-skirmish-stars]', '.skirmish-threat-card');
-    const layout = await mobile.evaluate(() => ({
-      sw: document.documentElement.scrollWidth,
-      cw: document.documentElement.clientWidth,
-      sh: document.documentElement.scrollHeight,
-      ch: document.documentElement.clientHeight,
-      pos: getComputedStyle(document.querySelector('.skirmish-actionbar')).position
-    }));
+    const layout = await mobile.evaluate(() => {
+      const screen = document.querySelector('[data-skirmish-screen]');
+      const formation = document.querySelector('[data-skirmish-formation]');
+      const selection = document.querySelector('.skirmish-selection');
+      const selected = document.querySelector('.skirmish-selected');
+      const start = document.querySelector('[data-skirmish-start]');
+      const rect = (node) => { const box=node?.getBoundingClientRect(); return box ? {left:box.left,right:box.right,top:box.top,bottom:box.bottom} : null; };
+      return {
+        sw: document.documentElement.scrollWidth,
+        cw: document.documentElement.clientWidth,
+        sh: document.documentElement.scrollHeight,
+        ch: document.documentElement.clientHeight,
+        screen:rect(screen),
+        formation:rect(formation),
+        selection:rect(selection),
+        start:rect(start),
+        selectedScrollHeight:selected?.scrollHeight || 0,
+        selectedClientHeight:selected?.clientHeight || 0,
+        selectedOverflowY:selected ? getComputedStyle(selected).overflowY : ''
+      };
+    });
     assert(layout.sw <= layout.cw + 1);
-    assert(layout.sh > layout.ch);
-    assert.strictEqual(layout.pos, 'sticky');
+    assert(layout.sh <= layout.ch + 1, `mobile landscape Skirmish prep must not page-scroll: ${layout.sh}/${layout.ch}`);
+    const insideViewport = (box) => box && box.left >= -1 && box.right <= layout.cw + 1 && box.top >= -1 && box.bottom <= layout.ch + 1;
+    assert(insideViewport(layout.screen), 'Skirmish screen must stay inside the viewport');
+    assert(insideViewport(layout.formation), 'full Skirmish formation preview must stay inside the viewport');
+    assert(insideViewport(layout.selection), 'Skirmish selection frame must stay inside the viewport');
+    assert(insideViewport(layout.start), 'Skirmish Start CTA must stay inside the viewport');
+    if (layout.selectedScrollHeight > layout.selectedClientHeight + 1) assert(['auto','scroll'].includes(layout.selectedOverflowY), 'overflowing selected-fighter list must scroll inside its frame');
 
     assert.deepStrictEqual(errors, []);
     assert.deepStrictEqual(blackErrors, []);
     assert.deepStrictEqual(woundedErrors, []);
     assert.deepStrictEqual(mobileErrors, []);
-    console.log('Skirmish aftermath→Event fork, compact desktop stars, canonical combat summary, race art, Black-side, wounded-King and mobile acceptance: PASS');
+    console.log('Skirmish aftermath→Event fork, compact desktop stars, canonical combat summary, race art, Black-side, wounded-King and landscape-mobile one-screen acceptance: PASS');
   } finally {
     await browser.close();
   }
