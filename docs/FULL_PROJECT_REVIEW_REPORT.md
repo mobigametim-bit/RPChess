@@ -33,29 +33,30 @@ Canonical targets include desktop landscape, `1024×768` tablet landscape, `844�
 
 Status meanings:
 
-- **DONE — verification pending**: root-cause implementation is complete, but the affected regression/gate has not yet been rerun on the latest combined branch head.
+- **DONE — verified**: root-cause implementation is complete and its affected deterministic/browser coverage has passed on the relevant code head.
+- **DONE — verification pending**: implementation is complete but still awaits its relevant gate.
 - **IN PROGRESS**: part of the root cause has been removed, but meaningful work remains.
 - **OPEN**: no final remediation implemented yet.
 - **DECISION CLOSED**: product/engineering policy was resolved by the project owner; implementation follows that decision rather than the original proposed direction.
 
 | Finding | Status | Remediation / current state |
 |---|---|---|
-| REV-001 Hero Notes owns unrelated UI patch chain | **DONE — verification pending** | Deleted `hero-notes-runtime.mjs`; Roster and Settlement render Hero Notes directly. Remaining compatibility presentation modules now load from explicit temporary `presentation-bootstrap.mjs`, so Hero Notes no longer owns global UI bootstrap. |
-| REV-002 Market reads state back from DOM | **DONE — verification pending** | `settlement-app.mjs` now renders accepted Market row directly from `activeRun.currentSettlement` and `SETTLEMENT_SUPPLY_PRICE`; `post-pages-ui-review4.mjs` deleted. |
-| REV-003 Resources render fan-out | **DONE — verification pending** | Removed Resources subtree `MutationObserver` and global document-click refresh; one coalescing RAF scheduler now reacts to semantic events. |
+| REV-001 Hero Notes owns unrelated UI patch chain | **DONE — verified** | Deleted `hero-notes-runtime.mjs`; Roster and Settlement render Hero Notes directly. Remaining compatibility presentation modules now load from explicit temporary `presentation-bootstrap.mjs`, so Hero Notes no longer owns global UI bootstrap. |
+| REV-002 Market reads state back from DOM | **DONE — verified** | `settlement-app.mjs` now renders accepted Market row directly from `activeRun.currentSettlement` and `SETTLEMENT_SUPPLY_PRICE`; `post-pages-ui-review4.mjs` deleted. |
+| REV-003 Resources render fan-out | **DONE — verified** | Removed Resources subtree `MutationObserver` and global document-click refresh; one coalescing RAF scheduler now reacts to semantic events. |
 | REV-004 whole-document legacy localization | **IN PROGRESS** | Settlement and Resources now render keyed `t(...)` copy directly and subscribe to language changes. Remaining production screens still need migration before the global legacy observer can be deleted. |
 | REV-005 obsolete source controls / hidden DOM | **OPEN** | Source/runtime ownership cleanup still required. |
 | REV-006 runtime DOM reparenting | **OPEN** | Stable owner structures/slots still required for Classic moves, Skirmish actionbar and Battle CTA. |
 | REV-007 canonical Pages gate covers 3/17 browser contracts | **OPEN** | Test truth must first be restored; then define fast PR smoke gate + broader milestone browser gate. |
-| REV-008 stale browser contract requires page scroll | **DONE — verification pending** | Foundation/Roster audit contracts updated to the accepted one-screen rule instead of requiring page-level vertical scrolling. |
-| REV-009 Supplies/Market global image retargeting | **DONE — verification pending** | HUD, Travel, Settlement, Event outcome and shared resource markup render `reward_supplies.png` directly; Market service retains `node_shop.png`; `supplies-resource-icon.mjs` deleted; shared UX retarget scanner removed. |
+| REV-008 stale browser contract requires page scroll | **DONE — verified** | Foundation/Roster audit contracts updated to the accepted one-screen rule instead of requiring page-level vertical scrolling. |
+| REV-009 Supplies/Market global image retargeting | **DONE — verified** | HUD, Travel, Settlement, Event outcome and shared resource markup render `reward_supplies.png` directly; Market service retains `node_shop.png`; `supplies-resource-icon.mjs` deleted; shared UX retarget scanner removed. |
 | REV-010 fragmented runtime hotfix CSS | **IN PROGRESS** | Market/review4 dynamic layer removed; Training rule moved into owner CSS; remaining Roster/Travel/Battle/Combat duties in review2, polish layers, `battle-route`, `ux-consistency`, `cross-scene-visuals` and landscape runtime CSS still need consolidation. |
-| REV-011 Supplies optimizer makes asset larger | **DONE — verification pending** | Resource icon optimizer now keeps the original bytes when transformation is larger while still enforcing dimension/byte budgets. |
+| REV-011 Supplies optimizer makes asset larger | **DONE — verified** | Resource icon optimizer now keeps the original bytes when transformation is larger while still enforcing dimension/byte budgets. |
 | REV-012 stale CURRENT_STATE SHA | **OPEN** | Intentionally deferred until final accepted remediation SHA. |
-| REV-013 shared browser helper lifecycle drift | **DONE — verification pending** | `startNewRun()` now waits for the visible main menu/Identity/Roster and emits scene diagnostics instead of blindly clicking hidden nodes. Full 17-test rerun still required. |
+| REV-013 shared browser helper lifecycle drift | **DONE — verified** | `startNewRun()` now waits for the visible main menu/Identity/Roster and emits scene diagnostics instead of blindly clicking hidden nodes. Full 17-contract rerun passed in milestone #9. |
 | REV-014 responsive gate does not prove one-screen for every screen | **OPEN** | Reusable all-screen frame/viewport/internal-overflow geometry checker still required for RU/EN and breakpoint boundaries. |
-| REV-015 persistence has no migration path | **DONE — verification pending** | Owner-approved reset-on-unsupported-schema behavior is explicit in `readRun()`: incompatible stored runs are removed and return `null`; no migration/backward-save machinery is introduced. |
-| REV-016 repeated puzzle materialization / duplicate build inputs | **DONE — verification pending** | `gate:local` materializes the catalog once before materialized test/validate/build stages; duplicate Endless build inputs removed. |
+| REV-015 persistence has no migration path | **DONE — verified** | Owner-approved reset-on-unsupported-schema behavior is explicit in `readRun()`: incompatible stored runs are removed and return `null`; no migration/backward-save machinery is introduced. |
+| REV-016 repeated puzzle materialization / duplicate build inputs | **DONE — verified** | `gate:local` materializes the catalog once before materialized test/validate/build stages; duplicate Endless build inputs removed. |
 | REV-017 generic Wrangler deploy path looks canonical | **DONE — docs pending** | Generic `npm run deploy` removed. Cloudflare is retained only as explicit manual `npm run deploy:cloudflare`; GitHub Pages remains canonical. |
 | REV-018 legacy Vertical Slice stack | **OPEN — deletion authorized** | Project owner approved deletion after reachability/reference proof. |
 | REV-019 CSS loading split between HTML and runtime JS | **OPEN** | Explicit stylesheet ownership/order still required after patch-layer consolidation. |
@@ -82,7 +83,7 @@ Status meanings:
 - Removed review2's duplicate combat-panel listeners/reparenting; the remaining single legacy reparent path is isolated in `post-pages-ui-polish.mjs` pending stable owner slots.
 - Source verifier and targeted static contracts updated to reject those deleted layers and require the new ownership contracts.
 
-**Important:** the latest combined branch state has not yet completed its milestone regression run. Items marked “DONE — verification pending” are implementation-complete but are not reported as verified until that run finishes.
+**Verification scope:** full milestone #9 covers the review3/5/6/7 owner migration; targeted #10 covers the later review2 Puzzle/Settlement split and lifecycle deduplication; deterministic #11 covers the save-schema reset. Subsequent commits only restore the manual workflow file or update this report and do not alter production code.
 
 ### Latest milestone verification
 
@@ -90,8 +91,9 @@ Status meanings:
 - The only failure was Settlement at `1024×768 RU`: the compact compatibility CSS used a `background` shorthand on every service icon and erased the Market emblem supplied by `settlement.css`.
 - The root cause is fixed on the current remediation line by limiting that compatibility declaration to `background-color`; `settlement.css` remains the owner of `node_shop.png`. The existing Settlement regression now rejects future compatibility shorthands that erase owner-defined service art.
 - **Full Project Review #8** ([run `34262502407`](https://github.com/mobigametim-bit/RPChess/actions/runs/34262502407), head `d5820573`) completed with canonical local gate **PASS**, all **17/17 Chromium contracts PASS** and `AUDIT_TOTAL_FAILURES=0`. This verifies the Settlement root-cause fix together with every previously passing browser contract.
-- The later owner-level removal of `review3/5/6/7` is intentionally not attributed to #8; it requires the next milestone run on the current branch head.
+- **Full Project Review #9** ([run `34265688360`](https://github.com/mobigametim-bit/RPChess/actions/runs/34265688360), head `b63726eb`) completed with canonical local gate **PASS**, all **17/17 Chromium contracts PASS** and `AUDIT_TOTAL_FAILURES=0` after deleting review3/5/6/7 and moving their accepted styles into screen owners.
 - **Targeted owner-migration gate #10** ([run `34266676368`](https://github.com/mobigametim-bit/RPChess/actions/runs/34266676368), head `8e7c4675`) completed with canonical local gate **PASS**, Classic/Settlement/Puzzles **3/3 PASS** and `AUDIT_TOTAL_FAILURES=0` after the review2 Puzzle/Settlement split and duplicate lifecycle removal.
+- **Deterministic save-schema gate #11** ([run `34267715267`](https://github.com/mobigametim-bit/RPChess/actions/runs/34267715267), head `2ced5f67`) completed with canonical local gate **PASS**, the new persistence regression **PASS** and `AUDIT_TOTAL_FAILURES=0`.
 
 ---
 
