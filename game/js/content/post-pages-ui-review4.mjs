@@ -76,6 +76,7 @@ function ensureStyle(){
     margin:8px 0 0!important;
     text-align:left!important;
     box-sizing:border-box!important;
+    overflow:hidden!important;
   }
   html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-market-row__product {
     display:flex!important;
@@ -83,8 +84,12 @@ function ensureStyle(){
     justify-content:flex-start!important;
     gap:7px!important;
     min-width:0!important;
+    max-width:100%!important;
     white-space:nowrap!important;
     color:#f0d28b!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    overscroll-behavior-inline:contain!important;
   }
   html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-market-row__item-icon,
   html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-market-row__gold-icon {
