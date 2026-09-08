@@ -1,6 +1,8 @@
 import { BACKGROUND_POOLS, RACE_TAGS, hashString, normalizeRaceTag } from './race-assets.mjs';
 
 const VICTORY_FANFARE = 'SFX/win_fanfare.mp3';
+const GOLD_ICON = 'generated_assets/reward_gold.png';
+const SUPPLIES_ICON = 'generated_assets/reward_supplies.png';
 
 function backdropPath(seed, raceTag = null, { generic = false } = {}) {
   if (generic) {
@@ -139,7 +141,7 @@ function decorateEventOutcomeNotes() {
 
     const icon = document.createElement('img');
     icon.className = 'events-outcome-resource__icon';
-    icon.src = resource.type === 'gold' ? 'generated_assets/reward_gold.png' : 'generated_assets/node_shop.png';
+    icon.src = resource.type === 'gold' ? GOLD_ICON : SUPPLIES_ICON;
     icon.alt = '';
 
     const amount = document.createElement('strong');
