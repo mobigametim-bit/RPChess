@@ -135,7 +135,7 @@ async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
     await page.locator('[data-endless-run-menu]').click();
     await page.locator('[data-reboot-foundation]:not([hidden])').waitFor();
 
-    const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    const mobile = await browser.newPage({ viewport: { width: 844, height: 390 } });
     const mobileErrors = [];
     mobile.on('pageerror', (error) => mobileErrors.push(String(error.stack || error)));
     await startFresh(mobile);
@@ -143,14 +143,32 @@ async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
     await mobile.locator('[data-roster-travel]').click();
     await mobile.locator('[data-travel-choice="manual.starvation.skirmish"]').click();
     await mobile.locator('[data-starvation-screen]:not([hidden])').waitFor();
-    const layout = await mobile.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, clientWidth: document.documentElement.clientWidth }));
-    assert(layout.scrollWidth <= layout.clientWidth + 1, `Starvation mobile screen must not create horizontal overflow: ${layout.scrollWidth}/${layout.clientWidth}`);
-    const panel = await mobile.locator('.starvation-panel').boundingBox();
-    assert(panel && panel.x >= -1 && panel.x + panel.width <= 391, `Starvation panel must fit mobile viewport: ${JSON.stringify(panel)}`);
+    const layout = await mobile.evaluate(() => {
+      const screen = document.querySelector('[data-starvation-screen]')?.getBoundingClientRect();
+      const panel = document.querySelector('.starvation-panel');
+      const panelRect = panel?.getBoundingClientRect();
+      return {
+        scrollWidth:document.documentElement.scrollWidth,
+        clientWidth:document.documentElement.clientWidth,
+        scrollHeight:document.documentElement.scrollHeight,
+        clientHeight:document.documentElement.clientHeight,
+        screen:screen ? { left:screen.left,right:screen.right,top:screen.top,bottom:screen.bottom } : null,
+        panel:panelRect ? { left:panelRect.left,right:panelRect.right,top:panelRect.top,bottom:panelRect.bottom } : null,
+        panelScrollHeight:panel?.scrollHeight || 0,
+        panelClientHeight:panel?.clientHeight || 0,
+        panelOverflowY:panel ? getComputedStyle(panel).overflowY : ''
+      };
+    });
+    assert(layout.scrollWidth <= layout.clientWidth + 1, `Starvation landscape-mobile screen must not create horizontal overflow: ${layout.scrollWidth}/${layout.clientWidth}`);
+    assert(layout.scrollHeight <= layout.clientHeight + 1, `Starvation landscape-mobile screen must not page-scroll: ${layout.scrollHeight}/${layout.clientHeight}`);
+    const insideViewport = (box) => box && box.left >= -1 && box.right <= layout.clientWidth + 1 && box.top >= -1 && box.bottom <= layout.clientHeight + 1;
+    assert(insideViewport(layout.screen), 'Starvation screen must fit the viewport');
+    assert(insideViewport(layout.panel), 'Starvation panel must fit the viewport');
+    if (layout.panelScrollHeight > layout.panelClientHeight + 1) assert(['auto','scroll'].includes(layout.panelOverflowY), 'overflowing Starvation content must scroll inside the panel');
 
     assert.deepStrictEqual(errors, [], `desktop Starvation page errors:\n${errors.join('\n')}`);
-    assert.deepStrictEqual(mobileErrors, [], `mobile Starvation page errors:\n${mobileErrors.join('\n')}`);
-    console.log('Starvation compact warning, deterministic casualty, canonical Skirmish gating, reload idempotency, encounter gate, King run summary and mobile Chromium acceptance: PASS');
+    assert.deepStrictEqual(mobileErrors, [], `landscape-mobile Starvation page errors:\n${mobileErrors.join('\n')}`);
+    console.log('Starvation compact warning, deterministic casualty, canonical Skirmish gating, reload idempotency, encounter gate, King run summary and landscape-mobile Chromium acceptance: PASS');
   } finally {
     await browser.close();
   }
