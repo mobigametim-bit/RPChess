@@ -50,8 +50,9 @@
     "assets:pin-ice:verify": "node scripts/pin-ice-asset-runtime.cjs --root dist --verify-only --max-side 384",
     "assets:auras:report": "node scripts/aura-asset-runtime.cjs --root game --max-side 384",
     "assets:auras:verify": "node scripts/aura-asset-runtime.cjs --root dist --verify-only --max-side 384",
+    "assets:resource-icons:verify": "node scripts/resource-icon-asset-runtime.cjs --root dist --verify-only",
     "test:browser": "node scripts/run-browser-tests.cjs",
-    "build": "npm run puzzles:materialize && node scripts/build.cjs",
+    "build": "npm run puzzles:materialize && node scripts/build.cjs && node scripts/resource-icon-asset-runtime.cjs --root dist",
     "gate:local": "npm run verify && npm test && npm run content:validate && npm run puzzles:validate && npm run build && npm run test:asset-cache-build",
     "gate:full": "npm run gate:local && npm run test:browser",
     "deploy": "wrangler deploy"
