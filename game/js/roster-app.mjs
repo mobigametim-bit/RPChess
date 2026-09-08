@@ -1,5 +1,6 @@
 import { PIECE_LABELS, PIECE_GLYPHS, STATUS_LABELS } from './roster-data.mjs';
 import { createRun, readRun, writeRun } from './run-persistence.mjs';
+import { heroNoteForId } from './content/hero-notes.mjs';
 
 const menu = document.querySelector('[data-reboot-foundation]');
 const classicScreen = document.querySelector('[data-classic-screen]');
@@ -99,7 +100,7 @@ function renderDetail() {
   status.textContent = STATUS_LABELS[character.status] || character.status;
   const description = document.createElement('p');
   description.className = 'roster-detail__description';
-  description.textContent = character.description;
+  description.textContent = heroNoteForId(character.id) || character.description;
 
   body.append(eyebrow, title, facts, status);
   const noteText = statusNote(character);
