@@ -1,6 +1,7 @@
 import { PIECE_GLYPHS, PIECE_LABELS } from './roster-data.mjs';
 import { readRun, writeRun } from './run-persistence.mjs';
 import { subscribe, t } from './i18n.mjs';
+import { heroNoteForId } from './content/hero-notes.mjs';
 import {
   SETTLEMENT_SUPPLY_PRICE,
   applyHealing,
@@ -168,7 +169,7 @@ function renderRecruits() {
       <div class="settlement-recruit__body">
         <div class="settlement-recruit__head"><strong>${candidate.name}</strong><span>${PIECE_GLYPHS[candidate.pieceType] || ''} ${PIECE_LABELS[candidate.pieceType] || candidate.pieceType}</span></div>
         <small>${candidate.origin}</small>
-        <p>${candidate.description}</p>
+        <p>${heroNoteForId(candidate.id) || candidate.description}</p>
         <div class="settlement-recruit__footer">${goldMarkup(price)}<button class="reboot-button reboot-button--primary" type="button" data-settlement-recruit="${candidate.id}" ${alreadyPresent || activeRun.gold < price ? 'disabled' : ''}>${alreadyPresent ? t('settlement.tavern.inRoster') : t('settlement.tavern.hire')}</button></div>
       </div>`;
     root.append(card);
