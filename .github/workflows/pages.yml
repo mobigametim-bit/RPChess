@@ -59,7 +59,7 @@ jobs:
       - name: Verify GitHub Pages /RPChess/ subpath
         env:
           RPCHESS_GATE_PREFIX: /RPChess
-          RPCHESS_BROWSER_TEST: classic-chess-browser.cjs,responsive-viewport-browser.cjs
+          RPCHESS_BROWSER_TEST: classic-chess-browser.cjs,responsive-viewport-browser.cjs,settlement-browser.cjs
         run: npm run test:browser
 
       - name: Configure Pages
