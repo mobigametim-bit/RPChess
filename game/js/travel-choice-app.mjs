@@ -8,7 +8,7 @@ import { puzzleBaseGold } from './puzzles/puzzle-core.mjs';
 
 const ROUTE_ICONS=Object.freeze({skirmish:'generated_assets/node_battle.png',battle:'generated_assets/node_elite.png',event:'generated_assets/node_story.png',settlement:'generated_assets/node_shop.png',puzzle:'generated_assets/node_training.png'});
 const GOLD_ICON='generated_assets/reward_gold.png';
-const SUPPLIES_ICON='generated_assets/node_shop.png';
+const SUPPLIES_ICON='generated_assets/reward_supplies.png';
 let screen=null,activeRun=null,routing=false;
 function audio(){return globalThis.RPChessRebootAudio;}
 function resourceIcon(src,className){const image=document.createElement('img');image.src=src;image.alt='';image.draggable=false;image.className=className;image.setAttribute('aria-hidden','true');return image;}
