@@ -1,10 +1,16 @@
 import { readRun, writeRun } from './run-persistence.mjs';
 import { applyGoldReward, combatGoldReward } from './resources-core.mjs';
+import { subscribe, t } from './i18n.mjs';
+
+const GOLD_ICON='generated_assets/reward_gold.png';
+const SUPPLIES_ICON='generated_assets/reward_supplies.png';
 
 let hud = null;
 let toast = null;
 let toastTimer = null;
 let settling = false;
+let renderQueued = false;
+let rewardRenderQueued = false;
 
 function activeRunSceneVisible() {
   const visible = [...document.querySelectorAll('#app > main')].find((main) => !main.hidden);
@@ -16,16 +22,15 @@ function ensureHud() {
   hud = document.createElement('aside');
   hud.className = 'resource-hud';
   hud.dataset.resourceHud = '';
-  hud.setAttribute('aria-label', 'Ресурсы текущего забега');
   hud.hidden = true;
   hud.innerHTML = `
     <div class="resource-chip resource-chip--gold" data-resource-gold-chip>
-      <img src="generated_assets/reward_gold.png" alt="">
-      <span>ЗОЛОТО</span><strong data-resource-gold>0</strong>
+      <img src="${GOLD_ICON}" alt="" aria-hidden="true">
+      <span data-resource-gold-label></span><strong data-resource-gold>0</strong>
     </div>
     <div class="resource-chip resource-chip--supplies" data-resource-supplies-chip>
-      <span class="resource-chip__supply-icon" aria-hidden="true">◆</span>
-      <span>ПРИПАСЫ</span><strong data-resource-supplies>0</strong>
+      <span class="resource-chip__supply-icon" aria-hidden="true"><img class="resource-chip__supply-image" src="${SUPPLIES_ICON}" alt=""></span>
+      <span data-resource-supplies-label></span><strong data-resource-supplies>0</strong>
     </div>`;
   document.body.append(hud);
   return hud;
@@ -46,6 +51,11 @@ function ensureToast() {
 function render() {
   const root = ensureHud();
   const run = readRun();
+  root.setAttribute('aria-label', t('resources.ariaLabel'));
+  const goldLabel=root.querySelector('[data-resource-gold-label]');
+  const suppliesLabel=root.querySelector('[data-resource-supplies-label]');
+  if(goldLabel)goldLabel.textContent=t('resources.gold');
+  if(suppliesLabel)suppliesLabel.textContent=t('resources.supplies');
   root.hidden = !run || !activeRunSceneVisible();
   if (!run) return;
   const gold = root.querySelector('[data-resource-gold]');
@@ -55,11 +65,17 @@ function render() {
   root.querySelector('[data-resource-supplies-chip]')?.classList.toggle('is-empty', run.supplies === 0);
 }
 
+function scheduleRender() {
+  if(renderQueued)return;
+  renderQueued=true;
+  queueMicrotask(()=>{renderQueued=false;render();});
+}
+
 function showChange({ goldDelta = 0, suppliesDelta = 0, label = '' } = {}) {
   const root = ensureToast();
   const parts = [];
-  if (goldDelta) parts.push(`${goldDelta > 0 ? '+' : ''}${goldDelta} ЗОЛОТА`);
-  if (suppliesDelta) parts.push(`${suppliesDelta > 0 ? '+' : ''}${suppliesDelta} ПРИПАС`);
+  if (goldDelta) parts.push(`${goldDelta > 0 ? '+' : ''}${goldDelta} ${t('resources.goldDelta')}`);
+  if (suppliesDelta) parts.push(`${suppliesDelta > 0 ? '+' : ''}${suppliesDelta} ${t('resources.suppliesDelta')}`);
   root.textContent = [label, ...parts].filter(Boolean).join(' · ');
   root.hidden = !root.textContent;
   clearTimeout(toastTimer);
@@ -78,12 +94,12 @@ function renderCombatReward(root, amount) {
     else root.append(reward);
   }
   const gold = Number.isInteger(amount) && amount > 0 ? amount : 0;
-  const rewardText = gold > 0 ? `+${gold} ЗОЛОТА` : '';
+  const rewardText = gold > 0 ? `+${gold} ${t('resources.goldDelta')}` : '';
   reward.hidden = gold <= 0;
   if (rewardText) reward.dataset.resourceCombatRewardText = rewardText;
   else delete reward.dataset.resourceCombatRewardText;
   reward.innerHTML = gold > 0
-    ? `<img src="generated_assets/reward_gold.png" alt=""><span>НАГРАДА</span><strong>${rewardText}</strong>`
+    ? `<img src="${GOLD_ICON}" alt=""><span>${t('resources.reward')}</span><strong>${rewardText}</strong>`
     : '';
 }
 
@@ -92,11 +108,7 @@ function clearCombatReward(root) {
 }
 
 function statusFromRecord(record) {
-  return {
-    over: true,
-    type: record?.result || 'unknown',
-    winner: record?.winner || null
-  };
+  return { over:true, type:record?.result || 'unknown', winner:record?.winner || null };
 }
 
 function renderLastCombatRewards(run = readRun()) {
@@ -105,91 +117,86 @@ function renderLastCombatRewards(run = readRun()) {
   renderCombatReward(document.querySelector('[data-battle-aftermath]'), run.lastBattle?.goldReward || 0);
 }
 
+function scheduleCombatRewardRender() {
+  if(rewardRenderQueued)return;
+  rewardRenderQueued=true;
+  requestAnimationFrame(()=>{
+    rewardRenderQueued=false;
+    renderLastCombatRewards();
+  });
+}
+
 function settleCombatRewards() {
-  if (settling) return;
+  if (settling) return false;
   const run = readRun();
-  if (!run) return;
+  if (!run) return false;
   const rewarded = run.resourceRewards || { skirmishCount: run.skirmishCount || 0, battleCount: run.battleCount || 0 };
   const pendingSkirmish = (run.skirmishCount || 0) > rewarded.skirmishCount;
   const pendingBattle = (run.battleCount || 0) > rewarded.battleCount;
-  if (!pendingSkirmish && !pendingBattle) {
-    setTimeout(() => renderLastCombatRewards(run), 0);
-    return;
-  }
+  if (!pendingSkirmish && !pendingBattle) return false;
 
   settling = true;
-  let next = { ...run };
-  let totalReward = 0;
-  const nextRewarded = { ...rewarded };
+  try {
+    let next = { ...run };
+    let totalReward = 0;
+    const nextRewarded = { ...rewarded };
 
-  if (pendingSkirmish) {
-    const reward = run.ended ? 0 : combatGoldReward({
-      encounterType: 'skirmish',
-      stars: run.lastSkirmish?.encounterStars,
-      status: statusFromRecord(run.lastSkirmish),
-      playerColor: run.lastSkirmish?.playerColor || 'w'
-    });
-    next = applyGoldReward(next, reward);
-    next.lastSkirmish = { ...(next.lastSkirmish || {}), goldReward: reward };
-    nextRewarded.skirmishCount = run.skirmishCount || 0;
-    totalReward += reward;
+    if (pendingSkirmish) {
+      const reward = run.ended ? 0 : combatGoldReward({
+        encounterType:'skirmish', stars:run.lastSkirmish?.encounterStars,
+        status:statusFromRecord(run.lastSkirmish), playerColor:run.lastSkirmish?.playerColor || 'w'
+      });
+      next = applyGoldReward(next, reward);
+      next.lastSkirmish = { ...(next.lastSkirmish || {}), goldReward: reward };
+      nextRewarded.skirmishCount = run.skirmishCount || 0;
+      totalReward += reward;
+    }
+
+    if (pendingBattle) {
+      const reward = run.ended ? 0 : combatGoldReward({
+        encounterType:'battle', stars:run.lastBattle?.encounterStars,
+        status:statusFromRecord(run.lastBattle), playerColor:run.lastBattle?.playerColor || 'w'
+      });
+      next = applyGoldReward(next, reward);
+      next.lastBattle = { ...(next.lastBattle || {}), goldReward: reward };
+      nextRewarded.battleCount = run.battleCount || 0;
+      totalReward += reward;
+    }
+
+    next.resourceRewards = nextRewarded;
+    writeRun(next);
+    if (totalReward > 0) showChange({ goldDelta: totalReward, label: t('resources.combatReward') });
+    globalThis.dispatchEvent(new CustomEvent('rpchess:resources-updated', { detail: { source:'combat-reward', goldReward: totalReward } }));
+    return true;
+  } finally {
+    settling = false;
   }
-
-  if (pendingBattle) {
-    const reward = run.ended ? 0 : combatGoldReward({
-      encounterType: 'battle',
-      stars: run.lastBattle?.encounterStars,
-      status: statusFromRecord(run.lastBattle),
-      playerColor: run.lastBattle?.playerColor || 'w'
-    });
-    next = applyGoldReward(next, reward);
-    next.lastBattle = { ...(next.lastBattle || {}), goldReward: reward };
-    nextRewarded.battleCount = run.battleCount || 0;
-    totalReward += reward;
-  }
-
-  next.resourceRewards = nextRewarded;
-  const saved = writeRun(next);
-  settling = false;
-  render();
-  setTimeout(() => renderLastCombatRewards(saved), 0);
-  if (totalReward > 0) showChange({ goldDelta: totalReward, label: 'НАГРАДА ЗА БОЙ' });
-  globalThis.dispatchEvent(new CustomEvent('rpchess:resources-updated', { detail: { goldReward: totalReward } }));
 }
 
-function syncSoon() {
+function syncState() {
   settleCombatRewards();
-  queueMicrotask(render);
-  setTimeout(render, 0);
+  scheduleRender();
+  scheduleCombatRewardRender();
 }
 
 if (!document.querySelector('[data-resources-css]')) {
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/resources.css?v=20260827-resources-1';
+  link.href = 'css/resources.css?v=20260908-owner-1';
   link.dataset.resourcesCss = '';
   document.head.append(link);
 }
 
 ensureHud();
-addEventListener('rpchess:run-updated', syncSoon);
-addEventListener('rpchess:run-new', syncSoon);
-addEventListener('rpchess:run-continue', syncSoon);
-addEventListener('rpchess:travel-open', syncSoon);
-addEventListener('rpchess:resources-updated', () => { render(); setTimeout(renderLastCombatRewards, 0); });
-document.addEventListener('click', () => setTimeout(render, 0));
-if (typeof MutationObserver !== 'undefined') {
-  new MutationObserver(render).observe(document.querySelector('#app') || document.body, {
-    subtree: true,
-    attributes: true,
-    attributeFilter: ['hidden'],
-    childList: true
-  });
-}
+for(const eventName of ['rpchess:run-updated','rpchess:run-new','rpchess:run-continue'])addEventListener(eventName,syncState);
+for(const eventName of ['rpchess:travel-open','rpchess:skirmish-open','rpchess:battle-open','rpchess:settlement-open','rpchess:event-open','rpchess:starvation-open','rpchess:puzzle-open','rpchess:scene-changed'])addEventListener(eventName,scheduleRender);
+addEventListener('rpchess:resources-updated',()=>{scheduleRender();scheduleCombatRewardRender();});
+subscribe(()=>{scheduleRender();scheduleCombatRewardRender();});
 render();
 
 globalThis.RPChessResources = Object.freeze({
   render,
+  scheduleRender,
   showChange,
   renderCombatReward,
   clearCombatReward,
