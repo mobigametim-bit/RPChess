@@ -1,9 +1,6 @@
 name: Full Project Review Runtime Gate
 
 on:
-  push:
-    branches:
-      - audit/full-project-review-2026-09-08
   workflow_dispatch:
 
 permissions:
