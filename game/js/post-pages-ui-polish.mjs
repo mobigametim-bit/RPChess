@@ -132,12 +132,6 @@ function ensureStyle(){
 }
 
 @media (orientation:landscape) and (max-width:980px) and (max-height:520px) {
-  /* 1. Roster cards are vertically centered in the mobile catalog area. */
-  html[data-landscape-ui='1'] body.roster-active #app .roster-grid{align-content:center!important;align-items:center!important}
-  html[data-landscape-ui='1'] body.roster-active #app .roster-card{align-self:center!important}
-  html[data-landscape-ui='1'] body.roster-active #app .roster-card__art-wrap{display:grid!important;place-items:center!important}
-  html[data-landscape-ui='1'] body.roster-active #app .roster-card__art{align-self:center!important;justify-self:center!important;object-position:center center!important}
-
   /* 2. Mobile Travel uses the same three-column card treatment as tablet. */
   html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-shell{grid-template-rows:48px minmax(0,1fr)!important;gap:5px!important}
   html[data-landscape-ui='1'] body.travel-choice-active #app .travel-choice-routes{
