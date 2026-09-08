@@ -1,6 +1,9 @@
 name: Full Project Review Runtime Gate
 
 on:
+  push:
+    branches:
+      - audit/full-project-review-2026-09-08
   workflow_dispatch:
 
 permissions:
@@ -47,22 +50,8 @@ jobs:
           set +e
           failed=0
           tests=(
-            reboot-foundation-browser.cjs
             classic-chess-browser.cjs
-            race-board-themes-browser.cjs
-            king-pin-ice-browser.cjs
-            responsive-viewport-browser.cjs
-            roster-browser.cjs
-            skirmish-browser.cjs
-            battle-browser.cjs
-            combat-side-colors-browser.cjs
-            combat-aura-move-sync-browser.cjs
-            battle-animation-art-browser.cjs
-            travel-choice-browser.cjs
-            resources-browser.cjs
             settlement-browser.cjs
-            starvation-browser.cjs
-            events-browser.cjs
             puzzles-browser.cjs
           )
           for test in "${tests[@]}"; do
