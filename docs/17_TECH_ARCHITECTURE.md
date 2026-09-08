@@ -8,44 +8,91 @@
 - `src/persistence/`, `src/ui/`, `assets/`.
 
 ## Критический контракт
-Chess layer ничего не знает о gold, supplies, events или campaign. Он получает позицию/ход и возвращает legality, position, check, mate, draw.
+Chess layer ничего не знает о Gold, Supplies, Events или campaign. Он получает позицию/ход и возвращает legality, position, check, mate, draw.
 
-## Разработка
-Каждая feature проходит один и тот же lifecycle:
+## Канонический lifecycle разработки
+Каждая player-facing feature проходит один и тот же lifecycle:
 
-`ТЗ → DoD → feature branch → local gates → Cloudflare exact-head preview → human playtest → fixes → acceptance → GitHub docs + Notion → merge → production verification`.
+`ТЗ / DoD → feature branch → implementation → technical gates → visual/live review → Human Acceptance → docs sync → merge → production verification`
 
-### Обязательные локальные gates
-GitHub Actions **не является обязательным merge/deploy gate**. С 2026-08-29 основной автоматизированный контроль выполняется вне Actions:
+Зелёный CI сам по себе не заменяет Human Acceptance для UI/gameplay изменений.
+
+## Локальные technical gates
+Минимально достаточный автоматизированный контракт:
 
 1. `npm ci --no-audit --no-fund`
 2. `npm run gate:local`
    - source/static verification;
-   - все deterministic Node tests Foundation → текущая feature;
-   - production build в `dist/`.
-3. Для full gameplay candidate установить Playwright/Chromium:
-   - `npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2`
-   - `npx playwright install chromium`
-4. `npm run test:browser` или единый `npm run gate:full` после установленного Playwright.
-   - standalone Node static server поднимает `dist/` на `127.0.0.1:4173`;
-   - последовательно выполняется real-Chromium regression Foundation → Classic Chess → Roster → Skirmish → Battle → Travel → Resources → Settlement → Starvation → Events.
+   - deterministic Node regressions;
+   - content/puzzle validation;
+   - production build в `dist/`;
+   - runtime asset optimization/budget checks.
+3. Для полного browser gate устанавливаются Playwright/Chromium и выполняется `npm run test:browser` либо соответствующий scoped browser contract.
 
-`npm run gate:full` является главным техническим acceptance gate перед corrected preview.
+Browser runner поднимает production `dist/` через standalone static server и проверяет реальный Chromium, а не dev DOM approximation.
 
-### Cloudflare
-`wrangler.toml` использует `npm run gate:local` как build command. Поэтому Cloudflare exact-head deployment обязан повторно пройти source verification, deterministic tests и production build перед публикацией assets.
+## GitHub Pages — canonical production delivery
 
-После успешного local full gate и Cloudflare deployment проверяется живой preview URL. Human acceptance выполняется только на preview того же gameplay candidate или на документированном последующем docs-only head.
+Публичный production RPChess размещён на GitHub Pages:
 
-### GitHub Actions
-`.github/workflows/ci.yml` сохранён только как **manual diagnostic workflow** с `workflow_dispatch`. Push и pull request больше не запускают его автоматически и failure GitHub hosted runner не блокирует feature lifecycle.
+`https://mobigametim-bit.github.io/RPChess/`
 
-При необходимости manual workflow повторяет тот же `gate:local + Playwright Chromium` contract, но его результат является дополнительным сигналом, а не обязательным доказательством готовности.
+Канонический workflow: `.github/workflows/pages.yml`.
+
+### Pull request run
+На каждом PR workflow:
+
+1. checkout;
+2. Node 22 + npm cache/runtime-asset cache;
+3. `npm ci --no-audit --no-fund`;
+4. `npm run gate:local`;
+5. проверка размера `dist` — Pages artifact должен оставаться < 1 GB;
+6. установка Playwright + Chromium;
+7. real-Chromium verification production build под реальным project prefix `/RPChess/`;
+8. **без deploy**.
+
+Таким образом PR доказывает, что кандидат собирается и работает в тех же subpath-условиях, в которых будет опубликован.
+
+### Push to main
+Push в `main` повторяет тот же build/browser gate. Только после успеха:
+
+- `dist/` загружается как Pages artifact;
+- job `deploy` публикует его в environment `github-pages`.
+
+Post-merge production verification считается закрытым только после зелёных build **и** deploy jobs на SHA нового `main`.
+
+## Runtime asset pipeline
+High-resolution source/master assets могут оставаться в `game/`, но production `dist/` проходит runtime optimization/budget pipelines. На текущем production state ими покрыты, среди прочего:
+
+- race/hero/generic board pieces;
+- portraits;
+- backgrounds;
+- race board skins;
+- pin/ice VFX;
+- combat auras;
+- dedicated resource icons (включая Supplies).
+
+Build fails closed, если покрытый runtime asset не удовлетворяет своему production budget после оптимизации.
+
+## Cloudflare
+`wrangler.toml` и Cloudflare-related configuration сохранены для совместимости, исторических receipts и возможных preview/alternative delivery workflows.
+
+Cloudflare **не является текущим canonical public production host**. Актуальный production contract — GitHub Pages workflow выше.
+
+## GitHub Actions
+GitHub Actions снова является частью активного delivery contract через `.github/workflows/pages.yml`:
+
+- PR: canonical build + Pages/subpath Chromium validation;
+- `main`: тот же gate + deploy.
+
+Отдельные diagnostic/manual workflows могут существовать дополнительно, но не заменяют canonical Pages workflow.
 
 ## Merge rule
-Feature нельзя переводить в DONE только по локальным тестам. До merge обязательны:
-- успешный full local/standalone Chromium gate;
-- успешный Cloudflare exact-head deployment;
-- живой пользовательский playtest, если feature требует Human Acceptance;
-- синхронизация GitHub docs + Notion;
-- merge и post-merge production verification.
+До merge player-facing изменения должны иметь:
+
+- минимально достаточные deterministic/build проверки;
+- реальный browser check для затронутого responsive/runtime контракта, когда он необходим;
+- Human Acceptance пользователя, если меняется видимый UI/gameplay;
+- синхронизацию GitHub docs + Notion.
+
+После merge обязателен успешный GitHub Pages production run на новом `main`.
