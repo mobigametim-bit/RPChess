@@ -19,6 +19,8 @@ import './landscape-ui-redesign.mjs';
 
 // Aftermath already contains the reward and Power result. Suppress transient reward/payment toasts
 // there so they cannot cover those canonical result cards, and preserve semantic hidden sections.
+// The compact-aftermath-active lifecycle class itself is owned by ui-redesign-final; this route
+// retains presentation parity only until the remaining aftermath CSS is folded into its owner.
 if (!document.querySelector('[data-landscape-aftermath-viewport-fix]')) {
   const style = document.createElement('style');
   style.dataset.landscapeAftermathViewportFix = '';
@@ -52,18 +54,4 @@ if (!document.querySelector('[data-landscape-aftermath-viewport-fix]')) {
   }
 }`;
   document.head.append(style);
-}
-
-// ui-redesign-final owns the Battle Prep lifecycle class until its remaining CTA reparenting is
-// replaced by a stable owner slot. battle-route only keeps the aftermath visibility bridge here.
-if (!globalThis.__RPChessLandscapeVisibilitySync) {
-  const syncVisibilityClasses = () => {
-    const skirmishAftermath = document.querySelector('[data-skirmish-aftermath]');
-    const battleAftermath = document.querySelector('[data-battle-aftermath]');
-    document.body.classList.toggle('compact-aftermath-active', Boolean((skirmishAftermath && !skirmishAftermath.hidden) || (battleAftermath && !battleAftermath.hidden)));
-  };
-  const app = document.querySelector('#app') || document.body;
-  new MutationObserver(syncVisibilityClasses).observe(app, { subtree:true, childList:true, attributes:true, attributeFilter:['hidden'] });
-  syncVisibilityClasses();
-  globalThis.__RPChessLandscapeVisibilitySync = true;
 }
