@@ -50,7 +50,7 @@ Status meanings:
 | REV-007 canonical Pages gate covers 3/17 browser contracts | **OPEN** | Test truth must first be restored; then define fast PR smoke gate + broader milestone browser gate. |
 | REV-008 stale browser contract requires page scroll | **DONE — verified** | Foundation/Roster audit contracts updated to the accepted one-screen rule instead of requiring page-level vertical scrolling. |
 | REV-009 Supplies/Market global image retargeting | **DONE — verified** | HUD, Travel, Settlement, Event outcome and shared resource markup render `reward_supplies.png` directly; Market service retains `node_shop.png`; `supplies-resource-icon.mjs` deleted; shared UX retarget scanner removed. |
-| REV-010 fragmented runtime hotfix CSS | **IN PROGRESS** | Market/review4 dynamic layer removed; Training rule moved into owner CSS; remaining Roster/Travel/Battle/Combat duties in review2, polish layers, `battle-route`, `ux-consistency`, `cross-scene-visuals` and landscape runtime CSS still need consolidation. |
+| REV-010 fragmented runtime hotfix CSS | **IN PROGRESS** | Market/review4 and review3/5/6/7 dynamic layers removed; accepted Training, Roster and Travel presentation now lives with screen owners. `review2` is reduced to Battle Prep/Combat duties. Remaining Battle/Combat/Skirmish/Settlement/Puzzle duties in polish layers, `battle-route`, `ux-consistency`, `cross-scene-visuals` and landscape runtime CSS still need consolidation. |
 | REV-011 Supplies optimizer makes asset larger | **DONE — verified** | Resource icon optimizer now keeps the original bytes when transformation is larger while still enforcing dimension/byte budgets. |
 | REV-012 stale CURRENT_STATE SHA | **OPEN** | Intentionally deferred until final accepted remediation SHA. |
 | REV-013 shared browser helper lifecycle drift | **DONE — verified** | `startNewRun()` now waits for the visible main menu/Identity/Roster and emits scene diagnostics instead of blindly clicking hidden nodes. Full 17-contract rerun passed in milestone #9. |
@@ -59,8 +59,8 @@ Status meanings:
 | REV-016 repeated puzzle materialization / duplicate build inputs | **DONE — verified** | `gate:local` materializes the catalog once before materialized test/validate/build stages; duplicate Endless build inputs removed. |
 | REV-017 generic Wrangler deploy path looks canonical | **DONE — docs pending** | Generic `npm run deploy` removed. Cloudflare is retained only as explicit manual `npm run deploy:cloudflare`; GitHub Pages remains canonical. |
 | REV-018 legacy Vertical Slice stack | **OPEN — deletion authorized** | Project owner approved deletion after reachability/reference proof. |
-| REV-019 CSS loading split between HTML and runtime JS | **OPEN** | Explicit stylesheet ownership/order still required after patch-layer consolidation. |
-| REV-020 `rpchess:run-updated` is overly broad bus | **IN PROGRESS** | Resources now consumes semantic `scene-changed`/`settlement-updated`; Settlement emits source details. Broader event graph still needs reduction. |
+| REV-019 CSS loading split between HTML and runtime JS | **IN PROGRESS** | Travel compact presentation now has an explicit owner stylesheet (`travel-choice-compact.css`) loaded by `travel-choice-app.mjs`; the wider production stylesheet order is still split and must be consolidated after remaining compatibility layers are removed. |
+| REV-020 `rpchess:run-updated` is overly broad bus | **IN PROGRESS** | Resources now consumes semantic `scene-changed`/`settlement-updated`; Settlement emits source details. Travel fan-out was removed from the generic post-pages polish runtime. Broader event graph still needs reduction. |
 | REV-021 historical docs conflict with current UI/deploy rules | **OPEN** | Final docs sync phase will add current-contract headers while retaining clearly marked history. |
 
 ### Remediation changes already landed on the audit branch
@@ -79,13 +79,16 @@ Status meanings:
 - Deleted `hero-notes-runtime.mjs`, `post-pages-ui-review3.mjs`, `post-pages-ui-review4.mjs`, `post-pages-ui-review5.mjs`, `post-pages-ui-review6.mjs`, `post-pages-ui-review7.mjs`, `supplies-resource-icon.mjs`.
 - Moved accepted desktop Settlement emblem and Classic/Puzzle role-glyph rules from review7 into their owning CSS files.
 - Folded the review3/5/6 Training geometry cascade into `puzzles.css` and its language-aware Classic captions into `chess-ai-polish.css`.
-- Moved the overlapping Puzzle and Settlement sections of review2 ahead of those accepted owner cascades; review2 now retains only Roster/Travel/Battle/Combat CSS compatibility duties.
+- Moved the overlapping Puzzle and Settlement sections of review2 ahead of those accepted owner cascades; `review2` now retains only Battle Prep/Combat CSS compatibility duties.
 - Removed review2's duplicate combat-panel listeners/reparenting; the remaining single legacy reparent path is isolated in `post-pages-ui-polish.mjs` pending stable owner slots.
-- Source verifier and targeted static contracts updated to reject those deleted layers and require the new ownership contracts.
+- Moved compact Roster presentation into `roster.css`; Roster selectors are now forbidden in both `review2` and `post-pages-ui-polish.mjs` by the existing `tests/roster.cjs` regression contract.
+- Moved Travel king portrait rendering into `travel-choice-app.mjs` and the final accepted `1180`/`980` compact cascade into `travel-choice-compact.css`; Travel selectors were removed from `review2`, `post-pages-ui-polish-constraints.mjs` and `post-pages-ui-polish.mjs`.
+- Removed `syncTravel()`, Travel-open fan-out and the associated compatibility run/compact helpers from `post-pages-ui-polish.mjs`.
+- Source verifier and targeted static contracts updated to reject deleted/superseded layers and require the new ownership contracts.
 - Added reusable pre-scroll page/viewport/frame assertions in `tests/helpers/viewport-geometry-contract.cjs`.
 - Reworked `responsive-viewport-browser.cjs` so it cannot hide one-screen failures via `scrollIntoView()`; the contract now runs RU/EN, tests `1180`/`980` breakpoint boundaries and directly covers Language, Player Identity and Chronicle containment.
 
-**Verification scope:** full milestone #9 covers the review3/5/6/7 owner migration; targeted #10 covers the later review2 Puzzle/Settlement split and lifecycle deduplication; deterministic #11 covers the save-schema reset. Geometry-test commit `6888beb2` changes test evidence only, not production runtime, and still awaits targeted Chromium verification.
+**Verification scope:** full milestone #9 covers the review3/5/6/7 owner migration; targeted #10 covers the later review2 Puzzle/Settlement split and lifecycle deduplication; deterministic #11 covers the save-schema reset. Geometry-test commit `6888beb2` changes test evidence only, not production runtime, and still awaits targeted Chromium verification. Roster/Travel ownership commits through `15bc21b6` include strengthened existing static regression contracts, but no new Chromium or canonical local-gate PASS is claimed yet.
 
 ### Latest milestone verification
 
@@ -97,6 +100,7 @@ Status meanings:
 - **Targeted owner-migration gate #10** ([run `34266676368`](https://github.com/mobigametim-bit/RPChess/actions/runs/34266676368), head `8e7c4675`) completed with canonical local gate **PASS**, Classic/Settlement/Puzzles **3/3 PASS** and `AUDIT_TOTAL_FAILURES=0` after the review2 Puzzle/Settlement split and duplicate lifecycle removal.
 - **Deterministic save-schema gate #11** ([run `34267715267`](https://github.com/mobigametim-bit/RPChess/actions/runs/34267715267), head `2ced5f67`) completed with canonical local gate **PASS**, the new persistence regression **PASS** and `AUDIT_TOTAL_FAILURES=0`.
 - **Geometry contract remediation #12** (`6888beb2`) is committed with local JS syntax/static checks passing. No Chromium PASS is claimed yet: the strengthened responsive contract still needs a real browser run.
+- **Roster/Travel owner cleanup #13** (through head `15bc21b6`) removes Roster/Travel presentation ownership from the compatibility layers, gives Travel an owner-rendered king portrait and explicit compact stylesheet, and strengthens the existing Roster/Travel regression contracts. The audit workflows are manual-dispatch only and were not run for this head, so deterministic/browser verification remains pending.
 
 ---
 
@@ -160,6 +164,8 @@ A global runtime injected Market CSS, hid nested images, scanned multiple screen
 
 There are still overlapping dynamic style blocks and `!important` rules in `battle-route`, remaining `post-pages-ui-*`, `ux-consistency`, `cross-scene-visuals`, landscape UI and related compatibility layers.
 
+**Current remediation:** review3/5/6/7 are deleted; Puzzle/Settlement accepted rules were split out of review2; Roster and Travel compact presentation now belongs to their screen owners. `post-pages-ui-review2.mjs` is reduced to Battle Prep/Combat rules. Remaining polish/runtime layers still overlap for Battle/Combat, Skirmish, Settlement, Puzzle/Training, Endless and route-level presentation.
+
 **Target:** migrate accepted declarations into screen-owned CSS and delete superseded layers after geometry parity for each screen.
 
 ## REV-011 — P3 — Resource icon optimizer enlarged a tiny runtime asset
@@ -214,13 +220,15 @@ A substantial pre-Reboot application exists outside the production build, includ
 
 Some CSS is linked in HTML, while many active modules dynamically append stylesheets at evaluation time.
 
+**Current remediation:** Travel compact rules are no longer injected from generic post-pages compatibility modules; `travel-choice-app.mjs` explicitly owns and loads `travel-choice-compact.css`. This is a bounded ownership improvement, not yet the final global loading model.
+
 **Target:** one explicit production stylesheet order/ownership model; lazy CSS only if a measured payload benefit justifies it.
 
 ## REV-020 — P2 — `rpchess:run-updated` is an overly broad cross-system bus
 
 Many independent writes dispatch the same event; consumers reread broad state/DOM to infer what changed.
 
-**Target:** narrower semantic events or typed change details and one scheduler per owner. Resources/Settlement cleanup has started this migration.
+**Target:** narrower semantic events or typed change details and one scheduler per owner. Resources/Settlement cleanup has started this migration; Travel-open compatibility fan-out has now also been removed from post-pages polish.
 
 ## REV-021 — P2 — Feature docs contain historical rules conflicting with current policy
 
@@ -274,9 +282,9 @@ Legend: **PROVEN** = direct evidence of the required geometry; **PARTIAL** = use
 | Settings modal | PARTIAL | PARTIAL | PARTIAL | PARTIAL | frame ownership contract authored; Chromium rerun pending |
 | Language modal | OPEN | OPEN | OPEN | OPEN | RU/EN geometry contract authored; Chromium verification pending |
 | Player Identity | OPEN | OPEN | OPEN | PARTIAL | explicit owner-frame contract authored; Chromium verification pending |
-| Roster | PARTIAL | PARTIAL | PARTIAL | PARTIAL | stronger pre-scroll scene/CTA contract authored; Chromium rerun pending |
+| Roster | PARTIAL | PARTIAL | PARTIAL | PARTIAL | stronger pre-scroll scene/CTA + owner-style contract authored; Chromium rerun pending |
 | Chronicle | PARTIAL | PARTIAL | PARTIAL | PARTIAL | pre-scroll vertical containment authored; Chromium rerun pending |
-| Travel Choice | PARTIAL | PARTIAL | PROVEN compact | PARTIAL | RU/EN + `1180`/`980` boundary sweep authored; Chromium rerun pending |
+| Travel Choice | PARTIAL | PARTIAL | PROVEN compact | PARTIAL | owner compact cascade + RU/EN `1180`/`980` boundary sweep authored; Chromium rerun pending |
 | Skirmish prep | PARTIAL | PARTIAL | PROVEN compact | PARTIAL | RU/EN pre-scroll sweep authored; Chromium rerun pending |
 | Skirmish combat | PROVEN board | PROVEN board | PROVEN board | PARTIAL | RU/EN page-fit sweep authored; Chromium rerun pending |
 | Skirmish aftermath | PARTIAL | PARTIAL | PROVEN compact | PARTIAL | stronger pre-scroll contract authored; Chromium rerun pending |
@@ -299,7 +307,7 @@ Legend: **PROVEN** = direct evidence of the required geometry; **PARTIAL** = use
 2. **Observer/listener/event fan-out:** measure callbacks/render scheduling over repeated full route loops.
 3. **Leak stability:** repeat route loops 10+ times and compare listener/node counts.
 4. **Asset orphan inventory:** build a runtime reference graph for generated assets, music/SFX and legacy masters.
-5. **Latest remediation regression:** run `responsive-viewport-browser.cjs` against `6888beb2`, then the deterministic/local gate after any real geometry fixes; run the full 17-contract browser matrix at the next meaningful architecture milestone.
+5. **Latest remediation regression:** run `responsive-viewport-browser.cjs` and the strengthened Roster/Travel contracts against current head `15bc21b6`, then `gate:local`; run the full 17-contract browser matrix at the next meaningful architecture milestone.
 
 ---
 
@@ -318,7 +326,7 @@ These are the active autonomous remediation steps, ordered to minimize regressio
 
 ## Phase B — remove presentation/runtime debt
 
-7. Inventory remaining responsibilities in `post-pages-ui-polish(-constraints)` and review2/3/5/6/7.
+7. Inventory the remaining responsibilities in `post-pages-ui-polish(-constraints)` and the now Battle/Combat-only `post-pages-ui-review2.mjs`, plus `battle-route`, `ux-consistency`, `cross-scene-visuals` and landscape runtime layers.
 8. Move each accepted rule into its actual screen-owned CSS/renderer and delete the compatibility module immediately after parity proof.
 9. Move Battle/aftermath CSS out of `battle-route.mjs`; remove its hidden-attribute MutationObserver by having scene owners set semantic state/classes.
 10. Remove obsolete controls from source owners and then delete runtime `.remove()` cleanup.
@@ -335,7 +343,7 @@ These are the active autonomous remediation steps, ordered to minimize regressio
 
 ## Phase D — persistence/tooling/legacy cleanup
 
-18. Implement the owner-approved **reset-on-unsupported-schema** policy; no migration/backward-save preservation is required. Add only the minimal regression proving safe reset behavior.
+18. Keep the verified owner-approved **reset-on-unsupported-schema** policy; no migration/backward-save preservation is required unless a future schema decision changes that contract.
 19. Complete dependency security classification.
 20. Generate asset orphan/reference inventory and remove only proven unused assets.
 21. Delete the authorized legacy Vertical Slice application/runtime/tests after reference proof.
@@ -366,15 +374,17 @@ These are the active autonomous remediation steps, ordered to minimize regressio
 4. Remove obsolete DOM and reparenting.
 5. Finish keyed localization and remove global legacy observation.
 6. Reduce broad event/render fan-out and prove no leaks.
-7. Apply explicit save-reset policy, dependency/asset cleanup and delete Vertical Slice.
+7. Apply dependency/asset cleanup and delete Vertical Slice while retaining the verified save-reset policy.
 8. Final RU/EN all-screen matrix + Pages gate + documentation synchronization.
 
 ## Next actions
 
-1. Run targeted `responsive-viewport-browser.cjs` against head `6888beb2`; fix only real geometry failures and do not relax the one-screen contract to preserve old layouts.
-2. Run `gate:local` on the combined remediation head after any geometry fixes.
+1. Run targeted `responsive-viewport-browser.cjs` plus existing Roster/Travel contracts against current head `15bc21b6`; fix only real geometry/ownership failures and do not relax the one-screen contract to preserve old layouts.
+2. Run `gate:local` on the combined remediation head after any real contract fixes.
 3. Extend the reusable geometry contract to the remaining weak surfaces: Battle aftermath, Starvation, Puzzle/Training, Classic setup and Endless summary.
-4. Continue `REV-010` / `REV-005` / `REV-006`: inventory remaining compatibility CSS/runtime responsibilities, move accepted rules into screen owners, remove obsolete source controls and replace DOM reparenting with stable owner slots.
-5. At the next meaningful architecture milestone, run the full 17-contract Chromium matrix and update tracker/evidence statuses from actual results.
+4. Continue `REV-010` with the next bounded owner package: fold Battle Prep presentation out of `review2`/constraints/polish into Battle-owned CSS and renderer contracts without changing accepted composition.
+5. Then address `REV-006`: replace the remaining Classic moves runtime reparenting with a stable owner slot before deleting its compatibility styling/listeners.
+6. Continue `REV-005` source cleanup only where obsolete controls are proven unreachable/unused; prefer extending existing regression contracts over new suites.
+7. At the next meaningful architecture milestone, run the full 17-contract Chromium matrix and update tracker/evidence statuses from actual results.
 
 Every subsequent remediation report must update this tracker and include a concrete **Next actions** list.
