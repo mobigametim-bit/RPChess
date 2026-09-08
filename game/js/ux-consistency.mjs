@@ -1,9 +1,7 @@
 const GOLD_ICON = 'generated_assets/reward_gold.png';
-// Existing campaign-map shop asset: a merchant pouch / supply-stall symbol designed to stay readable at icon size.
-const SUPPLIES_ICON = 'generated_assets/node_shop.png';
+const SUPPLIES_ICON = 'generated_assets/reward_supplies.png';
 const BOARD_SELECTOR = '.classic-board[data-chess-board], .puzzle-board[data-puzzle-board]';
 const SKIP_TEXT_PARENTS = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'OPTION', 'NOSCRIPT']);
-const SUPPLY_ICON_HOLDER_SELECTOR = '.resource-chip__supply-icon, [aria-labelledby="settlement-supplies-title"] .settlement-service__icon';
 const LANDSCAPE_ACCEPTANCE_STYLE = 'data-landscape-acceptance-revision-style';
 
 function ensureCss() {
@@ -28,7 +26,7 @@ function ensureLandscapeAcceptanceRevision() {
   const style = document.createElement('style');
   style.setAttribute(LANDSCAPE_ACCEPTANCE_STYLE, '');
   style.textContent = `
-/* Human Acceptance revision 2 — only the four requested responsive corrections. */
+/* Human Acceptance revision 2 — remaining shared responsive corrections. */
 @media (orientation: landscape) and (max-width: 980px) and (max-height: 520px) {
   /* Travel: route icon owns a fixed left rail; title/meta start to its right. */
   html[data-landscape-ui='1'] body.travel-choice-active .travel-choice-card__icon {
@@ -260,20 +258,6 @@ function iconizeText(root = document.body) {
   for (const node of nodes) iconizeTextNode(node);
 }
 
-function replaceSupplyDiamonds(root = document) {
-  if (!(root instanceof Element || root instanceof Document || root instanceof DocumentFragment)) return;
-  const candidates = [];
-  if (root instanceof Element && root.matches(SUPPLY_ICON_HOLDER_SELECTOR)) candidates.push(root);
-  candidates.push(...(root.querySelectorAll?.(SUPPLY_ICON_HOLDER_SELECTOR) || []));
-  for (const holder of candidates) {
-    if (holder.querySelector('img')) continue;
-    holder.textContent = '';
-    const image = resourceIcon('supplies');
-    image.classList.add('resource-chip__supply-image');
-    holder.append(image);
-  }
-}
-
 function visibleAxes(board) {
   const squares = [...board.querySelectorAll(':scope > [data-square]')];
   if (squares.length !== 64) return null;
@@ -364,7 +348,6 @@ function refresh() {
   refreshQueued = false;
   syncCombatSummary();
   syncPuzzlePresentation();
-  replaceSupplyDiamonds(document);
   iconizeText(document.body);
   for (const board of document.querySelectorAll(BOARD_SELECTOR)) syncBoard(board);
 }
