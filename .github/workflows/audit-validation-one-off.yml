@@ -7,10 +7,13 @@ on:
     paths:
       - .github/workflows/audit-validation-one-off.yml
 
+permissions:
+  contents: write
+
 jobs:
-  diagnose:
+  validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 55
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,63 +31,139 @@ jobs:
             rpchess-runtime-assets-v1-${{ runner.os }}-
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
-      - name: Apply landscape owner candidate
+      - name: Apply compact combat owner fix
         run: |
           python - <<'PY'
           import re
           from pathlib import Path
-          p=Path('game/js/landscape-ui-redesign.mjs')
-          t=p.read_text()
-          t=t.replace("\nconst BOARD_EDGE_STYLE_MARKER = 'data-landscape-board-edge-style';",'',1)
-          t,n=re.subn(r"\nfunction ensureBoardEdgeStyle\(\) \{[\s\S]*?\n\}\n\n(?=function ensureOrientationLock\(\))",'\n',t,count=1)
-          if n!=1 or t.count('ensureBoardEdgeStyle();')!=1: raise SystemExit('landscape injection structure drift')
-          t=t.replace('ensureBoardEdgeStyle();\n','',1)
-          p.write_text(t)
-          p=Path('game/css/landscape-ui-redesign.css')
-          t=p.read_text()
-          t += "\n\n/* DIAGNOSTIC owner-final Classic rail */\n@media (orientation: landscape) {\n  html[data-landscape-ui='1'] .classic-shell {\n    width:100vw!important;\n    max-width:none!important;\n    height:100dvh!important;\n    margin:0!important;\n    display:grid!important;\n    grid-template-columns:calc(100vw - 100dvh - 4px) 100dvh!important;\n    grid-template-rows:auto minmax(0,1fr) minmax(86px,.42fr)!important;\n    column-gap:4px!important;\n    row-gap:0!important;\n    align-items:stretch!important;\n  }\n  html[data-landscape-ui='1'] .classic-party-panel,\n  html[data-landscape-ui='1'] .classic-panel--moves { min-width:0!important; max-width:100%!important; }\n}\n"
-          p.write_text(t)
+
+          js_path=Path('game/js/landscape-ui-redesign.mjs')
+          js=js_path.read_text()
+          js=js.replace("\nconst BOARD_EDGE_STYLE_MARKER = 'data-landscape-board-edge-style';",'',1)
+          js,count=re.subn(r"\nfunction ensureBoardEdgeStyle\(\) \{[\s\S]*?\n\}\n\n(?=function ensureOrientationLock\(\))",'\n',js,count=1)
+          if count!=1:
+              raise SystemExit(f'expected one ensureBoardEdgeStyle block, got {count}')
+          if js.count('ensureBoardEdgeStyle();')!=1:
+              raise SystemExit('expected one ensureBoardEdgeStyle call')
+          js=js.replace('ensureBoardEdgeStyle();\n','',1)
+          for token in ['BOARD_EDGE_STYLE_MARKER','data-landscape-board-edge-style','style.textContent']:
+              if token in js:
+                  raise SystemExit(f'landscape runtime CSS residue remains: {token}')
+          js_path.write_text(js)
+
+          css_path=Path('game/css/landscape-ui-redesign.css')
+          css=css_path.read_text()
+          generic="""  .classic-shell {
+            width: 100vw !important;
+            max-width: none !important;
+            height: 100dvh !important;
+            margin: 0 !important;
+            display: grid !important;
+            grid-template-columns: calc(100vw - 100dvh) 100dvh !important;
+            grid-template-rows: auto minmax(0, 1fr) minmax(86px, .42fr) !important;
+            gap: 0 !important;
+            align-items: stretch !important;
+          }
+          """
+          if generic not in css:
+              raise SystemExit('canonical classic-shell landscape block drifted')
+          owner="""  /* Compact combat owns a zero-padding viewport and a physical rail/board separation. */
+          html[data-landscape-ui='1'] body.compact-combat-active .classic-screen {
+            padding: 0 !important;
+          }
+          html[data-landscape-ui='1'] body.compact-combat-active .classic-shell {
+            width: 100vw !important;
+            max-width: none !important;
+            height: 100dvh !important;
+            margin: 0 !important;
+            display: grid !important;
+            grid-template-columns: calc(100vw - 100dvh - 4px) 100dvh !important;
+            grid-template-rows: auto minmax(0, 1fr) minmax(86px, .42fr) !important;
+            column-gap: 4px !important;
+            row-gap: 0 !important;
+            align-items: stretch !important;
+          }
+          """
+          if owner not in css:
+              css=css.replace(generic,generic+owner,1)
+          css_path.write_text(css)
+
+          test_path=Path('tests/ui-redesign-final.cjs')
+          test=test_path.read_text()
+          declaration="  const finalCss=read('game/css/ui-redesign-final.css');\n"
+          if "const landscapeUi=read('game/js/landscape-ui-redesign.mjs')" not in test:
+              if declaration not in test:
+                  raise SystemExit('UI regression declaration anchor missing')
+              test=test.replace(declaration,declaration+"  const landscapeUi=read('game/js/landscape-ui-redesign.mjs');\n  const landscapeCss=read('game/css/landscape-ui-redesign.css');\n",1)
+          anchor="  assert(!finalUi.includes('MutationObserver')&&!finalUi.includes('LIVE_OVERRIDE_CSS'),'final redesign module must not rely on global observers or live injected CSS');\n"
+          assertion=(
+              "  assert(!landscapeUi.includes('BOARD_EDGE_STYLE_MARKER')&&!landscapeUi.includes('data-landscape-board-edge-style')&&!landscapeUi.includes('style.textContent'), 'landscape presentation must be stylesheet-owned and must not inject runtime CSS');\n"
+              "  assert(landscapeCss.includes(\"html[data-landscape-ui='1'] body.compact-combat-active .classic-screen\")&&landscapeCss.includes(\"html[data-landscape-ui='1'] body.compact-combat-active .classic-shell\")&&landscapeCss.includes('grid-template-columns: calc(100vw - 100dvh - 4px) 100dvh !important')&&landscapeCss.includes('column-gap: 4px !important'), 'compact combat owner must remove outer padding and keep a physical information-rail gap before the 100dvh board');\n"
+          )
+          if assertion.strip() not in test:
+              if anchor not in test:
+                  raise SystemExit('UI regression assertion anchor missing')
+              test=test.replace(anchor,anchor+assertion,1)
+          test_path.write_text(test)
           PY
-      - name: Build production dist
-        run: npm run puzzles:materialize && npm run build:materialized
+      - name: Run owner regression
+        run: node tests/ui-redesign-final.cjs
+      - name: Run canonical local gate
+        run: npm run gate:local
       - name: Install Playwright and Chromium
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
-      - name: Instrument one combat viewport
+      - name: Narrow responsive proof to 1024x768 RU combat
         run: |
+          cp tests/responsive-viewport-browser.cjs /tmp/responsive-viewport-browser.cjs
           python - <<'PY'
           from pathlib import Path
           p=Path('tests/responsive-viewport-browser.cjs')
           t=p.read_text()
-          assertion="    assert(combatPanel.gap >= 4, `${label}: combat information panel must not touch the board`);"
-          js_lines=[
-            "    console.log('CASCADE_DIAG', JSON.stringify(await page.evaluate(async () => {",
-            "      const shell=document.querySelector('.classic-shell');",
-            "      const party=document.querySelector('.classic-party-panel');",
-            "      const board=document.querySelector('[data-chess-board]');",
-            "      const rect=(n)=>{const r=n?.getBoundingClientRect();return r?{left:r.left,right:r.right,width:r.width,top:r.top,bottom:r.bottom}:null};",
-            "      const rules=[];",
-            "      const walk=(ruleList,href,media=[])=>{for(const rule of Array.from(ruleList||[])){if(rule.cssRules){const condition=rule.conditionText||rule.media?.mediaText||'';walk(rule.cssRules,href,condition?[...media,condition]:media);}else if(rule.selectorText?.includes('.classic-shell')){const style=rule.style;const props=['width','max-width','height','margin','display','grid-template-columns','column-gap','gap'];const declared={};for(const prop of props){const value=style.getPropertyValue(prop);if(value)declared[prop]=value+(style.getPropertyPriority(prop)?' !important':'');}if(Object.keys(declared).length)rules.push({href,selector:rule.selectorText,media,declared});}}};",
-            "      for(const sheet of Array.from(document.styleSheets)){try{walk(sheet.cssRules,sheet.href||'INLINE');}catch(error){rules.push({href:sheet.href||'INLINE',error:String(error)});}}",
-            "      const link=document.querySelector('link[data-landscape-ui-css]');",
-            "      let landscapeText='';let landscapeStatus=null;",
-            "      if(link){try{const response=await fetch(link.href,{cache:'no-store'});landscapeStatus=response.status;landscapeText=await response.text();}catch(error){landscapeText='FETCH_ERROR:'+String(error);}}",
-            "      const cs=getComputedStyle(shell),ps=getComputedStyle(party);",
-            "      return {htmlLandscape:document.documentElement.dataset.landscapeUi||null,linkHref:link?.href||null,landscapeStatus,servedHasDiagnostic:landscapeText.includes('DIAGNOSTIC owner-final Classic rail'),stylesheets:Array.from(document.styleSheets).map(s=>s.href||'INLINE'),shell:rect(shell),party:rect(party),board:rect(board),computed:{grid:cs.gridTemplateColumns,columnGap:cs.columnGap,gap:cs.gap,width:cs.width,margin:cs.margin,padding:cs.padding,partyWidth:ps.width,partyMargin:ps.margin},rules};",
-            "    })));"
-          ]
-          diagnostic='\n'.join(js_lines)+'\n'+assertion
-          if assertion not in t: raise SystemExit('combat gap assertion missing')
-          t=t.replace(assertion,diagnostic,1)
           marker='\n(async () => {'
           pos=t.rfind(marker)
-          if pos<0: raise SystemExit('runner marker missing')
-          suffix="\n(async () => {\n  const browser=await chromium.launch({headless:true});\n  try{await auditPrepAndCombat(browser,1024,768,'ru');}finally{await browser.close();}\n})().catch((error)=>{console.error(error.stack||error);process.exitCode=1;});\n"
+          if pos<0:
+              raise SystemExit('responsive runner marker missing')
+          suffix=(
+              "\n(async () => {\n"
+              "  const browser = await chromium.launch({ headless: true });\n"
+              "  try {\n"
+              "    await auditPrepAndCombat(browser, 1024, 768, 'ru');\n"
+              "    console.log('Targeted 1024x768 RU combat geometry: PASS');\n"
+              "  } finally { await browser.close(); }\n"
+              "})().catch((error) => { console.error(error.stack || error); process.exitCode = 1; });\n"
+          )
           p.write_text(t[:pos]+suffix)
           PY
-      - name: Run diagnostic Chromium
+      - name: Run targeted combat browser proof
         env:
           RPCHESS_GATE_PREFIX: /RPChess
           RPCHESS_BROWSER_TEST: responsive-viewport-browser.cjs
+        run: npm run test:browser
+      - name: Restore full responsive contract
+        if: always()
+        run: |
+          if [ -f /tmp/responsive-viewport-browser.cjs ]; then
+            cp /tmp/responsive-viewport-browser.cjs tests/responsive-viewport-browser.cjs
+          fi
+      - name: Commit validated owner fix
+        if: success()
+        run: |
+          git config user.name "mobigametim-bit"
+          git config user.email "mobigametim@gmail.com"
+          git add game/js/landscape-ui-redesign.mjs game/css/landscape-ui-redesign.css tests/ui-redesign-final.cjs
+          git diff --cached --check
+          git commit -m "fix: own compact combat rail geometry"
+          git push origin HEAD:audit/full-project-review-2026-09-08
+      - name: Run full responsive contract
+        if: success()
+        env:
+          RPCHESS_GATE_PREFIX: /RPChess
+          RPCHESS_BROWSER_TEST: responsive-viewport-browser.cjs
+        run: npm run test:browser
+      - name: Run all Chromium contracts
+        if: success()
+        env:
+          RPCHESS_GATE_PREFIX: /RPChess
         run: npm run test:browser
