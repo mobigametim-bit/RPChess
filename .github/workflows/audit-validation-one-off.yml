@@ -35,36 +35,29 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Align Roster localization regression
+      - name: Align Power semantic ownership regression
         run: |
           python - <<'PY'
           from pathlib import Path
-          path = Path('tests/roster.cjs')
+          path = Path('tests/player-rating.cjs')
           text = path.read_text()
-          old = "for(const key of ['roster.ariaLabel','roster.filter.all','roster.journey','roster.commandPoints','roster.cardAria'])assert(app.includes(`t('${key}'`)||app.includes(`t(\\`${key}`),`Roster owner must call t() for ${key}`);"
-          new = "for(const key of ['roster.ariaLabel','roster.journey','roster.commandPoints','roster.cardAria'])assert(app.includes(`t('${key}'`)||app.includes(`t(\\`${key}`),`Roster owner must call t() for ${key}`);\n  assert(app.includes('t(`roster.filter.${filter}`)'),'Roster owner must derive filter labels from the keyed localization family');"
+          old = "  const travelSource=fs.readFileSync(path.join(game,'js/travel-choice-app.mjs'),'utf8');\n  const settleToken='globalThis.RPChessPower?.settle?.(activeRun)';\n  const clearToken='activeRun=writeRun({...activeRun,activeTravelChoice:null})';\n  assert(travelSource.includes(settleToken),'Travel lifecycle must explicitly settle Power before clearing a completed combat route');\n  assert(travelSource.indexOf(settleToken)<travelSource.indexOf(clearToken),'Power settlement must happen before activeTravelChoice cleanup');"
+          new = "  const travelSource=fs.readFileSync(path.join(game,'js/travel-choice-app.mjs'),'utf8');\n  const ratingRuntimeSource=fs.readFileSync(path.join(game,'js/player-rating-runtime.mjs'),'utf8');\n  const settleToken='globalThis.RPChessPower?.settle?.(activeRun)';\n  assert(!travelSource.includes(settleToken),'Travel must not duplicate Power settlement owned by the semantic Power runtime');\n  assert(ratingRuntimeSource.includes(\"addEventListener('rpchess:combat-completed', sync)\")&&ratingRuntimeSource.includes(\"addEventListener('rpchess:puzzle-resolved', sync)\"),'Power runtime must settle rated outcomes from semantic completion events');\n  assert(ratingRuntimeSource.includes('settleCurrentRatedOutcome(run);'),'Power semantic owner must settle the current rated outcome before result rendering');"
           if text.count(old) != 1:
-              raise SystemExit(f'expected one stale Roster direct-key assertion, got {text.count(old)}')
+              raise SystemExit(f'expected one stale Travel-owned Power assertion block, got {text.count(old)}')
           path.write_text(text.replace(old, new, 1))
           PY
 
-      - name: Run targeted Roster contract
-        run: node tests/roster.cjs
+      - name: Run targeted Power contract
+        run: node tests/player-rating.cjs
 
-      - name: Commit validated Roster regression fix
+      - name: Commit validated Power regression fix
         run: |
           git config user.name 'mobigametim-bit'
           git config user.email 'mobigametim@gmail.com'
-          git add tests/roster.cjs
-          git commit -m 'test: align Roster filter localization contract'
+          git add tests/player-rating.cjs
+          git commit -m 'test: align Power semantic ownership contract'
           git push origin HEAD:audit/full-project-review-2026-09-08
-
-      - name: Report asset reachability candidates
-        run: npm run assets:orphans:report
-
-      - name: Diagnose remaining generated asset candidates
-        run: |
-          grep -RInE 'generated_assets/(logo_main|ui_checkbox|ui_slider_knob|ui_chip|ui_button_danger|unit_boss_king_enemy|ui_button_secondary|unit_arcane_node_enemy|ui_slider_bg|ui_divider)\.png' game scripts tests package.json || true
 
       - name: Run canonical local gate
         run: npm run gate:local
