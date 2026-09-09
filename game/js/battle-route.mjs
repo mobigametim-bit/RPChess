@@ -1,3 +1,4 @@
+import './run-lifecycle-events.mjs';
 import './player-rating-runtime.mjs';
 import './endless-run-app.mjs';
 import './resources-app.mjs';
