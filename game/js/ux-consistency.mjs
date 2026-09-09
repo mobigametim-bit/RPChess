@@ -1,9 +1,13 @@
+import { currentLanguage, translateLegacy } from './i18n.mjs';
+import { runtimeT } from '../localization/runtime-ui.mjs';
+
 const GOLD_ICON = 'generated_assets/reward_gold.png';
 const SUPPLIES_ICON = 'generated_assets/reward_supplies.png';
 const BOARD_SELECTOR = '.classic-board[data-chess-board], .puzzle-board[data-puzzle-board]';
 const SKIP_TEXT_PARENTS = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'OPTION', 'NOSCRIPT']);
 const LANDSCAPE_ACCEPTANCE_STYLE = 'data-landscape-acceptance-revision-style';
 
+function t(key, params = {}) { return runtimeT(currentLanguage(), key, params); }
 function ensureCss() {
   if (!document.querySelector('[data-ux-consistency-css]')) {
     const link = document.createElement('link');
@@ -205,8 +209,8 @@ function resourceIcon(type) {
 
 function resourceName(type, amountText = '') {
   const amount = Math.abs(Number.parseInt(String(amountText).replace(/[^0-9-]/g, ''), 10) || 0);
-  if (type === 'gold') return `${amountText} золота`;
-  return `${amountText} ${amount === 1 ? 'припас' : 'припасов'}`;
+  if (type === 'gold') return t('ux.resource.gold', { amount:amountText });
+  return t(amount === 1 ? 'ux.resource.supplyOne' : 'ux.resource.supplyMany', { amount:amountText });
 }
 
 function resourceAmount(type, amountText) {
@@ -258,6 +262,14 @@ function iconizeText(root = document.body) {
   for (const node of nodes) iconizeTextNode(node);
 }
 
+function syncResourceAria() {
+  for (const root of document.querySelectorAll('.resource-inline')) {
+    const amount = root.querySelector('.resource-inline__amount')?.textContent || '';
+    const type = root.classList.contains('resource-inline--gold') ? 'gold' : 'supplies';
+    root.setAttribute('aria-label', resourceName(type, amount));
+  }
+}
+
 function visibleAxes(board) {
   const squares = [...board.querySelectorAll(':scope > [data-square]')];
   if (squares.length !== 64) return null;
@@ -286,8 +298,8 @@ function ensureBoardFrame(board) {
     frame.className = 'board-coordinate-frame';
     board.parentNode?.insertBefore(frame, board);
     frame.append(board);
-    frame.append(axis('board-coordinate-ranks', Array(8).fill(''), 'Горизонтали доски'));
-    frame.append(axis('board-coordinate-files', Array(8).fill(''), 'Вертикали доски'));
+    frame.append(axis('board-coordinate-ranks', Array(8).fill(''), t('ux.board.ranks')));
+    frame.append(axis('board-coordinate-files', Array(8).fill(''), t('ux.board.files')));
   }
   return frame;
 }
@@ -310,18 +322,20 @@ function syncBoard(board) {
   const files = frame.querySelector('.board-coordinate-files');
   const ranks = frame.querySelector('.board-coordinate-ranks');
   if (!files || !ranks) return;
+  files.setAttribute('aria-label', t('ux.board.files'));
+  ranks.setAttribute('aria-label', t('ux.board.ranks'));
   [...files.children].forEach((item, index) => { item.textContent = values.files[index]; });
   [...ranks.children].forEach((item, index) => { item.textContent = values.ranks[index]; });
   frame.dataset.orientation = values.files[0] === 'h' ? 'black' : 'white';
 }
 
 function difficultyLabel(encounter) {
-  return String(encounter?.label || '').split(' · ')[0].trim();
+  return translateLegacy(String(encounter?.label || '').split(' · ')[0].trim());
 }
 
 function activeCombat() {
-  if (globalThis.RPChessBattle?.battlePlan) return { api:globalThis.RPChessBattle, title:'Битва' };
-  if (globalThis.RPChessSkirmish?.battlePlan) return { api:globalThis.RPChessSkirmish, title:'Стычка' };
+  if (globalThis.RPChessBattle?.battlePlan) return { api:globalThis.RPChessBattle, title:t('ux.combat.battle') };
+  if (globalThis.RPChessSkirmish?.battlePlan) return { api:globalThis.RPChessSkirmish, title:t('ux.combat.skirmish') };
   return null;
 }
 
@@ -339,7 +353,7 @@ function syncCombatSummary() {
 function syncPuzzlePresentation() {
   const status = document.querySelector('[data-puzzle-status]');
   const source = 'Ваш ход';
-  const localized = globalThis.RPChessI18n?.translateLegacy?.(source) || source;
+  const localized = translateLegacy(source);
   if (status && [source, localized].includes(status.textContent.trim())) status.textContent = '';
 }
 
@@ -349,6 +363,7 @@ function refresh() {
   syncCombatSummary();
   syncPuzzlePresentation();
   iconizeText(document.body);
+  syncResourceAria();
   for (const board of document.querySelectorAll(BOARD_SELECTOR)) syncBoard(board);
 }
 function scheduleRefresh() {
@@ -364,7 +379,7 @@ else scheduleRefresh();
 for (const name of [
   'rpchess:run-updated','rpchess:resources-updated','rpchess:power-updated','rpchess:run-continue',
   'rpchess:travel-open','rpchess:skirmish-open','rpchess:battle-open','rpchess:puzzle-open',
-  'rpchess:event-open','rpchess:settlement-open','rpchess:starvation-open'
+  'rpchess:event-open','rpchess:settlement-open','rpchess:starvation-open','rpchess:language-changed'
 ]) addEventListener(name, () => queueMicrotask(scheduleRefresh));
 
 document.addEventListener('click', (event) => {
