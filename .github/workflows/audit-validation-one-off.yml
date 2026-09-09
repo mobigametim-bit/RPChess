@@ -1,0 +1,52 @@
+name: One-off Audit Validation
+
+on:
+  push:
+    branches:
+      - audit/full-project-review-2026-09-08
+    paths:
+      - .github/workflows/audit-validation-one-off.yml
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Restore runtime asset cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Report asset reachability candidates
+        run: npm run assets:orphans:report
+
+      - name: Run canonical local gate
+        run: npm run gate:local
+
+      - name: Install Playwright and Chromium
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+
+      - name: Run all Chromium contracts
+        env:
+          RPCHESS_GATE_PREFIX: /RPChess
+        run: npm run test:browser
