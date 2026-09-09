@@ -104,14 +104,14 @@ body.settlement-active .resource-chip strong{color:#f0d99e}
        the compact circular background. The previous background shorthand erased them. */
     html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-services>.settlement-service:nth-child(1) .settlement-service__icon {
       background-color:rgba(5,10,16,.95)!important;
-      background-image:url('generated_assets/reward_heal.png')!important;
+      background-image:url('../generated_assets/reward_heal.png')!important;
       background-position:center!important;
       background-repeat:no-repeat!important;
       background-size:contain!important;
     }
     html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-services>.settlement-service:nth-child(2) .settlement-service__icon {
       background-color:rgba(5,10,16,.95)!important;
-      background-image:url('generated_assets/reward_recruit.png')!important;
+      background-image:url('../generated_assets/reward_recruit.png')!important;
       background-position:center!important;
       background-repeat:no-repeat!important;
       background-size:contain!important;

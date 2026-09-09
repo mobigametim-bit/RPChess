@@ -50,7 +50,7 @@ class TestCustomEvent extends Event{constructor(type,{detail=null}={}){super(typ
   const events=fs.readFileSync(path.join(game,'js/events-app.mjs'),'utf8');
   const travel=fs.readFileSync(path.join(game,'js/travel-choice-app.mjs'),'utf8');
   const resources=fs.readFileSync(path.join(game,'js/resources-app.mjs'),'utf8');
-  assert(source.includes("dispatch('rpchess:puzzle-resolved'"),'lifecycle bridge must expose the semantic Puzzle completion path');
+  assert(source.includes("completed.push(['rpchess:puzzle-resolved'"),'lifecycle bridge must expose the queued semantic Puzzle completion path');
   assert(source.indexOf('previous = next;')<source.indexOf('for (const [name, detail] of completed) dispatch(name, detail)'),'bridge must commit its snapshot before notifying reentrant consumers');
   assert(events.includes("addEventListener('rpchess:combat-completed',syncRun)")&&!events.includes("addEventListener('rpchess:run-updated',syncRun)"),'Events combat completion must consume the semantic event only');
   assert(travel.includes("addEventListener('rpchess:combat-completed',syncCombatCompletion)")&&!travel.includes("addEventListener('rpchess:run-updated'"),'Travel combat-route cleanup must consume semantic completion and must not retain a broad run listener');
