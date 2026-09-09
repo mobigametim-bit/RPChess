@@ -19,10 +19,14 @@ const LANDSCAPE_MATRIX = [
 ];
 const PORTRAIT_MATRIX = [[768, 1024], [390, 844]];
 
-async function freshMenu(page) {
+async function freshDocument(page) {
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.evaluate((key) => localStorage.removeItem(key), RUN_KEY);
   await page.reload({ waitUntil: 'networkidle' });
+}
+
+async function freshMenu(page) {
+  await freshDocument(page);
   await page.locator('[data-reboot-foundation]:not([hidden])').waitFor();
 }
 
@@ -38,7 +42,7 @@ async function auditPortraitLock(browser, width, height, language) {
   page.on('pageerror', (error) => errors.push(String(error.stack || error)));
   const label = `${width}x${height} ${language.toUpperCase()}`;
   try {
-    await freshMenu(page);
+    await freshDocument(page);
     await setLanguage(page, language);
     const lock = page.locator('[data-orientation-lock]');
     await lock.waitFor({ state: 'visible' });
@@ -198,13 +202,19 @@ async function auditPrepAndCombat(browser, width, height, language) {
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     await assertPageFitsViewport(page, `${label} Skirmish combat`);
     const combatPanel = await page.evaluate(() => {
+      const shell=document.querySelector('.classic-shell');
       const party=document.querySelector('.classic-party-panel');
       const moves=document.querySelector('.classic-panel--moves');
       const board=document.querySelector('[data-chess-board]');
       const p=party?.getBoundingClientRect(),b=board?.getBoundingClientRect();
-      return { movesInside:Boolean(party&&moves&&moves.parentElement===party),gap:p&&b?b.left-p.right:0 };
+      return {
+        movesInsideParty:Boolean(party&&moves&&moves.parentElement===party),
+        movesInShell:Boolean(shell&&moves&&moves.parentElement===shell),
+        gap:p&&b?b.left-p.right:0
+      };
     });
-    assert(combatPanel.movesInside, `${label}: run combat must use the desktop information-panel structure`);
+    assert.strictEqual(combatPanel.movesInsideParty, false, `${label}: run combat Journal must not be reparented into the Party panel`);
+    assert.strictEqual(combatPanel.movesInShell, true, `${label}: run combat Journal must remain in its stable classic-shell owner slot`);
     assert(combatPanel.gap >= 4, `${label}: combat information panel must not touch the board`);
     const board = await page.locator('[data-chess-board]').evaluate((element) => {
       const rect = element.getBoundingClientRect();
@@ -297,7 +307,7 @@ async function auditPrepAndCombat(browser, width, height, language) {
       for (const [width, height] of [[1024, 768], [844, 390]]) await auditEventLayout(browser, width, height, language);
       for (const [width, height] of [[1180, 820], [1024, 768], [844, 390]]) await auditPrepAndCombat(browser, width, height, language);
     }
-    console.log('Responsive viewport browser: PASS — RU/EN one-screen geometry, 1180/980 breakpoint boundaries, portrait lock, Language/Identity/Chronicle frames, Event rail, Travel, Skirmish combat/aftermath and Battle prep contracts');
+    console.log('Responsive viewport browser: PASS — RU/EN one-screen geometry, 1180/980 breakpoint boundaries, portrait lock, Language/Identity/Chronicle frames, Event rail, Travel, stable Classic Journal, Skirmish combat/aftermath and Battle prep contracts');
   } finally {
     await browser.close();
   }
