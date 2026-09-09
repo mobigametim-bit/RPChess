@@ -34,165 +34,33 @@ jobs:
       - name: Restore accepted Event landscape owner contract
         run: |
           python - <<'PY'
+          import base64
           from pathlib import Path
-
           css_path=Path('game/css/landscape-ui-redesign.css')
           css=css_path.read_text()
-
+          tablet=base64.b64decode('ICAvKiBFdmVudHMg4oCUIGFjY2VwdGVkIG93bmVyLXNjb3BlZCB0YWJsZXQgbGFuZHNjYXBlIGNvbnRyYWN0LiAqLwogIGJvZHkuZXZlbnRzLWFjdGl2ZSAuZXZlbnRzLXNjcmVlbiB7CiAgICBoZWlnaHQ6IDEwMGR2aCAhaW1wb3J0YW50OwogICAgbWluLWhlaWdodDogMCAhaW1wb3J0YW50OwogICAgcGFkZGluZzogMTBweCAxMnB4ICFpbXBvcnRhbnQ7CiAgICBvdmVyZmxvdzogaGlkZGVuICFpbXBvcnRhbnQ7CiAgICBib3gtc2l6aW5nOiBib3JkZXItYm94ICFpbXBvcnRhbnQ7CiAgfQogIGJvZHkuZXZlbnRzLWFjdGl2ZSAuZXZlbnRzLXNoZWxsIHsKICAgIHBvc2l0aW9uOiByZWxhdGl2ZSAhaW1wb3J0YW50OwogICAgd2lkdGg6IDEwMCUgIWltcG9ydGFudDsKICAgIGhlaWdodDogMTAwJSAhaW1wb3J0YW50OwogICAgbWluLWhlaWdodDogMCAhaW1wb3J0YW50OwogICAgZGlzcGxheTogZ3JpZCAhaW1wb3J0YW50OwogICAgZ3JpZC10ZW1wbGF0ZS1yb3dzOiBhdXRvIG1pbm1heCgwLDFmcikgIWltcG9ydGFudDsKICAgIGdhcDogN3B4ICFpbXBvcnRhbnQ7CiAgICBtYXJnaW46IDAgIWltcG9ydGFudDsKICAgIHBhZGRpbmc6IDAgIWltcG9ydGFudDsKICB9CiAgYm9keS5ldmVudHMtYWN0aXZlIC5ldmVudHMtdG9wYmFyIHsKICAgIHBvc2l0aW9uOiByZWxhdGl2ZSAhaW1wb3J0YW50OwogICAgaW5zZXQ6IGF1dG8gIWltcG9ydGFudDsKICAgIGdyaWQtcm93OiAxICFpbXBvcnRhbnQ7CiAgICBtaW4taGVpZ2h0OiA0OHB4ICFpbXBvcnRhbnQ7CiAgICBtYXJnaW46IDAgIWltcG9ydGFudDsKICB9CiAgYm9keS5ldmVudHMtYWN0aXZlIC5ldmVudHMtbG9nbyB7IHdpZHRoOiBtaW4oMTkwcHgsIDIydncpICFpbXBvcnRhbnQ7IH0KICBib2R5LmV2ZW50cy1hY3RpdmUgLmV2ZW50cy10b3BiYXJfX2FjdGlvbnMgLnJlYm9vdC1idXR0b24geyBtaW4taGVpZ2h0OiAzNnB4ICFpbXBvcnRhbnQ7IHBhZGRpbmc6IDVweCAxMHB4ICFpbXBvcnRhbnQ7IH0KICBib2R5LmV2ZW50cy1hY3RpdmUgLmV2ZW50cy1wYW5lbCB7CiAgICBwb3NpdGlvbjogcmVsYXRpdmUgIWltcG9ydGFudDsKICAgIGluc2V0OiBhdXRvICFpbXBvcnRhbnQ7CiAgICBncmlkLXJvdzogMiAhaW1wb3J0YW50OwogICAgd2lkdGg6IDEwMCUgIWltcG9ydGFudDsKICAgIGhlaWdodDogMTAwJSAhaW1wb3J0YW50OwogICAgbWluLXdpZHRoOiAwICFpbXBvcnRhbnQ7CiAgICBtaW4taGVpZ2h0OiAwICFpbXBvcnRhbnQ7CiAgICBkaXNwbGF5OiBncmlkICFpbXBvcnRhbnQ7CiAgICBncmlkLXRlbXBsYXRlLWNvbHVtbnM6IG1pbm1heCgwLDEuMDhmcikgbWlubWF4KDMzMHB4LC45MmZyKSAhaW1wb3J0YW50OwogICAgZ2FwOiAxMHB4ICFpbXBvcnRhbnQ7CiAgICBhbGlnbi1pdGVtczogc3RyZXRjaCAhaW1wb3J0YW50OwogICAgb3ZlcmZsb3c6IGhpZGRlbiAhaW1wb3J0YW50OwogICAgcG9pbnRlci1ldmVudHM6IGF1dG8gIWltcG9ydGFudDsKICB9CiAgYm9keS5ldmVudHMtYWN0aXZlIC5ldmVudHMtY29weS1mcmFtZSwKICBib2R5LmV2ZW50cy1hY3RpdmUgLmV2ZW50cy1jaG9pY2UtZnJhbWUgewogICAgcG9zaXRpb246IHJlbGF0aXZlICFpbXBvcnRhbnQ7CiAgICBpbnNldDogYXV0byAhaW1wb3J0YW50OwogICAgd2lkdGg6IGF1dG8gIWltcG9ydGFudDsKICAgIGhlaWdodDogMTAwJSAhaW1wb3J0YW50OwogICAgbWluLXdpZHRoOiAwICFpbXBvcnRhbnQ7CiAgICBtaW4taGVpZ2h0OiAwICFpbXBvcnRhbnQ7CiAgICBtYXgtd2lkdGg6IG5vbmUgIWltcG9ydGFudDsKICAgIG1heC1oZWlnaHQ6IG5vbmUgIWltcG9ydGFudDsKICAgIG92ZXJmbG93LXk6IGF1dG8gIWltcG9ydGFudDsKICAgIG92ZXJzY3JvbGwtYmVoYXZpb3I6IGNvbnRhaW4gIWltcG9ydGFudDsKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3ggIWltcG9ydGFudDsKICB9CiAgYm9keS5ldmVudHMtYWN0aXZlIC5ldmVudHMtY29weS1mcmFtZSB7IHBhZGRpbmc6IDE0cHggMTZweCAhaW1wb3J0YW50OyB9CiAgYm9keS5ldmVudHMtYWN0aXZlIC5ldmVudHMtY2hvaWNlLWZyYW1lIHsgcGFkZGluZzogMTBweCAhaW1wb3J0YW50OyB9CiAgYm9keS5ldmVudHMtYWN0aXZlIC5ldmVudHMtY29weS1mcmFtZSBoMSB7IGZvbnQtc2l6ZTogY2xhbXAoMzFweCwgNC4ydmgsIDQ2cHgpICFpbXBvcnRhbnQ7IH0KICBib2R5LmV2ZW50cy1hY3RpdmUgLmV2ZW50cy1zdG9yeSB7IGxpbmUtaGVpZ2h0OiAxLjQyICFpbXBvcnRhbnQ7IH0KICBib2R5LmV2ZW50cy1hY3RpdmUgLmV2ZW50cy1jaG9pY2VzIHsKICAgIGRpc3BsYXk6IGdyaWQgIWltcG9ydGFudDsKICAgIGdyaWQtdGVtcGxhdGUtY29sdW1uczogbWlubWF4KDAsMWZyKSAhaW1wb3J0YW50OwogICAgZ3JpZC1hdXRvLWZsb3c6IHJvdyAhaW1wb3J0YW50OwogICAgZ2FwOiA3cHggIWltcG9ydGFudDsKICAgIGFsaWduLWNvbnRlbnQ6IHN0YXJ0ICFpbXBvcnRhbnQ7CiAgfQogIGJvZHkuZXZlbnRzLWFjdGl2ZSAuZXZlbnRzLWNob2ljZSwKICBib2R5LmV2ZW50cy1hY3RpdmUgLmV2ZW50cy1jaG9pY2U6bGFzdC1jaGlsZDpudGgtY2hpbGQob2RkKSB7CiAgICBncmlkLWNvbHVtbjogYXV0byAhaW1wb3J0YW50OwogICAgbWluLXdpZHRoOiAwICFpbXBvcnRhbnQ7CiAgICBtaW4taGVpZ2h0OiAwICFpbXBvcnRhbnQ7CiAgICBoZWlnaHQ6IGF1dG8gIWltcG9ydGFudDsKICB9CiAgYm9keS5ldmVudHMtYWN0aXZlIC5ldmVudHMtY2hvaWNlIHsgcGFkZGluZzogMTBweCAhaW1wb3J0YW50OyB9CiAgYm9keS5ldmVudHMtYWN0aXZlIC5ldmVudHMtY2hvaWNlX19oZWFkIHN0cm9uZywKICBib2R5LmV2ZW50cy1hY3RpdmUgLmV2ZW50cy1jaG9pY2VfX3JlYWN0aW9uLAogIGJvZHkuZXZlbnRzLWFjdGl2ZSAuZXZlbnRzLWNob2ljZV9faGVyby1saW5lIHsKICAgIHdvcmQtYnJlYWs6IG5vcm1hbCAhaW1wb3J0YW50OwogICAgb3ZlcmZsb3ctd3JhcDogbm9ybWFsICFpbXBvcnRhbnQ7CiAgICBoeXBoZW5zOiBub25lICFpbXBvcnRhbnQ7CiAgfQoK').decode()
+          phone=base64.b64decode('ICAvKiBFdmVudHMg4oCUIGFjY2VwdGVkIG93bmVyLXNjb3BlZCBwaG9uZSBsYW5kc2NhcGUgY29tcHJlc3Npb24uICovCiAgYm9keS5ldmVudHMtYWN0aXZlIC5ldmVudHMtc2NyZWVuIHsgcGFkZGluZzogNXB4IDdweCAhaW1wb3J0YW50OyB9CiAgYm9keS5ldmVudHMtYWN0aXZlIC5ldmVudHMtc2hlbGwgeyBnYXA6IDRweCAhaW1wb3J0YW50OyB9CiAgYm9keS5ldmVudHMtYWN0aXZlIC5ldmVudHMtdG9wYmFyIHsgbWluLWhlaWdodDogMzRweCAhaW1wb3J0YW50OyBtYXJnaW4tYm90dG9tOiAwICFpbXBvcnRhbnQ7IH0KICBib2R5LmV2ZW50cy1hY3RpdmUgLmV2ZW50cy1sb2dvIHsgd2lkdGg6IDEyNXB4ICFpbXBvcnRhbnQ7IH0KICBib2R5LmV2ZW50cy1hY3RpdmUgLmV2ZW50cy10b3BiYXJfX2FjdGlvbnMgeyBnYXA6IDRweCAhaW1wb3J0YW50OyB9CiAgYm9keS5ldmVudHMtYWN0aXZlIC5ldmVudHMtdG9wYmFyX19hY3Rpb25zIC5yZWJvb3QtYnV0dG9uIHsgbWluLWhlaWdodDogMjlweCAhaW1wb3J0YW50OyBwYWRkaW5nOiAzcHggN3B4ICFpbXBvcnRhbnQ7IGZvbnQtc2l6ZTogMTBweCAhaW1wb3J0YW50OyB9CiAgYm9keS5ldmVudHMtYWN0aXZlIC5ldmVudHMtcGFuZWwgewogICAgZ3JpZC10ZW1wbGF0ZS1jb2x1bW5zOiBtaW5tYXgoMCwxLjA0ZnIpIG1pbm1heCgzMDBweCwuOTZmcikgIWltcG9ydGFudDsKICAgIGdhcDogNnB4ICFpbXBvcnRhbnQ7CiAgfQogIGJvZHkuZXZlbnRzLWFjdGl2ZSAuZXZlbnRzLWNvcHktZnJhbWUsCiAgYm9keS5ldmVudHMtYWN0aXZlIC5ldmVudHMtY2hvaWNlLWZyYW1lIHsgcGFkZGluZzogOHB4IDEwcHggIWltcG9ydGFudDsgfQogIGJvZHkuZXZlbnRzLWFjdGl2ZSAuZXZlbnRzLWtpY2tlciB7IGZvbnQtc2l6ZTogOHB4ICFpbXBvcnRhbnQ7IH0KICBib2R5LmV2ZW50cy1hY3RpdmUgLmV2ZW50cy1jb3B5LWZyYW1lIGgxIHsgZm9udC1zaXplOiAyN3B4ICFpbXBvcnRhbnQ7IG1hcmdpbjogM3B4IDAgNnB4ICFpbXBvcnRhbnQ7IH0KICBib2R5LmV2ZW50cy1hY3RpdmUgLmV2ZW50cy1zdG9yeSB7IGZvbnQtc2l6ZTogMTBweCAhaW1wb3J0YW50OyBsaW5lLWhlaWdodDogMS4yNCAhaW1wb3J0YW50OyB9CiAgYm9keS5ldmVudHMtYWN0aXZlIC5ldmVudHMtc3RvcnkgcCB7IG1hcmdpbjogMCAwIDZweCAhaW1wb3J0YW50OyB9CiAgYm9keS5ldmVudHMtYWN0aXZlIC5ldmVudHMtcmVhY3Rpb24geyBmb250LXNpemU6IDlweCAhaW1wb3J0YW50OyBwYWRkaW5nOiA2cHggIWltcG9ydGFudDsgfQogIGJvZHkuZXZlbnRzLWFjdGl2ZSAuZXZlbnRzLWNob2ljZXMgewogICAgZGlzcGxheTogZ3JpZCAhaW1wb3J0YW50OwogICAgZ3JpZC10ZW1wbGF0ZS1jb2x1bW5zOiBtaW5tYXgoMCwxZnIpICFpbXBvcnRhbnQ7CiAgICBncmlkLWF1dG8tZmxvdzogcm93ICFpbXBvcnRhbnQ7CiAgICBnYXA6IDVweCAhaW1wb3J0YW50OwogICAgYWxpZ24tY29udGVudDogc3RhcnQgIWltcG9ydGFudDsKICB9CiAgYm9keS5ldmVudHMtYWN0aXZlIC5ldmVudHMtY2hvaWNlLAogIGJvZHkuZXZlbnRzLWFjdGl2ZSAuZXZlbnRzLWNob2ljZTpsYXN0LWNoaWxkOm50aC1jaGlsZChvZGQpIHsKICAgIGdyaWQtY29sdW1uOiBhdXRvICFpbXBvcnRhbnQ7CiAgICBtaW4td2lkdGg6IDAgIWltcG9ydGFudDsKICAgIG1pbi1oZWlnaHQ6IDAgIWltcG9ydGFudDsKICAgIGhlaWdodDogYXV0byAhaW1wb3J0YW50OwogIH0KICBib2R5LmV2ZW50cy1hY3RpdmUgLmV2ZW50cy1jaG9pY2UgeyBwYWRkaW5nOiA3cHggOXB4ICFpbXBvcnRhbnQ7IGZvbnQtc2l6ZTogOXB4ICFpbXBvcnRhbnQ7IH0KICBib2R5LmV2ZW50cy1hY3RpdmUgLmV2ZW50cy1jaG9pY2VfX2hlYWQgeyBnYXA6IDVweCAhaW1wb3J0YW50OyB9CiAgYm9keS5ldmVudHMtYWN0aXZlIC5ldmVudHMtY2hvaWNlX19oZWFkIHN0cm9uZyB7IGZvbnQtc2l6ZTogMTFweCAhaW1wb3J0YW50OyBsaW5lLWhlaWdodDogMS4xOCAhaW1wb3J0YW50OyB9CiAgYm9keS5ldmVudHMtYWN0aXZlIC5ldmVudHMtY2hvaWNlX19tZXRhIHNtYWxsLAogIGJvZHkuZXZlbnRzLWFjdGl2ZSAuZXZlbnRzLWNob2ljZV9fZGlzYWJsZWQsCiAgYm9keS5ldmVudHMtYWN0aXZlIC5ldmVudHMtY2hvaWNlX19yZWFjdGlvbiwKICBib2R5LmV2ZW50cy1hY3RpdmUgLmV2ZW50cy1jaG9pY2VfX2hlcm8tbGluZSB7IGZvbnQtc2l6ZTogN3B4ICFpbXBvcnRhbnQ7IGxpbmUtaGVpZ2h0OiAxLjE2ICFpbXBvcnRhbnQ7IH0K').decode()
           tablet_media=css.index('@media (orientation: landscape) and (max-width: 1180px)')
-          tablet_start=css.index('  /* Events */', tablet_media)
-          tablet_end=css.index('  /* Skirmish prep */', tablet_start)
-          tablet='''  /* Events — accepted owner-scoped tablet landscape contract. */
-  body.events-active .events-screen {
-    height: 100dvh !important;
-    min-height: 0 !important;
-    padding: 10px 12px !important;
-    overflow: hidden !important;
-    box-sizing: border-box !important;
-  }
-  body.events-active .events-shell {
-    position: relative !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-height: 0 !important;
-    display: grid !important;
-    grid-template-rows: auto minmax(0,1fr) !important;
-    gap: 7px !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-  body.events-active .events-topbar {
-    position: relative !important;
-    inset: auto !important;
-    grid-row: 1 !important;
-    min-height: 48px !important;
-    margin: 0 !important;
-  }
-  body.events-active .events-logo { width: min(190px, 22vw) !important; }
-  body.events-active .events-topbar__actions .reboot-button { min-height: 36px !important; padding: 5px 10px !important; }
-  body.events-active .events-panel {
-    position: relative !important;
-    inset: auto !important;
-    grid-row: 2 !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    display: grid !important;
-    grid-template-columns: minmax(0,1.08fr) minmax(330px,.92fr) !important;
-    gap: 10px !important;
-    align-items: stretch !important;
-    overflow: hidden !important;
-    pointer-events: auto !important;
-  }
-  body.events-active .events-copy-frame,
-  body.events-active .events-choice-frame {
-    position: relative !important;
-    inset: auto !important;
-    width: auto !important;
-    height: 100% !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    max-width: none !important;
-    max-height: none !important;
-    overflow-y: auto !important;
-    overscroll-behavior: contain !important;
-    box-sizing: border-box !important;
-  }
-  body.events-active .events-copy-frame { padding: 14px 16px !important; }
-  body.events-active .events-choice-frame { padding: 10px !important; }
-  body.events-active .events-copy-frame h1 { font-size: clamp(31px, 4.2vh, 46px) !important; }
-  body.events-active .events-story { line-height: 1.42 !important; }
-  body.events-active .events-choices {
-    display: grid !important;
-    grid-template-columns: minmax(0,1fr) !important;
-    grid-auto-flow: row !important;
-    gap: 7px !important;
-    align-content: start !important;
-  }
-  body.events-active .events-choice,
-  body.events-active .events-choice:last-child:nth-child(odd) {
-    grid-column: auto !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    height: auto !important;
-  }
-  body.events-active .events-choice { padding: 10px !important; }
-  body.events-active .events-choice__head strong,
-  body.events-active .events-choice__reaction,
-  body.events-active .events-choice__hero-line {
-    word-break: normal !important;
-    overflow-wrap: normal !important;
-    hyphens: none !important;
-  }
-
-'''
+          tablet_start=css.index('  /* Events */',tablet_media)
+          tablet_end=css.index('  /* Skirmish prep */',tablet_start)
           css=css[:tablet_start]+tablet+css[tablet_end:]
-
           phone_media=css.index('@media (orientation: landscape) and (max-height: 520px) and (max-width: 980px)')
-          phone_start=css.index('  /* Events */', phone_media)
-          phone_end=css.index('  /* Puzzle side column */', phone_start)
-          phone='''  /* Events — accepted owner-scoped phone landscape compression. */
-  body.events-active .events-screen { padding: 5px 7px !important; }
-  body.events-active .events-shell { gap: 4px !important; }
-  body.events-active .events-topbar { min-height: 34px !important; margin-bottom: 0 !important; }
-  body.events-active .events-logo { width: 125px !important; }
-  body.events-active .events-topbar__actions { gap: 4px !important; }
-  body.events-active .events-topbar__actions .reboot-button { min-height: 29px !important; padding: 3px 7px !important; font-size: 10px !important; }
-  body.events-active .events-panel {
-    grid-template-columns: minmax(0,1.04fr) minmax(300px,.96fr) !important;
-    gap: 6px !important;
-  }
-  body.events-active .events-copy-frame,
-  body.events-active .events-choice-frame { padding: 8px 10px !important; }
-  body.events-active .events-kicker { font-size: 8px !important; }
-  body.events-active .events-copy-frame h1 { font-size: 27px !important; margin: 3px 0 6px !important; }
-  body.events-active .events-story { font-size: 10px !important; line-height: 1.24 !important; }
-  body.events-active .events-story p { margin: 0 0 6px !important; }
-  body.events-active .events-reaction { font-size: 9px !important; padding: 6px !important; }
-  body.events-active .events-choices {
-    display: grid !important;
-    grid-template-columns: minmax(0,1fr) !important;
-    grid-auto-flow: row !important;
-    gap: 5px !important;
-    align-content: start !important;
-  }
-  body.events-active .events-choice,
-  body.events-active .events-choice:last-child:nth-child(odd) {
-    grid-column: auto !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    height: auto !important;
-  }
-  body.events-active .events-choice { padding: 7px 9px !important; font-size: 9px !important; }
-  body.events-active .events-choice__head { gap: 5px !important; }
-  body.events-active .events-choice__head strong { font-size: 11px !important; line-height: 1.18 !important; }
-  body.events-active .events-choice__meta small,
-  body.events-active .events-choice__disabled,
-  body.events-active .events-choice__reaction,
-  body.events-active .events-choice__hero-line { font-size: 7px !important; line-height: 1.16 !important; }
-
-'''
+          phone_start=css.index('  /* Events */',phone_media)
+          phone_end=css.index('  /* Puzzle side column */',phone_start)
           css=css[:phone_start]+phone+css[phone_end:]
           css_path.write_text(css)
-
           test_path=Path('tests/events.cjs')
           test=test_path.read_text()
-          declaration="  const appSource=fs.readFileSync(path.join(game,'js/events-app.mjs'),'utf8');\n"
-          extra_decl="  const landscapeCss=fs.readFileSync(path.join(game,'css/landscape-ui-redesign.css'),'utf8');\n"
-          if extra_decl not in test:
-              if declaration not in test: raise SystemExit('Events declaration anchor missing')
-              test=test.replace(declaration,declaration+extra_decl,1)
+          decl="  const appSource=fs.readFileSync(path.join(game,'js/events-app.mjs'),'utf8');\n"
+          extra="  const landscapeCss=fs.readFileSync(path.join(game,'css/landscape-ui-redesign.css'),'utf8');\n"
+          if extra not in test:
+              if decl not in test: raise SystemExit('Events declaration anchor missing')
+              test=test.replace(decl,decl+extra,1)
           anchor="  assert(!appSource.includes(\"addEventListener('rpchess:run-updated',syncRun)\"),'Events must not subscribe to broad run-updated for combat completion');\n"
-          assertions=(
-              "  const eventChoiceLandscapeBlocks=[...landscapeCss.matchAll(/body\\.events-active \\.events-choices\\s*\\{([^}]*)\\}/g)].map(([,block])=>block);\n"
-              "  assert(eventChoiceLandscapeBlocks.length>=2,'landscape owner must define scoped tablet and phone Event choice rails');\n"
-              "  assert(eventChoiceLandscapeBlocks.every(block=>!block.includes('repeat(2'))),'scoped Event landscape rails must never return to two columns');\n"
-              "  assert(eventChoiceLandscapeBlocks.every(block=>block.includes('grid-template-columns: minmax(0,1fr)')),'scoped Event landscape rails must remain one readable column');\n"
-          )
-          if assertions.strip() not in test:
+          checks="  const eventChoiceLandscapeBlocks=[...landscapeCss.matchAll(/body\\.events-active \\.events-choices\\s*\\{([^}]*)\\}/g)].map(([,block])=>block);\n  assert(eventChoiceLandscapeBlocks.length>=2,'landscape owner must define scoped tablet and phone Event choice rails');\n  assert(eventChoiceLandscapeBlocks.every(block=>!block.includes('repeat(2'))),'scoped Event landscape rails must never return to two columns');\n  assert(eventChoiceLandscapeBlocks.every(block=>block.includes('grid-template-columns: minmax(0,1fr)')),'scoped Event landscape rails must remain one readable column');\n"
+          if checks not in test:
               if anchor not in test: raise SystemExit('Events assertion anchor missing')
-              test=test.replace(anchor,anchor+assertions,1)
+              test=test.replace(anchor,anchor+checks,1)
           test_path.write_text(test)
           PY
       - name: Run Event owner regression
@@ -209,22 +77,14 @@ jobs:
         run: |
           cp tests/responsive-viewport-browser.cjs /tmp/responsive-viewport-browser.cjs
           python - <<'PY'
+          import base64
           from pathlib import Path
           p=Path('tests/responsive-viewport-browser.cjs')
           t=p.read_text()
           marker='\n(async () => {'
           pos=t.rfind(marker)
           if pos<0: raise SystemExit('responsive runner marker missing')
-          suffix=(
-              "\n(async () => {\n"
-              "  const browser = await chromium.launch({ headless: true });\n"
-              "  try {\n"
-              "    await auditEventLayout(browser, 1024, 768, 'ru');\n"
-              "    await auditEventLayout(browser, 844, 390, 'ru');\n"
-              "    console.log('Targeted RU Event landscape owner geometry: PASS');\n"
-              "  } finally { await browser.close(); }\n"
-              "})().catch((error) => { console.error(error.stack || error); process.exitCode = 1; });\n"
-          )
+          suffix=base64.b64decode('Cihhc3luYyAoKSA9PiB7CiAgY29uc3QgYnJvd3NlciA9IGF3YWl0IGNocm9taXVtLmxhdW5jaCh7IGhlYWRsZXNzOiB0cnVlIH0pOwogIHRyeSB7CiAgICBhd2FpdCBhdWRpdEV2ZW50TGF5b3V0KGJyb3dzZXIsIDEwMjQsIDc2OCwgJ3J1Jyk7CiAgICBhd2FpdCBhdWRpdEV2ZW50TGF5b3V0KGJyb3dzZXIsIDg0NCwgMzkwLCAncnUnKTsKICAgIGNvbnNvbGUubG9nKCdUYXJnZXRlZCBSVSBFdmVudCBsYW5kc2NhcGUgb3duZXIgZ2VvbWV0cnk6IFBBU1MnKTsKICB9IGZpbmFsbHkgeyBhd2FpdCBicm93c2VyLmNsb3NlKCk7IH0KfSkoKS5jYXRjaCgoZXJyb3IpID0+IHsgY29uc29sZS5lcnJvcihlcnJvci5zdGFjayB8fCBlcnJvcik7IHByb2Nlc3MuZXhpdENvZGUgPSAxOyB9KTsK').decode()
           p.write_text(t[:pos]+suffix)
           PY
       - name: Run targeted Event browser proof
@@ -262,25 +122,8 @@ jobs:
           text=re.sub(r"(\*\*Current remediation code head:\*\* `)[^`]+(`)",rf"\g<1>{source}\2",text,count=1)
           marker=f"### Responsive owner checkpoint — {source[:8]}"
           if marker not in text:
-              text+=f"""
-
-{marker}
-
-- `e42b5ad834defe31e9cd7a5f4d34e147aaa8ccdd` removed the remaining runtime landscape CSS injection, moved compact-combat ownership into `landscape-ui-redesign.css`, and passed `gate:local` plus targeted `1024×768 RU` combat geometry.
-- `{source}` restores the accepted owner-scoped `body.events-active` Event landscape contract in the static stylesheet after that runtime-style removal.
-- Existing `events.cjs` now prevents scoped Event choice rails from returning to two columns.
-- Exact-checkout `gate:local`: **PASS**.
-- Targeted Event Chromium (`1024×768 RU`, `844×390 RU`): **PASS**.
-- Full responsive/all-Chromium validation continues after this checkpoint; no full-browser PASS is claimed here.
-- `main`, Pages deployment policy and Cloudflare remain untouched.
-
-**Дальнейшие действия:**
-1. Run the complete strengthened RU/EN/boundary responsive matrix on this implementation lineage.
-2. If it is green, run all Chromium contracts on the same code; otherwise fix only the next evidence-backed owner defect.
-3. Normalize `package-lock.json` reproducibly through npm and prove `npm ci` plus dependency security.
-4. Finish evidence-backed asset inventory and keep ambiguous/planned assets.
-5. Remove the one-off audit workflow, then finalize `CURRENT_STATE.md` and historical/deployment documentation.
-"""
+              lines=["",marker,"",f"- `e42b5ad834defe31e9cd7a5f4d34e147aaa8ccdd` removed the remaining runtime landscape CSS injection, moved compact-combat ownership into `landscape-ui-redesign.css`, and passed `gate:local` plus targeted `1024×768 RU` combat geometry.",f"- `{source}` restores the accepted owner-scoped `body.events-active` Event landscape contract in the static stylesheet after runtime-style removal.","- Existing `events.cjs` now prevents scoped Event choice rails from returning to two columns.","- Exact-checkout `gate:local`: **PASS**.","- Targeted Event Chromium (`1024×768 RU`, `844×390 RU`): **PASS**.","- Full responsive/all-Chromium validation continues after this checkpoint; no full-browser PASS is claimed here.","- `main`, Pages deployment policy and Cloudflare remain untouched.","","**Дальнейшие действия:**","1. Run the complete strengthened RU/EN/boundary responsive matrix on this implementation lineage.","2. If it is green, run all Chromium contracts on the same code; otherwise fix only the next evidence-backed owner defect.","3. Normalize `package-lock.json` reproducibly through npm and prove `npm ci` plus dependency security.","4. Finish evidence-backed asset inventory and keep ambiguous/planned assets.","5. Remove the one-off audit workflow, then finalize `CURRENT_STATE.md` and historical/deployment documentation.",""]
+              text+="\n".join(lines)
           p.write_text(text)
           PY
           git add docs/FULL_PROJECT_REVIEW_REPORT.md
@@ -311,21 +154,8 @@ jobs:
           source=os.environ['SOURCE_HEAD']
           marker=f"### Full browser verification — {source[:8]}"
           if marker not in text:
-              text+=f"""
-
-{marker}
-
-- Complete strengthened responsive RU/EN/boundary contract: **PASS**.
-- Complete Chromium browser contract set: **PASS** on the same implementation lineage `{source}`.
-- Browser-verification-pending findings may now be closed only where this full gate covers their contract.
-
-**Дальнейшие действия:**
-1. Normalize stale lock metadata through npm and rerun dependency-security plus `gate:local`.
-2. Finish evidence-backed asset inventory/removal and rerun final local/browser gates if production files change.
-3. Remove `.github/workflows/audit-validation-one-off.yml`.
-4. Update `CURRENT_STATE.md`, final audit statuses and historical/deployment docs.
-5. Keep `main` frozen and Cloudflare manual-only until explicit owner direction.
-"""
+              lines=["",marker,"","- Complete strengthened responsive RU/EN/boundary contract: **PASS**.",f"- Complete Chromium browser contract set: **PASS** on the same implementation lineage `{source}`.","- Browser-verification-pending findings may now be closed only where this full gate covers their contract.","","**Дальнейшие действия:**","1. Normalize stale lock metadata through npm and rerun dependency-security plus `gate:local`.","2. Finish evidence-backed asset inventory/removal and rerun final local/browser gates if production files change.","3. Remove `.github/workflows/audit-validation-one-off.yml`.","4. Update `CURRENT_STATE.md`, final audit statuses and historical/deployment docs.","5. Keep `main` frozen and Cloudflare manual-only until explicit owner direction.",""]
+              text+="\n".join(lines)
           p.write_text(text)
           PY
           git add docs/FULL_PROJECT_REVIEW_REPORT.md
