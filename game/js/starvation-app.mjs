@@ -6,13 +6,18 @@ let activeRun = null;
 
 function audio() { return globalThis.RPChessRebootAudio; }
 
-function ensureCss() {
-  if (document.querySelector('[data-starvation-css]')) return;
+function ensureStylesheet(marker, href) {
+  if (document.querySelector(`[${marker}]`)) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/starvation.css?v=20260828-starvation-1';
-  link.dataset.starvationCss = '';
+  link.href = href;
+  link.setAttribute(marker, '');
   document.head.append(link);
+}
+
+function ensureCss() {
+  ensureStylesheet('data-starvation-css', 'css/starvation.css?v=20260909-owner2');
+  ensureStylesheet('data-starvation-compact-css', 'css/starvation-compact.css?v=20260909-owner1');
 }
 
 function ensureScreen() {
