@@ -1,6 +1,7 @@
 import { readRun } from './run-persistence.mjs';
 import { PIECE_GLYPHS } from './roster-data.mjs';
 import { placeArmy } from './skirmish-core.mjs';
+import { subscribe, translateLegacy } from './i18n.mjs';
 
 const CSS_HREF='css/ui-redesign-final.css?v=20260902-cleanup2';
 const SIDE_COLORS_CSS_HREF='css/combat-side-colors.css?v=20260903-aura1';
@@ -30,7 +31,7 @@ function syncSkirmishFormation(){
   root.dataset.playerColor=color;root.dir=color==='b'?'rtl':'ltr';
   const bySquare=new Map(placements.map((piece)=>[piece.square,piece])),ranks=color==='w'?['2','1']:['7','8'],glyphs=glyphsFor(color),cells=[...root.querySelectorAll('.skirmish-formation-cell')];
   if(cells.length!==16)return;
-  let index=0;for(const rank of ranks)for(const file of 'abcdefgh'){const cell=cells[index++],square=`${file}${rank}`,piece=bySquare.get(square);cell.textContent=piece?(glyphs[piece.pieceType]||''):'·';cell.title=piece?.name||square;if(piece?.pieceType){cell.dataset.previewPiece=piece.pieceType;cell.dataset.pieceColor=color;}else{delete cell.dataset.previewPiece;delete cell.dataset.pieceColor;}}
+  let index=0;for(const rank of ranks)for(const file of 'abcdefgh'){const cell=cells[index++],square=`${file}${rank}`,piece=bySquare.get(square);cell.textContent=piece?(glyphs[piece.pieceType]||''):'·';cell.title=piece?.name?translateLegacy(piece.name):square;if(piece?.pieceType){cell.dataset.previewPiece=piece.pieceType;cell.dataset.pieceColor=color;}else{delete cell.dataset.previewPiece;delete cell.dataset.pieceColor;}}
 }
 function syncBattleFormation(screen,color){const root=screen?.querySelector('[data-battle-formation]');if(!root)return;const side=normalizeColor(color),glyphs=glyphsFor(side);root.dataset.playerColor=side;for(const cell of root.querySelectorAll('.battle-formation-cell')){const mark=cell.querySelector('span');if(!mark)continue;const type=TYPE_BY_GLYPH[mark.textContent||''];if(!type){delete mark.dataset.pieceColor;continue;}mark.textContent=glyphs[type]||mark.textContent;mark.dataset.pieceColor=side;}}
 function syncSkirmishPrep(){if(!skirmishScreen)return;const active=visible(skirmishScreen),api=globalThis.RPChessSkirmish,color=normalizeColor(api?.encounter?.playerColor);if(active){ensureCardGlyphs('[data-skirmish-screen] [data-skirmish-character]','skirmish-card__tech-glyph',color);const title=skirmishScreen.querySelector('[data-skirmish-title]'),stars=skirmishScreen.querySelector('[data-skirmish-stars]');if(title&&stars)title.dataset.compactStars=stars.textContent.trim();syncSkirmishFormation();}}
@@ -42,5 +43,6 @@ function schedule(){if(queued)return;queued=true;requestAnimationFrame(refresh);
 ensureCss();
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 for(const name of ['rpchess:skirmish-open','rpchess:battle-open','rpchess:puzzle-open','rpchess:settlement-open','rpchess:event-open','rpchess:travel-open','rpchess:run-continue','rpchess:run-updated'])addEventListener(name,()=>queueMicrotask(schedule));
+subscribe(()=>queueMicrotask(schedule));
 addEventListener('resize',schedule,{passive:true});
 document.addEventListener('click',(event)=>{const target=event.target instanceof Element?event.target:null;if(target?.closest('[data-skirmish-character],[data-selected-character],[data-skirmish-start],[data-battle-character],[data-battle-participant],[data-battle-start],[data-puzzle-board],[data-puzzle-continue],[data-aftermath-continue],[data-battle-continue]'))queueMicrotask(schedule);},true);
