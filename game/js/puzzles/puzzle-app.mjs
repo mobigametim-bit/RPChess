@@ -37,13 +37,18 @@ function squareFromIndex(index) { return `${FILES[index % 8]}${Math.floor(index 
 function reducedMotion() { return document.documentElement.dataset.reducedMotion === '1'; }
 function replyDelay() { return reducedMotion() ? 0 : 320; }
 
-function ensureCss() {
-  if (document.querySelector('[data-puzzles-css]')) return;
+function ensureStylesheet(marker, href) {
+  if (document.querySelector(`[${marker}]`)) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/puzzles.css?v=20260901-puzzles-redesign-1';
-  link.dataset.puzzlesCss = '';
+  link.href = href;
+  link.setAttribute(marker, '');
   document.head.append(link);
+}
+
+function ensureCss() {
+  ensureStylesheet('data-puzzles-css', 'css/puzzles.css?v=20260909-owner2');
+  ensureStylesheet('data-puzzles-compact-css', 'css/puzzles-compact.css?v=20260909-owner1');
 }
 
 function ensureScreen() {
@@ -76,6 +81,10 @@ function ensureScreen() {
       </header>
       <div class="puzzle-layout">
         <section class="puzzle-panel">
+          <div class="puzzle-polish-objective" data-puzzle-compact-objective aria-hidden="true">
+            <strong data-puzzle-compact-objective-label>МАТ В 1</strong>
+            <span data-puzzle-compact-stars>★</span>
+          </div>
           <h2>Условие</h2>
           <p data-puzzle-instruction>Найдите точное продолжение.</p>
           <div class="puzzle-attempts" data-puzzle-attempts aria-label="Оставшиеся попытки"></div>
@@ -83,6 +92,10 @@ function ensureScreen() {
             <span>Награда без ошибок</span>
             <strong data-puzzle-base-reward>12 Gold</strong>
             <p data-puzzle-current-reward>Текущая награда: 12 Gold</p>
+          </div>
+          <div class="puzzle-polish-reward" data-puzzle-compact-reward aria-hidden="true">
+            <img src="generated_assets/reward_gold.png" alt="">
+            <strong data-puzzle-compact-reward-value>12</strong>
           </div>
           <p class="puzzle-source">Задачи: Lichess Open Database · CC0</p>
         </section>
@@ -138,17 +151,24 @@ function persist(nextState = state) {
 }
 
 function instructionText(item) {
-  if (item.type === 'material') return 'Найдите комбинацию, которая выигрывает указанную фигуру. У вас три попытки.';
+  if (item.type === 'material') return 'Найдите комбинацию, которая выигрывает указанную фигуру.';
   const moves = Number(item.type.slice(-1));
-  return `Найдите вынужденный мат за ${moves === 1 ? 'один ход' : moves === 2 ? 'два хода' : 'три хода'}. У вас три попытки.`;
+  return `Найдите вынужденный мат за ${moves === 1 ? 'один ход' : moves === 2 ? 'два хода' : 'три хода'}.`;
 }
 
 function renderMeta() {
-  screen.querySelector('[data-puzzle-objective]').textContent = objectiveLabel(puzzle);
-  screen.querySelector('[data-puzzle-stars]').textContent = starsText(state.stars);
+  const objective = objectiveLabel(puzzle);
+  const stars = starsText(state.stars);
+  const baseReward = puzzleBaseGold(state.stars);
+  const currentReward = puzzleGoldReward(state.stars, state.errors);
+  screen.querySelector('[data-puzzle-objective]').textContent = objective;
+  screen.querySelector('[data-puzzle-stars]').textContent = stars;
+  screen.querySelector('[data-puzzle-compact-objective-label]').textContent = objective;
+  screen.querySelector('[data-puzzle-compact-stars]').textContent = stars;
   screen.querySelector('[data-puzzle-instruction]').textContent = instructionText(puzzle);
-  screen.querySelector('[data-puzzle-base-reward]').textContent = `${puzzleBaseGold(state.stars)} Gold`;
-  screen.querySelector('[data-puzzle-current-reward]').textContent = `Текущая награда: ${puzzleGoldReward(state.stars, state.errors)} Gold`;
+  screen.querySelector('[data-puzzle-base-reward]').textContent = `${baseReward} Gold`;
+  screen.querySelector('[data-puzzle-current-reward]').textContent = `Текущая награда: ${currentReward} Gold`;
+  screen.querySelector('[data-puzzle-compact-reward-value]').textContent = String(currentReward);
 
   const attempts = screen.querySelector('[data-puzzle-attempts]');
   attempts.replaceChildren();

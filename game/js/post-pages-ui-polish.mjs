@@ -1,41 +1,10 @@
-const GOLD_ICON='generated_assets/reward_gold.png';
 const STYLE_MARKER='data-post-pages-ui-polish-style';
-
-function visible(node){return Boolean(node&&!node.hidden);}
-function img(src,className=''){const node=document.createElement('img');node.src=src;node.alt='';node.draggable=false;if(className)node.className=className;node.setAttribute('aria-hidden','true');return node;}
-function numberFrom(value){const match=String(value||'').match(/-?\d+/);return match?Number(match[0]):0;}
 
 function ensureStyle(){
   if(document.querySelector(`[${STYLE_MARKER}]`))return;
   const style=document.createElement('style');style.setAttribute(STYLE_MARKER,'');style.textContent=`
 /* Post GitHub-Pages playtest polish: accepted UI corrections not yet folded into screen owners. */
 @media (orientation:landscape) {
-  /* Training: one concise information frame, separated from the board. */
-  html[data-landscape-ui='1'] body.puzzles-active .puzzle-heading{display:none!important}
-  html[data-landscape-ui='1'] body.puzzles-active .puzzle-layout>.puzzle-panel:first-child{
-    margin:8px 10px 8px 8px!important;
-    padding:clamp(12px,1.4vw,20px)!important;
-    border:1px solid rgba(216,177,93,.34)!important;
-    border-radius:4px!important;
-    box-shadow:0 12px 34px rgba(0,0,0,.34)!important;
-    background:rgba(4,8,13,.91)!important;
-    overflow:auto!important;
-  }
-  html[data-landscape-ui='1'] body.puzzles-active .puzzle-layout>.puzzle-panel:first-child>h2,
-  html[data-landscape-ui='1'] body.puzzles-active .puzzle-reward{display:none!important}
-  html[data-landscape-ui='1'] body.puzzles-active .puzzle-polish-objective{
-    display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;
-    padding-bottom:9px!important;margin-bottom:10px!important;border-bottom:1px solid rgba(216,177,93,.25)!important
-  }
-  html[data-landscape-ui='1'] body.puzzles-active .puzzle-polish-objective strong{
-    color:#f3dfa6!important;font:400 clamp(24px,3.2vw,42px)/1 'BrahmsGotischCyr',Georgia,serif!important
-  }
-  html[data-landscape-ui='1'] body.puzzles-active .puzzle-polish-objective span{color:#e8bd5f!important;font-size:clamp(14px,1.5vw,22px)!important;white-space:nowrap!important}
-  html[data-landscape-ui='1'] body.puzzles-active [data-puzzle-instruction]{margin:0 0 12px!important;font-size:clamp(12px,1.1vw,16px)!important;line-height:1.35!important}
-  html[data-landscape-ui='1'] body.puzzles-active .puzzle-attempts{margin:0 0 12px!important}
-  html[data-landscape-ui='1'] body.puzzles-active .puzzle-polish-reward{display:flex!important;align-items:center!important;gap:8px!important;color:#f1cf75!important;font-weight:800!important;font-size:clamp(16px,1.6vw,23px)!important}
-  html[data-landscape-ui='1'] body.puzzles-active .puzzle-polish-reward img{width:1.45em!important;height:1.45em!important;object-fit:contain!important}
-
   /* Final run summary has no floating Gold/Supplies frames. */
   html[data-landscape-ui='1'] body.endless-run-active .resource-hud{display:none!important}
 }
@@ -88,15 +57,6 @@ function ensureStyle(){
   html[data-landscape-ui='1'] body.skirmish-active .skirmish-formation{height:46px!important;min-height:46px!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;grid-template-rows:repeat(2,minmax(0,1fr))!important;gap:1px!important;overflow:visible!important}
   html[data-landscape-ui='1'] body.skirmish-active .skirmish-formation-cell{min-height:0!important;height:auto!important;font-size:10px!important;line-height:1!important}
 
-  /* Compact puzzle copy without sacrificing the board. */
-  html[data-landscape-ui='1'] body.puzzles-active .puzzle-layout>.puzzle-panel:first-child{margin:5px 7px 5px 5px!important;padding:8px 9px!important}
-  html[data-landscape-ui='1'] body.puzzles-active .puzzle-polish-objective{padding-bottom:5px!important;margin-bottom:6px!important}
-  html[data-landscape-ui='1'] body.puzzles-active .puzzle-polish-objective strong{font-size:20px!important}
-  html[data-landscape-ui='1'] body.puzzles-active .puzzle-polish-objective span{font-size:11px!important}
-  html[data-landscape-ui='1'] body.puzzles-active [data-puzzle-instruction]{font-size:8px!important;line-height:1.18!important;margin-bottom:7px!important}
-  html[data-landscape-ui='1'] body.puzzles-active .puzzle-attempts{margin-bottom:7px!important}
-  html[data-landscape-ui='1'] body.puzzles-active .puzzle-polish-reward{font-size:12px!important}
-
   /* Settlement service icons remain physically above their frames, same composition as tablet. */
   html[data-landscape-ui='1'] body.settlement-active .settlement-services{grid-template-columns:minmax(0,1.48fr) minmax(220px,.92fr)!important;gap:6px!important}
   html[data-landscape-ui='1'] body.settlement-active .settlement-service{padding:9px 7px 5px!important}
@@ -109,29 +69,5 @@ function ensureStyle(){
   document.head.append(style);
 }
 
-function syncPuzzle(){
-  const screen=document.querySelector('[data-puzzle-screen]');if(!visible(screen))return;
-  const panel=screen.querySelector('.puzzle-layout>.puzzle-panel:first-child');if(!panel)return;
-  let head=panel.querySelector('.puzzle-polish-objective');
-  if(!head){head=document.createElement('div');head.className='puzzle-polish-objective';head.innerHTML='<strong></strong><span></span>';panel.prepend(head);}
-  head.querySelector('strong').textContent=screen.querySelector('[data-puzzle-objective]')?.textContent?.trim()||'';
-  head.querySelector('span').textContent=screen.querySelector('[data-puzzle-stars]')?.textContent?.trim()||'';
-  const instruction=screen.querySelector('[data-puzzle-instruction]');
-  if(instruction)instruction.textContent=instruction.textContent.replace(/\s*У вас три попытки\.?\s*$/i,'').replace(/\s*You have three attempts\.?\s*$/i,'').trim();
-  let reward=panel.querySelector('.puzzle-polish-reward');
-  if(!reward){reward=document.createElement('div');reward.className='puzzle-polish-reward';reward.append(img(GOLD_ICON),document.createElement('strong'));panel.append(reward);}
-  const current=screen.querySelector('[data-puzzle-current-reward]');
-  reward.querySelector('strong').textContent=String(numberFrom(current?.textContent));
-}
-
-let queued=false;
-function refresh(){queued=false;syncPuzzle();}
-function schedule(){if(queued)return;queued=true;requestAnimationFrame(refresh);}
-
-for(const name of ['rpchess:puzzle-open','rpchess:run-updated','rpchess:resources-updated'])addEventListener(name,()=>queueMicrotask(schedule));
-document.addEventListener('click',()=>queueMicrotask(schedule),true);
-addEventListener('resize',schedule,{passive:true});
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
-setTimeout(()=>{ensureStyle();schedule();},0);
-
-globalThis.RPChessPostPagesUIPolish=Object.freeze({refresh:schedule});
+ensureStyle();
+globalThis.RPChessPostPagesUIPolish=Object.freeze({refresh:ensureStyle});
