@@ -3,7 +3,7 @@
 **Audit status:** REMEDIATION IN PROGRESS  
 **Frozen production baseline:** `main@e92831ca5d6e0c14fb2d919e410180ce77b97ce6`  
 **Audit/remediation branch:** `audit/full-project-review-2026-09-08`  
-**Current remediation code head:** `8768d55ce285ba65617e270e16a9ccc0a55ee856`  
+**Current remediation code head:** `316d567bb606c1aa5e3b60a14a3ea0649a90c680`  
 **Started:** 2026-09-08
 
 This document is the source of truth for remediation. `main` remains untouched. Cloudflare remains manual-only. Do not restore compatibility patch layers, post-render DOM rewrites, runtime DOM reparenting, whole-document UI workarounds or broad state-mutating event consumers to conceal ownership problems.
@@ -41,8 +41,8 @@ Status meanings: **DONE — verified**, **DONE — verification pending**, **IN 
 | REV-010 fragmented runtime hotfix CSS | **DONE — verification pending** | Review/polish chain, presentation bootstrap and route CSS-in-JS deleted; compact/aftermath rules are owner stylesheets. |
 | REV-011 Supplies optimizer increases asset | **DONE — verified** | Optimizer keeps smaller source bytes. |
 | REV-012 stale CURRENT_STATE SHA | **OPEN** | Deferred to final accepted remediation SHA. |
-| REV-013 browser helper lifecycle drift | **DONE — verified** | Shared helper waits for visible scenes; older full milestone passed 17/17. |
-| REV-014 responsive gate incomplete | **DONE — verification pending** | Reusable geometry assertions + RU/EN/boundary matrices cover Battle aftermath, Starvation, Puzzle/Training, Classic setup and Endless summary (`e37f3771`). Current full responsive execution is still being driven to PASS. |
+| REV-013 browser helper lifecycle drift | **DONE — verified** | Shared helper waits for visible scenes; older full milestone passed 17/17. A separate Stockfish game-lifecycle race exposed by the strengthened responsive run is being remediated at the AI adapter owner rather than hidden in the helper. |
+| REV-014 responsive gate incomplete | **DONE — verification pending** | Reusable geometry assertions + RU/EN/boundary matrices cover Battle aftermath, Starvation, Puzzle/Training, Classic setup and Endless summary (`e37f3771`). Skirmish/Battle owner geometry now progresses past the prior 844×390 failures; current exact validation is blocked by a Stockfish lifecycle pageerror rather than a known viewport escape. |
 | REV-015 persistence migration policy | **DONE — verified** | Unsupported schema resets safely; no old-save preservation required. |
 | REV-016 repeated puzzle materialization/build inputs | **DONE — verified** | Puzzle materialization deduplicated; duplicate build inputs removed. |
 | REV-017 generic Wrangler deploy path | **DONE — docs pending** | Generic deploy removed; Cloudflare explicit/manual; GitHub Pages canonical. |
@@ -127,7 +127,9 @@ Completed owner migrations:
 - Portrait stale setup fixed `71c3f39b`; real 3px portrait overflow fixed `480ec6f3`; Language selector fixed `24e7414d`.
 - Responsive suite explicitly covers weak surfaces in `e37f3771`. Exact Chromium validation later exposed a real `1366×768` RU main-menu overflow; root cause was a fixed `52px` height subtraction that did not match responsive outer padding. Owner CSS fix `25fde16b` now subtracts the actual responsive vertical padding.
 - The same strengthened suite exposed an `844×390` RU Chronicle vertical escape. `983e8907` resets the inherited menu-column `min-height`; targeted menu + Chronicle proof passed.
-- Run `34391754411` then exposed an `844×390 RU` Skirmish aftermath CTA at `bottom=398.59` for a `390px` viewport. `8c78f6d8` reduced the owner panel padding and run `34395341890` moved the CTA to `bottom=393.59`, proving the same owner defect remained by only ~3.6px. `8768d55c` tightens only that compact owner padding for the next exact-checkout proof.
+- Run `34391754411` then exposed an `844×390 RU` Skirmish aftermath CTA at `bottom=398.59` for a `390px` viewport. `8c78f6d8` reduced the owner panel padding and run `34395341890` moved the CTA to `bottom=393.59`, proving the same owner defect remained by only ~3.6px. `8768d55c` tightened only that compact owner padding.
+- Run `34396935134` progressed past the Skirmish aftermath fix and exposed a separate `844×390 RU` Battle aftermath panel escape (`top=25.25`, `bottom=405.25`, `height=380`, internal `scrollHeight=614`). `aa65be13` moved the accepted compact aftermath grid out of the deleted runtime injection and into `battle-compact.css`, the Battle owner stylesheet.
+- Run `34400237429` on `aa65be13` kept `gate:local` green and progressed through the prior Battle aftermath geometry assertions. The next failure was not a viewport escape: `1024×768 RU` collected `RuntimeError: unreachable` from the Stockfish WASM worker while rapidly replacing combat games. `316d567b` now isolates Stockfish requests by operation/lifecycle epoch and hardens stale-worker callback handling; browser revalidation is pending.
 
 ## Legacy / build / deployment
 
@@ -155,15 +157,17 @@ Completed owner migrations:
 - Asset inventory tooling (`a497089f`, `d7176767`) executed on an exact audit checkout. Its broad automatic candidate set includes manifest-driven/source-reserve assets and is never a bulk-delete list. Corrected proven cleanup remains 25 files / 2,389,275 bytes after restoring active Settlement heal/recruit art.
 - `3431c48c` / run `34391754411`: `gate:local` PASS; responsive FAIL at `844×390 RU` Skirmish aftermath CTA (`bottom=398.59`, viewport 390); all-browser step skipped.
 - `8c78f6d8` / run `34395341890`: `gate:local` PASS; responsive progressed to the same `844×390 RU` Skirmish aftermath CTA at `bottom=393.59`; all-browser step skipped. This iteration reduced the measured overflow by 5px but did not claim a browser PASS.
+- `0f812690` / run `34396935134`: `gate:local` PASS; responsive progressed past Skirmish and exposed `844×390 RU` Battle aftermath panel (`top=25.25`, `bottom=405.25`, `scrollHeight=614`); all-browser step skipped.
+- `aa65be13` / run `34400237429`: `gate:local` PASS; prior Battle aftermath geometry assertions no longer failed. Responsive later FAILed at `1024×768 RU` on a Stockfish WASM `RuntimeError: unreachable`; no full responsive or all-browser PASS is claimed.
 
 ---
 
 # Open verification / cleanup items
 
-1. Validate `8768d55c` through the complete strengthened responsive RU/EN/boundary matrix; address only the next evidence-backed geometry failure, if any.
+1. Validate `316d567b` through the complete strengthened responsive RU/EN/boundary matrix, including the Stockfish game-replacement lifecycle regression discovered after the Battle geometry fix.
 2. If responsive is green, run the complete Chromium contract set on the same code lineage.
 3. Finish manual classification of the remaining generated UI/logo/special-unit candidates; preserve ambiguous/planned/source-reserve assets and delete only positively unreachable source files.
-4. Remove temporary/duplicated validation workflows after final browser evidence while retaining Pages plus the permanent manual 17-contract milestone/release gate.
+4. Remove temporary/duplicated validation workflows after final browser evidence while retaining Pages plus the permanent manual 17-contract milestone/release gate; harden Pages deployment so manual runs cannot deploy a non-`main` ref.
 5. Finalize `CURRENT_STATE.md`, deployment/history docs, numbered docs and Notion on the accepted candidate SHA.
 
 ---
@@ -185,7 +189,7 @@ Completed owner migrations:
 8. **DONE — verified:** dead direct `adm-zip` dependency removed, lock metadata normalized reproducibly and dependency-security passes under `npm ci`/`gate:local`.
 9. **IN PROGRESS:** asset reachability cleanup. 25 positively unreachable files remain removed (**2.28 MiB net**); build allowlisting now prevents ambiguous source/reserve candidates from shipping.
 10. **DONE — verified:** lock metadata normalization completed in `e516c24b` without hand-editing integrity data.
-11. **IN PROGRESS:** strengthened responsive gate is being driven to PASS before the final 17-contract Chromium run.
+11. **IN PROGRESS:** strengthened responsive gate has cleared the prior Skirmish/Battle owner geometry failures and is now revalidating the newly exposed Stockfish game-lifecycle race before the final 17-contract Chromium run.
 
 ## Phase D — final integration/docs
 12. Fix only evidence-backed regressions from final gate.
@@ -195,10 +199,10 @@ Completed owner migrations:
 
 ## Next actions
 
-1. Run the complete strengthened responsive matrix on `8768d55c`; fix only the next measured owner defect if one remains.
+1. Run the complete strengthened responsive matrix on `316d567b`; fix only the next measured runtime/geometry defect if one remains.
 2. Run all Chromium contracts once responsive is green and close verification-pending REV items only from actual evidence.
 3. Complete the conservative asset classification; keep all ambiguous/planned/source-reserve assets outside production `dist` rather than deleting them without ownership proof.
-4. Remove temporary audit workflows and duplicate manual CI while keeping `pages.yml` plus `full-project-review.yml` as the permanent fast/complete gate pair.
+4. Remove temporary audit workflows and duplicate manual CI while keeping `pages.yml` plus `full-project-review.yml` as the permanent fast/complete gate pair; restrict Pages deploy to `refs/heads/main`.
 5. Synchronize `CURRENT_STATE.md`, deployment/history/numbered docs and Notion, then issue the final release-readiness/remediation report.
 6. Keep `main` frozen and Cloudflare manual-only until explicit owner direction.
 
@@ -237,3 +241,20 @@ Every subsequent remediation checkpoint must update this report and end with a c
 3. Complete conservative asset classification and preserve all ambiguous/planned/source-reserve files.
 4. Remove temporary/duplicate audit workflows after final browser evidence.
 5. Synchronize `CURRENT_STATE.md`, remaining GitHub docs and Notion on the final accepted candidate SHA.
+
+### Battle aftermath / Stockfish lifecycle checkpoint — 316d567b
+
+- Run `34396935134` on `0f812690` progressed past the Skirmish fix and exposed the separate `844×390 RU` Battle aftermath owner defect: panel `top=25.25`, `bottom=405.25`, `height=380`, internal `scrollHeight=614` in a 390px viewport.
+- `aa65be13b641f1648bc21e0031edafeeebb217a9` restores the accepted compact Battle aftermath grid in `battle-compact.css`, the true owner stylesheet, rather than reintroducing the deleted runtime CSS injection.
+- Run `34400237429` on `aa65be13` kept exact-checkout `gate:local` **PASS** and progressed beyond the prior Battle aftermath geometry assertions. The next failure was a `1024×768 RU` browser pageerror from Stockfish WASM: `RuntimeError: unreachable`.
+- Root cause is an AI adapter lifecycle race exposed by rapid Skirmish→Battle game replacement: `stop()` previously canceled only an active search, so an older `chooseMove()` still awaiting Stockfish initialization could resume beside the replacement game and interleave UCI commands.
+- `316d567bb606c1aa5e3b60a14a3ea0649a90c680` adds separate operation/lifecycle epochs, invalidates stale game requests even while initialization is pending, ignores callbacks from destroyed workers, and makes destroy/re-initialization race-safe.
+- Existing `tests/chess-ai-adapter.cjs` is extended with stop-during-initialization and destroy/reuse regressions; no new test suite was added.
+- No full responsive/all-Chromium PASS is claimed until the new exact-SHA run completes. `main` and Cloudflare remain untouched.
+
+**Дальнейшие действия:**
+1. Validate `316d567b` with the complete responsive RU/EN/boundary matrix and confirm the Stockfish pageerror is gone.
+2. If responsive is green, run all 17 Chromium contracts on the same lineage.
+3. If another failure appears, fix only that evidence-backed owner/runtime defect and record the next checkpoint here.
+4. Complete conservative asset classification, then remove temporary/duplicate audit workflows and harden Pages deploy to `main` only.
+5. Synchronize `CURRENT_STATE.md`, UI/UX, Save System, Tech Architecture, Assets and corresponding Notion pages on the final accepted candidate SHA.
