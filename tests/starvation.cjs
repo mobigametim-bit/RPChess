@@ -118,7 +118,6 @@ class MemoryStorage {
   const appSource = fs.readFileSync(path.join(game, 'js/starvation-app.mjs'), 'utf8');
   const css = fs.readFileSync(path.join(game, 'css/starvation.css'), 'utf8');
   const compactCss = fs.readFileSync(path.join(game, 'css/starvation-compact.css'), 'utf8');
-  const polishSource = fs.readFileSync(path.join(game, 'js/post-pages-ui-polish.mjs'), 'utf8');
   assert(travelSource.includes('Припасов нет — при переходе сработает голод.'), 'Travel cards must warn about Starvation before commitment');
   assert(travelSource.includes("cost.setAttribute('aria-label',warning)") && travelSource.includes('cost.title=warning'), 'Travel Starvation warning must remain accessible in the compact cost presentation');
   assert(travelSource.includes('resolveStarvation'), 'Travel must resolve Starvation atomically with route commitment');
@@ -126,7 +125,8 @@ class MemoryStorage {
   assert(appSource.includes('dataset.starvationScreen'), 'Starvation consequence screen contract missing');
   assert(appSource.includes('css/starvation-compact.css?v=20260909-owner1'), 'Starvation owner must load its compact stylesheet after base CSS');
   assert(compactCss.includes('max-height:calc(100dvh - 58px)!important') && compactCss.includes('overflow:auto!important'), 'Starvation owner compact stylesheet must contain the accepted HUD-safe internal scroll contract');
-  assert(!polishSource.includes('starvation-active'), 'post-pages compatibility module must not retain Starvation presentation ownership');
+  assert(!fs.existsSync(path.join(game, 'js/post-pages-ui-polish.mjs')), 'retired post-pages presentation shim must stay deleted');
+  assert(!fs.existsSync(path.join(game, 'js/presentation-bootstrap.mjs')), 'retired presentation bootstrap must stay deleted');
   assert(!css.includes('ui_panel_frame.png') && !css.includes('ui_panel_wide.png'), 'Starvation UI must remain frameless CSS-only');
 
   console.log('Starvation deterministic casualty, idempotency, King death, persistence and owner-level compact accessible UX contract: PASS');
