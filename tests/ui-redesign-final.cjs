@@ -42,6 +42,7 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   assert(finalUi.includes("import { placeArmy } from './skirmish-core.mjs'")&&finalUi.includes('BLACK_GLYPHS'),'Skirmish preview must use canonical formation data and preserve black-side glyphs without observers');
   assert(finalUi.includes('GLYPHS_BY_COLOR')&&finalUi.includes('mark.dataset.pieceColor=side')&&finalUi.includes('syncBattleFormation(screen,color)'),'Battle/Skirmish prep technical glyphs must derive from encounter player color');
   assert(finalUi.includes("document.body.classList.toggle('run-combat-board-active',Boolean(kind))"),'persistent side aura must be enabled only while the shared board is an active run combat');
+  assert(!finalUi.includes("'rpchess:run-updated'")&&finalUi.includes("'rpchess:combat-completed'")&&finalUi.includes("'rpchess:puzzle-resolved'"),'shared redesign presentation must use semantic completion events instead of broad run-updated');
   assert(sideColorsCss.includes('.skirmish-card__tech-glyph[data-piece-color="w"]')&&sideColorsCss.includes('.battle-card__tech-glyph[data-piece-color="b"]'),'prep card glyphs must expose white/black presentation states');
   assert(sideColorsCss.includes('.skirmish-formation-cell[data-piece-color="b"]')&&sideColorsCss.includes('.battle-formation-cell span[data-piece-color="w"]'),'formation preview glyphs must expose white/black presentation states');
   assert(sideColorsCss.includes("--combat-aura-image:url('../assets/vfx/aura_white.png')")&&sideColorsCss.includes("--combat-aura-image:url('../assets/vfx/aura_black.png')"),'white/black combat pieces must use the supplied aura art');
@@ -60,7 +61,8 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   const battleActionbarStyle=crossScene.match(/\.battle-screen \.battle-actionbar\s*\{([\s\S]*?)\}/)?.[1]||'';
   assert(battleActionbarStyle.includes('display:none!important')&&!battleActionbarStyle.includes('display:flex!important'),'cross-scene visuals must not revive the legacy Battle actionbar on mobile');
   assert(!crossScene.includes('MutationObserver'),'cross-scene visual refresh must be lifecycle-driven, not a global subtree observer');
-  assert(crossScene.includes("'rpchess:run-updated'")&&crossScene.includes("'rpchess:event-open'")&&crossScene.includes("'rpchess:run-continue'"),'cross-scene visual refresh must subscribe to canonical lifecycle events');
+  assert(!crossScene.includes("'rpchess:run-updated'")&&crossScene.includes("'rpchess:combat-completed'")&&crossScene.includes("'rpchess:event-open'")&&crossScene.includes("'rpchess:run-continue'"),'cross-scene visuals must use semantic combat lifecycle plus explicit scene restoration events');
+  assert(crossScene.includes("target?.closest('[data-event-choice]')")&&crossScene.includes('queueMicrotask(decorateEventOutcomeNotes)'),'Event resource decoration must be tied to the actual choice interaction instead of all run writes');
 
   const gateIndex=travelApp.indexOf('if(!canSelectTravelChoice(current,choice).ok)');
   const paymentIndex=travelApp.indexOf('applyTravelSupplyCost(current)');
@@ -81,7 +83,7 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
 
   assert(!ux.includes('MutationObserver')&&!ux.includes('activeCombatPresentation'),'shared UX must be lifecycle-driven and must not remember combat type from a Start click');
   assert(ux.includes('function activeCombat()')&&ux.includes('RPChessBattle?.battlePlan')&&ux.includes('RPChessSkirmish?.battlePlan'),'shared combat summary must derive from canonical runtime state');
-  assert(ux.includes("'rpchess:run-updated'")&&ux.includes("'rpchess:travel-open'")&&ux.includes("'rpchess:event-open'"),'shared UX refresh must be connected to lifecycle events');
+  assert(!ux.includes("'rpchess:run-updated'")&&ux.includes("'rpchess:combat-completed'")&&ux.includes("'rpchess:puzzle-resolved'")&&ux.includes("'rpchess:travel-open'")&&ux.includes("'rpchess:event-open'"),'shared UX refresh must use semantic completion events plus explicit scene/resource events');
 
   assert(events.includes("state:'missing'")&&events.includes("state:'wounded'")&&events.includes("state:'dead'")&&events.includes('button.dataset.heroState = heroState.state'),'Event hero locks must expose distinct semantic states');
   assert(events.includes("if (!hero) return { hero:null, name, state:'missing', locked:true, label:'🔒' }"),'missing Event hero must show only the lock in the upper strip');
@@ -97,5 +99,5 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   assert(pkg.scripts['test:materialized'].includes('tests/aura-asset-runtime.cjs'),'materialized test set must verify combat aura source assets');
   assert(!pkg.scripts['test:materialized'].includes('travel-choice-ui.cjs')&&!pkg.scripts['test:materialized'].includes('compact-ui-pass4.cjs'),'materialized test set must not require superseded UI tests');
 
-  console.log('Consolidated UI redesign contracts, owner-loaded Battle compact CSS, side-colored aura presentation, keyed Travel gating and lifecycle presentation: PASS');
+  console.log('Consolidated UI redesign contracts, owner-loaded Battle compact CSS, side-colored aura presentation, keyed Travel gating and semantic lifecycle presentation: PASS');
 })().catch((error)=>{console.error(error.stack||error);process.exitCode=1});
