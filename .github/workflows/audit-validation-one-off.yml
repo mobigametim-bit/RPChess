@@ -45,7 +45,7 @@ jobs:
       - name: Install Playwright and Chromium
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
       - name: Narrow responsive proof to Event rail
         run: |
           cp tests/responsive-viewport-browser.cjs /tmp/responsive-viewport-browser.cjs
