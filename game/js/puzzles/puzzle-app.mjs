@@ -1,9 +1,9 @@
 import { ClassicChessEngine } from '../classic-chess-engine.mjs';
 import { readRun, writeRun } from '../run-persistence.mjs';
+import { t, subscribe } from '../i18n.mjs';
 import { PUZZLE_CATALOG } from './puzzle-catalog.mjs';
 import {
   createPuzzleState,
-  objectiveLabel,
   puzzleBaseGold,
   puzzleGoldReward,
   selectPuzzle,
@@ -14,12 +14,12 @@ import { starsText } from '../encounter-difficulty.mjs';
 
 const FILES = 'abcdefgh';
 const PIECE_ASSETS = Object.freeze({ p:'pawn', n:'knight', b:'bishop', r:'rook', q:'queen', k:'king' });
-const PIECE_NAMES = Object.freeze({ p:'пешка', n:'конь', b:'слон', r:'ладья', q:'ферзь', k:'король' });
+const PIECE_KEYS = Object.freeze({ p:'piece.pawn', n:'piece.knight', b:'piece.bishop', r:'piece.rook', q:'piece.queen', k:'piece.king' });
 const PIECE_GLYPHS = Object.freeze({
   w:Object.freeze({ p:'♙', n:'♘', b:'♗', r:'♖', q:'♕', k:'♔' }),
   b:Object.freeze({ p:'♟', n:'♞', b:'♝', r:'♜', q:'♛', k:'♚' })
 });
-const PROMOTION_LABELS = Object.freeze({ q:'Ферзь', r:'Ладья', b:'Слон', n:'Конь' });
+const PROMOTION_KEYS = Object.freeze({ q:'piece.queen', r:'piece.rook', b:'piece.bishop', n:'piece.knight' });
 
 let screen = null;
 let activeRun = null;
@@ -33,6 +33,7 @@ let promotionResolve = null;
 
 function audio() { return globalThis.RPChessRebootAudio; }
 function pieceAsset(piece) { return `generated_assets/unit_${PIECE_ASSETS[piece.type]}_${piece.color === 'w' ? 'player' : 'enemy'}.png`; }
+function pieceLabel(type) { return t(PIECE_KEYS[type] || 'piece.pawn'); }
 function squareFromIndex(index) { return `${FILES[index % 8]}${Math.floor(index / 8) + 1}`; }
 function reducedMotion() { return document.documentElement.dataset.reducedMotion === '1'; }
 function replyDelay() { return reducedMotion() ? 0 : 320; }
@@ -60,57 +61,57 @@ function ensureScreen() {
   screen.className = 'puzzle-screen';
   screen.dataset.puzzleScreen = '';
   screen.hidden = true;
-  screen.setAttribute('aria-label', 'Шахматная задача');
+  screen.setAttribute('aria-label', t('puzzle.ariaLabel'));
   screen.innerHTML = `
     <div class="puzzle-shell">
       <header class="puzzle-topbar">
         <img class="puzzle-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
         <div class="puzzle-topbar__actions">
-          <button class="reboot-button reboot-button--primary" type="button" data-puzzle-settings>Настройки</button>
+          <button class="reboot-button reboot-button--primary" type="button" data-puzzle-settings>${t('puzzle.settings')}</button>
         </div>
       </header>
       <header class="puzzle-heading">
         <div>
-          <div class="reboot-eyebrow">ШАХМАТНАЯ ЗАДАЧА</div>
-          <h1 data-puzzle-objective>МАТ В 1</h1>
+          <div class="reboot-eyebrow" data-puzzle-kicker>${t('puzzle.kicker')}</div>
+          <h1 data-puzzle-objective>${t('puzzle.objective.mate1')}</h1>
         </div>
         <div class="puzzle-difficulty">
           <strong data-puzzle-stars>★</strong>
-          <span>Сложность задачи</span>
+          <span data-puzzle-difficulty-label>${t('puzzle.difficulty')}</span>
         </div>
       </header>
       <div class="puzzle-layout">
         <section class="puzzle-panel">
           <div class="puzzle-polish-objective" data-puzzle-compact-objective aria-hidden="true">
-            <strong data-puzzle-compact-objective-label>МАТ В 1</strong>
+            <strong data-puzzle-compact-objective-label>${t('puzzle.objective.mate1')}</strong>
             <span data-puzzle-compact-stars>★</span>
           </div>
-          <h2>Условие</h2>
-          <p data-puzzle-instruction>Найдите точное продолжение.</p>
-          <div class="puzzle-attempts" data-puzzle-attempts aria-label="Оставшиеся попытки"></div>
+          <h2 data-puzzle-condition>${t('puzzle.condition')}</h2>
+          <p data-puzzle-instruction>${t('puzzle.instruction.mate1')}</p>
+          <div class="puzzle-attempts" data-puzzle-attempts aria-label="${t('puzzle.attemptsAria')}"></div>
           <div class="puzzle-reward">
-            <span>Награда без ошибок</span>
+            <span data-puzzle-reward-perfect>${t('puzzle.rewardPerfect')}</span>
             <strong data-puzzle-base-reward>12 Gold</strong>
-            <p data-puzzle-current-reward>Текущая награда: 12 Gold</p>
+            <p data-puzzle-current-reward>${t('puzzle.rewardCurrent',{reward:12})}</p>
           </div>
           <div class="puzzle-polish-reward" data-puzzle-compact-reward aria-hidden="true">
             <img src="generated_assets/reward_gold.png" alt="">
             <strong data-puzzle-compact-reward-value>12</strong>
           </div>
-          <p class="puzzle-source">Задачи: Lichess Open Database · CC0</p>
+          <p class="puzzle-source" data-puzzle-source>${t('puzzle.source')}</p>
         </section>
         <section class="puzzle-board-wrap">
-          <div class="puzzle-board" data-puzzle-board role="grid" aria-label="Шахматная доска задачи"></div>
+          <div class="puzzle-board" data-puzzle-board role="grid" aria-label="${t('puzzle.boardAria')}"></div>
           <div class="puzzle-status" data-puzzle-status role="status" aria-live="polite"></div>
           <div class="puzzle-promotion" data-puzzle-promotion hidden>
             <div class="puzzle-promotion__panel" data-puzzle-promotion-options></div>
           </div>
         </section>
         <section class="puzzle-panel puzzle-outcome" data-puzzle-outcome hidden>
-          <h2 data-puzzle-outcome-title>РЕШЕНО</h2>
+          <h2 data-puzzle-outcome-title>${t('puzzle.outcome.solved')}</h2>
           <p data-puzzle-outcome-text></p>
           <div class="puzzle-outcome__gold" data-puzzle-outcome-gold></div>
-          <button class="reboot-button reboot-button--primary puzzle-continue" type="button" data-puzzle-continue>Продолжить путь</button>
+          <button class="reboot-button reboot-button--primary puzzle-continue" type="button" data-puzzle-continue>${t('puzzle.continue')}</button>
         </section>
       </div>
     </div>`;
@@ -118,6 +119,26 @@ function ensureScreen() {
   screen.querySelector('[data-puzzle-settings]')?.addEventListener('click', () => globalThis.RPChessOpenSettings?.());
   screen.querySelector('[data-puzzle-continue]')?.addEventListener('click', continueTravel);
   return screen;
+}
+
+function renderStaticCopy() {
+  if (!screen) return;
+  screen.setAttribute('aria-label', t('puzzle.ariaLabel'));
+  const values = [
+    ['[data-puzzle-settings]','puzzle.settings'],
+    ['[data-puzzle-kicker]','puzzle.kicker'],
+    ['[data-puzzle-difficulty-label]','puzzle.difficulty'],
+    ['[data-puzzle-condition]','puzzle.condition'],
+    ['[data-puzzle-reward-perfect]','puzzle.rewardPerfect'],
+    ['[data-puzzle-source]','puzzle.source'],
+    ['[data-puzzle-continue]','puzzle.continue']
+  ];
+  for (const [selector,key] of values) {
+    const node = screen.querySelector(selector);
+    if (node) node.textContent = t(key);
+  }
+  screen.querySelector('[data-puzzle-attempts]')?.setAttribute('aria-label', t('puzzle.attemptsAria'));
+  screen.querySelector('[data-puzzle-board]')?.setAttribute('aria-label', t('puzzle.boardAria'));
 }
 
 function hideAllScenes() {
@@ -150,24 +171,33 @@ function persist(nextState = state) {
   return state;
 }
 
+function objectiveText(item) {
+  if (!item) return t('puzzle.objective.fallback');
+  if (item.type === 'material') {
+    const target = ['queen','rook','bishop','knight'].includes(item.targetPiece) ? item.targetPiece : null;
+    return target ? t(`puzzle.objective.material.${target}`) : t('puzzle.objective.fallback');
+  }
+  return ['mate1','mate2','mate3'].includes(item.type) ? t(`puzzle.objective.${item.type}`) : t('puzzle.objective.fallback');
+}
+
 function instructionText(item) {
-  if (item.type === 'material') return 'Найдите комбинацию, которая выигрывает указанную фигуру.';
-  const moves = Number(item.type.slice(-1));
-  return `Найдите вынужденный мат за ${moves === 1 ? 'один ход' : moves === 2 ? 'два хода' : 'три хода'}.`;
+  if (item?.type === 'material') return t('puzzle.instruction.material');
+  return ['mate1','mate2','mate3'].includes(item?.type) ? t(`puzzle.instruction.${item.type}`) : t('puzzle.instruction.mate1');
 }
 
 function renderMeta() {
-  const objective = objectiveLabel(puzzle);
+  const objective = objectiveText(puzzle);
   const stars = starsText(state.stars);
   const baseReward = puzzleBaseGold(state.stars);
   const currentReward = puzzleGoldReward(state.stars, state.errors);
+  renderStaticCopy();
   screen.querySelector('[data-puzzle-objective]').textContent = objective;
   screen.querySelector('[data-puzzle-stars]').textContent = stars;
   screen.querySelector('[data-puzzle-compact-objective-label]').textContent = objective;
   screen.querySelector('[data-puzzle-compact-stars]').textContent = stars;
   screen.querySelector('[data-puzzle-instruction]').textContent = instructionText(puzzle);
   screen.querySelector('[data-puzzle-base-reward]').textContent = `${baseReward} Gold`;
-  screen.querySelector('[data-puzzle-current-reward]').textContent = `Текущая награда: ${currentReward} Gold`;
+  screen.querySelector('[data-puzzle-current-reward]').textContent = t('puzzle.rewardCurrent',{reward:currentReward});
   screen.querySelector('[data-puzzle-compact-reward-value]').textContent = String(currentReward);
 
   const attempts = screen.querySelector('[data-puzzle-attempts]');
@@ -182,10 +212,10 @@ function renderMeta() {
   const outcome = screen.querySelector('[data-puzzle-outcome]');
   outcome.hidden = !state.resolved;
   if (!state.resolved) return;
-  screen.querySelector('[data-puzzle-outcome-title]').textContent = state.result === 'solved' ? 'РЕШЕНО' : 'ЗАДАЧА ПРОВАЛЕНА';
+  screen.querySelector('[data-puzzle-outcome-title]').textContent = t(state.result === 'solved' ? 'puzzle.outcome.solved' : 'puzzle.outcome.failed');
   screen.querySelector('[data-puzzle-outcome-text]').textContent = state.result === 'solved'
-    ? `Ошибок: ${state.errors}. Награда рассчитана по точности решения.`
-    : 'Три неверных хода. Путь открыт, но награды нет.';
+    ? t('puzzle.outcome.solvedText',{errors:state.errors})
+    : t('puzzle.outcome.failedText');
   screen.querySelector('[data-puzzle-outcome-gold]').textContent = state.goldReward > 0 ? `+${state.goldReward} Gold` : '0 Gold';
 }
 
@@ -211,7 +241,7 @@ function renderBoard() {
       button.className = `puzzle-square puzzle-square--${(file + rank) % 2 === 0 ? 'dark' : 'light'}`;
       button.dataset.square = square;
       button.setAttribute('role', 'gridcell');
-      button.setAttribute('aria-label', piece ? `${square}: ${PIECE_NAMES[piece.type]}` : square);
+      button.setAttribute('aria-label', piece ? `${square}: ${pieceLabel(piece.type)}` : square);
       if (selected === square) button.classList.add('is-selected');
       if (target) button.classList.add(target.capture ? 'is-capture' : 'is-legal');
       if (piece) {
@@ -224,7 +254,7 @@ function renderBoard() {
         marker.className = `puzzle-piece-marker puzzle-piece-marker--${piece.color}`;
         marker.dataset.puzzlePieceMarker = piece.type;
         marker.textContent = PIECE_GLYPHS[piece.color][piece.type];
-        marker.title = PIECE_NAMES[piece.type];
+        marker.title = pieceLabel(piece.type);
         marker.setAttribute('aria-hidden', 'true');
         button.append(image, marker);
       }
@@ -264,7 +294,7 @@ function choosePromotion(choices) {
     for (const value of choices) {
       const button = document.createElement('button');
       button.type = 'button';
-      button.textContent = PROMOTION_LABELS[value] || value.toUpperCase();
+      button.textContent = t(PROMOTION_KEYS[value] || 'piece.queen');
       button.addEventListener('click', () => {
         root.hidden = true;
         promotionResolve = null;
@@ -333,13 +363,13 @@ function wrongMove() {
     persist(resolvedPuzzleState({ ...state, errors: 3 }, 'failed'));
     settleReward();
     locked = false;
-    status('Третья ошибка — задача провалена.', 'error');
+    status(t('puzzle.status.thirdError'), 'error');
     renderMeta();
     renderBoard();
     return;
   }
   persist({ ...state, errors });
-  status('Неверный ход', 'error');
+  status(t('puzzle.status.wrongMove'), 'error');
   renderMeta();
   renderBoard();
 }
@@ -359,7 +389,7 @@ async function playForcedReply({ resume = false } = {}) {
   const reply = uciParts(puzzle.solution[state.solutionIndex]);
   if (!reply) throw new Error('Puzzle forced reply missing');
   locked = true;
-  status(resume ? 'Восстанавливаем ответ соперника…' : 'Ход соперника…');
+  status(t(resume ? 'puzzle.status.restoreOpponent' : 'puzzle.status.opponentMove'));
   await new Promise((resolve) => setTimeout(resolve, replyDelay()));
   const replyResult = moveEngine(reply);
   const nextIndex = state.solutionIndex + 1;
@@ -370,7 +400,7 @@ async function playForcedReply({ resume = false } = {}) {
     return;
   }
   locked = false;
-  status('Ваш ход');
+  status(t('puzzle.status.yourMove'));
 }
 
 async function correctMove(from, to, promotion) {
@@ -381,7 +411,7 @@ async function correctMove(from, to, promotion) {
   persist({ ...state, currentFen: result.fen, solutionIndex: nextIndex });
   audio()?.move?.();
   renderBoard();
-  status('Верно', 'correct');
+  status(t('puzzle.status.correct'), 'correct');
 
   if (result.status.type === 'checkmate' || nextIndex >= puzzle.solution.length) {
     finishSolved();
@@ -409,7 +439,7 @@ function settleReward() {
   });
   state = stateWithReceipt;
   globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
-  if (reward > 0) globalThis.RPChessResources?.showChange?.({ goldDelta: reward, label: 'ЗАДАЧА' });
+  if (reward > 0) globalThis.RPChessResources?.showChange?.({ goldDelta: reward, label: t('puzzle.change.reward') });
 }
 
 function finishSolved() {
@@ -418,13 +448,13 @@ function finishSolved() {
     locked = false;
     renderMeta();
     renderBoard();
-    status('Задача решена', 'correct');
+    status(t('puzzle.status.solved'), 'correct');
     return;
   }
   persist(resolvedPuzzleState(state, 'solved'));
   settleReward();
   locked = false;
-  status('Задача решена', 'correct');
+  status(t('puzzle.status.solved'), 'correct');
   renderMeta();
   renderBoard();
 }
@@ -432,9 +462,9 @@ function finishSolved() {
 function renderAll() {
   renderMeta();
   renderBoard();
-  if (state.resolved) status(state.result === 'solved' ? 'Задача решена' : 'Задача провалена', state.result === 'solved' ? 'correct' : 'error');
-  else if (engine.turn() !== puzzle.side) status('Ход соперника…');
-  else status('Ваш ход');
+  if (state.resolved) status(t(state.result === 'solved' ? 'puzzle.status.solved' : 'puzzle.status.failed'), state.result === 'solved' ? 'correct' : 'error');
+  else if (engine.turn() !== puzzle.side) status(t('puzzle.status.opponentMove'));
+  else status(t('puzzle.status.yourMove'));
 }
 
 async function resumeSession() {
@@ -482,7 +512,7 @@ function openPuzzle(event) {
   void resumeSession().catch((error) => {
     console.error(error);
     locked = false;
-    status('Не удалось восстановить задачу. Вернитесь в отряд и откройте её снова.', 'error');
+    status(t('puzzle.status.restoreFailed'), 'error');
   });
 }
 
@@ -501,6 +531,10 @@ function continueTravel() {
 }
 
 ensureScreen();
+subscribe(() => {
+  renderStaticCopy();
+  if (screen && !screen.hidden && puzzle && state && engine) renderAll();
+});
 addEventListener('rpchess:puzzle-open', openPuzzle);
 globalThis.RPChessPuzzle = Object.freeze({
   open: openPuzzle,
