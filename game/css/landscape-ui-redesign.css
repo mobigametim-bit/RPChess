@@ -446,19 +446,89 @@ html[data-landscape-ui='1'] body.compact-combat-active .classic-shell {
   .travel-choice-card { min-height: 0 !important; height: 100% !important; }
   .travel-choice-card__body { padding-bottom: 14px !important; }
 
-  /* Events */
-  .events-screen { height: 100dvh !important; min-height: 0 !important; overflow: hidden !important; }
-  .events-shell { height: 100% !important; display: grid !important; grid-template-rows: auto minmax(0, 1fr) !important; padding: 10px 12px !important; }
-  .events-topbar { min-height: 48px !important; margin: 0 0 7px !important; }
-  .events-logo { width: min(190px, 22vw) !important; }
-  .events-topbar__actions .reboot-button { min-height: 36px !important; padding: 5px 10px !important; }
-  .events-panel { min-height: 0 !important; height: 100% !important; display: grid !important; grid-template-columns: minmax(0, 1.08fr) minmax(330px, .92fr) !important; gap: 10px !important; align-items: stretch !important; }
-  .events-copy-frame,
-  .events-choice-frame { min-height: 0 !important; max-height: none !important; overflow-y: auto !important; }
-  .events-copy-frame h1 { font-size: clamp(31px, 4.2vh, 46px) !important; }
-  .events-story { line-height: 1.42 !important; }
-  .events-choices { min-height: 0 !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 7px !important; }
-  .events-choice { min-height: 0 !important; padding: 10px !important; }
+  /* Events — accepted owner-scoped tablet landscape contract. */
+  body.events-active .events-screen {
+    height: 100dvh !important;
+    min-height: 0 !important;
+    padding: 10px 12px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+  body.events-active .events-shell {
+    position: relative !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    display: grid !important;
+    grid-template-rows: auto minmax(0,1fr) !important;
+    gap: 7px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body.events-active .events-topbar {
+    position: relative !important;
+    inset: auto !important;
+    grid-row: 1 !important;
+    min-height: 48px !important;
+    margin: 0 !important;
+  }
+  body.events-active .events-logo { width: min(190px, 22vw) !important; }
+  body.events-active .events-topbar__actions .reboot-button { min-height: 36px !important; padding: 5px 10px !important; }
+  body.events-active .events-panel {
+    position: relative !important;
+    inset: auto !important;
+    grid-row: 2 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0,1.08fr) minmax(330px,.92fr) !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+    overflow: hidden !important;
+    pointer-events: auto !important;
+  }
+  body.events-active .events-copy-frame,
+  body.events-active .events-choice-frame {
+    position: relative !important;
+    inset: auto !important;
+    width: auto !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    box-sizing: border-box !important;
+  }
+  body.events-active .events-copy-frame { padding: 14px 16px !important; }
+  body.events-active .events-choice-frame { padding: 10px !important; }
+  body.events-active .events-copy-frame h1 { font-size: clamp(31px, 4.2vh, 46px) !important; }
+  body.events-active .events-story { line-height: 1.42 !important; }
+  body.events-active .events-choices {
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) !important;
+    grid-auto-flow: row !important;
+    gap: 7px !important;
+    align-content: start !important;
+  }
+  body.events-active .events-choice,
+  body.events-active .events-choice:last-child:nth-child(odd) {
+    grid-column: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+  body.events-active .events-choice { padding: 10px !important; }
+  body.events-active .events-choice__head strong,
+  body.events-active .events-choice__reaction,
+  body.events-active .events-choice__hero-line {
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    hyphens: none !important;
+  }
 
   /* Skirmish prep */
   .skirmish-screen { height: 100dvh !important; min-height: 0 !important; padding: 9px 12px !important; overflow: hidden !important; }
@@ -746,29 +816,45 @@ html[data-landscape-ui='1'] body.compact-combat-active .classic-shell {
   .travel-choice-card__cost-icon,
   .travel-choice-card__reward-icon { width: 16px !important; height: 16px !important; flex-basis: 16px !important; }
 
-  /* Events */
-  .events-shell { padding: 5px 7px !important; }
-  .events-topbar { min-height: 34px !important; margin-bottom: 4px !important; }
-  .events-logo { width: 125px !important; }
-  .events-topbar__actions { gap: 4px !important; }
-  .events-topbar__actions .reboot-button { min-height: 29px !important; padding: 3px 7px !important; font-size: 10px !important; }
-  .events-panel { grid-template-columns: minmax(0, 1.04fr) minmax(0, .96fr) !important; gap: 6px !important; }
-  .events-copy-frame,
-  .events-choice-frame { padding: 8px 10px !important; }
-  .events-kicker { font-size: 8px !important; }
-  .events-copy-frame h1 { font-size: 27px !important; margin: 3px 0 6px !important; }
-  .events-story { font-size: 10px !important; line-height: 1.24 !important; }
-  .events-story p { margin: 0 0 6px !important; }
-  .events-reaction { font-size: 9px !important; padding: 6px !important; }
-  .events-choices { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 5px !important; align-content: start !important; }
-  .events-choice { padding: 7px !important; font-size: 9px !important; }
-  .events-choice__head { gap: 5px !important; }
-  .events-choice__head strong { font-size: 10px !important; line-height: 1.18 !important; }
-  .events-choice__meta small,
-  .events-choice__disabled,
-  .events-choice__reaction,
-  .events-choice__hero-line { font-size: 7px !important; line-height: 1.16 !important; }
-
+  /* Events — accepted owner-scoped phone landscape compression. */
+  body.events-active .events-screen { padding: 5px 7px !important; }
+  body.events-active .events-shell { gap: 4px !important; }
+  body.events-active .events-topbar { min-height: 34px !important; margin-bottom: 0 !important; }
+  body.events-active .events-logo { width: 125px !important; }
+  body.events-active .events-topbar__actions { gap: 4px !important; }
+  body.events-active .events-topbar__actions .reboot-button { min-height: 29px !important; padding: 3px 7px !important; font-size: 10px !important; }
+  body.events-active .events-panel {
+    grid-template-columns: minmax(0,1.04fr) minmax(300px,.96fr) !important;
+    gap: 6px !important;
+  }
+  body.events-active .events-copy-frame,
+  body.events-active .events-choice-frame { padding: 8px 10px !important; }
+  body.events-active .events-kicker { font-size: 8px !important; }
+  body.events-active .events-copy-frame h1 { font-size: 27px !important; margin: 3px 0 6px !important; }
+  body.events-active .events-story { font-size: 10px !important; line-height: 1.24 !important; }
+  body.events-active .events-story p { margin: 0 0 6px !important; }
+  body.events-active .events-reaction { font-size: 9px !important; padding: 6px !important; }
+  body.events-active .events-choices {
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) !important;
+    grid-auto-flow: row !important;
+    gap: 5px !important;
+    align-content: start !important;
+  }
+  body.events-active .events-choice,
+  body.events-active .events-choice:last-child:nth-child(odd) {
+    grid-column: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+  body.events-active .events-choice { padding: 7px 9px !important; font-size: 9px !important; }
+  body.events-active .events-choice__head { gap: 5px !important; }
+  body.events-active .events-choice__head strong { font-size: 11px !important; line-height: 1.18 !important; }
+  body.events-active .events-choice__meta small,
+  body.events-active .events-choice__disabled,
+  body.events-active .events-choice__reaction,
+  body.events-active .events-choice__hero-line { font-size: 7px !important; line-height: 1.16 !important; }
   /* Puzzle side column */
   .puzzle-topbar { padding: 5px 7px !important; }
   .puzzle-topbar .reboot-button { min-height: 29px !important; padding: 3px 7px !important; font-size: 10px !important; }

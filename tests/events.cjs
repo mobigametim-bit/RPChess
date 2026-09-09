@@ -73,6 +73,7 @@ const path=require('path'),assert=require('assert'),fs=require('fs'),{pathToFile
   const base=persistence.createRun({id:'wounded-king',now:3}),woundedKing={...base,roster:base.roster.map(c=>c.isRunKing?{...c,status:'wounded'}:c)};const skirmish=await import(pathToFileURL(path.join(game,'js/skirmish-core.mjs')).href);const battle=await import(pathToFileURL(path.join(game,'js/battle-core.mjs')).href);assert(skirmish.defaultCombatSelection(woundedKing.roster).includes(woundedKing.roster.find(c=>c.isRunKing).id));assert(battle.defaultBattleSelection(woundedKing.roster).includes(woundedKing.roster.find(c=>c.isRunKing).id));
 
   const appSource=fs.readFileSync(path.join(game,'js/events-app.mjs'),'utf8');
+  const landscapeCss=fs.readFileSync(path.join(game,'css/landscape-ui-redesign.css'),'utf8');
   const uiSource=fs.readFileSync(path.join(game,'localization/ui.mjs'),'utf8');
   assert(appSource.includes("import { subscribe, t, translateLegacy } from './i18n.mjs'"),'Events owner must consume semantic i18n directly while retaining explicit content translation');
   assert(appSource.includes("t('events.ariaLabel')")&&appSource.includes("t('events.choice.guaranteed')")&&appSource.includes("t('events.guaranteedOutcome')"),'Event chrome/chance/outcome copy must be owner-keyed');
@@ -82,6 +83,10 @@ const path=require('path'),assert=require('assert'),fs=require('fs'),{pathToFile
   assert(!appSource.includes("localizeEventSource(outcome.success ? 'УСПЕХ' : 'НЕУДАЧА')")&&!appSource.includes("localizeEventSource('ПРОДОЛЖИТЬ ПУТЬ')"),'Events runtime must not rely on legacy DOM/content translation for keyed chrome');
   assert(appSource.includes("addEventListener('rpchess:combat-completed',syncRun)"),'Events must complete Event combat from the semantic combat lifecycle');
   assert(!appSource.includes("addEventListener('rpchess:run-updated',syncRun)"),'Events must not subscribe to broad run-updated for combat completion');
+  const eventChoiceLandscapeBlocks=[...landscapeCss.matchAll(/body\.events-active \.events-choices\s*\{([^}]*)\}/g)].map(([,block])=>block);
+  assert(eventChoiceLandscapeBlocks.length>=2,'landscape owner must define scoped tablet and phone Event choice rails');
+  assert(eventChoiceLandscapeBlocks.every(block=>!block.includes('repeat(2')),'scoped Event landscape rails must never return to two columns');
+  assert(eventChoiceLandscapeBlocks.every(block=>block.includes('grid-template-columns: minmax(0,1fr)')),'scoped Event landscape rails must remain one readable column');
   for(const key of ["'events.kicker'","'events.choice.successChance'","'events.hero.deadLocked'","'events.roll'"])assert(uiSource.includes(key),`Events i18n registry missing ${key}`);
 
   console.log('Events 500/2114, v4 inline narrative, canonical 36-background register, 20% five-type Travel, 12-star combat, King risk, persistence, owner-keyed chrome and semantic combat lifecycle: PASS');
