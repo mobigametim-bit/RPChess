@@ -3,7 +3,7 @@
 **Audit status:** REMEDIATION IN PROGRESS  
 **Frozen production baseline:** `main@e92831ca5d6e0c14fb2d919e410180ce77b97ce6`  
 **Audit/remediation branch:** `audit/full-project-review-2026-09-08`  
-**Current remediation code head:** `307554151d871807581874aea549c07fe8a9de7d`  
+**Current remediation code head:** `b29b763e3b34ca6599e452cbd9a2a15befda2cab`  
 **Started:** 2026-09-08
 
 This document is the source of truth for remediation. `main` remains untouched. Cloudflare remains manual-only. Do not restore compatibility patch layers, post-render DOM rewrites, runtime DOM reparenting or whole-document UI workarounds to conceal ownership problems.
@@ -48,7 +48,7 @@ Status meanings: **DONE — verified**, **DONE — verification pending**, **IN 
 | REV-017 generic Wrangler deploy path | **DONE — docs pending** | Generic deploy removed; Cloudflare explicit/manual; GitHub Pages canonical. |
 | REV-018 legacy Vertical Slice | **DONE — verification pending** | Standalone browser stack and unreachable `src/` domain/runtime/tests deleted after reachability proof; source verifier blocks return. |
 | REV-019 stylesheet ownership/load split | **DONE — verification pending** | Compact/aftermath styles are explicit owner inputs. Battle loads `battle.css` + `battle-compact.css` itself; shared redesign no longer owns Battle stylesheet loading. |
-| REV-020 broad `rpchess:run-updated` bus | **IN PROGRESS** | Generic post-pages listeners are gone. Battle Mercenaries no longer resolves debt or patches aftermath from broad `run-updated`; Battle owner settles the contract before the final state update. Remaining event graph still needs semantic narrowing and repeated-loop instrumentation. |
+| REV-020 broad `rpchess:run-updated` bus | **IN PROGRESS** | Semantic lifecycle bridge now derives `combat-completed` and `puzzle-resolved` from canonical run transitions. Power, final redesign, shared UX and cross-scene presentation no longer consume broad `run-updated`. Bridge reentrancy is fixed and a 12-transition regression is wired into the canonical test set. Events still needs semantic narrowing; Resources remains under review as a potentially legitimate broad canonical-state projection. Browser listener/render/node stability proof is still pending. |
 | REV-021 historical docs conflict with current rules | **OPEN** | Final documentation synchronization remains after code/gate completion. |
 
 ---
@@ -72,6 +72,18 @@ Status meanings: **DONE — verified**, **DONE — verification pending**, **IN 
 - Battle compact stylesheet loading moved from shared `ui-redesign-final.mjs` into `battle-app.mjs`.
 - Battle Mercenary debt is now resolved inside the Battle completion lifecycle before aftermath rendering; the Mercenaries module no longer post-renders aftermath or subscribes to broad `rpchess:run-updated` for settlement.
 - Whole-document localization is no longer a presentation owner: all identified dynamic UI surfaces render translated presentation themselves, and `i18n.mjs` no longer observes or walks the full DOM.
+
+## Semantic lifecycle ownership
+
+- `run-lifecycle-events.mjs` introduced in `6aaa8422` and loaded first by `battle-route.mjs` in `2e1968e5`.
+- The bridge derives only semantic completion transitions from canonical persisted state: `rpchess:combat-completed` for Battle/Skirmish count increments and `rpchess:puzzle-resolved` for a newly resolved Puzzle.
+- Power stopped consuming broad `run-updated` in `15ac7458`; it now reacts to semantic completion events plus one initial recovery sync.
+- Final redesign presentation stopped consuming broad `run-updated` in `ee05e0ad`.
+- Cross-scene visuals stopped consuming broad `run-updated` in `328ee91d`; combat outcome styling uses `combat-completed`, Event resource decoration is tied to Event choice/open lifecycle, and restore paths remain explicit.
+- Shared UX stopped consuming broad `run-updated` in `7dbdc171`; resources/power/scene/language/click events plus semantic combat/Puzzle completion own refresh scheduling.
+- Existing UI regression was synchronized in `aa801cab` and source/build contracts in `a8af96fa` + `dada4d10`.
+- A reentrancy defect was found during review before CI: nested `run-updated` from a semantic consumer could replay the same completion because the bridge updated its snapshot after dispatch. `27b1c892` now commits the transition before notifying consumers.
+- Permanent `tests/run-lifecycle.cjs` (`c86d763e`) executes 12 alternating Battle/Skirmish transitions, intentionally emits nested derived `run-updated`, and requires exactly one semantic completion per canonical transition. It also verifies ten no-state-change notifications do not fan out. The test is wired into `test:materialized` and exposed as `test:lifecycle` in `b29b763e`.
 
 ## Responsive truth
 
@@ -108,7 +120,8 @@ Owner-keyed / explicit render-time localization now covers all identified active
 
 - Vertical Slice Stage 1 removed standalone browser entry/bundle/builder/tests (`d46ca26e`).
 - Vertical Slice Stage 2 removed unreachable `src/` stack (`5351eb77`).
-- Production build packages the complete `localization/` directory, including the new Classic/runtime owner registries.
+- Production build packages the complete `localization/` directory, including the Classic/runtime owner registries.
+- Semantic lifecycle bridge is explicitly packaged and asserted in production build (`a8af96fa`).
 - Unsupported save schema resets safely.
 - GitHub Pages auto-deploy remains `main`-only; audit commits do not auto-deploy.
 - Cloudflare has not been deployed during remediation.
@@ -128,14 +141,15 @@ Owner-keyed / explicit render-time localization now covers all identified active
 - Attempted one-off full-review trigger on audit branch (`0931aebb`) created **no check run** through the connector; immediately restored to manual-only in `51464246`. Do not claim CI evidence from this attempt.
 - Battle owner/Mercenary package (`9222fceb` → `43afa5a8`): implementation and source-contract review complete; no current gate PASS is claimed.
 - Localization completion package (`f37994ac` → `30755415`): implementation, ownership inventory and static contract synchronization complete. A local checkout execution attempt could not resolve `github.com` from the execution environment, so **no fresh `gate:local`, targeted Node PASS or Chromium PASS is claimed** for this head.
+- Semantic lifecycle package (`6aaa8422` → `b29b763e`): implementation, build/source contracts and permanent 12-transition regression are committed. The test has **not yet been executed in the connected environment**, so no fresh PASS is claimed from it yet.
 - No full 17-contract Chromium PASS is claimed for the current head.
 
 ---
 
 # Open verification / cleanup items
 
-1. Full current `gate:local` + all 17 Chromium contracts after strengthened responsive and completed localization ownership changes.
-2. Map and narrow remaining `rpchess:*` event fan-out; instrument at least 10 route loops for callback/render/node stability.
+1. Full current `gate:local` + all 17 Chromium contracts after strengthened responsive, localization and semantic lifecycle changes.
+2. Finish `REV-020`: move Events from broad `run-updated` to semantic combat completion; classify Resources broad subscription as either necessary canonical projection or replace it with explicit state/resource events. Then perform browser listener/render/node stability proof across 10+ route loops.
 3. Dependency security classification: keep player runtime separate from dev/build-only exposure.
 4. Asset orphan/reference inventory; delete only proven-unused assets.
 5. Final CURRENT_STATE/docs/Notion synchronization after accepted final SHA.
@@ -159,28 +173,31 @@ Owner-keyed / explicit render-time localization now covers all identified active
 
 ## Phase B — lifecycle/performance
 
-11. Map remaining `rpchess:*` producers/consumers.
-12. Narrow broad `run-updated` consumers to semantic events where safe.
-13. Instrument 10+ route loops and compare listener/render/node counts.
+11. **DONE:** Introduce semantic completion bridge and load it before journey consumers.
+12. **DONE:** Remove broad `run-updated` from Power, final redesign, shared UX and cross-scene presentation; synchronize build/source/UI contracts.
+13. **DONE:** Fix semantic bridge reentrancy and add a permanent 12-transition/no-state-change regression.
+14. Narrow Events to semantic combat completion.
+15. Decide/implement the minimal Resources event contract; broad `run-updated` may remain only if documented as the canonical run-state projection and no safer explicit event covers all resource mutations.
+16. Add browser-level 10+ route-loop listener/render/node stability instrumentation.
 
 ## Phase C — validation/tooling
 
-14. Run minimum targeted regressions per cleanup package.
-15. Run `gate:local` and all 17 Chromium contracts at the next executable milestone; do not weaken geometry contracts for green.
-16. Classify dependency advisories and build asset reference/orphan inventory.
+17. Run minimum targeted regressions per cleanup package.
+18. Run `gate:local` and all 17 Chromium contracts at the next executable milestone; do not weaken geometry contracts for green.
+19. Classify dependency advisories and build asset reference/orphan inventory.
 
 ## Phase D — final integration/docs
 
-17. Fix only evidence-backed regressions from the final gate.
-18. Update `docs/CURRENT_STATE.md` to the final accepted SHA.
-19. Mark historical documentation clearly and synchronize architecture/UI/persistence/deployment state into Notion.
-20. Do not merge `main` or deploy Cloudflare without explicit owner instruction.
+20. Fix only evidence-backed regressions from the final gate.
+21. Update `docs/CURRENT_STATE.md` to the final accepted SHA.
+22. Mark historical documentation clearly and synchronize architecture/UI/persistence/deployment state into Notion.
+23. Do not merge `main` or deploy Cloudflare without explicit owner instruction.
 
 ## Next actions
 
-1. Build an exact producer/consumer inventory for `rpchess:*`, starting with broad `rpchess:run-updated` consumers in Events, Power, shared UX/redesign and other active runtime modules.
-2. Narrow only consumers that can be replaced with an existing semantic event or a small owner-specific event without changing gameplay/state ordering.
-3. Add 10+ route-loop stability instrumentation for listener/render/node counts using existing test infrastructure where possible; create a new permanent test only if the lifecycle contract cannot be proven by extending an existing one.
+1. Replace the Events `rpchess:run-updated` consumer with `rpchess:combat-completed`, preserving the event-combat completion/write ordering now that the bridge is reentrant-safe.
+2. Review Resources mutations across Travel/Settlement/Events/Puzzle/combat and either replace the remaining broad state projection with explicit resource events or document/guard it as the single justified broad consumer.
+3. Extend existing browser infrastructure with 10+ route-loop stability instrumentation for listener/render/node counts; avoid a second browser suite if the existing route/browser harness can host it.
 4. Run full current `gate:local` + all 17 Chromium contracts when executable; update verification-pending statuses only from actual results.
 5. Complete dependency security classification and asset orphan/reference inventory; delete only evidence-backed unused items.
 6. Finish `CURRENT_STATE.md`, historical docs/Notion synchronization and final release-readiness report; keep `main` frozen and Cloudflare manual-only until explicit owner direction.
