@@ -173,7 +173,7 @@ function settleCombatRewards() {
   }
 }
 
-function syncState() {
+function syncCombatState() {
   settleCombatRewards();
   scheduleRender();
   scheduleCombatRewardRender();
@@ -188,7 +188,12 @@ if (!document.querySelector('[data-resources-css]')) {
 }
 
 ensureHud();
-for(const eventName of ['rpchess:run-updated','rpchess:run-new','rpchess:run-continue'])addEventListener(eventName,syncState);
+addEventListener('rpchess:combat-completed',syncCombatState);
+addEventListener('rpchess:run-continue',syncCombatState);
+addEventListener('rpchess:run-new',scheduleRender);
+// HUD is the one justified broad run-state projection: generic run writes may change Gold or
+// Supplies in several owners. This listener is deliberately render-only and cannot settle/mutate state.
+addEventListener('rpchess:run-updated',scheduleRender);
 for(const eventName of ['rpchess:travel-open','rpchess:skirmish-open','rpchess:battle-open','rpchess:settlement-open','rpchess:event-open','rpchess:starvation-open','rpchess:puzzle-open','rpchess:scene-changed'])addEventListener(eventName,scheduleRender);
 addEventListener('rpchess:resources-updated',()=>{scheduleRender();scheduleCombatRewardRender();});
 subscribe(()=>{scheduleRender();scheduleCombatRewardRender();});
