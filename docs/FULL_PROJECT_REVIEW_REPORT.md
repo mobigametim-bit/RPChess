@@ -3,7 +3,7 @@
 **Audit status:** REMEDIATION IN PROGRESS  
 **Frozen production baseline:** `main@e92831ca5d6e0c14fb2d919e410180ce77b97ce6`  
 **Audit/remediation branch:** `audit/full-project-review-2026-09-08`  
-**Current remediation code head:** `dfd6651f47c0337b3e60f234ea3bdf901b8b0f7d`  
+**Current remediation code head:** `d13841104cd3467cd3413182f3d49c3b0c8eba86`  
 **Started:** 2026-09-08
 
 This document is the source of truth for remediation. `main` remains untouched. Cloudflare remains manual-only. Do not restore compatibility patch layers, post-render DOM rewrites, runtime DOM reparenting, whole-document UI workarounds or broad state-mutating event consumers to conceal ownership problems.
@@ -111,11 +111,14 @@ Completed owner migrations:
 
 ## Asset reachability cleanup
 
-- `scripts/asset-orphan-inventory.cjs` added in `a497089f`; `npm run assets:orphans:report` exposed in `d7176767`. It classifies production media as explicit reference, known dynamic family, or candidate. It intentionally protects dynamic race-piece, race-board, Event-background and generated core-piece families from literal-only false positives. The inventory command is not yet in `gate:local` because its first full execution on the connected repo snapshot is still pending.
+- `scripts/asset-orphan-inventory.cjs` added in `a497089f`; `npm run assets:orphans:report` exposed in `d7176767`. It classifies production media as explicit reference, known dynamic family, or candidate. It intentionally protects dynamic race-piece, race-board, Event-background and generated core-piece families from literal-only false positives. The inventory command is not yet in `gate:local` because its first full execution on an exact audit checkout is still pending.
 - Music is explicitly owned by `reboot-audio.mjs`: exactly four `echoes_iron_throne_0N.mp3` tracks. SFX currently contains only `win_fanfare.mp3`, explicitly owned by cross-scene victory presentation.
-- Six `generated_assets/commander_*.png` files were proven unreachable after Vertical Slice/approved-shell removal. Historical owners were `approved-shell-data.mjs`, `commander-selection-final.mjs` and Vertical Slice presentation; those runtime owners are absent on the audit branch. Removed in the sequential contents-API package `905c9daa` → `7c3ca286`. Bytes removed: **857,650**.
-- `ui_panel_frame.png` and `ui_panel_wide.png` were proven obsolete by the current frameless production invariant: active owner CSS is verifier-guarded against both files, and the legacy `game/style.css` owner was deleted with Vertical Slice. Removed in `e1de42f1` + `dfd6651f`. Bytes removed: **91,263**.
-- Proven asset reduction so far: **948,913 bytes (~0.91 MiB)**. No race/piece/board/Event-background dynamic family was deleted.
+- Six `generated_assets/commander_*.png` files were proven unreachable after Vertical Slice/approved-shell removal. Historical owners were `approved-shell-data.mjs`, `commander-selection-final.mjs` and Vertical Slice presentation; those runtime owners are absent on the audit branch. Removed in `905c9daa` → `7c3ca286`. Bytes removed: **857,650**.
+- `ui_panel_frame.png` and `ui_panel_wide.png` were proven obsolete by the current frameless production invariant: active owner CSS is verifier-guarded against both files, and legacy `game/style.css` was deleted with Vertical Slice. Removed in `e1de42f1` + `dfd6651f`. Bytes removed: **91,263**.
+- Five legacy map-node assets (`node_bargain`, `node_boss`, `node_event`, `node_repair`, `node_vault`) were proven unreachable. The legacy `approved-shell-data.mjs`/Vertical Slice route map owned boss/event/repair/vault; `node_bargain` had no production owner even on the frozen baseline. Current Travel keeps the five Reboot route icons `node_battle`, `node_elite`, `node_shop`, `node_story`, `node_training`. Removed in `1fecc0cc` → `9c9f0a66`. Bytes removed: **194,295**.
+- Six legacy reward assets (`reward_artifact`, `reward_experience`, `reward_heal`, `reward_meta`, `reward_recruit`, `reward_upgrade`) were proven unreachable. `reward_heal`/`reward_meta` were old Vertical Slice/Army Foundation resource substitutes; `reward_recruit` was owned only by deleted review2 compatibility presentation; artifact/experience/upgrade had no production owner. Current Reboot keeps `reward_gold.png` and `reward_supplies.png`. Removed in `9861f533` → `a3adc5c1`. Bytes removed: **191,338**.
+- Eight legacy scene backgrounds (`scene_achievements`, `scene_bargain`, `scene_codex`, `scene_event`, `scene_repair`, `scene_settings`, `scene_training`, `scene_vault`) were proven owned only by deleted approved-shell/Vertical Slice presentation or removed legacy Event fallback. Current Reboot-owned `scene_training_ui`, `scene_victory`, Campaign/Battle/Shop/Reward/Defeat backgrounds are preserved. Removed in `879a0f27` → `d1384110`. Bytes removed: **1,123,762**.
+- Proven asset reduction: **2,458,308 bytes (~2.34 MiB)** across 27 files. No active race/piece/board/Event-background dynamic family was deleted.
 
 ## Responsive truth
 
@@ -145,17 +148,18 @@ Completed owner migrations:
 - Localization completion (`f37994ac` → `30755415`): implementation/static contracts complete; no fresh full gate claimed.
 - Semantic lifecycle (`6aaa8422` → `9f08c276`) + browser instrumentation `a447df1d`: implementation/contracts complete; **no fresh execution PASS is claimed** for current head.
 - Dependency security (`f04df06a` → `c88dfac6`): direct vulnerable ZIP install edge removed; contract not yet executed in current CI; lock metadata normalization pending.
-- Asset inventory tooling (`a497089f`, `d7176767`) passed a standalone Node syntax check in the execution container, but no full-repository inventory execution or current build/Chromium PASS is claimed yet. Proven commander/panel-frame deletions were based on explicit owner/reachability evidence, not the unexecuted report command.
+- Asset inventory tooling (`a497089f`, `d7176767`) passed standalone Node syntax validation during remediation, but no exact-checkout full inventory execution or current build/Chromium PASS is claimed yet. All 27 deletions through `d1384110` were based on explicit owner/non-reachability evidence, not on an unreviewed automated candidate list.
 - No full 17-contract Chromium PASS is claimed for current head.
 
 ---
 
 # Open verification / cleanup items
 
-1. Execute targeted lifecycle/Travel/security and asset-inventory contracts, then full current `gate:local` + all 17 Chromium contracts.
-2. Normalize `package-lock.json` reproducibly so stale `adm-zip` metadata disappears without hand-editing integrity data.
-3. Continue asset inventory for old map-node/reward/scene/generated UI families; delete only additional positive non-reachability candidates.
-4. Final `CURRENT_STATE.md`, deployment/history docs and Notion synchronization after accepted final SHA.
+1. Inspect the remaining `generated_assets` UI/logo/special-unit families and delete only additional positive non-reachability candidates.
+2. Execute `npm run assets:orphans:report` on an exact audit checkout and reconcile candidates with manual owner proof.
+3. Normalize `package-lock.json` reproducibly so stale `adm-zip` metadata disappears without hand-editing integrity data.
+4. Execute targeted lifecycle/Travel/security/assets contracts, then full current `gate:local` + all 17 Chromium contracts.
+5. Final `CURRENT_STATE.md`, deployment/history docs and Notion synchronization after accepted final SHA.
 
 ---
 
@@ -174,7 +178,7 @@ Completed owner migrations:
 
 ## Phase C — validation/tooling
 8. **DONE — verification pending:** dead direct `adm-zip` dependency removed and dependency-security contract added.
-9. **IN PROGRESS:** asset reachability inventory. Tooling exists; two proven legacy families removed (0.91 MiB).
+9. **IN PROGRESS:** asset reachability inventory. Reproducible tooling exists; 27 positively unreachable files removed (**2.34 MiB**).
 10. Normalize lock metadata reproducibly; do not hand-edit integrity graph.
 11. Run targeted regressions and then `gate:local` + all 17 Chromium contracts when executable.
 
@@ -186,11 +190,11 @@ Completed owner migrations:
 
 ## Next actions
 
-1. Continue reachability proof for remaining `generated_assets` map-node/reward/scene/UI families; preserve any asset with explicit or dynamic ownership evidence.
-2. Run `npm run assets:orphans:report` on the first executable exact audit checkout and reconcile its candidate list with manual owner proof before any bulk deletion.
+1. Finish reachability proof for remaining `generated_assets`: logo/wordmark, secondary/danger buttons, checkbox/chip/divider/sliders and special-unit images; preserve anything with explicit/current owner evidence.
+2. Run `npm run assets:orphans:report` on the first executable exact audit checkout and reconcile every candidate with manual proof before any further bulk deletion.
 3. Normalize `package-lock.json` at the first reproducible lockfile-generation opportunity; do not manually alter integrity records.
-4. Synchronize each additional asset-cleanup package into this report.
-5. Run targeted lifecycle/Travel/security/assets checks and then full `gate:local` + all 17 Chromium contracts when executable; update verification-pending findings only from actual results.
-6. Finish `CURRENT_STATE.md`, deployment/history docs/Notion synchronization and final release-readiness report; keep `main` frozen and Cloudflare manual-only until explicit owner direction.
+4. Run targeted lifecycle/Travel/security/assets checks and then full `gate:local` + all 17 Chromium contracts; update verification-pending findings only from actual results.
+5. Finish `CURRENT_STATE.md`, deployment/history docs/Notion synchronization and final release-readiness report.
+6. Keep `main` frozen and Cloudflare manual-only until explicit owner direction.
 
 Every subsequent remediation checkpoint must update this report and end with a concrete numbered **Next actions** list.
