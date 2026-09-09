@@ -71,5 +71,16 @@ const path=require('path'),assert=require('assert'),fs=require('fs'),{pathToFile
   const kingRisks=[];for(const e of data.EVENT_CATALOG)for(const raw of e.choices){const c=core.normalizeChoice(raw),all=[...c.successEffects,...c.failureEffects,...c.alwaysEffects],kingDeath=all.some(x=>x.type==='death'&&x.target==='king');if(kingDeath){kingRisks.push(c.id);assert.strictEqual(c.kingRisk,true);assert(c.warnings.some(w=>w.includes('КОРОЛЬ')));}for(const effect of all)if(effect.type==='death'&&effect.target==='randomNonKing')assert.notStrictEqual(effect.target,'king');}assert.strictEqual(kingRisks.length,4);
 
   const base=persistence.createRun({id:'wounded-king',now:3}),woundedKing={...base,roster:base.roster.map(c=>c.isRunKing?{...c,status:'wounded'}:c)};const skirmish=await import(pathToFileURL(path.join(game,'js/skirmish-core.mjs')).href);const battle=await import(pathToFileURL(path.join(game,'js/battle-core.mjs')).href);assert(skirmish.defaultCombatSelection(woundedKing.roster).includes(woundedKing.roster.find(c=>c.isRunKing).id));assert(battle.defaultBattleSelection(woundedKing.roster).includes(woundedKing.roster.find(c=>c.isRunKing).id));
-  console.log('Events 500/2114, v4 inline narrative, canonical 36-background register, 20% five-type Travel, 12-star combat, King risk and persistence: PASS');
+
+  const appSource=fs.readFileSync(path.join(game,'js/events-app.mjs'),'utf8');
+  const uiSource=fs.readFileSync(path.join(game,'localization/ui.mjs'),'utf8');
+  assert(appSource.includes("import { subscribe, t, translateLegacy } from './i18n.mjs'"),'Events owner must consume semantic i18n directly while retaining explicit content translation');
+  assert(appSource.includes("t('events.ariaLabel')")&&appSource.includes("t('events.choice.guaranteed')")&&appSource.includes("t('events.guaranteedOutcome')"),'Event chrome/chance/outcome copy must be owner-keyed');
+  assert(appSource.includes("t('events.hero.deadLocked',{name})")&&appSource.includes("t('events.hero.woundedLocked',{name})"),'hero-state presentation must be owner-keyed');
+  assert(appSource.includes('presentEventText(paragraph)')&&appSource.includes('translateLegacy(String(value ?? \'\'))'),'authored Event narrative must keep explicit content translation rather than moving into UI keys');
+  assert(appSource.includes('subscribe(() =>')&&appSource.includes('renderStaticCopy()'),'Events owner must refresh its own chrome/content on language change');
+  assert(!appSource.includes("localizeEventSource(outcome.success ? 'УСПЕХ' : 'НЕУДАЧА')")&&!appSource.includes("localizeEventSource('ПРОДОЛЖИТЬ ПУТЬ')"),'Events runtime must not rely on legacy DOM/content translation for keyed chrome');
+  for(const key of ["'events.kicker'","'events.choice.successChance'","'events.hero.deadLocked'","'events.roll'"])assert(uiSource.includes(key),`Events i18n registry missing ${key}`);
+
+  console.log('Events 500/2114, v4 inline narrative, canonical 36-background register, 20% five-type Travel, 12-star combat, King risk, persistence and owner-keyed chrome: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
