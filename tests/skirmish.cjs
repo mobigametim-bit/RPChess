@@ -5,14 +5,14 @@ const assert=require('assert'),fs=require('fs'),path=require('path'),{pathToFile
   const skirmishAppSource=fs.readFileSync(path.join(root,'game/js/skirmish-app.mjs'),'utf8');
   const finalUiSource=fs.readFileSync(path.join(root,'game/js/ui-redesign-final.mjs'),'utf8');
   const compactCss=fs.readFileSync(path.join(root,'game/css/skirmish-compact.css'),'utf8');
-  const polishSource=fs.readFileSync(path.join(root,'game/js/post-pages-ui-polish.mjs'),'utf8');
   assert(skirmishAppSource.includes("aftermathButton.textContent='Продолжить путь'"),'Skirmish aftermath CTA must say Продолжить путь');
   assert(skirmishAppSource.includes("function leaveAftermath(){audio()?.click?.();resetBattleState();globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open'"),'Skirmish aftermath must route directly to Travel Choice');
   assert(finalUiSource.includes("import { placeArmy } from './skirmish-core.mjs'")&&finalUiSource.includes("placeArmy(members,color,{seed:`${encounter.seed}:player`})"),'Skirmish preview must use canonical placeArmy with the exact player-formation seed used by the real battle plan');
   assert(indexSource.includes('<footer class="skirmish-actionbar" aria-label="Параметры боевого отряда">'),'Skirmish owner source must render the actionbar in its stable shell slot');
   assert(indexSource.includes('css/skirmish-compact.css?v=20260909-owner1'),'Skirmish compact owner stylesheet must load immediately after the base Skirmish CSS');
   assert(compactCss.includes('grid-template-rows:auto minmax(72px,.75fr) auto!important')&&compactCss.includes('grid-template-rows:repeat(2,minmax(0,1fr))!important'),'Skirmish owner compact stylesheet must preserve the accepted mobile formation geometry');
-  assert(!polishSource.includes('skirmish-active'),'post-pages compatibility module must not retain Skirmish presentation ownership');
+  assert(!fs.existsSync(path.join(root,'game/js/post-pages-ui-polish.mjs')),'retired post-pages presentation shim must stay deleted');
+  assert(!fs.existsSync(path.join(root,'game/js/presentation-bootstrap.mjs')),'retired presentation bootstrap must stay deleted');
   assert(!finalUiSource.includes('skirmishActionbarHome')&&!finalUiSource.includes('skirmishActionbarNext')&&!finalUiSource.includes('selection.append(skirmishActionbar)'),'shared redesign runtime must not reparent the Skirmish actionbar');
   const rosterData=await import(pathToFileURL(path.join(root,'game/js/roster-data.mjs')).href);
   const difficulty=await import(pathToFileURL(path.join(root,'game/js/encounter-difficulty.mjs')).href);
