@@ -7,13 +7,10 @@ on:
     paths:
       - .github/workflows/audit-validation-one-off.yml
 
-permissions:
-  contents: write
-
 jobs:
-  validate:
+  diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 70
+    timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,106 +28,57 @@ jobs:
             rpchess-runtime-assets-v1-${{ runner.os }}-
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
-      - name: Apply Event landscape owner fix
+      - name: Apply Event candidate
         run: |
           python - <<'PY'
           from pathlib import Path
-
-          css_path=Path('game/css/landscape-ui-redesign.css')
-          css=css_path.read_text()
-          tablet_old="  .events-choices { min-height: 0 !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 7px !important; }"
-          tablet_new="  .events-choices { min-height: 0 !important; grid-template-columns: minmax(0, 1fr) !important; grid-auto-flow: row !important; gap: 7px !important; align-content: start !important; }"
-          phone_old="  .events-choices { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 5px !important; align-content: start !important; }"
-          phone_new="  .events-choices { grid-template-columns: minmax(0,1fr) !important; grid-auto-flow: row !important; gap: 5px !important; align-content: start !important; }"
-          if css.count(tablet_old)!=1: raise SystemExit(f'tablet Event rule drift: {css.count(tablet_old)}')
-          if css.count(phone_old)!=1: raise SystemExit(f'phone Event rule drift: {css.count(phone_old)}')
-          css=css.replace(tablet_old,tablet_new,1).replace(phone_old,phone_new,1)
-          tablet_choice="  .events-choice { min-height: 0 !important; padding: 10px !important; }"
-          tablet_choice_new="  .events-choice,\n  .events-choice:last-child:nth-child(odd) { grid-column: auto !important; min-width: 0 !important; min-height: 0 !important; height: auto !important; padding: 10px !important; }"
-          phone_choice="  .events-choice { padding: 7px !important; font-size: 9px !important; }"
-          phone_choice_new="  .events-choice,\n  .events-choice:last-child:nth-child(odd) { grid-column: auto !important; min-width: 0 !important; min-height: 0 !important; height: auto !important; padding: 7px !important; font-size: 9px !important; }"
-          if css.count(tablet_choice)!=1: raise SystemExit(f'tablet Event choice drift: {css.count(tablet_choice)}')
-          if css.count(phone_choice)!=1: raise SystemExit(f'phone Event choice drift: {css.count(phone_choice)}')
-          css=css.replace(tablet_choice,tablet_choice_new,1).replace(phone_choice,phone_choice_new,1)
-          css_path.write_text(css)
-
-          test_path=Path('tests/events.cjs')
-          test=test_path.read_text()
-          declaration="  const appSource=fs.readFileSync(path.join(game,'js/events-app.mjs'),'utf8');\n"
-          extra_decl="  const landscapeCss=fs.readFileSync(path.join(game,'css/landscape-ui-redesign.css'),'utf8');\n"
-          if extra_decl not in test:
-              if declaration not in test: raise SystemExit('Events declaration anchor missing')
-              test=test.replace(declaration,declaration+extra_decl,1)
-          anchor="  assert(!appSource.includes(\"addEventListener('rpchess:run-updated',syncRun)\"),'Events must not subscribe to broad run-updated for combat completion');\n"
-          assertions=(
-              "  const eventChoiceLandscapeBlocks=[...landscapeCss.matchAll(/\\.events-choices\\s*\\{([^}]*)\\}/g)].map(match=>match[1]);\n"
-              "  assert(eventChoiceLandscapeBlocks.length>=2,'landscape owner must define tablet and phone Event choice rails');\n"
-              "  assert(eventChoiceLandscapeBlocks.every(block=>!/repeat\\(2/.test(block)), 'Event landscape choice rails must never return to two columns');\n"
-              "  assert(eventChoiceLandscapeBlocks.filter(block=>block.includes('grid-template-columns: minmax(0')).length>=2,'tablet and phone Event landscape rails must both be one readable column');\n"
-          )
-          if assertions.strip() not in test:
-              if anchor not in test: raise SystemExit('Events assertion anchor missing')
-              test=test.replace(anchor,anchor+assertions,1)
-          test_path.write_text(test)
+          p=Path('game/css/landscape-ui-redesign.css')
+          t=p.read_text()
+          replacements={
+            "  .events-choices { min-height: 0 !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 7px !important; }":"  .events-choices { min-height: 0 !important; grid-template-columns: minmax(0, 1fr) !important; grid-auto-flow: row !important; gap: 7px !important; align-content: start !important; }",
+            "  .events-choices { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 5px !important; align-content: start !important; }":"  .events-choices { grid-template-columns: minmax(0,1fr) !important; grid-auto-flow: row !important; gap: 5px !important; align-content: start !important; }",
+            "  .events-choice { min-height: 0 !important; padding: 10px !important; }":"  .events-choice,\n  .events-choice:last-child:nth-child(odd) { grid-column: auto !important; min-width: 0 !important; min-height: 0 !important; height: auto !important; padding: 10px !important; }",
+            "  .events-choice { padding: 7px !important; font-size: 9px !important; }":"  .events-choice,\n  .events-choice:last-child:nth-child(odd) { grid-column: auto !important; min-width: 0 !important; min-height: 0 !important; height: auto !important; padding: 7px !important; font-size: 9px !important; }"
+          }
+          for old,new in replacements.items():
+              if t.count(old)!=1: raise SystemExit(f'candidate anchor drift: {old[:60]} => {t.count(old)}')
+              t=t.replace(old,new,1)
+          p.write_text(t)
           PY
-      - name: Run Event owner regression
-        run: node tests/events.cjs
-      - name: Run canonical local gate
-        run: npm run gate:local
+      - name: Build production dist
+        run: npm run puzzles:materialize && npm run build:materialized
       - name: Install Playwright and Chromium
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
-      - name: Narrow responsive proof to Event rail
+      - name: Instrument Event grid
         run: |
-          cp tests/responsive-viewport-browser.cjs /tmp/responsive-viewport-browser.cjs
           python - <<'PY'
           from pathlib import Path
           p=Path('tests/responsive-viewport-browser.cjs')
           t=p.read_text()
+          assertion="    assert.strictEqual(layout.columns, 1, `${label}: Event choices must use one readable column in the right rail`);"
+          diagnostic="""    console.log('EVENT_GRID_DIAG', JSON.stringify(await page.evaluate(() => {
+      const choices=document.querySelector('.events-choices');
+      const items=[...document.querySelectorAll('.events-choice')];
+      const cs=getComputedStyle(choices);
+      const rect=(node)=>{const r=node?.getBoundingClientRect();return r?{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}:null};
+      const rules=[];
+      const walk=(list,href,media=[])=>{for(const rule of Array.from(list||[])){if(rule.cssRules){const condition=rule.conditionText||rule.media?.mediaText||'';walk(rule.cssRules,href,condition?[...media,condition]:media);}else if(rule.selectorText&&(rule.selectorText.includes('.events-choices')||rule.selectorText.includes('.events-choice:last-child'))){let matches=false;try{matches=choices.matches(rule.selectorText)||items.some(item=>item.matches(rule.selectorText));}catch{};if(matches)rules.push({href,selector:rule.selectorText,media,cssText:rule.style.cssText});}}};
+      for(const sheet of Array.from(document.styleSheets)){try{walk(sheet.cssRules,sheet.href||'INLINE');}catch(error){rules.push({href:sheet.href||'INLINE',error:String(error)});}}
+      return {choices:rect(choices),template:cs.gridTemplateColumns,autoColumns:cs.gridAutoColumns,autoFlow:cs.gridAutoFlow,display:cs.display,items:items.map((item,index)=>{const s=getComputedStyle(item);return {index,rect:rect(item),column:s.gridColumn,columnStart:s.gridColumnStart,columnEnd:s.gridColumnEnd};}),rules,stylesheets:Array.from(document.styleSheets).map(sheet=>sheet.href||'INLINE')};
+    }))));
+"""+assertion
+          if assertion not in t: raise SystemExit('Event column assertion missing')
+          t=t.replace(assertion,diagnostic,1)
           marker='\n(async () => {'
           pos=t.rfind(marker)
-          if pos<0: raise SystemExit('responsive runner marker missing')
-          suffix=(
-              "\n(async () => {\n"
-              "  const browser = await chromium.launch({ headless: true });\n"
-              "  try {\n"
-              "    await auditEventLayout(browser, 1024, 768, 'ru');\n"
-              "    await auditEventLayout(browser, 844, 390, 'ru');\n"
-              "    console.log('Targeted RU Event landscape rail geometry: PASS');\n"
-              "  } finally { await browser.close(); }\n"
-              "})().catch((error) => { console.error(error.stack || error); process.exitCode = 1; });\n"
-          )
+          if pos<0: raise SystemExit('runner marker missing')
+          suffix="\n(async () => {\n  const browser=await chromium.launch({headless:true});\n  try{await auditEventLayout(browser,1024,768,'ru');}finally{await browser.close();}\n})().catch((error)=>{console.error(error.stack||error);process.exitCode=1;});\n"
           p.write_text(t[:pos]+suffix)
           PY
-      - name: Run targeted Event browser proof
+      - name: Run Event grid diagnostic
         env:
           RPCHESS_GATE_PREFIX: /RPChess
           RPCHESS_BROWSER_TEST: responsive-viewport-browser.cjs
-        run: npm run test:browser
-      - name: Restore full responsive contract
-        if: always()
-        run: |
-          if [ -f /tmp/responsive-viewport-browser.cjs ]; then
-            cp /tmp/responsive-viewport-browser.cjs tests/responsive-viewport-browser.cjs
-          fi
-      - name: Commit validated Event owner fix
-        if: success()
-        run: |
-          git config user.name "mobigametim-bit"
-          git config user.email "mobigametim@gmail.com"
-          git add game/css/landscape-ui-redesign.css tests/events.cjs
-          git diff --cached --check
-          git commit -m "fix: restore one-column Event landscape rail"
-          git push origin HEAD:audit/full-project-review-2026-09-08
-      - name: Run full responsive contract
-        if: success()
-        env:
-          RPCHESS_GATE_PREFIX: /RPChess
-          RPCHESS_BROWSER_TEST: responsive-viewport-browser.cjs
-        run: npm run test:browser
-      - name: Run all Chromium contracts
-        if: success()
-        env:
-          RPCHESS_GATE_PREFIX: /RPChess
         run: npm run test:browser
