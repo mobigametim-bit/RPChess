@@ -34,7 +34,6 @@ jobs:
       - name: Apply Event landscape owner fix
         run: |
           python - <<'PY'
-          import re
           from pathlib import Path
 
           css_path=Path('game/css/landscape-ui-redesign.css')
@@ -43,44 +42,35 @@ jobs:
           tablet_new="  .events-choices { min-height: 0 !important; grid-template-columns: minmax(0, 1fr) !important; grid-auto-flow: row !important; gap: 7px !important; align-content: start !important; }"
           phone_old="  .events-choices { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 5px !important; align-content: start !important; }"
           phone_new="  .events-choices { grid-template-columns: minmax(0,1fr) !important; grid-auto-flow: row !important; gap: 5px !important; align-content: start !important; }"
-          if css.count(tablet_old)!=1:
-              raise SystemExit(f'expected one tablet two-column Event rule, got {css.count(tablet_old)}')
-          if css.count(phone_old)!=1:
-              raise SystemExit(f'expected one phone two-column Event rule, got {css.count(phone_old)}')
+          if css.count(tablet_old)!=1: raise SystemExit(f'tablet Event rule drift: {css.count(tablet_old)}')
+          if css.count(phone_old)!=1: raise SystemExit(f'phone Event rule drift: {css.count(phone_old)}')
           css=css.replace(tablet_old,tablet_new,1).replace(phone_old,phone_new,1)
           tablet_choice="  .events-choice { min-height: 0 !important; padding: 10px !important; }"
-          tablet_choice_new=(
-              "  .events-choice,\n"
-              "  .events-choice:last-child:nth-child(odd) { grid-column: auto !important; min-width: 0 !important; min-height: 0 !important; height: auto !important; padding: 10px !important; }"
-          )
-          if css.count(tablet_choice)!=1:
-              raise SystemExit(f'expected one tablet Event choice rule, got {css.count(tablet_choice)}')
-          css=css.replace(tablet_choice,tablet_choice_new,1)
+          tablet_choice_new="  .events-choice,\n  .events-choice:last-child:nth-child(odd) { grid-column: auto !important; min-width: 0 !important; min-height: 0 !important; height: auto !important; padding: 10px !important; }"
           phone_choice="  .events-choice { padding: 7px !important; font-size: 9px !important; }"
           phone_choice_new="  .events-choice,\n  .events-choice:last-child:nth-child(odd) { grid-column: auto !important; min-width: 0 !important; min-height: 0 !important; height: auto !important; padding: 7px !important; font-size: 9px !important; }"
-          if css.count(phone_choice)!=1:
-              raise SystemExit(f'expected one phone Event choice rule, got {css.count(phone_choice)}')
-          css=css.replace(phone_choice,phone_choice_new,1)
+          if css.count(tablet_choice)!=1: raise SystemExit(f'tablet Event choice drift: {css.count(tablet_choice)}')
+          if css.count(phone_choice)!=1: raise SystemExit(f'phone Event choice drift: {css.count(phone_choice)}')
+          css=css.replace(tablet_choice,tablet_choice_new,1).replace(phone_choice,phone_choice_new,1)
           css_path.write_text(css)
 
           test_path=Path('tests/events.cjs')
           test=test_path.read_text()
           declaration="  const appSource=fs.readFileSync(path.join(game,'js/events-app.mjs'),'utf8');\n"
-          if "const landscapeCss=fs.readFileSync(path.join(game,'css/landscape-ui-redesign.css'),'utf8');" not in test:
-              if declaration not in test:
-                  raise SystemExit('Events regression declaration anchor missing')
-              test=test.replace(declaration,declaration+"  const landscapeCss=fs.readFileSync(path.join(game,'css/landscape-ui-redesign.css'),'utf8');\n",1)
+          extra_decl="  const landscapeCss=fs.readFileSync(path.join(game,'css/landscape-ui-redesign.css'),'utf8');\n"
+          if extra_decl not in test:
+              if declaration not in test: raise SystemExit('Events declaration anchor missing')
+              test=test.replace(declaration,declaration+extra_decl,1)
           anchor="  assert(!appSource.includes(\"addEventListener('rpchess:run-updated',syncRun)\"),'Events must not subscribe to broad run-updated for combat completion');\n"
-          assertion=(
+          assertions=(
               "  const eventChoiceLandscapeBlocks=[...landscapeCss.matchAll(/\\.events-choices\\s*\\{([^}]*)\\}/g)].map(match=>match[1]);\n"
               "  assert(eventChoiceLandscapeBlocks.length>=2,'landscape owner must define tablet and phone Event choice rails');\n"
               "  assert(eventChoiceLandscapeBlocks.every(block=>!block.includes('repeat(2'))),'Event landscape choice rails must never return to two columns');\n"
               "  assert(eventChoiceLandscapeBlocks.filter(block=>block.includes('grid-template-columns: minmax(0')).length>=2,'tablet and phone Event landscape rails must both be one readable column');\n"
           )
-          if assertion.strip() not in test:
-              if anchor not in test:
-                  raise SystemExit('Events regression assertion anchor missing')
-              test=test.replace(anchor,anchor+assertion,1)
+          if assertions.strip() not in test:
+              if anchor not in test: raise SystemExit('Events assertion anchor missing')
+              test=test.replace(anchor,anchor+assertions,1)
           test_path.write_text(test)
           PY
       - name: Run Event owner regression
@@ -100,8 +90,7 @@ jobs:
           t=p.read_text()
           marker='\n(async () => {'
           pos=t.rfind(marker)
-          if pos<0:
-              raise SystemExit('responsive runner marker missing')
+          if pos<0: raise SystemExit('responsive runner marker missing')
           suffix=(
               "\n(async () => {\n"
               "  const browser = await chromium.launch({ headless: true });\n"
@@ -126,7 +115,6 @@ jobs:
             cp /tmp/responsive-viewport-browser.cjs tests/responsive-viewport-browser.cjs
           fi
       - name: Commit validated Event owner fix
-        id: commit_source
         if: success()
         run: |
           git config user.name "mobigametim-bit"
@@ -135,83 +123,14 @@ jobs:
           git diff --cached --check
           git commit -m "fix: restore one-column Event landscape rail"
           git push origin HEAD:audit/full-project-review-2026-09-08
-          echo "source_head=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Run full responsive contract
-        id: full_responsive
-        if: steps.commit_source.outcome == 'success'
-        continue-on-error: true
+        if: success()
         env:
           RPCHESS_GATE_PREFIX: /RPChess
           RPCHESS_BROWSER_TEST: responsive-viewport-browser.cjs
-        run: |
-          set -o pipefail
-          npm run test:browser 2>&1 | tee /tmp/full-responsive.log
+        run: npm run test:browser
       - name: Run all Chromium contracts
-        id: all_chromium
-        if: steps.full_responsive.outcome == 'success'
-        continue-on-error: true
+        if: success()
         env:
           RPCHESS_GATE_PREFIX: /RPChess
-        run: |
-          set -o pipefail
-          npm run test:browser 2>&1 | tee /tmp/all-chromium.log
-      - name: Record remediation checkpoint
-        if: always() && steps.commit_source.outcome == 'success'
-        env:
-          SOURCE_HEAD: ${{ steps.commit_source.outputs.source_head }}
-          RESPONSIVE_OUTCOME: ${{ steps.full_responsive.outcome }}
-          CHROMIUM_OUTCOME: ${{ steps.all_chromium.outcome }}
-        run: |
-          python - <<'PY'
-          import os,re
-          from pathlib import Path
-          p=Path('docs/FULL_PROJECT_REVIEW_REPORT.md')
-          text=p.read_text()
-          source=os.environ['SOURCE_HEAD']
-          responsive=os.environ.get('RESPONSIVE_OUTCOME','skipped')
-          chromium=os.environ.get('CHROMIUM_OUTCOME','skipped')
-          text=re.sub(r"(\*\*Current remediation code head:\*\* `)[^`]+(`)",rf"\g<1>{source}\2",text,count=1)
-          failure='none'
-          log=Path('/tmp/full-responsive.log')
-          if log.exists():
-              lines=log.read_text(errors='replace').splitlines()
-              hits=[line.strip() for line in lines if 'AssertionError' in line or 'Error:' in line and 'failed with exit' not in line]
-              if hits: failure=hits[-1]
-          marker=f"### Remediation checkpoint — {source[:8]}"
-          if marker not in text:
-              block=f"""
-
-{marker}
-
-- `e42b5ad834defe31e9cd7a5f4d34e147aaa8ccdd` removed the remaining `landscape-ui-redesign.mjs` runtime CSS injection, moved compact-combat viewport ownership into `landscape-ui-redesign.css`, and passed `gate:local` plus targeted `1024x768 RU` combat geometry.
-- `{source}` restores the accepted one-column Event choice rail in the static landscape owner for tablet and phone landscape, with the existing `events.cjs` regression preventing a return to `repeat(2, ...)`.
-- Targeted Event proof: `1024x768 RU` + `844x390 RU` PASS.
-- Full responsive outcome after the Event fix: **{responsive.upper()}**.
-- Full all-Chromium outcome: **{chromium.upper()}**.
-- Latest responsive failure, if any: `{failure}`.
-- No assertion was weakened; `main`, Pages deployment policy and Cloudflare remain untouched.
-
-**Дальнейшие действия:**
-1. If full responsive is not green, fix the next reported owner-geometry defect and rerun the same matrix.
-2. Once responsive is green, require the complete Chromium set to pass on the same implementation lineage.
-3. Normalize stale `package-lock.json` metadata through npm only, then prove `npm ci`, dependency-security and `gate:local`.
-4. Finish the residual asset inventory and delete only evidence-backed orphans.
-5. Remove this one-off audit workflow after validation no longer needs it.
-"""
-              text+=block
-          p.write_text(text)
-          PY
-          git config user.name "mobigametim-bit"
-          git config user.email "mobigametim@gmail.com"
-          git add docs/FULL_PROJECT_REVIEW_REPORT.md
-          git diff --cached --check
-          git commit -m "docs: checkpoint Event landscape remediation"
-          git push origin HEAD:audit/full-project-review-2026-09-08
-      - name: Fail if browser validation is incomplete
-        if: always() && steps.commit_source.outcome == 'success'
-        env:
-          RESPONSIVE_OUTCOME: ${{ steps.full_responsive.outcome }}
-          CHROMIUM_OUTCOME: ${{ steps.all_chromium.outcome }}
-        run: |
-          test "$RESPONSIVE_OUTCOME" = "success"
-          test "$CHROMIUM_OUTCOME" = "success"
+        run: npm run test:browser
