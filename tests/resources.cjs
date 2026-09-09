@@ -98,10 +98,14 @@ class MemoryStorage {
 
   assert(travelSource.includes('applyTravelSupplyCost'), 'Travel Choice must use the canonical Supply-cost function');
   assert(travelSource.includes('supplyPaid'), 'committed route must persist the exact Supply payment');
-  assert(travelSource.includes('Стоимость пути'), 'route cards must disclose the travel cost before commitment');
+  assert(travelSource.includes("'travel.costStarvation'") && travelSource.includes("'travel.cost'"), 'route cards must disclose travel cost through owner localization keys');
   assert(appSource.includes('resourceRewards'), 'combat rewards must have one-time settlement bookkeeping');
   assert(appSource.includes("run.lastSkirmish?.playerColor || 'w'") && appSource.includes("run.lastBattle?.playerColor || 'w'"), 'reward settlement must use the actual side played in combat');
   assert(appSource.includes('dataset.resourceHud'), 'Resources HUD contract missing');
+  assert(appSource.includes("addEventListener('rpchess:combat-completed',syncCombatState)"), 'combat reward settlement must be driven by semantic combat completion');
+  assert(appSource.includes("addEventListener('rpchess:run-continue',syncCombatState)"), 'run recovery must settle any pending idempotent combat reward');
+  assert(appSource.includes("addEventListener('rpchess:run-updated',scheduleRender)"), 'Resources may retain one broad run-state projection only for coalesced HUD rendering');
+  assert(!appSource.includes("addEventListener('rpchess:run-updated',syncCombatState)"), 'broad run-updated must never trigger resource settlement/state mutation');
   assert(routeSource.includes("import './ux-consistency.mjs'"), 'shared resource/board presentation layer must load with the run route');
   assert(uxSource.includes("generated_assets/reward_gold.png"), 'gold amounts must use the existing gold icon asset');
   assert(fs.existsSync(suppliesIconPath), 'dedicated supplies icon asset must exist');
@@ -131,8 +135,8 @@ class MemoryStorage {
   assert(travelCoreSource.includes("type==='puzzle'?`СЛОЖНОСТЬ ★${stars}`"), 'Puzzle route cards must expose the adaptive power-derived star value');
   assert(uxSource.includes('playtest-fixes.css?v=20260831-1'), 'post-playtest visual corrections must be loaded by the shared UX layer');
   assert(travelSource.includes("combatGoldReward } from './resources-core.mjs'") && travelSource.includes("import { puzzleBaseGold } from './puzzles/puzzle-core.mjs'"), 'Travel reward preview must reuse canonical combat and Puzzle reward formulas directly');
-  assert(travelSource.includes('textContent=`Неделя ${week}`'), 'Travel heading must render the approved shortened Неделя N copy directly');
-  assert(uxSource.includes('function activeCombat()') && uxSource.includes("title:'Битва'") && uxSource.includes("title:'Стычка'"), 'combat summary heading must derive the actual encounter type from runtime battlePlan');
+  assert(travelSource.includes("t('travel.week',{week})"), 'Travel heading must render the approved Week copy through the owner localization key');
+  assert(uxSource.includes('function activeCombat()') && uxSource.includes("title:t('ux.combat.battle')") && uxSource.includes("title:t('ux.combat.skirmish')"), 'combat summary heading must derive encounter type from runtime state and owner localization');
   assert(!uxSource.includes('activeCombatPresentation') && !uxSource.includes('MutationObserver'), 'shared resource/board presentation must not keep click-state or a global subtree observer');
   assert(playtestCss.includes('.puzzle-source{display:none!important}'), 'Puzzle source attribution must be hidden from the gameplay panel');
   assert(playtestCss.includes('.battle-participants{display:none!important}'), 'duplicate named-participant list must be hidden from Battle preparation');
@@ -143,7 +147,7 @@ class MemoryStorage {
   assert(uxCss.includes('.puzzles-active .puzzle-difficulty span{display:none!important}') && uxCss.includes('calc(100vh - 225px)'), 'Puzzle layout must hide the redundant difficulty caption and cap the raised board to viewport height');
   for(const source of [css,uxCss,playtestCss]) assert(!source.includes('ui_panel_frame.png') && !source.includes('ui_panel_wide.png'), 'Resources UI must remain CSS-only and frameless');
 
-  console.log('Resources persistence, owner-level Supplies art, Balance Pass 2 rewards and semantic HUD lifecycle: PASS');
+  console.log('Resources persistence, owner-level Supplies art, Balance Pass 2 rewards, semantic combat settlement and render-only broad HUD projection: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;
