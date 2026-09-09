@@ -35,37 +35,40 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Align Events v5 hero lock regression
+      - name: Fix menu viewport geometry
         run: |
           python - <<'PY'
           from pathlib import Path
-          path = Path('tests/events-v5.cjs')
+          path = Path('game/css/ui-redesign-first-three.css')
           text = path.read_text()
-          old = "  assert(app.includes(\"state:'missing', locked:true, label:'🔒'\")&&app.includes('choice.heroLine'),'missing hero upper strip must stay lock-only while the hero line remains present');"
-          new = "  assert(app.includes(\"state:'missing', locked:true\")&&app.includes(\"if(heroState.state==='missing')return '🔒';\")&&app.includes('choice.heroLine'),'missing hero upper strip must preserve semantic missing state, render lock-only and keep the hero line present');"
+          old = "  min-height:min(780px,calc(100vh - 52px));"
+          new = "  min-height:min(780px,calc(100dvh - clamp(36px,5.2vw,84px)));"
           if text.count(old) != 1:
-              raise SystemExit(f'expected one stale Events v5 hero-lock assertion, got {text.count(old)}')
+              raise SystemExit(f'expected one stale menu height contract, got {text.count(old)}')
           path.write_text(text.replace(old, new, 1))
           PY
-
-      - name: Run targeted Events v5 contract
-        run: node tests/events-v5.cjs
-
-      - name: Commit validated Events v5 regression fix
-        run: |
-          git config user.name 'mobigametim-bit'
-          git config user.email 'mobigametim@gmail.com'
-          git add tests/events-v5.cjs
-          git commit -m 'test: align Events v5 hero lock contract'
-          git push origin HEAD:audit/full-project-review-2026-09-08
-
-      - name: Run canonical local gate
-        run: npm run gate:local
 
       - name: Install Playwright and Chromium
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
+
+      - name: Run targeted responsive contract
+        env:
+          RPCHESS_GATE_PREFIX: /RPChess
+          RPCHESS_BROWSER_TEST: responsive-viewport-browser.cjs
+        run: npm run test:browser
+
+      - name: Commit validated menu geometry fix
+        run: |
+          git config user.name 'mobigametim-bit'
+          git config user.email 'mobigametim@gmail.com'
+          git add game/css/ui-redesign-first-three.css
+          git commit -m 'fix: keep main menu within viewport'
+          git push origin HEAD:audit/full-project-review-2026-09-08
+
+      - name: Run canonical local gate
+        run: npm run gate:local
 
       - name: Run all Chromium contracts
         env:
