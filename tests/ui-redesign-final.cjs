@@ -66,7 +66,7 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   const paymentIndex=travelApp.indexOf('applyTravelSupplyCost(current)');
   assert(gateIndex>=0&&paymentIndex>gateIndex,'Skirmish eligibility must be rechecked before Travel spends Supplies');
   assert(travelApp.includes("import { TRAVEL_SUPPLY_COST, applyTravelSupplyCost, combatGoldReward } from './resources-core.mjs'")&&travelApp.includes("import { puzzleBaseGold } from './puzzles/puzzle-core.mjs'"),'Travel reward/cost presentation must use canonical economy formulas directly');
-  assert(travelApp.includes("choice.type==='puzzle'?'Тренировка':choice.label"),'Training label must be rendered semantically by Travel');
+  assert(travelApp.includes('t(`travel.type.${choice.type}`)'),'Training and other route labels must be rendered semantically by Travel localization keys');
   assert(travelApp.includes('data-travel-inline-gold')&&travelApp.includes('data-travel-inline-supplies')&&travelApp.includes('renderResources()'),'Travel command resources must have one canonical screen renderer');
   assert(travelCoreSource.includes('canSelectTravelChoice')&&travelCoreSource.includes('skirmish_requires_companion'),'Skirmish availability rule must live in Travel core');
 
@@ -97,5 +97,5 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   assert(pkg.scripts['test:materialized'].includes('tests/aura-asset-runtime.cjs'),'materialized test set must verify combat aura source assets');
   assert(!pkg.scripts['test:materialized'].includes('travel-choice-ui.cjs')&&!pkg.scripts['test:materialized'].includes('compact-ui-pass4.cjs'),'materialized test set must not require superseded UI tests');
 
-  console.log('Consolidated UI redesign contracts, owner-loaded Battle compact CSS, side-colored aura presentation, canonical Travel gating and lifecycle presentation: PASS');
+  console.log('Consolidated UI redesign contracts, owner-loaded Battle compact CSS, side-colored aura presentation, keyed Travel gating and lifecycle presentation: PASS');
 })().catch((error)=>{console.error(error.stack||error);process.exitCode=1});
