@@ -48,6 +48,9 @@ jobs:
           path.write_text(text.replace(old, new, 1))
           PY
 
+      - name: Run canonical local gate
+        run: npm run gate:local
+
       - name: Install Playwright and Chromium
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
@@ -66,9 +69,6 @@ jobs:
           git add game/css/ui-redesign-first-three.css
           git commit -m 'fix: keep main menu within viewport'
           git push origin HEAD:audit/full-project-review-2026-09-08
-
-      - name: Run canonical local gate
-        run: npm run gate:local
 
       - name: Run all Chromium contracts
         env:
