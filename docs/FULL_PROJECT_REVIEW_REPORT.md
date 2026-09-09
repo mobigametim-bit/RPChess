@@ -3,7 +3,7 @@
 **Audit status:** REMEDIATION IN PROGRESS  
 **Frozen production baseline:** `main@e92831ca5d6e0c14fb2d919e410180ce77b97ce6`  
 **Audit/remediation branch:** `audit/full-project-review-2026-09-08`  
-**Current remediation code head:** `da8e0a56e136d450bef633d52682b2274c0ee2ee`  
+**Current remediation code head:** `8768d55ce285ba65617e270e16a9ccc0a55ee856`  
 **Started:** 2026-09-08
 
 This document is the source of truth for remediation. `main` remains untouched. Cloudflare remains manual-only. Do not restore compatibility patch layers, post-render DOM rewrites, runtime DOM reparenting, whole-document UI workarounds or broad state-mutating event consumers to conceal ownership problems.
@@ -35,14 +35,14 @@ Status meanings: **DONE — verified**, **DONE — verification pending**, **IN 
 | REV-004 whole-document legacy localization | **DONE — verification pending** | All identified active dynamic surfaces localize at owner render time. Global localization `MutationObserver`, TreeWalker scan, DOM source WeakMaps and `localizeLegacyDocument` deleted in `fc74ac8b`. Explicit `translateLegacy(...)` remains only for authored/content values. |
 | REV-005 obsolete source controls / hidden DOM | **DONE — verification pending** | Obsolete Skirmish/Battle/Puzzle/Event shortcuts and hidden controls deleted at source; generic cleanup removed. |
 | REV-006 runtime DOM reparenting | **DONE — verification pending** | Battle Start, Classic Journal and Skirmish actionbar have stable owner/source slots. |
-| REV-007 canonical Pages gate covers smoke subset | **OPEN** | Pages is safe (`main` push only). Full 17-contract milestone/release gate remains manual because connector exposes no `workflow_dispatch`. |
+| REV-007 canonical Pages gate covers smoke subset | **DONE — verified** | The Pages/PR workflow intentionally keeps the fast smoke subset. Permanent `.github/workflows/full-project-review.yml` is `workflow_dispatch`-only and runs `gate:local` plus all 17 Chromium contracts for milestone/release validation, matching the accepted minimal-testing policy. |
 | REV-008 stale page-scroll contract | **DONE — verified** | Geometry tests enforce one-screen behavior instead of scrolling. |
 | REV-009 Supplies/Market image retargeting | **DONE — verified** | True owners render resource imagery; global scanner deleted. |
 | REV-010 fragmented runtime hotfix CSS | **DONE — verification pending** | Review/polish chain, presentation bootstrap and route CSS-in-JS deleted; compact/aftermath rules are owner stylesheets. |
 | REV-011 Supplies optimizer increases asset | **DONE — verified** | Optimizer keeps smaller source bytes. |
 | REV-012 stale CURRENT_STATE SHA | **OPEN** | Deferred to final accepted remediation SHA. |
 | REV-013 browser helper lifecycle drift | **DONE — verified** | Shared helper waits for visible scenes; older full milestone passed 17/17. |
-| REV-014 responsive gate incomplete | **DONE — verification pending** | Reusable geometry assertions + RU/EN/boundary matrices cover Battle aftermath, Starvation, Puzzle/Training, Classic setup and Endless summary (`e37f3771`). Current full Chromium execution pending. |
+| REV-014 responsive gate incomplete | **DONE — verification pending** | Reusable geometry assertions + RU/EN/boundary matrices cover Battle aftermath, Starvation, Puzzle/Training, Classic setup and Endless summary (`e37f3771`). Current full responsive execution is still being driven to PASS. |
 | REV-015 persistence migration policy | **DONE — verified** | Unsupported schema resets safely; no old-save preservation required. |
 | REV-016 repeated puzzle materialization/build inputs | **DONE — verified** | Puzzle materialization deduplicated; duplicate build inputs removed. |
 | REV-017 generic Wrangler deploy path | **DONE — docs pending** | Generic deploy removed; Cloudflare explicit/manual; GitHub Pages canonical. |
@@ -105,26 +105,29 @@ Completed owner migrations:
 ## Dependency / tooling security
 
 - Reachability review proved `adm-zip` was a dead direct dev dependency; Stockfish downloads integrity-pinned JS/WASM directly.
-- `adm-zip` removed from `package.json` in `f04df06a`; old lock metadata remains pending reproducible regeneration.
-- Permanent dependency-security contract `d83c27c9`, wired `c88dfac6`.
+- `adm-zip` removed from `package.json` in `f04df06a` and stale lock metadata was reproducibly normalized in `e516c24b` without hand-editing integrity data.
+- Permanent dependency-security contract `d83c27c9`, wired `c88dfac6`; current exact-checkout `npm ci` and `gate:local` execute it successfully.
 - Contract records current tooling floors: direct esbuild `0.25.8` outside reviewed `>=0.27.3 <0.28.1` range; Wrangler nested esbuild `0.28.1`; `undici 7.28.0`; `ws 8.21.0`; `path-to-regexp 6.3.0`.
 
 ## Asset reachability cleanup
 
-- `scripts/asset-orphan-inventory.cjs` added in `a497089f`; `npm run assets:orphans:report` exposed in `d7176767`. It classifies production media as explicit reference, known dynamic family, or candidate. It intentionally protects dynamic race-piece, race-board, Event-background and generated core-piece families from literal-only false positives. The inventory command is not yet in `gate:local` because its first full execution on an exact audit checkout is still pending.
+- `scripts/asset-orphan-inventory.cjs` added in `a497089f`; `npm run assets:orphans:report` exposed in `d7176767`. It has executed on an exact audit checkout. Its automatic candidate set is candidate-only: dynamic race-piece, race-board, Event-background and generated core-piece families remain protected, and ambiguous/planned source assets are not deleted from a literal-reference result alone.
+- Production packaging now uses an explicit runtime allowlist/collectors instead of copying the entire source asset trees. `tests/runtime-assets-build.cjs` proves selected source/reserve assets stay out of `dist` while canonical runtime assets remain present.
 - Music is explicitly owned by `reboot-audio.mjs`: exactly four `echoes_iron_throne_0N.mp3` tracks. SFX currently contains only `win_fanfare.mp3`, explicitly owned by cross-scene victory presentation.
 - Six `generated_assets/commander_*.png` files were proven unreachable after Vertical Slice/approved-shell removal. Historical owners were `approved-shell-data.mjs`, `commander-selection-final.mjs` and Vertical Slice presentation; those runtime owners are absent on the audit branch. Removed in `905c9daa` → `7c3ca286`. Bytes removed: **857,650**.
 - `ui_panel_frame.png` and `ui_panel_wide.png` were proven obsolete by the current frameless production invariant: active owner CSS is verifier-guarded against both files, and legacy `game/style.css` was deleted with Vertical Slice. Removed in `e1de42f1` + `dfd6651f`. Bytes removed: **91,263**.
 - Five legacy map-node assets (`node_bargain`, `node_boss`, `node_event`, `node_repair`, `node_vault`) were proven unreachable. The legacy `approved-shell-data.mjs`/Vertical Slice route map owned boss/event/repair/vault; `node_bargain` had no production owner even on the frozen baseline. Current Travel keeps the five Reboot route icons `node_battle`, `node_elite`, `node_shop`, `node_story`, `node_training`. Removed in `1fecc0cc` → `9c9f0a66`. Bytes removed: **194,295**.
 - Four legacy reward assets (`reward_artifact`, `reward_experience`, `reward_meta`, `reward_upgrade`) remain proven unreachable and removed. A later exact-checkout review caught that `reward_heal.png` and `reward_recruit.png` are current Settlement service art; both were restored from the frozen baseline, their owner CSS paths were corrected, and the existing Settlement regression now protects their presence. Net reward-family reduction: **122,305 bytes**.
 - Eight legacy scene backgrounds (`scene_achievements`, `scene_bargain`, `scene_codex`, `scene_event`, `scene_repair`, `scene_settings`, `scene_training`, `scene_vault`) were proven owned only by deleted approved-shell/Vertical Slice presentation or removed legacy Event fallback. Current Reboot-owned `scene_training_ui`, `scene_victory`, Campaign/Battle/Shop/Reward/Defeat backgrounds are preserved. Removed in `879a0f27` → `d1384110`. Bytes removed: **1,123,762**.
-- Proven asset reduction after restoring the two active Settlement service assets: **2,389,275 bytes (~2.28 MiB)** across **25 files**. No active race/piece/board/Event-background dynamic family was deleted.
+- Proven source cleanup after restoring the two active Settlement service assets: **2,389,275 bytes (~2.28 MiB)** across **25 files**. No active race/piece/board/Event-background dynamic family was deleted.
 
 ## Responsive truth
 
 - Geometry helper rejects page overflow, nonzero window scroll and frame/viewport escapes.
 - Portrait stale setup fixed `71c3f39b`; real 3px portrait overflow fixed `480ec6f3`; Language selector fixed `24e7414d`.
-- Responsive suite explicitly covers weak surfaces in `e37f3771`. Exact Chromium validation later exposed a real `1366×768` RU main-menu overflow; root cause was a fixed `52px` height subtraction that did not match responsive outer padding. Owner CSS fix `25fde16b` now subtracts the actual responsive vertical padding. The same strengthened suite then exposed a separate `844×390` RU Chronicle vertical escape. Root cause was the inherited `min-height:560px` on the menu main column inside the fixed-height landscape grid; `983e8907` resets that owner min-height to zero. A targeted 844×390 RU menu + Chronicle browser proof passed before this commit.
+- Responsive suite explicitly covers weak surfaces in `e37f3771`. Exact Chromium validation later exposed a real `1366×768` RU main-menu overflow; root cause was a fixed `52px` height subtraction that did not match responsive outer padding. Owner CSS fix `25fde16b` now subtracts the actual responsive vertical padding.
+- The same strengthened suite exposed an `844×390` RU Chronicle vertical escape. `983e8907` resets the inherited menu-column `min-height`; targeted menu + Chronicle proof passed.
+- Run `34391754411` then exposed an `844×390 RU` Skirmish aftermath CTA at `bottom=398.59` for a `390px` viewport. `8c78f6d8` reduced the owner panel padding and run `34395341890` moved the CTA to `bottom=393.59`, proving the same owner defect remained by only ~3.6px. `8768d55c` tightens only that compact owner padding for the next exact-checkout proof.
 
 ## Legacy / build / deployment
 
@@ -132,6 +135,7 @@ Completed owner migrations:
 - Production build explicitly packages owner localization and semantic lifecycle bridge.
 - Unsupported save schema resets safely.
 - GitHub Pages audit auto-deploy is disabled; `main` remains canonical.
+- Pages/PR uses a fast mandatory smoke browser subset; `.github/workflows/full-project-review.yml` is the permanent manual milestone/release 17-contract gate.
 - Cloudflare has not been deployed during remediation.
 
 ---
@@ -147,19 +151,20 @@ Completed owner migrations:
 - One-off full-review trigger `0931aebb` produced no check run through connector; restored manual-only `51464246`.
 - Localization completion (`f37994ac` → `30755415`): implementation/static contracts complete; no fresh full gate claimed.
 - Semantic lifecycle (`6aaa8422` → `9f08c276`) + browser instrumentation `a447df1d`: implementation/contracts complete. Current exact-checkout `gate:local` executes the lifecycle Node contract successfully; browser loop verification remains part of the full Chromium gate.
-- Dependency security (`f04df06a` → `c88dfac6`): direct vulnerable ZIP install edge removed; dependency-security contract now passes in exact-checkout `gate:local`. Lock metadata normalization remains pending.
-- Asset inventory tooling (`a497089f`, `d7176767`) has now executed on an exact audit checkout. Its broad automatic candidate set includes manifest-driven production assets and is therefore **candidate-only**, never a bulk-delete list. Manual ownership proof remains mandatory. The corrected proven cleanup is 25 files / 2,389,275 bytes after restoring active Settlement heal/recruit art.
-- Exact-checkout `gate:local` is **PASS** on the current remediation lineage, including localization, security, domain tests, content validation, production build and runtime asset-cache parity. Full Chromium is **not yet PASS**. Run `34371249143` progressed past the fixed menu and exposed the `844×390` RU Chronicle overflow; the targeted Chronicle proof passed for `983e8907`. Full responsive/all-browser verification remains pending after this checkpoint.
+- Dependency security (`f04df06a` → `e516c24b`): direct vulnerable ZIP install edge removed, lock metadata normalized through npm, and exact-checkout `npm ci` + dependency-security + `gate:local` PASS.
+- Asset inventory tooling (`a497089f`, `d7176767`) executed on an exact audit checkout. Its broad automatic candidate set includes manifest-driven/source-reserve assets and is never a bulk-delete list. Corrected proven cleanup remains 25 files / 2,389,275 bytes after restoring active Settlement heal/recruit art.
+- `3431c48c` / run `34391754411`: `gate:local` PASS; responsive FAIL at `844×390 RU` Skirmish aftermath CTA (`bottom=398.59`, viewport 390); all-browser step skipped.
+- `8c78f6d8` / run `34395341890`: `gate:local` PASS; responsive progressed to the same `844×390 RU` Skirmish aftermath CTA at `bottom=393.59`; all-browser step skipped. This iteration reduced the measured overflow by 5px but did not claim a browser PASS.
 
 ---
 
 # Open verification / cleanup items
 
-1. Rerun the full strengthened responsive RU/EN/boundary matrix after the validated Chronicle owner fix; address only the next evidence-backed geometry failure, if any.
-2. Finish manual proof for remaining `generated_assets` UI/logo/special-unit candidates; preserve anything ambiguous or owner-backed.
-3. Normalize `package-lock.json` reproducibly so stale `adm-zip` metadata disappears without hand-editing integrity data.
-4. Rerun full current `gate:local` + all Chromium contracts after the final geometry/asset/lock cleanup.
-5. Remove the temporary one-off validation workflow, then finalize `CURRENT_STATE.md`, deployment/history docs and Notion synchronization on the accepted SHA.
+1. Validate `8768d55c` through the complete strengthened responsive RU/EN/boundary matrix; address only the next evidence-backed geometry failure, if any.
+2. If responsive is green, run the complete Chromium contract set on the same code lineage.
+3. Finish manual classification of the remaining generated UI/logo/special-unit candidates; preserve ambiguous/planned/source-reserve assets and delete only positively unreachable source files.
+4. Remove temporary/duplicated validation workflows after final browser evidence while retaining Pages plus the permanent manual 17-contract milestone/release gate.
+5. Finalize `CURRENT_STATE.md`, deployment/history docs, numbered docs and Notion on the accepted candidate SHA.
 
 ---
 
@@ -177,24 +182,24 @@ Completed owner migrations:
 7. **DONE — verification pending:** 12-loop Chromium listener/render/node stability proof committed.
 
 ## Phase C — validation/tooling
-8. **DONE — verification pending:** dead direct `adm-zip` dependency removed and dependency-security contract added.
-9. **IN PROGRESS:** asset reachability inventory. Reproducible tooling has executed on an exact checkout; 25 positively unreachable files remain removed (**2.28 MiB net**) after restoring two active Settlement service assets.
-10. Normalize lock metadata reproducibly; do not hand-edit integrity graph.
-11. Run targeted regressions and then `gate:local` + all 17 Chromium contracts when executable.
+8. **DONE — verified:** dead direct `adm-zip` dependency removed, lock metadata normalized reproducibly and dependency-security passes under `npm ci`/`gate:local`.
+9. **IN PROGRESS:** asset reachability cleanup. 25 positively unreachable files remain removed (**2.28 MiB net**); build allowlisting now prevents ambiguous source/reserve candidates from shipping.
+10. **DONE — verified:** lock metadata normalization completed in `e516c24b` without hand-editing integrity data.
+11. **IN PROGRESS:** strengthened responsive gate is being driven to PASS before the final 17-contract Chromium run.
 
 ## Phase D — final integration/docs
 12. Fix only evidence-backed regressions from final gate.
-13. Update `docs/CURRENT_STATE.md` to final accepted SHA.
+13. Update `docs/CURRENT_STATE.md` to final accepted candidate SHA while keeping production `main` status explicit.
 14. Mark historical docs clearly and synchronize architecture/UI/persistence/deployment into Notion.
 15. Do not merge `main` or deploy Cloudflare without explicit owner instruction.
 
 ## Next actions
 
-1. Run the full responsive RU/EN/boundary coverage after the targeted Chronicle PASS; fix only any next evidence-backed defect.
-2. Finish manual reachability proof for the remaining `generated_assets` candidates; `ui_button_primary.png`, active route/reward art and all dynamic families stay protected.
-3. Normalize `package-lock.json` reproducibly and prove `npm ci` + dependency-security after removing stale `adm-zip` metadata.
-4. Run the final `gate:local` + complete Chromium gate on the resulting SHA and update verification-pending findings only from actual results.
-5. Remove `.github/workflows/audit-validation-one-off.yml`, then finish `CURRENT_STATE.md`, deployment/history docs/Notion synchronization and final release-readiness report.
+1. Run the complete strengthened responsive matrix on `8768d55c`; fix only the next measured owner defect if one remains.
+2. Run all Chromium contracts once responsive is green and close verification-pending REV items only from actual evidence.
+3. Complete the conservative asset classification; keep all ambiguous/planned/source-reserve assets outside production `dist` rather than deleting them without ownership proof.
+4. Remove temporary audit workflows and duplicate manual CI while keeping `pages.yml` plus `full-project-review.yml` as the permanent fast/complete gate pair.
+5. Synchronize `CURRENT_STATE.md`, deployment/history/numbered docs and Notion, then issue the final release-readiness/remediation report.
 6. Keep `main` frozen and Cloudflare manual-only until explicit owner direction.
 
 Every subsequent remediation checkpoint must update this report and end with a concrete numbered **Next actions** list.
@@ -215,3 +220,20 @@ Every subsequent remediation checkpoint must update this report and end with a c
 3. Normalize `package-lock.json` reproducibly through npm and prove `npm ci` plus dependency security.
 4. Finish evidence-backed asset inventory and keep ambiguous/planned assets.
 5. Remove temporary audit helpers/workflows, then finalize `CURRENT_STATE.md` and historical/deployment documentation.
+
+### Skirmish aftermath checkpoint — 8768d55c
+
+- Run `34391754411` on `3431c48c` proved the first compact Skirmish aftermath failure at `844×390 RU`: CTA `bottom=398.59` in a 390px viewport.
+- `8c78f6d876e72ef82981c3bf39f72991b9c4b204` reduced only the owner panel vertical padding. Exact-checkout `gate:local` remained **PASS**.
+- Run `34395341890` proved the same CTA moved to `bottom=393.59`; the measured overflow shrank by 5px, but responsive remained **FAIL**, so no browser verification status was upgraded.
+- `8768d55ce285ba65617e270e16a9ccc0a55ee856` reduces the compact owner vertical padding from 4px to 1px. No runtime patch layer or cross-screen CSS was added.
+- REV-007 is now **DONE — verified** from repository workflow evidence: Pages stays the fast mandatory smoke gate and the existing manual `full-project-review.yml` runs all 17 Chromium contracts.
+- Dependency/lock cleanup is also **DONE — verified**: current `npm ci`, dependency-security and `gate:local` pass after the `e516c24b` lock normalization.
+- `main` and Cloudflare remain untouched.
+
+**Дальнейшие действия:**
+1. Validate `8768d55c` with the complete responsive RU/EN/boundary matrix.
+2. If green, run the complete Chromium contract set on the same lineage; otherwise fix only the next exact measured geometry defect.
+3. Complete conservative asset classification and preserve all ambiguous/planned/source-reserve files.
+4. Remove temporary/duplicate audit workflows after final browser evidence.
+5. Synchronize `CURRENT_STATE.md`, remaining GitHub docs and Notion on the final accepted candidate SHA.
