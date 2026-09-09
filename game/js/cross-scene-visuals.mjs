@@ -224,8 +224,12 @@ installStyles();
 queueMicrotask(refresh);
 addEventListener('rpchess:travel-rendered', decorateTravelCards);
 addEventListener('rpchess:travel-open', () => queueMicrotask(decorateTravelCards));
-addEventListener('rpchess:run-updated', () => queueMicrotask(refresh));
+addEventListener('rpchess:combat-completed', () => queueMicrotask(syncOutcomeScreens));
 for (const name of ['rpchess:event-open','rpchess:puzzle-open','rpchess:run-continue']) addEventListener(name, () => queueMicrotask(refresh));
+document.addEventListener('click', (event) => {
+  const target = event.target instanceof Element ? event.target : null;
+  if (target?.closest('[data-event-choice]')) queueMicrotask(decorateEventOutcomeNotes);
+}, true);
 addEventListener('rpchess:skirmish-open', (event) => setCombatBackdrop(event?.detail?.choice));
 addEventListener('rpchess:battle-open', (event) => {
   const choice = event?.detail?.choice || null;
