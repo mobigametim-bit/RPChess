@@ -8,7 +8,6 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(key){return this.ma
   const buildSource=fs.readFileSync(path.join(game,'..','scripts/build.cjs'),'utf8');
   const battleCompactCss=fs.readFileSync(path.join(game,'css/battle-compact.css'),'utf8');
   const redesignSource=fs.readFileSync(path.join(game,'js/ui-redesign-final.mjs'),'utf8');
-  const polish=fs.readFileSync(path.join(game,'js/post-pages-ui-polish.mjs'),'utf8');
   assert(battleAppSource.includes('data-battle-continue>Продолжить путь</button>'),'Battle aftermath CTA must say Продолжить путь');
   assert(battleAppSource.includes("function leaveAftermath(){audio()?.click?.();resetBattleTracking();globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open'"),'Battle aftermath must route directly to Travel Choice');
   assert(battleRouteSource.includes("import './battle-mercenaries.mjs'"),'Battle route must load Mercenaries economy runtime');
@@ -20,9 +19,15 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(key){return this.ma
   assert(battleCompactCss.includes('width:14px!important')&&battleCompactCss.includes('flex-basis:14px!important'),'Battle phone mercenary Gold icon must preserve the accepted compact size');
   assert(battleCompactCss.includes('.battle-army > .battle-start'),'Battle compact CSS must style the owner-rendered Start CTA directly');
   assert(!battleCompactCss.includes('.battle-actionbar'),'Battle compact CSS must not retain the removed legacy actionbar');
+  assert(battleCompactCss.includes('body.battle-active.compact-aftermath-active .battle-aftermath')&&battleCompactCss.includes('body.battle-active.compact-aftermath-active .battle-aftermath-shell'),'Battle owner compact CSS must own aftermath viewport containment');
+  assert(battleCompactCss.includes('.battle-aftermath-columns > section[hidden]'),'Battle owner compact CSS must preserve semantic hidden aftermath sections');
   assert(!battleRouteSource.includes('data-landscape-battle-prep-viewport-fix'),'Battle route must not inject Battle Prep presentation CSS');
   assert(!battleRouteSource.includes('battle-prep-compact-active'),'Battle route visibility observer must not own Battle Prep state');
-  assert(!polish.includes('body.battle-prep-compact-active'),'post-pages polish must not retain Battle Prep presentation ownership');
+  assert(!battleRouteSource.includes('data-landscape-aftermath-viewport-fix')&&!battleRouteSource.includes("document.createElement('style')"),'Battle route must not inject aftermath or other presentation CSS');
+  const routeExecutable=battleRouteSource.split('\n').map(line=>line.trim()).filter(line=>line&&!line.startsWith('//'));
+  assert(routeExecutable.every(line=>line.startsWith('import ')),'Battle route must remain imports-only apart from comments');
+  assert(!fs.existsSync(path.join(game,'js/post-pages-ui-polish.mjs')),'retired post-pages presentation shim must stay deleted');
+  assert(!fs.existsSync(path.join(game,'js/presentation-bootstrap.mjs')),'retired presentation bootstrap must stay deleted');
   assert(!fs.existsSync(path.join(game,'js/content/post-pages-ui-polish-constraints.mjs')),'superseded constraints compatibility module must stay deleted');
   assert(!fs.existsSync(path.join(game,'js/content/post-pages-ui-review2.mjs')),'superseded review2 compatibility module must stay deleted');
   assert(battleAppSource.includes('data-battle-participants></div>\n          <button class="reboot-button reboot-button--primary battle-start" type="button" data-battle-start>Начать битву</button>'),'Battle owner must render Start CTA directly after the participants slot');
@@ -64,5 +69,5 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(key){return this.ma
   const debtAfterBattle={...repeated.run,battleCount:1,roster:repeated.run.roster.map(e=>e.id==='hero.mara_chain'?{...e,status:'wounded'}:e),lastBattle:{result:'checkmate',winner:'w'}};const resolved=mercenaries.resolveBattleMercenaryDebt(debtAfterBattle);assert.strictEqual(resolved.resolved,true);assert.strictEqual(resolved.casualty.id,'hero.mara_chain','Wounded named non-King must die before any healthy hero');assert.strictEqual(resolved.run.roster.find(e=>e.id==='hero.mara_chain').status,'dead');assert.strictEqual(resolved.run.roster.find(e=>e.isRunKing).status,'healthy');assert.strictEqual(resolved.run.battleMercenaryContract,null);assert.strictEqual(resolved.run.lastBattle.mercenaryPayment.totalCost,26);
   const paidFinished=mercenaries.resolveBattleMercenaryDebt({...paid.run,battleCount:1,lastBattle:{result:'stalemate',winner:null}});assert.strictEqual(paidFinished.resolved,true);assert.strictEqual(paidFinished.casualty,null);assert.strictEqual(paidFinished.run.battleMercenaryContract,null);
   const ended=mercenaries.resolveBattleMercenaryDebt({...short.run,battleCount:1,ended:true,endReason:'king-death',lastBattle:{result:'checkmate',winner:'b'}});assert.strictEqual(ended.resolved,true);assert.strictEqual(ended.casualty,null,'Ended run must not receive an extra Mercenary casualty');assert.strictEqual(ended.run.roster.some(e=>!e.isRunKing&&e.status==='dead'),false);
-  console.log('Battle standard army, owner-styled compact prep and stable Start CTA, solo-King consequence, healthy-reserve Mercenary pricing, economy/debt and 12-star Black-side: PASS');
+  console.log('Battle standard army, owner-styled compact prep/aftermath and stable Start CTA, imports-only route, solo-King consequence, healthy-reserve Mercenary pricing, economy/debt and 12-star Black-side: PASS');
 })().catch(error=>{console.error(error.stack||error);process.exitCode=1});
