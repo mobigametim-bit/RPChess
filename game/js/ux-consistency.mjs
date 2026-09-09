@@ -377,9 +377,10 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 else scheduleRefresh();
 
 for (const name of [
-  'rpchess:run-updated','rpchess:resources-updated','rpchess:power-updated','rpchess:run-continue',
+  'rpchess:resources-updated','rpchess:power-updated','rpchess:run-continue',
   'rpchess:travel-open','rpchess:skirmish-open','rpchess:battle-open','rpchess:puzzle-open',
-  'rpchess:event-open','rpchess:settlement-open','rpchess:starvation-open','rpchess:language-changed'
+  'rpchess:event-open','rpchess:settlement-open','rpchess:starvation-open','rpchess:language-changed',
+  'rpchess:combat-completed','rpchess:puzzle-resolved'
 ]) addEventListener(name, () => queueMicrotask(scheduleRefresh));
 
 document.addEventListener('click', (event) => {
