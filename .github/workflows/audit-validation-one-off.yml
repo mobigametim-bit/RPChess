@@ -51,7 +51,7 @@ jobs:
           if js.count('ensureBoardEdgeStyle();')!=1:
               raise SystemExit('expected one ensureBoardEdgeStyle call')
           js=js.replace('ensureBoardEdgeStyle();\n','',1)
-          if any(token in js for token in ['BOARD_EDGE_STYLE_MARKER','data-landscape-board-edge-style','style.textContent = `']):
+          if any(token in js for token in ['BOARD_EDGE_STYLE_MARKER','data-landscape-board-edge-style','style.textContent']):
               raise SystemExit('landscape runtime CSS injection residue remains')
           js_path.write_text(js)
 
@@ -68,7 +68,10 @@ jobs:
           if "const landscapeUi=read('game/js/landscape-ui-redesign.mjs')" not in test:
               if anchor not in test: raise SystemExit('ui regression declaration anchor missing')
               test=test.replace(anchor,anchor+"  const landscapeUi=read('game/js/landscape-ui-redesign.mjs');\n  const landscapeCss=read('game/css/landscape-ui-redesign.css');\n",1)
-          assertion="  assert(!landscapeUi.includes('BOARD_EDGE_STYLE_MARKER')&&!landscapeUi.includes('data-landscape-board-edge-style')&&!landscapeUi.includes('createElement(\'style\')'),'landscape presentation must be stylesheet-owned and must not inject runtime CSS');\n  assert(landscapeCss.includes(\"html[data-landscape-ui='1'] .classic-shell\")&&landscapeCss.includes('grid-template-columns:calc(100vw - 100dvh - 4px) 100dvh!important')&&landscapeCss.includes('column-gap:4px!important'),'landscape owner stylesheet must keep the fixed 100dvh board separated from its information rail');\n"
+          assertion=(
+              "  assert(!landscapeUi.includes('BOARD_EDGE_STYLE_MARKER')&&!landscapeUi.includes('data-landscape-board-edge-style')&&!landscapeUi.includes('style.textContent'),'landscape presentation must be stylesheet-owned and must not inject runtime CSS');\n"
+              "  assert(landscapeCss.includes(\"html[data-landscape-ui='1'] .classic-shell\")&&landscapeCss.includes('grid-template-columns:calc(100vw - 100dvh - 4px) 100dvh!important')&&landscapeCss.includes('column-gap:4px!important'),'landscape owner stylesheet must keep the fixed 100dvh board separated from its information rail');\n"
+          )
           insert_after="  assert(!finalUi.includes('MutationObserver')&&!finalUi.includes('LIVE_OVERRIDE_CSS'),'final redesign module must not rely on global observers or live injected CSS');\n"
           if assertion.strip() not in test:
               if insert_after not in test: raise SystemExit('ui regression assertion anchor missing')
@@ -117,7 +120,10 @@ jobs:
 
       - name: Restore full responsive contract
         if: always()
-        run: cp /tmp/responsive-viewport-browser.cjs tests/responsive-viewport-browser.cjs
+        run: |
+          if [ -f /tmp/responsive-viewport-browser.cjs ]; then
+            cp /tmp/responsive-viewport-browser.cjs tests/responsive-viewport-browser.cjs
+          fi
 
       - name: Commit validated landscape owner migration
         run: |
