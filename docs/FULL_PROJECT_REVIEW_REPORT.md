@@ -3,7 +3,7 @@
 **Audit status:** REMEDIATION IN PROGRESS  
 **Frozen production baseline:** `main@e92831ca5d6e0c14fb2d919e410180ce77b97ce6`  
 **Audit/remediation branch:** `audit/full-project-review-2026-09-08`  
-**Current remediation code head:** `9f08c276c975d777a0bae14ddad20a67355fcf63`  
+**Current remediation code head:** `c88dfac6b55a039b5f85e90c8c4de2ed332a4c60`  
 **Started:** 2026-09-08
 
 This document is the source of truth for remediation. `main` remains untouched. Cloudflare remains manual-only. Do not restore compatibility patch layers, post-render DOM rewrites, runtime DOM reparenting, whole-document UI workarounds or broad state-mutating event consumers to conceal ownership problems.
@@ -102,6 +102,14 @@ Completed owner migrations:
 - Lifecycle regression strengthened `9f08c276` to forbid Events/Travel broad completion consumers and broad Resources mutation.
 - Existing `travel-choice-browser.cjs` extended in `a447df1d` with 12 Roster↔Travel loops. It instruments unique `rpchess:*` window listener registrations and asserts no growth in listeners, `#app > main`, HUD/stylesheet/runtime singleton nodes, or route-card nodes; it also requires exactly one Travel render per re-entry and no hidden event producer loop from 12 explicit no-op `run-updated` notifications.
 
+## Dependency / tooling security
+
+- Reachability review proved `adm-zip` was a dead direct dev dependency: no `game/`, `scripts/` or test runtime imports use it, and `stockfish-assets.cjs` downloads integrity-pinned JS/WASM directly rather than extracting ZIP archives.
+- `adm-zip` was removed from `package.json` in `f04df06a`, eliminating the install edge that exposed RPChess tooling to the reviewed high-severity `<0.6.0` archive vulnerability. The old package-lock still contains orphan metadata and must be normalized by a reproducible lockfile-generation run; it is not treated as completed metadata cleanup yet.
+- `d83c27c9` added `tests/dependency-security.cjs`; `c88dfac6` wires it into `test:materialized` and exposes `test:security`.
+- The security contract forbids a direct `adm-zip` dependency/import and records current safe version floors for the actually installed tooling graph: direct esbuild remains `0.25.8` outside the reviewed `>=0.27.3 <0.28.1` advisory range; Wrangler's nested esbuild is `0.28.1`; `undici` is `7.28.0`; `ws` is `8.21.0`; `path-to-regexp` is `6.3.0`.
+- A local npm 10.9.2 synthetic lock/install check confirmed an orphan lock entry without a package.json dependency is not installed by `npm ci`; this is supporting evidence only, not a substitute for final clean-lock regeneration and current CI execution.
+
 ## Responsive truth
 
 - Geometry helper rejects page overflow, nonzero window scroll and frame/viewport escapes.
@@ -129,15 +137,16 @@ Completed owner migrations:
 - One-off full-review trigger `0931aebb` produced no check run through connector; restored manual-only `51464246`.
 - Localization completion (`f37994ac` → `30755415`): implementation/static contracts complete; no fresh full gate claimed.
 - Semantic lifecycle (`6aaa8422` → `9f08c276`) + browser instrumentation `a447df1d`: implementation/contracts complete; **no fresh execution PASS is claimed** for the current head.
+- Dependency security (`f04df06a` → `c88dfac6`): dead direct `adm-zip` install edge removed and permanent security contract wired into canonical tests. The new contract has **not yet been executed in current CI**, and package-lock orphan metadata normalization remains pending.
 - No full 17-contract Chromium PASS is claimed for current head.
 
 ---
 
 # Open verification / cleanup items
 
-1. Execute targeted lifecycle/Travel browser proof and full current `gate:local` + all 17 Chromium contracts.
-2. Dependency security classification, separating player runtime from dev/build-only exposure; remediate active build-tool advisories reproducibly.
-3. Asset orphan/reference inventory; delete only proven-unused assets.
+1. Execute targeted lifecycle/Travel/security contracts and full current `gate:local` + all 17 Chromium contracts.
+2. Normalize `package-lock.json` with a reproducible lockfile-generation run so stale `adm-zip` metadata disappears without hand-editing integrity data.
+3. Complete asset orphan/reference inventory; delete only proven-unused assets.
 4. Final `CURRENT_STATE.md`, deployment/history docs and Notion synchronization after accepted final SHA.
 
 ---
@@ -160,22 +169,25 @@ Completed owner migrations:
 
 ## Phase C — validation/tooling
 
-9. Run targeted regressions and then `gate:local` + all 17 Chromium contracts when executable.
-10. Classify dependency advisories and build asset reference/orphan inventory.
+9. **DONE — verification pending:** dead direct `adm-zip` dependency removed and permanent dependency-security contract added.
+10. Normalize lock metadata reproducibly; do not hand-edit integrity graph.
+11. Build asset reference/orphan inventory and remove only positive non-reachability candidates.
+12. Run targeted regressions and then `gate:local` + all 17 Chromium contracts when executable.
 
 ## Phase D — final integration/docs
 
-11. Fix only evidence-backed regressions from final gate.
-12. Update `docs/CURRENT_STATE.md` to final accepted SHA.
-13. Mark historical docs clearly and synchronize architecture/UI/persistence/deployment into Notion.
-14. Do not merge `main` or deploy Cloudflare without explicit owner instruction.
+13. Fix only evidence-backed regressions from final gate.
+14. Update `docs/CURRENT_STATE.md` to final accepted SHA.
+15. Mark historical docs clearly and synchronize architecture/UI/persistence/deployment into Notion.
+16. Do not merge `main` or deploy Cloudflare without explicit owner instruction.
 
 ## Next actions
 
-1. Classify current dependency advisories from authoritative upstream sources; update vulnerable build-only dependencies only with a reproducible lock/integrity path.
-2. Build an asset reference/orphan inventory across production HTML/CSS/JS/content/build inputs and delete only files with positive non-reachability proof.
-3. Synchronize any dependency/asset changes into this report.
-4. Run targeted lifecycle/Travel/browser contracts and then full `gate:local` + all 17 Chromium contracts when executable; update verification-pending findings only from actual results.
-5. Finish `CURRENT_STATE.md`, deployment/history docs/Notion synchronization and final release-readiness report; keep `main` frozen and Cloudflare manual-only until explicit owner direction.
+1. Build a production asset reference/orphan inventory across HTML/CSS/JS/content/build inputs, explicitly accounting for dynamic race/piece/board/background families; delete only files with positive non-reachability proof.
+2. Add an auditable asset-inventory command/report if current contracts cannot prove reachability from static source alone.
+3. Normalize package-lock metadata at the first reproducible lockfile-generation opportunity; do not manually alter integrity records.
+4. Synchronize asset/dependency results into this report after each cleanup package.
+5. Run targeted lifecycle/Travel/security/browser contracts and then full `gate:local` + all 17 Chromium contracts when executable; update verification-pending findings only from actual results.
+6. Finish `CURRENT_STATE.md`, deployment/history docs/Notion synchronization and final release-readiness report; keep `main` frozen and Cloudflare manual-only until explicit owner direction.
 
 Every subsequent remediation checkpoint must update this report and end with a concrete numbered **Next actions** list.
