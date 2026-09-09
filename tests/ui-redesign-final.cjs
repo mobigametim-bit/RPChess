@@ -35,6 +35,8 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   assert.strictEqual(loader.trim(),"import './ui-redesign-final.mjs';",'legacy loader may only delegate to the consolidated final redesign module');
   assert(finalUi.includes("CSS_HREF='css/ui-redesign-final.css?v=20260902-cleanup2'"),'final redesign stylesheet must be cache-busted');
   assert(finalUi.includes("SIDE_COLORS_CSS_HREF='css/combat-side-colors.css?v=20260903-aura1'"),'combat aura stylesheet must be cache-busted independently');
+  assert(!finalUi.includes('BATTLE_COMPACT_CSS_HREF')&&!finalUi.includes('data-battle-compact-css'),'shared redesign runtime must not load Battle-owned stylesheets');
+  assert(sourceOwners.includes('css/battle-compact.css?v=20260909-owner2')&&sourceOwners.includes('data-battle-compact-css'),'Battle source owner must load its compact stylesheet explicitly');
   assert(!finalUi.includes('MutationObserver')&&!finalUi.includes('LIVE_OVERRIDE_CSS'),'final redesign module must not rely on global observers or live injected CSS');
   assert(finalUi.includes('RPChessBattle?.battlePlan')&&finalUi.includes('RPChessSkirmish?.battlePlan'),'combat presentation must derive from canonical battlePlan state');
   assert(finalUi.includes("import { placeArmy } from './skirmish-core.mjs'")&&finalUi.includes('BLACK_GLYPHS'),'Skirmish preview must use canonical formation data and preserve black-side glyphs without observers');
@@ -95,5 +97,5 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   assert(pkg.scripts['test:materialized'].includes('tests/aura-asset-runtime.cjs'),'materialized test set must verify combat aura source assets');
   assert(!pkg.scripts['test:materialized'].includes('travel-choice-ui.cjs')&&!pkg.scripts['test:materialized'].includes('compact-ui-pass4.cjs'),'materialized test set must not require superseded UI tests');
 
-  console.log('Consolidated UI redesign contracts, side-colored aura presentation, canonical Travel gating and lifecycle presentation: PASS');
+  console.log('Consolidated UI redesign contracts, owner-loaded Battle compact CSS, side-colored aura presentation, canonical Travel gating and lifecycle presentation: PASS');
 })().catch((error)=>{console.error(error.stack||error);process.exitCode=1});
