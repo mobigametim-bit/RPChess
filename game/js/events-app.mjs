@@ -1,5 +1,6 @@
 import { readRun, writeRun } from './run-persistence.mjs';
-import { PIECE_GLYPHS, PIECE_LABELS } from './roster-data.mjs';
+import { PIECE_GLYPHS } from './roster-data.mjs';
+import { subscribe, t, translateLegacy } from './i18n.mjs';
 import { eventBackgroundPath } from './race-assets.mjs';
 import { literaryStory } from './event-narrative.mjs';
 import { playerNameForRun, personalizePlayerNarrative, personalizePlayerTitle } from './player-identity-core.mjs';
@@ -21,10 +22,7 @@ let syncingCombat = false;
 
 function audio() { return globalThis.RPChessRebootAudio; }
 function playerName() { return playerNameForRun(activeRun); }
-function localizeEventSource(value) {
-  const source = String(value ?? '');
-  return globalThis.RPChessI18n?.translateLegacy?.(source) || source;
-}
+function localizeEventSource(value) { return translateLegacy(String(value ?? '')); }
 function presentEventText(value, { title = false } = {}) {
   const localized = localizeEventSource(value);
   return title ? personalizePlayerTitle(localized, playerName()) : personalizePlayerNarrative(localized, playerName());
@@ -58,7 +56,7 @@ function ensureScreen() {
   screen.className = 'events-screen';
   screen.dataset.eventsScreen = '';
   screen.hidden = true;
-  screen.setAttribute('aria-label', 'Дорожное событие');
+  screen.setAttribute('aria-label', t('events.ariaLabel'));
   screen.innerHTML = `
     <div class="events-backdrop" aria-hidden="true">
       <img data-events-background alt="">
@@ -69,7 +67,7 @@ function ensureScreen() {
       </header>
       <section class="events-panel">
         <div class="events-copy-frame ui-panel-safe">
-          <div class="events-kicker"><span>СОБЫТИЕ</span><strong data-events-race></strong></div>
+          <div class="events-kicker"><span data-events-kicker>${t('events.kicker')}</span><strong data-events-race></strong></div>
           <h1 data-events-title></h1>
           <div class="events-story" data-events-story></div>
           <div class="events-reaction events-reaction--king" data-events-king-reaction hidden></div>
@@ -81,17 +79,26 @@ function ensureScreen() {
     </div>
     <div class="events-outcome-modal" data-events-outcome hidden>
       <section class="events-outcome-card ui-panel-safe" role="dialog" aria-modal="true" aria-labelledby="events-outcome-title">
-        <div class="reboot-eyebrow" data-events-outcome-eyebrow>ИСХОД</div>
+        <div class="reboot-eyebrow" data-events-outcome-eyebrow>${t('events.outcomeKicker')}</div>
         <h2 id="events-outcome-title" data-events-outcome-title></h2>
         <div class="events-roll" data-events-roll></div>
         <div class="events-outcome-notes" data-events-outcome-notes></div>
-        <button class="reboot-button reboot-button--primary events-continue" type="button" data-events-continue>ПРОДОЛЖИТЬ ПУТЬ</button>
+        <button class="reboot-button reboot-button--primary events-continue" type="button" data-events-continue>${t('events.continue')}</button>
       </section>
     </div>`;
   app.append(screen);
   screen.querySelector('[data-events-continue]')?.addEventListener('click', continueOutcome);
   screen.addEventListener('click', handleChoice);
   return screen;
+}
+
+function renderStaticCopy() {
+  if (!screen) return;
+  screen.setAttribute('aria-label', t('events.ariaLabel'));
+  const kicker=screen.querySelector('[data-events-kicker]');
+  const outcomeKicker=screen.querySelector('[data-events-outcome-eyebrow]');
+  if(kicker)kicker.textContent=t('events.kicker');
+  if(outcomeKicker)outcomeKicker.textContent=t('events.outcomeKicker');
 }
 
 function hideAllScenes() {
@@ -111,13 +118,13 @@ function hideEvents() { if (screen) screen.hidden = true; document.body.classLis
 
 function riskLabel(choice) {
   const warnings = [...(choice.warnings || [])];
-  if (choice.kingRisk && !warnings.some((x) => x.includes('КОРОЛЬ'))) warnings.push('КОРОЛЬ МОЖЕТ ПОГИБНУТЬ');
-  return warnings.join(' · ');
+  if (choice.kingRisk && !warnings.some((x) => x.includes('КОРОЛЬ'))) warnings.push(t('events.risk.king'));
+  return warnings.map(localizeEventSource).join(' · ');
 }
 function costLabel(choice) {
   const parts=[];
-  if(choice.cost?.gold)parts.push(`${choice.cost.gold} Gold`);
-  if(choice.cost?.supplies)parts.push(`${choice.cost.supplies} Supplies`);
+  if(choice.cost?.gold)parts.push(t('events.cost.gold',{amount:choice.cost.gold}));
+  if(choice.cost?.supplies)parts.push(t('events.cost.supplies',{amount:choice.cost.supplies}));
   return parts.join(' · ');
 }
 function reactionHero(choice, availability) {
@@ -130,11 +137,19 @@ function reactionHero(choice, availability) {
 function v5HeroState(choice) {
   if (!choice?.requiredHeroId) return null;
   const hero = (activeRun?.roster || []).find((entry) => entry?.id === choice.requiredHeroId) || null;
-  const name = choice.requiredHeroName || hero?.name || 'Именной герой';
-  if (!hero) return { hero:null, name, state:'missing', locked:true, label:'🔒' };
-  if (hero.status === 'dead') return { hero, name, state:'dead', locked:true, label:`🔒 ${name} — ПОГИБ` };
-  if (hero.status !== 'healthy') return { hero, name, state:'wounded', locked:true, label:`🔒 ${name} — РАНЕН` };
-  return { hero, name, state:'healthy', locked:false, label:name };
+  const name = choice.requiredHeroName || hero?.name || t('events.hero.named');
+  if (!hero) return { hero:null, name, state:'missing', locked:true };
+  if (hero.status === 'dead') return { hero, name, state:'dead', locked:true };
+  if (hero.status !== 'healthy') return { hero, name, state:'wounded', locked:true };
+  return { hero, name, state:'healthy', locked:false };
+}
+function heroStateLabel(heroState) {
+  if (!heroState) return '';
+  const name=localizeEventSource(heroState.name);
+  if(heroState.state==='missing')return '🔒';
+  if(heroState.state==='dead')return t('events.hero.deadLocked',{name});
+  if(heroState.state==='wounded')return t('events.hero.woundedLocked',{name});
+  return name;
 }
 function displayedChoiceAction(choice) {
   if (!choice?.sourceChoiceId) return choice?.action || '';
@@ -156,9 +171,9 @@ function choiceButton(eventChoice) {
   button.disabled = !availability.enabled || busy;
   button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
   const hero = localizedHero(availability.hero);
-  const role = heroState ? '' : hero ? `${PIECE_GLYPHS[hero.pieceType] || ''} ${hero.name}` : choice.role ? `${PIECE_GLYPHS[choice.role] || ''} ${localizeEventSource(PIECE_LABELS[choice.role] || choice.role)}` : '';
-  const chance = localizeEventSource(choice.chance < 100 ? `${choice.chance}% УСПЕХА` : 'ГАРАНТИРОВАННО');
-  const cost = costLabel(choice), risk = localizeEventSource(riskLabel(choice));
+  const role = heroState ? '' : hero ? `${PIECE_GLYPHS[hero.pieceType] || ''} ${hero.name}` : choice.role ? `${PIECE_GLYPHS[choice.role] || ''} ${t(`piece.${choice.role}`)}` : '';
+  const chance = choice.chance < 100 ? t('events.choice.successChance',{chance:choice.chance}) : t('events.choice.guaranteed');
+  const cost = costLabel(choice), risk = riskLabel(choice);
   const unavailable = availability.enabled ? '' : localizeEventSource(availability.reason);
   button.innerHTML = `<span class="events-choice__head"><strong></strong><span>${chance}</span></span><span class="events-choice__meta">${[role,cost,risk].filter(Boolean).map((x)=>`<small>${x}</small>`).join('')}</span>${availability.enabled?'':`<span class="events-choice__disabled">${unavailable}</span>`}`;
   button.querySelector('strong').textContent = presentEventText(displayedChoiceAction(choice));
@@ -168,7 +183,7 @@ function choiceButton(eventChoice) {
     heroBlock.className = 'events-choice__hero';
     const heroName = document.createElement('b');
     heroName.className = 'events-choice__hero-name';
-    heroName.textContent = localizeEventSource(heroState.label);
+    heroName.textContent = heroStateLabel(heroState);
     const heroLine = document.createElement('span');
     heroLine.className = 'events-choice__hero-line';
     heroLine.textContent = `“${presentEventText(String(choice.heroLine || '').trim())}”`;
@@ -229,9 +244,10 @@ function renderEvent() {
   if (!screen || !activeRun?.currentEvent) return;
   const event = applyEventContentV3(normalizedEvent(activeRun.currentEvent.eventId));
   if (!event) return;
+  renderStaticCopy();
   renderBackground(event);
   screen.querySelector('[data-events-title]').textContent = presentEventText(event.title, { title: true });
-  screen.querySelector('[data-events-race]').textContent = localizeEventSource(String(event.race || 'Смешанное').toUpperCase());
+  screen.querySelector('[data-events-race]').textContent = event.race ? localizeEventSource(String(event.race).toUpperCase()) : t('events.race.mixed').toUpperCase();
   renderStory(event);
   renderKingReaction(event);
   const choices = screen.querySelector('[data-events-choices]');
@@ -255,17 +271,17 @@ function renderOutcome(event) {
   root.hidden = false;
   document.body.classList.add('events-outcome-open');
   const title=root.querySelector('[data-events-outcome-title]'),roll=root.querySelector('[data-events-roll]'),notes=root.querySelector('[data-events-outcome-notes]'),button=root.querySelector('[data-events-continue]');
-  if(title) title.textContent = localizeEventSource(outcome.success ? 'УСПЕХ' : 'НЕУДАЧА');
-  if(roll) roll.textContent = localizeEventSource(outcome.chance < 100 ? `Бросок: ${outcome.roll} · шанс: ${outcome.chance}%` : 'Гарантированный исход');
+  if(title) title.textContent = t(outcome.success ? 'events.success' : 'events.failure');
+  if(roll) roll.textContent = outcome.chance < 100 ? t('events.roll',{roll:outcome.roll,chance:outcome.chance}) : t('events.guaranteedOutcome');
   if(notes){
     notes.replaceChildren();
-    const list=outcome.notes?.length?outcome.notes:['Ничего не изменилось.'];
+    const list=outcome.notes?.length?outcome.notes:[t('events.noChange')];
     for(const text of list){const p=document.createElement('p');p.textContent=presentEventText(text);notes.append(p);}
   }
   if(button){
-    if(activeRun.ended)button.textContent=localizeEventSource('ИТОГИ ЗАБЕГА');
-    else if(state.combat)button.textContent=localizeEventSource(state.combat.type==='battle'?'К БИТВЕ':'К СТЫЧКЕ');
-    else button.textContent=localizeEventSource('ПРОДОЛЖИТЬ ПУТЬ');
+    if(activeRun.ended)button.textContent=t('events.summary');
+    else if(state.combat)button.textContent=t(state.combat.type==='battle'?'events.toBattle':'events.toSkirmish');
+    else button.textContent=t('events.continue');
   }
 }
 
@@ -347,6 +363,10 @@ function syncRun() {
 }
 
 ensureScreen();
+subscribe(() => {
+  renderStaticCopy();
+  if(screen&&!screen.hidden&&activeRun?.activeTravelChoice?.type==='event')renderEvent();
+});
 addEventListener('rpchess:event-open',openEvent);
 addEventListener('rpchess:run-updated',syncRun);
 globalThis.RPChessEvents=Object.freeze({open:openEvent,render:renderEvent,get run(){return activeRun;},get state(){return activeRun?.currentEvent||null;}});
