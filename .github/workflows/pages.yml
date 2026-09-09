@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - audit/full-project-review-2026-09-08
   workflow_dispatch:
 
 permissions:
