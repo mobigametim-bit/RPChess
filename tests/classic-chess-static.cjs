@@ -8,8 +8,6 @@ const html = fs.readFileSync(path.join(game, 'index.html'), 'utf8');
 const foundationCss = fs.readFileSync(path.join(game, 'css/reboot-foundation.css'), 'utf8');
 const css = fs.readFileSync(path.join(game, 'css/classic-chess.css'), 'utf8');
 const polishCss = fs.readFileSync(path.join(game, 'css/chess-ai-polish.css'), 'utf8');
-const review2Source = fs.readFileSync(path.join(game, 'js/content/post-pages-ui-review2.mjs'), 'utf8');
-const constraintsSource = fs.readFileSync(path.join(game, 'js/content/post-pages-ui-polish-constraints.mjs'), 'utf8');
 const postPagesSource = fs.readFileSync(path.join(game, 'js/post-pages-ui-polish.mjs'), 'utf8');
 const redesignSource = fs.readFileSync(path.join(game, 'js/ui-redesign-final.mjs'), 'utf8');
 const rosterCss = fs.readFileSync(path.join(game, 'css/roster.css'), 'utf8');
@@ -94,11 +92,12 @@ assert(polishCss.includes(".classic-piece-marker[data-piece-marker='p']::before"
 assert(polishCss.includes("html[lang='en'] .classic-party-panel h2::before { content:'COMBAT SUMMARY'!important; }") && polishCss.includes("content:'COMBAT LOG'!important"), 'Classic owner CSS must own language-aware combat captions');
 
 // Run combat must keep the Journal in its source-owned sibling slot instead of moving live DOM.
-assert(review2Source.includes('body.run-combat-board-active') && review2Source.includes('.classic-party-panel,') && review2Source.includes('.classic-panel--moves'), 'run-combat compatibility CSS must style stable Party/Journal siblings');
-assert(!review2Source.includes(':has(>.classic-panel--moves)') && !review2Source.includes('>.classic-panel--moves'), 'run-combat CSS must not depend on Journal being reparented into Party');
+assert(polishCss.includes('body.run-combat-board-active') && polishCss.includes('.classic-party-panel,') && polishCss.includes('.classic-panel--moves'), 'Classic owner CSS must style stable Party/Journal siblings during run combat');
+assert(!polishCss.includes(':has(>.classic-panel--moves)') && !polishCss.includes('>.classic-panel--moves'), 'run-combat CSS must not depend on Journal being reparented into Party');
+assert(!fs.existsSync(path.join(game,'js/content/post-pages-ui-review2.mjs')), 'superseded review2 compatibility module must be deleted');
 assert(!redesignSource.includes('movePanelHome') && !redesignSource.includes('party.append(movePanel)'), 'shared redesign runtime must not reparent Classic Journal');
 assert(!postPagesSource.includes('movesHome') && !postPagesSource.includes('syncCombat()') && !postPagesSource.includes('party.append(moves)'), 'post-pages polish must not keep a second Classic Journal reparent path');
-assert(!constraintsSource.includes('post-pages-run-combat-active') && !constraintsSource.includes('syncCombatConstraintState'), 'constraints layer must not keep dead run-combat lifecycle state');
+assert(!fs.existsSync(path.join(game,'js/content/post-pages-ui-polish-constraints.mjs')), 'superseded constraints compatibility module must be deleted');
 
 for (const side of ['player', 'enemy']) {
   for (const piece of ['pawn', 'knight', 'bishop', 'rook', 'queen', 'king']) {

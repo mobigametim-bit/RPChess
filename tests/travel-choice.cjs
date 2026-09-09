@@ -5,8 +5,6 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const travelAppSource=fs.readFileSync(path.join(game,'js/travel-choice-app.mjs'),'utf8');
   const travelCss=fs.readFileSync(path.join(game,'css/travel-choice-compact.css'),'utf8');
   const polish=fs.readFileSync(path.join(game,'js/post-pages-ui-polish.mjs'),'utf8');
-  const constraints=fs.readFileSync(path.join(game,'js/content/post-pages-ui-polish-constraints.mjs'),'utf8');
-  const review2=fs.readFileSync(path.join(game,'js/content/post-pages-ui-review2.mjs'),'utf8');
   assert(!travelAppSource.includes("document.addEventListener('click'"),'Travel must not intercept combat aftermath clicks globally');
   assert(travelAppSource.includes('recoverAftermathRoute'));assert(travelAppSource.includes("source==='skirmish-aftermath'")&&travelAppSource.includes("source==='battle-aftermath'"));assert(travelAppSource.includes("rpchess:puzzle-open"),'Puzzle routes must dispatch into playable scene');
   assert(travelAppSource.includes('data-travel-power')&&travelAppSource.includes('data-travel-player-threat'),'Travel must show Power and Threat without redesigning route cards');
@@ -15,7 +13,9 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(travelCss.includes('.travel-choice-run-portrait{display:none}'),'Travel portrait must stay hidden outside the compact owner breakpoint');
   assert(travelCss.includes("grid-template-columns:40px minmax(112px,1fr) minmax(100px,1fr) minmax(148px,1.15fr)!important"),'tablet Travel command rhythm must preserve the accepted final cascade');
   assert(travelCss.includes("grid-template-columns:34px minmax(96px,1fr) minmax(88px,1fr) minmax(128px,1.05fr)!important"),'phone Travel command rhythm must preserve the accepted final cascade');
-  for(const [name,source] of [['post-pages-ui-polish',polish],['post-pages-ui-polish-constraints',constraints],['post-pages-ui-review2',review2]])assert(!source.includes('body.travel-choice-active'),`${name} must not retain Travel presentation ownership`);
+  assert(!polish.includes('body.travel-choice-active'),'post-pages-ui-polish must not retain Travel presentation ownership');
+  assert(!fs.existsSync(path.join(game,'js/content/post-pages-ui-polish-constraints.mjs')),'superseded constraints compatibility module must stay deleted');
+  assert(!fs.existsSync(path.join(game,'js/content/post-pages-ui-review2.mjs')),'superseded review2 compatibility module must stay deleted');
   assert(!polish.includes('syncTravel')&&!polish.includes('rpchess:travel-open'),'post-pages polish must not retain Travel rendering or Travel-open fan-out');
   const travel=await import(pathToFileURL(path.join(game,'js/travel-choice-core.mjs')).href),difficulty=await import(pathToFileURL(path.join(game,'js/encounter-difficulty.mjs')).href),rating=await import(pathToFileURL(path.join(game,'js/player-rating.mjs')).href),persistence=await import(pathToFileURL(path.join(game,'js/run-persistence.mjs')).href),skirmish=await import(pathToFileURL(path.join(game,'js/skirmish-core.mjs')).href),battle=await import(pathToFileURL(path.join(game,'js/battle-core.mjs')).href);
   assert.deepStrictEqual(travel.PLAYABLE_TRAVEL_TYPES,['skirmish','battle','settlement','event','puzzle']);assert.strictEqual(travel.TRAVEL_CHOICE_COUNT,3);assert.strictEqual(difficulty.MAX_ENCOUNTER_STARS,12);assert.strictEqual(difficulty.difficultyForStars(1).elo,400);assert.strictEqual(difficulty.difficultyForStars(12).elo,2600);

@@ -482,3 +482,14 @@ html body .puzzle-piece-marker--b::before {
   html body .puzzle-piece-marker--w::before {-webkit-text-stroke:.75px #050505}
   html body .puzzle-piece-marker--b::before {-webkit-text-stroke:.75px #fff}
 }
+
+/* Owner-level landscape frame constraint formerly supplied by compatibility runtime. */
+@media (orientation:landscape) and (max-width:1180px) {
+  html[data-landscape-ui='1'] body.puzzles-active .puzzle-layout>.puzzle-panel:first-child {
+    width:calc(100vw - 100dvh - 32px)!important;
+    max-width:calc(100vw - 100dvh - 32px)!important;
+    min-width:0!important;
+    box-sizing:border-box!important;
+    justify-self:start!important;
+  }
+}

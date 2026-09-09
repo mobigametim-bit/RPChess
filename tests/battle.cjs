@@ -8,8 +8,6 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(key){return this.ma
   const buildSource=fs.readFileSync(path.join(game,'..','scripts/build.cjs'),'utf8');
   const battleCompactCss=fs.readFileSync(path.join(game,'css/battle-compact.css'),'utf8');
   const redesignSource=fs.readFileSync(path.join(game,'js/ui-redesign-final.mjs'),'utf8');
-  const review2=fs.readFileSync(path.join(game,'js/content/post-pages-ui-review2.mjs'),'utf8');
-  const constraints=fs.readFileSync(path.join(game,'js/content/post-pages-ui-polish-constraints.mjs'),'utf8');
   const polish=fs.readFileSync(path.join(game,'js/post-pages-ui-polish.mjs'),'utf8');
   assert(battleAppSource.includes('data-battle-continue>Продолжить путь</button>'),'Battle aftermath CTA must say Продолжить путь');
   assert(battleAppSource.includes("function leaveAftermath(){audio()?.click?.();resetBattleTracking();globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open'"),'Battle aftermath must route directly to Travel Choice');
@@ -24,7 +22,9 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(key){return this.ma
   assert(!battleCompactCss.includes('.battle-actionbar'),'Battle compact CSS must not retain the removed legacy actionbar');
   assert(!battleRouteSource.includes('data-landscape-battle-prep-viewport-fix'),'Battle route must not inject Battle Prep presentation CSS');
   assert(!battleRouteSource.includes('battle-prep-compact-active'),'Battle route visibility observer must not own Battle Prep state');
-  for(const [name,source] of [['review2',review2],['polish constraints',constraints],['post-pages polish',polish]])assert(!source.includes('body.battle-prep-compact-active'),`${name} must not retain Battle Prep presentation ownership`);
+  assert(!polish.includes('body.battle-prep-compact-active'),'post-pages polish must not retain Battle Prep presentation ownership');
+  assert(!fs.existsSync(path.join(game,'js/content/post-pages-ui-polish-constraints.mjs')),'superseded constraints compatibility module must stay deleted');
+  assert(!fs.existsSync(path.join(game,'js/content/post-pages-ui-review2.mjs')),'superseded review2 compatibility module must stay deleted');
   assert(battleAppSource.includes('data-battle-participants></div>\n          <button class="reboot-button reboot-button--primary battle-start" type="button" data-battle-start>Начать битву</button>'),'Battle owner must render Start CTA directly after the participants slot');
   assert(!battleAppSource.includes('battle-actionbar')&&!battleAppSource.includes('data-battle-personalized-count'),'Battle owner must not render the obsolete hidden actionbar/counters');
   assert(!redesignSource.includes('syncBattleStart')&&!redesignSource.includes('battleStartHome')&&!redesignSource.includes("insertAdjacentElement('afterend',start)"),'shared redesign runtime must not reparent the Battle Start CTA');
