@@ -35,82 +35,28 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Restore Settlement owner service art
-        run: |
-          git fetch --no-tags --depth=1 origin e92831ca5d6e0c14fb2d919e410180ce77b97ce6
-          git checkout e92831ca5d6e0c14fb2d919e410180ce77b97ce6 -- game/generated_assets/reward_heal.png game/generated_assets/reward_recruit.png
-
-      - name: Synchronize owner verifier and regression contracts
+      - name: Align Roster localization regression
         run: |
           python - <<'PY'
           from pathlib import Path
-
-          css_path = Path('game/css/settlement.css')
-          css = css_path.read_text()
-          replacements = {
-              "url('generated_assets/reward_heal.png')": "url('../generated_assets/reward_heal.png')",
-              "url('generated_assets/reward_recruit.png')": "url('../generated_assets/reward_recruit.png')",
-          }
-          for old, new in replacements.items():
-              if css.count(old) != 1:
-                  raise SystemExit(f'expected exactly one stale Settlement URL {old}, got {css.count(old)}')
-              css = css.replace(old, new)
-          css_path.write_text(css)
-
-          verifier_path = Path('scripts/verify-source.cjs')
-          verifier = verifier_path.read_text()
-          verifier_replacements = {
-              "'generated_assets/node_event.png'": "'generated_assets/node_story.png'",
-              '"dispatch(\'rpchess:combat-completed\'"': '"completed.push([\'rpchess:combat-completed\'"',
-              '"dispatch(\'rpchess:puzzle-resolved\'"': '"completed.push([\'rpchess:puzzle-resolved\'"',
-          }
-          for old, new in verifier_replacements.items():
-              if verifier.count(old) != 1:
-                  raise SystemExit(f'expected exactly one stale verifier token {old}, got {verifier.count(old)}')
-              verifier = verifier.replace(old, new)
-          lifecycle_anchor = '"completed.push([\'rpchess:puzzle-resolved\'",\'battleCount\''
-          lifecycle_replacement = '"completed.push([\'rpchess:puzzle-resolved\'",\'for (const [name, detail] of completed) dispatch(name, detail)\',\'battleCount\''
-          if lifecycle_anchor not in verifier:
-              raise SystemExit('semantic lifecycle verifier anchor not found after token synchronization')
-          verifier = verifier.replace(lifecycle_anchor, lifecycle_replacement, 1)
-          verifier_path.write_text(verifier)
-
-          settlement_test_path = Path('tests/settlement.cjs')
-          test = settlement_test_path.read_text()
-          stale = "assert(travelSource.includes('ЛЕЧЕНИЕ · НАЙМ · СНАБЖЕНИЕ'));"
-          semantic = "assert(travelSource.includes(\"t('travel.settlementServices')\"),'Travel Settlement card must use keyed services copy');"
-          if stale not in test:
-              raise SystemExit('stale Settlement Travel literal assertion not found')
-          test = test.replace(stale, semantic, 1)
-          anchor = "assert(appSource.includes('css/settlement-compact.css?v=20260909-owner1'),'Settlement owner must load compact CSS after its base stylesheet');"
-          addition = "\nfor(const asset of ['reward_heal.png','reward_recruit.png'])assert(fs.existsSync(path.join(game,'generated_assets',asset)),`Settlement owner service art missing: ${asset}`);\nassert(css.includes(\"url('../generated_assets/reward_heal.png')\")&&css.includes(\"url('../generated_assets/reward_recruit.png')\"),'Settlement service art must use CSS-relative owner paths');\nassert(!css.includes(\"url('generated_assets/reward_heal.png')\")&&!css.includes(\"url('generated_assets/reward_recruit.png')\"),'Settlement owner must not use stylesheet-relative broken service-art paths');"
-          if anchor not in test:
-              raise SystemExit('Settlement regression insertion anchor not found')
-          if 'Settlement owner service art missing' not in test:
-              test = test.replace(anchor, anchor + addition, 1)
-          settlement_test_path.write_text(test)
-
-          lifecycle_test_path = Path('tests/run-lifecycle.cjs')
-          lifecycle_test = lifecycle_test_path.read_text()
-          old_lifecycle_assert = "assert(source.includes(\"dispatch('rpchess:puzzle-resolved'\"),'lifecycle bridge must expose the semantic Puzzle completion path');"
-          new_lifecycle_assert = "assert(source.includes(\"completed.push(['rpchess:puzzle-resolved'\"),'lifecycle bridge must expose the queued semantic Puzzle completion path');"
-          if old_lifecycle_assert not in lifecycle_test:
-              raise SystemExit('stale lifecycle semantic assertion not found')
-          lifecycle_test_path.write_text(lifecycle_test.replace(old_lifecycle_assert, new_lifecycle_assert, 1))
+          path = Path('tests/roster.cjs')
+          text = path.read_text()
+          old = "for(const key of ['roster.ariaLabel','roster.filter.all','roster.journey','roster.commandPoints','roster.cardAria'])assert(app.includes(`t('${key}'`)||app.includes(`t(\\`${key}`),`Roster owner must call t() for ${key}`);"
+          new = "for(const key of ['roster.ariaLabel','roster.journey','roster.commandPoints','roster.cardAria'])assert(app.includes(`t('${key}'`)||app.includes(`t(\\`${key}`),`Roster owner must call t() for ${key}`);\n  assert(app.includes('t(`roster.filter.${filter}`)'),'Roster owner must derive filter labels from the keyed localization family');"
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one stale Roster direct-key assertion, got {text.count(old)}')
+          path.write_text(text.replace(old, new, 1))
           PY
 
-      - name: Run targeted owner contracts
-        run: |
-          npm run verify
-          node tests/settlement.cjs
-          node tests/run-lifecycle.cjs
+      - name: Run targeted Roster contract
+        run: node tests/roster.cjs
 
-      - name: Commit validated owner fixes
+      - name: Commit validated Roster regression fix
         run: |
           git config user.name 'mobigametim-bit'
           git config user.email 'mobigametim@gmail.com'
-          git add game/css/settlement.css game/generated_assets/reward_heal.png game/generated_assets/reward_recruit.png scripts/verify-source.cjs tests/settlement.cjs tests/run-lifecycle.cjs
-          git commit -m 'fix: restore Settlement service art contracts'
+          git add tests/roster.cjs
+          git commit -m 'test: align Roster filter localization contract'
           git push origin HEAD:audit/full-project-review-2026-09-08
 
       - name: Report asset reachability candidates
