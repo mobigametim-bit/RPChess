@@ -5,6 +5,8 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
 (async()=>{
   const finalUi=read('game/js/ui-redesign-final.mjs');
   const finalCss=read('game/css/ui-redesign-final.css');
+  const landscapeUi=read('game/js/landscape-ui-redesign.mjs');
+  const landscapeCss=read('game/css/landscape-ui-redesign.css');
   const sourceOwners=[
     read('game/index.html'),
     read('game/js/skirmish-app.mjs'),
@@ -38,6 +40,8 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   assert(!finalUi.includes('BATTLE_COMPACT_CSS_HREF')&&!finalUi.includes('data-battle-compact-css'),'shared redesign runtime must not load Battle-owned stylesheets');
   assert(sourceOwners.includes('css/battle-compact.css?v=20260909-owner2')&&sourceOwners.includes('data-battle-compact-css'),'Battle source owner must load its compact stylesheet explicitly');
   assert(!finalUi.includes('MutationObserver')&&!finalUi.includes('LIVE_OVERRIDE_CSS'),'final redesign module must not rely on global observers or live injected CSS');
+  assert(!landscapeUi.includes('BOARD_EDGE_STYLE_MARKER')&&!landscapeUi.includes('data-landscape-board-edge-style')&&!landscapeUi.includes('style.textContent'), 'landscape presentation must be stylesheet-owned and must not inject runtime CSS');
+  assert(landscapeCss.includes("html[data-landscape-ui='1'] body.compact-combat-active .classic-screen")&&landscapeCss.includes("html[data-landscape-ui='1'] body.compact-combat-active .classic-shell")&&landscapeCss.includes('grid-template-columns: calc(100vw - 100dvh - 4px) 100dvh !important')&&landscapeCss.includes('column-gap: 4px !important'), 'compact combat owner must remove outer padding and keep a physical information-rail gap before the 100dvh board');
   assert(finalUi.includes('RPChessBattle?.battlePlan')&&finalUi.includes('RPChessSkirmish?.battlePlan'),'combat presentation must derive from canonical battlePlan state');
   assert(finalUi.includes("import { placeArmy } from './skirmish-core.mjs'")&&finalUi.includes('BLACK_GLYPHS'),'Skirmish preview must use canonical formation data and preserve black-side glyphs without observers');
   assert(finalUi.includes('GLYPHS_BY_COLOR')&&finalUi.includes('mark.dataset.pieceColor=side')&&finalUi.includes('syncBattleFormation(screen,color)'),'Battle/Skirmish prep technical glyphs must derive from encounter player color');

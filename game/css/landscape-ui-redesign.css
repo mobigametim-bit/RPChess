@@ -116,6 +116,22 @@ html[data-landscape-ui='1'] body {
     gap: 0 !important;
     align-items: stretch !important;
   }
+  /* Compact combat owns a zero-padding viewport and a physical rail/board separation. */
+html[data-landscape-ui='1'] body.compact-combat-active .classic-screen {
+  padding: 0 !important;
+}
+html[data-landscape-ui='1'] body.compact-combat-active .classic-shell {
+  width: 100vw !important;
+  max-width: none !important;
+  height: 100dvh !important;
+  margin: 0 !important;
+  display: grid !important;
+  grid-template-columns: calc(100vw - 100dvh - 4px) 100dvh !important;
+  grid-template-rows: auto minmax(0, 1fr) minmax(86px, .42fr) !important;
+  column-gap: 4px !important;
+  row-gap: 0 !important;
+  align-items: stretch !important;
+}
   .classic-topbar {
     grid-column: 1 !important;
     grid-row: 1 !important;
