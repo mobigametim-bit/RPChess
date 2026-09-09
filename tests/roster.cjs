@@ -94,7 +94,6 @@ class MemoryStorage {
   const persistenceSource = fs.readFileSync(path.join(game, 'js/run-persistence.mjs'), 'utf8');
   const css = fs.readFileSync(path.join(game, 'css/roster.css'), 'utf8');
   const foundationCss = fs.readFileSync(path.join(game, 'css/reboot-foundation.css'), 'utf8');
-  const polish = fs.readFileSync(path.join(game, 'js/post-pages-ui-polish.mjs'), 'utf8');
   for (const token of ['data-roster-screen', 'data-continue-run', 'data-roster-detail', 'data-roster-list', 'data-roster-filter="dead"', 'data-roster-travel', 'Начать путешествие', 'js/roster-app.mjs', 'css/roster.css']) {
     assert(html.includes(token), `Roster HTML contract missing: ${token}`);
   }
@@ -118,7 +117,8 @@ class MemoryStorage {
   assert(css.includes("body.roster-active #app main.roster-screen .roster-catalog"), 'accepted compact Roster catalog layout must live in roster.css');
   assert(css.includes('grid-template-rows: minmax(145px,1fr) auto !important'), 'accepted compact Roster card height contract must live in roster.css');
   assert(!fs.existsSync(path.join(game,'js/content/post-pages-ui-review2.mjs')), 'superseded review2 compatibility module must stay deleted');
-  assert(!polish.includes('body.roster-active'), 'post-pages polish compatibility layer must not retain Roster presentation ownership');
+  assert(!fs.existsSync(path.join(game,'js/post-pages-ui-polish.mjs')), 'retired post-pages presentation shim must stay deleted');
+  assert(!fs.existsSync(path.join(game,'js/presentation-bootstrap.mjs')), 'retired presentation bootstrap must stay deleted');
 
   console.log('Roster model, persistence hydration, race-safe Travel Choice routing and frameless static UX contract: PASS');
 })().catch((error) => {
