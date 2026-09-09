@@ -86,7 +86,7 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   assert(!ux.includes("'rpchess:run-updated'")&&ux.includes("'rpchess:combat-completed'")&&ux.includes("'rpchess:puzzle-resolved'")&&ux.includes("'rpchess:travel-open'")&&ux.includes("'rpchess:event-open'"),'shared UX refresh must use semantic completion events plus explicit scene/resource events');
 
   assert(events.includes("state:'missing'")&&events.includes("state:'wounded'")&&events.includes("state:'dead'")&&events.includes('button.dataset.heroState = heroState.state'),'Event hero locks must expose distinct semantic states');
-  assert(events.includes("if (!hero) return { hero:null, name, state:'missing', locked:true, label:'🔒' }"),'missing Event hero must show only the lock in the upper strip');
+  assert(events.includes("if (!hero) return { hero:null, name, state:'missing', locked:true }")&&events.includes("if(heroState.state==='missing')return '🔒';"),'missing Event hero must preserve semantic missing state and render only the lock in the upper strip');
   assert(!battleCore.includes('Победа решится по классическим шахматным правилам.'),'Battle copy cleanup must live in encounter data rather than presentation regex replacement');
   assert(!battleMercenaries.includes('normalizeBattleCopy')&&!battleMercenaries.includes("replace(/\\s*Победа решится"),'Battle Mercenaries runtime must not rewrite canonical Battle copy with presentation regexes');
   assert(!battleMercenaries.includes('.battle-actionbar')&&!battleMercenaries.includes('data-battle-mercenary-action-cost'),'Mercenary presentation must not depend on the removed Battle actionbar or recreate its obsolete cost hook');
