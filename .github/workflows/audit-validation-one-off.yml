@@ -75,8 +75,8 @@ jobs:
           verifier = verifier.replace(lifecycle_anchor, lifecycle_replacement, 1)
           verifier_path.write_text(verifier)
 
-          test_path = Path('tests/settlement.cjs')
-          test = test_path.read_text()
+          settlement_test_path = Path('tests/settlement.cjs')
+          test = settlement_test_path.read_text()
           stale = "assert(travelSource.includes('ЛЕЧЕНИЕ · НАЙМ · СНАБЖЕНИЕ'));"
           semantic = "assert(travelSource.includes(\"t('travel.settlementServices')\"),'Travel Settlement card must use keyed services copy');"
           if stale not in test:
@@ -88,7 +88,15 @@ jobs:
               raise SystemExit('Settlement regression insertion anchor not found')
           if 'Settlement owner service art missing' not in test:
               test = test.replace(anchor, anchor + addition, 1)
-          test_path.write_text(test)
+          settlement_test_path.write_text(test)
+
+          lifecycle_test_path = Path('tests/run-lifecycle.cjs')
+          lifecycle_test = lifecycle_test_path.read_text()
+          old_lifecycle_assert = "assert(source.includes(\"dispatch('rpchess:puzzle-resolved'\"),'lifecycle bridge must expose the semantic Puzzle completion path');"
+          new_lifecycle_assert = "assert(source.includes(\"completed.push(['rpchess:puzzle-resolved'\"),'lifecycle bridge must expose the queued semantic Puzzle completion path');"
+          if old_lifecycle_assert not in lifecycle_test:
+              raise SystemExit('stale lifecycle semantic assertion not found')
+          lifecycle_test_path.write_text(lifecycle_test.replace(old_lifecycle_assert, new_lifecycle_assert, 1))
           PY
 
       - name: Run targeted owner contracts
@@ -101,7 +109,7 @@ jobs:
         run: |
           git config user.name 'mobigametim-bit'
           git config user.email 'mobigametim@gmail.com'
-          git add game/css/settlement.css game/generated_assets/reward_heal.png game/generated_assets/reward_recruit.png scripts/verify-source.cjs tests/settlement.cjs
+          git add game/css/settlement.css game/generated_assets/reward_heal.png game/generated_assets/reward_recruit.png scripts/verify-source.cjs tests/settlement.cjs tests/run-lifecycle.cjs
           git commit -m 'fix: restore Settlement service art contracts'
           git push origin HEAD:audit/full-project-review-2026-09-08
 
