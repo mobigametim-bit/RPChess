@@ -3,7 +3,7 @@
 **Audit status:** REMEDIATION IN PROGRESS  
 **Frozen production baseline:** `main@e92831ca5d6e0c14fb2d919e410180ce77b97ce6`  
 **Audit/remediation branch:** `audit/full-project-review-2026-09-08`  
-**Current remediation code head:** `c88dfac6b55a039b5f85e90c8c4de2ed332a4c60`  
+**Current remediation code head:** `dfd6651f47c0337b3e60f234ea3bdf901b8b0f7d`  
 **Started:** 2026-09-08
 
 This document is the source of truth for remediation. `main` remains untouched. Cloudflare remains manual-only. Do not restore compatibility patch layers, post-render DOM rewrites, runtime DOM reparenting, whole-document UI workarounds or broad state-mutating event consumers to conceal ownership problems.
@@ -98,17 +98,24 @@ Completed owner migrations:
 - Permanent lifecycle regression `c86d763e`, wired `b29b763e`, executes 12 alternating Battle/Skirmish transitions, nested derived `run-updated`, and ten no-state-change notifications.
 - Events moved to semantic combat completion `1158b857`; regression `3e354cfb`.
 - Resources split `b3ef74a5`: semantic combat/recovery owns reward settlement; broad `run-updated` is render-only. Regression `54c8ddc9`.
-- Final inventory found Travel still using broad `run-updated` for Power settlement + combat-route cleanup. Fixed `f4f706ad`: duplicate Power settlement removed; Travel cleans completed combat route only from `rpchess:combat-completed`.
-- Lifecycle regression strengthened `9f08c276` to forbid Events/Travel broad completion consumers and broad Resources mutation.
-- Existing `travel-choice-browser.cjs` extended in `a447df1d` with 12 Roster↔Travel loops. It instruments unique `rpchess:*` window listener registrations and asserts no growth in listeners, `#app > main`, HUD/stylesheet/runtime singleton nodes, or route-card nodes; it also requires exactly one Travel render per re-entry and no hidden event producer loop from 12 explicit no-op `run-updated` notifications.
+- Travel cleanup `f4f706ad`: duplicate Power settlement removed; completed combat route cleanup now uses `rpchess:combat-completed`.
+- Lifecycle regression strengthened `9f08c276`.
+- Existing `travel-choice-browser.cjs` extended `a447df1d` with 12 Roster↔Travel loops and listener/render/node stability probes.
 
 ## Dependency / tooling security
 
-- Reachability review proved `adm-zip` was a dead direct dev dependency: no `game/`, `scripts/` or test runtime imports use it, and `stockfish-assets.cjs` downloads integrity-pinned JS/WASM directly rather than extracting ZIP archives.
-- `adm-zip` was removed from `package.json` in `f04df06a`, eliminating the install edge that exposed RPChess tooling to the reviewed high-severity `<0.6.0` archive vulnerability. The old package-lock still contains orphan metadata and must be normalized by a reproducible lockfile-generation run; it is not treated as completed metadata cleanup yet.
-- `d83c27c9` added `tests/dependency-security.cjs`; `c88dfac6` wires it into `test:materialized` and exposes `test:security`.
-- The security contract forbids a direct `adm-zip` dependency/import and records current safe version floors for the actually installed tooling graph: direct esbuild remains `0.25.8` outside the reviewed `>=0.27.3 <0.28.1` advisory range; Wrangler's nested esbuild is `0.28.1`; `undici` is `7.28.0`; `ws` is `8.21.0`; `path-to-regexp` is `6.3.0`.
-- A local npm 10.9.2 synthetic lock/install check confirmed an orphan lock entry without a package.json dependency is not installed by `npm ci`; this is supporting evidence only, not a substitute for final clean-lock regeneration and current CI execution.
+- Reachability review proved `adm-zip` was a dead direct dev dependency; Stockfish downloads integrity-pinned JS/WASM directly.
+- `adm-zip` removed from `package.json` in `f04df06a`; old lock metadata remains pending reproducible regeneration.
+- Permanent dependency-security contract `d83c27c9`, wired `c88dfac6`.
+- Contract records current tooling floors: direct esbuild `0.25.8` outside reviewed `>=0.27.3 <0.28.1` range; Wrangler nested esbuild `0.28.1`; `undici 7.28.0`; `ws 8.21.0`; `path-to-regexp 6.3.0`.
+
+## Asset reachability cleanup
+
+- `scripts/asset-orphan-inventory.cjs` added in `a497089f`; `npm run assets:orphans:report` exposed in `d7176767`. It classifies production media as explicit reference, known dynamic family, or candidate. It intentionally protects dynamic race-piece, race-board, Event-background and generated core-piece families from literal-only false positives. The inventory command is not yet in `gate:local` because its first full execution on the connected repo snapshot is still pending.
+- Music is explicitly owned by `reboot-audio.mjs`: exactly four `echoes_iron_throne_0N.mp3` tracks. SFX currently contains only `win_fanfare.mp3`, explicitly owned by cross-scene victory presentation.
+- Six `generated_assets/commander_*.png` files were proven unreachable after Vertical Slice/approved-shell removal. Historical owners were `approved-shell-data.mjs`, `commander-selection-final.mjs` and Vertical Slice presentation; those runtime owners are absent on the audit branch. Removed in the sequential contents-API package `905c9daa` → `7c3ca286`. Bytes removed: **857,650**.
+- `ui_panel_frame.png` and `ui_panel_wide.png` were proven obsolete by the current frameless production invariant: active owner CSS is verifier-guarded against both files, and the legacy `game/style.css` owner was deleted with Vertical Slice. Removed in `e1de42f1` + `dfd6651f`. Bytes removed: **91,263**.
+- Proven asset reduction so far: **948,913 bytes (~0.91 MiB)**. No race/piece/board/Event-background dynamic family was deleted.
 
 ## Responsive truth
 
@@ -136,17 +143,18 @@ Completed owner migrations:
 - Pages audit auto-trigger removed `496bfac9`.
 - One-off full-review trigger `0931aebb` produced no check run through connector; restored manual-only `51464246`.
 - Localization completion (`f37994ac` → `30755415`): implementation/static contracts complete; no fresh full gate claimed.
-- Semantic lifecycle (`6aaa8422` → `9f08c276`) + browser instrumentation `a447df1d`: implementation/contracts complete; **no fresh execution PASS is claimed** for the current head.
-- Dependency security (`f04df06a` → `c88dfac6`): dead direct `adm-zip` install edge removed and permanent security contract wired into canonical tests. The new contract has **not yet been executed in current CI**, and package-lock orphan metadata normalization remains pending.
+- Semantic lifecycle (`6aaa8422` → `9f08c276`) + browser instrumentation `a447df1d`: implementation/contracts complete; **no fresh execution PASS is claimed** for current head.
+- Dependency security (`f04df06a` → `c88dfac6`): direct vulnerable ZIP install edge removed; contract not yet executed in current CI; lock metadata normalization pending.
+- Asset inventory tooling (`a497089f`, `d7176767`) passed a standalone Node syntax check in the execution container, but no full-repository inventory execution or current build/Chromium PASS is claimed yet. Proven commander/panel-frame deletions were based on explicit owner/reachability evidence, not the unexecuted report command.
 - No full 17-contract Chromium PASS is claimed for current head.
 
 ---
 
 # Open verification / cleanup items
 
-1. Execute targeted lifecycle/Travel/security contracts and full current `gate:local` + all 17 Chromium contracts.
-2. Normalize `package-lock.json` with a reproducible lockfile-generation run so stale `adm-zip` metadata disappears without hand-editing integrity data.
-3. Complete asset orphan/reference inventory; delete only proven-unused assets.
+1. Execute targeted lifecycle/Travel/security and asset-inventory contracts, then full current `gate:local` + all 17 Chromium contracts.
+2. Normalize `package-lock.json` reproducibly so stale `adm-zip` metadata disappears without hand-editing integrity data.
+3. Continue asset inventory for old map-node/reward/scene/generated UI families; delete only additional positive non-reachability candidates.
 4. Final `CURRENT_STATE.md`, deployment/history docs and Notion synchronization after accepted final SHA.
 
 ---
@@ -154,40 +162,35 @@ Completed owner migrations:
 # Autonomous remediation plan
 
 ## Phase A — localization
-
 1. **DONE:** all active owner localization migrations.
 2. **DONE:** whole-document localization observer/scan deletion.
 3. **DONE:** permanent i18n ownership gate and stale regression synchronization.
 
 ## Phase B — lifecycle/performance
-
 4. **DONE:** semantic completion bridge and first-import ownership.
-5. **DONE:** Power/redesign/shared UX/cross-scene/Events/Travel broad state-mutating consumer removal.
-6. **DONE:** Resources state-settlement split; only render-only broad projection remains.
-7. **DONE:** bridge reentrancy fix + permanent 12-transition regression.
-8. **DONE — verification pending:** existing Chromium Travel contract now contains 12-loop listener/render/node stability proof.
+5. **DONE:** broad state-mutating consumer removal/split.
+6. **DONE:** bridge reentrancy fix + permanent 12-transition regression.
+7. **DONE — verification pending:** 12-loop Chromium listener/render/node stability proof committed.
 
 ## Phase C — validation/tooling
-
-9. **DONE — verification pending:** dead direct `adm-zip` dependency removed and permanent dependency-security contract added.
+8. **DONE — verification pending:** dead direct `adm-zip` dependency removed and dependency-security contract added.
+9. **IN PROGRESS:** asset reachability inventory. Tooling exists; two proven legacy families removed (0.91 MiB).
 10. Normalize lock metadata reproducibly; do not hand-edit integrity graph.
-11. Build asset reference/orphan inventory and remove only positive non-reachability candidates.
-12. Run targeted regressions and then `gate:local` + all 17 Chromium contracts when executable.
+11. Run targeted regressions and then `gate:local` + all 17 Chromium contracts when executable.
 
 ## Phase D — final integration/docs
-
-13. Fix only evidence-backed regressions from final gate.
-14. Update `docs/CURRENT_STATE.md` to final accepted SHA.
-15. Mark historical docs clearly and synchronize architecture/UI/persistence/deployment into Notion.
-16. Do not merge `main` or deploy Cloudflare without explicit owner instruction.
+12. Fix only evidence-backed regressions from final gate.
+13. Update `docs/CURRENT_STATE.md` to final accepted SHA.
+14. Mark historical docs clearly and synchronize architecture/UI/persistence/deployment into Notion.
+15. Do not merge `main` or deploy Cloudflare without explicit owner instruction.
 
 ## Next actions
 
-1. Build a production asset reference/orphan inventory across HTML/CSS/JS/content/build inputs, explicitly accounting for dynamic race/piece/board/background families; delete only files with positive non-reachability proof.
-2. Add an auditable asset-inventory command/report if current contracts cannot prove reachability from static source alone.
-3. Normalize package-lock metadata at the first reproducible lockfile-generation opportunity; do not manually alter integrity records.
-4. Synchronize asset/dependency results into this report after each cleanup package.
-5. Run targeted lifecycle/Travel/security/browser contracts and then full `gate:local` + all 17 Chromium contracts when executable; update verification-pending findings only from actual results.
+1. Continue reachability proof for remaining `generated_assets` map-node/reward/scene/UI families; preserve any asset with explicit or dynamic ownership evidence.
+2. Run `npm run assets:orphans:report` on the first executable exact audit checkout and reconcile its candidate list with manual owner proof before any bulk deletion.
+3. Normalize `package-lock.json` at the first reproducible lockfile-generation opportunity; do not manually alter integrity records.
+4. Synchronize each additional asset-cleanup package into this report.
+5. Run targeted lifecycle/Travel/security/assets checks and then full `gate:local` + all 17 Chromium contracts when executable; update verification-pending findings only from actual results.
 6. Finish `CURRENT_STATE.md`, deployment/history docs/Notion synchronization and final release-readiness report; keep `main` frozen and Cloudflare manual-only until explicit owner direction.
 
 Every subsequent remediation checkpoint must update this report and end with a concrete numbered **Next actions** list.
