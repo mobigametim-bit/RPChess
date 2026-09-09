@@ -58,21 +58,24 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   assert.strictEqual(rating.readPlayerRating(storage).power,777,'new run must preserve profile Power');
 
   const app=fs.readFileSync(path.join(game,'js/endless-run-app.mjs'),'utf8');
+  const runtimeUi=fs.readFileSync(path.join(game,'localization/runtime-ui.mjs'),'utf8');
   const css=fs.readFileSync(path.join(game,'css/endless-run.css'),'utf8');
   const compactCss=fs.readFileSync(path.join(game,'css/endless-run-compact.css'),'utf8');
   const starvation=fs.readFileSync(path.join(game,'js/starvation-app.mjs'),'utf8');
   const events=fs.readFileSync(path.join(game,'js/events-app.mjs'),'utf8');
   const route=fs.readFileSync(path.join(game,'js/battle-route.mjs'),'utf8');
-  for(const token of ['ЗАБЕГ ЗАВЕРШЁН','ЗАРАБОТАНО ЗОЛОТА','ИТОГОВАЯ МОЩЬ','НОВАЯ ИГРА','ГЛАВНОЕ МЕНЮ','scene_defeat.jpg','queueMicrotask(() => open(storedRun))','RPChessEndlessRun'])assert(app.includes(token),`endless app missing ${token}`);
+  for(const token of ["from '../localization/runtime-ui.mjs'",'runtimeT(currentLanguage()','translateLegacy(summary.kingName)','translateLegacy(summary.endReasonLabel)','subscribe(() =>','scene_defeat.jpg','queueMicrotask(() => open(storedRun))','RPChessEndlessRun'])assert(app.includes(token),`Endless owner app missing ${token}`);
+  for(const token of ["'endless.title':'ЗАБЕГ ЗАВЕРШЁН'","'endless.metric.goldEarned':'ЗАРАБОТАНО ЗОЛОТА'","'endless.metric.finalPower':'ИТОГОВАЯ МОЩЬ'","'endless.newGame':'НОВАЯ ИГРА'","'endless.menu':'ГЛАВНОЕ МЕНЮ'"])assert(runtimeUi.includes(token),`runtime owner registry missing ${token}`);
+  for(const forbidden of ['ЗАБЕГ ЗАВЕРШЁН','ЗАРАБОТАНО ЗОЛОТА','ИТОГОВАЯ МОЩЬ','НОВАЯ ИГРА','ГЛАВНОЕ МЕНЮ'])assert(!app.includes(forbidden),`Endless runtime must not hardcode localized copy: ${forbidden}`);
   assert(app.includes('css/endless-run-compact.css?v=20260909-owner1'),'Endless Run owner must load its compact stylesheet after base CSS');
   assert(compactCss.includes('body.endless-run-active .resource-hud{display:none!important}'),'Endless Run owner compact stylesheet must suppress the floating resource HUD on the final summary');
   assert(!fs.existsSync(path.join(game,'js/post-pages-ui-polish.mjs')),'retired post-pages presentation shim must stay deleted');
   assert(!fs.existsSync(path.join(game,'js/presentation-bootstrap.mjs')),'retired presentation bootstrap must stay deleted');
-  assert(starvation.includes("button.textContent = kingDied ? 'ИТОГИ ЗАБЕГА'"));
+  assert(starvation.includes("button.textContent = kingDied ? t('starvation.summary') : t('starvation.continue')"),'Starvation end CTA must use owner localization while preserving Endless routing');
   assert(starvation.includes('RPChessEndlessRun?.open?.(current)'));
-  assert(events.includes("if(activeRun.ended)button.textContent=localizeEventSource('ИТОГИ ЗАБЕГА')"),'Event end-of-run CTA must stay localized while preserving Endless Run routing');
+  assert(events.includes("if(activeRun.ended)button.textContent=t('events.summary')"),'Event end-of-run CTA must stay owner-localized while preserving Endless routing');
   assert(events.includes('RPChessEndlessRun?.open?.(current)'));
   assert(route.includes("import './endless-run-app.mjs'"));
   assert(!css.includes('ui_panel_frame.png')&&!css.includes('ui_panel_wide.png'));
-  console.log('First Complete Endless Run statistics, reset, Power persistence and owner-level final summary contract: PASS');
+  console.log('First Complete Endless Run statistics, reset, Power persistence and owner-localized final summary contract: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
