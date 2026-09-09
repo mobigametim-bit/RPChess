@@ -18,6 +18,7 @@ const LANDSCAPE_MATRIX = [
   [844, 390]
 ];
 const PORTRAIT_MATRIX = [[768, 1024], [390, 844]];
+const WEAK_SURFACE_MATRIX = [[1024, 768], [844, 390]];
 
 async function freshDocument(page) {
   await page.goto(url, { waitUntil: 'networkidle' });
@@ -179,6 +180,145 @@ async function auditEventLayout(browser, width, height, language) {
   }
 }
 
+async function auditClassicSetup(browser, width, height, language) {
+  const page = await browser.newPage({ viewport: { width, height } });
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(String(error.stack || error)));
+  const label = `${width}x${height} ${language.toUpperCase()}`;
+  try {
+    await freshMenu(page);
+    await setLanguage(page, language);
+    await page.evaluate(() => dispatchEvent(new CustomEvent('rpchess:new-game')));
+    await page.locator('[data-game-setup-modal]:not([hidden])').waitFor();
+    await assertPageFitsViewport(page, `${label} Classic setup`);
+    await assertViewportContained(page, '[data-game-setup-modal]:not([hidden]) .classic-setup-panel', `${label} Classic setup frame`);
+    await assertFrameContains(page, '[data-game-setup-modal]:not([hidden]) .classic-setup-panel', ['[data-game-mode-select]', '[data-ai-elo]', '[data-player-color]', '[data-start-game]'], `${label} Classic setup ownership`);
+    assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
+  } finally {
+    await page.close();
+  }
+}
+
+async function auditPuzzleLayout(browser, width, height, language) {
+  const page = await browser.newPage({ viewport: { width, height } });
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(String(error.stack || error)));
+  const label = `${width}x${height} ${language.toUpperCase()}`;
+  try {
+    await freshMenu(page);
+    await setLanguage(page, language);
+    await startNewRun(page, { playerName: `Puzzle ${width} ${language}` });
+    await page.evaluate((key) => {
+      const run = JSON.parse(localStorage.getItem(key));
+      const route = {
+        id:'responsive.puzzle.route', step:1, type:'puzzle', label:'ЗАДАЧА', stars:1,
+        threatLabel:'СЛОЖНОСТЬ ★1', flavor:'На дороге обнаружена позиция, требующая точного решения.',
+        mechanicalHint:'Шахматная задача с конкретной целью.', seed:'responsive-puzzle-seed',
+        difficultyModel:'power-v1', supplyCostAtSelection:1, supplyPaid:1
+      };
+      run.supplies = Math.max(5, Number(run.supplies || 0));
+      run.journeyStep = 1;
+      run.currentTravelChoices = null;
+      run.activeTravelChoice = route;
+      run.currentPuzzle = null;
+      localStorage.setItem(key, JSON.stringify(run));
+      dispatchEvent(new CustomEvent('rpchess:run-updated'));
+      dispatchEvent(new CustomEvent('rpchess:puzzle-open', { detail:{ choice:route } }));
+    }, RUN_KEY);
+    await page.locator('[data-puzzle-screen]:not([hidden])').waitFor();
+    await page.waitForFunction(() => document.body.classList.contains('compact-puzzle-active'));
+    await assertPageFitsViewport(page, `${label} Puzzle`);
+    await assertViewportContained(page, '[data-puzzle-screen]:not([hidden])', `${label} Puzzle screen`);
+    await assertViewportContained(page, '[data-puzzle-board]', `${label} Puzzle board`);
+    await assertViewportContained(page, '.puzzle-layout > .puzzle-panel:first-child', `${label} Puzzle information frame`);
+    const layout = await page.evaluate(() => {
+      const board = document.querySelector('[data-puzzle-board]')?.getBoundingClientRect();
+      const panel = document.querySelector('.puzzle-layout > .puzzle-panel:first-child');
+      return {
+        board: board ? { width:board.width, height:board.height, right:board.right, bottom:board.bottom } : null,
+        panelScrollHeight:panel?.scrollHeight || 0,
+        panelClientHeight:panel?.clientHeight || 0,
+        panelOverflowY:panel ? getComputedStyle(panel).overflowY : '',
+        vw:innerWidth,
+        vh:innerHeight
+      };
+    });
+    assert(layout.board && Math.abs(layout.board.width - layout.board.height) <= 2, `${label}: Puzzle board must remain square`);
+    if (layout.panelScrollHeight > layout.panelClientHeight + 1) {
+      assert(['auto','scroll'].includes(layout.panelOverflowY), `${label}: overflowing Puzzle copy must scroll inside its information frame`);
+    }
+    assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
+  } finally {
+    await page.close();
+  }
+}
+
+async function auditStarvationAndEndless(browser, width, height, language) {
+  const page = await browser.newPage({ viewport: { width, height } });
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(String(error.stack || error)));
+  const label = `${width}x${height} ${language.toUpperCase()}`;
+  try {
+    await freshMenu(page);
+    await setLanguage(page, language);
+    await startNewRun(page, { playerName: `Run End ${width} ${language}` });
+    await page.waitForFunction(() => Boolean(globalThis.RPChessStarvation?.open && globalThis.RPChessEndlessRun?.open));
+
+    await page.evaluate((key) => {
+      const run = JSON.parse(localStorage.getItem(key));
+      const victim = run.roster.find((character) => !character.isRunKing);
+      run.supplies = 0;
+      run.journeyStep = 1;
+      run.currentTravelChoices = null;
+      run.activeTravelChoice = {
+        id:'responsive.starvation.route', step:1, type:'battle', label:'БИТВА', stars:2,
+        threatLabel:'УМЕРЕННАЯ', flavor:'Путь без припасов.', mechanicalHint:'Полная армия противника.',
+        seed:'responsive-starvation-seed', difficultyModel:'power-v1', supplyCostAtSelection:1, supplyPaid:0,
+        starvationVictimId:victim.id, starvationKingDied:false, starvationAcknowledged:false
+      };
+      run.roster = run.roster.map((character) => character.id === victim.id ? { ...character, status:'dead' } : character);
+      localStorage.setItem(key, JSON.stringify(run));
+      dispatchEvent(new CustomEvent('rpchess:run-updated'));
+      globalThis.RPChessStarvation.open(run);
+    }, RUN_KEY);
+    await page.locator('[data-starvation-screen]:not([hidden])').waitFor();
+    await assertPageFitsViewport(page, `${label} Starvation`);
+    await assertViewportContained(page, '[data-starvation-screen]:not([hidden])', `${label} Starvation screen`);
+    await assertViewportContained(page, '.starvation-panel', `${label} Starvation panel`);
+    await assertViewportContained(page, '[data-starvation-continue]', `${label} Starvation CTA`);
+    const starvation = await page.locator('.starvation-panel').evaluate((panel) => ({
+      scrollHeight:panel.scrollHeight,
+      clientHeight:panel.clientHeight,
+      overflowY:getComputedStyle(panel).overflowY
+    }));
+    if (starvation.scrollHeight > starvation.clientHeight + 1) {
+      assert(['auto','scroll'].includes(starvation.overflowY), `${label}: overflowing Starvation content must scroll inside its panel`);
+    }
+
+    await page.evaluate((key) => {
+      const run = JSON.parse(localStorage.getItem(key));
+      run.ended = true;
+      run.endReason = 'starvation_king';
+      run.activeTravelChoice = null;
+      run.currentTravelChoices = null;
+      run.roster = run.roster.map((character) => character.isRunKing ? { ...character, status:'dead' } : character);
+      localStorage.setItem(key, JSON.stringify(run));
+      dispatchEvent(new CustomEvent('rpchess:run-updated'));
+      globalThis.RPChessEndlessRun.open(run);
+    }, RUN_KEY);
+    await page.locator('[data-endless-run-screen]:not([hidden])').waitFor();
+    await assertPageFitsViewport(page, `${label} Endless summary`);
+    await assertViewportContained(page, '[data-endless-run-screen]:not([hidden])', `${label} Endless summary screen`);
+    await assertViewportContained(page, '.endless-run-panel', `${label} Endless summary panel`);
+    await assertFrameContains(page, '.endless-run-panel', ['[data-endless-run-metric]', '[data-endless-run-new]', '[data-endless-run-menu]'], `${label} Endless summary ownership`);
+    await assertViewportContained(page, '[data-endless-run-new]', `${label} Endless new game CTA`);
+    await assertViewportContained(page, '[data-endless-run-menu]', `${label} Endless menu CTA`);
+    assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
+  } finally {
+    await page.close();
+  }
+}
+
 async function auditPrepAndCombat(browser, width, height, language) {
   const page = await browser.newPage({ viewport: { width, height } });
   const errors = [];
@@ -292,6 +432,14 @@ async function auditPrepAndCombat(browser, width, height, language) {
       assert(prep.documentHeight <= prep.vh + 1 && prep.bodyHeight <= prep.vh + 1, `${label}: Battle prep must not require page scrolling`);
     }
     await assertViewportContained(page, '[data-battle-start]', `${label} Battle start`);
+    await page.locator('[data-battle-start]').click();
+    await page.locator('[data-classic-screen]:not([hidden])').waitFor();
+    await page.evaluate(() => globalThis.RPChessBattle.finishBattle({ over:true, type:'stalemate', winner:null }));
+    await page.locator('[data-battle-aftermath]:not([hidden])').waitFor();
+    await assertPageFitsViewport(page, `${label} Battle aftermath`);
+    await assertViewportContained(page, '[data-battle-aftermath]:not([hidden])', `${label} Battle aftermath screen`);
+    await assertViewportContained(page, '.battle-aftermath-panel', `${label} Battle aftermath panel`);
+    await assertViewportContained(page, '[data-battle-continue]', `${label} Battle aftermath CTA`);
     assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
   } finally {
     await page.close();
@@ -304,10 +452,13 @@ async function auditPrepAndCombat(browser, width, height, language) {
     for (const language of LANGUAGES) {
       for (const [width, height] of PORTRAIT_MATRIX) await auditPortraitLock(browser, width, height, language);
       for (const [width, height] of LANDSCAPE_MATRIX) await auditViewport(browser, width, height, language);
-      for (const [width, height] of [[1024, 768], [844, 390]]) await auditEventLayout(browser, width, height, language);
+      for (const [width, height] of WEAK_SURFACE_MATRIX) await auditClassicSetup(browser, width, height, language);
+      for (const [width, height] of WEAK_SURFACE_MATRIX) await auditEventLayout(browser, width, height, language);
+      for (const [width, height] of WEAK_SURFACE_MATRIX) await auditPuzzleLayout(browser, width, height, language);
+      for (const [width, height] of WEAK_SURFACE_MATRIX) await auditStarvationAndEndless(browser, width, height, language);
       for (const [width, height] of [[1180, 820], [1024, 768], [844, 390]]) await auditPrepAndCombat(browser, width, height, language);
     }
-    console.log('Responsive viewport browser: PASS — RU/EN one-screen geometry, 1180/980 breakpoint boundaries, portrait lock, Language/Identity/Chronicle frames, Event rail, Travel, stable Classic Journal, Skirmish combat/aftermath and Battle prep contracts');
+    console.log('Responsive viewport browser: PASS — RU/EN one-screen geometry, 1180/980 breakpoint boundaries, portrait lock, Settings/Language/Identity/Chronicle/Classic setup frames, Event rail, Travel, Puzzle/Training, Starvation, Endless summary, stable Classic Journal, Skirmish combat/aftermath and Battle prep/aftermath contracts');
   } finally {
     await browser.close();
   }
