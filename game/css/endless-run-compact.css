@@ -1,0 +1,4 @@
+/* Endless Run owner rule formerly supplied by post-pages compatibility polish. */
+@media (orientation:landscape) {
+  html[data-landscape-ui='1'] body.endless-run-active .resource-hud{display:none!important}
+}
