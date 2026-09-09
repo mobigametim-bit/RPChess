@@ -1,10 +1,13 @@
 import { readRun } from './run-persistence.mjs';
 import { readPlayerRating } from './player-rating.mjs';
 import { summarizeRun } from './endless-run-core.mjs';
+import { currentLanguage, subscribe, translateLegacy } from './i18n.mjs';
+import { runtimeT } from '../localization/runtime-ui.mjs';
 
 let screen = null;
 let activeRun = null;
 
+function t(key, params = {}) { return runtimeT(currentLanguage(), key, params); }
 function audio() { return globalThis.RPChessRebootAudio; }
 
 function ensureStylesheet(marker, href) {
@@ -21,6 +24,25 @@ function ensureCss() {
   ensureStylesheet('data-endless-run-compact-css', 'css/endless-run-compact.css?v=20260909-owner1');
 }
 
+function renderStaticCopy() {
+  if (!screen) return;
+  screen.setAttribute('aria-label', t('endless.ariaLabel'));
+  const kicker = screen.querySelector('.reboot-eyebrow');
+  const title = screen.querySelector('h1');
+  const metrics = screen.querySelector('.endless-run-metrics');
+  if (kicker) kicker.textContent = t('endless.kicker');
+  if (title) title.textContent = t('endless.title');
+  if (metrics) metrics.setAttribute('aria-label', t('endless.metricsAria'));
+  for (const metric of screen.querySelectorAll('[data-endless-run-metric]')) {
+    const label = metric.closest('.endless-run-metric')?.querySelector('span');
+    if (label) label.textContent = t(`endless.metric.${metric.dataset.endlessRunMetric}`);
+  }
+  const newButton = screen.querySelector('[data-endless-run-new]');
+  const menuButton = screen.querySelector('[data-endless-run-menu]');
+  if (newButton) newButton.textContent = t('endless.newGame');
+  if (menuButton) menuButton.textContent = t('endless.menu');
+}
+
 function ensureScreen() {
   if (screen) return screen;
   const app = document.querySelector('#app');
@@ -30,32 +52,32 @@ function ensureScreen() {
   screen.className = 'endless-run-screen';
   screen.dataset.endlessRunScreen = '';
   screen.hidden = true;
-  screen.setAttribute('aria-label', 'Итоги забега');
   screen.innerHTML = `
     <div class="endless-run-backdrop" aria-hidden="true"><img src="generated_assets/scene_defeat.jpg" alt=""></div>
     <div class="endless-run-shell">
       <img class="endless-run-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
       <section class="endless-run-panel ui-panel-safe">
-        <div class="reboot-eyebrow">ПУТЕШЕСТВИЕ ОКОНЧЕНО</div>
-        <h1>ЗАБЕГ ЗАВЕРШЁН</h1>
+        <div class="reboot-eyebrow"></div>
+        <h1></h1>
         <p class="endless-run-reason" data-endless-run-reason></p>
-        <div class="endless-run-metrics" aria-label="Статистика завершённого забега">
-          <div class="endless-run-metric"><span>НЕДЕЛЬ В ПУТИ</span><strong data-endless-run-metric="weeks">0</strong></div>
-          <div class="endless-run-metric"><span>ЗАРАБОТАНО ЗОЛОТА</span><strong data-endless-run-metric="goldEarned">0</strong></div>
-          <div class="endless-run-metric"><span>ПОБЕД В СТЫЧКАХ</span><strong data-endless-run-metric="skirmishWins">0</strong></div>
-          <div class="endless-run-metric"><span>ПОБЕД В БИТВАХ</span><strong data-endless-run-metric="battleWins">0</strong></div>
-          <div class="endless-run-metric"><span>РЕШЕНО ЗАДАЧ</span><strong data-endless-run-metric="puzzlesSolved">0</strong></div>
-          <div class="endless-run-metric"><span>ПРОЙДЕНО СОБЫТИЙ</span><strong data-endless-run-metric="eventsResolved">0</strong></div>
-          <div class="endless-run-metric"><span>НАНЯТО ГЕРОЕВ</span><strong data-endless-run-metric="heroesRecruited">0</strong></div>
-          <div class="endless-run-metric endless-run-metric--power"><span>ИТОГОВАЯ МОЩЬ</span><strong data-endless-run-metric="finalPower">500</strong></div>
+        <div class="endless-run-metrics">
+          <div class="endless-run-metric"><span></span><strong data-endless-run-metric="weeks">0</strong></div>
+          <div class="endless-run-metric"><span></span><strong data-endless-run-metric="goldEarned">0</strong></div>
+          <div class="endless-run-metric"><span></span><strong data-endless-run-metric="skirmishWins">0</strong></div>
+          <div class="endless-run-metric"><span></span><strong data-endless-run-metric="battleWins">0</strong></div>
+          <div class="endless-run-metric"><span></span><strong data-endless-run-metric="puzzlesSolved">0</strong></div>
+          <div class="endless-run-metric"><span></span><strong data-endless-run-metric="eventsResolved">0</strong></div>
+          <div class="endless-run-metric"><span></span><strong data-endless-run-metric="heroesRecruited">0</strong></div>
+          <div class="endless-run-metric endless-run-metric--power"><span></span><strong data-endless-run-metric="finalPower">500</strong></div>
         </div>
         <div class="endless-run-actions">
-          <button class="reboot-button reboot-button--primary" type="button" data-endless-run-new>НОВАЯ ИГРА</button>
-          <button class="reboot-button reboot-button--primary" type="button" data-endless-run-menu>ГЛАВНОЕ МЕНЮ</button>
+          <button class="reboot-button reboot-button--primary" type="button" data-endless-run-new></button>
+          <button class="reboot-button reboot-button--primary" type="button" data-endless-run-menu></button>
         </div>
       </section>
     </div>`;
   app.append(screen);
+  renderStaticCopy();
   screen.querySelector('[data-endless-run-new]')?.addEventListener('click', startNewRun);
   screen.querySelector('[data-endless-run-menu]')?.addEventListener('click', returnToMenu);
   return screen;
@@ -72,10 +94,11 @@ function hideAllScenes() {
 function render(run) {
   const root = ensureScreen();
   if (!root || !run) return false;
+  renderStaticCopy();
   const profile = readPlayerRating();
   const summary = summarizeRun(run, { power: profile.power });
   const reason = root.querySelector('[data-endless-run-reason]');
-  if (reason) reason.textContent = `${summary.kingName}. ${summary.endReasonLabel}`;
+  if (reason) reason.textContent = `${translateLegacy(summary.kingName)}. ${translateLegacy(summary.endReasonLabel)}`;
   for (const metric of root.querySelectorAll('[data-endless-run-metric]')) {
     const key = metric.dataset.endlessRunMetric;
     metric.textContent = String(summary[key] ?? 0);
@@ -119,6 +142,7 @@ function returnToMenu() {
 }
 
 ensureScreen();
+subscribe(() => { renderStaticCopy(); if (activeRun && screen && !screen.hidden) render(activeRun); });
 addEventListener('rpchess:run-end', (event) => open(event?.detail?.run || null));
 const storedRun = readRun();
 if (storedRun?.ended) queueMicrotask(() => open(storedRun));
