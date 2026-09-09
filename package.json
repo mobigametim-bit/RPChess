@@ -4,8 +4,11 @@
   "version": "3.2.0",
   "description": "RPChess Reboot — fantasy roguelite built on classical chess",
   "devDependencies": {
-    "esbuild": "0.25.8",
-    "wrangler": "^4.0.0"
+    "esbuild": "^0.28.2",
+    "wrangler": "^4.130.0"
+  },
+  "overrides": {
+    "sharp": "0.35.4"
   },
   "scripts": {
     "verify": "node -e \"require('./scripts/verify-source.cjs')(require('path').resolve('game'))\"",

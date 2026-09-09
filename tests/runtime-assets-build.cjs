@@ -22,6 +22,18 @@ function equal(relative,expected){
 }
 assert(fs.existsSync(path.join(DIST,'index.html')),'dist must exist; run npm run build first');
 
+for(const relative of fs.readdirSync(path.join(DIST,'css')).filter((name)=>name.endsWith('.css'))){
+  const cssPath=path.join(DIST,'css',relative);
+  const source=fs.readFileSync(cssPath,'utf8');
+  for(const match of source.matchAll(/url\(\s*(['"]?)([^'"\)]+)\1\s*\)/g)){
+    const reference=match[2].trim().split(/[?#]/,1)[0];
+    if(!reference||/^(?:data:|https?:|\/\/|#)/i.test(reference))continue;
+    const target=path.resolve(path.dirname(cssPath),reference);
+    assert(target.startsWith(`${DIST}${path.sep}`),`${relative} contains an out-of-dist asset URL: ${reference}`);
+    assert(fs.existsSync(target),`${relative} references a local asset missing from dist: ${reference}`);
+  }
+}
+
 equal('assets/races/humans/board/white.png',piece.optimizePngBuffer(read(GAME,'assets/races/humans/board/white.png'),384).buffer);
 equal('assets/vfx/pin_ice_full.png',piece.optimizePngBuffer(read(GAME,'assets/vfx/pin_ice_full.png'),pinIce.PIN_ICE_RUNTIME_MAX_SIDE).buffer);
 equal('assets/vfx/aura_white.png',piece.optimizePngBuffer(read(GAME,'assets/vfx/aura_white.png'),aura.AURA_RUNTIME_MAX_SIDE).buffer);
@@ -33,6 +45,7 @@ for(const relative of [
   'assets/heroes/aldric_wall/ability_icon.png',
   'assets/kings/oathkeeper/command_icon.png',
   'assets/events/register-04/contract_three_seals.png',
+  'generated_assets/ui_button_primary.png',
   'generated_assets/ui_button_secondary.png',
   'generated_assets/unit_boss_king_enemy.png'
 ])assert(!fs.existsSync(path.join(DIST,relative)),`${relative} is a source/reserve asset and must not be shipped in dist`);

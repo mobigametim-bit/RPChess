@@ -4,7 +4,7 @@ const GENERATED_RUNTIME_ASSETS=Object.freeze([
   'node_battle.png','node_elite.png','node_shop.png','node_story.png','node_training.png',
   'reward_gold.png','reward_heal.png','reward_recruit.png','reward_supplies.png',
   'scene_battle.jpg','scene_campaign.jpg','scene_defeat.jpg','scene_reward.jpg','scene_shop.jpg','scene_training_ui.jpg','scene_victory.jpg',
-  'splash_poster.jpg','title_wordmark.png','ui_button_primary.png'
+  'splash_poster.jpg','title_wordmark.png'
 ].map(name=>`generated_assets/${name}`));
 function copy(relative){const from=path.join(source,relative),to=path.join(dist,relative);if(!fs.existsSync(from))throw new Error(`missing Reboot build input: ${relative}`);fs.mkdirSync(path.dirname(to),{recursive:true});fs.cpSync(from,to,{recursive:true,force:true});}
 async function main(){

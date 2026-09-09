@@ -56,7 +56,7 @@ async function fresh(page) {
       const current = JSON.parse(localStorage.getItem(key));
       current.supplies = 0;
       localStorage.setItem(key, JSON.stringify(current));
-      dispatchEvent(new CustomEvent('rpchess:run-updated'));
+      dispatchEvent(new CustomEvent('rpchess:resources-updated', { detail:{ source:'resources-browser-live-update' } }));
     }, RUN_KEY);
     await page.waitForTimeout(30);
     assert.strictEqual(await page.locator('.travel-choice-card__cost.is-empty').count(), 3);
