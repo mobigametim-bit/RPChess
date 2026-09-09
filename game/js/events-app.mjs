@@ -177,7 +177,6 @@ function choiceButton(eventChoice) {
   const unavailable = availability.enabled ? '' : localizeEventSource(availability.reason);
   button.innerHTML = `<span class="events-choice__head"><strong></strong><span>${chance}</span></span><span class="events-choice__meta">${[role,cost,risk].filter(Boolean).map((x)=>`<small>${x}</small>`).join('')}</span>${availability.enabled?'':`<span class="events-choice__disabled">${unavailable}</span>`}`;
   button.querySelector('strong').textContent = presentEventText(displayedChoiceAction(choice));
-
   if (heroState) {
     const heroBlock = document.createElement('span');
     heroBlock.className = 'events-choice__hero';
@@ -368,5 +367,5 @@ subscribe(() => {
   if(screen&&!screen.hidden&&activeRun?.activeTravelChoice?.type==='event')renderEvent();
 });
 addEventListener('rpchess:event-open',openEvent);
-addEventListener('rpchess:run-updated',syncRun);
+addEventListener('rpchess:combat-completed',syncRun);
 globalThis.RPChessEvents=Object.freeze({open:openEvent,render:renderEvent,get run(){return activeRun;},get state(){return activeRun?.currentEvent||null;}});
