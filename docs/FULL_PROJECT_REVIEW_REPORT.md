@@ -3,7 +3,7 @@
 **Audit status:** REMEDIATION IN PROGRESS  
 **Frozen production baseline:** `main@e92831ca5d6e0c14fb2d919e410180ce77b97ce6`  
 **Audit/remediation branch:** `audit/full-project-review-2026-09-08`  
-**Current remediation code head:** `983e8907a1419755cdd0177124fac906ec8a26f8`  
+**Current remediation code head:** `da8e0a56e136d450bef633d52682b2274c0ee2ee`  
 **Started:** 2026-09-08
 
 This document is the source of truth for remediation. `main` remains untouched. Cloudflare remains manual-only. Do not restore compatibility patch layers, post-render DOM rewrites, runtime DOM reparenting, whole-document UI workarounds or broad state-mutating event consumers to conceal ownership problems.
@@ -198,3 +198,20 @@ Completed owner migrations:
 6. Keep `main` frozen and Cloudflare manual-only until explicit owner direction.
 
 Every subsequent remediation checkpoint must update this report and end with a concrete numbered **Next actions** list.
+
+### Responsive owner checkpoint — da8e0a56
+
+- `e42b5ad834defe31e9cd7a5f4d34e147aaa8ccdd` removed the remaining runtime `landscape-ui-redesign.mjs` CSS injection, moved compact-combat viewport ownership into the static landscape stylesheet, and passed exact-checkout `gate:local` plus targeted `1024×768 RU` combat geometry.
+- `da8e0a56e136d450bef633d52682b2274c0ee2ee` restores the accepted owner-scoped `body.events-active` Event landscape contract in static `landscape-ui-redesign.css` after that runtime-style removal.
+- Existing `events.cjs` now prevents scoped Event choice rails from returning to two columns.
+- Exact-checkout `gate:local`: **PASS**.
+- Targeted Event Chromium (`1024×768 RU`, `844×390 RU`): **PASS**.
+- Full responsive/all-Chromium validation continues after this checkpoint; no full-browser PASS is claimed here.
+- `main`, Pages deployment policy and Cloudflare remain untouched.
+
+**Дальнейшие действия:**
+1. Run the complete strengthened RU/EN/boundary responsive matrix on this implementation lineage.
+2. If responsive is green, run all Chromium contracts on the same implementation; otherwise fix only the next evidence-backed owner defect.
+3. Normalize `package-lock.json` reproducibly through npm and prove `npm ci` plus dependency security.
+4. Finish evidence-backed asset inventory and keep ambiguous/planned assets.
+5. Remove temporary audit helpers/workflows, then finalize `CURRENT_STATE.md` and historical/deployment documentation.
