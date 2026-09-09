@@ -3,7 +3,7 @@
 **Audit status:** REMEDIATION IN PROGRESS  
 **Frozen production baseline:** `main@e92831ca5d6e0c14fb2d919e410180ce77b97ce6`  
 **Audit/remediation branch:** `audit/full-project-review-2026-09-08`  
-**Current remediation code head:** `d13841104cd3467cd3413182f3d49c3b0c8eba86`  
+**Current remediation code head:** `25fde16b7235fc0d3bdb743fb1f85c962869c0db`  
 **Started:** 2026-09-08
 
 This document is the source of truth for remediation. `main` remains untouched. Cloudflare remains manual-only. Do not restore compatibility patch layers, post-render DOM rewrites, runtime DOM reparenting, whole-document UI workarounds or broad state-mutating event consumers to conceal ownership problems.
@@ -116,15 +116,15 @@ Completed owner migrations:
 - Six `generated_assets/commander_*.png` files were proven unreachable after Vertical Slice/approved-shell removal. Historical owners were `approved-shell-data.mjs`, `commander-selection-final.mjs` and Vertical Slice presentation; those runtime owners are absent on the audit branch. Removed in `905c9daa` → `7c3ca286`. Bytes removed: **857,650**.
 - `ui_panel_frame.png` and `ui_panel_wide.png` were proven obsolete by the current frameless production invariant: active owner CSS is verifier-guarded against both files, and legacy `game/style.css` was deleted with Vertical Slice. Removed in `e1de42f1` + `dfd6651f`. Bytes removed: **91,263**.
 - Five legacy map-node assets (`node_bargain`, `node_boss`, `node_event`, `node_repair`, `node_vault`) were proven unreachable. The legacy `approved-shell-data.mjs`/Vertical Slice route map owned boss/event/repair/vault; `node_bargain` had no production owner even on the frozen baseline. Current Travel keeps the five Reboot route icons `node_battle`, `node_elite`, `node_shop`, `node_story`, `node_training`. Removed in `1fecc0cc` → `9c9f0a66`. Bytes removed: **194,295**.
-- Six legacy reward assets (`reward_artifact`, `reward_experience`, `reward_heal`, `reward_meta`, `reward_recruit`, `reward_upgrade`) were proven unreachable. `reward_heal`/`reward_meta` were old Vertical Slice/Army Foundation resource substitutes; `reward_recruit` was owned only by deleted review2 compatibility presentation; artifact/experience/upgrade had no production owner. Current Reboot keeps `reward_gold.png` and `reward_supplies.png`. Removed in `9861f533` → `a3adc5c1`. Bytes removed: **191,338**.
+- Four legacy reward assets (`reward_artifact`, `reward_experience`, `reward_meta`, `reward_upgrade`) remain proven unreachable and removed. A later exact-checkout review caught that `reward_heal.png` and `reward_recruit.png` are current Settlement service art; both were restored from the frozen baseline, their owner CSS paths were corrected, and the existing Settlement regression now protects their presence. Net reward-family reduction: **122,305 bytes**.
 - Eight legacy scene backgrounds (`scene_achievements`, `scene_bargain`, `scene_codex`, `scene_event`, `scene_repair`, `scene_settings`, `scene_training`, `scene_vault`) were proven owned only by deleted approved-shell/Vertical Slice presentation or removed legacy Event fallback. Current Reboot-owned `scene_training_ui`, `scene_victory`, Campaign/Battle/Shop/Reward/Defeat backgrounds are preserved. Removed in `879a0f27` → `d1384110`. Bytes removed: **1,123,762**.
-- Proven asset reduction: **2,458,308 bytes (~2.34 MiB)** across 27 files. No active race/piece/board/Event-background dynamic family was deleted.
+- Proven asset reduction after restoring the two active Settlement service assets: **2,389,275 bytes (~2.28 MiB)** across **25 files**. No active race/piece/board/Event-background dynamic family was deleted.
 
 ## Responsive truth
 
 - Geometry helper rejects page overflow, nonzero window scroll and frame/viewport escapes.
 - Portrait stale setup fixed `71c3f39b`; real 3px portrait overflow fixed `480ec6f3`; Language selector fixed `24e7414d`.
-- Responsive suite explicitly covers weak surfaces in `e37f3771`.
+- Responsive suite explicitly covers weak surfaces in `e37f3771`. Exact Chromium validation later exposed a real `1366×768` RU main-menu overflow; root cause was a fixed `52px` height subtraction that did not match responsive outer padding. Owner CSS fix `25fde16b` now subtracts the actual responsive vertical padding. The same strengthened suite progressed to a separate `844×390` RU Chronicle vertical escape, which remains the next geometry fix.
 
 ## Legacy / build / deployment
 
@@ -146,20 +146,20 @@ Completed owner migrations:
 - Pages audit auto-trigger removed `496bfac9`.
 - One-off full-review trigger `0931aebb` produced no check run through connector; restored manual-only `51464246`.
 - Localization completion (`f37994ac` → `30755415`): implementation/static contracts complete; no fresh full gate claimed.
-- Semantic lifecycle (`6aaa8422` → `9f08c276`) + browser instrumentation `a447df1d`: implementation/contracts complete; **no fresh execution PASS is claimed** for current head.
-- Dependency security (`f04df06a` → `c88dfac6`): direct vulnerable ZIP install edge removed; contract not yet executed in current CI; lock metadata normalization pending.
-- Asset inventory tooling (`a497089f`, `d7176767`) passed standalone Node syntax validation during remediation, but no exact-checkout full inventory execution or current build/Chromium PASS is claimed yet. All 27 deletions through `d1384110` were based on explicit owner/non-reachability evidence, not on an unreviewed automated candidate list.
-- No full 17-contract Chromium PASS is claimed for current head.
+- Semantic lifecycle (`6aaa8422` → `9f08c276`) + browser instrumentation `a447df1d`: implementation/contracts complete. Current exact-checkout `gate:local` executes the lifecycle Node contract successfully; browser loop verification remains part of the full Chromium gate.
+- Dependency security (`f04df06a` → `c88dfac6`): direct vulnerable ZIP install edge removed; dependency-security contract now passes in exact-checkout `gate:local`. Lock metadata normalization remains pending.
+- Asset inventory tooling (`a497089f`, `d7176767`) has now executed on an exact audit checkout. Its broad automatic candidate set includes manifest-driven production assets and is therefore **candidate-only**, never a bulk-delete list. Manual ownership proof remains mandatory. The corrected proven cleanup is 25 files / 2,389,275 bytes after restoring active Settlement heal/recruit art.
+- Exact-checkout `gate:local` is **PASS** on the current remediation lineage, including localization, security, domain tests, content validation, production build and runtime asset-cache parity. Full Chromium is **not yet PASS**: run `34371249143` progressed past the fixed menu and exposed the separate `844×390` RU Chronicle overflow.
 
 ---
 
 # Open verification / cleanup items
 
-1. Inspect the remaining `generated_assets` UI/logo/special-unit families and delete only additional positive non-reachability candidates.
-2. Execute `npm run assets:orphans:report` on an exact audit checkout and reconcile candidates with manual owner proof.
+1. Fix the evidence-backed `844×390` RU Chronicle viewport escape in the Chronicle/menu owner CSS and rerun the strengthened responsive contract.
+2. Finish manual proof for remaining `generated_assets` UI/logo/special-unit candidates; preserve anything ambiguous or owner-backed.
 3. Normalize `package-lock.json` reproducibly so stale `adm-zip` metadata disappears without hand-editing integrity data.
-4. Execute targeted lifecycle/Travel/security/assets contracts, then full current `gate:local` + all 17 Chromium contracts.
-5. Final `CURRENT_STATE.md`, deployment/history docs and Notion synchronization after accepted final SHA.
+4. Rerun full current `gate:local` + all Chromium contracts after the final geometry/asset/lock cleanup.
+5. Remove the temporary one-off validation workflow, then finalize `CURRENT_STATE.md`, deployment/history docs and Notion synchronization on the accepted SHA.
 
 ---
 
@@ -178,7 +178,7 @@ Completed owner migrations:
 
 ## Phase C — validation/tooling
 8. **DONE — verification pending:** dead direct `adm-zip` dependency removed and dependency-security contract added.
-9. **IN PROGRESS:** asset reachability inventory. Reproducible tooling exists; 27 positively unreachable files removed (**2.34 MiB**).
+9. **IN PROGRESS:** asset reachability inventory. Reproducible tooling has executed on an exact checkout; 25 positively unreachable files remain removed (**2.28 MiB net**) after restoring two active Settlement service assets.
 10. Normalize lock metadata reproducibly; do not hand-edit integrity graph.
 11. Run targeted regressions and then `gate:local` + all 17 Chromium contracts when executable.
 
@@ -190,11 +190,11 @@ Completed owner migrations:
 
 ## Next actions
 
-1. Finish reachability proof for remaining `generated_assets`: logo/wordmark, secondary/danger buttons, checkbox/chip/divider/sliders and special-unit images; preserve anything with explicit/current owner evidence.
-2. Run `npm run assets:orphans:report` on the first executable exact audit checkout and reconcile every candidate with manual proof before any further bulk deletion.
-3. Normalize `package-lock.json` at the first reproducible lockfile-generation opportunity; do not manually alter integrity records.
-4. Run targeted lifecycle/Travel/security/assets checks and then full `gate:local` + all 17 Chromium contracts; update verification-pending findings only from actual results.
-5. Finish `CURRENT_STATE.md`, deployment/history docs/Notion synchronization and final release-readiness report.
+1. Fix the `844×390` RU Chronicle geometry defect exposed after the validated menu fix; rerun responsive RU/EN/boundary coverage.
+2. Finish manual reachability proof for the remaining `generated_assets` candidates; `ui_button_primary.png`, active route/reward art and all dynamic families stay protected.
+3. Normalize `package-lock.json` reproducibly and prove `npm ci` + dependency-security after removing stale `adm-zip` metadata.
+4. Run the final `gate:local` + complete Chromium gate on the resulting SHA and update verification-pending findings only from actual results.
+5. Remove `.github/workflows/audit-validation-one-off.yml`, then finish `CURRENT_STATE.md`, deployment/history docs/Notion synchronization and final release-readiness report.
 6. Keep `main` frozen and Cloudflare manual-only until explicit owner direction.
 
 Every subsequent remediation checkpoint must update this report and end with a concrete numbered **Next actions** list.
