@@ -1,5 +1,11 @@
-const fs=require('fs'),path=require('path'),verifySource=require('./verify-source.cjs'),{prepareStockfishAssets}=require('./stockfish-assets.cjs'),{assertPieceAssetBudget,formatBytes}=require('./piece-asset-runtime.cjs'),{assertPortraitAssetBudget}=require('./portrait-asset-runtime.cjs'),{assertBackgroundAssetBudget}=require('./background-asset-runtime.cjs'),{assertBoardAssetBudget}=require('./board-asset-runtime.cjs'),{assertPinIceAssetBudget}=require('./pin-ice-asset-runtime.cjs'),{assertAuraAssetBudget}=require('./aura-asset-runtime.cjs'),{materializeRuntimeAssets,cacheText}=require('./runtime-assets-build.cjs'),{inspectRuntimeAssetCache}=require('./runtime-asset-cache.cjs');
+const fs=require('fs'),path=require('path'),verifySource=require('./verify-source.cjs'),{prepareStockfishAssets}=require('./stockfish-assets.cjs'),{assertPieceAssetBudget,collectPieceAssetPaths,formatBytes}=require('./piece-asset-runtime.cjs'),{assertPortraitAssetBudget,collectPortraitAssetPaths}=require('./portrait-asset-runtime.cjs'),{assertBackgroundAssetBudget,collectBackgroundAssetPaths}=require('./background-asset-runtime.cjs'),{assertBoardAssetBudget,collectBoardAssetPaths}=require('./board-asset-runtime.cjs'),{assertPinIceAssetBudget}=require('./pin-ice-asset-runtime.cjs'),{assertAuraAssetBudget}=require('./aura-asset-runtime.cjs'),{materializeRuntimeAssets,cacheText}=require('./runtime-assets-build.cjs'),{inspectRuntimeAssetCache}=require('./runtime-asset-cache.cjs');
 const root=path.resolve(__dirname,'..'),source=path.join(root,'game'),dist=path.join(root,'dist');
+const GENERATED_RUNTIME_ASSETS=Object.freeze([
+  'node_battle.png','node_elite.png','node_shop.png','node_story.png','node_training.png',
+  'reward_gold.png','reward_heal.png','reward_recruit.png','reward_supplies.png',
+  'scene_battle.jpg','scene_campaign.jpg','scene_defeat.jpg','scene_reward.jpg','scene_shop.jpg','scene_training_ui.jpg','scene_victory.jpg',
+  'splash_poster.jpg','title_wordmark.png','ui_button_primary.png'
+].map(name=>`generated_assets/${name}`));
 function copy(relative){const from=path.join(source,relative),to=path.join(dist,relative);if(!fs.existsSync(from))throw new Error(`missing Reboot build input: ${relative}`);fs.mkdirSync(path.dirname(to),{recursive:true});fs.cpSync(from,to,{recursive:true,force:true});}
 async function main(){
   verifySource(source);
@@ -11,7 +17,8 @@ async function main(){
     'js/encounter-difficulty.mjs','js/player-rating.mjs','js/player-rating-runtime.mjs','js/race-assets.mjs','js/event-narrative.mjs','js/content',
     'js/skirmish-core.mjs','js/skirmish-app.mjs','js/battle-core.mjs','js/battle-app.mjs','js/battle-mercenaries.mjs','js/battle-route.mjs','js/travel-choice-core.mjs','js/travel-choice-app.mjs','js/ux-consistency.mjs','js/post-redesign-playtest-pass1b.mjs','js/ui-redesign-final.mjs','js/cross-scene-visuals.mjs','js/landscape-ui-redesign.mjs',
     'js/resources-core.mjs','js/resources-app.mjs','js/settlement-core.mjs','js/settlement-app.mjs','js/starvation-core.mjs','js/starvation-app.mjs','js/events-data.mjs','js/events-core.mjs','js/events-app.mjs','js/events','js/puzzles',
-    'assets/kings/oathkeeper','assets/heroes','assets/races','assets/events','assets/vfx/pin_ice_full.png','assets/vfx/pin_ice_partial.png','assets/vfx/aura_white.png','assets/vfx/aura_black.png','assets/vfx/aura_red.png','fonts','generated_assets','music','SFX'
+    'assets/vfx/pin_ice_full.png','assets/vfx/pin_ice_partial.png','assets/vfx/aura_white.png','assets/vfx/aura_black.png','assets/vfx/aura_red.png','fonts','music','SFX',
+    ...collectBoardAssetPaths(source),...collectPieceAssetPaths(source),...collectPortraitAssetPaths(source),...collectBackgroundAssetPaths(source),...GENERATED_RUNTIME_ASSETS
   ])copy(relative);
   const runtime=materializeRuntimeAssets(dist);
   assertBoardAssetBudget(dist);

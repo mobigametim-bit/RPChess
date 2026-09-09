@@ -29,4 +29,12 @@ equal('assets/races/orcs/pieces/pawn.png',expectedPng('assets/races/orcs/pieces/
 equal('assets/kings/oathkeeper/portrait.png',expectedPng('assets/kings/oathkeeper/portrait.png',portrait.PORTRAIT_RUNTIME_MAX_SIDE,portrait.PORTRAIT_RUNTIME_MAX_BYTES));
 equal('assets/events/register-04/backgrounds/generic/forest_crossroad.png',background.optimizeBackgroundBuffer(read(GAME,'assets/events/register-04/backgrounds/generic/forest_crossroad.png'),background.BACKGROUND_RUNTIME_CHANNEL_BITS).buffer);
 
-console.log('Runtime asset cached build parity: PASS — board, pin ice, aura, piece, portrait and background bytes match canonical transforms');
+for(const relative of [
+  'assets/heroes/aldric_wall/ability_icon.png',
+  'assets/kings/oathkeeper/command_icon.png',
+  'assets/events/register-04/contract_three_seals.png',
+  'generated_assets/ui_button_secondary.png',
+  'generated_assets/unit_boss_king_enemy.png'
+])assert(!fs.existsSync(path.join(DIST,relative)),`${relative} is a source/reserve asset and must not be shipped in dist`);
+
+console.log('Runtime asset cached build parity: PASS — canonical assets match transforms and source/reserve assets stay out of dist');

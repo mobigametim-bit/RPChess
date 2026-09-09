@@ -387,7 +387,7 @@ async function auditPrepAndCombat(browser, width, height, language) {
         });
         return { button:button ? { top:button.top, bottom:button.bottom } : null, rows, vh:innerHeight };
       });
-      assert(aftermath.button && aftermath.button.top >= -1 && aftermath.button.bottom <= aftermath.vh + 1, `${label}: aftermath CTA must be visible without scrolling`);
+      assert(aftermath.button && aftermath.button.top >= -1 && aftermath.button.bottom <= aftermath.vh + 1, `${label}: aftermath CTA must be visible without scrolling ${JSON.stringify(aftermath)}`);
       assert.strictEqual(aftermath.rows.length, 6, `${label}: all six named survivors must remain present`);
       assert(aftermath.rows.every((row) => row.top >= -1 && row.bottom <= aftermath.vh + 1), `${label}: all six survivor rows must be visible without page scrolling`);
     }
