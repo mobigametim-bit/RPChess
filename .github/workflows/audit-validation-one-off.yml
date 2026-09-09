@@ -65,7 +65,7 @@ jobs:
           assertions=(
               "  const eventChoiceLandscapeBlocks=[...landscapeCss.matchAll(/\\.events-choices\\s*\\{([^}]*)\\}/g)].map(match=>match[1]);\n"
               "  assert(eventChoiceLandscapeBlocks.length>=2,'landscape owner must define tablet and phone Event choice rails');\n"
-              "  assert(eventChoiceLandscapeBlocks.every(block=>!block.includes('repeat(2'))),'Event landscape choice rails must never return to two columns');\n"
+              "  assert(eventChoiceLandscapeBlocks.every(block=>!/repeat\\(2/.test(block)), 'Event landscape choice rails must never return to two columns');\n"
               "  assert(eventChoiceLandscapeBlocks.filter(block=>block.includes('grid-template-columns: minmax(0')).length>=2,'tablet and phone Event landscape rails must both be one readable column');\n"
           )
           if assertions.strip() not in test:
