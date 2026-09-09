@@ -65,18 +65,19 @@ jobs:
           t=p.read_text()
           marker='\n(async () => {'
           pos=t.rfind(marker)
-          if pos<0: raise SystemExit('responsive runner marker missing')
-          suffix="""
-(async () => {
-  const browser = await chromium.launch({ headless: true });
-  try {
-    await auditViewport(browser, 844, 390, 'ru');
-    console.log('Targeted 844x390 RU menu + Chronicle geometry: PASS');
-  } finally {
-    await browser.close();
-  }
-})().catch((error) => { console.error(error.stack || error); process.exitCode = 1; });
-"""
+          if pos<0:
+              raise SystemExit('responsive runner marker missing')
+          suffix=(
+              "\n(async () => {\n"
+              "  const browser = await chromium.launch({ headless: true });\n"
+              "  try {\n"
+              "    await auditViewport(browser, 844, 390, 'ru');\n"
+              "    console.log('Targeted 844x390 RU menu + Chronicle geometry: PASS');\n"
+              "  } finally {\n"
+              "    await browser.close();\n"
+              "  }\n"
+              "})().catch((error) => { console.error(error.stack || error); process.exitCode = 1; });\n"
+          )
           p.write_text(t[:pos]+suffix)
           PY
 
