@@ -1,5 +1,7 @@
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { ChessAIAdapter, ELO_LEVELS, profileForElo } from './chess-ai-adapter.mjs';
+import { currentLanguage, subscribe, translateLegacy } from './i18n.mjs';
+import { classicT } from '../localization/classic-ui.mjs';
 
 const FILES = 'abcdefgh';
 const PIECE_NAMES = Object.freeze({ p: 'Пешка', n: 'Конь', b: 'Слон', r: 'Ладья', q: 'Ферзь', k: 'Король' });
@@ -10,7 +12,6 @@ const PIECE_GLYPHS = Object.freeze({
   w: Object.freeze({ p: '♙', n: '♘', b: '♗', r: '♖', q: '♕', k: '♔' }),
   b: Object.freeze({ p: '♟', n: '♞', b: '♝', r: '♜', q: '♛', k: '♚' })
 });
-const PROMOTION_LABELS = Object.freeze({ q: 'Ферзь', r: 'Ладья', b: 'Слон', n: 'Конь' });
 
 const menu = document.querySelector('[data-reboot-foundation]');
 const screen = document.querySelector('[data-classic-screen]');
@@ -49,14 +50,71 @@ let gameGeneration = 0;
 let gameConfig = { mode: 'local', playerColor: 'w', aiColor: null, aiElo: 800 };
 let aiAdapter = new ChessAIAdapter();
 
+function t(key, params = {}) { return classicT(currentLanguage(), key, params); }
 function audio() { return globalThis.RPChessRebootAudio; }
-function sideName(color) { return color === 'w' ? 'белых' : 'чёрных'; }
-function sideNameTitle(color) { return color === 'w' ? 'Белые' : 'Чёрные'; }
+function sideName(color) { return t(color === 'w' ? 'classic.side.whiteGenitive' : 'classic.side.blackGenitive'); }
+function sideNameTitle(color) { return t(color === 'w' ? 'classic.side.white' : 'classic.side.black'); }
+function pieceName(type) { return translateLegacy(PIECE_NAMES[type] || String(type || '')); }
 function opposite(color) { return color === 'w' ? 'b' : 'w'; }
 function squareFromIndex(index) { return `${FILES[index % 8]}${Math.floor(index / 8) + 1}`; }
 function pieceAsset(piece) { return `generated_assets/unit_${PIECE_ASSETS[piece.type]}_${piece.color === 'w' ? 'player' : 'enemy'}.png`; }
 function uciParts(uci) { return { from: uci?.slice(0, 2), to: uci?.slice(2, 4), promotion: uci?.slice(4, 5) || null }; }
 function prefersReducedMotion() { return document.documentElement.dataset.reducedMotion === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches; }
+
+function renderStaticCopy() {
+  if (screen) screen.setAttribute('aria-label', t('classic.ariaLabel'));
+  const setText = (root, selector, key) => { const element = root?.querySelector(selector); if (element) element.textContent = t(key); };
+  const setAria = (root, selector, key) => { const element = root?.querySelector(selector); if (element) element.setAttribute('aria-label', t(key)); };
+  setText(screen, '[data-classic-new]', 'classic.newGame');
+  setText(screen, '[data-classic-menu]', 'classic.menu');
+  setAria(screen, '.classic-party-panel', 'classic.partyAria');
+  setText(screen, '.classic-party-panel h2', 'classic.partyTitle');
+  setAria(screen, '.classic-material', 'classic.materialAria');
+  const materialSides = screen?.querySelectorAll('.classic-material-side') || [];
+  if (materialSides[0]) materialSides[0].textContent = t('classic.side.white');
+  if (materialSides[1]) materialSides[1].textContent = t('classic.side.black');
+  if (capturedByWhiteRoot) capturedByWhiteRoot.setAttribute('aria-label', t('classic.captured.white'));
+  if (capturedByBlackRoot) capturedByBlackRoot.setAttribute('aria-label', t('classic.captured.black'));
+  if (board) board.setAttribute('aria-label', t('classic.boardAria'));
+  if (thinkingLabel) thinkingLabel.textContent = t('classic.status.thinking');
+  setAria(screen, '.classic-panel--moves', 'classic.historyAria');
+  setText(screen, '.classic-panel--moves h3', 'classic.historyTitle');
+
+  if (setupModal) {
+    setText(setupModal, '.reboot-eyebrow', 'classic.setup.kicker');
+    setText(setupModal, '#game-setup-title', 'classic.setup.title');
+    setAria(setupModal, '[data-close-modal]', 'classic.setup.close');
+    const labels = setupModal.querySelectorAll('.classic-setup-field > span');
+    if (labels[0]) labels[0].textContent = t('classic.setup.mode');
+    if (labels[1]) labels[1].textContent = t('classic.setup.strength');
+    if (labels[2]) labels[2].textContent = t('classic.setup.color');
+    const aiOption = modeSelect?.querySelector('option[value="ai"]');
+    const localOption = modeSelect?.querySelector('option[value="local"]');
+    if (aiOption) aiOption.textContent = t('classic.setup.mode.ai');
+    if (localOption) localOption.textContent = t('classic.setup.mode.local');
+    for (const option of eloSelect?.options || []) {
+      const profile = profileForElo(Number(option.value));
+      option.textContent = `${translateLegacy(profile.label)} · ≈${profile.elo} Elo`;
+    }
+    const whiteOption = colorSelect?.querySelector('option[value="w"]');
+    const blackOption = colorSelect?.querySelector('option[value="b"]');
+    if (whiteOption) whiteOption.textContent = t('classic.setup.color.white');
+    if (blackOption) blackOption.textContent = t('classic.setup.color.black');
+    const creditLinks = setupModal.querySelectorAll('[data-engine-credit] a');
+    if (creditLinks[0]) creditLinks[0].textContent = t('classic.setup.license');
+    if (creditLinks[1]) creditLinks[1].textContent = t('classic.setup.source');
+    if (startGameButton) startGameButton.textContent = t('classic.setup.start');
+  }
+
+  if (promotionModal) {
+    setText(promotionModal, '.reboot-eyebrow', 'classic.promotion.kicker');
+    setText(promotionModal, '#promotion-title', 'classic.promotion.title');
+    for (const option of promotionOptions?.querySelectorAll('[data-promotion]') || []) {
+      const label = option.querySelector('span');
+      if (label) label.textContent = pieceName(option.dataset.promotion);
+    }
+  }
+}
 
 function sanNotation({ moving, from, to, promotion, resultMove, status, legalBefore }) {
   const suffix = status.type === 'checkmate' ? '#' : status.checked ? '+' : '';
@@ -89,29 +147,23 @@ function sanNotation({ moving, from, to, promotion, resultMove, status, legalBef
 
 function describeStatus(status) {
   switch (status.type) {
-    case 'check': return { state: 'Шах', title: '', text: '' };
-    case 'checkmate': return { state: `Мат — победа ${sideName(status.winner)}`, title: 'Мат', text: `${sideNameTitle(status.winner)} победили.` };
-    case 'stalemate': return { state: 'Пат — ничья', title: 'Пат', text: 'Легальных ходов нет, шаха нет. Ничья.' };
-    case 'draw_50_move': return { state: 'Ничья — правило 50 ходов', title: 'Ничья', text: 'Пятьдесят ходов прошли без хода пешкой и без взятия.' };
-    case 'draw_threefold': return { state: 'Ничья — троекратное повторение', title: 'Ничья', text: 'Одна и та же позиция возникла трижды.' };
-    case 'draw_insufficient': return { state: 'Ничья — недостаточно материала', title: 'Ничья', text: 'На доске недостаточно материала для мата.' };
-    default: return { state: 'Партия продолжается', title: '', text: '' };
+    case 'check': return { state: t('classic.state.check'), title: '', text: '' };
+    case 'checkmate': return { state: t('classic.state.checkmate', { side: sideName(status.winner) }), title: t('classic.result.checkmateTitle'), text: t('classic.result.checkmateText', { side: sideNameTitle(status.winner) }) };
+    case 'stalemate': return { state: t('classic.state.stalemate'), title: t('classic.result.stalemateTitle'), text: t('classic.result.stalemateText') };
+    case 'draw_50_move': return { state: t('classic.state.draw50'), title: t('classic.result.drawTitle'), text: t('classic.result.draw50Text') };
+    case 'draw_threefold': return { state: t('classic.state.drawThreefold'), title: t('classic.result.drawTitle'), text: t('classic.result.drawThreefoldText') };
+    case 'draw_insufficient': return { state: t('classic.state.drawInsufficient'), title: t('classic.result.drawTitle'), text: t('classic.result.drawInsufficientText') };
+    default: return { state: t('classic.state.continues'), title: '', text: '' };
   }
 }
 
 function appendFigurineSAN(root, entry) {
-  if (!entry) {
-    root.textContent = '…';
-    return;
-  }
+  if (!entry) { root.textContent = '…'; return; }
   root.dataset.san = entry.san;
   root.setAttribute('aria-label', entry.san);
   const first = entry.san[0];
   const type = ({ N: 'n', B: 'b', R: 'r', Q: 'q', K: 'k' })[first];
-  if (!type) {
-    root.textContent = entry.san;
-    return;
-  }
+  if (!type) { root.textContent = entry.san; return; }
   const glyph = document.createElement('span');
   glyph.className = `classic-san-figurine classic-san-figurine--${entry.color}`;
   glyph.textContent = PIECE_GLYPHS[entry.color][type];
@@ -126,7 +178,7 @@ function renderHistory() {
   if (!moveLog.length) {
     const empty = document.createElement('div');
     empty.className = 'classic-empty';
-    empty.textContent = 'Ходов пока нет';
+    empty.textContent = t('classic.historyEmpty');
     historyRoot.append(empty);
     return;
   }
@@ -153,7 +205,7 @@ function renderCapturedRow(root, entries) {
     const icon = document.createElement('span');
     icon.className = `classic-captured-piece classic-captured-piece--${piece.color}`;
     icon.textContent = PIECE_GLYPHS[piece.color][piece.type];
-    icon.title = PIECE_NAMES[piece.type];
+    icon.title = pieceName(piece.type);
     root.append(icon);
   }
   if (!ordered.length) {
@@ -179,28 +231,29 @@ function renderMaterial() {
 }
 
 function renderMode() {
-  if (gameConfig.mode !== 'ai') {
-    modeLabel.textContent = 'Локальная партия · два игрока';
-    return;
-  }
+  if (gameConfig.mode !== 'ai') { modeLabel.textContent = t('classic.mode.local'); return; }
   const profile = profileForElo(gameConfig.aiElo);
-  const degraded = aiAdapter.snapshot().degraded ? ' · резервный ход' : '';
-  modeLabel.textContent = `Stockfish 18 lite · ${profile.label} · ≈${profile.elo} Elo${degraded}`;
+  const fallback = aiAdapter.snapshot().degraded ? t('classic.mode.fallback') : '';
+  modeLabel.textContent = t('classic.mode.ai', { profile: translateLegacy(profile.label), elo: profile.elo, fallback });
+}
+
+function renderSideSummary(key, color) {
+  summary.replaceChildren();
+  const strong = document.createElement('strong');
+  strong.textContent = sideNameTitle(color);
+  summary.append(strong, document.createTextNode(t(key)));
 }
 
 function renderStatus() {
   const snapshot = engine.snapshot();
   const status = snapshot.status;
   const description = describeStatus(status);
-  turnLabel.textContent = status.over ? 'Партия завершена' : `Ход ${sideName(snapshot.turn)}`;
-  stateLabel.textContent = aiThinking ? 'Компьютер думает…' : visualAnimating ? 'Ход выполняется' : description.state;
-  summary.innerHTML = status.over
-    ? description.text
-    : aiThinking
-      ? `<strong>${sideNameTitle(snapshot.turn)}</strong> выбирают ход.`
-      : status.checked
-        ? `<strong>${sideNameTitle(snapshot.turn)}</strong> под шахом. Нужно защитить короля.`
-        : `<strong>${sideNameTitle(snapshot.turn)}</strong> делают ход.`;
+  turnLabel.textContent = status.over ? t('classic.turn.complete') : t('classic.turn.active', { side: sideName(snapshot.turn) });
+  stateLabel.textContent = aiThinking ? t('classic.status.thinking') : visualAnimating ? t('classic.status.animating') : description.state;
+  if (status.over) summary.textContent = description.text;
+  else if (aiThinking) renderSideSummary('classic.summary.choosing', snapshot.turn);
+  else if (status.checked) renderSideSummary('classic.summary.checked', snapshot.turn);
+  else renderSideSummary('classic.summary.turn', snapshot.turn);
 
   if (status.over) {
     resultRoot.hidden = false;
@@ -214,17 +267,13 @@ function renderStatus() {
   renderMode();
 }
 
-function isBlackView() {
-  return gameConfig.mode === 'ai' && gameConfig.playerColor === 'b';
-}
+function isBlackView() { return gameConfig.mode === 'ai' && gameConfig.playerColor === 'b'; }
 
 function renderBoard() {
   const snapshot = engine.snapshot();
   const legalTargets = new Map();
   for (const move of selectedMoves) if (!legalTargets.has(move.to)) legalTargets.set(move.to, move);
-  const checkedKing = snapshot.status.checked
-    ? snapshot.board.findIndex((piece) => piece?.type === 'k' && piece.color === snapshot.turn)
-    : -1;
+  const checkedKing = snapshot.status.checked ? snapshot.board.findIndex((piece) => piece?.type === 'k' && piece.color === snapshot.turn) : -1;
   const reverse = isBlackView();
   const ranks = reverse ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0];
   const files = reverse ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
@@ -243,7 +292,7 @@ function renderBoard() {
       button.className = `classic-square classic-square--${(file + rank) % 2 === 0 ? 'dark' : 'light'}`;
       button.dataset.square = square;
       button.setAttribute('role', 'gridcell');
-      button.setAttribute('aria-label', piece ? `${square}: ${PIECE_NAMES[piece.type]}, ${sideName(piece.color)}` : square);
+      button.setAttribute('aria-label', piece ? t('classic.boardCell', { square, piece: pieceName(piece.type), side: sideName(piece.color) }) : square);
 
       if (selected === square) button.classList.add('classic-square--selected');
       if (snapshot.lastMove && (snapshot.lastMove.from === square || snapshot.lastMove.to === square)) button.classList.add('classic-square--last');
@@ -260,7 +309,7 @@ function renderBoard() {
         marker.className = `classic-piece-marker classic-piece-marker--${piece.color}`;
         marker.dataset.pieceMarker = piece.type;
         marker.textContent = PIECE_GLYPHS[piece.color][piece.type];
-        marker.title = PIECE_NAMES[piece.type];
+        marker.title = pieceName(piece.type);
         marker.setAttribute('aria-hidden', 'true');
         button.append(image, marker);
       }
@@ -286,12 +335,7 @@ function renderBoard() {
   thinkingLabel.hidden = !aiThinking;
 }
 
-function render() {
-  renderBoard();
-  renderStatus();
-  renderHistory();
-  renderMaterial();
-}
+function render() { renderBoard(); renderStatus(); renderHistory(); renderMaterial(); }
 
 function closePromotion() {
   promotionModal.hidden = true;
@@ -311,7 +355,7 @@ function openPromotion(from, to, color, choices) {
     image.src = pieceAsset({ type, color });
     image.alt = '';
     const label = document.createElement('span');
-    label.textContent = PROMOTION_LABELS[type];
+    label.textContent = pieceName(type);
     button.append(image, label);
     button.addEventListener('click', () => {
       const pending = pendingPromotion;
@@ -321,17 +365,14 @@ function openPromotion(from, to, color, choices) {
     });
     promotionOptions.append(button);
   }
+  renderStaticCopy();
   promotionModal.hidden = false;
   document.body.classList.add('reboot-modal-open');
   audio()?.open?.();
   promotionOptions.querySelector('button')?.focus();
 }
 
-function setThinking(value) {
-  aiThinking = Boolean(value);
-  renderBoard();
-  renderStatus();
-}
+function setThinking(value) { aiThinking = Boolean(value); renderBoard(); renderStatus(); }
 
 function captureAnimationGeometry(from, to, moving, capturedPiece) {
   if (prefersReducedMotion()) return null;
@@ -344,7 +385,7 @@ function captureAnimationGeometry(from, to, moving, capturedPiece) {
     moving: { ...moving },
     movingSrc: sourceImage.getAttribute('src') || sourceImage.currentSrc || sourceImage.src || pieceAsset(moving),
     capturedPiece: capturedPiece ? { ...capturedPiece } : null,
-    capturedSrc: targetImage?.getAttribute('src') || targetImage?.currentSrc || targetImage?.src || (capturedPiece ? pieceAsset(capturedPiece) : null),
+    capturedSrc: targetImage?.getAttribute('src') || targetImage?.currentSrc || targetImage.src || (capturedPiece ? pieceAsset(capturedPiece) : null),
     capturedRect: targetImage?.getBoundingClientRect() || null
   };
 }
@@ -381,10 +422,7 @@ function animateCommittedMove(geometry, to, onDone) {
     capturedGhost.style.width = `${geometry.capturedRect.width}px`;
     capturedGhost.style.height = `${geometry.capturedRect.height}px`;
     document.body.append(capturedGhost);
-    capturedGhost.animate([
-      { opacity: 1, transform: 'scale(1)' },
-      { opacity: 0, transform: 'scale(.72)' }
-    ], { duration: 190, easing: 'ease-out', fill: 'forwards' });
+    capturedGhost.animate([{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.72)' }], { duration: 190, easing: 'ease-out', fill: 'forwards' });
   }
 
   const targetImage = destinationImage?.getBoundingClientRect();
@@ -436,11 +474,7 @@ function executeMove(from, to, promotion = null, { triggerAI = true } = {}) {
   render();
   const afterVisual = () => { if (triggerAI) void maybeScheduleAI(); };
   if (geometry) animateCommittedMove(geometry, to, afterVisual);
-  else {
-    visualAnimating = false;
-    renderBoard();
-    afterVisual();
-  }
+  else { visualAnimating = false; renderBoard(); afterVisual(); }
   return true;
 }
 
@@ -458,22 +492,8 @@ function handleSquare(square) {
     renderBoard();
     return;
   }
-
-  if (square === selected) {
-    selected = null;
-    selectedMoves = [];
-    renderBoard();
-    return;
-  }
-
-  if (piece?.color === turn) {
-    selected = square;
-    selectedMoves = engine.legalMoves(square);
-    audio()?.click?.();
-    renderBoard();
-    return;
-  }
-
+  if (square === selected) { selected = null; selectedMoves = []; renderBoard(); return; }
+  if (piece?.color === turn) { selected = square; selectedMoves = engine.legalMoves(square); audio()?.click?.(); renderBoard(); return; }
   const candidates = selectedMoves.filter((move) => move.to === square);
   if (!candidates.length) return;
   executeMove(selected, square);
@@ -552,6 +572,7 @@ function syncSetupFields() {
 }
 
 function openGameSetup() {
+  renderStaticCopy();
   modeSelect.value = gameConfig.mode === 'ai' ? 'ai' : 'local';
   eloSelect.value = String(gameConfig.aiElo || 800);
   colorSelect.value = gameConfig.mode === 'ai' ? gameConfig.playerColor : 'w';
@@ -562,18 +583,13 @@ function openGameSetup() {
   modeSelect.focus();
 }
 
-function closeGameSetup() {
-  setupModal.hidden = true;
-  document.body.classList.remove('reboot-modal-open');
-}
+function closeGameSetup() { setupModal.hidden = true; document.body.classList.remove('reboot-modal-open'); }
 
 function startConfiguredGame() {
   const mode = modeSelect.value;
   let playerColor = colorSelect.value;
   if (playerColor === 'random') playerColor = Math.random() < .5 ? 'w' : 'b';
-  const options = mode === 'ai'
-    ? { mode: 'ai', playerColor, aiElo: Number(eloSelect.value) }
-    : { mode: 'local' };
+  const options = mode === 'ai' ? { mode: 'ai', playerColor, aiElo: Number(eloSelect.value) } : { mode: 'local' };
   closeGameSetup();
   audio()?.click?.();
   newGame(null, options);
@@ -587,7 +603,9 @@ document.querySelector('[data-classic-menu]')?.addEventListener('click', showMen
 document.querySelector('[data-result-rematch]')?.addEventListener('click', () => { audio()?.click?.(); openGameSetup(); });
 document.querySelector('[data-result-menu]')?.addEventListener('click', showMenu);
 
+renderStaticCopy();
 render();
+subscribe(() => { renderStaticCopy(); render(); });
 
 globalThis.RPChessChessAI = {
   ELO_LEVELS,
@@ -604,10 +622,7 @@ globalThis.RPChessClassicChess = {
   newGame,
   openGameSetup,
   loadFen(fen, options = {}) { newGame(fen, options); return engine.snapshot(); },
-  move(from, to, promotion = null) {
-    const ok = executeMove(from, to, promotion);
-    return { ok, snapshot: engine.snapshot() };
-  },
+  move(from, to, promotion = null) { const ok = executeMove(from, to, promotion); return { ok, snapshot: engine.snapshot() }; },
   showMenu,
   snapshot() { return engine.snapshot(); }
 };
