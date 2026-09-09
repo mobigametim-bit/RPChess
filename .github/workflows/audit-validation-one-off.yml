@@ -72,7 +72,7 @@ jobs:
             "      if(link){try{const response=await fetch(link.href,{cache:'no-store'});landscapeStatus=response.status;landscapeText=await response.text();}catch(error){landscapeText='FETCH_ERROR:'+String(error);}}",
             "      const cs=getComputedStyle(shell),ps=getComputedStyle(party);",
             "      return {htmlLandscape:document.documentElement.dataset.landscapeUi||null,linkHref:link?.href||null,landscapeStatus,servedHasDiagnostic:landscapeText.includes('DIAGNOSTIC owner-final Classic rail'),stylesheets:Array.from(document.styleSheets).map(s=>s.href||'INLINE'),shell:rect(shell),party:rect(party),board:rect(board),computed:{grid:cs.gridTemplateColumns,columnGap:cs.columnGap,gap:cs.gap,width:cs.width,margin:cs.margin,padding:cs.padding,partyWidth:ps.width,partyMargin:ps.margin},rules};",
-            "    }))));"
+            "    })));"
           ]
           diagnostic='\n'.join(js_lines)+'\n'+assertion
           if assertion not in t: raise SystemExit('combat gap assertion missing')
