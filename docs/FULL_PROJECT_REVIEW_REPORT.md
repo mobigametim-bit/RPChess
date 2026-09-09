@@ -3,7 +3,7 @@
 **Audit status:** REMEDIATION IN PROGRESS  
 **Frozen production baseline:** `main@e92831ca5d6e0c14fb2d919e410180ce77b97ce6`  
 **Audit/remediation branch:** `audit/full-project-review-2026-09-08`  
-**Current remediation head:** `2933fbab2f888dd421c438996cbc824bd562762a`
+**Current remediation head:** `60fb67c796e1da4c08901e9b3d815396f4dc7909`
 **Started:** 2026-09-08
 
 This report is the source of truth for the full technical/runtime/UI review and remediation. Production `main` remains untouched. Fixes are grouped by root cause; adding another patch layer to conceal an ownership problem is out of scope.
@@ -46,12 +46,12 @@ Status meanings:
 | REV-002 Market reads state back from DOM | **DONE — verified** | Settlement renders Market from `activeRun.currentSettlement` / `SETTLEMENT_SUPPLY_PRICE`; `post-pages-ui-review4.mjs` deleted. |
 | REV-003 Resources render fan-out | **DONE — verified** | Resources subtree `MutationObserver` and global click refresh removed; one coalescing scheduler consumes semantic events. |
 | REV-004 whole-document legacy localization | **IN PROGRESS** | Settlement/Resources render keyed `t(...)` copy directly. Remaining active screens must migrate before the global legacy observer can be deleted. |
-| REV-005 obsolete source controls / hidden DOM | **DONE — verification pending** | Obsolete Skirmish/Battle/Puzzle/Event shortcuts and dead handlers are deleted from their owners; Settlement already no longer authored its old shortcuts. The shared seven-selector post-render `.remove()` cleanup and dead compatibility CSS are gone (`df6d35bc`). Deterministic owner/UI contracts pass; Chromium proof remains pending. |
+| REV-005 obsolete source controls / hidden DOM | **DONE — verification pending** | Obsolete Skirmish/Battle/Puzzle/Event shortcuts and dead handlers are deleted from their owners; Settlement already no longer authored its old shortcuts. The shared seven-selector post-render `.remove()` cleanup and dead compatibility CSS are gone (`23778724`). Deterministic owner/UI contracts pass; Chromium proof remains pending. |
 | REV-006 runtime DOM reparenting | **DONE — verification pending** | All three identified live-layout reparent paths are removed: Battle Start CTA is owner-rendered directly in `.battle-army` (`b63772f8`); Classic Journal remains in its source `.classic-shell` slot and run-combat styling targets stable siblings (`db42fb78`); Skirmish actionbar remains in its source `.skirmish-shell` slot with no home/next/append lifecycle (`bac324a0`). Existing tests were strengthened; Chromium/local gate still pending. |
 | REV-007 canonical Pages gate covers 3/17 browser contracts | **OPEN** | After current test truth is verified, define fast mandatory PR smoke coverage plus a broader milestone/full-release gate. |
 | REV-008 stale browser contract requires page scroll | **DONE — verified** | Foundation/Roster contracts now enforce one-screen behavior rather than requiring page scrolling. |
 | REV-009 Supplies/Market global image retargeting | **DONE — verified** | True owners render Supplies/Market art directly; global retarget scanner and `supplies-resource-icon.mjs` deleted. |
-| REV-010 fragmented runtime hotfix CSS | **IN PROGRESS** | `review2` and `polish-constraints` are now deleted alongside review3/4/5/6/7; their final Classic and Puzzle rules live in owner CSS (`852b0bdf`). Remaining `post-pages-ui-polish`, aftermath route styles and Skirmish/Settlement/Puzzle/Endless compatibility duties must move to owners. |
+| REV-010 fragmented runtime hotfix CSS | **IN PROGRESS** | `review2` and `polish-constraints` are now deleted alongside review3/4/5/6/7; their final Classic and Puzzle rules live in owner CSS (`58aac6b2`). Remaining `post-pages-ui-polish`, aftermath route styles and Skirmish/Settlement/Puzzle/Endless compatibility duties must move to owners. |
 | REV-011 Supplies optimizer makes asset larger | **DONE — verified** | Optimizer keeps original bytes when transformed output is larger while still enforcing budgets. |
 | REV-012 stale CURRENT_STATE SHA | **OPEN** | Deferred intentionally until the final accepted remediation SHA. |
 | REV-013 shared browser helper lifecycle drift | **DONE — verified** | `startNewRun()` waits for visible scenes and emits diagnostics; full milestone #9 passed 17/17. |
@@ -59,8 +59,8 @@ Status meanings:
 | REV-015 persistence has no migration path | **DONE — verified** | Unsupported schema versions are explicitly deleted/reset by `readRun()`; no backward-save migration is required by owner decision. |
 | REV-016 repeated puzzle materialization / duplicate build inputs | **DONE — verified** | Puzzle catalog materializes once per gate path; duplicate Endless build inputs removed. |
 | REV-017 generic Wrangler deploy path looks canonical | **DONE — docs pending** | Generic `npm run deploy` removed. Cloudflare remains explicit manual `deploy:cloudflare`; GitHub Pages is canonical. |
-| REV-018 legacy Vertical Slice stack | **DONE — verification pending** | Stage 1 removed the standalone browser entry/bundle/builder and its isolated tests (`a250a4f7`). Stage 2 removed the unreachable `src/` domain/runtime stack, dormant tests, previews, wards and unbuilt presentation files (`3db16021`). The 74-entrypoint / 81-file live closure contains no `src/`; deterministic verification passes. Full build/Chromium milestone proof is still pending. |
-| REV-019 CSS loading split between HTML and runtime JS | **IN PROGRESS** | Travel and Battle compact presentation use explicit owner stylesheets, and the previously omitted `travel-choice-compact.css` is now required and copied by the production build (`2933fbab`). Final explicit stylesheet order still requires consolidation after compatibility modules are removed. |
+| REV-018 legacy Vertical Slice stack | **DONE — verification pending** | Stage 1 removed the standalone browser entry/bundle/builder and its isolated tests (`d46ca26e`). Stage 2 removed the unreachable `src/` domain/runtime stack, dormant tests, previews, wards and unbuilt presentation files (`5351eb77`). The 74-entrypoint / 81-file live closure contains no `src/`; deterministic verification passes. Full build/Chromium milestone proof is still pending. |
+| REV-019 CSS loading split between HTML and runtime JS | **IN PROGRESS** | Travel and Battle compact presentation use explicit owner stylesheets, and the previously omitted `travel-choice-compact.css` is now required and copied by the production build (`60fb67c7`). Final explicit stylesheet order still requires consolidation after compatibility modules are removed. |
 | REV-020 `rpchess:run-updated` is overly broad bus | **IN PROGRESS** | Resources consumes semantic scene/settlement updates; Travel compatibility fan-out was removed. Broader event graph still needs narrowing. |
 | REV-021 historical docs conflict with current UI/deploy rules | **OPEN** | Final docs sync will add current-contract headers and retain history only as clearly marked history. |
 
@@ -128,11 +128,11 @@ The audit workflows are **manual-dispatch only** and never deploy. The current c
 - **Stable Battle CTA #15** (`b63772f8`): Battle owner renders Start directly in `.battle-army`; obsolete actionbar/counters/action-cost and CTA reparenting removed; existing deterministic/browser contracts updated; verification pending.
 - **Stable Classic Journal #16** (`db42fb78`): Classic Journal remains in `.classic-shell`; both runtime reparent paths removed; dead constraints combat lifecycle removed; existing Classic static contract strengthened; verification pending.
 - **Stable Skirmish actionbar #17** (`bac324a0`): last identified `REV-006` runtime reparent removed; existing Skirmish deterministic contract strengthened; verification pending.
-- **Vertical Slice deletion Stage 1** (`a250a4f7`): removed the standalone `vertical-slice.html` browser entry, generated Iron Marches bundle/builder and two isolated browser tests after package/runner/workflow reachability proof.
-- **Vertical Slice deletion Stage 2** (`3db16021`): removed 284 unreachable files / 38,496 lines. The active graph contains 74 entrypoints and 81 reachable code/test files, no `src/`, and no dormant top-level tests. `verify`, all deterministic/domain tests, content validation and the 11,498-puzzle catalog validation pass. Build packaging reached a clean Reboot `dist` with no legacy runtime; final Stockfish download was blocked by the execution environment's external-network cancellation, so no full local-gate or Chromium PASS is claimed for this head.
-- **Obsolete source DOM removal #18** (`df6d35bc`): removed the remaining deprecated scene shortcuts, dead handlers, seven-selector runtime remover and matching compatibility CSS. `verify`, syntax checks and the UI/Skirmish/Battle/Settlement/Events/Puzzles owner tests pass; Chromium verification pending.
-- **Compatibility owner migration #19** (`852b0bdf`): moved stable Classic Party/Journal run-combat rules into `chess-ai-polish.css`, moved the last Puzzle width rule into `puzzles.css`, and deleted `post-pages-ui-review2.mjs` plus `post-pages-ui-polish-constraints.mjs`. Source verification and seven affected owner/UI contracts pass; Chromium verification pending.
-- **Travel build ownership #20** (`2933fbab`): production build input/output contracts now include the Travel-owned compact stylesheet. Source verification and the Travel contract pass; a network-independent complete build remains pending.
+- **Vertical Slice deletion Stage 1** (`d46ca26e`): removed the standalone `vertical-slice.html` browser entry, generated Iron Marches bundle/builder and two isolated browser tests after package/runner/workflow reachability proof.
+- **Vertical Slice deletion Stage 2** (`5351eb77`): removed 284 unreachable files / 38,496 lines. The active graph contains 74 entrypoints and 81 reachable code/test files, no `src/`, and no dormant top-level tests. `verify`, all deterministic/domain tests, content validation and the 11,498-puzzle catalog validation pass. Build packaging reached a clean Reboot `dist` with no legacy runtime; final Stockfish download was blocked by the execution environment's external-network cancellation, so no full local-gate or Chromium PASS is claimed for this head.
+- **Obsolete source DOM removal #18** (`23778724`): removed the remaining deprecated scene shortcuts, dead handlers, seven-selector runtime remover and matching compatibility CSS. `verify`, syntax checks and the UI/Skirmish/Battle/Settlement/Events/Puzzles owner tests pass; Chromium verification pending.
+- **Compatibility owner migration #19** (`58aac6b2`): moved stable Classic Party/Journal run-combat rules into `chess-ai-polish.css`, moved the last Puzzle width rule into `puzzles.css`, and deleted `post-pages-ui-review2.mjs` plus `post-pages-ui-polish-constraints.mjs`. Source verification and seven affected owner/UI contracts pass; Chromium verification pending.
+- **Travel build ownership #20** (`60fb67c7`): production build input/output contracts now include the Travel-owned compact stylesheet. Source verification and the Travel contract pass; a network-independent complete build remains pending.
 
 ---
 
@@ -234,7 +234,7 @@ Legend: **PROVEN** = direct passing evidence on an executed browser head; **PART
 
 # Open verification items
 
-1. **Current architecture regression:** run strengthened responsive, Roster, Travel, Battle, Classic and Skirmish contracts against head `2933fbab`, then `gate:local`.
+1. **Current architecture regression:** run strengthened responsive, Roster, Travel, Battle, Classic and Skirmish contracts against head `60fb67c7`, then `gate:local`.
 2. **Full browser milestone:** run all 17 Chromium contracts at the next meaningful architecture checkpoint.
 3. **Dependency security:** classify the two previously reported high-severity advisories as production-relevant or dev-only.
 4. **Observer/listener/event fan-out:** measure callbacks/render scheduling over repeated route loops.
