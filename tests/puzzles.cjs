@@ -21,7 +21,6 @@ function memoryStorage(){const data=new Map();return{getItem:key=>data.has(key)?
   const appSource=fs.readFileSync(path.join(game,'js/puzzles/puzzle-app.mjs'),'utf8');
   const cssSource=fs.readFileSync(path.join(game,'css/puzzles.css'),'utf8');
   const compactCss=fs.readFileSync(path.join(game,'css/puzzles-compact.css'),'utf8');
-  const polishSource=fs.readFileSync(path.join(game,'js/post-pages-ui-polish.mjs'),'utf8');
   const buildSource=fs.readFileSync(path.join(game,'..','scripts/build.cjs'),'utf8');
   assert(appSource.includes("rpchess:puzzle-open"));
   assert(!/hint/i.test(appSource),'Puzzles v1 must not introduce hint UI/mechanics');
@@ -42,7 +41,8 @@ function memoryStorage(){const data=new Map();return{getItem:key=>data.has(key)?
   assert(cssSource.includes('Review2 Puzzle geometry moved into the screen owner.') && cssSource.includes('Final Training geometry for the second Human Acceptance pass.') && cssSource.includes('width:calc(100vw - 100dvh - 43px)!important')&&cssSource.includes('width:calc(100vw - 100dvh - 32px)!important'),'Puzzle owner CSS must own the complete accepted Training geometry cascade');
   assert(compactCss.includes('Puzzle-owned compact Training presentation formerly supplied by post-pages runtime.')&&compactCss.includes('.puzzle-polish-objective')&&compactCss.includes('.puzzle-polish-reward'),'Puzzle compact owner stylesheet must own accepted objective/reward presentation');
   assert(buildSource.includes("'css/puzzles-compact.css'"),'production build must package Puzzle compact owner stylesheet');
-  for(const forbidden of ['syncPuzzle','puzzles-active','rpchess:puzzle-open','rpchess:resources-updated','document.addEventListener(\'click\''])assert(!polishSource.includes(forbidden),`post-pages polish must not retain Puzzle runtime ownership: ${forbidden}`);
+  assert(!fs.existsSync(path.join(game,'js/post-pages-ui-polish.mjs')),'retired post-pages presentation shim must stay deleted');
+  assert(!fs.existsSync(path.join(game,'js/presentation-bootstrap.mjs')),'retired presentation bootstrap must stay deleted');
   assert(!fs.existsSync(path.join(game,'js/content/post-pages-ui-polish-constraints.mjs')),'superseded Puzzle constraints module must stay deleted');
   assert(!fs.existsSync(path.join(game,'js/content/post-pages-ui-review2.mjs')),'superseded review2 compatibility module must stay deleted');
   console.log('Puzzles reward/persistence/history/no-repeat/board annotation and owner-level compact presentation contracts: PASS');
