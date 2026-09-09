@@ -1,5 +1,6 @@
 import { PIECE_LABELS, PIECE_GLYPHS, STATUS_LABELS } from './roster-data.mjs';
 import { createRun, readRun, writeRun } from './run-persistence.mjs';
+import { subscribe, t, translateLegacy } from './i18n.mjs';
 import { heroNoteForId } from './content/hero-notes.mjs';
 
 const menu = document.querySelector('[data-reboot-foundation]');
@@ -20,6 +21,26 @@ let activeFilter = 'all';
 let journeyPending = false;
 
 function audio() { return globalThis.RPChessRebootAudio; }
+function contentText(value) { return translateLegacy(String(value || '')); }
+function pieceLabel(type) { return t(`piece.${type}`) || PIECE_LABELS[type] || type; }
+function statusLabel(status) { return t(`status.${status}`) || STATUS_LABELS[status] || status; }
+
+function applyStaticCopy() {
+  if (!rosterScreen) return;
+  rosterScreen.setAttribute('aria-label', t('roster.ariaLabel'));
+  const kicker = rosterScreen.querySelector('.roster-heading .reboot-eyebrow');
+  const title = rosterScreen.querySelector('.roster-heading h1');
+  const catalog = rosterScreen.querySelector('.roster-catalog');
+  const catalogTitle = rosterScreen.querySelector('.roster-catalog__head h2');
+  const filters = rosterScreen.querySelector('.roster-filters');
+  const menuButton = rosterScreen.querySelector('[data-roster-menu]');
+  if (kicker) kicker.textContent = t('roster.kicker');
+  if (title) title.textContent = t('roster.title');
+  if (catalog) catalog.setAttribute('aria-label', t('roster.catalogLabel'));
+  if (catalogTitle) catalogTitle.textContent = t('roster.catalogTitle');
+  if (filters) filters.setAttribute('aria-label', t('roster.filtersLabel'));
+  if (menuButton) menuButton.textContent = t('roster.menu');
+}
 
 function setScene(target) {
   if (menu) menu.hidden = target !== 'menu';
@@ -43,7 +64,7 @@ function updateContinueState() {
 
 function updateJourneyLabel() {
   if (!journeyButton || journeyPending) return;
-  journeyButton.textContent = activeRun?.activeTravelChoice?.type === 'settlement' ? 'Вернуться в поселение' : 'В путь';
+  journeyButton.textContent = activeRun?.activeTravelChoice?.type === 'settlement' ? t('roster.returnSettlement') : t('roster.journey');
 }
 
 function filteredRoster() {
@@ -61,8 +82,8 @@ function selectedCharacter() {
 }
 
 function statusNote(character) {
-  if (character.status === 'wounded') return 'Не может участвовать в сражениях до лечения.';
-  if (character.status === 'dead') return 'Погиб в текущем забеге и остаётся в памяти отряда.';
+  if (character.status === 'wounded') return t('roster.statusNote.wounded');
+  if (character.status === 'dead') return t('roster.statusNote.dead');
   return '';
 }
 
@@ -71,36 +92,37 @@ function renderDetail() {
   const character = selectedCharacter();
   rosterDetail.replaceChildren();
   if (!character) return;
+  const displayName = contentText(character.name);
 
   const media = document.createElement('div');
   media.className = 'roster-detail__media';
   const portrait = document.createElement('img');
   portrait.className = 'roster-detail__portrait';
   portrait.src = character.portrait;
-  portrait.alt = character.name;
+  portrait.alt = displayName;
   media.append(portrait);
 
   const body = document.createElement('div');
   body.className = 'roster-detail__body';
   const eyebrow = document.createElement('div');
   eyebrow.className = 'roster-kicker';
-  eyebrow.textContent = character.isRunKing ? 'КОРОЛЬ ОТРЯДА' : 'ИМЕННАЯ ФИГУРА';
+  eyebrow.textContent = character.isRunKing ? t('roster.kingKicker') : t('roster.namedPieceKicker');
   const title = document.createElement('h2');
-  title.textContent = character.name;
+  title.textContent = displayName;
   const facts = document.createElement('div');
   facts.className = 'roster-detail__facts';
   const role = document.createElement('span');
-  role.innerHTML = `<strong>${PIECE_GLYPHS[character.pieceType] || ''} ${PIECE_LABELS[character.pieceType] || character.pieceType}</strong><small>${character.origin}</small>`;
+  role.innerHTML = `<strong>${PIECE_GLYPHS[character.pieceType] || ''} ${pieceLabel(character.pieceType)}</strong><small>${contentText(character.origin)}</small>`;
   const cost = document.createElement('span');
-  cost.innerHTML = `<small>КОМАНДНЫЕ ОЧКИ</small><strong>${character.commandCost}</strong>`;
+  cost.innerHTML = `<small>${t('roster.commandPoints')}</small><strong>${character.commandCost}</strong>`;
   facts.append(role, cost);
 
   const status = document.createElement('div');
   status.className = `roster-status roster-status--${character.status}`;
-  status.textContent = STATUS_LABELS[character.status] || character.status;
+  status.textContent = statusLabel(character.status);
   const description = document.createElement('p');
   description.className = 'roster-detail__description';
-  description.textContent = heroNoteForId(character.id) || character.description;
+  description.textContent = contentText(heroNoteForId(character.id) || character.description);
 
   body.append(eyebrow, title, facts, status);
   const noteText = statusNote(character);
@@ -115,13 +137,16 @@ function renderDetail() {
 }
 
 function cardFor(character) {
+  const displayName = contentText(character.name);
+  const displayPiece = pieceLabel(character.pieceType);
+  const displayStatus = statusLabel(character.status);
   const button = document.createElement('button');
   button.type = 'button';
   button.className = `roster-card roster-card--${character.status}`;
   button.dataset.rosterCard = character.id;
   if (character.isRunKing) button.dataset.runKing = 'true';
   button.setAttribute('aria-pressed', activeRun?.selectedCharacterId === character.id ? 'true' : 'false');
-  button.setAttribute('aria-label', `${character.name}, ${PIECE_LABELS[character.pieceType]}, ${STATUS_LABELS[character.status]}`);
+  button.setAttribute('aria-label', t('roster.cardAria', { name:displayName, piece:displayPiece, status:displayStatus }));
 
   const artWrap = document.createElement('span');
   artWrap.className = 'roster-card__art-wrap';
@@ -139,20 +164,20 @@ function cardFor(character) {
   const value = document.createElement('span');
   value.className = 'roster-card__value';
   value.textContent = String(character.commandCost);
-  value.title = 'Командные очки';
+  value.title = t('roster.commandPoints');
   artWrap.append(glyph, value);
 
   const body = document.createElement('span');
   body.className = 'roster-card__body';
   const name = document.createElement('strong');
   name.className = 'roster-card__name';
-  name.textContent = character.name;
+  name.textContent = displayName;
   const meta = document.createElement('span');
   meta.className = 'roster-card__meta';
-  meta.textContent = `${PIECE_LABELS[character.pieceType]} · ${character.origin}`;
+  meta.textContent = `${displayPiece} · ${contentText(character.origin)}`;
   const status = document.createElement('span');
   status.className = `roster-status roster-status--${character.status}`;
-  status.textContent = STATUS_LABELS[character.status];
+  status.textContent = displayStatus;
   body.append(name, meta, status);
 
   button.append(artWrap, body);
@@ -170,23 +195,25 @@ function renderFilters() {
     const count = filter === 'all' ? (activeRun?.roster.length || 0) : (activeRun?.roster.filter((character) => character.status === filter).length || 0);
     button.classList.toggle('is-active', filter === activeFilter);
     button.setAttribute('aria-pressed', filter === activeFilter ? 'true' : 'false');
-    const label = button.dataset.rosterFilterLabel || button.textContent.replace(/\s+\d+$/, '').trim();
+    const label = t(`roster.filter.${filter}`);
+    button.dataset.rosterFilterLabel = label;
     button.textContent = `${label} ${count}`;
   }
 }
 
 function renderRoster() {
   if (!activeRun || !rosterList) return;
+  applyStaticCopy();
   updateJourneyLabel();
   renderFilters();
   renderDetail();
   rosterList.replaceChildren();
   const list = filteredRoster();
-  if (rosterCount) rosterCount.textContent = `${activeRun.roster.filter((character) => character.status !== 'dead').length} в строю`;
+  if (rosterCount) rosterCount.textContent = t('roster.inFormation', { count:activeRun.roster.filter((character) => character.status !== 'dead').length });
   if (!list.length) {
     const empty = document.createElement('div');
     empty.className = 'roster-empty';
-    empty.textContent = activeFilter === 'dead' ? 'В этом забеге пока никто не погиб.' : 'Нет фигур с таким состоянием.';
+    empty.textContent = activeFilter === 'dead' ? t('roster.empty.dead') : t('roster.empty.filtered');
     rosterList.append(empty);
     return;
   }
@@ -234,7 +261,7 @@ async function beginJourney() {
   journeyPending = true;
   if (journeyButton) {
     journeyButton.disabled = true;
-    journeyButton.textContent = 'Загрузка пути…';
+    journeyButton.textContent = t('roster.journeyLoading');
   }
   try {
     const travelChoice = await ensureTravelChoiceReady();
@@ -274,7 +301,13 @@ journeyButton?.addEventListener('click', beginJourney);
 addEventListener('rpchess:run-new', beginRun);
 addEventListener('rpchess:run-continue', continueRun);
 addEventListener('rpchess:run-updated', syncRun);
+subscribe(() => {
+  applyStaticCopy();
+  updateJourneyLabel();
+  if (rosterScreen && !rosterScreen.hidden && activeRun && !activeRun.ended) renderRoster();
+});
 
+applyStaticCopy();
 updateContinueState();
 updateJourneyLabel();
 
