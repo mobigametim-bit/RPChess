@@ -53,20 +53,6 @@ jobs:
 
           css_path=Path('game/css/landscape-ui-redesign.css')
           css=css_path.read_text()
-          generic="""  .classic-shell {
-            width: 100vw !important;
-            max-width: none !important;
-            height: 100dvh !important;
-            margin: 0 !important;
-            display: grid !important;
-            grid-template-columns: calc(100vw - 100dvh) 100dvh !important;
-            grid-template-rows: auto minmax(0, 1fr) minmax(86px, .42fr) !important;
-            gap: 0 !important;
-            align-items: stretch !important;
-          }
-          """
-          if generic not in css:
-              raise SystemExit('canonical classic-shell landscape block drifted')
           owner="""  /* Compact combat owns a zero-padding viewport and a physical rail/board separation. */
           html[data-landscape-ui='1'] body.compact-combat-active .classic-screen {
             padding: 0 !important;
@@ -85,7 +71,10 @@ jobs:
           }
           """
           if owner not in css:
-              css=css.replace(generic,generic+owner,1)
+              pattern=re.compile(r"(  \.classic-shell \{[\s\S]*?\n  \}\n)(?=  \.classic-topbar)")
+              css,count=pattern.subn(lambda match: match.group(1)+owner,css,count=1)
+              if count!=1:
+                  raise SystemExit(f'expected one canonical classic-shell landscape block, got {count}')
           css_path.write_text(css)
 
           test_path=Path('tests/ui-redesign-final.cjs')
