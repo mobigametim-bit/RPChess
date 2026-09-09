@@ -121,9 +121,11 @@ function sync() {
   queueMicrotask(() => renderPowerResults(readRun() || run));
 }
 
-addEventListener('rpchess:run-updated', sync);
+addEventListener('rpchess:combat-completed', sync);
+addEventListener('rpchess:puzzle-resolved', sync);
 addEventListener('rpchess:power-updated', () => queueMicrotask(() => renderPowerResults()));
 subscribe(() => queueMicrotask(() => renderPowerResults()));
+queueMicrotask(sync);
 if (typeof MutationObserver !== 'undefined') {
   new MutationObserver(() => renderPowerResults()).observe(document.querySelector('#app') || document.body, {
     childList:true,
