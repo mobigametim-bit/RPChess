@@ -1,7 +1,8 @@
-import { PIECE_GLYPHS, PIECE_LABELS, STATUS_LABELS } from './roster-data.mjs';
+import { PIECE_GLYPHS } from './roster-data.mjs';
 import { readRun, writeRun } from './run-persistence.mjs';
 import { pieceArtForTheme, racePiecePath } from './race-assets.mjs';
 import { starsText } from './encounter-difficulty.mjs';
+import { subscribe, t, translateLegacy } from './i18n.mjs';
 import {
   BATTLE_ARMY_POINTS,
   BATTLE_PIECE_COUNT,
@@ -54,15 +55,20 @@ let battleFinalized = false;
 let finalizeTimer = null;
 let toastTimer = null;
 let lastCapturedVisual = null;
+let lastBattleStatus = null;
+let lastMercenaryCasualty = null;
 
 function audio() { return globalThis.RPChessRebootAudio; }
+function contentText(value) { return translateLegacy(String(value ?? '')); }
+function pieceLabel(type) { return t(`piece.${type}`); }
+function statusLabel(status) { return t(`status.${status}`); }
 function characterForId(id) { return activeRun?.roster?.find((character) => character.id === id) || null; }
-function slotLabel(type) { return `${PIECE_LABELS[type] || type}: ${SLOT_CAPACITY[type] || 0}`; }
+function slotLabel(type) { return t('battle.card.slot', { piece:pieceLabel(type), capacity:SLOT_CAPACITY[type] || 0 }); }
 function playerColor() { return battlePlan?.playerColor || encounter?.playerColor || 'w'; }
 function enemyColor() { return battlePlan?.enemyColor || (playerColor() === 'w' ? 'b' : 'w'); }
 function playerGenericArt(pieceType, color = playerColor()) { return racePiecePath('humans', pieceType, color); }
 function enemyArt(pieceType) { return pieceArtForTheme(battlePlan?.encounter || encounter, pieceType, enemyColor()); }
-function combatDifficultyLabel() { return String(encounter?.label || '').split(' · ')[0].trim(); }
+function combatDifficultyLabel() { return contentText(String(encounter?.label || '').split(' · ')[0].trim()); }
 
 function ensureBattleScreens() {
   if (prepScreen && aftermathScreen && runEndScreen) return;
@@ -81,28 +87,28 @@ function ensureBattleScreens() {
       </header>
       <header class="battle-heading">
         <div>
-          <div class="reboot-eyebrow">ПОДГОТОВКА К БИТВЕ</div>
+          <div class="reboot-eyebrow" data-battle-prep-kicker>ПОДГОТОВКА К БИТВЕ</div>
           <h1 data-battle-title>Битва</h1>
           <p data-battle-description></p>
         </div>
         <div class="battle-threat-card ui-panel-safe">
           <strong data-battle-stars></strong>
-          <span>ПОЛНАЯ АРМИЯ · 16 ФИГУР · 39 ОЧКОВ</span>
+          <span data-battle-full-army>ПОЛНАЯ АРМИЯ · 16 ФИГУР · 39 ОЧКОВ</span>
           <small data-battle-tactic>Тактика противника: —</small>
         </div>
       </header>
       <div class="battle-layout">
         <section class="battle-roster ui-panel-safe" aria-label="Персональные бойцы">
           <header class="battle-section-head">
-            <div><div class="reboot-eyebrow">РОСТЕР</div><h2>Персональные бойцы</h2></div>
-            <span>Здоровые бойцы выбраны по умолчанию. Снимите тех, кем не хотите рисковать.</span>
+            <div><div class="reboot-eyebrow" data-battle-roster-kicker>РОСТЕР</div><h2 data-battle-available-title>Персональные бойцы</h2></div>
+            <span data-battle-available-hint>Здоровые бойцы выбраны по умолчанию. Снимите тех, кем не хотите рисковать.</span>
           </header>
           <div class="battle-grid" data-battle-available></div>
         </section>
         <aside class="battle-army ui-panel-safe" aria-label="Ваша полная армия">
           <header class="battle-section-head">
-            <div><div class="reboot-eyebrow">СТАНДАРТНЫЙ КОМПЛЕКТ</div><h2>Ваша армия</h2></div>
-            <span>Персональные бойцы заменяют временные фигуры того же типа.</span>
+            <div><div class="reboot-eyebrow" data-battle-army-kicker>СТАНДАРТНЫЙ КОМПЛЕКТ</div><h2 data-battle-army-title>Боевой строй</h2></div>
+            <span data-battle-army-note>Свободный слот — дешёвый Наёмник. Замена оставленного в резерве здорового героя стоит как его лечение.</span>
           </header>
           <div class="battle-slot-summary" data-battle-slot-summary></div>
           <div class="battle-formation" data-battle-formation aria-label="Стандартная стартовая армия"></div>
@@ -121,8 +127,8 @@ function ensureBattleScreens() {
   aftermathScreen.innerHTML = `
     <div class="battle-aftermath-shell"><img class="battle-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
       <section class="battle-aftermath-panel ui-panel-safe">
-        <div class="reboot-eyebrow">БИТВА ЗАВЕРШЕНА</div><h1 data-battle-aftermath-result>ИТОГ</h1><p data-battle-aftermath-text></p>
-        <div class="battle-aftermath-columns"><section><h2>Выжили</h2><div class="battle-aftermath-list" data-battle-survivors></div></section><section><h2>Тяжело ранены</h2><div class="battle-aftermath-list" data-battle-wounded></div></section></div>
+        <div class="reboot-eyebrow" data-battle-aftermath-kicker>БИТВА ЗАВЕРШЕНА</div><h1 data-battle-aftermath-result>ИТОГ</h1><p data-battle-aftermath-text></p>
+        <div class="battle-aftermath-columns"><section><h2 data-battle-survivors-title>Выжили</h2><div class="battle-aftermath-list" data-battle-survivors></div></section><section><h2 data-battle-wounded-title>Тяжело ранены</h2><div class="battle-aftermath-list" data-battle-wounded></div></section></div>
         <button class="reboot-button reboot-button--primary battle-aftermath-button" type="button" data-battle-continue>Продолжить путь</button>
       </section>
     </div>`;
@@ -133,8 +139,8 @@ function ensureBattleScreens() {
   runEndScreen.hidden = true;
   runEndScreen.innerHTML = `
     <div class="battle-aftermath-shell"><img class="battle-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
-      <section class="battle-aftermath-panel ui-panel-safe"><div class="reboot-eyebrow">ЗАБЕГ ЗАВЕРШЁН</div><h1>КОРОЛЬ ПОГИБ</h1><p data-battle-run-end-text></p>
-        <div class="battle-aftermath-columns battle-run-end-metrics"><section><h2>Сражений завершено</h2><div class="battle-aftermath-empty" data-battle-run-metric="combats">0</div></section><section><h2>Сохранили строй</h2><div class="battle-aftermath-empty" data-battle-run-metric="healthy">0</div></section><section><h2>Тяжело ранены</h2><div class="battle-aftermath-empty" data-battle-run-metric="wounded">0</div></section></div>
+      <section class="battle-aftermath-panel ui-panel-safe"><div class="reboot-eyebrow" data-battle-run-end-kicker>ЗАБЕГ ЗАВЕРШЁН</div><h1 data-battle-run-end-title>КОРОЛЬ ПОГИБ</h1><p data-battle-run-end-text></p>
+        <div class="battle-aftermath-columns battle-run-end-metrics"><section><h2 data-battle-run-combats-title>Сражений завершено</h2><div class="battle-aftermath-empty" data-battle-run-metric="combats">0</div></section><section><h2 data-battle-run-healthy-title>Сохранили строй</h2><div class="battle-aftermath-empty" data-battle-run-metric="healthy">0</div></section><section><h2 data-battle-run-wounded-title>Тяжело ранены</h2><div class="battle-aftermath-empty" data-battle-run-metric="wounded">0</div></section></div>
         <button class="reboot-button reboot-button--primary battle-aftermath-button" type="button" data-battle-run-end-continue>Главное меню</button>
       </section>
     </div>`;
@@ -143,6 +149,37 @@ function ensureBattleScreens() {
   prepScreen.querySelector('[data-battle-start]')?.addEventListener('click', startBattle);
   aftermathScreen.querySelector('[data-battle-continue]')?.addEventListener('click', leaveAftermath);
   runEndScreen.querySelector('[data-battle-run-end-continue]')?.addEventListener('click', leaveRunEnd);
+  renderStaticCopy();
+}
+
+function renderStaticCopy() {
+  if (!prepScreen || !aftermathScreen || !runEndScreen) return;
+  prepScreen.setAttribute('aria-label', t('battle.ariaLabel'));
+  prepScreen.querySelector('[data-battle-prep-kicker]').textContent=t('battle.prepKicker');
+  prepScreen.querySelector('[data-battle-full-army]').textContent=t('battle.fullArmy');
+  prepScreen.querySelector('.battle-roster').setAttribute('aria-label',t('battle.availableAria'));
+  prepScreen.querySelector('[data-battle-roster-kicker]').textContent=t('battle.rosterKicker');
+  prepScreen.querySelector('[data-battle-available-title]').textContent=t('battle.availableTitle');
+  prepScreen.querySelector('[data-battle-available-hint]').textContent=t('battle.availableHint');
+  prepScreen.querySelector('.battle-army').setAttribute('aria-label',t('battle.armyAria'));
+  prepScreen.querySelector('[data-battle-army-kicker]').textContent=t('battle.armyKicker');
+  prepScreen.querySelector('[data-battle-army-title]').textContent=t('battle.armyTitle');
+  prepScreen.querySelector('[data-battle-army-note]').textContent=t('battle.armyNote');
+  prepScreen.querySelector('[data-battle-formation]').setAttribute('aria-label',t('battle.formationAria'));
+  prepScreen.querySelector('[data-battle-start]').textContent=t('battle.start');
+
+  aftermathScreen.setAttribute('aria-label',t('battle.aftermathAria'));
+  aftermathScreen.querySelector('[data-battle-aftermath-kicker]').textContent=t('battle.aftermathKicker');
+  aftermathScreen.querySelector('[data-battle-survivors-title]').textContent=t('battle.aftermath.survivors');
+  aftermathScreen.querySelector('[data-battle-wounded-title]').textContent=t('battle.aftermath.wounded');
+  aftermathScreen.querySelector('[data-battle-continue]').textContent=t('battle.aftermath.continue');
+
+  runEndScreen.querySelector('[data-battle-run-end-kicker]').textContent=t('battle.runEnd.kicker');
+  runEndScreen.querySelector('[data-battle-run-end-title]').textContent=t('battle.runEnd.title');
+  runEndScreen.querySelector('[data-battle-run-combats-title]').textContent=t('battle.runEnd.combats');
+  runEndScreen.querySelector('[data-battle-run-healthy-title]').textContent=t('battle.runEnd.healthy');
+  runEndScreen.querySelector('[data-battle-run-wounded-title]').textContent=t('battle.runEnd.wounded');
+  runEndScreen.querySelector('[data-battle-run-end-continue]').textContent=t('battle.runEnd.menu');
 }
 
 function showOnly(target) {
@@ -169,12 +206,12 @@ function setBattleNavigationLocked(locked) {
 }
 function setNotice(text = '') { const root = prepScreen?.querySelector('[data-battle-notice]'); if (!root) return; root.textContent = text; root.hidden = !text; }
 function battleReason(result) {
-  if (!result) return 'Состав нельзя использовать в этой битве.';
-  if (result.reason === 'king_unavailable') return 'Король недоступен. Забег не может продолжаться.';
-  if (result.reason === 'king_required') return 'Король обязан участвовать в каждой битве.';
-  if (result.reason === 'character_unavailable') return 'Эта фигура сейчас не может участвовать в битве.';
-  if (result.reason === 'slot_limit') return `ВСЕ ${result.capacity} СЛОТА · ${String(PIECE_LABELS[result.pieceType] || result.pieceType).toUpperCase()} ЗАНЯТЫ`;
-  return 'Состав нельзя использовать в этой битве.';
+  if (!result) return t('battle.reason.invalid');
+  if (result.reason === 'king_unavailable') return t('battle.reason.kingUnavailable');
+  if (result.reason === 'king_required') return t('battle.reason.kingRequired');
+  if (result.reason === 'character_unavailable') return t('battle.reason.characterUnavailable');
+  if (result.reason === 'slot_limit') return t('battle.reason.slotLimit',{capacity:result.capacity,piece:pieceLabel(result.pieceType).toUpperCase()});
+  return t('battle.reason.invalid');
 }
 
 function encounterForRun(run) {
@@ -184,17 +221,17 @@ function encounterForRun(run) {
 }
 function renderEncounter() {
   if (!prepScreen || !encounter) return;
-  prepScreen.querySelector('[data-battle-title]').textContent = encounter.label;
-  prepScreen.querySelector('[data-battle-description]').textContent = `${encounter.description} ${encounter.sideNarrative || ''}`.trim();
+  prepScreen.querySelector('[data-battle-title]').textContent = contentText(encounter.label) || t('battle.title');
+  prepScreen.querySelector('[data-battle-description]').textContent = contentText(`${encounter.description} ${encounter.sideNarrative || ''}`.trim());
   const stars = prepScreen.querySelector('[data-battle-stars]');
   stars.textContent = starsText(encounter.stars);
-  stars.setAttribute('aria-label', `Сложность ${encounter.stars} из 12`);
-  prepScreen.querySelector('[data-battle-tactic]').textContent = `Тактика противника: ${encounter.tactic}`;
+  stars.setAttribute('aria-label', t('battle.difficultyAria',{stars:encounter.stars}));
+  prepScreen.querySelector('[data-battle-tactic]').textContent = encounter.tactic ? t('battle.tactic',{tactic:contentText(encounter.tactic)}) : t('battle.tacticFallback');
 }
 
 function tryToggle(character) {
   if (!activeRun || (character.status !== 'healthy' && !character.isRunKing)) return;
-  if (character.isRunKing) { setNotice('Король обязан участвовать в каждой битве.'); return; }
+  if (character.isRunKing) { setNotice(t('battle.reason.kingRequired')); return; }
   const next = new Set(selectedIds);
   next.has(character.id) ? next.delete(character.id) : next.add(character.id);
   const validation = validateBattleSelection(activeRun.roster, [...next]);
@@ -210,25 +247,25 @@ function battleCard(character) {
   button.disabled = unavailable; button.setAttribute('aria-disabled', unavailable ? 'true' : 'false');
   const art = document.createElement('img'); art.className = 'battle-card__art'; art.src = character.pieceArt; art.alt = '';
   const body = document.createElement('span'); body.className = 'battle-card__body';
-  const name = document.createElement('strong'); name.textContent = character.name;
-  const meta = document.createElement('span'); meta.className = 'battle-card__meta'; meta.textContent = `${PIECE_GLYPHS[character.pieceType] || ''} ${PIECE_LABELS[character.pieceType]} · слот ${slotLabel(character.pieceType)}`;
-  const state = document.createElement('span'); state.className = `battle-card__status battle-card__status--${character.status}`; state.textContent = character.isRunKing ? '♔ КОРОЛЬ · ОБЯЗАТЕЛЕН' : STATUS_LABELS[character.status];
-  body.append(name, meta, state); button.append(art, body); if (!unavailable) button.addEventListener('click', () => tryToggle(character)); return button;
+  const name=document.createElement('strong'); name.textContent=contentText(character.name);
+  const meta=document.createElement('span'); meta.className='battle-card__meta'; meta.textContent=`${PIECE_GLYPHS[character.pieceType] || ''} ${pieceLabel(character.pieceType)} · ${slotLabel(character.pieceType)}`;
+  const state=document.createElement('span'); state.className=`battle-card__status battle-card__status--${character.status}`; state.textContent=character.isRunKing?t('battle.card.kingRequired'):statusLabel(character.status);
+  body.append(name,meta,state); button.append(art,body); if(!unavailable)button.addEventListener('click',()=>tryToggle(character)); return button;
 }
 function renderAvailable() { const root=prepScreen?.querySelector('[data-battle-available]'); if(!root||!activeRun)return; root.replaceChildren(); const order={healthy:0,wounded:1,dead:2}; for(const c of [...activeRun.roster].sort((a,b)=>order[a.status]-order[b.status]))root.append(battleCard(c)); }
-function renderSlotSummary() { const root=prepScreen?.querySelector('[data-battle-slot-summary]'); if(!root||!activeRun)return; root.replaceChildren(); const counts=selectedTypeCounts(activeRun.roster,[...selectedIds]); for(const type of ['king','queen','rook','bishop','knight','pawn']){const chip=document.createElement('span');chip.className='battle-slot-chip';chip.dataset.battleSlotType=type;chip.textContent=`${PIECE_GLYPHS[type]||''} ${PIECE_LABELS[type]} ${counts[type]} / ${SLOT_CAPACITY[type]}`;root.append(chip);} }
+function renderSlotSummary() { const root=prepScreen?.querySelector('[data-battle-slot-summary]'); if(!root||!activeRun)return; root.replaceChildren(); const counts=selectedTypeCounts(activeRun.roster,[...selectedIds]); for(const type of ['king','queen','rook','bishop','knight','pawn']){const chip=document.createElement('span');chip.className='battle-slot-chip';chip.dataset.battleSlotType=type;chip.textContent=`${PIECE_GLYPHS[type]||''} ${pieceLabel(type)} ${counts[type]} / ${SLOT_CAPACITY[type]}`;root.append(chip);} }
 function renderFormation() {
   const root=prepScreen?.querySelector('[data-battle-formation]'); if(!root||!activeRun||!encounter)return; root.replaceChildren();
   const color=encounter.playerColor||'w'; let formation=[]; try{formation=formationFor(color,activeRun.roster,[...selectedIds],color);}catch{return;}
   const bySquare=new Map(formation.map((piece)=>[piece.square,piece])),ranks=color==='w'?['2','1']:['7','8'];
-  for(const rank of ranks)for(const file of 'abcdefgh'){const square=`${file}${rank}`,piece=bySquare.get(square),cell=document.createElement('div');cell.className='battle-formation-cell';cell.dataset.battlePreviewSquare=square;if(piece){const image=document.createElement('img');image.src=piece.id?(characterForId(piece.id)?.pieceArt||playerGenericArt(piece.pieceType,color)):playerGenericArt(piece.pieceType,color);image.alt='';if(piece.id)image.dataset.personalizedId=piece.id;const glyph=document.createElement('span');glyph.textContent=PIECE_GLYPHS[piece.pieceType]||'';cell.append(image,glyph);cell.title=piece.id?(characterForId(piece.id)?.name||piece.name):piece.name;}root.append(cell);}
+  for(const rank of ranks)for(const file of 'abcdefgh'){const square=`${file}${rank}`,piece=bySquare.get(square),cell=document.createElement('div');cell.className='battle-formation-cell';cell.dataset.battlePreviewSquare=square;if(piece){const image=document.createElement('img');image.src=piece.id?(characterForId(piece.id)?.pieceArt||playerGenericArt(piece.pieceType,color)):playerGenericArt(piece.pieceType,color);image.alt='';if(piece.id)image.dataset.personalizedId=piece.id;const glyph=document.createElement('span');glyph.textContent=PIECE_GLYPHS[piece.pieceType]||'';cell.append(image,glyph);cell.title=piece.id?contentText(characterForId(piece.id)?.name||piece.name):contentText(piece.name);}root.append(cell);}
 }
-function renderParticipants() { const root=prepScreen?.querySelector('[data-battle-participants]'); if(!root||!activeRun)return; root.replaceChildren(); const validation=validateBattleSelection(activeRun.roster,[...selectedIds]);if(!validation.ok)return;for(const c of validation.members){const row=document.createElement('button');row.type='button';row.className='battle-participant-row';row.disabled=c.isRunKing;row.dataset.battleParticipant=c.id;const glyph=document.createElement('span');glyph.textContent=PIECE_GLYPHS[c.pieceType]||'';const name=document.createElement('strong');name.textContent=c.name;const state=document.createElement('small');state.textContent=c.isRunKing?'ОБЯЗАТЕЛЕН':'ИМЕННОЙ';row.append(glyph,name,state);if(!c.isRunKing)row.addEventListener('click',()=>tryToggle(c));root.append(row);} }
+function renderParticipants() { const root=prepScreen?.querySelector('[data-battle-participants]'); if(!root||!activeRun)return; root.replaceChildren(); const validation=validateBattleSelection(activeRun.roster,[...selectedIds]);if(!validation.ok)return;for(const c of validation.members){const row=document.createElement('button');row.type='button';row.className='battle-participant-row';row.disabled=c.isRunKing;row.dataset.battleParticipant=c.id;const glyph=document.createElement('span');glyph.textContent=PIECE_GLYPHS[c.pieceType]||'';const name=document.createElement('strong');name.textContent=contentText(c.name);const state=document.createElement('small');state.textContent=c.isRunKing?t('battle.participant.required'):t('battle.participant.named');row.append(glyph,name,state);if(!c.isRunKing)row.addEventListener('click',()=>tryToggle(c));root.append(row);} }
 function renderCounters() { const validation=validateBattleSelection(activeRun?.roster||[],[...selectedIds]);const start=prepScreen?.querySelector('[data-battle-start]');if(start){start.disabled=!validation.ok;start.setAttribute('aria-disabled',validation.ok?'false':'true');} }
 function renderComposition(){renderAvailable();renderSlotSummary();renderFormation();renderParticipants();renderCounters();}
 
-function resetBattleTracking(){battlePlan=null;playerBySquare=new Map();enemyBySquare=new Map();capturedIds=new Set();processedMoves=0;battleFinalized=false;lastCapturedVisual=null;clearTimeout(finalizeTimer);finalizeTimer=null;setBattleNavigationLocked(false);}
-function openBattle(){ensureBattleScreens();activeRun=readRun();if(!activeRun||activeRun.ended)return;encounter=encounterForRun(activeRun);selectedIds=new Set(defaultBattleSelection(activeRun.roster));resetBattleTracking();setNotice('');renderEncounter();renderComposition();showOnly('battle');}
+function resetBattleTracking(){battlePlan=null;playerBySquare=new Map();enemyBySquare=new Map();capturedIds=new Set();processedMoves=0;battleFinalized=false;lastCapturedVisual=null;lastBattleStatus=null;lastMercenaryCasualty=null;clearTimeout(finalizeTimer);finalizeTimer=null;setBattleNavigationLocked(false);}
+function openBattle(){ensureBattleScreens();activeRun=readRun();if(!activeRun||activeRun.ended)return;encounter=encounterForRun(activeRun);selectedIds=new Set(defaultBattleSelection(activeRun.roster));resetBattleTracking();setNotice('');renderStaticCopy();renderEncounter();renderComposition();showOnly('battle');}
 function pieceImage(piece, side) {
   if (side === 'player') {
     if (piece.id) return characterForId(piece.id)?.pieceArt || playerGenericArt(piece.pieceType, battlePlan.playerColor);
@@ -239,7 +276,7 @@ function pieceImage(piece, side) {
 function applyBoardArt() {
   if (!board || !battlePlan) return;
   for (const [square,piece] of playerBySquare) {
-    const cell=board.querySelector(`[data-square="${square}"]`),image=cell?.querySelector('.classic-piece');if(!image)continue;image.src=pieceImage(piece,'player');if(piece.id){image.dataset.personalizedId=piece.id;image.classList.add('classic-piece--personalized');cell.dataset.personalizedId=piece.id;const character=characterForId(piece.id);cell.setAttribute('aria-label',`${square}: ${character?.name||piece.name}, ${PIECE_LABELS[piece.pieceType]||piece.pieceType}`);}
+    const cell=board.querySelector(`[data-square="${square}"]`),image=cell?.querySelector('.classic-piece');if(!image)continue;image.src=pieceImage(piece,'player');if(piece.id){image.dataset.personalizedId=piece.id;image.classList.add('classic-piece--personalized');cell.dataset.personalizedId=piece.id;const character=characterForId(piece.id);cell.setAttribute('aria-label',`${square}: ${contentText(character?.name||piece.name)}, ${pieceLabel(piece.pieceType)}`);}
   }
   for (const [square,piece] of enemyBySquare) { const image=board.querySelector(`[data-square="${square}"] .classic-piece`); if(image)image.src=pieceImage(piece,'enemy'); }
 }
@@ -254,12 +291,12 @@ function startBattle() {
   activeRun=readRun();if(!activeRun||activeRun.ended)return;const validation=validateBattleSelection(activeRun.roster,[...selectedIds]);if(!validation.ok){setNotice(battleReason(validation));return;}
   battlePlan=createBattlePlan({roster:activeRun.roster,selectedIds:[...selectedIds],encounter});
   playerBySquare=new Map(battlePlan.playerFormation.map((piece)=>[piece.square,piece])); enemyBySquare=new Map(battlePlan.enemyFormation.map((piece)=>[piece.square,piece]));
-  capturedIds=new Set();processedMoves=0;battleFinalized=false;lastCapturedVisual=null;clearTimeout(finalizeTimer);audio()?.click?.();showOnly('classic');setBattleNavigationLocked(true);
+  capturedIds=new Set();processedMoves=0;battleFinalized=false;lastCapturedVisual=null;lastBattleStatus=null;lastMercenaryCasualty=null;clearTimeout(finalizeTimer);audio()?.click?.();showOnly('classic');setBattleNavigationLocked(true);
   globalThis.RPChessClassicChess?.newGame(battlePlan.fen,{mode:'ai',playerColor:battlePlan.playerColor,aiElo:encounter.aiElo});applyBoardArt();
   const mode=document.querySelector('[data-game-mode]');if(mode)mode.textContent=combatDifficultyLabel();
 }
 
-function showWoundToast(id){let toast=document.querySelector('[data-battle-toast]');if(!toast){toast=document.createElement('div');toast.className='battle-toast';toast.dataset.battleToast='';toast.setAttribute('role','status');toast.setAttribute('aria-live','polite');toast.hidden=true;document.body.append(toast);}const c=characterForId(id);if(!c)return;toast.textContent=`${c.name} — ТЯЖЕЛО РАНЕН`;toast.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{toast.hidden=true;},2200);}
+function showWoundToast(id){let toast=document.querySelector('[data-battle-toast]');if(!toast){toast=document.createElement('div');toast.className='battle-toast';toast.dataset.battleToast='';toast.setAttribute('role','status');toast.setAttribute('aria-live','polite');toast.hidden=true;document.body.append(toast);}const c=characterForId(id);if(!c)return;toast.textContent=t('battle.woundToast',{name:contentText(c.name)});toast.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{toast.hidden=true;},2200);}
 function processMove(entry) {
   if(!entry?.move||!battlePlan)return;const{from,to,capture}=entry.move;
   if(entry.color===battlePlan.playerColor){const piece=playerBySquare.get(from);if(piece){playerBySquare.delete(from);playerBySquare.set(to,{...piece,square:to});}if(entry.captured)enemyBySquare.delete(capture||to);}
@@ -267,14 +304,22 @@ function processMove(entry) {
 }
 function syncBattleFromChess(){if(!battlePlan||battleFinalized||!globalThis.RPChessClassicChess)return;const log=globalThis.RPChessClassicChess.moveLog||[];while(processedMoves<log.length){processMove(log[processedMoves]);processedMoves++;}applyBoardArt();const mode=document.querySelector('[data-game-mode]');if(mode&&encounter)mode.textContent=combatDifficultyLabel();const status=globalThis.RPChessClassicChess.snapshot()?.status;if(status?.over&&!finalizeTimer)finalizeTimer=setTimeout(()=>finishBattle(status),320);}
 
-function renderCharacterList(root,characters,emptyText){if(!root)return;root.replaceChildren();if(!characters.length){const empty=document.createElement('div');empty.className='battle-aftermath-empty';empty.textContent=emptyText;root.append(empty);return;}for(const character of characters){const row=document.createElement('div');row.className='battle-aftermath-row';const art=document.createElement('img');art.src=character.pieceArt;art.alt='';const name=document.createElement('strong');name.textContent=character.name;const status=document.createElement('span');status.textContent=STATUS_LABELS[character.status]||character.status;row.append(art,name,status);root.append(row);}}
-function renderAftermath(status){if(!activeRun||!battlePlan||!aftermathScreen)return;const participants=battlePlan.participants.map((id)=>activeRun.roster.find((c)=>c.id===id)).filter(Boolean),survivors=participants.filter((c)=>c.status==='healthy'),wounded=participants.filter((c)=>c.status==='wounded'),victory=status?.type==='checkmate'&&status.winner===battlePlan.playerColor;aftermathScreen.querySelector('[data-battle-aftermath-result]').textContent=victory?'ПОБЕДА':status?.type==='checkmate'?'ПОРАЖЕНИЕ':'НИЧЬЯ';aftermathScreen.querySelector('[data-battle-aftermath-text]').textContent=wounded.length?'Битва окончена. Временная армия распущена; тяжело раненые именные бойцы требуют лечения.':'Битва окончена. Именные участники сохранили боеспособность.';renderCharacterList(aftermathScreen.querySelector('[data-battle-survivors]'),survivors,'Нет невредимых именных участников.');renderCharacterList(aftermathScreen.querySelector('[data-battle-wounded]'),wounded,'Никто из именных участников не получил тяжёлых ранений.');}
-function renderRunEnd(){if(!activeRun||!runEndScreen)return;const king=activeRun.roster.find((c)=>c.isRunKing),healthy=activeRun.roster.filter((c)=>!c.isRunKing&&c.status==='healthy').length,wounded=activeRun.roster.filter((c)=>c.status==='wounded').length;runEndScreen.querySelector('[data-battle-run-end-text]').textContent=`${king?.name||'Король'} пал в битве. Забег завершён.`;const values={combats:String((activeRun.skirmishCount||0)+(activeRun.battleCount||0)),healthy:String(healthy),wounded:String(wounded)};for(const metric of runEndScreen.querySelectorAll('[data-battle-run-metric]'))metric.textContent=values[metric.dataset.battleRunMetric]||'0';}
-function finishBattle(status){finalizeTimer=null;if(battleFinalized||!battlePlan)return;battleFinalized=true;const current=readRun();if(!current)return;const outcome=applyBattleOutcome(current,{capturedIds:[...capturedIds],participantIds:battlePlan.participants,status,playerColor:battlePlan.playerColor});activeRun=writeRun({...outcome,battleCount:(Number.isInteger(current.battleCount)?current.battleCount:0)+1,lastBattle:{...(outcome.lastBattle||{}),encounterId:battlePlan.encounter.id,encounterStars:battlePlan.encounter.stars,fullArmyPieces:BATTLE_PIECE_COUNT,fullArmyPoints:BATTLE_ARMY_POINTS,playerColor:battlePlan.playerColor,enemyRaceTag:battlePlan.encounter.enemyRaceTag}});setBattleNavigationLocked(false);globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));if(activeRun.ended){renderRunEnd();showOnly('battleRunEnd');return;}renderAftermath(status);showOnly('battleAftermath');}
+function renderCharacterList(root,characters,emptyText){if(!root)return;root.replaceChildren();if(!characters.length){const empty=document.createElement('div');empty.className='battle-aftermath-empty';empty.textContent=emptyText;root.append(empty);return;}for(const character of characters){const row=document.createElement('div');row.className='battle-aftermath-row';const art=document.createElement('img');art.src=character.pieceArt;art.alt='';const name=document.createElement('strong');name.textContent=contentText(character.name);const status=document.createElement('span');status.textContent=statusLabel(character.status);row.append(art,name,status);root.append(row);}}
+function renderAftermath(status=lastBattleStatus,casualty=lastMercenaryCasualty){if(!activeRun||!battlePlan||!aftermathScreen||!status)return;const participants=battlePlan.participants.map((id)=>activeRun.roster.find((c)=>c.id===id)).filter(Boolean),survivors=participants.filter((c)=>c.status==='healthy'),wounded=participants.filter((c)=>c.status==='wounded'),victory=status?.type==='checkmate'&&status.winner===battlePlan.playerColor;aftermathScreen.querySelector('[data-battle-aftermath-result]').textContent=victory?t('battle.aftermath.victory'):status?.type==='checkmate'?t('battle.aftermath.defeat'):t('battle.aftermath.draw');let text=t(wounded.length?'battle.aftermath.woundedText':'battle.aftermath.healthyText');if(casualty)text=`${text} ${t('battle.aftermath.debtCasualty',{name:contentText(casualty.name)})}`;aftermathScreen.querySelector('[data-battle-aftermath-text]').textContent=text;renderCharacterList(aftermathScreen.querySelector('[data-battle-survivors]'),survivors,t('battle.aftermath.emptySurvivors'));renderCharacterList(aftermathScreen.querySelector('[data-battle-wounded]'),wounded,t('battle.aftermath.emptyWounded'));}
+function renderRunEnd(){if(!activeRun||!runEndScreen)return;const king=activeRun.roster.find((c)=>c.isRunKing),healthy=activeRun.roster.filter((c)=>!c.isRunKing&&c.status==='healthy').length,wounded=activeRun.roster.filter((c)=>c.status==='wounded').length;runEndScreen.querySelector('[data-battle-run-end-text]').textContent=t('battle.runEnd.text',{name:contentText(king?.name||t('piece.king'))});const values={combats:String((activeRun.skirmishCount||0)+(activeRun.battleCount||0)),healthy:String(healthy),wounded:String(wounded)};for(const metric of runEndScreen.querySelectorAll('[data-battle-run-metric]'))metric.textContent=values[metric.dataset.battleRunMetric]||'0';}
+function finishBattle(status){finalizeTimer=null;if(battleFinalized||!battlePlan)return;battleFinalized=true;const current=readRun();if(!current)return;const outcome=applyBattleOutcome(current,{capturedIds:[...capturedIds],participantIds:battlePlan.participants,status,playerColor:battlePlan.playerColor});const completed={...outcome,battleCount:(Number.isInteger(current.battleCount)?current.battleCount:0)+1,lastBattle:{...(outcome.lastBattle||{}),encounterId:battlePlan.encounter.id,encounterStars:battlePlan.encounter.stars,fullArmyPieces:BATTLE_PIECE_COUNT,fullArmyPoints:BATTLE_ARMY_POINTS,playerColor:battlePlan.playerColor,enemyRaceTag:battlePlan.encounter.enemyRaceTag}};const debt=globalThis.RPChessBattleMercenaries?.resolveBattleMercenaryDebt?.(completed)||{run:completed,resolved:false,casualty:null};activeRun=writeRun(debt.run);lastBattleStatus=status;lastMercenaryCasualty=debt.casualty||null;setBattleNavigationLocked(false);globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{battleCompleted:true,mercenaryDebtSettled:Boolean(debt.resolved),casualtyId:debt.casualty?.id||null}}));if(activeRun.ended){renderRunEnd();showOnly('battleRunEnd');return;}renderAftermath(status,debt.casualty);showOnly('battleAftermath');}
 function leaveAftermath(){audio()?.click?.();resetBattleTracking();globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open',{detail:{source:'battle-aftermath',runId:activeRun?.id||null}}));}
 function leaveRunEnd(){audio()?.click?.();resetBattleTracking();showOnly('menu');globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));}
 
-addEventListener('rpchess:battle-open',openBattle);ensureBattleScreens();
+function rerenderLanguage() {
+  renderStaticCopy();
+  if (prepScreen && !prepScreen.hidden && encounter) { renderEncounter(); renderComposition(); }
+  if (aftermathScreen && !aftermathScreen.hidden && lastBattleStatus) renderAftermath();
+  if (runEndScreen && !runEndScreen.hidden) renderRunEnd();
+  if (battlePlan && classicScreen && !classicScreen.hidden) { applyBoardArt(); const mode=document.querySelector('[data-game-mode]');if(mode)mode.textContent=combatDifficultyLabel(); }
+}
+
+addEventListener('rpchess:battle-open',openBattle);ensureBattleScreens();subscribe(rerenderLanguage);
 if(board&&typeof MutationObserver!=='undefined')new MutationObserver(syncBattleFromChess).observe(board,{childList:true,subtree:true});
 if(typeof MutationObserver!=='undefined'&&document.body)new MutationObserver(()=>{if(!battlePlan)return;if(!document.querySelector('.classic-piece-flyer:not([data-battle-visualized]),.classic-captured-ghost:not([data-battle-visualized])'))return;queueMicrotask(patchTransientBattleArt);}).observe(document.body,{childList:true,subtree:true});
 globalThis.RPChessBattle=Object.freeze({open:openBattle,start:startBattle,get encounter(){return encounter;},get selectedIds(){return[...selectedIds];},get battlePlan(){return battlePlan;},syncBattleFromChess,finishBattle});
