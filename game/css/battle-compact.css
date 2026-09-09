@@ -188,6 +188,8 @@
     height:100dvh!important;
     min-height:0!important;
     max-height:100dvh!important;
+    padding:5px 7px!important;
+    overflow:hidden!important;
     box-sizing:border-box!important;
   }
   html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .battle-aftermath-shell {
@@ -195,6 +197,117 @@
     height:100%!important;
     min-height:0!important;
     max-height:100%!important;
+    margin:0!important;
+    padding:0!important;
+    display:grid!important;
+    place-items:center!important;
+    overflow:hidden!important;
     box-sizing:border-box!important;
+  }
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .battle-aftermath-panel {
+    width:min(816px,calc(100vw - 14px))!important;
+    height:100%!important;
+    max-height:100%!important;
+    min-height:0!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) minmax(260px,.94fr)!important;
+    grid-template-areas:'result gold' 'text power' 'columns columns' 'button button'!important;
+    grid-template-rows:42px 34px minmax(0,1fr) 34px!important;
+    gap:3px 10px!important;
+    align-items:stretch!important;
+    align-content:stretch!important;
+    margin:0 auto!important;
+    padding:8px 10px!important;
+    overflow:hidden!important;
+    box-sizing:border-box!important;
+  }
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .battle-aftermath-panel>h1 {
+    align-self:center!important;
+    margin:0!important;
+    font-size:28px!important;
+    line-height:.96!important;
+  }
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .battle-aftermath-panel>p {
+    align-self:start!important;
+    margin:0!important;
+    font-size:9px!important;
+    line-height:1.18!important;
+  }
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .resource-combat-reward,
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .power-result {
+    width:100%!important;
+    height:34px!important;
+    min-height:34px!important;
+    margin:0!important;
+    padding:3px 7px!important;
+    box-sizing:border-box!important;
+  }
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .resource-combat-reward {
+    grid-template-columns:28px minmax(0,1fr)!important;
+    gap:6px!important;
+  }
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .resource-combat-reward img {width:28px!important;height:28px!important;}
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .resource-combat-reward::after {font-size:16px!important;}
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .power-result {gap:3px 7px!important;padding-left:43px!important;}
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .power-result::before {left:5px!important;width:28px!important;height:28px!important;}
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .power-result__value {font-size:14px!important;}
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .power-result__delta {font-size:9px!important;}
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .power-result__threat {display:none!important;}
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .battle-aftermath-columns {
+    min-height:0!important;
+    height:100%!important;
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:6px!important;
+    margin:2px 0 0!important;
+    padding-top:4px!important;
+    overflow:hidden!important;
+  }
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .battle-aftermath-columns>section {
+    min-height:0!important;
+    height:100%!important;
+    display:flex!important;
+    flex-direction:column!important;
+    padding:5px 7px!important;
+    overflow:hidden!important;
+    box-sizing:border-box!important;
+  }
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .battle-aftermath-columns h2 {
+    flex:0 0 auto!important;
+    margin:0 0 3px!important;
+    font-size:17px!important;
+    line-height:1!important;
+  }
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .battle-aftermath-list {
+    flex:1 1 auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    display:grid!important;
+    grid-auto-rows:minmax(0,1fr)!important;
+    gap:2px!important;
+    overflow:hidden!important;
+    padding:0!important;
+  }
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .battle-aftermath-row {
+    min-height:0!important;
+    height:100%!important;
+    grid-template-columns:25px minmax(0,1fr) auto!important;
+    gap:5px!important;
+    padding:1px 4px!important;
+    box-sizing:border-box!important;
+  }
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .battle-aftermath-row img {width:23px!important;height:23px!important;}
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .battle-aftermath-row strong {font-size:9px!important;}
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .battle-aftermath-row span {font-size:7px!important;}
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .battle-aftermath-empty {font-size:9px!important;line-height:1.2!important;}
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .battle-aftermath-button {
+    align-self:stretch!important;
+    justify-self:center!important;
+    width:min(300px,100%)!important;
+    min-height:31px!important;
+    height:31px!important;
+    margin:0!important;
+    padding:3px 8px!important;
+    font-size:11px!important;
   }
 }
