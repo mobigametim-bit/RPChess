@@ -1,0 +1,12 @@
+/* Starvation-owned compact landscape containment formerly supplied by post-pages compatibility polish. */
+@media (orientation:landscape) and (max-width:1180px) {
+  html[data-landscape-ui='1'] body.starvation-active .starvation-screen {
+    padding-top:50px!important;
+    box-sizing:border-box!important;
+  }
+  html[data-landscape-ui='1'] body.starvation-active .starvation-panel {
+    max-height:calc(100dvh - 58px)!important;
+    margin-top:0!important;
+    overflow:auto!important;
+  }
+}
