@@ -219,7 +219,12 @@ class ChessAIAdapter {
 
   stop() {
     if (!this.worker) return;
-    if (this.activeSearch) this._send('stop');
+    const search = this.activeSearch;
+    if (!search) return;
+    this.activeSearch = null;
+    clearTimeout(search.timer);
+    this._send('stop');
+    search.resolve(null);
   }
 
   destroy() {

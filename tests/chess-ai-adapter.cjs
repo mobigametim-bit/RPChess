@@ -76,7 +76,37 @@ function rngFrom(values) {
   assert.strictEqual(fallbackMove, 'a2a3', 'adapter must preserve legality in degraded fallback');
   assert.strictEqual(fallback.snapshot().degraded, true);
 
-  high.destroy(); low.destroy(); randomLow.destroy(); fallback.destroy();
+  class InterruptibleWorker extends FakeWorker {
+    constructor(url) { super(url); this.searches = 0; }
+    postMessage(command) {
+      this.commands.push(command);
+      if (command === 'uci') this.emit('uciok');
+      if (command === 'isready') this.emit('readyok');
+      if (command === 'stop') this.emit('bestmove e7e5');
+      if (command.startsWith('go ')) {
+        this.searches += 1;
+        if (this.searches === 1) this.emit('info depth 4 multipv 1 score cp 12 pv e7e5');
+        else this.emit('bestmove c7c5');
+      }
+    }
+  }
+  const interruptible = new ChessAIAdapter({ WorkerClass: InterruptibleWorker, timeoutMs: 500 });
+  const interruptedSearch = interruptible.chooseMove({
+    fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+    elo: 1400,
+    legalMoves: ['e7e5', 'c7c5']
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  interruptible.stop();
+  assert.strictEqual(await interruptedSearch, null, 'stopped search must settle without leaking a move into the next game');
+  const resumedMove = await interruptible.chooseMove({
+    fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+    elo: 1400,
+    legalMoves: ['g1f3', 'd2d4', 'c7c5']
+  });
+  assert.strictEqual(resumedMove, 'c7c5', 'a new search after cancellation must ignore the previous bestmove');
+
+  high.destroy(); low.destroy(); randomLow.destroy(); fallback.destroy(); interruptible.destroy();
   console.log('Chess AI adapter deterministic contract: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
