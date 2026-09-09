@@ -3,7 +3,7 @@
 **Audit status:** REMEDIATION IN PROGRESS  
 **Frozen production baseline:** `main@e92831ca5d6e0c14fb2d919e410180ce77b97ce6`  
 **Audit/remediation branch:** `audit/full-project-review-2026-09-08`  
-**Current remediation head:** `3db1602120d94a73734189eadeec7e0dd1716f49`
+**Current remediation head:** `df6d35bc8f884c66c185f5ef5496930f1b0a3004`
 **Started:** 2026-09-08
 
 This report is the source of truth for the full technical/runtime/UI review and remediation. Production `main` remains untouched. Fixes are grouped by root cause; adding another patch layer to conceal an ownership problem is out of scope.
@@ -46,7 +46,7 @@ Status meanings:
 | REV-002 Market reads state back from DOM | **DONE — verified** | Settlement renders Market from `activeRun.currentSettlement` / `SETTLEMENT_SUPPLY_PRICE`; `post-pages-ui-review4.mjs` deleted. |
 | REV-003 Resources render fan-out | **DONE — verified** | Resources subtree `MutationObserver` and global click refresh removed; one coalescing scheduler consumes semantic events. |
 | REV-004 whole-document legacy localization | **IN PROGRESS** | Settlement/Resources render keyed `t(...)` copy directly. Remaining active screens must migrate before the global legacy observer can be deleted. |
-| REV-005 obsolete source controls / hidden DOM | **IN PROGRESS** | The obsolete Battle Prep actionbar/counters were deleted from the Battle owner when the Start CTA moved to its stable owner slot. Runtime cleanup still removes obsolete Skirmish/Battle/Puzzle/Settlement/Event controls; those source controls must be removed next. |
+| REV-005 obsolete source controls / hidden DOM | **DONE — verification pending** | Obsolete Skirmish/Battle/Puzzle/Event shortcuts and dead handlers are deleted from their owners; Settlement already no longer authored its old shortcuts. The shared seven-selector post-render `.remove()` cleanup and dead compatibility CSS are gone (`df6d35bc`). Deterministic owner/UI contracts pass; Chromium proof remains pending. |
 | REV-006 runtime DOM reparenting | **DONE — verification pending** | All three identified live-layout reparent paths are removed: Battle Start CTA is owner-rendered directly in `.battle-army` (`b63772f8`); Classic Journal remains in its source `.classic-shell` slot and run-combat styling targets stable siblings (`db42fb78`); Skirmish actionbar remains in its source `.skirmish-shell` slot with no home/next/append lifecycle (`bac324a0`). Existing tests were strengthened; Chromium/local gate still pending. |
 | REV-007 canonical Pages gate covers 3/17 browser contracts | **OPEN** | After current test truth is verified, define fast mandatory PR smoke coverage plus a broader milestone/full-release gate. |
 | REV-008 stale browser contract requires page scroll | **DONE — verified** | Foundation/Roster contracts now enforce one-screen behavior rather than requiring page scrolling. |
@@ -82,6 +82,7 @@ Status meanings:
 - Classic run-combat Journal no longer moves into `.classic-party-panel`; it remains a stable sibling in `.classic-shell`. `ui-redesign-final` and `post-pages-ui-polish` no longer keep Classic home references or append/restore paths.
 - `post-pages-ui-polish-constraints` no longer keeps the unused `post-pages-run-combat-active` lifecycle state/listeners.
 - Skirmish actionbar no longer moves into `.skirmish-selection`; it stays in its source `.skirmish-shell` slot. Shared redesign no longer stores actionbar home/next references.
+- Obsolete Skirmish/Battle/Puzzle/Event navigation shortcuts are absent at source; the shared post-render control remover and its dead CSS selectors are deleted.
 
 ## Deleted/superseded layers
 
@@ -130,6 +131,7 @@ The audit workflows are **manual-dispatch only** and never deploy. The current c
 - **Stable Skirmish actionbar #17** (`bac324a0`): last identified `REV-006` runtime reparent removed; existing Skirmish deterministic contract strengthened; verification pending.
 - **Vertical Slice deletion Stage 1** (`a250a4f7`): removed the standalone `vertical-slice.html` browser entry, generated Iron Marches bundle/builder and two isolated browser tests after package/runner/workflow reachability proof.
 - **Vertical Slice deletion Stage 2** (`3db16021`): removed 284 unreachable files / 38,496 lines. The active graph contains 74 entrypoints and 81 reachable code/test files, no `src/`, and no dormant top-level tests. `verify`, all deterministic/domain tests, content validation and the 11,498-puzzle catalog validation pass. Build packaging reached a clean Reboot `dist` with no legacy runtime; final Stockfish download was blocked by the execution environment's external-network cancellation, so no full local-gate or Chromium PASS is claimed for this head.
+- **Obsolete source DOM removal #18** (`df6d35bc`): removed the remaining deprecated scene shortcuts, dead handlers, seven-selector runtime remover and matching compatibility CSS. `verify`, syntax checks and the UI/Skirmish/Battle/Settlement/Events/Puzzles owner tests pass; Chromium verification pending.
 
 ---
 
@@ -148,7 +150,7 @@ Resolved for Resources owner. Broader app event instrumentation remains under RE
 Still active debt. Owner-keyed migration must continue before removing the global legacy translation observer.
 
 ## REV-005 — Obsolete source DOM
-Confirmed. Battle hidden actionbar was removed as part of the stable CTA package. Other source controls are still removed post-render by shared runtime and must be deleted in their owners.
+Implementation complete. Battle's hidden actionbar and the remaining deprecated Skirmish/Battle/Puzzle/Event shortcuts are deleted at source; Settlement already authored none of its old shortcuts. No shared post-render `.remove()` cleanup or dead selector-based hiding remains. Current-head Chromium verification is pending.
 
 ## REV-006 — Runtime DOM reparenting
 Implementation complete on the current head. The three identified paths (Battle CTA, Classic Journal, Skirmish actionbar) now have stable source/owner structure. Browser parity proof is still required.
@@ -231,7 +233,7 @@ Legend: **PROVEN** = direct passing evidence on an executed browser head; **PART
 
 # Open verification items
 
-1. **Current architecture regression:** run strengthened responsive, Roster, Travel, Battle, Classic and Skirmish contracts against head `3db16021`, then `gate:local`.
+1. **Current architecture regression:** run strengthened responsive, Roster, Travel, Battle, Classic and Skirmish contracts against head `df6d35bc`, then `gate:local`.
 2. **Full browser milestone:** run all 17 Chromium contracts at the next meaningful architecture checkpoint.
 3. **Dependency security:** classify the two previously reported high-severity advisories as production-relevant or dev-only.
 4. **Observer/listener/event fan-out:** measure callbacks/render scheduling over repeated route loops.
@@ -304,15 +306,15 @@ Legend: **PROVEN** = direct passing evidence on an executed browser head; **PART
 
 ## Next actions
 
-1. Remove obsolete source controls from Skirmish/Puzzle/Settlement/Event owners, then delete the shared post-render `.remove()` cleanup and close `REV-005`.
-2. Move the stable Classic run-combat sibling CSS from `post-pages-ui-review2.mjs` into Classic-owned presentation and delete `post-pages-ui-review2.mjs`.
-3. Move the final Puzzle width constraint out of `post-pages-ui-polish-constraints.mjs` and delete that compatibility module.
-4. Continue shrinking `post-pages-ui-polish.mjs` by moving Puzzle, Settlement, Starvation, Skirmish and Endless rules into their true owners.
-5. Remove the remaining aftermath style/state bridge and hidden-attribute observer from `battle-route.mjs`.
-6. Ensure every owner-loaded stylesheet, including Travel compact presentation, is copied explicitly into `dist`; then consolidate final stylesheet order.
-7. Extend geometry coverage to Battle aftermath, Starvation, Puzzle/Training, Classic setup and Endless summary.
-8. Run all 17 Chromium contracts plus `gate:local` at the next meaningful architecture milestone; fix only real current-contract failures and update evidence from actual results.
-9. Continue owner-keyed localization and event-bus narrowing after presentation/source ownership is stable.
-10. Complete dependency classification and asset orphan inventory before final integration; retain the Vertical Slice non-return source contract.
+1. Move the stable Classic run-combat sibling CSS from `post-pages-ui-review2.mjs` into Classic-owned presentation and delete `post-pages-ui-review2.mjs`.
+2. Move the final Puzzle width constraint out of `post-pages-ui-polish-constraints.mjs` and delete that compatibility module.
+3. Continue shrinking `post-pages-ui-polish.mjs` by moving Puzzle, Settlement, Starvation, Skirmish and Endless rules into their true owners.
+4. Remove the remaining aftermath style/state bridge and hidden-attribute observer from `battle-route.mjs`.
+5. Ensure every owner-loaded stylesheet, including Travel compact presentation, is copied explicitly into `dist`; then consolidate final stylesheet order.
+6. Extend geometry coverage to Battle aftermath, Starvation, Puzzle/Training, Classic setup and Endless summary.
+7. Run all 17 Chromium contracts plus `gate:local` at the next meaningful architecture milestone; fix only real current-contract failures and update evidence from actual results.
+8. Continue owner-keyed localization and event-bus narrowing after presentation/source ownership is stable.
+9. Complete dependency classification and asset orphan inventory before final integration; retain the Vertical Slice non-return source contract.
+10. Update `CURRENT_STATE.md` only after the final accepted remediation SHA and full gate are available.
 
 Every subsequent remediation report must update this tracker and end with a concrete numbered **Next actions** list.
