@@ -38,6 +38,23 @@ jobs:
       - name: Report asset reachability candidates
         run: npm run assets:orphans:report
 
+      - name: Diagnose references to removed legacy assets
+        run: |
+          grep -RInE 'commander_(aggressor|chronicler|engineer|necromancer|psionic|warlord)\.png|ui_panel_(frame|wide)\.png|node_(bargain|boss|event|repair|vault)\.png|reward_(artifact|experience|heal|meta|recruit|upgrade)\.png|scene_(achievements|bargain|codex|event|repair|settings|training|vault)\.jpg' game scripts tests package.json || true
+
+      - name: Preview verifier synchronization
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/verify-source.cjs')
+          text = path.read_text()
+          old = "'generated_assets/node_event.png'"
+          new = "'generated_assets/node_story.png'"
+          if text.count(old) != 1:
+              raise SystemExit(f'expected exactly one stale node_event verifier token, got {text.count(old)}')
+          path.write_text(text.replace(old, new))
+          PY
+
       - name: Run canonical local gate
         run: npm run gate:local
 
