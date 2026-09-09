@@ -3,7 +3,7 @@
 **Audit status:** REMEDIATION IN PROGRESS  
 **Frozen production baseline:** `main@e92831ca5d6e0c14fb2d919e410180ce77b97ce6`  
 **Audit/remediation branch:** `audit/full-project-review-2026-09-08`  
-**Current remediation code head:** `54c8ddc96f0aec8ca1ad05dfc5d3feb9503bf67d`  
+**Current remediation code head:** `9f08c276c975d777a0bae14ddad20a67355fcf63`  
 **Started:** 2026-09-08
 
 This document is the source of truth for remediation. `main` remains untouched. Cloudflare remains manual-only. Do not restore compatibility patch layers, post-render DOM rewrites, runtime DOM reparenting, whole-document UI workarounds or broad state-mutating event consumers to conceal ownership problems.
@@ -48,7 +48,7 @@ Status meanings: **DONE — verified**, **DONE — verification pending**, **IN 
 | REV-017 generic Wrangler deploy path | **DONE — docs pending** | Generic deploy removed; Cloudflare explicit/manual; GitHub Pages canonical. |
 | REV-018 legacy Vertical Slice | **DONE — verification pending** | Standalone browser stack and unreachable `src/` domain/runtime/tests deleted after reachability proof; verifier blocks return. |
 | REV-019 stylesheet ownership/load split | **DONE — verification pending** | Compact/aftermath styles are explicit owner inputs; Battle owns its compact CSS. |
-| REV-020 broad `rpchess:run-updated` bus | **IN PROGRESS** | Semantic narrowing is implementation-complete: Power, redesign, shared UX, cross-scene and Events no longer consume broad `run-updated`; Resources retains one documented broad listener solely as a coalesced, side-effect-free HUD projection. State-mutating combat reward settlement is semantic. Reentrancy-safe lifecycle bridge and 12-transition regression exist. Remaining work: browser listener/render/node stability proof across 10+ route loops. |
+| REV-020 broad `rpchess:run-updated` bus | **DONE — verification pending** | Semantic lifecycle bridge owns combat/Puzzle completion. Power, redesign, shared UX, cross-scene, Events and Travel no longer consume broad `run-updated` for state mutation or completion. Resources retains one documented broad listener solely as coalesced side-effect-free HUD projection; Roster retains a side-effect-free owner projection. Reentrancy-safe 12-transition Node contract and 12-loop Chromium listener/render/node stability contract are committed but current browser execution is pending. |
 | REV-021 historical docs conflict with current rules | **OPEN** | Final documentation synchronization remains after code/gate completion. |
 
 ---
@@ -91,13 +91,16 @@ Completed owner migrations:
 - It derives `rpchess:combat-completed` from Battle/Skirmish counter transitions and `rpchess:puzzle-resolved` from a new Puzzle resolution.
 - Power moved off broad `run-updated` in `15ac7458`.
 - Final redesign moved off broad `run-updated` in `ee05e0ad`.
-- Cross-scene visuals moved off broad `run-updated` in `328ee91d`; combat outcome uses semantic completion and Event note decoration is tied to Event interaction/open lifecycle.
+- Cross-scene visuals moved off broad `run-updated` in `328ee91d`.
 - Shared UX moved off broad `run-updated` in `7dbdc171`.
 - Existing UI contract synchronized `aa801cab`; bridge packaged `a8af96fa`; verifier synchronized `dada4d10`.
-- Reentrancy bug found during review: semantic consumer could synchronously emit another `run-updated` before bridge snapshot advanced. Fixed in `27b1c892` by committing `previous = next` before notification.
-- Permanent lifecycle regression `c86d763e`, wired by `b29b763e`, executes 12 alternating Battle/Skirmish transitions, nested derived `run-updated`, and ten no-state-change notifications; contract requires exactly one semantic completion per canonical transition.
-- Events moved from `run-updated` consumer to `combat-completed` in `1158b857`; existing 500-event regression strengthened in `3e354cfb`.
-- Resources split in `b3ef74a5`: `combat-completed`/`run-continue` own reward settlement, while the sole remaining broad `run-updated` listener calls `scheduleRender` only. Existing Resources regression updated in `54c8ddc9` to forbid broad state-mutating settlement and record this one justified projection.
+- Reentrancy bug found during review and fixed `27b1c892`: bridge commits its snapshot before notifying semantic consumers.
+- Permanent lifecycle regression `c86d763e`, wired `b29b763e`, executes 12 alternating Battle/Skirmish transitions, nested derived `run-updated`, and ten no-state-change notifications.
+- Events moved to semantic combat completion `1158b857`; regression `3e354cfb`.
+- Resources split `b3ef74a5`: semantic combat/recovery owns reward settlement; broad `run-updated` is render-only. Regression `54c8ddc9`.
+- Final inventory found Travel still using broad `run-updated` for Power settlement + combat-route cleanup. Fixed `f4f706ad`: duplicate Power settlement removed; Travel cleans completed combat route only from `rpchess:combat-completed`.
+- Lifecycle regression strengthened `9f08c276` to forbid Events/Travel broad completion consumers and broad Resources mutation.
+- Existing `travel-choice-browser.cjs` extended in `a447df1d` with 12 Roster↔Travel loops. It instruments unique `rpchess:*` window listener registrations and asserts no growth in listeners, `#app > main`, HUD/stylesheet/runtime singleton nodes, or route-card nodes; it also requires exactly one Travel render per re-entry and no hidden event producer loop from 12 explicit no-op `run-updated` notifications.
 
 ## Responsive truth
 
@@ -121,22 +124,21 @@ Completed owner migrations:
 - Full Review #9 (`34265688360`, `b63726eb`): `gate:local` PASS, **17/17 Chromium PASS**.
 - Owner migration #10 (`34266676368`, `8e7c4675`): local PASS; Classic/Settlement/Puzzles 3/3 PASS.
 - Save schema #11 (`34267715267`, `2ced5f67`): local/persistence PASS.
-- Pages #91 (`34330513111`, `0c4156bc`), #92 (`34341624633`, `71c3f39b`), #93 (`34342233234`, `480ec6f3`): current-at-the-time local/build PASS; browser runs exposed stale/real responsive issues subsequently fixed.
+- Pages #91 (`34330513111`, `0c4156bc`), #92 (`34341624633`, `71c3f39b`), #93 (`34342233234`, `480ec6f3`): current-at-the-time local/build PASS; browser runs exposed issues subsequently fixed.
 - Pages audit auto-trigger removed `496bfac9`.
-- One-off full-review trigger `0931aebb` produced no check run through connector; restored manual-only in `51464246`.
+- One-off full-review trigger `0931aebb` produced no check run through connector; restored manual-only `51464246`.
 - Localization completion (`f37994ac` → `30755415`): implementation/static contracts complete; no fresh full gate claimed.
-- Semantic lifecycle (`6aaa8422` → `54c8ddc9`): implementation/static contracts/12-transition regression committed; **no fresh execution PASS is claimed** because current connected environment has not executed the gate.
+- Semantic lifecycle (`6aaa8422` → `9f08c276`) + browser instrumentation `a447df1d`: implementation/contracts complete; **no fresh execution PASS is claimed** for the current head.
 - No full 17-contract Chromium PASS is claimed for current head.
 
 ---
 
 # Open verification / cleanup items
 
-1. Browser-level 10+ route-loop stability proof for `REV-020`: listener callback counts, owner root/style/HUD node counts and render stability must not grow across loops.
-2. Full current `gate:local` + all 17 Chromium contracts.
-3. Dependency security classification, separating player runtime from dev/build-only exposure.
-4. Asset orphan/reference inventory; delete only proven-unused assets.
-5. Final `CURRENT_STATE.md`, historical docs/Notion synchronization after accepted final SHA.
+1. Execute targeted lifecycle/Travel browser proof and full current `gate:local` + all 17 Chromium contracts.
+2. Dependency security classification, separating player runtime from dev/build-only exposure; remediate active build-tool advisories reproducibly.
+3. Asset orphan/reference inventory; delete only proven-unused assets.
+4. Final `CURRENT_STATE.md`, deployment/history docs and Notion synchronization after accepted final SHA.
 
 ---
 
@@ -144,38 +146,36 @@ Completed owner migrations:
 
 ## Phase A — localization
 
-1. **DONE:** Roster/Travel/Starvation/Puzzle/Events/Skirmish/Battle owner localization.
-2. **DONE:** Classic/Endless/Power/shared dynamic localization.
-3. **DONE:** Whole-document localization observer/scan deletion.
-4. **DONE:** Permanent i18n ownership gate and stale source-regression synchronization.
+1. **DONE:** all active owner localization migrations.
+2. **DONE:** whole-document localization observer/scan deletion.
+3. **DONE:** permanent i18n ownership gate and stale regression synchronization.
 
 ## Phase B — lifecycle/performance
 
-5. **DONE:** Semantic completion bridge and first-import ownership.
-6. **DONE:** Power/redesign/shared UX/cross-scene broad consumer removal.
-7. **DONE:** Bridge reentrancy fix + permanent 12-transition regression.
-8. **DONE:** Events semantic combat completion.
-9. **DONE:** Resources lifecycle split; broad listener retained only as render-only HUD projection.
-10. **NEXT:** Browser 10+ route-loop stability instrumentation and proof.
+4. **DONE:** semantic completion bridge and first-import ownership.
+5. **DONE:** Power/redesign/shared UX/cross-scene/Events/Travel broad state-mutating consumer removal.
+6. **DONE:** Resources state-settlement split; only render-only broad projection remains.
+7. **DONE:** bridge reentrancy fix + permanent 12-transition regression.
+8. **DONE — verification pending:** existing Chromium Travel contract now contains 12-loop listener/render/node stability proof.
 
 ## Phase C — validation/tooling
 
-11. Run targeted regressions and then `gate:local` + all 17 Chromium contracts when executable.
-12. Classify dependency advisories and build asset reference/orphan inventory.
+9. Run targeted regressions and then `gate:local` + all 17 Chromium contracts when executable.
+10. Classify dependency advisories and build asset reference/orphan inventory.
 
 ## Phase D — final integration/docs
 
-13. Fix only evidence-backed regressions from final gate.
-14. Update `docs/CURRENT_STATE.md` to final accepted SHA.
-15. Mark historical docs clearly and synchronize architecture/UI/persistence/deployment into Notion.
-16. Do not merge `main` or deploy Cloudflare without explicit owner instruction.
+11. Fix only evidence-backed regressions from final gate.
+12. Update `docs/CURRENT_STATE.md` to final accepted SHA.
+13. Mark historical docs clearly and synchronize architecture/UI/persistence/deployment into Notion.
+14. Do not merge `main` or deploy Cloudflare without explicit owner instruction.
 
 ## Next actions
 
-1. Extend an existing browser contract with at least 10 route/scene loops; instrument callback/render/node counts and assert no accumulation. Do not add a second browser suite unless the existing harness cannot host the proof.
-2. Synchronize source verifier with the final Events/Resources lifecycle contract if needed after the browser instrumentation package.
-3. Run targeted lifecycle/UI/Resources/Events contracts when an executable environment is available, then run full `gate:local` + 17 Chromium contracts; update verification statuses only from actual results.
-4. Complete dependency security classification and asset orphan/reference inventory; delete only evidence-backed unused items.
-5. Finish `CURRENT_STATE.md`, historical docs/Notion synchronization and final release-readiness report; keep `main` frozen and Cloudflare manual-only until explicit owner direction.
+1. Classify current dependency advisories from authoritative upstream sources; update vulnerable build-only dependencies only with a reproducible lock/integrity path.
+2. Build an asset reference/orphan inventory across production HTML/CSS/JS/content/build inputs and delete only files with positive non-reachability proof.
+3. Synchronize any dependency/asset changes into this report.
+4. Run targeted lifecycle/Travel/browser contracts and then full `gate:local` + all 17 Chromium contracts when executable; update verification-pending findings only from actual results.
+5. Finish `CURRENT_STATE.md`, deployment/history docs/Notion synchronization and final release-readiness report; keep `main` frozen and Cloudflare manual-only until explicit owner direction.
 
 Every subsequent remediation checkpoint must update this report and end with a concrete numbered **Next actions** list.
