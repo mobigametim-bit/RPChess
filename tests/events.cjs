@@ -80,7 +80,9 @@ const path=require('path'),assert=require('assert'),fs=require('fs'),{pathToFile
   assert(appSource.includes('presentEventText(paragraph)')&&appSource.includes('translateLegacy(String(value ?? \'\'))'),'authored Event narrative must keep explicit content translation rather than moving into UI keys');
   assert(appSource.includes('subscribe(() =>')&&appSource.includes('renderStaticCopy()'),'Events owner must refresh its own chrome/content on language change');
   assert(!appSource.includes("localizeEventSource(outcome.success ? 'УСПЕХ' : 'НЕУДАЧА')")&&!appSource.includes("localizeEventSource('ПРОДОЛЖИТЬ ПУТЬ')"),'Events runtime must not rely on legacy DOM/content translation for keyed chrome');
+  assert(appSource.includes("addEventListener('rpchess:combat-completed',syncRun)"),'Events must complete Event combat from the semantic combat lifecycle');
+  assert(!appSource.includes("addEventListener('rpchess:run-updated',syncRun)"),'Events must not subscribe to broad run-updated for combat completion');
   for(const key of ["'events.kicker'","'events.choice.successChance'","'events.hero.deadLocked'","'events.roll'"])assert(uiSource.includes(key),`Events i18n registry missing ${key}`);
 
-  console.log('Events 500/2114, v4 inline narrative, canonical 36-background register, 20% five-type Travel, 12-star combat, King risk, persistence and owner-keyed chrome: PASS');
+  console.log('Events 500/2114, v4 inline narrative, canonical 36-background register, 20% five-type Travel, 12-star combat, King risk, persistence, owner-keyed chrome and semantic combat lifecycle: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
