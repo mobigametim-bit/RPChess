@@ -40,6 +40,7 @@
     "puzzles:validate:full": "npm run puzzles:materialize && node scripts/validate-puzzle-catalog-full.cjs",
     "assets:cache:info": "node scripts/runtime-asset-cache.cjs",
     "assets:cache:clear": "node scripts/runtime-asset-cache.cjs --clear",
+    "assets:orphans:report": "node scripts/asset-orphan-inventory.cjs",
     "assets:pieces:report": "node scripts/optimize-piece-assets.cjs --root game",
     "assets:pieces:verify": "node scripts/optimize-piece-assets.cjs --root dist --verify-only",
     "assets:portraits:report": "node scripts/optimize-portrait-assets.cjs --root game",
