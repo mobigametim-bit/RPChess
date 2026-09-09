@@ -35,28 +35,28 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Fix Chronicle short-landscape geometry
+      - name: Separate combat information rail from board
         run: |
           python - <<'PY'
           from pathlib import Path
           p=Path('game/css/landscape-ui-redesign.css')
           t=p.read_text()
-          old="  .reboot-menu-screen__main { padding: clamp(10px, 2vw, 24px) !important; }"
-          new="  .reboot-menu-screen__main { min-height: 0 !important; padding: clamp(10px, 2vw, 24px) !important; }"
+          old="    grid-template-columns: calc(100vw - 100dvh) 100dvh !important;\n    grid-template-rows: auto minmax(0, 1fr) minmax(86px, .42fr) !important;\n    gap: 0 !important;"
+          new="    grid-template-columns: calc(100vw - 100dvh - 4px) 100dvh !important;\n    grid-template-rows: auto minmax(0, 1fr) minmax(86px, .42fr) !important;\n    gap: 0 4px !important;"
           if t.count(old)!=1:
-              raise SystemExit(f'expected one landscape menu-main rule, got {t.count(old)}')
+              raise SystemExit(f'expected one Classic board-first grid contract, got {t.count(old)}')
           p.write_text(t.replace(old,new,1))
           PY
 
-      - name: Run canonical local gate
-        run: npm run gate:local
+      - name: Build production dist
+        run: npm run puzzles:materialize && npm run build:materialized
 
       - name: Install Playwright and Chromium
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
 
-      - name: Narrow responsive proof to 844x390 RU menu and Chronicle
+      - name: Narrow responsive proof to 1024x768 RU combat
         run: |
           cp tests/responsive-viewport-browser.cjs /tmp/responsive-viewport-browser.cjs
           python - <<'PY'
@@ -71,8 +71,8 @@ jobs:
               "\n(async () => {\n"
               "  const browser = await chromium.launch({ headless: true });\n"
               "  try {\n"
-              "    await auditViewport(browser, 844, 390, 'ru');\n"
-              "    console.log('Targeted 844x390 RU menu + Chronicle geometry: PASS');\n"
+              "    await auditPrepAndCombat(browser, 1024, 768, 'ru');\n"
+              "    console.log('Targeted 1024x768 RU combat geometry: PASS');\n"
               "  } finally {\n"
               "    await browser.close();\n"
               "  }\n"
@@ -81,7 +81,7 @@ jobs:
           p.write_text(t[:pos]+suffix)
           PY
 
-      - name: Run targeted Chronicle browser proof
+      - name: Run targeted combat browser proof
         env:
           RPCHESS_GATE_PREFIX: /RPChess
           RPCHESS_BROWSER_TEST: responsive-viewport-browser.cjs
@@ -91,12 +91,12 @@ jobs:
         if: always()
         run: cp /tmp/responsive-viewport-browser.cjs tests/responsive-viewport-browser.cjs
 
-      - name: Commit Chronicle fix and documentation checkpoint
+      - name: Commit combat geometry fix and documentation checkpoint
         run: |
           git config user.name 'mobigametim-bit'
           git config user.email 'mobigametim@gmail.com'
           git add game/css/landscape-ui-redesign.css
-          git commit -m 'fix: contain Chronicle in short landscape viewport'
+          git commit -m 'fix: separate combat information rail from board'
           CODE_SHA=$(git rev-parse HEAD)
           export CODE_SHA
           python - <<'PY'
@@ -106,15 +106,24 @@ jobs:
           t=p.read_text()
           sha=os.environ['CODE_SHA']
           t=re.sub(r'\*\*Current remediation code head:\*\* `[^`]+`', f'**Current remediation code head:** `{sha}`', t, count=1)
-          t=t.replace('The same strengthened suite progressed to a separate `844×390` RU Chronicle vertical escape, which remains the next geometry fix.', f'The same strengthened suite then exposed a separate `844×390` RU Chronicle vertical escape. Root cause was the inherited `min-height:560px` on the menu main column inside the fixed-height landscape grid; `{sha[:8]}` resets that owner min-height to zero. A targeted 844×390 RU menu + Chronicle browser proof passed before this commit.')
-          t=t.replace('Full Chromium is **not yet PASS**: run `34371249143` progressed past the fixed menu and exposed the separate `844×390` RU Chronicle overflow.', f'Full Chromium is **not yet PASS**. Run `34371249143` progressed past the fixed menu and exposed the `844×390` RU Chronicle overflow; the targeted Chronicle proof passed for `{sha[:8]}`. Full responsive/all-browser verification remains pending after this checkpoint.')
-          t=t.replace('1. Fix the evidence-backed `844×390` RU Chronicle viewport escape in the Chronicle/menu owner CSS and rerun the strengthened responsive contract.', '1. Rerun the full strengthened responsive RU/EN/boundary matrix after the validated Chronicle owner fix; address only the next evidence-backed geometry failure, if any.')
-          t=t.replace('1. Fix the `844×390` RU Chronicle geometry defect exposed after the validated menu fix; rerun responsive RU/EN/boundary coverage.', '1. Run the full responsive RU/EN/boundary coverage after the targeted Chronicle PASS; fix only any next evidence-backed defect.')
+          needle='A targeted 844×390 RU menu + Chronicle browser proof passed before this commit.'
+          replacement=(needle + f' Full responsive run `34373136145` then exposed a separate `1024×768` RU combat ownership defect: the Party information rail touched the square board with a 0px gap. `{sha[:8]}` preserves the board at exactly `100dvh` and flush right while shrinking the left rail by 4px and adding a 4px inter-column gap. Targeted `1024×768` RU Skirmish/Battle combat geometry passed before commit.')
+          if needle in t:
+              t=t.replace(needle,replacement,1)
+          verify_old='Full responsive/all-browser verification remains pending after this checkpoint.'
+          verify_new=f'Full responsive/all-browser verification remains pending after this checkpoint. Run `34373136145` progressed beyond Menu/Chronicle and exposed the 1024×768 RU zero-gap combat rail; targeted combat verification passed for `{sha[:8]}`.'
+          if verify_old in t:
+              t=t.replace(verify_old,verify_new,1)
+          t=t.replace('1. Rerun the full strengthened responsive RU/EN/boundary matrix after the validated Chronicle owner fix; address only the next evidence-backed geometry failure, if any.', '1. Rerun the full strengthened responsive RU/EN/boundary matrix after the validated combat-rail separation; address only the next evidence-backed geometry failure, if any.')
+          t=t.replace('1. Run the full responsive RU/EN/boundary coverage after the targeted Chronicle PASS; fix only any next evidence-backed defect.', '1. Run the full responsive RU/EN/boundary coverage after the targeted combat PASS; fix only any next evidence-backed defect.')
           p.write_text(t)
           PY
           git add docs/FULL_PROJECT_REVIEW_REPORT.md
-          git commit -m 'docs: record Chronicle viewport remediation milestone'
+          git commit -m 'docs: record combat viewport remediation milestone'
           git push origin HEAD:audit/full-project-review-2026-09-08
+
+      - name: Run canonical local gate
+        run: npm run gate:local
 
       - name: Run full responsive contract
         env:
