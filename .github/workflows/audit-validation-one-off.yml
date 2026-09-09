@@ -8,7 +8,7 @@ on:
       - .github/workflows/audit-validation-one-off.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
@@ -35,25 +35,77 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Report asset reachability candidates
-        run: npm run assets:orphans:report
-
-      - name: Diagnose references to removed legacy assets
+      - name: Restore Settlement owner service art
         run: |
-          grep -RInE 'commander_(aggressor|chronicler|engineer|necromancer|psionic|warlord)\.png|ui_panel_(frame|wide)\.png|node_(bargain|boss|event|repair|vault)\.png|reward_(artifact|experience|heal|meta|recruit|upgrade)\.png|scene_(achievements|bargain|codex|event|repair|settings|training|vault)\.jpg' game scripts tests package.json || true
+          git fetch --no-tags --depth=1 origin e92831ca5d6e0c14fb2d919e410180ce77b97ce6
+          git checkout e92831ca5d6e0c14fb2d919e410180ce77b97ce6 -- game/generated_assets/reward_heal.png game/generated_assets/reward_recruit.png
 
-      - name: Preview verifier synchronization
+      - name: Synchronize owner and verifier contracts
         run: |
           python - <<'PY'
           from pathlib import Path
-          path = Path('scripts/verify-source.cjs')
-          text = path.read_text()
-          old = "'generated_assets/node_event.png'"
-          new = "'generated_assets/node_story.png'"
-          if text.count(old) != 1:
-              raise SystemExit(f'expected exactly one stale node_event verifier token, got {text.count(old)}')
-          path.write_text(text.replace(old, new))
+
+          css_path = Path('game/css/settlement.css')
+          css = css_path.read_text()
+          replacements = {
+              "url('generated_assets/reward_heal.png')": "url('../generated_assets/reward_heal.png')",
+              "url('generated_assets/reward_recruit.png')": "url('../generated_assets/reward_recruit.png')",
+          }
+          for old, new in replacements.items():
+              if css.count(old) != 1:
+                  raise SystemExit(f'expected exactly one stale Settlement URL {old}, got {css.count(old)}')
+              css = css.replace(old, new)
+          css_path.write_text(css)
+
+          verifier_path = Path('scripts/verify-source.cjs')
+          verifier = verifier_path.read_text()
+          verifier_replacements = {
+              "'generated_assets/node_event.png'": "'generated_assets/node_story.png'",
+              '"dispatch(\'rpchess:combat-completed\'"': '"completed.push([\'rpchess:combat-completed\'"',
+              '"dispatch(\'rpchess:puzzle-resolved\'"': '"completed.push([\'rpchess:puzzle-resolved\'"',
+          }
+          for old, new in verifier_replacements.items():
+              if verifier.count(old) != 1:
+                  raise SystemExit(f'expected exactly one stale verifier token {old}, got {verifier.count(old)}')
+              verifier = verifier.replace(old, new)
+          lifecycle_anchor = '"completed.push([\'rpchess:puzzle-resolved\'",\'battleCount\''
+          lifecycle_replacement = '"completed.push([\'rpchess:puzzle-resolved\'",\'for (const [name, detail] of completed) dispatch(name, detail)\',\'battleCount\''
+          if lifecycle_anchor not in verifier:
+              raise SystemExit('semantic lifecycle verifier anchor not found after token synchronization')
+          verifier = verifier.replace(lifecycle_anchor, lifecycle_replacement, 1)
+          verifier_path.write_text(verifier)
+
+          test_path = Path('tests/settlement.cjs')
+          test = test_path.read_text()
+          anchor = "assert(appSource.includes('css/settlement-compact.css?v=20260909-owner1'),'Settlement owner must load compact CSS after its base stylesheet');"
+          addition = "\nfor(const asset of ['reward_heal.png','reward_recruit.png'])assert(fs.existsSync(path.join(game,'generated_assets',asset)),`Settlement owner service art missing: ${asset}`);\nassert(css.includes(\"url('../generated_assets/reward_heal.png')\")&&css.includes(\"url('../generated_assets/reward_recruit.png')\"),'Settlement service art must use CSS-relative owner paths');\nassert(!css.includes(\"url('generated_assets/reward_heal.png')\")&&!css.includes(\"url('generated_assets/reward_recruit.png')\"),'Settlement owner must not use stylesheet-relative broken service-art paths');"
+          if anchor not in test:
+              raise SystemExit('Settlement regression insertion anchor not found')
+          if 'Settlement owner service art missing' not in test:
+              test = test.replace(anchor, anchor + addition, 1)
+          test_path.write_text(test)
           PY
+
+      - name: Run targeted owner contracts
+        run: |
+          npm run verify
+          node tests/settlement.cjs
+          node tests/run-lifecycle-events.cjs
+
+      - name: Commit validated owner fixes
+        run: |
+          git config user.name 'mobigametim-bit'
+          git config user.email 'mobigametim@gmail.com'
+          git add game/css/settlement.css game/generated_assets/reward_heal.png game/generated_assets/reward_recruit.png scripts/verify-source.cjs tests/settlement.cjs
+          git commit -m 'fix: restore Settlement service art contracts'
+          git push origin HEAD:audit/full-project-review-2026-09-08
+
+      - name: Report asset reachability candidates
+        run: npm run assets:orphans:report
+
+      - name: Diagnose remaining generated asset candidates
+        run: |
+          grep -RInE 'generated_assets/(logo_main|ui_checkbox|ui_slider_knob|ui_chip|ui_button_danger|unit_boss_king_enemy|ui_button_secondary|unit_arcane_node_enemy|ui_slider_bg|ui_divider)\.png' game scripts tests package.json || true
 
       - name: Run canonical local gate
         run: npm run gate:local
