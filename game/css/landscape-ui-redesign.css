@@ -341,7 +341,7 @@ html[data-landscape-ui='1'] body {
     gap: clamp(10px, 1.7vw, 22px) !important;
     align-items: center !important;
   }
-  .reboot-menu-screen__main { padding: clamp(10px, 2vw, 24px) !important; }
+  .reboot-menu-screen__main { min-height: 0 !important; padding: clamp(10px, 2vw, 24px) !important; }
   .reboot-wordmark { width: min(470px, 92%) !important; margin: 8px 0 14px !important; }
   .reboot-menu-actions { gap: 7px !important; max-width: 500px !important; }
   .reboot-menu-secondary { margin-top: 2px !important; gap: 7px !important; }
