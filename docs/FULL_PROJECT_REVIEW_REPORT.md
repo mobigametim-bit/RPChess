@@ -3,7 +3,7 @@
 **Audit status:** REMEDIATION IN PROGRESS  
 **Frozen production baseline:** `main@e92831ca5d6e0c14fb2d919e410180ce77b97ce6`  
 **Audit/remediation branch:** `audit/full-project-review-2026-09-08`  
-**Current remediation code head:** `bf038da0afaa6fa54afc3cbb5b4edef044b64ef0`  
+**Current remediation code head:** `54c96e78ddac058bcf09267f8e3aa3d66b27ba2f`  
 **Started:** 2026-09-08
 
 This report is the source of truth for the full technical/runtime/UI review and remediation. Production `main` remains untouched. Fixes are grouped by root cause; adding another patch layer to conceal an ownership problem is out of scope.
@@ -42,16 +42,16 @@ Status meanings:
 
 | Finding | Status | Remediation / current state |
 |---|---|---|
-| REV-001 Hero Notes owns unrelated UI patch chain | **DONE — verified** | `hero-notes-runtime.mjs` deleted. Roster/Settlement render Hero Notes directly; temporary presentation bootstrap is now also deleted. |
+| REV-001 Hero Notes owns unrelated UI patch chain | **DONE — verified** | `hero-notes-runtime.mjs` deleted. Roster/Settlement render Hero Notes directly; temporary presentation bootstrap is also deleted. |
 | REV-002 Market reads state back from DOM | **DONE — verified** | Settlement renders Market from `activeRun.currentSettlement` / `SETTLEMENT_SUPPLY_PRICE`; `post-pages-ui-review4.mjs` deleted. |
 | REV-003 Resources render fan-out | **DONE — verified** | Resources subtree `MutationObserver` and global click refresh removed; one coalescing scheduler consumes semantic events. |
 | REV-004 whole-document legacy localization | **IN PROGRESS** | Settlement/Resources render keyed `t(...)` copy directly. Remaining active screens must migrate before the global legacy observer can be deleted. |
-| REV-005 obsolete source controls / hidden DOM | **DONE — verification pending** | Obsolete Skirmish/Battle/Puzzle/Event shortcuts and dead handlers are deleted from their owners; shared post-render `.remove()` cleanup and dead compatibility CSS are gone (`23778724`). Current `gate:local` evidence predates the latest owner-style cleanup; current full Chromium parity remains pending. |
+| REV-005 obsolete source controls / hidden DOM | **DONE — verification pending** | Obsolete Skirmish/Battle/Puzzle/Event shortcuts and dead handlers are deleted from their owners; shared post-render `.remove()` cleanup and dead compatibility CSS are gone (`23778724`). Current full Chromium parity remains pending. |
 | REV-006 runtime DOM reparenting | **DONE — verification pending** | Battle Start CTA is owner-rendered in `.battle-army` (`b63772f8`); Classic Journal remains in `.classic-shell` (`db42fb78`); Skirmish actionbar remains in `.skirmish-shell` (`bac324a0`). Strengthened contracts reflect stable owner structure; current end-to-end Chromium proof remains pending. |
 | REV-007 canonical Pages gate covers only a smoke subset | **OPEN** | Pages smoke currently runs Classic + Responsive + Settlement. Final fast-smoke vs full 17-contract milestone/release split remains to be defined after current responsive truth is fully green. |
 | REV-008 stale browser contract requires page scroll | **DONE — verified** | Foundation/Roster contracts enforce one-screen behavior rather than requiring page scrolling. |
 | REV-009 Supplies/Market global image retargeting | **DONE — verified** | True owners render Supplies/Market art directly; global retarget scanner and `supplies-resource-icon.mjs` deleted. |
-| REV-010 fragmented runtime hotfix CSS | **IN PROGRESS** | `post-pages-ui-review2/3/4/5/6/7`, `polish-constraints`, `post-pages-ui-polish.mjs` and `presentation-bootstrap.mjs` are deleted. Puzzle/Settlement/Starvation/Skirmish/Endless compact presentation now lives in explicit owner stylesheets. The **only remaining CSS-in-JS compatibility block is aftermath viewport styling in `battle-route.mjs`**; move it to Battle/Skirmish owners next. |
+| REV-010 fragmented runtime hotfix CSS | **DONE — verification pending** | All review/polish compatibility modules are deleted. Puzzle/Settlement/Starvation/Skirmish/Endless compact rules live in explicit owner stylesheets. Skirmish/Battle aftermath viewport rules moved into `skirmish-compact.css` / `battle-compact.css`; `battle-route.mjs` is now imports-only (`ad37fba5`). No generic CSS-in-JS hotfix layer remains. Current gate/Chromium verification for this head is pending. |
 | REV-011 Supplies optimizer makes asset larger | **DONE — verified** | Optimizer keeps original bytes when transformed output is larger while still enforcing budgets. |
 | REV-012 stale CURRENT_STATE SHA | **OPEN** | Deferred intentionally until the final accepted remediation SHA. |
 | REV-013 shared browser helper lifecycle drift | **DONE — verified** | `startNewRun()` waits for visible scenes and emits diagnostics; full milestone #9 passed 17/17. |
@@ -60,7 +60,7 @@ Status meanings:
 | REV-016 repeated puzzle materialization / duplicate build inputs | **DONE — verified** | Puzzle catalog materializes once per gate path; duplicate Endless build inputs removed. |
 | REV-017 generic Wrangler deploy path looks canonical | **DONE — docs pending** | Generic `npm run deploy` removed. Cloudflare remains explicit manual `deploy:cloudflare`; GitHub Pages is canonical. Temporary audit Pages push trigger used for runs #91–#93 was removed again in `496bfac9`; audit remediation commits no longer auto-deploy Pages. |
 | REV-018 legacy Vertical Slice stack | **DONE — verification pending** | Stage 1 removed standalone Vertical Slice browser entry/bundle/builder/tests (`d46ca26e`). Stage 2 removed unreachable `src/` domain/runtime/test stack (`5351eb77`). Canonical `gate:local`, production build, Stockfish packaging and asset-cache parity passed on runs #91–#93; full current 17-contract Chromium milestone remains pending. |
-| REV-019 CSS loading split between HTML and runtime JS | **IN PROGRESS** | Travel/Battle/Puzzle/Settlement/Starvation/Skirmish/Endless compact presentation now use explicit owner stylesheets and production packaging contracts. Generic presentation bootstrap is deleted. Remaining work is aftermath ownership and final load-order consolidation. |
+| REV-019 CSS loading split between HTML and runtime JS | **IN PROGRESS** | Travel/Battle/Puzzle/Settlement/Starvation/Skirmish/Endless compact presentation use explicit owner stylesheets and production packaging contracts. Generic presentation bootstrap and route CSS injection are gone. Remaining work is final stylesheet ordering/loader consolidation where owner CSS is still loaded from different owner entry points. |
 | REV-020 `rpchess:run-updated` is overly broad bus | **IN PROGRESS** | Resources consumes semantic scene/settlement updates; Travel compatibility fan-out was removed; Puzzle/global post-pages listeners and the entire generic presentation runtime are deleted. Broader event graph still needs semantic narrowing and loop instrumentation. |
 | REV-021 historical docs conflict with current UI/deploy rules | **OPEN** | Final docs sync will add current-contract headers and retain history only as clearly marked history. |
 
@@ -87,12 +87,15 @@ Status meanings:
 - Language-modal browser interaction targets the explicit `.reboot-close` instead of an ambiguous shared close hook (`24e7414d`).
 - Puzzle owner authors compact objective/stars/reward DOM and renders compact values directly from Puzzle state (`d5c6f3c2`); the former post-render read/copy/regex mutation path is gone.
 - Puzzle accepted compact presentation is explicitly owned by `puzzles-compact.css`, loaded by `puzzle-app.mjs` and packaged by production build (`d5c6f3c2`).
-- Starvation accepted compact HUD-safe/internal-scroll rules now live in `starvation-compact.css` and are loaded by `starvation-app.mjs` (`286e94d7`, `ab67c470`).
-- Endless summary resource-HUD suppression now lives in `endless-run-compact.css` and is loaded by `endless-run-app.mjs` (`775c50ba`, `beb1a036`).
-- Skirmish mobile formation geometry now lives in `skirmish-compact.css`, loaded immediately after base `skirmish.css` (`d420dea7`, `c52e526e`).
-- Settlement tablet/phone service composition now lives in `settlement-compact.css`, loaded by `settlement-app.mjs` (`91d26bbb`, `049977ea`).
+- Starvation accepted compact HUD-safe/internal-scroll rules live in `starvation-compact.css` and are loaded by `starvation-app.mjs` (`286e94d7`, `ab67c470`).
+- Endless summary resource-HUD suppression lives in `endless-run-compact.css` and is loaded by `endless-run-app.mjs` (`775c50ba`, `beb1a036`).
+- Skirmish mobile formation geometry lives in `skirmish-compact.css`, loaded immediately after base `skirmish.css` (`d420dea7`, `c52e526e`).
+- Settlement tablet/phone service composition lives in `settlement-compact.css`, loaded by `settlement-app.mjs` (`91d26bbb`, `049977ea`).
 - Production build/source contracts package and require all four new owner compact stylesheets (`d5d1bcc9`, `8ba5eb78`).
-- Existing Roster/Travel/Puzzle/Settlement/Starvation/Skirmish/Endless regressions now require retired presentation modules to remain absent; no new test suite was introduced.
+- Skirmish aftermath toast/hidden-section/phone viewport containment moved from route CSS-in-JS into `skirmish-compact.css` (`4eff6a42`).
+- Battle aftermath toast/hidden-section/phone viewport containment moved into `battle-compact.css` (`90f2a714`).
+- `battle-route.mjs` is imports-only after `ad37fba5`; presentation injection has been removed completely.
+- Existing Battle/Skirmish regressions require owner aftermath CSS and reject any route `style` injection (`4f6e9b06`, `54c96e78`).
 
 ## Deleted/superseded layers
 
@@ -110,7 +113,7 @@ Deleted:
 - `post-pages-ui-polish.mjs` (`99399790`)
 - `presentation-bootstrap.mjs` (`bcd5dea4`)
 
-There is **no remaining generic post-pages presentation runtime**. `scripts/verify-source.cjs` treats both deleted presentation modules as forbidden regressions.
+There is **no remaining generic post-pages presentation runtime and no presentation CSS injection in `battle-route.mjs`**. Existing owner tests reject return of these paths.
 
 ## Build / persistence / assets / deployment
 
@@ -118,7 +121,7 @@ There is **no remaining generic post-pages presentation runtime**. `scripts/veri
 - Puzzle build/materialization work is deduplicated.
 - Unsupported run schema resets safely; old save compatibility is intentionally not maintained.
 - `battle-compact.css`, `travel-choice-compact.css`, `puzzles-compact.css`, `settlement-compact.css`, `starvation-compact.css`, `skirmish-compact.css` and `endless-run-compact.css` have explicit production build ownership.
-- `battle-route.mjs` no longer imports `presentation-bootstrap.mjs` (`ec241b00`); build no longer packages either retired presentation module (`4f0f6ba3`).
+- `battle-route.mjs` no longer imports `presentation-bootstrap.mjs` (`ec241b00`) and now contains only imports/comments (`ad37fba5`); build no longer packages retired presentation modules (`4f0f6ba3`).
 - Vertical Slice browser entry, generated Iron Marches bundle/builder, `src/` application/domain/runtime stack, isolated previews/workflows and dormant tests are deleted; source verification blocks their return.
 - GitHub-hosted runs #91–#93 prove `npm run gate:local`, Reboot production build with Stockfish 18.0.0 and runtime asset-cache parity on the remediated architecture through `480ec6f3`.
 - The temporary audit-branch Pages push trigger added by `0c4156bc` was removed in `496bfac9`. Pages again auto-deploys only from `main`; PR/manual verification remains available without changing production policy.
@@ -155,7 +158,8 @@ The full audit/browser workflows remain milestone tools. Separately, canonical P
 - **Pages policy restoration #23** (`496bfac9`): audit branch removed from Pages `push.branches`; no workflow run was created for that audit push.
 - **Language modal test truth #24** (`24e7414d`): responsive test clicks `[data-language-modal] .reboot-close`; Chromium rerun pending at next meaningful browser milestone.
 - **Puzzle compact owner migration #25** (`d5c6f3c2`): Puzzle owner now renders compact objective/stars/reward directly, accepted compact CSS lives in explicit owner stylesheet, production packaging contract includes it, and generic post-pages runtime no longer has Puzzle/global refresh listeners.
-- **Final generic presentation owner migration #26** (`286e94d7` → `bf038da0`): Settlement/Starvation/Skirmish/Endless compact rules moved to owner stylesheets; production/source contracts were updated; `post-pages-ui-polish.mjs` and `presentation-bootstrap.mjs` were physically deleted; existing owner regressions were updated to require their absence. **No new Chromium/local PASS is claimed for this head yet.**
+- **Final generic presentation owner migration #26** (`286e94d7` → `bf038da0`): Settlement/Starvation/Skirmish/Endless compact rules moved to owner stylesheets; production/source contracts were updated; `post-pages-ui-polish.mjs` and `presentation-bootstrap.mjs` were physically deleted; existing owner regressions were updated to require their absence.
+- **Aftermath owner migration / imports-only route #27** (`4eff6a42` → `54c96e78`): Skirmish/Battle aftermath viewport rules moved into owner compact CSS, final route CSS injection was deleted, and Battle/Skirmish existing regressions now reject route presentation logic. **No new Chromium/local PASS is claimed for this head yet.**
 
 No full 17-contract Chromium PASS is claimed for the current head yet.
 
@@ -191,7 +195,7 @@ Resolved.
 Resolved.
 
 ## REV-010 — Runtime hotfix CSS fragmentation
-Nearly complete. All generic post-pages presentation modules are deleted and screen-specific compact rules are owner-owned. The remaining implementation item is the aftermath viewport CSS still injected by `battle-route.mjs`; after it moves to Battle/Skirmish owner CSS, the runtime hotfix chain is implementation-complete.
+Implementation complete. The review/polish patch chain, generic presentation runtime/bootstrap, and route CSS-in-JS aftermath patch are all removed. Compact and aftermath presentation now belongs to explicit screen owner stylesheets. Current gate/Chromium proof for this exact architecture remains pending.
 
 ## REV-011 — Asset optimizer regression
 Resolved.
@@ -203,7 +207,7 @@ Deferred to final integration.
 Resolved and verified in milestone #9.
 
 ## REV-014 — Exhaustive responsive proof
-In progress. The strengthened suite distinguishes portrait-lock setup correctly and the real body overflow it exposed is fixed. Run #93 proved RU portrait geometry progressed past the previous failure. A test-selector ambiguity was corrected afterward; full current matrix still requires execution.
+In progress. The strengthened suite distinguishes portrait-lock setup correctly and the real body overflow it exposed is fixed. Run #93 proved RU portrait geometry progressed past the previous failure. A test-selector ambiguity was corrected afterward; weak-surface coverage and full current matrix still require execution.
 
 ## REV-015 — Persistence version policy
 Resolved: fail-safe reset, no migration preservation.
@@ -218,10 +222,10 @@ Implementation resolved. GitHub Pages deploys on push only from `main`; audit re
 Implementation complete. Canonical gate and production build passed on GitHub-hosted runs after deletion, including Stockfish and asset-cache parity. Full current Chromium milestone is the remaining broad verification gap.
 
 ## REV-019 — Stylesheet loading ownership
-In progress. Generic presentation bootstrap is gone and all current compact screen rules have explicit owner stylesheets/packaging. Remaining ownership issue is aftermath CSS-in-JS in `battle-route.mjs`, followed by final load-order consolidation.
+Implementation ownership is now explicit for all compact/aftermath surfaces; generic runtime loading is gone. Remaining work is consolidating final owner load order/entry points and then proving it through current build/browser gates.
 
 ## REV-020 — Broad run-updated bus
-In progress. Generic post-pages listeners/schedulers are now gone entirely. Remaining event graph still requires semantic narrowing and repeated-loop instrumentation.
+In progress. Generic post-pages listeners/schedulers are gone entirely. Remaining event graph still requires semantic narrowing and repeated-loop instrumentation.
 
 ## REV-021 — Historical documentation conflicts
 Open until final documentation synchronization.
@@ -243,10 +247,10 @@ Legend: **PROVEN** = direct passing evidence on an executed browser head; **PART
 | Travel Choice | PARTIAL | PARTIAL | PARTIAL | PARTIAL | owner compact cascade + boundary sweep pending full rerun |
 | Skirmish prep | PARTIAL | PARTIAL | PARTIAL | PARTIAL | stable actionbar + owner compact CSS pending full rerun |
 | Skirmish combat | PROVEN board (older head) | PROVEN board (older head) | PROVEN board (older head) | PARTIAL | stable Journal/current head pending full rerun |
-| Skirmish aftermath | PARTIAL | PARTIAL | PARTIAL | PARTIAL | aftermath owner migration + explicit current-head frame sweep pending |
+| Skirmish aftermath | PARTIAL | PARTIAL | PARTIAL | PARTIAL | owner aftermath CSS landed; explicit current-head frame sweep pending |
 | Battle prep | PARTIAL | PARTIAL | PARTIAL | PARTIAL | Battle owner CSS + stable CTA pending full rerun |
 | Battle combat | PROVEN board (older head) | PROVEN board (older head) | PROVEN board (older head) | PARTIAL | stable Journal/current head pending full rerun |
-| Battle aftermath | PARTIAL | PARTIAL | PARTIAL | PARTIAL | aftermath owner migration + explicit frame matrix pending |
+| Battle aftermath | PARTIAL | PARTIAL | PARTIAL | PARTIAL | owner aftermath CSS landed; explicit frame matrix pending |
 | Settlement | PROVEN (older owner head) | PROVEN | PROVEN | PROVEN | owner compact split pending current rerun |
 | Event | PARTIAL | PARTIAL | PARTIAL | PARTIAL | RU/EN page/frame sweep pending |
 | Starvation | PARTIAL | PARTIAL | PARTIAL | PARTIAL | owner compact CSS landed; geometry matrix pending |
@@ -259,8 +263,8 @@ Legend: **PROVEN** = direct passing evidence on an executed browser head; **PART
 
 # Open verification items
 
-1. **Responsive current truth:** rerun corrected `responsive-viewport-browser.cjs` after aftermath ownership reaches the next architecture milestone; do not weaken geometry assertions to get green.
-2. **Full browser milestone:** run all 17 Chromium contracts after the remaining route-injected aftermath CSS is removed.
+1. **Responsive current truth:** extend the current geometry contract to the remaining weak surfaces, then rerun corrected `responsive-viewport-browser.cjs`; do not weaken geometry assertions to get green.
+2. **Full browser milestone:** run all 17 Chromium contracts after weak-surface geometry coverage is added.
 3. **Dependency security:** classify current advisories from the repository/tooling graph; temporary Playwright installation reports must not be conflated with player runtime exposure without dependency tracing.
 4. **Observer/listener/event fan-out:** measure callbacks/render scheduling over repeated route loops.
 5. **Leak stability:** repeat 10+ route loops and compare listener/node counts.
@@ -284,8 +288,8 @@ Legend: **PROVEN** = direct passing evidence on an executed browser head; **PART
 6. **DONE:** Puzzle compact DOM/data ownership moved into `puzzle-app.mjs`; accepted compact styling is owner-loaded in `puzzles-compact.css`; generic Puzzle runtime refresh path removed (`d5c6f3c2`).
 7. **DONE:** Settlement, Starvation, Skirmish and Endless compact compatibility rules moved into explicit owner stylesheets and production packaging contracts.
 8. **DONE:** `post-pages-ui-polish.mjs` and `presentation-bootstrap.mjs` deleted; route/build/source-verifier and existing owner tests require their absence.
-9. Move remaining aftermath presentation CSS out of `battle-route.mjs`. **The duplicate hidden-attribute `MutationObserver` is already removed and must not be listed as future work again.**
-10. Consolidate final stylesheet load order and ownership after aftermath migration.
+9. **DONE:** Skirmish/Battle aftermath presentation CSS moved out of `battle-route.mjs`; route is imports-only (`ad37fba5`).
+10. Consolidate final stylesheet load order/entry points and prove build parity.
 
 ## Phase C — localization/event lifecycle
 
@@ -321,25 +325,23 @@ Legend: **PROVEN** = direct passing evidence on an executed browser head; **PART
 
 # Current simplification order
 
-1. Move aftermath CSS out of `battle-route.mjs`; leave route imports-only.
-2. Consolidate final stylesheet order and extend weak-surface geometry truth.
-3. Run corrected responsive + full 17-contract Chromium/current canonical gate at the architecture milestone.
-4. Finish keyed localization and delete global legacy observation.
-5. Reduce event/render fan-out and prove no leaks.
-6. Complete dependency and asset cleanup; retain Vertical Slice non-return contract.
-7. Run final RU/EN all-screen matrix + Pages gate.
-8. Synchronize final documentation and only then prepare integration.
+1. Consolidate final stylesheet order/entry points and extend weak-surface geometry truth.
+2. Run corrected responsive + full 17-contract Chromium/current canonical gate at the architecture milestone.
+3. Finish keyed localization and delete global legacy observation.
+4. Reduce event/render fan-out and prove no leaks.
+5. Complete dependency and asset cleanup; retain Vertical Slice non-return contract.
+6. Run final RU/EN all-screen matrix + Pages gate.
+7. Synchronize final documentation and only then prepare integration.
 
 ## Next actions
 
-1. Move Skirmish aftermath viewport/hidden-section/toast rules from `battle-route.mjs` into `skirmish-compact.css`, extending `tests/skirmish.cjs` rather than creating a new suite.
-2. Move Battle aftermath viewport/hidden-section/toast rules into `battle-compact.css`, extending `tests/battle.cjs`.
-3. Remove the final `data-landscape-aftermath-viewport-fix` CSS injection block from `battle-route.mjs`; route should become imports-only.
-4. Update source/build contracts so CSS-in-JS aftermath presentation cannot return.
-5. Extend geometry coverage to Battle aftermath, Starvation, Puzzle/Training, Classic setup and Endless summary while retaining the corrected portrait-lock contract.
-6. At the next meaningful architecture milestone run corrected responsive coverage plus all 17 Chromium contracts and `gate:local`; update evidence only from actual results.
-7. Continue owner-keyed localization and event-bus narrowing after presentation ownership is stable.
-8. Complete dependency classification and asset orphan inventory before final integration.
-9. Update `CURRENT_STATE.md` only after the final accepted remediation SHA and full gate are available; keep `main` frozen and Cloudflare manual-only until explicit owner direction changes either constraint.
+1. Extend existing responsive geometry coverage to Battle aftermath, Starvation, Puzzle/Training, Classic setup and Endless summary; reuse `viewport-geometry-contract.cjs` and do not create a parallel geometry suite.
+2. Consolidate/verify final stylesheet load order and owner entry points now that generic presentation runtime and route CSS injection are gone.
+3. At this architecture milestone run corrected responsive coverage plus all 17 Chromium contracts and `gate:local`; update evidence only from actual results.
+4. Fix any real geometry/runtime regressions exposed by that gate without weakening contracts; stale test assumptions may be corrected only where source ownership proves them obsolete.
+5. Continue owner-keyed localization and remove legacy whole-document translation reliance screen by screen after browser parity.
+6. Map and narrow remaining `rpchess:run-updated` fan-out, then instrument 10+ route loops for listener/render/node stability.
+7. Complete dependency classification and asset orphan inventory before final integration.
+8. Update `CURRENT_STATE.md` only after the final accepted remediation SHA and full gate are available; keep `main` frozen and Cloudflare manual-only until explicit owner direction changes either constraint.
 
 Every subsequent remediation report must update this tracker and end with a concrete numbered **Next actions** list.
