@@ -4,10 +4,17 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const game=path.resolve(__dirname,'..','game');
   const travelAppSource=fs.readFileSync(path.join(game,'js/travel-choice-app.mjs'),'utf8');
   const travelCss=fs.readFileSync(path.join(game,'css/travel-choice-compact.css'),'utf8');
+  const uiSource=fs.readFileSync(path.join(game,'localization/ui.mjs'),'utf8');
   assert(!travelAppSource.includes("document.addEventListener('click'"),'Travel must not intercept combat aftermath clicks globally');
   assert(travelAppSource.includes('recoverAftermathRoute'));assert(travelAppSource.includes("source==='skirmish-aftermath'")&&travelAppSource.includes("source==='battle-aftermath'"));assert(travelAppSource.includes("rpchess:puzzle-open"),'Puzzle routes must dispatch into playable scene');
   assert(travelAppSource.includes('data-travel-power')&&travelAppSource.includes('data-travel-player-threat'),'Travel must show Power and Threat without redesigning route cards');
   assert(travelAppSource.includes("OWNER_STYLE_HREF='css/travel-choice-compact.css'"),'Travel owner must load its compact stylesheet explicitly');
+  assert(travelAppSource.includes("import { subscribe, t, translateLegacy } from './i18n.mjs'"),'Travel owner must render keyed UI and explicit translated content');
+  for(const key of ['travel.ariaLabel','travel.week','travel.type.puzzle','travel.costStarvation','travel.rewardAria','travel.skirmishUnavailable','travel.continue'])assert(uiSource.includes(`'${key}'`),`localization registry missing Travel key: ${key}`);
+  for(const key of ['travel.ariaLabel','travel.week','travel.costStarvation','travel.rewardAria','travel.skirmishUnavailable','travel.continue'])assert(travelAppSource.includes(`'${key}'`),`Travel owner must consume localization key: ${key}`);
+  assert(travelAppSource.includes('t(`travel.type.${choice.type}`)')&&travelAppSource.includes('contentText(choice.flavor)'),'Travel route UI must use semantic type keys while flavor content is translated explicitly');
+  assert(travelAppSource.includes('subscribe(()=>')&&travelAppSource.includes('renderChoices()'),'Travel language changes must rerender owner presentation without document mutation');
+  for(const hardcoded of ['Припасов нет — при переходе сработает голод.','Недоступно: для стычки нужен хотя бы один здоровый герой кроме короля.','ЛЕЧЕНИЕ · НАЙМ · СНАБЖЕНИЕ'])assert(!travelAppSource.includes(hardcoded),`Travel runtime must not retain keyed RU UI copy: ${hardcoded}`);
   const buildSource=fs.readFileSync(path.join(game,'..','scripts/build.cjs'),'utf8');
   assert(buildSource.includes("'css/travel-choice-compact.css'"),'production build must package the Travel owner stylesheet');
   assert(travelAppSource.includes('data-travel-run-portrait')&&travelAppSource.includes('function renderPortrait()'),'Travel owner must render and refresh the run king portrait itself');
@@ -36,5 +43,5 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const legacyActive={...activeTwelve,difficultyModel:undefined};const legacyCompleted={...run,updatedAt:1410,skirmishCount:1,currentTravelChoices:null,activeTravelChoice:legacyActive};storage.setItem(persistence.RUN_STORAGE_KEY,JSON.stringify(legacyCompleted));const legacyRecovered=persistence.readRun(storage);assert(legacyRecovered);assert.strictEqual(legacyRecovered.activeTravelChoice,null,'legacy completed combat route still auto-recovers');
   const manualSkirmish={id:'manual.s',step:1,type:'skirmish',label:'СТЫЧКА',stars:12,threatLabel:'ЛЕГЕНДАРНАЯ',flavor:'Путь.',mechanicalHint:'Нестандартный состав противника.',seed:'manual-s',playerColor:'b',enemyRaceTag:'orcs'};globalThis.RPChessTravelEncounterOverride=manualSkirmish;const rs=skirmish.createEncounter({seed:'fallback',stars:5});assert.strictEqual(rs.seed,'manual-s');assert.strictEqual(rs.stars,12);assert.strictEqual(rs.aiElo,2600);assert.strictEqual(rs.playerColor,'b');
   const manualBattle={...manualSkirmish,id:'manual.b',type:'battle',label:'БИТВА',seed:'manual-b'};globalThis.RPChessTravelEncounterOverride=manualBattle;const rb=battle.createBattleEncounter({seed:'fallback',stars:1});assert.strictEqual(rb.seed,'manual-b');assert.strictEqual(rb.stars,12);assert.strictEqual(rb.aiElo,2600);
-  console.log('Travel Choice keeps 5-type ~20% pool, owner-rendered compact UI and player Threat..Threat+3 encounter contract: PASS');
+  console.log('Travel Choice keeps 5-type ~20% pool, owner-keyed RU/EN compact UI and player Threat..Threat+3 encounter contract: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
