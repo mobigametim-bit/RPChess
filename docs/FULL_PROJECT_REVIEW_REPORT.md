@@ -3,7 +3,7 @@
 **Audit status:** REMEDIATION IN PROGRESS  
 **Frozen production baseline:** `main@e92831ca5d6e0c14fb2d919e410180ce77b97ce6`  
 **Audit/remediation branch:** `audit/full-project-review-2026-09-08`  
-**Current remediation head:** `df6d35bc8f884c66c185f5ef5496930f1b0a3004`
+**Current remediation head:** `2933fbab2f888dd421c438996cbc824bd562762a`
 **Started:** 2026-09-08
 
 This report is the source of truth for the full technical/runtime/UI review and remediation. Production `main` remains untouched. Fixes are grouped by root cause; adding another patch layer to conceal an ownership problem is out of scope.
@@ -51,7 +51,7 @@ Status meanings:
 | REV-007 canonical Pages gate covers 3/17 browser contracts | **OPEN** | After current test truth is verified, define fast mandatory PR smoke coverage plus a broader milestone/full-release gate. |
 | REV-008 stale browser contract requires page scroll | **DONE — verified** | Foundation/Roster contracts now enforce one-screen behavior rather than requiring page scrolling. |
 | REV-009 Supplies/Market global image retargeting | **DONE — verified** | True owners render Supplies/Market art directly; global retarget scanner and `supplies-resource-icon.mjs` deleted. |
-| REV-010 fragmented runtime hotfix CSS | **IN PROGRESS** | review3/4/5/6/7 are deleted; Training, Roster, Travel and Battle Prep ownership has been consolidated. `review2` now contains only temporary run-combat presentation for stable Classic siblings; `polish-constraints` is reduced to a Puzzle width rule. Remaining `post-pages-ui-polish`, aftermath route styles, Skirmish/Settlement/Puzzle/Endless compatibility rules must move to owners. |
+| REV-010 fragmented runtime hotfix CSS | **IN PROGRESS** | `review2` and `polish-constraints` are now deleted alongside review3/4/5/6/7; their final Classic and Puzzle rules live in owner CSS (`852b0bdf`). Remaining `post-pages-ui-polish`, aftermath route styles and Skirmish/Settlement/Puzzle/Endless compatibility duties must move to owners. |
 | REV-011 Supplies optimizer makes asset larger | **DONE — verified** | Optimizer keeps original bytes when transformed output is larger while still enforcing budgets. |
 | REV-012 stale CURRENT_STATE SHA | **OPEN** | Deferred intentionally until the final accepted remediation SHA. |
 | REV-013 shared browser helper lifecycle drift | **DONE — verified** | `startNewRun()` waits for visible scenes and emits diagnostics; full milestone #9 passed 17/17. |
@@ -60,7 +60,7 @@ Status meanings:
 | REV-016 repeated puzzle materialization / duplicate build inputs | **DONE — verified** | Puzzle catalog materializes once per gate path; duplicate Endless build inputs removed. |
 | REV-017 generic Wrangler deploy path looks canonical | **DONE — docs pending** | Generic `npm run deploy` removed. Cloudflare remains explicit manual `deploy:cloudflare`; GitHub Pages is canonical. |
 | REV-018 legacy Vertical Slice stack | **DONE — verification pending** | Stage 1 removed the standalone browser entry/bundle/builder and its isolated tests (`a250a4f7`). Stage 2 removed the unreachable `src/` domain/runtime stack, dormant tests, previews, wards and unbuilt presentation files (`3db16021`). The 74-entrypoint / 81-file live closure contains no `src/`; deterministic verification passes. Full build/Chromium milestone proof is still pending. |
-| REV-019 CSS loading split between HTML and runtime JS | **IN PROGRESS** | Travel and Battle compact presentation now use explicit stylesheet files included in production. Battle structural reparenting no longer justifies shared presentation ownership; final explicit stylesheet order still requires consolidation after compatibility modules are removed. |
+| REV-019 CSS loading split between HTML and runtime JS | **IN PROGRESS** | Travel and Battle compact presentation use explicit owner stylesheets, and the previously omitted `travel-choice-compact.css` is now required and copied by the production build (`2933fbab`). Final explicit stylesheet order still requires consolidation after compatibility modules are removed. |
 | REV-020 `rpchess:run-updated` is overly broad bus | **IN PROGRESS** | Resources consumes semantic scene/settlement updates; Travel compatibility fan-out was removed. Broader event graph still needs narrowing. |
 | REV-021 historical docs conflict with current UI/deploy rules | **OPEN** | Final docs sync will add current-contract headers and retain history only as clearly marked history. |
 
@@ -80,7 +80,8 @@ Status meanings:
 - Battle Prep duplicate hidden-state observer in `battle-route.mjs` was removed.
 - Battle Start CTA is rendered directly in `.battle-army`; obsolete hidden `.battle-actionbar`, counters, action-cost generation and Start reparent/restore logic were removed.
 - Classic run-combat Journal no longer moves into `.classic-party-panel`; it remains a stable sibling in `.classic-shell`. `ui-redesign-final` and `post-pages-ui-polish` no longer keep Classic home references or append/restore paths.
-- `post-pages-ui-polish-constraints` no longer keeps the unused `post-pages-run-combat-active` lifecycle state/listeners.
+- Classic run-combat layout now lives in `chess-ai-polish.css`; the former `review2` runtime style injector is deleted.
+- The final Puzzle width constraint now lives in `puzzles.css`; the former constraints runtime style injector is deleted.
 - Skirmish actionbar no longer moves into `.skirmish-selection`; it stays in its source `.skirmish-shell` slot. Shared redesign no longer stores actionbar home/next references.
 - Obsolete Skirmish/Battle/Puzzle/Event navigation shortcuts are absent at source; the shared post-render control remover and its dead CSS selectors are deleted.
 
@@ -96,10 +97,8 @@ Deleted:
 - `post-pages-ui-review7.mjs`
 - `supplies-resource-icon.mjs`
 
-Remaining temporary presentation modules are explicit and must continue shrinking:
+The remaining temporary presentation module is explicit and must continue shrinking:
 
-- `post-pages-ui-review2.mjs` — run-combat CSS only, now using stable sibling selectors.
-- `post-pages-ui-polish-constraints.mjs` — Puzzle width constraint only.
 - `post-pages-ui-polish.mjs` — Puzzle plus remaining Settlement/Starvation/Skirmish/Endless compatibility duties.
 
 ## Build / persistence / assets
@@ -132,6 +131,8 @@ The audit workflows are **manual-dispatch only** and never deploy. The current c
 - **Vertical Slice deletion Stage 1** (`a250a4f7`): removed the standalone `vertical-slice.html` browser entry, generated Iron Marches bundle/builder and two isolated browser tests after package/runner/workflow reachability proof.
 - **Vertical Slice deletion Stage 2** (`3db16021`): removed 284 unreachable files / 38,496 lines. The active graph contains 74 entrypoints and 81 reachable code/test files, no `src/`, and no dormant top-level tests. `verify`, all deterministic/domain tests, content validation and the 11,498-puzzle catalog validation pass. Build packaging reached a clean Reboot `dist` with no legacy runtime; final Stockfish download was blocked by the execution environment's external-network cancellation, so no full local-gate or Chromium PASS is claimed for this head.
 - **Obsolete source DOM removal #18** (`df6d35bc`): removed the remaining deprecated scene shortcuts, dead handlers, seven-selector runtime remover and matching compatibility CSS. `verify`, syntax checks and the UI/Skirmish/Battle/Settlement/Events/Puzzles owner tests pass; Chromium verification pending.
+- **Compatibility owner migration #19** (`852b0bdf`): moved stable Classic Party/Journal run-combat rules into `chess-ai-polish.css`, moved the last Puzzle width rule into `puzzles.css`, and deleted `post-pages-ui-review2.mjs` plus `post-pages-ui-polish-constraints.mjs`. Source verification and seven affected owner/UI contracts pass; Chromium verification pending.
+- **Travel build ownership #20** (`2933fbab`): production build input/output contracts now include the Travel-owned compact stylesheet. Source verification and the Travel contract pass; a network-independent complete build remains pending.
 
 ---
 
@@ -165,7 +166,7 @@ Resolved.
 Resolved.
 
 ## REV-010 — Runtime hotfix CSS fragmentation
-Significantly reduced but still open. The next target is to delete `review2` and `polish-constraints` after their last rules are absorbed by screen owners, then shrink `post-pages-ui-polish`.
+Significantly reduced but still open. `review2` and `polish-constraints` are deleted after their last rules moved into Classic/Puzzle owner CSS. The next target is the remaining `post-pages-ui-polish` Puzzle rendering and Settlement/Starvation/Skirmish/Endless CSS.
 
 ## REV-011 — Asset optimizer regression
 Resolved.
@@ -192,7 +193,7 @@ Implementation resolved; documentation cleanup remains. No Cloudflare deploy occ
 Implementation complete. Both the standalone browser stack and the remaining unreachable legacy application/domain/runtime stack are deleted. Source verification prevents the entry, builder and stack anchors from returning. A current-head full build and Chromium milestone remain the only verification gap.
 
 ## REV-019 — Stylesheet loading ownership
-Improving. Owner-specific Travel/Battle files exist, but final production ordering remains split across HTML and runtime loaders.
+Improving. Owner-specific Travel/Battle files exist and are explicitly packaged; final production ordering remains split across HTML and runtime loaders.
 
 ## REV-020 — Broad run-updated bus
 In progress; further semantic narrowing and loop instrumentation required.
@@ -233,7 +234,7 @@ Legend: **PROVEN** = direct passing evidence on an executed browser head; **PART
 
 # Open verification items
 
-1. **Current architecture regression:** run strengthened responsive, Roster, Travel, Battle, Classic and Skirmish contracts against head `df6d35bc`, then `gate:local`.
+1. **Current architecture regression:** run strengthened responsive, Roster, Travel, Battle, Classic and Skirmish contracts against head `2933fbab`, then `gate:local`.
 2. **Full browser milestone:** run all 17 Chromium contracts at the next meaningful architecture checkpoint.
 3. **Dependency security:** classify the two previously reported high-severity advisories as production-relevant or dev-only.
 4. **Observer/listener/event fan-out:** measure callbacks/render scheduling over repeated route loops.
@@ -254,8 +255,8 @@ Legend: **PROVEN** = direct passing evidence on an executed browser head; **PART
 
 ## Phase B — finish presentation/source ownership
 
-5. Move run-combat sibling presentation out of `post-pages-ui-review2.mjs` into Classic-owned CSS; delete `review2`.
-6. Move the remaining Puzzle width constraint into Puzzle owner CSS; delete `post-pages-ui-polish-constraints.mjs`.
+5. Retain Classic run-combat presentation in owner CSS; `post-pages-ui-review2.mjs` is deleted.
+6. Retain the final Puzzle width constraint in owner CSS; `post-pages-ui-polish-constraints.mjs` is deleted.
 7. Move remaining Puzzle/Settlement/Starvation/Skirmish/Endless duties out of `post-pages-ui-polish.mjs`; delete the module when empty.
 8. Move remaining aftermath presentation/state bridge out of `battle-route.mjs`; remove its hidden-attribute `MutationObserver`.
 9. Delete obsolete source controls from Skirmish/Battle/Puzzle/Settlement/Event owners; then delete `removeObsoleteHiddenControls()` and its selector list.
@@ -306,15 +307,15 @@ Legend: **PROVEN** = direct passing evidence on an executed browser head; **PART
 
 ## Next actions
 
-1. Move the stable Classic run-combat sibling CSS from `post-pages-ui-review2.mjs` into Classic-owned presentation and delete `post-pages-ui-review2.mjs`.
-2. Move the final Puzzle width constraint out of `post-pages-ui-polish-constraints.mjs` and delete that compatibility module.
-3. Continue shrinking `post-pages-ui-polish.mjs` by moving Puzzle, Settlement, Starvation, Skirmish and Endless rules into their true owners.
-4. Remove the remaining aftermath style/state bridge and hidden-attribute observer from `battle-route.mjs`.
-5. Ensure every owner-loaded stylesheet, including Travel compact presentation, is copied explicitly into `dist`; then consolidate final stylesheet order.
-6. Extend geometry coverage to Battle aftermath, Starvation, Puzzle/Training, Classic setup and Endless summary.
-7. Run all 17 Chromium contracts plus `gate:local` at the next meaningful architecture milestone; fix only real current-contract failures and update evidence from actual results.
-8. Continue owner-keyed localization and event-bus narrowing after presentation/source ownership is stable.
-9. Complete dependency classification and asset orphan inventory before final integration; retain the Vertical Slice non-return source contract.
-10. Update `CURRENT_STATE.md` only after the final accepted remediation SHA and full gate are available.
+1. Move Puzzle's post-render objective/reward creation from `post-pages-ui-polish.mjs` into `puzzle-app.mjs` owner markup/rendering and transfer its compact CSS into `puzzles.css`.
+2. Move Settlement, Starvation, Skirmish and Endless compatibility rules into their owner stylesheets, then delete `post-pages-ui-polish.mjs` and remove it from bootstrap/build contracts.
+3. Remove the remaining aftermath style/state bridge and hidden-attribute observer from `battle-route.mjs`.
+4. Consolidate final stylesheet order after the last compatibility runtime is gone.
+5. Extend geometry coverage to Battle aftermath, Starvation, Puzzle/Training, Classic setup and Endless summary.
+6. Run all 17 Chromium contracts plus `gate:local` at the next meaningful architecture milestone; fix only real current-contract failures and update evidence from actual results.
+7. Continue owner-keyed localization and event-bus narrowing after presentation/source ownership is stable.
+8. Complete dependency classification and asset orphan inventory before final integration; retain the Vertical Slice non-return source contract.
+9. Update `CURRENT_STATE.md` only after the final accepted remediation SHA and full gate are available.
+10. Keep `main` frozen and Cloudflare manual-only until explicit owner direction changes either constraint.
 
 Every subsequent remediation report must update this tracker and end with a concrete numbered **Next actions** list.
