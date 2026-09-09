@@ -3,7 +3,7 @@
 **Audit status:** REMEDIATION IN PROGRESS  
 **Frozen production baseline:** `main@e92831ca5d6e0c14fb2d919e410180ce77b97ce6`  
 **Audit/remediation branch:** `audit/full-project-review-2026-09-08`  
-**Current remediation code head:** `b3ae7599e4d51a344ca99d3281ed4d9da60b6a1c`  
+**Current remediation code head:** `7c95fd05107992e108d5eda1cc2910e3e5cc68be`  
 **Started:** 2026-09-08
 
 This document is the source of truth for remediation. `main` remains untouched. Cloudflare remains manual-only. Do not restore compatibility patch layers, post-render DOM rewrites, runtime DOM reparenting or whole-document UI workarounds to conceal ownership problems.
@@ -32,7 +32,7 @@ Status meanings: **DONE — verified**, **DONE — verification pending**, **IN 
 | REV-001 Hero Notes owns unrelated patch chain | **DONE — verified** | Hero Notes rendered by true owners; compatibility runtime deleted. |
 | REV-002 Market reads state back from DOM | **DONE — verified** | Settlement renders Market from canonical state. |
 | REV-003 Resources render fan-out | **DONE — verified** | Global Resources observer/click fan-out removed; semantic scheduler owns updates. |
-| REV-004 whole-document legacy localization | **IN PROGRESS** | Settlement/Resources plus Roster, Travel, Starvation and Puzzle now render owner-keyed UI. Roster/Travel explicitly translate content at render time where needed. Events, Battle/Skirmish and remaining active surfaces still need migration before the global legacy `MutationObserver` can be deleted. |
+| REV-004 whole-document legacy localization | **IN PROGRESS** | Settlement/Resources plus Roster, Travel, Starvation, Puzzle and Events now render owner-keyed UI. Events keep authored narrative/reactions in the existing explicit content translation layer. Battle/Skirmish and remaining active shared/classic/endless surfaces still need migration before the global legacy `MutationObserver` can be deleted. |
 | REV-005 obsolete source controls / hidden DOM | **DONE — verification pending** | Obsolete Skirmish/Battle/Puzzle/Event shortcuts and hidden controls deleted at source; generic `.remove()` cleanup gone. |
 | REV-006 runtime DOM reparenting | **DONE — verification pending** | Battle Start, Classic Journal and Skirmish actionbar have stable owner/source slots; append/restore paths removed. |
 | REV-007 canonical Pages gate covers smoke subset | **OPEN** | Pages policy is safe (`main` push only). Full 17-contract milestone/release gate remains manual because connector does not expose `workflow_dispatch`. |
@@ -42,12 +42,12 @@ Status meanings: **DONE — verified**, **DONE — verification pending**, **IN 
 | REV-011 Supplies optimizer increases asset | **DONE — verified** | Optimizer keeps smaller source bytes. |
 | REV-012 stale CURRENT_STATE SHA | **OPEN** | Intentionally deferred to final accepted remediation SHA. |
 | REV-013 browser helper lifecycle drift | **DONE — verified** | Shared helper waits for visible scenes; older full milestone passed 17/17. |
-| REV-014 responsive gate incomplete | **DONE — verification pending** | Reusable geometry assertions plus RU/EN/boundary matrices exist. Coverage now explicitly includes Battle aftermath, Starvation, Puzzle/Training, Classic setup and Endless summary (`e37f3771`). Current full Chromium execution still pending. |
+| REV-014 responsive gate incomplete | **DONE — verification pending** | Reusable geometry assertions plus RU/EN/boundary matrices exist. Coverage explicitly includes Battle aftermath, Starvation, Puzzle/Training, Classic setup and Endless summary (`e37f3771`). Current full Chromium execution still pending. |
 | REV-015 persistence migration policy | **DONE — verified** | Unsupported schema resets safely; no old-save preservation required by owner decision. |
 | REV-016 repeated puzzle materialization/build inputs | **DONE — verified** | Puzzle materialization deduplicated; duplicate build inputs removed. |
 | REV-017 generic Wrangler deploy path | **DONE — docs pending** | Generic deploy removed; Cloudflare explicit/manual; GitHub Pages canonical. |
 | REV-018 legacy Vertical Slice | **DONE — verification pending** | Standalone browser stack and unreachable `src/` domain/runtime/tests deleted after reachability proof; source verifier blocks return. |
-| REV-019 stylesheet ownership/load split | **DONE — verification pending** | Compact/aftermath styles are explicit owner inputs. Battle now loads `battle.css` + `battle-compact.css` itself; shared redesign no longer owns Battle stylesheet loading (`54aa9228`, `d7827fd1`, `a3ec62b8`). |
+| REV-019 stylesheet ownership/load split | **DONE — verification pending** | Compact/aftermath styles are explicit owner inputs. Battle loads `battle.css` + `battle-compact.css` itself; shared redesign no longer owns Battle stylesheet loading. |
 | REV-020 broad `rpchess:run-updated` bus | **IN PROGRESS** | Generic post-pages listeners are gone. Remaining event graph still needs semantic narrowing and repeated-loop instrumentation. |
 | REV-021 historical docs conflict with current rules | **OPEN** | Final documentation synchronization remains after code/gate completion. |
 
@@ -77,19 +77,20 @@ Status meanings: **DONE — verified**, **DONE — verification pending**, **IN 
 - Portrait setup no longer waits for an intentionally hidden landscape menu (`71c3f39b`).
 - Real portrait body overflow (`1027px` body in `768×1024`) fixed by removing hidden gameplay roots from portrait layout (`480ec6f3`).
 - Ambiguous Language modal selector fixed (`24e7414d`).
-- Existing responsive suite now covers weak surfaces: Battle aftermath, Starvation, Puzzle/Training, Classic setup and Endless summary (`e37f3771`).
+- Existing responsive suite covers weak surfaces: Battle aftermath, Starvation, Puzzle/Training, Classic setup and Endless summary (`e37f3771`).
 
 ## Localization ownership
 
 Already owner-keyed:
 
 - Settlement and Resources — earlier remediation.
-- Roster — `7432aa43`; UI uses `t(...)`, content is translated explicitly at render time, owner subscribes to language changes. Existing regression updated in `6ea67719`.
-- Travel — `7216b01c`; week/type/cost/reward/Threat/buttons/warnings/aftermath CTA are keyed, flavor is explicitly translated at render. Registry additions in `4e249726`; regression/source contracts updated.
+- Roster — `7432aa43`; UI uses `t(...)`, content is translated explicitly at render time, owner subscribes to language changes. Regression `6ea67719`.
+- Travel — `7216b01c`; week/type/cost/reward/Threat/buttons/warnings/aftermath CTA are keyed, flavor is explicitly translated at render. Registry additions `4e249726`.
 - Starvation — `ef0fb91e`; all screen chrome and parameterized victim copy keyed; owner language subscription; regression `d7ab7123`.
-- Puzzle — registry `6eba6011`, owner migration `187ce871`, semantic DOM kicker override `337fa7d5`, regression `c6a59c75`, source gate `b3ae7599`. Objective/instruction/status/outcome/board aria/promotion labels are owner-rendered; CSS-generated `TRAINING` is suppressed in favor of semantic DOM.
+- Puzzle — registry `6eba6011`, owner `187ce871`, semantic DOM kicker override `337fa7d5`, regression `c6a59c75`, source gate `b3ae7599`. Objective/instruction/status/outcome/board aria/promotion labels are owner-rendered; legacy CSS-generated `TRAINING` is suppressed in favor of semantic DOM.
+- Events — registry `d2b7bac3`, owner `1234cd07`, regression `7c95fd05`. Event chrome/chance/outcome/hero-state/cost presentation is keyed and owner-subscribed; authored 500-event narrative, reactions, IDs, effects and hero gates remain in the existing explicit content translation/domain layers.
 
-Still to migrate before deleting the global legacy observer: Events UI chrome, Battle/Skirmish UI presentation and remaining active shared/classic/endless surfaces.
+Still to migrate before deleting the global legacy observer: Battle/Skirmish and remaining active shared/classic/endless UI surfaces.
 
 ## Legacy / build / deployment
 
@@ -119,8 +120,8 @@ Still to migrate before deleting the global legacy observer: Events UI chrome, B
 
 # Open verification / cleanup items
 
-1. Full current `gate:local` + all 17 Chromium contracts after the strengthened responsive and localization changes.
-2. Events/Battle/Skirmish/remaining owner-keyed localization, then removal of whole-document legacy localization observer.
+1. Full current `gate:local` + all 17 Chromium contracts after strengthened responsive and localization changes.
+2. Battle/Skirmish/remaining owner-keyed localization, then removal of whole-document legacy localization observer.
 3. Map and narrow `rpchess:*` event fan-out; instrument at least 10 route loops for callback/render/node stability.
 4. Dependency security classification: keep player runtime separate from dev/build-only exposure.
 5. Asset orphan/reference inventory; delete only proven-unused assets.
@@ -136,9 +137,9 @@ Still to migrate before deleting the global legacy observer: Events UI chrome, B
 2. **DONE:** Travel owner-keyed localization.
 3. **DONE:** Starvation owner-keyed localization.
 4. **DONE:** Puzzle owner-keyed localization and semantic kicker DOM.
-5. Migrate Event UI chrome while preserving the existing 500-event content/presentation translation layer and IDs/effects.
+5. **DONE:** Event UI chrome owner-keyed while authored Event content remains in explicit content translation layers.
 6. Migrate Battle and Skirmish presentation copy without changing encounter/domain mechanics.
-7. Migrate remaining active shared/classic/endless UI surfaces.
+7. Inventory/migrate remaining active shared/classic/endless UI surfaces.
 8. Delete whole-document legacy localization `MutationObserver` only after active owners no longer rely on it.
 
 ## Phase B — lifecycle/performance
@@ -162,13 +163,12 @@ Still to migrate before deleting the global legacy observer: Events UI chrome, B
 
 ## Next actions
 
-1. Migrate **Events UI chrome** to owner-keyed localization without changing the 500-event catalog, IDs, effects, hero gates or existing English content layers.
-2. Extend the existing Events regression/source verifier; do not create a parallel localization suite.
-3. Migrate Battle and Skirmish presentation copy to semantic owner keys using shared `piece.*` / status keys where appropriate.
-4. Inventory remaining active screens still dependent on `localizeLegacyDocument` and migrate them in owner-sized packages.
-5. Remove the whole-document localization `MutationObserver` only when that inventory reaches zero; retain explicit content translation helpers where content data requires them.
-6. Map/narrow `rpchess:run-updated` and instrument 10+ route loops for listener/render/node stability.
-7. Run full current `gate:local` + 17 Chromium contracts when executable; update statuses only from actual results.
-8. Complete dependency/asset cleanup and final documentation; keep `main` frozen and Cloudflare manual-only until explicit owner direction.
+1. Migrate **Battle and Skirmish presentation copy** to semantic owner keys, reusing shared `piece.*` / status keys and preserving all encounter/domain mechanics.
+2. Extend existing Battle/Skirmish regressions only; do not create a parallel localization suite.
+3. Inventory remaining active screens still dependent on `localizeLegacyDocument` (Classic/shared/Endless and any residual owner chrome) and migrate them in owner-sized packages.
+4. Remove the whole-document localization `MutationObserver` only when that inventory reaches zero; retain explicit content translation helpers where content data requires them.
+5. Map/narrow `rpchess:run-updated` and instrument 10+ route loops for listener/render/node stability.
+6. Run full current `gate:local` + 17 Chromium contracts when executable; update statuses only from actual results.
+7. Complete dependency/asset cleanup and final documentation; keep `main` frozen and Cloudflare manual-only until explicit owner direction.
 
 Every subsequent remediation checkpoint must update this report and end with a concrete numbered **Next actions** list.
