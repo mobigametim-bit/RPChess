@@ -17,6 +17,7 @@ class MemoryStorage {
   const starvation = await import(pathToFileURL(path.join(game, 'js/starvation-core.mjs')).href);
   const travel = await import(pathToFileURL(path.join(game, 'js/travel-choice-core.mjs')).href);
   const persistence = await import(pathToFileURL(path.join(game, 'js/run-persistence.mjs')).href);
+  const { UI_MESSAGES } = await import(pathToFileURL(path.join(game, 'localization/ui.mjs')).href);
 
   const choice = {
     id: 'travel.1.starvation-test',
@@ -120,7 +121,7 @@ class MemoryStorage {
   const css = fs.readFileSync(path.join(game, 'css/starvation.css'), 'utf8');
   const compactCss = fs.readFileSync(path.join(game, 'css/starvation-compact.css'), 'utf8');
   assert(travelSource.includes("t(noSupplies?'travel.costStarvation':'travel.cost'"), 'Travel cards must render the keyed Starvation warning before commitment');
-  assert(uiSource.includes("'travel.costStarvation': 'Стоимость пути:") && uiSource.includes('starvation will trigger on travel.'), 'RU/EN Travel Starvation warning copy must live in the localization registry');
+  assert(UI_MESSAGES.ru['travel.costStarvation']?.includes('сработает голод') && UI_MESSAGES.en['travel.costStarvation']?.includes('starvation will trigger on travel.'), 'RU/EN Travel Starvation warning copy must live in the localization registry');
   assert(travelSource.includes("cost.setAttribute('aria-label',warning)") && travelSource.includes('cost.title=warning'), 'Travel Starvation warning must remain accessible in the compact cost presentation');
   assert(travelSource.includes('resolveStarvation'), 'Travel must resolve Starvation atomically with route commitment');
   assert(appSource.includes("import { subscribe, t, translateLegacy } from './i18n.mjs'"), 'Starvation owner must render keyed UI and explicit translated names');
