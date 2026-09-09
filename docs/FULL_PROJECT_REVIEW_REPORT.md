@@ -3,7 +3,7 @@
 **Audit status:** REMEDIATION IN PROGRESS  
 **Frozen production baseline:** `main@e92831ca5d6e0c14fb2d919e410180ce77b97ce6`  
 **Audit/remediation branch:** `audit/full-project-review-2026-09-08`  
-**Current remediation head:** `bac324a0fe6911cab2e8898c760aff7673a1672e`  
+**Current remediation head:** `3db1602120d94a73734189eadeec7e0dd1716f49`
 **Started:** 2026-09-08
 
 This report is the source of truth for the full technical/runtime/UI review and remediation. Production `main` remains untouched. Fixes are grouped by root cause; adding another patch layer to conceal an ownership problem is out of scope.
@@ -59,7 +59,7 @@ Status meanings:
 | REV-015 persistence has no migration path | **DONE — verified** | Unsupported schema versions are explicitly deleted/reset by `readRun()`; no backward-save migration is required by owner decision. |
 | REV-016 repeated puzzle materialization / duplicate build inputs | **DONE — verified** | Puzzle catalog materializes once per gate path; duplicate Endless build inputs removed. |
 | REV-017 generic Wrangler deploy path looks canonical | **DONE — docs pending** | Generic `npm run deploy` removed. Cloudflare remains explicit manual `deploy:cloudflare`; GitHub Pages is canonical. |
-| REV-018 legacy Vertical Slice stack | **OPEN — deletion authorized** | Deletion approved after reference/reachability proof. |
+| REV-018 legacy Vertical Slice stack | **DONE — verification pending** | Stage 1 removed the standalone browser entry/bundle/builder and its isolated tests (`a250a4f7`). Stage 2 removed the unreachable `src/` domain/runtime stack, dormant tests, previews, wards and unbuilt presentation files (`3db16021`). The 74-entrypoint / 81-file live closure contains no `src/`; deterministic verification passes. Full build/Chromium milestone proof is still pending. |
 | REV-019 CSS loading split between HTML and runtime JS | **IN PROGRESS** | Travel and Battle compact presentation now use explicit stylesheet files included in production. Battle structural reparenting no longer justifies shared presentation ownership; final explicit stylesheet order still requires consolidation after compatibility modules are removed. |
 | REV-020 `rpchess:run-updated` is overly broad bus | **IN PROGRESS** | Resources consumes semantic scene/settlement updates; Travel compatibility fan-out was removed. Broader event graph still needs narrowing. |
 | REV-021 historical docs conflict with current UI/deploy rules | **OPEN** | Final docs sync will add current-contract headers and retain history only as clearly marked history. |
@@ -108,6 +108,7 @@ Remaining temporary presentation modules are explicit and must continue shrinkin
 - Cloudflare command is manual-only.
 - Unsupported run schema resets safely; old save compatibility is intentionally not maintained.
 - `battle-compact.css` is part of the explicit production build output.
+- The legacy Vertical Slice browser entry, generated Iron Marches bundle/builder, `src/` application/domain/runtime stack, isolated previews/workflows and dormant tests are deleted. `verify-source` now rejects restoration of the legacy entry or stack.
 
 ---
 
@@ -127,6 +128,8 @@ The audit workflows are **manual-dispatch only** and never deploy. The current c
 - **Stable Battle CTA #15** (`b63772f8`): Battle owner renders Start directly in `.battle-army`; obsolete actionbar/counters/action-cost and CTA reparenting removed; existing deterministic/browser contracts updated; verification pending.
 - **Stable Classic Journal #16** (`db42fb78`): Classic Journal remains in `.classic-shell`; both runtime reparent paths removed; dead constraints combat lifecycle removed; existing Classic static contract strengthened; verification pending.
 - **Stable Skirmish actionbar #17** (`bac324a0`): last identified `REV-006` runtime reparent removed; existing Skirmish deterministic contract strengthened; verification pending.
+- **Vertical Slice deletion Stage 1** (`a250a4f7`): removed the standalone `vertical-slice.html` browser entry, generated Iron Marches bundle/builder and two isolated browser tests after package/runner/workflow reachability proof.
+- **Vertical Slice deletion Stage 2** (`3db16021`): removed 284 unreachable files / 38,496 lines. The active graph contains 74 entrypoints and 81 reachable code/test files, no `src/`, and no dormant top-level tests. `verify`, all deterministic/domain tests, content validation and the 11,498-puzzle catalog validation pass. Build packaging reached a clean Reboot `dist` with no legacy runtime; final Stockfish download was blocked by the execution environment's external-network cancellation, so no full local-gate or Chromium PASS is claimed for this head.
 
 ---
 
@@ -184,7 +187,7 @@ Resolved.
 Implementation resolved; documentation cleanup remains. No Cloudflare deploy occurs unless explicitly requested by the project owner.
 
 ## REV-018 — Vertical Slice
-Deletion authorized after proof; not yet deleted.
+Implementation complete. Both the standalone browser stack and the remaining unreachable legacy application/domain/runtime stack are deleted. Source verification prevents the entry, builder and stack anchors from returning. A current-head full build and Chromium milestone remain the only verification gap.
 
 ## REV-019 — Stylesheet loading ownership
 Improving. Owner-specific Travel/Battle files exist, but final production ordering remains split across HTML and runtime loaders.
@@ -228,7 +231,7 @@ Legend: **PROVEN** = direct passing evidence on an executed browser head; **PART
 
 # Open verification items
 
-1. **Current architecture regression:** run strengthened responsive, Roster, Travel, Battle, Classic and Skirmish contracts against head `bac324a0`, then `gate:local`.
+1. **Current architecture regression:** run strengthened responsive, Roster, Travel, Battle, Classic and Skirmish contracts against head `3db16021`, then `gate:local`.
 2. **Full browser milestone:** run all 17 Chromium contracts at the next meaningful architecture checkpoint.
 3. **Dependency security:** classify the two previously reported high-severity advisories as production-relevant or dev-only.
 4. **Observer/listener/event fan-out:** measure callbacks/render scheduling over repeated route loops.
@@ -269,7 +272,7 @@ Legend: **PROVEN** = direct passing evidence on an executed browser head; **PART
 16. Retain the verified unsupported-schema reset policy.
 17. Complete dependency security classification.
 18. Generate asset orphan/reference inventory and remove only proven-unused assets.
-19. Prove and delete the authorized legacy Vertical Slice application/runtime/tests.
+19. Retain the verified Vertical Slice non-return source contract; the authorized application/runtime/test deletion is complete.
 20. Keep Cloudflare manual-only; GitHub Pages remains canonical.
 
 ## Phase E — validation/integration
@@ -295,21 +298,21 @@ Legend: **PROVEN** = direct passing evidence on an executed browser head; **PART
 3. Finish exhaustive geometry truth and rerun current architecture.
 4. Finish keyed localization and delete global legacy observation.
 5. Reduce event/render fan-out and prove no leaks.
-6. Complete dependency/assets/Vertical Slice cleanup.
+6. Complete dependency and asset cleanup; retain the Vertical Slice non-return contract.
 7. Run final RU/EN all-screen matrix + Pages gate.
 8. Synchronize final documentation and only then prepare integration.
 
 ## Next actions
 
-1. Move the stable Classic run-combat sibling CSS from `post-pages-ui-review2.mjs` into Classic-owned presentation and delete `post-pages-ui-review2.mjs`.
-2. Move the final Puzzle width constraint out of `post-pages-ui-polish-constraints.mjs` and delete that compatibility module.
-3. Continue shrinking `post-pages-ui-polish.mjs` by moving Puzzle, Settlement, Starvation, Skirmish and Endless rules into their true owners.
-4. Remove the remaining aftermath style/state bridge and hidden-attribute observer from `battle-route.mjs`.
-5. Remove obsolete source controls from Skirmish/Battle/Puzzle/Settlement/Event owners, then delete the shared post-render `.remove()` cleanup.
-6. Extend geometry coverage to Battle aftermath, Starvation, Puzzle/Training, Classic setup and Endless summary.
-7. Run the strengthened current-head targeted browser contracts plus `gate:local` when an executable gate is available; fix only real current-contract failures.
-8. Run all 17 Chromium contracts at the next meaningful architecture milestone and update every verification/evidence status from actual results.
+1. Remove obsolete source controls from Skirmish/Puzzle/Settlement/Event owners, then delete the shared post-render `.remove()` cleanup and close `REV-005`.
+2. Move the stable Classic run-combat sibling CSS from `post-pages-ui-review2.mjs` into Classic-owned presentation and delete `post-pages-ui-review2.mjs`.
+3. Move the final Puzzle width constraint out of `post-pages-ui-polish-constraints.mjs` and delete that compatibility module.
+4. Continue shrinking `post-pages-ui-polish.mjs` by moving Puzzle, Settlement, Starvation, Skirmish and Endless rules into their true owners.
+5. Remove the remaining aftermath style/state bridge and hidden-attribute observer from `battle-route.mjs`.
+6. Ensure every owner-loaded stylesheet, including Travel compact presentation, is copied explicitly into `dist`; then consolidate final stylesheet order.
+7. Extend geometry coverage to Battle aftermath, Starvation, Puzzle/Training, Classic setup and Endless summary.
+8. Run all 17 Chromium contracts plus `gate:local` at the next meaningful architecture milestone; fix only real current-contract failures and update evidence from actual results.
 9. Continue owner-keyed localization and event-bus narrowing after presentation/source ownership is stable.
-10. Complete dependency classification, asset orphan inventory and authorized Vertical Slice deletion before final integration.
+10. Complete dependency classification and asset orphan inventory before final integration; retain the Vertical Slice non-return source contract.
 
 Every subsequent remediation report must update this tracker and end with a concrete numbered **Next actions** list.
