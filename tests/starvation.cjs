@@ -116,12 +116,18 @@ class MemoryStorage {
 
   const travelSource = fs.readFileSync(path.join(game, 'js/travel-choice-app.mjs'), 'utf8');
   const appSource = fs.readFileSync(path.join(game, 'js/starvation-app.mjs'), 'utf8');
+  const uiSource = fs.readFileSync(path.join(game, 'localization/ui.mjs'), 'utf8');
   const css = fs.readFileSync(path.join(game, 'css/starvation.css'), 'utf8');
   const compactCss = fs.readFileSync(path.join(game, 'css/starvation-compact.css'), 'utf8');
-  assert(travelSource.includes('Припасов нет — при переходе сработает голод.'), 'Travel cards must warn about Starvation before commitment');
+  assert(travelSource.includes("t(noSupplies?'travel.costStarvation':'travel.cost'"), 'Travel cards must render the keyed Starvation warning before commitment');
+  assert(uiSource.includes("'travel.costStarvation': 'Стоимость пути:") && uiSource.includes('starvation will trigger on travel.'), 'RU/EN Travel Starvation warning copy must live in the localization registry');
   assert(travelSource.includes("cost.setAttribute('aria-label',warning)") && travelSource.includes('cost.title=warning'), 'Travel Starvation warning must remain accessible in the compact cost presentation');
   assert(travelSource.includes('resolveStarvation'), 'Travel must resolve Starvation atomically with route commitment');
-  assert(appSource.includes('КОРОЛЬ ПОГИБ ОТ ГОЛОДА'), 'King starvation run-end copy missing');
+  assert(appSource.includes("import { subscribe, t, translateLegacy } from './i18n.mjs'"), 'Starvation owner must render keyed UI and explicit translated names');
+  for(const key of ['starvation.ariaLabel','starvation.kicker','starvation.kingTitle','starvation.kingText','starvation.companionText','starvation.continue','starvation.summary'])assert(uiSource.includes(`'${key}'`),`localization registry missing Starvation key: ${key}`);
+  for(const key of ['starvation.ariaLabel','starvation.kingTitle','starvation.kingText','starvation.companionText','starvation.continue','starvation.summary'])assert(appSource.includes(`'${key}'`),`Starvation owner must consume localization key: ${key}`);
+  assert(appSource.includes('subscribe(() =>')&&appSource.includes('render(activeRun)'),'Starvation language changes must rerender the owner without document mutation');
+  assert(!appSource.includes('КОРОЛЬ ПОГИБ ОТ ГОЛОДА')&&!appSource.includes('ПРОДОЛЖИТЬ ПУТЬ'),'Starvation runtime must not retain keyed RU presentation copy');
   assert(appSource.includes('dataset.starvationScreen'), 'Starvation consequence screen contract missing');
   assert(appSource.includes('css/starvation-compact.css?v=20260909-owner1'), 'Starvation owner must load its compact stylesheet after base CSS');
   assert(compactCss.includes('max-height:calc(100dvh - 58px)!important') && compactCss.includes('overflow:auto!important'), 'Starvation owner compact stylesheet must contain the accepted HUD-safe internal scroll contract');
@@ -129,7 +135,7 @@ class MemoryStorage {
   assert(!fs.existsSync(path.join(game, 'js/presentation-bootstrap.mjs')), 'retired presentation bootstrap must stay deleted');
   assert(!css.includes('ui_panel_frame.png') && !css.includes('ui_panel_wide.png'), 'Starvation UI must remain frameless CSS-only');
 
-  console.log('Starvation deterministic casualty, idempotency, King death, persistence and owner-level compact accessible UX contract: PASS');
+  console.log('Starvation deterministic casualty, idempotency, King death, persistence, keyed RU/EN owner copy and compact accessible UX contract: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;
