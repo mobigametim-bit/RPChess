@@ -7,10 +7,13 @@ on:
     paths:
       - .github/workflows/audit-validation-one-off.yml
 
+permissions:
+  contents: write
+
 jobs:
-  diagnose:
+  validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,57 +31,304 @@ jobs:
             rpchess-runtime-assets-v1-${{ runner.os }}-
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
-      - name: Apply Event candidate
+      - name: Restore accepted Event landscape owner contract
         run: |
           python - <<'PY'
           from pathlib import Path
-          p=Path('game/css/landscape-ui-redesign.css')
-          t=p.read_text()
-          replacements={
-            "  .events-choices { min-height: 0 !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 7px !important; }":"  .events-choices { min-height: 0 !important; grid-template-columns: minmax(0, 1fr) !important; grid-auto-flow: row !important; gap: 7px !important; align-content: start !important; }",
-            "  .events-choices { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 5px !important; align-content: start !important; }":"  .events-choices { grid-template-columns: minmax(0,1fr) !important; grid-auto-flow: row !important; gap: 5px !important; align-content: start !important; }",
-            "  .events-choice { min-height: 0 !important; padding: 10px !important; }":"  .events-choice,\n  .events-choice:last-child:nth-child(odd) { grid-column: auto !important; min-width: 0 !important; min-height: 0 !important; height: auto !important; padding: 10px !important; }",
-            "  .events-choice { padding: 7px !important; font-size: 9px !important; }":"  .events-choice,\n  .events-choice:last-child:nth-child(odd) { grid-column: auto !important; min-width: 0 !important; min-height: 0 !important; height: auto !important; padding: 7px !important; font-size: 9px !important; }"
-          }
-          for old,new in replacements.items():
-              if t.count(old)!=1: raise SystemExit(f'candidate anchor drift: {old[:60]} => {t.count(old)}')
-              t=t.replace(old,new,1)
-          p.write_text(t)
+
+          css_path=Path('game/css/landscape-ui-redesign.css')
+          css=css_path.read_text()
+
+          tablet_media=css.index('@media (orientation: landscape) and (max-width: 1180px)')
+          tablet_start=css.index('  /* Events */', tablet_media)
+          tablet_end=css.index('  /* Skirmish prep */', tablet_start)
+          tablet='''  /* Events — accepted owner-scoped tablet landscape contract. */
+  body.events-active .events-screen {
+    height: 100dvh !important;
+    min-height: 0 !important;
+    padding: 10px 12px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+  body.events-active .events-shell {
+    position: relative !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    display: grid !important;
+    grid-template-rows: auto minmax(0,1fr) !important;
+    gap: 7px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body.events-active .events-topbar {
+    position: relative !important;
+    inset: auto !important;
+    grid-row: 1 !important;
+    min-height: 48px !important;
+    margin: 0 !important;
+  }
+  body.events-active .events-logo { width: min(190px, 22vw) !important; }
+  body.events-active .events-topbar__actions .reboot-button { min-height: 36px !important; padding: 5px 10px !important; }
+  body.events-active .events-panel {
+    position: relative !important;
+    inset: auto !important;
+    grid-row: 2 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0,1.08fr) minmax(330px,.92fr) !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+    overflow: hidden !important;
+    pointer-events: auto !important;
+  }
+  body.events-active .events-copy-frame,
+  body.events-active .events-choice-frame {
+    position: relative !important;
+    inset: auto !important;
+    width: auto !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    box-sizing: border-box !important;
+  }
+  body.events-active .events-copy-frame { padding: 14px 16px !important; }
+  body.events-active .events-choice-frame { padding: 10px !important; }
+  body.events-active .events-copy-frame h1 { font-size: clamp(31px, 4.2vh, 46px) !important; }
+  body.events-active .events-story { line-height: 1.42 !important; }
+  body.events-active .events-choices {
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) !important;
+    grid-auto-flow: row !important;
+    gap: 7px !important;
+    align-content: start !important;
+  }
+  body.events-active .events-choice,
+  body.events-active .events-choice:last-child:nth-child(odd) {
+    grid-column: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+  body.events-active .events-choice { padding: 10px !important; }
+  body.events-active .events-choice__head strong,
+  body.events-active .events-choice__reaction,
+  body.events-active .events-choice__hero-line {
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    hyphens: none !important;
+  }
+
+'''
+          css=css[:tablet_start]+tablet+css[tablet_end:]
+
+          phone_media=css.index('@media (orientation: landscape) and (max-height: 520px) and (max-width: 980px)')
+          phone_start=css.index('  /* Events */', phone_media)
+          phone_end=css.index('  /* Puzzle side column */', phone_start)
+          phone='''  /* Events — accepted owner-scoped phone landscape compression. */
+  body.events-active .events-screen { padding: 5px 7px !important; }
+  body.events-active .events-shell { gap: 4px !important; }
+  body.events-active .events-topbar { min-height: 34px !important; margin-bottom: 0 !important; }
+  body.events-active .events-logo { width: 125px !important; }
+  body.events-active .events-topbar__actions { gap: 4px !important; }
+  body.events-active .events-topbar__actions .reboot-button { min-height: 29px !important; padding: 3px 7px !important; font-size: 10px !important; }
+  body.events-active .events-panel {
+    grid-template-columns: minmax(0,1.04fr) minmax(300px,.96fr) !important;
+    gap: 6px !important;
+  }
+  body.events-active .events-copy-frame,
+  body.events-active .events-choice-frame { padding: 8px 10px !important; }
+  body.events-active .events-kicker { font-size: 8px !important; }
+  body.events-active .events-copy-frame h1 { font-size: 27px !important; margin: 3px 0 6px !important; }
+  body.events-active .events-story { font-size: 10px !important; line-height: 1.24 !important; }
+  body.events-active .events-story p { margin: 0 0 6px !important; }
+  body.events-active .events-reaction { font-size: 9px !important; padding: 6px !important; }
+  body.events-active .events-choices {
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) !important;
+    grid-auto-flow: row !important;
+    gap: 5px !important;
+    align-content: start !important;
+  }
+  body.events-active .events-choice,
+  body.events-active .events-choice:last-child:nth-child(odd) {
+    grid-column: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+  body.events-active .events-choice { padding: 7px 9px !important; font-size: 9px !important; }
+  body.events-active .events-choice__head { gap: 5px !important; }
+  body.events-active .events-choice__head strong { font-size: 11px !important; line-height: 1.18 !important; }
+  body.events-active .events-choice__meta small,
+  body.events-active .events-choice__disabled,
+  body.events-active .events-choice__reaction,
+  body.events-active .events-choice__hero-line { font-size: 7px !important; line-height: 1.16 !important; }
+
+'''
+          css=css[:phone_start]+phone+css[phone_end:]
+          css_path.write_text(css)
+
+          test_path=Path('tests/events.cjs')
+          test=test_path.read_text()
+          declaration="  const appSource=fs.readFileSync(path.join(game,'js/events-app.mjs'),'utf8');\n"
+          extra_decl="  const landscapeCss=fs.readFileSync(path.join(game,'css/landscape-ui-redesign.css'),'utf8');\n"
+          if extra_decl not in test:
+              if declaration not in test: raise SystemExit('Events declaration anchor missing')
+              test=test.replace(declaration,declaration+extra_decl,1)
+          anchor="  assert(!appSource.includes(\"addEventListener('rpchess:run-updated',syncRun)\"),'Events must not subscribe to broad run-updated for combat completion');\n"
+          assertions=(
+              "  const eventChoiceLandscapeBlocks=[...landscapeCss.matchAll(/body\\.events-active \\.events-choices\\s*\\{([^}]*)\\}/g)].map(([,block])=>block);\n"
+              "  assert(eventChoiceLandscapeBlocks.length>=2,'landscape owner must define scoped tablet and phone Event choice rails');\n"
+              "  assert(eventChoiceLandscapeBlocks.every(block=>!block.includes('repeat(2'))),'scoped Event landscape rails must never return to two columns');\n"
+              "  assert(eventChoiceLandscapeBlocks.every(block=>block.includes('grid-template-columns: minmax(0,1fr)')),'scoped Event landscape rails must remain one readable column');\n"
+          )
+          if assertions.strip() not in test:
+              if anchor not in test: raise SystemExit('Events assertion anchor missing')
+              test=test.replace(anchor,anchor+assertions,1)
+          test_path.write_text(test)
           PY
-      - name: Build production dist
-        run: npm run puzzles:materialize && npm run build:materialized
+      - name: Run Event owner regression
+        run: |
+          node --check tests/events.cjs
+          node tests/events.cjs
+      - name: Run canonical local gate
+        run: npm run gate:local
       - name: Install Playwright and Chromium
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
-      - name: Instrument Event grid
+      - name: Narrow responsive proof to Event rail
         run: |
+          cp tests/responsive-viewport-browser.cjs /tmp/responsive-viewport-browser.cjs
           python - <<'PY'
           from pathlib import Path
           p=Path('tests/responsive-viewport-browser.cjs')
           t=p.read_text()
-          assertion="    assert.strictEqual(layout.columns, 1, `${label}: Event choices must use one readable column in the right rail`);"
-          diagnostic="""    console.log('EVENT_GRID_DIAG', JSON.stringify(await page.evaluate(() => {
-      const choices=document.querySelector('.events-choices');
-      const items=[...document.querySelectorAll('.events-choice')];
-      const cs=getComputedStyle(choices);
-      const rect=(node)=>{const r=node?.getBoundingClientRect();return r?{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}:null};
-      const rules=[];
-      const walk=(list,href,media=[])=>{for(const rule of Array.from(list||[])){if(rule.cssRules){const condition=rule.conditionText||rule.media?.mediaText||'';walk(rule.cssRules,href,condition?[...media,condition]:media);}else if(rule.selectorText&&(rule.selectorText.includes('.events-choices')||rule.selectorText.includes('.events-choice:last-child'))){let matches=false;try{matches=choices.matches(rule.selectorText)||items.some(item=>item.matches(rule.selectorText));}catch{};if(matches)rules.push({href,selector:rule.selectorText,media,cssText:rule.style.cssText});}}};
-      for(const sheet of Array.from(document.styleSheets)){try{walk(sheet.cssRules,sheet.href||'INLINE');}catch(error){rules.push({href:sheet.href||'INLINE',error:String(error)});}}
-      return {choices:rect(choices),template:cs.gridTemplateColumns,autoColumns:cs.gridAutoColumns,autoFlow:cs.gridAutoFlow,display:cs.display,items:items.map((item,index)=>{const s=getComputedStyle(item);return {index,rect:rect(item),column:s.gridColumn,columnStart:s.gridColumnStart,columnEnd:s.gridColumnEnd};}),rules,stylesheets:Array.from(document.styleSheets).map(sheet=>sheet.href||'INLINE')};
-    }))));
-"""+assertion
-          if assertion not in t: raise SystemExit('Event column assertion missing')
-          t=t.replace(assertion,diagnostic,1)
           marker='\n(async () => {'
           pos=t.rfind(marker)
-          if pos<0: raise SystemExit('runner marker missing')
-          suffix="\n(async () => {\n  const browser=await chromium.launch({headless:true});\n  try{await auditEventLayout(browser,1024,768,'ru');}finally{await browser.close();}\n})().catch((error)=>{console.error(error.stack||error);process.exitCode=1;});\n"
+          if pos<0: raise SystemExit('responsive runner marker missing')
+          suffix=(
+              "\n(async () => {\n"
+              "  const browser = await chromium.launch({ headless: true });\n"
+              "  try {\n"
+              "    await auditEventLayout(browser, 1024, 768, 'ru');\n"
+              "    await auditEventLayout(browser, 844, 390, 'ru');\n"
+              "    console.log('Targeted RU Event landscape owner geometry: PASS');\n"
+              "  } finally { await browser.close(); }\n"
+              "})().catch((error) => { console.error(error.stack || error); process.exitCode = 1; });\n"
+          )
           p.write_text(t[:pos]+suffix)
           PY
-      - name: Run Event grid diagnostic
+      - name: Run targeted Event browser proof
         env:
           RPCHESS_GATE_PREFIX: /RPChess
           RPCHESS_BROWSER_TEST: responsive-viewport-browser.cjs
         run: npm run test:browser
+      - name: Restore full responsive contract
+        if: always()
+        run: |
+          if [ -f /tmp/responsive-viewport-browser.cjs ]; then cp /tmp/responsive-viewport-browser.cjs tests/responsive-viewport-browser.cjs; fi
+      - name: Commit validated Event owner fix
+        id: source_commit
+        if: success()
+        run: |
+          git config user.name "mobigametim-bit"
+          git config user.email "mobigametim@gmail.com"
+          git add game/css/landscape-ui-redesign.css tests/events.cjs
+          git diff --cached --check
+          git commit -m "fix: restore scoped Event landscape layout"
+          SOURCE_HEAD=$(git rev-parse HEAD)
+          git push origin HEAD:audit/full-project-review-2026-09-08
+          echo "source_head=$SOURCE_HEAD" >> "$GITHUB_OUTPUT"
+      - name: Record completed Event iteration
+        if: steps.source_commit.outcome == 'success'
+        env:
+          SOURCE_HEAD: ${{ steps.source_commit.outputs.source_head }}
+        run: |
+          python - <<'PY'
+          import os,re
+          from pathlib import Path
+          p=Path('docs/FULL_PROJECT_REVIEW_REPORT.md')
+          text=p.read_text()
+          source=os.environ['SOURCE_HEAD']
+          text=re.sub(r"(\*\*Current remediation code head:\*\* `)[^`]+(`)",rf"\g<1>{source}\2",text,count=1)
+          marker=f"### Responsive owner checkpoint — {source[:8]}"
+          if marker not in text:
+              text+=f"""
+
+{marker}
+
+- `e42b5ad834defe31e9cd7a5f4d34e147aaa8ccdd` removed the remaining runtime landscape CSS injection, moved compact-combat ownership into `landscape-ui-redesign.css`, and passed `gate:local` plus targeted `1024×768 RU` combat geometry.
+- `{source}` restores the accepted owner-scoped `body.events-active` Event landscape contract in the static stylesheet after that runtime-style removal.
+- Existing `events.cjs` now prevents scoped Event choice rails from returning to two columns.
+- Exact-checkout `gate:local`: **PASS**.
+- Targeted Event Chromium (`1024×768 RU`, `844×390 RU`): **PASS**.
+- Full responsive/all-Chromium validation continues after this checkpoint; no full-browser PASS is claimed here.
+- `main`, Pages deployment policy and Cloudflare remain untouched.
+
+**Дальнейшие действия:**
+1. Run the complete strengthened RU/EN/boundary responsive matrix on this implementation lineage.
+2. If it is green, run all Chromium contracts on the same code; otherwise fix only the next evidence-backed owner defect.
+3. Normalize `package-lock.json` reproducibly through npm and prove `npm ci` plus dependency security.
+4. Finish evidence-backed asset inventory and keep ambiguous/planned assets.
+5. Remove the one-off audit workflow, then finalize `CURRENT_STATE.md` and historical/deployment documentation.
+"""
+          p.write_text(text)
+          PY
+          git add docs/FULL_PROJECT_REVIEW_REPORT.md
+          git diff --cached --check
+          git commit -m "docs: checkpoint Event landscape owner fix"
+          git push origin HEAD:audit/full-project-review-2026-09-08
+      - name: Run full responsive contract
+        if: success()
+        env:
+          RPCHESS_GATE_PREFIX: /RPChess
+          RPCHESS_BROWSER_TEST: responsive-viewport-browser.cjs
+        run: npm run test:browser
+      - name: Run all Chromium contracts
+        if: success()
+        env:
+          RPCHESS_GATE_PREFIX: /RPChess
+        run: npm run test:browser
+      - name: Record full browser PASS
+        if: success()
+        env:
+          SOURCE_HEAD: ${{ steps.source_commit.outputs.source_head }}
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          p=Path('docs/FULL_PROJECT_REVIEW_REPORT.md')
+          text=p.read_text()
+          source=os.environ['SOURCE_HEAD']
+          marker=f"### Full browser verification — {source[:8]}"
+          if marker not in text:
+              text+=f"""
+
+{marker}
+
+- Complete strengthened responsive RU/EN/boundary contract: **PASS**.
+- Complete Chromium browser contract set: **PASS** on the same implementation lineage `{source}`.
+- Browser-verification-pending findings may now be closed only where this full gate covers their contract.
+
+**Дальнейшие действия:**
+1. Normalize stale lock metadata through npm and rerun dependency-security plus `gate:local`.
+2. Finish evidence-backed asset inventory/removal and rerun final local/browser gates if production files change.
+3. Remove `.github/workflows/audit-validation-one-off.yml`.
+4. Update `CURRENT_STATE.md`, final audit statuses and historical/deployment docs.
+5. Keep `main` frozen and Cloudflare manual-only until explicit owner direction.
+"""
+          p.write_text(text)
+          PY
+          git add docs/FULL_PROJECT_REVIEW_REPORT.md
+          git diff --cached --check
+          git commit -m "docs: record full Chromium verification"
+          git push origin HEAD:audit/full-project-review-2026-09-08
