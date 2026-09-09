@@ -74,7 +74,7 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   assert(events.includes("if (!hero) return { hero:null, name, state:'missing', locked:true, label:'🔒' }"),'missing Event hero must show only the lock in the upper strip');
   assert(!battleCore.includes('Победа решится по классическим шахматным правилам.'),'Battle copy cleanup must live in encounter data rather than presentation regex replacement');
   assert(!battleMercenaries.includes('normalizeBattleCopy')&&!battleMercenaries.includes("replace(/\\s*Победа решится"),'Battle Mercenaries runtime must not rewrite canonical Battle copy with presentation regexes');
-  assert(battleMercenaries.includes('if (start?.parentNode === actionbar) actionbar.insertBefore(actionCost, start);')&&battleMercenaries.includes('else actionbar.append(actionCost);'),'Mercenary action-cost hook must tolerate the Start CTA being relocated out of the legacy actionbar');
+  assert(!battleMercenaries.includes('.battle-actionbar')&&!battleMercenaries.includes('data-battle-mercenary-action-cost'),'Mercenary presentation must not depend on the removed Battle actionbar or recreate its obsolete cost hook');
 
   for(const obsolete of ['travel-choice-commandbar-pass','compact-run-screens-pass','compact-combat-ui-pass','compact-ui-pass3','compact-ui-pass4']) assert(!build.includes(obsolete),`build must not package obsolete ${obsolete} layers`);
   assert(build.includes("'css/ui-redesign-final.css'")&&build.includes("'css/combat-side-colors.css'")&&build.includes("'js/ui-redesign-final.mjs'"),'production build must package the consolidated redesign and combat aura layer');

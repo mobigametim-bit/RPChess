@@ -22,6 +22,8 @@ module.exports=function verifySource(root){
 
   for(const obsolete of ['css/travel-choice-commandbar-pass.css','css/compact-run-screens-pass.css','css/compact-combat-ui-pass.css','css/compact-ui-pass3.css','css/compact-ui-pass4.css','css/post-redesign-playtest-pass1b.css','js/travel-choice-commandbar-pass.mjs','js/compact-combat-ui-pass.mjs','js/compact-ui-pass3.mjs','js/compact-ui-pass4.mjs','js/content/hero-notes-runtime.mjs','js/content/post-pages-ui-review3.mjs','js/content/post-pages-ui-review4.mjs','js/content/post-pages-ui-review5.mjs','js/content/post-pages-ui-review6.mjs','js/content/post-pages-ui-review7.mjs','js/content/supplies-resource-icon.mjs'])if(fs.existsSync(path.join(root,obsolete)))fail(`superseded redesign layer still exists: ${obsolete}`);
   for(const obsolete of ['game/vertical-slice.html','game/js/generated/iron-marches-runtime.bundle.js','scripts/build-browser-runtime.cjs','src/browser/iron-marches-browser-entry.cjs'])if(fs.existsSync(path.join(repoRoot,obsolete)))fail(`legacy Vertical Slice browser entry still exists: ${obsolete}`);
+  for(const obsolete of ['game/js/vertical-slice-app.mjs','game/style.css','game/tools/vertical-slice-preview.html'])if(fs.existsSync(path.join(repoRoot,obsolete)))fail(`legacy Vertical Slice stack still exists: ${obsolete}`);
+  const legacySrc=path.join(repoRoot,'src');if(fs.existsSync(legacySrc)&&fs.readdirSync(legacySrc,{recursive:true}).some(relative=>fs.statSync(path.join(legacySrc,relative)).isFile()))fail('legacy Vertical Slice stack still exists: src');
 
   const info=JSON.parse(read(root,'BUILD_INFO.json'));
   if(!String(info.version||'').startsWith('3.1.0-puzzles'))fail(`unexpected Puzzles version: ${info.version||'missing'}`);
