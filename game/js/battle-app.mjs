@@ -22,6 +22,13 @@ if (!document.querySelector('[data-battle-css]')) {
   cssLink.dataset.battleCss = '';
   document.head.append(cssLink);
 }
+if (!document.querySelector('[data-battle-compact-css]')) {
+  const compactCssLink = document.createElement('link');
+  compactCssLink.rel = 'stylesheet';
+  compactCssLink.href = 'css/battle-compact.css?v=20260909-owner2';
+  compactCssLink.dataset.battleCompactCss = '';
+  document.head.append(compactCssLink);
+}
 
 const menu = document.querySelector('[data-reboot-foundation]');
 const rosterScreen = document.querySelector('[data-roster-screen]');
