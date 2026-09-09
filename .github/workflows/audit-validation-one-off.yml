@@ -35,28 +35,28 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Align Power semantic ownership regression
+      - name: Align Event hero lock regression
         run: |
           python - <<'PY'
           from pathlib import Path
-          path = Path('tests/player-rating.cjs')
+          path = Path('tests/ui-redesign-final.cjs')
           text = path.read_text()
-          old = "  const travelSource=fs.readFileSync(path.join(game,'js/travel-choice-app.mjs'),'utf8');\n  const settleToken='globalThis.RPChessPower?.settle?.(activeRun)';\n  const clearToken='activeRun=writeRun({...activeRun,activeTravelChoice:null})';\n  assert(travelSource.includes(settleToken),'Travel lifecycle must explicitly settle Power before clearing a completed combat route');\n  assert(travelSource.indexOf(settleToken)<travelSource.indexOf(clearToken),'Power settlement must happen before activeTravelChoice cleanup');"
-          new = "  const travelSource=fs.readFileSync(path.join(game,'js/travel-choice-app.mjs'),'utf8');\n  const ratingRuntimeSource=fs.readFileSync(path.join(game,'js/player-rating-runtime.mjs'),'utf8');\n  const settleToken='globalThis.RPChessPower?.settle?.(activeRun)';\n  assert(!travelSource.includes(settleToken),'Travel must not duplicate Power settlement owned by the semantic Power runtime');\n  assert(ratingRuntimeSource.includes(\"addEventListener('rpchess:combat-completed', sync)\")&&ratingRuntimeSource.includes(\"addEventListener('rpchess:puzzle-resolved', sync)\"),'Power runtime must settle rated outcomes from semantic completion events');\n  assert(ratingRuntimeSource.includes('settleCurrentRatedOutcome(run);'),'Power semantic owner must settle the current rated outcome before result rendering');"
+          old = "  assert(events.includes(\"if (!hero) return { hero:null, name, state:'missing', locked:true, label:'🔒' }\"),'missing Event hero must show only the lock in the upper strip');"
+          new = "  assert(events.includes(\"if (!hero) return { hero:null, name, state:'missing', locked:true }\")&&events.includes(\"if(heroState.state==='missing')return '🔒';\"),'missing Event hero must preserve semantic missing state and render only the lock in the upper strip');"
           if text.count(old) != 1:
-              raise SystemExit(f'expected one stale Travel-owned Power assertion block, got {text.count(old)}')
+              raise SystemExit(f'expected one stale Event missing-hero assertion, got {text.count(old)}')
           path.write_text(text.replace(old, new, 1))
           PY
 
-      - name: Run targeted Power contract
-        run: node tests/player-rating.cjs
+      - name: Run targeted UI contract
+        run: node tests/ui-redesign-final.cjs
 
-      - name: Commit validated Power regression fix
+      - name: Commit validated UI regression fix
         run: |
           git config user.name 'mobigametim-bit'
           git config user.email 'mobigametim@gmail.com'
-          git add tests/player-rating.cjs
-          git commit -m 'test: align Power semantic ownership contract'
+          git add tests/ui-redesign-final.cjs
+          git commit -m 'test: align Event hero lock presentation contract'
           git push origin HEAD:audit/full-project-review-2026-09-08
 
       - name: Run canonical local gate
