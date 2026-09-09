@@ -3,7 +3,7 @@
 **Audit status:** REMEDIATION IN PROGRESS  
 **Frozen production baseline:** `main@e92831ca5d6e0c14fb2d919e410180ce77b97ce6`  
 **Audit/remediation branch:** `audit/full-project-review-2026-09-08`  
-**Current remediation code head:** `25fde16b7235fc0d3bdb743fb1f85c962869c0db`  
+**Current remediation code head:** `983e8907a1419755cdd0177124fac906ec8a26f8`  
 **Started:** 2026-09-08
 
 This document is the source of truth for remediation. `main` remains untouched. Cloudflare remains manual-only. Do not restore compatibility patch layers, post-render DOM rewrites, runtime DOM reparenting, whole-document UI workarounds or broad state-mutating event consumers to conceal ownership problems.
@@ -124,7 +124,7 @@ Completed owner migrations:
 
 - Geometry helper rejects page overflow, nonzero window scroll and frame/viewport escapes.
 - Portrait stale setup fixed `71c3f39b`; real 3px portrait overflow fixed `480ec6f3`; Language selector fixed `24e7414d`.
-- Responsive suite explicitly covers weak surfaces in `e37f3771`. Exact Chromium validation later exposed a real `1366×768` RU main-menu overflow; root cause was a fixed `52px` height subtraction that did not match responsive outer padding. Owner CSS fix `25fde16b` now subtracts the actual responsive vertical padding. The same strengthened suite progressed to a separate `844×390` RU Chronicle vertical escape, which remains the next geometry fix.
+- Responsive suite explicitly covers weak surfaces in `e37f3771`. Exact Chromium validation later exposed a real `1366×768` RU main-menu overflow; root cause was a fixed `52px` height subtraction that did not match responsive outer padding. Owner CSS fix `25fde16b` now subtracts the actual responsive vertical padding. The same strengthened suite then exposed a separate `844×390` RU Chronicle vertical escape. Root cause was the inherited `min-height:560px` on the menu main column inside the fixed-height landscape grid; `983e8907` resets that owner min-height to zero. A targeted 844×390 RU menu + Chronicle browser proof passed before this commit.
 
 ## Legacy / build / deployment
 
@@ -149,13 +149,13 @@ Completed owner migrations:
 - Semantic lifecycle (`6aaa8422` → `9f08c276`) + browser instrumentation `a447df1d`: implementation/contracts complete. Current exact-checkout `gate:local` executes the lifecycle Node contract successfully; browser loop verification remains part of the full Chromium gate.
 - Dependency security (`f04df06a` → `c88dfac6`): direct vulnerable ZIP install edge removed; dependency-security contract now passes in exact-checkout `gate:local`. Lock metadata normalization remains pending.
 - Asset inventory tooling (`a497089f`, `d7176767`) has now executed on an exact audit checkout. Its broad automatic candidate set includes manifest-driven production assets and is therefore **candidate-only**, never a bulk-delete list. Manual ownership proof remains mandatory. The corrected proven cleanup is 25 files / 2,389,275 bytes after restoring active Settlement heal/recruit art.
-- Exact-checkout `gate:local` is **PASS** on the current remediation lineage, including localization, security, domain tests, content validation, production build and runtime asset-cache parity. Full Chromium is **not yet PASS**: run `34371249143` progressed past the fixed menu and exposed the separate `844×390` RU Chronicle overflow.
+- Exact-checkout `gate:local` is **PASS** on the current remediation lineage, including localization, security, domain tests, content validation, production build and runtime asset-cache parity. Full Chromium is **not yet PASS**. Run `34371249143` progressed past the fixed menu and exposed the `844×390` RU Chronicle overflow; the targeted Chronicle proof passed for `983e8907`. Full responsive/all-browser verification remains pending after this checkpoint.
 
 ---
 
 # Open verification / cleanup items
 
-1. Fix the evidence-backed `844×390` RU Chronicle viewport escape in the Chronicle/menu owner CSS and rerun the strengthened responsive contract.
+1. Rerun the full strengthened responsive RU/EN/boundary matrix after the validated Chronicle owner fix; address only the next evidence-backed geometry failure, if any.
 2. Finish manual proof for remaining `generated_assets` UI/logo/special-unit candidates; preserve anything ambiguous or owner-backed.
 3. Normalize `package-lock.json` reproducibly so stale `adm-zip` metadata disappears without hand-editing integrity data.
 4. Rerun full current `gate:local` + all Chromium contracts after the final geometry/asset/lock cleanup.
@@ -190,7 +190,7 @@ Completed owner migrations:
 
 ## Next actions
 
-1. Fix the `844×390` RU Chronicle geometry defect exposed after the validated menu fix; rerun responsive RU/EN/boundary coverage.
+1. Run the full responsive RU/EN/boundary coverage after the targeted Chronicle PASS; fix only any next evidence-backed defect.
 2. Finish manual reachability proof for the remaining `generated_assets` candidates; `ui_button_primary.png`, active route/reward art and all dynamic families stay protected.
 3. Normalize `package-lock.json` reproducibly and prove `npm ci` + dependency-security after removing stale `adm-zip` metadata.
 4. Run the final `gate:local` + complete Chromium gate on the resulting SHA and update verification-pending findings only from actual results.
