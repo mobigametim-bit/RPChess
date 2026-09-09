@@ -7,3 +7,31 @@
   html[data-landscape-ui='1'] body.skirmish-active .skirmish-formation{height:46px!important;min-height:46px!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;grid-template-rows:repeat(2,minmax(0,1fr))!important;gap:1px!important;overflow:visible!important}
   html[data-landscape-ui='1'] body.skirmish-active .skirmish-formation-cell{min-height:0!important;height:auto!important;font-size:10px!important;line-height:1!important}
 }
+
+/* Skirmish aftermath viewport ownership formerly injected by battle-route.mjs. */
+@media (orientation:landscape) {
+  html[data-landscape-ui='1'] body.skirmish-active.compact-aftermath-active .resource-toast,
+  html[data-landscape-ui='1'] body.skirmish-active.compact-aftermath-active .battle-toast {
+    display:none!important;
+  }
+  html[data-landscape-ui='1'] body.skirmish-active.compact-aftermath-active .skirmish-aftermath-columns > section[hidden] {
+    display:none!important;
+  }
+}
+
+@media (orientation:landscape) and (max-width:980px) and (max-height:520px) {
+  html[data-landscape-ui='1'] body.skirmish-active.compact-aftermath-active .skirmish-aftermath {
+    width:100vw!important;
+    height:100dvh!important;
+    min-height:0!important;
+    max-height:100dvh!important;
+    box-sizing:border-box!important;
+  }
+  html[data-landscape-ui='1'] body.skirmish-active.compact-aftermath-active .skirmish-aftermath-shell {
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    max-height:100%!important;
+    box-sizing:border-box!important;
+  }
+}
