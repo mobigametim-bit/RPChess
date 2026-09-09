@@ -385,7 +385,7 @@ function captureAnimationGeometry(from, to, moving, capturedPiece) {
     moving: { ...moving },
     movingSrc: sourceImage.getAttribute('src') || sourceImage.currentSrc || sourceImage.src || pieceAsset(moving),
     capturedPiece: capturedPiece ? { ...capturedPiece } : null,
-    capturedSrc: targetImage?.getAttribute('src') || targetImage?.currentSrc || targetImage.src || (capturedPiece ? pieceAsset(capturedPiece) : null),
+    capturedSrc: targetImage?.getAttribute('src') || targetImage?.currentSrc || targetImage?.src || (capturedPiece ? pieceAsset(capturedPiece) : null),
     capturedRect: targetImage?.getBoundingClientRect() || null
   };
 }
