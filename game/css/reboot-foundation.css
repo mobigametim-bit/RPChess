@@ -451,3 +451,16 @@ html[data-reduced-motion='1'] *::after {
   .reboot-language-options { grid-template-columns: 1fr; }
   .reboot-language-option { min-height: 82px; }
 }
+
+/* Portrait orientation lock is the only active layout in supported portrait viewports. */
+@media (orientation: portrait) and (max-width: 1180px) {
+  html[data-landscape-ui='1'],
+  html[data-landscape-ui='1'] body {
+    height: 100dvh;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+  html[data-landscape-ui='1'] body > :not(.landscape-orientation-lock) {
+    display: none !important;
+  }
+}
