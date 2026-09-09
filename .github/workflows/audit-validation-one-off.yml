@@ -7,13 +7,10 @@ on:
     paths:
       - .github/workflows/audit-validation-one-off.yml
 
-permissions:
-  contents: write
-
 jobs:
-  validate:
+  diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,18 +21,10 @@ jobs:
           node-version: '22'
           cache: npm
 
-      - name: Restore runtime asset cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm/rpchess-runtime-assets-v1
-          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
-          restore-keys: |
-            rpchess-runtime-assets-v1-${{ runner.os }}-
-
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Separate combat information rail from board
+      - name: Apply candidate grid separation
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -44,7 +33,7 @@ jobs:
           old="    grid-template-columns: calc(100vw - 100dvh) 100dvh !important;\n    grid-template-rows: auto minmax(0, 1fr) minmax(86px, .42fr) !important;\n    gap: 0 !important;"
           new="    grid-template-columns: calc(100vw - 100dvh - 4px) 100dvh !important;\n    grid-template-rows: auto minmax(0, 1fr) minmax(86px, .42fr) !important;\n    gap: 0 4px !important;"
           if t.count(old)!=1:
-              raise SystemExit(f'expected one Classic board-first grid contract, got {t.count(old)}')
+              raise SystemExit(f'expected one Classic grid contract, got {t.count(old)}')
           p.write_text(t.replace(old,new,1))
           PY
 
@@ -56,13 +45,29 @@ jobs:
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
 
-      - name: Narrow responsive proof to 1024x768 RU combat
+      - name: Narrow test and instrument combat geometry
         run: |
-          cp tests/responsive-viewport-browser.cjs /tmp/responsive-viewport-browser.cjs
           python - <<'PY'
           from pathlib import Path
           p=Path('tests/responsive-viewport-browser.cjs')
           t=p.read_text()
+          assertion="    assert(combatPanel.gap >= 4, `${label}: combat information panel must not touch the board`);"
+          diagnostic=(
+              "    console.log('COMBAT_DIAG', JSON.stringify(await page.evaluate(() => {\n"
+              "      const shell=document.querySelector('.classic-shell');\n"
+              "      const party=document.querySelector('.classic-party-panel');\n"
+              "      const main=document.querySelector('.classic-main');\n"
+              "      const board=document.querySelector('[data-chess-board]');\n"
+              "      const rect=(node)=>{const r=node?.getBoundingClientRect();return r?{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}:null};\n"
+              "      const style=(node)=>node?getComputedStyle(node):null;\n"
+              "      const ss=style(shell),ps=style(party),ms=style(main),bs=style(board);\n"
+              "      return {shell:rect(shell),party:rect(party),main:rect(main),board:rect(board),shellGrid:ss?.gridTemplateColumns,shellGap:ss?.gap,shellColumnGap:ss?.columnGap,partyWidth:ps?.width,partyMarginRight:ps?.marginRight,partyTransform:ps?.transform,partyPosition:ps?.position,partyGridColumn:ps?.gridColumn,mainWidth:ms?.width,mainMarginLeft:ms?.marginLeft,boardWidth:bs?.width};\n"
+              "    })));\n"
+              + assertion
+          )
+          if assertion not in t:
+              raise SystemExit('combat assertion missing')
+          t=t.replace(assertion,diagnostic,1)
           marker='\n(async () => {'
           pos=t.rfind(marker)
           if pos<0:
@@ -70,68 +75,15 @@ jobs:
           suffix=(
               "\n(async () => {\n"
               "  const browser = await chromium.launch({ headless: true });\n"
-              "  try {\n"
-              "    await auditPrepAndCombat(browser, 1024, 768, 'ru');\n"
-              "    console.log('Targeted 1024x768 RU combat geometry: PASS');\n"
-              "  } finally {\n"
-              "    await browser.close();\n"
-              "  }\n"
+              "  try { await auditPrepAndCombat(browser, 1024, 768, 'ru'); }\n"
+              "  finally { await browser.close(); }\n"
               "})().catch((error) => { console.error(error.stack || error); process.exitCode = 1; });\n"
           )
           p.write_text(t[:pos]+suffix)
           PY
 
-      - name: Run targeted combat browser proof
+      - name: Run diagnostic Chromium contract
         env:
           RPCHESS_GATE_PREFIX: /RPChess
           RPCHESS_BROWSER_TEST: responsive-viewport-browser.cjs
-        run: npm run test:browser
-
-      - name: Restore full responsive contract
-        if: always()
-        run: cp /tmp/responsive-viewport-browser.cjs tests/responsive-viewport-browser.cjs
-
-      - name: Commit combat geometry fix and documentation checkpoint
-        run: |
-          git config user.name 'mobigametim-bit'
-          git config user.email 'mobigametim@gmail.com'
-          git add game/css/landscape-ui-redesign.css
-          git commit -m 'fix: separate combat information rail from board'
-          CODE_SHA=$(git rev-parse HEAD)
-          export CODE_SHA
-          python - <<'PY'
-          import os,re
-          from pathlib import Path
-          p=Path('docs/FULL_PROJECT_REVIEW_REPORT.md')
-          t=p.read_text()
-          sha=os.environ['CODE_SHA']
-          t=re.sub(r'\*\*Current remediation code head:\*\* `[^`]+`', f'**Current remediation code head:** `{sha}`', t, count=1)
-          needle='A targeted 844×390 RU menu + Chronicle browser proof passed before this commit.'
-          replacement=(needle + f' Full responsive run `34373136145` then exposed a separate `1024×768` RU combat ownership defect: the Party information rail touched the square board with a 0px gap. `{sha[:8]}` preserves the board at exactly `100dvh` and flush right while shrinking the left rail by 4px and adding a 4px inter-column gap. Targeted `1024×768` RU Skirmish/Battle combat geometry passed before commit.')
-          if needle in t:
-              t=t.replace(needle,replacement,1)
-          verify_old='Full responsive/all-browser verification remains pending after this checkpoint.'
-          verify_new=f'Full responsive/all-browser verification remains pending after this checkpoint. Run `34373136145` progressed beyond Menu/Chronicle and exposed the 1024×768 RU zero-gap combat rail; targeted combat verification passed for `{sha[:8]}`.'
-          if verify_old in t:
-              t=t.replace(verify_old,verify_new,1)
-          t=t.replace('1. Rerun the full strengthened responsive RU/EN/boundary matrix after the validated Chronicle owner fix; address only the next evidence-backed geometry failure, if any.', '1. Rerun the full strengthened responsive RU/EN/boundary matrix after the validated combat-rail separation; address only the next evidence-backed geometry failure, if any.')
-          t=t.replace('1. Run the full responsive RU/EN/boundary coverage after the targeted Chronicle PASS; fix only any next evidence-backed defect.', '1. Run the full responsive RU/EN/boundary coverage after the targeted combat PASS; fix only any next evidence-backed defect.')
-          p.write_text(t)
-          PY
-          git add docs/FULL_PROJECT_REVIEW_REPORT.md
-          git commit -m 'docs: record combat viewport remediation milestone'
-          git push origin HEAD:audit/full-project-review-2026-09-08
-
-      - name: Run canonical local gate
-        run: npm run gate:local
-
-      - name: Run full responsive contract
-        env:
-          RPCHESS_GATE_PREFIX: /RPChess
-          RPCHESS_BROWSER_TEST: responsive-viewport-browser.cjs
-        run: npm run test:browser
-
-      - name: Run all Chromium contracts
-        env:
-          RPCHESS_GATE_PREFIX: /RPChess
         run: npm run test:browser
