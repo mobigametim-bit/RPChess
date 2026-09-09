@@ -23,13 +23,18 @@ let busy = false;
 
 function audio() { return globalThis.RPChessRebootAudio; }
 
-function ensureCss() {
-  if (document.querySelector('[data-settlement-css]')) return;
+function ensureStylesheet(marker, href) {
+  if (document.querySelector(`[${marker}]`)) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/settlement.css?v=20260908-owner-1';
-  link.dataset.settlementCss = '';
+  link.href = href;
+  link.setAttribute(marker, '');
   document.head.append(link);
+}
+
+function ensureCss() {
+  ensureStylesheet('data-settlement-css', 'css/settlement.css?v=20260909-owner2');
+  ensureStylesheet('data-settlement-compact-css', 'css/settlement-compact.css?v=20260909-owner1');
 }
 
 function applyStaticCopy() {
