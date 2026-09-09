@@ -7,13 +7,18 @@ let activeRun = null;
 
 function audio() { return globalThis.RPChessRebootAudio; }
 
-function ensureCss() {
-  if (document.querySelector('[data-endless-run-css]')) return;
+function ensureStylesheet(marker, href) {
+  if (document.querySelector(`[${marker}]`)) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/endless-run.css?v=20260830-endless-1';
-  link.dataset.endlessRunCss = '';
+  link.href = href;
+  link.setAttribute(marker, '');
   document.head.append(link);
+}
+
+function ensureCss() {
+  ensureStylesheet('data-endless-run-css', 'css/endless-run.css?v=20260909-owner2');
+  ensureStylesheet('data-endless-run-compact-css', 'css/endless-run-compact.css?v=20260909-owner1');
 }
 
 function ensureScreen() {
