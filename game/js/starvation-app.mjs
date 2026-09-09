@@ -1,10 +1,12 @@
 import { readRun, writeRun } from './run-persistence.mjs';
 import { acknowledgeStarvation, hasPendingStarvation } from './starvation-core.mjs';
+import { subscribe, t, translateLegacy } from './i18n.mjs';
 
 let screen = null;
 let activeRun = null;
 
 function audio() { return globalThis.RPChessRebootAudio; }
+function contentText(value) { return translateLegacy(String(value || '')); }
 
 function ensureStylesheet(marker, href) {
   if (document.querySelector(`[${marker}]`)) return;
@@ -20,6 +22,13 @@ function ensureCss() {
   ensureStylesheet('data-starvation-compact-css', 'css/starvation-compact.css?v=20260909-owner1');
 }
 
+function applyStaticCopy() {
+  if (!screen) return;
+  screen.setAttribute('aria-label', t('starvation.ariaLabel'));
+  const kicker = screen.querySelector('.reboot-eyebrow');
+  if (kicker) kicker.textContent = t('starvation.kicker');
+}
+
 function ensureScreen() {
   if (screen) return screen;
   const app = document.querySelector('#app');
@@ -28,22 +37,22 @@ function ensureScreen() {
   screen = document.createElement('main');
   screen.className = 'starvation-screen';
   screen.dataset.starvationScreen = '';
-  screen.setAttribute('aria-label', 'Последствия голода');
   screen.hidden = true;
   screen.innerHTML = `
     <div class="starvation-shell">
       <img class="starvation-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
       <section class="starvation-panel ui-panel-safe" aria-live="polite">
-        <div class="reboot-eyebrow">ПРИПАСЫ ЗАКОНЧИЛИСЬ</div>
-        <h1 data-starvation-title>ГОЛОД</h1>
+        <div class="reboot-eyebrow"></div>
+        <h1 data-starvation-title></h1>
         <img class="starvation-portrait" data-starvation-portrait alt="">
         <div class="starvation-piece" data-starvation-piece></div>
         <h2 data-starvation-name></h2>
         <p data-starvation-text></p>
-        <button class="reboot-button reboot-button--primary starvation-button" type="button" data-starvation-continue>ПРОДОЛЖИТЬ ПУТЬ</button>
+        <button class="reboot-button reboot-button--primary starvation-button" type="button" data-starvation-continue></button>
       </section>
     </div>`;
   app.append(screen);
+  applyStaticCopy();
   screen.querySelector('[data-starvation-continue]')?.addEventListener('click', continueFromStarvation);
   return screen;
 }
@@ -68,7 +77,9 @@ function render(run) {
   const victim = (run?.roster || []).find((character) => character.id === choice?.starvationVictimId);
   if (!victim) return false;
 
+  applyStaticCopy();
   const kingDied = Boolean(choice.starvationKingDied || victim.isRunKing);
+  const displayName = victim.name ? contentText(victim.name) : t('starvation.fighterFallback');
   const title = root.querySelector('[data-starvation-title]');
   const portrait = root.querySelector('[data-starvation-portrait]');
   const piece = root.querySelector('[data-starvation-piece]');
@@ -76,19 +87,17 @@ function render(run) {
   const text = root.querySelector('[data-starvation-text]');
   const button = root.querySelector('[data-starvation-continue]');
 
-  if (title) title.textContent = kingDied ? 'КОРОЛЬ ПОГИБ ОТ ГОЛОДА' : 'ГОЛОД';
+  if (title) title.textContent = kingDied ? t('starvation.kingTitle') : t('starvation.title');
   if (portrait) {
     portrait.src = victim.portrait || victim.pieceArt || '';
-    portrait.alt = victim.name || 'Погибший боец';
+    portrait.alt = victim.name ? displayName : t('starvation.victimFallback');
   }
   if (piece) {
     piece.textContent = victim.pieceType === 'king' ? '♔' : ({ pawn: '♙', knight: '♘', bishop: '♗', rook: '♖', queen: '♕' }[victim.pieceType] || '');
   }
-  if (name) name.textContent = victim.name || 'Боец';
-  if (text) text.textContent = kingDied
-    ? `${victim.name} пал во время перехода без припасов. Путешествие этого отряда завершено.`
-    : `Ваш соратник ${victim.name} умер от голода. Похоронив его и водрузив на могилу памятный камень, отряд отправляется дальше с тяжелым сердцем.`;
-  if (button) button.textContent = kingDied ? 'ИТОГИ ЗАБЕГА' : 'ПРОДОЛЖИТЬ ПУТЬ';
+  if (name) name.textContent = displayName;
+  if (text) text.textContent = t(kingDied ? 'starvation.kingText' : 'starvation.companionText', { name:displayName });
+  if (button) button.textContent = kingDied ? t('starvation.summary') : t('starvation.continue');
   return true;
 }
 
@@ -130,8 +139,13 @@ function continueFromStarvation() {
 }
 
 ensureScreen();
+subscribe(() => {
+  applyStaticCopy();
+  if (screen && !screen.hidden && activeRun && hasPendingStarvation(activeRun)) render(activeRun);
+});
 
 globalThis.RPChessStarvation = Object.freeze({
   open,
+  render,
   get run() { return activeRun; }
 });
