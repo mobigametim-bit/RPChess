@@ -5,10 +5,11 @@ function memoryStorage(){const data=new Map();return{getItem:k=>data.has(k)?data
   const rating=await import(pathToFileURL(path.join(game,'js/player-rating.mjs')).href);
   const persistence=await import(pathToFileURL(path.join(game,'js/run-persistence.mjs')).href);
   const travelSource=fs.readFileSync(path.join(game,'js/travel-choice-app.mjs'),'utf8');
+  const ratingRuntimeSource=fs.readFileSync(path.join(game,'js/player-rating-runtime.mjs'),'utf8');
   const settleToken='globalThis.RPChessPower?.settle?.(activeRun)';
-  const clearToken='activeRun=writeRun({...activeRun,activeTravelChoice:null})';
-  assert(travelSource.includes(settleToken),'Travel lifecycle must explicitly settle Power before clearing a completed combat route');
-  assert(travelSource.indexOf(settleToken)<travelSource.indexOf(clearToken),'Power settlement must happen before activeTravelChoice cleanup');
+  assert(!travelSource.includes(settleToken),'Travel must not duplicate Power settlement owned by the semantic Power runtime');
+  assert(ratingRuntimeSource.includes("addEventListener('rpchess:combat-completed', sync)")&&ratingRuntimeSource.includes("addEventListener('rpchess:puzzle-resolved', sync)"),'Power runtime must settle rated outcomes from semantic completion events');
+  assert(ratingRuntimeSource.includes('settleCurrentRatedOutcome(run);'),'Power semantic owner must settle the current rated outcome before result rendering');
   const baseChoice={id:'route-1',type:'skirmish',step:1,stars:2,seed:'seed',flavor:'test',mechanicalHint:'test',combatCountAtSelection:0};
   assert.strictEqual(persistence.recoverCompletedCombatChoice({...baseChoice,difficultyModel:'power-v1'},1,0)?.id,'route-1','completed power-v1 route must survive hydration until Elo settlement');
   assert.strictEqual(persistence.recoverCompletedCombatChoice(baseChoice,1,0),null,'legacy completed route should still auto-recover');
