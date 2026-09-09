@@ -59,15 +59,20 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
 
   const app=fs.readFileSync(path.join(game,'js/endless-run-app.mjs'),'utf8');
   const css=fs.readFileSync(path.join(game,'css/endless-run.css'),'utf8');
+  const compactCss=fs.readFileSync(path.join(game,'css/endless-run-compact.css'),'utf8');
+  const polishSource=fs.readFileSync(path.join(game,'js/post-pages-ui-polish.mjs'),'utf8');
   const starvation=fs.readFileSync(path.join(game,'js/starvation-app.mjs'),'utf8');
   const events=fs.readFileSync(path.join(game,'js/events-app.mjs'),'utf8');
   const route=fs.readFileSync(path.join(game,'js/battle-route.mjs'),'utf8');
   for(const token of ['ЗАБЕГ ЗАВЕРШЁН','ЗАРАБОТАНО ЗОЛОТА','ИТОГОВАЯ МОЩЬ','НОВАЯ ИГРА','ГЛАВНОЕ МЕНЮ','scene_defeat.jpg','queueMicrotask(() => open(storedRun))','RPChessEndlessRun'])assert(app.includes(token),`endless app missing ${token}`);
+  assert(app.includes('css/endless-run-compact.css?v=20260909-owner1'),'Endless Run owner must load its compact stylesheet after base CSS');
+  assert(compactCss.includes('body.endless-run-active .resource-hud{display:none!important}'),'Endless Run owner compact stylesheet must suppress the floating resource HUD on the final summary');
+  assert(!polishSource.includes('endless-run-active'),'post-pages compatibility module must not retain Endless Run presentation ownership');
   assert(starvation.includes("button.textContent = kingDied ? 'ИТОГИ ЗАБЕГА'"));
   assert(starvation.includes('RPChessEndlessRun?.open?.(current)'));
   assert(events.includes("if(activeRun.ended)button.textContent=localizeEventSource('ИТОГИ ЗАБЕГА')"),'Event end-of-run CTA must stay localized while preserving Endless Run routing');
   assert(events.includes('RPChessEndlessRun?.open?.(current)'));
   assert(route.includes("import './endless-run-app.mjs'"));
   assert(!css.includes('ui_panel_frame.png')&&!css.includes('ui_panel_wide.png'));
-  console.log('First Complete Endless Run statistics, reset, Power persistence and final summary contract: PASS');
+  console.log('First Complete Endless Run statistics, reset, Power persistence and owner-level final summary contract: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
