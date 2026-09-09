@@ -103,7 +103,8 @@ class MemoryStorage {
   }
   assert(app.includes("import { subscribe, t, translateLegacy } from './i18n.mjs'"),'Roster owner must render UI keys and content translations explicitly');
   for(const key of ['roster.ariaLabel','roster.filter.all','roster.journey','roster.returnSettlement','roster.commandPoints','roster.inFormation','piece.king','status.wounded'])assert(uiSource.includes(`'${key}'`),`localization registry missing Roster key: ${key}`);
-  for(const key of ['roster.ariaLabel','roster.filter.all','roster.journey','roster.commandPoints','roster.cardAria'])assert(app.includes(`t('${key}'`)||app.includes(`t(\`${key}`),`Roster owner must call t() for ${key}`);
+  for(const key of ['roster.ariaLabel','roster.journey','roster.commandPoints','roster.cardAria'])assert(app.includes(`t('${key}'`)||app.includes(`t(\`${key}`),`Roster owner must call t() for ${key}`);
+  assert(app.includes('t(`roster.filter.${filter}`)'),'Roster owner must derive filter labels from the keyed localization family');
   assert(app.includes('subscribe(() =>')&&app.includes('contentText(heroNoteForId(character.id) || character.description)'),'Roster language changes must rerender owner UI and translated content without relying on document mutation');
   assert(!/journeyButton\.textContent\s*=\s*['"](?:Вернуться в поселение|В путь|Загрузка пути…)/.test(app),'Roster journey labels must not be hardcoded in runtime');
   assert(!/status\.textContent\s*=\s*STATUS_LABELS\[character\.status\]/.test(app),'Roster status presentation must use localized owner labels');
