@@ -92,6 +92,7 @@ class MemoryStorage {
   const html = fs.readFileSync(path.join(game, 'index.html'), 'utf8');
   const app = fs.readFileSync(path.join(game, 'js/roster-app.mjs'), 'utf8');
   const persistenceSource = fs.readFileSync(path.join(game, 'js/run-persistence.mjs'), 'utf8');
+  const uiSource = fs.readFileSync(path.join(game, 'localization/ui.mjs'), 'utf8');
   const css = fs.readFileSync(path.join(game, 'css/roster.css'), 'utf8');
   const foundationCss = fs.readFileSync(path.join(game, 'css/reboot-foundation.css'), 'utf8');
   for (const token of ['data-roster-screen', 'data-continue-run', 'data-roster-detail', 'data-roster-list', 'data-roster-filter="dead"', 'data-roster-travel', 'Начать путешествие', 'js/roster-app.mjs', 'css/roster.css']) {
@@ -100,6 +101,12 @@ class MemoryStorage {
   for (const forbidden of ['Применить состав', 'Именные фигуры, которые путешествуют вместе с вашим королём', 'Обязательная фигура текущего забега.', 'Готов к участию в будущих сражениях.']) {
     assert(!app.includes(forbidden), `removed Roster copy leaked into runtime: ${forbidden}`);
   }
+  assert(app.includes("import { subscribe, t, translateLegacy } from './i18n.mjs'"),'Roster owner must render UI keys and content translations explicitly');
+  for(const key of ['roster.ariaLabel','roster.filter.all','roster.journey','roster.returnSettlement','roster.commandPoints','roster.inFormation','piece.king','status.wounded'])assert(uiSource.includes(`'${key}'`),`localization registry missing Roster key: ${key}`);
+  for(const key of ['roster.ariaLabel','roster.filter.all','roster.journey','roster.commandPoints','roster.cardAria'])assert(app.includes(`t('${key}'`)||app.includes(`t(\`${key}`),`Roster owner must call t() for ${key}`);
+  assert(app.includes('subscribe(() =>')&&app.includes('contentText(heroNoteForId(character.id) || character.description)'),'Roster language changes must rerender owner UI and translated content without relying on document mutation');
+  assert(!/journeyButton\.textContent\s*=\s*['"](?:Вернуться в поселение|В путь|Загрузка пути…)/.test(app),'Roster journey labels must not be hardcoded in runtime');
+  assert(!/status\.textContent\s*=\s*STATUS_LABELS\[character\.status\]/.test(app),'Roster status presentation must use localized owner labels');
   assert(!/data-roster[^>]*type=["']checkbox/i.test(html), 'Roster must not use checkbox selection');
   assert(app.includes("rpchess.reboot.v1.run") || persistenceSource.includes("rpchess.reboot.v1.run"), 'Roster run persistence key missing');
   assert(persistenceSource.includes('hydrateCurrentRosterCopy'), 'saved runs must refresh current static character copy');
@@ -120,7 +127,7 @@ class MemoryStorage {
   assert(!fs.existsSync(path.join(game,'js/post-pages-ui-polish.mjs')), 'retired post-pages presentation shim must stay deleted');
   assert(!fs.existsSync(path.join(game,'js/presentation-bootstrap.mjs')), 'retired presentation bootstrap must stay deleted');
 
-  console.log('Roster model, persistence hydration, race-safe Travel Choice routing and frameless static UX contract: PASS');
+  console.log('Roster model, persistence hydration, owner-keyed RU/EN rendering, race-safe Travel Choice routing and frameless static UX contract: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;
