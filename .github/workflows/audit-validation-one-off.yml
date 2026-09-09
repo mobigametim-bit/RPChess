@@ -35,28 +35,31 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Align Event hero lock regression
+      - name: Align Starvation localization regression
         run: |
           python - <<'PY'
           from pathlib import Path
-          path = Path('tests/ui-redesign-final.cjs')
+          path = Path('tests/starvation.cjs')
           text = path.read_text()
-          old = "  assert(events.includes(\"if (!hero) return { hero:null, name, state:'missing', locked:true, label:'🔒' }\"),'missing Event hero must show only the lock in the upper strip');"
-          new = "  assert(events.includes(\"if (!hero) return { hero:null, name, state:'missing', locked:true }\")&&events.includes(\"if(heroState.state==='missing')return '🔒';\"),'missing Event hero must preserve semantic missing state and render only the lock in the upper strip');"
+          import_anchor = "  const persistence = await import(pathToFileURL(path.join(game, 'js/run-persistence.mjs')).href);"
+          if "localization/ui.mjs')).href" not in text:
+              text = text.replace(import_anchor, import_anchor + "\n  const { UI_MESSAGES } = await import(pathToFileURL(path.join(game, 'localization/ui.mjs')).href);", 1)
+          old = "  assert(uiSource.includes(\"'travel.costStarvation': 'Стоимость пути:\") && uiSource.includes('starvation will trigger on travel.'), 'RU/EN Travel Starvation warning copy must live in the localization registry');"
+          new = "  assert(UI_MESSAGES.ru['travel.costStarvation']?.includes('сработает голод') && UI_MESSAGES.en['travel.costStarvation']?.includes('starvation will trigger on travel.'), 'RU/EN Travel Starvation warning copy must live in the localization registry');"
           if text.count(old) != 1:
-              raise SystemExit(f'expected one stale Event missing-hero assertion, got {text.count(old)}')
+              raise SystemExit(f'expected one formatting-sensitive Starvation localization assertion, got {text.count(old)}')
           path.write_text(text.replace(old, new, 1))
           PY
 
-      - name: Run targeted UI contract
-        run: node tests/ui-redesign-final.cjs
+      - name: Run targeted Starvation contract
+        run: node tests/starvation.cjs
 
-      - name: Commit validated UI regression fix
+      - name: Commit validated Starvation regression fix
         run: |
           git config user.name 'mobigametim-bit'
           git config user.email 'mobigametim@gmail.com'
-          git add tests/ui-redesign-final.cjs
-          git commit -m 'test: align Event hero lock presentation contract'
+          git add tests/starvation.cjs
+          git commit -m 'test: validate Starvation localization semantically'
           git push origin HEAD:audit/full-project-review-2026-09-08
 
       - name: Run canonical local gate
