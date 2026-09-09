@@ -3,10 +3,17 @@ const assert=require('assert'),fs=require('fs'),path=require('path'),{pathToFile
   const root=path.resolve(__dirname,'..');
   const indexSource=fs.readFileSync(path.join(root,'game/index.html'),'utf8');
   const skirmishAppSource=fs.readFileSync(path.join(root,'game/js/skirmish-app.mjs'),'utf8');
+  const uiSource=fs.readFileSync(path.join(root,'game/localization/ui.mjs'),'utf8');
   const finalUiSource=fs.readFileSync(path.join(root,'game/js/ui-redesign-final.mjs'),'utf8');
   const compactCss=fs.readFileSync(path.join(root,'game/css/skirmish-compact.css'),'utf8');
   const routeSource=fs.readFileSync(path.join(root,'game/js/battle-route.mjs'),'utf8');
-  assert(skirmishAppSource.includes("aftermathButton.textContent='Продолжить путь'"),'Skirmish aftermath CTA must say Продолжить путь');
+  assert(skirmishAppSource.includes("import { subscribe, t, translateLegacy } from './i18n.mjs'"),'Skirmish owner must consume semantic i18n directly');
+  assert(skirmishAppSource.includes("aftermathButton.textContent=t('skirmish.aftermath.continue')"),'Skirmish aftermath CTA must be owner-keyed');
+  assert(skirmishAppSource.includes("function contentText(value){return translateLegacy"),'Skirmish encounter/name content must translate explicitly at render time');
+  assert(skirmishAppSource.includes("case'minimum_force':return t('skirmish.reason.minimumForce')"),'minimum-force UI reason must be distinct and owner-keyed');
+  assert(skirmishAppSource.includes('subscribe(()=>')&&skirmishAppSource.includes('renderStaticCopy()'),'Skirmish owner must refresh its own presentation when language changes');
+  assert(skirmishAppSource.includes("t('skirmish.woundToast',{name:characterName(character)})")&&skirmishAppSource.includes("t('skirmish.runEnd.text'"),'Skirmish wound/run-end composed copy must be owner-keyed');
+  for(const key of ["'skirmish.ariaLabel'","'skirmish.reason.minimumForce'","'skirmish.aftermath.victory'","'skirmish.runEnd.text'"])assert(uiSource.includes(key),`Skirmish i18n registry missing ${key}`);
   assert(skirmishAppSource.includes("function leaveAftermath(){audio()?.click?.();resetBattleState();globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open'"),'Skirmish aftermath must route directly to Travel Choice');
   assert(finalUiSource.includes("import { placeArmy } from './skirmish-core.mjs'")&&finalUiSource.includes("placeArmy(members,color,{seed:`${encounter.seed}:player`})"),'Skirmish preview must use canonical placeArmy with the exact player-formation seed used by the real battle plan');
   assert(indexSource.includes('<footer class="skirmish-actionbar" aria-label="Параметры боевого отряда">'),'Skirmish owner source must render the actionbar in its stable shell slot');
@@ -41,5 +48,5 @@ const assert=require('assert'),fs=require('fs'),path=require('path'),{pathToFile
   const run={id:'run-test',roster,ended:false};
   const winBlack=skirmish.applyBattleOutcome(run,{capturedIds:['hero.aldric_wall'],status:{type:'checkmate',winner:'b'},playerColor:'b'});assert.strictEqual(winBlack.roster.find(c=>c.id==='hero.aldric_wall').status,'wounded');assert.strictEqual(winBlack.roster.find(c=>c.isRunKing).status,'healthy');assert.strictEqual(winBlack.ended,false);
   const lossBlack=skirmish.applyBattleOutcome(run,{capturedIds:[],status:{type:'checkmate',winner:'w'},playerColor:'b'});assert.strictEqual(lossBlack.roster.find(c=>c.isRunKing).status,'healthy','checkmate must not kill the RPG King');assert.strictEqual(lossBlack.ended,false,'Skirmish defeat must continue the run');assert.strictEqual(lossBlack.endReason,null);assert.strictEqual(lossBlack.lastSkirmish.kingDied,false);
-  console.log('Skirmish minimum force, owner-level compact formation/aftermath, stable actionbar slot, preview/runtime formation parity, 12-level legal formations, Black-side wounds and non-lethal checkmate defeat: PASS');
+  console.log('Skirmish minimum force, owner-keyed presentation, owner-level compact formation/aftermath, stable actionbar slot, preview/runtime formation parity, 12-level legal formations, Black-side wounds and non-lethal checkmate defeat: PASS');
 })().catch(error=>{console.error(error.stack||error);process.exitCode=1});
