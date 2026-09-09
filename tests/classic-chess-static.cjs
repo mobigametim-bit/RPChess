@@ -8,12 +8,12 @@ const html = fs.readFileSync(path.join(game, 'index.html'), 'utf8');
 const foundationCss = fs.readFileSync(path.join(game, 'css/reboot-foundation.css'), 'utf8');
 const css = fs.readFileSync(path.join(game, 'css/classic-chess.css'), 'utf8');
 const polishCss = fs.readFileSync(path.join(game, 'css/chess-ai-polish.css'), 'utf8');
-const postPagesSource = fs.readFileSync(path.join(game, 'js/post-pages-ui-polish.mjs'), 'utf8');
 const redesignSource = fs.readFileSync(path.join(game, 'js/ui-redesign-final.mjs'), 'utf8');
 const rosterCss = fs.readFileSync(path.join(game, 'css/roster.css'), 'utf8');
 const uxCss = fs.readFileSync(path.join(game, 'css/ux-consistency.css'), 'utf8');
 const uxApp = fs.readFileSync(path.join(game, 'js/ux-consistency.mjs'), 'utf8');
 const app = fs.readFileSync(path.join(game, 'js/classic-chess-app.mjs'), 'utf8');
+const classicUi = fs.readFileSync(path.join(game, 'localization/classic-ui.mjs'), 'utf8');
 const engine = fs.readFileSync(path.join(game, 'js/classic-chess-engine.mjs'), 'utf8');
 const ai = fs.readFileSync(path.join(game, 'js/chess-ai-adapter.mjs'), 'utf8');
 
@@ -31,6 +31,10 @@ assert(html.includes('css/chess-ai-polish.css?v=20260827-frameless-1'), 'framele
 assert(html.includes('js/classic-chess-app.mjs'), 'Classic Chess app is not loaded');
 assert(app.includes("from './classic-chess-engine.mjs'"), 'Classic app does not use standalone engine');
 assert(app.includes("from './chess-ai-adapter.mjs'"), 'Classic app does not use ChessAIAdapter boundary');
+assert(app.includes("from './i18n.mjs'") && app.includes("from '../localization/classic-ui.mjs'"), 'Classic owner must import language state plus its semantic registry');
+assert(app.includes('subscribe(() => { renderStaticCopy(); render(); });'), 'Classic owner must rerender dynamic presentation on language changes');
+assert(classicUi.includes('CLASSIC_UI_MESSAGES') && classicUi.includes("'classic.boardCell'") && classicUi.includes("'classic.result.drawThreefoldText'"), 'Classic semantic RU/EN registry must cover board and dynamic result presentation');
+for (const forbidden of ['Локальная партия · два игрока','Ходов пока нет','Компьютер думает…','Мат — победа ${sideName']) assert(!app.includes(forbidden), `Classic owner still hardcodes translated presentation: ${forbidden}`);
 assert(app.includes('globalThis.RPChessClassicChess'), 'Classic app acceptance API is missing');
 assert(app.includes('globalThis.RPChessChessAI'), 'Chess AI acceptance API is missing');
 assert(app.includes('generated_assets/unit_${PIECE_ASSETS[piece.type]}_'), 'production piece assets are not used');
@@ -96,7 +100,6 @@ assert(polishCss.includes('body.run-combat-board-active') && polishCss.includes(
 assert(!polishCss.includes(':has(>.classic-panel--moves)') && !polishCss.includes('>.classic-panel--moves'), 'run-combat CSS must not depend on Journal being reparented into Party');
 assert(!fs.existsSync(path.join(game,'js/content/post-pages-ui-review2.mjs')), 'superseded review2 compatibility module must be deleted');
 assert(!redesignSource.includes('movePanelHome') && !redesignSource.includes('party.append(movePanel)'), 'shared redesign runtime must not reparent Classic Journal');
-assert(!postPagesSource.includes('movesHome') && !postPagesSource.includes('syncCombat()') && !postPagesSource.includes('party.append(moves)'), 'post-pages polish must not keep a second Classic Journal reparent path');
 assert(!fs.existsSync(path.join(game,'js/content/post-pages-ui-polish-constraints.mjs')), 'superseded constraints compatibility module must be deleted');
 
 for (const side of ['player', 'enemy']) {
@@ -105,4 +108,4 @@ for (const side of ['player', 'enemy']) {
   }
 }
 
-console.log('Classic Chess + AI external-coordinate / stable-Journal / frameless production polish static contract: PASS');
+console.log('Classic Chess + AI owner-localized / external-coordinate / stable-Journal / frameless static contract: PASS');
