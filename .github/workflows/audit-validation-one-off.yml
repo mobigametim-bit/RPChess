@@ -42,26 +42,7 @@ jobs:
           p.write_text(t)
           p=Path('game/css/landscape-ui-redesign.css')
           t=p.read_text()
-          t += """
-
-/* DIAGNOSTIC owner-final Classic rail */
-@media (orientation: landscape) {
-  html[data-landscape-ui='1'] .classic-shell {
-    width:100vw!important;
-    max-width:none!important;
-    height:100dvh!important;
-    margin:0!important;
-    display:grid!important;
-    grid-template-columns:calc(100vw - 100dvh - 4px) 100dvh!important;
-    grid-template-rows:auto minmax(0,1fr) minmax(86px,.42fr)!important;
-    column-gap:4px!important;
-    row-gap:0!important;
-    align-items:stretch!important;
-  }
-  html[data-landscape-ui='1'] .classic-party-panel,
-  html[data-landscape-ui='1'] .classic-panel--moves { min-width:0!important; max-width:100%!important; }
-}
-"""
+          t += "\n\n/* DIAGNOSTIC owner-final Classic rail */\n@media (orientation: landscape) {\n  html[data-landscape-ui='1'] .classic-shell {\n    width:100vw!important;\n    max-width:none!important;\n    height:100dvh!important;\n    margin:0!important;\n    display:grid!important;\n    grid-template-columns:calc(100vw - 100dvh - 4px) 100dvh!important;\n    grid-template-rows:auto minmax(0,1fr) minmax(86px,.42fr)!important;\n    column-gap:4px!important;\n    row-gap:0!important;\n    align-items:stretch!important;\n  }\n  html[data-landscape-ui='1'] .classic-party-panel,\n  html[data-landscape-ui='1'] .classic-panel--moves { min-width:0!important; max-width:100%!important; }\n}\n"
           p.write_text(t)
           PY
       - name: Build production dist
@@ -77,52 +58,29 @@ jobs:
           p=Path('tests/responsive-viewport-browser.cjs')
           t=p.read_text()
           assertion="    assert(combatPanel.gap >= 4, `${label}: combat information panel must not touch the board`);"
-          diagnostic="""    console.log('CASCADE_DIAG', JSON.stringify(await page.evaluate(async () => {
-      const shell=document.querySelector('.classic-shell');
-      const party=document.querySelector('.classic-party-panel');
-      const board=document.querySelector('[data-chess-board]');
-      const rect=(n)=>{const r=n?.getBoundingClientRect();return r?{left:r.left,right:r.right,width:r.width,top:r.top,bottom:r.bottom}:null};
-      const rules=[];
-      const walk=(ruleList,href,media=[])=>{
-        for(const rule of Array.from(ruleList||[])){
-          if(rule.cssRules){
-            const condition=rule.conditionText||rule.media?.mediaText||'';
-            walk(rule.cssRules,href,condition?[...media,condition]:media);
-          }else if(rule.selectorText?.includes('.classic-shell')){
-            const style=rule.style;
-            const props=['width','max-width','height','margin','display','grid-template-columns','column-gap','gap'];
-            const declared={};
-            for(const prop of props){const value=style.getPropertyValue(prop);if(value)declared[prop]=`${value}${style.getPropertyPriority(prop)?' !important':''}`;}
-            if(Object.keys(declared).length)rules.push({href,selector:rule.selectorText,media,declared});
-          }
-        }
-      };
-      for(const sheet of Array.from(document.styleSheets)){
-        try{walk(sheet.cssRules,sheet.href||'INLINE');}catch(error){rules.push({href:sheet.href||'INLINE',error:String(error)});}
-      }
-      const link=document.querySelector('link[data-landscape-ui-css]');
-      let landscapeText='';
-      let landscapeStatus=null;
-      if(link){try{const response=await fetch(link.href,{cache:'no-store'});landscapeStatus=response.status;landscapeText=await response.text();}catch(error){landscapeText=`FETCH_ERROR:${error}`;}}
-      const cs=getComputedStyle(shell),ps=getComputedStyle(party);
-      return {
-        htmlLandscape:document.documentElement.dataset.landscapeUi||null,
-        linkHref:link?.href||null,
-        landscapeStatus,
-        servedHasDiagnostic:landscapeText.includes('DIAGNOSTIC owner-final Classic rail'),
-        stylesheets:Array.from(document.styleSheets).map(s=>s.href||'INLINE'),
-        shell:rect(shell),party:rect(party),board:rect(board),
-        computed:{grid:cs.gridTemplateColumns,columnGap:cs.columnGap,gap:cs.gap,width:cs.width,margin:cs.margin,padding:cs.padding,partyWidth:ps.width,partyMargin:ps.margin},
-        rules
-      }));
-    }))); 
-""" + assertion
+          js_lines=[
+            "    console.log('CASCADE_DIAG', JSON.stringify(await page.evaluate(async () => {",
+            "      const shell=document.querySelector('.classic-shell');",
+            "      const party=document.querySelector('.classic-party-panel');",
+            "      const board=document.querySelector('[data-chess-board]');",
+            "      const rect=(n)=>{const r=n?.getBoundingClientRect();return r?{left:r.left,right:r.right,width:r.width,top:r.top,bottom:r.bottom}:null};",
+            "      const rules=[];",
+            "      const walk=(ruleList,href,media=[])=>{for(const rule of Array.from(ruleList||[])){if(rule.cssRules){const condition=rule.conditionText||rule.media?.mediaText||'';walk(rule.cssRules,href,condition?[...media,condition]:media);}else if(rule.selectorText?.includes('.classic-shell')){const style=rule.style;const props=['width','max-width','height','margin','display','grid-template-columns','column-gap','gap'];const declared={};for(const prop of props){const value=style.getPropertyValue(prop);if(value)declared[prop]=value+(style.getPropertyPriority(prop)?' !important':'');}if(Object.keys(declared).length)rules.push({href,selector:rule.selectorText,media,declared});}}};",
+            "      for(const sheet of Array.from(document.styleSheets)){try{walk(sheet.cssRules,sheet.href||'INLINE');}catch(error){rules.push({href:sheet.href||'INLINE',error:String(error)});}}",
+            "      const link=document.querySelector('link[data-landscape-ui-css]');",
+            "      let landscapeText='';let landscapeStatus=null;",
+            "      if(link){try{const response=await fetch(link.href,{cache:'no-store'});landscapeStatus=response.status;landscapeText=await response.text();}catch(error){landscapeText='FETCH_ERROR:'+String(error);}}",
+            "      const cs=getComputedStyle(shell),ps=getComputedStyle(party);",
+            "      return {htmlLandscape:document.documentElement.dataset.landscapeUi||null,linkHref:link?.href||null,landscapeStatus,servedHasDiagnostic:landscapeText.includes('DIAGNOSTIC owner-final Classic rail'),stylesheets:Array.from(document.styleSheets).map(s=>s.href||'INLINE'),shell:rect(shell),party:rect(party),board:rect(board),computed:{grid:cs.gridTemplateColumns,columnGap:cs.columnGap,gap:cs.gap,width:cs.width,margin:cs.margin,padding:cs.padding,partyWidth:ps.width,partyMargin:ps.margin},rules};",
+            "    }))));"
+          ]
+          diagnostic='\n'.join(js_lines)+'\n'+assertion
           if assertion not in t: raise SystemExit('combat gap assertion missing')
           t=t.replace(assertion,diagnostic,1)
           marker='\n(async () => {'
           pos=t.rfind(marker)
           if pos<0: raise SystemExit('runner marker missing')
-          suffix=("\n(async () => {\n"+"  const browser=await chromium.launch({headless:true});\n"+"  try{await auditPrepAndCombat(browser,1024,768,'ru');}finally{await browser.close();}\n"+"})().catch((error)=>{console.error(error.stack||error);process.exitCode=1;});\n")
+          suffix="\n(async () => {\n  const browser=await chromium.launch({headless:true});\n  try{await auditPrepAndCombat(browser,1024,768,'ru');}finally{await browser.close();}\n})().catch((error)=>{console.error(error.stack||error);process.exitCode=1;});\n"
           p.write_text(t[:pos]+suffix)
           PY
       - name: Run diagnostic Chromium
