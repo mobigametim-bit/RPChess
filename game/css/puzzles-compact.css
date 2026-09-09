@@ -1,4 +1,6 @@
 /* Puzzle-owned compact Training presentation formerly supplied by post-pages runtime. */
+.puzzle-heading .reboot-eyebrow{font-size:10px}
+.puzzle-heading .reboot-eyebrow::after{content:none!important}
 .puzzle-polish-objective,
 .puzzle-polish-reward{display:none}
 
