@@ -40,7 +40,7 @@ jobs:
           git fetch --no-tags --depth=1 origin e92831ca5d6e0c14fb2d919e410180ce77b97ce6
           git checkout e92831ca5d6e0c14fb2d919e410180ce77b97ce6 -- game/generated_assets/reward_heal.png game/generated_assets/reward_recruit.png
 
-      - name: Synchronize owner and verifier contracts
+      - name: Synchronize owner verifier and regression contracts
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -77,6 +77,11 @@ jobs:
 
           test_path = Path('tests/settlement.cjs')
           test = test_path.read_text()
+          stale = "assert(travelSource.includes('ЛЕЧЕНИЕ · НАЙМ · СНАБЖЕНИЕ'));"
+          semantic = "assert(travelSource.includes(\"t('travel.settlementServices')\"),'Travel Settlement card must use keyed services copy');"
+          if stale not in test:
+              raise SystemExit('stale Settlement Travel literal assertion not found')
+          test = test.replace(stale, semantic, 1)
           anchor = "assert(appSource.includes('css/settlement-compact.css?v=20260909-owner1'),'Settlement owner must load compact CSS after its base stylesheet');"
           addition = "\nfor(const asset of ['reward_heal.png','reward_recruit.png'])assert(fs.existsSync(path.join(game,'generated_assets',asset)),`Settlement owner service art missing: ${asset}`);\nassert(css.includes(\"url('../generated_assets/reward_heal.png')\")&&css.includes(\"url('../generated_assets/reward_recruit.png')\"),'Settlement service art must use CSS-relative owner paths');\nassert(!css.includes(\"url('generated_assets/reward_heal.png')\")&&!css.includes(\"url('generated_assets/reward_recruit.png')\"),'Settlement owner must not use stylesheet-relative broken service-art paths');"
           if anchor not in test:
@@ -90,7 +95,7 @@ jobs:
         run: |
           npm run verify
           node tests/settlement.cjs
-          node tests/run-lifecycle-events.cjs
+          node tests/run-lifecycle.cjs
 
       - name: Commit validated owner fixes
         run: |
