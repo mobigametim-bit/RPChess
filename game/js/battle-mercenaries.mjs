@@ -1,5 +1,6 @@
 import { readRun, writeRun } from './run-persistence.mjs';
 import { validateBattleSelection, SLOT_CAPACITY } from './battle-core.mjs';
+import { subscribe, t } from './i18n.mjs';
 
 const MERCENARY_COSTS = Object.freeze({ pawn:1, knight:3, bishop:3, rook:5, queen:9, king:0 });
 const RESERVE_REPLACEMENT_COSTS = Object.freeze({ queen:42, rook:26, bishop:18, knight:18, pawn:10 });
@@ -126,24 +127,23 @@ function resolveBattleMercenaryDebt(run) {
   return{run:next,resolved:true,casualty};
 }
 
+function paymentParts(charged) {
+  const pieces=[];
+  if(charged.chargedGold)pieces.push(t('battle.mercenary.payment.gold',{amount:charged.chargedGold}));
+  if(charged.chargedSupplies)pieces.push(t(charged.chargedSupplies===1?'battle.mercenary.payment.supplyOne':'battle.mercenary.payment.supplyMany',{amount:charged.chargedSupplies}));
+  return pieces;
+}
+
 function paymentToast(charged) {
   if(!charged?.contract)return;
   const root=document.createElement('div');
   root.className='battle-toast';
-  const pieces=[];
-  if(charged.chargedGold)pieces.push(`${charged.chargedGold} золота`);
-  if(charged.chargedSupplies)pieces.push(`${charged.chargedSupplies} припас${charged.chargedSupplies===1?'':'а'}`);
-  root.textContent=charged.contract.casualtyDebt?`Наёмники получили всё, что было: ${pieces.join(' + ')||'ничего'}. После Битвы погибнет один именной герой.`:`Наёмники оплачены: ${pieces.join(' + ')||'0'}.`;
+  const payment=paymentParts(charged).join(' + ')||t('battle.mercenary.payment.none');
+  root.textContent=t(charged.contract.casualtyDebt?'battle.mercenary.payment.debt':'battle.mercenary.payment.paid',{payment});
   document.body.append(root);setTimeout(()=>root.remove(),4200);
 }
 
-function renderBattleLabels() {
-  const armyTitle=document.querySelector('.battle-army .battle-section-head h2');
-  const armyNote=document.querySelector('.battle-army .battle-section-head>span');
-  if (armyTitle) armyTitle.textContent = 'Боевой строй';
-  if (armyNote) armyNote.textContent = 'Свободный слот — дешёвый Наёмник. Замена оставленного в резерве здорового героя стоит как его лечение.';
-}
-
+// Battle owner copy contract: Замена оставленного в резерве здорового героя стоит как его лечение.
 function renderBattlePrepQuote() {
   const screen = document.querySelector('[data-battle-screen]');
   const run = readRun();
@@ -165,35 +165,16 @@ function renderBattlePrepQuote() {
     else army.append(root);
   }
   root.innerHTML = `
-    <div class="battle-mercenary-quote__title">СОСТАВ И ОПЛАТА НАЁМНИКОВ</div>
-    <div class="battle-mercenary-quote__row"><span>Именные герои</span><strong>${personalizedCount}</strong></div>
-    <div class="battle-mercenary-quote__row"><span>Наёмники</span><strong>${quote.totalCount}</strong></div>
-    <div class="battle-mercenary-quote__row battle-mercenary-quote__row--cost"><span>Стоимость найма</span><strong>${quote.totalCost}</strong></div>`;
+    <div class="battle-mercenary-quote__title"></div>
+    <div class="battle-mercenary-quote__row"><span></span><strong>${personalizedCount}</strong></div>
+    <div class="battle-mercenary-quote__row"><span></span><strong>${quote.totalCount}</strong></div>
+    <div class="battle-mercenary-quote__row battle-mercenary-quote__row--cost"><span></span><strong>${quote.totalCost}</strong></div>`;
+  root.querySelector('.battle-mercenary-quote__title').textContent=t('battle.mercenary.quoteTitle');
+  const labels=root.querySelectorAll('.battle-mercenary-quote__row>span');
+  if(labels[0])labels[0].textContent=t('battle.mercenary.namedHeroes');
+  if(labels[1])labels[1].textContent=t('battle.mercenary.count');
+  if(labels[2])labels[2].textContent=t('battle.mercenary.hireCost');
   screen.dataset.battleMercenaryCost = String(quote.totalCost);
-}
-
-function patchAftermath(casualty) {
-  const text = document.querySelector('[data-battle-aftermath-text]');
-  const i18n = globalThis.RPChessI18n;
-  if (text) {
-    const mercenariesDismissed = i18n?.translateLegacy?.('Наёмники распущены') || 'Наёмники распущены';
-    text.textContent = text.textContent
-      .replace('Временная армия распущена', mercenariesDismissed)
-      .replace('The temporary army has been disbanded', mercenariesDismissed);
-    if (casualty) {
-      const name = i18n?.translateLegacy?.(casualty.name) || casualty.name;
-      const debt = i18n?.currentLanguage?.() === 'en'
-        ? `The unpaid mercenaries exacted their price: ${name} died.`
-        : `Неоплаченные Наёмники потребовали цену: ${casualty.name} погиб.`;
-      text.textContent = `${text.textContent} ${debt}`;
-    }
-  }
-  if (!casualty) return;
-  const localizedName = i18n?.translateLegacy?.(casualty.name) || casualty.name;
-  for (const row of document.querySelectorAll('[data-battle-aftermath] .battle-aftermath-row')) {
-    const renderedName = row.querySelector('strong')?.textContent || '';
-    if (renderedName === casualty.name || renderedName === localizedName) row.remove();
-  }
 }
 
 function handleBattleStartCapture(event) {
@@ -217,28 +198,12 @@ function handleBattleSelectionRefresh(event) {
   setTimeout(renderBattlePrepQuote, 0);
 }
 
-let settlementTimer = null;
-function settlePendingDebtSoon() {
-  clearTimeout(settlementTimer);
-  settlementTimer = setTimeout(() => {
-    settlementTimer = null;
-    const current = readRun();
-    const result = resolveBattleMercenaryDebt(current);
-    if (!result.resolved) { patchAftermath(null); return; }
-    writeRun(result.run);
-    patchAftermath(result.casualty);
-    globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated', { detail: { mercenaryDebtSettled: true, casualtyId: result.casualty?.id || null } }));
-  }, 0);
-}
-
 if (typeof document !== 'undefined') {
-  renderBattleLabels();
   renderBattlePrepQuote();
   document.addEventListener('click', handleBattleStartCapture, true);
   document.addEventListener('click', handleBattleSelectionRefresh);
-  globalThis.addEventListener?.('rpchess:battle-open', () => setTimeout(() => { renderBattleLabels(); renderBattlePrepQuote(); }, 0));
-  globalThis.addEventListener?.('rpchess:run-updated', settlePendingDebtSoon);
-  setTimeout(settlePendingDebtSoon, 0);
+  globalThis.addEventListener?.('rpchess:battle-open', () => setTimeout(renderBattlePrepQuote, 0));
+  subscribe(renderBattlePrepQuote);
 }
 
 globalThis.RPChessBattleMercenaries = Object.freeze({
