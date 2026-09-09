@@ -252,3 +252,14 @@ body.events-active .resource-chip strong{color:#f0d99e}
     min-height:56px;
   }
 }
+
+/* Compact phone-landscape Event readability belongs to the Event owner. */
+@media (orientation:landscape) and (max-width:980px) and (max-height:520px){
+  body.events-active .events-panel{
+    grid-template-columns:minmax(0,.92fr) minmax(340px,1.08fr)!important;
+  }
+  body.events-active .events-choice__head>span{
+    font-size:9px!important;
+    letter-spacing:.04em!important;
+  }
+}
