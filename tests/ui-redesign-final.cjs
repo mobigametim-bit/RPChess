@@ -5,6 +5,14 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
 (async()=>{
   const finalUi=read('game/js/ui-redesign-final.mjs');
   const finalCss=read('game/css/ui-redesign-final.css');
+  const sourceOwners=[
+    read('game/index.html'),
+    read('game/js/skirmish-app.mjs'),
+    read('game/js/battle-app.mjs'),
+    read('game/js/puzzles/puzzle-app.mjs'),
+    read('game/js/settlement-app.mjs'),
+    read('game/js/events-app.mjs')
+  ].join('\n');
   const sideColorsCss=read('game/css/combat-side-colors.css');
   const resourcesCss=read('game/css/resources.css');
   const puzzlesCss=read('game/css/puzzles.css');
@@ -38,8 +46,11 @@ const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
   assert(!sideColorsCss.includes('radial-gradient'),'procedural radial combat glow must be fully replaced by aura assets');
   assert(sideColorsCss.includes('.classic-square--check:has(.classic-piece-marker)')&&sideColorsCss.includes("--combat-aura-image:url('../assets/vfx/aura_red.png')"),'check must replace side art with the supplied red aura');
   assert(sideColorsCss.includes('background-size:100% 100%'),'combat aura must fit the board square without changing its geometry');
-  assert(finalUi.includes('OBSOLETE_HIDDEN_CONTROLS')&&finalUi.includes('removeObsoleteHiddenControls()'),'deprecated invisible scene controls must be removed from the runtime DOM instead of being kept as hidden hooks');
-  for(const selector of ['[data-skirmish-back]','[data-battle-back]','[data-puzzle-roster]','[data-settlement-roster]','[data-settlement-settings]','[data-events-roster]','[data-events-settings]'])assert(finalUi.includes(`'${selector}'`),`${selector} must be included in invisible-control cleanup`);
+  assert(!finalUi.includes('OBSOLETE_HIDDEN_CONTROLS')&&!finalUi.includes('removeObsoleteHiddenControls'),'obsolete source controls must not require shared post-render DOM cleanup');
+  for(const attribute of ['data-skirmish-back','data-battle-back','data-puzzle-roster','data-settlement-roster','data-settlement-settings','data-events-roster','data-events-settings']){
+    assert(!sourceOwners.includes(attribute),`${attribute} must be deleted from its source owner`);
+    assert(!finalCss.includes(`[${attribute}]`),`${attribute} must not retain dead compatibility CSS`);
+  }
   assert(finalCss.includes('.travel-choice-topbar--command')&&finalCss.includes('.events-copy-frame')&&finalCss.includes('.events-choice-frame'),'approved Travel and Events structures must live in one final stylesheet');
   assert(!finalCss.includes("content:'Тренировка'")&&!finalCss.includes('font-size:0'),'final stylesheet must not use text-replacement hacks for Training or hidden semantic labels');
   assert(!resourcesCss.includes('.travel-choice-card--puzzle .travel-choice-card__type')&&!resourcesCss.includes("content: 'ТРЕНИРОВКА'"),'legacy Resources CSS must not replace the semantic Training label with font-size:0 + ::after');

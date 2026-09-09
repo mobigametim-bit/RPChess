@@ -1,6 +1,6 @@
 /* RPChess accepted redesign — consolidated pre-merge stylesheet, 2026-09-02. */
 
-/* Shared presentation removals. Runtime hooks remain in DOM. */
+/* Shared presentation removals. */
 body.travel-choice-active .resource-hud,
 body.roster-active .resource-hud,
 body.skirmish-active .resource-hud,
@@ -11,14 +11,11 @@ body.compact-aftermath-active .resource-hud{display:none!important;}
 .travel-choice-screen .travel-choice-logo,
 body.roster-active .roster-logo,
 body.skirmish-active .skirmish-logo,
-body.skirmish-active [data-skirmish-back],
 body.compact-combat-active .classic-logo,
 body.compact-combat-active [data-classic-new],
 body.compact-combat-active [data-classic-menu],
 body.puzzles-active.compact-puzzle-active .puzzle-logo,
-body.puzzles-active.compact-puzzle-active [data-puzzle-roster],
 body.battle-prep-compact-active .battle-logo,
-body.battle-prep-compact-active [data-battle-back],
 body.compact-aftermath-active .battle-logo,
 body.compact-aftermath-active .skirmish-logo{display:none!important;}
 
@@ -298,13 +295,12 @@ body.compact-aftermath-active{overflow:hidden!important;}
   body.settlement-active .settlement-footer{position:absolute!important;z-index:20!important;top:8px!important;right:0!important;margin:0!important;padding:0!important;}
   body.settlement-active .settlement-footer p{display:none!important;}
   body.settlement-active .settlement-continue{width:auto!important;min-width:230px!important;min-height:50px!important;margin:0!important;}
-  body.settlement-active [data-settlement-roster],body.settlement-active [data-settlement-settings],body.settlement-active .settlement-logo{display:none!important;}
+  body.settlement-active .settlement-logo{display:none!important;}
 }
 
 /* --------------------------------------------------------------------------
    Events — copy bottom-left; choices bottom-right; two per row.
    -------------------------------------------------------------------------- */
-body.events-active [data-events-roster],body.events-active [data-events-settings]{display:none!important;}
 @media(min-width:901px){
   body.events-active{overflow:hidden!important;}
   body.events-active .events-screen{height:100svh!important;min-height:0!important;overflow:hidden!important;padding:16px 20px!important;box-sizing:border-box!important;}

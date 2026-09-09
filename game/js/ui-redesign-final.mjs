@@ -8,22 +8,12 @@ const BATTLE_COMPACT_CSS_HREF='css/battle-compact.css?v=20260908-owner1';
 const BLACK_GLYPHS=Object.freeze({pawn:'♟',knight:'♞',bishop:'♝',rook:'♜',queen:'♛',king:'♚'});
 const GLYPHS_BY_COLOR=Object.freeze({w:PIECE_GLYPHS,b:BLACK_GLYPHS});
 const TYPE_BY_GLYPH=Object.freeze(Object.fromEntries([...Object.entries(PIECE_GLYPHS),...Object.entries(BLACK_GLYPHS)].map(([type,glyph])=>[glyph,type])));
-const OBSOLETE_HIDDEN_CONTROLS=Object.freeze([
-  '[data-skirmish-back]',
-  '[data-battle-back]',
-  '[data-puzzle-roster]',
-  '[data-settlement-roster]',
-  '[data-settlement-settings]',
-  '[data-events-roster]',
-  '[data-events-settings]'
-]);
 const classicScreen=document.querySelector('[data-classic-screen]');
 const skirmishScreen=document.querySelector('[data-skirmish-screen]');
 let queued=false;
 
 function ensureStylesheet(href,datasetName){if(document.querySelector(`[${datasetName}]`))return;const link=document.createElement('link');link.rel='stylesheet';link.href=href;link.setAttribute(datasetName,'');document.head.append(link);}
 function ensureCss(){ensureStylesheet(CSS_HREF,'data-ui-redesign-final-css');ensureStylesheet(SIDE_COLORS_CSS_HREF,'data-combat-side-colors-css');ensureStylesheet(BATTLE_COMPACT_CSS_HREF,'data-battle-compact-css');}
-function removeObsoleteHiddenControls(){for(const selector of OBSOLETE_HIDDEN_CONTROLS)for(const node of document.querySelectorAll(selector))node.remove();}
 function visible(root){return Boolean(root&&!root.hidden);}
 function desktop(){return matchMedia('(min-width: 901px)').matches;}
 function normalizeColor(value){return value==='b'?'b':'w';}
@@ -47,11 +37,10 @@ function syncBattleFormation(screen,color){const root=screen?.querySelector('[da
 function syncSkirmishPrep(){if(!skirmishScreen)return;const active=visible(skirmishScreen),api=globalThis.RPChessSkirmish,color=normalizeColor(api?.encounter?.playerColor);if(active){ensureCardGlyphs('[data-skirmish-screen] [data-skirmish-character]','skirmish-card__tech-glyph',color);const title=skirmishScreen.querySelector('[data-skirmish-title]'),stars=skirmishScreen.querySelector('[data-skirmish-stars]');if(title&&stars)title.dataset.compactStars=stars.textContent.trim();syncSkirmishFormation();}}
 function syncBattlePrep(){const screen=document.querySelector('[data-battle-screen]'),active=visible(screen),api=globalThis.RPChessBattle,color=normalizeColor(api?.encounter?.playerColor);document.body.classList.toggle('battle-prep-compact-active',active);if(active){ensureCardGlyphs('[data-battle-screen] [data-battle-character]','battle-card__tech-glyph',color);syncBattleFormation(screen,color);}}
 function syncAftermath(){const battle=document.querySelector('[data-battle-aftermath]'),skirmish=document.querySelector('[data-skirmish-aftermath]');document.body.classList.toggle('compact-aftermath-active',visible(battle)||visible(skirmish));}
-function refresh(){queued=false;removeObsoleteHiddenControls();syncCombatBoard();syncPuzzle();syncSkirmishPrep();syncBattlePrep();syncAftermath();}
-function schedule(){removeObsoleteHiddenControls();if(queued)return;queued=true;requestAnimationFrame(refresh);}
+function refresh(){queued=false;syncCombatBoard();syncPuzzle();syncSkirmishPrep();syncBattlePrep();syncAftermath();}
+function schedule(){if(queued)return;queued=true;requestAnimationFrame(refresh);}
 
 ensureCss();
-removeObsoleteHiddenControls();
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 for(const name of ['rpchess:skirmish-open','rpchess:battle-open','rpchess:puzzle-open','rpchess:settlement-open','rpchess:event-open','rpchess:travel-open','rpchess:run-continue','rpchess:run-updated'])addEventListener(name,()=>queueMicrotask(schedule));
 addEventListener('resize',schedule,{passive:true});

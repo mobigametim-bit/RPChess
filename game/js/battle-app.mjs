@@ -71,7 +71,6 @@ function ensureBattleScreens() {
     <div class="battle-shell">
       <header class="battle-topbar">
         <img class="battle-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
-        <button class="reboot-button reboot-button--primary" type="button" data-battle-back>Вернуться к отряду</button>
       </header>
       <header class="battle-heading">
         <div>
@@ -134,7 +133,6 @@ function ensureBattleScreens() {
     </div>`;
 
   app.append(prepScreen, aftermathScreen, runEndScreen);
-  prepScreen.querySelector('[data-battle-back]')?.addEventListener('click', returnToRoster);
   prepScreen.querySelector('[data-battle-start]')?.addEventListener('click', startBattle);
   aftermathScreen.querySelector('[data-battle-continue]')?.addEventListener('click', leaveAftermath);
   runEndScreen.querySelector('[data-battle-run-end-continue]')?.addEventListener('click', leaveRunEnd);
@@ -224,8 +222,6 @@ function renderComposition(){renderAvailable();renderSlotSummary();renderFormati
 
 function resetBattleTracking(){battlePlan=null;playerBySquare=new Map();enemyBySquare=new Map();capturedIds=new Set();processedMoves=0;battleFinalized=false;lastCapturedVisual=null;clearTimeout(finalizeTimer);finalizeTimer=null;setBattleNavigationLocked(false);}
 function openBattle(){ensureBattleScreens();activeRun=readRun();if(!activeRun||activeRun.ended)return;encounter=encounterForRun(activeRun);selectedIds=new Set(defaultBattleSelection(activeRun.roster));resetBattleTracking();setNotice('');renderEncounter();renderComposition();showOnly('battle');}
-function returnToRoster(){audio()?.click?.();resetBattleTracking();showOnly('menu');globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue'));}
-
 function pieceImage(piece, side) {
   if (side === 'player') {
     if (piece.id) return characterForId(piece.id)?.pieceArt || playerGenericArt(piece.pieceType, battlePlan.playerColor);

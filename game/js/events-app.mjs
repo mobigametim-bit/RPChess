@@ -66,10 +66,6 @@ function ensureScreen() {
     <div class="events-shell">
       <header class="events-topbar">
         <img class="events-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
-        <div class="events-topbar__actions">
-          <button class="reboot-button reboot-button--primary" type="button" data-events-roster>Отряд</button>
-          <button class="reboot-button reboot-button--primary" type="button" data-events-settings>Настройки</button>
-        </div>
       </header>
       <section class="events-panel">
         <div class="events-copy-frame ui-panel-safe">
@@ -93,8 +89,6 @@ function ensureScreen() {
       </section>
     </div>`;
   app.append(screen);
-  screen.querySelector('[data-events-roster]')?.addEventListener('click', openRoster);
-  screen.querySelector('[data-events-settings]')?.addEventListener('click', () => { audio()?.click?.(); globalThis.RPChessOpenSettings?.(); });
   screen.querySelector('[data-events-continue]')?.addEventListener('click', continueOutcome);
   screen.addEventListener('click', handleChoice);
   return screen;
@@ -324,13 +318,6 @@ function continueOutcome() {
   globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open',{detail:{source:'event-complete',runId:activeRun.id}}));
 }
 
-function openRoster() {
-  if(busy)return;
-  audio()?.click?.();
-  document.body.classList.remove('events-outcome-open');
-  hideEvents();
-  globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue',{detail:{source:'event'}}));
-}
 function openEvent(event=null) {
   busy=false;
   activeRun=readRun();

@@ -61,7 +61,6 @@ function ensureScreen() {
       <header class="puzzle-topbar">
         <img class="puzzle-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
         <div class="puzzle-topbar__actions">
-          <button class="reboot-button reboot-button--primary" type="button" data-puzzle-roster>Отряд</button>
           <button class="reboot-button reboot-button--primary" type="button" data-puzzle-settings>Настройки</button>
         </div>
       </header>
@@ -104,11 +103,6 @@ function ensureScreen() {
     </div>`;
   app.append(screen);
   screen.querySelector('[data-puzzle-settings]')?.addEventListener('click', () => globalThis.RPChessOpenSettings?.());
-  screen.querySelector('[data-puzzle-roster]')?.addEventListener('click', () => {
-    if (locked) return;
-    hidePuzzle();
-    globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue'));
-  });
   screen.querySelector('[data-puzzle-continue]')?.addEventListener('click', continueTravel);
   return screen;
 }
