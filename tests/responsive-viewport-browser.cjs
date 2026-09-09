@@ -77,7 +77,7 @@ async function auditMenuModals(page, label) {
   await assertViewportContained(page, '[data-language-modal]:not([hidden]) .reboot-modal__panel', `${label} Language frame`);
   await assertFrameContains(page, '[data-language-modal]:not([hidden]) .reboot-modal__panel', ['[data-language-option]', '[data-close-modal]'], `${label} Language ownership`);
   await assertPageFitsViewport(page, `${label} Language`);
-  await page.locator('[data-language-modal] [data-close-modal]').click();
+  await page.locator('[data-language-modal] .reboot-close').click();
 
   await page.locator('[data-new-game]').first().click();
   await page.locator('[data-player-identity-modal]:not([hidden])').waitFor({ state: 'visible' });
