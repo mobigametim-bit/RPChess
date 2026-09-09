@@ -1,5 +1,7 @@
 import { readRun } from './run-persistence.mjs';
 import { starsText } from './encounter-difficulty.mjs';
+import { currentLanguage, subscribe } from './i18n.mjs';
+import { runtimeT } from '../localization/runtime-ui.mjs';
 import {
   combatResultScore,
   opponentEloForStars,
@@ -18,6 +20,7 @@ if (!document.querySelector('[data-player-rating-css]')) {
   document.head.append(link);
 }
 
+function t(key, params = {}) { return runtimeT(currentLanguage(), key, params); }
 function skirmishReceiptId(run) {
   const last = run?.lastSkirmish;
   if (!run?.id || !last?.encounterId || !Number.isInteger(run.skirmishCount)) return null;
@@ -63,9 +66,9 @@ function resultMarkup(receipt) {
   const beforeThreat = threatStarsForPower(receipt.before);
   const afterThreat = threatStarsForPower(receipt.after);
   const threatChanged = beforeThreat !== afterThreat
-    ? `<div class="power-result__threat">УГРОЗА ${starsText(beforeThreat)} → ${starsText(afterThreat)}</div>`
+    ? `<div class="power-result__threat">${t('power.threat',{stars:`${starsText(beforeThreat)} → ${starsText(afterThreat)}`})}</div>`
     : '';
-  return `<span class="power-result__label">МОЩЬ</span><strong class="power-result__value">${receipt.before} → ${receipt.after}</strong><strong class="power-result__delta ${cls}">${sign}${receipt.delta}</strong>${threatChanged}`;
+  return `<span class="power-result__label">${t('power.label')}</span><strong class="power-result__value">${receipt.before} → ${receipt.after}</strong><strong class="power-result__delta ${cls}">${sign}${receipt.delta}</strong>${threatChanged}`;
 }
 function ensureResult(container, before) {
   if (!container) return null;
@@ -120,6 +123,7 @@ function sync() {
 
 addEventListener('rpchess:run-updated', sync);
 addEventListener('rpchess:power-updated', () => queueMicrotask(() => renderPowerResults()));
+subscribe(() => queueMicrotask(() => renderPowerResults()));
 if (typeof MutationObserver !== 'undefined') {
   new MutationObserver(() => renderPowerResults()).observe(document.querySelector('#app') || document.body, {
     childList:true,
