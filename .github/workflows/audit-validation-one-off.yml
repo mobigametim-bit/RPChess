@@ -11,66 +11,36 @@ permissions:
   contents: write
 
 jobs:
-  validate:
+  checkpoint:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-
-      - name: Restore runtime asset cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm/rpchess-runtime-assets-v1
-          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
-          restore-keys: |
-            rpchess-runtime-assets-v1-${{ runner.os }}-
-
-      - name: Install dependencies
-        run: npm ci --no-audit --no-fund
-
-      - name: Fix menu viewport geometry
+      - name: Update remediation report
         run: |
           python - <<'PY'
           from pathlib import Path
-          path = Path('game/css/ui-redesign-first-three.css')
-          text = path.read_text()
-          old = "  min-height:min(780px,calc(100vh - 52px));"
-          new = "  min-height:min(780px,calc(100dvh - clamp(36px,5.2vw,84px)));"
-          if text.count(old) != 1:
-              raise SystemExit(f'expected one stale menu height contract, got {text.count(old)}')
-          path.write_text(text.replace(old, new, 1))
+          p=Path('docs/FULL_PROJECT_REVIEW_REPORT.md')
+          t=p.read_text()
+          t=t.replace('**Current remediation code head:** `d13841104cd3467cd3413182f3d49c3b0c8eba86`', '**Current remediation code head:** `25fde16b7235fc0d3bdb743fb1f85c962869c0db`')
+          t=t.replace("- Six legacy reward assets (`reward_artifact`, `reward_experience`, `reward_heal`, `reward_meta`, `reward_recruit`, `reward_upgrade`) were proven unreachable. `reward_heal`/`reward_meta` were old Vertical Slice/Army Foundation resource substitutes; `reward_recruit` was owned only by deleted review2 compatibility presentation; artifact/experience/upgrade had no production owner. Current Reboot keeps `reward_gold.png` and `reward_supplies.png`. Removed in `9861f533` → `a3adc5c1`. Bytes removed: **191,338**.", "- Four legacy reward assets (`reward_artifact`, `reward_experience`, `reward_meta`, `reward_upgrade`) remain proven unreachable and removed. A later exact-checkout review caught that `reward_heal.png` and `reward_recruit.png` are current Settlement service art; both were restored from the frozen baseline, their owner CSS paths were corrected, and the existing Settlement regression now protects their presence. Net reward-family reduction: **122,305 bytes**.")
+          t=t.replace('- Proven asset reduction: **2,458,308 bytes (~2.34 MiB)** across 27 files. No active race/piece/board/Event-background dynamic family was deleted.', '- Proven asset reduction after restoring the two active Settlement service assets: **2,389,275 bytes (~2.28 MiB)** across **25 files**. No active race/piece/board/Event-background dynamic family was deleted.')
+          t=t.replace('- Responsive suite explicitly covers weak surfaces in `e37f3771`.', '- Responsive suite explicitly covers weak surfaces in `e37f3771`. Exact Chromium validation later exposed a real `1366×768` RU main-menu overflow; root cause was a fixed `52px` height subtraction that did not match responsive outer padding. Owner CSS fix `25fde16b` now subtracts the actual responsive vertical padding. The same strengthened suite progressed to a separate `844×390` RU Chronicle vertical escape, which remains the next geometry fix.')
+          t=t.replace('- Semantic lifecycle (`6aaa8422` → `9f08c276`) + browser instrumentation `a447df1d`: implementation/contracts complete; **no fresh execution PASS is claimed** for current head.', '- Semantic lifecycle (`6aaa8422` → `9f08c276`) + browser instrumentation `a447df1d`: implementation/contracts complete. Current exact-checkout `gate:local` executes the lifecycle Node contract successfully; browser loop verification remains part of the full Chromium gate.')
+          t=t.replace('- Dependency security (`f04df06a` → `c88dfac6`): direct vulnerable ZIP install edge removed; contract not yet executed in current CI; lock metadata normalization pending.', '- Dependency security (`f04df06a` → `c88dfac6`): direct vulnerable ZIP install edge removed; dependency-security contract now passes in exact-checkout `gate:local`. Lock metadata normalization remains pending.')
+          t=t.replace('- Asset inventory tooling (`a497089f`, `d7176767`) passed standalone Node syntax validation during remediation, but no exact-checkout full inventory execution or current build/Chromium PASS is claimed yet. All 27 deletions through `d1384110` were based on explicit owner/non-reachability evidence, not on an unreviewed automated candidate list.', '- Asset inventory tooling (`a497089f`, `d7176767`) has now executed on an exact audit checkout. Its broad automatic candidate set includes manifest-driven production assets and is therefore **candidate-only**, never a bulk-delete list. Manual ownership proof remains mandatory. The corrected proven cleanup is 25 files / 2,389,275 bytes after restoring active Settlement heal/recruit art.')
+          t=t.replace('- No full 17-contract Chromium PASS is claimed for current head.', '- Exact-checkout `gate:local` is **PASS** on the current remediation lineage, including localization, security, domain tests, content validation, production build and runtime asset-cache parity. Full Chromium is **not yet PASS**: run `34371249143` progressed past the fixed menu and exposed the separate `844×390` RU Chronicle overflow.')
+          t=t.replace('1. Inspect the remaining `generated_assets` UI/logo/special-unit families and delete only additional positive non-reachability candidates.\n2. Execute `npm run assets:orphans:report` on an exact audit checkout and reconcile candidates with manual owner proof.\n3. Normalize `package-lock.json` reproducibly so stale `adm-zip` metadata disappears without hand-editing integrity data.\n4. Execute targeted lifecycle/Travel/security/assets contracts, then full current `gate:local` + all 17 Chromium contracts.\n5. Final `CURRENT_STATE.md`, deployment/history docs and Notion synchronization after accepted final SHA.', '1. Fix the evidence-backed `844×390` RU Chronicle viewport escape in the Chronicle/menu owner CSS and rerun the strengthened responsive contract.\n2. Finish manual proof for remaining `generated_assets` UI/logo/special-unit candidates; preserve anything ambiguous or owner-backed.\n3. Normalize `package-lock.json` reproducibly so stale `adm-zip` metadata disappears without hand-editing integrity data.\n4. Rerun full current `gate:local` + all Chromium contracts after the final geometry/asset/lock cleanup.\n5. Remove the temporary one-off validation workflow, then finalize `CURRENT_STATE.md`, deployment/history docs and Notion synchronization on the accepted SHA.')
+          t=t.replace('9. **IN PROGRESS:** asset reachability inventory. Reproducible tooling exists; 27 positively unreachable files removed (**2.34 MiB**).', '9. **IN PROGRESS:** asset reachability inventory. Reproducible tooling has executed on an exact checkout; 25 positively unreachable files remain removed (**2.28 MiB net**) after restoring two active Settlement service assets.')
+          t=t.replace('1. Finish reachability proof for remaining `generated_assets`: logo/wordmark, secondary/danger buttons, checkbox/chip/divider/sliders and special-unit images; preserve anything with explicit/current owner evidence.\n2. Run `npm run assets:orphans:report` on the first executable exact audit checkout and reconcile every candidate with manual proof before any further bulk deletion.\n3. Normalize `package-lock.json` at the first reproducible lockfile-generation opportunity; do not manually alter integrity records.\n4. Run targeted lifecycle/Travel/security/assets checks and then full `gate:local` + all 17 Chromium contracts; update verification-pending findings only from actual results.\n5. Finish `CURRENT_STATE.md`, deployment/history docs/Notion synchronization and final release-readiness report.\n6. Keep `main` frozen and Cloudflare manual-only until explicit owner direction.', '1. Fix the `844×390` RU Chronicle geometry defect exposed after the validated menu fix; rerun responsive RU/EN/boundary coverage.\n2. Finish manual reachability proof for the remaining `generated_assets` candidates; `ui_button_primary.png`, active route/reward art and all dynamic families stay protected.\n3. Normalize `package-lock.json` reproducibly and prove `npm ci` + dependency-security after removing stale `adm-zip` metadata.\n4. Run the final `gate:local` + complete Chromium gate on the resulting SHA and update verification-pending findings only from actual results.\n5. Remove `.github/workflows/audit-validation-one-off.yml`, then finish `CURRENT_STATE.md`, deployment/history docs/Notion synchronization and final release-readiness report.\n6. Keep `main` frozen and Cloudflare manual-only until explicit owner direction.')
+          p.write_text(t)
           PY
 
-      - name: Run canonical local gate
-        run: npm run gate:local
-
-      - name: Commit validated menu geometry fix
+      - name: Commit documentation checkpoint
         run: |
           git config user.name 'mobigametim-bit'
           git config user.email 'mobigametim@gmail.com'
-          git add game/css/ui-redesign-first-three.css
-          git commit -m 'fix: keep main menu within viewport'
+          git add docs/FULL_PROJECT_REVIEW_REPORT.md
+          git commit -m 'docs: record menu viewport remediation milestone'
           git push origin HEAD:audit/full-project-review-2026-09-08
-
-      - name: Install Playwright and Chromium
-        run: |
-          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
-          npx playwright install --with-deps chromium
-
-      - name: Run targeted responsive contract
-        env:
-          RPCHESS_GATE_PREFIX: /RPChess
-          RPCHESS_BROWSER_TEST: responsive-viewport-browser.cjs
-        run: npm run test:browser
-
-      - name: Run all Chromium contracts
-        env:
-          RPCHESS_GATE_PREFIX: /RPChess
-        run: npm run test:browser
