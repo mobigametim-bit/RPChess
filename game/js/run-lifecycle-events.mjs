@@ -30,30 +30,35 @@ function syncLifecycle(event) {
     return;
   }
 
+  const completed = [];
   if (next.battleCount > previous.battleCount) {
-    dispatch('rpchess:combat-completed', {
+    completed.push(['rpchess:combat-completed', {
       kind: 'battle',
       runId: next.runId,
       count: next.battleCount,
       source: event?.detail?.source || null
-    });
+    }]);
   }
   if (next.skirmishCount > previous.skirmishCount) {
-    dispatch('rpchess:combat-completed', {
+    completed.push(['rpchess:combat-completed', {
       kind: 'skirmish',
       runId: next.runId,
       count: next.skirmishCount,
       source: event?.detail?.source || null
-    });
+    }]);
   }
   if (next.puzzleKey && next.puzzleResolved && (next.puzzleKey !== previous.puzzleKey || !previous.puzzleResolved)) {
-    dispatch('rpchess:puzzle-resolved', {
+    completed.push(['rpchess:puzzle-resolved', {
       runId: next.runId,
       puzzleKey: next.puzzleKey
-    });
+    }]);
   }
 
+  // Commit the canonical transition before notifying semantic consumers. Consumers may
+  // synchronously persist derived state and emit run-updated again; that must not replay
+  // the same completion event.
   previous = next;
+  for (const [name, detail] of completed) dispatch(name, detail);
 }
 
 addEventListener('rpchess:run-updated', syncLifecycle);
