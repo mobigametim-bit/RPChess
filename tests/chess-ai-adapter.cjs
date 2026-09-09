@@ -106,7 +106,49 @@ function rngFrom(values) {
   });
   assert.strictEqual(resumedMove, 'c7c5', 'a new search after cancellation must ignore the previous bestmove');
 
-  high.destroy(); low.destroy(); randomLow.destroy(); fallback.destroy(); interruptible.destroy();
+  class DelayedInitWorker extends FakeWorker {
+    postMessage(command) {
+      this.commands.push(command);
+      if (command === 'uci') setTimeout(() => this.onmessage?.({ data:'uciok' }), 8);
+      if (command === 'isready') setTimeout(() => this.onmessage?.({ data:'readyok' }), 8);
+      if (command.startsWith('go ')) setTimeout(() => this.onmessage?.({ data:'bestmove e7e5' }), 8);
+    }
+  }
+  const pendingInit = new ChessAIAdapter({ WorkerClass: DelayedInitWorker, timeoutMs: 500 });
+  const staleInitSearch = pendingInit.chooseMove({
+    fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+    elo: 1400,
+    legalMoves: ['e7e5', 'c7c5']
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  pendingInit.stop();
+  const resumedDuringInit = pendingInit.chooseMove({
+    fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+    elo: 1400,
+    legalMoves: ['e7e5', 'c7c5']
+  });
+  assert.strictEqual(await staleInitSearch, null, 'stop during Stockfish initialization must invalidate the stale game request');
+  assert.strictEqual(await resumedDuringInit, 'e7e5', 'a replacement game may safely reuse an initialization already in flight');
+
+  const resettable = new ChessAIAdapter({ WorkerClass: DelayedInitWorker, timeoutMs: 500 });
+  const destroyedInitSearch = resettable.chooseMove({
+    fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+    elo: 1400,
+    legalMoves: ['e7e5', 'c7c5']
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  const destroyedWorker = FakeWorker.instances.at(-1);
+  resettable.destroy();
+  assert.strictEqual(await destroyedInitSearch, null, 'destroy during initialization must settle the abandoned game without a fallback move');
+  assert.strictEqual(destroyedWorker.terminated, true, 'destroy must terminate the abandoned Stockfish worker');
+  const afterDestroyMove = await resettable.chooseMove({
+    fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+    elo: 1400,
+    legalMoves: ['e7e5', 'c7c5']
+  });
+  assert.strictEqual(afterDestroyMove, 'e7e5', 'adapter must reinitialize cleanly after a lifecycle destroy');
+
+  high.destroy(); low.destroy(); randomLow.destroy(); fallback.destroy(); interruptible.destroy(); pendingInit.destroy(); resettable.destroy();
   console.log('Chess AI adapter deterministic contract: PASS');
 })().catch((error) => {
   console.error(error.stack || error);

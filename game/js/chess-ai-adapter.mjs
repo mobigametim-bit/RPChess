@@ -66,14 +66,22 @@ class ChessAIAdapter {
     this.activeSearch = null;
     this.provider = 'Stockfish 18 lite';
     this.degraded = false;
+    this.lifecycleEpoch = 0;
+    this.operationEpoch = 0;
   }
 
   _spawn() {
     if (this.worker) return;
     if (typeof this.WorkerClass !== 'function') throw new Error('Web Worker is not available');
-    this.worker = new this.WorkerClass(this.workerUrl);
-    this.worker.onmessage = (event) => this._handleLine(normalizeLine(event));
-    this.worker.onerror = (event) => {
+    const worker = new this.WorkerClass(this.workerUrl);
+    const lifecycleEpoch = this.lifecycleEpoch;
+    this.worker = worker;
+    worker.onmessage = (event) => {
+      if (this.worker !== worker || this.lifecycleEpoch !== lifecycleEpoch) return;
+      this._handleLine(normalizeLine(event));
+    };
+    worker.onerror = (event) => {
+      if (this.worker !== worker || this.lifecycleEpoch !== lifecycleEpoch) return;
       const error = new Error(event?.message || 'Stockfish worker error');
       this.degraded = true;
       this._rejectAll(error);
@@ -158,48 +166,69 @@ class ChessAIAdapter {
     await ready;
   }
 
+  _stopActiveSearch() {
+    const search = this.activeSearch;
+    if (!search) return;
+    this.activeSearch = null;
+    clearTimeout(search.timer);
+    if (this.worker) this._send('stop');
+    search.resolve(null);
+  }
+
   async init() {
     if (this.initialized) return this;
     if (this.initPromise) return this.initPromise;
-    this.initPromise = (async () => {
+    const lifecycleEpoch = this.lifecycleEpoch;
+    let initPromise = null;
+    initPromise = (async () => {
       this._spawn();
       const uci = this._waitFor((line) => line === 'uciok', 'uciok');
       this._send('uci');
       await uci;
+      if (lifecycleEpoch !== this.lifecycleEpoch) throw new Error('Stockfish adapter reset during initialization');
       this._send('setoption name Hash value 16');
       await this._ready();
+      if (lifecycleEpoch !== this.lifecycleEpoch) throw new Error('Stockfish adapter reset during initialization');
       this.initialized = true;
       return this;
     })().catch((error) => {
-      this.degraded = true;
-      this.initPromise = null;
+      if (lifecycleEpoch === this.lifecycleEpoch) {
+        this.degraded = true;
+        if (this.initPromise === initPromise) this.initPromise = null;
+      }
       throw error;
     });
-    return this.initPromise;
+    this.initPromise = initPromise;
+    return initPromise;
   }
 
   async chooseMove({ fen, elo = 800, legalMoves = [] } = {}) {
     const legal = new Set(legalMoves.map((move) => typeof move === 'string' ? move.toLowerCase() : moveToUci(move)));
     if (!legal.size) return null;
     const profile = profileForElo(elo);
+    const operationEpoch = ++this.operationEpoch;
 
     try {
       await this.init();
-      this.stop();
+      if (operationEpoch !== this.operationEpoch) return null;
+      this._stopActiveSearch();
       this._send(`setoption name MultiPV value ${profile.multiPv}`);
       this._send('setoption name UCI_LimitStrength value true');
       this._send(`setoption name UCI_Elo value ${Math.max(MIN_NATIVE_ELO, profile.elo)}`);
       await this._ready();
+      if (operationEpoch !== this.operationEpoch) return null;
       this._send(`position fen ${fen}`);
 
       return await new Promise((resolve, reject) => {
+        if (operationEpoch !== this.operationEpoch) { resolve(null); return; }
         const search = {
           resolve,
           reject,
           legal,
           profile,
           candidates: new Map(),
-          timer: null
+          timer: null,
+          operationEpoch
         };
         search.timer = setTimeout(() => {
           if (this.activeSearch !== search) return;
@@ -212,28 +241,26 @@ class ChessAIAdapter {
         this._send(`go movetime ${profile.moveTime}`);
       });
     } catch (error) {
+      if (operationEpoch !== this.operationEpoch) return null;
       this.degraded = true;
       return [...legal][0];
     }
   }
 
   stop() {
-    if (!this.worker) return;
-    const search = this.activeSearch;
-    if (!search) return;
-    this.activeSearch = null;
-    clearTimeout(search.timer);
-    this._send('stop');
-    search.resolve(null);
+    this.operationEpoch += 1;
+    this._stopActiveSearch();
   }
 
   destroy() {
-    this.stop();
-    this._rejectAll(new Error('Stockfish adapter destroyed'));
-    this.worker?.terminate?.();
+    this.operationEpoch += 1;
+    this.lifecycleEpoch += 1;
+    const worker = this.worker;
     this.worker = null;
     this.initialized = false;
     this.initPromise = null;
+    this._rejectAll(new Error('Stockfish adapter destroyed'));
+    worker?.terminate?.();
   }
 
   snapshot() {
