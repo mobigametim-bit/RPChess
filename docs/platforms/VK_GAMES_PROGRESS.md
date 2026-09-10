@@ -1,15 +1,30 @@
 # VK Games publication — progress
 
 **Updated:** 2026-09-10  
-**Current stage:** VK Games publication — first real VK Hosting upload  
+**Current stage:** VK Games publication — real VK Web acceptance  
 **Working branch:** `platform/vk-games`  
 **Current runtime candidate:** `40fba371763113a31d94bc89287cda59dedf74a9`  
-**Operational branch head:** docs/tooling may be newer than the accepted runtime candidate  
+**Successful VK Hosting diagnostic deploy commit:** `24929f7482443f15fa666598f14a4dbe500a405f`  
+**VK Hosting dev version:** `1789073236`  
+**VK dev URL:** `https://stage-app54754579-d1b007975863.pages.vk-apps.ru/index.html`  
 **VK App ID:** `54754579` (`app54754579`)  
 **Draft PR:** #137  
 **Canonical checklist:** `docs/platforms/VK_GAMES_PUBLICATION_PLAN.md`
 
 This file is the compact operational handoff/status companion for agents. The canonical task definitions remain in `VK_GAMES_PUBLICATION_PLAN.md`; exact implementation/test evidence is recorded here so another agent can continue without re-auditing completed work.
+
+## First real VK Hosting upload — COMPLETE WITH AUDIO LIMITATION
+
+- [x] Owner configured `MINI_APPS_ACCESS_TOKEN` as a GitHub Actions Repository Secret; the value is not stored in source/docs.
+- [x] First non-interactive `dev` deployment path was exercised from GitHub Actions.
+- [x] Full `dist-vk` payload was initially rejected by VK Hosting at `apps.createGoHostingTask` with `15: Access denied: invalid file`.
+- [x] Diagnostic upload excluded only the 5 `.mp3` files from the upload payload; source assets, canonical Web build and gameplay code were not deleted.
+- [x] Diagnostic upload succeeded in GitHub Actions run `34527974937`, job `103042645832`.
+- [x] VK Hosting version: `1789073236`.
+- [x] Desktop/mobile/mvk dev endpoints were all updated to `https://stage-app54754579-d1b007975863.pages.vk-apps.ru/index.html`.
+- [x] Temporary one-shot PR deploy job/marker was removed after success; future VK production deployment remains manual-only.
+- [ ] Current dev preview has no MP3 music/SFX. This is diagnostic only; final VK release must resolve supported audio delivery/format instead of silently shipping without audio.
+- [ ] Owner must now open the real VK dev build and perform acceptance.
 
 ## 0 — Current RPChess VK-readiness — COMPLETE
 
@@ -70,13 +85,14 @@ This file is the compact operational handoff/status companion for agents. The ca
 - [x] Root `vk-hosting-config.json` exists.
 - [x] `static_path` = `dist-vk`.
 - [x] `app_id` = `54754579`.
+- [x] `noprompt` = `true` for CI/non-interactive deployment.
 - [x] `web`, `mobile` and `mvk` endpoints currently map to `index.html`.
 - [x] No secret is stored in the config.
 - [x] Manual-only `.github/workflows/vk-deploy.yml` exists; there is no push-triggered VK production deployment.
 - [x] Deploy workflow always executes `gate:vk` before publishing and requires `MINI_APPS_ACCESS_TOKEN` from GitHub Actions Secrets.
 - [x] Deploy tool is pinned at invocation to `@vkontakte/vk-miniapps-deploy@1.0.2`.
 
-## 6 — Preview/testing — AUTOMATED PART COMPLETE; REAL VK ACCEPTANCE PENDING
+## 6 — Preview/testing — REAL VK DEV BUILD AVAILABLE; HUMAN ACCEPTANCE PENDING
 
 Automated evidence for runtime candidate `40fba371763113a31d94bc89287cda59dedf74a9`:
 
@@ -89,32 +105,24 @@ Automated evidence for runtime candidate `40fba371763113a31d94bc89287cda59dedf74
 - [x] Classic Chess + real Stockfish browser acceptance on VK build — PASS.
 - [x] Mock rejected `VKWebAppInit` fallback — PASS; common menu remains usable.
 - [x] Previous exact canonical Web/Pages run `34499856191` on `6a1f613c...` — SUCCESS after advancing the stale Stage-1 assertion.
-- [x] Current runtime candidate canonical Web `gate:local` and artifact-size stages passed in run `34504789756`; the later long PR subpath step was cancelled only because docs/tooling commits superseded the run, not because of a test failure.
-- [x] Local manual server exists: after `npm run build:vk`, run `node scripts/serve-vk.cjs` and open `http://127.0.0.1:4174/`. The server sends `.wasm` as `application/wasm`.
-- [x] Manual full VK browser review workflow exists: `.github/workflows/vk-full-review.yml` builds deterministic `dist-vk` and reuses the complete existing Chromium matrix against it before moderation/release.
+- [x] Local manual server exists: after `npm run build:vk`, run `node scripts/serve-vk.cjs`; `.wasm` is served as `application/wasm`.
+- [x] Manual full VK browser review workflow exists and reuses the complete existing Chromium matrix against `dist-vk` before moderation/release.
+- [x] Real VK Hosting `dev` upload succeeded without MP3 in run `34527974937`.
 
-Still intentionally open:
+Human acceptance still open:
 
-- [ ] First uploaded build opens inside real VK Web.
-- [ ] Practical real-VK smoke through New Run / Travel / Skirmish / Battle / Event / Puzzle / Settlement.
+- [ ] Owner opens `https://stage-app54754579-d1b007975863.pages.vk-apps.ru/index.html` in the real VK development context / browser.
+- [ ] Practical smoke through New Run / Travel / Skirmish / Battle / Event / Puzzle / Settlement.
 - [ ] Save → reload verified in real VK context.
+- [ ] Confirm expected lack of audio in this diagnostic preview; do not treat it as an audio regression in gameplay source.
 - [ ] Full VK browser review workflow executed before moderation candidate freeze.
 - [ ] Mobile Android/iOS smoke only if those platforms are enabled for the first release.
-- [ ] VK Tunnel is not required yet because we have a deployable static candidate; use it only if real-container debugging becomes necessary.
 
-## Deployment boundary / current blocker
+## Current blockers / next work
 
-The repository is technically ready for the **first VK Hosting upload** of App `54754579`.
-
-The only external credential required to execute the prepared deploy workflow is `MINI_APPS_ACCESS_TOKEN`. It must be stored in **GitHub → Settings → Secrets and variables → Actions → Repository secrets** and must never be committed or pasted into project docs/chat. The official `vk-miniapps-deploy` tool accepts either its authorized user token or a service token for the deployable application.
-
-After the secret exists, run the manual workflow **Deploy RPChess to VK Hosting** with environment `dev` first. Production stays manual-only.
-
-## Next numbered/product decision
-
-After the first real VK Web smoke, continue section 6 acceptance and then section 7 — decide first-release persistence policy:
-
-- recommended first technical release: existing local save behind `platform.storage`;
-- optional later iteration: VK cloud/platform storage after its current limits/conflict policy are designed and tested.
+1. Human-check the live VK dev build.
+2. Resolve VK Hosting MP3 incompatibility for final VK delivery while preserving audio in other platforms.
+3. Continue section 7 persistence decision after the real VK smoke.
+4. Keep `platform/vk-games` unmerged until real VK Web acceptance or explicit owner authorization.
 
 Do not merge `platform/vk-games` to `main` until the VK build has passed real VK Web acceptance or the owner explicitly authorizes an earlier merge.
