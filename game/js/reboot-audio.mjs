@@ -1,3 +1,5 @@
+import { audioAssetUrl } from './platform/audio-assets.mjs';
+
 const MUSIC_TRACKS = Object.freeze([
   'music/echoes_iron_throne_01.mp3',
   'music/echoes_iron_throne_02.mp3',
@@ -46,7 +48,7 @@ class RebootAudio {
 
   loadTrack() {
     if (!this.music) return;
-    this.music.src = MUSIC_TRACKS[this.musicIndex % MUSIC_TRACKS.length];
+    this.music.src = audioAssetUrl(MUSIC_TRACKS[this.musicIndex % MUSIC_TRACKS.length]);
     this.music.load();
   }
 
