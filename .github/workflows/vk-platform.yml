@@ -56,3 +56,39 @@ jobs:
         env:
           RPCHESS_BROWSER_TEST: vk-platform-browser.cjs
         run: npm run test:browser:vk
+
+  deploy-vk-audio-cdn-dev:
+    name: one-shot VK audio CDN dev deploy
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.body, '[VK_AUDIO_CDN_DEPLOY_ONESHOT]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      MINI_APPS_ACCESS_TOKEN: ${{ secrets.MINI_APPS_ACCESS_TOKEN }}
+      MINI_APPS_ENVIRONMENT: dev
+      CI_URLS: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Validate exact VK candidate
+        run: npm run gate:vk
+
+      - name: Require VK Hosting access token
+        shell: bash
+        run: |
+          if [ -z "$MINI_APPS_ACCESS_TOKEN" ]; then
+            echo "MINI_APPS_ACCESS_TOKEN is not configured in GitHub Actions Secrets."
+            exit 1
+          fi
+
+      - name: Deploy VK audio CDN candidate to dev
+        run: npx --yes @vkontakte/vk-miniapps-deploy@1.0.2
