@@ -91,5 +91,14 @@ jobs:
             exit 1
           fi
 
-      - name: Deploy exact VK build to dev
+      - name: Prepare diagnostic VK Hosting payload without MP3
+        shell: bash
+        run: |
+          count=$(find dist-vk -type f -iname '*.mp3' | wc -l | tr -d ' ')
+          echo "VK Hosting diagnostic: excluding ${count} MP3 file(s) from upload payload only."
+          find dist-vk -type f -iname '*.mp3' -delete
+          remaining=$(find dist-vk -type f -iname '*.mp3' | wc -l | tr -d ' ')
+          test "$remaining" = "0"
+
+      - name: Deploy diagnostic VK build to dev
         run: npx --yes @vkontakte/vk-miniapps-deploy@1.0.2
