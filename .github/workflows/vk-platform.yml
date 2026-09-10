@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'package.json'
+      - 'game/js/reboot-audio.mjs'
+      - 'game/js/reboot-foundation.mjs'
       - 'game/js/platform/**'
       - 'platforms/vk/**'
       - 'scripts/build-vk.cjs'
@@ -46,7 +48,9 @@ jobs:
       - name: Build VK mock variant
         run: node scripts/build-vk.cjs --mock
 
-      - name: Run VK browser bootstrap smoke
+      - name: Run VK browser bootstrap + mobile audio unlock smoke
+        env:
+          RPCHESS_AUDIO_UNLOCK_RETRY: '1'
         run: npm run test:browser:vk
 
       - name: Build VK Bridge init-failure variant
