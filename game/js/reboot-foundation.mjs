@@ -7,6 +7,15 @@ import {
   subscribe,
   t
 } from './i18n.mjs';
+import { initializePlatform } from './platform/platform.mjs';
+
+// Platform bootstrap is intentionally non-blocking. Web remains the default adapter;
+// VK-specific SDK work stays behind the platform layer and is connected in the VK integration stages.
+const platformReady = initializePlatform().catch((error) => {
+  console.error('[RPChess] Platform bootstrap failed', error);
+  return null;
+});
+globalThis.RPChessPlatformReady = platformReady;
 
 // Travel Choice is part of the critical run shell. Its stylesheet must be available even if
 // the wider route/content bootstrap fails and Roster has to use the direct Travel fallback.
