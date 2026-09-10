@@ -1,7 +1,5 @@
 name: Validate RPChess VK build
 
-# One-shot marker is intentionally read from the PR body; remove the deploy job after success.
-# Armed for the current mobile-audio verification only. The job is dev-only and still runs gate:vk before uploading.
 on:
   pull_request:
     paths:
@@ -62,35 +60,3 @@ jobs:
         env:
           RPCHESS_BROWSER_TEST: vk-platform-browser.cjs
         run: npm run test:browser:vk
-
-  one-shot-vk-mobile-audio-deploy:
-    name: one-shot VK mobile audio fix dev deploy
-    needs: validate-vk
-    if: github.event_name == 'pull_request' && contains(github.event.pull_request.body, '[VK_MOBILE_AUDIO_DEPLOY_ONESHOT]')
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      MINI_APPS_ACCESS_TOKEN: ${{ secrets.MINI_APPS_ACCESS_TOKEN }}
-      MINI_APPS_ENVIRONMENT: dev
-      CI_URLS: 'true'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-      - name: Install dependencies
-        run: npm ci --no-audit --no-fund
-      - name: Validate exact VK candidate
-        run: npm run gate:vk
-      - name: Require VK Hosting access token
-        shell: bash
-        run: |
-          if [ -z "$MINI_APPS_ACCESS_TOKEN" ]; then
-            echo "MINI_APPS_ACCESS_TOKEN is not configured in GitHub Actions Secrets."
-            exit 1
-          fi
-      - name: Deploy VK mobile audio fix to dev
-        run: npx --yes @vkontakte/vk-miniapps-deploy@1.0.2
