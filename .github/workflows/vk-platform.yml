@@ -1,6 +1,7 @@
 name: Validate RPChess VK build
 
 # One-shot marker is intentionally read from the PR body; remove the deploy job after success.
+# The job is dev-only and still runs gate:vk before uploading.
 on:
   pull_request:
     paths:
