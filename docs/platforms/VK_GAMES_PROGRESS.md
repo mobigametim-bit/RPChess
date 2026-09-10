@@ -1,18 +1,44 @@
 # VK Games publication — progress
 
 **Updated:** 2026-09-11  
-**Current stage:** VK Games publication — real VK Web audio acceptance  
+**Current stage:** VK Games publication — real VK mobile audio acceptance  
 **Working branch:** `platform/vk-games`  
-**Current audio-enabled runtime candidate:** `e8cf9a81c05b77817794619839b34ebce4c07b08`  
-**VK Hosting audio-CDN dev version:** `1789076770`  
-**VK dev URL:** `https://stage-app54754579-8398c99ac1b3.pages.vk-apps.ru/index.html`  
+**Current mobile-audio runtime candidate:** `974c418709d31b644fa27eda8a4a6f198fc636ef`  
+**Current branch head after one-shot cleanup:** `5a976cf003809bb42c2ab06641efb7412b2f27fb`  
+**VK Hosting mobile-audio dev version:** `1789078875`  
+**VK dev URL:** `https://stage-app54754579-f861812c54e4.pages.vk-apps.ru/index.html`  
 **VK App ID:** `54754579` (`app54754579`)  
 **Draft PR:** #137  
 **Canonical checklist:** `docs/platforms/VK_GAMES_PUBLICATION_PLAN.md`
 
 This file is the compact operational handoff/status companion for agents. The canonical task definitions remain in `VK_GAMES_PUBLICATION_PLAN.md`; exact implementation/test evidence is recorded here so another agent can continue without re-auditing completed work.
 
-## VK Hosting audio constraint and solution — DEV CANDIDATE DEPLOYED
+## VK mobile music regression — FIX DEPLOYED; HUMAN ACCEPTANCE PENDING
+
+Observed in the real VK clients:
+
+- [x] Owner verified that music works in the VK desktop client/browser build.
+- [x] Owner reported that music did not start in the VK mobile version; tablet remained untested.
+- [x] The shared external audio origin was therefore reachable from the deployed game, narrowing the issue to mobile media activation rather than VK Hosting packaging.
+
+Root cause and fix:
+
+- [x] Previous Foundation registered audio activation only once on the first `pointerdown`/`keydown`.
+- [x] `HTMLMediaElement.play()` rejection was swallowed. A mobile WebView `NotAllowedError` on that first attempt therefore left background music permanently paused for the session.
+- [x] `RebootAudio` now tracks playback success/failure (`musicPlaybackUnlocked`, `musicPlayPending`, `lastMusicPlayError`) and retries playback from later trusted user gestures until it succeeds.
+- [x] Foundation now keeps lightweight `pointerdown`, `pointerup`, `touchend`, `click` and `keydown` activation handlers alive. Once music is already playing, `RebootAudio` short-circuits without issuing another `play()`.
+- [x] The same gesture path also gives a suspended WebAudio context a chance to resume after mobile lifecycle changes.
+- [x] Existing `tests/vk-platform-browser.cjs` was extended instead of creating a new suite. It deterministically rejects the first `play()` with `NotAllowedError` and requires a later real Playwright click to unlock music.
+- [x] VK validation run `34535999482` — SUCCESS, including `VK mobile music user-gesture retry regression: PASS`, Foundation responsive acceptance, Classic+real Stockfish and Bridge failure fallback.
+- [x] VK deploy run `34536590824` — validation SUCCESS + dev deploy SUCCESS.
+- [x] VK Hosting version `1789078875` created.
+- [x] Desktop/mobile/mvk dev endpoints updated to `https://stage-app54754579-f861812c54e4.pages.vk-apps.ru/index.html`.
+- [x] Temporary one-shot mobile-audio deploy job/PR marker was removed immediately after successful upload; permanent VK deployment remains manual-only.
+- [ ] Owner must now reopen/refresh the real VK mobile app and verify that music starts after a normal tap/click inside the game.
+- [ ] Verify generated UI SFX separately.
+- [ ] Verify `SFX/win_fanfare.mp3` separately when a victory screen is reached.
+
+## VK Hosting audio constraint and external delivery — COMPLETE FOR DEV
 
 Observed and reproduced:
 
@@ -31,11 +57,7 @@ Implemented solution:
 - [x] VK mock builds retain local audio so browser tests remain deterministic and independent of an external origin.
 - [x] `tests/vk-build.cjs` asserts that Web retains all 5 MP3 files, production VK embeds no audio/video media, and the VK runtime config contains the external audio base URL.
 - [x] Audio externalization validation run `34533393436` — SUCCESS, including Chromium success/failure Bridge paths.
-- [x] Real audio-CDN VK Hosting dev deploy run `34533856283` — SUCCESS.
-- [x] VK Hosting version `1789076770` created.
-- [x] Desktop/mobile/mvk dev endpoints updated to `https://stage-app54754579-8398c99ac1b3.pages.vk-apps.ru/index.html`.
-- [x] Temporary one-shot audio deploy trigger/PR marker removed after successful upload; permanent VK deployment remains manual-only.
-- [ ] Owner must verify music and victory SFX in the new real VK development build.
+- [x] Real audio-CDN VK Hosting dev deploy run `34533856283` — SUCCESS; Hosting version `1789076770`.
 
 ## 0 — Current RPChess VK-readiness — COMPLETE
 
@@ -106,23 +128,27 @@ Automated evidence:
 - [x] First real VK Hosting diagnostic run `34527974937` — SUCCESS without embedded MP3.
 - [x] Audio externalization validation run `34533393436` — SUCCESS.
 - [x] Audio-enabled VK Hosting deploy run `34533856283` — SUCCESS; version `1789076770`.
+- [x] Mobile audio retry validation run `34535999482` — SUCCESS.
+- [x] Mobile audio fix deploy run `34536590824` — SUCCESS; version `1789078875`.
 - [x] Bridge success + rejected-init fallbacks are covered by Chromium.
 - [x] Classic Chess + real Stockfish works in VK browser test build.
-- [x] Owner confirmed the first real VK build otherwise works; only audio was missing in that version.
+- [x] Owner confirmed real VK gameplay/UI works and desktop music works.
 
-Human acceptance still open for the new audio-enabled version:
+Human acceptance still open for current version `1789078875`:
 
-- [ ] Music plays inside real VK Web after normal user interaction.
-- [ ] Victory fanfare/SFX plays from the external audio origin.
+- [ ] Music plays inside real VK mobile after normal user interaction.
+- [ ] UI SFX works in real VK mobile.
+- [ ] Victory fanfare plays from the external audio origin.
+- [ ] Tablet smoke if tablet is part of the intended first-release coverage.
 - [ ] Recheck New Run / Travel / Skirmish / Battle / Event / Puzzle / Settlement after the audio-layer change.
 - [ ] Save → reload verified in real VK context.
 - [ ] Full VK browser review workflow executed before moderation candidate freeze.
-- [ ] Mobile Android/iOS smoke only if those platforms are enabled for the first release.
 
 ## Current blockers / next work
 
-1. Owner opens VK App `54754579` and verifies music + SFX on Hosting version `1789076770`.
-2. If external audio works in VK Web, test the same path in the VK mobile clients intended for release.
-3. Decide whether GitHub Pages remains the temporary audio origin for first release or move audio to production object storage/CDN before moderation.
-4. Continue section 7 persistence decision.
-5. Keep `platform/vk-games` unmerged until real VK acceptance or explicit owner authorization.
+1. Owner reopens/refreshes VK App `54754579` on mobile and tests music on Hosting version `1789078875`.
+2. Verify UI SFX and victory fanfare as separate paths.
+3. If mobile music is confirmed, record human acceptance and continue save/reload + remaining real VK flow checks.
+4. Decide whether GitHub Pages remains the temporary audio origin for first release or move audio to production object storage/CDN before moderation.
+5. Continue section 7 persistence decision.
+6. Keep `platform/vk-games` unmerged until real VK acceptance or explicit owner authorization.
