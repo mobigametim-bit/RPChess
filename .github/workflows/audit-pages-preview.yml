@@ -1,0 +1,90 @@
+name: Temporary Audit Pages Preview
+
+on:
+  push:
+    branches:
+      - audit/full-project-review-2026-09-08
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: audit-pages-preview
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout frozen production
+        uses: actions/checkout@v4
+        with:
+          ref: e92831ca5d6e0c14fb2d919e410180ce77b97ce6
+          path: prod
+
+      - name: Checkout exact audit candidate
+        uses: actions/checkout@v4
+        with:
+          ref: 2906aebf5c95f20620bc9691279f95fd65fe8544
+          path: audit
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build frozen production root
+        working-directory: prod
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
+      - name: Build exact audit candidate
+        working-directory: audit
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
+      - name: Verify nested audit preview subpath in Chromium
+        working-directory: audit
+        env:
+          RPCHESS_GATE_PREFIX: /RPChess/audit-preview
+          RPCHESS_BROWSER_TEST: reboot-foundation-browser.cjs,classic-chess-browser.cjs,responsive-viewport-browser.cjs
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+          npm run test:browser
+
+      - name: Assemble combined Pages artifact
+        shell: bash
+        run: |
+          rm -rf site
+          mkdir -p site/audit-preview
+          cp -a prod/dist/. site/
+          cp -a audit/dist/. site/audit-preview/
+          touch site/.nojekyll
+          bytes=$(du -sb site | cut -f1)
+          echo "combined Pages artifact: ${bytes} bytes"
+          test "$bytes" -lt 1000000000
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload combined Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy combined production + audit preview
+        id: deployment
+        uses: actions/deploy-pages@v4
