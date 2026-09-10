@@ -10,6 +10,22 @@
 ## Критический контракт
 Chess layer ничего не знает о Gold, Supplies, Events или campaign. Он получает позицию/ход и возвращает legality, position, check, mate, draw.
 
+## Multi-platform delivery boundary
+RPChess сохраняет **один общий gameplay/runtime**. Web, VK Games и будущие Android/iOS/Windows варианты не являются отдельными копиями игры и не должны иметь собственные форки Battle, Events, Resources, Settlement, Puzzles, Roster или другой domain logic.
+
+Активная platform boundary находится в `game/js/platform/`:
+
+- `platform.mjs` — resolver/runtime contract;
+- `web-platform.mjs` — default Web adapter;
+- `vk-platform.mjs` — VK Games adapter/scaffold;
+- будущие platform implementations добавляются по той же модели, не через копирование gameplay owners.
+
+Общий adapter contract предоставляет `init` и capability/service boundaries для `storage`, `ads`, `payments`, `analytics`, `social`, `lifecycle`. Неподдерживаемая capability обязана иметь безопасное состояние `supported: false`/fallback.
+
+**Запрещено:** вызывать `VKWebApp*`, `bridge.send(...)` или SDK другой площадки напрямую из gameplay owner-модулей. Платформенный SDK подключается только внутри соответствующего adapter/build layer.
+
+Foundation поднимает platform runtime неблокирующе. Web является default, поэтому появление VK integration не должно менять поведение канонической GitHub Pages сборки. VK Bridge, `VKWebAppInit`, `build:vk` и VK Hosting подключаются по `docs/platforms/VK_GAMES_PUBLICATION_PLAN.md`; текущий рабочий branch — `platform/vk-games`.
+
 ## Канонический lifecycle разработки
 Каждая player-facing feature проходит один и тот же lifecycle:
 

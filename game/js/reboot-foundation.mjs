@@ -7,6 +7,15 @@ import {
   subscribe,
   t
 } from './i18n.mjs';
+import { initializePlatform } from './platform/platform.mjs';
+
+// Platform bootstrap is intentionally non-blocking. Web remains the default adapter;
+// VK-specific SDK work stays behind the platform layer and is connected in the VK integration stages.
+const platformReady = initializePlatform().catch((error) => {
+  console.error('[RPChess] Platform bootstrap failed', error);
+  return null;
+});
+globalThis.RPChessPlatformReady = platformReady;
 
 // Travel Choice is part of the critical run shell. Its stylesheet must be available even if
 // the wider route/content bootstrap fails and Roster has to use the direct Travel fallback.
@@ -127,9 +136,14 @@ subscribe((language) => {
   syncLanguageUi();
 });
 
+// Mobile WebViews may reject the first HTMLMediaElement.play() even when it is attempted
+// from an early pointer event. Keep lightweight gesture retries active: once music is playing,
+// RebootAudio short-circuits without issuing another play() call. Repeated gestures also give
+// a suspended WebAudio context a chance to resume after mobile app lifecycle transitions.
 function activateAudio() { audio.activate(); }
-document.addEventListener('pointerdown', activateAudio, { once: true, capture: true });
-document.addEventListener('keydown', activateAudio, { once: true, capture: true });
+for (const eventName of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) {
+  document.addEventListener(eventName, activateAudio, { capture: true });
+}
 
 document.querySelector('[data-new-game]')?.addEventListener('click', async () => {
   audio.click();

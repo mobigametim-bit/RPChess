@@ -1,4 +1,5 @@
 import { BACKGROUND_POOLS, RACE_TAGS, hashString, normalizeRaceTag } from './race-assets.mjs';
+import { audioAssetUrl } from './platform/audio-assets.mjs';
 
 const VICTORY_FANFARE = 'SFX/win_fanfare.mp3';
 const GOLD_ICON = 'generated_assets/reward_gold.png';
@@ -194,7 +195,7 @@ function playVictoryFanfare(root) {
   const sfx = Number(audio?.settings?.sfx ?? 80);
   root.dataset.victoryFanfarePlayed = '1';
   if (!audio?.activated || sfx <= 0 || typeof Audio !== 'function') return;
-  const fanfare = new Audio(VICTORY_FANFARE);
+  const fanfare = new Audio(audioAssetUrl(VICTORY_FANFARE));
   fanfare.volume = Math.min(1, Math.max(0, sfx / 100) * .78);
   fanfare.play().catch(() => {});
 }
