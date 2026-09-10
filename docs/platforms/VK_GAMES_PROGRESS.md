@@ -3,7 +3,8 @@
 **Updated:** 2026-09-10  
 **Current stage:** VK Games publication — first real VK Hosting upload  
 **Working branch:** `platform/vk-games`  
-**Current code candidate:** `40fba371763113a31d94bc89287cda59dedf74a9`  
+**Current runtime candidate:** `40fba371763113a31d94bc89287cda59dedf74a9`  
+**Operational branch head:** docs/tooling may be newer than the accepted runtime candidate  
 **VK App ID:** `54754579` (`app54754579`)  
 **Draft PR:** #137  
 **Canonical checklist:** `docs/platforms/VK_GAMES_PUBLICATION_PLAN.md`
@@ -77,7 +78,7 @@ This file is the compact operational handoff/status companion for agents. The ca
 
 ## 6 — Preview/testing — AUTOMATED PART COMPLETE; REAL VK ACCEPTANCE PENDING
 
-Automated evidence for code candidate `40fba371763113a31d94bc89287cda59dedf74a9`:
+Automated evidence for runtime candidate `40fba371763113a31d94bc89287cda59dedf74a9`:
 
 - [x] VK validation workflow run `34504789713` — SUCCESS.
 - [x] `gate:vk` — PASS.
@@ -88,13 +89,16 @@ Automated evidence for code candidate `40fba371763113a31d94bc89287cda59dedf74a9`
 - [x] Classic Chess + real Stockfish browser acceptance on VK build — PASS.
 - [x] Mock rejected `VKWebAppInit` fallback — PASS; common menu remains usable.
 - [x] Previous exact canonical Web/Pages run `34499856191` on `6a1f613c...` — SUCCESS after advancing the stale Stage-1 assertion.
-- [x] Current code candidate canonical Web `gate:local` and artifact-size stages are PASS in run `34504789756`; its long Pages subpath Chromium smoke is separate PR validation and cannot deploy because the ref is not `main`.
+- [x] Current runtime candidate canonical Web `gate:local` and artifact-size stages passed in run `34504789756`; the later long PR subpath step was cancelled only because docs/tooling commits superseded the run, not because of a test failure.
+- [x] Local manual server exists: after `npm run build:vk`, run `node scripts/serve-vk.cjs` and open `http://127.0.0.1:4174/`. The server sends `.wasm` as `application/wasm`.
+- [x] Manual full VK browser review workflow exists: `.github/workflows/vk-full-review.yml` builds deterministic `dist-vk` and reuses the complete existing Chromium matrix against it before moderation/release.
 
 Still intentionally open:
 
-- [ ] Owner opens the first uploaded build inside real VK Web.
-- [ ] Run practical smoke through New Run / Travel / Skirmish / Battle / Event / Puzzle / Settlement in real VK context.
-- [ ] Verify save → reload in real VK context.
+- [ ] First uploaded build opens inside real VK Web.
+- [ ] Practical real-VK smoke through New Run / Travel / Skirmish / Battle / Event / Puzzle / Settlement.
+- [ ] Save → reload verified in real VK context.
+- [ ] Full VK browser review workflow executed before moderation candidate freeze.
 - [ ] Mobile Android/iOS smoke only if those platforms are enabled for the first release.
 - [ ] VK Tunnel is not required yet because we have a deployable static candidate; use it only if real-container debugging becomes necessary.
 
