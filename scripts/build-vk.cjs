@@ -8,6 +8,8 @@ const VK_CONFIG_PATH = path.join(ROOT, 'vk-hosting-config.json');
 const MOCK_INIT_FAILURE = process.argv.includes('--mock-fail');
 const USE_MOCK = process.argv.includes('--mock') || MOCK_INIT_FAILURE;
 const BRIDGE_VERSION = '3.0.2';
+const AUDIO_BASE_URL = 'https://mobigametim-bit.github.io/RPChess';
+const VK_HOSTING_MEDIA_EXTENSIONS = new Set(['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac', '.mp4', '.webm', '.mov']);
 const BRIDGE_SOURCE = path.join(
   ROOT,
   'platforms',
@@ -29,6 +31,24 @@ function copyFile(source, target) {
   requireFile(source);
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.copyFileSync(source, target);
+}
+
+function stripHostingMedia(root) {
+  const removed = [];
+  const visit = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const absolute = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        visit(absolute);
+        continue;
+      }
+      if (!VK_HOSTING_MEDIA_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) continue;
+      removed.push(path.relative(root, absolute).replace(/\\/g, '/'));
+      fs.unlinkSync(absolute);
+    }
+  };
+  visit(root);
+  return removed;
 }
 
 function assertRelativeRuntimePaths(root) {
@@ -69,6 +89,7 @@ function main() {
 
   fs.rmSync(VK_DIST, { recursive: true, force: true });
   fs.cpSync(WEB_DIST, VK_DIST, { recursive: true, force: true });
+  const removedHostingMedia = USE_MOCK ? [] : stripHostingMedia(VK_DIST);
 
   const bridgeTarget = path.join(VK_DIST, 'vendor', 'vk-bridge', 'browser.min.js');
   copyFile(BRIDGE_SOURCE, bridgeTarget);
@@ -82,11 +103,13 @@ function main() {
   if (html.includes('data-rpchess-vk-bootstrap')) throw new Error('VK bootstrap was already injected');
 
   const bridgeMockMode = MOCK_INIT_FAILURE ? 'init-failure' : (USE_MOCK ? 'success' : null);
+  const audioBaseUrl = USE_MOCK ? '' : AUDIO_BASE_URL;
   const config = JSON.stringify({
     kind: 'vk',
     appId,
     bridgeVersion: BRIDGE_VERSION,
     bridgeInitTimeoutMs: 4000,
+    audioBaseUrl,
     mockBridge: USE_MOCK,
     bridgeMockMode
   });
@@ -105,6 +128,7 @@ function main() {
     'js/platform/web-platform.mjs',
     'js/platform/vk-platform.mjs',
     'js/platform/vk-bootstrap.mjs',
+    'js/platform/audio-assets.mjs',
     'vendor/vk-bridge/browser.min.js',
     'vendor/vk-bridge/LICENSE.txt',
     'vendor/stockfish/stockfish-18-lite-single.js',
@@ -122,11 +146,15 @@ function main() {
     bridge_version: BRIDGE_VERSION,
     bridge_mock: USE_MOCK,
     bridge_mock_mode: bridgeMockMode,
+    audio_base_url: audioBaseUrl,
+    hosting_media_externalized: !USE_MOCK,
+    hosting_media_removed: removedHostingMedia,
     source: 'canonical dist copy + VK platform overlay'
   }, null, 2)}\n`);
 
   const mode = MOCK_INIT_FAILURE ? ' mock-init-failure' : (USE_MOCK ? ' mock' : '');
-  console.log(`Prepared RPChess VK Games build in ${VK_DIST}; app_id=${appId}; VK Bridge ${BRIDGE_VERSION}${mode}`);
+  const audioMode = USE_MOCK ? 'local test audio' : `${removedHostingMedia.length} hosting media externalized to ${AUDIO_BASE_URL}`;
+  console.log(`Prepared RPChess VK Games build in ${VK_DIST}; app_id=${appId}; VK Bridge ${BRIDGE_VERSION}${mode}; ${audioMode}`);
 }
 
 main();
