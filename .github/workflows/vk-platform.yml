@@ -12,6 +12,7 @@ on:
       - 'tests/vk-*.cjs'
       - 'vk-hosting-config.json'
       - '.github/workflows/vk-platform.yml'
+      - '.github/workflows/vk-deploy.yml'
   workflow_dispatch:
 
 permissions:
@@ -46,4 +47,12 @@ jobs:
         run: node scripts/build-vk.cjs --mock
 
       - name: Run VK browser bootstrap smoke
+        run: npm run test:browser:vk
+
+      - name: Build VK Bridge init-failure variant
+        run: node scripts/build-vk.cjs --mock-fail
+
+      - name: Verify VK Bridge failure fallback
+        env:
+          RPCHESS_BROWSER_TEST: vk-platform-browser.cjs
         run: npm run test:browser:vk
