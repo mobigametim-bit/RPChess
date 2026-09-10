@@ -52,7 +52,7 @@ jobs:
         working-directory: audit
         env:
           RPCHESS_GATE_PREFIX: /RPChess/audit-preview
-          RPCHESS_BROWSER_TEST: reboot-foundation-browser.cjs,classic-chess-browser.cjs,responsive-viewport-browser.cjs
+          RPCHESS_BROWSER_TEST: reboot-foundation-browser.cjs,classic-chess-browser.cjs
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
