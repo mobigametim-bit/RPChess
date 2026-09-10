@@ -1,19 +1,36 @@
 # RPChess — Current State
 
-**Last synchronized:** 2026-09-10
+**Last synchronized:** 2026-09-10  
 **Production branch:** `main`  
-**Frozen production commit:** `e92831ca5d6e0c14fb2d919e410180ce77b97ce6`
-**Production URL:** https://mobigametim-bit.github.io/RPChess/
+**Accepted production/audit merge head:** `24885b2da20bc5063e4b4f5101a34f6d7aa2ddde`  
+**Production URL:** https://mobigametim-bit.github.io/RPChess/  
+**Current active stage:** **VK Games publication**  
+**VK working plan:** `docs/platforms/VK_GAMES_PUBLICATION_PLAN.md`
 
-This page is the short operational snapshot of the project. Historical feature receipts remain in the numbered documents and `CHANGELOG.md`; when an old receipt conflicts with this page about deployment, responsive UI, persistence or current asset usage, this page describes the current contract.
+This page is the short operational snapshot of the project. Historical feature receipts remain in the numbered documents and `CHANGELOG.md`; when an old receipt conflicts with this page about deployment, responsive UI, persistence, current asset usage or current project stage, this page describes the current contract.
 
-## Full-review remediation candidate
+## Current phase — VK Games publication
 
-- Branch: `audit/full-project-review-2026-09-08`.
-- Final code candidate: `2906aebf5c95f20620bc9691279f95fd65fe8544`.
-- `main` remains frozen and has not received the remediation changes.
-- The audit branch is not a production deployment; merge and deploy require a separate owner command.
-- Exact validation run `34451963848`: canonical local gate, standalone responsive RU/EN/boundary matrix and all 17 Chromium contracts **PASS**.
+The full-project review remediation is complete, human accepted, merged into `main` and used as the production baseline. The active delivery track is now the first external platform release: **VK Games**.
+
+Canonical working checklist:
+
+`docs/platforms/VK_GAMES_PUBLICATION_PLAN.md`
+
+Agents continuing this project should use that checklist as the source of truth for VK work, mark completed items there, preserve one shared gameplay codebase, and keep VK-specific integration behind the platform layer rather than creating a separate copy of RPChess.
+
+Immediate next technical stages are:
+
+1. verify/record the existing RPChess readiness state (plan section 0);
+2. create `platform/vk-games` from current `main` and establish the platform-integration boundary (plan section 1);
+3. after the owner creates the VK Games project and provides `app_id`, continue with VK Bridge, `build:vk`, VK Hosting config and platform testing.
+
+## Full-project review closure
+
+- Final remediation code candidate: `2906aebf5c95f20620bc9691279f95fd65fe8544`.
+- Final exact validation run `34451963848`: canonical local gate, standalone responsive RU/EN/boundary matrix and all 17 Chromium contracts **PASS**.
+- The accepted audit line was fast-forward merged into `main`; final cleanup/docs commits culminated in accepted production merge head `24885b2da20bc5063e4b4f5101a34f6d7aa2ddde` before the subsequent docs-only VK planning updates.
+- All REV-001…REV-021 review findings are closed and verified.
 
 ## Production and delivery
 
@@ -26,17 +43,15 @@ RPChess is published from `main` through **GitHub Pages**.
 3. Pages artifact-size guard (`dist` must remain below 1 GB);
 4. Playwright/Chromium installation;
 5. real browser verification under the project subpath `/RPChess/` using Classic Chess/Stockfish and responsive viewport contracts;
-6. on non-PR runs, upload `dist` and deploy it to GitHub Pages.
+6. on permitted `main` runs, upload `dist` and deploy it to GitHub Pages.
 
-PR runs validate the candidate but do not publish it. Pushes to accepted `main` publish production after the same gate.
+PR runs validate candidates but do not publish them. Production Pages deployment is guarded to `main`.
 
-The frozen production baseline is `main@e92831ca5d6e0c14fb2d919e410180ce77b97ce6`. Audit validation does not publish it or alter the production deployment.
-
-Cloudflare configuration and `npm run deploy:cloudflare` remain only for an explicit manual owner request. No push, PR or milestone workflow deploys Cloudflare automatically. GitHub Pages is the canonical public production deployment described by the active workflow and documentation.
+Cloudflare configuration and `npm run deploy:cloudflare` remain only for an explicit manual owner request. No normal push, PR or milestone workflow deploys Cloudflare automatically. GitHub Pages remains the canonical public web production deployment while VK Games is developed as an additional platform target.
 
 ## Current accepted UI contract
 
-The landscape redesign and live-device correction cycle is human accepted. The audit branch additionally enforces the remediation geometry contract below; it is not merged into `main` yet.
+The landscape redesign, live-device correction cycle and full-review remediation geometry are human accepted and merged into `main`.
 
 Canonical viewport targets:
 
@@ -97,13 +112,13 @@ Legacy `ui_button_primary.png` is excluded from production `dist`; ordinary CTA 
 
 Canonical language codes are `ru` and `en`.
 
-The accepted main branch includes bilingual shell/runtime coverage and live-verified English presentation for Roster, Battle, Skirmish, Travel, Settlement and Event across desktop/tablet/mobile. Event mechanics remain language-independent; localization is presentation-only.
-
-The audit candidate completes owner-level RU/EN rendering for active dynamic surfaces and removes the whole-document localization observer. Explicit authored-content translation remains render-time and owner-controlled.
+Current `main` includes owner-level RU/EN rendering for active dynamic surfaces and no whole-document localization observer. Explicit authored-content translation remains render-time and owner-controlled. Event mechanics remain language-independent; localization is presentation-only.
 
 ## Persistence boundary
 
 The current namespace is `rpchess.reboot.v1.run`, schema version `1`. Supported same-schema state is hydrated best-effort. Unsupported schema versions reset safely; old/legacy schema preservation and Iron Marches save import are not product obligations.
+
+For VK Games, storage must be accessed through the planned platform boundary so the existing local-save behavior can remain the first implementation while cloud/platform storage can be introduced later without duplicating gameplay logic.
 
 ## Core gameplay state
 
@@ -130,7 +145,7 @@ Historical acceptance/build receipts remain in the numbered design documents and
 
 ## Documentation synchronization rule
 
-GitHub `main`, GitHub `docs/` and the Notion **RPChess — Центр проекта** hierarchy must describe the same accepted production state.
+GitHub `main`, GitHub `docs/` and the Notion **RPChess — Центр проекта** hierarchy must describe the same accepted production state and current active delivery stage.
 
 For active work the lifecycle remains:
 
