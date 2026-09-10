@@ -1,3 +1,4 @@
+# Temporary one-shot dev deploy for the validated audio-CDN candidate; remove after successful upload.
 name: Validate RPChess VK build
 
 on:
