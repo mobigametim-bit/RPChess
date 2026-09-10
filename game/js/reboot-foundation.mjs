@@ -136,9 +136,14 @@ subscribe((language) => {
   syncLanguageUi();
 });
 
+// Mobile WebViews may reject the first HTMLMediaElement.play() even when it is attempted
+// from an early pointer event. Keep lightweight gesture retries active: once music is playing,
+// RebootAudio short-circuits without issuing another play() call. Repeated gestures also give
+// a suspended WebAudio context a chance to resume after mobile app lifecycle transitions.
 function activateAudio() { audio.activate(); }
-document.addEventListener('pointerdown', activateAudio, { once: true, capture: true });
-document.addEventListener('keydown', activateAudio, { once: true, capture: true });
+for (const eventName of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) {
+  document.addEventListener(eventName, activateAudio, { capture: true });
+}
 
 document.querySelector('[data-new-game]')?.addEventListener('click', async () => {
   audio.click();
