@@ -1,7 +1,6 @@
 import { currentLanguage, subscribe } from './i18n.mjs';
 
 const CSS_MARKER = 'data-landscape-ui-css';
-const COMPACT_COMBAT_AIR_MARKER = 'data-compact-combat-air-css';
 
 function ensureStylesheet() {
   if (document.querySelector(`[${CSS_MARKER}]`)) return;
@@ -10,25 +9,6 @@ function ensureStylesheet() {
   link.href = 'css/landscape-ui-redesign.css?v=20260905-1';
   link.setAttribute(CSS_MARKER, '');
   document.head.append(link);
-}
-
-function ensureCompactCombatAirGap() {
-  if (document.querySelector(`[${COMPACT_COMBAT_AIR_MARKER}]`)) return;
-  const style = document.createElement('style');
-  style.setAttribute(COMPACT_COMBAT_AIR_MARKER, '');
-  style.textContent = `
-    html[data-landscape-ui='1'] body.compact-combat-active .classic-party-panel,
-    html[data-landscape-ui='1'] body.compact-combat-active .classic-panel--moves {
-      width: min(
-        calc(100vw - 100dvh - 4px),
-        max(220px, calc(48vw - 48dvh - 2px))
-      ) !important;
-      max-width: none !important;
-      justify-self: start !important;
-      box-sizing: border-box !important;
-    }
-  `;
-  document.head.append(style);
 }
 
 function ensureOrientationLock() {
@@ -55,7 +35,6 @@ function syncLanguage(language = currentLanguage()) {
 }
 
 ensureStylesheet();
-ensureCompactCombatAirGap();
 ensureOrientationLock();
 document.documentElement.dataset.landscapeUi = '1';
 syncLanguage();
