@@ -4,7 +4,9 @@ const path=require('path');
 const {spawn}=require('child_process');
 
 const ROOT=path.resolve(__dirname,'..');
-const DIST=path.join(ROOT,'dist');
+const RAW_DIST=String(process.env.RPCHESS_GATE_DIST||'dist').trim();
+if(!RAW_DIST||path.isAbsolute(RAW_DIST)||RAW_DIST.split(/[\\/]+/).includes('..'))throw new Error(`Invalid RPCHESS_GATE_DIST: ${RAW_DIST}`);
+const DIST=path.join(ROOT,RAW_DIST);
 const HOST='127.0.0.1';
 const PORT=Number(process.env.RPCHESS_GATE_PORT||4173);
 const RAW_PREFIX=String(process.env.RPCHESS_GATE_PREFIX||'').trim();
@@ -29,13 +31,15 @@ const DEFAULT_TESTS=[
   'events-browser.cjs',
   'puzzles-browser.cjs'
 ];
+const OPTIONAL_TESTS=['vk-platform-browser.cjs'];
+const ALLOWED_TESTS=new Set([...DEFAULT_TESTS,...OPTIONAL_TESTS]);
 const requested=String(process.env.RPCHESS_BROWSER_TEST||'').trim();
 const TESTS=requested?requested.split(',').map(item=>item.trim()).filter(Boolean):DEFAULT_TESTS;
-for(const test of TESTS)if(!DEFAULT_TESTS.includes(test))throw new Error(`Unknown RPChess browser test: ${test}`);
-const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.svg':'image/svg+xml','.mp3':'audio/mpeg','.wasm':'application/wasm','.otf':'font/otf'};
+for(const test of TESTS)if(!ALLOWED_TESTS.has(test))throw new Error(`Unknown RPChess browser test: ${test}`);
+const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.svg':'image/svg+xml','.mp3':'audio/mpeg','.wasm':'application/wasm','.otf':'font/otf','.txt':'text/plain; charset=utf-8'};
 
 function requirePrerequisites(){
-  if(!fs.existsSync(path.join(DIST,'index.html')))throw new Error('dist/index.html is missing. Run npm run gate:local first.');
+  if(!fs.existsSync(path.join(DIST,'index.html')))throw new Error(`${RAW_DIST}/index.html is missing. Build the requested distribution first.`);
   try{require.resolve('playwright',{paths:[ROOT]});}catch{
     throw new Error('Playwright is not installed. Run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2 && npx playwright install chromium');
   }
@@ -75,7 +79,7 @@ function run(test){
   requirePrerequisites();
   const app=server();
   await new Promise((resolve,reject)=>{app.once('error',reject);app.listen(PORT,HOST,resolve);});
-  console.log(`[browser gate] ${BASE}`);
+  console.log(`[browser gate] dist=${RAW_DIST} ${BASE}`);
   try{
     for(const test of TESTS){console.log(`\n[browser gate] ${test}`);await run(test);}
     console.log(`\nRPChess ${requested?'targeted':'full'} real-Chromium regression: PASS`);
