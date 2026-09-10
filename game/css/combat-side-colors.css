@@ -64,3 +64,17 @@ body.run-combat-board-active .classic-square--check.classic-square--selected:has
 body.run-combat-board-active .classic-square--check.classic-square--last:has(.classic-piece-marker)::after{
   background:var(--combat-aura-image) center/100% 100% no-repeat!important;
 }
+
+/* Shared compact-combat spacing: preserve the fixed board and turn unused left-rail width into air. */
+@media (orientation: landscape) {
+  html[data-landscape-ui='1'] body.compact-combat-active .classic-party-panel,
+  html[data-landscape-ui='1'] body.compact-combat-active .classic-panel--moves {
+    width:min(
+      calc(100vw - 100dvh - 4px),
+      max(220px, calc(48vw - 48dvh - 2px))
+    )!important;
+    max-width:none!important;
+    justify-self:start!important;
+    box-sizing:border-box!important;
+  }
+}
