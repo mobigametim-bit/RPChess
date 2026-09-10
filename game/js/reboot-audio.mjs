@@ -26,6 +26,9 @@ class RebootAudio {
     this.musicIndex = randomMusicIndex();
     this.activated = false;
     this.context = null;
+    this.musicPlaybackUnlocked = false;
+    this.musicPlayPending = null;
+    this.lastMusicPlayError = null;
     this.music = typeof Audio === 'function' ? new Audio() : null;
     if (this.music) {
       this.music.preload = 'metadata';
@@ -52,19 +55,64 @@ class RebootAudio {
     this.music.load();
   }
 
+  tryPlayMusic() {
+    if (!this.music || !this.activated || this.settings.music <= 0 || this.music.muted) {
+      return Promise.resolve(false);
+    }
+    if (!this.music.paused) {
+      this.musicPlaybackUnlocked = true;
+      this.lastMusicPlayError = null;
+      return Promise.resolve(true);
+    }
+    if (this.musicPlayPending) return this.musicPlayPending;
+
+    let playResult;
+    try {
+      playResult = this.music.play();
+    } catch (error) {
+      this.musicPlaybackUnlocked = false;
+      this.lastMusicPlayError = error?.name || error?.code || String(error || 'play-error');
+      return Promise.resolve(false);
+    }
+
+    if (!playResult || typeof playResult.then !== 'function') {
+      this.musicPlaybackUnlocked = !this.music.paused;
+      this.lastMusicPlayError = this.musicPlaybackUnlocked ? null : 'play-blocked';
+      return Promise.resolve(this.musicPlaybackUnlocked);
+    }
+
+    const pending = Promise.resolve(playResult)
+      .then(() => {
+        this.musicPlaybackUnlocked = true;
+        this.lastMusicPlayError = null;
+        return true;
+      })
+      .catch((error) => {
+        this.musicPlaybackUnlocked = false;
+        this.lastMusicPlayError = error?.name || error?.code || String(error || 'play-error');
+        return false;
+      })
+      .finally(() => {
+        if (this.musicPlayPending === pending) this.musicPlayPending = null;
+      });
+    this.musicPlayPending = pending;
+    return pending;
+  }
+
   nextTrack() {
     this.musicIndex = (this.musicIndex + 1) % MUSIC_TRACKS.length;
     this.loadTrack();
-    if (this.activated && this.settings.music > 0) this.music?.play().catch(() => {});
+    if (this.activated && this.settings.music > 0) this.tryPlayMusic();
   }
 
   activate() {
     this.activated = true;
     this.ensureContext();
-    this.applySettings(this.settings);
+    this.applySettings(this.settings, { attemptPlayback: false });
+    return this.tryPlayMusic();
   }
 
-  applySettings(settings = this.settings) {
+  applySettings(settings = this.settings, { attemptPlayback = true } = {}) {
     this.settings.music = clampPercent(settings.music, this.settings.music);
     this.settings.sfx = clampPercent(settings.sfx, this.settings.sfx);
     if (!this.music) return;
@@ -72,8 +120,8 @@ class RebootAudio {
     this.music.muted = this.settings.music <= 0;
     if (this.music.muted) {
       if (!this.music.paused) this.music.pause();
-    } else if (this.activated && this.music.paused) {
-      this.music.play().catch(() => {});
+    } else if (attemptPlayback && this.activated && this.music.paused) {
+      this.tryPlayMusic();
     }
   }
 
