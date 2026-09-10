@@ -22,41 +22,64 @@ permissions:
 
 jobs:
   validate-vk:
+    if: ${{ github.event_name != 'pull_request' || !contains(github.event.pull_request.body || '', '[VK_COMBAT_AIR_DEPLOY_ONESHOT]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
-
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
-
       - name: Validate VK adapter and production build
         run: npm run gate:vk
-
       - name: Install Playwright and Chromium
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
-
       - name: Build VK mock variant
         run: node scripts/build-vk.cjs --mock
-
       - name: Run VK browser bootstrap + mobile audio unlock smoke
         env:
           RPCHESS_AUDIO_UNLOCK_RETRY: '1'
         run: npm run test:browser:vk
-
       - name: Build VK Bridge init-failure variant
         run: node scripts/build-vk.cjs --mock-fail
-
       - name: Verify VK Bridge failure fallback
         env:
           RPCHESS_BROWSER_TEST: vk-platform-browser.cjs
         run: npm run test:browser:vk
+
+  deploy-combat-air-dev:
+    if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.body || '', '[VK_COMBAT_AIR_DEPLOY_ONESHOT]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      MINI_APPS_ACCESS_TOKEN: ${{ secrets.MINI_APPS_ACCESS_TOKEN }}
+      MINI_APPS_ENVIRONMENT: dev
+      CI_URLS: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build VK candidate without extra tests
+        run: npm run build:vk
+      - name: Require VK Hosting access token
+        shell: bash
+        run: |
+          if [ -z "$MINI_APPS_ACCESS_TOKEN" ]; then
+            echo "MINI_APPS_ACCESS_TOKEN is not configured in GitHub Actions Secrets."
+            exit 1
+          fi
+      - name: Deploy compact-combat air-gap UI to VK dev
+        run: npx --yes @vkontakte/vk-miniapps-deploy@1.0.2
