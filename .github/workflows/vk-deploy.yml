@@ -1,0 +1,55 @@
+name: Deploy RPChess to VK Hosting
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'VK Hosting environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - production
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vk-hosting-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-vk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      MINI_APPS_ACCESS_TOKEN: ${{ secrets.MINI_APPS_ACCESS_TOKEN }}
+      MINI_APPS_ENVIRONMENT: ${{ inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Validate exact VK candidate
+        run: npm run gate:vk
+
+      - name: Require VK Hosting access token
+        shell: bash
+        run: |
+          if [ -z "$MINI_APPS_ACCESS_TOKEN" ]; then
+            echo "MINI_APPS_ACCESS_TOKEN is not configured in GitHub Actions Secrets."
+            echo "Create it after the first VK deploy authorization; never commit the token."
+            exit 1
+          fi
+
+      - name: Deploy exact VK build
+        run: npx --yes @vkontakte/vk-miniapps-deploy@1.0.2
