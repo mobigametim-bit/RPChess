@@ -2,12 +2,48 @@ const assert = require('assert');
 const { chromium } = require('playwright');
 
 const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
+const testAudioUnlockRetry = process.env.RPCHESS_AUDIO_UNLOCK_RETRY === '1';
 
 (async () => {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   const errors = [];
   page.on('pageerror', (error) => errors.push(String(error.stack || error)));
+
+  if (testAudioUnlockRetry) {
+    await page.addInitScript(() => {
+      const probe = globalThis.__RPChessAudioUnlockProbe = { playCalls: 0 };
+      class ProbeAudio {
+        constructor(src = '') {
+          this.src = src;
+          this.preload = '';
+          this.loop = false;
+          this.volume = 1;
+          this.muted = false;
+          this.paused = true;
+          this.listeners = new Map();
+        }
+        addEventListener(name, listener) {
+          const listeners = this.listeners.get(name) || [];
+          listeners.push(listener);
+          this.listeners.set(name, listeners);
+        }
+        load() {}
+        pause() { this.paused = true; }
+        play() {
+          probe.playCalls += 1;
+          if (probe.playCalls === 1) {
+            this.paused = true;
+            return Promise.reject(new DOMException('Autoplay blocked for deterministic mobile regression', 'NotAllowedError'));
+          }
+          this.paused = false;
+          return Promise.resolve();
+        }
+      }
+      globalThis.Audio = ProbeAudio;
+    });
+  }
+
   try {
     await page.goto(url, { waitUntil: 'networkidle' });
     const state = await page.evaluate(async () => {
@@ -40,6 +76,22 @@ const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
       assert.strictEqual(state.bridgeReady, true);
       assert.strictEqual(state.mockMode, 'success');
       console.log('VK build Bridge bootstrap + common menu browser smoke: PASS');
+    }
+
+    if (testAudioUnlockRetry) {
+      await page.mouse.click(12, 12);
+      await page.waitForFunction(() => globalThis.RPChessRebootAudio?.musicPlaybackUnlocked === true);
+      const audioState = await page.evaluate(() => ({
+        playCalls: globalThis.__RPChessAudioUnlockProbe?.playCalls || 0,
+        unlocked: globalThis.RPChessRebootAudio?.musicPlaybackUnlocked,
+        lastError: globalThis.RPChessRebootAudio?.lastMusicPlayError || null,
+        paused: globalThis.RPChessRebootAudio?.music?.paused
+      }));
+      assert(audioState.playCalls >= 2, `blocked first mobile play() must be retried from the same/later gesture; calls=${audioState.playCalls}`);
+      assert.strictEqual(audioState.unlocked, true);
+      assert.strictEqual(audioState.lastError, null);
+      assert.strictEqual(audioState.paused, false);
+      console.log('VK mobile music user-gesture retry regression: PASS');
     }
 
     assert.deepStrictEqual(errors, [], `VK browser errors:\n${errors.join('\n')}`);
