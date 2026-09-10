@@ -5,7 +5,8 @@ const ROOT = path.resolve(__dirname, '..');
 const WEB_DIST = path.join(ROOT, 'dist');
 const VK_DIST = path.join(ROOT, 'dist-vk');
 const VK_CONFIG_PATH = path.join(ROOT, 'vk-hosting-config.json');
-const USE_MOCK = process.argv.includes('--mock');
+const MOCK_INIT_FAILURE = process.argv.includes('--mock-fail');
+const USE_MOCK = process.argv.includes('--mock') || MOCK_INIT_FAILURE;
 const BRIDGE_VERSION = '3.0.2';
 const BRIDGE_SOURCE = path.join(
   ROOT,
@@ -51,6 +52,10 @@ function assertRelativeRuntimePaths(root) {
   visit(root);
 }
 
+function applyMockInitFailure(file) {
+  fs.appendFileSync(file, `\n;(() => {\n  const bridge = globalThis.vkBridge;\n  if (!bridge || typeof bridge.send !== 'function') return;\n  bridge.__rpchessMockMode = 'init-failure';\n  const originalSend = bridge.send.bind(bridge);\n  bridge.send = (method, params = {}) => {\n    if (method === 'VKWebAppInit') {\n      bridge.calls.push({ method, params });\n      const error = new Error('RPChess deterministic VKWebAppInit failure');\n      error.code = 'RPCHESS_VK_MOCK_INIT_FAILURE';\n      return Promise.reject(error);\n    }\n    return originalSend(method, params);\n  };\n  bridge.sendPromise = bridge.send;\n})();\n`);
+}
+
 function main() {
   requireFile(path.join(WEB_DIST, 'index.html'), 'dist/index.html is missing. Run the canonical Web build first.');
   requireFile(VK_CONFIG_PATH, 'vk-hosting-config.json is missing.');
@@ -65,7 +70,9 @@ function main() {
   fs.rmSync(VK_DIST, { recursive: true, force: true });
   fs.cpSync(WEB_DIST, VK_DIST, { recursive: true, force: true });
 
-  copyFile(BRIDGE_SOURCE, path.join(VK_DIST, 'vendor', 'vk-bridge', 'browser.min.js'));
+  const bridgeTarget = path.join(VK_DIST, 'vendor', 'vk-bridge', 'browser.min.js');
+  copyFile(BRIDGE_SOURCE, bridgeTarget);
+  if (MOCK_INIT_FAILURE) applyMockInitFailure(bridgeTarget);
   copyFile(BRIDGE_LICENSE, path.join(VK_DIST, 'vendor', 'vk-bridge', 'LICENSE.txt'));
 
   const indexPath = path.join(VK_DIST, 'index.html');
@@ -74,12 +81,14 @@ function main() {
   if (!html.includes(marker)) throw new Error('VK build bootstrap marker not found in dist/index.html');
   if (html.includes('data-rpchess-vk-bootstrap')) throw new Error('VK bootstrap was already injected');
 
+  const bridgeMockMode = MOCK_INIT_FAILURE ? 'init-failure' : (USE_MOCK ? 'success' : null);
   const config = JSON.stringify({
     kind: 'vk',
     appId,
     bridgeVersion: BRIDGE_VERSION,
     bridgeInitTimeoutMs: 4000,
-    mockBridge: USE_MOCK
+    mockBridge: USE_MOCK,
+    bridgeMockMode
   });
   const bootstrap = [
     '  <script data-rpchess-vk-config>',
@@ -112,10 +121,12 @@ function main() {
     app_id: appId,
     bridge_version: BRIDGE_VERSION,
     bridge_mock: USE_MOCK,
+    bridge_mock_mode: bridgeMockMode,
     source: 'canonical dist copy + VK platform overlay'
   }, null, 2)}\n`);
 
-  console.log(`Prepared RPChess VK Games build in ${VK_DIST}; app_id=${appId}; VK Bridge ${BRIDGE_VERSION}${USE_MOCK ? ' mock' : ''}`);
+  const mode = MOCK_INIT_FAILURE ? ' mock-init-failure' : (USE_MOCK ? ' mock' : '');
+  console.log(`Prepared RPChess VK Games build in ${VK_DIST}; app_id=${appId}; VK Bridge ${BRIDGE_VERSION}${mode}`);
 }
 
 main();
