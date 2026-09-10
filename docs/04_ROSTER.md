@@ -14,7 +14,7 @@ Desktop:
 - используются реальные legacy portrait / piece assets из сохранённой предыдущей версии RPChess;
 - detail/catalog и все системные surfaces используют game-wide frameless `.ui-panel-safe` / `--ui-panel-*` contract;
 - ornate assets `ui_panel_frame.png` и `ui_panel_wide.png` запрещены;
-- action-кнопки используют approved синий `ui_button_primary.png`;
+- action-кнопки используют текущий CSS-only obsidian/gold contract; legacy `ui_button_primary.png` не входит в production runtime;
 - `Начать путешествие` — главный forward CTA текущей версии Roster.
 
 Mobile:
@@ -90,7 +90,7 @@ Run хранится локально под reboot namespace. Roster-связа
 - `selectedCharacterId`;
 - массив `roster` со статусами персонажей.
 
-Общая run schema также содержит данные Skirmish/Battle/Travel Choice и гидратирует старые saves обратно совместимо.
+Общая run schema также содержит данные Skirmish/Battle/Travel Choice. Same-schema Reboot saves гидратируются best-effort; совместимость с несовместимыми/старыми schema и Iron Marches saves не является обязательством.
 
 После `Новая игра` run сохраняется сразу. Кнопка `Продолжить` становится активной и после перезагрузки возвращает игрока на экран `Отряд` с тем же выбранным персонажем и статусами.
 

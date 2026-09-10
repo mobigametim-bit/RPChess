@@ -40,7 +40,7 @@ Starvation — отдельный слой последствий переход
 - reload не перебрасывает жертву;
 - повторный вызов resolution не убивает второго персонажа;
 - victim id сохраняется внутри `activeTravelChoice` до показа consequence screen;
-- текущая save schema `rpchess.reboot.v1.run` остаётся обратно совместимой и не требует version bump.
+- текущая save schema `rpchess.reboot.v1.run` не требует version bump; same-schema hydration остаётся best-effort, а unsupported schema безопасно сбрасывается.
 
 Committed route хранит:
 

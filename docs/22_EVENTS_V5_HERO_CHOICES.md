@@ -63,7 +63,7 @@ Random non-King последствия остаются random non-King: Events 
 - combat race continuity, Power/Threat и event persistence не меняются;
 - assets не добавляются и не заменяются;
 - ручные hero `piece_badge.png` не затрагиваются;
-- GitHub Actions не используются.
+- в исходном feature acceptance GitHub Actions не использовались; текущие изменения проходят Pages/full-review workflows.
 
 ## Gate
 
@@ -80,7 +80,7 @@ Random non-King последствия остаются random non-King: Events 
 - отсутствие ложного run-end при гибели named King-role героя, который не является текущим run King;
 - наличие v5 UI/CSS-контракта.
 
-Canonical deploy gate: `npm run gate:local` + Cloudflare exact-head **SUCCESS**, затем обязательный human acceptance перед merge.
+Historical feature gate: `npm run gate:local` + Cloudflare exact-head **SUCCESS**, затем обязательный human acceptance перед merge. Current delivery contract — GitHub Pages smoke gate плюс manual 17-contract milestone/release gate; Cloudflare запускается только по отдельной команде владельца.
 
 ## Acceptance / merge receipt
 

@@ -29,6 +29,8 @@ Chess layer ничего не знает о Gold, Supplies, Events или campai
    - runtime asset optimization/budget checks.
 3. Для полного browser gate устанавливаются Playwright/Chromium и выполняется `npm run test:browser` либо соответствующий scoped browser contract.
 
+Постоянный `.github/workflows/full-project-review.yml` запускается вручную для milestone/release validation и выполняет все 17 Chromium-контрактов. Pages workflow сохраняет минимальный обязательный smoke subset.
+
 Browser runner поднимает production `dist/` через standalone static server и проверяет реальный Chromium, а не dev DOM approximation.
 
 ## GitHub Pages — canonical production delivery
@@ -75,9 +77,17 @@ High-resolution source/master assets могут оставаться в `game/`,
 Build fails closed, если покрытый runtime asset не удовлетворяет своему production budget после оптимизации.
 
 ## Cloudflare
-`wrangler.toml` и Cloudflare-related configuration сохранены для совместимости, исторических receipts и возможных preview/alternative delivery workflows.
+`wrangler.toml` и команда `npm run deploy:cloudflare` сохранены только для явного ручного запуска владельцем.
 
 Cloudflare **не является текущим canonical public production host**. Актуальный production contract — GitHub Pages workflow выше.
+
+Автоматический Cloudflare deploy из push, PR или milestone gate запрещён.
+
+## Presentation and lifecycle ownership
+
+- Dynamic UI локализуется owner-ом при render через semantic keys/parameters; whole-document localization observer запрещён.
+- Combat/Puzzle completion передаётся semantic lifecycle events. Broad `rpchess:run-updated` не используется для state mutation или completion fan-out.
+- Screen owner создаёт и размещает собственный DOM/CSS; post-render reparenting и compatibility patch chains запрещены.
 
 ## GitHub Actions
 GitHub Actions снова является частью активного delivery contract через `.github/workflows/pages.yml`:

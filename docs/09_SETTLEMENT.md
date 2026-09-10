@@ -100,7 +100,7 @@ Balance Gate меняет только числовые economy constants; versi
 - accepted exact head `de819f0aebc0bebf6898bf8d4d26ce172a4b408f`;
 - accepted Cloudflare exact-head build `23be38ab-5524-47eb-97d5-5ff92c6d39d8` — **SUCCESS**;
 - Human acceptance: **«да, отлично, всё хорошо» — 2026-08-31**;
-- GitHub Actions не используются для текущего workflow.
+- На момент этого исторического acceptance GitHub Actions не использовались; текущий delivery contract описан в `17_TECH_ARCHITECTURE.md` и использует Pages/full-review workflows.
 
 ## Acceptance / technical receipts — historical Settlement v1
 

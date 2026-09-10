@@ -1,9 +1,9 @@
 # RPChess — Full Project Review Report
 
-**Audit status:** REMEDIATION IN PROGRESS  
+**Audit status:** REMEDIATION COMPLETE — MERGE/DEPLOY NOT AUTHORIZED
 **Frozen production baseline:** `main@e92831ca5d6e0c14fb2d919e410180ce77b97ce6`  
 **Audit/remediation branch:** `audit/full-project-review-2026-09-08`  
-**Current remediation code head:** `316d567bb606c1aa5e3b60a14a3ea0649a90c680`  
+**Current remediation code head:** `2906aebf5c95f20620bc9691279f95fd65fe8544`
 **Started:** 2026-09-08
 
 This document is the source of truth for remediation. `main` remains untouched. Cloudflare remains manual-only. Do not restore compatibility patch layers, post-render DOM rewrites, runtime DOM reparenting, whole-document UI workarounds or broad state-mutating event consumers to conceal ownership problems.
@@ -32,24 +32,24 @@ Status meanings: **DONE — verified**, **DONE — verification pending**, **IN 
 | REV-001 Hero Notes owns unrelated patch chain | **DONE — verified** | Hero Notes rendered by true owners; compatibility runtime deleted. |
 | REV-002 Market reads state back from DOM | **DONE — verified** | Settlement renders Market from canonical state. |
 | REV-003 Resources render fan-out | **DONE — verified** | Global Resources observer/click fan-out removed; coalesced owner scheduler remains. |
-| REV-004 whole-document legacy localization | **DONE — verification pending** | All identified active dynamic surfaces localize at owner render time. Global localization `MutationObserver`, TreeWalker scan, DOM source WeakMaps and `localizeLegacyDocument` deleted in `fc74ac8b`. Explicit `translateLegacy(...)` remains only for authored/content values. |
-| REV-005 obsolete source controls / hidden DOM | **DONE — verification pending** | Obsolete Skirmish/Battle/Puzzle/Event shortcuts and hidden controls deleted at source; generic cleanup removed. |
-| REV-006 runtime DOM reparenting | **DONE — verification pending** | Battle Start, Classic Journal and Skirmish actionbar have stable owner/source slots. |
+| REV-004 whole-document legacy localization | **DONE — verified** | All identified active dynamic surfaces localize at owner render time. Global localization `MutationObserver`, TreeWalker scan, DOM source WeakMaps and `localizeLegacyDocument` deleted in `fc74ac8b`. Explicit `translateLegacy(...)` remains only for authored/content values. |
+| REV-005 obsolete source controls / hidden DOM | **DONE — verified** | Obsolete Skirmish/Battle/Puzzle/Event shortcuts and hidden controls deleted at source; generic cleanup removed. |
+| REV-006 runtime DOM reparenting | **DONE — verified** | Battle Start, Classic Journal and Skirmish actionbar have stable owner/source slots. |
 | REV-007 canonical Pages gate covers smoke subset | **DONE — verified** | The Pages/PR workflow intentionally keeps the fast smoke subset. Permanent `.github/workflows/full-project-review.yml` is `workflow_dispatch`-only and runs `gate:local` plus all 17 Chromium contracts for milestone/release validation, matching the accepted minimal-testing policy. |
 | REV-008 stale page-scroll contract | **DONE — verified** | Geometry tests enforce one-screen behavior instead of scrolling. |
 | REV-009 Supplies/Market image retargeting | **DONE — verified** | True owners render resource imagery; global scanner deleted. |
-| REV-010 fragmented runtime hotfix CSS | **DONE — verification pending** | Review/polish chain, presentation bootstrap and route CSS-in-JS deleted; compact/aftermath rules are owner stylesheets. |
+| REV-010 fragmented runtime hotfix CSS | **DONE — verified** | Review/polish chain, presentation bootstrap and route CSS-in-JS deleted; compact/aftermath rules are owner stylesheets. |
 | REV-011 Supplies optimizer increases asset | **DONE — verified** | Optimizer keeps smaller source bytes. |
-| REV-012 stale CURRENT_STATE SHA | **OPEN** | Deferred to final accepted remediation SHA. |
+| REV-012 stale CURRENT_STATE SHA | **DONE — verified** | `CURRENT_STATE.md` records frozen production `main`, final remediation code SHA and the non-deployed audit boundary. |
 | REV-013 browser helper lifecycle drift | **DONE — verified** | Shared helper waits for visible scenes; older full milestone passed 17/17. A separate Stockfish game-lifecycle race exposed by the strengthened responsive run is being remediated at the AI adapter owner rather than hidden in the helper. |
-| REV-014 responsive gate incomplete | **DONE — verification pending** | Reusable geometry assertions + RU/EN/boundary matrices cover Battle aftermath, Starvation, Puzzle/Training, Classic setup and Endless summary (`e37f3771`). Skirmish/Battle owner geometry now progresses past the prior 844×390 failures; current exact validation is blocked by a Stockfish lifecycle pageerror rather than a known viewport escape. |
+| REV-014 responsive gate incomplete | **DONE — verified** | Reusable geometry assertions + RU/EN/boundary matrices cover all targeted screens at canonical viewports and 1180/980 boundaries. Exact run `34451963848` passed the standalone responsive matrix and all 17 Chromium contracts. |
 | REV-015 persistence migration policy | **DONE — verified** | Unsupported schema resets safely; no old-save preservation required. |
 | REV-016 repeated puzzle materialization/build inputs | **DONE — verified** | Puzzle materialization deduplicated; duplicate build inputs removed. |
-| REV-017 generic Wrangler deploy path | **DONE — docs pending** | Generic deploy removed; Cloudflare explicit/manual; GitHub Pages canonical. |
-| REV-018 legacy Vertical Slice | **DONE — verification pending** | Standalone browser stack and unreachable `src/` domain/runtime/tests deleted after reachability proof; verifier blocks return. |
-| REV-019 stylesheet ownership/load split | **DONE — verification pending** | Compact/aftermath styles are explicit owner inputs; Battle owns its compact CSS. |
-| REV-020 broad `rpchess:run-updated` bus | **DONE — verification pending** | Semantic lifecycle bridge owns combat/Puzzle completion. Power, redesign, shared UX, cross-scene, Events and Travel no longer consume broad `run-updated` for state mutation or completion. Resources retains one documented broad listener solely as coalesced side-effect-free HUD projection; Roster retains a side-effect-free owner projection. Reentrancy-safe 12-transition Node contract and 12-loop Chromium listener/render/node stability contract are committed but current browser execution is pending. |
-| REV-021 historical docs conflict with current rules | **OPEN** | Final documentation synchronization remains after code/gate completion. |
+| REV-017 generic Wrangler deploy path | **DONE — verified** | Generic deploy removed; Cloudflare is explicit/manual-only; GitHub Pages is canonical and deploys only `refs/heads/main`. |
+| REV-018 legacy Vertical Slice | **DONE — verified** | Standalone browser stack and unreachable `src/` domain/runtime/tests deleted after reachability proof; verifier blocks return. |
+| REV-019 stylesheet ownership/load split | **DONE — verified** | Compact/aftermath styles are explicit owner inputs; Battle owns its compact CSS. |
+| REV-020 broad `rpchess:run-updated` bus | **DONE — verified** | Semantic lifecycle bridge owns combat/Puzzle completion. Power, redesign, shared UX, cross-scene, Events and Travel no longer consume broad `run-updated` for state mutation or completion. Resources retains one documented broad listener solely as coalesced side-effect-free HUD projection; Roster retains a side-effect-free owner projection. Reentrancy-safe Node and Chromium stability contracts pass. |
+| REV-021 historical docs conflict with current rules | **DONE — verified** | Current State, Roadmap, Changelog and numbered UI/persistence/assets/architecture docs are synchronized; historical receipts are explicitly non-authoritative for current policy. |
 
 ---
 
@@ -106,8 +106,8 @@ Completed owner migrations:
 
 - Reachability review proved `adm-zip` was a dead direct dev dependency; Stockfish downloads integrity-pinned JS/WASM directly.
 - `adm-zip` removed from `package.json` in `f04df06a` and stale lock metadata was reproducibly normalized in `e516c24b` without hand-editing integrity data.
-- Permanent dependency-security contract `d83c27c9`, wired `c88dfac6`; current exact-checkout `npm ci` and `gate:local` execute it successfully.
-- Contract records current tooling floors: direct esbuild `0.25.8` outside reviewed `>=0.27.3 <0.28.1` range; Wrangler nested esbuild `0.28.1`; `undici 7.28.0`; `ws 8.21.0`; `path-to-regexp 6.3.0`.
+- Permanent dependency-security contract `d83c27c9`, wired `c88dfac6`; current exact-checkout `npm ci`, `npm audit --package-lock-only` and `gate:local` execute successfully.
+- Final tooling baseline from `87e595aa`: direct esbuild `0.28.2`; Wrangler `4.130.0` with nested esbuild `0.28.1`; `undici 7.29.0`; `sharp 0.35.4`; `ws 8.21.0`; `path-to-regexp 6.3.0`. Current npm audit reports 0 vulnerabilities.
 
 ## Asset reachability cleanup
 
@@ -120,6 +120,8 @@ Completed owner migrations:
 - Four legacy reward assets (`reward_artifact`, `reward_experience`, `reward_meta`, `reward_upgrade`) remain proven unreachable and removed. A later exact-checkout review caught that `reward_heal.png` and `reward_recruit.png` are current Settlement service art; both were restored from the frozen baseline, their owner CSS paths were corrected, and the existing Settlement regression now protects their presence. Net reward-family reduction: **122,305 bytes**.
 - Eight legacy scene backgrounds (`scene_achievements`, `scene_bargain`, `scene_codex`, `scene_event`, `scene_repair`, `scene_settings`, `scene_training`, `scene_vault`) were proven owned only by deleted approved-shell/Vertical Slice presentation or removed legacy Event fallback. Current Reboot-owned `scene_training_ui`, `scene_victory`, Campaign/Battle/Shop/Reward/Defeat backgrounds are preserved. Removed in `879a0f27` → `d1384110`. Bytes removed: **1,123,762**.
 - Proven source cleanup after restoring the two active Settlement service assets: **2,389,275 bytes (~2.28 MiB)** across **25 files**. No active race/piece/board/Event-background dynamic family was deleted.
+- Legacy `ui_button_primary.png` is retained only as a source/reserve asset and excluded from production `dist`; Foundation/Language/Classic owner CSS now uses the canonical CSS-only obsidian/gold button contract.
+- `tests/runtime-assets-build.cjs` now validates every local built CSS `url(...)` against an existing `dist` target, preventing a green build from shipping missing asset references.
 
 ## Responsive truth
 
@@ -129,7 +131,10 @@ Completed owner migrations:
 - The same strengthened suite exposed an `844×390` RU Chronicle vertical escape. `983e8907` resets the inherited menu-column `min-height`; targeted menu + Chronicle proof passed.
 - Run `34391754411` then exposed an `844×390 RU` Skirmish aftermath CTA at `bottom=398.59` for a `390px` viewport. `8c78f6d8` reduced the owner panel padding and run `34395341890` moved the CTA to `bottom=393.59`, proving the same owner defect remained by only ~3.6px. `8768d55c` tightened only that compact owner padding.
 - Run `34396935134` progressed past the Skirmish aftermath fix and exposed a separate `844×390 RU` Battle aftermath panel escape (`top=25.25`, `bottom=405.25`, `height=380`, internal `scrollHeight=614`). `aa65be13` moved the accepted compact aftermath grid out of the deleted runtime injection and into `battle-compact.css`, the Battle owner stylesheet.
-- Run `34400237429` on `aa65be13` kept `gate:local` green and progressed through the prior Battle aftermath geometry assertions. The next failure was not a viewport escape: `1024×768 RU` collected `RuntimeError: unreachable` from the Stockfish WASM worker while rapidly replacing combat games. `316d567b` now isolates Stockfish requests by operation/lifecycle epoch and hardens stale-worker callback handling; browser revalidation is pending.
+- Run `34400237429` on `aa65be13` kept `gate:local` green and progressed through the prior Battle aftermath geometry assertions. The next failure was not a viewport escape: `1024×768 RU` collected `RuntimeError: unreachable` from the Stockfish WASM worker while rapidly replacing combat games. `316d567b` isolated Stockfish requests by operation/lifecycle epoch and hardened stale-worker callback handling; final run `34451963848` later verified the fix.
+- `7a620abf` corrected the compact Event choice heading in the true owner stylesheet after the later landscape rule had won the cascade with `!important`.
+- `87e595aa` completed workflow/asset/dependency cleanup and changed the Resources test transition to the semantic `rpchess:resources-updated` path. Run `34417319096` passed the full responsive matrix and the first 15 all-browser contracts; Events then timed out because its fixture still expected the removed broad run listener.
+- `2906aebf` corrects that stale fixture to reopen the mutated Event through `rpchess:event-open`. Runtime Events remains correctly free of a broad state listener.
 
 ## Legacy / build / deployment
 
@@ -159,16 +164,20 @@ Completed owner migrations:
 - `8c78f6d8` / run `34395341890`: `gate:local` PASS; responsive progressed to the same `844×390 RU` Skirmish aftermath CTA at `bottom=393.59`; all-browser step skipped. This iteration reduced the measured overflow by 5px but did not claim a browser PASS.
 - `0f812690` / run `34396935134`: `gate:local` PASS; responsive progressed past Skirmish and exposed `844×390 RU` Battle aftermath panel (`top=25.25`, `bottom=405.25`, `scrollHeight=614`); all-browser step skipped.
 - `aa65be13` / run `34400237429`: `gate:local` PASS; prior Battle aftermath geometry assertions no longer failed. Responsive later FAILed at `1024×768 RU` on a Stockfish WASM `RuntimeError: unreachable`; no full responsive or all-browser PASS is claimed.
+- `7a620abf` / run `34408548508`: `gate:local` PASS and full responsive RU/EN/boundary PASS; all-browser progressed through Travel and exposed the stale Resources fixture.
+- `87e595aa` / run `34417319096`: `gate:local` PASS, full responsive RU/EN/boundary PASS, first 15 all-browser contracts PASS; Events fixture timed out while waiting for an owner refresh from broad `rpchess:run-updated`; Puzzles did not start.
+- `2906aebf` / run `34451963848`: `npm ci`, canonical local gate, standalone responsive RU/EN/boundary matrix and **all 17 Chromium contracts PASS**, including Events and Puzzles.
 
 ---
 
-# Open verification / cleanup items
+# Release boundary / owner decisions
 
-1. Validate `316d567b` through the complete strengthened responsive RU/EN/boundary matrix, including the Stockfish game-replacement lifecycle regression discovered after the Battle geometry fix.
-2. If responsive is green, run the complete Chromium contract set on the same code lineage.
-3. Finish manual classification of the remaining generated UI/logo/special-unit candidates; preserve ambiguous/planned/source-reserve assets and delete only positively unreachable source files.
-4. Remove temporary/duplicated validation workflows after final browser evidence while retaining Pages plus the permanent manual 17-contract milestone/release gate; harden Pages deployment so manual runs cannot deploy a non-`main` ref.
-5. Finalize `CURRENT_STATE.md`, deployment/history docs, numbered docs and Notion on the accepted candidate SHA.
+All review remediation findings are closed on the audit branch. Remaining actions are intentionally outside autonomous remediation:
+
+1. perform any desired human playtest of the audit candidate;
+2. merge into `main` only after explicit owner approval;
+3. let the guarded Pages workflow validate/deploy the approved `main` merge;
+4. run Cloudflare only after a separate explicit owner command.
 
 ---
 
@@ -183,28 +192,26 @@ Completed owner migrations:
 4. **DONE:** semantic completion bridge and first-import ownership.
 5. **DONE:** broad state-mutating consumer removal/split.
 6. **DONE:** bridge reentrancy fix + permanent 12-transition regression.
-7. **DONE — verification pending:** 12-loop Chromium listener/render/node stability proof committed.
+7. **DONE — verified:** 12-loop Chromium listener/render/node stability proof passes in the exact final browser run.
 
 ## Phase C — validation/tooling
 8. **DONE — verified:** dead direct `adm-zip` dependency removed, lock metadata normalized reproducibly and dependency-security passes under `npm ci`/`gate:local`.
-9. **IN PROGRESS:** asset reachability cleanup. 25 positively unreachable files remain removed (**2.28 MiB net**); build allowlisting now prevents ambiguous source/reserve candidates from shipping.
+9. **DONE — verified:** 25 positively unreachable files remain removed (**2.28 MiB net**); ambiguous/planned assets are preserved outside `dist`, legacy image CTA is excluded, and built CSS asset reachability fails closed.
 10. **DONE — verified:** lock metadata normalization completed in `e516c24b` without hand-editing integrity data.
-11. **IN PROGRESS:** strengthened responsive gate has cleared the prior Skirmish/Battle owner geometry failures and is now revalidating the newly exposed Stockfish game-lifecycle race before the final 17-contract Chromium run.
+11. **DONE — verified:** strengthened responsive matrix plus all 17 Chromium contracts pass on `2906aebf`.
 
 ## Phase D — final integration/docs
-12. Fix only evidence-backed regressions from final gate.
-13. Update `docs/CURRENT_STATE.md` to final accepted candidate SHA while keeping production `main` status explicit.
-14. Mark historical docs clearly and synchronize architecture/UI/persistence/deployment into Notion.
-15. Do not merge `main` or deploy Cloudflare without explicit owner instruction.
+12. **DONE:** evidence-backed regressions from the final gate are fixed.
+13. **DONE:** `docs/CURRENT_STATE.md` records the final code candidate while keeping production `main` explicit.
+14. **DONE:** historical docs and architecture/UI/persistence/deployment rules are synchronized.
+15. **PERMANENT:** do not merge `main` or deploy Cloudflare without explicit owner instruction.
 
 ## Next actions
 
-1. Run the complete strengthened responsive matrix on `316d567b`; fix only the next measured runtime/geometry defect if one remains.
-2. Run all Chromium contracts once responsive is green and close verification-pending REV items only from actual evidence.
-3. Complete the conservative asset classification; keep all ambiguous/planned/source-reserve assets outside production `dist` rather than deleting them without ownership proof.
-4. Remove temporary audit workflows and duplicate manual CI while keeping `pages.yml` plus `full-project-review.yml` as the permanent fast/complete gate pair; restrict Pages deploy to `refs/heads/main`.
-5. Synchronize `CURRENT_STATE.md`, deployment/history/numbered docs and Notion, then issue the final release-readiness/remediation report.
-6. Keep `main` frozen and Cloudflare manual-only until explicit owner direction.
+1. Offer the audit candidate for human playtest if requested.
+2. Wait for explicit owner approval before merging into `main`.
+3. After an approved merge, verify the main-only Pages production run.
+4. Keep Cloudflare manual-only until a separate explicit owner request.
 
 Every subsequent remediation checkpoint must update this report and end with a concrete numbered **Next actions** list.
 
@@ -250,11 +257,21 @@ Every subsequent remediation checkpoint must update this report and end with a c
 - Root cause is an AI adapter lifecycle race exposed by rapid Skirmish→Battle game replacement: `stop()` previously canceled only an active search, so an older `chooseMove()` still awaiting Stockfish initialization could resume beside the replacement game and interleave UCI commands.
 - `316d567bb606c1aa5e3b60a14a3ea0649a90c680` adds separate operation/lifecycle epochs, invalidates stale game requests even while initialization is pending, ignores callbacks from destroyed workers, and makes destroy/re-initialization race-safe.
 - Existing `tests/chess-ai-adapter.cjs` is extended with stop-during-initialization and destroy/reuse regressions; no new test suite was added.
-- No full responsive/all-Chromium PASS is claimed until the new exact-SHA run completes. `main` and Cloudflare remain untouched.
+- This was an intermediate checkpoint. Final run `34451963848` subsequently passed the complete responsive matrix and all 17 Chromium contracts. `main` and Cloudflare remained untouched.
+
+**Checkpoint closure:** completed by `2906aebf` / run `34451963848`; remaining actions are the owner-controlled merge/deploy decisions listed above.
+
+### Final Event contract checkpoint — 2906aebf
+
+- Run `34417319096` on `87e595aa` proved the complete responsive RU/EN/boundary matrix and the first 15 contracts in the full Chromium sequence. It then timed out in `events-browser.cjs`; Puzzles did not start.
+- The timeout was not a runtime ownership defect. The EN fixture directly replaced E147 with E291 in localStorage and expected the Event owner to react to broad `rpchess:run-updated`, although REV-020 deliberately removed that state-mutating subscription.
+- `2906aebf5c95f20620bc9691279f95fd65fe8544` changes only the existing browser fixture: after the direct persistence mutation it reopens Events through canonical `rpchess:event-open`.
+- Local source verification, the complete Node/static/content/puzzle suite and `npm audit --package-lock-only` pass; audit reports 0 vulnerabilities.
+- Exact run `34451963848` passed `npm ci`, `gate:local`, Playwright/Chromium installation, the standalone responsive RU/EN/boundary matrix and all 17 Chromium contracts. Events and Puzzles both report explicit PASS markers.
+- `main`, GitHub Pages production and Cloudflare remain untouched.
 
 **Дальнейшие действия:**
-1. Validate `316d567b` with the complete responsive RU/EN/boundary matrix and confirm the Stockfish pageerror is gone.
-2. If responsive is green, run all 17 Chromium contracts on the same lineage.
-3. If another failure appears, fix only that evidence-backed owner/runtime defect and record the next checkpoint here.
-4. Complete conservative asset classification, then remove temporary/duplicate audit workflows and harden Pages deploy to `main` only.
-5. Synchronize `CURRENT_STATE.md`, UI/UX, Save System, Tech Architecture, Assets and corresponding Notion pages on the final accepted candidate SHA.
+1. Offer a human playtest path if requested.
+2. Merge into `main` only after explicit owner approval.
+3. Verify the guarded Pages build/deploy after any approved merge.
+4. Keep Cloudflare manual-only until a separate explicit owner request.

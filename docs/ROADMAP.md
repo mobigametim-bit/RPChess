@@ -157,13 +157,17 @@ Feature lifecycle: `UX/SPEC APPROVED → IMPLEMENTED → AUTOTESTED → DEPLOYED
 
 Proposal о постоянной трёхветочной схеме `main / deploy / Legasy` и автоматической очистке остальных веток **отменён пользователем 2026-08-31**. Ветки пользователь почистит самостоятельно; branch-management не является частью текущего roadmap.
 
+## Current audit precedence
+
+Исторические feature receipts ниже сохраняют факты прежних сборок и Cloudflare previews, но не задают текущую delivery/UI/persistence политику. Актуальные правила находятся в `CURRENT_STATE.md`, `16_UI_UX.md`, `17_TECH_ARCHITECTURE.md` и `REVIEW_REMEDIATION_DECISIONS.md`.
+
 ## Global UI invariant
 
-Все production surfaces — **frameless CSS-only panels** с `--ui-panel-safe-*` / `.ui-panel-safe`; active Reboot UI не использует `ui_panel_frame.png` или `ui_panel_wide.png`. Синий `ui_button_primary.png` остаётся approved CTA asset.
+Все production surfaces — **frameless CSS-only panels** с `--ui-panel-safe-*` / `.ui-panel-safe`; active Reboot UI не использует `ui_panel_frame.png`, `ui_panel_wide.png` или legacy `ui_button_primary.png`. Обычные CTA используют CSS-only obsidian/gold contract.
 
 ## Gates
 
-Канонический deploy gate — source verification + deterministic Node suite + production build (`npm run gate:local`) и Cloudflare exact-head SUCCESS. Standalone `gate:full` содержит real-Chromium regression. **GitHub Actions не используются.**
+Канонический deploy gate — `npm run gate:local` плюс Pages smoke Chromium. Постоянный manual `full-project-review.yml` выполняет все 17 Chromium-контрактов для milestone/release validation. GitHub Actions используется; Cloudflare запускается только вручную по отдельной команде владельца.
 
 ## Legacy boundary
 

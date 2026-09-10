@@ -132,10 +132,10 @@ Balance Gate Pass 1 acceptance receipt:
 - GitHub Actions не используются.
 
 ## Persistence
-Схема `rpchess.reboot.v1.run` остаётся обратно совместимой и содержит `battleCount`, `lastBattle`, `lastBattle.participants` и outcome metadata. Mercenaries extension добавляет transient `battleMercenaryContract` между `Начать битву` и её settlement; после завершения контракт очищается, а receipt переносится в `lastBattle`. Balance Gate добавляет в transient contract breakdown `baseMercenaryCounts` / `reserveReplacementCounts`, не меняя version persistence schema.
+Текущая schema `rpchess.reboot.v1.run` содержит `battleCount`, `lastBattle`, `lastBattle.participants` и outcome metadata. Same-schema hydration выполняется best-effort, но неподдерживаемые schema безопасно сбрасываются. Mercenaries extension добавляет transient `battleMercenaryContract` между `Начать битву` и её settlement; после завершения контракт очищается, а receipt переносится в `lastBattle`. Balance Gate добавляет в transient contract breakdown `baseMercenaryCounts` / `reserveReplacementCounts`, не меняя version persistence schema.
 
 ## Mobile
-Full-army preview и выбранные именные участники идут перед каталогом; action bar sticky; только vertical scroll; horizontal overflow запрещён.
+Full-army preview и выбранные именные участники идут перед каталогом; action bar остаётся внутри owner-frame. Gameplay-композиция помещается в один viewport, а неизбежный overflow прокручивается только внутри назначенного Battle frame; page-scroll и horizontal overflow запрещены.
 
 ## Границы Battle v1
 Не входят: ручная расстановка, изменение 39-point army, способности, equipment modifiers, special objectives, fog of war, другие размеры доски и permanent promotion. Mercenaries Economy является отдельным принятым расширением поверх Battle v1 и не меняет шахматные правила.
@@ -149,4 +149,4 @@ Accepted Cloudflare build: `855b8d21-3dbf-42e2-9dac-3646c2061d41` — **SUCCESS*
 Accepted preview: `https://9ba31509-rpchess.mobigametim.workers.dev`.
 Battle v1 squash-merged в `main`; historical lifecycle: **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DONE**.
 
-Для текущего проекта GitHub Actions не используются.
+Для текущего проекта GitHub Actions используются через Pages smoke gate и manual 17-contract milestone/release gate; приведённые выше Cloudflare receipts остаются историческими.

@@ -42,7 +42,7 @@ Human acceptance: **«всё хорошо» — 2026-08-31**. Exact accepted hea
 - никаких новых или заменённых assets;
 - существующие вручную заменённые `piece_badge.png` не затрагиваются;
 - экономика, Power, Battle Mercenaries, Player Identity/Chronicle и Endless Run не меняются;
-- GitHub Actions не используются.
+- в исходном feature acceptance GitHub Actions не использовались; текущие изменения проходят Pages/full-review workflows.
 
 ## Gate
 
@@ -55,4 +55,4 @@ Human acceptance: **«всё хорошо» — 2026-08-31**. Exact accepted hea
 - загрузку runtime через journey bootstrap;
 - применение к Roster и Settlement presentation.
 
-Canonical gate: `npm run gate:local` + Cloudflare exact-head SUCCESS + human acceptance перед merge — закрыт.
+Historical feature gate (`npm run gate:local` + Cloudflare exact-head SUCCESS + human acceptance) закрыт. Current delivery использует GitHub Pages и manual 17-contract milestone/release gate; Cloudflare остаётся manual-only.

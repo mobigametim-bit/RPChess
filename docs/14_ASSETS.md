@@ -1,5 +1,13 @@
 # 14 — Assets
 
+## Source / master / reserve / production boundary
+
+- High-resolution source/master и явно зарезервированные будущие assets могут оставаться в репозитории, не попадая в `dist`.
+- Production build включает только assets с доказанным runtime owner-ом через explicit allowlist/collectors.
+- Orphan inventory формирует список кандидатов, а не разрешение на массовое удаление.
+- Удаление source asset требует положительного reachability proof: отсутствуют literal, manifest, generated и dynamic-family owners.
+- Build regression проверяет, что каждый локальный CSS `url(...)` разрешается в реально существующий файл внутри `dist`.
+
 ## Visual contract
 Сохраняем текущий approved RPChess UI, фоны, board skins, портреты, фигуры, environment assets и VFX, если они подходят Reboot.
 

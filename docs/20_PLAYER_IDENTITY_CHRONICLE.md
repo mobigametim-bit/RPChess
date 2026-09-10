@@ -106,6 +106,6 @@ Gold и Supplies в Летопись не входят: это не economy HUD,
 - deterministic regression `tests/player-identity-chronicle.cjs`;
 - canonical `npm test` включает этот regression;
 - `scripts/build.cjs` упаковывает Identity/Chronicle runtime и CSS;
-- canonical deployment gate: `npm run gate:local` + exact-head Cloudflare SUCCESS;
+- historical acceptance gate: `npm run gate:local` + exact-head Cloudflare SUCCESS; current delivery uses GitHub Pages plus the manual 17-contract milestone/release gate, while Cloudflare is manual-only;
 - human playtest завершён до merge;
-- GitHub Actions не используются.
+- для этого исторического feature acceptance GitHub Actions не использовались; текущие изменения проходят Pages/full-review workflows.

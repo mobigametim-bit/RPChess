@@ -1,5 +1,15 @@
 # RPChess Reboot Changelog
 
+> Historical entries record the delivery rules and assets that applied at their original dates. Current production/remediation policy is defined by `CURRENT_STATE.md`, `16_UI_UX.md`, `17_TECH_ARCHITECTURE.md` and `REVIEW_REMEDIATION_DECISIONS.md`; historical Cloudflare or `ui_button_primary.png` receipts do not override it.
+
+## 2026-09-10 — Full-project review remediation complete on audit branch
+
+- Final remediation code candidate: `2906aebf5c95f20620bc9691279f95fd65fe8544`.
+- Exact Actions run `34451963848`: `npm ci`, canonical local gate, standalone responsive RU/EN/boundary matrix and all **17/17 Chromium contracts PASS**.
+- Owner-level UI/i18n, semantic lifecycle, stable owner DOM/CSS, persistence reset boundary, dependency security and asset reachability remediation are closed.
+- Legacy Vertical Slice runtime/tests, obsolete patch layers and duplicate audit/CI workflows are removed; permanent workflows are `pages.yml` plus manual `full-project-review.yml`.
+- `main@e92831ca5d6e0c14fb2d919e410180ce77b97ce6` remains frozen. No production Pages or Cloudflare deployment was performed.
+
 ## 2026-08-28 — Starvation HUMAN ACCEPTED; merge closure pending
 - Пользователь завершил живой Starvation playtest и подтвердил: **«все хорошо, ручной тест провел»**.
 - Подтверждены: предупреждение при `0 Supplies`, ровно одна casualty до encounter, persistent deterministic victim без reroll/duplicate death после reload, ordinary `ГОЛОД` acknowledgement flow, King starvation run-end и mobile 390×844 без horizontal overflow.

@@ -263,7 +263,7 @@ Diff from production: **7 files / 0 assets**. Persistence schema unchanged. GitH
 - PR #106 squash-merged в `main` как `aced637fe6a6cbc7b1b2eeade25039cbcae5501d`;
 - merged diff: **7 files / 0 assets**;
 - persistence schema version changes: **0**;
-- workflow runs для merge SHA отсутствуют; GitHub Actions не использовались.
+- для этого исторического merge SHA workflow runs отсутствовали; текущий delivery contract использует GitHub Actions Pages/full-review gates.
 
 Pass 2 lifecycle: **CONTRACT APPROVED → IMPLEMENTED → REGRESSION UPDATED → CLOUDFLARE EXACT-HEAD SUCCESS → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE**.
 

@@ -1,11 +1,19 @@
 # RPChess — Current State
 
-**Last synchronized:** 2026-09-08  
+**Last synchronized:** 2026-09-10
 **Production branch:** `main`  
-**Production commit at sync start:** `bc84d4b53db1544f338d4d7ea421e1e1d41b49d9`  
+**Frozen production commit:** `e92831ca5d6e0c14fb2d919e410180ce77b97ce6`
 **Production URL:** https://mobigametim-bit.github.io/RPChess/
 
-This page is the short operational snapshot of the accepted project state. Historical feature receipts remain in the numbered documents and `CHANGELOG.md`; when an old acceptance receipt conflicts with this page about deployment, responsive UI or current asset usage, this page describes the current production configuration.
+This page is the short operational snapshot of the project. Historical feature receipts remain in the numbered documents and `CHANGELOG.md`; when an old receipt conflicts with this page about deployment, responsive UI, persistence or current asset usage, this page describes the current contract.
+
+## Full-review remediation candidate
+
+- Branch: `audit/full-project-review-2026-09-08`.
+- Final code candidate: `2906aebf5c95f20620bc9691279f95fd65fe8544`.
+- `main` remains frozen and has not received the remediation changes.
+- The audit branch is not a production deployment; merge and deploy require a separate owner command.
+- Exact validation run `34451963848`: canonical local gate, standalone responsive RU/EN/boundary matrix and all 17 Chromium contracts **PASS**.
 
 ## Production and delivery
 
@@ -22,13 +30,13 @@ RPChess is published from `main` through **GitHub Pages**.
 
 PR runs validate the candidate but do not publish it. Pushes to accepted `main` publish production after the same gate.
 
-The post-merge workflow for `main@bc84d4b53db1544f338d4d7ea421e1e1d41b49d9` completed successfully: canonical gate/build, `/RPChess/` Chromium verification and GitHub Pages deploy all passed.
+The frozen production baseline is `main@e92831ca5d6e0c14fb2d919e410180ce77b97ce6`. Audit validation does not publish it or alter the production deployment.
 
-Cloudflare configuration remains in the repository for compatibility/legacy preview workflows, but GitHub Pages is the canonical public production deployment described by the active workflow and documentation.
+Cloudflare configuration and `npm run deploy:cloudflare` remain only for an explicit manual owner request. No push, PR or milestone workflow deploys Cloudflare automatically. GitHub Pages is the canonical public production deployment described by the active workflow and documentation.
 
 ## Current accepted UI contract
 
-The landscape redesign and live-device correction cycle is merged and human accepted.
+The landscape redesign and live-device correction cycle is human accepted. The audit branch additionally enforces the remediation geometry contract below; it is not merged into `main` yet.
 
 Canonical viewport targets:
 
@@ -36,6 +44,8 @@ Canonical viewport targets:
 - tablet landscape: `1024×768`;
 - mobile landscape: `844×390`;
 - portrait gameplay: bilingual rotate-device lock.
+
+Every gameplay composition must remain within one viewport in both RU and EN. Page scrolling is not a layout substitute; unavoidable overflow belongs only to an explicitly designated owner-frame. Breakpoint boundaries around `1180/980` are part of the browser contract.
 
 Battle, Skirmish and Training/Puzzle are board-first screens. Their 8×8 boards use the accepted edge-to-edge landscape geometry without coordinate gutters in combat/training presentation.
 
@@ -79,7 +89,9 @@ The Market product row is intentionally compact: item icon + current/max stock +
 
 Production `dist` is built from high-resolution source assets and then optimized for runtime delivery. Existing optimized classes include board pieces, portraits, backgrounds, board skins, pin/ice VFX, combat auras and the dedicated resource-icon pipeline.
 
-High-resolution masters remain in the repository where required; production-size budgets protect the shipped `dist` payload rather than destructively replacing all source masters.
+High-resolution masters and reserve/planned assets may remain in the repository where required. Explicit build allowlists/collectors determine production ownership, and production-size budgets protect the shipped `dist` payload rather than destructively replacing source masters. Orphan inventory is candidate-only; deletion requires positive reachability proof.
+
+Legacy `ui_button_primary.png` is excluded from production `dist`; ordinary CTA controls use the CSS-only obsidian/gold contract. Every local CSS `url(...)` in the built distribution must resolve to an existing runtime file.
 
 ## Localization
 
@@ -87,7 +99,11 @@ Canonical language codes are `ru` and `en`.
 
 The accepted main branch includes bilingual shell/runtime coverage and live-verified English presentation for Roster, Battle, Skirmish, Travel, Settlement and Event across desktop/tablet/mobile. Event mechanics remain language-independent; localization is presentation-only.
 
-The broader `feature/localisation-completion` work described in `localization_glossary.md` is a separate completion track and is not implied to be fully release-accepted merely by this production snapshot.
+The audit candidate completes owner-level RU/EN rendering for active dynamic surfaces and removes the whole-document localization observer. Explicit authored-content translation remains render-time and owner-controlled.
+
+## Persistence boundary
+
+The current namespace is `rpchess.reboot.v1.run`, schema version `1`. Supported same-schema state is hydrated best-effort. Unsupported schema versions reset safely; old/legacy schema preservation and Iron Marches save import are not product obligations.
 
 ## Core gameplay state
 

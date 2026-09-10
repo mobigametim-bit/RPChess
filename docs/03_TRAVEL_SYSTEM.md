@@ -106,7 +106,7 @@ Puzzle **не использует combat threat roll**. Его сложност
 
 ## Persistence
 
-Схема `rpchess.reboot.v1.run` остаётся обратно совместимой и содержит:
+Текущая schema `rpchess.reboot.v1.run` содержит перечисленные ниже поля. Same-schema hydration выполняется best-effort; unsupported schema безопасно сбрасывается и не является compatibility obligation:
 
 - `journeyStep`;
 - `currentTravelChoices`;
@@ -167,4 +167,4 @@ PR #70 squash-merged в `main` как `ee7d1b348ac88ebafcd334acb84167f6b5a12bdc`
 
 Базовый Travel Choice остаётся **DONE**. Resources, Settlement, Starvation и Events уже расширили его поверх принятого контракта.
 
-Puzzles v1 меняет playable pool с четырёх на пять типов, добавляет Puzzle-specific week difficulty и Puzzle resume semantics. Эта новая часть остаётся **IMPLEMENTED / acceptance pending** до canonical gate, Cloudflare preview и отдельного живого пользовательского playtest.
+Puzzles v1 меняет playable pool с четырёх на пять типов, добавляет Puzzle-specific week difficulty и Puzzle resume semantics. Функция уже входит в текущий принятый gameplay; дальнейшие изменения проверяются canonical local/Chromium gates, а player-facing изменения требуют отдельного живого acceptance.

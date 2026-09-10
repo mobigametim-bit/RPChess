@@ -89,7 +89,7 @@ Gold/XP и другие будущие награды здесь пока не �
 Это отдельная run-ending surface. Более полный итог забега может расширяться будущими системами Travel/Resources/Rewards, но обычный aftermath и run-end summary не должны смешиваться.
 
 ## Persistence
-Run schema остаётся совместимой с `rpchess.reboot.v1.run` и получает дополнительные поля:
+Run state остаётся в namespace `rpchess.reboot.v1.run` и получает дополнительные поля. Это не обещание совместимости с неподдерживаемыми schema: они безопасно сбрасываются.
 - `ended`;
 - `endReason`;
 - `skirmishCount`;

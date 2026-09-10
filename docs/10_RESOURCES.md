@@ -70,7 +70,7 @@ Range at 1–5 stars:
 Gold rewards are stored with the latest combat result for observability and shown in the normal aftermath. No reward is invented for a run-ending King death.
 
 ## 5. Persistence
-The existing run save namespace remains `rpchess.reboot.v1.run` and schema version remains `1` for backward compatibility.
+The existing run save namespace remains `rpchess.reboot.v1.run` and schema version remains `1`. Same-schema hydration is best-effort; unsupported schema versions reset safely and are not a compatibility obligation.
 
 Resources adds:
 

@@ -58,7 +58,7 @@ Stockfish 18 lite single-threaded
 - показываются взятые фигуры и material advantage;
 - desktop: `Партия` слева / доска по центру / `Ходы` справа;
 - широкая `Партия завершена…` status-плашка и duplicate post-game CTA отсутствуют;
-- action-кнопки используют синий `ui_button_primary.png`;
+- action-кнопки используют текущий CSS-only obsidian/gold contract; legacy `ui_button_primary.png` не поставляется как production CTA;
 - все framed surfaces подчиняются game-wide safe-area contract из `16_UI_UX.md`: текст/controls не касаются декоративной рамки, левый inset немного больше правого;
 - reduced-motion может отключать плавное перемещение.
 
