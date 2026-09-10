@@ -63,6 +63,7 @@ jobs:
         run: npm run test:browser:vk
 
   deploy-combat-air-dev:
+    # One-shot deploy is armed only while the PR body carries the marker below.
     if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.body || '', '[VK_COMBAT_AIR_DEPLOY_ONESHOT]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
