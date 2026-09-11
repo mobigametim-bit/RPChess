@@ -319,6 +319,26 @@ async function auditStarvationAndEndless(browser, width, height, language) {
   }
 }
 
+async function assertCombatFrame(page, label) {
+  await page.waitForFunction(() => document.body.classList.contains('run-combat-board-active'));
+  const frame = await page.evaluate(() => {
+    const party = document.querySelector('.classic-party-panel').getBoundingClientRect();
+    const journal = document.querySelector('.classic-panel--moves').getBoundingClientRect();
+    const board = document.querySelector('[data-chess-board]').getBoundingClientRect();
+    return { partyWidth:party.width, journalWidth:journal.width,
+      partyRight:party.right, journalRight:journal.right, boardLeft:board.left,
+      boardTop:board.top, boardRight:board.right, boardWidth:board.width,
+      boardHeight:board.height, vw:innerWidth, vh:innerHeight };
+  });
+  // The two visible frames share one edge, leaving about half a wide rail as air.
+  // Narrow tablet rails retain a readable minimum rather than halving below 220px.
+  const target = Math.min(frame.boardLeft - 18, Math.max(220, frame.boardLeft * .48));
+  assert(Math.abs(frame.partyWidth - target) <= 3, `${label}: combat frame must be narrowed, not just separated by a token gap ${JSON.stringify(frame)}`);
+  assert(Math.abs(frame.partyRight - frame.journalRight) <= 1 && Math.abs(frame.partyWidth - frame.journalWidth) <= 1, `${label}: Party and Journal must share the same narrowed frame edge`);
+  assert(Math.abs(frame.boardTop) <= 1 && Math.abs(frame.boardRight - frame.vw) <= 1 && Math.abs(frame.boardWidth - frame.vh) <= 2 && Math.abs(frame.boardHeight - frame.vh) <= 2, `${label}: narrowing the frame must not move or resize the board`);
+  console.log(`${label}: frame=${frame.partyWidth.toFixed(1)}px, gap=${(frame.boardLeft-frame.partyRight).toFixed(1)}px, board=${frame.boardWidth}x${frame.boardHeight}`);
+}
+
 async function auditPrepAndCombat(browser, width, height, language) {
   const page = await browser.newPage({ viewport: { width, height } });
   const errors = [];
@@ -356,6 +376,7 @@ async function auditPrepAndCombat(browser, width, height, language) {
     assert.strictEqual(combatPanel.movesInsideParty, false, `${label}: run combat Journal must not be reparented into the Party panel`);
     assert.strictEqual(combatPanel.movesInShell, true, `${label}: run combat Journal must remain in its stable classic-shell owner slot`);
     assert(combatPanel.gap >= 4, `${label}: combat information panel must not touch the board`);
+    await assertCombatFrame(page, `${label} Skirmish`);
     const board = await page.locator('[data-chess-board]').evaluate((element) => {
       const rect = element.getBoundingClientRect();
       const square = element.querySelector('[data-square]')?.getBoundingClientRect();
@@ -434,6 +455,7 @@ async function auditPrepAndCombat(browser, width, height, language) {
     await assertViewportContained(page, '[data-battle-start]', `${label} Battle start`);
     await page.locator('[data-battle-start]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
+    await assertCombatFrame(page, `${label} Battle`);
     await page.evaluate(() => globalThis.RPChessBattle.finishBattle({ over:true, type:'stalemate', winner:null }));
     await page.locator('[data-battle-aftermath]:not([hidden])').waitFor();
     await assertPageFitsViewport(page, `${label} Battle aftermath`);
@@ -456,7 +478,7 @@ async function auditPrepAndCombat(browser, width, height, language) {
       for (const [width, height] of WEAK_SURFACE_MATRIX) await auditEventLayout(browser, width, height, language);
       for (const [width, height] of WEAK_SURFACE_MATRIX) await auditPuzzleLayout(browser, width, height, language);
       for (const [width, height] of WEAK_SURFACE_MATRIX) await auditStarvationAndEndless(browser, width, height, language);
-      for (const [width, height] of [[1180, 820], [1024, 768], [844, 390]]) await auditPrepAndCombat(browser, width, height, language);
+      for (const [width, height] of [[1920, 1080], [1897, 789], [1180, 820], [1024, 768], [844, 390]]) await auditPrepAndCombat(browser, width, height, language);
     }
     console.log('Responsive viewport browser: PASS — RU/EN one-screen geometry, 1180/980 breakpoint boundaries, portrait lock, Settings/Language/Identity/Chronicle/Classic setup frames, Event rail, Travel, Puzzle/Training, Starvation, Endless summary, stable Classic Journal, Skirmish combat/aftermath and Battle prep/aftermath contracts');
   } finally {
