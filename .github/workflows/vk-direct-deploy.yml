@@ -1,0 +1,74 @@
+name: VK Direct Deploy
+
+on:
+  push:
+    branches:
+      - build/vk-manual-check-2026-09-11
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VK_APP_ID: ${{ vars.VK_APP_ID }}
+      MINI_APPS_ACCESS_TOKEN: ${{ secrets.MINI_APPS_ACCESS_TOKEN }}
+      MINI_APPS_ENVIRONMENT: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Validate VK deployment credentials
+        shell: bash
+        run: |
+          if [ -z "$VK_APP_ID" ]; then
+            echo "::error::Repository variable VK_APP_ID is not configured"
+            exit 1
+          fi
+          if [ -z "$MINI_APPS_ACCESS_TOKEN" ]; then
+            echo "::error::Repository secret MINI_APPS_ACCESS_TOKEN is not configured"
+            exit 1
+          fi
+
+      - name: Restore runtime asset cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run focused combat regressions
+        run: npm run test:ui && npm run test:skirmish && npm run test:battle
+
+      - name: Build production dist
+        run: npm run build
+
+      - name: Create VK hosting config
+        shell: bash
+        run: |
+          cat > vk-hosting-config.json <<EOF
+          {
+            "static_path": "dist",
+            "app_id": ${VK_APP_ID},
+            "endpoints": {
+              "mobile": "index.html",
+              "mvk": "index.html",
+              "web": "index.html"
+            }
+          }
+          EOF
+
+      - name: Deploy to VK Hosting
+        run: npx --yes @vkontakte/vk-miniapps-deploy@1.0.2
