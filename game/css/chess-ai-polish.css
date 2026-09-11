@@ -425,8 +425,11 @@ html body .classic-piece-marker--b::before {
   }
   html[data-landscape-ui='1'] body.run-combat-board-active #app main.classic-screen .classic-party-panel,
   html[data-landscape-ui='1'] body.run-combat-board-active #app main.classic-screen .classic-panel--moves {
-    width:calc(100% - 18px)!important;
-    max-width:calc(100% - 18px)!important;
+    width:min(
+      calc(100vw - 100dvh - 4px),
+      max(220px, calc(48vw - 48dvh - 2px))
+    )!important;
+    max-width:none!important;
     min-width:0!important;
     margin-left:8px!important;
     margin-right:10px!important;

@@ -347,14 +347,20 @@ async function auditPrepAndCombat(browser, width, height, language) {
       const moves=document.querySelector('.classic-panel--moves');
       const board=document.querySelector('[data-chess-board]');
       const p=party?.getBoundingClientRect(),b=board?.getBoundingClientRect();
+      const m=moves?.getBoundingClientRect();
       return {
         movesInsideParty:Boolean(party&&moves&&moves.parentElement===party),
         movesInShell:Boolean(shell&&moves&&moves.parentElement===shell),
+        partyWidth:p?.width||0,
+        movesWidth:m?.width||0,
         gap:p&&b?b.left-p.right:0
       };
     });
+    const expectedCombatPanelWidth = Math.min(width - height - 4, Math.max(220, .48 * width - .48 * height - 2));
     assert.strictEqual(combatPanel.movesInsideParty, false, `${label}: run combat Journal must not be reparented into the Party panel`);
     assert.strictEqual(combatPanel.movesInShell, true, `${label}: run combat Journal must remain in its stable classic-shell owner slot`);
+    assert(Math.abs(combatPanel.partyWidth - expectedCombatPanelWidth) <= 2, `${label}: Skirmish Party frame width ${combatPanel.partyWidth}px must match ${expectedCombatPanelWidth}px`);
+    assert(Math.abs(combatPanel.movesWidth - expectedCombatPanelWidth) <= 2, `${label}: Skirmish Journal frame width ${combatPanel.movesWidth}px must match ${expectedCombatPanelWidth}px`);
     assert(combatPanel.gap >= 4, `${label}: combat information panel must not touch the board`);
     const board = await page.locator('[data-chess-board]').evaluate((element) => {
       const rect = element.getBoundingClientRect();
@@ -434,6 +440,19 @@ async function auditPrepAndCombat(browser, width, height, language) {
     await assertViewportContained(page, '[data-battle-start]', `${label} Battle start`);
     await page.locator('[data-battle-start]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
+    const battleCombatPanel = await page.evaluate(() => {
+      const party=document.querySelector('.classic-party-panel')?.getBoundingClientRect();
+      const moves=document.querySelector('.classic-panel--moves')?.getBoundingClientRect();
+      const board=document.querySelector('[data-chess-board]')?.getBoundingClientRect();
+      return {
+        partyWidth:party?.width||0,
+        movesWidth:moves?.width||0,
+        gap:party&&board?board.left-party.right:0
+      };
+    });
+    assert(Math.abs(battleCombatPanel.partyWidth - expectedCombatPanelWidth) <= 2, `${label}: Battle Party frame width ${battleCombatPanel.partyWidth}px must match ${expectedCombatPanelWidth}px`);
+    assert(Math.abs(battleCombatPanel.movesWidth - expectedCombatPanelWidth) <= 2, `${label}: Battle Journal frame width ${battleCombatPanel.movesWidth}px must match ${expectedCombatPanelWidth}px`);
+    assert(battleCombatPanel.gap >= 4, `${label}: Battle information panel must not touch the board`);
     await page.evaluate(() => globalThis.RPChessBattle.finishBattle({ over:true, type:'stalemate', winner:null }));
     await page.locator('[data-battle-aftermath]:not([hidden])').waitFor();
     await assertPageFitsViewport(page, `${label} Battle aftermath`);
