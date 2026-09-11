@@ -1,4 +1,4 @@
-name: Diagnose VK Pages testing-group API
+name: Inspect VK GitHub Pages test group
 
 on:
   push:
@@ -9,31 +9,22 @@ permissions:
   contents: read
 
 jobs:
-  diagnose:
+  inspect:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
       MINI_APPS_ACCESS_TOKEN: ${{ secrets.MINI_APPS_ACCESS_TOKEN }}
-      PAGES_URL: https://mobigametim-bit.github.io/RPChess/
     steps:
-      - name: Call testing-group API without exposing token
+      - name: Read test group
         shell: bash
         run: |
-          RESPONSE_FILE=$(mktemp)
-          HTTP=$(curl --silent --show-error --output "$RESPONSE_FILE" --write-out '%{http_code}' --request POST \
+          BODY=$(curl --silent --show-error --get \
             --data-urlencode "access_token=${MINI_APPS_ACCESS_TOKEN}" \
             --data-urlencode "v=5.199" \
-            --data-urlencode "webview=${PAGES_URL}" \
-            --data-urlencode "name=GitHub Pages manual check" \
-            --data-urlencode "platforms=web,mobile,mvk" \
-            "https://api.vk.ru/method/apps.updateMetaForTestingGroup")
-          echo "HTTP $HTTP"
-          BODY=$(cat "$RESPONSE_FILE")
+            --data-urlencode "app_id=54754579" \
+            "https://api.vk.ru/method/apps.getTestingGroups")
           BODY="$BODY" node <<'NODE'
-          const raw=process.env.BODY||'';
-          try {
-            const p=JSON.parse(raw);
-            if (p.error) console.log(`VK ERROR ${p.error.error_code}: ${p.error.error_msg}`);
-            else console.log(`VK RESPONSE ${JSON.stringify(p.response)}`);
-          } catch { console.log(`NONJSON ${raw.slice(0,500)}`); }
+          const p=JSON.parse(process.env.BODY||'{}');
+          if(p.error){console.error(`VK ERROR ${p.error.error_code}: ${p.error.error_msg}`);process.exit(2)}
+          console.log(`GROUPS ${JSON.stringify(p.response)}`);
           NODE
