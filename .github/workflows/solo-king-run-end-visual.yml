@@ -6,8 +6,7 @@ on:
       - ci/solo-king-run-end-visual
     paths:
       - .github/workflows/solo-king-run-end-visual.yml
-      - ci/solo-king-patch.py
-      - ci/solo-king-test-repair.py
+      - ci/solo-king-toast-repair.py
       - ci/solo-king-visual.cjs
 
 permissions:
@@ -43,11 +42,9 @@ jobs:
         working-directory: feature
         run: npm ci --no-audit --no-fund
 
-      - name: Apply approved presentation changes
+      - name: Clear transient Battle toasts before outcome screens
         working-directory: feature
-        run: |
-          python ../harness/ci/solo-king-patch.py
-          python ../harness/ci/solo-king-test-repair.py
+        run: python ../harness/ci/solo-king-toast-repair.py
 
       - name: Run focused gameplay regression
         working-directory: feature
@@ -79,20 +76,20 @@ jobs:
         working-directory: feature
         run: node ../harness/ci/solo-king-visual.cjs
 
-      - name: Commit validated source changes to feature branch
+      - name: Commit validated toast cleanup to feature branch
         working-directory: feature
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add game/localization/ui.mjs game/js/battle-app.mjs game/css/landscape-ui-redesign.css tests/responsive-viewport-browser.cjs
-          git commit -m "ui: fit solo king Battle run end in one viewport"
+          git add game/js/battle-app.mjs
+          git commit -m "ui: clear Battle toast before outcome screens"
           git push origin HEAD:fix/battle-solo-king-run-end
 
       - name: Upload visual evidence
         uses: actions/upload-artifact@v4
         with:
-          name: solo-king-run-end-screenshots
+          name: solo-king-run-end-screenshots-clean
           path: feature/solo-king-screenshots/*.png
           if-no-files-found: error
           retention-days: 7
