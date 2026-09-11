@@ -1,0 +1,56 @@
+name: VK Manual Check Build
+
+on:
+  push:
+    branches:
+      - build/vk-manual-check-2026-09-11
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Restore runtime asset cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run focused combat regressions
+        run: |
+          npm run test:ui
+          npm run test:skirmish
+          npm run test:battle
+
+      - name: Build production dist
+        run: npm run build
+
+      - name: Record source revision
+        run: |
+          printf 'RPChess manual VK check build\nsource_main_sha=48af386933072bc3d06a020c778338a7020c025a\nbuild_branch_sha=%s\n' "$GITHUB_SHA" > dist/BUILD_INFO.txt
+
+      - name: Upload VK manual-check archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: RPChess-VK-manual-check-48af386
+          path: dist/
+          if-no-files-found: error
+          compression-level: 6
+          retention-days: 7
