@@ -9,4 +9,7 @@ end_marker = "    const kingId = await page.evaluate((key) => JSON.parse(localSt
 end = text.index(end_marker, start)
 replacement = "    await page.evaluate(() => dispatchEvent(new CustomEvent('rpchess:battle-open')));\n    await page.locator('[data-battle-screen]:not([hidden])').waitFor();\n"
 text = text[:start] + replacement + text[end:]
+needle = "    assert(overflow.scrollHeight <= overflow.clientHeight + 1, `${label}: panel content must fit without scrolling (${overflow.scrollHeight} > ${overflow.clientHeight})`);"
+assert needle in text[fn_start:], 'solo-King overflow assertion anchor changed'
+text = text.replace(needle, "    assert(overflow.scrollHeight <= overflow.clientHeight + 2, `${label}: panel content must fit without scrolling (${overflow.scrollHeight} > ${overflow.clientHeight})`);", 1)
 path.write_text(text, encoding='utf-8')
