@@ -22,17 +22,7 @@ async function runCase(browser,width,height,language,filename){
   await page.reload({waitUntil:'networkidle'});
   await setLanguage(page,language);
   await startNewRun(page,{playerName:'Solo King Visual'});
-  await page.evaluate((key)=>{
-    const run=JSON.parse(localStorage.getItem(key));
-    const enemyRoleRaces={pawn:'orcs',knight:'orcs',bishop:'orcs',rook:'orcs',queen:'orcs',king:'orcs'};
-    run.currentTravelChoices=[{id:'visual.solo-king.battle',step:1,type:'battle',label:'БИТВА',stars:6,threatLabel:'ОПАСНАЯ',flavor:'Дорогу перекрывает полностью развёрнутая армия противника.',mechanicalHint:'Полная армия противника.',seed:'visual-solo-king',difficultyModel:'power-v1',playerColor:'w',enemyColor:'b',enemyRaceTag:'orcs',enemyRoleRaces,sideNarrative:'Ваш отряд перехватывает инициативу и первым выходит на поле.'}];
-    run.activeTravelChoice=null;
-    localStorage.setItem(key,JSON.stringify(run));
-    dispatchEvent(new CustomEvent('rpchess:run-updated'));
-  },RUN_KEY);
-  await page.locator('[data-roster-travel]').click();
-  await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
-  await page.locator('[data-travel-type="battle"]').first().click();
+  await page.evaluate(()=>dispatchEvent(new CustomEvent('rpchess:battle-open')));
   await page.locator('[data-battle-screen]:not([hidden])').waitFor();
   const kingId=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).roster.find(c=>c.isRunKing).id,RUN_KEY);
   const cards=page.locator('[data-battle-character]');
