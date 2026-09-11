@@ -6,6 +6,9 @@ on:
       - ci/solo-king-run-end-visual
     paths:
       - .github/workflows/solo-king-run-end-visual.yml
+      - ci/solo-king-patch.py
+      - ci/solo-king-test-repair.py
+      - ci/solo-king-visual.cjs
 
 permissions:
   contents: write
@@ -42,7 +45,9 @@ jobs:
 
       - name: Apply approved presentation changes
         working-directory: feature
-        run: python ../harness/ci/solo-king-patch.py
+        run: |
+          python ../harness/ci/solo-king-patch.py
+          python ../harness/ci/solo-king-test-repair.py
 
       - name: Run focused gameplay regression
         working-directory: feature
