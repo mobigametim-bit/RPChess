@@ -52,9 +52,11 @@ jobs:
         working-directory: feature
         run: npm run build
 
-      - name: Install Chromium
+      - name: Install visual Playwright and Chromium
         working-directory: feature
-        run: npx playwright install --with-deps chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.63.0
+          npx playwright install --with-deps chromium
 
       - name: Start local production server
         working-directory: feature
