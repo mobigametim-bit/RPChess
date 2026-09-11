@@ -81,12 +81,68 @@ jobs:
       - name: Build production dist
         run: npm run build
 
+      - name: Prepare compact VK manual-check bundle
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const { optimizePngBuffer } = require('./scripts/piece-asset-runtime.cjs');
+          const { optimizePortraitAssets } = require('./scripts/portrait-asset-runtime.cjs');
+
+          const root = path.resolve('dist');
+          const eventsRoot = path.join(root, 'assets/events');
+          let eventCount = 0;
+          let before = 0;
+          let after = 0;
+
+          function walk(dir) {
+            if (!fs.existsSync(dir)) return;
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const full = path.join(dir, entry.name);
+              if (entry.isDirectory()) walk(full);
+              else if (entry.isFile() && entry.name.toLowerCase().endsWith('.png')) {
+                const source = fs.readFileSync(full);
+                const optimized = optimizePngBuffer(source, 448);
+                const output = optimized.buffer.length < source.length ? optimized.buffer : source;
+                fs.writeFileSync(full, output);
+                eventCount += 1;
+                before += source.length;
+                after += output.length;
+              }
+            }
+          }
+
+          walk(eventsRoot);
+          const portraits = optimizePortraitAssets(root, {
+            write: true,
+            maxSide: 320,
+            maxBytes: 1536 * 1024,
+            maxTotalBytes: 30 * 1024 * 1024,
+            expectedCount: 37
+          });
+          fs.rmSync(path.join(root, 'music'), { recursive: true, force: true });
+          console.log(`VK compact events: ${eventCount}, ${before} -> ${after} bytes`);
+          console.log(`VK compact portraits: ${portraits.beforeBytes} -> ${portraits.afterBytes} bytes`);
+          console.log('VK manual-check bundle omits background music only; combat/UI code is unchanged.');
+          NODE
+
+          rm -f build.zip
+          (cd dist && zip -qr ../build.zip .)
+          BUNDLE_BYTES=$(stat -c%s build.zip)
+          echo "VK bundle size: ${BUNDLE_BYTES} bytes"
+          if [ "$BUNDLE_BYTES" -ge 50000000 ]; then
+            echo "::error::VK manual-check bundle is still >= 50 MB"
+            exit 1
+          fi
+
       - name: Create VK hosting config
         shell: bash
         run: |
           cat > vk-hosting-config.json <<EOF
           {
             "static_path": "dist",
+            "bundleFile": "./build.zip",
             "app_id": ${VK_APP_ID},
             "noprompt": true,
             "update_prod": true,
