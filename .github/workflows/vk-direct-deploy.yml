@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: vk-direct-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -15,7 +19,7 @@ jobs:
     env:
       VK_APP_ID: ${{ vars.VK_APP_ID }}
       MINI_APPS_ACCESS_TOKEN: ${{ secrets.MINI_APPS_ACCESS_TOKEN }}
-      MINI_APPS_ENVIRONMENT: production
+      MINI_APPS_ENVIRONMENT: dev
       CI_URLS: '1'
     steps:
       - name: Checkout
@@ -145,8 +149,8 @@ jobs:
             "bundleFile": "./build.zip",
             "app_id": ${VK_APP_ID},
             "noprompt": true,
-            "update_prod": true,
-            "update_dev": false,
+            "update_prod": false,
+            "update_dev": true,
             "endpoints": {
               "mobile": "index.html",
               "mvk": "index.html",
@@ -155,5 +159,5 @@ jobs:
           }
           EOF
 
-      - name: Deploy to VK Hosting
+      - name: Deploy to VK Hosting dev URL
         run: npx --yes @vkontakte/vk-miniapps-deploy@1.0.2
