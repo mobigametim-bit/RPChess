@@ -96,4 +96,5 @@ jobs:
           EOF
 
       - name: Deploy to VK Hosting
-        run: npx --yes @vkontakte/vk-miniapps-deploy@1.0.2
+        shell: bash
+        run: printf 'y\n' | npx --yes @vkontakte/vk-miniapps-deploy@1.0.2
