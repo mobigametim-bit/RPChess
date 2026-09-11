@@ -1,0 +1,139 @@
+name: Apply combat panel width fix
+
+on:
+  push:
+    branches:
+      - fix/combat-panel-vk-pages-2026-09-11
+
+permissions:
+  contents: write
+
+jobs:
+  fix-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: fix/combat-panel-vk-pages-2026-09-11
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Apply root-cause CSS fix and viewport regression assertions
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          polish = Path('game/css/chess-ai-polish.css')
+          text = polish.read_text(encoding='utf-8')
+          old = """    width:calc(100% - 18px)!important;\n    max-width:calc(100% - 18px)!important;"""
+          new = """    width:min(\n      calc(100vw - 100dvh - 4px),\n      max(220px, calc(48vw - 48dvh - 2px))\n    )!important;\n    max-width:none!important;"""
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected exactly one owner width rule, found {text.count(old)}')
+          polish.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          side = Path('game/css/combat-side-colors.css')
+          text = side.read_text(encoding='utf-8')
+          marker = "\n/* Shared compact-combat spacing: preserve the fixed board and turn unused left-rail width into air. */\n"
+          if marker not in text:
+              raise SystemExit('Expected stale compact-combat spacing block in combat-side-colors.css')
+          side.write_text(text.split(marker, 1)[0].rstrip() + '\n', encoding='utf-8')
+
+          test = Path('tests/responsive-viewport-browser.cjs')
+          text = test.read_text(encoding='utf-8')
+          old_geom = """      return {\n        movesInsideParty:Boolean(party&&moves&&moves.parentElement===party),\n        movesInShell:Boolean(shell&&moves&&moves.parentElement===shell),\n        gap:p&&b?b.left-p.right:0\n      };"""
+          new_geom = """      const m=moves?.getBoundingClientRect();\n      return {\n        movesInsideParty:Boolean(party&&moves&&moves.parentElement===party),\n        movesInShell:Boolean(shell&&moves&&moves.parentElement===shell),\n        partyWidth:p?.width||0,\n        movesWidth:m?.width||0,\n        gap:p&&b?b.left-p.right:0\n      };"""
+          if text.count(old_geom) != 1:
+              raise SystemExit(f'Expected one Skirmish combat geometry block, found {text.count(old_geom)}')
+          text = text.replace(old_geom, new_geom, 1)
+
+          old_assert = """    assert.strictEqual(combatPanel.movesInsideParty, false, `${label}: run combat Journal must not be reparented into the Party panel`);\n    assert.strictEqual(combatPanel.movesInShell, true, `${label}: run combat Journal must remain in its stable classic-shell owner slot`);\n    assert(combatPanel.gap >= 4, `${label}: combat information panel must not touch the board`);"""
+          new_assert = """    const expectedCombatPanelWidth = Math.min(width - height - 4, Math.max(220, .48 * width - .48 * height - 2));\n    assert.strictEqual(combatPanel.movesInsideParty, false, `${label}: run combat Journal must not be reparented into the Party panel`);\n    assert.strictEqual(combatPanel.movesInShell, true, `${label}: run combat Journal must remain in its stable classic-shell owner slot`);\n    assert(Math.abs(combatPanel.partyWidth - expectedCombatPanelWidth) <= 2, `${label}: Skirmish Party frame width ${combatPanel.partyWidth}px must match ${expectedCombatPanelWidth}px`);\n    assert(Math.abs(combatPanel.movesWidth - expectedCombatPanelWidth) <= 2, `${label}: Skirmish Journal frame width ${combatPanel.movesWidth}px must match ${expectedCombatPanelWidth}px`);\n    assert(combatPanel.gap >= 4, `${label}: combat information panel must not touch the board`);"""
+          if text.count(old_assert) != 1:
+              raise SystemExit(f'Expected one Skirmish combat assertion block, found {text.count(old_assert)}')
+          text = text.replace(old_assert, new_assert, 1)
+
+          battle_anchor = """    await page.locator('[data-battle-start]').click();\n    await page.locator('[data-classic-screen]:not([hidden])').waitFor();\n    await page.evaluate(() => globalThis.RPChessBattle.finishBattle({ over:true, type:'stalemate', winner:null }));"""
+          battle_replacement = """    await page.locator('[data-battle-start]').click();\n    await page.locator('[data-classic-screen]:not([hidden])').waitFor();\n    const battleCombatPanel = await page.evaluate(() => {\n      const party=document.querySelector('.classic-party-panel')?.getBoundingClientRect();\n      const moves=document.querySelector('.classic-panel--moves')?.getBoundingClientRect();\n      const board=document.querySelector('[data-chess-board]')?.getBoundingClientRect();\n      return {\n        partyWidth:party?.width||0,\n        movesWidth:moves?.width||0,\n        gap:party&&board?board.left-party.right:0\n      };\n    });\n    assert(Math.abs(battleCombatPanel.partyWidth - expectedCombatPanelWidth) <= 2, `${label}: Battle Party frame width ${battleCombatPanel.partyWidth}px must match ${expectedCombatPanelWidth}px`);\n    assert(Math.abs(battleCombatPanel.movesWidth - expectedCombatPanelWidth) <= 2, `${label}: Battle Journal frame width ${battleCombatPanel.movesWidth}px must match ${expectedCombatPanelWidth}px`);\n    assert(battleCombatPanel.gap >= 4, `${label}: Battle information panel must not touch the board`);\n    await page.evaluate(() => globalThis.RPChessBattle.finishBattle({ over:true, type:'stalemate', winner:null }));"""
+          if text.count(battle_anchor) != 1:
+              raise SystemExit(f'Expected one Battle combat anchor, found {text.count(battle_anchor)}')
+          test.write_text(text.replace(battle_anchor, battle_replacement, 1), encoding='utf-8')
+          PY
+
+      - name: Restore runtime asset cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run focused static regressions
+        run: npm run test:ui && npm run test:skirmish && npm run test:battle
+
+      - name: Build canonical production dist
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+
+      - name: Run real viewport regression
+        env:
+          RPCHESS_BROWSER_TEST: responsive-viewport-browser.cjs
+        run: npm run test:browser
+
+      - name: Record VK app metadata keys
+        env:
+          MINI_APPS_ACCESS_TOKEN: ${{ secrets.MINI_APPS_ACCESS_TOKEN }}
+        shell: bash
+        run: |
+          if [ -z "$MINI_APPS_ACCESS_TOKEN" ]; then
+            echo "VK token not configured; skipping metadata inspection"
+            exit 0
+          fi
+          RESPONSE=$(curl --fail --silent --show-error --get \
+            --data-urlencode "access_token=${MINI_APPS_ACCESS_TOKEN}" \
+            --data-urlencode "v=5.199" \
+            --data-urlencode "app_ids=54754579" \
+            --data-urlencode "extended=1" \
+            "https://api.vk.ru/method/apps.get")
+          VK_RESPONSE="$RESPONSE" node <<'NODE'
+          const payload = JSON.parse(process.env.VK_RESPONSE || '{}');
+          if (payload.error) {
+            console.log(`VK metadata query error ${payload.error.error_code}: ${payload.error.error_msg}`);
+            process.exit(0);
+          }
+          const item = payload.response?.items?.[0] || payload.response?.[0] || null;
+          if (!item) {
+            console.log('VK metadata query returned no app item');
+            process.exit(0);
+          }
+          const safe = {};
+          for (const key of Object.keys(item).sort()) {
+            if (/token|secret|key/i.test(key)) continue;
+            const value = item[key];
+            if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || value == null) safe[key] = value;
+          }
+          console.log('VK app metadata:', JSON.stringify(safe));
+          NODE
+
+      - name: Commit verified fix to branch
+        shell: bash
+        run: |
+          rm -f .github/workflows/apply-combat-panel-vk-pages-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add game/css/chess-ai-polish.css game/css/combat-side-colors.css tests/responsive-viewport-browser.cjs .github/workflows/apply-combat-panel-vk-pages-fix.yml
+          git commit -m "fix: enforce narrow Battle and Skirmish combat frames [skip ci]"
+          git push origin HEAD:fix/combat-panel-vk-pages-2026-09-11
