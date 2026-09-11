@@ -319,6 +319,54 @@ async function auditStarvationAndEndless(browser, width, height, language) {
   }
 }
 
+
+async function auditSoloKingBattleRunEnd(browser, width, height, language) {
+  const page = await browser.newPage({ viewport: { width, height } });
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(String(error.stack || error)));
+  const label = `${width}x${height} ${language.toUpperCase()} solo-King Battle run end`;
+  try {
+    await freshMenu(page);
+    await setLanguage(page, language);
+    await startNewRun(page, { playerName: `Solo King ${width} ${language}` });
+    await page.evaluate(() => dispatchEvent(new CustomEvent('rpchess:battle-open')));
+    await page.locator('[data-battle-screen]:not([hidden])').waitFor();
+    const kingId = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).roster.find((character) => character.isRunKing).id, RUN_KEY);
+    const cards = page.locator('[data-battle-character]');
+    for (let index = 0; index < await cards.count(); index += 1) {
+      const card = cards.nth(index);
+      if ((await card.getAttribute('data-battle-character')) !== kingId) await card.click();
+    }
+    await page.locator('[data-battle-start]').click();
+    await page.locator('[data-classic-screen]:not([hidden])').waitFor();
+    const participants = await page.evaluate(() => globalThis.RPChessBattle.battlePlan?.participants || []);
+    assert.deepStrictEqual(participants, [kingId], `${label}: Battle must contain only the named King`);
+    await page.evaluate(() => globalThis.RPChessBattle.finishBattle({ over:true, type:'stalemate', winner:null }));
+    await page.locator('[data-battle-run-end]:not([hidden])').waitFor();
+    const persisted = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
+    assert.strictEqual(persisted.ended, true, `${label}: run must end`);
+    assert.strictEqual(persisted.endReason, 'king_solo_battle', `${label}: solo-King end reason must be preserved`);
+    assert.strictEqual(persisted.roster.find((character) => character.isRunKing).status, 'dead', `${label}: King must die after the completed Battle`);
+    const expectedText = language === 'en'
+      ? 'The mercenaries paid no heed to the words of a lone king without a kingdom and hanged you from the nearest tree.'
+      : 'Наемники не посчитались со словами одинокого короля без королевства и повесили вас на суку ближайшего дерева';
+    assert.strictEqual((await page.locator('[data-battle-run-end-text]').innerText()).trim(), expectedText, `${label}: reason copy mismatch`);
+    await assertPageFitsViewport(page, label);
+    await assertViewportContained(page, '[data-battle-run-end]:not([hidden])', `${label} screen`);
+    await assertViewportContained(page, '.battle-run-end .battle-aftermath-panel', `${label} panel`);
+    for (const selector of ['[data-battle-run-end-title]','[data-battle-run-end-text]','[data-battle-run-metric="combats"]','[data-battle-run-metric="healthy"]','[data-battle-run-metric="wounded"]','[data-battle-run-end-continue]']) {
+      await assertViewportContained(page, selector, `${label} ${selector}`);
+    }
+    await assertFrameContains(page, '.battle-run-end .battle-aftermath-panel', ['[data-battle-run-end-title]','[data-battle-run-end-text]','[data-battle-run-metric]','[data-battle-run-end-continue]'], `${label} ownership`);
+    const overflow = await page.locator('.battle-run-end .battle-aftermath-panel').evaluate((panel) => ({ scrollHeight:panel.scrollHeight, clientHeight:panel.clientHeight, overflowY:getComputedStyle(panel).overflowY }));
+    assert(overflow.scrollHeight <= overflow.clientHeight + 2, `${label}: panel content must fit without scrolling (${overflow.scrollHeight} > ${overflow.clientHeight})`);
+    assert(!['auto','scroll'].includes(overflow.overflowY), `${label}: panel must not own an internal scrollbar`);
+    assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
+  } finally {
+    await page.close();
+  }
+}
+
 async function auditPrepAndCombat(browser, width, height, language) {
   const page = await browser.newPage({ viewport: { width, height } });
   const errors = [];
@@ -471,6 +519,7 @@ async function auditPrepAndCombat(browser, width, height, language) {
       for (const [width, height] of WEAK_SURFACE_MATRIX) await auditEventLayout(browser, width, height, language);
       for (const [width, height] of WEAK_SURFACE_MATRIX) await auditPuzzleLayout(browser, width, height, language);
       for (const [width, height] of WEAK_SURFACE_MATRIX) await auditStarvationAndEndless(browser, width, height, language);
+      for (const [width, height] of [[1366, 768], [1024, 768], [844, 390]]) await auditSoloKingBattleRunEnd(browser, width, height, language);
       for (const [width, height] of [[1180, 820], [1024, 768], [844, 390]]) await auditPrepAndCombat(browser, width, height, language);
     }
     console.log('Responsive viewport browser: PASS — RU/EN one-screen geometry, 1180/980 breakpoint boundaries, portrait lock, Settings/Language/Identity/Chronicle/Classic setup frames, Event rail, Travel, Puzzle/Training, Starvation, Endless summary, stable Classic Journal, Skirmish combat/aftermath and Battle prep/aftermath contracts');

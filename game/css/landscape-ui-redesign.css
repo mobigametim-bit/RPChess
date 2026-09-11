@@ -1049,3 +1049,158 @@ html[data-landscape-ui='1'] body.compact-combat-active .classic-shell {
   [data-promotion-modal] .classic-promotion-option { min-height: 72px !important; }
   [data-promotion-modal] .classic-promotion-option img { height: 48px !important; }
 }
+
+
+/* Solo-King Battle run-end: one-viewport owner contract. */
+@media (orientation: landscape) {
+  html[data-landscape-ui='1'] .battle-run-end {
+    width:100vw !important;
+    height:100dvh !important;
+    min-height:0 !important;
+    max-height:100dvh !important;
+    padding:0 !important;
+    overflow:hidden !important;
+    box-sizing:border-box !important;
+  }
+  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-shell {
+    position:relative !important;
+    width:100% !important;
+    height:100% !important;
+    min-height:0 !important;
+    max-height:100% !important;
+    margin:0 !important;
+    padding:8px 10px !important;
+    display:grid !important;
+    place-items:center !important;
+    overflow:hidden !important;
+    box-sizing:border-box !important;
+  }
+  html[data-landscape-ui='1'] .battle-run-end .battle-logo {
+    position:absolute !important;
+    top:8px !important;
+    left:10px !important;
+    width:min(140px,14vw) !important;
+    margin:0 !important;
+    z-index:3 !important;
+  }
+  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-panel {
+    width:min(1380px,100%) !important;
+    min-height:0 !important;
+    max-height:calc(100dvh - 16px) !important;
+    overflow:hidden !important;
+    box-sizing:border-box !important;
+  }
+  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-panel::after {
+    min-height:0 !important;
+  }
+}
+@media (orientation: landscape) and (max-width:1180px) {
+  html[data-landscape-ui='1'] .battle-run-end .battle-logo { width:min(118px,13vw) !important; }
+  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-panel {
+    height:100% !important;
+    max-height:100% !important;
+    grid-template-columns:minmax(0,1.22fr) minmax(220px,.78fr) !important;
+    grid-template-areas:'result art' 'eyebrow art' 'text art' 'columns art' 'button art' !important;
+    grid-template-rows:auto auto auto minmax(0,1fr) auto !important;
+    column-gap:18px !important;
+    row-gap:6px !important;
+    align-content:center !important;
+    padding:clamp(14px,2.2vw,24px) !important;
+  }
+  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-panel>h1 { font-size:clamp(46px,6vw,68px) !important; }
+  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-panel>p {
+    margin-top:0 !important;
+    font-size:13px !important;
+    line-height:1.35 !important;
+  }
+  html[data-landscape-ui='1'] .battle-run-end .battle-run-end-metrics {
+    grid-area:columns !important;
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+    gap:7px !important;
+    margin:12px 0 0 !important;
+    align-self:start !important;
+  }
+  html[data-landscape-ui='1'] .battle-run-end .battle-run-end-metrics>section {
+    min-height:0 !important;
+    padding:7px 8px !important;
+  }
+  html[data-landscape-ui='1'] .battle-run-end .battle-run-end-metrics h2 {
+    margin:0 0 5px !important;
+    font-size:clamp(16px,2vw,21px) !important;
+  }
+  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-button {
+    min-height:42px !important;
+    margin:8px 0 0 !important;
+  }
+}
+@media (orientation: landscape) and (max-width:980px) and (max-height:520px) {
+  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-shell { padding:5px 7px !important; }
+  html[data-landscape-ui='1'] .battle-run-end .battle-logo { display:none !important; }
+  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-panel {
+    width:100% !important;
+    height:100% !important;
+    max-height:100% !important;
+    grid-template-columns:minmax(0,1.2fr) minmax(245px,.8fr) !important;
+    grid-template-areas:'result columns' 'eyebrow columns' 'text columns' 'button columns' !important;
+    grid-template-rows:auto auto minmax(0,1fr) auto !important;
+    column-gap:12px !important;
+    row-gap:3px !important;
+    align-content:stretch !important;
+    padding:8px 10px !important;
+  }
+  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-panel::after { display:none !important; }
+  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-panel>h1 {
+    margin:0 !important;
+    font-size:clamp(32px,9vh,44px) !important;
+    line-height:.92 !important;
+  }
+  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-panel>.reboot-eyebrow {
+    margin:0 !important;
+    font-size:9px !important;
+    line-height:1.1 !important;
+  }
+  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-panel>p {
+    margin:0 !important;
+    max-width:none !important;
+    font-size:11px !important;
+    line-height:1.25 !important;
+  }
+  html[data-landscape-ui='1'] .battle-run-end .battle-run-end-metrics {
+    grid-area:columns !important;
+    align-self:stretch !important;
+    height:100% !important;
+    min-height:0 !important;
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    grid-template-rows:repeat(3,minmax(0,1fr)) !important;
+    gap:5px !important;
+    margin:0 !important;
+    padding:0 !important;
+    border:0 !important;
+  }
+  html[data-landscape-ui='1'] .battle-run-end .battle-run-end-metrics>section {
+    min-height:0 !important;
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) auto !important;
+    align-items:center !important;
+    gap:6px !important;
+    padding:5px 7px !important;
+  }
+  html[data-landscape-ui='1'] .battle-run-end .battle-run-end-metrics h2 {
+    margin:0 !important;
+    font-size:clamp(14px,3.7vh,18px) !important;
+    line-height:1 !important;
+  }
+  html[data-landscape-ui='1'] .battle-run-end .battle-run-end-metrics .battle-aftermath-empty {
+    font-size:clamp(20px,6vh,28px) !important;
+    line-height:1 !important;
+    text-align:right !important;
+  }
+  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-button {
+    justify-self:start !important;
+    width:min(300px,100%) !important;
+    min-height:36px !important;
+    margin:3px 0 0 !important;
+    font-size:16px !important;
+  }
+}
