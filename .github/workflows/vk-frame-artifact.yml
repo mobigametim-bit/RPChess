@@ -1,52 +1,49 @@
-name: VK frame-width build artifact
+name: VK frame-width manual acceptance preview
 on:
   push:
     branches:
       - fix/combat-frame-width-build
 permissions:
   contents: read
+  actions: read
+concurrency:
+  group: vk-hosting-dev
+  cancel-in-progress: false
 jobs:
-  build-vk:
+  deploy-requested-dev:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-      - name: Restore runtime assets
-        uses: actions/cache@v4
+      - name: Download the already verified VK artifact
+        uses: actions/download-artifact@v4
         with:
-          path: ~/.npm/rpchess-runtime-assets-v1
-          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
-          restore-keys: |
-            rpchess-runtime-assets-v1-${{ runner.os }}-
-      - run: npm ci --no-audit --no-fund
-      - name: Build real VK candidate
-        run: npm run build:vk
-      - name: Check VK packaging
-        run: npm run test:vk-build
-      - name: Verify frame fix in delivered CSS
+          name: RPChess-VK-frame-fix
+          path: dist-vk
+          run-id: 34586758727
+          github-token: ${{ github.token }}
+      - name: Verify exact acceptance artifact
         run: |
           node - <<'NODE'
           const fs = require('fs');
           const assert = require('assert');
+          const info = JSON.parse(fs.readFileSync('dist-vk/CHECKPOINT.json', 'utf8'));
+          assert.strictEqual(info.source_head, '2fd10385c04b4efee59b96817a517b9beb1f2549');
           const css = fs.readFileSync('dist-vk/css/chess-ai-polish.css', 'utf8');
           assert(css.includes('width:min(calc(100% - 18px),max(220px,48%))!important;'));
-          assert(fs.readFileSync('dist-vk/index.html', 'utf8').includes('chess-ai-polish.css?v=20260911-combat-frame'));
-          fs.writeFileSync('dist-vk/CHECKPOINT.json', JSON.stringify({
-            source_head: process.env.GITHUB_SHA,
-            change: 'Narrow Battle and Skirmish Party + Journal to 48% of the left rail, readable minimum 220px; board unchanged',
-            visual_acceptance: 'pending user check'
-          }, null, 2) + '\n');
-          console.log('Delivered combat-frame CSS and cache version: PASS');
+          console.log('Verified exact frame-width acceptance artifact: ' + info.source_head);
           NODE
-      - name: Upload VK build for manual acceptance
-        uses: actions/upload-artifact@v4
-        with:
-          name: RPChess-VK-frame-fix
-          path: dist-vk/
-          retention-days: 14
-          compression-level: 0
-          if-no-files-found: error
+      - name: Deploy requested VK dev preview
+        env:
+          MINI_APPS_ACCESS_TOKEN: ${{ secrets.MINI_APPS_ACCESS_TOKEN }}
+          MINI_APPS_ENVIRONMENT: dev
+          CI_URLS: 'true'
+        run: |
+          if [ -z "$MINI_APPS_ACCESS_TOKEN" ]; then
+            echo "VK Hosting deploy token is not configured."
+            exit 1
+          fi
+          npx --yes @vkontakte/vk-miniapps-deploy@1.0.2
