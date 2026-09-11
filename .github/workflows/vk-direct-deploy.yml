@@ -16,6 +16,7 @@ jobs:
       VK_APP_ID: ${{ vars.VK_APP_ID }}
       MINI_APPS_ACCESS_TOKEN: ${{ secrets.MINI_APPS_ACCESS_TOKEN }}
       MINI_APPS_ENVIRONMENT: production
+      CI_URLS: '1'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -87,6 +88,9 @@ jobs:
           {
             "static_path": "dist",
             "app_id": ${VK_APP_ID},
+            "noprompt": true,
+            "update_prod": true,
+            "update_dev": false,
             "endpoints": {
               "mobile": "index.html",
               "mvk": "index.html",
@@ -96,5 +100,4 @@ jobs:
           EOF
 
       - name: Deploy to VK Hosting
-        shell: bash
-        run: printf 'y\n' | npx --yes @vkontakte/vk-miniapps-deploy@1.0.2
+        run: npx --yes @vkontakte/vk-miniapps-deploy@1.0.2
