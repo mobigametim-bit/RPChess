@@ -19,323 +19,48 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: fix/battle-solo-king-run-end
+          path: feature
           fetch-depth: 0
+
+      - name: Checkout validation harness
+        uses: actions/checkout@v4
+        with:
+          ref: ci/solo-king-run-end-visual
+          path: harness
+          fetch-depth: 1
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
+          cache-dependency-path: feature/package-lock.json
 
       - name: Install dependencies
+        working-directory: feature
         run: npm ci --no-audit --no-fund
 
-      - name: Apply presentation and viewport contract
-        shell: bash
-        run: |
-          python <<'PY'
-          from pathlib import Path
-
-          # 1) Dedicated RU/EN copy for the approved solo-King consequence.
-          ui = Path('game/localization/ui.mjs')
-          text = ui.read_text(encoding='utf-8')
-          ru_old = "'battle.runEnd.text':'{name} пал в битве. Забег завершён.','battle.mercenary.quoteTitle'"
-          ru_new = "'battle.runEnd.text':'{name} пал в битве. Забег завершён.','battle.runEnd.text.soloKing':'Наемники не посчитались со словами одинокого короля без королевства и повесили вас на суку ближайшего дерева','battle.mercenary.quoteTitle'"
-          en_old = "'battle.runEnd.text':'{name} fell in battle. The run is over.','battle.mercenary.quoteTitle'"
-          en_new = "'battle.runEnd.text':'{name} fell in battle. The run is over.','battle.runEnd.text.soloKing':'The mercenaries paid no heed to the words of a lone king without a kingdom and hanged you from the nearest tree.','battle.mercenary.quoteTitle'"
-          assert text.count(ru_old) == 1, 'RU Battle run-end key anchor changed'
-          assert text.count(en_old) == 1, 'EN Battle run-end key anchor changed'
-          text = text.replace(ru_old, ru_new).replace(en_old, en_new)
-          ui.write_text(text, encoding='utf-8')
-
-          # 2) Immediate Battle run-end screen chooses reason-aware copy.
-          app = Path('game/js/battle-app.mjs')
-          text = app.read_text(encoding='utf-8')
-          old = "runEndScreen.querySelector('[data-battle-run-end-text]').textContent=t('battle.runEnd.text',{name:contentText(king?.name||t('piece.king'))});"
-          new = "const textKey=activeRun.endReason==='king_solo_battle'?'battle.runEnd.text.soloKing':'battle.runEnd.text';runEndScreen.querySelector('[data-battle-run-end-text]').textContent=t(textKey,{name:contentText(king?.name||t('piece.king'))});"
-          assert text.count(old) == 1, 'Battle renderRunEnd anchor changed'
-          app.write_text(text.replace(old, new), encoding='utf-8')
-
-          # 3) Responsive owner rule: this screen must fit in one landscape viewport with no panel scrolling.
-          css = Path('game/css/landscape-ui-redesign.css')
-          text = css.read_text(encoding='utf-8')
-          marker = '/* Solo-King Battle run-end: one-viewport owner contract. */'
-          assert marker not in text, 'Solo-King viewport contract already present'
-          block = r'''
-
-/* Solo-King Battle run-end: one-viewport owner contract. */
-@media (orientation: landscape) {
-  html[data-landscape-ui='1'] .battle-run-end {
-    width:100vw !important;
-    height:100dvh !important;
-    min-height:0 !important;
-    max-height:100dvh !important;
-    padding:0 !important;
-    overflow:hidden !important;
-    box-sizing:border-box !important;
-  }
-  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-shell {
-    position:relative !important;
-    width:100% !important;
-    height:100% !important;
-    min-height:0 !important;
-    max-height:100% !important;
-    margin:0 !important;
-    padding:8px 10px !important;
-    display:grid !important;
-    place-items:center !important;
-    overflow:hidden !important;
-    box-sizing:border-box !important;
-  }
-  html[data-landscape-ui='1'] .battle-run-end .battle-logo {
-    position:absolute !important;
-    top:8px !important;
-    left:10px !important;
-    width:min(140px,14vw) !important;
-    margin:0 !important;
-    z-index:3 !important;
-  }
-  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-panel {
-    width:min(1380px,100%) !important;
-    min-height:0 !important;
-    max-height:calc(100dvh - 16px) !important;
-    overflow:hidden !important;
-    box-sizing:border-box !important;
-  }
-  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-panel::after {
-    min-height:0 !important;
-  }
-}
-
-@media (orientation: landscape) and (max-width:1180px) {
-  html[data-landscape-ui='1'] .battle-run-end .battle-logo {
-    width:min(118px,13vw) !important;
-  }
-  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-panel {
-    height:100% !important;
-    max-height:100% !important;
-    grid-template-columns:minmax(0,1.22fr) minmax(220px,.78fr) !important;
-    grid-template-areas:
-      'result art'
-      'eyebrow art'
-      'text art'
-      'columns art'
-      'button art' !important;
-    grid-template-rows:auto auto auto minmax(0,1fr) auto !important;
-    column-gap:18px !important;
-    row-gap:6px !important;
-    align-content:center !important;
-    padding:clamp(14px,2.2vw,24px) !important;
-  }
-  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-panel>h1 {
-    font-size:clamp(46px,6vw,68px) !important;
-  }
-  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-panel>p {
-    margin-top:0 !important;
-    font-size:13px !important;
-    line-height:1.35 !important;
-  }
-  html[data-landscape-ui='1'] .battle-run-end .battle-run-end-metrics {
-    grid-area:columns !important;
-    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
-    gap:7px !important;
-    margin:12px 0 0 !important;
-    align-self:start !important;
-  }
-  html[data-landscape-ui='1'] .battle-run-end .battle-run-end-metrics>section {
-    min-height:0 !important;
-    padding:7px 8px !important;
-  }
-  html[data-landscape-ui='1'] .battle-run-end .battle-run-end-metrics h2 {
-    margin:0 0 5px !important;
-    font-size:clamp(16px,2vw,21px) !important;
-  }
-  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-button {
-    min-height:42px !important;
-    margin:8px 0 0 !important;
-  }
-}
-
-@media (orientation: landscape) and (max-width:980px) and (max-height:520px) {
-  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-shell {
-    padding:5px 7px !important;
-  }
-  html[data-landscape-ui='1'] .battle-run-end .battle-logo {
-    display:none !important;
-  }
-  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-panel {
-    width:100% !important;
-    height:100% !important;
-    max-height:100% !important;
-    grid-template-columns:minmax(0,1.2fr) minmax(245px,.8fr) !important;
-    grid-template-areas:
-      'result columns'
-      'eyebrow columns'
-      'text columns'
-      'button columns' !important;
-    grid-template-rows:auto auto minmax(0,1fr) auto !important;
-    column-gap:12px !important;
-    row-gap:3px !important;
-    align-content:stretch !important;
-    padding:8px 10px !important;
-  }
-  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-panel::after {
-    display:none !important;
-  }
-  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-panel>h1 {
-    margin:0 !important;
-    font-size:clamp(32px,9vh,44px) !important;
-    line-height:.92 !important;
-  }
-  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-panel>.reboot-eyebrow {
-    margin:0 !important;
-    font-size:9px !important;
-    line-height:1.1 !important;
-  }
-  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-panel>p {
-    margin:0 !important;
-    max-width:none !important;
-    font-size:11px !important;
-    line-height:1.25 !important;
-  }
-  html[data-landscape-ui='1'] .battle-run-end .battle-run-end-metrics {
-    grid-area:columns !important;
-    align-self:stretch !important;
-    height:100% !important;
-    min-height:0 !important;
-    display:grid !important;
-    grid-template-columns:1fr !important;
-    grid-template-rows:repeat(3,minmax(0,1fr)) !important;
-    gap:5px !important;
-    margin:0 !important;
-    padding:0 !important;
-    border:0 !important;
-  }
-  html[data-landscape-ui='1'] .battle-run-end .battle-run-end-metrics>section {
-    min-height:0 !important;
-    display:grid !important;
-    grid-template-columns:minmax(0,1fr) auto !important;
-    align-items:center !important;
-    gap:6px !important;
-    padding:5px 7px !important;
-  }
-  html[data-landscape-ui='1'] .battle-run-end .battle-run-end-metrics h2 {
-    margin:0 !important;
-    font-size:clamp(14px,3.7vh,18px) !important;
-    line-height:1 !important;
-  }
-  html[data-landscape-ui='1'] .battle-run-end .battle-run-end-metrics .battle-aftermath-empty {
-    font-size:clamp(20px,6vh,28px) !important;
-    line-height:1 !important;
-    text-align:right !important;
-  }
-  html[data-landscape-ui='1'] .battle-run-end .battle-aftermath-button {
-    justify-self:start !important;
-    width:min(300px,100%) !important;
-    min-height:36px !important;
-    margin:3px 0 0 !important;
-    font-size:16px !important;
-  }
-}
-'''
-          css.write_text(text + block, encoding='utf-8')
-
-          # 4) Extend the existing viewport suite rather than introducing a permanent parallel suite.
-          test = Path('tests/responsive-viewport-browser.cjs')
-          text = test.read_text(encoding='utf-8')
-          anchor = '\nasync function auditPrepAndCombat(browser, width, height, language) {'
-          assert text.count(anchor) == 1, 'Responsive test insertion anchor changed'
-          fn = r'''
-
-async function auditSoloKingBattleRunEnd(browser, width, height, language) {
-  const page = await browser.newPage({ viewport: { width, height } });
-  const errors = [];
-  page.on('pageerror', (error) => errors.push(String(error.stack || error)));
-  const label = `${width}x${height} ${language.toUpperCase()} solo-King Battle run end`;
-  try {
-    await freshMenu(page);
-    await setLanguage(page, language);
-    await startNewRun(page, { playerName: `Solo King ${width} ${language}` });
-    await page.evaluate((key) => {
-      const run = JSON.parse(localStorage.getItem(key));
-      const enemyRoleRaces = { pawn:'orcs', knight:'orcs', bishop:'orcs', rook:'orcs', queen:'orcs', king:'orcs' };
-      run.currentTravelChoices = [{
-        id:'responsive.solo-king.battle', step:1, type:'battle', label:'БИТВА', stars:6,
-        threatLabel:'ОПАСНАЯ', flavor:'Дорогу перекрывает полностью развёрнутая армия противника.',
-        mechanicalHint:'Полная армия противника.', seed:'responsive-solo-king-battle-seed',
-        difficultyModel:'power-v1', playerColor:'w', enemyColor:'b', enemyRaceTag:'orcs', enemyRoleRaces,
-        sideNarrative:'Ваш отряд перехватывает инициативу и первым выходит на поле.'
-      }];
-      run.activeTravelChoice = null;
-      localStorage.setItem(key, JSON.stringify(run));
-      dispatchEvent(new CustomEvent('rpchess:run-updated'));
-    }, RUN_KEY);
-    await page.locator('[data-roster-travel]').click();
-    await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
-    await page.locator('[data-travel-type="battle"]').first().click();
-    await page.locator('[data-battle-screen]:not([hidden])').waitFor();
-    const kingId = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).roster.find((character) => character.isRunKing).id, RUN_KEY);
-    const cards = page.locator('[data-battle-character]');
-    for (let index = 0; index < await cards.count(); index += 1) {
-      const card = cards.nth(index);
-      if ((await card.getAttribute('data-battle-character')) !== kingId) await card.click();
-    }
-    await page.locator('[data-battle-start]').click();
-    await page.locator('[data-classic-screen]:not([hidden])').waitFor();
-    const participants = await page.evaluate(() => globalThis.RPChessBattle.battlePlan?.participants || []);
-    assert.deepStrictEqual(participants, [kingId], `${label}: Battle must contain only the named King`);
-    await page.evaluate(() => globalThis.RPChessBattle.finishBattle({ over:true, type:'stalemate', winner:null }));
-    await page.locator('[data-battle-run-end]:not([hidden])').waitFor();
-    const persisted = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
-    assert.strictEqual(persisted.ended, true, `${label}: run must end`);
-    assert.strictEqual(persisted.endReason, 'king_solo_battle', `${label}: solo-King end reason must be preserved`);
-    assert.strictEqual(persisted.roster.find((character) => character.isRunKing).status, 'dead', `${label}: King must die after the completed Battle`);
-    const expectedText = language === 'en'
-      ? 'The mercenaries paid no heed to the words of a lone king without a kingdom and hanged you from the nearest tree.'
-      : 'Наемники не посчитались со словами одинокого короля без королевства и повесили вас на суку ближайшего дерева';
-    assert.strictEqual((await page.locator('[data-battle-run-end-text]').innerText()).trim(), expectedText, `${label}: reason copy mismatch`);
-    await assertPageFitsViewport(page, label);
-    await assertViewportContained(page, '[data-battle-run-end]:not([hidden])', `${label} screen`);
-    await assertViewportContained(page, '.battle-run-end .battle-aftermath-panel', `${label} panel`);
-    for (const selector of ['[data-battle-run-end-title]','[data-battle-run-end-text]','[data-battle-run-metric="combats"]','[data-battle-run-metric="healthy"]','[data-battle-run-metric="wounded"]','[data-battle-run-end-continue]']) {
-      await assertViewportContained(page, selector, `${label} ${selector}`);
-    }
-    await assertFrameContains(page, '.battle-run-end .battle-aftermath-panel', ['[data-battle-run-end-title]','[data-battle-run-end-text]','[data-battle-run-metric]','[data-battle-run-end-continue]'], `${label} ownership`);
-    const overflow = await page.locator('.battle-run-end .battle-aftermath-panel').evaluate((panel) => ({
-      scrollHeight: panel.scrollHeight,
-      clientHeight: panel.clientHeight,
-      overflowY: getComputedStyle(panel).overflowY
-    }));
-    assert(overflow.scrollHeight <= overflow.clientHeight + 1, `${label}: panel content must fit without scrolling (${overflow.scrollHeight} > ${overflow.clientHeight})`);
-    assert(!['auto','scroll'].includes(overflow.overflowY), `${label}: panel must not own an internal scrollbar`);
-    assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
-  } finally {
-    await page.close();
-  }
-}
-'''
-          text = text.replace(anchor, fn + anchor)
-          loop = "      for (const [width, height] of [[1180, 820], [1024, 768], [844, 390]]) await auditPrepAndCombat(browser, width, height, language);"
-          replacement = "      for (const [width, height] of [[1366, 768], [1024, 768], [844, 390]]) await auditSoloKingBattleRunEnd(browser, width, height, language);\n" + loop
-          assert text.count(loop) == 1, 'Responsive test invocation anchor changed'
-          text = text.replace(loop, replacement)
-          test.write_text(text, encoding='utf-8')
-          PY
+      - name: Apply approved presentation changes
+        working-directory: feature
+        run: python ../harness/ci/solo-king-patch.py
 
       - name: Run focused gameplay regression
+        working-directory: feature
         run: npm run test:battle
 
       - name: Build canonical production dist
+        working-directory: feature
         run: npm run build
 
       - name: Install Chromium
+        working-directory: feature
         run: npx playwright install --with-deps chromium
 
       - name: Start local production server
+        working-directory: feature
         shell: bash
         run: |
           npx --yes http-server dist -p 4173 -c-1 > /tmp/rpchess-server.log 2>&1 &
-          echo $! > /tmp/rpchess-server.pid
           for i in {1..30}; do
             if curl --fail --silent http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
             sleep 1
@@ -343,107 +68,12 @@ async function auditSoloKingBattleRunEnd(browser, width, height, language) {
           cat /tmp/rpchess-server.log
           exit 1
 
-      - name: Create focused visual runner
-        shell: bash
-        run: |
-          cat > /tmp/solo-king-visual.cjs <<'NODE'
-          const assert = require('assert');
-          const fs = require('fs');
-          const path = require('path');
-          const { chromium } = require(process.cwd() + '/node_modules/playwright');
-          const { startNewRun } = require(process.cwd() + '/tests/browser-test-helpers.cjs');
-          const url = 'http://127.0.0.1:4173';
-          const RUN_KEY = 'rpchess.reboot.v1.run';
-          const shots = path.resolve('solo-king-screenshots');
-          fs.mkdirSync(shots, { recursive:true });
-
-          async function setLanguage(page, language) {
-            await page.waitForFunction(() => Boolean(globalThis.RPChessI18n?.setLanguage));
-            await page.evaluate((value) => globalThis.RPChessI18n.setLanguage(value), language);
-          }
-
-          async function runCase(browser, width, height, language, filename) {
-            const page = await browser.newPage({ viewport:{ width, height } });
-            const errors = [];
-            page.on('pageerror', (error) => errors.push(String(error.stack || error)));
-            await page.goto(url, { waitUntil:'networkidle' });
-            await page.evaluate((key) => localStorage.removeItem(key), RUN_KEY);
-            await page.reload({ waitUntil:'networkidle' });
-            await setLanguage(page, language);
-            await startNewRun(page, { playerName:'Solo King Visual' });
-            await page.evaluate((key) => {
-              const run = JSON.parse(localStorage.getItem(key));
-              const enemyRoleRaces = { pawn:'orcs', knight:'orcs', bishop:'orcs', rook:'orcs', queen:'orcs', king:'orcs' };
-              run.currentTravelChoices = [{ id:'visual.solo-king.battle', step:1, type:'battle', label:'БИТВА', stars:6, threatLabel:'ОПАСНАЯ', flavor:'Дорогу перекрывает полностью развёрнутая армия противника.', mechanicalHint:'Полная армия противника.', seed:'visual-solo-king', difficultyModel:'power-v1', playerColor:'w', enemyColor:'b', enemyRaceTag:'orcs', enemyRoleRaces, sideNarrative:'Ваш отряд перехватывает инициативу и первым выходит на поле.' }];
-              run.activeTravelChoice = null;
-              localStorage.setItem(key, JSON.stringify(run));
-              dispatchEvent(new CustomEvent('rpchess:run-updated'));
-            }, RUN_KEY);
-            await page.locator('[data-roster-travel]').click();
-            await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
-            await page.locator('[data-travel-type="battle"]').first().click();
-            await page.locator('[data-battle-screen]:not([hidden])').waitFor();
-            const kingId = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).roster.find((character) => character.isRunKing).id, RUN_KEY);
-            const cards = page.locator('[data-battle-character]');
-            for (let i = 0; i < await cards.count(); i += 1) {
-              const card = cards.nth(i);
-              if ((await card.getAttribute('data-battle-character')) !== kingId) await card.click();
-            }
-            await page.locator('[data-battle-start]').click();
-            await page.locator('[data-classic-screen]:not([hidden])').waitFor();
-            const participants = await page.evaluate(() => globalThis.RPChessBattle.battlePlan?.participants || []);
-            assert.deepStrictEqual(participants, [kingId]);
-            await page.evaluate(() => globalThis.RPChessBattle.finishBattle({ over:true, type:'stalemate', winner:null }));
-            await page.locator('[data-battle-run-end]:not([hidden])').waitFor();
-            await page.waitForTimeout(150);
-            const state = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
-            assert.strictEqual(state.endReason, 'king_solo_battle');
-            assert.strictEqual(state.roster.find((character) => character.isRunKing).status, 'dead');
-            const expected = language === 'en'
-              ? 'The mercenaries paid no heed to the words of a lone king without a kingdom and hanged you from the nearest tree.'
-              : 'Наемники не посчитались со словами одинокого короля без королевства и повесили вас на суку ближайшего дерева';
-            assert.strictEqual((await page.locator('[data-battle-run-end-text]').innerText()).trim(), expected);
-            const geometry = await page.evaluate(() => {
-              const panel = document.querySelector('.battle-run-end .battle-aftermath-panel');
-              const root = document.querySelector('[data-battle-run-end]:not([hidden])');
-              const required = ['[data-battle-run-end-title]','[data-battle-run-end-text]','[data-battle-run-metric="combats"]','[data-battle-run-metric="healthy"]','[data-battle-run-metric="wounded"]','[data-battle-run-end-continue]'];
-              const box = (el) => { const r=el.getBoundingClientRect(); return {left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height}; };
-              return {
-                vw:innerWidth, vh:innerHeight,
-                doc:{sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,sh:document.documentElement.scrollHeight,ch:document.documentElement.clientHeight},
-                root:box(root), panel:box(panel), panelScrollHeight:panel.scrollHeight, panelClientHeight:panel.clientHeight, panelOverflowY:getComputedStyle(panel).overflowY,
-                required:required.map((selector)=>({selector,rect:box(document.querySelector(selector))}))
-              };
-            });
-            assert(geometry.doc.sw <= geometry.doc.cw + 1, `${filename}: horizontal page overflow`);
-            assert(geometry.doc.sh <= geometry.doc.ch + 1, `${filename}: vertical page overflow ${geometry.doc.sh} > ${geometry.doc.ch}`);
-            assert(geometry.panelScrollHeight <= geometry.panelClientHeight + 1, `${filename}: panel scroll ${geometry.panelScrollHeight} > ${geometry.panelClientHeight}`);
-            assert(!['auto','scroll'].includes(geometry.panelOverflowY), `${filename}: internal scrollbar ${geometry.panelOverflowY}`);
-            for (const item of geometry.required) {
-              assert(item.rect.left >= -1 && item.rect.top >= -1 && item.rect.right <= geometry.vw + 1 && item.rect.bottom <= geometry.vh + 1, `${filename}: ${item.selector} outside viewport`);
-              assert(item.rect.left >= geometry.panel.left - 1 && item.rect.top >= geometry.panel.top - 1 && item.rect.right <= geometry.panel.right + 1 && item.rect.bottom <= geometry.panel.bottom + 1, `${filename}: ${item.selector} outside panel`);
-            }
-            assert.deepStrictEqual(errors, [], `${filename}: browser errors ${errors.join('\n')}`);
-            await page.screenshot({ path:path.join(shots, filename), fullPage:false });
-            console.log(`${filename}: PASS`, JSON.stringify(geometry));
-            await page.close();
-          }
-
-          (async()=>{
-            const browser = await chromium.launch({ headless:true });
-            try {
-              await runCase(browser, 1366, 768, 'ru', 'solo-king-1366x768-ru.png');
-              await runCase(browser, 1024, 768, 'ru', 'solo-king-1024x768-ru.png');
-              await runCase(browser, 844, 390, 'ru', 'solo-king-844x390-ru.png');
-              await runCase(browser, 844, 390, 'en', 'solo-king-844x390-en.png');
-            } finally { await browser.close(); }
-          })().catch((error)=>{ console.error(error.stack || error); process.exitCode=1; });
-          NODE
-
-      - name: Run exact solo-King visual gate
-        run: node /tmp/solo-king-visual.cjs
+      - name: Run exact solo-King visual gate and capture screenshots
+        working-directory: feature
+        run: node ../harness/ci/solo-king-visual.cjs
 
       - name: Commit validated source changes to feature branch
+        working-directory: feature
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
@@ -456,6 +86,6 @@ async function auditSoloKingBattleRunEnd(browser, width, height, language) {
         uses: actions/upload-artifact@v4
         with:
           name: solo-king-run-end-screenshots
-          path: solo-king-screenshots/*.png
+          path: feature/solo-king-screenshots/*.png
           if-no-files-found: error
           retention-days: 7
