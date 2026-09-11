@@ -1,4 +1,4 @@
-name: Add VK tester to GitHub Pages group
+name: Inspect GitHub Pages headers for VK
 
 on:
   push:
@@ -9,46 +9,17 @@ permissions:
   contents: read
 
 jobs:
-  add-tester:
+  inspect:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      MINI_APPS_ACCESS_TOKEN: ${{ secrets.MINI_APPS_ACCESS_TOKEN }}
     steps:
-      - name: Add VK user to testing group and verify
+      - name: Inspect response headers and framing policy
         shell: bash
         run: |
-          if [ -z "$MINI_APPS_ACCESS_TOKEN" ]; then
-            echo "::error::MINI_APPS_ACCESS_TOKEN is not configured"
-            exit 1
-          fi
-
-          BODY=$(curl --silent --show-error --request POST \
-            --data-urlencode "access_token=${MINI_APPS_ACCESS_TOKEN}" \
-            --data-urlencode "v=5.199" \
-            --data-urlencode "app_id=54754579" \
-            --data-urlencode "group_id=1" \
-            --data-urlencode "user_ids=7646007" \
-            "https://api.vk.ru/method/apps.addUsersToTestingGroup")
-
-          BODY="$BODY" node <<'NODE'
-          const p=JSON.parse(process.env.BODY||'{}');
-          if(p.error){console.error(`VK ERROR ${p.error.error_code}: ${p.error.error_msg}`);process.exit(2)}
-          console.log(`ADD RESPONSE ${JSON.stringify(p.response)}`);
-          NODE
-
-          AFTER=$(curl --silent --show-error --get \
-            --data-urlencode "access_token=${MINI_APPS_ACCESS_TOKEN}" \
-            --data-urlencode "v=5.199" \
-            --data-urlencode "app_id=54754579" \
-            "https://api.vk.ru/method/apps.getTestingGroups")
-
-          AFTER="$AFTER" node <<'NODE'
-          const p=JSON.parse(process.env.AFTER||'{}');
-          if(p.error){console.error(`VK ERROR ${p.error.error_code}: ${p.error.error_msg}`);process.exit(2)}
-          const group=(Array.isArray(p.response)?p.response:[]).find(g=>Number(g.group_id)===1);
-          if(!group){console.error('Testing group 1 not found');process.exit(3)}
-          const users=(group.user_ids||[]).map(Number);
-          if(!users.includes(7646007)){console.error(`VK user 7646007 is not in group 1: ${JSON.stringify(group)}`);process.exit(4)}
-          console.log(`VERIFIED GROUP ${JSON.stringify(group)}`);
-          NODE
+          echo '=== HEADERS ==='
+          curl --silent --show-error --location --head https://mobigametim-bit.github.io/RPChess/ | sed -n '1,80p'
+          echo '=== SECURITY-RELEVANT ==='
+          curl --silent --show-error --location --head https://mobigametim-bit.github.io/RPChess/ | grep -Ei '^(HTTP/|content-security-policy:|x-frame-options:|cross-origin|access-control|content-type:|location:)' || true
+          echo '=== BODY STATUS ==='
+          curl --silent --show-error --location --output /tmp/rpchess.html --write-out 'code=%{http_code} type=%{content_type} bytes=%{size_download}\n' https://mobigametim-bit.github.io/RPChess/
+          head -c 200 /tmp/rpchess.html | tr '\n' ' '; echo
