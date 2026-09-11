@@ -1,4 +1,4 @@
-name: Inspect VK external Pages configuration
+name: Configure VK GitHub Pages test group
 
 on:
   push:
@@ -9,13 +9,14 @@ permissions:
   contents: read
 
 jobs:
-  inspect:
+  configure:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
       MINI_APPS_ACCESS_TOKEN: ${{ secrets.MINI_APPS_ACCESS_TOKEN }}
+      PAGES_URL: https://mobigametim-bit.github.io/RPChess/
     steps:
-      - name: Inspect VK app and testing groups safely
+      - name: Create external Pages testing group when absent
         shell: bash
         run: |
           if [ -z "$MINI_APPS_ACCESS_TOKEN" ]; then
@@ -23,39 +24,36 @@ jobs:
             exit 1
           fi
 
-          call_vk() {
-            local method="$1"
-            shift
-            curl --fail --silent --show-error --get \
-              --data-urlencode "access_token=${MINI_APPS_ACCESS_TOKEN}" \
-              --data-urlencode "v=5.199" \
-              "$@" \
-              "https://api.vk.ru/method/${method}"
-          }
+          GROUPS=$(curl --fail --silent --show-error --get \
+            --data-urlencode "access_token=${MINI_APPS_ACCESS_TOKEN}" \
+            --data-urlencode "v=5.199" \
+            --data-urlencode "app_id=54754579" \
+            "https://api.vk.ru/method/apps.getTestingGroups")
 
-          APP_RESPONSE=$(call_vk apps.get \
-            --data-urlencode "app_ids=54754579" \
-            --data-urlencode "extended=1")
-          GROUP_RESPONSE=$(call_vk apps.getTestingGroups \
-            --data-urlencode "app_id=54754579")
+          COUNT=$(GROUPS="$GROUPS" node -e "const p=JSON.parse(process.env.GROUPS||'{}'); if(p.error){console.error(p.error.error_code+': '+p.error.error_msg);process.exit(2)}; process.stdout.write(String(Array.isArray(p.response)?p.response.length:0))")
+          if [ "$COUNT" != "0" ]; then
+            echo "Existing VK testing groups found; refusing to overwrite them."
+            GROUPS="$GROUPS" node -e "const p=JSON.parse(process.env.GROUPS||'{}'); console.log(JSON.stringify(p.response))"
+            exit 0
+          fi
 
-          APP_RESPONSE="$APP_RESPONSE" GROUP_RESPONSE="$GROUP_RESPONSE" node <<'NODE'
-          function safe(value) {
-            if (Array.isArray(value)) return value.map(safe);
-            if (!value || typeof value !== 'object') return value;
-            const out = {};
-            for (const [k,v] of Object.entries(value)) {
-              if (/token|secret|key/i.test(k)) continue;
-              out[k] = safe(v);
-            }
-            return out;
-          }
-          for (const [name, raw] of [['apps.get', process.env.APP_RESPONSE], ['apps.getTestingGroups', process.env.GROUP_RESPONSE]]) {
-            const payload = JSON.parse(raw || '{}');
-            if (payload.error) {
-              console.log(`${name} ERROR ${payload.error.error_code}: ${payload.error.error_msg}`);
-              continue;
-            }
-            console.log(`${name} RESPONSE ${JSON.stringify(safe(payload.response))}`);
-          }
+          CREATED=$(curl --fail --silent --show-error --request POST \
+            --data-urlencode "access_token=${MINI_APPS_ACCESS_TOKEN}" \
+            --data-urlencode "v=5.199" \
+            --data-urlencode "webview=${PAGES_URL}" \
+            --data-urlencode "name=GitHub Pages manual check" \
+            --data-urlencode "platforms=web,mobile,mvk" \
+            "https://api.vk.ru/method/apps.updateMetaForTestingGroup")
+
+          CREATED="$CREATED" node <<'NODE'
+          const p=JSON.parse(process.env.CREATED||'{}');
+          if(p.error){console.error(`CREATE ERROR ${p.error.error_code}: ${p.error.error_msg}`);process.exit(2)}
+          console.log(`CREATED ${JSON.stringify(p.response)}`);
           NODE
+
+          AFTER=$(curl --fail --silent --show-error --get \
+            --data-urlencode "access_token=${MINI_APPS_ACCESS_TOKEN}" \
+            --data-urlencode "v=5.199" \
+            --data-urlencode "app_id=54754579" \
+            "https://api.vk.ru/method/apps.getTestingGroups")
+          AFTER="$AFTER" node -e "const p=JSON.parse(process.env.AFTER||'{}'); if(p.error){console.error(p.error.error_code+': '+p.error.error_msg);process.exit(2)}; console.log('GROUPS '+JSON.stringify(p.response))"
