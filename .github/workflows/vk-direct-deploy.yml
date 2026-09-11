@@ -26,17 +26,42 @@ jobs:
           node-version: '22'
           cache: npm
 
-      - name: Validate VK deployment credentials
+      - name: Resolve VK app id safely
         shell: bash
         run: |
-          if [ -z "$VK_APP_ID" ]; then
-            echo "::error::Repository variable VK_APP_ID is not configured"
-            exit 1
-          fi
           if [ -z "$MINI_APPS_ACCESS_TOKEN" ]; then
             echo "::error::Repository secret MINI_APPS_ACCESS_TOKEN is not configured"
             exit 1
           fi
+
+          if [ -n "$VK_APP_ID" ]; then
+            echo "VK app id is configured via repository variable."
+            exit 0
+          fi
+
+          RESPONSE=$(curl --fail --silent --show-error --get \
+            --data-urlencode "access_token=${MINI_APPS_ACCESS_TOKEN}" \
+            --data-urlencode "v=5.199" \
+            "https://api.vk.com/method/apps.get")
+
+          APP_ID=$(VK_RESPONSE="$RESPONSE" node <<'NODE'
+          const payload = JSON.parse(process.env.VK_RESPONSE || '{}');
+          if (payload.error) {
+            console.error(`VK API error ${payload.error.error_code || 'unknown'}: ${payload.error.error_msg || 'unknown'}`);
+            process.exit(2);
+          }
+          const r = payload.response;
+          const items = Array.isArray(r) ? r : (r && Array.isArray(r.items) ? r.items : []);
+          if (items.length !== 1 || !items[0] || !items[0].id) {
+            console.error(`VK API app discovery returned ${items.length} apps; cannot select safely.`);
+            process.exit(3);
+          }
+          process.stdout.write(String(items[0].id));
+          NODE
+          )
+
+          echo "VK_APP_ID=$APP_ID" >> "$GITHUB_ENV"
+          echo "Resolved VK app id: $APP_ID"
 
       - name: Restore runtime asset cache
         uses: actions/cache@v4
