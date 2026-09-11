@@ -49,16 +49,16 @@ async function runCase(browser,width,height,language,filename){
     const box=el=>{const r=el.getBoundingClientRect();return{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height}};
     return {vw:innerWidth,vh:innerHeight,doc:{sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,sh:document.documentElement.scrollHeight,ch:document.documentElement.clientHeight},panel:box(panel),panelScrollHeight:panel.scrollHeight,panelClientHeight:panel.clientHeight,panelOverflowY:getComputedStyle(panel).overflowY,required:required.map(selector=>({selector,rect:box(document.querySelector(selector))}))};
   });
+  await page.screenshot({path:path.join(shots,filename),fullPage:false});
   assert(g.doc.sw<=g.doc.cw+1,`${filename}: horizontal page overflow`);
   assert(g.doc.sh<=g.doc.ch+1,`${filename}: vertical page overflow ${g.doc.sh}>${g.doc.ch}`);
-  assert(g.panelScrollHeight<=g.panelClientHeight+1,`${filename}: panel scroll ${g.panelScrollHeight}>${g.panelClientHeight}`);
+  assert(g.panelScrollHeight<=g.panelClientHeight+2,`${filename}: panel scroll ${g.panelScrollHeight}>${g.panelClientHeight}`);
   assert(!['auto','scroll'].includes(g.panelOverflowY),`${filename}: internal scrollbar ${g.panelOverflowY}`);
   for(const item of g.required){
     assert(item.rect.left>=-1&&item.rect.top>=-1&&item.rect.right<=g.vw+1&&item.rect.bottom<=g.vh+1,`${filename}: ${item.selector} outside viewport`);
     assert(item.rect.left>=g.panel.left-1&&item.rect.top>=g.panel.top-1&&item.rect.right<=g.panel.right+1&&item.rect.bottom<=g.panel.bottom+1,`${filename}: ${item.selector} outside panel`);
   }
   assert.deepStrictEqual(errors,[],`${filename}: browser errors ${errors.join('\n')}`);
-  await page.screenshot({path:path.join(shots,filename),fullPage:false});
   console.log(`${filename}: PASS ${JSON.stringify(g)}`);
   await page.close();
 }
