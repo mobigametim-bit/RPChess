@@ -8,6 +8,54 @@ import {
   t
 } from './i18n.mjs';
 
+function initVKHost() {
+  if (globalThis.__RPCHESS_VK_INIT_SENT) return true;
+
+  let referrerHost = '';
+  try {
+    referrerHost = document.referrer ? new URL(document.referrer).hostname : '';
+  } catch {}
+
+  const launchParams = new URLSearchParams(location.search);
+  const launchedByVK =
+    launchParams.has('vk_app_id') ||
+    /(^|\.)vk\.(com|ru)$/i.test(referrerHost) ||
+    Boolean(globalThis.AndroidBridge?.VKWebAppInit) ||
+    Boolean(globalThis.webkit?.messageHandlers?.VKWebAppInit?.postMessage) ||
+    Boolean(globalThis.ReactNativeWebView?.postMessage);
+
+  if (!launchedByVK) return false;
+
+  const params = {};
+  try {
+    if (globalThis.AndroidBridge?.VKWebAppInit) {
+      globalThis.AndroidBridge.VKWebAppInit(JSON.stringify(params));
+    } else if (globalThis.webkit?.messageHandlers?.VKWebAppInit?.postMessage) {
+      globalThis.webkit.messageHandlers.VKWebAppInit.postMessage(params);
+    } else if (globalThis.ReactNativeWebView?.postMessage) {
+      globalThis.ReactNativeWebView.postMessage(JSON.stringify({ handler: 'VKWebAppInit', params }));
+    } else if (globalThis.parent && globalThis.parent !== globalThis) {
+      globalThis.parent.postMessage({
+        handler: 'VKWebAppInit',
+        params,
+        type: 'vk-connect',
+        connectVersion: '2.15.12'
+      }, '*');
+    } else {
+      return false;
+    }
+
+    globalThis.__RPCHESS_VK_INIT_SENT = true;
+    globalThis.RPChessVKInitialized = true;
+    return true;
+  } catch (error) {
+    console.error('[RPChess] VK host initialization failed', error);
+    return false;
+  }
+}
+
+initVKHost();
+
 // Travel Choice is part of the critical run shell. Its stylesheet must be available even if
 // the wider route/content bootstrap fails and Roster has to use the direct Travel fallback.
 if (!document.querySelector('[data-travel-choice-css]')) {
