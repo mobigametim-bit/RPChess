@@ -1,4 +1,4 @@
-name: Inspect VK GitHub Pages test group
+name: Add VK tester to GitHub Pages group
 
 on:
   push:
@@ -9,22 +9,46 @@ permissions:
   contents: read
 
 jobs:
-  inspect:
+  add-tester:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
       MINI_APPS_ACCESS_TOKEN: ${{ secrets.MINI_APPS_ACCESS_TOKEN }}
     steps:
-      - name: Read test group
+      - name: Add VK user to testing group and verify
         shell: bash
         run: |
-          BODY=$(curl --silent --show-error --get \
+          if [ -z "$MINI_APPS_ACCESS_TOKEN" ]; then
+            echo "::error::MINI_APPS_ACCESS_TOKEN is not configured"
+            exit 1
+          fi
+
+          BODY=$(curl --silent --show-error --request POST \
+            --data-urlencode "access_token=${MINI_APPS_ACCESS_TOKEN}" \
+            --data-urlencode "v=5.199" \
+            --data-urlencode "app_id=54754579" \
+            --data-urlencode "group_id=1" \
+            --data-urlencode "user_ids=7646007" \
+            "https://api.vk.ru/method/apps.addUsersToTestingGroup")
+
+          BODY="$BODY" node <<'NODE'
+          const p=JSON.parse(process.env.BODY||'{}');
+          if(p.error){console.error(`VK ERROR ${p.error.error_code}: ${p.error.error_msg}`);process.exit(2)}
+          console.log(`ADD RESPONSE ${JSON.stringify(p.response)}`);
+          NODE
+
+          AFTER=$(curl --silent --show-error --get \
             --data-urlencode "access_token=${MINI_APPS_ACCESS_TOKEN}" \
             --data-urlencode "v=5.199" \
             --data-urlencode "app_id=54754579" \
             "https://api.vk.ru/method/apps.getTestingGroups")
-          BODY="$BODY" node <<'NODE'
-          const p=JSON.parse(process.env.BODY||'{}');
+
+          AFTER="$AFTER" node <<'NODE'
+          const p=JSON.parse(process.env.AFTER||'{}');
           if(p.error){console.error(`VK ERROR ${p.error.error_code}: ${p.error.error_msg}`);process.exit(2)}
-          console.log(`GROUPS ${JSON.stringify(p.response)}`);
+          const group=(Array.isArray(p.response)?p.response:[]).find(g=>Number(g.group_id)===1);
+          if(!group){console.error('Testing group 1 not found');process.exit(3)}
+          const users=(group.user_ids||[]).map(Number);
+          if(!users.includes(7646007)){console.error(`VK user 7646007 is not in group 1: ${JSON.stringify(group)}`);process.exit(4)}
+          console.log(`VERIFIED GROUP ${JSON.stringify(group)}`);
           NODE
