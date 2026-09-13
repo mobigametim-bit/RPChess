@@ -42,7 +42,7 @@ jobs:
         run: |
           rm .github/workflows/auto-music-catalog-pass.yml
           rm scripts/_tmp_music_catalog_migration.py
-          rm -rf dist .runtime-asset-cache || true
+          rm -rf dist .runtime-asset-cache node_modules || true
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
