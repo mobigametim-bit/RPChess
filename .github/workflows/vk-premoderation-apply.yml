@@ -98,9 +98,9 @@ jobs:
           npm run build
       - name: Commit validated implementation
         run: |
-          rm .github/workflows/vk-premoderation-apply.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add game/js/reboot-foundation.mjs game/js/reboot-audio.mjs game/js/run-persistence.mjs scripts/build.cjs tests/reboot-foundation.cjs
+          git rm .github/workflows/vk-premoderation-apply.yml
           git commit -m "platform: isolate VK lifecycle and storage boundary"
           git push origin HEAD:platform/vk-premoderation-implementation
