@@ -1,9 +1,4 @@
-const MUSIC_TRACKS = Object.freeze([
-  'music/echoes_iron_throne_01.mp3',
-  'music/echoes_iron_throne_02.mp3',
-  'music/echoes_iron_throne_03.mp3',
-  'music/echoes_iron_throne_04.mp3'
-]);
+import { MUSIC_TRACKS } from './music-catalog.mjs';
 
 function clampPercent(value, fallback) {
   const number = Number(value);
@@ -25,7 +20,7 @@ class RebootAudio {
     this.activated = false;
     this.hostActive = true;
     this.context = null;
-    this.music = typeof Audio === 'function' ? new Audio() : null;
+    this.music = typeof Audio === 'function' && MUSIC_TRACKS.length > 0 ? new Audio() : null;
     if (this.music) {
       this.music.preload = 'metadata';
       this.music.loop = false;
@@ -52,6 +47,7 @@ class RebootAudio {
   }
 
   nextTrack() {
+    if (!MUSIC_TRACKS.length) return;
     this.musicIndex = (this.musicIndex + 1) % MUSIC_TRACKS.length;
     this.loadTrack();
     if (this.hostActive && this.activated && this.settings.music > 0) this.music?.play().catch(() => {});

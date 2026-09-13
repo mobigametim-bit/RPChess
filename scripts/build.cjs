@@ -7,19 +7,44 @@ const GENERATED_RUNTIME_ASSETS=Object.freeze([
   'splash_poster.jpg','title_wordmark.png'
 ].map(name=>`generated_assets/${name}`));
 function copy(relative){const from=path.join(source,relative),to=path.join(dist,relative);if(!fs.existsSync(from))throw new Error(`missing Reboot build input: ${relative}`);fs.mkdirSync(path.dirname(to),{recursive:true});fs.cpSync(from,to,{recursive:true,force:true});}
+const MUSIC_EXTENSIONS=new Set(['.mp3','.ogg','.wav']);
+function collectMusicTracks(directory=path.join(source,'music')){
+  if(!fs.existsSync(directory))return [];
+  const tracks=[];
+  const visit=(current)=>{
+    for(const entry of fs.readdirSync(current,{withFileTypes:true})){
+      const absolute=path.join(current,entry.name);
+      if(entry.isDirectory()){visit(absolute);continue;}
+      if(!entry.isFile()||!MUSIC_EXTENSIONS.has(path.extname(entry.name).toLowerCase()))continue;
+      const relative=path.relative(directory,absolute).split(path.sep).join('/');
+      tracks.push(`music/${relative}`);
+    }
+  };
+  visit(directory);
+  return tracks.sort((left,right)=>left.localeCompare(right,'en'));
+}
+function writeMusicCatalog(){
+  const tracks=collectMusicTracks();
+  const target=path.join(dist,'js/music-catalog.mjs');
+  fs.mkdirSync(path.dirname(target),{recursive:true});
+  fs.writeFileSync(target,`const MUSIC_TRACKS = Object.freeze(${JSON.stringify(tracks,null,2)});\n\nexport { MUSIC_TRACKS };\n`,'utf8');
+  return tracks;
+}
 async function main(){
   verifySource(source);
   fs.rmSync(dist,{recursive:true,force:true});fs.mkdirSync(dist,{recursive:true});
   for(const relative of [
     'index.html','BUILD_INFO.json',
     'css/reboot-foundation.css','css/language.css','css/ui-redesign-first-three.css','css/player-identity-chronicle.css','css/classic-chess.css','css/chess-ai-polish.css','css/roster.css','css/skirmish.css','css/skirmish-compact.css','css/battle.css','css/battle-compact.css','css/endless-run.css','css/endless-run-compact.css','css/travel-choice.css','css/travel-choice-compact.css','css/ui-redesign-final.css','css/combat-side-colors.css','css/player-rating.css','css/resources.css','css/settlement.css','css/settlement-compact.css','css/starvation.css','css/starvation-compact.css','css/events.css','css/events-v5.css','css/puzzles.css','css/puzzles-compact.css','css/ux-consistency.css','css/playtest-fixes.css','css/landscape-ui-redesign.css',
-    'js/reboot-foundation.mjs','js/reboot-audio.mjs','js/platform.mjs','js/i18n.mjs','localization','js/player-identity-core.mjs','js/chronicle-core.mjs','js/player-identity-chronicle.mjs','js/endless-run-core.mjs','js/endless-run-app.mjs','js/classic-chess-engine.mjs','js/classic-chess-app.mjs','js/king-pin-ice.mjs','js/chess-ai-adapter.mjs','js/roster-data.mjs','js/run-persistence.mjs','js/run-lifecycle-events.mjs','js/roster-app.mjs',
+    'js/reboot-foundation.mjs','js/reboot-audio.mjs','js/music-catalog.mjs','js/platform.mjs','js/i18n.mjs','localization','js/player-identity-core.mjs','js/chronicle-core.mjs','js/player-identity-chronicle.mjs','js/endless-run-core.mjs','js/endless-run-app.mjs','js/classic-chess-engine.mjs','js/classic-chess-app.mjs','js/king-pin-ice.mjs','js/chess-ai-adapter.mjs','js/roster-data.mjs','js/run-persistence.mjs','js/run-lifecycle-events.mjs','js/roster-app.mjs',
     'js/encounter-difficulty.mjs','js/player-rating.mjs','js/player-rating-runtime.mjs','js/race-assets.mjs','js/event-narrative.mjs','js/content',
     'js/skirmish-core.mjs','js/skirmish-app.mjs','js/battle-core.mjs','js/battle-app.mjs','js/battle-mercenaries.mjs','js/battle-route.mjs','js/travel-choice-core.mjs','js/travel-choice-app.mjs','js/ux-consistency.mjs','js/post-redesign-playtest-pass1b.mjs','js/ui-redesign-final.mjs','js/cross-scene-visuals.mjs','js/landscape-ui-redesign.mjs',
     'js/resources-core.mjs','js/resources-app.mjs','js/settlement-core.mjs','js/settlement-app.mjs','js/starvation-core.mjs','js/starvation-app.mjs','js/events-data.mjs','js/events-core.mjs','js/events-app.mjs','js/events','js/puzzles',
     'assets/vfx/pin_ice_full.png','assets/vfx/pin_ice_partial.png','assets/vfx/aura_white.png','assets/vfx/aura_black.png','assets/vfx/aura_red.png','fonts','music','SFX',
     ...collectBoardAssetPaths(source),...collectPieceAssetPaths(source),...collectPortraitAssetPaths(source),...collectBackgroundAssetPaths(source),...GENERATED_RUNTIME_ASSETS
   ])copy(relative);
+  const musicTracks=writeMusicCatalog();
+  console.log(`Runtime music catalog: ${musicTracks.length} track${musicTracks.length===1?'':'s'}`);
   const runtime=materializeRuntimeAssets(dist);
   assertBoardAssetBudget(dist);
   assertPinIceAssetBudget(dist);
