@@ -1,4 +1,5 @@
 import { RebootAudio } from './reboot-audio.mjs';
+import { platform } from './platform.mjs';
 import {
   availableLanguages,
   currentLanguage,
@@ -8,53 +9,7 @@ import {
   t
 } from './i18n.mjs';
 
-function initVKHost() {
-  if (globalThis.__RPCHESS_VK_INIT_SENT) return true;
-
-  let referrerHost = '';
-  try {
-    referrerHost = document.referrer ? new URL(document.referrer).hostname : '';
-  } catch {}
-
-  const launchParams = new URLSearchParams(location.search);
-  const launchedByVK =
-    launchParams.has('vk_app_id') ||
-    /(^|\.)vk\.(com|ru)$/i.test(referrerHost) ||
-    Boolean(globalThis.AndroidBridge?.VKWebAppInit) ||
-    Boolean(globalThis.webkit?.messageHandlers?.VKWebAppInit?.postMessage) ||
-    Boolean(globalThis.ReactNativeWebView?.postMessage);
-
-  if (!launchedByVK) return false;
-
-  const params = {};
-  try {
-    if (globalThis.AndroidBridge?.VKWebAppInit) {
-      globalThis.AndroidBridge.VKWebAppInit(JSON.stringify(params));
-    } else if (globalThis.webkit?.messageHandlers?.VKWebAppInit?.postMessage) {
-      globalThis.webkit.messageHandlers.VKWebAppInit.postMessage(params);
-    } else if (globalThis.ReactNativeWebView?.postMessage) {
-      globalThis.ReactNativeWebView.postMessage(JSON.stringify({ handler: 'VKWebAppInit', params }));
-    } else if (globalThis.parent && globalThis.parent !== globalThis) {
-      globalThis.parent.postMessage({
-        handler: 'VKWebAppInit',
-        params,
-        type: 'vk-connect',
-        connectVersion: '2.15.12'
-      }, '*');
-    } else {
-      return false;
-    }
-
-    globalThis.__RPCHESS_VK_INIT_SENT = true;
-    globalThis.RPChessVKInitialized = true;
-    return true;
-  } catch (error) {
-    console.error('[RPChess] VK host initialization failed', error);
-    return false;
-  }
-}
-
-initVKHost();
+platform.init();
 
 // Travel Choice is part of the critical run shell. Its stylesheet must be available even if
 // the wider route/content bootstrap fails and Roster has to use the direct Travel fallback.
@@ -92,19 +47,20 @@ const REBOOT_INIT_KEY = 'rpchess.reboot.v1.initialized';
 const SETTINGS_KEY = 'rpchess.reboot.v1.settings';
 
 function clearLegacySavesOnce() {
-  if (localStorage.getItem(REBOOT_INIT_KEY) === '1') return;
+  const target = platform.storage.sync();
+  if (!target || target.getItem(REBOOT_INIT_KEY) === '1') return;
   const remove = [];
-  for (let index = 0; index < localStorage.length; index += 1) {
-    const key = localStorage.key(index);
+  for (let index = 0; index < target.length; index += 1) {
+    const key = target.key(index);
     if (key && key.startsWith('rpchess.') && !key.startsWith('rpchess.reboot.')) remove.push(key);
   }
-  for (const key of remove) localStorage.removeItem(key);
-  localStorage.setItem(REBOOT_INIT_KEY, '1');
+  for (const key of remove) target.removeItem(key);
+  target.setItem(REBOOT_INIT_KEY, '1');
 }
 
 function readSettings() {
   try {
-    const value = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    const value = JSON.parse(platform.storage.getItem(SETTINGS_KEY) || '{}');
     return {
       music: Number.isFinite(value.music) ? value.music : 70,
       sfx: Number.isFinite(value.sfx) ? value.sfx : 80,
@@ -117,7 +73,7 @@ function readSettings() {
 }
 
 function writeSettings(settings) {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  platform.storage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
 
 function openModal(modal, audio) {
@@ -151,6 +107,8 @@ if (reducedMotion) reducedMotion.checked = settings.reducedMotion;
 document.documentElement.dataset.reducedMotion = settings.reducedMotion ? '1' : '0';
 
 globalThis.RPChessRebootAudio = audio;
+globalThis.RPChessPlatform = platform;
+const unsubscribePlatformLifecycle = platform.lifecycle.subscribe(({ active }) => audio.setHostActive(active));
 globalThis.RPChessOpenSettings = () => openModal(settingsModal, audio);
 
 function syncLanguageUi() {
@@ -245,4 +203,4 @@ reducedMotion?.addEventListener('change', () => {
   saveSettings();
 });
 
-addEventListener('beforeunload', () => audio.destroy(), { once: true });
+addEventListener('beforeunload', () => { unsubscribePlatformLifecycle(); audio.destroy(); }, { once: true });

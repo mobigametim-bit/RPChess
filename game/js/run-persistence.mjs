@@ -1,4 +1,5 @@
 import { createStarterRoster } from './roster-data.mjs';
+import { platform } from './platform.mjs';
 import { STARTING_GOLD, STARTING_SUPPLIES, hydrateResources } from './resources-core.mjs';
 import { isSettlementState } from './settlement-core.mjs';
 import { isPuzzleState } from './puzzles/puzzle-core.mjs';
@@ -10,7 +11,7 @@ const RUN_STORAGE_KEY = 'rpchess.reboot.v1.run';
 const RUN_SCHEMA_VERSION = 1;
 const TRAVEL_TYPES = new Set(['skirmish', 'battle', 'event', 'settlement', 'puzzle']);
 
-function resolveStorage(storage) { if (storage) return storage; if (typeof localStorage !== 'undefined') return localStorage; return null; }
+function resolveStorage(storage) { if (storage) return storage; return platform.storage.sync(); }
 function runId(now = Date.now()) { return `run-${Number(now).toString(36)}-${Math.random().toString(36).slice(2, 8)}`; }
 function puzzleHistory(value) { return Array.isArray(value) ? [...new Set(value.filter((id) => typeof id === 'string' && id))] : []; }
 function hydratePuzzleHistory(run) { const history=puzzleHistory(run?.puzzleHistory),lastId=typeof run?.lastPuzzle?.puzzleId==='string'?run.lastPuzzle.puzzleId:null;if(lastId&&!history.includes(lastId))history.push(lastId);return history; }
