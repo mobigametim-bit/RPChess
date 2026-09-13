@@ -12,7 +12,7 @@
 | BrahmsGotischCyr font | PASS | SIL OFL 1.1 license and author attribution are present in-repo and copied by the production build. |
 | Lichess puzzle catalog | PASS | `THIRD_PARTY_NOTICES.md` records Lichess Open Database Puzzles under CC0. |
 | RPChess code | PASS for repository notice | Repository notice states RPChess is MIT except identified third-party material. |
-| Music: `echoes_iron_throne_01..04.mp3` | OPEN — owner confirmation needed | Runtime use is clear, but no music-specific license/provenance record was found in the repository. |
+| Background music | PASS for current candidate | The four Suno Free tracks were removed. The current release intentionally ships with no background music; future tracks must be commercially cleared before being added to `game/music/`. |
 | SFX: `win_fanfare.mp3` | OPEN — owner confirmation needed | Runtime use is clear, but no SFX-specific license/provenance record was found in the repository. |
 | Authored/generated visual assets | REVIEWED INVENTORY, provenance record incomplete | The repository contains manifests/audits for imported production art, but those inventory records by themselves are not a license/rightsholder statement. Keep/source a concise owner provenance record before submission if VK requests proof of rights. |
 
@@ -52,20 +52,15 @@ The production build copies the font plus its sidecar license/copyright files.
 
 **Pre-moderation action:** keep the notice in the release repository/candidate documentation.
 
-## 4. Audio — OPEN
+## 4. Audio — PARTIAL PASS
 
-The runtime audio owner module uses exactly four music tracks:
+The four previously shipped `echoes_iron_throne_01..04.mp3` files were generated under a Suno Free plan and have been removed from the release source. The current candidate intentionally contains no background music.
 
-- `game/music/echoes_iron_throne_01.mp3`;
-- `game/music/echoes_iron_throne_02.mp3`;
-- `game/music/echoes_iron_throne_03.mp3`;
-- `game/music/echoes_iron_throne_04.mp3`.
+The music runtime no longer hard-codes filenames. `npm run build` scans supported files under `game/music/` and generates the production catalog automatically. This means future commercially cleared tracks can be added without editing gameplay/audio code.
 
-The production tree also contains the game SFX used by the runtime, including `game/SFX/win_fanfare.mp3`.
+The production tree still contains game SFX, including `game/SFX/win_fanfare.mp3`. Its provenance/commercial-use basis remains unresolved in repository evidence.
 
-The repository audit found ownership/runtime references, but did **not** find an explicit license/provenance document for those audio files. A filename, commit history, or the fact that RPChess uses a file is not proof of commercial-use rights.
-
-**Owner decision required before moderation candidate is frozen:** confirm the origin and commercial-use rights for these audio files. Once confirmed, add a short record such as `docs/licenses/RPCHESS_AUDIO_PROVENANCE.md` with source/tool/author, date if known, and the basis for commercial use. If any track cannot be cleared, replace it before submission.
+**Pre-moderation action:** background music is cleared by absence for the current candidate. Before adding future music, record source/tool/author/date and the commercial-use basis. Separately resolve or replace `win_fanfare.mp3` before the final moderation candidate is frozen.
 
 ## 5. Visual assets — inventory exists; provenance should be centralized
 
@@ -89,11 +84,11 @@ Before fixing the SHA submitted to VK:
 - [ ] confirm `dist/vendor/stockfish/SOURCE.txt` exists;
 - [ ] confirm the Brahms font license/copyright sidecars exist in `dist/fonts/`;
 - [ ] confirm `THIRD_PARTY_NOTICES.md` still matches shipped third-party components;
-- [ ] resolve music provenance;
+- [x] confirm current candidate ships no background music;
 - [ ] resolve `win_fanfare.mp3` provenance;
 - [ ] record owner confirmation for original/generated production art;
 - [ ] re-run this audit if the candidate adds a new font, dataset, engine, music/SFX pack, or third-party visual asset.
 
 ## Current blockers from this audit
 
-The repository has clear license handling for **Stockfish, the Brahms font and Lichess puzzles**. The concrete unresolved provenance items found in this pass are **music and `win_fanfare.mp3`**. Visual assets need a centralized provenance statement, but no specific contradictory license was found in the current repository audit.
+The repository has clear license handling for **Stockfish, the Brahms font and Lichess puzzles**. The previous Suno Free background music has been removed, so it is no longer a current-candidate blocker. The concrete unresolved audio provenance item remaining in this pass is **`win_fanfare.mp3`**. Visual assets still need a centralized provenance statement, but no specific contradictory license was found in the current repository audit.

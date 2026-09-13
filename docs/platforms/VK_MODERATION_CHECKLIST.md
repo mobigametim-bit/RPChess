@@ -51,7 +51,7 @@ Before submission, freeze an exact `main` SHA and verify that exact build:
 - [ ] Open/complete a Puzzle.
 - [ ] Open Settlement and perform a normal action.
 - [ ] Verify King-death/run-end flow.
-- [ ] Check Settings, RU/EN, music and SFX.
+- [ ] Check Settings, RU/EN and SFX; current candidate intentionally has no background music.
 - [ ] Check `844×390`-class landscape.
 - [ ] Check normal desktop viewport.
 - [ ] If Mobile is declared, repeat the critical smoke in the official VK mobile client.
@@ -63,12 +63,12 @@ See `VK_LICENSE_AUDIT_2026-09-13.md`.
 - [x] Stockfish notices/source handling documented.
 - [x] Brahms font OFL/attribution documented.
 - [x] Lichess puzzle source/license documented.
-- [ ] Confirm provenance/commercial-use basis for all four `echoes_iron_throne_0N.mp3` tracks.
+- [x] Remove the four Suno Free background-music tracks from the release candidate; no background music currently ships.
 - [ ] Confirm provenance/commercial-use basis for `game/SFX/win_fanfare.mp3`.
 - [ ] Record a concise provenance statement for original/generated production visual assets.
 - [ ] Re-check the exact candidate for newly added third-party material.
 
-Current repository-side blocker: audio provenance is not documented sufficiently to mark it cleared from repository evidence alone.
+Current repository-side audio blocker: `game/SFX/win_fanfare.mp3` provenance/commercial-use basis is still unresolved. Background music is no longer a blocker because none ships in the current candidate.
 
 ## Decisions still required from the project owner
 
