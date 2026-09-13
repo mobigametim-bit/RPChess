@@ -27,7 +27,6 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
-          import re
 
           root = Path('.')
           game = root / 'game'
@@ -62,13 +61,16 @@ jobs:
 
           audio_path = game / 'js/reboot-audio.mjs'
           audio = audio_path.read_text(encoding='utf-8')
-          audio, count = re.subn(
-              r"const MUSIC_TRACKS = Object\.freeze\(\[\n(?:.*\n)*?\]\);\n\n",
-              "import { MUSIC_TRACKS } from './music-catalog.mjs';\n\n",
-              audio,
-              count=1,
+          old_tracks = (
+              "const MUSIC_TRACKS = Object.freeze([\n"
+              "  'music/echoes_iron_throne_01.mp3',\n"
+              "  'music/echoes_iron_throne_02.mp3',\n"
+              "  'music/echoes_iron_throne_03.mp3',\n"
+              "  'music/echoes_iron_throne_04.mp3'\n"
+              "]);\n\n"
           )
-          assert count == 1, 'hard-coded MUSIC_TRACKS block not found'
+          assert old_tracks in audio, 'hard-coded MUSIC_TRACKS block not found'
+          audio = audio.replace(old_tracks, "import { MUSIC_TRACKS } from './music-catalog.mjs';\n\n", 1)
           old = "this.music = typeof Audio === 'function' ? new Audio() : null;"
           assert old in audio
           audio = audio.replace(old, "this.music = typeof Audio === 'function' && MUSIC_TRACKS.length > 0 ? new Audio() : null;", 1)
@@ -125,7 +127,8 @@ jobs:
           old = "audio=fs.readFileSync(path.join(game,'js/reboot-audio.mjs'),'utf8'),platform="
           assert old in test
           test = test.replace(old, "audio=fs.readFileSync(path.join(game,'js/reboot-audio.mjs'),'utf8'),musicCatalog=fs.readFileSync(path.join(game,'js/music-catalog.mjs'),'utf8'),platform=", 1)
-          pattern = re.compile(r"for\(const track of \['echoes_iron_throne_01\.mp3'.*?\}\n?", re.S)
+          old_music_test = "for(const track of ['echoes_iron_throne_01.mp3','echoes_iron_throne_02.mp3','echoes_iron_throne_03.mp3','echoes_iron_throne_04.mp3']){assert(audio.includes(`music/${track}`));assert(fs.existsSync(path.join(game,'music',track)));}"
+          assert old_music_test in test, 'legacy hard-coded music test block not found'
           replacement = (
               "assert(audio.includes(\"import { MUSIC_TRACKS } from './music-catalog.mjs'\"),'Audio must consume the generated music catalog');"
               "assert(audio.includes('MUSIC_TRACKS.length > 0'),'Audio must tolerate an empty music catalog');"
@@ -133,10 +136,9 @@ jobs:
               "assert(musicCatalog.includes('Object.freeze([])'),'Source music catalog must remain an empty fallback');"
               "assert(build.includes('collectMusicTracks')&&build.includes('writeMusicCatalog'),'Production build must auto-generate the music catalog from game/music');"
               "const sourceMusicFiles=fs.readdirSync(path.join(game,'music')).filter(name=>/\\.(?:mp3|ogg|wav)$/i.test(name));"
-              "assert.deepStrictEqual(sourceMusicFiles,[],'Current source release must ship no background music until cleared tracks are added');\n"
+              "assert.deepStrictEqual(sourceMusicFiles,[],'Current source release must ship no background music until cleared tracks are added');"
           )
-          test, count = pattern.subn(replacement, test, count=1)
-          assert count == 1, 'legacy hard-coded music test block not found'
+          test = test.replace(old_music_test, replacement, 1)
           test_path.write_text(test, encoding='utf-8')
 
           audit_path = root / 'docs/platforms/VK_LICENSE_AUDIT_2026-09-13.md'
