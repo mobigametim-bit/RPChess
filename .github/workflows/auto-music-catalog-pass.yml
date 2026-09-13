@@ -1,0 +1,209 @@
+name: Apply automatic music catalog migration
+
+on:
+  push:
+    branches:
+      - audio/auto-music-catalog-2026-09-13
+    paths:
+      - .github/workflows/auto-music-catalog-pass.yml
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: audio/auto-music-catalog-2026-09-13
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Apply music catalog migration
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          root = Path('.')
+          game = root / 'game'
+
+          # Source fallback: direct source launches remain valid and simply have no music
+          # until a canonical build generates a dist catalog from game/music/.
+          catalog = game / 'js/music-catalog.mjs'
+          catalog.write_text("const MUSIC_TRACKS = Object.freeze([]);\n\nexport { MUSIC_TRACKS };\n", encoding='utf-8')
+
+          music_readme = game / 'music/README.md'
+          music_readme.write_text("""# RPChess music drop folder
+
+The current release intentionally ships with no background music.
+
+To add cleared music later, place audio files anywhere under this folder and run the canonical build. Supported extensions are `.mp3`, `.ogg` and `.wav`.
+
+`npm run build` recursively scans `game/music/`, copies the files to `dist/music/`, and generates `dist/js/music-catalog.mjs`. No track list needs to be edited by hand.
+
+The checked-in `game/js/music-catalog.mjs` is intentionally an empty source fallback so direct source launches remain safe before a build. The production build always replaces the dist copy with the generated catalog.
+
+Only add files whose commercial-use rights are documented for RPChess.
+""", encoding='utf-8')
+
+          # Remove the four Suno Free tracks from the source tree.
+          for name in [
+              'echoes_iron_throne_01.mp3',
+              'echoes_iron_throne_02.mp3',
+              'echoes_iron_throne_03.mp3',
+              'echoes_iron_throne_04.mp3',
+          ]:
+              target = game / 'music' / name
+              if target.exists():
+                  target.unlink()
+
+          audio_path = game / 'js/reboot-audio.mjs'
+          audio = audio_path.read_text(encoding='utf-8')
+          audio, n = re.subn(
+              r"const MUSIC_TRACKS = Object\.freeze\(\[\n(?:.*\n)*?\]\);\n\n",
+              "import { MUSIC_TRACKS } from './music-catalog.mjs';\n\n",
+              audio,
+              count=1,
+          )
+          assert n == 1, 'hard-coded MUSIC_TRACKS block not found'
+          old = "this.music = typeof Audio === 'function' ? new Audio() : null;"
+          new = "this.music = typeof Audio === 'function' && MUSIC_TRACKS.length > 0 ? new Audio() : null;"
+          assert old in audio
+          audio = audio.replace(old, new, 1)
+          old = "  nextTrack() {\n    this.musicIndex = (this.musicIndex + 1) % MUSIC_TRACKS.length;"
+          new = "  nextTrack() {\n    if (!MUSIC_TRACKS.length) return;\n    this.musicIndex = (this.musicIndex + 1) % MUSIC_TRACKS.length;"
+          assert old in audio
+          audio = audio.replace(old, new, 1)
+          audio_path.write_text(audio, encoding='utf-8')
+
+          build_path = root / 'scripts/build.cjs'
+          build = build_path.read_text(encoding='utf-8')
+          build = build.replace(
+              "'js/reboot-foundation.mjs','js/reboot-audio.mjs','js/platform.mjs'",
+              "'js/reboot-foundation.mjs','js/reboot-audio.mjs','js/music-catalog.mjs','js/platform.mjs'",
+              1,
+          )
+          marker = "function copy(relative){const from=path.join(source,relative),to=path.join(dist,relative);if(!fs.existsSync(from))throw new Error(`missing Reboot build input: ${relative}`);fs.mkdirSync(path.dirname(to),{recursive:true});fs.cpSync(from,to,{recursive:true,force:true});}\n"
+          assert marker in build, 'copy() marker not found'
+          helpers = """function copy(relative){const from=path.join(source,relative),to=path.join(dist,relative);if(!fs.existsSync(from))throw new Error(`missing Reboot build input: ${relative}`);fs.mkdirSync(path.dirname(to),{recursive:true});fs.cpSync(from,to,{recursive:true,force:true});}
+const MUSIC_EXTENSIONS=new Set(['.mp3','.ogg','.wav']);
+function collectMusicTracks(directory=path.join(source,'music')){
+  if(!fs.existsSync(directory))return [];
+  const tracks=[];
+  const visit=(current)=>{
+    for(const entry of fs.readdirSync(current,{withFileTypes:true})){
+      const absolute=path.join(current,entry.name);
+      if(entry.isDirectory()){visit(absolute);continue;}
+      if(!entry.isFile()||!MUSIC_EXTENSIONS.has(path.extname(entry.name).toLowerCase()))continue;
+      const relative=path.relative(directory,absolute).split(path.sep).join('/');
+      tracks.push(`music/${relative}`);
+    }
+  };
+  visit(directory);
+  return tracks.sort((left,right)=>left.localeCompare(right,'en'));
+}
+function writeMusicCatalog(){
+  const tracks=collectMusicTracks();
+  const target=path.join(dist,'js/music-catalog.mjs');
+  fs.mkdirSync(path.dirname(target),{recursive:true});
+  fs.writeFileSync(target,`const MUSIC_TRACKS = Object.freeze(${JSON.stringify(tracks,null,2)});\n\nexport { MUSIC_TRACKS };\n`,'utf8');
+  return tracks;
+}
+"""
+          build = build.replace(marker, helpers, 1)
+          old = "  ])copy(relative);\n  const runtime=materializeRuntimeAssets(dist);"
+          new = "  ])copy(relative);\n  const musicTracks=writeMusicCatalog();\n  console.log(`Runtime music catalog: ${musicTracks.length} track${musicTracks.length===1?'':'s'}`);\n  const runtime=materializeRuntimeAssets(dist);"
+          assert old in build, 'build copy loop marker not found'
+          build = build.replace(old, new, 1)
+          build_path.write_text(build, encoding='utf-8')
+
+          test_path = root / 'tests/reboot-foundation.cjs'
+          test = test_path.read_text(encoding='utf-8')
+          old = "audio=fs.readFileSync(path.join(game,'js/reboot-audio.mjs'),'utf8'),platform="
+          new = "audio=fs.readFileSync(path.join(game,'js/reboot-audio.mjs'),'utf8'),musicCatalog=fs.readFileSync(path.join(game,'js/music-catalog.mjs'),'utf8'),platform="
+          assert old in test, 'test source list marker not found'
+          test = test.replace(old, new, 1)
+          pattern = re.compile(r"for\(const track of \['echoes_iron_throne_01\.mp3'.*?\}\n?", re.S)
+          replacement = "assert(audio.includes(\"import { MUSIC_TRACKS } from './music-catalog.mjs'\"),'Audio must consume the generated music catalog');assert(audio.includes('MUSIC_TRACKS.length > 0'),'Audio must tolerate an empty music catalog');assert(audio.includes('if (!MUSIC_TRACKS.length) return;'),'Track advance must be safe when no music is shipped');assert(musicCatalog.includes('Object.freeze([])'),'Source music catalog must remain an empty fallback');assert(build.includes('collectMusicTracks')&&build.includes('writeMusicCatalog'),'Production build must auto-generate the music catalog from game/music');const sourceMusicFiles=fs.readdirSync(path.join(game,'music')).filter(name=>/\\.(?:mp3|ogg|wav)$/i.test(name));assert.deepStrictEqual(sourceMusicFiles,[],'Current source release must ship no background music until cleared tracks are added');\n"
+          test, n = pattern.subn(replacement, test, count=1)
+          assert n == 1, 'legacy hard-coded music test block not found'
+          test_path.write_text(test, encoding='utf-8')
+
+          audit_path = root / 'docs/platforms/VK_LICENSE_AUDIT_2026-09-13.md'
+          audit = audit_path.read_text(encoding='utf-8')
+          audit = audit.replace(
+              "| Music: `echoes_iron_throne_01..04.mp3` | OPEN — owner confirmation needed | Runtime use is clear, but no music-specific license/provenance record was found in the repository. |",
+              "| Background music | PASS for current candidate | The four Suno Free tracks were removed. The current release intentionally ships with no background music; future tracks must be commercially cleared before being added to `game/music/`. |",
+          )
+          start = audit.index('## 4. Audio — OPEN')
+          end = audit.index('## 5. Visual assets')
+          section = """## 4. Audio — PARTIAL PASS
+
+The four previously shipped `echoes_iron_throne_01..04.mp3` files were generated under a Suno Free plan and have been removed from the release source. The current candidate intentionally contains no background music.
+
+The music runtime no longer hard-codes filenames. `npm run build` scans supported files under `game/music/` and generates the production catalog automatically. This means future commercially cleared tracks can be added without editing gameplay/audio code.
+
+The production tree still contains game SFX, including `game/SFX/win_fanfare.mp3`. Its provenance/commercial-use basis remains unresolved in repository evidence.
+
+**Pre-moderation action:** background music is cleared by absence for the current candidate. Before adding future music, record source/tool/author/date and the commercial-use basis. Separately resolve or replace `win_fanfare.mp3` before the final moderation candidate is frozen.
+
+"""
+          audit = audit[:start] + section + audit[end:]
+          audit = audit.replace('- [ ] resolve music provenance;','- [x] confirm current candidate ships no background music;')
+          audit = audit.replace(
+              'The repository has clear license handling for **Stockfish, the Brahms font and Lichess puzzles**. The concrete unresolved provenance items found in this pass are **music and `win_fanfare.mp3`**. Visual assets need a centralized provenance statement, but no specific contradictory license was found in the current repository audit.',
+              'The repository has clear license handling for **Stockfish, the Brahms font and Lichess puzzles**. The previous Suno Free background music has been removed, so it is no longer a current-candidate blocker. The concrete unresolved audio provenance item remaining in this pass is **`win_fanfare.mp3`**. Visual assets still need a centralized provenance statement, but no specific contradictory license was found in the current repository audit.'
+          )
+          audit_path.write_text(audit, encoding='utf-8')
+
+          checklist_path = root / 'docs/platforms/VK_MODERATION_CHECKLIST.md'
+          checklist = checklist_path.read_text(encoding='utf-8')
+          checklist = checklist.replace('- [ ] Check Settings, RU/EN, music and SFX.','- [ ] Check Settings, RU/EN and SFX; current candidate intentionally has no background music.')
+          checklist = checklist.replace('- [ ] Confirm provenance/commercial-use basis for all four `echoes_iron_throne_0N.mp3` tracks.','- [x] Remove the four Suno Free background-music tracks from the release candidate; no background music currently ships.')
+          checklist = checklist.replace(
+              'Current repository-side blocker: audio provenance is not documented sufficiently to mark it cleared from repository evidence alone.',
+              'Current repository-side audio blocker: `game/SFX/win_fanfare.mp3` provenance/commercial-use basis is still unresolved. Background music is no longer a blocker because none ships in the current candidate.'
+          )
+          checklist_path.write_text(checklist, encoding='utf-8')
+
+      - name: Focused regression and zero-music build
+        run: |
+          npm run test:foundation
+          npm run build
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          const sourceFiles = fs.readdirSync('game/music').filter((name)=>/\.(?:mp3|ogg|wav)$/i.test(name));
+          assert.deepEqual(sourceFiles, []);
+          const distCatalog = fs.readFileSync('dist/js/music-catalog.mjs','utf8');
+          assert.match(distCatalog,/Object\.freeze\(\[\]\)/);
+          const distAudio = fs.readFileSync('dist/js/reboot-audio.mjs','utf8');
+          assert.ok(distAudio.includes("from './music-catalog.mjs'"));
+          for (const name of ['echoes_iron_throne_01.mp3','echoes_iron_throne_02.mp3','echoes_iron_throne_03.mp3','echoes_iron_throne_04.mp3']) {
+            assert.equal(fs.existsSync(path.join('dist/music',name)), false, `${name} must not ship`);
+          }
+          console.log('Zero-music production build and generated catalog: PASS');
+          NODE
+      - name: Prove automatic discovery with a temporary licensed-placeholder-shaped file
+        run: |
+          printf 'test' > game/music/__catalog_probe__.mp3
+          npm run build >/tmp/rp-build.log
+          grep -q "music/__catalog_probe__.mp3" dist/js/music-catalog.mjs
+          test -f dist/music/__catalog_probe__.mp3
+          rm game/music/__catalog_probe__.mp3
+          echo "Automatic music discovery: PASS"
+      - name: Commit validated migration
+        run: |
+          rm .github/workflows/auto-music-catalog-pass.yml
+          rm -rf dist .runtime-asset-cache || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "audio: generate playlist from cleared music folder"
+          git push origin HEAD:audio/auto-music-catalog-2026-09-13
