@@ -1,4 +1,5 @@
 import { clampStars, difficultyForStars } from './encounter-difficulty.mjs';
+import { platform } from './platform.mjs';
 
 const PLAYER_RATING_STORAGE_KEY = 'rpchess.reboot.v1.player-rating';
 const PLAYER_RATING_SCHEMA_VERSION = 1;
@@ -8,8 +9,7 @@ const RATING_RECEIPT_LIMIT = 2048;
 
 function resolveStorage(storage) {
   if (storage) return storage;
-  if (typeof localStorage !== 'undefined') return localStorage;
-  return null;
+  return platform.storage.sync();
 }
 
 function hashSeed(input) {

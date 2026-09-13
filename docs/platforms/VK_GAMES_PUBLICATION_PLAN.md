@@ -1,11 +1,52 @@
 # RPChess → VK Games: пошаговый план публикации
 
-> **ТЕКУЩИЙ ЭТАП ПРОЕКТА — VK GAMES PUBLICATION (ACTIVE, 2026-09-10).**
-> Этот документ — рабочий source of truth для этапа выкладки RPChess во VK Games. Разные агенты должны продолжать работу по этому чек-листу, отмечать выполненные пункты и не создавать отдельную копию игровой логики.
+> **ТЕКУЩИЙ ЭТАП ПРОЕКТА — PRE-MODERATION VK GAMES (ACTIVE, 2026-09-13).**
+> Этот документ остаётся source of truth, но блок ниже заменяет устаревшие предположения версии 2026-09-10 о VK Hosting.
 
-**Версия плана:** 2026-09-10  
+**Версия плана:** 2026-09-13  
 **Проект:** RPChess  
-**Цель:** первая платформенная публикация RPChess во VK Games без форка игровой логики и без расхождения с Web-версией.
+**VK App ID:** `54754579`  
+**Текущий URL игры:** `https://mobigametim-bit.github.io/RPChess/`  
+**Цель:** первая публикация RPChess во VK Games без форка игровой логики и без расхождения с Web-версией.
+
+## CURRENT ARCHITECTURE OVERRIDE — 2026-09-13
+
+Фактически проверенная схема первой VK-версии:
+
+```text
+main
+  → canonical npm run build / dist
+  → GitHub Pages
+  → https://mobigametim-bit.github.io/RPChess/
+  → VK iframe / WebView (app 54754579)
+```
+
+Уже подтверждено вручную внутри VK Web:
+
+- приложение открывается с GitHub Pages;
+- ранний `VKWebAppInit` снимает загрузочный экран VK;
+- Battle/Skirmish работают с исправленной compact landscape геометрией;
+- игровая логика не требует отдельной VK-копии.
+
+Пункты ниже про обязательные `dist-vk/`, `vk-hosting-config.json`, большой пакет в VK Hosting и отдельный VK Hosting production deploy считаются **SUPERSEDED** для текущего релизного пути. Они сохраняются как резервный вариант и снова актуальны только при осознанной смене hosting strategy.
+
+Текущие технические приоритеты перед модерацией:
+
+1. единый Web/VK platform boundary и ранний init;
+2. lifecycle: pause/resume при скрытии/возврате;
+3. persistence через `platform.storage` с localStorage backend в v1;
+4. license/provenance audit;
+5. exact-candidate gate + ручной VK smoke;
+6. фактические данные карточки/поддержки и продуктовые решения владельца.
+
+Cloud save, реклама, покупки, leaderboard и social API не считаются автоматически обязательными: включаем только выбранный release scope и то, что фактически требует/поддерживает текущий кабинет VK для нашего проекта.
+
+См. также:
+
+- `docs/platforms/VK_MODERATION_CHECKLIST.md`;
+- `docs/platforms/VK_LICENSE_AUDIT_2026-09-13.md`.
+
+---
 
 ## Обозначения
 

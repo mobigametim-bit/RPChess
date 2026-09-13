@@ -23,6 +23,7 @@ class RebootAudio {
     };
     this.musicIndex = randomMusicIndex();
     this.activated = false;
+    this.hostActive = true;
     this.context = null;
     this.music = typeof Audio === 'function' ? new Audio() : null;
     if (this.music) {
@@ -53,7 +54,7 @@ class RebootAudio {
   nextTrack() {
     this.musicIndex = (this.musicIndex + 1) % MUSIC_TRACKS.length;
     this.loadTrack();
-    if (this.activated && this.settings.music > 0) this.music?.play().catch(() => {});
+    if (this.hostActive && this.activated && this.settings.music > 0) this.music?.play().catch(() => {});
   }
 
   activate() {
@@ -70,13 +71,26 @@ class RebootAudio {
     this.music.muted = this.settings.music <= 0;
     if (this.music.muted) {
       if (!this.music.paused) this.music.pause();
-    } else if (this.activated && this.music.paused) {
+    } else if (this.hostActive && this.activated && this.music.paused) {
       this.music.play().catch(() => {});
     }
   }
 
+  setHostActive(active) {
+    this.hostActive = Boolean(active);
+    if (!this.hostActive) {
+      if (this.music && !this.music.paused) this.music.pause();
+      if (this.context?.state === 'running') this.context.suspend().catch(() => {});
+      return;
+    }
+    if (this.activated) {
+      this.ensureContext();
+      this.applySettings(this.settings);
+    }
+  }
+
   tone(frequency = 520, duration = 0.045, type = 'square', gain = 0.032) {
-    if (!this.activated || this.settings.sfx <= 0) return;
+    if (!this.hostActive || !this.activated || this.settings.sfx <= 0) return;
     const context = this.ensureContext();
     if (!context) return;
     const oscillator = context.createOscillator();
