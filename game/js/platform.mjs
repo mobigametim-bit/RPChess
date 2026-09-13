@@ -65,8 +65,11 @@ const storage = Object.freeze({
 function createLifecycle() {
   const listeners = new Set();
   let installed = false;
-  const active = () => !(globalThis.document?.hidden || globalThis.document?.visibilityState === 'hidden');
-  const emit = (reason) => {
+  let pageActive = true;
+  const documentActive = () => !(globalThis.document?.hidden || globalThis.document?.visibilityState === 'hidden');
+  const active = () => pageActive && documentActive();
+  const emit = (reason, forcedActive = null) => {
+    if (forcedActive !== null) pageActive = Boolean(forcedActive);
     const state = Object.freeze({ active:active(), reason });
     for (const listener of listeners) {
       try { listener(state); }
@@ -77,8 +80,8 @@ function createLifecycle() {
     if (installed || !globalThis.document?.addEventListener) return;
     installed = true;
     globalThis.document.addEventListener('visibilitychange', () => emit('visibilitychange'));
-    globalThis.addEventListener?.('pagehide', () => emit('pagehide'));
-    globalThis.addEventListener?.('pageshow', () => emit('pageshow'));
+    globalThis.addEventListener?.('pagehide', () => emit('pagehide', false));
+    globalThis.addEventListener?.('pageshow', () => emit('pageshow', true));
   };
   return Object.freeze({
     isActive:active,
