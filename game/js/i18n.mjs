@@ -8,6 +8,7 @@ import { RUNTIME_STATUS_EN_EXACT } from '../localization/runtime-status-en.mjs';
 import { RUNTIME_COMPOSED_EN_EXACT } from '../localization/runtime-composed-en.mjs';
 import { EVENT_EN_EXACT } from '../localization/events/en.mjs';
 import { EVENT_EN_V5_NAMES } from '../localization/events/en-v5-names.mjs';
+import { platform } from './platform.mjs';
 
 const SETTINGS_KEY = 'rpchess.reboot.v1.settings';
 const DEFAULT_LANGUAGE = 'ru';
@@ -15,7 +16,7 @@ const LANGUAGE_CODES = new Set(LANGUAGES.map(({ code }) => code));
 const listeners = new Set();
 
 function normalizeLanguage(code) { return LANGUAGE_CODES.has(code) ? code : DEFAULT_LANGUAGE; }
-function storage() { try { return globalThis.localStorage || null; } catch { return null; } }
+function storage() { return platform.storage.sync(); }
 function readPersistedLanguage() {
   try { return normalizeLanguage(JSON.parse(storage()?.getItem(SETTINGS_KEY) || '{}')?.language); }
   catch { return DEFAULT_LANGUAGE; }

@@ -1,4 +1,5 @@
 import { playerNameForRun } from './player-identity-core.mjs';
+import { platform } from './platform.mjs';
 
 const CHRONICLE_STORAGE_KEY = 'rpchess.reboot.v1.chronicle';
 const CHRONICLE_SCHEMA_VERSION = 1;
@@ -6,8 +7,7 @@ const CHRONICLE_HISTORY_LIMIT = 20;
 
 function resolveStorage(storage) {
   if (storage) return storage;
-  if (typeof localStorage !== 'undefined') return localStorage;
-  return null;
+  return platform.storage.sync();
 }
 
 function safeInteger(value) {
