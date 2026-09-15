@@ -28,6 +28,20 @@ const cloudReady = import('./cloud-save.mjs')
   });
 globalThis.RPChessCloudReady = cloudReady;
 
+// Onboarding owns only the ten approved first-visit hints. It loads after Cloud Save so synced
+// tutorial flags are authoritative before any hint can be displayed.
+const onboardingReady = cloudReady
+  .then(() => import('./content/onboarding.mjs'))
+  .then((module) => {
+    module.installOnboarding();
+    return module;
+  })
+  .catch((error) => {
+    console.error('[RPChess] Onboarding bootstrap failed', error);
+    return null;
+  });
+globalThis.RPChessOnboardingReady = onboardingReady;
+
 // Travel Choice is part of the critical run shell. Its stylesheet must be available even if
 // the wider route/content bootstrap fails and Roster has to use the direct Travel fallback.
 if (!document.querySelector('[data-travel-choice-css]')) {
@@ -161,8 +175,11 @@ document.addEventListener('keydown', activateAudio, { once: true, capture: true 
 
 document.querySelector('[data-new-game]')?.addEventListener('click', async () => {
   audio.click();
+  const onboarding = await onboardingReady;
+  onboarding?.activateOnboarding?.();
   const identity = await identityReady;
   identity?.openIdentityPrompt?.();
+  onboarding?.showHint?.('identity');
 });
 
 document.querySelector('[data-continue-run]')?.addEventListener('click', (event) => {
