@@ -11,6 +11,16 @@ import {
 
 platform.init();
 
+// Reconcile VK cloud state before run-owned modules read local persistence. Standalone Web resolves
+// immediately; VK failures are non-fatal and leave the local cache authoritative for this session.
+const cloudReady = import('./cloud-save.mjs')
+  .then((module) => module.bootstrapCloudSave())
+  .catch((error) => {
+    console.error('[RPChess] Cloud Save bootstrap failed', error);
+    return { status:'error', conflict:null };
+  });
+globalThis.RPChessCloudReady = cloudReady;
+
 // Travel Choice is part of the critical run shell. Its stylesheet must be available even if
 // the wider route/content bootstrap fails and Roster has to use the direct Travel fallback.
 if (!document.querySelector('[data-travel-choice-css]')) {
@@ -28,19 +38,24 @@ if (!document.querySelector('[data-player-rating-css]')) {
   document.head.append(link);
 }
 
-// Player Identity / Chronicle loads asynchronously so the main-menu shell remains independent.
-const identityReady = import('./player-identity-chronicle.mjs').catch((error) => {
-  console.error('[RPChess] Player Identity / Chronicle bootstrap failed', error);
-  return null;
-});
+// Player Identity / Chronicle loads after the cloud reconciliation boundary so Continue/New Game
+// observes the selected local/cloud state instead of racing VK Storage on startup.
+const identityReady = cloudReady
+  .then(() => import('./player-identity-chronicle.mjs'))
+  .catch((error) => {
+    console.error('[RPChess] Player Identity / Chronicle bootstrap failed', error);
+    return null;
+  });
 globalThis.RPChessIdentityReady = identityReady;
 
-// Route/content modules are intentionally bootstrapped asynchronously. The main-menu controls
-// must remain usable even if a secondary encounter/UX module throws during evaluation.
-const routeReady = import('./battle-route.mjs').catch((error) => {
-  console.error('[RPChess] Route bootstrap failed', error);
-  return null;
-});
+// Route/content modules use the same cloud-ready barrier. The main-menu shell remains independent
+// and usable even if a secondary encounter/UX module throws during evaluation.
+const routeReady = cloudReady
+  .then(() => import('./battle-route.mjs'))
+  .catch((error) => {
+    console.error('[RPChess] Route bootstrap failed', error);
+    return null;
+  });
 globalThis.RPChessRouteReady = routeReady;
 
 const REBOOT_INIT_KEY = 'rpchess.reboot.v1.initialized';
