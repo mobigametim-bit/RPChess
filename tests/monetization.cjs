@@ -62,6 +62,7 @@ class MemoryStorage {
   ]) assert(source.includes(token), `Monetization contract missing ${token}`);
   assert(source.includes("reward.append(root)"), 'Double-gold offer must be placed inside the visible combat reward row');
   assert(source.includes("button.textContent = '×2'"), 'Double-gold control must use the compact ×2 label');
+  assert(source.includes('scheduleDoubleGoldOffer(kind, count, attempts = 4)'), 'Double-gold offer must retry until the aftermath screen is visible');
   assert(skirmishCss.includes('grid-template-columns:52px minmax(0,1fr) auto'), 'Skirmish reward row must reserve a right-side ×2 button slot');
   assert(battleCss.includes('grid-template-columns:52px minmax(0,1fr) auto'), 'Battle reward row must reserve a right-side ×2 button slot');
 
