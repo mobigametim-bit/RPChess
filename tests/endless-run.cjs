@@ -65,6 +65,7 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   const events=fs.readFileSync(path.join(game,'js/events-app.mjs'),'utf8');
   const route=fs.readFileSync(path.join(game,'js/battle-route.mjs'),'utf8');
   for(const token of ["from '../localization/runtime-ui.mjs'",'runtimeT(currentLanguage()','translateLegacy(summary.kingName)','translateLegacy(summary.endReasonLabel)','subscribe(() =>','scene_defeat.jpg','queueMicrotask(() => open(storedRun))','RPChessEndlessRun'])assert(app.includes(token),`Endless owner app missing ${token}`);
+  for(const token of ["import { shareRunResult } from './content/share-result.mjs'",'data-endless-run-share','shareRunResult(activeRun, { power: readPlayerRating().power })'])assert(app.includes(token),`Final-summary sharing contract missing ${token}`);
   for(const token of ["'endless.title':'ЗАБЕГ ЗАВЕРШЁН'","'endless.metric.goldEarned':'ЗАРАБОТАНО ЗОЛОТА'","'endless.metric.finalPower':'ИТОГОВАЯ МОЩЬ'","'endless.newGame':'НОВАЯ ИГРА'","'endless.menu':'ГЛАВНОЕ МЕНЮ'"])assert(runtimeUi.includes(token),`runtime owner registry missing ${token}`);
   for(const forbidden of ['ЗАБЕГ ЗАВЕРШЁН','ЗАРАБОТАНО ЗОЛОТА','ИТОГОВАЯ МОЩЬ','НОВАЯ ИГРА','ГЛАВНОЕ МЕНЮ'])assert(!app.includes(forbidden),`Endless runtime must not hardcode localized copy: ${forbidden}`);
   assert(app.includes('css/endless-run-compact.css?v=20260909-owner1'),'Endless Run owner must load its compact stylesheet after base CSS');
