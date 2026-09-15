@@ -120,6 +120,10 @@ function renderLastCombatRewards(run = readRun()) {
   if (!run) return;
   renderCombatReward(document.querySelector('[data-skirmish-aftermath]'), combatRewardAmount(run.lastSkirmish));
   renderCombatReward(document.querySelector('[data-battle-aftermath]'), combatRewardAmount(run.lastBattle));
+
+  const monetization = globalThis.RPChessMonetization;
+  if (Number(run.skirmishCount) > 0) monetization?.renderDoubleGoldOffer?.('skirmish', run.skirmishCount);
+  if (Number(run.battleCount) > 0) monetization?.renderDoubleGoldOffer?.('battle', run.battleCount);
 }
 
 function scheduleCombatRewardRender() {
