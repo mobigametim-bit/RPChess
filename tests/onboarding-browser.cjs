@@ -35,8 +35,7 @@ async function assertOverlay(page, label, expectedHint) {
       modal:card.getAttribute('aria-modal'),
       title:root.querySelector('[data-tutorial-title]')?.textContent?.trim() || '',
       body:root.querySelector('[data-tutorial-body]')?.textContent?.trim() || '',
-      dismiss: dismiss?.textContent?.trim() || '',
-      focused:document.activeElement === dismiss
+      dismiss:dismiss?.textContent?.trim() || ''
     };
   });
   assert.strictEqual(geometry.hint, expectedHint, `${label}: wrong hint displayed`);
@@ -50,12 +49,9 @@ async function assertOverlay(page, label, expectedHint) {
 }
 
 async function audit(browser, { width, height, language, mobile = false }) {
-  const context = await browser.newContext({
-    viewport:{ width, height },
-    isMobile:mobile,
-    hasTouch:mobile,
-    userAgent:mobile ? 'Mozilla/5.0 (Linux; Android 14; VK Mini Apps) AppleWebKit/537.36 Chrome/152 Mobile Safari/537.36' : undefined
-  });
+  const contextOptions = { viewport:{ width, height }, isMobile:mobile, hasTouch:mobile };
+  if (mobile) contextOptions.userAgent = 'Mozilla/5.0 (Linux; Android 14; VK Mini Apps) AppleWebKit/537.36 Chrome/152 Mobile Safari/537.36';
+  const context = await browser.newContext(contextOptions);
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (error) => errors.push(String(error.stack || error)));
@@ -66,7 +62,7 @@ async function audit(browser, { width, height, language, mobile = false }) {
     await page.reload({ waitUntil:'networkidle' });
     await setLanguage(page, language);
     await page.waitForFunction(() => Boolean(globalThis.RPChessOnboardingReady));
-    await page.evaluate(() => globalThis.RPChessOnboardingReady);
+    await page.evaluate(async () => { await globalThis.RPChessOnboardingReady; return true; });
 
     await page.locator('[data-new-game]').first().click();
     await assertOverlay(page, `${label} identity`, 'identity');
