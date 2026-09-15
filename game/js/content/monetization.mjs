@@ -425,7 +425,7 @@ function ensureRescueModal() {
   ensureStyles();
   rescueModal = document.createElement('div');
   rescueModal.className = 'rpchess-rescue';
-  rescueModal.dataset.starvationRescue = '';
+  rescueModal.setAttribute('data-starvation-rescue', '');
   rescueModal.hidden = true;
   rescueModal.innerHTML = `
     <section class="rpchess-rescue__card ui-panel-surface" role="dialog" aria-modal="true" aria-labelledby="rpchess-rescue-title" aria-describedby="rpchess-rescue-body">
