@@ -62,9 +62,11 @@
     "assets:resource-icons:verify": "node scripts/resource-icon-asset-runtime.cjs --root dist --verify-only",
     "test:browser": "node scripts/run-browser-tests.cjs",
     "build": "npm run puzzles:materialize && npm run build:materialized",
+    "build:vk": "npm run build && node scripts/build-vk.cjs",
     "build:materialized": "node scripts/build.cjs && node scripts/resource-icon-asset-runtime.cjs --root dist",
     "gate:local": "npm run puzzles:materialize && npm run verify && npm run test:materialized && npm run content:validate && npm run puzzles:validate:materialized && npm run build:materialized && npm run test:asset-cache-build",
     "gate:full": "npm run gate:local && npm run test:browser",
+    "gate:vk": "npm run test:monetization && npm run build:vk",
     "deploy:cloudflare": "wrangler deploy"
   }
 }
