@@ -359,7 +359,9 @@ function onDoubleGoldRunUpdated(event) {
   const kind = event.detail.kind;
   const count = Number(event.detail.count);
   if (!['battle','skirmish'].includes(kind) || !Number.isInteger(count)) return;
-  queueMicrotask(() => scheduleDoubleGoldOffer(kind, count));
+  const renderCompletedOffer = () => scheduleDoubleGoldOffer(kind, count);
+  if (typeof globalThis.requestAnimationFrame === 'function') globalThis.requestAnimationFrame(renderCompletedOffer);
+  else setTimeout(renderCompletedOffer, 0);
 }
 
 function rescueEligible(run) {
