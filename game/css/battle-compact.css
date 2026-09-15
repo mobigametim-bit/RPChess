@@ -243,11 +243,12 @@
     box-sizing:border-box!important;
   }
   html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .resource-combat-reward {
-    grid-template-columns:28px minmax(0,1fr)!important;
+    grid-template-columns:28px minmax(0,1fr) auto!important;
     gap:6px!important;
   }
   html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .resource-combat-reward img {width:28px!important;height:28px!important;}
   html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .resource-combat-reward::after {font-size:16px!important;}
+  html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .resource-combat-reward .rpchess-ad-offer__button {min-width:48px!important;min-height:28px!important;padding:3px 8px!important;font-size:16px!important;}
   html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .power-result {gap:3px 7px!important;padding-left:43px!important;}
   html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .power-result::before {left:5px!important;width:28px!important;height:28px!important;}
   html[data-landscape-ui='1'] body.battle-active.compact-aftermath-active .power-result__value {font-size:14px!important;}
