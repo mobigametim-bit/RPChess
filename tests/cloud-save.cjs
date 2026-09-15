@@ -41,7 +41,9 @@ class MemoryStorage {
     referrer:'',
     hidden:false,
     visibilityState:'visible',
-    addEventListener() {}
+    addEventListener() {},
+    querySelector() { return null; },
+    querySelectorAll() { return []; }
   };
   globalThis.addEventListener = (name, listener) => {
     if (!listeners.has(name)) listeners.set(name, new Set());
