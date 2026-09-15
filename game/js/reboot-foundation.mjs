@@ -13,8 +13,15 @@ platform.init();
 
 // Reconcile VK cloud state before run-owned modules read local persistence. Standalone Web resolves
 // immediately; VK failures are non-fatal and leave the local cache authoritative for this session.
+// A genuine local/cloud run conflict blocks run bootstrap until the player explicitly chooses one.
 const cloudReady = import('./cloud-save.mjs')
-  .then((module) => module.bootstrapCloudSave())
+  .then(async (module) => {
+    const result = await module.bootstrapCloudSave();
+    if (result?.status !== 'conflict' || !result.conflict) return result;
+    const ui = await import('./cloud-save-ui.mjs');
+    const choice = await ui.openCloudConflict(result.conflict, module.resolveCloudConflict);
+    return choice ? { status:`resolved-${choice}`, conflict:null } : result;
+  })
   .catch((error) => {
     console.error('[RPChess] Cloud Save bootstrap failed', error);
     return { status:'error', conflict:null };
