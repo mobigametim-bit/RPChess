@@ -65,13 +65,6 @@ async function shareRunResult(run, { power = 0, language = currentLanguage(), li
     if (wall.status === 'completed') return Object.freeze({ status:'completed', method:'wall', text, link, postId:wall.postId });
     if (wall.status === 'closed') return Object.freeze({ status:'closed', method:'wall', text, link });
 
-    const shared = await platform.social.shareLink(link);
-    if (shared.status === 'completed') {
-      await platform.social.copyText(text);
-      return Object.freeze({ status:'completed', method:'share-link', text, link, textCopied:true });
-    }
-    if (shared.status === 'closed') return Object.freeze({ status:'closed', method:'share-link', text, link });
-
     if (await platform.social.copyText(text)) return Object.freeze({ status:'completed', method:'copy', text, link });
   }
 
