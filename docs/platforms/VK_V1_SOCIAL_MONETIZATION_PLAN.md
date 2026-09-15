@@ -382,8 +382,8 @@ Exact emoji may be adjusted for readability, but the v1 share text should use th
 
 - [x] RU share copy.
 - [x] EN share copy.
-- [x] Use VK share capability when available.
-- [x] Fall back to another supported VK social flow when needed.
+- [x] Open VK wall publication through `VKWebAppShowWallPostBox`.
+- [x] Do **not** fall back to the private-message `VKWebAppShare` dialog.
 - [x] Final fallback: Copy Result / Copy Link.
 - [x] Share cancel/failure never breaks the final screen.
 - [x] v1 is text + link; generated image cards are deferred.
@@ -586,6 +586,7 @@ Onboarding viewport tests apply only to screens listed in **4.2 Included onboard
 - [ ] Included onboarding overlays — `844×390`.
 - [ ] Included onboarding overlays — VK Mobile landscape.
 - [ ] Rewarded UI/modal `844×390` where applicable.
+- [x] Final run summary uses actual iframe height and fits landscape viewport without page scrolling.
 - [ ] Starvation-rescue offer `844×390`.
 - [ ] Leaderboard `844×390`.
 - [ ] Mobile landscape.
