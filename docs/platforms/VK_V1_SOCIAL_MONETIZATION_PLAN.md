@@ -1,187 +1,706 @@
-# RPChess — VK v1 social, cloud-save, ads and onboarding plan
+# RPChess — VK Games v1 implementation plan
 
-Approved: 2026-09-15
+**Status:** APPROVED  
+**Approved:** 2026-09-15  
+**VK App ID:** `54754579`  
+**Release scope:** **VK Web + VK Mobile**, one HTML5 codebase  
+**Delivery:** `main` → canonical `dist/` → GitHub Pages → VK iframe/WebView
 
-Target app: VK Games app `54754579`  
-First release platform: **VK Web**  
-Delivery path: `main` → canonical `dist/` → GitHub Pages → VK iframe/WebView.
+This file is the canonical implementation handoff for the VK v1 release. Another developer/agent should be able to continue directly from the unchecked items below.
 
-This document fixes the approved product scope before implementation. Purchases and declared VK Mobile support are deferred.
+## Goal
 
-## 1. Cloud save
+Prepare the first full VK Games release of RPChess with:
 
-Goal: the same VK user can continue RPChess progress on another device/browser signed into the same VK account.
+- cross-device cloud save for the same VK user;
+- Power leaderboard with Global / Friends views;
+- sharing of run results;
+- rewarded and interstitial ads;
+- one-time contextual onboarding after the first New Game;
+- VK Web and VK Mobile support from the same HTML5 build;
+- moderation, licensing and payout readiness.
 
-Architecture:
+## Out of scope for v1
 
-- `localStorage` remains the synchronous local cache/fallback for standalone GitHub Pages and temporary VK failures;
-- VK users additionally sync a compact versioned save through VK Storage (`VKWebAppStorageGet` / `VKWebAppStorageSet`);
-- VK Storage is treated as app/user scoped storage; no RPChess account/password system is introduced;
-- cloud writes are asynchronous and must never block gameplay;
-- save records carry schema/version, revision and update timestamp;
-- startup reconciles local and VK copies deterministically and persists the selected newest valid state back to both stores;
-- payloads are chunked conservatively rather than assuming an unlimited single-value size.
+- [ ] Purchases / Votes / store / item orders.
+- [ ] Separate Android APK/AAB.
+- [ ] Separate iOS IPA/App Store build.
+- [ ] Steam integration.
+- [ ] Full authoritative game backend.
+- [ ] Advanced anti-cheat beyond reasonable server-side validation for leaderboard writes.
 
-Cloud domains for v1:
+## Ownership legend
 
-- active run and roster state;
-- resources and current route/encounter state required to resume safely;
-- player Power;
-- Chronicle / persistent progression already owned by RPChess;
-- tutorial/first-visit flags.
+- `[DEV]` — autonomous code/repo/test/documentation work.
+- `[OWNER]` — requires project-owner action, secret, legal/account action or acceptance.
+- `[TOGETHER]` — developer prepares it, owner performs the final real-client/manual verification.
+- `BLOCKER` — do not submit the moderation candidate until closed.
 
-Device-local only:
+---
 
-- audio volume/mute;
-- other presentation preferences that do not affect game progression;
-- transient UI state.
+# 0. Ready baseline
 
-No gameplay state may exist only in cloud. If VK Storage is unavailable, the player continues locally and sync retries later.
+- [x] VK app exists: `54754579`.
+- [x] RPChess launches inside VK.
+- [x] Canonical delivery is GitHub Pages embedded by VK.
+- [x] `VKWebAppInit` works.
+- [x] Shared Web/VK platform boundary exists.
+- [x] Lifecycle pause/resume exists.
+- [x] Core persistence uses the shared storage boundary.
+- [x] Suno Free background tracks were removed.
+- [x] Music catalog is generated automatically from `game/music/`.
+- [x] Stockfish license/source handling is documented.
+- [x] BrahmsGotischCyr / SIL OFL attribution is documented.
+- [x] Lichess puzzles / CC0 attribution is documented.
+- [x] Victory fanfare provenance is documented: `_MC5_`, `Short Brass Fanfare 1`, Freesound sound `524849`, CC BY 4.0.
+- [x] Production visual provenance is documented as project-specific artwork generated with ChatGPT/OpenAI image-generation tools under the owner's direction.
+- [x] RPChess is visible in the VK payout cabinet.
 
-## 2. VK leaderboard
+---
 
-Primary leaderboard metric: **Power**.
+# 1. VK API capability spike
 
-Power remains the existing RPChess adaptive/Elo-style player rating. Individual run length does not become the primary global ranking metric in v1.
+Do this before large integration work so implementation matches the real App ID and current VK platform behavior.
 
-Write path:
+## 1.1 VK Storage
 
-- scores are submitted through VK's game activity/leaderboard backend using `secure.addAppEvent`;
-- the VK application/service secret must never be embedded in GitHub Pages client code;
-- use a minimal serverless score-submit endpoint;
-- v1 infrastructure target is **Cloudflare Workers Free**, so implementation does not require purchasing a hosting service initially;
-- the endpoint validates signed VK launch parameters, app/user identity and reasonable score transitions before calling VK;
-- secret/service credentials live only in Worker secrets/environment variables.
+- [ ] `[DEV]` Verify current VK Storage methods for Web and Mobile.
+- [ ] `[DEV]` Verify actual limits for value size, key count and error behavior.
+- [ ] `[DEV]` Verify Storage against a real VK Web launch.
+- [ ] `[DEV]` Use chunking only if the measured/current limits require it.
 
-Read/display path for Web:
+## 1.2 Ads
 
-- fetch VK leaderboard data with the user-authorized `apps.getLeaderboard` API;
-- display an RPChess-native leaderboard screen with `Global` and `Friends` modes;
-- do not depend on `VKWebAppShowLeaderBoardBox` for Web UX, because the official Mini Apps helper documents that Direct Games leaderboard box for iOS/Android;
-- when VK Mobile is added later, the native leaderboard box can be evaluated as an optional platform surface.
+- [ ] `[DEV]` Verify rewarded support.
+- [ ] `[DEV]` Verify interstitial support.
+- [ ] `[DEV]` Verify ad-availability probing.
+- [ ] `[DEV]` Normalize `completed`, `closed`, `unavailable`, `error` responses.
+- [ ] `[DEV]` Build deterministic mocks before relying on real inventory.
 
-Failure policy: leaderboard failure never blocks gameplay or save loading.
+## 1.3 Leaderboard
 
-## 3. Share run result
+- [ ] `[DEV]` Verify `apps.getLeaderboard` for Global results.
+- [ ] `[DEV]` Verify Friends results.
+- [ ] `[DEV]` Verify extended user data needed for avatar/name rows.
+- [ ] `[DEV]` Verify the authorization required to read leaderboard data in Web/Mobile.
+- [ ] `[DEV]` Verify the server-side `secure.addAppEvent` write path.
+- [ ] `[DEV]` Verify exact `level` / `points` semantics.
 
-Add `Поделиться результатом / Share result` to the final run summary.
+### Power decision gate
 
-Shared text includes:
+Current RPChess Power is Elo-like and can both rise and fall.
 
-- weeks / journey length;
-- Skirmish wins;
-- Battle wins;
-- puzzles solved;
-- events resolved;
-- heroes recruited;
-- final Power;
-- **King death/end reason**;
-- link/deep link to RPChess in VK.
+- [ ] `[DEV]` Verify whether the native VK leaderboard can represent the **current** Power when Power decreases.
+- [ ] If yes: use Current Power as approved.
+- [ ] If VK only preserves maximum/cumulative score: **stop leaderboard implementation and ask the owner** to choose between native Best Power and a custom Current Power leaderboard. Do not silently change the metric.
 
-Use VK share/wall capabilities when available, with a safe Web fallback. v1 shares text/result + link; generated share-card images are deferred.
+**Acceptance:** no unknown VK API limitation remains before implementing Cloud Save / Ads / Leaderboard.
 
-## 4. Advertising
+---
 
-All ad calls live behind `platform.ads`; gameplay code requests an intent and does not know VK-specific bridge details.
+# 2. Expand PlatformAdapter
 
-Before each show attempt, check availability. Ad errors, absence, close/cancel or VK-side limits must always fall back to normal gameplay.
+Gameplay modules must not call VK Bridge/API directly.
 
-### 4.1 Interstitial cadence
+- [ ] `[DEV]` Add/normalize `platform.storage.local`.
+- [ ] `[DEV]` Add `platform.storage.cloud`.
+- [ ] `[DEV]` Add `platform.ads`.
+- [ ] `[DEV]` Add `platform.social`.
+- [ ] `[DEV]` Add `platform.leaderboard`.
+- [ ] `[DEV]` Add `platform.identity`.
+- [ ] `[DEV]` Keep `platform.lifecycle` as the shared lifecycle owner.
+- [ ] `[DEV]` Add safe Web fallbacks for every VK-only capability.
+- [ ] `[DEV]` Add capability detection per optional VK method.
+- [ ] `[DEV]` Ensure unavailable VK functions never produce fatal gameplay errors.
+- [ ] `[DEV]` Log platform errors without exposing secrets.
 
-- increment based on committed Travel-card selections;
-- show at every 5th committed selection: 5, 10, 15, 20, ...;
-- show only at a scene-transition/pause point after the choice has been committed;
-- never make the selected route depend on successful ad delivery;
-- rewarded ads have priority;
-- do not show an interstitial for 60 seconds after any rewarded ad;
-- if an interstitial is due during that cooldown/conflict, defer it to the next suitable transition instead of double-serving ads.
+## Feature flags
 
-### 4.2 Double combat gold rewarded ad
+- [ ] `[DEV]` Cloud save flag.
+- [ ] `[DEV]` Rewarded flag.
+- [ ] `[DEV]` Interstitial flag.
+- [ ] `[DEV]` Sharing flag.
+- [ ] `[DEV]` Leaderboard flag.
+- [ ] `[DEV]` Onboarding flag.
+- [ ] `[DEV]` Allow production ads to be disabled without changing gameplay code.
 
-On Battle and Skirmish aftermath:
+---
 
-- normal earned gold is granted without ad;
-- offer `×2 золота за просмотр рекламы / Double gold by watching an ad`;
-- successful rewarded view grants exactly one extra copy of the gold reward from that completed encounter;
-- one rewarded claim per encounter;
-- persist an idempotent claim/receipt so reload/back-navigation cannot duplicate the reward;
-- if no ad is available, the normal reward and Continue flow remain unchanged.
+# 3. VK Cloud Save
 
-### 4.3 Starvation rescue rewarded ad
+## 3.1 Synced domains
 
-Trigger only when the newly selected Travel route cannot be paid because current Supplies are insufficient and the existing starvation flow is about to begin.
+Synchronize:
 
-Offer:
+- [ ] active run;
+- [ ] roster and hero statuses;
+- [ ] gold;
+- [ ] supplies;
+- [ ] current route / resumable encounter state;
+- [ ] run statistics;
+- [ ] Power;
+- [ ] Chronicle / persistent progression;
+- [ ] onboarding flags;
+- [ ] rewarded claim receipts;
+- [ ] minimal leaderboard-sync state required for idempotency.
 
-- successful rewarded view grants `+5 Supplies`;
-- the current route cost is then paid from those rescued Supplies;
-- starvation is prevented for that transition;
-- the remaining Supplies continue normally (for the current cost of 1, the player keeps 4);
-- decline, close, ad failure or unavailable ad continues into the existing starvation flow unchanged.
+Keep device-local:
 
-Do **not** trigger simply because the visible Supplies count becomes zero after a successfully paid journey.
+- [ ] volume / mute;
+- [ ] presentation-only settings;
+- [ ] transient DOM/UI state;
+- [ ] static descriptions and asset paths;
+- [ ] unnecessary historical Elo receipts.
 
-## 5. First-run onboarding
+## 3.2 CloudSaveV1 schema
 
-On the first ever `Новая игра / New Game`, enable contextual onboarding.
+- [ ] `[DEV]` Create versioned `CloudSaveV1`.
+- [ ] Include schema version.
+- [ ] Include monotonic revision.
+- [ ] Include `updatedAt`.
+- [ ] Include active run/profile/tutorial/ad-receipt domains.
+- [ ] `[DEV]` Compact serialization.
+- [ ] `[DEV]` Chunk only if required by verified VK limits.
+- [ ] `[DEV]` Add manifest/checksum for multi-key writes if chunked.
+- [ ] `[DEV]` Write manifest last so partial writes are never treated as valid complete saves.
 
-Rules:
+## 3.3 Local + cloud behavior
 
-- each major screen/type gets one short modal/overlay explanation on its first visit;
-- explain what the screen is and the meaningful actions available there;
-- user dismisses each explanation with a normal Continue/OK action;
-- no global `Skip tutorial` control in v1;
-- no persistent `?` help button in v1;
-- once dismissed, that screen's hint does not reappear;
-- tutorial flags are included in VK cloud save, so a user does not repeat them on another device;
-- compact landscape hints must fit in one viewport without internal scrolling and receive browser regression coverage.
+Every gameplay save remains local-first:
 
-Initial hint coverage should include at least: Travel, Roster/party, Skirmish preparation, Skirmish battle, Battle preparation, Battle battle, Event, Puzzle, Settlement, aftermath/reward and starvation when first encountered.
+1. save locally;
+2. queue asynchronous cloud write;
+3. cloud failure does not interrupt gameplay.
 
-## 6. Platform scope
+- [ ] `[DEV]` Debounce cloud writes.
+- [ ] `[DEV]` Best-effort flush on lifecycle/page hide.
+- [ ] `[DEV]` Retry temporary failures.
+- [ ] `[DEV]` Keep standalone GitHub Pages fully playable with local-only persistence.
 
-### v1: VK Web
+## 3.4 First sync and conflicts
 
-The first moderation candidate declares and tests Web only.
+- [ ] Cloud empty + local valid → upload local.
+- [ ] Local empty + cloud valid → restore cloud.
+- [ ] Same runId → reconcile by revision/validity.
+- [ ] Different active runIds → show a minimal conflict chooser.
+- [ ] Conflict UI shows local/cloud date, week and Power.
+- [ ] Owner-selected copy becomes authoritative and is written back to both stores.
+- [ ] Never silently destroy the newer valid state.
 
-This does **not** mean creating a separate desktop build. RPChess remains the same HTML5 build running inside VK's desktop web iframe.
+## 3.5 Cross-device acceptance
 
-### Later: VK Mobile
+- [ ] `[TOGETHER]` Start run on device A.
+- [ ] Open same VK account on device B.
+- [ ] Confirm the same run resumes.
+- [ ] Make progress on B.
+- [ ] Return to A and confirm B's newer state restores.
 
-`VK Mobile` in this project means making the **same HTML5 application** available and tested inside VK's Android/iOS mobile client WebView/mobile surface. It does not mean producing an APK, AAB or IPA.
+---
 
-A standalone Android APK/AAB or iOS IPA/App Store build would be a separate distribution project and is not required for VK Mobile support.
+# 4. First-run contextual onboarding
 
-Before declaring Mobile later, run the complete critical smoke on real VK Android/iOS clients and fix any platform-specific Bridge/audio/layout issues.
+## 4.1 Rules
 
-## 7. Purchases
+- [ ] On the first-ever `Новая игра / New Game`, activate onboarding.
+- [ ] Each included screen/type shows one short overlay on its first visit.
+- [ ] Each overlay explains what this screen is and what the player can do there.
+- [ ] One normal `Понятно / Got it` dismissal button.
+- [ ] No global `Skip tutorial`.
+- [ ] No persistent `?` help button.
+- [ ] Dismissed hints never repeat for that user.
+- [ ] Tutorial flags sync through Cloud Save.
 
-Deferred after v1. Do not implement Votes/items/store/order flows as part of this plan.
+## 4.2 Included onboarding screens
 
-## 8. Payout / ads dashboard
+- [ ] Player Identity / start of run.
+- [ ] Travel / route cards.
+- [ ] Roster / party.
+- [ ] Skirmish preparation.
+- [ ] Skirmish chess screen.
+- [ ] Battle preparation.
+- [ ] Battle chess screen.
+- [ ] Event.
+- [ ] Settlement.
+- [ ] Puzzle.
 
-RPChess is already visible in the VK payout cabinet as of 2026-09-15. Before enabling production ads, verify the remaining executor/payment and advertising configuration required by the current VK dashboard. This is a dashboard/financial setup task, separate from gameplay code.
+**Explicitly excluded from onboarding:**
 
-## 9. Implementation order
+- Hunger / Starvation;
+- Chronicle;
+- Run End / final run screen;
+- Skirmish Result / aftermath;
+- Battle Result / aftermath.
 
-1. Finalize PlatformAdapter request/response layer for VK Bridge methods needed by storage, API calls, share and ads.
-2. Implement versioned/chunked VK cloud-save adapter and local/cloud reconciliation; add migration and failure tests.
-3. Add first-run onboarding state/model and responsive overlays; sync tutorial flags.
-4. Add ad orchestration/receipts and starvation rescue, then combat double-gold, then 5-route interstitial cadence.
-5. Add run-result share flow with RU/EN copy and King end reason.
-6. Add free-tier serverless leaderboard score-submit endpoint; keep secret out of client/repository; add client read UI for Global/Friends.
-7. Run focused unit/browser tests after each slice.
-8. Verify VK payout/ad configuration and enable real ad calls in test group/candidate.
-9. Freeze moderation candidate SHA, run complete VK Web smoke, verify Pages exact SHA, then submit.
+No onboarding work or onboarding-specific viewport tests are required for those excluded screens.
 
-## 10. Non-negotiable safety/UX contracts
+## 4.3 Onboarding UI/tests
 
-- ads never gate ordinary gameplay progress;
-- rewarded benefits are granted only after a successful rewarded result;
-- reward claims are idempotent;
-- cloud failure never destroys a newer valid local save;
-- secrets never enter client JS, Git history or Pages artifacts;
-- leaderboard submission is server-mediated; leaderboard read failure is non-fatal;
-- standalone GitHub Pages remains playable without VK features;
-- RU and EN are implemented together for all new UI;
-- compact landscape remains one-screen where that is already an RPChess UI contract.
+- [ ] `[DEV]` One reusable tutorial-overlay component.
+- [ ] RU copy for every included screen.
+- [ ] EN copy for every included screen.
+- [ ] Correct focus/accessibility behavior.
+- [ ] Included overlays fit desktop viewport.
+- [ ] Included overlays fit compact `844×390` without internal scrolling.
+- [ ] Included overlays fit VK Mobile landscape.
+
+---
+
+# 5. Advertising platform layer
+
+- [ ] `[DEV]` All ad calls go through `platform.ads`.
+- [ ] `[DEV]` Probe availability before every show attempt.
+- [ ] `[DEV]` Normalize `completed`, `closed`, `unavailable`, `error`.
+- [ ] `[DEV]` Ad failure never blocks normal game progression.
+- [ ] `[DEV]` Reward is granted only on confirmed successful rewarded completion.
+- [ ] `[DEV]` Reward mutations are idempotent.
+
+---
+
+# 6. Interstitial every fifth Travel selection
+
+## 6.1 Trigger
+
+- [ ] Count only committed Travel-card selections.
+- [ ] Use committed `journeyStep` semantics.
+- [ ] Due at 5, 10, 15, 20, ...
+
+## 6.2 Safe show point
+
+Flow:
+
+`Travel selection → persist route/save → advertising gate → next scene`
+
+- [ ] Never show before the route is persisted.
+- [ ] Never show mid-combat.
+- [ ] Never show over a combat-result screen.
+- [ ] Route progression never depends on successful ad delivery.
+
+## 6.3 Rewarded priority/cooldown
+
+- [ ] Starvation rescue rewarded takes priority over a due interstitial.
+- [ ] No interstitial for 60 seconds after any rewarded ad.
+- [ ] Conflicting interstitial becomes `pending` rather than being double-served.
+- [ ] Pending interstitial waits for the next safe transition after cooldown.
+- [ ] Never auto-pop an interstitial in the middle of an encounter merely because the timer expired.
+
+---
+
+# 7. Rewarded: double combat gold
+
+## Battle
+
+- [ ] Normal reward is granted immediately.
+- [ ] Aftermath offers `×2 золота за просмотр рекламы / Double gold by watching an ad`.
+- [ ] Successful rewarded adds exactly one extra copy of that encounter's original gold reward.
+- [ ] Close/error/unavailable never removes the normal reward.
+- [ ] One claim per encounter.
+
+## Skirmish
+
+- [ ] Same normal-reward-first contract.
+- [ ] Same one-extra-copy reward.
+- [ ] One claim per encounter.
+
+## Idempotency
+
+Receipt contains at least:
+
+- [ ] runId;
+- [ ] encounter type;
+- [ ] encounter sequence/id;
+- [ ] reward amount.
+
+- [ ] Reload cannot claim again.
+- [ ] Cross-device cloud resume cannot claim again.
+
+---
+
+# 8. Rewarded: starvation rescue
+
+## 8.1 Trigger
+
+Show only when:
+
+1. the player selected a Travel card;
+2. current Supplies cannot pay the route cost;
+3. the existing starvation flow is about to begin.
+
+Do **not** trigger merely because Supplies become zero after a successfully paid route.
+
+## 8.2 Offer
+
+- [ ] Explain that Supplies are insufficient.
+- [ ] Offer `Получить 5 припасов / Get 5 Supplies` via rewarded ad.
+- [ ] Offer normal continuation without ad.
+
+## 8.3 Successful rewarded
+
+- [ ] Grant +5 Supplies.
+- [ ] Immediately pay the current route cost from those Supplies.
+- [ ] Persist the result.
+- [ ] Do not start starvation for that transition.
+- [ ] Continue to the already selected encounter.
+
+At current route cost 1: `0 → +5 → -1 → 4` remaining.
+
+## 8.4 Decline/error
+
+- [ ] No extra punishment.
+- [ ] Continue into the existing starvation flow unchanged.
+
+## 8.5 Idempotency
+
+- [ ] One rescue receipt per route selection.
+- [ ] Reload during/after ad cannot manufacture repeated Supplies.
+
+---
+
+# 9. Share run result
+
+## 9.1 Entry point
+
+- [ ] Add `Поделиться результатом / Share result` to the final run summary.
+
+## 9.2 Shared content — use emoji actively
+
+The result should feel like a compact social achievement, not a dry telemetry dump. Include relevant emoji in both RU and EN copy, for example:
+
+- [ ] 👑 King / player identity;
+- [ ] 🗓️ weeks / journey length;
+- [ ] ⚔️ Battle wins;
+- [ ] 🛡️ Skirmish wins;
+- [ ] 🧩 puzzles solved;
+- [ ] 📜 events resolved;
+- [ ] 👥 heroes recruited;
+- [ ] 🔥 final Power;
+- [ ] ☠️ **King death / end reason**;
+- [ ] 🎮 link/deep link to RPChess in VK.
+
+Exact emoji may be adjusted for readability, but the v1 share text should use them actively and remain compact.
+
+## 9.3 Localization/platform behavior
+
+- [ ] RU share copy.
+- [ ] EN share copy.
+- [ ] Use VK share capability when available.
+- [ ] Fall back to another supported VK social flow when needed.
+- [ ] Final fallback: Copy Result / Copy Link.
+- [ ] Share cancel/failure never breaks the final screen.
+- [ ] v1 is text + link; generated image cards are deferred.
+
+---
+
+# 10. VK Leaderboard
+
+## 10.1 Metric
+
+- [x] Approved primary metric: **Power**.
+
+## 10.2 In-game UI
+
+Add `Рейтинг / Leaderboard` with:
+
+- [ ] Global tab;
+- [ ] Friends tab;
+- [ ] place;
+- [ ] avatar;
+- [ ] player name;
+- [ ] Power;
+- [ ] explicit own result / own place.
+
+## 10.3 Read path
+
+- [ ] `[DEV]` Read native VK leaderboard data.
+- [ ] `[DEV]` Loading state.
+- [ ] `[DEV]` Error state.
+- [ ] `[DEV]` Empty state.
+- [ ] `[DEV]` Short-lived cache to avoid unnecessary repeated calls.
+
+## 10.4 Write path
+
+Service secret must never reach the browser.
+
+`RPChess → Cloudflare Worker → VK secure.addAppEvent`
+
+- [ ] `[DEV]` Create minimal Cloudflare Worker.
+- [ ] Use Cloudflare Workers Free plan for v1.
+- [ ] `[OWNER]` Add VK service credential as Worker Secret when required.
+- [ ] Never place the secret in GitHub, browser JS, documentation or chat.
+
+## 10.5 Worker validation
+
+- [ ] Validate signed VK launch params.
+- [ ] Derive/trust user identity only from validated VK context.
+- [ ] Validate app id.
+- [ ] Rate limit.
+- [ ] Idempotency by rating receipt.
+- [ ] Validate reasonable Power range.
+- [ ] Validate reasonable rating delta.
+- [ ] Never log secrets.
+
+## 10.6 Anti-cheat scope
+
+v1 is best-effort protection only:
+
+- [ ] replay protection;
+- [ ] basic delta validation;
+- [ ] rate limiting;
+- [ ] no full authoritative game backend.
+
+## 10.7 Power limitation gate
+
+If the native VK leaderboard cannot represent decreasing Current Power:
+
+- [ ] stop implementation at this gate;
+- [ ] present concrete alternatives to the owner;
+- [ ] do not silently switch to Best Power.
+
+---
+
+# 11. VK Web + VK Mobile
+
+## 11.1 Architecture
+
+- [x] One HTML5 gameplay codebase.
+- [ ] One canonical production build.
+- [ ] One PlatformAdapter.
+- [ ] Same Cloud Save semantics on Web and Mobile.
+- [ ] No mobile gameplay fork.
+
+## 11.2 VK Web validation
+
+- [ ] Desktop VK iframe smoke.
+- [ ] Direct GitHub Pages fallback smoke.
+- [ ] Normal desktop viewport.
+- [ ] `844×390` compact regression.
+
+## 11.3 VK Mobile definition
+
+**VK Mobile means the same HTML5 RPChess running inside the VK Android/iOS client WebView/mobile surface. It does not mean APK/AAB/IPA.**
+
+- [ ] `[DEV]` Mobile URL uses the same canonical production.
+- [ ] `[DEV]` Verify Bridge capability differences.
+- [ ] `[DEV]` Verify touch/focus/audio/lifecycle.
+- [ ] `[DEV]` Verify Cloud Save.
+- [ ] `[DEV]` Verify rewarded/interstitial ads.
+- [ ] `[DEV]` Verify sharing.
+- [ ] `[DEV]` Verify leaderboard.
+- [ ] `[DEV]` Verify onboarding included screens.
+
+## 11.4 Orientation
+
+RPChess is landscape-oriented.
+
+- [ ] Verify VK Mobile landscape.
+- [ ] Verify portrait behavior.
+- [ ] If portrait cannot preserve gameplay UI, show a clean `Поверните устройство / Rotate your device` overlay instead of broken combat UI.
+- [ ] Returning to landscape restores the current game without reload.
+
+## 11.5 Real-client acceptance
+
+Before declaring Mobile in the candidate:
+
+- [ ] `[TOGETHER]` Real VK Android client critical smoke.
+- [ ] `[TOGETHER]` Real VK iOS client critical smoke.
+- [ ] If one platform cannot be physically tested by the owner, obtain a real-client test for that platform before submitting Mobile.
+
+---
+
+# 12. Privacy / Terms / Support
+
+Prepare after the real data flow is implemented so legal copy matches reality.
+
+## Privacy Policy
+
+- [ ] VK user identification.
+- [ ] VK Cloud Save usage.
+- [ ] Leaderboard score handling.
+- [ ] Cloudflare Worker role.
+- [ ] Advertising integration.
+- [ ] State what RPChess does **not** collect/store independently where applicable.
+
+## User Agreement / Terms
+
+- [ ] usage terms;
+- [ ] intellectual property;
+- [ ] availability/no-warranty clauses as appropriate;
+- [ ] external VK services;
+- [ ] advertising.
+
+## Support
+
+- [ ] `[OWNER]` Confirm public support e-mail.
+- [ ] `[DEV]` Publish support/legal pages.
+- [ ] `[DEV]` RU/EN where required by the VK card/form.
+
+---
+
+# 13. Payout / advertising cabinet
+
+- [x] RPChess is already present in VK payout cabinet.
+- [ ] `[OWNER]` Assign the required executor if VK requires it for payouts.
+- [ ] `[OWNER]` Accept required offers/terms.
+- [ ] `[OWNER]` Confirm the app is enabled for the intended advertising monetization.
+- [ ] `[TOGETHER]` Verify first test impressions/statistics.
+- [ ] Do not consider production ad economy ready until cabinet configuration is valid.
+
+---
+
+# 14. Automated tests — Minimal Testing Policy
+
+Prefer extending existing owner/regression tests. Create a new permanent suite only where no existing test can prove the contract.
+
+## 14.1 Unit / contract coverage
+
+- [ ] Platform capability/fallback behavior.
+- [ ] Cloud serialization.
+- [ ] Cloud reconciliation.
+- [ ] Save conflict selection.
+- [ ] Tutorial flags for **included onboarding screens only**.
+- [ ] Interstitial scheduler.
+- [ ] 60-second rewarded cooldown.
+- [ ] Reward receipt idempotency.
+- [ ] Double-gold mutation.
+- [ ] Starvation rescue mutation.
+- [ ] Share text RU with emoji/end reason.
+- [ ] Share text EN with emoji/end reason.
+- [ ] Leaderboard adapter.
+- [ ] Worker request validation.
+
+## 14.2 Browser mocked-VK coverage
+
+- [ ] Storage success/unavailable/error.
+- [ ] Rewarded completed/closed/unavailable/error.
+- [ ] Interstitial success/error.
+- [ ] Share success/cancel/fallback.
+- [ ] Leaderboard loading/error.
+- [ ] Lifecycle during ad.
+- [ ] Reload after rewarded claim.
+- [ ] Reload after cloud save.
+
+## 14.3 Viewport coverage
+
+Onboarding viewport tests apply only to screens listed in **4.2 Included onboarding screens**.
+
+- [ ] Included onboarding overlays — desktop.
+- [ ] Included onboarding overlays — `844×390`.
+- [ ] Included onboarding overlays — VK Mobile landscape.
+- [ ] Rewarded UI/modal `844×390` where applicable.
+- [ ] Starvation-rescue offer `844×390`.
+- [ ] Leaderboard `844×390`.
+- [ ] Mobile landscape.
+- [ ] Portrait rotate overlay.
+
+There are **no onboarding-specific tests** for Hunger, Chronicle, Run End, Skirmish Result or Battle Result.
+
+---
+
+# 15. Manual VK Web end-to-end smoke
+
+- [ ] First launch.
+- [ ] New Game.
+- [ ] Included onboarding hints.
+- [ ] Travel selection.
+- [ ] Skirmish.
+- [ ] Rewarded ×2 after Skirmish.
+- [ ] Battle.
+- [ ] Rewarded ×2 after Battle.
+- [ ] Fifth committed Travel selection → interstitial.
+- [ ] Insufficient Supplies → rescue rewarded.
+- [ ] Event.
+- [ ] Settlement.
+- [ ] Puzzle.
+- [ ] Chronicle normal behavior (not onboarding).
+- [ ] Power update.
+- [ ] Leaderboard update.
+- [ ] Global leaderboard.
+- [ ] Friends leaderboard.
+- [ ] Cloud reload/resume.
+- [ ] Run end.
+- [ ] King death reason.
+- [ ] Share result with emoji.
+- [ ] RU.
+- [ ] EN.
+
+---
+
+# 16. Manual VK Mobile smoke
+
+Repeat the critical path in the real VK mobile client:
+
+- [ ] launch;
+- [ ] cloud resume;
+- [ ] Travel;
+- [ ] combat;
+- [ ] touch controls;
+- [ ] audio;
+- [ ] background → foreground;
+- [ ] rewarded;
+- [ ] interstitial;
+- [ ] starvation rescue;
+- [ ] sharing;
+- [ ] leaderboard;
+- [ ] included onboarding screens;
+- [ ] landscape;
+- [ ] rotation;
+- [ ] reload;
+- [ ] cross-device sync.
+
+---
+
+# 17. Moderation candidate
+
+- [ ] Freeze exact `main` SHA.
+- [ ] Run `npm run gate:local`.
+- [ ] Build canonical production `dist/`.
+- [ ] Run release-critical browser smoke.
+- [ ] Deploy that exact SHA to GitHub Pages.
+- [ ] Verify exact SHA through VK Web.
+- [ ] Verify exact SHA through VK Mobile.
+- [ ] Re-run candidate license/provenance audit.
+- [ ] Confirm Privacy / Terms / Support URLs.
+- [ ] Complete VK card fields and marketing assets.
+- [ ] Confirm age rating.
+- [ ] Confirm public title.
+- [ ] Confirm support contact.
+- [ ] Confirm payout/ad configuration.
+
+Do not change code between final smoke and submission without creating a new candidate SHA and re-running the relevant gates.
+
+---
+
+# 18. Submission
+
+- [ ] `[TOGETHER]` Final VK Web launch.
+- [ ] `[TOGETHER]` Final VK Mobile launch.
+- [ ] `[OWNER]` Final card review.
+- [ ] `[OWNER]` Final payout-cabinet review.
+- [ ] `[DEV]` Prepare concise moderation notes describing cloud save, ads, leaderboard, sharing and Web/Mobile support.
+- [ ] `[OWNER]` Submit to VK moderation.
+- [ ] If moderation returns feedback, record exact feedback and fix narrowly with relevant regression + candidate gate.
+
+---
+
+# Definition of Done — VK Games v1
+
+All must be true:
+
+- [ ] the same VK user can continue the same run across devices;
+- [ ] Power syncs correctly;
+- [ ] Global and Friends leaderboard work;
+- [ ] run result can be shared;
+- [ ] share copy uses emoji and includes the King death reason;
+- [ ] interstitial is scheduled every fifth committed Travel selection;
+- [ ] rewarded doubles only the just-completed combat reward;
+- [ ] starvation rescue grants 5 Supplies and pays the selected route;
+- [ ] normal reload/cross-device resume cannot duplicate rewarded benefits;
+- [ ] onboarding appears once for every **included** screen and nowhere in the explicitly excluded set;
+- [ ] VK Web passes full smoke;
+- [ ] VK Mobile passes real-client smoke;
+- [ ] landscape UI remains usable and portrait is handled safely;
+- [ ] cloud/ad/VK API failure never makes the game unplayable;
+- [ ] license/provenance/credits are closed;
+- [ ] Privacy / Terms / Support are ready;
+- [ ] payout configuration is ready;
+- [ ] exact moderation candidate passes release gates;
+- [ ] candidate is submitted to VK moderation.
