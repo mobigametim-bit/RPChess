@@ -15,6 +15,7 @@ class MemoryStorage {
   globalThis.location = { search:'' };
   const root = path.resolve(__dirname, '..');
   const source = fs.readFileSync(path.join(root, 'game/js/content/monetization.mjs'), 'utf8');
+  const resourcesSource = fs.readFileSync(path.join(root, 'game/js/resources-app.mjs'), 'utf8');
   const skirmishCss = fs.readFileSync(path.join(root, 'game/css/player-rating.css'), 'utf8');
   const battleCss = fs.readFileSync(path.join(root, 'game/css/playtest-fixes.css'), 'utf8');
   const starvationSource = fs.readFileSync(path.join(root, 'game/js/starvation-core.mjs'), 'utf8');
@@ -62,7 +63,10 @@ class MemoryStorage {
   ]) assert(source.includes(token), `Monetization contract missing ${token}`);
   assert(source.includes("reward.append(root)"), 'Double-gold offer must be placed inside the visible combat reward row');
   assert(source.includes("button.textContent = '×2'"), 'Double-gold control must use the compact ×2 label');
-  assert(source.includes('scheduleDoubleGoldOffer(kind, count, attempts = 4)'), 'Double-gold offer must retry until the aftermath screen is visible');
+  assert(source.includes('scheduleDoubleGoldOffer(kind, count, attempts = 16)'), 'Double-gold offer must retry until the aftermath screen is visible');
+  assert(source.includes("source:'rewarded-double-gold', kind, count"), 'Completed double-gold must re-render its victory offer state');
+  assert(source.includes("button.disabled = true;\n    button.setAttribute('aria-disabled', 'true');"), 'Completed double-gold must leave the ×2 button inactive');
+  assert(resourcesSource.includes('goldReward) || 0))\n    + Math.max(0, Math.floor(Number(record?.adBonusGold)'), 'Victory reward display must include the granted double-gold bonus');
   assert(skirmishCss.includes('grid-template-columns:52px minmax(0,1fr) auto'), 'Skirmish reward row must reserve a right-side ×2 button slot');
   assert(battleCss.includes('grid-template-columns:52px minmax(0,1fr) auto'), 'Battle reward row must reserve a right-side ×2 button slot');
 
