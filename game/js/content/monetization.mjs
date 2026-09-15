@@ -266,7 +266,7 @@ function grantDoubleGold({ receiptId, kind, count, amount }) {
   }, receiptId);
   writeRun(run);
   updateReceipt(receiptId, { granted:true, status:'completed' });
-  globalThis.dispatchEvent?.(new CustomEvent('rpchess:run-updated', { detail:{ source:'rewarded-double-gold' } }));
+  globalThis.dispatchEvent?.(new CustomEvent('rpchess:run-updated', { detail:{ source:'rewarded-double-gold', kind, count } }));
   globalThis.dispatchEvent?.(new CustomEvent('rpchess:resources-updated', { detail:{ source:'rewarded-double-gold', goldReward:safeAmount } }));
   return true;
 }
@@ -307,11 +307,16 @@ function renderDoubleGoldOffer(kind, count) {
   const amount = Math.max(0, Math.floor(Number(run[key]?.goldReward) || 0));
   if (!amount || Number(run[`${kind}Count`]) !== Number(count)) return false;
   const receiptId = doubleGoldReceiptId(run.id, kind, count, amount);
-  if (receipt(receiptId)?.granted || hasRunClaim(run, receiptId)) return false;
+  const claimed = Boolean(receipt(receiptId)?.granted || hasRunClaim(run, receiptId));
   const screen = document.querySelector(kind === 'battle' ? '[data-battle-aftermath]' : '[data-skirmish-aftermath]');
   const reward = screen?.querySelector('[data-resource-combat-reward]');
   if (!reward || screen.hidden) return false;
-  if (reward.querySelector('[data-ad-double-gold]')) return true;
+  const existing = reward.querySelector('[data-ad-double-gold]');
+  if (existing) {
+    const button = existing.querySelector('[data-ad-double-gold-button]');
+    if (claimed && button) { button.disabled = true; button.textContent = '×2'; }
+    return true;
+  }
   const root = document.createElement('div');
   root.className = 'rpchess-ad-offer';
   root.dataset.adDoubleGold = '';
@@ -327,11 +332,15 @@ function renderDoubleGoldOffer(kind, count) {
   note.dataset.adDoubleGoldNote = '';
   root.append(button, note);
   reward.append(root);
+  if (claimed) {
+    button.disabled = true;
+    button.setAttribute('aria-disabled', 'true');
+    return true;
+  }
   button.addEventListener('click', () => void claimDoubleGold(button, note, { receiptId, kind, count, amount, runId:run.id }));
   return true;
 }
-
-function scheduleDoubleGoldOffer(kind, count, attempts = 4) {
+function scheduleDoubleGoldOffer(kind, count, attempts = 16) {
   if (renderDoubleGoldOffer(kind, count) || attempts <= 0) return;
   const retry = () => scheduleDoubleGoldOffer(kind, count, attempts - 1);
   if (typeof globalThis.requestAnimationFrame === 'function') globalThis.requestAnimationFrame(retry);
@@ -341,6 +350,14 @@ function scheduleDoubleGoldOffer(kind, count, attempts = 4) {
 function onCombatCompleted(event) {
   const kind = event?.detail?.kind;
   const count = Number(event?.detail?.count);
+  if (!['battle','skirmish'].includes(kind) || !Number.isInteger(count)) return;
+  queueMicrotask(() => scheduleDoubleGoldOffer(kind, count));
+}
+
+function onDoubleGoldRunUpdated(event) {
+  if (event?.detail?.source !== 'rewarded-double-gold') return;
+  const kind = event.detail.kind;
+  const count = Number(event.detail.count);
   if (!['battle','skirmish'].includes(kind) || !Number.isInteger(count)) return;
   queueMicrotask(() => scheduleDoubleGoldOffer(kind, count));
 }
@@ -561,6 +578,7 @@ function installMonetization() {
   ensureStyles();
   for (const name of TRAVEL_EVENTS) globalThis.addEventListener?.(name, onTravelOpenEvent);
   globalThis.addEventListener?.('rpchess:combat-completed', onCombatCompleted);
+  globalThis.addEventListener?.('rpchess:run-updated', onDoubleGoldRunUpdated);
   unsubscribeLanguage = subscribe(() => {
     renderRescueCopy();
     for (const button of document.querySelectorAll('[data-ad-double-gold-button]')) {
