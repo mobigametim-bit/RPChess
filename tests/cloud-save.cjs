@@ -15,21 +15,34 @@ class MemoryStorage {
 (async () => {
   const listeners = new Map();
   const cloud = new Map();
+  const supportedHandlers = [
+    'VKWebAppInit','VKWebAppStorageGet','VKWebAppStorageSet','VKWebAppStorageGetKeys',
+    'VKWebAppCheckNativeAds','VKWebAppShowNativeAds','VKWebAppShare','VKWebAppShowWallPostBox',
+    'VKWebAppCopyText','VKWebAppGetUserInfo','VKWebAppCallAPIMethod'
+  ];
   const parent = {
     postMessage(message) {
       const { handler, params = {} } = message || {};
       if (!params.request_id) return;
       let response = { request_id:params.request_id };
-      if (handler === 'VKWebAppStorageSet') {
+      if (handler === 'SetSupportedHandlers') {
+        response.supportedHandlers = supportedHandlers;
+      } else if (handler === 'VKWebAppStorageSet') {
         cloud.set(String(params.key), String(params.value));
         response.result = true;
       } else if (handler === 'VKWebAppStorageGet') {
         response.keys = (params.keys || []).map((key) => ({ key:String(key), value:cloud.get(String(key)) || '' }));
+      } else if (handler === 'VKWebAppCheckNativeAds' || handler === 'VKWebAppShowNativeAds' || handler === 'VKWebAppCopyText') {
+        response.result = true;
+      } else if (handler === 'VKWebAppGetUserInfo') {
+        Object.assign(response, { id:7646007, first_name:'Cloud', last_name:'Tester' });
+      } else if (handler === 'VKWebAppShowWallPostBox') {
+        response.post_id = 42;
       } else {
         response.result = true;
       }
       queueMicrotask(() => {
-        const event = { type:'message', source:parent, data:{ data:response } };
+        const event = { type:'message', source:parent, data:{ type:`${handler}Result`, data:response } };
         for (const listener of listeners.get('message') || []) listener(event);
       });
     }
@@ -53,8 +66,18 @@ class MemoryStorage {
   globalThis.localStorage = new MemoryStorage();
 
   const root = path.resolve(__dirname, '..');
+  const platformModule = await import(pathToFileURL(path.join(root, 'game/js/platform.mjs')).href);
   const persistence = await import(pathToFileURL(path.join(root, 'game/js/run-persistence.mjs')).href);
   const cloudSave = await import(pathToFileURL(path.join(root, 'game/js/cloud-save.mjs')).href);
+
+  assert.strictEqual(await platformModule.supportsVKMethod('VKWebAppStorageGet'), true, 'VK supported-handler negotiation must expose Storage');
+  assert.strictEqual(await platformModule.supportsVKMethod('VKWebAppShowNativeAds'), true, 'VK supported-handler negotiation must expose native ads');
+  assert.strictEqual(await platformModule.ads.check('reward'), true, 'reward inventory probe must normalize to boolean');
+  assert.deepStrictEqual(await platformModule.ads.show('reward'), { status:'completed', format:'reward' }, 'successful rewarded show must normalize to completed');
+  assert.strictEqual((await platformModule.social.shareLink('https://vk.com/app54754579')).status, 'completed', 'VK share adapter must normalize successful share');
+  assert.strictEqual((await platformModule.social.wallPost({ message:'RPChess' })).postId, 42, 'wall-post fallback must surface the VK post id');
+  assert.strictEqual(await platformModule.social.copyText('RPChess'), true, 'copy fallback must use VK capability when available');
+  assert.strictEqual((await platformModule.identity.getUserInfo()).id, 7646007, 'identity adapter must expose VK user info without leaking bridge calls into gameplay');
 
   let run = persistence.createRun({ now:100, playerName:'Cloud Tester' });
   run = persistence.writeRun({ ...run, gold:321, supplies:7, journeyStep:4 }, null, 200);
@@ -103,7 +126,7 @@ class MemoryStorage {
   assert.strictEqual(cloudSave.compareEnvelopes(localEnvelope, cloudEnvelope), 'conflict', 'different active run ids must never be silently overwritten');
 
   globalThis.localStorage = oldDevice;
-  console.log('VK CloudSave v1 compact payload, UTF-8 chunking, atomic slots, restore and conflict gate: PASS');
+  console.log('VK platform capabilities plus CloudSave v1 compact payload, UTF-8 chunking, atomic slots, restore and conflict gate: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;
