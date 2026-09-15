@@ -42,6 +42,20 @@ const onboardingReady = cloudReady
   });
 globalThis.RPChessOnboardingReady = onboardingReady;
 
+// Monetization installs before route modules so the interstitial gate can intercept semantic Travel
+// transitions before scene owners. All VK ad calls stay behind platform.ads; standalone Web is a no-op.
+const monetizationReady = cloudReady
+  .then(() => import('./content/monetization.mjs'))
+  .then((module) => {
+    module.installMonetization();
+    return module;
+  })
+  .catch((error) => {
+    console.error('[RPChess] Monetization bootstrap failed', error);
+    return null;
+  });
+globalThis.RPChessMonetizationReady = monetizationReady;
+
 // Travel Choice is part of the critical run shell. Its stylesheet must be available even if
 // the wider route/content bootstrap fails and Roster has to use the direct Travel fallback.
 if (!document.querySelector('[data-travel-choice-css]')) {
@@ -69,10 +83,15 @@ const identityReady = cloudReady
   });
 globalThis.RPChessIdentityReady = identityReady;
 
-// Route/content modules use the same cloud-ready barrier. The main-menu shell remains independent
-// and usable even if a secondary encounter/UX module throws during evaluation.
-const routeReady = cloudReady
-  .then(() => import('./battle-route.mjs'))
+// Route/content modules wait for the ad gate registration. Once Starvation exists, monetization
+// replaces only the public starvation entry point with the optional rewarded-rescue gate.
+const routeReady = Promise.all([cloudReady, monetizationReady])
+  .then(async ([, monetization]) => {
+    const route = await import('./battle-route.mjs');
+    monetization?.bindStarvationRescue?.();
+    monetization?.reconcileCompletedRewards?.();
+    return route;
+  })
   .catch((error) => {
     console.error('[RPChess] Route bootstrap failed', error);
     return null;
