@@ -4,13 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: VK Hosting environment
-        required: true
+        description: VK Hosting environment (dev only)
+        required: false
         default: dev
-        type: choice
-        options:
-          - dev
-          - production
 
 permissions:
   contents: read
@@ -21,12 +17,11 @@ concurrency:
 
 jobs:
   deploy-vk:
-    if: inputs.environment == 'dev'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
       MINI_APPS_ACCESS_TOKEN: ${{ secrets.MINI_APPS_ACCESS_TOKEN }}
-      MINI_APPS_ENVIRONMENT: ${{ inputs.environment }}
+      MINI_APPS_ENVIRONMENT: dev
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
