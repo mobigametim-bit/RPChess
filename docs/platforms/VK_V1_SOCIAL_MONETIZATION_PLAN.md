@@ -289,28 +289,28 @@ Flow:
 
 ## Battle
 
-- [ ] Normal reward is granted immediately.
-- [ ] Aftermath offers `×2 золота за просмотр рекламы / Double gold by watching an ad`.
-- [ ] Successful rewarded adds exactly one extra copy of that encounter's original gold reward.
-- [ ] Close/error/unavailable never removes the normal reward.
-- [ ] One claim per encounter.
+- [x] Normal reward is granted immediately.
+- [x] Aftermath offers `×2 золота за просмотр рекламы / Double gold by watching an ad`.
+- [x] Successful rewarded adds exactly one extra copy of that encounter's original gold reward.
+- [x] Close/error/unavailable never removes the normal reward.
+- [x] One claim per encounter.
 
 ## Skirmish
 
-- [ ] Same normal-reward-first contract.
-- [ ] Same one-extra-copy reward.
-- [ ] One claim per encounter.
+- [x] Same normal-reward-first contract.
+- [x] Same one-extra-copy reward.
+- [x] One claim per encounter.
 
 ## Idempotency
 
 Receipt contains at least:
 
-- [ ] runId;
-- [ ] encounter type;
-- [ ] encounter sequence/id;
-- [ ] reward amount.
+- [x] runId;
+- [x] encounter type;
+- [x] encounter sequence/id;
+- [x] reward amount.
 
-- [ ] Reload cannot claim again.
+- [x] Reload cannot claim again.
 - [ ] Cross-device cloud resume cannot claim again.
 
 ---
@@ -559,8 +559,8 @@ Prefer extending existing owner/regression tests. Create a new permanent suite o
 - [ ] Tutorial flags for **included onboarding screens only**.
 - [ ] Interstitial scheduler.
 - [ ] 60-second rewarded cooldown.
-- [ ] Reward receipt idempotency.
-- [ ] Double-gold mutation.
+- [x] Reward receipt idempotency.
+- [x] Double-gold mutation.
 - [ ] Starvation rescue mutation.
 - [ ] Share text RU with emoji/end reason.
 - [ ] Share text EN with emoji/end reason.
