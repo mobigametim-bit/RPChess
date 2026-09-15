@@ -89,7 +89,7 @@
   width:100%;
   min-height:64px;
   display:grid;
-  grid-template-columns:52px minmax(0,1fr);
+  grid-template-columns:52px minmax(0,1fr) auto;
   gap:12px;
   align-items:center;
   margin:0;
