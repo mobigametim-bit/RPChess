@@ -309,6 +309,17 @@ let syncTimer = null;
 let syncInFlight = null;
 let autosyncInstalled = false;
 
+function emitCloudEvent(name, detail) {
+  if (typeof globalThis.dispatchEvent !== 'function' || typeof CustomEvent === 'undefined') return;
+  globalThis.dispatchEvent(new CustomEvent(name, { detail }));
+}
+
+function beginConflict(local, cloud, manifest, reason = 'diverged') {
+  conflictState = { local, cloud, manifest, reason };
+  emitCloudEvent('rpchess:cloud-conflict', { local, cloud, reason });
+  return conflictState;
+}
+
 async function syncCloudNow() {
   if (!platform.storage.cloud.available || conflictState) return false;
   if (syncInFlight) return syncInFlight;
@@ -316,8 +327,28 @@ async function syncCloudNow() {
   if (!envelope.hasProgress || envelope.fingerprint === lastUploadedFingerprint) return true;
   syncInFlight = (async () => {
     try {
-      const manifest = await readCloudManifest();
-      const ok = await writeCloudEnvelope(envelope, manifest);
+      const remoteState = await readCloudEnvelope();
+      if (remoteState.error) {
+        console.warn(`[RPChess] cloud save sync paused on invalid remote state: ${remoteState.error}`);
+        return false;
+      }
+      const remote = remoteState.envelope;
+      if (remote?.hasProgress) {
+        if (lastUploadedFingerprint && remote.fingerprint !== lastUploadedFingerprint) {
+          beginConflict(envelope, remote, remoteState.manifest, 'concurrent-device-change');
+          return false;
+        }
+        if (!lastUploadedFingerprint) {
+          const decision = compareEnvelopes(envelope, remote);
+          if (decision === 'same') {
+            lastUploadedFingerprint = envelope.fingerprint;
+            return true;
+          }
+          beginConflict(envelope, remote, remoteState.manifest, 'unknown-remote-baseline');
+          return false;
+        }
+      }
+      const ok = await writeCloudEnvelope(envelope, remoteState.manifest);
       if (ok) lastUploadedFingerprint = envelope.fingerprint;
       return ok;
     } catch (error) {
@@ -378,9 +409,8 @@ async function bootstrapCloudSave() {
   }
   const decision = compareEnvelopes(local, cloud);
   if (decision === 'conflict') {
-    conflictState = { local, cloud, manifest:cloudState.manifest };
-    globalThis.dispatchEvent?.(new CustomEvent('rpchess:cloud-conflict', { detail:{ local, cloud } }));
-    bootstrapResult = Object.freeze({ status:'conflict', conflict:conflictState });
+    const conflict = beginConflict(local, cloud, cloudState.manifest, 'bootstrap-divergence');
+    bootstrapResult = Object.freeze({ status:'conflict', conflict });
     return bootstrapResult;
   }
   if (decision === 'cloud' && cloud) {
@@ -397,22 +427,38 @@ async function bootstrapCloudSave() {
   return bootstrapResult;
 }
 
+function authoritativeEnvelope(chosen, other) {
+  const revision = Math.max(Number(chosen?.revision) || 0, Number(other?.revision) || 0) + 1;
+  const updatedAt = nowMs();
+  const payload = chosen.payload;
+  return {
+    schemaVersion:CLOUD_SAVE_SCHEMA_VERSION,
+    revision,
+    updatedAt,
+    fingerprint:payloadFingerprint(payload),
+    payload,
+    hasProgress:payloadHasProgress(payload)
+  };
+}
+
 async function resolveCloudConflict(choice) {
   if (!conflictState || !['local','cloud'].includes(choice)) return false;
   const current = conflictState;
+  const chosen = choice === 'cloud' ? current.cloud : current.local;
+  const other = choice === 'cloud' ? current.local : current.cloud;
+  if (!chosen?.payload) return false;
+  const authoritative = authoritativeEnvelope(chosen, other);
   let ok = false;
-  if (choice === 'cloud' && current.cloud) {
-    ok = restoreLocalEnvelope(current.cloud);
-    if (ok) lastUploadedFingerprint = current.cloud.fingerprint;
-  } else if (choice === 'local' && current.local) {
-    ok = await writeCloudEnvelope(current.local, current.manifest);
-    if (ok) lastUploadedFingerprint = current.local.fingerprint;
-  }
+  try { ok = await writeCloudEnvelope(authoritative, current.manifest); }
+  catch { ok = false; }
   if (!ok) return false;
+  restoreLocalEnvelope(authoritative);
+  lastUploadedFingerprint = authoritative.fingerprint;
   conflictState = null;
   bootstrapResult = Object.freeze({ status:`resolved-${choice}`, conflict:null });
   installCloudAutosync();
-  globalThis.dispatchEvent?.(new CustomEvent('rpchess:cloud-conflict-resolved', { detail:{ choice } }));
+  emitCloudEvent('rpchess:cloud-conflict-resolved', { choice, revision:authoritative.revision });
+  emitCloudEvent('rpchess:run-updated', { source:'cloud-conflict-resolved' });
   return true;
 }
 
@@ -445,6 +491,7 @@ export {
   writeCloudEnvelope,
   restoreLocalEnvelope,
   compareEnvelopes,
+  authoritativeEnvelope,
   bootstrapCloudSave,
   resolveCloudConflict,
   scheduleCloudSync,
