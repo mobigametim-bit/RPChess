@@ -67,7 +67,12 @@ function server(){
 }
 function run(test){
   return new Promise((resolve,reject)=>{
-    const child=spawn(process.execPath,[path.join(ROOT,'tests',test)],{cwd:ROOT,stdio:'inherit',env:{...process.env,RPCHESS_ACCEPTANCE_URL:BASE}});
+    const env={...process.env,RPCHESS_ACCEPTANCE_URL:BASE};
+    if(test==='responsive-viewport-browser.cjs'){
+      const preload=`--require=${path.join(ROOT,'tests','onboarding-disabled-preload.cjs')}`;
+      env.NODE_OPTIONS=[process.env.NODE_OPTIONS,preload].filter(Boolean).join(' ');
+    }
+    const child=spawn(process.execPath,[path.join(ROOT,'tests',test)],{cwd:ROOT,stdio:'inherit',env});
     child.on('error',reject);
     child.on('exit',(code,signal)=>code===0?resolve():reject(new Error(`${test} failed with ${signal||`exit ${code}`}`)));
   });
