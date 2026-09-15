@@ -111,10 +111,15 @@ function statusFromRecord(record) {
   return { over:true, type:record?.result || 'unknown', winner:record?.winner || null };
 }
 
+function combatRewardAmount(record) {
+  return Math.max(0, Math.floor(Number(record?.goldReward) || 0))
+    + Math.max(0, Math.floor(Number(record?.adBonusGold) || 0));
+}
+
 function renderLastCombatRewards(run = readRun()) {
   if (!run) return;
-  renderCombatReward(document.querySelector('[data-skirmish-aftermath]'), run.lastSkirmish?.goldReward || 0);
-  renderCombatReward(document.querySelector('[data-battle-aftermath]'), run.lastBattle?.goldReward || 0);
+  renderCombatReward(document.querySelector('[data-skirmish-aftermath]'), combatRewardAmount(run.lastSkirmish));
+  renderCombatReward(document.querySelector('[data-battle-aftermath]'), combatRewardAmount(run.lastBattle));
 }
 
 function scheduleCombatRewardRender() {
