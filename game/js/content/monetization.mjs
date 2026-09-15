@@ -226,9 +226,9 @@ function ensureStyles() {
   const style = document.createElement('style');
   style.dataset.rpchessMonetizationStyle = '';
   style.textContent = `
-.rpchess-ad-offer{display:grid;gap:6px;margin:8px 0}
-.rpchess-ad-offer__button{width:100%;min-height:40px}
-.rpchess-ad-offer__note{min-height:1em;text-align:center;font:600 12px/1.2 system-ui,sans-serif;color:rgba(245,228,181,.86)}
+.resource-combat-reward .rpchess-ad-offer{grid-column:3;grid-row:1;justify-self:end;display:grid;gap:0;margin:0}
+.resource-combat-reward .rpchess-ad-offer__button{min-width:72px;min-height:42px;padding:6px 14px;font-size:22px;line-height:1}
+.resource-combat-reward .rpchess-ad-offer__note{display:none}
 .rpchess-rescue[hidden]{display:none!important}
 .rpchess-rescue{position:fixed;inset:0;z-index:2147483100;display:grid;place-items:center;padding:clamp(12px,2.5vw,28px);box-sizing:border-box;background:rgba(2,6,12,.82);backdrop-filter:blur(3px)}
 .rpchess-rescue__card{width:min(560px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:hidden;box-sizing:border-box;padding:22px 24px;border:1px solid rgba(210,180,112,.72);border-radius:14px;background:rgba(7,13,22,.98);box-shadow:0 22px 72px rgba(0,0,0,.55);display:grid;gap:12px}
@@ -276,7 +276,7 @@ async function claimDoubleGold(button, note, meta) {
   const existing = receipt(receiptId);
   if (existing?.granted) return;
   button.disabled = true;
-  button.textContent = copy().doubleGoldBusy;
+  button.textContent = '…';
   updateReceipt(receiptId, { type:'double-gold', status:'pending', granted:false, runId, kind, count, amount });
   let result;
   try { result = await platform.ads.show('reward'); }
@@ -288,14 +288,14 @@ async function claimDoubleGold(button, note, meta) {
   if (result.status === 'completed') {
     updateReceipt(receiptId, { type:'double-gold', status:'completed', granted:false, runId, kind, count, amount });
     if (grantDoubleGold(meta)) {
-      button.textContent = copy().doubleGoldDone;
+      button.textContent = '✓×2';
       note.textContent = `+${amount}`;
       return;
     }
   }
   updateReceipt(receiptId, { type:'double-gold', status:result.status, granted:false, runId, kind, count, amount });
   note.textContent = copy().doubleGoldUnavailable;
-  button.textContent = copy().doubleGold;
+  button.textContent = '×2';
   button.disabled = false;
 }
 
@@ -309,10 +309,9 @@ function renderDoubleGoldOffer(kind, count) {
   const receiptId = doubleGoldReceiptId(run.id, kind, count, amount);
   if (receipt(receiptId)?.granted || hasRunClaim(run, receiptId)) return;
   const screen = document.querySelector(kind === 'battle' ? '[data-battle-aftermath]' : '[data-skirmish-aftermath]');
-  const panel = screen?.querySelector(kind === 'battle' ? '.battle-aftermath-panel' : '.skirmish-aftermath-panel');
-  const continueButton = screen?.querySelector(kind === 'battle' ? '[data-battle-continue]' : '[data-aftermath-continue]');
-  if (!panel || !continueButton || screen.hidden) return;
-  panel.querySelector('[data-ad-double-gold]')?.remove();
+  const reward = screen?.querySelector('[data-resource-combat-reward]');
+  if (!reward || screen.hidden) return;
+  reward.querySelector('[data-ad-double-gold]')?.remove();
   const root = document.createElement('div');
   root.className = 'rpchess-ad-offer';
   root.dataset.adDoubleGold = '';
@@ -320,12 +319,14 @@ function renderDoubleGoldOffer(kind, count) {
   button.type = 'button';
   button.className = 'reboot-button reboot-button--primary rpchess-ad-offer__button';
   button.dataset.adDoubleGoldButton = '';
-  button.textContent = copy().doubleGold;
+  button.textContent = '×2';
+  button.title = copy().doubleGold;
+  button.setAttribute('aria-label', copy().doubleGold);
   const note = document.createElement('div');
   note.className = 'rpchess-ad-offer__note';
   note.dataset.adDoubleGoldNote = '';
   root.append(button, note);
-  panel.insertBefore(root, continueButton);
+  reward.append(root);
   button.addEventListener('click', () => void claimDoubleGold(button, note, { receiptId, kind, count, amount, runId:run.id }));
 }
 
@@ -554,7 +555,11 @@ function installMonetization() {
   globalThis.addEventListener?.('rpchess:combat-completed', onCombatCompleted);
   unsubscribeLanguage = subscribe(() => {
     renderRescueCopy();
-    for (const button of document.querySelectorAll('[data-ad-double-gold-button]')) if (!button.disabled) button.textContent = copy().doubleGold;
+    for (const button of document.querySelectorAll('[data-ad-double-gold-button]')) {
+      button.title = copy().doubleGold;
+      button.setAttribute('aria-label', copy().doubleGold);
+      if (!button.disabled) button.textContent = '×2';
+    }
   });
   reconcileCompletedRewards();
   globalThis.RPChessMonetization = Object.freeze({
