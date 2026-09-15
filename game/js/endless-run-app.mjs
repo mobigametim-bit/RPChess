@@ -2,6 +2,7 @@ import { readRun } from './run-persistence.mjs';
 import { readPlayerRating } from './player-rating.mjs';
 import { summarizeRun } from './endless-run-core.mjs';
 import { currentLanguage, subscribe, translateLegacy } from './i18n.mjs';
+import { shareRunResult } from './content/share-result.mjs';
 import { runtimeT } from '../localization/runtime-ui.mjs';
 
 let screen = null;
@@ -38,8 +39,10 @@ function renderStaticCopy() {
     if (label) label.textContent = t(`endless.metric.${metric.dataset.endlessRunMetric}`);
   }
   const newButton = screen.querySelector('[data-endless-run-new]');
+  const shareButton = screen.querySelector('[data-endless-run-share]');
   const menuButton = screen.querySelector('[data-endless-run-menu]');
   if (newButton) newButton.textContent = t('endless.newGame');
+  if (shareButton) shareButton.textContent = currentLanguage() === 'en' ? 'Share result' : 'Поделиться результатом';
   if (menuButton) menuButton.textContent = t('endless.menu');
 }
 
@@ -72,6 +75,7 @@ function ensureScreen() {
         </div>
         <div class="endless-run-actions">
           <button class="reboot-button reboot-button--primary" type="button" data-endless-run-new></button>
+          <button class="reboot-button reboot-button--primary" type="button" data-endless-run-share></button>
           <button class="reboot-button reboot-button--primary" type="button" data-endless-run-menu></button>
         </div>
       </section>
@@ -79,6 +83,7 @@ function ensureScreen() {
   app.append(screen);
   renderStaticCopy();
   screen.querySelector('[data-endless-run-new]')?.addEventListener('click', startNewRun);
+  screen.querySelector('[data-endless-run-share]')?.addEventListener('click', () => void shareResult());
   screen.querySelector('[data-endless-run-menu]')?.addEventListener('click', returnToMenu);
   return screen;
 }
@@ -139,6 +144,18 @@ function returnToMenu() {
   if (menu) menu.hidden = false;
   globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated', { detail: { source: 'endless-run-summary' } }));
   window.scrollTo({ top: 0, behavior: 'auto' });
+}
+
+async function shareResult() {
+  if (!activeRun) return;
+  audio()?.click?.();
+  const button = screen?.querySelector('[data-endless-run-share]');
+  if (button) button.disabled = true;
+  try {
+    await shareRunResult(activeRun, { power: readPlayerRating().power });
+  } finally {
+    if (button) button.disabled = false;
+  }
 }
 
 ensureScreen();
