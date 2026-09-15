@@ -1,6 +1,6 @@
 # RPChess — VK Games moderation checklist
 
-Updated: 2026-09-13
+Updated: 2026-09-15
 
 VK app: `54754579`
 
@@ -58,30 +58,40 @@ Before submission, freeze an exact `main` SHA and verify that exact build:
 
 ## License/provenance gate
 
-See `VK_LICENSE_AUDIT_2026-09-13.md`.
+See `VK_LICENSE_AUDIT_2026-09-13.md`, `../../THIRD_PARTY_NOTICES.md`, `../../CREDITS.md` and `../ASSET_PROVENANCE.md`.
 
 - [x] Stockfish notices/source handling documented.
 - [x] Brahms font OFL/attribution documented.
 - [x] Lichess puzzle source/license documented.
 - [x] Remove the four Suno Free background-music tracks from the release candidate; no background music currently ships.
-- [ ] Confirm provenance/commercial-use basis for `game/SFX/win_fanfare.mp3`.
-- [ ] Record a concise provenance statement for original/generated production visual assets.
+- [x] `game/SFX/win_fanfare.mp3` identified as `_MC5_` / `Short Brass Fanfare 1.wav` / Freesound 524849 / CC BY 4.0; attribution recorded.
+- [x] Record a concise provenance statement for original/generated production visual assets.
 - [ ] Re-check the exact candidate for newly added third-party material.
 
-Current repository-side audio blocker: `game/SFX/win_fanfare.mp3` provenance/commercial-use basis is still unresolved. Background music is no longer a blocker because none ships in the current candidate.
+No known license/provenance blocker remains from the current audited asset set. Re-check the exact release candidate before submission.
 
-## Decisions still required from the project owner
+## Decisions confirmed for the planned VK v1
 
-- [ ] Cloud save in v1 or local-only save for first release.
-- [ ] Monetization model for v1: rewarded/interstitial/purchases/none according to the current VK dashboard and product goals.
-- [ ] Onboarding scope: guided tutorial, concise help/rules overlay, or current learn-by-play flow.
-- [ ] Release scope: Web-only or Web + Mobile after real client testing.
+- [x] Cloud save between devices is desired for VK users; local storage remains a standalone/fallback backend.
+- [x] Main leaderboard metric should be the existing player `Power` rating.
+- [x] Run result sharing should include achievements/statistics and the King's death reason.
+- [x] Rewarded ad: double the gold reward from the just-completed Battle/Skirmish, once per encounter.
+- [x] Rewarded ad: when a selected route cannot be paid because Supplies are insufficient and starvation is about to begin, offer +5 Supplies; successful reward also pays the current route from those Supplies.
+- [x] Interstitial ad cadence: every 5th committed Travel-card choice, with rewarded ads taking priority and a 60-second no-interstitial cooldown after rewarded.
+- [x] First-run onboarding: one dismissible contextual explanation per screen/type after the first New Game; no global “skip tutorial” control and no persistent `?` help button in v1.
+- [x] Purchases deferred.
+- [x] Release target for first moderation: VK Web. Mobile client support/testing is deferred to a later release rather than declared for v1.
+- [x] RPChess is already present in the VK payout cabinet; payout/advertising configuration still needs final dashboard verification before live ads.
+
+## Decisions / implementation details still to finalize
+
+- [ ] Select the no-paid-service architecture for securely submitting `Power` to the native VK leaderboard. A service secret must not be shipped in GitHub Pages; prefer a free-tier serverless endpoint if VK provides no client-safe score-write path.
+- [ ] Define compact cloud-save schema/version, conflict policy and the exact persistent domains to sync (active run, Power, Chronicle/meta progression, tutorial flags; device-local settings stay local).
+- [ ] Confirm the exact VK ad methods/availability checks and dashboard settings before enabling production ads.
 - [ ] Final public title and age rating.
 - [ ] Public support contact.
 - [ ] Facts needed for Privacy Policy / Terms if required by the current form.
 - [ ] Final card copy and marketing assets approval.
-
-No cloud-save, ad or purchase feature should be added merely because an old project checklist mentioned it. Implement only the release scope we choose and that the current VK dashboard actually requires/supports.
 
 ## Submission gate
 
@@ -92,14 +102,12 @@ No cloud-save, ad or purchase feature should be added merely because an old proj
 - [ ] manual VK smoke green;
 - [ ] provenance blockers resolved;
 - [ ] required VK card/form fields complete;
-- [ ] release scope and monetization choice confirmed;
+- [ ] cloud save / sharing / leaderboard / ad implementation for chosen v1 scope complete and smoke-tested;
 - [ ] submit the candidate from VK dashboard.
 
-## Safe to defer unless the current VK dashboard explicitly requires them
+## Safe to defer for v1
 
-- cross-device cloud save;
-- leaderboards;
-- invites/share;
+- Mobile declaration/release;
 - purchases;
-- rewarded/interstitial ads;
-- deeper analytics.
+- deeper analytics;
+- share-card image generation (text/result sharing is sufficient for v1).
