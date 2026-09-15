@@ -15,6 +15,8 @@ class MemoryStorage {
   globalThis.location = { search:'' };
   const root = path.resolve(__dirname, '..');
   const source = fs.readFileSync(path.join(root, 'game/js/content/monetization.mjs'), 'utf8');
+  const skirmishCss = fs.readFileSync(path.join(root, 'game/css/player-rating.css'), 'utf8');
+  const battleCss = fs.readFileSync(path.join(root, 'game/css/playtest-fixes.css'), 'utf8');
   const starvationSource = fs.readFileSync(path.join(root, 'game/js/starvation-core.mjs'), 'utf8');
   const foundation = fs.readFileSync(path.join(root, 'game/js/reboot-foundation.mjs'), 'utf8');
   const monetization = await import(`${pathToFileURL(path.join(root, 'game/js/content/monetization.mjs')).href}?test=${Date.now()}`);
@@ -58,6 +60,10 @@ class MemoryStorage {
     "status:'completed', granted:false",
     "status:'completed', granted:true"
   ]) assert(source.includes(token), `Monetization contract missing ${token}`);
+  assert(source.includes("reward.append(root)"), 'Double-gold offer must be placed inside the visible combat reward row');
+  assert(source.includes("button.textContent = '×2'"), 'Double-gold control must use the compact ×2 label');
+  assert(skirmishCss.includes('grid-template-columns:52px minmax(0,1fr) auto'), 'Skirmish reward row must reserve a right-side ×2 button slot');
+  assert(battleCss.includes('grid-template-columns:52px minmax(0,1fr) auto'), 'Battle reward row must reserve a right-side ×2 button slot');
 
   assert(!source.includes('VKWebAppShowNativeAds') && !source.includes('VKWebAppCheckNativeAds'), 'Gameplay monetization must not call VK Bridge directly');
   assert(starvationSource.includes('starvationVictimPreviousStatus: victim.status'), 'Starvation must preserve the victim status so rewarded rescue can restore it exactly');
