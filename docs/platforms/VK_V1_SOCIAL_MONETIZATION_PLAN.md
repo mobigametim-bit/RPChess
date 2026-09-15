@@ -329,29 +329,29 @@ Do **not** trigger merely because Supplies become zero after a successfully paid
 
 ## 8.2 Offer
 
-- [ ] Explain that Supplies are insufficient.
-- [ ] Offer `Получить 5 припасов / Get 5 Supplies` via rewarded ad.
-- [ ] Offer normal continuation without ad.
+- [x] Explain that Supplies are insufficient.
+- [x] Offer `Получить 5 припасов / Get 5 Supplies` via rewarded ad.
+- [x] Offer normal continuation without ad.
 
 ## 8.3 Successful rewarded
 
-- [ ] Grant +5 Supplies.
-- [ ] Immediately pay the current route cost from those Supplies.
-- [ ] Persist the result.
-- [ ] Do not start starvation for that transition.
-- [ ] Continue to the already selected encounter.
+- [x] Grant +5 Supplies.
+- [x] Immediately pay the current route cost from those Supplies.
+- [x] Persist the result.
+- [x] Do not start starvation for that transition.
+- [x] Continue to the already selected encounter.
 
 At current route cost 1: `0 → +5 → -1 → 4` remaining.
 
 ## 8.4 Decline/error
 
-- [ ] No extra punishment.
-- [ ] Continue into the existing starvation flow unchanged.
+- [x] No extra punishment.
+- [x] Continue into the existing starvation flow unchanged.
 
 ## 8.5 Idempotency
 
-- [ ] One rescue receipt per route selection.
-- [ ] Reload during/after ad cannot manufacture repeated Supplies.
+- [x] One rescue receipt per route selection.
+- [x] Reload during/after ad cannot manufacture repeated Supplies.
 
 ---
 
@@ -359,34 +359,34 @@ At current route cost 1: `0 → +5 → -1 → 4` remaining.
 
 ## 9.1 Entry point
 
-- [ ] Add `Поделиться результатом / Share result` to the final run summary.
+- [x] Add `Поделиться результатом / Share result` to the final run summary.
 
 ## 9.2 Shared content — use emoji actively
 
 The result should feel like a compact social achievement, not a dry telemetry dump. Include relevant emoji in both RU and EN copy, for example:
 
-- [ ] 👑 King / player identity;
-- [ ] 🗓️ weeks / journey length;
-- [ ] ⚔️ Battle wins;
-- [ ] 🛡️ Skirmish wins;
-- [ ] 🧩 puzzles solved;
-- [ ] 📜 events resolved;
-- [ ] 👥 heroes recruited;
-- [ ] 🔥 final Power;
-- [ ] ☠️ **King death / end reason**;
-- [ ] 🎮 link/deep link to RPChess in VK.
+- [x] 👑 King / player identity;
+- [x] 🗓️ weeks / journey length;
+- [x] ⚔️ Battle wins;
+- [x] 🛡️ Skirmish wins;
+- [x] 🧩 puzzles solved;
+- [x] 📜 events resolved;
+- [x] 👥 heroes recruited;
+- [x] 🔥 final Power;
+- [x] ☠️ **King death / end reason**;
+- [x] 🎮 link/deep link to RPChess in VK.
 
 Exact emoji may be adjusted for readability, but the v1 share text should use them actively and remain compact.
 
 ## 9.3 Localization/platform behavior
 
-- [ ] RU share copy.
-- [ ] EN share copy.
-- [ ] Use VK share capability when available.
-- [ ] Fall back to another supported VK social flow when needed.
-- [ ] Final fallback: Copy Result / Copy Link.
-- [ ] Share cancel/failure never breaks the final screen.
-- [ ] v1 is text + link; generated image cards are deferred.
+- [x] RU share copy.
+- [x] EN share copy.
+- [x] Use VK share capability when available.
+- [x] Fall back to another supported VK social flow when needed.
+- [x] Final fallback: Copy Result / Copy Link.
+- [x] Share cancel/failure never breaks the final screen.
+- [x] v1 is text + link; generated image cards are deferred.
 
 ---
 
