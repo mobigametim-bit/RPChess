@@ -284,7 +284,7 @@ const social = Object.freeze({
     }
   },
   async wallPost({ message = '', attachments = '' } = {}) {
-    if (!await supportsVKMethod('VKWebAppShowWallPostBox')) return Object.freeze({ status:'unavailable' });
+    if (!isVKLaunch()) return Object.freeze({ status:'unavailable' });
     try {
       const response = await sendVKRequest('VKWebAppShowWallPostBox', { message:String(message), attachments:String(attachments) });
       return Object.freeze({ status:'completed', postId:response?.post_id ?? null });
