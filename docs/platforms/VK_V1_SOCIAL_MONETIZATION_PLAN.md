@@ -300,6 +300,7 @@ Flow:
 - [x] Same normal-reward-first contract.
 - [x] Same one-extra-copy reward.
 - [x] One claim per encounter.
+- [x] `[DEV]` Reward-row re-renders restore the canonical ×2 offer in both Skirmish and Battle aftermath screens.
 
 ## Idempotency
 
