@@ -40,6 +40,7 @@ function resolveStarvation(run, choice = run?.activeTravelChoice) {
   const nextChoice = {
     ...choice,
     starvationVictimId: victim.id,
+    starvationVictimPreviousStatus: victim.status,
     starvationKingDied: kingDied,
     starvationAcknowledged: false
   };

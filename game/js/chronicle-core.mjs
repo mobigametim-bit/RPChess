@@ -66,6 +66,9 @@ function writeChronicle(chronicle, storage = null) {
     .slice(-CHRONICLE_HISTORY_LIMIT);
   const next = { schemaVersion: CHRONICLE_SCHEMA_VERSION, history };
   if (target) target.setItem(CHRONICLE_STORAGE_KEY, JSON.stringify(next));
+  if (storage == null && typeof globalThis !== 'undefined' && typeof globalThis.dispatchEvent === 'function' && typeof CustomEvent !== 'undefined') {
+    globalThis.dispatchEvent(new CustomEvent('rpchess:chronicle-updated', { detail:{ historySize:history.length } }));
+  }
   return next;
 }
 

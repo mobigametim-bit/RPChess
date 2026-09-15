@@ -11,6 +11,51 @@ import {
 
 platform.init();
 
+// Reconcile VK cloud state before run-owned modules read local persistence. Standalone Web resolves
+// immediately; VK failures are non-fatal and leave the local cache authoritative for this session.
+// A genuine local/cloud run conflict blocks run bootstrap until the player explicitly chooses one.
+const cloudReady = import('./cloud-save.mjs')
+  .then(async (module) => {
+    const result = await module.bootstrapCloudSave();
+    if (result?.status !== 'conflict' || !result.conflict) return result;
+    const ui = await import('./cloud-save-ui.mjs');
+    const choice = await ui.openCloudConflict(result.conflict, module.resolveCloudConflict);
+    return choice ? { status:`resolved-${choice}`, conflict:null } : result;
+  })
+  .catch((error) => {
+    console.error('[RPChess] Cloud Save bootstrap failed', error);
+    return { status:'error', conflict:null };
+  });
+globalThis.RPChessCloudReady = cloudReady;
+
+// Onboarding owns only the ten approved first-visit hints. It loads after Cloud Save so synced
+// tutorial flags are authoritative before any hint can be displayed.
+const onboardingReady = cloudReady
+  .then(() => import('./content/onboarding.mjs'))
+  .then((module) => {
+    module.installOnboarding();
+    return module;
+  })
+  .catch((error) => {
+    console.error('[RPChess] Onboarding bootstrap failed', error);
+    return null;
+  });
+globalThis.RPChessOnboardingReady = onboardingReady;
+
+// Monetization installs before route modules so the interstitial gate can intercept semantic Travel
+// transitions before scene owners. All VK ad calls stay behind platform.ads; standalone Web is a no-op.
+const monetizationReady = cloudReady
+  .then(() => import('./content/monetization.mjs'))
+  .then((module) => {
+    module.installMonetization();
+    return module;
+  })
+  .catch((error) => {
+    console.error('[RPChess] Monetization bootstrap failed', error);
+    return null;
+  });
+globalThis.RPChessMonetizationReady = monetizationReady;
+
 // Travel Choice is part of the critical run shell. Its stylesheet must be available even if
 // the wider route/content bootstrap fails and Roster has to use the direct Travel fallback.
 if (!document.querySelector('[data-travel-choice-css]')) {
@@ -28,19 +73,29 @@ if (!document.querySelector('[data-player-rating-css]')) {
   document.head.append(link);
 }
 
-// Player Identity / Chronicle loads asynchronously so the main-menu shell remains independent.
-const identityReady = import('./player-identity-chronicle.mjs').catch((error) => {
-  console.error('[RPChess] Player Identity / Chronicle bootstrap failed', error);
-  return null;
-});
+// Player Identity / Chronicle loads after the cloud reconciliation boundary so Continue/New Game
+// observes the selected local/cloud state instead of racing VK Storage on startup.
+const identityReady = cloudReady
+  .then(() => import('./player-identity-chronicle.mjs'))
+  .catch((error) => {
+    console.error('[RPChess] Player Identity / Chronicle bootstrap failed', error);
+    return null;
+  });
 globalThis.RPChessIdentityReady = identityReady;
 
-// Route/content modules are intentionally bootstrapped asynchronously. The main-menu controls
-// must remain usable even if a secondary encounter/UX module throws during evaluation.
-const routeReady = import('./battle-route.mjs').catch((error) => {
-  console.error('[RPChess] Route bootstrap failed', error);
-  return null;
-});
+// Route/content modules wait for the ad gate registration. Once Starvation exists, monetization
+// replaces only the public starvation entry point with the optional rewarded-rescue gate.
+const routeReady = Promise.all([cloudReady, monetizationReady])
+  .then(async ([, monetization]) => {
+    const route = await import('./battle-route.mjs');
+    monetization?.bindStarvationRescue?.();
+    monetization?.reconcileCompletedRewards?.();
+    return route;
+  })
+  .catch((error) => {
+    console.error('[RPChess] Route bootstrap failed', error);
+    return null;
+  });
 globalThis.RPChessRouteReady = routeReady;
 
 const REBOOT_INIT_KEY = 'rpchess.reboot.v1.initialized';
@@ -139,8 +194,11 @@ document.addEventListener('keydown', activateAudio, { once: true, capture: true 
 
 document.querySelector('[data-new-game]')?.addEventListener('click', async () => {
   audio.click();
+  const onboarding = await onboardingReady;
+  onboarding?.activateOnboarding?.();
   const identity = await identityReady;
   identity?.openIdentityPrompt?.();
+  onboarding?.showHint?.('identity');
 });
 
 document.querySelector('[data-continue-run]')?.addEventListener('click', (event) => {

@@ -1,4 +1,6 @@
 const RUN_KEY = 'rpchess.reboot.v1.run';
+const TUTORIAL_KEY = 'rpchess.reboot.v1.tutorial';
+const TUTORIAL_HINTS = ['identity','roster','travel','skirmishPrep','skirmishChess','battlePrep','battleChess','event','settlement','puzzle'];
 
 async function installManualTravelFixtureNormalizer(page) {
   await page.evaluate((key) => {
@@ -49,8 +51,19 @@ async function waitForVisible(page, selector, label = selector, timeout = 10000)
   return locator;
 }
 
+async function markOnboardingComplete(page) {
+  await page.evaluate(({ key, hints }) => {
+    localStorage.setItem(key, JSON.stringify({
+      schemaVersion:1,
+      activated:true,
+      dismissed:Object.fromEntries(hints.map((hint) => [hint, true]))
+    }));
+  }, { key:TUTORIAL_KEY, hints:TUTORIAL_HINTS });
+}
+
 async function startNewRun(page, { playerName = 'Browser Tester' } = {}) {
   const menu = await waitForVisible(page, '[data-reboot-foundation]:not([hidden])', 'Main menu');
+  await markOnboardingComplete(page);
   const newGame = menu.locator('[data-new-game]');
   await newGame.waitFor({ state: 'visible' });
   await newGame.click();
@@ -63,4 +76,4 @@ async function startNewRun(page, { playerName = 'Browser Tester' } = {}) {
   await installManualTravelFixtureNormalizer(page);
 }
 
-module.exports = { startNewRun, waitForVisible };
+module.exports = { startNewRun, waitForVisible, markOnboardingComplete };
