@@ -1,6 +1,7 @@
 # RPChess — VK Games pre-moderation license/provenance audit
 
 **Audit date:** 2026-09-13  
+**Updated:** 2026-09-15  
 **Target:** the canonical production build served by GitHub Pages and embedded by VK Games  
 **Scope:** files and notices present in the repository/build. This document records evidence; it does not invent missing provenance and is not legal advice.
 
@@ -13,8 +14,8 @@
 | Lichess puzzle catalog | PASS | `THIRD_PARTY_NOTICES.md` records Lichess Open Database Puzzles under CC0. |
 | RPChess code | PASS for repository notice | Repository notice states RPChess is MIT except identified third-party material. |
 | Background music | PASS for current candidate | The four Suno Free tracks were removed. The current release intentionally ships with no background music; future tracks must be commercially cleared before being added to `game/music/`. |
-| SFX: `win_fanfare.mp3` | OPEN — owner confirmation needed | Runtime use is clear, but no SFX-specific license/provenance record was found in the repository. |
-| Authored/generated visual assets | REVIEWED INVENTORY, provenance record incomplete | The repository contains manifests/audits for imported production art, but those inventory records by themselves are not a license/rightsholder statement. Keep/source a concise owner provenance record before submission if VK requests proof of rights. |
+| SFX: `win_fanfare.mp3` | PASS | Source confirmed as `_MC5_`, `Short Brass Fanfare 1.wav`, Freesound sound 524849, licensed CC BY 4.0; attribution is now recorded in `THIRD_PARTY_NOTICES.md` and `CREDITS.md`. |
+| Authored/generated visual assets | PASS for project provenance record | Project owner confirmed production graphics were generated specifically for RPChess with ChatGPT/OpenAI image-generation tools; centralized provenance is recorded in `docs/ASSET_PROVENANCE.md`. |
 
 ## 1. Stockfish 18 — PASS
 
@@ -52,28 +53,30 @@ The production build copies the font plus its sidecar license/copyright files.
 
 **Pre-moderation action:** keep the notice in the release repository/candidate documentation.
 
-## 4. Audio — PARTIAL PASS
+## 4. Audio — PASS for current candidate provenance
 
 The four previously shipped `echoes_iron_throne_01..04.mp3` files were generated under a Suno Free plan and have been removed from the release source. The current candidate intentionally contains no background music.
 
-The music runtime no longer hard-codes filenames. `npm run build` scans supported files under `game/music/` and generates the production catalog automatically. This means future commercially cleared tracks can be added without editing gameplay/audio code.
+The music runtime no longer hard-codes filenames. `npm run build` scans supported files under `game/music/` and generates the production catalog automatically. Future commercially cleared tracks can therefore be added without editing gameplay/audio code.
 
-The production tree still contains game SFX, including `game/SFX/win_fanfare.mp3`. Its provenance/commercial-use basis remains unresolved in repository evidence.
+The remaining production fanfare is `game/SFX/win_fanfare.mp3`. The project owner confirmed its source as:
 
-**Pre-moderation action:** background music is cleared by absence for the current candidate. Before adding future music, record source/tool/author/date and the commercial-use basis. Separately resolve or replace `win_fanfare.mp3` before the final moderation candidate is frozen.
+- original work: `_MC5_` — `Short Brass Fanfare 1.wav`;
+- Freesound sound ID: 524849;
+- source URL: `https://freesound.org/people/_MC5_/sounds/524849/`;
+- license: Creative Commons Attribution 4.0 International (CC BY 4.0).
 
-## 5. Visual assets — inventory exists; provenance should be centralized
+The Freesound source page identifies the sound and license. Required attribution is recorded in `THIRD_PARTY_NOTICES.md` and `CREDITS.md`.
 
-The repository contains asset manifests/audits for production visual content (for example event-asset registers and imported production paths). These are useful for proving which files are intentional production assets, but an import manifest alone does not establish copyright ownership or commercial-use permission.
+**Pre-moderation action:** none for current audio beyond exact-candidate verification. Before adding future music/SFX, record source/tool/author/date and commercial-use/license basis.
 
-For first moderation, a practical repository-side record is enough unless VK asks for additional documents:
+## 5. Visual assets — PASS for centralized provenance record
 
-- distinguish RPChess-original / commissioned / AI-generated / third-party assets;
-- record any third-party license or source;
-- keep evidence outside Git as needed for contracts/private receipts;
-- do not state that an asset is cleared unless its origin is known.
+The project owner confirmed that production visual assets were generated specifically for RPChess with ChatGPT/OpenAI image-generation tools from project-specific prompts and iterative art direction.
 
-**Current audit status:** no specific conflicting third-party visual license was found during this pass, but this is not equivalent to a complete chain-of-title review for every PNG/JPG.
+A centralized provenance record now exists at `docs/ASSET_PROVENANCE.md`. It distinguishes project-specific generated production art from separately licensed third-party components.
+
+This does not remove the need to document any future externally sourced asset individually. If a commercial stock pack, commissioned asset with contract terms, third-party illustration, font, audio pack or dataset is added later, its source/license must be recorded before the next release candidate.
 
 ## 6. Candidate verification checklist
 
@@ -85,10 +88,10 @@ Before fixing the SHA submitted to VK:
 - [ ] confirm the Brahms font license/copyright sidecars exist in `dist/fonts/`;
 - [ ] confirm `THIRD_PARTY_NOTICES.md` still matches shipped third-party components;
 - [x] confirm current candidate ships no background music;
-- [ ] resolve `win_fanfare.mp3` provenance;
-- [ ] record owner confirmation for original/generated production art;
+- [x] resolve `win_fanfare.mp3` provenance and attribution;
+- [x] record owner confirmation for original/generated production art;
 - [ ] re-run this audit if the candidate adds a new font, dataset, engine, music/SFX pack, or third-party visual asset.
 
 ## Current blockers from this audit
 
-The repository has clear license handling for **Stockfish, the Brahms font and Lichess puzzles**. The previous Suno Free background music has been removed, so it is no longer a current-candidate blocker. The concrete unresolved audio provenance item remaining in this pass is **`win_fanfare.mp3`**. Visual assets still need a centralized provenance statement, but no specific contradictory license was found in the current repository audit.
+No known license/provenance blocker remains from the items reviewed in this pass. Stockfish, the Brahms font, Lichess puzzles and the Freesound victory fanfare have recorded license/attribution handling; current background music is absent; project-specific generated visual provenance is centralized. The final moderation candidate still needs an exact-build re-check for newly added material.
