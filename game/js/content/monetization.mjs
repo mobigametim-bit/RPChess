@@ -300,18 +300,18 @@ async function claimDoubleGold(button, note, meta) {
 }
 
 function renderDoubleGoldOffer(kind, count) {
-  if (!featureEnabled('rewarded')) return;
+  if (!featureEnabled('rewarded')) return false;
   const run = readRun();
-  if (!run || run.ended) return;
+  if (!run || run.ended) return false;
   const key = kind === 'battle' ? 'lastBattle' : 'lastSkirmish';
   const amount = Math.max(0, Math.floor(Number(run[key]?.goldReward) || 0));
-  if (!amount || Number(run[`${kind}Count`]) !== Number(count)) return;
+  if (!amount || Number(run[`${kind}Count`]) !== Number(count)) return false;
   const receiptId = doubleGoldReceiptId(run.id, kind, count, amount);
-  if (receipt(receiptId)?.granted || hasRunClaim(run, receiptId)) return;
+  if (receipt(receiptId)?.granted || hasRunClaim(run, receiptId)) return false;
   const screen = document.querySelector(kind === 'battle' ? '[data-battle-aftermath]' : '[data-skirmish-aftermath]');
   const reward = screen?.querySelector('[data-resource-combat-reward]');
-  if (!reward || screen.hidden) return;
-  reward.querySelector('[data-ad-double-gold]')?.remove();
+  if (!reward || screen.hidden) return false;
+  if (reward.querySelector('[data-ad-double-gold]')) return true;
   const root = document.createElement('div');
   root.className = 'rpchess-ad-offer';
   root.dataset.adDoubleGold = '';
@@ -328,13 +328,21 @@ function renderDoubleGoldOffer(kind, count) {
   root.append(button, note);
   reward.append(root);
   button.addEventListener('click', () => void claimDoubleGold(button, note, { receiptId, kind, count, amount, runId:run.id }));
+  return true;
+}
+
+function scheduleDoubleGoldOffer(kind, count, attempts = 4) {
+  if (renderDoubleGoldOffer(kind, count) || attempts <= 0) return;
+  const retry = () => scheduleDoubleGoldOffer(kind, count, attempts - 1);
+  if (typeof globalThis.requestAnimationFrame === 'function') globalThis.requestAnimationFrame(retry);
+  else setTimeout(retry, 0);
 }
 
 function onCombatCompleted(event) {
   const kind = event?.detail?.kind;
   const count = Number(event?.detail?.count);
   if (!['battle','skirmish'].includes(kind) || !Number.isInteger(count)) return;
-  queueMicrotask(() => renderDoubleGoldOffer(kind, count));
+  queueMicrotask(() => scheduleDoubleGoldOffer(kind, count));
 }
 
 function rescueEligible(run) {
