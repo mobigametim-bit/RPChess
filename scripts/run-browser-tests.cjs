@@ -16,6 +16,7 @@ const DEFAULT_TESTS=[
   'race-board-themes-browser.cjs',
   'king-pin-ice-browser.cjs',
   'responsive-viewport-browser.cjs',
+  'onboarding-browser.cjs',
   'roster-browser.cjs',
   'skirmish-browser.cjs',
   'battle-browser.cjs',
