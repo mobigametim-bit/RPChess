@@ -29,3 +29,13 @@ Stockfish is distributed as a separate Web Worker/WASM engine and is not relicen
 - Source information: https://database.lichess.org/#puzzles
 
 The puzzle dataset remains available under CC0 and is not subject to additional restrictions from the RPChess MIT License.
+
+## Short Brass Fanfare 1.wav / victory fanfare
+
+- Runtime file: `game/SFX/win_fanfare.mp3`
+- Original work: `Short Brass Fanfare 1.wav`
+- Author: `_MC5_`
+- Source: Freesound sound 524849 — https://freesound.org/people/_MC5_/sounds/524849/
+- License: Creative Commons Attribution 4.0 International (CC BY 4.0) — https://creativecommons.org/licenses/by/4.0/
+
+RPChess uses this sound as the victory fanfare. Commercial use and adaptation are permitted by CC BY 4.0 provided the author is credited and the license is identified. The runtime MP3 may be a converted copy of the original WAV; the underlying sound remains attributed to `_MC5_` under CC BY 4.0.
