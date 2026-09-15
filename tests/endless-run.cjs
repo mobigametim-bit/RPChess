@@ -61,6 +61,8 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   const runtimeUi=fs.readFileSync(path.join(game,'localization/runtime-ui.mjs'),'utf8');
   const css=fs.readFileSync(path.join(game,'css/endless-run.css'),'utf8');
   const compactCss=fs.readFileSync(path.join(game,'css/endless-run-compact.css'),'utf8');
+  const shareResult=fs.readFileSync(path.join(game,'js/content/share-result.mjs'),'utf8');
+  const platform=fs.readFileSync(path.join(game,'js/platform.mjs'),'utf8');
   const starvation=fs.readFileSync(path.join(game,'js/starvation-app.mjs'),'utf8');
   const events=fs.readFileSync(path.join(game,'js/events-app.mjs'),'utf8');
   const route=fs.readFileSync(path.join(game,'js/battle-route.mjs'),'utf8');
@@ -70,6 +72,9 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   for(const forbidden of ['ЗАБЕГ ЗАВЕРШЁН','ЗАРАБОТАНО ЗОЛОТА','ИТОГОВАЯ МОЩЬ','НОВАЯ ИГРА','ГЛАВНОЕ МЕНЮ'])assert(!app.includes(forbidden),`Endless runtime must not hardcode localized copy: ${forbidden}`);
   assert(app.includes('css/endless-run-compact.css?v=20260909-owner1'),'Endless Run owner must load its compact stylesheet after base CSS');
   assert(compactCss.includes('body.endless-run-active .resource-hud{display:none!important}'),'Endless Run owner compact stylesheet must suppress the floating resource HUD on the final summary');
+  assert(compactCss.includes('height:100dvh')&&compactCss.includes("grid-template-areas:\n      'eyebrow metrics'"),'Landscape final summary must fit the actual VK iframe height while preserving its two-column layout');
+  assert(shareResult.includes('platform.social.wallPost')&&!shareResult.includes('platform.social.shareLink'),'VK result sharing must open wall publication instead of the private-message share dialog');
+  assert(platform.includes("if (!isVKLaunch()) return Object.freeze({ status:'unavailable' });\n    try {\n      const response = await sendVKRequest('VKWebAppShowWallPostBox'"),'Wall posting must be attempted directly because handler discovery is not authoritative in every VK host');
   assert(!fs.existsSync(path.join(game,'js/post-pages-ui-polish.mjs')),'retired post-pages presentation shim must stay deleted');
   assert(!fs.existsSync(path.join(game,'js/presentation-bootstrap.mjs')),'retired presentation bootstrap must stay deleted');
   assert(starvation.includes("button.textContent = kingDied ? t('starvation.summary') : t('starvation.continue')"),'Starvation end CTA must use owner localization while preserving Endless routing');
