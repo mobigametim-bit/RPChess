@@ -342,7 +342,7 @@ async function auditSoloKingBattleRunEnd(browser, width, height, language) {
     const participants = await page.evaluate(() => globalThis.RPChessBattle.battlePlan?.participants || []);
     assert.deepStrictEqual(participants, [kingId], `${label}: Battle must contain only the named King`);
     await page.evaluate(() => globalThis.RPChessBattle.finishBattle({ over:true, type:'stalemate', winner:null }));
-    await page.locator('[data-battle-run-end]:not([hidden])').waitFor();
+    await page.locator('[data-endless-run-screen]:not([hidden])').waitFor();
     const persisted = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
     assert.strictEqual(persisted.ended, true, `${label}: run must end`);
     assert.strictEqual(persisted.endReason, 'king_solo_battle', `${label}: solo-King end reason must be preserved`);
@@ -350,15 +350,16 @@ async function auditSoloKingBattleRunEnd(browser, width, height, language) {
     const expectedText = language === 'en'
       ? 'The mercenaries paid no heed to the words of a lone king without a kingdom and hanged you from the nearest tree.'
       : 'Наемники не посчитались со словами одинокого короля без королевства и повесили вас на суку ближайшего дерева';
-    assert.strictEqual((await page.locator('[data-battle-run-end-text]').innerText()).trim(), expectedText, `${label}: reason copy mismatch`);
+    const reasonText = (await page.locator('[data-endless-run-reason]').innerText()).trim();
+    assert(reasonText.endsWith(expectedText), `${label}: reason copy mismatch`);
     await assertPageFitsViewport(page, label);
-    await assertViewportContained(page, '[data-battle-run-end]:not([hidden])', `${label} screen`);
-    await assertViewportContained(page, '.battle-run-end .battle-aftermath-panel', `${label} panel`);
-    for (const selector of ['[data-battle-run-end-title]','[data-battle-run-end-text]','[data-battle-run-metric="combats"]','[data-battle-run-metric="healthy"]','[data-battle-run-metric="wounded"]','[data-battle-run-end-continue]']) {
+    await assertViewportContained(page, '[data-endless-run-screen]:not([hidden])', `${label} screen`);
+    await assertViewportContained(page, '.endless-run-panel', `${label} panel`);
+    for (const selector of ['[data-endless-run-reason]','[data-endless-run-metric]','[data-endless-run-new]','[data-endless-run-share]','[data-endless-run-menu]']) {
       await assertViewportContained(page, selector, `${label} ${selector}`);
     }
-    await assertFrameContains(page, '.battle-run-end .battle-aftermath-panel', ['[data-battle-run-end-title]','[data-battle-run-end-text]','[data-battle-run-metric]','[data-battle-run-end-continue]'], `${label} ownership`);
-    const overflow = await page.locator('.battle-run-end .battle-aftermath-panel').evaluate((panel) => ({ scrollHeight:panel.scrollHeight, clientHeight:panel.clientHeight, overflowY:getComputedStyle(panel).overflowY }));
+    await assertFrameContains(page, '.endless-run-panel', ['[data-endless-run-reason]','[data-endless-run-metric]','[data-endless-run-new]','[data-endless-run-share]','[data-endless-run-menu]'], `${label} ownership`);
+    const overflow = await page.locator('.endless-run-panel').evaluate((panel) => ({ scrollHeight:panel.scrollHeight, clientHeight:panel.clientHeight, overflowY:getComputedStyle(panel).overflowY }));
     assert(overflow.scrollHeight <= overflow.clientHeight + 2, `${label}: panel content must fit without scrolling (${overflow.scrollHeight} > ${overflow.clientHeight})`);
     assert(!['auto','scroll'].includes(overflow.overflowY), `${label}: panel must not own an internal scrollbar`);
     assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
