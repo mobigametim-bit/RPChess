@@ -33,4 +33,20 @@ jobs:
       - name: Require VK Hosting access token
         run: test -n "$MINI_APPS_ACCESS_TOKEN"
       - name: Deploy exact VK dev build
-        run: npx --yes @vkontakte/vk-miniapps-deploy@1.0.2
+        shell: bash
+        run: |
+          set +e
+          for attempt in 1 2 3 4 5; do
+            echo "VK deploy attempt ${attempt}/5"
+            npx --yes @vkontakte/vk-miniapps-deploy@1.0.2
+            status=$?
+            if [ "$status" -eq 0 ]; then
+              echo "VK deploy succeeded on attempt ${attempt}"
+              exit 0
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              echo "VK deploy failed with status ${status}; waiting before retry"
+              sleep 45
+            fi
+          done
+          exit 1
