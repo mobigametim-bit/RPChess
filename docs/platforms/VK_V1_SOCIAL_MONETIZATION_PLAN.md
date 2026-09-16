@@ -301,6 +301,7 @@ Flow:
 - [x] Same one-extra-copy reward.
 - [x] One claim per encounter.
 - [x] `[DEV]` Reward-row re-renders restore the canonical ×2 offer in both Skirmish and Battle aftermath screens.
+- [x] `[DEV]` Native rewarded shows use an ad-specific completion timeout instead of the generic 7-second Bridge timeout.
 
 ## Idempotency
 
