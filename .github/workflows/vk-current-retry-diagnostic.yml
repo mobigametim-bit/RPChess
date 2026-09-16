@@ -1,0 +1,50 @@
+name: VK current candidate retry diagnostic
+
+on:
+  push:
+    branches:
+      - diagnostic/vk-current-retry-2026-09-16
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vk-current-retry-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  deploy-current-vk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      MINI_APPS_ACCESS_TOKEN: ${{ secrets.MINI_APPS_ACCESS_TOKEN }}
+      MINI_APPS_ENVIRONMENT: dev
+      CI_URLS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run gate:vk
+      - name: Require VK Hosting access token
+        run: test -n "$MINI_APPS_ACCESS_TOKEN"
+      - name: Deploy current candidate with bounded retries
+        shell: bash
+        run: |
+          set +e
+          for attempt in 1 2 3 4 5; do
+            echo "VK deploy attempt ${attempt}/5"
+            npx --yes @vkontakte/vk-miniapps-deploy@1.0.2
+            status=$?
+            if [ "$status" -eq 0 ]; then
+              echo "VK deploy succeeded on attempt ${attempt}"
+              exit 0
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              echo "VK deploy failed with status ${status}; waiting before retry"
+              sleep 45
+            fi
+          done
+          exit 1
