@@ -16,6 +16,7 @@ class MemoryStorage {
   const root = path.resolve(__dirname, '..');
   const source = fs.readFileSync(path.join(root, 'game/js/content/monetization.mjs'), 'utf8');
   const resourcesSource = fs.readFileSync(path.join(root, 'game/js/resources-app.mjs'), 'utf8');
+  const platformSource = fs.readFileSync(path.join(root, 'game/js/platform.mjs'), 'utf8');
   const skirmishCss = fs.readFileSync(path.join(root, 'game/css/player-rating.css'), 'utf8');
   const battleCss = fs.readFileSync(path.join(root, 'game/css/playtest-fixes.css'), 'utf8');
   const starvationSource = fs.readFileSync(path.join(root, 'game/js/starvation-core.mjs'), 'utf8');
@@ -73,6 +74,8 @@ class MemoryStorage {
   assert(battleCss.includes('grid-template-columns:52px minmax(0,1fr) auto'), 'Battle reward row must reserve a right-side ×2 button slot');
 
   assert(!source.includes('VKWebAppShowNativeAds') && !source.includes('VKWebAppCheckNativeAds'), 'Gameplay monetization must not call VK Bridge directly');
+  assert(platformSource.includes('const VK_AD_SHOW_TIMEOUT_MS = 180_000;'), 'Rewarded ads must have enough time to finish before the Bridge request expires');
+  assert(platformSource.includes("sendVKRequest('VKWebAppShowNativeAds', { ad_format:normalized }, { timeoutMs:VK_AD_SHOW_TIMEOUT_MS })"), 'Native ad show must use the dedicated long timeout');
   assert(starvationSource.includes('starvationVictimPreviousStatus: victim.status'), 'Starvation must preserve the victim status so rewarded rescue can restore it exactly');
   assert(foundation.includes("import('./content/monetization.mjs')"), 'Foundation must load the monetization owner');
   assert(foundation.indexOf("import('./content/monetization.mjs')") < foundation.indexOf("import('./battle-route.mjs')"), 'Ad gate must register before route owners');
