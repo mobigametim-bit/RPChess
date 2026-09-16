@@ -57,6 +57,7 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   const css=fs.readFileSync(path.join(game,'css/player-identity-chronicle.css'),'utf8');
   for(const token of ["import('./player-identity-chronicle.mjs')",'RPChessIdentityReady','openIdentityPrompt'])assert(foundation.includes(token),`foundation identity bootstrap missing ${token}`);
   for(const token of ['Кто ты, воин?','data-player-identity-input','data-chronicle-panel','ТЕКУЩИЙ ПОХОД','ЛУЧШИЙ ПОХОД','СЛАВА'])assert(ui.includes(token),`identity/chronicle UI missing ${token}`);
+  assert(!ui.includes('Новое имя ещё ждёт своей дороги.'),'Chronicle must not show the removed empty current-run sentence');
   for(const token of ['personalizePlayerNarrative','personalizePlayerTitle','playerNameForRun'])assert(events.includes(token),`Events player-name integration missing ${token}`);
   for(const token of ['.chronicle-panel','.identity-panel','.chronicle-metric'])assert(css.includes(token),`identity/chronicle CSS missing ${token}`);
   console.log('Player Identity persistence, Event narrative personalization, Chronicle Glory/history and UI contract: PASS');

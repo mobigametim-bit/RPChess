@@ -9,6 +9,7 @@ const assert=require('assert'),fs=require('fs'),path=require('path'),{pathToFile
   const routeSource=fs.readFileSync(path.join(root,'game/js/battle-route.mjs'),'utf8');
   assert(skirmishAppSource.includes("import { subscribe, t, translateLegacy } from './i18n.mjs'"),'Skirmish owner must consume semantic i18n directly');
   assert(skirmishAppSource.includes("aftermathButton.textContent=t('skirmish.aftermath.continue')"),'Skirmish aftermath CTA must be owner-keyed');
+  assert(skirmishAppSource.includes("if(globalThis.RPChessEndlessRun?.open?.(activeRun))return;"),'Skirmish run endings must open the canonical share-enabled final summary');
   assert(skirmishAppSource.includes("function contentText(value){return translateLegacy"),'Skirmish encounter/name content must translate explicitly at render time');
   assert(skirmishAppSource.includes("case'minimum_force':return t('skirmish.reason.minimumForce')"),'minimum-force UI reason must be distinct and owner-keyed');
   assert(skirmishAppSource.includes('subscribe(()=>')&&skirmishAppSource.includes('renderStaticCopy()'),'Skirmish owner must refresh its own presentation when language changes');

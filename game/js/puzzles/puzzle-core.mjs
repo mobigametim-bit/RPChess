@@ -3,7 +3,7 @@ import { hashString } from '../race-assets.mjs';
 const PUZZLE_TYPES = Object.freeze(['mate1', 'mate2', 'mate3', 'material']);
 const TARGET_PIECES = Object.freeze(['queen', 'rook', 'bishop', 'knight']);
 const TYPE_LABELS = Object.freeze({ mate1:'МАТ В 1', mate2:'МАТ В 2', mate3:'МАТ В 3', material:'ВЫИГРАЙТЕ ФИГУРУ' });
-const TARGET_LABELS = Object.freeze({ queen:'ФЕРЗЯ', rook:'ЛАДЬЮ', bishop:'СЛОНА', knight:'КОНЯ' });
+const TARGET_LABELS = Object.freeze({ queen:'♛', rook:'♜', bishop:'♝', knight:'♞' });
 const ERROR_MULTIPLIERS = Object.freeze([1, 0.7, 0.4, 0]);
 
 const DIFFICULTY_TABLE = Object.freeze([

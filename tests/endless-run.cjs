@@ -53,9 +53,11 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   assert.strictEqual(endless.endReasonLabel('king_solo_battle'),'Наемники не посчитались со словами одинокого короля без королевства и повесили вас на суку ближайшего дерева');
 
   rating.writePlayerRating({power:777,receipts:[]},storage);
+  const carryover=rating.applyNewRunPowerCarryover(storage);
+  assert.strictEqual(carryover.before,777);assert.strictEqual(carryover.after,583,'new run must start with 75% of final Power');
   const nextRun=persistence.writeRun(persistence.createRun({now:2000,id:'endless-new-run'}),storage,2000);
   assert.deepStrictEqual(nextRun.runStats,{goldEarned:0,skirmishWins:0,battleWins:0,puzzlesSolved:0,eventsResolved:0},'new run must reset run statistics');
-  assert.strictEqual(rating.readPlayerRating(storage).power,777,'new run must preserve profile Power');
+  assert.strictEqual(rating.readPlayerRating(storage).power,583,'new run must preserve the reduced carryover Power');
 
   const app=fs.readFileSync(path.join(game,'js/endless-run-app.mjs'),'utf8');
   const runtimeUi=fs.readFileSync(path.join(game,'localization/runtime-ui.mjs'),'utf8');
@@ -66,6 +68,7 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   const starvation=fs.readFileSync(path.join(game,'js/starvation-app.mjs'),'utf8');
   const events=fs.readFileSync(path.join(game,'js/events-app.mjs'),'utf8');
   const route=fs.readFileSync(path.join(game,'js/battle-route.mjs'),'utf8');
+  const roster=fs.readFileSync(path.join(game,'js/roster-app.mjs'),'utf8');
   for(const token of ["from '../localization/runtime-ui.mjs'",'runtimeT(currentLanguage()','translateLegacy(summary.kingName)','translateLegacy(summary.endReasonLabel)','subscribe(() =>','scene_defeat.jpg','queueMicrotask(() => open(storedRun))','RPChessEndlessRun'])assert(app.includes(token),`Endless owner app missing ${token}`);
   for(const token of ["import { shareRunResult } from './content/share-result.mjs'",'data-endless-run-share','shareRunResult(activeRun, { power: readPlayerRating().power })'])assert(app.includes(token),`Final-summary sharing contract missing ${token}`);
   for(const token of ["'endless.title':'ЗАБЕГ ЗАВЕРШЁН'","'endless.metric.goldEarned':'ЗАРАБОТАНО ЗОЛОТА'","'endless.metric.finalPower':'ИТОГОВАЯ МОЩЬ'","'endless.newGame':'НОВАЯ ИГРА'","'endless.menu':'ГЛАВНОЕ МЕНЮ'"])assert(runtimeUi.includes(token),`runtime owner registry missing ${token}`);
@@ -82,6 +85,7 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   assert(events.includes("if(activeRun.ended)button.textContent=t('events.summary')"),'Event end-of-run CTA must stay owner-localized while preserving Endless routing');
   assert(events.includes('RPChessEndlessRun?.open?.(current)'));
   assert(route.includes("import './endless-run-app.mjs'"));
+  assert(roster.includes("if (previousRun?.ended) applyNewRunPowerCarryover();"),'Roster owner must apply 75% Power carryover exactly when replacing an ended run');
   assert(!css.includes('ui_panel_frame.png')&&!css.includes('ui_panel_wide.png'));
   console.log('First Complete Endless Run statistics, reset, Power persistence and owner-localized final summary contract: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});

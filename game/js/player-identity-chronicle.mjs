@@ -166,10 +166,6 @@ function renderChronicle() {
       currentRoot.append(metric('МОЩЬ', current.power), metric('НЕДЕЛЯ', current.week), metric('ГЕРОЕВ В СТРОЮ', current.heroes));
     } else {
       currentRoot.append(sectionTitle('ТЕКУЩИЙ ПОХОД', 'Нет активного похода'));
-      const text = document.createElement('p');
-      text.className = 'chronicle-empty-copy';
-      text.textContent = 'Новое имя ещё ждёт своей дороги.';
-      currentRoot.append(text);
     }
   }
 

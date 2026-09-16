@@ -4,6 +4,8 @@ import { currentLanguage, subscribe } from './i18n.mjs';
 import { runtimeT } from '../localization/runtime-ui.mjs';
 import {
   combatResultScore,
+  PUZZLE_WIN_GAIN_DIVISOR,
+  SKIRMISH_WIN_GAIN_DIVISOR,
   opponentEloForStars,
   ratedOutcomeKind,
   ratingReceipt,
@@ -42,13 +44,14 @@ function settleCombat(run, kind) {
   const receiptId = kind === 'skirmish' ? skirmishReceiptId(run) : battleReceiptId(run);
   if (!receiptId || !last || !Number.isInteger(last.encounterStars)) return null;
   const result = combatResultScore({ type:last.result, winner:last.winner }, last.playerColor || 'w');
-  return settlePlayerRating({ receiptId, opponentElo:opponentEloForStars(last.encounterStars), result }).receipt;
+  const gainDivisor = kind === 'skirmish' ? SKIRMISH_WIN_GAIN_DIVISOR : 1;
+  return settlePlayerRating({ receiptId, opponentElo:opponentEloForStars(last.encounterStars), result, gainDivisor }).receipt;
 }
 function settlePuzzle(run) {
   const state = run?.currentPuzzle;
   const receiptId = puzzleReceiptId(run);
   if (!receiptId || !state) return null;
-  return settlePlayerRating({ receiptId, opponentElo:opponentEloForStars(state.stars), result:state.result === 'solved' ? 1 : 0 }).receipt;
+  return settlePlayerRating({ receiptId, opponentElo:opponentEloForStars(state.stars), result:state.result === 'solved' ? 1 : 0, gainDivisor:PUZZLE_WIN_GAIN_DIVISOR }).receipt;
 }
 
 function settleCurrentRatedOutcome(run = readRun()) {

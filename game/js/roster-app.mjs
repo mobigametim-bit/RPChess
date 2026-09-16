@@ -1,5 +1,6 @@
 import { PIECE_LABELS, PIECE_GLYPHS, STATUS_LABELS } from './roster-data.mjs';
 import { createRun, readRun, writeRun } from './run-persistence.mjs';
+import { applyNewRunPowerCarryover } from './player-rating.mjs';
 import { subscribe, t, translateLegacy } from './i18n.mjs';
 import { heroNoteForId } from './content/hero-notes.mjs';
 
@@ -221,6 +222,8 @@ function renderRoster() {
 }
 
 function beginRun(event = null) {
+  const previousRun = readRun();
+  if (previousRun?.ended) applyNewRunPowerCarryover();
   activeRun = writeRun(createRun({ playerName: event?.detail?.playerName }));
   activeFilter = 'all';
   updateContinueState();

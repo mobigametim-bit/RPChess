@@ -1,6 +1,6 @@
 import { BACKGROUND_POOLS, RACE_TAGS, hashString, normalizeRaceTag } from './race-assets.mjs';
 
-const VICTORY_FANFARE = 'SFX/win_fanfare.mp3';
+const VICTORY_FANFARE = 'https://mobigametim-bit.github.io/RPChess/SFX/win_fanfare.mp3';
 const GOLD_ICON = 'generated_assets/reward_gold.png';
 const SUPPLIES_ICON = 'generated_assets/reward_supplies.png';
 

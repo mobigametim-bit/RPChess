@@ -9,7 +9,7 @@ for(const token of [
   "generated_assets/splash_poster.jpg",
   "generated_assets/scene_reward.jpg",
   "generated_assets/scene_defeat.jpg",
-  "SFX/win_fanfare.mp3",
+  "https://mobigametim-bit.github.io/RPChess/SFX/win_fanfare.mp3",
   "assets/events/register-04/backgrounds/",
   "--travel-card-backdrop",
   "--settlement-scene-backdrop",

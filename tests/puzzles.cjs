@@ -6,6 +6,10 @@ function memoryStorage(){const data=new Map();return{getItem:key=>data.has(key)?
   const {PUZZLE_CATALOG}=await import(pathToFileURL(path.join(game,'js/puzzles/puzzle-catalog.mjs')).href);
   const persistence=await import(pathToFileURL(path.join(game,'js/run-persistence.mjs')).href);
   const catalog=PUZZLE_CATALOG;
+  assert.strictEqual(core.objectiveLabel({type:'material',targetPiece:'queen'}),'ВЫИГРАЙТЕ ♛');
+  assert.strictEqual(core.objectiveLabel({type:'material',targetPiece:'rook'}),'ВЫИГРАЙТЕ ♜');
+  assert.strictEqual(core.objectiveLabel({type:'material',targetPiece:'bishop'}),'ВЫИГРАЙТЕ ♝');
+  assert.strictEqual(core.objectiveLabel({type:'material',targetPiece:'knight'}),'ВЫИГРАЙТЕ ♞');
   const rewardPuzzle=catalog.find(p=>p.difficulty===5) || catalog[0];
   const baseRun=persistence.createRun({id:'puzzle-reward-run',now:100});
   assert.deepStrictEqual(baseRun.puzzleHistory,[],'new runs must initialize persistent Puzzle history');
@@ -23,6 +27,7 @@ function memoryStorage(){const data=new Map();return{getItem:key=>data.has(key)?
   const compactCss=fs.readFileSync(path.join(game,'css/puzzles-compact.css'),'utf8');
   const uiSource=fs.readFileSync(path.join(game,'localization/ui.mjs'),'utf8');
   const buildSource=fs.readFileSync(path.join(game,'..','scripts/build.cjs'),'utf8');
+  for(const token of ["'puzzle.objective.material.queen':'ВЫИГРАЙТЕ ♛'","'puzzle.objective.material.rook':'ВЫИГРАЙТЕ ♜'","'puzzle.objective.material.bishop':'ВЫИГРАЙТЕ ♝'","'puzzle.objective.material.knight':'ВЫИГРАЙТЕ ♞'"])assert(uiSource.includes(token),`Puzzle glyph localization missing ${token}`);
   assert(appSource.includes("rpchess:puzzle-open"));
   assert(!/hint/i.test(appSource),'Puzzles v1 must not introduce hint UI/mechanics');
   assert(appSource.includes("import { t, subscribe } from '../i18n.mjs'"),'Puzzle presentation must consume semantic i18n directly');

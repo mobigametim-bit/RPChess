@@ -302,6 +302,7 @@ Flow:
 - [x] One claim per encounter.
 - [x] `[DEV]` Reward-row re-renders restore the canonical ×2 offer in both Skirmish and Battle aftermath screens.
 - [x] `[DEV]` Native rewarded shows use an ad-specific completion timeout instead of the generic 7-second Bridge timeout.
+- [x] `[TOGETHER]` Real VK Web smoke on Hosting version `1789552334`: rewarded video completes and the extra combat Gold is granted.
 
 ## Idempotency
 
@@ -362,6 +363,7 @@ At current route cost 1: `0 → +5 → -1 → 4` remaining.
 ## 9.1 Entry point
 
 - [x] Add `Поделиться результатом / Share result` to the final run summary.
+- [x] `[DEV]` Route Battle/Skirmish King-death endings through the same canonical share-enabled final summary as every other run ending.
 
 ## 9.2 Shared content — use emoji actively
 
@@ -389,6 +391,14 @@ Exact emoji may be adjusted for readability, but the v1 share text should use th
 - [x] Final fallback: Copy Result / Copy Link.
 - [x] Share cancel/failure never breaks the final screen.
 - [x] v1 is text + link; generated image cards are deferred.
+
+## 9.4 Post-smoke owner corrections
+
+- [x] `[DEV]` Victory fanfare uses the externally hosted licensed MP3 in VK builds, where Hosting excludes bundled audio.
+- [x] `[DEV]` Chronicle no longer shows «Новое имя ещё ждёт своей дороги.» when no run is active.
+- [x] `[DEV]` Positive Power gain is halved for Skirmish wins and divided by three for Training wins; losses keep the canonical Elo penalty.
+- [x] `[DEV]` A new run starts at 75% of the previous run's final Power.
+- [x] `[DEV]` Material-training objectives display the target piece glyph instead of its written name.
 
 ---
 
@@ -605,9 +615,9 @@ There are **no onboarding-specific tests** for Hunger, Chronicle, Run End, Skirm
 - [ ] Included onboarding hints.
 - [ ] Travel selection.
 - [ ] Skirmish.
-- [ ] Rewarded ×2 after Skirmish.
+- [x] Rewarded ×2 after Skirmish.
 - [ ] Battle.
-- [ ] Rewarded ×2 after Battle.
+- [x] Rewarded ×2 after Battle.
 - [ ] Fifth committed Travel selection → interstitial.
 - [ ] Insufficient Supplies → rescue rewarded.
 - [ ] Event.

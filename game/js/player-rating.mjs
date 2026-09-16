@@ -5,6 +5,9 @@ const PLAYER_RATING_STORAGE_KEY = 'rpchess.reboot.v1.player-rating';
 const PLAYER_RATING_SCHEMA_VERSION = 1;
 const STARTING_POWER = 500;
 const ELO_K = 32;
+const SKIRMISH_WIN_GAIN_DIVISOR = 2;
+const PUZZLE_WIN_GAIN_DIVISOR = 3;
+const NEW_RUN_POWER_FACTOR = 0.75;
 const RATING_RECEIPT_LIMIT = 2048;
 
 function resolveStorage(storage) {
@@ -45,6 +48,13 @@ function normalizeResult(result) {
   const numeric = Number(result);
   if (!Number.isFinite(numeric)) return 0;
   return Math.max(0, Math.min(1, numeric));
+}
+
+function scaledPositiveRatingDelta(delta, gainDivisor = 1) {
+  const normalized = Math.round(Number(delta) || 0);
+  if (normalized <= 0) return normalized;
+  const divisor = Math.max(1, Number(gainDivisor) || 1);
+  return Math.max(1, Math.round(normalized / divisor));
 }
 
 function ratingDelta(power, opponentElo, result, k = ELO_K) {
@@ -93,12 +103,23 @@ function writePlayerRating(profile, storage = null) {
   return next;
 }
 
+function applyNewRunPowerCarryover(storage = null) {
+  const profile = readPlayerRating(storage);
+  const before = profile.power;
+  const after = normalizePower(before * NEW_RUN_POWER_FACTOR);
+  const next = writePlayerRating({ ...profile, power:after }, storage);
+  if (after !== before && typeof globalThis !== 'undefined' && typeof globalThis.dispatchEvent === 'function' && typeof CustomEvent !== 'undefined') {
+    globalThis.dispatchEvent(new CustomEvent('rpchess:power-updated', { detail:{ power:after, previousPower:before, source:'new-run-carryover' } }));
+  }
+  return Object.freeze({ profile:next, before, after, changed:after !== before });
+}
+
 function ratingReceipt(receiptId, storage = null) {
   if (!receiptId) return null;
   return readPlayerRating(storage).receipts.find((receipt) => receipt.id === receiptId) || null;
 }
 
-function settlePlayerRating({ receiptId, opponentElo, result, storage = null } = {}) {
+function settlePlayerRating({ receiptId, opponentElo, result, gainDivisor = 1, storage = null } = {}) {
   if (!receiptId || typeof receiptId !== 'string') throw new Error('Power settlement requires receiptId');
   const profile = readPlayerRating(storage);
   const existing = profile.receipts.find((receipt) => receipt.id === receiptId);
@@ -106,7 +127,8 @@ function settlePlayerRating({ receiptId, opponentElo, result, storage = null } =
   const before = profile.power;
   const normalizedOpponent = Math.max(0, Math.round(Number(opponentElo) || 0));
   const normalizedResult = normalizeResult(result) >= 0.75 ? 1 : normalizeResult(result) >= 0.25 ? 0.5 : 0;
-  const delta = ratingDelta(before, normalizedOpponent, normalizedResult);
+  const rawDelta = ratingDelta(before, normalizedOpponent, normalizedResult);
+  const delta = scaledPositiveRatingDelta(rawDelta, gainDivisor);
   const after = Math.max(0, before + delta);
   const receipt = Object.freeze({ id:receiptId, before, after, delta, opponentElo:normalizedOpponent, result:normalizedResult });
   const next = writePlayerRating({ ...profile, power:after, receipts:[...profile.receipts, receipt] }, storage);
@@ -166,14 +188,19 @@ export {
   PLAYER_RATING_SCHEMA_VERSION,
   STARTING_POWER,
   ELO_K,
+  SKIRMISH_WIN_GAIN_DIVISOR,
+  PUZZLE_WIN_GAIN_DIVISOR,
+  NEW_RUN_POWER_FACTOR,
   RATING_RECEIPT_LIMIT,
   normalizePower,
   threatStarsForPower,
   threatForPower,
   expectedScore,
   ratingDelta,
+  scaledPositiveRatingDelta,
   readPlayerRating,
   writePlayerRating,
+  applyNewRunPowerCarryover,
   ratingReceipt,
   settlePlayerRating,
   adaptiveEncounterStars,

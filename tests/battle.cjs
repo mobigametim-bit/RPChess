@@ -9,6 +9,7 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(key){return this.ma
   const battleCompactCss=fs.readFileSync(path.join(game,'css/battle-compact.css'),'utf8');
   const redesignSource=fs.readFileSync(path.join(game,'js/ui-redesign-final.mjs'),'utf8');
   assert(battleAppSource.includes('data-battle-continue>Продолжить путь</button>'),'Battle aftermath CTA must say Продолжить путь');
+  assert(battleAppSource.includes("if(globalThis.RPChessEndlessRun?.open?.(activeRun))return;"),'Battle run endings must open the canonical share-enabled final summary');
   assert(battleAppSource.includes("function leaveAftermath(){audio()?.click?.();resetBattleTracking();globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open'"),'Battle aftermath must route directly to Travel Choice');
   assert(battleRouteSource.includes("import './battle-mercenaries.mjs'"),'Battle route must load Mercenaries economy runtime');
   assert(buildSource.includes("'js/battle-mercenaries.mjs'"),'Production build must package Mercenaries runtime');
