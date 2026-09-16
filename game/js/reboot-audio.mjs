@@ -22,11 +22,10 @@ class RebootAudio {
     this.context = null;
     this.music = typeof Audio === 'function' && MUSIC_TRACKS.length > 0 ? new Audio() : null;
     if (this.music) {
-      this.music.preload = 'metadata';
+      this.music.preload = 'none';
       this.music.loop = false;
       this.music.addEventListener('ended', () => this.nextTrack());
       this.music.addEventListener('error', () => setTimeout(() => this.nextTrack(), 500));
-      this.loadTrack();
       this.applySettings(this.settings);
     }
   }
@@ -56,6 +55,7 @@ class RebootAudio {
   activate() {
     this.activated = true;
     this.ensureContext();
+    if (this.music && !this.music.getAttribute('src')) this.loadTrack();
     this.applySettings(this.settings);
   }
 
