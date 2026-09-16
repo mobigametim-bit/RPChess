@@ -348,7 +348,7 @@ async function auditSoloKingBattleRunEnd(browser, width, height, language) {
     assert.strictEqual(persisted.endReason, 'king_solo_battle', `${label}: solo-King end reason must be preserved`);
     assert.strictEqual(persisted.roster.find((character) => character.isRunKing).status, 'dead', `${label}: King must die after the completed Battle`);
     const expectedText = language === 'en'
-      ? 'The mercenaries paid no heed to the words of a lone king without a kingdom and hanged you from the nearest tree.'
+      ? 'The mercenaries ignored the words of a lone king without a kingdom and hanged you from the nearest tree.'
       : 'Наемники не посчитались со словами одинокого короля без королевства и повесили вас на суку ближайшего дерева';
     const reasonText = (await page.locator('[data-endless-run-reason]').innerText()).trim();
     assert(reasonText.endsWith(expectedText), `${label}: reason copy mismatch`);
