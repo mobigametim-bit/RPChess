@@ -39,3 +39,46 @@ The puzzle dataset remains available under CC0 and is not subject to additional 
 - License: Creative Commons Attribution 4.0 International (CC BY 4.0) — https://creativecommons.org/licenses/by/4.0/
 
 RPChess uses this sound as the victory fanfare. Commercial use and adaptation are permitted by CC BY 4.0 provided the author is credited and the license is identified. The runtime MP3 may be a converted copy of the original WAV; the underlying sound remains attributed to `_MC5_` under CC BY 4.0.
+
+## Background music from Freesound
+
+### Fountain of Life (Opening, trailer, epic music, Free CCBY)
+
+- Runtime file: `game/music/epic_music1.mp3`
+- Author: SunixMuz
+- Source: Freesound sound 767845 — https://freesound.org/people/SunixMuz/sounds/767845/
+- License: Creative Commons Attribution 4.0 International (CC BY 4.0) — https://creativecommons.org/licenses/by/4.0/
+- Source-page credit requested by the author: `Music by SunixMuz, licensed under CC BY`
+
+The source page permits use in video games and commercial projects, requires attribution, and asks that the music not be sold or redistributed as a standalone track. RPChess uses the music only as part of the game.
+
+### Epic Orchestra - LOOP.wav
+
+- Runtime file: `game/music/epic_music2.mp3`
+- Original work: `Epic Orchestra - LOOP.wav`
+- Author: Joshua Empyre (`joshuaempyre`)
+- Source: Freesound sound 250856 — https://freesound.org/people/joshuaempyre/sounds/250856/
+- License: Creative Commons Attribution 4.0 International (CC BY 4.0) — https://creativecommons.org/licenses/by/4.0/
+
+The runtime MP3 is a converted copy of the source WAV. The underlying work remains attributed to Joshua Empyre under CC BY 4.0.
+
+### Cinematic Epic (loop ver.1) — not cleared for commercial distribution
+
+- Repository file: `game/music/epic_music3.mp3`
+- Original work: `Cinematic Epic (loop ver.1)`
+- Author: AudioCoffee
+- Source: Freesound sound 725001 — https://freesound.org/people/AudioCoffee/sounds/725001/
+- License: Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) — https://creativecommons.org/licenses/by-nc/4.0/
+
+CC BY-NC 4.0 does not permit commercial use. Attribution does not remove that restriction. This track is **not approved for an RPChess commercial/moderation candidate** unless the rights holder grants RPChess a separate commercial license. It must otherwise be removed or replaced before the candidate is built and deployed.
+
+### Epic Powerful Theme
+
+- Runtime file: `game/music/epic_music4.mp3`
+- Author: TheoJT
+- Source: Freesound sound 698759 — https://freesound.org/people/TheoJT/sounds/698759/
+- License: Creative Commons Attribution 4.0 International (CC BY 4.0) — https://creativecommons.org/licenses/by/4.0/
+
+Commercial use and adaptation are permitted by CC BY 4.0 provided TheoJT is credited and the license is identified.
+
+The same music attribution record is copied with production music at `game/music/ATTRIBUTION.md`.

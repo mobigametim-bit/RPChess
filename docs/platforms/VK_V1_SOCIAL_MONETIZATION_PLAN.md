@@ -673,6 +673,8 @@ Repeat the critical path in the real VK mobile client:
 - [ ] Verify exact SHA through VK Web.
 - [ ] Verify exact SHA through VK Mobile.
 - [ ] Re-run candidate license/provenance audit.
+- [x] Record exact titles, authors, Freesound sources and licenses for `epic_music1..4.mp3` in shipped and repository attribution files.
+- [ ] `[OWNER][BLOCKER]` Resolve `epic_music3.mp3`: remove/replace it or provide a separate commercial license from AudioCoffee; Freesound lists the track as CC BY-NC 4.0.
 - [ ] Confirm Privacy / Terms / Support URLs.
 - [ ] Complete VK card fields and marketing assets.
 - [ ] Confirm age rating.

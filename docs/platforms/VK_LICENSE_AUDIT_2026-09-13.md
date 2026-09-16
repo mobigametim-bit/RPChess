@@ -1,7 +1,7 @@
 # RPChess — VK Games pre-moderation license/provenance audit
 
 **Audit date:** 2026-09-13  
-**Updated:** 2026-09-15  
+**Updated:** 2026-09-16
 **Target:** the canonical production build served by GitHub Pages and embedded by VK Games  
 **Scope:** files and notices present in the repository/build. This document records evidence; it does not invent missing provenance and is not legal advice.
 
@@ -13,7 +13,7 @@
 | BrahmsGotischCyr font | PASS | SIL OFL 1.1 license and author attribution are present in-repo and copied by the production build. |
 | Lichess puzzle catalog | PASS | `THIRD_PARTY_NOTICES.md` records Lichess Open Database Puzzles under CC0. |
 | RPChess code | PASS for repository notice | Repository notice states RPChess is MIT except identified third-party material. |
-| Background music | PASS for current candidate | The four Suno Free tracks were removed. The current release intentionally ships with no background music; future tracks must be commercially cleared before being added to `game/music/`. |
+| Background music | BLOCKED | `epic_music1`, `epic_music2` and `epic_music4` are CC BY 4.0 with attribution recorded. `epic_music3` is CC BY-NC 4.0 and cannot ship in a commercial/moderation candidate without a separate commercial license. |
 | SFX: `win_fanfare.mp3` | PASS | Source confirmed as `_MC5_`, `Short Brass Fanfare 1.wav`, Freesound sound 524849, licensed CC BY 4.0; attribution is now recorded in `THIRD_PARTY_NOTICES.md` and `CREDITS.md`. |
 | Authored/generated visual assets | PASS for project provenance record | Project owner confirmed production graphics were generated specifically for RPChess with ChatGPT/OpenAI image-generation tools; centralized provenance is recorded in `docs/ASSET_PROVENANCE.md`. |
 
@@ -53,9 +53,22 @@ The production build copies the font plus its sidecar license/copyright files.
 
 **Pre-moderation action:** keep the notice in the release repository/candidate documentation.
 
-## 4. Audio — PASS for current candidate provenance
+## 4. Audio — BLOCKED by `epic_music3.mp3`
 
 The four previously shipped `echoes_iron_throne_01..04.mp3` files were generated under a Suno Free plan and have been removed from the release source. The current candidate intentionally contains no background music.
+
+Four replacement MP3 files were added to `game/music/` on 2026-09-16. Their source pages and exact repository hashes were checked:
+
+| File | Work / author | Source | License | SHA-256 | Candidate status |
+| --- | --- | --- | --- | --- | --- |
+| `epic_music1.mp3` | `Fountain of Life (Opening, trailer, epic music, Free CCBY)` / SunixMuz | Freesound 767845 | CC BY 4.0 | `32312250d47e11898d2c93f6cb694dae7f423350061ceebe6150270fefaae74d` | PASS with attribution |
+| `epic_music2.mp3` | `Epic Orchestra - LOOP.wav` / Joshua Empyre | Freesound 250856 | CC BY 4.0 | `57267125e0466ad711809ac76f30875d0cdb7c571beba772b877cd059168c1d8` | PASS with attribution; WAV converted to MP3 |
+| `epic_music3.mp3` | `Cinematic Epic (loop ver.1)` / AudioCoffee | Freesound 725001 | CC BY-NC 4.0 | `81ef1f9e8ee2634dd8fa3b47a17614f74b82e3fb460e2e1b7ab4f32a16956a78` | **BLOCKED for commercial use** |
+| `epic_music4.mp3` | `Epic Powerful Theme` / TheoJT | Freesound 698759 | CC BY 4.0 | `9f84f4c576b17a904d99b8ab16afe0df64f3c71da56ba0901bb1a0147ae7adf8` | PASS with attribution |
+
+The source URLs and license links are recorded in `THIRD_PARTY_NOTICES.md`, `CREDITS.md` and `game/music/ATTRIBUTION.md`. The latter is copied into `dist/music/` by the canonical build.
+
+`epic_music3.mp3` must be removed/replaced or covered by a separate commercial license from AudioCoffee before an RPChess commercial/moderation candidate is built and deployed. Crediting AudioCoffee does not override the NonCommercial restriction.
 
 The music runtime no longer hard-codes filenames. `npm run build` scans supported files under `game/music/` and generates the production catalog automatically. Future commercially cleared tracks can therefore be added without editing gameplay/audio code.
 
@@ -68,7 +81,7 @@ The remaining production fanfare is `game/SFX/win_fanfare.mp3`. The project owne
 
 The Freesound source page identifies the sound and license. Required attribution is recorded in `THIRD_PARTY_NOTICES.md` and `CREDITS.md`.
 
-**Pre-moderation action:** none for current audio beyond exact-candidate verification. Before adding future music/SFX, record source/tool/author/date and commercial-use/license basis.
+**Pre-moderation action:** resolve `epic_music3.mp3`, then rebuild and verify the exact candidate. Before adding future music/SFX, record source/tool/author/date and commercial-use/license basis.
 
 ## 5. Visual assets — PASS for centralized provenance record
 
@@ -87,11 +100,12 @@ Before fixing the SHA submitted to VK:
 - [ ] confirm `dist/vendor/stockfish/SOURCE.txt` exists;
 - [ ] confirm the Brahms font license/copyright sidecars exist in `dist/fonts/`;
 - [ ] confirm `THIRD_PARTY_NOTICES.md` still matches shipped third-party components;
-- [x] confirm current candidate ships no background music;
+- [x] record exact sources, authors, licenses and hashes for all four newly added background tracks;
+- [ ] remove/replace `epic_music3.mp3` or record a separate commercial license from AudioCoffee;
 - [x] resolve `win_fanfare.mp3` provenance and attribution;
 - [x] record owner confirmation for original/generated production art;
-- [ ] re-run this audit if the candidate adds a new font, dataset, engine, music/SFX pack, or third-party visual asset.
+- [x] re-run this audit for the newly added music pack.
 
 ## Current blockers from this audit
 
-No known license/provenance blocker remains from the items reviewed in this pass. Stockfish, the Brahms font, Lichess puzzles and the Freesound victory fanfare have recorded license/attribution handling; current background music is absent; project-specific generated visual provenance is centralized. The final moderation candidate still needs an exact-build re-check for newly added material.
+The current license/provenance blocker is `game/music/epic_music3.mp3`: its CC BY-NC 4.0 license does not permit commercial use. The remaining three new music tracks, Stockfish, the Brahms font, Lichess puzzles and the Freesound victory fanfare have recorded license/attribution handling. The final moderation candidate still needs an exact-build re-check after the blocked track is resolved.

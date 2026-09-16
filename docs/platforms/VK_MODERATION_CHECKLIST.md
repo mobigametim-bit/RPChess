@@ -51,7 +51,7 @@ Before submission, freeze an exact `main` SHA and verify that exact build:
 - [ ] Open/complete a Puzzle.
 - [ ] Open Settlement and perform a normal action.
 - [ ] Verify King-death/run-end flow.
-- [ ] Check Settings, RU/EN and SFX; current candidate intentionally has no background music.
+- [ ] Check Settings, RU/EN, SFX and the commercially cleared background-music rotation after the blocked track is resolved.
 - [ ] Check `844×390`-class landscape.
 - [ ] Check normal desktop viewport.
 - [ ] If Mobile is declared, repeat the critical smoke in the official VK mobile client.
@@ -65,10 +65,12 @@ See `VK_LICENSE_AUDIT_2026-09-13.md`, `../../THIRD_PARTY_NOTICES.md`, `../../CRE
 - [x] Lichess puzzle source/license documented.
 - [x] Remove the four Suno Free background-music tracks from the release candidate; no background music currently ships.
 - [x] `game/SFX/win_fanfare.mp3` identified as `_MC5_` / `Short Brass Fanfare 1.wav` / Freesound 524849 / CC BY 4.0; attribution recorded.
+- [x] Record titles, authors, source URLs, conversion notes and licenses for `epic_music1..4.mp3`.
+- [ ] Remove/replace `game/music/epic_music3.mp3` or obtain a separate commercial license; its Freesound license is CC BY-NC 4.0.
 - [x] Record a concise provenance statement for original/generated production visual assets.
 - [ ] Re-check the exact candidate for newly added third-party material.
 
-No known license/provenance blocker remains from the current audited asset set. Re-check the exact release candidate before submission.
+Current blocker: `epic_music3.mp3` cannot ship in a commercial/moderation candidate under CC BY-NC 4.0. The other three new tracks are CC BY 4.0 and have the required attribution recorded. Re-check the exact release candidate after resolving the blocked track.
 
 ## Decisions confirmed for the planned VK v1
 

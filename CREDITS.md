@@ -15,6 +15,25 @@ Source: https://freesound.org/people/_MC5_/sounds/524849/
 License: Creative Commons Attribution 4.0 International (CC BY 4.0)  
 https://creativecommons.org/licenses/by/4.0/
 
+### Background music
+
+- `Fountain of Life (Opening, trailer, epic music, Free CCBY)` by SunixMuz
+- Source: https://freesound.org/people/SunixMuz/sounds/767845/
+- License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+https://creativecommons.org/licenses/by/4.0/
+
+- `Epic Orchestra - LOOP.wav` by Joshua Empyre (`joshuaempyre`)
+- Source: https://freesound.org/people/joshuaempyre/sounds/250856/
+- License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+https://creativecommons.org/licenses/by/4.0/
+
+- `Epic Powerful Theme` by TheoJT
+- Source: https://freesound.org/people/TheoJT/sounds/698759/
+- License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+https://creativecommons.org/licenses/by/4.0/
+
+`Cinematic Epic (loop ver.1)` by AudioCoffee is present in the repository as `game/music/epic_music3.mp3`, but Freesound publishes it under CC BY-NC 4.0. It is not cleared for an RPChess commercial release and must be removed/replaced or covered by a separate commercial license before distribution.
+
 ### BrahmsGotischCyr
 
 Font by Sasha Pavljenko. Licensed under the SIL Open Font License 1.1.
