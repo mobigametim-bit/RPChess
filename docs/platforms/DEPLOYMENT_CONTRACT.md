@@ -32,7 +32,7 @@ Deployment to GitHub Pages is intentionally manual.
 6. The test URL is always:
    `https://mobigametim-bit.github.io/RPChess/`
 
-Pushes to `main` do **not** automatically deploy. Pull requests may run the build/test part, but never publish Pages.
+Pushes to `main` automatically run the same build/test validation as pull requests, but do **not** publish Pages. Only a manual `workflow_dispatch` from `main` can upload and deploy `dist/`.
 
 ## VK testing rule
 

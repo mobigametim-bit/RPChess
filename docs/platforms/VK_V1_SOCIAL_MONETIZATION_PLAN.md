@@ -391,6 +391,7 @@ Exact emoji may be adjusted for readability, but the v1 share text should use th
 - [x] Final fallback: Copy Result / Copy Link.
 - [x] Share cancel/failure never breaks the final screen.
 - [x] v1 is text + link; generated image cards are deferred.
+- [ ] `[TOGETHER][BLOCKER]` Confirm that `VKWebAppShowWallPostBox` creates the post on the player's own wall after VK moderation. The 2026-09-16 pre-moderation Web smoke reached the correct VK wall method, but VK rejected it with «Приложению недоступно создание постов»; do not replace this with private-message sharing.
 
 ## 9.4 Post-smoke owner corrections
 
@@ -618,6 +619,7 @@ There are **no onboarding-specific tests** for Hunger, Chronicle, Run End, Skirm
 - [x] Rewarded ×2 after Skirmish.
 - [ ] Battle.
 - [x] Rewarded ×2 after Battle.
+- [x] Victory fanfare is audible in the real VK Web build.
 - [ ] Fifth committed Travel selection → interstitial.
 - [ ] Insufficient Supplies → rescue rewarded.
 - [ ] Event.
@@ -629,10 +631,10 @@ There are **no onboarding-specific tests** for Hunger, Chronicle, Run End, Skirm
 - [ ] Global leaderboard.
 - [ ] Friends leaderboard.
 - [ ] Cloud reload/resume.
-- [ ] Run end.
-- [ ] King death reason.
+- [x] Run end.
+- [x] King death reason.
 - [ ] Share result with emoji.
-- [ ] RU.
+- [x] RU.
 - [ ] EN.
 
 ---
