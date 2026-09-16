@@ -1,5 +1,6 @@
 const VK_CONNECT_VERSION = '2.15.12';
 const VK_REQUEST_TIMEOUT_MS = 7000;
+const VK_AD_SHOW_TIMEOUT_MS = 180_000;
 const VK_AD_FORMATS = new Set(['reward', 'interstitial']);
 
 function safeLocalStorage() {
@@ -265,7 +266,7 @@ const ads = Object.freeze({
     if (!normalized || !await this.supported(normalized)) return Object.freeze({ status:'unavailable', format:normalized || String(format || '') });
     if (!await this.check(normalized)) return Object.freeze({ status:'unavailable', format:normalized });
     try {
-      const response = await sendVKRequest('VKWebAppShowNativeAds', { ad_format:normalized });
+      const response = await sendVKRequest('VKWebAppShowNativeAds', { ad_format:normalized }, { timeoutMs:VK_AD_SHOW_TIMEOUT_MS });
       return Object.freeze({ status:response?.result === true ? 'completed' : 'error', format:normalized });
     } catch (error) {
       return Object.freeze({ status:adErrorStatus(error), format:normalized, error });
