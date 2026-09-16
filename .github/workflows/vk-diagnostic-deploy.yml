@@ -1,0 +1,34 @@
+name: VK Hosting diagnostic deploy
+
+on:
+  push:
+    branches:
+      - diagnostic/vk-hosting-invalid-file-2026-09-16
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vk-hosting-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  deploy-vk-diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      MINI_APPS_ACCESS_TOKEN: ${{ secrets.MINI_APPS_ACCESS_TOKEN }}
+      MINI_APPS_ENVIRONMENT: dev
+      CI_URLS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run gate:vk
+      - name: Require VK Hosting access token
+        run: test -n "$MINI_APPS_ACCESS_TOKEN"
+      - name: Deploy diagnostic VK dev build
+        run: npx --yes @vkontakte/vk-miniapps-deploy@1.0.2
