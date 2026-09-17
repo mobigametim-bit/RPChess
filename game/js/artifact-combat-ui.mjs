@@ -1,5 +1,5 @@
 import { applyCombatArtifactChoice, artifactForCombat, ownedArtifacts, FIRE_BY_THREAT } from './artifact-core.mjs';
-import { countSquareAttackers, indexToSquare, squareToIndex } from './classic-chess-engine.mjs';
+import { countSquareAttackers, indexToSquare } from './classic-chess-engine.mjs';
 
 function ensureCss(){
   if(document.querySelector('[data-artifact-combat-css]')) return;
@@ -20,13 +20,30 @@ function chooseArtifact({run,combatType,encounterId,onChoose}={}){
 }
 function renderThreatOverlay(board,snapshot,artifact,playerColor){
   if(!board) return;
-  const mode=artifact?.mode||null,signature=`${mode||'none'}:${playerColor}:${snapshot?.fen||''}`;
-  if(board.dataset.artifactThreatSignature===signature) return;
-  board.dataset.artifactThreatSignature=signature;
-  board.querySelectorAll('.classic-threat-fire').forEach((node)=>node.remove());
-  if(!mode||!snapshot?.board) return;
+  const mode=artifact?.mode||null;
+  const desired=new Map();
   const enemyColor=playerColor==='w'?'b':'w';
-  for(let index=0;index<snapshot.board.length;index+=1){ const piece=snapshot.board[index]; if(!piece)continue; const side=piece.color===playerColor?'player':'enemy'; if((mode==='player'&&side!=='player')||(mode==='enemy'&&side!=='enemy'))continue; const attackers=countSquareAttackers(snapshot,index,piece.color===playerColor?enemyColor:playerColor); if(!attackers)continue; const square=indexToSquare(index),cell=board.querySelector(`[data-square="${square}"]`); if(!cell)continue; const fire=document.createElement('img'); fire.className='classic-threat-fire'; fire.src=FIRE_BY_THREAT[Math.min(3,attackers)]; fire.alt=''; fire.dataset.attackers=String(attackers); cell.append(fire); }
+  if(mode&&snapshot?.board) for(let index=0;index<snapshot.board.length;index+=1){
+    const piece=snapshot.board[index];
+    if(!piece)continue;
+    const side=piece.color===playerColor?'player':'enemy';
+    if((mode==='player'&&side!=='player')||(mode==='enemy'&&side!=='enemy'))continue;
+    const attackers=countSquareAttackers(snapshot,index,piece.color===playerColor?enemyColor:playerColor);
+    if(attackers)desired.set(indexToSquare(index),attackers);
+  }
+  // The chess renderer replaces cells even when FEN is unchanged (selection/AI thinking).
+  // Reconcile actual nodes, not a cached FEN. A second observer pass must make no mutations.
+  for(const cell of board.querySelectorAll('[data-square]')){
+    const attackers=desired.get(cell.dataset.square);
+    const existing=[...cell.querySelectorAll('.classic-threat-fire')];
+    let fire=existing.shift();
+    existing.forEach(node=>node.remove());
+    if(!attackers){fire?.remove();continue;}
+    if(!fire){fire=document.createElement('img');fire.className='classic-threat-fire';fire.alt='';cell.append(fire);}
+    const src=FIRE_BY_THREAT[Math.min(3,attackers)];
+    if(fire.getAttribute('src')!==src)fire.setAttribute('src',src);
+    if(fire.dataset.attackers!==String(attackers))fire.dataset.attackers=String(attackers);
+  }
 }
 
 export { chooseArtifact, renderThreatOverlay };

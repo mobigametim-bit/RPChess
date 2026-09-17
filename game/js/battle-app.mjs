@@ -296,6 +296,7 @@ function launchBattle() {
   capturedIds=new Set();processedMoves=0;battleFinalized=false;lastCapturedVisual=null;lastBattleStatus=null;lastMercenaryCasualty=null;clearTimeout(finalizeTimer);audio()?.click?.();showOnly('classic');setBattleNavigationLocked(true);
   globalThis.RPChessClassicChess?.newGame(battlePlan.fen,{mode:'ai',playerColor:battlePlan.playerColor,aiElo:encounter.aiElo});applyBoardArt();
   const mode=document.querySelector('[data-game-mode]');if(mode)mode.textContent=combatDifficultyLabel();
+  globalThis.dispatchEvent(new CustomEvent('rpchess:combat-started',{detail:{combatType:'battle'}}));
 }
 function startBattle() {
   activeRun=readRun();if(!activeRun||activeRun.ended)return;const validation=validateBattleSelection(activeRun.roster,[...selectedIds]);if(!validation.ok){setNotice(battleReason(validation));return;}

@@ -46,6 +46,20 @@ Runtime budget: square PNG with alpha, maximum 256×256 and 256 KiB per file; 1.
 
 ## Continuation notes
 
+### Preview feedback — 2026-09-17
+
+- [x] User opened Cloudflare preview `https://f28745cb-rpchess.mobigametim.workers.dev`; original preview build is available. The previous dashboard-access blocker does not mean the preview failed.
+- [x] Compare branch ancestry: `08f5625` is 3 commits ahead / 0 behind `main` (`e7f6ed0`). No stale base or incorrect clone; main/VK candidate remain unchanged.
+- [x] Replace mismatched market markup with one framed product-card renderer for supplies and artifacts, using the existing button style and owner-scoped responsive CSS.
+- [x] Restore canonical combat presentation through `rpchess:combat-started` after artifact selection. The old Start-click listener ran before asynchronous choice, leaving combat layout/HUD classes unset. Shared combat summary also listens to the actual launch.
+- [x] Reconcile fire nodes against actual cells, including same-position re-renders during selection/AI thinking. FEN-only caching left newly created cells without fire. Repeated observer passes now make no DOM changes.
+- [x] Verify the missing ×2 is platform gating: ordinary Cloudflare/Web launches intentionally have no VK ads. Monetization code is unchanged; do not spoof VK or award unearned ad rewards for preview tests.
+- [x] Run source verification, full materialized tests and new DOM/lifecycle regression tests (cell replacement, both player colors, count updates, clearing overlays, delayed Battle/Skirmish classes).
+- [ ] Verify the newly built Cloudflare preview visually at 1920×1080, 1024×768 and 844×390, including card overflow and combat layout. Do not mark manual acceptance from unit tests.
+- [ ] User acceptance of the fixed preview, then separately authorize merge/VK deployment.
+
+Next agent: inspect latest feature head and Cloudflare preview status, finish visual acceptance; do not use the old version-specific `f28745cb` URL as proof that a newer commit was deployed. No changes to `main`, VK settings or production publication are authorized by this feedback pass.
+
 - The existing current settlement records are intentionally invalidated during hydration once, then regenerated from their route seed with the Artifact offer. This preserves deterministic offers and does not alter unrelated run state.
 - `combatArtifactChoice` is transient persistence for a started encounter. It prevents a reload or repeated click from spending another charge and is cleared in both Battle and Skirmish completion paths.
 - The local `build:materialized` reached asset optimization successfully; the six runtime assets total 434.4 KiB. The subsequent Stockfish fetch timed out through the restricted proxy. This is an infrastructure retry, not an artifact contract failure.

@@ -95,7 +95,7 @@ function ensureScreen() {
         <section class="settlement-service settlement-service--market ui-panel-safe" aria-labelledby="settlement-supplies-title">
           <div class="settlement-service__icon settlement-service__icon--market" aria-hidden="true"></div>
           <h2 id="settlement-supplies-title" data-settlement-market-title></h2>
-          <div class="settlement-supply-card" data-settlement-supply-card></div>
+            <div class="settlement-market-products" data-settlement-supply-card></div>
         </section>
       </div>
       <footer class="settlement-footer">
@@ -183,22 +183,21 @@ function renderRecruits() {
   }
 }
 
+function marketProductCard({icon,name,description,stock,price,action,disabled,sold}) {
+  return `<article class="settlement-product-card${sold?' is-sold':''}">
+    <img class="settlement-product-card__icon" src="${icon}" alt="">
+    <div class="settlement-product-card__copy"><strong>${name}</strong><p>${description}</p><small>${stock}</small></div>
+    <div class="settlement-product-card__footer">${goldMarkup(price)}<button class="reboot-button reboot-button--primary" type="button" ${action} ${disabled?'disabled':''}>${t(sold?'settlement.market.soldOut':'settlement.market.buy')}</button></div>
+  </article>`;
+}
 function renderSupply() {
   const root = screen?.querySelector('[data-settlement-supply-card]');
   if (!root || !activeRun?.currentSettlement) return;
   const stock = activeRun.currentSettlement.supplyStock;
   const disabled = stock <= 0 || activeRun.gold < SETTLEMENT_SUPPLY_PRICE;
   const offer=activeRun.currentSettlement.artifactOffer,artifact=artifactById(offer?.id),artifactDisabled=!artifact||offer.sold||activeRun.gold<offer.price;
-  root.innerHTML = `
-    <div class="settlement-market-row__product">
-      <img class="settlement-market-row__item-icon" src="${SUPPLIES_ICON}" alt="" aria-hidden="true">
-      <strong data-settlement-supply-stock>${stock}/4</strong>
-      <span class="settlement-market-row__separator">${t('settlement.market.for')}</span>
-      <img class="settlement-market-row__gold-icon" src="${GOLD_ICON}" alt="" aria-hidden="true">
-      <strong class="settlement-price settlement-market-row__price">${SETTLEMENT_SUPPLY_PRICE}</strong>
-    </div>
-    <button class="reboot-button reboot-button--primary" type="button" data-settlement-buy-supply ${disabled ? 'disabled' : ''}>${stock <= 0 ? t('settlement.market.soldOut') : t('settlement.market.buy')}</button>
-    ${artifact?`<article class="settlement-artifact-card${offer.sold?' is-sold':''}"><img src="${artifact.icon}" alt=""><div><strong>${artifact.name}</strong><p>${artifact.description}</p><small>${offer.sold?'ПРОДАНО':`${offer.charges} ${offer.charges===1?'заряд':'заряда'}`}</small></div><div class="settlement-artifact-card__action">${goldMarkup(offer.price)}<button class="reboot-button reboot-button--primary" type="button" data-settlement-buy-artifact ${artifactDisabled?'disabled':''}>${offer.sold?'Продано':'Купить'}</button></div></article>`:''}`;
+  root.innerHTML = marketProductCard({icon:SUPPLIES_ICON,name:t('resources.supplies'),description:t('settlement.market.supplyDescription'),stock:`<span data-settlement-supply-stock>${t('settlement.market.stock',{count:stock})}</span>`,price:SETTLEMENT_SUPPLY_PRICE,action:'data-settlement-buy-supply',disabled,sold:stock<=0})
+    +(artifact?marketProductCard({icon:artifact.icon,name:artifact.name,description:artifact.description,stock:t('settlement.market.charges',{count:offer.charges}),price:offer.price,action:'data-settlement-buy-artifact',disabled:artifactDisabled,sold:offer.sold}):'');
 }
 
 function renderSettlement() {
