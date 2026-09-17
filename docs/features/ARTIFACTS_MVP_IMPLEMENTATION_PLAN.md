@@ -25,7 +25,7 @@
 - [x] Add six artifact PNGs to the runtime copy, transform cache, max-size/alpha contract and dist verification.
 - [x] Add unit/contract coverage for offers, purchases, idempotent selection, attacker counting and asset contract.
 - [ ] Run the full local gate after the external Stockfish fetch is available.
-- [ ] Push branch and wait for Cloudflare Preview build.
+- [x] Publish `feature/artifacts-mvp` to GitHub (`90ee63e`); wait for the automatic Cloudflare Preview build.
 - [ ] Manual acceptance: Settlement purchase, each combat choice, yellow/orange/red fires, reload/idempotency, white/black player side, 1920×1080 / 1024×768 / 844×390.
 - [ ] Only after explicit acceptance: merge to `main`, deploy the already-approved version to VK and mark the feature DONE.
 
@@ -48,4 +48,4 @@ Runtime budget: square PNG with alpha, maximum 256×256 and 256 KiB per file; 1.
 
 - The existing current settlement records are intentionally invalidated during hydration once, then regenerated from their route seed with the Artifact offer. This preserves deterministic offers and does not alter unrelated run state.
 - `combatArtifactChoice` is transient persistence for a started encounter. It prevents a reload or repeated click from spending another charge and is cleared in both Battle and Skirmish completion paths.
-- The local `build:materialized` reached asset optimization successfully (six assets: 7.34 MiB → 434.4 KiB) but the subsequent Stockfish fetch timed out through the restricted proxy. This is an infrastructure retry, not an artifact contract failure.
+- The local `build:materialized` reached asset optimization successfully; the six runtime assets total 434.4 KiB. The subsequent Stockfish fetch timed out through the restricted proxy. This is an infrastructure retry, not an artifact contract failure.
