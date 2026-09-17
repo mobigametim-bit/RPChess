@@ -115,7 +115,8 @@ function addSlidingMoves(state, from, color, directions, moves) {
   }
 }
 
-function isSquareAttacked(state, target, byColor) {
+function countSquareAttackers(state, target, byColor) {
+  let attackers = 0;
   const tf = fileOf(target);
   const tr = rankOf(target);
   const pawnSourceRank = tr + (byColor === 'w' ? -1 : 1);
@@ -123,7 +124,7 @@ function isSquareAttacked(state, target, byColor) {
     const file = tf + df;
     if (!inBounds(file, pawnSourceRank)) continue;
     const piece = state.board[indexOf(file, pawnSourceRank)];
-    if (piece?.color === byColor && piece.type === 'p') return true;
+    if (piece?.color === byColor && piece.type === 'p') attackers += 1;
   }
 
   for (const [df, dr] of [[1, 2], [2, 1], [2, -1], [1, -2], [-1, -2], [-2, -1], [-2, 1], [-1, 2]]) {
@@ -131,7 +132,7 @@ function isSquareAttacked(state, target, byColor) {
     const rank = tr + dr;
     if (!inBounds(file, rank)) continue;
     const piece = state.board[indexOf(file, rank)];
-    if (piece?.color === byColor && piece.type === 'n') return true;
+    if (piece?.color === byColor && piece.type === 'n') attackers += 1;
   }
 
   for (const [df, dr] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
@@ -140,7 +141,7 @@ function isSquareAttacked(state, target, byColor) {
     while (inBounds(file, rank)) {
       const piece = state.board[indexOf(file, rank)];
       if (piece) {
-        if (piece.color === byColor && (piece.type === 'b' || piece.type === 'q')) return true;
+        if (piece.color === byColor && (piece.type === 'b' || piece.type === 'q')) attackers += 1;
         break;
       }
       file += df;
@@ -154,7 +155,7 @@ function isSquareAttacked(state, target, byColor) {
     while (inBounds(file, rank)) {
       const piece = state.board[indexOf(file, rank)];
       if (piece) {
-        if (piece.color === byColor && (piece.type === 'r' || piece.type === 'q')) return true;
+        if (piece.color === byColor && (piece.type === 'r' || piece.type === 'q')) attackers += 1;
         break;
       }
       file += df;
@@ -168,10 +169,11 @@ function isSquareAttacked(state, target, byColor) {
     const rank = tr + dr;
     if (!inBounds(file, rank)) continue;
     const piece = state.board[indexOf(file, rank)];
-    if (piece?.color === byColor && piece.type === 'k') return true;
+    if (piece?.color === byColor && piece.type === 'k') attackers += 1;
   }
-  return false;
+  return attackers;
 }
+function isSquareAttacked(state, target, byColor) { return countSquareAttackers(state, target, byColor) > 0; }
 
 function kingIndex(state, color) {
   return state.board.findIndex((piece) => piece?.color === color && piece.type === 'k');
@@ -433,4 +435,4 @@ class ClassicChessEngine {
   }
 }
 
-export { COLORS, PIECES, PROMOTIONS, ClassicChessEngine, createInitialState, gameStatus, inCheck, indexToSquare, insufficientMaterial, isSquareAttacked, legalMoves, parseFEN, positionKey, squareToIndex, stateToFEN };
+export { COLORS, PIECES, PROMOTIONS, ClassicChessEngine, createInitialState, gameStatus, inCheck, indexToSquare, insufficientMaterial, isSquareAttacked, countSquareAttackers, legalMoves, parseFEN, positionKey, squareToIndex, stateToFEN };
