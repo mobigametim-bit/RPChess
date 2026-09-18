@@ -1,6 +1,7 @@
 import { readRun, writeRun } from './run-persistence.mjs';
 import { PIECE_GLYPHS } from './roster-data.mjs';
 import { subscribe, t, translateLegacy } from './i18n.mjs';
+import { brandLogoSrc } from './brand-logo.mjs';
 import { eventBackgroundPath } from './race-assets.mjs';
 import { literaryStory } from './event-narrative.mjs';
 import { playerNameForRun, personalizePlayerNarrative, personalizePlayerTitle } from './player-identity-core.mjs';
@@ -63,7 +64,7 @@ function ensureScreen() {
     </div>
     <div class="events-shell">
       <header class="events-topbar">
-        <img class="events-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
+        <img class="events-logo" data-brand-logo src="${brandLogoSrc()}" alt="RPChess">
       </header>
       <section class="events-panel">
         <div class="events-copy-frame ui-panel-safe">

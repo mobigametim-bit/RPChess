@@ -7,6 +7,7 @@ const portrait=require('../scripts/portrait-asset-runtime.cjs');
 const background=require('../scripts/background-asset-runtime.cjs');
 const pinIce=require('../scripts/pin-ice-asset-runtime.cjs');
 const aura=require('../scripts/aura-asset-runtime.cjs');
+const brandLogo=require('../scripts/brand-logo-asset-runtime.cjs');
 
 const ROOT=path.resolve(__dirname,'..'),GAME=path.join(ROOT,'game'),DIST=path.join(ROOT,'dist');
 function read(root,relative){return fs.readFileSync(path.join(root,relative));}
@@ -40,6 +41,7 @@ equal('assets/vfx/aura_white.png',piece.optimizePngBuffer(read(GAME,'assets/vfx/
 equal('assets/races/orcs/pieces/pawn.png',expectedPng('assets/races/orcs/pieces/pawn.png',piece.PIECE_RUNTIME_MAX_SIDE,piece.PIECE_RUNTIME_MAX_BYTES));
 equal('assets/kings/oathkeeper/portrait.png',expectedPng('assets/kings/oathkeeper/portrait.png',portrait.PORTRAIT_RUNTIME_MAX_SIDE,portrait.PORTRAIT_RUNTIME_MAX_BYTES));
 equal('assets/events/register-04/backgrounds/generic/forest_crossroad.png',background.optimizeBackgroundBuffer(read(GAME,'assets/events/register-04/backgrounds/generic/forest_crossroad.png'),background.BACKGROUND_RUNTIME_CHANNEL_BITS).buffer);
+for(const relative of brandLogo.BRAND_LOGO_FILES)equal(relative,piece.optimizePngBuffer(read(GAME,relative),brandLogo.BRAND_LOGO_RUNTIME_MAX_SIDE).buffer);
 
 for(const relative of [
   'assets/heroes/aldric_wall/ability_icon.png',

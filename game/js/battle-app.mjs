@@ -3,6 +3,7 @@ import { readRun, writeRun } from './run-persistence.mjs';
 import { pieceArtForTheme, racePiecePath } from './race-assets.mjs';
 import { starsText } from './encounter-difficulty.mjs';
 import { subscribe, t, translateLegacy } from './i18n.mjs';
+import { brandLogoSrc } from './brand-logo.mjs';
 import { chooseArtifact, renderThreatOverlay } from './artifact-combat-ui.mjs';
 import { artifactForCombat, clearCombatArtifactChoice } from './artifact-core.mjs';
 import {
@@ -85,7 +86,7 @@ function ensureBattleScreens() {
   prepScreen.innerHTML = `
     <div class="battle-shell">
       <header class="battle-topbar">
-        <img class="battle-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
+        <img class="battle-logo" data-brand-logo src="${brandLogoSrc()}" alt="RPChess">
       </header>
       <header class="battle-heading">
         <div>
@@ -127,7 +128,7 @@ function ensureBattleScreens() {
   aftermathScreen.setAttribute('aria-label', 'Итоги битвы');
   aftermathScreen.hidden = true;
   aftermathScreen.innerHTML = `
-    <div class="battle-aftermath-shell"><img class="battle-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
+    <div class="battle-aftermath-shell"><img class="battle-logo" data-brand-logo src="${brandLogoSrc()}" alt="RPChess">
       <section class="battle-aftermath-panel ui-panel-safe">
         <div class="reboot-eyebrow" data-battle-aftermath-kicker>БИТВА ЗАВЕРШЕНА</div><h1 data-battle-aftermath-result>ИТОГ</h1><p data-battle-aftermath-text></p>
         <div class="battle-aftermath-columns"><section><h2 data-battle-survivors-title>Выжили</h2><div class="battle-aftermath-list" data-battle-survivors></div></section><section><h2 data-battle-wounded-title>Тяжело ранены</h2><div class="battle-aftermath-list" data-battle-wounded></div></section></div>
@@ -140,7 +141,7 @@ function ensureBattleScreens() {
   runEndScreen.dataset.battleRunEnd = '';
   runEndScreen.hidden = true;
   runEndScreen.innerHTML = `
-    <div class="battle-aftermath-shell"><img class="battle-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
+    <div class="battle-aftermath-shell"><img class="battle-logo" data-brand-logo src="${brandLogoSrc()}" alt="RPChess">
       <section class="battle-aftermath-panel ui-panel-safe"><div class="reboot-eyebrow" data-battle-run-end-kicker>ЗАБЕГ ЗАВЕРШЁН</div><h1 data-battle-run-end-title>КОРОЛЬ ПОГИБ</h1><p data-battle-run-end-text></p>
         <div class="battle-aftermath-columns battle-run-end-metrics"><section><h2 data-battle-run-combats-title>Сражений завершено</h2><div class="battle-aftermath-empty" data-battle-run-metric="combats">0</div></section><section><h2 data-battle-run-healthy-title>Сохранили строй</h2><div class="battle-aftermath-empty" data-battle-run-metric="healthy">0</div></section><section><h2 data-battle-run-wounded-title>Тяжело ранены</h2><div class="battle-aftermath-empty" data-battle-run-metric="wounded">0</div></section></div>
         <button class="reboot-button reboot-button--primary battle-aftermath-button" type="button" data-battle-run-end-continue>Главное меню</button>
