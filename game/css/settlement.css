@@ -58,7 +58,8 @@ body.settlement-active .resource-chip strong{color:#f0d99e}
 @media(max-width:520px){.settlement-topbar{display:grid;grid-template-columns:1fr}.settlement-topbar__actions{justify-content:flex-start}.settlement-recruit{grid-template-columns:1fr}.settlement-recruit__portrait{width:100%;height:180px}.settlement-recruit__head{display:grid}.settlement-recruit__footer{align-items:center}.settlement-heal-row__action{flex-wrap:wrap}.settlement-service__icon{width:56px;height:56px;top:14px;right:14px}.settlement-service h2{margin-right:66px}}
 
 /* Market products share one layout; owned here rather than by shared scene styles. */
-.settlement-market-products{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-top:10px;min-width:0}
+.settlement-service--market{display:flex;min-height:0;flex-direction:column}
+.settlement-market-products{display:grid;grid-template-columns:minmax(0,1fr);flex:1;min-height:0;gap:10px;margin-top:10px;min-width:0;overflow-y:auto;overscroll-behavior:contain}
 .settlement-product-card{display:grid;grid-template-columns:48px minmax(0,1fr);gap:8px 10px;padding:12px;min-width:0;border:1px solid rgba(218,177,86,.24);border-radius:6px;background:rgba(7,11,16,.72)}
 .settlement-product-card__icon{width:48px;height:48px;object-fit:contain}
 /* Amulet source art has transparent padding; scale its visible silhouette to the standard supply icon. */
