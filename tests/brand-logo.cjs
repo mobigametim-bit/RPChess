@@ -33,4 +33,7 @@ assert.strictEqual(build.includes("'title_wordmark.png'"), false, 'legacy wordma
 const css = read('css/settlement.css');
 for (const token of ['grid-auto-rows:max-content', 'align-content:start', 'settlement-product-card__icon--artifact{transform:scale(1.55)}']) assert(css.includes(token), `market compact-card contract missing ${token}`);
 
+const menuCss = read('css/ui-redesign-first-three.css');
+for (const token of ['margin:0 0 0 152px', 'transform:translateY(-clamp(12px,1.6vh,20px))', 'margin:34px auto 0']) assert(menuCss.includes(token), `main-menu logo alignment contract missing ${token}`);
+
 console.log('Localized brand logos, tagline removal and compact market-card contract: PASS');
