@@ -1,7 +1,7 @@
 # Artifacts MVP — implementation plan
 
-**Branch:** `feature/artifacts-mvp`
-**Delivery:** Cloudflare Preview from the feature branch only. `main` and the VK moderation candidate must remain unchanged until manual acceptance.
+**Branch:** `feature/artifacts-mvp` → merged to `main` via PR [#139](https://github.com/mobigametim-bit/RPChess/pull/139) on 2026-09-18.
+**Delivery:** Cloudflare Preview was accepted. Publication to GitHub Pages/VK remains a separate manual release action.
 
 ## Fixed product contract
 
@@ -26,8 +26,9 @@
 - [x] Add unit/contract coverage for offers, purchases, idempotent selection, attacker counting and asset contract.
 - [ ] Run the full local gate after the external Stockfish fetch is available.
 - [x] Publish `feature/artifacts-mvp` to GitHub (`90ee63e`); wait for the automatic Cloudflare Preview build.
-- [ ] Manual acceptance: Settlement purchase, each combat choice, yellow/orange/red fires, reload/idempotency, white/black player side, 1920×1080 / 1024×768 / 844×390.
-- [ ] Only after explicit acceptance: merge to `main`, deploy the already-approved version to VK and mark the feature DONE.
+- [x] Manual acceptance: Settlement purchase, each combat choice, yellow/orange/red fires, reload/idempotency, white/black player side, 1920×1080 / 1024×768 / 844×390.
+- [x] User authorized and feature merged to `main` through PR [#139](https://github.com/mobigametim-bit/RPChess/pull/139), merge commit `1c08034`.
+- [ ] Manually run **Deploy RPChess to GitHub Pages** on `main`, then verify the VK app uses the updated Pages version.
 
 ## Asset contract
 
@@ -59,10 +60,10 @@ Runtime budget: square PNG with alpha, maximum 256×256 and 256 KiB per file; 1.
 - [x] Normalize all market product icons: padded amulet art is scaled to the same visible size as supplies on desktop, tablet and narrow landscape.
 - [x] Set first-run Music setting to 20%; an existing saved player setting is preserved.
 - [x] Localize the artifact offer, purchase receipt and pre-combat choice cards in Russian and English.
-- [ ] Verify the newly built Cloudflare preview visually at 1920×1080, 1024×768 and 844×390, including card overflow and combat layout. Do not mark manual acceptance from unit tests.
-- [ ] User acceptance of the fixed preview, then separately authorize merge/VK deployment.
+- [x] Verify the newly built Cloudflare preview visually at 1920×1080, 1024×768 and 844×390, including card overflow and combat layout.
+- [x] User accepted the fixed preview and authorized merge to `main`.
 
-Next agent: inspect latest feature head and Cloudflare preview status, finish visual acceptance; do not use the old version-specific `f28745cb` URL as proof that a newer commit was deployed. No changes to `main`, VK settings or production publication are authorized by this feedback pass.
+Next agent: after the GitHub Pages workflow is manually run for `main`, verify the Pages version in VK. The feature is merged; do not change the VK URL or create a new production publish without user approval.
 
 - The existing current settlement records are intentionally invalidated during hydration once, then regenerated from their route seed with the Artifact offer. This preserves deterministic offers and does not alter unrelated run state.
 - `combatArtifactChoice` is transient persistence for a started encounter. It prevents a reload or repeated click from spending another charge and is cleared in both Battle and Skirmish completion paths.
