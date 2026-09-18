@@ -1060,7 +1060,6 @@ html[data-landscape-ui='1'] body.compact-combat-active .classic-shell {
 @media (orientation: landscape) and (max-height: 860px) {
   html[data-landscape-ui='1'],
   html[data-landscape-ui='1'] body,
-  #app,
   #app > main.reboot-menu-screen:not([hidden]) {
     height: 100dvh !important;
     min-height: 0 !important;
