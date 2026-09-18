@@ -1,7 +1,7 @@
 # Localized brand logos and UI polish — implementation plan
 
 **Branch:** `feature/localized-brand-logos`  
-**Status:** Implementation published for preview at commit `7c98cf416c58141b8c9aedbe333940ab866810fd`; visual/Cloudflare acceptance remains pending.  
+**Status:** Implementation published for preview; latest UI-alignment commit `6e80f773295adb59636e9d5f59a98a36eb5c3f82`; visual/Cloudflare acceptance remains pending.  
 **Scope:** localize the RPChess brand mark across the UI, remove the unnecessary main-menu tagline, and restore compact market-card framing while retaining the accepted larger artifact icons.
 
 ## Product contract
@@ -23,9 +23,10 @@
 - [x] Introduce one shared locale-aware brand-logo resolver; avoid individual per-screen language branches.
 - [x] Replace all visible static and dynamic `title_wordmark.png` usages with the resolver/data attribute contract; remove the hidden legacy reference.
 - [x] Remove the main-menu tagline from markup/localization without leaving unused UI strings.
+- [x] Align the main-menu logo to the action-column center and raise it above the buttons; keep centered fallback behavior at tablet and mobile widths.
 - [x] Restore compact product-card frame heights and paddings in Settlement CSS while preserving the current large icon rendering.
 - [x] Add source/localization coverage for logo switching, no legacy runtime wordmark and market-card geometry; responsive browser coverage remains part of the preview gate.
-- [x] Publish the implementation commit to the isolated GitHub branch (commit `7c98cf416c58141b8c9aedbe333940ab866810fd`).
+- [x] Publish the implementation to the isolated GitHub branch (latest commit `6e80f773295adb59636e9d5f59a98a36eb5c3f82`).
 - [ ] Run the canonical local gate and visually inspect Russian/English at 1920×1080, 1024×768, 844×390 and mobile portrait.
 - [ ] Confirm the Cloudflare Preview URL and obtain user acceptance; a branch preview must not change `main`.
 - [ ] After acceptance, merge via PR, update this plan and Notion to complete, then manually run GitHub Pages for `main` to publish the existing VK URL.
