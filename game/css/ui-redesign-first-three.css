@@ -468,6 +468,23 @@ body.travel-choice-active .resource-chip strong{color:#f0d99e}
   }
 }
 
+/* Tablet and phone landscape: the localized brand mark is taller than the
+   archived wordmark, so tighten only the short viewport composition. */
+@media (min-width:621px) and (max-width:1120px) and (max-height:620px){
+  .reboot-menu-screen.reboot-menu-screen{padding:10px 18px}
+  .reboot-menu-screen .reboot-menu-screen__main{
+    min-height:auto;
+    padding:14px 18px;
+  }
+  .reboot-menu-screen .reboot-wordmark{width:min(320px,60vw)}
+  .reboot-menu-screen .reboot-menu-actions{
+    margin-top:14px;
+    gap:8px;
+  }
+  .reboot-menu-screen .reboot-menu-actions .reboot-button{min-height:48px}
+  .reboot-menu-screen .reboot-menu-secondary{margin-top:8px}
+}
+
 @media(max-width:900px){
   .travel-choice-screen .travel-choice-routes{grid-template-columns:1fr;gap:14px}
   .travel-choice-screen .travel-choice-card{min-height:320px}
