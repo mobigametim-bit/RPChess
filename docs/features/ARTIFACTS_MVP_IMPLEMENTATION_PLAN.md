@@ -55,6 +55,7 @@ Runtime budget: square PNG with alpha, maximum 256×256 and 256 KiB per file; 1.
 - [x] Reconcile fire nodes against actual cells, including same-position re-renders during selection/AI thinking. FEN-only caching left newly created cells without fire. Repeated observer passes now make no DOM changes.
 - [x] Verify the missing ×2 is platform gating: ordinary Cloudflare/Web launches intentionally have no VK ads. Monetization code is unchanged; do not spoof VK or award unearned ad rewards for preview tests.
 - [x] Run source verification, full materialized tests and new DOM/lifecycle regression tests (cell replacement, both player colors, count updates, clearing overlays, delayed Battle/Skirmish classes).
+- [x] Cloudflare build for `534c83c` succeeded (version `82207b82`). Preview: `https://82207b82-rpchess.mobigametim.workers.dev`; stable branch alias: `https://feature-artifacts-mvp-rpchess.mobigametim.workers.dev`.
 - [ ] Verify the newly built Cloudflare preview visually at 1920×1080, 1024×768 and 844×390, including card overflow and combat layout. Do not mark manual acceptance from unit tests.
 - [ ] User acceptance of the fixed preview, then separately authorize merge/VK deployment.
 
