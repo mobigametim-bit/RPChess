@@ -100,6 +100,16 @@
 .reboot-menu-screen .reboot-menu-secondary{margin-top:10px}
 .reboot-menu-screen .reboot-menu-actions .reboot-button{min-height:58px}
 
+/* The localized mark has a taller aspect ratio than the former wordmark.
+   Preserve the desktop composition on short landscape displays without
+   introducing page-level scrolling. */
+@media (min-width:1121px) and (max-height:760px){
+  .reboot-menu-screen .reboot-wordmark{
+    width:min(440px,72vw);
+    margin-left:182px;
+  }
+}
+
 .reboot-menu-screen .chronicle-panel{
   align-self:center;
   justify-self:end;
