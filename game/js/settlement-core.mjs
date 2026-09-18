@@ -1,5 +1,6 @@
 import { PIECE_VALUES } from './roster-data.mjs';
 import { seededRandom } from './travel-choice-core.mjs';
+import { applyArtifactPurchase, deterministicArtifactOffer, isArtifactOffer } from './artifact-core.mjs';
 
 const SETTLEMENT_OFFER_COUNT = 3;
 const SETTLEMENT_SUPPLY_PRICE = 12;
@@ -112,6 +113,7 @@ function isSettlementState(value) {
   if (new Set(value.offers).size !== SETTLEMENT_OFFER_COUNT) return false;
   if (!value.offers.every((id) => Boolean(recruitProfile(id)))) return false;
   if (!Number.isInteger(value.supplyStock) || value.supplyStock < 0 || value.supplyStock > SETTLEMENT_SUPPLY_STOCK) return false;
+  if (!isArtifactOffer(value.artifactOffer)) return false;
   return true;
 }
 
@@ -124,7 +126,8 @@ function createSettlementState(run, choice) {
     routeId: choice.id,
     seed: choice.seed,
     offers: deterministicRecruitOffers({ seed: choice.seed, roster: run.roster }),
-    supplyStock: SETTLEMENT_SUPPLY_STOCK
+    supplyStock: SETTLEMENT_SUPPLY_STOCK,
+    artifactOffer: deterministicArtifactOffer({seed:choice.seed})
   };
 }
 
@@ -215,5 +218,6 @@ export {
   applyHealing,
   applyRecruitment,
   applySupplyPurchase,
+  applyArtifactPurchase,
   completeSettlement
 };

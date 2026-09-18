@@ -380,7 +380,7 @@ for (const name of [
   'rpchess:resources-updated','rpchess:power-updated','rpchess:run-continue',
   'rpchess:travel-open','rpchess:skirmish-open','rpchess:battle-open','rpchess:puzzle-open',
   'rpchess:event-open','rpchess:settlement-open','rpchess:starvation-open','rpchess:language-changed',
-  'rpchess:combat-completed','rpchess:puzzle-resolved'
+  'rpchess:combat-started','rpchess:combat-completed','rpchess:puzzle-resolved'
 ]) addEventListener(name, () => queueMicrotask(scheduleRefresh));
 
 document.addEventListener('click', (event) => {

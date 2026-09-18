@@ -41,6 +41,8 @@ function refresh(){queued=false;syncCombatBoard();syncPuzzle();syncSkirmishPrep(
 function schedule(){if(queued)return;queued=true;requestAnimationFrame(refresh);}
 
 ensureCss();
+// Artifact selection makes combat launch asynchronous relative to the preparation click.
+addEventListener('rpchess:combat-started',schedule);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 for(const name of ['rpchess:skirmish-open','rpchess:battle-open','rpchess:puzzle-open','rpchess:puzzle-resolved','rpchess:combat-completed','rpchess:settlement-open','rpchess:event-open','rpchess:travel-open','rpchess:run-continue'])addEventListener(name,()=>queueMicrotask(schedule));
 subscribe(()=>queueMicrotask(schedule));

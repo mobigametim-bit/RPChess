@@ -5,6 +5,7 @@ import { heroNoteForId } from './content/hero-notes.mjs';
 import {
   SETTLEMENT_SUPPLY_PRICE,
   applyHealing,
+  applyArtifactPurchase,
   applyRecruitment,
   applySupplyPurchase,
   completeSettlement,
@@ -13,6 +14,7 @@ import {
   recruitCost,
   recruitProfile
 } from './settlement-core.mjs';
+import { artifactById } from './artifact-core.mjs';
 
 const GOLD_ICON='generated_assets/reward_gold.png';
 const SUPPLIES_ICON='generated_assets/reward_supplies.png';
@@ -93,7 +95,7 @@ function ensureScreen() {
         <section class="settlement-service settlement-service--market ui-panel-safe" aria-labelledby="settlement-supplies-title">
           <div class="settlement-service__icon settlement-service__icon--market" aria-hidden="true"></div>
           <h2 id="settlement-supplies-title" data-settlement-market-title></h2>
-          <div class="settlement-supply-card" data-settlement-supply-card></div>
+            <div class="settlement-market-products" data-settlement-supply-card></div>
         </section>
       </div>
       <footer class="settlement-footer">
@@ -181,20 +183,21 @@ function renderRecruits() {
   }
 }
 
+function marketProductCard({icon,name,description,stock,price,action,disabled,sold,iconClass=''}) {
+  return `<article class="settlement-product-card${sold?' is-sold':''}">
+    <img class="settlement-product-card__icon${iconClass}" src="${icon}" alt="">
+    <div class="settlement-product-card__copy"><strong>${name}</strong><p>${description}</p><small>${stock}</small></div>
+    <div class="settlement-product-card__footer">${goldMarkup(price)}<button class="reboot-button reboot-button--primary" type="button" ${action} ${disabled?'disabled':''}>${t(sold?'settlement.market.soldOut':'settlement.market.buy')}</button></div>
+  </article>`;
+}
 function renderSupply() {
   const root = screen?.querySelector('[data-settlement-supply-card]');
   if (!root || !activeRun?.currentSettlement) return;
   const stock = activeRun.currentSettlement.supplyStock;
   const disabled = stock <= 0 || activeRun.gold < SETTLEMENT_SUPPLY_PRICE;
-  root.innerHTML = `
-    <div class="settlement-market-row__product">
-      <img class="settlement-market-row__item-icon" src="${SUPPLIES_ICON}" alt="" aria-hidden="true">
-      <strong data-settlement-supply-stock>${stock}/4</strong>
-      <span class="settlement-market-row__separator">${t('settlement.market.for')}</span>
-      <img class="settlement-market-row__gold-icon" src="${GOLD_ICON}" alt="" aria-hidden="true">
-      <strong class="settlement-price settlement-market-row__price">${SETTLEMENT_SUPPLY_PRICE}</strong>
-    </div>
-    <button class="reboot-button reboot-button--primary" type="button" data-settlement-buy-supply ${disabled ? 'disabled' : ''}>${stock <= 0 ? t('settlement.market.soldOut') : t('settlement.market.buy')}</button>`;
+  const offer=activeRun.currentSettlement.artifactOffer,artifact=artifactById(offer?.id),artifactDisabled=!artifact||offer.sold||activeRun.gold<offer.price;
+  root.innerHTML = marketProductCard({icon:SUPPLIES_ICON,name:t('resources.supplies'),description:t('settlement.market.supplyDescription'),stock:`<span data-settlement-supply-stock>${t('settlement.market.stock',{count:stock})}</span>`,price:SETTLEMENT_SUPPLY_PRICE,action:'data-settlement-buy-supply',disabled,sold:stock<=0})
+    +(artifact?marketProductCard({icon:artifact.icon,iconClass:' settlement-product-card__icon--artifact',name:t(artifact.nameKey),description:t(artifact.descriptionKey),stock:t('settlement.market.charges',{count:offer.charges}),price:offer.price,action:'data-settlement-buy-artifact',disabled:artifactDisabled,sold:offer.sold}):'');
 }
 
 function renderSettlement() {
@@ -221,7 +224,8 @@ function handleServiceAction(event) {
   const healButton = event.target?.closest?.('[data-settlement-heal]');
   const recruitButton = event.target?.closest?.('[data-settlement-recruit]');
   const supplyButton = event.target?.closest?.('[data-settlement-buy-supply]');
-  if (!healButton && !recruitButton && !supplyButton) return;
+  const artifactButton = event.target?.closest?.('[data-settlement-buy-artifact]');
+  if (!healButton && !recruitButton && !supplyButton && !artifactButton) return;
   activeRun = readRun();
   if (!activeRun || activeRun.ended || activeRun.activeTravelChoice?.type !== 'settlement') return;
   busy = true;
@@ -236,6 +240,9 @@ function handleServiceAction(event) {
   } else if (supplyButton) {
     const result = applySupplyPurchase(activeRun);
     changed = persistResult(result, { goldDelta: -result.spent, suppliesDelta: result.suppliesAdded, label: result.success ? t('resources.supplyPurchase') : '' });
+  } else if (artifactButton) {
+    const result = applyArtifactPurchase(activeRun);
+    changed = persistResult(result, { goldDelta: -result.spent, label: result.success ? t('artifacts.purchaseToast',{name:t(result.artifact.nameKey)}) : '' });
   }
   if (!changed) renderSettlement();
   busy = false;

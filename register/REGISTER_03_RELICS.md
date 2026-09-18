@@ -1,5 +1,7 @@
 # REGISTER 03 — FIGURE-BOUND RELICS
 
+> **ARCHIVED CONCEPT — do not implement.** This register describes the retired figure-bound relic design (one relic assigned to one compatible chess piece and no shared inventory). The canonical Artifacts MVP is the shared, charge-based run inventory documented in [`docs/features/ARTIFACTS_MVP_IMPLEMENTATION_PLAN.md`](../docs/features/ARTIFACTS_MVP_IMPLEMENTATION_PLAN.md). The imported icons remain available as archival art only.
+
 Part of `CONTENT_AND_ASSET_PRODUCTION_REGISTER.md`.
 
 ## Shared production specification
