@@ -28,7 +28,7 @@ async function enter(page) {
   assert.strictEqual(await card.count(), 1, 'deterministic Settlement route must exist');
   await card.click();
   await page.locator('[data-settlement-screen]:not([hidden])').waitFor();
-  await page.locator('.settlement-market-row__product').waitFor({ state:'visible' });
+  await page.locator('.settlement-product-card').first().waitFor({ state:'visible' });
 }
 
 async function readMarketLayout(page) {
@@ -42,13 +42,13 @@ async function readMarketLayout(page) {
     const services = [...document.querySelectorAll('.settlement-service')];
     const market = document.querySelector('[aria-labelledby="settlement-supplies-title"]');
     const card = market?.querySelector('[data-settlement-supply-card]');
-    const product = card?.querySelector('.settlement-market-row__product');
+    const product = card?.querySelector('.settlement-product-card');
     const button = card?.querySelector('[data-settlement-buy-supply]');
     const marketIcon = market?.querySelector('.settlement-service__icon');
     const nestedMarketImage = marketIcon?.querySelector(':scope > img');
-    const itemIcon = product?.querySelector('.settlement-market-row__item-icon');
-    const goldIcon = product?.querySelector('.settlement-market-row__gold-icon');
-    const separator = product?.querySelector('.settlement-market-row__separator');
+    const itemIcon = product?.querySelector('.settlement-product-card__icon');
+    const goldIcon = product?.querySelector('.settlement-price img');
+    const separator = null;
     const stock = product?.querySelector('[data-settlement-supply-stock]');
     const productStyle = product ? getComputedStyle(product) : null;
     const marketStyle = market ? getComputedStyle(market) : null;
@@ -121,13 +121,13 @@ function assertMarketLayout(layout, label, language) {
   assert(layout.itemSrc.endsWith('generated_assets/reward_supplies.png'), `${label}: Market purchase row must use reward_supplies.png`);
 
   const expected = layout.vw <= 980 && layout.vh <= 520
-    ? { icon:35, stock:19, separator:15, button:15 }
+    ? { itemIcon:28, stock:9, button:14 }
     : layout.vw <= 1180
-      ? { icon:41, stock:23, separator:19, button:17 }
-      : { icon:51, stock:31, separator:25, button:29 };
-  assert(layout.itemWidth >= expected.icon && layout.goldWidth >= expected.icon, `${label}: purchase-row icons must keep the accepted enlarged size`);
-  assert(layout.stockFont >= expected.stock && layout.separatorFont >= expected.separator && layout.buttonFont >= expected.button, `${label}: purchase-row typography must keep the accepted enlarged size`);
-  assert.strictEqual(layout.separatorText, language === 'en' ? 'for' : 'за', `${label}: Market separator localization mismatch`);
+      ? { itemIcon:34, stock:10, button:15 }
+      : { itemIcon:48, stock:11, button:19 };
+  assert(layout.itemWidth >= expected.itemIcon, `${label}: Supply icon must keep the canonical Market-card size`);
+  assert(layout.goldWidth >= 18, `${label}: price must retain its gold icon`);
+  assert(layout.stockFont >= expected.stock && layout.buttonFont >= expected.button, `${label}: Market-card typography must remain readable`);
   assert.strictEqual(layout.buttonText, language === 'en' ? 'Buy' : 'Купить', `${label}: Market Buy localization mismatch`);
 }
 
@@ -148,7 +148,7 @@ async function auditSettlement(browser, width, height, { gameplay = false } = {}
 
     assertMarketLayout(await readMarketLayout(page), `${label} RU`, 'ru');
     await page.evaluate(() => globalThis.RPChessI18n.setLanguage('en'));
-    await page.waitForFunction(() => document.querySelector('.settlement-market-row__separator')?.textContent?.trim() === 'for');
+    await page.waitForFunction(() => document.querySelector('[data-settlement-buy-supply]')?.textContent?.trim() === 'Buy');
     assertMarketLayout(await readMarketLayout(page), `${label} EN`, 'en');
 
     if (gameplay) {
