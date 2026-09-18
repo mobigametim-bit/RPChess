@@ -6,7 +6,7 @@ function ensureStylesheet() {
   if (document.querySelector(`[${CSS_MARKER}]`)) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/landscape-ui-redesign.css?v=20260905-1';
+  link.href = 'css/landscape-ui-redesign.css?v=20260918-vk-menu-1';
   link.setAttribute(CSS_MARKER, '');
   document.head.append(link);
 }

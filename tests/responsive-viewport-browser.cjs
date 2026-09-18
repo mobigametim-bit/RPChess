@@ -1,4 +1,6 @@
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 const { chromium } = require('playwright');
 const { startNewRun } = require('./browser-test-helpers.cjs');
 const {
@@ -19,6 +21,10 @@ const LANDSCAPE_MATRIX = [
 ];
 const PORTRAIT_MATRIX = [[768, 1024], [390, 844]];
 const WEAK_SURFACE_MATRIX = [[1024, 768], [844, 390]];
+// A VK Mini App renders beneath VK's own chrome. These cases model the
+// resulting safe height and cover only the Main Menu / Chronicle contract.
+const VK_MENU_SAFE_HEIGHT_MATRIX = [[1366, 660], [1024, 640], [844, 340]];
+const VK_MENU_SCREENSHOT_DIR = String(process.env.RPCHESS_VK_MENU_SCREENSHOT_DIR || '').trim();
 
 async function freshDocument(page) {
   await page.goto(url, { waitUntil: 'networkidle' });
@@ -134,6 +140,30 @@ async function auditViewport(browser, width, height, language) {
       assert(cards.every((card) => card.top >= -1 && card.bottom <= height + 1), `${label}: all three Travel choices must be visible without page scroll`);
       assert(cards.every((card) => Math.abs(card.top - cards[0].top) <= 2), `${label}: mobile Travel choices must share one tablet-style row`);
       assert(cards[1].left >= cards[0].right - 2 && cards[2].left >= cards[1].right - 2, `${label}: mobile Travel choices must be laid out left-to-right`);
+    }
+    assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
+  } finally {
+    await page.close();
+  }
+}
+
+async function auditVkMenuSafeHeight(browser, width, height, language) {
+  const page = await browser.newPage({ viewport: { width, height } });
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(String(error.stack || error)));
+  const label = `${width}x${height} ${language.toUpperCase()} VK-safe menu`;
+  try {
+    await freshMenu(page);
+    await setLanguage(page, language);
+    await auditMenuModals(page, label);
+    await assertViewportContained(page, '[data-chronicle-panel]', `${label} Chronicle`);
+    await assertPageFitsViewport(page, label);
+    if (VK_MENU_SCREENSHOT_DIR) {
+      fs.mkdirSync(VK_MENU_SCREENSHOT_DIR, { recursive: true });
+      await page.screenshot({
+        path: path.join(VK_MENU_SCREENSHOT_DIR, `menu-${language}-${width}x${height}.png`),
+        fullPage: false
+      });
     }
     assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
   } finally {
@@ -523,6 +553,7 @@ async function auditPrepAndCombat(browser, width, height, language) {
   try {
     for (const language of LANGUAGES) {
       for (const [width, height] of PORTRAIT_MATRIX) await auditPortraitLock(browser, width, height, language);
+      for (const [width, height] of VK_MENU_SAFE_HEIGHT_MATRIX) await auditVkMenuSafeHeight(browser, width, height, language);
       for (const [width, height] of LANDSCAPE_MATRIX) await auditViewport(browser, width, height, language);
       for (const [width, height] of WEAK_SURFACE_MATRIX) await auditClassicSetup(browser, width, height, language);
       for (const [width, height] of WEAK_SURFACE_MATRIX) await auditEventLayout(browser, width, height, language);
@@ -531,7 +562,7 @@ async function auditPrepAndCombat(browser, width, height, language) {
       for (const [width, height] of [[1366, 768], [1024, 768], [844, 390]]) await auditSoloKingBattleRunEnd(browser, width, height, language);
       for (const [width, height] of [[1180, 820], [1024, 768], [844, 390]]) await auditPrepAndCombat(browser, width, height, language);
     }
-    console.log('Responsive viewport browser: PASS — RU/EN one-screen geometry, 1180/980 breakpoint boundaries, portrait lock, Settings/Language/Identity/Chronicle/Classic setup frames, Event rail, Travel, Puzzle/Training, Starvation, Endless summary, stable Classic Journal, Skirmish combat/aftermath and Battle prep/aftermath contracts');
+    console.log('Responsive viewport browser: PASS — RU/EN one-screen geometry, VK safe-height menu matrix, 1180/980 breakpoint boundaries, portrait lock, Settings/Language/Identity/Chronicle/Classic setup frames, Event rail, Travel, Puzzle/Training, Starvation, Endless summary, stable Classic Journal, Skirmish combat/aftermath and Battle prep/aftermath contracts');
   } finally {
     await browser.close();
   }

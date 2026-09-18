@@ -1051,6 +1051,72 @@ html[data-landscape-ui='1'] body.compact-combat-active .classic-shell {
 }
 
 
+/* --------------------------------------------------------------------------
+   VK landscape safe height.
+   VK's own top bar reduces the usable game canvas. The menu must therefore
+   fit as a single scene even when a wide screen has only a short safe height.
+   Keep the Chronicle beside the action rail instead of falling below it.
+   -------------------------------------------------------------------------- */
+@media (orientation: landscape) and (max-height: 860px) {
+  html[data-landscape-ui='1'],
+  html[data-landscape-ui='1'] body,
+  #app > main.reboot-menu-screen:not([hidden]) {
+    height: 100dvh !important;
+    min-height: 0 !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  .reboot-menu-screen {
+    padding: clamp(6px, 1.2vw, 16px) !important;
+  }
+  .reboot-menu-screen__layout {
+    width: min(1500px, 100%) !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    grid-template-columns: minmax(0, 1.08fr) minmax(270px, .92fr) !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+    gap: clamp(8px, 1.7vw, 28px) !important;
+    align-items: center !important;
+  }
+  .reboot-menu-screen__main {
+    align-self: stretch !important;
+    min-height: 0 !important;
+    padding: clamp(4px, 1vw, 16px) !important;
+    justify-content: center !important;
+  }
+  .reboot-wordmark {
+    width: min(380px, 52vw) !important;
+    max-height: 34dvh !important;
+    object-fit: contain !important;
+    margin: 0 auto clamp(6px, 1.6vh, 14px) !important;
+    transform: none !important;
+  }
+  .reboot-menu-actions {
+    width: min(500px, 90%) !important;
+    max-width: 500px !important;
+    margin: 0 auto !important;
+    gap: clamp(4px, .9vh, 8px) !important;
+  }
+  .reboot-menu-secondary {
+    margin-top: 0 !important;
+    gap: clamp(4px, .9vh, 8px) !important;
+  }
+  .reboot-menu-actions .reboot-button {
+    min-height: clamp(34px, 6.2vh, 48px) !important;
+    padding-block: clamp(3px, .8vh, 7px) !important;
+  }
+  .chronicle-panel {
+    align-self: center !important;
+    justify-self: stretch !important;
+    width: auto !important;
+    max-height: calc(100dvh - clamp(12px, 2.4vw, 32px)) !important;
+    margin: 0 !important;
+    padding: clamp(10px, 1.7vw, 22px) !important;
+    overflow-y: auto !important;
+  }
+}
+
 /* Solo-King Battle run-end: one-viewport owner contract. */
 @media (orientation: landscape) {
   html[data-landscape-ui='1'] .battle-run-end {
