@@ -60,7 +60,17 @@ jobs:
         env:
           RPCHESS_GATE_PREFIX: /RPChess
           RPCHESS_BROWSER_TEST: classic-chess-browser.cjs,responsive-viewport-browser.cjs,onboarding-browser.cjs,settlement-browser.cjs
+          RPCHESS_VK_MENU_SCREENSHOT_DIR: test-results/vk-menu
         run: npm run test:browser
+
+      - name: Upload VK menu safe-height screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vk-menu-safe-height-${{ github.sha }}
+          path: test-results/vk-menu
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Configure Pages
         if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
