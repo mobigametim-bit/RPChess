@@ -1,7 +1,7 @@
 # Localized brand logos and UI polish — implementation plan
 
 **Branch:** `feature/localized-brand-logos`  
-**Status:** Implementation published for preview; latest UI-alignment commit `6e80f773295adb59636e9d5f59a98a36eb5c3f82`; visual/Cloudflare acceptance remains pending.  
+**Status:** Merged into `main` through PR #140 at `6848535cb9a0eb15da749690c5eb2c39362cf53e` after explicit user acceptance of the Cloudflare preview. A deferred responsive visual follow-up remains.  
 **Scope:** localize the RPChess brand mark across the UI, remove the unnecessary main-menu tagline, and restore compact market-card framing while retaining the accepted larger artifact icons.
 
 ## Product contract
@@ -27,15 +27,15 @@
 - [x] Restore compact product-card frame heights and paddings in Settlement CSS while preserving the current large icon rendering.
 - [x] Add source/localization coverage for logo switching, no legacy runtime wordmark and market-card geometry; responsive browser coverage remains part of the preview gate.
 - [x] Publish the implementation to the isolated GitHub branch (latest commit `6e80f773295adb59636e9d5f59a98a36eb5c3f82`).
-- [ ] Run the canonical local gate and visually inspect Russian/English at 1920×1080, 1024×768, 844×390 and mobile portrait.
-- [ ] Confirm the Cloudflare Preview URL and obtain user acceptance; a branch preview must not change `main`.
-- [ ] After acceptance, merge via PR, update this plan and Notion to complete, then manually run GitHub Pages for `main` to publish the existing VK URL.
+- [ ] Deferred follow-up: run the canonical local gate and visually inspect Russian/English at 1920×1080, 1024×768, 844×390 and mobile portrait. This matrix was not a merge blocker after explicit user acceptance.
+- [x] Confirmed Cloudflare Preview `https://2b0af307-rpchess.mobigametim.workers.dev/` and obtained explicit user acceptance.
+- [x] Merged through PR #140 into `main` (`6848535cb9a0eb15da749690c5eb2c39362cf53e`); GitHub Pages remains a manual release action for the user.
 
 ## Preview evidence (partial)
 
 - Cloudflare Preview `https://2b0af307-rpchess.mobigametim.workers.dev/`: main-menu brand logo was visually verified at the available 1363×936 desktop viewport in RU and EN. It remains centered over the action column, clears the first button, and switches immediately from `logo_ru.png` to `logo_en.png`.
 - Compact Roster and Battle-preparation layouts intentionally hide their pre-existing header-logo slots through `ui-redesign-final.css`; they are not treated as visible logo screens in this acceptance pass.
-- The full tablet / narrow-landscape / mobile-portrait viewport matrix is still open because this preview browser cannot resize its viewport.
+- The full tablet / narrow-landscape / mobile-portrait viewport matrix remains a deferred follow-up because this preview browser cannot resize its viewport; it did not block the user-approved merge.
 
 ## Asset and delivery notes
 
