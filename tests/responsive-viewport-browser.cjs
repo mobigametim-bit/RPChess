@@ -37,6 +37,11 @@ async function setLanguage(page, language) {
   await page.waitForFunction((nextLanguage) => document.documentElement.lang === nextLanguage, language);
 }
 
+async function chooseNoArtifactForTest(page) {
+  await page.locator('[data-artifact-choice-modal]:not([hidden])').waitFor({ state: 'visible' });
+  await page.locator('[data-artifact-choice="none"]').click();
+}
+
 async function auditPortraitLock(browser, width, height, language) {
   const page = await browser.newPage({ viewport: { width, height } });
   const errors = [];
@@ -338,6 +343,7 @@ async function auditSoloKingBattleRunEnd(browser, width, height, language) {
       if ((await card.getAttribute('data-battle-character')) !== kingId) await card.click();
     }
     await page.locator('[data-battle-start]').click();
+    await chooseNoArtifactForTest(page);
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     const participants = await page.evaluate(() => globalThis.RPChessBattle.battlePlan?.participants || []);
     assert.deepStrictEqual(participants, [kingId], `${label}: Battle must contain only the named King`);
@@ -388,6 +394,7 @@ async function auditPrepAndCombat(browser, width, height, language) {
     }
     await assertViewportContained(page, '[data-skirmish-start]', `${label} Skirmish start`);
     await page.locator('[data-skirmish-start]').click();
+    await chooseNoArtifactForTest(page);
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     await assertPageFitsViewport(page, `${label} Skirmish combat`);
     const combatPanel = await page.evaluate(() => {
@@ -488,6 +495,7 @@ async function auditPrepAndCombat(browser, width, height, language) {
     }
     await assertViewportContained(page, '[data-battle-start]', `${label} Battle start`);
     await page.locator('[data-battle-start]').click();
+    await chooseNoArtifactForTest(page);
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     const battleCombatPanel = await page.evaluate(() => {
       const party=document.querySelector('.classic-party-panel')?.getBoundingClientRect();
