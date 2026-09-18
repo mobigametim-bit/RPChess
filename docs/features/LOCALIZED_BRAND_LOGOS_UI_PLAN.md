@@ -1,7 +1,7 @@
 # Localized brand logos and UI polish — implementation plan
 
 **Branch:** `feature/localized-brand-logos`  
-**Status:** In progress — implementation starts only in this isolated branch.  
+**Status:** Implementation published for preview at commit `7c98cf416c58141b8c9aedbe333940ab866810fd`; visual/Cloudflare acceptance remains pending.  
 **Scope:** localize the RPChess brand mark across the UI, remove the unnecessary main-menu tagline, and restore compact market-card framing while retaining the accepted larger artifact icons.
 
 ## Product contract
@@ -25,8 +25,9 @@
 - [x] Remove the main-menu tagline from markup/localization without leaving unused UI strings.
 - [x] Restore compact product-card frame heights and paddings in Settlement CSS while preserving the current large icon rendering.
 - [x] Add source/localization coverage for logo switching, no legacy runtime wordmark and market-card geometry; responsive browser coverage remains part of the preview gate.
+- [x] Publish the implementation commit to the isolated GitHub branch (commit `7c98cf416c58141b8c9aedbe333940ab866810fd`).
 - [ ] Run the canonical local gate and visually inspect Russian/English at 1920×1080, 1024×768, 844×390 and mobile portrait.
-- [ ] Publish this branch to Cloudflare Preview; user acceptance is required before a PR is merged into `main`.
+- [ ] Confirm the Cloudflare Preview URL and obtain user acceptance; a branch preview must not change `main`.
 - [ ] After acceptance, merge via PR, update this plan and Notion to complete, then manually run GitHub Pages for `main` to publish the existing VK URL.
 
 ## Asset and delivery notes
