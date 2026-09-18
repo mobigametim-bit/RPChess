@@ -53,6 +53,7 @@ async function readMarketLayout(page) {
     const stock = product?.querySelector('[data-settlement-supply-stock]');
     const productStyle = product ? getComputedStyle(product) : null;
     const marketStyle = market ? getComputedStyle(market) : null;
+    const cardStyle = card ? getComputedStyle(card) : null;
     const marketIconStyle = marketIcon ? getComputedStyle(marketIcon) : null;
     const childRects = product ? [...product.children].map(rect) : [];
     return {
@@ -75,6 +76,9 @@ async function readMarketLayout(page) {
       marketScrollHeight:market?.scrollHeight || 0,
       marketClientHeight:market?.clientHeight || 0,
       marketOverflowY:marketStyle?.overflowY || '',
+      cardScrollHeight:card?.scrollHeight || 0,
+      cardClientHeight:card?.clientHeight || 0,
+      cardOverflowY:cardStyle?.overflowY || '',
       marketBackground:marketIconStyle?.backgroundImage || '',
       nestedMarketImageDisplay:nestedMarketImage ? getComputedStyle(nestedMarketImage).display : null,
       itemSrc:itemIcon?.getAttribute('src') || '',
@@ -119,6 +123,12 @@ function assertMarketLayout(layout, label, language) {
     assert(layout.products.length >= 2, `${label}: compact Market must retain both purchase cards behind its internal scroll`);
   } else {
     assert(inside(layout.card, layout.market), `${label}: purchase-card rail must remain inside the Market frame`);
+  }
+  const cardNeedsScroll = layout.cardScrollHeight > layout.cardClientHeight + 1;
+  if (cardNeedsScroll) {
+    assert(['auto','scroll'].includes(layout.cardOverflowY), `${label}: compact purchase-card rail must use internal scrolling`);
+    assert(layout.products.length >= 2, `${label}: compact Market must retain both purchase cards behind its internal scroll`);
+  } else {
     assert(layout.products.every((box) => inside(box, layout.card)), `${label}: product cards must remain inside the purchase-card rail`);
   }
 
