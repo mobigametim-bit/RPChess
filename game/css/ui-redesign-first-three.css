@@ -83,7 +83,9 @@
 }
 .reboot-menu-screen .reboot-wordmark{
   width:min(500px,78vw);
-  margin:8px 0 0;
+  /* Keep the mark on the same visual axis as the action rail below it. */
+  margin:0 0 0 152px;
+  transform:translateY(-clamp(12px,1.6vh,20px));
   filter:drop-shadow(0 9px 24px rgba(0,0,0,.82));
 }
 .reboot-menu-screen .reboot-menu-actions{
@@ -427,7 +429,12 @@ body.travel-choice-active .resource-chip strong{color:#f0d99e}
   }
   .reboot-menu-screen .reboot-menu-actions{
     width:min(556px,100%);
-    margin:34px 0 0;
+    margin:34px auto 0;
+  }
+  .reboot-menu-screen .reboot-wordmark{
+    margin:0 auto;
+    align-self:center;
+    transform:none;
   }
   .reboot-menu-screen .chronicle-panel{
     justify-self:stretch;
@@ -483,7 +490,7 @@ body.travel-choice-active .resource-chip strong{color:#f0d99e}
   .reboot-menu-screen.reboot-menu-screen{padding:12px;place-items:start center}
   .reboot-menu-screen .reboot-menu-screen__layout{width:100%;gap:12px}
   .reboot-menu-screen .reboot-menu-screen__main{min-height:auto;padding:30px 18px}
-  .reboot-menu-screen .reboot-wordmark{width:min(480px,96%)}
+  .reboot-menu-screen .reboot-wordmark{width:min(480px,96%);margin:0 auto;transform:none}
   .reboot-menu-screen .reboot-menu-actions{margin-top:28px}
   .reboot-menu-screen .chronicle-panel{margin:0 18px 28px}
 
