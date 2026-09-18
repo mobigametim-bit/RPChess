@@ -161,11 +161,11 @@ async function auditVkMenuSafeHeight(browser, width, height, language) {
     if (VK_MENU_SCREENSHOT_DIR) {
       fs.mkdirSync(VK_MENU_SCREENSHOT_DIR, { recursive: true });
       await page.screenshot({
-        path: path.join(VK_MENU_SCREENSHOT_DIR, \`menu-\${language}-\${width}x\${height}.png\`),
+        path: path.join(VK_MENU_SCREENSHOT_DIR, `menu-${language}-${width}x${height}.png`),
         fullPage: false
       });
     }
-    assert.deepStrictEqual(errors, [], \`${label} browser errors:\\n\${errors.join('\\n')}\`);
+    assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
   } finally {
     await page.close();
   }
