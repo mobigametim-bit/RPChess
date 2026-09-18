@@ -24,7 +24,7 @@
 - [x] Add responsive modal/Settlement styles for desktop, tablet and narrow landscape mobile.
 - [x] Add six artifact PNGs to the runtime copy, transform cache, max-size/alpha contract and dist verification.
 - [x] Add unit/contract coverage for offers, purchases, idempotent selection, attacker counting and asset contract.
-- [ ] Run the full local gate after the external Stockfish fetch is available.
+- [x] Run the canonical full gate and final Pages-release checks: workflow [#253](https://github.com/mobigametim-bit/RPChess/actions/runs/35339022689) completed **Run canonical gate and build**, asset-size check and Pages subpath verification successfully.
 - [x] Publish `feature/artifacts-mvp` to GitHub (`90ee63e`); wait for the automatic Cloudflare Preview build.
 - [x] Manual acceptance: Settlement purchase, each combat choice, yellow/orange/red fires, reload/idempotency, white/black player side, 1920×1080 / 1024×768 / 844×390.
 - [x] User authorized and feature merged to `main` through PR [#139](https://github.com/mobigametim-bit/RPChess/pull/139), merge commit `1c08034`.
@@ -63,9 +63,4 @@ Runtime budget: square PNG with alpha, maximum 256×256 and 256 KiB per file; 1.
 - [x] Verify the newly built Cloudflare preview visually at 1920×1080, 1024×768 and 844×390, including card overflow and combat layout.
 - [x] User accepted the fixed preview and authorized merge to `main`.
 
-Next agent: confirm the just-published version in VK at the unchanged Pages URL. The feature is merged and released; do not change the VK URL or create a new production publish without user approval.
-
-- The existing current settlement records are intentionally invalidated during hydration once, then regenerated from their route seed with the Artifact offer. This preserves deterministic offers and does not alter unrelated run state.
-- `combatArtifactChoice` is transient persistence for a started encounter. It prevents a reload or repeated click from spending another charge and is cleared in both Battle and Skirmish completion paths.
-- The local `build:materialized` reached asset optimization successfully; the six runtime assets total 434.4 KiB. The subsequent Stockfish fetch timed out through the restricted proxy. This is an infrastructure retry, not an artifact contract failure.
-- Cloudflare is configured to build non-production branches. The feature branch is published, but its dashboard cannot be inspected from this remote browser because Cloudflare presents human verification; obtain the Preview URL from the Cloudflare Deployments tab before manual acceptance.
+The feature is merged, released and fully documented. The existing VK URL must not be changed without a new user-authorized release.

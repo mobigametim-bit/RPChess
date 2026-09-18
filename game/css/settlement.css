@@ -59,7 +59,7 @@ body.settlement-active .resource-chip strong{color:#f0d99e}
 
 /* Market products share one layout; owned here rather than by shared scene styles. */
 .settlement-service--market{display:flex;min-height:0;flex-direction:column}
-.settlement-market-products{display:grid;grid-template-columns:minmax(0,1fr);flex:1;min-height:0;gap:10px;margin-top:10px;min-width:0;overflow-y:auto;overscroll-behavior:contain}
+.settlement-market-products{display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:max-content;align-content:start;flex:1;min-height:0;gap:10px;margin-top:10px;min-width:0;overflow-y:auto;overscroll-behavior:contain}
 .settlement-product-card{display:grid;grid-template-columns:48px minmax(0,1fr);gap:8px 10px;padding:12px;min-width:0;border:1px solid rgba(218,177,86,.24);border-radius:6px;background:rgba(7,11,16,.72)}
 .settlement-product-card__icon{width:48px;height:48px;object-fit:contain}
 /* Amulet source art has transparent padding; scale its visible silhouette to the standard supply icon. */

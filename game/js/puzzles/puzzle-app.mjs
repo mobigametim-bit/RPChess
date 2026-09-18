@@ -1,6 +1,7 @@
 import { ClassicChessEngine } from '../classic-chess-engine.mjs';
 import { readRun, writeRun } from '../run-persistence.mjs';
 import { t, subscribe } from '../i18n.mjs';
+import { brandLogoSrc } from '../brand-logo.mjs';
 import { PUZZLE_CATALOG } from './puzzle-catalog.mjs';
 import {
   createPuzzleState,
@@ -65,7 +66,7 @@ function ensureScreen() {
   screen.innerHTML = `
     <div class="puzzle-shell">
       <header class="puzzle-topbar">
-        <img class="puzzle-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
+        <img class="puzzle-logo" data-brand-logo src="${brandLogoSrc()}" alt="RPChess">
         <div class="puzzle-topbar__actions">
           <button class="reboot-button reboot-button--primary" type="button" data-puzzle-settings>${t('puzzle.settings')}</button>
         </div>

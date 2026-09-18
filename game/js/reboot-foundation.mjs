@@ -8,8 +8,10 @@ import {
   subscribe,
   t
 } from './i18n.mjs';
+import { installBrandLogos } from './brand-logo.mjs';
 
 platform.init();
+installBrandLogos();
 
 // Reconcile VK cloud state before run-owned modules read local persistence. Standalone Web resolves
 // immediately; VK failures are non-fatal and leave the local cache authoritative for this session.

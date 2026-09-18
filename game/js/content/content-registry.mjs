@@ -6,7 +6,8 @@ import { EVENT_CATALOG } from '../events-data.mjs';
 const ENCOUNTER_TYPES = Object.freeze(['skirmish', 'battle', 'settlement', 'event', 'puzzle']);
 
 const CORE_ASSETS = Object.freeze([
-  'generated_assets/title_wordmark.png',
+  'generated_assets/logo_ru.png',
+  'generated_assets/logo_en.png',
   'generated_assets/splash_poster.jpg',
   'generated_assets/scene_campaign.jpg',
   'generated_assets/scene_reward.jpg',

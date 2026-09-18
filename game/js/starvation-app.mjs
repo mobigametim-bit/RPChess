@@ -1,6 +1,7 @@
 import { readRun, writeRun } from './run-persistence.mjs';
 import { acknowledgeStarvation, hasPendingStarvation } from './starvation-core.mjs';
 import { subscribe, t, translateLegacy } from './i18n.mjs';
+import { brandLogoSrc } from './brand-logo.mjs';
 
 let screen = null;
 let activeRun = null;
@@ -40,7 +41,7 @@ function ensureScreen() {
   screen.hidden = true;
   screen.innerHTML = `
     <div class="starvation-shell">
-      <img class="starvation-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
+      <img class="starvation-logo" data-brand-logo src="${brandLogoSrc()}" alt="RPChess">
       <section class="starvation-panel ui-panel-safe" aria-live="polite">
         <div class="reboot-eyebrow"></div>
         <h1 data-starvation-title></h1>

@@ -17,14 +17,14 @@
 
 - [x] Verify that Artifacts MVP documentation is closed in GitHub and Notion.
 - [x] Create this isolated feature branch and record the implementation plan.
-- [ ] Add canonical source assets `game/generated_assets/logo_ru.png` and `game/generated_assets/logo_en.png`.
-- [ ] Add both logos to `scripts/build.cjs` runtime asset list so `scripts/runtime-assets-build.cjs` compresses and caches them.
-- [ ] Update the runtime asset registry and source/asset-contract tests for both logos.
-- [ ] Introduce one shared locale-aware brand-logo resolver; avoid individual per-screen language branches.
-- [ ] Replace all visible static and dynamic `title_wordmark.png` usages with the resolver/data attribute contract; remove the hidden legacy reference.
-- [ ] Remove the main-menu tagline from markup/localization without leaving unused UI strings.
-- [ ] Restore compact product-card frame heights and paddings in Settlement CSS while preserving the current large icon rendering.
-- [ ] Add/adjust source, localization and responsive browser coverage for logo switching, no legacy runtime wordmark and market-card geometry.
+- [x] Add canonical source assets `game/generated_assets/logo_ru.png` and `game/generated_assets/logo_en.png`.
+- [x] Add both logos to `scripts/build.cjs` runtime asset list so `scripts/runtime-assets-build.cjs` compresses and caches them.
+- [x] Update the runtime asset registry and source/asset-contract tests for both logos.
+- [x] Introduce one shared locale-aware brand-logo resolver; avoid individual per-screen language branches.
+- [x] Replace all visible static and dynamic `title_wordmark.png` usages with the resolver/data attribute contract; remove the hidden legacy reference.
+- [x] Remove the main-menu tagline from markup/localization without leaving unused UI strings.
+- [x] Restore compact product-card frame heights and paddings in Settlement CSS while preserving the current large icon rendering.
+- [x] Add source/localization coverage for logo switching, no legacy runtime wordmark and market-card geometry; responsive browser coverage remains part of the preview gate.
 - [ ] Run the canonical local gate and visually inspect Russian/English at 1920×1080, 1024×768, 844×390 and mobile portrait.
 - [ ] Publish this branch to Cloudflare Preview; user acceptance is required before a PR is merged into `main`.
 - [ ] After acceptance, merge via PR, update this plan and Notion to complete, then manually run GitHub Pages for `main` to publish the existing VK URL.

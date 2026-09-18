@@ -2,6 +2,7 @@ import { readRun } from './run-persistence.mjs';
 import { readPlayerRating } from './player-rating.mjs';
 import { summarizeRun } from './endless-run-core.mjs';
 import { currentLanguage, subscribe, translateLegacy } from './i18n.mjs';
+import { brandLogoSrc } from './brand-logo.mjs';
 import { shareRunResult } from './content/share-result.mjs';
 import { runtimeT } from '../localization/runtime-ui.mjs';
 
@@ -58,7 +59,7 @@ function ensureScreen() {
   screen.innerHTML = `
     <div class="endless-run-backdrop" aria-hidden="true"><img src="generated_assets/scene_defeat.jpg" alt=""></div>
     <div class="endless-run-shell">
-      <img class="endless-run-logo" src="generated_assets/title_wordmark.png" alt="RPChess">
+      <img class="endless-run-logo" data-brand-logo src="${brandLogoSrc()}" alt="RPChess">
       <section class="endless-run-panel ui-panel-safe">
         <div class="reboot-eyebrow"></div>
         <h1></h1>
