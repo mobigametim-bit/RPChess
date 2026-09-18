@@ -1,9 +1,9 @@
 import { seededRandom } from './travel-choice-core.mjs';
 
 const ARTIFACTS = Object.freeze([
-  Object.freeze({ id:'threat.defense', name:'Амулет чутья защиты', description:'Показывает угрозы вашим фигурам.', mode:'player', icon:'assets/artifacts/threat_sense/amulet_defense.png', pricePerCharge:18 }),
-  Object.freeze({ id:'threat.attack', name:'Амулет чутья атаки', description:'Показывает угрозы фигурам противника.', mode:'enemy', icon:'assets/artifacts/threat_sense/amulet_attack.png', pricePerCharge:18 }),
-  Object.freeze({ id:'threat.great', name:'Великий амулет чутья', description:'Показывает угрозы обеим армиям.', mode:'both', icon:'assets/artifacts/threat_sense/amulet_great.png', pricePerCharge:30 })
+  Object.freeze({ id:'threat.defense', name:'Амулет чутья защиты', description:'Показывает угрозы вашим фигурам.', nameKey:'artifacts.threatDefense.name', descriptionKey:'artifacts.threatDefense.description', mode:'player', icon:'assets/artifacts/threat_sense/amulet_defense.png', pricePerCharge:18 }),
+  Object.freeze({ id:'threat.attack', name:'Амулет чутья атаки', description:'Показывает угрозы фигурам противника.', nameKey:'artifacts.threatAttack.name', descriptionKey:'artifacts.threatAttack.description', mode:'enemy', icon:'assets/artifacts/threat_sense/amulet_attack.png', pricePerCharge:18 }),
+  Object.freeze({ id:'threat.great', name:'Великий амулет чутья', description:'Показывает угрозы обеим армиям.', nameKey:'artifacts.threatGreat.name', descriptionKey:'artifacts.threatGreat.description', mode:'both', icon:'assets/artifacts/threat_sense/amulet_great.png', pricePerCharge:30 })
 ]);
 const ARTIFACT_BY_ID = Object.freeze(Object.fromEntries(ARTIFACTS.map((artifact)=>[artifact.id,artifact])));
 const FIRE_BY_THREAT = Object.freeze({ 1:'assets/artifacts/threat_sense/threat_fire_1_yellow.png', 2:'assets/artifacts/threat_sense/threat_fire_2_orange.png', 3:'assets/artifacts/threat_sense/threat_fire_3_plus_red.png' });

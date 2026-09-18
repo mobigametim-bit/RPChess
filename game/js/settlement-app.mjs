@@ -183,9 +183,9 @@ function renderRecruits() {
   }
 }
 
-function marketProductCard({icon,name,description,stock,price,action,disabled,sold}) {
+function marketProductCard({icon,name,description,stock,price,action,disabled,sold,iconClass=''}) {
   return `<article class="settlement-product-card${sold?' is-sold':''}">
-    <img class="settlement-product-card__icon" src="${icon}" alt="">
+    <img class="settlement-product-card__icon${iconClass}" src="${icon}" alt="">
     <div class="settlement-product-card__copy"><strong>${name}</strong><p>${description}</p><small>${stock}</small></div>
     <div class="settlement-product-card__footer">${goldMarkup(price)}<button class="reboot-button reboot-button--primary" type="button" ${action} ${disabled?'disabled':''}>${t(sold?'settlement.market.soldOut':'settlement.market.buy')}</button></div>
   </article>`;
@@ -197,7 +197,7 @@ function renderSupply() {
   const disabled = stock <= 0 || activeRun.gold < SETTLEMENT_SUPPLY_PRICE;
   const offer=activeRun.currentSettlement.artifactOffer,artifact=artifactById(offer?.id),artifactDisabled=!artifact||offer.sold||activeRun.gold<offer.price;
   root.innerHTML = marketProductCard({icon:SUPPLIES_ICON,name:t('resources.supplies'),description:t('settlement.market.supplyDescription'),stock:`<span data-settlement-supply-stock>${t('settlement.market.stock',{count:stock})}</span>`,price:SETTLEMENT_SUPPLY_PRICE,action:'data-settlement-buy-supply',disabled,sold:stock<=0})
-    +(artifact?marketProductCard({icon:artifact.icon,name:artifact.name,description:artifact.description,stock:t('settlement.market.charges',{count:offer.charges}),price:offer.price,action:'data-settlement-buy-artifact',disabled:artifactDisabled,sold:offer.sold}):'');
+    +(artifact?marketProductCard({icon:artifact.icon,iconClass:' settlement-product-card__icon--artifact',name:t(artifact.nameKey),description:t(artifact.descriptionKey),stock:t('settlement.market.charges',{count:offer.charges}),price:offer.price,action:'data-settlement-buy-artifact',disabled:artifactDisabled,sold:offer.sold}):'');
 }
 
 function renderSettlement() {
@@ -242,7 +242,7 @@ function handleServiceAction(event) {
     changed = persistResult(result, { goldDelta: -result.spent, suppliesDelta: result.suppliesAdded, label: result.success ? t('resources.supplyPurchase') : '' });
   } else if (artifactButton) {
     const result = applyArtifactPurchase(activeRun);
-    changed = persistResult(result, { goldDelta: -result.spent, label: result.success ? `Артефакт: ${result.artifact.name}` : '' });
+    changed = persistResult(result, { goldDelta: -result.spent, label: result.success ? t('artifacts.purchaseToast',{name:t(result.artifact.nameKey)}) : '' });
   }
   if (!changed) renderSettlement();
   busy = false;

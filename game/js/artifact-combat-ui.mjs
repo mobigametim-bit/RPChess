@@ -1,5 +1,6 @@
 import { applyCombatArtifactChoice, artifactForCombat, ownedArtifacts, FIRE_BY_THREAT } from './artifact-core.mjs';
 import { countSquareAttackers, indexToSquare } from './classic-chess-engine.mjs';
+import { t } from './i18n.mjs';
 
 function ensureCss(){
   if(document.querySelector('[data-artifact-combat-css]')) return;
@@ -12,9 +13,9 @@ function chooseArtifact({run,combatType,encounterId,onChoose}={}){
   document.querySelector('[data-artifact-choice-modal]')?.remove();
   const modal=document.createElement('div'); modal.className='artifact-choice-modal'; modal.dataset.artifactChoiceModal=''; modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true'); modal.setAttribute('aria-labelledby','artifact-choice-title');
   const cards=[...ownedArtifacts(run).slice(0,3),null];
-  modal.innerHTML=`<section class="artifact-choice-panel ui-panel-safe"><div class="reboot-eyebrow">ПЕРЕД СРАЖЕНИЕМ</div><h2 id="artifact-choice-title">Выберите артефакт</h2><p>Один заряд будет потрачен сразу. Эффект действует до конца этого боя.</p><div class="artifact-choice-grid"></div></section>`;
+  modal.innerHTML=`<section class="artifact-choice-panel ui-panel-safe"><div class="reboot-eyebrow">${t('artifacts.choice.kicker')}</div><h2 id="artifact-choice-title">${t('artifacts.choice.title')}</h2><p>${t('artifacts.choice.description')}</p><div class="artifact-choice-grid"></div></section>`;
   const root=modal.querySelector('.artifact-choice-grid');
-  for(const artifact of cards){ const button=document.createElement('button'); button.type='button'; button.className='artifact-choice-card'; button.dataset.artifactChoice=artifact?.id||'none'; if(artifact) button.innerHTML=`<img src="${artifact.icon}" alt=""><strong>${artifact.name}</strong><span>${artifact.description}</span><small>Зарядов: ${run.artifacts?.[artifact.id]||0}</small>`; else button.innerHTML='<span class="artifact-choice-card__empty" aria-hidden="true">—</span><strong>Без артефакта</strong><span>Начать бой без дополнительного эффекта.</span>';
+  for(const artifact of cards){ const button=document.createElement('button'); button.type='button'; button.className='artifact-choice-card'; button.dataset.artifactChoice=artifact?.id||'none'; if(artifact) button.innerHTML=`<img src="${artifact.icon}" alt=""><strong>${t(artifact.nameKey)}</strong><span>${t(artifact.descriptionKey)}</span><small>${t('artifacts.charges',{count:run.artifacts?.[artifact.id]||0})}</small>`; else button.innerHTML=`<span class="artifact-choice-card__empty" aria-hidden="true">—</span><strong>${t('artifacts.choice.none.name')}</strong><span>${t('artifacts.choice.none.description')}</span>`;
     button.addEventListener('click',()=>{ const result=applyCombatArtifactChoice(run,{combatType,encounterId,artifactId:artifact?.id||null}); if(!result.success)return; modal.remove(); document.body.classList.remove('reboot-modal-open'); onChoose?.(result.run,artifact||null); }); root.append(button); }
   document.body.append(modal); document.body.classList.add('reboot-modal-open'); modal.querySelector('button')?.focus();
 }

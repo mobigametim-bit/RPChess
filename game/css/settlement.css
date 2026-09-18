@@ -61,6 +61,8 @@ body.settlement-active .resource-chip strong{color:#f0d99e}
 .settlement-market-products{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-top:10px;min-width:0}
 .settlement-product-card{display:grid;grid-template-columns:48px minmax(0,1fr);gap:8px 10px;padding:12px;min-width:0;border:1px solid rgba(218,177,86,.24);border-radius:6px;background:rgba(7,11,16,.72)}
 .settlement-product-card__icon{width:48px;height:48px;object-fit:contain}
+/* Amulet source art has transparent padding; scale its visible silhouette to the standard supply icon. */
+.settlement-product-card__icon--artifact{transform:scale(1.55)}
 .settlement-product-card__copy{min-width:0;overflow-wrap:anywhere}
 .settlement-product-card__copy>strong{display:block;color:#f4e4bd;font:400 22px/1.1 'BrahmsGotischCyr',Georgia,serif}
 .settlement-product-card__copy p{margin:5px 0;color:#aeb8c0;font-size:12px;line-height:1.3}
@@ -72,6 +74,7 @@ body.settlement-active .resource-chip strong{color:#f0d99e}
  .settlement-market-products{gap:6px;margin-top:4px}
  .settlement-product-card{padding:7px;gap:5px 7px;grid-template-columns:34px minmax(0,1fr)}
  .settlement-product-card__icon{width:34px;height:34px}
+ .settlement-product-card__icon--artifact{transform:scale(1.55)}
  .settlement-product-card__copy>strong{font-size:17px}
  .settlement-product-card__copy p{font-size:10px;margin:3px 0}
  .settlement-product-card__copy small{font-size:10px}

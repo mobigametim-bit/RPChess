@@ -10,6 +10,7 @@ const {pathToFileURL}=require('url');
   const settlement=await import(pathToFileURL(path.join(game,'js/settlement-core.mjs')).href);
   const engine=await import(pathToFileURL(path.join(game,'js/classic-chess-engine.mjs')).href);
   assert.strictEqual(artifacts.ARTIFACTS.length,3);
+  for(const artifact of artifacts.ARTIFACTS)assert(artifact.nameKey&&artifact.descriptionKey,'each artifact must expose localization keys');
   const offerA=artifacts.deterministicArtifactOffer({seed:'artifact-test'}),offerB=artifacts.deterministicArtifactOffer({seed:'artifact-test'});
   assert.deepStrictEqual(offerA,offerB,'Settlement artifact offer must be deterministic');
   assert(offerA.charges>=1&&offerA.charges<=3);

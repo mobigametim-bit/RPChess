@@ -13,7 +13,7 @@ function randomMusicIndex() {
 class RebootAudio {
   constructor(settings = {}) {
     this.settings = {
-      music: clampPercent(settings.music, 70),
+      music: clampPercent(settings.music, 20),
       sfx: clampPercent(settings.sfx, 80)
     };
     this.musicIndex = randomMusicIndex();
