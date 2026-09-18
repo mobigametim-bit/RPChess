@@ -43,6 +43,7 @@ async function readMarketLayout(page) {
     const market = document.querySelector('[aria-labelledby="settlement-supplies-title"]');
     const card = market?.querySelector('[data-settlement-supply-card]');
     const product = card?.querySelector('.settlement-product-card');
+    const products = [...(card?.querySelectorAll('.settlement-product-card') || [])].map(rect);
     const button = card?.querySelector('[data-settlement-buy-supply]');
     const marketIcon = market?.querySelector('.settlement-service__icon');
     const nestedMarketImage = marketIcon?.querySelector(':scope > img');
@@ -65,6 +66,7 @@ async function readMarketLayout(page) {
       market:rect(market),
       card:rect(card),
       product:rect(product),
+      products,
       button:rect(button),
       childRects,
       productScrollWidth:product?.scrollWidth || 0,
@@ -100,7 +102,6 @@ function assertMarketLayout(layout, label, language) {
   assert(inside(layout.screen, viewport), `${label}: Settlement screen must fit in one viewport`);
   assert(layout.services.length === 3 && layout.services.every((box) => inside(box, viewport)), `${label}: all Settlement service frames must remain inside the viewport`);
   assert(inside(layout.market, viewport), `${label}: Market frame must remain inside the viewport`);
-  assert(inside(layout.card, layout.market), `${label}: purchase card must remain inside the Market frame`);
   assert(inside(layout.product, layout.card), `${label}: product rail must remain inside its purchase card`);
   assert(inside(layout.button, layout.card), `${label}: Buy button must remain inside its purchase card`);
   assert(layout.documentWidth <= layout.vw + 1, `${label}: Settlement must not create page-level horizontal scrolling`);
@@ -112,8 +113,13 @@ function assertMarketLayout(layout, label, language) {
   } else {
     assert(layout.childRects.every((box) => inside(box, layout.product)), `${label}: Market product elements must remain inside the product rail when scrolling is unnecessary`);
   }
-  if (layout.marketScrollHeight > layout.marketClientHeight + 1) {
+  const marketNeedsScroll = layout.marketScrollHeight > layout.marketClientHeight + 1;
+  if (marketNeedsScroll) {
     assert(['auto','scroll'].includes(layout.marketOverflowY), `${label}: vertically constrained Market frame must use internal scrolling`);
+    assert(layout.products.length >= 2, `${label}: compact Market must retain both purchase cards behind its internal scroll`);
+  } else {
+    assert(inside(layout.card, layout.market), `${label}: purchase-card rail must remain inside the Market frame`);
+    assert(layout.products.every((box) => inside(box, layout.card)), `${label}: product cards must remain inside the purchase-card rail`);
   }
 
   assert(layout.marketBackground.includes('node_shop.png'), `${label}: Market service emblem must use node_shop.png`);
