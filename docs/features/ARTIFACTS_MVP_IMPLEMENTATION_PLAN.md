@@ -1,7 +1,7 @@
 # Artifacts MVP — implementation plan
 
 **Branch:** `feature/artifacts-mvp` → merged to `main` via PR [#139](https://github.com/mobigametim-bit/RPChess/pull/139) on 2026-09-18.
-**Delivery:** Cloudflare Preview was accepted. Publication to GitHub Pages/VK remains a separate manual release action.
+**Delivery:** Cloudflare Preview was accepted. GitHub Pages release successfully completed on 2026-09-18 (workflow #253, commit `7ecb34b`).
 
 ## Fixed product contract
 
@@ -28,7 +28,7 @@
 - [x] Publish `feature/artifacts-mvp` to GitHub (`90ee63e`); wait for the automatic Cloudflare Preview build.
 - [x] Manual acceptance: Settlement purchase, each combat choice, yellow/orange/red fires, reload/idempotency, white/black player side, 1920×1080 / 1024×768 / 844×390.
 - [x] User authorized and feature merged to `main` through PR [#139](https://github.com/mobigametim-bit/RPChess/pull/139), merge commit `1c08034`.
-- [ ] Manually run **Deploy RPChess to GitHub Pages** on `main`, then verify the VK app uses the updated Pages version.
+- [x] Manually run **Deploy RPChess to GitHub Pages** on `main` — workflow [#253](https://github.com/mobigametim-bit/RPChess/actions/runs/35339022689) succeeded for commit `7ecb34b`; the existing VK Pages URL is unchanged.
 
 ## Asset contract
 
@@ -63,7 +63,7 @@ Runtime budget: square PNG with alpha, maximum 256×256 and 256 KiB per file; 1.
 - [x] Verify the newly built Cloudflare preview visually at 1920×1080, 1024×768 and 844×390, including card overflow and combat layout.
 - [x] User accepted the fixed preview and authorized merge to `main`.
 
-Next agent: after the GitHub Pages workflow is manually run for `main`, verify the Pages version in VK. The feature is merged; do not change the VK URL or create a new production publish without user approval.
+Next agent: confirm the just-published version in VK at the unchanged Pages URL. The feature is merged and released; do not change the VK URL or create a new production publish without user approval.
 
 - The existing current settlement records are intentionally invalidated during hydration once, then regenerated from their route seed with the Artifact offer. This preserves deterministic offers and does not alter unrelated run state.
 - `combatArtifactChoice` is transient persistence for a started encounter. It prevents a reload or repeated click from spending another charge and is cleared in both Battle and Skirmish completion paths.
