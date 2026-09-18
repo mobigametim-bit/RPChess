@@ -31,6 +31,12 @@
 - [ ] Confirm the Cloudflare Preview URL and obtain user acceptance; a branch preview must not change `main`.
 - [ ] After acceptance, merge via PR, update this plan and Notion to complete, then manually run GitHub Pages for `main` to publish the existing VK URL.
 
+## Preview evidence (partial)
+
+- Cloudflare Preview `https://2b0af307-rpchess.mobigametim.workers.dev/`: main-menu brand logo was visually verified at the available 1363×936 desktop viewport in RU and EN. It remains centered over the action column, clears the first button, and switches immediately from `logo_ru.png` to `logo_en.png`.
+- Compact Roster and Battle-preparation layouts intentionally hide their pre-existing header-logo slots through `ui-redesign-final.css`; they are not treated as visible logo screens in this acceptance pass.
+- The full tablet / narrow-landscape / mobile-portrait viewport matrix is still open because this preview browser cannot resize its viewport.
+
 ## Asset and delivery notes
 
 - The source `title_wordmark.png` is retained as an archival source file only unless a future product decision explicitly requests deletion. It will not remain in the runtime asset allowlist or visible UI.
