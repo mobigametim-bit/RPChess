@@ -1,4 +1,6 @@
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 const { chromium } = require('playwright');
 const { startNewRun } = require('./browser-test-helpers.cjs');
 const {
@@ -22,6 +24,7 @@ const WEAK_SURFACE_MATRIX = [[1024, 768], [844, 390]];
 // A VK Mini App renders beneath VK's own chrome. These cases model the
 // resulting safe height and cover only the Main Menu / Chronicle contract.
 const VK_MENU_SAFE_HEIGHT_MATRIX = [[1366, 660], [1024, 640], [844, 340]];
+const VK_MENU_SCREENSHOT_DIR = String(process.env.RPCHESS_VK_MENU_SCREENSHOT_DIR || '').trim();
 
 async function freshDocument(page) {
   await page.goto(url, { waitUntil: 'networkidle' });
@@ -155,7 +158,14 @@ async function auditVkMenuSafeHeight(browser, width, height, language) {
     await auditMenuModals(page, label);
     await assertViewportContained(page, '[data-chronicle-panel]', `${label} Chronicle`);
     await assertPageFitsViewport(page, label);
-    assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
+    if (VK_MENU_SCREENSHOT_DIR) {
+      fs.mkdirSync(VK_MENU_SCREENSHOT_DIR, { recursive: true });
+      await page.screenshot({
+        path: path.join(VK_MENU_SCREENSHOT_DIR, \`menu-\${language}-\${width}x\${height}.png\`),
+        fullPage: false
+      });
+    }
+    assert.deepStrictEqual(errors, [], \`${label} browser errors:\\n\${errors.join('\\n')}\`);
   } finally {
     await page.close();
   }
