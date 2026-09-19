@@ -78,7 +78,29 @@ function renderComposition(){renderCounters();renderAvailable();renderSelected()
 function openSkirmish(){activeRun=readRun();if(!activeRun||activeRun.ended)return;encounter=encounterForRun(activeRun);selectedIds=new Set(defaultCombatSelection(activeRun.roster));resetBattleTracking();setBattleNavigationLocked(false);setNotice('');renderEncounter();renderComposition();showOnly('skirmish');}
 function resetBattleTracking(){battlePlan=null;identityBySquare=new Map();enemyBySquare=new Map();capturedIds=new Set();processedMoves=0;battleFinalized=false;lastCapturedVisual=null;lastBattleStatus=null;clearTimeout(finalizeTimer);finalizeTimer=null;}
 
-function renderObstacleProps(){if(!board||!battlePlan)return;for(const node of board.querySelectorAll('.classic-board-obstacle'))node.remove();for(const obstacle of battlePlan.obstacles||[]){const cell=board.querySelector(`[data-square="${obstacle.square}"]`);if(!cell)continue;const image=document.createElement('img');image.className='classic-board-obstacle';image.src=obstacle.asset;image.alt='';image.draggable=false;image.dataset.skirmishObstacle=obstacle.square;cell.append(image);}}
+function renderObstacleProps(){
+  if(!board||!battlePlan)return;
+  const desired=new Map((battlePlan.obstacles||[]).map(obstacle=>[obstacle.square,obstacle]));
+  const existing=new Map();
+  // This renderer runs inside the board's subtree observer. Replacing every
+  // image would schedule itself forever and starve browser painting/timers.
+  for(const node of board.querySelectorAll('.classic-board-obstacle')){
+    const square=node.dataset.skirmishObstacle;
+    const cell=desired.has(square)?board.querySelector(`[data-square="${square}"]`):null;
+    if(!cell||node.parentNode!==cell||existing.has(square)){node.remove();continue;}
+    existing.set(square,node);
+  }
+  for(const obstacle of desired.values()){
+    const cell=board.querySelector(`[data-square="${obstacle.square}"]`);
+    if(!cell)continue;
+    let image=existing.get(obstacle.square);
+    if(!image){
+      image=document.createElement('img');image.className='classic-board-obstacle';
+      image.alt='';image.draggable=false;image.dataset.skirmishObstacle=obstacle.square;
+      image.setAttribute('src',obstacle.asset);cell.append(image);
+    }else if(image.getAttribute('src')!==obstacle.asset){image.setAttribute('src',obstacle.asset);}
+  }
+}
 function applyBoardArt(){if(!board||!activeRun||!battlePlan)return;for(const[square,id]of identityBySquare){const character=characterForId(id),cell=board.querySelector(`[data-square="${square}"]`),image=cell?.querySelector('.classic-piece');if(!character?.pieceArt||!image)continue;image.src=character.pieceArt;image.dataset.personalizedId=id;image.classList.add('classic-piece--personalized');cell.dataset.personalizedId=id;cell.setAttribute('aria-label',`${square}: ${characterName(character)}, ${pieceLabel(character.pieceType)}`);}for(const[square,piece]of enemyBySquare){const image=board.querySelector(`[data-square="${square}"] .classic-piece`);if(image)image.src=pieceArtForTheme(battlePlan.encounter,piece.pieceType,battlePlan.enemyColor);}renderObstacleProps();renderThreatOverlay(board,globalThis.RPChessClassicChess?.snapshot?.(),artifactForCombat(activeRun,{combatType:'skirmish',encounterId:battlePlan.encounter.id}),battlePlan.playerColor);}
 function patchTransientBattleArt(){if(!battlePlan||!globalThis.RPChessClassicChess)return;const log=globalThis.RPChessClassicChess.moveLog||[],last=log[log.length-1];if(!last)return;for(const flyer of document.querySelectorAll('.classic-piece-flyer:not([data-skirmish-visualized])')){if(last.color===battlePlan.playerColor){const id=identityBySquare.get(last.move?.to)||identityBySquare.get(last.move?.from),character=characterForId(id);if(character?.pieceArt)flyer.src=character.pieceArt;}else{const piece=enemyBySquare.get(last.move?.to)||enemyBySquare.get(last.move?.from);if(piece)flyer.src=pieceArtForTheme(battlePlan.encounter,piece.pieceType,battlePlan.enemyColor);}flyer.dataset.skirmishVisualized='1';}for(const ghost of document.querySelectorAll('.classic-captured-ghost:not([data-skirmish-visualized])')){if(last.color===battlePlan.enemyColor&&lastCapturedVisual?.logLength===log.length&&lastCapturedVisual.art)ghost.src=lastCapturedVisual.art;else if(last.color===battlePlan.playerColor&&last.captured){const type=last.captured?.toLowerCase?.()||'pawn';ghost.src=pieceArtForTheme(battlePlan.encounter,{p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'}[type]||'pawn',battlePlan.enemyColor);}ghost.dataset.skirmishVisualized='1';}}
 function launchBattle(){battlePlan=createBattlePlan({roster:activeRun.roster,selectedIds:[...selectedIds],encounter});identityBySquare=new Map(battlePlan.playerFormation.filter((piece)=>piece.id).map((piece)=>[piece.square,piece.id]));enemyBySquare=new Map(battlePlan.enemyFormation.map((piece)=>[piece.square,piece]));capturedIds=new Set();processedMoves=0;battleFinalized=false;lastCapturedVisual=null;lastBattleStatus=null;clearTimeout(finalizeTimer);audio()?.click?.();skirmishScreen.hidden=true;document.body.classList.remove('skirmish-active');setBattleNavigationLocked(true);globalThis.RPChessClassicChess?.newGame(battlePlan.fen,{mode:'ai',playerColor:battlePlan.playerColor,aiElo:encounter.aiElo,blockedSquares:battlePlan.blockedSquares});applyBoardArt();const mode=document.querySelector('[data-game-mode]');if(mode)mode.textContent=combatDifficultyLabel();globalThis.dispatchEvent(new CustomEvent('rpchess:combat-started',{detail:{combatType:'skirmish'}}));}
