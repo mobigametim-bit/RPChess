@@ -1,9 +1,12 @@
 const assert = require('assert');
+const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
 
 (async () => {
   const root = path.resolve(__dirname, '..');
+  const buildScript = fs.readFileSync(path.join(root, 'scripts/build.cjs'), 'utf8');
+  assert(buildScript.includes("'js/skirmish-obstacles.mjs'"), 'production build must package the Skirmish obstacle runtime module');
   const obstacle = await import(pathToFileURL(path.join(root, 'game/js/skirmish-obstacles.mjs')).href);
   const engine = await import(pathToFileURL(path.join(root, 'game/js/classic-chess-engine.mjs')).href);
   const first = obstacle.generateSkirmishObstacles('obstacle-seed');
