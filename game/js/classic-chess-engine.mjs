@@ -28,9 +28,13 @@ function createEmptyState() {
     fullmove: 1,
     lastMove: null,
     history: [],
-    repetition: new Map()
+    repetition: new Map(),
+    blockedSquares: new Set()
   };
 }
+
+function isBlocked(state, index) { return state.blockedSquares?.has(index) || false; }
+function normalizeBlockedSquares(squares = []) { return new Set((Array.isArray(squares) ? squares : []).map(squareToIndex).filter((index) => index >= 0)); }
 
 function parseFEN(fen) {
   const [placement, turn = 'w', castling = '-', ep = '-', halfmove = '0', fullmove = '1'] = String(fen).trim().split(/\s+/);
@@ -103,6 +107,7 @@ function addSlidingMoves(state, from, color, directions, moves) {
     let rank = fromRank + dr;
     while (inBounds(file, rank)) {
       const to = indexOf(file, rank);
+      if (isBlocked(state, to)) break;
       const target = state.board[to];
       if (!target) moves.push({ from, to });
       else {
@@ -139,7 +144,9 @@ function countSquareAttackers(state, target, byColor) {
     let file = tf + df;
     let rank = tr + dr;
     while (inBounds(file, rank)) {
-      const piece = state.board[indexOf(file, rank)];
+      const index = indexOf(file, rank);
+      if (isBlocked(state, index)) break;
+      const piece = state.board[index];
       if (piece) {
         if (piece.color === byColor && (piece.type === 'b' || piece.type === 'q')) attackers += 1;
         break;
@@ -153,7 +160,9 @@ function countSquareAttackers(state, target, byColor) {
     let file = tf + df;
     let rank = tr + dr;
     while (inBounds(file, rank)) {
-      const piece = state.board[indexOf(file, rank)];
+      const index = indexOf(file, rank);
+      if (isBlocked(state, index)) break;
+      const piece = state.board[index];
       if (piece) {
         if (piece.color === byColor && (piece.type === 'r' || piece.type === 'q')) attackers += 1;
         break;
@@ -185,7 +194,7 @@ function inCheck(state, color) {
 }
 
 function kingTransitSafe(state, from, transit, color) {
-  const copy = { ...state, board: cloneBoard(state.board), castling: { ...state.castling } };
+  const copy = { ...state, board: cloneBoard(state.board), castling: { ...state.castling }, blockedSquares: new Set(state.blockedSquares) };
   copy.board[transit] = copy.board[from];
   copy.board[from] = null;
   return !isSquareAttacked(copy, transit, opposite(color));
@@ -205,12 +214,12 @@ function pseudoMovesFor(state, from, includeCastling = true) {
     const oneRank = rank + direction;
     if (inBounds(file, oneRank)) {
       const one = indexOf(file, oneRank);
-      if (!state.board[one]) {
+      if (!state.board[one] && !isBlocked(state, one)) {
         if (oneRank === promotionRank) for (const promotion of PROMOTIONS) moves.push({ from, to: one, promotion });
         else moves.push({ from, to: one });
         const twoRank = rank + direction * 2;
         const two = indexOf(file, twoRank);
-        if (rank === startRank && !state.board[two]) moves.push({ from, to: two, doublePawn: true });
+        if (rank === startRank && !state.board[two] && !isBlocked(state, two)) moves.push({ from, to: two, doublePawn: true });
       }
     }
     for (const df of [-1, 1]) {
@@ -218,6 +227,7 @@ function pseudoMovesFor(state, from, includeCastling = true) {
       const targetRank = rank + direction;
       if (!inBounds(targetFile, targetRank)) continue;
       const to = indexOf(targetFile, targetRank);
+      if (isBlocked(state, to)) continue;
       const target = state.board[to];
       if (target && target.color !== piece.color && target.type !== 'k') {
         if (targetRank === promotionRank) for (const promotion of PROMOTIONS) moves.push({ from, to, capture: to, promotion });
@@ -236,6 +246,7 @@ function pseudoMovesFor(state, from, includeCastling = true) {
       const tr = rank + dr;
       if (!inBounds(tf, tr)) continue;
       const to = indexOf(tf, tr);
+      if (isBlocked(state, to)) continue;
       const target = state.board[to];
       if (!target) moves.push({ from, to });
       else if (target.color !== piece.color && target.type !== 'k') moves.push({ from, to, capture: to });
@@ -253,6 +264,7 @@ function pseudoMovesFor(state, from, includeCastling = true) {
       const tr = rank + dr;
       if (!inBounds(tf, tr)) continue;
       const to = indexOf(tf, tr);
+      if (isBlocked(state, to)) continue;
       const target = state.board[to];
       if (!target) moves.push({ from, to });
       else if (target.color !== piece.color && target.type !== 'k') moves.push({ from, to, capture: to });
@@ -266,13 +278,13 @@ function pseudoMovesFor(state, from, includeCastling = true) {
         const rookKing = state.board[indexOf(7, homeRank)];
         const kingTransit = indexOf(5, homeRank);
         const kingDestination = indexOf(6, homeRank);
-        if (state.castling[kingSideRight] && rookKing?.type === 'r' && rookKing.color === piece.color && !state.board[kingTransit] && !state.board[kingDestination] && kingTransitSafe(state, from, kingTransit, piece.color)) {
+        if (state.castling[kingSideRight] && rookKing?.type === 'r' && rookKing.color === piece.color && !state.board[kingTransit] && !state.board[kingDestination] && !isBlocked(state, kingTransit) && !isBlocked(state, kingDestination) && kingTransitSafe(state, from, kingTransit, piece.color)) {
           moves.push({ from, to: kingDestination, castle: 'K' });
         }
         const rookQueen = state.board[indexOf(0, homeRank)];
         const queenTransit = indexOf(3, homeRank);
         const queenDestination = indexOf(2, homeRank);
-        if (state.castling[queenSideRight] && rookQueen?.type === 'r' && rookQueen.color === piece.color && !state.board[indexOf(1, homeRank)] && !state.board[queenDestination] && !state.board[queenTransit] && kingTransitSafe(state, from, queenTransit, piece.color)) {
+        if (state.castling[queenSideRight] && rookQueen?.type === 'r' && rookQueen.color === piece.color && !state.board[indexOf(1, homeRank)] && !state.board[queenDestination] && !state.board[queenTransit] && !isBlocked(state, indexOf(1, homeRank)) && !isBlocked(state, queenDestination) && !isBlocked(state, queenTransit) && kingTransitSafe(state, from, queenTransit, piece.color)) {
           moves.push({ from, to: queenDestination, castle: 'Q' });
         }
       }
@@ -328,7 +340,7 @@ function applyMoveToState(state, move, { record = false } = {}) {
 }
 
 function moveLeavesKingSafe(state, move, color) {
-  const copy = { ...state, board: cloneBoard(state.board), castling: { ...state.castling }, repetition: state.repetition };
+  const copy = { ...state, board: cloneBoard(state.board), castling: { ...state.castling }, repetition: state.repetition, blockedSquares: new Set(state.blockedSquares) };
   applyMoveToState(copy, move);
   return !inCheck(copy, color);
 }
@@ -387,8 +399,9 @@ function moveToPublic(move) {
 }
 
 class ClassicChessEngine {
-  constructor(fen = null) {
+  constructor(fen = null, { blockedSquares = [] } = {}) {
     this.state = fen ? parseFEN(fen) : createInitialState();
+    this.state.blockedSquares = normalizeBlockedSquares(blockedSquares);
     this.state.repetition = new Map();
     this.recordPosition();
   }
@@ -396,8 +409,9 @@ class ClassicChessEngine {
     const key = positionKey(this.state);
     this.state.repetition.set(key, (this.state.repetition.get(key) || 0) + 1);
   }
-  reset(fen = null) {
+  reset(fen = null, { blockedSquares = [] } = {}) {
     this.state = fen ? parseFEN(fen) : createInitialState();
+    this.state.blockedSquares = normalizeBlockedSquares(blockedSquares);
     this.state.repetition = new Map();
     this.recordPosition();
     return this.snapshot();
@@ -430,7 +444,7 @@ class ClassicChessEngine {
       enPassant: this.state.enPassant == null ? null : indexToSquare(this.state.enPassant),
       halfmove: this.state.halfmove, fullmove: this.state.fullmove,
       lastMove: this.state.lastMove ? { ...this.state.lastMove, from: indexToSquare(this.state.lastMove.from), to: indexToSquare(this.state.lastMove.to) } : null,
-      board: this.state.board.map(clonePiece), status: this.status()
+      board: this.state.board.map(clonePiece), blockedSquares: [...this.state.blockedSquares].map(indexToSquare), status: this.status()
     };
   }
 }

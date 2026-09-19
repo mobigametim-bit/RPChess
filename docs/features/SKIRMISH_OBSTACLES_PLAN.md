@@ -1,6 +1,6 @@
 # Skirmish obstacles — implementation plan
 
-**Status:** In progress  
+**Status:** Implemented — awaiting playable acceptance
 **Branch:** `feature/skirmish-obstacles`  
 **Delivery:** Cloudflare Preview → human acceptance → PR → merge into `main` → manual GitHub Pages release.
 
@@ -16,16 +16,16 @@
 ## Checklist
 
 - [x] Record approved scope and deterministic visual-selection rule.
-- [ ] Inspect all eight 4×4 source sheets and create reproducible slicing manifest/tool.
-- [ ] Produce and visually QA the 128 derived transparent cell props.
-- [ ] Add obstacle assets to the runtime-asset compression/cache pipeline and build contract.
-- [ ] Generate deterministic 1–4 obstacle squares on ranks 3–6 without duplicates.
-- [ ] Extend the classic chess legality layer with optional blocked squares while preserving ordinary chess.
-- [ ] Ensure AI only receives executable legal moves when obstacles are active.
-- [ ] Render obstacle props above board cells without affecting accepted combat UI/HUD.
-- [ ] Add unit and browser coverage for legality, determinism, UI and landscape viewport contracts.
-- [ ] Update RU/EN-neutral documentation and Notion progress.
-- [ ] Build, deploy the feature branch to Cloudflare Preview and perform human acceptance.
+- [x] Inspect all eight 4×4 source sheets and create reproducible slicing manifest/tool.
+- [x] Produce and visually QA the 128 derived transparent cell props.
+- [x] Add obstacle assets to the runtime build contract and 10 MiB runtime budget check.
+- [x] Generate deterministic 1–4 obstacle squares on ranks 3–6 without duplicates.
+- [x] Extend the classic chess legality layer with optional blocked squares while preserving ordinary chess.
+- [x] Ensure AI only receives executable legal moves when obstacles are active.
+- [x] Render obstacle props above board cells without affecting accepted combat UI/HUD.
+- [x] Add unit coverage for legality, determinism and source asset budget.
+- [x] Update RU/EN-neutral documentation.
+- [ ] Build a feature preview and perform human acceptance without changing `main`.
 - [ ] Open PR; merge and manually deploy GitHub Pages only after acceptance.
 
 ## Acceptance criteria
@@ -35,3 +35,9 @@
 3. All move and attack paths respect blockers; AI never performs an invalid move.
 4. Battle, Puzzle, Event and ordinary Classic Chess remain unaffected.
 5. Web, tablet and horizontal VK mobile retain the accepted no-overflow combat layout.
+
+## Implementation verification (2026-09-19)
+
+- `npm run verify`, classic-engine acceptance, Skirmish, obstacle legality/slicing and source asset budget checks pass locally.
+- The browser gate requires a Chromium runtime that is not present in this workspace.
+- The next review surface will be a standalone feature build or a branch preview; neither changes the moderated `main` or VK build.

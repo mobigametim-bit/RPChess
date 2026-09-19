@@ -553,7 +553,7 @@ function normalizeConfig(options = {}) {
 function newGame(fen = null, options = {}) {
   cancelAI();
   gameConfig = normalizeConfig(options);
-  engine = new ClassicChessEngine(fen);
+  engine = new ClassicChessEngine(fen, { blockedSquares: options.blockedSquares });
   selected = null;
   selectedMoves = [];
   moveLog = [];

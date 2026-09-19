@@ -152,6 +152,16 @@ body.classic-chess-active { background: #050a12; }
   filter: drop-shadow(0 5px 5px rgba(0, 0, 0, .6));
   transition: transform .1s ease, filter .1s ease;
 }
+.classic-board-obstacle {
+  position: absolute;
+  z-index: 5;
+  width: 92%;
+  height: 92%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 5px 5px rgba(0, 0, 0, .62));
+}
 .classic-square:hover .classic-piece { transform: translateY(-2%); filter: drop-shadow(0 7px 7px rgba(0,0,0,.72)) brightness(1.05); }
 
 .classic-coordinate {

@@ -28,7 +28,7 @@
     "test:lifecycle": "node tests/run-lifecycle.cjs",
     "test:endless": "node tests/endless-run.cjs",
     "test:identity": "node tests/player-identity-chronicle.cjs",
-    "test:skirmish": "node tests/skirmish.cjs",
+    "test:skirmish": "node tests/skirmish.cjs && node tests/skirmish-obstacles.cjs && node tests/skirmish-obstacle-assets.cjs",
     "test:battle": "node tests/battle.cjs",
     "test:travel": "node tests/travel-choice.cjs",
     "test:ui": "node tests/ui-redesign-final.cjs",

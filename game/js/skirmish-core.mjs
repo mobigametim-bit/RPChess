@@ -1,6 +1,7 @@
 import { PIECE_VALUES } from './roster-data.mjs';
 import { MAX_ENCOUNTER_STARS, clampStars, difficultyForStars } from './encounter-difficulty.mjs';
 import { combatTheme, oppositeColor } from './race-assets.mjs';
+import { generateSkirmishObstacles } from './skirmish-obstacles.mjs';
 
 const MIN_SKIRMISH_PIECES=2,MAX_SKIRMISH_PIECES=16,MAX_SKIRMISH_POINTS=39,TYPE_CODE=Object.freeze({pawn:'p',knight:'n',bishop:'b',rook:'r',queen:'q',king:'k'}),CODE_TYPE=Object.freeze({p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'}),FILES='abcdefgh';
 const ENCOUNTER_TIERS=Object.freeze(Object.fromEntries(Array.from({length:MAX_ENCOUNTER_STARS},(_,i)=>{const stars=i+1,d=difficultyForStars(stars);const low=Math.max(4,Math.min(39,Math.round(4+stars*2.15))),high=Math.max(low,Math.min(39,low+7));return[stars,Object.freeze({label:`${d.label} · дорожный отряд`,stars,threat:`${low}–${high}`,elo:d.elo,tactic:d.tactic})];})));
@@ -62,7 +63,8 @@ function createBattlePlan({roster,selectedIds,encounter}={}){
   const resolved=encounter||createEncounter(),playerColor=resolved.playerColor==='b'?'b':'w',enemyColor=oppositeColor(playerColor),enemy=generateEnemyArmy({playerPoints:validation.points,playerCount:validation.count,encounter:resolved});
   const playerFormation=placeArmy(validation.members,playerColor,{seed:`${resolved.seed}:player`});
   const enemyFormation=placeArmy(enemy.army,enemyColor,{seed:`${resolved.seed}:enemy`});
-  return{encounter:resolved,playerColor,enemyColor,selectedIds:validation.members.map((m)=>m.id),playerPoints:validation.points,enemyPoints:enemy.points,playerFormation,enemyFormation,fen:fenFromPlacements([...playerFormation,...enemyFormation],'w')};
+  const obstacles=generateSkirmishObstacles(resolved.seed);
+  return{encounter:resolved,playerColor,enemyColor,selectedIds:validation.members.map((m)=>m.id),playerPoints:validation.points,enemyPoints:enemy.points,playerFormation,enemyFormation,obstacles,blockedSquares:obstacles.map((obstacle)=>obstacle.square),fen:fenFromPlacements([...playerFormation,...enemyFormation],'w')};
 }
 
 function applyBattleOutcome(run,{capturedIds=[],status=null,playerColor='w'}={}){const captured=new Set(capturedIds||[]);const roster=(run?.roster||[]).map((c)=>{if(!c.isRunKing&&captured.has(c.id)&&c.status==='healthy')return{...c,status:'wounded'};return{...c};});const woundedIds=roster.filter((c)=>captured.has(c.id)&&!c.isRunKing&&c.status==='wounded').map((c)=>c.id);return{...run,roster,ended:Boolean(run?.ended),endReason:run?.endReason||null,lastSkirmish:{result:status?.type||'unknown',winner:status?.winner||null,woundedIds,kingDied:false}};}
