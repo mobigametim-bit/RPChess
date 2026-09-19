@@ -34,8 +34,46 @@ const {pathToFileURL}=require('url');
   const ui=fs.readFileSync(path.join(game,'js/artifact-combat-ui.mjs'),'utf8'),css=fs.readFileSync(path.join(game,'css/artifacts.css'),'utf8'),battle=fs.readFileSync(path.join(game,'js/battle-app.mjs'),'utf8'),skirmish=fs.readFileSync(path.join(game,'js/skirmish-app.mjs'),'utf8');
   for(const source of [battle,skirmish]){assert(source.includes("chooseArtifact"),'both combat types must gate launch on artifact choice');assert(source.includes('renderThreatOverlay'),'both combat types must refresh threat overlay');}
   assert(ui.includes('classic-threat-fire')&&css.includes('pointer-events:none'),'overlay must remain non-interactive');
+  assert(ui.includes("modal.addEventListener('click'")&&ui.includes("event.preventDefault();finishChoice"),'artifact cards must use guarded capture delegation');
+  const transition=ui.slice(ui.indexOf('const finishChoice='),ui.indexOf('// Capture delegation'));
+  assert(transition.indexOf('onChoose?.')<transition.indexOf('modal.remove()'),'artifact modal must close only after the combat launch callback succeeds');
+  assert(ui.includes("t('artifacts.choice.failed')")&&css.includes('.artifact-choice-status'),'failed combat launch must stay retryable and visible');
   // DOM regression: same position, newly rendered cells (selection / thinking / animation).
-  const {renderThreatOverlay}=await import(pathToFileURL(path.join(game,'js/artifact-combat-ui.mjs')).href);
+  const {chooseArtifact,renderThreatOverlay}=await import(pathToFileURL(path.join(game,'js/artifact-combat-ui.mjs')).href);
+  class FakeElement{
+    constructor(tag){this.tag=tag;this.dataset={};this.attributes={};this.children=[];this.listeners={};this.hidden=false;this.removed=false;this.disabled=false;this.className='';this.classList={values:new Set(),add:(name)=>this.classList.values.add(name),remove:(name)=>this.classList.values.delete(name)};}
+    set innerHTML(value){this.html=value;if(this.dataset.artifactChoiceModal!==undefined){this.status=new FakeElement('div');this.status.hidden=true;this.grid=new FakeElement('div');}}
+    setAttribute(name,value){this.attributes[name]=String(value);}
+    querySelector(selector){if(selector==='.artifact-choice-grid')return this.grid||null;if(selector==='[data-artifact-choice-status]')return this.status||null;if(selector==='button')return this.grid?.children[0]||null;return null;}
+    querySelectorAll(selector){return selector==='[data-artifact-choice]'?this.children:[];}
+    append(...nodes){this.children.push(...nodes);}
+    addEventListener(type,listener){this.listeners[type]=listener;}
+    contains(node){return node===this||this.grid?.children.includes(node)||false;}
+    closest(selector){return selector==='[data-artifact-choice]'&&this.dataset.artifactChoice!==undefined?this:null;}
+    focus(){this.focused=true;}
+    remove(){this.removed=true;}
+  }
+  const choiceClasses=new Set(),choiceDocument={
+    modal:null,head:{append(){}},body:{classList:{add:(name)=>choiceClasses.add(name),remove:(name)=>choiceClasses.delete(name)},append(node){choiceDocument.modal=node;}},
+    querySelector(){return null;},createElement(tag){return new FakeElement(tag);}
+  };
+  const choicePreviousDocument=globalThis.document;
+  globalThis.document=choiceDocument;
+  try{
+    let chosenRun=null;
+    chooseArtifact({run:purchase.run,combatType:'skirmish',encounterId:'skirmish-dom',onChoose:(next)=>{chosenRun=next;}});
+    const modal=choiceDocument.modal,artifactButton=modal.grid.children[0];let prevented=false;
+    modal.listeners.click({target:artifactButton,preventDefault(){prevented=true;}});
+    assert(prevented&&modal.removed&&!choiceClasses.has('reboot-modal-open'),'owned artifact click must close the modal after launch');
+    assert.strictEqual(artifacts.artifactCharges(chosenRun,purchase.artifact.id),Math.max(0,purchase.chargesAdded-1),'owned artifact click must consume one charge');
+    const previousConsoleError=console.error;console.error=()=>{};
+    try{
+      chooseArtifact({run:purchase.run,combatType:'skirmish',encounterId:'skirmish-dom-failure',onChoose:()=>{throw new Error('launch failed');}});
+      const failedModal=choiceDocument.modal;failedModal.listeners.click({target:failedModal.grid.children[0],preventDefault(){}});
+      assert(!failedModal.removed&&!failedModal.status.hidden&&failedModal.status.textContent,'failed launch must keep a visible retryable modal');
+      assert(failedModal.grid.children.every(button=>!button.disabled),'failed launch must re-enable every choice');
+    }finally{console.error=previousConsoleError;}
+  }finally{if(choicePreviousDocument===undefined)delete globalThis.document;else globalThis.document=choicePreviousDocument;}
   let mutations=0;
   const cells=new Map();
   const makeCell=square=>({dataset:{square},children:[],querySelectorAll(){return this.children;},append(node){node.parent=this;this.children.push(node);mutations++;}});
