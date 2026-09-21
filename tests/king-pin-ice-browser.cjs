@@ -25,6 +25,15 @@ const FEN='k3r3/n7/8/8/8/8/4R3/R3K3 w - - 0 1';
     assert.deepStrictEqual(state.white,{pin:'partial',src:'assets/vfx/pin_ice_partial.png',opacity:'0.5',pointerEvents:'none'});
     assert.deepStrictEqual(state.black,{pin:'full',src:'assets/vfx/pin_ice_full.png',opacity:'0.5',pointerEvents:'none'});
 
+    await page.evaluate(fen=>globalThis.RPChessClassicChess.loadFen(fen,{mode:'local',blockedSquares:['e5']}),FEN);
+    await page.waitForFunction(()=>!document.querySelector('[data-square="e2"]')?.dataset.pinState);
+    const blockedState=await page.evaluate(()=>({
+      white:document.querySelector('[data-square="e2"]')?.dataset.pinState||'',
+      whiteIce:document.querySelector('[data-square="e2"] .classic-pin-ice')?.getAttribute('src')||'',
+      black:document.querySelector('[data-square="a7"]')?.dataset.pinState||''
+    }));
+    assert.deepStrictEqual(blockedState,{white:'',whiteIce:'',black:'full'},'obstacle must remove pin ice only from the ray it blocks');
+
     const dimensions=await page.evaluate(async()=>{
       const load=file=>new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve({w:image.naturalWidth,h:image.naturalHeight});image.onerror=()=>reject(new Error(`failed to load ${image.src}`));image.src=`assets/vfx/${file}`;});
       return {full:await load('pin_ice_full.png'),partial:await load('pin_ice_partial.png')};
@@ -32,6 +41,6 @@ const FEN='k3r3/n7/8/8/8/8/4R3/R3K3 w - - 0 1';
     assert(Math.max(dimensions.full.w,dimensions.full.h)<=384,`full pin runtime asset exceeds 384px: ${JSON.stringify(dimensions.full)}`);
     assert(Math.max(dimensions.partial.w,dimensions.partial.h)<=384,`partial pin runtime asset exceeds 384px: ${JSON.stringify(dimensions.partial)}`);
     assert.deepStrictEqual(pageErrors,[]);
-    console.log(`King pin ice browser: PASS — white partial + black full visible together at 50% opacity; runtime full=${dimensions.full.w}x${dimensions.full.h}, partial=${dimensions.partial.w}x${dimensions.partial.h}`);
+    console.log(`King pin ice browser: PASS — pin ice respects obstacle-blocked rays; runtime full=${dimensions.full.w}x${dimensions.full.h}, partial=${dimensions.partial.w}x${dimensions.partial.h}`);
   }finally{await browser.close();}
 })().catch(error=>{console.error(error.stack||error);process.exitCode=1;});

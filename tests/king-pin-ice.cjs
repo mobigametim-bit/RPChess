@@ -7,8 +7,8 @@ const {pathToFileURL}=require('url');
   const chess=await import(pathToFileURL(path.join(root,'game/js/classic-chess-engine.mjs')).href);
   const pin=await import(`${pathToFileURL(path.join(root,'game/js/king-pin-ice.mjs')).href}?test=${Date.now()}`);
 
-  function classify(fen){
-    const engine=new chess.ClassicChessEngine(fen);
+  function classify(fen,blockedSquares=[]){
+    const engine=new chess.ClassicChessEngine(fen,{blockedSquares});
     return pin.classifyAbsolutePins(engine.snapshot());
   }
   function stateAt(list,square){return list.find(item=>item.square===square)?.state||null;}
@@ -40,5 +40,16 @@ const {pathToFileURL}=require('url');
   const diagonalFull=classify('7k/8/8/8/7b/6N1/5K2/8 w - - 0 1');
   assert.strictEqual(stateAt(diagonalFull,'g3'),'full','knight on diagonal ray must be fully pinned by bishop');
 
-  console.log('King pin ice: PASS — full/partial absolute pins for both sides independent of turn');
+  const pinRay='4r2k/8/8/8/4R3/8/8/4K3 w - - 0 1';
+  assert.strictEqual(stateAt(classify(pinRay),'e4'),'partial','rook remains partially pinned on an unobstructed ray');
+  for(const square of ['e3','e6']){
+    assert.strictEqual(classify(pinRay,[square]).length,0,`obstacle on either side of a candidate must break the pin ray (${square})`);
+  }
+  const fullPinRay='4r2k/8/8/8/4N3/8/8/4K3 w - - 0 1';
+  assert.strictEqual(stateAt(classify(fullPinRay),'e4'),'full','knight remains fully pinned on an unobstructed ray');
+  for(const square of ['e3','e6']){
+    assert.strictEqual(classify(fullPinRay,[square]).length,0,`obstacle must suppress full pin ice (${square})`);
+  }
+
+  console.log('King pin ice: PASS — full/partial absolute pins for both sides, with obstacle-blocked rays suppressed');
 })().catch(error=>{console.error(error.stack||error);process.exitCode=1;});

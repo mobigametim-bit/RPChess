@@ -11,13 +11,19 @@ function indexOf(file,rank){return rank*8+file;}
 function squareToIndex(square){const raw=String(square||'');if(!/^[a-h][1-8]$/.test(raw))return-1;return indexOf(FILES.indexOf(raw[0]),Number(raw[1])-1);}
 function indexToSquare(index){return `${FILES[fileOf(index)]}${rankOf(index)+1}`;}
 function sliderSupports(piece,df,dr){if(!piece)return false;const diagonal=df!==0&&dr!==0;return piece.type==='q'||(diagonal&&piece.type==='b')||(!diagonal&&piece.type==='r');}
+function blockedIndices(snapshot){
+  const squares=snapshot?.blockedSquares;
+  if(squares instanceof Set)return squares;
+  return new Set((Array.isArray(squares)?squares:[]).map(squareToIndex).filter(index=>index>=0));
+}
 
-function addSlidingDestinations(board,from,color,directions,out){
+function addSlidingDestinations(board,blocked,from,color,directions,out){
   const ff=fileOf(from),fr=rankOf(from);
   for(const [df,dr] of directions){
     let file=ff+df,rank=fr+dr;
     while(inBounds(file,rank)){
       const to=indexOf(file,rank),target=board[to];
+      if(blocked.has(to))break;
       if(!target)out.add(to);
       else{if(target.color!==color&&target.type!=='k')out.add(to);break;}
       file+=df;rank+=dr;
@@ -25,7 +31,7 @@ function addSlidingDestinations(board,from,color,directions,out){
   }
 }
 
-function pseudoDestinations(snapshot,from){
+function pseudoDestinations(snapshot,from,blocked=blockedIndices(snapshot)){
   const board=snapshot?.board;
   if(!Array.isArray(board)||board.length!==64)return new Set();
   const piece=board[from],out=new Set();
@@ -36,18 +42,18 @@ function pseudoDestinations(snapshot,from){
     const oneRank=rank+direction;
     if(inBounds(file,oneRank)){
       const one=indexOf(file,oneRank);
-      if(!board[one]){
+      if(!board[one]&&!blocked.has(one)){
         out.add(one);
         const twoRank=rank+direction*2;
         if(rank===startRank&&inBounds(file,twoRank)){
-          const two=indexOf(file,twoRank);if(!board[two])out.add(two);
+          const two=indexOf(file,twoRank);if(!board[two]&&!blocked.has(two))out.add(two);
         }
       }
     }
     const ep=squareToIndex(snapshot?.enPassant);
     for(const df of[-1,1]){
       const tf=file+df,tr=rank+direction;if(!inBounds(tf,tr))continue;
-      const to=indexOf(tf,tr),target=board[to];
+      const to=indexOf(tf,tr),target=board[to];if(blocked.has(to))continue;
       if(target&&target.color!==piece.color&&target.type!=='k')out.add(to);
       else if(to===ep){
         const captured=board[indexOf(tf,rank)];
@@ -57,17 +63,18 @@ function pseudoDestinations(snapshot,from){
   }else if(piece.type==='n'){
     for(const[df,dr]of[[1,2],[2,1],[2,-1],[1,-2],[-1,-2],[-2,-1],[-2,1],[-1,2]]){
       const tf=file+df,tr=rank+dr;if(!inBounds(tf,tr))continue;
-      const to=indexOf(tf,tr),target=board[to];if(!target||(target.color!==piece.color&&target.type!=='k'))out.add(to);
+      const to=indexOf(tf,tr),target=board[to];if(blocked.has(to))continue;if(!target||(target.color!==piece.color&&target.type!=='k'))out.add(to);
     }
-  }else if(piece.type==='b')addSlidingDestinations(board,from,piece.color,[[1,1],[1,-1],[-1,1],[-1,-1]],out);
-  else if(piece.type==='r')addSlidingDestinations(board,from,piece.color,[[1,0],[-1,0],[0,1],[0,-1]],out);
-  else if(piece.type==='q')addSlidingDestinations(board,from,piece.color,DIRECTIONS,out);
+  }else if(piece.type==='b')addSlidingDestinations(board,blocked,from,piece.color,[[1,1],[1,-1],[-1,1],[-1,-1]],out);
+  else if(piece.type==='r')addSlidingDestinations(board,blocked,from,piece.color,[[1,0],[-1,0],[0,1],[0,-1]],out);
+  else if(piece.type==='q')addSlidingDestinations(board,blocked,from,piece.color,DIRECTIONS,out);
   return out;
 }
 
 function classifyAbsolutePins(snapshot){
   const board=snapshot?.board;
   if(!Array.isArray(board)||board.length!==64)return Object.freeze([]);
+  const blocked=blockedIndices(snapshot);
   const pins=[];
   for(const color of['w','b']){
     const king=board.findIndex(piece=>piece?.color===color&&piece.type==='k');
@@ -77,6 +84,7 @@ function classifyAbsolutePins(snapshot){
       let file=kingFile+df,rank=kingRank+dr,candidate=-1;
       while(inBounds(file,rank)){
         const index=indexOf(file,rank),piece=board[index];
+        if(blocked.has(index))break;
         if(!piece){file+=df;rank+=dr;continue;}
         if(candidate<0){
           if(piece.color===color&&piece.type!=='k'){candidate=index;file+=df;rank+=dr;continue;}
@@ -88,7 +96,7 @@ function classifyAbsolutePins(snapshot){
           while(inBounds(rf,rr)){
             const ri=indexOf(rf,rr);ray.add(ri);if(ri===index)break;rf+=df;rr+=dr;
           }
-          const destinations=pseudoDestinations(snapshot,candidate);
+          const destinations=pseudoDestinations(snapshot,candidate,blocked);
           const hasPinSafeMove=[...destinations].some(to=>ray.has(to));
           pins.push(Object.freeze({square:indexToSquare(candidate),color,piece:board[candidate].type,state:hasPinSafeMove?'partial':'full',pinner:indexToSquare(index)}));
         }
