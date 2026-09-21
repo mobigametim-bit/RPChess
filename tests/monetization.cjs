@@ -60,7 +60,9 @@ class MemoryStorage {
     "data-starvation-rescue",
     'adRewardClaims',
     "status:'completed', granted:false",
-    "status:'completed', granted:true"
+    "status:'completed', granted:true",
+    'function resetRescueActions()',
+    'resetRescueActions();'
   ]) assert(source.includes(token), `Monetization contract missing ${token}`);
   assert(source.includes("reward.append(root)"), 'Double-gold offer must be placed inside the visible combat reward row');
   assert(source.includes("button.textContent = '×2'"), 'Double-gold control must use the compact ×2 label');

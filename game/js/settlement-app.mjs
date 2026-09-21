@@ -36,7 +36,7 @@ function ensureStylesheet(marker, href) {
 }
 
 function ensureCss() {
-  ensureStylesheet('data-settlement-css', 'css/settlement.css?v=20260909-owner2');
+  ensureStylesheet('data-settlement-css', 'css/settlement.css?v=20260921-mobile1');
   ensureStylesheet('data-settlement-compact-css', 'css/settlement-compact.css?v=20260909-owner1');
 }
 
@@ -81,7 +81,7 @@ function ensureScreen() {
         <p data-settlement-subtitle></p>
       </header>
       <div class="settlement-services">
-        <section class="settlement-service ui-panel-safe" aria-labelledby="settlement-healer-title">
+        <section class="settlement-service settlement-service--healer ui-panel-safe" aria-labelledby="settlement-healer-title">
           <div class="settlement-service__icon settlement-service__icon--healer" aria-hidden="true"></div>
           <h2 id="settlement-healer-title" data-settlement-healer-title></h2>
           <p class="settlement-service__intro" data-settlement-healer-intro></p>

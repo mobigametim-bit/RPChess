@@ -433,6 +433,13 @@ function hideRescueModal() {
   pendingRescue = null;
 }
 
+function resetRescueActions() {
+  const reward = rescueModal?.querySelector('[data-rescue-reward]');
+  const decline = rescueModal?.querySelector('[data-rescue-decline]');
+  if (reward) reward.disabled = false;
+  if (decline) decline.disabled = false;
+}
+
 function renderRescueCopy() {
   if (!rescueModal) return;
   const text = copy();
@@ -527,6 +534,9 @@ async function prepareStarvationRescue(run, originalOpen) {
   }
   pendingRescue = { run, originalOpen };
   const modal = ensureRescueModal();
+  // A previous cancelled/failed rewarded request disables both controls while it is pending.
+  // The modal is reused for the next starvation event, so make each new presentation interactive.
+  resetRescueActions();
   renderRescueCopy();
   modal.hidden = false;
   document.body.classList.add('rpchess-rescue-open');

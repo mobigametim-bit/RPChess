@@ -93,6 +93,43 @@ async function readMarketLayout(page) {
   });
 }
 
+async function assertMobileSettlementDetails(page) {
+  await page.evaluate((key) => {
+    const run = JSON.parse(localStorage.getItem(key));
+    run.gold = 500;
+    run.roster = run.roster.map((character) => ({
+      ...character,
+      status:character.isRunKing ? 'healthy' : 'wounded'
+    }));
+    localStorage.setItem(key, JSON.stringify(run));
+    dispatchEvent(new CustomEvent('rpchess:run-updated'));
+  }, RUN_KEY);
+
+  await page.locator('.settlement-heal-row').first().waitFor({ state:'visible' });
+  const details = await page.evaluate(() => {
+    const healerList = document.querySelector('[data-settlement-healer-list]');
+    const portrait = document.querySelector('.settlement-recruit__portrait');
+    const healerStyle = healerList ? getComputedStyle(healerList) : null;
+    const portraitStyle = portrait ? getComputedStyle(portrait) : null;
+    return {
+      healedCandidates:healerList?.querySelectorAll('.settlement-heal-row').length || 0,
+      healerScrollHeight:healerList?.scrollHeight || 0,
+      healerClientHeight:healerList?.clientHeight || 0,
+      healerOverflowY:healerStyle?.overflowY || '',
+      portraitObjectPosition:portraitStyle?.objectPosition || ''
+    };
+  });
+  assert(details.healedCandidates >= 3, 'mobile Settlement fixture must expose several heal candidates');
+  assert(['auto','scroll'].includes(details.healerOverflowY), 'mobile healer candidates must use an internal vertical scroll rail');
+  assert(details.healerScrollHeight > details.healerClientHeight + 1, 'mobile healer candidate rail must constrain and scroll a long list');
+  assert(details.portraitObjectPosition.includes('20%'), 'mobile Tavern portraits must keep their upper portion visible');
+  const scrollTop = await page.locator('[data-settlement-healer-list]').evaluate((node) => {
+    node.scrollTop = 9999;
+    return node.scrollTop;
+  });
+  assert(scrollTop > 0, 'mobile healer candidate rail must be scrollable');
+}
+
 function inside(inner, outer, tolerance = 1) {
   return Boolean(inner && outer
     && inner.left >= outer.left - tolerance
@@ -201,7 +238,15 @@ async function auditSettlement(browser, width, height, { gameplay = false } = {}
   try {
     await auditSettlement(browser, 1920, 1080, { gameplay:true });
     await auditSettlement(browser, 1024, 768);
-    await auditSettlement(browser, 844, 390);
+    const mobile = await browser.newPage({ viewport:{ width:844, height:390 } });
+    try {
+      await fresh(mobile, 'Settlement mobile details');
+      await enter(mobile);
+      await assertMobileSettlementDetails(mobile);
+      await auditSettlement(browser, 844, 390);
+    } finally {
+      await mobile.close();
+    }
     console.log('Settlement Market: desktop/tablet/mobile one-viewport containment, internal-scroll fallback, dedicated Supplies art, RU/EN localization and gameplay acceptance: PASS');
   } finally {
     await browser.close();
