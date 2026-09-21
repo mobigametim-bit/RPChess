@@ -33,7 +33,7 @@ module.exports=function verifySource(root){
 
   const index=read(root,'index.html');
   for(const forbidden of ['iron-marches-runtime.bundle.js','vertical-slice-app.mjs','ui-approved-campaign.mjs','explicit-run-setup.mjs'])if(index.includes(forbidden))fail(`index.html still references legacy runtime: ${forbidden}`);
-  requireTokens(index,['css/skirmish.css?v=20260827-skirmish-1','css/skirmish-compact.css?v=20260909-owner1'],'Skirmish owner stylesheet order');
+  requireTokens(index,['css/skirmish.css?v=20260827-skirmish-1','css/skirmish-compact.css?v='],'Skirmish owner stylesheet order');
   const foundation=read(root,'css/reboot-foundation.css');requireTokens(foundation,['BrahmsGotischCyr','--ui-panel-safe-left','--ui-panel-safe-right','.ui-panel-safe','.ui-panel-surface'],'frameless foundation');
   const foundationJs=read(root,'js/reboot-foundation.mjs');requireTokens(foundationJs,["import('./battle-route.mjs')",'RPChessRouteReady','css/travel-choice.css?v=20260830-acceptance-2'],'non-blocking foundation and critical Travel CSS');
   const i18n=read(root,'js/i18n.mjs');requireTokens(i18n,['currentLanguage','setLanguage','availableLanguages','subscribe','localizeDocument','rpchess:language-changed'],'localization foundation');

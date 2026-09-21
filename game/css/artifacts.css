@@ -4,3 +4,6 @@
 .artifact-choice-status{margin:-6px 0 14px;padding:10px 12px;border:1px solid rgba(230,106,88,.58);border-radius:7px;background:rgba(93,24,19,.35);color:#ffd2ca;font-size:12px;line-height:1.4}.artifact-choice-status[hidden]{display:none}.artifact-choice-modal[aria-busy="true"] .artifact-choice-card{cursor:wait;opacity:.72}
 .classic-square{isolation:isolate}.classic-piece{position:relative;z-index:2}.classic-piece-marker,.classic-coordinate{z-index:3}.classic-threat-fire{position:absolute;inset:2%;z-index:1;width:96%;height:96%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 0 6px rgba(255,112,24,.55))}
 @media(max-width:760px){.artifact-choice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.artifact-choice-card{min-height:176px}.artifact-choice-card img{width:58px;height:58px}}@media(max-width:380px){.artifact-choice-panel{padding:16px}.artifact-choice-grid{gap:8px}.artifact-choice-card{min-height:158px;padding:10px}.artifact-choice-card strong{font-size:17px}}
+
+/* Native WebView tap highlighting can outlive the removed modal during launch. */
+.artifact-choice-modal{-webkit-tap-highlight-color:transparent}
