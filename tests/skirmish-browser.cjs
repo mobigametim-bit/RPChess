@@ -58,6 +58,14 @@ async function enter(page) {
   await page.locator('[data-skirmish-screen]:not([hidden])').waitFor();
 }
 
+async function launch(page) {
+  await page.locator('[data-skirmish-start]').click();
+  // New combat routes always offer an artifact decision, including the
+  // deliberately effect-free option. This acceptance flow covers the latter.
+  await page.locator('[data-artifact-choice="none"]').click();
+  await page.locator('[data-classic-screen]:not([hidden])').waitFor();
+}
+
 async function assertResponsiveStars(page, selector, cardSelector) {
   const layout = await page.locator(selector).evaluate((el, cardSelector) => {
     const card = el.closest(cardSelector);
@@ -100,8 +108,7 @@ async function assertCompactDesktopStars(page) {
     assert.strictEqual(await page.locator('[data-skirmish-character]').count(), 6);
     assert.strictEqual((await page.locator('[data-skirmish-piece-count]').innerText()).trim(), '6 / 16');
     await assertCompactDesktopStars(page);
-    await page.locator('[data-skirmish-start]').click();
-    await page.locator('[data-classic-screen]:not([hidden])').waitFor();
+    await launch(page);
     const plan = await page.evaluate(() => globalThis.RPChessSkirmish.battlePlan);
     assert.strictEqual(plan.playerColor, 'w');
     assert.strictEqual(plan.encounter.stars, 12);
@@ -137,8 +144,7 @@ async function assertCompactDesktopStars(page) {
     await fresh(black, { playerColor: 'b', stars: 8, race: 'elves' });
     await enter(black);
     assert((await black.locator('[data-skirmish-description]').innerText()).includes('оборону'));
-    await black.locator('[data-skirmish-start]').click();
-    await black.locator('[data-classic-screen]:not([hidden])').waitFor();
+    await launch(black);
     const blackState = await black.evaluate(() => ({
       plan: globalThis.RPChessSkirmish.battlePlan,
       turn: globalThis.RPChessClassicChess.snapshot().turn,
@@ -164,8 +170,7 @@ async function assertCompactDesktopStars(page) {
     await enter(wounded);
     assert.strictEqual(await wounded.locator('[data-skirmish-character="king.oathkeeper"]').getAttribute('aria-pressed'), 'true');
     assert.strictEqual(await wounded.locator('[data-skirmish-start]').isDisabled(), false);
-    await wounded.locator('[data-skirmish-start]').click();
-    await wounded.locator('[data-classic-screen]:not([hidden])').waitFor();
+    await launch(wounded);
 
     const mobile = await browser.newPage({ viewport: { width: 844, height: 390 } });
     const mobileErrors = [];

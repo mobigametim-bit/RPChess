@@ -9,7 +9,7 @@
 - Scope is **Skirmish only**. Battle, Puzzle and Event combat remain unchanged.
 - Each encounter has **1–4** one-cell, indestructible, impassable obstacles.
 - Obstacles are generated deterministically from the encounter seed and occupy only ranks **3–6**.
-- Props are sliced from every regional `environment_sheet.png` (4×4 transparent grid); eligible props are selected randomly with no race lock.
+- Props originate from regional `environment_sheet.png` files (4×4 transparent grids). An audit retained 31 green slices; yellow and red slices were removed from both the runtime pool and source-prop folders. Eligible props are selected randomly with no race lock.
 - Obstacles are part of move legality: no piece may land on them; rook/bishop/queen rays stop at them; knights may jump over them but cannot land there.
 - Existing combat layout, landscape-only VK safe-area contract, HUD policy, and artifact UX remain unchanged.
 
@@ -17,7 +17,7 @@
 
 - [x] Record approved scope and deterministic visual-selection rule.
 - [x] Inspect all eight 4×4 source sheets and create reproducible slicing manifest/tool.
-- [x] Produce and visually QA the 128 derived transparent cell props.
+- [x] Audit the 128 derived transparent cell props and retain the 31 green candidates only.
 - [x] Add obstacle assets to the runtime build contract and 10 MiB runtime budget check.
 - [x] Generate deterministic 1–4 obstacle squares on ranks 3–6 without duplicates.
 - [x] Extend the classic chess legality layer with optional blocked squares while preserving ordinary chess.
