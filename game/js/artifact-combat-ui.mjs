@@ -4,7 +4,7 @@ import { t } from './i18n.mjs';
 
 function ensureCss(){
   if(document.querySelector('[data-artifact-combat-css]')) return;
-  const link=document.createElement('link'); link.rel='stylesheet'; link.href='css/artifacts.css?v=20260917'; link.dataset.artifactCombatCss=''; document.head.append(link);
+  const link=document.createElement('link'); link.rel='stylesheet'; link.href='css/artifacts.css?v=20260921-transition-1'; link.dataset.artifactCombatCss=''; document.head.append(link);
 }
 function chooseArtifact({run,combatType,encounterId,onChoose}={}){
   ensureCss();
@@ -35,7 +35,7 @@ function chooseArtifact({run,combatType,encounterId,onChoose}={}){
   // Capture delegation keeps the transition reliable even when another UI layer
   // refreshes or intercepts the card during the same click.
   modal.addEventListener('click',(event)=>{const button=event.target?.closest?.('[data-artifact-choice]');if(!button||!modal.contains(button))return;event.preventDefault();finishChoice(button.dataset.artifactChoice);},true);
-  document.body.append(modal); document.body.classList.add('reboot-modal-open'); modal.querySelector('button')?.focus();
+  document.body.append(modal); document.body.classList.add('reboot-modal-open'); modal.querySelector('button')?.focus({preventScroll:true});
 }
 function renderThreatOverlay(board,snapshot,artifact,playerColor){
   if(!board) return;

@@ -1,7 +1,9 @@
 /* Skirmish-owned compact formation geometry formerly supplied by post-pages compatibility polish. */
 @media (orientation:landscape) and (max-width:980px) and (max-height:520px) {
-  html[data-landscape-ui='1'] body.skirmish-active .skirmish-selection{display:grid!important;grid-template-rows:auto minmax(72px,.75fr) auto!important;min-height:0!important;overflow:hidden!important}
-  html[data-landscape-ui='1'] body.skirmish-active .skirmish-selected{height:auto!important;min-height:0!important;max-height:92px!important;overflow:auto!important}
+  html[data-landscape-ui='1'] body.skirmish-active .skirmish-selection{display:grid!important;grid-template-rows:auto minmax(0,1fr) auto!important;align-content:stretch!important;padding:6px 6px 84px!important;min-height:0!important;overflow:hidden!important}
+  /* The decorative pseudo-element must not consume the heading's grid row. */
+  html[data-landscape-ui='1'] body.skirmish-active .skirmish-selection::before{display:none!important}
+  html[data-landscape-ui='1'] body.skirmish-active .skirmish-selected{height:auto!important;min-height:0!important;max-height:none!important;overflow:auto!important;align-content:start!important}
   html[data-landscape-ui='1'] body.skirmish-active .skirmish-formation-block{margin-top:4px!important;padding-top:4px!important;min-height:64px!important;overflow:visible!important}
   html[data-landscape-ui='1'] body.skirmish-active .skirmish-formation-head{margin-bottom:2px!important;font-size:7px!important}
   html[data-landscape-ui='1'] body.skirmish-active .skirmish-formation{height:46px!important;min-height:46px!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;grid-template-rows:repeat(2,minmax(0,1fr))!important;gap:1px!important;overflow:visible!important}
@@ -57,4 +59,47 @@
     width:24px!important;
     height:24px!important;
   }
+}
+
+/* Reserve the Continue row; only the casualty lists may grow and scroll.
+   Use scene visibility directly so the first frame is constrained too. */
+@media (orientation:landscape) {
+  html[data-landscape-ui='1'] body .skirmish-aftermath:not([hidden]) .skirmish-aftermath-panel {
+    height:100%!important;
+    min-height:0!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+    grid-template-rows:auto auto minmax(0,1fr) auto!important;
+    grid-template-areas:'result gold' 'text power' 'columns columns' 'button button'!important;
+    overflow:hidden!important;
+  }
+  html[data-landscape-ui='1'] body .skirmish-aftermath:not([hidden]) .skirmish-aftermath-columns {
+    align-self:stretch!important;
+    min-height:0!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    overflow:hidden!important;
+  }
+  html[data-landscape-ui='1'] body .skirmish-aftermath:not([hidden]) .skirmish-aftermath-columns>section:not([hidden]) {
+    display:flex!important;
+    flex-direction:column!important;
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  html[data-landscape-ui='1'] body .skirmish-aftermath:not([hidden]) .skirmish-aftermath-columns h2 {
+    flex:0 0 auto;
+  }
+  html[data-landscape-ui='1'] body .skirmish-aftermath:not([hidden]) .skirmish-aftermath-list {
+    min-height:0!important;
+    max-height:none!important;
+    overflow-y:auto!important;
+    overscroll-behavior:contain;
+    touch-action:pan-y;
+  }
+  html[data-landscape-ui='1'] body .skirmish-aftermath:not([hidden]) .skirmish-aftermath-button {
+    align-self:end!important;
+  }
+}
+@media (orientation:landscape) and (max-width:980px) and (max-height:520px) {
+  html[data-landscape-ui='1'] body .skirmish-aftermath:not([hidden]) .skirmish-aftermath-panel { gap:4px 12px!important; }
+  html[data-landscape-ui='1'] body .skirmish-aftermath:not([hidden]) .skirmish-aftermath-columns { padding-top:4px!important; }
 }
