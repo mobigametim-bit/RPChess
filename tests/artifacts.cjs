@@ -31,6 +31,23 @@ const {pathToFileURL}=require('url');
   assert.strictEqual(engine.countSquareAttackers(state,engine.squareToIndex('e2'),'b'),1,'one bishop must count as one attacker');
   const multi=engine.parseFEN('4k3/8/8/4q3/2b5/8/4R3/4K3 w - - 0 1');
   assert.strictEqual(engine.countSquareAttackers(multi,engine.squareToIndex('e2'),'b'),2,'bishop and queen must count separately');
+  // Combat UI receives snapshot(), not parseFEN()'s internal Set-based state.
+  const threatFen='4k3/8/8/4q3/2b5/8/4R3/4K3 w - - 0 1';
+  const snapshotCases=[
+    {blockedSquares:[],expected:2},
+    {blockedSquares:['d3'],expected:1},
+    {blockedSquares:['e3'],expected:1},
+    {blockedSquares:['d3','e3'],expected:0}
+  ];
+  for(const {blockedSquares,expected} of snapshotCases){
+    const chess=new engine.ClassicChessEngine(threatFen,{blockedSquares});
+    const snapshot=JSON.parse(JSON.stringify(chess.snapshot()));
+    assert(Array.isArray(snapshot.blockedSquares));
+    const before=JSON.stringify(snapshot);
+    assert.strictEqual(engine.countSquareAttackers(snapshot,engine.squareToIndex('e2'),'b'),expected,'public snapshots must count threats respecting obstacles');
+    assert.strictEqual(engine.isSquareAttacked(snapshot,engine.squareToIndex('e2'),'b'),expected>0);
+    assert.strictEqual(JSON.stringify(snapshot),before,'threat analysis must not mutate a public snapshot');
+  }
   const ui=fs.readFileSync(path.join(game,'js/artifact-combat-ui.mjs'),'utf8'),css=fs.readFileSync(path.join(game,'css/artifacts.css'),'utf8'),battle=fs.readFileSync(path.join(game,'js/battle-app.mjs'),'utf8'),skirmish=fs.readFileSync(path.join(game,'js/skirmish-app.mjs'),'utf8');
   for(const source of [battle,skirmish]){assert(source.includes("chooseArtifact"),'both combat types must gate launch on artifact choice');assert(source.includes('renderThreatOverlay'),'both combat types must refresh threat overlay');}
   assert(ui.includes('classic-threat-fire')&&css.includes('pointer-events:none'),'overlay must remain non-interactive');
@@ -82,6 +99,14 @@ const {pathToFileURL}=require('url');
   const previousDocument=globalThis.document;
   globalThis.document={createElement(){return {dataset:{},attrs:{},getAttribute(k){return this.attrs[k];},setAttribute(k,v){this.attrs[k]=v;mutations++;},remove(){this.parent.children=this.parent.children.filter(n=>n!==this);mutations++;}};}};
   try {
+    for(const artifact of artifacts.ARTIFACTS)for(const color of ['w','b'])for(const {blockedSquares,expected} of snapshotCases){
+      const snapshot=new engine.ClassicChessEngine(threatFen,{blockedSquares}).snapshot();
+      rebuild();renderThreatOverlay(board,snapshot,artifact,color);
+      const visible=artifact.mode==='both'||(color==='w'?artifact.mode==='player':artifact.mode==='enemy');
+      assert.strictEqual(cells.get('e2').children[0]?.dataset.attackers,visible&&expected?String(expected):undefined,'artifact overlay must use real snapshots and stop at obstacles');
+      const stable=mutations;renderThreatOverlay(board,snapshot,artifact,color);
+      assert.strictEqual(mutations,stable,'public-snapshot overlay must reach a mutation-free fixed point');
+    }
     for(const color of ['w','b']){
       const artifact={mode:color==='w'?'player':'enemy'};
       rebuild();renderThreatOverlay(board,state,artifact,color);

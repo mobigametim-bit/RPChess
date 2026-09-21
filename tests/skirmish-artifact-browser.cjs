@@ -47,6 +47,19 @@ const watchdog = setTimeout(() => { console.error('Combat launch blocked browser
       for (const id of ['threat.attack', 'threat.defense', 'threat.great']) assert.strictEqual(result.charges[id], id === artifactId ? 2 : 3);
       assert.deepStrictEqual(errors, []);
       console.log(`Skirmish launch, responsive frame/timer and obstacle stability (${artifactId}): PASS`);
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.evaluate(async () => {
+        await import('./js/battle-route.mjs');
+        await import('./js/skirmish-app.mjs');
+        globalThis.RPChessSkirmish.open();
+      });
+      await page.locator('[data-skirmish-start]').click();
+      await page.locator('[data-classic-screen]:not([hidden])').waitFor({ state: 'visible', timeout: 10000 });
+      assert.strictEqual(await page.locator('[data-artifact-choice-modal]').count(), 0, 'saved choice must resume without another prompt');
+      const resumed = await page.evaluate(() => JSON.parse(localStorage.getItem('rpchess.reboot.v1.run')));
+      assert.deepStrictEqual(resumed.artifacts, result.charges, 'resuming a chosen combat must not spend another charge');
+      assert.deepStrictEqual(errors, []);
+      console.log(`Skirmish resume preserves artifact charges (${artifactId}): PASS`);
       await page.close();
     }
   } finally { await browser.close(); clearTimeout(watchdog); }

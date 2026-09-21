@@ -121,6 +121,10 @@ function addSlidingMoves(state, from, color, directions, moves) {
 }
 
 function countSquareAttackers(state, target, byColor) {
+  // Artifact overlays pass public snapshots, whose blocked squares are square
+  // names in a JSON-safe array. Internal engine states already use index Sets.
+  // Normalize here without mutating the caller's snapshot.
+  if (Array.isArray(state.blockedSquares)) state = { ...state, blockedSquares: normalizeBlockedSquares(state.blockedSquares) };
   let attackers = 0;
   const tf = fileOf(target);
   const tr = rankOf(target);
