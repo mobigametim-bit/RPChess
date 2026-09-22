@@ -40,8 +40,8 @@ function puzzleReceiptId(run) {
 }
 
 function settleCombat(run, kind) {
-  const last = kind === 'skirmish' ? run?.lastSkirmish : run?.lastBattle;
-  const receiptId = kind === 'skirmish' ? skirmishReceiptId(run) : battleReceiptId(run);
+  const last = kind === 'caravan' ? run?.lastCaravan : kind === 'skirmish' ? run?.lastSkirmish : run?.lastBattle;
+  const receiptId = kind === 'caravan' ? `${run.id}:caravan:${run.caravanCount}:${run.lastCaravan?.encounterId}` : kind === 'skirmish' ? skirmishReceiptId(run) : battleReceiptId(run);
   if (!receiptId || !last || !Number.isInteger(last.encounterStars)) return null;
   const result = combatResultScore({ type:last.result, winner:last.winner }, last.playerColor || 'w');
   const gainDivisor = kind === 'skirmish' ? SKIRMISH_WIN_GAIN_DIVISOR : 1;
@@ -58,7 +58,7 @@ function settleCurrentRatedOutcome(run = readRun()) {
   if (!run) return null;
   const kind = ratedOutcomeKind(run);
   if (kind === 'puzzle') return settlePuzzle(run);
-  if (kind === 'battle' || kind === 'skirmish') return settleCombat(run, kind);
+  if (kind === 'battle' || kind === 'skirmish' || kind === 'caravan') return settleCombat(run, kind);
   return null;
 }
 
@@ -92,8 +92,8 @@ function paint(root, receipt) {
   if (root.hidden) root.hidden = false;
 }
 function renderCombatResult(run, kind) {
-  const last = kind === 'skirmish' ? run?.lastSkirmish : run?.lastBattle;
-  const receiptId = kind === 'skirmish' ? skirmishReceiptId(run) : battleReceiptId(run);
+  const last = kind === 'caravan' ? run?.lastCaravan : kind === 'skirmish' ? run?.lastSkirmish : run?.lastBattle;
+  const receiptId = kind === 'caravan' ? `${run.id}:caravan:${run.caravanCount}:${run.lastCaravan?.encounterId}` : kind === 'skirmish' ? skirmishReceiptId(run) : battleReceiptId(run);
   if (!last || !receiptId) return;
   const receipt = ratingReceipt(receiptId);
   if (!receipt) return;
@@ -114,7 +114,7 @@ function renderPuzzleResult(run) {
 function renderPowerResults(run = readRun()) {
   if (!run) return;
   renderCombatResult(run, 'skirmish');
-  renderCombatResult(run, 'battle');
+  renderCombatResult(run, document.querySelector('[data-battle-aftermath]')?.dataset.combatType==='caravan'?'caravan':'battle');
   renderPuzzleResult(run);
 }
 function sync() {

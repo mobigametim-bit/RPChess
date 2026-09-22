@@ -14,7 +14,7 @@ const { pathToFileURL } = require('url');
   assert.strictEqual(registry.CONTENT_REGISTRY.adapters.events.expectedChoices, 2114);
   assert.strictEqual(registry.CONTENT_REGISTRY.adapters.settlement.recruitIds.length, 33);
   assert.strictEqual(registry.CONTENT_REGISTRY.adapters.puzzles.expectedEntries, 11498);
-  assert.deepStrictEqual([...registry.ENCOUNTER_TYPES], ['skirmish', 'battle', 'settlement', 'event', 'puzzle']);
+  assert.deepStrictEqual([...registry.ENCOUNTER_TYPES], ['skirmish', 'battle', 'settlement', 'event', 'puzzle', 'caravan']);
   assert(registry.CONTENT_ASSET_PATHS.includes('generated_assets/scene_campaign.jpg'));
   assert(registry.CONTENT_ASSET_PATHS.includes('generated_assets/scene_reward.jpg'));
   assert(registry.CONTENT_ASSET_PATHS.includes('generated_assets/scene_defeat.jpg'));

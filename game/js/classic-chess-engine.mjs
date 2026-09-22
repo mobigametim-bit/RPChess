@@ -23,6 +23,8 @@ function createEmptyState() {
     board: Array(64).fill(null),
     turn: 'w',
     castling: { K: false, Q: false, k: false, q: false },
+    castleRooks: { K: 7, Q: 0, k: 63, q: 56 },
+    chess960: false,
     enPassant: null,
     halfmove: 0,
     fullmove: 1,
@@ -59,8 +61,17 @@ function parseFEN(fen) {
   if (!['w', 'b'].includes(turn)) throw new Error('Invalid FEN turn');
   state.turn = turn;
   for (const right of castling === '-' ? '' : castling) {
-    if (!(right in state.castling)) throw new Error('Invalid FEN castling');
-    state.castling[right] = true;
+    if (right in state.castling) { state.castling[right] = true; continue; }
+    if (!/^[A-Ha-h]$/.test(right)) throw new Error('Invalid FEN castling');
+    const color = right === right.toUpperCase() ? 'w' : 'b';
+    const rookFile = FILES.indexOf(right.toLowerCase());
+    const king = kingIndex(state, color);
+    if (king < 0 || rookFile === fileOf(king)) throw new Error('Invalid Chess960 castling');
+    const side = rookFile > fileOf(king) ? 'K' : 'Q';
+    const key = color === 'w' ? side : side.toLowerCase();
+    state.castling[key] = true;
+    state.castleRooks[key] = indexOf(rookFile, color === 'w' ? 0 : 7);
+    state.chess960 = true;
   }
   state.enPassant = ep === '-' ? null : squareToIndex(ep);
   if (state.enPassant === -1) throw new Error('Invalid FEN en passant');
@@ -87,7 +98,11 @@ function boardPlacement(board) {
 }
 
 function castlingField(state) {
-  const rights = ['K', 'Q', 'k', 'q'].filter((right) => state.castling[right]).join('');
+  const rights = ['K', 'Q', 'k', 'q'].filter((right) => state.castling[right]).map((right) => {
+    if (!state.chess960) return right;
+    const file = FILES[fileOf(state.castleRooks[right])];
+    return right === right.toUpperCase() ? file.toUpperCase() : file;
+  }).join('');
   return rights || '-';
 }
 
@@ -197,11 +212,31 @@ function inCheck(state, color) {
   return king >= 0 && isSquareAttacked(state, king, opposite(color));
 }
 
-function kingTransitSafe(state, from, transit, color) {
-  const copy = { ...state, board: cloneBoard(state.board), castling: { ...state.castling }, blockedSquares: new Set(state.blockedSquares) };
-  copy.board[transit] = copy.board[from];
-  copy.board[from] = null;
-  return !isSquareAttacked(copy, transit, opposite(color));
+// Original rook squares are essential for stationary pieces and swaps in Chess960.
+function rankPath(from, to) {
+  const step = Math.sign(to - from);
+  return Array.from({ length: Math.abs(to - from) + 1 }, (_, i) => from + i * step);
+}
+function castlingMoves(state, from, piece) {
+  const rank = piece.color === 'w' ? 0 : 7;
+  if (rankOf(from) !== rank || inCheck(state, piece.color)) return [];
+  const moves = [];
+  for (const castle of ['K', 'Q']) {
+    const right = piece.color === 'w' ? castle : castle.toLowerCase();
+    const rookFrom = state.castleRooks[right];
+    const rook = state.board[rookFrom];
+    if (!state.castling[right] || rook?.type !== 'r' || rook.color !== piece.color) continue;
+    const to = indexOf(castle === 'K' ? 6 : 2, rank);
+    const rookTo = indexOf(castle === 'K' ? 5 : 3, rank);
+    const paths = [...rankPath(from, to), ...rankPath(rookFrom, rookTo)];
+    if (paths.some(sq => isBlocked(state, sq) || (sq !== from && sq !== rookFrom && state.board[sq]))) continue;
+    const transit = { ...state, board: cloneBoard(state.board) };
+    transit.board[from] = null;
+    if (rankPath(from, to).slice(1).some(sq => isSquareAttacked(transit, sq, opposite(piece.color)))) continue;
+    // The final legality filter also checks attacks revealed by the rook leaving.
+    moves.push({ from, to, castle, rookFrom, rookTo, ...(state.chess960 ? { uciTo: rookFrom } : {}) });
+  }
+  return moves;
 }
 
 function pseudoMovesFor(state, from, includeCastling = true) {
@@ -273,27 +308,9 @@ function pseudoMovesFor(state, from, includeCastling = true) {
       if (!target) moves.push({ from, to });
       else if (target.color !== piece.color && target.type !== 'k') moves.push({ from, to, capture: to });
     }
-    if (includeCastling) {
-      const homeRank = piece.color === 'w' ? 0 : 7;
-      const kingHome = indexOf(4, homeRank);
-      if (from === kingHome && !isSquareAttacked(state, kingHome, opposite(piece.color))) {
-        const kingSideRight = piece.color === 'w' ? 'K' : 'k';
-        const queenSideRight = piece.color === 'w' ? 'Q' : 'q';
-        const rookKing = state.board[indexOf(7, homeRank)];
-        const kingTransit = indexOf(5, homeRank);
-        const kingDestination = indexOf(6, homeRank);
-        if (state.castling[kingSideRight] && rookKing?.type === 'r' && rookKing.color === piece.color && !state.board[kingTransit] && !state.board[kingDestination] && !isBlocked(state, kingTransit) && !isBlocked(state, kingDestination) && kingTransitSafe(state, from, kingTransit, piece.color)) {
-          moves.push({ from, to: kingDestination, castle: 'K' });
-        }
-        const rookQueen = state.board[indexOf(0, homeRank)];
-        const queenTransit = indexOf(3, homeRank);
-        const queenDestination = indexOf(2, homeRank);
-        if (state.castling[queenSideRight] && rookQueen?.type === 'r' && rookQueen.color === piece.color && !state.board[indexOf(1, homeRank)] && !state.board[queenDestination] && !state.board[queenTransit] && !isBlocked(state, indexOf(1, homeRank)) && !isBlocked(state, queenDestination) && !isBlocked(state, queenTransit) && kingTransitSafe(state, from, queenTransit, piece.color)) {
-          moves.push({ from, to: queenDestination, castle: 'Q' });
-        }
-      }
-    }
+    if (includeCastling) moves.push(...castlingMoves(state, from, piece));
   }
+
   return moves;
 }
 
@@ -301,44 +318,35 @@ function applyMoveToState(state, move, { record = false } = {}) {
   const piece = state.board[move.from];
   if (!piece) throw new Error('No piece on source square');
   const moving = clonePiece(piece);
-  const capturedPiece = move.capture != null ? clonePiece(state.board[move.capture]) : clonePiece(state.board[move.to]);
+  const capturedPiece = move.castle ? null : move.capture != null ? clonePiece(state.board[move.capture]) : clonePiece(state.board[move.to]);
   const previous = record ? { fen: stateToFEN(state), move: state.lastMove ? { ...state.lastMove } : null, repetition: new Map(state.repetition) } : null;
 
-  state.board[move.from] = null;
-  if (move.capture != null && move.capture !== move.to) state.board[move.capture] = null;
-  state.board[move.to] = { type: move.promotion || moving.type, color: moving.color };
-
   if (move.castle) {
-    const rank = moving.color === 'w' ? 0 : 7;
-    const rookFrom = move.castle === 'K' ? indexOf(7, rank) : indexOf(0, rank);
-    const rookTo = move.castle === 'K' ? indexOf(5, rank) : indexOf(3, rank);
-    state.board[rookTo] = state.board[rookFrom];
-    state.board[rookFrom] = null;
+    const rook = state.board[move.rookFrom];
+    state.board[move.from] = null;
+    state.board[move.rookFrom] = null;
+    state.board[move.to] = moving;
+    state.board[move.rookTo] = rook;
+  } else {
+    state.board[move.from] = null;
+    if (move.capture != null && move.capture !== move.to) state.board[move.capture] = null;
+    state.board[move.to] = { type: move.promotion || moving.type, color: moving.color };
   }
 
   if (moving.type === 'k') {
     if (moving.color === 'w') { state.castling.K = false; state.castling.Q = false; }
     else { state.castling.k = false; state.castling.q = false; }
   }
-  if (moving.type === 'r') {
-    if (move.from === squareToIndex('a1')) state.castling.Q = false;
-    if (move.from === squareToIndex('h1')) state.castling.K = false;
-    if (move.from === squareToIndex('a8')) state.castling.q = false;
-    if (move.from === squareToIndex('h8')) state.castling.k = false;
-  }
-  if (capturedPiece?.type === 'r') {
-    const capturedAt = move.capture ?? move.to;
-    if (capturedAt === squareToIndex('a1')) state.castling.Q = false;
-    if (capturedAt === squareToIndex('h1')) state.castling.K = false;
-    if (capturedAt === squareToIndex('a8')) state.castling.q = false;
-    if (capturedAt === squareToIndex('h8')) state.castling.k = false;
+  for (const right of ['K', 'Q', 'k', 'q']) {
+    if ((moving.type === 'r' && move.from === state.castleRooks[right]) ||
+        (capturedPiece?.type === 'r' && (move.capture ?? move.to) === state.castleRooks[right])) state.castling[right] = false;
   }
 
   state.enPassant = moving.type === 'p' && Math.abs(rankOf(move.to) - rankOf(move.from)) === 2 ? indexOf(fileOf(move.from), (rankOf(move.from) + rankOf(move.to)) / 2) : null;
   state.halfmove = moving.type === 'p' || capturedPiece ? 0 : state.halfmove + 1;
   if (moving.color === 'b') state.fullmove += 1;
   state.turn = opposite(moving.color);
-  state.lastMove = { from: move.from, to: move.to, piece: moving.type, color: moving.color, capture: capturedPiece?.type || null, promotion: move.promotion || null, castle: move.castle || null, enPassant: Boolean(move.enPassant) };
+  state.lastMove = { from: move.from, to: move.to, piece: moving.type, color: moving.color, capture: capturedPiece?.type || null, promotion: move.promotion || null, castle: move.castle || null, rookFrom: move.rookFrom, rookTo: move.rookTo, enPassant: Boolean(move.enPassant) };
   if (record && previous) state.history.push(previous);
   return state;
 }
@@ -399,12 +407,13 @@ function gameStatus(state) {
 }
 
 function moveToPublic(move) {
-  return { ...move, from: indexToSquare(move.from), to: indexToSquare(move.to), capture: move.capture == null ? null : indexToSquare(move.capture) };
+  return { ...move, ...(move.rookFrom != null ? { rookFrom: indexToSquare(move.rookFrom), rookTo: indexToSquare(move.rookTo) } : {}), ...(move.uciTo != null ? { uciTo: indexToSquare(move.uciTo) } : {}), from: indexToSquare(move.from), to: indexToSquare(move.to), capture: move.capture == null ? null : indexToSquare(move.capture) };
 }
 
 class ClassicChessEngine {
-  constructor(fen = null, { blockedSquares = [] } = {}) {
+  constructor(fen = null, { blockedSquares = [], chess960 = false } = {}) {
     this.state = fen ? parseFEN(fen) : createInitialState();
+    this.state.chess960 ||= chess960;
     this.state.blockedSquares = normalizeBlockedSquares(blockedSquares);
     this.state.repetition = new Map();
     this.recordPosition();
@@ -413,8 +422,9 @@ class ClassicChessEngine {
     const key = positionKey(this.state);
     this.state.repetition.set(key, (this.state.repetition.get(key) || 0) + 1);
   }
-  reset(fen = null, { blockedSquares = [] } = {}) {
+  reset(fen = null, { blockedSquares = [], chess960 = false } = {}) {
     this.state = fen ? parseFEN(fen) : createInitialState();
+    this.state.chess960 ||= chess960;
     this.state.blockedSquares = normalizeBlockedSquares(blockedSquares);
     this.state.repetition = new Map();
     this.recordPosition();
@@ -432,7 +442,7 @@ class ClassicChessEngine {
     const from = squareToIndex(fromSquare);
     const to = squareToIndex(toSquare);
     if (from < 0 || to < 0) return { ok: false, reason: 'invalid_square' };
-    const candidates = legalMoves(this.state, from).filter((move) => move.to === to);
+    const candidates = legalMoves(this.state, from).filter((move) => (move.uciTo ?? move.to) === to);
     if (!candidates.length) return { ok: false, reason: 'illegal_move' };
     const promotions = candidates.filter((move) => move.promotion);
     if (promotions.length && !promotion) return { ok: false, reason: 'promotion_required', choices: PROMOTIONS.slice() };
@@ -444,10 +454,10 @@ class ClassicChessEngine {
   }
   snapshot() {
     return {
-      fen: this.fen(), turn: this.state.turn, castling: { ...this.state.castling },
+      fen: this.fen(), chess960: this.state.chess960, turn: this.state.turn, castling: { ...this.state.castling },
       enPassant: this.state.enPassant == null ? null : indexToSquare(this.state.enPassant),
       halfmove: this.state.halfmove, fullmove: this.state.fullmove,
-      lastMove: this.state.lastMove ? { ...this.state.lastMove, from: indexToSquare(this.state.lastMove.from), to: indexToSquare(this.state.lastMove.to) } : null,
+      lastMove: this.state.lastMove ? { ...this.state.lastMove, ...(this.state.lastMove.rookFrom != null ? { rookFrom: indexToSquare(this.state.lastMove.rookFrom), rookTo: indexToSquare(this.state.lastMove.rookTo) } : {}), from: indexToSquare(this.state.lastMove.from), to: indexToSquare(this.state.lastMove.to) } : null,
       board: this.state.board.map(clonePiece), blockedSquares: [...this.state.blockedSquares].map(indexToSquare), status: this.status()
     };
   }

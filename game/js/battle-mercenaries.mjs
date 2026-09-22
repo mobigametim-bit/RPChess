@@ -146,6 +146,7 @@ function paymentToast(charged) {
 // Battle owner copy contract: Замена оставленного в резерве здорового героя стоит как его лечение.
 function renderBattlePrepQuote() {
   const screen = document.querySelector('[data-battle-screen]');
+  if(globalThis.RPChessBattle?.combatType==='caravan'){screen?.querySelector('[data-battle-mercenary-quote]')?.remove();return;}
   const run = readRun();
   const selectedIds = globalThis.RPChessBattle?.selectedIds || [];
   if (!screen || !run || run.ended) return;
@@ -181,6 +182,7 @@ function handleBattleStartCapture(event) {
   const button = event.target?.closest?.('[data-battle-start]');
   if (!button || button.disabled) return;
   const battle = globalThis.RPChessBattle;
+  if(battle?.combatType==='caravan')return;
   const run = readRun();
   const selectedIds = battle?.selectedIds || [];
   const encounterId = battle?.encounter?.id || '';
@@ -203,6 +205,7 @@ if (typeof document !== 'undefined') {
   document.addEventListener('click', handleBattleStartCapture, true);
   document.addEventListener('click', handleBattleSelectionRefresh);
   globalThis.addEventListener?.('rpchess:battle-open', () => setTimeout(renderBattlePrepQuote, 0));
+  globalThis.addEventListener?.('rpchess:caravan-open', () => setTimeout(renderBattlePrepQuote, 0));
   subscribe(renderBattlePrepQuote);
 }
 

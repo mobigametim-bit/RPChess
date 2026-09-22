@@ -2,14 +2,15 @@ import { MAX_ENCOUNTER_STARS, difficultyForStars } from './encounter-difficulty.
 import { RACE_TAGS, combatTheme, hashString } from './race-assets.mjs';
 import { STARTING_POWER, adaptiveEncounterStars, threatStarsForPower } from './player-rating.mjs';
 
-const TRAVEL_ENCOUNTER_TYPES = Object.freeze(['skirmish', 'battle', 'event', 'settlement', 'puzzle']);
-const PLAYABLE_TRAVEL_TYPES = Object.freeze(['skirmish', 'battle', 'settlement', 'event', 'puzzle']);
+const TRAVEL_ENCOUNTER_TYPES = Object.freeze(['skirmish', 'battle', 'event', 'settlement', 'puzzle', 'caravan']);
+const PLAYABLE_TRAVEL_TYPES = Object.freeze(['skirmish', 'battle', 'settlement', 'event', 'puzzle', 'caravan']);
 const TRAVEL_CHOICE_COUNT = 3;
 
-const ENCOUNTER_LABELS = Object.freeze({ skirmish:'СТЫЧКА', battle:'БИТВА', event:'СОБЫТИЕ', settlement:'ПОСЕЛЕНИЕ', puzzle:'ЗАДАЧА' });
-const MECHANICAL_HINTS = Object.freeze({skirmish:'Нестандартный состав противника.',battle:'Полная армия противника.',event:'',settlement:'Место для передышки и подготовки.',puzzle:'Шахматная задача с конкретной целью.'});
+const ENCOUNTER_LABELS = Object.freeze({ caravan:'КАРАВАН',skirmish:'СТЫЧКА', battle:'БИТВА', event:'СОБЫТИЕ', settlement:'ПОСЕЛЕНИЕ', puzzle:'ЗАДАЧА' });
+const MECHANICAL_HINTS = Object.freeze({caravan:'Шахматы Фишера. Награда на выбор.',skirmish:'Нестандартный состав противника.',battle:'Полная армия противника.',event:'',settlement:'Место для передышки и подготовки.',puzzle:'Шахматная задача с конкретной целью.'});
 const THREAT_LABELS = Object.freeze(Object.fromEntries(Array.from({ length: MAX_ENCOUNTER_STARS }, (_, index) => { const stars=index+1; return [stars,difficultyForStars(stars).threat]; })));
 const FLAVOR_POOLS = Object.freeze({
+  caravan:Object.freeze(["Каравану нужна защита. Награда ждёт победителя.", "На дороге остановился караван, которому нужна охрана.", "Купцы просят отряд защитить их обоз.", "За поворотом ждут повозки и тревожные торговцы.", "Разведчики заметили врагов на пути каравана.", "Торговый обоз оказался вдали от безопасных дорог.", "Караванщики готовы вознаградить своих защитников.", "На перекрёстке купцы ищут надёжное прикрытие.", "Гружёные повозки остановились перед опасным участком.", "Караван не двинется дальше без вашей помощи."]),
   skirmish:Object.freeze(['Разведчики заметили впереди небольшой вражеский отряд.','На дороге видны следы вооружённого патруля.','Из-за холмов доносится лязг оружия небольшой группы.','Вражеские дозорные заняли проход впереди.','По дороге движется отряд, ещё не успевший развернуть основные силы.','Небольшая группа противника готовит засаду у переправы.','Разведчики сообщают о мобильном отряде неподалёку.','На пути замечены несколько вражеских знамён и лёгкая охрана.','Впереди расположился небольшой боевой дозор.','Противник контролирует дорогу силами ограниченного отряда.','Из леса показались разведчики неприятеля и их прикрытие.','Узкий проход удерживает небольшой, но готовый к бою отряд.']),
   battle:Object.freeze(['Дорогу перекрывает полностью развёрнутая армия противника.','Впереди выстроились основные силы неприятеля.','Вражеские знамёна закрывают весь путь через долину.','Противник подготовил полноценный боевой строй.','За укреплениями ожидает армия, готовая принять сражение.','Разведчики обнаружили крупные силы, занявшие дорогу.','Впереди начинается поле боя — противник уже построен.','Основная армия неприятеля готовится удерживать этот рубеж.','Путь проходит прямо через позиции полноценных вражеских сил.','На горизонте видны боевые порядки целой армии.','Враг собрал полный строй и явно не собирается отступать.','Дальнейший путь лежит через большое открытое сражение.']),
   event:Object.freeze(['У дороги происходит нечто, чего не было на картах.','Странная находка заставляет отряд остановиться.','В стороне от пути замечено необычное движение.','На дороге осталось свидетельство недавних событий.','Впереди ждёт встреча, исход которой трудно предсказать.','Разведчики обнаружили нечто, заслуживающее внимания.','Неожиданное происшествие преграждает привычный маршрут.','У старого перекрёстка кто-то ожидает путников.','Путь приводит к месту с необычно свежими следами.','Впереди возникает возможность, которой ещё мгновение назад не было.','С дороги доносится шум, не похожий на звуки сражения.','Что-то заставляет отряд свернуть с привычного маршрута.']),
@@ -32,7 +33,7 @@ function createTravelChoices({runId,step=1,types=PLAYABLE_TRAVEL_TYPES,playerPow
     const seed=`${runId}:travel:${step}:${index+1}:${type}`;
     const stars=type==='settlement'?baseThreat:adaptiveEncounterStars(playerPower,seed);
     const pool=FLAVOR_POOLS[type],used=usedFlavorIndexes.get(type)||new Set();let flavorIndex=hashString(`${seed}:flavor`)%pool.length;while(used.has(flavorIndex)&&used.size<pool.length)flavorIndex=(flavorIndex+1)%pool.length;used.add(flavorIndex);usedFlavorIndexes.set(type,used);
-    const combat=type==='skirmish'||type==='battle',raceTag=combat?RACE_TAGS[hashString(`${seed}:race`)%RACE_TAGS.length]:null,theme=combat?combatTheme({seed,raceTag}):null;
+    const combat=type==='skirmish'||type==='battle'||type==='caravan',raceTag=combat?RACE_TAGS[hashString(`${seed}:race`)%RACE_TAGS.length]:null,theme=combat?combatTheme({seed,raceTag}):null;
     return {id:`travel.${step}.${index+1}.${hashString(seed).toString(36)}`,step,type,label:ENCOUNTER_LABELS[type],stars,threatLabel:type==='puzzle'?`СЛОЖНОСТЬ ★${stars}`:THREAT_LABELS[stars],flavor:pool[flavorIndex],mechanicalHint:MECHANICAL_HINTS[type],seed,difficultyModel:'power-v1',...(theme?{playerColor:theme.playerColor,enemyRaceTag:theme.enemyRaceTag,enemyRoleRaces:theme.enemyRoleRaces,sideNarrative:theme.sideNarrative}:{})};
   });
 }

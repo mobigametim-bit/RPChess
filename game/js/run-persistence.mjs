@@ -1,3 +1,4 @@
+import { isCaravanState } from './caravan-core.mjs';
 import { createStarterRoster } from './roster-data.mjs';
 import { platform } from './platform.mjs';
 import { STARTING_GOLD, STARTING_SUPPLIES, hydrateResources } from './resources-core.mjs';
@@ -10,7 +11,7 @@ import { isArtifactInventory, isCombatArtifactChoice, normalizeArtifacts } from 
 
 const RUN_STORAGE_KEY = 'rpchess.reboot.v1.run';
 const RUN_SCHEMA_VERSION = 1;
-const TRAVEL_TYPES = new Set(['skirmish', 'battle', 'event', 'settlement', 'puzzle']);
+const TRAVEL_TYPES = new Set(['skirmish', 'battle', 'event', 'settlement', 'puzzle', 'caravan']);
 
 function resolveStorage(storage) { if (storage) return storage; return platform.storage.sync(); }
 function runId(now = Date.now()) { return `run-${Number(now).toString(36)}-${Math.random().toString(36).slice(2, 8)}`; }
@@ -44,6 +45,7 @@ function isValidRun(value) {
   if (value.activeTravelChoice != null && !isStoredTravelChoice(value.activeTravelChoice)) return false;
   if (value.currentSettlement != null && !isSettlementState(value.currentSettlement)) return false;
   if (value.currentPuzzle != null && !isPuzzleState(value.currentPuzzle)) return false;
+  if (!isCaravanState(value.currentCaravan) || (value.caravanCount != null && (!Number.isInteger(value.caravanCount) || value.caravanCount < 0))) return false;
   if (!isArtifactInventory(value.artifacts)) return false;
   if (!isCombatArtifactChoice(value.combatArtifactChoice)) return false;
   const ids = new Set(); let kingCount = 0;
@@ -64,7 +66,7 @@ function hydrateCurrentRosterCopy(run) {
   return {...resources,playerName:normalizePlayerName(run?.playerName,'Воин'),runStats:hydrateRunStats(run),resourceRewards:{skirmishCount:Number.isInteger(run.resourceRewards?.skirmishCount)?run.resourceRewards.skirmishCount:existingSkirmishes,battleCount:Number.isInteger(run.resourceRewards?.battleCount)?run.resourceRewards.battleCount:existingBattles},ended:Boolean(run.ended),skirmishCount:existingSkirmishes,battleCount:existingBattles,lastSkirmish:run.lastSkirmish||null,lastBattle:run.lastBattle||null,lastPuzzle:run.lastPuzzle||null,puzzleHistory:hydratePuzzleHistory(run),journeyStep:Number.isInteger(run.journeyStep)?run.journeyStep:0,currentTravelChoices:Array.isArray(run.currentTravelChoices)?run.currentTravelChoices:null,activeTravelChoice:recoveredActiveChoice,currentSettlement:isSettlementState(run.currentSettlement)?run.currentSettlement:null,currentPuzzle:isPuzzleState(run.currentPuzzle)?run.currentPuzzle:null,artifacts:normalizeArtifacts(run.artifacts),combatArtifactChoice:isCombatArtifactChoice(run.combatArtifactChoice)?run.combatArtifactChoice:null,roster:run.roster.map(character=>{const current=currentTemplates.get(character.id);return current?{...character,...current,status:character.status}:character;})};
 }
 function createRun({ now = Date.now(), id = null, playerName = 'Воин' } = {}) {
-  const roster=createStarterRoster(); return {schemaVersion:RUN_SCHEMA_VERSION,id:id||runId(now),playerName:normalizePlayerName(playerName,'Воин'),createdAt:Number(now),updatedAt:Number(now),selectedCharacterId:roster[0].id,roster,gold:STARTING_GOLD,supplies:STARTING_SUPPLIES,runStats:emptyRunStats(),resourceRewards:{skirmishCount:0,battleCount:0},ended:false,endReason:null,skirmishCount:0,lastSkirmish:null,battleCount:0,lastBattle:null,lastPuzzle:null,puzzleHistory:[],journeyStep:0,currentTravelChoices:null,activeTravelChoice:null,currentSettlement:null,currentPuzzle:null,artifacts:{},combatArtifactChoice:null};
+  const roster=createStarterRoster(); return {schemaVersion:RUN_SCHEMA_VERSION,id:id||runId(now),playerName:normalizePlayerName(playerName,'Воин'),createdAt:Number(now),updatedAt:Number(now),selectedCharacterId:roster[0].id,roster,gold:STARTING_GOLD,supplies:STARTING_SUPPLIES,runStats:emptyRunStats(),resourceRewards:{skirmishCount:0,battleCount:0},ended:false,endReason:null,skirmishCount:0,lastSkirmish:null,battleCount:0,lastBattle:null,caravanCount:0,currentCaravan:null,lastCaravan:null,lastPuzzle:null,puzzleHistory:[],journeyStep:0,currentTravelChoices:null,activeTravelChoice:null,currentSettlement:null,currentPuzzle:null,artifacts:{},combatArtifactChoice:null};
 }
 function readRun(storage = null) { const target=resolveStorage(storage); if(!target)return null; try{const parsed=JSON.parse(target.getItem(RUN_STORAGE_KEY)||'null');if(!parsed||typeof parsed!=='object')return null;if(parsed.schemaVersion!==RUN_SCHEMA_VERSION){target.removeItem(RUN_STORAGE_KEY);return null;}const hydrated=hydrateCurrentRosterCopy(parsed);return isValidRun(hydrated)?hydrated:null;}catch{return null;} }
 function previousStoredRun(target) { if(!target)return null;try{const parsed=JSON.parse(target.getItem(RUN_STORAGE_KEY)||'null');if(!parsed||typeof parsed!=='object'||parsed.schemaVersion!==RUN_SCHEMA_VERSION)return null;const hydrated=hydrateCurrentRosterCopy(parsed);return isValidRun(hydrated)?hydrated:null;}catch{return null;} }

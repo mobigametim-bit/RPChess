@@ -44,7 +44,7 @@ ensureCss();
 // Artifact selection makes combat launch asynchronous relative to the preparation click.
 addEventListener('rpchess:combat-started',schedule);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
-for(const name of ['rpchess:skirmish-open','rpchess:battle-open','rpchess:puzzle-open','rpchess:puzzle-resolved','rpchess:combat-completed','rpchess:settlement-open','rpchess:event-open','rpchess:travel-open','rpchess:run-continue'])addEventListener(name,()=>queueMicrotask(schedule));
+for(const name of ['rpchess:caravan-open','rpchess:skirmish-open','rpchess:battle-open','rpchess:puzzle-open','rpchess:puzzle-resolved','rpchess:combat-completed','rpchess:settlement-open','rpchess:event-open','rpchess:travel-open','rpchess:run-continue'])addEventListener(name,()=>queueMicrotask(schedule));
 subscribe(()=>queueMicrotask(schedule));
 addEventListener('resize',schedule,{passive:true});
 document.addEventListener('click',(event)=>{const target=event.target instanceof Element?event.target:null;if(target?.closest('[data-skirmish-character],[data-selected-character],[data-skirmish-start],[data-battle-character],[data-battle-participant],[data-battle-start],[data-puzzle-board],[data-puzzle-continue],[data-aftermath-continue],[data-battle-continue]'))queueMicrotask(schedule);},true);

@@ -71,7 +71,7 @@ class MemoryStorage {
   assert(source.includes("button.disabled = true;\n    button.setAttribute('aria-disabled', 'true');"), 'Completed double-gold must leave the ×2 button inactive');
   assert(resourcesSource.includes('goldReward) || 0))\n    + Math.max(0, Math.floor(Number(record?.adBonusGold)'), 'Victory reward display must include the granted double-gold bonus');
   assert(resourcesSource.includes("monetization?.renderDoubleGoldOffer?.('skirmish', run.skirmishCount)"), 'Skirmish reward re-render must restore the ×2 offer');
-  assert(resourcesSource.includes("monetization?.renderDoubleGoldOffer?.('battle', run.battleCount)"), 'Battle reward re-render must restore the ×2 offer');
+  assert(resourcesSource.includes("monetization?.renderDoubleGoldOffer?.(kind,run[`${kind}Count`])"), 'Battle reward re-render must restore the ×2 offer');
   assert(skirmishCss.includes('grid-template-columns:52px minmax(0,1fr) auto'), 'Skirmish reward row must reserve a right-side ×2 button slot');
   assert(battleCss.includes('grid-template-columns:52px minmax(0,1fr) auto'), 'Battle reward row must reserve a right-side ×2 button slot');
 

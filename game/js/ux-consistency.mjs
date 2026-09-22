@@ -334,7 +334,7 @@ function difficultyLabel(encounter) {
 }
 
 function activeCombat() {
-  if (globalThis.RPChessBattle?.battlePlan) return { api:globalThis.RPChessBattle, title:t('ux.combat.battle') };
+  if (globalThis.RPChessBattle?.battlePlan) return { api:globalThis.RPChessBattle, title:globalThis.RPChessBattle.combatType==='caravan'?t('caravan.title'):t('ux.combat.battle') };
   if (globalThis.RPChessSkirmish?.battlePlan) return { api:globalThis.RPChessSkirmish, title:t('ux.combat.skirmish') };
   return null;
 }

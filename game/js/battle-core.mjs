@@ -45,9 +45,9 @@ function createBattlePlan({roster,selectedIds,encounter}={}){
   return{encounter:resolved,playerColor,enemyColor,selectedIds:validation.members.map((m)=>m.id),participants:validation.members.map((m)=>m.id),playerFormation:formationFor(playerColor,roster,selectedIds,playerColor),enemyFormation:formationFor(enemyColor,[],[],playerColor),fullArmyPieces:BATTLE_PIECE_COUNT,fullArmyPoints:BATTLE_ARMY_POINTS,fen:STANDARD_FEN};
 }
 
-function applyBattleOutcome(run,{capturedIds=[],status=null,playerColor='w',participantIds=[]}={}){
+function applyBattleOutcome(run,{capturedIds=[],status=null,playerColor='w',participantIds=[],freeMercenaries=false}={}){
   const captured=new Set(capturedIds||[]),participants=[...new Set(participantIds||[])];
-  const participantSet=new Set(participants),soloKing=participants.length===1&&(run?.roster||[]).some((c)=>c.isRunKing&&participantSet.has(c.id));
+  const participantSet=new Set(participants),soloKing=!freeMercenaries&&participants.length===1&&(run?.roster||[]).some((c)=>c.isRunKing&&participantSet.has(c.id));
   const roster=(run?.roster||[]).map((c)=>{
     if(soloKing&&c.isRunKing)return{...c,status:'dead'};
     if(!c.isRunKing&&captured.has(c.id)&&c.status==='healthy')return{...c,status:'wounded'};

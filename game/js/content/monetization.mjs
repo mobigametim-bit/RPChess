@@ -256,7 +256,7 @@ function grantDoubleGold({ receiptId, kind, count, amount }) {
   }
   const safeAmount = Math.max(0, Math.floor(Number(amount) || 0));
   if (!safeAmount) return false;
-  const key = kind === 'battle' ? 'lastBattle' : 'lastSkirmish';
+  const key = kind === 'caravan' ? 'lastCaravan' : kind === 'battle' ? 'lastBattle' : 'lastSkirmish';
   const last = run[key];
   if (!last || Number(run[`${kind}Count`]) !== Number(count)) return false;
   run = markRunClaim({
@@ -303,12 +303,12 @@ function renderDoubleGoldOffer(kind, count) {
   if (!featureEnabled('rewarded')) return false;
   const run = readRun();
   if (!run || run.ended) return false;
-  const key = kind === 'battle' ? 'lastBattle' : 'lastSkirmish';
+  const key = kind === 'caravan' ? 'lastCaravan' : kind === 'battle' ? 'lastBattle' : 'lastSkirmish';
   const amount = Math.max(0, Math.floor(Number(run[key]?.goldReward) || 0));
   if (!amount || Number(run[`${kind}Count`]) !== Number(count)) return false;
   const receiptId = doubleGoldReceiptId(run.id, kind, count, amount);
   const claimed = Boolean(receipt(receiptId)?.granted || hasRunClaim(run, receiptId));
-  const screen = document.querySelector(kind === 'battle' ? '[data-battle-aftermath]' : '[data-skirmish-aftermath]');
+  const screen = document.querySelector(kind !== 'skirmish' ? '[data-battle-aftermath]' : '[data-skirmish-aftermath]');
   const reward = screen?.querySelector('[data-resource-combat-reward]');
   if (!reward || screen.hidden) return false;
   const existing = reward.querySelector('[data-ad-double-gold]');
@@ -350,7 +350,7 @@ function scheduleDoubleGoldOffer(kind, count, attempts = 16) {
 function onCombatCompleted(event) {
   const kind = event?.detail?.kind;
   const count = Number(event?.detail?.count);
-  if (!['battle','skirmish'].includes(kind) || !Number.isInteger(count)) return;
+  if (!['battle','skirmish','caravan'].includes(kind) || !Number.isInteger(count)) return;
   queueMicrotask(() => scheduleDoubleGoldOffer(kind, count));
 }
 
@@ -358,7 +358,7 @@ function onDoubleGoldRunUpdated(event) {
   if (event?.detail?.source !== 'rewarded-double-gold') return;
   const kind = event.detail.kind;
   const count = Number(event.detail.count);
-  if (!['battle','skirmish'].includes(kind) || !Number.isInteger(count)) return;
+  if (!['battle','skirmish','caravan'].includes(kind) || !Number.isInteger(count)) return;
   const renderCompletedOffer = () => scheduleDoubleGoldOffer(kind, count);
   if (typeof globalThis.requestAnimationFrame === 'function') globalThis.requestAnimationFrame(renderCompletedOffer);
   else setTimeout(renderCompletedOffer, 0);

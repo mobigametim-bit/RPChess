@@ -28,7 +28,7 @@ function profileForElo(value) {
 }
 
 function moveToUci(move) {
-  return `${move.from}${move.to}${move.promotion || ''}`.toLowerCase();
+  return `${move.from}${move.uciTo || move.to}${move.promotion || ''}`.toLowerCase();
 }
 
 function normalizeLine(event) {
@@ -202,7 +202,7 @@ class ChessAIAdapter {
     return initPromise;
   }
 
-  async chooseMove({ fen, elo = 800, legalMoves = [] } = {}) {
+  async chooseMove({ fen, elo = 800, legalMoves = [], chess960 = false } = {}) {
     const legal = new Set(legalMoves.map((move) => typeof move === 'string' ? move.toLowerCase() : moveToUci(move)));
     if (!legal.size) return null;
     const profile = profileForElo(elo);
@@ -212,6 +212,7 @@ class ChessAIAdapter {
       await this.init();
       if (operationEpoch !== this.operationEpoch) return null;
       this._stopActiveSearch();
+      this._send(`setoption name UCI_Chess960 value ${chess960 ? 'true' : 'false'}`);
       this._send(`setoption name MultiPV value ${profile.multiPv}`);
       this._send('setoption name UCI_LimitStrength value true');
       this._send(`setoption name UCI_Elo value ${Math.max(MIN_NATIVE_ELO, profile.elo)}`);

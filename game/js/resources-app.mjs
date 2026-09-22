@@ -119,11 +119,12 @@ function combatRewardAmount(record) {
 function renderLastCombatRewards(run = readRun()) {
   if (!run) return;
   renderCombatReward(document.querySelector('[data-skirmish-aftermath]'), combatRewardAmount(run.lastSkirmish));
-  renderCombatReward(document.querySelector('[data-battle-aftermath]'), combatRewardAmount(run.lastBattle));
+  renderCombatReward(document.querySelector('[data-battle-aftermath]'), combatRewardAmount(document.querySelector('[data-battle-aftermath]')?.dataset.combatType==='caravan'?run.lastCaravan:run.lastBattle));
 
   const monetization = globalThis.RPChessMonetization;
   if (Number(run.skirmishCount) > 0) monetization?.renderDoubleGoldOffer?.('skirmish', run.skirmishCount);
-  if (Number(run.battleCount) > 0) monetization?.renderDoubleGoldOffer?.('battle', run.battleCount);
+  const kind=document.querySelector('[data-battle-aftermath]')?.dataset.combatType==='caravan'?'caravan':'battle';
+  if(Number(run[`${kind}Count`])>0)monetization?.renderDoubleGoldOffer?.(kind,run[`${kind}Count`]);
 }
 
 function scheduleCombatRewardRender() {
@@ -212,6 +213,7 @@ globalThis.RPChessResources = Object.freeze({
   render,
   scheduleRender,
   showChange,
+  renderLastCombatRewards,
   renderCombatReward,
   clearCombatReward,
   settleCombatRewards,
