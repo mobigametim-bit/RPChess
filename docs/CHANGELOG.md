@@ -2,6 +2,14 @@
 
 > Historical entries record the delivery rules and assets that applied at their original dates. Current production/remediation policy is defined by `CURRENT_STATE.md`, `16_UI_UX.md`, `17_TECH_ARCHITECTURE.md` and `REVIEW_REMEDIATION_DECISIONS.md`; historical Cloudflare or `ui_button_primary.png` receipts do not override it.
 
+## 2026-09-21 — Skirmish obstacles and mobile live-device corrections complete
+
+- Skirmish battlefield obstacles are on `main`: deterministic 1–4 blockers, legal-move/AI ray blocking, no landing on blocked cells and no false pin-ice linkage through an obstacle.
+- The prop audit retained only 31 green candidates; yellow/red crops were removed from both runtime and source-prop folders (`32de050`).
+- Artifact combat launch became retryable and resilient to stale obstacle snapshots; build/preview packaging now includes the obstacle runtime.
+- Mobile Settlement fixes are complete (`d770ddb`): Tavern portrait crop is raised, Healer candidates scroll internally, and Starvation rescue choices reset to an actionable state.
+- Mobile Skirmish follow-up is merged through PR [#142](https://github.com/mobigametim-bit/RPChess/pull/142), merge `df24f4c`: preparation heading/list containment, scrollable victory lists, reachable Continue button and preloaded artifact dialog styles. GitHub Actions run [35645913912](https://github.com/mobigametim-bit/RPChess/actions/runs/35645913912) passed the 667×300, 844×390, 932×430 and 1440×900 browser matrix.
+
 ## 2026-09-10 — Full-project review remediation complete on audit branch
 
 - Final remediation code candidate: `2906aebf5c95f20620bc9691279f95fd65fe8544`.

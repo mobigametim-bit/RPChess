@@ -5,7 +5,8 @@ const {parsePng,optimizePngBuffer,formatBytes}=require('./piece-asset-runtime.cj
 const RESOURCE_ICON_RUNTIME_MAX_SIDE=192;
 const RESOURCE_ICON_RUNTIME_MAX_BYTES=128*1024;
 const RESOURCE_ICON_PATHS=Object.freeze([
-  'generated_assets/reward_supplies.png'
+  'generated_assets/reward_supplies.png',
+  'assets/doctrines/cavalry/emblem.png'
 ]);
 
 function inspect(root){

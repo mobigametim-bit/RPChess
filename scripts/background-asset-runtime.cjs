@@ -25,7 +25,11 @@ const CANONICAL_BACKGROUND_FILES = Object.freeze({
   fae:['fae_ring_garden.png','whispering_meadow.png'],
   goblins:['goblin_trade_nook.png','goblin_scrapyard_camp.png']
 });
-const BACKGROUND_RUNTIME_EXPECTED_COUNT = Object.values(CANONICAL_BACKGROUND_FILES).reduce((sum, files) => sum + files.length, 0);
+const ADDITIONAL_BACKGROUND_FILES = Object.freeze([
+  'assets/events/register-04/sky_khanate/storm_over_caravan.png'
+]);
+const CANONICAL_EVENT_BACKGROUND_COUNT = Object.values(CANONICAL_BACKGROUND_FILES).reduce((sum, files) => sum + files.length, 0);
+const BACKGROUND_RUNTIME_EXPECTED_COUNT = CANONICAL_EVENT_BACKGROUND_COUNT + ADDITIONAL_BACKGROUND_FILES.length;
 const PNG_SIGNATURE = Buffer.from([137,80,78,71,13,10,26,10]);
 
 const CRC_TABLE = (() => {
@@ -116,6 +120,7 @@ function collectBackgroundAssetPaths(root) {
   for (const [folder, files] of Object.entries(CANONICAL_BACKGROUND_FILES)) {
     for (const file of files) paths.push(`assets/events/register-04/backgrounds/${folder}/${file}`);
   }
+  paths.push(...ADDITIONAL_BACKGROUND_FILES);
   const missing = paths.filter((relative) => !fs.existsSync(path.join(root, relative)));
   if (missing.length) throw new Error(`[background asset contract] missing canonical backgrounds:\n${missing.join('\n')}`);
   return paths.sort();
@@ -263,6 +268,8 @@ if (require.main === module) {
 
 module.exports = {
   CANONICAL_BACKGROUND_FILES,
+  ADDITIONAL_BACKGROUND_FILES,
+  CANONICAL_EVENT_BACKGROUND_COUNT,
   BACKGROUND_RUNTIME_EXPECTED_COUNT,
   BACKGROUND_RUNTIME_WIDTH,
   BACKGROUND_RUNTIME_HEIGHT,

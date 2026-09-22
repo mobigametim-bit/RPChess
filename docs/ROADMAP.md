@@ -27,7 +27,7 @@
 
 ## Current
 
-- [ ] **Balance Gate** — следующий этап проекта.
+- [ ] **Caravan / Караван** — specification approved; Chess960 route with player-selected named heroes, free mercenary fillers, artifact choice and three-card hidden reward choice. Implementation has not started; see `docs/features/CARAVAN_PLAN.md`.
 
 ## Next
 
@@ -37,7 +37,7 @@
 
 ## Current phase
 
-**Events v4 — DONE. Puzzles — DONE. Power / Threat — DONE. Content Framework — DONE. First Complete Endless Run — RECONCILED / HUMAN ACCEPTED / DONE. Battle Mercenaries Economy — HUMAN ACCEPTED / DONE. Player Identity + Chronicle — HUMAN ACCEPTED / DONE. Hero Notes — HUMAN ACCEPTED / DONE. Events v5 Hero Choices — HUMAN ACCEPTED / MERGED / DONE. Current phase: Balance Gate.**
+**Events v4 — DONE. Puzzles — DONE. Power / Threat — DONE. Content Framework — DONE. First Complete Endless Run — RECONCILED / HUMAN ACCEPTED / DONE. Battle Mercenaries Economy — HUMAN ACCEPTED / DONE. Player Identity + Chronicle — HUMAN ACCEPTED / DONE. Hero Notes — HUMAN ACCEPTED / MERGED / DONE. Events v5 Hero Choices — HUMAN ACCEPTED / MERGED / DONE. Skirmish obstacles and the latest mobile settlement/combat corrections — DONE on `main`. Current phase: Caravan specification approved; implementation not started.**
 
 ### Events v5 Hero Choices — accepted contract 2026-08-31
 

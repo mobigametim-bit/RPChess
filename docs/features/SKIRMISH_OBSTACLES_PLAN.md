@@ -1,8 +1,7 @@
 # Skirmish obstacles — implementation plan
 
-**Status:** Implemented — awaiting playable acceptance
-**Branch:** `feature/skirmish-obstacles`  
-**Delivery:** Cloudflare Preview → human acceptance → PR → merge into `main` → manual GitHub Pages release.
+**Status:** DONE on `main` — implemented, live-tested and accepted
+**Delivery:** merged through the accepted commit sequence `f43d327`…`32de050`; current production head includes the feature.
 
 ## Approved design
 
@@ -25,8 +24,8 @@
 - [x] Render obstacle props above board cells without affecting accepted combat UI/HUD.
 - [x] Add unit coverage for legality, determinism and source asset budget.
 - [x] Update RU/EN-neutral documentation.
-- [ ] Build a feature preview and perform human acceptance without changing `main`.
-- [ ] Open PR; merge and manually deploy GitHub Pages only after acceptance.
+- [x] Build a feature preview and perform human acceptance without changing `main`.
+- [x] Merge the accepted implementation and audited green-only asset set into `main`.
 
 ## Acceptance criteria
 
@@ -41,3 +40,10 @@
 - `npm run verify`, classic-engine acceptance, Skirmish, obstacle legality/slicing and source asset budget checks pass locally.
 - The browser gate requires a Chromium runtime that is not present in this workspace.
 - The next review surface will be a standalone feature build or a branch preview; neither changes the moderated `main` or VK build.
+
+## Closure (2026-09-21)
+
+- The obstacle runtime, build packaging and artifact-transition fixes were accepted and are present on `main`.
+- Pin-ice/full/partial linkage is suppressed when an obstacle blocks the attack ray.
+- The asset audit retained only 31 green candidates; yellow/red slices were removed from runtime and source-prop folders.
+- Final relevant main commits: `f43d327`, `58eefc3`, `4a84aa0`, `9300ee5`, `5664751`, `32de050`.
