@@ -23,11 +23,12 @@ async function openEncounter(page, type) {
 
   const travel = await page.evaluate(() => {
     const supplies = document.querySelector('.travel-choice-inline-resources').getBoundingClientRect();
-    const actions = document.querySelector('.travel-choice-topbar__actions').getBoundingClientRect();
+    const firstAction = document.querySelector('[data-travel-roster]').getBoundingClientRect();
+    const lastAction = document.querySelector('[data-travel-menu]').getBoundingClientRect();
     const header = document.querySelector('.travel-choice-topbar').getBoundingClientRect();
-    return { suppliesRight:supplies.right, actionsLeft:actions.left, actionsRight:actions.right, headerRight:header.right };
+    return { suppliesRight:supplies.right, actionsLeft:firstAction.left, actionsRight:lastAction.right, headerRight:header.right };
   });
-  assert(travel.actionsLeft > travel.suppliesRight && travel.headerRight - travel.actionsRight < 30,
+  assert(travel.actionsLeft > travel.suppliesRight + 40 && travel.headerRight - travel.actionsRight < 30,
     `Travel actions should align at the right edge: ${JSON.stringify(travel)}`);
   await page.locator('[data-travel-menu]').click();
   await page.locator('[data-reboot-foundation]:not([hidden])').waitFor();
