@@ -1,5 +1,6 @@
 import { artifactById } from './artifact-core.mjs';
 import { recruitProfile } from './settlement-core.mjs';
+import { PIECE_GLYPHS } from './roster-data.mjs';
 import { t, translateLegacy } from './i18n.mjs';
 
 export function caravanRewardText(reward, run) {
@@ -26,7 +27,12 @@ export function showCaravanRewards(run, onChoose) {
     const hero=recruitProfile(reward.heroId)||run.roster.find(c=>c.id===reward.heroId);
     image.src=reward.kind==='gold'?'generated_assets/reward_gold.png':reward.kind==='supplies'?'generated_assets/reward_supplies.png':reward.kind==='artifact'?artifactById(reward.artifactId).icon:hero.portrait;
     const name=document.createElement('strong');name.textContent=caravanRewardText(reward,run);
-    button.append(image,name);
+    if ((reward.kind==='healing'||reward.kind==='hero') && hero) {
+      const portrait=document.createElement('span');portrait.className='caravan-reward-card__portrait';
+      const glyph=document.createElement('span');glyph.className='caravan-reward-card__glyph';
+      glyph.textContent=PIECE_GLYPHS[hero.pieceType]||'';glyph.setAttribute('aria-hidden','true');
+      portrait.append(image,glyph);button.append(portrait,name);
+    } else button.append(image,name);
     button.addEventListener('click',()=>{
       if(busy)return;busy=true;for(const b of cards.querySelectorAll('button'))b.disabled=true;
       try{if(!onChoose(reward.id))throw new Error('Reward rejected');modal.remove();document.querySelector('[data-battle-continue]')?.focus({preventScroll:true});}

@@ -85,6 +85,38 @@ async function openCaravan(page) {
     const continued = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
     assert.equal(continued.currentCaravan, null);
     assert.equal(continued.activeTravelChoice, null);
+    const portraits = await page.evaluate(async (runKey) => {
+      const { showCaravanRewards } = await import('./js/caravan-reward-ui.mjs');
+      const { RECRUIT_LIBRARY } = await import('./js/settlement-core.mjs');
+      const { PIECE_GLYPHS } = await import('./js/roster-data.mjs');
+      const run = JSON.parse(localStorage.getItem(runKey));
+      const healed = run.roster.find(hero => !hero.isRunKing);
+      const recruit = RECRUIT_LIBRARY.find(hero => !run.roster.some(member => member.id === hero.id));
+      const offers = [
+        { id:'preview:healing',kind:'healing',heroId:healed.id },
+        { id:'preview:hero',kind:'hero',heroId:recruit.id },
+        { id:'preview:gold',kind:'gold',amount:60 }
+      ];
+      showCaravanRewards({ ...run,currentCaravan:{ offers } }, () => true);
+      const read = id => {
+        const card = document.querySelector(`[data-caravan-reward="${id}"]`);
+        return { glyph:card.querySelector('.caravan-reward-card__glyph')?.textContent,
+          hidden:card.querySelector('.caravan-reward-card__glyph')?.getAttribute('aria-hidden'),
+          imageCount:card.querySelectorAll('img').length,
+          portrait:card.querySelector('.caravan-reward-card__portrait')?.contains(card.querySelector('img')) };
+      };
+      const result = { healing:read('preview:healing'),hero:read('preview:hero'),gold:read('preview:gold'),
+        healingExpected:PIECE_GLYPHS[healed.pieceType],heroExpected:PIECE_GLYPHS[recruit.pieceType] };
+      document.querySelector('[data-caravan-rewards]').remove();
+      return result;
+    }, RUN_KEY);
+    for (const [kind,expected] of [['healing',portraits.healingExpected],['hero',portraits.heroExpected]]) {
+      assert.equal(portraits[kind].glyph,expected,`${kind} shows its hero's piece glyph`);
+      assert.equal(portraits[kind].hidden,'true');
+      assert.equal(portraits[kind].imageCount,1);
+      assert.equal(portraits[kind].portrait,true);
+    }
+    assert.equal(portraits.gold.glyph,undefined,'resource rewards have no piece glyph');
     assert.deepEqual(errors, []);
 
     const mobile = await browser.newPage({ viewport:{width:844,height:390} });
