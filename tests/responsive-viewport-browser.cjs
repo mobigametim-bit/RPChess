@@ -535,6 +535,7 @@ async function auditPrepAndCombat(browser, width, height, language) {
     await page.locator('[data-battle-start]').click();
     await chooseNoArtifactForTest(page);
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
+    await page.waitForFunction((expected) => Math.abs((document.querySelector('.classic-party-panel')?.getBoundingClientRect().width || 0) - expected) <= 2, expectedCombatPanelWidth);
     const battleCombatPanel = await page.evaluate(() => {
       const party=document.querySelector('.classic-party-panel')?.getBoundingClientRect();
       const moves=document.querySelector('.classic-panel--moves')?.getBoundingClientRect();
