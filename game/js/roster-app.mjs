@@ -239,7 +239,8 @@ function continueRun() {
     return;
   }
   activeFilter = 'all';
-  if (activeRun.currentCombat && activeRun.activeTravelChoice?.type === activeRun.currentCombat.type) {
+  if ((activeRun.currentCombat && activeRun.activeTravelChoice?.type === activeRun.currentCombat.type) ||
+      (activeRun.currentCaravan?.phase === 'combat' && activeRun.activeTravelChoice?.type === 'caravan')) {
     // A saved fight is the current scene, even when Continue is pressed on another device.
     void resumeCurrentCombat(activeRun.id);
     return;

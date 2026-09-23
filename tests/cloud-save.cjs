@@ -15,6 +15,7 @@ class MemoryStorage {
 (async () => {
   const listeners = new Map();
   const cloud = new Map();
+  let discardWrites = false, acknowledgeWrites = true;
   const supportedHandlers = [
     'VKWebAppInit','VKWebAppStorageGet','VKWebAppStorageSet','VKWebAppStorageGetKeys',
     'VKWebAppCheckNativeAds','VKWebAppShowNativeAds','VKWebAppShare','VKWebAppShowWallPostBox',
@@ -28,8 +29,8 @@ class MemoryStorage {
       if (handler === 'SetSupportedHandlers') {
         response.supportedHandlers = supportedHandlers;
       } else if (handler === 'VKWebAppStorageSet') {
-        cloud.set(String(params.key), String(params.value));
-        response.result = true;
+        if (!discardWrites) cloud.set(String(params.key), String(params.value));
+        if (acknowledgeWrites) response.result = true;
       } else if (handler === 'VKWebAppStorageGet') {
         response.keys = (params.keys || []).map((key) => ({ key:String(key), value:cloud.get(String(key)) || '' }));
       } else if (handler === 'VKWebAppCheckNativeAds' || handler === 'VKWebAppShowNativeAds' || handler === 'VKWebAppCopyText') {
@@ -42,7 +43,7 @@ class MemoryStorage {
         response.result = true;
       }
       queueMicrotask(() => {
-        const event = { type:'message', source:parent, data:{ type:`${handler}Result`, data:response } };
+        const event = { type:'message', origin:'https://vk.com', source:parent, data:{ type:`${handler}Result`, data:response } };
         for (const listener of listeners.get('message') || []) listener(event);
       });
     }
@@ -71,6 +72,17 @@ class MemoryStorage {
   const persistence = await import(pathToFileURL(path.join(root, 'game/js/run-persistence.mjs')).href);
   const cloudSave = await import(pathToFileURL(path.join(root, 'game/js/cloud-save.mjs')).href);
 
+  // VK desktop embeds can omit both vk_app_id and document.referrer. A real VK
+  // parent response enables cloud saves, while a direct Pages tab stays local.
+  globalThis.location.search = '';
+  globalThis.parent = globalThis;
+  assert.strictEqual(platformModule.isVKLaunch(), false);
+  assert.strictEqual(await platformModule.discoverVKHost(), false);
+  globalThis.parent = parent;
+  assert.strictEqual(await platformModule.discoverVKHost(), true);
+  assert.strictEqual(platformModule.storage.cloud.available, true);
+  globalThis.location.search = '?vk_app_id=54754579';
+
   assert.strictEqual(await platformModule.supportsVKMethod('VKWebAppStorageGet'), true, 'VK supported-handler negotiation must expose Storage');
   assert.strictEqual(await platformModule.supportsVKMethod('VKWebAppShowNativeAds'), true, 'VK supported-handler negotiation must expose native ads');
   assert.strictEqual(await platformModule.ads.check('reward'), true, 'reward inventory probe must normalize to boolean');
@@ -98,9 +110,20 @@ class MemoryStorage {
   assert.strictEqual(await cloudSave.writeCloudEnvelope(first), true, 'first cloud write must succeed');
   const firstManifest = JSON.parse(cloud.get(cloudSave.CLOUD_SAVE_MANIFEST_KEY));
   assert.strictEqual(firstManifest.slot, 'a', 'first atomic cloud write must use slot a');
+  assert.strictEqual(firstManifest.encoding, 'base64url');
+  for (let index = 0; index < firstManifest.chunks; index += 1)
+    assert(/^[A-Za-z0-9_-]+$/.test(cloud.get(`rpchess_v1_cloud_a_${index}`)), 'VK chunks must contain only ASCII-safe characters');
   const remoteFirst = await cloudSave.readCloudEnvelope();
   assert.strictEqual(remoteFirst.error, null);
   assert.strictEqual(remoteFirst.envelope.payload.run.gold, 321);
+  const legacyJson = JSON.stringify({ schemaVersion:1, revision:first.revision, updatedAt:first.updatedAt, payload:first.payload });
+  const legacyChunks = cloudSave.splitUtf8(legacyJson);
+  legacyChunks.forEach((chunk, index) => cloud.set(`rpchess_v1_cloud_b_${index}`, chunk));
+  cloud.set(cloudSave.CLOUD_SAVE_MANIFEST_KEY, JSON.stringify({ schemaVersion:1, slot:'b', chunks:legacyChunks.length,
+    revision:first.revision, updatedAt:first.updatedAt, checksum:cloudSave.checksum(legacyJson) }));
+  assert.strictEqual((await cloudSave.readCloudEnvelope()).envelope?.payload.run.gold, 321,
+    'existing VK saves in raw JSON must remain readable after the encoding upgrade');
+  cloud.set(cloudSave.CLOUD_SAVE_MANIFEST_KEY, JSON.stringify(firstManifest));
 
   run = persistence.writeRun({ ...run, gold:654, journeyStep:5 }, null, 1200);
   const second = cloudSave.prepareLocalEnvelope({ now:1300 });
@@ -108,6 +131,15 @@ class MemoryStorage {
   assert.strictEqual(await cloudSave.writeCloudEnvelope(second, firstManifest), true, 'second cloud write must succeed');
   const secondManifest = JSON.parse(cloud.get(cloudSave.CLOUD_SAVE_MANIFEST_KEY));
   assert.strictEqual(secondManifest.slot, 'b', 'second atomic cloud write must alternate slots');
+  discardWrites = true;
+  assert.strictEqual(await cloudSave.writeCloudEnvelope({ ...second, revision:3 }, secondManifest), false,
+    'an acknowledged but discarded chunk must never replace the working manifest');
+  assert.strictEqual(cloud.get(cloudSave.CLOUD_SAVE_MANIFEST_KEY), JSON.stringify(secondManifest));
+  discardWrites = false;
+  acknowledgeWrites = false;
+  assert.strictEqual(await platformModule.storage.cloud.setItem('rpchess_test_missing_ack', 'test'), false,
+    'a VK response without result:true must not be treated as a successful write');
+  acknowledgeWrites = true;
 
   const oldDevice = globalThis.localStorage;
   globalThis.localStorage = new MemoryStorage();
@@ -127,6 +159,11 @@ class MemoryStorage {
   assert.strictEqual(cloudSave.compareEnvelopes(localEnvelope, cloudEnvelope), 'cloud', 'a published save wins an exact timestamp tie');
   assert.strictEqual(cloudSave.compareEnvelopes({ ...localEnvelope, updatedAt:1400 }, cloudEnvelope), 'local', 'newer local run wins even when run ids differ');
   assert.strictEqual(cloudSave.compareEnvelopes(localEnvelope, { ...cloudEnvelope, updatedAt:1400 }), 'cloud', 'newer cloud run wins even when run ids differ');
+  const oldWeek = { ...second, updatedAt:9999, payload:{ ...second.payload, run:{ ...second.payload.run, journeyStep:20 } } };
+  const newWeek = { ...second, updatedAt:1000, payload:{ ...second.payload, run:{ ...second.payload.run, journeyStep:26 } } };
+  oldWeek.fingerprint = cloudSave.payloadFingerprint(oldWeek.payload);
+  newWeek.fingerprint = cloudSave.payloadFingerprint(newWeek.payload);
+  assert.strictEqual(cloudSave.compareEnvelopes(oldWeek, newWeek), 'cloud', 'week 20 cannot replace week 26 of the same run even with a later device clock');
 
   // Exercise two separate module instances, each with its own sync baseline and browser storage.
   await cloudSave.bootstrapCloudSave();

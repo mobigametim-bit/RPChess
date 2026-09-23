@@ -10,14 +10,14 @@ import {
 } from './i18n.mjs';
 import { installBrandLogos } from './brand-logo.mjs';
 
-platform.init();
+const platformReady = platform.init();
 installBrandLogos();
 
 // Reconcile VK cloud state before run-owned modules read local persistence. Standalone Web resolves
 // immediately; VK failures are non-fatal and leave the local cache authoritative for this session.
 // A genuine local/cloud run conflict blocks run bootstrap until the player explicitly chooses one.
-const cloudReady = import('./cloud-save.mjs')
-  .then((module) => module.bootstrapCloudSave())
+const cloudReady = Promise.all([platformReady, import('./cloud-save.mjs')])
+  .then(([, module]) => module.bootstrapCloudSave())
   .catch((error) => {
     console.error('[RPChess] Cloud Save bootstrap failed', error);
     return { status:'error', conflict:null };

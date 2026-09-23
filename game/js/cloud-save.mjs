@@ -148,6 +148,20 @@ function splitUtf8(input, maxBytes = CLOUD_CHUNK_BYTES) {
   return chunks;
 }
 
+function encodeCloudPayload(value) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = '';
+  for (let index = 0; index < bytes.length; index += 8192)
+    binary += String.fromCharCode(...bytes.subarray(index, index + 8192));
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function decodeCloudPayload(value, encoding) {
+  if (encoding !== 'base64url') return value; // Existing JSON manifests remain readable.
+  const binary = atob(value.replace(/-/g, '+').replace(/_/g, '/'));
+  return new TextDecoder('utf-8', { fatal:true }).decode(Uint8Array.from(binary, char => char.charCodeAt(0)));
+}
+
 function payloadFingerprint(payload) {
   return checksum(JSON.stringify(payload));
 }
@@ -196,12 +210,14 @@ function prepareLocalEnvelope({ now = nowMs(), bumpOnChange = true } = {}) {
 function normalizeManifest(value) {
   const parsed = typeof value === 'string' ? safeJsonParse(value) : value;
   if (!parsed || parsed.schemaVersion !== CLOUD_SAVE_SCHEMA_VERSION) return null;
+  if (parsed.encoding != null && parsed.encoding !== 'base64url') return null;
   if (!['a','b'].includes(parsed.slot)) return null;
   if (!Number.isInteger(parsed.chunks) || parsed.chunks < 1 || parsed.chunks > CLOUD_MAX_CHUNKS) return null;
   if (!Number.isInteger(parsed.revision) || parsed.revision < 0) return null;
   if (typeof parsed.checksum !== 'string' || !parsed.checksum) return null;
   return {
     schemaVersion:CLOUD_SAVE_SCHEMA_VERSION,
+    encoding:parsed.encoding || 'json',
     slot:parsed.slot,
     chunks:parsed.chunks,
     revision:parsed.revision,
@@ -230,7 +246,10 @@ async function readCloudEnvelope() {
   if (chunks.some((value) => typeof value !== 'string')) return { manifest, envelope:null, error:'missing-chunk' };
   const serialized = chunks.join('');
   if (checksum(serialized) !== manifest.checksum) return { manifest, envelope:null, error:'checksum' };
-  const parsed = safeJsonParse(serialized);
+  let decoded;
+  try { decoded = decodeCloudPayload(serialized, manifest.encoding); }
+  catch { return { manifest, envelope:null, error:'invalid-encoding' }; }
+  const parsed = safeJsonParse(decoded);
   if (!parsed || parsed.schemaVersion !== CLOUD_SAVE_SCHEMA_VERSION || parsed.revision !== manifest.revision || !parsed.payload) {
     return { manifest, envelope:null, error:'invalid-envelope' };
   }
@@ -251,12 +270,14 @@ async function readCloudEnvelope() {
 
 async function writeCloudEnvelope(envelope, currentManifest = null) {
   if (!platform.storage.cloud.available || !envelope?.payload) return false;
-  const serialized = JSON.stringify({
+  const payloadJson = JSON.stringify({
     schemaVersion:CLOUD_SAVE_SCHEMA_VERSION,
     revision:Math.max(0, Math.floor(Number(envelope.revision) || 0)),
     updatedAt:Math.max(0, Math.floor(Number(envelope.updatedAt) || 0)),
     payload:envelope.payload
   });
+  // ASCII-safe chunks cannot expand when the Bridge serializes its request.
+  const serialized = encodeCloudPayload(payloadJson);
   const chunks = splitUtf8(serialized);
   if (chunks.length > CLOUD_MAX_CHUNKS) throw new Error('Cloud save exceeds the RPChess chunk budget');
   const previous = currentManifest || await readCloudManifest();
@@ -265,15 +286,23 @@ async function writeCloudEnvelope(envelope, currentManifest = null) {
     const ok = await platform.storage.cloud.setItem(chunkKey(slot, index), chunks[index]);
     if (!ok) return false;
   }
+  // A Bridge acknowledgement alone does not prove that a chunk was stored.
+  // Verify the inactive slot before replacing the last readable manifest.
+  const keys = chunks.map((_, index) => chunkKey(slot, index));
+  const stored = await platform.storage.cloud.getItemsStrict(keys);
+  if (keys.some((key, index) => stored[key] !== chunks[index])) return false;
   const manifest = {
     schemaVersion:CLOUD_SAVE_SCHEMA_VERSION,
+    encoding:'base64url',
     slot,
     chunks:chunks.length,
     revision:Math.max(0, Math.floor(Number(envelope.revision) || 0)),
     updatedAt:Math.max(0, Math.floor(Number(envelope.updatedAt) || 0)),
     checksum:checksum(serialized)
   };
-  return platform.storage.cloud.setItem(CLOUD_SAVE_MANIFEST_KEY, JSON.stringify(manifest));
+  if (!await platform.storage.cloud.setItem(CLOUD_SAVE_MANIFEST_KEY, JSON.stringify(manifest))) return false;
+  const published = await readCloudManifest();
+  return Boolean(published && published.slot === manifest.slot && published.checksum === manifest.checksum && published.revision === manifest.revision);
 }
 
 function restoreLocalEnvelope(envelope) {
@@ -296,6 +325,13 @@ function compareEnvelopes(local, cloud) {
   if (!local || !local.hasProgress) return cloud.hasProgress ? 'cloud' : 'empty';
   if (!cloud.hasProgress) return 'local';
   if (local.fingerprint === cloud.fingerprint) return 'same';
+  // A single run cannot return to an earlier week. This also protects players
+  // when one device's clock is ahead and would otherwise revive an old run.
+  const localRun = local.payload?.run, cloudRun = cloud.payload?.run;
+  if (localRun?.id && localRun.id === cloudRun?.id && localRun.journeyStep !== cloudRun.journeyStep &&
+      Number.isInteger(localRun.journeyStep) && Number.isInteger(cloudRun.journeyStep)) {
+    return localRun.journeyStep > cloudRun.journeyStep ? 'local' : 'cloud';
+  }
   if (local.updatedAt !== cloud.updatedAt) return local.updatedAt > cloud.updatedAt ? 'local' : 'cloud';
   if (local.revision !== cloud.revision) return local.revision > cloud.revision ? 'local' : 'cloud';
   return 'cloud'; // Deterministic tie: keep the already published save.
@@ -371,7 +407,8 @@ function scheduleCloudSync(event) {
   syncTimer = setTimeout(() => {
     syncTimer = null;
     void syncCloudNow();
-  }, event?.detail?.combat ? CLOUD_COMBAT_SYNC_DEBOUNCE_MS : CLOUD_SYNC_DEBOUNCE_MS);
+  }, event?.type === 'rpchess:run-persisted' || event?.detail?.combat
+    ? CLOUD_COMBAT_SYNC_DEBOUNCE_MS : CLOUD_SYNC_DEBOUNCE_MS);
 }
 
 function installCloudAutosync() {

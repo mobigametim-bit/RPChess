@@ -6,10 +6,13 @@ const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
 const RUN_KEY = 'rpchess.reboot.v1.run';
 
 async function resumeCaravan(page, selector) {
+  const inCombat = await page.evaluate(key => JSON.parse(localStorage.getItem(key))?.currentCaravan?.phase === 'combat', RUN_KEY);
   await page.reload({ waitUntil:'networkidle' });
   await page.locator('[data-continue-run]').click();
-  await page.locator('[data-roster-screen]:not([hidden])').waitFor();
-  await page.locator('[data-roster-travel]').click();
+  if (!inCombat) {
+    await page.locator('[data-roster-screen]:not([hidden])').waitFor();
+    await page.locator('[data-roster-travel]').click();
+  }
   await page.locator(selector).waitFor();
 }
 
@@ -61,8 +64,21 @@ async function openCaravan(page) {
     assert(plan.chess960);
     assert.equal(plan.playerFormation.length, 16);
     assert.equal(plan.enemyFormation.length, 16);
+    await page.waitForFunction(() => globalThis.RPChessClassicChess?.snapshot().turn === globalThis.RPChessChessAI?.config.playerColor);
+    const move = await page.evaluate(() => {
+      const chess = globalThis.RPChessClassicChess;
+      const candidate = chess.engine.legalMoves().find(item => chess.engine.pieceAt(item.from)?.color === globalThis.RPChessChessAI.config.playerColor);
+      if (!candidate) throw new Error('No legal caravan move to save');
+      return chess.move(candidate.from, candidate.uciTo || candidate.to, candidate.promotion || null);
+    });
+    assert(move.ok, 'Caravan must accept a legal move before switching devices');
+    await page.waitForFunction(key => JSON.parse(localStorage.getItem(key))?.currentCaravan?.moves?.length >= 1, RUN_KEY);
+    await page.waitForFunction(() => globalThis.RPChessClassicChess?.snapshot().turn === globalThis.RPChessChessAI?.config.playerColor && !globalThis.RPChessChessAI?.thinking);
+    const beforeReload = await page.evaluate(key => ({ fen:globalThis.RPChessClassicChess.snapshot().fen, moves:JSON.parse(localStorage.getItem(key)).currentCaravan.moves }), RUN_KEY);
     await resumeCaravan(page, '[data-classic-screen]:not([hidden])');
     assert.equal((await page.evaluate(() => globalThis.RPChessBattle.battlePlan)).fen, plan.fen);
+    assert.equal((await page.evaluate(() => globalThis.RPChessClassicChess.snapshot().fen)), beforeReload.fen);
+    assert.deepStrictEqual((await page.evaluate(key => JSON.parse(localStorage.getItem(key)).currentCaravan.moves, RUN_KEY)), beforeReload.moves);
 
     await page.evaluate((color) => globalThis.RPChessBattle.finishBattle({over:true,type:'checkmate',winner:color}), plan.playerColor);
     await page.locator('[data-caravan-rewards]').waitFor();
