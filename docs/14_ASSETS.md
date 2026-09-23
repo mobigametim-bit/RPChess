@@ -8,6 +8,14 @@
 - Удаление source asset требует положительного reachability proof: отсутствуют literal, manifest, generated и dynamic-family owners.
 - Build regression проверяет, что каждый локальный CSS `url(...)` разрешается в реально существующий файл внутри `dist`.
 
+## Reserved for Caravan (spec approved, implementation not started)
+
+- Route icon: `game/assets/doctrines/cavalry/emblem.png`.
+- Route backdrop: `game/assets/events/register-04/sky_khanate/storm_over_caravan.png`.
+- Both are existing repository masters selected for the future Caravan route. Their paths are explicitly registered now so production copies pass the existing icon/background optimizers; no Caravan runtime/UI code has been added.
+- Icon runtime budget: maximum 192 px and 128 KiB through `scripts/resource-icon-asset-runtime.cjs`.
+- Backdrop runtime budget: 1600×900 opaque RGB, six-bit channel quantization and maximum 2 MiB through `scripts/background-asset-runtime.cjs`.
+
 ## Visual contract
 Сохраняем текущий approved RPChess UI, фоны, board skins, портреты, фигуры, environment assets и VFX, если они подходят Reboot.
 

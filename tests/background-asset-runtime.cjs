@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const {
   BACKGROUND_RUNTIME_EXPECTED_COUNT,
+  CANONICAL_EVENT_BACKGROUND_COUNT,
   BACKGROUND_RUNTIME_WIDTH,
   BACKGROUND_RUNTIME_HEIGHT,
   BACKGROUND_RUNTIME_MAX_TOTAL_BYTES,
@@ -13,11 +14,13 @@ const {
 const root = path.resolve(__dirname, '..', 'game');
 const paths = collectBackgroundAssetPaths(root);
 assert.strictEqual(paths.length, BACKGROUND_RUNTIME_EXPECTED_COUNT, 'canonical background count must stay fail-closed');
-assert.strictEqual(paths.length, 36, 'runtime uses exactly 36 approved Event/cross-scene backgrounds');
+assert.strictEqual(CANONICAL_EVENT_BACKGROUND_COUNT, 36, 'Event runtime keeps exactly 36 approved backgrounds');
+assert.strictEqual(paths.length, 37, 'runtime includes 36 approved Event backgrounds plus the reserved Caravan backdrop');
+assert(paths.includes('assets/events/register-04/sky_khanate/storm_over_caravan.png'), 'Caravan backdrop must stay inside the production background optimizer');
 assert(!paths.some((relative) => relative.includes('/merfolk/')), 'unused Merfolk backgrounds must not enter the runtime optimization budget');
 
 const source = inspectBackgroundAssets(root);
-assert.strictEqual(source.count, 36, 'source inspection must cover the canonical runtime set only');
+assert.strictEqual(source.count, 37, 'source inspection must cover Event backgrounds and the reserved Caravan backdrop');
 assert(source.totalBytes > BACKGROUND_RUNTIME_MAX_TOTAL_BYTES, 'master payload should remain larger than the runtime budget; build optimization must not rewrite masters');
 for (const record of source.records) {
   assert(record.width >= BACKGROUND_RUNTIME_WIDTH, `${record.path} must not be smaller than runtime width`);

@@ -18,6 +18,7 @@ async function assertThemedBoard(page,kind){
   await page.evaluate((kind)=>dispatchEvent(new CustomEvent(kind==='battle'?'rpchess:battle-open':'rpchess:skirmish-open')),kind);
   await page.locator(kind==='battle'?'[data-battle-screen]:not([hidden])':'[data-skirmish-screen]:not([hidden])').waitFor();
   await page.locator(kind==='battle'?'[data-battle-start]':'[data-skirmish-start]').click();
+  await page.locator('[data-artifact-choice="none"]').click();
   await page.locator('[data-classic-screen]:not([hidden])').waitFor();
   const state=await page.evaluate((api)=>{
     const plan=globalThis[api].battlePlan;

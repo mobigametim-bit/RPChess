@@ -272,7 +272,7 @@ function isBlackView() { return gameConfig.mode === 'ai' && gameConfig.playerCol
 function renderBoard() {
   const snapshot = engine.snapshot();
   const legalTargets = new Map();
-  for (const move of selectedMoves) if (!legalTargets.has(move.to)) legalTargets.set(move.to, move);
+  for (const move of selectedMoves) if (!legalTargets.has(move.uciTo || move.to)) legalTargets.set(move.uciTo || move.to, move);
   const checkedKing = snapshot.status.checked ? snapshot.board.findIndex((piece) => piece?.type === 'k' && piece.color === snapshot.turn) : -1;
   const reverse = isBlackView();
   const ranks = reverse ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0];
@@ -450,9 +450,9 @@ function executeMove(from, to, promotion = null, { triggerAI = true } = {}) {
   const moving = engine.pieceAt(from);
   if (!moving) return false;
   const legalBefore = engine.legalMoves();
-  const candidate = legalBefore.find((move) => move.from === from && move.to === to && (!move.promotion || move.promotion === promotion));
-  const capturedPiece = candidate?.capture ? engine.pieceAt(candidate.capture) : engine.pieceAt(to);
-  const geometry = candidate ? captureAnimationGeometry(from, to, moving, capturedPiece) : null;
+  const candidate = legalBefore.find((move) => move.from === from && (move.uciTo || move.to) === to && (!move.promotion || move.promotion === promotion));
+  const capturedPiece = candidate?.castle ? null : candidate?.capture ? engine.pieceAt(candidate.capture) : engine.pieceAt(to);
+  const geometry = candidate && !candidate.castle ? captureAnimationGeometry(from, to, moving, capturedPiece) : null;
   const result = engine.move(from, to, promotion);
   if (!result.ok) {
     if (result.reason === 'promotion_required') {
@@ -493,8 +493,9 @@ function handleSquare(square) {
     return;
   }
   if (square === selected) { selected = null; selectedMoves = []; renderBoard(); return; }
+  if (selectedMoves.some(move => move.castle && move.uciTo === square)) { executeMove(selected, square); return; }
   if (piece?.color === turn) { selected = square; selectedMoves = engine.legalMoves(square); audio()?.click?.(); renderBoard(); return; }
-  const candidates = selectedMoves.filter((move) => move.to === square);
+  const candidates = selectedMoves.filter((move) => (move.uciTo || move.to) === square);
   if (!candidates.length) return;
   executeMove(selected, square);
 }
@@ -506,7 +507,7 @@ async function maybeScheduleAI() {
   const legalMoves = engine.legalMoves();
   setThinking(true);
   const started = performance.now();
-  const uci = await aiAdapter.chooseMove({ fen, elo: gameConfig.aiElo, legalMoves });
+  const uci = await aiAdapter.chooseMove({ fen, elo: gameConfig.aiElo, legalMoves, chess960: engine.state.chess960 });
   const remainingDelay = Math.max(0, 180 - (performance.now() - started));
   if (remainingDelay) await new Promise((resolve) => setTimeout(resolve, remainingDelay));
   if (generation !== gameGeneration || gameConfig.mode !== 'ai' || engine.turn() !== gameConfig.aiColor) return;
@@ -553,10 +554,18 @@ function normalizeConfig(options = {}) {
 function newGame(fen = null, options = {}) {
   cancelAI();
   gameConfig = normalizeConfig(options);
-  engine = new ClassicChessEngine(fen, { blockedSquares: options.blockedSquares });
+  engine = new ClassicChessEngine(fen, { blockedSquares: options.blockedSquares, chess960: options.chess960 });
   selected = null;
   selectedMoves = [];
   moveLog = [];
+  for (const saved of options.moves || []) {
+    const moving = engine.pieceAt(saved.from), legalBefore = engine.legalMoves();
+    const candidate = legalBefore.find(m => m.from === saved.from && (m.uciTo || m.to) === saved.to);
+    const captured = candidate?.capture ? engine.pieceAt(candidate.capture) : null;
+    const result = engine.move(saved.from, saved.to, saved.promotion);
+    if (!result.ok) throw new Error('Invalid saved combat move');
+    moveLog.push({ color: moving.color, san: sanNotation({moving,from:saved.from,to:result.move.to,promotion:result.move.promotion,resultMove:result.move,status:result.status,legalBefore}), move: result.move, captured });
+  }
   pendingPromotion = null;
   closePromotion();
   showGame();

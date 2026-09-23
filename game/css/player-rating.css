@@ -54,7 +54,7 @@
 /* Approved Travel header adjustment: keep the existing DOM/runtime hooks and only
    move + scale the Power/Threat presentation on desktop. */
 @media(min-width:901px){
-  .travel-choice-screen .travel-choice-topbar{
+  .travel-choice-screen .travel-choice-topbar:not(.travel-choice-topbar--command){
     grid-template-columns:auto auto 1fr !important;
     align-items:center;
     column-gap:18px;
@@ -94,7 +94,7 @@
     font-size:21px !important;
   }
 
-  .travel-choice-screen .travel-choice-topbar__actions{
+  .travel-choice-screen .travel-choice-topbar > .travel-choice-topbar__actions{
     grid-column:3 !important;
     grid-row:1 !important;
     justify-self:end;

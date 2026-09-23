@@ -43,7 +43,7 @@ class TestCustomEvent extends Event{constructor(type,{detail=null}={}){super(typ
   assert.strictEqual(completions.length,12,'repeated run notifications without a state transition must not fan out semantic combat events');
   assert.strictEqual(lifecycle.default,undefined);
   assert.deepStrictEqual(globalThis.RPChessRunLifecycle.snapshot(),{
-    runId:'lifecycle-contract',battleCount:6,skirmishCount:6,puzzleKey:null,puzzleResolved:false
+    runId:'lifecycle-contract',caravanCount:0,battleCount:6,skirmishCount:6,puzzleKey:null,puzzleResolved:false
   });
 
   const source=fs.readFileSync(path.join(game,'js/run-lifecycle-events.mjs'),'utf8');

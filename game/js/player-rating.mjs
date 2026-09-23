@@ -156,6 +156,7 @@ function combatResultScore(status, playerColor = 'w') {
 
 function combatCountForKind(run, kind) {
   if (kind === 'skirmish') return Number.isInteger(run?.skirmishCount) ? run.skirmishCount : 0;
+  if (kind === 'caravan') return Number.isInteger(run?.caravanCount) ? run.caravanCount : 0;
   if (kind === 'battle') return Number.isInteger(run?.battleCount) ? run.battleCount : 0;
   return null;
 }
@@ -164,7 +165,7 @@ function ratedOutcomeKind(run) {
   const route = run?.activeTravelChoice;
   if (!route || route.difficultyModel !== 'power-v1') return null;
 
-  if (route.type === 'skirmish' || route.type === 'battle') {
+  if (route.type === 'skirmish' || route.type === 'battle' || route.type === 'caravan') {
     if (!Number.isInteger(route.combatCountAtSelection)) return null;
     return combatCountForKind(run, route.type) > route.combatCountAtSelection ? route.type : null;
   }

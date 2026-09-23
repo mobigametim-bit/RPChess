@@ -4,6 +4,7 @@ function snapshot(run) {
   const puzzle = run?.currentPuzzle;
   return Object.freeze({
     runId: run?.id || null,
+    caravanCount: Number.isInteger(run?.caravanCount) ? run.caravanCount : 0,
     battleCount: Number.isInteger(run?.battleCount) ? run.battleCount : 0,
     skirmishCount: Number.isInteger(run?.skirmishCount) ? run.skirmishCount : 0,
     puzzleKey: puzzle?.routeId && puzzle?.puzzleId ? `${puzzle.routeId}:${puzzle.puzzleId}` : null,
@@ -31,6 +32,7 @@ function syncLifecycle(event) {
   }
 
   const completed = [];
+  if (next.caravanCount > previous.caravanCount) completed.push(['rpchess:combat-completed',{kind:'caravan',runId:next.runId,count:next.caravanCount,source:event?.detail?.source||null}]);
   if (next.battleCount > previous.battleCount) {
     completed.push(['rpchess:combat-completed', {
       kind: 'battle',

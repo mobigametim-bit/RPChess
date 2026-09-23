@@ -3,7 +3,7 @@ import { STARTER_TEMPLATES } from '../roster-data.mjs';
 import { RECRUIT_LIBRARY } from '../settlement-core.mjs';
 import { EVENT_CATALOG } from '../events-data.mjs';
 
-const ENCOUNTER_TYPES = Object.freeze(['skirmish', 'battle', 'settlement', 'event', 'puzzle']);
+const ENCOUNTER_TYPES = Object.freeze(['skirmish', 'battle', 'settlement', 'event', 'puzzle', 'caravan']);
 
 const CORE_ASSETS = Object.freeze([
   'generated_assets/logo_ru.png',
@@ -21,6 +21,8 @@ const CORE_ASSETS = Object.freeze([
   'generated_assets/reward_gold.png',
   'assets/kings/oathkeeper/portrait.png',
   'assets/kings/oathkeeper/piece.png',
+  'assets/doctrines/cavalry/emblem.png',
+  'assets/events/register-04/sky_khanate/storm_over_caravan.png',
   'SFX/win_fanfare.mp3'
 ]);
 

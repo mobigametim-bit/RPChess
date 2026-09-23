@@ -54,7 +54,7 @@ assert(foundationCss.includes('[data-reboot-foundation][hidden]'), 'main menu sc
 assert(foundationCss.includes('[data-classic-screen][hidden]'), 'Classic Chess scene has no explicit hidden-state override');
 assert(/\[data-reboot-foundation\]\[hidden\][\s\S]*display:\s*none\s*!important/i.test(foundationCss), 'scene visibility contract must force hidden roots out of layout');
 
-for (const rule of ['promotion_required', 'draw_50_move', 'draw_threefold', 'draw_insufficient', 'checkmate', 'stalemate', 'kingTransitSafe']) {
+for (const rule of ['promotion_required', 'draw_50_move', 'draw_threefold', 'draw_insufficient', 'checkmate', 'stalemate', 'castlingMoves']) {
   assert(engine.includes(rule), `engine rule missing: ${rule}`);
 }
 for (const contract of ['class ChessAIAdapter', 'UCI_LimitStrength', 'UCI_Elo', 'MultiPV', 'ELO_LEVELS', 'stockfish-18-lite-single.js']) {

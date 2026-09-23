@@ -236,6 +236,11 @@ addEventListener('rpchess:battle-open', (event) => {
   setCombatBackdrop(choice);
   queueMicrotask(() => setBattlePrepBackdrop(choice));
 });
+addEventListener('rpchess:caravan-open', (event) => {
+  const choice = event?.detail?.choice || null;
+  setCombatBackdrop(choice);
+  queueMicrotask(() => setBattlePrepBackdrop(choice));
+});
 addEventListener('rpchess:settlement-open', (event) => setSettlementBackdrop(event?.detail?.choice));
 
 globalThis.RPChessSceneVisuals = Object.freeze({

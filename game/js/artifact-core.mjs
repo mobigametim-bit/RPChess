@@ -33,9 +33,9 @@ function applyArtifactPurchase(run){
   artifacts[offer.id]=(artifacts[offer.id]||0)+offer.charges;
   return {run:{...run,gold:run.gold-offer.price,artifacts,currentSettlement:{...run.currentSettlement,artifactOffer:{...offer,sold:true}}},success:true,spent:offer.price,chargesAdded:offer.charges,artifact:artifactById(offer.id),reason:'purchased'};
 }
-function isCombatArtifactChoice(value){ return value===null || Boolean(value&&typeof value==='object'&&['battle','skirmish'].includes(value.combatType)&&typeof value.encounterId==='string'&&value.encounterId&&((value.artifactId===null)||Boolean(artifactById(value.artifactId)))); }
+function isCombatArtifactChoice(value){ return value===null || Boolean(value&&typeof value==='object'&&['battle','skirmish','caravan'].includes(value.combatType)&&typeof value.encounterId==='string'&&value.encounterId&&((value.artifactId===null)||Boolean(artifactById(value.artifactId)))); }
 function applyCombatArtifactChoice(run,{combatType,encounterId,artifactId=null}={}){
-  if(!run || !['battle','skirmish'].includes(combatType) || !encounterId || !isCombatArtifactChoice({combatType,encounterId,artifactId})) return {run,success:false,reason:'invalid-choice',choice:null};
+  if(!run || !['battle','skirmish','caravan'].includes(combatType) || !encounterId || !isCombatArtifactChoice({combatType,encounterId,artifactId})) return {run,success:false,reason:'invalid-choice',choice:null};
   const existing=run.combatArtifactChoice;
   if(existing?.combatType===combatType&&existing.encounterId===encounterId) return {run,success:true,reason:'already-chosen',choice:existing};
   const artifacts=normalizeArtifacts(run.artifacts);

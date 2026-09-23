@@ -1,29 +1,25 @@
 # RPChess — Current State
 
-**Last synchronized:** 2026-09-10  
+**Last synchronized:** 2026-09-23
 **Production branch:** `main`  
-**Accepted production/audit merge head:** `24885b2da20bc5063e4b4f5101a34f6d7aa2ddde`  
+**Accepted production head:** `df24f4c69c77caa01e74e8722a022e405e682f00`
 **Production URL:** https://mobigametim-bit.github.io/RPChess/  
-**Current active stage:** **VK Games publication**  
-**VK working plan:** `docs/platforms/VK_GAMES_PUBLICATION_PLAN.md`
+**Current active stage:** **Caravan implemented on draft PR #144; validation and Preview pending**
+**Working plan:** `docs/features/CARAVAN_PLAN.md`
 
 This page is the short operational snapshot of the project. Historical feature receipts remain in the numbered documents and `CHANGELOG.md`; when an old receipt conflicts with this page about deployment, responsive UI, persistence, current asset usage or current project stage, this page describes the current contract.
 
-## Current phase — VK Games publication
+## Current phase — Caravan validation
 
-The full-project review remediation is complete, human accepted, merged into `main` and used as the production baseline. The active delivery track is now the first external platform release: **VK Games**.
+The full-project review remediation and VK delivery baseline are complete. The latest accepted `main` also includes Skirmish obstacles and the mobile Settlement/Skirmish live-device corrections through `df24f4c`.
 
-Canonical working checklist:
+**Caravan / Караван** is implemented on `feature/caravan` in draft PR #144. It adds a Chess960 Travel route, free mercenaries, artifact choice, three reward offers and persistent recovery. Its product contract and implementation checklist are recorded here:
 
-`docs/platforms/VK_GAMES_PUBLICATION_PLAN.md`
+`docs/features/CARAVAN_PLAN.md`
 
 Agents continuing this project should use that checklist as the source of truth for VK work, mark completed items there, preserve one shared gameplay codebase, and keep VK-specific integration behind the platform layer rather than creating a separate copy of RPChess.
 
-Immediate next technical stages are:
-
-1. verify/record the existing RPChess readiness state (plan section 0);
-2. create `platform/vk-games` from current `main` and establish the platform-integration boundary (plan section 1);
-3. after the owner creates the VK Games project and provides `app_id`, continue with VK Bridge, `build:vk`, VK Hosting config and platform testing.
+The local gate and targeted Chromium Caravan flow pass. Next: pass the PR workflow and full browser regression, publish a Preview, receive the user's manual acceptance, then merge into `main`. VK deployment follows the existing manual release process.
 
 ## Full-project review closure
 
@@ -75,6 +71,10 @@ Current live-device details include:
 - desktop Settlement service icons have no circular backing/frame;
 - board role glyphs in Battle/Skirmish/Training are filled symbols with opposite-color outline, anchored to the lower-left of the square; desktop/tablet keep the enlarged treatment and mobile uses the reduced 19.5 px treatment;
 - English combat pseudo-headings are localized (`COMBAT SUMMARY`, `COMBAT LOG`) rather than hard-coded Russian CSS content.
+- mobile Tavern portraits use a raised crop; Healer candidates and Skirmish victory lists scroll inside their owner panels;
+- Starvation rescue buttons reset to an actionable state on every prompt;
+- mobile Skirmish preparation keeps `Боевой отряд`, participant list, formation and Start footer in-frame;
+- artifact-choice styles are loaded before combat selection, preventing the transient unstyled/grey transition surface.
 
 ## Resources and Settlement
 
@@ -140,6 +140,9 @@ The accepted Reboot core currently includes:
 - Player Identity + Chronicle;
 - Hero Notes;
 - Battle Mercenaries economy and Balance Gate values.
+- Skirmish battlefield obstacles with obstacle-aware move/attack rays and pin-ice suppression.
+
+Caravan remains outside this production implementation list until PR #144 is accepted and merged.
 
 Historical acceptance/build receipts remain in the numbered design documents and changelog.
 

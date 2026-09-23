@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 const { pathToFileURL } = require('url');
+const { RESOURCE_ICON_PATHS } = require('../scripts/resource-icon-asset-runtime.cjs');
 
 const root = path.resolve(__dirname, '..');
 const game = path.join(root, 'game');
@@ -95,6 +96,7 @@ class MemoryStorage {
   const playtestCss = fs.readFileSync(path.join(game, 'css/playtest-fixes.css'), 'utf8');
   const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
   const suppliesIconPath = path.join(game, 'generated_assets/reward_supplies.png');
+  const caravanIconPath = path.join(game, 'assets/doctrines/cavalry/emblem.png');
 
   assert(travelSource.includes('applyTravelSupplyCost'), 'Travel Choice must use the canonical Supply-cost function');
   assert(travelSource.includes('supplyPaid'), 'committed route must persist the exact Supply payment');
@@ -109,6 +111,8 @@ class MemoryStorage {
   assert(routeSource.includes("import './ux-consistency.mjs'"), 'shared resource/board presentation layer must load with the run route');
   assert(uxSource.includes("generated_assets/reward_gold.png"), 'gold amounts must use the existing gold icon asset');
   assert(fs.existsSync(suppliesIconPath), 'dedicated supplies icon asset must exist');
+  assert(fs.existsSync(caravanIconPath), 'reserved Caravan route icon must exist');
+  assert(RESOURCE_ICON_PATHS.includes('assets/doctrines/cavalry/emblem.png'), 'reserved Caravan route icon must stay inside the production icon optimizer');
 
   for (const [label, source] of [
     ['Resources HUD', appSource],
@@ -136,7 +140,7 @@ class MemoryStorage {
   assert(uxSource.includes('playtest-fixes.css?v=20260831-1'), 'post-playtest visual corrections must be loaded by the shared UX layer');
   assert(travelSource.includes("combatGoldReward } from './resources-core.mjs'") && travelSource.includes("import { puzzleBaseGold } from './puzzles/puzzle-core.mjs'"), 'Travel reward preview must reuse canonical combat and Puzzle reward formulas directly');
   assert(travelSource.includes("t('travel.week',{week})"), 'Travel heading must render the approved Week copy through the owner localization key');
-  assert(uxSource.includes('function activeCombat()') && uxSource.includes("title:t('ux.combat.battle')") && uxSource.includes("title:t('ux.combat.skirmish')"), 'combat summary heading must derive encounter type from runtime state and owner localization');
+  assert(uxSource.includes('function activeCombat()') && uxSource.includes("combatType==='caravan'?uiT('caravan.title'):t('ux.combat.battle')") && uxSource.includes("title:t('ux.combat.skirmish')"), 'combat summary heading must derive Caravan title from UI localization and other titles from runtime localization');
   assert(!uxSource.includes('activeCombatPresentation') && !uxSource.includes('MutationObserver'), 'shared resource/board presentation must not keep click-state or a global subtree observer');
   assert(playtestCss.includes('.puzzle-source{display:none!important}'), 'Puzzle source attribution must be hidden from the gameplay panel');
   assert(playtestCss.includes('.battle-participants{display:none!important}'), 'duplicate named-participant list must be hidden from Battle preparation');

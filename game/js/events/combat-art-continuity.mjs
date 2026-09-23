@@ -7,6 +7,7 @@ function isCustomCombatArt(src) {
 
 function castleRookSquares(move, color) {
   if (!move?.castle || !['K', 'Q'].includes(move.castle)) return null;
+  if (move.rookFrom && move.rookTo) return { from:move.rookFrom, to:move.rookTo };
   const rank = color === 'w' ? '1' : '8';
   return move.castle === 'K'
     ? { from: `h${rank}`, to: `f${rank}` }
@@ -39,15 +40,15 @@ function advanceTrackedArt(previous, entry) {
   if (!move?.from || !move?.to) return next;
 
   const movingArt = next.get(move.from) || null;
+  const rookMove = castleRookSquares(move, entry.color);
+  const rookArt = rookMove ? next.get(rookMove.from) : null;
+  if (rookMove) next.delete(rookMove.from);
   next.delete(move.from);
   if (move.capture) next.delete(move.capture || move.to);
   else next.delete(move.to);
   if (movingArt) next.set(move.to, move.promotion ? promotedArtSource(movingArt, move.promotion) : movingArt);
 
-  const rookMove = castleRookSquares(move, entry.color);
   if (rookMove) {
-    const rookArt = next.get(rookMove.from) || null;
-    next.delete(rookMove.from);
     next.delete(rookMove.to);
     if (rookArt) next.set(rookMove.to, rookArt);
   }
