@@ -13,6 +13,7 @@ Canonical host remains GitHub Pages; sync is active only when RPChess is launche
 7. Repeat the route on VK Web and VK Android/iOS. Inspect the actual StorageGet/StorageSet responses and the maximum usable save size for App ID `54754579` before calling this feature accepted.
 8. On desktop VK, confirm that a frame without `vk_app_id` or referrer still uploads the latest week; opening GitHub Pages directly in a browser must keep local-only progress. A reported `StorageSet` success must be followed by a readback of the chunks and published manifest.
 9. For the same run, leave VK Web on week 26 and reopen a device with week 20 under the same account, including a device whose clock is ahead. It must restore week 26. For Caravan combat, Continue must reopen the exact Chess960 position directly.
+10. Confirm the first write after updating the app can read an older raw-JSON VK save, then publishes ASCII-safe encoded chunks. The app must verify the chunks before advancing the manifest so an interrupted or truncated write cannot replace the last readable save.
 
 ## Remaining platform limit
 

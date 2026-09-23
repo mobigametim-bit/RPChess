@@ -110,9 +110,20 @@ class MemoryStorage {
   assert.strictEqual(await cloudSave.writeCloudEnvelope(first), true, 'first cloud write must succeed');
   const firstManifest = JSON.parse(cloud.get(cloudSave.CLOUD_SAVE_MANIFEST_KEY));
   assert.strictEqual(firstManifest.slot, 'a', 'first atomic cloud write must use slot a');
+  assert.strictEqual(firstManifest.encoding, 'base64url');
+  for (let index = 0; index < firstManifest.chunks; index += 1)
+    assert(/^[A-Za-z0-9_-]+$/.test(cloud.get(`rpchess_v1_cloud_a_${index}`)), 'VK chunks must contain only ASCII-safe characters');
   const remoteFirst = await cloudSave.readCloudEnvelope();
   assert.strictEqual(remoteFirst.error, null);
   assert.strictEqual(remoteFirst.envelope.payload.run.gold, 321);
+  const legacyJson = JSON.stringify({ schemaVersion:1, revision:first.revision, updatedAt:first.updatedAt, payload:first.payload });
+  const legacyChunks = cloudSave.splitUtf8(legacyJson);
+  legacyChunks.forEach((chunk, index) => cloud.set(`rpchess_v1_cloud_b_${index}`, chunk));
+  cloud.set(cloudSave.CLOUD_SAVE_MANIFEST_KEY, JSON.stringify({ schemaVersion:1, slot:'b', chunks:legacyChunks.length,
+    revision:first.revision, updatedAt:first.updatedAt, checksum:cloudSave.checksum(legacyJson) }));
+  assert.strictEqual((await cloudSave.readCloudEnvelope()).envelope?.payload.run.gold, 321,
+    'existing VK saves in raw JSON must remain readable after the encoding upgrade');
+  cloud.set(cloudSave.CLOUD_SAVE_MANIFEST_KEY, JSON.stringify(firstManifest));
 
   run = persistence.writeRun({ ...run, gold:654, journeyStep:5 }, null, 1200);
   const second = cloudSave.prepareLocalEnvelope({ now:1300 });
