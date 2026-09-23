@@ -181,6 +181,19 @@ const localStorageAdapter = Object.freeze({
 const cloudStorageAdapter = Object.freeze({
   get available() { return isVKLaunch(); },
   async supported() { return supportsVKMethod('VKWebAppStorageGet'); },
+  async getItemStrict(key) {
+    const data = await sendVKRequest('VKWebAppStorageGet', { keys:[String(key)] });
+    if (!Array.isArray(data?.keys)) throw new Error('Invalid VK cloud storage response');
+    const entry = data.keys.find((item) => item?.key === String(key));
+    return typeof entry?.value === 'string' && entry.value.length ? entry.value : null;
+  },
+  async getItemsStrict(keys) {
+    const normalized = [...new Set((keys || []).map((key) => String(key)).filter(Boolean))];
+    if (!normalized.length) return {};
+    const data = await sendVKRequest('VKWebAppStorageGet', { keys:normalized });
+    if (!Array.isArray(data?.keys)) throw new Error('Invalid VK cloud storage response');
+    return Object.fromEntries(data.keys.filter((entry) => entry && typeof entry.key === 'string').map((entry) => [entry.key, typeof entry.value === 'string' ? entry.value : '']));
+  },
   async getItem(key) {
     if (!isVKLaunch()) return null;
     try {

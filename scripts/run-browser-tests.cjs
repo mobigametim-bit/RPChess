@@ -22,6 +22,7 @@ const DEFAULT_TESTS=[
   'skirmish-artifact-browser.cjs',
   'skirmish-mobile-browser.cjs',
   'battle-browser.cjs',
+  'combat-resume-browser.cjs',
   'caravan-browser.cjs',
   'caravan-reward-viewport-browser.cjs',
   'combat-menu-browser.cjs',

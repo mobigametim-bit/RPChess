@@ -176,7 +176,10 @@ function prepareLocalEnvelope({ now = nowMs(), bumpOnChange = true } = {}) {
   const previous = readLocalMeta();
   const changed = fingerprint !== previous.fingerprint;
   const revision = changed && bumpOnChange ? previous.revision + 1 : previous.revision;
-  const updatedAt = changed && bumpOnChange ? Number(now) : previous.updatedAt;
+  const firstObservation = !previous.fingerprint && previous.revision === 0;
+  const updatedAt = changed && bumpOnChange
+    ? (firstObservation && Number(payload.run?.updatedAt) > 0 ? Number(payload.run.updatedAt) : Number(now))
+    : previous.updatedAt;
   const meta = { schemaVersion:CLOUD_SAVE_SCHEMA_VERSION, revision, updatedAt, fingerprint };
   if (changed && bumpOnChange) writeLocalMeta(meta);
   return {
@@ -212,14 +215,16 @@ function chunkKey(slot, index) {
 
 async function readCloudManifest() {
   if (!platform.storage.cloud.available) return null;
-  return normalizeManifest(await platform.storage.cloud.getItem(CLOUD_SAVE_MANIFEST_KEY));
+  const raw = await platform.storage.cloud.getItemStrict(CLOUD_SAVE_MANIFEST_KEY);
+  if (raw && !normalizeManifest(raw)) throw new Error('Invalid VK cloud save manifest');
+  return normalizeManifest(raw);
 }
 
 async function readCloudEnvelope() {
   const manifest = await readCloudManifest();
   if (!manifest) return { manifest:null, envelope:null, error:null };
   const keys = Array.from({ length:manifest.chunks }, (_, index) => chunkKey(manifest.slot, index));
-  const values = await platform.storage.cloud.getItems(keys);
+  const values = await platform.storage.cloud.getItemsStrict(keys);
   const chunks = keys.map((key) => values[key]);
   if (chunks.some((value) => typeof value !== 'string')) return { manifest, envelope:null, error:'missing-chunk' };
   const serialized = chunks.join('');
@@ -284,85 +289,83 @@ function restoreLocalEnvelope(envelope) {
   return true;
 }
 
-function activeRunId(envelope) {
-  return envelope?.payload?.run?.id || null;
-}
-
 function compareEnvelopes(local, cloud) {
   if (!local && !cloud) return 'empty';
   if (!cloud) return local?.hasProgress ? 'local' : 'empty';
   if (!local || !local.hasProgress) return cloud.hasProgress ? 'cloud' : 'empty';
   if (!cloud.hasProgress) return 'local';
-  const localRun = activeRunId(local);
-  const cloudRun = activeRunId(cloud);
-  if (localRun && cloudRun && localRun !== cloudRun) return 'conflict';
-  if (local.revision !== cloud.revision) return local.revision > cloud.revision ? 'local' : 'cloud';
   if (local.fingerprint === cloud.fingerprint) return 'same';
   if (local.updatedAt !== cloud.updatedAt) return local.updatedAt > cloud.updatedAt ? 'local' : 'cloud';
-  return 'conflict';
+  if (local.revision !== cloud.revision) return local.revision > cloud.revision ? 'local' : 'cloud';
+  return 'cloud'; // Deterministic tie: keep the already published save.
 }
 
 let bootstrapResult = null;
-let conflictState = null;
 let lastUploadedFingerprint = '';
 let syncTimer = null;
 let syncInFlight = null;
 let autosyncInstalled = false;
+let retryTimer = null;
 
-function emitCloudEvent(name, detail) {
-  if (typeof globalThis.dispatchEvent !== 'function' || typeof CustomEvent === 'undefined') return;
-  globalThis.dispatchEvent(new CustomEvent(name, { detail }));
-}
-
-function beginConflict(local, cloud, manifest, reason = 'diverged') {
-  conflictState = { local, cloud, manifest, reason };
-  emitCloudEvent('rpchess:cloud-conflict', { local, cloud, reason });
-  return conflictState;
+function scheduleCloudRetry() {
+  if (retryTimer || !platform.storage.cloud.available) return;
+  retryTimer = setTimeout(() => { retryTimer = null; void syncCloudNow(); }, 5000);
+  retryTimer.unref?.();
 }
 
 async function syncCloudNow() {
-  if (!platform.storage.cloud.available || conflictState) return false;
+  if (!platform.storage.cloud.available) return false;
   if (syncInFlight) return syncInFlight;
   const envelope = prepareLocalEnvelope();
-  if (!envelope.hasProgress || envelope.fingerprint === lastUploadedFingerprint) return true;
   syncInFlight = (async () => {
+    let successful = false;
     try {
       const remoteState = await readCloudEnvelope();
       if (remoteState.error) {
         console.warn(`[RPChess] cloud save sync paused on invalid remote state: ${remoteState.error}`);
+        scheduleCloudRetry();
         return false;
       }
-      const remote = remoteState.envelope;
-      if (remote?.hasProgress) {
-        if (lastUploadedFingerprint && remote.fingerprint !== lastUploadedFingerprint) {
-          beginConflict(envelope, remote, remoteState.manifest, 'concurrent-device-change');
-          return false;
-        }
-        if (!lastUploadedFingerprint) {
-          const decision = compareEnvelopes(envelope, remote);
-          if (decision === 'same') {
-            lastUploadedFingerprint = envelope.fingerprint;
-            return true;
-          }
-          beginConflict(envelope, remote, remoteState.manifest, 'unknown-remote-baseline');
-          return false;
-        }
+      if (prepareLocalEnvelope().fingerprint !== envelope.fingerprint) {
+        successful = true;
+        return true;
       }
-      const ok = await writeCloudEnvelope(envelope, remoteState.manifest);
-      if (ok) lastUploadedFingerprint = envelope.fingerprint;
+      const remote = remoteState.envelope;
+      const decision = compareEnvelopes(envelope, remote);
+      if (decision === 'cloud' && remote) {
+        restoreLocalEnvelope(remote);
+        lastUploadedFingerprint = remote.fingerprint;
+        successful = true;
+        if (globalThis.location?.reload) globalThis.location.reload();
+        return true;
+      }
+      if (decision !== 'local' || !envelope.hasProgress) {
+        if (decision === 'same' || decision === 'empty') lastUploadedFingerprint = envelope.fingerprint;
+        successful = true;
+        return true;
+      }
+      const candidate = remote?.hasProgress ? authoritativeEnvelope(envelope, remote) : envelope;
+      const ok = await writeCloudEnvelope(candidate, remoteState.manifest);
+      if (ok) {
+        writeLocalMeta(candidate);
+        lastUploadedFingerprint = candidate.fingerprint;
+        successful = true;
+      } else scheduleCloudRetry();
       return ok;
     } catch (error) {
       console.warn('[RPChess] cloud save sync failed', error);
+      scheduleCloudRetry();
       return false;
     } finally {
       syncInFlight = null;
+      if (successful && prepareLocalEnvelope().fingerprint !== lastUploadedFingerprint) scheduleCloudSync();
     }
   })();
   return syncInFlight;
 }
 
 function scheduleCloudSync() {
-  if (!platform.storage.cloud.available || conflictState) return;
+  if (!platform.storage.cloud.available) return;
   if (syncTimer) clearTimeout(syncTimer);
   syncTimer = setTimeout(() => {
     syncTimer = null;
@@ -380,11 +383,9 @@ function installCloudAutosync() {
     'rpchess:tutorial-updated',
     'rpchess:ad-receipts-updated'
   ]) globalThis.addEventListener?.(name, scheduleCloudSync);
-  platform.lifecycle.subscribe(({ active }) => {
-    if (!active) {
-      if (syncTimer) { clearTimeout(syncTimer); syncTimer = null; }
-      void syncCloudNow();
-    }
+  platform.lifecycle.subscribe(() => {
+    if (syncTimer) { clearTimeout(syncTimer); syncTimer = null; }
+    void syncCloudNow();
   }, { immediate:false });
 }
 
@@ -400,25 +401,29 @@ async function bootstrapCloudSave() {
   catch (error) {
     console.warn('[RPChess] cloud save bootstrap read failed', error);
     installCloudAutosync();
+    scheduleCloudRetry();
     bootstrapResult = Object.freeze({ status:'cloud-unavailable', conflict:null });
     return bootstrapResult;
   }
   const cloud = cloudState.envelope;
-  if (cloudState.error && !cloud) {
-    console.warn(`[RPChess] cloud save ignored corrupt remote state: ${cloudState.error}`);
-  }
-  const decision = compareEnvelopes(local, cloud);
-  if (decision === 'conflict') {
-    const conflict = beginConflict(local, cloud, cloudState.manifest, 'bootstrap-divergence');
-    bootstrapResult = Object.freeze({ status:'conflict', conflict });
+  if (cloudState.error) {
+    console.warn(`[RPChess] cloud save bootstrap paused on invalid remote state: ${cloudState.error}`);
+    installCloudAutosync();
+    scheduleCloudRetry();
+    bootstrapResult = Object.freeze({ status:'cloud-unavailable', conflict:null });
     return bootstrapResult;
   }
+  const decision = compareEnvelopes(local, cloud);
   if (decision === 'cloud' && cloud) {
     restoreLocalEnvelope(cloud);
     lastUploadedFingerprint = cloud.fingerprint;
   } else if (decision === 'local' && local.hasProgress) {
-    const ok = await writeCloudEnvelope(local, cloudState.manifest);
-    if (ok) lastUploadedFingerprint = local.fingerprint;
+    const candidate = cloud?.hasProgress ? authoritativeEnvelope(local, cloud) : local;
+    let ok = false;
+    try { ok = await writeCloudEnvelope(candidate, cloudState.manifest); }
+    catch (error) { console.warn('[RPChess] cloud save bootstrap write failed', error); }
+    if (ok) { writeLocalMeta(candidate); lastUploadedFingerprint = candidate.fingerprint; }
+    else scheduleCloudRetry();
   } else if (decision === 'same') {
     lastUploadedFingerprint = local.fingerprint;
   }
@@ -429,7 +434,7 @@ async function bootstrapCloudSave() {
 
 function authoritativeEnvelope(chosen, other) {
   const revision = Math.max(Number(chosen?.revision) || 0, Number(other?.revision) || 0) + 1;
-  const updatedAt = nowMs();
+  const updatedAt = Math.max(Number(chosen?.updatedAt) || 0, nowMs());
   const payload = chosen.payload;
   return {
     schemaVersion:CLOUD_SAVE_SCHEMA_VERSION,
@@ -441,31 +446,9 @@ function authoritativeEnvelope(chosen, other) {
   };
 }
 
-async function resolveCloudConflict(choice) {
-  if (!conflictState || !['local','cloud'].includes(choice)) return false;
-  const current = conflictState;
-  const chosen = choice === 'cloud' ? current.cloud : current.local;
-  const other = choice === 'cloud' ? current.local : current.cloud;
-  if (!chosen?.payload) return false;
-  const authoritative = authoritativeEnvelope(chosen, other);
-  let ok = false;
-  try { ok = await writeCloudEnvelope(authoritative, current.manifest); }
-  catch { ok = false; }
-  if (!ok) return false;
-  restoreLocalEnvelope(authoritative);
-  lastUploadedFingerprint = authoritative.fingerprint;
-  conflictState = null;
-  bootstrapResult = Object.freeze({ status:`resolved-${choice}`, conflict:null });
-  installCloudAutosync();
-  emitCloudEvent('rpchess:cloud-conflict-resolved', { choice, revision:authoritative.revision });
-  emitCloudEvent('rpchess:run-updated', { source:'cloud-conflict-resolved' });
-  return true;
-}
-
 function cloudSaveStatus() {
   return Object.freeze({
     available:platform.storage.cloud.available,
-    conflict:Boolean(conflictState),
     lastUploadedFingerprint
   });
 }
@@ -493,7 +476,6 @@ export {
   compareEnvelopes,
   authoritativeEnvelope,
   bootstrapCloudSave,
-  resolveCloudConflict,
   scheduleCloudSync,
   syncCloudNow,
   cloudSaveStatus

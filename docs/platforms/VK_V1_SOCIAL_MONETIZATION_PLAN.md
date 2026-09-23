@@ -181,11 +181,11 @@ Every gameplay save remains local-first:
 
 - [ ] Cloud empty + local valid → upload local.
 - [ ] Local empty + cloud valid → restore cloud.
-- [ ] Same runId → reconcile by revision/validity.
-- [ ] Different active runIds → show a minimal conflict chooser.
-- [ ] Conflict UI shows local/cloud date, week and Power.
-- [ ] Owner-selected copy becomes authoritative and is written back to both stores.
-- [ ] Never silently destroy the newer valid state.
+- [ ] Compare valid local and cloud saves by their save timestamp; use revision only to break an exact timestamp tie, then prefer the published cloud copy.
+- [ ] Restore the newer cloud copy automatically, including when two devices started different runs; publish a newer local copy with a revision above the old cloud revision.
+- [ ] Recheck on returning to the app and before uploading local changes; a failed cloud read must never be interpreted as an empty cloud save.
+- [ ] On a live remote restore, reload the scene so the in-memory combat and run state match the restored save.
+- [ ] Verify this policy with real device clocks and the real VK App ID; no conflict chooser or save-status UI is planned.
 
 ## 3.5 Cross-device acceptance
 
@@ -194,6 +194,9 @@ Every gameplay save remains local-first:
 - [ ] Confirm the same run resumes.
 - [ ] Make progress on B.
 - [ ] Return to A and confirm B's newer state restores.
+- [ ] Repeat during Battle, Skirmish and Caravan, with the exact board position and spent artifact charges preserved.
+- [ ] Test failed StorageGet/StorageSet, offline progress and a return after connectivity is restored; confirm neither copy is silently erased.
+- [ ] Test a device clock set ahead/behind the other device. Timestamp-based automatic selection depends on clocks being correct.
 
 ---
 
