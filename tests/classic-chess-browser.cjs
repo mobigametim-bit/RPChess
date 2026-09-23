@@ -13,7 +13,6 @@ async function pieceSrc(page, square) {
 }
 
 async function waitForMoveAnimation(page) {
-  await page.locator('.classic-piece-flyer').waitFor({ state: 'attached', timeout: 1500 });
   await page.locator('.classic-piece-flyer').waitFor({ state: 'detached', timeout: 2500 });
 }
 
@@ -56,11 +55,20 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     assert.strictEqual(await localMode.isVisible(), true, 'local mode label must remain visible');
     assert((await localMode.textContent()).includes('Локальная'), 'local mode semantic label must render');
 
+    await page.evaluate(() => {
+      window.__classicFlyerCount = 0;
+      new MutationObserver((records) => {
+        for (const record of records) for (const node of record.addedNodes)
+          if (node.nodeType === 1 && node.classList?.contains('classic-piece-flyer')) window.__classicFlyerCount++;
+      }).observe(document.body, { childList: true });
+    });
+
     await page.locator('[data-square="e2"]').click();
     assert(await page.locator('[data-square="e3"]').evaluate((node) => node.classList.contains('classic-square--legal')), 'e3 must be highlighted as legal');
     assert(await page.locator('[data-square="e4"]').evaluate((node) => node.classList.contains('classic-square--legal')), 'e4 must be highlighted as legal');
     await page.locator('[data-square="e4"]').click();
     await waitForMoveAnimation(page);
+    assert((await page.evaluate(() => window.__classicFlyerCount)) > 0, 'moving piece must animate in Classic Chess');
     assert((await pieceSrc(page, 'e4')).includes('unit_pawn_player.png'), 'white pawn must move to e4');
     assert.strictEqual(await page.locator('[data-move-history] [data-san="e4"]').count(), 1, 'pawn move must use SAN e4');
     await clickMove(page, 'e7', 'e5');

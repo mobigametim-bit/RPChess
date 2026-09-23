@@ -1,30 +1,25 @@
 # RPChess — Current State
 
-**Last synchronized:** 2026-09-22
+**Last synchronized:** 2026-09-23
 **Production branch:** `main`  
 **Accepted production head:** `df24f4c69c77caa01e74e8722a022e405e682f00`
 **Production URL:** https://mobigametim-bit.github.io/RPChess/  
-**Current active stage:** **Caravan specification approved; implementation not started**
+**Current active stage:** **Caravan implemented on draft PR #144; validation and Preview pending**
 **Working plan:** `docs/features/CARAVAN_PLAN.md`
 
 This page is the short operational snapshot of the project. Historical feature receipts remain in the numbered documents and `CHANGELOG.md`; when an old receipt conflicts with this page about deployment, responsive UI, persistence, current asset usage or current project stage, this page describes the current contract.
 
-## Current phase — Caravan planning
+## Current phase — Caravan validation
 
 The full-project review remediation and VK delivery baseline are complete. The latest accepted `main` also includes Skirmish obstacles and the mobile Settlement/Skirmish live-device corrections through `df24f4c`.
 
-The next approved feature is **Caravan / Караван**, a Chess960 Travel route. Its product contract and implementation checklist are recorded here:
+**Caravan / Караван** is implemented on `feature/caravan` in draft PR #144. It adds a Chess960 Travel route, free mercenaries, artifact choice, three reward offers and persistent recovery. Its product contract and implementation checklist are recorded here:
 
 `docs/features/CARAVAN_PLAN.md`
 
 Agents continuing this project should use that checklist as the source of truth for VK work, mark completed items there, preserve one shared gameplay codebase, and keep VK-specific integration behind the platform layer rather than creating a separate copy of RPChess.
 
-No Caravan gameplay implementation has started. The next technical stages, only after an explicit start command, are:
-
-1. create `feature/caravan` from the then-current `main`;
-2. implement the deterministic Chess960 core and Caravan route state;
-3. add preparation, artifacts, reward choice and aftermath integration;
-4. pass automated gates and a live VK/device playtest before merge.
+The local gate and targeted Chromium Caravan flow pass. Next: pass the PR workflow and full browser regression, publish a Preview, receive the user's manual acceptance, then merge into `main`. VK deployment follows the existing manual release process.
 
 ## Full-project review closure
 
@@ -147,7 +142,7 @@ The accepted Reboot core currently includes:
 - Battle Mercenaries economy and Balance Gate values.
 - Skirmish battlefield obstacles with obstacle-aware move/attack rays and pin-ice suppression.
 
-The approved next feature, Caravan, is deliberately not in this implemented list yet.
+Caravan remains outside this production implementation list until PR #144 is accepted and merged.
 
 Historical acceptance/build receipts remain in the numbered design documents and changelog.
 

@@ -2,6 +2,12 @@
 
 > Historical entries record the delivery rules and assets that applied at their original dates. Current production/remediation policy is defined by `CURRENT_STATE.md`, `16_UI_UX.md`, `17_TECH_ARCHITECTURE.md` and `REVIEW_REMEDIATION_DECISIONS.md`; historical Cloudflare or `ui_button_primary.png` receipts do not override it.
 
+## 2026-09-23 — Caravan implementation under validation
+
+- Draft PR #144 implements the Caravan Chess960 route, free mercenaries, artifact selection, three deterministic reward offers, persistent recovery and shared victory/defeat/draw aftermath.
+- The local gate and targeted real-Chromium flow pass, including reload at preparation, combat and reward choice, one-time reward claim and 844×390 preparation containment.
+- Full PR CI, Preview and human acceptance remain pending. `main` and the VK release are unchanged.
+
 ## 2026-09-21 — Skirmish obstacles and mobile live-device corrections complete
 
 - Skirmish battlefield obstacles are on `main`: deterministic 1–4 blockers, legal-move/AI ray blocking, no landing on blocked cells and no false pin-ice linkage through an obstacle.

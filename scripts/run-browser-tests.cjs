@@ -22,6 +22,7 @@ const DEFAULT_TESTS=[
   'skirmish-artifact-browser.cjs',
   'skirmish-mobile-browser.cjs',
   'battle-browser.cjs',
+  'caravan-browser.cjs',
   'combat-side-colors-browser.cjs',
   'combat-aura-move-sync-browser.cjs',
   'battle-animation-art-browser.cjs',

@@ -477,11 +477,19 @@ async function auditPrepAndCombat(browser, width, height, language) {
           const rect = row.getBoundingClientRect();
           return { top:rect.top, bottom:rect.bottom };
         });
-        return { button:button ? { top:button.top, bottom:button.bottom } : null, rows, vh:innerHeight };
+        const list = document.querySelector('[data-aftermath-survivors]');
+        return { button:button ? { top:button.top, bottom:button.bottom } : null, rows, vh:innerHeight,
+          list: list ? { clientHeight:list.clientHeight, scrollHeight:list.scrollHeight, overflowY:getComputedStyle(list).overflowY } : null };
       });
       assert(aftermath.button && aftermath.button.top >= -1 && aftermath.button.bottom <= aftermath.vh + 1, `${label}: aftermath CTA must be visible without scrolling ${JSON.stringify(aftermath)}`);
       assert.strictEqual(aftermath.rows.length, 6, `${label}: all six named survivors must remain present`);
-      assert(aftermath.rows.every((row) => row.top >= -1 && row.bottom <= aftermath.vh + 1), `${label}: all six survivor rows must be visible without page scrolling`);
+      assert(aftermath.list && aftermath.list.clientHeight > 0 && ['auto','scroll'].includes(aftermath.list.overflowY), `${label}: survivor list must scroll internally`);
+      await page.locator('[data-aftermath-survivors] .skirmish-aftermath-row').last().scrollIntoViewIfNeeded();
+      const lastRowVisible = await page.locator('[data-aftermath-survivors] .skirmish-aftermath-row').last().evaluate((row) => {
+        const rect = row.getBoundingClientRect(), list = row.closest('[data-aftermath-survivors]').getBoundingClientRect();
+        return rect.top >= list.top - 1 && rect.bottom <= list.bottom + 1;
+      });
+      assert(lastRowVisible, `${label}: last survivor must be reachable by internal scrolling`);
     }
     await assertViewportContained(page, '[data-aftermath-continue]', `${label} Skirmish aftermath CTA`);
 

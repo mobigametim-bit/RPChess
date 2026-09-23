@@ -58,16 +58,20 @@ function gitBlobSha1(buffer) {
 
 async function prepareStockfishAssets(distRoot) {
   const target = path.join(distRoot, 'vendor', 'stockfish');
+  const assetDirectory = process.env.RPCHESS_STOCKFISH_ASSET_DIR;
+  const readAsset = (name, url) => assetDirectory
+    ? Promise.resolve(fs.readFileSync(path.join(assetDirectory, name)))
+    : requestBuffer(url);
   fs.mkdirSync(target, { recursive: true });
 
   for (const asset of ASSETS) {
-    const bytes = await requestBuffer(asset.url);
+    const bytes = await readAsset(asset.name, asset.url);
     const digest = sha256(bytes);
     if (digest !== asset.sha256) throw new Error(`Stockfish integrity mismatch for ${asset.name}: ${digest}`);
     fs.writeFileSync(path.join(target, asset.name), bytes);
   }
 
-  const license = await requestBuffer(LICENSE_URL);
+  const license = await readAsset('COPYING.txt', LICENSE_URL);
   const licenseBlob = gitBlobSha1(license);
   if (licenseBlob !== LICENSE_GIT_BLOB_SHA1) throw new Error(`Stockfish license integrity mismatch: ${licenseBlob}`);
   fs.writeFileSync(path.join(target, 'COPYING.txt'), license);

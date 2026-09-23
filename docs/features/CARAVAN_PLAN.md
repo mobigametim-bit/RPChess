@@ -1,7 +1,7 @@
 # Caravan — implementation plan
 
-**Status:** SPEC APPROVED — implementation not started  
-**Planned branch:** `feature/caravan`  
+**Status:** implemented on `feature/caravan`; local gate and targeted Chromium flow pass; awaiting CI, Preview and human acceptance
+**Working branch:** `feature/caravan` (draft PR #144)
 **Delivery:** implementation branch → automated gates → human playtest → merge into `main` → manual VK deployment.
 
 ## Product contract
@@ -92,4 +92,3 @@ All state transitions must be idempotent. Reloading at preparation, artifact cho
 - Skirmish obstacles, escort-unit AI, moving wagons or asymmetric armies.
 - Rerolling the Chess960 position or reward offer after the route is committed.
 - Changes to Battle mercenary prices or the existing economy outside Caravan rewards.
-

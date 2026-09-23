@@ -140,7 +140,7 @@ class MemoryStorage {
   assert(uxSource.includes('playtest-fixes.css?v=20260831-1'), 'post-playtest visual corrections must be loaded by the shared UX layer');
   assert(travelSource.includes("combatGoldReward } from './resources-core.mjs'") && travelSource.includes("import { puzzleBaseGold } from './puzzles/puzzle-core.mjs'"), 'Travel reward preview must reuse canonical combat and Puzzle reward formulas directly');
   assert(travelSource.includes("t('travel.week',{week})"), 'Travel heading must render the approved Week copy through the owner localization key');
-  assert(uxSource.includes('function activeCombat()') && uxSource.includes("title:t('ux.combat.battle')") && uxSource.includes("title:t('ux.combat.skirmish')"), 'combat summary heading must derive encounter type from runtime state and owner localization');
+  assert(uxSource.includes('function activeCombat()') && uxSource.includes("combatType==='caravan'?t('caravan.title'):t('ux.combat.battle')") && uxSource.includes("title:t('ux.combat.skirmish')"), 'combat summary heading must derive Caravan, Battle and Skirmish titles from runtime state and owner localization');
   assert(!uxSource.includes('activeCombatPresentation') && !uxSource.includes('MutationObserver'), 'shared resource/board presentation must not keep click-state or a global subtree observer');
   assert(playtestCss.includes('.puzzle-source{display:none!important}'), 'Puzzle source attribution must be hidden from the gameplay panel');
   assert(playtestCss.includes('.battle-participants{display:none!important}'), 'duplicate named-participant list must be hidden from Battle preparation');
