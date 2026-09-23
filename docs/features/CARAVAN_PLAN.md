@@ -1,8 +1,10 @@
 # Caravan — implementation plan
 
-**Status:** implemented on `feature/caravan`; local gate and targeted Chromium flow pass; awaiting CI, Preview and human acceptance
-**Working branch:** `feature/caravan` (draft PR #144)
-**Delivery:** implementation branch → automated gates → human playtest → merge into `main` → manual VK deployment.
+**Status:** implementation accepted after human playtest; CI, browser checks and Netlify Preview passed; manual production deployment pending.
+**Working branch:** `feature/caravan` (PR #144, approved for merge into `main`)
+**Delivery:** implementation branch → automated gates → human playtest → merge into `main` → manual deployment.
+
+Post-playtest refinements include enemy-race backgrounds for Caravan, piece glyphs on Healing/Hero reward portraits and a confirmed Main Menu exit that records a loss during combat. RU/EN layouts were checked at desktop, tablet and mobile landscape widths.
 
 ## Product contract
 
