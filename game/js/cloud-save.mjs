@@ -265,6 +265,11 @@ async function writeCloudEnvelope(envelope, currentManifest = null) {
     const ok = await platform.storage.cloud.setItem(chunkKey(slot, index), chunks[index]);
     if (!ok) return false;
   }
+  // A Bridge acknowledgement alone does not prove that a chunk was stored.
+  // Verify the inactive slot before replacing the last readable manifest.
+  const keys = chunks.map((_, index) => chunkKey(slot, index));
+  const stored = await platform.storage.cloud.getItemsStrict(keys);
+  if (keys.some((key, index) => stored[key] !== chunks[index])) return false;
   const manifest = {
     schemaVersion:CLOUD_SAVE_SCHEMA_VERSION,
     slot,
@@ -273,7 +278,9 @@ async function writeCloudEnvelope(envelope, currentManifest = null) {
     updatedAt:Math.max(0, Math.floor(Number(envelope.updatedAt) || 0)),
     checksum:checksum(serialized)
   };
-  return platform.storage.cloud.setItem(CLOUD_SAVE_MANIFEST_KEY, JSON.stringify(manifest));
+  if (!await platform.storage.cloud.setItem(CLOUD_SAVE_MANIFEST_KEY, JSON.stringify(manifest))) return false;
+  const published = await readCloudManifest();
+  return Boolean(published && published.slot === manifest.slot && published.checksum === manifest.checksum && published.revision === manifest.revision);
 }
 
 function restoreLocalEnvelope(envelope) {
@@ -296,6 +303,13 @@ function compareEnvelopes(local, cloud) {
   if (!local || !local.hasProgress) return cloud.hasProgress ? 'cloud' : 'empty';
   if (!cloud.hasProgress) return 'local';
   if (local.fingerprint === cloud.fingerprint) return 'same';
+  // A single run cannot return to an earlier week. This also protects players
+  // when one device's clock is ahead and would otherwise revive an old run.
+  const localRun = local.payload?.run, cloudRun = cloud.payload?.run;
+  if (localRun?.id && localRun.id === cloudRun?.id && localRun.journeyStep !== cloudRun.journeyStep &&
+      Number.isInteger(localRun.journeyStep) && Number.isInteger(cloudRun.journeyStep)) {
+    return localRun.journeyStep > cloudRun.journeyStep ? 'local' : 'cloud';
+  }
   if (local.updatedAt !== cloud.updatedAt) return local.updatedAt > cloud.updatedAt ? 'local' : 'cloud';
   if (local.revision !== cloud.revision) return local.revision > cloud.revision ? 'local' : 'cloud';
   return 'cloud'; // Deterministic tie: keep the already published save.
@@ -371,7 +385,8 @@ function scheduleCloudSync(event) {
   syncTimer = setTimeout(() => {
     syncTimer = null;
     void syncCloudNow();
-  }, event?.detail?.combat ? CLOUD_COMBAT_SYNC_DEBOUNCE_MS : CLOUD_SYNC_DEBOUNCE_MS);
+  }, event?.type === 'rpchess:run-persisted' || event?.detail?.combat
+    ? CLOUD_COMBAT_SYNC_DEBOUNCE_MS : CLOUD_SYNC_DEBOUNCE_MS);
 }
 
 function installCloudAutosync() {

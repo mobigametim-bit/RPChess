@@ -21,11 +21,48 @@ function referrerHost(referrer = globalThis.document?.referrer || '') {
 
 function isVKLaunch() {
   const params = parseLaunchParams();
-  return params.has('vk_app_id')
+  return verifiedVKHost || params.has('vk_app_id')
     || /(^|\.)vk\.(com|ru)$/i.test(referrerHost())
     || Boolean(globalThis.AndroidBridge?.VKWebAppInit)
     || Boolean(globalThis.webkit?.messageHandlers?.VKWebAppInit?.postMessage)
     || Boolean(globalThis.ReactNativeWebView?.postMessage);
+}
+
+let verifiedVKHost = false;
+
+// Desktop VK can embed the game without launch parameters or a referrer. Verify
+// the parent bridge before enabling VK-only storage; a direct Pages tab stays local.
+async function discoverVKHost({ timeoutMs = 1800 } = {}) {
+  if (isVKLaunch()) return true;
+  if (!globalThis.parent || globalThis.parent === globalThis || !globalThis.addEventListener) return false;
+  const requestId = nextRequestId();
+  return new Promise(resolve => {
+    const finish = verified => {
+      clearTimeout(timer);
+      globalThis.removeEventListener?.('message', onMessage);
+      if (verified) verifiedVKHost = true;
+      resolve(verified);
+    };
+    const onMessage = event => {
+      if (event.source !== globalThis.parent) return;
+      let trusted = false;
+      try { trusted = /(^|\.)vk\.(com|ru)$/i.test(new URL(event.origin).hostname); }
+      catch { return; }
+      if (!trusted) return;
+      const payload = bridgePayload(event);
+      if (payload?.data?.request_id !== requestId) return;
+      if (payload.type !== 'SetSupportedHandlersResult' && payload.type !== 'VKWebAppStorageGetResult') return;
+      finish(true);
+    };
+    const timer = setTimeout(() => finish(false), timeoutMs);
+    globalThis.addEventListener('message', onMessage);
+    try {
+      for (const [handler, params] of [
+        ['SetSupportedHandlers', { request_id:requestId }],
+        ['VKWebAppStorageGet', { request_id:requestId, keys:['rpchess_v1_cloud_manifest'] }]
+      ]) globalThis.parent.postMessage({ handler, params, type:'vk-connect', connectVersion:VK_CONNECT_VERSION }, '*');
+    } catch { finish(false); }
+  });
 }
 
 let webFrameId;
@@ -222,7 +259,7 @@ const cloudStorageAdapter = Object.freeze({
     if (!isVKLaunch()) return false;
     try {
       const data = await sendVKRequest('VKWebAppStorageSet', { key:String(key), value:String(value) });
-      return data?.result !== false;
+      return data?.result === true;
     } catch (error) {
       console.warn('[RPChess] VK cloud storage write failed', error);
       return false;
@@ -384,7 +421,7 @@ const platform = Object.freeze({
   social,
   identity,
   lifecycle,
-  init() { return sendVKWebAppInit(); },
+  async init() { return await discoverVKHost() ? sendVKWebAppInit() : false; },
   capabilities
 });
 
@@ -394,6 +431,7 @@ export {
   VK_AD_FORMATS,
   parseLaunchParams,
   isVKLaunch,
+  discoverVKHost,
   dispatchVK,
   sendVKRequest,
   sendVKWebAppInit,
