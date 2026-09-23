@@ -78,6 +78,9 @@ function writeRun(run, storage = null, now = Date.now()) {
   const next={...accrueRunStats(normalized,previous),updatedAt:Number(now)};
   if(!isValidRun(next))throw new Error('Cannot persist invalid RPChess run state');
   if(target)target.setItem(RUN_STORAGE_KEY,JSON.stringify(next));
+  // Combat moves only change the run record; the cloud uploader must see these writes.
+  if(!storage && target && typeof globalThis.CustomEvent === 'function')
+    globalThis.dispatchEvent?.(new CustomEvent('rpchess:run-persisted',{detail:{combat:Boolean(next.currentCombat)}}));
   return next;
 }
 function clearRun(storage = null) { resolveStorage(storage)?.removeItem(RUN_STORAGE_KEY); }

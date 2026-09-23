@@ -161,6 +161,30 @@ class MemoryStorage {
   assert.strictEqual(persistence.readRun().gold, 888, 'offline progress stays in local storage');
   parent.postMessage = failedCloudGet;
 
+  // A chess move has no generic run-updated event. Persisting it must still publish
+  // the checkpoint so a second device cannot resume from the earlier travel screen.
+  globalThis.dispatchEvent = event => {
+    for (const listener of listeners.get(event.type) || []) listener(event);
+  };
+  const { createTravelChoices } = await import(pathToFileURL(path.join(root, 'game/js/travel-choice-core.mjs')).href);
+  const current = persistence.readRun();
+  const choice = createTravelChoices({ runId:current.id, types:['skirmish'], step:current.journeyStep + 1 })[0];
+  run = persistence.writeRun({ ...current, activeTravelChoice:choice, currentTravelChoices:null,
+    currentCombat:{ type:'skirmish', encounterId:'skirmish-test', selectedIds:current.roster.slice(0, 2).map(hero => hero.id), moves:[] } });
+  run = persistence.writeRun({ ...run, currentCombat:{ ...run.currentCombat, moves:[{ from:'e2', to:'e4' }] } });
+  let publishedCombat = null;
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    publishedCombat = (await cloudSave.readCloudEnvelope()).envelope?.payload.run;
+    if (publishedCombat?.currentCombat?.moves.length === 1) break;
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  assert.strictEqual(publishedCombat?.currentCombat?.moves.length, 1, 'a persisted move must reach VK Storage without an explicit run-updated event');
+  assert.strictEqual(publishedCombat?.activeTravelChoice?.type, 'skirmish', 'the remote checkpoint keeps its route');
+  globalThis.localStorage = new MemoryStorage();
+  assert.strictEqual(cloudSave.restoreLocalEnvelope((await cloudSave.readCloudEnvelope()).envelope), true);
+  assert.strictEqual(persistence.readRun()?.currentCombat?.moves.length, 1, 'a fresh device restores the saved skirmish move');
+  assert.strictEqual(persistence.readRun()?.activeTravelChoice?.type, 'skirmish');
+
   globalThis.localStorage = oldDevice;
   console.log('VK CloudSave compact payload, atomic slots, automatic newer-save restore and failed-read protection: PASS');
 })().catch((error) => {

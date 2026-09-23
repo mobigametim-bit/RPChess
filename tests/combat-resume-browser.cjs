@@ -45,16 +45,19 @@ async function exercise(browser, type) {
     }), runKey);
     await page.reload({ waitUntil:'networkidle' });
     await page.locator('[data-continue-run]').click();
-    await page.locator('[data-roster-travel]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     const after = await page.evaluate(key => ({
       run:JSON.parse(localStorage.getItem(key)),
       fen:globalThis.RPChessClassicChess.snapshot().fen,
       moves:globalThis.RPChessClassicChess.moveLog.length,
+      rosterHidden:document.querySelector('[data-roster-screen]').hidden,
+      rosterVisible:getComputedStyle(document.querySelector('[data-roster-screen]')).display !== 'none',
       artifactModal:Boolean(document.querySelector('[data-artifact-choice-modal]'))
     }), runKey);
     assert.strictEqual(after.fen, before.fen, `${type} must resume the exact board position`);
     assert.strictEqual(after.moves, before.run.currentCombat.moves.length);
+    assert.strictEqual(after.rosterHidden, true, `${type} resume must hide the roster scene`);
+    assert.strictEqual(after.rosterVisible, false, `${type} resume must not paint the roster over the board`);
     assert.strictEqual(after.run.supplies, before.run.supplies, `${type} reload must not charge travel again`);
     assert.strictEqual(after.run.gold, before.run.gold, `${type} reload must not charge mercenaries again`);
     assert.strictEqual(after.artifactModal, false, `${type} reload must not offer an artifact again`);

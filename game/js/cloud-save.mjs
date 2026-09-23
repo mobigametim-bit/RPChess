@@ -25,6 +25,7 @@ const CLOUD_RATING_RECEIPT_LIMIT = 128;
 const CLOUD_CHUNK_BYTES = 3000;
 const CLOUD_MAX_CHUNKS = 128;
 const CLOUD_SYNC_DEBOUNCE_MS = 750;
+const CLOUD_COMBAT_SYNC_DEBOUNCE_MS = 150;
 
 const starterById = new Map(createStarterRoster().map((character) => [character.id, character]));
 
@@ -364,13 +365,13 @@ async function syncCloudNow() {
   return syncInFlight;
 }
 
-function scheduleCloudSync() {
+function scheduleCloudSync(event) {
   if (!platform.storage.cloud.available) return;
   if (syncTimer) clearTimeout(syncTimer);
   syncTimer = setTimeout(() => {
     syncTimer = null;
     void syncCloudNow();
-  }, CLOUD_SYNC_DEBOUNCE_MS);
+  }, event?.detail?.combat ? CLOUD_COMBAT_SYNC_DEBOUNCE_MS : CLOUD_SYNC_DEBOUNCE_MS);
 }
 
 function installCloudAutosync() {
@@ -378,6 +379,7 @@ function installCloudAutosync() {
   autosyncInstalled = true;
   for (const name of [
     'rpchess:run-updated',
+    'rpchess:run-persisted',
     'rpchess:power-updated',
     'rpchess:chronicle-updated',
     'rpchess:tutorial-updated',

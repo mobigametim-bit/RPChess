@@ -239,8 +239,20 @@ function continueRun() {
     return;
   }
   activeFilter = 'all';
+  if (activeRun.currentCombat && activeRun.activeTravelChoice?.type === activeRun.currentCombat.type) {
+    // A saved fight is the current scene, even when Continue is pressed on another device.
+    void resumeCurrentCombat(activeRun.id);
+    return;
+  }
   setScene('roster');
   renderRoster();
+}
+
+async function resumeCurrentCombat(runId) {
+  const travelChoice = await ensureTravelChoiceReady();
+  const current = readRun();
+  if (current?.id !== runId || current.ended || !travelChoice) return;
+  travelChoice.open({ detail:{ source:'run-continue', runId } });
 }
 
 async function ensureTravelChoiceReady() {
