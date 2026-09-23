@@ -73,6 +73,7 @@ async function openCaravan(page) {
     });
     assert(move.ok, 'Caravan must accept a legal move before switching devices');
     await page.waitForFunction(key => JSON.parse(localStorage.getItem(key))?.currentCaravan?.moves?.length >= 1, RUN_KEY);
+    await page.waitForFunction(() => globalThis.RPChessClassicChess?.snapshot().turn === globalThis.RPChessChessAI?.config.playerColor && !globalThis.RPChessChessAI?.thinking);
     const beforeReload = await page.evaluate(key => ({ fen:globalThis.RPChessClassicChess.snapshot().fen, moves:JSON.parse(localStorage.getItem(key)).currentCaravan.moves }), RUN_KEY);
     await resumeCaravan(page, '[data-classic-screen]:not([hidden])');
     assert.equal((await page.evaluate(() => globalThis.RPChessBattle.battlePlan)).fen, plan.fen);
