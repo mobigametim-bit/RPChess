@@ -59,7 +59,7 @@ jobs:
       - name: Verify GitHub Pages /RPChess/ subpath
         env:
           RPCHESS_GATE_PREFIX: /RPChess
-          RPCHESS_BROWSER_TEST: classic-chess-browser.cjs,responsive-viewport-browser.cjs,onboarding-browser.cjs,settlement-browser.cjs,skirmish-mobile-browser.cjs,caravan-browser.cjs,combat-menu-browser.cjs
+          RPCHESS_BROWSER_TEST: classic-chess-browser.cjs,responsive-viewport-browser.cjs,onboarding-browser.cjs,settlement-browser.cjs,skirmish-mobile-browser.cjs,caravan-browser.cjs,caravan-reward-viewport-browser.cjs,combat-menu-browser.cjs
           RPCHESS_VK_MENU_SCREENSHOT_DIR: test-results/vk-menu
         run: npm run test:browser
 

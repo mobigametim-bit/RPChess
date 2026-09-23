@@ -23,6 +23,7 @@ const DEFAULT_TESTS=[
   'skirmish-mobile-browser.cjs',
   'battle-browser.cjs',
   'caravan-browser.cjs',
+  'caravan-reward-viewport-browser.cjs',
   'combat-menu-browser.cjs',
   'combat-side-colors-browser.cjs',
   'combat-aura-move-sync-browser.cjs',
