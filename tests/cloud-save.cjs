@@ -48,7 +48,8 @@ class MemoryStorage {
     }
   };
 
-  globalThis.location = { search:'?vk_app_id=54754579' };
+  let reloads = 0;
+  globalThis.location = { search:'?vk_app_id=54754579', reload() { reloads += 1; } };
   globalThis.parent = parent;
   globalThis.document = {
     referrer:'',
@@ -123,10 +124,45 @@ class MemoryStorage {
   localEnvelope.fingerprint = cloudSave.payloadFingerprint(localEnvelope.payload);
   const cloudEnvelope = { ...second, payload:{ ...second.payload, run:{ ...second.payload.run, id:'run-cloud' } } };
   cloudEnvelope.fingerprint = cloudSave.payloadFingerprint(cloudEnvelope.payload);
-  assert.strictEqual(cloudSave.compareEnvelopes(localEnvelope, cloudEnvelope), 'conflict', 'different active run ids must never be silently overwritten');
+  assert.strictEqual(cloudSave.compareEnvelopes(localEnvelope, cloudEnvelope), 'cloud', 'a published save wins an exact timestamp tie');
+  assert.strictEqual(cloudSave.compareEnvelopes({ ...localEnvelope, updatedAt:1400 }, cloudEnvelope), 'local', 'newer local run wins even when run ids differ');
+  assert.strictEqual(cloudSave.compareEnvelopes(localEnvelope, { ...cloudEnvelope, updatedAt:1400 }), 'cloud', 'newer cloud run wins even when run ids differ');
+
+  // Exercise two separate module instances, each with its own sync baseline and browser storage.
+  await cloudSave.bootstrapCloudSave();
+  const secondDevice = await import(`${pathToFileURL(path.join(root, 'game/js/cloud-save.mjs')).href}?second-device`);
+  globalThis.localStorage = new MemoryStorage();
+  const onSecond = await secondDevice.bootstrapCloudSave();
+  assert.strictEqual(onSecond.status, 'cloud', 'a fresh device restores the published VK save');
+  const secondRun = persistence.readRun();
+  assert.strictEqual(secondRun.gold, 654);
+  persistence.writeRun({ ...secondRun, gold:777 }, null, 1800);
+  assert.strictEqual(await secondDevice.syncCloudNow(), true, 'second device uploads its later move');
+  globalThis.localStorage = oldDevice;
+  assert.strictEqual(await cloudSave.syncCloudNow(), true, 'first device automatically reads a newer published save');
+  assert.strictEqual(persistence.readRun().gold, 777);
+  assert.strictEqual(reloads, 1, 'the first device reloads its live scene after cloud restore');
+
+  const published = cloud.get(cloudSave.CLOUD_SAVE_MANIFEST_KEY);
+  const failedCloudGet = parent.postMessage;
+  parent.postMessage = function (message) {
+    if (message?.handler !== 'VKWebAppStorageGet') return failedCloudGet.call(this, message);
+    queueMicrotask(() => {
+      for (const listener of listeners.get('message') || []) listener({
+        type:'message', source:parent,
+        data:{ type:'VKWebAppStorageGetFailed', data:{ request_id:message.params.request_id, error_type:'offline' } }
+      });
+    });
+  };
+  const beforeFailure = persistence.readRun();
+  persistence.writeRun({ ...beforeFailure, gold:888 }, null, 1900);
+  assert.strictEqual(await cloudSave.syncCloudNow(), false, 'a failed VK read must pause upload');
+  assert.strictEqual(cloud.get(cloudSave.CLOUD_SAVE_MANIFEST_KEY), published, 'read failure cannot replace the remote manifest');
+  assert.strictEqual(persistence.readRun().gold, 888, 'offline progress stays in local storage');
+  parent.postMessage = failedCloudGet;
 
   globalThis.localStorage = oldDevice;
-  console.log('VK platform capabilities plus CloudSave v1 compact payload, UTF-8 chunking, atomic slots, restore and conflict gate: PASS');
+  console.log('VK CloudSave compact payload, atomic slots, automatic newer-save restore and failed-read protection: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;
