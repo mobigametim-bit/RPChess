@@ -19,8 +19,8 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(buildSource.includes("'css/travel-choice-compact.css'"),'production build must package the Travel owner stylesheet');
   assert(travelAppSource.includes('data-travel-run-portrait')&&travelAppSource.includes('function renderPortrait()'),'Travel owner must render and refresh the run king portrait itself');
   assert(travelCss.includes('.travel-choice-run-portrait{display:none}'),'Travel portrait must stay hidden outside the compact owner breakpoint');
-  assert(travelCss.includes("grid-template-columns:40px minmax(112px,1fr) minmax(100px,1fr) minmax(148px,1.15fr)!important"),'tablet Travel command rhythm must preserve the accepted final cascade');
-  assert(travelCss.includes("grid-template-columns:34px minmax(96px,1fr) minmax(88px,1fr) minmax(128px,1.05fr)!important"),'phone Travel command rhythm must preserve the accepted final cascade');
+  assert(travelCss.includes("grid-template-columns:40px minmax(112px,1fr) minmax(100px,1fr) minmax(176px,1.3fr)!important"),'tablet Travel controls must fit three actions');
+  assert(travelCss.includes("grid-template-columns:34px minmax(96px,1fr) minmax(88px,1fr) minmax(172px,1.2fr)!important"),'phone Travel controls must fit three actions');
   assert(!fs.existsSync(path.join(game,'js/post-pages-ui-polish.mjs')),'retired post-pages presentation shim must stay deleted');
   assert(!fs.existsSync(path.join(game,'js/presentation-bootstrap.mjs')),'retired presentation bootstrap must stay deleted');
   assert(!fs.existsSync(path.join(game,'js/content/post-pages-ui-polish-constraints.mjs')),'superseded constraints compatibility module must stay deleted');

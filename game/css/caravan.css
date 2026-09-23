@@ -3,6 +3,6 @@
 .caravan-reward-panel h2{margin:0 0 8px;font:400 clamp(26px,4vw,42px)/1.1 'BrahmsGotischCyr',serif}.caravan-reward-panel p{margin:8px 0 16px;color:#bac4ce}
 .caravan-reward-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .caravan-reward-card{min-width:0;display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px;border:1px solid #9c8345;border-radius:9px;background:linear-gradient(150deg,#23241a,#080e14);color:#f7e8c2;cursor:pointer;font:inherit}
-.caravan-reward-card img{width:96px;height:96px;object-fit:contain;border-radius:6px}.caravan-reward-card strong{font-size:18px;overflow-wrap:anywhere}.caravan-reward-card span{margin-top:auto;color:#e4c46c}.caravan-reward-card:focus-visible{outline:3px solid #e4c46c;outline-offset:2px}
+.caravan-reward-card img{width:96px;height:96px;object-fit:contain;border-radius:6px}.caravan-reward-card strong{font-size:18px;overflow-wrap:anywhere}.caravan-reward-card:focus-visible{outline:3px solid #e4c46c;outline-offset:2px}
 @media(max-height:500px){.caravan-reward-panel{padding:12px}.caravan-reward-panel p{margin:4px 0 10px;font-size:12px}.caravan-reward-card{padding:10px;gap:8px}.caravan-reward-card img{width:58px;height:58px}.caravan-reward-card strong{font-size:14px}}
 @media(max-width:480px) and (orientation:portrait){.caravan-reward-grid{grid-template-columns:1fr}.caravan-reward-card img{width:58px;height:58px}}

@@ -26,7 +26,7 @@ export function showCaravanRewards(run, onChoose) {
     const hero=recruitProfile(reward.heroId)||run.roster.find(c=>c.id===reward.heroId);
     image.src=reward.kind==='gold'?'generated_assets/reward_gold.png':reward.kind==='supplies'?'generated_assets/reward_supplies.png':reward.kind==='artifact'?artifactById(reward.artifactId).icon:hero.portrait;
     const name=document.createElement('strong');name.textContent=caravanRewardText(reward,run);
-    const label=document.createElement('span');label.textContent=t('caravan.choose');button.append(image,name,label);
+    button.append(image,name);
     button.addEventListener('click',()=>{
       if(busy)return;busy=true;for(const b of cards.querySelectorAll('button'))b.disabled=true;
       try{if(!onChoose(reward.id))throw new Error('Reward rejected');modal.remove();document.querySelector('[data-battle-continue]')?.focus({preventScroll:true});}

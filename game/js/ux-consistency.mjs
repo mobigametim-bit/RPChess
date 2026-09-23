@@ -1,4 +1,4 @@
-import { currentLanguage, translateLegacy } from './i18n.mjs';
+import { currentLanguage, translateLegacy, t as uiT } from './i18n.mjs';
 import { runtimeT } from '../localization/runtime-ui.mjs';
 
 const GOLD_ICON = 'generated_assets/reward_gold.png';
@@ -229,7 +229,7 @@ const RESOURCE_PATTERN = new RegExp(`([+-]?\\d+)\\s*(${RESOURCE_WORD})|(${RESOUR
 
 function iconizeTextNode(node) {
   const parent = node.parentElement;
-  if (!parent || SKIP_TEXT_PARENTS.has(parent.tagName) || parent.closest('.resource-inline')) return;
+  if (!parent || SKIP_TEXT_PARENTS.has(parent.tagName) || parent.closest('.resource-inline,.caravan-reward-card')) return;
   const value = node.nodeValue || '';
   RESOURCE_PATTERN.lastIndex = 0;
   if (!RESOURCE_PATTERN.test(value)) return;
@@ -334,7 +334,7 @@ function difficultyLabel(encounter) {
 }
 
 function activeCombat() {
-  if (globalThis.RPChessBattle?.battlePlan) return { api:globalThis.RPChessBattle, title:globalThis.RPChessBattle.combatType==='caravan'?t('caravan.title'):t('ux.combat.battle') };
+  if (globalThis.RPChessBattle?.battlePlan) return { api:globalThis.RPChessBattle, title:globalThis.RPChessBattle.combatType==='caravan'?uiT('caravan.title'):t('ux.combat.battle') };
   if (globalThis.RPChessSkirmish?.battlePlan) return { api:globalThis.RPChessSkirmish, title:t('ux.combat.skirmish') };
   return null;
 }

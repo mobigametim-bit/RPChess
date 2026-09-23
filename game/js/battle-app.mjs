@@ -1,4 +1,4 @@
-import { CARAVAN_BACKGROUND, createCaravanState, createCaravanPlan, finishCaravan, claimCaravanReward } from './caravan-core.mjs';
+import { createCaravanState, createCaravanPlan, finishCaravan, claimCaravanReward } from './caravan-core.mjs';
 import { caravanRewardText, showCaravanRewards } from './caravan-reward-ui.mjs';
 import { PIECE_GLYPHS } from './roster-data.mjs';
 import { readRun, writeRun } from './run-persistence.mjs';
@@ -195,7 +195,6 @@ function renderStaticCopy() {
     prepScreen.setAttribute('aria-label',t('caravan.prep'));
     prepScreen.querySelector('[data-battle-formation]').setAttribute('aria-label',t('caravan.formation'));
     aftermathScreen.querySelector('[data-battle-aftermath-kicker]').textContent=t('caravan.finished');
-    prepScreen.style.setProperty('--battle-scene-backdrop',`url("${CARAVAN_BACKGROUND}")`);
   }
 
 }
@@ -387,6 +386,17 @@ function renderCharacterList(root,characters,emptyText){if(!root)return;root.rep
 function renderAftermath(status=lastBattleStatus,casualty=lastMercenaryCasualty){if(!activeRun||!battlePlan||!aftermathScreen||!status)return;const participants=battlePlan.participants.map((id)=>activeRun.roster.find((c)=>c.id===id)).filter(Boolean),survivors=participants.filter((c)=>c.status==='healthy'),wounded=participants.filter((c)=>c.status==='wounded'),victory=status?.type==='checkmate'&&status.winner===battlePlan.playerColor;aftermathScreen.querySelector('[data-battle-aftermath-result]').textContent=victory?t('battle.aftermath.victory'):status?.type==='checkmate'?t('battle.aftermath.defeat'):t('battle.aftermath.draw');let text=isCaravan()?t('caravan.finished'):t(wounded.length?'battle.aftermath.woundedText':'battle.aftermath.healthyText');if(isCaravan()&&activeRun.currentCaravan?.claimedReward)text+=` ${t('caravan.received')}: ${caravanRewardText(activeRun.currentCaravan.claimedReward,activeRun)}.`;if(casualty)text=`${text} ${t('battle.aftermath.debtCasualty',{name:contentText(casualty.name)})}`;aftermathScreen.querySelector('[data-battle-aftermath-text]').textContent=text;renderCharacterList(aftermathScreen.querySelector('[data-battle-survivors]'),survivors,t('battle.aftermath.emptySurvivors'));renderCharacterList(aftermathScreen.querySelector('[data-battle-wounded]'),wounded,t('battle.aftermath.emptyWounded'));}
 function renderRunEnd(){if(!activeRun||!runEndScreen)return;const king=activeRun.roster.find((c)=>c.isRunKing),healthy=activeRun.roster.filter((c)=>!c.isRunKing&&c.status==='healthy').length,wounded=activeRun.roster.filter((c)=>c.status==='wounded').length;const textKey=activeRun.endReason==='king_solo_battle'?'battle.runEnd.text.soloKing':'battle.runEnd.text';runEndScreen.querySelector('[data-battle-run-end-text]').textContent=t(textKey,{name:contentText(king?.name||t('piece.king'))});const values={combats:String((activeRun.skirmishCount||0)+(activeRun.battleCount||0)),healthy:String(healthy),wounded:String(wounded)};for(const metric of runEndScreen.querySelectorAll('[data-battle-run-metric]'))metric.textContent=values[metric.dataset.battleRunMetric]||'0';}
 function finishBattle(status){if(isCaravan())return finishCaravanBattle(status);finalizeTimer=null;if(battleFinalized||!battlePlan)return;battleFinalized=true;const current=readRun();if(!current)return;const outcome=applyBattleOutcome(current,{capturedIds:[...capturedIds],participantIds:battlePlan.participants,status,playerColor:battlePlan.playerColor});const completed=clearCombatArtifactChoice({...outcome,battleCount:(Number.isInteger(current.battleCount)?current.battleCount:0)+1,lastBattle:{...(outcome.lastBattle||{}),encounterId:battlePlan.encounter.id,encounterStars:battlePlan.encounter.stars,fullArmyPieces:BATTLE_PIECE_COUNT,fullArmyPoints:BATTLE_ARMY_POINTS,playerColor:battlePlan.playerColor,enemyRaceTag:battlePlan.encounter.enemyRaceTag}});const debt=globalThis.RPChessBattleMercenaries?.resolveBattleMercenaryDebt?.(completed)||{run:completed,resolved:false,casualty:null};activeRun=writeRun(debt.run);lastBattleStatus=status;lastMercenaryCasualty=debt.casualty||null;setBattleNavigationLocked(false);clearTimeout(toastTimer);toastTimer=null;document.querySelectorAll('.battle-toast').forEach((toast)=>toast.remove());globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{battleCompleted:true,mercenaryDebtSettled:Boolean(debt.resolved),casualtyId:debt.casualty?.id||null}}));if(activeRun.ended){if(globalThis.RPChessEndlessRun?.open?.(activeRun))return;renderRunEnd();showOnly('battleRunEnd');return;}renderAftermath(status,debt.casualty);showOnly('battleAftermath');}
+function forfeitBattle(){
+  if(!battlePlan||battleFinalized||classicScreen?.hidden||!readRun())return false;
+  const previous=readRun(),count=isCaravan()?previous.caravanCount||0:previous.battleCount||0;
+  finishBattle({over:true,type:'checkmate',winner:battlePlan.enemyColor});
+  const completed=readRun();
+  if(!completed||(isCaravan()?completed.caravanCount||0:completed.battleCount||0)!==count+1)return false;
+  activeRun=writeRun({...completed,activeTravelChoice:null,currentTravelChoices:null,...(isCaravan()?{currentCaravan:null}:{})});
+  resetBattleTracking();
+  globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'combat-forfeit'}}));
+  return true;
+}
 function leaveAftermath(){audio()?.click?.();if(isCaravan())activeRun=writeRun({...readRun(),activeTravelChoice:null,currentTravelChoices:null,currentCaravan:null});resetBattleTracking();globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open',{detail:{source:isCaravan()?'caravan-aftermath':'battle-aftermath',runId:activeRun?.id||null}}));}
 function leaveRunEnd(){audio()?.click?.();resetBattleTracking();showOnly('menu');globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));}
 
@@ -401,4 +411,4 @@ function rerenderLanguage() {
 addEventListener('rpchess:caravan-open',openCaravan);addEventListener('rpchess:battle-open',openBattle);ensureBattleScreens();subscribe(rerenderLanguage);
 if(board&&typeof MutationObserver!=='undefined')new MutationObserver(syncBattleFromChess).observe(board,{childList:true,subtree:true});
 if(typeof MutationObserver!=='undefined'&&document.body)new MutationObserver(()=>{if(!battlePlan)return;if(!document.querySelector('.classic-piece-flyer:not([data-battle-visualized]),.classic-captured-ghost:not([data-battle-visualized])'))return;queueMicrotask(patchTransientBattleArt);}).observe(document.body,{childList:true,subtree:true});
-globalThis.RPChessBattle=Object.freeze({open:openBattle,openCaravan,get combatType(){return combatType;},start:startBattle,get encounter(){return encounter;},get selectedIds(){return[...selectedIds];},get battlePlan(){return battlePlan;},syncBattleFromChess,finishBattle});
+globalThis.RPChessBattle=Object.freeze({open:openBattle,openCaravan,get combatType(){return combatType;},start:startBattle,get encounter(){return encounter;},get selectedIds(){return[...selectedIds];},get battlePlan(){return battlePlan;},syncBattleFromChess,finishBattle,forfeitBattle});

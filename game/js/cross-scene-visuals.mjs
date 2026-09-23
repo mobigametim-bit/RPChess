@@ -105,7 +105,6 @@ function choiceForCard(card) {
 function routeBackdrop(choice, card) {
   const type = choice?.type || card?.dataset?.travelType || 'event';
   const seed = choice?.seed || choice?.id || card?.dataset?.travelChoice || `${type}:route`;
-  if (type === 'caravan') return 'assets/events/register-04/sky_khanate/storm_over_caravan.png';
   if (type === 'puzzle') return 'generated_assets/splash_poster.jpg';
   if (type === 'event') return backdropPath(seed, null, { generic: true });
   if (type === 'settlement') return backdropPath(seed);
@@ -233,6 +232,11 @@ document.addEventListener('click', (event) => {
 }, true);
 addEventListener('rpchess:skirmish-open', (event) => setCombatBackdrop(event?.detail?.choice));
 addEventListener('rpchess:battle-open', (event) => {
+  const choice = event?.detail?.choice || null;
+  setCombatBackdrop(choice);
+  queueMicrotask(() => setBattlePrepBackdrop(choice));
+});
+addEventListener('rpchess:caravan-open', (event) => {
   const choice = event?.detail?.choice || null;
   setCombatBackdrop(choice);
   queueMicrotask(() => setBattlePrepBackdrop(choice));

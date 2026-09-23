@@ -56,6 +56,7 @@ async function openCaravan(page) {
     await page.locator('[data-artifact-choice-modal]').waitFor();
     await page.locator('[data-artifact-choice="none"]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
+    assert.equal(await page.locator('[data-classic-screen] .classic-party-panel h2').innerText(), 'Защита каравана');
     const plan = await page.evaluate(() => globalThis.RPChessBattle.battlePlan);
     assert(plan.chess960);
     assert.equal(plan.playerFormation.length, 16);
@@ -66,6 +67,10 @@ async function openCaravan(page) {
     await page.evaluate((color) => globalThis.RPChessBattle.finishBattle({over:true,type:'checkmate',winner:color}), plan.playerColor);
     await page.locator('[data-caravan-rewards]').waitFor();
     assert.equal(await page.locator('[data-caravan-reward]').count(), 3);
+    for (const card of await page.locator('[data-caravan-reward]').all()) {
+      assert.equal(await card.locator('img').count(), 1, 'each reward card needs one icon');
+      assert(!(await card.innerText()).includes('Забрать'), 'reward selection needs no redundant Claim label');
+    }
     await resumeCaravan(page, '[data-caravan-rewards]');
     const offer = await page.locator('[data-caravan-reward]').first().getAttribute('data-caravan-reward');
     await page.locator('[data-caravan-reward]').first().click();
