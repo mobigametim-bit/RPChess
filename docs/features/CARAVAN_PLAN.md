@@ -1,7 +1,7 @@
 # Caravan — implementation plan
 
-**Status:** implementation accepted after human playtest; CI, browser checks and Netlify Preview passed; manual production deployment pending.
-**Working branch:** `feature/caravan` (PR #144, approved for merge into `main`)
+**Status:** implemented, human accepted and merged into `main` through PR #144 (`a706eb8`). Exact deployed Pages SHA is not tracked by this document; release remains manual.
+**Working branch:** `feature/caravan` (historical; PR #144 merged).
 **Delivery:** implementation branch → automated gates → human playtest → merge into `main` → manual deployment.
 
 Post-playtest refinements include enemy-race backgrounds for Caravan, piece glyphs on Healing/Hero reward portraits and a confirmed Main Menu exit that records a loss during combat. RU/EN layouts were checked at desktop, tablet and mobile landscape widths.
@@ -72,9 +72,9 @@ All state transitions must be idempotent. Reloading at preparation, artifact cho
 7. **Responsive and regression coverage**
    - Cover desktop 1920×1080, tablet 1024×768 and phone landscape 844×390, plus the current short-phone boundary matrix.
    - Verify preparation scrolling, artifact transition, board geometry, reward-card scrolling/selection and reachable Continue CTA.
-8. **Delivery gates**
+8. **Delivery gates** (completed for implementation)
    - Run deterministic/core tests, content validation, production asset budgets, canonical local gate and targeted real-Chromium flow.
-   - Publish a feature preview for human acceptance. Do not merge or deploy to VK before explicit approval.
+   - Publish a feature preview for human acceptance; merge only after approval. PR #144 was accepted and merged. VK release remains a separate manual step.
 
 ## Acceptance criteria
 
