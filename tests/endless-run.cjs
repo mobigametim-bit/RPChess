@@ -84,7 +84,7 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   for(const token of ["import { shareRunResult } from './content/share-result.mjs'",'data-endless-run-share','shareRunResult(activeRun, { power: readPlayerRating().power })'])assert(app.includes(token),`Final-summary sharing contract missing ${token}`);
   for(const token of ["'endless.title':'ЗАБЕГ ЗАВЕРШЁН'","'endless.metric.goldEarned':'ЗАРАБОТАНО ЗОЛОТА'","'endless.metric.finalPower':'ИТОГОВАЯ МОЩЬ'","'endless.newGame':'НОВАЯ ИГРА'","'endless.menu':'ГЛАВНОЕ МЕНЮ'"])assert(runtimeUi.includes(token),`runtime owner registry missing ${token}`);
   for(const forbidden of ['ЗАБЕГ ЗАВЕРШЁН','ЗАРАБОТАНО ЗОЛОТА','ИТОГОВАЯ МОЩЬ','НОВАЯ ИГРА','ГЛАВНОЕ МЕНЮ'])assert(!app.includes(forbidden),`Endless runtime must not hardcode localized copy: ${forbidden}`);
-  assert(app.includes('css/endless-run-compact.css?v=20260925-flag-1'),'Endless Run owner must load its compact stylesheet after base CSS');
+  assert(app.includes('css/endless-run-compact.css?v=20260925-flag-2'),'Endless Run owner must load its compact stylesheet after base CSS');
   assert(compactCss.includes('body.endless-run-active .resource-hud{display:none!important}'),'Endless Run owner compact stylesheet must suppress the floating resource HUD on the final summary');
   assert(css.includes('royal_run_flag') === false && app.includes('assets/ui/royal_run_flag.png'),'Run summary must render the optimized flag asset');
   assert(css.includes('inset:15% 21% 24%')&&css.includes('overflow-y:auto'),'Run metrics must remain scrollable within the flag safety area');
