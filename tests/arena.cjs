@@ -71,6 +71,9 @@ const { pathToFileURL } = require('url');
   const next=core.newMatch({...merged,match:null},foes[1].id,'match:test:3');
   const lost=core.finishMatch(core.chooseArtifact(next,null),'loss');
   assert.strictEqual(core.arenaSummary(lost).stats[foes[1].id].losses,1);
+  const drawn=core.finishMatch(core.chooseArtifact(core.newMatch({...lost,match:null},foes[1].id,'match:test:draw'),null),'draw');
+  assert.strictEqual(core.arenaSummary(drawn).stats[foes[1].id].draws,1);
+  assert.strictEqual(core.arenaSummary(drawn).stats[foes[1].id].losses,1);
   assert.strictEqual(core.arenaSummary(lost).highest,1);
   // Concurrent devices buy against the same balance. Deterministic replay cannot
   // spend more than was earned even when their ledgers are merged.

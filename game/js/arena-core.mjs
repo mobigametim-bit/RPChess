@@ -34,7 +34,7 @@ function normalizeArena(raw){
   return { version:1, events, squad:RACE_TAGS.includes(raw.squad)?raw.squad:'humans', match, updatedAt:safeInt(raw.updatedAt) };
 }
 function arenaSummary(state){
-  const stats=Object.fromEntries(OPPONENTS.map(foe=>[foe.id,{wins:0,losses:0}]));
+  const stats=Object.fromEntries(OPPONENTS.map(foe=>[foe.id,{wins:0,losses:0,draws:0}]));
   const owned=new Set(['humans']);let balance=0,highest=0;
   const accepted=new Set(),bonuses=[];
   for(const event of normalizeArena(state).events){
@@ -49,6 +49,7 @@ function arenaSummary(state){
       highest=Math.max(highest,Math.min(83,OPPONENT_BY_ID.get(event.foe).index+1));
       balance+=event.amount;
     } else if(event.kind==='loss')stats[event.foe].losses++;
+    else if(event.kind==='draw')stats[event.foe].draws++;
     else if(event.kind==='ad')bonuses.push(event);
     accepted.add(event.id);
   }

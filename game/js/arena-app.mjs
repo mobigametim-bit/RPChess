@@ -9,8 +9,8 @@ import { platform } from './platform.mjs';
 import { ARENA_KEY, SHARD_ICON, PIECE_CODE, OPPONENTS, OPPONENT_BY_ID, SQUAD_PRICES, ARTIFACT_PRICES, emptyArena, normalizeArena, arenaSummary, newMatch, chooseArtifact, finishMatch, claimDouble, purchaseSquad } from './arena-core.mjs';
 
 const copy = {
-  ru:{title:'Арена',back:'Главное меню',shards:'Осколки чести',squads:'Ваш отряд',enemies:'Соперники',section:'Раздел',power:'Мощь',wins:'Побед',losses:'Поражений',fight:'В бой!',locked:'Победите предыдущего соперника',buy:'Купить',select:'Выбрать',owned:'Выбран',resume:'Продолжить бой',offer:'Подготовка к бою',offerText:'Выберите один артефакт на эту партию',none:'Без артефакта',insufficient:'Недостаточно осколков чести',victory:'Победа!',defeat:'Поражение',draw:'Ничья',continue:'Продолжить',again:'Сыграть ещё',rivals:'К соперникам',double:'Реклама: награда ×2',adError:'Реклама не завершена. Основная награда сохранена.',move:'Ваш ход',thinking:'Противник думает…',promotion:'Превращение пешки',result:'Партия завершена',drawText:'Следующий противник открывается за победу.',defeatText:'Можно попробовать снова.',opponent:'Соперник',squad:'Отряд'},
-  en:{title:'Arena',back:'Main menu',shards:'Honor shards',squads:'Your squad',enemies:'Opponents',section:'Section',power:'Power',wins:'Wins',losses:'Losses',fight:'Fight!',locked:'Defeat the previous opponent',buy:'Buy',select:'Select',owned:'Selected',resume:'Resume match',offer:'Prepare for battle',offerText:'Choose one artifact for this match',none:'No artifact',insufficient:'Not enough honor shards',victory:'Victory!',defeat:'Defeat',draw:'Draw',continue:'Continue',again:'Play again',rivals:'Opponents',double:'Watch ad: reward ×2',adError:'Ad was not completed. Your base reward is safe.',move:'Your move',thinking:'Opponent is thinking…',promotion:'Promote pawn',result:'Match complete',drawText:'Win to unlock the next opponent.',defeatText:'You can try again.',opponent:'Opponent',squad:'Squad'}
+  ru:{title:'Арена',back:'Главное меню',shards:'Осколки чести',squads:'Ваш отряд',enemies:'Соперники',section:'Раздел',power:'Мощь',wins:'Побед',losses:'Поражений',draws:'Ничьих',fight:'В бой!',locked:'Победите предыдущего соперника',buy:'Купить',select:'Выбрать',owned:'Выбран',resume:'Продолжить бой',offer:'Подготовка к бою',offerText:'Выберите один артефакт на эту партию',none:'Без артефакта',insufficient:'Недостаточно осколков чести',victory:'Победа!',defeat:'Поражение',draw:'Ничья',continue:'Продолжить',again:'Сыграть ещё',rivals:'К соперникам',double:'Реклама: награда ×2',adError:'Реклама не завершена. Основная награда сохранена.',move:'Ваш ход',thinking:'Противник думает…',promotion:'Превращение пешки',result:'Партия завершена',drawText:'Следующий противник открывается за победу.',defeatText:'Можно попробовать снова.',opponent:'Соперник',squad:'Отряд'},
+  en:{title:'Arena',back:'Main menu',shards:'Honor shards',squads:'Your squad',enemies:'Opponents',section:'Section',power:'Power',wins:'Wins',losses:'Losses',draws:'Draws',fight:'Fight!',locked:'Defeat the previous opponent',buy:'Buy',select:'Select',owned:'Selected',resume:'Resume match',offer:'Prepare for battle',offerText:'Choose one artifact for this match',none:'No artifact',insufficient:'Not enough honor shards',victory:'Victory!',defeat:'Defeat',draw:'Draw',continue:'Continue',again:'Play again',rivals:'Opponents',double:'Watch ad: reward ×2',adError:'Ad was not completed. Your base reward is safe.',move:'Your move',thinking:'Opponent is thinking…',promotion:'Promote pawn',result:'Match complete',drawText:'Win to unlock the next opponent.',defeatText:'You can try again.',opponent:'Opponent',squad:'Squad'}
 };
 const types = {ru:{pawn:'Пешка',knight:'Конь',bishop:'Слон',rook:'Ладья',queen:'Ферзь',king:'Король'},en:{pawn:'Pawn',knight:'Knight',bishop:'Bishop',rook:'Rook',queen:'Queen',king:'King'}};
 const raceEn = ['Humans','Elves','Orcs','Undead','Dark elves','Dwarves','Demons','Angels','Dragonborn','Beastfolk','Constructs','Animals','Fae','Goblins'];
@@ -32,6 +32,7 @@ function img(src,cls,alt=''){return '<img class="'+cls+'" src="'+src+'" alt="'+e
 function button(action,label,extra=''){return '<button type="button" data-arena-action="'+action+'" '+extra+'>'+label+'</button>';}
 function visible(open){
   root.hidden=!open;menu.hidden=open;document.body.classList.toggle('arena-active',open);
+  if(!open)document.body.classList.remove('arena-battle-active');
   if(open)window.scrollTo(0,0);
 }
 function renderCatalog(){
@@ -44,9 +45,11 @@ function renderCatalog(){
   const squads=root.querySelector('[data-arena-squads]');squads.replaceChildren();
   for(const race of RACE_TAGS){
     const owned=stats.owned.has(race),tile=document.createElement('button');
-    tile.type='button';tile.className='arena-squad'+(state.squad===race?' is-selected':'');
-    tile.dataset.arenaSquad=race;tile.setAttribute('aria-pressed',String(state.squad===race));
-    tile.innerHTML=img(racePiecePath(race,'king','w'),'arena-squad-art','')+'<strong>'+escape(raceLabel(race))+'</strong><small>'+(owned?(state.squad===race?l('owned'):l('select')):l('buy')+' · '+SQUAD_PRICES[race])+'</small>';
+    const affordable=owned||stats.balance>=SQUAD_PRICES[race];
+    tile.type='button';tile.className='arena-squad'+(state.squad===race?' is-selected':'')+(affordable?'':' is-unaffordable');
+    tile.dataset.arenaSquad=race;tile.setAttribute('aria-pressed',String(state.squad===race));tile.disabled=!affordable;
+    tile.setAttribute('aria-label',raceLabel(race)+' · '+(owned?(state.squad===race?l('owned'):l('select')):l('buy')+' · '+SQUAD_PRICES[race]));
+    tile.innerHTML=img(racePiecePath(race,'king','w'),'arena-squad-art','')+(owned?'':'<span class="arena-squad-price">'+img(SHARD_ICON,'arena-inline-shard','')+' '+SQUAD_PRICES[race]+'</span>');
     squads.append(tile);
   }
   root.querySelector('[data-arena-squad-label]').textContent=l('squads');
@@ -71,6 +74,7 @@ function renderCatalog(){
 function renderBoard(){
   const area=root.querySelector('[data-arena-battle]');
   area.hidden=!engine || !state.match || state.match.phase!=='playing';
+  document.body.classList.toggle('arena-battle-active',!area.hidden);
   if(area.hidden)return;
   const foe=OPPONENT_BY_ID.get(state.match.foe),snapshot=engine.snapshot(),legal=selected?engine.legalMoves(selected):[];
   root.querySelector('[data-arena-battle-title]').textContent=foeLabel(foe)+' · ≈'+foe.elo+' Elo';
@@ -95,13 +99,13 @@ function renderBoard(){
   renderThreatOverlay(board,snapshot,artifactById(state.match.artifactId),'w');
   applyPinIce(board,snapshot);
 }
-function openDialog(kind,html){dialogType=kind;dialog.innerHTML='<section class="arena-dialog-panel" role="dialog" aria-modal="true" aria-label="'+escape(l('title'))+'">'+html+'</section>';dialog.hidden=false;dialog.querySelector('button')?.focus();}
+function openDialog(kind,html){dialogType=kind;dialog.innerHTML='<section class="arena-dialog-panel'+(kind==='foe'?' arena-dialog-panel--foe':'')+'" role="dialog" aria-modal="true" aria-label="'+escape(kind==='foe'?foeLabel(OPPONENT_BY_ID.get(dialog.dataset.foe)):l('title')))+'">'+html+'</section>';dialog.hidden=false;dialog.querySelector('button')?.focus();}
 function closeDialog(){dialog.hidden=true;dialog.replaceChildren();dialogType=null;}
 function renderDialog(){
   if(dialogType==='foe'){
     const foe=OPPONENT_BY_ID.get(dialog.dataset.foe);if(!foe)return closeDialog();
     const stats=arenaSummary(state).stats[foe.id];
-    openDialog('foe','<header>'+button('close','×','class="arena-close" aria-label="Close"')+'<h2>'+escape(foeLabel(foe))+'</h2></header>'+img(foe.art,'arena-dialog-foe','')+'<p>'+l('power')+': ≈'+foe.elo+' Elo</p><p>'+l('wins')+': '+stats.wins+' · '+l('losses')+': '+stats.losses+'</p>'+button('fight',l('fight')));
+    openDialog('foe','<header>'+button('close','×','class="arena-close" aria-label="'+(currentLanguage()==='en'?'Close':'Закрыть')+'"')+'</header><div class="arena-foe-profile"><div class="arena-foe-profile-art">'+img(foe.art,'arena-dialog-foe','')+'<p>'+l('power')+': ≈'+foe.elo+' Elo</p></div><dl class="arena-foe-profile-stats"><div><dt>'+l('wins')+'</dt><dd>'+stats.wins+'</dd></div><div><dt>'+l('losses')+'</dt><dd>'+stats.losses+'</dd></div><div><dt>'+l('draws')+'</dt><dd>'+stats.draws+'</dd></div></dl></div>'+button('fight',l('fight')));
   }else if(dialogType==='offer'&&state.match){
     const cards=ARTIFACTS.map(a=>button('artifact',img(a.icon,'arena-artifact','')+'<strong>'+escape(currentLanguage()==='en'?a.id==='threat.great'?'Greater awareness':a.id==='threat.attack'?'Attack awareness':'Defense awareness':a.name)+'</strong><small>'+escape(currentLanguage()==='en'?a.id==='threat.great'?'Shows threats to both armies':a.id==='threat.attack'?'Shows threats to enemy pieces':'Shows threats to your pieces':a.description)+'</small><span>'+img(SHARD_ICON,'arena-inline-shard','')+' '+ARTIFACT_PRICES[a.id]+'</span>','data-artifact="'+a.id+'" '+(arenaSummary(state).balance<ARTIFACT_PRICES[a.id]?'disabled':''))).join('');
     openDialog('offer','<h2>'+l('offer')+'</h2><p>'+l('offerText')+'</p><div class="arena-offers">'+cards+button('artifact',l('none'),'data-artifact="none"')+'</div>');
