@@ -1,0 +1,37 @@
+const assert=require('assert');
+const {chromium}=require('playwright');
+const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
+(async()=>{
+  const browser=await chromium.launch({headless:true});
+  try{
+    const page=await browser.newPage({viewport:{width:950,height:530}});
+    const errors=[];page.on('pageerror',e=>errors.push(e.message));
+    await page.goto(url,{waitUntil:'networkidle'});
+    await page.locator('[data-arena-open]').click();
+    await page.locator('[data-arena-screen]:not([hidden])').waitFor();
+    assert.strictEqual(await page.locator('[data-arena-foes] button').count(),7);
+    assert.strictEqual(await page.locator('[data-arena-foes] button:not([disabled])').count(),1);
+    assert.strictEqual(await page.locator('[data-arena-squads] button').count(),14);
+    await page.locator('[data-arena-foes] button').first().click();
+    assert((await page.locator('[data-arena-dialog]').textContent()).includes('Мощь'));
+    await page.locator('[data-arena-action="fight"]').click();
+    assert.strictEqual(await page.locator('[data-arena-action="artifact"]').count(),4);
+    await page.reload({waitUntil:'networkidle'});
+    await page.locator('[data-arena-open]').click();
+    assert.strictEqual(await page.locator('[data-arena-action="artifact"]').count(),4,'offer persists on reload');
+    await page.locator('[data-artifact="none"]').click();
+    assert.strictEqual(await page.locator('[data-arena-board] [data-square]').count(),64);
+    assert.strictEqual(await page.locator('[data-arena-board] .classic-piece-marker[data-piece-marker]').count(),32);
+    await page.locator('[data-arena-board] [data-square="e2"]').click();
+    await page.locator('[data-arena-board] [data-square="e4"]').click();
+    await page.waitForFunction(()=>window.RPChessArena?.state.match.moves.length>=2,{timeout:16000});
+    assert((await page.locator('[data-arena-board] [data-square="e4"] .classic-piece').getAttribute('src')).includes('/humans/pieces/white/pawn.png'));
+    const moves=await page.evaluate(()=>window.RPChessArena.state.match.moves);
+    await page.reload({waitUntil:'networkidle'});
+    await page.locator('[data-arena-open]').click();
+    assert.deepStrictEqual(await page.evaluate(()=>window.RPChessArena.state.match.moves),moves);
+    assert.strictEqual(await page.locator('[data-arena-board] .classic-piece').count(),32);
+    assert.deepStrictEqual(errors,[]);
+    console.log('Arena mobile landscape, offer, match and reload: PASS');
+  }finally{await browser.close();}
+})().catch(error=>{console.error(error);process.exitCode=1;});

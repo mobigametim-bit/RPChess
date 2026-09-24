@@ -1,0 +1,94 @@
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+const { pathToFileURL } = require('url');
+(async()=>{
+  const root=path.resolve(__dirname,'..');
+  const core=await import(pathToFileURL(path.join(root,'game/js/arena-core.mjs')).href);
+  const {arenaProfileForElo,profileForElo,ChessAIAdapter}=await import(pathToFileURL(path.join(root,'game/js/chess-ai-adapter.mjs')).href);
+  const {ClassicChessEngine}=await import(pathToFileURL(path.join(root,'game/js/classic-chess-engine.mjs')).href);
+  const foes=core.OPPONENTS;
+  assert.strictEqual(foes.length,84);
+  assert.strictEqual(new Set(foes.map(x=>x.id)).size,84);
+  assert.strictEqual(foes[0].elo,400);
+  assert.strictEqual(foes.at(-1).elo,2600);
+  foes.forEach((foe,index)=>{
+    assert.strictEqual(foe.index,index);
+    if(index)assert(foe.elo>foes[index-1].elo);
+    assert(fs.existsSync(path.join(root,'game',foe.art)),foe.art);
+  });
+  assert.strictEqual(new Set(foes.map(x=>x.section)).size,12);
+  assert.strictEqual(profileForElo(730).elo,800);
+  assert.strictEqual(arenaProfileForElo(730).elo,730);
+  for(let elo=400;elo<=2600;elo+=10)assert.strictEqual(arenaProfileForElo(elo).elo,elo);
+  assert(arenaProfileForElo(1300).randomRate<arenaProfileForElo(1200).randomRate);
+  assert.strictEqual(arenaProfileForElo(1320).multiPv,1);
+  class FakeWorker{
+    constructor(){this.commands=[];FakeWorker.instance=this;}
+    postMessage(command){
+      this.commands.push(command);
+      if(command==='uci')queueMicrotask(()=>this.onmessage({data:'uciok'}));
+      if(command==='isready')queueMicrotask(()=>this.onmessage({data:'readyok'}));
+      if(command.startsWith('go '))queueMicrotask(()=>this.onmessage({data:'bestmove e7e5'}));
+    }
+    terminate(){}
+  }
+  const adapter=new ChessAIAdapter({WorkerClass:FakeWorker,timeoutMs:500});
+  const engine=new ClassicChessEngine();
+  engine.move('e2','e4');
+  assert.strictEqual(await adapter.chooseMove({fen:engine.fen(),elo:1340,legalMoves:engine.legalMoves(),arena:true}),'e7e5');
+  assert(FakeWorker.instance.commands.includes('setoption name UCI_Elo value 1340'));
+  adapter.destroy();
+  let state=core.emptyArena();
+  assert.strictEqual(core.arenaSummary(state).balance,0);
+  assert.strictEqual(core.arenaSummary(state).highest,0);
+  assert.strictEqual(core.newMatch(state,foes[1].id,'skip'),state,'locked opponent');
+  state=core.newMatch(state,foes[0].id,'match:test:1');
+  assert.strictEqual(state.match.phase,'offer');
+  assert.strictEqual(core.chooseArtifact(state,'threat.defense'),state,'unaffordable artifact');
+  state=core.chooseArtifact(state,null);
+  assert.strictEqual(state.match.phase,'playing');
+  state=core.finishMatch(state,'win');
+  assert.strictEqual(state.match.reward,30);
+  assert.strictEqual(core.arenaSummary(state).balance,30);
+  assert.strictEqual(core.arenaSummary(state).highest,1);
+  assert.strictEqual(core.finishMatch(state,'win'),state,'same match cannot be rewarded twice');
+  const doubled=core.claimDouble(state);
+  assert.strictEqual(core.arenaSummary(doubled).balance,60);
+  assert.strictEqual(core.arenaSummary(core.claimDouble(doubled)).balance,60,'ad callback idempotent');
+  const restored=core.normalizeArena(JSON.parse(JSON.stringify(doubled)));
+  assert.strictEqual(restored.match.phase,'result');
+  const replay=core.newMatch({...restored,match:null},foes[0].id,'match:test:2');
+  const withArtifact=core.chooseArtifact(replay,'threat.defense');
+  assert.strictEqual(core.arenaSummary(withArtifact).balance,52);
+  assert.strictEqual(withArtifact.match.artifactId,'threat.defense');
+  const repeat=core.finishMatch(withArtifact,'win');
+  assert.strictEqual(repeat.match.reward,10);
+  const merged=core.mergeArena(state,repeat);
+  assert.strictEqual(core.arenaSummary(merged).balance,62,'event union must not duplicate awards');
+  const unpaid=core.mergeArena({...state,match:{...state.match,phase:'playing',artifactId:'threat.defense'}},{...state,events:[...state.events,{id:'match:test:1:artifact',kind:'artifact',artifact:'threat.defense',amount:8,at:0}]});
+  assert.strictEqual(unpaid.match.artifactId,null,'unpaid artifact must not survive conflict merge');
+  const next=core.newMatch({...merged,match:null},foes[1].id,'match:test:3');
+  const lost=core.finishMatch(core.chooseArtifact(next,null),'loss');
+  assert.strictEqual(core.arenaSummary(lost).stats[foes[1].id].losses,1);
+  assert.strictEqual(core.arenaSummary(lost).highest,1);
+  // Concurrent devices buy against the same balance. Deterministic replay cannot
+  // spend more than was earned even when their ledgers are merged.
+  const earned=core.addEvent(core.emptyArena(),{id:'match:start:win',kind:'win',foe:foes[0].id,amount:100,at:1});
+  const first=core.purchaseSquad(earned,'elves'),second=core.purchaseSquad(earned,'orcs');
+  const both=core.arenaSummary(core.mergeArena(first,second));
+  assert(both.balance>=0);
+  assert.strictEqual([...both.owned].length,2);
+  const bought=[...both.owned].find(r=>r!=='humans');
+  const rejected=bought==='elves'?'orcs':'elves';
+  const toppedUp=core.addEvent(core.mergeArena(first,second),{id:'match:more:win',kind:'win',foe:foes[0].id,amount:100,at:Date.now()});
+  assert(core.arenaSummary(core.purchaseSquad(toppedUp,rejected)).owned.has(rejected),'rejected concurrent purchase can be retried');
+  const cloud=await import(pathToFileURL(path.join(root,'game/js/cloud-save.mjs')).href);
+  const older={revision:8,updatedAt:100,payload:{run:{id:'same',journeyStep:5},arena:repeat}};
+  const newer={revision:7,updatedAt:200,payload:{run:{id:'same',journeyStep:4},arena:lost}};
+  const chosen=cloud.authoritativeEnvelope(older,newer);
+  assert.strictEqual(chosen.payload.run.journeyStep,5);
+  assert.strictEqual(core.arenaSummary(chosen.payload.arena).stats[foes[1].id].losses,1);
+  assert.strictEqual(core.arenaSummary(chosen.payload.arena).stats[foes[0].id].wins,2);
+  console.log('Arena catalog, continuous Elo, chess AI, economy, resume, ad and cloud merge: PASS');
+})().catch(error=>{console.error(error);process.exitCode=1;});

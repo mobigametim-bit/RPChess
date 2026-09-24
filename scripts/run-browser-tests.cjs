@@ -13,6 +13,7 @@ const BASE=`http://${HOST}:${PORT}${PREFIX}${PREFIX?'/':''}`;
 const DEFAULT_TESTS=[
   'reboot-foundation-browser.cjs',
   'classic-chess-browser.cjs',
+  'arena-browser.cjs',
   'race-board-themes-browser.cjs',
   'king-pin-ice-browser.cjs',
   'responsive-viewport-browser.cjs',
