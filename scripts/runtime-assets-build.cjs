@@ -156,8 +156,8 @@ function materializeRuntimeAssets(root){
 }
 function materializeArena(root){
   const records=[];
-  for(const name of ['mirror_shard.png','defeat_crown.png']){
-    const relative=`assets/arena/${name}`,full=path.join(root,relative),source=fs.readFileSync(full);
+  for(const relative of ['assets/arena/mirror_shard.png','assets/arena/defeat_crown.png','assets/relics/merchants_scale.png']){
+    const full=path.join(root,relative),source=fs.readFileSync(full);
     const cached=cachedPng(source,{namespace:'arena-icons',version:fingerprintFiles([ORCHESTRATOR_FILE,PIECE_FILE]),maxSide:160,maxBytes:80*1024});
     fs.writeFileSync(full,cached.buffer);
     records.push({path:relative,before:source.length,after:cached.buffer.length,cacheHit:cached.cacheHit,cachePath:cached.cachePath});

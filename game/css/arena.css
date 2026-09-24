@@ -19,7 +19,7 @@
 .arena-section-nav button:disabled{opacity:.35;cursor:default}
 .arena-foes{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;overflow-x:auto;overscroll-behavior-inline:contain}
 .arena-foe{min-height:clamp(120px,18vw,205px);padding:8px 4px}
-.arena-foe-art{height:clamp(65px,12vw,137px);max-width:100%;object-fit:contain}
+.arena-foe-art{height:clamp(65px,12vw,137px);width:100%;max-width:100%;object-fit:contain}
 .arena-foe.is-locked{opacity:.55;filter:grayscale(1);cursor:default}
 .arena-lock{position:absolute;top:8px;right:8px;font-size:19px}
 .arena-notice{min-height:22px;color:#ffdb8d}
@@ -29,6 +29,7 @@
 .arena-board{width:min(75vh,92vw,700px);height:auto;aspect-ratio:1;margin:0 auto}
 .arena-board .classic-piece{width:100%;height:100%;object-fit:contain}
 .arena-board .classic-piece-marker{pointer-events:none}
+.arena-board .classic-piece--arriving~.classic-piece-marker{visibility:hidden}
 .arena-dialog{position:fixed;inset:0;z-index:150;background:#02060bdd;display:grid;place-items:center;padding:16px;overflow:auto}
 .arena-dialog-panel{width:min(740px,96vw);max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain;padding:clamp(16px,2vw,28px);border:1px solid var(--ui-panel-border-gold);border-radius:var(--ui-panel-radius);background:var(--ui-panel-bg);color:#fff4d8;text-align:center;box-shadow:var(--ui-panel-shadow)}
 .arena-dialog-panel h2{margin:8px 0 12px;font-size:clamp(22px,3vw,32px)}
@@ -54,16 +55,19 @@
 .arena-squad.is-unaffordable{filter:grayscale(1);opacity:.47;cursor:default}
 .arena-foe{background:linear-gradient(160deg,rgba(96,36,48,.95),rgba(43,14,27,.98));border-color:#b59168}
 .arena-foe:not(:disabled):hover{background:linear-gradient(160deg,rgba(121,49,59,.97),rgba(56,20,32,.98))}
+.arena-foe-power{display:flex;align-items:center;justify-content:center;gap:4px;flex:0 0 auto;width:100%;white-space:nowrap}
+.arena-stat-icon{width:30px;height:30px;flex:0 0 auto;object-fit:contain;vertical-align:middle}
+.arena-foe-power .arena-stat-icon{width:22px;height:22px}
 .arena-dialog-panel--foe{width:min(600px,96vw);background:linear-gradient(150deg,rgba(96,36,48,.98),rgba(36,12,25,.99));border-color:#b59168}
 .arena-dialog-panel--foe header{height:32px}
 .arena-dialog-panel--foe .arena-close{top:-8px;right:-8px;min-width:38px;min-height:38px;padding:0;font-size:28px;line-height:1}
 .arena-foe-profile{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,1fr);align-items:center;gap:18px;padding:4px 8px 18px}
 .arena-foe-profile-art{min-width:0}
 .arena-foe-profile-art .arena-dialog-foe{height:clamp(96px,22dvh,190px);width:100%}
-.arena-foe-profile-art p{font-size:clamp(17px,2vw,22px);font-weight:800;margin:4px 0 0;white-space:nowrap}
+.arena-foe-profile-art p{display:flex;align-items:center;justify-content:center;gap:6px;font-size:clamp(17px,2vw,22px);font-weight:800;margin:4px 0 0;white-space:nowrap}
 .arena-foe-profile-stats{display:flex;flex-direction:column;gap:9px;margin:0;text-align:left;font-size:clamp(17px,2vw,22px)}
 .arena-foe-profile-stats div{display:flex;justify-content:space-between;gap:14px;border-bottom:1px solid #bd996a;padding:4px 0}
-.arena-foe-profile-stats dt{white-space:nowrap}.arena-foe-profile-stats dd{margin:0;color:#ffe4ab;font-weight:800}
+.arena-foe-profile-stats dt{display:flex;align-items:center;gap:8px;white-space:nowrap}.arena-foe-profile-stats dd{margin:0;color:#ffe4ab;font-weight:800}
 .arena-dialog-panel--foe [data-arena-action="fight"]{min-width:65%;min-height:48px;font-size:22px}
 @media(max-width:500px){.arena-foe-profile{grid-template-columns:minmax(0,1fr) minmax(120px,1fr);gap:8px;padding-inline:0}.arena-foe-profile-art p{white-space:normal;font-size:16px}.arena-foe-profile-stats{font-size:16px}}
 @media (orientation:landscape){
@@ -78,7 +82,7 @@
   .arena-squad-art{height:min(12dvh,80px)}
   .arena-foes{flex:1;min-height:0;align-items:stretch}
   .arena-foe{min-height:0;overflow:hidden}
-  .arena-foe-art{height:min(17dvh,137px);flex:0 1 auto}
+  .arena-foe .arena-foe-art{height:0;min-height:0;max-height:none;flex:1 1 auto;transform:scale(1.12)}
   .arena-notice{flex:0 0 auto;margin:3px 0;min-height:16px}
   .arena-resume{flex:0 0 auto;margin:4px 0;min-height:42px;padding:4px 12px}
   body.arena-battle-active .arena-screen{padding:0!important;overflow:hidden}
@@ -111,7 +115,7 @@
   .arena-section-nav button{height:30px;min-width:32px}
   .arena-foes{flex:1;min-height:0;gap:7px;padding:1px 2px 3px;align-items:stretch}
   .arena-foe{flex:0 0 125px;min-height:0;padding:2px;justify-content:center;overflow-y:auto}
-  .arena-foe-art{height:clamp(23px,13dvh,43px);flex:0 1 auto}
+  .arena-foe .arena-foe-art{height:0;min-height:0;max-height:none;flex:1 1 auto;transform:scale(1)}
   .arena-notice{flex:0 0 auto;min-height:0;margin:2px 0;font-size:14px}
   .arena-resume{flex:0 0 auto;margin:2px 0;padding:4px 10px}
   .arena-battle{flex:1;min-height:0;overflow-y:auto}

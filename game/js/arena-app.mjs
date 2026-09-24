@@ -15,12 +15,13 @@ const copy = {
 const types = {ru:{pawn:'Пешка',knight:'Конь',bishop:'Слон',rook:'Ладья',queen:'Ферзь',king:'Король'},en:{pawn:'Pawn',knight:'Knight',bishop:'Bishop',rook:'Rook',queen:'Queen',king:'King'}};
 const raceEn = ['Humans','Elves','Orcs','Undead','Dark elves','Dwarves','Demons','Angels','Dragonborn','Beastfolk','Constructs','Animals','Fae','Goblins'];
 const glyphs = {w:{p:'♙',n:'♘',b:'♗',r:'♖',q:'♕',k:'♔'},b:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'}};
+const statIcons = {power:'generated_assets/node_battle.png',wins:'generated_assets/node_elite.png',losses:'assets/arena/defeat_crown.png',draws:'assets/relics/merchants_scale.png'};
 const root = document.querySelector('[data-arena-screen]');
 const menu = document.querySelector('[data-reboot-foundation]');
 const board = root?.querySelector('[data-arena-board]');
 const dialog = document.querySelector('[data-arena-dialog]');
 const adapter = new ChessAIAdapter();
-let state=emptyArena(),engine=null,section=0,selected=null,thinking=false,searchId=0,adBusy=false,dialogType=null,promotion=null,notice='';
+let state=emptyArena(),engine=null,section=0,selected=null,thinking=false,animating=false,animationDestination=null,moveAnimation=null,moveFlyer=null,captureGhost=null,searchId=0,adBusy=false,dialogType=null,promotion=null,notice='';
 function l(key){return (copy[currentLanguage()]||copy.ru)[key]||key;}
 function raceLabel(race){return currentLanguage()==='en'?raceEn[RACE_TAGS.indexOf(race)]||race:(RACE_LABELS[race]||race);}
 function foeLabel(foe){return (types[currentLanguage()]||types.ru)[foe.type]+' · '+raceLabel(foe.race);}
@@ -30,6 +31,7 @@ function id(){return globalThis.crypto?.randomUUID?.()||'arena:'+Date.now()+':'+
 function escape(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 function img(src,cls,alt=''){return '<img class="'+cls+'" src="'+src+'" alt="'+escape(alt)+'">';}
 function button(action,label,extra=''){return '<button type="button" data-arena-action="'+action+'" '+extra+'>'+label+'</button>';}
+function statIcon(kind){return img(statIcons[kind],'arena-stat-icon','');}
 function visible(open){
   root.hidden=!open;menu.hidden=open;document.body.classList.toggle('arena-active',open);
   if(!open)document.body.classList.remove('arena-battle-active');
@@ -63,12 +65,12 @@ function renderCatalog(){
   for(const foe of OPPONENTS.slice(section*7,section*7+7)){
     const unlocked=foe.index<=stats.highest,card=document.createElement('button');
     card.type='button';card.className='arena-foe'+(unlocked?'':' is-locked');card.dataset.arenaFoe=foe.id;
-    card.disabled=!unlocked;card.setAttribute('aria-label',foeLabel(foe)+' '+foe.elo+' Elo');
-    card.innerHTML=img(foe.art,'arena-foe-art','')+'<strong>'+escape(foeLabel(foe))+'</strong><small>≈'+foe.elo+' Elo</small>'+(unlocked?'':'<span class="arena-lock" aria-hidden="true">🔒</span>');
+    card.disabled=!unlocked;card.setAttribute('aria-label',foeLabel(foe)+', '+l('power')+': '+foe.elo);
+    card.innerHTML=img(foe.art,'arena-foe-art','')+'<small class="arena-foe-power">'+statIcon('power')+l('power')+': '+foe.elo+'</small>'+(unlocked?'':'<span class="arena-lock" aria-hidden="true">🔒</span>');
     foes.append(card);
   }
   const resume=root.querySelector('[data-arena-resume]');
-  resume.hidden=!state.match;resume.textContent=l('resume')+' · '+(state.match?foeLabel(OPPONENT_BY_ID.get(state.match.foe)):'');
+  resume.hidden=!state.match;resume.textContent=l('resume')+(state.match?' · '+l('power')+': '+OPPONENT_BY_ID.get(state.match.foe).elo:'');
   root.querySelector('[data-arena-notice]').textContent=notice;
 }
 function renderBoard(){
@@ -77,7 +79,7 @@ function renderBoard(){
   document.body.classList.toggle('arena-battle-active',!area.hidden);
   if(area.hidden)return;
   const foe=OPPONENT_BY_ID.get(state.match.foe),snapshot=engine.snapshot(),legal=selected?engine.legalMoves(selected):[];
-  root.querySelector('[data-arena-battle-title]').textContent=foeLabel(foe)+' · ≈'+foe.elo+' Elo';
+  root.querySelector('[data-arena-battle-title]').textContent=l('opponent')+' · '+l('power')+': '+foe.elo;
   root.querySelector('[data-arena-status]').textContent=thinking?l('thinking'):(snapshot.status.over?l('result'):l('move'));
   root.querySelector('[data-arena-rivals]').textContent=l('rivals');
   board.replaceChildren();
@@ -92,12 +94,51 @@ function renderBoard(){
     if(piece){
       const race=piece.color==='w'?state.match.squad:foe.race;
       cell.innerHTML=img(racePiecePath(race,({p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'})[piece.type],piece.color),'classic-piece','')+'<span class="classic-piece-marker classic-piece-marker--'+piece.color+'" data-piece-marker="'+piece.type+'" aria-hidden="true">'+glyphs[piece.color][piece.type]+'</span>';
+      if(animating&&square===animationDestination)cell.querySelector('.classic-piece').classList.add('classic-piece--arriving');
     }
-    cell.disabled=thinking||snapshot.status.over;
+    cell.disabled=thinking||animating||snapshot.status.over;
     board.append(cell);
   }
   renderThreatOverlay(board,snapshot,artifactById(state.match.artifactId),'w');
   applyPinIce(board,snapshot);
+}
+function stopMoveAnimation(){
+  const active=moveAnimation;moveAnimation=null;
+  active?.cancel();moveFlyer?.remove();captureGhost?.remove();moveFlyer=null;captureGhost=null;
+  animating=false;animationDestination=null;
+}
+function moveGeometry(from,to,promo){
+  if(document.documentElement.dataset.reducedMotion==='1'||globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches||typeof Element.prototype.animate!=='function')return null;
+  const candidate=engine.legalMoves(from).find(move=>(move.uciTo||move.to)===to&&(!move.promotion||move.promotion===promo));
+  if(!candidate||candidate.castle)return null;
+  const source=board.querySelector('[data-square="'+from+'"] .classic-piece');
+  const target=board.querySelector('[data-square="'+to+'"]');
+  if(!source||!target)return null;
+  const captured=candidate.capture?board.querySelector('[data-square="'+candidate.capture+'"] .classic-piece'):null;
+  return {source:source.getBoundingClientRect(),target:target.getBoundingClientRect(),src:source.getAttribute('src'),capturedSrc:captured?.getAttribute('src'),capturedRect:captured?.getBoundingClientRect()};
+}
+function animateCommittedMove(geometry,to,onDone){
+  const target=board.querySelector('[data-square="'+to+'"] .classic-piece')?.getBoundingClientRect();
+  const left=target?.left??geometry.target.left+(geometry.target.width-geometry.source.width)/2;
+  const top=target?.top??geometry.target.top+(geometry.target.height-geometry.source.height)/2;
+  const flyer=document.createElement('img');flyer.className='classic-piece-flyer';flyer.src=geometry.src;flyer.alt='';
+  Object.assign(flyer.style,{left:geometry.source.left+'px',top:geometry.source.top+'px',width:geometry.source.width+'px',height:geometry.source.height+'px'});
+  moveFlyer=flyer;document.body.append(flyer);
+  if(geometry.capturedSrc&&geometry.capturedRect){
+    const ghost=document.createElement('img');ghost.className='classic-captured-ghost';ghost.src=geometry.capturedSrc;ghost.alt='';
+    Object.assign(ghost.style,{left:geometry.capturedRect.left+'px',top:geometry.capturedRect.top+'px',width:geometry.capturedRect.width+'px',height:geometry.capturedRect.height+'px'});
+    captureGhost=ghost;document.body.append(ghost);
+    ghost.animate([{opacity:1,transform:'scale(1)'},{opacity:0,transform:'scale(.72)'}],{duration:240,easing:'ease-out',fill:'forwards'});
+  }
+  const stamp=searchId,matchId=state.match?.id;
+  const animation=flyer.animate([{transform:'translate3d(0,0,0) scale(1)'},{transform:'translate3d('+(left-geometry.source.left)+'px,'+(top-geometry.source.top)+'px,0) scale(1.025)'}],{duration:290,easing:'cubic-bezier(.22,.8,.24,1)',fill:'forwards'});
+  moveAnimation=animation;
+  animation.finished.catch(()=>{}).finally(()=>{
+    if(moveAnimation!==animation)return;
+    stopMoveAnimation();
+    if(stamp!==searchId||!engine||state.match?.id!==matchId)return;
+    renderBoard();onDone();
+  });
 }
 function openDialog(kind,html){dialogType=kind;dialog.innerHTML='<section class="arena-dialog-panel'+(kind==='foe'?' arena-dialog-panel--foe':'')+'" role="dialog" aria-modal="true" aria-label="'+escape(kind==='foe'?foeLabel(OPPONENT_BY_ID.get(dialog.dataset.foe)):l('title'))+'">'+html+'</section>';dialog.hidden=false;dialog.querySelector('button')?.focus();}
 function closeDialog(){dialog.hidden=true;dialog.replaceChildren();dialogType=null;}
@@ -105,7 +146,7 @@ function renderDialog(){
   if(dialogType==='foe'){
     const foe=OPPONENT_BY_ID.get(dialog.dataset.foe);if(!foe)return closeDialog();
     const stats=arenaSummary(state).stats[foe.id];
-    openDialog('foe','<header>'+button('close','×','class="arena-close" aria-label="'+(currentLanguage()==='en'?'Close':'Закрыть')+'"')+'</header><div class="arena-foe-profile"><div class="arena-foe-profile-art">'+img(foe.art,'arena-dialog-foe','')+'<p>'+l('power')+': ≈'+foe.elo+' Elo</p></div><dl class="arena-foe-profile-stats"><div><dt>'+l('wins')+'</dt><dd>'+stats.wins+'</dd></div><div><dt>'+l('losses')+'</dt><dd>'+stats.losses+'</dd></div><div><dt>'+l('draws')+'</dt><dd>'+stats.draws+'</dd></div></dl></div>'+button('fight',l('fight')));
+    openDialog('foe','<header>'+button('close','×','class="arena-close" aria-label="'+(currentLanguage()==='en'?'Close':'Закрыть')+'"')+'</header><div class="arena-foe-profile"><div class="arena-foe-profile-art">'+img(foe.art,'arena-dialog-foe','')+'<p>'+statIcon('power')+l('power')+': '+foe.elo+'</p></div><dl class="arena-foe-profile-stats"><div><dt>'+statIcon('wins')+l('wins')+'</dt><dd>'+stats.wins+'</dd></div><div><dt>'+statIcon('losses')+l('losses')+'</dt><dd>'+stats.losses+'</dd></div><div><dt>'+statIcon('draws')+l('draws')+'</dt><dd>'+stats.draws+'</dd></div></dl></div>'+button('fight',l('fight')));
   }else if(dialogType==='offer'&&state.match){
     const cards=ARTIFACTS.map(a=>button('artifact',img(a.icon,'arena-artifact','')+'<strong>'+escape(currentLanguage()==='en'?a.id==='threat.great'?'Greater awareness':a.id==='threat.attack'?'Attack awareness':'Defense awareness':a.name)+'</strong><small>'+escape(currentLanguage()==='en'?a.id==='threat.great'?'Shows threats to both armies':a.id==='threat.attack'?'Shows threats to enemy pieces':'Shows threats to your pieces':a.description)+'</small><span>'+img(SHARD_ICON,'arena-inline-shard','')+' '+ARTIFACT_PRICES[a.id]+'</span>','data-artifact="'+a.id+'" '+(arenaSummary(state).balance<ARTIFACT_PRICES[a.id]?'disabled':''))).join('');
     openDialog('offer','<h2>'+l('offer')+'</h2><p>'+l('offerText')+'</p><div class="arena-offers">'+cards+button('artifact',l('none'),'data-artifact="none"')+'</div>');
@@ -135,7 +176,7 @@ function restoreMatch(){
 function settle(status){
   if(!status.over||state.match?.phase!=='playing')return;
   const outcome=status.type==='checkmate'?(status.winner==='w'?'win':'loss'):'draw';
-  engine=null;selected=null;adapter.stop();searchId++;notice='';
+  stopMoveAnimation();engine=null;selected=null;adapter.stop();searchId++;notice='';
   save(finishMatch(state,outcome));dialogType='result';render();
 }
 function startBattle(){
@@ -143,36 +184,42 @@ function startBattle(){
   closeDialog();engine=new ClassicChessEngine();selected=null;render();
 }
 function commit(from,to,promo=null){
-  if(!engine||thinking||state.match?.phase!=='playing')return;
+  if(!engine||animating||thinking||state.match?.phase!=='playing')return;
+  const geometry=moveGeometry(from,to,promo);
   const result=engine.move(from,to,promo);
   if(!result.ok){
     if(result.reason==='promotion_required'){promotion={from,to};dialogType='promotion';renderDialog();}
     return;
   }
   selected=null;promotion=null;closeDialog();
+  animating=Boolean(geometry);animationDestination=animating?to:null;
   const moves=[...state.match.moves,from+to+(promo||'')];
   save({...state,match:{...state.match,moves},updatedAt:Date.now()});
-  if(result.status.over)settle(result.status);
-  else void aiTurn();
+  const afterMove=()=>{if(result.status.over)settle(result.status);else void aiTurn();};
+  if(geometry)animateCommittedMove(geometry,to,afterMove);
+  else afterMove();
 }
 async function aiTurn(){
   if(!engine||engine.turn()!=='b'||state.match?.phase!=='playing')return;
   const stamp=++searchId,foe=OPPONENT_BY_ID.get(state.match.foe);thinking=true;render();
+  const started=performance.now();
   const uci=await adapter.chooseMove({fen:engine.fen(),elo:foe.elo,legalMoves:engine.legalMoves(),arena:true});
+  const remaining=Math.max(0,180-(performance.now()-started));
+  if(remaining)await new Promise(resolve=>setTimeout(resolve,remaining));
   if(stamp!==searchId||!engine||state.match?.phase!=='playing')return;
   thinking=false;
   if(!uci){notice='Engine is unavailable';render();return;}
   commit(uci.slice(0,2),uci.slice(2,4),uci.slice(4)||null);
 }
 function enter(){state=read();engine=null;selected=null;section=Math.floor((OPPONENT_BY_ID.get(state.match?.foe)?.index??arenaSummary(state).highest)/7);notice='';visible(true);if(state.match?.phase==='result')dialogType='result';else if(state.match?.phase==='offer')dialogType='offer';else restoreMatch();render();}
-function leave(){adapter.stop();searchId++;thinking=false;engine=null;closeDialog();visible(false);}
+function leave(){adapter.stop();searchId++;thinking=false;stopMoveAnimation();engine=null;closeDialog();visible(false);}
 root?.addEventListener('click',event=>{
   const target=event.target.closest('button');if(!target||target.disabled)return;
   if(target.dataset.arenaBack!==undefined){leave();return;}
   if(target.dataset.arenaPrev!==undefined){section=Math.max(0,section-1);render();return;}
   if(target.dataset.arenaNext!==undefined){section=Math.min(11,section+1);render();return;}
   if(target.dataset.arenaResume!==undefined){if(state.match?.phase==='offer')dialogType='offer';else if(state.match?.phase==='result')dialogType='result';else restoreMatch();render();return;}
-  if(target.dataset.arenaRivals!==undefined){adapter.stop();searchId++;thinking=false;engine=null;render();return;}
+  if(target.dataset.arenaRivals!==undefined){adapter.stop();searchId++;thinking=false;stopMoveAnimation();engine=null;render();return;}
   if(target.dataset.arenaSquad){
     const race=target.dataset.arenaSquad,summary=arenaSummary(state);
     if(!summary.owned.has(race)){
