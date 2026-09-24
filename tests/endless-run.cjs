@@ -9,7 +9,10 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   const storage=new MemoryStorage();
 
   let run=persistence.writeRun(persistence.createRun({now:1000,id:'endless-run-test'}),storage,1000);
-  assert.deepStrictEqual(run.runStats,{goldEarned:0,skirmishWins:0,battleWins:0,puzzlesSolved:0,eventsResolved:0});
+  assert.deepStrictEqual(run.runStats,{goldEarned:0,skirmishWins:0,battleWins:0,caravansDefended:0,puzzlesSolved:0,eventsResolved:0});
+  const oldSaveStats=endless.hydrateRunStats({runStats:{goldEarned:8,skirmishWins:1,battleWins:0,puzzlesSolved:0,eventsResolved:0}});
+  assert.strictEqual(oldSaveStats.caravansDefended,0,'old saves without caravan statistics remain readable');
+  assert(endless.isRunStats(oldSaveStats));
 
   run=persistence.writeRun({...run,skirmishCount:1,lastSkirmish:{result:'checkmate',winner:'w',playerColor:'w'}},storage,1100);
   assert.strictEqual(run.runStats.skirmishWins,1);
@@ -20,6 +23,13 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   assert.strictEqual(run.runStats.battleWins,0,'Battle loss must not count as a win');
   run=persistence.writeRun({...run,battleCount:2,lastBattle:{result:'checkmate',winner:'w',playerColor:'w'}},storage,1250);
   assert.strictEqual(run.runStats.battleWins,1);
+
+  run=persistence.writeRun({...run,caravanCount:1,lastCaravan:{result:'stalemate',winner:null,playerColor:'w'}},storage,1270);
+  assert.strictEqual(run.runStats.caravansDefended,0,'an unsuccessful caravan defense must not count');
+  run=persistence.writeRun({...run,caravanCount:2,lastCaravan:{result:'checkmate',winner:'w',playerColor:'w'}},storage,1280);
+  assert.strictEqual(run.runStats.caravansDefended,1,'a successful caravan defense counts once');
+  run=persistence.writeRun({...run},storage,1290);
+  assert.strictEqual(run.runStats.caravansDefended,1,'re-saving a defense must not count twice');
 
   run=persistence.writeRun({...run,gold:run.gold+33},storage,1300);
   assert.strictEqual(run.runStats.goldEarned,33);
@@ -45,6 +55,7 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   assert.strictEqual(summary.goldEarned,33);
   assert.strictEqual(summary.skirmishWins,1);
   assert.strictEqual(summary.battleWins,1);
+  assert.strictEqual(summary.caravansDefended,1);
   assert.strictEqual(summary.puzzlesSolved,1);
   assert.strictEqual(summary.eventsResolved,1);
   assert.strictEqual(summary.heroesRecruited,1);
@@ -56,7 +67,7 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   const carryover=rating.applyNewRunPowerCarryover(storage);
   assert.strictEqual(carryover.before,777);assert.strictEqual(carryover.after,583,'new run must start with 75% of final Power');
   const nextRun=persistence.writeRun(persistence.createRun({now:2000,id:'endless-new-run'}),storage,2000);
-  assert.deepStrictEqual(nextRun.runStats,{goldEarned:0,skirmishWins:0,battleWins:0,puzzlesSolved:0,eventsResolved:0},'new run must reset run statistics');
+  assert.deepStrictEqual(nextRun.runStats,{goldEarned:0,skirmishWins:0,battleWins:0,caravansDefended:0,puzzlesSolved:0,eventsResolved:0},'new run must reset run statistics');
   assert.strictEqual(rating.readPlayerRating(storage).power,583,'new run must preserve the reduced carryover Power');
 
   const app=fs.readFileSync(path.join(game,'js/endless-run-app.mjs'),'utf8');
@@ -73,9 +84,11 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   for(const token of ["import { shareRunResult } from './content/share-result.mjs'",'data-endless-run-share','shareRunResult(activeRun, { power: readPlayerRating().power })'])assert(app.includes(token),`Final-summary sharing contract missing ${token}`);
   for(const token of ["'endless.title':'ЗАБЕГ ЗАВЕРШЁН'","'endless.metric.goldEarned':'ЗАРАБОТАНО ЗОЛОТА'","'endless.metric.finalPower':'ИТОГОВАЯ МОЩЬ'","'endless.newGame':'НОВАЯ ИГРА'","'endless.menu':'ГЛАВНОЕ МЕНЮ'"])assert(runtimeUi.includes(token),`runtime owner registry missing ${token}`);
   for(const forbidden of ['ЗАБЕГ ЗАВЕРШЁН','ЗАРАБОТАНО ЗОЛОТА','ИТОГОВАЯ МОЩЬ','НОВАЯ ИГРА','ГЛАВНОЕ МЕНЮ'])assert(!app.includes(forbidden),`Endless runtime must not hardcode localized copy: ${forbidden}`);
-  assert(app.includes('css/endless-run-compact.css?v=20260909-owner1'),'Endless Run owner must load its compact stylesheet after base CSS');
+  assert(app.includes('css/endless-run-compact.css?v=20260925-flag-1'),'Endless Run owner must load its compact stylesheet after base CSS');
   assert(compactCss.includes('body.endless-run-active .resource-hud{display:none!important}'),'Endless Run owner compact stylesheet must suppress the floating resource HUD on the final summary');
-  assert(compactCss.includes('height:100dvh')&&compactCss.includes("grid-template-areas:\n      'eyebrow metrics'"),'Landscape final summary must fit the actual VK iframe height while preserving its two-column layout');
+  assert(css.includes('royal_run_flag') === false && app.includes('assets/ui/royal_run_flag.png'),'Run summary must render the optimized flag asset');
+  assert(css.includes('inset:15% 21% 24%')&&css.includes('overflow-y:auto'),'Run metrics must remain scrollable within the flag safety area');
+  assert(compactCss.includes('main.endless-run-screen:not([hidden])')&&compactCss.includes('overflow-y:auto!important'),'Short landscape screens must allow vertical access to the flag and buttons');
   assert(shareResult.includes('platform.social.wallPost')&&!shareResult.includes('platform.social.shareLink'),'VK result sharing must open wall publication instead of the private-message share dialog');
   assert(platform.includes("if (!isVKLaunch()) return Object.freeze({ status:'unavailable' });\n    try {\n      const response = await sendVKRequest('VKWebAppShowWallPostBox'"),'Wall posting must be attempted directly because handler discovery is not authoritative in every VK host');
   assert(!fs.existsSync(path.join(game,'js/post-pages-ui-polish.mjs')),'retired post-pages presentation shim must stay deleted');

@@ -11,7 +11,7 @@ function ensureCss() {
   if (document.querySelector('[data-player-identity-chronicle-css]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/player-identity-chronicle.css?v=20260831-identity-1';
+  link.href = 'css/player-identity-chronicle.css?v=20260925-flag-1';
   link.dataset.playerIdentityChronicleCss = '';
   document.head.append(link);
 }
@@ -111,29 +111,36 @@ function ensureChroniclePanel() {
   const layout = document.querySelector('.reboot-menu-screen__layout');
   if (!layout) return null;
   chroniclePanel = document.createElement('aside');
-  chroniclePanel.className = 'chronicle-panel ui-panel-safe';
+  chroniclePanel.className = 'chronicle-panel';
   chroniclePanel.setAttribute('data-chronicle-panel', '');
   chroniclePanel.setAttribute('aria-label', 'Летопись походов');
   chroniclePanel.innerHTML = `
-    <header class="chronicle-header">
-      <div class="reboot-eyebrow">ЛЕТОПИСЬ</div>
-      <h2>Летопись</h2>
-    </header>
-    <div class="chronicle-current" data-chronicle-current></div>
-    <div class="chronicle-divider" aria-hidden="true"></div>
-    <div class="chronicle-best" data-chronicle-best></div>`;
+    <img class="chronicle-flag-art" src="assets/ui/royal_run_flag.png" alt="" aria-hidden="true">
+    <div class="chronicle-safe">
+      <header class="chronicle-header"><h2>Летопись</h2></header>
+      <div class="chronicle-current" data-chronicle-current></div>
+      <div class="chronicle-divider" aria-hidden="true"></div>
+      <div class="chronicle-best" data-chronicle-best></div>
+    </div>`;
   layout.append(chroniclePanel);
   return chroniclePanel;
 }
 
-function metric(label, value) {
+function metric(label, value, icon) {
   const row = document.createElement('div');
   row.className = 'chronicle-metric';
+  const image = document.createElement('img');
+  image.src = icon;
+  image.alt = '';
+  image.setAttribute('aria-hidden', 'true');
+  const detail = document.createElement('div');
+  detail.className = 'chronicle-metric-detail';
   const key = document.createElement('span');
   key.textContent = label;
   const strong = document.createElement('strong');
   strong.textContent = String(value);
-  row.append(key, strong);
+  detail.append(key, strong);
+  row.append(image, detail);
   return row;
 }
 
@@ -163,7 +170,7 @@ function renderChronicle() {
   if (currentRoot) {
     if (current) {
       currentRoot.append(sectionTitle('ТЕКУЩИЙ ПОХОД', current.playerName));
-      currentRoot.append(metric('МОЩЬ', current.power), metric('НЕДЕЛЯ', current.week), metric('ГЕРОЕВ В СТРОЮ', current.heroes));
+      currentRoot.append(metric('МОЩЬ', current.power, 'assets/doctrines/royal_court/emblem.png'), metric('НЕДЕЛЯ', current.week, 'generated_assets/node_story.png'), metric('ГЕРОЕВ В СТРОЮ', current.heroes, 'generated_assets/reward_recruit.png'));
     } else {
       currentRoot.append(sectionTitle('ТЕКУЩИЙ ПОХОД', 'Нет активного похода'));
     }
@@ -173,7 +180,7 @@ function renderChronicle() {
   if (bestRoot) {
     if (best) {
       bestRoot.append(sectionTitle('ЛУЧШИЙ ПОХОД', best.playerName));
-      bestRoot.append(metric('СЛАВА', best.glory), metric('НЕДЕЛЯ', best.week), metric('МОЩЬ', best.power));
+      bestRoot.append(metric('СЛАВА', best.glory, 'generated_assets/node_elite.png'), metric('НЕДЕЛЯ', best.week, 'generated_assets/node_story.png'), metric('МОЩЬ', best.power, 'assets/doctrines/royal_court/emblem.png'));
     } else {
       bestRoot.append(sectionTitle('ЛУЧШАЯ ЛЕТОПИСЬ', 'Летопись пуста'));
       const text = document.createElement('p');
