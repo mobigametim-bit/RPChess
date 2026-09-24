@@ -2,6 +2,13 @@
 
 > Historical entries record the delivery rules and assets that applied at their original dates. Current production/remediation policy is defined by `CURRENT_STATE.md`, `16_UI_UX.md`, `17_TECH_ARCHITECTURE.md` and `REVIEW_REMEDIATION_DECISIONS.md`; historical Cloudflare or `ui_button_primary.png` receipts do not override it.
 
+## 2026-09-24 — Arena plan and documentation reconciliation
+
+- Recorded the Arena plan: 84 opponents, increasing approximate Elo per opponent, 14 cosmetic squads, Honor Shards, artifacts, victory/draw/defeat, VK rewarded ×2 and independent cross-device progression. This is documentation only; no Arena gameplay has been implemented.
+- Caravan passed owner playtest and was merged via PR #144 (`a706eb8`). The earlier asset/plan PR #143 was merged too.
+- VK cross-device saves and combat-resume corrections were merged via PRs #145–147 (latest `f6f0eec`). On 2026-09-24 the owner confirmed that the phone resumed the laptop run after manual repair of a cloud checksum mismatch; the exact corruption cause and automatic recovery remain unverified.
+- The owner reported submitting the VK game for repeat moderation; the dashboard outcome has not been verified. GitHub Pages deployment remains manual via `workflow_dispatch`.
+
 ## 2026-09-23 — Caravan implementation under validation
 
 - Draft PR #144 implements the Caravan Chess960 route, free mercenaries, artifact selection, three deterministic reward offers, persistent recovery and shared victory/defeat/draw aftermath.
