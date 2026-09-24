@@ -102,7 +102,7 @@ module.exports=function verifySource(root){
   const settlementApp=read(root,'js/settlement-app.mjs');requireTokens(settlementApp,['css/settlement-compact.css?v=20260909-owner1'],'Settlement compact owner loader');
   const starvationApp=read(root,'js/starvation-app.mjs');requireTokens(starvationApp,['css/starvation-compact.css?v=20260909-owner1',"import { subscribe, t, translateLegacy } from './i18n.mjs'","t('starvation.ariaLabel')","'starvation.kingText'","'starvation.companionText'",'subscribe(() =>'],'owner-keyed Starvation runtime');
   if(starvationApp.includes('КОРОЛЬ ПОГИБ ОТ ГОЛОДА')||starvationApp.includes('ПРОДОЛЖИТЬ ПУТЬ'))fail('Starvation runtime must not hardcode keyed RU presentation copy');
-  const endlessApp=read(root,'js/endless-run-app.mjs');requireTokens(endlessApp,['css/endless-run-compact.css?v=20260925-flag-1','assets/ui/royal_run_flag.png'],'Endless Run compact owner loader');
+  const endlessApp=read(root,'js/endless-run-app.mjs');requireTokens(endlessApp,['css/endless-run-compact.css?v=20260925-flag-2','assets/ui/royal_run_flag.png'],'Endless Run compact owner loader');
   const battleCore=read(root,'js/battle-core.mjs');requireTokens(battleCore,['MAX_ENCOUNTER_STARS','playerColor','enemyRaceTag','BATTLE_TIERS','kingDied:false'],'Battle 12-level non-lethal checkmate core');
   if(battleCore.includes("kingDied=true;return{...c,status:'dead'}"))fail('Battle checkmate must not kill the RPG King');
   if(battleCore.includes('Победа решится по классическим шахматным правилам.'))fail('Battle encounter copy must not rely on presentation-time regex cleanup');
