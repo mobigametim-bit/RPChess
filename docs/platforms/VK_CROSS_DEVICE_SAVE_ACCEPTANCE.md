@@ -2,6 +2,10 @@
 
 Canonical host remains GitHub Pages; sync is active only when RPChess is launched in VK under the same VK account. Direct GitHub Pages play stays local to the browser. Desktop VK frames without launch parameters must be recognized through a verified VK parent Bridge response before the run loads.
 
+## Observed result — 2026-09-24
+
+PRs #145–147 are merged. The owner observed a laptop on week 26 and an older phone on week 20; the cloud read returned a checksum mismatch and sync paused. After a one-time manual rewrite of the cloud envelope from the laptop's local save and clearing the older phone cache, the owner confirmed that the phone resumed at the laptop's location. This validates one real same-account transfer after repair; it does not validate automatic recovery of the corrupted state or every case in the acceptance matrix below. Keep the underlying corruption mechanism open for investigation.
+
 ## Two-device check in the real app
 
 1. Open the VK app on device A, continue an existing run and note the week, Gold, Supplies, Power and current encounter. Do not create a fresh run on an account with valuable progress just for this check.
