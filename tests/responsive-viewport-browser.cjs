@@ -37,12 +37,11 @@ async function captureFlagScreens(browser, width, height) {
     await startNewRun(page, { playerName:'Хранитель Клятвы' });
     await page.locator('[data-roster-menu]').click();
     await page.locator('[data-chronicle-panel]').waitFor({ state:'visible' });
+    fs.mkdirSync(FLAG_SCREENSHOT_DIR, { recursive:true });
+    await page.screenshot({ path:path.join(FLAG_SCREENSHOT_DIR,`menu-${width}x${height}.png`),fullPage:false });
     await assertViewportContained(page, '[data-chronicle-panel]', `${label} Chronicle frame`);
     await assertPageFitsViewport(page, `${label} menu`);
     const menuButtonHeight = await page.locator('.reboot-menu-actions .reboot-button').first().evaluate((node) => node.getBoundingClientRect().height);
-    fs.mkdirSync(FLAG_SCREENSHOT_DIR, { recursive:true });
-    await page.screenshot({ path:path.join(FLAG_SCREENSHOT_DIR,`menu-${width}x${height}.png`),fullPage:false });
-
     await page.evaluate((key) => {
       const run = JSON.parse(localStorage.getItem(key));
       run.ended = true;
@@ -56,6 +55,7 @@ async function captureFlagScreens(browser, width, height) {
     await page.locator('[data-endless-run-screen]:not([hidden])').waitFor();
     await page.locator('.endless-run-flag-art').evaluate((image) => image.decode());
     await page.waitForFunction(() => [...document.querySelectorAll('.endless-run-metric img')].every((image) => image.complete));
+    await page.screenshot({ path:path.join(FLAG_SCREENSHOT_DIR,`result-${width}x${height}.png`),fullPage:false });
     await assertViewportContained(page, '.endless-run-panel', `${label} result flag`);
     await assertPageFitsViewport(page, `${label} result`);
     for (const selector of ['.endless-run-logo','[data-endless-run-new]','[data-endless-run-share]','[data-endless-run-menu]']) {
@@ -66,7 +66,6 @@ async function captureFlagScreens(browser, width, height) {
     assert(buttonHeights.every((height) => Math.abs(height-menuButtonHeight)<3), `${label}: result buttons ${buttonHeights} differ from menu ${menuButtonHeight}`);
     const brokenIcons = await page.locator('.endless-run-metric img').evaluateAll((images) => images.filter((img) => !img.complete || !img.naturalWidth).map((img) => img.getAttribute('src')));
     assert.deepStrictEqual(brokenIcons,[],`${label}: broken result icons`);
-    await page.screenshot({ path:path.join(FLAG_SCREENSHOT_DIR,`result-${width}x${height}.png`),fullPage:false });
   } finally {
     await page.close();
   }
