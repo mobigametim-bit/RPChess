@@ -179,6 +179,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert(goldResult.background.includes('12, 15, 19') && goldResult.border.includes('218, 177, 86'),'result modal matches gold Journey palette');
     const resultButton=await page.locator('.arena-dialog-panel--result .arena-result-actions button').first().evaluate(node=>getComputedStyle(node).backgroundImage);
     assert(resultButton.includes('58, 45, 27'),'victory buttons use gold UI styling');
+    assert(await page.locator('.arena-dialog-panel--result .arena-result-actions button').first().evaluate(node=>node.classList.contains('reboot-button--primary')),'result actions reuse the common primary button');
     await page.evaluate(()=>{
       const key='rpchess.reboot.v1.arena';
       const saved=JSON.parse(localStorage.getItem(key));saved.match=null;localStorage.setItem(key,JSON.stringify(saved));
