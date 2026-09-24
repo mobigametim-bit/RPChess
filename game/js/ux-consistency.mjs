@@ -69,10 +69,7 @@ function ensureLandscapeAcceptanceRevision() {
     box-sizing: border-box !important;
   }
 
-  /* Run summary phone: remove decorative wordmark and make all four metric rows fit fully. */
-  html[data-landscape-ui='1'] body.endless-run-active .endless-run-logo {
-    display: none !important;
-  }
+  /* Run summary phone: keep the localized logo in the compact controls rail. */
   html[data-landscape-ui='1'] body.endless-run-active .endless-run-screen {
     width: 100vw !important;
     height: 100dvh !important;
