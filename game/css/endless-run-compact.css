@@ -84,6 +84,7 @@
 }
 @media (orientation:landscape) and (max-height:860px){
   html[data-landscape-ui='1'] .endless-run-actions{width:min(500px,90%)!important}
+  html[data-landscape-ui='1'] .endless-run-actions .reboot-button{min-height:clamp(34px,6.2vh,48px)!important;height:clamp(34px,6.2vh,48px)!important}
 }
 @media (orientation:landscape) and (max-height:540px){
   html[data-landscape-ui='1'] .endless-run-actions .reboot-button{min-height:36px!important;height:36px!important}
