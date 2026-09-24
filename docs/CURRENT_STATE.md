@@ -1,25 +1,21 @@
 # RPChess — Current State
 
-**Last synchronized:** 2026-09-23
-**Production branch:** `main`  
-**Accepted production head:** `df24f4c69c77caa01e74e8722a022e405e682f00`
+**Last synchronized:** 2026-09-24  
+**Source branch:** `main` (verified head before this documentation change: `f6f0eec93e4cb3342477d6e164aaa56c08ab2ad8`)  
+**Latest separately verified Pages release SHA:** not established in this document; deployment is manual.  
 **Production URL:** https://mobigametim-bit.github.io/RPChess/  
-**Current active stage:** **Caravan implemented on draft PR #144; validation and Preview pending**
-**Working plan:** `docs/features/CARAVAN_PLAN.md`
+**Current planning stage:** Arena / Арена — design recorded, implementation not started.  
+**Working plan:** `docs/features/ARENA_PLAN.md`
 
-This page is the short operational snapshot of the project. Historical feature receipts remain in the numbered documents and `CHANGELOG.md`; when an old receipt conflicts with this page about deployment, responsive UI, persistence, current asset usage or current project stage, this page describes the current contract.
+This is the current operational snapshot; older milestones and receipts below remain historical. The GitHub Pages site is updated only by a manually dispatched Pages workflow from `main`; normal pushes and PR checks validate without publishing.
 
-## Current phase — Caravan validation
+## Current phase — Arena plan; Caravan and VK saves already merged
 
-The full-project review remediation and VK delivery baseline are complete. The latest accepted `main` also includes Skirmish obstacles and the mobile Settlement/Skirmish live-device corrections through `df24f4c`.
-
-**Caravan / Караван** is implemented on `feature/caravan` in draft PR #144. It adds a Chess960 Travel route, free mercenaries, artifact choice, three reward offers and persistent recovery. Its product contract and implementation checklist are recorded here:
-
-`docs/features/CARAVAN_PLAN.md`
-
-Agents continuing this project should use that checklist as the source of truth for VK work, mark completed items there, preserve one shared gameplay codebase, and keep VK-specific integration behind the platform layer rather than creating a separate copy of RPChess.
-
-The local gate and targeted Chromium Caravan flow pass. Next: pass the PR workflow and full browser regression, publish a Preview, receive the user's manual acceptance, then merge into `main`. VK deployment follows the existing manual release process.
+- **Arena:** 84 opponents (14 races × 6 pieces), 12 visual sections of seven, 84 strictly increasing approximate Elo settings, independent Honor Shards economy and bought cosmetic squads. The approved UI and implementation plan live in `docs/features/ARENA_PLAN.md`. The Arena has no gameplay implementation yet; detailed prices, payouts and defeat icon remain to be finalized.
+- **Caravan:** Chess960, free mercenaries, artifacts, reward selection and reload recovery were human accepted and merged to `main` in [PR #144](https://github.com/mobigametim-bit/RPChess/pull/144), merge `a706eb8`. The earlier plan-only [PR #143](https://github.com/mobigametim-bit/RPChess/pull/143) is also merged.
+- **VK cross-device saves:** [PR #145](https://github.com/mobigametim-bit/RPChess/pull/145), [#146](https://github.com/mobigametim-bit/RPChess/pull/146) and [#147](https://github.com/mobigametim-bit/RPChess/pull/147) are merged, last merge `f6f0eec`. The owner confirmed on 2026-09-24 that a phone resumed at the laptop's location after a manually repaired remote checksum mismatch. The manual repair demonstrates one successful transfer, not automatic recovery of corrupted cloud state or a completed two-device acceptance matrix. Direct GitHub Pages remains browser-local.
+- **VK moderation:** the owner reported resubmission for moderation on 2026-09-24. Dashboard status and eventual approval have not been independently verified.
+- **Skirmish obstacles / mobile fixes / artifacts:** already accepted and merged; historical details are retained in their feature docs and changelog.
 
 ## Full-project review closure
 
@@ -39,9 +35,9 @@ RPChess is published from `main` through **GitHub Pages**.
 3. Pages artifact-size guard (`dist` must remain below 1 GB);
 4. Playwright/Chromium installation;
 5. real browser verification under the project subpath `/RPChess/` using Classic Chess/Stockfish and responsive viewport contracts;
-6. on permitted `main` runs, upload `dist` and deploy it to GitHub Pages.
+6. only for a manually dispatched workflow from `main`, upload `dist` and deploy it to GitHub Pages.
 
-PR runs validate candidates but do not publish them. Production Pages deployment is guarded to `main`.
+PR and push runs validate candidates without publishing. Only `workflow_dispatch` from `main` publishes GitHub Pages.
 
 Cloudflare configuration and `npm run deploy:cloudflare` remain only for an explicit manual owner request. No normal push, PR or milestone workflow deploys Cloudflare automatically. GitHub Pages remains the canonical public web production deployment while VK Games is developed as an additional platform target.
 
@@ -118,7 +114,7 @@ Current `main` includes owner-level RU/EN rendering for active dynamic surfaces 
 
 The current namespace is `rpchess.reboot.v1.run`, schema version `1`. Supported same-schema state is hydrated best-effort. Unsupported schema versions reset safely; old/legacy schema preservation and Iron Marches save import are not product obligations.
 
-For VK Games, storage must be accessed through the planned platform boundary so the existing local-save behavior can remain the first implementation while cloud/platform storage can be introduced later without duplicating gameplay logic.
+In VK, the PlatformAdapter now syncs a compact cloud envelope and retains localStorage as a local cache. Direct GitHub Pages play stays local to the browser. A corrupted VK remote checksum previously paused sync; a manual repair restored cross-device continuation once, while automatic recovery and concurrent-device conflict handling remain open verification points.
 
 ## Core gameplay state
 
@@ -142,7 +138,9 @@ The accepted Reboot core currently includes:
 - Battle Mercenaries economy and Balance Gate values.
 - Skirmish battlefield obstacles with obstacle-aware move/attack rays and pin-ice suppression.
 
-Caravan remains outside this production implementation list until PR #144 is accepted and merged.
+- Caravan Chess960 encounters are merged on `main` through PR #144; cross-device VK Cloud Save through PRs #145–147.
+
+Arena is planned and is not part of this implementation list.
 
 Historical acceptance/build receipts remain in the numbered design documents and changelog.
 
