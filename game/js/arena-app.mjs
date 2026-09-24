@@ -32,7 +32,7 @@ function save(next){state=normalizeArena(next);platform.storage.local?.setItem(A
 function id(){return globalThis.crypto?.randomUUID?.()||'arena:'+Date.now()+':'+Math.random().toString(36).slice(2);}
 function escape(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 function img(src,cls,alt=''){return '<img class="'+cls+'" src="'+src+'" alt="'+escape(alt)+'">';}
-function button(action,label,extra=''){return '<button type="button" data-arena-action="'+action+'" '+extra+'>'+label+'</button>';}
+function button(action,label,extra=''){const shared=['double','continue','again'].includes(action)?' class="reboot-button reboot-button--primary"':'';return '<button type="button"'+shared+' data-arena-action="'+action+'" '+extra+'>'+label+'</button>';}
 function statIcon(kind){return img(statIcons[kind],'arena-stat-icon','');}
 function visible(open){
   root.hidden=!open;menu.hidden=open;document.body.classList.toggle('arena-active',open);
