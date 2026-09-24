@@ -170,6 +170,15 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert(await page.locator('[data-arena-board] [data-square="e1"].classic-square--check').count(),'checked king must show red highlight');
     const redAura=await page.locator('[data-arena-board] [data-square="e1"]').evaluate(element=>getComputedStyle(element,'::after').backgroundImage);
     assert(redAura.includes('aura_red.png'),'checked king must use the Journey red aura');
+    await page.evaluate(()=>window.RPChessArena.engine.reset('7k/8/5KQ1/8/8/8/8/8 w - - 0 1'));
+    await page.locator('[data-arena-board] [data-square="g6"]').click();
+    await page.locator('[data-arena-board] [data-square="g7"]').click();
+    await page.locator('.arena-dialog-panel--result').waitFor({timeout:16000});
+    assert.strictEqual(await page.evaluate(()=>window.RPChessArena.state.match.outcome),'win','checkmate by player must resolve as victory');
+    const goldResult=await page.locator('.arena-dialog-panel--result').evaluate(node=>({background:getComputedStyle(node).backgroundImage,border:getComputedStyle(node).borderColor}));
+    assert(goldResult.background.includes('12, 15, 19') && goldResult.border.includes('218, 177, 86'),'result modal matches gold Journey palette');
+    const resultButton=await page.locator('.arena-dialog-panel--result .arena-result-actions button').first().evaluate(node=>getComputedStyle(node).backgroundImage);
+    assert(resultButton.includes('58, 45, 27'),'victory buttons use gold UI styling');
     await page.evaluate(()=>{
       const key='rpchess.reboot.v1.arena';
       const saved=JSON.parse(localStorage.getItem(key));saved.match=null;localStorage.setItem(key,JSON.stringify(saved));
