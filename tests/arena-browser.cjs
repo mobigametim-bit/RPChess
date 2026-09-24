@@ -207,6 +207,12 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert.strictEqual(await page.evaluate(()=>window.RPChessArena.state.match.playerColor),'b','reload keeps player color');
     assert.strictEqual(await page.locator('[data-arena-board] [data-square]').first().getAttribute('data-square'),'h1');
     assert.deepStrictEqual((await page.evaluate(()=>window.RPChessArena.state.match.moves)).slice(0,2),blackMoves.slice(0,2),'black match restores move history');
+    await page.waitForFunction(()=>window.RPChessArena.engine?.turn()==='b'&&document.querySelector('[data-arena-status]').textContent==='Ваш ход',{timeout:16000});
+    await page.evaluate(()=>window.RPChessArena.engine.reset('8/8/8/8/8/5kq1/8/7K b - - 0 1'));
+    await page.locator('[data-arena-board] [data-square="g3"]').click();
+    await page.locator('[data-arena-board] [data-square="g2"]').click();
+    await page.locator('.arena-dialog-panel--result').waitFor({timeout:16000});
+    assert.strictEqual(await page.evaluate(()=>window.RPChessArena.state.match.outcome),'win','checkmate by black player must count as victory');
     assert.deepStrictEqual(errors,[]);
     console.log('Arena mobile landscape, offer, match and reload: PASS');
   }finally{await browser.close();}
