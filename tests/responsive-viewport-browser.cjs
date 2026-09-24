@@ -99,7 +99,7 @@ async function auditPortraitLock(browser, width, height, language) {
 async function auditMenuModals(page, label) {
   await assertPageFitsViewport(page, `${label} menu`);
   for (const selector of ['[data-new-game]', '[data-continue-run]', '[data-settings]', '[data-language]']) {
-    await assertViewportContained(page, selector, `${label} ${selector}`);
+    await assertScrollableAction(page, selector, `${label} ${selector}`);
   }
 
   await page.locator('[data-settings]').first().click();
