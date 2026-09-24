@@ -24,10 +24,12 @@
 - [x] Hero Notes — 37 канонических character-notes: 36 HERO-01–36 + Хранитель Клятвы; presentation-layer captions в Отряде и Поселении, включая legacy saves. Human accepted 2026-08-31. Accepted head `985865c06032b4e731b8ef120049d0cfd49765b1`; Cloudflare build `42ba300a-3374-49dd-9392-d0f299d08fa5` — **SUCCESS**; Draft #98 закрыт unmerged из-за GraphQL `fullDatabaseId`; identical PR #99 squash-merged как `a6526bc77a0b39241a9b0db2bd5bc62d9a764167`. Accepted head и merge имеют tree SHA `424fe98cc78005c787679a6de676a7082278ca9b`; 0 asset files changed. **IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE.**
 - [x] Events v5 Hero Choices — **SOURCE APPROVED → IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → MERGED → DOCS SYNCED → DONE.** 500/500 событий, 537 персональных вариантов, HERO-01–36; missing/wounded/dead герой остаётся видимым locked-choice с именем и authored `heroLine`. Human accepted 2026-08-31. Exact accepted head `4bdd002bf618f73077c74329cc2f16edd48667ac`; Cloudflare exact-head build `90b126d9-1b28-4e60-8919-9b5d565a3f26` — **SUCCESS**; Draft #100 закрыт unmerged для established workaround; identical PR #101 squash-merged как `350e04783e4c4370dc490ff0745207b7f1b2ba11`. Accepted head и production merge имеют одинаковый tree SHA `abe48127ce4a709a22ecfbc86142aefdff493188`; 0 asset files changed.
 - [x] **PLAYTEST GATE C** — интересность собственного состава и corrected Skirmish flow подтверждены пользователем.
+- [x] Караван / Caravan — Chess960, бесплатные наёмники, артефакты, три награды, сохранение; ручная приёмка и merge PR #144 (`a706eb8`).
+- [x] VK Cloud Save / возобновление боёв — PR #145–147 в `main`; один реальный cross-device resume подтверждён после ручного восстановления checksum. Автоматическое восстановление повреждённого облака и полный acceptance matrix не подтверждены.
 
 ## Current
 
-- [ ] **Caravan / Караван** — implemented in draft PR #144: Chess960 route with selected heroes, free mercenaries, artifact choice and three hidden reward offers. Local gate and targeted Chromium flow pass; awaiting CI, Preview and human acceptance. See `docs/features/CARAVAN_PLAN.md`.
+- [ ] **Арена / Arena** — 84 соперника, плавная ≈400–2600 Elo, отдельная валюта «Осколок чести», отряды 14 рас, артефакты, реклама ×2, независимые облачные метаданные. Спецификация и этапы: `docs/features/ARENA_PLAN.md`; реализация не начата, цены/награды остаются балансным решением.
 
 ## Next
 
@@ -37,7 +39,7 @@
 
 ## Current phase
 
-**Events v4 — DONE. Puzzles — DONE. Power / Threat — DONE. Content Framework — DONE. First Complete Endless Run — RECONCILED / HUMAN ACCEPTED / DONE. Battle Mercenaries Economy — HUMAN ACCEPTED / DONE. Player Identity + Chronicle — HUMAN ACCEPTED / DONE. Hero Notes — HUMAN ACCEPTED / MERGED / DONE. Events v5 Hero Choices — HUMAN ACCEPTED / MERGED / DONE. Skirmish obstacles and the latest mobile settlement/combat corrections — DONE on `main`. Current phase: Caravan validation and Preview on draft PR #144.**
+**Events v4 — DONE. Puzzles — DONE. Power / Threat — DONE. Content Framework — DONE. First Complete Endless Run — RECONCILED / HUMAN ACCEPTED / DONE. Battle Mercenaries Economy — HUMAN ACCEPTED / DONE. Player Identity + Chronicle — HUMAN ACCEPTED / DONE. Hero Notes — HUMAN ACCEPTED / MERGED / DONE. Events v5 Hero Choices — HUMAN ACCEPTED / MERGED / DONE. Skirmish obstacles and the latest mobile settlement/combat corrections — DONE on `main`. Current phase: Arena plan recorded, implementation not started. Caravan accepted and merged in PR #144; VK Cloud Save merged in PRs #145–147, with one owner-confirmed cross-device resume after manual checksum repair.**
 
 ### Events v5 Hero Choices — accepted contract 2026-08-31
 

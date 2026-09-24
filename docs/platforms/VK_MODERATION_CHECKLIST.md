@@ -1,10 +1,12 @@
 # RPChess — VK Games moderation checklist
 
-Updated: 2026-09-15
+Updated: 2026-09-24
 
 VK app: `54754579`
 
-Current delivery path: `main` → canonical `dist/` → GitHub Pages → VK iframe/WebView.
+Current delivery path: `main` → canonical `dist/` → manually dispatched GitHub Pages deploy → VK iframe/WebView.
+
+The owner reported repeat moderation submission on 2026-09-24; the outcome is not yet verified. VK Cloud Save and battle resume have been merged in PRs #145–147. Cross-device continuation succeeded once after manual repair of a checksum-corrupted remote; do not mark automatic recovery or the full device matrix as accepted.
 
 Game URL: `https://mobigametim-bit.github.io/RPChess/`
 
@@ -18,7 +20,7 @@ The current VK developer dashboard and moderator feedback are authoritative if t
 - [x] `VKWebAppInit` is sent at bootstrap in VK context.
 - [x] Standalone Web startup remains available outside VK.
 - [x] Shared platform boundary now covers VK/Web detection, storage and lifecycle.
-- [x] Current v1 persistence is local storage behind the shared storage boundary.
+- [x] VK uses verified chunked cloud saves with localStorage as a local cache; direct Pages remains local-only.
 - [x] Audio is paused when the host page becomes inactive and restored on return.
 - [x] RU/EN localization exists.
 - [x] Stockfish, Brahms font and Lichess puzzle notices are present in repository/build handling.
@@ -37,7 +39,7 @@ Before submission, freeze an exact `main` SHA and verify that exact build:
 - [ ] confirm Stockfish worker/WASM loads and moves;
 - [ ] confirm hide/background pauses audio and return resumes normally;
 - [ ] confirm save/reload preserves the current run on the same browser/WebView;
-- [ ] confirm no UI promises cloud sync unless cloud sync is implemented.
+- [x] verify cloud sync only appears in VK context; direct Pages remains local-only.
 
 ## Manual VK smoke
 
