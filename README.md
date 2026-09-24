@@ -16,6 +16,7 @@ Active development happens through feature branches and human playtest gates bef
 The source-of-truth documentation lives under [`docs/`](docs/). Start with the current operational snapshot:
 
 - [`CURRENT_STATE.md`](docs/CURRENT_STATE.md) — current accepted production/runtime/deployment state;
+- [`ARENA_PLAN.md`](docs/features/ARENA_PLAN.md) — 84-opponent Arena design and implementation plan (not implemented);
 - `00_PRODUCT_VISION.md`
 - `01_CORE_GAME_LOOP.md`
 - `02_CHESS_RULES.md`
@@ -59,10 +60,10 @@ For the canonical project gate use `npm run gate:local`. Browser acceptance uses
 
 ## Production
 
-The accepted `main` build is published automatically to **GitHub Pages**:
+The accepted `main` build is published to **GitHub Pages** only when the Pages workflow is dispatched manually:
 
 https://mobigametim-bit.github.io/RPChess/
 
-`.github/workflows/pages.yml` validates pull requests with the canonical build plus real Chromium checks under the `/RPChess/` project subpath. Pull-request runs do **not** deploy; pushes to accepted `main` publish the optimized `dist/` artifact after the same gate.
+`.github/workflows/pages.yml` validates pull requests with the canonical build plus real Chromium checks under the `/RPChess/` project subpath. Pull-request and ordinary `main` push runs do **not** deploy; only a manual `workflow_dispatch` on `main` publishes the validated `dist/` artifact.
 
 Cloudflare configuration remains in the repository for compatibility/legacy preview workflows, but GitHub Pages is the canonical public production host.
