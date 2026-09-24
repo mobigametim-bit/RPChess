@@ -45,7 +45,7 @@ async function assertFlagSafety(page, panelSelector, safeSelector, label) {
 }
 
 async function assertScrollableAction(page, selector, label) {
-  await page.locator(selector).scrollIntoViewIfNeeded();
+  await page.locator(selector).first().scrollIntoViewIfNeeded();
   await assertViewportContained(page, selector, label);
 }
 
