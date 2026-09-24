@@ -1,4 +1,5 @@
 import { platform } from './platform.mjs';
+import { ARENA_KEY, normalizeArena, mergeArena } from './arena-core.mjs';
 import { createStarterRoster } from './roster-data.mjs';
 import { recruitProfile } from './settlement-core.mjs';
 import { RUN_STORAGE_KEY, readRun } from './run-persistence.mjs';
@@ -96,12 +97,14 @@ function localPayload() {
   const chronicle = readChronicle();
   const tutorial = safeJsonParse(localRaw(TUTORIAL_STORAGE_KEY));
   const adReceipts = safeJsonParse(localRaw(AD_RECEIPTS_STORAGE_KEY));
+  const arena = normalizeArena(safeJsonParse(localRaw(ARENA_KEY)));
   return {
     run:compactRun(run),
     rating:compactRating(rating),
     chronicle:{ schemaVersion:CHRONICLE_SCHEMA_VERSION, history:Array.isArray(chronicle?.history) ? chronicle.history : [] },
     tutorial,
-    adReceipts
+    adReceipts,
+    arena
   };
 }
 
@@ -110,7 +113,7 @@ function payloadHasProgress(payload) {
   if (payload.run) return true;
   if (Number(payload.rating?.power) !== STARTING_POWER || (payload.rating?.receipts?.length || 0) > 0) return true;
   if ((payload.chronicle?.history?.length || 0) > 0) return true;
-  return Boolean(payload.tutorial || payload.adReceipts);
+  return Boolean(payload.tutorial || payload.adReceipts || payload.arena?.events?.length || payload.arena?.match);
 }
 
 function checksum(input) {
@@ -314,6 +317,7 @@ function restoreLocalEnvelope(envelope) {
   writeLocalRaw(CHRONICLE_STORAGE_KEY, payload.chronicle || { schemaVersion:CHRONICLE_SCHEMA_VERSION, history:[] });
   writeLocalRaw(TUTORIAL_STORAGE_KEY, payload.tutorial ?? null);
   writeLocalRaw(AD_RECEIPTS_STORAGE_KEY, payload.adReceipts ?? null);
+  writeLocalRaw(ARENA_KEY, normalizeArena(payload.arena));
   const fingerprint = payloadFingerprint(payload);
   writeLocalMeta({ revision:envelope.revision, updatedAt:envelope.updatedAt, fingerprint });
   return true;
@@ -370,8 +374,13 @@ async function syncCloudNow() {
       const remote = remoteState.envelope;
       const decision = compareEnvelopes(envelope, remote);
       if (decision === 'cloud' && remote) {
-        restoreLocalEnvelope(remote);
-        lastUploadedFingerprint = remote.fingerprint;
+        const candidate=authoritativeEnvelope(remote,envelope);
+        if(candidate.fingerprint!==remote.fingerprint && !await writeCloudEnvelope(candidate,remoteState.manifest)){
+          scheduleCloudRetry();return false;
+        }
+        if(prepareLocalEnvelope().fingerprint!==envelope.fingerprint){successful=true;return true;}
+        restoreLocalEnvelope(candidate);
+        lastUploadedFingerprint = candidate.fingerprint;
         successful = true;
         if (globalThis.location?.reload) globalThis.location.reload();
         return true;
@@ -384,6 +393,8 @@ async function syncCloudNow() {
       const candidate = remote?.hasProgress ? authoritativeEnvelope(envelope, remote) : envelope;
       const ok = await writeCloudEnvelope(candidate, remoteState.manifest);
       if (ok) {
+        if(prepareLocalEnvelope().fingerprint!==envelope.fingerprint){successful=true;return true;}
+        if(candidate.fingerprint!==envelope.fingerprint)restoreLocalEnvelope(candidate);
         writeLocalMeta(candidate);
         lastUploadedFingerprint = candidate.fingerprint;
         successful = true;
@@ -421,6 +432,7 @@ function installCloudAutosync() {
     'rpchess:chronicle-updated',
     'rpchess:tutorial-updated',
     'rpchess:ad-receipts-updated'
+    ,'rpchess:arena-updated'
   ]) globalThis.addEventListener?.(name, scheduleCloudSync);
   platform.lifecycle.subscribe(() => {
     if (syncTimer) { clearTimeout(syncTimer); syncTimer = null; }
@@ -454,14 +466,19 @@ async function bootstrapCloudSave() {
   }
   const decision = compareEnvelopes(local, cloud);
   if (decision === 'cloud' && cloud) {
-    restoreLocalEnvelope(cloud);
-    lastUploadedFingerprint = cloud.fingerprint;
+    const candidate=authoritativeEnvelope(cloud,local);
+    let merged=true;
+    if(candidate.fingerprint!==cloud.fingerprint){
+      try{merged=await writeCloudEnvelope(candidate,cloudState.manifest);}catch(error){console.warn('[RPChess] Arena cloud merge failed',error);merged=false;}
+    }
+    if(merged){restoreLocalEnvelope(candidate);lastUploadedFingerprint=candidate.fingerprint;}
+    else scheduleCloudRetry();
   } else if (decision === 'local' && local.hasProgress) {
     const candidate = cloud?.hasProgress ? authoritativeEnvelope(local, cloud) : local;
     let ok = false;
     try { ok = await writeCloudEnvelope(candidate, cloudState.manifest); }
     catch (error) { console.warn('[RPChess] cloud save bootstrap write failed', error); }
-    if (ok) { writeLocalMeta(candidate); lastUploadedFingerprint = candidate.fingerprint; }
+    if (ok) { if(candidate.fingerprint!==local.fingerprint)restoreLocalEnvelope(candidate);writeLocalMeta(candidate); lastUploadedFingerprint = candidate.fingerprint; }
     else scheduleCloudRetry();
   } else if (decision === 'same') {
     lastUploadedFingerprint = local.fingerprint;
@@ -474,7 +491,15 @@ async function bootstrapCloudSave() {
 function authoritativeEnvelope(chosen, other) {
   const revision = Math.max(Number(chosen?.revision) || 0, Number(other?.revision) || 0) + 1;
   const updatedAt = Math.max(Number(chosen?.updatedAt) || 0, nowMs());
-  const payload = chosen.payload;
+  const payload = {...chosen.payload,arena:mergeArena(chosen.payload?.arena,other?.payload?.arena)};
+  // Arena-only progress from another device must never clear a journey that
+  // exists on the other side of the reconciliation. For the same run the
+  // furthest journey checkpoint remains authoritative regardless of clocks.
+  const chosenRun=chosen.payload?.run,otherRun=other?.payload?.run;
+  if(!chosenRun && otherRun)payload.run=otherRun;
+  else if(chosenRun?.id && chosenRun.id===otherRun?.id && Number.isInteger(chosenRun.journeyStep) && Number.isInteger(otherRun.journeyStep) && otherRun.journeyStep>chosenRun.journeyStep)payload.run=otherRun;
+  if(!chosen.payload?.chronicle?.history?.length && other?.payload?.chronicle?.history?.length)payload.chronicle=other.payload.chronicle;
+  if(!chosen.payload?.tutorial && other?.payload?.tutorial)payload.tutorial=other.payload.tutorial;
   return {
     schemaVersion:CLOUD_SAVE_SCHEMA_VERSION,
     revision,

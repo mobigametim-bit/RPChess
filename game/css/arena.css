@@ -1,0 +1,164 @@
+.arena-screen[hidden],.arena-dialog[hidden],.arena-catalog[hidden],.arena-battle[hidden],.arena-resume[hidden],.arena-nav-actions button[hidden]{display:none!important}
+.arena-screen{min-height:100dvh;box-sizing:border-box;padding:clamp(12px,2vw,28px);color:#f8edce;background:linear-gradient(110deg,#080e18ed,#101d2dec),url('../generated_assets/scene_battle.jpg') center/cover fixed;overflow-x:hidden}
+.arena-shell{max-width:1360px;margin:auto}
+.arena-topbar,.arena-section-nav,.arena-battle-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:space-between}
+.arena-topbar{border-bottom:1px solid #caa65b;padding-bottom:10px}
+.arena-topbar h1{margin:0;font-size:clamp(28px,4vw,50px)}
+.arena-nav-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.arena-balance{display:flex;align-items:center;gap:8px;font-size:18px;font-weight:bold;color:#ffe6a3}
+.arena-shard{width:42px;height:42px;object-fit:contain}
+.arena-catalog h2{font-size:clamp(19px,2.2vw,30px);margin:15px 0 9px}
+.arena-squads{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 12px;scroll-snap-type:x proximity;overscroll-behavior-inline:contain}
+.arena-squad,.arena-foe{position:relative;border:1px solid var(--ui-panel-border-gold);border-radius:var(--ui-panel-radius);background:var(--ui-panel-bg);color:#fff4c9;cursor:pointer;text-align:center;display:flex;align-items:center;flex-direction:column;justify-content:end;box-shadow:var(--ui-panel-shadow)}
+.arena-squad{min-width:112px;width:112px;min-height:134px;scroll-snap-align:start;padding:5px}
+.arena-squad.is-selected{outline:2px solid #d8b15d;outline-offset:-3px}
+.arena-squad-art{height:80px;width:90px;object-fit:contain}
+.arena-squad small,.arena-foe small{font-size:15px;color:#e4cf9c;line-height:1.15}
+.arena-section-nav{justify-content:start}
+.arena-section-nav h2{margin-right:auto}
+.arena-section-nav button{min-width:40px;height:40px;border:1px solid #d8b15d;background:#10253d;color:#fff;font-size:26px;cursor:pointer}
+.arena-section-nav button:disabled{opacity:.35;cursor:default}
+.arena-foes{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;overflow-x:auto;overscroll-behavior-inline:contain}
+.arena-foe{min-height:clamp(120px,18vw,205px);padding:8px 4px}
+.arena-foe-art{height:clamp(65px,12vw,137px);width:100%;max-width:100%;object-fit:contain}
+.arena-foe.is-locked{opacity:.55;filter:grayscale(1);cursor:default}
+.arena-lock{position:absolute;top:8px;right:8px;font-size:19px}
+.arena-notice{min-height:22px;color:#ffdb8d}
+.arena-resume{margin:14px 0}
+.arena-battle-head{margin:10px 0}
+.arena-battle-head h2{margin:0}
+.arena-battle-opponent{margin:0;color:#d7bd72;font-weight:800;border-bottom:1px solid rgba(212,180,93,.28);padding-bottom:8px}
+.arena-battle-material{border-block:1px solid rgba(212,180,93,.28)}
+.arena-battle-material>div{display:flex;align-items:center;gap:14px;min-height:36px;border-bottom:1px solid rgba(212,180,93,.18)}
+.arena-battle-material>div:last-child{border:0}
+.arena-battle-material>div>span:first-child{min-width:60px;color:#d5dce1;font-size:13px;font-weight:800;text-transform:uppercase}
+.arena-battle-material>div>span:last-child{display:flex;gap:4px;align-items:center;color:#b5bac4}
+.arena-battle-journal{min-height:110px;overflow:hidden;padding:12px;border:1px solid rgba(216,177,93,.28);background:rgba(4,8,13,.92)}
+.arena-battle-journal small{display:block;color:#e5bd70;font-size:11px;font-weight:800;letter-spacing:.08em}
+.arena-battle-journal h3{font:400 clamp(20px,2vw,28px) 'BrahmsGotischCyr',Georgia,serif;margin:0 0 6px}
+.arena-moves{height:calc(100% - 50px);max-height:none;overflow:auto}
+.arena-board{width:min(75vh,92vw,700px);height:auto;aspect-ratio:1;margin:0 auto}
+.arena-board .classic-piece{width:100%;height:100%;object-fit:contain}
+.arena-board .classic-piece-marker{pointer-events:none}
+.arena-board .classic-piece--arriving~.classic-piece-marker{visibility:hidden}
+.arena-dialog{position:fixed;inset:0;z-index:150;background:#02060bdd;display:grid;place-items:center;padding:16px;overflow:auto}
+.arena-dialog-panel{width:min(740px,96vw);max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain;padding:clamp(16px,2vw,28px);border:1px solid var(--ui-panel-border-gold);border-radius:var(--ui-panel-radius);background:var(--ui-panel-bg);color:#fff4d8;text-align:center;box-shadow:var(--ui-panel-shadow)}
+.arena-dialog-panel h2{margin:8px 0 12px;font-size:clamp(22px,3vw,32px)}
+.arena-dialog-panel header{position:relative}
+.arena-dialog-panel button{border:1px solid #d8b15d;border-radius:8px;padding:10px 17px;background:#10253d;color:#fff4c9;font-size:16px;font-weight:800;cursor:pointer}
+.arena-dialog-panel button:hover:not(:disabled){background:#18334d}
+.arena-dialog-panel button:disabled{opacity:.4;cursor:default}
+.arena-dialog-panel button[data-arena-action="fight"],.arena-dialog-panel button[data-arena-action="continue"]{background:#10253d}
+.arena-close{position:absolute;top:0;right:0}
+.arena-dialog-foe{height:min(25vh,190px);width:100%;object-fit:contain}
+.arena-offers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.arena-offers button{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
+.arena-offers small{font-size:15px;font-weight:400;line-height:1.2}
+.arena-artifact{width:64px;height:64px;object-fit:contain}
+.arena-inline-shard{width:20px;height:20px;vertical-align:middle}
+.arena-result-icon{display:block;height:125px;max-width:220px;object-fit:contain;margin:8px auto;font-size:100px;color:#dec67b}
+.arena-result-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.arena-promotions{display:flex;justify-content:center;gap:10px;font-size:32px}
+.arena-topbar h1,.arena-catalog h2,.arena-battle-head h2,.arena-dialog-panel h2,.arena-dialog-panel button,.arena-resume{font-family:'BrahmsGotischCyr',Georgia,serif;font-weight:400}
+.arena-squad{justify-content:center}
+.arena-squad-price{display:flex;align-items:center;justify-content:center;gap:4px;font-size:18px;line-height:1.1;color:#f5db96;font-weight:800}
+.arena-squad-price .arena-inline-shard{width:23px;height:23px}
+.arena-squad.is-unaffordable{filter:grayscale(1);opacity:.47;cursor:default}
+.arena-foe{background:linear-gradient(160deg,rgba(96,36,48,.95),rgba(43,14,27,.98));border-color:#b59168}
+.arena-foe:not(:disabled):hover{background:linear-gradient(160deg,rgba(121,49,59,.97),rgba(56,20,32,.98))}
+.arena-foe-power{display:flex;align-items:center;justify-content:center;gap:4px;flex:0 0 auto;width:100%;white-space:nowrap}
+.arena-stat-icon{width:30px;height:30px;flex:0 0 auto;object-fit:contain;vertical-align:middle}
+.arena-foe-power .arena-stat-icon{width:22px;height:22px}
+.arena-dialog-panel--foe{width:min(600px,96vw);background:linear-gradient(150deg,rgba(96,36,48,.98),rgba(36,12,25,.99));border-color:#b59168}
+.arena-dialog-panel--foe header{height:32px}
+.arena-dialog-panel--foe .arena-close{top:-8px;right:-8px;min-width:38px;min-height:38px;padding:0;font-size:28px;line-height:1}
+.arena-foe-profile{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,1fr);align-items:center;gap:18px;padding:4px 8px 18px}
+.arena-foe-profile-art{min-width:0}
+.arena-foe-profile-art .arena-dialog-foe{height:clamp(96px,22dvh,190px);width:100%}
+.arena-foe-profile-art p{display:flex;align-items:center;justify-content:center;gap:6px;font-size:clamp(17px,2vw,22px);font-weight:800;margin:4px 0 0;white-space:nowrap}
+.arena-foe-profile-stats{display:flex;flex-direction:column;gap:9px;margin:0;text-align:left;font-size:clamp(17px,2vw,22px)}
+.arena-foe-profile-stats div{display:flex;justify-content:space-between;gap:14px;border-bottom:1px solid #bd996a;padding:4px 0}
+.arena-foe-profile-stats dt{display:flex;align-items:center;gap:8px;white-space:nowrap}.arena-foe-profile-stats dd{margin:0;color:#ffe4ab;font-weight:800}
+.arena-dialog-panel--foe [data-arena-action="fight"]{min-width:65%;min-height:48px;font-size:22px}
+@media(max-width:500px){.arena-foe-profile{grid-template-columns:minmax(0,1fr) minmax(120px,1fr);gap:8px;padding-inline:0}.arena-foe-profile-art p{white-space:normal;font-size:16px}.arena-foe-profile-stats{font-size:16px}}
+@media (orientation:landscape){
+  body.arena-active{overflow:hidden}
+  .arena-screen{height:100dvh;min-height:0;overflow:hidden}
+  .arena-shell{height:100%;display:flex;flex-direction:column;min-height:0}
+  .arena-topbar{flex:0 0 auto}
+  .arena-catalog{display:flex;flex-direction:column;flex:1;min-height:0}
+  .arena-catalog h2,.arena-section-nav{flex:0 0 auto}
+  .arena-squads{flex:0 0 auto;min-height:0;max-height:21dvh}
+  .arena-squad{min-height:0;min-width:clamp(80px,10dvh,112px);width:clamp(80px,10dvh,112px)}
+  .arena-squad-art{height:min(12dvh,80px)}
+  .arena-foes{flex:1;min-height:0;align-items:stretch}
+  .arena-foe{min-height:0;overflow:hidden}
+  .arena-foe .arena-foe-art{height:0;min-height:0;max-height:none;flex:1 1 auto;transform:scale(1.12)}
+  .arena-notice{flex:0 0 auto;margin:3px 0;min-height:16px}
+  .arena-resume{flex:0 0 auto;margin:4px 0;min-height:42px;padding:4px 12px}
+  body.arena-battle-active .arena-screen{padding:0!important;overflow:hidden}
+  body.arena-battle-active .arena-shell{width:100vw;max-width:none;margin:0;display:grid;grid-template-columns:minmax(0,1fr) min(100dvh,calc(100vw - 320px));grid-template-rows:auto max-content minmax(0,1fr);column-gap:4px;background:linear-gradient(90deg,rgba(4,8,13,.32),rgba(4,8,13,.06)),url('../assets/regions/ashen_dominion/boss_arena.jpg') center/cover no-repeat #070b10}
+  body.arena-battle-active .arena-topbar{grid-column:1;grid-row:1;min-width:0;margin:0;padding:clamp(8px,1.4vh,16px) clamp(8px,1.3vw,22px);background:transparent;border-bottom:0;flex-wrap:nowrap}
+  body.arena-battle-active .arena-topbar h1{font-size:clamp(22px,3vw,36px)}
+  body.arena-battle-active .arena-balance{flex-wrap:wrap;font-size:clamp(14px,1.5vw,18px);margin-right:auto}
+  body.arena-battle-active .arena-nav-actions{flex-wrap:nowrap}
+  body.arena-battle-active .arena-nav-actions button{white-space:nowrap;min-height:36px;padding:5px 9px;font-family:'BrahmsGotischCyr',Georgia,serif;font-weight:400;background:linear-gradient(180deg,rgba(58,45,27,.72),rgba(14,16,19,.98))}
+  body.arena-battle-active .arena-battle:not([hidden]){display:contents}
+  body.arena-battle-active .arena-battle-head,body.arena-battle-active .arena-battle-journal{width:min(calc(100% - 16px),max(280px,48%));max-width:none;min-width:0;box-sizing:border-box;justify-self:start;margin-left:8px;background:rgba(4,8,13,.92);border:1px solid rgba(216,177,93,.28);box-shadow:0 12px 34px rgba(0,0,0,.32)}
+  body.arena-battle-active .arena-battle-head{grid-column:1;grid-row:2;min-height:0;overflow:auto;display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:8px;margin-top:0;margin-bottom:0;padding:clamp(10px,1.2vw,18px);border-bottom:0;border-radius:3px 3px 0 0}
+  body.arena-battle-active .arena-battle-head h2{font-size:clamp(21px,2.2vw,31px)}
+  body.arena-battle-active .arena-battle-head p[data-arena-status]{margin:0;font-size:clamp(14px,1.5vw,20px)}
+  body.arena-battle-active .arena-battle-journal{grid-column:1;grid-row:3;min-height:0;display:flex;margin-bottom:8px;padding:9px clamp(10px,1.2vw,18px);border-top-color:rgba(216,177,93,.20);border-radius:0 0 3px 3px;overflow:hidden;flex-direction:column}
+  body.arena-battle-active .arena-moves{flex:1;min-height:0;height:auto;overflow:auto}
+  body.arena-battle-active .arena-board.classic-board{grid-column:2;grid-row:1/4;box-sizing:border-box;width:min(100dvh,calc(100vw - 320px))!important;height:min(100dvh,calc(100vw - 320px))!important;max-width:none!important;min-width:0;margin:0!important;padding:0!important;aspect-ratio:1;border:0!important;box-shadow:none!important;align-self:start;justify-self:start}
+}
+body.arena-battle-active .arena-board .classic-square--check:has(.classic-piece-marker)::after{background:url('../assets/vfx/aura_red.png') center/100% 100% no-repeat!important;opacity:.72!important}
+body.arena-battle-active .arena-board .classic-square--check:has(.classic-piece--arriving)::after{opacity:0!important}
+@media (orientation:landscape) and (max-aspect-ratio:17/10){body.arena-battle-active .arena-balance{display:none}body.arena-battle-active .arena-topbar{flex-wrap:wrap}}
+@media(max-width:760px){.arena-foes{display:flex;gap:8px;scroll-snap-type:x proximity}.arena-foe{flex:0 0 132px;min-height:105px;scroll-snap-align:start}.arena-foe-art{height:80px}.arena-offers{grid-template-columns:repeat(2,minmax(0,1fr))}.arena-balance{font-size:15px}}
+@media(max-height:540px) and (orientation:landscape){
+  .arena-screen{height:100dvh;min-height:0;padding:4px 10px;overflow:hidden}
+  .arena-shell{height:100%;display:flex;flex-direction:column;min-height:0}
+  .arena-topbar{flex:0 0 auto;flex-wrap:nowrap;gap:8px;padding-bottom:2px}
+  .arena-topbar h1{font-size:clamp(21px,3vw,28px)}
+  .arena-balance{font-size:14px}.arena-balance .arena-shard{height:27px;width:27px}
+  .arena-catalog{display:flex;flex-direction:column;flex:1;min-height:0}
+  .arena-catalog h2{flex:0 0 auto;margin:2px 0;font-size:18px}
+  .arena-squads{flex:0 0 auto;height:clamp(58px,22dvh,88px);padding:0 2px 4px;gap:7px}
+  .arena-squad{min-height:0;width:116px;min-width:116px;padding:2px;justify-content:center}
+  .arena-squad-art{height:clamp(25px,13dvh,45px);width:65px}
+  .arena-foe strong{font-size:14px;line-height:1.12}
+  .arena-squad small,.arena-foe small{font-size:14px}
+  .arena-section-nav{flex:0 0 auto;gap:7px;flex-wrap:nowrap;min-height:32px}
+  .arena-section-nav button{height:30px;min-width:32px}
+  .arena-foes{flex:1;min-height:0;gap:7px;padding:1px 2px 3px;align-items:stretch}
+  .arena-foe{flex:0 0 125px;min-height:0;padding:2px;justify-content:center;overflow-y:auto}
+  .arena-foe .arena-foe-art{height:0;min-height:0;max-height:none;flex:1 1 auto;transform:scale(1)}
+  .arena-notice{flex:0 0 auto;min-height:0;margin:2px 0;font-size:14px}
+  .arena-resume{flex:0 0 auto;margin:2px 0;padding:4px 10px}
+  .arena-battle{flex:1;min-height:0;overflow-y:auto}
+  body.arena-battle-active .arena-topbar{gap:4px;padding:4px 5px}
+  body.arena-battle-active .arena-topbar h1{font-size:20px}
+  body.arena-battle-active .arena-balance{display:none}
+  body.arena-battle-active .arena-nav-actions{gap:3px}
+  body.arena-battle-active .arena-nav-actions button{font-size:clamp(11px,1.8vw,14px);padding:2px 5px;min-height:29px}
+  body.arena-battle-active .arena-battle-head{padding:8px 10px;gap:4px}
+  body.arena-battle-active .arena-battle-head h2{font-size:21px}
+  body.arena-battle-active .arena-battle-opponent{font-size:12px;padding-bottom:4px}
+  body.arena-battle-active .arena-battle-material>div{min-height:23px}
+  body.arena-battle-active .arena-battle-head p[data-arena-status]{font-size:13px}
+  body.arena-battle-active .arena-battle-journal{padding:5px 10px 7px}
+  body.arena-battle-active .arena-battle-journal h3{font-size:20px;margin:0}
+  body.arena-battle-active .arena-moves{height:auto}
+  .arena-battle-head{gap:6px;margin:2px 0;flex-wrap:nowrap}
+  .arena-battle-head h2{font-size:17px}.arena-battle-head p{margin:0}
+  .arena-board{width:min(calc(100dvh - 84px),calc(100vw - 24px),640px)}
+  .arena-dialog{padding:5px}.arena-dialog-panel{max-height:calc(100dvh - 10px);padding:9px}
+  .arena-dialog-panel h2{font-size:21px;margin:2px 0 5px}
+  .arena-dialog-panel p{margin:4px 0}
+  .arena-dialog-foe{height:min(24dvh,78px)}
+  .arena-foe-profile-art .arena-dialog-foe{height:min(34dvh,100px)}
+  .arena-foe-profile{gap:8px;padding-bottom:6px}
+  .arena-foe-profile-stats{gap:1px;font-size:17px}
+  .arena-artifact{height:38px;width:38px}.arena-result-icon{height:55px}
+}

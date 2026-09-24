@@ -1,0 +1,159 @@
+const assert=require('assert');
+const {chromium}=require('playwright');
+const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
+(async()=>{
+  const browser=await chromium.launch({headless:true});
+  try{
+    const page=await browser.newPage({viewport:{width:950,height:530}});
+    const errors=[];page.on('pageerror',e=>errors.push(e.message));
+    await page.goto(url,{waitUntil:'networkidle'});
+    await page.locator('[data-arena-open]').click();
+    await page.locator('[data-arena-screen]:not([hidden])').waitFor();
+    assert.strictEqual(await page.locator('[data-arena-foes] button').count(),7);
+    assert.strictEqual(await page.locator('[data-arena-foes] button:not([disabled])').count(),1);
+    assert.strictEqual(await page.locator('[data-arena-squads] button').count(),14);
+    assert.strictEqual(await page.locator('[data-arena-squads] button:not([disabled])').count(),1,'unaffordable squads are disabled');
+    assert.strictEqual(await page.locator('[data-arena-squads] button').first().innerText(),'','owned squad shows only its art');
+    await page.setViewportSize({width:1900,height:909});
+    const largeCard=await page.locator('[data-arena-foes] button').first().boundingBox();
+    const largeArt=await page.locator('[data-arena-foes] button .arena-foe-art').first().boundingBox();
+    assert(largeArt.height>=largeCard.height*.65,'opponent artwork must grow with its card');
+    assert(!(await page.locator('[data-arena-foes] button').first().innerText()).includes('Пешка'),'opponent tiles omit race and piece names');
+    assert.strictEqual((await page.locator('[data-arena-foes] button').first().innerText()).trim(),'Мощь: 400');
+    await page.setViewportSize({width:667,height:300});
+    const first=await page.locator('[data-arena-foes] button').first().boundingBox();
+    const last=await page.locator('[data-arena-foes] button').last().boundingBox();
+    assert(Math.abs(first.y-last.y)<2,'all seven opponents must share one row in mobile landscape');
+    assert(last.y+last.height<=300,'opponent row must fit above the mobile landscape viewport edge');
+    const layout=await page.evaluate(()=>{
+      const foes=document.querySelector('[data-arena-foes]'),card=foes.querySelector('button');
+      return {overflow:getComputedStyle(foes).overflowX,scrollable:foes.scrollWidth>foes.clientWidth,font:parseFloat(getComputedStyle(card.querySelector('small')).fontSize),background:getComputedStyle(card).backgroundImage};
+    });
+    assert.strictEqual(layout.overflow,'auto','opponent carousel must allow swiping');
+    assert(layout.scrollable,'opponents should scroll horizontally instead of shrinking text');
+    assert(layout.font>=14,'opponent text should remain legible on mobile landscape');
+    assert(layout.background.includes('96, 36, 48'),'opponent panels should be burgundy');
+    await page.setViewportSize({width:1024,height:768});
+    const tabletCatalog=await page.evaluate(()=>{
+      const r=document.querySelector('[data-arena-foes]').getBoundingClientRect();
+      const squads=document.querySelector('[data-arena-squads]');
+      return {bottom:r.bottom,width:document.documentElement.scrollWidth,squadsOverflow:getComputedStyle(squads).overflowX};
+    });
+    assert(tabletCatalog.bottom<=769 && tabletCatalog.width<=1025,'tablet catalog must fit without page overflow');
+    assert.strictEqual(tabletCatalog.squadsOverflow,'auto','tablet squad carousel remains horizontally scrollable');
+    await page.setViewportSize({width:667,height:300});
+    await page.locator('[data-arena-foes] button').first().click();
+    assert((await page.locator('[data-arena-dialog]').textContent()).includes('Мощь'));
+    assert((await page.locator('[data-arena-dialog]').textContent()).includes('Ничьих'));
+    assert(!(await page.locator('[data-arena-dialog]').textContent()).includes('Elo'));
+    assert.strictEqual(await page.locator('.arena-dialog-panel--foe h2').count(),0,'foe popup omits the piece/race heading');
+    await page.locator('.arena-dialog-panel--foe .arena-stat-icon').evaluateAll(nodes=>Promise.all(nodes.map(img=>img.decode())));
+    const icons=await page.locator('.arena-dialog-panel--foe .arena-stat-icon').evaluateAll(nodes=>nodes.map(node=>({path:node.getAttribute('src'),loaded:node.complete&&node.naturalWidth>0})));
+    assert.deepStrictEqual(icons.map(icon=>icon.path),['generated_assets/node_battle.png','generated_assets/node_elite.png','assets/arena/defeat_crown.png','assets/relics/merchants_scale.png']);
+    assert(icons.every(icon=>icon.loaded),'all four stat icons must load');
+    const popup=await page.evaluate(()=>{
+      const art=document.querySelector('.arena-foe-profile-art').getBoundingClientRect(),stats=document.querySelector('.arena-foe-profile-stats').getBoundingClientRect();
+      return {artRight:art.right,statsLeft:stats.left};
+    });
+    assert(popup.artRight<=popup.statsLeft,'foe art must sit to the left of match stats');
+    await page.locator('[data-arena-action="fight"]').click();
+    assert.strictEqual(await page.locator('[data-arena-action="artifact"]').count(),4);
+    await page.reload({waitUntil:'networkidle'});
+    await page.locator('[data-arena-open]').click();
+    assert.strictEqual(await page.locator('[data-arena-action="artifact"]').count(),4,'offer persists on reload');
+    await page.locator('[data-artifact="none"]').click();
+    assert.strictEqual(await page.locator('[data-arena-board] [data-square]').count(),64);
+    await page.setViewportSize({width:1900,height:909});
+    const combatBoard=await page.locator('[data-arena-board]').boundingBox();
+    assert(combatBoard.x>=0 && combatBoard.y<=1 && Math.abs(combatBoard.width-909)<=1 && Math.abs(combatBoard.height-909)<=1,'battle board must fit edge to edge in the landscape viewport');
+    assert.strictEqual(await page.locator('.arena-nav-actions button').first().getAttribute('data-arena-rivals'),'','opponents button must precede main menu');
+    assert(await page.locator('[data-arena-battle-title]').isVisible() && await page.locator('[data-arena-moves]').isVisible(),'battle summary and move journal must both be visible');
+    const railBackground=await page.locator('.arena-shell').evaluate(element=>getComputedStyle(element).backgroundImage);
+    assert(railBackground.includes('ashen_dominion/boss_arena.jpg'),'Arena combat should use the repository arena backdrop');
+    await page.setViewportSize({width:1363,height:936});
+    const midNav=await page.evaluate(()=>({right:document.querySelector('[data-arena-back]').getBoundingClientRect().right,board:document.querySelector('[data-arena-board]').getBoundingClientRect().left}));
+    assert(midNav.right<=midNav.board,'main menu button must fit in the rail at a nearly square landscape size');
+    for(const [width,height] of [[1900,909],[1363,936],[1180,820],[1024,768],[960,720],[950,530],[812,375],[667,300]]){
+      await page.setViewportSize({width,height});
+      const frame=await page.evaluate(()=>{
+        const box=selector=>document.querySelector(selector).getBoundingClientRect().toJSON();
+        const moves=document.querySelector('[data-arena-moves]');
+        return {board:box('[data-arena-board]'),title:box('[data-arena-battle-title]'),head:box('.arena-battle-head'),journal:box('.arena-battle-journal'),moves:box('[data-arena-moves]'),rivals:box('[data-arena-rivals]'),back:box('[data-arena-back]'),pageWidth:document.documentElement.scrollWidth,moveOverflow:getComputedStyle(moves).overflowY};
+      });
+      const tag=`${width}x${height}`;
+      assert(frame.board.left>=-1 && frame.board.right<=width+1 && frame.board.bottom<=height+1,`Arena board fits viewport ${tag}`);
+      assert(frame.pageWidth<=width+1,`Arena does not create page horizontal overflow ${tag}`);
+      assert(frame.rivals.right<=frame.back.left+1 && frame.back.right<=frame.board.left+1,`Arena navigation stays in left rail ${tag}`);
+      assert(frame.head.left>=-1 && frame.head.right<=frame.board.left+1 && frame.head.top>=-1,`Arena summary stays in left rail ${tag}`);
+      assert(Math.abs(frame.journal.top-frame.head.bottom)<=3,`Arena journal immediately follows the summary ${tag}`);
+      assert(frame.journal.left>=-1 && frame.journal.right<=frame.board.left+1 && frame.journal.bottom<=height+1 && frame.journal.height>38,`Arena journal fits remaining height ${tag}`);
+      assert(frame.moves.height>0 && frame.moves.bottom<=frame.journal.bottom+1 && frame.moveOverflow==='auto',`Arena moves have an internal scrolling region ${tag}`);
+      if(width===1900)assert(frame.journal.top<height*.48,`Arena journal must start near status, not halfway down the rail ${tag}`);
+    }
+    await page.setViewportSize({width:1900,height:909});
+    await page.locator('[data-arena-rivals]').click();
+    const resume=await page.locator('[data-arena-resume]').boundingBox();
+    assert(resume && resume.y>=0 && resume.y+resume.height<=909,'resume button must remain visible on desktop');
+    await page.setViewportSize({width:667,height:300});
+    const compactResume=await page.locator('[data-arena-resume]').boundingBox();
+    assert(compactResume && compactResume.y+compactResume.height<=300,'resume button must remain visible on phone');
+    await page.locator('[data-arena-resume]').click();
+    assert.strictEqual(await page.locator('[data-arena-board] .classic-piece-marker[data-piece-marker]').count(),32);
+    const nav=await page.evaluate(()=>{const buttons=[...document.querySelectorAll('.arena-nav-actions button')].map(button=>button.getBoundingClientRect());return {first:buttons[0].toJSON(),second:buttons[1].toJSON(),boardLeft:document.querySelector('[data-arena-board]').getBoundingClientRect().left};});
+    assert(nav.first.right<=nav.second.left && nav.second.right<=nav.boardLeft,'both navigation buttons must fit at the top of the mobile rail');
+    await page.evaluate(()=>{
+      window.__arenaFlyerDurations=[];
+      window.__arenaAudio={move:0,capture:0,check:0};
+      for(const kind of Object.keys(window.__arenaAudio)){
+        const original=window.RPChessRebootAudio[kind].bind(window.RPChessRebootAudio);
+        window.RPChessRebootAudio[kind]=()=>{window.__arenaAudio[kind]++;return original();};
+      }
+      const native=Element.prototype.animate;
+      Element.prototype.animate=function(frames,options){if(this.classList.contains('classic-piece-flyer'))window.__arenaFlyerDurations.push(options.duration);return native.call(this,frames,options);};
+    });
+    await page.locator('[data-arena-board] [data-square="e2"]').click();
+    await page.locator('[data-arena-board] [data-square="e4"]').click();
+    await page.waitForFunction(()=>window.RPChessArena?.state.match.moves.length>=2,{timeout:16000});
+    assert((await page.evaluate(()=>window.__arenaFlyerDurations)).every(duration=>duration>=290),'Arena pieces should visibly slide across the board');
+    assert((await page.evaluate(()=>window.__arenaFlyerDurations)).length>=2,'both player and opponent moves should animate');
+    assert((await page.evaluate(()=>window.__arenaAudio.move+window.__arenaAudio.capture))>=2,'both turns must play the shared move or capture sound');
+    assert((await page.locator('[data-arena-moves] .classic-move[data-san]').count())>=2,'journal shows both moves in chess notation');
+    const moveScrolling=await page.evaluate(()=>{
+      const moves=document.querySelector('[data-arena-moves]'),extra=[];
+      for(let n=0;n<80;n++){
+        const line=document.createElement('div');line.textContent=`${n+2}. e4 e5`;moves.append(line);extra.push(line);
+      }
+      const scrollable=moves.scrollHeight>moves.clientHeight;
+      moves.scrollTop=moves.scrollHeight;
+      const advanced=moves.scrollTop>0;
+      for(const line of extra)line.remove();
+      return {scrollable,advanced};
+    });
+    assert(moveScrolling.scrollable && moveScrolling.advanced,'long move journals must scroll inside their frame on phone');
+    assert((await page.locator('[data-arena-board] [data-square="e4"] .classic-piece').getAttribute('src')).includes('/humans/pieces/white/pawn.png'));
+    const moves=await page.evaluate(()=>window.RPChessArena.state.match.moves);
+    await page.reload({waitUntil:'networkidle'});
+    await page.locator('[data-arena-open]').click();
+    assert.deepStrictEqual(await page.evaluate(()=>window.RPChessArena.state.match.moves),moves);
+    assert.strictEqual(await page.locator('[data-arena-board] .classic-piece').count(),32);
+    assert((await page.locator('[data-arena-moves] .classic-move[data-san]').count())>=2,'journal survives restoring a saved match');
+    await page.evaluate(()=>{
+      window.RPChessArena.engine.reset('k3r3/n7/8/8/8/8/4R3/R3K3 w - - 0 1');
+      document.querySelector('[data-arena-board] [data-square="e2"]').click();
+    });
+    const ice=await page.evaluate(()=>{
+      const square=id=>{const cell=document.querySelector(`[data-arena-board] [data-square="${id}"]`),overlay=cell.querySelector('.classic-pin-ice');return {pin:cell.dataset.pinState,src:overlay?.getAttribute('src'),opacity:overlay?getComputedStyle(overlay).opacity:''};};
+      return {white:square('e2'),black:square('a7')};
+    });
+    assert.deepStrictEqual(ice,{white:{pin:'partial',src:'assets/vfx/pin_ice_partial.png',opacity:'0.5'},black:{pin:'full',src:'assets/vfx/pin_ice_full.png',opacity:'0.5'}},'Arena pin animation must reuse the journey overlays');
+    await page.evaluate(()=>{
+      window.RPChessArena.engine.reset('k7/8/8/8/8/4r3/8/4K3 w - - 0 1');
+      document.querySelector('[data-arena-board] [data-square="e1"]').click();
+    });
+    assert(await page.locator('[data-arena-board] [data-square="e1"].classic-square--check').count(),'checked king must show red highlight');
+    const redAura=await page.locator('[data-arena-board] [data-square="e1"]').evaluate(element=>getComputedStyle(element,'::after').backgroundImage);
+    assert(redAura.includes('aura_red.png'),'checked king must use the Journey red aura');
+    assert.deepStrictEqual(errors,[]);
+    console.log('Arena mobile landscape, offer, match and reload: PASS');
+  }finally{await browser.close();}
+})().catch(error=>{console.error(error);process.exitCode=1;});

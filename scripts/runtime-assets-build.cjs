@@ -140,6 +140,7 @@ function materializeBackgrounds(root){
 }
 function materializeRuntimeAssets(root){
   const groups={
+    arena:materializeArena(root),
     boards:materializeBoards(root),
     pinIce:materializePinIce(root),
     auras:materializeAuras(root),
@@ -153,6 +154,16 @@ function materializeRuntimeAssets(root){
   groups.cachePrune=pruneRuntimeAssetCache(activePaths);
   return groups;
 }
+function materializeArena(root){
+  const records=[];
+  for(const relative of ['assets/arena/mirror_shard.png','assets/arena/defeat_crown.png','assets/relics/merchants_scale.png']){
+    const full=path.join(root,relative),source=fs.readFileSync(full);
+    const cached=cachedPng(source,{namespace:'arena-icons',version:fingerprintFiles([ORCHESTRATOR_FILE,PIECE_FILE]),maxSide:160,maxBytes:80*1024});
+    fs.writeFileSync(full,cached.buffer);
+    records.push({path:relative,before:source.length,after:cached.buffer.length,cacheHit:cached.cacheHit,cachePath:cached.cachePath});
+  }
+  return report(records);
+}
 function cacheText(group){return group.cache.total?`${group.cache.hits} hit / ${group.cache.misses} miss`:'no transforms';}
 
-module.exports={BOARD_MAX_SIDE,BOARD_MAX_BYTES,BOARD_MAX_TOTAL_BYTES,materializePieces,materializePortraits,materializeBoards,materializePinIce,materializeAuras,materializeArtifacts,materializeBrandLogos,materializeBackgrounds,materializeRuntimeAssets,cacheText};
+module.exports={BOARD_MAX_SIDE,BOARD_MAX_BYTES,BOARD_MAX_TOTAL_BYTES,materializePieces,materializePortraits,materializeBoards,materializePinIce,materializeAuras,materializeArtifacts,materializeBrandLogos,materializeBackgrounds,materializeArena,materializeRuntimeAssets,cacheText};

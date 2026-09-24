@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="css/skirmish-compact.css?v=20260921-mobile-combat-1">
   <link rel="stylesheet" href="css/ui-redesign-final.css?v=20260902-cleanup2" data-ui-redesign-final-css>
   <link rel="stylesheet" href="css/landscape-ui-redesign.css?v=20260918-vk-menu-1" data-landscape-ui-css>
+  <link rel="stylesheet" href="css/arena.css?v=20260924-5">
 </head>
 <body>
   <div id="app">
@@ -27,11 +28,29 @@
           <div class="reboot-menu-actions" aria-label="Главное меню" data-i18n-aria-label="menu.actionsLabel">
             <button class="reboot-button reboot-button--primary" type="button" data-new-game data-i18n="menu.newGame">Новая игра</button>
             <button class="reboot-button reboot-button--primary" type="button" data-continue-run data-i18n="menu.continue" disabled aria-disabled="true">Продолжить</button>
+            <button class="reboot-button reboot-button--primary" type="button" data-arena-open>Арена</button>
             <div class="reboot-menu-secondary">
               <button class="reboot-button reboot-button--primary" type="button" data-settings data-i18n="menu.settings">Настройки</button>
               <button class="reboot-button reboot-button--primary" type="button" data-language data-i18n="menu.language">Язык</button>
             </div>
           </div>
+        </section>
+      </div>
+    </main>
+
+    <main class="arena-screen" data-arena-screen aria-label="Арена" hidden>
+      <div class="arena-shell">
+        <header class="arena-topbar"><h1 data-arena-title>Арена</h1><div class="arena-balance" data-arena-shards></div><div class="arena-nav-actions"><button class="classic-mini-button" type="button" data-arena-rivals hidden>К соперникам</button><button class="classic-mini-button" type="button" data-arena-back>Главное меню</button></div></header>
+        <section class="arena-catalog" data-arena-catalog>
+          <h2 data-arena-squad-label>Ваш отряд</h2><div class="arena-squads" data-arena-squads></div>
+          <div class="arena-section-nav"><h2 data-arena-enemy-label>Соперники</h2><button type="button" data-arena-prev aria-label="Назад">‹</button><strong data-arena-section></strong><button type="button" data-arena-next aria-label="Вперёд">›</button></div>
+          <div class="arena-foes" data-arena-foes></div><p class="arena-notice" data-arena-notice role="status"></p>
+          <button class="reboot-button reboot-button--primary arena-resume" type="button" data-arena-resume hidden>Продолжить бой</button>
+        </section>
+        <section class="arena-battle" data-arena-battle hidden>
+          <div class="arena-battle-head" aria-label="Партия"><h2 data-arena-party-title>Битва</h2><p class="arena-battle-opponent" data-arena-battle-title></p><div class="arena-battle-material"><div><span data-arena-white-label>Белые</span><span data-arena-captured-white></span></div><div><span data-arena-black-label>Чёрные</span><span data-arena-captured-black></span></div></div><p data-arena-status role="status"></p></div>
+          <aside class="arena-battle-journal" aria-label="Журнал боя"><small data-arena-journal-label>ЖУРНАЛ БОЯ</small><h3 data-arena-moves-label>Ходы</h3><div class="classic-moves arena-moves" data-arena-moves aria-live="polite"></div></aside>
+          <div class="arena-board classic-board" data-arena-board role="grid" aria-label="Шахматная доска Арены"></div>
         </section>
       </div>
     </main>
@@ -213,6 +232,7 @@
   </div>
 
   <div class="skirmish-toast" data-skirmish-toast role="status" aria-live="polite" hidden></div>
+  <div class="arena-dialog" data-arena-dialog hidden></div>
 
   <div class="reboot-modal" data-game-setup-modal hidden>
     <section class="reboot-modal__panel classic-commander-panel classic-setup-panel" role="dialog" aria-modal="true" aria-labelledby="game-setup-title">
@@ -322,6 +342,7 @@
   <script type="module" src="js/reboot-foundation.mjs?v=20260827-roster-1"></script>
   <script type="module" src="js/roster-app.mjs?v=20260827-skirmish-1"></script>
   <script type="module" src="js/classic-chess-app.mjs?v=20260827-ai-2"></script>
+  <script type="module" src="js/arena-app.mjs?v=20260924-4"></script>
   <script type="module" src="js/skirmish-app.mjs?v=20260827-skirmish-1"></script>
 </body>
 </html>

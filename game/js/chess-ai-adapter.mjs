@@ -27,6 +27,22 @@ function profileForElo(value) {
   return { ...ELO_LEVELS.find((profile) => profile.elo === elo) };
 }
 
+// Arena interpolates the existing weak profiles and uses Stockfish's native
+// UCI_Elo above its supported floor. Regular games keep their twelve presets.
+function arenaProfileForElo(value) {
+  const elo = Math.max(400,Math.min(2600,Math.round(Number(value)||400)));
+  if(elo >= MIN_NATIVE_ELO) return { ...profileForElo(elo), elo, multiPv:1, randomRate:0, weights:[1] };
+  const lower=ELO_LEVELS.filter(item=>item.elo<=elo).at(-1) || ELO_LEVELS[0];
+  const upper=ELO_LEVELS.find(item=>item.elo>elo) || lower;
+  const fraction=lower===upper?0:(elo-lower.elo)/(upper.elo-lower.elo);
+  const interpolate=(a,b)=>a+(b-a)*fraction;
+  const width=Math.max(lower.weights?.length||1,upper.weights?.length||1);
+  const weights=Array.from({length:width},(_,index)=>interpolate(lower.weights?.[index]||0,upper.weights?.[index]||0));
+  // Ease the final 120 points into native Stockfish without a sudden MultiPV jump.
+  if(elo>1200){const fade=(elo-1200)/120;return {elo,label:'Арена',multiPv:4,randomRate:.02*(1-fade),weights:weights.map((weight,index)=>index?weight*(1-fade):weight+(1-weight)*fade),moveTime:Math.round(interpolate(lower.moveTime,120))};}
+  return {elo,label:'Арена',multiPv:Math.max(1,Math.ceil(interpolate(lower.multiPv,upper.multiPv))),randomRate:interpolate(lower.randomRate,upper.randomRate),weights,moveTime:Math.round(interpolate(lower.moveTime,upper.moveTime))};
+}
+
 function moveToUci(move) {
   return `${move.from}${move.uciTo || move.to}${move.promotion || ''}`.toLowerCase();
 }
@@ -202,10 +218,10 @@ class ChessAIAdapter {
     return initPromise;
   }
 
-  async chooseMove({ fen, elo = 800, legalMoves = [], chess960 = false } = {}) {
+  async chooseMove({ fen, elo = 800, legalMoves = [], chess960 = false, arena = false } = {}) {
     const legal = new Set(legalMoves.map((move) => typeof move === 'string' ? move.toLowerCase() : moveToUci(move)));
     if (!legal.size) return null;
-    const profile = profileForElo(elo);
+    const profile = arena ? arenaProfileForElo(elo) : profileForElo(elo);
     const operationEpoch = ++this.operationEpoch;
 
     try {
@@ -274,4 +290,4 @@ class ChessAIAdapter {
   }
 }
 
-export { ChessAIAdapter, DEFAULT_WORKER_URL, ELO_LEVELS, MIN_NATIVE_ELO, clampElo, moveToUci, profileForElo };
+export { ChessAIAdapter, DEFAULT_WORKER_URL, ELO_LEVELS, MIN_NATIVE_ELO, clampElo, moveToUci, profileForElo, arenaProfileForElo };
