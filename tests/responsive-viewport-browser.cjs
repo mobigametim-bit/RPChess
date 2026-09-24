@@ -25,6 +25,52 @@ const WEAK_SURFACE_MATRIX = [[1024, 768], [844, 390]];
 // resulting safe height and cover only the Main Menu / Chronicle contract.
 const VK_MENU_SAFE_HEIGHT_MATRIX = [[1366, 660], [1024, 640], [844, 340]];
 const VK_MENU_SCREENSHOT_DIR = String(process.env.RPCHESS_VK_MENU_SCREENSHOT_DIR || '').trim();
+const FLAG_SCREENSHOT_DIR = String(process.env.RPCHESS_FLAG_SCREENSHOT_DIR || '').trim();
+const FLAG_SCREENSHOT_MATRIX = [[1920,900],[1366,768],[1366,660],[1180,820],[1024,768],[980,520],[844,390],[844,340]];
+
+async function captureFlagScreens(browser, width, height) {
+  const page = await browser.newPage({ viewport:{ width,height } });
+  const label = `${width}x${height} flag UI`;
+  try {
+    await freshMenu(page);
+    await setLanguage(page, 'ru');
+    await startNewRun(page, { playerName:'Хранитель Клятвы' });
+    await page.locator('[data-roster-menu]').click();
+    await page.locator('[data-chronicle-panel]').waitFor({ state:'visible' });
+    await assertViewportContained(page, '[data-chronicle-panel]', `${label} Chronicle frame`);
+    await assertPageFitsViewport(page, `${label} menu`);
+    const menuButtonHeight = await page.locator('.reboot-menu-actions .reboot-button').first().evaluate((node) => node.getBoundingClientRect().height);
+    fs.mkdirSync(FLAG_SCREENSHOT_DIR, { recursive:true });
+    await page.screenshot({ path:path.join(FLAG_SCREENSHOT_DIR,`menu-${width}x${height}.png`),fullPage:false });
+
+    await page.evaluate((key) => {
+      const run = JSON.parse(localStorage.getItem(key));
+      run.ended = true;
+      run.endReason = 'starvation_king';
+      run.journeyStep = 18;
+      run.runStats = { goldEarned:188,skirmishWins:2,battleWins:1,caravansDefended:1,puzzlesSolved:4,eventsResolved:5 };
+      localStorage.setItem(key,JSON.stringify(run));
+      dispatchEvent(new CustomEvent('rpchess:run-updated'));
+      globalThis.RPChessEndlessRun.open(run);
+    }, RUN_KEY);
+    await page.locator('[data-endless-run-screen]:not([hidden])').waitFor();
+    await page.locator('.endless-run-flag-art').evaluate((image) => image.decode());
+    await page.waitForFunction(() => [...document.querySelectorAll('.endless-run-metric img')].every((image) => image.complete));
+    await assertViewportContained(page, '.endless-run-panel', `${label} result flag`);
+    await assertPageFitsViewport(page, `${label} result`);
+    for (const selector of ['.endless-run-logo','[data-endless-run-new]','[data-endless-run-share]','[data-endless-run-menu]']) {
+      await assertViewportContained(page, selector, `${label} ${selector}`);
+    }
+    await assertFlagSafety(page,'.endless-run-panel','.endless-run-flag-content',`${label} result`);
+    const buttonHeights = await page.locator('.endless-run-actions .reboot-button').evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().height));
+    assert(buttonHeights.every((height) => Math.abs(height-menuButtonHeight)<3), `${label}: result buttons ${buttonHeights} differ from menu ${menuButtonHeight}`);
+    const brokenIcons = await page.locator('.endless-run-metric img').evaluateAll((images) => images.filter((img) => !img.complete || !img.naturalWidth).map((img) => img.getAttribute('src')));
+    assert.deepStrictEqual(brokenIcons,[],`${label}: broken result icons`);
+    await page.screenshot({ path:path.join(FLAG_SCREENSHOT_DIR,`result-${width}x${height}.png`),fullPage:false });
+  } finally {
+    await page.close();
+  }
+}
 
 async function assertFlagSafety(page, panelSelector, safeSelector, label) {
   const geometry = await page.locator(panelSelector).evaluate((panel, selector) => {
@@ -574,6 +620,7 @@ async function auditPrepAndCombat(browser, width, height, language) {
 (async () => {
   const browser = await chromium.launch({ headless: true });
   try {
+    if (FLAG_SCREENSHOT_DIR) for (const [width,height] of FLAG_SCREENSHOT_MATRIX) await captureFlagScreens(browser,width,height);
     for (const language of LANGUAGES) {
       for (const [width, height] of PORTRAIT_MATRIX) await auditPortraitLock(browser, width, height, language);
       for (const [width, height] of VK_MENU_SAFE_HEIGHT_MATRIX) await auditVkMenuSafeHeight(browser, width, height, language);

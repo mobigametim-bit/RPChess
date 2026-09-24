@@ -164,10 +164,10 @@
   html[data-landscape-ui='1'] .chronicle-metric strong{font-size:clamp(19px,1.9vw,28px)!important}
 }
 @media (orientation:landscape) and (max-height:600px){
-  html[data-landscape-ui='1'],html[data-landscape-ui='1'] body,html[data-landscape-ui='1'] #app{height:auto!important;min-height:100dvh!important;max-height:none!important;overflow-y:auto!important}
-  html[data-landscape-ui='1'] #app > main.reboot-menu-screen:not([hidden]){overflow-y:auto!important}
-  html[data-landscape-ui='1'] .reboot-menu-screen__layout{height:auto!important;min-height:440px!important;grid-template-rows:auto!important}
-  html[data-landscape-ui='1'] .chronicle-panel{width:min(100%,330px)!important}
+  html[data-landscape-ui='1'],html[data-landscape-ui='1'] body,html[data-landscape-ui='1'] #app{height:100dvh!important;min-height:0!important;max-height:100dvh!important;overflow:hidden!important}
+  html[data-landscape-ui='1'] #app > main.reboot-menu-screen:not([hidden]){overflow:hidden!important}
+  html[data-landscape-ui='1'] .reboot-menu-screen__layout{height:100%!important;min-height:0!important;grid-template-rows:minmax(0,1fr)!important}
+  html[data-landscape-ui='1'] .chronicle-panel{width:min(100%,330px)!important;height:calc(100dvh - 12px)!important;min-height:0!important;max-height:calc(100dvh - 12px)!important;aspect-ratio:auto!important;overflow:hidden!important}
   .chronicle-safe{inset:14% 21% 24%}
   .chronicle-metric{min-height:38px}
 }

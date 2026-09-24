@@ -11,7 +11,7 @@ function ensureCss() {
   if (document.querySelector('[data-player-identity-chronicle-css]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/player-identity-chronicle.css?v=20260925-flag-1';
+  link.href = 'css/player-identity-chronicle.css?v=20260925-flag-2';
   link.dataset.playerIdentityChronicleCss = '';
   document.head.append(link);
 }

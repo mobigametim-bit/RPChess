@@ -23,7 +23,7 @@ function ensureStylesheet(marker, href) {
 
 function ensureCss() {
   ensureStylesheet('data-endless-run-css', 'css/endless-run.css?v=20260925-flag-1');
-  ensureStylesheet('data-endless-run-compact-css', 'css/endless-run-compact.css?v=20260925-flag-1');
+  ensureStylesheet('data-endless-run-compact-css', 'css/endless-run-compact.css?v=20260925-flag-2');
 }
 
 function renderStaticCopy() {

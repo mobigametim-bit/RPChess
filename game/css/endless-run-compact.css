@@ -22,3 +22,84 @@
   html[data-landscape-ui='1'] .endless-run-panel{width:440px!important}
   html[data-landscape-ui='1'] .endless-run-flag-content .endless-run-metric strong{font-size:19px!important}
 }
+
+/* Keep the flag and every action inside one viewport; only the cloth scrolls. */
+@media (orientation:landscape){
+  html[data-landscape-ui='1']:has(body.endless-run-active),
+  html[data-landscape-ui='1'] body.endless-run-active,
+  html[data-landscape-ui='1'] body.endless-run-active #app{
+    height:100dvh!important;min-height:0!important;max-height:100dvh!important;overflow:hidden!important;
+  }
+  html[data-landscape-ui='1'] #app > main.endless-run-screen:not([hidden]){
+    height:100dvh!important;min-height:0!important;max-height:100dvh!important;
+    padding:8px!important;overflow:hidden!important;
+  }
+  html[data-landscape-ui='1'] .endless-run-shell{
+    width:min(1480px,100%)!important;height:100%!important;min-height:0!important;
+    padding:0!important;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)!important;
+    gap:clamp(10px,2.5vw,42px)!important;align-items:stretch!important;
+  }
+  html[data-landscape-ui='1'] .endless-run-controls{
+    width:100%!important;height:max-content!important;min-height:0!important;
+    display:grid!important;grid-template-rows:max-content max-content!important;
+    align-content:start!important;justify-items:center!important;align-self:start!important;
+    gap:clamp(8px,1.8vh,16px)!important;padding-top:clamp(4px,1.5vh,16px)!important;
+    position:static!important;
+  }
+  html[data-landscape-ui='1'] .endless-run-logo{
+    position:static!important;width:min(280px,70%,28vh)!important;height:auto!important;
+  }
+  html[data-landscape-ui='1'] .endless-run-actions{
+    width:min(500px,90%)!important;height:max-content!important;
+    display:grid!important;grid-auto-rows:max-content!important;align-content:start!important;
+    gap:clamp(4px,.9vh,8px)!important;
+  }
+  html[data-landscape-ui='1'] .endless-run-actions .reboot-button{
+    height:auto!important;min-height:clamp(34px,6.2vh,48px)!important;
+    padding:clamp(3px,.8vh,7px) 12px!important;
+    font-size:clamp(15px,1.4vw,22px)!important;line-height:1.25!important;
+  }
+  html[data-landscape-ui='1'] .endless-run-panel{
+    box-sizing:border-box!important;width:100%!important;min-width:0!important;
+    height:100%!important;min-height:0!important;max-height:100%!important;
+    aspect-ratio:auto!important;align-self:stretch!important;margin:0!important;
+    padding:0!important;overflow:hidden!important;
+  }
+  html[data-landscape-ui='1'] .endless-run-flag-content{
+    overflow-y:auto!important;overflow-x:hidden!important;
+  }
+  html[data-landscape-ui='1'] .endless-run-flag-content .endless-run-metrics{
+    flex:0 0 auto!important;min-height:0!important;
+    grid-template-rows:repeat(5,minmax(51px,auto))!important;
+    align-items:stretch!important;
+  }
+  html[data-landscape-ui='1'] .endless-run-flag-content .endless-run-metric{
+    grid-template-columns:clamp(31px,3vw,53px) minmax(0,1fr)!important;
+    grid-template-rows:auto auto!important;column-gap:6px!important;
+    min-height:51px!important;
+  }
+  html[data-landscape-ui='1'] .endless-run-flag-content .endless-run-metric img{
+    height:auto!important;max-height:48px!important;
+  }
+}
+@media (orientation:landscape) and (max-width:980px){
+  html[data-landscape-ui='1'] .endless-run-actions .reboot-button{min-height:36px!important;font-size:15px!important}
+  html[data-landscape-ui='1'] .endless-run-shell{
+    grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr)!important;gap:8px!important;
+  }
+  html[data-landscape-ui='1'] .endless-run-logo{width:min(165px,60%,26vh)!important}
+  html[data-landscape-ui='1'] .endless-run-flag-content h1{font-size:clamp(21px,5.4vh,28px)!important}
+  html[data-landscape-ui='1'] .endless-run-flag-content .endless-run-metrics{
+    grid-template-columns:minmax(0,1fr)!important;grid-template-rows:none!important;
+    grid-auto-rows:minmax(42px,auto)!important;
+  }
+  html[data-landscape-ui='1'] .endless-run-flag-content .endless-run-metric{
+    min-height:42px!important;grid-template-columns:35px minmax(0,1fr)!important;
+  }
+  html[data-landscape-ui='1'] .endless-run-flag-content .endless-run-metric--caravan{
+    grid-column:auto!important;width:100%!important;
+  }
+  html[data-landscape-ui='1'] .endless-run-flag-content .endless-run-metric span{font-size:12px!important}
+  html[data-landscape-ui='1'] .endless-run-flag-content .endless-run-metric strong{font-size:18px!important}
+  html[data-landscape-ui='1'] .endless-run-flag-content .endless-run-reason{font-size:12px!important}
+}
