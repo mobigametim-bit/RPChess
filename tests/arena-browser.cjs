@@ -33,6 +33,15 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert(layout.scrollable,'opponents should scroll horizontally instead of shrinking text');
     assert(layout.font>=14,'opponent text should remain legible on mobile landscape');
     assert(layout.background.includes('96, 36, 48'),'opponent panels should be burgundy');
+    await page.setViewportSize({width:1024,height:768});
+    const tabletCatalog=await page.evaluate(()=>{
+      const r=document.querySelector('[data-arena-foes]').getBoundingClientRect();
+      const squads=document.querySelector('[data-arena-squads]');
+      return {bottom:r.bottom,width:document.documentElement.scrollWidth,squadsOverflow:getComputedStyle(squads).overflowX};
+    });
+    assert(tabletCatalog.bottom<=769 && tabletCatalog.width<=1025,'tablet catalog must fit without page overflow');
+    assert.strictEqual(tabletCatalog.squadsOverflow,'auto','tablet squad carousel remains horizontally scrollable');
+    await page.setViewportSize({width:667,height:300});
     await page.locator('[data-arena-foes] button').first().click();
     assert((await page.locator('[data-arena-dialog]').textContent()).includes('Мощь'));
     assert((await page.locator('[data-arena-dialog]').textContent()).includes('Ничьих'));
@@ -64,6 +73,23 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     await page.setViewportSize({width:1363,height:936});
     const midNav=await page.evaluate(()=>({right:document.querySelector('[data-arena-back]').getBoundingClientRect().right,board:document.querySelector('[data-arena-board]').getBoundingClientRect().left}));
     assert(midNav.right<=midNav.board,'main menu button must fit in the rail at a nearly square landscape size');
+    for(const [width,height] of [[1900,909],[1363,936],[1180,820],[1024,768],[960,720],[950,530],[812,375],[667,300]]){
+      await page.setViewportSize({width,height});
+      const frame=await page.evaluate(()=>{
+        const box=selector=>document.querySelector(selector).getBoundingClientRect().toJSON();
+        const moves=document.querySelector('[data-arena-moves]');
+        return {board:box('[data-arena-board]'),title:box('[data-arena-battle-title]'),head:box('.arena-battle-head'),journal:box('.arena-battle-journal'),moves:box('[data-arena-moves]'),rivals:box('[data-arena-rivals]'),back:box('[data-arena-back]'),pageWidth:document.documentElement.scrollWidth,moveOverflow:getComputedStyle(moves).overflowY};
+      });
+      const tag=`${width}x${height}`;
+      assert(frame.board.left>=-1 && frame.board.right<=width+1 && frame.board.bottom<=height+1,`Arena board fits viewport ${tag}`);
+      assert(frame.pageWidth<=width+1,`Arena does not create page horizontal overflow ${tag}`);
+      assert(frame.rivals.right<=frame.back.left+1 && frame.back.right<=frame.board.left+1,`Arena navigation stays in left rail ${tag}`);
+      assert(frame.head.left>=-1 && frame.head.right<=frame.board.left+1 && frame.head.top>=-1,`Arena summary stays in left rail ${tag}`);
+      assert(Math.abs(frame.journal.top-frame.head.bottom)<=3,`Arena journal immediately follows the summary ${tag}`);
+      assert(frame.journal.left>=-1 && frame.journal.right<=frame.board.left+1 && frame.journal.bottom<=height+1 && frame.journal.height>38,`Arena journal fits remaining height ${tag}`);
+      assert(frame.moves.height>0 && frame.moves.bottom<=frame.journal.bottom+1 && frame.moveOverflow==='auto',`Arena moves have an internal scrolling region ${tag}`);
+      if(width===1900)assert(frame.journal.top<height*.48,`Arena journal must start near status, not halfway down the rail ${tag}`);
+    }
     await page.setViewportSize({width:1900,height:909});
     await page.locator('[data-arena-rivals]').click();
     const resume=await page.locator('[data-arena-resume]').boundingBox();
@@ -92,6 +118,18 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert((await page.evaluate(()=>window.__arenaFlyerDurations)).length>=2,'both player and opponent moves should animate');
     assert((await page.evaluate(()=>window.__arenaAudio.move+window.__arenaAudio.capture))>=2,'both turns must play the shared move or capture sound');
     assert((await page.locator('[data-arena-moves] .classic-move[data-san]').count())>=2,'journal shows both moves in chess notation');
+    const moveScrolling=await page.evaluate(()=>{
+      const moves=document.querySelector('[data-arena-moves]'),extra=[];
+      for(let n=0;n<80;n++){
+        const line=document.createElement('div');line.textContent=`${n+2}. e4 e5`;moves.append(line);extra.push(line);
+      }
+      const scrollable=moves.scrollHeight>moves.clientHeight;
+      moves.scrollTop=moves.scrollHeight;
+      const advanced=moves.scrollTop>0;
+      for(const line of extra)line.remove();
+      return {scrollable,advanced};
+    });
+    assert(moveScrolling.scrollable && moveScrolling.advanced,'long move journals must scroll inside their frame on phone');
     assert((await page.locator('[data-arena-board] [data-square="e4"] .classic-piece').getAttribute('src')).includes('/humans/pieces/white/pawn.png'));
     const moves=await page.evaluate(()=>window.RPChessArena.state.match.moves);
     await page.reload({waitUntil:'networkidle'});
