@@ -17,6 +17,14 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     const last=await page.locator('[data-arena-foes] button').last().boundingBox();
     assert(Math.abs(first.y-last.y)<2,'all seven opponents must share one row in mobile landscape');
     assert(last.y+last.height<=300,'opponent row must fit above the mobile landscape viewport edge');
+    const layout=await page.evaluate(()=>{
+      const foes=document.querySelector('[data-arena-foes]'),card=foes.querySelector('button');
+      return {overflow:getComputedStyle(foes).overflowX,scrollable:foes.scrollWidth>foes.clientWidth,font:parseFloat(getComputedStyle(card.querySelector('small')).fontSize),background:getComputedStyle(card).backgroundImage};
+    });
+    assert.strictEqual(layout.overflow,'auto','opponent carousel must allow swiping');
+    assert(layout.scrollable,'opponents should scroll horizontally instead of shrinking text');
+    assert(layout.font>=14,'opponent text should remain legible on mobile landscape');
+    assert(layout.background.includes('10, 24, 40'),'opponent panels should use journey panel colors');
     await page.locator('[data-arena-foes] button').first().click();
     assert((await page.locator('[data-arena-dialog]').textContent()).includes('Мощь'));
     await page.locator('[data-arena-action="fight"]').click();
@@ -36,6 +44,15 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     await page.locator('[data-arena-open]').click();
     assert.deepStrictEqual(await page.evaluate(()=>window.RPChessArena.state.match.moves),moves);
     assert.strictEqual(await page.locator('[data-arena-board] .classic-piece').count(),32);
+    await page.evaluate(()=>{
+      window.RPChessArena.engine.reset('k3r3/n7/8/8/8/8/4R3/R3K3 w - - 0 1');
+      document.querySelector('[data-arena-board] [data-square="e2"]').click();
+    });
+    const ice=await page.evaluate(()=>{
+      const square=id=>{const cell=document.querySelector(`[data-arena-board] [data-square="${id}"]`),overlay=cell.querySelector('.classic-pin-ice');return {pin:cell.dataset.pinState,src:overlay?.getAttribute('src'),opacity:overlay?getComputedStyle(overlay).opacity:''};};
+      return {white:square('e2'),black:square('a7')};
+    });
+    assert.deepStrictEqual(ice,{white:{pin:'partial',src:'assets/vfx/pin_ice_partial.png',opacity:'0.5'},black:{pin:'full',src:'assets/vfx/pin_ice_full.png',opacity:'0.5'}},'Arena pin animation must reuse the journey overlays');
     assert.deepStrictEqual(errors,[]);
     console.log('Arena mobile landscape, offer, match and reload: PASS');
   }finally{await browser.close();}

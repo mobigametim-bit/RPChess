@@ -3,6 +3,7 @@ import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { RACE_TAGS, RACE_LABELS, racePiecePath, applyRaceBoardTheme } from './race-assets.mjs';
 import { ARTIFACTS, artifactById } from './artifact-core.mjs';
 import { renderThreatOverlay } from './artifact-combat-ui.mjs';
+import { applyPinIce } from './king-pin-ice.mjs';
 import { currentLanguage, subscribe } from './i18n.mjs';
 import { platform } from './platform.mjs';
 import { ARENA_KEY, SHARD_ICON, PIECE_CODE, OPPONENTS, OPPONENT_BY_ID, SQUAD_PRICES, ARTIFACT_PRICES, emptyArena, normalizeArena, arenaSummary, newMatch, chooseArtifact, finishMatch, claimDouble, purchaseSquad } from './arena-core.mjs';
@@ -92,6 +93,7 @@ function renderBoard(){
     board.append(cell);
   }
   renderThreatOverlay(board,snapshot,artifactById(state.match.artifactId),'w');
+  applyPinIce(board,snapshot);
 }
 function openDialog(kind,html){dialogType=kind;dialog.innerHTML='<section class="arena-dialog-panel" role="dialog" aria-modal="true" aria-label="'+escape(l('title'))+'">'+html+'</section>';dialog.hidden=false;dialog.querySelector('button')?.focus();}
 function closeDialog(){dialog.hidden=true;dialog.replaceChildren();dialogType=null;}
