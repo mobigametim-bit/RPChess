@@ -9,8 +9,8 @@ import { platform } from './platform.mjs';
 import { ARENA_KEY, SHARD_ICON, PIECE_CODE, OPPONENTS, OPPONENT_BY_ID, SQUAD_PRICES, ARTIFACT_PRICES, emptyArena, normalizeArena, arenaSummary, newMatch, chooseArtifact, finishMatch, claimDouble, purchaseSquad } from './arena-core.mjs';
 
 const copy = {
-  ru:{title:'Арена',back:'Главное меню',shards:'Осколки чести',squads:'Ваш отряд',enemies:'Соперники',section:'Раздел',power:'Мощь',wins:'Побед',losses:'Поражений',draws:'Ничьих',fight:'В бой!',locked:'Победите предыдущего соперника',buy:'Купить',select:'Выбрать',owned:'Выбран',resume:'Продолжить бой',offer:'Подготовка к бою',offerText:'Выберите один артефакт на эту партию',none:'Без артефакта',insufficient:'Недостаточно осколков чести',victory:'Победа!',defeat:'Поражение',draw:'Ничья',continue:'Продолжить',again:'Сыграть ещё',rivals:'К соперникам',double:'Реклама: награда ×2',adError:'Реклама не завершена. Основная награда сохранена.',move:'Ваш ход',thinking:'Противник думает…',promotion:'Превращение пешки',result:'Партия завершена',drawText:'Следующий противник открывается за победу.',defeatText:'Можно попробовать снова.',opponent:'Соперник',squad:'Отряд'},
-  en:{title:'Arena',back:'Main menu',shards:'Honor shards',squads:'Your squad',enemies:'Opponents',section:'Section',power:'Power',wins:'Wins',losses:'Losses',draws:'Draws',fight:'Fight!',locked:'Defeat the previous opponent',buy:'Buy',select:'Select',owned:'Selected',resume:'Resume match',offer:'Prepare for battle',offerText:'Choose one artifact for this match',none:'No artifact',insufficient:'Not enough honor shards',victory:'Victory!',defeat:'Defeat',draw:'Draw',continue:'Continue',again:'Play again',rivals:'Opponents',double:'Watch ad: reward ×2',adError:'Ad was not completed. Your base reward is safe.',move:'Your move',thinking:'Opponent is thinking…',promotion:'Promote pawn',result:'Match complete',drawText:'Win to unlock the next opponent.',defeatText:'You can try again.',opponent:'Opponent',squad:'Squad'}
+  ru:{title:'Арена',back:'Главное меню',shards:'Осколки чести',squads:'Ваш отряд',enemies:'Соперники',section:'Раздел',power:'Мощь',wins:'Побед',losses:'Поражений',draws:'Ничьих',fight:'В бой!',locked:'Победите предыдущего соперника',buy:'Купить',select:'Выбрать',owned:'Выбран',resume:'Продолжить бой',offer:'Подготовка к бою',offerText:'Выберите один артефакт на эту партию',none:'Без артефакта',insufficient:'Недостаточно осколков чести',victory:'Победа!',defeat:'Поражение',draw:'Ничья',continue:'Продолжить',again:'Сыграть ещё',rivals:'К соперникам',double:'Реклама: награда ×2',adError:'Реклама не завершена. Основная награда сохранена.',move:'Ваш ход',thinking:'Противник думает…',promotion:'Превращение пешки',result:'Партия завершена',drawText:'Следующий противник открывается за победу.',defeatText:'Можно попробовать снова.',opponent:'Соперник',squad:'Отряд',party:'Битва',white:'Белые',black:'Чёрные',journal:'ЖУРНАЛ БОЯ',moves:'Ходы',noMoves:'Ходов пока нет',check:'Шах!'},
+  en:{title:'Arena',back:'Main menu',shards:'Honor shards',squads:'Your squad',enemies:'Opponents',section:'Section',power:'Power',wins:'Wins',losses:'Losses',draws:'Draws',fight:'Fight!',locked:'Defeat the previous opponent',buy:'Buy',select:'Select',owned:'Selected',resume:'Resume match',offer:'Prepare for battle',offerText:'Choose one artifact for this match',none:'No artifact',insufficient:'Not enough honor shards',victory:'Victory!',defeat:'Defeat',draw:'Draw',continue:'Continue',again:'Play again',rivals:'Opponents',double:'Watch ad: reward ×2',adError:'Ad was not completed. Your base reward is safe.',move:'Your move',thinking:'Opponent is thinking…',promotion:'Promote pawn',result:'Match complete',drawText:'Win to unlock the next opponent.',defeatText:'You can try again.',opponent:'Opponent',squad:'Squad',party:'Battle',white:'White',black:'Black',journal:'BATTLE LOG',moves:'Moves',noMoves:'No moves yet',check:'Check!'}
 };
 const types = {ru:{pawn:'Пешка',knight:'Конь',bishop:'Слон',rook:'Ладья',queen:'Ферзь',king:'Король'},en:{pawn:'Pawn',knight:'Knight',bishop:'Bishop',rook:'Rook',queen:'Queen',king:'King'}};
 const raceEn = ['Humans','Elves','Orcs','Undead','Dark elves','Dwarves','Demons','Angels','Dragonborn','Beastfolk','Constructs','Animals','Fae','Goblins'];
@@ -22,6 +22,8 @@ const board = root?.querySelector('[data-arena-board]');
 const dialog = document.querySelector('[data-arena-dialog]');
 const adapter = new ChessAIAdapter();
 let state=emptyArena(),engine=null,section=0,selected=null,thinking=false,animating=false,animationDestination=null,moveAnimation=null,moveFlyer=null,captureGhost=null,searchId=0,adBusy=false,dialogType=null,promotion=null,notice='';
+let historyKey=null,historyEntries=[],capturedByWhite=[],capturedByBlack=[];
+function audio(){return globalThis.RPChessRebootAudio;}
 function l(key){return (copy[currentLanguage()]||copy.ru)[key]||key;}
 function raceLabel(race){return currentLanguage()==='en'?raceEn[RACE_TAGS.indexOf(race)]||race:(RACE_LABELS[race]||race);}
 function foeLabel(foe){return (types[currentLanguage()]||types.ru)[foe.type]+' · '+raceLabel(foe.race);}
@@ -76,12 +78,16 @@ function renderCatalog(){
 function renderBoard(){
   const area=root.querySelector('[data-arena-battle]');
   area.hidden=!engine || !state.match || state.match.phase!=='playing';
+  root.querySelector('[data-arena-rivals]').hidden=area.hidden;
   document.body.classList.toggle('arena-battle-active',!area.hidden);
   if(area.hidden)return;
   const foe=OPPONENT_BY_ID.get(state.match.foe),snapshot=engine.snapshot(),legal=selected?engine.legalMoves(selected):[];
+  const checkedKing=snapshot.status.checked?snapshot.board.findIndex(piece=>piece?.type==='k'&&piece.color===snapshot.turn):-1;
+  root.querySelector('[data-arena-party-title]').textContent=l('party');
   root.querySelector('[data-arena-battle-title]').textContent=l('opponent')+' · '+l('power')+': '+foe.elo;
-  root.querySelector('[data-arena-status]').textContent=thinking?l('thinking'):(snapshot.status.over?l('result'):l('move'));
+  root.querySelector('[data-arena-status]').textContent=thinking?l('thinking'):(snapshot.status.over?l('result'):snapshot.status.checked?l('check'):l('move'));
   root.querySelector('[data-arena-rivals]').textContent=l('rivals');
+  renderBattleHistory();
   board.replaceChildren();
   applyRaceBoardTheme(board,foe.race);
   for(let rank=7;rank>=0;rank--)for(let file=0;file<8;file++){
@@ -91,6 +97,7 @@ function renderBoard(){
     if(selected===square)cell.classList.add('classic-square--selected');
     if(legal.some(move=>(move.uciTo||move.to)===square))cell.classList.add('classic-square--legal');
     if(snapshot.lastMove && [snapshot.lastMove.from,snapshot.lastMove.to].includes(square))cell.classList.add('classic-square--last');
+    if(index===checkedKing)cell.classList.add('classic-square--check');
     if(piece){
       const race=piece.color==='w'?state.match.squad:foe.race;
       cell.innerHTML=img(racePiecePath(race,({p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'})[piece.type],piece.color),'classic-piece','')+'<span class="classic-piece-marker classic-piece-marker--'+piece.color+'" data-piece-marker="'+piece.type+'" aria-hidden="true">'+glyphs[piece.color][piece.type]+'</span>';
@@ -101,6 +108,65 @@ function renderBoard(){
   }
   renderThreatOverlay(board,snapshot,artifactById(state.match.artifactId),'w');
   applyPinIce(board,snapshot);
+}
+function replayBattleHistory(){
+  const key=state.match.id+':'+state.match.moves.join(',');
+  if(historyKey===key)return;
+  historyKey=key;historyEntries=[];capturedByWhite=[];capturedByBlack=[];
+  const replay=new ClassicChessEngine();
+  for(const uci of state.match.moves){
+    const from=uci.slice(0,2),to=uci.slice(2,4),promotion=uci.slice(4)||null;
+    const moving=replay.pieceAt(from),before=replay.legalMoves();
+    if(!moving)break;
+    const candidate=before.find(option=>option.from===from&&option.to===to&&(!option.promotion||option.promotion===promotion));
+    const captured=candidate?.capture?replay.pieceAt(candidate.capture):null;
+    const alternatives=before.filter(candidate=>candidate.to===to&&candidate.from!==from&&replay.pieceAt(candidate.from)?.type===moving.type);
+    const result=replay.move(from,to,promotion);
+    if(!result.ok)break;
+    const move=result.move,suffix=result.status.type==='checkmate'?'#':result.status.checked?'+':'';
+    let san;
+    if(move.castle==='K'||move.castle==='Q')san=(move.castle==='K'?'O-O':'O-O-O')+suffix;
+    else {
+      let prefix=moving.type==='p'?(move.capture?from[0]:''):({n:'N',b:'B',r:'R',q:'Q',k:'K'}[moving.type]||'');
+      if(moving.type!=='p'&&alternatives.length){
+        const sameFile=alternatives.some(candidate=>candidate.from[0]===from[0]);
+        const sameRank=alternatives.some(candidate=>candidate.from[1]===from[1]);
+        prefix+=!sameFile?from[0]:!sameRank?from[1]:from;
+      }
+      san=prefix+(move.capture?'x':'')+to+(promotion?'='+promotion.toUpperCase():'')+suffix;
+    }
+    historyEntries.push({san,color:moving.color});
+    if(captured)(moving.color==='w'?capturedByWhite:capturedByBlack).push(captured.type);
+  }
+}
+function renderBattleHistory(){
+  replayBattleHistory();
+  root.querySelector('[data-arena-white-label]').textContent=l('white');
+  root.querySelector('[data-arena-black-label]').textContent=l('black');
+  root.querySelector('[data-arena-journal-label]').textContent=l('journal');
+  root.querySelector('[data-arena-moves-label]').textContent=l('moves');
+  for(const [side,entries,color] of [['white',capturedByWhite,'b'],['black',capturedByBlack,'w']]){
+    const node=root.querySelector('[data-arena-captured-'+side+']');
+    node.replaceChildren(...entries.map(type=>{const element=document.createElement('span');element.className='classic-captured-piece classic-captured-piece--'+color;element.textContent=glyphs[color][type];return element;}));
+    if(!entries.length)node.textContent='—';
+  }
+  const moves=root.querySelector('[data-arena-moves]');moves.replaceChildren();
+  if(!historyEntries.length){const empty=document.createElement('div');empty.className='classic-empty';empty.textContent=l('noMoves');moves.append(empty);return;}
+  for(let index=0;index<historyEntries.length;index+=2){
+    const number=document.createElement('div');number.className='classic-move-number';number.textContent=(Math.floor(index/2)+1)+'.';moves.append(number);
+    for(let offset=0;offset<2;offset++){
+      const entry=historyEntries[index+offset],cell=document.createElement('div');cell.className='classic-move';
+      if(!entry)cell.textContent='…';
+      else {
+        cell.dataset.san=entry.san;cell.setAttribute('aria-label',entry.san);
+        const type={N:'n',B:'b',R:'r',Q:'q',K:'k'}[entry.san[0]];
+        if(type){const figurine=document.createElement('span');figurine.className='classic-san-figurine classic-san-figurine--'+entry.color;figurine.textContent=glyphs[entry.color][type];figurine.setAttribute('aria-hidden','true');cell.append(figurine,document.createTextNode(entry.san.slice(1)));}
+        else cell.textContent=entry.san;
+      }
+      moves.append(cell);
+    }
+  }
+  moves.scrollTop=moves.scrollHeight;
 }
 function stopMoveAnimation(){
   const active=moveAnimation;moveAnimation=null;
@@ -192,6 +258,8 @@ function commit(from,to,promo=null){
     return;
   }
   selected=null;promotion=null;closeDialog();
+  if(result.move.capture)audio()?.capture?.();else audio()?.move?.();
+  if(result.status.checked)setTimeout(()=>audio()?.check?.(),45);
   animating=Boolean(geometry);animationDestination=animating?to:null;
   const moves=[...state.match.moves,from+to+(promo||'')];
   save({...state,match:{...state.match,moves},updatedAt:Date.now()});

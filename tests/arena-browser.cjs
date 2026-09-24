@@ -57,6 +57,10 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     await page.setViewportSize({width:1900,height:909});
     const combatBoard=await page.locator('[data-arena-board]').boundingBox();
     assert(combatBoard.x>=0 && combatBoard.y<=1 && Math.abs(combatBoard.width-909)<=1 && Math.abs(combatBoard.height-909)<=1,'battle board must fit edge to edge in the landscape viewport');
+    assert.strictEqual(await page.locator('.arena-nav-actions button').first().getAttribute('data-arena-rivals'),'','opponents button must precede main menu');
+    assert(await page.locator('[data-arena-battle-title]').isVisible() && await page.locator('[data-arena-moves]').isVisible(),'battle summary and move journal must both be visible');
+    const railBackground=await page.locator('.arena-shell').evaluate(element=>getComputedStyle(element).backgroundImage);
+    assert(railBackground.includes('ashen_dominion/boss_arena.jpg'),'Arena combat should use the repository arena backdrop');
     await page.locator('[data-arena-rivals]').click();
     const resume=await page.locator('[data-arena-resume]').boundingBox();
     assert(resume && resume.y>=0 && resume.y+resume.height<=909,'resume button must remain visible on desktop');
@@ -65,8 +69,15 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert(compactResume && compactResume.y+compactResume.height<=300,'resume button must remain visible on phone');
     await page.locator('[data-arena-resume]').click();
     assert.strictEqual(await page.locator('[data-arena-board] .classic-piece-marker[data-piece-marker]').count(),32);
+    const nav=await page.evaluate(()=>{const buttons=[...document.querySelectorAll('.arena-nav-actions button')].map(button=>button.getBoundingClientRect());return {first:buttons[0].toJSON(),second:buttons[1].toJSON(),boardLeft:document.querySelector('[data-arena-board]').getBoundingClientRect().left};});
+    assert(nav.first.right<=nav.second.left && nav.second.right<=nav.boardLeft,'both navigation buttons must fit at the top of the mobile rail');
     await page.evaluate(()=>{
       window.__arenaFlyerDurations=[];
+      window.__arenaAudio={move:0,capture:0,check:0};
+      for(const kind of Object.keys(window.__arenaAudio)){
+        const original=window.RPChessRebootAudio[kind].bind(window.RPChessRebootAudio);
+        window.RPChessRebootAudio[kind]=()=>{window.__arenaAudio[kind]++;return original();};
+      }
       const native=Element.prototype.animate;
       Element.prototype.animate=function(frames,options){if(this.classList.contains('classic-piece-flyer'))window.__arenaFlyerDurations.push(options.duration);return native.call(this,frames,options);};
     });
@@ -75,12 +86,15 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     await page.waitForFunction(()=>window.RPChessArena?.state.match.moves.length>=2,{timeout:16000});
     assert((await page.evaluate(()=>window.__arenaFlyerDurations)).every(duration=>duration>=290),'Arena pieces should visibly slide across the board');
     assert((await page.evaluate(()=>window.__arenaFlyerDurations)).length>=2,'both player and opponent moves should animate');
+    assert((await page.evaluate(()=>window.__arenaAudio.move+window.__arenaAudio.capture))>=2,'both turns must play the shared move or capture sound');
+    assert((await page.locator('[data-arena-moves] .classic-move[data-san]').count())>=2,'journal shows both moves in chess notation');
     assert((await page.locator('[data-arena-board] [data-square="e4"] .classic-piece').getAttribute('src')).includes('/humans/pieces/white/pawn.png'));
     const moves=await page.evaluate(()=>window.RPChessArena.state.match.moves);
     await page.reload({waitUntil:'networkidle'});
     await page.locator('[data-arena-open]').click();
     assert.deepStrictEqual(await page.evaluate(()=>window.RPChessArena.state.match.moves),moves);
     assert.strictEqual(await page.locator('[data-arena-board] .classic-piece').count(),32);
+    assert((await page.locator('[data-arena-moves] .classic-move[data-san]').count())>=2,'journal survives restoring a saved match');
     await page.evaluate(()=>{
       window.RPChessArena.engine.reset('k3r3/n7/8/8/8/8/4R3/R3K3 w - - 0 1');
       document.querySelector('[data-arena-board] [data-square="e2"]').click();
@@ -90,6 +104,13 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       return {white:square('e2'),black:square('a7')};
     });
     assert.deepStrictEqual(ice,{white:{pin:'partial',src:'assets/vfx/pin_ice_partial.png',opacity:'0.5'},black:{pin:'full',src:'assets/vfx/pin_ice_full.png',opacity:'0.5'}},'Arena pin animation must reuse the journey overlays');
+    await page.evaluate(()=>{
+      window.RPChessArena.engine.reset('k7/8/8/8/8/4r3/8/4K3 w - - 0 1');
+      document.querySelector('[data-arena-board] [data-square="e1"]').click();
+    });
+    assert(await page.locator('[data-arena-board] [data-square="e1"].classic-square--check').count(),'checked king must show red highlight');
+    const redAura=await page.locator('[data-arena-board] [data-square="e1"]').evaluate(element=>getComputedStyle(element,'::after').backgroundImage);
+    assert(redAura.includes('aura_red.png'),'checked king must use the Journey red aura');
     assert.deepStrictEqual(errors,[]);
     console.log('Arena mobile landscape, offer, match and reload: PASS');
   }finally{await browser.close();}
