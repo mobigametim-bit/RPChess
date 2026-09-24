@@ -108,7 +108,7 @@
   body.arena-battle-active .arena-battle-head{grid-column:1;grid-row:2;min-height:0;overflow:auto;display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:8px;margin-top:0;margin-bottom:0;padding:clamp(10px,1.2vw,18px);border-bottom:0;border-radius:3px 3px 0 0}
   body.arena-battle-active .arena-battle-head h2{font-size:clamp(21px,2.2vw,31px)}
   body.arena-battle-active .arena-battle-head p[data-arena-status]{margin:0;font-size:clamp(14px,1.5vw,20px)}
-  body.arena-battle-active .arena-battle-journal{grid-column:1;grid-row:3;min-height:0;display:block;margin-bottom:8px;padding:9px clamp(10px,1.2vw,18px);border-top-color:rgba(216,177,93,.20);border-radius:0 0 3px 3px;overflow:hidden;flex-direction:column}
+  body.arena-battle-active .arena-battle-journal{grid-column:1;grid-row:3;min-height:0;display:flex;margin-bottom:8px;padding:9px clamp(10px,1.2vw,18px);border-top-color:rgba(216,177,93,.20);border-radius:0 0 3px 3px;overflow:hidden;flex-direction:column}
   body.arena-battle-active .arena-moves{flex:1;min-height:0;height:auto;overflow:auto}
   body.arena-battle-active .arena-board.classic-board{grid-column:2;grid-row:1/4;box-sizing:border-box;width:min(100dvh,calc(100vw - 320px))!important;height:min(100dvh,calc(100vw - 320px))!important;max-width:none!important;min-width:0;margin:0!important;padding:0!important;aspect-ratio:1;border:0!important;box-shadow:none!important;align-self:start;justify-self:start}
 }
