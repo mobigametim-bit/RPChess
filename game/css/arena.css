@@ -113,6 +113,7 @@
 }
 body.arena-battle-active .arena-board .classic-square--check:has(.classic-piece-marker)::after{background:url('../assets/vfx/aura_red.png') center/100% 100% no-repeat!important;opacity:.72!important}
 body.arena-battle-active .arena-board .classic-square--check:has(.classic-piece--arriving)::after{opacity:0!important}
+@media (orientation:landscape) and (max-aspect-ratio:17/10){body.arena-battle-active .arena-balance{display:none}}
 @media(max-width:760px){.arena-foes{display:flex;gap:8px;scroll-snap-type:x proximity}.arena-foe{flex:0 0 132px;min-height:105px;scroll-snap-align:start}.arena-foe-art{height:80px}.arena-offers{grid-template-columns:repeat(2,minmax(0,1fr))}.arena-balance{font-size:15px}}
 @media(max-height:540px) and (orientation:landscape){
   .arena-screen{height:100dvh;min-height:0;padding:4px 10px;overflow:hidden}
