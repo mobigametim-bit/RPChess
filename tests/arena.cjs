@@ -90,5 +90,7 @@ const { pathToFileURL } = require('url');
   assert.strictEqual(chosen.payload.run.journeyStep,5);
   assert.strictEqual(core.arenaSummary(chosen.payload.arena).stats[foes[1].id].losses,1);
   assert.strictEqual(core.arenaSummary(chosen.payload.arena).stats[foes[0].id].wins,2);
+  const arenaOnly=cloud.authoritativeEnvelope({revision:9,updatedAt:300,payload:{run:null,arena:lost}},older);
+  assert.strictEqual(arenaOnly.payload.run.journeyStep,5,'arena-only device must retain the other device journey');
   console.log('Arena catalog, continuous Elo, chess AI, economy, resume, ad and cloud merge: PASS');
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -492,6 +492,14 @@ function authoritativeEnvelope(chosen, other) {
   const revision = Math.max(Number(chosen?.revision) || 0, Number(other?.revision) || 0) + 1;
   const updatedAt = Math.max(Number(chosen?.updatedAt) || 0, nowMs());
   const payload = {...chosen.payload,arena:mergeArena(chosen.payload?.arena,other?.payload?.arena)};
+  // Arena-only progress from another device must never clear a journey that
+  // exists on the other side of the reconciliation. For the same run the
+  // furthest journey checkpoint remains authoritative regardless of clocks.
+  const chosenRun=chosen.payload?.run,otherRun=other?.payload?.run;
+  if(!chosenRun && otherRun)payload.run=otherRun;
+  else if(chosenRun?.id && chosenRun.id===otherRun?.id && Number.isInteger(chosenRun.journeyStep) && Number.isInteger(otherRun.journeyStep) && otherRun.journeyStep>chosenRun.journeyStep)payload.run=otherRun;
+  if(!chosen.payload?.chronicle?.history?.length && other?.payload?.chronicle?.history?.length)payload.chronicle=other.payload.chronicle;
+  if(!chosen.payload?.tutorial && other?.payload?.tutorial)payload.tutorial=other.payload.tutorial;
   return {
     schemaVersion:CLOUD_SAVE_SCHEMA_VERSION,
     revision,
