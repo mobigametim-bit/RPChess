@@ -99,7 +99,7 @@ function renderBoard(){
   renderThreatOverlay(board,snapshot,artifactById(state.match.artifactId),'w');
   applyPinIce(board,snapshot);
 }
-function openDialog(kind,html){dialogType=kind;dialog.innerHTML='<section class="arena-dialog-panel'+(kind==='foe'?' arena-dialog-panel--foe':'')+'" role="dialog" aria-modal="true" aria-label="'+escape(kind==='foe'?foeLabel(OPPONENT_BY_ID.get(dialog.dataset.foe)):l('title')))+'">'+html+'</section>';dialog.hidden=false;dialog.querySelector('button')?.focus();}
+function openDialog(kind,html){dialogType=kind;dialog.innerHTML='<section class="arena-dialog-panel'+(kind==='foe'?' arena-dialog-panel--foe':'')+'" role="dialog" aria-modal="true" aria-label="'+escape(kind==='foe'?foeLabel(OPPONENT_BY_ID.get(dialog.dataset.foe)):l('title'))+'">'+html+'</section>';dialog.hidden=false;dialog.querySelector('button')?.focus();}
 function closeDialog(){dialog.hidden=true;dialog.replaceChildren();dialogType=null;}
 function renderDialog(){
   if(dialogType==='foe'){
