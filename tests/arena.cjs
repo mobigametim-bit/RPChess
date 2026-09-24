@@ -83,7 +83,7 @@ const { pathToFileURL } = require('url');
   assert.strictEqual(core.arenaSummary(lost).highest,1);
   // Concurrent devices buy against the same balance. Deterministic replay cannot
   // spend more than was earned even when their ledgers are merged.
-  const earned=core.addEvent(core.emptyArena(),{id:'match:start:win',kind:'win',foe:foes[0].id,amount:300,at:1});
+  const earned=core.addEvent(core.emptyArena(),{id:'match:start:win',kind:'win',foe:foes[0].id,amount:200,at:1});
   const first=core.purchaseSquad(earned,'elves'),second=core.purchaseSquad(earned,'orcs');
   const both=core.arenaSummary(core.mergeArena(first,second));
   assert(both.balance>=0);
@@ -92,14 +92,14 @@ const { pathToFileURL } = require('url');
   const rejected=bought==='elves'?'orcs':'elves';
   const toppedUp=core.addEvent(core.mergeArena(first,second),{id:'match:more:win',kind:'win',foe:foes[0].id,amount:300,at:Date.now()});
   assert(core.arenaSummary(core.purchaseSquad(toppedUp,rejected)).owned.has(rejected),'rejected concurrent purchase can be retried');
-  const wealthy=core.addEvent(earned,{id:'match:rich:win',kind:'win',foe:foes[0].id,amount:400,at:2});
+  const wealthy=core.addEvent(earned,{id:'match:rich:win',kind:'win',foe:foes[0].id,amount:500,at:2});
   const nonSequential=core.purchaseSquad(wealthy,'goblins','buy:last');
   assert(core.arenaSummary(nonSequential).owned.has('goblins'),'last squad can be bought without earlier squads');
   assert(!core.arenaSummary(nonSequential).owned.has('elves'));
   assert.strictEqual(core.arenaSummary(nonSequential).balance,100);
   const oldPurchase=core.normalizeArena({...earned,events:[...earned.events,{id:'squad:elves:before-price-rise',kind:'squad',race:'elves',amount:60,at:2}]});
   assert(core.arenaSummary(oldPurchase).owned.has('elves'),'existing paid squads survive doubled price migration');
-  assert.strictEqual(core.arenaSummary(oldPurchase).balance,240,'original cost is not charged again');
+  assert.strictEqual(core.arenaSummary(oldPurchase).balance,140,'original cost is not charged again');
   const cloud=await import(pathToFileURL(path.join(root,'game/js/cloud-save.mjs')).href);
   const older={revision:8,updatedAt:100,payload:{run:{id:'same',journeyStep:5},arena:repeat}};
   const newer={revision:7,updatedAt:200,payload:{run:{id:'same',journeyStep:4},arena:lost}};
