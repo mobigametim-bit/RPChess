@@ -9,8 +9,8 @@ import { platform } from './platform.mjs';
 import { ARENA_KEY, SHARD_ICON, PIECE_CODE, OPPONENTS, OPPONENT_BY_ID, SQUAD_PRICES, ARTIFACT_PRICES, emptyArena, normalizeArena, arenaSummary, newMatch, chooseArtifact, finishMatch, claimDouble, purchaseSquad } from './arena-core.mjs';
 
 const copy = {
-  ru:{title:'Арена',back:'Главное меню',shards:'Осколки чести',squads:'Ваш отряд',enemies:'Соперники',section:'Раздел',power:'Мощь',wins:'Побед',losses:'Поражений',draws:'Ничьих',fight:'В бой!',locked:'Победите предыдущего соперника',buy:'Купить',select:'Выбрать',owned:'Выбран',resume:'Продолжить бой',offer:'Подготовка к бою',offerText:'Выберите один артефакт на эту партию',none:'Без артефакта',insufficient:'Недостаточно осколков чести',victory:'Победа!',defeat:'Поражение',draw:'Ничья',continue:'Продолжить',again:'Сыграть ещё',rivals:'К соперникам',double:'Реклама: награда ×2',adError:'Реклама не завершена. Основная награда сохранена.',move:'Ваш ход',thinking:'Противник думает…',promotion:'Превращение пешки',result:'Партия завершена',drawText:'Следующий противник открывается за победу.',defeatText:'Можно попробовать снова.',opponent:'Соперник',squad:'Отряд',party:'Битва',white:'Белые',black:'Чёрные',journal:'ЖУРНАЛ БОЯ',moves:'Ходы',noMoves:'Ходов пока нет',check:'Шах!'},
-  en:{title:'Arena',back:'Main menu',shards:'Honor shards',squads:'Your squad',enemies:'Opponents',section:'Section',power:'Power',wins:'Wins',losses:'Losses',draws:'Draws',fight:'Fight!',locked:'Defeat the previous opponent',buy:'Buy',select:'Select',owned:'Selected',resume:'Resume match',offer:'Prepare for battle',offerText:'Choose one artifact for this match',none:'No artifact',insufficient:'Not enough honor shards',victory:'Victory!',defeat:'Defeat',draw:'Draw',continue:'Continue',again:'Play again',rivals:'Opponents',double:'Watch ad: reward ×2',adError:'Ad was not completed. Your base reward is safe.',move:'Your move',thinking:'Opponent is thinking…',promotion:'Promote pawn',result:'Match complete',drawText:'Win to unlock the next opponent.',defeatText:'You can try again.',opponent:'Opponent',squad:'Squad',party:'Battle',white:'White',black:'Black',journal:'BATTLE LOG',moves:'Moves',noMoves:'No moves yet',check:'Check!'}
+  ru:{title:'Арена',back:'Главное меню',shards:'Осколки чести',squads:'Ваш отряд',enemies:'Соперники',section:'Раздел',power:'Мощь',wins:'Побед',losses:'Поражений',draws:'Ничьих',fight:'В бой!',locked:'Победите предыдущего соперника',buy:'Купить',select:'Выбрать',owned:'Выбран',resume:'Продолжить бой',offer:'Выберите артефакт',offerKicker:'ПЕРЕД СРАЖЕНИЕМ',offerText:'Выберите один артефакт на эту партию',none:'Без артефакта',insufficient:'Недостаточно осколков чести',victory:'Победа!',defeat:'Поражение',draw:'Ничья',continue:'Продолжить',again:'Сыграть ещё',rivals:'К соперникам',double:'Реклама: награда ×2',adError:'Реклама не завершена. Основная награда сохранена.',move:'Ваш ход',thinking:'Противник думает…',promotion:'Превращение пешки',result:'Партия завершена',drawText:'Следующий противник открывается за победу.',defeatText:'Можно попробовать снова.',opponent:'Соперник',squad:'Отряд',party:'Битва',white:'Белые',black:'Чёрные',journal:'ЖУРНАЛ БОЯ',moves:'Ходы',noMoves:'Ходов пока нет',check:'Шах!'},
+  en:{title:'Arena',back:'Main menu',shards:'Honor shards',squads:'Your squad',enemies:'Opponents',section:'Section',power:'Power',wins:'Wins',losses:'Losses',draws:'Draws',fight:'Fight!',locked:'Defeat the previous opponent',buy:'Buy',select:'Select',owned:'Selected',resume:'Resume match',offer:'Choose an artifact',offerKicker:'BEFORE BATTLE',offerText:'Choose one artifact for this match',none:'No artifact',insufficient:'Not enough honor shards',victory:'Victory!',defeat:'Defeat',draw:'Draw',continue:'Continue',again:'Play again',rivals:'Opponents',double:'Watch ad: reward ×2',adError:'Ad was not completed. Your base reward is safe.',move:'Your move',thinking:'Opponent is thinking…',promotion:'Promote pawn',result:'Match complete',drawText:'Win to unlock the next opponent.',defeatText:'You can try again.',opponent:'Opponent',squad:'Squad',party:'Battle',white:'White',black:'Black',journal:'BATTLE LOG',moves:'Moves',noMoves:'No moves yet',check:'Check!'}
 };
 const types = {ru:{pawn:'Пешка',knight:'Конь',bishop:'Слон',rook:'Ладья',queen:'Ферзь',king:'Король'},en:{pawn:'Pawn',knight:'Knight',bishop:'Bishop',rook:'Rook',queen:'Queen',king:'King'}};
 const raceEn = ['Humans','Elves','Orcs','Undead','Dark elves','Dwarves','Demons','Angels','Dragonborn','Beastfolk','Constructs','Animals','Fae','Goblins'];
@@ -59,18 +59,15 @@ function renderCatalog(){
   root.querySelector('[data-arena-squad-label]').textContent=l('squads');
   root.querySelector('[data-arena-enemy-label]').textContent=l('enemies');
   root.querySelector('[data-arena-section]').textContent=l('section')+' '+(section+1)+' / 12';
-  root.querySelector('[data-arena-prev]').setAttribute('aria-label',currentLanguage()==='en'?'Previous':'Назад');
-  root.querySelector('[data-arena-next]').setAttribute('aria-label',currentLanguage()==='en'?'Next':'Вперёд');
-  root.querySelector('[data-arena-prev]').disabled=section===0;
-  root.querySelector('[data-arena-next]').disabled=section===11;
   const foes=root.querySelector('[data-arena-foes]');foes.replaceChildren();
-  for(const foe of OPPONENTS.slice(section*7,section*7+7)){
+  for(const foe of OPPONENTS){
     const unlocked=foe.index<=stats.highest,card=document.createElement('button');
-    card.type='button';card.className='arena-foe'+(unlocked?'':' is-locked');card.dataset.arenaFoe=foe.id;
+    card.type='button';card.className='arena-foe'+(foe.index%7===0?' arena-foe--section-start':'')+(unlocked?'':' is-locked');card.dataset.arenaFoe=foe.id;
     card.disabled=!unlocked;card.setAttribute('aria-label',foeLabel(foe)+', '+l('power')+': '+foe.elo);
     card.innerHTML=img(foe.art,'arena-foe-art','')+'<small class="arena-foe-power">'+statIcon('power')+l('power')+': '+foe.elo+'</small>'+(unlocked?'':'<span class="arena-lock" aria-hidden="true">🔒</span>');
     foes.append(card);
   }
+  foes.scrollLeft=foes.children[section*7]?.offsetLeft-foes.children[0]?.offsetLeft||0;
   const resume=root.querySelector('[data-arena-resume]');
   resume.hidden=!state.match;resume.textContent=l('resume')+(state.match?' · '+l('power')+': '+OPPONENT_BY_ID.get(state.match.foe).elo:'');
   root.querySelector('[data-arena-notice]').textContent=notice;
@@ -85,12 +82,13 @@ function renderBoard(){
   const checkedKing=snapshot.status.checked?snapshot.board.findIndex(piece=>piece?.type==='k'&&piece.color===snapshot.turn):-1;
   root.querySelector('[data-arena-party-title]').textContent=l('party');
   root.querySelector('[data-arena-battle-title]').textContent=l('opponent')+' · '+l('power')+': '+foe.elo;
-  root.querySelector('[data-arena-status]').textContent=thinking?l('thinking'):(snapshot.status.over?l('result'):snapshot.status.checked?l('check'):l('move'));
+  root.querySelector('[data-arena-status]').textContent=thinking?l('thinking'):(snapshot.status.over?l('result'):snapshot.status.checked?l('check'):snapshot.turn===state.match.playerColor?l('move'):l('thinking'));
   root.querySelector('[data-arena-rivals]').textContent=l('rivals');
   renderBattleHistory();
   board.replaceChildren();
   applyRaceBoardTheme(board,foe.race);
-  for(let rank=7;rank>=0;rank--)for(let file=0;file<8;file++){
+  for(let row=0;row<8;row++)for(let col=0;col<8;col++){
+    const rank=state.match.playerColor==='b'?row:7-row,file=state.match.playerColor==='b'?7-col:col;
     const index=rank*8+file,square='abcdefgh'[file]+(rank+1),piece=snapshot.board[index];
     const cell=document.createElement('button');cell.type='button';cell.className='classic-square classic-square--'+((rank+file)%2?'light':'dark');
     cell.dataset.square=square;cell.setAttribute('role','gridcell');cell.setAttribute('aria-label',square+(piece?' '+piece.type:''));
@@ -99,14 +97,14 @@ function renderBoard(){
     if(snapshot.lastMove && [snapshot.lastMove.from,snapshot.lastMove.to].includes(square))cell.classList.add('classic-square--last');
     if(index===checkedKing)cell.classList.add('classic-square--check');
     if(piece){
-      const race=piece.color==='w'?state.match.squad:foe.race;
+      const race=piece.color===state.match.playerColor?state.match.squad:foe.race;
       cell.innerHTML=img(racePiecePath(race,({p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'})[piece.type],piece.color),'classic-piece','')+'<span class="classic-piece-marker classic-piece-marker--'+piece.color+'" data-piece-marker="'+piece.type+'" aria-hidden="true">'+glyphs[piece.color][piece.type]+'</span>';
       if(animating&&square===animationDestination)cell.querySelector('.classic-piece').classList.add('classic-piece--arriving');
     }
     cell.disabled=thinking||animating||snapshot.status.over;
     board.append(cell);
   }
-  renderThreatOverlay(board,snapshot,artifactById(state.match.artifactId),'w');
+  renderThreatOverlay(board,snapshot,artifactById(state.match.artifactId),state.match.playerColor);
   applyPinIce(board,snapshot);
 }
 function replayBattleHistory(){
@@ -206,7 +204,7 @@ function animateCommittedMove(geometry,to,onDone){
     renderBoard();onDone();
   });
 }
-function openDialog(kind,html){dialogType=kind;dialog.innerHTML='<section class="arena-dialog-panel'+(kind==='foe'?' arena-dialog-panel--foe':'')+'" role="dialog" aria-modal="true" aria-label="'+escape(kind==='foe'?foeLabel(OPPONENT_BY_ID.get(dialog.dataset.foe)):l('title'))+'">'+html+'</section>';dialog.hidden=false;dialog.querySelector('button')?.focus();}
+function openDialog(kind,html){dialogType=kind;dialog.innerHTML='<section class="arena-dialog-panel arena-dialog-panel--'+kind+'" role="dialog" aria-modal="true" aria-label="'+escape(kind==='foe'?foeLabel(OPPONENT_BY_ID.get(dialog.dataset.foe)):l('title'))+'">'+html+'</section>';dialog.hidden=false;dialog.querySelector('button')?.focus();}
 function closeDialog(){dialog.hidden=true;dialog.replaceChildren();dialogType=null;}
 function renderDialog(){
   if(dialogType==='foe'){
@@ -214,8 +212,8 @@ function renderDialog(){
     const stats=arenaSummary(state).stats[foe.id];
     openDialog('foe','<header>'+button('close','×','class="arena-close" aria-label="'+(currentLanguage()==='en'?'Close':'Закрыть')+'"')+'</header><div class="arena-foe-profile"><div class="arena-foe-profile-art">'+img(foe.art,'arena-dialog-foe','')+'<p>'+statIcon('power')+l('power')+': '+foe.elo+'</p></div><dl class="arena-foe-profile-stats"><div><dt>'+statIcon('wins')+l('wins')+'</dt><dd>'+stats.wins+'</dd></div><div><dt>'+statIcon('losses')+l('losses')+'</dt><dd>'+stats.losses+'</dd></div><div><dt>'+statIcon('draws')+l('draws')+'</dt><dd>'+stats.draws+'</dd></div></dl></div>'+button('fight',l('fight')));
   }else if(dialogType==='offer'&&state.match){
-    const cards=ARTIFACTS.map(a=>button('artifact',img(a.icon,'arena-artifact','')+'<strong>'+escape(currentLanguage()==='en'?a.id==='threat.great'?'Greater awareness':a.id==='threat.attack'?'Attack awareness':'Defense awareness':a.name)+'</strong><small>'+escape(currentLanguage()==='en'?a.id==='threat.great'?'Shows threats to both armies':a.id==='threat.attack'?'Shows threats to enemy pieces':'Shows threats to your pieces':a.description)+'</small><span>'+img(SHARD_ICON,'arena-inline-shard','')+' '+ARTIFACT_PRICES[a.id]+'</span>','data-artifact="'+a.id+'" '+(arenaSummary(state).balance<ARTIFACT_PRICES[a.id]?'disabled':''))).join('');
-    openDialog('offer','<h2>'+l('offer')+'</h2><p>'+l('offerText')+'</p><div class="arena-offers">'+cards+button('artifact',l('none'),'data-artifact="none"')+'</div>');
+    const cards=ARTIFACTS.map(a=>button('artifact',img(a.icon,'arena-artifact','')+'<strong>'+escape(currentLanguage()==='en'?a.id==='threat.great'?'Greater awareness':a.id==='threat.attack'?'Attack awareness':'Defense awareness':a.name)+'</strong><small>'+escape(currentLanguage()==='en'?a.id==='threat.great'?'Shows threats to both armies':a.id==='threat.attack'?'Shows threats to enemy pieces':'Shows threats to your pieces':a.description)+'</small><span class="arena-artifact-price">'+img(SHARD_ICON,'arena-inline-shard','')+' '+ARTIFACT_PRICES[a.id]+'</span>','data-artifact="'+a.id+'" '+(arenaSummary(state).balance<ARTIFACT_PRICES[a.id]?'disabled':''))).join('');
+    openDialog('offer','<div class="reboot-eyebrow">'+l('offerKicker')+'</div><h2>'+l('offer')+'</h2><p>'+l('offerText')+'</p><div class="arena-offers">'+cards+button('artifact','<span class="arena-artifact-empty" aria-hidden="true">—</span><strong>'+l('none')+'</strong>','data-artifact="none"')+'</div>');
   }else if(dialogType==='result'&&state.match){
     const match=state.match,win=match.outcome==='win',loss=match.outcome==='loss',claimed=arenaSummary(state).accepted.has(match.id+':ad');
     const icon=win?img(SHARD_ICON,'arena-result-icon',''):loss?img('assets/arena/defeat_crown.png','arena-result-icon',''):'<span class="arena-result-icon">½</span>';
@@ -223,7 +221,7 @@ function renderDialog(){
     const message=win?('+'+match.reward+(claimed?' ×2':'')+' '+l('shards')):loss?l('defeatText'):l('drawText');
     openDialog('result','<h2>'+l(win?'victory':loss?'defeat':'draw')+'</h2>'+icon+'<p>'+message+'</p><p class="arena-notice" role="status">'+escape(notice)+'</p><div class="arena-result-actions">'+ad+button('continue',l('continue'),adBusy?'disabled':'')+(loss?button('again',l('again')):'')+'</div>');
   }else if(dialogType==='promotion'){
-    openDialog('promotion','<h2>'+l('promotion')+'</h2><div class="arena-promotions">'+['q','r','b','n'].map(type=>button('promote',glyphs.w[type],'data-promotion="'+type+'"')).join('')+'</div>');
+    openDialog('promotion','<h2>'+l('promotion')+'</h2><div class="arena-promotions">'+['q','r','b','n'].map(type=>button('promote',glyphs[state.match.playerColor][type],'data-promotion="'+type+'"')).join('')+'</div>');
   }
 }
 function render(){if(!root||root.hidden)return;renderCatalog();renderBoard();if(dialogType)renderDialog();}
@@ -241,13 +239,13 @@ function restoreMatch(){
 }
 function settle(status){
   if(!status.over||state.match?.phase!=='playing')return;
-  const outcome=status.type==='checkmate'?(status.winner==='w'?'win':'loss'):'draw';
+  const outcome=status.type==='checkmate'?(status.winner===state.match.playerColor?'win':'loss'):'draw';
   stopMoveAnimation();engine=null;selected=null;adapter.stop();searchId++;notice='';
   save(finishMatch(state,outcome));dialogType='result';render();
 }
 function startBattle(){
   if(state.match?.phase!=='playing')return;
-  closeDialog();engine=new ClassicChessEngine();selected=null;render();
+  closeDialog();engine=new ClassicChessEngine();selected=null;render();void aiTurn();
 }
 function commit(from,to,promo=null){
   if(!engine||animating||thinking||state.match?.phase!=='playing')return;
@@ -268,7 +266,7 @@ function commit(from,to,promo=null){
   else afterMove();
 }
 async function aiTurn(){
-  if(!engine||engine.turn()!=='b'||state.match?.phase!=='playing')return;
+  if(!engine||engine.turn()===state.match?.playerColor||state.match?.phase!=='playing')return;
   const stamp=++searchId,foe=OPPONENT_BY_ID.get(state.match.foe);thinking=true;render();
   const started=performance.now();
   const uci=await adapter.chooseMove({fen:engine.fen(),elo:foe.elo,legalMoves:engine.legalMoves(),arena:true});
@@ -284,8 +282,6 @@ function leave(){adapter.stop();searchId++;thinking=false;stopMoveAnimation();en
 root?.addEventListener('click',event=>{
   const target=event.target.closest('button');if(!target||target.disabled)return;
   if(target.dataset.arenaBack!==undefined){leave();return;}
-  if(target.dataset.arenaPrev!==undefined){section=Math.max(0,section-1);render();return;}
-  if(target.dataset.arenaNext!==undefined){section=Math.min(11,section+1);render();return;}
   if(target.dataset.arenaResume!==undefined){if(state.match?.phase==='offer')dialogType='offer';else if(state.match?.phase==='result')dialogType='result';else restoreMatch();render();return;}
   if(target.dataset.arenaRivals!==undefined){adapter.stop();searchId++;thinking=false;stopMoveAnimation();engine=null;render();return;}
   if(target.dataset.arenaSquad){
@@ -300,11 +296,11 @@ root?.addEventListener('click',event=>{
     dialog.dataset.foe=target.dataset.arenaFoe;dialogType='foe';renderDialog();return;
   }
   if(target.dataset.square){
-    if(!engine||thinking||engine.turn()!=='w')return;
+    if(!engine||thinking||engine.turn()!==state.match.playerColor)return;
     const square=target.dataset.square,piece=engine.pieceAt(square);
-    if(!selected){if(piece?.color==='w'){selected=square;renderBoard();}return;}
+    if(!selected){if(piece?.color===state.match.playerColor){selected=square;renderBoard();}return;}
     if(selected===square){selected=null;renderBoard();return;}
-    if(piece?.color==='w'&&!engine.legalMoves(selected).some(m=>m.uciTo===square)){selected=square;renderBoard();return;}
+    if(piece?.color===state.match.playerColor&&!engine.legalMoves(selected).some(m=>m.uciTo===square)){selected=square;renderBoard();return;}
     commit(selected,square);return;
   }
 });
@@ -340,6 +336,28 @@ dialog?.addEventListener('click',async event=>{
     finally{adBusy=false;render();}
   }
 });
+const foeCarousel=root?.querySelector('[data-arena-foes]');
+foeCarousel?.addEventListener('wheel',event=>{
+  if(!foeCarousel.clientWidth||foeCarousel.scrollWidth<=foeCarousel.clientWidth)return;
+  const delta=Math.abs(event.deltaX)>Math.abs(event.deltaY)?event.deltaX:event.deltaY;
+  if(!delta)return;
+  event.preventDefault();
+  foeCarousel.scrollLeft+=delta;
+},{passive:false});
+foeCarousel?.addEventListener('scroll',()=>{
+  if(!foeCarousel.children.length)return;
+  const start=foeCarousel.children[0].offsetLeft;
+  let closest=0,distance=Infinity;
+  for(let i=0;i<12;i++){
+    const card=foeCarousel.children[i*7];
+    if(!card)break;
+    const gap=Math.abs(card.offsetLeft-start-foeCarousel.scrollLeft);
+    if(gap<distance){distance=gap;closest=i;}
+  }
+  section=closest;
+  const label=root.querySelector('[data-arena-section]');
+  if(label)label.textContent=l('section')+' '+(section+1)+' / 12';
+},{passive:true});
 const entryButton=document.querySelector('[data-arena-open]');
 entryButton?.addEventListener('click',()=>{void Promise.resolve(globalThis.RPChessCloudReady).then(enter);});
 function updateLanguage(){if(entryButton)entryButton.textContent=l('title');render();}
