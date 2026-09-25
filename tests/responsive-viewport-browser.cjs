@@ -25,6 +25,74 @@ const WEAK_SURFACE_MATRIX = [[1024, 768], [844, 390]];
 // resulting safe height and cover only the Main Menu / Chronicle contract.
 const VK_MENU_SAFE_HEIGHT_MATRIX = [[1366, 660], [1024, 640], [844, 340]];
 const VK_MENU_SCREENSHOT_DIR = String(process.env.RPCHESS_VK_MENU_SCREENSHOT_DIR || '').trim();
+const FLAG_SCREENSHOT_DIR = String(process.env.RPCHESS_FLAG_SCREENSHOT_DIR || '').trim();
+const FLAG_SCREENSHOT_MATRIX = [[1920,900],[1366,768],[1366,660],[1180,820],[1024,768],[980,520],[844,390],[844,340]];
+
+async function captureFlagScreens(browser, width, height) {
+  const page = await browser.newPage({ viewport:{ width,height } });
+  const label = `${width}x${height} flag UI`;
+  try {
+    await freshMenu(page);
+    await setLanguage(page, 'ru');
+    await startNewRun(page, { playerName:'Хранитель Клятвы' });
+    await page.locator('[data-roster-menu]').click();
+    await page.locator('[data-chronicle-panel]').waitFor({ state:'visible' });
+    fs.mkdirSync(FLAG_SCREENSHOT_DIR, { recursive:true });
+    await page.screenshot({ path:path.join(FLAG_SCREENSHOT_DIR,`menu-${width}x${height}.png`),fullPage:false });
+    await assertViewportContained(page, '[data-chronicle-panel]', `${label} Chronicle frame`);
+    await assertPageFitsViewport(page, `${label} menu`);
+    const menuButtonHeight = await page.locator('.reboot-menu-actions .reboot-button').first().evaluate((node) => node.getBoundingClientRect().height);
+    await page.evaluate((key) => {
+      const run = JSON.parse(localStorage.getItem(key));
+      run.ended = true;
+      run.endReason = 'starvation_king';
+      run.journeyStep = 18;
+      run.runStats = { goldEarned:188,skirmishWins:2,battleWins:1,caravansDefended:1,puzzlesSolved:4,eventsResolved:5 };
+      localStorage.setItem(key,JSON.stringify(run));
+      dispatchEvent(new CustomEvent('rpchess:run-updated'));
+      globalThis.RPChessEndlessRun.open(run);
+    }, RUN_KEY);
+    await page.locator('[data-endless-run-screen]:not([hidden])').waitFor();
+    await page.locator('.endless-run-flag-art').evaluate((image) => image.decode());
+    await page.waitForFunction(() => [...document.querySelectorAll('.endless-run-metric img')].every((image) => image.complete));
+    await page.screenshot({ path:path.join(FLAG_SCREENSHOT_DIR,`result-${width}x${height}.png`),fullPage:false });
+    await assertViewportContained(page, '.endless-run-panel', `${label} result flag`);
+    await assertPageFitsViewport(page, `${label} result`);
+    for (const selector of ['.endless-run-logo','[data-endless-run-new]','[data-endless-run-share]','[data-endless-run-menu]']) {
+      await assertViewportContained(page, selector, `${label} ${selector}`);
+    }
+    await assertFlagSafety(page,'.endless-run-panel','.endless-run-flag-content',`${label} result`);
+    const buttonHeights = await page.locator('.endless-run-actions .reboot-button').evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().height));
+    assert(buttonHeights.every((height) => Math.abs(height-menuButtonHeight)<3), `${label}: result buttons ${buttonHeights} differ from menu ${menuButtonHeight}`);
+    const brokenIcons = await page.locator('.endless-run-metric img').evaluateAll((images) => images.filter((img) => !img.complete || !img.naturalWidth).map((img) => img.getAttribute('src')));
+    assert.deepStrictEqual(brokenIcons,[],`${label}: broken result icons`);
+  } finally {
+    await page.close();
+  }
+}
+
+async function assertFlagSafety(page, panelSelector, safeSelector, label) {
+  const geometry = await page.locator(panelSelector).evaluate((panel, selector) => {
+    const flag = panel.getBoundingClientRect();
+    const safe = panel.querySelector(selector);
+    const area = safe.getBoundingClientRect();
+    return {
+      flag: { left:flag.left, top:flag.top, width:flag.width, height:flag.height },
+      safe: { left:area.left, right:area.right, top:area.top, bottom:area.bottom },
+      scrollHeight:safe.scrollHeight, clientHeight:safe.clientHeight,
+      overflowY:getComputedStyle(safe).overflowY
+    };
+  }, safeSelector);
+  const {flag,safe}=geometry;
+  assert(safe.left>=flag.left+flag.width*.20-2 && safe.right<=flag.left+flag.width*.80+2, `${label}: content leaves flag side rails`);
+  assert(safe.top>=flag.top+flag.height*.13-2 && safe.bottom<=flag.top+flag.height*.77+2, `${label}: content leaves marked flag height`);
+  if(geometry.scrollHeight>geometry.clientHeight+2)assert(['auto','scroll'].includes(geometry.overflowY), `${label}: flag contents must scroll inside the safe area`);
+}
+
+async function assertScrollableAction(page, selector, label) {
+  await page.locator(selector).first().scrollIntoViewIfNeeded();
+  await assertViewportContained(page, selector, label);
+}
 
 async function freshDocument(page) {
   await page.goto(url, { waitUntil: 'networkidle' });
@@ -76,7 +144,7 @@ async function auditPortraitLock(browser, width, height, language) {
 async function auditMenuModals(page, label) {
   await assertPageFitsViewport(page, `${label} menu`);
   for (const selector of ['[data-new-game]', '[data-continue-run]', '[data-settings]', '[data-language]']) {
-    await assertViewportContained(page, selector, `${label} ${selector}`);
+    await assertScrollableAction(page, selector, `${label} ${selector}`);
   }
 
   await page.locator('[data-settings]').first().click();
@@ -116,7 +184,7 @@ async function auditViewport(browser, width, height, language) {
 
     await page.locator('[data-roster-menu]').click();
     await page.locator('[data-chronicle-panel]').waitFor({ state: 'visible' });
-    await assertViewportContained(page, '[data-chronicle-panel]', `${label} Chronicle`);
+    await assertFlagSafety(page, '[data-chronicle-panel]', '.chronicle-safe', `${label} Chronicle`);
     await assertPageFitsViewport(page, `${label} Chronicle`);
 
     await page.locator('[data-continue-run]').click();
@@ -156,7 +224,7 @@ async function auditVkMenuSafeHeight(browser, width, height, language) {
     await freshMenu(page);
     await setLanguage(page, language);
     await auditMenuModals(page, label);
-    await assertViewportContained(page, '[data-chronicle-panel]', `${label} Chronicle`);
+    await assertFlagSafety(page, '[data-chronicle-panel]', '.chronicle-safe', `${label} Chronicle`);
     await assertPageFitsViewport(page, label);
     if (VK_MENU_SCREENSHOT_DIR) {
       fs.mkdirSync(VK_MENU_SCREENSHOT_DIR, { recursive: true });
@@ -342,12 +410,9 @@ async function auditStarvationAndEndless(browser, width, height, language) {
       globalThis.RPChessEndlessRun.open(run);
     }, RUN_KEY);
     await page.locator('[data-endless-run-screen]:not([hidden])').waitFor();
-    await assertPageFitsViewport(page, `${label} Endless summary`);
-    await assertViewportContained(page, '[data-endless-run-screen]:not([hidden])', `${label} Endless summary screen`);
-    await assertViewportContained(page, '.endless-run-panel', `${label} Endless summary panel`);
-    await assertFrameContains(page, '.endless-run-panel', ['[data-endless-run-metric]', '[data-endless-run-new]', '[data-endless-run-menu]'], `${label} Endless summary ownership`);
-    await assertViewportContained(page, '[data-endless-run-new]', `${label} Endless new game CTA`);
-    await assertViewportContained(page, '[data-endless-run-menu]', `${label} Endless menu CTA`);
+    await assertFlagSafety(page, '.endless-run-panel', '.endless-run-flag-content', `${label} Endless summary`);
+    await assertScrollableAction(page, '[data-endless-run-new]', `${label} Endless new game CTA`);
+    await assertScrollableAction(page, '[data-endless-run-menu]', `${label} Endless menu CTA`);
     assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
   } finally {
     await page.close();
@@ -388,16 +453,10 @@ async function auditSoloKingBattleRunEnd(browser, width, height, language) {
       : 'Наемники не посчитались со словами одинокого короля без королевства и повесили вас на суку ближайшего дерева';
     const reasonText = (await page.locator('[data-endless-run-reason]').innerText()).trim();
     assert(reasonText.endsWith(expectedText), `${label}: reason copy mismatch`);
-    await assertPageFitsViewport(page, label);
-    await assertViewportContained(page, '[data-endless-run-screen]:not([hidden])', `${label} screen`);
-    await assertViewportContained(page, '.endless-run-panel', `${label} panel`);
-    for (const selector of ['[data-endless-run-reason]','[data-endless-run-metric]','[data-endless-run-new]','[data-endless-run-share]','[data-endless-run-menu]']) {
-      await assertViewportContained(page, selector, `${label} ${selector}`);
+    await assertFlagSafety(page, '.endless-run-panel', '.endless-run-flag-content', `${label} summary`);
+    for (const selector of ['[data-endless-run-new]','[data-endless-run-share]','[data-endless-run-menu]']) {
+      await assertScrollableAction(page, selector, `${label} ${selector}`);
     }
-    await assertFrameContains(page, '.endless-run-panel', ['[data-endless-run-reason]','[data-endless-run-metric]','[data-endless-run-new]','[data-endless-run-share]','[data-endless-run-menu]'], `${label} ownership`);
-    const overflow = await page.locator('.endless-run-panel').evaluate((panel) => ({ scrollHeight:panel.scrollHeight, clientHeight:panel.clientHeight, overflowY:getComputedStyle(panel).overflowY }));
-    assert(overflow.scrollHeight <= overflow.clientHeight + 2, `${label}: panel content must fit without scrolling (${overflow.scrollHeight} > ${overflow.clientHeight})`);
-    assert(!['auto','scroll'].includes(overflow.overflowY), `${label}: panel must not own an internal scrollbar`);
     assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
   } finally {
     await page.close();
@@ -560,6 +619,7 @@ async function auditPrepAndCombat(browser, width, height, language) {
 (async () => {
   const browser = await chromium.launch({ headless: true });
   try {
+    if (FLAG_SCREENSHOT_DIR) for (const [width,height] of FLAG_SCREENSHOT_MATRIX) await captureFlagScreens(browser,width,height);
     for (const language of LANGUAGES) {
       for (const [width, height] of PORTRAIT_MATRIX) await auditPortraitLock(browser, width, height, language);
       for (const [width, height] of VK_MENU_SAFE_HEIGHT_MATRIX) await auditVkMenuSafeHeight(browser, width, height, language);

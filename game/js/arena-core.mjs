@@ -9,7 +9,8 @@ const OPPONENTS = Object.freeze(PIECE_TYPES.flatMap((type, typeIndex) => RACE_TA
   return Object.freeze({ id:`${type}:${race}`, index, section:Math.floor(index / 7), race, type, elo:Math.round((400 + 2200 * index / 83) / 10) * 10, art:racePiecePath(race,type,'b') });
 })));
 const OPPONENT_BY_ID = new Map(OPPONENTS.map(foe => [foe.id,foe]));
-const SQUAD_PRICES = Object.freeze(Object.fromEntries(RACE_TAGS.slice(1).map((race,index) => [race,60 + index * 20])));
+const LEGACY_SQUAD_PRICES = Object.freeze(Object.fromEntries(RACE_TAGS.slice(1).map((race,index) => [race,60 + index * 20])));
+const SQUAD_PRICES = Object.freeze(Object.fromEntries(RACE_TAGS.slice(1).map((race,index) => [race,120 + index * 40])));
 const ARTIFACT_PRICES = Object.freeze({ 'threat.defense':8, 'threat.attack':8, 'threat.great':14 });
 function emptyArena(){ return { version:1, events:[], squad:'humans', match:null, updatedAt:0 }; }
 function safeInt(n){ return Number.isSafeInteger(n) && n >= 0 ? n : 0; }
@@ -17,7 +18,7 @@ function validEvent(event){
   if(!event || typeof event.id!=='string' || !/^[\w:.\-]{1,100}$/.test(event.id) || !['win','loss','draw','ad','squad','artifact'].includes(event.kind) || !Number.isSafeInteger(event.at) || event.at<0) return false;
   if(['win','loss','draw'].includes(event.kind)) return OPPONENT_BY_ID.has(event.foe) && safeInt(event.amount)===event.amount && event.amount<=500;
   if(event.kind==='ad') return OPPONENT_BY_ID.has(event.foe) && safeInt(event.amount)===event.amount && event.amount<=500;
-  if(event.kind==='squad') return SQUAD_PRICES[event.race]!==undefined && event.amount===SQUAD_PRICES[event.race];
+  if(event.kind==='squad') return SQUAD_PRICES[event.race]!==undefined && (event.amount===SQUAD_PRICES[event.race] || event.amount===LEGACY_SQUAD_PRICES[event.race]);
   return Boolean(ARTIFACTS.find(a=>a.id===event.artifact)) && event.amount===ARTIFACT_PRICES[event.artifact];
 }
 function normalizeArena(raw){
@@ -28,7 +29,7 @@ function normalizeArena(raw){
     seen.add(event.id);return true;
   }).sort((a,b)=>a.at-b.at || a.id.localeCompare(b.id));
   const match=raw.match && typeof raw.match.id==='string' && /^[\w:.\-]{1,100}$/.test(raw.match.id) && OPPONENT_BY_ID.has(raw.match.foe) && RACE_TAGS.includes(raw.match.squad) && ['offer','playing','result'].includes(raw.match.phase) && Array.isArray(raw.match.moves) && raw.match.moves.length<=1000 && raw.match.moves.every(move=>/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(move)) ? {
-    id:raw.match.id,foe:raw.match.foe,squad:raw.match.squad,phase:raw.match.phase,moves:raw.match.moves.slice(),artifactId:ARTIFACT_PRICES[raw.match.artifactId]!==undefined?raw.match.artifactId:null,
+    id:raw.match.id,foe:raw.match.foe,squad:raw.match.squad,playerColor:raw.match.playerColor==='b'?'b':'w',phase:raw.match.phase,moves:raw.match.moves.slice(),artifactId:ARTIFACT_PRICES[raw.match.artifactId]!==undefined?raw.match.artifactId:null,
     outcome:['win','loss','draw'].includes(raw.match.outcome)?raw.match.outcome:null, reward:safeInt(raw.match.reward), at:safeInt(raw.match.at)
   }:null;
   return { version:1, events, squad:RACE_TAGS.includes(raw.squad)?raw.squad:'humans', match, updatedAt:safeInt(raw.updatedAt) };
@@ -70,10 +71,10 @@ function mergeArena(local,remote){
   return merged;
 }
 function rewardFor(foe,first){ return (first?30:10)+Math.floor(foe.index/7)*(first?5:2); }
-function newMatch(state,foeId,id){
+function newMatch(state,foeId,id,playerColor=Math.random()<.5?'w':'b'){
   const summary=arenaSummary(state),foe=OPPONENT_BY_ID.get(foeId);
   if(!foe||foe.index>summary.highest||state.match||!summary.owned.has(state.squad)||!id)return state;
-  return {...normalizeArena(state),match:{id,foe:foeId,squad:state.squad,phase:'offer',moves:[],artifactId:null,outcome:null,reward:0,at:Date.now()},updatedAt:Date.now()};
+  return {...normalizeArena(state),match:{id,foe:foeId,squad:state.squad,playerColor:playerColor==='b'?'b':'w',phase:'offer',moves:[],artifactId:null,outcome:null,reward:0,at:Date.now()},updatedAt:Date.now()};
 }
 function chooseArtifact(state,artifactId){
   if(state.match?.phase!=='offer')return state;

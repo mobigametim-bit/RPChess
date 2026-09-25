@@ -141,6 +141,7 @@ function materializeBackgrounds(root){
 function materializeRuntimeAssets(root){
   const groups={
     arena:materializeArena(root),
+    runFlag:materializeRunFlag(root),
     boards:materializeBoards(root),
     pinIce:materializePinIce(root),
     auras:materializeAuras(root),
@@ -164,6 +165,21 @@ function materializeArena(root){
   }
   return report(records);
 }
+function materializeRunFlag(root){
+  const relative='assets/ui/royal_run_flag.png',full=path.join(root,relative);
+  const source=fs.readFileSync(full),before=source.length;
+  const cached=cachedTransform(source,{
+    namespace:'run-flag',version:fingerprintFiles([ORCHESTRATOR_FILE,PIECE_FILE]),options:{maxSide:1200,maxBytes:2*1024*1024},extension:'png',
+    transform:(buffer)=>{const optimized=piece.optimizePngBuffer(buffer,1200).buffer;return buffer.length<=optimized.length?buffer:optimized;},
+    validate:(buffer)=>{
+      const png=piece.parsePng(buffer);
+      if(Math.max(png.width,png.height)>1200 || buffer.length>2*1024*1024)throw new Error('run flag exceeds runtime asset budget');
+      if(png.width>=png.height || !([4,6].includes(png.colorType) || (png.colorType===3 && png.transparency)))throw new Error('run flag must remain portrait with transparency');
+    }
+  });
+  const out=piece.parsePng(cached.buffer);fs.writeFileSync(full,cached.buffer);
+  return report([{path:relative,before,after:cached.buffer.length,width:out.width,height:out.height,cacheHit:cached.cacheHit,cachePath:cached.cachePath}]);
+}
 function cacheText(group){return group.cache.total?`${group.cache.hits} hit / ${group.cache.misses} miss`:'no transforms';}
 
-module.exports={BOARD_MAX_SIDE,BOARD_MAX_BYTES,BOARD_MAX_TOTAL_BYTES,materializePieces,materializePortraits,materializeBoards,materializePinIce,materializeAuras,materializeArtifacts,materializeBrandLogos,materializeBackgrounds,materializeArena,materializeRuntimeAssets,cacheText};
+module.exports={BOARD_MAX_SIDE,BOARD_MAX_BYTES,BOARD_MAX_TOTAL_BYTES,materializePieces,materializePortraits,materializeBoards,materializePinIce,materializeAuras,materializeArtifacts,materializeBrandLogos,materializeBackgrounds,materializeArena,materializeRunFlag,materializeRuntimeAssets,cacheText};

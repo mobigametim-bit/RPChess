@@ -22,8 +22,8 @@ function ensureStylesheet(marker, href) {
 }
 
 function ensureCss() {
-  ensureStylesheet('data-endless-run-css', 'css/endless-run.css?v=20260909-owner2');
-  ensureStylesheet('data-endless-run-compact-css', 'css/endless-run-compact.css?v=20260909-owner1');
+  ensureStylesheet('data-endless-run-css', 'css/endless-run.css?v=20260925-flag-1');
+  ensureStylesheet('data-endless-run-compact-css', 'css/endless-run-compact.css?v=20260925-flag-2');
 }
 
 function renderStaticCopy() {
@@ -56,28 +56,29 @@ function ensureScreen() {
   screen.className = 'endless-run-screen';
   screen.dataset.endlessRunScreen = '';
   screen.hidden = true;
+  const icons={weeks:'generated_assets/node_story.png',goldEarned:'generated_assets/reward_gold.png',skirmishWins:'generated_assets/node_battle.png',battleWins:'generated_assets/node_elite.png',puzzlesSolved:'generated_assets/node_training.png',eventsResolved:'generated_assets/node_story.png',heroesRecruited:'generated_assets/reward_recruit.png',finalPower:'assets/doctrines/royal_court/emblem.png',caravansDefended:'assets/doctrines/cavalry/emblem.png'};
+  const metric=(key,extra='')=>`<div class="endless-run-metric ${extra}"><img src="${icons[key]}" alt="" aria-hidden="true"><span></span><strong data-endless-run-metric="${key}">0</strong></div>`;
   screen.innerHTML = `
     <div class="endless-run-backdrop" aria-hidden="true"><img src="generated_assets/scene_defeat.jpg" alt=""></div>
     <div class="endless-run-shell">
-      <img class="endless-run-logo" data-brand-logo src="${brandLogoSrc()}" alt="RPChess">
-      <section class="endless-run-panel ui-panel-safe">
-        <div class="reboot-eyebrow"></div>
-        <h1></h1>
-        <p class="endless-run-reason" data-endless-run-reason></p>
-        <div class="endless-run-metrics">
-          <div class="endless-run-metric"><span></span><strong data-endless-run-metric="weeks">0</strong></div>
-          <div class="endless-run-metric"><span></span><strong data-endless-run-metric="goldEarned">0</strong></div>
-          <div class="endless-run-metric"><span></span><strong data-endless-run-metric="skirmishWins">0</strong></div>
-          <div class="endless-run-metric"><span></span><strong data-endless-run-metric="battleWins">0</strong></div>
-          <div class="endless-run-metric"><span></span><strong data-endless-run-metric="puzzlesSolved">0</strong></div>
-          <div class="endless-run-metric"><span></span><strong data-endless-run-metric="eventsResolved">0</strong></div>
-          <div class="endless-run-metric"><span></span><strong data-endless-run-metric="heroesRecruited">0</strong></div>
-          <div class="endless-run-metric endless-run-metric--power"><span></span><strong data-endless-run-metric="finalPower">500</strong></div>
-        </div>
+      <aside class="endless-run-controls">
+        <img class="endless-run-logo" data-brand-logo src="${brandLogoSrc()}" alt="RPChess">
         <div class="endless-run-actions">
           <button class="reboot-button reboot-button--primary" type="button" data-endless-run-new></button>
           <button class="reboot-button reboot-button--primary" type="button" data-endless-run-share></button>
           <button class="reboot-button reboot-button--primary" type="button" data-endless-run-menu></button>
+        </div>
+      </aside>
+      <section class="endless-run-panel" aria-label="Статистика забега">
+        <img class="endless-run-flag-art" src="assets/ui/royal_run_flag.png" alt="" aria-hidden="true">
+        <div class="endless-run-flag-content">
+          <h1></h1>
+          <p class="endless-run-reason" data-endless-run-reason></p>
+        <div class="endless-run-metrics">
+          ${metric('weeks')}${metric('goldEarned')}${metric('skirmishWins')}${metric('battleWins')}
+          ${metric('puzzlesSolved')}${metric('eventsResolved')}${metric('heroesRecruited')}${metric('finalPower','endless-run-metric--power')}
+          ${metric('caravansDefended','endless-run-metric--caravan')}
+        </div>
         </div>
       </section>
     </div>`;

@@ -8,7 +8,7 @@ const END_REASON_LABELS = Object.freeze({
 });
 
 const STARTER_IDS = new Set(STARTER_TEMPLATES.map((character) => character.id));
-const RUN_STAT_KEYS = Object.freeze(['goldEarned','skirmishWins','battleWins','puzzlesSolved','eventsResolved']);
+const RUN_STAT_KEYS = Object.freeze(['goldEarned','skirmishWins','battleWins','caravansDefended','puzzlesSolved','eventsResolved']);
 
 function safeCount(value) {
   return Number.isInteger(value) && value >= 0 ? value : 0;
@@ -19,6 +19,7 @@ function emptyRunStats() {
     goldEarned: 0,
     skirmishWins: 0,
     battleWins: 0,
+    caravansDefended: 0,
     puzzlesSolved: 0,
     eventsResolved: 0
   };
@@ -30,6 +31,7 @@ function hydrateRunStats(run) {
     goldEarned: safeCount(source.goldEarned),
     skirmishWins: safeCount(source.skirmishWins),
     battleWins: safeCount(source.battleWins),
+    caravansDefended: safeCount(source.caravansDefended),
     puzzlesSolved: safeCount(source.puzzlesSolved),
     eventsResolved: safeCount(source.eventsResolved)
   };
@@ -69,6 +71,10 @@ function accrueRunStats(run, previous) {
   const nextBattles = safeCount(next.battleCount);
   if (nextBattles > previousBattles && combatVictory(next.lastBattle)) stats.battleWins += 1;
 
+  const previousCaravans = safeCount(previous.caravanCount);
+  const nextCaravans = safeCount(next.caravanCount);
+  if (nextCaravans > previousCaravans && combatVictory(next.lastCaravan)) stats.caravansDefended += 1;
+
   if (next.lastPuzzle?.result === 'solved' && puzzleIdentity(next.lastPuzzle) && puzzleIdentity(next.lastPuzzle) !== puzzleIdentity(previous.lastPuzzle)) {
     stats.puzzlesSolved += 1;
   }
@@ -97,6 +103,7 @@ function summarizeRun(run, { power = 0 } = {}) {
     goldEarned: stats.goldEarned,
     skirmishWins: stats.skirmishWins,
     battleWins: stats.battleWins,
+    caravansDefended: stats.caravansDefended,
     puzzlesSolved: stats.puzzlesSolved,
     eventsResolved: stats.eventsResolved,
     heroesRecruited: recruitedHeroCount(run),
