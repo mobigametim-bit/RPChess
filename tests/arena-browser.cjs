@@ -16,6 +16,24 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert.strictEqual(await page.locator('[data-arena-squads] button').count(),14);
     assert.strictEqual(await page.locator('[data-arena-squads] button:not([disabled])').count(),1,'unaffordable squads are disabled');
     assert.strictEqual(await page.locator('[data-arena-squads] button').first().innerText(),'','owned squad shows only its art');
+    await page.evaluate(()=>{
+      const now=Date.now();
+      localStorage.setItem('rpchess.reboot.v1.arena',JSON.stringify({version:1,squad:'orcs',match:null,updatedAt:now,events:[
+        {id:'arena:before:win',kind:'win',foe:'pawn:humans',amount:200,at:now-4000},
+        {id:'squad:elves:owned',kind:'squad',race:'elves',amount:120,at:now-3000},
+        {id:'squad:orcs:rejected',kind:'squad',race:'orcs',amount:160,at:now-1000},
+        {id:'arena:clock-ahead:win',kind:'win',foe:'pawn:humans',amount:98,at:now+60000}
+      ]}));
+      window.RPChessArena.enter();
+    });
+    assert((await page.locator('[data-arena-shards]').innerText()).includes('178'));
+    assert(await page.locator('[data-arena-squad="humans"]').evaluate(node=>node.classList.contains('is-selected')),'old rejected purchase cannot remain selected');
+    await page.locator('[data-arena-squad="orcs"]').click();
+    assert((await page.locator('[data-arena-shards]').innerText()).includes('18'),'buying the third squad deducts 160 shards');
+    assert.strictEqual(await page.locator('[data-arena-squad="orcs"] .arena-squad-price').count(),0,'third squad is owned after purchase');
+    await page.evaluate(()=>window.RPChessArena.enter());
+    assert.strictEqual(await page.locator('[data-arena-squad="orcs"] .arena-squad-price').count(),0,'purchase survives reloading Arena state');
+    await page.evaluate(()=>{localStorage.removeItem('rpchess.reboot.v1.arena');window.RPChessArena.enter();});
     await page.setViewportSize({width:1900,height:909});
     const largeCard=await page.locator('[data-arena-foes] button').first().boundingBox();
     const largeArt=await page.locator('[data-arena-foes] button .arena-foe-art').first().boundingBox();
