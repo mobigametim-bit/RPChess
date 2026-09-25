@@ -27,7 +27,12 @@ function audio(){return globalThis.RPChessRebootAudio;}
 function l(key){return (copy[currentLanguage()]||copy.ru)[key]||key;}
 function raceLabel(race){return currentLanguage()==='en'?raceEn[RACE_TAGS.indexOf(race)]||race:(RACE_LABELS[race]||race);}
 function foeLabel(foe){return (types[currentLanguage()]||types.ru)[foe.type]+' · '+raceLabel(foe.race);}
-function read(){try{return normalizeArena(JSON.parse(platform.storage.local?.getItem(ARENA_KEY)||'null'));}catch{return emptyArena();}}
+function read(){
+  try{
+    const loaded=normalizeArena(JSON.parse(platform.storage.local?.getItem(ARENA_KEY)||'null'));
+    return arenaSummary(loaded).owned.has(loaded.squad)?loaded:{...loaded,squad:'humans'};
+  }catch{return emptyArena();}
+}
 function save(next){state=normalizeArena(next);platform.storage.local?.setItem(ARENA_KEY,JSON.stringify(state));globalThis.dispatchEvent(new CustomEvent('rpchess:arena-updated'));render();}
 function id(){return globalThis.crypto?.randomUUID?.()||'arena:'+Date.now()+':'+Math.random().toString(36).slice(2);}
 function escape(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
@@ -286,11 +291,13 @@ root?.addEventListener('click',event=>{
   if(target.dataset.arenaRivals!==undefined){adapter.stop();searchId++;thinking=false;stopMoveAnimation();engine=null;render();return;}
   if(target.dataset.arenaSquad){
     const race=target.dataset.arenaSquad,summary=arenaSummary(state);
+    let next=state;
     if(!summary.owned.has(race)){
       if(summary.balance<SQUAD_PRICES[race]){notice=l('insufficient');render();return;}
-      save(purchaseSquad(state,race,id()));
+      next=purchaseSquad(state,race,id());
+      if(!arenaSummary(next).owned.has(race)){notice=l('insufficient');render();return;}
     }
-    save({...state,squad:race,updatedAt:Date.now()});return;
+    save({...next,squad:race,updatedAt:Date.now()});return;
   }
   if(target.dataset.arenaFoe){
     dialog.dataset.foe=target.dataset.arenaFoe;dialogType='foe';renderDialog();return;

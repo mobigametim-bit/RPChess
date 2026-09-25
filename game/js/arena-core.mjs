@@ -62,6 +62,11 @@ function addEvent(state,event){
   if(!validEvent(event)||normalized.events.some(item=>item.id===event.id))return normalized;
   return {...normalized,events:[...normalized.events,event],updatedAt:Date.now()};
 }
+function spendingTime(state){
+  // Cloud saves can contain rewards from a device whose clock is ahead of ours.
+  // A purchase must replay after the rewards shown in the current balance.
+  return Math.min(Number.MAX_SAFE_INTEGER,normalizeArena(state).events.reduce((latest,event)=>Math.max(latest,event.at+1),Date.now()));
+}
 function mergeArena(local,remote){
   const a=normalizeArena(local),b=normalizeArena(remote),byId=new Map();
   for(const event of [...b.events,...a.events]) byId.set(event.id,event);
@@ -83,7 +88,7 @@ function chooseArtifact(state,artifactId){
   const price=artifactId==null?0:ARTIFACT_PRICES[artifactId];
   if(price===undefined||arenaSummary(state).balance<price)return state;
   let next=state;
-  if(price)next=addEvent(next,{id:`${state.match.id}:artifact`,kind:'artifact',artifact:artifactId,amount:price,at:Date.now()});
+  if(price)next=addEvent(next,{id:`${state.match.id}:artifact`,kind:'artifact',artifact:artifactId,amount:price,at:spendingTime(state)});
   return {...next,match:{...state.match,phase:'playing',artifactId:artifactId||null},updatedAt:Date.now()};
 }
 function finishMatch(state,outcome){
@@ -100,6 +105,6 @@ function claimDouble(state){
 }
 function purchaseSquad(state,race,transactionId=globalThis.crypto?.randomUUID?.()||Math.random().toString(36).slice(2)){
   const price=SQUAD_PRICES[race];if(!price||arenaSummary(state).owned.has(race)||arenaSummary(state).balance<price)return state;
-  return addEvent(state,{id:`squad:${race}:${transactionId}`,kind:'squad',race,amount:price,at:Date.now()});
+  return addEvent(state,{id:`squad:${race}:${transactionId}`,kind:'squad',race,amount:price,at:spendingTime(state)});
 }
 export { ARENA_KEY,SHARD_ICON,PIECE_CODE,OPPONENTS,OPPONENT_BY_ID,SQUAD_PRICES,ARTIFACT_PRICES,emptyArena,normalizeArena,arenaSummary,addEvent,mergeArena,rewardFor,newMatch,chooseArtifact,finishMatch,claimDouble,purchaseSquad };
