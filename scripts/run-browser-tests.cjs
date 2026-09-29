@@ -19,6 +19,7 @@ const DEFAULT_TESTS=[
   'responsive-viewport-browser.cjs',
   'onboarding-browser.cjs',
   'roster-browser.cjs',
+  'cloud-continue-browser.cjs',
   'skirmish-browser.cjs',
   'skirmish-artifact-browser.cjs',
   'skirmish-mobile-browser.cjs',
