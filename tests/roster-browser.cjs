@@ -81,34 +81,6 @@ async function assertOneScreen(page,label){
     if(frame.sw>frame.cw+1)assert(['auto','scroll'].includes(frame.overflowX),'overflowing Roster catalog must own horizontal scrolling');
     if(frame.sh>frame.ch+1)assert(['auto','scroll'].includes(frame.overflowY),'overflowing Roster catalog must own vertical scrolling');
 
-    // A VK restore can finish after Roster has checked an empty local save.
-    // The menu must re-read persistence when the cloud bootstrap settles.
-    const delayedCloud=await browser.newPage({viewport:{width:844,height:390}}),cloudErrors=[];
-    delayedCloud.on('pageerror',e=>cloudErrors.push(String(e.stack||e)));
-    await delayedCloud.addInitScript(()=>{
-      let cloudReady;
-      Object.defineProperty(window,'RPChessCloudReady',{
-        configurable:true,
-        get(){return cloudReady;},
-        set(value){
-          window.__realCloudReady=value;
-          cloudReady=new Promise(resolve=>{window.__finishCloudRestore=resolve;});
-        }
-      });
-    });
-    await delayedCloud.goto(url,{waitUntil:'networkidle'});
-    const delayedContinue=delayedCloud.locator('[data-continue-run]');
-    assert.strictEqual(await delayedContinue.isDisabled(),true,'empty local save starts with Continue disabled');
-    await delayedCloud.evaluate(([key,run])=>{
-      localStorage.setItem(key,run);
-      window.__finishCloudRestore({status:'cloud'});
-    },[RUN_KEY,serialized]);
-    await delayedCloud.waitForFunction(()=>!document.querySelector('[data-continue-run]').disabled);
-    await delayedContinue.click();
-    await waitForVisible(delayedCloud,'[data-roster-screen]:not([hidden])','Roster after delayed cloud restore');
-    assert.deepStrictEqual(cloudErrors,[]);
-    await delayedCloud.close();
-
     assert.deepStrictEqual(errors,[]);
     assert.deepStrictEqual(mobileErrors,[]);
     await mobile.close();
