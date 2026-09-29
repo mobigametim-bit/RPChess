@@ -337,3 +337,7 @@ globalThis.RPChessRoster = Object.freeze({
   returnToMenu,
   syncRun
 });
+
+// Cloud Save may restore the run after Roster's initial menu check. Read the same
+// persisted run again once reconciliation finishes, regardless of script load order.
+void globalThis.RPChessCloudReady?.then(syncRun, syncRun);
