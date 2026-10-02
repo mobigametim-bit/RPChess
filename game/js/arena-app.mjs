@@ -1,10 +1,10 @@
 import { ChessAIAdapter } from './chess-ai-adapter.mjs';
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { RACE_TAGS, RACE_LABELS, racePiecePath, applyRaceBoardTheme } from './race-assets.mjs';
-import { ARTIFACTS, artifactById } from './artifact-core.mjs';
+import { ARTIFACTS, artifactById, combatArtifactOffer } from './artifact-core.mjs';
 import { renderThreatOverlay } from './artifact-combat-ui.mjs';
 import { applyPinIce } from './king-pin-ice.mjs';
-import { currentLanguage, subscribe } from './i18n.mjs';
+import { t, currentLanguage, subscribe } from './i18n.mjs';
 import { platform } from './platform.mjs';
 import { ARENA_KEY, SHARD_ICON, PIECE_CODE, OPPONENTS, OPPONENT_BY_ID, SQUAD_PRICES, ARTIFACT_PRICES, emptyArena, normalizeArena, arenaSummary, newMatch, chooseArtifact, finishMatch, claimDouble, purchaseSquad } from './arena-core.mjs';
 
@@ -109,7 +109,7 @@ function renderBoard(){
     cell.disabled=thinking||animating||snapshot.status.over;
     board.append(cell);
   }
-  renderThreatOverlay(board,snapshot,artifactById(state.match.artifactId),state.match.playerColor);
+  renderThreatOverlay(board,snapshot,artifactById(state.match.artifactId),state.match.playerColor,selected);
   applyPinIce(board,snapshot);
 }
 function replayBattleHistory(){
@@ -217,7 +217,7 @@ function renderDialog(){
     const stats=arenaSummary(state).stats[foe.id];
     openDialog('foe','<header>'+button('close','×','class="arena-close" aria-label="'+(currentLanguage()==='en'?'Close':'Закрыть')+'"')+'</header><div class="arena-foe-profile"><div class="arena-foe-profile-art">'+img(foe.art,'arena-dialog-foe','')+'<p>'+statIcon('power')+l('power')+': '+foe.elo+'</p></div><dl class="arena-foe-profile-stats"><div><dt>'+statIcon('wins')+l('wins')+'</dt><dd>'+stats.wins+'</dd></div><div><dt>'+statIcon('losses')+l('losses')+'</dt><dd>'+stats.losses+'</dd></div><div><dt>'+statIcon('draws')+l('draws')+'</dt><dd>'+stats.draws+'</dd></div></dl></div>'+button('fight',l('fight')));
   }else if(dialogType==='offer'&&state.match){
-    const cards=ARTIFACTS.map(a=>button('artifact',img(a.icon,'arena-artifact','')+'<strong>'+escape(currentLanguage()==='en'?a.id==='threat.great'?'Greater awareness':a.id==='threat.attack'?'Attack awareness':'Defense awareness':a.name)+'</strong><small>'+escape(currentLanguage()==='en'?a.id==='threat.great'?'Shows threats to both armies':a.id==='threat.attack'?'Shows threats to enemy pieces':'Shows threats to your pieces':a.description)+'</small><span class="arena-artifact-price">'+img(SHARD_ICON,'arena-inline-shard','')+' '+ARTIFACT_PRICES[a.id]+'</span>','data-artifact="'+a.id+'" '+(arenaSummary(state).balance<ARTIFACT_PRICES[a.id]?'disabled':''))).join('');
+    const cards=combatArtifactOffer(ARTIFACTS,state.match.id).map(a=>button('artifact',img(a.icon,'arena-artifact','')+'<strong>'+escape(t(a.nameKey))+'</strong><small>'+escape(t(a.descriptionKey))+'</small><span class="arena-artifact-price">'+img(SHARD_ICON,'arena-inline-shard','')+' '+ARTIFACT_PRICES[a.id]+'</span>','data-artifact="'+a.id+'" '+(arenaSummary(state).balance<ARTIFACT_PRICES[a.id]?'disabled':''))).join('');
     openDialog('offer','<div class="reboot-eyebrow">'+l('offerKicker')+'</div><h2>'+l('offer')+'</h2><p>'+l('offerText')+'</p><div class="arena-offers">'+cards+button('artifact','<span class="arena-artifact-empty" aria-hidden="true">—</span><strong>'+l('none')+'</strong><small>'+l('noneText')+'</small>','data-artifact="none"')+'</div>');
   }else if(dialogType==='result'&&state.match){
     const match=state.match,win=match.outcome==='win',loss=match.outcome==='loss',claimed=arenaSummary(state).accepted.has(match.id+':ad');

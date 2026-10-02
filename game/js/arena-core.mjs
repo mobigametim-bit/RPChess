@@ -11,7 +11,7 @@ const OPPONENTS = Object.freeze(PIECE_TYPES.flatMap((type, typeIndex) => RACE_TA
 const OPPONENT_BY_ID = new Map(OPPONENTS.map(foe => [foe.id,foe]));
 const LEGACY_SQUAD_PRICES = Object.freeze(Object.fromEntries(RACE_TAGS.slice(1).map((race,index) => [race,60 + index * 20])));
 const SQUAD_PRICES = Object.freeze(Object.fromEntries(RACE_TAGS.slice(1).map((race,index) => [race,120 + index * 40])));
-const ARTIFACT_PRICES = Object.freeze({ 'threat.defense':8, 'threat.attack':8, 'threat.great':14 });
+const ARTIFACT_PRICES = Object.freeze({ 'threat.defense':8, 'threat.attack':8, 'threat.great':14, 'vision.piercing':14 });
 function emptyArena(){ return { version:1, events:[], squad:'humans', match:null, updatedAt:0 }; }
 function safeInt(n){ return Number.isSafeInteger(n) && n >= 0 ? n : 0; }
 function validEvent(event){

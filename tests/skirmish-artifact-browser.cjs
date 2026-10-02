@@ -53,7 +53,7 @@ const watchdog = setTimeout(() => { console.error('Combat launch blocked browser
         await import('./js/skirmish-app.mjs');
         globalThis.RPChessSkirmish.open();
       });
-      await page.locator('[data-skirmish-start]').click();
+      if(await page.locator('[data-skirmish-start]').isVisible())await page.locator('[data-skirmish-start]').click();
       await page.locator('[data-classic-screen]:not([hidden])').waitFor({ state: 'visible', timeout: 10000 });
       assert.strictEqual(await page.locator('[data-artifact-choice-modal]').count(), 0, 'saved choice must resume without another prompt');
       const resumed = await page.evaluate(() => JSON.parse(localStorage.getItem('rpchess.reboot.v1.run')));

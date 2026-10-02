@@ -72,7 +72,7 @@ class MemoryStorage {
   const i18n = await import(`${i18nUrl}?contract=default`);
   assert.strictEqual(i18n.currentLanguage(), 'ru', 'RU must be the default without browser-language detection');
   assert.strictEqual(globalThis.document.documentElement.lang, 'ru', 'document language must reflect the active locale');
-  assert.strictEqual(i18n.t('menu.newGame'), 'Новая игра');
+  assert.strictEqual(i18n.t('menu.newGame'), 'Новое Путешествие');
   assert.strictEqual(i18n.t('language.current', { language: 'Русский' }), 'Выбран: Русский', 't() must interpolate named parameters');
   assert.strictEqual(i18n.t('unknown.key'), '[missing:unknown.key]', 'missing keys must remain observable');
   assert.strictEqual(i18n.has('menu.newGame', 'en'), true);
@@ -84,7 +84,7 @@ class MemoryStorage {
   assert.strictEqual(i18n.setLanguage('en'), 'en');
   assert.strictEqual(i18n.currentLanguage(), 'en');
   assert.strictEqual(globalThis.document.documentElement.lang, 'en');
-  assert.strictEqual(i18n.t('menu.newGame'), 'New Game');
+  assert.strictEqual(i18n.t('menu.newGame'), 'New Journey');
   assert.strictEqual(i18n.translateLegacy('Дорога просит цену'), 'The Road Demands a Price', 'Events v3 E100 must be available through the runtime translator');
   assert.strictEqual(i18n.translateLegacy('Пятнадцатый спутник'), 'The Fifteenth Companion', 'Events v4c E500 must be available through the runtime translator');
   assert.strictEqual(

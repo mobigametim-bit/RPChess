@@ -633,7 +633,7 @@ globalThis.RPChessClassicChess = {
   loadFen(fen, options = {}) { newGame(fen, options); return engine.snapshot(); },
   move(from, to, promotion = null) { const ok = executeMove(from, to, promotion); return { ok, snapshot: engine.snapshot() }; },
   showMenu,
-  snapshot() { return engine.snapshot(); }
+  snapshot() { return { ...engine.snapshot(), selectedSquare:selected }; }
 };
 
 addEventListener('beforeunload', () => aiAdapter.destroy(), { once: true });

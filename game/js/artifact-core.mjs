@@ -1,12 +1,41 @@
+import { squareToIndex, indexToSquare } from './classic-chess-engine.mjs';
 import { seededRandom } from './travel-choice-core.mjs';
 
 const ARTIFACTS = Object.freeze([
   Object.freeze({ id:'threat.defense', name:'Амулет чутья защиты', description:'Показывает угрозы вашим фигурам.', nameKey:'artifacts.threatDefense.name', descriptionKey:'artifacts.threatDefense.description', mode:'player', icon:'assets/artifacts/threat_sense/amulet_defense.png', pricePerCharge:18 }),
   Object.freeze({ id:'threat.attack', name:'Амулет чутья атаки', description:'Показывает угрозы фигурам противника.', nameKey:'artifacts.threatAttack.name', descriptionKey:'artifacts.threatAttack.description', mode:'enemy', icon:'assets/artifacts/threat_sense/amulet_attack.png', pricePerCharge:18 }),
-  Object.freeze({ id:'threat.great', name:'Великий амулет чутья', description:'Показывает угрозы обеим армиям.', nameKey:'artifacts.threatGreat.name', descriptionKey:'artifacts.threatGreat.description', mode:'both', icon:'assets/artifacts/threat_sense/amulet_great.png', pricePerCharge:30 })
+  Object.freeze({ id:'threat.great', name:'Великий амулет чутья', description:'Показывает угрозы обеим армиям.', nameKey:'artifacts.threatGreat.name', descriptionKey:'artifacts.threatGreat.description', mode:'both', icon:'assets/artifacts/threat_sense/amulet_great.png', pricePerCharge:30 }),
+  Object.freeze({ id:'vision.piercing', name:'Сквозное видение', description:'Выберите свою фигуру: враги на её линиях подсвечиваются сквозь фигуры и препятствия. Первая цель — зелёная, вторая — жёлтая, остальные — оранжевые.', nameKey:'artifacts.piercingVision.name', descriptionKey:'artifacts.piercingVision.description', mode:'vision', icon:'assets/artifacts/piercing_vision.png', pricePerCharge:30 })
 ]);
 const ARTIFACT_BY_ID = Object.freeze(Object.fromEntries(ARTIFACTS.map((artifact)=>[artifact.id,artifact])));
 const FIRE_BY_THREAT = Object.freeze({ 1:'assets/artifacts/threat_sense/threat_fire_1_yellow.png', 2:'assets/artifacts/threat_sense/threat_fire_2_orange.png', 3:'assets/artifacts/threat_sense/threat_fire_3_plus_red.png' });
+
+// Stable random offers: re-opening the same encounter cannot reroll its cards.
+function combatArtifactOffer(artifacts,seed){
+  const pool=[...artifacts],random=seededRandom(`${seed}:combat:artifacts`);
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  return pool.slice(0,3);
+}
+function piercingVisionTargets(snapshot,selectedSquare,playerColor){
+  const targets=new Map();
+  if(!snapshot?.board || snapshot.status?.over || !/^[a-h][1-8]$/.test(selectedSquare||''))return targets;
+  const index=squareToIndex(selectedSquare),piece=snapshot.board[index];
+  if(!piece || piece.color!==playerColor)return targets;
+  const file=index%8,rank=Math.floor(index/8);
+  const orthogonal=[[1,0],[-1,0],[0,1],[0,-1]],diagonal=[[1,1],[-1,1],[1,-1],[-1,-1]];
+  const rays=piece.type==='r'?orthogonal:piece.type==='b'?diagonal:piece.type==='q'?[...orthogonal,...diagonal]:null;
+  const steps=piece.type==='n'?[[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]]:piece.type==='k'?[...orthogonal,...diagonal]:piece.type==='p'?[[1,playerColor==='w'?1:-1],[-1,playerColor==='w'?1:-1]]:[];
+  for(const [dx,dy] of rays||steps){
+    let depth=0;
+    for(let distance=1;distance<=(rays?7:1);distance++){
+      const x=file+dx*distance,y=rank+dy*distance;
+      if(x<0||x>7||y<0||y>7)break;
+      const target=snapshot.board[y*8+x];
+      if(target && target.color!==playerColor)targets.set(indexToSquare(y*8+x),Math.min(3,++depth));
+    }
+  }
+  return targets;
+}
 
 function artifactById(id){ return ARTIFACT_BY_ID[id] || null; }
 function normalizeArtifacts(value){
@@ -49,4 +78,4 @@ function applyCombatArtifactChoice(run,{combatType,encounterId,artifactId=null}=
 function clearCombatArtifactChoice(run){ return run ? {...run,combatArtifactChoice:null} : run; }
 function artifactForCombat(run,{combatType,encounterId}={}){ const choice=run?.combatArtifactChoice; return choice?.combatType===combatType&&choice.encounterId===encounterId&&choice.artifactId?artifactById(choice.artifactId):null; }
 
-export { ARTIFACTS, FIRE_BY_THREAT, artifactById, artifactCharges, ownedArtifacts, normalizeArtifacts, isArtifactInventory, deterministicArtifactOffer, isArtifactOffer, applyArtifactPurchase, isCombatArtifactChoice, applyCombatArtifactChoice, clearCombatArtifactChoice, artifactForCombat };
+export { combatArtifactOffer, piercingVisionTargets, ARTIFACTS, FIRE_BY_THREAT, artifactById, artifactCharges, ownedArtifacts, normalizeArtifacts, isArtifactInventory, deterministicArtifactOffer, isArtifactOffer, applyArtifactPurchase, isCombatArtifactChoice, applyCombatArtifactChoice, clearCombatArtifactChoice, artifactForCombat };
