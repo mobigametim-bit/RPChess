@@ -30,7 +30,7 @@ const assert=require('assert');
     assert.strictEqual(offer.length,3);assert.strictEqual(new Set(offer.map(a=>a.id)).size,3);
     assert.deepStrictEqual(offer,combatArtifactOffer(ARTIFACTS,'match-'+i));offer.forEach(a=>reached.add(a.id));
   }
-  assert.strictEqual(reached.size,4);
+  assert.strictEqual(reached.size,5);
   for(const combatType of ['battle','skirmish','caravan']){
     const run={...createRun({id:'vision-test',now:1}),artifacts:{'vision.piercing':2}};
     const chosen=applyCombatArtifactChoice(run,{combatType,encounterId:'test',artifactId:'vision.piercing'});

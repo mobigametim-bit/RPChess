@@ -2,6 +2,7 @@ import { squareToIndex, indexToSquare } from './classic-chess-engine.mjs';
 import { seededRandom } from './travel-choice-core.mjs';
 
 const ARTIFACTS = Object.freeze([
+  Object.freeze({ id:'tactics.fork_master', name:'Мастер вилок', description:'Помогает находить вилки: показывает двойные атаки и ходы, которыми их можно создать. Зелёные цели — без ответного взятия, красные — с возможностью ответного взятия.', nameKey:'artifacts.forkMaster.name', descriptionKey:'artifacts.forkMaster.description', mode:'fork', icon:'assets/artifacts/fork_master.png', pricePerCharge:15 }),
   Object.freeze({ id:'threat.defense', name:'Амулет чутья защиты', description:'Показывает угрозы вашим фигурам.', nameKey:'artifacts.threatDefense.name', descriptionKey:'artifacts.threatDefense.description', mode:'player', icon:'assets/artifacts/threat_sense/amulet_defense.png', pricePerCharge:18 }),
   Object.freeze({ id:'threat.attack', name:'Амулет чутья атаки', description:'Показывает угрозы фигурам противника.', nameKey:'artifacts.threatAttack.name', descriptionKey:'artifacts.threatAttack.description', mode:'enemy', icon:'assets/artifacts/threat_sense/amulet_attack.png', pricePerCharge:18 }),
   Object.freeze({ id:'threat.great', name:'Великий амулет чутья', description:'Показывает угрозы обеим армиям.', nameKey:'artifacts.threatGreat.name', descriptionKey:'artifacts.threatGreat.description', mode:'both', icon:'assets/artifacts/threat_sense/amulet_great.png', pricePerCharge:30 }),

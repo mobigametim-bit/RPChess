@@ -9,7 +9,7 @@ const {pathToFileURL}=require('url');
   const persistence=await import(pathToFileURL(path.join(game,'js/run-persistence.mjs')).href);
   const settlement=await import(pathToFileURL(path.join(game,'js/settlement-core.mjs')).href);
   const engine=await import(pathToFileURL(path.join(game,'js/classic-chess-engine.mjs')).href);
-  assert.strictEqual(artifacts.ARTIFACTS.length,4);
+  assert.strictEqual(artifacts.ARTIFACTS.length,5);
   for(const artifact of artifacts.ARTIFACTS)assert(artifact.nameKey&&artifact.descriptionKey,'each artifact must expose localization keys');
   const offerA=artifacts.deterministicArtifactOffer({seed:'artifact-test'}),offerB=artifacts.deterministicArtifactOffer({seed:'artifact-test'});
   assert.deepStrictEqual(offerA,offerB,'Settlement artifact offer must be deterministic');
@@ -99,7 +99,7 @@ const {pathToFileURL}=require('url');
   const previousDocument=globalThis.document;
   globalThis.document={createElement(){return {dataset:{},attrs:{},getAttribute(k){return this.attrs[k];},setAttribute(k,v){this.attrs[k]=v;mutations++;},remove(){this.parent.children=this.parent.children.filter(n=>n!==this);mutations++;}};}};
   try {
-    for(const artifact of artifacts.ARTIFACTS.filter(a=>a.mode!=='vision'))for(const color of ['w','b'])for(const {blockedSquares,expected} of snapshotCases){
+    for(const artifact of artifacts.ARTIFACTS.filter(a=>['player','enemy','both'].includes(a.mode)))for(const color of ['w','b'])for(const {blockedSquares,expected} of snapshotCases){
       const snapshot=new engine.ClassicChessEngine(threatFen,{blockedSquares}).snapshot();
       rebuild();renderThreatOverlay(board,snapshot,artifact,color);
       const visible=artifact.mode==='both'||(color==='w'?artifact.mode==='player':artifact.mode==='enemy');
