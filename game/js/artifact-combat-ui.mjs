@@ -1,10 +1,39 @@
 import { applyCombatArtifactChoice, artifactForCombat, ownedArtifacts, combatArtifactOffer, piercingVisionTargets, FIRE_BY_THREAT } from './artifact-core.mjs';
 import { countSquareAttackers, indexToSquare } from './classic-chess-engine.mjs';
 import { t } from './i18n.mjs';
+import { forkMasterHints } from './fork-master-core.mjs';
+
+const forkCache=new WeakMap();
+function renderForkOverlay(board,snapshot,mode,playerColor,selectedSquare){
+  let hints={targets:new Map(),destinations:new Set()};
+  if(mode==='fork'){
+    const key=JSON.stringify([snapshot?.fen,selectedSquare,playerColor,snapshot?.blockedSquares,snapshot?.chess960,snapshot?.status?.over]);
+    const cached=forkCache.get(board);
+    hints=cached?.key===key?cached.hints:forkMasterHints(snapshot,selectedSquare,playerColor);
+    forkCache.set(board,{key,hints});
+  }else forkCache.delete(board);
+  for(const cell of board.querySelectorAll('[data-square]')){
+    const square=cell.dataset.square;
+    if(hints.destinations.has(square)){if(cell.dataset.forkMove!=='1')cell.dataset.forkMove='1';}
+    else if(cell.dataset.forkMove!==undefined)delete cell.dataset.forkMove;
+    const checked=cell.classList?.contains?.('classic-square--check');
+    const color=checked?null:hints.targets.get(square);
+    let silhouette=cell.querySelector?.('.classic-fork-silhouette');
+    const image=color?cell.querySelector?.('.classic-piece'):null;
+    if(!color||!image){silhouette?.remove();if(cell.dataset.forkTarget!==undefined)delete cell.dataset.forkTarget;continue;}
+    const tone=color==='check'?'red':color;
+    if(cell.dataset.forkTarget!==tone)cell.dataset.forkTarget=tone;
+    if(!silhouette){silhouette=document.createElement('span');silhouette.className='classic-fork-silhouette';silhouette.setAttribute('aria-hidden','true');cell.append(silhouette);}
+    // CSS masks resolve relative URLs from the stylesheet, so use the actual
+    // absolute piece URL (also correct under the GitHub Pages /RPChess/ path).
+    const mask=`url(${JSON.stringify(new URL(image.getAttribute('src'),document.baseURI).href)})`;
+    if(silhouette.style.getPropertyValue('--fork-image')!==mask)silhouette.style.setProperty('--fork-image',mask);
+  }
+}
 
 function ensureCss(){
   if(document.querySelector('[data-artifact-combat-css]')) return;
-  const link=document.createElement('link'); link.rel='stylesheet'; link.href='css/artifacts.css?v=20261002-vision-1'; link.dataset.artifactCombatCss=''; document.head.append(link);
+  const link=document.createElement('link'); link.rel='stylesheet'; link.href='css/artifacts.css?v=20261002-fork-1'; link.dataset.artifactCombatCss=''; document.head.append(link);
 }
 function chooseArtifact({run,combatType,encounterId,onChoose}={}){
   ensureCss();
@@ -42,7 +71,7 @@ function renderThreatOverlay(board,snapshot,artifact,playerColor,selectedSquare=
   const mode=artifact?.mode||null;
   const desired=new Map();
   const enemyColor=playerColor==='w'?'b':'w';
-  if(mode&&mode!=='vision'&&snapshot?.board&&!snapshot.status?.over) for(let index=0;index<snapshot.board.length;index+=1){
+  if(['player','enemy','both'].includes(mode)&&snapshot?.board&&!snapshot.status?.over) for(let index=0;index<snapshot.board.length;index+=1){
     const piece=snapshot.board[index];
     if(!piece)continue;
     const side=piece.color===playerColor?'player':'enemy';
@@ -51,6 +80,7 @@ function renderThreatOverlay(board,snapshot,artifact,playerColor,selectedSquare=
     if(attackers)desired.set(indexToSquare(index),attackers);
   }
   const vision=mode==='vision'?piercingVisionTargets(snapshot,selectedSquare,playerColor):new Map();
+  renderForkOverlay(board,snapshot,mode,playerColor,selectedSquare);
   for(const cell of board.querySelectorAll('[data-square]')){
     const level=cell.classList?.contains('classic-square--check')?null:vision.get(cell.dataset.square);
     if(level){if(cell.dataset.visionDepth!==String(level))cell.dataset.visionDepth=String(level);}

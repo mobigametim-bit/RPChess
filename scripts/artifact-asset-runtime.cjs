@@ -3,6 +3,7 @@ const path=require('path');
 const {parsePng,optimizePngBuffer,formatBytes}=require('./piece-asset-runtime.cjs');
 
 const ARTIFACT_FILES=Object.freeze([
+  'assets/artifacts/fork_master.png',
   'assets/artifacts/piercing_vision.png',
   'assets/artifacts/threat_sense/amulet_defense.png',
   'assets/artifacts/threat_sense/amulet_attack.png',

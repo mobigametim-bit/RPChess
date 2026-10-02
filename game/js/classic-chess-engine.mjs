@@ -357,6 +357,14 @@ function moveLeavesKingSafe(state, move, color) {
   return !inCheck(copy, color);
 }
 
+// Analysis uses independent positions and never touches live history or repetition.
+function simulateMove(state, move) {
+  const copy = { ...state, board:cloneBoard(state.board), castling:{...state.castling},
+    castleRooks:{...state.castleRooks}, blockedSquares:new Set(state.blockedSquares),
+    history:state.history.slice(), repetition:new Map(state.repetition) };
+  return applyMoveToState(copy, move);
+}
+
 function legalMoves(state, fromSquare = null) {
   const fromFilter = fromSquare == null ? null : squareToIndex(fromSquare);
   const moves = [];
@@ -463,4 +471,4 @@ class ClassicChessEngine {
   }
 }
 
-export { COLORS, PIECES, PROMOTIONS, ClassicChessEngine, createInitialState, gameStatus, inCheck, indexToSquare, insufficientMaterial, isSquareAttacked, countSquareAttackers, legalMoves, parseFEN, positionKey, squareToIndex, stateToFEN };
+export { COLORS, PIECES, PROMOTIONS, ClassicChessEngine, createInitialState, gameStatus, inCheck, indexToSquare, insufficientMaterial, isSquareAttacked, countSquareAttackers, legalMoves, parseFEN, positionKey, squareToIndex, stateToFEN, simulateMove };

@@ -15,6 +15,7 @@ const DEFAULT_TESTS=[
   'classic-chess-browser.cjs',
   'arena-browser.cjs',
   'piercing-vision-browser.cjs',
+  'fork-master-browser.cjs',
   'race-board-themes-browser.cjs',
   'king-pin-ice-browser.cjs',
   'responsive-viewport-browser.cjs',
