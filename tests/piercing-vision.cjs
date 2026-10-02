@@ -1,6 +1,6 @@
 const assert=require('assert');
 (async()=>{
-  const {ARTIFACTS,piercingVisionTargets,combatArtifactOffer,applyCombatArtifactChoice}=await import('../game/js/artifact-core.mjs');
+  const {ARTIFACTS,piercingVisionTargets,combatArtifactOffer,applyCombatArtifactChoice,applyArtifactPurchase,artifactOfferPrice}=await import('../game/js/artifact-core.mjs');
   const {ClassicChessEngine}=await import('../game/js/classic-chess-engine.mjs');
   const {createRun,isValidRun}=await import('../game/js/run-persistence.mjs');
   const arena=await import('../game/js/arena-core.mjs');
@@ -39,9 +39,18 @@ const assert=require('assert');
   }
   let state=arena.emptyArena();state.events=[{id:'reward',kind:'win',foe:arena.OPPONENTS[0].id,amount:30,at:1}];
   state=arena.newMatch(state,arena.OPPONENTS[0].id,'vision-match','b');state=arena.chooseArtifact(state,'vision.piercing');
-  assert.strictEqual(state.match.artifactId,'vision.piercing');assert.strictEqual(arena.arenaSummary(state).balance,16);
+  assert.strictEqual(state.match.artifactId,'vision.piercing');assert.strictEqual(arena.arenaSummary(state).balance,23);
   assert.strictEqual(arena.normalizeArena(state).match.artifactId,'vision.piercing');
-  assert.strictEqual(arena.arenaSummary(arena.chooseArtifact(state,'vision.piercing')).balance,16);
+  assert.strictEqual(arena.arenaSummary(arena.chooseArtifact(state,'vision.piercing')).balance,23);
+  const legacy=JSON.parse(JSON.stringify(state));legacy.events.find(e=>e.kind==='artifact').amount=14;
+  assert.strictEqual(arena.arenaSummary(arena.normalizeArena(legacy)).balance,16,'old 14-shard receipts must remain valid');
+  assert.strictEqual(arena.normalizeArena(legacy).match.artifactId,'vision.piercing');
+  assert.strictEqual(ARTIFACTS.find(a=>a.id==='vision.piercing').pricePerCharge,15);
+  const oldOffer={id:'vision.piercing',charges:2,price:60,sold:false};
+  assert.strictEqual(artifactOfferPrice(oldOffer),30);
+  const purchase=applyArtifactPurchase({...createRun({id:'shop-test',now:1}),gold:30,currentSettlement:{artifactOffer:oldOffer}});
+  assert(purchase.success);assert.strictEqual(purchase.spent,30);assert.strictEqual(purchase.run.gold,0);
+  assert.strictEqual(purchase.run.currentSettlement.artifactOffer.price,30);
   assert(isValidRun(createRun({id:'old-save',now:1})));
   console.log('Piercing Vision lines, both pawn colors, blockers, offers and save/economy regression: PASS');
 })().catch(e=>{console.error(e);process.exitCode=1;});
