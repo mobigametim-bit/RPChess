@@ -11,7 +11,7 @@ const OPPONENTS = Object.freeze(PIECE_TYPES.flatMap((type, typeIndex) => RACE_TA
 const OPPONENT_BY_ID = new Map(OPPONENTS.map(foe => [foe.id,foe]));
 const LEGACY_SQUAD_PRICES = Object.freeze(Object.fromEntries(RACE_TAGS.slice(1).map((race,index) => [race,60 + index * 20])));
 const SQUAD_PRICES = Object.freeze(Object.fromEntries(RACE_TAGS.slice(1).map((race,index) => [race,120 + index * 40])));
-const ARTIFACT_PRICES = Object.freeze({ 'threat.defense':8, 'threat.attack':8, 'threat.great':14 });
+const ARTIFACT_PRICES = Object.freeze({ 'threat.defense':8, 'threat.attack':8, 'threat.great':14, 'vision.piercing':7 });
 function emptyArena(){ return { version:1, events:[], squad:'humans', match:null, updatedAt:0 }; }
 function safeInt(n){ return Number.isSafeInteger(n) && n >= 0 ? n : 0; }
 function validEvent(event){
@@ -19,7 +19,7 @@ function validEvent(event){
   if(['win','loss','draw'].includes(event.kind)) return OPPONENT_BY_ID.has(event.foe) && safeInt(event.amount)===event.amount && event.amount<=500;
   if(event.kind==='ad') return OPPONENT_BY_ID.has(event.foe) && safeInt(event.amount)===event.amount && event.amount<=500;
   if(event.kind==='squad') return SQUAD_PRICES[event.race]!==undefined && (event.amount===SQUAD_PRICES[event.race] || event.amount===LEGACY_SQUAD_PRICES[event.race]);
-  return Boolean(ARTIFACTS.find(a=>a.id===event.artifact)) && event.amount===ARTIFACT_PRICES[event.artifact];
+  return Boolean(ARTIFACTS.find(a=>a.id===event.artifact)) && (event.amount===ARTIFACT_PRICES[event.artifact] || (event.artifact==='vision.piercing' && event.amount===14));
 }
 function normalizeArena(raw){
   if(!raw || raw.version!==1) return emptyArena();

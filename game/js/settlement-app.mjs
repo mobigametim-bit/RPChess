@@ -15,7 +15,7 @@ import {
   recruitCost,
   recruitProfile
 } from './settlement-core.mjs';
-import { artifactById } from './artifact-core.mjs';
+import { artifactById, artifactOfferPrice } from './artifact-core.mjs';
 
 const GOLD_ICON='generated_assets/reward_gold.png';
 const SUPPLIES_ICON='generated_assets/reward_supplies.png';
@@ -196,7 +196,7 @@ function renderSupply() {
   if (!root || !activeRun?.currentSettlement) return;
   const stock = activeRun.currentSettlement.supplyStock;
   const disabled = stock <= 0 || activeRun.gold < SETTLEMENT_SUPPLY_PRICE;
-  const offer=activeRun.currentSettlement.artifactOffer,artifact=artifactById(offer?.id),artifactDisabled=!artifact||offer.sold||activeRun.gold<offer.price;
+  const savedOffer=activeRun.currentSettlement.artifactOffer,offer=savedOffer?{...savedOffer,price:artifactOfferPrice(savedOffer)}:null,artifact=artifactById(offer?.id),artifactDisabled=!artifact||offer.sold||activeRun.gold<offer.price;
   root.innerHTML = marketProductCard({icon:SUPPLIES_ICON,name:t('resources.supplies'),description:t('settlement.market.supplyDescription'),stock:`<span data-settlement-supply-stock>${t('settlement.market.stock',{count:stock})}</span>`,price:SETTLEMENT_SUPPLY_PRICE,action:'data-settlement-buy-supply',disabled,sold:stock<=0})
     +(artifact?marketProductCard({icon:artifact.icon,iconClass:' settlement-product-card__icon--artifact',name:t(artifact.nameKey),description:t(artifact.descriptionKey),stock:t('settlement.market.charges',{count:offer.charges}),price:offer.price,action:'data-settlement-buy-artifact',disabled:artifactDisabled,sold:offer.sold}):'');
 }
