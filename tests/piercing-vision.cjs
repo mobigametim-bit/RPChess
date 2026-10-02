@@ -8,6 +8,8 @@ const assert=require('assert');
   const before=JSON.stringify(snapshot);
   assert.deepStrictEqual([...piercingVisionTargets(snapshot,'d2','w')],[['f2',1],['d4',1],['d5',2],['d6',3]]);
   assert.strictEqual(JSON.stringify(snapshot),before);
+  const bishopBoard=Array(64).fill(null);bishopBoard[27]={type:'b',color:'b'};bishopBoard[36]={type:'p',color:'b'};bishopBoard[45]={type:'r',color:'w'};bishopBoard[54]={type:'r',color:'w'};bishopBoard[28]={type:'r',color:'w'};
+  assert.deepStrictEqual([...piercingVisionTargets({board:bishopBoard},'d4','b')],[['f6',1],['g7',2]],'bishop must cross allies and ignore orthogonal targets');
   // A fourth target retains orange; direction counters reset independently.
   const board=Array(64).fill(null);board[27]={type:'q',color:'w'};
   for(const i of [28,29,30,31,18,9,0])board[i]={type:'p',color:'b'};
