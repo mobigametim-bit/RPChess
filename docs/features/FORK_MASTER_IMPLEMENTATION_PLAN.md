@@ -1,6 +1,6 @@
 # Мастер вилок / Fork Master — план внедрения
 
-Дата: 2026-10-02. Статус: реализовано и автоматически проверено; подготовка приватной сборки для ручной приёмки.
+Дата: 2026-10-02. Статус: реализовано и автоматически проверено; приватная сборка опубликована; ожидается ручная приёмка.
 База: main `e6566ea0184a533bff6c6069f8435731d6b403c8`.
 
 ## Согласованные правила
@@ -36,10 +36,10 @@
 - [x] Подсказки не меняют игру и работают с препятствиями/всеми фигурами/обоими цветами.
 - [x] RU/EN, цены, сжатие иконки и мобильный интерфейс проверены.
 - [x] Старый прогресс читается; новый предмет и активный эффект сохраняются локально и в облаке.
-- [ ] Играбельная сборка передана на ручную приёмку.
+- [x] Играбельная сборка передана на ручную приёмку.
 
 ## Статус
-Код реализован. Все canonical unit/content/localization/save проверки PASS. Production build и asset-cache parity PASS; Stockfish взят из прежней сборки и проверен каноническими SHA256/license проверками. Chromium под /RPChess/: fork-master, classic-chess, arena, piercing-vision, skirmish-artifact, king-pin-ice, caravan, combat-resume PASS. Визуально проверены мобильные силуэты в пике пульсации и стрелки вместо кружков. Публикация приватной сборки Sites — следующий шаг; ручная приёмка ещё не выполнена.
+Код реализован. Все canonical unit/content/localization/save проверки PASS. Production build и asset-cache parity PASS; Stockfish взят из прежней сборки и проверен каноническими SHA256/license проверками. Chromium под /RPChess/: fork-master, classic-chess, arena, piercing-vision, skirmish-artifact, king-pin-ice, caravan, combat-resume PASS. Визуально проверены мобильные силуэты в пике пульсации и стрелки вместо кружков. Приватная сборка Sites опубликована: https://rpchess-piercing-vision.mobigametim.chatgpt.site. Следующий шаг — ручная приёмка владельцем; после неё корректировки и слияние.
 
 Notion: https://app.notion.com/p/3ed8c73f225281a6a56bda9a1ee05365
 Draft PR: https://github.com/mobigametim-bit/RPChess/pull/154
