@@ -9,8 +9,8 @@ async function glow(page,selector){
   await page.waitForFunction(selector=>document.querySelector(selector+' [data-square="d6"]')?.dataset.visionDepth==='3',selector);
   const result=await page.locator(selector).evaluate(board=>Object.fromEntries([...board.querySelectorAll('[data-vision-depth]')].map(c=>[c.dataset.square,c.dataset.visionDepth])));
   assert.deepStrictEqual(result,{d6:'3',d5:'2',d4:'1',f2:'1'});
-  const css=await page.locator(selector+' [data-square="d6"]').evaluate(c=>({bg:getComputedStyle(c,'::after').backgroundImage,filter:getComputedStyle(c,'::after').filter,pointer:getComputedStyle(c,'::after').pointerEvents}));
-  assert(css.bg.includes('aura_red.png')&&css.filter.includes('40deg'));assert.strictEqual(css.pointer,'none');
+  const css=await page.locator(selector+' [data-square="d6"]').evaluate(c=>({mask:getComputedStyle(c,'::after').maskImage,color:getComputedStyle(c,'::after').backgroundColor,pointer:getComputedStyle(c,'::after').pointerEvents}));
+  assert(css.mask.includes('aura_red.png')&&css.color==='rgb(255, 144, 38)');assert.strictEqual(css.pointer,'none');
   await page.screenshot({path:'/tmp/rpchess-vision-'+(selector.includes('arena')?'arena':'journey')+'.png'});
   await page.locator(selector+' [data-square="d2"]').click();
   await page.waitForFunction(selector=>!document.querySelector(selector+' [data-vision-depth]'),selector);

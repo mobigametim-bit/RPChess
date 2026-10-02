@@ -8,14 +8,16 @@
 /* Native WebView tap highlighting can outlive the removed modal during launch. */
 .artifact-choice-modal{-webkit-tap-highlight-color:transparent}
 
-/* Reuse the check aura artwork; only its hue changes. Move/capture markers stay above it. */
+/* Reuse the check aura alpha shape with exact colors. Move/capture markers stay above it. */
 html body .classic-square[data-vision-depth]:not(.classic-square--check)::after{
-  background:url('../assets/vfx/aura_red.png') center/100% 100% no-repeat!important;
-  opacity:.88!important;filter:hue-rotate(var(--vision-hue)) brightness(var(--vision-brightness));
+  background:var(--vision-color)!important;
+  -webkit-mask:url('../assets/vfx/aura_red.png') center/100% 100% no-repeat;
+  mask:url('../assets/vfx/aura_red.png') center/100% 100% no-repeat;
+  opacity:.88!important;
 }
-.classic-square[data-vision-depth="1"]{--vision-hue:110deg;--vision-brightness:1.3}
-.classic-square[data-vision-depth="2"]{--vision-hue:55deg;--vision-brightness:2}
-.classic-square[data-vision-depth="3"]{--vision-hue:40deg;--vision-brightness:1.5}
+.classic-square[data-vision-depth="1"]{--vision-color:#40ef65}
+.classic-square[data-vision-depth="2"]{--vision-color:#ffe13b}
+.classic-square[data-vision-depth="3"]{--vision-color:#ff9026}
 html body .classic-square[data-vision-depth]:has(.classic-piece--arriving)::after{opacity:0!important}
 @media(orientation:landscape) and (max-height:540px){
   .artifact-choice-panel{padding:12px;max-height:calc(100dvh - 24px)}
