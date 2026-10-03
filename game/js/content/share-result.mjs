@@ -22,15 +22,16 @@ function localizedKingName(summary, language) {
   return language === 'en' ? translateLegacy(summary.kingName, 'en') : summary.kingName;
 }
 
-function formatRunShare(run, { power = 0, language = currentLanguage(), link = VK_GAME_LINK } = {}) {
+function formatRunShare(run, { power = 0, language = currentLanguage(), link = platform.kind === 'yandex' ? platform.gameLink : VK_GAME_LINK } = {}) {
   const lang = languageCode(language);
+  const brand = platform.kind === 'yandex' ? (lang === 'en' ? 'Heroes of Check & Mate' : 'Герои Шаха и Мата') : 'RPChess';
   const summary = summarizeRun(run, { power });
   const kingName = localizedKingName(summary, lang);
   const playerName = String(run?.playerName || '').trim();
   const identity = playerName ? `${playerName} · ${kingName}` : kingName;
   if (lang === 'en') {
     return [
-      '♟️ RPChess — my run',
+      `♟️ ${brand} — my run`,
       `👑 ${identity}`,
       `🗓️ Weeks: ${summary.weeks}`,
       `⚔️ Battle wins: ${summary.battleWins}`,
@@ -40,11 +41,11 @@ function formatRunShare(run, { power = 0, language = currentLanguage(), link = V
       `👥 Heroes recruited: ${summary.heroesRecruited}`,
       `🔥 Power: ${summary.finalPower}`,
       `☠️ End: ${localizedEndReason(summary, lang)}`,
-      `🎮 Play RPChess: ${link}`
+      `🎮 Play ${brand}: ${link}`
     ].join('\n');
   }
   return [
-    '♟️ RPChess — мой забег',
+    `♟️ ${brand} — мой забег`,
     `👑 ${identity}`,
     `🗓️ Недель: ${summary.weeks}`,
     `⚔️ Побед в битвах: ${summary.battleWins}`,
@@ -54,11 +55,11 @@ function formatRunShare(run, { power = 0, language = currentLanguage(), link = V
     `👥 Нанято героев: ${summary.heroesRecruited}`,
     `🔥 Мощь: ${summary.finalPower}`,
     `☠️ Финал: ${localizedEndReason(summary, lang)}`,
-    `🎮 Играть в RPChess: ${link}`
+    `🎮 Играть в ${brand}: ${link}`
   ].join('\n');
 }
 
-async function shareRunResult(run, { power = 0, language = currentLanguage(), link = VK_GAME_LINK } = {}) {
+async function shareRunResult(run, { power = 0, language = currentLanguage(), link = platform.kind === 'yandex' ? platform.gameLink : VK_GAME_LINK } = {}) {
   const text = formatRunShare(run, { power, language, link });
   if (platform.launch.isVK()) {
     const wall = await platform.social.wallPost({ message:text, attachments:link });

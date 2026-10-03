@@ -1,3 +1,4 @@
+import { platform } from './platform.mjs';
 import { BACKGROUND_POOLS, RACE_TAGS, hashString, normalizeRaceTag } from './race-assets.mjs';
 
 const VICTORY_FANFARE = 'https://mobigametim-bit.github.io/RPChess/SFX/win_fanfare.mp3';
@@ -194,9 +195,13 @@ function playVictoryFanfare(root) {
   const sfx = Number(audio?.settings?.sfx ?? 80);
   root.dataset.victoryFanfarePlayed = '1';
   if (!audio?.activated || sfx <= 0 || typeof Audio !== 'function') return;
-  const fanfare = new Audio(VICTORY_FANFARE);
+  const fanfare = new Audio(platform.kind === 'yandex' ? 'SFX/win_fanfare.mp3' : VICTORY_FANFARE);
   fanfare.volume = Math.min(1, Math.max(0, sfx / 100) * .78);
-  fanfare.play().catch(() => {});
+  if (!platform.lifecycle.isActive()) return;
+  const unsubscribe = platform.lifecycle.subscribe(({ active }) => { if (!active) fanfare.pause(); }, { immediate:false });
+  fanfare.addEventListener('ended', unsubscribe, { once:true });
+  fanfare.addEventListener('error', unsubscribe, { once:true });
+  fanfare.play().catch(() => { unsubscribe(); });
 }
 
 function syncOutcomeScreens() {

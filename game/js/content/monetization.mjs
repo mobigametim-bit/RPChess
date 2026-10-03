@@ -141,8 +141,8 @@ function featureOverride(name) {
 
 function featureEnabled(name) {
   const override = featureOverride(name);
-  if (override !== null) return override && platform.launch.isVK();
-  return platform.launch.isVK();
+  if (override !== null) return override && platform.capabilities.ads;
+  return platform.capabilities.ads;
 }
 
 function dueInterstitial(step) {

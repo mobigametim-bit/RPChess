@@ -2,9 +2,10 @@
   "name": "rpchess",
   "private": true,
   "version": "3.2.0",
-  "description": "RPChess Reboot \u2014 fantasy roguelite built on classical chess",
+  "description": "RPChess Reboot — fantasy roguelite built on classical chess",
   "devDependencies": {
     "esbuild": "^0.28.2",
+    "sharp": "0.35.4",
     "wrangler": "^4.130.0"
   },
   "overrides": {
@@ -69,6 +70,8 @@
     "gate:full": "npm run gate:local && npm run test:browser",
     "gate:vk": "npm run test:monetization && npm run build:vk",
     "deploy:cloudflare": "wrangler deploy",
-    "test:caravan": "node tests/chess960.cjs && node tests/caravan.cjs"
+    "test:caravan": "node tests/chess960.cjs && node tests/caravan.cjs",
+    "build:yandex": "npm run build && node scripts/build-yandex.cjs",
+    "test:yandex": "node tests/yandex-platform.cjs"
   }
 }

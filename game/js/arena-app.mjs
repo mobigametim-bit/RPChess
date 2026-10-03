@@ -205,7 +205,8 @@ function animateCommittedMove(geometry,to,onDone){
   animation.finished.catch(()=>{}).finally(()=>{
     if(moveAnimation!==animation)return;
     stopMoveAnimation();
-    if(stamp!==searchId||!engine||state.match?.id!==matchId)return;
+    if(platform.kind==='yandex')await platform.lifecycle.whenPlayable();
+  if(stamp!==searchId||!engine||state.match?.id!==matchId)return;
     renderBoard();onDone();
   });
 }
@@ -253,6 +254,7 @@ function startBattle(){
   closeDialog();engine=new ClassicChessEngine();selected=null;render();void aiTurn();
 }
 function commit(from,to,promo=null){
+  if(platform.kind==='yandex'&&!platform.lifecycle.isPlayable())return;
   if(!engine||animating||thinking||state.match?.phase!=='playing')return;
   const geometry=moveGeometry(from,to,promo);
   const result=engine.move(from,to,promo);
@@ -277,6 +279,7 @@ async function aiTurn(){
   const uci=await adapter.chooseMove({fen:engine.fen(),elo:foe.elo,legalMoves:engine.legalMoves(),arena:true});
   const remaining=Math.max(0,180-(performance.now()-started));
   if(remaining)await new Promise(resolve=>setTimeout(resolve,remaining));
+  if(platform.kind==='yandex')await platform.lifecycle.whenPlayable();
   if(stamp!==searchId||!engine||state.match?.phase!=='playing')return;
   thinking=false;
   if(!uci){notice='Engine is unavailable';render();return;}

@@ -21,14 +21,14 @@ function readPersistedLanguage() {
   try { return normalizeLanguage(JSON.parse(storage()?.getItem(SETTINGS_KEY) || '{}')?.language); }
   catch { return DEFAULT_LANGUAGE; }
 }
-function persistLanguage(language) {
+function persistLanguage(language, source = 'manual') {
   const target = storage();
   if (!target) return;
   try {
     const parsed = JSON.parse(target.getItem(SETTINGS_KEY) || '{}');
     const settings = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
-    target.setItem(SETTINGS_KEY, JSON.stringify({ ...settings, language }));
-  } catch { target.setItem(SETTINGS_KEY, JSON.stringify({ language })); }
+    target.setItem(SETTINGS_KEY, JSON.stringify({ ...settings, language, ...(platform.kind === 'yandex' ? { languageSource:source } : {}) }));
+  } catch { target.setItem(SETTINGS_KEY, JSON.stringify({ language, ...(platform.kind === 'yandex' ? { languageSource:source } : {}) })); }
 }
 
 let activeLanguage = readPersistedLanguage();
@@ -284,11 +284,11 @@ export function translateLegacy(value, language = activeLanguage) {
   }
   return source;
 }
-export function setLanguage(code) {
+export function setLanguage(code, { source = 'manual' } = {}) {
   const language = normalizeLanguage(code);
   const changed = language !== activeLanguage;
   activeLanguage = language;
-  persistLanguage(language);
+  persistLanguage(language, source);
   updateDocumentLanguage();
   refreshLocalization();
   if (changed) {

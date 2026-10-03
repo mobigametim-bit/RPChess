@@ -1,5 +1,6 @@
 import { RebootAudio } from './reboot-audio.mjs';
 import { platform } from './platform.mjs';
+import { initializeYandex, finishYandexStartup } from './yandex-runtime.mjs';
 import {
   availableLanguages,
   currentLanguage,
@@ -10,7 +11,7 @@ import {
 } from './i18n.mjs';
 import { installBrandLogos } from './brand-logo.mjs';
 
-const platformReady = platform.init();
+const platformReady = platform.kind === 'yandex' ? initializeYandex() : platform.init();
 installBrandLogos();
 
 // Reconcile VK cloud state before run-owned modules read local persistence. Standalone Web resolves
@@ -116,7 +117,8 @@ function readSettings() {
       music: Number.isFinite(value.music) ? value.music : 20,
       sfx: Number.isFinite(value.sfx) ? value.sfx : 80,
       reducedMotion: Boolean(value.reducedMotion),
-      language: currentLanguage()
+      language: currentLanguage(),
+      ...(platform.kind === 'yandex' ? { languageSource:value.languageSource || 'manual' } : {})
     };
   } catch {
     return { music: 20, sfx: 80, reducedMotion: false, language: currentLanguage() };
@@ -124,6 +126,9 @@ function readSettings() {
 }
 
 function writeSettings(settings) {
+  if (platform.kind === 'yandex') {
+    try { settings.languageSource = JSON.parse(platform.storage.getItem(SETTINGS_KEY) || '{}').languageSource || 'manual'; } catch {}
+  }
   platform.storage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
 
@@ -181,6 +186,9 @@ function syncLanguageUi() {
 syncLanguageUi();
 subscribe((language) => {
   settings.language = language;
+  if (platform.kind === 'yandex') {
+    try { settings.languageSource = JSON.parse(platform.storage.getItem(SETTINGS_KEY) || '{}').languageSource || 'manual'; } catch {}
+  }
   syncLanguageUi();
 });
 
@@ -258,3 +266,8 @@ reducedMotion?.addEventListener('change', () => {
 });
 
 addEventListener('beforeunload', () => { unsubscribePlatformLifecycle(); audio.destroy(); }, { once: true });
+
+if (platform.kind === 'yandex') {
+  globalThis.RPChessYandexReady = Promise.all([platformReady, cloudReady, onboardingReady, identityReady, routeReady])
+    .then(finishYandexStartup);
+}

@@ -241,6 +241,17 @@ async function readCloudManifest() {
 }
 
 async function readCloudEnvelope() {
+  if (platform.kind === 'yandex') {
+    const parsed = await platform.storage.cloud.readEnvelope();
+    if (parsed == null) return { manifest:null, envelope:null, error:null };
+    if (parsed.schemaVersion !== CLOUD_SAVE_SCHEMA_VERSION || !Number.isInteger(parsed.revision) || parsed.revision < 0
+      || !parsed.payload || typeof parsed.payload !== 'object' || Array.isArray(parsed.payload)) {
+      return { manifest:null, envelope:null, error:'invalid-envelope' };
+    }
+    return { manifest:null, error:null, envelope:{ ...parsed,
+      updatedAt:Math.max(0, Math.floor(Number(parsed.updatedAt) || 0)),
+      fingerprint:payloadFingerprint(parsed.payload), hasProgress:payloadHasProgress(parsed.payload) } };
+  }
   const manifest = await readCloudManifest();
   if (!manifest) return { manifest:null, envelope:null, error:null };
   const keys = Array.from({ length:manifest.chunks }, (_, index) => chunkKey(manifest.slot, index));
@@ -273,6 +284,12 @@ async function readCloudEnvelope() {
 
 async function writeCloudEnvelope(envelope, currentManifest = null) {
   if (!platform.storage.cloud.available || !envelope?.payload) return false;
+  if (platform.kind === 'yandex') return platform.storage.cloud.writeEnvelope({
+    schemaVersion:CLOUD_SAVE_SCHEMA_VERSION,
+    revision:Math.max(0, Math.floor(Number(envelope.revision) || 0)),
+    updatedAt:Math.max(0, Math.floor(Number(envelope.updatedAt) || 0)),
+    payload:envelope.payload
+  });
   const payloadJson = JSON.stringify({
     schemaVersion:CLOUD_SAVE_SCHEMA_VERSION,
     revision:Math.max(0, Math.floor(Number(envelope.revision) || 0)),
@@ -414,11 +431,12 @@ async function syncCloudNow() {
 
 function scheduleCloudSync(event) {
   if (!platform.storage.cloud.available) return;
+  if (platform.kind === 'yandex' && syncTimer) return;
   if (syncTimer) clearTimeout(syncTimer);
   syncTimer = setTimeout(() => {
     syncTimer = null;
     void syncCloudNow();
-  }, event?.type === 'rpchess:run-persisted' || event?.detail?.combat
+  }, platform.kind === 'yandex' ? 5000 : event?.type === 'rpchess:run-persisted' || event?.detail?.combat
     ? CLOUD_COMBAT_SYNC_DEBOUNCE_MS : CLOUD_SYNC_DEBOUNCE_MS);
 }
 

@@ -1,3 +1,4 @@
+import { platform } from './platform.mjs';
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { ChessAIAdapter, ELO_LEVELS, profileForElo } from './chess-ai-adapter.mjs';
 import { currentLanguage, subscribe, translateLegacy } from './i18n.mjs';
@@ -447,6 +448,7 @@ function animateCommittedMove(geometry, to, onDone) {
 }
 
 function executeMove(from, to, promotion = null, { triggerAI = true } = {}) {
+  if (platform.kind === 'yandex' && !platform.lifecycle.isPlayable()) return false;
   const moving = engine.pieceAt(from);
   if (!moving) return false;
   const legalBefore = engine.legalMoves();
@@ -510,6 +512,7 @@ async function maybeScheduleAI() {
   const uci = await aiAdapter.chooseMove({ fen, elo: gameConfig.aiElo, legalMoves, chess960: engine.state.chess960 });
   const remainingDelay = Math.max(0, 180 - (performance.now() - started));
   if (remainingDelay) await new Promise((resolve) => setTimeout(resolve, remainingDelay));
+  if (platform.kind === 'yandex') await platform.lifecycle.whenPlayable();
   if (generation !== gameGeneration || gameConfig.mode !== 'ai' || engine.turn() !== gameConfig.aiColor) return;
   setThinking(false);
   if (!uci) return;

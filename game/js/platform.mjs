@@ -1,3 +1,5 @@
+import { isYandexLaunch, yandex } from './platform-yandex.mjs';
+
 const VK_CONNECT_VERSION = '2.15.12';
 const VK_REQUEST_TIMEOUT_MS = 7000;
 const VK_AD_SHOW_TIMEOUT_MS = 180_000;
@@ -20,6 +22,7 @@ function referrerHost(referrer = globalThis.document?.referrer || '') {
 }
 
 function isVKLaunch() {
+  if (isYandexLaunch()) return false;
   const params = parseLaunchParams();
   return verifiedVKHost || params.has('vk_app_id')
     || /(^|\.)vk\.(com|ru)$/i.test(referrerHost())
@@ -279,7 +282,7 @@ const cloudStorageAdapter = Object.freeze({
 
 const storage = Object.freeze({
   local:localStorageAdapter,
-  cloud:cloudStorageAdapter,
+  get cloud() { return isYandexLaunch() ? yandex.cloud : cloudStorageAdapter; },
   sync() { return localStorageAdapter.sync(); },
   getItem(key) { return localStorageAdapter.getItem(key); },
   setItem(key, value) { localStorageAdapter.setItem(key, value); },
@@ -362,8 +365,10 @@ function createLifecycle() {
   const listeners = new Set();
   let installed = false;
   let pageActive = true;
+  let hostActive = true;
+  let gameplayActive = true;
   const documentActive = () => !(globalThis.document?.hidden || globalThis.document?.visibilityState === 'hidden');
-  const active = () => pageActive && documentActive();
+  const active = () => pageActive && hostActive && documentActive();
   const emit = (reason, forcedActive = null) => {
     if (forcedActive !== null) pageActive = Boolean(forcedActive);
     const state = Object.freeze({ active:active(), reason });
@@ -378,9 +383,32 @@ function createLifecycle() {
     globalThis.document.addEventListener('visibilitychange', () => emit('visibilitychange'));
     globalThis.addEventListener?.('pagehide', () => emit('pagehide', false));
     globalThis.addEventListener?.('pageshow', () => emit('pageshow', true));
+    if (isYandexLaunch()) {
+      yandex.onHostActive(value => { hostActive = value; emit('yandex'); });
+      globalThis.addEventListener?.('blur', () => emit('blur', false));
+      globalThis.addEventListener?.('focus', () => emit('focus', true));
+    }
   };
   return Object.freeze({
     isActive:active,
+    isPlayable() { return active() && gameplayActive; },
+    setGameplayActive(value) {
+      if (gameplayActive === Boolean(value)) return;
+      gameplayActive = Boolean(value);
+      emit('gameplay');
+    },
+    whenPlayable() {
+      if (active() && gameplayActive) return Promise.resolve();
+      return new Promise(resolve => {
+        const unsubscribe = this.subscribe(state => { if (state.active && gameplayActive) { unsubscribe(); resolve(); } }, { immediate:false });
+      });
+    },
+    whenActive() {
+      if (active()) return Promise.resolve();
+      return new Promise(resolve => {
+        const unsubscribe = this.subscribe(state => { if (state.active) { unsubscribe(); resolve(); } }, { immediate:false });
+      });
+    },
     subscribe(listener, { immediate = true } = {}) {
       if (typeof listener !== 'function') return () => {};
       install();
@@ -394,7 +422,8 @@ function createLifecycle() {
 const lifecycle = createLifecycle();
 const launch = Object.freeze({
   params() { return Object.fromEntries(parseLaunchParams().entries()); },
-  isVK:isVKLaunch
+  isVK:isVKLaunch,
+  isYandex:isYandexLaunch
 });
 
 const bridge = Object.freeze({
@@ -405,23 +434,27 @@ const bridge = Object.freeze({
 });
 
 const capabilities = Object.freeze({
-  get cloudStorage() { return isVKLaunch(); },
-  get ads() { return isVKLaunch(); },
+  get cloudStorage() { return isYandexLaunch() || isVKLaunch(); },
+  get ads() { return isYandexLaunch() || isVKLaunch(); },
   get sharing() { return isVKLaunch(); },
   get leaderboard() { return isVKLaunch(); },
   payments:false
 });
 
 const platform = Object.freeze({
-  get kind() { return isVKLaunch() ? 'vk' : 'web'; },
+  get kind() { return isYandexLaunch() ? 'yandex' : isVKLaunch() ? 'vk' : 'web'; },
   launch,
   bridge,
   storage,
-  ads,
+  get ads() { return isYandexLaunch() ? yandex.ads : ads; },
   social,
   identity,
   lifecycle,
-  async init() { return await discoverVKHost() ? sendVKWebAppInit() : false; },
+  get language() { return isYandexLaunch() ? yandex.language : null; },
+  get gameLink() { return isYandexLaunch() ? yandex.gameLink : null; },
+  ready() { if (isYandexLaunch()) yandex.ready(); },
+  gameplay(active) { if (isYandexLaunch()) yandex.gameplay(active); },
+  async init() { return isYandexLaunch() ? yandex.init() : await discoverVKHost() ? sendVKWebAppInit() : false; },
   capabilities
 });
 
