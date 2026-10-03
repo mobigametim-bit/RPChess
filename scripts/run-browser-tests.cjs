@@ -4,7 +4,9 @@ const path=require('path');
 const {spawn}=require('child_process');
 
 const ROOT=path.resolve(__dirname,'..');
-const DIST=path.join(ROOT,'dist');
+const BUILD_TARGET=process.env.RPCHESS_BUILD_TARGET||'web';
+if(!['web','yandex'].includes(BUILD_TARGET))throw new Error('Unknown browser build target');
+const DIST=path.join(ROOT,BUILD_TARGET==='yandex'?'dist-yandex':'dist');
 const HOST='127.0.0.1';
 const PORT=Number(process.env.RPCHESS_GATE_PORT||4173);
 const RAW_PREFIX=String(process.env.RPCHESS_GATE_PREFIX||'').trim();

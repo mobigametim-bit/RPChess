@@ -46,6 +46,10 @@ function gameplayVisible() {
 async function finishYandexStartup() {
   selectLanguage();
   localizeBrand();
+  if (document.readyState !== 'complete') await new Promise(resolve => globalThis.addEventListener('load', resolve, { once:true }));
+  if (!globalThis.RPChessClassicChess || !globalThis.RPChessArena || !globalThis.RPChessRoster) {
+    throw new Error('Yandex game menu modules did not initialize');
+  }
   await document.fonts?.ready;
   await Promise.all([...document.querySelectorAll('[data-brand-logo]')].map(logo => logo.decode?.().catch(() => {})));
   // The attribute also belongs to <html>; never remove it via a generic query.

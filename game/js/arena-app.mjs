@@ -205,8 +205,7 @@ function animateCommittedMove(geometry,to,onDone){
   animation.finished.catch(()=>{}).finally(()=>{
     if(moveAnimation!==animation)return;
     stopMoveAnimation();
-    if(platform.kind==='yandex')await platform.lifecycle.whenPlayable();
-  if(stamp!==searchId||!engine||state.match?.id!==matchId)return;
+    if(stamp!==searchId||!engine||state.match?.id!==matchId)return;
     renderBoard();onDone();
   });
 }
@@ -254,7 +253,7 @@ function startBattle(){
   closeDialog();engine=new ClassicChessEngine();selected=null;render();void aiTurn();
 }
 function commit(from,to,promo=null){
-  if(platform.kind==='yandex'&&!platform.lifecycle.isPlayable())return;
+  if(platform.kind==='yandex'&&!platform.lifecycle.isActive())return;
   if(!engine||animating||thinking||state.match?.phase!=='playing')return;
   const geometry=moveGeometry(from,to,promo);
   const result=engine.move(from,to,promo);

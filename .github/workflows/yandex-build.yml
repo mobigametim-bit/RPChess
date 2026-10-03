@@ -1,0 +1,52 @@
+name: Build Yandex Games ZIP
+
+on:
+  push:
+    branches: [feature/yandex-games]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  yandex:
+    if: github.ref == 'refs/heads/feature/yandex-games'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: yandex-runtime-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: yandex-runtime-${{ runner.os }}-
+      - run: npm ci --no-audit --no-fund
+      - name: Source and deterministic checks
+        run: npm run verify && npm test && npm run test:yandex && npm run content:validate
+      - name: Build the isolated distribution and verify unpacked size
+        env:
+          RPCHESS_SOURCE_SHA: ${{ github.sha }}
+        run: npm run build:yandex
+      - name: Install browser test dependencies
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+      - name: Real Chromium integration checks with a simulated SDK
+        run: node tests/yandex-browser.cjs
+      - name: Battle, Skirmish, Caravan, Arena and artifacts in the Yandex output
+        env:
+          RPCHESS_BUILD_TARGET: yandex
+          RPCHESS_GATE_PORT: '4175'
+          RPCHESS_GATE_PREFIX: /RPChess
+          NODE_OPTIONS: --require=./tests/yandex-regression-preload.cjs
+          RPCHESS_BROWSER_TEST: classic-chess-browser.cjs,arena-browser.cjs,piercing-vision-browser.cjs,fork-master-browser.cjs,combat-resume-browser.cjs,caravan-browser.cjs
+        run: npm run test:browser
+      - uses: actions/upload-artifact@v4
+        with:
+          name: heroes-checkmate-yandex-${{ github.sha }}
+          path: heroes-checkmate-yandex.zip
+          retention-days: 30

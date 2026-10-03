@@ -448,7 +448,7 @@ function animateCommittedMove(geometry, to, onDone) {
 }
 
 function executeMove(from, to, promotion = null, { triggerAI = true } = {}) {
-  if (platform.kind === 'yandex' && !platform.lifecycle.isPlayable()) return false;
+  if (platform.kind === 'yandex' && !platform.lifecycle.isActive()) return false;
   const moving = engine.pieceAt(from);
   if (!moving) return false;
   const legalBefore = engine.legalMoves();
