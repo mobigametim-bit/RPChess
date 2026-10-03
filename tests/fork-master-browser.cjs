@@ -58,17 +58,17 @@ async function verifyBoard(page,selector,label,arena=false){
         const run=readRun();writeRun({...run,artifacts:{[id]:2},currentTravelChoices:createTravelChoices({runId:run.id,types:[type],step:1}).map(c=>({...c,playerColor:'w',enemyColor:'b'})),activeTravelChoice:null});
         dispatchEvent(new CustomEvent('rpchess:run-updated'));
       },{type,id});
-      if(type==='caravan')await page.evaluate(async()=>{const i=await import('./js/i18n.mjs');i.setLanguage('en');});
+      if(type==='caravan')await page.waitForFunction(()=>window.RPChessI18n?.setLanguage('en')==='en');
       await page.locator('[data-roster-travel]').click();await page.locator(`[data-travel-type="${type}"]`).first().click();
       await page.locator(type==='skirmish'?'[data-skirmish-start]':'[data-battle-start]').click();
       await page.setViewportSize({width:667,height:375});const card=page.locator(`[data-artifact-choice="${id}"]`);await card.waitFor();
       assert((await card.innerText()).includes(type==='caravan'?'Fork Master':'Мастер вилок'));
       if(type==='caravan')assert(!/[А-Яа-яЁё]/.test(await card.innerText()),'English artifact card must not leak Russian');
-      await page.evaluate(async()=>{const i=await import('./js/i18n.mjs');i.setLanguage('en');});
+      await page.waitForFunction(()=>window.RPChessI18n?.setLanguage('en')==='en');
       // Current modal copy uses the selected locale on creation; core dictionary
       // still must supply complete English copy without Russian fallback.
       assert.strictEqual(await page.evaluate(async()=>{const i=await import('./js/i18n.mjs');return i.t('artifacts.forkMaster.name');}),'Fork Master');
-      await page.evaluate(async()=>{const i=await import('./js/i18n.mjs');i.setLanguage('ru');});
+      await page.waitForFunction(()=>window.RPChessI18n?.setLanguage('ru')==='ru');
       const panel=await page.locator('.artifact-choice-panel').boundingBox();assert(panel.x>=0&&panel.y>=0&&panel.x+panel.width<=668&&panel.y+panel.height<=376);
       await card.click();await page.locator('[data-classic-screen]:not([hidden])').waitFor();
       assert.strictEqual(await page.evaluate(({key,id})=>JSON.parse(localStorage.getItem(key)).artifacts[id],{key,id}),1);
