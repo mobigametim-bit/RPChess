@@ -40,7 +40,21 @@ const { randomBytes } = require('node:crypto');
   assert.equal(platform.gameLink, 'https://yandex.ru/games/app/123456');
   const states = [];
   platform.lifecycle.subscribe(state => states.push(state.active));
+  // Runtime subscribers report gameplay back to the adapter. That must not
+  // produce another host event, including during a real pause/resume.
+  const hostStates = [];
+  let reporting = false;
+  const unsubscribeHost = platform.lifecycle.subscribe(state => {
+    if (state.reason !== 'yandex') return;
+    assert.equal(reporting, false, 'gameplay feedback must not re-enter the host listener');
+    hostStates.push(state.active);
+    reporting = true;
+    try { platform.gameplay(state.active); } finally { reporting = false; }
+  }, { immediate:false });
   platform.gameplay(true);
+  platform.gameplay(true);
+  assert.deepEqual(hostStates, [], 'gameplay updates do not change host activity');
+  events.get('game_api_pause')();
   events.get('game_api_pause')();
   assert.equal(platform.lifecycle.isActive(), false);
   let resumed = false;
@@ -48,8 +62,11 @@ const { randomBytes } = require('node:crypto');
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(resumed, false);
   events.get('game_api_resume')();
+  events.get('game_api_resume')();
   await wait;
   assert.equal(resumed, true);
+  assert.deepEqual(hostStates, [false, true], 'only host transitions notify subscribers');
+  unsubscribeHost();
   platform.lifecycle.setGameplayActive(false);
   platform.gameplay(false);
   const starts = activity.filter(value => value === 'start').length;

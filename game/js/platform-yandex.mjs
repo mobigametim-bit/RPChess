@@ -7,6 +7,7 @@ let sdk = null;
 let initPromise = null;
 let playerPromise = null;
 let hostListener = null;
+let reportedHostActive = null;
 let sdkPaused = false;
 let adPaused = false;
 let requestedGameplay = false;
@@ -14,7 +15,13 @@ let playing = false;
 let readySent = false;
 
 function syncActivity() {
-  hostListener?.(!sdkPaused && !adPaused);
+  const hostActive = !sdkPaused && !adPaused;
+  if (hostListener && hostActive !== reportedHostActive) {
+    // Publish before calling subscribers: they may report gameplay back to us.
+    // Gameplay changes must never recursively emit the same host state.
+    reportedHostActive = hostActive;
+    hostListener(hostActive);
+  }
   const next = requestedGameplay && !sdkPaused && !adPaused;
   if (!sdk || next === playing) return;
   playing = next;
@@ -154,7 +161,7 @@ const yandex = Object.freeze({
     const id = String(sdk?.environment?.app?.id || '');
     return /^\d+$/.test(id) ? `https://yandex.ru/games/app/${id}` : 'https://yandex.ru/games/';
   },
-  onHostActive(listener) { hostListener = listener; syncActivity(); },
+  onHostActive(listener) { hostListener = listener; reportedHostActive = null; syncActivity(); },
   gameplay(active) { requestedGameplay = Boolean(active); syncActivity(); },
   ready() {
     if (readySent || !sdk) return;
