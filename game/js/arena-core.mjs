@@ -37,7 +37,7 @@ function normalizeArena(raw){
 function arenaSummary(state){
   const stats=Object.fromEntries(OPPONENTS.map(foe=>[foe.id,{wins:0,losses:0,draws:0}]));
   const owned=new Set(['humans']);let balance=0,highest=0;
-  const accepted=new Set(),bonuses=[];
+  const accepted=new Set(),pendingBonuses=new Map();
   for(const event of normalizeArena(state).events){
     if(event.kind==='squad'){
       if(owned.has(event.race)||balance<event.amount)continue;
@@ -49,12 +49,19 @@ function arenaSummary(state){
       stats[event.foe].wins++;
       highest=Math.max(highest,Math.min(83,OPPONENT_BY_ID.get(event.foe).index+1));
       balance+=event.amount;
+      // A clock-ahead win can arrive after its ad receipt. Credit the bonus
+      // once its win is known, before replaying subsequent purchases.
+      balance+=pendingBonuses.get(event.id)||0;
+      pendingBonuses.delete(event.id);
     } else if(event.kind==='loss')stats[event.foe].losses++;
     else if(event.kind==='draw')stats[event.foe].draws++;
-    else if(event.kind==='ad')bonuses.push(event);
+    else if(event.kind==='ad'){
+      const winId=`${event.id.slice(0,-3)}:win`;
+      if(accepted.has(winId))balance+=event.amount;
+      else pendingBonuses.set(winId,(pendingBonuses.get(winId)||0)+event.amount);
+    }
     accepted.add(event.id);
   }
-  for(const bonus of bonuses)if(accepted.has(`${bonus.id.slice(0,-3)}:win`))balance+=bonus.amount;
   return {balance,owned,highest,stats,accepted};
 }
 function addEvent(state,event){

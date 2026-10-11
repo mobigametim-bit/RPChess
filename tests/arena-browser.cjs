@@ -33,6 +33,23 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert.strictEqual(await page.locator('[data-arena-squad="orcs"] .arena-squad-price').count(),0,'third squad is owned after purchase');
     await page.evaluate(()=>window.RPChessArena.enter());
     assert.strictEqual(await page.locator('[data-arena-squad="orcs"] .arena-squad-price').count(),0,'purchase survives reloading Arena state');
+    for(const [race,price] of [['undead',200],['dark_elves',240]]){
+      await page.evaluate(()=>{
+        const now=Date.now();
+        localStorage.setItem('rpchess.reboot.v1.arena',JSON.stringify({version:1,squad:'humans',match:null,updatedAt:now,events:[
+          {id:'browser:ad-funded:win',kind:'win',foe:'pawn:humans',amount:150,at:now-2000},
+          {id:'browser:ad-funded:ad',kind:'ad',foe:'pawn:humans',amount:105,at:now-1000}
+        ]}));
+        window.RPChessArena.enter();
+      });
+      await page.locator(`[data-arena-squad="${race}"]`).click();
+      assert.strictEqual(await page.locator(`[data-arena-squad="${race}"] .arena-squad-price`).count(),0,'ad-funded squad becomes owned');
+      assert((await page.locator('[data-arena-shards]').innerText()).includes(String(255-price)),'ad-funded squad cost is deducted');
+      assert.strictEqual(await page.locator('[data-arena-notice]').innerText(),'','no false insufficient-shards notice');
+      await page.reload({waitUntil:'networkidle'});
+      await page.locator('[data-arena-open]').click();
+      assert.strictEqual(await page.locator(`[data-arena-squad="${race}"] .arena-squad-price`).count(),0,'ad-funded purchase survives a full reload');
+    }
     await page.evaluate(()=>{localStorage.removeItem('rpchess.reboot.v1.arena');window.RPChessArena.enter();});
     await page.setViewportSize({width:1900,height:909});
     const largeCard=await page.locator('[data-arena-foes] button').first().boundingBox();

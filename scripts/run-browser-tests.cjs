@@ -12,6 +12,7 @@ const PREFIX=RAW_PREFIX?`/${RAW_PREFIX.replace(/^\/+|\/+$/g,'')}`:'';
 const BASE=`http://${HOST}:${PORT}${PREFIX}${PREFIX?'/':''}`;
 const DEFAULT_TESTS=[
   'reboot-foundation-browser.cjs',
+  'chronicle-localization-browser.cjs',
   'classic-chess-browser.cjs',
   'arena-browser.cjs',
   'piercing-vision-browser.cjs',

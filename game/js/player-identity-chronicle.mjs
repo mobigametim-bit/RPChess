@@ -1,3 +1,5 @@
+import { currentLanguage, subscribe } from './i18n.mjs';
+import { runtimeT } from '../localization/runtime-ui.mjs';
 import { readRun } from './run-persistence.mjs';
 import { readPlayerRating } from './player-rating.mjs';
 import { PLAYER_NAME_MAX_LENGTH, normalizePlayerName } from './player-identity-core.mjs';
@@ -5,6 +7,8 @@ import { activeRunSnapshot, bestChronicleRun, readChronicle, recordCompletedRun 
 
 let identityModal = null;
 let chroniclePanel = null;
+
+function l(key) { return runtimeT(currentLanguage(), key); }
 
 function audio() { return globalThis.RPChessRebootAudio; }
 function ensureCss() {
@@ -27,19 +31,19 @@ function ensureIdentityModal() {
     <section class="reboot-modal__panel identity-panel ui-panel-surface" role="dialog" aria-modal="true" aria-labelledby="player-identity-title">
       <header class="reboot-modal__header">
         <div>
-          <div class="reboot-eyebrow">НОВЫЙ ПОХОД</div>
-          <h2 id="player-identity-title">Кто ты, воин?</h2>
+          <div class="reboot-eyebrow">${l('identity.kicker')}</div>
+          <h2 id="player-identity-title">${l('identity.title')}</h2>
         </div>
-        <button class="reboot-close" type="button" data-player-identity-close aria-label="Закрыть">×</button>
+        <button class="reboot-close" type="button" data-player-identity-close aria-label="${l('identity.close')}">×</button>
       </header>
-      <p class="identity-copy">Это имя будет вписано в события и Летопись похода.</p>
+      <p class="identity-copy">${l('identity.copy')}</p>
       <form class="identity-form" data-player-identity-form novalidate>
         <label class="identity-field">
-          <span>ИМЯ</span>
+          <span>${l('identity.name')}</span>
           <input type="text" data-player-identity-input maxlength="${PLAYER_NAME_MAX_LENGTH}" autocomplete="off" spellcheck="false" aria-describedby="player-identity-error">
         </label>
         <div class="identity-error" id="player-identity-error" data-player-identity-error aria-live="polite"></div>
-        <button class="reboot-button reboot-button--primary identity-submit" type="submit" data-player-identity-submit disabled>ПРОДОЛЖИТЬ</button>
+        <button class="reboot-button reboot-button--primary identity-submit" type="submit" data-player-identity-submit disabled>${l('identity.continue')}</button>
       </form>
     </section>`;
   document.body.append(identityModal);
@@ -53,7 +57,7 @@ function ensureIdentityModal() {
   const validate = () => {
     const name = normalizePlayerName(input?.value || '');
     if (submit) submit.disabled = !name;
-    if (error) error.textContent = input?.value && !name ? 'Введите имя.' : '';
+    if (error) error.textContent = input?.value && !name ? l('identity.error') : '';
     return name;
   };
 
@@ -81,6 +85,18 @@ function ensureIdentityModal() {
   });
 
   return identityModal;
+}
+
+function renderIdentityCopy() {
+  if (!identityModal) return;
+  for (const [selector, key] of [
+    ['.reboot-eyebrow', 'identity.kicker'], ['#player-identity-title', 'identity.title'],
+    ['.identity-copy', 'identity.copy'], ['.identity-field span', 'identity.name'],
+    ['[data-player-identity-submit]', 'identity.continue']
+  ]) identityModal.querySelector(selector).textContent = l(key);
+  identityModal.querySelector('[data-player-identity-close]').setAttribute('aria-label', l('identity.close'));
+  const error = identityModal.querySelector('[data-player-identity-error]');
+  if (error.textContent) error.textContent = l('identity.error');
 }
 
 function openIdentityPrompt() {
@@ -113,11 +129,11 @@ function ensureChroniclePanel() {
   chroniclePanel = document.createElement('aside');
   chroniclePanel.className = 'chronicle-panel';
   chroniclePanel.setAttribute('data-chronicle-panel', '');
-  chroniclePanel.setAttribute('aria-label', 'Летопись походов');
+  chroniclePanel.setAttribute('aria-label', l('chronicle.ariaLabel'));
   chroniclePanel.innerHTML = `
     <img class="chronicle-flag-art" src="assets/ui/royal_run_flag.png" alt="" aria-hidden="true">
     <div class="chronicle-safe">
-      <header class="chronicle-header"><h2>Летопись</h2></header>
+      <header class="chronicle-header"><h2>${l('chronicle.title')}</h2></header>
       <div class="chronicle-current" data-chronicle-current></div>
       <div class="chronicle-divider" aria-hidden="true"></div>
       <div class="chronicle-best" data-chronicle-best></div>
@@ -158,6 +174,8 @@ function sectionTitle(kicker, name) {
 function renderChronicle() {
   const root = ensureChroniclePanel();
   if (!root) return;
+  root.setAttribute('aria-label', l('chronicle.ariaLabel'));
+  root.querySelector('.chronicle-header h2').textContent = l('chronicle.title');
   const run = readRun();
   const rating = readPlayerRating();
   const current = activeRunSnapshot(run, { power: rating.power });
@@ -169,23 +187,23 @@ function renderChronicle() {
   currentRoot?.replaceChildren();
   if (currentRoot) {
     if (current) {
-      currentRoot.append(sectionTitle('ТЕКУЩИЙ ПОХОД', current.playerName));
-      currentRoot.append(metric('МОЩЬ', current.power, 'assets/doctrines/royal_court/emblem.png'), metric('НЕДЕЛЯ', current.week, 'generated_assets/node_story.png'), metric('ГЕРОЕВ В СТРОЮ', current.heroes, 'generated_assets/reward_recruit.png'));
+      currentRoot.append(sectionTitle(l('chronicle.current'), current.playerName));
+      currentRoot.append(metric(l('chronicle.power'), current.power, 'assets/doctrines/royal_court/emblem.png'), metric(l('chronicle.week'), current.week, 'generated_assets/node_story.png'), metric(l('chronicle.heroes'), current.heroes, 'generated_assets/reward_recruit.png'));
     } else {
-      currentRoot.append(sectionTitle('ТЕКУЩИЙ ПОХОД', 'Нет активного похода'));
+      currentRoot.append(sectionTitle(l('chronicle.current'), l('chronicle.noActive')));
     }
   }
 
   bestRoot?.replaceChildren();
   if (bestRoot) {
     if (best) {
-      bestRoot.append(sectionTitle('ЛУЧШИЙ ПОХОД', best.playerName));
-      bestRoot.append(metric('СЛАВА', best.glory, 'generated_assets/node_elite.png'), metric('НЕДЕЛЯ', best.week, 'generated_assets/node_story.png'), metric('МОЩЬ', best.power, 'assets/doctrines/royal_court/emblem.png'));
+      bestRoot.append(sectionTitle(l('chronicle.best'), best.playerName));
+      bestRoot.append(metric(l('chronicle.glory'), best.glory, 'generated_assets/node_elite.png'), metric(l('chronicle.week'), best.week, 'generated_assets/node_story.png'), metric(l('chronicle.power'), best.power, 'assets/doctrines/royal_court/emblem.png'));
     } else {
-      bestRoot.append(sectionTitle('ЛУЧШАЯ ЛЕТОПИСЬ', 'Летопись пуста'));
+      bestRoot.append(sectionTitle(l('chronicle.emptyKicker'), l('chronicle.emptyTitle')));
       const text = document.createElement('p');
       text.className = 'chronicle-empty-copy';
-      text.textContent = 'Ни одно имя ещё не вписано в её страницы.';
+      text.textContent = l('chronicle.emptyCopy');
       bestRoot.append(text);
     }
   }
@@ -197,6 +215,8 @@ function syncChronicle() {
   if (run?.ended) recordCompletedRun(run, { power: rating.power });
   renderChronicle();
 }
+
+subscribe(() => { renderIdentityCopy(); renderChronicle(); });
 
 addEventListener('rpchess:identity-request', openIdentityPrompt);
 addEventListener('rpchess:run-updated', syncChronicle);
