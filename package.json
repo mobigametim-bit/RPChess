@@ -21,7 +21,7 @@
     "test:arena": "node tests/arena.cjs",
     "test:onboarding": "node tests/onboarding.cjs",
     "test:monetization": "node tests/monetization.cjs",
-    "test:localization": "node tests/localization-foundation.cjs && node tests/localization-owner-contract.cjs && node tests/event-localization-corpus.cjs",
+    "test:localization": "node tests/localization-foundation.cjs && node tests/localization-owner-contract.cjs && node tests/event-localization-corpus.cjs && node tests/localization-gameplay-content.cjs",
     "test:classic": "node tests/classic-chess-static.cjs && node tests/classic-chess-engine.cjs && node tests/king-pin-ice.cjs",
     "test:ai": "node tests/chess-ai-adapter.cjs",
     "test:roster": "node tests/roster.cjs && node tests/hero-notes.cjs",

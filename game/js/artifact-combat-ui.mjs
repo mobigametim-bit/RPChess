@@ -1,9 +1,11 @@
 import { applyCombatArtifactChoice, artifactForCombat, ownedArtifacts, combatArtifactOffer, piercingVisionTargets, FIRE_BY_THREAT } from './artifact-core.mjs';
 import { countSquareAttackers, indexToSquare } from './classic-chess-engine.mjs';
-import { t } from './i18n.mjs';
+import { t, subscribe } from './i18n.mjs';
 import { forkMasterHints } from './fork-master-core.mjs';
 
 const forkCache=new WeakMap();
+let refreshArtifactChoice = () => {};
+subscribe(() => refreshArtifactChoice());
 function renderForkOverlay(board,snapshot,mode,playerColor,selectedSquare){
   let hints={targets:new Map(),destinations:new Set()};
   if(mode==='fork'){
@@ -50,6 +52,20 @@ function chooseArtifact({run,combatType,encounterId,onChoose}={}){
   const status=modal.querySelector('[data-artifact-choice-status]');
   const setBusy=(busy)=>{choosing=busy;modal.setAttribute('aria-busy',busy?'true':'false');for(const button of root.querySelectorAll('[data-artifact-choice]'))button.disabled=busy;};
   const fail=(error)=>{console.error('[RPChess] Artifact choice failed',error);setBusy(false);if(status){status.textContent=t('artifacts.choice.failed');status.hidden=false;}};
+  const renderCopy=()=>{
+    if(!modal.isConnected)return;
+    modal.querySelector('.reboot-eyebrow').textContent=t('artifacts.choice.kicker');
+    modal.querySelector('h2').textContent=t('artifacts.choice.title');
+    modal.querySelector('.artifact-choice-panel > p').textContent=t('artifacts.choice.description');
+    for(const button of root.querySelectorAll('[data-artifact-choice]')){
+      const artifact=cards.find(item=>item?.id===button.dataset.artifactChoice);
+      button.querySelector('strong').textContent=t(artifact?.nameKey||'artifacts.choice.none.name');
+      button.querySelector('span:not(.artifact-choice-card__empty)').textContent=t(artifact?.descriptionKey||'artifacts.choice.none.description');
+      if(artifact)button.querySelector('small').textContent=t('artifacts.charges',{count:run.artifacts?.[artifact.id]||0});
+    }
+    if(!status.hidden)status.textContent=t('artifacts.choice.failed');
+  };
+  refreshArtifactChoice=renderCopy;
   const finishChoice=(artifactId)=>{
     if(choosing)return;
     setBusy(true);if(status)status.hidden=true;
@@ -59,6 +75,7 @@ function chooseArtifact({run,combatType,encounterId,onChoose}={}){
       if(!result.success)throw new Error(`Artifact choice rejected: ${result.reason||'unknown'}`);
       onChoose?.(result.run,artifact);
       modal.remove();document.body.classList.remove('reboot-modal-open');
+      if(refreshArtifactChoice===renderCopy)refreshArtifactChoice=()=>{};
     }catch(error){fail(error);}
   };
   // Capture delegation keeps the transition reliable even when another UI layer

@@ -109,6 +109,48 @@ const { pathToFileURL } = require('url');
   const oldPurchase=core.normalizeArena({...earned,events:[...earned.events,{id:'squad:elves:before-price-rise',kind:'squad',race:'elves',amount:60,at:2}]});
   assert(core.arenaSummary(oldPurchase).owned.has('elves'),'existing paid squads survive doubled price migration');
   assert.strictEqual(core.arenaSummary(oldPurchase).balance,140,'original cost is not charged again');
+  // Reproduce the reported 255-shard balance: ad rewards must fund purchases
+  // during ledger replay, not only increase the final displayed balance.
+  let adFunded=core.addEvent(core.emptyArena(),{id:'ad-funds:win',kind:'win',foe:foes[0].id,amount:150,at:1});
+  adFunded=core.addEvent(adFunded,{id:'ad-funds:ad',kind:'ad',foe:foes[0].id,amount:105,at:2});
+  assert.strictEqual(core.arenaSummary(adFunded).balance,255);
+  for(const race of ['undead','dark_elves']){
+    const purchased=core.purchaseSquad(adFunded,race,`ad-funded:${race}`);
+    const summary=core.arenaSummary(purchased);
+    assert(summary.owned.has(race),`ad-funded ${race} purchase is accepted`);
+    assert.strictEqual(summary.balance,255-core.SQUAD_PRICES[race]);
+    assert(core.arenaSummary(core.normalizeArena(JSON.parse(JSON.stringify(purchased)))).owned.has(race),'ad-funded purchase survives reload');
+  }
+  const paidSquads=Object.entries(core.SQUAD_PRICES).filter(([,price])=>price>0);
+  assert.strictEqual(paidSquads.length,13);
+  const fundsFor=(amount,id)=>core.addEvent(core.addEvent(core.emptyArena(),{id:`${id}:win`,kind:'win',foe:foes[0].id,amount:Math.ceil(amount/2),at:1}),{id:`${id}:ad`,kind:'ad',foe:foes[0].id,amount:Math.floor(amount/2),at:2});
+  for(const [race,price]of paidSquads){
+    const funds=fundsFor(price,race);
+    const purchased=core.purchaseSquad(funds,race,`all:${race}`);
+    const summary=core.arenaSummary(purchased);
+    assert(summary.owned.has(race),`${race} is purchasable at its exact price, including ad shards`);
+    assert.strictEqual(summary.balance,0);
+    assert(core.arenaSummary(core.normalizeArena(JSON.parse(JSON.stringify(purchased)))).owned.has(race),`${race} persists`);
+    assert.strictEqual(core.purchaseSquad(purchased,race),purchased,`${race} cannot be charged twice`);
+    const short=fundsFor(price-1,`short:${race}`);
+    assert.strictEqual(core.purchaseSquad(short,race),short,`${race} requires its full price`);
+  }
+  let allPurchased=core.emptyArena();
+  for(const [race,price]of paidSquads)allPurchased=core.mergeArena(allPurchased,fundsFor(price,`sequence-funds:${race}`));
+  for(const [race]of [...paidSquads].reverse())allPurchased=core.purchaseSquad(allPurchased,race,`sequence:${race}`);
+  assert.strictEqual(core.arenaSummary(allPurchased).owned.size,14,'every squad can be bought in reverse order');
+  assert.strictEqual(core.arenaSummary(allPurchased).balance,0,'all squad costs charged exactly once');
+  const artifactFunds=core.addEvent(core.addEvent(core.emptyArena(),{id:'artifact-funds:win',kind:'win',foe:foes[0].id,amount:4,at:1}),{id:'artifact-funds:ad',kind:'ad',foe:foes[0].id,amount:4,at:2});
+  const adArtifact=core.chooseArtifact(core.newMatch(artifactFunds,foes[0].id,'ad-funds:match'),'threat.defense');
+  assert(core.arenaSummary(adArtifact).accepted.has('ad-funds:match:artifact'),'artifact spending is accepted too');
+  assert.strictEqual(core.arenaSummary(adArtifact).balance,0);
+  const concurrentAdPurchases=core.arenaSummary(core.mergeArena(core.purchaseSquad(adFunded,'undead','ad-one'),core.purchaseSquad(adFunded,'dark_elves','ad-two')));
+  assert.strictEqual(concurrentAdPurchases.owned.size,2,'merged devices cannot spend the same ad bonus twice');
+  assert(concurrentAdPurchases.balance>=0);
+  const earlyAd=core.addEvent(core.emptyArena(),{id:'early-ad:ad',kind:'ad',foe:foes[0].id,amount:105,at:1});
+  assert.strictEqual(core.arenaSummary(earlyAd).balance,0,'unmatched ad receipts cannot mint currency');
+  const delayedWin=core.addEvent(earlyAd,{id:'early-ad:win',kind:'win',foe:foes[0].id,amount:150,at:3});
+  assert(core.arenaSummary(core.purchaseSquad(delayedWin,'undead','delayed-win')).owned.has('undead'),'clock-skewed ad receipts fund purchases after their win');
   const cloud=await import(pathToFileURL(path.join(root,'game/js/cloud-save.mjs')).href);
   const older={revision:8,updatedAt:100,payload:{run:{id:'same',journeyStep:5},arena:repeat}};
   const newer={revision:7,updatedAt:200,payload:{run:{id:'same',journeyStep:4},arena:lost}};

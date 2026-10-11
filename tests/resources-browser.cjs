@@ -45,6 +45,7 @@ async function fresh(page) {
     assert.strictEqual(run.supplies, 9);
     const stars = run.activeTravelChoice.stars;
     await page.locator('[data-skirmish-start]').click();
+    await page.locator('[data-artifact-choice="none"]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     await page.evaluate(() => globalThis.RPChessSkirmish.finishBattle({ over:true, type:'stalemate', winner:null }));
     await page.locator('[data-skirmish-aftermath]:not([hidden])').waitFor();

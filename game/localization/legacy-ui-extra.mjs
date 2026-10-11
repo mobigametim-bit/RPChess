@@ -6,6 +6,19 @@ function translateResourcePhrase(value) {
 }
 
 export const EXTRA_EN_EXACT = Object.freeze({
+  'КАРАВАН': 'CARAVAN',
+  'Шахматы Фишера. Награда на выбор.': 'Fischer random chess. Choose your reward.',
+  'Каравану нужна защита. Награда ждёт победителя.': 'The caravan needs protection. A reward awaits the winner.',
+  'На дороге остановился караван, которому нужна охрана.': 'A caravan needing guards has stopped on the road.',
+  'Купцы просят отряд защитить их обоз.': 'Merchants ask your squad to protect their convoy.',
+  'За поворотом ждут повозки и тревожные торговцы.': 'Wagons and anxious merchants wait around the bend.',
+  'Разведчики заметили врагов на пути каравана.': 'Scouts spotted enemies along the caravan route.',
+  'Торговый обоз оказался вдали от безопасных дорог.': 'A merchant convoy has strayed far from safe roads.',
+  'Караванщики готовы вознаградить своих защитников.': 'The caravan traders are ready to reward their defenders.',
+  'На перекрёстке купцы ищут надёжное прикрытие.': 'Merchants seek reliable protection at the crossroads.',
+  'Гружёные повозки остановились перед опасным участком.': 'Loaded wagons have stopped before a dangerous stretch.',
+  'Караван не двинется дальше без вашей помощи.': 'The caravan will not move on without your help.',
+
   'Последствия голода': 'Starvation Consequences',
   'ПРИПАСЫ ЗАКОНЧИЛИСЬ': 'OUT OF SUPPLIES',
   'ГОЛОД': 'STARVATION',

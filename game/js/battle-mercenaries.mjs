@@ -134,13 +134,17 @@ function paymentParts(charged) {
   return pieces;
 }
 
+let refreshPaymentToast = () => {};
 function paymentToast(charged) {
   if(!charged?.contract)return;
   const root=document.createElement('div');
   root.className='battle-toast';
-  const payment=paymentParts(charged).join(' + ')||t('battle.mercenary.payment.none');
-  root.textContent=t(charged.contract.casualtyDebt?'battle.mercenary.payment.debt':'battle.mercenary.payment.paid',{payment});
-  document.body.append(root);setTimeout(()=>root.remove(),4200);
+  const renderCopy=()=>{
+    const payment=paymentParts(charged).join(' + ')||t('battle.mercenary.payment.none');
+    root.textContent=t(charged.contract.casualtyDebt?'battle.mercenary.payment.debt':'battle.mercenary.payment.paid',{payment});
+  };
+  refreshPaymentToast=renderCopy;renderCopy();
+  document.body.append(root);setTimeout(()=>{root.remove();if(refreshPaymentToast===renderCopy)refreshPaymentToast=()=>{};},4200);
 }
 
 // Battle owner copy contract: Замена оставленного в резерве здорового героя стоит как его лечение.
@@ -207,6 +211,7 @@ if (typeof document !== 'undefined') {
   globalThis.addEventListener?.('rpchess:battle-open', () => setTimeout(renderBattlePrepQuote, 0));
   globalThis.addEventListener?.('rpchess:caravan-open', () => setTimeout(renderBattlePrepQuote, 0));
   subscribe(renderBattlePrepQuote);
+  subscribe(()=>refreshPaymentToast());
 }
 
 globalThis.RPChessBattleMercenaries = Object.freeze({

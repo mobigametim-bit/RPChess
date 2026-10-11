@@ -9,10 +9,11 @@ async function fresh(page){
   await page.evaluate(k=>localStorage.removeItem(k),RUN_KEY);
   await page.reload({waitUntil:'networkidle'});
   await startNewRun(page);
-  await page.evaluate(k=>{
+  await page.evaluate(async k=>{
+    const {createTravelChoices}=await import('./js/travel-choice-core.mjs');
     const r=JSON.parse(localStorage.getItem(k));
     r.id='roster-browser';
-    r.currentTravelChoices=null;
+    r.currentTravelChoices=createTravelChoices({runId:r.id,types:['skirmish']});
     r.activeTravelChoice=null;
     localStorage.setItem(k,JSON.stringify(r));
     dispatchEvent(new CustomEvent('rpchess:run-updated'));
@@ -47,7 +48,7 @@ async function assertOneScreen(page,label){
     await page.locator('[data-roster-travel]').click();
     await waitForVisible(page,'[data-travel-choice-screen]:not([hidden])','Travel Choice');
     assert.strictEqual(await page.locator('[data-travel-choice]').count(),3);
-    assert((await page.locator('[data-travel-type="skirmish"]').count())>=1,'seeded regression fork needs Skirmish');
+    assert((await page.locator('[data-travel-type="skirmish"]').count())>=1,'explicit Skirmish route fixture must be available');
     await page.locator('[data-travel-type="skirmish"]').first().click();
     await waitForVisible(page,'[data-skirmish-screen]:not([hidden])','Skirmish prep');
     assert.strictEqual((await page.locator('[data-skirmish-piece-count]').innerText()).trim(),'6 / 16');

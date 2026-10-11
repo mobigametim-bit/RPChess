@@ -50,6 +50,7 @@ function route(id) {
     await page.locator('[data-travel-type="battle"]').first().click();
     await page.locator('[data-battle-screen]:not([hidden])').waitFor();
     await page.locator('[data-battle-start]').click();
+    await page.locator('[data-artifact-choice="none"]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
 
     await page.evaluate((fen) => {

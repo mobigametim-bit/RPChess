@@ -9,8 +9,8 @@ import { platform } from './platform.mjs';
 import { ARENA_KEY, SHARD_ICON, PIECE_CODE, OPPONENTS, OPPONENT_BY_ID, SQUAD_PRICES, ARTIFACT_PRICES, emptyArena, normalizeArena, arenaSummary, newMatch, chooseArtifact, finishMatch, claimDouble, purchaseSquad } from './arena-core.mjs';
 
 const copy = {
-  ru:{title:'Арена',back:'Главное меню',shards:'Осколки чести',squads:'Ваш отряд',enemies:'Соперники',section:'Раздел',power:'Мощь',wins:'Побед',losses:'Поражений',draws:'Ничьих',fight:'В бой!',locked:'Победите предыдущего соперника',buy:'Купить',select:'Выбрать',owned:'Выбран',resume:'Продолжить бой',offer:'Выберите артефакт',offerKicker:'ПЕРЕД СРАЖЕНИЕМ',offerText:'Выберите один артефакт на эту партию',none:'Без артефакта',noneText:'Начать бой без дополнительного эффекта.',insufficient:'Недостаточно осколков чести',victory:'Победа!',defeat:'Поражение',draw:'Ничья',continue:'Продолжить',again:'Сыграть ещё',rivals:'К соперникам',double:'Реклама: награда ×2',adError:'Реклама не завершена. Основная награда сохранена.',move:'Ваш ход',thinking:'Противник думает…',promotion:'Превращение пешки',result:'Партия завершена',drawText:'Следующий противник открывается за победу.',defeatText:'Можно попробовать снова.',opponent:'Соперник',squad:'Отряд',party:'Битва',white:'Белые',black:'Чёрные',journal:'ЖУРНАЛ БОЯ',moves:'Ходы',noMoves:'Ходов пока нет',check:'Шах!'},
-  en:{title:'Arena',back:'Main menu',shards:'Honor shards',squads:'Your squad',enemies:'Opponents',section:'Section',power:'Power',wins:'Wins',losses:'Losses',draws:'Draws',fight:'Fight!',locked:'Defeat the previous opponent',buy:'Buy',select:'Select',owned:'Selected',resume:'Resume match',offer:'Choose an artifact',offerKicker:'BEFORE BATTLE',offerText:'Choose one artifact for this match',none:'No artifact',noneText:'Start the match without an additional effect.',insufficient:'Not enough honor shards',victory:'Victory!',defeat:'Defeat',draw:'Draw',continue:'Continue',again:'Play again',rivals:'Opponents',double:'Watch ad: reward ×2',adError:'Ad was not completed. Your base reward is safe.',move:'Your move',thinking:'Opponent is thinking…',promotion:'Promote pawn',result:'Match complete',drawText:'Win to unlock the next opponent.',defeatText:'You can try again.',opponent:'Opponent',squad:'Squad',party:'Battle',white:'White',black:'Black',journal:'BATTLE LOG',moves:'Moves',noMoves:'No moves yet',check:'Check!'}
+  ru:{foesAria:'Соперники: горизонтальная карусель',restoreError:'Не удалось восстановить сохранённую партию',engineUnavailable:'Шахматный движок недоступен',title:'Арена',back:'Главное меню',shards:'Осколки чести',squads:'Ваш отряд',enemies:'Соперники',section:'Раздел',power:'Мощь',wins:'Побед',losses:'Поражений',draws:'Ничьих',fight:'В бой!',locked:'Победите предыдущего соперника',buy:'Купить',select:'Выбрать',owned:'Выбран',resume:'Продолжить бой',offer:'Выберите артефакт',offerKicker:'ПЕРЕД СРАЖЕНИЕМ',offerText:'Выберите один артефакт на эту партию',none:'Без артефакта',noneText:'Начать бой без дополнительного эффекта.',insufficient:'Недостаточно осколков чести',victory:'Победа!',defeat:'Поражение',draw:'Ничья',continue:'Продолжить',again:'Сыграть ещё',rivals:'К соперникам',double:'Реклама: награда ×2',adError:'Реклама не завершена. Основная награда сохранена.',move:'Ваш ход',thinking:'Противник думает…',promotion:'Превращение пешки',result:'Партия завершена',drawText:'Следующий противник открывается за победу.',defeatText:'Можно попробовать снова.',opponent:'Соперник',squad:'Отряд',party:'Битва',white:'Белые',black:'Чёрные',journal:'ЖУРНАЛ БОЯ',moves:'Ходы',noMoves:'Ходов пока нет',check:'Шах!'},
+  en:{foesAria:'Opponents: horizontal carousel',restoreError:'Cannot restore the saved match',engineUnavailable:'Engine is unavailable',title:'Arena',back:'Main menu',shards:'Honor shards',squads:'Your squad',enemies:'Opponents',section:'Section',power:'Power',wins:'Wins',losses:'Losses',draws:'Draws',fight:'Fight!',locked:'Defeat the previous opponent',buy:'Buy',select:'Select',owned:'Selected',resume:'Resume match',offer:'Choose an artifact',offerKicker:'BEFORE BATTLE',offerText:'Choose one artifact for this match',none:'No artifact',noneText:'Start the match without an additional effect.',insufficient:'Not enough honor shards',victory:'Victory!',defeat:'Defeat',draw:'Draw',continue:'Continue',again:'Play again',rivals:'Opponents',double:'Watch ad: reward ×2',adError:'Ad was not completed. Your base reward is safe.',move:'Your move',thinking:'Opponent is thinking…',promotion:'Promote pawn',result:'Match complete',drawText:'Win to unlock the next opponent.',defeatText:'You can try again.',opponent:'Opponent',squad:'Squad',party:'Battle',white:'White',black:'Black',journal:'BATTLE LOG',moves:'Moves',noMoves:'No moves yet',check:'Check!'}
 };
 const types = {ru:{pawn:'Пешка',knight:'Конь',bishop:'Слон',rook:'Ладья',queen:'Ферзь',king:'Король'},en:{pawn:'Pawn',knight:'Knight',bishop:'Bishop',rook:'Rook',queen:'Queen',king:'King'}};
 const raceEn = ['Humans','Elves','Orcs','Undead','Dark elves','Dwarves','Demons','Angels','Dragonborn','Beastfolk','Constructs','Animals','Fae','Goblins'];
@@ -64,7 +64,7 @@ function renderCatalog(){
   root.querySelector('[data-arena-squad-label]').textContent=l('squads');
   root.querySelector('[data-arena-enemy-label]').textContent=l('enemies');
   root.querySelector('[data-arena-section]').textContent=l('section')+' '+(section+1)+' / 12';
-  const foes=root.querySelector('[data-arena-foes]');foes.replaceChildren();
+  const foes=root.querySelector('[data-arena-foes]');foes.setAttribute('aria-label',l('foesAria'));foes.replaceChildren();
   for(const foe of OPPONENTS){
     const unlocked=foe.index<=stats.highest,card=document.createElement('button');
     card.type='button';card.className='arena-foe'+(foe.index%7===0?' arena-foe--section-start':'')+(unlocked?'':' is-locked');card.dataset.arenaFoe=foe.id;
@@ -75,7 +75,7 @@ function renderCatalog(){
   foes.scrollLeft=foes.children[section*7]?.offsetLeft-foes.children[0]?.offsetLeft||0;
   const resume=root.querySelector('[data-arena-resume]');
   resume.hidden=!state.match;resume.textContent=l('resume')+(state.match?' · '+l('power')+': '+OPPONENT_BY_ID.get(state.match.foe).elo:'');
-  root.querySelector('[data-arena-notice]').textContent=notice;
+  root.querySelector('[data-arena-notice]').textContent=notice?l(notice):'';
 }
 function renderBoard(){
   const area=root.querySelector('[data-arena-battle]');
@@ -224,7 +224,7 @@ function renderDialog(){
     const icon=win?img(SHARD_ICON,'arena-result-icon',''):loss?img('assets/arena/defeat_crown.png','arena-result-icon',''):'<span class="arena-result-icon">½</span>';
     const ad=win && platform.storage.cloud.available && !claimed?button('double',l('double'),' '+(adBusy?'disabled':'')):'';
     const message=win?('+'+match.reward+(claimed?' ×2':'')+' '+l('shards')):loss?l('defeatText'):l('drawText');
-    openDialog('result','<h2>'+l(win?'victory':loss?'defeat':'draw')+'</h2>'+icon+'<p>'+message+'</p><p class="arena-notice" role="status">'+escape(notice)+'</p><div class="arena-result-actions">'+ad+button('continue',l('continue'),adBusy?'disabled':'')+(loss?button('again',l('again')):'')+'</div>');
+    openDialog('result','<h2>'+l(win?'victory':loss?'defeat':'draw')+'</h2>'+icon+'<p>'+message+'</p><p class="arena-notice" role="status">'+escape(notice?l(notice):'')+'</p><div class="arena-result-actions">'+ad+button('continue',l('continue'),adBusy?'disabled':'')+(loss?button('again',l('again')):'')+'</div>');
   }else if(dialogType==='promotion'){
     openDialog('promotion','<h2>'+l('promotion')+'</h2><div class="arena-promotions">'+['q','r','b','n'].map(type=>button('promote',glyphs[state.match.playerColor][type],'data-promotion="'+type+'"')).join('')+'</div>');
   }
@@ -235,7 +235,7 @@ function restoreMatch(){
   const next=new ClassicChessEngine();
   for(const uci of state.match.moves){
     if(!next.move(uci.slice(0,2),uci.slice(2,4),uci.slice(4)||null).ok){
-      notice='Cannot restore the saved match';save({...state,match:null,updatedAt:Date.now()});return;
+      notice='restoreError';save({...state,match:null,updatedAt:Date.now()});return;
     }
   }
   engine=next;selected=null;thinking=false;
@@ -279,7 +279,7 @@ async function aiTurn(){
   if(remaining)await new Promise(resolve=>setTimeout(resolve,remaining));
   if(stamp!==searchId||!engine||state.match?.phase!=='playing')return;
   thinking=false;
-  if(!uci){notice='Engine is unavailable';render();return;}
+  if(!uci){notice='engineUnavailable';render();return;}
   commit(uci.slice(0,2),uci.slice(2,4),uci.slice(4)||null);
 }
 function enter(){state=read();engine=null;selected=null;section=Math.floor((OPPONENT_BY_ID.get(state.match?.foe)?.index??arenaSummary(state).highest)/7);notice='';visible(true);if(state.match?.phase==='result')dialogType='result';else if(state.match?.phase==='offer')dialogType='offer';else restoreMatch();render();}
@@ -293,9 +293,9 @@ root?.addEventListener('click',event=>{
     const race=target.dataset.arenaSquad,summary=arenaSummary(state);
     let next=state;
     if(!summary.owned.has(race)){
-      if(summary.balance<SQUAD_PRICES[race]){notice=l('insufficient');render();return;}
+      if(summary.balance<SQUAD_PRICES[race]){notice='insufficient';render();return;}
       next=purchaseSquad(state,race,id());
-      if(!arenaSummary(next).owned.has(race)){notice=l('insufficient');render();return;}
+      if(!arenaSummary(next).owned.has(race)){notice='insufficient';render();return;}
     }
     save({...next,squad:race,updatedAt:Date.now()});return;
   }
@@ -320,7 +320,7 @@ dialog?.addEventListener('click',async event=>{
     save(next);dialogType='offer';renderDialog();
   }else if(action==='artifact'){
     const artifactId=target.dataset.artifact==='none'?null:target.dataset.artifact,next=chooseArtifact(state,artifactId);
-    if(next===state){notice=l('insufficient');render();return;}
+    if(next===state){notice='insufficient';render();return;}
     save(next);startBattle();
   }else if(action==='promote'&&promotion){commit(promotion.from,promotion.to,target.dataset.promotion);}
   else if(action==='continue'){
@@ -338,8 +338,8 @@ dialog?.addEventListener('click',async event=>{
     try{
       const result=await platform.ads.show('reward');
       if(result.status==='completed'&&state.match?.id===matchId&&state.match.phase==='result')save(claimDouble(state));
-      else notice=l('adError');
-    }catch{notice=l('adError');}
+      else notice='adError';
+    }catch{notice='adError';}
     finally{adBusy=false;render();}
   }
 });

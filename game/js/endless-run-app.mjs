@@ -29,6 +29,7 @@ function ensureCss() {
 function renderStaticCopy() {
   if (!screen) return;
   screen.setAttribute('aria-label', t('endless.ariaLabel'));
+  screen.querySelector('.endless-run-panel')?.setAttribute('aria-label', t('endless.metricsAria'));
   const kicker = screen.querySelector('.reboot-eyebrow');
   const title = screen.querySelector('h1');
   const metrics = screen.querySelector('.endless-run-metrics');
@@ -69,7 +70,7 @@ function ensureScreen() {
           <button class="reboot-button reboot-button--primary" type="button" data-endless-run-menu></button>
         </div>
       </aside>
-      <section class="endless-run-panel" aria-label="Статистика забега">
+      <section class="endless-run-panel">
         <img class="endless-run-flag-art" src="assets/ui/royal_run_flag.png" alt="" aria-hidden="true">
         <div class="endless-run-flag-content">
           <h1></h1>

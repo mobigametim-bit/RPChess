@@ -92,7 +92,7 @@ function ensureScreen() {
           <div class="puzzle-attempts" data-puzzle-attempts aria-label="${t('puzzle.attemptsAria')}"></div>
           <div class="puzzle-reward">
             <span data-puzzle-reward-perfect>${t('puzzle.rewardPerfect')}</span>
-            <strong data-puzzle-base-reward>12 Gold</strong>
+            <strong data-puzzle-base-reward></strong>
             <p data-puzzle-current-reward>${t('puzzle.rewardCurrent',{reward:12})}</p>
           </div>
           <div class="puzzle-polish-reward" data-puzzle-compact-reward aria-hidden="true">
@@ -197,7 +197,7 @@ function renderMeta() {
   screen.querySelector('[data-puzzle-compact-objective-label]').textContent = objective;
   screen.querySelector('[data-puzzle-compact-stars]').textContent = stars;
   screen.querySelector('[data-puzzle-instruction]').textContent = instructionText(puzzle);
-  screen.querySelector('[data-puzzle-base-reward]').textContent = `${baseReward} Gold`;
+  screen.querySelector('[data-puzzle-base-reward]').textContent = `${baseReward} ${t('resources.goldDelta')}`;
   screen.querySelector('[data-puzzle-current-reward]').textContent = t('puzzle.rewardCurrent',{reward:currentReward});
   screen.querySelector('[data-puzzle-compact-reward-value]').textContent = String(currentReward);
 
@@ -217,7 +217,7 @@ function renderMeta() {
   screen.querySelector('[data-puzzle-outcome-text]').textContent = state.result === 'solved'
     ? t('puzzle.outcome.solvedText',{errors:state.errors})
     : t('puzzle.outcome.failedText');
-  screen.querySelector('[data-puzzle-outcome-gold]').textContent = state.goldReward > 0 ? `+${state.goldReward} Gold` : '0 Gold';
+  screen.querySelector('[data-puzzle-outcome-gold]').textContent = `${state.goldReward > 0 ? '+' : ''}${state.goldReward} ${t('resources.goldDelta')}`;
 }
 
 function renderBoard() {
@@ -440,7 +440,7 @@ function settleReward() {
   });
   state = stateWithReceipt;
   globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
-  if (reward > 0) globalThis.RPChessResources?.showChange?.({ goldDelta: reward, label: t('puzzle.change.reward') });
+  if (reward > 0) globalThis.RPChessResources?.showChange?.({ goldDelta: reward, labelKey: 'puzzle.change.reward' });
 }
 
 function finishSolved() {
