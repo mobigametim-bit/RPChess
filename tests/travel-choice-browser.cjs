@@ -102,7 +102,7 @@ async function assertRouteLoopStability(page, travel) {
   assert.strictEqual(after.probe.eventCounts.runUpdated - baseline.probe.eventCounts.runUpdated, 12, 'the 12 explicit no-op run updates must not trigger hidden producer loops');
 }
 
-async function fresh(page, runId = 'all_event-18') {
+async function fresh(page, runId = 'all_puzzle-71') {
   await page.goto(url, { waitUntil:'networkidle' });
   await page.evaluate((key) => localStorage.removeItem(key), RUN_KEY);
   await page.reload({ waitUntil:'networkidle' });
@@ -217,7 +217,7 @@ async function assertDecoratedBackdrops(page, label) {
     const copy = await travel.innerText();
     for (const removed of ['Исход неизвестен','3–5 решений','Выбрать путь','Каждая карточка выбирается независимо','Куда двигаться дальше?','Шаг путешествия']) assert(!copy.includes(removed), `removed Travel copy leaked: ${removed}`);
     const types = await page.locator('[data-travel-choice]').evaluateAll((nodes) => nodes.map((node) => node.dataset.travelType));
-    assert.deepStrictEqual(types, ['puzzle','puzzle','puzzle'], 'known five-type seed proves duplicate Puzzle cards are allowed');
+    assert.deepStrictEqual(types, ['puzzle','puzzle','puzzle'], 'known six-type seed proves duplicate Puzzle cards are allowed');
     assert.strictEqual(await page.locator('[data-travel-type="puzzle"]').count(), 3);
     assert((await travel.innerText()).includes('Тренировка'), 'Puzzle route must expose the semantic Training label in DOM text');
     assert((await travel.innerText()).includes('СЛОЖНОСТЬ'));
@@ -245,7 +245,7 @@ async function assertDecoratedBackdrops(page, label) {
     const committed = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
     assert.strictEqual(committed.journeyStep, 1);
     assert.strictEqual(committed.activeTravelChoice.type, 'puzzle');
-    assert.strictEqual(committed.activeTravelChoice.stars, 1);
+    assert.strictEqual(committed.activeTravelChoice.stars, first[0].stars);
     assert.strictEqual(committed.supplies, 9);
     assert(committed.currentPuzzle?.puzzleId);
 
