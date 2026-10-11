@@ -1,0 +1,99 @@
+name: Publish accepted fixes PR 155 (one time)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/publish-accepted-155.yml'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages-release-155
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.event.head_commit.message == 'Publish accepted RPChess fixes (PR 155)'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Restore runtime asset cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run canonical gate and build
+        run: npm run gate:local
+
+      - name: Check Pages artifact size
+        run: |
+          bytes=$(du -sb dist | cut -f1)
+          mib=$((bytes / 1024 / 1024))
+          echo "dist size: ${mib} MiB (${bytes} bytes)"
+          test "$bytes" -lt 1000000000
+
+      - name: Install Playwright and Chromium
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+
+      - name: Verify GitHub Pages /RPChess/ subpath
+        env:
+          RPCHESS_GATE_PREFIX: /RPChess
+          RPCHESS_BROWSER_TEST: chronicle-localization-browser.cjs,localization-ui-browser.cjs,classic-chess-browser.cjs,arena-browser.cjs,piercing-vision-browser.cjs,fork-master-browser.cjs,cloud-continue-browser.cjs,responsive-viewport-browser.cjs,onboarding-browser.cjs,settlement-browser.cjs,skirmish-mobile-browser.cjs,caravan-browser.cjs,caravan-reward-viewport-browser.cjs,combat-menu-browser.cjs,combat-resume-browser.cjs
+          RPCHESS_VK_MENU_SCREENSHOT_DIR: test-results/vk-menu
+          RPCHESS_FLAG_SCREENSHOT_DIR: test-results/flag-ui
+        run: npm run test:browser
+
+      - name: Upload menu and run-summary screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flag-ui-${{ github.sha }}
+          path: |
+            test-results/vk-menu
+            test-results/flag-ui
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Configure Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./dist
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
