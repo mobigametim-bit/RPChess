@@ -124,6 +124,7 @@ function assertAuraAssets(responses){
     await fresh(battle,'battle','b','constructs');
     assertPrep(await prepState(battle,'battle'),'b');
     await battle.locator('[data-battle-start]').click();
+    await battle.locator('[data-artifact-choice="none"]').click();
     await battle.locator('[data-classic-screen]:not([hidden])').waitFor();
     await battle.waitForTimeout(60);
     assertAuras(await combatAuraState(battle));
@@ -140,6 +141,7 @@ function assertAuraAssets(responses){
     await fresh(skirmish,'skirmish','w','demons');
     assertPrep(await prepState(skirmish,'skirmish'),'w');
     await skirmish.locator('[data-skirmish-start]').click();
+    await skirmish.locator('[data-artifact-choice="none"]').click();
     await skirmish.locator('[data-classic-screen]:not([hidden])').waitFor();
     await skirmish.waitForTimeout(60);
     assertAuras(await combatAuraState(skirmish));

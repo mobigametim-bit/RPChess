@@ -98,6 +98,7 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     assert.strictEqual(await page.locator('[data-battle-start]').isVisible(), true);
     assert.strictEqual(await page.locator('[data-battle-start]').evaluate((node) => node.parentElement?.classList.contains('battle-army')), true, 'Battle Start CTA must be owner-rendered in the army panel');
     await page.locator('[data-battle-start]').click();
+    await page.locator('[data-artifact-choice="none"]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     const state = await page.evaluate(() => ({ fen: globalThis.RPChessClassicChess.snapshot().fen, plan: globalThis.RPChessBattle.battlePlan }));
     assert.strictEqual(state.fen, state.plan.fen);
@@ -130,6 +131,7 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     await enter(black);
     assert((await black.locator('[data-battle-description]').innerText()).includes('оборону'));
     await black.locator('[data-battle-start]').click();
+    await black.locator('[data-artifact-choice="none"]').click();
     await black.locator('[data-classic-screen]:not([hidden])').waitFor();
     const blackPlan = await black.evaluate(() => globalThis.RPChessBattle.battlePlan);
     assert.strictEqual(blackPlan.playerColor, 'b');
@@ -155,6 +157,7 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     assert.strictEqual(await wounded.locator('[data-battle-participant="king.oathkeeper"]').count(), 1);
     assert.strictEqual(await wounded.locator('[data-battle-start]').isDisabled(), false);
     await wounded.locator('[data-battle-start]').click();
+    await wounded.locator('[data-artifact-choice="none"]').click();
     await wounded.locator('[data-classic-screen]:not([hidden])').waitFor();
 
     const mobile = await browser.newPage({ viewport: { width: 844, height: 390 } });
