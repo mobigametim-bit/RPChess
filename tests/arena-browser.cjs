@@ -33,18 +33,20 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert.strictEqual(await page.locator('[data-arena-squad="orcs"] .arena-squad-price').count(),0,'third squad is owned after purchase');
     await page.evaluate(()=>window.RPChessArena.enter());
     assert.strictEqual(await page.locator('[data-arena-squad="orcs"] .arena-squad-price').count(),0,'purchase survives reloading Arena state');
-    for(const [race,price] of [['undead',200],['dark_elves',240]]){
-      await page.evaluate(()=>{
+    const prices=await page.evaluate(async()=>Object.entries((await import('./js/arena-core.mjs')).SQUAD_PRICES).filter(([,price])=>price>0));
+    assert.strictEqual(prices.length,13);
+    for(const [race,price] of prices){
+      await page.evaluate(price=>{
         const now=Date.now();
         localStorage.setItem('rpchess.reboot.v1.arena',JSON.stringify({version:1,squad:'humans',match:null,updatedAt:now,events:[
-          {id:'browser:ad-funded:win',kind:'win',foe:'pawn:humans',amount:150,at:now-2000},
-          {id:'browser:ad-funded:ad',kind:'ad',foe:'pawn:humans',amount:105,at:now-1000}
+          {id:'browser:ad-funded:win',kind:'win',foe:'pawn:humans',amount:Math.ceil(price/2),at:now-2000},
+          {id:'browser:ad-funded:ad',kind:'ad',foe:'pawn:humans',amount:Math.floor(price/2),at:now-1000}
         ]}));
         window.RPChessArena.enter();
-      });
+      },price);
       await page.locator(`[data-arena-squad="${race}"]`).click();
       assert.strictEqual(await page.locator(`[data-arena-squad="${race}"] .arena-squad-price`).count(),0,'ad-funded squad becomes owned');
-      assert((await page.locator('[data-arena-shards]').innerText()).includes(String(255-price)),'ad-funded squad cost is deducted');
+      assert((await page.locator('[data-arena-shards]').innerText()).includes('0 ·'),'ad-funded squad cost is deducted');
       assert.strictEqual(await page.locator('[data-arena-notice]').innerText(),'','no false insufficient-shards notice');
       await page.reload({waitUntil:'networkidle'});
       await page.locator('[data-arena-open]').click();

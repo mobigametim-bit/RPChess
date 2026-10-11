@@ -32,7 +32,10 @@ class MemoryStorage {
   const referenceKeys = Object.keys(UI_MESSAGES.ru).sort();
   for (const language of LANGUAGES) {
     assert.deepStrictEqual(Object.keys(UI_MESSAGES[language.code]).sort(), referenceKeys, `${language.code} keys must match RU`);
-    for (const key of referenceKeys) assert(String(UI_MESSAGES[language.code][key]).trim(), `${language.code}.${key} must not be empty`);
+    for (const key of referenceKeys) {
+      assert(String(UI_MESSAGES[language.code][key]).trim(), `${language.code}.${key} must not be empty`);
+      if (language.code === 'en') assert(!/[А-Яа-яЁё]|\[missing:/u.test(UI_MESSAGES.en[key]), `en.${key} must be fully translated`);
+    }
   }
 
   const eventLocalizationDir = path.join(root, 'game/localization/events');

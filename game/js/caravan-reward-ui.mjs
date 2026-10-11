@@ -1,7 +1,10 @@
 import { artifactById } from './artifact-core.mjs';
 import { recruitProfile } from './settlement-core.mjs';
 import { PIECE_GLYPHS } from './roster-data.mjs';
-import { t, translateLegacy } from './i18n.mjs';
+import { t, translateLegacy, subscribe } from './i18n.mjs';
+
+let refreshCaravanRewards = () => {};
+subscribe(() => refreshCaravanRewards());
 
 export function caravanRewardText(reward, run) {
   const hero = recruitProfile(reward.heroId) || run.roster.find(c => c.id === reward.heroId);
@@ -21,12 +24,21 @@ export function showCaravanRewards(run, onChoose) {
   const cards=document.createElement('div');cards.className='caravan-reward-grid';
   const error=document.createElement('p');error.hidden=true;error.setAttribute('role','alert');
   let busy=false;
+  const names=[];
+  const renderCopy=()=>{
+    if(!modal.isConnected)return;
+    title.textContent=t('caravan.rewardTitle');hint.textContent=t('caravan.rewardHint');
+    for(const [name,reward]of names)name.textContent=caravanRewardText(reward,run);
+    if(!error.hidden)error.textContent=t('caravan.rewardFailed');
+  };
+  refreshCaravanRewards=renderCopy;
   for(const reward of run.currentCaravan.offers){
     const button=document.createElement('button');button.type='button';button.className='caravan-reward-card';button.dataset.caravanReward=reward.id;
     const image=document.createElement('img');image.alt='';
     const hero=recruitProfile(reward.heroId)||run.roster.find(c=>c.id===reward.heroId);
     image.src=reward.kind==='gold'?'generated_assets/reward_gold.png':reward.kind==='supplies'?'generated_assets/reward_supplies.png':reward.kind==='artifact'?artifactById(reward.artifactId).icon:hero.portrait;
     const name=document.createElement('strong');name.textContent=caravanRewardText(reward,run);
+    names.push([name,reward]);
     if ((reward.kind==='healing'||reward.kind==='hero') && hero) {
       const portrait=document.createElement('span');portrait.className='caravan-reward-card__portrait';
       const glyph=document.createElement('span');glyph.className='caravan-reward-card__glyph';
@@ -35,7 +47,7 @@ export function showCaravanRewards(run, onChoose) {
     } else button.append(image,name);
     button.addEventListener('click',()=>{
       if(busy)return;busy=true;for(const b of cards.querySelectorAll('button'))b.disabled=true;
-      try{if(!onChoose(reward.id))throw new Error('Reward rejected');modal.remove();document.querySelector('[data-battle-continue]')?.focus({preventScroll:true});}
+      try{if(!onChoose(reward.id))throw new Error('Reward rejected');modal.remove();if(refreshCaravanRewards===renderCopy)refreshCaravanRewards=()=>{};document.querySelector('[data-battle-continue]')?.focus({preventScroll:true});}
       catch(e){console.error('[RPChess] Caravan reward',e);busy=false;error.textContent=t('caravan.rewardFailed');error.hidden=false;for(const b of cards.querySelectorAll('button'))b.disabled=false;}
     });cards.append(button);
   }

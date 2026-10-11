@@ -8,6 +8,7 @@ const SUPPLIES_ICON='generated_assets/reward_supplies.png';
 let hud = null;
 let toast = null;
 let toastTimer = null;
+let toastChange = null;
 let settling = false;
 let renderQueued = false;
 let rewardRenderQueued = false;
@@ -71,15 +72,21 @@ function scheduleRender() {
   queueMicrotask(()=>{renderQueued=false;render();});
 }
 
-function showChange({ goldDelta = 0, suppliesDelta = 0, label = '' } = {}) {
-  const root = ensureToast();
+function renderToast() {
+  if (!toastChange || !toast || toast.hidden) return;
+  const { goldDelta = 0, suppliesDelta = 0, label = '', labelKey, labelParams = {} } = toastChange;
+  const params = Object.fromEntries(Object.entries(labelParams).map(([key,value]) => [key,typeof value === 'function' ? value() : value]));
   const parts = [];
   if (goldDelta) parts.push(`${goldDelta > 0 ? '+' : ''}${goldDelta} ${t('resources.goldDelta')}`);
   if (suppliesDelta) parts.push(`${suppliesDelta > 0 ? '+' : ''}${suppliesDelta} ${t('resources.suppliesDelta')}`);
-  root.textContent = [label, ...parts].filter(Boolean).join(' · ');
-  root.hidden = !root.textContent;
+  toast.textContent = [labelKey ? t(labelKey,params) : label, ...parts].filter(Boolean).join(' · ');
+  toast.hidden = !toast.textContent;
+}
+function showChange(change = {}) {
+  const root = ensureToast();
+  toastChange = change; root.hidden = false; renderToast();
   clearTimeout(toastTimer);
-  if (!root.hidden) toastTimer = setTimeout(() => { root.hidden = true; }, 2600);
+  if (!root.hidden) toastTimer = setTimeout(() => { root.hidden = true; toastChange = null; }, 2600);
 }
 
 function renderCombatReward(root, amount) {
@@ -175,7 +182,7 @@ function settleCombatRewards() {
 
     next.resourceRewards = nextRewarded;
     writeRun(next);
-    if (totalReward > 0) showChange({ goldDelta: totalReward, label: t('resources.combatReward') });
+    if (totalReward > 0) showChange({ goldDelta: totalReward, labelKey: 'resources.combatReward' });
     globalThis.dispatchEvent(new CustomEvent('rpchess:resources-updated', { detail: { source:'combat-reward', goldReward: totalReward } }));
     return true;
   } finally {
@@ -206,7 +213,7 @@ addEventListener('rpchess:run-new',scheduleRender);
 addEventListener('rpchess:run-updated',scheduleRender);
 for(const eventName of ['rpchess:travel-open','rpchess:skirmish-open','rpchess:battle-open','rpchess:settlement-open','rpchess:event-open','rpchess:starvation-open','rpchess:puzzle-open','rpchess:scene-changed'])addEventListener(eventName,scheduleRender);
 addEventListener('rpchess:resources-updated',()=>{scheduleRender();scheduleCombatRewardRender();});
-subscribe(()=>{scheduleRender();scheduleCombatRewardRender();});
+subscribe(()=>{scheduleRender();scheduleCombatRewardRender();renderToast();});
 render();
 
 globalThis.RPChessResources = Object.freeze({

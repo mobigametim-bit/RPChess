@@ -1,6 +1,6 @@
-import { PIECE_GLYPHS, PIECE_LABELS } from './roster-data.mjs';
+import { PIECE_GLYPHS } from './roster-data.mjs';
 import { readRun, writeRun } from './run-persistence.mjs';
-import { subscribe, t } from './i18n.mjs';
+import { subscribe, t, translateLegacy } from './i18n.mjs';
 import { brandLogoSrc } from './brand-logo.mjs';
 import { heroNoteForId } from './content/hero-notes.mjs';
 import {
@@ -25,6 +25,8 @@ let activeRun = null;
 let busy = false;
 
 function audio() { return globalThis.RPChessRebootAudio; }
+function contentText(value) { return translateLegacy(String(value ?? '')); }
+function pieceLabel(type) { return t(`piece.${type}`); }
 
 function ensureStylesheet(marker, href) {
   if (document.querySelector(`[${marker}]`)) return;
@@ -153,8 +155,8 @@ function renderHealer() {
     row.className = 'settlement-heal-row';
     const price = healCost(character);
     row.innerHTML = `
-      <img src="${character.portrait}" alt="${character.name}">
-      <div><strong>${character.name}</strong><span>${PIECE_GLYPHS[character.pieceType] || ''} ${PIECE_LABELS[character.pieceType] || character.pieceType}</span></div>
+      <img src="${character.portrait}" alt="${contentText(character.name)}">
+      <div><strong>${contentText(character.name)}</strong><span>${PIECE_GLYPHS[character.pieceType] || ''} ${pieceLabel(character.pieceType)}</span></div>
       <div class="settlement-heal-row__action">${goldMarkup(price)}<button class="reboot-button reboot-button--primary" type="button" data-settlement-heal="${character.id}" ${activeRun.gold < price ? 'disabled' : ''}>${t('settlement.healer.action')}</button></div>`;
     root.append(row);
   }
@@ -173,11 +175,11 @@ function renderRecruits() {
     card.className = `settlement-recruit${alreadyPresent ? ' is-hired' : ''}`;
     card.dataset.settlementRecruitCard = candidateId;
     card.innerHTML = `
-      <img class="settlement-recruit__portrait" src="${candidate.portrait}" alt="${candidate.name}">
+      <img class="settlement-recruit__portrait" src="${candidate.portrait}" alt="${contentText(candidate.name)}">
       <div class="settlement-recruit__body">
-        <div class="settlement-recruit__head"><strong>${candidate.name}</strong><span>${PIECE_GLYPHS[candidate.pieceType] || ''} ${PIECE_LABELS[candidate.pieceType] || candidate.pieceType}</span></div>
-        <small>${candidate.origin}</small>
-        <p>${heroNoteForId(candidate.id) || candidate.description}</p>
+        <div class="settlement-recruit__head"><strong>${contentText(candidate.name)}</strong><span>${PIECE_GLYPHS[candidate.pieceType] || ''} ${pieceLabel(candidate.pieceType)}</span></div>
+        <small>${contentText(candidate.origin)}</small>
+        <p>${contentText(heroNoteForId(candidate.id) || candidate.description)}</p>
         <div class="settlement-recruit__footer">${goldMarkup(price)}<button class="reboot-button reboot-button--primary" type="button" data-settlement-recruit="${candidate.id}" ${alreadyPresent || activeRun.gold < price ? 'disabled' : ''}>${alreadyPresent ? t('settlement.tavern.inRoster') : t('settlement.tavern.hire')}</button></div>
       </div>`;
     root.append(card);
@@ -234,16 +236,16 @@ function handleServiceAction(event) {
   let changed = false;
   if (healButton) {
     const result = applyHealing(activeRun, healButton.dataset.settlementHeal);
-    changed = persistResult(result, { goldDelta: -result.spent, label: result.success ? t('resources.healing') : '' });
+    changed = persistResult(result, { goldDelta: -result.spent, labelKey: result.success ? 'resources.healing' : '' });
   } else if (recruitButton) {
     const result = applyRecruitment(activeRun, recruitButton.dataset.settlementRecruit);
-    changed = persistResult(result, { goldDelta: -result.spent, label: result.success ? t('resources.newFighter') : '' });
+    changed = persistResult(result, { goldDelta: -result.spent, labelKey: result.success ? 'resources.newFighter' : '' });
   } else if (supplyButton) {
     const result = applySupplyPurchase(activeRun);
-    changed = persistResult(result, { goldDelta: -result.spent, suppliesDelta: result.suppliesAdded, label: result.success ? t('resources.supplyPurchase') : '' });
+    changed = persistResult(result, { goldDelta: -result.spent, suppliesDelta: result.suppliesAdded, labelKey: result.success ? 'resources.supplyPurchase' : '' });
   } else if (artifactButton) {
     const result = applyArtifactPurchase(activeRun);
-    changed = persistResult(result, { goldDelta: -result.spent, label: result.success ? t('artifacts.purchaseToast',{name:t(result.artifact.nameKey)}) : '' });
+    changed = persistResult(result, { goldDelta: -result.spent, labelKey: result.success ? 'artifacts.purchaseToast' : '', labelParams: {name: () => t(result.artifact.nameKey)} });
   }
   if (!changed) renderSettlement();
   busy = false;

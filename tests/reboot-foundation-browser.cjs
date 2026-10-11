@@ -64,7 +64,7 @@ async function desktopContract(browser) {
     await assertInsideViewport(language.locator('.reboot-modal__panel'), 'desktop Language frame');
     await language.locator('[data-language-option="en"]').click();
     await page.waitForFunction(() => document.documentElement.lang === 'en');
-    assert.strictEqual(await menu.locator('[data-new-game]').textContent(), 'New Game');
+    assert.strictEqual(await menu.locator('[data-new-game]').textContent(), 'New Journey');
     assert.strictEqual(await menu.locator('[data-settings]').textContent(), 'Settings');
     assert.strictEqual(await page.evaluate(() => performance.getEntriesByType('navigation').length), navigationCount, 'language switch must not reload');
     assert.strictEqual(await page.evaluate((key)=>localStorage.getItem(key), RUN_KEY), null, 'language switch must not create run state');

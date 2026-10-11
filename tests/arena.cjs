@@ -121,6 +121,25 @@ const { pathToFileURL } = require('url');
     assert.strictEqual(summary.balance,255-core.SQUAD_PRICES[race]);
     assert(core.arenaSummary(core.normalizeArena(JSON.parse(JSON.stringify(purchased)))).owned.has(race),'ad-funded purchase survives reload');
   }
+  const paidSquads=Object.entries(core.SQUAD_PRICES).filter(([,price])=>price>0);
+  assert.strictEqual(paidSquads.length,13);
+  const fundsFor=(amount,id)=>core.addEvent(core.addEvent(core.emptyArena(),{id:`${id}:win`,kind:'win',foe:foes[0].id,amount:Math.ceil(amount/2),at:1}),{id:`${id}:ad`,kind:'ad',foe:foes[0].id,amount:Math.floor(amount/2),at:2});
+  for(const [race,price]of paidSquads){
+    const funds=fundsFor(price,race);
+    const purchased=core.purchaseSquad(funds,race,`all:${race}`);
+    const summary=core.arenaSummary(purchased);
+    assert(summary.owned.has(race),`${race} is purchasable at its exact price, including ad shards`);
+    assert.strictEqual(summary.balance,0);
+    assert(core.arenaSummary(core.normalizeArena(JSON.parse(JSON.stringify(purchased)))).owned.has(race),`${race} persists`);
+    assert.strictEqual(core.purchaseSquad(purchased,race),purchased,`${race} cannot be charged twice`);
+    const short=fundsFor(price-1,`short:${race}`);
+    assert.strictEqual(core.purchaseSquad(short,race),short,`${race} requires its full price`);
+  }
+  let allPurchased=core.emptyArena();
+  for(const [race,price]of paidSquads)allPurchased=core.mergeArena(allPurchased,fundsFor(price,`sequence-funds:${race}`));
+  for(const [race]of [...paidSquads].reverse())allPurchased=core.purchaseSquad(allPurchased,race,`sequence:${race}`);
+  assert.strictEqual(core.arenaSummary(allPurchased).owned.size,14,'every squad can be bought in reverse order');
+  assert.strictEqual(core.arenaSummary(allPurchased).balance,0,'all squad costs charged exactly once');
   const artifactFunds=core.addEvent(core.addEvent(core.emptyArena(),{id:'artifact-funds:win',kind:'win',foe:foes[0].id,amount:4,at:1}),{id:'artifact-funds:ad',kind:'ad',foe:foes[0].id,amount:4,at:2});
   const adArtifact=core.chooseArtifact(core.newMatch(artifactFunds,foes[0].id,'ad-funds:match'),'threat.defense');
   assert(core.arenaSummary(adArtifact).accepted.has('ad-funds:match:artifact'),'artifact spending is accepted too');
