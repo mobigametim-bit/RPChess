@@ -389,12 +389,15 @@ Exact emoji may be adjusted for readability, but the v1 share text should use th
 
 - [x] RU share copy.
 - [x] EN share copy.
-- [x] Open VK wall publication through `VKWebAppShowWallPostBox`.
+- [x] 2026-10-14 VK support confirmed `VKWebAppShowWallPostBox` is obsolete for this app; Stories are the only recommended platform share surface.
+- [x] Use `VKWebAppShowStoryBox` with a locally generated 1080×1920 JPEG Base64 card and a `type:'url'` link back to the game.
+- [x] Preserve RU/EN copy and the original blue banner, logo, and metric icon assets in the image.
 - [x] Do **not** fall back to the private-message `VKWebAppShare` dialog.
-- [x] Final fallback: Copy Result / Copy Link.
-- [x] Share cancel/failure never breaks the final screen.
-- [x] v1 is text + link; generated image cards are deferred.
-- [ ] `[TOGETHER][BLOCKER]` Confirm that `VKWebAppShowWallPostBox` creates the post on the player's own wall after VK moderation. The 2026-09-16 pre-moderation Web smoke reached the correct VK wall method, but VK rejected it with «Приложению недоступно создание постов»; do not replace this with private-message sharing.
+- [x] Fallback when story editor is unavailable: trigger image download; if image rendering fails, copy the text.
+- [x] Share cancel/failure never breaks the final screen; do not claim publication based solely on a successful editor response.
+- [ ] `[OWNER ACCEPTANCE]` In the published VK client, verify the actual Story editor opens for App ID 54754579 and publishes the image (Web + Android/iOS as available). A browser mock is not proof that the VK host accepts stories or clickable links.
+- [ ] `[OWNER ACCEPTANCE]` Confirm that closing the editor does not falsely report a published story; VK Bridge may not respond when a Web story editor is closed (upstream issue VKCOM/vk-bridge#585).
+- [ ] `[OWNER ACCEPTANCE]` Check that the generated story's art, metrics, text safe areas and game-link attachment are readable on mobile.
 
 ## 9.4 Post-smoke owner corrections
 
