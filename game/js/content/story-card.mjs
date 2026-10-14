@@ -21,7 +21,7 @@ const ORDER = Object.freeze([
 ]);
 const COPY = Object.freeze({
   ru:{
-    heading:'ИТОГИ ПУТЕШЕСТВИЯ',
+    heading:'ЗАБЕГ ЗАВЕРШЁН',
     subheading:'Шахматное приключение',
     end:'Финал',
     callToAction:'ПРОВЕРЬ СВОИ СИЛЫ',
@@ -35,7 +35,7 @@ const COPY = Object.freeze({
     }
   },
   en:{
-    heading:'JOURNEY COMPLETE',
+    heading:'RUN COMPLETE',
     subheading:'A chess fantasy adventure',
     end:'The end',
     callToAction:'CAN YOU GO FURTHER?',
@@ -70,14 +70,6 @@ function contain(ctx, image, x, y, width, height) {
   const w = image.naturalWidth * scale, h = image.naturalHeight * scale;
   ctx.drawImage(image, x + (width - w) / 2, y + (height - h) / 2, w, h);
 }
-function rounded(ctx, x, y, width, height, radius) {
-  const r = Math.min(radius, width/2, height/2);
-  ctx.beginPath();
-  ctx.moveTo(x+r,y);ctx.lineTo(x+width-r,y);ctx.quadraticCurveTo(x+width,y,x+width,y+r);
-  ctx.lineTo(x+width,y+height-r);ctx.quadraticCurveTo(x+width,y+height,x+width-r,y+height);
-  ctx.lineTo(x+r,y+height);ctx.quadraticCurveTo(x,y+height,x,y+height-r);
-  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
-}
 function fitText(ctx, value, maxWidth) {
   let text = String(value || '');
   if (ctx.measureText(text).width <= maxWidth) return text;
@@ -88,18 +80,33 @@ function centered(ctx, value, x, y, maxWidth) {
   ctx.textAlign = 'center';
   ctx.fillText(fitText(ctx,value,maxWidth),x,y);
 }
+function wrappedCentered(ctx, value, x, firstY, maxWidth, lineHeight, maxLines = 2) {
+  const words = String(value || '').trim().split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = '';
+  for (const word of words) {
+    const candidate = line ? line + ' ' + word : word;
+    if (line && ctx.measureText(candidate).width > maxWidth) {
+      lines.push(line);
+      line = word;
+    } else line = candidate;
+  }
+  if (line) lines.push(line);
+  lines.slice(0,maxLines).forEach((part,i) =>
+    centered(ctx,i===maxLines-1 && lines.length>maxLines ? part+'…' : part,x,firstY+i*lineHeight,maxWidth));
+}
 function metric(ctx, title, value, icon, x, y, width) {
-  ctx.strokeStyle = 'rgba(234,186,104,.48)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();ctx.moveTo(x,y+118);ctx.lineTo(x+width,y+118);ctx.stroke();
-  if (icon) contain(ctx,icon,x,y+6,66,70);
+  ctx.strokeStyle = 'rgba(226,179,87,.52)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();ctx.moveTo(x,y+111);ctx.lineTo(x+width,y+111);ctx.stroke();
+  if (icon) contain(ctx,icon,x+2,y+14,43,47);
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#f1d49a';
-  ctx.font = 'bold 23px Georgia,serif';
-  ctx.fillText(fitText(ctx,title,width-76),x+76,y+35);
-  ctx.font = 'bold 51px Georgia,serif';
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText(String(value ?? 0),x+76,y+95);
+  ctx.fillStyle = '#ffe3a8';
+  ctx.font = 'bold 18px Georgia,serif';
+  ctx.fillText(fitText(ctx,title,width-51),x+51,y+40);
+  ctx.font = 'bold 40px Georgia,serif';
+  ctx.fillStyle = '#fff6dc';
+  ctx.fillText(String(value ?? 0),x+51,y+88);
 }
 
 /**
@@ -131,44 +138,60 @@ async function renderRunStory(run, { power = 0, language = 'ru', endReason = '' 
   shade.addColorStop(1,'rgba(3,7,17,.94)');
   ctx.fillStyle=shade;ctx.fillRect(0,0,STORY_WIDTH,STORY_HEIGHT);
 
-  ctx.save();ctx.globalAlpha=.80;
-  contain(ctx,flag,43,440,994,1258);
-  ctx.restore();
-  const cloth = ctx.createLinearGradient(0,580,0,1720);
-  cloth.addColorStop(0,'rgba(11,49,102,.92)');
-  cloth.addColorStop(.5,'rgba(8,46,109,.94)');
-  cloth.addColorStop(1,'rgba(4,26,70,.94)');
-  ctx.fillStyle=cloth;rounded(ctx,143,554,794,1112,24);ctx.fill();
-  ctx.lineWidth=5;ctx.strokeStyle='#c79c52';ctx.stroke();
-  ctx.lineWidth=1;ctx.strokeStyle='rgba(255,221,146,.7)';
-  rounded(ctx,155,566,770,1088,18);ctx.stroke();
+  // Keep the original royal banner visible: never cover its blue cloth with
+  // synthetic panels. The text uses the same inset as endless-run.css.
+  contain(ctx,flag,41,349,998,1334);
+  if (globalThis.document?.fonts?.load) {
+    try { await document.fonts.load('48px BrahmsGotischCyr'); } catch {}
+  }
 
-  if (logo) contain(ctx,logo,140,80,800,360);
-  else {ctx.font='bold 78px Georgia,serif';ctx.fillStyle='#f9d88e';centered(ctx,'HEROES OF CHESS & MATE',540,290,900);}
-  ctx.fillStyle='#edd09c';ctx.font='32px Georgia,serif';
-  centered(ctx,copy.subheading,540,463,820);
+  // Separate logo above the banner: it must not crowd the gold banner rails.
+  if (logo) contain(ctx,logo,130,72,820,342);
+  else {
+    ctx.font='bold 73px Georgia,serif';ctx.fillStyle='#ffdb8a';
+    centered(ctx,'HEROES OF CHESS & MATE',540,290,920);
+  }
+  ctx.fillStyle='#f5dcac';
+  ctx.font='29px Georgia,serif';
+  centered(ctx,copy.subheading,540,450,780);
 
-  ctx.fillStyle='#ffdc91';ctx.font='bold 51px Georgia,serif';
-  centered(ctx,copy.heading,540,643,736);
-  ctx.fillStyle='#f6ead2';ctx.font='30px Georgia,serif';
+  // The flag's fabric-safe zone is ~21% inset from both sides, 15% from top.
+  // All numbers stay within that zone, above the lower golden ornament.
+  ctx.shadowColor='rgba(0,5,19,.9)';
+  ctx.shadowBlur=7;
+  ctx.shadowOffsetY=3;
+  ctx.fillStyle='#ffe1a0';
+  ctx.font='48px BrahmsGotischCyr,Georgia,serif';
+  centered(ctx,copy.heading,540,597,555);
+  ctx.fillStyle='#fff5e1';
+  ctx.font='26px Georgia,serif';
   const player = String(run?.playerName || '').trim();
-  centered(ctx,player,540,697,730);
-  ctx.fillStyle='#d7dff1';ctx.font='25px Georgia,serif';
-  centered(ctx,copy.end+': '+String(endReason||summary.endReasonLabel),540,749,718);
+  if (player) centered(ctx,player,540,644,554);
+  ctx.fillStyle='#fff0d8';
+  ctx.font='22px Georgia,serif';
+  wrappedCentered(ctx,copy.end+': '+String(endReason||summary.endReasonLabel),
+    540,player?684:665,554,29,2);
+  ctx.shadowBlur=0;
+  ctx.shadowOffsetY=0;
 
+  // Four tightly paired rows + one centered caravan row, matching the game.
   const metricImages = Object.fromEntries(ORDER.map((key,index)=>[key,icons[index]]));
   for (let i=0;i<8;i++) {
     const key=ORDER[i],column=i%2,row=Math.floor(i/2);
-    metric(ctx,copy.metrics[key],summary[key],metricImages[key],193+column*374,808+row*173,324);
+    metric(ctx,copy.metrics[key],summary[key],metricImages[key],
+      262+column*287,754+row*120,269);
   }
-  metric(ctx,copy.metrics.caravansDefended,summary.caravansDefended,metricImages.caravansDefended,375,1500,344);
+  metric(ctx,copy.metrics.caravansDefended,summary.caravansDefended,
+    metricImages.caravansDefended,382,1234,310);
 
+  // CTA outside the flag: below the gold tip, above the VK Stories controls.
   ctx.strokeStyle='rgba(241,199,113,.85)';
-  ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(170,1754);ctx.lineTo(910,1754);ctx.stroke();
-  ctx.fillStyle='#ffe1a2';ctx.font='bold 44px Georgia,serif';
-  centered(ctx,copy.callToAction,540,1825,940);
+  ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(153,1739);ctx.lineTo(927,1739);ctx.stroke();
+  ctx.fillStyle='#ffe1a2';
+  ctx.font='bold 43px Georgia,serif';
+  centered(ctx,copy.callToAction,540,1810,940);
   ctx.fillStyle='#ffffff';ctx.font='31px Arial,sans-serif';
-  centered(ctx,copy.address,540,1881,950);
+  centered(ctx,copy.address,540,1869,950);
 
   return Object.freeze({
     dataUrl:canvas.toDataURL('image/jpeg',0.88),
