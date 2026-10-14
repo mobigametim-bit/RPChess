@@ -187,12 +187,12 @@ async function renderRunStory(run, { power = 0, language = 'ru', endReason = '' 
 
   // CTA outside the flag: below the gold tip, above the VK Stories controls.
   ctx.strokeStyle='rgba(241,199,113,.85)';
-  ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(153,1575);ctx.lineTo(927,1575);ctx.stroke();
+  ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(153,1605);ctx.lineTo(927,1605);ctx.stroke();
   ctx.fillStyle='#ffe1a2';
   ctx.font='bold 43px Georgia,serif';
-  centered(ctx,copy.callToAction,540,1635,940);
+  centered(ctx,copy.callToAction,540,1651,940);
   ctx.fillStyle='#ffffff';ctx.font='31px Arial,sans-serif';
-  centered(ctx,copy.address,540,1698,950);
+  centered(ctx,copy.address,540,1711,950);
 
   return Object.freeze({
     dataUrl:canvas.toDataURL('image/jpeg',0.88),
