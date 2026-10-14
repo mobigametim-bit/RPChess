@@ -44,7 +44,7 @@ function renderStaticCopy() {
   const shareButton = screen.querySelector('[data-endless-run-share]');
   const menuButton = screen.querySelector('[data-endless-run-menu]');
   if (newButton) newButton.textContent = t('endless.newGame');
-  if (shareButton) shareButton.textContent = currentLanguage() === 'en' ? 'Share result' : 'Поделиться результатом';
+  if (shareButton) shareButton.textContent = currentLanguage() === 'en' ? 'Share as VK Story' : 'Поделиться историей';
   if (menuButton) menuButton.textContent = t('endless.menu');
 }
 
@@ -67,6 +67,7 @@ function ensureScreen() {
         <div class="endless-run-actions">
           <button class="reboot-button reboot-button--primary" type="button" data-endless-run-new></button>
           <button class="reboot-button reboot-button--primary" type="button" data-endless-run-share></button>
+          <p class="endless-run-share-notice" data-endless-run-share-notice role="status" aria-live="polite" hidden></p>
           <button class="reboot-button reboot-button--primary" type="button" data-endless-run-menu></button>
         </div>
       </aside>
@@ -154,8 +155,28 @@ async function shareResult() {
   audio()?.click?.();
   const button = screen?.querySelector('[data-endless-run-share]');
   if (button) button.disabled = true;
+  const notice = screen?.querySelector('[data-endless-run-share-notice]');
+  if (notice) notice.hidden = true;
+  const en = currentLanguage() === 'en';
   try {
-    await shareRunResult(activeRun, { power: readPlayerRating().power });
+    const result = await shareRunResult(activeRun, { power: readPlayerRating().power });
+    const messages = en ? {
+      'editor-finished':'VK Story editor finished. Check your story in VK.',
+      'download-started':'Image prepared. Check your downloads to share it manually.',
+      'copied':'Run result copied to clipboard.',
+      'closed':'Story editor closed without publishing.',
+      'unavailable':'Sharing is unavailable on this device.'
+    } : {
+      'editor-finished':'Редактор истории VK завершил работу. Проверьте свою историю в VK.',
+      'download-started':'Изображение подготовлено. Проверьте загрузки, чтобы поделиться им вручную.',
+      'copied':'Результат забега скопирован.',
+      'closed':'Редактор истории закрыт без публикации.',
+      'unavailable':'На этом устройстве поделиться результатом не удалось.'
+    };
+    if (notice) { notice.textContent = messages[result.status] || messages.unavailable; notice.hidden = false; }
+  } catch (error) {
+    console.warn('[RPChess] result sharing failed', error);
+    if (notice) { notice.textContent = en ? 'Could not prepare the story. Please try again.' : 'Не удалось подготовить историю. Попробуйте ещё раз.'; notice.hidden = false; }
   } finally {
     if (button) button.disabled = false;
   }
