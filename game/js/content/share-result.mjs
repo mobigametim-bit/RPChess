@@ -90,9 +90,11 @@ async function shareRunResult(run, { power = 0, language = currentLanguage(), li
   if (platform.launch.isVK() && story?.dataUrl) {
     const result = await platform.social.showStory({ blob:story.dataUrl, link });
     if (result.status === 'completed')
-      return Object.freeze({ status:'editor-finished', method:'story', text, link });
+      return Object.freeze({ status:'editor-opened', method:'story', text, link });
     if (result.status === 'closed')
       return Object.freeze({ status:'closed', method:'story', text, link });
+    if (result.status === 'no-response')
+      return Object.freeze({ status:'unconfirmed', method:'story', text, link });
     if (result.status === 'error') console.warn('[RPChess] VK story editor failed', result.error || result.reason);
   }
 
