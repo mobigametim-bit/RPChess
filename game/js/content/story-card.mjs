@@ -152,10 +152,6 @@ async function renderRunStory(run, { power = 0, language = 'ru', endReason = '' 
     ctx.font='bold 73px Georgia,serif';ctx.fillStyle='#ffdb8a';
     centered(ctx,'HEROES OF CHESS & MATE',540,290,920);
   }
-  ctx.fillStyle='#f5dcac';
-  ctx.font='29px Georgia,serif';
-  centered(ctx,copy.subheading,540,419,780);
-
   // The flag's fabric-safe zone is ~21% inset from both sides, 15% from top.
   // All numbers stay within that zone, above the lower golden ornament.
   ctx.shadowColor='rgba(0,5,19,.9)';
