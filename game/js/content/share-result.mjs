@@ -1,5 +1,6 @@
 import { platform } from '../platform.mjs';
 import { summarizeRun } from '../endless-run-core.mjs';
+import { renderRunStory } from './story-card.mjs';
 import { currentLanguage, translateLegacy } from '../i18n.mjs';
 
 const VK_GAME_LINK = 'https://vk.com/app54754579';
@@ -58,20 +59,54 @@ function formatRunShare(run, { power = 0, language = currentLanguage(), link = V
   ].join('\n');
 }
 
+function downloadStoryImage(dataUrl) {
+  if (!dataUrl || !globalThis.document?.createElement) return false;
+  try {
+    const anchor = document.createElement('a');
+    anchor.href = dataUrl;
+    anchor.download = 'rpchess-journey-result.jpg';
+    anchor.hidden = true;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    return true;
+  } catch { return false; }
+}
+
 async function shareRunResult(run, { power = 0, language = currentLanguage(), link = VK_GAME_LINK } = {}) {
   const text = formatRunShare(run, { power, language, link });
-  if (platform.launch.isVK()) {
-    const wall = await platform.social.wallPost({ message:text, attachments:link });
-    if (wall.status === 'completed') return Object.freeze({ status:'completed', method:'wall', text, link, postId:wall.postId });
-    if (wall.status === 'closed') return Object.freeze({ status:'closed', method:'wall', text, link });
-
-    if (await platform.social.copyText(text)) return Object.freeze({ status:'completed', method:'copy', text, link });
+  let story = null;
+  try {
+    const summary = summarizeRun(run, { power });
+    story = await renderRunStory(run, {
+      power,
+      language,
+      endReason:localizedEndReason(summary,languageCode(language))
+    });
+  } catch (error) {
+    console.warn('[RPChess] story image rendering failed', error);
   }
+
+  if (platform.launch.isVK() && story?.dataUrl) {
+    const result = await platform.social.showStory({ blob:story.dataUrl, link });
+    if (result.status === 'completed')
+      return Object.freeze({ status:'editor-finished', method:'story', text, link });
+    if (result.status === 'closed')
+      return Object.freeze({ status:'closed', method:'story', text, link });
+    if (result.status === 'error') console.warn('[RPChess] VK story editor failed', result.error || result.reason);
+  }
+
+  // Fallback for unsupported VK clients and standalone web: save a portrait image.
+  if (story?.dataUrl && downloadStoryImage(story.dataUrl))
+    return Object.freeze({ status:'download-started', method:'image', text, link });
+
+  if (platform.launch.isVK() && await platform.social.copyText(text))
+    return Object.freeze({ status:'copied', method:'copy', text, link });
 
   try {
     if (globalThis.navigator?.clipboard?.writeText) {
       await globalThis.navigator.clipboard.writeText(text);
-      return Object.freeze({ status:'completed', method:'clipboard', text, link });
+      return Object.freeze({ status:'copied', method:'clipboard', text, link });
     }
   } catch {}
   return Object.freeze({ status:'unavailable', method:'none', text, link });
