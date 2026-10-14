@@ -16,9 +16,10 @@ class MemoryStorage {
   const listeners = new Map();
   const cloud = new Map();
   let discardWrites = false, acknowledgeWrites = true;
+  let lastStoryPayload = null;
   const supportedHandlers = [
     'VKWebAppInit','VKWebAppStorageGet','VKWebAppStorageSet','VKWebAppStorageGetKeys',
-    'VKWebAppCheckNativeAds','VKWebAppShowNativeAds','VKWebAppShare','VKWebAppShowWallPostBox',
+    'VKWebAppCheckNativeAds','VKWebAppShowNativeAds','VKWebAppShare','VKWebAppShowStoryBox',
     'VKWebAppCopyText','VKWebAppGetUserInfo','VKWebAppCallAPIMethod'
   ];
   const parent = {
@@ -37,8 +38,9 @@ class MemoryStorage {
         response.result = true;
       } else if (handler === 'VKWebAppGetUserInfo') {
         Object.assign(response, { id:7646007, first_name:'Cloud', last_name:'Tester' });
-      } else if (handler === 'VKWebAppShowWallPostBox') {
-        response.post_id = 42;
+      } else if (handler === 'VKWebAppShowStoryBox') {
+        lastStoryPayload = params;
+        response.result = true;
       } else {
         response.result = true;
       }
@@ -88,7 +90,13 @@ class MemoryStorage {
   assert.strictEqual(await platformModule.ads.check('reward'), true, 'reward inventory probe must normalize to boolean');
   assert.deepStrictEqual(await platformModule.ads.show('reward'), { status:'completed', format:'reward' }, 'successful rewarded show must normalize to completed');
   assert.strictEqual((await platformModule.social.shareLink('https://vk.com/app54754579')).status, 'completed', 'VK share adapter must normalize successful share');
-  assert.strictEqual((await platformModule.social.wallPost({ message:'RPChess' })).postId, 42, 'wall-post fallback must surface the VK post id');
+  assert.strictEqual((await platformModule.social.showStory({ blob:'data:image/png;base64,AA==', link:'https://vk.com/app54754579' })).status, 'completed', 'VK story editor must normalize successful Bridge result');
+  assert.strictEqual(lastStoryPayload.background_type, 'image');
+  assert.strictEqual(lastStoryPayload.blob, 'data:image/png;base64,AA==');
+  assert.strictEqual(lastStoryPayload.attachment.url, 'https://vk.com/app54754579');
+  assert.strictEqual(lastStoryPayload.attachment.type, 'url');
+  assert.strictEqual(lastStoryPayload.locked, true);
+  assert.strictEqual((await platformModule.social.showStory({ blob:'not-base64' })).status, 'error', 'invalid image must not reach the VK Bridge');
   assert.strictEqual(await platformModule.social.copyText('RPChess'), true, 'copy fallback must use VK capability when available');
   assert.strictEqual((await platformModule.identity.getUserInfo()).id, 7646007, 'identity adapter must expose VK user info without leaking bridge calls into gameplay');
 
