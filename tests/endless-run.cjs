@@ -89,8 +89,44 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   assert(css.includes('royal_run_flag') === false && app.includes('assets/ui/royal_run_flag.png'),'Run summary must render the optimized flag asset');
   assert(css.includes('inset:15% 21% 24%')&&css.includes('overflow-y:auto'),'Run metrics must remain scrollable within the flag safety area');
   assert(compactCss.includes('main.endless-run-screen:not([hidden])')&&compactCss.includes('overflow-y:auto!important'),'Short landscape screens must allow vertical access to the flag and buttons');
-  assert(shareResult.includes('platform.social.wallPost')&&!shareResult.includes('platform.social.shareLink'),'VK result sharing must open wall publication instead of the private-message share dialog');
-  assert(platform.includes("if (!isVKLaunch()) return Object.freeze({ status:'unavailable' });\n    try {\n      const response = await sendVKRequest('VKWebAppShowWallPostBox'"),'Wall posting must be attempted directly because handler discovery is not authoritative in every VK host');
+  assert(shareResult.includes('platform.social.showStory')&&!shareResult.includes('platform.social.wallPost'),'VK run sharing must use Stories, not retired wall posting');
+  assert(platform.includes("sendVKRequest('VKWebAppShowStoryBox'"),'Story editor must use supported VK Bridge method');
+  assert(platform.includes("background_type:'image'")&&platform.includes("attachment:{ type:'url', text:'play'"),'Story request must include image and a link back to the game');
+  assert(app.includes('data-endless-run-share-notice')&&app.includes("'editor-opened'"),'Summary must show a localized non-misleading sharing result');
+  const storySource=fs.readFileSync(path.join(game,'js/content/story-card.mjs'),'utf8');
+  assert(storySource.includes('STORY_WIDTH = 1080')&&storySource.includes('STORY_HEIGHT = 1920'),'Story image must be portrait 1080×1920');
+  assert(storySource.includes('royal_run_flag.png')&&storySource.includes('brandLogoSrc(language)'),'Story must reuse the existing banner and localized logo');
+  assert(storySource.includes("canvas.toDataURL('image/jpeg',0.88)"),'Story image should be JPEG Base64 for VK Bridge');
+  assert(storySource.includes("callToAction:'Сумеешь лучше?'"),'Russian story CTA must use approved copy');
+  assert(!storySource.includes('Шахматное приключение')&&!storySource.includes('A chess fantasy adventure'),'Story copy must not contain the removed subtitles');
+  const drawn=[];
+  const ctx={
+    fillRect(){},drawImage(){},beginPath(){},moveTo(){},lineTo(){},quadraticCurveTo(){},closePath(){},fill(){},stroke(){},save(){},restore(){},
+    createLinearGradient(){return {addColorStop(){}};},
+    measureText(value){return {width:String(value).length*12};},
+    fillText(value){drawn.push(String(value));}
+  };
+  const previousImage=globalThis.Image,previousDocument=globalThis.document;
+  globalThis.document={baseURI:'https://example.org/RPChess/',createElement(name){
+    assert.strictEqual(name,'canvas');return {width:0,height:0,getContext(){return ctx;},toDataURL(){return 'data:image/jpeg;base64,ZmFrZQ==';}};
+  }};
+  globalThis.Image=class {
+    naturalWidth=800;naturalHeight=1200;
+    set src(value){this.url=value;queueMicrotask(()=>this.onload?.());}
+  };
+  try {
+    const storyModule=await import(url('js/content/story-card.mjs'));
+    const ru=await storyModule.renderRunStory(run,{power:777,language:'ru'});
+    assert.deepStrictEqual([ru.width,ru.height],[1080,1920]);
+    assert(ru.dataUrl.startsWith('data:image/jpeg;base64,'));
+    assert(drawn.includes('ЗАБЕГ ЗАВЕРШЁН'));
+    drawn.length=0;
+    await storyModule.renderRunStory(run,{power:777,language:'en'});
+    assert(drawn.includes('RUN COMPLETE'));
+  } finally {
+    globalThis.Image=previousImage;
+    globalThis.document=previousDocument;
+  }
   assert(!fs.existsSync(path.join(game,'js/post-pages-ui-polish.mjs')),'retired post-pages presentation shim must stay deleted');
   assert(!fs.existsSync(path.join(game,'js/presentation-bootstrap.mjs')),'retired presentation bootstrap must stay deleted');
   assert(starvation.includes("button.textContent = kingDied ? t('starvation.summary') : t('starvation.continue')"),'Starvation end CTA must use owner localization while preserving Endless routing');

@@ -45,3 +45,7 @@ body.endless-run-active{overflow-x:hidden}
   .endless-run-logo{width:150px}
   .endless-run-actions .reboot-button{min-height:40px;font-size:16px}
 }
+
+/* Story sharing feedback belongs to the summary controls, never over the banner. */
+.endless-run-share-notice{margin:0;padding:4px 8px;max-width:100%;color:#ffdda5;font:13px/1.3 Georgia,serif;text-align:center;overflow-wrap:anywhere}
+.endless-run-share-notice[hidden]{display:none!important}
