@@ -156,8 +156,11 @@ async function shareResult() {
   const button = screen?.querySelector('[data-endless-run-share]');
   if (button) button.disabled = true;
   const notice = screen?.querySelector('[data-endless-run-share-notice]');
-  if (notice) notice.hidden = true;
   const en = currentLanguage() === 'en';
+  if (notice) {
+    notice.textContent = en ? 'Preparing your VK Story…' : 'Подготавливаем историю для VK…';
+    notice.hidden = false;
+  }
   try {
     const result = await shareRunResult(activeRun, { power: readPlayerRating().power });
     const messages = en ? {
