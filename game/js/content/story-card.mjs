@@ -124,6 +124,7 @@ async function renderRunStory(run, { power = 0, language = 'ru', endReason = '' 
   ];
   const images = await Promise.all(paths.map(loadImage));
   const [backdrop,flag,logo,...icons] = images;
+  if (!flag || !logo) throw new Error('RPChess story branding assets could not be loaded');
   const canvas = document.createElement('canvas');
   canvas.width = STORY_WIDTH; canvas.height = STORY_HEIGHT;
   const ctx = canvas.getContext('2d', { alpha:false });
