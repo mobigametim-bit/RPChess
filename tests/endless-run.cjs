@@ -117,10 +117,10 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
     const ru=await storyModule.renderRunStory(run,{power:777,language:'ru'});
     assert.deepStrictEqual([ru.width,ru.height],[1080,1920]);
     assert(ru.dataUrl.startsWith('data:image/jpeg;base64,'));
-    assert(drawn.includes('ИТОГИ ПУТЕШЕСТВИЯ'));
+    assert(drawn.includes('ЗАБЕГ ЗАВЕРШЁН'));
     drawn.length=0;
     await storyModule.renderRunStory(run,{power:777,language:'en'});
-    assert(drawn.includes('JOURNEY COMPLETE'));
+    assert(drawn.includes('RUN COMPLETE'));
   } finally {
     globalThis.Image=previousImage;
     globalThis.document=previousDocument;
