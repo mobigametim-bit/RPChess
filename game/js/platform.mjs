@@ -349,6 +349,7 @@ const social = Object.freeze({
       const response = await sendVKRequest('VKWebAppShowStoryBox', payload, { timeoutMs:120_000 });
       return Object.freeze({ status:'completed', response });
     } catch (error) {
+      if (error?.reason === 'timeout') return Object.freeze({ status:'no-response', error });
       return Object.freeze({ status:adErrorStatus(error) === 'closed' ? 'closed' : 'error', error });
     }
   },
