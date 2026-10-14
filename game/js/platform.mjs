@@ -334,11 +334,20 @@ const social = Object.freeze({
       return Object.freeze({ status:adErrorStatus(error) === 'closed' ? 'closed' : 'error', error });
     }
   },
-  async wallPost({ message = '', attachments = '' } = {}) {
+  async showStory({ blob = '', link = '' } = {}) {
     if (!isVKLaunch()) return Object.freeze({ status:'unavailable' });
+    if (!/^data:image\/(?:png|jpeg);base64,[a-z\d+/=]+$/i.test(blob)) return Object.freeze({ status:'error', reason:'invalid-image' });
+    const payload = {
+      background_type:'image',
+      blob,
+      locked:true,
+      ...(link ? { attachment:{ type:'url', text:'play', url:String(link) } } : {})
+    };
     try {
-      const response = await sendVKRequest('VKWebAppShowWallPostBox', { message:String(message), attachments:String(attachments) });
-      return Object.freeze({ status:'completed', postId:response?.post_id ?? null });
+      // VK mobile/web may keep the story editor open without responding on close.
+      // Do not claim the story was published based on this API's response alone.
+      const response = await sendVKRequest('VKWebAppShowStoryBox', payload, { timeoutMs:120_000 });
+      return Object.freeze({ status:'completed', response });
     } catch (error) {
       return Object.freeze({ status:adErrorStatus(error) === 'closed' ? 'closed' : 'error', error });
     }
