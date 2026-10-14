@@ -164,13 +164,15 @@ async function shareResult() {
   try {
     const result = await shareRunResult(activeRun, { power: readPlayerRating().power });
     const messages = en ? {
-      'editor-finished':'VK Story editor finished. Check your story in VK.',
+      'editor-opened':'VK Story editor responded. Check your story in VK.',
+      'unconfirmed':'VK did not confirm the result. Please check your stories.',
       'download-started':'Image prepared. Check your downloads to share it manually.',
       'copied':'Run result copied to clipboard.',
       'closed':'Story editor closed without publishing.',
       'unavailable':'Sharing is unavailable on this device.'
     } : {
-      'editor-finished':'Редактор истории VK завершил работу. Проверьте свою историю в VK.',
+      'editor-opened':'Редактор VK ответил. Проверьте публикацию в историях.',
+      'unconfirmed':'VK не подтвердил результат. Проверьте свои истории.',
       'download-started':'Изображение подготовлено. Проверьте загрузки, чтобы поделиться им вручную.',
       'copied':'Результат забега скопирован.',
       'closed':'Редактор истории закрыт без публикации.',
