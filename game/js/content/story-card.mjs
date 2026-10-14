@@ -141,20 +141,20 @@ async function renderRunStory(run, { power = 0, language = 'ru', endReason = '' 
 
   // Keep the original royal banner visible: never cover its blue cloth with
   // synthetic panels. The text uses the same inset as endless-run.css.
-  contain(ctx,flag,41,349,998,1334);
+  contain(ctx,flag,41,320,998,1270);
   if (globalThis.document?.fonts?.load) {
     try { await document.fonts.load('48px BrahmsGotischCyr'); } catch {}
   }
 
   // Separate logo above the banner: it must not crowd the gold banner rails.
-  if (logo) contain(ctx,logo,130,72,820,342);
+  if (logo) contain(ctx,logo,145,95,790,293);
   else {
     ctx.font='bold 73px Georgia,serif';ctx.fillStyle='#ffdb8a';
     centered(ctx,'HEROES OF CHESS & MATE',540,290,920);
   }
   ctx.fillStyle='#f5dcac';
   ctx.font='29px Georgia,serif';
-  centered(ctx,copy.subheading,540,450,780);
+  centered(ctx,copy.subheading,540,419,780);
 
   // The flag's fabric-safe zone is ~21% inset from both sides, 15% from top.
   // All numbers stay within that zone, above the lower golden ornament.
@@ -163,15 +163,15 @@ async function renderRunStory(run, { power = 0, language = 'ru', endReason = '' 
   ctx.shadowOffsetY=3;
   ctx.fillStyle='#ffe1a0';
   ctx.font='48px BrahmsGotischCyr,Georgia,serif';
-  centered(ctx,copy.heading,540,597,555);
+  centered(ctx,copy.heading,540,553,555);
   ctx.fillStyle='#fff5e1';
   ctx.font='26px Georgia,serif';
   const player = String(run?.playerName || '').trim();
-  if (player) centered(ctx,player,540,644,554);
+  if (player) centered(ctx,player,540,594,554);
   ctx.fillStyle='#fff0d8';
   ctx.font='22px Georgia,serif';
   wrappedCentered(ctx,copy.end+': '+String(endReason||summary.endReasonLabel),
-    540,player?684:665,554,29,2);
+    540,player?629:612,554,27,2);
   ctx.shadowBlur=0;
   ctx.shadowOffsetY=0;
 
@@ -180,19 +180,19 @@ async function renderRunStory(run, { power = 0, language = 'ru', endReason = '' 
   for (let i=0;i<8;i++) {
     const key=ORDER[i],column=i%2,row=Math.floor(i/2);
     metric(ctx,copy.metrics[key],summary[key],metricImages[key],
-      262+column*287,754+row*120,269);
+      262+column*287,682+row*110,269);
   }
   metric(ctx,copy.metrics.caravansDefended,summary.caravansDefended,
-    metricImages.caravansDefended,382,1234,310);
+    metricImages.caravansDefended,382,1122,310);
 
   // CTA outside the flag: below the gold tip, above the VK Stories controls.
   ctx.strokeStyle='rgba(241,199,113,.85)';
-  ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(153,1739);ctx.lineTo(927,1739);ctx.stroke();
+  ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(153,1575);ctx.lineTo(927,1575);ctx.stroke();
   ctx.fillStyle='#ffe1a2';
   ctx.font='bold 43px Georgia,serif';
-  centered(ctx,copy.callToAction,540,1810,940);
+  centered(ctx,copy.callToAction,540,1635,940);
   ctx.fillStyle='#ffffff';ctx.font='31px Arial,sans-serif';
-  centered(ctx,copy.address,540,1869,950);
+  centered(ctx,copy.address,540,1698,950);
 
   return Object.freeze({
     dataUrl:canvas.toDataURL('image/jpeg',0.88),
