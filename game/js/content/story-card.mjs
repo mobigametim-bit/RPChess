@@ -22,9 +22,8 @@ const ORDER = Object.freeze([
 const COPY = Object.freeze({
   ru:{
     heading:'ЗАБЕГ ЗАВЕРШЁН',
-    subheading:'Шахматное приключение',
     end:'Финал',
-    callToAction:'ПРОВЕРЬ СВОИ СИЛЫ',
+    callToAction:'Сумеешь лучше?',
     address:'vk.com/app54754579',
     metrics:{
       weeks:'НЕДЕЛЬ В ПУТИ',goldEarned:'ЗОЛОТА ДОБЫТО',
@@ -36,7 +35,6 @@ const COPY = Object.freeze({
   },
   en:{
     heading:'RUN COMPLETE',
-    subheading:'A chess fantasy adventure',
     end:'The end',
     callToAction:'CAN YOU GO FURTHER?',
     address:'vk.com/app54754579',
