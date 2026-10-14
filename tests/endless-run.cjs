@@ -97,6 +97,8 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   assert(storySource.includes('STORY_WIDTH = 1080')&&storySource.includes('STORY_HEIGHT = 1920'),'Story image must be portrait 1080×1920');
   assert(storySource.includes('royal_run_flag.png')&&storySource.includes('brandLogoSrc(language)'),'Story must reuse the existing banner and localized logo');
   assert(storySource.includes("canvas.toDataURL('image/jpeg',0.88)"),'Story image should be JPEG Base64 for VK Bridge');
+  assert(storySource.includes("callToAction:'Сумеешь лучше?'"),'Russian story CTA must use approved copy');
+  assert(!storySource.includes('Шахматное приключение')&&!storySource.includes('A chess fantasy adventure'),'Story copy must not contain the removed subtitles');
   const drawn=[];
   const ctx={
     fillRect(){},drawImage(){},beginPath(){},moveTo(){},lineTo(){},quadraticCurveTo(){},closePath(){},fill(){},stroke(){},save(){},restore(){},
