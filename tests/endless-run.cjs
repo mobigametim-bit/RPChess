@@ -92,7 +92,7 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   assert(shareResult.includes('platform.social.showStory')&&!shareResult.includes('platform.social.wallPost'),'VK run sharing must use Stories, not retired wall posting');
   assert(platform.includes("sendVKRequest('VKWebAppShowStoryBox'"),'Story editor must use supported VK Bridge method');
   assert(platform.includes("background_type:'image'")&&platform.includes("attachment:{ type:'url', text:'play'"),'Story request must include image and a link back to the game');
-  assert(app.includes('data-endless-run-share-notice')&&app.includes("'editor-finished'"),'Summary must show a localized non-misleading sharing result');
+  assert(app.includes('data-endless-run-share-notice')&&app.includes("'editor-opened'"),'Summary must show a localized non-misleading sharing result');
   const storySource=fs.readFileSync(path.join(game,'js/content/story-card.mjs'),'utf8');
   assert(storySource.includes('STORY_WIDTH = 1080')&&storySource.includes('STORY_HEIGHT = 1920'),'Story image must be portrait 1080×1920');
   assert(storySource.includes('royal_run_flag.png')&&storySource.includes('brandLogoSrc(language)'),'Story must reuse the existing banner and localized logo');
