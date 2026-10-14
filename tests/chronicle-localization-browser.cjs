@@ -1,4 +1,6 @@
 const assert=require('assert');
+const fs=require('fs');
+const path=require('path');
 const {chromium}=require('playwright');
 const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
 (async()=>{
@@ -38,7 +40,35 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     await page.reload({waitUntil:'networkidle'});
     assert.strictEqual(await panel.locator('h2').innerText(),'Chronicle','persisted English applies at startup');
     assert.strictEqual(await panel.locator('[data-chronicle-current] h3').innerText(),'Тимур');
+    // Reuse this existing real-browser acceptance to capture a visual preview
+    // of the exact JPEG sent to VK Stories, not a schematic test placeholder.
+    const previews=await page.evaluate(async()=>{
+      const {createRun}=await import('./js/run-persistence.mjs');
+      const {renderRunStory}=await import('./js/content/story-card.mjs');
+      const sample={...createRun({id:'vk-story-visual-preview',playerName:'Тимур'}),
+        ended:true,endReason:'king_solo_battle',journeyStep:28,
+        runStats:{weeks:28,goldEarned:322,skirmishWins:0,battleWins:3,
+          puzzlesSolved:9,eventsResolved:6,caravansDefended:1}};
+      const images={};
+      for(const [language,endReason] of [
+        ['ru','Наёмники отказались слушать одинокого короля без королевства.'],
+        ['en','Mercenaries ignored the words of a lone king without a kingdom.']
+      ]) {
+        const story=await renderRunStory(sample,{language,power:634,endReason});
+        if(story.width!==1080||story.height!==1920||story.dataUrl.length<20000)
+          throw new Error('Story card must be a real 1080x1920 JPEG with game art');
+        images[language]=story.dataUrl;
+      }
+      return images;
+    });
+    if(process.env.RPCHESS_FLAG_SCREENSHOT_DIR) {
+      const dir=path.resolve(process.env.RPCHESS_FLAG_SCREENSHOT_DIR);
+      fs.mkdirSync(dir,{recursive:true});
+      for(const language of ['ru','en'])
+        fs.writeFileSync(path.join(dir,`vk-story-${language}-1080x1920.jpg`),
+          Buffer.from(previews[language].split(',')[1],'base64'));
+    }
     assert.deepStrictEqual(errors,[]);
-    console.log('Chronicle empty/populated states, RU/EN changes, player names and English reload: PASS');
+    console.log('Chronicle + genuine VK Story card JPEG previews (RU/EN): PASS');
   }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
