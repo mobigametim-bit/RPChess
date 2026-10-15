@@ -60,5 +60,10 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   assert(!ui.includes('Новое имя ещё ждёт своей дороги.'),'Chronicle must not show the removed empty current-run sentence');
   for(const token of ['personalizePlayerNarrative','personalizePlayerTitle','playerNameForRun'])assert(events.includes(token),`Events player-name integration missing ${token}`);
   for(const token of ['.chronicle-panel','.identity-panel','.chronicle-metric'])assert(css.includes(token),`identity/chronicle CSS missing ${token}`);
-  console.log('Player Identity persistence, Event narrative personalization, Chronicle Glory/history and UI contract: PASS');
+  const leaderboard=await import(pathToFileURL(path.join(game,'../leaderboard-worker/src/index.mjs')).href);
+  assert.strictEqual(leaderboard.validatedRecord({runId:'run-1',playerName:'Элиана',week:36,power:556,glory:14}).glory,14);
+  assert.strictEqual(leaderboard.validatedRecord({runId:'run-1',playerName:'Элиана',week:36,power:556,glory:99}),null,'incorrect Glory must be rejected');
+  assert.strictEqual(leaderboard.validatedRecord({runId:'run-1',playerName:'Элиана',week:-1,power:556,glory:0}),null,'negative weeks must be rejected');
+  assert(ui.includes('chronicle-leaderboard-self')&&ui.includes('chronicle-leaderboard-list'));
+  console.log('Player Identity, Chronicle, Great Commanders UI and server Glory checks: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
