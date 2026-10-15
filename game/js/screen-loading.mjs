@@ -164,9 +164,22 @@ if (overlay && app) {
   overlay.dataset.loaderInitialized = '1';
   localize();
   addEventListener('rpchess:language-changed', localize);
-  new MutationObserver(onSceneMutation).observe(app, {
-    subtree: true, childList: true, attributes: true, attributeFilter: ['hidden']
+  // Watch only top-level scene roots, not every chess-piece DOM mutation.
+  const watchedScreens = new WeakSet();
+  const observer = new MutationObserver((records) => {
+    for (const node of app.children) {
+      if (node.tagName !== 'MAIN' || watchedScreens.has(node)) continue;
+      watchedScreens.add(node);
+      observer.observe(node, { attributes: true, attributeFilter: ['hidden'] });
+    }
+    onSceneMutation(records);
   });
+  observer.observe(app, { childList: true });
+  for (const node of app.children) {
+    if (node.tagName !== 'MAIN') continue;
+    watchedScreens.add(node);
+    observer.observe(node, { attributes: true, attributeFilter: ['hidden'] });
+  }
   let started = false;
   async function start() {
     if (started) return;
