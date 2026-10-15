@@ -116,6 +116,8 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     await page.locator('[data-arena-open]').click();
     assert.strictEqual(await page.locator('[data-arena-action="artifact"]').count(),4,'offer persists on reload');
     await page.locator('[data-artifact="none"]').click();
+    await page.waitForFunction(()=>document.querySelectorAll('[data-arena-board] [data-square]').length===64);
+    await page.locator('.rpchess-scene-preparing').waitFor({state:'detached'});
     assert.strictEqual(await page.locator('[data-arena-board] [data-square]').count(),64);
     await page.setViewportSize({width:1900,height:909});
     const combatBoard=await page.locator('[data-arena-board]').boundingBox();

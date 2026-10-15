@@ -1,5 +1,6 @@
 import { ChessAIAdapter } from './chess-ai-adapter.mjs';
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
+import { showPreparedScene } from './scene-ready.mjs';
 import { RACE_TAGS, RACE_LABELS, racePiecePath, applyRaceBoardTheme } from './race-assets.mjs';
 import { ARTIFACTS, artifactById, combatArtifactOffer } from './artifact-core.mjs';
 import { renderThreatOverlay } from './artifact-combat-ui.mjs';
@@ -250,7 +251,19 @@ function settle(status){
 }
 function startBattle(){
   if(state.match?.phase!=='playing')return;
-  closeDialog();engine=new ClassicChessEngine();selected=null;render();void aiTurn();
+  const matchId=state.match.id,foe=OPPONENT_BY_ID.get(state.match.foe);
+  const playerColor=state.match.playerColor,enemyColor=playerColor==='w'?'b':'w';
+  const pieces=['pawn','knight','bishop','rook','queen','king'];
+  const art=pieces.flatMap(type=>[
+    racePiecePath(state.match.squad,type,playerColor),
+    racePiecePath(foe.race,type,enemyColor)
+  ]);
+  void showPreparedScene({
+    roots:[board],
+    assets:art,
+    isCurrent:()=>state.match?.id===matchId&&state.match.phase==='playing',
+    enter:()=>{closeDialog();engine=new ClassicChessEngine();selected=null;render();}
+  }).then(({entered})=>{if(entered&&state.match?.id===matchId)void aiTurn();});
 }
 function commit(from,to,promo=null){
   if(!engine||animating||thinking||state.match?.phase!=='playing')return;
