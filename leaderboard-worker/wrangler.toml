@@ -12,4 +12,4 @@ database_name = "rpchess-leaderboard"
 database_id = "8452f616-2982-428a-ad59-57cb8238708f"
 
 [vars]
-ALLOWED_ORIGINS = "https://mobigametim-bit.github.io"
+ALLOWED_ORIGINS = "https://mobigametim-bit.github.io,https://rpchess-leaderboard-preview.mobigametim.workers.dev"
