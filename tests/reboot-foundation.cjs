@@ -7,7 +7,7 @@ const loadingCss=fs.readFileSync(path.join(game,'css/screen-loading.css'),'utf8'
 for(const token of ['data-game-loading','data-game-loading-logo','data-game-loading-label','logo_ru.png','logo_en.png','ЗАГРУЗКА...','LOADING...','css/screen-loading.css','js/screen-loading.mjs'])assert(html.includes(token),`Loading screen markup missing ${token}`);
 assert(html.indexOf('data-game-loading')<html.indexOf('id="app"'),'Loading mask must precede all game screens');
 for(const token of ['background: #000','position: fixed','game-loading-blink','prefers-reduced-motion'])assert(loadingCss.includes(token),`Loading visual contract missing ${token}`);
-for(const token of ['MutationObserver','mediaSources()','pendingStyles()','preload(src)','rpchess:language-changed','getComputedStyle','onSceneMutation'])assert(loadingJs.includes(token),`Scene asset loading contract missing ${token}`);
+for(const token of ['MutationObserver','mediaSources()','pendingStyles()','preload(src)','rpchess:language-changed','getComputedStyle','onSceneMutation'])assert(loadingJs.includes(token),`Scene asset loading contract missing ${token}`);assert(/if\s*\(!pendingStyles\(\)\.length\s*&&\s*!mediaSources\(\)\.length\)\s*\{[\s\S]*?hide\(token\);\s*return;\s*\}/.test(loadingJs),'Cached scene transitions must dismiss any previous asset-loading mask');
 assert(build.includes("'js/screen-loading.mjs'")&&build.includes("'css/screen-loading.css'"),'Production build must package loader JS and CSS');
 
 console.log('Reboot Foundation keeps New Game independent, initializes VK host launches, preserves canonical CSS-only controls, Player Identity prompt, Travel fallback and shared UX runtime: PASS');
