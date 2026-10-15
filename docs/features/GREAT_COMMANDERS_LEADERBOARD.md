@@ -1,6 +1,6 @@
 # Great Commanders / Великие полководцы — MVP
 
-Status: feature branch only, no merge or live deployment. Owner deleted the old static `rpchess` Cloudflare Worker. This feature does **not** recreate it.
+Status (2026-10-15): merged to `main` in PR #157 and published to GitHub Pages. Deployment confirmed by GitHub Actions run #38783897854 at https://mobigametim-bit.github.io/RPChess/. Cloudflare D1 and dedicated `rpchess-leaderboard` API are deployed. The deleted old static `rpchess` Worker was not recreated. **Production VK account submission is awaiting manual real-VK verification**.
 
 ## Product contract
 
@@ -17,10 +17,10 @@ Status: feature branch only, no merge or live deployment. Owner deleted the old 
 ## Components
 
 - `game/js/player-identity-chronicle.mjs`: Chronicle UI and async leaderboard state.
-- `game/js/leaderboard-client.mjs`: optional remote API; disabled until the endpoint is configured.
+- `game/js/leaderboard-client.mjs`: live leaderboard API client; endpoint configured in `game/index.html`.
 - `leaderboard-worker/src/index.mjs`: isolated Web-standard request handler using a Cloudflare D1 binding, not the former static game Worker.
 - `leaderboard-worker/schema.sql`: D1 leaderboard table.
-- `leaderboard-worker/wrangler.toml`: deployment template; requires **new database ID**, real `VK_APP_SECRET`, and allowed origin.
+- `leaderboard-worker/wrangler.toml`: active D1 binding, database ID, and permitted game origins. Secret `VK_APP_SECRET` is configured as a protected Cloudflare Worker secret.
 
 ## API
 
@@ -38,8 +38,8 @@ Some VK desktop iframe launches may omit signed launch params. Those users can v
 
 ## Acceptance
 
-1. Configure dedicated backing API and database in connected Sites or D1 and stage URL; no further action on deleted Worker.
+1. DONE: dedicated Cloudflare Worker + D1 deployed; signed-secret presence, CORS, public board reads, rejection of unsigned submissions checked in Actions #38782253574.
 2. Real browsers on VK desktop and mobile: launch signed/unsigned, fetch top 10, submit best record, revisit from second device.
 3. Two different accounts, duplicates, worse submissions, equal Glory ties, name updates, empty board, offline recovery, RU/EN.
 4. Confirm responsive list fits within the original blue banner and independently scrolls when space is narrow.
-5. Manual owner approval before merging `main`.
+5. DONE: owner explicitly requested production rollout on 2026-10-15; PR #157 merged and GitHub Pages build validated and deployed. Real-VK manual acceptance remains open.
