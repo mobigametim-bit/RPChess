@@ -43,5 +43,24 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const legacyActive={...activeTwelve,difficultyModel:undefined};const legacyCompleted={...run,updatedAt:1410,skirmishCount:1,currentTravelChoices:null,activeTravelChoice:legacyActive};storage.setItem(persistence.RUN_STORAGE_KEY,JSON.stringify(legacyCompleted));const legacyRecovered=persistence.readRun(storage);assert(legacyRecovered);assert.strictEqual(legacyRecovered.activeTravelChoice,null,'legacy completed combat route still auto-recovers');
   const manualSkirmish={id:'manual.s',step:1,type:'skirmish',label:'СТЫЧКА',stars:12,threatLabel:'ЛЕГЕНДАРНАЯ',flavor:'Путь.',mechanicalHint:'Нестандартный состав противника.',seed:'manual-s',playerColor:'b',enemyRaceTag:'orcs'};globalThis.RPChessTravelEncounterOverride=manualSkirmish;const rs=skirmish.createEncounter({seed:'fallback',stars:5});assert.strictEqual(rs.seed,'manual-s');assert.strictEqual(rs.stars,12);assert.strictEqual(rs.aiElo,2600);assert.strictEqual(rs.playerColor,'b');
   const manualBattle={...manualSkirmish,id:'manual.b',type:'battle',label:'БИТВА',seed:'manual-b'};globalThis.RPChessTravelEncounterOverride=manualBattle;const rb=battle.createBattleEncounter({seed:'fallback',stars:1});assert.strictEqual(rb.seed,'manual-b');assert.strictEqual(rb.stars,12);assert.strictEqual(rb.aiElo,2600);
+  // Reuse Travel's existing regression for bounded scene-art preparation.
+  const ready=await import(pathToFileURL(path.join(game,'js/scene-ready.mjs')).href);
+  const oldImage=globalThis.Image,oldStyle=globalThis.getComputedStyle;
+  try {
+    let requested=0;
+    globalThis.Image=class {
+      set src(value){requested++;queueMicrotask(()=>this.onload?.());}
+      decode(){return Promise.resolve();}
+    };
+    const result=await ready.prepareArt(['assets/test.png','assets/test.png'],{timeoutMs:200});
+    assert.deepStrictEqual(result,{timedOut:false,count:1},'ready art must be awaited and deduplicated');
+    assert.strictEqual(requested,1,'same asset must only be requested once');
+    globalThis.Image=class {set src(_value){}};
+    const timed=await ready.prepareArt(['assets/slow.png'],{timeoutMs:1});
+    assert.strictEqual(timed.timedOut,true,'a stalled asset must never block a scene forever');
+  }finally{
+    if(oldImage===undefined)delete globalThis.Image;else globalThis.Image=oldImage;
+    if(oldStyle===undefined)delete globalThis.getComputedStyle;else globalThis.getComputedStyle=oldStyle;
+  }
   console.log('Travel Choice keeps 6-type ~16.7% pool, owner-keyed RU/EN compact UI and player Threat..Threat+3 encounter contract: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
