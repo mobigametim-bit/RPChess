@@ -54,6 +54,16 @@ jobs:
             exit 1
           fi
           npx wrangler d1 execute rpchess-leaderboard --remote --file leaderboard-worker/schema.sql --config leaderboard-worker/wrangler.toml --yes
+      - name: Require an encrypted VK secret before any deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          # Capture only the names in a local file: never print secret values
+          npx wrangler secret list --config leaderboard-worker/wrangler.toml > /tmp/leaderboard-secret-names.json
+          grep -q '"name": "VK_APP_SECRET"' /tmp/leaderboard-secret-names.json ||
+            { echo "::error::VK_APP_SECRET must exist as an encrypted Worker Secret, not a plain Variable. Deployment blocked."; exit 1; }
       - name: Deploy dedicated leaderboard API
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
