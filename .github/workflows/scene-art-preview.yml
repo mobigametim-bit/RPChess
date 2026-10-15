@@ -1,0 +1,65 @@
+name: Deploy RPChess prepared-scene preview
+
+on:
+  push:
+    branches:
+      - feature/scene-preload-transitions-20261016
+    paths:
+      - scene-preview/**
+      - .github/workflows/scene-art-preview.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rpchess-prepared-scene-preview
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.repository == 'mobigametim-bit/RPChess' &&
+      (
+        (github.event_name == 'push' && github.event.head_commit.message == 'deploy: scene art preview') ||
+        (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/scene-preload-transitions-20261016')
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Run canonical regression gate and build
+        run: npm run gate:local
+      - name: Assert bundled scene preparation is present
+        run: |
+          test -s dist/js/scene-ready.mjs
+          grep -q "showPreparedScene" dist/js/travel-choice-app.mjs
+          grep -q "showPreparedScene" dist/js/skirmish-app.mjs
+          grep -q "showPreparedScene" dist/js/battle-app.mjs
+      - name: Deploy to dedicated Cloudflare static preview
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          npx wrangler deploy --config scene-preview/wrangler.toml
+      - name: Verify public preview HTML
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if curl -fsS --max-time 15 'https://rpchess-scene-preview.mobigametim.workers.dev/' -o /tmp/scene-preview.html &&
+               grep -q 'RPChess' /tmp/scene-preview.html; then
+              echo "RPChess game preview ready: https://rpchess-scene-preview.mobigametim.workers.dev/"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Prepared-scene preview did not respond"
+          exit 1
