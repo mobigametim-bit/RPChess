@@ -1,0 +1,99 @@
+name: Deploy Great Commanders leaderboard API (staging)
+
+on:
+  push:
+    branches:
+      - feature/great-commanders-leaderboard-20261015
+    paths:
+      - leaderboard-worker/**
+      - .github/workflows/leaderboard-api-preview.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rpchess-leaderboard-api-preview
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # PR checks never deploy implicitly. A deliberate owner commit starts staging.
+    if: >-
+      github.repository == 'mobigametim-bit/RPChess' &&
+      (
+        (github.event_name == 'push' && github.event.head_commit.message == 'deploy: leaderboard preview') ||
+        (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/great-commanders-leaderboard-20261015')
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Require deploy credentials
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$TOKEN" || { echo "::error::CLOUDFLARE_API_TOKEN is not configured"; exit 1; }
+          test -n "$ACCOUNT" || { echo "::error::CLOUDFLARE_ACCOUNT_ID is not configured"; exit 1; }
+      - name: Apply leaderboard D1 schema (idempotent)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # GitHub Secret values may include accidental trailing CR/LF from copy/paste.
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          if ! [[ "$CLOUDFLARE_ACCOUNT_ID" =~ ^[A-Za-z0-9_-]{20,64}$ ]]; then
+            echo "::error::CLOUDFLARE_ACCOUNT_ID format is invalid; paste only the account identifier, without labels or quotes."
+            exit 1
+          fi
+          npx wrangler d1 execute rpchess-leaderboard --remote --file leaderboard-worker/schema.sql --config leaderboard-worker/wrangler.toml --yes
+      - name: Require an encrypted VK secret before any deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          # Capture only the names in a local file: never print secret values
+          npx wrangler secret list --config leaderboard-worker/wrangler.toml > /tmp/leaderboard-secret-names.json
+          grep -q '"name": "VK_APP_SECRET"' /tmp/leaderboard-secret-names.json ||
+            { echo "::error::VK_APP_SECRET must exist as an encrypted Worker Secret, not a plain Variable. Deployment blocked."; exit 1; }
+      - name: Deploy dedicated leaderboard API
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config leaderboard-worker/wrangler.toml
+      - name: Verify VK authentication secret is present (names only)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler secret list --config leaderboard-worker/wrangler.toml | grep -q 'VK_APP_SECRET' ||
+            { echo "::error::VK_APP_SECRET is missing from the dedicated Worker"; exit 1; }
+      - name: Smoke-check published D1 API
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if curl -fsS --max-time 12 'https://rpchess-leaderboard.mobigametim.workers.dev/health' -o /tmp/leaderboard-health.json &&
+              curl -fsS --max-time 12 'https://rpchess-leaderboard.mobigametim.workers.dev/v1/leaderboard' -o /tmp/leaderboard-board.json &&
+              node -e "const fs=require('fs');const a=JSON.parse(fs.readFileSync('/tmp/leaderboard-health.json'));const b=JSON.parse(fs.readFileSync('/tmp/leaderboard-board.json'));if(a.status!=='ok'||!Array.isArray(b.top))process.exit(1)"; then
+              # Verify browser-origin CORS and reject unsigned writes without touching D1.
+              cors=$(curl -fsS --max-time 12 -D - -o /dev/null -H 'Origin: https://rpchess-leaderboard-preview.mobigametim.workers.dev' 'https://rpchess-leaderboard.mobigametim.workers.dev/v1/leaderboard')
+              printf '%s' "$cors" | grep -iq '^access-control-allow-origin: https://rpchess-leaderboard-preview.mobigametim.workers.dev'
+              status=$(curl -sS --max-time 12 -o /tmp/leaderboard-unauthorized.json -w '%{http_code}' -X POST -H 'content-type: application/json' -H 'Origin: https://rpchess-leaderboard-preview.mobigametim.workers.dev' --data '{"launch":"invalid","record":{"runId":"unauthorized","week":1,"power":1,"glory":0}}' 'https://rpchess-leaderboard.mobigametim.workers.dev/v1/leaderboard/submit')
+              test "$status" = 401 || { echo "::error::Unsigned write was not rejected"; exit 1; }
+              echo "Great Commanders API healthy; preview CORS works; unsigned writes rejected."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Published leaderboard API failed smoke test."
+          exit 1

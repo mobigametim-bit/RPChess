@@ -8,6 +8,10 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
   try{
     const page=await browser.newPage({viewport:{width:1653,height:760}});
     const errors=[];page.on('pageerror',error=>errors.push(error.message));
+    // Keep browser localization deterministic; public API connectivity is exercised
+    // separately by the Cloudflare deployment smoke test.
+    await page.route('https://rpchess-leaderboard.mobigametim.workers.dev/**',route=>
+      route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({top:[],me:null})}));
     await page.goto(url,{waitUntil:'networkidle'});
     const panel=page.locator('[data-chronicle-panel]');
     await panel.waitFor();
@@ -15,7 +19,8 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     await setLanguage('en');
     assert.strictEqual(await panel.locator('h2').innerText(),'Chronicle');
     assert((await panel.innerText()).includes('No active journey'));
-    assert((await panel.innerText()).includes('The chronicle is empty'));
+    assert((await panel.innerText()).includes('Great Commanders'));
+    assert((await panel.innerText()).includes('No results yet'),'online empty leaderboard should translate');
     assert(!/[А-Яа-яЁё]/u.test(await panel.innerText()),'empty Chronicle must fully translate');
     await page.evaluate(async()=>{
       const persistence=await import('./js/run-persistence.mjs');
@@ -23,12 +28,37 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       localStorage.setItem('rpchess.reboot.v1.chronicle',JSON.stringify({schemaVersion:1,history:[{runId:'best-language',playerName:'Рагнар',week:35,power:900,completedAt:1000}]}));
       window.RPChessChronicle.render();
     });
-    for(const text of ['CURRENT JOURNEY','BEST JOURNEY','POWER','WEEK','HEROES IN RANKS','GLORY'])assert((await panel.innerText()).includes(text),text);
+    for(const text of ['CURRENT JOURNEY','Great Commanders','POWER','WEEK','HEROES IN RANKS'])assert((await panel.innerText()).includes(text),text);
     assert.strictEqual(await panel.locator('[data-chronicle-current] h3').innerText(),'Тимур');
-    assert.strictEqual(await panel.locator('[data-chronicle-best] h3').innerText(),'Рагнар');
-    assert(!/[А-Яа-яЁё]/u.test((await panel.innerText()).replaceAll('Тимур','').replaceAll('Рагнар','')),'only player names may retain Cyrillic');
+    assert.strictEqual(await panel.locator('[data-chronicle-best] h3').innerText(),'Great Commanders');
+    assert(!/[А-Яа-яЁё]/u.test((await panel.innerText()).replaceAll('Тимур','')),'only player names may retain Cyrillic');
+    // Mock the API only in the browser regression, never in production.
+    await page.evaluate(async()=>{
+      window.RPChessLeaderboardAPI='https://leaderboard.example.invalid';
+      const original=window.fetch.bind(window);
+      window.fetch=(resource,options)=>String(resource).startsWith('https://leaderboard.example.invalid/')
+        ?Promise.resolve(new Response(JSON.stringify({
+          top:[{rank:1,name:'Рагнар',glory:17},{rank:2,name:'Ивар',glory:15}],
+          me:{rank:43,name:'Тимур',glory:14}
+        }),{status:200,headers:{'content-type':'application/json'}}))
+        :original(resource,options);
+      const {loadLeaderboard}=await import('./js/leaderboard-client.mjs');
+      await loadLeaderboard({force:true});
+    });
+    assert.strictEqual(await panel.locator('.chronicle-leaderboard-row').count(),2);
+    assert((await panel.locator('.chronicle-leaderboard-self').innerText()).includes('#43'));
+    if(process.env.RPCHESS_FLAG_SCREENSHOT_DIR) {
+      const dir=path.resolve(process.env.RPCHESS_FLAG_SCREENSHOT_DIR);
+      fs.mkdirSync(dir,{recursive:true});
+      await panel.screenshot({path:path.join(dir,'leaderboard-en.png')});
+    }
     await setLanguage('ru');
     assert.strictEqual(await panel.locator('h2').innerText(),'Летопись');
+    assert((await panel.innerText()).includes('Великие полководцы'));
+    if(process.env.RPCHESS_FLAG_SCREENSHOT_DIR) {
+      const dir=path.resolve(process.env.RPCHESS_FLAG_SCREENSHOT_DIR);
+      await panel.screenshot({path:path.join(dir,'leaderboard-ru.png')});
+    }
     assert((await panel.innerText()).includes('ГЕРОЕВ В СТРОЮ'));
     await page.evaluate(()=>window.RPChessPlayerIdentity.open());
     await page.locator('[data-player-identity-input]').fill('Тимур');
