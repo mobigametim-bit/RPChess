@@ -61,8 +61,24 @@ jobs:
         run: |
           export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
           npx wrangler deploy --config leaderboard-worker/wrangler.toml
-      - name: Remaining manual step
+      - name: Verify VK authentication secret is present (names only)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          echo "Deployed only rpchess-leaderboard (not the deleted static rpchess Worker)."
-          echo "Add VK_APP_SECRET as an encrypted Worker secret in Cloudflare Dashboard."
-          echo "Signed score submissions require the secret."
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler secret list --config leaderboard-worker/wrangler.toml | grep -q 'VK_APP_SECRET' ||
+            { echo "::error::VK_APP_SECRET is missing from the dedicated Worker"; exit 1; }
+      - name: Smoke-check published D1 API
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if curl -fsS --max-time 12 'https://rpchess-leaderboard.mobigametim.workers.dev/health' -o /tmp/leaderboard-health.json &&
+              curl -fsS --max-time 12 'https://rpchess-leaderboard.mobigametim.workers.dev/v1/leaderboard' -o /tmp/leaderboard-board.json &&
+              node -e "const fs=require('fs');const a=JSON.parse(fs.readFileSync('/tmp/leaderboard-health.json'));const b=JSON.parse(fs.readFileSync('/tmp/leaderboard-board.json'));if(a.status!=='ok'||!Array.isArray(b.top))process.exit(1)"; then
+              echo "Great Commanders API and database publicly accessible."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Published leaderboard API failed smoke test."
+          exit 1
