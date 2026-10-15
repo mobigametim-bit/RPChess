@@ -5,8 +5,9 @@ let board={top:[],me:null,status:'unavailable'};
 let cachedAt=0;
 let pending=null;
 let lastUpload='';
+let uploading=null;
 function apiRoot(){
-  const explicit=globalThis.RPChessLeaderboardAPI || document?.querySelector?.('meta[name="rpchess-leaderboard-api"]')?.content || '';
+  const explicit=globalThis.RPChessLeaderboardAPI || globalThis.document?.querySelector?.('meta[name="rpchess-leaderboard-api"]')?.content || '';
   const url=String(explicit).trim().replace(/\/+$/,'');
   return /^https:\/\//.test(url) ? url : '';
 }
@@ -67,7 +68,8 @@ async function submitBestChronicle(){
   if(!apiRoot()||!launch||!best)return {status:'unavailable'};
   const key=best.runId+':'+best.glory+':'+best.week+':'+best.power;
   if(lastUpload===key)return {status:'already-submitted'};
-  try{
+  if(uploading)return uploading;
+  uploading=(async()=>{try{
     const next=await request('/v1/leaderboard/submit',{launch,record:{
       runId:best.runId,playerName:best.playerName,
       glory:best.glory,week:best.week,power:best.power
@@ -78,6 +80,7 @@ async function submitBestChronicle(){
   }catch(error){
     console.warn('[RPChess] leaderboard submit failed',error);
     return {status:'error'};
-  }
+  }finally{uploading=null;}})();
+  return uploading;
 }
 export {currentLeaderboard,loadLeaderboard,submitBestChronicle};
