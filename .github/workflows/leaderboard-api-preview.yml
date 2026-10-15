@@ -85,7 +85,12 @@ jobs:
             if curl -fsS --max-time 12 'https://rpchess-leaderboard.mobigametim.workers.dev/health' -o /tmp/leaderboard-health.json &&
               curl -fsS --max-time 12 'https://rpchess-leaderboard.mobigametim.workers.dev/v1/leaderboard' -o /tmp/leaderboard-board.json &&
               node -e "const fs=require('fs');const a=JSON.parse(fs.readFileSync('/tmp/leaderboard-health.json'));const b=JSON.parse(fs.readFileSync('/tmp/leaderboard-board.json'));if(a.status!=='ok'||!Array.isArray(b.top))process.exit(1)"; then
-              echo "Great Commanders API and database publicly accessible."
+              # Verify browser-origin CORS and reject unsigned writes without touching D1.
+              cors=$(curl -fsS --max-time 12 -D - -o /dev/null -H 'Origin: https://rpchess-leaderboard-preview.mobigametim.workers.dev' 'https://rpchess-leaderboard.mobigametim.workers.dev/v1/leaderboard')
+              printf '%s' "$cors" | grep -iq '^access-control-allow-origin: https://rpchess-leaderboard-preview.mobigametim.workers.dev'
+              status=$(curl -sS --max-time 12 -o /tmp/leaderboard-unauthorized.json -w '%{http_code}' -X POST -H 'content-type: application/json' -H 'Origin: https://rpchess-leaderboard-preview.mobigametim.workers.dev' --data '{"launch":"invalid","record":{"runId":"unauthorized","week":1,"power":1,"glory":0}}' 'https://rpchess-leaderboard.mobigametim.workers.dev/v1/leaderboard/submit')
+              test "$status" = 401 || { echo "::error::Unsigned write was not rejected"; exit 1; }
+              echo "Great Commanders API healthy; preview CORS works; unsigned writes rejected."
               exit 0
             fi
             sleep 5
