@@ -1,0 +1,8 @@
+name = "rpchess-scene-preview"
+compatibility_date = "2026-10-16"
+
+# Isolated temporary game preview, not production GitHub Pages/VK
+# and not the deleted historical Cloudflare static Worker.
+[assets]
+directory = "../dist"
+not_found_handling = "single-page-application"
