@@ -43,6 +43,21 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const legacyActive={...activeTwelve,difficultyModel:undefined};const legacyCompleted={...run,updatedAt:1410,skirmishCount:1,currentTravelChoices:null,activeTravelChoice:legacyActive};storage.setItem(persistence.RUN_STORAGE_KEY,JSON.stringify(legacyCompleted));const legacyRecovered=persistence.readRun(storage);assert(legacyRecovered);assert.strictEqual(legacyRecovered.activeTravelChoice,null,'legacy completed combat route still auto-recovers');
   const manualSkirmish={id:'manual.s',step:1,type:'skirmish',label:'СТЫЧКА',stars:12,threatLabel:'ЛЕГЕНДАРНАЯ',flavor:'Путь.',mechanicalHint:'Нестандартный состав противника.',seed:'manual-s',playerColor:'b',enemyRaceTag:'orcs'};globalThis.RPChessTravelEncounterOverride=manualSkirmish;const rs=skirmish.createEncounter({seed:'fallback',stars:5});assert.strictEqual(rs.seed,'manual-s');assert.strictEqual(rs.stars,12);assert.strictEqual(rs.aiElo,2600);assert.strictEqual(rs.playerColor,'b');
   const manualBattle={...manualSkirmish,id:'manual.b',type:'battle',label:'БИТВА',seed:'manual-b'};globalThis.RPChessTravelEncounterOverride=manualBattle;const rb=battle.createBattleEncounter({seed:'fallback',stars:1});assert.strictEqual(rb.seed,'manual-b');assert.strictEqual(rb.stars,12);assert.strictEqual(rb.aiElo,2600);
+  // The scene cover is opaque, localized and must remain through final DOM paint.
+  const loaderSource=fs.readFileSync(path.join(game,'js/scene-ready.mjs'),'utf8');
+  for(const token of [
+    "background:#000",
+    "ЗАГРУЗКА...",
+    "LOADING...",
+    "brandLogoSrc()",
+    "rpchess-scene-blink",
+    "rpchess:scene-revealed",
+    "const finalArt = await prepareArt(sceneImageUrls(roots)"
+  ])assert(loaderSource.includes(token),`scene loader contract missing: ${token}`);
+  const compactSource=fs.readFileSync(path.join(game,'js/ui-redesign-final.mjs'),'utf8');
+  assert(compactSource.includes("'rpchess:scene-revealed'"),'deferred reveals must synchronize responsive Battle prep classes');
+  for(const script of ['skirmish-app.mjs','battle-app.mjs','arena-app.mjs'])
+    assert(fs.readFileSync(path.join(game,'js',script),'utf8').includes('showPreparedScene'),'chess entry must keep art covered: '+script);
   // Reuse Travel's existing regression for bounded scene-art preparation.
   const ready=await import(pathToFileURL(path.join(game,'js/scene-ready.mjs')).href);
   const oldImage=globalThis.Image,oldStyle=globalThis.getComputedStyle;
