@@ -1,7 +1,7 @@
 # Great Commanders API — first deployment
 
 This is a **new dedicated** Cloudflare Worker `rpchess-leaderboard`, not the deleted static game Worker `rpchess`.
-The main RPChess website stays on GitHub Pages. The feature PR stays in draft until owner acceptance.
+The main RPChess website stays on GitHub Pages. PR #157 was merged and published on 2026-10-15 (Actions #38783897854). Dedicated Worker and D1 are live; signed VK account score submissions still need real-VK acceptance.
 
 ## Already configured
 
@@ -19,7 +19,7 @@ The main RPChess website stays on GitHub Pages. The feature PR stays in draft un
    - `CLOUDFLARE_API_TOKEN` — value is the token created in Cloudflare;
    - `CLOUDFLARE_ACCOUNT_ID` — value is Cloudflare Account ID (not D1 database ID).
 3. Inform the developer that both secret names have been configured, **without sending the values**.
-4. Developer will trigger the staging deployment from this *feature branch* using a deliberate push commit whose entire message is `deploy: leaderboard preview`. Normal pushes and PR checks don't deploy.
+4. Staging-only workflow is restricted to the original feature branch, while the main game is published via the separate manual GitHub Pages release workflow. Production release already completed.
 5. GitHub Actions will apply `schema.sql` to the existing D1 and deploy the new `rpchess-leaderboard` Worker. Record the **actual** `.workers.dev` URL from the job output; never guess it.
 6. In Cloudflare → Workers & Pages → **rpchess-leaderboard** → Settings → Variables and Secrets → Add secret, create `VK_APP_SECRET` using the **secret key from the VK application**. Do NOT use VK access tokens, and do NOT expose the key in GitHub or chat. This must happen after the Worker exists. The Cloudflare dashboard may redeploy it.
 7. Verify `GET <actual-worker-url>/health` and `GET <actual-worker-url>/v1/leaderboard`, and a signed launch from a real VK client. The game preview must then explicitly configure the verified API origin. The current client does not invent the endpoint.
@@ -41,4 +41,4 @@ The last command prompts for the secret value; never put it in shell history.
 
 The VK signed launch proves account identity, not honest game results. The Worker recomputes Glory, checks basic value bounds, upserts only personal bests, and never creates demo players. Full anti-cheat requires server-authoritative game verification. No prizes or monetary rewards should be based solely on this MVP.
 
-Staging deployment is deliberately initiated only by a push to the feature branch whose commit message is `deploy: leaderboard preview` (or by manually dispatching the workflow on that branch). GitHub Actions verifies credentials, applies the D1 schema and deploys the Worker. The game stays on GitHub Pages and the PR stays unmerged.
+Worker staging deployment was verified in GitHub Actions #38782253574. The encrypted VK secret was confirmed; public leaderboard reads, CORS, and unsigned write rejection passed. Game is live on GitHub Pages. Real signed VK submissions and the user's leaderboard position still need user acceptance in VK. Preserve secret rotation from earlier exposure; never reintroduce plaintext variables.
