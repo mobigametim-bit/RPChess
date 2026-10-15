@@ -41,4 +41,4 @@ The last command prompts for the secret value; never put it in shell history.
 
 The VK signed launch proves account identity, not honest game results. The Worker recomputes Glory, checks basic value bounds, upserts only personal bests, and never creates demo players. Full anti-cheat requires server-authoritative game verification. No prizes or monetary rewards should be based solely on this MVP.
 
-The Worker is **not deployed** by merely committing this configuration; D1 schema is not initialized until explicit remote schema execution.
+Staging deployment is deliberately initiated only by a push to the feature branch whose commit message is `deploy: leaderboard preview` (or by manually dispatching the workflow on that branch). GitHub Actions verifies credentials, applies the D1 schema and deploys the Worker. The game stays on GitHub Pages and the PR stays unmerged.
