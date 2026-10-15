@@ -7,6 +7,7 @@ import { pieceArtForTheme, racePiecePath } from './race-assets.mjs';
 import { starsText } from './encounter-difficulty.mjs';
 import { subscribe, t, translateLegacy } from './i18n.mjs';
 import { brandLogoSrc } from './brand-logo.mjs';
+import { showPreparedScene } from './scene-ready.mjs';
 import { chooseArtifact, renderThreatOverlay } from './artifact-combat-ui.mjs';
 import { artifactForCombat, clearCombatArtifactChoice } from './artifact-core.mjs';
 import {
@@ -284,7 +285,8 @@ function renderCounters() { const validation=validateBattleSelection(activeRun?.
 function renderComposition(){renderAvailable();renderSlotSummary();renderFormation();renderParticipants();renderCounters();}
 
 function resetBattleTracking(){battlePlan=null;playerBySquare=new Map();enemyBySquare=new Map();capturedIds=new Set();processedMoves=0;battleFinalized=false;lastCapturedVisual=null;lastBattleStatus=null;lastMercenaryCasualty=null;clearTimeout(finalizeTimer);finalizeTimer=null;setBattleNavigationLocked(false);}
-function openBattle(){combatType='battle';ensureBattleScreens();activeRun=readRun();if(!activeRun||activeRun.ended)return;encounter=encounterForRun(activeRun);const saved=checkpointFor(activeRun,'battle',encounter);selectedIds=new Set(saved?.selectedIds||defaultBattleSelection(activeRun.roster));resetBattleTracking();setNotice('');renderStaticCopy();if(saved&&validateBattleSelection(activeRun.roster,saved.selectedIds).ok){launchBattle(true);return;}renderEncounter();renderComposition();showOnly('battle');}
+function showPreparedBattleSetup(){globalThis.RPChessSceneVisuals?.setBattlePrepBackdrop?.(encounter);const id=encounter?.id;void showPreparedScene({roots:[prepScreen],enter:()=>showOnly('battle'),isCurrent:()=>encounter?.id===id&&!!activeRun&&!activeRun.ended});}
+function openBattle(){combatType='battle';ensureBattleScreens();activeRun=readRun();if(!activeRun||activeRun.ended)return;encounter=encounterForRun(activeRun);const saved=checkpointFor(activeRun,'battle',encounter);selectedIds=new Set(saved?.selectedIds||defaultBattleSelection(activeRun.roster));resetBattleTracking();setNotice('');renderStaticCopy();if(saved&&validateBattleSelection(activeRun.roster,saved.selectedIds).ok){launchBattle(true);return;}renderEncounter();renderComposition();showPreparedBattleSetup();}
 function openCaravan(event){
   combatType='caravan';ensureBattleScreens();activeRun=readRun();if(!activeRun||activeRun.ended)return;
   const choice=event?.detail?.choice||activeRun.activeTravelChoice;
@@ -295,8 +297,7 @@ function openCaravan(event){
     battlePlan=state.plan;lastBattleStatus=state.status;battleFinalized=true;showCaravanOutcome();return;
   }
   if(state.phase==='combat'){launchBattle();return;}
-  renderEncounter();renderComposition();showOnly('battle');
-  if(state.phase==='artifact')startBattle();
+  renderEncounter();renderComposition();if(state.phase==='artifact'){showOnly('battle');startBattle();}else showPreparedBattleSetup();
 }
 function showCaravanOutcome(){
   activeRun=readRun();lastBattleStatus=activeRun.currentCaravan.status;
@@ -350,11 +351,22 @@ function launchBattle(resume = false) {
     activeRun=writeRun({...activeRun,currentCombat:{type:'battle',encounterId:encounter.id,selectedIds:[...selectedIds],moves:[]}});
   }
   playerBySquare=new Map(battlePlan.playerFormation.map((piece)=>[piece.square,piece])); enemyBySquare=new Map(battlePlan.enemyFormation.map((piece)=>[piece.square,piece]));
-  capturedIds=new Set();processedMoves=0;battleFinalized=false;lastCapturedVisual=null;lastBattleStatus=null;lastMercenaryCasualty=null;clearTimeout(finalizeTimer);audio()?.click?.();showOnly('classic');setBattleNavigationLocked(true);
-  globalThis.RPChessClassicChess?.newGame(battlePlan.fen,{mode:'ai',playerColor:battlePlan.playerColor,aiElo:encounter.aiElo,chess960:isCaravan(),moves:isCaravan()?activeRun.currentCaravan.moves:saved?.moves||[]});
-  restoring=true;syncBattleFromChess();restoring=false;applyBoardArt();
-  const mode=document.querySelector('[data-game-mode]');if(mode)mode.textContent=combatDifficultyLabel();
-  globalThis.dispatchEvent(new CustomEvent('rpchess:combat-started',{detail:{combatType}}));
+  capturedIds=new Set();processedMoves=0;battleFinalized=false;lastCapturedVisual=null;lastBattleStatus=null;lastMercenaryCasualty=null;clearTimeout(finalizeTimer);audio()?.click?.();
+  const expectedPlan=battlePlan, runId=activeRun.id, savedMoves=isCaravan()?activeRun.currentCaravan.moves:saved?.moves||[], type=combatType;
+  const assets=[...playerBySquare.values()].map(piece=>pieceImage(piece,'player'));
+  assets.push(...[...enemyBySquare.values()].map(piece=>pieceImage(piece,'enemy')));
+  if(classicScreen?.dataset?.combatBackdrop)assets.push(classicScreen.dataset.combatBackdrop);
+  void showPreparedScene({
+    assets,
+    isCurrent:()=>battlePlan===expectedPlan&&activeRun?.id===runId&&!activeRun.ended,
+    enter:()=>{
+      showOnly('classic');setBattleNavigationLocked(true);
+      globalThis.RPChessClassicChess?.newGame(expectedPlan.fen,{mode:'ai',playerColor:expectedPlan.playerColor,aiElo:encounter.aiElo,chess960:type==='caravan',moves:savedMoves});
+      restoring=true;try{syncBattleFromChess();}finally{restoring=false;}applyBoardArt();
+      const mode=document.querySelector('[data-game-mode]');if(mode)mode.textContent=combatDifficultyLabel();
+      globalThis.dispatchEvent(new CustomEvent('rpchess:combat-started',{detail:{combatType:type}}));
+    }
+  });
 }
 function startBattle() {
   activeRun=readRun();if(!activeRun||activeRun.ended)return;const validation=validateBattleSelection(activeRun.roster,[...selectedIds]);if(!validation.ok){setNotice(() => battleReason(validation));return;}
