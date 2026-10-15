@@ -1,0 +1,85 @@
+name: Deploy RPChess loading screen acceptance preview
+
+on:
+  push:
+    branches:
+      - feature/localized-asset-loading-screen
+    paths:
+      - loading-preview/**
+      - .github/workflows/loading-screen-preview.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rpchess-loading-screen-preview
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Preview deploys are deliberate, not triggered by unrelated PR code edits.
+    if: >-
+      github.repository == 'mobigametim-bit/RPChess' &&
+      github.ref == 'refs/heads/feature/localized-asset-loading-screen' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'push' && github.event.head_commit.message == 'deploy: loading screen preview')
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout acceptance branch
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Restore runtime asset cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build playable preview
+        run: npm run build
+      - name: Confirm localized loading screen included
+        run: |
+          test -f dist/index.html
+          test -f dist/js/screen-loading.mjs
+          test -f dist/css/screen-loading.css
+          test -f dist/generated_assets/logo_ru.png
+          test -f dist/generated_assets/logo_en.png
+          grep -q 'data-game-loading' dist/index.html
+      - name: Require Cloudflare credentials
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$TOKEN" || { echo "::error::CLOUDFLARE_API_TOKEN is missing"; exit 1; }
+          test -n "$ACCOUNT" || { echo "::error::CLOUDFLARE_ACCOUNT_ID is missing"; exit 1; }
+      - name: Deploy separate acceptance Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config loading-preview/wrangler.toml
+      - name: Smoke-check public preview
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            if curl -fsS --max-time 15 'https://rpchess-loading-preview.mobigametim.workers.dev/' -o /tmp/rpchess-preview.html &&
+               grep -q 'data-game-loading' /tmp/rpchess-preview.html &&
+               curl -fsS --max-time 15 'https://rpchess-loading-preview.mobigametim.workers.dev/js/screen-loading.mjs' -o /tmp/rpchess-preview-loader.js &&
+               grep -q 'onSceneMutation' /tmp/rpchess-preview-loader.js; then
+              echo "PLAYABLE_PREVIEW_URL=https://rpchess-loading-preview.mobigametim.workers.dev/"
+              exit 0
+            fi
+            sleep 6
+          done
+          echo "::error::Public loading screen preview failed smoke checks"
+          exit 1
