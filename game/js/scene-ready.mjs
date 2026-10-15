@@ -114,7 +114,14 @@ function makeOverlay() {
 function afterPaint() {
   return new Promise(resolve => {
     if (typeof requestAnimationFrame !== 'function') { resolve(); return; }
-    requestAnimationFrame(() => requestAnimationFrame(resolve));
+    let done = false;
+    const timer = setTimeout(() => { if (!done) { done = true; resolve(); } }, 200);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      resolve();
+    }));
   });
 }
 
