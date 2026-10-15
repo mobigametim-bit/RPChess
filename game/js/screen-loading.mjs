@@ -7,6 +7,7 @@ const app = document.querySelector('#app');
 const loaded = new Set();
 const failed = new Set();
 const inflight = new Map();
+const settledStyles = new WeakSet();
 let generation = 0;
 let bootFinished = false;
 let lastScene = '';
@@ -76,7 +77,7 @@ function mediaSources() {
   return [...sources].filter((src) => !loaded.has(src) && !failed.has(src));
 }
 function pendingStyles() {
-  return [...document.querySelectorAll('link[rel="stylesheet"]')].filter((link) => !link.disabled && !link.sheet);
+  return [...document.querySelectorAll('link[rel="stylesheet"]')].filter((link) => !link.disabled && !link.sheet && !settledStyles.has(link));
 }
 function awaitStylesheet(link) {
   if (link.sheet) return Promise.resolve();
@@ -85,6 +86,7 @@ function awaitStylesheet(link) {
     const finish = () => {
       if (done) return;
       done = true;
+      settledStyles.add(link);
       clearTimeout(timer);
       link.removeEventListener('load', finish);
       link.removeEventListener('error', finish);
@@ -150,8 +152,8 @@ function onSceneMutation(records) {
     const key = sceneKey();
     if (key === lastScene) return;
     lastScene = key;
-    const token = ++generation;
     if (!bootFinished || !key) return;
+    const token = ++generation;
     // Do not flash the mask on cached, already complete transitions.
     if (!pendingStyles().length && !mediaSources().length) return;
     show();
@@ -159,6 +161,7 @@ function onSceneMutation(records) {
   });
 }
 if (overlay && app) {
+  overlay.dataset.loaderInitialized = '1';
   localize();
   addEventListener('rpchess:language-changed', localize);
   new MutationObserver(onSceneMutation).observe(app, {
