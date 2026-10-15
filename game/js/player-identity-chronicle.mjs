@@ -3,7 +3,8 @@ import { runtimeT } from '../localization/runtime-ui.mjs';
 import { readRun } from './run-persistence.mjs';
 import { readPlayerRating } from './player-rating.mjs';
 import { PLAYER_NAME_MAX_LENGTH, normalizePlayerName } from './player-identity-core.mjs';
-import { activeRunSnapshot, bestChronicleRun, readChronicle, recordCompletedRun } from './chronicle-core.mjs';
+import { activeRunSnapshot, recordCompletedRun } from './chronicle-core.mjs';
+import { currentLeaderboard, loadLeaderboard, submitBestChronicle } from './leaderboard-client.mjs';
 
 let identityModal = null;
 let chroniclePanel = null;
@@ -179,8 +180,7 @@ function renderChronicle() {
   const run = readRun();
   const rating = readPlayerRating();
   const current = activeRunSnapshot(run, { power: rating.power });
-  const chronicle = readChronicle();
-  const best = bestChronicleRun(chronicle);
+  const leaderboard = currentLeaderboard();
   const currentRoot = root.querySelector('[data-chronicle-current]');
   const bestRoot = root.querySelector('[data-chronicle-best]');
 
@@ -196,15 +196,50 @@ function renderChronicle() {
 
   bestRoot?.replaceChildren();
   if (bestRoot) {
-    if (best) {
-      bestRoot.append(sectionTitle(l('chronicle.best'), best.playerName));
-      bestRoot.append(metric(l('chronicle.glory'), best.glory, 'generated_assets/node_elite.png'), metric(l('chronicle.week'), best.week, 'generated_assets/node_story.png'), metric(l('chronicle.power'), best.power, 'assets/doctrines/royal_court/emblem.png'));
+    const title=document.createElement('h3');
+    title.className='chronicle-commanders-title';
+    title.textContent=l('chronicle.commanders');
+    bestRoot.append(title);
+
+    const own=document.createElement('div');
+    own.className='chronicle-leaderboard-self';
+    const ownLabel=document.createElement('span');
+    ownLabel.textContent=l('leaderboard.yourRank');
+    const ownRank=document.createElement('strong');
+    ownRank.textContent=leaderboard.me
+      ? '#'+leaderboard.me.rank+' · '+leaderboard.me.glory+' '+l('chronicle.glory')
+      : l('leaderboard.notRanked');
+    own.append(ownLabel,ownRank);
+    bestRoot.append(own);
+
+    if (leaderboard.status==='ready' && leaderboard.top.length) {
+      const list=document.createElement('ol');
+      list.className='chronicle-leaderboard-list';
+      list.setAttribute('aria-label',l('leaderboard.top10'));
+      for (const entry of leaderboard.top) {
+        const row=document.createElement('li');
+        row.className='chronicle-leaderboard-row';
+        const rank=document.createElement('span');
+        rank.className='chronicle-leaderboard-rank';
+        rank.textContent=String(entry.rank)+'.';
+        const name=document.createElement('span');
+        name.className='chronicle-leaderboard-name';
+        name.textContent=entry.name;
+        name.title=entry.name;
+        const glory=document.createElement('strong');
+        glory.className='chronicle-leaderboard-glory';
+        glory.textContent=String(entry.glory);
+        row.append(rank,name,glory);
+        list.append(row);
+      }
+      bestRoot.append(list);
     } else {
-      bestRoot.append(sectionTitle(l('chronicle.emptyKicker'), l('chronicle.emptyTitle')));
-      const text = document.createElement('p');
-      text.className = 'chronicle-empty-copy';
-      text.textContent = l('chronicle.emptyCopy');
-      bestRoot.append(text);
+      const note=document.createElement('p');
+      note.className='chronicle-leaderboard-note';
+      note.textContent=leaderboard.status==='ready'
+        ? l('leaderboard.empty')
+        : leaderboard.status==='offline'?l('leaderboard.offline'):l('leaderboard.unavailable');
+      bestRoot.append(note);
     }
   }
 }
@@ -214,9 +249,12 @@ function syncChronicle() {
   const rating = readPlayerRating();
   if (run?.ended) recordCompletedRun(run, { power: rating.power });
   renderChronicle();
+  void loadLeaderboard();
 }
 
 subscribe(() => { renderIdentityCopy(); renderChronicle(); });
+addEventListener('rpchess:leaderboard-updated', renderChronicle);
+addEventListener('rpchess:chronicle-updated', () => { void submitBestChronicle(); });
 
 addEventListener('rpchess:identity-request', openIdentityPrompt);
 addEventListener('rpchess:run-updated', syncChronicle);
@@ -230,6 +268,7 @@ document.addEventListener('keydown', (event) => {
 
 ensureChroniclePanel();
 syncChronicle();
+void submitBestChronicle();
 
 globalThis.RPChessPlayerIdentity = Object.freeze({ open: openIdentityPrompt, close: closeIdentityPrompt });
 globalThis.RPChessChronicle = Object.freeze({ render: renderChronicle, sync: syncChronicle });
