@@ -68,7 +68,7 @@ function mediaSources() {
       }
       const bg = getComputedStyle(node).backgroundImage;
       if (bg && bg !== 'none') {
-        for (const match of bg.matchAll(/url\\(["']?([^"')]+)["']?\\)/g)) {
+        for (const match of bg.matchAll(/url\(["']?([^"')]+)["']?\)/g)) {
           try { sources.add(new URL(match[1], document.baseURI).href); } catch {}
         }
       }
