@@ -1,0 +1,8 @@
+name = "rpchess-loading-preview"
+compatibility_date = "2026-10-15"
+
+# Isolated playable acceptance build of feature/localized-asset-loading-screen.
+# Does not alter GitHub Pages, VK, Yandex or the leaderboard staging Worker.
+[assets]
+directory = "../dist"
+not_found_handling = "single-page-application"
