@@ -62,6 +62,9 @@ const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
         globalThis.RPChessSkirmish.finishBattle({ over: true, type: 'checkmate', winner: plan.playerColor });
       });
       await page.locator('[data-skirmish-aftermath]').waitFor({ state: 'visible' });
+      // The new asset-loading mask deliberately covers a scene until its images decode.
+      // Check tap accessibility only after that blocking overlay is fully dismissed.
+      await page.locator('[data-game-loading]').waitFor({ state: 'hidden', timeout: 25000 });
       // Allow the reward/power owners to fill their slots before checking layout.
       await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       const result = await page.evaluate(() => {
@@ -71,6 +74,7 @@ const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
         list.scrollTop = list.scrollHeight;
         return { top: box.top, bottom: box.bottom, height: box.height,
           reachable: button.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)),
+          coveringElement: document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)?.className || '',
           listHeight: list.clientHeight, overflow: list.scrollHeight > list.clientHeight + 1,
           scrolled: list.scrollTop > 0 };
       });
