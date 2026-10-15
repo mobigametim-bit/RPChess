@@ -8,6 +8,10 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
   try{
     const page=await browser.newPage({viewport:{width:1653,height:760}});
     const errors=[];page.on('pageerror',error=>errors.push(error.message));
+    // Keep browser localization deterministic; public API connectivity is exercised
+    // separately by the Cloudflare deployment smoke test.
+    await page.route('https://rpchess-leaderboard.mobigametim.workers.dev/**',route=>
+      route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({top:[],me:null})}));
     await page.goto(url,{waitUntil:'networkidle'});
     const panel=page.locator('[data-chronicle-panel]');
     await panel.waitFor();
@@ -16,7 +20,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert.strictEqual(await panel.locator('h2').innerText(),'Chronicle');
     assert((await panel.innerText()).includes('No active journey'));
     assert((await panel.innerText()).includes('Great Commanders'));
-    assert((await panel.innerText()).includes('Online leaderboard is not connected yet'));
+    assert((await panel.innerText()).includes('No results yet'),'online empty leaderboard should translate');
     assert(!/[А-Яа-яЁё]/u.test(await panel.innerText()),'empty Chronicle must fully translate');
     await page.evaluate(async()=>{
       const persistence=await import('./js/run-persistence.mjs');
