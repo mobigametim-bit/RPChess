@@ -155,7 +155,12 @@ function onSceneMutation(records) {
     if (!bootFinished || !key) return;
     const token = ++generation;
     // Do not flash the mask on cached, already complete transitions.
-    if (!pendingStyles().length && !mediaSources().length) return;
+    if (!pendingStyles().length && !mediaSources().length) {
+      // A cached destination can supersede a still-loading screen. Dismiss
+      // the old mask rather than invalidating its token and leaving it stuck.
+      hide(token);
+      return;
+    }
     show();
     prepareScene(token);
   });
