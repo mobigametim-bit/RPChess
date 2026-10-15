@@ -2,14 +2,14 @@ name = "rpchess-leaderboard"
 main = "src/index.mjs"
 compatibility_date = "2026-10-15"
 
-# Before deployment: create D1, supply database_id in a binding below,
-# then: npx wrangler secret put VK_APP_SECRET
-# The old static RPChess Worker is NOT reused.
-#
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "rpchess-leaderboard"
-# database_id = "REPLACE_WITH_REAL_D1_ID"
+# Dedicated leaderboard API, not the deleted static RPChess Worker.
+# VK_APP_SECRET must be configured as a Cloudflare Worker secret, not [vars].
+# No automatic deployment from feature branches.
+
+[[d1_databases]]
+binding = "DB"
+database_name = "rpchess-leaderboard"
+database_id = "8452f616-2982-428a-ad59-57cb8238708f"
 
 [vars]
 ALLOWED_ORIGINS = "https://mobigametim-bit.github.io"
