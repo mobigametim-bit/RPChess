@@ -285,7 +285,7 @@ function renderCounters() { const validation=validateBattleSelection(activeRun?.
 function renderComposition(){renderAvailable();renderSlotSummary();renderFormation();renderParticipants();renderCounters();}
 
 function resetBattleTracking(){battlePlan=null;playerBySquare=new Map();enemyBySquare=new Map();capturedIds=new Set();processedMoves=0;battleFinalized=false;lastCapturedVisual=null;lastBattleStatus=null;lastMercenaryCasualty=null;clearTimeout(finalizeTimer);finalizeTimer=null;setBattleNavigationLocked(false);}
-function showPreparedBattleSetup(){globalThis.RPChessSceneVisuals?.setBattlePrepBackdrop?.(encounter);const id=encounter?.id;void showPreparedScene({roots:[prepScreen],enter:()=>showOnly('battle'),isCurrent:()=>encounter?.id===id&&!!activeRun&&!activeRun.ended});}
+function showPreparedBattleSetup(){globalThis.RPChessSceneVisuals?.setBattlePrepBackdrop?.(encounter);const id=encounter?.id;void showPreparedScene({roots:[prepScreen],enter:()=>{renderEncounter();renderComposition();showOnly('battle');},isCurrent:()=>encounter?.id===id&&!!activeRun&&!activeRun.ended});}
 function openBattle(){combatType='battle';ensureBattleScreens();activeRun=readRun();if(!activeRun||activeRun.ended)return;encounter=encounterForRun(activeRun);const saved=checkpointFor(activeRun,'battle',encounter);selectedIds=new Set(saved?.selectedIds||defaultBattleSelection(activeRun.roster));resetBattleTracking();setNotice('');renderStaticCopy();if(saved&&validateBattleSelection(activeRun.roster,saved.selectedIds).ok){launchBattle(true);return;}renderEncounter();renderComposition();showPreparedBattleSetup();}
 function openCaravan(event){
   combatType='caravan';ensureBattleScreens();activeRun=readRun();if(!activeRun||activeRun.ended)return;
