@@ -64,6 +64,12 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   assert.strictEqual(leaderboard.validatedRecord({runId:'run-1',playerName:'Элиана',week:36,power:556,glory:14}).glory,14);
   assert.strictEqual(leaderboard.validatedRecord({runId:'run-1',playerName:'Элиана',week:36,power:556,glory:99}),null,'incorrect Glory must be rejected');
   assert.strictEqual(leaderboard.validatedRecord({runId:'run-1',playerName:'Элиана',week:-1,power:556,glory:0}),null,'negative weeks must be rejected');
+  const vkSecret='local-test-secret';
+  const signedLaunch='vk_app_id=54754579&vk_user_id=42';
+  const vkSignature=require('node:crypto').createHmac('sha256',vkSecret).update(signedLaunch).digest('base64url');
+  assert.strictEqual(await leaderboard.verifiedVKId(signedLaunch+'&sign='+vkSignature,vkSecret),'42','signed VK identity must be verified');
+  assert.strictEqual(await leaderboard.verifiedVKId('vk_app_id=54754579&vk_user_id=43&sign='+vkSignature,vkSecret),null,'tampered VK user ID must be rejected');
+  assert.strictEqual(await leaderboard.verifiedVKId('vk_app_id=54754580&vk_user_id=42&sign='+vkSignature,vkSecret),null,'VK app ID must match RPChess');
   assert(ui.includes('chronicle-leaderboard-self')&&ui.includes('chronicle-leaderboard-list'));
   console.log('Player Identity, Chronicle, Great Commanders UI and server Glory checks: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
