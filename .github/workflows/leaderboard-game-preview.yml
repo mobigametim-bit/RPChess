@@ -1,0 +1,65 @@
+name: Deploy playable Great Commanders preview
+
+on:
+  push:
+    branches:
+      - feature/great-commanders-leaderboard-20261015
+    paths:
+      - leaderboard-preview/**
+      - .github/workflows/leaderboard-game-preview.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rpchess-great-commanders-game-preview
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.repository == 'mobigametim-bit/RPChess' &&
+      (
+        (github.event_name == 'push' && github.event.head_commit.message == 'deploy: game leaderboard preview') ||
+        (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/great-commanders-leaderboard-20261015')
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build game from feature branch
+        run: npm run build
+      - name: Require configured real leaderboard endpoint in preview build
+        run: |
+          test -f dist/index.html
+          grep -q 'name="rpchess-leaderboard-api" content="https://rpchess-leaderboard.mobigametim.workers.dev"' dist/index.html
+          test -f dist/js/leaderboard-client.mjs
+          test -f dist/assets/ui/royal_run_flag.png
+      - name: Deploy preview as separate Cloudflare Worker with static assets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          npx wrangler deploy --config leaderboard-preview/wrangler.toml
+      - name: Check public preview responds
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if curl -fsS --max-time 12 'https://rpchess-leaderboard-preview.mobigametim.workers.dev/' -o /tmp/leaderboard-preview.html &&
+               grep -q 'rpchess-leaderboard-api' /tmp/leaderboard-preview.html; then
+              echo "Playable preview deployed: https://rpchess-leaderboard-preview.mobigametim.workers.dev/"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Game preview URL failed public HTML smoke check"
+          exit 1
