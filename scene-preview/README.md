@@ -17,3 +17,7 @@ https://rpchess-scene-preview.mobigametim.workers.dev/
 
 This preview does not replace GitHub Pages, the VK application, or the API Worker.
 A direct preview tab is not equivalent to a signed VK Mini Apps launch.
+
+## Regression fix
+
+The final scene reveal re-renders localized headings and labels in the then-current language before removing the prior scene. This covers language changes while images are still loading.
