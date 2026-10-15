@@ -21,3 +21,7 @@ A direct preview tab is not equivalent to a signed VK Mini Apps launch.
 ## Regression fix
 
 The final scene reveal re-renders localized headings and labels in the then-current language before removing the prior scene. This covers language changes while images are still loading.
+
+## Full-screen loading cover (2026-10-16)
+
+Until the destination scene is painted and its visible art decoded, show a full-screen **black** cover with the current RU/EN game's logo and blinking **ЗАГРУЗКА... / LOADING...**. This includes Travel card images, Skirmish/Battle/Caravan board art, and Arena combat art. Enforce a single seven-second safety budget in case a remote image is broken or a device is offline. After the destination scene becomes visible under the cover, trigger the responsive-layout owner event `rpchess:scene-revealed` and decode final visible images before dismissing the cover. Tests must pass before merging into main.
