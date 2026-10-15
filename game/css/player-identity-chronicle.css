@@ -184,3 +184,18 @@
   .identity-field input{min-height:54px;font-size:18px}
   .identity-submit{min-height:54px}
 }
+
+/* Great Commanders leaderboard: compact rows inside the existing royal flag. */
+.chronicle-commanders-title{margin:1px 0 5px;text-align:center;font:400 clamp(18px,1.7vw,25px)/1.1 'BrahmsGotischCyr',Georgia,serif;color:#ffe0a1;overflow-wrap:anywhere}
+.chronicle-leaderboard-self{display:flex;align-items:center;justify-content:space-between;gap:5px;padding:4px 2px;border-bottom:1px solid #d4aa6f;background:rgba(1,15,39,.13);font:700 clamp(10px,.92vw,13px)/1.2 Georgia,serif;color:#ffe1a6}
+.chronicle-leaderboard-self strong{white-space:nowrap;font-size:clamp(10px,1vw,14px);color:#fff4dd}
+.chronicle-leaderboard-list{list-style:none;padding:0;margin:3px 0 0;min-width:0;display:grid;gap:0}
+.chronicle-leaderboard-row{display:grid;grid-template-columns:23px minmax(0,1fr) 35px;gap:3px;align-items:center;min-width:0;min-height:clamp(18px,2.55vh,24px);border-bottom:1px solid rgba(232,188,92,.24);font:700 clamp(11px,.95vw,14px)/1.13 Georgia,serif;color:#fff1cf}
+.chronicle-leaderboard-rank{color:#e4c27d;font-variant-numeric:tabular-nums}
+.chronicle-leaderboard-name{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.chronicle-leaderboard-glory{text-align:right;color:#ffdb8a;font-variant-numeric:tabular-nums}
+.chronicle-leaderboard-note{margin:10px 1px;font:clamp(11px,1vw,14px)/1.35 Georgia,serif;text-align:center;color:#f0d5a2}
+@media(orientation:landscape) and (max-height:600px){
+ html[data-landscape-ui='1'] .chronicle-leaderboard-row{min-height:17px!important;font-size:11px}
+ html[data-landscape-ui='1'] .chronicle-commanders-title{font-size:18px}
+}
