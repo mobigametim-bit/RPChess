@@ -3,6 +3,8 @@ import { createRun, readRun, writeRun } from './run-persistence.mjs';
 import { applyNewRunPowerCarryover } from './player-rating.mjs';
 import { subscribe, t, translateLegacy } from './i18n.mjs';
 import { heroNoteForId } from './content/hero-notes.mjs';
+import { commanderTitle,commanderDescription } from './commander-portraits.mjs';
+import { currentLanguage } from './i18n.mjs';
 
 const menu = document.querySelector('[data-reboot-foundation]');
 const classicScreen = document.querySelector('[data-classic-screen]');
@@ -93,7 +95,7 @@ function renderDetail() {
   const character = selectedCharacter();
   rosterDetail.replaceChildren();
   if (!character) return;
-  const displayName = contentText(character.name);
+  const displayName = character.isRunKing?commanderTitle(activeRun?.commanderId,currentLanguage()):contentText(character.name);
 
   const media = document.createElement('div');
   media.className = 'roster-detail__media';
@@ -123,7 +125,7 @@ function renderDetail() {
   status.textContent = statusLabel(character.status);
   const description = document.createElement('p');
   description.className = 'roster-detail__description';
-  description.textContent = contentText(heroNoteForId(character.id) || character.description);
+  description.textContent = character.isRunKing?commanderDescription(activeRun?.commanderId,currentLanguage()):contentText(heroNoteForId(character.id) || character.description);
 
   body.append(eyebrow, title, facts, status);
   const noteText = statusNote(character);
@@ -138,7 +140,7 @@ function renderDetail() {
 }
 
 function cardFor(character) {
-  const displayName = contentText(character.name);
+  const displayName = character.isRunKing?commanderTitle(activeRun?.commanderId,currentLanguage()):contentText(character.name);
   const displayPiece = pieceLabel(character.pieceType);
   const displayStatus = statusLabel(character.status);
   const button = document.createElement('button');
@@ -224,7 +226,7 @@ function renderRoster() {
 function beginRun(event = null) {
   const previousRun = readRun();
   if (previousRun?.ended) applyNewRunPowerCarryover();
-  activeRun = writeRun(createRun({ playerName: event?.detail?.playerName }));
+  activeRun = writeRun(createRun({ playerName:event?.detail?.playerName,commanderId:event?.detail?.commanderId }));
   activeFilter = 'all';
   updateContinueState();
   setScene('roster');
