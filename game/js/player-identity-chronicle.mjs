@@ -151,6 +151,7 @@ function openIdentityPrompt() {
   if (submit) submit.disabled = true;
   modal.hidden = false;
   document.body.classList.add('reboot-modal-open');
+  globalThis.RPChessLoading?.requestVisibleAssets?.();
   audio()?.open?.();
   requestAnimationFrame(() => input?.focus());
   return true;
