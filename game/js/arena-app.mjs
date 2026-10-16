@@ -1,6 +1,6 @@
 import { ChessAIAdapter } from './chess-ai-adapter.mjs';
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
-import { RACE_TAGS, RACE_LABELS, racePiecePath, applyRaceBoardTheme } from './race-assets.mjs';
+import { RACE_TAGS, RACE_LABELS, racePiecePath, boardRacePiecePath, applyRaceBoardTheme } from './race-assets.mjs';
 import { ARTIFACTS, artifactById, combatArtifactOffer } from './artifact-core.mjs';
 import { renderThreatOverlay } from './artifact-combat-ui.mjs';
 import { applyPinIce } from './king-pin-ice.mjs';
@@ -103,7 +103,8 @@ function renderBoard(){
     if(index===checkedKing)cell.classList.add('classic-square--check');
     if(piece){
       const race=piece.color===state.match.playerColor?state.match.squad:foe.race;
-      cell.innerHTML=img(racePiecePath(race,({p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'})[piece.type],piece.color),'classic-piece','')+'<span class="classic-piece-marker classic-piece-marker--'+piece.color+'" data-piece-marker="'+piece.type+'" aria-hidden="true">'+glyphs[piece.color][piece.type]+'</span>';
+      const pieceArt=boardRacePiecePath(race,({p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'})[piece.type],piece.color);
+      cell.innerHTML=img(pieceArt,'classic-piece'+(pieceArt.includes('/pieces/board/')?' classic-piece--new-race':''),'')+'<span class="classic-piece-marker classic-piece-marker--'+piece.color+'" data-piece-marker="'+piece.type+'" aria-hidden="true">'+glyphs[piece.color][piece.type]+'</span>';
       if(animating&&square===animationDestination)cell.querySelector('.classic-piece').classList.add('classic-piece--arriving');
     }
     cell.disabled=thinking||animating||snapshot.status.over;
