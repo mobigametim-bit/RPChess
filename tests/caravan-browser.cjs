@@ -148,7 +148,7 @@ async function openCaravan(page) {
     await mobile.waitForFunction(()=>Boolean(document.querySelector('[data-artifact-combat-css]')?.sheet));
     const dialog=await mobile.locator('[data-artifact-choice-modal] .artifact-choice-panel').boundingBox();
     const viewport=mobile.viewportSize();
-    assert(dialog&&dialog.top>=-1&&dialog.bottom<=viewport.height+1,
+    assert(dialog&&dialog.y>=-1&&dialog.y+dialog.height<=viewport.height+1,
       `Caravan artifact modal fits mobile after stylesheet loads: ${JSON.stringify({dialog,viewport})}`);
     assert.strictEqual(await mobile.locator('[data-battle-screen]').isHidden(),true);
     await mobile.locator('[data-artifact-choice="none"]').click();
