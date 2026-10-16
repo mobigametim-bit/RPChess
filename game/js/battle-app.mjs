@@ -17,6 +17,7 @@ import {
   createBattleEncounter,
   createBattlePlan,
   defaultBattleSelection,
+  automaticBattleSelection,
   formationFor,
   selectedTypeCounts,
   validateBattleSelection
@@ -284,19 +285,24 @@ function renderCounters() { const validation=validateBattleSelection(activeRun?.
 function renderComposition(){renderAvailable();renderSlotSummary();renderFormation();renderParticipants();renderCounters();}
 
 function resetBattleTracking(){battlePlan=null;playerBySquare=new Map();enemyBySquare=new Map();capturedIds=new Set();processedMoves=0;battleFinalized=false;lastCapturedVisual=null;lastBattleStatus=null;lastMercenaryCasualty=null;clearTimeout(finalizeTimer);finalizeTimer=null;setBattleNavigationLocked(false);}
-function openBattle(){combatType='battle';ensureBattleScreens();activeRun=readRun();if(!activeRun||activeRun.ended)return;encounter=encounterForRun(activeRun);const saved=checkpointFor(activeRun,'battle',encounter);selectedIds=new Set(saved?.selectedIds||defaultBattleSelection(activeRun.roster));resetBattleTracking();setNotice('');renderStaticCopy();if(saved&&validateBattleSelection(activeRun.roster,saved.selectedIds).ok){launchBattle(true);return;}renderEncounter();renderComposition();showOnly('battle');}
+function openBattle(){combatType='battle';ensureBattleScreens();activeRun=readRun();if(!activeRun||activeRun.ended)return;encounter=encounterForRun(activeRun);const saved=checkpointFor(activeRun,'battle',encounter);selectedIds=new Set(saved?.selectedIds||automaticBattleSelection(activeRun.roster,`${activeRun.id}:${encounter.id}:battle-deployment`));resetBattleTracking();setNotice('');renderStaticCopy();if(saved&&validateBattleSelection(activeRun.roster,saved.selectedIds).ok){launchBattle(true);return;}startBattle();}
 function openCaravan(event){
   combatType='caravan';ensureBattleScreens();activeRun=readRun();if(!activeRun||activeRun.ended)return;
   const choice=event?.detail?.choice||activeRun.activeTravelChoice;
   activeRun=writeRun({...activeRun,currentCaravan:createCaravanState(activeRun,choice)});
-  const state=activeRun.currentCaravan;encounter=state.encounter;selectedIds=new Set(state.selectedIds);
+  const state=activeRun.currentCaravan;encounter=state.encounter;
+  const deployment=validateBattleSelection(activeRun.roster,state.selectedIds).ok
+    ? state.selectedIds
+    : automaticBattleSelection(activeRun.roster,`${activeRun.id}:${encounter.id}:caravan-deployment`);
+  selectedIds=new Set(deployment);
+  if(state.phase==='preparation' && deployment!==state.selectedIds)
+    activeRun=writeRun({...activeRun,currentCaravan:{...state,selectedIds:deployment}});
   resetBattleTracking();renderStaticCopy();setNotice('');
   if(['reward','aftermath'].includes(state.phase)){
     battlePlan=state.plan;lastBattleStatus=state.status;battleFinalized=true;showCaravanOutcome();return;
   }
   if(state.phase==='combat'){launchBattle();return;}
-  renderEncounter();renderComposition();showOnly('battle');
-  if(state.phase==='artifact')startBattle();
+  startBattle();
 }
 function showCaravanOutcome(){
   activeRun=readRun();lastBattleStatus=activeRun.currentCaravan.status;
