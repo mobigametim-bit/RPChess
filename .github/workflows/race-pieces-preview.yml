@@ -75,6 +75,8 @@ jobs:
           grep -q 'requestVisibleAssets' dist/js/arena-app.mjs
           grep -q 'data-artifact-choice-modal' dist/js/screen-loading.mjs
           grep -q 'personal leaderboard lookup unavailable' dist/js/leaderboard-client.mjs
+          grep -q 'VKWebAppGetLaunchParams' dist/js/leaderboard-client.mjs
+          grep -q 'leaderboard.notAuthenticated' dist/js/player-identity-chronicle.mjs
       - name: Require Cloudflare credentials
         env:
           TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
