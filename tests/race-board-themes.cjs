@@ -29,6 +29,19 @@ const {BOARD_RACES,BOARD_FILES,collectBoardAssetPaths}=require('../scripts/board
     }
   }
 
+  assert.deepStrictEqual([...mod.BOARD_PIECE_RACES],['humans','orcs','undead','angels','fae'],'only the five complete race sets switch board art');
+  for(const race of mod.BOARD_PIECE_RACES)for(const color of ['w','b'])for(const pieceType of mod.PIECE_TYPES){
+    const src=mod.boardRacePiecePath(race,pieceType,color);
+    const full=path.join(game,src);
+    assert(fs.existsSync(full),`board sprite missing: ${src}`);
+    const data=fs.readFileSync(full),png=parsePng(data);
+    assert(png.width===256&&png.height===256&&data.length<=320*1024,`board sprite over budget: ${src}`);
+  }
+  assert.strictEqual(mod.racePiecePath('orcs','king','w'),'assets/races/orcs/pieces/king.png','Arena catalog must retain preexisting orc art');
+  assert.strictEqual(mod.racePiecePath('humans','king','w'),'assets/races/humans/pieces/white/king.png','Arena catalog must retain preexisting human art');
+  assert.strictEqual(mod.boardRacePiecePath('elves','pawn','b'),mod.racePiecePath('elves','pawn','b'),'unfinished races must retain legacy board art');
+  assert.strictEqual(mod.boardPieceArtForCharacter({pieceType:'rook'},'b'),mod.boardRacePiecePath('humans','rook','b'),'named heroes use new generic chess art until an individual boardPieceArt is supplied');
+
   const properties={};
   const board={dataset:{},style:{setProperty(name,value){properties[name]=value;},removeProperty(name){delete properties[name];}}};
   const applied=mod.applyRaceBoardTheme(board,'orcs');
@@ -55,5 +68,5 @@ const {BOARD_RACES,BOARD_FILES,collectBoardAssetPaths}=require('../scripts/board
   assert.ok(source.includes('linear-gradient(145deg,#c3b995,#aa9f7c)'),'light cell must retain neutral fallback');
   assert.ok(source.includes('linear-gradient(145deg,#4d585d,#374349)'),'dark cell must retain neutral fallback');
 
-  console.log('Race board themes: PASS — 28 PNGs, 14 race pairs, square sources, combat binding and neutral fallback');
+  console.log('Race board themes: PASS — 28 board tiles plus 60 PNG board sprites; unchanged Arena catalog paths and incomplete-race fallback');
 })().catch((error)=>{console.error(error);process.exitCode=1;});
