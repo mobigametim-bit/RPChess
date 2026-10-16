@@ -1,0 +1,87 @@
+name: Deploy leaderboard mobile CORS fix (PR 160)
+
+on:
+  push:
+    branches:
+      - feature/race-chess-piece-art-20261016
+    paths:
+      - .github/workflows/leaderboard-mobile-cors-deploy.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rpchess-leaderboard-mobile-cors
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.repository == 'mobigametim-bit/RPChess' &&
+      github.ref == 'refs/heads/feature/race-chess-piece-art-20261016' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'push' && github.event.head_commit.message == 'deploy: leaderboard mobile CORS')
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Test mobile CORS and signed VK security without database changes
+        run: node tests/player-identity-chronicle.cjs
+      - name: Verify deploy credentials and existing VK secret
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::CLOUDFLARE_API_TOKEN missing"; exit 1; }
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::CLOUDFLARE_ACCOUNT_ID missing"; exit 1; }
+          npx wrangler secret list --config leaderboard-worker/wrangler.toml > /tmp/rpchess-leaderboard-secret-names.json
+          grep -q 'VK_APP_SECRET' /tmp/rpchess-leaderboard-secret-names.json ||
+            { echo "::error::Existing encrypted VK_APP_SECRET is required"; exit 1; }
+      - name: Deploy updated CORS configuration to existing leaderboard Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config leaderboard-worker/wrangler.toml
+      - name: Verify mobile VK and preview CORS, public reads, and rejected rogue app
+        shell: bash
+        run: |
+          set -euo pipefail
+          endpoint='https://rpchess-leaderboard.mobigametim.workers.dev/v1/leaderboard'
+          for origin in \
+            'https://mobigametim-bit.github.io' \
+            'https://rpchess-race-pieces-preview.mobigametim.workers.dev' \
+            'https://stage-app54754579-2ccfb72929d1.pages.vk-apps.ru' \
+            'https://prod-app54754579-candidate.pages.vk-apps.com'; do
+            echo "Checking browser origin: $origin"
+            curl -fsS --retry 3 --max-time 20 -D /tmp/cors-get -o /tmp/board.json \
+              -H "Origin: $origin" "$endpoint"
+            grep -Fqi "access-control-allow-origin: $origin" /tmp/cors-get
+            node -e "const d=require('/tmp/board.json');if(!Array.isArray(d.top))process.exit(1)"
+            status=$(curl -sS --max-time 20 -D /tmp/cors-preflight -o /dev/null -w '%{http_code}' \
+              -X OPTIONS -H "Origin: $origin" -H 'Access-Control-Request-Method: POST' \
+              -H 'Access-Control-Request-Headers: content-type' "$endpoint/view")
+            test "$status" = 204
+            grep -Fqi "access-control-allow-origin: $origin" /tmp/cors-preflight
+            grep -qi '^access-control-allow-headers: content-type' /tmp/cors-preflight
+          done
+          status=$(curl -sS --max-time 20 -o /tmp/rogue.json -w '%{http_code}' \
+            -H 'Origin: https://stage-app54754580-untrusted.pages.vk-apps.ru' "$endpoint")
+          test "$status" = 403
+          status=$(curl -sS --max-time 20 -o /tmp/unsigned.json -w '%{http_code}' \
+            -X POST -H 'Origin: https://mobigametim-bit.github.io' \
+            -H 'content-type: application/json' \
+            --data '{"launch":"invalid","record":{"runId":"unsigned","week":1,"power":1,"glory":0}}' "$endpoint/submit")
+          test "$status" = 401
+          echo 'PASS: RPChess mobile VK origins, preview and Pages read OK; unrelated VK app and unsigned writes rejected'
