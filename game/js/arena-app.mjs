@@ -251,7 +251,7 @@ function settle(status){
 }
 function startBattle(){
   if(state.match?.phase!=='playing')return;
-  closeDialog();engine=new ClassicChessEngine();selected=null;render();void aiTurn();
+  closeDialog();engine=new ClassicChessEngine();selected=null;render();globalThis.RPChessLoading?.requestVisibleAssets?.();void aiTurn();
 }
 function commit(from,to,promo=null){
   if(!engine||animating||thinking||state.match?.phase!=='playing')return;
@@ -283,13 +283,13 @@ async function aiTurn(){
   if(!uci){notice='engineUnavailable';render();return;}
   commit(uci.slice(0,2),uci.slice(2,4),uci.slice(4)||null);
 }
-function enter(){state=read();engine=null;selected=null;section=Math.floor((OPPONENT_BY_ID.get(state.match?.foe)?.index??arenaSummary(state).highest)/7);notice='';visible(true);if(state.match?.phase==='result')dialogType='result';else if(state.match?.phase==='offer')dialogType='offer';else restoreMatch();render();}
+function enter(){state=read();engine=null;selected=null;section=Math.floor((OPPONENT_BY_ID.get(state.match?.foe)?.index??arenaSummary(state).highest)/7);notice='';visible(true);if(state.match?.phase==='result')dialogType='result';else if(state.match?.phase==='offer')dialogType='offer';else restoreMatch();render();globalThis.RPChessLoading?.requestVisibleAssets?.();}
 function leave(){adapter.stop();searchId++;thinking=false;stopMoveAnimation();engine=null;closeDialog();visible(false);}
 root?.addEventListener('click',event=>{
   const target=event.target.closest('button');if(!target||target.disabled)return;
   if(target.dataset.arenaBack!==undefined){leave();return;}
-  if(target.dataset.arenaResume!==undefined){if(state.match?.phase==='offer')dialogType='offer';else if(state.match?.phase==='result')dialogType='result';else restoreMatch();render();return;}
-  if(target.dataset.arenaRivals!==undefined){adapter.stop();searchId++;thinking=false;stopMoveAnimation();engine=null;render();return;}
+  if(target.dataset.arenaResume!==undefined){if(state.match?.phase==='offer')dialogType='offer';else if(state.match?.phase==='result')dialogType='result';else restoreMatch();render();globalThis.RPChessLoading?.requestVisibleAssets?.();return;}
+  if(target.dataset.arenaRivals!==undefined){adapter.stop();searchId++;thinking=false;stopMoveAnimation();engine=null;render();globalThis.RPChessLoading?.requestVisibleAssets?.();return;}
   if(target.dataset.arenaSquad){
     const race=target.dataset.arenaSquad,summary=arenaSummary(state);
     let next=state;
@@ -301,7 +301,7 @@ root?.addEventListener('click',event=>{
     save({...next,squad:race,updatedAt:Date.now()});return;
   }
   if(target.dataset.arenaFoe){
-    dialog.dataset.foe=target.dataset.arenaFoe;dialogType='foe';renderDialog();return;
+    dialog.dataset.foe=target.dataset.arenaFoe;dialogType='foe';renderDialog();globalThis.RPChessLoading?.requestVisibleAssets?.();return;
   }
   if(target.dataset.square){
     if(!engine||thinking||engine.turn()!==state.match.playerColor)return;
