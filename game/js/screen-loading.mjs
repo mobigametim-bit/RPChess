@@ -165,6 +165,19 @@ function onSceneMutation(records) {
     prepareScene(token);
   });
 }
+// For interfaces that update their images without switching top-level <main>
+// (Arena catalog / battle / rival dialog). Call synchronously after DOM updates,
+// before the next paint. Do not show a mask when all visible art is cached.
+function requestVisibleAssets(){
+  if(!overlay||!bootFinished)return false;
+  if(!pendingStyles().length&&!mediaSources().length)return false;
+  const token=++generation;
+  show();
+  void prepareScene(token);
+  return true;
+}
+globalThis.RPChessLoading=Object.freeze({requestVisibleAssets});
+
 if (overlay && app) {
   overlay.dataset.loaderInitialized = '1';
   localize();
