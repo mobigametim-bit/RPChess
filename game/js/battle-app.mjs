@@ -205,6 +205,8 @@ function showOnly(target) {
   ensureBattleScreens();
   if (menu) menu.hidden = target !== 'menu';
   if (rosterScreen) rosterScreen.hidden = target !== 'roster';
+  const travelScreen = document.querySelector('[data-travel-choice-screen]');
+  if (travelScreen) travelScreen.hidden = true;
   if (skirmishScreen) skirmishScreen.hidden = target !== 'skirmish';
   if (skirmishAftermath) skirmishAftermath.hidden = target !== 'skirmishAftermath';
   if (classicScreen) classicScreen.hidden = target !== 'classic';
