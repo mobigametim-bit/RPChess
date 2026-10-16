@@ -86,6 +86,14 @@ jobs:
       - name: Smoke-check public preview and original catalog images
         run: |
           base='https://rpchess-race-pieces-preview.mobigametim.workers.dev'
+          echo "Inspecting public response codes after deployment:"
+          for resource in '/' '/index.html' '/js/race-assets.mjs' '/assets/races/humans/pieces/board/white/king.png' '/assets/races/humans/pieces/white/king.png' '/assets/races/orcs/pieces/king.png'; do
+            status=$(curl -sSL --max-time 15 -o /tmp/rpchess-debug-file -w '%{http_code}' "$base$resource" || true)
+            size=$(wc -c </tmp/rpchess-debug-file || echo 0)
+            echo "$resource: HTTP $status, bytes $size"
+          done
+          echo "Root response headers:"
+          curl -sSI --max-time 15 "$base/" | head -n 20 || true
           for attempt in 1 2 3 4 5 6; do
             if curl -fsS --max-time 15 "$base/" -o /tmp/rpchess-piece-preview.html &&
                grep -q 'data-game-loading' /tmp/rpchess-piece-preview.html &&
