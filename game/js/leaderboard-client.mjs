@@ -11,10 +11,46 @@ function apiRoot(){
   const url=String(explicit).trim().replace(/\/+$/,'');
   return /^https:\/\//.test(url) ? url : '';
 }
-function vkLaunch(){
-  const p=new URLSearchParams(globalThis.location?.search||'');
-  return p.has('sign')&&p.has('vk_app_id')&&p.has('vk_user_id')?
-    '?'+p.toString():'';
+const VK_APP_ID='54754579';
+let signedLaunch='';
+let launchPending=null;
+
+// Rebuild the signed VK parameter set without inventing an identity; the
+// Worker alone decides whether the supplied signature is authentic.
+function signedLaunchQuery(data){
+  let p;
+  try{
+    if(typeof data==='string')p=new URLSearchParams(data.replace(/^\?/,''));
+    else if(data&&typeof data==='object')p=new URLSearchParams(Object.entries(data)
+      .filter(([key,value])=>(key.startsWith('vk_')||key==='sign')&&value!==undefined&&value!==null)
+      .map(([key,value])=>[key,String(value)]));
+    else return '';
+    if(p.get('vk_app_id')!==VK_APP_ID||!/^[1-9]\d*$/.test(p.get('vk_user_id')||'')||!p.get('sign'))return '';
+    const query=new URLSearchParams([...p].filter(([key])=>key.startsWith('vk_')||key==='sign'));
+    return '?'+query.toString();
+  }catch{return ''}
+}
+async function vkLaunch(){
+  const fromUrl=signedLaunchQuery(globalThis.location?.search||'');
+  if(fromUrl)return fromUrl;
+  if(signedLaunch)return signedLaunch;
+  if(launchPending)return launchPending;
+  // Mobile VK may open its internal WebView without propagating launch search
+  // parameters. VK Bridge supplies the complete *signed* launch object.
+  const host=globalThis.RPChessPlatform;
+  if(!host?.launch?.isVK?.()||typeof host?.bridge?.request!=='function')return '';
+  launchPending=(async()=>{
+    try{
+      const result=await host.bridge.request('VKWebAppGetLaunchParams',{}, {timeoutMs:4500});
+      signedLaunch=signedLaunchQuery(result);
+      if(!signedLaunch)console.warn('[RPChess] VK Bridge returned no signed launch parameters');
+      return signedLaunch;
+    }catch(error){
+      console.warn('[RPChess] signed VK launch unavailable from bridge',String(error?.message||error));
+      return '';
+    }finally{launchPending=null}
+  })();
+  return launchPending;
 }
 function normalize(data){
   if(!data||!Array.isArray(data.top))throw new Error('Invalid leaderboard response');
@@ -24,7 +60,7 @@ function normalize(data){
   const me=data.me&&Number.isSafeInteger(data.me.rank)&&data.me.rank>0&&
     Number.isSafeInteger(data.me.glory)&&data.me.glory>=0
     ?{rank:data.me.rank,name:String(data.me.name||'').slice(0,24),glory:data.me.glory}:null;
-  return {top,me,status:'ready'};
+  return {top,me,status:'ready',viewerAuthenticated:Boolean(data.viewerAuthenticated||me)};
 }
 async function request(path,body=null){
   const root=apiRoot();
@@ -54,7 +90,7 @@ async function loadLeaderboard({force=false}={}){
   if(pending)return pending;
   pending=(async()=>{
     try{
-      const launch=vkLaunch();
+      const launch=await vkLaunch();
       if(!launch)return changed(await request('/v1/leaderboard'));
       try{
         return changed(await request('/v1/leaderboard/view',{launch}));
@@ -73,8 +109,10 @@ async function loadLeaderboard({force=false}={}){
   return pending;
 }
 async function submitBestChronicle(){
-  const launch=vkLaunch(),best=bestChronicleRun(readChronicle());
-  if(!apiRoot()||!launch||!best)return {status:'unavailable'};
+  const best=bestChronicleRun(readChronicle());
+  if(!apiRoot()||!best)return {status:'unavailable'};
+  const launch=await vkLaunch();
+  if(!launch)return {status:'unavailable'};
   const key=best.runId+':'+best.glory+':'+best.week+':'+best.power;
   if(lastUpload===key)return {status:'already-submitted'};
   if(uploading)return uploading;
@@ -92,4 +130,4 @@ async function submitBestChronicle(){
   }finally{uploading=null;}})();
   return uploading;
 }
-export {currentLeaderboard,loadLeaderboard,submitBestChronicle};
+export {currentLeaderboard,loadLeaderboard,submitBestChronicle,signedLaunchQuery};
