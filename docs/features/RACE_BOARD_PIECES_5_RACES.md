@@ -27,3 +27,15 @@ Status: feature-branch implementation; pending CI and manual playtest. Do not me
 5. Classic and Puzzle boards: readable human white/black pieces without glyph overlays.
 6. Mobile landscape and desktop: confirm board silhouettes remain distinguishable.
 7. Verify 60 files inside production `dist` and old Arena catalog PNGs remain present.
+
+
+## Follow-up polish (2026-10-16): automatic deployment and asset loading
+
+- All Journey combat route cards (Skirmish / Battle / Caravan) **skip manual formation/preparation screens**. The next intentional decision is the existing artifact-choice modal; the selected chess board then opens directly.
+- Deployment is always King-inclusive. Healthy heroes enter automatically; wounded non-King heroes and dead heroes stay out; the wounded Run King remains eligible by existing gameplay rules.
+- Battle / Caravan: preserve the canonical 1 King, 1 Queen, 2 Rooks, 2 Bishops, 2 Knights, 8 Pawns slots. All eligible named fighters take those slots when there is space. When a role has more candidates than slots, draw a reproducible random subset seeded by the encounter.
+- Skirmish: keep 2–16 pieces, ≤39 points, ≤8 pawns. Use all eligible when they fit; on overflow draw a reproducible, legal seeded subset. Mandatory King and enough healthy companions retain existing eligibility rules.
+- Save/resume: Battle and Skirmish continue to checkpoint the chosen IDs; Caravan persists selected IDs and its Chess960 plan. A renewed artifact-phase Caravan route does not create another random team or consume supplies twice.
+- The traveling scene remains visible underneath the artifact-choice dialog, and is hidden once the chess board is created. Old preparation screen DOM is not entered during the normal gameplay flow; existing aftermath, rewards, forfeit and game-over screens remain.
+- The localized black loading mask is **conditional on pending visible assets**. Arena has explicit loading gates on catalog entry, returning to rivals, entering/resuming the Arena board and rival-dialog images. Dynamically mounted artifact dialogs are included in media/style readiness. Cached scenes must not flash the mask, and failed assets must not trap players.
+- Keep `main` unchanged until acceptance. Preview: https://rpchess-race-pieces-preview.mobigametim.workers.dev/ (redeploy branch changes before requesting user verification).
