@@ -31,10 +31,10 @@ const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
       const modalLayout=await page.evaluate(()=>{
         const panel=document.querySelector('[data-artifact-choice-modal] .artifact-choice-panel');
         const rect=panel.getBoundingClientRect();
-        return {top:rect.top,bottom:rect.bottom,styled:Boolean(document.querySelector('[data-artifact-combat-css]')?.sheet)};
+        return {top:rect.top,bottom:rect.bottom,height:innerHeight,styled:Boolean(document.querySelector('[data-artifact-combat-css]')?.sheet)};
       });
       assert(modalLayout.styled,'cold artifact stylesheet must finish before its modal is unveiled');
-      assert(modalLayout.top>=-1&&modalLayout.bottom<=innerHeight+1,'artifact selection replaces prep and fits viewport');
+      assert(modalLayout.top>=-1&&modalLayout.bottom<=modalLayout.height+1,'artifact selection replaces prep and fits viewport');
       assert.strictEqual(await page.locator('[data-skirmish-screen]').isHidden(),true,'Skirmish preparation is skipped');
       assert.strictEqual(await page.locator('[data-artifact-choice-modal]').evaluate(el => getComputedStyle(el).position), 'fixed');
       await page.locator(`[data-artifact-choice="${artifact}"]`).tap();
