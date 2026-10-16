@@ -112,8 +112,8 @@ async function assertResponsiveStars(page, selector, cardSelector) {
       generic: document.querySelector(`[data-square="${genericSquare}"] .classic-piece`)?.getAttribute('src') || '',
       enemy: document.querySelector(`[data-square="${enemySquare}"] .classic-piece`)?.getAttribute('src') || ''
     }), { genericSquare: generic.square, enemySquare: enemyQueen.square });
-    assert(art.generic.includes('assets/races/humans/pieces/white/'));
-    assert(art.enemy.includes('assets/races/orcs/pieces/queen.png'));
+    assert(art.generic.includes('assets/races/humans/pieces/board/white/'));
+    assert(art.enemy.includes('assets/races/orcs/pieces/board/black/queen.png'));
     await page.evaluate(() => globalThis.RPChessBattle.finishBattle({ over: true, type: 'stalemate', winner: null }));
     await page.locator('[data-battle-aftermath]:not([hidden])').waitFor();
     assert.strictEqual((await page.locator('[data-battle-continue]').innerText()).trim(), 'Продолжить путь');
@@ -144,7 +144,7 @@ async function assertResponsiveStars(page, selector, cardSelector) {
       mode: document.querySelector('[data-game-mode]')?.textContent || '',
       firstSquare: document.querySelector('[data-chess-board] [data-square]')?.dataset.square || ''
     }), { genericSquare: blackGeneric.square, enemySquare: darkEnemy.square });
-    assert(blackArt.generic.includes('assets/races/humans/pieces/black/'));
+    assert(blackArt.generic.includes('assets/races/humans/pieces/board/black/'));
     assert(blackArt.enemy.includes('assets/races/dark_elves/pieces/rook.png'));
     assert.strictEqual(blackArt.firstSquare, 'h1', 'Black-side Battle must render the board from Black perspective');
     assert.strictEqual(blackArt.mode, 'Безжалостный Полководец', 'shared combat summary must render the canonical difficulty label');
