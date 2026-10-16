@@ -13,6 +13,25 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
 
   let run=persistence.createRun({now:1000,id:'identity-run',playerName:'  Тимур  '});
   assert.strictEqual(run.playerName,'Тимур');
+  const commanders=await import(url('js/commander-portraits.mjs'));
+  assert.strictEqual(commanders.COMMANDERS.length,7,'all seven actual king portraits are selectable');
+  const assetRoot=path.resolve(game,'assets/kings');
+  for(const c of commanders.COMMANDERS){
+    assert(fs.existsSync(path.join(game,c.portrait)),`king portrait missing: ${c.id}`);
+    assert(c.descriptionRu&&c.descriptionEn&&c.titleRu&&c.titleEn,`localized commander bio incomplete: ${c.id}`);
+  }
+  assert.strictEqual(commanders.normalizeCommanderId('../bad/path'),'oathkeeper','user-controlled paths are never accepted');
+  const chosen=persistence.createRun({id:'portrait-test',playerName:'Тест',commanderId:'wanderer_queen'});
+  assert.strictEqual(chosen.commanderId,'wanderer_queen');
+  assert.strictEqual(chosen.roster[0].id,'king.oathkeeper','chess rules rely on stable Run King ID');
+  assert.strictEqual(chosen.roster[0].portrait,commanders.commanderPortrait('wanderer_queen'));
+  assert.strictEqual(chosen.roster[0].name,commanders.commanderTitle('wanderer_queen'));
+  const stored=persistence.writeRun(chosen,storage,1200);
+  assert.strictEqual(stored.commanderId,'wanderer_queen');
+  const resumed=persistence.readRun(storage);
+  assert.strictEqual(resumed.roster[0].portrait,commanders.commanderPortrait('wanderer_queen'),'hydration must not reset the chosen commander portrait');
+  assert.strictEqual(resumed.roster[0].pieceArt,chosen.roster[0].pieceArt,'commander appearance must not change chess piece sprites or rules');
+
   run=persistence.writeRun(run,storage,1000);
   assert.strictEqual(persistence.readRun(storage).playerName,'Тимур','player name must survive persistence');
 
@@ -27,11 +46,13 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
 
   assert.strictEqual(chronicle.gloryForRun(35,900),17);
   assert.strictEqual(chronicle.gloryForRun(0,900),0);
-  const completed={...persistence.createRun({now:2000,id:'completed-run',playerName:'Рагнар'}),journeyStep:35,ended:true,endReason:'starvation_king',updatedAt:2500};
+  const completed={...persistence.createRun({now:2000,id:'completed-run',playerName:'Рагнар',commanderId:'ash_regent'}),journeyStep:35,ended:true,endReason:'starvation_king',updatedAt:2500};
   let result=chronicle.recordCompletedRun(completed,{power:900,storage,completedAt:2500});
   assert.strictEqual(result.changed,true);
   assert.strictEqual(result.record.glory,17);
   assert.strictEqual(result.record.playerName,'Рагнар');
+  assert.strictEqual(result.record.commanderId,'ash_regent');
+  assert.strictEqual(chronicle.readChronicle(storage).history[0].commanderId,'ash_regent');
   assert(!Object.prototype.hasOwnProperty.call(result.record,'endReason'),'Chronicle must not store/display the run-end reason');
   result=chronicle.recordCompletedRun(completed,{power:900,storage,completedAt:2600});
   assert.strictEqual(result.changed,false,'same completed run must be idempotent');
@@ -47,6 +68,7 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   const active={...persistence.createRun({id:'active-run',playerName:'Алёна'}),journeyStep:12,roster:persistence.createRun({id:'roster-copy'}).roster.map((hero,index)=>index===1?{...hero,status:'dead'}:hero)};
   const snapshot=chronicle.activeRunSnapshot(active,{power:777});
   assert.strictEqual(snapshot.playerName,'Алёна');
+  assert.strictEqual(snapshot.commanderId,'oathkeeper');
   assert.strictEqual(snapshot.week,12);
   assert.strictEqual(snapshot.power,777);
   assert.strictEqual(snapshot.heroes,active.roster.length-1);
@@ -62,6 +84,13 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   for(const token of ['.chronicle-panel','.identity-panel','.chronicle-metric'])assert(css.includes(token),`identity/chronicle CSS missing ${token}`);
   const leaderboard=await import(pathToFileURL(path.join(game,'../leaderboard-worker/src/index.mjs')).href);
   assert.strictEqual(leaderboard.validatedRecord({runId:'run-1',playerName:'Элиана',week:36,power:556,glory:14}).glory,14);
+  assert.strictEqual(leaderboard.validatedRecord({runId:'run-1',playerName:'Элиана',week:36,power:556,glory:14,commanderId:'stone_crown'}).commanderId,'stone_crown');
+  assert.strictEqual(leaderboard.validatedRecord({runId:'run-1',playerName:'Элиана',week:36,power:556,glory:14,commanderId:'../../unsafe'}).commanderId,'oathkeeper');
+  assert(fs.readFileSync(path.join(game,'../leaderboard-worker/schema.sql'),'utf8').includes('commander_id TEXT NOT NULL DEFAULT'));
+  assert(fs.readFileSync(path.join(game,'../leaderboard-worker/src/index.mjs'),'utf8').includes('commander_id AS commanderId'));
+  assert(ui.includes('data-identity-commander')&&ui.includes('chronicle-leaderboard-avatar'),
+    'creation modal and existing blue Chronicle flag must display commander portraits');
+
   assert.strictEqual(leaderboard.validatedRecord({runId:'run-1',playerName:'Элиана',week:36,power:556,glory:99}),null,'incorrect Glory must be rejected');
   assert.strictEqual(leaderboard.validatedRecord({runId:'run-1',playerName:'Элиана',week:-1,power:556,glory:0}),null,'negative weeks must be rejected');
   const vkSecret='local-test-secret';
