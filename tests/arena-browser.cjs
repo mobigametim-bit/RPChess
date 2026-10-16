@@ -16,6 +16,17 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert.strictEqual(await page.locator('[data-arena-squads] button').count(),14);
     assert.strictEqual(await page.locator('[data-arena-squads] button:not([disabled])').count(),1,'unaffordable squads are disabled');
     assert.strictEqual(await page.locator('[data-arena-squads] button').first().innerText(),'','owned squad shows only its art');
+    // Selection screens deliberately retain existing artwork: only the BOARD gets new sprites.
+    const catalogArt=await page.evaluate(()=>({
+      humanSquad:document.querySelector('[data-arena-squad="humans"] .arena-squad-art')?.getAttribute('src'),
+      orcSquad:document.querySelector('[data-arena-squad="orcs"] .arena-squad-art')?.getAttribute('src'),
+      humanRival:document.querySelector('[data-arena-foes] .arena-foe-art')?.getAttribute('src')
+    }));
+    assert(catalogArt.humanSquad?.includes('/humans/pieces/white/king.png'),'Arena squad selection must keep pre-existing human art');
+    assert(catalogArt.orcSquad?.includes('/orcs/pieces/king.png'),'Arena squad selection must keep pre-existing orc art');
+    assert(catalogArt.humanRival?.includes('/humans/pieces/black/pawn.png'),'Arena rival selection must keep pre-existing human art');
+    assert(Object.values(catalogArt).every(src=>!src?.includes('/pieces/board/')),'Arena catalog must never show board-only sprites');
+
     await page.evaluate(()=>{
       const now=Date.now();
       localStorage.setItem('rpchess.reboot.v1.arena',JSON.stringify({version:1,squad:'orcs',match:null,updatedAt:now,events:[
