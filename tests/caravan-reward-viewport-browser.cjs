@@ -88,6 +88,7 @@ async function audit(browser,language) {
     await page.locator('[data-roster-travel]').click();
     await page.locator('[data-travel-type="caravan"]').first().click();
     await page.locator('[data-artifact-choice-modal]').waitFor();
+    await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
     assert.strictEqual(await page.locator('[data-battle-screen]').isHidden(),true);
     for (const [width,height] of [[1024,768],[844,390]]) {
       await page.setViewportSize({ width,height });
