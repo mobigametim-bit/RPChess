@@ -72,7 +72,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       const card=document.querySelector('.identity-commander-option');
       const preview=document.querySelector('.identity-commander-preview');
       const rect=preview.getBoundingClientRect(), middle=rect.top+rect.height/2;
-      const color=element=>getComputedStyle(element).borderTopColor.match(/[\\d.]+/g).slice(0,3).map(Number);
+      const color=element=>getComputedStyle(element).borderTopColor.match(/[0-9.]+/g).slice(0,3).map(Number);
       const offset=element=>{const r=element.getBoundingClientRect();return Math.abs(r.top+r.height/2-middle);};
       return {cardBorder:color(card),previewBorder:color(preview),
         portraitOffset:offset(preview.querySelector('img')),
