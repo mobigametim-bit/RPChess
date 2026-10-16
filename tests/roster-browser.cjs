@@ -50,9 +50,9 @@ async function assertOneScreen(page,label){
     assert.strictEqual(await page.locator('[data-travel-choice]').count(),3);
     assert((await page.locator('[data-travel-type="skirmish"]').count())>=1,'explicit Skirmish route fixture must be available');
     await page.locator('[data-travel-type="skirmish"]').first().click();
-    await waitForVisible(page,'[data-skirmish-screen]:not([hidden])','Skirmish prep');
-    assert.strictEqual((await page.locator('[data-skirmish-piece-count]').innerText()).trim(),'6 / 16');
-    assert.strictEqual(await page.locator('[data-skirmish-back]').count(),0,'approved Skirmish prep must not retain a legacy back control');
+    await waitForVisible(page,'[data-artifact-choice-modal]','Skirmish artifact choice');
+    assert.strictEqual(await page.locator('[data-skirmish-screen]').isHidden(),true,'no Skirmish preparation step');
+    assert.strictEqual((await page.evaluate(()=>globalThis.RPChessSkirmish.selectedIds)).length,6);
 
     await page.evaluate(()=>dispatchEvent(new CustomEvent('rpchess:run-continue')));
     await waitForVisible(page,'[data-roster-screen]:not([hidden])','Roster after encounter return');
