@@ -64,6 +64,9 @@ async function verifyBoard(page,selector,label,arena=false){
       await page.setViewportSize({width:667,height:375});const card=page.locator(`[data-artifact-choice="${id}"]`);await card.waitFor();
       assert((await card.innerText()).includes(type==='caravan'?'Fork Master':'Мастер вилок'));
       if(type==='caravan')assert(!/[А-Яа-яЁё]/.test(await card.innerText()),'English artifact card must not leak Russian');
+      // The modal may be visible before its scene's asset mask is dismissed.
+      // A user cannot switch language while that full-screen mask is active.
+      await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
       await page.evaluate(async()=>{const i=await import('./js/i18n.mjs');i.setLanguage('en');});
       // Current modal copy uses the selected locale on creation; core dictionary
       // still must supply complete English copy without Russian fallback.

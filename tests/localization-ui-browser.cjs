@@ -5,7 +5,15 @@ const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
 const cyrillic = /[А-Яа-яЁё]/u;
 
 async function language(page, code) {
-  await page.evaluate(async code => (await import('./js/i18n.mjs')).setLanguage(code), code);
+  // Switching language is a user action; the new asset mask must finish before
+  // interacting with the incoming scene's controls and accessibility labels.
+  await page.locator('[data-game-loading]').waitFor({ state:'hidden', timeout:25000 });
+  try {
+    await page.evaluate(async code => (await import('./js/i18n.mjs')).setLanguage(code), code);
+  } catch (error) {
+    console.error(`[localization] language switch ${code} failed (current URL: ${page.url()})`);
+    throw error;
+  }
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 }
 async function english(page, label) {
@@ -59,6 +67,12 @@ async function seed(page, type, index = 0, eventId = null) {
   async function fresh() {
     const page = await browser.newPage({viewport:{width:1653,height:900}});
     page.on('pageerror', error=>errors.push(error.message));
+    let initialNavigation = true;
+    page.on('framenavigated', frame => {
+      if (frame !== page.mainFrame()) return;
+      if (initialNavigation) { initialNavigation = false; return; }
+      console.warn(`[localization] unexpected main-frame navigation to ${frame.url()}`);
+    });
     await page.goto(url,{waitUntil:'networkidle'});
     await page.evaluate(async()=>{await globalThis.RPChessRouteReady;});
     return page;

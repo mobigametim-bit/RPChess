@@ -8,6 +8,14 @@
   <meta name="description" content="RPChess — фэнтезийный шахматный roguelite">
   <meta name="rpchess-leaderboard-api" content="https://rpchess-leaderboard.mobigametim.workers.dev">
   <title>RPChess</title>
+  <script>
+    try {
+      if (JSON.parse(localStorage.getItem('rpchess.reboot.v1.settings') || '{}').language === 'en') {
+        document.documentElement.lang = 'en';
+      }
+    } catch {}
+  </script>
+  <link rel="stylesheet" href="css/screen-loading.css?v=20261016-1">
   <link rel="stylesheet" href="css/reboot-foundation.css?v=20260827-frameless-1">
   <link rel="stylesheet" href="css/language.css?v=20260904-1">
   <link rel="stylesheet" href="css/artifacts.css?v=20261002-vision-1" data-artifact-combat-css>
@@ -21,6 +29,24 @@
   <link rel="stylesheet" href="css/arena.css?v=20260924-6">
 </head>
 <body>
+  <div class="game-loading-screen" data-game-loading role="status" aria-live="polite" aria-label="Загрузка игры">
+    <div class="game-loading-screen__content">
+      <img class="game-loading-screen__logo" data-game-loading-logo src="generated_assets/logo_ru.png" alt="RPChess" fetchpriority="high">
+      <p class="game-loading-screen__label" data-game-loading-label>ЗАГРУЗКА...</p>
+    </div>
+  </div>
+  <script>
+    if (document.documentElement.lang === 'en') {
+      const splash = document.querySelector('[data-game-loading]');
+      splash.querySelector('[data-game-loading-logo]').src = 'generated_assets/logo_en.png';
+      splash.querySelector('[data-game-loading-label]').textContent = 'LOADING...';
+      splash.setAttribute('aria-label', 'Loading game');
+    }
+    setTimeout(() => {
+      const splash = document.querySelector('[data-game-loading]');
+      if (splash && !splash.dataset.loaderInitialized) splash.hidden = true;
+    }, 22000);
+  </script>
   <div id="app">
     <main class="reboot-menu-screen" data-reboot-foundation aria-label="Главное меню RPChess" data-i18n-aria-label="menu.ariaLabel">
       <div class="reboot-menu-screen__layout">
@@ -340,6 +366,7 @@
     </section>
   </div>
 
+  <script type="module" src="js/screen-loading.mjs?v=20261016-1"></script>
   <script type="module" src="js/reboot-foundation.mjs?v=20260827-roster-1"></script>
   <script type="module" src="js/roster-app.mjs?v=20260827-skirmish-1"></script>
   <script type="module" src="js/classic-chess-app.mjs?v=20260827-ai-2"></script>
