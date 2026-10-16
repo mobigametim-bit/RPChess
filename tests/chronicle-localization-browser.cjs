@@ -65,6 +65,24 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     await page.locator('[data-identity-commander="wanderer_queen"]').click();
     assert.strictEqual(await page.locator('[data-identity-commander="wanderer_queen"]').getAttribute('aria-pressed'),'true');
     assert((await page.locator('[data-identity-commander-image]').getAttribute('src')).includes('wanderer_queen/portrait.png'));
+    // Guard the actual 1313x641 modal layout: warm-gold cards, and both
+    // portrait and biography centered within the tall selected-king preview.
+    await page.setViewportSize({width:1313,height:641});
+    const commanderLayout=await page.evaluate(()=>{
+      const card=document.querySelector('.identity-commander-option');
+      const preview=document.querySelector('.identity-commander-preview');
+      const rect=preview.getBoundingClientRect(), middle=rect.top+rect.height/2;
+      const color=element=>getComputedStyle(element).borderTopColor.match(/[\\d.]+/g).slice(0,3).map(Number);
+      const offset=element=>{const r=element.getBoundingClientRect();return Math.abs(r.top+r.height/2-middle);};
+      return {cardBorder:color(card),previewBorder:color(preview),
+        portraitOffset:offset(preview.querySelector('img')),
+        biographyOffset:offset(preview.querySelector('div'))};
+    });
+    for(const rgb of [commanderLayout.cardBorder,commanderLayout.previewBorder])
+      assert(rgb[0]>rgb[1]&&rgb[1]>rgb[2],'commander card borders should be warm gold, not blue');
+    assert(commanderLayout.portraitOffset<=12&&commanderLayout.biographyOffset<=12,
+      'selected commander portrait and biography must both be vertically centered');
+    await page.setViewportSize({width:1653,height:760});
     await page.locator('[data-player-identity-input]').fill('Тимур');
     await setLanguage('en');
     assert.strictEqual(await page.locator('#player-identity-title').innerText(),'Who are you, warrior?');
