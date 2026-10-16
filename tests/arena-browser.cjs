@@ -184,7 +184,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       return {scrollable,advanced};
     });
     assert(moveScrolling.scrollable && moveScrolling.advanced,'long move journals must scroll inside their frame on phone');
-    assert((await page.locator('[data-arena-board] [data-square="e4"] .classic-piece').getAttribute('src')).includes('/humans/pieces/white/pawn.png'));
+    assert((await page.locator('[data-arena-board] [data-square="e4"] .classic-piece').getAttribute('src')).includes('/humans/pieces/board/white/pawn.png'));
     const moves=await page.evaluate(()=>window.RPChessArena.state.match.moves);
     await page.reload({waitUntil:'networkidle'});
     await page.locator('[data-arena-open]').click();
