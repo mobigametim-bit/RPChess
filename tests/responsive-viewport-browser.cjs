@@ -481,6 +481,15 @@ async function auditPrepAndCombat(browser, width, height, language) {
     await assertViewportContained(page,'[data-artifact-choice-modal] .artifact-choice-panel',`${label} Skirmish artifact panel`);
     await chooseNoArtifactForTest(page);
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
+    await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
+    const expectedSkirmishPanelWidth=Math.min(width-height-4,Math.max(220,.48*width-.48*height-2));
+    // The Classic screen is marked visible before the combat-only layout
+    // styles have necessarily settled. Measure the final owner geometry,
+    // not its default interim 360px width during the scene transition.
+    await page.waitForFunction(expected=>{
+      const party=document.querySelector('.classic-party-panel');
+      return party&&Math.abs(party.getBoundingClientRect().width-expected)<=2;
+    },expectedSkirmishPanelWidth,{timeout:15000});
     await assertPageFitsViewport(page, `${label} Skirmish combat`);
     const combatPanel = await page.evaluate(() => {
       const shell=document.querySelector('.classic-shell');
