@@ -1,4 +1,5 @@
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
+import { boardRacePiecePath } from './race-assets.mjs';
 import { ChessAIAdapter, ELO_LEVELS, profileForElo } from './chess-ai-adapter.mjs';
 import { currentLanguage, subscribe, translateLegacy } from './i18n.mjs';
 import { classicT } from '../localization/classic-ui.mjs';
@@ -57,7 +58,7 @@ function sideNameTitle(color) { return t(color === 'w' ? 'classic.side.white' : 
 function pieceName(type) { return translateLegacy(PIECE_NAMES[type] || String(type || '')); }
 function opposite(color) { return color === 'w' ? 'b' : 'w'; }
 function squareFromIndex(index) { return `${FILES[index % 8]}${Math.floor(index / 8) + 1}`; }
-function pieceAsset(piece) { return `generated_assets/unit_${PIECE_ASSETS[piece.type]}_${piece.color === 'w' ? 'player' : 'enemy'}.png`; }
+function pieceAsset(piece) { return boardRacePiecePath('humans',PIECE_ASSETS[piece.type],piece.color); }
 function uciParts(uci) { return { from: uci?.slice(0, 2), to: uci?.slice(2, 4), promotion: uci?.slice(4, 5) || null }; }
 function prefersReducedMotion() { return document.documentElement.dataset.reducedMotion === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches; }
 
@@ -301,7 +302,7 @@ function renderBoard() {
 
       if (piece) {
         const image = document.createElement('img');
-        image.className = 'classic-piece';
+        image.className = 'classic-piece classic-piece--new-race';
         image.src = pieceAsset(piece);
         image.alt = '';
         image.draggable = false;
