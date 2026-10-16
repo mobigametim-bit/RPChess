@@ -20,6 +20,12 @@ Status: Implemented in feature branch, pending QA and manual acceptance. Do not 
 - The established runtime optimizer now includes all seven king portraits in the 43-file portrait set (36 heroes + 7 kings). The existing bounds of 640px side and 1536KiB per portrait apply to deployed copies.
 - The conditional asset loader covers the open commander gallery; visible images are predecoded before removing the mask, without flashing on cached transitions.
 
+## New Journey modal — gold palette and vertical alignment (2026-10-17)
+- In the name/commander selection modal, both portrait-option cards and the selected-commander preview use the existing obsidian/gold theme, not blue card surfaces or borders. The royal-blue Chronicle flag is unchanged.
+- Selected portrait and biography are centered vertically within the right-hand preview panel. Landscape desktop/tablet, compact-landscape and stacked narrow-screen layouts retain their existing responsive structure.
+- A new CSS URL version bypasses cached blue styling. The existing Chronicle/identity browser check now verifies warm borders and portrait/biography centering at 1313 × 641.
+- Gameplay, save format, seven portrait choices and the Roster screen remain unchanged.
+
 ## QA / acceptance
 - Existing identity and Chronicle regression checks cover seven assets, validation, save/reload, bilingual biographies, local history and leaderboard whitelist.
 - The RU/EN browser test checks the gallery and compact portraits.
