@@ -228,7 +228,12 @@ function renderChronicle() {
   currentRoot?.replaceChildren();
   if (currentRoot) {
     if (current) {
-      currentRoot.append(sectionTitle(l('chronicle.current'), current.playerName));
+      const profile=document.createElement('div');
+    profile.className='chronicle-current-profile';
+    const avatar=document.createElement('img');avatar.src=commanderPortrait(current.commanderId);
+    avatar.alt=commanderTitle(current.commanderId,currentLanguage());avatar.loading='lazy';
+    const label=document.createElement('div');label.append(sectionTitle(l('chronicle.current'),current.playerName));
+    profile.append(avatar,label);currentRoot.append(profile);
       currentRoot.append(metric(l('chronicle.power'), current.power, 'assets/doctrines/royal_court/emblem.png'), metric(l('chronicle.week'), current.week, 'generated_assets/node_story.png'), metric(l('chronicle.heroes'), current.heroes, 'generated_assets/reward_recruit.png'));
     } else {
       currentRoot.append(sectionTitle(l('chronicle.current'), l('chronicle.noActive')));
@@ -251,7 +256,14 @@ function renderChronicle() {
       ? '#'+leaderboard.me.rank+' · '+leaderboard.me.glory+' '+l('chronicle.glory')
       : leaderboard.status!=='ready' ? '—'
       : l(leaderboard.viewerAuthenticated?'leaderboard.notRanked':'leaderboard.notAuthenticated');
-    own.append(ownLabel,ownRank);
+    const best=bestChronicleRun(readChronicle());
+    if(leaderboard.me||best){
+      const avatar=document.createElement('img');
+      avatar.src=commanderPortrait(leaderboard.me?.commanderId||best?.commanderId);
+      avatar.alt='';avatar.loading='lazy';
+      const profile=document.createElement('div');profile.className='chronicle-self-profile';
+      profile.append(avatar,ownLabel);own.append(profile,ownRank);
+    }else own.append(ownLabel,ownRank);
     bestRoot.append(own);
 
     if (leaderboard.status==='ready' && leaderboard.top.length) {
@@ -264,6 +276,9 @@ function renderChronicle() {
         const rank=document.createElement('span');
         rank.className='chronicle-leaderboard-rank';
         rank.textContent=String(entry.rank)+'.';
+        const avatar=document.createElement('img');
+        avatar.className='chronicle-leaderboard-avatar';avatar.src=commanderPortrait(entry.commanderId);
+        avatar.alt='';avatar.loading='lazy';
         const name=document.createElement('span');
         name.className='chronicle-leaderboard-name';
         name.textContent=entry.name;
@@ -271,7 +286,7 @@ function renderChronicle() {
         const glory=document.createElement('strong');
         glory.className='chronicle-leaderboard-glory';
         glory.textContent=String(entry.glory);
-        row.append(rank,name,glory);
+        row.append(rank,avatar,name,glory);
         list.append(row);
       }
       bestRoot.append(list);
