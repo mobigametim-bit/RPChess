@@ -1,5 +1,6 @@
 import { playerNameForRun } from './player-identity-core.mjs';
 import { platform } from './platform.mjs';
+import {normalizeCommanderId} from './commander-portraits.mjs';
 
 const CHRONICLE_STORAGE_KEY = 'rpchess.reboot.v1.chronicle';
 const CHRONICLE_SCHEMA_VERSION = 1;
@@ -27,6 +28,7 @@ function normalizeChronicleRecord(value) {
   return {
     runId: value.runId,
     playerName,
+    commanderId:normalizeCommanderId(value.commanderId),
     week,
     power,
     glory: gloryForRun(week, power),
@@ -91,6 +93,7 @@ function completedRunRecord(run, { power = 0, completedAt = Date.now() } = {}) {
   return {
     runId: run.id,
     playerName: playerNameForRun(run),
+    commanderId:normalizeCommanderId(run.commanderId),
     week,
     power: normalizedPower,
     glory: gloryForRun(week, normalizedPower),
@@ -105,7 +108,7 @@ function recordCompletedRun(run, { power = 0, storage = null, completedAt = null
   const index = chronicle.history.findIndex((entry) => entry.runId === record.runId);
   if (index >= 0) {
     const existing = chronicle.history[index];
-    const same = existing.playerName === record.playerName && existing.week === record.week && existing.power === record.power && existing.glory === record.glory;
+    const same = existing.playerName === record.playerName && existing.commanderId===record.commanderId && existing.week === record.week && existing.power === record.power && existing.glory === record.glory;
     if (same) return { chronicle, record: existing, changed: false };
     const history = [...chronicle.history];
     history[index] = { ...record, completedAt: existing.completedAt || record.completedAt };
@@ -120,6 +123,7 @@ function activeRunSnapshot(run, { power = 0 } = {}) {
   if (!run || run.ended) return null;
   return Object.freeze({
     playerName: playerNameForRun(run),
+    commanderId:normalizeCommanderId(run.commanderId),
     week: safeInteger(run.journeyStep),
     power: safeInteger(power),
     heroes: (run.roster || []).filter((character) => character?.status !== 'dead').length
