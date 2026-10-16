@@ -70,6 +70,59 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   assert.strictEqual(await leaderboard.verifiedVKId(signedLaunch+'&sign='+vkSignature,vkSecret),'42','signed VK identity must be verified');
   assert.strictEqual(await leaderboard.verifiedVKId('vk_app_id=54754579&vk_user_id=43&sign='+vkSignature,vkSecret),null,'tampered VK user ID must be rejected');
   assert.strictEqual(await leaderboard.verifiedVKId('vk_app_id=54754580&vk_user_id=42&sign='+vkSignature,vkSecret),null,'VK app ID must match RPChess');
+  // Browser CORS is limited to our exact game hosts; a different VK Mini App
+  // must not be able to send cross-origin authenticated leaderboard requests.
+  const allowedOrigins='https://mobigametim-bit.github.io,https://rpchess-race-pieces-preview.mobigametim.workers.dev';
+  for(const origin of [
+    'https://mobigametim-bit.github.io',
+    'https://rpchess-race-pieces-preview.mobigametim.workers.dev',
+    'https://stage-app54754579-2ccfb72929d1.pages.vk-apps.ru',
+    'https://prod-app54754579-candidate.pages.vk-apps.com'
+  ]){
+    assert.strictEqual(leaderboard.trustedOrigin(origin,allowedOrigins),true,`RPChess origin rejected: ${origin}`);
+    const preflight=await leaderboard.handler(new Request('https://api.example.test/v1/leaderboard/view',{
+      method:'OPTIONS',headers:{Origin:origin,'Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'content-type'}
+    }),{ALLOWED_ORIGINS:allowedOrigins});
+    assert.strictEqual(preflight.status,204);
+    assert.strictEqual(preflight.headers.get('access-control-allow-origin'),origin,'VK mobile POST must pass CORS preflight');
+    assert(preflight.headers.get('access-control-allow-methods').includes('POST'));
+  }
+  for(const origin of [
+    'https://stage-app54754580-abcd.pages.vk-apps.ru',
+    'https://app547545790.pages.vk-apps.com',
+    'https://rpchess-race-pieces-preview.mobigametim.workers.dev.evil.test',
+    'http://stage-app54754579-abcd.pages.vk-apps.ru',
+    'https://evil.example'
+  ]){
+    assert.strictEqual(leaderboard.trustedOrigin(origin,allowedOrigins),false,`Untrusted origin accepted: ${origin}`);
+    const rejected=await leaderboard.handler(new Request('https://api.example.test/v1/leaderboard',{headers:{Origin:origin}}),{ALLOWED_ORIGINS:allowedOrigins});
+    assert.strictEqual(rejected.status,403,'Unexpected third-party site must not read the API');
+  }
+
+  // A failed mobile VK /view POST should not hide the public top ten when
+  // unauthenticated GET is still accessible. No fake leaderboard scores used.
+  const previousDocument=globalThis.document,previousLocation=globalThis.location,previousFetch=globalThis.fetch;
+  try{
+    globalThis.document={querySelector:()=>({content:'https://leaderboard.example.test'})};
+    globalThis.location={search:'?sign=test&vk_app_id=54754579&vk_user_id=42'};
+    const calls=[];
+    globalThis.fetch=async(resource,options={})=>{
+      calls.push({resource:String(resource),method:options.method});
+      if(options.method==='POST')throw new TypeError('Simulated VK mobile POST failure');
+      return new Response(JSON.stringify({top:[{rank:1,name:'Честный игрок',glory:17}],me:null}),{status:200});
+    };
+    const client=await import(url('js/leaderboard-client.mjs'));
+    const result=await client.loadLeaderboard({force:true});
+    assert.strictEqual(result.status,'ready');
+    assert.strictEqual(result.top.length,1,'public leaderboard must remain available on mobile');
+    assert.strictEqual(result.me,null,'never invent a personal rank without verified VK launch');
+    assert.deepStrictEqual(calls.map(call=>call.method),['POST','GET'],'fall back to public leaderboard after failed signed POST');
+  }finally{
+    if(previousDocument===undefined)delete globalThis.document;else globalThis.document=previousDocument;
+    if(previousLocation===undefined)delete globalThis.location;else globalThis.location=previousLocation;
+    globalThis.fetch=previousFetch;
+  }
+
   assert(ui.includes('chronicle-leaderboard-self')&&ui.includes('chronicle-leaderboard-list'));
   console.log('Player Identity, Chronicle, Great Commanders UI and server Glory checks: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
