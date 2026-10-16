@@ -1,4 +1,4 @@
-name: Deploy leaderboard mobile CORS fix (PR 160)
+name: Deploy leaderboard commander portrait support (PR 160)
 
 on:
   push:
@@ -22,7 +22,7 @@ jobs:
       github.ref == 'refs/heads/feature/race-chess-piece-art-20261016' &&
       (
         github.event_name == 'workflow_dispatch' ||
-        (github.event_name == 'push' && github.event.head_commit.message == 'deploy: leaderboard VK identity')
+        (github.event_name == 'push' && github.event.head_commit.message == 'deploy: commander portraits API')
       )
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -47,7 +47,31 @@ jobs:
           npx wrangler secret list --config leaderboard-worker/wrangler.toml > /tmp/rpchess-leaderboard-secret-names.json
           grep -q 'VK_APP_SECRET' /tmp/rpchess-leaderboard-secret-names.json ||
             { echo "::error::Existing encrypted VK_APP_SECRET is required"; exit 1; }
-      - name: Deploy updated CORS configuration to existing leaderboard Worker
+      - name: Apply additive D1 commander portrait migration only when needed
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler d1 execute rpchess-leaderboard --remote --command "PRAGMA table_info(leaderboard_v1)" --json > /tmp/rpchess-schema-before.json
+          if node -e "const d=require('/tmp/rpchess-schema-before.json');process.exit(d.some(group=>group.results?.some(col=>col.name==='commander_id'))?0:1)"; then
+            echo 'D1 commander_id column already exists; migration skipped'
+          else
+            echo 'Adding cosmetic commander_id with legacy-safe oathkeeper default'
+            npx wrangler d1 execute rpchess-leaderboard --remote --file leaderboard-worker/migrations/0002_commander_id.sql --yes
+          fi
+          npx wrangler d1 execute rpchess-leaderboard --remote --command "PRAGMA table_info(leaderboard_v1)" --json > /tmp/rpchess-schema-after.json
+          node -e "const d=require('/tmp/rpchess-schema-after.json');if(!d.some(group=>group.results?.some(col=>col.name==='commander_id')))process.exit(1)"
+      - name: Verify existing leaderboard scores remain intact
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler d1 execute rpchess-leaderboard --remote --command "SELECT COUNT(*) AS n FROM leaderboard_v1 WHERE commander_id IS NULL OR commander_id = ''" --json > /tmp/rpchess-invalid-commander.json
+          node -e "const d=require('/tmp/rpchess-invalid-commander.json');if(d[0]?.results?.[0]?.n!==0)process.exit(1)"
+      - name: Deploy backward-compatible commander-aware leaderboard Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -69,6 +93,7 @@ jobs:
               -H "Origin: $origin" "$endpoint"
             grep -Fqi "access-control-allow-origin: $origin" /tmp/cors-get
             node -e "const d=require('/tmp/board.json');if(!Array.isArray(d.top))process.exit(1)"
+            node -e "const d=require('/tmp/board.json');if(!d.top.every(r=>typeof r.commanderId==='string'))process.exit(1)"
             status=$(curl -sS --max-time 20 -D /tmp/cors-preflight -o /dev/null -w '%{http_code}' \
               -X OPTIONS -H "Origin: $origin" -H 'Access-Control-Request-Method: POST' \
               -H 'Access-Control-Request-Headers: content-type' "$endpoint/view")
