@@ -277,7 +277,7 @@
   .identity-commander-option{grid-template-rows:54px auto;gap:3px;padding:3px}
   .identity-commander-option img{height:54px}
   .identity-commander-option span{font-size:10px;min-height:17px}
-  .identity-commander-preview{padding:6px;gap:5px;grid-template-columns:95px 1fr;align-items:start}
+  .identity-commander-preview{padding:6px;gap:5px;grid-template-columns:95px 1fr;align-items:center}
   .identity-commander-preview>img{height:126px}
   .identity-commander-preview h3{font-size:20px}
   .identity-commander-preview p{font-size:11px;line-height:1.25}
