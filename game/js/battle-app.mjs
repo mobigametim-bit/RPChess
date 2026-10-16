@@ -213,6 +213,7 @@ function showOnly(target) {
   if (prepScreen) prepScreen.hidden = target !== 'battle';
   if (aftermathScreen) aftermathScreen.hidden = target !== 'battleAftermath';
   if (runEndScreen) runEndScreen.hidden = target !== 'battleRunEnd';
+  document.body.classList.remove('travel-choice-active');
   document.body.classList.toggle('battle-active', ['battle','battleAftermath','battleRunEnd'].includes(target));
   if (target !== 'classic') document.body.classList.remove('classic-chess-active');
   window.scrollTo({ top: 0, behavior: 'auto' });
