@@ -3,7 +3,7 @@ import { caravanRewardText, showCaravanRewards } from './caravan-reward-ui.mjs';
 import { PIECE_GLYPHS } from './roster-data.mjs';
 import { readRun, writeRun } from './run-persistence.mjs';
 import { checkpointFor, combatMoves } from './combat-checkpoint.mjs';
-import { pieceArtForTheme, racePiecePath } from './race-assets.mjs';
+import { boardPieceArtForTheme, boardPieceArtForCharacter, boardRacePiecePath, setBoardPieceArt, racePiecePath } from './race-assets.mjs';
 import { starsText } from './encounter-difficulty.mjs';
 import { subscribe, t, translateLegacy } from './i18n.mjs';
 import { brandLogoSrc } from './brand-logo.mjs';
@@ -76,7 +76,7 @@ function slotLabel(type) { return t('battle.card.slot', { piece:pieceLabel(type)
 function playerColor() { return battlePlan?.playerColor || encounter?.playerColor || 'w'; }
 function enemyColor() { return battlePlan?.enemyColor || (playerColor() === 'w' ? 'b' : 'w'); }
 function playerGenericArt(pieceType, color = playerColor()) { return racePiecePath('humans', pieceType, color); }
-function enemyArt(pieceType) { return pieceArtForTheme(battlePlan?.encounter || encounter, pieceType, enemyColor()); }
+function enemyArt(pieceType) { return boardPieceArtForTheme(battlePlan?.encounter || encounter, pieceType, enemyColor()); }
 function combatDifficultyLabel() { return contentText(String(encounter?.label || '').split(' · ')[0].trim()); }
 
 function ensureBattleScreens() {
@@ -320,17 +320,17 @@ function finishCaravanBattle(status){
 }
 function pieceImage(piece, side) {
   if (side === 'player') {
-    if (piece.id) return characterForId(piece.id)?.pieceArt || playerGenericArt(piece.pieceType, battlePlan.playerColor);
-    return playerGenericArt(piece.pieceType, battlePlan.playerColor);
+    if (piece.id) return boardPieceArtForCharacter(characterForId(piece.id)||piece, battlePlan.playerColor);
+    return boardRacePiecePath('humans',piece.pieceType,battlePlan.playerColor);
   }
   return enemyArt(piece.pieceType);
 }
 function applyBoardArt() {
   if (!board || !battlePlan) return;
   for (const [square,piece] of playerBySquare) {
-    const cell=board.querySelector(`[data-square="${square}"]`),image=cell?.querySelector('.classic-piece');if(!image)continue;image.src=pieceImage(piece,'player');if(piece.id){image.dataset.personalizedId=piece.id;image.classList.add('classic-piece--personalized');cell.dataset.personalizedId=piece.id;const character=characterForId(piece.id);cell.setAttribute('aria-label',`${square}: ${contentText(character?.name||piece.name)}, ${pieceLabel(piece.pieceType)}`);}
+    const cell=board.querySelector(`[data-square="${square}"]`),image=cell?.querySelector('.classic-piece');if(!image)continue;setBoardPieceArt(image,pieceImage(piece,'player'));if(piece.id){image.dataset.personalizedId=piece.id;image.classList.add('classic-piece--personalized');cell.dataset.personalizedId=piece.id;const character=characterForId(piece.id);cell.setAttribute('aria-label',`${square}: ${contentText(character?.name||piece.name)}, ${pieceLabel(piece.pieceType)}`);}
   }
-  for (const [square,piece] of enemyBySquare) { const image=board.querySelector(`[data-square="${square}"] .classic-piece`); if(image)image.src=pieceImage(piece,'enemy'); }
+  for (const [square,piece] of enemyBySquare) { const image=board.querySelector(`[data-square="${square}"] .classic-piece`); if(image)setBoardPieceArt(image,pieceImage(piece,'enemy')); }
   renderThreatOverlay(board,globalThis.RPChessClassicChess?.snapshot?.(),artifactForCombat(activeRun,{combatType,encounterId:battlePlan.encounter.id}),battlePlan.playerColor);
 }
 function patchTransientBattleArt() {
