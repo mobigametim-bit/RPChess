@@ -40,11 +40,11 @@ async function fresh(page) {
     for (const label of await page.locator('.travel-choice-card__cost').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('aria-label') || ''))) assert(label.includes('Стоимость пути: 1 припас.'));
     assert.strictEqual(await page.locator('[data-resource-hud]').isVisible(), false, 'fixed HUD must stay visually removed on compact Travel');
     await page.locator('[data-travel-type="skirmish"]').first().click();
-    await page.locator('[data-skirmish-screen]:not([hidden])').waitFor();
+    await page.locator('[data-artifact-choice-modal]').waitFor();
     let run = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
     assert.strictEqual(run.supplies, 9);
     const stars = run.activeTravelChoice.stars;
-    await page.locator('[data-skirmish-start]').click();
+    assert.strictEqual(await page.locator('[data-skirmish-screen]').isHidden(),true);
     await page.locator('[data-artifact-choice="none"]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     await page.evaluate(() => globalThis.RPChessSkirmish.finishBattle({ over:true, type:'stalemate', winner:null }));
