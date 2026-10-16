@@ -26,9 +26,10 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   assert.strictEqual(chosen.roster[0].id,'king.oathkeeper','chess rules rely on stable Run King ID');
   assert.strictEqual(chosen.roster[0].portrait,commanders.commanderPortrait('wanderer_queen'));
   assert.strictEqual(chosen.roster[0].name,commanders.commanderTitle('wanderer_queen'));
-  const stored=persistence.writeRun(chosen,storage,1200);
+  const portraitStorage=new MemoryStorage();
+  const stored=persistence.writeRun(chosen,portraitStorage,1200);
   assert.strictEqual(stored.commanderId,'wanderer_queen');
-  const resumed=persistence.readRun(storage);
+  const resumed=persistence.readRun(portraitStorage);
   assert.strictEqual(resumed.roster[0].portrait,commanders.commanderPortrait('wanderer_queen'),'hydration must not reset the chosen commander portrait');
   assert.strictEqual(resumed.roster[0].pieceArt,chosen.roster[0].pieceArt,'commander appearance must not change chess piece sprites or rules');
 
