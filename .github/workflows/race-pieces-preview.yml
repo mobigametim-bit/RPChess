@@ -77,6 +77,17 @@ jobs:
           grep -q 'personal leaderboard lookup unavailable' dist/js/leaderboard-client.mjs
           grep -q 'VKWebAppGetLaunchParams' dist/js/leaderboard-client.mjs
           grep -q 'leaderboard.notAuthenticated' dist/js/player-identity-chronicle.mjs
+          # Cosmetic commander portrait selection, without changing the Roster layout.
+          test -s dist/js/commander-portraits.mjs
+          grep -q 'data-identity-commander' dist/js/player-identity-chronicle.mjs
+          grep -q 'commanderDescription' dist/js/roster-app.mjs
+          grep -q 'commanderId' dist/js/chronicle-core.mjs
+          grep -q 'commanderId' dist/js/leaderboard-client.mjs
+          for commander in oathkeeper stone_crown wanderer_queen pilgrim fox_prince ash_regent nameless_heir; do
+            test -s "dist/assets/kings/$commander/portrait.png"
+          done
+          test "$(find dist/assets/heroes dist/assets/kings -type f -name portrait.png | wc -l)" -eq 43
+
       - name: Require Cloudflare credentials
         env:
           TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -122,6 +133,18 @@ jobs:
           done
           echo "::error::Live race-piece preview or legacy catalog art failed smoke checks"
           exit 1
+      - name: Verify published portrait gallery and optimized commander PNG
+        run: |
+          set -euo pipefail
+          base='https://rpchess-race-pieces-preview.mobigametim.workers.dev'
+          curl -fsS --max-time 20 "$base/js/commander-portraits.mjs" -o /tmp/commander-portraits-preview.mjs
+          grep -q 'wanderer_queen' /tmp/commander-portraits-preview.mjs
+          curl -fsS --max-time 20 "$base/js/player-identity-chronicle.mjs" -o /tmp/commander-identity-preview.mjs
+          grep -q 'data-identity-commander' /tmp/commander-identity-preview.mjs
+          for commander in oathkeeper stone_crown wanderer_queen pilgrim fox_prince ash_regent nameless_heir; do
+            curl -fsS --max-time 20 "$base/assets/kings/$commander/portrait.png" -o "/tmp/commander-$commander.png"
+            test "$(od -An -tx1 -N8 "/tmp/commander-$commander.png" | tr -d ' \n')" = '89504e470d0a1a0a'
+          done
       - name: Validate live leaderboard access from this preview origin
         run: |
           set -euo pipefail
@@ -130,6 +153,6 @@ jobs:
           curl -fsS --max-time 20 -D /tmp/rpchess-leaderboard-origin-headers \
             -H "Origin: $origin" "$api/v1/leaderboard" -o /tmp/rpchess-leaderboard.json
           grep -Fqi "access-control-allow-origin: $origin" /tmp/rpchess-leaderboard-origin-headers
-          node -e "const d=require('/tmp/rpchess-leaderboard.json');if(!Array.isArray(d.top))process.exit(1)"
+          node -e "const d=require('/tmp/rpchess-leaderboard.json');if(!Array.isArray(d.top)||!d.top.every(row=>typeof row.commanderId==='string'))process.exit(1)"
           echo 'Great Commanders works from the playable preview origin'
 
