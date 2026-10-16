@@ -26,33 +26,16 @@ const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
         writeRun({ ...readRun(), artifacts: { 'threat.attack': 3, 'threat.defense': 3, 'threat.great': 3 } });
         globalThis.RPChessSkirmish.open();
       });
-      await page.locator('[data-skirmish-screen]').waitFor({ state: 'visible' });
-      const prep = await page.evaluate(() => {
-        const panel = document.querySelector('.skirmish-selection');
-        const header = panel.querySelector('.skirmish-section-head');
-        const list = panel.querySelector('.skirmish-selected');
-        const formation = panel.querySelector('.skirmish-formation-block');
-        return {
-          topGap: header.getBoundingClientRect().top - panel.getBoundingClientRect().top,
-          headerBottom: header.getBoundingClientRect().bottom,
-          listTop: list.getBoundingClientRect().top,
-          listBottom: list.getBoundingClientRect().bottom,
-          listHeight: list.clientHeight,
-          formationTop: formation.getBoundingClientRect().top,
-          formationBottom: formation.getBoundingClientRect().bottom,
-          footerTop: document.querySelector('.skirmish-actionbar').getBoundingClientRect().top,
-          styledArtifact: Boolean(document.querySelector('[data-artifact-combat-css]')?.sheet)
-        };
+      await page.locator('[data-artifact-choice-modal]').waitFor({state:'visible'});
+      await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
+      const modalLayout=await page.evaluate(()=>{
+        const panel=document.querySelector('[data-artifact-choice-modal] .artifact-choice-panel');
+        const rect=panel.getBoundingClientRect();
+        return {top:rect.top,bottom:rect.bottom,styled:Boolean(document.querySelector('[data-artifact-combat-css]')?.sheet)};
       });
-      if (width <= 980) {
-        assert(prep.topGap >= 0 && prep.topGap < 24, `heading shifted down: ${JSON.stringify(prep)}`);
-        assert(prep.listHeight >= 27, `selected list has no usable row: ${JSON.stringify(prep)}`);
-        assert(prep.listTop >= prep.headerBottom - 1, 'list overlaps heading');
-        assert(prep.listBottom <= prep.formationTop + 1, 'list overlaps formation');
-        assert(prep.formationBottom <= prep.footerTop + 1, 'formation overlaps Start footer');
-      }
-      assert(prep.styledArtifact, 'artifact styles must be ready before the first launch click');
-      await page.locator('[data-skirmish-start]').click();
+      assert(modalLayout.styled,'cold artifact stylesheet must finish before its modal is unveiled');
+      assert(modalLayout.top>=-1&&modalLayout.bottom<=innerHeight+1,'artifact selection replaces prep and fits viewport');
+      assert.strictEqual(await page.locator('[data-skirmish-screen]').isHidden(),true,'Skirmish preparation is skipped');
       assert.strictEqual(await page.locator('[data-artifact-choice-modal]').evaluate(el => getComputedStyle(el).position), 'fixed');
       await page.locator(`[data-artifact-choice="${artifact}"]`).tap();
       await page.locator('[data-classic-screen]').waitFor({ state: 'visible' });
