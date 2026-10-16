@@ -32,6 +32,28 @@ function createEncounter({seed='rpchess-skirmish',stars=2}={}){
 function combatEligible(character){return Boolean(character&&(character.status==='healthy'||(character.isRunKing&&character.status==='wounded')));}
 function selectionSummary(roster,selectedIds){const selected=new Set(selectedIds||[]),members=(roster||[]).filter((c)=>selected.has(c.id));return{members,count:members.length,points:members.reduce((s,c)=>s+(PIECE_VALUES[c.pieceType]??c.commandCost??0),0)};}
 function validateSelection(roster,selectedIds){const ids=[...new Set(selectedIds||[])],byId=new Map((roster||[]).map((c)=>[c.id,c])),king=(roster||[]).find((c)=>c.isRunKing);if(!king)return{ok:false,reason:'missing_king'};if(!combatEligible(king))return{ok:false,reason:'king_unavailable'};if(!ids.includes(king.id))return{ok:false,reason:'king_required'};for(const id of ids){const c=byId.get(id);if(!c)return{ok:false,reason:'unknown_character',id};if(!combatEligible(c))return{ok:false,reason:'character_unavailable',id};}const summary=selectionSummary(roster,ids);if(summary.count<MIN_SKIRMISH_PIECES)return{ok:false,reason:'minimum_force',minimum:MIN_SKIRMISH_PIECES,...summary};if(summary.count>MAX_SKIRMISH_PIECES)return{ok:false,reason:'piece_limit',...summary};if(summary.points>MAX_SKIRMISH_POINTS)return{ok:false,reason:'point_limit',...summary};return{ok:true,...summary};}
+// Automatic Skirmish deployment must fit 2 ranks, the 39-point cap and
+// the maximum eight pawns. Keep every eligible hero when no limit is exceeded.
+function automaticCombatSelection(roster,seed='rpchess-auto-skirmish'){
+  const eligible=(roster||[]).filter(combatEligible);
+  const king=eligible.find(c=>c.isRunKing);
+  if(!king)return[];
+  const others=eligible.filter(c=>!c.isRunKing&&c.pieceType!=='king');
+  const points=others.reduce((sum,c)=>sum+(PIECE_VALUES[c.pieceType]??c.commandCost??0),0);
+  const pawns=others.filter(c=>c.pieceType==='pawn').length;
+  if(eligible.length<=MAX_SKIRMISH_PIECES&&points<=MAX_SKIRMISH_POINTS&&pawns<=8)
+    return [king.id,...others.map(c=>c.id)];
+  const shuffled=shuffle(others.sort((a,b)=>String(a.id).localeCompare(String(b.id))),seed);
+  const chosen=[king.id];let spent=0,pawnCount=0;
+  for(const c of shuffled){
+    const cost=PIECE_VALUES[c.pieceType]??c.commandCost??0;
+    if(chosen.length>=MAX_SKIRMISH_PIECES||spent+cost>MAX_SKIRMISH_POINTS)continue;
+    if(c.pieceType==='pawn'&&pawnCount===8)continue;
+    chosen.push(c.id);spent+=cost;
+    if(c.pieceType==='pawn')pawnCount++;
+  }
+  return chosen;
+}
 function defaultCombatSelection(roster){const eligible=(roster||[]).filter(combatEligible),king=eligible.find((c)=>c.isRunKing);if(!king)return[];const selected=[king.id];let points=0;for(const c of eligible){if(c.id===king.id)continue;const cost=PIECE_VALUES[c.pieceType]??c.commandCost??0;if(selected.length>=MAX_SKIRMISH_PIECES||points+cost>MAX_SKIRMISH_POINTS)continue;selected.push(c.id);points+=cost;}return selected;}
 
 function startingSquares(color){const home=color==='w'?'1':'8',front=color==='w'?'2':'7';return{home:[...FILES].map((f)=>`${f}${home}`),front:[...FILES].map((f)=>`${f}${front}`)};}
@@ -69,4 +91,4 @@ function createBattlePlan({roster,selectedIds,encounter}={}){
 
 function applyBattleOutcome(run,{capturedIds=[],status=null,playerColor='w'}={}){const captured=new Set(capturedIds||[]);const roster=(run?.roster||[]).map((c)=>{if(!c.isRunKing&&captured.has(c.id)&&c.status==='healthy')return{...c,status:'wounded'};return{...c};});const woundedIds=roster.filter((c)=>captured.has(c.id)&&!c.isRunKing&&c.status==='wounded').map((c)=>c.id);return{...run,roster,ended:Boolean(run?.ended),endReason:run?.endReason||null,lastSkirmish:{result:status?.type||'unknown',winner:status?.winner||null,woundedIds,kingDied:false}};}
 
-export {MIN_SKIRMISH_PIECES,MAX_SKIRMISH_PIECES,MAX_SKIRMISH_POINTS,ENCOUNTER_TIERS,combatEligible,createEncounter,selectionSummary,validateSelection,defaultCombatSelection,placeArmy,fenFromPlacements,generateEnemyArmy,createBattlePlan,applyBattleOutcome};
+export {MIN_SKIRMISH_PIECES,MAX_SKIRMISH_PIECES,MAX_SKIRMISH_POINTS,ENCOUNTER_TIERS,combatEligible,createEncounter,selectionSummary,validateSelection,defaultCombatSelection,automaticCombatSelection,placeArmy,fenFromPlacements,generateEnemyArmy,createBattlePlan,applyBattleOutcome};
