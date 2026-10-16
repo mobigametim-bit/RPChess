@@ -141,8 +141,15 @@ async function openCaravan(page) {
     const mobileErrors = [];
     mobile.on('pageerror', (error) => mobileErrors.push(String(error.stack || error)));
     await openCaravan(mobile);
+    // The modal is added immediately, but its dedicated stylesheet can still
+    // be loading on a cold mobile entry. Assert geometry only once the asset
+    // gate has released the fully styled and decoded modal.
+    await mobile.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
+    await mobile.waitForFunction(()=>Boolean(document.querySelector('[data-artifact-combat-css]')?.sheet));
     const dialog=await mobile.locator('[data-artifact-choice-modal] .artifact-choice-panel').boundingBox();
-    assert(dialog&&dialog.top>=-1&&dialog.bottom<=391,'Caravan artifact modal fits mobile without preparation');
+    const viewport=mobile.viewportSize();
+    assert(dialog&&dialog.top>=-1&&dialog.bottom<=viewport.height+1,
+      `Caravan artifact modal fits mobile after stylesheet loads: ${JSON.stringify({dialog,viewport})}`);
     assert.strictEqual(await mobile.locator('[data-battle-screen]').isHidden(),true);
     await mobile.locator('[data-artifact-choice="none"]').click();
     await mobile.locator('[data-classic-screen]:not([hidden])').waitFor();
