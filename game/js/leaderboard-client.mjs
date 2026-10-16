@@ -50,12 +50,21 @@ function changed(next){
 function currentLeaderboard(){return board;}
 async function loadLeaderboard({force=false}={}){
   if(!apiRoot())return changed({top:[],me:null,status:'unavailable'});
-  if(!force&&Date.now()-cachedAt<CACHE_MS)return board;
+  if(!force&&Date.now()-cachedAt<(board.status==='offline'?5000:CACHE_MS))return board;
   if(pending)return pending;
   pending=(async()=>{
     try{
       const launch=vkLaunch();
-      return changed(await request(launch?'/v1/leaderboard/view':'/v1/leaderboard',launch?{launch}:null));
+      if(!launch)return changed(await request('/v1/leaderboard'));
+      try{
+        return changed(await request('/v1/leaderboard/view',{launch}));
+      }catch(error){
+        // VK mobile may reject an authenticated POST even when public reads
+        // work (WebView transport, preflight or stale signed launch). Keep the
+        // public top ten visible; only personal position requires VK auth.
+        console.warn('[RPChess] personal leaderboard lookup unavailable; retrying public top ten',error);
+        return changed(await request('/v1/leaderboard'));
+      }
     }catch(error){
       console.warn('[RPChess] leaderboard read failed',error);
       return changed({top:[],me:null,status:'offline'});
