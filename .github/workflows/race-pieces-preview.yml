@@ -83,6 +83,7 @@ jobs:
           grep -q 'min-height:531px' dist/css/player-identity-chronicle.css
           # New Journey cards use gold surfaces; the selected portrait and bio are vertically centered.
           grep -Fq 'align-content:center;align-items:center' dist/css/player-identity-chronicle.css
+          grep -Fq 'grid-template-columns:95px 1fr;align-items:center' dist/css/player-identity-chronicle.css
           grep -Fq 'radial-gradient(circle at center top,#342715' dist/css/player-identity-chronicle.css
           grep -Fq '20261017-commander-gold-1' dist/js/player-identity-chronicle.mjs
           npm run test:identity
