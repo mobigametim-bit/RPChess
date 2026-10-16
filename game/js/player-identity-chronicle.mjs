@@ -208,7 +208,8 @@ function renderChronicle() {
     const ownRank=document.createElement('strong');
     ownRank.textContent=leaderboard.me
       ? '#'+leaderboard.me.rank+' · '+leaderboard.me.glory+' '+l('chronicle.glory')
-      : l('leaderboard.notRanked');
+      : leaderboard.status!=='ready' ? '—'
+      : l(leaderboard.viewerAuthenticated?'leaderboard.notRanked':'leaderboard.notAuthenticated');
     own.append(ownLabel,ownRank);
     bestRoot.append(own);
 
