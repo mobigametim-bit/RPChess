@@ -40,10 +40,22 @@ async function readBoard(db,id){
   }
   return {top:result.results.map((r,i)=>({rank:i+1,name:r.name,glory:r.glory,week:r.week,power:r.power})),me};
 }
+// Hosting domains vary between VK WebViews, desktop iframes, and staging.
+// Match this application's VK ID (not every VK Mini App) and both VK hosting TLDs.
+// Origin validation is for browser CORS only; signed VK launch auth remains mandatory
+// for writes and personal ranks.
+function trustedOrigin(origin,allowedOrigins=''){
+  if(!origin)return true; // non-browser clients and trusted server-side probes
+  let parsed;
+  try{parsed=new URL(origin)}catch{return false}
+  if(parsed.protocol!=='https:'||parsed.origin!==origin)return false;
+  const explicit=new Set(String(allowedOrigins||'https://mobigametim-bit.github.io').split(',').map(s=>s.trim()).filter(Boolean));
+  if(explicit.has(origin))return true;
+  return /^(?:(?:stage|prod)-)?app54754579(?:-[a-z0-9]+)?\.pages\.vk-apps\.(?:ru|com)$/i.test(parsed.hostname);
+}
 async function handler(req,env){
   const origin=req.headers.get('origin');
-  const allowed=new Set(String(env.ALLOWED_ORIGINS||'https://mobigametim-bit.github.io').split(',').map(x=>x.trim()));
-  if(origin&&!allowed.has(origin))return json({error:'origin_not_allowed'},403);
+  if(origin&&!trustedOrigin(origin,env.ALLOWED_ORIGINS))return json({error:'origin_not_allowed'},403);
   const cors=origin?{'access-control-allow-origin':origin,'vary':'Origin','access-control-allow-methods':'GET, POST, OPTIONS','access-control-allow-headers':'content-type'}:{};
   if(req.method==='OPTIONS')return new Response(null,{status:204,headers:cors});
   if(!env.DB)return json({error:'database_not_configured'},503,cors);
@@ -71,4 +83,4 @@ async function handler(req,env){
   return json(await readBoard(env.DB,id),200,cors);
 }
 export default {async fetch(req,env){try{return await handler(req,env)}catch(e){console.error('leaderboard error',e);return json({error:'server_error'},500)}}};
-export {handler,verifiedVKId,validatedRecord};
+export {handler,verifiedVKId,validatedRecord,trustedOrigin};
