@@ -42,6 +42,27 @@ function racePiecePath(raceTag,pieceType,color='b'){
   if(race==='humans')return `assets/races/humans/pieces/${color==='w'?'white':'black'}/${type}.png`;
   const resolved=race==='mixed'?'humans':race;return `assets/races/${resolved}/pieces/${type}.png`;
 }
+// Board sprites are independent from the historical catalog/profile art paths.
+// Keep racePiecePath() unchanged: Arena squad and rival cards must retain their imagery.
+const BOARD_PIECE_RACES=Object.freeze(['humans','orcs','undead','angels','fae']);
+function boardRacePiecePath(raceTag,pieceType,color='b'){
+  const race=normalizeRaceTag(raceTag);
+  if(!BOARD_PIECE_RACES.includes(race))return racePiecePath(raceTag,pieceType,color);
+  const type=PIECE_TYPES.includes(pieceType)?pieceType:'pawn';
+  return `assets/races/${race}/pieces/board/${color==='w'?'white':'black'}/${type}.png`;
+}
+function boardPieceArtForTheme(theme,pieceType,color){
+  const race=theme?.enemyRoleRaces?.[pieceType]||theme?.enemyRaceTag||'humans';
+  return boardRacePiecePath(race,pieceType,color||theme?.enemyColor||'b');
+}
+function boardPieceArtForCharacter(character,color='w'){
+  return character?.boardPieceArt||boardRacePiecePath(character?.raceTag||'humans',character?.pieceType,color);
+}
+function setBoardPieceArt(image,src){
+  if(!image)return;
+  image.src=src;
+  image.classList.toggle('classic-piece--new-race',String(src).includes('/pieces/board/'));
+}
 function raceBoardTiles(raceTag){
   const race=normalizeRaceTag(raceTag);
   if(race==='mixed')return null;
@@ -136,4 +157,4 @@ function pieceArtForTheme(theme,pieceType,color){const race=theme?.enemyRoleRace
 
 installRaceBoardRuntime();
 
-export {RACE_TAGS,PIECE_TYPES,BOARD_TILE_FILES,BOARD_THEME_STYLE_ID,RACE_LABELS,RACE_TAG_BY_LABEL,BACKGROUND_POOLS,BACKGROUND_FOLDER_BY_RACE,hashString,normalizeRaceTag,oppositeColor,racePiecePath,raceBoardTiles,installRaceBoardStyles,applyRaceBoardTheme,currentCombatBoardRace,queueRaceBoardRuntimeInstall,installRaceBoardRuntime,eventBackgroundPath,deterministicPlayerColor,deterministicRace,mixedRoleRaces,combatTheme,pieceArtForTheme};
+export {RACE_TAGS,PIECE_TYPES,BOARD_TILE_FILES,BOARD_THEME_STYLE_ID,RACE_LABELS,RACE_TAG_BY_LABEL,BACKGROUND_POOLS,BACKGROUND_FOLDER_BY_RACE,hashString,normalizeRaceTag,oppositeColor,racePiecePath,BOARD_PIECE_RACES,boardRacePiecePath,boardPieceArtForTheme,boardPieceArtForCharacter,setBoardPieceArt,raceBoardTiles,installRaceBoardStyles,applyRaceBoardTheme,currentCombatBoardRace,queueRaceBoardRuntimeInstall,installRaceBoardRuntime,eventBackgroundPath,deterministicPlayerColor,deterministicRace,mixedRoleRaces,combatTheme,pieceArtForTheme};
