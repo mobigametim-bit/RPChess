@@ -1,0 +1,85 @@
+name: Publish accepted loading screen to GitHub Pages (one-time)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/release-loading-screen-20261016.yml
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages-accepted-loading-screen-20261016
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.event.head_commit.message == 'release: deploy accepted loading screen'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout accepted main
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Restore runtime asset cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify and build production
+        run: npm run gate:local
+      - name: Verify accepted assets and Pages size
+        run: |
+          test -f dist/index.html
+          test -f dist/css/screen-loading.css
+          test -f dist/js/screen-loading.mjs
+          test -f dist/generated_assets/logo_ru.png
+          test -f dist/generated_assets/logo_en.png
+          grep -q 'data-game-loading' dist/index.html
+          bytes=$(du -sb dist | cut -f1)
+          echo "Production dist size: ${bytes} bytes"
+          test "$bytes" -lt 1000000000
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./dist
+
+  deploy:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.event.head_commit.message == 'release: deploy accepted loading screen'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Smoke-check public game and loading screen
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            if curl -fsS --max-time 15 'https://mobigametim-bit.github.io/RPChess/' -o /tmp/rpchess-pages.html &&
+               grep -q 'data-game-loading' /tmp/rpchess-pages.html &&
+               curl -fsS --max-time 15 'https://mobigametim-bit.github.io/RPChess/js/screen-loading.mjs?v=20261016-1' -o /tmp/rpchess-pages-loading.js &&
+               grep -q 'onSceneMutation' /tmp/rpchess-pages-loading.js; then
+              echo "PUBLISHED_GAME=https://mobigametim-bit.github.io/RPChess/"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::GitHub Pages production smoke check failed"
+          exit 1
