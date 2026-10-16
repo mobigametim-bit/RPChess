@@ -61,10 +61,20 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     }
     assert((await panel.innerText()).includes('ГЕРОЕВ В СТРОЮ'));
     await page.evaluate(()=>window.RPChessPlayerIdentity.open());
+    assert.strictEqual(await page.locator('[data-identity-commander]').count(),7,'seven original commanders available in the name dialog');
+    await page.locator('[data-identity-commander="wanderer_queen"]').click();
+    assert.strictEqual(await page.locator('[data-identity-commander="wanderer_queen"]').getAttribute('aria-pressed'),'true');
+    assert((await page.locator('[data-identity-commander-image]').getAttribute('src')).includes('wanderer_queen/portrait.png'));
     await page.locator('[data-player-identity-input]').fill('Тимур');
     await setLanguage('en');
     assert.strictEqual(await page.locator('#player-identity-title').innerText(),'Who are you, warrior?');
     assert.strictEqual(await page.locator('[data-player-identity-input]').inputValue(),'Тимур','language changes preserve entered names');
+    assert.strictEqual(await page.locator('[data-identity-commander="wanderer_queen"]').getAttribute('aria-pressed'),'true','language switch must preserve the selected portrait');
+    assert((await page.locator('[data-identity-commander-description]').innerText()).includes('queen without a palace'),'commander bio changes to English');
+    assert.strictEqual(await panel.locator('.chronicle-leaderboard-avatar').count(),2,'existing flag shows portrait per ranked commander');
+    const portrait=await panel.locator('[data-chronicle-current] .chronicle-current-profile img').getAttribute('src');
+    assert(portrait.includes('/kings/oathkeeper/portrait.png'),'legacy current runs keep the default royal portrait');
+
     assert.strictEqual(await page.locator('[data-player-identity-close]').getAttribute('aria-label'),'Close');
     await page.evaluate(()=>window.RPChessPlayerIdentity.close());
     await page.reload({waitUntil:'networkidle'});
