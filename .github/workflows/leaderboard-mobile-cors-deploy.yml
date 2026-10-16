@@ -1,4 +1,5 @@
 name: Deploy leaderboard commander portrait support (PR 160)
+# Idempotent cosmetic D1 schema expansion; existing leaderboard score values remain unchanged.
 
 on:
   push:
