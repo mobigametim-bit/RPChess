@@ -176,8 +176,9 @@ async function assertCompactDesktopStars(page) {
     mobile.on('pageerror', (error) => mobileErrors.push(String(error.stack || error)));
     await fresh(mobile, { stars: 12 });
     await enter(mobile);
+    await mobile.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
     const overlay=await mobile.locator('[data-artifact-choice-modal] .artifact-choice-panel').boundingBox();
-    assert(overlay&&overlay.top>=-1&&overlay.bottom<=391,'artifact decision fits the mobile viewport without preparation');
+    assert(overlay&&overlay.y>=-1&&overlay.y+overlay.height<=391,'artifact decision fits the mobile viewport without preparation');
     assert.strictEqual(await mobile.locator('[data-skirmish-screen]').isHidden(),true);
     await launch(mobile);
     assert.strictEqual(await mobile.locator('[data-classic-screen]').isVisible(),true);
