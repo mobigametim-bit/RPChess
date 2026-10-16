@@ -123,6 +123,62 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
     globalThis.fetch=previousFetch;
   }
 
+  // VK mobile WebView can omit signed launch data from location.search.
+  // Only VK Bridge's signed launch response (not an unchecked profile ID)
+  // may authorize the personal position on our leaderboard Worker.
+  const prevPlatform=globalThis.RPChessPlatform,prevMobileLocation=globalThis.location;
+  const prevMobileDocument=globalThis.document,prevMobileFetch=globalThis.fetch;
+  try{
+    const parameters={vk_app_id:54754579,vk_user_id:42,vk_ts:1720000000,vk_platform:'mobile_android',vk_ref:'other'};
+    const signingText=new URLSearchParams(Object.entries(parameters)
+      .sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>[k,String(v)])).toString();
+    const sig=require('node:crypto').createHmac('sha256',vkSecret).update(signingText).digest('base64url');
+    const mobileLaunch={...parameters,sign:sig};
+    let bridgeRequests=0;const requests=[];
+    globalThis.location={search:''};
+    globalThis.document={querySelector:()=>({content:'https://leaderboard.example.test'})};
+    globalThis.RPChessPlatform={launch:{isVK:()=>true},bridge:{request:async method=>{
+      assert.strictEqual(method,'VKWebAppGetLaunchParams');
+      bridgeRequests++;
+      return mobileLaunch;
+    }}};
+    globalThis.fetch=async(resource,options={})=>{
+      requests.push({resource:String(resource),method:options.method,body:options.body});
+      if(options.method==='POST'){
+        const submitted=JSON.parse(options.body);
+        assert.strictEqual(await leaderboard.verifiedVKId(submitted.launch,vkSecret),'42',
+          'the mobile bridge must supply a verifiable signed VK identity');
+        return new Response(JSON.stringify({top:[{rank:1,name:'Tester',glory:14}],
+          me:{rank:1,name:'Tester',glory:14},viewerAuthenticated:true}),{status:200});
+      }
+      throw new Error('signed mobile personal request must not silently downgrade to GET');
+    };
+    const client=await import(url('js/leaderboard-client.mjs'));
+    const answer=await client.loadLeaderboard({force:true});
+    assert.strictEqual(bridgeRequests,1,'one VK bridge authentication fetch per mobile session');
+    assert.strictEqual(answer.me.rank,1);
+    assert.strictEqual(answer.viewerAuthenticated,true);
+    assert.strictEqual(requests[0].method,'POST');
+    await client.loadLeaderboard({force:true});
+    assert.strictEqual(bridgeRequests,1,'reuse signed launch params instead of repeatedly requesting the bridge');
+    assert.strictEqual(client.signedLaunchQuery({vk_app_id:54754579,vk_user_id:42}),'',
+      'an unsigned user ID must never grant a personal leaderboard rank');
+    assert.strictEqual(client.signedLaunchQuery({...mobileLaunch,vk_app_id:54754580}),'',
+      'a different VK app cannot impersonate RPChess');
+  }finally{
+    if(prevPlatform===undefined)delete globalThis.RPChessPlatform;else globalThis.RPChessPlatform=prevPlatform;
+    if(prevMobileLocation===undefined)delete globalThis.location;else globalThis.location=prevMobileLocation;
+    if(prevMobileDocument===undefined)delete globalThis.document;else globalThis.document=prevMobileDocument;
+    globalThis.fetch=prevMobileFetch;
+  }
+  assert(ui.includes('leaderboard.notAuthenticated')&&ui.includes('leaderboard.notRanked'),
+    'personal rank must distinguish unverified VK from authenticated players without a completed run');
+  const translations=fs.readFileSync(path.join(game,'localization/runtime-ui.mjs'),'utf8');
+  assert(translations.includes("'leaderboard.notAuthenticated':'VK не подтверждён'"));
+  assert(translations.includes("'leaderboard.notRanked':'Нет результата'"));
+  assert(fs.readFileSync(path.join(game,'../leaderboard-worker/src/index.mjs'),'utf8').includes('viewerAuthenticated:Boolean(id)'),
+    'the API must distinguish verified users with no ranking from unsigned reads');
+
   assert(ui.includes('chronicle-leaderboard-self')&&ui.includes('chronicle-leaderboard-list'));
   console.log('Player Identity, Chronicle, Great Commanders UI and server Glory checks: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
