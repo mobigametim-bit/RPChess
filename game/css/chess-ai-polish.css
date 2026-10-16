@@ -472,3 +472,7 @@ html body .classic-piece-marker--b::before {
     padding:7px 12px 8px!important;
   }
 }
+/* Readable race chess sprites carry their own role silhouette; suppress only board glyphs. */
+html body .classic-square:has(.classic-piece--new-race) .classic-piece-marker {
+  display:none!important;
+}
