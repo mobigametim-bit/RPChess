@@ -56,8 +56,8 @@ async function enter(page) {
   const card = page.locator('[data-travel-type="battle"]').first();
   assert.strictEqual(await card.count(), 1);
   await card.click();
-  await page.locator('[data-battle-screen]:not([hidden])').waitFor();
-  assert.strictEqual(await page.locator('[data-battle-back]').count(), 0, 'approved Battle prep must not retain an invisible legacy back control');
+  await page.locator('[data-artifact-choice-modal]').waitFor();
+  assert.strictEqual(await page.locator('[data-battle-screen]').isHidden(),true,'Battle preparation is skipped');
 }
 
 async function assertResponsiveStars(page, selector, cardSelector) {
@@ -92,12 +92,9 @@ async function assertResponsiveStars(page, selector, cardSelector) {
 
     await fresh(page, { playerColor: 'w', stars: 12, race: 'orcs' });
     await enter(page);
-    assert.strictEqual(await page.locator('[data-battle-character]').count(), 6);
-    await assertResponsiveStars(page, '[data-battle-stars]', '.battle-threat-card');
-    assert.strictEqual(await page.locator('.battle-actionbar').count(), 0, 'Battle owner must not render the obsolete hidden actionbar/counters');
-    assert.strictEqual(await page.locator('[data-battle-start]').isVisible(), true);
-    assert.strictEqual(await page.locator('[data-battle-start]').evaluate((node) => node.parentElement?.classList.contains('battle-army')), true, 'Battle Start CTA must be owner-rendered in the army panel');
-    await page.locator('[data-battle-start]').click();
+    assert.strictEqual((await page.evaluate(()=>globalThis.RPChessBattle.selectedIds)).length,6,'Battle automatically chooses all six eligible starter heroes');
+    assert.strictEqual((await page.evaluate(()=>globalThis.RPChessBattle.encounter.stars)),12);
+    assert.strictEqual(await page.locator('[data-battle-screen]').isHidden(),true);
     await page.locator('[data-artifact-choice="none"]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     const state = await page.evaluate(() => ({ fen: globalThis.RPChessClassicChess.snapshot().fen, plan: globalThis.RPChessBattle.battlePlan }));
@@ -129,8 +126,7 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     black.on('pageerror', (error) => blackErrors.push(String(error.stack || error)));
     await fresh(black, { playerColor: 'b', stars: 9, race: 'dark_elves' });
     await enter(black);
-    assert((await black.locator('[data-battle-description]').innerText()).includes('оборону'));
-    await black.locator('[data-battle-start]').click();
+    assert.strictEqual((await black.evaluate(()=>globalThis.RPChessBattle.encounter.playerColor)),'b');
     await black.locator('[data-artifact-choice="none"]').click();
     await black.locator('[data-classic-screen]:not([hidden])').waitFor();
     const blackPlan = await black.evaluate(() => globalThis.RPChessBattle.battlePlan);
@@ -154,9 +150,7 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     wounded.on('pageerror', (error) => woundedErrors.push(String(error.stack || error)));
     await fresh(wounded, { woundedKing: true });
     await enter(wounded);
-    assert.strictEqual(await wounded.locator('[data-battle-participant="king.oathkeeper"]').count(), 1);
-    assert.strictEqual(await wounded.locator('[data-battle-start]').isDisabled(), false);
-    await wounded.locator('[data-battle-start]').click();
+    assert((await wounded.evaluate(()=>globalThis.RPChessBattle.selectedIds)).includes('king.oathkeeper'),'auto Battle team keeps wounded run king');
     await wounded.locator('[data-artifact-choice="none"]').click();
     await wounded.locator('[data-classic-screen]:not([hidden])').waitFor();
 
@@ -165,40 +159,11 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     mobile.on('pageerror', (error) => mobileErrors.push(String(error.stack || error)));
     await fresh(mobile, { stars: 12 });
     await enter(mobile);
-    await mobile.waitForFunction(() => document.body.classList.contains('battle-prep-compact-active'));
-    const layout = await mobile.evaluate(() => {
-      const start = document.querySelector('[data-battle-start]');
-      const army = document.querySelector('.battle-army');
-      const screen = document.querySelector('[data-battle-screen]');
-      const startBox = start?.getBoundingClientRect();
-      const armyBox = army?.getBoundingClientRect();
-      const screenBox = screen?.getBoundingClientRect();
-      const cards = [...document.querySelectorAll('[data-battle-character]')].map((card) => {
-        const rect = card.getBoundingClientRect();
-        return { top:rect.top, bottom:rect.bottom, left:rect.left, right:rect.right };
-      });
-      return {
-        sw: document.documentElement.scrollWidth,
-        cw: document.documentElement.clientWidth,
-        sh: document.documentElement.scrollHeight,
-        ch: document.documentElement.clientHeight,
-        actionbarCount: document.querySelectorAll('.battle-actionbar').length,
-        startParent: start?.parentElement?.className || '',
-        startBox: startBox ? { left:startBox.left,right:startBox.right,top:startBox.top,bottom:startBox.bottom,width:startBox.width } : null,
-        armyBox: armyBox ? { left:armyBox.left,right:armyBox.right,top:armyBox.top,bottom:armyBox.bottom,width:armyBox.width } : null,
-        screenBox: screenBox ? { left:screenBox.left,right:screenBox.right,top:screenBox.top,bottom:screenBox.bottom } : null,
-        cards
-      };
-    });
-    assert(layout.sw <= layout.cw + 1);
-    assert(layout.sh <= layout.ch + 1, `mobile landscape Battle prep must not page-scroll: ${layout.sh}/${layout.ch}`);
-    assert(layout.screenBox && layout.screenBox.left >= -1 && layout.screenBox.right <= layout.cw + 1 && layout.screenBox.top >= -1 && layout.screenBox.bottom <= layout.ch + 1, 'Battle screen must stay inside the viewport');
-    assert.strictEqual(layout.cards.length, 6);
-    assert(layout.cards.every((card) => card.left >= -1 && card.right <= layout.cw + 1 && card.top >= -1 && card.bottom <= layout.ch + 1), 'all six Battle cards must remain inside the viewport');
-    assert.strictEqual(layout.actionbarCount, 0, 'mobile Battle prep must not retain the obsolete duplicate actionbar');
-    assert(layout.startParent.includes('battle-army'), 'mobile Battle Start CTA must be owner-rendered in the army panel');
-    assert(layout.startBox && layout.armyBox && layout.startBox.left >= layout.armyBox.left - 1 && layout.startBox.right <= layout.armyBox.right + 1 && layout.startBox.top >= -1 && layout.startBox.bottom <= layout.ch + 1, 'mobile Battle Start CTA must stay inside the army frame and viewport');
-    assert(layout.startBox.width >= layout.armyBox.width - 40, `mobile Battle Start CTA must be effectively full width: ${layout.startBox.width}/${layout.armyBox.width}`);
+    const dialog=await mobile.locator('[data-artifact-choice-modal] .artifact-choice-panel').boundingBox();
+    assert(dialog&&dialog.top>=-1&&dialog.bottom<=391,'automatic Battle artifact choice fits mobile landscape');
+    assert.strictEqual(await mobile.locator('[data-battle-screen]').isHidden(),true);
+    await mobile.locator('[data-artifact-choice="none"]').click();
+    await mobile.locator('[data-classic-screen]:not([hidden])').waitFor();
 
     assert.deepStrictEqual(errors, []);
     assert.deepStrictEqual(blackErrors, []);
