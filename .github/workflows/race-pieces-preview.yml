@@ -1,0 +1,108 @@
+name: Deploy RPChess race chess pieces acceptance preview
+
+on:
+  push:
+    branches:
+      - feature/race-chess-piece-art-20261016
+    paths:
+      - race-pieces-preview/**
+      - .github/workflows/race-pieces-preview.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rpchess-race-pieces-preview
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.repository == 'mobigametim-bit/RPChess' &&
+      github.ref == 'refs/heads/feature/race-chess-piece-art-20261016' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'push' && github.event.head_commit.message == 'deploy: race pieces preview')
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout acceptance branch
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Restore runtime asset cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build playable preview
+        run: npm run build
+      - name: Verify all 60 dedicated chess pieces and unchanged Arena catalog
+        run: |
+          test -f dist/index.html
+          test -f dist/js/arena-app.mjs
+          test -f dist/js/race-assets.mjs
+          test -f dist/css/combat-side-colors.css
+          test -f dist/css/chess-ai-polish.css
+          count=$(find dist/assets/races -type f -path '*/pieces/board/*/*.png' | wc -l)
+          echo "Dedicated piece PNGs: $count"
+          test "$count" -eq 60
+          for race in humans orcs undead angels fae; do
+            for color in white black; do
+              for piece in pawn knight bishop rook queen king; do
+                test -s "dist/assets/races/$race/pieces/board/$color/$piece.png"
+              done
+            done
+          done
+          test -s dist/assets/races/humans/pieces/white/king.png
+          test -s dist/assets/races/humans/pieces/black/pawn.png
+          test -s dist/assets/races/orcs/pieces/king.png
+          grep -q 'boardRacePiecePath' dist/js/arena-app.mjs
+          grep -q 'racePiecePath' dist/js/arena-app.mjs
+          grep -q 'boardRacePiecePath' dist/js/race-assets.mjs
+      - name: Require Cloudflare credentials
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$TOKEN" || { echo "::error::CLOUDFLARE_API_TOKEN is missing"; exit 1; }
+          test -n "$ACCOUNT" || { echo "::error::CLOUDFLARE_ACCOUNT_ID is missing"; exit 1; }
+      - name: Deploy separate playable preview Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config race-pieces-preview/wrangler.toml
+      - name: Smoke-check public preview and original catalog images
+        run: |
+          base='https://rpchess-race-pieces-preview.mobigametim.workers.dev'
+          for attempt in 1 2 3 4 5 6; do
+            if curl -fsS --max-time 15 "$base/" -o /tmp/rpchess-piece-preview.html &&
+               grep -q 'data-game-loading' /tmp/rpchess-piece-preview.html &&
+               curl -fsS --max-time 15 "$base/js/race-assets.mjs" -o /tmp/rpchess-piece-runtime.js &&
+               grep -q 'boardRacePiecePath' /tmp/rpchess-piece-runtime.js &&
+               curl -fsS --max-time 15 "$base/assets/races/humans/pieces/board/white/king.png" -o /tmp/rpchess-piece-new.png &&
+               curl -fsS --max-time 15 "$base/assets/races/orcs/pieces/board/black/knight.png" -o /tmp/rpchess-piece-orc-new.png &&
+               curl -fsS --max-time 15 "$base/assets/races/humans/pieces/white/king.png" -o /tmp/rpchess-piece-catalog-original.png &&
+               curl -fsS --max-time 15 "$base/assets/races/orcs/pieces/king.png" -o /tmp/rpchess-piece-orc-original.png &&
+               test "$(od -An -tx1 -N8 /tmp/rpchess-piece-new.png | tr -d ' \n')" = '89504e470d0a1a0a' &&
+               test "$(od -An -tx1 -N8 /tmp/rpchess-piece-orc-new.png | tr -d ' \n')" = '89504e470d0a1a0a' &&
+               test "$(od -An -tx1 -N8 /tmp/rpchess-piece-catalog-original.png | tr -d ' \n')" = '89504e470d0a1a0a' &&
+               test "$(od -An -tx1 -N8 /tmp/rpchess-piece-orc-original.png | tr -d ' \n')" = '89504e470d0a1a0a'; then
+              echo "PLAYABLE_PREVIEW_URL=$base/"
+              exit 0
+            fi
+            sleep 6
+          done
+          echo "::error::Live race-piece preview or legacy catalog art failed smoke checks"
+          exit 1
