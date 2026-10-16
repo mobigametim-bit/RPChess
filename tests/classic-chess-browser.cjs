@@ -93,7 +93,7 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     await clickMove(page, 'e1', 'g1');
     await waitForMoveAnimation(page);
     assert((await pieceSrc(page, 'g1')).includes('/humans/pieces/board/white/king.png'), 'castling must place king on g1');
-    assert((await pieceSrc(page, 'f1')).includes('unit_rook_player.png'), 'castling must place rook on f1');
+    assert((await pieceSrc(page, 'f1')).includes('/humans/pieces/board/white/rook.png'), 'castling must place rook on f1');
     assert.strictEqual(await page.locator('[data-move-history] [data-san="O-O"]').count(), 1, 'castling must use SAN O-O');
 
     await page.evaluate(() => window.RPChessClassicChess.loadFen('4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 1'));
@@ -110,7 +110,7 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     assert.strictEqual(await page.locator('[data-promotion-modal]').isVisible(), true, 'mandatory promotion modal must ignore Escape');
     await page.locator('[data-promotion="q"]').click();
     await waitForMoveAnimation(page);
-    assert((await pieceSrc(page, 'a8')).includes('unit_queen_player.png'), 'promotion must render chosen queen asset');
+    assert((await pieceSrc(page, 'a8')).includes('/humans/pieces/board/white/queen.png'), 'promotion must render chosen queen asset');
     assert((await page.locator('[data-move-history] .classic-move[data-san]').last().getAttribute('data-san')).includes('=Q'), 'promotion SAN must include =Q');
 
     await page.evaluate(() => window.RPChessClassicChess.newGame());
