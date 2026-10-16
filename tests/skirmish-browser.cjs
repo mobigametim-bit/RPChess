@@ -120,12 +120,12 @@ async function assertCompactDesktopStars(page) {
       const piece = plan.enemyFormation.find((entry) => entry.pieceType === 'king');
       return document.querySelector(`[data-square="${piece.square}"] .classic-piece`)?.getAttribute('src') || '';
     });
-    assert(enemySrc.includes('assets/races/orcs/pieces/king.png'), 'enemy Skirmish art must come from race library');
+    assert(enemySrc.includes('assets/races/orcs/pieces/board/black/king.png'), 'enemy Skirmish art must come from race library');
     const personalized = await page.evaluate(() => globalThis.RPChessSkirmish.battlePlan.playerFormation.map(({ id, square }) => ({
       id,
       src: document.querySelector(`[data-square="${square}"] .classic-piece`)?.getAttribute('src') || ''
     })));
-    assert(personalized.find((entry) => entry.id === 'king.oathkeeper').src.includes('assets/kings/oathkeeper/piece.png'));
+    assert(personalized.find((entry) => entry.id === 'king.oathkeeper').src.includes('assets/races/humans/pieces/board/white/king.png'));
     await page.evaluate(() => globalThis.RPChessSkirmish.finishBattle({ over: true, type: 'stalemate', winner: null }));
     await page.locator('[data-skirmish-aftermath]:not([hidden])').waitFor();
     assert.strictEqual((await page.locator('[data-aftermath-continue]').innerText()).trim(), 'Продолжить путь');
