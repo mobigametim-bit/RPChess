@@ -21,7 +21,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       const square=document.querySelector('[data-square="e2"]');
       return getComputedStyle(square,'::after').backgroundImage||'';
     });
-    assert(before.includes('aura_white.png'),'source piece must begin with the white aura');
+    assert(!before.includes('aura_white.png'),'new white board piece must not show a decorative aura');
 
     const moved=await page.evaluate(()=>globalThis.RPChessClassicChess.move('e2','e4'));
     assert.strictEqual(moved.ok,true,'e2-e4 must start the smooth move');
@@ -42,7 +42,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert.strictEqual(during.arriving,true,'destination piece must remain in arriving state during flyer animation');
     assert.strictEqual(during.pieceVisibility,'hidden','authoritative destination piece must stay hidden until landing');
     assert.strictEqual(during.flyer,true,'piece flyer must be visible during movement');
-    assert(during.auraImage.includes('aura_white.png'),'destination keeps the correct aura identity while hidden');
+    assert(!during.auraImage.includes('aura_white.png'),'destination must stay free of the old aura during animation');
     assert.strictEqual(during.auraOpacity,'0','destination aura must stay invisible while the piece flyer is moving');
 
     await page.waitForTimeout(320);
@@ -62,10 +62,10 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert.strictEqual(after.arriving,false,'destination piece arriving state must clear on landing');
     assert.notStrictEqual(after.pieceVisibility,'hidden','destination piece must become visible on landing');
     assert.strictEqual(after.flyer,false,'piece flyer must be removed on landing');
-    assert(after.auraImage.includes('aura_white.png'),'landed piece must retain the white aura');
+    assert(!after.auraImage.includes('aura_white.png'),'new landed sprite must not restore the old side aura');
     assert.strictEqual(after.auraOpacity,'0.6','destination aura must return to the canonical visible opacity in the same landed frame');
     assert.deepStrictEqual(errors,[]);
 
-    console.log('Combat aura move sync: PASS — destination aura stays hidden for the 230ms flyer and appears with the landed piece');
+    console.log('Combat board arrival sync: PASS — destination sprite stays hidden during 230ms animation and lands without decorative side aura');
   }finally{await browser.close();}
 })().catch((error)=>{console.error(error.stack||error);process.exitCode=1;});
