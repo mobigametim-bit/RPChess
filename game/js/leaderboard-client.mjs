@@ -1,4 +1,5 @@
 import { bestChronicleRun, readChronicle } from './chronicle-core.mjs';
+import {normalizeCommanderId} from './commander-portraits.mjs';
 
 const CACHE_MS=30_000;
 let board={top:[],me:null,status:'unavailable'};
@@ -56,10 +57,10 @@ function normalize(data){
   if(!data||!Array.isArray(data.top))throw new Error('Invalid leaderboard response');
   const top=data.top.slice(0,10).filter(row=>Number.isSafeInteger(row.rank)&&row.rank>0&&
     typeof row.name==='string'&&Number.isSafeInteger(row.glory)&&row.glory>=0)
-    .map(row=>({rank:row.rank,name:row.name.slice(0,24),glory:row.glory}));
+    .map(row=>({rank:row.rank,name:row.name.slice(0,24),glory:row.glory,commanderId:normalizeCommanderId(row.commanderId)}));
   const me=data.me&&Number.isSafeInteger(data.me.rank)&&data.me.rank>0&&
     Number.isSafeInteger(data.me.glory)&&data.me.glory>=0
-    ?{rank:data.me.rank,name:String(data.me.name||'').slice(0,24),glory:data.me.glory}:null;
+    ?{rank:data.me.rank,name:String(data.me.name||'').slice(0,24),glory:data.me.glory,commanderId:normalizeCommanderId(data.me.commanderId)}:null;
   return {top,me,status:'ready',viewerAuthenticated:Boolean(data.viewerAuthenticated||me)};
 }
 async function request(path,body=null){
@@ -113,12 +114,12 @@ async function submitBestChronicle(){
   if(!apiRoot()||!best)return {status:'unavailable'};
   const launch=await vkLaunch();
   if(!launch)return {status:'unavailable'};
-  const key=best.runId+':'+best.glory+':'+best.week+':'+best.power;
+  const key=best.runId+':'+best.glory+':'+best.week+':'+best.power+':'+best.commanderId;
   if(lastUpload===key)return {status:'already-submitted'};
   if(uploading)return uploading;
   uploading=(async()=>{try{
     const next=await request('/v1/leaderboard/submit',{launch,record:{
-      runId:best.runId,playerName:best.playerName,
+      runId:best.runId,playerName:best.playerName,commanderId:best.commanderId,
       glory:best.glory,week:best.week,power:best.power
     }});
     lastUpload=key;
