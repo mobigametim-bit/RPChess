@@ -80,6 +80,7 @@ jobs:
           # Cosmetic commander portrait selection, without changing the Roster layout.
           test -s dist/js/commander-portraits.mjs
           grep -q 'data-identity-commander' dist/js/player-identity-chronicle.mjs
+          grep -q 'min-height:531px' dist/css/player-identity-chronicle.css
           grep -q 'commanderDescription' dist/js/roster-app.mjs
           grep -q 'commanderId' dist/js/chronicle-core.mjs
           grep -q 'commanderId' dist/js/leaderboard-client.mjs
