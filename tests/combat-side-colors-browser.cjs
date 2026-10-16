@@ -33,7 +33,8 @@ async function fresh(page,type,playerColor,race){
   await page.locator('[data-roster-travel]').click();
   await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
   await page.locator(`[data-travel-type="${type}"]`).first().click();
-  await page.locator(`[data-${type}-screen]:not([hidden])`).waitFor();
+  await page.locator('[data-artifact-choice-modal]').waitFor();
+  assert.strictEqual(await page.locator(`[data-${type}-screen]`).isHidden(),true,'combat preparation is skipped');
   await page.waitForTimeout(60);
 }
 async function prepState(page,type){
@@ -128,8 +129,7 @@ function assertAuraAssets(responses){
     const battle=await browser.newPage({viewport:{width:1440,height:900}}),battleErrors=[];
     battle.on('pageerror',(error)=>battleErrors.push(String(error.stack||error)));
     await fresh(battle,'battle','b','constructs');
-    assertPrep(await prepState(battle,'battle'),'b');
-    await battle.locator('[data-battle-start]').click();
+    assert((await battle.evaluate(()=>globalThis.RPChessBattle.selectedIds)).includes('king.oathkeeper'),'automatic black-side Battle team includes king');
     await battle.locator('[data-artifact-choice="none"]').click();
     await battle.locator('[data-classic-screen]:not([hidden])').waitFor();
     await battle.waitForTimeout(60);
@@ -145,14 +145,13 @@ function assertAuraAssets(responses){
     const skirmish=await browser.newPage({viewport:{width:1440,height:900}}),skirmishErrors=[];
     skirmish.on('pageerror',(error)=>skirmishErrors.push(String(error.stack||error)));
     await fresh(skirmish,'skirmish','w','demons');
-    assertPrep(await prepState(skirmish,'skirmish'),'w');
-    await skirmish.locator('[data-skirmish-start]').click();
+    assert((await skirmish.evaluate(()=>globalThis.RPChessSkirmish.selectedIds)).includes('king.oathkeeper'),'automatic white-side Skirmish includes king');
     await skirmish.locator('[data-artifact-choice="none"]').click();
     await skirmish.locator('[data-classic-screen]:not([hidden])').waitFor();
     await skirmish.waitForTimeout(60);
     assertAuras(await combatAuraState(skirmish));
     assert.deepStrictEqual(skirmishErrors,[]);
 
-    console.log('Combat side colors: PASS — prep unchanged, new board sprites remove decorative auras/glyphs, legacy fallback and red check remain');
+    console.log('Combat side colors: PASS — automatic teams, board sprites omit auras/glyphs, legacy fallback and check indicators remain');
   }finally{await browser.close();}
 })().catch((error)=>{console.error(error.stack||error);process.exitCode=1;});
