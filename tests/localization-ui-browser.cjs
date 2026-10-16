@@ -116,18 +116,14 @@ async function seed(page, type, index = 0, eventId = null) {
     for(const type of ['skirmish','battle','caravan']) {
       page = await fresh();
       await seed(page,type);
-      await roundtrip(page,`${type} preparation`);
       const api=type==='skirmish'?'RPChessSkirmish':'RPChessBattle';
       const prefix=type==='skirmish'?'skirmish':'battle';
-      const king=await page.evaluate(async()=> (await import('./js/run-persistence.mjs')).readRun().roster.find(hero=>hero.isRunKing).id);
-      await language(page,'ru');
-      await page.locator(`[data-${prefix}-character="${king}"]`).click();
-      await roundtrip(page,`${type} selection notice`);
-      await page.evaluate(api=>globalThis[api].start(),api);
-      if(await page.locator('[data-artifact-choice-modal]').count()){
-        await roundtrip(page,`${type} artifact choice`);
-        await page.locator('[data-artifact-choice="none"]').click();
-      }
+      await page.locator('[data-artifact-choice-modal]').waitFor();
+      assert.strictEqual(await page.locator(`[data-${prefix}-screen]`).isHidden(),true,`${type} must skip preparation`);
+      const chosen=await page.evaluate(name=>globalThis[name].selectedIds,api);
+      assert(chosen.includes('king.oathkeeper'),`${type} automatic roster selection must keep the King`);
+      await roundtrip(page,`${type} automatic deployment and artifact choice`);
+      await page.locator('[data-artifact-choice="none"]').click();
       await page.locator('[data-classic-screen]:not([hidden])').waitFor();
       await roundtrip(page,`${type} chessboard`);
       await page.evaluate(api=>{const combat=globalThis[api];combat.finishBattle({over:true,type:'checkmate',winner:combat.battlePlan.playerColor});},api);
