@@ -1,5 +1,5 @@
 import { chess960BackRank, chess960Fen } from './chess960.mjs';
-import { createBattlePlan, defaultBattleSelection, applyBattleOutcome } from './battle-core.mjs';
+import { createBattlePlan, automaticBattleSelection, applyBattleOutcome } from './battle-core.mjs';
 import { combatTheme, hashString } from './race-assets.mjs';
 import { difficultyForStars, clampStars } from './encounter-difficulty.mjs';
 import { seededRandom } from './travel-choice-core.mjs';
@@ -17,7 +17,7 @@ export function createCaravanState(run, choice) {
   const encounter = { ...combatTheme({ seed:choice.seed, playerColor:choice.playerColor, raceTag:choice.enemyRaceTag }),
     id:choice.id, seed:choice.seed, stars, aiElo:difficulty.elo, tactic:difficulty.tactic, label:difficulty.label,
     positionIndex:hashString(`${choice.seed}:chess960`) % 960 };
-  return { routeId:choice.id, encounter, phase:'preparation', selectedIds:defaultBattleSelection(run.roster), moves:[], offers:[], claimedReward:null };
+  return { routeId:choice.id, encounter, phase:'preparation', selectedIds:automaticBattleSelection(run.roster,`${run.id}:${choice.id}:caravan-deployment`), moves:[], offers:[], claimedReward:null };
 }
 export function createCaravanPlan(options) {
   const plan = createBattlePlan(options), rank = chess960BackRank(plan.encounter.positionIndex);
