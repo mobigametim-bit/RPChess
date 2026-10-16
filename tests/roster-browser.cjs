@@ -54,7 +54,11 @@ async function assertOneScreen(page,label){
     assert.strictEqual(await page.locator('[data-skirmish-screen]').isHidden(),true,'no Skirmish preparation step');
     assert.strictEqual((await page.evaluate(()=>globalThis.RPChessSkirmish.selectedIds)).length,6);
 
-    await page.evaluate(()=>dispatchEvent(new CustomEvent('rpchess:run-continue')));
+    await page.evaluate(()=>{
+      document.querySelector('[data-artifact-choice-modal]')?.remove();
+      document.body.classList.remove('reboot-modal-open');
+      dispatchEvent(new CustomEvent('rpchess:run-continue'));
+    });
     await waitForVisible(page,'[data-roster-screen]:not([hidden])','Roster after encounter return');
     await page.locator('[data-roster-menu]').click();
     const menu=await waitForVisible(page,'[data-reboot-foundation]:not([hidden])','Menu before reload');
