@@ -60,7 +60,7 @@ async function verifyBoard(page,selector,label,arena=false){
       },{type,id});
       if(type==='caravan')await page.evaluate(async()=>{const i=await import('./js/i18n.mjs');i.setLanguage('en');});
       await page.locator('[data-roster-travel]').click();await page.locator(`[data-travel-type="${type}"]`).first().click();
-      await page.locator(type==='skirmish'?'[data-skirmish-start]':'[data-battle-start]').click();
+      await page.locator('[data-artifact-choice-modal]').waitFor();
       await page.setViewportSize({width:667,height:375});const card=page.locator(`[data-artifact-choice="${id}"]`);await card.waitFor();
       assert((await card.innerText()).includes(type==='caravan'?'Fork Master':'Мастер вилок'));
       if(type==='caravan')assert(!/[А-Яа-яЁё]/.test(await card.innerText()),'English artifact card must not leak Russian');
