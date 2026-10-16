@@ -8,6 +8,12 @@ for(const token of ['data-game-loading','data-game-loading-logo','data-game-load
 assert(html.indexOf('data-game-loading')<html.indexOf('id="app"'),'Loading mask must precede all game screens');
 for(const token of ['background: #000','position: fixed','game-loading-blink','prefers-reduced-motion'])assert(loadingCss.includes(token),`Loading visual contract missing ${token}`);
 for(const token of ['MutationObserver','mediaSources()','pendingStyles()','preload(src)','rpchess:language-changed','getComputedStyle','onSceneMutation'])assert(loadingJs.includes(token),`Scene asset loading contract missing ${token}`);assert(/if\s*\(!pendingStyles\(\)\.length\s*&&\s*!mediaSources\(\)\.length\)\s*\{[\s\S]*?hide\(token\);\s*return;\s*\}/.test(loadingJs),'Cached scene transitions must dismiss any previous asset-loading mask');
+assert(loadingJs.includes('requestVisibleAssets')&&loadingJs.includes("[data-artifact-choice-modal]"),
+  'loading gate must support Arena internal scenes and dynamically mounted artifact dialog');
+assert(fs.readFileSync(path.join(game,'js/arena-app.mjs'),'utf8').includes('RPChessLoading?.requestVisibleAssets?.()'),
+  'Arena catalog/battle must explicitly request asset readiness before paint');
+assert(fs.readFileSync(path.join(game,'js/artifact-combat-ui.mjs'),'utf8').includes('RPChessLoading?.requestVisibleAssets?.()'),
+  'artifact modal must predecode images and stylesheet before unmasking');
 assert(build.includes("'js/screen-loading.mjs'")&&build.includes("'css/screen-loading.css'"),'Production build must package loader JS and CSS');
 
 console.log('Reboot Foundation keeps New Game independent, initializes VK host launches, preserves canonical CSS-only controls, Player Identity prompt, Travel fallback and shared UX runtime: PASS');
