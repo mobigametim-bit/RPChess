@@ -6,8 +6,15 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
   try{
     const page=await browser.newPage({viewport:{width:950,height:530}});
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
+    // Simulate a slow initial Arena catalog image. The mask must cover its loading.
+    await page.route('**/assets/races/humans/pieces/white/king.png',async route=>{
+      await new Promise(resolve=>setTimeout(resolve,650));
+      await route.continue();
+    });
     await page.goto(url,{waitUntil:'networkidle'});
     await page.locator('[data-arena-open]').click();
+    await page.waitForFunction(()=>!document.querySelector('[data-game-loading]')?.hidden,{timeout:3000});
+    await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
     await page.locator('[data-arena-screen]:not([hidden])').waitFor();
     assert.strictEqual(await page.locator('[data-arena-foes] button').count(),84);
     assert.strictEqual(await page.locator('[data-arena-prev], [data-arena-next]').count(),0,'section arrows are removed');
