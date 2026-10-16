@@ -66,7 +66,7 @@ async function handler(req,env){
   if(Number(req.headers.get('content-length'))>12000)return json({error:'request_too_large'},413,cors);
   let body;try{body=await req.json()}catch{return json({error:'invalid_json'},400,cors)}
   const id=await verifiedVKId(body.launch,env.VK_APP_SECRET);
-  if(path==='/v1/leaderboard/view')return json(await readBoard(env.DB,id),200,cors);
+  if(path==='/v1/leaderboard/view')return json({...await readBoard(env.DB,id),viewerAuthenticated:Boolean(id)},200,cors);
   if(!id)return json({error:'vk_auth_required'},401,cors);
   const r=validatedRecord(body.record);
   if(!r)return json({error:'invalid_record'},422,cors);
@@ -80,7 +80,7 @@ async function handler(req,env){
     'OR (excluded.glory=leaderboard_v1.glory AND excluded.week>leaderboard_v1.week)',
     'OR (excluded.glory=leaderboard_v1.glory AND excluded.week=leaderboard_v1.week AND excluded.power>leaderboard_v1.power)'].join(' ');
   await env.DB.prepare(sql).bind(id,r.name,r.glory,r.week,r.power,r.runId,now,now).run();
-  return json(await readBoard(env.DB,id),200,cors);
+  return json({...await readBoard(env.DB,id),viewerAuthenticated:true},200,cors);
 }
 export default {async fetch(req,env){try{return await handler(req,env)}catch(e){console.error('leaderboard error',e);return json({error:'server_error'},500)}}};
 export {handler,verifiedVKId,validatedRecord,trustedOrigin};
