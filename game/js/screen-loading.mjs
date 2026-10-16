@@ -55,7 +55,7 @@ function visibleScreens() {
 function mediaSources() {
   const sources = new Set();
   // Artifact choices are modal roots under <body>, not <main> under #app.
-  const roots=[...visibleScreens(),...document.querySelectorAll('[data-artifact-choice-modal]')].filter(visible);
+  const roots=[...visibleScreens(),...document.querySelectorAll('[data-artifact-choice-modal],[data-player-identity-modal]:not([hidden])')].filter(visible);
   for (const screen of roots) {
     // Prioritize viewport imagery, not thousands of portraits from hidden screens.
     const nodes = [screen, ...screen.querySelectorAll('*')].slice(0, 900);
