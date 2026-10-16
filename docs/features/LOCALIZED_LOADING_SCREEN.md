@@ -1,6 +1,6 @@
 # Localized screen loading and asset readiness
 
-Status: IMPLEMENTED; pending CI, browser verification, and human acceptance (do not merge yet).
+Status: ACCEPTED by user on 2026-10-16 following successful isolated playable Cloudflare preview and browser verification. Approved for merge into main and production GitHub Pages deployment.
 
 ## User-visible behavior
 - Display a full-viewport solid black loading screen before any game screen.
@@ -26,4 +26,4 @@ Status: IMPLEMENTED; pending CI, browser verification, and human acceptance (do 
 6. Reduced Motion / OS prefers-reduced-motion: text doesn't blink, fade is disabled.
 7. Verify narrow viewport and VK iframe/standalone Pages contexts.
 
-No change to chess rules, saves, monetization, or game balance. `main` remains untouched until acceptance.
+No change to chess rules, saves, monetization, or game balance. User approved merging PR #159 and publishing production on 2026-10-16.
