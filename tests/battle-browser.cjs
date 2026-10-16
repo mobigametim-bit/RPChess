@@ -159,8 +159,9 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     mobile.on('pageerror', (error) => mobileErrors.push(String(error.stack || error)));
     await fresh(mobile, { stars: 12 });
     await enter(mobile);
+    await mobile.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
     const dialog=await mobile.locator('[data-artifact-choice-modal] .artifact-choice-panel').boundingBox();
-    assert(dialog&&dialog.top>=-1&&dialog.bottom<=391,'automatic Battle artifact choice fits mobile landscape');
+    assert(dialog&&dialog.y>=-1&&dialog.y+dialog.height<=391,'automatic Battle artifact choice fits mobile landscape');
     assert.strictEqual(await mobile.locator('[data-battle-screen]').isHidden(),true);
     await mobile.locator('[data-artifact-choice="none"]').click();
     await mobile.locator('[data-classic-screen]:not([hidden])').waitFor();
