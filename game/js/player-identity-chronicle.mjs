@@ -76,6 +76,7 @@ function ensureIdentityModal() {
     button.addEventListener('click',()=>{
       selectedCommanderId=normalizeCommanderId(button.dataset.identityCommander);
       renderCommanderChoice();
+      globalThis.RPChessLoading?.requestVisibleAssets?.();
       audio()?.click?.();
     });
   });
