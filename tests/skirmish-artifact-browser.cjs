@@ -21,7 +21,7 @@ const watchdog = setTimeout(() => { console.error('Combat launch blocked browser
         writeRun({ ...readRun(), artifacts: { 'threat.attack': 3, 'threat.defense': 3, 'threat.great': 3 } });
         globalThis.RPChessSkirmish.open();
       });
-      await page.locator('[data-skirmish-start]').click();
+      await page.locator('[data-artifact-choice-modal]').waitFor();
       await page.locator(`[data-artifact-choice="${artifactId}"]`).click({ timeout: 10000 });
       await page.locator('[data-classic-screen]:not([hidden])').waitFor({ state: 'visible', timeout: 10000 });
       assert.strictEqual(await page.locator('[data-artifact-choice-modal]').count(), 0);
