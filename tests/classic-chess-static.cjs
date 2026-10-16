@@ -37,7 +37,7 @@ assert(classicUi.includes('CLASSIC_UI_MESSAGES') && classicUi.includes("'classic
 for (const forbidden of ['Локальная партия · два игрока','Ходов пока нет','Компьютер думает…','Мат — победа ${sideName']) assert(!app.includes(forbidden), `Classic owner still hardcodes translated presentation: ${forbidden}`);
 assert(app.includes('globalThis.RPChessClassicChess'), 'Classic app acceptance API is missing');
 assert(app.includes('globalThis.RPChessChessAI'), 'Chess AI acceptance API is missing');
-assert(app.includes('generated_assets/unit_${PIECE_ASSETS[piece.type]}_'), 'production piece assets are not used');
+assert(app.includes("boardRacePiecePath('humans',PIECE_ASSETS[piece.type],piece.color)"), 'standard chess board must use dedicated white and black human sprites');
 assert(app.includes('maybeScheduleAI'), 'automatic AI response flow is missing');
 assert(app.includes("engine.turn() !== gameConfig.playerColor"), 'player input is not guarded during AI turns');
 assert(app.includes("movingSrc: sourceImage.getAttribute('src')"), 'move animation must snapshot the actual rendered source art before board rebuild');
