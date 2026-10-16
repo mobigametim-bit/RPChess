@@ -22,7 +22,7 @@ jobs:
       github.ref == 'refs/heads/feature/race-chess-piece-art-20261016' &&
       (
         github.event_name == 'workflow_dispatch' ||
-        (github.event_name == 'push' && github.event.head_commit.message == 'deploy: leaderboard mobile CORS')
+        (github.event_name == 'push' && github.event.head_commit.message == 'deploy: leaderboard VK identity')
       )
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -84,4 +84,12 @@ jobs:
             -H 'content-type: application/json' \
             --data '{"launch":"invalid","record":{"runId":"unsigned","week":1,"power":1,"glory":0}}' "$endpoint/submit")
           test "$status" = 401
-          echo 'PASS: RPChess mobile VK origins, preview and Pages read OK; unrelated VK app and unsigned writes rejected'
+          # An invalid signed launch must never accidentally be treated as an
+          # authenticated personal rank; public data remains available.
+          curl -fsS --max-time 20 -X POST \
+            -H 'Origin: https://stage-app54754579-2ccfb72929d1.pages.vk-apps.ru' \
+            -H 'content-type: application/json' \
+            --data '{"launch":"?vk_app_id=54754579&vk_user_id=42&sign=invalid"}' \
+            "$endpoint/view" -o /tmp/unsigned-view.json
+          node -e "const v=require('/tmp/unsigned-view.json');if(v.viewerAuthenticated!==false||v.me!==null||!Array.isArray(v.top))process.exit(1)"
+          echo 'PASS: VK mobile CORS and signed-identity guard; unauthenticated read returns public leaderboard only'
