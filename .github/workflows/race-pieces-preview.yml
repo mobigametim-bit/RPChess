@@ -138,12 +138,16 @@ jobs:
           set -euo pipefail
           base='https://rpchess-race-pieces-preview.mobigametim.workers.dev'
           curl -fsS --max-time 20 "$base/js/commander-portraits.mjs" -o /tmp/commander-portraits-preview.mjs
+          echo 'Commander module bytes:' $(wc -c </tmp/commander-portraits-preview.mjs)
           grep -q 'wanderer_queen' /tmp/commander-portraits-preview.mjs
           curl -fsS --max-time 20 "$base/js/player-identity-chronicle.mjs" -o /tmp/commander-identity-preview.mjs
           grep -q 'data-identity-commander' /tmp/commander-identity-preview.mjs
           for commander in oathkeeper stone_crown wanderer_queen pilgrim fox_prince ash_regent nameless_heir; do
-            curl -fsS --max-time 20 "$base/assets/kings/$commander/portrait.png" -o "/tmp/commander-$commander.png"
-            test "$(od -An -tx1 -N8 "/tmp/commander-$commander.png" | tr -d ' \n')" = '89504e470d0a1a0a'
+            status=$(curl -sS -L --max-time 20 -w '%{http_code}' "$base/assets/kings/$commander/portrait.png" -o "/tmp/commander-$commander.png")
+            signature=$(od -An -tx1 -N8 "/tmp/commander-$commander.png" | tr -d ' \n')
+            echo "$commander => HTTP $status, bytes $(wc -c <"/tmp/commander-$commander.png"), signature $signature"
+            test "$status" = '200'
+            test "$signature" = '89504e470d0a1a0a'
           done
       - name: Validate live leaderboard access from this preview origin
         run: |
