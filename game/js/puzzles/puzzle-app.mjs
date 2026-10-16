@@ -1,4 +1,5 @@
 import { ClassicChessEngine } from '../classic-chess-engine.mjs';
+import { boardRacePiecePath } from '../race-assets.mjs';
 import { readRun, writeRun } from '../run-persistence.mjs';
 import { t, subscribe } from '../i18n.mjs';
 import { brandLogoSrc } from '../brand-logo.mjs';
@@ -33,7 +34,7 @@ let locked = false;
 let promotionResolve = null;
 
 function audio() { return globalThis.RPChessRebootAudio; }
-function pieceAsset(piece) { return `generated_assets/unit_${PIECE_ASSETS[piece.type]}_${piece.color === 'w' ? 'player' : 'enemy'}.png`; }
+function pieceAsset(piece) { return boardRacePiecePath('humans',PIECE_ASSETS[piece.type],piece.color); }
 function pieceLabel(type) { return t(PIECE_KEYS[type] || 'piece.pawn'); }
 function squareFromIndex(index) { return `${FILES[index % 8]}${Math.floor(index / 8) + 1}`; }
 function reducedMotion() { return document.documentElement.dataset.reducedMotion === '1'; }
@@ -247,7 +248,7 @@ function renderBoard() {
       if (target) button.classList.add(target.capture ? 'is-capture' : 'is-legal');
       if (piece) {
         const image = document.createElement('img');
-        image.className = 'puzzle-piece';
+        image.className = 'puzzle-piece puzzle-piece--new-race';
         image.src = pieceAsset(piece);
         image.alt = '';
         image.draggable = false;
