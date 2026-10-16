@@ -429,15 +429,17 @@ async function auditSoloKingBattleRunEnd(browser, width, height, language) {
     await freshMenu(page);
     await setLanguage(page, language);
     await startNewRun(page, { playerName: `Solo King ${width} ${language}` });
-    await page.evaluate(() => dispatchEvent(new CustomEvent('rpchess:battle-open')));
-    await page.locator('[data-battle-screen]:not([hidden])').waitFor();
-    const kingId = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).roster.find((character) => character.isRunKing).id, RUN_KEY);
-    const cards = page.locator('[data-battle-character]');
-    for (let index = 0; index < await cards.count(); index += 1) {
-      const card = cards.nth(index);
-      if ((await card.getAttribute('data-battle-character')) !== kingId) await card.click();
-    }
-    await page.locator('[data-battle-start]').click();
+    // With no preparation screen, only the run King is eligible for this encounter.
+    await page.evaluate(key=>{
+      const run=JSON.parse(localStorage.getItem(key));
+      run.roster=run.roster.map(c=>c.isRunKing?c:{...c,status:'wounded'});
+      localStorage.setItem(key,JSON.stringify(run));
+      dispatchEvent(new CustomEvent('rpchess:run-updated'));
+      dispatchEvent(new CustomEvent('rpchess:battle-open'));
+    },RUN_KEY);
+    await page.locator('[data-artifact-choice-modal]').waitFor();
+    assert.strictEqual(await page.locator('[data-battle-screen]').isHidden(),true);
+    const kingId=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).roster.find(c=>c.isRunKing).id,RUN_KEY);
     await chooseNoArtifactForTest(page);
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     const participants = await page.evaluate(() => globalThis.RPChessBattle.battlePlan?.participants || []);
@@ -473,16 +475,10 @@ async function auditPrepAndCombat(browser, width, height, language) {
     await setLanguage(page, language);
     await startNewRun(page, { playerName: `Breakpoint ${width} ${language}` });
     await page.evaluate(() => dispatchEvent(new CustomEvent('rpchess:skirmish-open')));
-    await page.locator('[data-skirmish-screen]:not([hidden])').waitFor();
-    await assertPageFitsViewport(page, `${label} Skirmish prep`);
-    await assertViewportContained(page, '[data-skirmish-screen]:not([hidden])', `${label} Skirmish prep screen`);
-    const skirmishColumns = await page.locator('.skirmish-grid').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length);
-    assert.strictEqual(skirmishColumns, 2, `${label}: Skirmish prep must keep two selectable card columns`);
-    if (width <= 980 && height <= 520) {
-      await assertViewportContained(page, '[data-skirmish-formation]', `${label} Skirmish formation`);
-    }
-    await assertViewportContained(page, '[data-skirmish-start]', `${label} Skirmish start`);
-    await page.locator('[data-skirmish-start]').click();
+    await page.locator('[data-artifact-choice-modal]').waitFor();
+    assert.strictEqual(await page.locator('[data-skirmish-screen]').isHidden(),true,`${label}: no Skirmish preparation`);
+    await assertPageFitsViewport(page,`${label} Skirmish artifact choice`);
+    await assertViewportContained(page,'[data-artifact-choice-modal] .artifact-choice-panel',`${label} Skirmish artifact panel`);
     await chooseNoArtifactForTest(page);
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     await assertPageFitsViewport(page, `${label} Skirmish combat`);
@@ -553,45 +549,10 @@ async function auditPrepAndCombat(browser, width, height, language) {
     await assertViewportContained(page, '[data-aftermath-continue]', `${label} Skirmish aftermath CTA`);
 
     await page.evaluate(() => dispatchEvent(new CustomEvent('rpchess:battle-open')));
-    await page.locator('[data-battle-screen]:not([hidden])').waitFor();
-    await page.waitForFunction(() => document.body.classList.contains('battle-prep-compact-active'));
-    await assertPageFitsViewport(page, `${label} Battle prep`);
-    await assertViewportContained(page, '[data-battle-screen]:not([hidden])', `${label} Battle prep screen`);
-    const battleColumns = await page.locator('.battle-grid').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length);
-    assert.strictEqual(battleColumns, 2, `${label}: Battle prep must keep two card columns at tablet/mobile landscape widths`);
-    const hireCost = await page.locator('.battle-mercenary-quote__row--cost strong').evaluate((element) => ({
-      background:getComputedStyle(element,'::before').backgroundImage,
-      text:element.textContent.trim()
-    }));
-    assert(hireCost.background.includes('reward_gold.png') && /^\d+$/.test(hireCost.text), `${label}: hiring cost must render as gold icon + numeric value`);
-    if (width <= 980 && height <= 520) {
-      const prep = await page.evaluate(() => {
-        const buttonRect = document.querySelector('[data-battle-start]')?.getBoundingClientRect();
-        const cards = [...document.querySelectorAll('[data-battle-character]')].map((card) => {
-          const rect = card.getBoundingClientRect();
-          return { top:rect.top, bottom:rect.bottom, left:rect.left, right:rect.right };
-        });
-        const rosterRect = document.querySelector('.battle-roster')?.getBoundingClientRect();
-        const armyRect = document.querySelector('.battle-army')?.getBoundingClientRect();
-        return {
-          button:buttonRect ? { top:buttonRect.top, bottom:buttonRect.bottom, left:buttonRect.left, right:buttonRect.right } : null,
-          cards,
-          roster:rosterRect ? { top:rosterRect.top, bottom:rosterRect.bottom, left:rosterRect.left, right:rosterRect.right } : null,
-          army:armyRect ? { top:armyRect.top, bottom:armyRect.bottom, left:armyRect.left, right:armyRect.right } : null,
-          documentHeight:document.documentElement.scrollHeight,
-          bodyHeight:document.body.scrollHeight,
-          vw:innerWidth,
-          vh:innerHeight
-        };
-      });
-      assert(prep.button && prep.button.top >= -1 && prep.button.bottom <= prep.vh + 1, `${label}: Battle start CTA must be visible without scrolling`);
-      assert.strictEqual(prep.cards.length, 6, `${label}: Battle prep must keep all six personal fighter cards present`);
-      assert(prep.cards.every((card) => card.top >= -1 && card.bottom <= prep.vh + 1), `${label}: all six Battle prep fighter cards must be visible without page scrolling`);
-      assert(prep.roster && prep.army && prep.roster.right <= prep.army.left + 1, `${label}: Battle prep must keep roster and army side-by-side`);
-      assert(prep.documentHeight <= prep.vh + 1 && prep.bodyHeight <= prep.vh + 1, `${label}: Battle prep must not require page scrolling`);
-    }
-    await assertViewportContained(page, '[data-battle-start]', `${label} Battle start`);
-    await page.locator('[data-battle-start]').click();
+    await page.locator('[data-artifact-choice-modal]').waitFor();
+    assert.strictEqual(await page.locator('[data-battle-screen]').isHidden(),true,`${label}: no Battle preparation`);
+    await assertPageFitsViewport(page,`${label} Battle artifact choice`);
+    await assertViewportContained(page,'[data-artifact-choice-modal] .artifact-choice-panel',`${label} Battle artifact panel`);
     await chooseNoArtifactForTest(page);
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     await page.waitForFunction((expected) => Math.abs((document.querySelector('.classic-party-panel')?.getBoundingClientRect().width || 0) - expected) <= 2, expectedCombatPanelWidth);
