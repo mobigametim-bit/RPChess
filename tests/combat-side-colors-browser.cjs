@@ -52,7 +52,9 @@ async function combatAuraState(page){
     const black=document.querySelector('.classic-square:has(.classic-piece-marker--b)');
     const state=(node)=>node?{
       side:getComputedStyle(node).getPropertyValue('--combat-piece-glow-side').trim(),
-      image:getComputedStyle(node,'::after').backgroundImage||''
+      image:getComputedStyle(node,'::after').backgroundImage||'',
+      art:node.querySelector('.classic-piece')?.getAttribute('src')||'',
+      glyphDisplay:getComputedStyle(node.querySelector('.classic-piece-marker')).display
     }:{side:'',image:''};
     return{
       active:document.body.classList.contains('run-combat-board-active'),
@@ -95,12 +97,16 @@ function assertPrep(state,side){
   }
 }
 function assertAuras(state){
-  assert.strictEqual(state.active,true,'run combat board must enable persistent side aura');
-  assert.strictEqual(state.white.side,'white');
-  assert.strictEqual(state.black.side,'black');
-  assert(state.white.image.includes('aura_white.png'),'white side must use aura_white.png');
-  assert(state.black.image.includes('aura_black.png'),'black side must use aura_black.png');
-  assert.notStrictEqual(state.white.image,state.black.image,'white and black aura art must differ');
+  assert.strictEqual(state.active,true,'combat board must activate overlay rules');
+  for(const side of ['white','black']){
+    const entry=state[side];assert.strictEqual(entry.side,side);
+    if(entry.art.includes('/pieces/board/')){
+      assert(!entry.image.includes('aura_'),`${side} new chess piece must not use decorative auras`);
+      assert.strictEqual(entry.glyphDisplay,'none',`${side} readable chess piece must hide the corner glyph`);
+    }else{
+      assert(entry.image.includes(`aura_${side}.png`),`${side} legacy race piece retains existing aura fallback`);
+    }
+  }
 }
 function assertRedCheckAura(state){
   assert.strictEqual(state.side,'red','check must override side aura state');
@@ -147,6 +153,6 @@ function assertAuraAssets(responses){
     assertAuras(await combatAuraState(skirmish));
     assert.deepStrictEqual(skirmishErrors,[]);
 
-    console.log('Combat side colors: PASS — prep glyphs match combat side; aura_white/aura_black persist under pieces; aura_red overrides check; aura PNGs load from runtime dist');
+    console.log('Combat side colors: PASS — prep unchanged, new board sprites remove decorative auras/glyphs, legacy fallback and red check remain');
   }finally{await browser.close();}
 })().catch((error)=>{console.error(error.stack||error);process.exitCode=1;});
