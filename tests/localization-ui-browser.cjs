@@ -11,8 +11,14 @@ async function language(page, code) {
   try {
     await page.evaluate(async code => (await import('./js/i18n.mjs')).setLanguage(code), code);
   } catch (error) {
-    console.error(`[localization] language switch ${code} failed (current URL: ${page.url()})`);
-    throw error;
+    // The browser can replace an execution context during its own same-URL
+    // navigation. A single retry after the new document has finished loading
+    // is safer than treating a transient Playwright context error as an i18n bug.
+    if(!/Execution context was destroyed/.test(String(error))||page.isClosed())throw error;
+    console.warn(`[localization] recovering same-page context during ${code} switch`);
+    await page.waitForLoadState('domcontentloaded',{timeout:15000});
+    await page.waitForFunction(()=>Boolean(globalThis.RPChessI18n?.setLanguage),null,{timeout:15000});
+    await page.evaluate(async code => (await import('./js/i18n.mjs')).setLanguage(code), code);
   }
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 }
