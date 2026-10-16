@@ -36,6 +36,16 @@ const assert=require('assert'),fs=require('fs'),path=require('path'),{pathToFile
   const kingOnly=['king.oathkeeper'];const minimum=skirmish.validateSelection(roster,kingOnly);assert.strictEqual(minimum.ok,false);assert.strictEqual(minimum.reason,'minimum_force');assert.strictEqual(minimum.minimum,2);assert.strictEqual(minimum.count,1);
   const kingPlusPawn=['king.oathkeeper','hero.mara_chain'];assert.strictEqual(skirmish.validateSelection(roster,kingPlusPawn).ok,true,'King plus one healthy named figure must be a legal minimum Skirmish force');
   const wounded=roster.map(c=>c.id==='hero.vael_hammer'?{...c,status:'wounded'}:c);assert.strictEqual(skirmish.validateSelection(wounded,selected).reason,'character_unavailable');
+  const autoBase=skirmish.automaticCombatSelection(roster,'auto:base');
+  assert.strictEqual(skirmish.validateSelection(roster,autoBase).ok,true,'eligible starter heroes deploy automatically');
+  assert.deepStrictEqual(new Set(autoBase),new Set(selected));
+  const surplus=[...roster,...Array.from({length:24},(_,i)=>({...roster.find(c=>c.pieceType==='pawn'),id:`auto.extra.pawn.${i}`,name:`Pawn ${i}`}))];
+  const autoTeam=skirmish.automaticCombatSelection(surplus,'auto:overflow');
+  const autoResult=skirmish.validateSelection(surplus,autoTeam);
+  assert(autoResult.ok,'Skirmish auto-deployment must obey all combat limits');
+  assert(autoResult.count<=skirmish.MAX_SKIRMISH_PIECES&&autoResult.points<=skirmish.MAX_SKIRMISH_POINTS);
+  assert(autoResult.members.filter(c=>c.pieceType==='pawn').length<=8,'no more than eight pawns fit in the front rank');
+  assert.deepStrictEqual(autoTeam,skirmish.automaticCombatSelection([...surplus].reverse(),'auto:overflow'),'selection must survive reordering and reload');
   const woundedKing=roster.map(c=>c.isRunKing?{...c,status:'wounded'}:c);assert(skirmish.defaultCombatSelection(woundedKing).includes('king.oathkeeper'));assert.strictEqual(skirmish.validateSelection(woundedKing,skirmish.defaultCombatSelection(woundedKing)).ok,true);
   const oversized=[roster[0],...Array.from({length:16},(_,i)=>({id:`pawn.${i}`,name:`Pawn ${i}`,pieceType:'pawn',commandCost:1,status:'healthy',isRunKing:false}))];assert.strictEqual(skirmish.validateSelection(oversized,oversized.map(x=>x.id)).reason,'piece_limit');
   const expensive=[roster[0],...Array.from({length:5},(_,i)=>({id:`queen.${i}`,name:`Queen ${i}`,pieceType:'queen',commandCost:9,status:'healthy',isRunKing:false}))];assert.strictEqual(skirmish.validateSelection(expensive,expensive.map(x=>x.id)).reason,'point_limit');
