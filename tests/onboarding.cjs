@@ -13,7 +13,7 @@ assert(arrayMatch, 'Onboarding must expose the approved hint list');
 const actual = [...arrayMatch[1].matchAll(/[\x27\x22]([^\x27\x22]+)[\x27\x22]/g)].map((match) => match[1]);
 assert.deepStrictEqual(actual, approved, 'Onboarding scope must contain exactly 20 approved first-visit moments');
 
-for (const excluded of ['starvation','chronicle','runEnd','skirmishAftermath','battleAftermath']) {
+for (const excluded of ['skirmishPrep','battlePrep','caravanPrep']) {
   assert(!actual.includes(excluded), `Excluded onboarding screen leaked into scope: ${excluded}`);
 }
 for (const token of [
@@ -21,8 +21,8 @@ for (const token of [
   "'rpchess:travel-open':['travel'",
   "'rpchess:event-open':['event'",
   "'rpchess:settlement-open':['settlement'",
-  "dismiss:'Понятно'",
-  "dismiss:'Got it'",
+  "ru:'Понятно'",
+  "en:'Got it'",
   "role=\"dialog\"",
   "aria-modal=\"true\"",
   "rpchess:tutorial-updated"
