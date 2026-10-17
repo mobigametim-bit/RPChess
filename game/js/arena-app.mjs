@@ -210,7 +210,7 @@ function animateCommittedMove(geometry,to,onDone){
     renderBoard();onDone();
   });
 }
-function openDialog(kind,html){dialogType=kind;dialog.innerHTML='<section class="arena-dialog-panel arena-dialog-panel--'+kind+'" role="dialog" aria-modal="true" aria-label="'+escape(kind==='foe'?foeLabel(OPPONENT_BY_ID.get(dialog.dataset.foe)):l('title'))+'">'+html+'</section>';dialog.hidden=false;dialog.querySelector('button')?.focus();}
+function openDialog(kind,html){dialogType=kind;dialog.innerHTML='<section class="arena-dialog-panel arena-dialog-panel--'+kind+'" role="dialog" aria-modal="true" aria-label="'+escape(kind==='foe'?foeLabel(OPPONENT_BY_ID.get(dialog.dataset.foe)):l('title'))+'">'+html+'</section>';dialog.hidden=false;dialog.querySelector('button')?.focus();const hint={foe:'rpchess:arena-foe-shown',offer:'rpchess:arena-artifact-shown',result:'rpchess:arena-result-shown'}[kind];if(hint)globalThis.dispatchEvent(new CustomEvent(hint));}
 function closeDialog(){dialog.hidden=true;dialog.replaceChildren();dialogType=null;}
 function renderDialog(){
   if(dialogType==='foe'){
@@ -251,7 +251,7 @@ function settle(status){
 }
 function startBattle(){
   if(state.match?.phase!=='playing')return;
-  closeDialog();engine=new ClassicChessEngine();selected=null;render();globalThis.RPChessLoading?.requestVisibleAssets?.();void aiTurn();
+  closeDialog();engine=new ClassicChessEngine();selected=null;render();globalThis.RPChessLoading?.requestVisibleAssets?.();globalThis.dispatchEvent(new CustomEvent('rpchess:arena-battle-shown'));void aiTurn();
 }
 function commit(from,to,promo=null){
   if(!engine||animating||thinking||state.match?.phase!=='playing')return;
@@ -283,7 +283,7 @@ async function aiTurn(){
   if(!uci){notice='engineUnavailable';render();return;}
   commit(uci.slice(0,2),uci.slice(2,4),uci.slice(4)||null);
 }
-function enter(){state=read();engine=null;selected=null;section=Math.floor((OPPONENT_BY_ID.get(state.match?.foe)?.index??arenaSummary(state).highest)/7);notice='';visible(true);if(state.match?.phase==='result')dialogType='result';else if(state.match?.phase==='offer')dialogType='offer';else restoreMatch();render();globalThis.RPChessLoading?.requestVisibleAssets?.();}
+function enter(){state=read();engine=null;selected=null;section=Math.floor((OPPONENT_BY_ID.get(state.match?.foe)?.index??arenaSummary(state).highest)/7);notice='';visible(true);if(state.match?.phase==='result')dialogType='result';else if(state.match?.phase==='offer')dialogType='offer';else restoreMatch();render();globalThis.RPChessLoading?.requestVisibleAssets?.();if(root.querySelector('[data-arena-catalog]')?.hidden!==true&&!root.querySelector('[data-arena-battle]')?.hidden){/* Active match: avoid catalog hint. */}else globalThis.dispatchEvent(new CustomEvent('rpchess:arena-catalog-shown'));}
 function leave(){adapter.stop();searchId++;thinking=false;stopMoveAnimation();engine=null;closeDialog();visible(false);}
 root?.addEventListener('click',event=>{
   const target=event.target.closest('button');if(!target||target.disabled)return;
