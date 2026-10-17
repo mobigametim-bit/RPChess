@@ -46,6 +46,22 @@ const assert=require('assert'),fs=require('fs'),path=require('path'),{pathToFile
   assert(autoResult.count<=skirmish.MAX_SKIRMISH_PIECES&&autoResult.points<=skirmish.MAX_SKIRMISH_POINTS);
   assert(autoResult.members.filter(c=>c.pieceType==='pawn').length<=8,'no more than eight pawns fit in the front rank');
   assert.deepStrictEqual(autoTeam,skirmish.automaticCombatSelection([...surplus].reverse(),'auto:overflow'),'selection must survive reordering and reload');
+  // Pawns always remain on their second rank, for either side and even if
+  // a corrupted/legacy preferred formation requests an illegal home square.
+  const bishopA={...roster.find(c=>c.pieceType==='bishop'),id:'bishop.second'};
+  const bishopB={...bishopA,id:'bishop.third'};
+  const twoBishops=[roster[0],roster.find(c=>c.pieceType==='pawn'),roster.find(c=>c.pieceType==='bishop'),bishopA];
+  const badPrefs={a1:'hero.mara_chain',c1:'hero.brother_orell',e1:'king.oathkeeper',g1:'bishop.second'};
+  for(const side of ['w','b']){
+    const deployed=skirmish.placeArmy(twoBishops,side,{seed:'bishop-constraints',preferredSquares:badPrefs});
+    const pawn=deployed.find(p=>p.pieceType==='pawn');
+    assert.strictEqual(pawn.square[1],side==='w'?'2':'7','pawn cannot start on first rank');
+    const bishopCells=deployed.filter(p=>p.pieceType==='bishop').map(p=>(('abcdefgh'.indexOf(p.square[0])+Number(p.square[1]))%2));
+    assert.deepStrictEqual(new Set(bishopCells).size,2,'bishops must start on opposite cell colors');
+  }
+  assert.strictEqual(skirmish.validateSelection([...twoBishops,bishopB], [...twoBishops,bishopB].map(c=>c.id)).reason,'bishop_limit',
+    'three bishops cannot be selected into one Skirmish');
+  assert.strictEqual(skirmish.placeArmy(twoBishops,'w',{seed:'bishop-repeat'}).filter(p=>p.pieceType==='bishop').length,2);
   const woundedKing=roster.map(c=>c.isRunKing?{...c,status:'wounded'}:c);assert(skirmish.defaultCombatSelection(woundedKing).includes('king.oathkeeper'));assert.strictEqual(skirmish.validateSelection(woundedKing,skirmish.defaultCombatSelection(woundedKing)).ok,true);
   const oversized=[roster[0],...Array.from({length:16},(_,i)=>({id:`pawn.${i}`,name:`Pawn ${i}`,pieceType:'pawn',commandCost:1,status:'healthy',isRunKing:false}))];assert.strictEqual(skirmish.validateSelection(oversized,oversized.map(x=>x.id)).reason,'piece_limit');
   const expensive=[roster[0],...Array.from({length:5},(_,i)=>({id:`queen.${i}`,name:`Queen ${i}`,pieceType:'queen',commandCost:9,status:'healthy',isRunKing:false}))];assert.strictEqual(skirmish.validateSelection(expensive,expensive.map(x=>x.id)).reason,'point_limit');
@@ -55,7 +71,7 @@ const assert=require('assert'),fs=require('fs'),path=require('path'),{pathToFile
   const planA=skirmish.createBattlePlan({roster,selectedIds:selected,encounter}),planB=skirmish.createBattlePlan({roster,selectedIds:selected,encounter});assert.strictEqual(planA.fen,planB.fen);assert.deepStrictEqual(planA.playerFormation,planB.playerFormation);assert.deepStrictEqual(planA.enemyFormation,planB.enemyFormation);assert.strictEqual(planA.playerColor,'b');assert.strictEqual(planA.enemyColor,'w');
   assert(planA.playerFormation.every(p=>['7','8'].includes(p.square[1])));assert(planA.enemyFormation.every(p=>['1','2'].includes(p.square[1])));assert(planA.playerFormation.filter(p=>p.pieceType==='pawn').every(p=>p.square[1]==='7'));assert(planA.enemyFormation.filter(p=>p.pieceType==='pawn').every(p=>p.square[1]==='2'));
   const conventional=skirmish.placeArmy(valid.members,'w',{seed:'random-deploy'}),repeat=skirmish.placeArmy(valid.members,'w',{seed:'random-deploy'});assert.deepStrictEqual(conventional,repeat);const alternative=skirmish.placeArmy(valid.members,'w',{seed:'random-deploy-other'});assert.notDeepStrictEqual(conventional,alternative);assert.ok(planA.enemyPoints<=39);assert.ok(planA.enemyFormation.length<=16);
-  for(let stars=1;stars<=12;stars++)for(let index=0;index<40;index++){const generated=skirmish.createEncounter({seed:`event-route-regression:${stars}:${index}`,stars});const army=skirmish.generateEnemyArmy({playerPoints:valid.points,playerCount:valid.count,encounter:generated});assert(army.army.filter(piece=>piece.pieceType==='pawn').length<=8);const plan=skirmish.createBattlePlan({roster,selectedIds:selected,encounter:generated});assert(plan.enemyFormation.length<=16);assert(plan.enemyFormation.filter(piece=>piece.pieceType==='pawn').length<=8);}
+  for(let stars=1;stars<=12;stars++)for(let index=0;index<40;index++){const generated=skirmish.createEncounter({seed:`event-route-regression:${stars}:${index}`,stars});const army=skirmish.generateEnemyArmy({playerPoints:valid.points,playerCount:valid.count,encounter:generated});assert(army.army.filter(piece=>piece.pieceType==='pawn').length<=8);assert(army.army.filter(piece=>piece.pieceType==='bishop').length<=2);const plan=skirmish.createBattlePlan({roster,selectedIds:selected,encounter:generated});assert(plan.enemyFormation.length<=16);assert(plan.enemyFormation.filter(piece=>piece.pieceType==='pawn').length<=8);const bishops=plan.enemyFormation.filter(piece=>piece.pieceType==='bishop');assert(bishops.length<=2);if(bishops.length===2)assert.notStrictEqual(('abcdefgh'.indexOf(bishops[0].square[0])+Number(bishops[0].square[1]))%2,('abcdefgh'.indexOf(bishops[1].square[0])+Number(bishops[1].square[1]))%2,'enemy bishops must occupy opposite-colored squares');}
   const run={id:'run-test',roster,ended:false};
   const winBlack=skirmish.applyBattleOutcome(run,{capturedIds:['hero.aldric_wall'],status:{type:'checkmate',winner:'b'},playerColor:'b'});assert.strictEqual(winBlack.roster.find(c=>c.id==='hero.aldric_wall').status,'wounded');assert.strictEqual(winBlack.roster.find(c=>c.isRunKing).status,'healthy');assert.strictEqual(winBlack.ended,false);
   const lossBlack=skirmish.applyBattleOutcome(run,{capturedIds:[],status:{type:'checkmate',winner:'w'},playerColor:'b'});assert.strictEqual(lossBlack.roster.find(c=>c.isRunKing).status,'healthy','checkmate must not kill the RPG King');assert.strictEqual(lossBlack.ended,false,'Skirmish defeat must continue the run');assert.strictEqual(lossBlack.endReason,null);assert.strictEqual(lossBlack.lastSkirmish.kingDied,false);
