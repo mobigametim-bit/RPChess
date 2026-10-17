@@ -31,6 +31,13 @@ function run(program,args){
 function inspect(jpg,{verify=false}={}){
   const relative=path.relative(ROOT,jpg).split(path.sep).join('/');
   const webp=jpg.replace(/\.jpg$/i,'.webp');
+  const before=fs.statSync(jpg).size;
+  // A few pre-compressed JPEG backgrounds are already smaller than WebP at q55.
+  // Never make the game download a bigger image just to standardize extensions.
+  if(before<24*1024){
+    if(!verify && fs.existsSync(webp))fs.rmSync(webp);
+    return {source:relative,runtime:relative,format:'jpg',before,after:before,reason:'already under 24 KiB'};
+  }
   if(!verify){
     // Never stretch or enlarge; preserve source aspect ratio, no alpha required.
     run('ffmpeg',['-hide_banner','-loglevel','error','-y','-i',jpg,
@@ -43,11 +50,12 @@ function inspect(jpg,{verify=false}={}){
       throw new Error('Invalid WebP dimensions: '+relative+': '+dimensions);
   }
   if(!fs.existsSync(webp))throw new Error('WebP companion missing: '+relative);
-  const buffer=fs.readFileSync(webp),before=fs.statSync(jpg).size,after=buffer.length;
+  const buffer=fs.readFileSync(webp),after=buffer.length;
   if(buffer.toString('ascii',0,4)!=='RIFF'||buffer.toString('ascii',8,12)!=='WEBP')
     throw new Error('Invalid WebP signature: '+relative);
   if(after>=before)throw new Error('WebP does not save bytes: '+relative+' '+before+' -> '+after);
-  return {source:relative,webp:path.relative(ROOT,webp).split(path.sep).join('/'),before,after};
+  const runtime=path.relative(ROOT,webp).split(path.sep).join('/');
+  return {source:relative,runtime,format:'webp',before,after};
 }
 function main(){
   const verify=process.argv.includes('--verify'),entries=collect();
@@ -55,13 +63,13 @@ function main(){
   const before=rows.reduce((sum,r)=>sum+r.before,0),after=rows.reduce((sum,r)=>sum+r.after,0);
   const savedPercent=Number((100*(1-after/before)).toFixed(2));
   if(savedPercent<60)throw new Error('Expected >=60% total savings, got '+savedPercent+'%');
-  const report={source:'RPChess scene JPEG masters',format:'WebP',widthLimit:MAX_WIDTH,
+  const report={source:'RPChess scene JPEG masters',format:'WebP with tiny-JPEG fallback',converted:rows.filter(r=>r.format==='webp').length,retained:rows.filter(r=>r.format==='jpg').length,widthLimit:MAX_WIDTH,
     heightLimit:MAX_HEIGHT,quality:QUALITY,count:rows.length,
     groups:EXPECTED,beforeBytes:before,webpBytes:after,savedBytes:before-after,savedPercent,
     files:rows};
   if(!verify){fs.mkdirSync(path.dirname(REPORT),{recursive:true});fs.writeFileSync(REPORT,JSON.stringify(report,null,2)+'\n');}
   console.log('Remaining scene backgrounds '+(verify?'VERIFIED':'ENCODED')+': '+JSON.stringify(
-    {count:rows.length,beforeBytes:before,webpBytes:after,savedPercent}));
+    {count:rows.length,converted:report.converted,retained:report.retained,beforeBytes:before,runtimeBytes:after,savedPercent}));
   return report;
 }
 if(require.main===module)main();
