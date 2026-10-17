@@ -11,10 +11,21 @@ const PREFERRED={
 };
 function eligible(c){return c?.status==='healthy'||Boolean(c?.isRunKing&&c?.status==='wounded');}
 function cost(c){return PIECE_VALUES[c.pieceType]??c.commandCost??0;}
+// A bishop's square color is defined by its actual board cell, not race or art.
+function squareColor(square){return ('abcdefgh'.indexOf(square[0])+Number(square[1]))%2;}
+function isAllowedSquare(character,square){return Boolean(character&&FORMATION_SQUARES.includes(square)&&(character.pieceType!=='pawn'||square.endsWith('2')));}
+function hasBishopColorConflict(character,square,squares,byId){
+  return character.pieceType==='bishop'&&Object.entries(squares).some(([occupied,id])=>
+    byId.get(id)?.pieceType==='bishop'&&id!==character.id&&squareColor(occupied)===squareColor(square));
+}
+function canOccupy(character,square,squares,byId){
+  return isAllowedSquare(character,square)&&!hasBishopColorConflict(character,square,squares,byId);
+}
 function acceptable(members,c){
   return members.length<BOARD_CAPACITY
     &&members.reduce((sum,p)=>sum+cost(p),0)+cost(c)<=POINT_CAPACITY
     &&(c.pieceType!=='pawn'||members.filter(p=>p.pieceType==='pawn').length<PAWN_CAPACITY)
+    &&(c.pieceType!=='bishop'||members.filter(p=>p.pieceType==='bishop').length<2)
     &&(c.isRunKing||c.pieceType!=='king');
 }
 function normalizedFormation(run){
@@ -28,7 +39,7 @@ function normalizedFormation(run){
   // wounded/dead, reserved, duplicated or outside combat power limits.
   for(const square of FORMATION_SQUARES){
     const id=stored[square],c=byId.get(id);
-    if(!c||seen.has(id)||reserved.has(id)||!acceptable(selected,c))continue;
+    if(!c||seen.has(id)||reserved.has(id)||!acceptable(selected,c)||!canOccupy(c,square,squares,byId))continue;
     squares[square]=id;selected.push(c);seen.add(id);
   }
   const king=roster.find(c=>c.isRunKing&&eligible(c));
@@ -44,7 +55,7 @@ function normalizedFormation(run){
   for(const c of roster){
     if(!eligible(c)||c.isRunKing||seen.has(c.id)||reserved.has(c.id)||!acceptable(selected,c))continue;
     const choices=[...(PREFERRED[c.pieceType]||[]),...FORMATION_SQUARES];
-    const dest=choices.find(square=>!squares[square]);
+    const dest=choices.find(square=>!squares[square]&&canOccupy(c,square,squares,byId));
     if(!dest)continue;
     squares[dest]=c.id;selected.push(c);seen.add(c.id);
   }
@@ -78,11 +89,14 @@ function moveFormation(run,id,destination){
     }
   }else reserved.add(id);
   const chosen=Object.values(squares).map(key=>byId.get(key)).filter(Boolean);
+  if(Object.entries(squares).some(([square,key])=>!isAllowedSquare(byId.get(key),square)))return {ok:false,reason:'pawn_rank'};
+  if(Object.entries(squares).some(([square,key])=>hasBishopColorConflict(byId.get(key),square,squares,byId)))return {ok:false,reason:'bishop_color'};
   const valid=chosen.length>=2&&chosen.length<=BOARD_CAPACITY
     &&chosen.reduce((sum,p)=>sum+cost(p),0)<=POINT_CAPACITY
-    &&chosen.filter(p=>p.pieceType==='pawn').length<=PAWN_CAPACITY;
+    &&chosen.filter(p=>p.pieceType==='pawn').length<=PAWN_CAPACITY
+    &&chosen.filter(p=>p.pieceType==='bishop').length<=2;
   if(!valid)return {ok:false,reason:chosen.length<2?'minimum_force':'capacity'};
   return {ok:true,run:{...run,rosterFormation:{squares,reserveIds:[...reserved]}}};
 }
 function formationSelectedIds(run){return Object.values(normalizedFormation(run).squares);}
-export {FORMATION_SQUARES,normalizedFormation,placementForColor,moveFormation,formationSelectedIds};
+export {FORMATION_SQUARES,squareColor,isAllowedSquare,normalizedFormation,placementForColor,moveFormation,formationSelectedIds};
