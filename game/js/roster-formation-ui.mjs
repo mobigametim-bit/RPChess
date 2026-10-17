@@ -91,7 +91,7 @@ function renderFormationUI(root,run,{onSelect,onCommit}={}){
   };
   const show=(id)=>{
     if(!byId.has(id))return;
-    armedId=id;
+    armedId=(byId.get(id)?.status==='healthy'||byId.get(id)?.isRunKing)?id:null;
     onSelect?.(id);
   };
   const dropTarget=(node)=>{
