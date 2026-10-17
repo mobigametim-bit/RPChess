@@ -19,7 +19,7 @@ function ensureCss() {
   if (document.querySelector('[data-player-identity-chronicle-css]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/player-identity-chronicle.css?v=20261017-commander-gold-vk-2';
+  link.href = 'css/player-identity-chronicle.css?v=20261017-commander-gold-vk-3';
   link.dataset.playerIdentityChronicleCss = '';
   document.head.append(link);
 }
