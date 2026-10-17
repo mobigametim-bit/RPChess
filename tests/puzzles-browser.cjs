@@ -59,6 +59,21 @@ async function clickMove(page,from,to,promotion=null){
   const pieceSources=await page.locator('[data-puzzle-board] img.puzzle-piece').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('src')));assert(pieceSources.length>0);assert(pieceSources.every(src=>src&&src.includes('assets/races/humans/pieces/board/')),'Puzzle board must use readable color-specific chess pieces');assert(pieceSources.every(src=>!src.includes('/assets/heroes/')),'Puzzle board must not use named hero portraits');
   assert.strictEqual(await page.locator('[data-puzzle-board] .puzzle-piece-marker').count(),pieceSources.length,'every occupied Puzzle square must expose a technical chess glyph');assert.strictEqual(await page.locator('[data-puzzle-board] .puzzle-coordinate--file').count(),8,'Puzzle board must show all eight file coordinates');assert.strictEqual(await page.locator('[data-puzzle-board] .puzzle-coordinate--rank').count(),8,'Puzzle board must show all eight rank coordinates');
   const opened=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),RUN_KEY),moves=await selectedPuzzleMoves(page);assert.strictEqual(moves.type,'mate1','★1 acceptance route must expose a mate-in-1 task for this deterministic run');assert.strictEqual(opened.currentPuzzle.puzzleId,moves.id);assert(Array.isArray(opened.puzzleHistory)&&opened.puzzleHistory.includes(opened.currentPuzzle.puzzleId),'opened Puzzle must be recorded in persistent no-repeat history');
+  const themePresentation=await page.evaluate(async key=>{
+    const run=JSON.parse(localStorage.getItem(key));
+    const [{PUZZLE_CATALOG},{featuredPuzzleTheme}]=await Promise.all([
+      import('./js/puzzles/puzzle-catalog.mjs'),import('./js/puzzles/puzzle-theme-catalog.mjs')
+    ]);
+    const row=PUZZLE_CATALOG.find(p=>p.id===run.currentPuzzle.puzzleId);
+    const featured=featuredPuzzleTheme(row,'ru');
+    const screen=document.querySelector('[data-puzzle-screen]');
+    return {theme:featured?.key||'',label:featured?.label.toLocaleUpperCase('ru')||'',
+      kicker:screen.querySelector('[data-puzzle-kicker]')?.textContent||'',dataset:screen.dataset.puzzleTheme||''};
+  },RUN_KEY);
+  assert.strictEqual(themePresentation.dataset,themePresentation.theme,
+    'Puzzle screen must expose its genuine source theme, not an inferred motif');
+  if(themePresentation.theme)assert(themePresentation.kicker.includes(themePresentation.label),
+    'Puzzle headline must present the localized Lichess theme beside the existing objective');
   const firstPuzzleId=opened.currentPuzzle.puzzleId;
   const beforeWrong=opened.currentPuzzle;await clickMove(page,moves.wrong.from,moves.wrong.to);await page.waitForFunction(k=>{const run=JSON.parse(localStorage.getItem(k));return run?.currentPuzzle?.errors===1;},RUN_KEY);const afterWrong=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).currentPuzzle,RUN_KEY);assert.strictEqual(afterWrong.errors,1);assert.strictEqual(afterWrong.currentFen,beforeWrong.currentFen,'wrong move must not advance the persisted position');assert.strictEqual(afterWrong.solutionIndex,0);
   await clickMove(page,moves.correct.from,moves.correct.to,moves.correct.promotion);await page.locator('[data-puzzle-outcome]:not([hidden])').waitFor();assert.strictEqual((await page.locator('[data-puzzle-outcome-title]').innerText()).trim(),'РЕШЕНО');assert((await page.locator('[data-puzzle-outcome-gold]').innerText()).includes('+8'),'★1 with one error must visibly show the 8 Gold reward amount');
