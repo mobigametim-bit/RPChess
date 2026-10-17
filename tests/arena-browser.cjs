@@ -33,6 +33,12 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert(catalogArt.orcSquad?.includes('/orcs/pieces/board/white/king.png'),'Arena squad selection must use the new orc white king');
     assert(catalogArt.humanRival?.includes('/humans/pieces/board/black/pawn.png'),'Arena rival selection must use the new human black pawn');
     assert(Object.values(catalogArt).every(src=>src?.includes('/pieces/board/')),'Arena catalogs must display color-specific chess pieces');
+    const allSquadArt=await page.locator('[data-arena-squads] .arena-squad-art').evaluateAll(nodes=>nodes.map(img=>img.getAttribute('src')));
+    const allRivalArt=await page.locator('[data-arena-foes] .arena-foe-art').evaluateAll(nodes=>nodes.map(img=>img.getAttribute('src')));
+    assert.strictEqual(allSquadArt.length,14);
+    assert.strictEqual(allRivalArt.length,84);
+    assert(allSquadArt.every(src=>src?.includes('/pieces/board/white/king.png')),'all squad cards use new white kings');
+    assert(allRivalArt.every(src=>src?.includes('/pieces/board/black/')),'all 84 rival cards use new black chess sprites');
 
     await page.evaluate(()=>{
       const now=Date.now();
