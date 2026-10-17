@@ -54,7 +54,14 @@ async function clickMove(page,from,to,promotion=null){
   assert((await page.locator('[data-puzzle-objective]').innerText()).trim().length>3,'all curated puzzle types must render a localized objective');
   assert.strictEqual((await page.locator('[data-puzzle-stars]').innerText()).replace(/\s/g,''),'★');
   assert(!(await screen.innerText()).includes('Lichess Open Database · CC0'),'accepted Puzzle gameplay UI must keep source attribution out of the visible gameplay panel');
-  assert.strictEqual(await page.locator('[data-puzzle-status]').isVisible(),false,'compact Puzzle UI must keep transient status semantic but visually hidden');
+  // Playwright isVisible() treats clipped 1px semantic live regions as visible.
+  // Check the intended accessible visually-hidden CSS rather than display visibility.
+  const statusStyle=await page.locator('[data-puzzle-status]').evaluate(node=>{
+    const css=getComputedStyle(node);
+    return {position:css.position,overflow:css.overflow,clipPath:css.clipPath,whiteSpace:css.whiteSpace,ariaLive:node.getAttribute('aria-live')};
+  });
+  assert(statusStyle.position==='absolute'&&statusStyle.overflow==='hidden'&&statusStyle.clipPath==='inset(50%)'&&statusStyle.whiteSpace==='nowrap'&&statusStyle.ariaLive==='polite',
+    'compact Puzzle status must remain an accessible live region clipped from visual layout: '+JSON.stringify(statusStyle));
   assert.strictEqual(await page.locator('[data-puzzle-board] [data-square]').count(),64);
   const pieceSources=await page.locator('[data-puzzle-board] img.puzzle-piece').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('src')));assert(pieceSources.length>0);assert(pieceSources.every(src=>src&&src.includes('assets/races/humans/pieces/board/')),'Puzzle board must use readable color-specific chess pieces');assert(pieceSources.every(src=>!src.includes('/assets/heroes/')),'Puzzle board must not use named hero portraits');
   assert.strictEqual(await page.locator('[data-puzzle-board] .puzzle-piece-marker').count(),pieceSources.length,'every occupied Puzzle square must expose a technical chess glyph');assert.strictEqual(await page.locator('[data-puzzle-board] .puzzle-coordinate--file').count(),8,'Puzzle board must show all eight file coordinates');assert.strictEqual(await page.locator('[data-puzzle-board] .puzzle-coordinate--rank').count(),8,'Puzzle board must show all eight rank coordinates');
