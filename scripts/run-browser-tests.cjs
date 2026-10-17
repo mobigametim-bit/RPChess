@@ -80,7 +80,9 @@ function server(){
 function run(test){
   return new Promise((resolve,reject)=>{
     const env={...process.env,RPCHESS_ACCEPTANCE_URL:BASE};
-    if(test==='responsive-viewport-browser.cjs'){
+    // Every non-onboarding browser regression exercises gameplay, not first-visit guidance.
+    // The dedicated onboarding-browser suite is the only one that must see jester hints.
+    if(test!=='onboarding-browser.cjs'){
       const preload=`--require=${path.join(ROOT,'tests','onboarding-disabled-preload.cjs')}`;
       env.NODE_OPTIONS=[process.env.NODE_OPTIONS,preload].filter(Boolean).join(' ');
     }
