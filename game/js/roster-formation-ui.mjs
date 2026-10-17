@@ -3,8 +3,8 @@ import { commanderTitle } from './commander-portraits.mjs';
 import { FORMATION_SQUARES, normalizedFormation, moveFormation } from './roster-formation-core.mjs';
 
 const WORDS={
- ru:{board:'Расстановка',hint:'Перетащите фигуру на клетку или в запас. На телефоне: выберите фигуру, затем клетку.',reserve:'В запасе',wounded:'Ранены',dead:'Убиты',empty:'Нет героев',points:'Очки',king:'Король обязан оставаться на поле',capacity:'Лимит: 16 фигур, 39 очков, не больше 8 пешек',minimum:'Для стычки нужно не менее двух фигур',slot:'Клетка'},
- en:{board:'Formation',hint:'Drag pieces to a square or reserves. On touchscreens, choose a piece and then a square.',reserve:'Reserves',wounded:'Wounded',dead:'Fallen',empty:'No heroes',points:'Points',king:'The king must stay on the board',capacity:'Limit: 16 pieces, 39 points and 8 pawns',minimum:'A skirmish requires at least two pieces',slot:'Square'}
+ ru:{board:'Расстановка',hint:'Перетащите фигуру на клетку или в запас. На телефоне: выберите фигуру, затем клетку.',reserve:'В запасе',wounded:'Ранены',dead:'Убиты',empty:'Нет героев',points:'Очки',king:'Король обязан оставаться на поле',capacity:'Лимит: 16 фигур, 39 очков, не больше 8 пешек',minimum:'Для стычки нужно не менее двух фигур',pawnRank:'Пешки можно ставить только на второй горизонтали',bishopColor:'Слоны должны стоять на клетках разного цвета',slot:'Клетка'},
+ en:{board:'Formation',hint:'Drag pieces to a square or reserves. On touchscreens, choose a piece and then a square.',reserve:'Reserves',wounded:'Wounded',dead:'Fallen',empty:'No heroes',points:'Points',king:'The king must stay on the board',capacity:'Limit: 16 pieces, 39 points and 8 pawns',minimum:'A skirmish requires at least two pieces',pawnRank:'Pawns can only start on the second rank',bishopColor:'Bishops must occupy squares of opposite colors',slot:'Square'}
 };
 let armedId=null;
 let lastRunId=null;
@@ -82,7 +82,7 @@ function renderFormationUI(root,run,{onSelect,onCommit}={}){
   const commit=(id,square)=>{
     const outcome=moveFormation(run,id,square);
     if(!outcome.ok){
-      feedback.textContent=outcome.reason==='king_required'?w.king:outcome.reason==='minimum_force'?w.minimum:w.capacity;
+      feedback.textContent=outcome.reason==='king_required'?w.king:outcome.reason==='minimum_force'?w.minimum:outcome.reason==='pawn_rank'?w.pawnRank:outcome.reason==='bishop_color'?w.bishopColor:w.capacity;
       return;
     }
     armedId=null;
