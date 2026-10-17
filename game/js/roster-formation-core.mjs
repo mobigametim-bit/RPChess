@@ -34,7 +34,7 @@ function normalizedFormation(run){
   const king=roster.find(c=>c.isRunKing&&eligible(c));
   // The Run King is always on the board, even if older saves were malformed.
   if(king&&!seen.has(king.id)){
-    let dest=FORMATION_SQUARES.find(square=>!squares[square]);
+    let dest=!squares.e1?'e1':FORMATION_SQUARES.find(square=>!squares[square]);
     if(!dest){
       dest=FORMATION_SQUARES.find(square=>byId.get(squares[square])?.isRunKing!==true);
       if(dest){seen.delete(squares[dest]);selected.splice(selected.findIndex(c=>c.id===squares[dest]),1);}
