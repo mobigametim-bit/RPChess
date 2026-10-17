@@ -68,6 +68,8 @@ jobs:
           grep -q 'racePiecePath' dist/js/arena-app.mjs
           grep -q 'boardRacePiecePath' dist/js/race-assets.mjs
           grep -Fq 'return boardRacePiecePath(raceTag,pieceType,color)' dist/js/race-assets.mjs
+          # Named heroes and the Run King must continue using their own pieceArt.
+          grep -Fq 'character?.boardPieceArt||character?.pieceArt||boardRacePiecePath' dist/js/race-assets.mjs
           # The acceptance build also contains the latest no-prep combat polish.
           grep -q 'automaticBattleSelection' dist/js/battle-app.mjs
           grep -q 'automaticCombatSelection' dist/js/skirmish-app.mjs
