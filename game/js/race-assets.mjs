@@ -37,19 +37,16 @@ function normalizeRaceTag(value) {
   return RACE_TAG_BY_LABEL[raw.toLocaleLowerCase('ru-RU')]||'mixed';
 }
 function oppositeColor(color){return color==='b'?'w':'b';}
-function racePiecePath(raceTag,pieceType,color='b'){
-  const race=normalizeRaceTag(raceTag),type=PIECE_TYPES.includes(pieceType)?pieceType:'pawn';
-  if(race==='humans')return `assets/races/humans/pieces/${color==='w'?'white':'black'}/${type}.png`;
-  const resolved=race==='mixed'?'humans':race;return `assets/races/${resolved}/pieces/${type}.png`;
-}
-// Board sprites are independent from the historical catalog/profile art paths.
-// Keep racePiecePath() unchanged: Arena squad and rival cards must retain their imagery.
-const BOARD_PIECE_RACES=Object.freeze(['humans','orcs','undead','angels','fae']);
+// Every race now has a separate light/dark chess set. The same sprites are used
+// on the board AND in Arena opponent/squad cards; no legacy catalog art fallback.
+const BOARD_PIECE_RACES=RACE_TAGS;
 function boardRacePiecePath(raceTag,pieceType,color='b'){
-  const race=normalizeRaceTag(raceTag);
-  if(!BOARD_PIECE_RACES.includes(race))return racePiecePath(raceTag,pieceType,color);
+  const race=normalizeRaceTag(raceTag),resolved=race==='mixed'?'humans':race;
   const type=PIECE_TYPES.includes(pieceType)?pieceType:'pawn';
-  return `assets/races/${race}/pieces/board/${color==='w'?'white':'black'}/${type}.png`;
+  return `assets/races/${resolved}/pieces/board/${color==='w'?'white':'black'}/${type}.png`;
+}
+function racePiecePath(raceTag,pieceType,color='b'){
+  return boardRacePiecePath(raceTag,pieceType,color);
 }
 function boardPieceArtForTheme(theme,pieceType,color){
   const race=theme?.enemyRoleRaces?.[pieceType]||theme?.enemyRaceTag||'humans';
