@@ -22,26 +22,26 @@ function installStyles() {
   style.dataset.crossSceneVisuals = '';
   style.textContent = `
     .travel-choice-screen{
-      background:linear-gradient(180deg,rgba(2,7,13,.58),rgba(2,7,13,.86)),url('generated_assets/scene_campaign.jpg') center/cover fixed no-repeat!important;
+      background:linear-gradient(180deg,rgba(2,7,13,.58),rgba(2,7,13,.86)),url('generated_assets/scene_campaign.webp') center/cover fixed no-repeat!important;
     }
     .travel-choice-card__visual{
-      background:linear-gradient(180deg,rgba(4,10,17,.10),rgba(4,8,15,.94)),var(--travel-card-backdrop,url('generated_assets/scene_campaign.jpg')) center/cover no-repeat!important;
+      background:linear-gradient(180deg,rgba(4,10,17,.10),rgba(4,8,15,.94)),var(--travel-card-backdrop,url('generated_assets/scene_campaign.webp')) center/cover no-repeat!important;
     }
     .settlement-screen{
-      background:linear-gradient(180deg,rgba(3,10,8,.54),rgba(3,8,12,.90)),var(--settlement-scene-backdrop,url('generated_assets/scene_shop.jpg')) center/cover fixed no-repeat!important;
+      background:linear-gradient(180deg,rgba(3,10,8,.54),rgba(3,8,12,.90)),var(--settlement-scene-backdrop,url('generated_assets/scene_shop.webp')) center/cover fixed no-repeat!important;
     }
     .classic-screen{
-      background:linear-gradient(90deg,rgba(3,7,15,.62),rgba(7,15,26,.30) 46%,rgba(3,7,15,.58)),var(--classic-scene-backdrop,url('generated_assets/scene_battle.jpg')) center/cover fixed no-repeat!important;
+      background:linear-gradient(90deg,rgba(3,7,15,.62),rgba(7,15,26,.30) 46%,rgba(3,7,15,.58)),var(--classic-scene-backdrop,url('generated_assets/scene_battle.webp')) center/cover fixed no-repeat!important;
     }
     .puzzle-screen{
-      background:linear-gradient(90deg,rgba(3,7,15,.90),rgba(7,15,26,.62) 48%,rgba(3,7,15,.88)),url('generated_assets/splash_poster.jpg') center/cover fixed no-repeat!important;
+      background:linear-gradient(90deg,rgba(3,7,15,.90),rgba(7,15,26,.62) 48%,rgba(3,7,15,.88)),url('generated_assets/splash_poster.webp') center/cover fixed no-repeat!important;
     }
     .puzzles-active .puzzle-board-wrap{width:min(100%,820px,calc(100vh - 126px))!important;}
     .skirmish-aftermath.is-victory,.battle-aftermath.is-victory{
-      background:linear-gradient(90deg,rgba(3,7,15,.76),rgba(5,13,21,.45) 52%,rgba(3,7,15,.78)),url('generated_assets/scene_reward.jpg') center/cover fixed no-repeat!important;
+      background:linear-gradient(90deg,rgba(3,7,15,.76),rgba(5,13,21,.45) 52%,rgba(3,7,15,.78)),url('generated_assets/scene_reward.webp') center/cover fixed no-repeat!important;
     }
     .skirmish-aftermath.is-defeat,.battle-aftermath.is-defeat{
-      background:linear-gradient(90deg,rgba(3,7,15,.82),rgba(18,8,11,.54) 52%,rgba(3,7,15,.86)),url('generated_assets/scene_defeat.jpg') center/cover fixed no-repeat!important;
+      background:linear-gradient(90deg,rgba(3,7,15,.82),rgba(18,8,11,.54) 52%,rgba(3,7,15,.86)),url('generated_assets/scene_defeat.webp') center/cover fixed no-repeat!important;
     }
     .skirmish-aftermath.is-victory h1,.battle-aftermath.is-victory h1{
       font-family:'BrahmsGotischCyr',Georgia,serif!important;font-weight:400!important;color:#fff0c5!important;text-shadow:0 4px 18px rgba(0,0,0,.78)!important;
@@ -105,7 +105,7 @@ function choiceForCard(card) {
 function routeBackdrop(choice, card) {
   const type = choice?.type || card?.dataset?.travelType || 'event';
   const seed = choice?.seed || choice?.id || card?.dataset?.travelChoice || `${type}:route`;
-  if (type === 'puzzle') return 'generated_assets/splash_poster.jpg';
+  if (type === 'puzzle') return 'generated_assets/splash_poster.webp';
   if (type === 'event') return backdropPath(seed, null, { generic: true });
   if (type === 'settlement') return backdropPath(seed);
   return backdropPath(seed, choice?.enemyRaceTag || null);
