@@ -1,5 +1,5 @@
 .arena-screen[hidden],.arena-dialog[hidden],.arena-catalog[hidden],.arena-battle[hidden],.arena-resume[hidden],.arena-nav-actions button[hidden]{display:none!important}
-.arena-screen{min-height:100dvh;box-sizing:border-box;padding:clamp(12px,2vw,28px);color:#f8edce;background:linear-gradient(110deg,#080e18ed,#101d2dec),url('../generated_assets/scene_battle.jpg') center/cover fixed;overflow-x:hidden}
+.arena-screen{min-height:100dvh;box-sizing:border-box;padding:clamp(12px,2vw,28px);color:#f8edce;background:linear-gradient(110deg,#080e18ed,#101d2dec),url('../generated_assets/scene_battle.webp') center/cover fixed;overflow-x:hidden}
 .arena-shell{max-width:1360px;margin:auto}
 .arena-topbar,.arena-section-nav,.arena-battle-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:space-between}
 .arena-topbar{border-bottom:1px solid #caa65b;padding-bottom:10px}
@@ -95,7 +95,7 @@
   .arena-notice{flex:0 0 auto;margin:3px 0;min-height:16px}
   .arena-resume{flex:0 0 auto;margin:4px 0;min-height:42px;padding:4px 12px}
   body.arena-battle-active .arena-screen{padding:0!important;overflow:hidden}
-  body.arena-battle-active .arena-shell{width:100vw;max-width:none;margin:0;display:grid;grid-template-columns:minmax(0,1fr) min(100dvh,calc(100vw - 320px));grid-template-rows:auto max-content minmax(0,1fr);column-gap:4px;background:linear-gradient(90deg,rgba(4,8,13,.32),rgba(4,8,13,.06)),url('../assets/regions/ashen_dominion/boss_arena.jpg') center/cover no-repeat #070b10}
+  body.arena-battle-active .arena-shell{width:100vw;max-width:none;margin:0;display:grid;grid-template-columns:minmax(0,1fr) min(100dvh,calc(100vw - 320px));grid-template-rows:auto max-content minmax(0,1fr);column-gap:4px;background:linear-gradient(90deg,rgba(4,8,13,.32),rgba(4,8,13,.06)),url('../assets/regions/ashen_dominion/boss_arena.webp') center/cover no-repeat #070b10}
   body.arena-battle-active .arena-topbar{grid-column:1;grid-row:1;min-width:0;margin:0;padding:clamp(8px,1.4vh,16px) clamp(8px,1.3vw,22px);background:transparent;border-bottom:0;flex-wrap:nowrap}
   body.arena-battle-active .arena-topbar h1{font-size:clamp(22px,3vw,36px)}
   body.arena-battle-active .arena-balance{flex-wrap:wrap;font-size:clamp(14px,1.5vw,18px);margin-right:auto}
