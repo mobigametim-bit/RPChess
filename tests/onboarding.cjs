@@ -10,7 +10,7 @@ const cloud = fs.readFileSync(path.join(root, 'game/js/cloud-save.mjs'), 'utf8')
 const approved = ["identity","roster","travel","artifact","skirmishChess","battleChess","combatAftermath","event","settlement","puzzle","caravanChess","caravanReward","starvation","runEnd","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess","arenaResult"];
 const arrayMatch = onboarding.match(/const INCLUDED_HINTS = Object\.freeze\(\[([\s\S]*?)\]\);/);
 assert(arrayMatch, 'Onboarding must expose the approved hint list');
-const actual = [...arrayMatch[1].matchAll(/'([^']+)'/g)].map((match) => match[1]);
+const actual = [...arrayMatch[1].matchAll(/[\x27\x22]([^\x27\x22]+)[\x27\x22]/g)].map((match) => match[1]);
 assert.deepStrictEqual(actual, approved, 'Onboarding scope must contain exactly 20 approved first-visit moments');
 
 for (const excluded of ['starvation','chronicle','runEnd','skirmishAftermath','battleAftermath']) {
