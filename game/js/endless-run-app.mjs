@@ -126,6 +126,7 @@ function open(run = null) {
   document.body.classList.add('endless-run-active');
   window.scrollTo({ top: 0, behavior: 'auto' });
   globalThis.RPChessResources?.render?.();
+  globalThis.dispatchEvent(new CustomEvent('rpchess:run-summary-shown'));
   return true;
 }
 
@@ -147,6 +148,7 @@ function returnToMenu() {
   const menu = document.querySelector('[data-reboot-foundation]');
   if (menu) menu.hidden = false;
   globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated', { detail: { source: 'endless-run-summary' } }));
+  globalThis.dispatchEvent(new CustomEvent('rpchess:chronicle-visible'));
   window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
