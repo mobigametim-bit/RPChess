@@ -221,7 +221,7 @@ function resourceAmount(type, amountText) {
   return span;
 }
 
-const RESOURCE_WORD = 'gold|золота|золото|припас(?:ы|а|ов)?';
+const RESOURCE_WORD = 'gold|suppl(?:y|ies)|золот(?:о|а|ых)|припас(?:ы|а|ов)?';
 const RESOURCE_PATTERN = new RegExp(`([+-]?\\d+)\\s*(${RESOURCE_WORD})|(${RESOURCE_WORD})\\s*[:·]?\\s*([+-]?\\d+)`, 'giu');
 
 function iconizeTextNode(node) {
@@ -389,4 +389,4 @@ document.addEventListener('click', (event) => {
 // style element is appended after the landscape stylesheet and final board-edge runtime styles.
 setTimeout(ensureLandscapeAcceptanceRevision, 0);
 
-globalThis.RPChessResourceIcons = Object.freeze({ GOLD_ICON, SUPPLIES_ICON, refresh:scheduleRefresh });
+globalThis.RPChessResourceIcons = Object.freeze({ GOLD_ICON, SUPPLIES_ICON, iconize:iconizeText, refresh:scheduleRefresh });
