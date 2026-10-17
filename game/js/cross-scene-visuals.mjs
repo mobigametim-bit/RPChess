@@ -7,13 +7,13 @@ const SUPPLIES_ICON = 'generated_assets/reward_supplies.png';
 function backdropPath(seed, raceTag = null, { generic = false } = {}) {
   if (generic) {
     const pool = BACKGROUND_POOLS.generic;
-    return `assets/events/register-04/backgrounds/generic/${pool[hashString(`${seed}:generic-backdrop`) % pool.length]}`;
+    return `assets/events/register-04/backgrounds/generic/${pool[hashString(`${seed}:generic-backdrop`) % pool.length].replace(/\.png$/,'.webp')}`;
   }
   let race = normalizeRaceTag(raceTag);
   if (race === 'mixed') race = RACE_TAGS[hashString(`${seed}:backdrop-race`) % RACE_TAGS.length];
   const pool = BACKGROUND_POOLS[race] || BACKGROUND_POOLS.generic;
   const folder = BACKGROUND_POOLS[race] ? race : 'generic';
-  return `assets/events/register-04/backgrounds/${folder}/${pool[hashString(`${seed}:backdrop`) % pool.length]}`;
+  return `assets/events/register-04/backgrounds/${folder}/${pool[hashString(`${seed}:backdrop`) % pool.length].replace(/\.png$/,'.webp')}`;
 }
 
 function installStyles() {
