@@ -70,8 +70,8 @@ function typeFromThemesExtended(themes){
 function preclassifyExtendedLichessRow(row,difficultyTable){
   const sourceId=String(row.PuzzleId||'').trim(),rating=Number(row.Rating),
     deviation=Number(row.RatingDeviation),popularity=Number(row.Popularity),
-    themes=String(row.Themes||'').trim().split(/\\s+/).filter(Boolean),
-    themeSet=new Set(themes),moves=String(row.Moves||'').trim().split(/\\s+/).filter(Boolean);
+    themes=String(row.Themes||'').trim().split(/\s+/).filter(Boolean),
+    themeSet=new Set(themes),moves=String(row.Moves||'').trim().split(/\s+/).filter(Boolean);
   if(!sourceId||!Number.isFinite(rating)||!Number.isFinite(deviation)
     ||!Number.isFinite(popularity)||popularity<80||deviation>100||moves.length<2)return null;
   const type=typeFromThemesExtended(themeSet),expected=expectedSolutionPlies(type);
