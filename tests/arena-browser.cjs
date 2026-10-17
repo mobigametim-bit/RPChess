@@ -7,7 +7,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     const page=await browser.newPage({viewport:{width:950,height:530}});
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
     // Simulate a slow initial Arena catalog image. The mask must cover its loading.
-    await page.route('**/assets/races/humans/pieces/white/king.png',async route=>{
+    await page.route('**/assets/races/humans/pieces/board/white/king.png',async route=>{
       await new Promise(resolve=>setTimeout(resolve,650));
       await route.continue();
     });
@@ -23,16 +23,16 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert.strictEqual(await page.locator('[data-arena-squads] button').count(),14);
     assert.strictEqual(await page.locator('[data-arena-squads] button:not([disabled])').count(),1,'unaffordable squads are disabled');
     assert.strictEqual(await page.locator('[data-arena-squads] button').first().innerText(),'','owned squad shows only its art');
-    // Selection screens deliberately retain existing artwork: only the BOARD gets new sprites.
+    // All Arena catalog cards now use the same color-specific race chess art as the board.
     const catalogArt=await page.evaluate(()=>({
       humanSquad:document.querySelector('[data-arena-squad="humans"] .arena-squad-art')?.getAttribute('src'),
       orcSquad:document.querySelector('[data-arena-squad="orcs"] .arena-squad-art')?.getAttribute('src'),
       humanRival:document.querySelector('[data-arena-foes] .arena-foe-art')?.getAttribute('src')
     }));
-    assert(catalogArt.humanSquad?.includes('/humans/pieces/white/king.png'),'Arena squad selection must keep pre-existing human art');
-    assert(catalogArt.orcSquad?.includes('/orcs/pieces/king.png'),'Arena squad selection must keep pre-existing orc art');
-    assert(catalogArt.humanRival?.includes('/humans/pieces/black/pawn.png'),'Arena rival selection must keep pre-existing human art');
-    assert(Object.values(catalogArt).every(src=>!src?.includes('/pieces/board/')),'Arena catalog must never show board-only sprites');
+    assert(catalogArt.humanSquad?.includes('/humans/pieces/board/white/king.png'),'Arena squad selection must use the new human white king');
+    assert(catalogArt.orcSquad?.includes('/orcs/pieces/board/white/king.png'),'Arena squad selection must use the new orc white king');
+    assert(catalogArt.humanRival?.includes('/humans/pieces/board/black/pawn.png'),'Arena rival selection must use the new human black pawn');
+    assert(Object.values(catalogArt).every(src=>src?.includes('/pieces/board/')),'Arena catalogs must display color-specific chess pieces');
 
     await page.evaluate(()=>{
       const now=Date.now();
