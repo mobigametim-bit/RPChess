@@ -50,10 +50,10 @@ jobs:
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
-      - name: Verify Roster, Skirmish and named combat auras
+      - name: Verify Roster, Skirmish, named combat auras and all Event resource icons
         env:
           RPCHESS_GATE_PREFIX: /RPChess
-          RPCHESS_BROWSER_TEST: roster-browser.cjs,skirmish-browser.cjs,combat-side-colors-browser.cjs
+          RPCHESS_BROWSER_TEST: roster-browser.cjs,skirmish-browser.cjs,combat-side-colors-browser.cjs,events-browser.cjs
         run: npm run test:browser
       - name: Verify all 168 color-specific race chess pieces and unified Arena art
         run: |
