@@ -296,3 +296,28 @@
   .identity-submit{min-height:38px!important}
   .identity-error{min-height:0}
 }
+
+
+/* Ultra-short landscape (e.g. VK 844×340): keep the entire name/commander
+   dialog, including Continue, inside the visible panel without scrolling.
+   The normal desktop/tablet gold layout remains unchanged. */
+@media (orientation:landscape) and (max-height:370px){
+  .identity-modal .identity-panel{padding:5px 11px!important}
+  .identity-modal .reboot-modal__header{padding-bottom:2px}
+  .identity-modal .reboot-modal__header h2{font-size:25px}
+  .identity-modal .reboot-close{width:34px;min-width:34px;height:34px;min-height:34px;font-size:21px}
+  .identity-copy{margin-top:1px!important;font-size:11px!important;line-height:1.2!important}
+  .identity-form{margin-top:2px;gap:3px}
+  .identity-field{gap:2px}
+  .identity-field input{min-height:29px;padding:2px 8px;font-size:14px}
+  .identity-commander-section{gap:4px}
+  .identity-commander-grid{gap:3px}
+  .identity-commander-option{grid-template-rows:33px auto;gap:1px;padding:2px}
+  .identity-commander-option img{height:33px}
+  .identity-commander-option span{font-size:8px;min-height:12px;line-height:1.1}
+  .identity-commander-preview{padding:4px;gap:4px;grid-template-columns:60px 1fr;align-items:center}
+  .identity-commander-preview>img{height:73px}
+  .identity-commander-preview h3{font-size:15px;margin:0 0 3px}
+  .identity-commander-preview p{font-size:9px;line-height:1.16}
+  .identity-submit{min-height:32px!important;font-size:17px!important}
+}
