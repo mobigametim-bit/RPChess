@@ -67,6 +67,8 @@ function moveFormation(run,id,destination){
   const source=Object.keys(squares).find(square=>squares[square]===id);
   if(destination===source)return {ok:true,run};
   const displaced=destination?squares[destination]:null;
+  if(!source&&displaced&&byId.get(displaced)?.isRunKing)
+    return {ok:false,reason:'king_required'};
   if(source)delete squares[source];
   if(destination){
     squares[destination]=id;reserved.delete(id);
@@ -76,10 +78,10 @@ function moveFormation(run,id,destination){
     }
   }else reserved.add(id);
   const chosen=Object.values(squares).map(key=>byId.get(key)).filter(Boolean);
-  const valid=chosen.length<=BOARD_CAPACITY
+  const valid=chosen.length>=2&&chosen.length<=BOARD_CAPACITY
     &&chosen.reduce((sum,p)=>sum+cost(p),0)<=POINT_CAPACITY
     &&chosen.filter(p=>p.pieceType==='pawn').length<=PAWN_CAPACITY;
-  if(!valid)return {ok:false,reason:'capacity'};
+  if(!valid)return {ok:false,reason:chosen.length<2?'minimum_force':'capacity'};
   return {ok:true,run:{...run,rosterFormation:{squares,reserveIds:[...reserved]}}};
 }
 function formationSelectedIds(run){return Object.values(normalizedFormation(run).squares);}
