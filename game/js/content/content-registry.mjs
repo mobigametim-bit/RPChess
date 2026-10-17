@@ -22,13 +22,13 @@ const CORE_ASSETS = Object.freeze([
   'assets/kings/oathkeeper/portrait.png',
   'assets/kings/oathkeeper/piece.png',
   'assets/doctrines/cavalry/emblem.png',
-  'assets/events/register-04/sky_khanate/storm_over_caravan.png',
+  'assets/events/register-04/sky_khanate/storm_over_caravan.webp',
   'SFX/win_fanfare.mp3'
 ]);
 
 function eventBackgroundAssets(raceTag) {
   const pool = BACKGROUND_POOLS[raceTag] || [];
-  return Object.freeze(pool.map((filename) => `assets/events/register-04/backgrounds/${raceTag}/${filename}`));
+  return Object.freeze(pool.map((filename) => `assets/events/register-04/backgrounds/${raceTag}/${filename.replace(/\.png$/,'.webp')}`));
 }
 
 function pieceAssets(raceTag) {
@@ -61,7 +61,7 @@ for (const source of [...STARTER_TEMPLATES, ...RECRUIT_LIBRARY]) {
   }));
 }
 const CONTENT_HEROES = Object.freeze([...heroById.values()]);
-const GENERIC_EVENT_BACKGROUNDS = Object.freeze((BACKGROUND_POOLS.generic || []).map((filename) => `assets/events/register-04/backgrounds/generic/${filename}`));
+const GENERIC_EVENT_BACKGROUNDS = Object.freeze((BACKGROUND_POOLS.generic || []).map((filename) => `assets/events/register-04/backgrounds/generic/${filename.replace(/\.png$/,'.webp')}`));
 
 const CONTENT_ASSET_PATHS = Object.freeze([...new Set([
   ...CORE_ASSETS,
