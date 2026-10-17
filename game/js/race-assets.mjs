@@ -140,7 +140,7 @@ function installRaceBoardRuntime(){
 }
 function eventBackgroundPath(event){
   const id=event?.id||event?.eventId||'event',race=normalizeRaceTag(event?.raceTag||event?.race),pool=race==='mixed'?BACKGROUND_POOLS.generic:(BACKGROUND_POOLS[race]||BACKGROUND_POOLS.generic),filename=pool[hashString(`${id}:background`)%pool.length],folder=race==='mixed'?'generic':(BACKGROUND_FOLDER_BY_RACE[race]||race);
-  return `assets/events/register-04/backgrounds/${folder}/${filename}`;
+  return `assets/events/register-04/backgrounds/${folder}/${filename.replace(/\.png$/,'.webp')}`;
 }
 function deterministicPlayerColor(seed,explicit=null){if(explicit==='w'||explicit==='b')return explicit;return hashString(`${seed}:player-color`)%100<36?'b':'w';}
 function deterministicRace(seed,explicit=null){const tag=normalizeRaceTag(explicit);if(tag!=='mixed')return tag;return RACE_TAGS[hashString(`${seed}:enemy-race`)%RACE_TAGS.length];}
