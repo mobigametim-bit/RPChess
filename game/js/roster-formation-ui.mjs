@@ -1,11 +1,13 @@
-import { currentLanguage } from './i18n.mjs';
+import { currentLanguage, translateLegacy } from './i18n.mjs';
+import { commanderTitle } from './commander-portraits.mjs';
 import { FORMATION_SQUARES, normalizedFormation, moveFormation } from './roster-formation-core.mjs';
 
 const WORDS={
- ru:{board:'Расстановка',hint:'Перетащите фигуру на клетку или в запас. На телефоне: выберите фигуру, затем клетку.',reserve:'В запасе',wounded:'Ранены',dead:'Убиты',empty:'Нет героев',points:'Очки',king:'Король обязан оставаться на поле',capacity:'Лимит: 16 фигур, 39 очков, не больше 8 пешек',slot:'Клетка',selected:'Выбрано',hero:'Герой'},
- en:{board:'Formation',hint:'Drag pieces to a square or reserves. On touchscreens, choose a piece and then a square.',reserve:'Reserves',wounded:'Wounded',dead:'Fallen',empty:'No heroes',points:'Points',king:'The king must stay on the board',capacity:'Limit: 16 pieces, 39 points and 8 pawns',slot:'Square',selected:'Selected',hero:'Hero'}
+ ru:{board:'Расстановка',hint:'Перетащите фигуру на клетку или в запас. На телефоне: выберите фигуру, затем клетку.',reserve:'В запасе',wounded:'Ранены',dead:'Убиты',empty:'Нет героев',points:'Очки',king:'Король обязан оставаться на поле',capacity:'Лимит: 16 фигур, 39 очков, не больше 8 пешек',minimum:'Для стычки нужно не менее двух фигур',slot:'Клетка'},
+ en:{board:'Formation',hint:'Drag pieces to a square or reserves. On touchscreens, choose a piece and then a square.',reserve:'Reserves',wounded:'Wounded',dead:'Fallen',empty:'No heroes',points:'Points',king:'The king must stay on the board',capacity:'Limit: 16 pieces, 39 points and 8 pawns',minimum:'A skirmish requires at least two pieces',slot:'Square'}
 };
 let armedId=null;
+let lastRunId=null;
 let pointerStart=null;
 function copy(){return WORDS[currentLanguage()==='en'?'en':'ru'];}
 function element(tag,className,text){
@@ -14,8 +16,7 @@ function element(tag,className,text){
   if(text!==undefined)el.textContent=text;
   return el;
 }
-function label(c,run){return c.isRunKing?
-  (run?.commanderId&&run?.roster?.find(x=>x.id===c.id)?.name||c.name):c.name;}
+function label(c,run){return c.isRunKing?commanderTitle(run?.commanderId,currentLanguage()):translateLegacy(String(c.name||''));}
 function createPiece(c,run,{board=false,selected=false}={}){
   const node=element(board?'span':'button',board?'rfc-piece rfc-piece--board':'rfc-piece rfc-piece--list');
   if(!board)node.type='button';
@@ -30,6 +31,7 @@ function createPiece(c,run,{board=false,selected=false}={}){
 }
 function renderFormationUI(root,run,{onSelect,onCommit}={}){
   if(!root||!run)return;
+  if(lastRunId!==run.id){armedId=null;lastRunId=run.id;}
   const w=copy(),state=normalizedFormation(run);
   if(armedId&&!run.roster.some(c=>c.id===armedId))armedId=null;
   root.replaceChildren();
@@ -79,7 +81,7 @@ function renderFormationUI(root,run,{onSelect,onCommit}={}){
   const commit=(id,square)=>{
     const outcome=moveFormation(run,id,square);
     if(!outcome.ok){
-      feedback.textContent=outcome.reason==='king_required'?w.king:w.capacity;
+      feedback.textContent=outcome.reason==='king_required'?w.king:outcome.reason==='minimum_force'?w.minimum:w.capacity;
       return;
     }
     armedId=null;
