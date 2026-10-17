@@ -52,11 +52,34 @@ function parseArgs(argv){
 function hashString(value){let hash=2166136261;for(const char of String(value)){hash^=char.charCodeAt(0);hash=Math.imul(hash,16777619);}return hash>>>0;}
 function materialScore(snapshot,side){let ours=0,theirs=0;for(const piece of snapshot.board||[]){if(!piece)continue;const value=PIECE_VALUE[piece.type]||0;if(piece.color===side)ours+=value;else theirs+=value;}return ours-theirs;}
 function typeFromThemes(themes){const set=themes instanceof Set?themes:new Set(themes||[]);if(set.has('mateIn1'))return'mate1';if(set.has('mateIn2'))return'mate2';if(set.has('mateIn3'))return'mate3';if(set.has('mate'))return null;for(const theme of MATERIAL_THEMES)if(set.has(theme))return'material';return null;}
-function isMateType(type){return type==='mate1'||type==='mate2'||type==='mate3';}
-function expectedSolutionPlies(type){return type==='mate1'?1:type==='mate2'?3:type==='mate3'?5:null;}
+function isMateType(type){return ['mate1','mate2','mate3','mate4','mate5Plus'].includes(type);}
+function expectedSolutionPlies(type){return type==='mate1'?1:type==='mate2'?3:type==='mate3'?5:type==='mate4'?7:null;}
 function allocateStarTotals(count){const base=Math.floor(count/12),remainder=count%12;return Array.from({length:12},(_,i)=>base+(i<remainder?1:0));}
 function allocateMix(total,mix){const entries=Object.entries(mix),raw=entries.map(([type,weight])=>({type,value:total*weight/100,amount:Math.floor(total*weight/100)}));let left=total-raw.reduce((sum,item)=>sum+item.amount,0);raw.sort((a,b)=>(b.value-b.amount)-(a.value-a.amount)||a.type.localeCompare(b.type));for(let i=0;i<left;i+=1)raw[i%raw.length].amount+=1;return Object.fromEntries(raw.map(item=>[item.type,item.amount]));}
-function closestEligibleStar(rating,type,difficultyTable){const candidates=[];for(let star=1;star<=12;star+=1){const row=difficultyTable[star];if(!row||!row.mix?.[type])continue;if(rating<row.rating[0]||rating>row.rating[1])continue;const midpoint=(row.rating[0]+row.rating[1])/2;candidates.push({star,distance:Math.abs(rating-midpoint)});}candidates.sort((a,b)=>a.distance-b.distance||a.star-b.star);return candidates[0]?.star||null;}
+function closestEligibleStar(rating,type,difficultyTable,{allGoals=false}={}){const candidates=[];for(let star=1;star<=12;star+=1){const row=difficultyTable[star];if(!row||(!allGoals&&!row.mix?.[type]))continue;if(rating<row.rating[0]||rating>row.rating[1])continue;const midpoint=(row.rating[0]+row.rating[1])/2;candidates.push({star,distance:Math.abs(rating-midpoint)});}candidates.sort((a,b)=>a.distance-b.distance||a.star-b.star);return candidates[0]?.star||null;}
+// Expanded discovery is deliberately opt-in: the frozen 11,498-task legacy
+// import stays bit-for-bit compatible with its original rating/type mix.
+function typeFromThemesExtended(themes){
+  const set=themes instanceof Set?themes:new Set(themes||[]);
+  for(const [tag,goal] of [['mateIn1','mate1'],['mateIn2','mate2'],['mateIn3','mate3'],['mateIn4','mate4'],['mateIn5','mate5Plus']]){
+    if(set.has(tag))return goal;
+  }
+  if(set.has('mate'))return null; // Untyped mate: cannot promise a mate length.
+  return set.size?'bestLine':null;
+}
+function preclassifyExtendedLichessRow(row,difficultyTable){
+  const sourceId=String(row.PuzzleId||'').trim(),rating=Number(row.Rating),
+    deviation=Number(row.RatingDeviation),popularity=Number(row.Popularity),
+    themes=String(row.Themes||'').trim().split(/\\s+/).filter(Boolean),
+    themeSet=new Set(themes),moves=String(row.Moves||'').trim().split(/\\s+/).filter(Boolean);
+  if(!sourceId||!Number.isFinite(rating)||!Number.isFinite(deviation)
+    ||!Number.isFinite(popularity)||popularity<80||deviation>100||moves.length<2)return null;
+  const type=typeFromThemesExtended(themeSet),expected=expectedSolutionPlies(type);
+  if(!type||expected!=null&&moves.length-1!==expected)return null;
+  if(type==='mate5Plus'&&(moves.length-1<9||(moves.length-1)%2!==1))return null;
+  const star=closestEligibleStar(rating,type,difficultyTable,{allGoals:true});
+  return star?{sourceId,rating,themes,themeSet,moves,type,star}:null;
+}
 function reservoirPush(bucket,item,limit,score){if(limit<=0)return;if(bucket.length<limit){bucket.push({score,item});bucket.sort((a,b)=>b.score-a.score);return;}if(score>=bucket[0].score)return;bucket[0]={score,item};bucket.sort((a,b)=>b.score-a.score);}
 function uciParts(value){const uci=String(value||'').trim().toLowerCase();return /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(uci)?{from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci.slice(4,5)||null,uci}:null;}
 
@@ -69,6 +92,10 @@ function preclassifyLichessRow(row,difficultyTable){
   return {sourceId,rating,deviation,popularity,themes,themeSet,moves,type,star};
 }
 
+async function normalizeExtendedLichessRow(row,options){
+  const pre=preclassifyExtendedLichessRow(row,options.difficultyTable);
+  return pre?normalizeLichessRow(row,{...options,preclassified:pre}):null;
+}
 async function normalizeLichessRow(row,{ClassicChessEngine,puzzleBaseGold,difficultyTable,preclassified=null}){
   const pre=preclassified||preclassifyLichessRow(row,difficultyTable);if(!pre)return null;
   const {sourceId,rating,themes,moves,type,star}=pre;
@@ -96,4 +123,4 @@ async function importLichessPuzzles(options){
 }
 async function main(){const options=parseArgs(process.argv.slice(2)),summary=await importLichessPuzzles(options);console.log(`Lichess CC0 importer: scanned ${summary.seen}, cheap-eligible ${summary.cheapEligible}, engine-validated ${summary.engineValidated}, wrote ${summary.written} puzzles -> ${summary.output}`);}
 if(require.main===module)main().catch(error=>{console.error(error.stack||error);process.exitCode=1;});
-module.exports={MATERIAL_THEMES,TARGET_BY_TYPE,parseCsvLine,rowFromHeader,parseArgs,hashString,typeFromThemes,isMateType,expectedSolutionPlies,allocateStarTotals,allocateMix,closestEligibleStar,preclassifyLichessRow,serializeCatalog,normalizeLichessRow,importLichessPuzzles};
+module.exports={MATERIAL_THEMES,TARGET_BY_TYPE,parseCsvLine,rowFromHeader,parseArgs,hashString,typeFromThemes,typeFromThemesExtended,isMateType,expectedSolutionPlies,allocateStarTotals,allocateMix,closestEligibleStar,preclassifyLichessRow,preclassifyExtendedLichessRow,serializeCatalog,normalizeLichessRow,normalizeExtendedLichessRow,importLichessPuzzles};
