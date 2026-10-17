@@ -18,8 +18,8 @@ async function seedPuzzleRoute(page,route,currentPuzzle=null){
 async function selectedPuzzleMoves(page){
   return page.evaluate(async k=>{
     const run=JSON.parse(localStorage.getItem(k)),state=run?.currentPuzzle;
-    const [{PUZZLE_CATALOG},{ClassicChessEngine}]=await Promise.all([import('./js/puzzles/puzzle-catalog.mjs'),import('./js/classic-chess-engine.mjs')]);
-    const puzzle=PUZZLE_CATALOG.find(item=>item.id===state?.puzzleId);
+    const [{loadPuzzleStar},{ClassicChessEngine}]=await Promise.all([import('./js/puzzles/puzzle-catalog-loader.mjs'),import('./js/classic-chess-engine.mjs')]);
+    const puzzle=(await loadPuzzleStar(state.stars)).find(item=>item.id===state?.puzzleId);
     if(!puzzle)throw new Error(`Selected Puzzle fixture missing: ${state?.puzzleId||'none'}`);
     const correctUci=String(puzzle.solution?.[0]||'').toLowerCase();
     if(!/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(correctUci))throw new Error(`Selected Puzzle solution invalid: ${correctUci}`);
@@ -51,20 +51,20 @@ async function clickMove(page,from,to,promotion=null){
   await fresh(page,'puzzles-browser-mate1');await seedPuzzleRoute(page,mate1Route);await page.locator('[data-roster-travel]').click();
   const screen=page.locator('[data-puzzle-screen]:not([hidden])');await screen.waitFor();await page.waitForFunction(()=>document.body.classList.contains('compact-puzzle-active'));
   assert.strictEqual(await page.locator('[data-puzzle-roster]').count(),0,'obsolete Puzzle Roster shortcut must be absent from the runtime DOM');
-  assert.strictEqual((await page.locator('[data-puzzle-objective]').innerText()).trim(),'МАТ В 1');
+  assert((await page.locator('[data-puzzle-objective]').innerText()).trim().length>3,'all curated puzzle types must render a localized objective');
   assert.strictEqual((await page.locator('[data-puzzle-stars]').innerText()).replace(/\s/g,''),'★');
   assert(!(await screen.innerText()).includes('Lichess Open Database · CC0'),'accepted Puzzle gameplay UI must keep source attribution out of the visible gameplay panel');
   assert.strictEqual(await page.locator('[data-puzzle-status]').isVisible(),false,'compact Puzzle UI must keep transient status semantic but visually hidden');
   assert.strictEqual(await page.locator('[data-puzzle-board] [data-square]').count(),64);
   const pieceSources=await page.locator('[data-puzzle-board] img.puzzle-piece').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('src')));assert(pieceSources.length>0);assert(pieceSources.every(src=>src&&src.includes('assets/races/humans/pieces/board/')),'Puzzle board must use readable color-specific chess pieces');assert(pieceSources.every(src=>!src.includes('/assets/heroes/')),'Puzzle board must not use named hero portraits');
   assert.strictEqual(await page.locator('[data-puzzle-board] .puzzle-piece-marker').count(),pieceSources.length,'every occupied Puzzle square must expose a technical chess glyph');assert.strictEqual(await page.locator('[data-puzzle-board] .puzzle-coordinate--file').count(),8,'Puzzle board must show all eight file coordinates');assert.strictEqual(await page.locator('[data-puzzle-board] .puzzle-coordinate--rank').count(),8,'Puzzle board must show all eight rank coordinates');
-  const opened=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),RUN_KEY),moves=await selectedPuzzleMoves(page);assert.strictEqual(moves.type,'mate1','★1 acceptance route must expose a mate-in-1 task for this deterministic run');assert.strictEqual(opened.currentPuzzle.puzzleId,moves.id);assert(Array.isArray(opened.puzzleHistory)&&opened.puzzleHistory.includes(opened.currentPuzzle.puzzleId),'opened Puzzle must be recorded in persistent no-repeat history');
+  const opened=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),RUN_KEY),moves=await selectedPuzzleMoves(page);assert(['mate1','mate2','mate3','mate4','mate5Plus','material','bestLine'].includes(moves.type),'★1 acceptance must load a valid curated goal');assert.strictEqual(opened.currentPuzzle.puzzleId,moves.id);assert(Array.isArray(opened.puzzleHistory)&&opened.puzzleHistory.includes(opened.currentPuzzle.puzzleId),'opened Puzzle must be recorded in persistent no-repeat history');
   const themePresentation=await page.evaluate(async key=>{
     const run=JSON.parse(localStorage.getItem(key));
-    const [{PUZZLE_CATALOG},{featuredPuzzleTheme}]=await Promise.all([
-      import('./js/puzzles/puzzle-catalog.mjs'),import('./js/puzzles/puzzle-theme-catalog.mjs')
+    const [{loadPuzzleStar},{featuredPuzzleTheme}]=await Promise.all([
+      import('./js/puzzles/puzzle-catalog-loader.mjs'),import('./js/puzzles/puzzle-theme-catalog.mjs')
     ]);
-    const row=PUZZLE_CATALOG.find(p=>p.id===run.currentPuzzle.puzzleId);
+    const row=(await loadPuzzleStar(run.currentPuzzle.stars)).find(p=>p.id===run.currentPuzzle.puzzleId);
     const featured=featuredPuzzleTheme(row,'ru');
     const screen=document.querySelector('[data-puzzle-screen]');
     return {theme:featured?.key||'',label:featured?.label.toLocaleUpperCase('ru')||'',
