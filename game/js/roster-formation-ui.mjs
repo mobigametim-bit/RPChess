@@ -36,6 +36,7 @@ function renderFormationUI(root,run,{onSelect,onCommit}={}){
   if(armedId&&!run.roster.some(c=>c.id===armedId))armedId=null;
   root.replaceChildren();
   root.className='roster-formation-ui';
+  root.setAttribute('aria-label',w.board);
   const byId=new Map(run.roster.map(c=>[c.id,c]));
   const header=element('div','rfc-head');
   header.append(element('h3','rfc-title',w.board));
