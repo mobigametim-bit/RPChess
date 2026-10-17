@@ -30,8 +30,8 @@ for (const record of source.records) {
 }
 
 const implementation = fs.readFileSync(path.resolve(__dirname, '..', 'scripts', 'background-asset-runtime.cjs'), 'utf8');
-assert(implementation.includes('BACKGROUND_RUNTIME_CHANNEL_BITS = 6'), 'runtime background quantization must remain on the accepted 6-bit probe');
-assert(implementation.includes('colorType !== 2'), 'runtime budget must enforce opaque RGB PNG output');
+assert(implementation.includes('BACKGROUND_RUNTIME_WEBP_QUALITY = 55'), 'Event runtime uses approved strong WebP compression');
+assert(implementation.includes("'WEBP'"), 'runtime background budget must validate WebP signatures');
 assert(implementation.includes('assertBackgroundAssetBudget'), 'runtime background budget must fail closed after build transformation');
 
 console.log(`background-asset-runtime: PASS (${source.count} masters, ${(source.totalBytes / 1024 / 1024).toFixed(2)} MiB source payload)`);
