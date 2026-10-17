@@ -80,6 +80,9 @@ jobs:
           done
           test -s dist/generated_assets/scene_training_ui.jpg
           test ! -e dist/generated_assets/scene_training_ui.webp
+          test -s dist/assets/ui/jester-patrick.webp
+          grep -q 'rpchess:arena-catalog-shown' dist/js/content/onboarding.mjs
+          grep -q 'rpchess:caravan-rewards' dist/js/content/onboarding.mjs
           test -s dist/assets/regions/ashen_dominion/boss_arena.webp
           test ! -e dist/assets/regions/ashen_dominion/boss_arena.jpg
           test -s dist/assets/events/register-04/backgrounds/generic/forest_crossroad.webp
@@ -170,7 +173,9 @@ jobs:
                grep -q 'boardRacePiecePath' /tmp/rpchess-piece-runtime.js &&
               curl -fsS --max-time 20 "$base/js/puzzles/extra-star-01.mjs" -o /tmp/rpchess-lichess-star1.mjs &&
               grep -q 'EXTRA_PUZZLES' /tmp/rpchess-lichess-star1.mjs &&
-              curl -fsS --max-time 20 "$base/generated_assets/splash_poster.webp" -o /tmp/rpchess-optimized-scene.webp &&
+              curl -fsS --max-time 20 "$base/assets/ui/jester-patrick.webp" -o /tmp/rpchess-jester-portrait.webp &&
+               test "$(head -c4 /tmp/rpchess-jester-portrait.webp)" = 'RIFF' &&
+               curl -fsS --max-time 20 "$base/generated_assets/splash_poster.webp" -o /tmp/rpchess-optimized-scene.webp &&
               test "$(head -c4 /tmp/rpchess-optimized-scene.webp)" = 'RIFF' &&
                curl -fsS --max-time 15 "$base/assets/races/humans/pieces/board/white/king.png" -o /tmp/rpchess-piece-new.png &&
                curl -fsS --max-time 15 "$base/assets/races/orcs/pieces/board/black/knight.png" -o /tmp/rpchess-piece-orc-new.png &&
