@@ -367,7 +367,7 @@ foeCarousel?.addEventListener('scroll',()=>{
   if(label)label.textContent=l('section')+' '+(section+1)+' / 12';
 },{passive:true});
 const entryButton=document.querySelector('[data-arena-open]');
-entryButton?.addEventListener('click',()=>{void Promise.resolve(globalThis.RPChessCloudReady).then(enter);});
+entryButton?.addEventListener('click',()=>{void Promise.all([globalThis.RPChessCloudReady,globalThis.RPChessOnboardingReady]).then(enter);});
 function updateLanguage(){if(entryButton)entryButton.textContent=l('title');render();}
 subscribe(updateLanguage);
 updateLanguage();
