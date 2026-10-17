@@ -79,6 +79,7 @@ jobs:
           find dist/assets/events/register-04 -type f -name '*.webp' -printf '%s\n' | awk '{sum+=$1;n++}END{printf "Event WebP assets: %d files, %.2f MiB\n",n,sum/1048576;if(sum>12*1048576)exit 1}'
           grep -Fq 'featuredPuzzleTheme(puzzle,currentLanguage())' dist/js/puzzles/puzzle-app.mjs
           grep -Fq 'ensurePuzzleStylesReady' dist/js/puzzles/puzzle-app.mjs
+          grep -Fq 'rpchess:puzzle-shown' dist/js/ui-redesign-final.mjs
           grep -q 'isAllowedSquare' dist/js/roster-formation-core.mjs
           grep -q 'bishopColors' dist/js/skirmish-core.mjs
           grep -Fq 'suppl(?:y|ies)' dist/js/ux-consistency.mjs
