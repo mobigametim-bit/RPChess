@@ -53,7 +53,9 @@ function boardPieceArtForTheme(theme,pieceType,color){
   return boardRacePiecePath(race,pieceType,color||theme?.enemyColor||'b');
 }
 function boardPieceArtForCharacter(character,color='w'){
-  return character?.boardPieceArt||boardRacePiecePath(character?.raceTag||'humans',character?.pieceType,color);
+  // Named roster characters keep their original identity art until dedicated
+  // new board sprites are supplied. Only generic unnamed pieces use race art.
+  return character?.boardPieceArt||character?.pieceArt||boardRacePiecePath(character?.raceTag||'humans',character?.pieceType,color);
 }
 function setBoardPieceArt(image,src){
   if(!image)return;
