@@ -147,7 +147,7 @@
   background:
     radial-gradient(circle at 30% 18%,rgba(139,96,39,.055),transparent 30%),
     linear-gradient(90deg,rgba(4,5,9,.94),rgba(7,8,13,.63) 49%,rgba(4,5,9,.88)),
-    #05070b url('../generated_assets/splash_poster.jpg') center/cover fixed no-repeat;
+    #05070b url('../generated_assets/splash_poster.webp') center/cover fixed no-repeat;
 }
 .roster-screen .roster-shell{width:min(1500px,100%)}
 .roster-screen .roster-topbar{
