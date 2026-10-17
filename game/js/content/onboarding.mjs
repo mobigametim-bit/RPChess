@@ -347,7 +347,7 @@ function installOnboarding() {
     'rpchess:event-open':['event','[data-events-screen]:not([hidden])'],
     'rpchess:settlement-open':['settlement','[data-settlement-screen]:not([hidden])'],
     'rpchess:puzzle-shown':['puzzle','[data-puzzle-screen]:not([hidden])'],
-    'rpchess:artifact-offer':['artifact','[data-artifact-choice-overlay]:not([hidden])'],
+    'rpchess:artifact-offer':['artifact','[data-artifact-choice-modal]'],
     'rpchess:combat-aftermath':['combatAftermath'],
     'rpchess:caravan-rewards':['caravanReward'],
     'rpchess:starvation-shown':['starvation','[data-starvation-screen]:not([hidden])'],
