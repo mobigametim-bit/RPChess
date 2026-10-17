@@ -24,7 +24,7 @@ const importer=require('../scripts/import-lichess-puzzles.cjs');
   assert(mate4&&core.isNormalizedPuzzle(mate4)&&mate4.type==='mate4');
   assert.strictEqual(mate4.solution.length,7);
   const mate5Row={...row,PuzzleId:'mate5-fixture',Themes:'mate mateIn5 veryLong',
-    Moves:'g2g4 a7a6 a2a3 a6a5 b2b3 h7h6 c2c3 h6h5 d2d3 d8h4'};
+    Moves:'g2g4 a7a6 a2a3 a6a5 b2b3 h7h6 c2c3 h6h5 h2h3 d8h4'};
   const mate5=await importer.normalizeExtendedLichessRow(mate5Row,fullOpts);
   assert(mate5&&core.isNormalizedPuzzle(mate5)&&mate5.type==='mate5Plus');
   assert.strictEqual(mate5.solution.length,9);
