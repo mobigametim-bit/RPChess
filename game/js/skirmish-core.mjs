@@ -2,7 +2,7 @@ import { PIECE_VALUES } from './roster-data.mjs';
 import { MAX_ENCOUNTER_STARS, clampStars, difficultyForStars } from './encounter-difficulty.mjs';
 import { combatTheme, oppositeColor } from './race-assets.mjs';
 import { generateSkirmishObstacles } from './skirmish-obstacles.mjs';
-import { placementForColor } from './roster-formation-core.mjs';
+import { placementForColor, squareColor } from './roster-formation-core.mjs';
 
 const MIN_SKIRMISH_PIECES=2,MAX_SKIRMISH_PIECES=16,MAX_SKIRMISH_POINTS=39,TYPE_CODE=Object.freeze({pawn:'p',knight:'n',bishop:'b',rook:'r',queen:'q',king:'k'}),CODE_TYPE=Object.freeze({p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'}),FILES='abcdefgh';
 const ENCOUNTER_TIERS=Object.freeze(Object.fromEntries(Array.from({length:MAX_ENCOUNTER_STARS},(_,i)=>{const stars=i+1,d=difficultyForStars(stars);const low=Math.max(4,Math.min(39,Math.round(4+stars*2.15))),high=Math.max(low,Math.min(39,low+7));return[stars,Object.freeze({label:`${d.label} · дорожный отряд`,stars,threat:`${low}–${high}`,elo:d.elo,tactic:d.tactic})];})));
@@ -32,7 +32,7 @@ function createEncounter({seed='rpchess-skirmish',stars=2}={}){
 
 function combatEligible(character){return Boolean(character&&(character.status==='healthy'||(character.isRunKing&&character.status==='wounded')));}
 function selectionSummary(roster,selectedIds){const selected=new Set(selectedIds||[]),members=(roster||[]).filter((c)=>selected.has(c.id));return{members,count:members.length,points:members.reduce((s,c)=>s+(PIECE_VALUES[c.pieceType]??c.commandCost??0),0)};}
-function validateSelection(roster,selectedIds){const ids=[...new Set(selectedIds||[])],byId=new Map((roster||[]).map((c)=>[c.id,c])),king=(roster||[]).find((c)=>c.isRunKing);if(!king)return{ok:false,reason:'missing_king'};if(!combatEligible(king))return{ok:false,reason:'king_unavailable'};if(!ids.includes(king.id))return{ok:false,reason:'king_required'};for(const id of ids){const c=byId.get(id);if(!c)return{ok:false,reason:'unknown_character',id};if(!combatEligible(c))return{ok:false,reason:'character_unavailable',id};}const summary=selectionSummary(roster,ids);if(summary.count<MIN_SKIRMISH_PIECES)return{ok:false,reason:'minimum_force',minimum:MIN_SKIRMISH_PIECES,...summary};if(summary.count>MAX_SKIRMISH_PIECES)return{ok:false,reason:'piece_limit',...summary};if(summary.points>MAX_SKIRMISH_POINTS)return{ok:false,reason:'point_limit',...summary};return{ok:true,...summary};}
+function validateSelection(roster,selectedIds){const ids=[...new Set(selectedIds||[])],byId=new Map((roster||[]).map((c)=>[c.id,c])),king=(roster||[]).find((c)=>c.isRunKing);if(!king)return{ok:false,reason:'missing_king'};if(!combatEligible(king))return{ok:false,reason:'king_unavailable'};if(!ids.includes(king.id))return{ok:false,reason:'king_required'};for(const id of ids){const c=byId.get(id);if(!c)return{ok:false,reason:'unknown_character',id};if(!combatEligible(c))return{ok:false,reason:'character_unavailable',id};}const summary=selectionSummary(roster,ids);if(summary.count<MIN_SKIRMISH_PIECES)return{ok:false,reason:'minimum_force',minimum:MIN_SKIRMISH_PIECES,...summary};if(summary.count>MAX_SKIRMISH_PIECES)return{ok:false,reason:'piece_limit',...summary};if(summary.points>MAX_SKIRMISH_POINTS)return{ok:false,reason:'point_limit',...summary};if(summary.members.filter(c=>c.pieceType==='bishop').length>2)return{ok:false,reason:'bishop_limit',...summary};return{ok:true,...summary};}
 // Automatic Skirmish deployment must fit 2 ranks, the 39-point cap and
 // the maximum eight pawns. Keep every eligible hero when no limit is exceeded.
 function automaticCombatSelection(roster,seed='rpchess-auto-skirmish'){
@@ -42,52 +42,76 @@ function automaticCombatSelection(roster,seed='rpchess-auto-skirmish'){
   const others=eligible.filter(c=>!c.isRunKing&&c.pieceType!=='king');
   const points=others.reduce((sum,c)=>sum+(PIECE_VALUES[c.pieceType]??c.commandCost??0),0);
   const pawns=others.filter(c=>c.pieceType==='pawn').length;
-  if(eligible.length<=MAX_SKIRMISH_PIECES&&points<=MAX_SKIRMISH_POINTS&&pawns<=8)
+  const bishops=others.filter(c=>c.pieceType==='bishop').length;
+  if(eligible.length<=MAX_SKIRMISH_PIECES&&points<=MAX_SKIRMISH_POINTS&&pawns<=8&&bishops<=2)
     return [king.id,...others.map(c=>c.id)];
   const shuffled=shuffle(others.sort((a,b)=>String(a.id).localeCompare(String(b.id))),seed);
-  const chosen=[king.id];let spent=0,pawnCount=0;
+  const chosen=[king.id];let spent=0,pawnCount=0,bishopCount=0;
   for(const c of shuffled){
     const cost=PIECE_VALUES[c.pieceType]??c.commandCost??0;
     if(chosen.length>=MAX_SKIRMISH_PIECES||spent+cost>MAX_SKIRMISH_POINTS)continue;
     if(c.pieceType==='pawn'&&pawnCount===8)continue;
+    if(c.pieceType==='bishop'&&bishopCount===2)continue;
     chosen.push(c.id);spent+=cost;
     if(c.pieceType==='pawn')pawnCount++;
+    if(c.pieceType==='bishop')bishopCount++;
   }
   return chosen;
 }
-function defaultCombatSelection(roster){const eligible=(roster||[]).filter(combatEligible),king=eligible.find((c)=>c.isRunKing);if(!king)return[];const selected=[king.id];let points=0;for(const c of eligible){if(c.id===king.id)continue;const cost=PIECE_VALUES[c.pieceType]??c.commandCost??0;if(selected.length>=MAX_SKIRMISH_PIECES||points+cost>MAX_SKIRMISH_POINTS)continue;selected.push(c.id);points+=cost;}return selected;}
+function defaultCombatSelection(roster){const eligible=(roster||[]).filter(combatEligible),king=eligible.find((c)=>c.isRunKing);if(!king)return[];const selected=[king.id];let points=0,pawns=0,bishops=0;for(const c of eligible){if(c.id===king.id||c.pieceType==='king')continue;const cost=PIECE_VALUES[c.pieceType]??c.commandCost??0;if(selected.length>=MAX_SKIRMISH_PIECES||points+cost>MAX_SKIRMISH_POINTS)continue;if(c.pieceType==='pawn'&&pawns>=8||c.pieceType==='bishop'&&bishops>=2)continue;selected.push(c.id);points+=cost;if(c.pieceType==='pawn')pawns++;if(c.pieceType==='bishop')bishops++;}return selected;}
 
 function startingSquares(color){const home=color==='w'?'1':'8',front=color==='w'?'2':'7';return{home:[...FILES].map((f)=>`${f}${home}`),front:[...FILES].map((f)=>`${f}${front}`)};}
 function placeArmy(army,color,{seed='rpchess-formation',preferredSquares=null}={}){
-  const {home,front}=startingSquares(color),allowed=new Set([...home,...front]);
+  const {home,front}=startingSquares(color),allowed=new Set([...home,...front]),frontSet=new Set(front);
   const occupied=new Set(),placements=[];
-  const pawns=army.filter((m)=>(m.pieceType||CODE_TYPE[m.type]||m.type)==='pawn');
-  const others=army.filter((m)=>(m.pieceType||CODE_TYPE[m.type]||m.type)!=='pawn');
-  if(pawns.length>front.length||army.length>16)throw new Error('Skirmish army does not fit into two starting ranks');
+  const role=member=>member.pieceType||CODE_TYPE[member.type]||member.type;
+  const pawns=army.filter(member=>role(member)==='pawn');
+  const bishops=army.filter(member=>role(member)==='bishop');
+  const others=army.filter(member=>role(member)!=='pawn'&&role(member)!=='bishop');
+  if(pawns.length>8||bishops.length>2||army.length>16)throw new Error('Skirmish army exceeds available starting squares');
+  const bishopColors=new Set();
+  const legal=(member,square)=>{
+    const type=role(member);
+    return allowed.has(square)&&!occupied.has(square)
+      &&(type!=='pawn'||frontSet.has(square))
+      &&(type!=='bishop'||!bishopColors.has(squareColor(square)));
+  };
   const place=(member,square)=>{
-    const type=member.pieceType||CODE_TYPE[member.type]||member.type;
+    const type=role(member);
+    if(!legal(member,square))throw new Error('Illegal Skirmish starting square');
     occupied.add(square);
+    if(type==='bishop')bishopColors.add(squareColor(square));
     placements.push({id:member.id||null,name:member.name||null,pieceType:type,type:TYPE_CODE[type]||member.type,color,square});
   };
   const preferences=preferredSquares&&typeof preferredSquares==='object'?preferredSquares:null;
   if(preferences){
-    const selectedById=new Map(army.filter(m=>m.id).map(m=>[m.id,m]));
-    for(const [whiteSquare,id] of Object.entries(preferences)){
-      const member=selectedById.get(id),square=placementForColor(whiteSquare,color);
-      if(!member||!square||!allowed.has(square)||occupied.has(square))continue;
+    const selectedById=new Map(army.filter(member=>member.id).map(member=>[member.id,member]));
+    for(const [canonicalSquare,id] of Object.entries(preferences)){
+      const member=selectedById.get(id),square=placementForColor(canonicalSquare,color);
+      if(!member||!square||!legal(member,square))continue;
       place(member,square);
       selectedById.delete(id);
     }
   }
-  const remainingPawns=pawns.filter(member=>!placements.some(piece=>piece.id===member.id));
+  const unplaced=members=>members.filter(member=>!placements.some(piece=>piece.id===member.id));
+  const remainingPawns=unplaced(pawns);
   const pawnSquares=shuffle(front.filter(square=>!occupied.has(square)),`${seed}:${color}:pawns`);
-  // Unassigned pawns normally use rank 2/7; if the player has manually filled
-  // that row with other heroes, any free home square is a valid skirmish slot.
-  const extraPawnSquares=shuffle(home.filter(square=>!occupied.has(square)),`${seed}:${color}:pawns-home`);
-  remainingPawns.forEach((member,index)=>{const square=[...pawnSquares,...extraPawnSquares][index];if(!square)throw new Error('Skirmish pawn slots exhausted');place(member,square);});
+  remainingPawns.forEach((member,index)=>{
+    const square=pawnSquares[index];if(!square)throw new Error('Skirmish pawns must start on the second rank');
+    place(member,square);
+  });
+  // Reserve a square of each color for the two bishops, before filling the
+  // remaining empty cells with rooks, knights, queens and kings.
+  const bishopSquares=shuffle([...home,...front].filter(square=>!occupied.has(square)),`${seed}:${color}:bishops`);
+  for(const member of unplaced(bishops)){
+    const square=bishopSquares.find(candidate=>legal(member,candidate));
+    if(!square)throw new Error('Skirmish bishops must occupy opposite square colors');
+    place(member,square);
+  }
   const remaining=shuffle([...home,...front].filter(square=>!occupied.has(square)),`${seed}:${color}:others`);
-  others.filter(member=>!placements.some(piece=>piece.id===member.id)).forEach((member,index)=>{
-    const square=remaining[index];if(!square)throw new Error('Skirmish army does not fit into two starting ranks');place(member,square);
+  unplaced(others).forEach((member,index)=>{
+    const square=remaining[index];if(!square)throw new Error('Skirmish army does not fit into two starting ranks');
+    place(member,square);
   });
   return placements;
 }
@@ -99,7 +123,7 @@ function generateEnemyArmy({playerPoints=0,playerCount=1,encounter}={}){
   const target=clamp(Math.round(Number(playerPoints||0)*scale+resolved.stars*1.65),4,MAX_SKIRMISH_POINTS);
   const army=[{id:'enemy.king',name:'Вражеский король',pieceType:'king',commandCost:0}];let points=0;
   const candidates=resolved.stars>=9?['queen','rook','bishop','knight','pawn']:resolved.stars>=5?['rook','bishop','knight','pawn','pawn']:['bishop','knight','pawn','pawn','pawn'];
-  let guard=0;while(army.length<MAX_SKIRMISH_PIECES&&points<target&&guard<200){guard++;const pawnCount=army.reduce((sum,piece)=>sum+(piece.pieceType==='pawn'?1:0),0);const affordable=candidates.filter((t)=>points+PIECE_VALUES[t]<=target&&(t!=='pawn'||pawnCount<8));if(!affordable.length)break;const type=affordable[Math.floor(random()*affordable.length)],cost=PIECE_VALUES[type];army.push({id:`enemy.${type}.${army.length}`,name:`Вражеский ${type}`,pieceType:type,commandCost:cost});points+=cost;}
+  let guard=0;while(army.length<MAX_SKIRMISH_PIECES&&points<target&&guard<200){guard++;const pawnCount=army.reduce((sum,piece)=>sum+(piece.pieceType==='pawn'?1:0),0);const bishopCount=army.reduce((sum,piece)=>sum+(piece.pieceType==='bishop'?1:0),0);const affordable=candidates.filter((t)=>points+PIECE_VALUES[t]<=target&&(t!=='pawn'||pawnCount<8)&&(t!=='bishop'||bishopCount<2));if(!affordable.length)break;const type=affordable[Math.floor(random()*affordable.length)],cost=PIECE_VALUES[type];army.push({id:`enemy.${type}.${army.length}`,name:`Вражеский ${type}`,pieceType:type,commandCost:cost});points+=cost;}
   return{army,points,target};
 }
 
