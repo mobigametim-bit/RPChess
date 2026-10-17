@@ -159,6 +159,8 @@ function showPuzzle() {
   document.body.classList.add('puzzles-active');
   window.scrollTo({ top: 0, behavior: 'auto' });
   globalThis.RPChessResources?.render?.();
+  // Puzzle chunks load asynchronously: notify the presentation owner only after the screen is visible.
+  globalThis.dispatchEvent(new CustomEvent('rpchess:puzzle-shown'));
 }
 
 function hidePuzzle() {
@@ -167,7 +169,9 @@ function hidePuzzle() {
 }
 
 function findPuzzle(id,loaded=[]) { return loaded.find((item) => item.id === id)||PUZZLE_CATALOG.find((item) => item.id === id)||null; }
-function puzzleHistory(run) { return Array.isArray(run?.puzzleHistory) ? run.puzzleHistory.filter((id) => Boolean(findPuzzle(id))) : []; }
+// Keep previously seen IDs from every shard, including levels not yet loaded in this session.
+// Filtering by the initial offline catalog silently discarded the new 18,502 IDs.
+function puzzleHistory(run) { return Array.isArray(run?.puzzleHistory) ? run.puzzleHistory.filter((id) => typeof id === 'string' && /^puzzle\.[A-Za-z0-9]+$/.test(id)) : []; }
 
 function persist(nextState = state) {
   state = nextState;
