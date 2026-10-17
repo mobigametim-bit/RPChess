@@ -46,8 +46,10 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Build playable preview
         run: npm run build
-      - name: Verify extended Lichess Puzzle objectives and legacy catalog
-        run: npm run test:puzzles
+      - name: Verify 30000 Lichess goals, stars and original legacy catalog
+        run: |
+          npm run test:puzzles
+          node tests/puzzle-expansion.cjs
       - name: Install Chromium for targeted acceptance
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
@@ -69,6 +71,12 @@ jobs:
           test -s dist/js/roster-formation-ui.mjs
           test -s dist/css/roster-formation.css
           test -s dist/js/puzzles/puzzle-theme-catalog.mjs
+          test -s dist/js/puzzles/extra-star-01.mjs
+          test -s dist/js/puzzles/extra-star-12.mjs
+          test -s dist/assets/events/register-04/backgrounds/generic/forest_crossroad.webp
+          test "$(find dist/assets/events/register-04 -type f -name '*.webp' | wc -l)" -eq 37
+          test "$(find dist/assets/events/register-04 -type f -name '*.png' | wc -l)" -eq 0
+          find dist/assets/events/register-04 -type f -name '*.webp' -printf '%s\n' | awk '{sum+=$1;n++}END{printf "Event WebP assets: %d files, %.2f MiB\n",n,sum/1048576;if(sum>12*1048576)exit 1}'
           grep -Fq 'featuredPuzzleTheme(puzzle,currentLanguage())' dist/js/puzzles/puzzle-app.mjs
           grep -q 'isAllowedSquare' dist/js/roster-formation-core.mjs
           grep -q 'bishopColors' dist/js/skirmish-core.mjs
