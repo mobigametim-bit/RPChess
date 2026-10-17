@@ -42,6 +42,12 @@ equal('assets/races/orcs/pieces/pawn.png',expectedPng('assets/races/orcs/pieces/
 equal('assets/kings/oathkeeper/portrait.png',expectedPng('assets/kings/oathkeeper/portrait.png',portrait.PORTRAIT_RUNTIME_MAX_SIDE,portrait.PORTRAIT_RUNTIME_MAX_BYTES));
 equal('assets/events/register-04/backgrounds/generic/forest_crossroad.webp',read(GAME,'assets/events/register-04/backgrounds/generic/forest_crossroad.webp'));
 assert(!fs.existsSync(path.join(DIST,'assets/events/register-04/backgrounds/generic/forest_crossroad.png')),'Event PNG masters must not be published to dist');
+
+for(const relative of ['generated_assets/splash_poster.webp','generated_assets/scene_battle.webp','generated_assets/scene_campaign.webp','generated_assets/scene_reward.webp','assets/regions/ashen_dominion/boss_arena.webp'])
+  equal(relative,read(GAME,relative));
+for(const relative of ['generated_assets/splash_poster.jpg','generated_assets/scene_battle.jpg','generated_assets/scene_campaign.jpg','generated_assets/scene_reward.jpg','assets/regions/ashen_dominion/boss_arena.jpg'])
+  assert(!fs.existsSync(path.join(DIST,relative)),'Uncompressed scene master must not be shipped in dist: '+relative);
+
 for(const relative of brandLogo.BRAND_LOGO_FILES)equal(relative,piece.optimizePngBuffer(read(GAME,relative),brandLogo.BRAND_LOGO_RUNTIME_MAX_SIDE).buffer);
 
 for(const relative of [
