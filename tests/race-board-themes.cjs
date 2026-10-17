@@ -29,7 +29,7 @@ const {BOARD_RACES,BOARD_FILES,collectBoardAssetPaths}=require('../scripts/board
     }
   }
 
-  assert.deepStrictEqual([...mod.BOARD_PIECE_RACES],['humans','orcs','undead','angels','fae'],'only the five complete race sets switch board art');
+  assert.deepStrictEqual([...mod.BOARD_PIECE_RACES],[...mod.RACE_TAGS],'all 14 race sets must use the new board art');
   for(const race of mod.BOARD_PIECE_RACES)for(const color of ['w','b'])for(const pieceType of mod.PIECE_TYPES){
     const src=mod.boardRacePiecePath(race,pieceType,color);
     const full=path.join(game,src);
@@ -37,9 +37,9 @@ const {BOARD_RACES,BOARD_FILES,collectBoardAssetPaths}=require('../scripts/board
     const data=fs.readFileSync(full),png=parsePng(data);
     assert(png.width===256&&png.height===256&&data.length<=320*1024,`board sprite over budget: ${src}`);
   }
-  assert.strictEqual(mod.racePiecePath('orcs','king','w'),'assets/races/orcs/pieces/king.png','Arena catalog must retain preexisting orc art');
-  assert.strictEqual(mod.racePiecePath('humans','king','w'),'assets/races/humans/pieces/white/king.png','Arena catalog must retain preexisting human art');
-  assert.strictEqual(mod.boardRacePiecePath('elves','pawn','b'),mod.racePiecePath('elves','pawn','b'),'unfinished races must retain legacy board art');
+  assert.strictEqual(mod.racePiecePath('orcs','king','w'),mod.boardRacePiecePath('orcs','king','w'),'Arena squads now use new orc chess art');
+  assert.strictEqual(mod.racePiecePath('humans','king','w'),mod.boardRacePiecePath('humans','king','w'),'Arena squads now use new human chess art');
+  assert.strictEqual(mod.boardRacePiecePath('elves','pawn','b'),'assets/races/elves/pieces/board/black/pawn.png','new elven set must use color-specific chess art');
   assert.strictEqual(mod.boardPieceArtForCharacter({pieceType:'rook'},'b'),mod.boardRacePiecePath('humans','rook','b'),'named heroes use new generic chess art until an individual boardPieceArt is supplied');
 
   const properties={};
@@ -68,5 +68,5 @@ const {BOARD_RACES,BOARD_FILES,collectBoardAssetPaths}=require('../scripts/board
   assert.ok(source.includes('linear-gradient(145deg,#c3b995,#aa9f7c)'),'light cell must retain neutral fallback');
   assert.ok(source.includes('linear-gradient(145deg,#4d585d,#374349)'),'dark cell must retain neutral fallback');
 
-  console.log('Race board themes: PASS — 28 board tiles plus 60 PNG board sprites; unchanged Arena catalog paths and incomplete-race fallback');
+  console.log('Race board themes: PASS — 28 board tiles plus 168 PNG board sprites; all Arena catalog sprites unified');
 })().catch((error)=>{console.error(error);process.exitCode=1;});
