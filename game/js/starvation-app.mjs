@@ -112,6 +112,7 @@ function open(run = null) {
   document.body.classList.add('starvation-active');
   window.scrollTo({ top: 0, behavior: 'auto' });
   globalThis.RPChessResources?.render?.();
+  globalThis.dispatchEvent(new CustomEvent('rpchess:starvation-shown'));
   return true;
 }
 
