@@ -5,6 +5,38 @@ async function seedEvent(page,eventId=null,runId='events-browser'){await page.ev
 (async()=>{const browser=await chromium.launch({headless:true});try{
   const page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];page.on('pageerror',e=>errors.push(String(e.stack||e)));await fresh(page);await seedEvent(page,'E001','events-browser');await page.locator('[data-roster-travel]').click();const screen=page.locator('[data-events-screen]:not([hidden])');await screen.waitFor();
   const paragraphs=page.locator('[data-events-story] p'),storyText=await page.locator('[data-events-story]').innerText();assert.strictEqual(await paragraphs.count(),2,'E001 must render its two canonical literary story paragraphs');assert(storyText.length>=450,'Event scene must preserve the extended canonical literary copy');assert(storyText.includes('«'),'literary scene must include dialogue');const bg=page.locator('[data-events-background]');await bg.waitFor();const bgSrc=await bg.getAttribute('src');assert(bgSrc&&bgSrc.includes('/assets/events/register-04/backgrounds/'),'Event scene must use the explicit canonical backdrop image');assert.strictEqual(await page.locator('[data-events-roster]').count(),0,'obsolete Event Roster shortcut must be absent from the runtime DOM');assert.strictEqual(await page.locator('[data-events-settings]').count(),0,'obsolete Event Settings shortcut must be absent from the runtime DOM');
+  // Full-catalog currency rendering audit: exercise all 2,114 choice actions,
+  // including v3 literary overlays, against the same DOM iconizer used live.
+  const resourceAudit=await page.evaluate(async()=>{
+    const [{EVENT_CATALOG},{EVENT_CONTENT_V3}]=await Promise.all([
+      import('./js/events-data.mjs'),import('./js/events/event-content-v3.mjs')
+    ]);
+    const samples=['Отдать 1 Supply','Купить 2 Supplies за 20 Gold',
+      'Потратить 3 припаса и 14 золота','Взять 5 золотых','Нужно Supplies: 2'];
+    const text=EVENT_CATALOG.flatMap(event=>event.choices.map(choice=>
+      EVENT_CONTENT_V3[event.id]?.choices?.[choice.id]?.action||choice.action));
+    text.push(...samples);
+    const root=document.createElement('div');
+    for(const value of text){const node=document.createElement('span');node.className='currency-audit';node.textContent=value;root.append(node);}
+    const iconizer=globalThis.RPChessResourceIcons;
+    if(!iconizer?.iconize)return {error:'Resource iconizer unavailable'};
+    iconizer.iconize(root);
+    const remaining=[...root.querySelectorAll('.currency-audit')].filter(node=>
+      /[+-]?\\d+\\s*(?:gold|suppl(?:y|ies)|золот(?:о|а|ых)|припас(?:ы|а|ов)?)(?![a-zа-яё])/iu.test(node.textContent)
+      ||/(?:gold|suppl(?:y|ies)|золот(?:о|а|ых)|припас(?:ы|а|ов)?)\\s*[:·]?\\s*[+-]?\\d+/iu.test(node.textContent)
+    ).map(node=>node.textContent).slice(0,12);
+    const end=[...root.querySelectorAll('.currency-audit')].slice(-samples.length);
+    return {total:text.length,remaining,
+      gold:root.querySelectorAll('.resource-inline--gold img[src*="reward_gold.png"]').length,
+      supplies:root.querySelectorAll('.resource-inline--supplies img[src*="reward_supplies.png"]').length,
+      sampleKinds:end.map(node=>[...node.querySelectorAll('.resource-inline')].map(item=>item.classList.contains('resource-inline--gold')?'gold':'supplies'))};
+  });
+  assert(!resourceAudit.error,resourceAudit.error||'');
+  assert(resourceAudit.total>=2119,'resource sweep must cover all 2114 choices plus examples');
+  assert.deepStrictEqual(resourceAudit.remaining,[],'no explicit numeric resource labels may remain in event choices');
+  assert(resourceAudit.gold>5&&resourceAudit.supplies>5,'both gold and supply icons must be present across the whole catalog');
+  assert.deepStrictEqual(resourceAudit.sampleKinds,[['supplies'],['supplies','gold'],['supplies','gold'],['gold'],['supplies']],
+    'RU/EN singular and plural, both word orders and narrative numeric amounts must become the correct icons');
   const frames=await page.evaluate(()=>({copy:Boolean(document.querySelector('.events-copy-frame')),choices:Boolean(document.querySelector('.events-choice-frame'))}));assert.deepStrictEqual(frames,{copy:true,choices:true},'consolidated Event presentation must expose canonical copy/choice frames');const count=await page.locator('[data-event-choice]').count();assert(count>=3&&count<=5);assert((await screen.innerText()).includes('%')||(await screen.innerText()).includes('ГАРАНТИРОВАННО'));assert.strictEqual(await page.locator('[data-events-outcome]:not([hidden])').count(),0,'outcome dialog must be hidden before a choice');
   const risk=page.locator('[data-event-choice]:not([disabled])').filter({hasText:'%'}).first(),choice=await risk.count()?risk:page.locator('[data-event-choice]:not([disabled])').first();await choice.click();const outcome=page.locator('[data-events-outcome]:not([hidden])');await outcome.waitFor();assert.strictEqual(await outcome.getAttribute('class'),'events-outcome-modal');assert.strictEqual(await page.locator('[data-events-choices]').isVisible(),true,'choice scene stays behind separate modal');
   const saved=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),RUN_KEY);assert(saved.currentEvent.resolved);assert(saved.currentEvent.choiceId);assert(Number.isInteger(saved.currentEvent.roll));assert.strictEqual(saved.ended,false);const snapshot=JSON.stringify({gold:saved.gold,supplies:saved.supplies,roster:saved.roster,currentEvent:saved.currentEvent});
