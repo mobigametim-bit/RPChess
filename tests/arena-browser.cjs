@@ -147,7 +147,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert.strictEqual(await page.locator('.arena-nav-actions button').first().getAttribute('data-arena-rivals'),'','opponents button must precede main menu');
     assert(await page.locator('[data-arena-battle-title]').isVisible() && await page.locator('[data-arena-moves]').isVisible(),'battle summary and move journal must both be visible');
     const railBackground=await page.locator('.arena-shell').evaluate(element=>getComputedStyle(element).backgroundImage);
-    assert(railBackground.includes('ashen_dominion/boss_arena.jpg'),'Arena combat should use the repository arena backdrop');
+    assert(railBackground.includes('ashen_dominion/boss_arena.webp'),'Arena combat should use the repository arena backdrop');
     await page.setViewportSize({width:1363,height:936});
     const midNav=await page.evaluate(()=>({right:document.querySelector('[data-arena-back]').getBoundingClientRect().right,board:document.querySelector('[data-arena-board]').getBoundingClientRect().left}));
     assert(midNav.right<=midNav.board,'main menu button must fit in the rail at a nearly square landscape size');
