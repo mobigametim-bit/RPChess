@@ -213,7 +213,7 @@ function assertBackgroundAssetBudget(root, {
   }
   if (totalBytes > maxTotalBytes) failures.push(`aggregate ${formatBytes(totalBytes)} exceeds ${formatBytes(maxTotalBytes)}`);
   if (failures.length) throw new Error(`[background asset budget] runtime backgrounds exceed budget:\n${failures.join('\n')}`);
-  return { count: contract.count, totalBytes };
+  return { count: collectBackgroundAssetPaths(root).length, totalBytes };
 }
 
 function optimizeBackgroundAssets(root, { write = false, channelBits = BACKGROUND_RUNTIME_CHANNEL_BITS } = {}) {
