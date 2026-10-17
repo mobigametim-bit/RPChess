@@ -193,7 +193,7 @@ async function assertDecoratedBackdrops(page, label) {
   assert.strictEqual(cards.length, 3, `${label}: Travel must render three cards`);
   for (const card of cards) {
     assert(card.path, `${label}: every Travel card must receive its route backdrop on first render`);
-    assert(!card.path.includes('scene_campaign.jpg'), `${label}: route card must not remain on shared campaign fallback`);
+    assert(!card.path.includes('scene_campaign.webp'), `${label}: route card must not remain on shared campaign fallback`);
     assert(card.css.includes(card.path), `${label}: route backdrop must be applied before the Travel screen is shown`);
   }
 }
