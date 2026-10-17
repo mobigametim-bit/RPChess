@@ -7,7 +7,7 @@ import { ARTIFACTS, artifactById } from './artifact-core.mjs';
 import { RECRUIT_LIBRARY, recruitProfile } from './settlement-core.mjs';
 
 export const CARAVAN_ICON = 'assets/doctrines/cavalry/emblem.png';
-export const CARAVAN_BACKGROUND = 'assets/events/register-04/sky_khanate/storm_over_caravan.png';
+export const CARAVAN_BACKGROUND = 'assets/events/register-04/sky_khanate/storm_over_caravan.webp';
 const TYPES = { r:'rook', n:'knight', b:'bishop', q:'queen', k:'king', p:'pawn' };
 
 export function createCaravanState(run, choice) {
