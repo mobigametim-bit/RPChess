@@ -1,33 +1,33 @@
-# Color-specific race chess pieces — first five sets (acceptance)
+# Color-specific race chess pieces — all 14 sets (PR #160)
 
-Status: feature-branch implementation; pending CI and manual playtest. Do not merge into main before user approval.
+Status: implemented in the PR160 acceptance branch, awaiting full QA and user's manual approval. No merge to main until accepted.
 
-## Source and delivery
-- Source: the user's corrected ZIP `архив_часть_фигур_1_1.zip`.
-- Source variant for Humans: `white2` and `black2` only.
-- Optimized runtime PNG: 256×256 RGBA, 320 KiB max per file.
-- Five complete races: humans, orcs, undead, angels, fae.
-- Each race has 6 chess types × two canonical colors (white / black), 60 PNG total.
-- Files: `game/assets/races/<race>/pieces/board/<white|black>/<pawn|knight|bishop|rook|queen|king>.png`.
+## Source and size
 
-## UX ownership / do not regress
-- **Arena selection screens for rivals and available squads keep their current images.** The existing `racePiecePath()` and `OPPONENTS[].art` remain unchanged.
-- `boardRacePiecePath()` is used only to render chess-board pieces; no replacements of existing `pieces/*.png` or `pieces/white|black/*.png`.
-- New board pieces: no oversized technical glyph in the corner, no decorative white/black aura. Retain check highlight, selected/last-move states, possible moves, artifacts and gameplay overlays.
-- Legacy races (the other nine) continue displaying their old board art with the existing technical glyph / aura fallback until their complete color sets arrive.
-- Named characters retain their names, identities and portraits on roster/preparation cards; on the board they temporarily use the readable race chess sprite. Future `boardPieceArt` overrides take precedence when individual sprite art is prepared.
-- Applied to Arena board, Journey Skirmish/Battle/Caravan boards, standard Classic chess and Puzzle boards.
-- Chess rules, game balance, saves, and purchases are not altered.
+- First 5 races (humans, orcs, undead, angels, fae): approved `архив_часть_фигур_1_1.zip`; humans use the corrected `white2`/`black2` source.
+- Additional 9 races: `архив_часть_фигур_2.zip` (elves, dark_elves, dwarves, demons, dragonborn, beastfolk, constructs, animals, goblins).
+- Each race has white and black versions of pawn, knight, bishop, rook, queen, and king: **14 × 2 × 6 = 168 independent PNG sprites**.
+- Each delivered runtime file is **256×256 RGBA PNG**, no more than 320 KiB.
+- Canonical paths: `game/assets/races/<race>/pieces/board/<white|black>/<pawn|knight|bishop|rook|queen|king>.png`.
+- The supplementary source sprites varied from 1024×1024 to 1254×1254, with one non-square original. The converted images have transparent 256px canvases and consistent centering.
+- An additive PR-only GitHub Actions importer verified a checksum and all 108 supplementary files before committing separate PNG files. The temporary ZIP transport segments are removed from the final import commit.
 
-## Acceptance
-1. Arena: compare rival and squad cards against `main`; graphics must be the same.
-2. Arena match: verify new piece art for each of the five complete races when white and when black.
-3. Arena other nine races: old chess imagery and corner marker remain usable.
-4. Journey Skirmish, Battle, Caravan: check board art, animated piece moves, check highlight, artifact indicators and captures.
-5. Classic and Puzzle boards: readable human white/black pieces without glyph overlays.
-6. Mobile landscape and desktop: confirm board silhouettes remain distinguishable.
-7. Verify 60 files inside production `dist` and old Arena catalog PNGs remain present.
+## Updated Arena decision (supersedes original first-five plan)
 
+- **Do not retain the old chess piece art in Arena selection screens.** Squad king thumbnails and all 84 opponent thumbnails, including the opponent-details dialog, now use the matching new race sprite.
+- `racePiecePath()` and `boardRacePiecePath()` resolve to the same canonical 256px sprite for all 14 races and white/black colors. The `mixed` fallback safely uses humans.
+- This applies to Arena matches, Journey Skirmish/Battle/Caravan, Classic chess and Puzzles. All race sets are complete; no obsolete race fallback remains.
+- Chess-board decorative color auras and corner role glyphs remain suppressed for the new art. Functional check indicators, selected squares, last move, legal-move hints, artifact overlays and animations remain intact.
+- Character names, portraits, biographies, purchases, saves, core chess rules and game balance remain unchanged.
+
+## Manual acceptance
+
+1. Arena selection: inspect the new king art on all 14 squad cards, plus all 84 opponent cards and dialog portraits. It should be the same artwork family as the board.
+2. Arena matches: inspect all 14 race themes with white and black chess sprites.
+3. Journey Battle, Skirmish, Caravan: inspect sprite readability, captures, animation, check, legal moves and artifacts.
+4. Classic/Puzzles: the new human sprites appear without white/black decorative aura or role markers.
+5. Desktop and mobile landscape: check sprite outlines, contrast and that all assets load without placeholders.
+6. Verify 168 dedicated files in the production build and successful browser CI before requesting a merge.
 
 ## Follow-up polish (2026-10-16): automatic deployment and asset loading
 
