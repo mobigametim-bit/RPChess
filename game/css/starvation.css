@@ -3,7 +3,7 @@
   padding: clamp(16px, 2.4vw, 38px);
   background:
     linear-gradient(90deg, rgba(3, 7, 15, .56), rgba(18, 8, 11, .28) 52%, rgba(3, 7, 15, .45)),
-    url('../generated_assets/scene_defeat.jpg') center / cover fixed no-repeat;
+    url('../generated_assets/scene_defeat.webp') center / cover fixed no-repeat;
 }
 
 .starvation-shell {
