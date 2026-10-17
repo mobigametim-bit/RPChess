@@ -1,4 +1,4 @@
-name: Encode remaining 59 scene and arena backgrounds to WebP
+name: Compress remaining 59 scene backgrounds with small-JPEG fallback
 on:
   push:
     branches: [feature/race-chess-piece-art-20261016]
@@ -18,7 +18,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg
-      - name: Preserve masters and create exactly 59 WebP companions
+      - name: Preserve JPEG masters and encode 58 WebP scenes plus one tiny JPG
         run: |
           node scripts/encode-remaining-backgrounds-webp.cjs
           node scripts/encode-remaining-backgrounds-webp.cjs --verify
@@ -33,7 +33,7 @@ jobs:
           if git diff --cached --quiet; then
             echo 'Already converted'
           else
-            git commit -m 'assets: add 59 optimized WebP scene and arena backgrounds'
+            git commit -m 'assets: add optimized WebP scenes, retain 11 KiB JPEG'
             git fetch origin feature/race-chess-piece-art-20261016
             git rebase FETCH_HEAD
             git push origin HEAD:feature/race-chess-piece-art-20261016
@@ -42,7 +42,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: rpchess-59-backgrounds-webp-q55
+          name: rpchess-remaining-scene-backgrounds-q55
           path: |
             game/generated_assets/*.webp
             game/assets/regions/**/*.webp
