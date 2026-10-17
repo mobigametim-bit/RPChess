@@ -37,12 +37,21 @@ async function assertOneScreen(page,label){
     const page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];
     page.on('pageerror',e=>errors.push(String(e.stack||e)));
     await fresh(page);
-    assert.strictEqual(await page.locator('[data-roster-card]').count(),6);
-    assert.strictEqual(await page.locator('[data-run-king="true"]').count(),1);
+    assert.strictEqual(await page.locator('[data-roster-slot]').count(),16,'two ranks of eight squares');
+    assert.strictEqual(await page.locator('[data-roster-board] [data-roster-piece]').count(),6);
     assert((await page.locator('[data-roster-detail]').innerText()).includes('Хранитель Клятвы'));
-    await page.locator('[data-roster-card="hero.aldric_wall"]').click();
+    // First tap selects the hero, second tap chooses an empty destination.
+    const aldricSquare=await page.locator('[data-roster-slot]:has([data-roster-piece="hero.aldric_wall"])').getAttribute('data-roster-slot');
+    await page.locator(`[data-roster-slot="${aldricSquare}"]`).click();
     assert((await page.locator('[data-roster-detail]').innerText()).includes('Альдрик Стена'));
     assert.strictEqual(await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).selectedCharacterId,RUN_KEY),'hero.aldric_wall');
+    await page.locator('[data-roster-slot="h2"]').click();
+    assert.strictEqual(await page.locator('[data-roster-slot="h2"] [data-roster-piece="hero.aldric_wall"]').count(),1,'tap move changes formation');
+    await page.locator('[data-roster-slot]:has([data-roster-piece="hero.mara_chain"])').dragTo(page.locator('[data-roster-reserve]'));
+    assert.strictEqual(await page.locator('[data-roster-group="reserve"] [data-roster-piece="hero.mara_chain"]').count(),1,'drag places a hero in reserves');
+    const savedFormation=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).rosterFormation,RUN_KEY);
+    assert.strictEqual(savedFormation.squares.h2,'hero.aldric_wall');
+    assert(savedFormation.reserveIds.includes('hero.mara_chain'));
     await assertOneScreen(page,'desktop Roster');
 
     await page.locator('[data-roster-travel]').click();
@@ -52,7 +61,8 @@ async function assertOneScreen(page,label){
     await page.locator('[data-travel-type="skirmish"]').first().click();
     await waitForVisible(page,'[data-artifact-choice-modal]','Skirmish artifact choice');
     assert.strictEqual(await page.locator('[data-skirmish-screen]').isHidden(),true,'no Skirmish preparation step');
-    assert.strictEqual((await page.evaluate(()=>globalThis.RPChessSkirmish.selectedIds)).length,6);
+    assert.strictEqual((await page.evaluate(()=>globalThis.RPChessSkirmish.selectedIds)).length,5,'Skirmish respects player reserves');
+    assert.strictEqual((await page.evaluate(()=>globalThis.RPChessSkirmish.selectedIds.includes('hero.mara_chain'))),false);
 
     await page.evaluate(()=>{
       document.querySelector('[data-artifact-choice-modal]')?.remove();
@@ -67,6 +77,8 @@ async function assertOneScreen(page,label){
     await reloadedMenu.locator('[data-continue-run]').click();
     await waitForVisible(page,'[data-roster-screen]:not([hidden])','Roster after Continue');
     assert((await page.locator('[data-roster-detail]').innerText()).includes('Альдрик Стена'));
+    assert.strictEqual(await page.locator('[data-roster-slot="h2"] [data-roster-piece="hero.aldric_wall"]').count(),1,'formation survives save/reload');
+    assert.strictEqual(await page.locator('[data-roster-group="reserve"] [data-roster-piece="hero.mara_chain"]').count(),1,'reserves survive save/reload');
 
     const serialized=await page.evaluate(k=>localStorage.getItem(k),RUN_KEY);
     const mobile=await browser.newPage({viewport:{width:844,height:390}}),mobileErrors=[];
