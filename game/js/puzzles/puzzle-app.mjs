@@ -57,6 +57,20 @@ function ensureCss() {
   ensureStylesheet('data-puzzles-compact-css', 'css/puzzles-compact.css?v=20260909-owner1');
 }
 
+// The Puzzle screen must not be presented before its owner CSS is usable.
+// Fast lazy-loaded puzzle shards can otherwise win the race against CSS network loading.
+async function ensurePuzzleStylesReady() {
+  ensureCss();
+  await Promise.all(['data-puzzles-css','data-puzzles-compact-css'].map(marker => {
+    const link = document.querySelector(`link[${marker}]`);
+    if (!link || link.sheet) return Promise.resolve();
+    return new Promise(resolve => {
+      link.addEventListener('load', resolve, { once:true });
+      link.addEventListener('error', resolve, { once:true });
+    });
+  }));
+}
+
 function ensureScreen() {
   if (screen) return screen;
   ensureCss();
@@ -524,6 +538,7 @@ async function openPuzzle(event) {
   selectedMoves = [];
   locked = false;
   ensureScreen();
+  await ensurePuzzleStylesReady();
   showPuzzle();
   renderAll();
   void resumeSession().catch((error) => {
