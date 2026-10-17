@@ -88,6 +88,29 @@ async function clickMove(page,from,to,promotion=null){
   const settledSnapshot=JSON.stringify({gold:solved.gold,currentPuzzle:solved.currentPuzzle,lastPuzzle:solved.lastPuzzle,puzzleHistory:solved.puzzleHistory});await page.reload({waitUntil:'networkidle'});await page.locator('[data-continue-run]').click();await page.locator('[data-roster-screen]:not([hidden])').waitFor();await page.locator('[data-roster-travel]').click();await page.locator('[data-puzzle-outcome]:not([hidden])').waitFor();assert.strictEqual(await page.locator('[data-puzzle-roster]').count(),0,'obsolete Puzzle Roster shortcut must remain absent after reload');const settledReload=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),RUN_KEY);assert.strictEqual(JSON.stringify({gold:settledReload.gold,currentPuzzle:settledReload.currentPuzzle,lastPuzzle:settledReload.lastPuzzle,puzzleHistory:settledReload.puzzleHistory}),settledSnapshot,'reload after solved Puzzle must not duplicate Gold or lose history');await page.locator('[data-puzzle-continue]').click();await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();const continued=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),RUN_KEY);assert.strictEqual(continued.currentPuzzle,null);assert.strictEqual(continued.activeTravelChoice,null);assert(Array.isArray(continued.currentTravelChoices)&&continued.currentTravelChoices.length===3);
   await page.evaluate(({k,route})=>{const r=JSON.parse(localStorage.getItem(k));r.currentTravelChoices=null;r.activeTravelChoice={...route,id:'manual.puzzle.mate1.second',seed:'manual-puzzle-mate1-second'};r.currentPuzzle=null;localStorage.setItem(k,JSON.stringify(r));dispatchEvent(new CustomEvent('rpchess:puzzle-open',{detail:{choice:r.activeTravelChoice}}));},{k:RUN_KEY,route:mate1Route});await page.locator('[data-puzzle-screen]:not([hidden])').waitFor();const secondPuzzle=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),RUN_KEY);assert.notStrictEqual(secondPuzzle.currentPuzzle.puzzleId,firstPuzzleId,'successive Puzzle routes must not repeat a task before catalog exhaustion');assert.strictEqual(new Set(secondPuzzle.puzzleHistory).size,2);
 
+  // Regression: history must retain newly curated shard IDs and other-star IDs,
+  // even though neither belongs to the original embedded 11,498 catalog.
+  const previousShardId=await page.evaluate(async k=>{
+    const {loadPuzzleStar}=await import('./js/puzzles/puzzle-catalog-loader.mjs');
+    const [first,third]=await Promise.all([loadPuzzleStar(1),loadPuzzleStar(3)]);
+    const shard=first.find(p=>p.id==='puzzle.04Vkq');
+    const other=third.find(p=>p.id==='puzzle.001Wz');
+    if(!shard||!other)throw new Error('Lichess expanded-shard regression fixtures unavailable');
+    const r=JSON.parse(localStorage.getItem(k));
+    const prior=[...new Set([...(r.puzzleHistory||[]),shard.id,other.id])];
+    r.puzzleHistory=prior;
+    r.currentPuzzle=null;
+    r.currentTravelChoices=null;
+    r.activeTravelChoice={...r.activeTravelChoice,id:'manual.puzzle.shards.history',seed:'puzzle-shards-history'};
+    localStorage.setItem(k,JSON.stringify(r));
+    dispatchEvent(new CustomEvent('rpchess:puzzle-open',{detail:{choice:r.activeTravelChoice}}));
+    return {newId:shard.id,oldOtherStarId:other.id,prior};
+  },RUN_KEY);
+  await page.waitForFunction(k=>JSON.parse(localStorage.getItem(k))?.currentPuzzle?.routeId==='manual.puzzle.shards.history',RUN_KEY);
+  const shardHistory=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),RUN_KEY);
+  assert(shardHistory.puzzleHistory.includes(previousShardId.newId)&&shardHistory.puzzleHistory.includes(previousShardId.oldOtherStarId),'new shard and cross-star puzzle IDs must survive next route selection');
+  assert.notStrictEqual(shardHistory.currentPuzzle.puzzleId,previousShardId.newId,'a previously seen expanded puzzle cannot repeat before its star pool is exhausted');
+
   const resume=await browser.newPage({viewport:{width:1440,height:900}}),resumeErrors=[];resume.on('pageerror',e=>resumeErrors.push(String(e.stack||e)));await fresh(resume,'puzzles-browser-resume');
   const pendingReply={routeId:mate2Route.id,puzzleId:'puzzle.001Wz',stars:3,week:17,currentFen:'3R2k1/5ppp/r1p5/p1n1rP2/8/2P2N1P/2P3P1/6K1 b - - 2 22',solutionIndex:1,errors:0,resolved:false,result:null,goldReward:0,rewardSettled:false};await seedPuzzleRoute(resume,mate2Route,pendingReply);await resume.reload({waitUntil:'networkidle'});await resume.locator('[data-continue-run]').click();await resume.locator('[data-roster-screen]:not([hidden])').waitFor();await resume.locator('[data-roster-travel]').click();await resume.locator('[data-puzzle-screen]:not([hidden])').waitFor();assert.strictEqual(await resume.locator('[data-puzzle-roster]').count(),0,'obsolete Puzzle Roster shortcut must stay absent in resumed Puzzle');await resume.waitForFunction(k=>{const run=JSON.parse(localStorage.getItem(k));return run?.currentPuzzle?.solutionIndex===2;},RUN_KEY);const resumed=await resume.evaluate(k=>JSON.parse(localStorage.getItem(k)).currentPuzzle,RUN_KEY);assert.strictEqual(resumed.solutionIndex,2,'reload on opponent turn must auto-play exactly one persisted forced reply');assert.strictEqual(resumed.currentFen,'3Rr1k1/5ppp/r1p5/p1n2P2/8/2P2N1P/2P3P1/6K1 w - - 3 23');await clickMove(resume,'d8','e8');await resume.locator('[data-puzzle-outcome]:not([hidden])').waitFor();const resumedSolved=await resume.evaluate(k=>JSON.parse(localStorage.getItem(k)),RUN_KEY);assert.strictEqual(resumedSolved.currentPuzzle.result,'solved');assert.strictEqual(resumedSolved.currentPuzzle.goldReward,18);assert.strictEqual(resumedSolved.currentPuzzle.rewardSettled,true);
 
