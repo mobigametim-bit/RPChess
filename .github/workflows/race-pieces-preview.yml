@@ -73,6 +73,15 @@ jobs:
           test -s dist/js/puzzles/puzzle-theme-catalog.mjs
           test -s dist/js/puzzles/extra-star-01.mjs
           test -s dist/js/puzzles/extra-star-12.mjs
+          # New scene compression: production publishes WebP, not the JPEG masters.
+          for name in splash_poster scene_battle scene_campaign scene_defeat scene_reward scene_shop scene_victory; do
+            test -s "dist/generated_assets/$name.webp"
+            test ! -e "dist/generated_assets/$name.jpg"
+          done
+          test -s dist/generated_assets/scene_training_ui.jpg
+          test ! -e dist/generated_assets/scene_training_ui.webp
+          test -s dist/assets/regions/ashen_dominion/boss_arena.webp
+          test ! -e dist/assets/regions/ashen_dominion/boss_arena.jpg
           test -s dist/assets/events/register-04/backgrounds/generic/forest_crossroad.webp
           test "$(find dist/assets/events/register-04 -type f -name '*.webp' | wc -l)" -eq 37
           test "$(find dist/assets/events/register-04 -type f -name '*.png' | wc -l)" -eq 0
@@ -161,6 +170,8 @@ jobs:
                grep -q 'boardRacePiecePath' /tmp/rpchess-piece-runtime.js &&
               curl -fsS --max-time 20 "$base/js/puzzles/extra-star-01.mjs" -o /tmp/rpchess-lichess-star1.mjs &&
               grep -q 'EXTRA_PUZZLES' /tmp/rpchess-lichess-star1.mjs &&
+              curl -fsS --max-time 20 "$base/generated_assets/splash_poster.webp" -o /tmp/rpchess-optimized-scene.webp &&
+              test "$(head -c4 /tmp/rpchess-optimized-scene.webp)" = 'RIFF' &&
                curl -fsS --max-time 15 "$base/assets/races/humans/pieces/board/white/king.png" -o /tmp/rpchess-piece-new.png &&
                curl -fsS --max-time 15 "$base/assets/races/orcs/pieces/board/black/knight.png" -o /tmp/rpchess-piece-orc-new.png &&
                curl -fsS --max-time 15 "$base/assets/races/elves/pieces/board/white/king.png" -o /tmp/rpchess-piece-catalog-original.png &&
