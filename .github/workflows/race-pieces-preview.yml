@@ -46,6 +46,15 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Build playable preview
         run: npm run build
+      - name: Install Chromium for targeted acceptance
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+      - name: Verify Roster, Skirmish and named combat auras
+        env:
+          RPCHESS_GATE_PREFIX: /RPChess
+          RPCHESS_BROWSER_TEST: roster-browser.cjs,skirmish-browser.cjs,combat-side-colors-browser.cjs
+        run: npm run test:browser
       - name: Verify all 168 color-specific race chess pieces and unified Arena art
         run: |
           test -f dist/index.html
