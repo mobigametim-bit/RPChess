@@ -157,6 +157,8 @@ jobs:
                grep -q 'data-game-loading' /tmp/rpchess-piece-preview.html &&
                curl -fsS --max-time 15 "$base/js/race-assets.mjs" -o /tmp/rpchess-piece-runtime.js &&
                grep -q 'boardRacePiecePath' /tmp/rpchess-piece-runtime.js &&
+              curl -fsS --max-time 20 "$base/js/puzzles/extra-star-01.mjs" -o /tmp/rpchess-lichess-star1.mjs &&
+              grep -q 'EXTRA_PUZZLES' /tmp/rpchess-lichess-star1.mjs &&
                curl -fsS --max-time 15 "$base/assets/races/humans/pieces/board/white/king.png" -o /tmp/rpchess-piece-new.png &&
                curl -fsS --max-time 15 "$base/assets/races/orcs/pieces/board/black/knight.png" -o /tmp/rpchess-piece-orc-new.png &&
                curl -fsS --max-time 15 "$base/assets/races/elves/pieces/board/white/king.png" -o /tmp/rpchess-piece-catalog-original.png &&
