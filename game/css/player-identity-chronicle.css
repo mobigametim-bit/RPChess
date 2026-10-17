@@ -301,7 +301,7 @@
 /* Ultra-short landscape (e.g. VK 844×340): keep the entire name/commander
    dialog, including Continue, inside the visible panel without scrolling.
    The normal desktop/tablet gold layout remains unchanged. */
-@media (orientation:landscape) and (max-height:370px){
+@media (orientation:landscape) and (max-height:420px){
   .identity-modal .identity-panel{padding:5px 11px!important}
   .identity-modal .reboot-modal__header{padding-bottom:2px}
   .identity-modal .reboot-modal__header h2{font-size:25px}
