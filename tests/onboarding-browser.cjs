@@ -2,7 +2,7 @@ const assert = require('assert');
 const { chromium } = require('playwright');
 
 const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
-const HINTS = ['identity','roster','travel','skirmishPrep','skirmishChess','battlePrep','battleChess','event','settlement','puzzle'];
+const HINTS = ["identity","roster","travel","artifact","skirmishChess","battleChess","combatAftermath","event","settlement","puzzle","caravanChess","caravanReward","starvation","runEnd","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess","arenaResult"];
 const TUTORIAL_KEY = 'rpchess.reboot.v1.tutorial';
 
 async function setLanguage(page, language) {
@@ -85,7 +85,7 @@ async function audit(browser, { width, height, language, mobile = false }) {
 
     const state = await page.evaluate((key) => JSON.parse(localStorage.getItem(key) || 'null'), TUTORIAL_KEY);
     assert(state?.activated, `${label}: tutorial must remain activated`);
-    assert.deepStrictEqual(Object.keys(state.dismissed).sort(), [...HINTS].sort(), `${label}: dismissed state must contain exactly the ten approved hints`);
+    assert.deepStrictEqual(Object.keys(state.dismissed).sort(), [...HINTS].sort(), `${label}: dismissed state must contain exactly the twenty approved hints`);
     const repeated = await page.evaluate(async () => {
       const onboarding = await globalThis.RPChessOnboardingReady;
       return onboarding.showHint('travel');
