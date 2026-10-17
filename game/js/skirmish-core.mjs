@@ -2,6 +2,7 @@ import { PIECE_VALUES } from './roster-data.mjs';
 import { MAX_ENCOUNTER_STARS, clampStars, difficultyForStars } from './encounter-difficulty.mjs';
 import { combatTheme, oppositeColor } from './race-assets.mjs';
 import { generateSkirmishObstacles } from './skirmish-obstacles.mjs';
+import { placementForColor } from './roster-formation-core.mjs';
 
 const MIN_SKIRMISH_PIECES=2,MAX_SKIRMISH_PIECES=16,MAX_SKIRMISH_POINTS=39,TYPE_CODE=Object.freeze({pawn:'p',knight:'n',bishop:'b',rook:'r',queen:'q',king:'k'}),CODE_TYPE=Object.freeze({p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'}),FILES='abcdefgh';
 const ENCOUNTER_TIERS=Object.freeze(Object.fromEntries(Array.from({length:MAX_ENCOUNTER_STARS},(_,i)=>{const stars=i+1,d=difficultyForStars(stars);const low=Math.max(4,Math.min(39,Math.round(4+stars*2.15))),high=Math.max(low,Math.min(39,low+7));return[stars,Object.freeze({label:`${d.label} · дорожный отряд`,stars,threat:`${low}–${high}`,elo:d.elo,tactic:d.tactic})];})));
@@ -57,15 +58,37 @@ function automaticCombatSelection(roster,seed='rpchess-auto-skirmish'){
 function defaultCombatSelection(roster){const eligible=(roster||[]).filter(combatEligible),king=eligible.find((c)=>c.isRunKing);if(!king)return[];const selected=[king.id];let points=0;for(const c of eligible){if(c.id===king.id)continue;const cost=PIECE_VALUES[c.pieceType]??c.commandCost??0;if(selected.length>=MAX_SKIRMISH_PIECES||points+cost>MAX_SKIRMISH_POINTS)continue;selected.push(c.id);points+=cost;}return selected;}
 
 function startingSquares(color){const home=color==='w'?'1':'8',front=color==='w'?'2':'7';return{home:[...FILES].map((f)=>`${f}${home}`),front:[...FILES].map((f)=>`${f}${front}`)};}
-function placeArmy(army,color,{seed='rpchess-formation'}={}){
-  const {home,front}=startingSquares(color),occupied=new Set(),placements=[];
+function placeArmy(army,color,{seed='rpchess-formation',preferredSquares=null}={}){
+  const {home,front}=startingSquares(color),allowed=new Set([...home,...front]);
+  const occupied=new Set(),placements=[];
   const pawns=army.filter((m)=>(m.pieceType||CODE_TYPE[m.type]||m.type)==='pawn');
   const others=army.filter((m)=>(m.pieceType||CODE_TYPE[m.type]||m.type)!=='pawn');
   if(pawns.length>front.length||army.length>16)throw new Error('Skirmish army does not fit into two starting ranks');
-  const pawnSquares=shuffle(front,`${seed}:${color}:pawns`);
-  pawns.forEach((member,index)=>{const square=pawnSquares[index],type='pawn';occupied.add(square);placements.push({id:member.id||null,name:member.name||null,pieceType:type,type:TYPE_CODE[type],color,square});});
-  const remaining=shuffle([...home,...front].filter((sq)=>!occupied.has(sq)),`${seed}:${color}:others`);
-  others.forEach((member,index)=>{const square=remaining[index];if(!square)throw new Error('Skirmish army does not fit into two starting ranks');const type=member.pieceType||CODE_TYPE[member.type]||member.type;occupied.add(square);placements.push({id:member.id||null,name:member.name||null,pieceType:type,type:TYPE_CODE[type]||member.type,color,square});});
+  const place=(member,square)=>{
+    const type=member.pieceType||CODE_TYPE[member.type]||member.type;
+    occupied.add(square);
+    placements.push({id:member.id||null,name:member.name||null,pieceType:type,type:TYPE_CODE[type]||member.type,color,square});
+  };
+  const preferences=preferredSquares&&typeof preferredSquares==='object'?preferredSquares:null;
+  if(preferences){
+    const selectedById=new Map(army.filter(m=>m.id).map(m=>[m.id,m]));
+    for(const [whiteSquare,id] of Object.entries(preferences)){
+      const member=selectedById.get(id),square=placementForColor(whiteSquare,color);
+      if(!member||!square||!allowed.has(square)||occupied.has(square))continue;
+      place(member,square);
+      selectedById.delete(id);
+    }
+  }
+  const remainingPawns=pawns.filter(member=>!placements.some(piece=>piece.id===member.id));
+  const pawnSquares=shuffle(front.filter(square=>!occupied.has(square)),`${seed}:${color}:pawns`);
+  // Unassigned pawns normally use rank 2/7; if the player has manually filled
+  // that row with other heroes, any free home square is a valid skirmish slot.
+  const extraPawnSquares=shuffle(home.filter(square=>!occupied.has(square)),`${seed}:${color}:pawns-home`);
+  remainingPawns.forEach((member,index)=>{const square=[...pawnSquares,...extraPawnSquares][index];if(!square)throw new Error('Skirmish pawn slots exhausted');place(member,square);});
+  const remaining=shuffle([...home,...front].filter(square=>!occupied.has(square)),`${seed}:${color}:others`);
+  others.filter(member=>!placements.some(piece=>piece.id===member.id)).forEach((member,index)=>{
+    const square=remaining[index];if(!square)throw new Error('Skirmish army does not fit into two starting ranks');place(member,square);
+  });
   return placements;
 }
 function fenFromPlacements(placements,turn='w'){const board=new Map(placements.map((p)=>[p.square,p])),ranks=[];for(let rank=8;rank>=1;rank--){let row='',empty=0;for(const file of FILES){const p=board.get(`${file}${rank}`);if(!p){empty++;continue;}if(empty){row+=String(empty);empty=0;}const code=TYPE_CODE[p.pieceType]||p.type;row+=p.color==='w'?code.toUpperCase():code.toLowerCase();}if(empty)row+=String(empty);ranks.push(row);}return`${ranks.join('/')} ${turn} - - 0 1`;}
@@ -80,10 +103,10 @@ function generateEnemyArmy({playerPoints=0,playerCount=1,encounter}={}){
   return{army,points,target};
 }
 
-function createBattlePlan({roster,selectedIds,encounter}={}){
+function createBattlePlan({roster,selectedIds,encounter,formation=null}={}){
   const validation=validateSelection(roster,selectedIds);if(!validation.ok)throw new Error(`Invalid Skirmish selection: ${validation.reason}`);
   const resolved=encounter||createEncounter(),playerColor=resolved.playerColor==='b'?'b':'w',enemyColor=oppositeColor(playerColor),enemy=generateEnemyArmy({playerPoints:validation.points,playerCount:validation.count,encounter:resolved});
-  const playerFormation=placeArmy(validation.members,playerColor,{seed:`${resolved.seed}:player`});
+  const playerFormation=placeArmy(validation.members,playerColor,{seed:`${resolved.seed}:player`,preferredSquares:formation});
   const enemyFormation=placeArmy(enemy.army,enemyColor,{seed:`${resolved.seed}:enemy`});
   const obstacles=generateSkirmishObstacles(resolved.seed);
   return{encounter:resolved,playerColor,enemyColor,selectedIds:validation.members.map((m)=>m.id),playerPoints:validation.points,enemyPoints:enemy.points,playerFormation,enemyFormation,obstacles,blockedSquares:obstacles.map((obstacle)=>obstacle.square),fen:fenFromPlacements([...playerFormation,...enemyFormation],'w')};
