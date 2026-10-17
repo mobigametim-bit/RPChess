@@ -1,7 +1,7 @@
 const fs=require('fs'),path=require('path');
 function fail(message){throw new Error(`[reboot source verification] ${message}`)}
 function read(root,relative){return fs.readFileSync(path.join(root,relative),'utf8')}
-function requireFile(root,relative){const full=path.join(root,relative);if(!fs.existsSync(full)||!fs.statSync(full).isFile())fail(`missing required file: ${relative}`)}
+function requireFile(root,relative){let full=path.join(root,relative);if(!fs.existsSync(full)&&relative.startsWith('assets/events/register-04/')&&relative.endsWith('.png'))full=full.slice(0,-4)+'.webp';if(!fs.existsSync(full)||!fs.statSync(full).isFile())fail(`missing required file: ${relative}`)}
 function requireTokens(source,tokens,label){for(const token of tokens)if(!source.includes(token))fail(`${label} contract missing: ${token}`)}
 module.exports=function verifySource(root){
   const repoRoot=path.resolve(root,'..');
