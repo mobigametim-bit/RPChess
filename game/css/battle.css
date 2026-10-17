@@ -7,7 +7,7 @@
   background:
     linear-gradient(180deg,rgba(3,6,9,.34),rgba(3,6,9,.64) 56%,rgba(3,6,9,.86)),
     linear-gradient(90deg,rgba(4,7,10,.56),rgba(5,8,11,.14) 58%,rgba(4,7,10,.38)),
-    var(--battle-scene-backdrop,url('../generated_assets/scene_battle.jpg')) center/cover fixed no-repeat;
+    var(--battle-scene-backdrop,url('../generated_assets/scene_battle.webp')) center/cover fixed no-repeat;
   color:#eef0f2;
 }
 .battle-screen .battle-shell{
