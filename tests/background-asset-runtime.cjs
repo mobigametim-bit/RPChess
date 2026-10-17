@@ -34,4 +34,23 @@ assert(implementation.includes('BACKGROUND_RUNTIME_WEBP_QUALITY = 55'), 'Event r
 assert(implementation.includes("'WEBP'"), 'runtime background budget must validate WebP signatures');
 assert(implementation.includes('assertBackgroundAssetBudget'), 'runtime background budget must fail closed after build transformation');
 
+
+const remaining = JSON.parse(fs.readFileSync(path.resolve(__dirname,'..','docs/assets/remaining-backgrounds-webp-report.json'),'utf8'));
+assert.strictEqual(remaining.count,59,'remaining scenery audit must include all 59 original JPEG backgrounds');
+assert.strictEqual(remaining.converted,58,'all non-tiny scene and arena backgrounds must have WebP counterparts');
+assert.strictEqual(remaining.retained,1,'already-optimized small Training JPEG is retained without size regression');
+assert(remaining.savedPercent>=60,'remaining scene compression must meaningfully reduce its payload');
+for(const item of remaining.files){
+  assert(fs.existsSync(path.resolve(__dirname,'..',item.source)),'JPEG master missing: '+item.source);
+  const deployed=path.resolve(__dirname,'..',item.runtime);
+  assert(fs.existsSync(deployed),'scene runtime image missing: '+item.runtime);
+  assert.strictEqual(fs.statSync(deployed).size,item.after,'scene background byte report drift: '+item.runtime);
+  if(item.format==='webp'){
+    const header=Buffer.alloc(12),fd=fs.openSync(deployed,'r');
+    try{fs.readSync(fd,header,0,12,0);}finally{fs.closeSync(fd);}
+    assert(header.toString('ascii',0,4)==='RIFF'&&header.toString('ascii',8,12)==='WEBP',
+      'scene runtime image has invalid WebP signature: '+item.runtime);
+  }
+}
+
 console.log(`background-asset-runtime: PASS (${source.count} masters, ${(source.totalBytes / 1024 / 1024).toFixed(2)} MiB source payload)`);
