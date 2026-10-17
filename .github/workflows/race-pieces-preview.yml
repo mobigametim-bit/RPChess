@@ -82,6 +82,7 @@ jobs:
           test ! -e dist/generated_assets/scene_training_ui.webp
           test -s dist/assets/ui/jester-patrick.webp
           grep -q 'rpchess:arena-catalog-shown' dist/js/content/onboarding.mjs
+          grep -Fq 'Promise.all([globalThis.RPChessCloudReady,globalThis.RPChessOnboardingReady])' dist/js/arena-app.mjs
           grep -q 'rpchess:caravan-rewards' dist/js/content/onboarding.mjs
           test -s dist/assets/regions/ashen_dominion/boss_arena.webp
           test ! -e dist/assets/regions/ashen_dominion/boss_arena.jpg
