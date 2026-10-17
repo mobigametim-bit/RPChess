@@ -126,7 +126,7 @@ class MemoryStorage {
   const uiSource = fs.readFileSync(path.join(game, 'localization/ui.mjs'), 'utf8');
   const css = fs.readFileSync(path.join(game, 'css/roster.css'), 'utf8');
   const foundationCss = fs.readFileSync(path.join(game, 'css/reboot-foundation.css'), 'utf8');
-  for (const token of ['data-roster-screen', 'data-continue-run', 'data-roster-detail', 'data-roster-list', 'data-roster-filter="dead"', 'data-roster-travel', 'Начать путешествие', 'js/roster-app.mjs', 'css/roster.css']) {
+  for (const token of ['data-roster-screen', 'data-continue-run', 'data-roster-detail', 'data-roster-list', 'roster-formation-ui', 'data-roster-travel', 'Начать путешествие', 'js/roster-app.mjs', 'css/roster.css', 'css/roster-formation.css']) {
     assert(html.includes(token), `Roster HTML contract missing: ${token}`);
   }
   for (const forbidden of ['Применить состав', 'Именные фигуры, которые путешествуют вместе с вашим королём', 'Обязательная фигура текущего забега.', 'Готов к участию в будущих сражениях.']) {
@@ -134,8 +134,9 @@ class MemoryStorage {
   }
   assert(app.includes("import { subscribe, t, translateLegacy } from './i18n.mjs'"),'Roster owner must render UI keys and content translations explicitly');
   for(const key of ['roster.ariaLabel','roster.filter.all','roster.journey','roster.returnSettlement','roster.commandPoints','roster.inFormation','piece.king','status.wounded'])assert(uiSource.includes(`'${key}'`),`localization registry missing Roster key: ${key}`);
-  for(const key of ['roster.ariaLabel','roster.journey','roster.commandPoints','roster.cardAria'])assert(app.includes(`t('${key}'`)||app.includes(`t(\`${key}`),`Roster owner must call t() for ${key}`);
-  assert(app.includes('t(`roster.filter.${filter}`)'),'Roster owner must derive filter labels from the keyed localization family');
+  for(const key of ['roster.ariaLabel','roster.journey','roster.commandPoints'])assert(app.includes(`t('${key}'`)||app.includes(`t(\`${key}`),`Roster owner must call t() for ${key}`);
+  assert(app.includes('renderFormationUI(rosterList,activeRun'),'Roster owner must render the real board instead of the old card/filter grid');
+  assert(!app.includes('data-roster-filter'),'removed Roster filter buttons must not survive in runtime');
   assert(app.includes('subscribe(() =>')&&app.includes('contentText(heroNoteForId(character.id) || character.description)'),'Roster language changes must rerender owner UI and translated content without relying on document mutation');
   assert(!/journeyButton\.textContent\s*=\s*['"](?:Вернуться в поселение|В путь|Загрузка пути…)/.test(app),'Roster journey labels must not be hardcoded in runtime');
   assert(!/status\.textContent\s*=\s*STATUS_LABELS\[character\.status\]/.test(app),'Roster status presentation must use localized owner labels');
@@ -154,7 +155,8 @@ class MemoryStorage {
   assert(foundationCss.includes('--ui-panel-safe-left'), 'global frameless safe-area tokens are missing');
   assert(!css.includes('ui_panel_frame.png') && !css.includes('ui_panel_wide.png'), 'Roster must never use ornate panel frame assets');
   assert(css.includes("body.roster-active #app main.roster-screen .roster-catalog"), 'accepted compact Roster catalog layout must live in roster.css');
-  assert(css.includes('grid-template-rows: minmax(145px,1fr) auto !important'), 'accepted compact Roster card height contract must live in roster.css');
+  const formationCss=fs.readFileSync(path.join(game,'css/roster-formation.css'),'utf8');
+  assert(formationCss.includes('.rfc-board')&&formationCss.includes('.rfc-section--dead'),'new Roster board and status groups need their own responsive styling');
   assert(!fs.existsSync(path.join(game,'js/content/post-pages-ui-review2.mjs')), 'superseded review2 compatibility module must stay deleted');
   assert(!fs.existsSync(path.join(game,'js/post-pages-ui-polish.mjs')), 'retired post-pages presentation shim must stay deleted');
   assert(!fs.existsSync(path.join(game,'js/presentation-bootstrap.mjs')), 'retired presentation bootstrap must stay deleted');
