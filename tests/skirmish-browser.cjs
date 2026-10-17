@@ -125,7 +125,7 @@ async function assertCompactDesktopStars(page) {
       id,
       src: document.querySelector(`[data-square="${square}"] .classic-piece`)?.getAttribute('src') || ''
     })));
-    assert(personalized.find((entry) => entry.id === 'king.oathkeeper').src.includes('assets/races/humans/pieces/board/white/king.png'));
+    assert(personalized.find((entry) => entry.id === 'king.oathkeeper').src.includes('assets/kings/oathkeeper/piece.png'),'named king keeps original visual in Skirmish');
     await page.evaluate(() => globalThis.RPChessSkirmish.finishBattle({ over: true, type: 'stalemate', winner: null }));
     await page.locator('[data-skirmish-aftermath]:not([hidden])').waitFor();
     assert.strictEqual((await page.locator('[data-aftermath-continue]').innerText()).trim(), 'Продолжить путь');
