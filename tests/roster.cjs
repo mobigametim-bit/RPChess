@@ -40,8 +40,39 @@ class MemoryStorage {
   }
 
   const storage = new MemoryStorage();
+  const formation = await import(pathToFileURL(path.join(game,'js/roster-formation-core.mjs')).href);
+  const skirmishCore = await import(pathToFileURL(path.join(game,'js/skirmish-core.mjs')).href);
   const run = persistence.createRun({ now: 1000, id: 'run-test' });
   assert.strictEqual(run.id, 'run-test');
+  const initialFormation=formation.normalizedFormation(run);
+  assert.strictEqual(Object.keys(initialFormation.squares).length,6,'initial Roster shows all six named heroes');
+  assert.strictEqual(initialFormation.squares.e1,'king.oathkeeper');
+  assert.deepStrictEqual(initialFormation.bench,[],'healthy starter party needs no reserves');
+  assert.strictEqual(formation.placementForColor('a2','b'),'a7','saved formation mirrors ranks for black');
+  const moved=formation.moveFormation(run,'hero.aldric_wall','h2');
+  assert(moved.ok,'can reposition hero on two-rank board');
+  assert.strictEqual(formation.normalizedFormation(moved.run).squares.h2,'hero.aldric_wall');
+  const benched=formation.moveFormation(moved.run,'hero.mara_chain',null);
+  assert(benched.ok,'hero can move from board to reserves');
+  assert(!formation.formationSelectedIds(benched.run).includes('hero.mara_chain'));
+  assert(formation.normalizedFormation(benched.run).bench.some(c=>c.id==='hero.mara_chain'));
+  assert.strictEqual(formation.moveFormation(benched.run,'king.oathkeeper',null).reason,'king_required','king cannot enter reserves');
+  const blackPlan=skirmishCore.createBattlePlan({
+    roster:benched.run.roster,selectedIds:formation.formationSelectedIds(benched.run),
+    formation:formation.normalizedFormation(benched.run).squares,
+    encounter:{seed:'roster-black-preview',stars:2,playerColor:'b',enemyColor:'w'}
+  });
+  assert.strictEqual(blackPlan.playerFormation.find(c=>c.id==='hero.aldric_wall').square,'h7',
+    'repositioned hero uses mirrored square in black-side Skirmish');
+  assert(!blackPlan.playerFormation.some(c=>c.id==='hero.mara_chain'),'benched hero is absent from combat');
+  const woundedFormation=formation.normalizedFormation({...benched.run,roster:benched.run.roster.map(c=>
+    c.id==='hero.aldric_wall'?{...c,status:'wounded'}:c)});
+  assert(woundedFormation.wounded.some(c=>c.id==='hero.aldric_wall'),'wounded hero leaves the field for Wounded section');
+  assert(!Object.values(woundedFormation.squares).includes('hero.aldric_wall'));
+  const savedFormation=persistence.writeRun(benched.run,new MemoryStorage(),1211);
+  assert.deepStrictEqual(formation.normalizedFormation(savedFormation).squares,formation.normalizedFormation(benched.run).squares,
+    'run persistence keeps manual formation coordinates');
+
   assert.strictEqual(run.selectedCharacterId, 'king.oathkeeper');
   assert.strictEqual(run.ended, false, 'new run must start active');
   assert.strictEqual(run.skirmishCount, 0, 'new run must start before the first Skirmish');
