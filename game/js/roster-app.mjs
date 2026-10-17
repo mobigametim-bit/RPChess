@@ -5,6 +5,8 @@ import { subscribe, t, translateLegacy } from './i18n.mjs';
 import { heroNoteForId } from './content/hero-notes.mjs';
 import { commanderTitle,commanderDescription } from './commander-portraits.mjs';
 import { currentLanguage } from './i18n.mjs';
+import { renderFormationUI } from './roster-formation-ui.mjs';
+import { normalizedFormation } from './roster-formation-core.mjs';
 
 const menu = document.querySelector('[data-reboot-foundation]');
 const classicScreen = document.querySelector('[data-classic-screen]');
@@ -115,7 +117,7 @@ function renderDetail() {
   const facts = document.createElement('div');
   facts.className = 'roster-detail__facts';
   const role = document.createElement('span');
-  role.innerHTML = `<strong>${PIECE_GLYPHS[character.pieceType] || ''} ${pieceLabel(character.pieceType)}</strong><small>${contentText(character.origin)}</small>`;
+  role.innerHTML = `<strong>${contentText(character.origin)}</strong>`;
   const cost = document.createElement('span');
   cost.innerHTML = `<small>${t('roster.commandPoints')}</small><strong>${character.commandCost}</strong>`;
   facts.append(role, cost);
@@ -208,19 +210,23 @@ function renderRoster() {
   if (!activeRun || !rosterList) return;
   applyStaticCopy();
   updateJourneyLabel();
-  renderFilters();
   renderDetail();
-  rosterList.replaceChildren();
-  const list = filteredRoster();
-  if (rosterCount) rosterCount.textContent = t('roster.inFormation', { count:activeRun.roster.filter((character) => character.status !== 'dead').length });
-  if (!list.length) {
-    const empty = document.createElement('div');
-    empty.className = 'roster-empty';
-    empty.textContent = activeFilter === 'dead' ? t('roster.empty.dead') : t('roster.empty.filtered');
-    rosterList.append(empty);
-    return;
-  }
-  for (const character of list) rosterList.append(cardFor(character));
+  const formation=normalizedFormation(activeRun);
+  if (rosterCount) rosterCount.textContent = `${formation.members.length} / 16`;
+  renderFormationUI(rosterList,activeRun,{
+    onSelect:(id)=>{
+      if (activeRun.selectedCharacterId===id) return;
+      audio()?.click?.();
+      activeRun=writeRun({...activeRun,selectedCharacterId:id});
+      renderDetail();
+      renderRoster();
+    },
+    onCommit:(next)=>{
+      audio()?.click?.();
+      activeRun=writeRun(next);
+      renderRoster();
+    }
+  });
 }
 
 function beginRun(event = null) {
