@@ -4,6 +4,8 @@ import { readRun, writeRun } from '../run-persistence.mjs';
 import { t, subscribe } from '../i18n.mjs';
 import { brandLogoSrc } from '../brand-logo.mjs';
 import { PUZZLE_CATALOG } from './puzzle-catalog.mjs';
+import { featuredPuzzleTheme } from './puzzle-theme-catalog.mjs';
+import { currentLanguage } from '../i18n.mjs';
 import {
   createPuzzleState,
   puzzleBaseGold,
@@ -193,6 +195,13 @@ function renderMeta() {
   const baseReward = puzzleBaseGold(state.stars);
   const currentReward = puzzleGoldReward(state.stars, state.errors);
   renderStaticCopy();
+  const featured=featuredPuzzleTheme(puzzle,currentLanguage());
+  const kicker=screen.querySelector('[data-puzzle-kicker]');
+  if(kicker) kicker.textContent=featured
+    ? `${t('puzzle.kicker')} · ${featured.label.toLocaleUpperCase(currentLanguage()==='en'?'en':'ru')}`
+    : t('puzzle.kicker');
+  if(featured)screen.dataset.puzzleTheme=featured.key;
+  else delete screen.dataset.puzzleTheme;
   screen.querySelector('[data-puzzle-objective]').textContent = objective;
   screen.querySelector('[data-puzzle-stars]').textContent = stars;
   screen.querySelector('[data-puzzle-compact-objective-label]').textContent = objective;
