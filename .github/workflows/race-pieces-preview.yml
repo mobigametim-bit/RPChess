@@ -53,7 +53,7 @@ jobs:
       - name: Verify Roster, Skirmish, named combat auras and all Event resource icons
         env:
           RPCHESS_GATE_PREFIX: /RPChess
-          RPCHESS_BROWSER_TEST: roster-browser.cjs,skirmish-browser.cjs,combat-side-colors-browser.cjs,events-browser.cjs
+          RPCHESS_BROWSER_TEST: roster-browser.cjs,skirmish-browser.cjs,combat-side-colors-browser.cjs,events-browser.cjs,puzzles-browser.cjs
         run: npm run test:browser
       - name: Verify all 168 color-specific race chess pieces and unified Arena art
         run: |
@@ -66,6 +66,8 @@ jobs:
           test -s dist/js/roster-formation-core.mjs
           test -s dist/js/roster-formation-ui.mjs
           test -s dist/css/roster-formation.css
+          test -s dist/js/puzzles/puzzle-theme-catalog.mjs
+          grep -Fq 'featuredPuzzleTheme(puzzle,currentLanguage())' dist/js/puzzles/puzzle-app.mjs
           grep -q 'isAllowedSquare' dist/js/roster-formation-core.mjs
           grep -q 'bishopColors' dist/js/skirmish-core.mjs
           grep -Fq 'suppl(?:y|ies)' dist/js/ux-consistency.mjs
