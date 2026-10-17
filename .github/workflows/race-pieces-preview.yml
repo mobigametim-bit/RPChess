@@ -66,6 +66,8 @@ jobs:
           test -s dist/js/roster-formation-core.mjs
           test -s dist/js/roster-formation-ui.mjs
           test -s dist/css/roster-formation.css
+          grep -q 'isAllowedSquare' dist/js/roster-formation-core.mjs
+          grep -q 'bishopColors' dist/js/skirmish-core.mjs
           grep -q 'formationSelectedIds(activeRun)' dist/js/skirmish-app.mjs
           count=$(find dist/assets/races -type f -path '*/pieces/board/*/*.png' | wc -l)
           echo "Dedicated piece PNGs: $count"
