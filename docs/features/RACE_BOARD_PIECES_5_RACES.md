@@ -18,6 +18,7 @@ Status: implemented in the PR160 acceptance branch, awaiting full QA and user's 
 - `racePiecePath()` and `boardRacePiecePath()` resolve to the same canonical 256px sprite for all 14 races and white/black colors. The `mixed` fallback safely uses humans.
 - This applies to Arena matches, Journey Skirmish/Battle/Caravan, Classic chess and Puzzles. All race sets are complete; no obsolete race fallback remains.
 - Chess-board decorative color auras and corner role glyphs remain suppressed for the new art. Functional check indicators, selected squares, last move, legal-move hints, artifact overlays and animations remain intact.
+- **Named roster heroes and the Run King are excluded from generic race-sprite replacement:** until their dedicated new board art arrives, the King uses `assets/kings/oathkeeper/piece.png`, and named companions use their own `assets/heroes/*/piece_badge.png` on Battle/Skirmish/Caravan boards. Their legacy corner role glyphs and white/black side auras remain visible (check may override with red). The identity follows moves, capture feedback and resume; explicit `boardPieceArt` still overrides the personal `pieceArt` if supplied later.
 - Character names, portraits, biographies, purchases, saves, core chess rules and game balance remain unchanged.
 
 ## Manual acceptance
