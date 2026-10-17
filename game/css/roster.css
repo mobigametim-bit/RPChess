@@ -3,7 +3,7 @@
   padding: clamp(18px, 2.6vw, 42px);
   background:
     linear-gradient(90deg, rgba(3, 7, 16, .96), rgba(6, 12, 22, .72) 52%, rgba(3, 7, 16, .92)),
-    #050a12 url('../generated_assets/splash_poster.jpg') center / cover fixed no-repeat;
+    #050a12 url('../generated_assets/splash_poster.webp') center / cover fixed no-repeat;
 }
 
 [data-roster-screen][hidden] { display: none !important; }
