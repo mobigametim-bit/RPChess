@@ -283,7 +283,7 @@ async function aiTurn(){
   if(!uci){notice='engineUnavailable';render();return;}
   commit(uci.slice(0,2),uci.slice(2,4),uci.slice(4)||null);
 }
-function enter(){state=read();engine=null;selected=null;section=Math.floor((OPPONENT_BY_ID.get(state.match?.foe)?.index??arenaSummary(state).highest)/7);notice='';visible(true);if(state.match?.phase==='result')dialogType='result';else if(state.match?.phase==='offer')dialogType='offer';else restoreMatch();render();globalThis.RPChessLoading?.requestVisibleAssets?.();if(root.querySelector('[data-arena-catalog]')?.hidden!==true&&!root.querySelector('[data-arena-battle]')?.hidden){/* Active match: avoid catalog hint. */}else globalThis.dispatchEvent(new CustomEvent('rpchess:arena-catalog-shown'));}
+function enter(){state=read();engine=null;selected=null;section=Math.floor((OPPONENT_BY_ID.get(state.match?.foe)?.index??arenaSummary(state).highest)/7);notice='';visible(true);if(state.match?.phase==='result')dialogType='result';else if(state.match?.phase==='offer')dialogType='offer';else restoreMatch();render();globalThis.RPChessLoading?.requestVisibleAssets?.();if(!root.querySelector('[data-arena-catalog]')?.hidden)globalThis.dispatchEvent(new CustomEvent('rpchess:arena-catalog-shown'));}
 function leave(){adapter.stop();searchId++;thinking=false;stopMoveAnimation();engine=null;closeDialog();visible(false);}
 root?.addEventListener('click',event=>{
   const target=event.target.closest('button');if(!target||target.disabled)return;
