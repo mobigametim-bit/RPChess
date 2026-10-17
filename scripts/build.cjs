@@ -43,6 +43,7 @@ async function main(){
     'assets/vfx/pin_ice_full.png','assets/vfx/pin_ice_partial.png','assets/vfx/aura_white.png','assets/vfx/aura_black.png','assets/vfx/aura_red.png','assets/artifacts','assets/boards/obstacles','assets/doctrines/cavalry/emblem.png','assets/doctrines/royal_court/emblem.png','fonts','music','SFX',
     ...collectBoardAssetPaths(source),...collectPieceAssetPaths(source),...collectPortraitAssetPaths(source),...collectBackgroundAssetPaths(source),...GENERATED_RUNTIME_ASSETS
   ])copy(relative);
+  for(const master of collectBackgroundAssetPaths(source))copy(master.replace(/\.png$/,'.webp'));
   const musicTracks=writeMusicCatalog();
   console.log(`Runtime music catalog: ${musicTracks.length} track${musicTracks.length===1?'':'s'}`);
   const runtime=materializeRuntimeAssets(dist);
