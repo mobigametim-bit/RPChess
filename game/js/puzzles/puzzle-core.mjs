@@ -93,11 +93,11 @@ function candidatePool(catalog, stars, type, excludedIds = []) {
   return exact;
 }
 
-function selectPuzzle(catalog, { runId = 'run', routeId = 'route', stars = 1, excludedIds = [] } = {}) {
+function selectPuzzle(catalog, { runId = 'run', routeId = 'route', stars = 1, excludedIds = [], expanded = false } = {}) {
   const resolvedStars = clampStars(stars);
   const seed = `${runId}:${routeId}:stars:${resolvedStars}`;
   const type = chooseType(resolvedStars, seed);
-  const pool = candidatePool(catalog, resolvedStars, type, excludedIds);
+  const pool = expanded ? candidatePool(catalog, resolvedStars, null, excludedIds) : candidatePool(catalog, resolvedStars, type, excludedIds);
   if (!pool.length) throw new Error(`Puzzle catalog has no tasks for difficulty ${resolvedStars}`);
   return pool[hashString(`${seed}:pick`) % pool.length];
 }
