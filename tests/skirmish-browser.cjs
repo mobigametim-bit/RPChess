@@ -161,7 +161,7 @@ async function assertCompactDesktopStars(page) {
       const piece = plan.enemyFormation.find((entry) => entry.pieceType === 'king');
       return document.querySelector(`[data-square="${piece.square}"] .classic-piece`)?.getAttribute('src') || '';
     });
-    assert(blackEnemy.includes('assets/races/elves/pieces/king.png'));
+    assert(blackEnemy.includes('assets/races/elves/pieces/board/white/king.png'),'black-side Skirmish uses new white-colored race chess king sprites for its enemy');
 
     const wounded = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     const woundedErrors = [];
