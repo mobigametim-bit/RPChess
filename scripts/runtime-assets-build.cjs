@@ -125,36 +125,21 @@ function materializeBrandLogos(root){
   const result=report(records);if(result.afterBytes>brandLogo.BRAND_LOGO_RUNTIME_MAX_TOTAL_BYTES)throw new Error(`[brand logo asset budget] aggregate ${piece.formatBytes(result.afterBytes)} exceeds ${piece.formatBytes(brandLogo.BRAND_LOGO_RUNTIME_MAX_TOTAL_BYTES)}`);return result;
 }
 function materializeBackgrounds(root){
-  const {spawnSync}=require('child_process');
-  const version=fingerprintFiles([ORCHESTRATOR_FILE,PIECE_FILE,BACKGROUND_FILE]),records=[];
+  const records=[];
   for(const relative of background.collectBackgroundAssetPaths(root)){
     const full=path.join(root,relative),source=fs.readFileSync(full),meta=piece.parsePng(source),before=source.length;
-    const target=relative.replace(/\.png$/,'.webp');
-    const cached=cachedTransform(source,{
-      namespace:'backgrounds-webp',version,
-      options:{width:background.BACKGROUND_RUNTIME_WIDTH,height:background.BACKGROUND_RUNTIME_HEIGHT,quality:background.BACKGROUND_RUNTIME_WEBP_QUALITY,maxBytes:background.BACKGROUND_RUNTIME_MAX_BYTES},
-      extension:'webp',
-      transform:(buffer)=>{
-        const argv=['-hide_banner','-loglevel','error','-f','image2pipe','-vcodec','png','-i','pipe:0','-frames:v','1',
-          '-vf',`scale=${background.BACKGROUND_RUNTIME_WIDTH}:${background.BACKGROUND_RUNTIME_HEIGHT}:flags=lanczos`,
-          '-c:v','libwebp','-quality',String(background.BACKGROUND_RUNTIME_WEBP_QUALITY),
-          '-compression_level','6','-f','webp','pipe:1'];
-        const out=spawnSync('ffmpeg',argv,{input:buffer,encoding:null,maxBuffer:8*1024*1024,timeout:120000});
-        if(out.error||out.status!==0)throw new Error(`Event WebP encoder failed: ${out.error?.message||String(out.stderr)}`);
-        return out.stdout;
-      },
-      validate:(buffer)=>{
-        if(buffer.length>background.BACKGROUND_RUNTIME_MAX_BYTES)throw new Error('Event WebP exceeds per-file budget');
-        if(buffer.toString('ascii',0,4)!=='RIFF'||buffer.toString('ascii',8,12)!=='WEBP')throw new Error('Event WebP header invalid');
-      }
-    });
-    const dest=path.join(root,target);
-    fs.mkdirSync(path.dirname(dest),{recursive:true});
-    fs.writeFileSync(dest,cached.buffer);
-    fs.unlinkSync(full); // Leave PNG masters untouched in game/, remove only dist/ copies.
-    records.push({path:target,before,after:cached.buffer.length,width:background.BACKGROUND_RUNTIME_WIDTH,
+    const target=relative.replace(/\.png$/,'.webp'),dest=path.join(root,target);
+    // Publish the pre-encoded 1280x720 WebP companion, never the master PNG.
+    // Conversion occurs once via the asset preparation workflow, not on each
+    // CI build or on the developer's Windows machine.
+    if(!fs.existsSync(dest))throw new Error(`Missing pre-encoded Event WebP asset: ${target}. Run the Event WebP preparation workflow first.`);
+    const optimized=fs.readFileSync(dest);
+    if(optimized.length>background.BACKGROUND_RUNTIME_MAX_BYTES)throw new Error(`Oversized Event WebP: ${target}`);
+    if(optimized.toString('ascii',0,4)!=='RIFF'||optimized.toString('ascii',8,12)!=='WEBP')throw new Error(`Invalid Event WebP asset: ${target}`);
+    fs.unlinkSync(full);
+    records.push({path:target,before,after:optimized.length,width:background.BACKGROUND_RUNTIME_WIDTH,
       height:background.BACKGROUND_RUNTIME_HEIGHT,sourceWidth:meta.width,sourceHeight:meta.height,
-      skipped:false,cacheHit:cached.cacheHit,cacheKey:cached.cacheKey,cachePath:cached.cachePath});
+      skipped:true,cacheHit:true,cacheKey:null,cachePath:null});
   }
   const result=report(records);
   if(result.afterBytes>background.BACKGROUND_RUNTIME_MAX_TOTAL_BYTES)throw new Error(`Event WebP total ${piece.formatBytes(result.afterBytes)} exceeds ${piece.formatBytes(background.BACKGROUND_RUNTIME_MAX_TOTAL_BYTES)}`);
