@@ -181,12 +181,12 @@ function objectiveText(item) {
     const target = ['queen','rook','bishop','knight'].includes(item.targetPiece) ? item.targetPiece : null;
     return target ? t(`puzzle.objective.material.${target}`) : t('puzzle.objective.fallback');
   }
-  return ['mate1','mate2','mate3'].includes(item.type) ? t(`puzzle.objective.${item.type}`) : t('puzzle.objective.fallback');
+  return ['mate1','mate2','mate3','mate4','mate5Plus','bestLine'].includes(item.type) ? t(`puzzle.objective.${item.type}`) : t('puzzle.objective.fallback');
 }
 
 function instructionText(item) {
   if (item?.type === 'material') return t('puzzle.instruction.material');
-  return ['mate1','mate2','mate3'].includes(item?.type) ? t(`puzzle.instruction.${item.type}`) : t('puzzle.instruction.mate1');
+  return ['mate1','mate2','mate3','mate4','mate5Plus','bestLine'].includes(item?.type) ? t(`puzzle.instruction.${item.type}`) : t('puzzle.instruction.mate1');
 }
 
 function renderMeta() {
