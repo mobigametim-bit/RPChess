@@ -69,6 +69,30 @@ class MemoryStorage {
     c.id==='hero.aldric_wall'?{...c,status:'wounded'}:c)});
   assert(woundedFormation.wounded.some(c=>c.id==='hero.aldric_wall'),'wounded hero leaves the field for Wounded section');
   assert(!Object.values(woundedFormation.squares).includes('hero.aldric_wall'));
+  // A pawn may only start on the second rank; swapping cannot smuggle it home.
+  const pawnStart=Object.entries(initialFormation.squares).find(([,id])=>id==='hero.mara_chain')[0];
+  assert(pawnStart.endsWith('2'));
+  assert.strictEqual(formation.moveFormation(run,'hero.mara_chain','a1').reason,'pawn_rank',
+    'reject swaps that would put a pawn on the first rank');
+  const extraBishop={...roster.find(c=>c.pieceType==='bishop'),id:'hero.extra_bishop',name:'Second bishop'};
+  const bishopsRun={...run,roster:[...run.roster,extraBishop]};
+  const bishopsFormation=formation.normalizedFormation(bishopsRun);
+  const bishopSquares=Object.entries(bishopsFormation.squares).filter(([,id])=>[extraBishop.id,'hero.brother_orell'].includes(id));
+  assert.strictEqual(bishopSquares.length,2);
+  assert.notStrictEqual(formation.squareColor(bishopSquares[0][0]),formation.squareColor(bishopSquares[1][0]),
+    'two bishops must occupy opposite square colors on the Roster board');
+  assert.strictEqual(formation.moveFormation(bishopsRun,extraBishop.id,'a1').reason,'bishop_color',
+    'swapping two same-colored-square bishops must be rejected');
+  assert(formation.moveFormation(bishopsRun,extraBishop.id,'b1').ok,
+    'a bishop may move to a legal opposite-color cell');
+  const badSave={...bishopsRun,rosterFormation:{squares:{a1:'hero.mara_chain',c1:'hero.brother_orell',g1:extraBishop.id,e1:'king.oathkeeper'},reserveIds:[]}};
+  const repaired=formation.normalizedFormation(badSave);
+  const repairedBishops=Object.entries(repaired.squares).filter(([,id])=>[extraBishop.id,'hero.brother_orell'].includes(id));
+  assert(Object.values(repaired.squares).includes('hero.mara_chain'));
+  assert(Object.entries(repaired.squares).every(([sq,id])=>id!=='hero.mara_chain'||sq.endsWith('2')),
+    'older saves with first-rank pawns automatically normalize to legal deployment');
+  assert.notStrictEqual(formation.squareColor(repairedBishops[0][0]),formation.squareColor(repairedBishops[1][0]),
+    'older saves with same-colored bishops automatically reassign second bishop');
   const savedFormation=persistence.writeRun(benched.run,new MemoryStorage(),1211);
   assert.deepStrictEqual(formation.normalizedFormation(savedFormation).squares,formation.normalizedFormation(benched.run).squares,
     'run persistence keeps manual formation coordinates');
