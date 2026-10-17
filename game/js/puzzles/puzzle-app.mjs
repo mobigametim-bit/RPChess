@@ -4,6 +4,7 @@ import { readRun, writeRun } from '../run-persistence.mjs';
 import { t, subscribe } from '../i18n.mjs';
 import { brandLogoSrc } from '../brand-logo.mjs';
 import { PUZZLE_CATALOG } from './puzzle-catalog.mjs';
+import { loadPuzzleStar } from './puzzle-catalog-loader.mjs';
 import { featuredPuzzleTheme } from './puzzle-theme-catalog.mjs';
 import { currentLanguage } from '../i18n.mjs';
 import {
@@ -165,7 +166,7 @@ function hidePuzzle() {
   document.body.classList.remove('puzzles-active');
 }
 
-function findPuzzle(id) { return PUZZLE_CATALOG.find((item) => item.id === id) || null; }
+function findPuzzle(id,loaded=[]) { return loaded.find((item) => item.id === id)||PUZZLE_CATALOG.find((item) => item.id === id)||null; }
 function puzzleHistory(run) { return Array.isArray(run?.puzzleHistory) ? run.puzzleHistory.filter((id) => Boolean(findPuzzle(id))) : []; }
 
 function persist(nextState = state) {
@@ -490,19 +491,20 @@ async function resumeSession() {
   if (engine.turn() !== puzzle.side) await playForcedReply({ resume: true });
 }
 
-function openPuzzle(event) {
+async function openPuzzle(event) {
   activeRun = readRun();
   const choice = activeRun?.activeTravelChoice || event?.detail?.choice;
   if (!activeRun || activeRun.ended || choice?.type !== 'puzzle') return;
   const week = choice.step || activeRun.journeyStep || 1;
+  const available=await loadPuzzleStar(choice.stars);
 
   if (activeRun.currentPuzzle?.routeId === choice.id) {
     state = activeRun.currentPuzzle;
-    puzzle = findPuzzle(state.puzzleId);
+    puzzle = findPuzzle(state.puzzleId,available);
   } else {
     let history = puzzleHistory(activeRun);
-    if (history.length >= PUZZLE_CATALOG.length) history = [];
-    puzzle = selectPuzzle(PUZZLE_CATALOG, { runId: activeRun.id, routeId: choice.id, stars: choice.stars, week, excludedIds: history });
+    if (history.length >= available.length) history = [];
+    puzzle = selectPuzzle(available, { runId: activeRun.id, routeId: choice.id, stars: choice.stars, week, excludedIds: history, expanded:available.length>PUZZLE_CATALOG.filter(item=>item.difficulty===Math.max(1,Math.min(12,Math.round(Number(choice.stars)||1)))).length });
     state = createPuzzleState({ puzzle, routeId: choice.id, stars: choice.stars, week });
     activeRun = writeRun({ ...activeRun, puzzleHistory:[...history, puzzle.id], currentPuzzle: state });
     globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
