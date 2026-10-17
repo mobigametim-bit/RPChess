@@ -53,6 +53,11 @@ jobs:
           test -f dist/js/race-assets.mjs
           test -f dist/css/combat-side-colors.css
           test -f dist/css/chess-ai-polish.css
+          # Roster formation is part of this playable acceptance build.
+          test -s dist/js/roster-formation-core.mjs
+          test -s dist/js/roster-formation-ui.mjs
+          test -s dist/css/roster-formation.css
+          grep -q 'formationSelectedIds(activeRun)' dist/js/skirmish-app.mjs
           count=$(find dist/assets/races -type f -path '*/pieces/board/*/*.png' | wc -l)
           echo "Dedicated piece PNGs: $count"
           test "$count" -eq 168
