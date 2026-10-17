@@ -1,0 +1,51 @@
+name: Encode remaining 59 scene and arena backgrounds to WebP
+on:
+  push:
+    branches: [feature/race-chess-piece-art-20261016]
+    paths:
+      - .github/workflows/encode-remaining-backgrounds-webp.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  encode:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/race-chess-piece-art-20261016'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: FFmpeg / FFprobe
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Preserve masters and create exactly 59 WebP companions
+        run: |
+          node scripts/encode-remaining-backgrounds-webp.cjs
+          node scripts/encode-remaining-backgrounds-webp.cjs --verify
+          git diff --exit-code -- 'game/**/*.jpg'
+      - name: Commit optimized companions and byte report to the acceptance branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          find game/generated_assets game/assets/regions game/assets/bosses -type f -name '*.webp' -print0 | xargs -0 git add --
+          git add docs/assets/remaining-backgrounds-webp-report.json
+          git diff --cached --stat
+          if git diff --cached --quiet; then
+            echo 'Already converted'
+          else
+            git commit -m 'assets: add 59 optimized WebP scene and arena backgrounds'
+            git fetch origin feature/race-chess-piece-art-20261016
+            git rebase FETCH_HEAD
+            git push origin HEAD:feature/race-chess-piece-art-20261016
+          fi
+      - name: Upload encoded assets audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpchess-59-backgrounds-webp-q55
+          path: |
+            game/generated_assets/*.webp
+            game/assets/regions/**/*.webp
+            game/assets/bosses/**/*.webp
+            docs/assets/remaining-backgrounds-webp-report.json
+          retention-days: 14
