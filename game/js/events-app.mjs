@@ -228,7 +228,7 @@ function renderBackground(event) {
   const image = screen?.querySelector('[data-events-background]');
   if (!image) return;
   const assetPath = eventBackgroundPath(event);
-  const fallbackPath = 'assets/events/register-04/backgrounds/generic/forest_crossroad.png';
+  const fallbackPath = 'assets/events/register-04/backgrounds/generic/forest_crossroad.webp';
   image.dataset.assetPath = assetPath;
   image.dataset.fallbackApplied = '0';
   image.onerror = () => {
