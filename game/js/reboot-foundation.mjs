@@ -24,7 +24,7 @@ const cloudReady = Promise.all([platformReady, import('./cloud-save.mjs')])
   });
 globalThis.RPChessCloudReady = cloudReady;
 
-// Onboarding owns only the ten approved first-visit hints. It loads after Cloud Save so synced
+// The jester owns the first-visit hints. It loads after Cloud Save so synced
 // tutorial flags are authoritative before any hint can be displayed.
 const onboardingReady = cloudReady
   .then(() => import('./content/onboarding.mjs'))
