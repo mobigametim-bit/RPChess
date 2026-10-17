@@ -46,6 +46,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Build playable preview
         run: npm run build
+      - name: Verify extended Lichess Puzzle objectives and legacy catalog
+        run: npm run test:puzzles
       - name: Install Chromium for targeted acceptance
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
