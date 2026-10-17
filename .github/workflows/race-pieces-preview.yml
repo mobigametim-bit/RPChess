@@ -84,8 +84,8 @@ jobs:
           grep -Fq 'align-content:center;align-items:center' dist/css/player-identity-chronicle.css
           grep -Fq 'grid-template-columns:95px 1fr;align-items:center' dist/css/player-identity-chronicle.css
           grep -Fq 'radial-gradient(circle at center top,#342715' dist/css/player-identity-chronicle.css
-          grep -Fq '20261017-commander-gold-vk-2' dist/js/player-identity-chronicle.mjs
-          grep -Fq 'max-height:370px' dist/css/player-identity-chronicle.css
+          grep -Fq '20261017-commander-gold-vk-3' dist/js/player-identity-chronicle.mjs
+          grep -Fq 'max-height:420px' dist/css/player-identity-chronicle.css
           npm run test:identity
           grep -q 'commanderDescription' dist/js/roster-app.mjs
           grep -q 'commanderId' dist/js/chronicle-core.mjs
