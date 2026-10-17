@@ -27,6 +27,7 @@
   <link rel="stylesheet" href="css/ui-redesign-final.css?v=20260902-cleanup2" data-ui-redesign-final-css>
   <link rel="stylesheet" href="css/landscape-ui-redesign.css?v=20260918-vk-menu-1" data-landscape-ui-css>
   <link rel="stylesheet" href="css/arena.css?v=20260924-6">
+  <link rel="stylesheet" href="css/roster-formation.css?v=20261017-1">
 </head>
 <body>
   <div class="game-loading-screen" data-game-loading role="status" aria-live="polite" aria-label="Загрузка игры">
@@ -106,13 +107,7 @@
               <h2>Ваш отряд</h2>
               <span class="roster-catalog__count" data-roster-count></span>
             </header>
-            <nav class="roster-filters" aria-label="Фильтр состояния фигур">
-              <button class="roster-filter is-active" type="button" data-roster-filter="all" data-roster-filter-label="ВСЕ" aria-pressed="true">ВСЕ</button>
-              <button class="roster-filter" type="button" data-roster-filter="healthy" data-roster-filter-label="ЗДОРОВЫ" aria-pressed="false">ЗДОРОВЫ</button>
-              <button class="roster-filter" type="button" data-roster-filter="wounded" data-roster-filter-label="РАНЕНЫ" aria-pressed="false">РАНЕНЫ</button>
-              <button class="roster-filter" type="button" data-roster-filter="dead" data-roster-filter-label="ПОГИБШИЕ" aria-pressed="false">ПОГИБШИЕ</button>
-            </nav>
-            <div class="roster-grid" data-roster-list></div>
+            <div class="roster-formation-ui" data-roster-list aria-label="Расстановка и состояние героев"></div>
           </section>
         </div>
       </div>

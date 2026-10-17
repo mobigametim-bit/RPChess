@@ -29,6 +29,31 @@ function combatEligible(character){return Boolean(character&&(character.status==
 function selectedMembers(roster,selectedIds){const selected=new Set(selectedIds||[]);return(roster||[]).filter((c)=>selected.has(c.id));}
 function selectedTypeCounts(roster,selectedIds){const counts={king:0,queen:0,rook:0,bishop:0,knight:0,pawn:0};for(const c of selectedMembers(roster,selectedIds))if(Object.prototype.hasOwnProperty.call(counts,c.pieceType))counts[c.pieceType]++;return counts;}
 function validateBattleSelection(roster,selectedIds){const ids=[...new Set(selectedIds||[])],byId=new Map((roster||[]).map((c)=>[c.id,c])),king=(roster||[]).find((c)=>c.isRunKing);if(!king)return{ok:false,reason:'missing_king'};if(!combatEligible(king))return{ok:false,reason:'king_unavailable'};if(!ids.includes(king.id))return{ok:false,reason:'king_required'};for(const id of ids){const c=byId.get(id);if(!c)return{ok:false,reason:'unknown_character',id};if(!combatEligible(c))return{ok:false,reason:'character_unavailable',id};if(c.pieceType==='king'&&!c.isRunKing)return{ok:false,reason:'invalid_king',id};}const members=selectedMembers(roster,ids),typeCounts=selectedTypeCounts(roster,ids);for(const [pieceType,count] of Object.entries(typeCounts))if(count>SLOT_CAPACITY[pieceType])return{ok:false,reason:'slot_limit',pieceType,count,capacity:SLOT_CAPACITY[pieceType],members,typeCounts};return{ok:true,members,typeCounts,count:members.length};}
+// Auto deployment: select all eligible heroes when they fit, otherwise sample
+// the excess of each chess role without favoring current roster order.
+function automaticBattleSelection(roster,seed='rpchess-auto-battle'){
+  const eligible=(roster||[]).filter(combatEligible);
+  const king=eligible.find(c=>c.isRunKing);
+  if(!king)return[];
+  const chosen=[king.id],random=seededBattleRandom(seed);
+  for(const type of ['queen','rook','bishop','knight','pawn']){
+    const candidates=eligible.filter(c=>!c.isRunKing&&c.pieceType===type)
+      .sort((a,b)=>String(a.id).localeCompare(String(b.id)));
+    const capacity=SLOT_CAPACITY[type];
+    if(candidates.length>capacity){
+      for(let i=candidates.length-1;i>0;i--){
+        const j=Math.floor(random()*(i+1));
+        [candidates[i],candidates[j]]=[candidates[j],candidates[i]];
+      }
+    }
+    chosen.push(...candidates.slice(0,capacity).map(c=>c.id));
+  }
+  return chosen;
+}
+function seededBattleRandom(seed){
+  let n=hashSeed(seed)||1;
+  return()=>{n+=0x6D2B79F5;let t=n;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};
+}
 function defaultBattleSelection(roster){const eligible=(roster||[]).filter(combatEligible),king=eligible.find((c)=>c.isRunKing);if(!king)return[];const selected=[king.id],counts={king:1,queen:0,rook:0,bishop:0,knight:0,pawn:0};for(const c of eligible){if(c.id===king.id||c.pieceType==='king')continue;const capacity=SLOT_CAPACITY[c.pieceType]||0;if((counts[c.pieceType]||0)>=capacity)continue;selected.push(c.id);counts[c.pieceType]=(counts[c.pieceType]||0)+1;}return selected;}
 
 function formationFor(color,roster=[],selectedIds=[],playerColor='w'){
@@ -59,4 +84,4 @@ function applyBattleOutcome(run,{capturedIds=[],status=null,playerColor='w',part
   return{...run,roster,ended:Boolean(run?.ended||soloKing),endReason:run?.endReason||(soloKing?'king_solo_battle':null),lastBattle};
 }
 
-export {BATTLE_PIECE_COUNT,BATTLE_ARMY_POINTS,STANDARD_FEN,SLOT_CAPACITY,STANDARD_SLOTS,BATTLE_TIERS,combatEligible,createBattleEncounter,selectedTypeCounts,validateBattleSelection,defaultBattleSelection,formationFor,createBattlePlan,applyBattleOutcome};
+export {BATTLE_PIECE_COUNT,BATTLE_ARMY_POINTS,STANDARD_FEN,SLOT_CAPACITY,STANDARD_SLOTS,BATTLE_TIERS,combatEligible,createBattleEncounter,selectedTypeCounts,validateBattleSelection,defaultBattleSelection,automaticBattleSelection,formationFor,createBattlePlan,applyBattleOutcome};

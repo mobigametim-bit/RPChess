@@ -115,7 +115,7 @@ async function renderRunStory(run, { power = 0, language = 'ru', endReason = '' 
   const copy = COPY[language === 'en' ? 'en' : 'ru'];
   const summary = summarizeRun(run, { power });
   const paths = [
-    'generated_assets/scene_defeat.jpg',
+    'generated_assets/scene_defeat.webp',
     'assets/ui/royal_run_flag.png',
     brandLogoSrc(language),
     ...ORDER.map(key => ICONS[key])

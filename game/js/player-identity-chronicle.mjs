@@ -5,9 +5,12 @@ import { readPlayerRating } from './player-rating.mjs';
 import { PLAYER_NAME_MAX_LENGTH, normalizePlayerName } from './player-identity-core.mjs';
 import { activeRunSnapshot, recordCompletedRun } from './chronicle-core.mjs';
 import { currentLeaderboard, loadLeaderboard, submitBestChronicle } from './leaderboard-client.mjs';
+import { COMMANDERS,DEFAULT_COMMANDER_ID,normalizeCommanderId,commanderTitle,commanderDescription,commanderPortrait } from './commander-portraits.mjs';
+import {bestChronicleRun,readChronicle} from './chronicle-core.mjs';
 
 let identityModal = null;
 let chroniclePanel = null;
+let selectedCommanderId = DEFAULT_COMMANDER_ID;
 
 function l(key) { return runtimeT(currentLanguage(), key); }
 
@@ -16,7 +19,7 @@ function ensureCss() {
   if (document.querySelector('[data-player-identity-chronicle-css]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/player-identity-chronicle.css?v=20260925-flag-2';
+  link.href = 'css/player-identity-chronicle.css?v=20261017-commander-gold-vk-3';
   link.dataset.playerIdentityChronicleCss = '';
   document.head.append(link);
 }
@@ -43,6 +46,21 @@ function ensureIdentityModal() {
           <span>${l('identity.name')}</span>
           <input type="text" data-player-identity-input maxlength="${PLAYER_NAME_MAX_LENGTH}" autocomplete="off" spellcheck="false" aria-describedby="player-identity-error">
         </label>
+        <div class="identity-commander-section">
+          <div class="identity-commander-label" data-identity-commander-label>${l('identity.choosePortrait')}</div>
+          <div class="identity-commander-layout">
+            <div class="identity-commander-grid" role="group" aria-label="${l('identity.choosePortrait')}" data-identity-commander-grid>
+              ${COMMANDERS.map(c=>`<button type="button" class="identity-commander-option" data-identity-commander="${c.id}" aria-pressed="${c.id===DEFAULT_COMMANDER_ID}">
+                <img src="${c.portrait}" alt="" loading="lazy"><span data-commander-label="${c.id}">${commanderTitle(c.id,currentLanguage())}</span>
+              </button>`).join('')}
+            </div>
+            <aside class="identity-commander-preview" data-identity-commander-preview aria-live="polite">
+              <img src="${commanderPortrait(DEFAULT_COMMANDER_ID)}" alt="" data-identity-commander-image>
+              <div><h3 data-identity-commander-title>${commanderTitle(DEFAULT_COMMANDER_ID,currentLanguage())}</h3>
+              <p data-identity-commander-description>${commanderDescription(DEFAULT_COMMANDER_ID,currentLanguage())}</p></div>
+            </aside>
+          </div>
+        </div>
         <div class="identity-error" id="player-identity-error" data-player-identity-error aria-live="polite"></div>
         <button class="reboot-button reboot-button--primary identity-submit" type="submit" data-player-identity-submit disabled>${l('identity.continue')}</button>
       </form>
@@ -54,6 +72,14 @@ function ensureIdentityModal() {
   const form = identityModal.querySelector('[data-player-identity-form]');
   const close = identityModal.querySelector('[data-player-identity-close]');
   const error = identityModal.querySelector('[data-player-identity-error]');
+  identityModal.querySelectorAll('[data-identity-commander]').forEach(button=>{
+    button.addEventListener('click',()=>{
+      selectedCommanderId=normalizeCommanderId(button.dataset.identityCommander);
+      renderCommanderChoice();
+      globalThis.RPChessLoading?.requestVisibleAssets?.();
+      audio()?.click?.();
+    });
+  });
 
   const validate = () => {
     const name = normalizePlayerName(input?.value || '');
@@ -79,7 +105,7 @@ function ensureIdentityModal() {
     try {
       if (!globalThis.RPChessRoster?.beginRun) await import('./roster-app.mjs');
       closeIdentityPrompt({ silent: true });
-      globalThis.dispatchEvent(new CustomEvent('rpchess:run-new', { detail: { playerName, source: 'player-identity' } }));
+      globalThis.dispatchEvent(new CustomEvent('rpchess:run-new', { detail: { playerName, commanderId:selectedCommanderId, source: 'player-identity' } }));
     } finally {
       if (submit) submit.disabled = false;
     }
@@ -88,6 +114,19 @@ function ensureIdentityModal() {
   return identityModal;
 }
 
+function renderCommanderChoice(){
+  if(!identityModal)return;
+  const commander=normalizeCommanderId(selectedCommanderId);
+  for(const b of identityModal.querySelectorAll('[data-identity-commander]'))
+    b.setAttribute('aria-pressed',String(b.dataset.identityCommander===commander));
+  identityModal.querySelector('[data-identity-commander-image]').src=commanderPortrait(commander);
+  identityModal.querySelector('[data-identity-commander-title]').textContent=commanderTitle(commander,currentLanguage());
+  identityModal.querySelector('[data-identity-commander-description]').textContent=commanderDescription(commander,currentLanguage());
+  identityModal.querySelector('[data-identity-commander-label]').textContent=l('identity.choosePortrait');
+  identityModal.querySelector('[data-identity-commander-grid]').setAttribute('aria-label',l('identity.choosePortrait'));
+  for(const c of COMMANDERS)
+    identityModal.querySelector('[data-commander-label="'+c.id+'"]').textContent=commanderTitle(c.id,currentLanguage());
+}
 function renderIdentityCopy() {
   if (!identityModal) return;
   for (const [selector, key] of [
@@ -98,6 +137,7 @@ function renderIdentityCopy() {
   identityModal.querySelector('[data-player-identity-close]').setAttribute('aria-label', l('identity.close'));
   const error = identityModal.querySelector('[data-player-identity-error]');
   if (error.textContent) error.textContent = l('identity.error');
+  renderCommanderChoice();
 }
 
 function openIdentityPrompt() {
@@ -105,11 +145,14 @@ function openIdentityPrompt() {
   const input = modal.querySelector('[data-player-identity-input]');
   const error = modal.querySelector('[data-player-identity-error]');
   if (input) input.value = '';
+  selectedCommanderId=DEFAULT_COMMANDER_ID;
+  renderCommanderChoice();
   if (error) error.textContent = '';
   const submit = modal.querySelector('[data-player-identity-submit]');
   if (submit) submit.disabled = true;
   modal.hidden = false;
   document.body.classList.add('reboot-modal-open');
+  globalThis.RPChessLoading?.requestVisibleAssets?.();
   audio()?.open?.();
   requestAnimationFrame(() => input?.focus());
   return true;
@@ -187,7 +230,12 @@ function renderChronicle() {
   currentRoot?.replaceChildren();
   if (currentRoot) {
     if (current) {
-      currentRoot.append(sectionTitle(l('chronicle.current'), current.playerName));
+      const profile=document.createElement('div');
+    profile.className='chronicle-current-profile';
+    const avatar=document.createElement('img');avatar.src=commanderPortrait(current.commanderId);
+    avatar.alt=commanderTitle(current.commanderId,currentLanguage());avatar.loading='lazy';
+    const label=document.createElement('div');label.append(sectionTitle(l('chronicle.current'),current.playerName));
+    profile.append(avatar,label);currentRoot.append(profile);
       currentRoot.append(metric(l('chronicle.power'), current.power, 'assets/doctrines/royal_court/emblem.png'), metric(l('chronicle.week'), current.week, 'generated_assets/node_story.png'), metric(l('chronicle.heroes'), current.heroes, 'generated_assets/reward_recruit.png'));
     } else {
       currentRoot.append(sectionTitle(l('chronicle.current'), l('chronicle.noActive')));
@@ -208,8 +256,16 @@ function renderChronicle() {
     const ownRank=document.createElement('strong');
     ownRank.textContent=leaderboard.me
       ? '#'+leaderboard.me.rank+' · '+leaderboard.me.glory+' '+l('chronicle.glory')
-      : l('leaderboard.notRanked');
-    own.append(ownLabel,ownRank);
+      : leaderboard.status!=='ready' ? '—'
+      : l(leaderboard.viewerAuthenticated?'leaderboard.notRanked':'leaderboard.notAuthenticated');
+    const best=bestChronicleRun(readChronicle());
+    if(leaderboard.me||best){
+      const avatar=document.createElement('img');
+      avatar.src=commanderPortrait(leaderboard.me?.commanderId||best?.commanderId);
+      avatar.alt='';avatar.loading='lazy';
+      const profile=document.createElement('div');profile.className='chronicle-self-profile';
+      profile.append(avatar,ownLabel);own.append(profile,ownRank);
+    }else own.append(ownLabel,ownRank);
     bestRoot.append(own);
 
     if (leaderboard.status==='ready' && leaderboard.top.length) {
@@ -222,6 +278,9 @@ function renderChronicle() {
         const rank=document.createElement('span');
         rank.className='chronicle-leaderboard-rank';
         rank.textContent=String(entry.rank)+'.';
+        const avatar=document.createElement('img');
+        avatar.className='chronicle-leaderboard-avatar';avatar.src=commanderPortrait(entry.commanderId);
+        avatar.alt='';avatar.loading='lazy';
         const name=document.createElement('span');
         name.className='chronicle-leaderboard-name';
         name.textContent=entry.name;
@@ -229,7 +288,7 @@ function renderChronicle() {
         const glory=document.createElement('strong');
         glory.className='chronicle-leaderboard-glory';
         glory.textContent=String(entry.glory);
-        row.append(rank,name,glory);
+        row.append(rank,avatar,name,glory);
         list.append(row);
       }
       bestRoot.append(list);

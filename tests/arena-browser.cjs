@@ -6,8 +6,15 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
   try{
     const page=await browser.newPage({viewport:{width:950,height:530}});
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
+    // Simulate a slow initial Arena catalog image. The mask must cover its loading.
+    await page.route('**/assets/races/humans/pieces/board/white/king.png',async route=>{
+      await new Promise(resolve=>setTimeout(resolve,650));
+      await route.continue();
+    });
     await page.goto(url,{waitUntil:'networkidle'});
     await page.locator('[data-arena-open]').click();
+    await page.waitForFunction(()=>!document.querySelector('[data-game-loading]')?.hidden,{timeout:3000});
+    await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
     await page.locator('[data-arena-screen]:not([hidden])').waitFor();
     assert.strictEqual(await page.locator('[data-arena-foes] button').count(),84);
     assert.strictEqual(await page.locator('[data-arena-prev], [data-arena-next]').count(),0,'section arrows are removed');
@@ -16,6 +23,23 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert.strictEqual(await page.locator('[data-arena-squads] button').count(),14);
     assert.strictEqual(await page.locator('[data-arena-squads] button:not([disabled])').count(),1,'unaffordable squads are disabled');
     assert.strictEqual(await page.locator('[data-arena-squads] button').first().innerText(),'','owned squad shows only its art');
+    // All Arena catalog cards now use the same color-specific race chess art as the board.
+    const catalogArt=await page.evaluate(()=>({
+      humanSquad:document.querySelector('[data-arena-squad="humans"] .arena-squad-art')?.getAttribute('src'),
+      orcSquad:document.querySelector('[data-arena-squad="orcs"] .arena-squad-art')?.getAttribute('src'),
+      humanRival:document.querySelector('[data-arena-foes] .arena-foe-art')?.getAttribute('src')
+    }));
+    assert(catalogArt.humanSquad?.includes('/humans/pieces/board/white/king.png'),'Arena squad selection must use the new human white king');
+    assert(catalogArt.orcSquad?.includes('/orcs/pieces/board/white/king.png'),'Arena squad selection must use the new orc white king');
+    assert(catalogArt.humanRival?.includes('/humans/pieces/board/black/pawn.png'),'Arena rival selection must use the new human black pawn');
+    assert(Object.values(catalogArt).every(src=>src?.includes('/pieces/board/')),'Arena catalogs must display color-specific chess pieces');
+    const allSquadArt=await page.locator('[data-arena-squads] .arena-squad-art').evaluateAll(nodes=>nodes.map(img=>img.getAttribute('src')));
+    const allRivalArt=await page.locator('[data-arena-foes] .arena-foe-art').evaluateAll(nodes=>nodes.map(img=>img.getAttribute('src')));
+    assert.strictEqual(allSquadArt.length,14);
+    assert.strictEqual(allRivalArt.length,84);
+    assert(allSquadArt.every(src=>src?.includes('/pieces/board/white/king.png')),'all squad cards use new white kings');
+    assert(allRivalArt.every(src=>src?.includes('/pieces/board/black/')),'all 84 rival cards use new black chess sprites');
+
     await page.evaluate(()=>{
       const now=Date.now();
       localStorage.setItem('rpchess.reboot.v1.arena',JSON.stringify({version:1,squad:'orcs',match:null,updatedAt:now,events:[
@@ -184,7 +208,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       return {scrollable,advanced};
     });
     assert(moveScrolling.scrollable && moveScrolling.advanced,'long move journals must scroll inside their frame on phone');
-    assert((await page.locator('[data-arena-board] [data-square="e4"] .classic-piece').getAttribute('src')).includes('/humans/pieces/white/pawn.png'));
+    assert((await page.locator('[data-arena-board] [data-square="e4"] .classic-piece').getAttribute('src')).includes('/humans/pieces/board/white/pawn.png'));
     const moves=await page.evaluate(()=>window.RPChessArena.state.match.moves);
     await page.reload({waitUntil:'networkidle'});
     await page.locator('[data-arena-open]').click();

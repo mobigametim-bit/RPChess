@@ -69,7 +69,7 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     await page.locator('[data-square="e4"]').click();
     await waitForMoveAnimation(page);
     assert((await page.evaluate(() => window.__classicFlyerCount)) > 0, 'moving piece must animate in Classic Chess');
-    assert((await pieceSrc(page, 'e4')).includes('unit_pawn_player.png'), 'white pawn must move to e4');
+    assert((await pieceSrc(page, 'e4')).includes('/humans/pieces/board/white/pawn.png'), 'white pawn must move to e4');
     assert.strictEqual(await page.locator('[data-move-history] [data-san="e4"]').count(), 1, 'pawn move must use SAN e4');
     await clickMove(page, 'e7', 'e5');
     await waitForMoveAnimation(page);
@@ -92,14 +92,14 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     await page.evaluate(() => window.RPChessClassicChess.loadFen('r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1'));
     await clickMove(page, 'e1', 'g1');
     await waitForMoveAnimation(page);
-    assert((await pieceSrc(page, 'g1')).includes('unit_king_player.png'), 'castling must place king on g1');
-    assert((await pieceSrc(page, 'f1')).includes('unit_rook_player.png'), 'castling must place rook on f1');
+    assert((await pieceSrc(page, 'g1')).includes('/humans/pieces/board/white/king.png'), 'castling must place king on g1');
+    assert((await pieceSrc(page, 'f1')).includes('/humans/pieces/board/white/rook.png'), 'castling must place rook on f1');
     assert.strictEqual(await page.locator('[data-move-history] [data-san="O-O"]').count(), 1, 'castling must use SAN O-O');
 
     await page.evaluate(() => window.RPChessClassicChess.loadFen('4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 1'));
     await clickMove(page, 'e5', 'd6');
     await waitForMoveAnimation(page);
-    assert((await pieceSrc(page, 'd6')).includes('unit_pawn_player.png'), 'en passant pawn must land on d6');
+    assert((await pieceSrc(page, 'd6')).includes('/humans/pieces/board/white/pawn.png'), 'en passant pawn must land on d6');
     assert.strictEqual(await page.locator('[data-square="d5"] .classic-piece').count(), 0, 'en passant must remove pawn from d5');
 
     await page.evaluate(() => window.RPChessClassicChess.loadFen('7k/P7/8/8/8/8/8/7K w - - 0 1'));
@@ -110,7 +110,7 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     assert.strictEqual(await page.locator('[data-promotion-modal]').isVisible(), true, 'mandatory promotion modal must ignore Escape');
     await page.locator('[data-promotion="q"]').click();
     await waitForMoveAnimation(page);
-    assert((await pieceSrc(page, 'a8')).includes('unit_queen_player.png'), 'promotion must render chosen queen asset');
+    assert((await pieceSrc(page, 'a8')).includes('/humans/pieces/board/white/queen.png'), 'promotion must render chosen queen asset');
     assert((await page.locator('[data-move-history] .classic-move[data-san]').last().getAttribute('data-san')).includes('=Q'), 'promotion SAN must include =Q');
 
     await page.evaluate(() => window.RPChessClassicChess.newGame());
@@ -173,7 +173,7 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     assert(boardBox && boardBox.width > 300 && boardBox.width <= 390, `mobile landscape board width must match viewport height: ${boardBox?.width}`);
     await clickMove(mobile, 'e2', 'e4');
     await waitForMoveAnimation(mobile);
-    assert((await pieceSrc(mobile, 'e4')).includes('unit_pawn_player.png'), 'mobile landscape board interaction must move pieces');
+    assert((await pieceSrc(mobile, 'e4')).includes('/humans/pieces/board/white/pawn.png'), 'mobile landscape board interaction must move pieces');
     const scrollState = await mobile.evaluate(() => ({ scrollHeight: document.documentElement.scrollHeight, clientHeight: document.documentElement.clientHeight }));
     assert(scrollState.scrollHeight <= scrollState.clientHeight + 1, 'mobile landscape Classic Chess must fit the viewport without page scrolling');
 

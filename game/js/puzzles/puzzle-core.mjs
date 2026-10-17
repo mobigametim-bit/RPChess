@@ -1,8 +1,8 @@
 import { hashString } from '../race-assets.mjs';
 
-const PUZZLE_TYPES = Object.freeze(['mate1', 'mate2', 'mate3', 'material']);
+const PUZZLE_TYPES = Object.freeze(['mate1', 'mate2', 'mate3', 'material', 'mate4', 'mate5Plus', 'bestLine']);
 const TARGET_PIECES = Object.freeze(['queen', 'rook', 'bishop', 'knight']);
-const TYPE_LABELS = Object.freeze({ mate1:'МАТ В 1', mate2:'МАТ В 2', mate3:'МАТ В 3', material:'ВЫИГРАЙТЕ ФИГУРУ' });
+const TYPE_LABELS = Object.freeze({ mate1:'МАТ В 1', mate2:'МАТ В 2', mate3:'МАТ В 3', material:'ВЫИГРАЙТЕ ФИГУРУ', mate4:'МАТ В 4', mate5Plus:'НАЙДИТЕ МАТ', bestLine:'НАЙДИТЕ ЛУЧШЕЕ ПРОДОЛЖЕНИЕ' });
 const TARGET_LABELS = Object.freeze({ queen:'♛', rook:'♜', bishop:'♝', knight:'♞' });
 const ERROR_MULTIPLIERS = Object.freeze([1, 0.7, 0.4, 0]);
 
@@ -93,11 +93,11 @@ function candidatePool(catalog, stars, type, excludedIds = []) {
   return exact;
 }
 
-function selectPuzzle(catalog, { runId = 'run', routeId = 'route', stars = 1, excludedIds = [] } = {}) {
+function selectPuzzle(catalog, { runId = 'run', routeId = 'route', stars = 1, excludedIds = [], expanded = false } = {}) {
   const resolvedStars = clampStars(stars);
   const seed = `${runId}:${routeId}:stars:${resolvedStars}`;
   const type = chooseType(resolvedStars, seed);
-  const pool = candidatePool(catalog, resolvedStars, type, excludedIds);
+  const pool = expanded ? candidatePool(catalog, resolvedStars, null, excludedIds) : candidatePool(catalog, resolvedStars, type, excludedIds);
   if (!pool.length) throw new Error(`Puzzle catalog has no tasks for difficulty ${resolvedStars}`);
   return pool[hashString(`${seed}:pick`) % pool.length];
 }

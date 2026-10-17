@@ -11,6 +11,31 @@ const importer=require('../scripts/import-lichess-puzzles.cjs');
   const game=path.resolve(__dirname,'..','game'),engineModule=await import(pathToFileURL(path.join(game,'js/classic-chess-engine.mjs')).href),core=await import(pathToFileURL(path.join(game,'js/puzzles/puzzle-core.mjs')).href);
   const normalized=await importer.normalizeLichessRow(row,{ClassicChessEngine:engineModule.ClassicChessEngine,puzzleBaseGold:core.puzzleBaseGold,difficultyTable:core.DIFFICULTY_TABLE});
   assert(normalized,'valid high-quality Lichess-like row must normalize');assert.strictEqual(normalized.sourceId,'fools');assert.strictEqual(normalized.type,'mate1');assert.strictEqual(normalized.side,'b');assert.deepStrictEqual(normalized.solution,['d8h4']);assert.strictEqual(normalized.difficulty,1);assert.strictEqual(normalized.reward,12);const engine=new engineModule.ClassicChessEngine(normalized.fen),result=engine.move('d8','h4');assert(result.ok&&result.status.type==='checkmate');
+  // Extended Lichess goals reuse the exact forced-line chess engine, not
+  // the old material-target guess or an unverified motif label.
+  assert.strictEqual(importer.typeFromThemesExtended(new Set(['mate','mateIn4'])),'mate4');
+  assert.strictEqual(importer.typeFromThemesExtended(new Set(['mate','mateIn5'])),'mate5Plus');
+  assert.strictEqual(importer.typeFromThemesExtended(new Set(['fork','advantage'])),'bestLine');
+  assert.strictEqual(importer.typeFromThemesExtended(new Set(['mate','fork'])),null,'unqualified mate must not be mislabeled');
+  const fullOpts={ClassicChessEngine:engineModule.ClassicChessEngine,puzzleBaseGold:core.puzzleBaseGold,difficultyTable:core.DIFFICULTY_TABLE};
+  const mate4Row={...row,PuzzleId:'mate4-fixture',Themes:'mate mateIn4 long',
+    Moves:'g2g4 a7a6 a2a3 a6a5 b2b3 h7h6 c2c3 d8h4'};
+  const mate4=await importer.normalizeExtendedLichessRow(mate4Row,fullOpts);
+  assert(mate4&&core.isNormalizedPuzzle(mate4)&&mate4.type==='mate4');
+  assert.strictEqual(mate4.solution.length,7);
+  const mate5Row={...row,PuzzleId:'mate5-fixture',Themes:'mate mateIn5 veryLong',
+    Moves:'g2g4 a7a6 a2a3 a6a5 b2b3 h7h6 c2c3 h6h5 h2h3 d8h4'};
+  const mate5=await importer.normalizeExtendedLichessRow(mate5Row,fullOpts);
+  assert(mate5&&core.isNormalizedPuzzle(mate5)&&mate5.type==='mate5Plus');
+  assert.strictEqual(mate5.solution.length,9);
+  const baseLine={...row,PuzzleId:'line-fixture',FEN:'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+    Moves:'e2e4 e7e5 g1f3',Themes:'advantage fork opening'};
+  const best=await importer.normalizeExtendedLichessRow(baseLine,fullOpts);
+  assert(best&&core.isNormalizedPuzzle(best)&&best.type==='bestLine');
+  assert.deepStrictEqual(best.solution,['e7e5','g1f3']);
+  assert.strictEqual(best.targetPiece,null);
+  assert.strictEqual(await importer.normalizeExtendedLichessRow({...baseLine,Popularity:'79'},fullOpts),null,
+    'extended goals retain existing popularity quality threshold');
   const lowPopularity={...row,Popularity:'79'};assert.strictEqual(await importer.normalizeLichessRow(lowPopularity,{ClassicChessEngine:engineModule.ClassicChessEngine,puzzleBaseGold:core.puzzleBaseGold,difficultyTable:core.DIFFICULTY_TABLE}),null);
   const highDeviation={...row,RatingDeviation:'101'};assert.strictEqual(await importer.normalizeLichessRow(highDeviation,{ClassicChessEngine:engineModule.ClassicChessEngine,puzzleBaseGold:core.puzzleBaseGold,difficultyTable:core.DIFFICULTY_TABLE}),null);
   const serialized=importer.serializeCatalog([normalized]);assert(serialized.includes('Lichess Open Database Puzzles'));assert(serialized.includes("license:'CC0'"));assert(serialized.includes('puzzle.fools'));

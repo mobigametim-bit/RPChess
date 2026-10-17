@@ -1,0 +1,55 @@
+name: Restore verified 30000 Lichess shard artifact
+on:
+  push:
+    branches:
+      - feature/race-chess-piece-art-20261016
+    paths:
+      - .github/workflows/restore-lichess-30000.yml
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: write
+jobs:
+  restore:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/race-chess-piece-art-20261016'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Restore independently validated 30K shard files
+        uses: actions/download-artifact@v4
+        with:
+          name: rpchess-30000-lichess-curated
+          run-id: 39070624941
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: game/js/puzzles
+      - name: Check extracted files
+        run: |
+          ls -lah game/js/puzzles/extra-star-*.mjs
+          cat game/js/puzzles/catalog-data/puzzle-expansion-report.json | head -25
+      - name: Validate exact 30000 puzzles and all quotas
+        run: |
+          npm ci --no-audit --no-fund
+          npm run puzzles:materialize
+          node tests/puzzle-expansion.cjs
+      - name: Commit to up-to-date PR branch without overwriting other changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add game/js/puzzles/extra-star-*.mjs game/js/puzzles/catalog-data/puzzle-expansion-report.json
+          if git diff --cached --quiet; then
+            echo 'Curated corpus already committed'
+          else
+            git commit -m 'feat: curate 30000 verified CC0 puzzles across all 12 stars'
+            git restore -- game/js/puzzles/puzzle-catalog.mjs
+            git status --short
+            git fetch origin feature/race-chess-piece-art-20261016
+            git rebase FETCH_HEAD
+            git push origin HEAD:feature/race-chess-piece-art-20261016
+          fi

@@ -1,0 +1,66 @@
+name: Curate 30000 official Lichess puzzles
+on:
+  push:
+    branches:
+      - feature/race-chess-piece-art-20261016
+    paths:
+      - .github/workflows/curate-lichess-30000.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  curate:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/race-chess-piece-art-20261016'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies and Zstandard
+        run: |
+          npm ci --no-audit --no-fund
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq zstd
+      - name: Verify existing Puzzle corpus
+        run: |
+          npm run puzzles:materialize
+          node tests/puzzle-expansion.cjs
+      - name: Stream full Lichess CC0 corpus and curate EXACT 30000
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --show-error --silent --retry 4 \
+            --retry-all-errors --connect-timeout 30 \
+            https://database.lichess.org/lichess_db_puzzle.csv.zst \
+            | zstd -dc | node --max-old-space-size=5120 scripts/curate-lichess-30000.cjs
+      - name: Verify full corpus and preserve old tasks
+        run: |
+          node tests/puzzle-expansion.cjs
+          npm run test:puzzles
+      - name: Publish audited shard files to acceptance branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add game/js/puzzles/extra-star-*.mjs game/js/puzzles/catalog-data/puzzle-expansion-report.json
+          git diff --cached --stat
+          if git diff --cached --quiet; then
+            echo 'No catalog changes'
+          else
+            git commit -m 'feat: curate 30000 verified CC0 puzzles across all 12 stars'
+            git push origin HEAD:feature/race-chess-piece-art-20261016
+          fi
+      - name: Preserve 30K catalog as workflow artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpchess-30000-lichess-curated
+          path: |
+            game/js/puzzles/extra-star-*.mjs
+            game/js/puzzles/catalog-data/puzzle-expansion-report.json
+          if-no-files-found: warn
+          retention-days: 14

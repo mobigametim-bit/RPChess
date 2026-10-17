@@ -29,7 +29,7 @@ async function glow(page,selector){
         dispatchEvent(new CustomEvent('rpchess:run-updated'));
       },{type,key});
       await page.locator('[data-roster-travel]').click();await page.locator(`[data-travel-type="${type}"]`).first().click();
-      await page.locator(type==='skirmish'?'[data-skirmish-start]':'[data-battle-start]').click();
+      await page.locator('[data-artifact-choice-modal]').waitFor();
       await page.setViewportSize({width:667,height:375});
       await page.locator('[data-artifact-choice="vision.piercing"]').waitFor();
       const panel=await page.locator('.artifact-choice-panel').boundingBox();assert(panel.x>=0&&panel.x+panel.width<=668&&panel.y>=0&&panel.y+panel.height<=376);

@@ -34,12 +34,14 @@ async function openCaravan(page) {
   const card = page.locator('[data-travel-type="caravan"]').first();
   assert((await card.innerText()).includes('???'), 'route must conceal its reward');
   await card.click();
-  await page.locator('[data-battle-screen]:not([hidden])').waitFor();
+  await page.locator('[data-artifact-choice-modal]').waitFor();
+  assert.strictEqual(await page.locator('[data-battle-screen]').isHidden(),true,'Caravan preparation is skipped');
   const run = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
   assert.equal(run.activeTravelChoice.type, 'caravan');
-  assert.equal(run.currentCaravan.phase, 'preparation');
+  assert.equal(run.currentCaravan.phase, 'artifact');
   assert.equal(run.activeTravelChoice.supplyPaid, 1);
-  assert(!(await page.locator('[data-battle-army-note]').innerText()).includes('стоит'), 'mercenaries must be free');
+  assert.equal(run.currentCaravan.selectedIds.length,6,'all eligible starters enter the Caravan automatically');
+  assert.strictEqual(run.currentCaravan.plan,undefined,'Caravan game plan is created after artifact selection');
   return run;
 }
 
@@ -50,12 +52,12 @@ async function openCaravan(page) {
     const errors = [];
     page.on('pageerror', (error) => errors.push(String(error.stack || error)));
     const before = await openCaravan(page);
-    await resumeCaravan(page, '[data-battle-screen]:not([hidden])');
+    await resumeCaravan(page, '[data-artifact-choice-modal]');
     const restored = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
     assert.equal(restored.currentCaravan.encounter.positionIndex, before.currentCaravan.encounter.positionIndex);
     assert.equal(restored.supplies, before.supplies, 'reload must not charge Supplies twice');
 
-    await page.locator('[data-battle-start]').click();
+    assert.deepStrictEqual(restored.currentCaravan.selectedIds,before.currentCaravan.selectedIds,'reload must preserve the automatic team');
     await page.locator('[data-artifact-choice-modal]').waitFor();
     await page.locator('[data-artifact-choice="none"]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
@@ -139,15 +141,19 @@ async function openCaravan(page) {
     const mobileErrors = [];
     mobile.on('pageerror', (error) => mobileErrors.push(String(error.stack || error)));
     await openCaravan(mobile);
-    const layout = await mobile.evaluate(() => ({
-      pageWidth:document.documentElement.scrollWidth,
-      viewportWidth:document.documentElement.clientWidth,
-      pageHeight:document.documentElement.scrollHeight,
-      viewportHeight:document.documentElement.clientHeight,
-      start:(() => {const r=document.querySelector('[data-battle-start]').getBoundingClientRect();return {top:r.top,bottom:r.bottom};})()
-    }));
-    assert(layout.pageWidth <= layout.viewportWidth + 1 && layout.pageHeight <= layout.viewportHeight + 1, `mobile preparation must fit the viewport: ${JSON.stringify(layout)}`);
-    assert(layout.start.top >= 0 && layout.start.bottom <= layout.viewportHeight + 1, 'mobile Start button must be reachable');
+    // The modal is added immediately, but its dedicated stylesheet can still
+    // be loading on a cold mobile entry. Assert geometry only once the asset
+    // gate has released the fully styled and decoded modal.
+    await mobile.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
+    await mobile.waitForFunction(()=>Boolean(document.querySelector('[data-artifact-combat-css]')?.sheet));
+    const dialog=await mobile.locator('[data-artifact-choice-modal] .artifact-choice-panel').boundingBox();
+    const viewport=mobile.viewportSize();
+    assert(dialog&&dialog.y>=-1&&dialog.y+dialog.height<=viewport.height+1,
+      `Caravan artifact modal fits mobile after stylesheet loads: ${JSON.stringify({dialog,viewport})}`);
+    assert.strictEqual(await mobile.locator('[data-battle-screen]').isHidden(),true);
+    await mobile.locator('[data-artifact-choice="none"]').click();
+    await mobile.locator('[data-classic-screen]:not([hidden])').waitFor();
+
     assert.deepEqual(mobileErrors, []);
     console.log('Caravan browser: route, free mercenaries, reload, Chess960, reward claim, aftermath and mobile PASS');
   } finally {

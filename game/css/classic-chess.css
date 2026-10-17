@@ -6,7 +6,7 @@ body.classic-chess-active { background: #050a12; }
   padding: clamp(12px, 2vw, 26px);
   background:
     linear-gradient(90deg, rgba(3, 7, 15, .94), rgba(7, 15, 26, .72) 46%, rgba(3, 7, 15, .88)),
-    url('../generated_assets/scene_battle.jpg') center / cover fixed no-repeat;
+    url('../generated_assets/scene_battle.webp') center / cover fixed no-repeat;
 }
 
 .classic-shell {

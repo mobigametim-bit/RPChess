@@ -1,8 +1,12 @@
-import { PIECE_LABELS, PIECE_GLYPHS, STATUS_LABELS } from './roster-data.mjs';
+import { STATUS_LABELS } from './roster-data.mjs';
 import { createRun, readRun, writeRun } from './run-persistence.mjs';
 import { applyNewRunPowerCarryover } from './player-rating.mjs';
 import { subscribe, t, translateLegacy } from './i18n.mjs';
 import { heroNoteForId } from './content/hero-notes.mjs';
+import { commanderTitle,commanderDescription } from './commander-portraits.mjs';
+import { currentLanguage } from './i18n.mjs';
+import { renderFormationUI } from './roster-formation-ui.mjs';
+import { normalizedFormation } from './roster-formation-core.mjs';
 
 const menu = document.querySelector('[data-reboot-foundation]');
 const classicScreen = document.querySelector('[data-classic-screen]');
@@ -15,15 +19,12 @@ const journeyButton = document.querySelector('[data-roster-travel]');
 const rosterList = document.querySelector('[data-roster-list]');
 const rosterDetail = document.querySelector('[data-roster-detail]');
 const rosterCount = document.querySelector('[data-roster-count]');
-const filterButtons = [...document.querySelectorAll('[data-roster-filter]')];
 
 let activeRun = readRun();
-let activeFilter = 'all';
 let journeyPending = false;
 
 function audio() { return globalThis.RPChessRebootAudio; }
 function contentText(value) { return translateLegacy(String(value || '')); }
-function pieceLabel(type) { return t(`piece.${type}`) || PIECE_LABELS[type] || type; }
 function statusLabel(status) { return t(`status.${status}`) || STATUS_LABELS[status] || status; }
 
 function applyStaticCopy() {
@@ -68,15 +69,6 @@ function updateJourneyLabel() {
   journeyButton.textContent = activeRun?.activeTravelChoice?.type === 'settlement' ? t('roster.returnSettlement') : t('roster.journey');
 }
 
-function filteredRoster() {
-  const roster = activeRun?.roster || [];
-  if (activeFilter === 'all') return roster;
-  if (activeFilter === 'healthy') return roster.filter((character) => character.status === 'healthy');
-  if (activeFilter === 'wounded') return roster.filter((character) => character.status === 'wounded');
-  if (activeFilter === 'dead') return roster.filter((character) => character.status === 'dead');
-  return roster;
-}
-
 function selectedCharacter() {
   if (!activeRun) return null;
   return activeRun.roster.find((character) => character.id === activeRun.selectedCharacterId) || activeRun.roster[0] || null;
@@ -93,7 +85,7 @@ function renderDetail() {
   const character = selectedCharacter();
   rosterDetail.replaceChildren();
   if (!character) return;
-  const displayName = contentText(character.name);
+  const displayName = character.isRunKing?commanderTitle(activeRun?.commanderId,currentLanguage()):contentText(character.name);
 
   const media = document.createElement('div');
   media.className = 'roster-detail__media';
@@ -113,7 +105,7 @@ function renderDetail() {
   const facts = document.createElement('div');
   facts.className = 'roster-detail__facts';
   const role = document.createElement('span');
-  role.innerHTML = `<strong>${PIECE_GLYPHS[character.pieceType] || ''} ${pieceLabel(character.pieceType)}</strong><small>${contentText(character.origin)}</small>`;
+  role.innerHTML = `<strong>${contentText(character.origin)}</strong>`;
   const cost = document.createElement('span');
   cost.innerHTML = `<small>${t('roster.commandPoints')}</small><strong>${character.commandCost}</strong>`;
   facts.append(role, cost);
@@ -123,7 +115,7 @@ function renderDetail() {
   status.textContent = statusLabel(character.status);
   const description = document.createElement('p');
   description.className = 'roster-detail__description';
-  description.textContent = contentText(heroNoteForId(character.id) || character.description);
+  description.textContent = character.isRunKing?commanderDescription(activeRun?.commanderId,currentLanguage()):contentText(heroNoteForId(character.id) || character.description);
 
   body.append(eyebrow, title, facts, status);
   const noteText = statusNote(character);
@@ -137,95 +129,33 @@ function renderDetail() {
   rosterDetail.append(media, body);
 }
 
-function cardFor(character) {
-  const displayName = contentText(character.name);
-  const displayPiece = pieceLabel(character.pieceType);
-  const displayStatus = statusLabel(character.status);
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = `roster-card roster-card--${character.status}`;
-  button.dataset.rosterCard = character.id;
-  if (character.isRunKing) button.dataset.runKing = 'true';
-  button.setAttribute('aria-pressed', activeRun?.selectedCharacterId === character.id ? 'true' : 'false');
-  button.setAttribute('aria-label', t('roster.cardAria', { name:displayName, piece:displayPiece, status:displayStatus }));
-
-  const artWrap = document.createElement('span');
-  artWrap.className = 'roster-card__art-wrap';
-  const art = document.createElement('img');
-  art.className = 'roster-card__art';
-  art.src = character.pieceArt;
-  art.alt = '';
-  art.loading = 'eager';
-  artWrap.append(art);
-
-  const glyph = document.createElement('span');
-  glyph.className = 'roster-card__glyph';
-  glyph.textContent = PIECE_GLYPHS[character.pieceType] || '';
-  glyph.setAttribute('aria-hidden', 'true');
-  const value = document.createElement('span');
-  value.className = 'roster-card__value';
-  value.textContent = String(character.commandCost);
-  value.title = t('roster.commandPoints');
-  artWrap.append(glyph, value);
-
-  const body = document.createElement('span');
-  body.className = 'roster-card__body';
-  const name = document.createElement('strong');
-  name.className = 'roster-card__name';
-  name.textContent = displayName;
-  const meta = document.createElement('span');
-  meta.className = 'roster-card__meta';
-  meta.textContent = `${displayPiece} · ${contentText(character.origin)}`;
-  const status = document.createElement('span');
-  status.className = `roster-status roster-status--${character.status}`;
-  status.textContent = displayStatus;
-  body.append(name, meta, status);
-
-  button.append(artWrap, body);
-  button.addEventListener('click', () => {
-    audio()?.click();
-    activeRun = writeRun({ ...activeRun, selectedCharacterId: character.id });
-    renderRoster();
-  });
-  return button;
-}
-
-function renderFilters() {
-  for (const button of filterButtons) {
-    const filter = button.dataset.rosterFilter;
-    const count = filter === 'all' ? (activeRun?.roster.length || 0) : (activeRun?.roster.filter((character) => character.status === filter).length || 0);
-    button.classList.toggle('is-active', filter === activeFilter);
-    button.setAttribute('aria-pressed', filter === activeFilter ? 'true' : 'false');
-    const label = t(`roster.filter.${filter}`);
-    button.dataset.rosterFilterLabel = label;
-    button.textContent = `${label} ${count}`;
-  }
-}
-
 function renderRoster() {
   if (!activeRun || !rosterList) return;
   applyStaticCopy();
   updateJourneyLabel();
-  renderFilters();
   renderDetail();
-  rosterList.replaceChildren();
-  const list = filteredRoster();
-  if (rosterCount) rosterCount.textContent = t('roster.inFormation', { count:activeRun.roster.filter((character) => character.status !== 'dead').length });
-  if (!list.length) {
-    const empty = document.createElement('div');
-    empty.className = 'roster-empty';
-    empty.textContent = activeFilter === 'dead' ? t('roster.empty.dead') : t('roster.empty.filtered');
-    rosterList.append(empty);
-    return;
-  }
-  for (const character of list) rosterList.append(cardFor(character));
+  const formation=normalizedFormation(activeRun);
+  if (rosterCount) rosterCount.textContent = `${formation.members.length} / 16`;
+  renderFormationUI(rosterList,activeRun,{
+    onSelect:(id)=>{
+      if (activeRun.selectedCharacterId===id) return;
+      audio()?.click?.();
+      activeRun=writeRun({...activeRun,selectedCharacterId:id});
+      renderDetail();
+      renderRoster();
+    },
+    onCommit:(next)=>{
+      audio()?.click?.();
+      activeRun=writeRun(next);
+      renderRoster();
+    }
+  });
 }
 
 function beginRun(event = null) {
   const previousRun = readRun();
   if (previousRun?.ended) applyNewRunPowerCarryover();
-  activeRun = writeRun(createRun({ playerName: event?.detail?.playerName }));
-  activeFilter = 'all';
+  activeRun = writeRun(createRun({ playerName:event?.detail?.playerName,commanderId:event?.detail?.commanderId }));
   updateContinueState();
   setScene('roster');
   renderRoster();
@@ -238,7 +168,6 @@ function continueRun() {
     updateContinueState();
     return;
   }
-  activeFilter = 'all';
   if ((activeRun.currentCombat && activeRun.activeTravelChoice?.type === activeRun.currentCombat.type) ||
       (activeRun.currentCaravan?.phase === 'combat' && activeRun.activeTravelChoice?.type === 'caravan')) {
     // A saved fight is the current scene, even when Continue is pressed on another device.
@@ -306,11 +235,6 @@ function syncRun() {
   if (rosterScreen && !rosterScreen.hidden && activeRun && !activeRun.ended) renderRoster();
 }
 
-filterButtons.forEach((button) => button.addEventListener('click', () => {
-  audio()?.click();
-  activeFilter = button.dataset.rosterFilter || 'all';
-  renderRoster();
-}));
 
 document.querySelector('[data-roster-menu]')?.addEventListener('click', returnToMenu);
 journeyButton?.addEventListener('click', beginJourney);
@@ -329,7 +253,6 @@ updateJourneyLabel();
 
 globalThis.RPChessRoster = Object.freeze({
   get run() { return activeRun; },
-  get filter() { return activeFilter; },
   render: renderRoster,
   beginRun,
   continueRun,

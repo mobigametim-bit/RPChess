@@ -40,7 +40,8 @@ equal('assets/vfx/pin_ice_full.png',piece.optimizePngBuffer(read(GAME,'assets/vf
 equal('assets/vfx/aura_white.png',piece.optimizePngBuffer(read(GAME,'assets/vfx/aura_white.png'),aura.AURA_RUNTIME_MAX_SIDE).buffer);
 equal('assets/races/orcs/pieces/pawn.png',expectedPng('assets/races/orcs/pieces/pawn.png',piece.PIECE_RUNTIME_MAX_SIDE,piece.PIECE_RUNTIME_MAX_BYTES));
 equal('assets/kings/oathkeeper/portrait.png',expectedPng('assets/kings/oathkeeper/portrait.png',portrait.PORTRAIT_RUNTIME_MAX_SIDE,portrait.PORTRAIT_RUNTIME_MAX_BYTES));
-equal('assets/events/register-04/backgrounds/generic/forest_crossroad.png',background.optimizeBackgroundBuffer(read(GAME,'assets/events/register-04/backgrounds/generic/forest_crossroad.png'),background.BACKGROUND_RUNTIME_CHANNEL_BITS).buffer);
+equal('assets/events/register-04/backgrounds/generic/forest_crossroad.webp',read(GAME,'assets/events/register-04/backgrounds/generic/forest_crossroad.webp'));
+assert(!fs.existsSync(path.join(DIST,'assets/events/register-04/backgrounds/generic/forest_crossroad.png')),'Event PNG masters must not be published to dist');
 for(const relative of brandLogo.BRAND_LOGO_FILES)equal(relative,piece.optimizePngBuffer(read(GAME,relative),brandLogo.BRAND_LOGO_RUNTIME_MAX_SIDE).buffer);
 
 for(const relative of [

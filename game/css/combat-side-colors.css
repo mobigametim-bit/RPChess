@@ -64,3 +64,20 @@ body.run-combat-board-active .classic-square--check.classic-square--selected:has
 body.run-combat-board-active .classic-square--check.classic-square--last:has(.classic-piece-marker)::after{
   background:var(--combat-aura-image) center/100% 100% no-repeat!important;
 }
+
+/* New dedicated chess sprites replace decorative side auras, not state indicators.
+   Legacy race silhouettes still retain their old white/black aura and role marker. */
+body.run-combat-board-active .classic-square:has(.classic-piece--new-race)::after {
+  background-image:none!important;
+}
+body.run-combat-board-active .classic-square--last:has(.classic-piece--new-race)::after {
+  background:rgba(246,212,92,.16)!important;
+}
+body.run-combat-board-active .classic-square--selected:has(.classic-piece--new-race)::after {
+  background:rgba(246,212,92,.16)!important;
+  box-shadow:inset 0 0 0 clamp(3px,.45vw,6px) #f2ce68!important;
+}
+body.run-combat-board-active .classic-square--check:has(.classic-piece--new-race)::after {
+  /* Red check is gameplay feedback; white/black decorative auras are gone. */
+  background:var(--combat-aura-image) center/100% 100% no-repeat!important;
+}

@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS leaderboard_v1 (
   week INTEGER NOT NULL CHECK(week>=0),
   power INTEGER NOT NULL CHECK(power>=0),
   run_id TEXT NOT NULL,
+  commander_id TEXT NOT NULL DEFAULT 'oathkeeper',
   achieved_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );

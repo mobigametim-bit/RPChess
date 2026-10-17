@@ -23,7 +23,7 @@ async function exercise(browser, type) {
     }, { key:runKey, type });
     await page.locator('[data-roster-travel]').click();
     await page.locator(`[data-travel-type="${type}"]`).first().click();
-    await page.locator(type === 'battle' ? '[data-battle-start]' : '[data-skirmish-start]').click();
+    await page.locator('[data-artifact-choice-modal]').waitFor();
     await page.locator('[data-artifact-choice="none"]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     assert.strictEqual((await page.evaluate(({ key }) => JSON.parse(localStorage.getItem(key)).currentCombat?.type, { key:runKey })), type);

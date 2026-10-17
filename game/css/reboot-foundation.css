@@ -94,7 +94,7 @@ button:focus-visible { outline: 3px solid #8bcfff; outline-offset: 3px; }
   place-items: center;
   padding: clamp(18px, 3vw, 42px);
   overflow: hidden;
-  background: #050a12 url('../generated_assets/splash_poster.jpg') center / cover fixed no-repeat;
+  background: #050a12 url('../generated_assets/splash_poster.webp') center / cover fixed no-repeat;
 }
 
 .reboot-menu-screen::before {

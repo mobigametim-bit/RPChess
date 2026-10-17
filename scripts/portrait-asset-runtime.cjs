@@ -5,7 +5,7 @@ const { parsePng, optimizePngBuffer, formatBytes } = require('./piece-asset-runt
 const PORTRAIT_RUNTIME_MAX_SIDE = 640;
 const PORTRAIT_RUNTIME_MAX_BYTES = 1536 * 1024;
 const PORTRAIT_RUNTIME_MAX_TOTAL_BYTES = 30 * 1024 * 1024;
-const PORTRAIT_RUNTIME_EXPECTED_COUNT = 37;
+const PORTRAIT_RUNTIME_EXPECTED_COUNT = 43;
 
 function collectPortraitAssetPaths(root) {
   const output = [];
@@ -17,8 +17,11 @@ function collectPortraitAssetPaths(root) {
       if (fs.existsSync(path.join(root, relative))) output.push(relative);
     }
   }
-  const oathkeeper = 'assets/kings/oathkeeper/portrait.png';
-  if (fs.existsSync(path.join(root, oathkeeper))) output.push(oathkeeper);
+  // All seven selectable commander portraits are required in the deployed build.
+  for(const id of ['oathkeeper','stone_crown','wanderer_queen','pilgrim','fox_prince','ash_regent','nameless_heir']){
+    const relative=`assets/kings/${id}/portrait.png`;
+    if(fs.existsSync(path.join(root,relative)))output.push(relative);
+  }
   return [...new Set(output)].sort();
 }
 

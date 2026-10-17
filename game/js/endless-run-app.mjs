@@ -60,7 +60,7 @@ function ensureScreen() {
   const icons={weeks:'generated_assets/node_story.png',goldEarned:'generated_assets/reward_gold.png',skirmishWins:'generated_assets/node_battle.png',battleWins:'generated_assets/node_elite.png',puzzlesSolved:'generated_assets/node_training.png',eventsResolved:'generated_assets/node_story.png',heroesRecruited:'generated_assets/reward_recruit.png',finalPower:'assets/doctrines/royal_court/emblem.png',caravansDefended:'assets/doctrines/cavalry/emblem.png'};
   const metric=(key,extra='')=>`<div class="endless-run-metric ${extra}"><img src="${icons[key]}" alt="" aria-hidden="true"><span></span><strong data-endless-run-metric="${key}">0</strong></div>`;
   screen.innerHTML = `
-    <div class="endless-run-backdrop" aria-hidden="true"><img src="generated_assets/scene_defeat.jpg" alt=""></div>
+    <div class="endless-run-backdrop" aria-hidden="true"><img src="generated_assets/scene_defeat.webp" alt=""></div>
     <div class="endless-run-shell">
       <aside class="endless-run-controls">
         <img class="endless-run-logo" data-brand-logo src="${brandLogoSrc()}" alt="RPChess">

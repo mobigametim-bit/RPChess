@@ -11,7 +11,7 @@ const { pathToFileURL } = require('url');
   const appSource = fs.readFileSync(path.join(game, 'js/events-app.mjs'), 'utf8');
 
   const demonPath = assets.eventBackgroundPath({ id: 'E-DEMON-VISUAL', race: 'Демоны' });
-  assert(/^assets\/events\/register-04\/backgrounds\/demons\/(infernal_breach|ashen_altar)\.png$/.test(demonPath), `unexpected Demon Event background: ${demonPath}`);
+  assert(/^assets\/events\/register-04\/backgrounds\/demons\/(infernal_breach|ashen_altar)\.webp$/.test(demonPath), `unexpected Demon Event background: ${demonPath}`);
 
   assert(appSource.includes('class="events-backdrop"'), 'Event scene must own a dedicated artwork layer instead of relying on the scene background shorthand');
   assert(appSource.includes('data-events-background'), 'Event scene must render an explicit background image element');

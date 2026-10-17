@@ -54,7 +54,9 @@ function visibleScreens() {
 }
 function mediaSources() {
   const sources = new Set();
-  for (const screen of visibleScreens()) {
+  // Artifact choices are modal roots under <body>, not <main> under #app.
+  const roots=[...visibleScreens(),...document.querySelectorAll('[data-artifact-choice-modal],[data-player-identity-modal]:not([hidden])')].filter(visible);
+  for (const screen of roots) {
     // Prioritize viewport imagery, not thousands of portraits from hidden screens.
     const nodes = [screen, ...screen.querySelectorAll('*')].slice(0, 900);
     for (const node of nodes) {
@@ -165,6 +167,19 @@ function onSceneMutation(records) {
     prepareScene(token);
   });
 }
+// For interfaces that update their images without switching top-level <main>
+// (Arena catalog / battle / rival dialog). Call synchronously after DOM updates,
+// before the next paint. Do not show a mask when all visible art is cached.
+function requestVisibleAssets(){
+  if(!overlay||!bootFinished)return false;
+  if(!pendingStyles().length&&!mediaSources().length)return false;
+  const token=++generation;
+  show();
+  void prepareScene(token);
+  return true;
+}
+globalThis.RPChessLoading=Object.freeze({requestVisibleAssets});
+
 if (overlay && app) {
   overlay.dataset.loaderInitialized = '1';
   localize();

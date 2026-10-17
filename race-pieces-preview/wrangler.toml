@@ -1,0 +1,8 @@
+name = "rpchess-race-pieces-preview"
+compatibility_date = "2026-10-15"
+
+# A separate acceptance build for PR #160 only.
+# Preserve the live GitHub Pages, VK, Yandex and previous preview deployments.
+[assets]
+directory = "../dist"
+not_found_handling = "single-page-application"

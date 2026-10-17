@@ -493,3 +493,7 @@ html body .puzzle-piece-marker--b::before {
     justify-self:start!important;
   }
 }
+/* The dedicated white/black puzzle sprites make technical corner figurines unnecessary. */
+html body .puzzle-square:has(.puzzle-piece--new-race) .puzzle-piece-marker {
+  display:none!important;
+}

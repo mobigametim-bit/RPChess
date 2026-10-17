@@ -1,0 +1,205 @@
+name: Deploy RPChess race chess pieces acceptance preview
+
+on:
+  push:
+    branches:
+      - feature/race-chess-piece-art-20261016
+    paths:
+      - race-pieces-preview/**
+      - .github/workflows/race-pieces-preview.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rpchess-race-pieces-preview
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.repository == 'mobigametim-bit/RPChess' &&
+      github.ref == 'refs/heads/feature/race-chess-piece-art-20261016' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'push' && github.event.head_commit.message == 'deploy: race pieces preview')
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout acceptance branch
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Restore runtime asset cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build playable preview
+        run: npm run build
+      - name: Verify 30000 Lichess goals, stars and original legacy catalog
+        run: |
+          npm run test:puzzles
+          node tests/puzzle-expansion.cjs
+      - name: Install Chromium for targeted acceptance
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+      - name: Verify Roster, Skirmish, named combat auras and all Event resource icons
+        env:
+          RPCHESS_GATE_PREFIX: /RPChess
+          RPCHESS_BROWSER_TEST: roster-browser.cjs,skirmish-browser.cjs,combat-side-colors-browser.cjs,events-browser.cjs,puzzles-browser.cjs
+        run: npm run test:browser
+      - name: Verify all 168 color-specific race chess pieces and unified Arena art
+        run: |
+          test -f dist/index.html
+          test -f dist/js/arena-app.mjs
+          test -f dist/js/race-assets.mjs
+          test -f dist/css/combat-side-colors.css
+          test -f dist/css/chess-ai-polish.css
+          # Roster formation is part of this playable acceptance build.
+          test -s dist/js/roster-formation-core.mjs
+          test -s dist/js/roster-formation-ui.mjs
+          test -s dist/css/roster-formation.css
+          test -s dist/js/puzzles/puzzle-theme-catalog.mjs
+          test -s dist/js/puzzles/extra-star-01.mjs
+          test -s dist/js/puzzles/extra-star-12.mjs
+          test -s dist/assets/events/register-04/backgrounds/generic/forest_crossroad.webp
+          test "$(find dist/assets/events/register-04 -type f -name '*.webp' | wc -l)" -eq 37
+          test "$(find dist/assets/events/register-04 -type f -name '*.png' | wc -l)" -eq 0
+          find dist/assets/events/register-04 -type f -name '*.webp' -printf '%s\n' | awk '{sum+=$1;n++}END{printf "Event WebP assets: %d files, %.2f MiB\n",n,sum/1048576;if(sum>12*1048576)exit 1}'
+          grep -Fq 'featuredPuzzleTheme(puzzle,currentLanguage())' dist/js/puzzles/puzzle-app.mjs
+          grep -Fq 'ensurePuzzleStylesReady' dist/js/puzzles/puzzle-app.mjs
+          grep -Fq 'rpchess:puzzle-shown' dist/js/ui-redesign-final.mjs
+          grep -q 'isAllowedSquare' dist/js/roster-formation-core.mjs
+          grep -q 'bishopColors' dist/js/skirmish-core.mjs
+          grep -Fq 'suppl(?:y|ies)' dist/js/ux-consistency.mjs
+          grep -Fq 'RPChessResourceIcons?.iconize?.(choices)' dist/js/events-app.mjs
+          grep -q 'formationSelectedIds(activeRun)' dist/js/skirmish-app.mjs
+          count=$(find dist/assets/races -type f -path '*/pieces/board/*/*.png' | wc -l)
+          echo "Dedicated piece PNGs: $count"
+          test "$count" -eq 168
+          for race in humans elves orcs undead dark_elves dwarves demons angels dragonborn beastfolk constructs animals fae goblins; do
+            for color in white black; do
+              for piece in pawn knight bishop rook queen king; do
+                test -s "dist/assets/races/$race/pieces/board/$color/$piece.png"
+              done
+            done
+          done
+          # The Arena catalog uses those same race/side-specific board PNGs.
+          grep -q 'boardRacePiecePath' dist/js/arena-app.mjs
+          grep -q 'racePiecePath' dist/js/arena-app.mjs
+          grep -q 'boardRacePiecePath' dist/js/race-assets.mjs
+          grep -Fq 'return boardRacePiecePath(raceTag,pieceType,color)' dist/js/race-assets.mjs
+          # Named heroes and the Run King must continue using their own pieceArt.
+          grep -Fq 'character?.boardPieceArt||character?.pieceArt||boardRacePiecePath' dist/js/race-assets.mjs
+          # The acceptance build also contains the latest no-prep combat polish.
+          grep -q 'automaticBattleSelection' dist/js/battle-app.mjs
+          grep -q 'automaticCombatSelection' dist/js/skirmish-app.mjs
+          grep -q 'requestVisibleAssets' dist/js/arena-app.mjs
+          grep -q 'data-artifact-choice-modal' dist/js/screen-loading.mjs
+          grep -q 'personal leaderboard lookup unavailable' dist/js/leaderboard-client.mjs
+          grep -q 'VKWebAppGetLaunchParams' dist/js/leaderboard-client.mjs
+          grep -q 'leaderboard.notAuthenticated' dist/js/player-identity-chronicle.mjs
+          # Cosmetic commander portrait selection, without changing the Roster layout.
+          test -s dist/js/commander-portraits.mjs
+          grep -q 'data-identity-commander' dist/js/player-identity-chronicle.mjs
+          grep -q 'min-height:531px' dist/css/player-identity-chronicle.css
+          # New Journey cards use gold surfaces; the selected portrait and bio are vertically centered.
+          grep -Fq 'align-content:center;align-items:center' dist/css/player-identity-chronicle.css
+          grep -Fq 'grid-template-columns:95px 1fr;align-items:center' dist/css/player-identity-chronicle.css
+          grep -Fq 'radial-gradient(circle at center top,#342715' dist/css/player-identity-chronicle.css
+          grep -Fq '20261017-commander-gold-vk-3' dist/js/player-identity-chronicle.mjs
+          grep -Fq 'max-height:420px' dist/css/player-identity-chronicle.css
+          npm run test:identity
+          grep -q 'commanderDescription' dist/js/roster-app.mjs
+          grep -q 'commanderId' dist/js/chronicle-core.mjs
+          grep -q 'commanderId' dist/js/leaderboard-client.mjs
+          for commander in oathkeeper stone_crown wanderer_queen pilgrim fox_prince ash_regent nameless_heir; do
+            test -s "dist/assets/kings/$commander/portrait.png"
+          done
+          test "$(find dist/assets/heroes dist/assets/kings -type f -name portrait.png | wc -l)" -eq 43
+
+      - name: Require Cloudflare credentials
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$TOKEN" || { echo "::error::CLOUDFLARE_API_TOKEN is missing"; exit 1; }
+          test -n "$ACCOUNT" || { echo "::error::CLOUDFLARE_ACCOUNT_ID is missing"; exit 1; }
+      - name: Deploy separate playable preview Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config race-pieces-preview/wrangler.toml
+      - name: Smoke-check public preview and all-new Arena catalog images
+        run: |
+          base='https://rpchess-race-pieces-preview.mobigametim.workers.dev'
+          echo "Inspecting public response codes after deployment:"
+          for resource in '/' '/index.html' '/js/race-assets.mjs' '/assets/races/humans/pieces/board/white/king.png' '/assets/races/elves/pieces/board/white/king.png' '/assets/races/constructs/pieces/board/black/rook.png'; do
+            status=$(curl -sSL --max-time 15 -o /tmp/rpchess-debug-file -w '%{http_code}' "$base$resource" || true)
+            size=$(wc -c </tmp/rpchess-debug-file || echo 0)
+            echo "$resource: HTTP $status, bytes $size"
+          done
+          echo "Root response headers:"
+          curl -sSI --max-time 15 "$base/" | head -n 20 || true
+          for attempt in 1 2 3 4 5 6; do
+            if curl -fsS --max-time 15 "$base/" -o /tmp/rpchess-piece-preview.html &&
+               grep -q 'data-game-loading' /tmp/rpchess-piece-preview.html &&
+               curl -fsS --max-time 15 "$base/js/race-assets.mjs" -o /tmp/rpchess-piece-runtime.js &&
+               grep -q 'boardRacePiecePath' /tmp/rpchess-piece-runtime.js &&
+              curl -fsS --max-time 20 "$base/js/puzzles/extra-star-01.mjs" -o /tmp/rpchess-lichess-star1.mjs &&
+              grep -q 'EXTRA_PUZZLES' /tmp/rpchess-lichess-star1.mjs &&
+               curl -fsS --max-time 15 "$base/assets/races/humans/pieces/board/white/king.png" -o /tmp/rpchess-piece-new.png &&
+               curl -fsS --max-time 15 "$base/assets/races/orcs/pieces/board/black/knight.png" -o /tmp/rpchess-piece-orc-new.png &&
+               curl -fsS --max-time 15 "$base/assets/races/elves/pieces/board/white/king.png" -o /tmp/rpchess-piece-catalog-original.png &&
+               curl -fsS --max-time 15 "$base/assets/races/constructs/pieces/board/black/rook.png" -o /tmp/rpchess-piece-orc-original.png &&
+               test "$(od -An -tx1 -N8 /tmp/rpchess-piece-new.png | tr -d ' \n')" = '89504e470d0a1a0a' &&
+               test "$(od -An -tx1 -N8 /tmp/rpchess-piece-orc-new.png | tr -d ' \n')" = '89504e470d0a1a0a' &&
+               test "$(od -An -tx1 -N8 /tmp/rpchess-piece-catalog-original.png | tr -d ' \n')" = '89504e470d0a1a0a' &&
+               test "$(od -An -tx1 -N8 /tmp/rpchess-piece-orc-original.png | tr -d ' \n')" = '89504e470d0a1a0a'; then
+              echo "PLAYABLE_PREVIEW_URL=$base/"
+              exit 0
+            fi
+            sleep 6
+          done
+          echo "::error::Live PR160 preview or new all-race sprites failed smoke checks"
+          exit 1
+      - name: Verify published portrait gallery and optimized commander PNG
+        run: |
+          set -euo pipefail
+          base='https://rpchess-race-pieces-preview.mobigametim.workers.dev'
+          curl -fsS --max-time 20 "$base/js/commander-portraits.mjs" -o /tmp/commander-portraits-preview.mjs
+          echo 'Commander module bytes:' $(wc -c </tmp/commander-portraits-preview.mjs)
+          grep -q 'wanderer_queen' /tmp/commander-portraits-preview.mjs
+          curl -fsS --max-time 20 "$base/js/player-identity-chronicle.mjs" -o /tmp/commander-identity-preview.mjs
+          grep -q 'data-identity-commander' /tmp/commander-identity-preview.mjs
+          for commander in oathkeeper stone_crown wanderer_queen pilgrim fox_prince ash_regent nameless_heir; do
+            status=$(curl -sS -L --max-time 20 -w '%{http_code}' "$base/assets/kings/$commander/portrait.png" -o "/tmp/commander-$commander.png")
+            signature=$(od -An -tx1 -N8 "/tmp/commander-$commander.png" | tr -d ' \n')
+            echo "$commander => HTTP $status, bytes $(wc -c <"/tmp/commander-$commander.png"), signature $signature"
+            test "$status" = '200'
+            test "$signature" = '89504e470d0a1a0a'
+          done
+      - name: Validate live leaderboard access from this preview origin
+        run: |
+          set -euo pipefail
+          origin='https://rpchess-race-pieces-preview.mobigametim.workers.dev'
+          api='https://rpchess-leaderboard.mobigametim.workers.dev'
+          curl -fsS --max-time 20 -D /tmp/rpchess-leaderboard-origin-headers \
+            -H "Origin: $origin" "$api/v1/leaderboard" -o /tmp/rpchess-leaderboard.json
+          grep -Fqi "access-control-allow-origin: $origin" /tmp/rpchess-leaderboard-origin-headers
+          node -e "const d=require('/tmp/rpchess-leaderboard.json');if(!Array.isArray(d.top)||!d.top.every(row=>typeof row.commanderId==='string'))process.exit(1)"
+          echo 'Great Commanders works from the playable preview origin'
+

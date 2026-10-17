@@ -37,10 +37,30 @@ function normalizeRaceTag(value) {
   return RACE_TAG_BY_LABEL[raw.toLocaleLowerCase('ru-RU')]||'mixed';
 }
 function oppositeColor(color){return color==='b'?'w':'b';}
+// Every race now has a separate light/dark chess set. The same sprites are used
+// on the board AND in Arena opponent/squad cards; no legacy catalog art fallback.
+const BOARD_PIECE_RACES=RACE_TAGS;
+function boardRacePiecePath(raceTag,pieceType,color='b'){
+  const race=normalizeRaceTag(raceTag),resolved=race==='mixed'?'humans':race;
+  const type=PIECE_TYPES.includes(pieceType)?pieceType:'pawn';
+  return `assets/races/${resolved}/pieces/board/${color==='w'?'white':'black'}/${type}.png`;
+}
 function racePiecePath(raceTag,pieceType,color='b'){
-  const race=normalizeRaceTag(raceTag),type=PIECE_TYPES.includes(pieceType)?pieceType:'pawn';
-  if(race==='humans')return `assets/races/humans/pieces/${color==='w'?'white':'black'}/${type}.png`;
-  const resolved=race==='mixed'?'humans':race;return `assets/races/${resolved}/pieces/${type}.png`;
+  return boardRacePiecePath(raceTag,pieceType,color);
+}
+function boardPieceArtForTheme(theme,pieceType,color){
+  const race=theme?.enemyRoleRaces?.[pieceType]||theme?.enemyRaceTag||'humans';
+  return boardRacePiecePath(race,pieceType,color||theme?.enemyColor||'b');
+}
+function boardPieceArtForCharacter(character,color='w'){
+  // Named roster characters keep their original identity art until dedicated
+  // new board sprites are supplied. Only generic unnamed pieces use race art.
+  return character?.boardPieceArt||character?.pieceArt||boardRacePiecePath(character?.raceTag||'humans',character?.pieceType,color);
+}
+function setBoardPieceArt(image,src){
+  if(!image)return;
+  image.src=src;
+  image.classList.toggle('classic-piece--new-race',String(src).includes('/pieces/board/'));
 }
 function raceBoardTiles(raceTag){
   const race=normalizeRaceTag(raceTag);
@@ -120,7 +140,7 @@ function installRaceBoardRuntime(){
 }
 function eventBackgroundPath(event){
   const id=event?.id||event?.eventId||'event',race=normalizeRaceTag(event?.raceTag||event?.race),pool=race==='mixed'?BACKGROUND_POOLS.generic:(BACKGROUND_POOLS[race]||BACKGROUND_POOLS.generic),filename=pool[hashString(`${id}:background`)%pool.length],folder=race==='mixed'?'generic':(BACKGROUND_FOLDER_BY_RACE[race]||race);
-  return `assets/events/register-04/backgrounds/${folder}/${filename}`;
+  return `assets/events/register-04/backgrounds/${folder}/${filename.replace(/\.png$/,'.webp')}`;
 }
 function deterministicPlayerColor(seed,explicit=null){if(explicit==='w'||explicit==='b')return explicit;return hashString(`${seed}:player-color`)%100<36?'b':'w';}
 function deterministicRace(seed,explicit=null){const tag=normalizeRaceTag(explicit);if(tag!=='mixed')return tag;return RACE_TAGS[hashString(`${seed}:enemy-race`)%RACE_TAGS.length];}
@@ -136,4 +156,4 @@ function pieceArtForTheme(theme,pieceType,color){const race=theme?.enemyRoleRace
 
 installRaceBoardRuntime();
 
-export {RACE_TAGS,PIECE_TYPES,BOARD_TILE_FILES,BOARD_THEME_STYLE_ID,RACE_LABELS,RACE_TAG_BY_LABEL,BACKGROUND_POOLS,BACKGROUND_FOLDER_BY_RACE,hashString,normalizeRaceTag,oppositeColor,racePiecePath,raceBoardTiles,installRaceBoardStyles,applyRaceBoardTheme,currentCombatBoardRace,queueRaceBoardRuntimeInstall,installRaceBoardRuntime,eventBackgroundPath,deterministicPlayerColor,deterministicRace,mixedRoleRaces,combatTheme,pieceArtForTheme};
+export {RACE_TAGS,PIECE_TYPES,BOARD_TILE_FILES,BOARD_THEME_STYLE_ID,RACE_LABELS,RACE_TAG_BY_LABEL,BACKGROUND_POOLS,BACKGROUND_FOLDER_BY_RACE,hashString,normalizeRaceTag,oppositeColor,racePiecePath,BOARD_PIECE_RACES,boardRacePiecePath,boardPieceArtForTheme,boardPieceArtForCharacter,setBoardPieceArt,raceBoardTiles,installRaceBoardStyles,applyRaceBoardTheme,currentCombatBoardRace,queueRaceBoardRuntimeInstall,installRaceBoardRuntime,eventBackgroundPath,deterministicPlayerColor,deterministicRace,mixedRoleRaces,combatTheme,pieceArtForTheme};

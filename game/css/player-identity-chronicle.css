@@ -199,3 +199,125 @@
  html[data-landscape-ui='1'] .chronicle-leaderboard-row{min-height:17px!important;font-size:11px}
  html[data-landscape-ui='1'] .chronicle-commanders-title{font-size:18px}
 }
+
+/* Cosmetic commander selection lives in the existing name modal. */
+.identity-modal .identity-panel{width:min(990px,100%);max-height:min(96dvh,870px);overflow-y:auto;overscroll-behavior:contain}
+.identity-commander-section{display:grid;gap:10px}
+.identity-commander-label{color:#ddb86a;font-size:11px;letter-spacing:.13em;font-weight:800}
+.identity-commander-layout{display:grid;grid-template-columns:minmax(0,1.52fr) minmax(210px,.85fr);gap:12px;min-width:0}
+.identity-commander-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;align-content:start}
+.identity-commander-option{position:relative;display:grid;grid-template-rows:86px auto;gap:5px;padding:5px;background:linear-gradient(180deg,#241c12,#0b0b0b);border:1px solid rgba(216,177,93,.5);color:#f1dfb5;min-width:0;cursor:pointer;text-align:center}
+.identity-commander-option img{width:100%;height:86px;object-fit:cover;object-position:center 27%;background:#201a12}
+.identity-commander-option span{font:11px/1.2 Georgia,serif;overflow-wrap:anywhere;align-self:center;min-height:27px}
+.identity-commander-option[aria-pressed="true"]{border-color:#e6bf68;box-shadow:inset 0 0 0 1px rgba(230,191,104,.35),0 0 12px #d29b4530}
+.identity-commander-option[aria-pressed="true"]::after{content:"✓";position:absolute;right:6px;top:6px;color:#0b161c;background:#eed083;border-radius:50%;width:20px;height:20px;font:700 14px/20px sans-serif}
+.identity-commander-option:hover{border-color:#cfb477}
+.identity-commander-option:focus-visible{outline:2px solid #ffd88c;outline-offset:2px}
+.identity-commander-preview{display:grid;gap:8px;align-content:center;align-items:center;padding:8px;background:radial-gradient(circle at center top,#342715,#0c0a08 75%);border:1px solid rgba(216,177,93,.65);min-width:0}
+.identity-commander-preview>img{width:100%;height:190px;object-fit:cover;object-position:center 28%;border:1px solid #b49456}
+.identity-commander-preview h3{margin:0 0 6px;color:#f4d89e;font:25px/1.05 'BrahmsGotischCyr',Georgia,serif}
+.identity-commander-preview p{margin:0;color:#d2c2a5;font:12px/1.45 Georgia,serif}
+.identity-form{gap:12px;margin-top:17px}
+.identity-copy{margin-top:12px!important}
+.chronicle-current-profile{display:flex;align-items:center;gap:7px;min-width:0}
+.chronicle-current-profile img{width:clamp(29px,3.5vw,42px);height:clamp(29px,3.5vw,42px);object-fit:cover;object-position:center 25%;border:1px solid #c9ab6b;background:#10273f;flex:none}
+.chronicle-current-profile h3{flex:1;margin:0;min-width:0}
+.chronicle-leaderboard-avatar{width:clamp(18px,2vw,24px);height:clamp(18px,2vw,24px);object-fit:cover;object-position:center 25%;border:1px solid rgba(233,193,119,.8);background:rgba(6,23,43,.85);flex:none}
+.chronicle-leaderboard-row{grid-template-columns:19px 23px minmax(0,1fr) 31px;gap:3px}
+.chronicle-self-profile{display:inline-flex;align-items:center;gap:5px;min-width:0}
+.chronicle-self-profile img{width:23px;height:23px;object-fit:cover;border:1px solid #e0b977}
+@media(max-width:760px){
+ .identity-commander-layout{grid-template-columns:minmax(0,1.4fr) minmax(145px,.8fr)}
+ .identity-commander-option{grid-template-rows:70px auto}
+ .identity-commander-option img{height:70px}
+ .identity-commander-preview>img{height:130px}
+ .identity-commander-preview h3{font-size:19px}
+ .identity-commander-preview p{font-size:11px;line-height:1.34}
+}
+@media(max-width:530px) and (orientation:portrait){
+ .identity-commander-layout{grid-template-columns:1fr}
+ .identity-commander-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .identity-commander-preview{grid-template-columns:95px 1fr;align-items:center}
+ .identity-commander-preview>img{height:106px}
+ .identity-commander-option img{height:82px}
+ .identity-commander-option{grid-template-rows:82px auto}
+}
+@media(orientation:landscape) and (max-height:530px){
+ .identity-modal{padding:4px}
+ .identity-modal .identity-panel{max-height:calc(100dvh - 8px);padding:10px 14px!important}
+ .identity-modal .reboot-modal__header{padding-bottom:6px}
+ .identity-modal .reboot-modal__header h2{font-size:30px}
+ .identity-copy{margin-top:5px!important;font-size:12px!important}
+ .identity-field input{min-height:39px;padding:6px 10px;font-size:16px}
+ .identity-form{gap:7px;margin-top:6px}
+ .identity-commander-layout{grid-template-columns:minmax(0,1.7fr) minmax(175px,.75fr)}
+ .identity-commander-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+ .identity-commander-option{grid-template-rows:62px auto;gap:3px;padding:3px}
+ .identity-commander-option img{height:62px}
+ .identity-commander-option span{font-size:10px;min-height:20px}
+ .identity-commander-preview{grid-template-columns:70px 1fr;gap:7px;align-items:center}
+ .identity-commander-preview>img{height:100px}
+ .identity-commander-preview h3{font-size:18px}
+ .identity-commander-preview p{font-size:10px;line-height:1.3}
+ .identity-submit{min-height:43px!important}
+}
+
+/* Fit the entire commander selection, including the Continue action, into
+   VK-safe desktop/tablet landscape heights. No hidden or clipped controls. */
+@media (orientation:landscape) and (min-height:531px) and (max-height:760px){
+  .identity-modal .identity-panel{max-height:calc(100dvh - 18px);padding:15px 20px!important}
+  .identity-modal .reboot-modal__header{padding-bottom:8px}
+  .identity-modal .reboot-modal__header h2{font-size:37px}
+  .identity-copy{margin-top:6px!important;font-size:12px!important}
+  .identity-form{margin-top:8px;gap:7px}
+  .identity-field{gap:5px}
+  .identity-field input{min-height:43px;padding:7px 12px;font-size:17px}
+  .identity-commander-layout{gap:8px}
+  .identity-commander-grid{gap:5px}
+  .identity-commander-option{grid-template-rows:54px auto;gap:3px;padding:3px}
+  .identity-commander-option img{height:54px}
+  .identity-commander-option span{font-size:10px;min-height:17px}
+  .identity-commander-preview{padding:6px;gap:5px;grid-template-columns:95px 1fr;align-items:center}
+  .identity-commander-preview>img{height:126px}
+  .identity-commander-preview h3{font-size:20px}
+  .identity-commander-preview p{font-size:11px;line-height:1.25}
+  .identity-submit{min-height:45px!important;margin-top:0;font-size:20px!important}
+  .identity-error{min-height:0;font-size:11px}
+}
+@media (orientation:landscape) and (max-height:530px){
+  .identity-commander-option{grid-template-rows:43px auto}
+  .identity-commander-option img{height:43px}
+  .identity-commander-option span{min-height:16px;font-size:9px}
+  .identity-commander-preview>img{height:82px}
+  .identity-commander-preview h3{font-size:17px}
+  .identity-commander-preview p{font-size:10px;line-height:1.23}
+  .identity-field{gap:3px}
+  .identity-field input{min-height:34px;padding:4px 10px}
+  .identity-submit{min-height:38px!important}
+  .identity-error{min-height:0}
+}
+
+
+/* Ultra-short landscape (e.g. VK 844×340): keep the entire name/commander
+   dialog, including Continue, inside the visible panel without scrolling.
+   The normal desktop/tablet gold layout remains unchanged. */
+@media (orientation:landscape) and (max-height:420px){
+  .identity-modal .identity-panel{padding:5px 11px!important}
+  .identity-modal .reboot-modal__header{padding-bottom:2px}
+  .identity-modal .reboot-modal__header h2{font-size:25px}
+  .identity-modal .reboot-close{width:34px;min-width:34px;height:34px;min-height:34px;font-size:21px}
+  .identity-copy{margin-top:1px!important;font-size:11px!important;line-height:1.2!important}
+  .identity-form{margin-top:2px;gap:3px}
+  .identity-field{gap:2px}
+  .identity-field input{min-height:29px;padding:2px 8px;font-size:14px}
+  .identity-commander-section{gap:4px}
+  .identity-commander-grid{gap:3px}
+  .identity-commander-option{grid-template-rows:33px auto;gap:1px;padding:2px}
+  .identity-commander-option img{height:33px}
+  .identity-commander-option span{font-size:8px;min-height:12px;line-height:1.1}
+  .identity-commander-preview{padding:4px;gap:4px;grid-template-columns:60px 1fr;align-items:center}
+  .identity-commander-preview>img{height:73px}
+  .identity-commander-preview h3{font-size:15px;margin:0 0 3px}
+  .identity-commander-preview p{font-size:9px;line-height:1.16}
+  .identity-submit{min-height:32px!important;font-size:17px!important}
+}
