@@ -125,18 +125,40 @@ function materializeBrandLogos(root){
   const result=report(records);if(result.afterBytes>brandLogo.BRAND_LOGO_RUNTIME_MAX_TOTAL_BYTES)throw new Error(`[brand logo asset budget] aggregate ${piece.formatBytes(result.afterBytes)} exceeds ${piece.formatBytes(brandLogo.BRAND_LOGO_RUNTIME_MAX_TOTAL_BYTES)}`);return result;
 }
 function materializeBackgrounds(root){
+  const {spawnSync}=require('child_process');
   const version=fingerprintFiles([ORCHESTRATOR_FILE,PIECE_FILE,BACKGROUND_FILE]),records=[];
   for(const relative of background.collectBackgroundAssetPaths(root)){
     const full=path.join(root,relative),source=fs.readFileSync(full),meta=piece.parsePng(source),before=source.length;
+    const target=relative.replace(/\.png$/,'.webp');
     const cached=cachedTransform(source,{
-      namespace:'backgrounds',version,options:{width:background.BACKGROUND_RUNTIME_WIDTH,height:background.BACKGROUND_RUNTIME_HEIGHT,channelBits:background.BACKGROUND_RUNTIME_CHANNEL_BITS,maxBytes:background.BACKGROUND_RUNTIME_MAX_BYTES},extension:'png',
-      transform:(buffer)=>background.optimizeBackgroundBuffer(buffer,background.BACKGROUND_RUNTIME_CHANNEL_BITS).buffer,
-      validate:(buffer)=>{const png=piece.parsePng(buffer);if(png.width!==background.BACKGROUND_RUNTIME_WIDTH||png.height!==background.BACKGROUND_RUNTIME_HEIGHT)throw new Error('cached background dimensions mismatch');if(png.colorType!==2)throw new Error(`cached background colorType=${png.colorType}, expected 2`);if(buffer.length>background.BACKGROUND_RUNTIME_MAX_BYTES)throw new Error('cached background exceeds byte budget');}
+      namespace:'backgrounds-webp',version,
+      options:{width:background.BACKGROUND_RUNTIME_WIDTH,height:background.BACKGROUND_RUNTIME_HEIGHT,quality:background.BACKGROUND_RUNTIME_WEBP_QUALITY,maxBytes:background.BACKGROUND_RUNTIME_MAX_BYTES},
+      extension:'webp',
+      transform:(buffer)=>{
+        const argv=['-hide_banner','-loglevel','error','-f','image2pipe','-vcodec','png','-i','pipe:0','-frames:v','1',
+          '-vf',`scale=${background.BACKGROUND_RUNTIME_WIDTH}:${background.BACKGROUND_RUNTIME_HEIGHT}:flags=lanczos`,
+          '-c:v','libwebp','-quality',String(background.BACKGROUND_RUNTIME_WEBP_QUALITY),
+          '-compression_level','6','-f','webp','pipe:1'];
+        const out=spawnSync('ffmpeg',argv,{input:buffer,encoding:null,maxBuffer:8*1024*1024,timeout:120000});
+        if(out.error||out.status!==0)throw new Error(`Event WebP encoder failed: ${out.error?.message||String(out.stderr)}`);
+        return out.stdout;
+      },
+      validate:(buffer)=>{
+        if(buffer.length>background.BACKGROUND_RUNTIME_MAX_BYTES)throw new Error('Event WebP exceeds per-file budget');
+        if(buffer.toString('ascii',0,4)!=='RIFF'||buffer.toString('ascii',8,12)!=='WEBP')throw new Error('Event WebP header invalid');
+      }
     });
-    const out=piece.parsePng(cached.buffer);fs.writeFileSync(full,cached.buffer);
-    records.push({path:relative,before,after:cached.buffer.length,width:out.width,height:out.height,sourceWidth:meta.width,sourceHeight:meta.height,skipped:false,cacheHit:cached.cacheHit,cacheKey:cached.cacheKey,cachePath:cached.cachePath});
+    const dest=path.join(root,target);
+    fs.mkdirSync(path.dirname(dest),{recursive:true});
+    fs.writeFileSync(dest,cached.buffer);
+    fs.unlinkSync(full); // Leave PNG masters untouched in game/, remove only dist/ copies.
+    records.push({path:target,before,after:cached.buffer.length,width:background.BACKGROUND_RUNTIME_WIDTH,
+      height:background.BACKGROUND_RUNTIME_HEIGHT,sourceWidth:meta.width,sourceHeight:meta.height,
+      skipped:false,cacheHit:cached.cacheHit,cacheKey:cached.cacheKey,cachePath:cached.cachePath});
   }
-  const result=report(records);if(result.afterBytes>background.BACKGROUND_RUNTIME_MAX_TOTAL_BYTES)throw new Error(`[background asset budget] aggregate ${piece.formatBytes(result.afterBytes)} exceeds ${piece.formatBytes(background.BACKGROUND_RUNTIME_MAX_TOTAL_BYTES)}`);return result;
+  const result=report(records);
+  if(result.afterBytes>background.BACKGROUND_RUNTIME_MAX_TOTAL_BYTES)throw new Error(`Event WebP total ${piece.formatBytes(result.afterBytes)} exceeds ${piece.formatBytes(background.BACKGROUND_RUNTIME_MAX_TOTAL_BYTES)}`);
+  return result;
 }
 function materializeRuntimeAssets(root){
   const groups={
