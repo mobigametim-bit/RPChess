@@ -120,7 +120,11 @@ async function assertNamedHeroBoardArt(page,playerColor){
         source:img.getAttribute('src')||'',
         incorrectlyGeneric:img.classList.contains('classic-piece--new-race'),
         markerVisible:!!marker&&getComputedStyle(marker).display!=='none',
-        aura:getComputedStyle(square,'::after').backgroundImage
+        aura:getComputedStyle(square,'::after').backgroundImage,
+        state:getComputedStyle(square).getPropertyValue('--combat-piece-glow-side').trim(),
+        check:square?.classList.contains('classic-square--check'),
+        arriving:!!square?.querySelector('.classic-piece--arriving'),
+        maskedByRaceSprite:!!square?.querySelector('.classic-piece--new-race')
       };
     });
   });
@@ -131,8 +135,10 @@ async function assertNamedHeroBoardArt(page,playerColor){
   for(const hero of named){
     assert.strictEqual(hero.incorrectlyGeneric,false,`${hero.id}: named artwork must not carry the generic race CSS class`);
     assert(hero.markerVisible,`${hero.id}: legacy role glyph must be visible`);
-    assert(hero.aura.includes(`aura_${playerColor==='w'?'white':'black'}.png`),
-      `${hero.id}: named artwork must retain its original side aura`);
+    // The red check aura correctly overrides a named king's side aura.
+    const expectedSide=hero.check?'red':(playerColor==='w'?'white':'black');
+    assert(hero.aura.includes(`aura_${expectedSide}.png`),
+      `${hero.id}: expected ${expectedSide} aura; got ${JSON.stringify(hero)}`);
   }
 }
 function assertRedCheckAura(state){
