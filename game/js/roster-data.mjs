@@ -19,8 +19,8 @@ const STARTER_TEMPLATES = Object.freeze([
     name: 'Альдрик Стена',
     pieceType: 'rook',
     origin: 'Железные Марши',
-    portrait: 'assets/heroes/aldric_wall/portrait.png',
-    pieceArt: 'assets/heroes/aldric_wall/piece_badge.png',
+    portrait: 'assets/heroes/aldric_wall/portrait_named.webp',
+    pieceArt: 'assets/heroes/aldric_wall/pieces/white/rook.webp',
     description: 'Ветеран пограничных гарнизонов, привыкший держать линию до последнего.'
   }),
   Object.freeze({

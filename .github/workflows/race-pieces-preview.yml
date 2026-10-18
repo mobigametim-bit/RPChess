@@ -175,7 +175,18 @@ jobs:
               test "$(head -c4 "$sprite")" = 'RIFF'
             done
           done
-          test "$(find dist/assets/heroes -path '*/pieces/*' -name '*.webp' | wc -l)" -eq 106
+          # Six named Rooks: compressed portraits and both chess colors.
+          for hero in aldric_wall batu_cliff ivar_lens cassian_coin maeve_root rat_banner; do
+            candidate="dist/assets/heroes/$hero/portrait_named.webp"
+            test -s "$candidate"
+            test "$(head -c4 "$candidate")" = 'RIFF'
+            for side in white black; do
+              sprite="dist/assets/heroes/$hero/pieces/$side/rook.webp"
+              test -s "$sprite"
+              test "$(head -c4 "$sprite")" = 'RIFF'
+            done
+          done
+          test "$(find dist/assets/heroes -path '*/pieces/*' -name '*.webp' | wc -l)" -eq 118
           node tests/race-board-themes.cjs
           # Promotion options must show each hero's own upgraded piece.
           grep -Fq 'promotionArtResolver?.(from,type,color)' dist/js/classic-chess-app.mjs
@@ -284,6 +295,11 @@ jobs:
             echo "$commander => HTTP $status, bytes $(wc -c <"/tmp/commander-$commander.png"), signature $signature"
             test "$status" = '200'
             test "$signature" = '89504e470d0a1a0a'
+          done
+          # Published named Rook variants and portraits must be downloadable.
+          for image in assets/heroes/aldric_wall/pieces/white/rook.webp assets/heroes/rat_banner/pieces/black/rook.webp assets/heroes/maeve_root/portrait_named.webp; do
+            curl -fsS --max-time 20 "$base/$image" -o /tmp/rpchess-named-rook.webp
+            test "$(head -c4 /tmp/rpchess-named-rook.webp)" = 'RIFF'
           done
           # Published named Bishop variants and portraits must be downloadable.
           for image in assets/heroes/brother_orell/pieces/black/bishop.webp assets/heroes/altana_bow/pieces/white/bishop.webp assets/heroes/briar_sister/portrait_named.webp; do
