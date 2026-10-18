@@ -163,7 +163,18 @@ jobs:
               test "$(head -c4 "$sprite")" = 'RIFF'
             done
           done
-          test "$(find dist/assets/heroes -path '*/pieces/*' -name '*.webp' | wc -l)" -eq 94
+          # New named Knights: six 640px compressed portraits and white/black 256px sprites.
+          for hero in vael_hammer orion_step roan_stag suri_ash temur_wind tessa_gull; do
+            candidate="dist/assets/heroes/$hero/portrait_named.webp"
+            test -s "$candidate"
+            test "$(head -c4 "$candidate")" = 'RIFF'
+            for side in white black; do
+              sprite="dist/assets/heroes/$hero/pieces/$side/knight.webp"
+              test -s "$sprite"
+              test "$(head -c4 "$sprite")" = 'RIFF'
+            done
+          done
+          test "$(find dist/assets/heroes -path '*/pieces/*' -name '*.webp' | wc -l)" -eq 106
           node tests/race-board-themes.cjs
           # Promotion options must show each hero's own upgraded piece.
           grep -Fq 'promotionArtResolver?.(from,type,color)' dist/js/classic-chess-app.mjs

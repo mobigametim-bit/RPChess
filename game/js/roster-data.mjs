@@ -55,8 +55,8 @@ const STARTER_TEMPLATES = Object.freeze([
     name: 'Ваэль Молот',
     pieceType: 'knight',
     origin: 'Железные Марши',
-    portrait: 'assets/heroes/vael_hammer/portrait.png',
-    pieceArt: 'assets/heroes/vael_hammer/piece_badge.png',
+    portrait: 'assets/heroes/vael_hammer/portrait_named.webp',
+    pieceArt: 'assets/heroes/vael_hammer/pieces/white/knight.webp',
     description: 'Тяжёлый всадник, предпочитающий решительный манёвр долгому ожиданию.'
   })
 ]);

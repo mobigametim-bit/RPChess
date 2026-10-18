@@ -61,6 +61,23 @@ const {BOARD_RACES,BOARD_FILES,collectBoardAssetPaths}=require('../scripts/board
     assert(bytes.length<=42*1024&&bytes.toString('ascii',0,4)==='RIFF'&&bytes.toString('ascii',8,12)==='WEBP',
       `missing or invalid compressed promotion art ${art}`);
   }
+  // Six named knights: 6 portraits + 12 side-specific chess pieces.
+  assert.strictEqual(mod.NAMED_KNIGHT_IDS.length,6,'all six supplied named knights must be registered');
+  for(const id of mod.NAMED_KNIGHT_IDS){
+    const hero={id:`hero.${id}`,pieceType:'knight',portrait:`assets/heroes/${id}/portrait.png`};
+    const portrait=`assets/heroes/${id}/portrait_named.webp`;
+    assert.strictEqual(mod.heroPortraitArt(hero),portrait,`old saves must get new portrait for ${id}`);
+    assert(fs.readFileSync(path.join(game,portrait)).toString('ascii',0,4)==='RIFF',`missing named portrait ${portrait}`);
+    for(const color of ['w','b']){
+      const expected=`assets/heroes/${id}/pieces/${color==='w'?'white':'black'}/knight.webp`;
+      assert.strictEqual(mod.boardPieceArtForCharacter(hero,color),expected,`named knight art must use side-specific image for ${id}`);
+      const buffer=fs.readFileSync(path.join(game,expected));
+      assert(buffer.length<42*1024&&buffer.toString('ascii',0,4)==='RIFF'&&buffer.toString('ascii',8,12)==='WEBP',
+        `invalid optimized named knight WebP: ${expected}`);
+    }
+  }
+  assert.strictEqual(mod.namedKnightPieceArt({id:'hero.aldric_wall',pieceType:'rook'},'rook','w'),null,
+    'non-knights must still use existing named hero badges');
   assert.strictEqual(mod.namedPawnPieceArt({id:'hero.aldric_wall',pieceType:'rook'},'queen','w'),null,
     'unreplaced named heroes must retain their legacy piece badges');
   assert.strictEqual(mod.boardPieceArtForCharacter({id:'hero.aldric_wall',pieceType:'rook',raceTag:'humans',pieceArt:'assets/heroes/aldric_wall/piece_badge.png'},'w'),'assets/heroes/aldric_wall/piece_badge.png','named heroes must retain their existing personal board badges');
@@ -99,5 +116,5 @@ const {BOARD_RACES,BOARD_FILES,collectBoardAssetPaths}=require('../scripts/board
   assert.ok(source.includes('linear-gradient(145deg,#c3b995,#aa9f7c)'),'light cell must retain neutral fallback');
   assert.ok(source.includes('linear-gradient(145deg,#4d585d,#374349)'),'dark cell must retain neutral fallback');
 
-  console.log('Race board themes: PASS — 28 board tiles, 168 race sprites and 80 named pawn/promotion sprites in both colors');
+  console.log('Race board themes: PASS — 28 board tiles, 168 race sprites and 80 named pawn/promotion sprites and 12 named knight sprites in both colors');
 })().catch((error)=>{console.error(error);process.exitCode=1;});
