@@ -1,0 +1,31 @@
+/* Pointer drag is additive to the existing click-to-move interaction. */
+.rpchess-draggable-board {
+  touch-action:none;
+  -webkit-user-select:none;
+  user-select:none;
+}
+.rpchess-draggable-board img {
+  -webkit-user-drag:none;
+  user-select:none;
+}
+.rpchess-draggable-board .rpchess-drag-origin .classic-piece,
+.rpchess-draggable-board .rpchess-drag-origin .puzzle-piece {
+  opacity:.26!important;
+}
+.rpchess-draggable-board .rpchess-drop-target {
+  outline:3px solid rgba(255,215,116,.96)!important;
+  outline-offset:-3px!important;
+}
+.rpchess-piece-drag-ghost {
+  position:fixed!important;
+  z-index:2147483000!important;
+  pointer-events:none!important;
+  object-fit:contain;
+  transform:translate(-50%,-50%) scale(1.08);
+  filter:drop-shadow(0 10px 10px rgba(0,0,0,.7));
+  opacity:.96;
+  margin:0!important;
+  padding:0!important;
+  -webkit-user-drag:none;
+  user-select:none;
+}
