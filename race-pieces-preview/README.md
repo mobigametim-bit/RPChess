@@ -34,3 +34,5 @@ Final viewport diagnosis: the legacy UX consistency stylesheet fixed the inner b
 - Built-in tests cover dragging in Classic, Arena, and Training; no change to production main before manual acceptance.
 
 Training drag regression investigation: log persisted move index, objective state and visible selection after pointer release in existing browser acceptance.
+
+Race input acceptance: a three-ply Lichess puzzle exposed a brief forced-reply unlock race; resolved by unlocking before persisting its next player turn. Added Chromium real touch event drag to Classic mobile acceptance; mouse drag remains tested across Classic, Arena and Training.
