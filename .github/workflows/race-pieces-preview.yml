@@ -69,6 +69,8 @@ jobs:
           test -f dist/index.html
           test -f dist/js/arena-app.mjs
           test -f dist/js/race-assets.mjs
+          # Keep the Skirmish king role accessible in both localization modes.
+          grep -Fq "k:'king'" dist/js/skirmish-app.mjs
           test -f dist/css/combat-side-colors.css
           test -f dist/css/chess-ai-polish.css
           # Roster formation is part of this playable acceptance build.
