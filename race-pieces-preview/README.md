@@ -19,3 +19,5 @@ Never merge PR #160 to `main` before owner manual acceptance.
 Do not merge to main without the owner's manual playtest approval.
 
 Updated acceptance target: symmetric CSS rail calculation for broad Chromium compatibility; re-run browser gates before publishing.
+
+Final classic-toolbar geometry check: local Classic shows three navigation buttons (not two), so the centered-rail CSS must distribute their widths without overlapping the board. The accepted Journey combat keeps its two-button layout.
