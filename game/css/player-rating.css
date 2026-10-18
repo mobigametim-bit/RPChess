@@ -20,7 +20,7 @@
   height:46px;
   transform:translateY(-50%);
   border:1px solid rgba(229,195,100,.62);
-  background:url('../assets/kings/oathkeeper/portrait.png') center 20%/cover no-repeat;
+  background:var(--battle-king-portrait, url('../assets/kings/oathkeeper/portrait.webp')) center 20%/cover no-repeat;
   box-shadow:0 3px 13px rgba(0,0,0,.56),inset 0 0 0 1px rgba(134,197,239,.14);
 }
 .travel-player-rating__row{display:flex;align-items:center;gap:9px;min-width:0}
@@ -211,7 +211,7 @@
   transform:translateY(-50%);
   border:1px solid rgba(225,184,89,.38);
   border-radius:5px;
-  background:url('../assets/kings/oathkeeper/portrait.png') center 20%/cover no-repeat;
+  background:var(--battle-king-portrait, url('../assets/kings/oathkeeper/portrait.webp')) center 20%/cover no-repeat;
   box-shadow:0 4px 13px rgba(0,0,0,.42),inset 0 0 0 1px rgba(255,235,179,.035);
   pointer-events:none;
 }
