@@ -226,6 +226,9 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     await mobile.goto(url, { waitUntil: 'networkidle' });
     await openSetup(mobile);
     await startFromSetup(mobile, { mode: 'local' });
+    // The scene loading mask fades after chess initialization; a raw mouse drag
+    // does not auto-wait for an overlay like Playwright locator.click() does.
+    await mobile.locator('[data-game-loading]').waitFor({state:'hidden',timeout:15000});
     assert.strictEqual(await mobile.locator('[data-reboot-foundation]').isHidden(), true, 'mobile landscape menu scene must hide during game');
     assert.strictEqual(await mobile.locator('[data-chess-board] [data-square]').count(), 64, 'mobile landscape board must have 64 squares');
     assert.strictEqual(await mobile.locator('[data-piece-marker]').count(), 32, 'mobile landscape pieces must retain technical markers');
