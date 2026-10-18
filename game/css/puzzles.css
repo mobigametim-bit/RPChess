@@ -516,3 +516,53 @@ html body .puzzle-square:has(.puzzle-piece--new-race) .puzzle-piece-marker {
     text-overflow:clip!important;
   }
 }
+
+/* Accepted full-viewport centered Training board (matching centered Combat).
+   Old two-column landscape rules aligned this board against the RIGHT edge;
+   reserve balanced rails so the 8x8 square is centered in the whole viewport. */
+@media (orientation:landscape) {
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen {
+    --puzzle-rail-min:clamp(160px,18vw,380px);
+    --puzzle-centered-board:min(100dvh,calc(100vw - var(--puzzle-rail-min) - var(--puzzle-rail-min)));
+    --puzzle-side-space:calc((100vw - var(--puzzle-centered-board)) / 2);
+    --puzzle-rail-inset:clamp(8px,1.6vw,28px);
+    --puzzle-rail-width:min(440px,calc(var(--puzzle-side-space) - var(--puzzle-rail-inset) - 8px));
+  }
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-shell {
+    width:100vw!important;
+    max-width:none!important;
+    grid-template-columns:minmax(0,1fr) var(--puzzle-centered-board) minmax(0,1fr)!important;
+    column-gap:0!important;
+  }
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-board-wrap {
+    grid-column:2!important;
+    grid-row:1 / 4!important;
+    width:var(--puzzle-centered-board)!important;
+    height:var(--puzzle-centered-board)!important;
+    max-width:none!important;
+    min-width:0!important;
+    justify-self:center!important;
+    align-self:center!important;
+    margin:0!important;
+    padding:0!important;
+    box-sizing:border-box!important;
+  }
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-board {
+    width:100%!important;
+    height:100%!important;
+  }
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-topbar,
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-heading,
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-layout>.puzzle-panel:first-child,
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-outcome {
+    left:var(--puzzle-rail-inset)!important;
+    right:auto!important;
+    width:var(--puzzle-rail-width)!important;
+    max-width:var(--puzzle-rail-width)!important;
+    box-sizing:border-box!important;
+  }
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-layout>.puzzle-panel:first-child {
+    /* Ignore retired mobile fixed positioning based on an edge-aligned board. */
+    position:absolute!important;
+  }
+}
