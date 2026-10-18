@@ -1,4 +1,5 @@
 name: Deploy RPChess race chess pieces acceptance preview
+# PR160 Queen portraits + canonical Travel commander portrait acceptance.
 # PR160: named rook art, color-specific sprites and all updated starter combat tests.
 
 on:
