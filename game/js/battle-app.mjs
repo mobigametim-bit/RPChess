@@ -27,7 +27,7 @@ import {
 if (!document.querySelector('[data-battle-css]')) {
   const cssLink = document.createElement('link');
   cssLink.rel = 'stylesheet';
-  cssLink.href = 'css/battle.css?v=20260829-battle-2';
+  cssLink.href = 'css/battle.css?v=20261018-death-center';
   cssLink.dataset.battleCss = '';
   document.head.append(cssLink);
 }
