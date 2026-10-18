@@ -12,9 +12,14 @@ async function dragMove(page, from, to) {
   const source=await page.locator(`[data-chess-board] [data-square="${from}"]`).boundingBox();
   const target=await page.locator(`[data-chess-board] [data-square="${to}"]`).boundingBox();
   assert(source&&target,'drag from/to squares must exist');
-  await page.mouse.move(source.x+source.width/2,source.y+source.height/2);
+  const x=source.x+source.width/2,y=source.y+source.height/2;
+  await page.mouse.move(x,y);
   await page.mouse.down();
-  await page.mouse.move(target.x+target.width/2,target.y+target.height/2,{steps:8});
+  await page.waitForTimeout(45);
+  await page.mouse.move(x+Math.min(source.width/4,14),y,{steps:4});
+  await page.waitForFunction(()=>Boolean(document.querySelector('.rpchess-piece-drag-ghost')),null,{timeout:3000});
+  await page.mouse.move(target.x+target.width/2,target.y+target.height/2,{steps:14});
+  await page.waitForTimeout(45);
   await page.mouse.up();
 }
 
