@@ -497,3 +497,22 @@ html body .puzzle-piece-marker--b::before {
 html body .puzzle-square:has(.puzzle-piece--new-race) .puzzle-piece-marker {
   display:none!important;
 }
+
+/* Puzzle objective fit: scale to the available panel width and wrap long RU/EN titles.
+   Avoid fixed single-line ellipsis (e.g. «ЛУЧШЕЕ ПРОДОЛЖЕНИЕ») on compact screens. */
+@media (orientation:landscape) {
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-polish-objective {
+    container-type:inline-size;
+  }
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-polish-objective strong {
+    min-width:0!important;
+    max-width:100%!important;
+    font-size:clamp(15px,5.7cqi,30px)!important;
+    line-height:1.1!important;
+    white-space:normal!important;
+    text-wrap:balance;
+    overflow-wrap:anywhere!important;
+    overflow:visible!important;
+    text-overflow:clip!important;
+  }
+}
