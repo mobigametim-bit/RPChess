@@ -7,12 +7,14 @@ Status (2026-10-15): merged to `main` in PR #157 and published to GitHub Pages. 
 - Keep the existing Chronicle flag and the Current Journey section.
 - Replace Best Journey with Great Commanders / Великие полководцы.
 - Show authenticated VK player's overall position first, then global top 10.
-- One entry per VK user. Score is the **maximum Glory from a completed run**.
+- One entry per VK user. Score is the **maximum Glory from either a completed run or an ongoing Journey**; a lower later result never decreases the player's record.
+- Every entrance to Main Menu (including returns from battle or summary) recomputes the active Journey's Glory, refreshes the leaderboard, and submits only an improvement with signed VK launch credentials.
+- A per-VK-user local high-water record allows an unsent improved active score to retry after connectivity returns; ongoing runs are **not** inserted into the completed Chronicle history.
 - Glory: `floor(sqrt(week * power) / 10)`. Ties: week DESC, power DESC, achieved time ASC, VK account id ASC.
 - Display the player name from that user's best completed run. Display RU/EN labels.
 - Never insert imaginary leaderboard users or data in production.
 - If API is missing/offline, show a small clear localized fallback; don't break Chronicle.
-- Do not alter gameplay rules, persistence schema, local history, or Arena economy.
+- Do not alter gameplay rules, completed Chronicle history, or Arena economy. The separate versionless, per-VK-account leaderboard-best cache is not a completed run.
 
 ## Components
 
@@ -26,7 +28,7 @@ Status (2026-10-15): merged to `main` in PR #157 and published to GitHub Pages. 
 
 - `GET /v1/leaderboard`: public top 10, no personal position.
 - `POST /v1/leaderboard/view` with `{launch}`: top 10 + verified VK user's position if signed launch params are provided.
-- `POST /v1/leaderboard/submit` with `{launch,record}`: verify signed VK user, validate values and recompute Glory, atomically upsert only if better, return updated board.
+- `POST /v1/leaderboard/submit` with `{launch,record}`: verify signed VK user, validate values and recompute Glory, atomically upsert only if better, return updated board. Existing server and D1 schema already accept active Journey records; no API redeploy or migration is required.
 - The server secret must never appear in HTML or game JavaScript. CORS should allow only intended staging and production host origins.
 - For the frontend, configure `globalThis.RPChessLeaderboardAPI='https://<new-api-origin>'` before game initialization or set the page's `meta[name="rpchess-leaderboard-api"]` `content` to the real API URL.
 
@@ -43,3 +45,10 @@ Some VK desktop iframe launches may omit signed launch params. Those users can v
 3. Two different accounts, duplicates, worse submissions, equal Glory ties, name updates, empty board, offline recovery, RU/EN.
 4. Confirm responsive list fits within the original blue banner and independently scrolls when space is narrow.
 5. DONE: owner explicitly requested production rollout on 2026-10-15; PR #157 merged and GitHub Pages build validated and deployed. Real-VK manual acceptance remains open.
+
+## 2026-10-18 — Main Menu Glory refresh
+
+- Active Journey candidate uses the same `floor(sqrt(week * power) / 10)` formula as completed Journey records.
+- On opening/re-entering Main Menu, the client reloads the board, computes the best of completed and current Journey, remembers its signed VK account's local high-water mark, and submits when it outranks the existing server result.
+- Signed VK launches can submit; unsigned standalone/GitHub Pages launches continue to show public results read-only.
+- No gameplay, D1 table, server Worker, Chronicle-history schema, or other branches have been changed for this feature.

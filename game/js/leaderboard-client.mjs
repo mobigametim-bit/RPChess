@@ -1,6 +1,10 @@
-import { bestChronicleRun, readChronicle } from './chronicle-core.mjs';
+import { bestLeaderboardRecord, compareChronicleRecords, normalizeChronicleRecord, readChronicle } from './chronicle-core.mjs';
+import { readRun } from './run-persistence.mjs';
+import { readPlayerRating } from './player-rating.mjs';
+import { platform } from './platform.mjs';
 
 const CACHE_MS=30_000;
+const BEST_STORAGE_PREFIX='rpchess.reboot.v1.leaderboard-best.';
 let board={top:[],me:null,status:'unavailable'};
 let cachedAt=0;
 let pending=null;
@@ -23,7 +27,9 @@ function normalize(data){
     .map(row=>({rank:row.rank,name:row.name.slice(0,24),glory:row.glory}));
   const me=data.me&&Number.isSafeInteger(data.me.rank)&&data.me.rank>0&&
     Number.isSafeInteger(data.me.glory)&&data.me.glory>=0
-    ?{rank:data.me.rank,name:String(data.me.name||'').slice(0,24),glory:data.me.glory}:null;
+    ?{rank:data.me.rank,name:String(data.me.name||'').slice(0,24),glory:data.me.glory,
+      week:Number.isSafeInteger(data.me.week)?data.me.week:null,
+      power:Number.isSafeInteger(data.me.power)?data.me.power:null}:null;
   return {top,me,status:'ready'};
 }
 async function request(path,body=null){
@@ -63,11 +69,36 @@ async function loadLeaderboard({force=false}={}){
   })();
   return pending;
 }
+function bestRankedCandidate(launch) {
+  // The server keeps the global personal best. Preserve the best active score
+  // locally per signed VK account too, so an offline high-water mark can be
+  // retried later, even if Power subsequently falls.
+  const id=new URLSearchParams(launch).get('vk_user_id');
+  const storage=platform.storage.sync();
+  const key=id?BEST_STORAGE_PREFIX+id:null;
+  let saved=null;
+  if(key&&storage)try{saved=normalizeChronicleRecord(JSON.parse(storage.getItem(key)||'null'));}catch{}
+  const current=bestLeaderboardRecord(readChronicle(),readRun(),{power:readPlayerRating().power});
+  const best=[saved,current].filter(Boolean).sort(compareChronicleRecords)[0]||null;
+  if(key&&storage&&best&&(!saved||compareChronicleRecords(best,saved)<0))
+    try{storage.setItem(key,JSON.stringify(best));}catch{}
+  return best;
+}
+function alreadyRanked(best) {
+  const me=board.status==='ready'?board.me:null;
+  if(!me)return false;
+  if(me.glory>best.glory)return true;
+  if(me.glory<best.glory)return false;
+  if(!Number.isSafeInteger(me.week)||!Number.isSafeInteger(me.power))return false;
+  return me.week>best.week||(me.week===best.week&&me.power>=best.power);
+}
 async function submitBestChronicle(){
-  const launch=vkLaunch(),best=bestChronicleRun(readChronicle());
-  if(!apiRoot()||!launch||!best)return {status:'unavailable'};
-  const key=best.runId+':'+best.glory+':'+best.week+':'+best.power;
-  if(lastUpload===key)return {status:'already-submitted'};
+  const launch=vkLaunch();
+  if(!apiRoot()||!launch)return {status:'unavailable'};
+  const best=bestRankedCandidate(launch);
+  if(!best)return {status:'unavailable'};
+  const key=launch+':'+best.runId+':'+best.glory+':'+best.week+':'+best.power;
+  if(lastUpload===key||alreadyRanked(best))return {status:'already-submitted'};
   if(uploading)return uploading;
   uploading=(async()=>{try{
     const next=await request('/v1/leaderboard/submit',{launch,record:{

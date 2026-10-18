@@ -249,12 +249,42 @@ function syncChronicle() {
   const rating = readPlayerRating();
   if (run?.ended) recordCompletedRun(run, { power: rating.power });
   renderChronicle();
-  void loadLeaderboard();
 }
+
+// Main Menu is also accessible from Combat and the end-of-run summary, not
+// only from Roster's setScene(). Observe the actual menu visibility so every
+// return recalculates and submits an improved ACTIVE Journey's Glory.
+const menuScreen=document.querySelector('[data-reboot-foundation]');
+let menuRefreshQueued=false;
+async function refreshMenuLeaderboard() {
+  if(!menuScreen||menuScreen.hidden)return;
+  syncChronicle();
+  await loadLeaderboard({force:true});
+  if(!menuScreen.hidden)await submitBestChronicle();
+}
+function scheduleMenuLeaderboardRefresh() {
+  if(menuRefreshQueued||!menuScreen||menuScreen.hidden)return;
+  menuRefreshQueued=true;
+  queueMicrotask(()=>{
+    menuRefreshQueued=false;
+    if(!menuScreen.hidden)void refreshMenuLeaderboard();
+  });
+}
+if(menuScreen&&typeof MutationObserver!=='undefined'){
+  let visible=!menuScreen.hidden;
+  new MutationObserver(()=>{
+    const next=!menuScreen.hidden;
+    if(next&&!visible)scheduleMenuLeaderboardRefresh();
+    visible=next;
+  }).observe(menuScreen,{attributes:true,attributeFilter:['hidden']});
+}
+addEventListener('rpchess:scene-changed',event=>{
+  if(event?.detail?.scene==='menu')scheduleMenuLeaderboardRefresh();
+});
 
 subscribe(() => { renderIdentityCopy(); renderChronicle(); });
 addEventListener('rpchess:leaderboard-updated', renderChronicle);
-addEventListener('rpchess:chronicle-updated', () => { void submitBestChronicle(); });
+addEventListener('rpchess:chronicle-updated', renderChronicle);
 
 addEventListener('rpchess:identity-request', openIdentityPrompt);
 addEventListener('rpchess:run-updated', syncChronicle);
@@ -268,7 +298,7 @@ document.addEventListener('keydown', (event) => {
 
 ensureChroniclePanel();
 syncChronicle();
-void submitBestChronicle();
+scheduleMenuLeaderboardRefresh();
 
 globalThis.RPChessPlayerIdentity = Object.freeze({ open: openIdentityPrompt, close: closeIdentityPrompt });
 globalThis.RPChessChronicle = Object.freeze({ render: renderChronicle, sync: syncChronicle });
