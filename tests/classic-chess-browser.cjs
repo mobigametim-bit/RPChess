@@ -215,7 +215,7 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     await page.locator('[data-settings-modal] [data-close-modal]').click();
     await page.locator('[data-classic-menu]').click();
 
-    const mobile = await browser.newPage({ viewport: { width: 844, height: 390 } });
+    const mobile = await browser.newPage({ viewport: { width: 844, height: 390 }, hasTouch:true });
     const mobileErrors = [];
     mobile.on('pageerror', (error) => mobileErrors.push(String(error.stack || error)));
     await mobile.goto(url, { waitUntil: 'networkidle' });
@@ -229,6 +229,19 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     await dragMove(mobile, 'e2', 'e4');
     await waitForMoveAnimation(mobile);
     assert((await pieceSrc(mobile, 'e4')).includes('/humans/pieces/board/white/pawn.png'), 'mobile landscape board interaction must move pieces');
+    // Genuine Chromium touch events: press, slide and release a black pawn.
+    const fromTouch=await mobile.locator('[data-chess-board] [data-square="e7"]').boundingBox();
+    const toTouch=await mobile.locator('[data-chess-board] [data-square="e5"]').boundingBox();
+    const start={x:fromTouch.x+fromTouch.width/2,y:fromTouch.y+fromTouch.height/2,id:1};
+    const end={x:toTouch.x+toTouch.width/2,y:toTouch.y+toTouch.height/2,id:1};
+    const touch=await mobile.context().newCDPSession(mobile);
+    await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[start]});
+    await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{...start,x:(start.x+end.x)/2,y:(start.y+end.y)/2}]});
+    await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[end]});
+    await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    await touch.detach();
+    await waitForMoveAnimation(mobile);
+    assert((await pieceSrc(mobile,'e5')).includes('/humans/pieces/board/black/pawn.png'),'touch drag must move a pawn on mobile landscape');
     const scrollState = await mobile.evaluate(() => ({ scrollHeight: document.documentElement.scrollHeight, clientHeight: document.documentElement.clientHeight }));
     assert(scrollState.scrollHeight <= scrollState.clientHeight + 1, 'mobile landscape Classic Chess must fit the viewport without page scrolling');
 
