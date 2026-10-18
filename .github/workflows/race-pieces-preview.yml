@@ -57,7 +57,7 @@ jobs:
       - name: Verify Roster, both combat check auras, Arena, Starvation layouts and Event icons
         env:
           RPCHESS_GATE_PREFIX: /RPChess
-          RPCHESS_BROWSER_TEST: roster-browser.cjs,classic-chess-browser.cjs,skirmish-browser.cjs,combat-side-colors-browser.cjs,arena-browser.cjs,starvation-browser.cjs,events-browser.cjs,puzzles-browser.cjs
+          RPCHESS_BROWSER_TEST: roster-browser.cjs,classic-chess-browser.cjs,skirmish-browser.cjs,battle-browser.cjs,settlement-browser.cjs,caravan-browser.cjs,combat-side-colors-browser.cjs,arena-browser.cjs,starvation-browser.cjs,events-browser.cjs,puzzles-browser.cjs
         run: npm run test:browser
       - name: Verify jester onboarding in RU/EN, desktop, compact and VK Mobile
         env:
@@ -154,7 +154,16 @@ jobs:
               done
             done
           done
-          test "$(find dist/assets/heroes -path '*/pieces/*' -name '*.webp' | wc -l)" -eq 80
+          # Seven named Bishops: two sides and one portrait each.
+          for hero in altana_bow brother_orell velka_urn deacon_mirel seraph_lyra briar_sister old_marin; do
+            test -s "dist/assets/heroes/$hero/portrait_named.webp"
+            for side in white black; do
+              sprite="dist/assets/heroes/$hero/pieces/$side/bishop.webp"
+              test -s "$sprite"
+              test "$(head -c4 "$sprite")" = 'RIFF'
+            done
+          done
+          test "$(find dist/assets/heroes -path '*/pieces/*' -name '*.webp' | wc -l)" -eq 94
           node tests/race-board-themes.cjs
           # Promotion options must show each hero's own upgraded piece.
           grep -Fq 'promotionArtResolver?.(from,type,color)' dist/js/classic-chess-app.mjs
@@ -263,6 +272,11 @@ jobs:
             echo "$commander => HTTP $status, bytes $(wc -c <"/tmp/commander-$commander.png"), signature $signature"
             test "$status" = '200'
             test "$signature" = '89504e470d0a1a0a'
+          done
+          # Published named Bishop variants and portraits must be downloadable.
+          for image in assets/heroes/brother_orell/pieces/black/bishop.webp assets/heroes/altana_bow/pieces/white/bishop.webp assets/heroes/briar_sister/portrait_named.webp; do
+            curl -fsS --max-time 20 "$base/$image" -o /tmp/rpchess-named-bishop.webp
+            test "$(head -c4 /tmp/rpchess-named-bishop.webp)" = 'RIFF'
           done
       - name: Validate live leaderboard access from this preview origin
         run: |
