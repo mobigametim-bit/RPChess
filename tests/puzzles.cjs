@@ -40,7 +40,7 @@ function memoryStorage(){const data=new Map();return{getItem:key=>data.has(key)?
   assert(appSource.includes('pieceLabel(piece.type)'),'Puzzle board aria/title labels must use localized owner piece labels');
   assert(appSource.includes('puzzle-coordinate--file')&&appSource.includes('puzzle-coordinate--rank'),'Puzzle board must render orientation-aware coordinates');
   assert(appSource.includes('puzzleHistory')&&appSource.includes('excludedIds: history'),'Puzzle route must use persistent no-repeat history');
-  assert(appSource.includes("css/puzzles.css?v=20260909-owner2")&&appSource.includes("css/puzzles-compact.css?v=20260909-owner1"),'Puzzle owner must load base and compact owner styles explicitly');
+  assert(appSource.includes("css/puzzles.css?v=20261018-objective-fit")&&appSource.includes("css/puzzles-compact.css?v=20260909-owner1"),'Puzzle owner must load base and compact owner styles explicitly');
   for(const token of ['data-puzzle-kicker','data-puzzle-compact-objective','data-puzzle-compact-objective-label','data-puzzle-compact-stars','data-puzzle-compact-reward-value'])assert(appSource.includes(token),`Puzzle owner markup missing ${token}`);
   assert(appSource.includes("screen.querySelector('[data-puzzle-compact-reward-value]').textContent = String(currentReward)"),'compact Puzzle reward must render directly from Puzzle state');
   assert(appSource.includes('subscribe(() =>')&&appSource.includes('renderStaticCopy()'),'Puzzle owner must refresh its own copy on language change');
@@ -51,6 +51,8 @@ function memoryStorage(){const data=new Map();return{getItem:key=>data.has(key)?
   assert(cssSource.includes('Review2 Puzzle geometry moved into the screen owner.') && cssSource.includes('Final Training geometry for the second Human Acceptance pass.') && cssSource.includes('width:calc(100vw - 100dvh - 43px)!important')&&cssSource.includes('width:calc(100vw - 100dvh - 32px)!important'),'Puzzle owner CSS must own the complete accepted Training geometry cascade');
   assert(compactCss.includes('.puzzle-heading .reboot-eyebrow{font-size:10px}')&&compactCss.includes('.puzzle-heading .reboot-eyebrow::after{content:none!important}'),'Puzzle owner compact CSS must expose semantic kicker DOM and suppress legacy translated pseudo-content');
   assert(compactCss.includes('Puzzle-owned compact Training presentation formerly supplied by post-pages runtime.')&&compactCss.includes('.puzzle-polish-objective')&&compactCss.includes('.puzzle-polish-reward'),'Puzzle compact owner stylesheet must own accepted objective/reward presentation');
+  assert(cssSource.includes('Puzzle objective fit: scale to the available panel width')&&cssSource.includes('white-space:normal!important')&&cssSource.includes('font-size:clamp(15px,5.7cqi,30px)!important'),
+    'training objective must fit and wrap instead of truncating long translated titles');
   assert(buildSource.includes("'css/puzzles-compact.css'"),'production build must package Puzzle compact owner stylesheet');
   assert(!fs.existsSync(path.join(game,'js/post-pages-ui-polish.mjs')),'retired post-pages presentation shim must stay deleted');
   assert(!fs.existsSync(path.join(game,'js/presentation-bootstrap.mjs')),'retired presentation bootstrap must stay deleted');
