@@ -64,7 +64,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert.strictEqual(await page.locator('[data-identity-commander]').count(),7,'seven original commanders available in the name dialog');
     await page.locator('[data-identity-commander="wanderer_queen"]').click();
     assert.strictEqual(await page.locator('[data-identity-commander="wanderer_queen"]').getAttribute('aria-pressed'),'true');
-    assert((await page.locator('[data-identity-commander-image]').getAttribute('src')).includes('wanderer_queen/portrait.png'));
+    assert((await page.locator('[data-identity-commander-image]').getAttribute('src')).includes('wanderer_queen/portrait.webp'));
     // Guard the actual 1313x641 modal layout: warm-gold cards, and both
     // portrait and biography centered within the tall selected-king preview.
     await page.setViewportSize({width:1313,height:641});
@@ -91,7 +91,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert((await page.locator('[data-identity-commander-description]').innerText()).includes('queen without a palace'),'commander bio changes to English');
     assert.strictEqual(await panel.locator('.chronicle-leaderboard-avatar').count(),2,'existing flag shows portrait per ranked commander');
     const portrait=await panel.locator('[data-chronicle-current] .chronicle-current-profile img').getAttribute('src');
-    assert(portrait.includes('/kings/oathkeeper/portrait.png'),'legacy current runs keep the default royal portrait');
+    assert(portrait.includes('/kings/oathkeeper/portrait.webp'),'legacy current runs keep the default royal portrait');
 
     assert.strictEqual(await page.locator('[data-player-identity-close]').getAttribute('aria-label'),'Close');
     await page.evaluate(()=>window.RPChessPlayerIdentity.close());
