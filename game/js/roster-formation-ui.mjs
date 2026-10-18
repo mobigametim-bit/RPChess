@@ -1,5 +1,5 @@
 import { currentLanguage, translateLegacy } from './i18n.mjs';
-import { commanderTitle } from './commander-portraits.mjs';
+import { commanderTitle,commanderPieceArt } from './commander-portraits.mjs';
 import { FORMATION_SQUARES, normalizedFormation, moveFormation } from './roster-formation-core.mjs';
 
 const WORDS={
@@ -24,7 +24,7 @@ function createPiece(c,run,{board=false,selected=false}={}){
   node.classList.toggle('is-selected',selected);
   node.title=label(c,run);
   node.setAttribute('aria-label',label(c,run));
-  const img=element('img','rfc-piece__art');img.src=c.pieceArt;img.alt='';img.draggable=false;
+  const img=element('img','rfc-piece__art');img.src=c.isRunKing?commanderPieceArt(run?.commanderId,'w'):c.pieceArt;img.alt='';img.draggable=false;
   node.append(img);
   if(!board)node.append(element('span','rfc-piece__name',label(c,run)));
   return node;
