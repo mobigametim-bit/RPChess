@@ -17,3 +17,5 @@ Never merge PR #160 to `main` before owner manual acceptance.
 - Existing responsive browser tests now assert the accepted alignment at desktop, tablet and mobile landscape sizes.
 
 Do not merge to main without the owner's manual playtest approval.
+
+Updated acceptance target: symmetric CSS rail calculation for broad Chromium compatibility; re-run browser gates before publishing.
