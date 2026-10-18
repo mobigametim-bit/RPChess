@@ -83,7 +83,16 @@ async function clickMove(page,from,to,promotion=null){
     'Puzzle headline must present the localized Lichess theme beside the existing objective');
   const firstPuzzleId=opened.currentPuzzle.puzzleId;
   const beforeWrong=opened.currentPuzzle;await clickMove(page,moves.wrong.from,moves.wrong.to);await page.waitForFunction(k=>{const run=JSON.parse(localStorage.getItem(k));return run?.currentPuzzle?.errors===1;},RUN_KEY);const afterWrong=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).currentPuzzle,RUN_KEY);assert.strictEqual(afterWrong.errors,1);assert.strictEqual(afterWrong.currentFen,beforeWrong.currentFen,'wrong move must not advance the persisted position');assert.strictEqual(afterWrong.solutionIndex,0);
-  await clickMove(page,moves.correct.from,moves.correct.to,moves.correct.promotion);
+  const dragFrom=await page.locator(`[data-puzzle-board] [data-square="${moves.correct.from}"]`).boundingBox();
+  const dragTo=await page.locator(`[data-puzzle-board] [data-square="${moves.correct.to}"]`).boundingBox();
+  await page.mouse.move(dragFrom.x+dragFrom.width/2,dragFrom.y+dragFrom.height/2);
+  await page.mouse.down();
+  await page.mouse.move(dragTo.x+dragTo.width/2,dragTo.y+dragTo.height/2,{steps:8});
+  await page.mouse.up();
+  if(moves.correct.promotion){
+    const names={q:'Ферзь',r:'Ладья',b:'Слон',n:'Конь'};
+    await page.locator('[data-puzzle-promotion]:not([hidden])').getByRole('button',{name:names[moves.correct.promotion]}).click();
+  }
   // New bestLine/mate4/mate5+ positions may require multiple correct replies:
   // play each authored player move after the engine has executed its opponent UCI.
   for(let index=2;index<moves.solution.length;index+=2){
