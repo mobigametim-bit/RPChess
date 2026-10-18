@@ -35,7 +35,14 @@ async function assertOverlay(page, label, expectedHint) {
       modal:card.getAttribute('aria-modal'),
       title:root.querySelector('[data-tutorial-title]')?.textContent?.trim() || '',
       body:root.querySelector('[data-tutorial-body]')?.textContent?.trim() || '',
-      dismiss:dismiss?.textContent?.trim() || ''
+      dismiss:dismiss?.textContent?.trim() || '',
+      portrait:{
+        loaded:Boolean(root.querySelector('.rpchess-onboarding__portrait')?.complete && root.querySelector('.rpchess-onboarding__portrait')?.naturalWidth),
+        left:root.querySelector('.rpchess-onboarding__portrait')?.getBoundingClientRect().left,
+        top:root.querySelector('.rpchess-onboarding__portrait')?.getBoundingClientRect().top,
+        right:root.querySelector('.rpchess-onboarding__portrait')?.getBoundingClientRect().right,
+        bottom:root.querySelector('.rpchess-onboarding__portrait')?.getBoundingClientRect().bottom
+      }
     };
   });
   assert.strictEqual(geometry.hint, expectedHint, `${label}: wrong hint displayed`);
@@ -45,6 +52,10 @@ async function assertOverlay(page, label, expectedHint) {
   assert.strictEqual(geometry.role, 'dialog', `${label}: onboarding must expose dialog role`);
   assert.strictEqual(geometry.modal, 'true', `${label}: onboarding must be modal`);
   assert(geometry.title.length > 0 && geometry.body.length > 0 && geometry.dismiss.length > 0, `${label}: localized onboarding copy missing`);
+  assert(geometry.portrait.loaded, `${label}: compressed jester WebP must load`);
+  assert(geometry.portrait.left >= -1 && geometry.portrait.top >= -1 &&
+    geometry.portrait.right <= geometry.vw + 1 && geometry.portrait.bottom <= geometry.vh + 1,
+    `${label}: jester portrait must remain fully inside the viewport`);
   await page.waitForFunction(() => document.activeElement?.matches?.('[data-tutorial-dismiss]'));
 }
 
@@ -91,6 +102,24 @@ async function audit(browser, { width, height, language, mobile = false }) {
       return onboarding.showHint('travel');
     });
     assert.strictEqual(repeated, false, `${label}: dismissed hints must never repeat`);
+
+    // Exercise an actual scene owner, not just direct showHint(): Arena needs no journey.
+    // Reset only its dismissed bit so the real catalog event must show it.
+    await page.evaluate((key) => {
+      const state=JSON.parse(localStorage.getItem(key));
+      delete state.dismissed.arenaCatalog;
+      localStorage.setItem(key,JSON.stringify(state));
+    }, TUTORIAL_KEY);
+    await page.locator('[data-arena-open]').click();
+    await assertOverlay(page, `${label} actual Arena catalog`, 'arenaCatalog');
+    await page.locator('[data-tutorial-dismiss]').click();
+    await page.locator('[data-tutorial-overlay]').waitFor({state:'hidden'});
+    await page.locator('[data-arena-back]').click();
+    await page.locator('[data-arena-open]').click();
+    await page.waitForTimeout(250);
+    assert.strictEqual(await page.locator('[data-tutorial-overlay]:not([hidden])').count(),0,
+      `${label}: real Arena catalog tutorial must not repeat`);
+
     assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
   } finally {
     await context.close();
