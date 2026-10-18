@@ -175,6 +175,11 @@
     flex-wrap:nowrap!important;
     overflow:visible!important;
   }
+  /* The opponent card carries the Arena battle identity; free the narrow rail for navigation. */
+  html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen .arena-topbar h1,
+  html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen .arena-balance {
+    display:none!important;
+  }
   html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen .arena-nav-actions {
     min-width:0!important;
     width:100%!important;
