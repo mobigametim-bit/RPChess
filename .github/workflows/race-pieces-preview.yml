@@ -142,6 +142,18 @@ jobs:
             done
           done
           test "$(find dist/assets/kings -type f -name '*.webp' | wc -l)" -eq 21
+          # Original plus four promotions for eight named pawns, per board color.
+          for hero in daro_last elio_silk kael_cinder mara_chain nemea_quill puck_ember renzo_bridge saran_dawn; do
+            for side in white black; do
+              for role in pawn knight bishop rook queen; do
+                sprite="dist/assets/heroes/$hero/pieces/$side/$role.webp"
+                test -s "$sprite"
+                test "$(head -c4 "$sprite")" = 'RIFF'
+              done
+            done
+          done
+          test "$(find dist/assets/heroes -path '*/pieces/*' -name '*.webp' | wc -l)" -eq 80
+          node tests/race-board-themes.cjs
           # The user-approved new king art removes board role glyphs and decorative auras.
           grep -q "image.parentElement?.querySelector('.classic-piece-marker')?.remove()" dist/js/race-assets.mjs
           # Check retains its red aura even for new full-color chess sprites; side glows remain off.
@@ -211,6 +223,10 @@ jobs:
                test "$(head -c4 /tmp/rpchess-selected-dark-king.webp)" = 'RIFF' &&
                curl -fsS --max-time 15 "$base/assets/kings/fox_prince/pieces/white.webp" -o /tmp/rpchess-selected-light-king.webp &&
                test "$(head -c4 /tmp/rpchess-selected-light-king.webp)" = 'RIFF' &&
+                curl -fsS --max-time 15 "$base/assets/heroes/mara_chain/pieces/white/queen.webp" -o /tmp/rpchess-mara-queen.webp &&
+                test "$(head -c4 /tmp/rpchess-mara-queen.webp)" = 'RIFF' &&
+                curl -fsS --max-time 15 "$base/assets/heroes/nemea_quill/pieces/black/knight.webp" -o /tmp/rpchess-nemea-knight.webp &&
+                test "$(head -c4 /tmp/rpchess-nemea-knight.webp)" = 'RIFF' &&
                curl -fsS --max-time 15 "$base/assets/races/humans/pieces/board/white/king.png" -o /tmp/rpchess-piece-new.png &&
                curl -fsS --max-time 15 "$base/assets/races/orcs/pieces/board/black/knight.png" -o /tmp/rpchess-piece-orc-new.png &&
                curl -fsS --max-time 15 "$base/assets/races/elves/pieces/board/white/king.png" -o /tmp/rpchess-piece-catalog-original.png &&
