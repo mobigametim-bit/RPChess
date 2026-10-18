@@ -139,8 +139,14 @@ async function assertNamedHeroBoardArt(page,playerColor){
   });
   assert(named.some(hero=>hero.id==='king.oathkeeper'&&hero.source.includes(`/kings/oathkeeper/pieces/${playerColor==='w'?'white':'black'}.webp`)),
     'Run King must use the selected commander sprite matching his white/black side');
-  assert(named.some(hero=>hero.id?.startsWith('hero.')&&hero.source.includes('/heroes/')&&hero.source.endsWith('/piece_badge.png')),
-    'named companions must use their existing personal piece_badge.png');
+  // The entire starter roster (including Aldric the Rook) now has dedicated art.
+  const side=playerColor==='w'?'white':'black';
+  assert(named.some(hero=>hero.id==='hero.aldric_wall'&&hero.source.endsWith(`/heroes/aldric_wall/pieces/${side}/rook.webp`)),
+    'Aldric must use the new side-specific Rook art in both white and black combat');
+  assert(named.some(hero=>hero.id==='hero.vael_hammer'&&hero.source.endsWith(`/heroes/vael_hammer/pieces/${side}/knight.webp`)),
+    'Vael must preserve his personalized Knight art');
+  assert(named.some(hero=>hero.id==='hero.brother_orell'&&hero.source.endsWith(`/heroes/brother_orell/pieces/${side}/bishop.webp`)),
+    'Brother Orell must preserve his personalized Bishop art');
   for(const hero of named){
     if(hero.id==='king.oathkeeper'||/\/heroes\/[^/]+\/pieces\/(?:white|black)\//.test(hero.source)){
       assert(hero.incorrectlyGeneric,`${hero.id}: newly illustrated chess sprites must suppress old glyph and side glow`);
