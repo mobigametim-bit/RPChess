@@ -54,10 +54,10 @@ jobs:
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
-      - name: Verify Roster, Skirmish, named combat auras and all Event resource icons
+      - name: Verify Roster, both combat check auras, Arena, Starvation layouts and Event icons
         env:
           RPCHESS_GATE_PREFIX: /RPChess
-          RPCHESS_BROWSER_TEST: roster-browser.cjs,skirmish-browser.cjs,combat-side-colors-browser.cjs,events-browser.cjs,puzzles-browser.cjs
+          RPCHESS_BROWSER_TEST: roster-browser.cjs,skirmish-browser.cjs,combat-side-colors-browser.cjs,arena-browser.cjs,starvation-browser.cjs,events-browser.cjs,puzzles-browser.cjs
         run: npm run test:browser
       - name: Verify jester onboarding in RU/EN, desktop, compact and VK Mobile
         env:
@@ -144,7 +144,10 @@ jobs:
           test "$(find dist/assets/kings -type f -name '*.webp' | wc -l)" -eq 21
           # The user-approved new king art removes board role glyphs and decorative auras.
           grep -q "image.parentElement?.querySelector('.classic-piece-marker')?.remove()" dist/js/race-assets.mjs
-          grep -Fq 'background:rgba(184,40,46,.27)!important' dist/css/combat-side-colors.css
+          # Check retains its red aura even for new full-color chess sprites; side glows remain off.
+          grep -Fq "background:url('../assets/vfx/aura_red.png') center/100% 100% no-repeat!important" dist/css/combat-side-colors.css
+          grep -Fq 'width: min(1160px, 100%)' dist/css/starvation.css
+          grep -Fq 'width:min(780px,96vw)!important' dist/css/starvation-compact.css
           grep -q "function commanderPieceArt" dist/js/commander-portraits.mjs
           grep -q "if(character?.isRunKing)return commanderPieceArt" dist/js/race-assets.mjs
           # Preserve the Roster layout, saved commander identity and differentiated art.
