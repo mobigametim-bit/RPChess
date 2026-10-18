@@ -3,6 +3,16 @@ import { commanderPieceArt } from './commander-portraits.mjs';
 
 const RACE_TAGS = Object.freeze(['humans','elves','orcs','undead','dark_elves','dwarves','demons','angels','dragonborn','beastfolk','constructs','animals','fae','goblins']);
 const PIECE_TYPES = Object.freeze(['pawn','knight','bishop','rook','queen','king']);
+const NAMED_PAWN_IDS = Object.freeze(['daro_last','kael_cinder','mara_chain','nemea_quill','puck_ember','renzo_bridge','saran_dawn','elio_silk']);
+const NAMED_PAWN_SET = new Set(NAMED_PAWN_IDS);
+const NAMED_PAWN_ROLES = Object.freeze(['pawn','knight','bishop','rook','queen']);
+const ROLE_FROM_CODE = Object.freeze({p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen'});
+function namedPawnPieceArt(character,role=character?.pieceType,color='w'){
+  const id=String(character?.id||'').replace(/^hero\./,'');
+  const type=ROLE_FROM_CODE[role]||role;
+  if(!NAMED_PAWN_SET.has(id)||!NAMED_PAWN_ROLES.includes(type))return null;
+  return `assets/heroes/${id}/pieces/${color==='b'||color==='black'?'black':'white'}/${type}.webp`;
+}
 const BOARD_TILE_FILES = Object.freeze({ light:'white.png', dark:'black.png' });
 const BOARD_THEME_STYLE_ID='rpchess-race-board-theme-style';
 let boardRuntimeInstallQueued=false;
@@ -53,18 +63,20 @@ function boardPieceArtForTheme(theme,pieceType,color){
   const race=theme?.enemyRoleRaces?.[pieceType]||theme?.enemyRaceTag||'humans';
   return boardRacePiecePath(race,pieceType,color||theme?.enemyColor||'b');
 }
-function boardPieceArtForCharacter(character,color='w'){
-  // A selected commander owns a distinct WHITE/BLACK chess king. Resolve by combat color,
-  // not the white preview art stored in the roster. Other named heroes keep legacy art.
+function boardPieceArtForCharacter(character,color='w',currentPieceType=character?.pieceType){
+  // Roles can change through pawn promotion. Resolve art from the ACTUAL chess piece
+  // rather than the saved roster starter role. The hero's identity survives the move.
   if(character?.isRunKing)return commanderPieceArt(character.commanderId,color);
-  return character?.boardPieceArt||character?.pieceArt||boardRacePiecePath(character?.raceTag||'humans',character?.pieceType,color);
+  const personalized=namedPawnPieceArt(character,currentPieceType,color);
+  if(personalized)return personalized;
+  return character?.boardPieceArt||character?.pieceArt||boardRacePiecePath(character?.raceTag||'humans',currentPieceType,color);
 }
 function setBoardPieceArt(image,src){
   if(!image)return;
   if(typeof image.getAttribute==='function'&&typeof image.setAttribute==='function'){
     if(image.getAttribute('src')!==src)image.setAttribute('src',src);
   }else if(image.src!==src)image.src=src;
-  const dedicated=String(src).includes('/pieces/board/')||/\/kings\/[^/]+\/pieces\/(?:white|black)\.webp$/.test(String(src));
+  const dedicated=String(src).includes('/pieces/board/')||/\/kings\/[^/]+\/pieces\/(?:white|black)\.webp$/.test(String(src))||/\/heroes\/[^/]+\/pieces\/(?:white|black)\/(?:pawn|knight|bishop|rook|queen)\.webp$/.test(String(src));
   image.classList.toggle('classic-piece--new-race',dedicated);
   // New illustrations are self-explanatory: no legacy role glyph or decorative aura.
   if(dedicated)image.parentElement?.querySelector('.classic-piece-marker')?.remove();
@@ -163,4 +175,4 @@ function pieceArtForTheme(theme,pieceType,color){const race=theme?.enemyRoleRace
 
 installRaceBoardRuntime();
 
-export {RACE_TAGS,PIECE_TYPES,BOARD_TILE_FILES,BOARD_THEME_STYLE_ID,RACE_LABELS,RACE_TAG_BY_LABEL,BACKGROUND_POOLS,BACKGROUND_FOLDER_BY_RACE,hashString,normalizeRaceTag,oppositeColor,racePiecePath,BOARD_PIECE_RACES,boardRacePiecePath,boardPieceArtForTheme,boardPieceArtForCharacter,setBoardPieceArt,raceBoardTiles,installRaceBoardStyles,applyRaceBoardTheme,currentCombatBoardRace,queueRaceBoardRuntimeInstall,installRaceBoardRuntime,eventBackgroundPath,deterministicPlayerColor,deterministicRace,mixedRoleRaces,combatTheme,pieceArtForTheme};
+export {RACE_TAGS,PIECE_TYPES,BOARD_TILE_FILES,BOARD_THEME_STYLE_ID,RACE_LABELS,RACE_TAG_BY_LABEL,BACKGROUND_POOLS,BACKGROUND_FOLDER_BY_RACE,hashString,normalizeRaceTag,oppositeColor,racePiecePath,BOARD_PIECE_RACES,boardRacePiecePath,boardPieceArtForTheme,NAMED_PAWN_IDS,NAMED_PAWN_ROLES,namedPawnPieceArt,boardPieceArtForCharacter,setBoardPieceArt,raceBoardTiles,installRaceBoardStyles,applyRaceBoardTheme,currentCombatBoardRace,queueRaceBoardRuntimeInstall,installRaceBoardRuntime,eventBackgroundPath,deterministicPlayerColor,deterministicRace,mixedRoleRaces,combatTheme,pieceArtForTheme};
