@@ -8,6 +8,16 @@ async function clickMove(page, from, to) {
   await page.locator(`[data-square="${to}"]`).click();
 }
 
+async function dragMove(page, from, to) {
+  const source=await page.locator(`[data-chess-board] [data-square="${from}"]`).boundingBox();
+  const target=await page.locator(`[data-chess-board] [data-square="${to}"]`).boundingBox();
+  assert(source&&target,'drag from/to squares must exist');
+  await page.mouse.move(source.x+source.width/2,source.y+source.height/2);
+  await page.mouse.down();
+  await page.mouse.move(target.x+target.width/2,target.y+target.height/2,{steps:8});
+  await page.mouse.up();
+}
+
 async function pieceSrc(page, square) {
   return page.locator(`[data-square="${square}"] .classic-piece`).getAttribute('src');
 }
@@ -138,7 +148,7 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
         promotionArtResolver:(from,type,color)=>art.namedPawnPieceArt({id:'hero.kael_cinder',pieceType:'pawn'},type,color)
       });
     });
-    await clickMove(page,'a2','a1');
+    await dragMove(page,'a2','a1');
     await page.locator('[data-promotion-modal]:not([hidden])').waitFor();
     for(const [role,name] of [['q','queen'],['r','rook'],['b','bishop'],['n','knight']]){
       const src=await page.locator(`[data-promotion="${role}"] img`).getAttribute('src');
@@ -151,7 +161,8 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
       'Kael promotion must preserve promoted queen role in the engine');
     await page.evaluate(() => window.RPChessClassicChess.newGame());
     for (const [from, to] of [['f2', 'f3'], ['e7', 'e5'], ['g2', 'g4'], ['d8', 'h4']]) {
-      await clickMove(page, from, to);
+      if(from==='f2')await dragMove(page,from,to);
+      else await clickMove(page, from, to);
       await waitForMoveAnimation(page);
     }
     await page.locator('[data-game-result]:not([hidden])').waitFor();
@@ -215,7 +226,7 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     assert.strictEqual(await mobile.locator('[data-piece-marker]').count(), 32, 'mobile landscape pieces must retain technical markers');
     const boardBox = await mobile.locator('[data-chess-board]').boundingBox();
     assert(boardBox && boardBox.width > 300 && boardBox.width <= 390, `mobile landscape board width must match viewport height: ${boardBox?.width}`);
-    await clickMove(mobile, 'e2', 'e4');
+    await dragMove(mobile, 'e2', 'e4');
     await waitForMoveAnimation(mobile);
     assert((await pieceSrc(mobile, 'e4')).includes('/humans/pieces/board/white/pawn.png'), 'mobile landscape board interaction must move pieces');
     const scrollState = await mobile.evaluate(() => ({ scrollHeight: document.documentElement.scrollHeight, clientHeight: document.documentElement.clientHeight }));
