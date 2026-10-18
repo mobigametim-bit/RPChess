@@ -548,8 +548,14 @@ html body .puzzle-square:has(.puzzle-piece--new-race) .puzzle-piece-marker {
     box-sizing:border-box!important;
   }
   html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-board {
-    width:100%!important;
-    height:100%!important;
+    width:var(--puzzle-centered-board)!important;
+    height:var(--puzzle-centered-board)!important;
+    min-width:0!important;
+    min-height:0!important;
+    max-width:var(--puzzle-centered-board)!important;
+    max-height:var(--puzzle-centered-board)!important;
+    aspect-ratio:1!important;
+    box-sizing:border-box!important;
   }
   html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-topbar,
   html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-heading,
