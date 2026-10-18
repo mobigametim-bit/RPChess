@@ -439,6 +439,8 @@ main.battle-run-end .battle-aftermath-shell {
   display: grid !important;
   place-items: center !important;
   min-height: 100dvh;
+  padding: clamp(8px, 1.4vw, 18px) !important;
+  box-sizing: border-box;
 }
 main.battle-aftermath--death .battle-aftermath-shell > .battle-logo,
 main.battle-run-end .battle-aftermath-shell > .battle-logo {
