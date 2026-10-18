@@ -3,7 +3,7 @@ import { createRun, readRun, writeRun } from './run-persistence.mjs';
 import { applyNewRunPowerCarryover } from './player-rating.mjs';
 import { subscribe, t, translateLegacy } from './i18n.mjs';
 import { heroNoteForId } from './content/hero-notes.mjs';
-import { commanderTitle,commanderDescription } from './commander-portraits.mjs';
+import { commanderTitle,commanderDescription,commanderPortrait } from './commander-portraits.mjs';
 import { currentLanguage } from './i18n.mjs';
 import { renderFormationUI } from './roster-formation-ui.mjs';
 import { normalizedFormation } from './roster-formation-core.mjs';
@@ -91,7 +91,7 @@ function renderDetail() {
   media.className = 'roster-detail__media';
   const portrait = document.createElement('img');
   portrait.className = 'roster-detail__portrait';
-  portrait.src = character.portrait;
+  portrait.src = character.isRunKing?commanderPortrait(activeRun?.commanderId):character.portrait;
   portrait.alt = displayName;
   media.append(portrait);
 
