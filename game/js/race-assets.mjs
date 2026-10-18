@@ -61,7 +61,9 @@ function boardPieceArtForCharacter(character,color='w'){
 }
 function setBoardPieceArt(image,src){
   if(!image)return;
-  if(image.getAttribute('src')!==src)image.setAttribute('src',src);
+  if(typeof image.getAttribute==='function'&&typeof image.setAttribute==='function'){
+    if(image.getAttribute('src')!==src)image.setAttribute('src',src);
+  }else if(image.src!==src)image.src=src;
   const dedicated=String(src).includes('/pieces/board/')||/\/kings\/[^/]+\/pieces\/(?:white|black)\.webp$/.test(String(src));
   image.classList.toggle('classic-piece--new-race',dedicated);
   // New illustrations are self-explanatory: no legacy role glyph or decorative aura.
