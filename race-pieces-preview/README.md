@@ -92,3 +92,5 @@ Desktop Training fix (owner screenshot 1919x907): the legacy compact UI styleshe
 - Existing Roster, Settlement, Caravan, Skirmish and Battle portrait/board resolver paths reuse the new art. Old PNG files remain in the repository for compatibility.
 - Source validation checks every bishop WebP asset and its byte budget; the extended Battle regression checks all seven named bishops for both colors, old-save portraits, and non-bishop fallback.
 - No merge into main. PR #160 remains acceptance-only.
+
+CI follow-up 2026-10-19: in the existing classic-chess-browser landscape case, wait for the scene-loading mask to become hidden before starting the real mouse drag; no fake move injection, and the move assertion remains required.
