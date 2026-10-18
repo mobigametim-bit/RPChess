@@ -166,16 +166,14 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     await waitForMoveAnimation(page);
     assert((await page.locator('[data-result-text]').innerText()).includes('Пятьдесят'), '50-move draw must be shown in UI');
 
-    const battleNavGeometry = await page.evaluate(() => {
-      const selectors=['.classic-shell','.classic-topbar','.classic-toolbar','[data-classic-new]','[data-settings]','[data-classic-menu]','.classic-main','[data-chess-board]'];
-      const box=selector=>{
-        const e=document.querySelector('[data-classic-screen] '+selector),r=e?.getBoundingClientRect(),cs=e?getComputedStyle(e):null;
-        return {selector,rect:r?{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}:null,display:cs?.display,position:cs?.position,gridColumn:cs?.gridColumn,zIndex:cs?.zIndex};
-      };
-      const shell=document.querySelector('.classic-shell'),css=getComputedStyle(shell);
-      return {viewport:[innerWidth,innerHeight],columns:css.gridTemplateColumns,boardSize:getComputedStyle(document.body).getPropertyValue('--combat-board-size').trim(),boxes:selectors.map(box)};
+    const navSafe = await page.evaluate(() => {
+      const button=document.querySelector('[data-classic-menu]');
+      const board=document.querySelector('[data-chess-board]');
+      const menu=button.getBoundingClientRect(),chess=board.getBoundingClientRect();
+      const hit=document.elementFromPoint((menu.left+menu.right)/2,(menu.top+menu.bottom)/2);
+      return {clickable:hit===button||button.contains(hit),separated:menu.right<=chess.left+1};
     });
-    console.log('Classic centered navigation geometry:',JSON.stringify(battleNavGeometry));
+    assert(navSafe.clickable&&navSafe.separated,'Classic menu must stay clickable to the left of the centered board');
     await page.locator('[data-classic-menu]').click();
     assert.strictEqual(await menu.isVisible(), true, 'main menu must be reachable from Classic Chess');
     assert.strictEqual(await page.locator('[data-classic-screen]').isHidden(), true, 'chess scene must leave layout on menu return');
