@@ -291,8 +291,15 @@ function leave(){adapter.stop();searchId++;thinking=false;stopMoveAnimation();en
 attachPieceDrag(board, {
   canPick: square => Boolean(!root?.hidden && !dialogType && engine && state.match?.phase === 'playing' && !animating && !thinking &&
     engine.turn() === state.match.playerColor && engine.pieceAt(square)?.color === state.match.playerColor),
-  onStart: square => { selected = square; renderBoard(); },
-  onDrop: (from,to) => commit(from,to)
+  onStart: square => {
+    selected = square;
+    board.querySelector('[data-square="' + square + '"]')?.classList.add('classic-square--selected');
+    for (const move of engine.legalMoves(square)) board.querySelector('[data-square="' + (move.uciTo || move.to) + '"]')?.classList.add('classic-square--legal');
+  },
+  onDrop: (from,to) => {
+    if (to && engine.legalMoves(from).some(move => (move.uciTo || move.to) === to)) commit(from,to);
+    else { selected = null; renderBoard(); }
+  }
 });
 
 root?.addEventListener('click',event=>{
