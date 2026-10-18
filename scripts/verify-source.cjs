@@ -53,6 +53,21 @@ module.exports=function verifySource(root){
       }
     }
   }
+  // Six named knights: stable hero IDs, replacement portraits, two side-specific board sprites.
+  for(const id of ['vael_hammer','orion_step','roan_stag','suri_ash','temur_wind','tessa_gull']){
+    for(const relative of [`assets/heroes/${id}/portrait_named.webp`,
+      `assets/heroes/${id}/pieces/white/knight.webp`,
+      `assets/heroes/${id}/pieces/black/knight.webp`]){
+      required.push(relative);
+      const full=path.join(root,relative);
+      if(fs.existsSync(full)){
+        const data=fs.readFileSync(full),limit=relative.includes('/pieces/')?42*1024:150*1024;
+        if(data.length<1000||data.length>limit||
+          data.toString('ascii',0,4)!=='RIFF'||data.toString('ascii',8,12)!=='WEBP')
+          fail(`named knight art invalid or exceeds ${Math.round(limit/1024)} KB budget: ${relative}`);
+      }
+    }
+  }
   required.push('js/skirmish-obstacles.mjs');
   required.push('css/arena.css','css/combat-centered-layout.css','css/piece-drag.css','js/arena-core.mjs','js/arena-app.mjs','assets/arena/mirror_shard.png','assets/arena/defeat_crown.png');
   required.push('js/combat-checkpoint.mjs');
