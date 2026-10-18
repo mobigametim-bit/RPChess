@@ -28,7 +28,7 @@ const STARTER_TEMPLATES = Object.freeze([
     name: 'Мара Цепь',
     pieceType: 'pawn',
     origin: 'Железные Марши',
-    portrait: 'assets/heroes/mara_chain/portrait.png',
+    portrait: 'assets/heroes/mara_chain/portrait_named.webp',
     pieceArt: 'assets/heroes/mara_chain/pieces/white/pawn.webp',
     description: 'Упрямая воительница из низших рядов, для которой каждый шаг вперёд имеет цену.'
   }),
@@ -37,7 +37,7 @@ const STARTER_TEMPLATES = Object.freeze([
     name: 'Немея Перо',
     pieceType: 'pawn',
     origin: 'Светлый Синод',
-    portrait: 'assets/heroes/nemea_quill/portrait.png',
+    portrait: 'assets/heroes/nemea_quill/portrait_named.webp',
     pieceArt: 'assets/heroes/nemea_quill/pieces/white/pawn.webp',
     description: 'Учёная-путешественница, присоединившаяся к отряду ради истории, которую ещё предстоит написать.'
   }),
