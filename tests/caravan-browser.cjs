@@ -108,8 +108,10 @@ async function openCaravan(page) {
       const { RECRUIT_LIBRARY } = await import('./js/settlement-core.mjs');
       const { PIECE_GLYPHS } = await import('./js/roster-data.mjs');
       const run = JSON.parse(localStorage.getItem(runKey));
-      const healed = run.roster.find(hero => !hero.isRunKing);
-      const recruit = RECRUIT_LIBRARY.find(hero => !run.roster.some(member => member.id === hero.id));
+      const healed = run.roster.find(hero => hero.id === 'hero.mara_chain');
+       // Simulate a pre-art saved run with an old portrait field.
+       healed.portrait='assets/heroes/mara_chain/portrait.png';
+      const recruit = RECRUIT_LIBRARY.find(hero => hero.id === 'hero.kael_cinder');
       const offers = [
         { id:'preview:healing',kind:'healing',heroId:healed.id },
         { id:'preview:hero',kind:'hero',heroId:recruit.id },
@@ -121,7 +123,8 @@ async function openCaravan(page) {
         return { glyph:card.querySelector('.caravan-reward-card__glyph')?.textContent,
           hidden:card.querySelector('.caravan-reward-card__glyph')?.getAttribute('aria-hidden'),
           imageCount:card.querySelectorAll('img').length,
-          portrait:card.querySelector('.caravan-reward-card__portrait')?.contains(card.querySelector('img')) };
+          portrait:card.querySelector('.caravan-reward-card__portrait')?.contains(card.querySelector('img')),
+           src:card.querySelector('img')?.getAttribute('src') };
       };
       const result = { healing:read('preview:healing'),hero:read('preview:hero'),gold:read('preview:gold'),
         healingExpected:PIECE_GLYPHS[healed.pieceType],heroExpected:PIECE_GLYPHS[recruit.pieceType] };
@@ -133,6 +136,8 @@ async function openCaravan(page) {
       assert.equal(portraits[kind].hidden,'true');
       assert.equal(portraits[kind].imageCount,1);
       assert.equal(portraits[kind].portrait,true);
+      assert(portraits[kind].src?.endsWith(kind==='healing'?'/mara_chain/portrait_named.webp':'/kael_cinder/portrait_named.webp'),
+        `${kind} must use the new compressed pawn portrait, including runs saved with old portrait paths: ${portraits[kind].src}`);
     }
     assert.equal(portraits.gold.glyph,undefined,'resource rewards have no piece glyph');
     assert.deepEqual(errors, []);
