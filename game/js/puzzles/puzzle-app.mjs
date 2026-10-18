@@ -1,4 +1,5 @@
 import { ClassicChessEngine } from '../classic-chess-engine.mjs';
+import { attachPieceDrag } from '../piece-drag.mjs';
 import { boardRacePiecePath } from '../race-assets.mjs';
 import { readRun, writeRun } from '../run-persistence.mjs';
 import { t, subscribe } from '../i18n.mjs';
@@ -563,6 +564,14 @@ function continueTravel() {
 }
 
 ensureScreen();
+
+attachPieceDrag(screen?.querySelector('[data-puzzle-board]'), {
+  canPick: square => Boolean(screen && !screen.hidden && engine && puzzle && state && !state.resolved && !locked &&
+    engine.turn() === puzzle.side && engine.pieceAt(square)?.color === puzzle.side),
+  onStart: square => { selected = square; selectedMoves = engine.legalMoves(square); renderBoard(); },
+  onDrop: (from,to) => { if (selected === from) void clickSquare(to); }
+});
+
 subscribe(() => {
   renderStaticCopy();
   if (screen && !screen.hidden && puzzle && state && engine) renderAll();
