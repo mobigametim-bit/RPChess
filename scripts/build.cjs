@@ -10,6 +10,7 @@ const COMMANDER_IDS=Object.freeze(['oathkeeper','stone_crown','wanderer_queen','
 const COMMANDER_ART=Object.freeze(COMMANDER_IDS.flatMap(id=>[`assets/kings/${id}/portrait.webp`,`assets/kings/${id}/pieces/white.webp`,`assets/kings/${id}/pieces/black.webp`]));
 const NAMED_PAWN_IDS=Object.freeze(['daro_last','kael_cinder','mara_chain','nemea_quill','puck_ember','renzo_bridge','saran_dawn','elio_silk']);
 const NAMED_PAWN_ART=Object.freeze(NAMED_PAWN_IDS.flatMap(id=>['white','black'].flatMap(side=>['pawn','knight','bishop','rook','queen'].map(role=>`assets/heroes/${id}/pieces/${side}/${role}.webp`))));
+const NAMED_PAWN_PORTRAITS=Object.freeze(NAMED_PAWN_IDS.map(id=>`assets/heroes/${id}/portrait_named.webp`));
 function copy(relative){const from=path.join(source,relative),to=path.join(dist,relative);if(!fs.existsSync(from))throw new Error(`missing Reboot build input: ${relative}`);fs.mkdirSync(path.dirname(to),{recursive:true});fs.cpSync(from,to,{recursive:true,force:true});}
 const MUSIC_EXTENSIONS=new Set(['.mp3','.ogg','.wav']);
 function collectMusicTracks(directory=path.join(source,'music')){
@@ -45,7 +46,7 @@ async function main(){
     'js/skirmish-core.mjs','js/skirmish-obstacles.mjs','js/skirmish-app.mjs','js/chess960.mjs','js/caravan-core.mjs','js/caravan-reward-ui.mjs','js/battle-core.mjs','js/battle-app.mjs','js/battle-mercenaries.mjs','js/battle-route.mjs','js/combat-menu.mjs','js/travel-choice-core.mjs','js/travel-choice-app.mjs','js/ux-consistency.mjs','js/post-redesign-playtest-pass1b.mjs','js/ui-redesign-final.mjs','js/cross-scene-visuals.mjs','js/landscape-ui-redesign.mjs',
     'js/resources-core.mjs','js/resources-app.mjs','js/settlement-core.mjs','js/settlement-app.mjs','js/starvation-core.mjs','js/starvation-app.mjs','js/events-data.mjs','js/events-core.mjs','js/events-app.mjs','js/events','js/puzzles',
     'assets/vfx/pin_ice_full.png','assets/vfx/pin_ice_partial.png','assets/vfx/aura_white.png','assets/vfx/aura_black.png','assets/vfx/aura_red.png','assets/artifacts','assets/boards/obstacles','assets/doctrines/cavalry/emblem.png','assets/doctrines/royal_court/emblem.png','fonts','music','SFX',
-    ...collectBoardAssetPaths(source),...collectPieceAssetPaths(source),...collectPortraitAssetPaths(source),...collectBackgroundAssetPaths(source),...COMMANDER_ART,...NAMED_PAWN_ART,...GENERATED_RUNTIME_ASSETS
+    ...collectBoardAssetPaths(source),...collectPieceAssetPaths(source),...collectPortraitAssetPaths(source),...collectBackgroundAssetPaths(source),...COMMANDER_ART,...NAMED_PAWN_ART,...NAMED_PAWN_PORTRAITS,...GENERATED_RUNTIME_ASSETS
   ])copy(relative);
   for(const master of collectBackgroundAssetPaths(source))copy(master.replace(/\.png$/,'.webp'));
   const musicTracks=writeMusicCatalog();
