@@ -1,4 +1,5 @@
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
+import { attachPieceDrag } from './piece-drag.mjs';
 import { boardRacePiecePath } from './race-assets.mjs';
 import { ChessAIAdapter, ELO_LEVELS, profileForElo } from './chess-ai-adapter.mjs';
 import { currentLanguage, subscribe, translateLegacy } from './i18n.mjs';
@@ -628,6 +629,14 @@ globalThis.RPChessChessAI = {
   snapshot() { return { ...aiAdapter.snapshot(), config: { ...gameConfig }, thinking: aiThinking, animating: visualAnimating }; },
   replaceAdapter(adapter) { aiAdapter.destroy(); aiAdapter = adapter; return aiAdapter; }
 };
+
+
+attachPieceDrag(board, {
+  canPick: square => Boolean(!screen?.hidden && !pendingPromotion && !aiThinking && !visualAnimating && !engine.status().over &&
+    (gameConfig.mode !== 'ai' || engine.turn() === gameConfig.playerColor) && engine.pieceAt(square)?.color === engine.turn()),
+  onStart: square => { selected = square; selectedMoves = engine.legalMoves(square); renderBoard(); },
+  onDrop: (from,to) => { if (selectedMoves.some(move => (move.uciTo || move.to) === to)) executeMove(from,to); }
+});
 
 globalThis.RPChessClassicChess = {
   get engine() { return engine; },
