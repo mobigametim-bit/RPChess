@@ -42,12 +42,20 @@ const {BOARD_RACES,BOARD_FILES,collectBoardAssetPaths}=require('../scripts/board
   assert.strictEqual(mod.boardRacePiecePath('elves','pawn','b'),'assets/races/elves/pieces/board/black/pawn.png','new elven set must use color-specific chess art');
   assert.strictEqual(mod.boardPieceArtForCharacter({pieceType:'rook'},'b'),mod.boardRacePiecePath('humans','rook','b'),'unnamed pieces use new race chess art');
   assert.strictEqual(mod.boardPieceArtForCharacter({id:'king.oathkeeper',pieceType:'king',pieceArt:'assets/kings/oathkeeper/piece.png'},'w'),'assets/kings/oathkeeper/piece.png','named Run King must retain his existing personal board image');
+  for(const id of ['oathkeeper','stone_crown','wanderer_queen','pilgrim','fox_prince','ash_regent','nameless_heir']){
+    for(const color of ['w','b']){
+      const chosen=mod.boardPieceArtForCharacter({id:'king.oathkeeper',isRunKing:true,commanderId:id,pieceType:'king',pieceArt:'assets/kings/oathkeeper/piece.png'},color);
+      assert.strictEqual(chosen,`assets/kings/${id}/pieces/${color==='w'?'white':'black'}.webp`,
+        `selected commander ${id} must use its own ${color} art on board`);
+    }
+  }
   assert.strictEqual(mod.boardPieceArtForCharacter({id:'hero.aldric_wall',pieceType:'rook',raceTag:'humans',pieceArt:'assets/heroes/aldric_wall/piece_badge.png'},'w'),'assets/heroes/aldric_wall/piece_badge.png','named heroes must retain their existing personal board badges');
   assert.strictEqual(mod.boardPieceArtForCharacter({pieceType:'bishop',pieceArt:'assets/heroes/example/piece_badge.png',boardPieceArt:'assets/heroes/example/board_custom.png'},'w'),'assets/heroes/example/board_custom.png','future explicitly supplied named board art takes precedence');
   const switched=[];const testImage={src:'',classList:{toggle(name,enabled){switched.push({name,enabled});}}};
   mod.setBoardPieceArt(testImage,mod.boardPieceArtForCharacter({pieceType:'rook',pieceArt:'assets/heroes/aldric_wall/piece_badge.png'},'w'));
   mod.setBoardPieceArt(testImage,mod.boardRacePiecePath('humans','rook','w'));
-  assert.deepStrictEqual(switched,[{name:'classic-piece--new-race',enabled:false},{name:'classic-piece--new-race',enabled:true}],
+  mod.setBoardPieceArt(testImage,mod.boardPieceArtForCharacter({isRunKing:true,commanderId:'ash_regent'},'b'));
+  assert.deepStrictEqual(switched,[{name:'classic-piece--new-race',enabled:false},{name:'classic-piece--new-race',enabled:true},{name:'classic-piece--new-race',enabled:true}],
     'named hero art must restore the glyph/aura while generic new race art suppresses it');
 
   const properties={};
