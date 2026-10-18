@@ -1,4 +1,5 @@
 import './king-pin-ice.mjs';
+import { commanderPieceArt } from './commander-portraits.mjs';
 
 const RACE_TAGS = Object.freeze(['humans','elves','orcs','undead','dark_elves','dwarves','demons','angels','dragonborn','beastfolk','constructs','animals','fae','goblins']);
 const PIECE_TYPES = Object.freeze(['pawn','knight','bishop','rook','queen','king']);
@@ -53,14 +54,18 @@ function boardPieceArtForTheme(theme,pieceType,color){
   return boardRacePiecePath(race,pieceType,color||theme?.enemyColor||'b');
 }
 function boardPieceArtForCharacter(character,color='w'){
-  // Named roster characters keep their original identity art until dedicated
-  // new board sprites are supplied. Only generic unnamed pieces use race art.
+  // A selected commander owns a distinct WHITE/BLACK chess king. Resolve by combat color,
+  // not the white preview art stored in the roster. Other named heroes keep legacy art.
+  if(character?.isRunKing)return commanderPieceArt(character.commanderId,color);
   return character?.boardPieceArt||character?.pieceArt||boardRacePiecePath(character?.raceTag||'humans',character?.pieceType,color);
 }
 function setBoardPieceArt(image,src){
   if(!image)return;
-  image.src=src;
-  image.classList.toggle('classic-piece--new-race',String(src).includes('/pieces/board/'));
+  if(image.getAttribute('src')!==src)image.setAttribute('src',src);
+  const dedicated=String(src).includes('/pieces/board/')||/\/kings\/[^/]+\/pieces\/(?:white|black)\.webp$/.test(String(src));
+  image.classList.toggle('classic-piece--new-race',dedicated);
+  // New illustrations are self-explanatory: no legacy role glyph or decorative aura.
+  if(dedicated)image.parentElement?.querySelector('.classic-piece-marker')?.remove();
 }
 function raceBoardTiles(raceTag){
   const race=normalizeRaceTag(raceTag);
