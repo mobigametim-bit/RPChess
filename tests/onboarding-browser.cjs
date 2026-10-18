@@ -68,8 +68,9 @@ async function assertOverlay(page, label, expectedHint) {
     `${label}: dialog panel must be horizontally centered instead of leaving a portrait column`);
   assert(geometry.portrait.top < geometry.top - 24,
     `${label}: jester must rise above the dialog, not sit beside it`);
-  assert(geometry.portrait.bottom > geometry.top + 10,
-    `${label}: jester must overlap and peek out from behind the top of the panel`);
+  const portraitOverlap = geometry.portrait.bottom - geometry.top;
+  assert(portraitOverlap >= 12 && portraitOverlap <= 25,
+    `${label}: jester must overlap panel by only 16–18px, actual ${portraitOverlap.toFixed(1)}px`);
   assert(geometry.portrait.left >= geometry.left - 1 && geometry.portrait.right <= geometry.right + 1,
     `${label}: jester must be above/behind the dialog, not in a left-side column`);
   assert(geometry.portraitLayer < geometry.cardLayer,
