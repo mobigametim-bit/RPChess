@@ -19,6 +19,14 @@ module.exports=function verifySource(root){
   }
   // Exactly 8 named pawn heroes, 2 playable sides, and 5 roles (pawn + 4 promotions).
   for(const id of ['daro_last','kael_cinder','mara_chain','nemea_quill','puck_ember','renzo_bridge','saran_dawn','elio_silk']){
+    const portrait=`assets/heroes/${id}/portrait_named.webp`;
+    required.push(portrait);
+    const portraitFile=path.join(root,portrait);
+    if(fs.existsSync(portraitFile)){
+      const data=fs.readFileSync(portraitFile);
+      if(data.length<1000||data.length>150*1024||data.toString('ascii',0,4)!=='RIFF'||data.toString('ascii',8,12)!=='WEBP')
+        fail(`named pawn portrait missing, invalid or over 150KB: ${portrait}`);
+    }
     for(const side of ['white','black'])for(const role of ['pawn','knight','bishop','rook','queen']){
       const relative=`assets/heroes/${id}/pieces/${side}/${role}.webp`;
       required.push(relative);
