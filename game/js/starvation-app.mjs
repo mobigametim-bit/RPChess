@@ -18,7 +18,7 @@ function ensureStylesheet(marker, href) {
 }
 
 function ensureCss() {
-  ensureStylesheet('data-starvation-css', 'css/starvation.css?v=20260909-owner2');
+  ensureStylesheet('data-starvation-css', 'css/starvation.css?v=20261018-death-center');
   ensureStylesheet('data-starvation-compact-css', 'css/starvation-compact.css?v=20260909-owner1');
 }
 
