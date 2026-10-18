@@ -1,3 +1,4 @@
+import { heroPortraitArt } from './race-assets.mjs';
 import { artifactById } from './artifact-core.mjs';
 import { recruitProfile } from './settlement-core.mjs';
 import { PIECE_GLYPHS } from './roster-data.mjs';
@@ -36,7 +37,7 @@ export function showCaravanRewards(run, onChoose) {
     const button=document.createElement('button');button.type='button';button.className='caravan-reward-card';button.dataset.caravanReward=reward.id;
     const image=document.createElement('img');image.alt='';
     const hero=recruitProfile(reward.heroId)||run.roster.find(c=>c.id===reward.heroId);
-    image.src=reward.kind==='gold'?'generated_assets/reward_gold.png':reward.kind==='supplies'?'generated_assets/reward_supplies.png':reward.kind==='artifact'?artifactById(reward.artifactId).icon:hero.portrait;
+    image.src=reward.kind==='gold'?'generated_assets/reward_gold.png':reward.kind==='supplies'?'generated_assets/reward_supplies.png':reward.kind==='artifact'?artifactById(reward.artifactId).icon:heroPortraitArt(hero);
     const name=document.createElement('strong');name.textContent=caravanRewardText(reward,run);
     names.push([name,reward]);
     if ((reward.kind==='healing'||reward.kind==='hero') && hero) {
