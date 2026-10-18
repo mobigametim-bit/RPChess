@@ -49,13 +49,28 @@ const {BOARD_RACES,BOARD_FILES,collectBoardAssetPaths}=require('../scripts/board
         `selected commander ${id} must use its own ${color} art on board`);
     }
   }
+  assert.strictEqual(mod.NAMED_PAWN_IDS.length,8,'every uploaded pawn needs its own named identity');
+  assert.strictEqual(mod.NAMED_PAWN_ROLES.length,5,'a named pawn must have its default art plus all four promotion types');
+  const pawnTypes={pawn:'p',knight:'n',bishop:'b',rook:'r',queen:'q'};
+  for(const id of mod.NAMED_PAWN_IDS)for(const color of ['w','b'])for(const role of mod.NAMED_PAWN_ROLES){
+    const hero={id:`hero.${id}`,pieceType:'pawn',pieceArt:`assets/heroes/${id}/piece_badge.png`};
+    const expected=`assets/heroes/${id}/pieces/${color==='w'?'white':'black'}/${role}.webp`;
+    const art=mod.boardPieceArtForCharacter(hero,color,pawnTypes[role]);
+    assert.strictEqual(art,expected,`wrong named pawn art after promotion: ${id}/${color}/${role}`);
+    const bytes=fs.readFileSync(path.join(game,art));
+    assert(bytes.length<=42*1024&&bytes.toString('ascii',0,4)==='RIFF'&&bytes.toString('ascii',8,12)==='WEBP',
+      `missing or invalid compressed promotion art ${art}`);
+  }
+  assert.strictEqual(mod.namedPawnPieceArt({id:'hero.aldric_wall',pieceType:'rook'},'queen','w'),null,
+    'unreplaced named heroes must retain their legacy piece badges');
   assert.strictEqual(mod.boardPieceArtForCharacter({id:'hero.aldric_wall',pieceType:'rook',raceTag:'humans',pieceArt:'assets/heroes/aldric_wall/piece_badge.png'},'w'),'assets/heroes/aldric_wall/piece_badge.png','named heroes must retain their existing personal board badges');
   assert.strictEqual(mod.boardPieceArtForCharacter({pieceType:'bishop',pieceArt:'assets/heroes/example/piece_badge.png',boardPieceArt:'assets/heroes/example/board_custom.png'},'w'),'assets/heroes/example/board_custom.png','future explicitly supplied named board art takes precedence');
   const switched=[];const testImage={src:'',classList:{toggle(name,enabled){switched.push({name,enabled});}}};
   mod.setBoardPieceArt(testImage,mod.boardPieceArtForCharacter({pieceType:'rook',pieceArt:'assets/heroes/aldric_wall/piece_badge.png'},'w'));
   mod.setBoardPieceArt(testImage,mod.boardRacePiecePath('humans','rook','w'));
   mod.setBoardPieceArt(testImage,mod.boardPieceArtForCharacter({isRunKing:true,commanderId:'ash_regent'},'b'));
-  assert.deepStrictEqual(switched,[{name:'classic-piece--new-race',enabled:false},{name:'classic-piece--new-race',enabled:true},{name:'classic-piece--new-race',enabled:true}],
+  mod.setBoardPieceArt(testImage,mod.boardPieceArtForCharacter({id:'hero.mara_chain',pieceType:'pawn'},'b','queen'));
+  assert.deepStrictEqual(switched,[{name:'classic-piece--new-race',enabled:false},{name:'classic-piece--new-race',enabled:true},{name:'classic-piece--new-race',enabled:true},{name:'classic-piece--new-race',enabled:true}],
     'named hero art must restore the glyph/aura while generic new race art suppresses it');
 
   const properties={};
@@ -84,5 +99,5 @@ const {BOARD_RACES,BOARD_FILES,collectBoardAssetPaths}=require('../scripts/board
   assert.ok(source.includes('linear-gradient(145deg,#c3b995,#aa9f7c)'),'light cell must retain neutral fallback');
   assert.ok(source.includes('linear-gradient(145deg,#4d585d,#374349)'),'dark cell must retain neutral fallback');
 
-  console.log('Race board themes: PASS — 28 board tiles plus 168 PNG board sprites; all Arena catalog sprites unified');
+  console.log('Race board themes: PASS — 28 board tiles, 168 race sprites and 80 named pawn/promotion sprites in both colors');
 })().catch((error)=>{console.error(error);process.exitCode=1;});
