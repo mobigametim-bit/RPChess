@@ -113,6 +113,12 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     assert(art.enemy.includes('assets/races/orcs/pieces/board/black/queen.png'));
     await page.evaluate(() => globalThis.RPChessBattle.finishBattle({ over: true, type: 'stalemate', winner: null }));
     await page.locator('[data-battle-aftermath]:not([hidden])').waitFor();
+    assert.strictEqual(await page.locator('[data-battle-aftermath]').evaluate(node=>node.classList.contains('battle-aftermath--death')),false,
+      'ordinary Battle aftermath must keep its existing non-death presentation');
+    assert.strictEqual(await page.locator('[data-battle-aftermath] .battle-logo').count(),1,
+      'normal Battle aftermath must retain its original logo');
+    assert.strictEqual(await page.locator('[data-battle-run-end] .battle-logo').count(),0,
+      'King death battle fallback screen must have no logo');
     assert.strictEqual((await page.locator('[data-battle-continue]').innerText()).trim(), 'Продолжить путь');
     await page.locator('[data-battle-continue]').click();
     await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
@@ -153,6 +159,31 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     assert((await wounded.evaluate(()=>globalThis.RPChessBattle.selectedIds)).includes('king.oathkeeper'),'auto Battle team keeps wounded run king');
     await wounded.locator('[data-artifact-choice="none"]').click();
     await wounded.locator('[data-classic-screen]:not([hidden])').waitFor();
+    // A Mercenary debt casualty uses the same aftermath screen but without
+    // the normal result logo; the card remains centered in both axes.
+    await wounded.evaluate(key=>{
+      const run=JSON.parse(localStorage.getItem(key));
+      run.battleMercenaryContract={encounterId:'browser.debt',battleCountAtCharge:run.battleCount||0,
+        casualtyDebt:true,settled:false,totalCost:100,unpaidValue:100,chargedGold:0,chargedSupplies:0};
+      localStorage.setItem(key,JSON.stringify(run));
+      window.RPChessBattle.finishBattle({over:true,type:'stalemate',winner:null});
+    },RUN_KEY);
+    await wounded.locator('[data-battle-aftermath].battle-aftermath--death:not([hidden])').waitFor();
+    const deathGeometry=await wounded.locator('[data-battle-aftermath]').evaluate(root=>{
+      const panel=root.querySelector('.battle-aftermath-panel')?.getBoundingClientRect();
+      const logo=root.querySelector('.battle-logo');
+      return {
+        x:panel?(panel.left+panel.right)/2-innerWidth/2:999,
+        y:panel?(panel.top+panel.bottom)/2-innerHeight/2:999,
+        logoHidden:!logo||getComputedStyle(logo).display==='none',
+        text:root.querySelector('[data-battle-aftermath-text]')?.textContent||''
+      };
+    });
+    assert(deathGeometry.logoHidden&&Math.abs(deathGeometry.x)<=2&&Math.abs(deathGeometry.y)<=2,
+      `Mercenary death aftermath must hide the logo and center its panel: ${JSON.stringify(deathGeometry)}`);
+    assert(deathGeometry.text.includes('Наёмники')||deathGeometry.text.includes('Наёмник'),
+      'Debt death aftermath must keep its casualty notice');
+
 
     const mobile = await browser.newPage({ viewport: { width: 844, height: 390 } });
     const mobileErrors = [];
