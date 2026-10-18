@@ -538,6 +538,17 @@ html body .puzzle-square:has(.puzzle-piece--new-race) .puzzle-piece-marker {
     grid-template-columns:minmax(0,1fr) var(--puzzle-centered-board) minmax(0,1fr)!important;
     column-gap:0!important;
   }
+  /* ui-redesign-final.css restores display:grid on .puzzle-layout at desktop
+     widths. That traps the board in a nested grid in the LEFT viewport rail.
+     Flatten it so the board is a direct child of the viewport-wide shell. */
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-layout {
+    display:contents!important;
+    grid-template-columns:none!important;
+    grid-template-rows:none!important;
+    gap:0!important;
+    margin:0!important;
+    padding:0!important;
+  }
   html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-board-wrap {
     position:relative!important;
     top:auto!important;
