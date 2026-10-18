@@ -5,7 +5,7 @@
 @media (orientation: landscape) {
   html[data-landscape-ui='1'] body {
     --combat-rail-min: clamp(160px, 18vw, 380px);
-    --combat-board-size: min(100dvh, calc(100vw - 2 * var(--combat-rail-min)));
+    --combat-board-size: min(100dvh, calc(100vw - var(--combat-rail-min) - var(--combat-rail-min)));
   }
 
   /* Journey Skirmish, Battle, Caravan and the shared Classic board. */
