@@ -72,3 +72,5 @@ Mobile drag reliability: after actual drag threshold the board captures the poin
 - No production main merge before owner visual confirmation.
 
 Training-centered final CI follow-up: static Puzzle owner regression updated to require the new stylesheet cache key and the three-column viewport-centered geometry. The run uses the actual selected Ash Regent commander portrait in the Battle Power badge regression.
+
+Square Training board follow-up: both the Training board and its wrapper now use the identical computed viewport dimension, with border-box sizing, instead of percentage-based height. Browser assertion reports full geometry if there is any remaining mismatch.
