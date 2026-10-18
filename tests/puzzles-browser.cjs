@@ -50,6 +50,32 @@ async function clickMove(page,from,to,promotion=null){
   const page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];page.on('pageerror',e=>errors.push(String(e.stack||e)));
   await fresh(page,'puzzles-browser-mate1');await seedPuzzleRoute(page,mate1Route);await page.locator('[data-roster-travel]').click();
   const screen=page.locator('[data-puzzle-screen]:not([hidden])');await screen.waitFor();await page.waitForFunction(()=>document.body.classList.contains('compact-puzzle-active'));
+
+  // Desktop regression: compact-puzzle-active has a historical nested grid at
+  // widths >=901px. Check the real desktop screenshot size, not only phones.
+  for(const viewport of [{width:1919,height:907},{width:1440,height:900},{width:1280,height:720},{width:1024,height:768}]){
+    await page.setViewportSize(viewport);
+    const geo=await page.evaluate(()=>{
+      const box=selector=>{
+        const node=document.querySelector(selector),rect=node?.getBoundingClientRect();
+        return rect?{left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom,
+          width:rect.width,height:rect.height}:null;
+      };
+      return {board:box('[data-puzzle-board]'),panel:box('.puzzle-layout>.puzzle-panel:first-child'),
+        settings:box('[data-puzzle-settings]'),layout:getComputedStyle(document.querySelector('.puzzle-layout')).display,
+        screen:box('[data-puzzle-screen]'),viewport:[innerWidth,innerHeight]};
+    });
+    const {board,panel,settings,viewport:[width,height]}=geo;
+    assert(geo.layout==='contents',`Training compact desktop must flatten legacy nested grid: ${JSON.stringify(geo)}`);
+    assert(board&&panel&&settings&&Math.abs(board.width-board.height)<=2&&board.height<=height+1,
+      `Training board must remain square and fit viewport ${width}x${height}: ${JSON.stringify(geo)}`);
+    assert(Math.abs((board.left+board.right)/2-width/2)<=2 &&
+      Math.abs((board.top+board.bottom)/2-height/2)<=2,
+      `Training board must center on FULL desktop viewport ${width}x${height}: ${JSON.stringify(geo)}`);
+    assert(panel.right<=board.left-4&&settings.right<=board.left-4&&panel.left>=-1,
+      `Training information and settings must not overlap board ${width}x${height}: ${JSON.stringify(geo)}`);
+  }
+  await page.setViewportSize({width:1440,height:900});
   assert.strictEqual(await page.locator('[data-puzzle-roster]').count(),0,'obsolete Puzzle Roster shortcut must be absent from the runtime DOM');
   assert((await page.locator('[data-puzzle-objective]').innerText()).trim().length>3,'all curated puzzle types must render a localized objective');
   assert.strictEqual((await page.locator('[data-puzzle-stars]').innerText()).replace(/\s/g,''),'★');
