@@ -84,3 +84,11 @@ Verified touch race via CDP diagnostics: transient [data-game-loading] fullscree
 Training viewport follow-up: remove legacy padding that shifted its newly centered board vertically and cap the task card to the available landscape height with internal scrolling; report exact board/task rectangles on any browser regression.
 
 Desktop Training fix (owner screenshot 1919x907): the legacy compact UI stylesheet recreated a nested puzzle-layout grid for widths >=901px, displacing the board left inside its subgrid. The Training stylesheet now forces display:contents on that nested layout, allowing the centered board square to participate directly in the full-viewport shell grid. The existing puzzles browser regression now checks 1919x907, 1440x900, 1280x720 and 1024x768, in addition to phone landscapes, with overlap and exact viewport-center assertions.
+
+## Seven named Bishop portraits and pieces — 2026-10-19
+- Added original user-provided art for Altana Bow, Brother Orell, Velka Urn, Deacon Mirel, Seraph Lyra, Briar Sister and Old Marin.
+- 7 transparent 512x512 WebP portraits and 14 transparent 256x256 white/black bishop WebP pieces: total 968822 bytes (97.58% smaller than the supplied PNGs).
+- Named bishop identity resolves board art by actual hero ID and side, independent of outdated portrait/pieceArt paths in saved runs; other named figure artwork is unaffected.
+- Existing Roster, Settlement, Caravan, Skirmish and Battle portrait/board resolver paths reuse the new art. Old PNG files remain in the repository for compatibility.
+- Source validation checks every bishop WebP asset and its byte budget; the extended Battle regression checks all seven named bishops for both colors, old-save portraits, and non-bishop fallback.
+- No merge into main. PR #160 remains acceptance-only.

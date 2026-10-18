@@ -105,11 +105,18 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     assert.strictEqual(state.plan.encounter.stars, 12);
     assert.strictEqual(state.plan.playerFormation.filter((piece) => piece.id).length, 6);
     const artContracts=await page.evaluate(async()=>{
-      const {boardPieceArtForCharacter,heroPortraitArt,namedPawnPieceArt}=await import('./js/race-assets.mjs');
+      const {boardPieceArtForCharacter,heroPortraitArt,namedPawnPieceArt,NAMED_BISHOP_IDS}=await import('./js/race-assets.mjs');
       const legacy={id:'hero.aldric_wall',pieceType:'rook',pieceArt:'assets/races/humans/pieces/board/white/rook.png'};
       return {
         oldNamed:boardPieceArtForCharacter(legacy,'w'),
         missingSaveArt:boardPieceArtForCharacter({id:'hero.brother_orell',pieceType:'bishop'},'b'),
+        namedBishops:NAMED_BISHOP_IDS.map(id=>({
+          id,
+          white:boardPieceArtForCharacter({id:`hero.${id}`,pieceType:'bishop',pieceArt:'obsolete.png'},'w'),
+          black:boardPieceArtForCharacter({id:`hero.${id}`,pieceType:'bishop',portrait:'obsolete.png'},'b'),
+          portrait:heroPortraitArt({id:`hero.${id}`,portrait:'obsolete.png'})
+        })),
+        nonBishop:boardPieceArtForCharacter({id:'hero.brother_orell',pieceType:'bishop'},'w','rook'),
         namedPawn:boardPieceArtForCharacter({id:'hero.nemea_quill',pieceType:'pawn'},'b'),
         promotedPawn:namedPawnPieceArt({id:'hero.mara_chain'},'queen','w'),
         stalePortrait:heroPortraitArt({id:'hero.nemea_quill',portrait:'assets/heroes/nemea_quill/portrait.png'})
@@ -117,8 +124,16 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     });
     assert.equal(artContracts.oldNamed,'assets/heroes/aldric_wall/piece_badge.png',
       'all other named pieces must keep their original art even if a saved run points to a race sprite');
-    assert.equal(artContracts.missingSaveArt,'assets/heroes/brother_orell/piece_badge.png',
-      'other named pieces must not become generic after loading an incomplete hero record');
+    assert.equal(artContracts.missingSaveArt,'assets/heroes/brother_orell/pieces/black/bishop.webp',
+      'a saved named Bishop must restore the new black figure, even without pieceArt');
+    assert.equal(artContracts.namedBishops.length,7);
+    for(const {id,white,black,portrait} of artContracts.namedBishops){
+      assert.equal(white,`assets/heroes/${id}/pieces/white/bishop.webp`);
+      assert.equal(black,`assets/heroes/${id}/pieces/black/bishop.webp`);
+      assert.equal(portrait,`assets/heroes/${id}/portrait_named.webp`);
+    }
+    assert.equal(artContracts.nonBishop,'assets/heroes/brother_orell/piece_badge.png',
+      'unprovided role art must keep the old personal badge fallback');
     assert(artContracts.namedPawn.endsWith('/nemea_quill/pieces/black/pawn.webp'));
     assert(artContracts.promotedPawn.endsWith('/mara_chain/pieces/white/queen.webp'));
     assert(artContracts.stalePortrait.endsWith('/nemea_quill/portrait_named.webp'));

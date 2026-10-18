@@ -46,8 +46,8 @@ const STARTER_TEMPLATES = Object.freeze([
     name: 'Брат Орелл',
     pieceType: 'bishop',
     origin: 'Железные Марши',
-    portrait: 'assets/heroes/brother_orell/portrait.png',
-    pieceArt: 'assets/heroes/brother_orell/piece_badge.png',
+    portrait: 'assets/heroes/brother_orell/portrait_named.webp',
+    pieceArt: 'assets/heroes/brother_orell/pieces/white/bishop.webp',
     description: 'Жрец-кузнец, читающий поле боя так же внимательно, как линии на раскалённом металле.'
   }),
   Object.freeze({
