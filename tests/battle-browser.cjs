@@ -29,7 +29,7 @@ function route(id, { playerColor = 'w', stars = 6, race = 'orcs' } = {}) {
   };
 }
 
-async function fresh(page, { woundedKing = false, playerColor = 'w', stars = 6, race = 'orcs' } = {}) {
+async function fresh(page, { woundedKing = false, playerColor = 'w', stars = 6, race = 'orcs', commanderId = 'oathkeeper' } = {}) {
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.evaluate((key) => localStorage.removeItem(key), RUN_KEY);
   await page.reload({ waitUntil: 'networkidle' });
@@ -39,15 +39,16 @@ async function fresh(page, { woundedKing = false, playerColor = 'w', stars = 6, 
     route('manual.battle.2', { playerColor, stars, race }),
     route('manual.battle.3', { playerColor, stars, race })
   ];
-  await page.evaluate(({ key, woundedKing, routes }) => {
+  await page.evaluate(({ key, woundedKing, routes, commanderId }) => {
     const run = JSON.parse(localStorage.getItem(key));
     run.id = `battle-browser-${routes[0].playerColor}`;
+    run.commanderId=commanderId;
     run.currentTravelChoices = routes;
     run.activeTravelChoice = null;
     if (woundedKing) run.roster.find((character) => character.isRunKing).status = 'wounded';
     localStorage.setItem(key, JSON.stringify(run));
     dispatchEvent(new CustomEvent('rpchess:run-updated'));
-  }, { key: RUN_KEY, woundedKing, routes });
+  }, { key: RUN_KEY, woundedKing, routes, commanderId });
 }
 
 async function enter(page) {
@@ -90,7 +91,7 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     const errors = [];
     page.on('pageerror', (error) => errors.push(String(error.stack || error)));
 
-    await fresh(page, { playerColor: 'w', stars: 12, race: 'orcs' });
+    await fresh(page, { playerColor: 'w', stars: 12, race: 'orcs', commanderId:'ash_regent' });
     await enter(page);
     assert.strictEqual((await page.evaluate(()=>globalThis.RPChessBattle.selectedIds)).length,6,'Battle automatically chooses all six eligible starter heroes');
     assert.strictEqual((await page.evaluate(()=>globalThis.RPChessBattle.encounter.stars)),12);
@@ -131,11 +132,6 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     assert(art.enemy.includes('assets/races/orcs/pieces/board/black/queen.png'));
     // The Power badge must display the player's selected King, not a blank
     // rectangle or a hardcoded Oathkeeper in an Ash Regent run.
-    await page.evaluate(key=>{
-      const run=JSON.parse(localStorage.getItem(key));
-      run.commanderId='ash_regent';
-      localStorage.setItem(key,JSON.stringify(run));
-    },RUN_KEY);
     await page.evaluate(() => globalThis.RPChessBattle.finishBattle({ over: true, type: 'stalemate', winner: null }));
     await page.locator('[data-battle-aftermath]:not([hidden])').waitFor();
     await page.waitForFunction(()=>{
