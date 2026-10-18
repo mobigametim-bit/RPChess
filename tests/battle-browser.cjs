@@ -103,6 +103,24 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     assert.strictEqual(state.plan.playerColor, 'w');
     assert.strictEqual(state.plan.encounter.stars, 12);
     assert.strictEqual(state.plan.playerFormation.filter((piece) => piece.id).length, 6);
+    const artContracts=await page.evaluate(async()=>{
+      const {boardPieceArtForCharacter,heroPortraitArt,namedPawnPieceArt}=await import('./js/race-assets.mjs');
+      const legacy={id:'hero.aldric_wall',pieceType:'rook',pieceArt:'assets/races/humans/pieces/board/white/rook.png'};
+      return {
+        oldNamed:boardPieceArtForCharacter(legacy,'w'),
+        missingSaveArt:boardPieceArtForCharacter({id:'hero.brother_orell',pieceType:'bishop'},'b'),
+        namedPawn:boardPieceArtForCharacter({id:'hero.nemea_quill',pieceType:'pawn'},'b'),
+        promotedPawn:namedPawnPieceArt({id:'hero.mara_chain'},'queen','w'),
+        stalePortrait:heroPortraitArt({id:'hero.nemea_quill',portrait:'assets/heroes/nemea_quill/portrait.png'})
+      };
+    });
+    assert.equal(artContracts.oldNamed,'assets/heroes/aldric_wall/piece_badge.png',
+      'all other named pieces must keep their original art even if a saved run points to a race sprite');
+    assert.equal(artContracts.missingSaveArt,'assets/heroes/brother_orell/piece_badge.png',
+      'other named pieces must not become generic after loading an incomplete hero record');
+    assert(artContracts.namedPawn.endsWith('/nemea_quill/pieces/black/pawn.webp'));
+    assert(artContracts.promotedPawn.endsWith('/mara_chain/pieces/white/queen.webp'));
+    assert(artContracts.stalePortrait.endsWith('/nemea_quill/portrait_named.webp'));
     const generic = state.plan.playerFormation.find((piece) => !piece.id);
     const enemyQueen = state.plan.enemyFormation.find((piece) => piece.pieceType === 'queen');
     const art = await page.evaluate(({ genericSquare, enemySquare }) => ({
