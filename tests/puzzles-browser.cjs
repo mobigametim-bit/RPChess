@@ -93,7 +93,7 @@ async function clickMove(page,from,to,promotion=null){
   const dragProbe=await page.evaluate(key=>{
     const s=JSON.parse(localStorage.getItem(key))?.currentPuzzle;
     return {id:s?.puzzleId,type:s?.type,solutionIndex:s?.solutionIndex,errors:s?.errors,resolved:s?.resolved,fen:s?.currentFen,ghosts:document.querySelectorAll('.rpchess-piece-drag-ghost').length,
-      from:document.querySelector('[data-puzzle-board] [data-square="${moves.correct.from}"]')?.className,
+      selected:document.querySelector('[data-puzzle-board] .puzzle-square.is-selected')?.dataset.square,
       board:document.querySelector('[data-puzzle-board]')?.className};
   },RUN_KEY);
   console.log('Training drag snapshot:',JSON.stringify(dragProbe),'expected:',JSON.stringify(moves.correct));
