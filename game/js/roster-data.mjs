@@ -29,7 +29,7 @@ const STARTER_TEMPLATES = Object.freeze([
     pieceType: 'pawn',
     origin: 'Железные Марши',
     portrait: 'assets/heroes/mara_chain/portrait.png',
-    pieceArt: 'assets/heroes/mara_chain/piece_badge.png',
+    pieceArt: 'assets/heroes/mara_chain/pieces/white/pawn.webp',
     description: 'Упрямая воительница из низших рядов, для которой каждый шаг вперёд имеет цену.'
   }),
   Object.freeze({
@@ -38,7 +38,7 @@ const STARTER_TEMPLATES = Object.freeze([
     pieceType: 'pawn',
     origin: 'Светлый Синод',
     portrait: 'assets/heroes/nemea_quill/portrait.png',
-    pieceArt: 'assets/heroes/nemea_quill/piece_badge.png',
+    pieceArt: 'assets/heroes/nemea_quill/pieces/white/pawn.webp',
     description: 'Учёная-путешественница, присоединившаяся к отряду ради истории, которую ещё предстоит написать.'
   }),
   Object.freeze({
