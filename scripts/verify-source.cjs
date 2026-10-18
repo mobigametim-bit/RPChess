@@ -17,6 +17,19 @@ module.exports=function verifySource(root){
       }
     }
   }
+  // Exactly 8 named pawn heroes, 2 playable sides, and 5 roles (pawn + 4 promotions).
+  for(const id of ['daro_last','kael_cinder','mara_chain','nemea_quill','puck_ember','renzo_bridge','saran_dawn','elio_silk']){
+    for(const side of ['white','black'])for(const role of ['pawn','knight','bishop','rook','queen']){
+      const relative=`assets/heroes/${id}/pieces/${side}/${role}.webp`;
+      required.push(relative);
+      const full=path.join(root,relative);
+      if(fs.existsSync(full)){
+        const buf=fs.readFileSync(full);
+        if(buf.length<1000||buf.length>42*1024||buf.toString('ascii',0,4)!=='RIFF'||buf.toString('ascii',8,12)!=='WEBP')
+          fail(`named pawn promotion art is missing, malformed or above its 42KB budget: ${relative}`);
+      }
+    }
+  }
   required.push('js/skirmish-obstacles.mjs');
   required.push('css/arena.css','js/arena-core.mjs','js/arena-app.mjs','assets/arena/mirror_shard.png','assets/arena/defeat_crown.png');
   required.push('js/combat-checkpoint.mjs');
