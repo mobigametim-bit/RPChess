@@ -531,6 +531,10 @@ html body .puzzle-square:has(.puzzle-piece--new-race) .puzzle-piece-marker {
   html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-shell {
     width:100vw!important;
     max-width:none!important;
+    height:100dvh!important;
+    min-height:0!important;
+    padding:0!important;
+    box-sizing:border-box!important;
     grid-template-columns:minmax(0,1fr) var(--puzzle-centered-board) minmax(0,1fr)!important;
     column-gap:0!important;
   }
@@ -581,7 +585,10 @@ html body .puzzle-square:has(.puzzle-piece--new-race) .puzzle-piece-marker {
     box-sizing:border-box!important;
   }
   html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-layout>.puzzle-panel:first-child {
-    /* Ignore retired mobile fixed positioning based on an edge-aligned board. */
+    /* Ignore retired mobile fixed positioning based on an edge-aligned board.
+       Long multi-language task copy scrolls inside the frame, not offscreen. */
     position:absolute!important;
+    max-height:calc(100dvh - 78px)!important;
+    overflow-y:auto!important;
   }
 }
