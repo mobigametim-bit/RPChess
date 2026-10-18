@@ -49,6 +49,17 @@ for(const id of ['oathkeeper','stone_crown','wanderer_queen','pilgrim','fox_prin
     equal(asset,file);
   }
 }
+// All 80 supplied pawn variants must be copied byte-for-byte into dist: no legacy
+// badge fallback, and no PNG masters or extra runtime conversion work.
+for(const id of ['daro_last','kael_cinder','mara_chain','nemea_quill','puck_ember','renzo_bridge','saran_dawn','elio_silk']){
+  for(const side of ['white','black'])for(const role of ['pawn','knight','bishop','rook','queen']){
+    const asset=`assets/heroes/${id}/pieces/${side}/${role}.webp`;
+    const raw=read(GAME,asset);
+    assert(raw.length<=42*1024&&raw.toString('ascii',0,4)==='RIFF'&&raw.toString('ascii',8,12)==='WEBP',
+      `malformed or oversized named pawn art: ${asset}`);
+    equal(asset,raw);
+  }
+}
 equal('assets/events/register-04/backgrounds/generic/forest_crossroad.webp',read(GAME,'assets/events/register-04/backgrounds/generic/forest_crossroad.webp'));
 assert(!fs.existsSync(path.join(DIST,'assets/events/register-04/backgrounds/generic/forest_crossroad.png')),'Event PNG masters must not be published to dist');
 
