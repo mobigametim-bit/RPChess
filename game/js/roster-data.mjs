@@ -9,8 +9,8 @@ const STARTER_TEMPLATES = Object.freeze([
     name: 'Хранитель Клятвы',
     pieceType: 'king',
     origin: 'Железные Марши',
-    portrait: 'assets/kings/oathkeeper/portrait.png',
-    pieceArt: 'assets/kings/oathkeeper/piece.png',
+    portrait: 'assets/kings/oathkeeper/portrait.webp',
+    pieceArt: 'assets/kings/oathkeeper/pieces/white.webp',
     description: 'Последний хранитель древней присяги Железных Маршей. После падения родовой крепости он покинул её стены и собрал вокруг себя тех, кто ещё верит, что данное слово важнее трона.',
     isRunKing: true
   }),
