@@ -53,7 +53,7 @@ function ensureStylesheet(marker, href) {
 }
 
 function ensureCss() {
-  ensureStylesheet('data-puzzles-css', 'css/puzzles.css?v=20260909-owner2');
+  ensureStylesheet('data-puzzles-css', 'css/puzzles.css?v=20261018-objective-fit');
   ensureStylesheet('data-puzzles-compact-css', 'css/puzzles-compact.css?v=20260909-owner1');
 }
 
