@@ -132,7 +132,12 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert.strictEqual(await page.locator('#player-identity-title').innerText(),'Who are you, warrior?');
     assert.strictEqual(await page.locator('[data-player-identity-input]').inputValue(),'Тимур','language changes preserve entered names');
     assert.strictEqual(await page.locator('[data-player-identity-close]').getAttribute('aria-label'),'Close');
-    await page.evaluate(()=>window.RPChessPlayerIdentity.close());
+    await page.evaluate(()=>{
+      window.RPChessPlayerIdentity.close();
+      // The synthetic signed VK launch is only for the in-page leaderboard
+      // submission regression. Do not reload standalone Pages as a fake VK app.
+      history.replaceState(null,'',location.pathname);
+    });
     await page.reload({waitUntil:'networkidle'});
     assert.strictEqual(await panel.locator('h2').innerText(),'Chronicle','persisted English applies at startup');
     assert.strictEqual(await panel.locator('[data-chronicle-current] h3').innerText(),'Тимур');
