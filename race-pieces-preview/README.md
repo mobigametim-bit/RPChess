@@ -78,3 +78,5 @@ Square Training board follow-up: both the Training board and its wrapper now use
 Fix after browser repro: ux-consistency.css fixed BOTH Training board layers to the viewport right with !important. Puzzle owner now positions the board wrapper relative in the centered grid column and its inner board absolute to that square. The Battle regression selects Ash Regent before constructing the Battle's cached active run, and verifies its portrait in the Power result.
 
 Chromium mobile touch diagnostic: on any failed drag assertion, log captured pointer/touch event sequence, target square, ghost presence and committed moveLog; do not bypass move validation or drop coverage.
+
+Verified touch race via CDP diagnostics: transient [data-game-loading] fullscreen overlay intercepted pointerdown before its fade completed; tests now await loading overlay hidden before sending raw touch input, as Playwright's ordinary click already does. Temporary trace logging removed; real move assertion retained.
