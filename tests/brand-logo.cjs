@@ -32,7 +32,9 @@ assert(!starvation.includes('data-brand-logo') && !starvation.includes('brand-lo
 const battle = read('js/battle-app.mjs');
 assert(battle.includes("battle-aftermath--death") && battle.includes('deathLogo.hidden=Boolean(casualty)'),
   'Mercenary death must hide the existing aftermath logo without changing normal outcomes');
-assert(battle.includes('<div class="battle-aftermath-shell">\\n      <section class="battle-aftermath-panel ui-panel-safe"><div class="reboot-eyebrow" data-battle-run-end-kicker>'),
+const fallbackStart=battle.indexOf('runEndScreen.innerHTML =');
+const fallbackEnd=battle.indexOf('app.append(prepScreen',fallbackStart);
+assert(fallbackStart>=0&&fallbackEnd>fallbackStart&&!battle.slice(fallbackStart,fallbackEnd).includes('battle-logo'),
   'King Battle run-end fallback must not render a corner logo');
 
 
