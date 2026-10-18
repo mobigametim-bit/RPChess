@@ -634,8 +634,18 @@ globalThis.RPChessChessAI = {
 attachPieceDrag(board, {
   canPick: square => Boolean(!screen?.hidden && !pendingPromotion && !aiThinking && !visualAnimating && !engine.status().over &&
     (gameConfig.mode !== 'ai' || engine.turn() === gameConfig.playerColor) && engine.pieceAt(square)?.color === engine.turn()),
-  onStart: square => { selected = square; selectedMoves = engine.legalMoves(square); renderBoard(); },
-  onDrop: (from,to) => { if (selectedMoves.some(move => (move.uciTo || move.to) === to)) executeMove(from,to); }
+  onStart: square => {
+    selected = square;
+    selectedMoves = engine.legalMoves(square);
+    // Do not replace the touched cell: touch pointers capture their origin.
+    board.querySelector('[data-square="' + square + '"]')?.classList.add('classic-square--selected');
+    for (const move of selectedMoves) board.querySelector('[data-square="' + (move.uciTo || move.to) + '"]')
+      ?.classList.add(move.capture ? 'classic-square--capture' : 'classic-square--legal');
+  },
+  onDrop: (from,to) => {
+    if (to && selectedMoves.some(move => (move.uciTo || move.to) === to)) executeMove(from,to);
+    else { selected = null; selectedMoves = []; renderBoard(); }
+  }
 });
 
 globalThis.RPChessClassicChess = {
