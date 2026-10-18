@@ -132,7 +132,19 @@ jobs:
           grep -q 'personal leaderboard lookup unavailable' dist/js/leaderboard-client.mjs
           grep -q 'VKWebAppGetLaunchParams' dist/js/leaderboard-client.mjs
           grep -q 'leaderboard.notAuthenticated' dist/js/player-identity-chronicle.mjs
-          # Cosmetic commander portrait selection, without changing the Roster layout.
+          # Seven playable commanders now have seven distinct compressed portraits
+          # and FOURTEEN side-specific white/black kings; no combined king art.
+          for commander in oathkeeper stone_crown wanderer_queen pilgrim fox_prince ash_regent nameless_heir; do
+            for asset in portrait.webp pieces/white.webp pieces/black.webp; do
+              candidate="dist/assets/kings/$commander/$asset"
+              test -s "$candidate"
+              test "$(head -c4 "$candidate")" = 'RIFF'
+            done
+          done
+          test "$(find dist/assets/kings -type f -name '*.webp' | wc -l)" -eq 21
+          grep -q "function commanderPieceArt" dist/js/commander-portraits.mjs
+          grep -q "if(character?.isRunKing)return commanderPieceArt" dist/js/race-assets.mjs
+          # Preserve the Roster layout, saved commander identity and differentiated art.
           test -s dist/js/commander-portraits.mjs
           grep -q 'data-identity-commander' dist/js/player-identity-chronicle.mjs
           grep -q 'min-height:531px' dist/css/player-identity-chronicle.css
@@ -169,7 +181,7 @@ jobs:
         run: |
           base='https://rpchess-race-pieces-preview.mobigametim.workers.dev'
           echo "Inspecting public response codes after deployment:"
-          for resource in '/' '/index.html' '/js/race-assets.mjs' '/assets/races/humans/pieces/board/white/king.png' '/assets/races/elves/pieces/board/white/king.png' '/assets/races/constructs/pieces/board/black/rook.png'; do
+          for resource in '/' '/index.html' '/js/race-assets.mjs' '/assets/kings/stone_crown/portrait.webp' '/assets/kings/stone_crown/pieces/white.webp' '/assets/kings/stone_crown/pieces/black.webp' '/assets/races/humans/pieces/board/white/king.png' '/assets/races/elves/pieces/board/white/king.png' '/assets/races/constructs/pieces/board/black/rook.png'; do
             status=$(curl -sSL --max-time 15 -o /tmp/rpchess-debug-file -w '%{http_code}' "$base$resource" || true)
             size=$(wc -c </tmp/rpchess-debug-file || echo 0)
             echo "$resource: HTTP $status, bytes $size"
@@ -187,6 +199,10 @@ jobs:
                test "$(head -c4 /tmp/rpchess-jester-portrait.webp)" = 'RIFF' &&
                curl -fsS --max-time 20 "$base/generated_assets/splash_poster.webp" -o /tmp/rpchess-optimized-scene.webp &&
               test "$(head -c4 /tmp/rpchess-optimized-scene.webp)" = 'RIFF' &&
+               curl -fsS --max-time 15 "$base/assets/kings/fox_prince/pieces/black.webp" -o /tmp/rpchess-selected-dark-king.webp &&
+               test "$(head -c4 /tmp/rpchess-selected-dark-king.webp)" = 'RIFF' &&
+               curl -fsS --max-time 15 "$base/assets/kings/fox_prince/pieces/white.webp" -o /tmp/rpchess-selected-light-king.webp &&
+               test "$(head -c4 /tmp/rpchess-selected-light-king.webp)" = 'RIFF' &&
                curl -fsS --max-time 15 "$base/assets/races/humans/pieces/board/white/king.png" -o /tmp/rpchess-piece-new.png &&
                curl -fsS --max-time 15 "$base/assets/races/orcs/pieces/board/black/knight.png" -o /tmp/rpchess-piece-orc-new.png &&
                curl -fsS --max-time 15 "$base/assets/races/elves/pieces/board/white/king.png" -o /tmp/rpchess-piece-catalog-original.png &&
