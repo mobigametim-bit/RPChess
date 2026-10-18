@@ -52,3 +52,4 @@ Some VK desktop iframe launches may omit signed launch params. Those users can v
 - On opening/re-entering Main Menu, the client reloads the board, computes the best of completed and current Journey, remembers its signed VK account's local high-water mark, and submits when it outranks the existing server result.
 - Signed VK launches can submit; unsigned standalone/GitHub Pages launches continue to show public results read-only.
 - No gameplay, D1 table, server Worker, Chronicle-history schema, or other branches have been changed for this feature.
+- Delivery is through the existing GitHub Pages build gate. A deliberately tagged deployment commit publishes this change while ordinary pushes remain build-only.
