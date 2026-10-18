@@ -60,3 +60,5 @@ Touch stability: highlighting a dragged piece now modifies existing cells instea
 - Named pawn/promotion art from PR #160 remains unchanged (80 white/black chess pieces).
 - Roster details, healing/recruitment in Settlement, Caravan healing/new-hero rewards, and Starvation portraits use the new portrait resolver.
 - Acceptance tests assert personal badge retention, promotion artwork, and new pawn rewards on stale saved-run objects.
+
+Mobile drag reliability: after actual drag threshold the board captures the pointer and releases it after drop/cancel; ordinary tap-to-select still uses the square click. The existing desktop/mobile browser scenario waits for the actual dragged-piece preview and releases after paced movement, with no artificial move injection or bypassed assertions.
