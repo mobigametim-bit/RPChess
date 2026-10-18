@@ -45,14 +45,19 @@
   html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen .classic-toolbar {
     justify-content:flex-start!important;
     flex-wrap:nowrap!important;
-    gap:clamp(3px,.5vw,9px)!important;
+    gap:clamp(2px,.35vw,5px)!important;
   }
   html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen .classic-mini-button {
+    flex:1 1 0!important;
+    width:auto!important;
     min-width:0!important;
     min-height:0!important;
-    padding:clamp(2px,.55dvh,6px) clamp(3px,.75vw,12px)!important;
-    font-size:clamp(10px,1.3vw,19px)!important;
-    white-space:nowrap!important;
+    padding:clamp(2px,.4dvh,5px) 2px!important;
+    font-size:clamp(9px,.96vw,15px)!important;
+    line-height:1.05!important;
+    overflow-wrap:anywhere!important;
+    white-space:normal!important;
+    text-align:center!important;
   }
   html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen .classic-party-panel,
   html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen .classic-panel--moves {
