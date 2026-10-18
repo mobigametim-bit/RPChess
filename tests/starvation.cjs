@@ -131,7 +131,8 @@ class MemoryStorage {
   assert(!appSource.includes('КОРОЛЬ ПОГИБ ОТ ГОЛОДА')&&!appSource.includes('ПРОДОЛЖИТЬ ПУТЬ'),'Starvation runtime must not retain keyed RU presentation copy');
   assert(appSource.includes('dataset.starvationScreen'), 'Starvation consequence screen contract missing');
   assert(appSource.includes('css/starvation-compact.css?v=20260909-owner1'), 'Starvation owner must load its compact stylesheet after base CSS');
-  assert(compactCss.includes('max-height:calc(100dvh - 58px)!important') && compactCss.includes('overflow:auto!important'), 'Starvation owner compact stylesheet must contain the accepted HUD-safe internal scroll contract');
+  assert(compactCss.includes('width:min(900px,88vw)!important') && compactCss.includes('width:min(780px,96vw)!important') && compactCss.includes('min-height:0!important') && compactCss.includes('overflow-y:auto!important'), 'Starvation must stay within the same desktop and compact card bounds as combat aftermath, with safe text scrolling');
+  assert(css.includes('width: min(1160px, 100%)') && css.includes('max-height: min(670px, calc(100dvh - 170px))') && css.includes('box-sizing: border-box'), 'Starvation desktop window must not exceed combat result dimensions or viewport height');
   assert(!fs.existsSync(path.join(game, 'js/post-pages-ui-polish.mjs')), 'retired post-pages presentation shim must stay deleted');
   assert(!fs.existsSync(path.join(game, 'js/presentation-bootstrap.mjs')), 'retired presentation bootstrap must stay deleted');
   assert(!css.includes('ui_panel_frame.png') && !css.includes('ui_panel_wide.png'), 'Starvation UI must remain frameless CSS-only');
