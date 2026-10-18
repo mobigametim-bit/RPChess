@@ -482,7 +482,7 @@ async function auditPrepAndCombat(browser, width, height, language) {
     await chooseNoArtifactForTest(page);
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
-    const expectedSkirmishPanelWidth=Math.min(width-height-4,Math.max(220,.48*width-.48*height-2));
+    const expectedSkirmishPanelWidth=Math.min(380,(width-Math.min(height,width-2*Math.min(380,Math.max(160,.18*width))))/2-16);
     // The Classic screen is marked visible before the combat-only layout
     // styles have necessarily settled. Measure the final owner geometry,
     // not its default interim 360px width during the scene transition.
@@ -499,6 +499,7 @@ async function auditPrepAndCombat(browser, width, height, language) {
       const p=party?.getBoundingClientRect(),b=board?.getBoundingClientRect();
       const m=moves?.getBoundingClientRect();
       return {
+        journalGap:p&&m?m.top-p.bottom:999,
         movesInsideParty:Boolean(party&&moves&&moves.parentElement===party),
         movesInShell:Boolean(shell&&moves&&moves.parentElement===shell),
         partyWidth:p?.width||0,
@@ -512,6 +513,7 @@ async function auditPrepAndCombat(browser, width, height, language) {
     assert(Math.abs(combatPanel.partyWidth - expectedCombatPanelWidth) <= 2, `${label}: Skirmish Party frame width ${combatPanel.partyWidth}px must match ${expectedCombatPanelWidth}px`);
     assert(Math.abs(combatPanel.movesWidth - expectedCombatPanelWidth) <= 2, `${label}: Skirmish Journal frame width ${combatPanel.movesWidth}px must match ${expectedCombatPanelWidth}px`);
     assert(combatPanel.gap >= 4, `${label}: combat information panel must not touch the board`);
+    assert(Math.abs(combatPanel.journalGap)<=3, `${label}: Journal must start directly below the side-to-move summary, got ${combatPanel.journalGap}px`);
     const board = await page.locator('[data-chess-board]').evaluate((element) => {
       const rect = element.getBoundingClientRect();
       const square = element.querySelector('[data-square]')?.getBoundingClientRect();
@@ -524,9 +526,10 @@ async function auditPrepAndCombat(browser, width, height, language) {
     });
     const geometry = JSON.stringify(board);
     assert(Math.abs(board.width - board.height) <= 2, `${label}: combat board lost square aspect ${geometry}`);
-    assert(Math.abs(board.width - board.vh) <= 2, `${label}: combat board must use full viewport height ${geometry}`);
-    assert(Math.abs(board.top) <= 1 && Math.abs(board.bottom - board.vh) <= 1, `${label}: combat board must touch top and bottom viewport edges ${geometry}`);
-    assert(Math.abs(board.right - board.vw) <= 1, `${label}: combat board must touch right viewport edge ${geometry}`);
+    const expectedBoard=Math.min(height,width-2*Math.min(380,Math.max(160,.18*width)));
+    assert(Math.abs(board.width-expectedBoard)<=2, `${label}: combat board must preserve maximum readable centered size ${geometry}`);
+    assert(Math.abs((board.top+board.bottom)/2-height/2)<=2, `${label}: combat board must be vertically centered ${geometry}`);
+    assert(Math.abs((board.left+board.right)/2-width/2)<=2, `${label}: combat board must be horizontally centered to the whole screen ${geometry}`);
     assert(Math.abs(board.squareWidth - board.squareHeight) <= 1, `${label}: board cells lost square aspect ${geometry}`);
     assert.strictEqual(board.visibleCoordinates, 0, `${label}: board coordinate labels must be hidden ${geometry}`);
 
@@ -569,11 +572,12 @@ async function auditPrepAndCombat(browser, width, height, language) {
       const party=document.querySelector('.classic-party-panel')?.getBoundingClientRect();
       const moves=document.querySelector('.classic-panel--moves')?.getBoundingClientRect();
       const board=document.querySelector('[data-chess-board]')?.getBoundingClientRect();
-      return { partyWidth:party?.width||0, movesWidth:moves?.width||0, gap:party&&board?board.left-party.right:0 };
+      return { partyWidth:party?.width||0, movesWidth:moves?.width||0, gap:party&&board?board.left-party.right:0, journalGap:party&&moves?moves.top-party.bottom:999 };
     });
     assert(Math.abs(battleCombatPanel.partyWidth - expectedCombatPanelWidth) <= 2, `${label}: Battle Party frame width ${battleCombatPanel.partyWidth}px must match ${expectedCombatPanelWidth}px`);
     assert(Math.abs(battleCombatPanel.movesWidth - expectedCombatPanelWidth) <= 2, `${label}: Battle Journal frame width ${battleCombatPanel.movesWidth}px must match ${expectedCombatPanelWidth}px`);
     assert(battleCombatPanel.gap >= 4, `${label}: Battle information panel must not touch the board`);
+    assert(Math.abs(battleCombatPanel.journalGap)<=3, `${label}: Battle Journal must immediately follow the turn summary`);
     await page.evaluate(() => globalThis.RPChessBattle.finishBattle({ over:true, type:'stalemate', winner:null }));
     await page.locator('[data-battle-aftermath]:not([hidden])').waitFor();
     await assertPageFitsViewport(page, `${label} Battle aftermath`);
