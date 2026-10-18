@@ -26,9 +26,13 @@ function attachPieceDrag(board, { canPick, onStart, onDrop }) {
   }
 
   function reset() {
+    const id = gesture?.id;
     detach();
     removeFeedback();
     gesture = null;
+    if (id !== undefined && board.hasPointerCapture?.(id)) {
+      try { board.releasePointerCapture(id); } catch { /* release on pointerup may be automatic */ }
+    }
   }
 
   function positionGhost(x, y) {
@@ -40,6 +44,9 @@ function attachPieceDrag(board, { canPick, onStart, onDrop }) {
   function begin(x, y) {
     if (!gesture) return;
     gesture.dragging = true;
+    // Capture only after actual movement. Capturing during a simple tap would
+    // redirect click-to-select events from the square to the board.
+    try { board.setPointerCapture?.(gesture.id); } catch { /* pointer already ended */ }
     const { from, src, size } = gesture;
     // The owner highlights legal destinations; re-rendering cells is safe.
     onStart(from);
