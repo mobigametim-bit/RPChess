@@ -96,6 +96,10 @@ async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
       return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height,
         viewportWidth:innerWidth,viewportHeight:innerHeight,scrollable:getComputedStyle(card).overflowY};
     });
+    assert.strictEqual(await page.locator('[data-starvation-screen] .starvation-logo').count(),0,'Starvation hero and King death must not render a corner logo');
+    assert(Math.abs((desktopCard.left+desktopCard.right)/2-desktopCard.viewportWidth/2)<=2 &&
+      Math.abs((desktopCard.top+desktopCard.bottom)/2-desktopCard.viewportHeight/2)<=2,
+      `desktop Starvation death panel must center on the entire viewport: ${JSON.stringify(desktopCard)}`);
     assert(desktopCard.width<=1161,`desktop Starvation must be no wider than Battle aftermath: ${JSON.stringify(desktopCard)}`);
     assert(desktopCard.left>=-1&&desktopCard.right<=desktopCard.viewportWidth+1&&desktopCard.top>=-1&&desktopCard.bottom<=desktopCard.viewportHeight+1,
       `desktop Starvation card must stay inside viewport: ${JSON.stringify(desktopCard)}`);
@@ -104,6 +108,10 @@ async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
       const r=node.getBoundingClientRect();return {height:r.height,width:r.width,top:r.top,bottom:r.bottom,viewport:innerHeight,
         scrollHeight:node.scrollHeight,clientHeight:node.clientHeight,overflowY:getComputedStyle(node).overflowY};
     });
+    const shorterHorizontalCenter=await page.locator('.starvation-panel').evaluate(node=>{
+      const r=node.getBoundingClientRect();return (r.left+r.right)/2-innerWidth/2;
+    });
+    assert(Math.abs(shorterHorizontalCenter)<=2,'720px Starvation card must be horizontally centered');
     assert(shorter.width<=1161&&shorter.height<=shorter.viewport&&shorter.top>=-1&&shorter.bottom<=shorter.viewport+1,
       `720px landscape Starvation card must be contained like aftermath: ${JSON.stringify(shorter)}`);
     if(shorter.scrollHeight>shorter.clientHeight+1)assert(['auto','scroll'].includes(shorter.overflowY),
@@ -147,6 +155,11 @@ async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
     const kingCard=await page.locator('.starvation-panel').evaluate(node=>{
       const r=node.getBoundingClientRect();return{width:r.width,top:r.top,bottom:r.bottom,viewport:innerHeight};
     });
+    const kingMid=await page.locator('.starvation-panel').evaluate(node=>{
+      const r=node.getBoundingClientRect();return {x:(r.left+r.right)/2-innerWidth/2,y:(r.top+r.bottom)/2-innerHeight/2};
+    });
+    assert(Math.abs(kingMid.x)<=2&&Math.abs(kingMid.y)<=2,
+      `King starvation panel must be centered with the logo removed: ${JSON.stringify(kingMid)}`);
     assert(kingCard.width<=1161&&kingCard.top>=-1&&kingCard.bottom<=kingCard.viewport+1,
       `king-death Starvation card must fit combat aftermath bounds: ${JSON.stringify(kingCard)}`);
     const kingState = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
@@ -190,6 +203,9 @@ async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
     const insideViewport = (box) => box && box.left >= -1 && box.right <= layout.clientWidth + 1 && box.top >= -1 && box.bottom <= layout.clientHeight + 1;
     assert(insideViewport(layout.screen), 'Starvation screen must fit the viewport');
     assert(insideViewport(layout.panel), 'Starvation panel must fit the viewport');
+    assert(Math.abs((layout.panel.left+layout.panel.right)/2-layout.clientWidth/2)<=2 &&
+      Math.abs((layout.panel.top+layout.panel.bottom)/2-layout.clientHeight/2)<=2,
+      'Starvation mobile outcome panel must be centered horizontally and vertically');
     assert(layout.panel.right-layout.panel.left<=Math.min(780,layout.clientWidth*.96)+2,
       'landscape mobile Starvation card must be no wider than compact combat aftermath');
     const action=await mobile.locator('[data-starvation-continue]').boundingBox();
