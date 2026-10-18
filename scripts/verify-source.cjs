@@ -83,6 +83,21 @@ module.exports=function verifySource(root){
       }
     }
   }
+  // Six named queens: each stable hero ID has its own portrait and both board colors.
+  for(const id of ['abbess_celene','viola_mask','empress_nahla','ysra_moss','lady_sorn','khulan_star']){
+    for(const relative of [`assets/heroes/${id}/portrait_named.webp`,
+      `assets/heroes/${id}/pieces/white/queen.webp`,
+      `assets/heroes/${id}/pieces/black/queen.webp`]){
+      required.push(relative);
+      const full=path.join(root,relative);
+      if(fs.existsSync(full)){
+        const data=fs.readFileSync(full),limit=relative.includes('/pieces/')?42*1024:160*1024;
+        if(data.length<1000||data.length>limit||
+           data.toString('ascii',0,4)!=='RIFF'||data.toString('ascii',8,12)!=='WEBP')
+          fail(`named queen art invalid or exceeds ${Math.round(limit/1024)}KB budget: ${relative}`);
+      }
+    }
+  }
   required.push('js/skirmish-obstacles.mjs');
   required.push('css/arena.css','css/combat-centered-layout.css','css/piece-drag.css','js/arena-core.mjs','js/arena-app.mjs','assets/arena/mirror_shard.png','assets/arena/defeat_crown.png');
   required.push('js/combat-checkpoint.mjs');

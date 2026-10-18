@@ -206,9 +206,21 @@ async function assertDecoratedBackdrops(page, label) {
     const errors = [];
     page.on('pageerror', (error) => errors.push(String(error.stack || error)));
     await fresh(page);
+    // A persisted run may still contain a stale King portrait from an earlier choice.
+    // The canonical commanderId, not king.portrait, defines the Travel header.
+    await page.evaluate((key)=>{
+      const run=JSON.parse(localStorage.getItem(key));
+      run.commanderId='ash_regent';
+      const king=run.roster.find(character=>character.isRunKing);
+      king.portrait='assets/kings/oathkeeper/portrait.webp';
+      localStorage.setItem(key,JSON.stringify(run));
+    },RUN_KEY);
     await page.locator('[data-roster-travel]').click();
     const travel = page.locator('[data-travel-choice-screen]:not([hidden])');
     await travel.waitFor();
+    assert.strictEqual(await page.locator('[data-travel-run-portrait]').getAttribute('src'),'assets/kings/ash_regent/portrait.webp',
+      'Travel header must use selected Ash Regent, not old Oathkeeper portrait');
+    assert.strictEqual(await page.locator('[data-travel-run-portrait]').getAttribute('alt'),'Пепельный Регент');
     assert.strictEqual(await page.locator('[data-travel-choice]').count(), 3);
     await assertDecoratedBackdrops(page, 'initial roster-to-Travel open');
     assert.strictEqual((await page.locator('[data-travel-week]').innerText()).trim(), 'Неделя 1');
@@ -239,6 +251,8 @@ async function assertDecoratedBackdrops(page, label) {
     await page.locator('[data-roster-travel]').click();
     await travel.waitFor();
     await assertDecoratedBackdrops(page, 'main-menu continue re-entry');
+    assert.strictEqual(await page.locator('[data-travel-run-portrait]').getAttribute('src'),'assets/kings/ash_regent/portrait.webp',
+      'Travel must preserve selected commander across save/load and menu re-entry');
     assert.deepStrictEqual(await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).currentTravelChoices, RUN_KEY), first);
     await page.locator('[data-travel-type="puzzle"]').first().click();
     await page.locator('[data-puzzle-screen]:not([hidden])').waitFor();

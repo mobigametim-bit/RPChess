@@ -58,7 +58,7 @@ jobs:
       - name: Verify Roster, both combat check auras, Arena, Starvation layouts and Event icons
         env:
           RPCHESS_GATE_PREFIX: /RPChess
-          RPCHESS_BROWSER_TEST: roster-browser.cjs,classic-chess-browser.cjs,skirmish-browser.cjs,battle-browser.cjs,settlement-browser.cjs,caravan-browser.cjs,combat-side-colors-browser.cjs,arena-browser.cjs,starvation-browser.cjs,events-browser.cjs,puzzles-browser.cjs
+          RPCHESS_BROWSER_TEST: roster-browser.cjs,travel-choice-browser.cjs,classic-chess-browser.cjs,skirmish-browser.cjs,battle-browser.cjs,settlement-browser.cjs,caravan-browser.cjs,combat-side-colors-browser.cjs,arena-browser.cjs,starvation-browser.cjs,events-browser.cjs,puzzles-browser.cjs
         run: npm run test:browser
       - name: Verify jester onboarding in RU/EN, desktop, compact and VK Mobile
         env:
@@ -186,7 +186,18 @@ jobs:
               test "$(head -c4 "$sprite")" = 'RIFF'
             done
           done
-          test "$(find dist/assets/heroes -path '*/pieces/*' -name '*.webp' | wc -l)" -eq 118
+          # Six named Queens: selected-side pieces, compressed portraits, and saved-run art.
+          for hero in abbess_celene viola_mask empress_nahla ysra_moss lady_sorn khulan_star; do
+            candidate="dist/assets/heroes/$hero/portrait_named.webp"
+            test -s "$candidate"
+            test "$(head -c4 "$candidate")" = 'RIFF'
+            for side in white black; do
+              sprite="dist/assets/heroes/$hero/pieces/$side/queen.webp"
+              test -s "$sprite"
+              test "$(head -c4 "$sprite")" = 'RIFF'
+            done
+          done
+          test "$(find dist/assets/heroes -path '*/pieces/*' -name '*.webp' | wc -l)" -eq 130
           node tests/race-board-themes.cjs
           # Promotion options must show each hero's own upgraded piece.
           grep -Fq 'promotionArtResolver?.(from,type,color)' dist/js/classic-chess-app.mjs
@@ -300,6 +311,11 @@ jobs:
           for image in assets/heroes/aldric_wall/pieces/white/rook.webp assets/heroes/rat_banner/pieces/black/rook.webp assets/heroes/maeve_root/portrait_named.webp; do
             curl -fsS --max-time 20 "$base/$image" -o /tmp/rpchess-named-rook.webp
             test "$(head -c4 /tmp/rpchess-named-rook.webp)" = 'RIFF'
+          done
+          # Public Queen portraits/sprites must be downloadable after deployment.
+          for image in assets/heroes/abbess_celene/portrait_named.webp assets/heroes/ysra_moss/pieces/white/queen.webp assets/heroes/khulan_star/pieces/black/queen.webp; do
+            curl -fsS --max-time 20 "$base/$image" -o /tmp/rpchess-named-queen.webp
+            test "$(head -c4 /tmp/rpchess-named-queen.webp)" = 'RIFF'
           done
           # Published named Bishop variants and portraits must be downloadable.
           for image in assets/heroes/brother_orell/pieces/black/bishop.webp assets/heroes/altana_bow/pieces/white/bishop.webp assets/heroes/briar_sister/portrait_named.webp; do

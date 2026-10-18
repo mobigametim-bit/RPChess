@@ -11,6 +11,8 @@ const NAMED_KNIGHT_IDS = Object.freeze(['vael_hammer','orion_step','roan_stag','
 const NAMED_KNIGHT_SET = new Set(NAMED_KNIGHT_IDS);
 const NAMED_ROOK_IDS = Object.freeze(['aldric_wall','batu_cliff','ivar_lens','cassian_coin','maeve_root','rat_banner']);
 const NAMED_ROOK_SET = new Set(NAMED_ROOK_IDS);
+const NAMED_QUEEN_IDS = Object.freeze(['abbess_celene','viola_mask','empress_nahla','ysra_moss','lady_sorn','khulan_star']);
+const NAMED_QUEEN_SET = new Set(NAMED_QUEEN_IDS);
 const NAMED_PAWN_ROLES = Object.freeze(['pawn','knight','bishop','rook','queen']);
 const ROLE_FROM_CODE = Object.freeze({p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen'});
 function namedPawnPieceArt(character,role=character?.pieceType,color='w'){
@@ -36,6 +38,12 @@ function namedRookPieceArt(character,role=character?.pieceType,color='w'){
   const type=ROLE_FROM_CODE[role]||role;
   if(!NAMED_ROOK_SET.has(id)||type!=='rook')return null;
   return `assets/heroes/${id}/pieces/${color==='b'||color==='black'?'black':'white'}/rook.webp`;
+}
+function namedQueenPieceArt(character,role=character?.pieceType,color='w'){
+  const id=String(character?.id||'').replace(/^hero\./,'');
+  const type=ROLE_FROM_CODE[role]||role;
+  if(!NAMED_QUEEN_SET.has(id)||type!=='queen')return null;
+  return `assets/heroes/${id}/pieces/${color==='b'||color==='black'?'black':'white'}/queen.webp`;
 }
 const BOARD_TILE_FILES = Object.freeze({ light:'white.png', dark:'black.png' });
 const BOARD_THEME_STYLE_ID='rpchess-race-board-theme-style';
@@ -91,14 +99,14 @@ function heroPortraitArt(character){
   // Resolve portraits by stable hero ID, so previously saved runs with the old
   // portrait.png path receive new named art without migrating save data.
   const id=String(character?.id||'').replace(/^hero\./,'');
-  if(NAMED_PAWN_SET.has(id)||NAMED_BISHOP_SET.has(id)||NAMED_KNIGHT_SET.has(id)||NAMED_ROOK_SET.has(id))return `assets/heroes/${id}/portrait_named.webp`;
+  if(NAMED_PAWN_SET.has(id)||NAMED_BISHOP_SET.has(id)||NAMED_KNIGHT_SET.has(id)||NAMED_ROOK_SET.has(id)||NAMED_QUEEN_SET.has(id))return `assets/heroes/${id}/portrait_named.webp`;
   return character?.portrait||character?.pieceArt||'';
 }
 function boardPieceArtForCharacter(character,color='w',currentPieceType=character?.pieceType){
   // Roles can change through pawn promotion. Resolve art from the ACTUAL chess piece
   // rather than the saved roster starter role. The hero's identity survives the move.
   if(character?.isRunKing)return commanderPieceArt(character.commanderId,color);
-  const personalized=namedPawnPieceArt(character,currentPieceType,color)||namedBishopPieceArt(character,currentPieceType,color)||namedKnightPieceArt(character,currentPieceType,color)||namedRookPieceArt(character,currentPieceType,color);
+  const personalized=namedPawnPieceArt(character,currentPieceType,color)||namedBishopPieceArt(character,currentPieceType,color)||namedKnightPieceArt(character,currentPieceType,color)||namedRookPieceArt(character,currentPieceType,color)||namedQueenPieceArt(character,currentPieceType,color);
   if(personalized)return personalized;
   const id=String(character?.id||'').replace(/^hero\./,'');
   // For other named heroes, always restore the individual badge art (even for
@@ -211,4 +219,4 @@ function pieceArtForTheme(theme,pieceType,color){const race=theme?.enemyRoleRace
 
 installRaceBoardRuntime();
 
-export {RACE_TAGS,PIECE_TYPES,BOARD_TILE_FILES,BOARD_THEME_STYLE_ID,RACE_LABELS,RACE_TAG_BY_LABEL,BACKGROUND_POOLS,BACKGROUND_FOLDER_BY_RACE,hashString,normalizeRaceTag,oppositeColor,racePiecePath,BOARD_PIECE_RACES,boardRacePiecePath,boardPieceArtForTheme,NAMED_PAWN_IDS,NAMED_PAWN_ROLES,namedPawnPieceArt,NAMED_BISHOP_IDS,namedBishopPieceArt,NAMED_KNIGHT_IDS,namedKnightPieceArt,NAMED_ROOK_IDS,namedRookPieceArt,heroPortraitArt,boardPieceArtForCharacter,setBoardPieceArt,raceBoardTiles,installRaceBoardStyles,applyRaceBoardTheme,currentCombatBoardRace,queueRaceBoardRuntimeInstall,installRaceBoardRuntime,eventBackgroundPath,deterministicPlayerColor,deterministicRace,mixedRoleRaces,combatTheme,pieceArtForTheme};
+export {RACE_TAGS,PIECE_TYPES,BOARD_TILE_FILES,BOARD_THEME_STYLE_ID,RACE_LABELS,RACE_TAG_BY_LABEL,BACKGROUND_POOLS,BACKGROUND_FOLDER_BY_RACE,hashString,normalizeRaceTag,oppositeColor,racePiecePath,BOARD_PIECE_RACES,boardRacePiecePath,boardPieceArtForTheme,NAMED_PAWN_IDS,NAMED_PAWN_ROLES,namedPawnPieceArt,NAMED_BISHOP_IDS,namedBishopPieceArt,NAMED_KNIGHT_IDS,namedKnightPieceArt,NAMED_ROOK_IDS,namedRookPieceArt,NAMED_QUEEN_IDS,namedQueenPieceArt,heroPortraitArt,boardPieceArtForCharacter,setBoardPieceArt,raceBoardTiles,installRaceBoardStyles,applyRaceBoardTheme,currentCombatBoardRace,queueRaceBoardRuntimeInstall,installRaceBoardRuntime,eventBackgroundPath,deterministicPlayerColor,deterministicRace,mixedRoleRaces,combatTheme,pieceArtForTheme};

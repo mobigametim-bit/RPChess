@@ -9,7 +9,7 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(travelAppSource.includes('recoverAftermathRoute'));assert(travelAppSource.includes("source==='skirmish-aftermath'")&&travelAppSource.includes("source==='battle-aftermath'"));assert(travelAppSource.includes("rpchess:puzzle-open"),'Puzzle routes must dispatch into playable scene');
   assert(travelAppSource.includes('data-travel-power')&&travelAppSource.includes('data-travel-player-threat'),'Travel must show Power and Threat without redesigning route cards');
   assert(travelAppSource.includes("OWNER_STYLE_HREF='css/travel-choice-compact.css'"),'Travel owner must load its compact stylesheet explicitly');
-  assert(travelAppSource.includes("import { subscribe, t, translateLegacy } from './i18n.mjs'"),'Travel owner must render keyed UI and explicit translated content');
+  assert(travelAppSource.includes("import { subscribe, t, translateLegacy, currentLanguage } from './i18n.mjs'"),'Travel owner must render keyed UI and explicit translated content');
   for(const key of ['travel.ariaLabel','travel.week','travel.type.puzzle','travel.costStarvation','travel.rewardAria','travel.skirmishUnavailable','travel.continue'])assert(uiSource.includes(`'${key}'`),`localization registry missing Travel key: ${key}`);
   for(const key of ['travel.ariaLabel','travel.week','travel.costStarvation','travel.rewardAria','travel.skirmishUnavailable','travel.continue'])assert(travelAppSource.includes(`'${key}'`),`Travel owner must consume localization key: ${key}`);
   assert(travelAppSource.includes('t(`travel.type.${choice.type}`)')&&travelAppSource.includes('contentText(choice.flavor)'),'Travel route UI must use semantic type keys while flavor content is translated explicitly');
@@ -18,6 +18,9 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const buildSource=fs.readFileSync(path.join(game,'..','scripts/build.cjs'),'utf8');
   assert(buildSource.includes("'css/travel-choice-compact.css'"),'production build must package the Travel owner stylesheet');
   assert(travelAppSource.includes('data-travel-run-portrait')&&travelAppSource.includes('function renderPortrait()'),'Travel owner must render and refresh the run king portrait itself');
+  assert(travelAppSource.includes('commanderPortrait(activeRun.commanderId)')&&travelAppSource.includes('commanderTitle(activeRun.commanderId,currentLanguage())'),
+    'Travel commander portrait/title must resolve from persisted run commanderId, not stale roster.king.portrait');
+  assert(!travelAppSource.includes('king?.portrait'),'Travel must not display stale selected commander portrait from roster');
   assert(travelCss.includes('.travel-choice-run-portrait{display:none}'),'Travel portrait must stay hidden outside the compact owner breakpoint');
   assert(travelCss.includes("grid-template-columns:40px minmax(112px,1fr) minmax(100px,1fr) minmax(176px,1.3fr)!important"),'tablet Travel controls must fit three actions');
   assert(travelCss.includes("grid-template-columns:34px minmax(96px,1fr) minmax(88px,1fr) minmax(172px,1.2fr)!important"),'phone Travel controls must fit three actions');

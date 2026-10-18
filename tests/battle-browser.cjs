@@ -111,7 +111,7 @@ async function assertResponsiveStars(page, selector, cardSelector) {
         oldNamed:boardPieceArtForCharacter(legacy,'w'),
         oldNamedBlack:boardPieceArtForCharacter(legacy,'b','r'),
         oldNamedPortrait:heroPortraitArt({...legacy,portrait:'assets/heroes/aldric_wall/portrait.png'}),
-        otherNamed:boardPieceArtForCharacter({id:'hero.ysra_moss',pieceType:'bishop',pieceArt:'assets/races/humans/pieces/board/white/bishop.png'},'w'),
+        otherNamed:boardPieceArtForCharacter({id:'hero.ergen_cloud',pieceType:'bishop',pieceArt:'assets/races/humans/pieces/board/white/bishop.png'},'w'),
         missingSaveArt:boardPieceArtForCharacter({id:'hero.brother_orell',pieceType:'bishop'},'b'),
         namedBishops:NAMED_BISHOP_IDS.map(id=>({
           id,
@@ -131,7 +131,7 @@ async function assertResponsiveStars(page, selector, cardSelector) {
       'named Rook must use its new black art when the role is encoded as r');
     assert.equal(artContracts.oldNamedPortrait,'assets/heroes/aldric_wall/portrait_named.webp',
       'named Rook old-save portrait must resolve to new image');
-    assert.equal(artContracts.otherNamed,'assets/heroes/ysra_moss/piece_badge.png',
+    assert.equal(artContracts.otherNamed,'assets/heroes/ergen_cloud/piece_badge.png',
       'other named pieces must keep personal badge art even when old save points at race sprite');
     assert.equal(artContracts.missingSaveArt,'assets/heroes/brother_orell/pieces/black/bishop.webp',
       'a saved named Bishop must restore the new black figure, even without pieceArt');

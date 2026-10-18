@@ -99,9 +99,27 @@ const {BOARD_RACES,BOARD_FILES,collectBoardAssetPaths}=require('../scripts/board
   }
   assert.strictEqual(mod.namedRookPieceArt({id:'hero.vael_hammer',pieceType:'knight'},'knight','w'),null,
     'non-rooks should not use named rook piece art');
-  assert.strictEqual(mod.namedPawnPieceArt({id:'hero.ysra_moss',pieceType:'rook'},'queen','w'),null,
-    'other named heroes must retain their existing piece badges');
-  assert.strictEqual(mod.boardPieceArtForCharacter({id:'hero.ysra_moss',pieceType:'queen',pieceArt:'assets/heroes/ysra_moss/piece_badge.png'},'w'),'assets/heroes/ysra_moss/piece_badge.png',
+  // All six named Queens (white/black and portraits) override stale saved art by ID.
+  assert.strictEqual(mod.NAMED_QUEEN_IDS.length,6,'all six queen identities must be registered');
+  for(const id of mod.NAMED_QUEEN_IDS){
+    const oldSave={id:`hero.${id}`,pieceType:'queen',portrait:`assets/heroes/${id}/portrait.png`,pieceArt:'old-hero-badge.png'};
+    const portrait=`assets/heroes/${id}/portrait_named.webp`;
+    assert.strictEqual(mod.heroPortraitArt(oldSave),portrait,`named Queen old save must use new portrait: ${id}`);
+    const portraitBytes=fs.readFileSync(path.join(game,portrait));
+    assert(portraitBytes.length<=160*1024&&portraitBytes.toString('ascii',0,4)==='RIFF',
+      `missing/oversized named Queen portrait: ${portrait}`);
+    for(const color of ['w','b']){
+      const expected=`assets/heroes/${id}/pieces/${color==='w'?'white':'black'}/queen.webp`;
+      assert.strictEqual(mod.boardPieceArtForCharacter(oldSave,color,'q'),expected,`named Queen side mismatch: ${id}/${color}`);
+      assert.strictEqual(mod.namedQueenPieceArt(oldSave,'queen',color),expected);
+      const bytes=fs.readFileSync(path.join(game,expected));
+      assert(bytes.length<=42*1024&&bytes.toString('ascii',0,4)==='RIFF'&&bytes.toString('ascii',8,12)==='WEBP',
+        `missing/invalid named Queen sprite: ${expected}`);
+    }
+  }
+  assert.strictEqual(mod.namedQueenPieceArt({id:'hero.ergen_cloud',pieceType:'rook'},'rook','w'),null,
+    'other hero IDs must not receive queen art');
+  assert.strictEqual(mod.boardPieceArtForCharacter({id:'hero.ergen_cloud',pieceType:'knight',pieceArt:'assets/heroes/ergen_cloud/piece_badge.png'},'w'),'assets/heroes/ergen_cloud/piece_badge.png',
     'unreplaced named heroes must retain their existing personal board badges');
   assert.strictEqual(mod.boardPieceArtForCharacter({pieceType:'bishop',pieceArt:'assets/heroes/example/piece_badge.png',boardPieceArt:'assets/heroes/example/board_custom.png'},'w'),'assets/heroes/example/board_custom.png','future explicitly supplied named board art takes precedence');
   const switched=[];const testImage={src:'',classList:{toggle(name,enabled){switched.push({name,enabled});}}};
@@ -110,7 +128,8 @@ const {BOARD_RACES,BOARD_FILES,collectBoardAssetPaths}=require('../scripts/board
   mod.setBoardPieceArt(testImage,mod.boardPieceArtForCharacter({isRunKing:true,commanderId:'ash_regent'},'b'));
   mod.setBoardPieceArt(testImage,mod.boardPieceArtForCharacter({id:'hero.mara_chain',pieceType:'pawn'},'b','queen'));
   mod.setBoardPieceArt(testImage,mod.boardPieceArtForCharacter({id:'hero.aldric_wall',pieceType:'rook'},'b'));
-  assert.deepStrictEqual(switched,[{name:'classic-piece--new-race',enabled:false},{name:'classic-piece--new-race',enabled:true},{name:'classic-piece--new-race',enabled:true},{name:'classic-piece--new-race',enabled:true},{name:'classic-piece--new-race',enabled:true}],
+  mod.setBoardPieceArt(testImage,mod.boardPieceArtForCharacter({id:'hero.ysra_moss',pieceType:'queen'},'w'));
+  assert.deepStrictEqual(switched,[{name:'classic-piece--new-race',enabled:false},{name:'classic-piece--new-race',enabled:true},{name:'classic-piece--new-race',enabled:true},{name:'classic-piece--new-race',enabled:true},{name:'classic-piece--new-race',enabled:true},{name:'classic-piece--new-race',enabled:true}],
     'named hero art must restore the glyph/aura while generic new race art suppresses it');
 
   const properties={};
@@ -139,5 +158,5 @@ const {BOARD_RACES,BOARD_FILES,collectBoardAssetPaths}=require('../scripts/board
   assert.ok(source.includes('linear-gradient(145deg,#c3b995,#aa9f7c)'),'light cell must retain neutral fallback');
   assert.ok(source.includes('linear-gradient(145deg,#4d585d,#374349)'),'dark cell must retain neutral fallback');
 
-  console.log('Race board themes: PASS — 28 board tiles, 168 race sprites and 80 named pawn/promotion sprites, 12 named knight sprites and 12 named rook sprites in both colors');
+  console.log('Race board themes: PASS — 28 board tiles, 168 race sprites and 80 named pawn/promotion sprites, 12 knight, 12 rook and 12 queen named sprites');
 })().catch((error)=>{console.error(error);process.exitCode=1;});
