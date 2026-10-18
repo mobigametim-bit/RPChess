@@ -70,3 +70,5 @@ Mobile drag reliability: after actual drag threshold the board captures the poin
 - The Power badge in Battle and Skirmish outcomes binds the current saved run's commanderId to the compressed commander portrait (no hardcoded Oathkeeper PNG).
 - Tests assert the Training board center and nonoverlap on 844x390 and 667x300, plus an Ash Regent portrait in Battle results.
 - No production main merge before owner visual confirmation.
+
+Training-centered final CI follow-up: static Puzzle owner regression updated to require the new stylesheet cache key and the three-column viewport-centered geometry. The run uses the actual selected Ash Regent commander portrait in the Battle Power badge regression.
