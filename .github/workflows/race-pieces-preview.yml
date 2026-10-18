@@ -1,5 +1,5 @@
 name: Deploy RPChess race chess pieces acceptance preview
-# PR160: include six named knight portraits and both board colors in production dist.
+# PR160: include named knight and rook portraits and both board colors in production dist.
 
 on:
   push:

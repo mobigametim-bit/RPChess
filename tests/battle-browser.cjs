@@ -109,6 +109,9 @@ async function assertResponsiveStars(page, selector, cardSelector) {
       const legacy={id:'hero.aldric_wall',pieceType:'rook',pieceArt:'assets/races/humans/pieces/board/white/rook.png'};
       return {
         oldNamed:boardPieceArtForCharacter(legacy,'w'),
+        oldNamedBlack:boardPieceArtForCharacter(legacy,'b','r'),
+        oldNamedPortrait:heroPortraitArt({...legacy,portrait:'assets/heroes/aldric_wall/portrait.png'}),
+        otherNamed:boardPieceArtForCharacter({id:'hero.ysra_moss',pieceType:'bishop',pieceArt:'assets/races/humans/pieces/board/white/bishop.png'},'w'),
         missingSaveArt:boardPieceArtForCharacter({id:'hero.brother_orell',pieceType:'bishop'},'b'),
         namedBishops:NAMED_BISHOP_IDS.map(id=>({
           id,
@@ -122,8 +125,14 @@ async function assertResponsiveStars(page, selector, cardSelector) {
         stalePortrait:heroPortraitArt({id:'hero.nemea_quill',portrait:'assets/heroes/nemea_quill/portrait.png'})
       };
     });
-    assert.equal(artContracts.oldNamed,'assets/heroes/aldric_wall/piece_badge.png',
-      'all other named pieces must keep their original art even if a saved run points to a race sprite');
+    assert.equal(artContracts.oldNamed,'assets/heroes/aldric_wall/pieces/white/rook.webp',
+      'named Rook must use its new white art even if an old save points at race chess art');
+    assert.equal(artContracts.oldNamedBlack,'assets/heroes/aldric_wall/pieces/black/rook.webp',
+      'named Rook must use its new black art when the role is encoded as r');
+    assert.equal(artContracts.oldNamedPortrait,'assets/heroes/aldric_wall/portrait_named.webp',
+      'named Rook old-save portrait must resolve to new image');
+    assert.equal(artContracts.otherNamed,'assets/heroes/ysra_moss/piece_badge.png',
+      'other named pieces must keep personal badge art even when old save points at race sprite');
     assert.equal(artContracts.missingSaveArt,'assets/heroes/brother_orell/pieces/black/bishop.webp',
       'a saved named Bishop must restore the new black figure, even without pieceArt');
     assert.equal(artContracts.namedBishops.length,7);
