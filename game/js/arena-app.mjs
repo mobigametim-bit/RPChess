@@ -106,6 +106,7 @@ function renderBoard(){
       const race=piece.color===state.match.playerColor?state.match.squad:foe.race;
       const pieceArt=boardRacePiecePath(race,({p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'})[piece.type],piece.color);
       cell.innerHTML=img(pieceArt,'classic-piece'+(pieceArt.includes('/pieces/board/')?' classic-piece--new-race':''),'')+'<span class="classic-piece-marker classic-piece-marker--'+piece.color+'" data-piece-marker="'+piece.type+'" aria-hidden="true">'+glyphs[piece.color][piece.type]+'</span>';
+      cell.querySelector('.classic-piece').draggable=false;
       if(animating&&square===animationDestination)cell.querySelector('.classic-piece').classList.add('classic-piece--arriving');
     }
     cell.disabled=thinking||animating||snapshot.status.over;
