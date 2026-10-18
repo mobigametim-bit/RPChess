@@ -129,8 +129,26 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     }), { genericSquare: generic.square, enemySquare: enemyQueen.square });
     assert(art.generic.includes('assets/races/humans/pieces/board/white/'));
     assert(art.enemy.includes('assets/races/orcs/pieces/board/black/queen.png'));
+    // The Power badge must display the player's selected King, not a blank
+    // rectangle or a hardcoded Oathkeeper in an Ash Regent run.
+    await page.evaluate(key=>{
+      const run=JSON.parse(localStorage.getItem(key));
+      run.commanderId='ash_regent';
+      localStorage.setItem(key,JSON.stringify(run));
+    },RUN_KEY);
     await page.evaluate(() => globalThis.RPChessBattle.finishBattle({ over: true, type: 'stalemate', winner: null }));
     await page.locator('[data-battle-aftermath]:not([hidden])').waitFor();
+    await page.waitForFunction(()=>{
+      const result=document.querySelector('[data-battle-aftermath] .power-result');
+      return result&&getComputedStyle(result,'::before').backgroundImage.includes('/assets/kings/ash_regent/portrait.webp');
+    },null,{timeout:10000});
+    const portraitLoaded=await page.evaluate(async()=>{
+      const image=new Image();
+      image.src='assets/kings/ash_regent/portrait.webp';
+      await image.decode();
+      return image.naturalWidth>0&&image.naturalHeight>0;
+    });
+    assert(portraitLoaded,'selected King portrait must decode successfully in the result screen');
     assert.strictEqual(await page.locator('[data-battle-aftermath]').evaluate(node=>node.classList.contains('battle-aftermath--death')),false,
       'ordinary Battle aftermath must keep its existing non-death presentation');
     assert.strictEqual(await page.locator('[data-battle-aftermath] .battle-logo').count(),1,
