@@ -571,8 +571,17 @@ ensureScreen();
 attachPieceDrag(screen?.querySelector('[data-puzzle-board]'), {
   canPick: square => Boolean(screen && !screen.hidden && engine && puzzle && state && !state.resolved && !locked &&
     engine.turn() === puzzle.side && engine.pieceAt(square)?.color === puzzle.side),
-  onStart: square => { selected = square; selectedMoves = engine.legalMoves(square); renderBoard(); },
-  onDrop: (from,to) => { if (selected === from) void clickSquare(to); }
+  onStart: square => {
+    selected = square;
+    selectedMoves = engine.legalMoves(square);
+    const board = screen.querySelector('[data-puzzle-board]');
+    board.querySelector('[data-square="' + square + '"]')?.classList.add('is-selected');
+    for (const move of selectedMoves) board.querySelector('[data-square="' + move.to + '"]')?.classList.add(move.capture ? 'is-capture' : 'is-legal');
+  },
+  onDrop: (from,to) => {
+    if (to && selected === from) void clickSquare(to);
+    else { selected = null; selectedMoves = []; renderBoard(); }
+  }
 });
 
 subscribe(() => {
