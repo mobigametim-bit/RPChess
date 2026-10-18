@@ -51,3 +51,12 @@ Touch stability: highlighting a dragged piece now modifies existing cells instea
 - Existing browser regressions exercise death screens and compact landscape viewports.
 - GitHub Pages CI also includes touch-drag emulation; pace physical touch events in Chromium rather than coalescing them.
 - No changes to gameplay rules or production main until owner approves.
+
+
+## Hero art regression & pawn portrait acceptance (2026-10-18)
+- Eight user-supplied PNG pawn portraits from the `пешки_портреты.zip` upload converted to 512x512 WebP (approx. 0.713 MB total instead of 19.29 MB).
+- Stored as `assets/heroes/<slug>/portrait_named.webp`, keeping original PNG portraits for backwards compatibility.
+- Old runs and temporary battle objects without current `pieceArt` must still resolve non-pawn named pieces to the hero's own `piece_badge.png`, not an ordinary race sprite. Those older figures keep their aura and glyph.
+- Named pawn/promotion art from PR #160 remains unchanged (80 white/black chess pieces).
+- Roster details, healing/recruitment in Settlement, Caravan healing/new-hero rewards, and Starvation portraits use the new portrait resolver.
+- Acceptance tests assert personal badge retention, promotion artwork, and new pawn rewards on stale saved-run objects.
