@@ -125,7 +125,7 @@ async function assertCompactDesktopStars(page) {
       id,
       src: document.querySelector(`[data-square="${square}"] .classic-piece`)?.getAttribute('src') || ''
     })));
-    assert(personalized.find((entry) => entry.id === 'king.oathkeeper').src.includes('assets/kings/oathkeeper/piece.png'),'named king keeps original visual in Skirmish');
+    assert(personalized.find((entry) => entry.id === 'king.oathkeeper').src.includes('assets/kings/oathkeeper/pieces/white.webp'),'selected white-side Run King must use the new white chess sprite in Skirmish');
     await page.evaluate(() => globalThis.RPChessSkirmish.finishBattle({ over: true, type: 'stalemate', winner: null }));
     await page.locator('[data-skirmish-aftermath]:not([hidden])').waitFor();
     assert.strictEqual((await page.locator('[data-aftermath-continue]').innerText()).trim(), 'Продолжить путь');
@@ -162,6 +162,12 @@ async function assertCompactDesktopStars(page) {
       return document.querySelector(`[data-square="${piece.square}"] .classic-piece`)?.getAttribute('src') || '';
     });
     assert(blackEnemy.includes('assets/races/elves/pieces/board/white/king.png'),'black-side Skirmish uses new white-colored race chess king sprites for its enemy');
+    const blackPlayerKing=await black.evaluate(()=>{
+      const plan=globalThis.RPChessSkirmish.battlePlan;
+      const king=plan.playerFormation.find(entry=>entry.id==='king.oathkeeper');
+      return document.querySelector(`[data-square="${king.square}"] .classic-piece`)?.getAttribute('src')||'';
+    });
+    assert(blackPlayerKing.includes('assets/kings/oathkeeper/pieces/black.webp'),'selected black-side Run King must use his matching dark sprite');
 
     const wounded = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     const woundedErrors = [];
