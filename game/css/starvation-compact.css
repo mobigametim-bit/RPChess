@@ -1,12 +1,45 @@
-/* Starvation-owned compact landscape containment formerly supplied by post-pages compatibility polish. */
+/* Starvation consequence: same viewport envelope as Battle/Skirmish aftermath.
+   Keep the action button inside the bounded card; only the description can scroll. */
 @media (orientation:landscape) and (max-width:1180px) {
   html[data-landscape-ui='1'] body.starvation-active .starvation-screen {
-    padding-top:50px!important;
+    padding:10px 12px!important;
+    box-sizing:border-box!important;
+    overflow:hidden!important;
+  }
+  html[data-landscape-ui='1'] body.starvation-active .starvation-shell {
+    height:100%!important;
+    min-height:0!important;
+    max-height:100%!important;
     box-sizing:border-box!important;
   }
   html[data-landscape-ui='1'] body.starvation-active .starvation-panel {
-    max-height:calc(100dvh - 58px)!important;
-    margin-top:0!important;
-    overflow:auto!important;
+    width:min(900px,88vw)!important;
+    min-width:0!important;
+    min-height:0!important;
+    max-height:calc(100dvh - 28px)!important;
+    box-sizing:border-box!important;
+    overflow:hidden!important;
   }
+  html[data-landscape-ui='1'] body.starvation-active .starvation-panel > p {
+    min-height:0!important;
+    overflow-y:auto!important;
+    overscroll-behavior:contain;
+  }
+}
+@media (orientation:landscape) and (max-width:980px) and (max-height:520px) {
+  html[data-landscape-ui='1'] body.starvation-active .starvation-screen {padding:5px 7px!important;}
+  html[data-landscape-ui='1'] body.starvation-active .starvation-logo {display:none!important;}
+  html[data-landscape-ui='1'] body.starvation-active .starvation-panel {
+    width:min(780px,96vw)!important;
+    height:100%!important;
+    max-height:100%!important;
+    min-height:0!important;
+    display:grid!important;
+    grid-template-columns:minmax(135px,.66fr) minmax(0,1.34fr)!important;
+    grid-template-rows:auto auto auto minmax(0,1fr) auto!important;
+    gap:4px 12px!important;
+    padding:9px 11px!important;
+  }
+  html[data-landscape-ui='1'] body.starvation-active .starvation-portrait {min-height:0!important;max-height:100%!important;}
+  html[data-landscape-ui='1'] body.starvation-active .starvation-panel > p {overflow-y:auto!important;min-height:0!important;}
 }
