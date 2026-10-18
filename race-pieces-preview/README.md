@@ -42,3 +42,12 @@ Touch test isolation: the 844x390 mouse regression uses the usual page; a second
 Final quick-follow-up regression: a newly pressed chess square clears the preceding drag's synthetic-click guard; the guard lasts only 90 ms. This preserves drag then click on the same square in multi-ply Training puzzles.
 
 Touch stability: highlighting a dragged piece now modifies existing cells instead of rebuilding the touched DOM subtree; all three board owners restore selection on abandoned drops. Preserve both touch and mouse pointer streams.
+
+
+## Approved death-screen centering polish (2026-10-18)
+- The Starvation outcome for a companion or King now omits its corner logo and centers the portrait/text panel on the viewport.
+- Mercenary nonpayment deaths center the Battle aftermath and hide its logo, while ordinary Battle aftermath retains its original branding.
+- The Battle run-end fallback for King death has no logo and centers the outcome frame.
+- Existing browser regressions exercise death screens and compact landscape viewports.
+- GitHub Pages CI also includes touch-drag emulation; pace physical touch events in Chromium rather than coalescing them.
+- No changes to gameplay rules or production main until owner approves.
