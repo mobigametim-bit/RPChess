@@ -126,6 +126,17 @@ async function assertCompactDesktopStars(page) {
       src: document.querySelector(`[data-square="${square}"] .classic-piece`)?.getAttribute('src') || ''
     })));
     assert(personalized.find((entry) => entry.id === 'king.oathkeeper').src.includes('assets/kings/oathkeeper/pieces/white.webp'),'selected white-side Run King must use the new white chess sprite in Skirmish');
+    for(const id of ['mara_chain','nemea_quill']){
+      const src=personalized.find(entry=>entry.id===`hero.${id}`)?.src||'';
+      assert(src.includes(`assets/heroes/${id}/pieces/white/pawn.webp`),
+        `white-side Skirmish must show the new pawn illustration of ${id}`);
+    }
+    const pawnVisuals=await page.evaluate(()=>[...document.querySelectorAll('[data-chess-board] .classic-piece--personalized')]
+      .filter(img=>img.getAttribute('src')?.includes('/heroes/')&&img.getAttribute('src')?.includes('/pieces/white/pawn.webp'))
+      .map(img=>({marker:!!img.closest('.classic-square')?.querySelector('.classic-piece-marker'),
+        newArt:img.classList.contains('classic-piece--new-race')})));
+    assert(pawnVisuals.length>=2&&pawnVisuals.every(item=>!item.marker&&item.newArt),
+      'updated named pawns must suppress legacy glyphs and side auras');
     await page.evaluate(() => globalThis.RPChessSkirmish.finishBattle({ over: true, type: 'stalemate', winner: null }));
     await page.locator('[data-skirmish-aftermath]:not([hidden])').waitFor();
     assert.strictEqual((await page.locator('[data-aftermath-continue]').innerText()).trim(), 'Продолжить путь');
@@ -168,6 +179,13 @@ async function assertCompactDesktopStars(page) {
       return document.querySelector(`[data-square="${king.square}"] .classic-piece`)?.getAttribute('src')||'';
     });
     assert(blackPlayerKing.includes('assets/kings/oathkeeper/pieces/black.webp'),'selected black-side Run King must use his matching dark sprite');
+    const blackPawn=await black.evaluate(()=>{
+      const plan=globalThis.RPChessSkirmish.battlePlan;
+      const named=plan.playerFormation.find(piece=>piece.id==='hero.mara_chain');
+      return document.querySelector(`[data-square="${named.square}"] .classic-piece`)?.getAttribute('src')||'';
+    });
+    assert(blackPawn.includes('assets/heroes/mara_chain/pieces/black/pawn.webp'),
+      'black-side Skirmish must select Mara own dark pawn, not her white image');
 
     const wounded = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     const woundedErrors = [];
