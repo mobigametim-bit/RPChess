@@ -431,3 +431,29 @@
   .battle-screen .battle-action-cost{grid-column:2/3;}
   .battle-screen .battle-start{grid-column:1/-1;}
 }
+
+/* Approved death-screen polish: hide the brand only for a Mercenary-debt
+   casualty. Ordinary victory and draw aftermath retain their existing logo. */
+main.battle-aftermath--death .battle-aftermath-shell,
+main.battle-run-end .battle-aftermath-shell {
+  display: grid !important;
+  place-items: center !important;
+  min-height: 100dvh;
+}
+main.battle-aftermath--death .battle-aftermath-shell > .battle-logo,
+main.battle-run-end .battle-aftermath-shell > .battle-logo {
+  display: none !important;
+}
+main.battle-aftermath--death .battle-aftermath-panel,
+main.battle-run-end .battle-aftermath-panel {
+  align-self: center !important;
+  justify-self: center !important;
+  margin: 0 auto !important;
+}
+@media (orientation: landscape) {
+  html[data-landscape-ui='1'] main.battle-aftermath--death .battle-aftermath-shell,
+  html[data-landscape-ui='1'] main.battle-run-end .battle-aftermath-shell {
+    min-height: 0;
+    height: 100%;
+  }
+}
