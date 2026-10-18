@@ -138,7 +138,7 @@ module.exports=function verifySource(root){
   if(route.includes('presentation-bootstrap.mjs')||route.includes('post-pages-ui-polish.mjs'))fail('journey bootstrap must not load retired presentation compatibility modules');
   const lifecycle=read(root,'js/run-lifecycle-events.mjs');requireTokens(lifecycle,["addEventListener('rpchess:run-updated', syncLifecycle)","completed.push(['rpchess:combat-completed'","completed.push(['rpchess:puzzle-resolved'",'for (const [name, detail] of completed) dispatch(name, detail)','battleCount','skirmishCount','puzzleResolved'],'semantic run lifecycle bridge');
 
-  const rosterApp=read(root,'js/roster-app.mjs');requireTokens(rosterApp,["import { subscribe, t, translateLegacy } from './i18n.mjs'","t('roster.ariaLabel')","t('roster.journey')","t('roster.commandPoints')","renderFormationUI(rosterList,activeRun",'subscribe(() =>','contentText(heroNoteForId(character.id) || character.description)'],'owner-keyed Roster runtime');
+  const rosterApp=read(root,'js/roster-app.mjs');requireTokens(rosterApp,["import { subscribe, t, translateLegacy } from './i18n.mjs'","t('roster.ariaLabel')","t('roster.journey')","PIECE_GLYPHS[character.pieceType]","renderFormationUI(rosterList,activeRun",'subscribe(() =>','contentText(heroNoteForId(character.id) || character.description)'],'owner-keyed Roster runtime');
   if(/journeyButton\.textContent\s*=\s*['"](?:Вернуться в поселение|В путь|Загрузка пути…)/.test(rosterApp))fail('Roster runtime must not hardcode keyed journey labels');
 
   const difficulty=read(root,'js/encounter-difficulty.mjs');requireTokens(difficulty,['MAX_ENCOUNTER_STARS = 12','elo: 400','elo: 2600','difficultyForStars','value.slice(0, 6)'],'12-level difficulty');
