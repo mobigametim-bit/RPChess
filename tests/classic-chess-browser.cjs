@@ -245,23 +245,13 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     await touchPage.goto(url,{waitUntil:'networkidle'});
     await openSetup(touchPage);
     await startFromSetup(touchPage,{mode:'local'});
+    // Raw CDP touches bypass Playwright's auto-wait for covering elements.
+    // Wait until the scene-loading mask has stopped intercepting input.
+    await touchPage.locator('[data-game-loading]').waitFor({state:'hidden',timeout:15000});
     const fromTouch=await touchPage.locator('[data-chess-board] [data-square="e2"]').boundingBox();
     const toTouch=await touchPage.locator('[data-chess-board] [data-square="e4"]').boundingBox();
     const start={x:fromTouch.x+fromTouch.width/2,y:fromTouch.y+fromTouch.height/2,id:1};
     const end={x:toTouch.x+toTouch.width/2,y:toTouch.y+toTouch.height/2,id:1};
-    await touchPage.evaluate(()=>{
-      window.__touchDragEvents=[];
-      for(const type of ['pointerdown','pointermove','pointerup','pointercancel','lostpointercapture','touchstart','touchmove','touchend','touchcancel']){
-        window.addEventListener(type,event=>{
-          const hit=document.elementFromPoint(event.clientX||0,event.clientY||0)?.closest?.('[data-square]');
-          window.__touchDragEvents.push({
-            type,at:Math.round(performance.now()),id:event.pointerId,kind:event.pointerType,
-            x:event.clientX,y:event.clientY,target:event.target?.dataset?.square || event.target?.className?.toString().slice(0,50),
-            hit:hit?.dataset.square,ghosts:document.querySelectorAll('.rpchess-piece-drag-ghost').length
-          });
-        },true);
-      }
-    });
     const touch=await touchPage.context().newCDPSession(touchPage);
     // CDP touch dispatch may coalesce instantaneous moves on slower CI hosts.
     // Give Chromium an animation frame between points, as a real finger would.
@@ -274,18 +264,7 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     }
     await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
     await touch.detach();
-    try {
-      await touchPage.waitForFunction(()=>window.RPChessClassicChess.moveLog.length===1,null,{timeout:8000});
-    } catch(error) {
-      const diagnostic=await touchPage.evaluate(()=>({
-        events:window.__touchDragEvents,
-        moveLog:window.RPChessClassicChess.moveLog,
-        selected:window.RPChessClassicChess.snapshot().selectedSquare,
-        ghost:document.querySelectorAll('.rpchess-piece-drag-ghost').length,
-        board:document.querySelector('[data-chess-board]')?.getBoundingClientRect().toJSON()
-      }));
-      throw new Error('Touch drag did not commit: '+JSON.stringify(diagnostic)+'; '+String(error));
-    }
+    await touchPage.waitForFunction(()=>window.RPChessClassicChess.moveLog.length===1,null,{timeout:8000});
     assert((await pieceSrc(touchPage,'e4')).includes('/humans/pieces/board/white/pawn.png'),'physical touch drag must commit on mobile landscape');
     assert.deepStrictEqual(touchErrors,[],'touch-enabled board must not throw errors');
     await touchPage.close();
