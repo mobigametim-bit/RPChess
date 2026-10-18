@@ -94,3 +94,5 @@ Desktop Training fix (owner screenshot 1919x907): the legacy compact UI styleshe
 - No merge into main. PR #160 remains acceptance-only.
 
 CI follow-up 2026-10-19: in the existing classic-chess-browser landscape case, wait for the scene-loading mask to become hidden before starting the real mouse drag; no fake move injection, and the move assertion remains required.
+
+Regression follow-up: the Battle black-side enemy is now a white-color dark_elves board rook at assets/races/dark_elves/pieces/board/white/rook.png; its older art assertion has been replaced, while the real chess-board render assertion remains.
