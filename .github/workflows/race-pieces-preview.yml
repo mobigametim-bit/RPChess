@@ -87,8 +87,8 @@ jobs:
           test ! -e dist/generated_assets/scene_training_ui.webp
           test -s dist/assets/ui/jester-patrick.webp
           grep -Fq 'width:auto!important' dist/js/content/onboarding.mjs
-          grep -Fq 'padding-top:clamp(122px,21vh,165px)' dist/js/content/onboarding.mjs
-          grep -Fq 'position:absolute;z-index:1;top:0' dist/js/content/onboarding.mjs
+          grep -Fq -- '--rpchess-jester-card-start:clamp(122px,21vh,165px)' dist/js/content/onboarding.mjs
+          grep -Fq 'position:absolute;z-index:1;top:auto' dist/js/content/onboarding.mjs
           grep -Fq 'position:relative;z-index:2' dist/js/content/onboarding.mjs
           grep -q 'rpchess:arena-catalog-shown' dist/js/content/onboarding.mjs
           grep -Fq 'Promise.all([globalThis.RPChessCloudReady,globalThis.RPChessOnboardingReady])' dist/js/arena-app.mjs
