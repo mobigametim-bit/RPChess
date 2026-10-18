@@ -32,3 +32,5 @@ Final viewport diagnosis: the legacy UX consistency stylesheet fixed the inner b
 - Applies to Journey (Skirmish, Battle, Caravan), Classic Chess, Arena and Training.
 - The owning chess engine remains authoritative for legal moves, saves, and promotion.
 - Built-in tests cover dragging in Classic, Arena, and Training; no change to production main before manual acceptance.
+
+Training drag regression investigation: log persisted move index, objective state and visible selection after pointer release in existing browser acceptance.
