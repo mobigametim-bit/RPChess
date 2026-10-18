@@ -80,3 +80,5 @@ Fix after browser repro: ux-consistency.css fixed BOTH Training board layers to 
 Chromium mobile touch diagnostic: on any failed drag assertion, log captured pointer/touch event sequence, target square, ghost presence and committed moveLog; do not bypass move validation or drop coverage.
 
 Verified touch race via CDP diagnostics: transient [data-game-loading] fullscreen overlay intercepted pointerdown before its fade completed; tests now await loading overlay hidden before sending raw touch input, as Playwright's ordinary click already does. Temporary trace logging removed; real move assertion retained.
+
+Training viewport follow-up: remove legacy padding that shifted its newly centered board vertically and cap the task card to the available landscape height with internal scrolling; report exact board/task rectangles on any browser regression.
