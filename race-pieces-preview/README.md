@@ -38,3 +38,5 @@ Training drag regression investigation: log persisted move index, objective stat
 Race input acceptance: a three-ply Lichess puzzle exposed a brief forced-reply unlock race; resolved by unlocking before persisting its next player turn. Added Chromium real touch event drag to Classic mobile acceptance; mouse drag remains tested across Classic, Arena and Training.
 
 Touch test isolation: the 844x390 mouse regression uses the usual page; a second touch-enabled Chromium page tests real finger pointer events separately. Production drag behavior unchanged.
+
+Final quick-follow-up regression: a newly pressed chess square clears the preceding drag's synthetic-click guard; the guard lasts only 90 ms. This preserves drag then click on the same square in multi-ply Training puzzles.
