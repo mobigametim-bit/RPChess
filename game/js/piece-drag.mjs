@@ -88,6 +88,9 @@ function attachPieceDrag(board, { canPick, onStart, onDrop }) {
   function cancel() { reset(); }
 
   board.addEventListener('pointerdown', event => {
+    // A new real press must never be mistaken for the synthetic click from
+    // the previous drag, even when the player taps the same square quickly.
+    suppressClick = null;
     if (gesture || !event.isPrimary || event.button !== 0) return;
     const square = event.target.closest?.('[data-square]');
     if (!square || !board.contains(square) || square.disabled) return;
