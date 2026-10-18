@@ -25,3 +25,10 @@ Final classic-toolbar geometry check: local Classic shows three navigation butto
 Diagnostic Chromium run: record computed Classic shell/toolbar/board rectangles in the existing browser test to distinguish a rail-width overflow from stylesheet precedence. Will remove temporary logging after geometry is corrected.
 
 Final viewport diagnosis: the legacy UX consistency stylesheet fixed the inner board to the whole viewport. The new owner stylesheet now makes the inner grid absolute inside its centered square parent; Classic browser test asserts the real Main Menu hit target remains unobstructed.
+
+## Pointer drag acceptance (2026-10-18)
+
+- Mouse and touch drag-to-move coexist with click-to-select/click-to-target.
+- Applies to Journey (Skirmish, Battle, Caravan), Classic Chess, Arena and Training.
+- The owning chess engine remains authoritative for legal moves, saves, and promotion.
+- Built-in tests cover dragging in Classic, Arena, and Training; no change to production main before manual acceptance.
