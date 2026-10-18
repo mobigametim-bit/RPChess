@@ -245,12 +245,18 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     const start={x:fromTouch.x+fromTouch.width/2,y:fromTouch.y+fromTouch.height/2,id:1};
     const end={x:toTouch.x+toTouch.width/2,y:toTouch.y+toTouch.height/2,id:1};
     const touch=await touchPage.context().newCDPSession(touchPage);
+    // CDP touch dispatch may coalesce instantaneous moves on slower CI hosts.
+    // Give Chromium an animation frame between points, as a real finger would.
     await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[start]});
-    await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{...start,x:(start.x+end.x)/2,y:(start.y+end.y)/2}]});
-    await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[end]});
+    await touchPage.waitForTimeout(70);
+    for(let i=1;i<=8;i++){
+      const p={id:1,x:start.x+(end.x-start.x)*i/8,y:start.y+(end.y-start.y)*i/8};
+      await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[p]});
+      await touchPage.waitForTimeout(22);
+    }
     await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
     await touch.detach();
-    await touchPage.waitForFunction(()=>window.RPChessClassicChess.moveLog.length===1,{timeout:4500});
+    await touchPage.waitForFunction(()=>window.RPChessClassicChess.moveLog.length===1,null,{timeout:8000});
     assert((await pieceSrc(touchPage,'e4')).includes('/humans/pieces/board/white/pawn.png'),'physical touch drag must commit on mobile landscape');
     assert.deepStrictEqual(touchErrors,[],'touch-enabled board must not throw errors');
     await touchPage.close();
