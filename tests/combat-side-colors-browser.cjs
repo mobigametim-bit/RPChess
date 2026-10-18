@@ -72,7 +72,7 @@ async function combatAuraState(page){
 }
 async function redCheckAuraState(page){
   return page.evaluate(()=>{
-    const square=document.querySelector('.classic-square:has(.classic-piece-marker--w),.classic-square:has(.classic-piece-marker--b)');
+    const square=document.querySelector('.classic-square:has(.classic-piece--new-race)')||document.querySelector('.classic-square:has(.classic-piece-marker--w),.classic-square:has(.classic-piece-marker--b)');
     if(!square)return{side:'',image:''};
     square.classList.add('classic-square--check');
     const result={
