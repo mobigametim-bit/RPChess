@@ -1,4 +1,5 @@
 import { readRun } from './run-persistence.mjs';
+import { commanderPortrait } from './commander-portraits.mjs';
 import { starsText } from './encounter-difficulty.mjs';
 import { currentLanguage, subscribe } from './i18n.mjs';
 import { runtimeT } from '../localization/runtime-ui.mjs';
@@ -101,7 +102,9 @@ function renderCombatResult(run, kind) {
   const screen = document.querySelector(selector);
   const panel = screen?.querySelector(kind === 'skirmish' ? '.skirmish-aftermath-panel' : '.battle-aftermath-panel');
   const button = screen?.querySelector(kind === 'skirmish' ? '[data-aftermath-continue]' : '[data-battle-continue]');
-  paint(ensureResult(panel, button), receipt);
+  const element=ensureResult(panel,button);
+  if(element)element.style.setProperty('--battle-king-portrait',`url("${commanderPortrait(run.commanderId)}")`);
+  paint(element,receipt);
 }
 function renderPuzzleResult(run) {
   const receiptId = puzzleReceiptId(run);
