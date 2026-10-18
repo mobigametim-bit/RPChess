@@ -507,7 +507,7 @@ async function auditPrepAndCombat(browser, width, height, language) {
         gap:p&&b?b.left-p.right:0
       };
     });
-    const expectedCombatPanelWidth = Math.min(width - height - 4, Math.max(220, .48 * width - .48 * height - 2));
+    const expectedCombatPanelWidth = expectedSkirmishPanelWidth;
     assert.strictEqual(combatPanel.movesInsideParty, false, `${label}: run combat Journal must not be reparented into the Party panel`);
     assert.strictEqual(combatPanel.movesInShell, true, `${label}: run combat Journal must remain in its stable classic-shell owner slot`);
     assert(Math.abs(combatPanel.partyWidth - expectedCombatPanelWidth) <= 2, `${label}: Skirmish Party frame width ${combatPanel.partyWidth}px must match ${expectedCombatPanelWidth}px`);
