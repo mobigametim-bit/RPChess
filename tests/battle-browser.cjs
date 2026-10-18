@@ -194,7 +194,8 @@ async function assertResponsiveStars(page, selector, cardSelector) {
       firstSquare: document.querySelector('[data-chess-board] [data-square]')?.dataset.square || ''
     }), { genericSquare: blackGeneric.square, enemySquare: darkEnemy.square });
     assert(blackArt.generic.includes('assets/races/humans/pieces/board/black/'));
-    assert(blackArt.enemy.includes('assets/races/dark_elves/pieces/rook.png'));
+    assert(blackArt.enemy.includes('assets/races/dark_elves/pieces/board/white/rook.png'),
+      'Black-side encounter must show the enemy white-color race board rook');
     assert.strictEqual(blackArt.firstSquare, 'h1', 'Black-side Battle must render the board from Black perspective');
     assert.strictEqual(blackArt.mode, 'Безжалостный Полководец', 'shared combat summary must render the canonical difficulty label');
 
