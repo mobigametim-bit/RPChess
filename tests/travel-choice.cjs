@@ -21,6 +21,10 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(travelAppSource.includes('commanderPortrait(activeRun.commanderId)')&&travelAppSource.includes('commanderTitle(activeRun.commanderId,currentLanguage())'),
     'Travel commander portrait/title must resolve from persisted run commanderId, not stale roster.king.portrait');
   assert(!travelAppSource.includes('king?.portrait'),'Travel must not display stale selected commander portrait from roster');
+  assert(travelAppSource.includes("rating.style.setProperty('--travel-commander-portrait'")&&travelAppSource.includes('new URL(source,document.baseURI).href'),
+    'Travel must update visible CSS portrait from commanderId with correct base URI');
+  assert(fs.readFileSync(path.join(game,'css/player-rating.css'),'utf8').includes('var(--travel-commander-portrait, none)'),
+    'visible desktop portrait must not use unrelated King fallback');
   assert(travelCss.includes('.travel-choice-run-portrait{display:none}'),'Travel portrait must stay hidden outside the compact owner breakpoint');
   assert(travelCss.includes("grid-template-columns:40px minmax(112px,1fr) minmax(100px,1fr) minmax(176px,1.3fr)!important"),'tablet Travel controls must fit three actions');
   assert(travelCss.includes("grid-template-columns:34px minmax(96px,1fr) minmax(88px,1fr) minmax(172px,1.2fr)!important"),'phone Travel controls must fit three actions');

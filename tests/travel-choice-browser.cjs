@@ -210,7 +210,7 @@ async function assertDecoratedBackdrops(page, label) {
     // The canonical commanderId, not king.portrait, defines the Travel header.
     await page.evaluate((key)=>{
       const run=JSON.parse(localStorage.getItem(key));
-      run.commanderId='ash_regent';
+      run.commanderId='nameless_heir';
       const king=run.roster.find(character=>character.isRunKing);
       king.portrait='assets/kings/oathkeeper/portrait.webp';
       localStorage.setItem(key,JSON.stringify(run));
@@ -218,9 +218,17 @@ async function assertDecoratedBackdrops(page, label) {
     await page.locator('[data-roster-travel]').click();
     const travel = page.locator('[data-travel-choice-screen]:not([hidden])');
     await travel.waitFor();
-    assert.strictEqual(await page.locator('[data-travel-run-portrait]').getAttribute('src'),'assets/kings/ash_regent/portrait.webp',
-      'Travel header must use selected Ash Regent, not old Oathkeeper portrait');
-    assert.strictEqual(await page.locator('[data-travel-run-portrait]').getAttribute('alt'),'Пепельный Регент');
+    assert.strictEqual(await page.locator('[data-travel-run-portrait]').getAttribute('src'),'assets/kings/nameless_heir/portrait.webp',
+      'Travel header must use selected Nameless Heir, not old Oathkeeper portrait');
+    assert.strictEqual(await page.locator('[data-travel-run-portrait]').getAttribute('alt'),'Безымянный Наследник');
+    // Desktop shows the CSS ::before portrait; the img checked earlier is hidden.
+    const visiblePortrait=await page.locator('[data-travel-player-rating]').evaluate(element=>{
+      const computed=getComputedStyle(element,'::before');
+      return {image:computed.backgroundImage,content:computed.content};
+    });
+    assert(visiblePortrait.image.includes('/assets/kings/nameless_heir/portrait.webp'),
+      `visible Travel portrait must match Nameless Heir, got ${visiblePortrait.image}`);
+    assert.notStrictEqual(visiblePortrait.content,'none','desktop Travel portrait must be visible');
     assert.strictEqual(await page.locator('[data-travel-choice]').count(), 3);
     await assertDecoratedBackdrops(page, 'initial roster-to-Travel open');
     assert.strictEqual((await page.locator('[data-travel-week]').innerText()).trim(), 'Неделя 1');
@@ -251,8 +259,11 @@ async function assertDecoratedBackdrops(page, label) {
     await page.locator('[data-roster-travel]').click();
     await travel.waitFor();
     await assertDecoratedBackdrops(page, 'main-menu continue re-entry');
-    assert.strictEqual(await page.locator('[data-travel-run-portrait]').getAttribute('src'),'assets/kings/ash_regent/portrait.webp',
+    assert.strictEqual(await page.locator('[data-travel-run-portrait]').getAttribute('src'),'assets/kings/nameless_heir/portrait.webp',
       'Travel must preserve selected commander across save/load and menu re-entry');
+    const resumedPortrait=await page.locator('[data-travel-player-rating]').evaluate(element=>getComputedStyle(element,'::before').backgroundImage);
+    assert(resumedPortrait.includes('/assets/kings/nameless_heir/portrait.webp'),
+      `desktop Travel must keep chosen portrait after reload: ${resumedPortrait}`);
     assert.deepStrictEqual(await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).currentTravelChoices, RUN_KEY), first);
     await page.locator('[data-travel-type="puzzle"]').first().click();
     await page.locator('[data-puzzle-screen]:not([hidden])').waitFor();

@@ -158,7 +158,10 @@ class MemoryStorage {
   }
   assert(app.includes("import { subscribe, t, translateLegacy } from './i18n.mjs'"),'Roster owner must render UI keys and content translations explicitly');
   for(const key of ['roster.ariaLabel','roster.filter.all','roster.journey','roster.returnSettlement','roster.commandPoints','roster.inFormation','piece.king','status.wounded'])assert(uiSource.includes(`'${key}'`),`localization registry missing Roster key: ${key}`);
-  for(const key of ['roster.ariaLabel','roster.journey','roster.commandPoints'])assert(app.includes(`t('${key}'`)||app.includes(`t(\`${key}`),`Roster owner must call t() for ${key}`);
+  for(const key of ['roster.ariaLabel','roster.journey'])assert(app.includes(`t('${key}'`)||app.includes(`t(\`${key}`),`Roster owner must call t() for ${key}`);
+  assert(app.includes('PIECE_GLYPHS[character.pieceType]')&&app.includes("glyph.className = 'roster-detail__piece-glyph'"),
+    'Roster detail must use glyph matching selected role');
+  assert(!app.includes("t('roster.commandPoints')"),'Removed Roster Command Points frame must not render');
   assert(app.includes('renderFormationUI(rosterList,activeRun'),'Roster owner must render the real board instead of the old card/filter grid');
   assert(!app.includes('data-roster-filter'),'removed Roster filter buttons must not survive in runtime');
   assert(app.includes('subscribe(() =>')&&app.includes('contentText(heroNoteForId(character.id) || character.description)'),'Roster language changes must rerender owner UI and translated content without relying on document mutation');

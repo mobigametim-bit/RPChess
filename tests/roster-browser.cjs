@@ -40,10 +40,16 @@ async function assertOneScreen(page,label){
     assert.strictEqual(await page.locator('[data-roster-slot]').count(),16,'two ranks of eight squares');
     assert.strictEqual(await page.locator('[data-roster-board] [data-roster-piece]').count(),6);
     assert((await page.locator('[data-roster-detail]').innerText()).includes('Хранитель Клятвы'));
+    assert.strictEqual(await page.locator('[data-roster-detail] .roster-detail__piece-glyph').innerText(),'♔',
+      'selected King displays King role glyph, not Command Points');
+    assert.strictEqual(await page.locator('[data-roster-detail] .roster-detail__facts small').count(),0,
+      'old Command Points frame and label must be absent');
     // First tap selects the hero, second tap chooses an empty destination.
     const aldricSquare=await page.locator('[data-roster-slot]:has([data-roster-piece="hero.aldric_wall"])').getAttribute('data-roster-slot');
     await page.locator(`[data-roster-slot="${aldricSquare}"]`).click();
     assert((await page.locator('[data-roster-detail]').innerText()).includes('Альдрик Стена'));
+    assert.strictEqual(await page.locator('[data-roster-detail] .roster-detail__piece-glyph').innerText(),'♖',
+      'selected Rook displays Rook role glyph');
     assert.strictEqual(await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).selectedCharacterId,RUN_KEY),'hero.aldric_wall');
     await page.locator('[data-roster-slot="h2"]').click();
     assert.strictEqual(await page.locator('[data-roster-slot="h2"] [data-roster-piece="hero.aldric_wall"]').count(),1,'tap move changes formation');
