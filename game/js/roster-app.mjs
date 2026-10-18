@@ -1,5 +1,5 @@
 import { heroPortraitArt } from './race-assets.mjs';
-import { STATUS_LABELS } from './roster-data.mjs';
+import { STATUS_LABELS, PIECE_GLYPHS } from './roster-data.mjs';
 import { createRun, readRun, writeRun } from './run-persistence.mjs';
 import { applyNewRunPowerCarryover } from './player-rating.mjs';
 import { subscribe, t, translateLegacy } from './i18n.mjs';
@@ -107,9 +107,12 @@ function renderDetail() {
   facts.className = 'roster-detail__facts';
   const role = document.createElement('span');
   role.innerHTML = `<strong>${contentText(character.origin)}</strong>`;
-  const cost = document.createElement('span');
-  cost.innerHTML = `<small>${t('roster.commandPoints')}</small><strong>${character.commandCost}</strong>`;
-  facts.append(role, cost);
+  const glyph = document.createElement('span');
+  glyph.className = 'roster-detail__piece-glyph';
+  glyph.textContent = PIECE_GLYPHS[character.pieceType] || PIECE_GLYPHS.pawn;
+  glyph.setAttribute('role','img');
+  glyph.setAttribute('aria-label',t(`piece.${character.pieceType}`));
+  facts.append(role, glyph);
 
   const status = document.createElement('div');
   status.className = `roster-status roster-status--${character.status}`;
