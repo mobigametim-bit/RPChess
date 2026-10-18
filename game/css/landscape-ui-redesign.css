@@ -662,17 +662,22 @@ html[data-landscape-ui='1'] body.compact-combat-active .classic-shell {
   .skirmish-aftermath-columns,
   .battle-aftermath-columns { gap: 8px !important; }
   .starvation-panel {
-    width: min(1000px, 90vw) !important;
+    width: min(900px, 88vw) !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
     max-height: calc(100dvh - 28px) !important;
+    box-sizing: border-box !important;
+    padding: clamp(12px, 2.2dvh, 24px) !important;
     display: grid !important;
-    grid-template-columns: minmax(210px, .72fr) minmax(0, 1.28fr) !important;
+    grid-template-columns: minmax(175px, .72fr) minmax(0, 1.28fr) !important;
     grid-template-rows: auto auto auto minmax(0,1fr) auto !important;
-    column-gap: 22px !important;
+    column-gap: 16px !important;
+    gap: 8px 16px !important;
     overflow: hidden !important;
   }
   .starvation-panel > .reboot-eyebrow { grid-column: 2 !important; grid-row: 1 !important; }
   .starvation-panel > h1 { grid-column: 2 !important; grid-row: 2 !important; margin-bottom: 4px !important; }
-  .starvation-portrait { grid-column: 1 !important; grid-row: 1 / 6 !important; width: 100% !important; height: 100% !important; min-height: 0 !important; object-fit: cover !important; }
+  .starvation-portrait { grid-column: 1 !important; grid-row: 1 / 6 !important; width: 100% !important; height: 100% !important; min-height: 0 !important; max-height: 100% !important; object-fit: cover !important; }
   .starvation-piece { grid-column: 1 !important; grid-row: 5 !important; align-self: end !important; justify-self: end !important; z-index: 2 !important; }
   .starvation-panel > h2 { grid-column: 2 !important; grid-row: 3 !important; }
   .starvation-panel > p { grid-column: 2 !important; grid-row: 4 !important; min-height: 0 !important; overflow-y: auto !important; }
@@ -1001,8 +1006,8 @@ html[data-landscape-ui='1'] body.compact-combat-active .classic-shell {
 
   /* Starvation */
   .starvation-screen { padding: 5px 7px !important; }
-  .starvation-logo { width: 120px !important; }
-  .starvation-panel { width: min(760px, 96vw) !important; max-height: calc(100dvh - 10px) !important; grid-template-columns: minmax(165px, .66fr) minmax(0, 1.34fr) !important; column-gap: 12px !important; padding: 9px 11px !important; }
+  .starvation-logo { display: none !important; }
+  .starvation-panel { width: min(780px, 96vw) !important; min-height: 0 !important; max-height: calc(100dvh - 10px) !important; grid-template-columns: minmax(135px, .66fr) minmax(0, 1.34fr) !important; column-gap: 12px !important; padding: 9px 11px !important; }
   .starvation-panel > .reboot-eyebrow { font-size: 8px !important; }
   .starvation-panel > h1 { font-size: 31px !important; margin: 1px 0 !important; }
   .starvation-panel > h2 { font-size: 21px !important; margin: 2px 0 !important; }
