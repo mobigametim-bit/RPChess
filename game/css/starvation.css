@@ -1,5 +1,7 @@
+/* Starvation consequence uses the same bounding-box discipline as Battle/Skirmish aftermath. */
 .starvation-screen {
-  min-height: 100vh;
+  box-sizing: border-box;
+  min-height: 100dvh;
   padding: clamp(16px, 2.4vw, 38px);
   background:
     linear-gradient(90deg, rgba(3, 7, 15, .56), rgba(18, 8, 11, .28) 52%, rgba(3, 7, 15, .45)),
@@ -7,6 +9,7 @@
 }
 
 .starvation-shell {
+  box-sizing: border-box;
   width: min(1510px, 100%);
   min-height: calc(100vh - clamp(32px, 4.8vw, 76px));
   margin: 0 auto;
@@ -28,8 +31,11 @@
 .starvation-panel {
   position: relative;
   isolation: isolate;
-  width: min(1260px, 100%);
-  min-height: 580px;
+  box-sizing: border-box;
+  min-width: 0;
+  width: min(1160px, 100%);
+  min-height: 0;
+  max-height: min(670px, calc(100dvh - 170px));
   display: grid;
   grid-template-columns: minmax(300px, 400px) minmax(0, 1fr);
   grid-template-areas:
@@ -45,7 +51,9 @@
   justify-items: start;
   margin: 0 auto;
   padding: clamp(42px, 5vw, 70px);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
   text-align: left;
   border: 1px solid rgba(203, 157, 80, .36) !important;
   border-radius: 8px !important;
@@ -103,8 +111,9 @@
   justify-self: stretch;
   width: 100%;
   height: 100%;
-  min-height: 440px;
+  min-height: 0;
   max-height: 470px;
+  aspect-ratio: 4 / 5;
   object-fit: cover;
   object-position: center top;
   border: 1px solid rgba(216, 177, 93, .62);
@@ -194,6 +203,7 @@
 
   .starvation-panel {
     min-height: 0;
+    max-height: calc(100dvh - 105px);
     grid-template-columns: minmax(190px, 34vw) minmax(0, 1fr);
     column-gap: 24px;
     padding: 28px 22px 34px;
@@ -242,7 +252,7 @@
   .starvation-portrait {
     width: min(100%, 390px);
     min-height: 0;
-    max-height: none;
+    max-height: min(56dvh, 360px);
     aspect-ratio: 4 / 5;
     justify-self: center;
     margin-top: 8px;
