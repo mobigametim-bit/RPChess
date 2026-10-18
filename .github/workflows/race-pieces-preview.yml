@@ -142,6 +142,9 @@ jobs:
             done
           done
           test "$(find dist/assets/kings -type f -name '*.webp' | wc -l)" -eq 21
+          # The user-approved new king art removes board role glyphs and decorative auras.
+          grep -q "image.parentElement?.querySelector('.classic-piece-marker')?.remove()" dist/js/race-assets.mjs
+          grep -Fq 'background:rgba(184,40,46,.27)!important' dist/css/combat-side-colors.css
           grep -q "function commanderPieceArt" dist/js/commander-portraits.mjs
           grep -q "if(character?.isRunKing)return commanderPieceArt" dist/js/race-assets.mjs
           # Preserve the Roster layout, saved commander identity and differentiated art.
