@@ -1,3 +1,4 @@
+import { heroPortraitArt } from './race-assets.mjs';
 import { STATUS_LABELS } from './roster-data.mjs';
 import { createRun, readRun, writeRun } from './run-persistence.mjs';
 import { applyNewRunPowerCarryover } from './player-rating.mjs';
@@ -91,7 +92,7 @@ function renderDetail() {
   media.className = 'roster-detail__media';
   const portrait = document.createElement('img');
   portrait.className = 'roster-detail__portrait';
-  portrait.src = character.isRunKing?commanderPortrait(activeRun?.commanderId):character.portrait;
+  portrait.src = character.isRunKing?commanderPortrait(activeRun?.commanderId):heroPortraitArt(character);
   portrait.alt = displayName;
   media.append(portrait);
 
