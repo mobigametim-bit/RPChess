@@ -82,7 +82,7 @@ function attachPieceDrag(board, { canPick, onStart, onDrop }) {
       suppressClick = { x:event.clientX, y:event.clientY, until:performance.now() + 90 };
     }
     reset();
-    if (dragging && target && target.dataset.square !== from) onDrop(from, target.dataset.square);
+    if (dragging) onDrop(from, target && target.dataset.square !== from ? target.dataset.square : null);
   }
 
   function cancel() { reset(); }
