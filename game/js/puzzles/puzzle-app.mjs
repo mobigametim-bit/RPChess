@@ -424,13 +424,16 @@ async function playForcedReply({ resume = false } = {}) {
   await new Promise((resolve) => setTimeout(resolve, replyDelay()));
   const replyResult = moveEngine(reply);
   const nextIndex = state.solutionIndex + 1;
+  // The next turn must be interactable when its state becomes visible.
+  // Otherwise quick players can tap while persistence says the reply is done,
+  // but the board is still locked for one microtask.
+  if (nextIndex < puzzle.solution.length) locked = false;
   persist({ ...state, currentFen: replyResult.fen, solutionIndex: nextIndex });
   renderBoard();
   if (nextIndex >= puzzle.solution.length) {
     finishSolved();
     return;
   }
-  locked = false;
   status(t('puzzle.status.yourMove'));
 }
 
