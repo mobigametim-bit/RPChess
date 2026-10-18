@@ -40,3 +40,5 @@ Race input acceptance: a three-ply Lichess puzzle exposed a brief forced-reply u
 Touch test isolation: the 844x390 mouse regression uses the usual page; a second touch-enabled Chromium page tests real finger pointer events separately. Production drag behavior unchanged.
 
 Final quick-follow-up regression: a newly pressed chess square clears the preceding drag's synthetic-click guard; the guard lasts only 90 ms. This preserves drag then click on the same square in multi-ply Training puzzles.
+
+Touch stability: highlighting a dragged piece now modifies existing cells instead of rebuilding the touched DOM subtree; all three board owners restore selection on abandoned drops. Preserve both touch and mouse pointer streams.
