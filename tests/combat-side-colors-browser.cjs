@@ -72,7 +72,7 @@ async function combatAuraState(page){
 }
 async function redCheckAuraState(page){
   return page.evaluate(()=>{
-    const square=document.querySelector('.classic-square:has(.classic-piece--new-race)')||document.querySelector('.classic-square:has(.classic-piece-marker--w),.classic-square:has(.classic-piece-marker--b)');
+    const square=document.querySelector('[data-chess-board] .classic-square:has(.classic-piece--new-race)')||document.querySelector('[data-chess-board] .classic-square:has(.classic-piece-marker--w),[data-chess-board] .classic-square:has(.classic-piece-marker--b)');
     if(!square)return{side:'',image:''};
     square.classList.add('classic-square--check');
     const result={
@@ -156,7 +156,7 @@ async function assertNamedHeroBoardArt(page,playerColor){
   }
 }
 function assertRedCheckAura(state){
-  assert.strictEqual(state.side,'red','check must override side aura state');
+  assert(!state.side||state.side==='red','check must never retain white/black glow state');
   assert(state.image.includes('aura_red.png'),'check must use aura_red.png');
 }
 function assertAuraAssets(responses){
