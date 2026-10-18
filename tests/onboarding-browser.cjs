@@ -36,6 +36,9 @@ async function assertOverlay(page, label, expectedHint) {
       buttonRight:dismiss?.getBoundingClientRect().right,
       buttonWidth:dismiss?.getBoundingClientRect().width,
       cardRight:rect.right,
+      centerOffset:Math.abs((rect.left+rect.right)/2-innerWidth/2),
+      cardLayer:Number(getComputedStyle(card).zIndex),
+      portraitLayer:Number(getComputedStyle(root.querySelector('.rpchess-onboarding__portrait')).zIndex),
       role:card.getAttribute('role'),
       modal:card.getAttribute('aria-modal'),
       title:root.querySelector('[data-tutorial-title]')?.textContent?.trim() || '',
@@ -61,10 +64,16 @@ async function assertOverlay(page, label, expectedHint) {
     `${label}: "Понятно" must be a compact menu-style button, never stretched across the panel`);
   assert(geometry.buttonRight <= geometry.cardRight + 1 && geometry.buttonLeft >= geometry.cardRight - 230,
     `${label}: dismissal button must stay aligned to the right, as in approved HTML preview`);
-  if (geometry.vw > geometry.vh) {
-    assert(geometry.portrait.right <= geometry.titleLeft - 2,
-      `${label}: jester portrait must sit to the left of the dialogue, not obscure the copy`);
-  }
+  assert(geometry.centerOffset <= 2,
+    `${label}: dialog panel must be horizontally centered instead of leaving a portrait column`);
+  assert(geometry.portrait.top < geometry.top - 24,
+    `${label}: jester must rise above the dialog, not sit beside it`);
+  assert(geometry.portrait.bottom > geometry.top + 10,
+    `${label}: jester must overlap and peek out from behind the top of the panel`);
+  assert(geometry.portrait.left >= geometry.left - 1 && geometry.portrait.right <= geometry.right + 1,
+    `${label}: jester must be above/behind the dialog, not in a left-side column`);
+  assert(geometry.portraitLayer < geometry.cardLayer,
+    `${label}: the dialog must be in front of the jester to partially occlude it`);
   assert(geometry.portrait.loaded, `${label}: compressed jester WebP must load`);
   assert(geometry.portrait.left >= -1 && geometry.portrait.top >= -1 &&
     geometry.portrait.right <= geometry.vw + 1 && geometry.portrait.bottom <= geometry.vh + 1,
