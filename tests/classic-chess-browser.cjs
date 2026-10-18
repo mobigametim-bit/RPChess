@@ -113,6 +113,42 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     assert((await pieceSrc(page, 'a8')).includes('/humans/pieces/board/white/queen.png'), 'promotion must render chosen queen asset');
     assert((await page.locator('[data-move-history] .classic-move[data-san]').last().getAttribute('data-san')).includes('=Q'), 'promotion SAN must include =Q');
 
+    // Promotion choice artwork must be bound to the original named pawn identity,
+    // its current side, and each of the four distinct upgrade roles.
+    await page.evaluate(async()=>{
+      const art=await import(new URL('js/race-assets.mjs',location.href).href);
+      window.RPChessClassicChess.loadFen('7k/P7/8/8/8/8/8/7K w - - 0 1',{
+        promotionArtResolver:(from,type,color)=>art.namedPawnPieceArt({id:'hero.mara_chain',pieceType:'pawn'},type,color)
+      });
+    });
+    await clickMove(page,'a7','a8');
+    await page.locator('[data-promotion-modal]:not([hidden])').waitFor();
+    for(const [role,name] of [['q','queen'],['r','rook'],['b','bishop'],['n','knight']]){
+      const src=await page.locator(`[data-promotion="${role}"] img`).getAttribute('src');
+      assert(src.includes(`/heroes/mara_chain/pieces/white/${name}.webp`),
+        `promoting Mara must offer her own WHITE ${name}, not a generic piece`);
+    }
+    await page.locator('[data-promotion="n"]').click();
+    await waitForMoveAnimation(page);
+    assert.strictEqual(await page.evaluate(()=>window.RPChessClassicChess.engine.pieceAt('a8')?.type),'n',
+      'Mara promotion must keep the chosen knight role in the engine');
+    await page.evaluate(async()=>{
+      const art=await import(new URL('js/race-assets.mjs',location.href).href);
+      window.RPChessClassicChess.loadFen('7k/8/8/8/8/8/p7/7K b - - 0 1',{
+        promotionArtResolver:(from,type,color)=>art.namedPawnPieceArt({id:'hero.kael_cinder',pieceType:'pawn'},type,color)
+      });
+    });
+    await clickMove(page,'a2','a1');
+    await page.locator('[data-promotion-modal]:not([hidden])').waitFor();
+    for(const [role,name] of [['q','queen'],['r','rook'],['b','bishop'],['n','knight']]){
+      const src=await page.locator(`[data-promotion="${role}"] img`).getAttribute('src');
+      assert(src.includes(`/heroes/kael_cinder/pieces/black/${name}.webp`),
+        `promoting Kael must offer his own BLACK ${name}, not a generic piece`);
+    }
+    await page.locator('[data-promotion="q"]').click();
+    await waitForMoveAnimation(page);
+    assert.strictEqual(await page.evaluate(()=>window.RPChessClassicChess.engine.pieceAt('a1')?.type),'q',
+      'Kael promotion must preserve promoted queen role in the engine');
     await page.evaluate(() => window.RPChessClassicChess.newGame());
     for (const [from, to] of [['f2', 'f3'], ['e7', 'e5'], ['g2', 'g4'], ['d8', 'h4']]) {
       await clickMove(page, from, to);
