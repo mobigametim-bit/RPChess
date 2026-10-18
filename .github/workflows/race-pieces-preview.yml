@@ -59,6 +59,11 @@ jobs:
           RPCHESS_GATE_PREFIX: /RPChess
           RPCHESS_BROWSER_TEST: roster-browser.cjs,skirmish-browser.cjs,combat-side-colors-browser.cjs,events-browser.cjs,puzzles-browser.cjs
         run: npm run test:browser
+      - name: Verify jester onboarding in RU/EN, desktop, compact and VK Mobile
+        env:
+          RPCHESS_GATE_PREFIX: /RPChess
+          RPCHESS_BROWSER_TEST: onboarding-browser.cjs
+        run: npm run test:browser
       - name: Verify all 168 color-specific race chess pieces and unified Arena art
         run: |
           test -f dist/index.html
