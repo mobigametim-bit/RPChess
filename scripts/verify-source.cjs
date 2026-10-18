@@ -31,7 +31,7 @@ module.exports=function verifySource(root){
     }
   }
   required.push('js/skirmish-obstacles.mjs');
-  required.push('css/arena.css','js/arena-core.mjs','js/arena-app.mjs','assets/arena/mirror_shard.png','assets/arena/defeat_crown.png');
+  required.push('css/arena.css','css/combat-centered-layout.css','js/arena-core.mjs','js/arena-app.mjs','assets/arena/mirror_shard.png','assets/arena/defeat_crown.png');
   required.push('js/combat-checkpoint.mjs');
   for(let i=1;i<=10;i++)required.push(`js/events/event-data-${String(i).padStart(2,'0')}.mjs`);
   required.push('js/events/event-data-v4-builder.mjs');
