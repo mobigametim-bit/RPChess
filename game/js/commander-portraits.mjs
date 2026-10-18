@@ -9,11 +9,12 @@ const COMMANDERS=Object.freeze([
   {id:'fox_prince',titleRu:'Лисий Принц',titleEn:'Fox Prince',descriptionRu:'Наследник, для которого хитрый манёвр дороже прямого удара. Даже противники не всегда понимают, когда сыграли по его правилам.',descriptionEn:'An heir who favors clever maneuvers over frontal blows. Even his foes rarely know when they have played by his rules.'},
   {id:'ash_regent',titleRu:'Пепельный Регент',titleEn:'Ash Regent',descriptionRu:'Он возглавил уцелевших после пожара престола. Под пепельной короной скрывается воля вернуть утраченное.',descriptionEn:'He took command of the survivors after the throne burned. Beneath the ash crown rests a will to reclaim what was lost.'},
   {id:'nameless_heir',titleRu:'Безымянный Наследник',titleEn:'Nameless Heir',descriptionRu:'Он не называет прежнего имени. Серебряная корона и верные ему люди — всё, что напоминает о потерянном королевстве.',descriptionEn:'He speaks nothing of his former name. A silver crown and loyal followers are all that remain of a lost kingdom.'}
-].map(row=>Object.freeze({...row,portrait:`assets/kings/${row.id}/portrait.png`})));
+].map(row=>Object.freeze({...row,portrait:`assets/kings/${row.id}/portrait.webp`})));
 const COMMANDER_IDS=Object.freeze(COMMANDERS.map(row=>row.id));
 function normalizeCommanderId(id){return COMMANDER_IDS.includes(id)?id:DEFAULT_COMMANDER_ID;}
 function commanderById(id){return COMMANDERS.find(row=>row.id===normalizeCommanderId(id))||COMMANDERS[0];}
 function commanderTitle(id,language='ru'){const c=commanderById(id);return language==='en'?c.titleEn:c.titleRu;}
 function commanderDescription(id,language='ru'){const c=commanderById(id);return language==='en'?c.descriptionEn:c.descriptionRu;}
 function commanderPortrait(id){return commanderById(id).portrait;}
-export {DEFAULT_COMMANDER_ID,COMMANDERS,COMMANDER_IDS,normalizeCommanderId,commanderById,commanderTitle,commanderDescription,commanderPortrait};
+function commanderPieceArt(id,color='w'){return `assets/kings/${normalizeCommanderId(id)}/pieces/${color==='b'||color==='black'?'black':'white'}.webp`;}
+export {DEFAULT_COMMANDER_ID,COMMANDERS,COMMANDER_IDS,normalizeCommanderId,commanderById,commanderTitle,commanderDescription,commanderPortrait,commanderPieceArt};
