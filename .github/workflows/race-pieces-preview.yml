@@ -86,6 +86,8 @@ jobs:
           test -s dist/generated_assets/scene_training_ui.jpg
           test ! -e dist/generated_assets/scene_training_ui.webp
           test -s dist/assets/ui/jester-patrick.webp
+          grep -Fq 'width:auto!important' dist/js/content/onboarding.mjs
+          grep -Fq 'grid-template-columns:clamp(145px,25vw,240px)' dist/js/content/onboarding.mjs
           grep -q 'rpchess:arena-catalog-shown' dist/js/content/onboarding.mjs
           grep -Fq 'Promise.all([globalThis.RPChessCloudReady,globalThis.RPChessOnboardingReady])' dist/js/arena-app.mjs
           grep -q 'rpchess:caravan-rewards' dist/js/content/onboarding.mjs
