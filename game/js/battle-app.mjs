@@ -1,6 +1,7 @@
 import { createCaravanState, createCaravanPlan, finishCaravan, claimCaravanReward } from './caravan-core.mjs';
 import { caravanRewardText, showCaravanRewards } from './caravan-reward-ui.mjs';
 import { PIECE_GLYPHS } from './roster-data.mjs';
+import { commanderPortrait } from './commander-portraits.mjs';
 import { readRun, writeRun } from './run-persistence.mjs';
 import { checkpointFor, combatMoves } from './combat-checkpoint.mjs';
 import { boardPieceArtForTheme, boardPieceArtForCharacter, boardRacePiecePath, setBoardPieceArt, racePiecePath } from './race-assets.mjs';
@@ -281,7 +282,7 @@ function renderFormation() {
   const root=prepScreen?.querySelector('[data-battle-formation]'); if(!root||!activeRun||!encounter)return; root.replaceChildren();
   const color=encounter.playerColor||'w'; let formation=[]; try{formation=isCaravan()?createCaravanPlan({roster:activeRun.roster,selectedIds:[...selectedIds],encounter}).playerFormation:formationFor(color,activeRun.roster,[...selectedIds],color);}catch{return;}
   const bySquare=new Map(formation.map((piece)=>[piece.square,piece])),ranks=color==='w'?['2','1']:['7','8'];
-  for(const rank of ranks)for(const file of 'abcdefgh'){const square=`${file}${rank}`,piece=bySquare.get(square),cell=document.createElement('div');cell.className='battle-formation-cell';cell.dataset.battlePreviewSquare=square;if(piece){const image=document.createElement('img');image.src=piece.id?(characterForId(piece.id)?.pieceArt||playerGenericArt(piece.pieceType,color)):playerGenericArt(piece.pieceType,color);image.alt='';if(piece.id)image.dataset.personalizedId=piece.id;const glyph=document.createElement('span');glyph.textContent=PIECE_GLYPHS[piece.pieceType]||'';cell.append(image,glyph);cell.title=piece.id?contentText(characterForId(piece.id)?.name||piece.name):contentText(piece.name);}root.append(cell);}
+  for(const rank of ranks)for(const file of 'abcdefgh'){const square=`${file}${rank}`,piece=bySquare.get(square),cell=document.createElement('div');cell.className='battle-formation-cell';cell.dataset.battlePreviewSquare=square;if(piece){const image=document.createElement('img');image.src=piece.id?(boardPieceArtForCharacter(characterForId(piece.id),color)||playerGenericArt(piece.pieceType,color)):playerGenericArt(piece.pieceType,color);image.alt='';if(piece.id)image.dataset.personalizedId=piece.id;const glyph=document.createElement('span');glyph.textContent=PIECE_GLYPHS[piece.pieceType]||'';cell.append(image);if(!piece.id||!characterForId(piece.id)?.isRunKing)cell.append(glyph);cell.title=piece.id?contentText(characterForId(piece.id)?.name||piece.name):contentText(piece.name);}root.append(cell);}
 }
 function renderParticipants() { const root=prepScreen?.querySelector('[data-battle-participants]'); if(!root||!activeRun)return; root.replaceChildren(); const validation=validateBattleSelection(activeRun.roster,[...selectedIds]);if(!validation.ok)return;for(const c of validation.members){const row=document.createElement('button');row.type='button';row.className='battle-participant-row';row.disabled=c.isRunKing;row.dataset.battleParticipant=c.id;const glyph=document.createElement('span');glyph.textContent=PIECE_GLYPHS[c.pieceType]||'';const name=document.createElement('strong');name.textContent=contentText(c.name);const state=document.createElement('small');state.textContent=c.isRunKing?t('battle.participant.required'):t('battle.participant.named');row.append(glyph,name,state);if(!c.isRunKing)row.addEventListener('click',()=>tryToggle(c));root.append(row);} }
 function renderCounters() { const validation=validateBattleSelection(activeRun?.roster||[],[...selectedIds]);const start=prepScreen?.querySelector('[data-battle-start]');if(start){start.disabled=!validation.ok;start.setAttribute('aria-disabled',validation.ok?'false':'true');} }
@@ -387,7 +388,7 @@ function processMove(entry) {
     const captured=other.get(capture||to);other.delete(capture||to);
     if(entry.color===battlePlan.enemyColor&&captured?.id){
       const character=characterForId(captured.id);
-      lastCapturedVisual=character?{id:captured.id,art:character.pieceArt,logLength:processedMoves+1}:null;
+      lastCapturedVisual=character?{id:captured.id,art:boardPieceArtForCharacter(character,battlePlan.playerColor),logLength:processedMoves+1}:null;
       if(character&&!character.isRunKing){capturedIds.add(captured.id);if(!restoring)showWoundToast(captured.id);}
     }
   }
