@@ -31,6 +31,11 @@ async function assertOverlay(page, label, expectedHint) {
       scrollHeight:card.scrollHeight,
       clientHeight:card.clientHeight,
       overflowY:getComputedStyle(card).overflowY,
+      titleLeft:root.querySelector('[data-tutorial-title]')?.getBoundingClientRect().left,
+      buttonLeft:dismiss?.getBoundingClientRect().left,
+      buttonRight:dismiss?.getBoundingClientRect().right,
+      buttonWidth:dismiss?.getBoundingClientRect().width,
+      cardRight:rect.right,
       role:card.getAttribute('role'),
       modal:card.getAttribute('aria-modal'),
       title:root.querySelector('[data-tutorial-title]')?.textContent?.trim() || '',
@@ -52,6 +57,14 @@ async function assertOverlay(page, label, expectedHint) {
   assert.strictEqual(geometry.role, 'dialog', `${label}: onboarding must expose dialog role`);
   assert.strictEqual(geometry.modal, 'true', `${label}: onboarding must be modal`);
   assert(geometry.title.length > 0 && geometry.body.length > 0 && geometry.dismiss.length > 0, `${label}: localized onboarding copy missing`);
+  assert(geometry.buttonWidth <= 210 && geometry.buttonWidth >= 100,
+    `${label}: "Понятно" must be a compact menu-style button, never stretched across the panel`);
+  assert(geometry.buttonRight <= geometry.cardRight + 1 && geometry.buttonLeft >= geometry.cardRight - 230,
+    `${label}: dismissal button must stay aligned to the right, as in approved HTML preview`);
+  if (geometry.vw > geometry.vh) {
+    assert(geometry.portrait.right <= geometry.titleLeft - 2,
+      `${label}: jester portrait must sit to the left of the dialogue, not obscure the copy`);
+  }
   assert(geometry.portrait.loaded, `${label}: compressed jester WebP must load`);
   assert(geometry.portrait.left >= -1 && geometry.portrait.top >= -1 &&
     geometry.portrait.right <= geometry.vw + 1 && geometry.portrait.bottom <= geometry.vh + 1,
