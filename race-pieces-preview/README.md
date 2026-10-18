@@ -23,3 +23,5 @@ Updated acceptance target: symmetric CSS rail calculation for broad Chromium com
 Final classic-toolbar geometry check: local Classic shows three navigation buttons (not two), so the centered-rail CSS must distribute their widths without overlapping the board. The accepted Journey combat keeps its two-button layout.
 
 Diagnostic Chromium run: record computed Classic shell/toolbar/board rectangles in the existing browser test to distinguish a rail-width overflow from stylesheet precedence. Will remove temporary logging after geometry is corrected.
+
+Final viewport diagnosis: the legacy UX consistency stylesheet fixed the inner board to the whole viewport. The new owner stylesheet now makes the inner grid absolute inside its centered square parent; Classic browser test asserts the real Main Menu hit target remains unobstructed.
