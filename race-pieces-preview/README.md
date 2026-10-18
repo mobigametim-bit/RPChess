@@ -76,3 +76,5 @@ Training-centered final CI follow-up: static Puzzle owner regression updated to 
 Square Training board follow-up: both the Training board and its wrapper now use the identical computed viewport dimension, with border-box sizing, instead of percentage-based height. Browser assertion reports full geometry if there is any remaining mismatch.
 
 Fix after browser repro: ux-consistency.css fixed BOTH Training board layers to the viewport right with !important. Puzzle owner now positions the board wrapper relative in the centered grid column and its inner board absolute to that square. The Battle regression selects Ash Regent before constructing the Battle's cached active run, and verifies its portrait in the Power result.
+
+Chromium mobile touch diagnostic: on any failed drag assertion, log captured pointer/touch event sequence, target square, ghost presence and committed moveLog; do not bypass move validation or drop coverage.
