@@ -1,3 +1,4 @@
+import { heroPortraitArt } from './race-assets.mjs';
 import { readRun, writeRun } from './run-persistence.mjs';
 import { acknowledgeStarvation, hasPendingStarvation } from './starvation-core.mjs';
 import { subscribe, t, translateLegacy } from './i18n.mjs';
@@ -88,7 +89,7 @@ function render(run) {
 
   if (title) title.textContent = kingDied ? t('starvation.kingTitle') : t('starvation.title');
   if (portrait) {
-    portrait.src = victim.portrait || victim.pieceArt || '';
+    portrait.src = heroPortraitArt(victim);
     portrait.alt = victim.name ? displayName : t('starvation.victimFallback');
   }
   if (piece) {
