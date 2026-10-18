@@ -148,6 +148,8 @@ jobs:
           grep -Fq "background:url('../assets/vfx/aura_red.png') center/100% 100% no-repeat!important" dist/css/combat-side-colors.css
           grep -Fq 'width: min(1160px, 100%)' dist/css/starvation.css
           grep -Fq 'width:min(780px,96vw)!important' dist/css/starvation-compact.css
+          # The compressed King keeps red check feedback, but no routine white/black halo.
+          grep -Fq -- "--combat-piece-glow-side:red" dist/css/combat-side-colors.css
           grep -q "function commanderPieceArt" dist/js/commander-portraits.mjs
           grep -q "if(character?.isRunKing)return commanderPieceArt" dist/js/race-assets.mjs
           # Preserve the Roster layout, saved commander identity and differentiated art.
