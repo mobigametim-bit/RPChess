@@ -154,6 +154,10 @@ jobs:
           done
           test "$(find dist/assets/heroes -path '*/pieces/*' -name '*.webp' | wc -l)" -eq 80
           node tests/race-board-themes.cjs
+          # Promotion options must show each hero's own upgraded piece.
+          grep -Fq 'promotionArtResolver?.(from,type,color)' dist/js/classic-chess-app.mjs
+          grep -Fq 'promotedRoleById.set(id,promotion)' dist/js/skirmish-app.mjs
+          grep -Fq 'piece.pieceType' dist/js/battle-app.mjs
           # The user-approved new king art removes board role glyphs and decorative auras.
           grep -q "image.parentElement?.querySelector('.classic-piece-marker')?.remove()" dist/js/race-assets.mjs
           # Check retains its red aura even for new full-color chess sprites; side glows remain off.
