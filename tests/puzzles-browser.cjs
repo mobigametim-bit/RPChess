@@ -89,6 +89,14 @@ async function clickMove(page,from,to,promotion=null){
   await page.mouse.down();
   await page.mouse.move(dragTo.x+dragTo.width/2,dragTo.y+dragTo.height/2,{steps:8});
   await page.mouse.up();
+  await page.waitForTimeout(120);
+  const dragProbe=await page.evaluate(key=>{
+    const s=JSON.parse(localStorage.getItem(key))?.currentPuzzle;
+    return {id:s?.puzzleId,type:s?.type,solutionIndex:s?.solutionIndex,errors:s?.errors,resolved:s?.resolved,fen:s?.currentFen,ghosts:document.querySelectorAll('.rpchess-piece-drag-ghost').length,
+      from:document.querySelector('[data-puzzle-board] [data-square="${moves.correct.from}"]')?.className,
+      board:document.querySelector('[data-puzzle-board]')?.className};
+  },RUN_KEY);
+  console.log('Training drag snapshot:',JSON.stringify(dragProbe),'expected:',JSON.stringify(moves.correct));
   if(moves.correct.promotion){
     const names={q:'Ферзь',r:'Ладья',b:'Слон',n:'Конь'};
     await page.locator('[data-puzzle-promotion]:not([hidden])').getByRole('button',{name:names[moves.correct.promotion]}).click();
