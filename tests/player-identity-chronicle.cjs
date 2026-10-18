@@ -48,7 +48,7 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   const resumed=persistence.readRun(portraitStorage);
   assert.strictEqual(resumed.roster[0].portrait,commanders.commanderPortrait('wanderer_queen'),'hydration must not reset the chosen commander portrait');
   assert.strictEqual(resumed.roster[0].pieceArt,chosen.roster[0].pieceArt,'commander-specific piece asset must survive hydration');
-  assert.strictEqual(resumed.roster[0].commanderId,'wanderer_queen','existing run must restore king's commander identity');
+  assert.strictEqual(resumed.roster[0].commanderId,'wanderer_queen',"existing run must restore king commander identity");
   assert.strictEqual(race.boardPieceArtForCharacter(resumed.roster[0],'b'),commanders.commanderPieceArt('wanderer_queen','b'));
 
   run=persistence.writeRun(run,storage,1000);
