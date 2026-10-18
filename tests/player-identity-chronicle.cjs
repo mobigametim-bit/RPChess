@@ -14,10 +14,21 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   let run=persistence.createRun({now:1000,id:'identity-run',playerName:'  Тимур  '});
   assert.strictEqual(run.playerName,'Тимур');
   const commanders=await import(url('js/commander-portraits.mjs'));
+  const race=await import(url('js/race-assets.mjs'));
   assert.strictEqual(commanders.COMMANDERS.length,7,'all seven actual king portraits are selectable');
   const assetRoot=path.resolve(game,'assets/kings');
   for(const c of commanders.COMMANDERS){
     assert(fs.existsSync(path.join(game,c.portrait)),`king portrait missing: ${c.id}`);
+    assert(c.portrait.endsWith('/portrait.webp'),`commander portrait must be compressed WebP: ${c.id}`);
+    for(const color of ['w','b']){
+      const asset=commanders.commanderPieceArt(c.id,color),data=fs.readFileSync(path.join(game,asset));
+      assert(asset.endsWith(color==='w'?'/white.webp':'/black.webp'),`wrong king color mapping: ${c.id}/${color}`);
+      assert.strictEqual(data.toString('ascii',0,4),'RIFF',`missing WebP signature: ${asset}`);
+      assert.strictEqual(data.toString('ascii',8,12),'WEBP',`bad WebP file: ${asset}`);
+      assert(data.length<100*1024,`king sprite not adequately compressed: ${asset}`);
+    }
+    const portrait=fs.readFileSync(path.join(game,c.portrait));
+    assert(portrait.length<180*1024 && portrait.toString('ascii',8,12)==='WEBP',`uncompressed commander portrait: ${c.id}`);
     assert(c.descriptionRu&&c.descriptionEn&&c.titleRu&&c.titleEn,`localized commander bio incomplete: ${c.id}`);
   }
   assert.strictEqual(commanders.normalizeCommanderId('../bad/path'),'oathkeeper','user-controlled paths are never accepted');
@@ -26,12 +37,19 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   assert.strictEqual(chosen.roster[0].id,'king.oathkeeper','chess rules rely on stable Run King ID');
   assert.strictEqual(chosen.roster[0].portrait,commanders.commanderPortrait('wanderer_queen'));
   assert.strictEqual(chosen.roster[0].name,commanders.commanderTitle('wanderer_queen'));
+  assert.strictEqual(chosen.roster[0].commanderId,'wanderer_queen');
+  assert.strictEqual(chosen.roster[0].pieceArt,commanders.commanderPieceArt('wanderer_queen','w'));
+  assert.strictEqual(race.boardPieceArtForCharacter(chosen.roster[0],'w'),commanders.commanderPieceArt('wanderer_queen','w'));
+  assert.strictEqual(race.boardPieceArtForCharacter(chosen.roster[0],'b'),commanders.commanderPieceArt('wanderer_queen','b'),
+    'black-side player king must use unique dark chess sprite, never generic old king');
   const portraitStorage=new MemoryStorage();
   const stored=persistence.writeRun(chosen,portraitStorage,1200);
   assert.strictEqual(stored.commanderId,'wanderer_queen');
   const resumed=persistence.readRun(portraitStorage);
   assert.strictEqual(resumed.roster[0].portrait,commanders.commanderPortrait('wanderer_queen'),'hydration must not reset the chosen commander portrait');
-  assert.strictEqual(resumed.roster[0].pieceArt,chosen.roster[0].pieceArt,'commander appearance must not change chess piece sprites or rules');
+  assert.strictEqual(resumed.roster[0].pieceArt,chosen.roster[0].pieceArt,'commander-specific piece asset must survive hydration');
+  assert.strictEqual(resumed.roster[0].commanderId,'wanderer_queen','existing run must restore king's commander identity');
+  assert.strictEqual(race.boardPieceArtForCharacter(resumed.roster[0],'b'),commanders.commanderPieceArt('wanderer_queen','b'));
 
   run=persistence.writeRun(run,storage,1000);
   assert.strictEqual(persistence.readRun(storage).playerName,'Тимур','player name must survive persistence');
