@@ -67,7 +67,18 @@ async function verifyBoard(page,selector,label,arena=false){
       // The modal may be visible before its scene's asset mask is dismissed.
       // A user cannot switch language while that full-screen mask is active.
       await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
-      await page.evaluate(async()=>{const i=await import('./js/i18n.mjs');i.setLanguage('en');});
+      // A route bootstrap can finish navigation just after the game mask
+      // disappears. Only retry context teardown, not an actual locale failure.
+      for(let attempt=0;attempt<3;attempt++){
+        try{
+          await page.evaluate(async()=>{const i=await import('./js/i18n.mjs');i.setLanguage('en');});
+          break;
+        }catch(error){
+          if(!/Execution context was destroyed|Cannot find context with specified id/.test(String(error))||attempt===2)throw error;
+          await page.waitForLoadState('networkidle');
+          await page.locator('[data-artifact-choice-modal]').waitFor({state:'visible',timeout:12000});
+        }
+      }
       // Current modal copy uses the selected locale on creation; core dictionary
       // still must supply complete English copy without Russian fallback.
       assert.strictEqual(await page.evaluate(async()=>{const i=await import('./js/i18n.mjs');return i.t('artifacts.forkMaster.name');}),'Fork Master');
