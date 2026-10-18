@@ -57,7 +57,7 @@ jobs:
       - name: Verify Roster, both combat check auras, Arena, Starvation layouts and Event icons
         env:
           RPCHESS_GATE_PREFIX: /RPChess
-          RPCHESS_BROWSER_TEST: roster-browser.cjs,skirmish-browser.cjs,combat-side-colors-browser.cjs,arena-browser.cjs,starvation-browser.cjs,events-browser.cjs,puzzles-browser.cjs
+          RPCHESS_BROWSER_TEST: roster-browser.cjs,classic-chess-browser.cjs,skirmish-browser.cjs,combat-side-colors-browser.cjs,arena-browser.cjs,starvation-browser.cjs,events-browser.cjs,puzzles-browser.cjs
         run: npm run test:browser
       - name: Verify jester onboarding in RU/EN, desktop, compact and VK Mobile
         env:
