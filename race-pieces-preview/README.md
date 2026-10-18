@@ -62,3 +62,11 @@ Touch stability: highlighting a dragged piece now modifies existing cells instea
 - Acceptance tests assert personal badge retention, promotion artwork, and new pawn rewards on stale saved-run objects.
 
 Mobile drag reliability: after actual drag threshold the board captures the pointer and releases it after drop/cancel; ordinary tap-to-select still uses the square click. The existing desktop/mobile browser scenario waits for the actual dragged-piece preview and releases after paced movement, with no artificial move injection or bypassed assertions.
+
+
+## Full-viewport Training centering and selected King portrait (2026-10-18)
+- Training's old landscape right-anchored 100dvh chessboard is replaced with the same symmetric viewport-centered geometry as Combat/Arena; task and Settings occupy the left rail, with responsive rail widths.
+- Existing click/touch puzzle interaction and objectives remain unchanged.
+- The Power badge in Battle and Skirmish outcomes binds the current saved run's commanderId to the compressed commander portrait (no hardcoded Oathkeeper PNG).
+- Tests assert the Training board center and nonoverlap on 844x390 and 667x300, plus an Ash Regent portrait in Battle results.
+- No production main merge before owner visual confirmation.
