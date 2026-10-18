@@ -230,7 +230,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     });
     assert(await page.locator('[data-arena-board] [data-square="e1"].classic-square--check').count(),'checked king must show red highlight');
     const redAura=await page.locator('[data-arena-board] [data-square="e1"]').evaluate(element=>getComputedStyle(element,'::after').backgroundImage);
-    assert(!redAura.includes('aura_red.png'),'updated chess figures must signal check without the legacy decorative red aura');
+    assert(redAura.includes('aura_red.png'),'a king in check must retain the red aura even with the new illustration');
     await page.evaluate(()=>window.RPChessArena.engine.reset('7k/8/5KQ1/8/8/8/8/8 w - - 0 1'));
     await page.locator('[data-arena-board] [data-square="g6"]').click();
     await page.locator('[data-arena-board] [data-square="g7"]').click();
