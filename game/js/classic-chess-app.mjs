@@ -45,6 +45,7 @@ let selected = null;
 let selectedMoves = [];
 let moveLog = [];
 let pendingPromotion = null;
+let promotionArtResolver = null;
 let aiThinking = false;
 let visualAnimating = false;
 let gameGeneration = 0;
@@ -353,7 +354,8 @@ function openPromotion(from, to, color, choices) {
     button.className = 'classic-promotion-option';
     button.dataset.promotion = type;
     const image = document.createElement('img');
-    image.src = pieceAsset({ type, color });
+    // The chosen named pawn can become four different named figures.
+    image.src = promotionArtResolver?.(from,type,color) || pieceAsset({ type, color });
     image.alt = '';
     const label = document.createElement('span');
     label.textContent = pieceName(type);
@@ -555,6 +557,7 @@ function normalizeConfig(options = {}) {
 function newGame(fen = null, options = {}) {
   cancelAI();
   gameConfig = normalizeConfig(options);
+  promotionArtResolver = typeof options.promotionArtResolver==='function'?options.promotionArtResolver:null;
   engine = new ClassicChessEngine(fen, { blockedSquares: options.blockedSquares, chess960: options.chess960 });
   selected = null;
   selectedMoves = [];
