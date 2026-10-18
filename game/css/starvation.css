@@ -281,3 +281,44 @@
     margin-top: 18px;
   }
 }
+
+
+/* Approved death-screen polish: the outcome card owns the viewport center.
+   The previous grid reserved a row for a logo that is no longer rendered. */
+.starvation-screen:not([hidden]) {
+  display: grid;
+  place-items: center;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+.starvation-screen .starvation-shell {
+  width: min(1510px, 100%);
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  place-items: center;
+  gap: 0;
+}
+.starvation-screen .starvation-panel {
+  align-self: center;
+  justify-self: center;
+  max-height: min(670px, calc(100dvh - 28px));
+}
+@media (orientation: portrait) {
+  .starvation-screen:not([hidden]) {
+    height: auto;
+    min-height: 100dvh;
+    overflow-y: auto;
+  }
+  .starvation-screen .starvation-shell {
+    min-height: calc(100dvh - 24px);
+    height: auto;
+    grid-template-rows: auto;
+  }
+  .starvation-screen .starvation-panel {
+    max-height: none;
+  }
+}
