@@ -79,7 +79,7 @@ function attachPieceDrag(board, { canPick, onStart, onDrop }) {
       if (event.cancelable) event.preventDefault();
       // A release can synthesize a click after pointerup. Suppress just that click,
       // not an unrelated tap/click or keyboard activation.
-      suppressClick = { x:event.clientX, y:event.clientY, until:performance.now() + 450 };
+      suppressClick = { x:event.clientX, y:event.clientY, until:performance.now() + 90 };
     }
     reset();
     if (dragging && target && target.dataset.square !== from) onDrop(from, target.dataset.square);
