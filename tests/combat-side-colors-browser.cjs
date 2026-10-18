@@ -108,7 +108,7 @@ function assertAuras(state){
   assert.strictEqual(state.active,true,'combat board must activate overlay rules');
   for(const side of ['white','black']){
     const entry=state[side];
-    const dedicated=entry.art.includes('/pieces/board/')||/\/kings\/[^/]+\/pieces\/(?:white|black)\.webp$/.test(entry.art);
+    const dedicated=entry.art.includes('/pieces/board/')||/\/kings\/[^/]+\/pieces\/(?:white|black)\.webp$/.test(entry.art)||/\/heroes\/[^/]+\/pieces\/(?:white|black)\/(?:pawn|queen|rook|bishop|knight)\.webp$/.test(entry.art);
     if(dedicated){
       assert(!entry.image.includes('aura_'),`${side} newly illustrated chess piece must not use decorative auras`);
       assert.strictEqual(entry.glyphDisplay,'none',`${side} readable chess piece must hide its role glyph`);
@@ -142,10 +142,12 @@ async function assertNamedHeroBoardArt(page,playerColor){
   assert(named.some(hero=>hero.id?.startsWith('hero.')&&hero.source.includes('/heroes/')&&hero.source.endsWith('/piece_badge.png')),
     'named companions must use their existing personal piece_badge.png');
   for(const hero of named){
-    if(hero.id==='king.oathkeeper'){
-      assert(hero.incorrectlyGeneric,`${hero.id}: the new king sprite must suppress old glyph and glow`);
-      assert(!hero.markerVisible,`${hero.id}: the new king sprite must not display a legacy role glyph`);
-      assert(!hero.aura.includes('aura_'),`${hero.id}: no decorative aura is allowed behind the updated king`);
+    if(hero.id==='king.oathkeeper'||/\/heroes\/[^/]+\/pieces\/(?:white|black)\//.test(hero.source)){
+      assert(hero.incorrectlyGeneric,`${hero.id}: newly illustrated chess sprites must suppress old glyph and side glow`);
+      assert(!hero.markerVisible,`${hero.id}: updated chess sprites must not display a legacy role glyph`);
+      assert(!hero.aura.includes('aura_white')&&!hero.aura.includes('aura_black'),
+        `${hero.id}: no routine side aura is allowed behind updated pieces`);
+      if(hero.check)assert(hero.aura.includes('aura_red'),`${hero.id}: red check feedback must remain`);
       continue;
     }
     assert.strictEqual(hero.incorrectlyGeneric,false,`${hero.id}: legacy named hero artwork stays separate from new chess art`);
