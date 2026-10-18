@@ -123,5 +123,28 @@ async function clickMove(page,from,to,promotion=null){
 
   const mobile=await browser.newPage({viewport:{width:844,height:390}}),mobileErrors=[];mobile.on('pageerror',e=>mobileErrors.push(String(e.stack||e)));await fresh(mobile,'puzzles-browser-mobile');await seedPuzzleRoute(mobile,mate1Route);await mobile.locator('[data-roster-travel]').click();await mobile.locator('[data-puzzle-screen]:not([hidden])').waitFor();assert.strictEqual(await mobile.locator('[data-puzzle-roster]').count(),0,'obsolete Puzzle Roster shortcut must stay absent on landscape mobile');assert.strictEqual(await mobile.locator('[data-puzzle-board] [data-square]').count(),64);assert.strictEqual(await mobile.locator('[data-puzzle-board] .puzzle-coordinate--file').count(),8);assert.strictEqual(await mobile.locator('[data-puzzle-board] .puzzle-coordinate--rank').count(),8);const layout=await mobile.evaluate(()=>{const rect=node=>{const r=node?.getBoundingClientRect();return r?{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}:null},board=document.querySelector('[data-puzzle-board]'),panel=document.querySelector('.puzzle-layout>.puzzle-panel:first-child'),screen=document.querySelector('[data-puzzle-screen]');return{sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,sh:document.documentElement.scrollHeight,ch:document.documentElement.clientHeight,screen:rect(screen),board:rect(board),panel:rect(panel),panelScrollHeight:panel?.scrollHeight||0,panelClientHeight:panel?.clientHeight||0,panelOverflowY:panel?getComputedStyle(panel).overflowY:''};});assert(layout.sw<=layout.cw+1,`Puzzle landscape-mobile must not overflow horizontally: ${layout.sw}/${layout.cw}`);assert(layout.sh<=layout.ch+1,`Puzzle landscape-mobile must not page-scroll: ${layout.sh}/${layout.ch}`);const inside=box=>box&&box.left>=-1&&box.right<=layout.cw+1&&box.top>=-1&&box.bottom<=layout.ch+1;assert(inside(layout.screen)&&inside(layout.board)&&inside(layout.panel),'Puzzle screen, board and information frame must stay inside the viewport');assert(Math.abs(layout.board.width-layout.board.height)<=2,'Puzzle board must remain square');assert(Math.abs(layout.board.height-layout.ch)<=2&&Math.abs(layout.board.right-layout.cw)<=1,'Puzzle board must use full viewport height and touch the right edge');if(layout.panelScrollHeight>layout.panelClientHeight+1)assert(['auto','scroll'].includes(layout.panelOverflowY),'overflowing Puzzle copy must scroll inside the information frame');
 
+  // Long translated objectives must remain readable even on the shortest landscape phones.
+  for (const size of [{width:844,height:390},{width:667,height:300}]) {
+    await mobile.setViewportSize(size);
+    const fit=await mobile.evaluate(async()=>{
+      await document.fonts.ready;
+      const label=document.querySelector('[data-puzzle-compact-objective-label]');
+      const stars=document.querySelector('[data-puzzle-compact-stars]');
+      const previous=label.textContent,results=[];
+      for(const title of ['ЛУЧШЕЕ ПРОДОЛЖЕНИЕ','ВЫИГРАЙТЕ ♛','BEST CONTINUATION']){
+        label.textContent=title;
+        const rect=label.getBoundingClientRect(),starRect=stars.getBoundingClientRect(),css=getComputedStyle(label);
+        results.push({title,whiteSpace:css.whiteSpace,fontSize:parseFloat(css.fontSize),
+          scrollWidth:label.scrollWidth,clientWidth:label.clientWidth,
+          scrollHeight:label.scrollHeight,clientHeight:label.clientHeight,
+          overlapsStars:rect.right>starRect.left+1});
+      }
+      label.textContent=previous;
+      return results;
+    });
+    for(const result of fit)assert(result.whiteSpace!=='nowrap'&&result.fontSize>=14&&result.scrollWidth<=result.clientWidth+2&&result.scrollHeight<=result.clientHeight+2&&!result.overlapsStars,
+      `Puzzle objective must fit at ${size.width}×${size.height}: ${JSON.stringify(result)}`);
+  }
+
   assert.deepStrictEqual(errors,[]);assert.deepStrictEqual(resumeErrors,[]);assert.deepStrictEqual(mobileErrors,[]);console.log('Puzzles identity flow, catalog-derived move acceptance, accepted hidden source attribution, canonical wrong-move/resume state, removed obsolete Roster shortcut, compact hidden status, no-repeat history, reward/idempotency, reload resume and landscape-mobile one-screen acceptance: PASS');
 }finally{await browser.close();}})().catch(e=>{console.error(e.stack||e);process.exitCode=1});
