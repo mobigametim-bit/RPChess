@@ -79,6 +79,8 @@ body.run-combat-board-active .classic-square--selected:has(.classic-piece--new-r
 }
 body.run-combat-board-active .classic-square--check:has(.classic-piece--new-race)::after {
   /* Check is game-state feedback, NOT a decorative side aura: retain red for every king. */
+  --combat-piece-glow-side:red;
+  --combat-aura-image:url('../assets/vfx/aura_red.png');
   background:url('../assets/vfx/aura_red.png') center/100% 100% no-repeat!important;
   opacity:.72!important;
 }
