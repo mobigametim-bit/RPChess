@@ -1,6 +1,7 @@
 import { ChessAIAdapter } from './chess-ai-adapter.mjs';
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { RACE_TAGS, RACE_LABELS, racePiecePath, boardRacePiecePath, applyRaceBoardTheme } from './race-assets.mjs';
+import { attachPieceDrag } from './piece-drag.mjs';
 import { ARTIFACTS, artifactById, combatArtifactOffer } from './artifact-core.mjs';
 import { renderThreatOverlay } from './artifact-combat-ui.mjs';
 import { applyPinIce } from './king-pin-ice.mjs';
@@ -285,6 +286,14 @@ async function aiTurn(){
 }
 function enter(){state=read();engine=null;selected=null;section=Math.floor((OPPONENT_BY_ID.get(state.match?.foe)?.index??arenaSummary(state).highest)/7);notice='';visible(true);if(state.match?.phase==='result')dialogType='result';else if(state.match?.phase==='offer')dialogType='offer';else restoreMatch();render();globalThis.RPChessLoading?.requestVisibleAssets?.();if(!root.querySelector('[data-arena-catalog]')?.hidden)globalThis.dispatchEvent?.(new CustomEvent('rpchess:arena-catalog-shown'));}
 function leave(){adapter.stop();searchId++;thinking=false;stopMoveAnimation();engine=null;closeDialog();visible(false);}
+
+attachPieceDrag(board, {
+  canPick: square => Boolean(!root?.hidden && !dialogType && engine && state.match?.phase === 'playing' && !animating && !thinking &&
+    engine.turn() === state.match.playerColor && engine.pieceAt(square)?.color === state.match.playerColor),
+  onStart: square => { selected = square; renderBoard(); },
+  onDrop: (from,to) => commit(from,to)
+});
+
 root?.addEventListener('click',event=>{
   const target=event.target.closest('button');if(!target||target.disabled)return;
   if(target.dataset.arenaBack!==undefined){leave();return;}
