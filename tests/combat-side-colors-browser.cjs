@@ -49,13 +49,20 @@ async function prepState(page,type){
 }
 async function combatAuraState(page){
   return page.evaluate(()=>{
-    const white=document.querySelector('.classic-square:has(.classic-piece-marker--w)');
-    const black=document.querySelector('.classic-square:has(.classic-piece-marker--b)');
+    const cells=[...document.querySelectorAll('.classic-square')];
+    const chosen=(side)=>{
+      const color=side==='white'?'w':'b';
+      return cells.find(square=>{
+        const art=square.querySelector('.classic-piece')?.getAttribute('src')||'';
+        return art.includes(`/pieces/board/${side}/`)||art.includes(`/pieces/${side}.webp`);
+      })||document.querySelector(`.classic-square:has(.classic-piece-marker--${color})`);
+    };
+    const white=chosen('white'),black=chosen('black');
     const state=(node)=>node?{
       side:getComputedStyle(node).getPropertyValue('--combat-piece-glow-side').trim(),
       image:getComputedStyle(node,'::after').backgroundImage||'',
       art:node.querySelector('.classic-piece')?.getAttribute('src')||'',
-      glyphDisplay:getComputedStyle(node.querySelector('.classic-piece-marker')).display
+      glyphDisplay:node.querySelector('.classic-piece-marker')?getComputedStyle(node.querySelector('.classic-piece-marker')).display:'none'
     }:{side:'',image:''};
     return{
       active:document.body.classList.contains('run-combat-board-active'),
@@ -100,13 +107,15 @@ function assertPrep(state,side){
 function assertAuras(state){
   assert.strictEqual(state.active,true,'combat board must activate overlay rules');
   for(const side of ['white','black']){
-    const entry=state[side];assert.strictEqual(entry.side,side);
-    if(entry.art.includes('/pieces/board/')){
-      assert(!entry.image.includes('aura_'),`${side} new chess piece must not use decorative auras`);
-      assert.strictEqual(entry.glyphDisplay,'none',`${side} readable chess piece must hide the corner glyph`);
+    const entry=state[side];
+    const dedicated=entry.art.includes('/pieces/board/')||/\/kings\/[^/]+\/pieces\/(?:white|black)\.webp$/.test(entry.art);
+    if(dedicated){
+      assert(!entry.image.includes('aura_'),`${side} newly illustrated chess piece must not use decorative auras`);
+      assert.strictEqual(entry.glyphDisplay,'none',`${side} readable chess piece must hide its role glyph`);
     }else{
-      assert(entry.image.includes(`aura_${side}.png`),`${side} named hero must retain its original side aura`);
-      assert.notStrictEqual(entry.glyphDisplay,'none',`${side} named hero must retain the corner glyph`);
+      assert.strictEqual(entry.side,side);
+      assert(entry.image.includes(`aura_${side}.png`),`${side} old named hero must retain aura until replaced`);
+      assert.notStrictEqual(entry.glyphDisplay,'none',`${side} old named hero must retain glyph until replaced`);
     }
   }
 }
@@ -128,17 +137,22 @@ async function assertNamedHeroBoardArt(page,playerColor){
       };
     });
   });
-  assert(named.some(hero=>hero.id==='king.oathkeeper'&&hero.source.includes('/kings/oathkeeper/piece.png')),
-    'named Run King must use its original king piece.png on the board');
+  assert(named.some(hero=>hero.id==='king.oathkeeper'&&hero.source.includes(`/kings/oathkeeper/pieces/${playerColor==='w'?'white':'black'}.webp`)),
+    'Run King must use the selected commander sprite matching his white/black side');
   assert(named.some(hero=>hero.id?.startsWith('hero.')&&hero.source.includes('/heroes/')&&hero.source.endsWith('/piece_badge.png')),
     'named companions must use their existing personal piece_badge.png');
   for(const hero of named){
-    assert.strictEqual(hero.incorrectlyGeneric,false,`${hero.id}: named artwork must not carry the generic race CSS class`);
-    assert(hero.markerVisible,`${hero.id}: legacy role glyph must be visible`);
-    // The red check aura correctly overrides a named king's side aura.
+    if(hero.id==='king.oathkeeper'){
+      assert(hero.incorrectlyGeneric,`${hero.id}: the new king sprite must suppress old glyph and glow`);
+      assert(!hero.markerVisible,`${hero.id}: the new king sprite must not display a legacy role glyph`);
+      assert(!hero.aura.includes('aura_'),`${hero.id}: no decorative aura is allowed behind the updated king`);
+      continue;
+    }
+    assert.strictEqual(hero.incorrectlyGeneric,false,`${hero.id}: legacy named hero artwork stays separate from new chess art`);
+    assert(hero.markerVisible,`${hero.id}: legacy glyph remains until that hero is replaced`);
     const expectedSide=hero.check?'red':(playerColor==='w'?'white':'black');
     assert(hero.aura.includes(`aura_${expectedSide}.png`),
-      `${hero.id}: expected ${expectedSide} aura; got ${JSON.stringify(hero)}`);
+      `${hero.id}: legacy hero keeps ${expectedSide} aura; got ${JSON.stringify(hero)}`);
   }
 }
 function assertRedCheckAura(state){
@@ -186,6 +200,6 @@ function assertAuraAssets(responses){
     await assertNamedHeroBoardArt(skirmish,'w');
     assert.deepStrictEqual(skirmishErrors,[]);
 
-    console.log('Combat side colors: PASS — automatic teams, named hero art retains glyphs/side auras, regular race sprites omit them, and checks remain');
+    console.log('Combat side colors: PASS — updated kings and race sprites omit glyphs/auras; unreplaced heroes retain legacy visuals');
   }finally{await browser.close();}
 })().catch((error)=>{console.error(error.stack||error);process.exitCode=1;});
