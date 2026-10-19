@@ -86,6 +86,24 @@ function bestChronicleRun(chronicle) {
   return records.sort(compareChronicleRecords)[0] || null;
 }
 
+// An ongoing Journey may compete for Glory, without becoming a completed
+// Chronicle entry. This is a ranking candidate only, not a run-end record.
+function activeLeaderboardRecord(run, { power = 0 } = {}) {
+  if (!run || run.ended || typeof run.id !== 'string' || !run.id) return null;
+  const week = safeInteger(run.journeyStep), normalizedPower = safeInteger(power);
+  return {
+    runId: run.id,
+    playerName: playerNameForRun(run),
+    week, power: normalizedPower, glory: gloryForRun(week, normalizedPower),
+    completedAt: 0
+  };
+}
+
+function bestLeaderboardRecord(chronicle, run, { power = 0 } = {}) {
+  const candidates = [bestChronicleRun(chronicle), activeLeaderboardRecord(run, { power })].filter(Boolean);
+  return candidates.sort(compareChronicleRecords)[0] || null;
+}
+
 function completedRunRecord(run, { power = 0, completedAt = Date.now() } = {}) {
   if (!run?.ended || typeof run.id !== 'string' || !run.id) return null;
   const week = safeInteger(run.journeyStep);
@@ -141,6 +159,8 @@ export {
   writeChronicle,
   compareChronicleRecords,
   bestChronicleRun,
+  activeLeaderboardRecord,
+  bestLeaderboardRecord,
   completedRunRecord,
   recordCompletedRun,
   activeRunSnapshot
