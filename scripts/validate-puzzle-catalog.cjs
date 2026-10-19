@@ -24,7 +24,7 @@ async function main(){
   assert.deepStrictEqual(meta.starTotals,EXPECTED_STAR_TOTALS);
 
   const ids=new Set(),sourceIds=new Set();
-  const typeTotals=Object.fromEntries(core.PUZZLE_TYPES.map(type=>[type,0]));
+  const typeTotals=Object.fromEntries(Object.keys(EXPECTED_TYPE_TOTALS).map(type=>[type,0]));
   const starTotals=Object.fromEntries(Array.from({length:12},(_,i)=>[i+1,0]));
   for(const puzzle of catalog){
     assert(core.isNormalizedPuzzle(puzzle),`invalid normalized puzzle: ${puzzle?.id}`);
@@ -42,7 +42,7 @@ async function main(){
 
   // Lightweight engine smoke only: one representative line per supported type.
   // Full 11,498-line replay lives in scripts/validate-puzzle-catalog-full.cjs and is not part of the regular build gate.
-  for(const type of core.PUZZLE_TYPES){
+  for(const type of Object.keys(EXPECTED_TYPE_TOTALS)){
     const puzzle=catalog.find(item=>item.type===type);
     assert(puzzle,`missing representative type ${type}`);
     const engine=new engineModule.ClassicChessEngine(puzzle.fen);

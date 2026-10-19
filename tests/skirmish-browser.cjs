@@ -55,11 +55,12 @@ async function enter(page) {
   const card = page.locator('[data-travel-type="skirmish"]').first();
   assert.strictEqual(await card.count(), 1);
   await card.click();
-  await page.locator('[data-skirmish-screen]:not([hidden])').waitFor();
+  await page.locator('[data-artifact-choice-modal]').waitFor();
+  assert.strictEqual(await page.locator('[data-skirmish-screen]').isHidden(),true,'Skirmish preparation is skipped');
 }
 
 async function launch(page) {
-  await page.locator('[data-skirmish-start]').click();
+  assert.strictEqual(await page.locator('[data-artifact-choice-modal]').isVisible(),true);
   // New combat routes always offer an artifact decision, including the
   // deliberately effect-free option. This acceptance flow covers the latter.
   await page.locator('[data-artifact-choice="none"]').click();
@@ -105,9 +106,8 @@ async function assertCompactDesktopStars(page) {
 
     await fresh(page, { playerColor: 'w', stars: 12, race: 'orcs', runId: 'skirmish-event-1' });
     await enter(page);
-    assert.strictEqual(await page.locator('[data-skirmish-character]').count(), 6);
-    assert.strictEqual((await page.locator('[data-skirmish-piece-count]').innerText()).trim(), '6 / 16');
-    await assertCompactDesktopStars(page);
+    assert.strictEqual((await page.evaluate(()=>globalThis.RPChessSkirmish.selectedIds)).length,6,'automatic Skirmish selects all eligible starter characters');
+    assert.strictEqual((await page.evaluate(()=>globalThis.RPChessSkirmish.encounter.stars)),12);
     await launch(page);
     const plan = await page.evaluate(() => globalThis.RPChessSkirmish.battlePlan);
     assert.strictEqual(plan.playerColor, 'w');
@@ -120,12 +120,23 @@ async function assertCompactDesktopStars(page) {
       const piece = plan.enemyFormation.find((entry) => entry.pieceType === 'king');
       return document.querySelector(`[data-square="${piece.square}"] .classic-piece`)?.getAttribute('src') || '';
     });
-    assert(enemySrc.includes('assets/races/orcs/pieces/king.png'), 'enemy Skirmish art must come from race library');
+    assert(enemySrc.includes('assets/races/orcs/pieces/board/black/king.png'), 'enemy Skirmish art must come from race library');
     const personalized = await page.evaluate(() => globalThis.RPChessSkirmish.battlePlan.playerFormation.map(({ id, square }) => ({
       id,
       src: document.querySelector(`[data-square="${square}"] .classic-piece`)?.getAttribute('src') || ''
     })));
-    assert(personalized.find((entry) => entry.id === 'king.oathkeeper').src.includes('assets/kings/oathkeeper/piece.png'));
+    assert(personalized.find((entry) => entry.id === 'king.oathkeeper').src.includes('assets/kings/oathkeeper/pieces/white.webp'),'selected white-side Run King must use the new white chess sprite in Skirmish');
+    for(const id of ['mara_chain','nemea_quill']){
+      const src=personalized.find(entry=>entry.id===`hero.${id}`)?.src||'';
+      assert(src.includes(`assets/heroes/${id}/pieces/white/pawn.webp`),
+        `white-side Skirmish must show the new pawn illustration of ${id}`);
+    }
+    const pawnVisuals=await page.evaluate(()=>[...document.querySelectorAll('[data-chess-board] .classic-piece--personalized')]
+      .filter(img=>img.getAttribute('src')?.includes('/heroes/')&&img.getAttribute('src')?.includes('/pieces/white/pawn.webp'))
+      .map(img=>({marker:!!img.closest('.classic-square')?.querySelector('.classic-piece-marker'),
+        newArt:img.classList.contains('classic-piece--new-race')})));
+    assert(pawnVisuals.length>=2&&pawnVisuals.every(item=>!item.marker&&item.newArt),
+      'updated named pawns must suppress legacy glyphs and side auras');
     await page.evaluate(() => globalThis.RPChessSkirmish.finishBattle({ over: true, type: 'stalemate', winner: null }));
     await page.locator('[data-skirmish-aftermath]:not([hidden])').waitFor();
     assert.strictEqual((await page.locator('[data-aftermath-continue]').innerText()).trim(), 'Продолжить путь');
@@ -143,7 +154,7 @@ async function assertCompactDesktopStars(page) {
     black.on('pageerror', (error) => blackErrors.push(String(error.stack || error)));
     await fresh(black, { playerColor: 'b', stars: 8, race: 'elves' });
     await enter(black);
-    assert((await black.locator('[data-skirmish-description]').innerText()).includes('оборону'));
+    assert.strictEqual((await black.evaluate(()=>globalThis.RPChessSkirmish.encounter.playerColor)),'b');
     await launch(black);
     const blackState = await black.evaluate(() => ({
       plan: globalThis.RPChessSkirmish.battlePlan,
@@ -161,15 +172,27 @@ async function assertCompactDesktopStars(page) {
       const piece = plan.enemyFormation.find((entry) => entry.pieceType === 'king');
       return document.querySelector(`[data-square="${piece.square}"] .classic-piece`)?.getAttribute('src') || '';
     });
-    assert(blackEnemy.includes('assets/races/elves/pieces/king.png'));
+    assert(blackEnemy.includes('assets/races/elves/pieces/board/white/king.png'),'black-side Skirmish uses new white-colored race chess king sprites for its enemy');
+    const blackPlayerKing=await black.evaluate(()=>{
+      const plan=globalThis.RPChessSkirmish.battlePlan;
+      const king=plan.playerFormation.find(entry=>entry.id==='king.oathkeeper');
+      return document.querySelector(`[data-square="${king.square}"] .classic-piece`)?.getAttribute('src')||'';
+    });
+    assert(blackPlayerKing.includes('assets/kings/oathkeeper/pieces/black.webp'),'selected black-side Run King must use his matching dark sprite');
+    const blackPawn=await black.evaluate(()=>{
+      const plan=globalThis.RPChessSkirmish.battlePlan;
+      const named=plan.playerFormation.find(piece=>piece.id==='hero.mara_chain');
+      return document.querySelector(`[data-square="${named.square}"] .classic-piece`)?.getAttribute('src')||'';
+    });
+    assert(blackPawn.includes('assets/heroes/mara_chain/pieces/black/pawn.webp'),
+      'black-side Skirmish must select Mara own dark pawn, not her white image');
 
     const wounded = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     const woundedErrors = [];
     wounded.on('pageerror', (error) => woundedErrors.push(String(error.stack || error)));
     await fresh(wounded, { woundedKing: true });
     await enter(wounded);
-    assert.strictEqual(await wounded.locator('[data-skirmish-character="king.oathkeeper"]').getAttribute('aria-pressed'), 'true');
-    assert.strictEqual(await wounded.locator('[data-skirmish-start]').isDisabled(), false);
+    assert((await wounded.evaluate(()=>globalThis.RPChessSkirmish.selectedIds)).includes('king.oathkeeper'),'wounded mandatory king remains in the automatically chosen team');
     await launch(wounded);
 
     const mobile = await browser.newPage({ viewport: { width: 844, height: 390 } });
@@ -177,35 +200,12 @@ async function assertCompactDesktopStars(page) {
     mobile.on('pageerror', (error) => mobileErrors.push(String(error.stack || error)));
     await fresh(mobile, { stars: 12 });
     await enter(mobile);
-    const layout = await mobile.evaluate(() => {
-      const screen = document.querySelector('[data-skirmish-screen]');
-      const formation = document.querySelector('[data-skirmish-formation]');
-      const selection = document.querySelector('.skirmish-selection');
-      const selected = document.querySelector('.skirmish-selected');
-      const start = document.querySelector('[data-skirmish-start]');
-      const rect = (node) => { const box=node?.getBoundingClientRect(); return box ? {left:box.left,right:box.right,top:box.top,bottom:box.bottom} : null; };
-      return {
-        sw: document.documentElement.scrollWidth,
-        cw: document.documentElement.clientWidth,
-        sh: document.documentElement.scrollHeight,
-        ch: document.documentElement.clientHeight,
-        screen:rect(screen),
-        formation:rect(formation),
-        selection:rect(selection),
-        start:rect(start),
-        selectedScrollHeight:selected?.scrollHeight || 0,
-        selectedClientHeight:selected?.clientHeight || 0,
-        selectedOverflowY:selected ? getComputedStyle(selected).overflowY : ''
-      };
-    });
-    assert(layout.sw <= layout.cw + 1);
-    assert(layout.sh <= layout.ch + 1, `mobile landscape Skirmish prep must not page-scroll: ${layout.sh}/${layout.ch}`);
-    const insideViewport = (box) => box && box.left >= -1 && box.right <= layout.cw + 1 && box.top >= -1 && box.bottom <= layout.ch + 1;
-    assert(insideViewport(layout.screen), 'Skirmish screen must stay inside the viewport');
-    assert(insideViewport(layout.formation), 'full Skirmish formation preview must stay inside the viewport');
-    assert(insideViewport(layout.selection), 'Skirmish selection frame must stay inside the viewport');
-    assert(insideViewport(layout.start), 'Skirmish Start CTA must stay inside the viewport');
-    if (layout.selectedScrollHeight > layout.selectedClientHeight + 1) assert(['auto','scroll'].includes(layout.selectedOverflowY), 'overflowing selected-fighter list must scroll inside its frame');
+    await mobile.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
+    const overlay=await mobile.locator('[data-artifact-choice-modal] .artifact-choice-panel').boundingBox();
+    assert(overlay&&overlay.y>=-1&&overlay.y+overlay.height<=391,'artifact decision fits the mobile viewport without preparation');
+    assert.strictEqual(await mobile.locator('[data-skirmish-screen]').isHidden(),true);
+    await launch(mobile);
+    assert.strictEqual(await mobile.locator('[data-classic-screen]').isVisible(),true);
 
     assert.deepStrictEqual(errors, []);
     assert.deepStrictEqual(blackErrors, []);

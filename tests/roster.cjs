@@ -40,8 +40,63 @@ class MemoryStorage {
   }
 
   const storage = new MemoryStorage();
+  const formation = await import(pathToFileURL(path.join(game,'js/roster-formation-core.mjs')).href);
+  const skirmishCore = await import(pathToFileURL(path.join(game,'js/skirmish-core.mjs')).href);
   const run = persistence.createRun({ now: 1000, id: 'run-test' });
   assert.strictEqual(run.id, 'run-test');
+  const initialFormation=formation.normalizedFormation(run);
+  assert.strictEqual(Object.keys(initialFormation.squares).length,6,'initial Roster shows all six named heroes');
+  assert.strictEqual(initialFormation.squares.e1,'king.oathkeeper');
+  assert.deepStrictEqual(initialFormation.bench,[],'healthy starter party needs no reserves');
+  assert.strictEqual(formation.placementForColor('a2','b'),'a7','saved formation mirrors ranks for black');
+  const moved=formation.moveFormation(run,'hero.aldric_wall','h2');
+  assert(moved.ok,'can reposition hero on two-rank board');
+  assert.strictEqual(formation.normalizedFormation(moved.run).squares.h2,'hero.aldric_wall');
+  const benched=formation.moveFormation(moved.run,'hero.mara_chain',null);
+  assert(benched.ok,'hero can move from board to reserves');
+  assert(!formation.formationSelectedIds(benched.run).includes('hero.mara_chain'));
+  assert(formation.normalizedFormation(benched.run).bench.some(c=>c.id==='hero.mara_chain'));
+  assert.strictEqual(formation.moveFormation(benched.run,'king.oathkeeper',null).reason,'king_required','king cannot enter reserves');
+  const blackPlan=skirmishCore.createBattlePlan({
+    roster:benched.run.roster,selectedIds:formation.formationSelectedIds(benched.run),
+    formation:formation.normalizedFormation(benched.run).squares,
+    encounter:{seed:'roster-black-preview',stars:2,playerColor:'b',enemyColor:'w'}
+  });
+  assert.strictEqual(blackPlan.playerFormation.find(c=>c.id==='hero.aldric_wall').square,'h7',
+    'repositioned hero uses mirrored square in black-side Skirmish');
+  assert(!blackPlan.playerFormation.some(c=>c.id==='hero.mara_chain'),'benched hero is absent from combat');
+  const woundedFormation=formation.normalizedFormation({...benched.run,roster:benched.run.roster.map(c=>
+    c.id==='hero.aldric_wall'?{...c,status:'wounded'}:c)});
+  assert(woundedFormation.wounded.some(c=>c.id==='hero.aldric_wall'),'wounded hero leaves the field for Wounded section');
+  assert(!Object.values(woundedFormation.squares).includes('hero.aldric_wall'));
+  // A pawn may only start on the second rank; swapping cannot smuggle it home.
+  const pawnStart=Object.entries(initialFormation.squares).find(([,id])=>id==='hero.mara_chain')[0];
+  assert(pawnStart.endsWith('2'));
+  assert.strictEqual(formation.moveFormation(run,'hero.mara_chain','a1').reason,'pawn_rank',
+    'reject swaps that would put a pawn on the first rank');
+  const extraBishop={...roster.find(c=>c.pieceType==='bishop'),id:'hero.extra_bishop',name:'Second bishop'};
+  const bishopsRun={...run,roster:[...run.roster,extraBishop]};
+  const bishopsFormation=formation.normalizedFormation(bishopsRun);
+  const bishopSquares=Object.entries(bishopsFormation.squares).filter(([,id])=>[extraBishop.id,'hero.brother_orell'].includes(id));
+  assert.strictEqual(bishopSquares.length,2);
+  assert.notStrictEqual(formation.squareColor(bishopSquares[0][0]),formation.squareColor(bishopSquares[1][0]),
+    'two bishops must occupy opposite square colors on the Roster board');
+  assert.strictEqual(formation.moveFormation(bishopsRun,extraBishop.id,'a1').reason,'bishop_color',
+    'swapping two same-colored-square bishops must be rejected');
+  assert(formation.moveFormation(bishopsRun,extraBishop.id,'b1').ok,
+    'a bishop may move to a legal opposite-color cell');
+  const badSave={...bishopsRun,rosterFormation:{squares:{a1:'hero.mara_chain',c1:'hero.brother_orell',g1:extraBishop.id,e1:'king.oathkeeper'},reserveIds:[]}};
+  const repaired=formation.normalizedFormation(badSave);
+  const repairedBishops=Object.entries(repaired.squares).filter(([,id])=>[extraBishop.id,'hero.brother_orell'].includes(id));
+  assert(Object.values(repaired.squares).includes('hero.mara_chain'));
+  assert(Object.entries(repaired.squares).every(([sq,id])=>id!=='hero.mara_chain'||sq.endsWith('2')),
+    'older saves with first-rank pawns automatically normalize to legal deployment');
+  assert.notStrictEqual(formation.squareColor(repairedBishops[0][0]),formation.squareColor(repairedBishops[1][0]),
+    'older saves with same-colored bishops automatically reassign second bishop');
+  const savedFormation=persistence.writeRun(benched.run,new MemoryStorage(),1211);
+  assert.deepStrictEqual(formation.normalizedFormation(savedFormation).squares,formation.normalizedFormation(benched.run).squares,
+    'run persistence keeps manual formation coordinates');
+
   assert.strictEqual(run.selectedCharacterId, 'king.oathkeeper');
   assert.strictEqual(run.ended, false, 'new run must start active');
   assert.strictEqual(run.skirmishCount, 0, 'new run must start before the first Skirmish');
@@ -95,7 +150,7 @@ class MemoryStorage {
   const uiSource = fs.readFileSync(path.join(game, 'localization/ui.mjs'), 'utf8');
   const css = fs.readFileSync(path.join(game, 'css/roster.css'), 'utf8');
   const foundationCss = fs.readFileSync(path.join(game, 'css/reboot-foundation.css'), 'utf8');
-  for (const token of ['data-roster-screen', 'data-continue-run', 'data-roster-detail', 'data-roster-list', 'data-roster-filter="dead"', 'data-roster-travel', 'Начать путешествие', 'js/roster-app.mjs', 'css/roster.css']) {
+  for (const token of ['data-roster-screen', 'data-continue-run', 'data-roster-detail', 'data-roster-list', 'roster-formation-ui', 'data-roster-travel', 'Начать путешествие', 'js/roster-app.mjs', 'css/roster.css', 'css/roster-formation.css']) {
     assert(html.includes(token), `Roster HTML contract missing: ${token}`);
   }
   for (const forbidden of ['Применить состав', 'Именные фигуры, которые путешествуют вместе с вашим королём', 'Обязательная фигура текущего забега.', 'Готов к участию в будущих сражениях.']) {
@@ -103,8 +158,12 @@ class MemoryStorage {
   }
   assert(app.includes("import { subscribe, t, translateLegacy } from './i18n.mjs'"),'Roster owner must render UI keys and content translations explicitly');
   for(const key of ['roster.ariaLabel','roster.filter.all','roster.journey','roster.returnSettlement','roster.commandPoints','roster.inFormation','piece.king','status.wounded'])assert(uiSource.includes(`'${key}'`),`localization registry missing Roster key: ${key}`);
-  for(const key of ['roster.ariaLabel','roster.journey','roster.commandPoints','roster.cardAria'])assert(app.includes(`t('${key}'`)||app.includes(`t(\`${key}`),`Roster owner must call t() for ${key}`);
-  assert(app.includes('t(`roster.filter.${filter}`)'),'Roster owner must derive filter labels from the keyed localization family');
+  for(const key of ['roster.ariaLabel','roster.journey'])assert(app.includes(`t('${key}'`)||app.includes(`t(\`${key}`),`Roster owner must call t() for ${key}`);
+  assert(app.includes('PIECE_GLYPHS[character.pieceType]')&&app.includes("glyph.className = 'roster-detail__piece-glyph'"),
+    'Roster detail must use glyph matching selected role');
+  assert(!app.includes("t('roster.commandPoints')"),'Removed Roster Command Points frame must not render');
+  assert(app.includes('renderFormationUI(rosterList,activeRun'),'Roster owner must render the real board instead of the old card/filter grid');
+  assert(!app.includes('data-roster-filter'),'removed Roster filter buttons must not survive in runtime');
   assert(app.includes('subscribe(() =>')&&app.includes('contentText(heroNoteForId(character.id) || character.description)'),'Roster language changes must rerender owner UI and translated content without relying on document mutation');
   assert(!/journeyButton\.textContent\s*=\s*['"](?:Вернуться в поселение|В путь|Загрузка пути…)/.test(app),'Roster journey labels must not be hardcoded in runtime');
   assert(!/status\.textContent\s*=\s*STATUS_LABELS\[character\.status\]/.test(app),'Roster status presentation must use localized owner labels');
@@ -123,7 +182,8 @@ class MemoryStorage {
   assert(foundationCss.includes('--ui-panel-safe-left'), 'global frameless safe-area tokens are missing');
   assert(!css.includes('ui_panel_frame.png') && !css.includes('ui_panel_wide.png'), 'Roster must never use ornate panel frame assets');
   assert(css.includes("body.roster-active #app main.roster-screen .roster-catalog"), 'accepted compact Roster catalog layout must live in roster.css');
-  assert(css.includes('grid-template-rows: minmax(145px,1fr) auto !important'), 'accepted compact Roster card height contract must live in roster.css');
+  const formationCss=fs.readFileSync(path.join(game,'css/roster-formation.css'),'utf8');
+  assert(formationCss.includes('.rfc-board')&&formationCss.includes('.rfc-section--dead'),'new Roster board and status groups need their own responsive styling');
   assert(!fs.existsSync(path.join(game,'js/content/post-pages-ui-review2.mjs')), 'superseded review2 compatibility module must stay deleted');
   assert(!fs.existsSync(path.join(game,'js/post-pages-ui-polish.mjs')), 'retired post-pages presentation shim must stay deleted');
   assert(!fs.existsSync(path.join(game,'js/presentation-bootstrap.mjs')), 'retired presentation bootstrap must stay deleted');

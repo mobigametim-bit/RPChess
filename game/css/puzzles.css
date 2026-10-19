@@ -493,3 +493,113 @@ html body .puzzle-piece-marker--b::before {
     justify-self:start!important;
   }
 }
+/* The dedicated white/black puzzle sprites make technical corner figurines unnecessary. */
+html body .puzzle-square:has(.puzzle-piece--new-race) .puzzle-piece-marker {
+  display:none!important;
+}
+
+/* Puzzle objective fit: scale to the available panel width and wrap long RU/EN titles.
+   Avoid fixed single-line ellipsis (e.g. «ЛУЧШЕЕ ПРОДОЛЖЕНИЕ») on compact screens. */
+@media (orientation:landscape) {
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-polish-objective {
+    container-type:inline-size;
+  }
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-polish-objective strong {
+    min-width:0!important;
+    max-width:100%!important;
+    font-size:clamp(15px,5.7cqi,30px)!important;
+    line-height:1.1!important;
+    white-space:normal!important;
+    text-wrap:balance;
+    overflow-wrap:anywhere!important;
+    overflow:visible!important;
+    text-overflow:clip!important;
+  }
+}
+
+/* Accepted full-viewport centered Training board (matching centered Combat).
+   Old two-column landscape rules aligned this board against the RIGHT edge;
+   reserve balanced rails so the 8x8 square is centered in the whole viewport. */
+@media (orientation:landscape) {
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen {
+    --puzzle-rail-min:clamp(160px,18vw,380px);
+    --puzzle-centered-board:min(100dvh,calc(100vw - var(--puzzle-rail-min) - var(--puzzle-rail-min)));
+    --puzzle-side-space:calc((100vw - var(--puzzle-centered-board)) / 2);
+    --puzzle-rail-inset:clamp(8px,1.6vw,28px);
+    --puzzle-rail-width:min(440px,calc(var(--puzzle-side-space) - var(--puzzle-rail-inset) - 8px));
+  }
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-shell {
+    width:100vw!important;
+    max-width:none!important;
+    height:100dvh!important;
+    min-height:0!important;
+    padding:0!important;
+    box-sizing:border-box!important;
+    grid-template-columns:minmax(0,1fr) var(--puzzle-centered-board) minmax(0,1fr)!important;
+    column-gap:0!important;
+  }
+  /* ui-redesign-final.css restores display:grid on .puzzle-layout at desktop
+     widths. That traps the board in a nested grid in the LEFT viewport rail.
+     Flatten it so the board is a direct child of the viewport-wide shell. */
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-layout {
+    display:contents!important;
+    grid-template-columns:none!important;
+    grid-template-rows:none!important;
+    gap:0!important;
+    margin:0!important;
+    padding:0!important;
+  }
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-board-wrap {
+    position:relative!important;
+    top:auto!important;
+    right:auto!important;
+    bottom:auto!important;
+    left:auto!important;
+    transform:none!important;
+    grid-column:2!important;
+    grid-row:1 / 4!important;
+    width:var(--puzzle-centered-board)!important;
+    height:var(--puzzle-centered-board)!important;
+    max-width:none!important;
+    min-width:0!important;
+    justify-self:center!important;
+    align-self:center!important;
+    margin:0!important;
+    padding:0!important;
+    box-sizing:border-box!important;
+  }
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-board {
+    /* Earlier ux-consistency pinned the board itself to the viewport's right edge. */
+    position:absolute!important;
+    top:0!important;
+    right:auto!important;
+    bottom:auto!important;
+    left:0!important;
+    transform:none!important;
+    width:var(--puzzle-centered-board)!important;
+    height:var(--puzzle-centered-board)!important;
+    min-width:0!important;
+    min-height:0!important;
+    max-width:var(--puzzle-centered-board)!important;
+    max-height:var(--puzzle-centered-board)!important;
+    aspect-ratio:1!important;
+    box-sizing:border-box!important;
+  }
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-topbar,
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-heading,
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-layout>.puzzle-panel:first-child,
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-outcome {
+    left:var(--puzzle-rail-inset)!important;
+    right:auto!important;
+    width:var(--puzzle-rail-width)!important;
+    max-width:var(--puzzle-rail-width)!important;
+    box-sizing:border-box!important;
+  }
+  html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-layout>.puzzle-panel:first-child {
+    /* Ignore retired mobile fixed positioning based on an edge-aligned board.
+       Long multi-language task copy scrolls inside the frame, not offscreen. */
+    position:absolute!important;
+    max-height:calc(100dvh - 78px)!important;
+    overflow-y:auto!important;
+  }
+}

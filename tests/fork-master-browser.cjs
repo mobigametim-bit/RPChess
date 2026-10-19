@@ -60,14 +60,25 @@ async function verifyBoard(page,selector,label,arena=false){
       },{type,id});
       if(type==='caravan')await page.evaluate(async()=>{const i=await import('./js/i18n.mjs');i.setLanguage('en');});
       await page.locator('[data-roster-travel]').click();await page.locator(`[data-travel-type="${type}"]`).first().click();
-      await page.locator(type==='skirmish'?'[data-skirmish-start]':'[data-battle-start]').click();
+      await page.locator('[data-artifact-choice-modal]').waitFor();
       await page.setViewportSize({width:667,height:375});const card=page.locator(`[data-artifact-choice="${id}"]`);await card.waitFor();
       assert((await card.innerText()).includes(type==='caravan'?'Fork Master':'Мастер вилок'));
       if(type==='caravan')assert(!/[А-Яа-яЁё]/.test(await card.innerText()),'English artifact card must not leak Russian');
       // The modal may be visible before its scene's asset mask is dismissed.
       // A user cannot switch language while that full-screen mask is active.
       await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
-      await page.evaluate(async()=>{const i=await import('./js/i18n.mjs');i.setLanguage('en');});
+      // A route bootstrap can finish navigation just after the game mask
+      // disappears. Only retry context teardown, not an actual locale failure.
+      for(let attempt=0;attempt<3;attempt++){
+        try{
+          await page.evaluate(async()=>{const i=await import('./js/i18n.mjs');i.setLanguage('en');});
+          break;
+        }catch(error){
+          if(!/Execution context was destroyed|Cannot find context with specified id/.test(String(error))||attempt===2)throw error;
+          await page.waitForLoadState('networkidle');
+          await page.locator('[data-artifact-choice-modal]').waitFor({state:'visible',timeout:12000});
+        }
+      }
       // Current modal copy uses the selected locale on creation; core dictionary
       // still must supply complete English copy without Russian fallback.
       assert.strictEqual(await page.evaluate(async()=>{const i=await import('./js/i18n.mjs');return i.t('artifacts.forkMaster.name');}),'Fork Master');

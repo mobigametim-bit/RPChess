@@ -1,13 +1,105 @@
 const fs=require('fs'),path=require('path');
 function fail(message){throw new Error(`[reboot source verification] ${message}`)}
 function read(root,relative){return fs.readFileSync(path.join(root,relative),'utf8')}
-function requireFile(root,relative){const full=path.join(root,relative);if(!fs.existsSync(full)||!fs.statSync(full).isFile())fail(`missing required file: ${relative}`)}
+function requireFile(root,relative){let full=path.join(root,relative);if(!fs.existsSync(full)&&relative.startsWith('assets/events/register-04/')&&relative.endsWith('.png'))full=full.slice(0,-4)+'.webp';if(!fs.existsSync(full)||!fs.statSync(full).isFile())fail(`missing required file: ${relative}`)}
 function requireTokens(source,tokens,label){for(const token of tokens)if(!source.includes(token))fail(`${label} contract missing: ${token}`)}
 module.exports=function verifySource(root){
   const repoRoot=path.resolve(root,'..');
-  const required=['index.html','BUILD_INFO.json','css/reboot-foundation.css','css/classic-chess.css','css/chess-ai-polish.css','css/roster.css','css/skirmish.css','css/skirmish-compact.css','css/battle.css','css/travel-choice.css','css/travel-choice-compact.css','css/ui-redesign-final.css','css/player-rating.css','css/resources.css','css/settlement.css','css/settlement-compact.css','css/starvation.css','css/starvation-compact.css','css/endless-run.css','css/endless-run-compact.css','css/events.css','css/events-v5.css','css/puzzles.css','css/puzzles-compact.css','css/ux-consistency.css','css/artifacts.css','js/reboot-foundation.mjs','js/reboot-audio.mjs','js/i18n.mjs','js/brand-logo.mjs','localization/ui.mjs','js/classic-chess-engine.mjs','js/classic-chess-app.mjs','js/chess-ai-adapter.mjs','js/roster-data.mjs','js/run-persistence.mjs','js/run-lifecycle-events.mjs','js/roster-app.mjs','js/artifact-core.mjs','js/artifact-combat-ui.mjs','js/encounter-difficulty.mjs','js/player-rating.mjs','js/player-rating-runtime.mjs','js/race-assets.mjs','js/event-narrative.mjs','js/skirmish-core.mjs','js/skirmish-app.mjs','js/battle-core.mjs','js/battle-app.mjs','js/battle-route.mjs','js/travel-choice-core.mjs','js/travel-choice-app.mjs','js/ux-consistency.mjs','js/post-redesign-playtest-pass1b.mjs','js/ui-redesign-final.mjs','js/cross-scene-visuals.mjs','js/resources-core.mjs','js/resources-app.mjs','js/settlement-core.mjs','js/settlement-app.mjs','js/starvation-core.mjs','js/starvation-app.mjs','js/endless-run-core.mjs','js/endless-run-app.mjs','js/events-data.mjs','js/events-core.mjs','js/events-app.mjs','js/events/event-content-v3.mjs','js/puzzles/puzzle-core.mjs','js/puzzles/puzzle-catalog.mjs','js/puzzles/puzzle-app.mjs','fonts/BrahmsGotischCyr.otf','assets/ui/royal_run_flag.png','generated_assets/logo_ru.png','generated_assets/logo_en.png','generated_assets/splash_poster.jpg','generated_assets/node_battle.png','generated_assets/node_elite.png','generated_assets/node_shop.png','generated_assets/node_story.png','generated_assets/node_training.png','generated_assets/reward_gold.png','generated_assets/reward_supplies.png','js/music-catalog.mjs','music/README.md','assets/kings/oathkeeper/portrait.png','assets/kings/oathkeeper/piece.png','assets/artifacts/threat_sense/amulet_defense.png','assets/artifacts/threat_sense/amulet_attack.png','assets/artifacts/threat_sense/amulet_great.png','assets/artifacts/threat_sense/threat_fire_1_yellow.png','assets/artifacts/threat_sense/threat_fire_2_orange.png','assets/artifacts/threat_sense/threat_fire_3_plus_red.png'];
+  const required=['index.html','BUILD_INFO.json','css/reboot-foundation.css','css/classic-chess.css','css/chess-ai-polish.css','css/roster.css','css/skirmish.css','css/skirmish-compact.css','css/battle.css','css/travel-choice.css','css/travel-choice-compact.css','css/ui-redesign-final.css','css/player-rating.css','css/resources.css','css/settlement.css','css/settlement-compact.css','css/starvation.css','css/starvation-compact.css','css/endless-run.css','css/endless-run-compact.css','css/events.css','css/events-v5.css','css/puzzles.css','css/puzzles-compact.css','css/ux-consistency.css','css/artifacts.css','js/reboot-foundation.mjs','js/reboot-audio.mjs','js/i18n.mjs','js/brand-logo.mjs','localization/ui.mjs','js/classic-chess-engine.mjs','js/classic-chess-app.mjs','js/piece-drag.mjs','js/chess-ai-adapter.mjs','js/roster-data.mjs','js/commander-portraits.mjs','js/run-persistence.mjs','js/run-lifecycle-events.mjs','js/roster-app.mjs','js/artifact-core.mjs','js/artifact-combat-ui.mjs','js/encounter-difficulty.mjs','js/player-rating.mjs','js/player-rating-runtime.mjs','js/race-assets.mjs','js/event-narrative.mjs','js/skirmish-core.mjs','js/skirmish-app.mjs','js/battle-core.mjs','js/battle-app.mjs','js/battle-route.mjs','js/travel-choice-core.mjs','js/travel-choice-app.mjs','js/ux-consistency.mjs','js/post-redesign-playtest-pass1b.mjs','js/ui-redesign-final.mjs','js/cross-scene-visuals.mjs','js/resources-core.mjs','js/resources-app.mjs','js/settlement-core.mjs','js/settlement-app.mjs','js/starvation-core.mjs','js/starvation-app.mjs','js/endless-run-core.mjs','js/endless-run-app.mjs','js/events-data.mjs','js/events-core.mjs','js/events-app.mjs','js/events/event-content-v3.mjs','js/puzzles/puzzle-core.mjs','js/puzzles/puzzle-catalog.mjs','js/puzzles/puzzle-app.mjs','fonts/BrahmsGotischCyr.otf','assets/ui/royal_run_flag.png','generated_assets/logo_ru.png','generated_assets/logo_en.png','generated_assets/splash_poster.webp','generated_assets/node_battle.png','generated_assets/node_elite.png','generated_assets/node_shop.png','generated_assets/node_story.png','generated_assets/node_training.png','generated_assets/reward_gold.png','generated_assets/reward_supplies.png','js/music-catalog.mjs','music/README.md','assets/kings/oathkeeper/portrait.png','assets/kings/oathkeeper/piece.png','assets/kings/stone_crown/portrait.png','assets/kings/wanderer_queen/portrait.png','assets/kings/pilgrim/portrait.png','assets/kings/fox_prince/portrait.png','assets/kings/ash_regent/portrait.png','assets/kings/nameless_heir/portrait.png','assets/artifacts/threat_sense/amulet_defense.png','assets/artifacts/threat_sense/amulet_attack.png','assets/artifacts/threat_sense/amulet_great.png','assets/artifacts/threat_sense/threat_fire_1_yellow.png','assets/artifacts/threat_sense/threat_fire_2_orange.png','assets/artifacts/threat_sense/threat_fire_3_plus_red.png'];
+  // A selectable commander now has one compressed portrait and two colored chess pieces.
+  for(const id of ['oathkeeper','stone_crown','wanderer_queen','pilgrim','fox_prince','ash_regent','nameless_heir']){
+    for(const relative of [`assets/kings/${id}/portrait.webp`,`assets/kings/${id}/pieces/white.webp`,`assets/kings/${id}/pieces/black.webp`]){
+      required.push(relative);
+      const target=path.join(root,relative);
+      if(fs.existsSync(target)){
+        const blob=fs.readFileSync(target);
+        if(blob.length<1000||blob.toString('ascii',0,4)!=='RIFF'||blob.toString('ascii',8,12)!=='WEBP')fail(`invalid compressed commander asset: ${relative}`);
+      }
+    }
+  }
+  // Exactly 8 named pawn heroes, 2 playable sides, and 5 roles (pawn + 4 promotions).
+  for(const id of ['daro_last','kael_cinder','mara_chain','nemea_quill','puck_ember','renzo_bridge','saran_dawn','elio_silk']){
+    const portrait=`assets/heroes/${id}/portrait_named.webp`;
+    required.push(portrait);
+    const portraitFile=path.join(root,portrait);
+    if(fs.existsSync(portraitFile)){
+      const data=fs.readFileSync(portraitFile);
+      if(data.length<1000||data.length>150*1024||data.toString('ascii',0,4)!=='RIFF'||data.toString('ascii',8,12)!=='WEBP')
+        fail(`named pawn portrait missing, invalid or over 150KB: ${portrait}`);
+    }
+    for(const side of ['white','black'])for(const role of ['pawn','knight','bishop','rook','queen']){
+      const relative=`assets/heroes/${id}/pieces/${side}/${role}.webp`;
+      required.push(relative);
+      const full=path.join(root,relative);
+      if(fs.existsSync(full)){
+        const buf=fs.readFileSync(full);
+        if(buf.length<1000||buf.length>42*1024||buf.toString('ascii',0,4)!=='RIFF'||buf.toString('ascii',8,12)!=='WEBP')
+          fail(`named pawn promotion art is missing, malformed or above its 42KB budget: ${relative}`);
+      }
+    }
+  }
+  // Seven named bishops: portrait and both board colors, without legacy badges.
+  for(const id of ["altana_bow","brother_orell","velka_urn","deacon_mirel","seraph_lyra","briar_sister","old_marin"]){
+    for(const relative of [`assets/heroes/${id}/portrait_named.webp`,
+       `assets/heroes/${id}/pieces/white/bishop.webp`,
+       `assets/heroes/${id}/pieces/black/bishop.webp`]){
+      required.push(relative);
+      const full=path.join(root,relative);
+      if(fs.existsSync(full)){
+        const data=fs.readFileSync(full),limit=relative.includes('/pieces/')?42*1024:120*1024;
+        if(data.length<1000||data.length>limit||
+           data.toString('ascii',0,4)!=='RIFF'||data.toString('ascii',8,12)!=='WEBP')
+          fail(`named bishop art invalid or exceeds ${Math.round(limit/1024)} KB budget: ${relative}`);
+      }
+    }
+  }
+  // Six named knights: stable hero IDs, replacement portraits, two side-specific board sprites.
+  for(const id of ['vael_hammer','orion_step','roan_stag','suri_ash','temur_wind','tessa_gull']){
+    for(const relative of [`assets/heroes/${id}/portrait_named.webp`,
+      `assets/heroes/${id}/pieces/white/knight.webp`,
+      `assets/heroes/${id}/pieces/black/knight.webp`]){
+      required.push(relative);
+      const full=path.join(root,relative);
+      if(fs.existsSync(full)){
+        const data=fs.readFileSync(full),limit=relative.includes('/pieces/')?42*1024:150*1024;
+        if(data.length<1000||data.length>limit||
+          data.toString('ascii',0,4)!=='RIFF'||data.toString('ascii',8,12)!=='WEBP')
+          fail(`named knight art invalid or exceeds ${Math.round(limit/1024)} KB budget: ${relative}`);
+      }
+    }
+  }
+  // Six named rooks: independent portraits and white/black pieces, including old-save override.
+  for(const id of ['aldric_wall','batu_cliff','ivar_lens','cassian_coin','maeve_root','rat_banner']){
+    for(const relative of [`assets/heroes/${id}/portrait_named.webp`,
+      `assets/heroes/${id}/pieces/white/rook.webp`,
+      `assets/heroes/${id}/pieces/black/rook.webp`]){
+      required.push(relative);
+      const full=path.join(root,relative);
+      if(fs.existsSync(full)){
+        const data=fs.readFileSync(full),limit=relative.includes('/pieces/')?42*1024:160*1024;
+        if(data.length<1000||data.length>limit||
+          data.toString('ascii',0,4)!=='RIFF'||data.toString('ascii',8,12)!=='WEBP')
+          fail(`named rook art invalid or exceeds ${Math.round(limit/1024)} KB budget: ${relative}`);
+      }
+    }
+  }
+  // Six named queens: each stable hero ID has its own portrait and both board colors.
+  for(const id of ['abbess_celene','viola_mask','empress_nahla','ysra_moss','lady_sorn','khulan_star']){
+    for(const relative of [`assets/heroes/${id}/portrait_named.webp`,
+      `assets/heroes/${id}/pieces/white/queen.webp`,
+      `assets/heroes/${id}/pieces/black/queen.webp`]){
+      required.push(relative);
+      const full=path.join(root,relative);
+      if(fs.existsSync(full)){
+        const data=fs.readFileSync(full),limit=relative.includes('/pieces/')?42*1024:160*1024;
+        if(data.length<1000||data.length>limit||
+           data.toString('ascii',0,4)!=='RIFF'||data.toString('ascii',8,12)!=='WEBP')
+          fail(`named queen art invalid or exceeds ${Math.round(limit/1024)}KB budget: ${relative}`);
+      }
+    }
+  }
   required.push('js/skirmish-obstacles.mjs');
-  required.push('css/arena.css','js/arena-core.mjs','js/arena-app.mjs','assets/arena/mirror_shard.png','assets/arena/defeat_crown.png');
+  required.push('css/arena.css','css/combat-centered-layout.css','css/piece-drag.css','js/arena-core.mjs','js/arena-app.mjs','assets/arena/mirror_shard.png','assets/arena/defeat_crown.png');
   required.push('js/combat-checkpoint.mjs');
   for(let i=1;i<=10;i++)required.push(`js/events/event-data-${String(i).padStart(2,'0')}.mjs`);
   required.push('js/events/event-data-v4-builder.mjs');
@@ -46,17 +138,17 @@ module.exports=function verifySource(root){
   if(route.includes('presentation-bootstrap.mjs')||route.includes('post-pages-ui-polish.mjs'))fail('journey bootstrap must not load retired presentation compatibility modules');
   const lifecycle=read(root,'js/run-lifecycle-events.mjs');requireTokens(lifecycle,["addEventListener('rpchess:run-updated', syncLifecycle)","completed.push(['rpchess:combat-completed'","completed.push(['rpchess:puzzle-resolved'",'for (const [name, detail] of completed) dispatch(name, detail)','battleCount','skirmishCount','puzzleResolved'],'semantic run lifecycle bridge');
 
-  const rosterApp=read(root,'js/roster-app.mjs');requireTokens(rosterApp,["import { subscribe, t, translateLegacy } from './i18n.mjs'","t('roster.ariaLabel')","t('roster.journey')","t('roster.commandPoints')","t('roster.cardAria'",'subscribe(() =>','contentText(heroNoteForId(character.id) || character.description)'],'owner-keyed Roster runtime');
+  const rosterApp=read(root,'js/roster-app.mjs');requireTokens(rosterApp,["import { subscribe, t, translateLegacy } from './i18n.mjs'","t('roster.ariaLabel')","t('roster.journey')","PIECE_GLYPHS[character.pieceType]","renderFormationUI(rosterList,activeRun",'subscribe(() =>','contentText(heroNoteForId(character.id) || character.description)'],'owner-keyed Roster runtime');
   if(/journeyButton\.textContent\s*=\s*['"](?:Вернуться в поселение|В путь|Загрузка пути…)/.test(rosterApp))fail('Roster runtime must not hardcode keyed journey labels');
 
   const difficulty=read(root,'js/encounter-difficulty.mjs');requireTokens(difficulty,['MAX_ENCOUNTER_STARS = 12','elo: 400','elo: 2600','difficultyForStars','value.slice(0, 6)'],'12-level difficulty');
   const rating=read(root,'js/player-rating.mjs');requireTokens(rating,["PLAYER_RATING_STORAGE_KEY = 'rpchess.reboot.v1.player-rating'",'STARTING_POWER = 500','ELO_K = 32','threatStarsForPower','expectedScore','settlePlayerRating','adaptiveEncounterStars','opponentEloForStars'],'Power/Elo core');
-  const ratingRuntime=read(root,'js/player-rating-runtime.mjs');requireTokens(ratingRuntime,['settleCombat','settlePuzzle','data-power-result','rpchess:combat-completed','rpchess:puzzle-resolved','RPChessPower','css/player-rating.css?v=20260830-power-1'],'semantic Power result runtime');
+  const ratingRuntime=read(root,'js/player-rating-runtime.mjs');requireTokens(ratingRuntime,['settleCombat','settlePuzzle','data-power-result','rpchess:combat-completed','rpchess:puzzle-resolved','RPChessPower','css/player-rating.css?v=20261018-king-portrait'],'semantic Power result runtime');
   if(ratingRuntime.includes("addEventListener('rpchess:run-updated'"))fail('Power runtime must not subscribe to broad run-updated');
   const ratingCss=read(root,'css/player-rating.css');requireTokens(ratingCss,['.travel-player-rating','.power-result','.power-result__delta.is-positive','.power-result__threat'],'Power/Threat CSS');
   const travel=read(root,'js/travel-choice-core.mjs');requireTokens(travel,['PLAYABLE_TRAVEL_TYPES','skirmish','battle','settlement','event','puzzle','adaptiveEncounterStars','threatStarsForPower','playerPower=STARTING_POWER','difficultyModel:\'power-v1\'','playerColor','enemyRaceTag','hasHealthySkirmishCompanion','canSelectTravelChoice','skirmish_requires_companion'],'Power-adaptive Travel core');
   if(travel.includes('puzzleStarsForWeek(step)'))fail('Travel must not derive live Puzzle difficulty from journey week');
-  const travelApp=read(root,'js/travel-choice-app.mjs');requireTokens(travelApp,['rpchess:event-open','rpchess:puzzle-open','starsText','data-travel-power','data-travel-player-threat','readPlayerRating','difficultyModel===\'power-v1\'','data-travel-commandbar','data-travel-inline-gold','data-travel-inline-supplies','generated_assets/reward_supplies.png','canSelectTravelChoice','combatGoldReward','puzzleBaseGold','applyTravelSupplyCost','travel-choice-card__reward',"import { subscribe, t, translateLegacy } from './i18n.mjs'",'t(`travel.type.${choice.type}`)',"'travel.costStarvation'","'travel.rewardAria'","'travel.continue'",'subscribe(()=>'],'consolidated owner-keyed Power Travel runtime');
+  const travelApp=read(root,'js/travel-choice-app.mjs');requireTokens(travelApp,['rpchess:event-open','rpchess:puzzle-open','starsText','data-travel-power','data-travel-player-threat','readPlayerRating','difficultyModel===\'power-v1\'','data-travel-commandbar','data-travel-inline-gold','data-travel-inline-supplies','generated_assets/reward_supplies.png','canSelectTravelChoice','combatGoldReward','puzzleBaseGold','applyTravelSupplyCost','travel-choice-card__reward',"import { subscribe, t, translateLegacy, currentLanguage } from './i18n.mjs'",'commanderPortrait(activeRun.commanderId)','t(`travel.type.${choice.type}`)',"'travel.costStarvation'","'travel.rewardAria'","'travel.continue'",'subscribe(()=>'],'consolidated owner-keyed Power Travel runtime');
   if(travelApp.indexOf('if(!canSelectTravelChoice(current,choice).ok)')<0||travelApp.indexOf('if(!canSelectTravelChoice(current,choice).ok)')>travelApp.indexOf('applyTravelSupplyCost(current)'))fail('Travel must enforce Skirmish eligibility before spending Supplies');
   for(const forbidden of ['ИСХОД НЕИЗВЕСТЕН','3–5 РЕШЕНИЙ','ВЫБРАТЬ ПУТЬ','Каждая карточка выбирается независимо','Куда двигаться дальше?','Шаг путешествия','СЛУЧАЙНАЯ СЛОЖНОСТЬ','Неделя путешествия','СЛУЧАЙНЫЙ БОЕЦ ПОГИБНЕТ','СЛОЖНОСТЬ ЗАДАЧИ','Недоступно: для стычки нужен хотя бы один здоровый герой кроме короля.','ЛЕЧЕНИЕ · НАЙМ · СНАБЖЕНИЕ'])if(travelApp.includes(forbidden))fail(`Travel UX still contains removed/hardcoded copy: ${forbidden}`);
   const travelCss=read(root,'js/../css/travel-choice.css');requireTokens(travelCss,["'BrahmsGotischCyr'",'.travel-choice-heading h1'],'Travel fantasy typography');
@@ -81,7 +173,7 @@ module.exports=function verifySource(root){
   const puzzleCompactCss=read(root,'css/puzzles-compact.css');requireTokens(puzzleCompactCss,['.puzzle-heading .reboot-eyebrow{font-size:10px}','.puzzle-heading .reboot-eyebrow::after{content:none!important}'],'semantic Puzzle kicker override');
   const persistence=read(root,'js/run-persistence.mjs');requireTokens(persistence,['isPuzzleState','currentPuzzle','lastPuzzle'],'Puzzle persistence');
 
-  const racesSource=read(root,'js/race-assets.mjs');requireTokens(racesSource,["humans/pieces/${color==='w'?'white':'black'}",'RACE_TAG_BY_LABEL','BACKGROUND_POOLS','eventBackgroundPath','wild_glen.png','riverbank_tracks.png','fae_ring_garden.png','whispering_meadow.png','goblin_trade_nook.png','goblin_scrapyard_camp.png','mixedRoleRaces','deterministicPlayerColor','pieceArtForTheme'],'race assets runtime');
+  const racesSource=read(root,'js/race-assets.mjs');requireTokens(racesSource,['const BOARD_PIECE_RACES=RACE_TAGS','RACE_TAG_BY_LABEL','BACKGROUND_POOLS','eventBackgroundPath','wild_glen.png','riverbank_tracks.png','fae_ring_garden.png','whispering_meadow.png','goblin_trade_nook.png','goblin_scrapyard_camp.png','mixedRoleRaces','deterministicPlayerColor','boardPieceArtForTheme'],'race assets runtime');
   for(const obsolete of ['fae_moonwell.png','fae_mushroom_court.png','goblin_bomb_yard.png','goblin_scrap_market.png'])if(racesSource.includes(obsolete))fail(`race assets runtime still references obsolete Event background: ${obsolete}`);
   const eventsData=read(root,'js/events-data.mjs');requireTokens(eventsData,['EVENTS_01','EVENTS_10','EVENTS_V4_01','EVENTS_V4C_25','500 events / 2114 choices','EVENT_CATALOG','EVENT_IDS','normalizeRaceTag'],'Events expanded catalog index');
   const narrative=read(root,'js/event-narrative.mjs');requireTokens(narrative,['literaryStory','dialogue','atmosphere','closing'],'literary Events narrative');
@@ -94,10 +186,10 @@ module.exports=function verifySource(root){
   if(eventsCss.includes('background-image:var(--events-background,none)'))fail('Events CSS still uses legacy background variable renderer');
   const eventsV5Css=read(root,'css/events-v5.css');requireTokens(eventsV5Css,['.events-choice--hero','.events-choice--hero-locked:disabled','.events-choice__hero-name','.events-choice__hero-line'],'Events v5 named-hero CSS');
 
-  const skirmishCore=read(root,'js/skirmish-core.mjs');requireTokens(skirmishCore,['MAX_ENCOUNTER_STARS','placeArmy(army,color,{seed','pawns.forEach','playerColor','enemyRoleRaces','generateSkirmishObstacles','blockedSquares','kingDied:false'],'Skirmish 12-level non-lethal checkmate contract');
+  const skirmishCore=read(root,'js/skirmish-core.mjs');requireTokens(skirmishCore,['MAX_ENCOUNTER_STARS','placeArmy(army,color,{seed','remainingPawns.forEach','preferredSquares','playerColor','enemyRoleRaces','generateSkirmishObstacles','blockedSquares','kingDied:false'],'Skirmish 12-level non-lethal checkmate contract');
   if(skirmishCore.includes("kingDied=true;return{...c,status:'dead'}"))fail('Skirmish checkmate must not kill the RPG King');
   const skirmishObstacles=read(root,'js/skirmish-obstacles.mjs');requireTokens(skirmishObstacles,['OBSTACLE_REGIONS','OBSTACLE_CELLS_PER_REGION','SKIRMISH_OBSTACLE_MIN_COUNT','SKIRMISH_OBSTACLE_MAX_COUNT','SKIRMISH_OBSTACLE_RANKS','generateSkirmishObstacles'],'Skirmish obstacle deterministic asset pool');
-  const skirmishApp=read(root,'js/skirmish-app.mjs');requireTokens(skirmishApp,["import { subscribe, t, translateLegacy } from './i18n.mjs'",'battlePlan.playerColor','pieceArtForTheme','function combatDifficultyLabel()','split(\' · \')[0].trim()','mode.textContent=combatDifficultyLabel()',"t('skirmish.difficultyAria'","t('skirmish.aftermath.continue')",'subscribe(()=>'],'owner-keyed Skirmish black-side/race/difficulty UI');
+  const skirmishApp=read(root,'js/skirmish-app.mjs');requireTokens(skirmishApp,["import { subscribe, t, translateLegacy } from './i18n.mjs'",'battlePlan.playerColor','boardPieceArtForTheme','function combatDifficultyLabel()','split(\' · \')[0].trim()','mode.textContent=combatDifficultyLabel()',"t('skirmish.difficultyAria'","t('skirmish.aftermath.continue')",'subscribe(()=>'],'owner-keyed Skirmish black-side/race/difficulty UI');
   if(skirmishApp.includes('mode.textContent=`Стычка ·')||skirmishApp.includes('Сложность ${encounter.stars} из 12'))fail('Skirmish runtime must not restore hardcoded technical/localized presentation copy');
   const settlementApp=read(root,'js/settlement-app.mjs');requireTokens(settlementApp,['css/settlement-compact.css?v=20260909-owner1'],'Settlement compact owner loader');
   const starvationApp=read(root,'js/starvation-app.mjs');requireTokens(starvationApp,['css/starvation-compact.css?v=20260909-owner1',"import { subscribe, t, translateLegacy } from './i18n.mjs'","t('starvation.ariaLabel')","'starvation.kingText'","'starvation.companionText'",'subscribe(() =>'],'owner-keyed Starvation runtime');
@@ -106,7 +198,7 @@ module.exports=function verifySource(root){
   const battleCore=read(root,'js/battle-core.mjs');requireTokens(battleCore,['MAX_ENCOUNTER_STARS','playerColor','enemyRaceTag','BATTLE_TIERS','kingDied:false'],'Battle 12-level non-lethal checkmate core');
   if(battleCore.includes("kingDied=true;return{...c,status:'dead'}"))fail('Battle checkmate must not kill the RPG King');
   if(battleCore.includes('Победа решится по классическим шахматным правилам.'))fail('Battle encounter copy must not rely on presentation-time regex cleanup');
-  const battleApp=read(root,'js/battle-app.mjs');requireTokens(battleApp,["import { subscribe, t, translateLegacy } from './i18n.mjs'",'battlePlan.playerColor','racePiecePath','pieceArtForTheme','function combatDifficultyLabel()','split(\' · \')[0].trim()','mode.textContent=combatDifficultyLabel()','css/battle-compact.css?v=20260909-owner2','data-battle-compact-css',"t('battle.difficultyAria'","t('battle.aftermath.debtCasualty'",'resolveBattleMercenaryDebt?.(completed)','subscribe(rerenderLanguage)'],'owner-keyed Battle UI and owner debt lifecycle');
+  const battleApp=read(root,'js/battle-app.mjs');requireTokens(battleApp,["import { subscribe, t, translateLegacy } from './i18n.mjs'",'battlePlan.playerColor','racePiecePath','boardPieceArtForTheme','function combatDifficultyLabel()','split(\' · \')[0].trim()','mode.textContent=combatDifficultyLabel()','css/battle-compact.css?v=20260909-owner2','data-battle-compact-css',"t('battle.difficultyAria'","t('battle.aftermath.debtCasualty'",'resolveBattleMercenaryDebt?.(completed)','subscribe(rerenderLanguage)'],'owner-keyed Battle UI and owner debt lifecycle');
   if(battleApp.includes('mode.textContent=`Битва ·')||battleApp.includes('Сложность ${encounter.stars} из 12'))fail('Battle runtime must not restore hardcoded technical/localized presentation copy');
   const mercenaryApp=read(root,'js/battle-mercenaries.mjs');requireTokens(mercenaryApp,["import { subscribe, t } from './i18n.mjs'","t('battle.mercenary.quoteTitle')",'resolveBattleMercenaryDebt','subscribe(renderBattlePrepQuote)'],'owner-keyed Battle Mercenaries runtime');
   for(const forbidden of ['patchAftermath','settlePendingDebtSoon','rpchess:run-updated'])if(mercenaryApp.includes(forbidden))fail(`Battle Mercenaries must not post-render patch or subscribe to broad run updates: ${forbidden}`);

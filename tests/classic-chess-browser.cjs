@@ -8,6 +8,21 @@ async function clickMove(page, from, to) {
   await page.locator(`[data-square="${to}"]`).click();
 }
 
+async function dragMove(page, from, to) {
+  const source=await page.locator(`[data-chess-board] [data-square="${from}"]`).boundingBox();
+  const target=await page.locator(`[data-chess-board] [data-square="${to}"]`).boundingBox();
+  assert(source&&target,'drag from/to squares must exist');
+  const x=source.x+source.width/2,y=source.y+source.height/2;
+  await page.mouse.move(x,y);
+  await page.mouse.down();
+  await page.waitForTimeout(45);
+  await page.mouse.move(x+Math.min(source.width/4,14),y,{steps:4});
+  await page.waitForFunction(()=>Boolean(document.querySelector('.rpchess-piece-drag-ghost')),null,{timeout:3000});
+  await page.mouse.move(target.x+target.width/2,target.y+target.height/2,{steps:14});
+  await page.waitForTimeout(45);
+  await page.mouse.up();
+}
+
 async function pieceSrc(page, square) {
   return page.locator(`[data-square="${square}"] .classic-piece`).getAttribute('src');
 }
@@ -69,7 +84,7 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     await page.locator('[data-square="e4"]').click();
     await waitForMoveAnimation(page);
     assert((await page.evaluate(() => window.__classicFlyerCount)) > 0, 'moving piece must animate in Classic Chess');
-    assert((await pieceSrc(page, 'e4')).includes('unit_pawn_player.png'), 'white pawn must move to e4');
+    assert((await pieceSrc(page, 'e4')).includes('/humans/pieces/board/white/pawn.png'), 'white pawn must move to e4');
     assert.strictEqual(await page.locator('[data-move-history] [data-san="e4"]').count(), 1, 'pawn move must use SAN e4');
     await clickMove(page, 'e7', 'e5');
     await waitForMoveAnimation(page);
@@ -92,14 +107,14 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     await page.evaluate(() => window.RPChessClassicChess.loadFen('r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1'));
     await clickMove(page, 'e1', 'g1');
     await waitForMoveAnimation(page);
-    assert((await pieceSrc(page, 'g1')).includes('unit_king_player.png'), 'castling must place king on g1');
-    assert((await pieceSrc(page, 'f1')).includes('unit_rook_player.png'), 'castling must place rook on f1');
+    assert((await pieceSrc(page, 'g1')).includes('/humans/pieces/board/white/king.png'), 'castling must place king on g1');
+    assert((await pieceSrc(page, 'f1')).includes('/humans/pieces/board/white/rook.png'), 'castling must place rook on f1');
     assert.strictEqual(await page.locator('[data-move-history] [data-san="O-O"]').count(), 1, 'castling must use SAN O-O');
 
     await page.evaluate(() => window.RPChessClassicChess.loadFen('4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 1'));
     await clickMove(page, 'e5', 'd6');
     await waitForMoveAnimation(page);
-    assert((await pieceSrc(page, 'd6')).includes('unit_pawn_player.png'), 'en passant pawn must land on d6');
+    assert((await pieceSrc(page, 'd6')).includes('/humans/pieces/board/white/pawn.png'), 'en passant pawn must land on d6');
     assert.strictEqual(await page.locator('[data-square="d5"] .classic-piece').count(), 0, 'en passant must remove pawn from d5');
 
     await page.evaluate(() => window.RPChessClassicChess.loadFen('7k/P7/8/8/8/8/8/7K w - - 0 1'));
@@ -110,12 +125,49 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     assert.strictEqual(await page.locator('[data-promotion-modal]').isVisible(), true, 'mandatory promotion modal must ignore Escape');
     await page.locator('[data-promotion="q"]').click();
     await waitForMoveAnimation(page);
-    assert((await pieceSrc(page, 'a8')).includes('unit_queen_player.png'), 'promotion must render chosen queen asset');
+    assert((await pieceSrc(page, 'a8')).includes('/humans/pieces/board/white/queen.png'), 'promotion must render chosen queen asset');
     assert((await page.locator('[data-move-history] .classic-move[data-san]').last().getAttribute('data-san')).includes('=Q'), 'promotion SAN must include =Q');
 
+    // Promotion choice artwork must be bound to the original named pawn identity,
+    // its current side, and each of the four distinct upgrade roles.
+    await page.evaluate(async()=>{
+      const art=await import(new URL('js/race-assets.mjs',location.href).href);
+      window.RPChessClassicChess.loadFen('7k/P7/8/8/8/8/8/7K w - - 0 1',{
+        promotionArtResolver:(from,type,color)=>art.namedPawnPieceArt({id:'hero.mara_chain',pieceType:'pawn'},type,color)
+      });
+    });
+    await clickMove(page,'a7','a8');
+    await page.locator('[data-promotion-modal]:not([hidden])').waitFor();
+    for(const [role,name] of [['q','queen'],['r','rook'],['b','bishop'],['n','knight']]){
+      const src=await page.locator(`[data-promotion="${role}"] img`).getAttribute('src');
+      assert(src.includes(`/heroes/mara_chain/pieces/white/${name}.webp`),
+        `promoting Mara must offer her own WHITE ${name}, not a generic piece`);
+    }
+    await page.locator('[data-promotion="n"]').click();
+    await waitForMoveAnimation(page);
+    assert.strictEqual(await page.evaluate(()=>window.RPChessClassicChess.engine.pieceAt('a8')?.type),'n',
+      'Mara promotion must keep the chosen knight role in the engine');
+    await page.evaluate(async()=>{
+      const art=await import(new URL('js/race-assets.mjs',location.href).href);
+      window.RPChessClassicChess.loadFen('7k/8/8/8/8/8/p7/7K b - - 0 1',{
+        promotionArtResolver:(from,type,color)=>art.namedPawnPieceArt({id:'hero.kael_cinder',pieceType:'pawn'},type,color)
+      });
+    });
+    await dragMove(page,'a2','a1');
+    await page.locator('[data-promotion-modal]:not([hidden])').waitFor();
+    for(const [role,name] of [['q','queen'],['r','rook'],['b','bishop'],['n','knight']]){
+      const src=await page.locator(`[data-promotion="${role}"] img`).getAttribute('src');
+      assert(src.includes(`/heroes/kael_cinder/pieces/black/${name}.webp`),
+        `promoting Kael must offer his own BLACK ${name}, not a generic piece`);
+    }
+    await page.locator('[data-promotion="q"]').click();
+    await waitForMoveAnimation(page);
+    assert.strictEqual(await page.evaluate(()=>window.RPChessClassicChess.engine.pieceAt('a1')?.type),'q',
+      'Kael promotion must preserve promoted queen role in the engine');
     await page.evaluate(() => window.RPChessClassicChess.newGame());
     for (const [from, to] of [['f2', 'f3'], ['e7', 'e5'], ['g2', 'g4'], ['d8', 'h4']]) {
-      await clickMove(page, from, to);
+      if(from==='f2')await dragMove(page,from,to);
+      else await clickMove(page, from, to);
       await waitForMoveAnimation(page);
     }
     await page.locator('[data-game-result]:not([hidden])').waitFor();
@@ -130,6 +182,14 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     await waitForMoveAnimation(page);
     assert((await page.locator('[data-result-text]').innerText()).includes('Пятьдесят'), '50-move draw must be shown in UI');
 
+    const navSafe = await page.evaluate(() => {
+      const button=document.querySelector('[data-classic-menu]');
+      const board=document.querySelector('[data-chess-board]');
+      const menu=button.getBoundingClientRect(),chess=board.getBoundingClientRect();
+      const hit=document.elementFromPoint((menu.left+menu.right)/2,(menu.top+menu.bottom)/2);
+      return {clickable:hit===button||button.contains(hit),separated:menu.right<=chess.left+1};
+    });
+    assert(navSafe.clickable&&navSafe.separated,'Classic menu must stay clickable to the left of the centered board');
     await page.locator('[data-classic-menu]').click();
     assert.strictEqual(await menu.isVisible(), true, 'main menu must be reachable from Classic Chess');
     assert.strictEqual(await page.locator('[data-classic-screen]').isHidden(), true, 'chess scene must leave layout on menu return');
@@ -166,16 +226,51 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     await mobile.goto(url, { waitUntil: 'networkidle' });
     await openSetup(mobile);
     await startFromSetup(mobile, { mode: 'local' });
+    // The scene loading mask fades after chess initialization; a raw mouse drag
+    // does not auto-wait for an overlay like Playwright locator.click() does.
+    await mobile.locator('[data-game-loading]').waitFor({state:'hidden',timeout:15000});
     assert.strictEqual(await mobile.locator('[data-reboot-foundation]').isHidden(), true, 'mobile landscape menu scene must hide during game');
     assert.strictEqual(await mobile.locator('[data-chess-board] [data-square]').count(), 64, 'mobile landscape board must have 64 squares');
     assert.strictEqual(await mobile.locator('[data-piece-marker]').count(), 32, 'mobile landscape pieces must retain technical markers');
     const boardBox = await mobile.locator('[data-chess-board]').boundingBox();
     assert(boardBox && boardBox.width > 300 && boardBox.width <= 390, `mobile landscape board width must match viewport height: ${boardBox?.width}`);
-    await clickMove(mobile, 'e2', 'e4');
+    await dragMove(mobile, 'e2', 'e4');
     await waitForMoveAnimation(mobile);
-    assert((await pieceSrc(mobile, 'e4')).includes('unit_pawn_player.png'), 'mobile landscape board interaction must move pieces');
+    assert((await pieceSrc(mobile, 'e4')).includes('/humans/pieces/board/white/pawn.png'), 'mobile landscape board interaction must move pieces');
     const scrollState = await mobile.evaluate(() => ({ scrollHeight: document.documentElement.scrollHeight, clientHeight: document.documentElement.clientHeight }));
     assert(scrollState.scrollHeight <= scrollState.clientHeight + 1, 'mobile landscape Classic Chess must fit the viewport without page scrolling');
+
+    // Use an independent touch-enabled context so emulation cannot alter
+    // the existing mouse-driven landscape acceptance.
+    const touchPage=await browser.newPage({viewport:{width:844,height:390},hasTouch:true});
+    const touchErrors=[];
+    touchPage.on('pageerror',e=>touchErrors.push(String(e.stack||e)));
+    await touchPage.goto(url,{waitUntil:'networkidle'});
+    await openSetup(touchPage);
+    await startFromSetup(touchPage,{mode:'local'});
+    // Raw CDP touches bypass Playwright's auto-wait for covering elements.
+    // Wait until the scene-loading mask has stopped intercepting input.
+    await touchPage.locator('[data-game-loading]').waitFor({state:'hidden',timeout:15000});
+    const fromTouch=await touchPage.locator('[data-chess-board] [data-square="e2"]').boundingBox();
+    const toTouch=await touchPage.locator('[data-chess-board] [data-square="e4"]').boundingBox();
+    const start={x:fromTouch.x+fromTouch.width/2,y:fromTouch.y+fromTouch.height/2,id:1};
+    const end={x:toTouch.x+toTouch.width/2,y:toTouch.y+toTouch.height/2,id:1};
+    const touch=await touchPage.context().newCDPSession(touchPage);
+    // CDP touch dispatch may coalesce instantaneous moves on slower CI hosts.
+    // Give Chromium an animation frame between points, as a real finger would.
+    await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[start]});
+    await touchPage.waitForTimeout(70);
+    for(let i=1;i<=8;i++){
+      const p={id:1,x:start.x+(end.x-start.x)*i/8,y:start.y+(end.y-start.y)*i/8};
+      await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[p]});
+      await touchPage.waitForTimeout(22);
+    }
+    await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    await touch.detach();
+    await touchPage.waitForFunction(()=>window.RPChessClassicChess.moveLog.length===1,null,{timeout:8000});
+    assert((await pieceSrc(touchPage,'e4')).includes('/humans/pieces/board/white/pawn.png'),'physical touch drag must commit on mobile landscape');
+    assert.deepStrictEqual(touchErrors,[],'touch-enabled board must not throw errors');
+    await touchPage.close();
 
     assert.deepStrictEqual(errors, [], `desktop page errors:\n${errors.join('\n')}`);
     assert.deepStrictEqual(mobileErrors, [], `mobile page errors:\n${mobileErrors.join('\n')}`);

@@ -144,7 +144,7 @@
   transform:translateY(-50%);
   border:1px solid rgba(225,184,89,.38);
   border-radius:5px;
-  background:url('../assets/kings/oathkeeper/portrait.png') center 20%/cover no-repeat;
+  background:var(--battle-king-portrait, url('../assets/kings/oathkeeper/portrait.webp')) center 20%/cover no-repeat;
   box-shadow:0 4px 13px rgba(0,0,0,.42),inset 0 0 0 1px rgba(255,235,179,.035);
   pointer-events:none;
 }
@@ -293,7 +293,7 @@
 .battle-aftermath.battle-run-end.is-defeat{
   background:
     linear-gradient(90deg,rgba(3,7,15,.55),rgba(18,8,11,.24) 52%,rgba(3,7,15,.38)),
-    url('../generated_assets/scene_defeat.jpg') center/cover fixed no-repeat!important;
+    url('../generated_assets/scene_defeat.webp') center/cover fixed no-repeat!important;
 }
 .battle-run-end .battle-aftermath-shell{
   position:relative;

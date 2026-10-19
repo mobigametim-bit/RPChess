@@ -81,7 +81,7 @@ function chooseArtifact({run,combatType,encounterId,onChoose}={}){
   // Capture delegation keeps the transition reliable even when another UI layer
   // refreshes or intercepts the card during the same click.
   modal.addEventListener('click',(event)=>{const button=event.target?.closest?.('[data-artifact-choice]');if(!button||!modal.contains(button))return;event.preventDefault();finishChoice(button.dataset.artifactChoice);},true);
-  document.body.append(modal); document.body.classList.add('reboot-modal-open'); modal.querySelector('button')?.focus({preventScroll:true});
+  document.body.append(modal); document.body.classList.add('reboot-modal-open'); globalThis.RPChessLoading?.requestVisibleAssets?.(); modal.querySelector('button')?.focus({preventScroll:true}); globalThis.dispatchEvent?.(new CustomEvent('rpchess:artifact-offer',{detail:{combatType}}));
 }
 function renderThreatOverlay(board,snapshot,artifact,playerColor,selectedSquare=snapshot?.selectedSquare){
   if(!board) return;

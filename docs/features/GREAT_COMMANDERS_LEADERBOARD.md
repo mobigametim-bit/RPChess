@@ -53,3 +53,24 @@ Some VK desktop iframe launches may omit signed launch params. Those users can v
 - Signed VK launches can submit; unsigned standalone/GitHub Pages launches continue to show public results read-only.
 - No gameplay, D1 table, server Worker, Chronicle-history schema, or other branches have been changed for this feature.
 - Delivery is through the existing GitHub Pages build gate. A deliberately tagged deployment commit publishes this change while ordinary pushes remain build-only.
+
+## Mobile and preview CORS polish (PR #160; October 2026)
+- The original production CORS whitelist had only GitHub Pages and the former leaderboard preview. VK-hosted mobile/production pages and the later race-piece preview were not included. A browser cross-origin request from an untrusted origin receives HTTP 403, causing the Chronicle to render its offline fallback.
+- Allow the **exact RPChess app ID 54754579** when hosted by VK on `stage-app54754579-*.pages.vk-apps.ru` or `prod-app54754579-*.pages.vk-apps.ru` (also VK's `.com` hosting variant). Do **not** wildcard other VK apps or arbitrary origins.
+- Add `rpchess-race-pieces-preview.mobigametim.workers.dev` to allowed preview origins. Keep previous GitHub Pages and leaderboard-preview origins.
+- On VK mobile signed `/view` failure, attempt the *public* read-only GET endpoint before reporting offline. Never invent a personal rank, do not bypass signature validation or weaken `/submit`.
+- The **separate leaderboard Worker must be deployed** for the CORS correction to take effect. Merely publishing game HTML from the feature branch will not fix a CORS 403. Validate with real `Origin` request headers from mobile staging, preview, and an unrelated host.
+- Preserve existing live D1 data, schema, leaderboard scoring, run snapshots and user submissions; this patch changes only CORS access and graceful public read fallback.
+
+
+## Personal rank on VK mobile WebView (PR #160; follow-up 2026-10-16)
+
+The public top ten and a personal rank are different requests. The public GET can succeed while the personal rank remains absent if the mobile VK WebView omits signed `vk_*` launch parameters from `location.search`. That issue is independent of CORS.
+
+- First try the existing signed `location.search`. If complete signed launch params are absent **and** the platform is a VK launch, ask VK Bridge for `VKWebAppGetLaunchParams`, cache only the returned signed parameters for the current JS session, and send them to the existing `/v1/leaderboard/view` endpoint.
+- The bridge response has `vk_app_id`, `vk_user_id`, `vk_ts`, `vk_platform`, `sign`, etc. Never treat an unsigned user ID or profile name as authentication; all signed data must continue to be verified by the Cloudflare Worker using the private `VK_APP_SECRET`.
+- The Worker returns `viewerAuthenticated` in the signed view response. `true` with no `me` means the account is verified but **has no recorded completed-run score**. A public GET or a failed VK signature leaves this flag false.
+- UI now differentiates RU/EN “VK не подтверждён” / “VK not verified” from RU/EN “Нет результата” / “Not ranked yet” instead of an unexplained dash.
+- Keep public top-ten fallback when signed VK requests cannot be completed, but do not claim a personal rank for an unverified session.
+- Updated 2026-10-18: a player's **current ongoing Journey can now compete for Glory** using the same scoring formula as completed journeys. A signed VK launch is still required to submit a record, and this does not insert an ongoing Journey into completed Chronicle history.
+- This requires deployment of the updated **leaderboard API** and game build. Cloudflare standalone previews cannot simulate VK user identity; real signed VK mobile test remains required before PR is accepted.

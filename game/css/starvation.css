@@ -1,12 +1,15 @@
+/* Starvation consequence uses the same bounding-box discipline as Battle/Skirmish aftermath. */
 .starvation-screen {
-  min-height: 100vh;
+  box-sizing: border-box;
+  min-height: 100dvh;
   padding: clamp(16px, 2.4vw, 38px);
   background:
     linear-gradient(90deg, rgba(3, 7, 15, .56), rgba(18, 8, 11, .28) 52%, rgba(3, 7, 15, .45)),
-    url('../generated_assets/scene_defeat.jpg') center / cover fixed no-repeat;
+    url('../generated_assets/scene_defeat.webp') center / cover fixed no-repeat;
 }
 
 .starvation-shell {
+  box-sizing: border-box;
   width: min(1510px, 100%);
   min-height: calc(100vh - clamp(32px, 4.8vw, 76px));
   margin: 0 auto;
@@ -28,8 +31,11 @@
 .starvation-panel {
   position: relative;
   isolation: isolate;
-  width: min(1260px, 100%);
-  min-height: 580px;
+  box-sizing: border-box;
+  min-width: 0;
+  width: min(1160px, 100%);
+  min-height: 0;
+  max-height: min(670px, calc(100dvh - 170px));
   display: grid;
   grid-template-columns: minmax(300px, 400px) minmax(0, 1fr);
   grid-template-areas:
@@ -45,7 +51,9 @@
   justify-items: start;
   margin: 0 auto;
   padding: clamp(42px, 5vw, 70px);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
   text-align: left;
   border: 1px solid rgba(203, 157, 80, .36) !important;
   border-radius: 8px !important;
@@ -103,8 +111,9 @@
   justify-self: stretch;
   width: 100%;
   height: 100%;
-  min-height: 440px;
+  min-height: 0;
   max-height: 470px;
+  aspect-ratio: 4 / 5;
   object-fit: cover;
   object-position: center top;
   border: 1px solid rgba(216, 177, 93, .62);
@@ -194,6 +203,7 @@
 
   .starvation-panel {
     min-height: 0;
+    max-height: calc(100dvh - 105px);
     grid-template-columns: minmax(190px, 34vw) minmax(0, 1fr);
     column-gap: 24px;
     padding: 28px 22px 34px;
@@ -242,7 +252,7 @@
   .starvation-portrait {
     width: min(100%, 390px);
     min-height: 0;
-    max-height: none;
+    max-height: min(56dvh, 360px);
     aspect-ratio: 4 / 5;
     justify-self: center;
     margin-top: 8px;
@@ -269,5 +279,46 @@
   .starvation-button {
     width: 100%;
     margin-top: 18px;
+  }
+}
+
+
+/* Approved death-screen polish: the outcome card owns the viewport center.
+   The previous grid reserved a row for a logo that is no longer rendered. */
+.starvation-screen:not([hidden]) {
+  display: grid;
+  place-items: center;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+.starvation-screen .starvation-shell {
+  width: min(1510px, 100%);
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  place-items: center;
+  gap: 0;
+}
+.starvation-screen .starvation-panel {
+  align-self: center;
+  justify-self: center;
+  max-height: min(670px, calc(100dvh - 28px));
+}
+@media (orientation: portrait) {
+  .starvation-screen:not([hidden]) {
+    height: auto;
+    min-height: 100dvh;
+    overflow-y: auto;
+  }
+  .starvation-screen .starvation-shell {
+    min-height: calc(100dvh - 24px);
+    height: auto;
+    grid-template-rows: auto;
+  }
+  .starvation-screen .starvation-panel {
+    max-height: none;
   }
 }

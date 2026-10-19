@@ -3,11 +3,12 @@ const path = require('path');
 const zlib = require('zlib');
 const { decodePng, parsePng, formatBytes } = require('./piece-asset-runtime.cjs');
 
-const BACKGROUND_RUNTIME_WIDTH = 1600;
-const BACKGROUND_RUNTIME_HEIGHT = 900;
-const BACKGROUND_RUNTIME_CHANNEL_BITS = 6;
-const BACKGROUND_RUNTIME_MAX_BYTES = 2048 * 1024;
-const BACKGROUND_RUNTIME_MAX_TOTAL_BYTES = 45 * 1024 * 1024;
+const BACKGROUND_RUNTIME_WIDTH = 1280;
+const BACKGROUND_RUNTIME_HEIGHT = 720;
+const BACKGROUND_RUNTIME_CHANNEL_BITS = 6; // legacy PNG comparison; WebP quality 55 is used by builds
+const BACKGROUND_RUNTIME_WEBP_QUALITY = 55;
+const BACKGROUND_RUNTIME_MAX_BYTES = 512 * 1024;
+const BACKGROUND_RUNTIME_MAX_TOTAL_BYTES = 12 * 1024 * 1024;
 const CANONICAL_BACKGROUND_FILES = Object.freeze({
   generic:['forest_crossroad.png','old_kings_road.png','roadside_shrine.png','abandoned_camp.png','ancient_ruins.png','stormy_bridge.png','moonlit_gravefield.png','market_square_twilight.png'],
   humans:['human_waystation.png','human_chapel_court.png'],
@@ -121,7 +122,7 @@ function collectBackgroundAssetPaths(root) {
     for (const file of files) paths.push(`assets/events/register-04/backgrounds/${folder}/${file}`);
   }
   paths.push(...ADDITIONAL_BACKGROUND_FILES);
-  const missing = paths.filter((relative) => !fs.existsSync(path.join(root, relative)));
+  const missing = paths.filter((relative) => !fs.existsSync(path.join(root, relative)) && !fs.existsSync(path.join(root, relative.replace(/\.png$/,'.webp'))));
   if (missing.length) throw new Error(`[background asset contract] missing canonical backgrounds:\n${missing.join('\n')}`);
   return paths.sort();
 }
@@ -199,20 +200,20 @@ function assertBackgroundAssetBudget(root, {
   maxBytes = BACKGROUND_RUNTIME_MAX_BYTES,
   maxTotalBytes = BACKGROUND_RUNTIME_MAX_TOTAL_BYTES
 } = {}) {
-  const contract = inspectBackgroundAssets(root);
   const failures = [];
   let totalBytes = 0;
-  for (const record of contract.records) {
-    totalBytes += record.bytes;
-    const full = path.join(root, record.path);
-    const png = parsePng(fs.readFileSync(full));
-    if (record.width !== BACKGROUND_RUNTIME_WIDTH || record.height !== BACKGROUND_RUNTIME_HEIGHT) failures.push(`${record.path}: ${record.width}x${record.height}, expected ${BACKGROUND_RUNTIME_WIDTH}x${BACKGROUND_RUNTIME_HEIGHT}`);
-    if (record.bytes > maxBytes) failures.push(`${record.path}: ${formatBytes(record.bytes)} exceeds ${formatBytes(maxBytes)}`);
-    if (png.colorType !== 2) failures.push(`${record.path}: expected opaque RGB PNG colorType=2, found ${png.colorType}`);
+  for (const relative of collectBackgroundAssetPaths(root)) {
+    const webpPath=relative.replace(/\.png$/,'.webp');
+    const full=path.join(root,webpPath);
+    if(!fs.existsSync(full)){failures.push(`${webpPath}: missing optimized runtime WebP`);continue;}
+    const buffer=fs.readFileSync(full);
+    totalBytes+=buffer.length;
+    if(buffer.length>maxBytes)failures.push(`${webpPath}: ${formatBytes(buffer.length)} exceeds ${formatBytes(maxBytes)}`);
+    if(buffer.toString('ascii',0,4)!=='RIFF'||buffer.toString('ascii',8,12)!=='WEBP')failures.push(`${webpPath}: invalid WebP signature`);
   }
   if (totalBytes > maxTotalBytes) failures.push(`aggregate ${formatBytes(totalBytes)} exceeds ${formatBytes(maxTotalBytes)}`);
   if (failures.length) throw new Error(`[background asset budget] runtime backgrounds exceed budget:\n${failures.join('\n')}`);
-  return { count: contract.count, totalBytes };
+  return { count: collectBackgroundAssetPaths(root).length, totalBytes };
 }
 
 function optimizeBackgroundAssets(root, { write = false, channelBits = BACKGROUND_RUNTIME_CHANNEL_BITS } = {}) {
@@ -274,6 +275,7 @@ module.exports = {
   BACKGROUND_RUNTIME_WIDTH,
   BACKGROUND_RUNTIME_HEIGHT,
   BACKGROUND_RUNTIME_CHANNEL_BITS,
+  BACKGROUND_RUNTIME_WEBP_QUALITY,
   BACKGROUND_RUNTIME_MAX_BYTES,
   BACKGROUND_RUNTIME_MAX_TOTAL_BYTES,
   collectBackgroundAssetPaths,

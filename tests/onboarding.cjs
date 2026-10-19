@@ -7,27 +7,22 @@ const onboarding = fs.readFileSync(path.join(root, 'game/js/content/onboarding.m
 const foundation = fs.readFileSync(path.join(root, 'game/js/reboot-foundation.mjs'), 'utf8');
 const cloud = fs.readFileSync(path.join(root, 'game/js/cloud-save.mjs'), 'utf8');
 
-const approved = ['identity','roster','travel','skirmishPrep','skirmishChess','battlePrep','battleChess','event','settlement','puzzle'];
+const approved = ["identity","roster","travel","artifact","skirmishChess","battleChess","combatAftermath","event","settlement","puzzle","caravanChess","caravanReward","starvation","runEnd","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess","arenaResult"];
 const arrayMatch = onboarding.match(/const INCLUDED_HINTS = Object\.freeze\(\[([\s\S]*?)\]\);/);
 assert(arrayMatch, 'Onboarding must expose the approved hint list');
-const actual = [...arrayMatch[1].matchAll(/'([^']+)'/g)].map((match) => match[1]);
-assert.deepStrictEqual(actual, approved, 'Onboarding scope must contain exactly the ten approved screens');
+const actual = [...arrayMatch[1].matchAll(/[\x27\x22]([^\x27\x22]+)[\x27\x22]/g)].map((match) => match[1]);
+assert.deepStrictEqual(actual, approved, 'Onboarding scope must contain exactly 20 approved first-visit moments');
 
-for (const excluded of ['starvation','chronicle','runEnd','skirmishAftermath','battleAftermath']) {
+for (const excluded of ['skirmishPrep','battlePrep','caravanPrep']) {
   assert(!actual.includes(excluded), `Excluded onboarding screen leaked into scope: ${excluded}`);
 }
 for (const token of [
-  "'rpchess:run-new':'roster'",
-  "'rpchess:travel-open':'travel'",
-  "'rpchess:skirmish-open':'skirmishPrep'",
-  "'rpchess:battle-open':'battlePrep'",
-  "'rpchess:event-open':'event'",
-  "'rpchess:settlement-open':'settlement'",
-  "'rpchess:puzzle-open':'puzzle'",
-  "[data-skirmish-start]",
-  "[data-battle-start]",
-  "dismiss:'Понятно'",
-  "dismiss:'Got it'",
+  "'rpchess:run-new':['roster'",
+  "'rpchess:travel-open':['travel'",
+  "'rpchess:event-open':['event'",
+  "'rpchess:settlement-open':['settlement'",
+  "ru:'Понятно'",
+  "en:'Got it'",
   "role=\"dialog\"",
   "aria-modal=\"true\"",
   "rpchess:tutorial-updated"
@@ -42,4 +37,7 @@ assert(foundation.indexOf("import('./content/onboarding.mjs')") > foundation.ind
 assert(cloud.includes("const TUTORIAL_STORAGE_KEY = 'rpchess.reboot.v1.tutorial'"), 'Cloud Save must sync tutorial flags');
 assert(cloud.includes("'rpchess:tutorial-updated'"), 'Cloud autosync must react to tutorial updates');
 
-console.log('First-run onboarding scope, persistence, localization, accessibility and cloud wiring: PASS');
+assert(!actual.includes('skirmishPrep')&&!actual.includes('battlePrep')&&!actual.includes('caravanPrep'),'removed deployment screen hints must never reappear');
+assert(onboarding.includes('jester-patrick.webp'),'approved jester portrait missing');
+assert(onboarding.includes('rpchess:arena-catalog-shown'),'Arena first-visit tutorial wiring missing');
+console.log('First-run jester onboarding (20 moments), persistence, localization, accessibility and cloud wiring: PASS');

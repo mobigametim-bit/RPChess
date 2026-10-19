@@ -56,6 +56,9 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       const {writePlayerRating}=await import('./js/player-rating.mjs');
       writeRun({...readRun(),journeyStep:50});
       writePlayerRating({power:1600,receipts:[]});
+      // Preserve the two-player portrait fixture: the active-Glory scenario
+      // below deliberately installs a separate single-record fake server.
+      window.__portraitLeaderboardFetch=window.fetch;
       window.__rankedSubmissions=[];
       window.__rankedServerBest=null;
       window.fetch=async(resource,options)=>{
@@ -126,11 +129,47 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       await panel.screenshot({path:path.join(dir,'leaderboard-ru.png')});
     }
     assert((await panel.innerText()).includes('ГЕРОЕВ В СТРОЮ'));
+    // Reset the leaderboard provider between the active-Journey and
+    // multi-commander portrait scenarios so their fixtures cannot collide.
+    await page.evaluate(async()=>{
+      window.fetch=window.__portraitLeaderboardFetch;
+      const {loadLeaderboard}=await import('./js/leaderboard-client.mjs');
+      await loadLeaderboard({force:true});
+    });
+    await page.locator('.chronicle-leaderboard-row').nth(1).waitFor();
     await page.evaluate(()=>window.RPChessPlayerIdentity.open());
+    assert.strictEqual(await page.locator('[data-identity-commander]').count(),7,'seven original commanders available in the name dialog');
+    await page.locator('[data-identity-commander="wanderer_queen"]').click();
+    assert.strictEqual(await page.locator('[data-identity-commander="wanderer_queen"]').getAttribute('aria-pressed'),'true');
+    assert((await page.locator('[data-identity-commander-image]').getAttribute('src')).includes('wanderer_queen/portrait.webp'));
+    // Guard the actual 1313x641 modal layout: warm-gold cards, and both
+    // portrait and biography centered within the tall selected-king preview.
+    await page.setViewportSize({width:1313,height:641});
+    const commanderLayout=await page.evaluate(()=>{
+      const card=document.querySelector('.identity-commander-option');
+      const preview=document.querySelector('.identity-commander-preview');
+      const rect=preview.getBoundingClientRect(), middle=rect.top+rect.height/2;
+      const color=element=>getComputedStyle(element).borderTopColor.match(/[0-9.]+/g).slice(0,3).map(Number);
+      const offset=element=>{const r=element.getBoundingClientRect();return Math.abs(r.top+r.height/2-middle);};
+      return {cardBorder:color(card),previewBorder:color(preview),
+        portraitOffset:offset(preview.querySelector('img')),
+        biographyOffset:offset(preview.querySelector('div'))};
+    });
+    for(const rgb of [commanderLayout.cardBorder,commanderLayout.previewBorder])
+      assert(rgb[0]>rgb[1]&&rgb[1]>rgb[2],'commander card borders should be warm gold, not blue');
+    assert(commanderLayout.portraitOffset<=12&&commanderLayout.biographyOffset<=12,
+      'selected commander portrait and biography must both be vertically centered');
+    await page.setViewportSize({width:1653,height:760});
     await page.locator('[data-player-identity-input]').fill('Тимур');
     await setLanguage('en');
     assert.strictEqual(await page.locator('#player-identity-title').innerText(),'Who are you, warrior?');
     assert.strictEqual(await page.locator('[data-player-identity-input]').inputValue(),'Тимур','language changes preserve entered names');
+    assert.strictEqual(await page.locator('[data-identity-commander="wanderer_queen"]').getAttribute('aria-pressed'),'true','language switch must preserve the selected portrait');
+    assert((await page.locator('[data-identity-commander-description]').innerText()).includes('queen without a palace'),'commander bio changes to English');
+    assert.strictEqual(await panel.locator('.chronicle-leaderboard-avatar').count(),2,'existing flag shows portrait per ranked commander');
+    const portrait=await panel.locator('[data-chronicle-current] .chronicle-current-profile img').getAttribute('src');
+    assert(portrait.includes('/kings/oathkeeper/portrait.webp'),'legacy current runs keep the default royal portrait');
+
     assert.strictEqual(await page.locator('[data-player-identity-close]').getAttribute('aria-label'),'Close');
     await page.evaluate(()=>{
       window.RPChessPlayerIdentity.close();

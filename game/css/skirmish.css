@@ -4,7 +4,7 @@
   background:
     linear-gradient(180deg, rgba(3, 6, 9, .40), rgba(3, 6, 9, .72) 58%, rgba(3, 6, 9, .90)),
     linear-gradient(90deg, rgba(4, 7, 10, .62), rgba(5, 8, 11, .18) 56%, rgba(4, 7, 10, .42)),
-    #080a0c url('../generated_assets/scene_battle.jpg') center / cover fixed no-repeat;
+    #080a0c url('../generated_assets/scene_battle.webp') center / cover fixed no-repeat;
 }
 
 .skirmish-aftermath {
@@ -12,7 +12,7 @@
   padding: clamp(16px, 2.4vw, 38px);
   background:
     linear-gradient(90deg, rgba(3, 7, 16, .96), rgba(6, 12, 22, .72) 52%, rgba(3, 7, 16, .92)),
-    #050a12 url('../generated_assets/splash_poster.jpg') center / cover fixed no-repeat;
+    #050a12 url('../generated_assets/splash_poster.webp') center / cover fixed no-repeat;
 }
 
 [data-skirmish-screen][hidden],

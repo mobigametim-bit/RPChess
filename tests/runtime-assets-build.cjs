@@ -40,7 +40,34 @@ equal('assets/vfx/pin_ice_full.png',piece.optimizePngBuffer(read(GAME,'assets/vf
 equal('assets/vfx/aura_white.png',piece.optimizePngBuffer(read(GAME,'assets/vfx/aura_white.png'),aura.AURA_RUNTIME_MAX_SIDE).buffer);
 equal('assets/races/orcs/pieces/pawn.png',expectedPng('assets/races/orcs/pieces/pawn.png',piece.PIECE_RUNTIME_MAX_SIDE,piece.PIECE_RUNTIME_MAX_BYTES));
 equal('assets/kings/oathkeeper/portrait.png',expectedPng('assets/kings/oathkeeper/portrait.png',portrait.PORTRAIT_RUNTIME_MAX_SIDE,portrait.PORTRAIT_RUNTIME_MAX_BYTES));
-equal('assets/events/register-04/backgrounds/generic/forest_crossroad.png',background.optimizeBackgroundBuffer(read(GAME,'assets/events/register-04/backgrounds/generic/forest_crossroad.png'),background.BACKGROUND_RUNTIME_CHANNEL_BITS).buffer);
+// All seven selected commanders have a compressed portrait and a distinct pair of kings.
+// Verify the built files match the authored WebP bytes exactly (never fall back to old king PNG).
+for(const id of ['oathkeeper','stone_crown','wanderer_queen','pilgrim','fox_prince','ash_regent','nameless_heir']){
+  for(const asset of [`assets/kings/${id}/portrait.webp`,`assets/kings/${id}/pieces/white.webp`,`assets/kings/${id}/pieces/black.webp`]){
+    const file=read(GAME,asset);
+    assert(file.toString('ascii',0,4)==='RIFF'&&file.toString('ascii',8,12)==='WEBP',`invalid WebP ${asset}`);
+    equal(asset,file);
+  }
+}
+// All 80 supplied pawn variants must be copied byte-for-byte into dist: no legacy
+// badge fallback, and no PNG masters or extra runtime conversion work.
+for(const id of ['daro_last','kael_cinder','mara_chain','nemea_quill','puck_ember','renzo_bridge','saran_dawn','elio_silk']){
+  for(const side of ['white','black'])for(const role of ['pawn','knight','bishop','rook','queen']){
+    const asset=`assets/heroes/${id}/pieces/${side}/${role}.webp`;
+    const raw=read(GAME,asset);
+    assert(raw.length<=42*1024&&raw.toString('ascii',0,4)==='RIFF'&&raw.toString('ascii',8,12)==='WEBP',
+      `malformed or oversized named pawn art: ${asset}`);
+    equal(asset,raw);
+  }
+}
+equal('assets/events/register-04/backgrounds/generic/forest_crossroad.webp',read(GAME,'assets/events/register-04/backgrounds/generic/forest_crossroad.webp'));
+assert(!fs.existsSync(path.join(DIST,'assets/events/register-04/backgrounds/generic/forest_crossroad.png')),'Event PNG masters must not be published to dist');
+
+for(const relative of ['generated_assets/splash_poster.webp','generated_assets/scene_battle.webp','generated_assets/scene_campaign.webp','generated_assets/scene_reward.webp','assets/regions/ashen_dominion/boss_arena.webp'])
+  equal(relative,read(GAME,relative));
+for(const relative of ['generated_assets/splash_poster.jpg','generated_assets/scene_battle.jpg','generated_assets/scene_campaign.jpg','generated_assets/scene_reward.jpg','assets/regions/ashen_dominion/boss_arena.jpg'])
+  assert(!fs.existsSync(path.join(DIST,relative)),'Uncompressed scene master must not be shipped in dist: '+relative);
+
 for(const relative of brandLogo.BRAND_LOGO_FILES)equal(relative,piece.optimizePngBuffer(read(GAME,relative),brandLogo.BRAND_LOGO_RUNTIME_MAX_SIDE).buffer);
 
 for(const relative of [

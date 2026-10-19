@@ -11,8 +11,14 @@ async function language(page, code) {
   try {
     await page.evaluate(async code => (await import('./js/i18n.mjs')).setLanguage(code), code);
   } catch (error) {
-    console.error(`[localization] language switch ${code} failed (current URL: ${page.url()})`);
-    throw error;
+    // The browser can replace an execution context during its own same-URL
+    // navigation. A single retry after the new document has finished loading
+    // is safer than treating a transient Playwright context error as an i18n bug.
+    if(!/Execution context was destroyed/.test(String(error))||page.isClosed())throw error;
+    console.warn(`[localization] recovering same-page context during ${code} switch`);
+    await page.waitForLoadState('domcontentloaded',{timeout:15000});
+    await page.waitForFunction(()=>Boolean(globalThis.RPChessI18n?.setLanguage),null,{timeout:15000});
+    await page.evaluate(async code => (await import('./js/i18n.mjs')).setLanguage(code), code);
   }
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 }
@@ -116,18 +122,14 @@ async function seed(page, type, index = 0, eventId = null) {
     for(const type of ['skirmish','battle','caravan']) {
       page = await fresh();
       await seed(page,type);
-      await roundtrip(page,`${type} preparation`);
       const api=type==='skirmish'?'RPChessSkirmish':'RPChessBattle';
       const prefix=type==='skirmish'?'skirmish':'battle';
-      const king=await page.evaluate(async()=> (await import('./js/run-persistence.mjs')).readRun().roster.find(hero=>hero.isRunKing).id);
-      await language(page,'ru');
-      await page.locator(`[data-${prefix}-character="${king}"]`).click();
-      await roundtrip(page,`${type} selection notice`);
-      await page.evaluate(api=>globalThis[api].start(),api);
-      if(await page.locator('[data-artifact-choice-modal]').count()){
-        await roundtrip(page,`${type} artifact choice`);
-        await page.locator('[data-artifact-choice="none"]').click();
-      }
+      await page.locator('[data-artifact-choice-modal]').waitFor();
+      assert.strictEqual(await page.locator(`[data-${prefix}-screen]`).isHidden(),true,`${type} must skip preparation`);
+      const chosen=await page.evaluate(name=>globalThis[name].selectedIds,api);
+      assert(chosen.includes('king.oathkeeper'),`${type} automatic roster selection must keep the King`);
+      await roundtrip(page,`${type} automatic deployment and artifact choice`);
+      await page.locator('[data-artifact-choice="none"]').click();
       await page.locator('[data-classic-screen]:not([hidden])').waitFor();
       await roundtrip(page,`${type} chessboard`);
       await page.evaluate(api=>{const combat=globalThis[api];combat.finishBattle({over:true,type:'checkmate',winner:combat.battlePlan.playerColor});},api);

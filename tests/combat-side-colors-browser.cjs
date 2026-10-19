@@ -33,7 +33,8 @@ async function fresh(page,type,playerColor,race){
   await page.locator('[data-roster-travel]').click();
   await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
   await page.locator(`[data-travel-type="${type}"]`).first().click();
-  await page.locator(`[data-${type}-screen]:not([hidden])`).waitFor();
+  await page.locator('[data-artifact-choice-modal]').waitFor();
+  assert.strictEqual(await page.locator(`[data-${type}-screen]`).isHidden(),true,'combat preparation is skipped');
   await page.waitForTimeout(60);
 }
 async function prepState(page,type){
@@ -48,11 +49,20 @@ async function prepState(page,type){
 }
 async function combatAuraState(page){
   return page.evaluate(()=>{
-    const white=document.querySelector('.classic-square:has(.classic-piece-marker--w)');
-    const black=document.querySelector('.classic-square:has(.classic-piece-marker--b)');
+    const cells=[...document.querySelectorAll('.classic-square')];
+    const chosen=(side)=>{
+      const color=side==='white'?'w':'b';
+      return cells.find(square=>{
+        const art=square.querySelector('.classic-piece')?.getAttribute('src')||'';
+        return art.includes(`/pieces/board/${side}/`)||art.includes(`/pieces/${side}.webp`);
+      })||document.querySelector(`.classic-square:has(.classic-piece-marker--${color})`);
+    };
+    const white=chosen('white'),black=chosen('black');
     const state=(node)=>node?{
       side:getComputedStyle(node).getPropertyValue('--combat-piece-glow-side').trim(),
-      image:getComputedStyle(node,'::after').backgroundImage||''
+      image:getComputedStyle(node,'::after').backgroundImage||'',
+      art:node.querySelector('.classic-piece')?.getAttribute('src')||'',
+      glyphDisplay:node.querySelector('.classic-piece-marker')?getComputedStyle(node.querySelector('.classic-piece-marker')).display:'none'
     }:{side:'',image:''};
     return{
       active:document.body.classList.contains('run-combat-board-active'),
@@ -62,7 +72,7 @@ async function combatAuraState(page){
 }
 async function redCheckAuraState(page){
   return page.evaluate(()=>{
-    const square=document.querySelector('.classic-square:has(.classic-piece-marker--w),.classic-square:has(.classic-piece-marker--b)');
+    const square=document.querySelector('[data-chess-board] .classic-square:has(.classic-piece--new-race)')||document.querySelector('[data-chess-board] .classic-square:has(.classic-piece-marker--w),[data-chess-board] .classic-square:has(.classic-piece-marker--b)');
     if(!square)return{side:'',image:''};
     square.classList.add('classic-square--check');
     const result={
@@ -95,15 +105,66 @@ function assertPrep(state,side){
   }
 }
 function assertAuras(state){
-  assert.strictEqual(state.active,true,'run combat board must enable persistent side aura');
-  assert.strictEqual(state.white.side,'white');
-  assert.strictEqual(state.black.side,'black');
-  assert(state.white.image.includes('aura_white.png'),'white side must use aura_white.png');
-  assert(state.black.image.includes('aura_black.png'),'black side must use aura_black.png');
-  assert.notStrictEqual(state.white.image,state.black.image,'white and black aura art must differ');
+  assert.strictEqual(state.active,true,'combat board must activate overlay rules');
+  for(const side of ['white','black']){
+    const entry=state[side];
+    const dedicated=entry.art.includes('/pieces/board/')||/\/kings\/[^/]+\/pieces\/(?:white|black)\.webp$/.test(entry.art)||/\/heroes\/[^/]+\/pieces\/(?:white|black)\/(?:pawn|queen|rook|bishop|knight)\.webp$/.test(entry.art);
+    if(dedicated){
+      assert(!entry.image.includes('aura_'),`${side} newly illustrated chess piece must not use decorative auras`);
+      assert.strictEqual(entry.glyphDisplay,'none',`${side} readable chess piece must hide its role glyph`);
+    }else{
+      assert.strictEqual(entry.side,side);
+      assert(entry.image.includes(`aura_${side}.png`),`${side} old named hero must retain aura until replaced`);
+      assert.notStrictEqual(entry.glyphDisplay,'none',`${side} old named hero must retain glyph until replaced`);
+    }
+  }
+}
+async function assertNamedHeroBoardArt(page,playerColor){
+  const named=await page.evaluate(()=>{
+    return [...document.querySelectorAll('[data-chess-board] .classic-piece--personalized')].map(img=>{
+      const square=img.closest('.classic-square');
+      const marker=square?.querySelector('.classic-piece-marker');
+      return {
+        id:img.dataset.personalizedId,
+        source:img.getAttribute('src')||'',
+        incorrectlyGeneric:img.classList.contains('classic-piece--new-race'),
+        markerVisible:!!marker&&getComputedStyle(marker).display!=='none',
+        aura:getComputedStyle(square,'::after').backgroundImage,
+        state:getComputedStyle(square).getPropertyValue('--combat-piece-glow-side').trim(),
+        check:square?.classList.contains('classic-square--check'),
+        arriving:!!square?.querySelector('.classic-piece--arriving'),
+        maskedByRaceSprite:!!square?.querySelector('.classic-piece--new-race')
+      };
+    });
+  });
+  assert(named.some(hero=>hero.id==='king.oathkeeper'&&hero.source.includes(`/kings/oathkeeper/pieces/${playerColor==='w'?'white':'black'}.webp`)),
+    'Run King must use the selected commander sprite matching his white/black side');
+  // The entire starter roster (including Aldric the Rook) now has dedicated art.
+  const side=playerColor==='w'?'white':'black';
+  assert(named.some(hero=>hero.id==='hero.aldric_wall'&&hero.source.endsWith(`/heroes/aldric_wall/pieces/${side}/rook.webp`)),
+    'Aldric must use the new side-specific Rook art in both white and black combat');
+  assert(named.some(hero=>hero.id==='hero.vael_hammer'&&hero.source.endsWith(`/heroes/vael_hammer/pieces/${side}/knight.webp`)),
+    'Vael must preserve his personalized Knight art');
+  assert(named.some(hero=>hero.id==='hero.brother_orell'&&hero.source.endsWith(`/heroes/brother_orell/pieces/${side}/bishop.webp`)),
+    'Brother Orell must preserve his personalized Bishop art');
+  for(const hero of named){
+    if(hero.id==='king.oathkeeper'||/\/heroes\/[^/]+\/pieces\/(?:white|black)\//.test(hero.source)){
+      assert(hero.incorrectlyGeneric,`${hero.id}: newly illustrated chess sprites must suppress old glyph and side glow`);
+      assert(!hero.markerVisible,`${hero.id}: updated chess sprites must not display a legacy role glyph`);
+      assert(!hero.aura.includes('aura_white')&&!hero.aura.includes('aura_black'),
+        `${hero.id}: no routine side aura is allowed behind updated pieces`);
+      if(hero.check)assert(hero.aura.includes('aura_red'),`${hero.id}: red check feedback must remain`);
+      continue;
+    }
+    assert.strictEqual(hero.incorrectlyGeneric,false,`${hero.id}: legacy named hero artwork stays separate from new chess art`);
+    assert(hero.markerVisible,`${hero.id}: legacy glyph remains until that hero is replaced`);
+    const expectedSide=hero.check?'red':(playerColor==='w'?'white':'black');
+    assert(hero.aura.includes(`aura_${expectedSide}.png`),
+      `${hero.id}: legacy hero keeps ${expectedSide} aura; got ${JSON.stringify(hero)}`);
+  }
 }
 function assertRedCheckAura(state){
-  assert.strictEqual(state.side,'red','check must override side aura state');
+  assert(!state.side||state.side==='red','check must never retain white/black glow state');
   assert(state.image.includes('aura_red.png'),'check must use aura_red.png');
 }
 function assertAuraAssets(responses){
@@ -122,12 +183,12 @@ function assertAuraAssets(responses){
     const battle=await browser.newPage({viewport:{width:1440,height:900}}),battleErrors=[];
     battle.on('pageerror',(error)=>battleErrors.push(String(error.stack||error)));
     await fresh(battle,'battle','b','constructs');
-    assertPrep(await prepState(battle,'battle'),'b');
-    await battle.locator('[data-battle-start]').click();
+    assert((await battle.evaluate(()=>globalThis.RPChessBattle.selectedIds)).includes('king.oathkeeper'),'automatic black-side Battle team includes king');
     await battle.locator('[data-artifact-choice="none"]').click();
     await battle.locator('[data-classic-screen]:not([hidden])').waitFor();
     await battle.waitForTimeout(60);
     assertAuras(await combatAuraState(battle));
+    await assertNamedHeroBoardArt(battle,'b');
     assertRedCheckAura(await redCheckAuraState(battle));
     assertAuraAssets(await auraAssetResponses(battle));
     await battle.evaluate(()=>globalThis.RPChessBattle.finishBattle({over:true,type:'stalemate',winner:null}));
@@ -139,14 +200,14 @@ function assertAuraAssets(responses){
     const skirmish=await browser.newPage({viewport:{width:1440,height:900}}),skirmishErrors=[];
     skirmish.on('pageerror',(error)=>skirmishErrors.push(String(error.stack||error)));
     await fresh(skirmish,'skirmish','w','demons');
-    assertPrep(await prepState(skirmish,'skirmish'),'w');
-    await skirmish.locator('[data-skirmish-start]').click();
+    assert((await skirmish.evaluate(()=>globalThis.RPChessSkirmish.selectedIds)).includes('king.oathkeeper'),'automatic white-side Skirmish includes king');
     await skirmish.locator('[data-artifact-choice="none"]').click();
     await skirmish.locator('[data-classic-screen]:not([hidden])').waitFor();
     await skirmish.waitForTimeout(60);
     assertAuras(await combatAuraState(skirmish));
+    await assertNamedHeroBoardArt(skirmish,'w');
     assert.deepStrictEqual(skirmishErrors,[]);
 
-    console.log('Combat side colors: PASS — prep glyphs match combat side; aura_white/aura_black persist under pieces; aura_red overrides check; aura PNGs load from runtime dist');
+    console.log('Combat side colors: PASS — updated kings and race sprites omit glyphs/auras; unreplaced heroes retain legacy visuals');
   }finally{await browser.close();}
 })().catch((error)=>{console.error(error.stack||error);process.exitCode=1;});

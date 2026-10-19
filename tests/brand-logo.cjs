@@ -15,7 +15,7 @@ const resolver = read('js/brand-logo.mjs');
 for (const token of ['logo_ru.png', 'logo_en.png', 'currentLanguage', 'subscribe', '[data-brand-logo]']) assert(resolver.includes(token), `brand-logo resolver missing ${token}`);
 
 const dynamicScreens = [
-  'js/battle-app.mjs', 'js/events-app.mjs', 'js/skirmish-app.mjs', 'js/starvation-app.mjs',
+  'js/battle-app.mjs', 'js/events-app.mjs', 'js/skirmish-app.mjs',
   'js/endless-run-app.mjs', 'js/settlement-app.mjs', 'js/puzzles/puzzle-app.mjs'
 ];
 for (const relative of dynamicScreens) {
@@ -25,6 +25,18 @@ for (const relative of dynamicScreens) {
   assert.strictEqual(source.includes('title_wordmark.png'), false, `${relative} must not reference the legacy wordmark`);
 }
 assert.strictEqual(read('js/travel-choice-app.mjs').includes('title_wordmark.png'), false, 'hidden Travel legacy wordmark must be removed');
+
+const starvation = read('js/starvation-app.mjs');
+assert(!starvation.includes('data-brand-logo') && !starvation.includes('brand-logo.mjs'),
+  'approved Starvation death screens must have no logo or brand resolver');
+const battle = read('js/battle-app.mjs');
+assert(battle.includes("battle-aftermath--death") && battle.includes('deathLogo.hidden=Boolean(casualty)'),
+  'Mercenary death must hide the existing aftermath logo without changing normal outcomes');
+const fallbackStart=battle.indexOf('runEndScreen.innerHTML =');
+const fallbackEnd=battle.indexOf('app.append(prepScreen',fallbackStart);
+assert(fallbackStart>=0&&fallbackEnd>fallbackStart&&!battle.slice(fallbackStart,fallbackEnd).includes('battle-logo'),
+  'King Battle run-end fallback must not render a corner logo');
+
 
 const build = fs.readFileSync(path.join(root, 'scripts/build.cjs'), 'utf8');
 for (const token of ['logo_ru.png', 'logo_en.png', 'assertBrandLogoAssetBudget', 'Runtime brand logos']) assert(build.includes(token), `runtime build missing ${token}`);

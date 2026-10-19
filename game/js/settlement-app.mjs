@@ -1,3 +1,4 @@
+import { heroPortraitArt } from './race-assets.mjs';
 import { PIECE_GLYPHS } from './roster-data.mjs';
 import { readRun, writeRun } from './run-persistence.mjs';
 import { subscribe, t, translateLegacy } from './i18n.mjs';
@@ -155,7 +156,7 @@ function renderHealer() {
     row.className = 'settlement-heal-row';
     const price = healCost(character);
     row.innerHTML = `
-      <img src="${character.portrait}" alt="${contentText(character.name)}">
+      <img src="${heroPortraitArt(character)}" alt="${contentText(character.name)}">
       <div><strong>${contentText(character.name)}</strong><span>${PIECE_GLYPHS[character.pieceType] || ''} ${pieceLabel(character.pieceType)}</span></div>
       <div class="settlement-heal-row__action">${goldMarkup(price)}<button class="reboot-button reboot-button--primary" type="button" data-settlement-heal="${character.id}" ${activeRun.gold < price ? 'disabled' : ''}>${t('settlement.healer.action')}</button></div>`;
     root.append(row);
@@ -175,7 +176,7 @@ function renderRecruits() {
     card.className = `settlement-recruit${alreadyPresent ? ' is-hired' : ''}`;
     card.dataset.settlementRecruitCard = candidateId;
     card.innerHTML = `
-      <img class="settlement-recruit__portrait" src="${candidate.portrait}" alt="${contentText(candidate.name)}">
+      <img class="settlement-recruit__portrait" src="${heroPortraitArt(candidate)}" alt="${contentText(candidate.name)}">
       <div class="settlement-recruit__body">
         <div class="settlement-recruit__head"><strong>${contentText(candidate.name)}</strong><span>${PIECE_GLYPHS[candidate.pieceType] || ''} ${pieceLabel(candidate.pieceType)}</span></div>
         <small>${contentText(candidate.origin)}</small>

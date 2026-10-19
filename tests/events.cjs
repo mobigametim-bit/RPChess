@@ -46,14 +46,14 @@ const path=require('path'),assert=require('assert'),fs=require('fs'),{pathToFile
         }
       }
     }
-    const background=raceAssets.eventBackgroundPath(e);assert(background.startsWith('assets/events/register-04/backgrounds/'));assert(fs.existsSync(path.join(game,background)),`${e.id} background must exist: ${background}`);
+    const background=raceAssets.eventBackgroundPath(e);assert(background.startsWith('assets/events/register-04/backgrounds/'));assert(fs.existsSync(path.join(game,background.replace(/\.webp$/,'.png'))),`${e.id} background must exist: ${background}`);
   }
   assert.strictEqual(data.eventById('E131')?.race,'Дварфы');assert.strictEqual(data.eventById('E131')?.raceTag,'dwarves');
   const dragonbornAlias=v4.find(e=>e.race==='Драконорождённые');assert(dragonbornAlias);assert.strictEqual(dragonbornAlias.raceTag,'dragonborn');
 
-  const animalBackground=raceAssets.eventBackgroundPath({id:'animal-background-contract',race:'Животные'});assert(/^assets\/events\/register-04\/backgrounds\/animals\/(wild_glen|riverbank_tracks)\.png$/.test(animalBackground),`Animals runtime must use canonical files: ${animalBackground}`);assert(fs.existsSync(path.join(game,animalBackground)));
-  const faeBackground=raceAssets.eventBackgroundPath({id:'fae-background-contract',race:'Феи'});assert(/^assets\/events\/register-04\/backgrounds\/fae\/(fae_ring_garden|whispering_meadow)\.png$/.test(faeBackground),`Fae runtime must use canonical files: ${faeBackground}`);assert(fs.existsSync(path.join(game,faeBackground)));
-  const goblinBackground=raceAssets.eventBackgroundPath({id:'goblin-background-contract',race:'Гоблины'});assert(/^assets\/events\/register-04\/backgrounds\/goblins\/(goblin_trade_nook|goblin_scrapyard_camp)\.png$/.test(goblinBackground),`Goblin runtime must use canonical files: ${goblinBackground}`);assert(fs.existsSync(path.join(game,goblinBackground)));
+  const animalBackground=raceAssets.eventBackgroundPath({id:'animal-background-contract',race:'Животные'});assert(/^assets\/events\/register-04\/backgrounds\/animals\/(wild_glen|riverbank_tracks)\.webp$/.test(animalBackground),`Animals runtime must use canonical files: ${animalBackground}`);assert(fs.existsSync(path.join(game,animalBackground.replace(/\.webp$/,'.png'))));
+  const faeBackground=raceAssets.eventBackgroundPath({id:'fae-background-contract',race:'Феи'});assert(/^assets\/events\/register-04\/backgrounds\/fae\/(fae_ring_garden|whispering_meadow)\.webp$/.test(faeBackground),`Fae runtime must use canonical files: ${faeBackground}`);assert(fs.existsSync(path.join(game,faeBackground.replace(/\.webp$/,'.png'))));
+  const goblinBackground=raceAssets.eventBackgroundPath({id:'goblin-background-contract',race:'Гоблины'});assert(/^assets\/events\/register-04\/backgrounds\/goblins\/(goblin_trade_nook|goblin_scrapyard_camp)\.webp$/.test(goblinBackground),`Goblin runtime must use canonical files: ${goblinBackground}`);assert(fs.existsSync(path.join(game,goblinBackground.replace(/\.webp$/,'.png'))));
   const races=['Люди','Эльфы','Орки','Нежить','Тёмные эльфы','Гномы','Демоны','Ангелы','Дракониды','Зверолюди','Конструкты','Животные','Феи','Гоблины'];for(const race of races)assert.strictEqual(v1.filter(e=>e.race===race).length,6,`${race} must keep six accepted v1 events`);
   const bag=core.shuffledEventIds('bag-test',0);assert.strictEqual(bag.length,500);assert.strictEqual(new Set(bag).size,500);assert.deepStrictEqual(bag,core.shuffledEventIds('bag-test',0));
   assert.deepStrictEqual(travel.PLAYABLE_TRAVEL_TYPES,['skirmish','battle','settlement','event','puzzle','caravan']);const samples={skirmish:0,battle:0,settlement:0,event:0,puzzle:0,caravan:0};for(let i=1;i<=5000;i++)for(const c of travel.createTravelChoices({runId:`prob-${i}`,step:1}))samples[c.type]++;for(const type of Object.keys(samples)){const ratio=samples[type]/15000;assert(ratio>.15&&ratio<.185,`${type} empirical ratio ${ratio} is not near 1/6`);}
@@ -73,6 +73,13 @@ const path=require('path'),assert=require('assert'),fs=require('fs'),{pathToFile
   const base=persistence.createRun({id:'wounded-king',now:3}),woundedKing={...base,roster:base.roster.map(c=>c.isRunKing?{...c,status:'wounded'}:c)};const skirmish=await import(pathToFileURL(path.join(game,'js/skirmish-core.mjs')).href);const battle=await import(pathToFileURL(path.join(game,'js/battle-core.mjs')).href);assert(skirmish.defaultCombatSelection(woundedKing.roster).includes(woundedKing.roster.find(c=>c.isRunKing).id));assert(battle.defaultBattleSelection(woundedKing.roster).includes(woundedKing.roster.find(c=>c.isRunKing).id));
 
   const appSource=fs.readFileSync(path.join(game,'js/events-app.mjs'),'utf8');
+  const resourcesSource=fs.readFileSync(path.join(game,'js/ux-consistency.mjs'),'utf8');
+  assert(resourcesSource.includes('suppl(?:y|ies)')&&resourcesSource.includes('iconize:iconizeText'),
+    'shared resource iconizer must recognize both Supply and Supplies and expose explicit Event rendering');
+  assert(appSource.includes('RPChessResourceIcons?.iconize?.(choices)'),
+    'Event choices must iconize resource labels immediately after each render');
+  assert(appSource.includes("RPChessResourceIcons?.iconize?.(screen.querySelector('[data-events-outcome-notes]'))"),
+    'Event outcome resource notes must use the same icon treatment');
   const landscapeCss=fs.readFileSync(path.join(game,'css/landscape-ui-redesign.css'),'utf8');
   const uiSource=fs.readFileSync(path.join(game,'localization/ui.mjs'),'utf8');
   assert(appSource.includes("import { subscribe, t, translateLegacy } from './i18n.mjs'"),'Events owner must consume semantic i18n directly while retaining explicit content translation');

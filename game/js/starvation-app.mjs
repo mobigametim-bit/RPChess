@@ -1,7 +1,7 @@
+import { heroPortraitArt } from './race-assets.mjs';
 import { readRun, writeRun } from './run-persistence.mjs';
 import { acknowledgeStarvation, hasPendingStarvation } from './starvation-core.mjs';
 import { subscribe, t, translateLegacy } from './i18n.mjs';
-import { brandLogoSrc } from './brand-logo.mjs';
 
 let screen = null;
 let activeRun = null;
@@ -19,7 +19,7 @@ function ensureStylesheet(marker, href) {
 }
 
 function ensureCss() {
-  ensureStylesheet('data-starvation-css', 'css/starvation.css?v=20260909-owner2');
+  ensureStylesheet('data-starvation-css', 'css/starvation.css?v=20261018-death-center');
   ensureStylesheet('data-starvation-compact-css', 'css/starvation-compact.css?v=20260909-owner1');
 }
 
@@ -41,7 +41,6 @@ function ensureScreen() {
   screen.hidden = true;
   screen.innerHTML = `
     <div class="starvation-shell">
-      <img class="starvation-logo" data-brand-logo src="${brandLogoSrc()}" alt="RPChess">
       <section class="starvation-panel ui-panel-safe" aria-live="polite">
         <div class="reboot-eyebrow"></div>
         <h1 data-starvation-title></h1>
@@ -90,7 +89,7 @@ function render(run) {
 
   if (title) title.textContent = kingDied ? t('starvation.kingTitle') : t('starvation.title');
   if (portrait) {
-    portrait.src = victim.portrait || victim.pieceArt || '';
+    portrait.src = heroPortraitArt(victim);
     portrait.alt = victim.name ? displayName : t('starvation.victimFallback');
   }
   if (piece) {
@@ -112,6 +111,7 @@ function open(run = null) {
   document.body.classList.add('starvation-active');
   window.scrollTo({ top: 0, behavior: 'auto' });
   globalThis.RPChessResources?.render?.();
+  globalThis.dispatchEvent?.(new CustomEvent('rpchess:starvation-shown'));
   return true;
 }
 

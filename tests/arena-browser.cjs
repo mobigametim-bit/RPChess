@@ -6,8 +6,15 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
   try{
     const page=await browser.newPage({viewport:{width:950,height:530}});
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
+    // Simulate a slow initial Arena catalog image. The mask must cover its loading.
+    await page.route('**/assets/races/humans/pieces/board/white/king.png',async route=>{
+      await new Promise(resolve=>setTimeout(resolve,650));
+      await route.continue();
+    });
     await page.goto(url,{waitUntil:'networkidle'});
     await page.locator('[data-arena-open]').click();
+    await page.waitForFunction(()=>!document.querySelector('[data-game-loading]')?.hidden,{timeout:3000});
+    await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
     await page.locator('[data-arena-screen]:not([hidden])').waitFor();
     assert.strictEqual(await page.locator('[data-arena-foes] button').count(),84);
     assert.strictEqual(await page.locator('[data-arena-prev], [data-arena-next]').count(),0,'section arrows are removed');
@@ -16,6 +23,23 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert.strictEqual(await page.locator('[data-arena-squads] button').count(),14);
     assert.strictEqual(await page.locator('[data-arena-squads] button:not([disabled])').count(),1,'unaffordable squads are disabled');
     assert.strictEqual(await page.locator('[data-arena-squads] button').first().innerText(),'','owned squad shows only its art');
+    // All Arena catalog cards now use the same color-specific race chess art as the board.
+    const catalogArt=await page.evaluate(()=>({
+      humanSquad:document.querySelector('[data-arena-squad="humans"] .arena-squad-art')?.getAttribute('src'),
+      orcSquad:document.querySelector('[data-arena-squad="orcs"] .arena-squad-art')?.getAttribute('src'),
+      humanRival:document.querySelector('[data-arena-foes] .arena-foe-art')?.getAttribute('src')
+    }));
+    assert(catalogArt.humanSquad?.includes('/humans/pieces/board/white/king.png'),'Arena squad selection must use the new human white king');
+    assert(catalogArt.orcSquad?.includes('/orcs/pieces/board/white/king.png'),'Arena squad selection must use the new orc white king');
+    assert(catalogArt.humanRival?.includes('/humans/pieces/board/black/pawn.png'),'Arena rival selection must use the new human black pawn');
+    assert(Object.values(catalogArt).every(src=>src?.includes('/pieces/board/')),'Arena catalogs must display color-specific chess pieces');
+    const allSquadArt=await page.locator('[data-arena-squads] .arena-squad-art').evaluateAll(nodes=>nodes.map(img=>img.getAttribute('src')));
+    const allRivalArt=await page.locator('[data-arena-foes] .arena-foe-art').evaluateAll(nodes=>nodes.map(img=>img.getAttribute('src')));
+    assert.strictEqual(allSquadArt.length,14);
+    assert.strictEqual(allRivalArt.length,84);
+    assert(allSquadArt.every(src=>src?.includes('/pieces/board/white/king.png')),'all squad cards use new white kings');
+    assert(allRivalArt.every(src=>src?.includes('/pieces/board/black/')),'all 84 rival cards use new black chess sprites');
+
     await page.evaluate(()=>{
       const now=Date.now();
       localStorage.setItem('rpchess.reboot.v1.arena',JSON.stringify({version:1,squad:'orcs',match:null,updatedAt:now,events:[
@@ -119,11 +143,11 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert.strictEqual(await page.locator('[data-arena-board] [data-square]').count(),64);
     await page.setViewportSize({width:1900,height:909});
     const combatBoard=await page.locator('[data-arena-board]').boundingBox();
-    assert(combatBoard.x>=0 && combatBoard.y<=1 && Math.abs(combatBoard.width-909)<=1 && Math.abs(combatBoard.height-909)<=1,'battle board must fit edge to edge in the landscape viewport');
+    assert(Math.abs(combatBoard.x+combatBoard.width/2-950)<=2 && Math.abs(combatBoard.y+combatBoard.height/2-454.5)<=2 && Math.abs(combatBoard.width-909)<=2 && Math.abs(combatBoard.height-909)<=2,'Arena board must center on the full landscape viewport');
     assert.strictEqual(await page.locator('.arena-nav-actions button').first().getAttribute('data-arena-rivals'),'','opponents button must precede main menu');
     assert(await page.locator('[data-arena-battle-title]').isVisible() && await page.locator('[data-arena-moves]').isVisible(),'battle summary and move journal must both be visible');
     const railBackground=await page.locator('.arena-shell').evaluate(element=>getComputedStyle(element).backgroundImage);
-    assert(railBackground.includes('ashen_dominion/boss_arena.jpg'),'Arena combat should use the repository arena backdrop');
+    assert(railBackground.includes('ashen_dominion/boss_arena.webp'),'Arena combat should use the repository arena backdrop');
     await page.setViewportSize({width:1363,height:936});
     const midNav=await page.evaluate(()=>({right:document.querySelector('[data-arena-back]').getBoundingClientRect().right,board:document.querySelector('[data-arena-board]').getBoundingClientRect().left}));
     assert(midNav.right<=midNav.board,'main menu button must fit in the rail at a nearly square landscape size');
@@ -136,6 +160,9 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       });
       const tag=`${width}x${height}`;
       assert(frame.board.left>=-1 && frame.board.right<=width+1 && frame.board.bottom<=height+1,`Arena board fits viewport ${tag}`);
+      assert(Math.abs((frame.board.left+frame.board.right)/2-width/2)<=2,`Arena board must be horizontally centered on the viewport ${tag}`);
+      assert(Math.abs((frame.board.top+frame.board.bottom)/2-height/2)<=2,`Arena board must be vertically centered ${tag}`);
+      assert(Math.abs(frame.board.width-frame.board.height)<=2,`Arena board remains square ${tag}`);
       assert(frame.pageWidth<=width+1,`Arena does not create page horizontal overflow ${tag}`);
       assert(frame.rivals.right<=frame.back.left+1 && frame.back.right<=frame.board.left+1,`Arena navigation stays in left rail ${tag}`);
       assert(frame.head.left>=-1 && frame.head.right<=frame.board.left+1 && frame.head.top>=-1,`Arena summary stays in left rail ${tag}`);
@@ -165,8 +192,12 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       const native=Element.prototype.animate;
       Element.prototype.animate=function(frames,options){if(this.classList.contains('classic-piece-flyer'))window.__arenaFlyerDurations.push(options.duration);return native.call(this,frames,options);};
     });
-    await page.locator('[data-arena-board] [data-square="e2"]').click();
-    await page.locator('[data-arena-board] [data-square="e4"]').click();
+    const dragOrigin=await page.locator('[data-arena-board] [data-square="e2"]').boundingBox();
+    const dragTarget=await page.locator('[data-arena-board] [data-square="e4"]').boundingBox();
+    await page.mouse.move(dragOrigin.x+dragOrigin.width/2,dragOrigin.y+dragOrigin.height/2);
+    await page.mouse.down();
+    await page.mouse.move(dragTarget.x+dragTarget.width/2,dragTarget.y+dragTarget.height/2,{steps:8});
+    await page.mouse.up();
     await page.waitForFunction(()=>window.RPChessArena?.state.match.moves.length>=2,{timeout:16000});
     assert((await page.evaluate(()=>window.__arenaFlyerDurations)).every(duration=>duration>=290),'Arena pieces should visibly slide across the board');
     assert((await page.evaluate(()=>window.__arenaFlyerDurations)).length>=2,'both player and opponent moves should animate');
@@ -184,7 +215,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       return {scrollable,advanced};
     });
     assert(moveScrolling.scrollable && moveScrolling.advanced,'long move journals must scroll inside their frame on phone');
-    assert((await page.locator('[data-arena-board] [data-square="e4"] .classic-piece').getAttribute('src')).includes('/humans/pieces/white/pawn.png'));
+    assert((await page.locator('[data-arena-board] [data-square="e4"] .classic-piece').getAttribute('src')).includes('/humans/pieces/board/white/pawn.png'));
     const moves=await page.evaluate(()=>window.RPChessArena.state.match.moves);
     await page.reload({waitUntil:'networkidle'});
     await page.locator('[data-arena-open]').click();
@@ -206,7 +237,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     });
     assert(await page.locator('[data-arena-board] [data-square="e1"].classic-square--check').count(),'checked king must show red highlight');
     const redAura=await page.locator('[data-arena-board] [data-square="e1"]').evaluate(element=>getComputedStyle(element,'::after').backgroundImage);
-    assert(redAura.includes('aura_red.png'),'checked king must use the Journey red aura');
+    assert(redAura.includes('aura_red.png'),'a king in check must retain the red aura even with the new illustration');
     await page.evaluate(()=>window.RPChessArena.engine.reset('7k/8/5KQ1/8/8/8/8/8 w - - 0 1'));
     await page.locator('[data-arena-board] [data-square="g6"]').click();
     await page.locator('[data-arena-board] [data-square="g7"]').click();

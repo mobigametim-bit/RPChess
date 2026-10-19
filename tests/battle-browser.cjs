@@ -29,7 +29,7 @@ function route(id, { playerColor = 'w', stars = 6, race = 'orcs' } = {}) {
   };
 }
 
-async function fresh(page, { woundedKing = false, playerColor = 'w', stars = 6, race = 'orcs' } = {}) {
+async function fresh(page, { woundedKing = false, playerColor = 'w', stars = 6, race = 'orcs', commanderId = 'oathkeeper' } = {}) {
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.evaluate((key) => localStorage.removeItem(key), RUN_KEY);
   await page.reload({ waitUntil: 'networkidle' });
@@ -39,15 +39,16 @@ async function fresh(page, { woundedKing = false, playerColor = 'w', stars = 6, 
     route('manual.battle.2', { playerColor, stars, race }),
     route('manual.battle.3', { playerColor, stars, race })
   ];
-  await page.evaluate(({ key, woundedKing, routes }) => {
+  await page.evaluate(({ key, woundedKing, routes, commanderId }) => {
     const run = JSON.parse(localStorage.getItem(key));
     run.id = `battle-browser-${routes[0].playerColor}`;
+    run.commanderId=commanderId;
     run.currentTravelChoices = routes;
     run.activeTravelChoice = null;
     if (woundedKing) run.roster.find((character) => character.isRunKing).status = 'wounded';
     localStorage.setItem(key, JSON.stringify(run));
     dispatchEvent(new CustomEvent('rpchess:run-updated'));
-  }, { key: RUN_KEY, woundedKing, routes });
+  }, { key: RUN_KEY, woundedKing, routes, commanderId });
 }
 
 async function enter(page) {
@@ -56,8 +57,8 @@ async function enter(page) {
   const card = page.locator('[data-travel-type="battle"]').first();
   assert.strictEqual(await card.count(), 1);
   await card.click();
-  await page.locator('[data-battle-screen]:not([hidden])').waitFor();
-  assert.strictEqual(await page.locator('[data-battle-back]').count(), 0, 'approved Battle prep must not retain an invisible legacy back control');
+  await page.locator('[data-artifact-choice-modal]').waitFor();
+  assert.strictEqual(await page.locator('[data-battle-screen]').isHidden(),true,'Battle preparation is skipped');
 }
 
 async function assertResponsiveStars(page, selector, cardSelector) {
@@ -90,14 +91,11 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     const errors = [];
     page.on('pageerror', (error) => errors.push(String(error.stack || error)));
 
-    await fresh(page, { playerColor: 'w', stars: 12, race: 'orcs' });
+    await fresh(page, { playerColor: 'w', stars: 12, race: 'orcs', commanderId:'ash_regent' });
     await enter(page);
-    assert.strictEqual(await page.locator('[data-battle-character]').count(), 6);
-    await assertResponsiveStars(page, '[data-battle-stars]', '.battle-threat-card');
-    assert.strictEqual(await page.locator('.battle-actionbar').count(), 0, 'Battle owner must not render the obsolete hidden actionbar/counters');
-    assert.strictEqual(await page.locator('[data-battle-start]').isVisible(), true);
-    assert.strictEqual(await page.locator('[data-battle-start]').evaluate((node) => node.parentElement?.classList.contains('battle-army')), true, 'Battle Start CTA must be owner-rendered in the army panel');
-    await page.locator('[data-battle-start]').click();
+    assert.strictEqual((await page.evaluate(()=>globalThis.RPChessBattle.selectedIds)).length,6,'Battle automatically chooses all six eligible starter heroes');
+    assert.strictEqual((await page.evaluate(()=>globalThis.RPChessBattle.encounter.stars)),12);
+    assert.strictEqual(await page.locator('[data-battle-screen]').isHidden(),true);
     await page.locator('[data-artifact-choice="none"]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     const state = await page.evaluate(() => ({ fen: globalThis.RPChessClassicChess.snapshot().fen, plan: globalThis.RPChessBattle.battlePlan }));
@@ -106,16 +104,77 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     assert.strictEqual(state.plan.playerColor, 'w');
     assert.strictEqual(state.plan.encounter.stars, 12);
     assert.strictEqual(state.plan.playerFormation.filter((piece) => piece.id).length, 6);
+    const artContracts=await page.evaluate(async()=>{
+      const {boardPieceArtForCharacter,heroPortraitArt,namedPawnPieceArt,NAMED_BISHOP_IDS}=await import('./js/race-assets.mjs');
+      const legacy={id:'hero.aldric_wall',pieceType:'rook',pieceArt:'assets/races/humans/pieces/board/white/rook.png'};
+      return {
+        oldNamed:boardPieceArtForCharacter(legacy,'w'),
+        oldNamedBlack:boardPieceArtForCharacter(legacy,'b','r'),
+        oldNamedPortrait:heroPortraitArt({...legacy,portrait:'assets/heroes/aldric_wall/portrait.png'}),
+        otherNamed:boardPieceArtForCharacter({id:'hero.ergen_cloud',pieceType:'bishop',pieceArt:'assets/races/humans/pieces/board/white/bishop.png'},'w'),
+        missingSaveArt:boardPieceArtForCharacter({id:'hero.brother_orell',pieceType:'bishop'},'b'),
+        namedBishops:NAMED_BISHOP_IDS.map(id=>({
+          id,
+          white:boardPieceArtForCharacter({id:`hero.${id}`,pieceType:'bishop',pieceArt:'obsolete.png'},'w'),
+          black:boardPieceArtForCharacter({id:`hero.${id}`,pieceType:'bishop',portrait:'obsolete.png'},'b'),
+          portrait:heroPortraitArt({id:`hero.${id}`,portrait:'obsolete.png'})
+        })),
+        nonBishop:boardPieceArtForCharacter({id:'hero.brother_orell',pieceType:'bishop'},'w','rook'),
+        namedPawn:boardPieceArtForCharacter({id:'hero.nemea_quill',pieceType:'pawn'},'b'),
+        promotedPawn:namedPawnPieceArt({id:'hero.mara_chain'},'queen','w'),
+        stalePortrait:heroPortraitArt({id:'hero.nemea_quill',portrait:'assets/heroes/nemea_quill/portrait.png'})
+      };
+    });
+    assert.equal(artContracts.oldNamed,'assets/heroes/aldric_wall/pieces/white/rook.webp',
+      'named Rook must use its new white art even if an old save points at race chess art');
+    assert.equal(artContracts.oldNamedBlack,'assets/heroes/aldric_wall/pieces/black/rook.webp',
+      'named Rook must use its new black art when the role is encoded as r');
+    assert.equal(artContracts.oldNamedPortrait,'assets/heroes/aldric_wall/portrait_named.webp',
+      'named Rook old-save portrait must resolve to new image');
+    assert.equal(artContracts.otherNamed,'assets/heroes/ergen_cloud/piece_badge.png',
+      'other named pieces must keep personal badge art even when old save points at race sprite');
+    assert.equal(artContracts.missingSaveArt,'assets/heroes/brother_orell/pieces/black/bishop.webp',
+      'a saved named Bishop must restore the new black figure, even without pieceArt');
+    assert.equal(artContracts.namedBishops.length,7);
+    for(const {id,white,black,portrait} of artContracts.namedBishops){
+      assert.equal(white,`assets/heroes/${id}/pieces/white/bishop.webp`);
+      assert.equal(black,`assets/heroes/${id}/pieces/black/bishop.webp`);
+      assert.equal(portrait,`assets/heroes/${id}/portrait_named.webp`);
+    }
+    assert.equal(artContracts.nonBishop,'assets/heroes/brother_orell/piece_badge.png',
+      'unprovided role art must keep the old personal badge fallback');
+    assert(artContracts.namedPawn.endsWith('/nemea_quill/pieces/black/pawn.webp'));
+    assert(artContracts.promotedPawn.endsWith('/mara_chain/pieces/white/queen.webp'));
+    assert(artContracts.stalePortrait.endsWith('/nemea_quill/portrait_named.webp'));
     const generic = state.plan.playerFormation.find((piece) => !piece.id);
     const enemyQueen = state.plan.enemyFormation.find((piece) => piece.pieceType === 'queen');
     const art = await page.evaluate(({ genericSquare, enemySquare }) => ({
       generic: document.querySelector(`[data-square="${genericSquare}"] .classic-piece`)?.getAttribute('src') || '',
       enemy: document.querySelector(`[data-square="${enemySquare}"] .classic-piece`)?.getAttribute('src') || ''
     }), { genericSquare: generic.square, enemySquare: enemyQueen.square });
-    assert(art.generic.includes('assets/races/humans/pieces/white/'));
-    assert(art.enemy.includes('assets/races/orcs/pieces/queen.png'));
+    assert(art.generic.includes('assets/races/humans/pieces/board/white/'));
+    assert(art.enemy.includes('assets/races/orcs/pieces/board/black/queen.png'));
+    // The Power badge must display the player's selected King, not a blank
+    // rectangle or a hardcoded Oathkeeper in an Ash Regent run.
     await page.evaluate(() => globalThis.RPChessBattle.finishBattle({ over: true, type: 'stalemate', winner: null }));
     await page.locator('[data-battle-aftermath]:not([hidden])').waitFor();
+    await page.waitForFunction(()=>{
+      const result=document.querySelector('[data-battle-aftermath] .power-result');
+      return result&&getComputedStyle(result,'::before').backgroundImage.includes('/assets/kings/ash_regent/portrait.webp');
+    },null,{timeout:10000});
+    const portraitLoaded=await page.evaluate(async()=>{
+      const image=new Image();
+      image.src='assets/kings/ash_regent/portrait.webp';
+      await image.decode();
+      return image.naturalWidth>0&&image.naturalHeight>0;
+    });
+    assert(portraitLoaded,'selected King portrait must decode successfully in the result screen');
+    assert.strictEqual(await page.locator('[data-battle-aftermath]').evaluate(node=>node.classList.contains('battle-aftermath--death')),false,
+      'ordinary Battle aftermath must keep its existing non-death presentation');
+    assert.strictEqual(await page.locator('[data-battle-aftermath] .battle-logo').count(),1,
+      'normal Battle aftermath must retain its original logo');
+    assert.strictEqual(await page.locator('[data-battle-run-end] .battle-logo').count(),0,
+      'King death battle fallback screen must have no logo');
     assert.strictEqual((await page.locator('[data-battle-continue]').innerText()).trim(), 'Продолжить путь');
     await page.locator('[data-battle-continue]').click();
     await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
@@ -129,8 +188,7 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     black.on('pageerror', (error) => blackErrors.push(String(error.stack || error)));
     await fresh(black, { playerColor: 'b', stars: 9, race: 'dark_elves' });
     await enter(black);
-    assert((await black.locator('[data-battle-description]').innerText()).includes('оборону'));
-    await black.locator('[data-battle-start]').click();
+    assert.strictEqual((await black.evaluate(()=>globalThis.RPChessBattle.encounter.playerColor)),'b');
     await black.locator('[data-artifact-choice="none"]').click();
     await black.locator('[data-classic-screen]:not([hidden])').waitFor();
     const blackPlan = await black.evaluate(() => globalThis.RPChessBattle.battlePlan);
@@ -144,8 +202,9 @@ async function assertResponsiveStars(page, selector, cardSelector) {
       mode: document.querySelector('[data-game-mode]')?.textContent || '',
       firstSquare: document.querySelector('[data-chess-board] [data-square]')?.dataset.square || ''
     }), { genericSquare: blackGeneric.square, enemySquare: darkEnemy.square });
-    assert(blackArt.generic.includes('assets/races/humans/pieces/black/'));
-    assert(blackArt.enemy.includes('assets/races/dark_elves/pieces/rook.png'));
+    assert(blackArt.generic.includes('assets/races/humans/pieces/board/black/'));
+    assert(blackArt.enemy.includes('assets/races/dark_elves/pieces/board/white/rook.png'),
+      'Black-side encounter must show the enemy white-color race board rook');
     assert.strictEqual(blackArt.firstSquare, 'h1', 'Black-side Battle must render the board from Black perspective');
     assert.strictEqual(blackArt.mode, 'Безжалостный Полководец', 'shared combat summary must render the canonical difficulty label');
 
@@ -154,51 +213,46 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     wounded.on('pageerror', (error) => woundedErrors.push(String(error.stack || error)));
     await fresh(wounded, { woundedKing: true });
     await enter(wounded);
-    assert.strictEqual(await wounded.locator('[data-battle-participant="king.oathkeeper"]').count(), 1);
-    assert.strictEqual(await wounded.locator('[data-battle-start]').isDisabled(), false);
-    await wounded.locator('[data-battle-start]').click();
+    assert((await wounded.evaluate(()=>globalThis.RPChessBattle.selectedIds)).includes('king.oathkeeper'),'auto Battle team keeps wounded run king');
     await wounded.locator('[data-artifact-choice="none"]').click();
     await wounded.locator('[data-classic-screen]:not([hidden])').waitFor();
+    // A Mercenary debt casualty uses the same aftermath screen but without
+    // the normal result logo; the card remains centered in both axes.
+    await wounded.evaluate(key=>{
+      const run=JSON.parse(localStorage.getItem(key));
+      run.battleMercenaryContract={encounterId:'browser.debt',battleCountAtCharge:run.battleCount||0,
+        casualtyDebt:true,settled:false,totalCost:100,unpaidValue:100,chargedGold:0,chargedSupplies:0};
+      localStorage.setItem(key,JSON.stringify(run));
+      window.RPChessBattle.finishBattle({over:true,type:'stalemate',winner:null});
+    },RUN_KEY);
+    await wounded.locator('[data-battle-aftermath].battle-aftermath--death:not([hidden])').waitFor();
+    const deathGeometry=await wounded.locator('[data-battle-aftermath]').evaluate(root=>{
+      const panel=root.querySelector('.battle-aftermath-panel')?.getBoundingClientRect();
+      const logo=root.querySelector('.battle-logo');
+      return {
+        x:panel?(panel.left+panel.right)/2-innerWidth/2:999,
+        y:panel?(panel.top+panel.bottom)/2-innerHeight/2:999,
+        logoHidden:!logo||getComputedStyle(logo).display==='none',
+        text:root.querySelector('[data-battle-aftermath-text]')?.textContent||''
+      };
+    });
+    assert(deathGeometry.logoHidden&&Math.abs(deathGeometry.x)<=2&&Math.abs(deathGeometry.y)<=2,
+      `Mercenary death aftermath must hide the logo and center its panel: ${JSON.stringify(deathGeometry)}`);
+    assert(deathGeometry.text.includes('Наёмники')||deathGeometry.text.includes('Наёмник'),
+      'Debt death aftermath must keep its casualty notice');
+
 
     const mobile = await browser.newPage({ viewport: { width: 844, height: 390 } });
     const mobileErrors = [];
     mobile.on('pageerror', (error) => mobileErrors.push(String(error.stack || error)));
     await fresh(mobile, { stars: 12 });
     await enter(mobile);
-    await mobile.waitForFunction(() => document.body.classList.contains('battle-prep-compact-active'));
-    const layout = await mobile.evaluate(() => {
-      const start = document.querySelector('[data-battle-start]');
-      const army = document.querySelector('.battle-army');
-      const screen = document.querySelector('[data-battle-screen]');
-      const startBox = start?.getBoundingClientRect();
-      const armyBox = army?.getBoundingClientRect();
-      const screenBox = screen?.getBoundingClientRect();
-      const cards = [...document.querySelectorAll('[data-battle-character]')].map((card) => {
-        const rect = card.getBoundingClientRect();
-        return { top:rect.top, bottom:rect.bottom, left:rect.left, right:rect.right };
-      });
-      return {
-        sw: document.documentElement.scrollWidth,
-        cw: document.documentElement.clientWidth,
-        sh: document.documentElement.scrollHeight,
-        ch: document.documentElement.clientHeight,
-        actionbarCount: document.querySelectorAll('.battle-actionbar').length,
-        startParent: start?.parentElement?.className || '',
-        startBox: startBox ? { left:startBox.left,right:startBox.right,top:startBox.top,bottom:startBox.bottom,width:startBox.width } : null,
-        armyBox: armyBox ? { left:armyBox.left,right:armyBox.right,top:armyBox.top,bottom:armyBox.bottom,width:armyBox.width } : null,
-        screenBox: screenBox ? { left:screenBox.left,right:screenBox.right,top:screenBox.top,bottom:screenBox.bottom } : null,
-        cards
-      };
-    });
-    assert(layout.sw <= layout.cw + 1);
-    assert(layout.sh <= layout.ch + 1, `mobile landscape Battle prep must not page-scroll: ${layout.sh}/${layout.ch}`);
-    assert(layout.screenBox && layout.screenBox.left >= -1 && layout.screenBox.right <= layout.cw + 1 && layout.screenBox.top >= -1 && layout.screenBox.bottom <= layout.ch + 1, 'Battle screen must stay inside the viewport');
-    assert.strictEqual(layout.cards.length, 6);
-    assert(layout.cards.every((card) => card.left >= -1 && card.right <= layout.cw + 1 && card.top >= -1 && card.bottom <= layout.ch + 1), 'all six Battle cards must remain inside the viewport');
-    assert.strictEqual(layout.actionbarCount, 0, 'mobile Battle prep must not retain the obsolete duplicate actionbar');
-    assert(layout.startParent.includes('battle-army'), 'mobile Battle Start CTA must be owner-rendered in the army panel');
-    assert(layout.startBox && layout.armyBox && layout.startBox.left >= layout.armyBox.left - 1 && layout.startBox.right <= layout.armyBox.right + 1 && layout.startBox.top >= -1 && layout.startBox.bottom <= layout.ch + 1, 'mobile Battle Start CTA must stay inside the army frame and viewport');
-    assert(layout.startBox.width >= layout.armyBox.width - 40, `mobile Battle Start CTA must be effectively full width: ${layout.startBox.width}/${layout.armyBox.width}`);
+    await mobile.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
+    const dialog=await mobile.locator('[data-artifact-choice-modal] .artifact-choice-panel').boundingBox();
+    assert(dialog&&dialog.y>=-1&&dialog.y+dialog.height<=391,'automatic Battle artifact choice fits mobile landscape');
+    assert.strictEqual(await mobile.locator('[data-battle-screen]').isHidden(),true);
+    await mobile.locator('[data-artifact-choice="none"]').click();
+    await mobile.locator('[data-classic-screen]:not([hidden])').waitFor();
 
     assert.deepStrictEqual(errors, []);
     assert.deepStrictEqual(blackErrors, []);

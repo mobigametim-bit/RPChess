@@ -1,8 +1,13 @@
 import { ClassicChessEngine } from '../classic-chess-engine.mjs';
+import { attachPieceDrag } from '../piece-drag.mjs';
+import { boardRacePiecePath } from '../race-assets.mjs';
 import { readRun, writeRun } from '../run-persistence.mjs';
 import { t, subscribe } from '../i18n.mjs';
 import { brandLogoSrc } from '../brand-logo.mjs';
 import { PUZZLE_CATALOG } from './puzzle-catalog.mjs';
+import { loadPuzzleStar } from './puzzle-catalog-loader.mjs';
+import { featuredPuzzleTheme } from './puzzle-theme-catalog.mjs';
+import { currentLanguage } from '../i18n.mjs';
 import {
   createPuzzleState,
   puzzleBaseGold,
@@ -33,7 +38,7 @@ let locked = false;
 let promotionResolve = null;
 
 function audio() { return globalThis.RPChessRebootAudio; }
-function pieceAsset(piece) { return `generated_assets/unit_${PIECE_ASSETS[piece.type]}_${piece.color === 'w' ? 'player' : 'enemy'}.png`; }
+function pieceAsset(piece) { return boardRacePiecePath('humans',PIECE_ASSETS[piece.type],piece.color); }
 function pieceLabel(type) { return t(PIECE_KEYS[type] || 'piece.pawn'); }
 function squareFromIndex(index) { return `${FILES[index % 8]}${Math.floor(index / 8) + 1}`; }
 function reducedMotion() { return document.documentElement.dataset.reducedMotion === '1'; }
@@ -49,8 +54,22 @@ function ensureStylesheet(marker, href) {
 }
 
 function ensureCss() {
-  ensureStylesheet('data-puzzles-css', 'css/puzzles.css?v=20260909-owner2');
+  ensureStylesheet('data-puzzles-css', 'css/puzzles.css?v=20261018-centered-board');
   ensureStylesheet('data-puzzles-compact-css', 'css/puzzles-compact.css?v=20260909-owner1');
+}
+
+// The Puzzle screen must not be presented before its owner CSS is usable.
+// Fast lazy-loaded puzzle shards can otherwise win the race against CSS network loading.
+async function ensurePuzzleStylesReady() {
+  ensureCss();
+  await Promise.all(['data-puzzles-css','data-puzzles-compact-css'].map(marker => {
+    const link = document.querySelector(`link[${marker}]`);
+    if (!link || link.sheet) return Promise.resolve();
+    return new Promise(resolve => {
+      link.addEventListener('load', resolve, { once:true });
+      link.addEventListener('error', resolve, { once:true });
+    });
+  }));
 }
 
 function ensureScreen() {
@@ -155,6 +174,8 @@ function showPuzzle() {
   document.body.classList.add('puzzles-active');
   window.scrollTo({ top: 0, behavior: 'auto' });
   globalThis.RPChessResources?.render?.();
+  // Puzzle chunks load asynchronously: notify the presentation owner only after the screen is visible.
+  globalThis.dispatchEvent(new CustomEvent('rpchess:puzzle-shown'));
 }
 
 function hidePuzzle() {
@@ -162,8 +183,10 @@ function hidePuzzle() {
   document.body.classList.remove('puzzles-active');
 }
 
-function findPuzzle(id) { return PUZZLE_CATALOG.find((item) => item.id === id) || null; }
-function puzzleHistory(run) { return Array.isArray(run?.puzzleHistory) ? run.puzzleHistory.filter((id) => Boolean(findPuzzle(id))) : []; }
+function findPuzzle(id,loaded=[]) { return loaded.find((item) => item.id === id)||PUZZLE_CATALOG.find((item) => item.id === id)||null; }
+// Keep previously seen IDs from every shard, including levels not yet loaded in this session.
+// Filtering by the initial offline catalog silently discarded the new 18,502 IDs.
+function puzzleHistory(run) { return Array.isArray(run?.puzzleHistory) ? run.puzzleHistory.filter((id) => typeof id === 'string' && /^puzzle\.[A-Za-z0-9]+$/.test(id)) : []; }
 
 function persist(nextState = state) {
   state = nextState;
@@ -178,12 +201,12 @@ function objectiveText(item) {
     const target = ['queen','rook','bishop','knight'].includes(item.targetPiece) ? item.targetPiece : null;
     return target ? t(`puzzle.objective.material.${target}`) : t('puzzle.objective.fallback');
   }
-  return ['mate1','mate2','mate3'].includes(item.type) ? t(`puzzle.objective.${item.type}`) : t('puzzle.objective.fallback');
+  return ['mate1','mate2','mate3','mate4','mate5Plus','bestLine'].includes(item.type) ? t(`puzzle.objective.${item.type}`) : t('puzzle.objective.fallback');
 }
 
 function instructionText(item) {
   if (item?.type === 'material') return t('puzzle.instruction.material');
-  return ['mate1','mate2','mate3'].includes(item?.type) ? t(`puzzle.instruction.${item.type}`) : t('puzzle.instruction.mate1');
+  return ['mate1','mate2','mate3','mate4','mate5Plus','bestLine'].includes(item?.type) ? t(`puzzle.instruction.${item.type}`) : t('puzzle.instruction.mate1');
 }
 
 function renderMeta() {
@@ -192,6 +215,13 @@ function renderMeta() {
   const baseReward = puzzleBaseGold(state.stars);
   const currentReward = puzzleGoldReward(state.stars, state.errors);
   renderStaticCopy();
+  const featured=featuredPuzzleTheme(puzzle,currentLanguage());
+  const kicker=screen.querySelector('[data-puzzle-kicker]');
+  if(kicker) kicker.textContent=featured
+    ? `${t('puzzle.kicker')} · ${featured.label.toLocaleUpperCase(currentLanguage()==='en'?'en':'ru')}`
+    : t('puzzle.kicker');
+  if(featured)screen.dataset.puzzleTheme=featured.key;
+  else delete screen.dataset.puzzleTheme;
   screen.querySelector('[data-puzzle-objective]').textContent = objective;
   screen.querySelector('[data-puzzle-stars]').textContent = stars;
   screen.querySelector('[data-puzzle-compact-objective-label]').textContent = objective;
@@ -247,7 +277,7 @@ function renderBoard() {
       if (target) button.classList.add(target.capture ? 'is-capture' : 'is-legal');
       if (piece) {
         const image = document.createElement('img');
-        image.className = 'puzzle-piece';
+        image.className = 'puzzle-piece puzzle-piece--new-race';
         image.src = pieceAsset(piece);
         image.alt = '';
         image.draggable = false;
@@ -394,13 +424,16 @@ async function playForcedReply({ resume = false } = {}) {
   await new Promise((resolve) => setTimeout(resolve, replyDelay()));
   const replyResult = moveEngine(reply);
   const nextIndex = state.solutionIndex + 1;
+  // The next turn must be interactable when its state becomes visible.
+  // Otherwise quick players can tap while persistence says the reply is done,
+  // but the board is still locked for one microtask.
+  if (nextIndex < puzzle.solution.length) locked = false;
   persist({ ...state, currentFen: replyResult.fen, solutionIndex: nextIndex });
   renderBoard();
   if (nextIndex >= puzzle.solution.length) {
     finishSolved();
     return;
   }
-  locked = false;
   status(t('puzzle.status.yourMove'));
 }
 
@@ -480,19 +513,20 @@ async function resumeSession() {
   if (engine.turn() !== puzzle.side) await playForcedReply({ resume: true });
 }
 
-function openPuzzle(event) {
+async function openPuzzle(event) {
   activeRun = readRun();
   const choice = activeRun?.activeTravelChoice || event?.detail?.choice;
   if (!activeRun || activeRun.ended || choice?.type !== 'puzzle') return;
   const week = choice.step || activeRun.journeyStep || 1;
+  const available=await loadPuzzleStar(choice.stars);
 
   if (activeRun.currentPuzzle?.routeId === choice.id) {
     state = activeRun.currentPuzzle;
-    puzzle = findPuzzle(state.puzzleId);
+    puzzle = findPuzzle(state.puzzleId,available);
   } else {
     let history = puzzleHistory(activeRun);
-    if (history.length >= PUZZLE_CATALOG.length) history = [];
-    puzzle = selectPuzzle(PUZZLE_CATALOG, { runId: activeRun.id, routeId: choice.id, stars: choice.stars, week, excludedIds: history });
+    if (history.length >= available.length) history = [];
+    puzzle = selectPuzzle(available, { runId: activeRun.id, routeId: choice.id, stars: choice.stars, week, excludedIds: history, expanded:available.length>PUZZLE_CATALOG.filter(item=>item.difficulty===Math.max(1,Math.min(12,Math.round(Number(choice.stars)||1)))).length });
     state = createPuzzleState({ puzzle, routeId: choice.id, stars: choice.stars, week });
     activeRun = writeRun({ ...activeRun, puzzleHistory:[...history, puzzle.id], currentPuzzle: state });
     globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
@@ -508,6 +542,7 @@ function openPuzzle(event) {
   selectedMoves = [];
   locked = false;
   ensureScreen();
+  await ensurePuzzleStylesReady();
   showPuzzle();
   renderAll();
   void resumeSession().catch((error) => {
@@ -532,6 +567,23 @@ function continueTravel() {
 }
 
 ensureScreen();
+
+attachPieceDrag(screen?.querySelector('[data-puzzle-board]'), {
+  canPick: square => Boolean(screen && !screen.hidden && engine && puzzle && state && !state.resolved && !locked &&
+    engine.turn() === puzzle.side && engine.pieceAt(square)?.color === puzzle.side),
+  onStart: square => {
+    selected = square;
+    selectedMoves = engine.legalMoves(square);
+    const board = screen.querySelector('[data-puzzle-board]');
+    board.querySelector('[data-square="' + square + '"]')?.classList.add('is-selected');
+    for (const move of selectedMoves) board.querySelector('[data-square="' + move.to + '"]')?.classList.add(move.capture ? 'is-capture' : 'is-legal');
+  },
+  onDrop: (from,to) => {
+    if (to && selected === from) void clickSquare(to);
+    else { selected = null; selectedMoves = []; renderBoard(); }
+  }
+});
+
 subscribe(() => {
   renderStaticCopy();
   if (screen && !screen.hidden && puzzle && state && engine) renderAll();

@@ -34,12 +34,14 @@ async function openCaravan(page) {
   const card = page.locator('[data-travel-type="caravan"]').first();
   assert((await card.innerText()).includes('???'), 'route must conceal its reward');
   await card.click();
-  await page.locator('[data-battle-screen]:not([hidden])').waitFor();
+  await page.locator('[data-artifact-choice-modal]').waitFor();
+  assert.strictEqual(await page.locator('[data-battle-screen]').isHidden(),true,'Caravan preparation is skipped');
   const run = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
   assert.equal(run.activeTravelChoice.type, 'caravan');
-  assert.equal(run.currentCaravan.phase, 'preparation');
+  assert.equal(run.currentCaravan.phase, 'artifact');
   assert.equal(run.activeTravelChoice.supplyPaid, 1);
-  assert(!(await page.locator('[data-battle-army-note]').innerText()).includes('стоит'), 'mercenaries must be free');
+  assert.equal(run.currentCaravan.selectedIds.length,6,'all eligible starters enter the Caravan automatically');
+  assert.strictEqual(run.currentCaravan.plan,undefined,'Caravan game plan is created after artifact selection');
   return run;
 }
 
@@ -50,12 +52,12 @@ async function openCaravan(page) {
     const errors = [];
     page.on('pageerror', (error) => errors.push(String(error.stack || error)));
     const before = await openCaravan(page);
-    await resumeCaravan(page, '[data-battle-screen]:not([hidden])');
+    await resumeCaravan(page, '[data-artifact-choice-modal]');
     const restored = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
     assert.equal(restored.currentCaravan.encounter.positionIndex, before.currentCaravan.encounter.positionIndex);
     assert.equal(restored.supplies, before.supplies, 'reload must not charge Supplies twice');
 
-    await page.locator('[data-battle-start]').click();
+    assert.deepStrictEqual(restored.currentCaravan.selectedIds,before.currentCaravan.selectedIds,'reload must preserve the automatic team');
     await page.locator('[data-artifact-choice-modal]').waitFor();
     await page.locator('[data-artifact-choice="none"]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
@@ -106,8 +108,10 @@ async function openCaravan(page) {
       const { RECRUIT_LIBRARY } = await import('./js/settlement-core.mjs');
       const { PIECE_GLYPHS } = await import('./js/roster-data.mjs');
       const run = JSON.parse(localStorage.getItem(runKey));
-      const healed = run.roster.find(hero => !hero.isRunKing);
-      const recruit = RECRUIT_LIBRARY.find(hero => !run.roster.some(member => member.id === hero.id));
+      const healed = run.roster.find(hero => hero.id === 'hero.mara_chain');
+       // Simulate a pre-art saved run with an old portrait field.
+       healed.portrait='assets/heroes/mara_chain/portrait.png';
+      const recruit = RECRUIT_LIBRARY.find(hero => hero.id === 'hero.kael_cinder');
       const offers = [
         { id:'preview:healing',kind:'healing',heroId:healed.id },
         { id:'preview:hero',kind:'hero',heroId:recruit.id },
@@ -119,7 +123,8 @@ async function openCaravan(page) {
         return { glyph:card.querySelector('.caravan-reward-card__glyph')?.textContent,
           hidden:card.querySelector('.caravan-reward-card__glyph')?.getAttribute('aria-hidden'),
           imageCount:card.querySelectorAll('img').length,
-          portrait:card.querySelector('.caravan-reward-card__portrait')?.contains(card.querySelector('img')) };
+          portrait:card.querySelector('.caravan-reward-card__portrait')?.contains(card.querySelector('img')),
+           src:card.querySelector('img')?.getAttribute('src') };
       };
       const result = { healing:read('preview:healing'),hero:read('preview:hero'),gold:read('preview:gold'),
         healingExpected:PIECE_GLYPHS[healed.pieceType],heroExpected:PIECE_GLYPHS[recruit.pieceType] };
@@ -131,6 +136,8 @@ async function openCaravan(page) {
       assert.equal(portraits[kind].hidden,'true');
       assert.equal(portraits[kind].imageCount,1);
       assert.equal(portraits[kind].portrait,true);
+      assert(portraits[kind].src?.endsWith(kind==='healing'?'/mara_chain/portrait_named.webp':'/kael_cinder/portrait_named.webp'),
+        `${kind} must use the new compressed pawn portrait, including runs saved with old portrait paths: ${portraits[kind].src}`);
     }
     assert.equal(portraits.gold.glyph,undefined,'resource rewards have no piece glyph');
     assert.deepEqual(errors, []);
@@ -139,15 +146,19 @@ async function openCaravan(page) {
     const mobileErrors = [];
     mobile.on('pageerror', (error) => mobileErrors.push(String(error.stack || error)));
     await openCaravan(mobile);
-    const layout = await mobile.evaluate(() => ({
-      pageWidth:document.documentElement.scrollWidth,
-      viewportWidth:document.documentElement.clientWidth,
-      pageHeight:document.documentElement.scrollHeight,
-      viewportHeight:document.documentElement.clientHeight,
-      start:(() => {const r=document.querySelector('[data-battle-start]').getBoundingClientRect();return {top:r.top,bottom:r.bottom};})()
-    }));
-    assert(layout.pageWidth <= layout.viewportWidth + 1 && layout.pageHeight <= layout.viewportHeight + 1, `mobile preparation must fit the viewport: ${JSON.stringify(layout)}`);
-    assert(layout.start.top >= 0 && layout.start.bottom <= layout.viewportHeight + 1, 'mobile Start button must be reachable');
+    // The modal is added immediately, but its dedicated stylesheet can still
+    // be loading on a cold mobile entry. Assert geometry only once the asset
+    // gate has released the fully styled and decoded modal.
+    await mobile.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
+    await mobile.waitForFunction(()=>Boolean(document.querySelector('[data-artifact-combat-css]')?.sheet));
+    const dialog=await mobile.locator('[data-artifact-choice-modal] .artifact-choice-panel').boundingBox();
+    const viewport=mobile.viewportSize();
+    assert(dialog&&dialog.y>=-1&&dialog.y+dialog.height<=viewport.height+1,
+      `Caravan artifact modal fits mobile after stylesheet loads: ${JSON.stringify({dialog,viewport})}`);
+    assert.strictEqual(await mobile.locator('[data-battle-screen]').isHidden(),true);
+    await mobile.locator('[data-artifact-choice="none"]').click();
+    await mobile.locator('[data-classic-screen]:not([hidden])').waitFor();
+
     assert.deepEqual(mobileErrors, []);
     console.log('Caravan browser: route, free mercenaries, reload, Chess960, reward claim, aftermath and mobile PASS');
   } finally {

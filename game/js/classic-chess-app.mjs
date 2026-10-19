@@ -1,4 +1,6 @@
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
+import { attachPieceDrag } from './piece-drag.mjs';
+import { boardRacePiecePath } from './race-assets.mjs';
 import { ChessAIAdapter, ELO_LEVELS, profileForElo } from './chess-ai-adapter.mjs';
 import { currentLanguage, subscribe, translateLegacy } from './i18n.mjs';
 import { classicT } from '../localization/classic-ui.mjs';
@@ -44,6 +46,7 @@ let selected = null;
 let selectedMoves = [];
 let moveLog = [];
 let pendingPromotion = null;
+let promotionArtResolver = null;
 let aiThinking = false;
 let visualAnimating = false;
 let gameGeneration = 0;
@@ -57,7 +60,7 @@ function sideNameTitle(color) { return t(color === 'w' ? 'classic.side.white' : 
 function pieceName(type) { return translateLegacy(PIECE_NAMES[type] || String(type || '')); }
 function opposite(color) { return color === 'w' ? 'b' : 'w'; }
 function squareFromIndex(index) { return `${FILES[index % 8]}${Math.floor(index / 8) + 1}`; }
-function pieceAsset(piece) { return `generated_assets/unit_${PIECE_ASSETS[piece.type]}_${piece.color === 'w' ? 'player' : 'enemy'}.png`; }
+function pieceAsset(piece) { return boardRacePiecePath('humans',PIECE_ASSETS[piece.type],piece.color); }
 function uciParts(uci) { return { from: uci?.slice(0, 2), to: uci?.slice(2, 4), promotion: uci?.slice(4, 5) || null }; }
 function prefersReducedMotion() { return document.documentElement.dataset.reducedMotion === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches; }
 
@@ -301,7 +304,7 @@ function renderBoard() {
 
       if (piece) {
         const image = document.createElement('img');
-        image.className = 'classic-piece';
+        image.className = 'classic-piece classic-piece--new-race';
         image.src = pieceAsset(piece);
         image.alt = '';
         image.draggable = false;
@@ -352,7 +355,8 @@ function openPromotion(from, to, color, choices) {
     button.className = 'classic-promotion-option';
     button.dataset.promotion = type;
     const image = document.createElement('img');
-    image.src = pieceAsset({ type, color });
+    // The chosen named pawn can become four different named figures.
+    image.src = promotionArtResolver?.(from,type,color) || pieceAsset({ type, color });
     image.alt = '';
     const label = document.createElement('span');
     label.textContent = pieceName(type);
@@ -554,6 +558,7 @@ function normalizeConfig(options = {}) {
 function newGame(fen = null, options = {}) {
   cancelAI();
   gameConfig = normalizeConfig(options);
+  promotionArtResolver = typeof options.promotionArtResolver==='function'?options.promotionArtResolver:null;
   engine = new ClassicChessEngine(fen, { blockedSquares: options.blockedSquares, chess960: options.chess960 });
   selected = null;
   selectedMoves = [];
@@ -624,6 +629,24 @@ globalThis.RPChessChessAI = {
   snapshot() { return { ...aiAdapter.snapshot(), config: { ...gameConfig }, thinking: aiThinking, animating: visualAnimating }; },
   replaceAdapter(adapter) { aiAdapter.destroy(); aiAdapter = adapter; return aiAdapter; }
 };
+
+
+attachPieceDrag(board, {
+  canPick: square => Boolean(!screen?.hidden && !pendingPromotion && !aiThinking && !visualAnimating && !engine.status().over &&
+    (gameConfig.mode !== 'ai' || engine.turn() === gameConfig.playerColor) && engine.pieceAt(square)?.color === engine.turn()),
+  onStart: square => {
+    selected = square;
+    selectedMoves = engine.legalMoves(square);
+    // Do not replace the touched cell: touch pointers capture their origin.
+    board.querySelector('[data-square="' + square + '"]')?.classList.add('classic-square--selected');
+    for (const move of selectedMoves) board.querySelector('[data-square="' + (move.uciTo || move.to) + '"]')
+      ?.classList.add(move.capture ? 'classic-square--capture' : 'classic-square--legal');
+  },
+  onDrop: (from,to) => {
+    if (to && selectedMoves.some(move => (move.uciTo || move.to) === to)) executeMove(from,to);
+    else { selected = null; selectedMoves = []; renderBoard(); }
+  }
+});
 
 globalThis.RPChessClassicChess = {
   get engine() { return engine; },

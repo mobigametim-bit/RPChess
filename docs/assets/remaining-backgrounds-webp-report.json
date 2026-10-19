@@ -1,0 +1,435 @@
+{
+  "source": "RPChess scene JPEG masters",
+  "format": "WebP with tiny-JPEG fallback",
+  "converted": 58,
+  "retained": 1,
+  "widthLimit": 1280,
+  "heightLimit": 720,
+  "quality": 55,
+  "count": 59,
+  "groups": {
+    "generated": 8,
+    "regions": 36,
+    "bosses": 15
+  },
+  "beforeBytes": 24554569,
+  "webpBytes": 5248098,
+  "savedBytes": 19306471,
+  "savedPercent": 78.63,
+  "files": [
+    {
+      "source": "game/assets/bosses/antler_king/arena.jpg",
+      "runtime": "game/assets/bosses/antler_king/arena.webp",
+      "format": "webp",
+      "before": 673603,
+      "after": 123748
+    },
+    {
+      "source": "game/assets/bosses/blue_pontiff/arena.jpg",
+      "runtime": "game/assets/bosses/blue_pontiff/arena.webp",
+      "format": "webp",
+      "before": 609284,
+      "after": 91018
+    },
+    {
+      "source": "game/assets/bosses/cinder_emperor/arena.jpg",
+      "runtime": "game/assets/bosses/cinder_emperor/arena.webp",
+      "format": "webp",
+      "before": 480768,
+      "after": 62808
+    },
+    {
+      "source": "game/assets/bosses/first_consul/arena.jpg",
+      "runtime": "game/assets/bosses/first_consul/arena.webp",
+      "format": "webp",
+      "before": 568094,
+      "after": 89130
+    },
+    {
+      "source": "game/assets/bosses/guild_of_three/arena.jpg",
+      "runtime": "game/assets/bosses/guild_of_three/arena.webp",
+      "format": "webp",
+      "before": 583820,
+      "after": 94200
+    },
+    {
+      "source": "game/assets/bosses/heretic_astronomer/arena.jpg",
+      "runtime": "game/assets/bosses/heretic_astronomer/arena.webp",
+      "format": "webp",
+      "before": 603840,
+      "after": 98370
+    },
+    {
+      "source": "game/assets/bosses/hollow_sovereign/arena.jpg",
+      "runtime": "game/assets/bosses/hollow_sovereign/arena.webp",
+      "format": "webp",
+      "before": 520322,
+      "after": 73290
+    },
+    {
+      "source": "game/assets/bosses/iron_regent/arena.jpg",
+      "runtime": "game/assets/bosses/iron_regent/arena.webp",
+      "format": "webp",
+      "before": 456684,
+      "after": 57692
+    },
+    {
+      "source": "game/assets/bosses/last_legion/arena.jpg",
+      "runtime": "game/assets/bosses/last_legion/arena.webp",
+      "format": "webp",
+      "before": 450185,
+      "after": 64638
+    },
+    {
+      "source": "game/assets/bosses/mirror_self/arena.jpg",
+      "runtime": "game/assets/bosses/mirror_self/arena.webp",
+      "format": "webp",
+      "before": 618450,
+      "after": 115066
+    },
+    {
+      "source": "game/assets/bosses/sky_khan/arena.jpg",
+      "runtime": "game/assets/bosses/sky_khan/arena.webp",
+      "format": "webp",
+      "before": 599385,
+      "after": 104368
+    },
+    {
+      "source": "game/assets/bosses/storm_sister/arena.jpg",
+      "runtime": "game/assets/bosses/storm_sister/arena.webp",
+      "format": "webp",
+      "before": 471498,
+      "after": 75142
+    },
+    {
+      "source": "game/assets/bosses/thorn_bride/arena.jpg",
+      "runtime": "game/assets/bosses/thorn_bride/arena.webp",
+      "format": "webp",
+      "before": 785289,
+      "after": 143780
+    },
+    {
+      "source": "game/assets/bosses/war_beyond_crown/arena.jpg",
+      "runtime": "game/assets/bosses/war_beyond_crown/arena.webp",
+      "format": "webp",
+      "before": 578235,
+      "after": 87748
+    },
+    {
+      "source": "game/assets/bosses/widow_general/arena.jpg",
+      "runtime": "game/assets/bosses/widow_general/arena.webp",
+      "format": "webp",
+      "before": 430714,
+      "after": 59156
+    },
+    {
+      "source": "game/assets/regions/ashen_dominion/battle.jpg",
+      "runtime": "game/assets/regions/ashen_dominion/battle.webp",
+      "format": "webp",
+      "before": 301026,
+      "after": 47748
+    },
+    {
+      "source": "game/assets/regions/ashen_dominion/boss_arena.jpg",
+      "runtime": "game/assets/regions/ashen_dominion/boss_arena.webp",
+      "format": "webp",
+      "before": 321453,
+      "after": 49044
+    },
+    {
+      "source": "game/assets/regions/ashen_dominion/capital.jpg",
+      "runtime": "game/assets/regions/ashen_dominion/capital.webp",
+      "format": "webp",
+      "before": 248359,
+      "after": 33056
+    },
+    {
+      "source": "game/assets/regions/ashen_dominion/elite.jpg",
+      "runtime": "game/assets/regions/ashen_dominion/elite.webp",
+      "format": "webp",
+      "before": 286304,
+      "after": 41048
+    },
+    {
+      "source": "game/assets/regions/ashen_dominion/map_banner.jpg",
+      "runtime": "game/assets/regions/ashen_dominion/map_banner.webp",
+      "format": "webp",
+      "before": 289735,
+      "after": 47248
+    },
+    {
+      "source": "game/assets/regions/free_cities/battle.jpg",
+      "runtime": "game/assets/regions/free_cities/battle.webp",
+      "format": "webp",
+      "before": 508121,
+      "after": 125084
+    },
+    {
+      "source": "game/assets/regions/free_cities/boss_arena.jpg",
+      "runtime": "game/assets/regions/free_cities/boss_arena.webp",
+      "format": "webp",
+      "before": 530859,
+      "after": 133452
+    },
+    {
+      "source": "game/assets/regions/free_cities/capital.jpg",
+      "runtime": "game/assets/regions/free_cities/capital.webp",
+      "format": "webp",
+      "before": 547269,
+      "after": 139042
+    },
+    {
+      "source": "game/assets/regions/free_cities/elite.jpg",
+      "runtime": "game/assets/regions/free_cities/elite.webp",
+      "format": "webp",
+      "before": 467510,
+      "after": 110090
+    },
+    {
+      "source": "game/assets/regions/free_cities/map_banner.jpg",
+      "runtime": "game/assets/regions/free_cities/map_banner.webp",
+      "format": "webp",
+      "before": 431104,
+      "after": 98972
+    },
+    {
+      "source": "game/assets/regions/iron_marches/battle.jpg",
+      "runtime": "game/assets/regions/iron_marches/battle.webp",
+      "format": "webp",
+      "before": 243196,
+      "after": 32212
+    },
+    {
+      "source": "game/assets/regions/iron_marches/boss_arena.jpg",
+      "runtime": "game/assets/regions/iron_marches/boss_arena.webp",
+      "format": "webp",
+      "before": 262029,
+      "after": 36798
+    },
+    {
+      "source": "game/assets/regions/iron_marches/capital.jpg",
+      "runtime": "game/assets/regions/iron_marches/capital.webp",
+      "format": "webp",
+      "before": 261882,
+      "after": 42500
+    },
+    {
+      "source": "game/assets/regions/iron_marches/elite.jpg",
+      "runtime": "game/assets/regions/iron_marches/elite.webp",
+      "format": "webp",
+      "before": 219375,
+      "after": 31706
+    },
+    {
+      "source": "game/assets/regions/iron_marches/map_banner.jpg",
+      "runtime": "game/assets/regions/iron_marches/map_banner.webp",
+      "format": "webp",
+      "before": 240994,
+      "after": 36692
+    },
+    {
+      "source": "game/assets/regions/luminous_synod/battle.jpg",
+      "runtime": "game/assets/regions/luminous_synod/battle.webp",
+      "format": "webp",
+      "before": 521790,
+      "after": 120658
+    },
+    {
+      "source": "game/assets/regions/luminous_synod/boss_arena.jpg",
+      "runtime": "game/assets/regions/luminous_synod/boss_arena.webp",
+      "format": "webp",
+      "before": 600631,
+      "after": 161774
+    },
+    {
+      "source": "game/assets/regions/luminous_synod/capital.jpg",
+      "runtime": "game/assets/regions/luminous_synod/capital.webp",
+      "format": "webp",
+      "before": 525104,
+      "after": 123672
+    },
+    {
+      "source": "game/assets/regions/luminous_synod/elite.jpg",
+      "runtime": "game/assets/regions/luminous_synod/elite.webp",
+      "format": "webp",
+      "before": 549505,
+      "after": 137402
+    },
+    {
+      "source": "game/assets/regions/luminous_synod/map_banner.jpg",
+      "runtime": "game/assets/regions/luminous_synod/map_banner.webp",
+      "format": "webp",
+      "before": 515750,
+      "after": 124310
+    },
+    {
+      "source": "game/assets/regions/mirror_conclave/battle.jpg",
+      "runtime": "game/assets/regions/mirror_conclave/battle.webp",
+      "format": "webp",
+      "before": 579024,
+      "after": 156120
+    },
+    {
+      "source": "game/assets/regions/mirror_conclave/boss_arena.jpg",
+      "runtime": "game/assets/regions/mirror_conclave/boss_arena.webp",
+      "format": "webp",
+      "before": 575947,
+      "after": 158722
+    },
+    {
+      "source": "game/assets/regions/mirror_conclave/map_banner.jpg",
+      "runtime": "game/assets/regions/mirror_conclave/map_banner.webp",
+      "format": "webp",
+      "before": 516519,
+      "after": 125970
+    },
+    {
+      "source": "game/assets/regions/sky_khanate/battle.jpg",
+      "runtime": "game/assets/regions/sky_khanate/battle.webp",
+      "format": "webp",
+      "before": 343648,
+      "after": 58276
+    },
+    {
+      "source": "game/assets/regions/sky_khanate/boss_arena.jpg",
+      "runtime": "game/assets/regions/sky_khanate/boss_arena.webp",
+      "format": "webp",
+      "before": 481709,
+      "after": 111958
+    },
+    {
+      "source": "game/assets/regions/sky_khanate/capital.jpg",
+      "runtime": "game/assets/regions/sky_khanate/capital.webp",
+      "format": "webp",
+      "before": 371946,
+      "after": 73092
+    },
+    {
+      "source": "game/assets/regions/sky_khanate/elite.jpg",
+      "runtime": "game/assets/regions/sky_khanate/elite.webp",
+      "format": "webp",
+      "before": 405341,
+      "after": 82458
+    },
+    {
+      "source": "game/assets/regions/sky_khanate/map_banner.jpg",
+      "runtime": "game/assets/regions/sky_khanate/map_banner.webp",
+      "format": "webp",
+      "before": 376200,
+      "after": 73322
+    },
+    {
+      "source": "game/assets/regions/thorn_covenant/battle.jpg",
+      "runtime": "game/assets/regions/thorn_covenant/battle.webp",
+      "format": "webp",
+      "before": 421777,
+      "after": 85564
+    },
+    {
+      "source": "game/assets/regions/thorn_covenant/boss_arena.jpg",
+      "runtime": "game/assets/regions/thorn_covenant/boss_arena.webp",
+      "format": "webp",
+      "before": 451436,
+      "after": 100774
+    },
+    {
+      "source": "game/assets/regions/thorn_covenant/capital.jpg",
+      "runtime": "game/assets/regions/thorn_covenant/capital.webp",
+      "format": "webp",
+      "before": 398585,
+      "after": 84928
+    },
+    {
+      "source": "game/assets/regions/thorn_covenant/elite.jpg",
+      "runtime": "game/assets/regions/thorn_covenant/elite.webp",
+      "format": "webp",
+      "before": 366949,
+      "after": 71010
+    },
+    {
+      "source": "game/assets/regions/thorn_covenant/map_banner.jpg",
+      "runtime": "game/assets/regions/thorn_covenant/map_banner.webp",
+      "format": "webp",
+      "before": 366053,
+      "after": 76322
+    },
+    {
+      "source": "game/assets/regions/verdant_exiles/battle.jpg",
+      "runtime": "game/assets/regions/verdant_exiles/battle.webp",
+      "format": "webp",
+      "before": 526040,
+      "after": 127170
+    },
+    {
+      "source": "game/assets/regions/verdant_exiles/boss_arena.jpg",
+      "runtime": "game/assets/regions/verdant_exiles/boss_arena.webp",
+      "format": "webp",
+      "before": 486538,
+      "after": 110716
+    },
+    {
+      "source": "game/assets/regions/verdant_exiles/map_banner.jpg",
+      "runtime": "game/assets/regions/verdant_exiles/map_banner.webp",
+      "format": "webp",
+      "before": 560782,
+      "after": 143286
+    },
+    {
+      "source": "game/generated_assets/scene_battle.jpg",
+      "runtime": "game/generated_assets/scene_battle.webp",
+      "format": "webp",
+      "before": 173930,
+      "after": 109060
+    },
+    {
+      "source": "game/generated_assets/scene_campaign.jpg",
+      "runtime": "game/generated_assets/scene_campaign.webp",
+      "format": "webp",
+      "before": 153261,
+      "after": 89890
+    },
+    {
+      "source": "game/generated_assets/scene_defeat.jpg",
+      "runtime": "game/generated_assets/scene_defeat.webp",
+      "format": "webp",
+      "before": 111337,
+      "after": 52898
+    },
+    {
+      "source": "game/generated_assets/scene_reward.jpg",
+      "runtime": "game/generated_assets/scene_reward.webp",
+      "format": "webp",
+      "before": 136773,
+      "after": 81202
+    },
+    {
+      "source": "game/generated_assets/scene_shop.jpg",
+      "runtime": "game/generated_assets/scene_shop.webp",
+      "format": "webp",
+      "before": 128028,
+      "after": 67438
+    },
+    {
+      "source": "game/generated_assets/scene_training_ui.jpg",
+      "runtime": "game/generated_assets/scene_training_ui.jpg",
+      "format": "jpg",
+      "before": 11704,
+      "after": 11704,
+      "reason": "already under 24 KiB"
+    },
+    {
+      "source": "game/generated_assets/scene_victory.jpg",
+      "runtime": "game/generated_assets/scene_victory.webp",
+      "format": "webp",
+      "before": 165954,
+      "after": 102996
+    },
+    {
+      "source": "game/generated_assets/splash_poster.jpg",
+      "runtime": "game/generated_assets/splash_poster.webp",
+      "format": "webp",
+      "before": 142921,
+      "after": 80560
+    }
+  ]
+}

@@ -1,0 +1,289 @@
+/* Owner-approved centered battle viewport (PR #160).
+   The board is centered against the FULL viewport, never the remaining width to
+   the right of the journal. The unused right gutter is available to platform
+   sticky advertising later; do not inject fake ads or move the board for ads. */
+@media (orientation: landscape) {
+  html[data-landscape-ui='1'] body {
+    --combat-rail-min: clamp(160px, 18vw, 380px);
+    --combat-board-size: min(100dvh, calc(100vw - var(--combat-rail-min) - var(--combat-rail-min)));
+  }
+
+  /* Journey Skirmish, Battle, Caravan and the shared Classic board. */
+  html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen {
+    width:100vw!important;
+    height:100dvh!important;
+    min-height:0!important;
+    padding:0!important;
+    overflow:hidden!important;
+  }
+  html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen .classic-shell {
+    position:relative!important;
+    width:100vw!important;
+    max-width:none!important;
+    height:100dvh!important;
+    margin:0!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) var(--combat-board-size) minmax(0,1fr)!important;
+    grid-template-rows:clamp(42px,7dvh,64px) max-content minmax(0,1fr)!important;
+    column-gap:0!important;
+    row-gap:0!important;
+    align-items:stretch!important;
+  }
+  html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen .classic-topbar {
+    grid-column:1!important;
+    grid-row:1!important;
+    width:calc(100% - 12px)!important;
+    min-width:0!important;
+    height:auto!important;
+    margin:0 0 0 6px!important;
+    padding:clamp(3px,.7dvh,8px) 0!important;
+    background:transparent!important;
+    border:0!important;
+    box-shadow:none!important;
+    overflow:visible!important;
+  }
+  html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen .classic-toolbar {
+    justify-content:flex-start!important;
+    flex-wrap:nowrap!important;
+    gap:clamp(2px,.35vw,5px)!important;
+  }
+  html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen .classic-mini-button {
+    flex:1 1 0!important;
+    width:auto!important;
+    min-width:0!important;
+    min-height:0!important;
+    padding:clamp(2px,.4dvh,5px) 2px!important;
+    font-size:clamp(9px,.96vw,15px)!important;
+    line-height:1.05!important;
+    overflow-wrap:anywhere!important;
+    white-space:normal!important;
+    text-align:center!important;
+  }
+  html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen .classic-party-panel,
+  html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen .classic-panel--moves {
+    grid-column:1!important;
+    box-sizing:border-box!important;
+    justify-self:start!important;
+    align-self:stretch!important;
+    width:min(380px,calc(100% - 16px))!important;
+    min-width:0!important;
+    max-width:none!important;
+    margin-left:8px!important;
+    margin-right:8px!important;
+    transform:none!important;
+    background:rgba(4,8,13,.92)!important;
+    border-color:rgba(216,177,93,.28)!important;
+  }
+  html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen .classic-party-panel {
+    grid-row:2!important;
+    height:auto!important;
+    max-height:55dvh!important;
+    min-height:0!important;
+    margin-top:0!important;
+    margin-bottom:0!important;
+    padding:clamp(7px,1.1vw,18px)!important;
+    border-bottom:0!important;
+    border-radius:3px 3px 0 0!important;
+    overflow-y:auto!important;
+  }
+  html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen .classic-panel--moves {
+    grid-row:3!important;
+    height:auto!important;
+    max-height:none!important;
+    min-height:0!important;
+    display:flex!important;
+    flex-direction:column!important;
+    margin-top:0!important;
+    margin-bottom:8px!important;
+    padding:clamp(5px,.8vw,12px)!important;
+    border-top:1px solid rgba(216,177,93,.20)!important;
+    border-radius:0 0 3px 3px!important;
+    overflow:hidden!important;
+  }
+  html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen .classic-panel--moves .classic-moves {
+    flex:1 1 auto!important;
+    min-height:0!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow-y:auto!important;
+  }
+  html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen .classic-main {
+    position:relative!important;
+    grid-column:2!important;
+    grid-row:1/4!important;
+    width:var(--combat-board-size)!important;
+    height:var(--combat-board-size)!important;
+    min-width:0!important;
+    min-height:0!important;
+    margin:0!important;
+    display:block!important;
+    align-self:center!important;
+    justify-self:center!important;
+    overflow:visible!important;
+  }
+  html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen .classic-board-wrap,
+  html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen .classic-board {
+    width:100%!important;
+    height:100%!important;
+    min-width:0!important;
+    min-height:0!important;
+    max-width:none!important;
+    margin:0!important;
+    padding:0!important;
+    border:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+    aspect-ratio:1!important;
+  }
+  html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen .classic-board-wrap {
+    position:absolute!important;
+    inset:0!important;
+  }
+  /* ux-consistency.css historically fixes the child grid itself to the viewport.
+     The board must instead be positioned inside the now-centered classic-main. */
+  html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen .classic-board {
+    position:absolute!important;
+    top:0!important;
+    right:auto!important;
+    bottom:auto!important;
+    left:0!important;
+    z-index:1!important;
+    transform:none!important;
+  }
+
+  /* Arena owns different markup but must obey the same centered board contract. */
+  html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen {
+    width:100vw!important;
+    height:100dvh!important;
+    min-height:0!important;
+    padding:0!important;
+    overflow:hidden!important;
+  }
+  html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen .arena-shell {
+    position:relative!important;
+    width:100vw!important;
+    max-width:none!important;
+    height:100dvh!important;
+    margin:0!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) var(--combat-board-size) minmax(0,1fr)!important;
+    grid-template-rows:clamp(42px,7dvh,64px) max-content minmax(0,1fr)!important;
+    column-gap:0!important;
+    row-gap:0!important;
+    align-items:stretch!important;
+  }
+  html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen .arena-topbar {
+    grid-column:1!important;
+    grid-row:1!important;
+    width:calc(100% - 12px)!important;
+    margin-left:6px!important;
+    margin-right:6px!important;
+    padding:clamp(3px,.7dvh,8px) 0!important;
+    min-width:0!important;
+    gap:2px!important;
+    background:transparent!important;
+    border:0!important;
+    flex-wrap:nowrap!important;
+    overflow:visible!important;
+  }
+  /* The opponent card carries the Arena battle identity; free the narrow rail for navigation. */
+  html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen .arena-topbar h1,
+  html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen .arena-balance {
+    display:none!important;
+  }
+  html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen .arena-nav-actions {
+    min-width:0!important;
+    width:100%!important;
+    flex-wrap:nowrap!important;
+    gap:3px!important;
+  }
+  html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen .arena-nav-actions button {
+    min-width:0!important;
+    flex:1 1 0!important;
+    min-height:0!important;
+    padding:clamp(2px,.55dvh,6px) clamp(2px,.45vw,8px)!important;
+    font-size:clamp(9px,1vw,16px)!important;
+    white-space:normal!important;
+    line-height:1.05!important;
+  }
+  html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen .arena-battle:not([hidden]) {
+    display:contents!important;
+  }
+  html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen .arena-battle-head,
+  html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen .arena-battle-journal {
+    grid-column:1!important;
+    box-sizing:border-box!important;
+    justify-self:start!important;
+    width:min(380px,calc(100% - 16px))!important;
+    max-width:none!important;
+    min-width:0!important;
+    margin-left:8px!important;
+    margin-right:8px!important;
+    background:rgba(4,8,13,.92)!important;
+    border-color:rgba(216,177,93,.28)!important;
+  }
+  html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen .arena-battle-head {
+    grid-row:2!important;
+    align-self:start!important;
+    max-height:55dvh!important;
+    margin-top:0!important;
+    margin-bottom:0!important;
+    padding:clamp(7px,1.1vw,18px)!important;
+    gap:clamp(3px,.55dvh,8px)!important;
+    overflow-y:auto!important;
+    border-bottom:0!important;
+    border-radius:3px 3px 0 0!important;
+  }
+  html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen .arena-battle-journal {
+    grid-row:3!important;
+    align-self:stretch!important;
+    min-height:0!important;
+    height:auto!important;
+    margin-top:0!important;
+    margin-bottom:8px!important;
+    padding:clamp(5px,.8vw,12px)!important;
+    border-top:1px solid rgba(216,177,93,.20)!important;
+    border-radius:0 0 3px 3px!important;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+  }
+  html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen .arena-moves {
+    flex:1 1 auto!important;
+    min-height:0!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow-y:auto!important;
+  }
+  html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen .arena-board.classic-board {
+    grid-column:2!important;
+    grid-row:1/4!important;
+    box-sizing:border-box!important;
+    width:var(--combat-board-size)!important;
+    height:var(--combat-board-size)!important;
+    max-width:none!important;
+    min-width:0!important;
+    margin:0!important;
+    padding:0!important;
+    border:0!important;
+    aspect-ratio:1!important;
+    align-self:center!important;
+    justify-self:center!important;
+  }
+}
+@media (orientation:landscape) and (max-width:1500px) {
+  html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen .arena-topbar h1,
+  html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen .arena-balance {
+    display:none!important;
+  }
+}
+@media (orientation:landscape) and (max-height:520px) {
+  html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen .classic-party-panel,
+  html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen .arena-battle-head {
+    max-height:55dvh!important;
+  }
+  html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen .classic-panel h2,
+  html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen .arena-battle-head h2 {
+    font-size:clamp(17px,3.3dvh,24px)!important;
+  }
+}

@@ -36,26 +36,19 @@ async function openEncounter(page, type) {
   await page.locator('[data-continue-run]').click();
   await page.locator('[data-roster-travel]').click();
   await page.locator(`[data-travel-type="${type}"]`).first().click();
-  const prep = type === 'skirmish' ? '[data-skirmish-screen]' : '[data-battle-screen]';
-  await page.locator(`${prep}:not([hidden])`).waitFor();
-  if (type === 'caravan') {
-    const backdrop = await page.evaluate(() => {
-      const choice = globalThis.RPChessTravelChoice.activeChoice;
-      const expected = globalThis.RPChessSceneVisuals.backdropPath(choice.seed, choice.enemyRaceTag);
-      return { expected, actual:document.querySelector('[data-battle-screen]').dataset.battleBackdrop };
-    });
-    assert.equal(backdrop.actual, backdrop.expected, 'Caravan preparation should match rolled enemy race');
-  }
-  await page.locator(type === 'skirmish' ? '[data-skirmish-start]' : '[data-battle-start]').click();
+  await page.locator('[data-artifact-choice-modal]').waitFor();
+  assert.strictEqual(await page.locator(type==='skirmish'?'[data-skirmish-screen]':'[data-battle-screen]').isHidden(),true);
+
   await page.locator('[data-artifact-choice="none"]').click();
   await page.locator('[data-classic-screen]:not([hidden])').waitFor();
   await page.locator('[data-combat-menu]:visible').waitFor();
   if (type === 'caravan') {
-    const backdrop = await page.evaluate(() => ({
-      prep:document.querySelector('[data-battle-screen]').dataset.battleBackdrop,
-      combat:document.querySelector('[data-classic-screen]').dataset.combatBackdrop
-    }));
-    assert.equal(backdrop.combat, backdrop.prep, 'Caravan combat backdrop should match preparation');
+    const backdrop=await page.evaluate(()=>{
+      const choice=globalThis.RPChessTravelChoice.activeChoice;
+      return {expected:globalThis.RPChessSceneVisuals.backdropPath(choice.seed,choice.enemyRaceTag),
+        actual:document.querySelector('[data-classic-screen]').dataset.combatBackdrop};
+    });
+    assert.strictEqual(backdrop.actual,backdrop.expected,'Caravan combat backdrop matches its rolled race');
   }
 }
 

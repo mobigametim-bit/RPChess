@@ -228,7 +228,7 @@ function renderBackground(event) {
   const image = screen?.querySelector('[data-events-background]');
   if (!image) return;
   const assetPath = eventBackgroundPath(event);
-  const fallbackPath = 'assets/events/register-04/backgrounds/generic/forest_crossroad.png';
+  const fallbackPath = 'assets/events/register-04/backgrounds/generic/forest_crossroad.webp';
   image.dataset.assetPath = assetPath;
   image.dataset.fallbackApplied = '0';
   image.onerror = () => {
@@ -257,6 +257,11 @@ function renderEvent() {
   const copyFrame=screen.querySelector('.events-copy-frame');
   if(copyFrame)copyFrame.scrollTop=0;
   renderOutcome(event);
+  // Explicitly replace all numeric Gold/Supply/Supplies mentions in every
+  // choice (actions, costs and disabled reasons) and in result notes. The
+  // global UI sweep alone can precede a late Event rerender.
+  globalThis.RPChessResourceIcons?.iconize?.(choices);
+  globalThis.RPChessResourceIcons?.iconize?.(screen.querySelector('[data-events-outcome-notes]'));
 }
 
 function renderOutcome(event) {

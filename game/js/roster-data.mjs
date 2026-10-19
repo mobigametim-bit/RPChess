@@ -9,8 +9,8 @@ const STARTER_TEMPLATES = Object.freeze([
     name: 'Хранитель Клятвы',
     pieceType: 'king',
     origin: 'Железные Марши',
-    portrait: 'assets/kings/oathkeeper/portrait.png',
-    pieceArt: 'assets/kings/oathkeeper/piece.png',
+    portrait: 'assets/kings/oathkeeper/portrait.webp',
+    pieceArt: 'assets/kings/oathkeeper/pieces/white.webp',
     description: 'Последний хранитель древней присяги Железных Маршей. После падения родовой крепости он покинул её стены и собрал вокруг себя тех, кто ещё верит, что данное слово важнее трона.',
     isRunKing: true
   }),
@@ -19,8 +19,8 @@ const STARTER_TEMPLATES = Object.freeze([
     name: 'Альдрик Стена',
     pieceType: 'rook',
     origin: 'Железные Марши',
-    portrait: 'assets/heroes/aldric_wall/portrait.png',
-    pieceArt: 'assets/heroes/aldric_wall/piece_badge.png',
+    portrait: 'assets/heroes/aldric_wall/portrait_named.webp',
+    pieceArt: 'assets/heroes/aldric_wall/pieces/white/rook.webp',
     description: 'Ветеран пограничных гарнизонов, привыкший держать линию до последнего.'
   }),
   Object.freeze({
@@ -28,8 +28,8 @@ const STARTER_TEMPLATES = Object.freeze([
     name: 'Мара Цепь',
     pieceType: 'pawn',
     origin: 'Железные Марши',
-    portrait: 'assets/heroes/mara_chain/portrait.png',
-    pieceArt: 'assets/heroes/mara_chain/piece_badge.png',
+    portrait: 'assets/heroes/mara_chain/portrait_named.webp',
+    pieceArt: 'assets/heroes/mara_chain/pieces/white/pawn.webp',
     description: 'Упрямая воительница из низших рядов, для которой каждый шаг вперёд имеет цену.'
   }),
   Object.freeze({
@@ -37,8 +37,8 @@ const STARTER_TEMPLATES = Object.freeze([
     name: 'Немея Перо',
     pieceType: 'pawn',
     origin: 'Светлый Синод',
-    portrait: 'assets/heroes/nemea_quill/portrait.png',
-    pieceArt: 'assets/heroes/nemea_quill/piece_badge.png',
+    portrait: 'assets/heroes/nemea_quill/portrait_named.webp',
+    pieceArt: 'assets/heroes/nemea_quill/pieces/white/pawn.webp',
     description: 'Учёная-путешественница, присоединившаяся к отряду ради истории, которую ещё предстоит написать.'
   }),
   Object.freeze({
@@ -46,8 +46,8 @@ const STARTER_TEMPLATES = Object.freeze([
     name: 'Брат Орелл',
     pieceType: 'bishop',
     origin: 'Железные Марши',
-    portrait: 'assets/heroes/brother_orell/portrait.png',
-    pieceArt: 'assets/heroes/brother_orell/piece_badge.png',
+    portrait: 'assets/heroes/brother_orell/portrait_named.webp',
+    pieceArt: 'assets/heroes/brother_orell/pieces/white/bishop.webp',
     description: 'Жрец-кузнец, читающий поле боя так же внимательно, как линии на раскалённом металле.'
   }),
   Object.freeze({
@@ -55,8 +55,8 @@ const STARTER_TEMPLATES = Object.freeze([
     name: 'Ваэль Молот',
     pieceType: 'knight',
     origin: 'Железные Марши',
-    portrait: 'assets/heroes/vael_hammer/portrait.png',
-    pieceArt: 'assets/heroes/vael_hammer/piece_badge.png',
+    portrait: 'assets/heroes/vael_hammer/portrait_named.webp',
+    pieceArt: 'assets/heroes/vael_hammer/pieces/white/knight.webp',
     description: 'Тяжёлый всадник, предпочитающий решительный манёвр долгому ожиданию.'
   })
 ]);
