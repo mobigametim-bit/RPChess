@@ -56,6 +56,9 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       const {writePlayerRating}=await import('./js/player-rating.mjs');
       writeRun({...readRun(),journeyStep:50});
       writePlayerRating({power:1600,receipts:[]});
+      // Preserve the two-player portrait fixture: the active-Glory scenario
+      // below deliberately installs a separate single-record fake server.
+      window.__portraitLeaderboardFetch=window.fetch;
       window.__rankedSubmissions=[];
       window.__rankedServerBest=null;
       window.fetch=async(resource,options)=>{
@@ -126,6 +129,14 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       await panel.screenshot({path:path.join(dir,'leaderboard-ru.png')});
     }
     assert((await panel.innerText()).includes('ГЕРОЕВ В СТРОЮ'));
+    // Reset the leaderboard provider between the active-Journey and
+    // multi-commander portrait scenarios so their fixtures cannot collide.
+    await page.evaluate(async()=>{
+      window.fetch=window.__portraitLeaderboardFetch;
+      const {loadLeaderboard}=await import('./js/leaderboard-client.mjs');
+      await loadLeaderboard({force:true});
+    });
+    await page.locator('.chronicle-leaderboard-row').nth(1).waitFor();
     await page.evaluate(()=>window.RPChessPlayerIdentity.open());
     assert.strictEqual(await page.locator('[data-identity-commander]').count(),7,'seven original commanders available in the name dialog');
     await page.locator('[data-identity-commander="wanderer_queen"]').click();
