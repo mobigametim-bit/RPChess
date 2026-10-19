@@ -94,6 +94,7 @@ function activeLeaderboardRecord(run, { power = 0 } = {}) {
   return {
     runId: run.id,
     playerName: playerNameForRun(run),
+    commanderId: normalizeCommanderId(run.commanderId),
     week, power: normalizedPower, glory: gloryForRun(week, normalizedPower),
     completedAt: 0
   };
