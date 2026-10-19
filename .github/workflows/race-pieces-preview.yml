@@ -1,5 +1,5 @@
 name: Deploy RPChess race chess pieces acceptance preview
-# PR160 acceptance: synced visible commander portrait and role glyph build verification.
+# PR160 pre-merge verification: retain main active-Glory leaderboard and PR160 art/commander polish.
 # PR160: named rook art, color-specific sprites and all updated starter combat tests.
 
 on:
