@@ -36,6 +36,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     await page.evaluate(async()=>{
       window.RPChessLeaderboardAPI='https://leaderboard.example.invalid';
       const original=window.fetch.bind(window);
+      window.__chronicleOriginalFetch=original;
       window.fetch=(resource,options)=>String(resource).startsWith('https://leaderboard.example.invalid/')
         ?Promise.resolve(new Response(JSON.stringify({
           top:[{rank:1,name:'Рагнар',glory:17},{rank:2,name:'Ивар',glory:15}],
@@ -47,6 +48,71 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     });
     assert.strictEqual(await panel.locator('.chronicle-leaderboard-row').count(),2);
     assert((await panel.locator('.chronicle-leaderboard-self').innerText()).includes('#43'));
+    // Signed VK browser: every return to Main Menu can publish a NEW ongoing
+    // Journey's Glory; no backend calls are made without a VK launch signature.
+    const online=await page.evaluate(async()=>{
+      history.replaceState(null,'',location.pathname+'?vk_app_id=54754579&vk_user_id=42&sign=browser-test-only');
+      const {readRun,writeRun}=await import('./js/run-persistence.mjs');
+      const {writePlayerRating}=await import('./js/player-rating.mjs');
+      writeRun({...readRun(),journeyStep:50});
+      writePlayerRating({power:1600,receipts:[]});
+      window.__rankedSubmissions=[];
+      window.__rankedServerBest=null;
+      window.fetch=async(resource,options)=>{
+        if(!String(resource).startsWith('https://leaderboard.example.invalid/'))return window.__chronicleOriginalFetch(resource,options);
+        const request=options?.body?JSON.parse(options.body):{};
+        if(String(resource).endsWith('/submit')){
+          window.__rankedSubmissions.push(request.record);
+          window.__rankedServerBest=request.record;
+        }
+        const best=window.__rankedServerBest;
+        return new Response(JSON.stringify({top:best?[{rank:1,name:best.playerName,glory:best.glory}]:[],
+          me:best?{rank:1,name:best.playerName,glory:best.glory,week:best.week,power:best.power}:null}),
+          {status:200,headers:{'content-type':'application/json'}});
+      };
+      return true;
+    });
+    assert(online);
+    async function revisitMenu(){
+      await page.evaluate(async()=>{
+        const menu=document.querySelector('[data-reboot-foundation]');
+        menu.hidden=true;
+        await new Promise(resolve=>requestAnimationFrame(resolve));
+        menu.hidden=false;
+      });
+    }
+    await revisitMenu();
+    await page.waitForFunction(()=>window.__rankedSubmissions.length===1);
+    const record=await page.evaluate(()=>window.__rankedSubmissions[0]);
+    assert.strictEqual(record.glory,28);
+    assert.strictEqual(record.week,50);
+    assert.strictEqual(record.playerName,'Тимур');
+    assert((await panel.innerText()).includes('28'),'new active-run Glory must appear in the rank');
+    await revisitMenu();
+    await page.waitForTimeout(120);
+    assert.strictEqual(await page.evaluate(()=>window.__rankedSubmissions.length),1,
+      'returning to menu without improvement must not resubmit');
+    await page.evaluate(async()=>{
+      const persistence=await import('./js/run-persistence.mjs');
+      persistence.writeRun({...persistence.readRun(),journeyStep:60});
+    });
+    await revisitMenu();
+    await page.waitForFunction(()=>window.__rankedSubmissions.length===2);
+    assert.strictEqual(await page.evaluate(()=>window.__rankedSubmissions[1].glory),30,
+      'a later return to menu must publish the higher current Glory');
+    assert.strictEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('rpchess.reboot.v1.chronicle')).history.length),1,
+      'rank submissions must not write unfinished runs into completed Chronicle');
+    for(const viewport of [{width:1653,height:760},{width:844,height:390},{width:667,height:300}]){
+      await page.setViewportSize(viewport);
+      const view=await panel.evaluate(root=>{
+        const own=root.querySelector('.chronicle-leaderboard-self');
+        const row=root.querySelector('.chronicle-leaderboard-row');
+        return {rank:own?.textContent,row:row?.textContent,visible:getComputedStyle(root).display!=='none'};
+      });
+      assert(view.visible&&view.rank.includes('30')&&view.row?.includes('30'),
+        `live Glory must render at ${viewport.width}x${viewport.height}: ${JSON.stringify(view)}`);
+    }
+    await page.setViewportSize({width:1653,height:760});
     if(process.env.RPCHESS_FLAG_SCREENSHOT_DIR) {
       const dir=path.resolve(process.env.RPCHESS_FLAG_SCREENSHOT_DIR);
       fs.mkdirSync(dir,{recursive:true});
@@ -94,7 +160,12 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert(portrait.includes('/kings/oathkeeper/portrait.webp'),'legacy current runs keep the default royal portrait');
 
     assert.strictEqual(await page.locator('[data-player-identity-close]').getAttribute('aria-label'),'Close');
-    await page.evaluate(()=>window.RPChessPlayerIdentity.close());
+    await page.evaluate(()=>{
+      window.RPChessPlayerIdentity.close();
+      // The synthetic signed VK launch is only for the in-page leaderboard
+      // submission regression. Do not reload standalone Pages as a fake VK app.
+      history.replaceState(null,'',location.pathname);
+    });
     await page.reload({waitUntil:'networkidle'});
     assert.strictEqual(await panel.locator('h2').innerText(),'Chronicle','persisted English applies at startup');
     assert.strictEqual(await panel.locator('[data-chronicle-current] h3').innerText(),'Тимур');
