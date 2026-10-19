@@ -91,6 +91,15 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   assert.strictEqual(snapshot.week,12);
   assert.strictEqual(snapshot.power,777);
   assert.strictEqual(snapshot.heroes,active.roster.length-1);
+  assert.strictEqual(chronicle.activeLeaderboardRecord(active,{power:900}).glory,10,
+    'ongoing Journey earns Glory before ending');
+  assert.strictEqual(chronicle.bestLeaderboardRecord(chronicle.readChronicle(storage),active,{power:900}).runId,'completed-run',
+    'completed record stays on top if its Glory is higher');
+  const improving={...active,journeyStep:50};
+  assert.strictEqual(chronicle.bestLeaderboardRecord(chronicle.readChronicle(storage),improving,{power:1600}).runId,'active-run',
+    'an unfinished Journey can overtake the completed personal best');
+  assert.strictEqual(chronicle.readChronicle(storage).history.length,2,
+    'ranking an active Journey must not add it to the completed Chronicle');
 
   const foundation=fs.readFileSync(path.join(game,'js/reboot-foundation.mjs'),'utf8');
   const ui=fs.readFileSync(path.join(game,'js/player-identity-chronicle.mjs'),'utf8');
