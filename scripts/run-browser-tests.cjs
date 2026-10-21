@@ -40,6 +40,7 @@ const DEFAULT_TESTS=[
   'settlement-browser.cjs',
   'starvation-browser.cjs',
   'events-browser.cjs',
+  'mobile-run-summary-browser.cjs',
   'puzzles-browser.cjs'
 ];
 const requested=String(process.env.RPCHESS_BROWSER_TEST||'').trim();
