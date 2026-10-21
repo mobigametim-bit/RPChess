@@ -24,6 +24,9 @@ const SUPPLIES_ICON='generated_assets/reward_supplies.png';
 let screen = null;
 let activeRun = null;
 let busy = false;
+let activeTab = 'tavern';
+const TABS = ['tavern','healer','market'];
+
 
 function audio() { return globalThis.RPChessRebootAudio; }
 function contentText(value) { return translateLegacy(String(value ?? '')); }
@@ -62,7 +65,24 @@ function applyStaticCopy() {
     const node=screen.querySelector(selector);
     if(node)node.textContent=t(key);
   }
+  for(const tab of TABS){
+    const label=screen.querySelector(`[data-settlement-tab-label="${tab}"]`);
+    if(label)label.textContent=t(`settlement.${tab}.title`);
+  }
 }
+function selectTab(tab,{focus=false}={}){
+  if(!screen||!TABS.includes(tab))return;
+  activeTab=tab;
+  screen.dataset.settlementActiveTab=tab;
+  for(const name of TABS){
+    const button=screen.querySelector(`[data-settlement-tab="${name}"]`);
+    button?.setAttribute('aria-selected',String(tab===name));
+    if(button)button.tabIndex=tab===name?0:-1;
+    screen.querySelector(`.settlement-service--${name}`)?.classList.toggle('is-active-tab',tab===name);
+  }
+  if(focus)screen.querySelector(`[data-settlement-tab="${tab}"]`)?.focus();
+}
+
 
 function ensureScreen() {
   if (screen) return screen;
@@ -83,20 +103,25 @@ function ensureScreen() {
         <h1 data-settlement-title></h1>
         <p data-settlement-subtitle></p>
       </header>
+      <nav class="settlement-tabs" role="tablist" aria-label="Разделы поселения" data-settlement-tabs>
+        <button type="button" class="settlement-tab" role="tab" id="settlement-tab-tavern" aria-controls="settlement-pane-tavern" data-settlement-tab="tavern"><img src="generated_assets/reward_recruit.png" alt="" aria-hidden="true"><span data-settlement-tab-label="tavern"></span></button>
+        <button type="button" class="settlement-tab" role="tab" id="settlement-tab-healer" aria-controls="settlement-pane-healer" data-settlement-tab="healer"><img src="generated_assets/reward_heal.png" alt="" aria-hidden="true"><span data-settlement-tab-label="healer"></span></button>
+        <button type="button" class="settlement-tab" role="tab" id="settlement-tab-market" aria-controls="settlement-pane-market" data-settlement-tab="market"><img src="generated_assets/node_shop.png" alt="" aria-hidden="true"><span data-settlement-tab-label="market"></span></button>
+      </nav>
       <div class="settlement-services">
-        <section class="settlement-service settlement-service--healer ui-panel-safe" aria-labelledby="settlement-healer-title">
+        <section id="settlement-pane-healer" class="settlement-service settlement-service--healer ui-panel-safe" role="tabpanel" aria-labelledby="settlement-healer-title">
           <div class="settlement-service__icon settlement-service__icon--healer" aria-hidden="true"></div>
           <h2 id="settlement-healer-title" data-settlement-healer-title></h2>
           <p class="settlement-service__intro" data-settlement-healer-intro></p>
           <div class="settlement-healer-list" data-settlement-healer-list></div>
         </section>
-        <section class="settlement-service settlement-service--tavern ui-panel-safe" aria-labelledby="settlement-tavern-title">
+        <section id="settlement-pane-tavern" class="settlement-service settlement-service--tavern ui-panel-safe" role="tabpanel" aria-labelledby="settlement-tavern-title">
           <div class="settlement-service__icon settlement-service__icon--tavern" aria-hidden="true"></div>
           <h2 id="settlement-tavern-title" data-settlement-tavern-title></h2>
           <p class="settlement-service__intro" data-settlement-tavern-intro></p>
           <div class="settlement-recruits" data-settlement-recruits></div>
         </section>
-        <section class="settlement-service settlement-service--market ui-panel-safe" aria-labelledby="settlement-supplies-title">
+        <section id="settlement-pane-market" class="settlement-service settlement-service--market ui-panel-safe" role="tabpanel" aria-labelledby="settlement-supplies-title">
           <div class="settlement-service__icon settlement-service__icon--market" aria-hidden="true"></div>
           <h2 id="settlement-supplies-title" data-settlement-market-title></h2>
             <div class="settlement-market-products" data-settlement-supply-card></div>
@@ -111,6 +136,18 @@ function ensureScreen() {
   applyStaticCopy();
 
   screen.querySelector('[data-settlement-continue]')?.addEventListener('click', continuePath);
+  screen.querySelector('[data-settlement-tabs]')?.addEventListener('click',event=>{
+    const button=event.target.closest('[data-settlement-tab]');
+    if(button)selectTab(button.dataset.settlementTab);
+  });
+  screen.querySelector('[data-settlement-tabs]')?.addEventListener('keydown',event=>{
+    const index=TABS.indexOf(event.target?.dataset?.settlementTab);
+    if(index<0)return;
+    const delta=event.key==='ArrowRight'?1:event.key==='ArrowLeft'?-1:0;
+    const target=event.key==='Home'?TABS[0]:event.key==='End'?TABS[TABS.length-1]:delta?TABS[(index+delta+TABS.length)%TABS.length]:null;
+    if(target){event.preventDefault();selectTab(target,{focus:true});}
+  });
+  selectTab(activeTab);
   screen.addEventListener('click', handleServiceAction);
   return screen;
 }
@@ -125,6 +162,7 @@ function showSettlement() {
   if (!root) return;
   hideAllScenes();
   root.hidden = false;
+  selectTab(activeTab);
   document.body.classList.add('settlement-active');
   window.scrollTo({ top: 0, behavior: 'auto' });
   globalThis.RPChessResources?.render?.();

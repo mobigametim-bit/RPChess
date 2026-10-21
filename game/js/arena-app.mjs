@@ -73,7 +73,9 @@ function renderCatalog(){
     card.innerHTML=img(foe.art,'arena-foe-art','')+'<small class="arena-foe-power">'+statIcon('power')+l('power')+': '+foe.elo+'</small>'+(unlocked?'':'<span class="arena-lock" aria-hidden="true">🔒</span>');
     foes.append(card);
   }
-  foes.scrollLeft=foes.children[section*7]?.offsetLeft-foes.children[0]?.offsetLeft||0;
+  if(globalThis.matchMedia?.('(orientation:portrait) and (max-width:1100px)').matches)
+    foes.scrollTop=Math.max(0,(foes.children[section*7]?.offsetTop||0)-(foes.children[0]?.offsetTop||0));
+  else foes.scrollLeft=foes.children[section*7]?.offsetLeft-foes.children[0]?.offsetLeft||0;
   const resume=root.querySelector('[data-arena-resume]');
   resume.hidden=!state.match;resume.textContent=l('resume')+(state.match?' · '+l('power')+': '+OPPONENT_BY_ID.get(state.match.foe).elo:'');
   root.querySelector('[data-arena-notice]').textContent=notice?l(notice):'';
@@ -363,6 +365,7 @@ dialog?.addEventListener('click',async event=>{
 });
 const foeCarousel=root?.querySelector('[data-arena-foes]');
 foeCarousel?.addEventListener('wheel',event=>{
+  if(globalThis.matchMedia?.('(orientation:portrait) and (max-width:1100px)').matches)return;
   if(!foeCarousel.clientWidth||foeCarousel.scrollWidth<=foeCarousel.clientWidth)return;
   const delta=Math.abs(event.deltaX)>Math.abs(event.deltaY)?event.deltaX:event.deltaY;
   if(!delta)return;
@@ -371,12 +374,13 @@ foeCarousel?.addEventListener('wheel',event=>{
 },{passive:false});
 foeCarousel?.addEventListener('scroll',()=>{
   if(!foeCarousel.children.length)return;
-  const start=foeCarousel.children[0].offsetLeft;
+  const portrait=globalThis.matchMedia?.('(orientation:portrait) and (max-width:1100px)').matches;
+  const start=portrait?foeCarousel.children[0].offsetTop:foeCarousel.children[0].offsetLeft;
   let closest=0,distance=Infinity;
   for(let i=0;i<12;i++){
     const card=foeCarousel.children[i*7];
     if(!card)break;
-    const gap=Math.abs(card.offsetLeft-start-foeCarousel.scrollLeft);
+    const gap=Math.abs((portrait?card.offsetTop-foeCarousel.scrollTop:card.offsetLeft-foeCarousel.scrollLeft)-start);
     if(gap<distance){distance=gap;closest=i;}
   }
   section=closest;
