@@ -92,8 +92,16 @@ async function capturePhoneOrTablet(browser,width,height){
     await capture(page,'04-roster-formation');
     await page.locator('[data-roster-travel]').click();
     await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
-    const travel=await page.evaluate(()=>{
+    const travel=await page.evaluate(async()=>{
       const card=document.querySelector('[data-travel-choice]'),icon=card.querySelector('.travel-choice-card__icon'),flavor=card.querySelector('.travel-choice-card__flavor');
+      // A nonempty CSS url() is not enough: check that every route artwork loads.
+      const backdropLoaded=await Promise.all([...document.querySelectorAll('[data-travel-choice]')].map(async choice=>{
+        const style=getComputedStyle(choice.querySelector('.travel-choice-card__visual')).backgroundImage;
+        const url=style.match(/url\\(["']?([^"')]+)["']?\\)/)?.[1];
+        if(!url)return false;
+        try{const image=new Image();image.src=url;await image.decode();return image.naturalWidth>0;}
+        catch{return false;}
+      }));
       const backdrop=card.querySelector('.travel-choice-card__visual');
       const command=document.querySelector('[data-travel-commandbar]'),portrait=document.querySelector('[data-travel-run-portrait]');
       const controls=['[data-travel-roster]','[data-travel-settings]','[data-travel-menu]'].map(s=>document.querySelector(s).getBoundingClientRect());
@@ -108,7 +116,7 @@ async function capturePhoneOrTablet(browser,width,height){
       return {
         noFlavor:getComputedStyle(flavor).display==='none',
         iconTop:i.top-c.top,iconRight:c.right-i.right,
-        artBackdrop:getComputedStyle(backdrop).backgroundImage.includes('url('),
+        artBackdrop:backdropLoaded.length>0&&backdropLoaded.every(Boolean),
         noDifficultyLabel:![...document.querySelectorAll('.travel-choice-card__difficulty small')].some(n=>n.textContent.trim()),
         starsBesideTitle:!stars||(stars.left>=title.right-5&&Math.abs(stars.top-title.top)<26),
         buttonsStacked:controls.every((r,j)=>j===0||(r.top>=controls[j-1].bottom-2&&Math.abs(r.left-controls[0].left)<3)),

@@ -115,7 +115,10 @@ function decorateTravelCards() {
   for (const card of document.querySelectorAll('[data-travel-choice]')) {
     const path = routeBackdrop(choiceForCard(card), card);
     if (card.dataset.travelBackdrop === path) continue;
-    card.style.setProperty('--travel-card-backdrop', `url("${path}")`);
+    // CSS consumers live in both injected and external stylesheets; an absolute
+    // asset URL prevents relative paths from resolving under /css/ in portrait.
+    const absoluteUrl = new URL(path, document.baseURI).href;
+    card.style.setProperty('--travel-card-backdrop', `url("${absoluteUrl}")`);
     card.dataset.travelBackdrop = path;
   }
 }
