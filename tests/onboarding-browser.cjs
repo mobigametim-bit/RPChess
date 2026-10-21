@@ -163,6 +163,11 @@ async function capturePortraitTutorials(browser, width, height) {
     await page.waitForFunction(()=>Boolean(globalThis.RPChessOnboardingReady));
     await page.evaluate(async()=>await globalThis.RPChessOnboardingReady);
     await page.locator('[data-new-game]').first().click();
+    const debug=await page.locator('[data-tutorial-overlay]').evaluate(root=>{
+      const rect=root.getBoundingClientRect(),cs=getComputedStyle(root);
+      return {hidden:root.hidden,display:cs.display,visibility:cs.visibility,position:cs.position,opacity:cs.opacity,zIndex:cs.zIndex,bounds:{x:rect.x,y:rect.y,w:rect.width,h:rect.height},parent:root.parentElement.tagName,stylePresent:!!document.querySelector('[data-rpchess-onboarding-style]'),hint:root.dataset.tutorialHint};
+    });
+    console.log('PORTRAIT ONBOARDING FIRST OVERLAY DIAGNOSTIC',JSON.stringify(debug));
     for (const [index,hint] of HINTS.entries()) {
       if(index>0){
         const shown=await page.evaluate(async key=>{
