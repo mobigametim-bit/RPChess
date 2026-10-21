@@ -93,12 +93,32 @@ async function capturePhoneOrTablet(browser,width,height){
     await page.locator('[data-roster-travel]').click();
     await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
     const travel=await page.evaluate(()=>{
-      const card=document.querySelector('[data-travel-choice]'),icon=card?.querySelector('.travel-choice-card__icon'),flavor=card?.querySelector('.travel-choice-card__flavor');
-      const ranking=document.querySelector('[data-travel-player-rating]'),roster=document.querySelector('[data-travel-roster]');
-      const c=card.getBoundingClientRect(),i=icon.getBoundingClientRect(),r=ranking.getBoundingClientRect(),b=roster.getBoundingClientRect();
-      return {noFlavor:getComputedStyle(flavor).display==='none',iconTop:i.top-c.top,iconRight:c.right-i.right,rosterToRight:b.left>=r.right-4,aligned:Math.abs(b.top-r.top)<20};
+      const card=document.querySelector('[data-travel-choice]'),icon=card.querySelector('.travel-choice-card__icon'),flavor=card.querySelector('.travel-choice-card__flavor');
+      const backdrop=card.querySelector('.travel-choice-card__visual');
+      const command=document.querySelector('[data-travel-commandbar]'),portrait=document.querySelector('[data-travel-run-portrait]');
+      const controls=['[data-travel-roster]','[data-travel-settings]','[data-travel-menu]'].map(s=>document.querySelector(s).getBoundingClientRect());
+      const resources=document.querySelector('[data-travel-inline-resources]');
+      const resourceIcon=document.querySelector('.travel-choice-inline-resource__icon');
+      const resourceValue=document.querySelector('.travel-choice-inline-resource strong');
+      const starCard=[...document.querySelectorAll('[data-travel-choice]')].find(c=>c.querySelector('.travel-choice-card__threat>strong'));
+      const title=starCard?.querySelector('.travel-choice-card__type')?.getBoundingClientRect();
+      const stars=starCard?.querySelector('.travel-choice-card__threat>strong')?.getBoundingClientRect();
+      const c=card.getBoundingClientRect(),i=icon.getBoundingClientRect();
+      const cmd=command.getBoundingClientRect(),p=portrait.getBoundingClientRect(),res=resources.getBoundingClientRect();
+      return {
+        noFlavor:getComputedStyle(flavor).display==='none',
+        iconTop:i.top-c.top,iconRight:c.right-i.right,
+        artBackdrop:getComputedStyle(backdrop).backgroundImage.includes('url('),
+        noDifficultyLabel:![...document.querySelectorAll('.travel-choice-card__difficulty small')].some(n=>n.textContent.trim()),
+        starsBesideTitle:!stars||(stars.left>=title.right-5&&Math.abs(stars.top-title.top)<26),
+        buttonsStacked:controls.every((r,j)=>j===0||(r.top>=controls[j-1].bottom-2&&Math.abs(r.left-controls[0].left)<3)),
+        portraitDoubled:p.width>=103&&p.height>=103,
+        portraitCentered:Math.abs((p.top+p.bottom-cmd.top-cmd.bottom)/2)<8,
+        resourcesCentered:Math.abs((res.top+res.bottom-cmd.top-cmd.bottom)/2)<30,
+        resourceDoubled:resourceIcon.getBoundingClientRect().width>=59&&parseFloat(getComputedStyle(resourceValue).fontSize)>=35
+      };
     });
-    assert(travel.noFlavor&&travel.iconTop>=0&&travel.iconRight>=0&&travel.iconRight<=25&&travel.rosterToRight&&travel.aligned,`Travel portrait refinements: ${JSON.stringify(travel)}`);
+    assert(Object.values(travel).every(Boolean),`Travel portrait refinements: ${JSON.stringify(travel)}`);
     await capture(page,'05-journey-routes');
 
     await seeded(page,eventRoute,'E001');

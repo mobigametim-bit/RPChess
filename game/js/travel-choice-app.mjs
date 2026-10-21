@@ -44,11 +44,7 @@ function choiceMeta(choice,noSupplies){
   if(choice.type==='skirmish'||choice.type==='battle'||choice.type==='puzzle'||choice.type==='caravan'){
     const meta=document.createElement('span');meta.className='travel-choice-card__threat';
     const stars=document.createElement('strong');stars.textContent=starsText(choice.stars);
-    if(choice.type==='puzzle'){
-      const difficulty=document.createElement('span');difficulty.className='travel-choice-card__difficulty';
-      const label=document.createElement('small');label.textContent=t('travel.difficulty');
-      difficulty.append(stars,label);meta.append(difficulty,cost,rewardPreview(choice));
-    }else meta.append(stars,cost,rewardPreview(choice));
+    meta.append(stars,cost,rewardPreview(choice));
     return meta;
   }
   const meta=document.createElement('span');meta.className='travel-choice-card__meta travel-choice-card__meta--cost-only';meta.append(cost);return meta;
