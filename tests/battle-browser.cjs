@@ -174,8 +174,21 @@ async function assertResponsiveStars(page, selector, cardSelector) {
       const pseudo=getComputedStyle(root,'::before'),rect=root.getBoundingClientRect();
       return {image:pseudo.backgroundImage,display:pseudo.display,size:pseudo.width,result:{top:rect.top,bottom:rect.bottom}};
     });
-    assert(mobileKing.image.includes('/assets/kings/ash_regent/portrait.webp')&&mobileKing.display!=='none',
-      `selected King portrait must be visible after Battle at 844x390: ${JSON.stringify(mobileKing)}`);
+    assert(mobileKing.image.includes(new URL('assets/kings/ash_regent/portrait.webp',url).pathname)&&
+      !mobileKing.image.includes('/css/assets/kings/')&&mobileKing.display!=='none',
+      `selected King portrait must resolve to the correct public root at 844x390: ${JSON.stringify(mobileKing)}`);
+    const actuallyLoaded=await page.locator('[data-battle-aftermath] .power-result').evaluate(async root=>{
+      const bg=getComputedStyle(root,'::before').backgroundImage;
+      const match=bg.match(/url\(["']?([^"')]+)["']?\)/);
+      if(!match)return false;
+      return new Promise(resolve=>{
+        const image=new Image();
+        image.onload=()=>resolve(image.naturalWidth>0&&image.naturalHeight>0);
+        image.onerror=()=>resolve(false);
+        image.src=match[1];
+      });
+    });
+    assert(actuallyLoaded,'Aftermath commander portrait image must really load, not merely have a CSS URL');
     await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
   await page.evaluate(()=>document.fonts.ready);
   if(process.env.RPCHESS_MOBILE_POLISH_SCREENSHOT_DIR){
