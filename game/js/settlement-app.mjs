@@ -49,6 +49,7 @@ function ensureCss() {
 function applyStaticCopy() {
   if (!screen) return;
   screen.setAttribute('aria-label', t('settlement.ariaLabel'));
+  screen.querySelector('[data-settlement-tabs]')?.setAttribute('aria-label', t('settlement.ariaLabel'));
   const values={
     '[data-settlement-kicker]':'settlement.kicker',
     '[data-settlement-title]':'settlement.title',

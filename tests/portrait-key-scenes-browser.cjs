@@ -22,9 +22,11 @@ async function capture(page,name){
   const geometry=await page.evaluate(()=>{
     const width=document.documentElement.scrollWidth;
     const active=[...document.querySelectorAll('#app>main')].find(n=>!n.hidden);
-    return {width,viewport:innerWidth,active:active?.className,orientationLock:!!document.querySelector('[data-orientation-lock]')&&getComputedStyle(document.querySelector('[data-orientation-lock]')).display!=='none'};
+    const logos=active?.classList.contains('reboot-menu-screen')?[]:[...(active?.querySelectorAll('[data-brand-logo]')||[])].filter(node=>getComputedStyle(node).display!=='none');
+    return {width,viewport:innerWidth,active:active?.className,visibleLogos:logos.length,orientationLock:!!document.querySelector('[data-orientation-lock]')&&getComputedStyle(document.querySelector('[data-orientation-lock]')).display!=='none'};
   });
   assert(!geometry.orientationLock,'Portrait must not show rotate-device overlay');
+  assert.equal(geometry.visibleLogos,0,`${name}: non-menu logo must be hidden`);
   assert(geometry.width<=geometry.viewport+3,`${name}: horizontal overflow ${JSON.stringify(geometry)}`);
   const size=page.viewportSize(),suffix=`${size.width}x${size.height}`;
   fs.mkdirSync(dir,{recursive:true});
@@ -79,6 +81,9 @@ async function capturePhoneOrTablet(browser,width,height){
       'Arena menu control must be accessible in portrait '+JSON.stringify(arenaProbe));
     await page.locator('[data-arena-open]').click({timeout:10000});
     await page.locator('[data-arena-screen]:not([hidden])').waitFor();
+    const arenaGrid=await page.locator('[data-arena-foes]').evaluate(root=>({columns:getComputedStyle(root).gridTemplateColumns.split(' ').filter(Boolean).length,flow:getComputedStyle(root).overflowY,scrollHeight:root.scrollHeight,clientHeight:root.clientHeight,items:root.children.length}));
+    assert.equal(arenaGrid.columns,3,`Three Arena foes per row: ${JSON.stringify(arenaGrid)}`);
+    assert(arenaGrid.items>=80&&arenaGrid.scrollHeight>arenaGrid.clientHeight&&arenaGrid.flow==='auto',`Arena must scroll downward through foes: ${JSON.stringify(arenaGrid)}`);
     await capture(page,'02-arena-rivals');
     await page.locator('[data-arena-foes] button:not([disabled])').first().click();
     await page.locator('[data-arena-dialog]:not([hidden])').waitFor();
@@ -87,6 +92,13 @@ async function capturePhoneOrTablet(browser,width,height){
     await capture(page,'04-roster-formation');
     await page.locator('[data-roster-travel]').click();
     await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
+    const travel=await page.evaluate(()=>{
+      const card=document.querySelector('[data-travel-choice]'),icon=card?.querySelector('.travel-choice-card__icon'),flavor=card?.querySelector('.travel-choice-card__flavor');
+      const ranking=document.querySelector('[data-travel-player-rating]'),roster=document.querySelector('[data-travel-roster]');
+      const c=card.getBoundingClientRect(),i=icon.getBoundingClientRect(),r=ranking.getBoundingClientRect(),b=roster.getBoundingClientRect();
+      return {noFlavor:getComputedStyle(flavor).display==='none',iconTop:i.top-c.top,iconRight:c.right-i.right,rosterToRight:b.left>=r.right-4,aligned:Math.abs(b.top-r.top)<20};
+    });
+    assert(travel.noFlavor&&travel.iconTop>=0&&travel.iconRight>=0&&travel.iconRight<=25&&travel.rosterToRight&&travel.aligned,`Travel portrait refinements: ${JSON.stringify(travel)}`);
     await capture(page,'05-journey-routes');
 
     await seeded(page,eventRoute,'E001');
@@ -102,6 +114,8 @@ async function capturePhoneOrTablet(browser,width,height){
     await puzzle.waitFor();
     const board=await puzzle.boundingBox();
     assert(board&&Math.abs(board.width-board.height)<=3,`Training chess board square: ${JSON.stringify(board)}`);
+    const taskPanel=await page.locator('[data-puzzle-screen] .puzzle-layout>.puzzle-panel').first().boundingBox();
+    assert(board.y+board.height<=taskPanel.y+10,`Training board must precede task/reward: board=${JSON.stringify(board)} task=${JSON.stringify(taskPanel)}`);
     await capture(page,'08-training-board');
 
     // Deterministic settlement route: the random travel generator is allowed
@@ -122,7 +136,20 @@ async function capturePhoneOrTablet(browser,width,height){
     await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
     await page.locator('[data-travel-type="settlement"]').click();
     await page.locator('[data-settlement-screen]:not([hidden])').waitFor();
-    await capture(page,'09-settlement');
+    const nav=page.locator('[data-settlement-tabs]');
+    assert.equal(await nav.locator('button').count(),3,'Settlement must have three icon tabs');
+    const continueButton=await page.locator('[data-settlement-continue]').boundingBox();
+    const navBox=await nav.boundingBox();
+    assert(continueButton.y+continueButton.height<=navBox.y+5,'Continue must be above Settlement tabs');
+    const visiblePanel=async name=>page.locator(`[data-settlement-screen] .settlement-service--${name}`).evaluate(node=>getComputedStyle(node).display!=='none');
+    assert(await visiblePanel('tavern')&&!await visiblePanel('healer')&&!await visiblePanel('market'),'Tavern selected by default');
+    await capture(page,'09-settlement-tavern');
+    await page.locator('[data-settlement-tab="healer"]').click();
+    assert(await visiblePanel('healer')&&!await visiblePanel('tavern'),'Healer selected');
+    await capture(page,'09-settlement-healer');
+    await page.locator('[data-settlement-tab="market"]').click();
+    assert(await visiblePanel('market')&&!await visiblePanel('healer'),'Market selected');
+    await capture(page,'09-settlement-market');
 
     await run(page);
     await page.evaluate(({k,routes})=>{
