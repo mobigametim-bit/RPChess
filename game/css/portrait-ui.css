@@ -705,8 +705,16 @@
     min-width:0!important;margin:0!important;padding:0!important;
     border:0!important;background:none!important;
   }
+  /* The settlement description and cost are a column in the original card.
+     In portrait, the column must start at the left edge, never center. */
+  html[data-landscape-ui='1'] #app .travel-choice-card__safe{
+    flex-direction:column!important;align-items:flex-start!important;
+    justify-content:flex-start!important;justify-self:stretch!important;
+    text-align:left!important;gap:4px!important;
+  }
   html[data-landscape-ui='1'] #app .travel-choice-card__safe small{
-    white-space:normal!important;font-size:clamp(10px,2.6vw,12px)!important;
+    white-space:normal!important;text-align:left!important;
+    font-size:clamp(10px,2.6vw,12px)!important;
   }
 
   /* Week remains above the panel. Within the panel the commander portrait

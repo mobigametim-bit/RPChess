@@ -188,6 +188,14 @@ async function capturePhoneOrTablet(browser,width,height){
     ]});
     await page.locator('[data-roster-travel]').click();
     await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
+    const settlementAligned=await page.locator('[data-travel-type="settlement"]').evaluate(card=>{
+      const overlay=card.querySelector('.travel-choice-card__overlay').getBoundingClientRect();
+      const services=card.querySelector('.travel-choice-card__safe small').getBoundingClientRect();
+      const cost=card.querySelector('.travel-choice-card__safe .travel-choice-card__cost').getBoundingClientRect();
+      return Math.abs(services.left-cost.left)<3 && Math.abs(services.left-overlay.left)<5;
+    });
+    assert(settlementAligned,'Settlement service description and cost must be left-aligned in portrait');
+    await capture(page,'05b-settlement-route');
     await page.locator('[data-travel-type="settlement"]').click();
     await page.locator('[data-settlement-screen]:not([hidden])').waitFor();
     const nav=page.locator('[data-settlement-tabs]');
