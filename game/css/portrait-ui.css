@@ -15,6 +15,7 @@
   }
   html[data-landscape-ui='1'] .landscape-orientation-lock { display:none!important; }
   html[data-landscape-ui='1'] #app {
+    display:block!important;visibility:visible!important;
     width:100%!important;min-width:0!important;
     min-height:100dvh!important;height:auto!important;overflow:visible!important;
   }
