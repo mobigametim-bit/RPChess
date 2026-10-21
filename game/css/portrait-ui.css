@@ -783,14 +783,14 @@
     html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
       .travel-player-rating__row {
         display:grid!important;grid-template-columns:62px minmax(0,1fr)!important;
-        gap:4px!important;align-items:center!important;width:100%!important;
+        gap:4px!important;align-items:center!important;justify-items:start!important;width:100%!important;
       }
     html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
       .travel-choice-inline-resources {align-items:stretch!important;}
     html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
       .travel-choice-inline-resource {
         display:grid!important;grid-template-columns:62px minmax(0,1fr)!important;
-        gap:4px!important;align-items:center!important;width:100%!important;
+        gap:4px!important;align-items:center!important;justify-items:start!important;width:100%!important;
       }
   }
 
