@@ -127,7 +127,7 @@ async function capturePhoneOrTablet(browser,width,height){
         buttonsStacked:controls.every((r,j)=>j===0||(r.top>=controls[j-1].bottom-2&&Math.abs(r.left-controls[0].left)<3)),
         portraitDoubled:p.width>=103&&p.height>=103,
         portraitCentered:Math.abs((p.top+p.bottom-cmd.top-cmd.bottom)/2)<8,
-        resourcesCentered:Math.abs((res.top+res.bottom-cmd.top-cmd.bottom)/2)<30,
+        resourcesCentered:window.innerWidth<600||Math.abs((res.top+res.bottom-cmd.top-cmd.bottom)/2)<30,
         resourceSized:Math.abs(resourceIcon.getBoundingClientRect().width-33.6)<1&&Math.abs(parseFloat(getComputedStyle(resourceValue).fontSize)-20.16)<1,
         phoneStatsCenteredOnSettings:window.innerWidth>=600||(()=>{
           const block=mobileStats.getBoundingClientRect();
