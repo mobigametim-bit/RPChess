@@ -777,6 +777,23 @@
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
     [data-travel-menu]{grid-row:3!important;}
 
+  /* On phones, rating labels line up with resource icons; values and stars
+     share the same second column as resource counts. */
+  @media (max-width:599px) {
+    html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
+      .travel-player-rating__row {
+        display:grid!important;grid-template-columns:62px minmax(0,1fr)!important;
+        gap:4px!important;align-items:center!important;width:100%!important;
+      }
+    html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
+      .travel-choice-inline-resources {align-items:stretch!important;}
+    html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
+      .travel-choice-inline-resource {
+        display:grid!important;grid-template-columns:62px minmax(0,1fr)!important;
+        gap:4px!important;align-items:center!important;width:100%!important;
+      }
+  }
+
   /* Training chessboard above instruction and reward. */
   html[data-landscape-ui='1'] body.puzzles-active #app main.puzzle-screen .puzzle-layout{
     display:flex!important;flex-direction:column!important;gap:10px!important;
@@ -851,6 +868,21 @@
   html[data-landscape-ui='1'] body.roster-active .roster-detail{
     grid-template-columns:180px minmax(0,1fr)!important;
   }
+  /* Tablet: portrait, power/threat and both resource rows share one vertical center. */
+  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
+    .travel-choice-commandbar {
+      grid-template-columns:104px max-content minmax(0,1fr) clamp(115px,19vw,142px)!important;
+    }
+  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
+    .travel-player-rating {
+      grid-column:2!important;grid-row:1/4!important;align-self:center!important;
+    }
+  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
+    .travel-choice-inline-resources {
+      grid-column:3!important;grid-row:1/4!important;align-self:center!important;
+    }
+  html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
+    .travel-choice-topbar__actions {grid-column:4!important;}
   html[data-landscape-ui='1'] .travel-choice-card{min-height:184px!important;}
   html[data-landscape-ui='1'] .travel-choice-card__body{min-height:180px!important;}
   html[data-landscape-ui='1'] .arena-squad{flex-basis:160px!important;}

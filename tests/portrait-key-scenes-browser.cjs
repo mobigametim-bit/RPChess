@@ -108,6 +108,9 @@ async function capturePhoneOrTablet(browser,width,height){
       const resources=document.querySelector('[data-travel-inline-resources]');
       const resourceIcon=document.querySelector('.travel-choice-inline-resource__icon');
       const resourceValue=document.querySelector('.travel-choice-inline-resource strong');
+      const rating=document.querySelector('[data-travel-player-rating]');
+      const ratingRows=[...rating.querySelectorAll('.travel-player-rating__row')];
+      const resourceRows=[...resources.querySelectorAll('.travel-choice-inline-resource')];
       const starCard=[...document.querySelectorAll('[data-travel-choice]')].find(c=>c.querySelector('.travel-choice-card__threat>strong'));
       const title=starCard?.querySelector('.travel-choice-card__type')?.getBoundingClientRect();
       const stars=starCard?.querySelector('.travel-choice-card__threat>strong')?.getBoundingClientRect();
@@ -123,7 +126,16 @@ async function capturePhoneOrTablet(browser,width,height){
         portraitDoubled:p.width>=103&&p.height>=103,
         portraitCentered:Math.abs((p.top+p.bottom-cmd.top-cmd.bottom)/2)<8,
         resourcesCentered:Math.abs((res.top+res.bottom-cmd.top-cmd.bottom)/2)<30,
-        resourceSized:Math.abs(resourceIcon.getBoundingClientRect().width-33.6)<1&&Math.abs(parseFloat(getComputedStyle(resourceValue).fontSize)-20.16)<1
+        resourceSized:Math.abs(resourceIcon.getBoundingClientRect().width-33.6)<1&&Math.abs(parseFloat(getComputedStyle(resourceValue).fontSize)-20.16)<1,
+        ratingAndResourcesAligned:window.innerWidth>=600||ratingRows.every((row,i)=>{
+          const [label,value]=row.children,resource=resourceRows[i];
+          return Math.abs(label.getBoundingClientRect().left-resource.querySelector('img').getBoundingClientRect().left)<3
+            &&Math.abs(value.getBoundingClientRect().left-resource.querySelector('strong').getBoundingClientRect().left)<3;
+        }),
+        tabletGroupsPortraitCentered:window.innerWidth<600||[rating,resources].every(el=>{
+          const rect=el.getBoundingClientRect();
+          return Math.abs((rect.top+rect.bottom-p.top-p.bottom)/2)<3;
+        })
       };
     });
     assert(Object.values(travel).every(Boolean),`Travel portrait refinements: ${JSON.stringify(travel)}`);
