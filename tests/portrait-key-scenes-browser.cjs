@@ -104,21 +104,25 @@ async function capturePhoneOrTablet(browser,width,height){
     assert(board&&Math.abs(board.width-board.height)<=3,`Training chess board square: ${JSON.stringify(board)}`);
     await capture(page,'08-training-board');
 
+    // Deterministic settlement route: the random travel generator is allowed
+    // to offer 0 settlements and must not silently omit a key UX screenshot.
     await run(page);
-    await page.evaluate(k=>{
+    await page.evaluate(({k,routes})=>{
       const r=JSON.parse(localStorage.getItem(k));
-      r.currentTravelChoices=null;r.activeTravelChoice=null;r.currentSettlement=null;
+      r.currentTravelChoices=routes;r.activeTravelChoice=null;r.currentSettlement=null;
       localStorage.setItem(k,JSON.stringify(r));
       dispatchEvent(new CustomEvent('rpchess:run-updated'));
-    },key);
+    },{k:key,routes:[
+      {id:'manual.portrait.settlement',step:1,type:'settlement',label:'ПОСЕЛЕНИЕ',
+        stars:1,threatLabel:'БЕЗОПАСНО',flavor:'Дорога ведёт к месту, где путники могут найти передышку.',
+        mechanicalHint:'Место для передышки и подготовки.',seed:'portrait-settlement-2026',difficultyModel:'power-v1'},
+      battleRoute(7),battleRoute(8)
+    ]});
     await page.locator('[data-roster-travel]').click();
     await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
-    const settlement=page.locator('[data-travel-type="settlement"]').first();
-    if(await settlement.count()){
-      await settlement.click();
-      await page.locator('[data-settlement-screen]:not([hidden])').waitFor();
-      await capture(page,'09-settlement');
-    }
+    await page.locator('[data-travel-type="settlement"]').click();
+    await page.locator('[data-settlement-screen]:not([hidden])').waitFor();
+    await capture(page,'09-settlement');
 
     await run(page);
     await page.evaluate(({k,routes})=>{
