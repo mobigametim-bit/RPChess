@@ -127,7 +127,22 @@ async function clickMove(page,from,to,promotion=null){
     await page.waitForFunction(({key,index})=>{const state=JSON.parse(localStorage.getItem(key))?.currentPuzzle;return state?.solutionIndex>=index||state?.resolved;},{key:RUN_KEY,index});
     const move=moves.solution[index];await clickMove(page,move.slice(0,2),move.slice(2,4),move.slice(4)||null);
   }
-  await page.locator('[data-puzzle-outcome]:not([hidden])').waitFor();assert.strictEqual((await page.locator('[data-puzzle-outcome-title]').innerText()).trim(),'РЕШЕНО');assert((await page.locator('[data-puzzle-outcome-gold]').innerText()).includes('+8'),'★1 with one error must visibly show the 8 Gold reward amount');
+  await page.locator('[data-puzzle-outcome]:not([hidden])').waitFor();
+  await page.setViewportSize({width:844,height:390});
+  const solvedFit=await page.evaluate(()=>{
+    const gold=document.querySelector('[data-puzzle-outcome-gold]')?.getBoundingClientRect(),
+      button=document.querySelector('[data-puzzle-continue]')?.getBoundingClientRect();
+    return {gold:{top:gold.top,bottom:gold.bottom,right:gold.right},button:{top:button.top,bottom:button.bottom,left:button.left},viewHeight:innerHeight};
+  });
+  assert(solvedFit.gold.bottom+1<=solvedFit.button.top,
+    `Training Gold must sit wholly above Continue on mobile: ${JSON.stringify(solvedFit)}`);
+  if(process.env.RPCHESS_MOBILE_POLISH_SCREENSHOT_DIR){
+    const fs=require('node:fs'),dir=process.env.RPCHESS_MOBILE_POLISH_SCREENSHOT_DIR;
+    fs.mkdirSync(dir,{recursive:true});
+    await page.screenshot({path:require('node:path').join(dir,'03-training-reward-mobile.png')});
+  }
+  await page.setViewportSize({width:1440,height:900});
+  assert.strictEqual((await page.locator('[data-puzzle-outcome-title]').innerText()).trim(),'РЕШЕНО');assert((await page.locator('[data-puzzle-outcome-gold]').innerText()).includes('+8'),'★1 with one error must visibly show the 8 Gold reward amount');
   const solved=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),RUN_KEY);assert.strictEqual(solved.currentPuzzle.result,'solved');assert.strictEqual(solved.currentPuzzle.errors,1);assert.strictEqual(solved.currentPuzzle.goldReward,8);assert.strictEqual(solved.currentPuzzle.rewardSettled,true);assert.strictEqual(solved.gold,88);assert.strictEqual(solved.lastPuzzle.goldReward,8);
   const settledSnapshot=JSON.stringify({gold:solved.gold,currentPuzzle:solved.currentPuzzle,lastPuzzle:solved.lastPuzzle,puzzleHistory:solved.puzzleHistory});await page.reload({waitUntil:'networkidle'});await page.locator('[data-continue-run]').click();await page.locator('[data-roster-screen]:not([hidden])').waitFor();await page.locator('[data-roster-travel]').click();await page.locator('[data-puzzle-outcome]:not([hidden])').waitFor();assert.strictEqual(await page.locator('[data-puzzle-roster]').count(),0,'obsolete Puzzle Roster shortcut must remain absent after reload');const settledReload=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),RUN_KEY);assert.strictEqual(JSON.stringify({gold:settledReload.gold,currentPuzzle:settledReload.currentPuzzle,lastPuzzle:settledReload.lastPuzzle,puzzleHistory:settledReload.puzzleHistory}),settledSnapshot,'reload after solved Puzzle must not duplicate Gold or lose history');await page.locator('[data-puzzle-continue]').click();await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();const continued=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),RUN_KEY);assert.strictEqual(continued.currentPuzzle,null);assert.strictEqual(continued.activeTravelChoice,null);assert(Array.isArray(continued.currentTravelChoices)&&continued.currentTravelChoices.length===3);
   await page.evaluate(({k,route})=>{const r=JSON.parse(localStorage.getItem(k));r.currentTravelChoices=null;r.activeTravelChoice={...route,id:'manual.puzzle.mate1.second',seed:'manual-puzzle-mate1-second'};r.currentPuzzle=null;localStorage.setItem(k,JSON.stringify(r));dispatchEvent(new CustomEvent('rpchess:puzzle-open',{detail:{choice:r.activeTravelChoice}}));},{k:RUN_KEY,route:mate1Route});await page.locator('[data-puzzle-screen]:not([hidden])').waitFor();const secondPuzzle=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),RUN_KEY);assert.notStrictEqual(secondPuzzle.currentPuzzle.puzzleId,firstPuzzleId,'successive Puzzle routes must not repeat a task before catalog exhaustion');assert.strictEqual(new Set(secondPuzzle.puzzleHistory).size,2);

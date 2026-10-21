@@ -169,6 +169,19 @@ async function assertResponsiveStars(page, selector, cardSelector) {
       return image.naturalWidth>0&&image.naturalHeight>0;
     });
     assert(portraitLoaded,'selected King portrait must decode successfully in the result screen');
+    await page.setViewportSize({width:844,height:390});
+    const mobileKing=await page.locator('[data-battle-aftermath] .power-result').evaluate(root=>{
+      const pseudo=getComputedStyle(root,'::before'),rect=root.getBoundingClientRect();
+      return {image:pseudo.backgroundImage,display:pseudo.display,size:pseudo.width,result:{top:rect.top,bottom:rect.bottom}};
+    });
+    assert(mobileKing.image.includes('/assets/kings/ash_regent/portrait.webp')&&mobileKing.display!=='none',
+      `selected King portrait must be visible after Battle at 844x390: ${JSON.stringify(mobileKing)}`);
+    if(process.env.RPCHESS_MOBILE_POLISH_SCREENSHOT_DIR){
+      const fs=require('node:fs'),dir=process.env.RPCHESS_MOBILE_POLISH_SCREENSHOT_DIR;
+      fs.mkdirSync(dir,{recursive:true});
+      await page.screenshot({path:require('node:path').join(dir,'05-battle-commander-mobile.png')});
+    }
+    await page.setViewportSize({width:1440,height:900});
     assert.strictEqual(await page.locator('[data-battle-aftermath]').evaluate(node=>node.classList.contains('battle-aftermath--death')),false,
       'ordinary Battle aftermath must keep its existing non-death presentation');
     assert.strictEqual(await page.locator('[data-battle-aftermath] .battle-logo').count(),1,

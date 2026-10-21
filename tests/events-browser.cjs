@@ -38,7 +38,24 @@ async function seedEvent(page,eventId=null,runId='events-browser'){await page.ev
   assert.deepStrictEqual(resourceAudit.sampleKinds,[['supplies'],['supplies','gold'],['supplies','gold'],['gold'],['supplies']],
     'RU/EN singular and plural, both word orders and narrative numeric amounts must become the correct icons');
   const frames=await page.evaluate(()=>({copy:Boolean(document.querySelector('.events-copy-frame')),choices:Boolean(document.querySelector('.events-choice-frame'))}));assert.deepStrictEqual(frames,{copy:true,choices:true},'consolidated Event presentation must expose canonical copy/choice frames');const count=await page.locator('[data-event-choice]').count();assert(count>=3&&count<=5);assert((await screen.innerText()).includes('%')||(await screen.innerText()).includes('ГАРАНТИРОВАННО'));assert.strictEqual(await page.locator('[data-events-outcome]:not([hidden])').count(),0,'outcome dialog must be hidden before a choice');
-  const risk=page.locator('[data-event-choice]:not([disabled])').filter({hasText:'%'}).first(),choice=await risk.count()?risk:page.locator('[data-event-choice]:not([disabled])').first();await choice.click();const outcome=page.locator('[data-events-outcome]:not([hidden])');await outcome.waitFor();assert.strictEqual(await outcome.getAttribute('class'),'events-outcome-modal');assert.strictEqual(await page.locator('[data-events-choices]').isVisible(),true,'choice scene stays behind separate modal');
+  const risk=page.locator('[data-event-choice]:not([disabled])').filter({hasText:'%'}).first(),choice=await risk.count()?risk:page.locator('[data-event-choice]:not([disabled])').first();await choice.click();const outcome=page.locator('[data-events-outcome]:not([hidden])');await outcome.waitFor();
+  await page.setViewportSize({width:844,height:390});
+  const mobileOutcomeFit=await outcome.evaluate(root=>{
+    const card=root.querySelector('.events-outcome-card'),button=root.querySelector('[data-events-continue]');
+    const a=card.getBoundingClientRect(),b=button.getBoundingClientRect();
+    return {cardTop:a.top,cardBottom:a.bottom,buttonBottom:b.bottom,viewport:innerHeight,scroll:card.scrollHeight,client:card.clientHeight,overflow:getComputedStyle(card).overflowY};
+  });
+  assert(mobileOutcomeFit.cardTop>=0&&mobileOutcomeFit.cardBottom<=mobileOutcomeFit.viewport+1&&mobileOutcomeFit.buttonBottom<=mobileOutcomeFit.viewport,
+    `Event outcome must fit mobile without hidden CTA: ${JSON.stringify(mobileOutcomeFit)}`);
+  assert(mobileOutcomeFit.scroll<=mobileOutcomeFit.client+1&&mobileOutcomeFit.overflow!=='auto',
+    `Event result must not use inner scroll: ${JSON.stringify(mobileOutcomeFit)}`);
+  if(process.env.RPCHESS_MOBILE_POLISH_SCREENSHOT_DIR){
+    const fs=require('node:fs'),dir=process.env.RPCHESS_MOBILE_POLISH_SCREENSHOT_DIR;
+    fs.mkdirSync(dir,{recursive:true});
+    await page.screenshot({path:require('node:path').join(dir,'04-event-outcome-mobile.png')});
+  }
+  await page.setViewportSize({width:1440,height:900});
+  assert.strictEqual(await outcome.getAttribute('class'),'events-outcome-modal');assert.strictEqual(await page.locator('[data-events-choices]').isVisible(),true,'choice scene stays behind separate modal');
   const saved=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),RUN_KEY);assert(saved.currentEvent.resolved);assert(saved.currentEvent.choiceId);assert(Number.isInteger(saved.currentEvent.roll));assert.strictEqual(saved.ended,false);const snapshot=JSON.stringify({gold:saved.gold,supplies:saved.supplies,roster:saved.roster,currentEvent:saved.currentEvent});
   await page.reload({waitUntil:'networkidle'});await page.locator('[data-continue-run]').click();await page.locator('[data-roster-screen]:not([hidden])').waitFor();await page.locator('[data-roster-travel]').click();await page.locator('[data-events-outcome]:not([hidden])').waitFor();assert.strictEqual(await page.locator('[data-events-roster],[data-events-settings]').count(),0,'obsolete Event shortcuts must remain absent after reload');const reloaded=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),RUN_KEY);assert.strictEqual(JSON.stringify({gold:reloaded.gold,supplies:reloaded.supplies,roster:reloaded.roster,currentEvent:reloaded.currentEvent}),snapshot);
 
