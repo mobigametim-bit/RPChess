@@ -43,15 +43,17 @@ jobs:
         run: |
           npm ci --no-audit --no-fund
           npm run gate:local
-      - name: Capture real portrait gameplay at phone and tablet sizes
-        if: always()
+      - name: Install browser for portrait previews
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
-          RPCHESS_BROWSER_TEST=portrait-key-scenes-browser.cjs RPCHESS_PORTRAIT_SCREENSHOT_DIR=test-results/portrait-ui npm run test:browser
       - name: Capture all twenty tutorial dialogs on phone and tablet
         run: |
           RPCHESS_BROWSER_TEST=onboarding-browser.cjs RPCHESS_ONBOARDING_SCREENSHOT_DIR=test-results/portrait-ui npm run test:browser
+      - name: Capture real portrait gameplay at phone and tablet sizes
+        if: always()
+        run: |
+          RPCHESS_BROWSER_TEST=portrait-key-scenes-browser.cjs RPCHESS_PORTRAIT_SCREENSHOT_DIR=test-results/portrait-ui npm run test:browser
       - name: Upload portrait screenshots for visual acceptance
         if: always()
         uses: actions/upload-artifact@v4
