@@ -61,7 +61,18 @@ async function capturePhoneOrTablet(browser,width,height){
   try {
     await menu(page);
     await capture(page,'01-main-menu');
-    await page.locator('[data-arena-open]').click();
+    const arenaProbe=await page.locator('[data-arena-open]').evaluate(node=>{
+      const rect=node.getBoundingClientRect();
+      return {hidden:node.hidden,rect:{x:rect.x,y:rect.y,width:rect.width,height:rect.height},
+        style:{display:getComputedStyle(node).display,visibility:getComputedStyle(node).visibility},
+        menuHidden:node.closest('[data-reboot-foundation]')?.hidden,
+        parentStyle:getComputedStyle(node.parentElement).display,
+        appMain:[...document.querySelectorAll('#app>main')].filter(n=>!n.hidden).map(n=>n.className)};
+    });
+    console.log('PORTRAIT ARENA MENU CLICK PROBE',JSON.stringify(arenaProbe));
+    assert(!arenaProbe.menuHidden&&arenaProbe.rect.width>=120&&arenaProbe.rect.height>=44&&arenaProbe.style.display!=='none',
+      'Arena menu control must be accessible in portrait '+JSON.stringify(arenaProbe));
+    await page.locator('[data-arena-open]').click({timeout:10000});
     await page.locator('[data-arena-screen]:not([hidden])').waitFor();
     await capture(page,'02-arena-rivals');
     await page.locator('[data-arena-foes] button:not([disabled])').first().click();
