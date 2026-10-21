@@ -230,6 +230,52 @@ async function capturePhoneOrTablet(browser,width,height){
     await page.locator('[data-artifact-choice="none"]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     await capture(page,'10-battle-chess');
+    // In portrait, the old rotate-device CSS used to hide ALL body-level
+    // animation flyers and drag ghosts, making moves appear to teleport.
+    const overlayProbe=await page.evaluate(()=>{
+      const status=document.querySelector('.classic-statusbar');
+      const variants=['classic-piece-flyer','classic-captured-ghost','rpchess-piece-drag-ghost'];
+      const results=variants.map(name=>{
+        const img=document.createElement('img');
+        img.className=name;
+        Object.assign(img.style,{left:'30px',top:'30px',width:'32px',height:'32px'});
+        document.body.append(img);
+        const cs=getComputedStyle(img),r=img.getBoundingClientRect();
+        const visible=cs.display!=='none'&&cs.visibility!=='hidden'&&r.width>=30&&r.height>=30;
+        img.remove();
+        return {name,visible,display:cs.display};
+      });
+      return {statusHidden:getComputedStyle(status).display==='none',results};
+    });
+    assert(overlayProbe.statusHidden&&overlayProbe.results.every(row=>row.visible),
+      `Portrait chess banner/overlay visibility: ${JSON.stringify(overlayProbe)}`);
+    if(width<600){
+      const startSquare=await page.evaluate(()=>{
+        const chess=globalThis.RPChessClassicChess;
+        return chess.engine.legalMoves().find(move=>
+          !!document.querySelector(`[data-chess-board] [data-square="${move.from}"] .classic-piece`)
+        )?.from||null;
+      });
+      assert(startSquare,'A movable player piece must exist for portrait touch drag');
+      const rect=await page.locator(`[data-chess-board] [data-square="${startSquare}"]`).boundingBox();
+      const x=rect.x+rect.width/2,y=rect.y+rect.height/2;
+      const cdp=await page.context().newCDPSession(page);
+      try{
+        await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y,id:1}]});
+        await page.waitForTimeout(65);
+        await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+15,y:y-14,id:1}]});
+        await page.waitForFunction(()=>!!document.querySelector('.rpchess-piece-drag-ghost'),null,{timeout:4000});
+        const ghost=await page.locator('.rpchess-piece-drag-ghost').evaluate(node=>{
+          const css=getComputedStyle(node),rect=node.getBoundingClientRect();
+          return {display:css.display,visibility:css.visibility,top:rect.top,bottom:rect.bottom};
+        });
+        assert(ghost.display!=='none'&&ghost.visibility!=='hidden'&&ghost.bottom<y+12,
+          `Portrait finger drag must render a visible lifted piece: ${JSON.stringify(ghost)}`);
+      }finally{
+        await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]}).catch(()=>{});
+        await cdp.detach();
+      }
+    }
     const combatBoard=await page.locator('[data-chess-board]').boundingBox();
     assert(combatBoard&&Math.abs(combatBoard.width-combatBoard.height)<=3,`Chess board must be square: ${JSON.stringify(combatBoard)}`);
     await page.evaluate(()=>globalThis.RPChessBattle.finishBattle({over:true,type:'stalemate',winner:null}));

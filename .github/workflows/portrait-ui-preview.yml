@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/portrait-mobile-tablet-ui-20261021
+      - feature/portrait-piece-motion-cleanup-20261022
     paths:
       - .github/workflows/portrait-ui-preview.yml
       - portrait-ui-preview/wrangler.toml

@@ -38,7 +38,10 @@ function attachPieceDrag(board, { canPick, onStart, onDrop }) {
   function positionGhost(x, y) {
     if (!gesture?.ghost) return;
     gesture.ghost.style.left = x + 'px';
-    gesture.ghost.style.top = y + 'px';
+    // Keep the preview just above a finger; centering it under the touch
+    // obscures the artwork even when the ghost itself is visible.
+    const lift = gesture.pointerType === 'touch' ? Math.max(24, Math.min(40, gesture.size * .6)) : 0;
+    gesture.ghost.style.top = (y - lift) + 'px';
   }
 
   function begin(x, y) {
@@ -104,7 +107,7 @@ function attachPieceDrag(board, { canPick, onStart, onDrop }) {
     const image = square.querySelector('.classic-piece,.puzzle-piece');
     if (!image || !canPick(square.dataset.square)) return;
     gesture = {
-      id:event.pointerId, from:square.dataset.square, x:event.clientX, y:event.clientY,
+      id:event.pointerId, pointerType:event.pointerType, from:square.dataset.square, x:event.clientX, y:event.clientY,
       src:image.currentSrc || image.src, size:square.getBoundingClientRect().width * .85,
       dragging:false, ghost:null
     };

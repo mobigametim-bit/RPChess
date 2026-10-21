@@ -370,10 +370,8 @@
     width:100%!important;min-width:0!important;height:auto!important;
     overflow:visible!important;gap:8px!important;
   }
-  html[data-landscape-ui='1'] .classic-statusbar {
-    display:flex!important;flex-wrap:wrap!important;justify-content:space-between!important;
-    min-width:0!important;padding:6px!important;gap:4px!important;
-  }
+  /* The redundant turn/status banner is globally hidden by chess-ai-polish.css.
+     Keep it hidden on portrait phones and tablets as well. */
   html[data-landscape-ui='1'] .classic-board-wrap,
   html[data-landscape-ui='1'] .classic-board {
     position:relative!important;inset:auto!important;margin:0 auto!important;
