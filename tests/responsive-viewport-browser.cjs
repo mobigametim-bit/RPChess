@@ -145,7 +145,7 @@ async function auditPortraitFlow(browser,width,height,language){
     await page.locator('[data-new-game]').click();
     await page.locator('[data-player-identity-modal]:not([hidden])').waitFor({state:'visible'});
     const modal=await page.locator('[data-player-identity-modal] .identity-panel').first().boundingBox();
-    assert(modal&&modal.width<=width+2&&modal.right<=width+2&&modal.x>=-1,`${label}: identity form must fit portrait; modal=${JSON.stringify(modal)}`);
+    assert(modal&&modal.width<=width+2&&modal.x+modal.width<=width+2&&modal.x>=-1,`${label}: identity form must fit portrait; modal=${JSON.stringify(modal)}`);
     assert.deepStrictEqual(errors,[],`${label} browser errors\n${errors.join('\n')}`);
   }finally{await page.close();}
 }
