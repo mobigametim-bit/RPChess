@@ -785,13 +785,27 @@
         display:grid!important;grid-template-columns:62px minmax(0,1fr)!important;
         gap:4px!important;align-items:center!important;justify-items:start!important;width:100%!important;
       }
-    /* Keep the gap after Threat identical to the vertical gap between
-       the two resource icons; do not disturb the tablet layout. */
+    /* Center the entire four-row stats group on the Settings button. Keeping
+       both blocks in one flex column gives identical inter-block and resource gaps. */
     html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
-      .travel-player-rating {align-self:end!important;}
+      .travel-choice-mobile-stats {
+        display:flex!important;flex-direction:column!important;gap:4px!important;
+        grid-column:2!important;grid-row:1/4!important;
+        justify-self:stretch!important;align-self:center!important;min-width:0!important;
+      }
     html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
-      .travel-choice-inline-resources {
-        align-items:stretch!important;align-self:start!important;justify-content:flex-start!important;
+      .travel-choice-mobile-stats .travel-player-rating {
+        grid-column:auto!important;grid-row:auto!important;
+        align-self:auto!important;justify-self:stretch!important;
+        height:auto!important;padding:0!important;margin:0!important;
+        gap:4px!important;
+      }
+    html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
+      .travel-choice-mobile-stats .travel-choice-inline-resources {
+        grid-column:auto!important;grid-row:auto!important;
+        align-self:auto!important;justify-self:stretch!important;
+        align-items:stretch!important;justify-content:flex-start!important;
+        height:auto!important;margin:0!important;padding:0!important;gap:4px!important;
       }
     html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
       .travel-choice-inline-resource {
@@ -898,6 +912,9 @@
   html[data-landscape-ui='1'] .settlement-recruit {grid-template-columns:100px minmax(0,1fr)!important;}
   html[data-landscape-ui='1'] .settlement-service--tavern{grid-column:auto!important;}
 }
+
+/* Transparent wrapper preserves the existing landscape and tablet grids. */
+.travel-choice-mobile-stats{display:contents;}
 
 /* Tab navigation is intentionally absent in the accepted landscape layout. */
 .settlement-tabs{display:none;}

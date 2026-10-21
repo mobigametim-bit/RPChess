@@ -109,6 +109,8 @@ async function capturePhoneOrTablet(browser,width,height){
       const resourceIcon=document.querySelector('.travel-choice-inline-resource__icon');
       const resourceValue=document.querySelector('.travel-choice-inline-resource strong');
       const rating=document.querySelector('[data-travel-player-rating]');
+      const mobileStats=document.querySelector('.travel-choice-mobile-stats');
+      const settings=document.querySelector('[data-travel-settings]');
       const ratingRows=[...rating.querySelectorAll('.travel-player-rating__row')];
       const resourceRows=[...resources.querySelectorAll('.travel-choice-inline-resource')];
       const starCard=[...document.querySelectorAll('[data-travel-choice]')].find(c=>c.querySelector('.travel-choice-card__threat>strong'));
@@ -127,6 +129,11 @@ async function capturePhoneOrTablet(browser,width,height){
         portraitCentered:Math.abs((p.top+p.bottom-cmd.top-cmd.bottom)/2)<8,
         resourcesCentered:Math.abs((res.top+res.bottom-cmd.top-cmd.bottom)/2)<30,
         resourceSized:Math.abs(resourceIcon.getBoundingClientRect().width-33.6)<1&&Math.abs(parseFloat(getComputedStyle(resourceValue).fontSize)-20.16)<1,
+        phoneStatsCenteredOnSettings:window.innerWidth>=600||(()=>{
+          const block=mobileStats.getBoundingClientRect();
+          const button=settings.getBoundingClientRect();
+          return Math.abs((block.top+block.bottom-button.top-button.bottom)/2)<3;
+        })(),
         phoneVerticalRhythm:window.innerWidth>=600||(()=>{
           const gold=resourceRows[0].querySelector('img').getBoundingClientRect();
           const supplies=resourceRows[1].querySelector('img').getBoundingClientRect();
