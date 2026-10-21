@@ -67,7 +67,12 @@ async function capturePhoneOrTablet(browser,width,height){
         style:{display:getComputedStyle(node).display,visibility:getComputedStyle(node).visibility},
         menuHidden:node.closest('[data-reboot-foundation]')?.hidden,
         parentStyle:getComputedStyle(node.parentElement).display,
-        appMain:[...document.querySelectorAll('#app>main')].filter(n=>!n.hidden).map(n=>n.className)};
+        appMain:[...document.querySelectorAll('#app>main')].filter(n=>!n.hidden).map(n=>n.className),
+        ancestors:(()=>{const out=[];for(let p=node;p&&out.length<9;p=p.parentElement){const q=p.getBoundingClientRect(),c=getComputedStyle(p);
+          out.push({tag:p.tagName,className:String(p.className).slice(0,90),hidden:p.hidden,display:c.display,visibility:c.visibility,opacity:c.opacity,rect:[q.x,q.y,q.width,q.height]});}
+          return out;})(),
+        portraitCss:!!document.querySelector('link[data-portrait-ui-css]'),
+        portraitFileStatus:[...document.styleSheets].some(x=>String(x.href||'').includes('portrait-ui.css'))};
     });
     console.log('PORTRAIT ARENA MENU CLICK PROBE',JSON.stringify(arenaProbe));
     assert(!arenaProbe.menuHidden&&arenaProbe.rect.width>=120&&arenaProbe.rect.height>=44&&arenaProbe.style.display!=='none',
