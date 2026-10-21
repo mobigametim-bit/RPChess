@@ -16,7 +16,7 @@ const { pathToFileURL } = require('url');
   assert(appSource.includes('class="events-backdrop"'), 'Event scene must own a dedicated artwork layer instead of relying on the scene background shorthand');
   assert(appSource.includes('data-events-background'), 'Event scene must render an explicit background image element');
   assert(appSource.includes('new URL(assetPath, document.baseURI).href'), 'Event background URL must be resolved explicitly against the page origin');
-  assert(appSource.includes("css/events.css?v=20260830-events-v3"), 'Event v3 runtime itself must cache-bust the updated stylesheet');
+  assert(appSource.includes("css/events.css?v=20261021-outcome-fit"), 'Event v3 runtime itself must cache-bust the updated stylesheet');
   assert(appSource.includes('data-events-king-reaction'), 'Event v3 scene must expose the King reaction layer');
   assert(appSource.includes('formatHeroReaction'), 'Event v3 scene must render role-gated hero reactions');
   assert(!appSource.includes("setProperty('--events-background'"), 'legacy CSS-variable background injection must not return');
