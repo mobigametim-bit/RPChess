@@ -149,9 +149,60 @@ async function audit(browser, { width, height, language, mobile = false }) {
   }
 }
 
+/* Capture every real tutorial dialog at phone and tablet sizes for visual review.
+   This runs only in the dedicated screenshot mode, leaving the standard test unchanged. */
+async function capturePortraitTutorials(browser, width, height) {
+  const context=await browser.newContext({viewport:{width,height},isMobile:width<600,hasTouch:true});
+  const page=await context.newPage();
+  const outputDir=process.env.RPCHESS_ONBOARDING_SCREENSHOT_DIR;
+  try {
+    await page.goto(url,{waitUntil:'networkidle'});
+    await page.evaluate(key=>localStorage.removeItem(key),TUTORIAL_KEY);
+    await page.reload({waitUntil:'networkidle'});
+    await setLanguage(page,'ru');
+    await page.waitForFunction(()=>Boolean(globalThis.RPChessOnboardingReady));
+    await page.evaluate(async()=>await globalThis.RPChessOnboardingReady);
+    await page.locator('[data-new-game]').first().click();
+    const debug=await page.locator('[data-tutorial-overlay]').evaluate(root=>{
+      const rect=root.getBoundingClientRect(),cs=getComputedStyle(root);
+      return {hidden:root.hidden,display:cs.display,visibility:cs.visibility,position:cs.position,opacity:cs.opacity,zIndex:cs.zIndex,bounds:{x:rect.x,y:rect.y,w:rect.width,h:rect.height},parent:root.parentElement.tagName,stylePresent:!!document.querySelector('[data-rpchess-onboarding-style]'),hint:root.dataset.tutorialHint};
+    });
+    console.log('PORTRAIT ONBOARDING FIRST OVERLAY DIAGNOSTIC',JSON.stringify(debug));
+    for (const [index,hint] of HINTS.entries()) {
+      if(index>0){
+        const shown=await page.evaluate(async key=>{
+          const onboarding=await globalThis.RPChessOnboardingReady;
+          return onboarding.showHint(key);
+        },hint);
+        assert.equal(shown,true,`Tutorial ${hint} should open at ${width}x${height}`);
+      }
+      await assertOverlay(page,`${width}x${height} ${hint}`,hint);
+      await page.evaluate(()=>document.fonts.ready);
+      const file=require('path').join(outputDir,`${width}x${height}-tutorial-${String(index+1).padStart(2,'0')}-${hint}.png`);
+      require('fs').mkdirSync(outputDir,{recursive:true});
+      await page.screenshot({path:file,animations:'disabled',timeout:30000});
+      console.log('PORTRAIT TUTORIAL SCREENSHOT',file);
+      await page.locator('[data-tutorial-dismiss]').click();
+      await page.locator('[data-tutorial-overlay]').waitFor({state:'hidden'});
+      if(index===0){
+        await page.locator('[data-player-identity-modal]:not([hidden])').waitFor({state:'visible'});
+        await page.locator('[data-player-identity-close]').click();
+      }
+    }
+  } finally {
+    await context.close();
+  }
+}
+
 (async () => {
   const browser = await chromium.launch({ headless:true });
   try {
+    if(process.env.RPCHESS_ONBOARDING_SCREENSHOT_DIR){
+      await capturePortraitTutorials(browser,390,844);
+      await capturePortraitTutorials(browser,768,1024);
+      console.log('All 20 onboarding hints captured on phone and tablet: PASS');
+      return;
+    }
     for (const language of ['ru','en']) {
       await audit(browser, { width:1366, height:768, language });
       await audit(browser, { width:844, height:390, language });

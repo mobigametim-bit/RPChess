@@ -1,0 +1,94 @@
+name: Deploy RPChess portrait UI acceptance preview
+
+on:
+  push:
+    branches:
+      - feature/portrait-mobile-tablet-ui-20261021
+    paths:
+      - .github/workflows/portrait-ui-preview.yml
+      - portrait-ui-preview/wrangler.toml
+      - game/**
+      - scripts/**
+      - tests/**
+      - package.json
+      - package-lock.json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: portrait-ui-preview
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: github.repository == 'mobigametim-bit/RPChess'
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Restore runtime asset transform cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Build validated game
+        run: |
+          npm ci --no-audit --no-fund
+          npm run gate:local
+      - name: Install browser for portrait previews
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+      - name: Capture all twenty tutorial dialogs on phone and tablet
+        run: |
+          RPCHESS_BROWSER_TEST=onboarding-browser.cjs RPCHESS_ONBOARDING_SCREENSHOT_DIR=test-results/portrait-ui npm run test:browser
+      - name: Capture real portrait gameplay at phone and tablet sizes
+        if: always()
+        run: |
+          RPCHESS_BROWSER_TEST=portrait-key-scenes-browser.cjs RPCHESS_PORTRAIT_SCREENSHOT_DIR=test-results/portrait-ui npm run test:browser
+      - name: Upload portrait screenshots for visual acceptance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpchess-portrait-phone-tablet-${{ github.sha }}
+          path: test-results/portrait-ui
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Require Cloudflare deployment credentials
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$TOKEN" || { echo "::error::Cloudflare API token not configured"; exit 1; }
+          test -n "$ACCOUNT" || { echo "::error::Cloudflare account ID not configured"; exit 1; }
+      - name: Publish independent acceptance Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config portrait-ui-preview/wrangler.toml
+      - name: Verify public preview
+        run: |
+          set -euo pipefail
+          base='https://rpchess-portrait-ui-preview.mobigametim.workers.dev'
+          for attempt in 1 2 3 4 5 6; do
+            if curl -fsS --max-time 15 "$base/" -o /tmp/rpchess-preview.html &&
+              grep -q 'data-game-loading' /tmp/rpchess-preview.html &&
+              curl -fsS --max-time 15 "$base/css/endless-run-compact.css" -o /tmp/rpchess-flag.css &&
+              grep -q 'endless-run-panel' /tmp/rpchess-flag.css; then
+              echo "PR162 portrait UI preview is live: $base/"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::PR162 preview did not serve fresh art/css"
+          exit 1

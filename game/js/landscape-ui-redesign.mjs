@@ -35,7 +35,7 @@ function syncLanguage(language = currentLanguage()) {
 }
 
 ensureStylesheet();
-ensureOrientationLock();
+// Portrait UI is playable: no rotation instruction or blocking overlay.
 document.documentElement.dataset.landscapeUi = '1';
 syncLanguage();
 subscribe(syncLanguage);
