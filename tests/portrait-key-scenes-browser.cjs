@@ -189,11 +189,11 @@ async function capturePhoneOrTablet(browser,width,height){
     await page.locator('[data-roster-travel]').click();
     await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
     const settlementAligned=await page.locator('[data-travel-type="settlement"]').evaluate(card=>{
-      const overlay=card.querySelector('.travel-choice-card__overlay').getBoundingClientRect();
+      const title=card.querySelector('.travel-choice-card__type').getBoundingClientRect();
       const services=card.querySelector('.travel-choice-card__safe small').getBoundingClientRect();
       const cost=card.querySelector('.travel-choice-card__safe .travel-choice-card__cost').getBoundingClientRect();
-      return {aligned:Math.abs(services.left-cost.left)<3 && Math.abs(services.left-overlay.left)<5,
-        overlayLeft:overlay.left,servicesLeft:services.left,costLeft:cost.left,
+      return {aligned:Math.abs(services.left-cost.left)<3 && Math.abs(services.left-title.left)<3,
+        titleLeft:title.left,servicesLeft:services.left,costLeft:cost.left,
         direction:getComputedStyle(card.querySelector('.travel-choice-card__safe')).flexDirection,
         items:getComputedStyle(card.querySelector('.travel-choice-card__safe')).alignItems};
     });
