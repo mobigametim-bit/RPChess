@@ -97,7 +97,7 @@ async function capturePhoneOrTablet(browser,width,height){
       // A nonempty CSS url() is not enough: check that every route artwork loads.
       const backdropLoaded=await Promise.all([...document.querySelectorAll('[data-travel-choice]')].map(async choice=>{
         const style=getComputedStyle(choice.querySelector('.travel-choice-card__visual')).backgroundImage;
-        const url=style.match(/url\\(["']?([^"')]+)["']?\\)/)?.[1];
+        const url=style.match(/url\(["']?([^"')]+)["']?\)/)?.[1];
         if(!url)return false;
         try{const image=new Image();image.src=url;await image.decode();return image.naturalWidth>0;}
         catch{return false;}
