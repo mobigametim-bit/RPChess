@@ -19,6 +19,10 @@
     width:100%!important;min-width:0!important;
     min-height:100dvh!important;height:auto!important;overflow:visible!important;
   }
+  /* Honor scene ownership. Hidden scenes must NEVER be brought back by the
+     portrait display/grid declarations below (menu leaking behind Arena, etc.). */
+  html[data-landscape-ui='1'] #app > main[hidden] {display:none!important;}
+  html[data-landscape-ui='1'] body > .arena-dialog[hidden] {display:none!important;}
   html[data-landscape-ui='1'] #app > main:not([hidden]) {
     box-sizing:border-box!important;width:100%!important;max-width:100%!important;
     height:auto!important;min-height:100dvh!important;max-height:none!important;
