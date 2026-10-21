@@ -792,20 +792,23 @@
         display:flex!important;flex-direction:column!important;gap:4px!important;
         grid-column:2!important;grid-row:1/4!important;
         justify-self:stretch!important;align-self:center!important;min-width:0!important;
+        height:max-content!important;min-height:0!important;
       }
     html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
       .travel-choice-mobile-stats .travel-player-rating {
         grid-column:auto!important;grid-row:auto!important;
         align-self:auto!important;justify-self:stretch!important;
-        height:auto!important;padding:0!important;margin:0!important;
-        gap:4px!important;
+        height:max-content!important;min-height:0!important;max-height:none!important;
+        flex:0 0 auto!important;padding:0!important;margin:0!important;
+        grid-template-rows:repeat(2,max-content)!important;gap:4px!important;
       }
     html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
       .travel-choice-mobile-stats .travel-choice-inline-resources {
         grid-column:auto!important;grid-row:auto!important;
         align-self:auto!important;justify-self:stretch!important;
         align-items:stretch!important;justify-content:flex-start!important;
-        height:auto!important;margin:0!important;padding:0!important;gap:4px!important;
+        height:max-content!important;min-height:0!important;flex:0 0 auto!important;
+        margin:0!important;padding:0!important;gap:4px!important;
       }
     html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
       .travel-choice-inline-resource {
