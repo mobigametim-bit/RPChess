@@ -64,7 +64,7 @@ if (!document.querySelector('[data-travel-choice-css]')) {
 if (!document.querySelector('[data-player-rating-css]')) {
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/player-rating.css?v=20260830-power-1';
+  link.href = 'css/player-rating.css?v=20261021-after-battle';
   link.dataset.playerRatingCss = '';
   document.head.append(link);
 }

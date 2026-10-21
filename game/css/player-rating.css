@@ -535,3 +535,24 @@
     margin-top:24px !important;
   }
 }
+
+/* Battle/Caravan after-action Power badge: show the actual commander portrait.
+   Before this, only the Skirmish Power badge had a portrait pseudo-element. */
+.battle-aftermath .power-result::before {
+  content:'';
+  display:block;
+  flex:0 0 clamp(34px,4.4vw,48px);
+  width:clamp(34px,4.4vw,48px);
+  height:clamp(34px,4.4vw,48px);
+  border:1px solid rgba(225,184,89,.65);
+  border-radius:5px;
+  background:var(--battle-king-portrait, none) center 20%/cover no-repeat;
+  box-shadow:0 3px 13px rgba(0,0,0,.5);
+}
+@media(orientation:landscape) and (max-height:600px){
+  html[data-landscape-ui='1'] .battle-aftermath .power-result::before{
+    flex-basis:clamp(29px,7vh,40px);
+    width:clamp(29px,7vh,40px);
+    height:clamp(29px,7vh,40px);
+  }
+}

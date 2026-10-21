@@ -18,7 +18,7 @@ import {
 if (!document.querySelector('[data-player-rating-css]')) {
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/player-rating.css?v=20261018-king-portrait';
+  link.href = 'css/player-rating.css?v=20261021-after-battle';
   link.dataset.playerRatingCss = '';
   document.head.append(link);
 }
