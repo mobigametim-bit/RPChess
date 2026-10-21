@@ -70,7 +70,8 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
         }
         const best=window.__rankedServerBest;
         return new Response(JSON.stringify({top:best?[{rank:1,name:best.playerName,glory:best.glory}]:[],
-          me:best?{rank:1,name:best.playerName,glory:best.glory,week:best.week,power:best.power}:null}),
+          me:best?{rank:1,name:best.playerName,glory:best.glory,week:best.week,power:best.power}:null,
+          viewerAuthenticated:true}),
           {status:200,headers:{'content-type':'application/json'}});
       };
       return true;

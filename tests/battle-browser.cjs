@@ -169,6 +169,34 @@ async function assertResponsiveStars(page, selector, cardSelector) {
       return image.naturalWidth>0&&image.naturalHeight>0;
     });
     assert(portraitLoaded,'selected King portrait must decode successfully in the result screen');
+    await page.setViewportSize({width:844,height:390});
+    const mobileKing=await page.locator('[data-battle-aftermath] .power-result').evaluate(root=>{
+      const pseudo=getComputedStyle(root,'::before'),rect=root.getBoundingClientRect();
+      return {image:pseudo.backgroundImage,display:pseudo.display,size:pseudo.width,result:{top:rect.top,bottom:rect.bottom}};
+    });
+    assert(mobileKing.image.includes(new URL('assets/kings/ash_regent/portrait.webp',url).pathname)&&
+      !mobileKing.image.includes('/css/assets/kings/')&&mobileKing.display!=='none',
+      `selected King portrait must resolve to the correct public root at 844x390: ${JSON.stringify(mobileKing)}`);
+    const actuallyLoaded=await page.locator('[data-battle-aftermath] .power-result').evaluate(async root=>{
+      const bg=getComputedStyle(root,'::before').backgroundImage;
+      const match=bg.match(/url\(["']?([^"')]+)["']?\)/);
+      if(!match)return false;
+      return new Promise(resolve=>{
+        const image=new Image();
+        image.onload=()=>resolve(image.naturalWidth>0&&image.naturalHeight>0);
+        image.onerror=()=>resolve(false);
+        image.src=match[1];
+      });
+    });
+    assert(actuallyLoaded,'Aftermath commander portrait image must really load, not merely have a CSS URL');
+    await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
+  await page.evaluate(()=>document.fonts.ready);
+  if(process.env.RPCHESS_MOBILE_POLISH_SCREENSHOT_DIR){
+      const fs=require('node:fs'),dir=process.env.RPCHESS_MOBILE_POLISH_SCREENSHOT_DIR;
+      fs.mkdirSync(dir,{recursive:true});
+      await page.screenshot({path:require('node:path').join(dir,'05-battle-commander-mobile.png')});
+    }
+    await page.setViewportSize({width:1440,height:900});
     assert.strictEqual(await page.locator('[data-battle-aftermath]').evaluate(node=>node.classList.contains('battle-aftermath--death')),false,
       'ordinary Battle aftermath must keep its existing non-death presentation');
     assert.strictEqual(await page.locator('[data-battle-aftermath] .battle-logo').count(),1,

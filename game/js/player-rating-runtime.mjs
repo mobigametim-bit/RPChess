@@ -18,7 +18,7 @@ import {
 if (!document.querySelector('[data-player-rating-css]')) {
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/player-rating.css?v=20261018-king-portrait';
+  link.href = 'css/player-rating.css?v=20261021-after-battle';
   link.dataset.playerRatingCss = '';
   document.head.append(link);
 }
@@ -103,7 +103,7 @@ function renderCombatResult(run, kind) {
   const panel = screen?.querySelector(kind === 'skirmish' ? '.skirmish-aftermath-panel' : '.battle-aftermath-panel');
   const button = screen?.querySelector(kind === 'skirmish' ? '[data-aftermath-continue]' : '[data-battle-continue]');
   const element=ensureResult(panel,button);
-  if(element)element.style.setProperty('--battle-king-portrait',`url("${commanderPortrait(run.commanderId)}")`);
+  if(element)element.style.setProperty('--battle-king-portrait',`url("${new URL(commanderPortrait(run.commanderId),document.baseURI).href}")`);
   paint(element,receipt);
 }
 function renderPuzzleResult(run) {

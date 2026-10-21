@@ -59,9 +59,10 @@ jobs:
       - name: Verify GitHub Pages /RPChess/ subpath
         env:
           RPCHESS_GATE_PREFIX: /RPChess
-          RPCHESS_BROWSER_TEST: chronicle-localization-browser.cjs,localization-ui-browser.cjs,roster-browser.cjs,classic-chess-browser.cjs,arena-browser.cjs,piercing-vision-browser.cjs,fork-master-browser.cjs,cloud-continue-browser.cjs,responsive-viewport-browser.cjs,onboarding-browser.cjs,settlement-browser.cjs,skirmish-mobile-browser.cjs,caravan-browser.cjs,caravan-reward-viewport-browser.cjs,combat-menu-browser.cjs,combat-side-colors-browser.cjs,combat-resume-browser.cjs
+          RPCHESS_BROWSER_TEST: mobile-run-summary-browser.cjs,events-browser.cjs,puzzles-browser.cjs,battle-browser.cjs,chronicle-localization-browser.cjs,localization-ui-browser.cjs,roster-browser.cjs,classic-chess-browser.cjs,arena-browser.cjs,piercing-vision-browser.cjs,fork-master-browser.cjs,cloud-continue-browser.cjs,responsive-viewport-browser.cjs,onboarding-browser.cjs,settlement-browser.cjs,skirmish-mobile-browser.cjs,caravan-browser.cjs,caravan-reward-viewport-browser.cjs,combat-menu-browser.cjs,combat-side-colors-browser.cjs,combat-resume-browser.cjs
           RPCHESS_VK_MENU_SCREENSHOT_DIR: test-results/vk-menu
           RPCHESS_FLAG_SCREENSHOT_DIR: test-results/flag-ui
+          RPCHESS_MOBILE_POLISH_SCREENSHOT_DIR: test-results/mobile-polish
         run: npm run test:browser
 
       - name: Upload menu and run-summary screenshots
@@ -72,6 +73,7 @@ jobs:
           path: |
             test-results/vk-menu
             test-results/flag-ui
+            test-results/mobile-polish
           if-no-files-found: warn
           retention-days: 7
 

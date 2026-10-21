@@ -35,7 +35,7 @@ function ensureCss() {
   if (!document.querySelector('[data-events-css]')) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'css/events.css?v=20260830-events-v3';
+    link.href = 'css/events.css?v=20261021-outcome-fit';
     link.dataset.eventsCss = '';
     document.head.append(link);
   }
