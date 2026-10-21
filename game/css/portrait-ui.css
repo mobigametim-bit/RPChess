@@ -49,6 +49,26 @@
     place-items:center!important;
   }
   html[data-landscape-ui='1'] body > .reboot-modal[hidden]{display:none!important;}
+  html[data-landscape-ui='1'] body > .identity-modal:not([hidden]){
+    box-sizing:border-box!important;width:100%!important;max-width:100vw!important;
+    grid-template-columns:minmax(0,1fr)!important;justify-items:center!important;
+    padding:12px!important;overflow-x:hidden!important;
+  }
+  html[data-landscape-ui='1'] body > .identity-modal:not([hidden]) .identity-panel{
+    box-sizing:border-box!important;min-width:0!important;
+    width:min(100%,720px)!important;max-width:100%!important;
+    margin:0 auto!important;
+    max-height:calc(100dvh - 24px)!important;
+    overflow-x:hidden!important;overflow-y:auto!important;
+  }
+  html[data-landscape-ui='1'] body > .identity-modal:not([hidden]) .identity-commander-layout{
+    min-width:0!important;max-width:100%!important;
+  }
+  @media (max-width:599px){
+    html[data-landscape-ui='1'] body > .identity-modal:not([hidden]) .identity-commander-layout{
+      grid-template-columns:minmax(0,1fr)!important;
+    }
+  }
   /* Arena opens its rival profile as a body-level overlay: never let old
      horizontal-only dialog visibility rules suppress the portrait modal. */
   html[data-landscape-ui='1'] body > .arena-dialog:not([hidden]){
