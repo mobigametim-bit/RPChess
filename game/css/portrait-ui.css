@@ -87,6 +87,13 @@
       max(12px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))!important;
   }
   html[data-landscape-ui='1'] body > .artifact-choice-modal[hidden] {display:none!important;}
+  /* The legacy portrait rotation lock hides all body-level overlays.
+     First-run tutorial dialogs must remain visible above every portrait scene. */
+  html[data-landscape-ui='1'] body > .rpchess-onboarding:not([hidden]) {
+    display:grid!important;visibility:visible!important;pointer-events:auto!important;
+    position:fixed!important;inset:0!important;place-items:center!important;
+  }
+  html[data-landscape-ui='1'] body > .rpchess-onboarding[hidden] {display:none!important;}
   html[data-landscape-ui='1'] .artifact-choice-panel {
     width:min(100%,650px)!important;max-width:100%!important;
     max-height:calc(100dvh - 24px)!important;
