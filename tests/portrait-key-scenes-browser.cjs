@@ -123,7 +123,7 @@ async function capturePhoneOrTablet(browser,width,height){
         portraitDoubled:p.width>=103&&p.height>=103,
         portraitCentered:Math.abs((p.top+p.bottom-cmd.top-cmd.bottom)/2)<8,
         resourcesCentered:Math.abs((res.top+res.bottom-cmd.top-cmd.bottom)/2)<30,
-        resourceDoubled:resourceIcon.getBoundingClientRect().width>=59&&parseFloat(getComputedStyle(resourceValue).fontSize)>=35
+        resourceSized:Math.abs(resourceIcon.getBoundingClientRect().width-48)<1&&Math.abs(parseFloat(getComputedStyle(resourceValue).fontSize)-28.8)<1
       };
     });
     assert(Object.values(travel).every(Boolean),`Travel portrait refinements: ${JSON.stringify(travel)}`);
