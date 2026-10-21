@@ -116,29 +116,38 @@ async function chooseNoArtifactForTest(page) {
   await page.locator('[data-artifact-choice="none"]').click();
 }
 
-async function auditPortraitLock(browser, width, height, language) {
-  const page = await browser.newPage({ viewport: { width, height } });
-  const errors = [];
-  page.on('pageerror', (error) => errors.push(String(error.stack || error)));
-  const label = `${width}x${height} ${language.toUpperCase()}`;
-  try {
+async function auditPortraitFlow(browser,width,height,language){
+  const page=await browser.newPage({viewport:{width,height},hasTouch:true,isMobile:width<600});
+  const errors=[];
+  page.on('pageerror',error=>errors.push(String(error.stack||error)));
+  const label=`${width}x${height} ${language.toUpperCase()} portrait`;
+  try{
     await freshDocument(page);
-    await setLanguage(page, language);
-    const lock = page.locator('[data-orientation-lock]');
-    await lock.waitFor({ state: 'visible' });
-    await assertPageFitsViewport(page, `${label} portrait lock`);
-    await assertViewportContained(page, '[data-orientation-lock]', `${label} portrait lock`);
-    const geometry = await lock.evaluate((element) => {
-      const rect = element.getBoundingClientRect();
-      return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, vw: innerWidth, vh: innerHeight };
+    await setLanguage(page,language);
+    await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
+    const result=await page.evaluate(()=>{
+      const root=document.querySelector('[data-reboot-foundation]');
+      const menu=document.querySelector('[data-new-game]');
+      const card=document.querySelector('[data-chronicle-panel]');
+      const button=menu?.getBoundingClientRect();
+      return {vw:innerWidth,vh:innerHeight,scrollWidth:document.documentElement.scrollWidth,
+        rootVisible:!!root&&!root.hidden&&getComputedStyle(root).visibility==='visible',
+        buttonVisible:!!menu&&getComputedStyle(menu).visibility==='visible',
+        buttonHeight:button?.height||0,
+        cardWidth:card?.getBoundingClientRect().width||0,
+        lockVisible:!!document.querySelector('[data-orientation-lock]') &&
+          getComputedStyle(document.querySelector('[data-orientation-lock]')).display!=='none'};
     });
-    assert(Math.abs(geometry.left) <= 1 && Math.abs(geometry.top) <= 1, `${label}: portrait lock must start at viewport origin`);
-    assert(Math.abs(geometry.right - geometry.vw) <= 1 && Math.abs(geometry.bottom - geometry.vh) <= 1, `${label}: portrait lock must cover viewport`);
-    assert.strictEqual(await page.locator('.landscape-orientation-lock__device').count(), 1, `${label}: device frame missing`);
-    assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
-  } finally {
-    await page.close();
-  }
+    assert(result.rootVisible&&result.buttonVisible&&!result.lockVisible,
+      `${label}: the game must remain playable instead of requiring rotation: ${JSON.stringify(result)}`);
+    assert(result.scrollWidth<=result.vw+2,`${label}: no horizontal overflow: ${JSON.stringify(result)}`);
+    assert(result.buttonHeight>=46,`${label}: menu touch target must be at least 46 CSS px`);
+    await page.locator('[data-new-game]').click();
+    await page.locator('[data-player-identity-modal]:not([hidden])').waitFor({state:'visible'});
+    const modal=await page.locator('[data-player-identity-modal] .identity-panel').first().boundingBox();
+    assert(modal&&modal.width<=width+2&&modal.right<=width+2,`${label}: identity form must fit portrait`);
+    assert.deepStrictEqual(errors,[],`${label} browser errors\n${errors.join('\n')}`);
+  }finally{await page.close();}
 }
 
 async function auditMenuModals(page, label) {
@@ -595,7 +604,7 @@ async function auditPrepAndCombat(browser, width, height, language) {
   try {
     if (FLAG_SCREENSHOT_DIR) for (const [width,height] of FLAG_SCREENSHOT_MATRIX) await captureFlagScreens(browser,width,height);
     for (const language of LANGUAGES) {
-      for (const [width, height] of PORTRAIT_MATRIX) await auditPortraitLock(browser, width, height, language);
+      for (const [width, height] of PORTRAIT_MATRIX) await auditPortraitFlow(browser, width, height, language);
       for (const [width, height] of VK_MENU_SAFE_HEIGHT_MATRIX) await auditVkMenuSafeHeight(browser, width, height, language);
       for (const [width, height] of LANDSCAPE_MATRIX) await auditViewport(browser, width, height, language);
       for (const [width, height] of WEAK_SURFACE_MATRIX) await auditClassicSetup(browser, width, height, language);
@@ -605,7 +614,7 @@ async function auditPrepAndCombat(browser, width, height, language) {
       for (const [width, height] of [[1366, 768], [1024, 768], [844, 390]]) await auditSoloKingBattleRunEnd(browser, width, height, language);
       for (const [width, height] of [[1180, 820], [1024, 768], [844, 390]]) await auditPrepAndCombat(browser, width, height, language);
     }
-    console.log('Responsive viewport browser: PASS — RU/EN one-screen geometry, VK safe-height menu matrix, 1180/980 breakpoint boundaries, portrait lock, Settings/Language/Identity/Chronicle/Classic setup frames, Event rail, Travel, Puzzle/Training, Starvation, Endless summary, stable Classic Journal, Skirmish combat/aftermath and Battle prep/aftermath contracts');
+    console.log('Responsive viewport browser: PASS — RU/EN one-screen geometry, VK safe-height menu matrix, 1180/980 breakpoint boundaries, playable portrait UI, Settings/Language/Identity/Chronicle/Classic setup frames, Event rail, Travel, Puzzle/Training, Starvation, Endless summary, stable Classic Journal, Skirmish combat/aftermath and Battle prep/aftermath contracts');
   } finally {
     await browser.close();
   }
