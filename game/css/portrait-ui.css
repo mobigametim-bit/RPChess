@@ -41,6 +41,14 @@
   html[data-landscape-ui='1'] :where(.reboot-modal,.arena-dialog,.events-outcome-modal) {
     padding:max(10px,env(safe-area-inset-top)) 10px max(10px,env(safe-area-inset-bottom))!important;
   }
+  /* A newly opened Player Identity / Settings dialog must be visible even
+     after an Arena -> Menu full reload in the portrait WebView. */
+  html[data-landscape-ui='1'] body > .reboot-modal:not([hidden]){
+    display:grid!important;visibility:visible!important;pointer-events:auto!important;
+    position:fixed!important;inset:0!important;z-index:2300!important;
+    place-items:center!important;
+  }
+  html[data-landscape-ui='1'] body > .reboot-modal[hidden]{display:none!important;}
   /* Arena opens its rival profile as a body-level overlay: never let old
      horizontal-only dialog visibility rules suppress the portrait modal. */
   html[data-landscape-ui='1'] body > .arena-dialog:not([hidden]){
