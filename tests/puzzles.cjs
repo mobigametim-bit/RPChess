@@ -40,7 +40,7 @@ function memoryStorage(){const data=new Map();return{getItem:key=>data.has(key)?
   assert(appSource.includes('pieceLabel(piece.type)'),'Puzzle board aria/title labels must use localized owner piece labels');
   assert(appSource.includes('puzzle-coordinate--file')&&appSource.includes('puzzle-coordinate--rank'),'Puzzle board must render orientation-aware coordinates');
   assert(appSource.includes('puzzleHistory')&&appSource.includes('excludedIds: history'),'Puzzle route must use persistent no-repeat history');
-  assert(appSource.includes("css/puzzles.css?v=20261018-centered-board")&&appSource.includes("css/puzzles-compact.css?v=20260909-owner1"),'Puzzle owner must load base and compact owner styles explicitly');
+  assert(appSource.includes("css/puzzles.css?v=20261021-gold-row")&&appSource.includes("css/puzzles-compact.css?v=20260909-owner1"),'Puzzle owner must load base and compact owner styles explicitly');
   for(const token of ['data-puzzle-kicker','data-puzzle-compact-objective','data-puzzle-compact-objective-label','data-puzzle-compact-stars','data-puzzle-compact-reward-value'])assert(appSource.includes(token),`Puzzle owner markup missing ${token}`);
   assert(appSource.includes("screen.querySelector('[data-puzzle-compact-reward-value]').textContent = String(currentReward)"),'compact Puzzle reward must render directly from Puzzle state');
   assert(appSource.includes('subscribe(() =>')&&appSource.includes('renderStaticCopy()'),'Puzzle owner must refresh its own copy on language change');
