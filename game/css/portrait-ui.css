@@ -749,11 +749,11 @@
     }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
     .travel-choice-inline-resource__icon{
-      width:48px!important;height:48px!important;flex:0 0 48px!important;object-fit:contain!important;
+      width:33.6px!important;height:33.6px!important;flex:0 0 33.6px!important;object-fit:contain!important;
     }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
     .travel-choice-inline-resource strong{
-      min-width:0!important;font-size:28.8px!important;line-height:1!important;
+      min-width:0!important;font-size:20.16px!important;line-height:1!important;
       font-variant-numeric:tabular-nums!important;
     }
   html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
