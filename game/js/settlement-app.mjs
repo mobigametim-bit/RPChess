@@ -107,7 +107,7 @@ function ensureScreen() {
       <nav class="settlement-tabs" role="tablist" aria-label="Разделы поселения" data-settlement-tabs>
         <button type="button" class="settlement-tab" role="tab" id="settlement-tab-tavern" aria-controls="settlement-pane-tavern" data-settlement-tab="tavern"><img src="generated_assets/reward_recruit.png" alt="" aria-hidden="true"><span data-settlement-tab-label="tavern"></span></button>
         <button type="button" class="settlement-tab" role="tab" id="settlement-tab-healer" aria-controls="settlement-pane-healer" data-settlement-tab="healer"><img src="generated_assets/reward_heal.png" alt="" aria-hidden="true"><span data-settlement-tab-label="healer"></span></button>
-        <button type="button" class="settlement-tab" role="tab" id="settlement-tab-market" aria-controls="settlement-pane-market" data-settlement-tab="market"><img src="generated_assets/node_shop.png" alt="" aria-hidden="true"><span data-settlement-tab-label="market"></span></button>
+        <button type="button" class="settlement-tab" role="tab" id="settlement-tab-market" aria-controls="settlement-pane-market" data-settlement-tab="market"><span class="settlement-tab-icon settlement-tab-icon--market" aria-hidden="true"></span><span data-settlement-tab-label="market"></span></button>
       </nav>
       <div class="settlement-services">
         <section id="settlement-pane-healer" class="settlement-service settlement-service--healer ui-panel-safe" role="tabpanel" aria-labelledby="settlement-healer-title">

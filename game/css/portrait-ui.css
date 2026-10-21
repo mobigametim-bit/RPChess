@@ -758,6 +758,11 @@
   html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-tab img{
     width:clamp(38px,10vw,58px)!important;height:clamp(38px,10vw,58px)!important;object-fit:contain!important;
   }
+  html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-tab-icon--market{
+    display:block!important;width:clamp(38px,10vw,58px)!important;
+    height:clamp(38px,10vw,58px)!important;
+    background:url('../generated_assets/node_shop.png') center/contain no-repeat!important;
+  }
   html[data-landscape-ui='1'] body.settlement-active #app main.settlement-screen .settlement-tab[aria-selected="true"]{
     border-color:#f0cf7b!important;background:linear-gradient(180deg,rgba(81,62,35,.95),rgba(28,28,30,.99))!important;
     box-shadow:inset 0 0 0 1px #d9b46288,0 0 16px #dab76324!important;
