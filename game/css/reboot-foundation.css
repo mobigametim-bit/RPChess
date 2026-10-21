@@ -452,15 +452,6 @@ html[data-reduced-motion='1'] *::after {
   .reboot-language-option { min-height: 82px; }
 }
 
-/* Portrait orientation lock is the only active layout in supported portrait viewports. */
-@media (orientation: portrait) and (max-width: 1180px) {
-  html[data-landscape-ui='1'],
-  html[data-landscape-ui='1'] body {
-    height: 100dvh;
-    min-height: 0 !important;
-    overflow: hidden !important;
-  }
-  html[data-landscape-ui='1'] body > :not(.landscape-orientation-lock) {
-    display: none !important;
-  }
-}
+/* Portrait devices use the responsive game UI, not the obsolete rotation lock.
+   Do not hide body-level overlays: animated pieces, touch drag previews and dialogs
+   are mounted directly under body and must stay visible in both orientations. */

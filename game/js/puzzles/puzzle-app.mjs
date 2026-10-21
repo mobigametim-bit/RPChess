@@ -1,5 +1,5 @@
 import { ClassicChessEngine } from '../classic-chess-engine.mjs';
-import { attachPieceDrag } from '../piece-drag.mjs';
+import { attachPieceDrag } from '../piece-drag.mjs?v=20261022-portrait-motion1';
 import { boardRacePiecePath } from '../race-assets.mjs';
 import { readRun, writeRun } from '../run-persistence.mjs';
 import { t, subscribe } from '../i18n.mjs';
