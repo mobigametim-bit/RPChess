@@ -115,7 +115,8 @@
    The old 51px rows exceeded the 61%-height content safe area on VK landscape. */
 @media (orientation:landscape) and (max-height:600px){
   html[data-landscape-ui='1'] body.endless-run-active .endless-run-flag-content {
-    inset:13.5% 20% 18%!important;
+    /* Keep the content inside the flag's 13–77% vertical safe region. */
+    inset:14% 20% 24%!important;
     gap:clamp(1px,.35vh,3px)!important;
     overflow:hidden!important;
   }
