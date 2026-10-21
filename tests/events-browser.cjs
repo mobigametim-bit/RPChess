@@ -49,6 +49,8 @@ async function seedEvent(page,eventId=null,runId='events-browser'){await page.ev
     `Event outcome must fit mobile without hidden CTA: ${JSON.stringify(mobileOutcomeFit)}`);
   assert(mobileOutcomeFit.scroll<=mobileOutcomeFit.client+1&&mobileOutcomeFit.overflow!=='auto',
     `Event result must not use inner scroll: ${JSON.stringify(mobileOutcomeFit)}`);
+  await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
+  await page.evaluate(()=>document.fonts.ready);
   if(process.env.RPCHESS_MOBILE_POLISH_SCREENSHOT_DIR){
     const fs=require('node:fs'),dir=process.env.RPCHESS_MOBILE_POLISH_SCREENSHOT_DIR;
     fs.mkdirSync(dir,{recursive:true});

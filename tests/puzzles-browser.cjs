@@ -136,6 +136,8 @@ async function clickMove(page,from,to,promotion=null){
   });
   assert(solvedFit.gold.bottom+1<=solvedFit.button.top,
     `Training Gold must sit wholly above Continue on mobile: ${JSON.stringify(solvedFit)}`);
+  await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
+  await page.evaluate(()=>document.fonts.ready);
   if(process.env.RPCHESS_MOBILE_POLISH_SCREENSHOT_DIR){
     const fs=require('node:fs'),dir=process.env.RPCHESS_MOBILE_POLISH_SCREENSHOT_DIR;
     fs.mkdirSync(dir,{recursive:true});

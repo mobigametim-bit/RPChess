@@ -176,7 +176,9 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     });
     assert(mobileKing.image.includes('/assets/kings/ash_regent/portrait.webp')&&mobileKing.display!=='none',
       `selected King portrait must be visible after Battle at 844x390: ${JSON.stringify(mobileKing)}`);
-    if(process.env.RPCHESS_MOBILE_POLISH_SCREENSHOT_DIR){
+    await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
+  await page.evaluate(()=>document.fonts.ready);
+  if(process.env.RPCHESS_MOBILE_POLISH_SCREENSHOT_DIR){
       const fs=require('node:fs'),dir=process.env.RPCHESS_MOBILE_POLISH_SCREENSHOT_DIR;
       fs.mkdirSync(dir,{recursive:true});
       await page.screenshot({path:require('node:path').join(dir,'05-battle-commander-mobile.png')});

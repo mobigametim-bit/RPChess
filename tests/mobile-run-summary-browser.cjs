@@ -32,6 +32,8 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
           nodes:cards.map(card=>({card:box(card),label:box(card.querySelector('span')),value:box(card.querySelector('strong')),text:card.querySelector('span').textContent})),
           viewport:[innerWidth,innerHeight]};
       });
+      await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
+      await page.evaluate(()=>document.fonts.ready);
       if(process.env.RPCHESS_MOBILE_POLISH_SCREENSHOT_DIR){
         const dir=process.env.RPCHESS_MOBILE_POLISH_SCREENSHOT_DIR;fs.mkdirSync(dir,{recursive:true});
         await page.screenshot({path:path.join(dir,`01-journey-summary-${size.width}x${size.height}.png`)});
