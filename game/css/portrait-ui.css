@@ -785,8 +785,14 @@
         display:grid!important;grid-template-columns:62px minmax(0,1fr)!important;
         gap:4px!important;align-items:center!important;justify-items:start!important;width:100%!important;
       }
+    /* Keep the gap after Threat identical to the vertical gap between
+       the two resource icons; do not disturb the tablet layout. */
     html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
-      .travel-choice-inline-resources {align-items:stretch!important;}
+      .travel-player-rating {align-self:end!important;}
+    html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
+      .travel-choice-inline-resources {
+        align-items:stretch!important;align-self:start!important;justify-content:flex-start!important;
+      }
     html[data-landscape-ui='1'] body.travel-choice-active #app main.travel-choice-screen
       .travel-choice-inline-resource {
         display:grid!important;grid-template-columns:62px minmax(0,1fr)!important;

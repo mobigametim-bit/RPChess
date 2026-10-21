@@ -127,6 +127,12 @@ async function capturePhoneOrTablet(browser,width,height){
         portraitCentered:Math.abs((p.top+p.bottom-cmd.top-cmd.bottom)/2)<8,
         resourcesCentered:Math.abs((res.top+res.bottom-cmd.top-cmd.bottom)/2)<30,
         resourceSized:Math.abs(resourceIcon.getBoundingClientRect().width-33.6)<1&&Math.abs(parseFloat(getComputedStyle(resourceValue).fontSize)-20.16)<1,
+        phoneVerticalRhythm:window.innerWidth>=600||(()=>{
+          const gold=resourceRows[0].querySelector('img').getBoundingClientRect();
+          const supplies=resourceRows[1].querySelector('img').getBoundingClientRect();
+          const bottomRating=ratingRows[1].getBoundingClientRect().bottom;
+          return Math.abs((gold.top-bottomRating)-(supplies.top-gold.bottom))<3;
+        })(),
         ratingAndResourcesAligned:window.innerWidth>=600||ratingRows.every((row,i)=>{
           const [label,value]=row.children,resource=resourceRows[i];
           return Math.abs(label.getBoundingClientRect().left-resource.querySelector('img').getBoundingClientRect().left)<3
