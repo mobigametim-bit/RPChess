@@ -1,7 +1,7 @@
 import { ChessAIAdapter } from './chess-ai-adapter.mjs';
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { RACE_TAGS, RACE_LABELS, racePiecePath, boardRacePiecePath, applyRaceBoardTheme } from './race-assets.mjs';
-import { attachPieceDrag } from './piece-drag.mjs';
+import { attachPieceDrag } from './piece-drag.mjs?v=20261022-portrait-motion1';
 import { ARTIFACTS, artifactById, combatArtifactOffer } from './artifact-core.mjs';
 import { renderThreatOverlay } from './artifact-combat-ui.mjs';
 import { applyPinIce } from './king-pin-ice.mjs';
