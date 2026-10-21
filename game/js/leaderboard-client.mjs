@@ -18,6 +18,7 @@ function apiRoot(){
 }
 const VK_APP_ID='54754579';
 let signedLaunch='';
+let rejectedLaunch='';
 let launchPending=null;
 
 // Rebuild the signed VK parameter set without inventing an identity; the
@@ -37,18 +38,19 @@ function signedLaunchQuery(data){
 }
 async function vkLaunch(){
   const fromUrl=signedLaunchQuery(globalThis.location?.search||'');
-  if(fromUrl)return fromUrl;
-  if(signedLaunch)return signedLaunch;
+  if(fromUrl&&fromUrl!==rejectedLaunch)return fromUrl;
+  if(signedLaunch&&signedLaunch!==rejectedLaunch)return signedLaunch;
   if(launchPending)return launchPending;
   // Mobile VK may open its internal WebView without propagating launch search
   // parameters. VK Bridge supplies the complete *signed* launch object.
-  const host=globalThis.RPChessPlatform;
+  const host=globalThis.RPChessPlatform || platform;
   if(!host?.launch?.isVK?.()||typeof host?.bridge?.request!=='function')return '';
   launchPending=(async()=>{
     try{
       const result=await host.bridge.request('VKWebAppGetLaunchParams',{}, {timeoutMs:4500});
-      signedLaunch=signedLaunchQuery(result);
-      if(!signedLaunch)console.warn('[RPChess] VK Bridge returned no signed launch parameters');
+      const candidate=signedLaunchQuery(result?.launchParams||result?.launch_params||result?.params||result);
+      signedLaunch=candidate!==rejectedLaunch?candidate:'';
+      if(!signedLaunch)console.warn('[RPChess] VK Bridge returned no new valid signed launch parameters');
       return signedLaunch;
     }catch(error){
       console.warn('[RPChess] signed VK launch unavailable from bridge',String(error?.message||error));
@@ -100,7 +102,20 @@ async function loadLeaderboard({force=false}={}){
       const launch=await vkLaunch();
       if(!launch)return changed(await request('/v1/leaderboard'));
       try{
-        return changed(await request('/v1/leaderboard/view',{launch}));
+        let answer=await request('/v1/leaderboard/view',{launch});
+        if(!answer.viewerAuthenticated){
+          // The Worker returned HTTP 200 public results but rejected this
+          // signed identity. Never submit using a stale/invalid URL signature.
+          rejectedLaunch=launch;
+          signedLaunch='';
+          const recovered=await vkLaunch();
+          if(recovered&&recovered!==launch){
+            answer=await request('/v1/leaderboard/view',{launch:recovered});
+            if(!answer.viewerAuthenticated){rejectedLaunch=recovered;signedLaunch='';}
+          }
+          if(!answer.viewerAuthenticated)console.warn('[RPChess] VK leaderboard identity not authenticated; scores are read-only until signed launch recovers');
+        }
+        return changed(answer);
       }catch(error){
         // VK mobile may reject an authenticated POST even when public reads
         // work (WebView transport, preflight or stale signed launch). Keep the
@@ -152,6 +167,7 @@ async function submitBestChronicle(){
       runId:best.runId,playerName:best.playerName,commanderId:normalizeCommanderId(best.commanderId),
       glory:best.glory,week:best.week,power:best.power
     }});
+    if(!next.viewerAuthenticated)throw new Error('Leaderboard submission was not authenticated');
     lastUpload=key;
     changed(next);
     return {status:'submitted'};

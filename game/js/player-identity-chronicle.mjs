@@ -315,11 +315,17 @@ function syncChronicle() {
 // return recalculates and submits an improved ACTIVE Journey's Glory.
 const menuScreen=document.querySelector('[data-reboot-foundation]');
 let menuRefreshQueued=false;
+let menuSyncInFlight=null;
+let lastPassiveMenuRefresh=0;
 async function refreshMenuLeaderboard() {
   if(!menuScreen||menuScreen.hidden)return;
-  syncChronicle();
-  await loadLeaderboard({force:true});
-  if(!menuScreen.hidden)await submitBestChronicle();
+  if(menuSyncInFlight)return menuSyncInFlight;
+  menuSyncInFlight=(async()=>{
+    syncChronicle();
+    await loadLeaderboard({force:true});
+    if(!menuScreen.hidden)await submitBestChronicle();
+  })().finally(()=>{menuSyncInFlight=null;});
+  return menuSyncInFlight;
 }
 function scheduleMenuLeaderboardRefresh() {
   if(menuRefreshQueued||!menuScreen||menuScreen.hidden)return;
@@ -340,14 +346,26 @@ if(menuScreen&&typeof MutationObserver!=='undefined'){
 addEventListener('rpchess:scene-changed',event=>{
   if(event?.detail?.scene==='menu')scheduleMenuLeaderboardRefresh();
 });
+// VK can restore the signed launch after the initial bootstrap. A ranking
+// upload that could not authenticate must be retried when the app becomes
+// active again or when the player's active score improves on the menu.
+function retryVisibleMenuLeaderboard(){
+  if(!menuScreen||menuScreen.hidden||document.hidden)return;
+  if(Date.now()-lastPassiveMenuRefresh<15000)return;
+  lastPassiveMenuRefresh=Date.now();
+  scheduleMenuLeaderboardRefresh();
+}
+document.addEventListener('visibilitychange',retryVisibleMenuLeaderboard);
+addEventListener('focus',retryVisibleMenuLeaderboard);
+addEventListener('pageshow',retryVisibleMenuLeaderboard);
 
 subscribe(() => { renderIdentityCopy(); renderChronicle(); });
 addEventListener('rpchess:leaderboard-updated', renderChronicle);
 addEventListener('rpchess:chronicle-updated', renderChronicle);
 
 addEventListener('rpchess:identity-request', openIdentityPrompt);
-addEventListener('rpchess:run-updated', syncChronicle);
-addEventListener('rpchess:power-updated', syncChronicle);
+addEventListener('rpchess:run-updated',()=>{syncChronicle();retryVisibleMenuLeaderboard();});
+addEventListener('rpchess:power-updated',()=>{syncChronicle();retryVisibleMenuLeaderboard();});
 addEventListener('storage', (event) => {
   if (event.key?.startsWith('rpchess.reboot.')) syncChronicle();
 });
