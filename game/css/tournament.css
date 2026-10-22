@@ -1,0 +1,65 @@
+/* Tournament: game-native navy/gold language, independent of Arena and Journey. */
+.tournament-screen[hidden],.reboot-menu-screen[hidden]{display:none!important}
+.tournament-screen{
+ min-height:100dvh;padding:clamp(14px,2.3vw,28px);color:#f8edce;
+ background:linear-gradient(110deg,#080e18ec,#101d2dec),url('../generated_assets/scene_battle.webp') center/cover fixed;
+ overflow-x:hidden
+}
+.tournament-screen *{box-sizing:border-box}
+.tournament-screen button:disabled{opacity:.46;cursor:default}
+.tournament-header{max-width:1300px;margin:0 auto 18px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid #caa65b;padding:0 0 12px}
+.tournament-header h1{font:400 clamp(29px,4vw,52px)/1.05 'BrahmsGotischCyr',Georgia,serif;color:#f7e7c0;margin:5px 0}
+.tournament-header small{color:#dab976;letter-spacing:.1em}
+.tournament-layout{max-width:1120px;margin:0 auto;display:grid;gap:16px}
+.tournament-card{
+ border:1px solid var(--ui-panel-border-gold);border-radius:var(--ui-panel-radius);
+ background:var(--ui-panel-bg);box-shadow:var(--ui-panel-shadow);
+ padding:clamp(16px,3vw,25px);min-width:0
+}
+.tournament-card h2{margin:0 0 10px;font:400 clamp(23px,3vw,34px)/1.08 'BrahmsGotischCyr',Georgia,serif;color:#f3dfae}
+.tournament-card p{line-height:1.45;margin:5px 0 14px}
+.tournament-mode{position:relative;overflow:hidden;background:linear-gradient(110deg,rgba(17,32,50,.98),rgba(8,18,31,.94)),url('../generated_assets/node_battle.png') 98% 50%/auto 180px no-repeat}
+.tournament-mode small{font-size:15px;font-weight:800;color:#ebc777}
+.tournament-mode p{color:#c7d1de}
+.tournament-muted{color:#bcc7d4;font-size:14px}
+.tournament-squads{display:flex;gap:10px;overflow:auto;padding:5px 2px 12px;scrollbar-width:thin;scroll-snap-type:x proximity}
+.tournament-squad{
+ display:flex;flex-direction:column;align-items:center;justify-content:end;gap:5px;
+ flex:0 0 122px;min-width:0;min-height:160px;padding:8px;
+ color:#f7e6c6;cursor:pointer;border:1px solid var(--ui-panel-border-gold);
+ border-radius:var(--ui-panel-radius);background:linear-gradient(180deg,#142942,#091521);
+ scroll-snap-align:start;box-shadow:inset 0 0 14px #0005
+}
+.tournament-squad img{height:90px;width:100%;object-fit:contain}
+.tournament-squad strong{font:400 18px 'BrahmsGotischCyr',Georgia,serif}
+.tournament-squad small{color:#d2bd8d;font:12px Arial,sans-serif}
+.tournament-squad.is-locked{filter:grayscale(1);opacity:.46}
+.tournament-squad.is-selected{border-color:#e4c477;outline:2px solid #bc934a;outline-offset:-3px;background:linear-gradient(180deg,#233951,#101c29)}
+.tournament-stats{display:flex;align-items:center;flex-wrap:wrap;gap:12px;justify-content:space-between;padding:10px 16px;border:1px solid #caa65b45;background:#0b1829eb;border-radius:12px;color:#dfc995;font-size:16px}
+.tournament-stats span{display:flex;gap:8px;align-items:center}
+.tournament-stats img{width:25px;height:25px;object-fit:contain}
+.tournament-stats b{font-size:21px;color:#fff0c8}
+.tournament-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.tournament-actions button{min-width:160px;flex:1;max-width:360px}
+.tournament-notice{max-width:900px;margin:10px auto!important;padding:12px 15px;border:1px solid #b18b4555;border-radius:9px;color:#e2c995;background:#271e14af;text-align:center;line-height:1.4}
+.tournament-center{max-width:760px;margin:16px auto;text-align:center;padding:clamp(20px,5vw,42px)}
+.tournament-center>strong{display:block;font-size:22px;color:#f1d996;margin:10px}
+.tournament-center>.tournament-actions{margin-top:24px}
+.tournament-spinner{margin:20px auto;width:128px;height:128px;border:2px solid #e6c66e66;border-radius:50%;display:grid;place-items:center;font-size:64px;color:#e6c66e;box-shadow:0 0 45px #d8a95322;animation:tournament-pulse 2s ease-in-out infinite}
+@keyframes tournament-pulse{50%{box-shadow:0 0 55px #d8a9536b;transform:scale(1.035)}}
+.tournament-room-code{color:#f7d78e;font-size:clamp(25px,5vw,42px);letter-spacing:.14em;font-weight:800;padding:20px}
+.tournament-code-input{width:min(100%,340px);padding:15px 18px;letter-spacing:.11em;background:#071423;border:1px solid #d6b56b88;border-radius:9px;text-align:center;font-size:22px;color:#fff2ce}
+@media (orientation:portrait) and (max-width:1100px) {
+ html[data-landscape-ui='1'] body.tournament-active #app>.reboot-menu-screen{display:none!important}
+ html[data-landscape-ui='1'] body.tournament-active #app>.tournament-screen:not([hidden]){
+  display:block!important;min-height:100dvh!important;overflow:visible!important;
+  padding:12px clamp(12px,3vw,24px) 30px!important;background-attachment:scroll!important
+ }
+ html[data-landscape-ui='1'] body.tournament-active .tournament-header{gap:8px}
+ html[data-landscape-ui='1'] body.tournament-active .tournament-squad{flex-basis:115px;min-height:149px}
+ html[data-landscape-ui='1'] body.tournament-active .tournament-actions{flex-direction:column;align-items:stretch}
+ html[data-landscape-ui='1'] body.tournament-active .tournament-actions button{max-width:none;width:100%;min-height:48px}
+ html[data-landscape-ui='1'] body.tournament-active .tournament-card{padding:clamp(12px,3vw,22px)!important}
+ html[data-landscape-ui='1'] body.tournament-active .tournament-stats{gap:8px}
+}
+@media (prefers-reduced-motion:reduce){.tournament-spinner{animation:none}}

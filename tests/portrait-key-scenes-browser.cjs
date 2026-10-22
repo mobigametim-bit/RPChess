@@ -63,6 +63,15 @@ async function capturePhoneOrTablet(browser,width,height){
   try {
     await menu(page);
     await capture(page,'01-main-menu');
+    assert.equal(await page.locator('[data-tournament-open]').count(),1,'Tournament menu button');
+    await page.locator('[data-tournament-open]').click();
+    await page.locator('[data-tournament-screen]:not([hidden])').waitFor();
+    assert.equal(await page.locator('.tournament-squad').count(),14,'All tournament races');
+    assert.equal(await page.locator('.tournament-squad:not([disabled])').count(),1,'Only Humans initially owned');
+    await capture(page,'01a-tournament-preparation');
+    await page.locator('[data-tour-action="back"]').click();
+    await page.locator('[data-reboot-foundation]:not([hidden])').waitFor();
+
     const arenaProbe=await page.locator('[data-arena-open]').evaluate(node=>{
       const rect=node.getBoundingClientRect();
       return {hidden:node.hidden,rect:{x:rect.x,y:rect.y,width:rect.width,height:rect.height},
