@@ -166,6 +166,42 @@ try {
  await moveByClicks(white,'g1','f3');
  await black.waitForFunction(()=>!!document.querySelector('[data-tour-board] [data-square="f3"] .classic-piece'),null,{timeout:16000});
  assert.equal(await white.locator('[data-tour-board] .classic-piece').count(),32,'No vanished pieces');
+ // Real opening against the server: Ruy Lopez with ...d6 creates an
+ // absolute pin (Bb5 pins the black knight on c6 to the king on e8).
+ await moveByClicks(black,'b8','c6');
+ await white.waitForFunction(()=>!!document.querySelector('[data-tour-board] [data-square="c6"] .classic-piece'),null,{timeout:16000});
+ await moveByClicks(white,'f1','b5');
+ await black.waitForFunction(()=>!!document.querySelector('[data-tour-board] [data-square="b5"] .classic-piece'),null,{timeout:16000});
+ await moveByClicks(black,'d7','d6');
+ const inspectPin=()=>[...document.querySelectorAll('[data-tour-board] [data-square="c6"]')]
+   .some(cell=>cell.dataset.pinState==='full'&&cell.querySelector('.classic-pin-ice--full[src="assets/vfx/pin_ice_full.png"]'));
+ for(const client of [white,black]){
+  await client.waitForFunction(inspectPin,null,{timeout:16000});
+  const ice=await client.locator('[data-tour-board] [data-square="c6"] .classic-pin-ice').evaluate(img=>({
+   opacity:getComputedStyle(img).opacity,
+   pointerEvents:getComputedStyle(img).pointerEvents
+  }));
+  assert.equal(ice.opacity,'0.5','Pin ice must use canonical 50% opacity');
+  assert.equal(ice.pointerEvents,'none','Pin ice must not intercept mouse or touch moves');
+ }
+ // Polling identical snapshots must not re-create or repeatedly animate the ice.
+ await black.evaluate(()=>{globalThis.__tournamentPinIceNode=document.querySelector('[data-tour-board] [data-square="c6"] .classic-pin-ice');});
+ await black.waitForTimeout(2900);
+ assert(await black.evaluate(()=>globalThis.__tournamentPinIceNode===document.querySelector('[data-tour-board] [data-square="c6"] .classic-pin-ice')),
+  'Unchanged snapshots must preserve frozen overlay DOM node between polls');
+ // Bxc6+ removes the pinned knight and checks the black king on e8.
+ await moveByClicks(white,'b5','c6');
+ for(const client of [white,black]){
+  await client.waitForFunction(()=>document.querySelector('[data-tour-board] [data-square="e8"]')?.classList.contains('classic-square--check'),null,{timeout:16000});
+  const check=await client.locator('[data-tour-board] [data-square="e8"]').evaluate(cell=>({
+   img:getComputedStyle(cell,'::after').backgroundImage,
+   opacity:getComputedStyle(cell,'::after').opacity,
+   ice:document.querySelector('[data-tour-board] [data-square="c6"] .classic-pin-ice')!==null
+  }));
+  assert(check.img.includes('aura_red.png')&&check.opacity==='0.72',
+   'Checked black king must show canonical red aura: '+JSON.stringify(check));
+  assert.equal(check.ice,false,'Pin ice must be removed after the pinned knight was captured');
+ }
  fs.mkdirSync(dir,{recursive:true});
  await first.page.screenshot({path:path.join(dir,'phone-390x844-live-pvp.png'),fullPage:true});
  await second.page.screenshot({path:path.join(dir,'tablet-768x1024-live-pvp.png'),fullPage:true});
