@@ -25,7 +25,7 @@ const words={
 };
 let page='setup',squad='humans',queueSince=0,searchJob=null,session=null,live=null,roomCode='',message='',tabVisible=false;
 let lastSearch=0;
-let matchState=null,chess=null,selectedSquare=null,matchJob=null,matchRendered=false,lastSnapshotAt=0,busyMove=false;
+let matchState=null,chess=null,selectedSquare=null,matchJob=null,matchRendered=false,lastSnapshotAt=0,busyMove=false,dragActive=false;
 const ROLE={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
 function lang(){return currentLanguage()==='en'?'en':'ru';}
 function t(key){return words[lang()][key]||key;}
@@ -139,17 +139,47 @@ function showBattle(){
    matchState.players.find(p=>p.color==='w')?.race||'humans');
   attachPieceDrag(root.querySelector('[data-tour-board]'),{
    canPick:square=>Boolean(chess&&matchState.status==='playing'&&chess.turn()===matchState.playerColor&&chess.pieceAt(square)?.color===matchState.playerColor&&!busyMove),
-   onStart:from=>{selectedSquare=from;refreshBoard();},
-   onDrop:(from,to)=>{if(to)void sendMove(from,to);}
+   onStart:from=>highlightDragFrom(from),
+   onDrop:(from,to)=>{
+    dragActive=false;
+    if(to&&chess?.legalMoves(from).some(move=>move.to===to))void sendMove(from,to);
+    else {selectedSquare=from;refreshBoard();}
+   },
+   onCancel:()=>{
+    dragActive=false;
+    refreshBoard();
+   }
   });
   matchRendered=true;
  }
  refreshBoard();
 }
+function highlightDragFrom(from){
+ const board=root.querySelector('[data-tour-board]');
+ if(!board||!chess)return;
+ dragActive=true;
+ selectedSquare=from;
+ // A pointer gesture starts on a square that is currently the pointer target.
+ // Replacing its HTML at this moment cancels touch dragging in WebView. Keep
+ // those nodes in place and decorate existing squares instead.
+ board.querySelectorAll('.tournament-legal').forEach(node=>node.remove());
+ board.querySelectorAll('.classic-square.is-selected').forEach(node=>node.classList.remove('is-selected'));
+ board.querySelector('[data-square="'+from+'"]')?.classList.add('is-selected');
+ for(const move of chess.legalMoves(from)){
+  const target=board.querySelector('[data-square="'+move.to+'"]');
+  if(target){
+   const marker=document.createElement('span');
+   marker.className='tournament-legal';
+   target.append(marker);
+  }
+ }
+}
 function refreshBoard(){
  const b=root.querySelector('[data-tour-board]');if(!b||!chess)return;
  applyRaceBoardTheme(b,matchState?.players?.find(p=>p.color==='w')?.race||'humans');
- b.innerHTML=boardMarkup();
+ // Keep original pointer targets alive through the drag even if an automatic
+ // multiplayer snapshot arrives on the 2.4-second polling interval.
+ if(!dragActive)b.innerHTML=boardMarkup();
  const journal=root.querySelector('[data-tour-history]');
  if(journal)journal.textContent=matchState.moves.map((m,i)=> (i+1)+'. '+m.from+'–'+m.to).join('  ');
  const turn=root.querySelector('[data-tour-turn]');
@@ -180,7 +210,7 @@ async function syncMatch(){
   message=err.message;const tag=root.querySelector('[data-tour-turn]');if(tag)tag.textContent=message;
  }
 }
-function stopMatch(){if(matchJob){clearInterval(matchJob);matchJob=null;}}
+function stopMatch(){dragActive=false;if(matchJob){clearInterval(matchJob);matchJob=null;}}
 async function sendMove(from,to,promotion=null){
  if(busyMove||!chess||!matchState||chess.turn()!==matchState.playerColor)return;
  const choices=chess.promotionChoices(from,to);
