@@ -25,6 +25,9 @@ try {
  // landscape window. Buttons may use an internal scroll on small displays,
  // but must NEVER be clipped behind an unscrollable viewport.
  desktop=await client(1792,852);
+ // Wait for the game splash's opacity fade: DOM visibility alone is not enough
+ // for visual acceptance screenshots immediately after entering Tournament.
+ await desktop.page.waitForTimeout(1600);
  fs.mkdirSync(dir,{recursive:true});
  const checkSetup=async ({requireNoScroll=false}={})=>{
   return desktop.page.evaluate(requireNoScroll=>{
