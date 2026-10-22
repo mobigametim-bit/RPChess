@@ -122,14 +122,20 @@ function updateClocks(){
 }
 async function syncMatch(){
  if(!live?.matchId||!session)return;
+ const expectedMatch=live.matchId;
  try{
-  const response=await call('/v1/match/'+encodeURIComponent(live.matchId)+'/snapshot',{});
+  const response=await call('/v1/match/'+encodeURIComponent(expectedMatch)+'/snapshot',{});
+  // A delayed old-match response must not replace a fresh matchmaking screen.
+  if(live?.matchId!==expectedMatch||(page!=='match'&&page!=='result'))return;
   matchState=response;lastSnapshotAt=Date.now();
   chess=new ClassicChessEngine();
   for(const mv of response.moves){const result=chess.move(mv.from,mv.to,mv.promotion||null);if(!result.ok)throw Error('Invalid server history');}
   if(response.status==='finished'){stopMatch();page='result';render();return;}
   page='match';render();
- }catch(err){message=err.message;const tag=root.querySelector('[data-tour-turn]');if(tag)tag.textContent=message;}
+ }catch(err){
+  if(live?.matchId!==expectedMatch||(page!=='match'&&page!=='result'))return;
+  message=err.message;const tag=root.querySelector('[data-tour-turn]');if(tag)tag.textContent=message;
+ }
 }
 function stopMatch(){if(matchJob){clearInterval(matchJob);matchJob=null;}}
 async function sendMove(from,to,promotion=null){
@@ -172,23 +178,42 @@ async function connect(){
 }
 async function beginSearch(){
  if(!API){message=t('offline');page='setup';render();return;}
+ // A previous completed match must not keep polling and redraw its Victory
+ // screen over the next search (the old interval ran every 2.4 seconds).
+ stopMatch();stopPolling();
+ live=null;matchState=null;chess=null;selectedSquare=null;matchRendered=false;
+ queueSince=Date.now();page='search';message=t('searchPending');render();
  try{
-  await connect(); queueSince=Date.now();page='search';message=t('searchPending');render();
+  await connect();
+  if(page!=='search')return; // user may have cancelled during authentication
   const res=await call('/v1/queue/join',{squad,power:readPlayerRating().power,newSearch:true,lossStreak:0});
-  if(res.status==='matched'){openMatch(res);return;}
-  stopPolling();searchJob=setInterval(()=>{void pollQueue();},2400);
- }catch(err){page='setup';message=err.message;render();}
+  if(page!=='search')return;
+  if(res.status==='matched'){void openMatch(res);return;}
+  searchJob=setInterval(()=>{void pollQueue();},2400);
+ }catch(err){if(page==='search'){page='setup';message=err.message;render();}}
 }
 async function pollQueue(){
  if(page!=='search')return;
  try{
   const res=await call('/v1/queue/status',{});
-  if(res.status==='matched'){openMatch(res);return;}
+  if(page!=='search')return;
+  if(res.status==='matched'){void openMatch(res);return;}
+  if(res.status==='not_queued'){
+   // Seek expired or lost connectivity. Re-enter rather than waiting forever.
+   void beginSearch();return;
+  }
   if(Date.now()-queueSince>45000)message=t('noMatch');
   render();
  }catch(err){message=err.message;render();}
 }
-async function openMatch(response){stopPolling();live=response;page='match';message='';selectedSquare=null;matchRendered=false;await syncMatch();stopMatch();matchJob=setInterval(()=>{void syncMatch();},2400);}
+async function openMatch(response){
+ stopPolling();stopMatch();live=response;page='match';message='';selectedSquare=null;matchRendered=false;
+ await syncMatch();
+ // A finished game never receives another polling interval. Otherwise the
+ // timer continues and overwrites the next search with its old result.
+ if(page==='match'&&live?.matchId===response.matchId)
+  matchJob=setInterval(()=>{void syncMatch();},2400);
+}
 async function cancelQueue(){stopPolling();if(session&&API)await call('/v1/queue/cancel',{}).catch(()=>{});}
 async function cancelRoom(){stopPolling();if(session&&API&&roomCode)await call('/v1/room/cancel',{code:roomCode}).catch(()=>{});}
 async function makeRoom(){
