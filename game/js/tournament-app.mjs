@@ -2,6 +2,8 @@
    Real matchmaking is enabled only after a verified tournament API is configured.
    This UI never creates fictitious opponents, receipts or ranked results. */
 import { arenaSummary, normalizeArena, ARENA_KEY, SHARD_ICON } from './arena-core.mjs';
+import { ClassicChessEngine } from './classic-chess-engine.mjs';
+import { attachPieceDrag } from './piece-drag.mjs';
 import { RACE_TAGS, RACE_LABELS, racePiecePath } from './race-assets.mjs';
 import { readPlayerRating } from './player-rating.mjs';
 import { currentLanguage, subscribe } from './i18n.mjs';
@@ -23,6 +25,8 @@ const words={
 };
 let page='setup',squad='humans',queueSince=0,searchJob=null,session=null,live=null,roomCode='',message='',tabVisible=false;
 let lastSearch=0;
+let matchState=null,chess=null,selectedSquare=null,matchJob=null,matchRendered=false,lastSnapshotAt=0,busyMove=false;
+const ROLE={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
 function lang(){return currentLanguage()==='en'?'en':'ru';}
 function t(key){return words[lang()][key]||key;}
 function esc(text){return String(text??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
@@ -48,11 +52,105 @@ function invite(){return '<section class="tournament-card tournament-center"><h2
 function joining(){return '<section class="tournament-card tournament-center"><h2>'+t('join')+'</h2><p>'+t('entry')+'</p><input class="tournament-code-input" data-tour-code maxlength="12" autocomplete="off" placeholder="AB12CD" value="'+esc(roomCode)+'"><div class="tournament-actions">'+action('join-submit',t('enter'))+action('cancel',t('leave'))+'</div>'+notice(message)+'</section>';}
 function render(){
  if(!tabVisible)return;
+ if(page==='match'&&matchState){showBattle();return;}
+ if(page==='result'&&matchState){root.innerHTML=head()+resultView();return;}
+ matchRendered=false;
  root.innerHTML=head()+(page==='setup'?setup():page==='search'?search():page==='invite'?invite():page==='join'?joining():notice(message));
 }
+function boardMarkup(){
+ if(!chess||!matchState)return '';
+ const snapshot=chess.snapshot();
+ const reverse=matchState.playerColor==='b';
+ const legal=selectedSquare?chess.legalMoves(selectedSquare).map(m=>m.to):[];
+ let output='';
+ for(let y=0;y<8;y++)for(let x=0;x<8;x++){
+  const rank=reverse?y:7-y, file=reverse?7-x:x,idx=rank*8+file;
+  const sq='abcdefgh'[file]+(rank+1),piece=snapshot.board[idx];
+  const light=(rank+file)%2!==0;
+  const img=piece?'<img class="classic-piece" draggable="false" alt="" src="'+racePiecePath(matchState.players.find(p=>p.color===piece.color)?.race||'humans',ROLE[piece.type],piece.color)+'">':'';
+  const mark=legal.includes(sq)?'<span class="tournament-legal"></span>':'';
+  output+='<button type="button" class="classic-square '+(light?'classic-square--light':'classic-square--dark')+(selectedSquare===sq?' is-selected':'')+'" data-square="'+sq+'" aria-label="'+sq+'">'+img+mark+'</button>';
+ }
+ return output;
+}
+function timeLeft(color){
+ if(!matchState)return 0;
+ const base=Number(matchState.remaining?.[color]||0);
+ const elapsed=matchState.status==='playing'&&matchState.turn===color?Math.max(0,Date.now()-lastSnapshotAt):0;
+ return Math.max(0,base-elapsed);
+}
+function clock(ms){const sec=Math.ceil(Math.max(0,ms)/1000);return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');}
+function resultView(){
+ const outcome=matchState.result;
+ const win=outcome?.winner===matchState.playerColor,draw=!outcome?.winner;
+ const title=lang()==='ru'?(draw?'Ничья':win?'Победа!':'Поражение'):(draw?'Draw':win?'Victory!':'Defeat');
+ return '<section class="tournament-card tournament-center"><h2>'+title+'</h2><p>'+esc(outcome?.kind||'')+'</p><p class="tournament-muted">'+(lang()==='ru'?'Матч завершён на сервере. Награды и изменение Мощи будут включены после приёмки защищённой экономики.':'Server-confirmed result. Rewards and Power updates are pending secure economy validation.')+'</p><div class="tournament-actions">'+action('again',t('again'))+action('cancel',t('leave'))+'</div></section>';
+}
+function showBattle(){
+ if(!matchState)return;
+ const my=matchState.players.find(p=>p.color===matchState.playerColor);
+ const enemy=matchState.players.find(p=>p.color!==matchState.playerColor);
+ if(!my||!enemy)return;
+ const opponent='<div class="tournament-player"><strong>'+esc(enemy.name)+'</strong><small>'+esc(raceLabel(enemy.race))+'</small></div><span class="tournament-clock" data-tour-clock="'+enemy.color+'"></span>';
+ const player='<div class="tournament-player"><strong>'+t('you')+'</strong><small>'+esc(raceLabel(my.race))+'</small></div><span class="tournament-clock" data-tour-clock="'+my.color+'"></span>';
+ if(!matchRendered||!root.querySelector('[data-tour-board]')){
+  root.innerHTML=head()+'<section class="tournament-match"><div class="tournament-match-layout"><div class="tournament-match-main"><div class="tournament-playerbar">'+opponent+'</div><div class="classic-board tournament-board" data-tour-board role="grid" aria-label="Tournament chessboard"></div><div class="tournament-playerbar">'+player+'</div></div><aside class="tournament-card tournament-match-sidebar"><h2>'+t('match')+' · 10+0</h2><p data-tour-turn role="status"></p><div class="tournament-actions">'+action('offer-draw',t('draw'))+action('resign',t('resign'))+action('back',t('leave'))+'</div><div class="tournament-moves" data-tour-history></div></aside></div></section>';
+  attachPieceDrag(root.querySelector('[data-tour-board]'),{
+   canPick:square=>Boolean(chess&&matchState.status==='playing'&&chess.turn()===matchState.playerColor&&chess.pieceAt(square)?.color===matchState.playerColor&&!busyMove),
+   onStart:from=>{selectedSquare=from;refreshBoard();},
+   onDrop:(from,to)=>{if(to)void sendMove(from,to);}
+  });
+  matchRendered=true;
+ }
+ refreshBoard();
+}
+function refreshBoard(){
+ const b=root.querySelector('[data-tour-board]');if(!b||!chess)return;
+ b.innerHTML=boardMarkup();
+ const journal=root.querySelector('[data-tour-history]');
+ if(journal)journal.textContent=matchState.moves.map((m,i)=> (i+1)+'. '+m.from+'–'+m.to).join('  ');
+ const turn=root.querySelector('[data-tour-turn]');
+ if(turn)turn.textContent=chess.turn()===matchState.playerColor?t('yourTurn'):t('theirTurn');
+ updateClocks();
+}
+function updateClocks(){
+ for(const node of root.querySelectorAll('[data-tour-clock]')){
+  const color=node.dataset.tourClock;node.textContent=clock(timeLeft(color));
+  node.classList.toggle('is-running',matchState?.turn===color&&matchState.status==='playing');
+  node.classList.toggle('is-urgent',timeLeft(color)<30000);
+ }
+}
+async function syncMatch(){
+ if(!live?.matchId||!session)return;
+ try{
+  const response=await call('/v1/match/'+encodeURIComponent(live.matchId)+'/snapshot',{});
+  matchState=response;lastSnapshotAt=Date.now();
+  chess=new ClassicChessEngine();
+  for(const mv of response.moves){const result=chess.move(mv.from,mv.to,mv.promotion||null);if(!result.ok)throw Error('Invalid server history');}
+  if(response.status==='finished'){stopMatch();page='result';render();return;}
+  page='match';render();
+ }catch(err){message=err.message;const tag=root.querySelector('[data-tour-turn]');if(tag)tag.textContent=message;}
+}
+function stopMatch(){if(matchJob){clearInterval(matchJob);matchJob=null;}}
+async function sendMove(from,to,promotion=null){
+ if(busyMove||!chess||!matchState||chess.turn()!==matchState.playerColor)return;
+ const choices=chess.promotionChoices(from,to);
+ const promoted=choices.length?(promotion||'q'):null;
+ busyMove=true;
+ try{
+  const result=await call('/v1/match/'+encodeURIComponent(live.matchId)+'/move',{from,to,promotion:promoted});
+  selectedSquare=null;matchState=result;lastSnapshotAt=Date.now();await syncMatch();
+ }catch(err){message=err.message;await syncMatch();}finally{busyMove=false;}
+}
+async function matchAction(action){
+ if(!live?.matchId)return;
+ try{const result=await call('/v1/match/'+encodeURIComponent(live.matchId)+'/'+action,{});matchState=result;lastSnapshotAt=Date.now();await syncMatch();}
+ catch(err){message=err.message;const tag=root.querySelector('[data-tour-turn]');if(tag)tag.textContent=message;}
+}
+
 function visible(active){tabVisible=active;root.hidden=!active;menu.hidden=active;document.body.classList.toggle('tournament-active',active);if(active){window.scrollTo(0,0);render();}}
 function open(){squad=arena().owned.has(saved().squad)?saved().squad:'humans';page='setup';message='';visible(true);}
-function leave(){if(page==='search')void cancelQueue();if(page==='invite')void cancelRoom();stopPolling();visible(false);}
+function leave(){if(page==='search')void cancelQueue();if(page==='invite')void cancelRoom();stopPolling();stopMatch();visible(false);}
 function stopPolling(){if(searchJob){clearInterval(searchJob);searchJob=null;}}
 function endpoint(path){return API.replace(/\/$/,'')+path;}
 async function call(path,data){
@@ -76,7 +174,7 @@ async function beginSearch(){
  if(!API){message=t('offline');page='setup';render();return;}
  try{
   await connect(); queueSince=Date.now();page='search';message=t('searchPending');render();
-  const res=await call('/v1/queue/join',{squad,power:readPlayerRating().power});
+  const res=await call('/v1/queue/join',{squad,power:readPlayerRating().power,newSearch:true,lossStreak:0});
   if(res.status==='matched'){openMatch(res);return;}
   stopPolling();searchJob=setInterval(()=>{void pollQueue();},2400);
  }catch(err){page='setup';message=err.message;render();}
@@ -90,7 +188,7 @@ async function pollQueue(){
   render();
  }catch(err){message=err.message;render();}
 }
-function openMatch(response){stopPolling();live=response;page='match';message='';render();}
+async function openMatch(response){stopPolling();live=response;page='match';message='';selectedSquare=null;matchRendered=false;await syncMatch();stopMatch();matchJob=setInterval(()=>{void syncMatch();},2400);}
 async function cancelQueue(){stopPolling();if(session&&API)await call('/v1/queue/cancel',{}).catch(()=>{});}
 async function cancelRoom(){stopPolling();if(session&&API&&roomCode)await call('/v1/room/cancel',{code:roomCode}).catch(()=>{});}
 async function makeRoom(){
@@ -106,12 +204,20 @@ async function joinRoom(){
 }
 button?.addEventListener('click',()=>{void Promise.resolve(globalThis.RPChessCloudReady).then(open);});
 root.addEventListener('click',event=>{
+ const square=event.target.closest('[data-tour-board] [data-square]');
+ if(square&&chess&&matchState?.status==='playing'){
+  const clicked=square.dataset.square,own=chess.pieceAt(clicked)?.color===matchState.playerColor;
+  if(chess.turn()!==matchState.playerColor)return;
+  if(selectedSquare&&chess.legalMoves(selectedSquare).some(m=>m.to===clicked)){void sendMove(selectedSquare,clicked);return;}
+  selectedSquare=own?clicked:null;refreshBoard();return;
+ }
  const squadButton=event.target.closest('[data-tour-squad]');
  if(squadButton){squad=squadButton.dataset.tourSquad;remember();render();return;}
  const btn=event.target.closest('[data-tour-action]');if(!btn)return;
  const a=btn.dataset.tourAction;
- if(a==='back'||a==='cancel'){if(page==='setup'){leave();return;}if(page==='search')void cancelQueue();if(page==='invite')void cancelRoom();stopPolling();page='setup';message='';render();return;}
- if(a==='search'){void beginSearch();return;}
+ if(a==='back'||a==='cancel'){if(page==='setup'){leave();return;}if(page==='match'){stopMatch();page='setup';message='';render();return;}if(page==='search')void cancelQueue();if(page==='invite')void cancelRoom();stopPolling();page='setup';message='';render();return;}
+ if(a==='search'||a==='again'){void beginSearch();return;}
+ if(a==='offer-draw'||a==='resign'){void matchAction(a==='offer-draw'?'draw':'resign');return;}
  if(a==='invite'){void makeRoom();return;}
  if(a==='join-screen'){page='join';message='';render();return;}
  if(a==='join-submit'){void joinRoom();return;}

@@ -1,0 +1,20 @@
+name = "rpchess-tournament-preview"
+main = "src/index.mjs"
+compatibility_date = "2026-10-22"
+
+[durable_objects]
+bindings = [
+  { name = "LOBBY", class_name = "TournamentLobby" },
+  { name = "MATCHES", class_name = "TournamentMatch" }
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["TournamentLobby", "TournamentMatch"]
+
+[vars]
+ALLOWED_ORIGINS = "https://mobigametim-bit.github.io,https://rpchess-portrait-ui-preview.mobigametim.workers.dev"
+
+# Required private Cloudflare Worker secrets:
+# PVP_SESSION_SECRET: long random signing secret (never commit it).
+# VK_APP_SECRET: VK signing secret, if VK authentication is enabled.
