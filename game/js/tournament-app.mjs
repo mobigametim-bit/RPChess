@@ -4,7 +4,7 @@
 import { arenaSummary, normalizeArena, ARENA_KEY, SHARD_ICON } from './arena-core.mjs';
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { attachPieceDrag } from './piece-drag.mjs';
-import { RACE_TAGS, RACE_LABELS, racePiecePath } from './race-assets.mjs';
+import { RACE_TAGS, RACE_LABELS, racePiecePath, applyRaceBoardTheme } from './race-assets.mjs';
 import { readPlayerRating } from './player-rating.mjs';
 import { currentLanguage, subscribe } from './i18n.mjs';
 import { platform } from './platform.mjs';
@@ -52,7 +52,10 @@ function invite(){return '<section class="tournament-card tournament-center"><h2
 function joining(){return '<section class="tournament-card tournament-center"><h2>'+t('join')+'</h2><p>'+t('entry')+'</p><input class="tournament-code-input" data-tour-code maxlength="12" autocomplete="off" placeholder="AB12CD" value="'+esc(roomCode)+'"><div class="tournament-actions">'+action('join-submit',t('enter'))+action('cancel',t('leave'))+'</div>'+notice(message)+'</section>';}
 function render(){
  if(!tabVisible)return;
- if(page==='match'&&matchState){showBattle();return;}
+ const inBattle=page==='match'&&matchState?.status==='playing';
+ root.classList.toggle('tournament-screen--match',Boolean(inBattle));
+ document.body.classList.toggle('tournament-battle-active',Boolean(inBattle));
+ if(inBattle){showBattle();return;}
  if(page==='result'&&matchState){root.innerHTML=head()+resultView();return;}
  matchRendered=false;
  root.innerHTML=head()+(page==='setup'?setup():page==='search'?search():page==='invite'?invite():page==='join'?joining():notice(message));
@@ -91,10 +94,49 @@ function showBattle(){
  const my=matchState.players.find(p=>p.color===matchState.playerColor);
  const enemy=matchState.players.find(p=>p.color!==matchState.playerColor);
  if(!my||!enemy)return;
- const opponent='<div class="tournament-player"><strong>'+esc(enemy.name)+'</strong><small>'+esc(raceLabel(enemy.race))+'</small></div><span class="tournament-clock" data-tour-clock="'+enemy.color+'"></span>';
- const player='<div class="tournament-player"><strong>'+t('you')+'</strong><small>'+esc(raceLabel(my.race))+'</small></div><span class="tournament-clock" data-tour-clock="'+my.color+'"></span>';
+ const clockPanel=(p,isSelf)=>'<div class="tournament-playerbar tournament-clock-panel '+(isSelf?'tournament-clock-panel--self':'tournament-clock-panel--rival')+'">'+
+  '<div class="tournament-player"><strong>'+esc(isSelf?t('you'):p.name)+'</strong><small>'+esc(raceLabel(p.race))+'</small></div>'+
+  '<span class="tournament-clock" data-tour-clock="'+p.color+'"></span></div>';
  if(!matchRendered||!root.querySelector('[data-tour-board]')){
-  root.innerHTML=head()+'<section class="tournament-match"><div class="tournament-match-layout"><div class="tournament-match-main"><div class="tournament-playerbar">'+opponent+'</div><div class="classic-board tournament-board" data-tour-board data-player-color="'+esc(matchState.playerColor)+'" role="grid" aria-label="Tournament chessboard"></div><div class="tournament-playerbar">'+player+'</div></div><aside class="tournament-card tournament-match-sidebar"><h2>'+t('match')+' · 10+0</h2><p data-tour-turn role="status"></p><div class="tournament-actions">'+action('offer-draw',t('draw'))+action('resign',t('resign'))+action('back',t('leave'))+'</div><div class="tournament-moves" data-tour-history></div></aside></div></section>';
+  root.innerHTML=
+   '<header class="tournament-battle-mobile-header">'+
+     '<strong>'+t('title')+' · 10+0</strong>'+
+     '<button type="button" class="classic-mini-button" data-tour-action="menu">'+t('back')+'</button>'+
+   '</header>'+
+   '<section class="tournament-match" aria-label="'+t('match')+'">'+
+     '<div class="tournament-match-layout">'+
+       '<nav class="tournament-battle-nav" aria-label="'+t('match')+'">'+
+         '<button type="button" class="classic-mini-button" data-tour-action="settings">'+(lang()==='en'?'Settings':'Настройки')+'</button>'+
+         '<button type="button" class="classic-mini-button" data-tour-action="menu">'+t('back')+'</button>'+
+       '</nav>'+
+       '<div class="tournament-battle-rail">'+
+         clockPanel(enemy,false)+
+         '<aside class="tournament-card tournament-match-sidebar">'+
+           '<h2>'+t('title')+'</h2>'+
+           '<small class="tournament-match-kicker">'+t('match')+' · 10+0</small>'+
+           '<p data-tour-turn role="status"></p>'+
+           '<div class="tournament-actions">'+
+             action('offer-draw',t('draw'))+
+             action('resign',t('resign'))+
+             action('back',t('leave'))+
+           '</div>'+
+           '<section class="tournament-journal">'+
+             '<small>'+(lang()==='en'?'BATTLE LOG':'ЖУРНАЛ БОЯ')+'</small>'+
+             '<h3>'+(lang()==='en'?'Moves':'Ходы')+'</h3>'+
+             '<div class="tournament-moves" data-tour-history aria-label="'+(lang()==='en'?'Moves':'Ходы')+'"></div>'+
+           '</section>'+
+         '</aside>'+
+         clockPanel(my,true)+
+       '</div>'+
+       '<div class="tournament-match-main">'+
+         '<div class="classic-board tournament-board" data-tour-board data-player-color="'+esc(matchState.playerColor)+'" role="grid" aria-label="Tournament chessboard"></div>'+
+       '</div>'+
+     '</div>'+
+   '</section>';
+  // Shared Journey/Arena race board tiles. The *white* squad controls the
+  // common board design, regardless of which side this client plays.
+  applyRaceBoardTheme(root.querySelector('[data-tour-board]'),
+   matchState.players.find(p=>p.color==='w')?.race||'humans');
   attachPieceDrag(root.querySelector('[data-tour-board]'),{
    canPick:square=>Boolean(chess&&matchState.status==='playing'&&chess.turn()===matchState.playerColor&&chess.pieceAt(square)?.color===matchState.playerColor&&!busyMove),
    onStart:from=>{selectedSquare=from;refreshBoard();},
@@ -106,6 +148,7 @@ function showBattle(){
 }
 function refreshBoard(){
  const b=root.querySelector('[data-tour-board]');if(!b||!chess)return;
+ applyRaceBoardTheme(b,matchState?.players?.find(p=>p.color==='w')?.race||'humans');
  b.innerHTML=boardMarkup();
  const journal=root.querySelector('[data-tour-history]');
  if(journal)journal.textContent=matchState.moves.map((m,i)=> (i+1)+'. '+m.from+'–'+m.to).join('  ');
@@ -154,7 +197,12 @@ async function matchAction(action){
  catch(err){message=err.message;const tag=root.querySelector('[data-tour-turn]');if(tag)tag.textContent=message;}
 }
 
-function visible(active){tabVisible=active;root.hidden=!active;menu.hidden=active;document.body.classList.toggle('tournament-active',active);if(active){window.scrollTo(0,0);render();}}
+function visible(active){
+ tabVisible=active;root.hidden=!active;menu.hidden=active;
+ document.body.classList.toggle('tournament-active',active);
+ if(!active){root.classList.remove('tournament-screen--match');document.body.classList.remove('tournament-battle-active');}
+ if(active){window.scrollTo(0,0);render();}
+}
 function open(){squad=arena().owned.has(saved().squad)?saved().squad:'humans';page='setup';message='';visible(true);}
 function leave(){if(page==='search')void cancelQueue();if(page==='invite')void cancelRoom();stopPolling();stopMatch();visible(false);}
 function stopPolling(){if(searchJob){clearInterval(searchJob);searchJob=null;}}
@@ -241,6 +289,8 @@ root.addEventListener('click',event=>{
  const btn=event.target.closest('[data-tour-action]');if(!btn)return;
  const a=btn.dataset.tourAction;
  if(a==='back'||a==='cancel'){if(page==='setup'){leave();return;}if(page==='match'){stopMatch();page='setup';message='';render();return;}if(page==='search')void cancelQueue();if(page==='invite')void cancelRoom();stopPolling();page='setup';message='';render();return;}
+ if(a==='settings'){globalThis.RPChessOpenSettings?.();return;}
+ if(a==='menu'){leave();return;}
  if(a==='search'||a==='again'){void beginSearch();return;}
  if(a==='offer-draw'||a==='resign'){void matchAction(a==='offer-draw'?'draw':'resign');return;}
  if(a==='invite'){void makeRoom();return;}
