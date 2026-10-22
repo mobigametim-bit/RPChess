@@ -86,3 +86,95 @@
 .tournament-moves{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.75;color:#d9bf81;padding:12px 0;margin-top:14px;border-top:1px solid #ae8b4666;max-height:240px;overflow:auto;font-size:13px}
 @media(max-width:960px){.tournament-match-layout{grid-template-columns:1fr}.tournament-match-sidebar{max-width:820px;width:100%;margin:0 auto}}
 @media(orientation:portrait) and (max-width:600px){.tournament-board{border-width:3px}.tournament-playerbar{padding:7px 10px;margin:8px 0}.tournament-clock{min-width:92px}.tournament-match-sidebar{margin-top:10px}}
+
+
+/*
+ * Desktop / landscape Tournament acceptance.
+ * Legacy RPChess tablet-landscape CSS locks #app and active main to 100dvh
+ * with overflow:hidden. Tournament must provide its OWN keyboard- and
+ * wheel-scrollable surface, independent of that board-first game contract.
+ */
+@media (orientation: landscape) {
+  html[data-landscape-ui='1'] body.tournament-active #app > main.tournament-screen:not([hidden]) {
+    display:block !important;
+    width:100% !important;
+    height:100dvh !important;
+    min-height:0 !important;
+    max-height:100dvh !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    overscroll-behavior-y:contain;
+    scrollbar-gutter:stable;
+    padding:clamp(10px,1.8vh,22px) clamp(12px,2vw,28px) 24px !important;
+  }
+  /* Keep the tournament entirely isolated from other modes' body scroll lock. */
+  html[data-landscape-ui='1'] body.tournament-active {
+    overflow-x:hidden !important;
+  }
+  .tournament-screen .tournament-header { margin-bottom:clamp(8px,1.3vh,15px); }
+  .tournament-screen .tournament-card { padding:clamp(11px,1.8vh,20px); }
+  .tournament-screen .tournament-layout { gap:clamp(8px,1.2vh,14px); }
+  .tournament-screen .tournament-squad {
+    min-height:clamp(125px,19vh,160px);
+    flex-basis:clamp(104px,8vw,122px);
+    gap:3px;
+  }
+  .tournament-screen .tournament-squad img { height:clamp(66px,10vh,90px); }
+  .tournament-screen .tournament-squads { padding-bottom:8px; }
+  .tournament-screen .tournament-mode {
+    background-size:auto 130px;
+  }
+  .tournament-screen .tournament-actions button {
+    min-height:44px;
+  }
+  .tournament-screen .tournament-notice {
+    margin:0 auto !important;
+    padding:8px 12px;
+  }
+
+  /* On a laptop/desktop the 10+0 tile and the roster share a single row.
+     This keeps Start Match and Invite visible without sacrificing text. */
+  @media (min-width:940px) {
+    .tournament-screen .tournament-layout {
+      max-width:1300px;
+      grid-template-columns:minmax(235px,0.35fr) minmax(0,1fr);
+      align-items:stretch;
+    }
+    .tournament-screen .tournament-mode {
+      grid-column:1;
+      grid-row:1;
+    }
+    .tournament-screen .tournament-layout > .tournament-card:not(.tournament-mode) {
+      grid-column:2;
+      grid-row:1;
+    }
+    .tournament-screen .tournament-layout > .tournament-stats,
+    .tournament-screen .tournament-layout > .tournament-actions,
+    .tournament-screen .tournament-layout > .tournament-notice {
+      grid-column:1 / -1;
+    }
+  }
+
+  /* A match is board-first but it is NOT the old edge-to-edge combat layout:
+     reserve room for the title and both 10+0 clocks above/below the board. */
+  .tournament-screen .tournament-match-main {
+    max-width: min(100%, 760px);
+  }
+  .tournament-screen .tournament-board {
+    width:min(100%, 760px, max(290px, calc(100dvh - 315px)));
+    max-width:100%;
+    height:auto;
+    aspect-ratio:1;
+    margin-inline:auto;
+  }
+  .tournament-screen .tournament-playerbar {
+    padding:clamp(6px,1vh,10px) 12px;
+    margin:clamp(5px,.8vh,8px) 0;
+  }
+  .tournament-screen .tournament-clock {
+    font-size:clamp(22px,3.5vh,32px);
+  }
+  .tournament-screen .tournament-match-sidebar {
+    overflow:visible;
+  }
+}
