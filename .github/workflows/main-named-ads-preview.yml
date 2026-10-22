@@ -1,0 +1,71 @@
+name: Review named hero art and mobile rewarded ads
+
+on:
+  push:
+    branches:
+      - fix/main-named-promotion-restore-mobile-ads-20261023
+    paths:
+      - .github/workflows/main-named-ads-preview.yml
+      - main-fixes-preview/**
+      - game/**
+      - tests/**
+      - scripts/**
+      - package.json
+      - package-lock.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: main-named-ads-preview
+  cancel-in-progress: true
+
+jobs:
+  verify-and-preview:
+    if: github.repository == 'mobigametim-bit/RPChess'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Restore asset transform cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Validate and build from main-based fix branch
+        run: |
+          npm ci --no-audit --no-fund
+          npm run gate:local
+      - name: Install real Chromium
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+      - name: Verify named sprites, promotion and saved combat return
+        run: RPCHESS_BROWSER_TEST=combat-resume-browser.cjs npm run test:browser
+      - name: Verify rewarded mobile ad Bridge and UI
+        run: node tests/monetization.cjs
+      - name: Publish separate acceptance Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config main-fixes-preview/wrangler.toml
+      - name: Verify main-fixes preview
+        run: |
+          set -euo pipefail
+          base='https://rpchess-main-fixes-preview.mobigametim.workers.dev'
+          curl -fsS --retry 4 "$base/" -o /tmp/rpchess-main-fix.html
+          grep -q 'data-game-loading' /tmp/rpchess-main-fix.html
+          curl -fsS --retry 4 "$base/js/classic-chess-app.mjs" -o /tmp/rpchess-main-fix-chess.js
+          grep -q 'boardArtResolver' /tmp/rpchess-main-fix-chess.js
+          echo "Main-branch fixes preview: $base/"
