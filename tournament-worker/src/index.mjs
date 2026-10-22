@@ -91,9 +91,18 @@ export class TournamentLobby extends DurableObject {
   let queue=await this.ctx.storage.get('queue')||[];
   let matches=await this.ctx.storage.get('matched')||{};
   let rooms=await this.ctx.storage.get('rooms')||{};
-  queue=queue.filter(x=>x.at+120000>now);
+  // Only pair active seekers. A closed tab must not stay matchable for two
+  // minutes: the opponent would enter an empty game and lose on the clock.
+  queue=queue.filter(x=>(x.seenAt||x.at)+25000>now);
   for(const [code,room] of Object.entries(rooms))if(room.at+1200000<now)delete rooms[code];
-  if(path==='/v1/queue/status')return json(matches[uid]||{status:'waiting'});
+  if(path==='/v1/queue/status'){
+   if(matches[uid])return json(matches[uid]);
+   const entry=queue.find(x=>x.user.id===uid);
+   if(!entry)return json({status:'not_queued'});
+   entry.seenAt=now;
+   await this.ctx.storage.put('queue',queue);
+   return json({status:'waiting'});
+  }
   if(path==='/v1/room/status'){
    const code=String(body.code||'').toUpperCase(),room=rooms[code];
    if(room?.owner.id!==uid&&!matches[uid])return problem('room_not_found',404);
@@ -102,14 +111,18 @@ export class TournamentLobby extends DurableObject {
   if(path==='/v1/queue/cancel'||path==='/v1/room/cancel'){
    queue=queue.filter(x=>x.user.id!==uid);
    if(path==='/v1/room/cancel')for(const [code,room] of Object.entries(rooms))if(room.owner.id===uid)delete rooms[code];
-   await Promise.all([this.ctx.storage.put('queue',queue),this.ctx.storage.put('rooms',rooms)]);
+   // Cancel must discard old match pointers too. Otherwise the next
+   // queue/status poll may resurrect a previous game's result.
+   delete matches[uid];
+   await Promise.all([this.ctx.storage.put('queue',queue),this.ctx.storage.put('rooms',rooms),this.ctx.storage.put('matched',matches)]);
    return json({ok:true});
   }
   if(path==='/v1/room/create'){
    if(queue.some(x=>x.user.id===uid)||Object.values(rooms).some(x=>x.owner.id===uid))return problem('already_waiting',409);
    const code=crypto.randomUUID().replace(/-/g,'').slice(0,6).toUpperCase();
    rooms[code]={owner:body.user,race:safeRace(body.squad),at:now};
-   await this.ctx.storage.put('rooms',rooms);
+   delete matches[uid]; // a new invitation must not return an old result
+   await Promise.all([this.ctx.storage.put('rooms',rooms),this.ctx.storage.put('matched',matches)]);
    return json({status:'waiting',code});
   }
   if(path==='/v1/room/join'){
@@ -124,7 +137,14 @@ export class TournamentLobby extends DurableObject {
   }
   if(path==='/v1/queue/join'){
    if(matches[uid]&&!body.newSearch)return json(matches[uid]);
-   if(body.newSearch)delete matches[uid];
+   if(body.newSearch){
+    delete matches[uid];
+    queue=queue.filter(x=>x.user.id!==uid);
+    // Essential: previously we deleted matches[uid] in memory but only
+    // persisted 'queue'. First poll returned the finished OLD match and
+    // falsely displayed Victory/timeout seconds after pressing Find.
+    await this.ctx.storage.put('matched',matches);
+   }
    if(queue.some(x=>x.user.id===uid))return json({status:'waiting'});
    const power=safePower(body.power),shift=Math.min(150,Math.max(0,body.lossStreak||0)>=2?120:0);
    const desired=power-shift;
@@ -141,7 +161,7 @@ export class TournamentLobby extends DurableObject {
     await Promise.all([this.ctx.storage.put('queue',queue),this.ctx.storage.put('matched',matches)]);
     return json(made);
    }
-   queue.push({user:body.user,race:safeRace(body.squad),power,at:now});
+   queue.push({user:body.user,race:safeRace(body.squad),power,at:now,seenAt:now});
    await this.ctx.storage.put('queue',queue);
    return json({status:'waiting'});
   }
