@@ -64,8 +64,16 @@ jobs:
         run: |
           set -euo pipefail
           base='https://rpchess-main-fixes-preview.mobigametim.workers.dev'
-          curl -fsS --retry 4 "$base/" -o /tmp/rpchess-main-fix.html
-          grep -q 'data-game-loading' /tmp/rpchess-main-fix.html
-          curl -fsS --retry 4 "$base/js/classic-chess-app.mjs" -o /tmp/rpchess-main-fix-chess.js
-          grep -q 'boardArtResolver' /tmp/rpchess-main-fix-chess.js
-          echo "Main-branch fixes preview: $base/"
+          for attempt in $(seq 1 12); do
+            if curl -fsS --max-time 20 "$base/" -o /tmp/rpchess-main-fix.html &&
+              grep -q 'data-game-loading' /tmp/rpchess-main-fix.html &&
+              curl -fsS --max-time 20 "$base/js/classic-chess-app.mjs" -o /tmp/rpchess-main-fix-chess.js &&
+              grep -q 'boardArtResolver' /tmp/rpchess-main-fix-chess.js; then
+              echo "Main-branch fixes preview: $base/"
+              exit 0
+            fi
+            echo "Preview still propagating (attempt $attempt/12)"
+            sleep 5
+          done
+          echo "::error::Main-fixes Worker preview did not serve fresh UI and chess assets"
+          exit 1
