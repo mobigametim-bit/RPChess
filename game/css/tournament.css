@@ -160,12 +160,14 @@
   .tournament-screen .tournament-match-main {
     max-width: min(100%, 760px);
   }
-  .tournament-screen .tournament-board {
-    width:min(100%, 760px, max(290px, calc(100dvh - 315px)));
-    max-width:100%;
-    height:auto;
-    aspect-ratio:1;
-    margin-inline:auto;
+  html[data-landscape-ui='1'] body.tournament-active .tournament-screen .tournament-board {
+    /* Beat the legacy global .classic-board { width/height:100dvh!important }. */
+    width:min(100%, 760px, max(290px, calc(100dvh - 315px))) !important;
+    max-width:100% !important;
+    height:auto !important;
+    aspect-ratio:1 !important;
+    border:clamp(3px,.5vw,6px) solid #caa65b !important;
+    margin-inline:auto !important;
   }
   .tournament-screen .tournament-playerbar {
     padding:clamp(6px,1vh,10px) 12px;
