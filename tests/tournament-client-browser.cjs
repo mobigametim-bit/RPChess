@@ -141,8 +141,26 @@ try {
  }
  // Mouse and touch dragging are the primary Tourney controls. The original
  // tap-source/tap-destination path remains available as an alternative.
+ const moveResponses=[];
+ white.on('response',response=>{
+  if(response.url().includes('/v1/match/')&&response.url().endsWith('/move'))
+   moveResponses.push({status:response.status(),url:response.url()});
+ });
  await dragMouse(white,'e2','e4');
- await black.waitForFunction(()=>!!document.querySelector('[data-tour-board] [data-square="e4"] .classic-piece'),null,{timeout:16000});
+ try {
+  await black.waitForFunction(()=>!!document.querySelector('[data-tour-board] [data-square="e4"] .classic-piece'),null,{timeout:16000});
+ } catch(error) {
+  const debug=await white.evaluate(()=>({
+   currentPage:globalThis.RPChessTournament?.page,
+   turn:document.querySelector('[data-tour-turn]')?.textContent,
+   selected:[...document.querySelectorAll('[data-tour-board] .is-selected')].map(n=>n.dataset.square),
+   ghostCount:document.querySelectorAll('.rpchess-piece-drag-ghost').length,
+   canMove:document.querySelector('[data-tour-board]')?.dataset.playerColor,
+   sourcePiece:!!document.querySelector('[data-square="e2"] .classic-piece'),
+   destinationPiece:!!document.querySelector('[data-square="e4"] .classic-piece')
+  }));
+  throw new Error('Mouse drag did not reach server/opponent: '+JSON.stringify({moveResponses,debug,cause:error.message}));
+ }
  await dragTouch(black,'e7','e5');
  await white.waitForFunction(()=>!!document.querySelector('[data-tour-board] [data-square="e5"] .classic-piece'),null,{timeout:16000});
  await moveByClicks(white,'g1','f3');
