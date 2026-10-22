@@ -1198,3 +1198,25 @@ html[data-landscape-ui='1'] body.compact-combat-active .classic-shell {
     font-size:16px !important;
   }
 }
+
+
+/* Tournament adds one primary menu action. Preserve the one-viewport
+   contract for full-height desktop (e.g. 1920×900, Chronicle open), not only
+   the short VK-height media query above. Keep every menu action visible. */
+@media (orientation: landscape) and (min-height: 861px) {
+  html[data-landscape-ui='1'] .reboot-menu-screen .reboot-wordmark {
+    margin-top: 5px !important;
+    margin-bottom: 9px !important;
+  }
+  html[data-landscape-ui='1'] .reboot-menu-screen .reboot-menu-actions {
+    gap: 5px !important;
+  }
+  html[data-landscape-ui='1'] .reboot-menu-screen .reboot-menu-secondary {
+    margin-top: 0 !important;
+    gap: 5px !important;
+  }
+  html[data-landscape-ui='1'] .reboot-menu-screen .reboot-menu-actions .reboot-button {
+    min-height: 40px !important;
+    padding-block: 5px !important;
+  }
+}
