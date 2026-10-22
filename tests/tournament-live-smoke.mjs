@@ -39,7 +39,7 @@ const id=joined.matchId;
 const prefix='/v1/match/'+encodeURIComponent(id);
 const pa=await pass(prefix+'/snapshot',{token:white,body:{}});
 const pb=await pass(prefix+'/snapshot',{token:black,body:{}});
-assert.equal(pa.status,'playing');assert.equal(pa.turn,'w');assert.equal(pa.remaining.w,600000);
+assert.equal(pa.status,'playing');assert.equal(pa.turn,'w');assert(pa.remaining.w<=600000&&pa.remaining.w>=595000,'White clock starts counting as soon as the match begins');
 assert.equal(pa.remaining.b,600000);
 assert.equal(pa.moves.length,0);
 assert.notEqual(pa.playerColor,pb.playerColor);
