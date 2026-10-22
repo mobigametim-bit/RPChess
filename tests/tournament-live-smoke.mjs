@@ -77,4 +77,30 @@ assert.notEqual(repolled.matchId,found.matchId,'Old completed match must be clea
 if(restarted.status==='waiting')assert.equal(repolled.status,'waiting','New search remains queued');
 await pass('/v1/queue/cancel',{token:q1,body:{}});
 assert.equal((await pass('/v1/queue/status',{token:q1,body:{}})).status,'not_queued','Cancel leaves no phantom queue');
-console.log('TOURNAMENT LIVE SMOKE PASS: health, two signed guests, private room, turns, anti-forgery, reconnect, resign, queue');
+// Regression: a saved 2200-Power profile and a fresh incognito 500-Power
+// guest must eventually pair even when BOTH have already joined. Previously
+// match tolerance capped at 600 and status polling never retried pairing.
+const veteran=await guest('QA-power-veteran',2200);
+const newcomer=await guest('QA-fresh-incognito',500);
+const veteranJoin=await pass('/v1/queue/join',{token:veteran,body:{squad:'humans',power:2200,newSearch:true}});
+assert.equal(veteranJoin.status,'waiting','High-Power seeker enters queue');
+const newcomerJoin=await pass('/v1/queue/join',{token:newcomer,body:{squad:'humans',power:500,newSearch:true}});
+assert.equal(newcomerJoin.status,'waiting','Power mismatch does not immediately ignore preference');
+let matchedId='';
+for(let i=0;i<24;i++){
+ await new Promise(resolve=>setTimeout(resolve,1000));
+ const left=await pass('/v1/queue/status',{token:veteran,body:{}});
+ const right=await pass('/v1/queue/status',{token:newcomer,body:{}});
+ if(left.status==='matched'&&right.status==='matched'){
+  assert.equal(left.matchId,right.matchId,'Both polling clients enter the same real match');
+  matchedId=left.matchId;
+  break;
+ }
+ assert(['waiting','matched'].includes(left.status)&&['waiting','matched'].includes(right.status),
+  'Both clients stay queued until paired');
+}
+assert(matchedId,'Widening Power tolerance must match a veteran and fresh incognito guest');
+const crossSnapshot=await pass('/v1/match/'+matchedId+'/snapshot',{token:newcomer,body:{}});
+assert.equal(crossSnapshot.status,'playing');
+await pass('/v1/match/'+matchedId+'/resign',{token:newcomer,body:{}});
+console.log('TOURNAMENT LIVE SMOKE PASS: health, signed guests, private room, turns, anti-forgery, reconnect, resign, and expanding live queue');
