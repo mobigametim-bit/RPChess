@@ -1,7 +1,7 @@
 /* Shared pointer drag input for real 8x8 chess boards.
    Click-to-select remains authoritative: drag begins only after a short move.
    The move is committed by the owning screen's existing rules/validation. */
-function attachPieceDrag(board, { canPick, onStart, onDrop }) {
+function attachPieceDrag(board, { canPick, onStart, onDrop, onCancel }) {
   if (!board) return;
   board.classList.add('rpchess-draggable-board');
   let gesture = null;
@@ -95,7 +95,13 @@ function attachPieceDrag(board, { canPick, onStart, onDrop }) {
     if (dragging) onDrop(from, target && target.dataset.square !== from ? target.dataset.square : null);
   }
 
-  function cancel() { reset(); }
+  function cancel() {
+    const wasDragging=Boolean(gesture?.dragging);
+    reset();
+    // Optional: an owning screen may be holding its board DOM stable while a
+    // drag is active. A cancelled pointer/blur must release that state.
+    if(wasDragging)onCancel?.();
+  }
 
   board.addEventListener('pointerdown', event => {
     // A new real press must never be mistaken for the synthetic click from
