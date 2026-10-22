@@ -71,6 +71,9 @@ export default {
   else if(path.startsWith('/v1/match/')){
    const [,v,kind,id,...tail]=path.split('/');
    if(!/^[a-zA-Z0-9-]{8,80}$/.test(id||''))return json({error:'invalid_match_id'},400,cors);
+   if(!['snapshot','move','draw','resign'].includes(tail[0]||'snapshot'))
+    return json({error:'unsupported_match_action'},403,cors);
+   // Match initialization is private to the matchmaking Durable Object.
    stub=route(env,id);pathDo='/'+(tail[0]||'snapshot');
   }else return json({error:'not_found'},404,cors);
   const response=await internal(stub,pathDo,requestData);
