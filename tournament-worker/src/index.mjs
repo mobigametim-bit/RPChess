@@ -95,11 +95,42 @@ export class TournamentLobby extends DurableObject {
   // minutes: the opponent would enter an empty game and lose on the clock.
   queue=queue.filter(x=>(x.seenAt||x.at)+25000>now);
   for(const [code,room] of Object.entries(rooms))if(room.at+1200000<now)delete rooms[code];
+  // Searching must continue while BOTH players wait. A new /queue/join is not
+  // required for the power range to widen: each active /queue/status retries
+  // matching against the current queue.
+  const matchQueued=async (index)=>{
+   if(index<0)return null;
+   const seeker=queue[index];
+   let partner=-1,best=Infinity;
+   for(let i=0;i<queue.length;i++){
+    if(i===index||queue[i].user.id===seeker.user.id)continue;
+    const other=queue[i];
+    // Prefer close Power first, then relax the range for a small player pool.
+    // 160 initially, +125 per second, eventually spanning the full 100–3500
+    // rating range. Use either seeker's or opponent's time already waiting.
+    const waited=Math.max(0,now-Math.min(seeker.at,other.at));
+    const width=Math.min(3500,160+Math.floor(waited/1000)*125);
+    const distance=Math.min(
+     Math.abs(other.power-(seeker.desired??seeker.power)),
+     Math.abs(seeker.power-(other.desired??other.power))
+    );
+    if(distance<=width&&distance<best){best=distance;partner=i;}
+   }
+   if(partner<0)return null;
+   const other=queue[partner];
+   const made=await this.createMatch(seeker.user,other.user,seeker.race,other.race,now);
+   matches[seeker.user.id]=made;matches[other.user.id]=made;
+   queue=queue.filter(x=>x.user.id!==seeker.user.id&&x.user.id!==other.user.id);
+   await Promise.all([this.ctx.storage.put('queue',queue),this.ctx.storage.put('matched',matches)]);
+   return made;
+  };
   if(path==='/v1/queue/status'){
    if(matches[uid])return json(matches[uid]);
-   const entry=queue.find(x=>x.user.id===uid);
-   if(!entry)return json({status:'not_queued'});
-   entry.seenAt=now;
+   const index=queue.findIndex(x=>x.user.id===uid);
+   if(index<0)return json({status:'not_queued'});
+   queue[index].seenAt=now;
+   const paired=await matchQueued(index);
+   if(paired)return json(paired);
    await this.ctx.storage.put('queue',queue);
    return json({status:'waiting'});
   }
@@ -147,21 +178,9 @@ export class TournamentLobby extends DurableObject {
    }
    if(queue.some(x=>x.user.id===uid))return json({status:'waiting'});
    const power=safePower(body.power),shift=Math.min(150,Math.max(0,body.lossStreak||0)>=2?120:0);
-   const desired=power-shift;
-   let partnerIndex=-1,best=Infinity;
-   for(let i=0;i<queue.length;i++){
-    const q=queue[i],width=Math.min(600,160+Math.floor((now-q.at)/15000)*85);
-    const distance=Math.abs(q.power-desired);
-    if(q.user.id!==uid&&distance<=width&&distance<best){best=distance;partnerIndex=i;}
-   }
-   if(partnerIndex>=0){
-    const [other]=queue.splice(partnerIndex,1);
-    const made=await this.createMatch(other.user,body.user,other.race,safeRace(body.squad),now);
-    matches[other.user.id]=made;matches[uid]=made;
-    await Promise.all([this.ctx.storage.put('queue',queue),this.ctx.storage.put('matched',matches)]);
-    return json(made);
-   }
-   queue.push({user:body.user,race:safeRace(body.squad),power,at:now,seenAt:now});
+   queue.push({user:body.user,race:safeRace(body.squad),power,desired:power-shift,at:now,seenAt:now});
+   const paired=await matchQueued(queue.length-1);
+   if(paired)return json(paired);
    await this.ctx.storage.put('queue',queue);
    return json({status:'waiting'});
   }
