@@ -26,6 +26,7 @@ async function exercise(browser, type) {
     await page.locator('[data-artifact-choice-modal]').waitFor();
     await page.locator('[data-artifact-choice="none"]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
+    await page.waitForFunction(()=>Boolean(globalThis.RPChessClassicChess?.engine&&globalThis.RPChessBattle&&globalThis.RPChessSkirmish));
     assert.strictEqual((await page.evaluate(({ key }) => JSON.parse(localStorage.getItem(key)).currentCombat?.type, { key:runKey })), type);
 
     const move = await page.evaluate(() => {
@@ -46,6 +47,7 @@ async function exercise(browser, type) {
     await page.reload({ waitUntil:'networkidle' });
     await page.locator('[data-continue-run]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
+    await page.waitForFunction(()=>Boolean(globalThis.RPChessClassicChess?.engine&&globalThis.RPChessBattle&&globalThis.RPChessSkirmish));
     const after = await page.evaluate(key => ({
       run:JSON.parse(localStorage.getItem(key)),
       fen:globalThis.RPChessClassicChess.snapshot().fen,
@@ -96,6 +98,7 @@ async function exercise(browser, type) {
       await page.reload({waitUntil:'networkidle'});
       await page.locator('[data-continue-run]').click();
       await page.locator('[data-classic-screen]:not([hidden])').waitFor();
+    await page.waitForFunction(()=>Boolean(globalThis.RPChessClassicChess?.engine&&globalThis.RPChessBattle&&globalThis.RPChessSkirmish));
       const advanced=await page.evaluate(()=>{
         const chess=globalThis.RPChessClassicChess;
         const before=chess.engine.pieceAt('b7');
@@ -111,6 +114,7 @@ async function exercise(browser, type) {
       await page.reload({waitUntil:'networkidle'});
       await page.locator('[data-continue-run]').click();
       await page.locator('[data-classic-screen]:not([hidden])').waitFor();
+    await page.waitForFunction(()=>Boolean(globalThis.RPChessClassicChess?.engine&&globalThis.RPChessBattle&&globalThis.RPChessSkirmish));
       const reloaded=await page.evaluate(()=>({
         piece:globalThis.RPChessClassicChess.engine.pieceAt('a8'),
         sprite:document.querySelector('[data-chess-board] [data-square="a8"] .classic-piece')?.getAttribute('src')
