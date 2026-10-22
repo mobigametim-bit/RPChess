@@ -56,4 +56,5 @@ try {
 }catch(error){console.error('TOURNAMENT TWO-BROWSER UI FAILURE',error.message,'pageErrors:',errors);throw error;}
 finally {await Promise.all([first?.context?.close(),second?.context?.close()]);await browser.close();}
 
+}
 main().catch(error=>{console.error(error);process.exitCode=1;});
