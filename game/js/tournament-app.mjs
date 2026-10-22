@@ -202,7 +202,7 @@ async function joinRoom(){
  try{await connect();const res=await call('/v1/room/join',{code,squad,power:readPlayerRating().power});if(res.status==='matched')openMatch(res);else{message=res.error||t('waitFriend');render();}}
  catch(err){message=err.message;render();}
 }
-button?.addEventListener('click',()=>{void Promise.resolve(globalThis.RPChessCloudReady).then(open);});
+button?.addEventListener('click',()=>{open();void Promise.resolve(globalThis.RPChessCloudReady).then(()=>{if(page==='setup')render();}).catch(()=>{});});
 root.addEventListener('click',event=>{
  const square=event.target.closest('[data-tour-board] [data-square]');
  if(square&&chess&&matchState?.status==='playing'){

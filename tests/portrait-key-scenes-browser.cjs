@@ -65,6 +65,13 @@ async function capturePhoneOrTablet(browser,width,height){
     await capture(page,'01-main-menu');
     assert.equal(await page.locator('[data-tournament-open]').count(),1,'Tournament menu button');
     await page.locator('[data-tournament-open]').click();
+    await page.waitForTimeout(300);
+    console.log('TOURNAMENT PORTRAIT DIAGNOSTIC',JSON.stringify(await page.evaluate(()=>({
+      available:!!globalThis.RPChessTournament,
+      rootExists:!!document.querySelector('[data-tournament-screen]'),
+      rootHidden:document.querySelector('[data-tournament-screen]')?.hidden,
+      menuHidden:document.querySelector('[data-reboot-foundation]')?.hidden
+    })),errors));
     await page.locator('[data-tournament-screen]:not([hidden])').waitFor();
     assert.equal(await page.locator('.tournament-squad').count(),14,'All tournament races');
     assert.equal(await page.locator('.tournament-squad:not([disabled])').count(),1,'Only Humans initially owned');
