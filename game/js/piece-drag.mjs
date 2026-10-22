@@ -8,8 +8,18 @@ function attachPieceDrag(board, { canPick, onStart, onDrop, onCancel }) {
   let suppressClick = null;
 
   function squareAt(x, y) {
-    const target = document.elementFromPoint(x, y)?.closest?.('[data-square]');
-    return target && board.contains(target) ? target : null;
+    // Pointer capture and top-level overlays (including translucent mobile UI)
+    // can retarget elementFromPoint during an active drag. The chess board is
+    // authoritative for the drop cell: hit-test its actual square rectangles.
+    const hit = document.elementFromPoint(x, y)?.closest?.('[data-square]');
+    if (hit && board.contains(hit)) return hit;
+    const bounds = board.getBoundingClientRect();
+    if (x < bounds.left || x >= bounds.right || y < bounds.top || y >= bounds.bottom) return null;
+    for (const cell of board.querySelectorAll('[data-square]')) {
+      const rect = cell.getBoundingClientRect();
+      if (x >= rect.left && x < rect.right && y >= rect.top && y < rect.bottom) return cell;
+    }
+    return null;
   }
 
   function removeFeedback() {
