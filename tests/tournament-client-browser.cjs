@@ -69,6 +69,20 @@ try {
  const colorA=await first.page.locator('[data-tour-board]').getAttribute('data-player-color');
  const colorB=await second.page.locator('[data-tour-board]').getAttribute('data-player-color');
  assert(['w','b'].includes(colorA)&&colorB!==colorA,'Two humans must have opposite colors');
+ // Shared board theme must ALWAYS be determined by the white-side race,
+ // not the local player's race. The same texture is shown to both players.
+ const initialBoardRaces=await Promise.all([first.page,second.page].map(page=>
+  page.locator('[data-tour-board]').getAttribute('data-board-race')));
+ assert.deepEqual(initialBoardRaces,['humans','humans'],
+  'Both clients must use the white squad board tiles');
+ for(const page of [first.page,second.page]){
+  const art=await page.locator('[data-tour-board]').evaluate(board=>({
+    light:board.style.getPropertyValue('--board-light-tile'),
+    dark:board.style.getPropertyValue('--board-dark-tile')
+  }));
+  assert(art.light.includes('races/humans/board/white.png')&&art.dark.includes('races/humans/board/black.png'),
+   'Tournament board must use real race tile PNG assets: '+JSON.stringify(art));
+ }
  const white=colorA==='w'?first.page:second.page;
  const black=colorB==='b'?second.page:first.page;
  async function move(page,from,to){
@@ -88,8 +102,10 @@ try {
  // The board, both chess clocks and the draw/resign/leave controls must fit
  // without scrolling at these viewport heights.
  for(const [screen,width,height,label] of [
-  [first.page,1792,852,'desktop-1792x852-live-pvp.png'],
-  [second.page,1366,768,'desktop-1366x768-live-pvp.png']
+  [first.page,1898,786,'desktop-1898x786-live-pvp.png'],
+  [second.page,1366,768,'desktop-1366x768-live-pvp.png'],
+  [first.page,1024,640,'desktop-1024x640-live-pvp.png'],
+  [second.page,900,500,'desktop-900x500-live-pvp.png']
  ]){
   await screen.setViewportSize({width,height});
   await screen.waitForTimeout(180);
@@ -101,7 +117,13 @@ try {
    return {width:innerWidth,height:innerHeight,board:board&&{left:board.left,right:board.right,top:board.top,bottom:board.bottom,width:board.width},
     bars:bars.map(b=>({top:b.top,bottom:b.bottom})),
     buttons:buttons.map(b=>b&&({top:b.top,bottom:b.bottom})),
-    panelScroll:getComputedStyle(document.querySelector('[data-tournament-screen]')).overflowY};
+    leftRail:el('.tournament-battle-rail')&&{left:el('.tournament-battle-rail').left,right:el('.tournament-battle-rail').right,top:el('.tournament-battle-rail').top,bottom:el('.tournament-battle-rail').bottom},
+    journal:el('[data-tour-history]')&&{top:el('[data-tour-history]').top,bottom:el('[data-tour-history]').bottom},
+    nav:[...document.querySelectorAll('.tournament-battle-nav button')].map(n=>({top:n.getBoundingClientRect().top,bottom:n.getBoundingClientRect().bottom})),
+    panelScroll:getComputedStyle(document.querySelector('[data-tournament-screen]')).overflowY,
+    scrollHeight:document.querySelector('[data-tournament-screen]').scrollHeight,
+    clientHeight:document.querySelector('[data-tournament-screen]').clientHeight,
+    boardRace:document.querySelector('[data-tour-board]').dataset.boardRace};
   });
   assert(layout.board&&layout.board.width>320&&layout.board.top>=0&&layout.board.bottom<=height,
    'Desktop chess board must fit: '+JSON.stringify(layout));
@@ -109,6 +131,17 @@ try {
    'Both player clocks must fit on desktop: '+JSON.stringify(layout));
   assert(layout.buttons.every(b=>b&&b.top>=0&&b.bottom<=height),
    'All match actions must fit on desktop: '+JSON.stringify(layout));
+  assert(layout.nav.length===2&&layout.nav.every(b=>b.top>=0&&b.bottom<=height),
+   'Settings and Main Menu must fit: '+JSON.stringify(layout));
+  assert(layout.journal&&layout.journal.top>=0&&layout.journal.bottom<=height,
+   'Move journal must remain in viewport: '+JSON.stringify(layout));
+  assert(layout.leftRail&&layout.leftRail.right<layout.board.left-3,
+   'Left-side panels must remain LEFT of the centered board: '+JSON.stringify(layout));
+  assert(Math.abs((layout.board.left+layout.board.right)/2-width/2)<=2.5 &&
+          Math.abs((layout.board.top+layout.board.bottom)/2-height/2)<=2.5,
+   'Board must be centered within WHOLE viewport, not remaining space: '+JSON.stringify(layout));
+  assert(layout.scrollHeight<=layout.clientHeight+2&&layout.panelScroll==='hidden',
+   'Landscape match must NOT require scrolling: '+JSON.stringify(layout));
   await screen.screenshot({path:path.join(dir,label)});
  }
  await white.locator('[data-tour-action="resign"]').click();
