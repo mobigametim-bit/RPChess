@@ -26,7 +26,19 @@ async function exercise(browser, type) {
     await page.locator('[data-artifact-choice-modal]').waitFor();
     await page.locator('[data-artifact-choice="none"]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
-    await page.waitForFunction(type=>Boolean(globalThis.RPChessClassicChess?.engine&&(type==='battle'?globalThis.RPChessBattle?.battlePlan:globalThis.RPChessSkirmish?.battlePlan)),type);
+    try {
+      await page.waitForFunction(type=>Boolean(globalThis.RPChessClassicChess?.engine&&(type==='battle'?globalThis.RPChessBattle?.battlePlan:globalThis.RPChessSkirmish?.battlePlan)),type,{timeout:12000});
+    } catch (error) {
+      const debug=await page.evaluate(()=>({
+        chess:!!globalThis.RPChessClassicChess, battle:!!globalThis.RPChessBattle,
+        skirmish:!!globalThis.RPChessSkirmish,
+        battlePlan:!!globalThis.RPChessBattle?.battlePlan,
+        skirmishPlan:!!globalThis.RPChessSkirmish?.battlePlan,
+        screen:!document.querySelector('[data-classic-screen]')?.hidden,
+        boardCells:document.querySelectorAll('[data-chess-board] [data-square]').length
+      }));
+      throw new Error(type+' chess owner unavailable: '+JSON.stringify({debug,errors,cause:error.message}));
+    }
     assert.strictEqual((await page.evaluate(({ key }) => JSON.parse(localStorage.getItem(key)).currentCombat?.type, { key:runKey })), type);
 
     const move = await page.evaluate(() => {
@@ -47,7 +59,19 @@ async function exercise(browser, type) {
     await page.reload({ waitUntil:'networkidle' });
     await page.locator('[data-continue-run]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
-    await page.waitForFunction(type=>Boolean(globalThis.RPChessClassicChess?.engine&&(type==='battle'?globalThis.RPChessBattle?.battlePlan:globalThis.RPChessSkirmish?.battlePlan)),type);
+    try {
+      await page.waitForFunction(type=>Boolean(globalThis.RPChessClassicChess?.engine&&(type==='battle'?globalThis.RPChessBattle?.battlePlan:globalThis.RPChessSkirmish?.battlePlan)),type,{timeout:12000});
+    } catch (error) {
+      const debug=await page.evaluate(()=>({
+        chess:!!globalThis.RPChessClassicChess, battle:!!globalThis.RPChessBattle,
+        skirmish:!!globalThis.RPChessSkirmish,
+        battlePlan:!!globalThis.RPChessBattle?.battlePlan,
+        skirmishPlan:!!globalThis.RPChessSkirmish?.battlePlan,
+        screen:!document.querySelector('[data-classic-screen]')?.hidden,
+        boardCells:document.querySelectorAll('[data-chess-board] [data-square]').length
+      }));
+      throw new Error(type+' chess owner unavailable: '+JSON.stringify({debug,errors,cause:error.message}));
+    }
     const after = await page.evaluate(key => ({
       run:JSON.parse(localStorage.getItem(key)),
       fen:globalThis.RPChessClassicChess.snapshot().fen,
@@ -98,7 +122,19 @@ async function exercise(browser, type) {
       await page.reload({waitUntil:'networkidle'});
       await page.locator('[data-continue-run]').click();
       await page.locator('[data-classic-screen]:not([hidden])').waitFor();
-    await page.waitForFunction(type=>Boolean(globalThis.RPChessClassicChess?.engine&&(type==='battle'?globalThis.RPChessBattle?.battlePlan:globalThis.RPChessSkirmish?.battlePlan)),type);
+    try {
+      await page.waitForFunction(type=>Boolean(globalThis.RPChessClassicChess?.engine&&(type==='battle'?globalThis.RPChessBattle?.battlePlan:globalThis.RPChessSkirmish?.battlePlan)),type,{timeout:12000});
+    } catch (error) {
+      const debug=await page.evaluate(()=>({
+        chess:!!globalThis.RPChessClassicChess, battle:!!globalThis.RPChessBattle,
+        skirmish:!!globalThis.RPChessSkirmish,
+        battlePlan:!!globalThis.RPChessBattle?.battlePlan,
+        skirmishPlan:!!globalThis.RPChessSkirmish?.battlePlan,
+        screen:!document.querySelector('[data-classic-screen]')?.hidden,
+        boardCells:document.querySelectorAll('[data-chess-board] [data-square]').length
+      }));
+      throw new Error(type+' chess owner unavailable: '+JSON.stringify({debug,errors,cause:error.message}));
+    }
       const advanced=await page.evaluate(()=>{
         const chess=globalThis.RPChessClassicChess;
         const before=chess.engine.pieceAt('b7');
@@ -114,7 +150,19 @@ async function exercise(browser, type) {
       await page.reload({waitUntil:'networkidle'});
       await page.locator('[data-continue-run]').click();
       await page.locator('[data-classic-screen]:not([hidden])').waitFor();
-    await page.waitForFunction(type=>Boolean(globalThis.RPChessClassicChess?.engine&&(type==='battle'?globalThis.RPChessBattle?.battlePlan:globalThis.RPChessSkirmish?.battlePlan)),type);
+    try {
+      await page.waitForFunction(type=>Boolean(globalThis.RPChessClassicChess?.engine&&(type==='battle'?globalThis.RPChessBattle?.battlePlan:globalThis.RPChessSkirmish?.battlePlan)),type,{timeout:12000});
+    } catch (error) {
+      const debug=await page.evaluate(()=>({
+        chess:!!globalThis.RPChessClassicChess, battle:!!globalThis.RPChessBattle,
+        skirmish:!!globalThis.RPChessSkirmish,
+        battlePlan:!!globalThis.RPChessBattle?.battlePlan,
+        skirmishPlan:!!globalThis.RPChessSkirmish?.battlePlan,
+        screen:!document.querySelector('[data-classic-screen]')?.hidden,
+        boardCells:document.querySelectorAll('[data-chess-board] [data-square]').length
+      }));
+      throw new Error(type+' chess owner unavailable: '+JSON.stringify({debug,errors,cause:error.message}));
+    }
       const reloaded=await page.evaluate(()=>({
         piece:globalThis.RPChessClassicChess.engine.pieceAt('a8'),
         sprite:document.querySelector('[data-chess-board] [data-square="a8"] .classic-piece')?.getAttribute('src')
