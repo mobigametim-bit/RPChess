@@ -4,6 +4,7 @@
 import { arenaSummary, normalizeArena, ARENA_KEY, SHARD_ICON } from './arena-core.mjs';
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { attachPieceDrag } from './piece-drag.mjs';
+import { applyPinIce } from './king-pin-ice.mjs';
 import { RACE_TAGS, RACE_LABELS, racePiecePath, applyRaceBoardTheme } from './race-assets.mjs';
 import { readPlayerRating } from './player-rating.mjs';
 import { currentLanguage, subscribe } from './i18n.mjs';
@@ -63,6 +64,7 @@ function render(){
 function boardMarkup(){
  if(!chess||!matchState)return '';
  const snapshot=chess.snapshot();
+ const checkedKing=snapshot.status.checked?snapshot.board.findIndex(piece=>piece?.type==='k'&&piece.color===snapshot.turn):-1;
  const reverse=matchState.playerColor==='b';
  const legal=selectedSquare?chess.legalMoves(selectedSquare).map(m=>m.to):[];
  let output='';
@@ -72,7 +74,7 @@ function boardMarkup(){
   const light=(rank+file)%2!==0;
   const img=piece?'<img class="classic-piece" draggable="false" alt="" src="'+racePiecePath(matchState.players.find(p=>p.color===piece.color)?.race||'humans',ROLE[piece.type],piece.color)+'">':'';
   const mark=legal.includes(sq)?'<span class="tournament-legal"></span>':'';
-  output+='<button type="button" class="classic-square '+(light?'classic-square--light':'classic-square--dark')+(selectedSquare===sq?' is-selected':'')+'" data-square="'+sq+'" aria-label="'+sq+'">'+img+mark+'</button>';
+  output+='<button type="button" class="classic-square '+(light?'classic-square--light':'classic-square--dark')+(selectedSquare===sq?' is-selected':'')+(idx===checkedKing?' classic-square--check':'')+'" data-square="'+sq+'" aria-label="'+sq+'">'+img+mark+'</button>';
  }
  return output;
 }
@@ -177,9 +179,14 @@ function highlightDragFrom(from){
 function refreshBoard(){
  const b=root.querySelector('[data-tour-board]');if(!b||!chess)return;
  applyRaceBoardTheme(b,matchState?.players?.find(p=>p.color==='w')?.race||'humans');
- // Keep original pointer targets alive through the drag even if an automatic
- // multiplayer snapshot arrives on the 2.4-second polling interval.
- if(!dragActive)b.innerHTML=boardMarkup();
+ // Keep original pointer targets alive through drag and keep the pin-ice
+ // overlays stable between unchanged 2.4-second server snapshots.
+ const boardKey=chess.fen()+'|'+(selectedSquare||'');
+ if(!dragActive&&b.dataset.renderKey!==boardKey){
+  b.innerHTML=boardMarkup();
+  applyPinIce(b,chess.snapshot());
+  b.dataset.renderKey=boardKey;
+ }
  const journal=root.querySelector('[data-tour-history]');
  if(journal)journal.textContent=matchState.moves.map((m,i)=> (i+1)+'. '+m.from+'–'+m.to).join('  ');
  const turn=root.querySelector('[data-tour-turn]');
