@@ -666,7 +666,7 @@ attachPieceDrag(board, {
 globalThis.RPChessClassicChess = {
   get engine() { return engine; },
   get moveLog() { return moveLog.map((entry) => ({ ...entry })); },
-  get combatOwner() { return combatOwner; }
+  get combatOwner() { return combatOwner; },
   newGame,
   openGameSetup,
   loadFen(fen, options = {}) { newGame(fen, options); return engine.snapshot(); },
