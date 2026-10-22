@@ -66,4 +66,15 @@ const found=await pass('/v1/queue/join',{token:q2,body:{squad:'humans',power:650
 assert.equal(found.status,'matched');
 const polled=await pass('/v1/queue/status',{token:q1,body:{}});
 assert.equal(polled.matchId,found.matchId,'Queue owner discovers match by polling');
+// Regression: a previous server-confirmed game must never appear as a new
+// "instant victory" after clicking Find Opponent again.
+const finishPrevious=await pass('/v1/match/'+found.matchId+'/resign',{token:q1,body:{}});
+assert.equal(finishPrevious.status,'finished');
+const restarted=await pass('/v1/queue/join',{token:q1,body:{squad:'humans',power:3500,newSearch:true}});
+assert.notEqual(restarted.matchId,found.matchId,'Old match cannot be returned by new search');
+const repolled=await pass('/v1/queue/status',{token:q1,body:{}});
+assert.notEqual(repolled.matchId,found.matchId,'Old completed match must be cleared from persisted lobby status');
+if(restarted.status==='waiting')assert.equal(repolled.status,'waiting','New search remains queued');
+await pass('/v1/queue/cancel',{token:q1,body:{}});
+assert.equal((await pass('/v1/queue/status',{token:q1,body:{}})).status,'not_queued','Cancel leaves no phantom queue');
 console.log('TOURNAMENT LIVE SMOKE PASS: health, two signed guests, private room, turns, anti-forgery, reconnect, resign, queue');

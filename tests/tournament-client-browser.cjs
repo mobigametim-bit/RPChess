@@ -113,6 +113,17 @@ try {
  }
  await white.locator('[data-tour-action="resign"]').click();
  await Promise.all([first.page.locator('.tournament-center h2').waitFor({timeout:16000}),second.page.locator('.tournament-center h2').waitFor({timeout:16000})]);
+ // Regression for real user's bug: the completed game's 2.4-second poll must
+ // NOT resurrect Victory / timeout after starting a new opponent search.
+ await white.locator('[data-tour-action="again"]').click();
+ await white.waitForTimeout(6100);
+ const state=await white.evaluate(()=>({
+  page:globalThis.RPChessTournament?.page,
+  resultVisible:!!document.querySelector('[data-tournament-screen] .tournament-center h2') &&
+    /Победа|Victory|Поражение|Defeat|Ничья|Draw/.test(document.querySelector('[data-tournament-screen] .tournament-center h2')?.textContent||'')
+ }));
+ assert(!state.resultVisible&&state.page==='search','New matchmaking must not reopen old match result: '+JSON.stringify(state));
+ await white.locator('[data-tour-action="cancel"]').click();
  assert.equal(errors.length,0,'No browser page errors: '+errors.join('|'));
  console.log('TOURNAMENT TWO-BROWSER UI PASS: 390x844 + 768x1024, invited real pair, 10+0 board, white/black moves and resign');
 }catch(error){console.error('TOURNAMENT TWO-BROWSER UI FAILURE',error.message,'pageErrors:',errors);throw error;}
