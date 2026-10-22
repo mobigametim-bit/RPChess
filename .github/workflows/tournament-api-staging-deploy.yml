@@ -6,6 +6,7 @@ on:
       - feature/tournament-pvp-mvp-20261022
     paths:
       - tournament-worker/**
+      - tests/tournament-live-smoke.mjs
       - .github/workflows/tournament-api-staging-deploy.yml
   workflow_dispatch:
 
@@ -52,5 +53,9 @@ jobs:
         run: |
           export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
           printf '%s' "$SESSION" | npx wrangler secret put PVP_SESSION_SECRET --config tournament-worker/wrangler.toml
+      - name: Real two-player PvP smoke (no currency issued)
+        env:
+          RPCHESS_TOURNAMENT_API: https://rpchess-tournament-preview.mobigametim.workers.dev
+        run: node tests/tournament-live-smoke.mjs
       - name: Final note
-        run: echo "Read the deployed workers.dev address in Wrangler output; existing leaderboard is untouched."
+        run: echo "Tournament staging Worker deployed and exercised; existing leaderboard is untouched."
