@@ -55,7 +55,7 @@
     gap:clamp(4px,.9vh,8px)!important;
   }
   html[data-landscape-ui='1'] .endless-run-actions .reboot-button{
-    height:auto!important;min-height:58px!important;height:58px!important;
+    height:auto!important;min-height:42px!important;height:42px!important;
     padding:clamp(3px,.8vh,7px) 12px!important;
     font-size:clamp(15px,1.4vw,22px)!important;line-height:1.25!important;
   }
