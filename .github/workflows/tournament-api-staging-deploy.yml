@@ -1,0 +1,47 @@
+name: Deploy Tournament PvP Staging API
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  staging:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/tournament-pvp-mvp-20261022'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Require staging credentials and independent session signing key
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SESSION: ${{ secrets.PVP_SESSION_SECRET }}
+        run: |
+          test -n "$TOKEN" || { echo "::error::CLOUDFLARE_API_TOKEN is missing"; exit 1; }
+          test -n "$ACCOUNT" || { echo "::error::CLOUDFLARE_ACCOUNT_ID is missing"; exit 1; }
+          test -n "$SESSION" || { echo "::error::PVP_SESSION_SECRET is missing"; exit 1; }
+          [ "$(printf '%s' "$SESSION" | wc -c)" -ge 40 ] || { echo "::error::PVP_SESSION_SECRET must be at least 40 characters"; exit 1; }
+      - name: Install and verify
+        run: |
+          npm ci --no-audit --no-fund
+          npx wrangler deploy --config tournament-worker/wrangler.toml --dry-run
+      - name: Deploy new Tournament Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy --config tournament-worker/wrangler.toml
+      - name: Set Tournament signing secret
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SESSION: ${{ secrets.PVP_SESSION_SECRET }}
+        run: |
+          printf '%s' "$SESSION" | npx wrangler secret put PVP_SESSION_SECRET --config tournament-worker/wrangler.toml
+      - name: Final note
+        run: echo "Read the deployed workers.dev address in Wrangler output; existing leaderboard is untouched."
