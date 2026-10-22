@@ -85,15 +85,68 @@ try {
  }
  const white=colorA==='w'?first.page:second.page;
  const black=colorB==='b'?second.page:first.page;
- async function move(page,from,to){
+ async function moveByClicks(page,from,to){
   const origin=page.locator('[data-tour-board] [data-square="'+from+'"]');
   const destination=page.locator('[data-tour-board] [data-square="'+to+'"]');
-  await origin.click(); await destination.click();
+  await origin.click();await destination.click();
  }
- await move(white,'e2','e4');
+ async function dragMouse(page,from,to){
+  const origin=await page.locator('[data-tour-board] [data-square="'+from+'"]').boundingBox();
+  const dest=await page.locator('[data-tour-board] [data-square="'+to+'"]').boundingBox();
+  assert(origin&&dest,'Mouse drag requires square positions');
+  const sx=origin.x+origin.width/2,sy=origin.y+origin.height/2;
+  const dx=dest.x+dest.width/2,dy=dest.y+dest.height/2;
+  await page.mouse.move(sx,sy);
+  await page.mouse.down();
+  await page.mouse.move((sx+dx)/2,(sy+dy)/2,{steps:6});
+  const ghost=page.locator('.rpchess-piece-drag-ghost');
+  await ghost.waitFor({state:'visible',timeout:5000});
+  const ghostState=await ghost.evaluate(img=>({
+    src:img.currentSrc,rect:img.getBoundingClientRect().toJSON(),
+    opacity:getComputedStyle(img).opacity,
+    display:getComputedStyle(img).display
+  }));
+  assert(ghostState.src.includes('pawn')&&ghostState.rect.width>10&&ghostState.opacity!=='0',
+    'Mouse drag must SHOW piece following cursor: '+JSON.stringify(ghostState));
+  await page.mouse.move(dx,dy,{steps:8});
+  await page.mouse.up();
+  await ghost.waitFor({state:'detached',timeout:5000});
+ }
+ async function dragTouch(page,from,to){
+  const origin=await page.locator('[data-tour-board] [data-square="'+from+'"]').boundingBox();
+  const dest=await page.locator('[data-tour-board] [data-square="'+to+'"]').boundingBox();
+  assert(origin&&dest,'Touch drag requires square positions');
+  const sx=origin.x+origin.width/2,sy=origin.y+origin.height/2;
+  const dx=dest.x+dest.width/2,dy=dest.y+dest.height/2;
+  const cdp=await page.context().newCDPSession(page);
+  const event=(type,x,y)=>cdp.send('Input.dispatchTouchEvent',{
+   type,touchPoints:type==='touchEnd'?[]:[{x,y,id:11,radiusX:6,radiusY:6,force:.8}]
+  });
+  try{
+   await event('touchStart',sx,sy);
+   for(let i=1;i<=7;i++)await event('touchMove',sx+(dx-sx)*i/14,sy+(dy-sy)*i/14);
+   const ghost=page.locator('.rpchess-piece-drag-ghost');
+   await ghost.waitFor({state:'visible',timeout:5000});
+   const state=await ghost.evaluate(img=>({
+    src:img.currentSrc,width:img.getBoundingClientRect().width,
+    top:img.getBoundingClientRect().top,
+    opacity:getComputedStyle(img).opacity
+   }));
+   assert(state.src.includes('pawn')&&state.width>10&&state.opacity!=='0',
+    'Finger drag must SHOW carried figure: '+JSON.stringify(state));
+   for(let i=8;i<=14;i++)await event('touchMove',sx+(dx-sx)*i/14,sy+(dy-sy)*i/14);
+   await event('touchEnd',dx,dy);
+   await ghost.waitFor({state:'detached',timeout:5000});
+  }finally{await cdp.detach();}
+ }
+ // Mouse and touch dragging are the primary Tourney controls. The original
+ // tap-source/tap-destination path remains available as an alternative.
+ await dragMouse(white,'e2','e4');
  await black.waitForFunction(()=>!!document.querySelector('[data-tour-board] [data-square="e4"] .classic-piece'),null,{timeout:16000});
- await move(black,'e7','e5');
+ await dragTouch(black,'e7','e5');
  await white.waitForFunction(()=>!!document.querySelector('[data-tour-board] [data-square="e5"] .classic-piece'),null,{timeout:16000});
+ await moveByClicks(white,'g1','f3');
+ await black.waitForFunction(()=>!!document.querySelector('[data-tour-board] [data-square="f3"] .classic-piece'),null,{timeout:16000});
  assert.equal(await white.locator('[data-tour-board] .classic-piece').count(),32,'No vanished pieces');
  fs.mkdirSync(dir,{recursive:true});
  await first.page.screenshot({path:path.join(dir,'phone-390x844-live-pvp.png'),fullPage:true});
@@ -158,7 +211,7 @@ try {
  assert(!state.resultVisible&&state.page==='search','New matchmaking must not reopen old match result: '+JSON.stringify(state));
  await white.locator('[data-tour-action="cancel"]').click();
  assert.equal(errors.length,0,'No browser page errors: '+errors.join('|'));
- console.log('TOURNAMENT TWO-BROWSER UI PASS: 390x844 + 768x1024, invited real pair, 10+0 board, white/black moves and resign');
+ console.log('TOURNAMENT TWO-BROWSER UI PASS: real mouse drag and touch drag with visible ghost, click-to-move, two players and resign');
 }catch(error){console.error('TOURNAMENT TWO-BROWSER UI FAILURE',error.message,'pageErrors:',errors);throw error;}
 finally {await Promise.all([first?.context?.close(),second?.context?.close(),desktop?.context?.close()]);await browser.close();}
 
