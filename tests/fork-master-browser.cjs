@@ -8,14 +8,14 @@ const id='tactics.fork_master',key='rpchess.reboot.v1.run';
 const colorsFen='7k/8/8/1r6/3N2p1/5q2/8/K7 w - - 0 1';
 const futureFen='8/8/1r3k2/8/8/2N5/8/K7 w - - 0 1';
 const screenshots=path.resolve(__dirname,'../test-results/fork-master');fs.mkdirSync(screenshots,{recursive:true});
-async function load(page,fen,arena=false){
-  await page.evaluate(({fen,arena})=>{
+async function load(page,fen,arena=false,combatOwner=null){
+  await page.evaluate(({fen,arena,combatOwner})=>{
     if(arena)window.RPChessArena.engine.reset(fen);
-    else window.RPChessClassicChess.loadFen(fen,{mode:'hotseat',playerColor:'w'});
-  },{fen,arena});
+    else window.RPChessClassicChess.loadFen(fen,{mode:'hotseat',playerColor:'w',combatOwner});
+  },{fen,arena,combatOwner});
 }
 async function verifyBoard(page,selector,label,arena=false){
-  await load(page,colorsFen,arena);await page.locator(selector+' [data-square="d4"]').click();
+  await load(page,colorsFen,arena,arena?null:label);await page.locator(selector+' [data-square="d4"]').click();
   await page.waitForFunction(selector=>document.querySelector(selector+' [data-square="f3"]')?.dataset.forkTarget==='red',selector);
   const targets=await page.locator(selector).evaluate(board=>Object.fromEntries([...board.querySelectorAll('[data-fork-target]')].map(c=>[c.dataset.square,c.dataset.forkTarget])));
   assert.deepStrictEqual(targets,{b5:'green',f3:'red'});
@@ -33,7 +33,7 @@ async function verifyBoard(page,selector,label,arena=false){
   await page.screenshot({path:path.join(screenshots,label+'-targets.png')});
   await page.locator(selector+' [data-square="d4"]').click();
   assert.strictEqual(await page.locator(selector+' .classic-fork-silhouette').count(),0);
-  await load(page,futureFen,arena);await page.locator(selector+' [data-square="c3"]').click();
+  await load(page,futureFen,arena,arena?null:label);await page.locator(selector+' [data-square="c3"]').click();
   await page.waitForFunction(selector=>document.querySelector(selector+' [data-square="d5"]')?.dataset.forkMove==='1',selector);
   const fork=await page.locator(selector+' [data-square="d5"]').evaluate(c=>{
     const s=getComputedStyle(c,'::before');return {image:s.backgroundImage,border:s.borderWidth,radius:s.borderRadius,pointer:s.pointerEvents,width:s.width,height:s.height};
@@ -90,7 +90,7 @@ async function verifyBoard(page,selector,label,arena=false){
       assert.strictEqual(await page.locator('[data-artifact-choice-modal]').count(),0);
       assert.strictEqual(await page.evaluate(({key,id})=>JSON.parse(localStorage.getItem(key)).artifacts[id],{key,id}),1);
       await verifyBoard(page,'[data-chess-board]',type);
-      await page.setViewportSize({width:1440,height:900});await load(page,colorsFen);await page.locator('[data-chess-board] [data-square="d4"]').click();
+      await page.setViewportSize({width:1440,height:900});await load(page,colorsFen,false,type);await page.locator('[data-chess-board] [data-square="d4"]').click();
       await page.screenshot({path:path.join(screenshots,type+'-desktop.png')});
       assert.deepStrictEqual(errors,[]);console.log(`${type}: pulse masks/colors, fork replaces circle, click, check, mobile/RU/EN, reduced motion and resume: PASS`);await page.close();
     }
