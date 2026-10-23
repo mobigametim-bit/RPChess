@@ -63,7 +63,7 @@ function route(id) {
         snapshot() { return { degraded:false }; },
         async chooseMove() { return null; }
       });
-      globalThis.RPChessClassicChess.loadFen(fen, { mode:'ai', playerColor:'w', aiElo:800 });
+      globalThis.RPChessClassicChess.loadFen(fen, { mode:'ai', playerColor:'w', aiElo:800, combatOwner:'battle' });
       globalThis.RPChessBattle.syncBattleFromChess();
     }, OPEN_ROOK_FEN);
 
