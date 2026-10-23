@@ -69,7 +69,7 @@ function route(id) {
 
     await page.waitForFunction(() => {
       const src = document.querySelector('[data-square="a8"] .classic-piece')?.getAttribute('src') || '';
-      return src.includes('assets/races/animals/pieces/rook.png');
+      return src.includes('assets/races/animals/pieces/board/black/rook.png');
     });
 
     const movement = await page.evaluate(() => {
@@ -80,7 +80,7 @@ function route(id) {
     });
 
     assert.strictEqual(movement.ok, true, 'test rook move must be legal');
-    assert(movement.source.includes('assets/races/animals/pieces/rook.png'), `enemy rook must start with Animals art: ${movement.source}`);
+    assert(movement.source.includes('assets/races/animals/pieces/board/black/rook.png'), `enemy rook must start with Animals art: ${movement.source}`);
     assert.strictEqual(movement.flyer, movement.source, `moving enemy rook must keep the exact rendered race art instead of generic Classic art: ${movement.flyer}`);
     assert.deepStrictEqual(errors, []);
     console.log('Battle moving-piece race-art continuity: PASS');
