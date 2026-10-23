@@ -47,6 +47,9 @@ let selectedMoves = [];
 let moveLog = [];
 let pendingPromotion = null;
 let promotionArtResolver = null;
+let boardArtResolver = null;
+let onCommittedMove = null;
+let combatOwner = null;
 let aiThinking = false;
 let visualAnimating = false;
 let gameGeneration = 0;
@@ -305,7 +308,12 @@ function renderBoard() {
       if (piece) {
         const image = document.createElement('img');
         image.className = 'classic-piece classic-piece--new-race';
-        image.src = pieceAsset(piece);
+        // Combat scenes provide the hero's stable sprite before the cell enters
+        // the DOM. Painting generic art first and replacing it from a mutation
+        // observer caused promoted heroes to flash/revert after restoration.
+        const namedArt = boardArtResolver?.(square, piece) || null;
+        image.src = namedArt || pieceAsset(piece);
+        if (namedArt) image.dataset.personalizedArt = '1';
         image.alt = '';
         image.draggable = false;
         const marker = document.createElement('span');
@@ -467,7 +475,9 @@ function executeMove(from, to, promotion = null, { triggerAI = true } = {}) {
   }
 
   const san = sanNotation({ moving, from, to, promotion: result.move.promotion, resultMove: result.move, status: result.status, legalBefore });
-  moveLog.push({ color: moving.color, san, notation: san, move: result.move, captured: capturedPiece });
+  const committed = { color: moving.color, san, notation: san, move: result.move, captured: capturedPiece };
+  moveLog.push(committed);
+  onCommittedMove?.(committed, false);
   selected = null;
   selectedMoves = [];
   if (result.move.capture) audio()?.capture?.() || audio()?.tone?.(250, .08, 'triangle', .04);
@@ -559,6 +569,9 @@ function newGame(fen = null, options = {}) {
   cancelAI();
   gameConfig = normalizeConfig(options);
   promotionArtResolver = typeof options.promotionArtResolver==='function'?options.promotionArtResolver:null;
+  boardArtResolver = typeof options.boardArtResolver==='function'?options.boardArtResolver:null;
+  onCommittedMove = typeof options.onCommittedMove==='function'?options.onCommittedMove:null;
+  combatOwner = options.combatOwner || null;
   engine = new ClassicChessEngine(fen, { blockedSquares: options.blockedSquares, chess960: options.chess960 });
   selected = null;
   selectedMoves = [];
@@ -569,7 +582,9 @@ function newGame(fen = null, options = {}) {
     const captured = candidate?.capture ? engine.pieceAt(candidate.capture) : null;
     const result = engine.move(saved.from, saved.to, saved.promotion);
     if (!result.ok) throw new Error('Invalid saved combat move');
-    moveLog.push({ color: moving.color, san: sanNotation({moving,from:saved.from,to:result.move.to,promotion:result.move.promotion,resultMove:result.move,status:result.status,legalBefore}), move: result.move, captured });
+    const replayed = { color: moving.color, san: sanNotation({moving,from:saved.from,to:result.move.to,promotion:result.move.promotion,resultMove:result.move,status:result.status,legalBefore}), move: result.move, captured };
+    moveLog.push(replayed);
+    onCommittedMove?.(replayed, true);
   }
   pendingPromotion = null;
   closePromotion();
@@ -651,6 +666,7 @@ attachPieceDrag(board, {
 globalThis.RPChessClassicChess = {
   get engine() { return engine; },
   get moveLog() { return moveLog.map((entry) => ({ ...entry })); },
+  get combatOwner() { return combatOwner; },
   newGame,
   openGameSetup,
   loadFen(fen, options = {}) { newGame(fen, options); return engine.snapshot(); },

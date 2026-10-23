@@ -1,0 +1,8 @@
+name = "rpchess-main-fixes-preview"
+compatibility_date = "2026-10-23"
+
+# Isolated review deployment for the main-branch named heroes / VK ad fix.
+# Never overwrite the PvP PR164 or production Workers.
+[assets]
+directory = "../dist"
+not_found_handling = "single-page-application"

@@ -313,8 +313,11 @@ const ads = Object.freeze({
   },
   async show(format) {
     const normalized = normalizeAdFormat(format);
-    if (!normalized || !await this.supported(normalized)) return Object.freeze({ status:'unavailable', format:normalized || String(format || '') });
-    if (!await this.check(normalized)) return Object.freeze({ status:'unavailable', format:normalized });
+    if (!normalized || !isVKLaunch()) return Object.freeze({ status:'unavailable', format:normalized || String(format || '') });
+    // Launch directly from the player's tap. On VK mobile WebViews a preliminary
+    // SetSupportedHandlers/CheckNativeAds roundtrip can report a false negative,
+    // or consume the user gesture before ShowNativeAds reaches the host.
+    // VK itself decides whether inventory exists; grant only on result === true.
     try {
       const response = await sendVKRequest('VKWebAppShowNativeAds', { ad_format:normalized }, { timeoutMs:VK_AD_SHOW_TIMEOUT_MS });
       return Object.freeze({ status:response?.result === true ? 'completed' : 'error', format:normalized });
