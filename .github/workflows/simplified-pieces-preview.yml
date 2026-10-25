@@ -34,12 +34,6 @@ jobs:
         run: |
           npm ci --no-audit --no-fund
           npm run gate:local
-      - name: Install Chromium
-        run: |
-          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
-          npx playwright install --with-deps chromium
-      - name: Simplified chess glyph browser acceptance
-        run: RPCHESS_BROWSER_TEST=simplified-pieces-browser.cjs npm run test:browser
       - name: Publish isolated Cloudflare Preview
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -64,3 +58,9 @@ jobs:
             sleep 5
           done
           exit 1
+      - name: Install Chromium
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+      - name: Simplified chess glyph browser acceptance
+        run: RPCHESS_BROWSER_TEST=simplified-pieces-browser.cjs npm run test:browser
