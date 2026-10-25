@@ -8,7 +8,7 @@ import { renderThreatOverlay } from './artifact-combat-ui.mjs';
 import { applyPinIce } from './king-pin-ice.mjs';
 import { t, currentLanguage, subscribe } from './i18n.mjs';
 import { platform } from './platform.mjs';
-import { ARENA_KEY, ARENA_PREVIEW_ALL, SHARD_ICON, PIECE_CODE, OPPONENTS, OPPONENT_BY_ID, SQUAD_PRICES, ARTIFACT_PRICES, emptyArena, normalizeArena, arenaSummary, newMatch, chooseArtifact, finishMatch, claimDouble, purchaseSquad } from './arena-core.mjs';
+import { ARENA_KEY, SHARD_ICON, PIECE_CODE, OPPONENTS, OPPONENT_BY_ID, SQUAD_PRICES, ARTIFACT_PRICES, emptyArena, normalizeArena, arenaSummary, newMatch, chooseArtifact, finishMatch, claimDouble, purchaseSquad } from './arena-core.mjs';
 
 const copy = {
   ru:{foesAria:'Соперники: горизонтальная карусель',restoreError:'Не удалось восстановить сохранённую партию',engineUnavailable:'Шахматный движок недоступен',title:'Арена',back:'Главное меню',shards:'Осколки чести',squads:'Ваш отряд',enemies:'Соперники',section:'Раздел',power:'Мощь',wins:'Побед',losses:'Поражений',draws:'Ничьих',fight:'В бой!',locked:'Победите предыдущего соперника',buy:'Купить',select:'Выбрать',owned:'Выбран',resume:'Продолжить бой',offer:'Выберите артефакт',offerKicker:'ПЕРЕД СРАЖЕНИЕМ',offerText:'Выберите один артефакт на эту партию',none:'Без артефакта',noneText:'Начать бой без дополнительного эффекта.',insufficient:'Недостаточно осколков чести',victory:'Победа!',defeat:'Поражение',draw:'Ничья',continue:'Продолжить',again:'Сыграть ещё',rivals:'К соперникам',double:'Реклама: награда ×2',adError:'Реклама не завершена. Основная награда сохранена.',move:'Ваш ход',thinking:'Противник думает…',promotion:'Превращение пешки',result:'Партия завершена',drawText:'Следующий противник открывается за победу.',defeatText:'Можно попробовать снова.',opponent:'Соперник',squad:'Отряд',party:'Битва',white:'Белые',black:'Чёрные',journal:'ЖУРНАЛ БОЯ',moves:'Ходы',noMoves:'Ходов пока нет',check:'Шах!'},
@@ -288,7 +288,7 @@ async function aiTurn(){
   if(!uci){notice='engineUnavailable';render();return;}
   commit(uci.slice(0,2),uci.slice(2,4),uci.slice(4)||null);
 }
-function enter(){state=read();engine=null;selected=null;section=Math.floor((OPPONENT_BY_ID.get(state.match?.foe)?.index??(ARENA_PREVIEW_ALL?0:arenaSummary(state).highest))/7);notice='';visible(true);if(state.match?.phase==='result')dialogType='result';else if(state.match?.phase==='offer')dialogType='offer';else restoreMatch();render();globalThis.RPChessLoading?.requestVisibleAssets?.();if(!root.querySelector('[data-arena-catalog]')?.hidden)globalThis.dispatchEvent?.(new CustomEvent('rpchess:arena-catalog-shown'));}
+function enter(){state=read();engine=null;selected=null;section=Math.floor((OPPONENT_BY_ID.get(state.match?.foe)?.index??arenaSummary(state).highest)/7);notice='';visible(true);if(state.match?.phase==='result')dialogType='result';else if(state.match?.phase==='offer')dialogType='offer';else restoreMatch();render();globalThis.RPChessLoading?.requestVisibleAssets?.();if(!root.querySelector('[data-arena-catalog]')?.hidden)globalThis.dispatchEvent?.(new CustomEvent('rpchess:arena-catalog-shown'));}
 function leave(){adapter.stop();searchId++;thinking=false;stopMoveAnimation();engine=null;closeDialog();visible(false);}
 
 attachPieceDrag(board, {
