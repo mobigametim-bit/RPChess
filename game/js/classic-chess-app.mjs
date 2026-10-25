@@ -324,7 +324,7 @@ function renderBoard() {
         marker.setAttribute('aria-hidden', 'true');
         const symbol = document.createElement('span');
         symbol.className = 'rpchess-piece-symbol rpchess-piece-symbol--' + piece.color;
-        symbol.textContent = PIECE_GLYPHS[piece.color][piece.type];
+        symbol.textContent = PIECE_GLYPHS.b[piece.type];
         symbol.setAttribute('aria-hidden','true');
         button.append(image, marker, symbol);
       }
@@ -374,7 +374,7 @@ function openPromotion(from, to, color, choices) {
     label.textContent = pieceName(type);
     const symbol = document.createElement('span');
     symbol.className = 'rpchess-promotion-symbol rpchess-piece-symbol--' + color;
-    symbol.textContent = PIECE_GLYPHS[color][type];
+    symbol.textContent = PIECE_GLYPHS.b[type];
     symbol.setAttribute('aria-hidden','true');
     button.append(image, symbol, label);
     button.addEventListener('click', () => {
