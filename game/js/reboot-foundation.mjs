@@ -116,10 +116,11 @@ function readSettings() {
       music: Number.isFinite(value.music) ? value.music : 20,
       sfx: Number.isFinite(value.sfx) ? value.sfx : 80,
       reducedMotion: Boolean(value.reducedMotion),
+      simplePieces: value.simplePieces === true,
       language: currentLanguage()
     };
   } catch {
-    return { music: 20, sfx: 80, reducedMotion: false, language: currentLanguage() };
+    return { music: 20, sfx: 80, reducedMotion: false, simplePieces:false, language: currentLanguage() };
   }
 }
 
@@ -151,11 +152,14 @@ const languageModal = document.querySelector('[data-language-modal]');
 const music = document.querySelector('[data-music-volume]');
 const sfx = document.querySelector('[data-sfx-volume]');
 const reducedMotion = document.querySelector('[data-reduced-motion]');
+const simplePieces = document.querySelector('[data-simple-pieces]');
 
 if (music) music.value = String(settings.music);
 if (sfx) sfx.value = String(settings.sfx);
 if (reducedMotion) reducedMotion.checked = settings.reducedMotion;
+if (simplePieces) simplePieces.checked = settings.simplePieces;
 document.documentElement.dataset.reducedMotion = settings.reducedMotion ? '1' : '0';
+document.documentElement.dataset.simplePieces = settings.simplePieces ? '1' : '0';
 
 globalThis.RPChessRebootAudio = audio;
 globalThis.RPChessPlatform = platform;
@@ -244,8 +248,10 @@ function saveSettings({ previewSfx = false } = {}) {
   settings.music = Number(music?.value ?? settings.music);
   settings.sfx = Number(sfx?.value ?? settings.sfx);
   settings.reducedMotion = Boolean(reducedMotion?.checked);
+  settings.simplePieces = Boolean(simplePieces?.checked);
   writeSettings(settings);
   document.documentElement.dataset.reducedMotion = settings.reducedMotion ? '1' : '0';
+document.documentElement.dataset.simplePieces = settings.simplePieces ? '1' : '0';
   audio.applySettings(settings);
   if (previewSfx) audio.adjust();
 }
@@ -253,6 +259,10 @@ function saveSettings({ previewSfx = false } = {}) {
 music?.addEventListener('input', () => saveSettings());
 sfx?.addEventListener('input', () => saveSettings({ previewSfx: true }));
 reducedMotion?.addEventListener('change', () => {
+  audio.click();
+  saveSettings();
+});
+simplePieces?.addEventListener('change', () => {
   audio.click();
   saveSettings();
 });
