@@ -48,7 +48,7 @@ async function drag(page,from,to){
     await page.goto(url,{waitUntil:'networkidle'});
     assert.notEqual(await page.locator('html').getAttribute('data-simple-pieces'),'1','Detailed art default');
     await page.locator('[data-reboot-foundation] [data-settings]').first().click();
-    const toggle=page.locator('[data-simple-pieces]');
+    const toggle=page.locator('input[data-simple-pieces]');
     assert.equal(await toggle.isChecked(),false);
     await toggle.check();
     assert.equal(await page.locator('html').getAttribute('data-simple-pieces'),'1');
