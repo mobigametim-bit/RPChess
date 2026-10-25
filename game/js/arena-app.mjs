@@ -1,6 +1,7 @@
 import { ChessAIAdapter } from './chess-ai-adapter.mjs';
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { RACE_TAGS, RACE_LABELS, racePiecePath, boardRacePiecePath, applyRaceBoardTheme } from './race-assets.mjs';
+import { raceGlyphMarkup } from './race-glyphs.mjs';
 import { attachPieceDrag } from './piece-drag.mjs?v=20261022-portrait-motion1';
 import { ARTIFACTS, artifactById, combatArtifactOffer } from './artifact-core.mjs';
 import { renderThreatOverlay } from './artifact-combat-ui.mjs';
@@ -107,7 +108,7 @@ function renderBoard(){
     if(piece){
       const race=piece.color===state.match.playerColor?state.match.squad:foe.race;
       const pieceArt=boardRacePiecePath(race,({p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'})[piece.type],piece.color);
-      cell.innerHTML=img(pieceArt,'classic-piece'+(pieceArt.includes('/pieces/board/')?' classic-piece--new-race':''),'')+'<span class="classic-piece-marker classic-piece-marker--'+piece.color+'" data-piece-marker="'+piece.type+'" aria-hidden="true">'+glyphs[piece.color][piece.type]+'</span>'+'<span class="rpchess-piece-symbol rpchess-piece-symbol--'+piece.color+'" aria-hidden="true">'+glyphs.b[piece.type]+'</span>';
+      cell.innerHTML=img(pieceArt,'classic-piece'+(pieceArt.includes('/pieces/board/')?' classic-piece--new-race':''),'')+'<span class="classic-piece-marker classic-piece-marker--'+piece.color+'" data-piece-marker="'+piece.type+'" aria-hidden="true">'+glyphs[piece.color][piece.type]+'</span>'+'<span class="rpchess-piece-symbol rpchess-piece-symbol--'+piece.color+'" aria-hidden="true">'+raceGlyphMarkup(race,piece.type,piece.color)+'</span>';
       cell.querySelector('.classic-piece').draggable=false;
       if(animating&&square===animationDestination)cell.querySelector('.classic-piece').classList.add('classic-piece--arriving');
     }
@@ -231,7 +232,7 @@ function renderDialog(){
     const message=win?('+'+match.reward+(claimed?' ×2':'')+' '+l('shards')):loss?l('defeatText'):l('drawText');
     openDialog('result','<h2>'+l(win?'victory':loss?'defeat':'draw')+'</h2>'+icon+'<p>'+message+'</p><p class="arena-notice" role="status">'+escape(notice?l(notice):'')+'</p><div class="arena-result-actions">'+ad+button('continue',l('continue'),adBusy?'disabled':'')+(loss?button('again',l('again')):'')+'</div>');
   }else if(dialogType==='promotion'){
-    openDialog('promotion','<h2>'+l('promotion')+'</h2><div class="arena-promotions">'+['q','r','b','n'].map(type=>button('promote',glyphs[state.match.playerColor][type],'data-promotion="'+type+'"')).join('')+'</div>');
+    openDialog('promotion','<h2>'+l('promotion')+'</h2><div class="arena-promotions">'+['q','r','b','n'].map(type=>button('promote',raceGlyphMarkup(state.match.squad,type,state.match.playerColor),'data-promotion="'+type+'"')).join('')+'</div>');
   }
 }
 function render(){if(!root||root.hidden)return;renderCatalog();renderBoard();if(dialogType)renderDialog();}
