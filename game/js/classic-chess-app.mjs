@@ -1,6 +1,7 @@
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { attachPieceDrag } from './piece-drag.mjs?v=20261022-portrait-motion1';
 import { boardRacePiecePath } from './race-assets.mjs';
+import { raceGlyphMarkup } from './race-glyphs.mjs';
 import { ChessAIAdapter, ELO_LEVELS, profileForElo } from './chess-ai-adapter.mjs';
 import { currentLanguage, subscribe, translateLegacy } from './i18n.mjs';
 import { classicT } from '../localization/classic-ui.mjs';
@@ -324,7 +325,8 @@ function renderBoard() {
         marker.setAttribute('aria-hidden', 'true');
         const symbol = document.createElement('span');
         symbol.className = 'rpchess-piece-symbol rpchess-piece-symbol--' + piece.color;
-        symbol.textContent = PIECE_GLYPHS.b[piece.type];
+        const raceTag = image.src.match(/\/assets\/races\/([^/]+)\//)?.[1] || 'humans';
+        symbol.innerHTML = raceGlyphMarkup(raceTag, piece.type, piece.color);
         symbol.setAttribute('aria-hidden','true');
         button.append(image, marker, symbol);
       }
@@ -374,7 +376,7 @@ function openPromotion(from, to, color, choices) {
     label.textContent = pieceName(type);
     const symbol = document.createElement('span');
     symbol.className = 'rpchess-promotion-symbol rpchess-piece-symbol--' + color;
-    symbol.textContent = PIECE_GLYPHS.b[type];
+    symbol.innerHTML = raceGlyphMarkup(image.src.match(/\/assets\/races\/([^/]+)\//)?.[1] || 'humans', type, color);
     symbol.setAttribute('aria-hidden','true');
     button.append(image, symbol, label);
     button.addEventListener('click', () => {
