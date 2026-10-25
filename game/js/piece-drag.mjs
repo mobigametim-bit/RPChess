@@ -50,15 +50,21 @@ function attachPieceDrag(board, { canPick, onStart, onDrop }) {
     // Capture only after actual movement. Capturing during a simple tap would
     // redirect click-to-select events from the square to the board.
     try { board.setPointerCapture?.(gesture.id); } catch { /* pointer already ended */ }
-    const { from, src, size } = gesture;
+    const { from, src, size, glyph, glyphColor } = gesture;
     // The owner highlights legal destinations; re-rendering cells is safe.
     onStart(from);
     if (!gesture) return;
-    const ghost = document.createElement('img');
-    ghost.className = 'rpchess-piece-drag-ghost';
-    ghost.src = src;
-    ghost.alt = '';
-    ghost.draggable = false;
+    const ghost = document.createElement(glyph ? 'span' : 'img');
+    ghost.className = 'rpchess-piece-drag-ghost' + (glyph ? ' rpchess-piece-symbol rpchess-piece-symbol--' + glyphColor : '');
+    if (glyph) {
+      ghost.textContent = glyph;
+      ghost.style.fontSize = (size * .88) + 'px';
+      ghost.setAttribute('aria-hidden', 'true');
+    } else {
+      ghost.src = src;
+      ghost.alt = '';
+      ghost.draggable = false;
+    }
     ghost.style.width = size + 'px';
     ghost.style.height = size + 'px';
     document.body.append(ghost);
@@ -106,9 +112,13 @@ function attachPieceDrag(board, { canPick, onStart, onDrop }) {
     if (!square || !board.contains(square) || square.disabled) return;
     const image = square.querySelector('.classic-piece,.puzzle-piece');
     if (!image || !canPick(square.dataset.square)) return;
+    const symbol = document.documentElement.dataset.simplePieces === '1'
+      ? square.querySelector('.rpchess-piece-symbol') : null;
     gesture = {
       id:event.pointerId, pointerType:event.pointerType, from:square.dataset.square, x:event.clientX, y:event.clientY,
       src:image.currentSrc || image.src, size:square.getBoundingClientRect().width * .85,
+      glyph:symbol?.textContent || null,
+      glyphColor:symbol?.classList.contains('rpchess-piece-symbol--b') ? 'b' : 'w',
       dragging:false, ghost:null
     };
     window.addEventListener('pointermove', move, { passive:false });
