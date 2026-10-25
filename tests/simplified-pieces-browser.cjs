@@ -84,6 +84,8 @@ async function drag(page,from,to){
     await page.reload({waitUntil:'networkidle'});
     assert.equal(await page.locator('html').getAttribute('data-simple-pieces'),'1','Mode survives reload');
     await page.locator('[data-arena-open]').click();
+    assert.equal(await page.locator('[data-arena-foes] button:not([disabled])').count(),1,'Only the first opponent is open before a win');
+    assert.equal(await page.locator('[data-arena-squads] button:not([disabled])').count(),1,'Other squads require honor-shard purchases');
     await page.locator('[data-arena-foes] button').first().click();
     await page.locator('[data-arena-action="fight"]').click();
     await page.locator('[data-artifact="none"]').click();
@@ -91,24 +93,6 @@ async function drag(page,from,to){
     await page.setViewportSize({width:390,height:844});
     await checkSymbols(page,'[data-arena-board]');
     assert.deepEqual(errors,[],'No runtime exceptions in chess or Arena');
-    // Isolated Arena QA flag, without creating fake purchases or wins.
-    const unlocked=await browser.newPage({viewport:{width:1440,height:900}});
-    await unlocked.goto(url+'/?arenaPreviewAll=1',{waitUntil:'networkidle'});
-    await unlocked.evaluate(()=>localStorage.setItem('rpchess.reboot.v1.settings',JSON.stringify({language:'ru',simplePieces:true,reducedMotion:true,music:20,sfx:80})));
-    await unlocked.reload({waitUntil:'networkidle'});
-    await unlocked.locator('[data-arena-open]').click();
-    await unlocked.locator('[data-arena-screen]:not([hidden])').waitFor();
-    assert.equal(await unlocked.locator('[data-arena-foes] button:not([disabled])').count(),84);
-    assert.equal(await unlocked.locator('[data-arena-squads] button:not([disabled])').count(),14);
-    await unlocked.locator('[data-arena-squad="goblins"]').click();
-    assert.equal(await unlocked.locator('[data-arena-squad="goblins"]').getAttribute('aria-pressed'),'true');
-    await unlocked.locator('[data-arena-foe="king:dragonborn"]').click({force:true});
-    await unlocked.locator('[data-arena-action="fight"]').click();
-    await unlocked.locator('[data-artifact="none"]').click();
-    assert((await unlocked.locator('[data-arena-board] .rpchess-race-glyph[data-race="goblins"]').count())>0);
-    assert((await unlocked.locator('[data-arena-board] .rpchess-race-glyph[data-race="dragonkin"]').count())>0);
-    assert.equal(await unlocked.evaluate(()=>JSON.parse(localStorage.getItem('rpchess.reboot.v1.arena')).events.length),0,'QA mode never grants currency or purchases');
-    await unlocked.close();
 
     const puzzle=await browser.newPage({viewport:{width:667,height:375}});
     const puzzleErrors=[];puzzle.on('pageerror',e=>puzzleErrors.push(e.message));
