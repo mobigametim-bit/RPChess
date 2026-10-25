@@ -57,7 +57,8 @@ function attachPieceDrag(board, { canPick, onStart, onDrop }) {
     const ghost = document.createElement(glyph ? 'span' : 'img');
     ghost.className = 'rpchess-piece-drag-ghost' + (glyph ? ' rpchess-piece-symbol rpchess-piece-symbol--' + glyphColor : '');
     if (glyph) {
-      ghost.textContent = glyph;
+      if (glyph.startsWith('<svg')) ghost.innerHTML = glyph;
+      else ghost.textContent = glyph;
       ghost.style.fontSize = (size * .88) + 'px';
       ghost.setAttribute('aria-hidden', 'true');
     } else {
@@ -117,7 +118,7 @@ function attachPieceDrag(board, { canPick, onStart, onDrop }) {
     gesture = {
       id:event.pointerId, pointerType:event.pointerType, from:square.dataset.square, x:event.clientX, y:event.clientY,
       src:image.currentSrc || image.src, size:square.getBoundingClientRect().width * .85,
-      glyph:symbol?.textContent || null,
+      glyph:symbol?.querySelector('svg')?.outerHTML || symbol?.textContent || null,
       glyphColor:symbol?.classList.contains('rpchess-piece-symbol--b') ? 'b' : 'w',
       dragging:false, ghost:null
     };
