@@ -10,9 +10,9 @@
   <title>RPChess</title>
   <script>
     try {
-      if (JSON.parse(localStorage.getItem('rpchess.reboot.v1.settings') || '{}').language === 'en') {
-        document.documentElement.lang = 'en';
-      }
+      const settings = JSON.parse(localStorage.getItem('rpchess.reboot.v1.settings') || '{}');
+      if (settings.language === 'en') document.documentElement.lang = 'en';
+      document.documentElement.dataset.simplePieces = settings.simplePieces === true ? '1' : '0';
     } catch {}
   </script>
   <link rel="stylesheet" href="css/screen-loading.css?v=20261016-1">
@@ -31,6 +31,7 @@
   <link rel="stylesheet" href="css/piece-drag.css?v=20261018-drag1">
   <link rel="stylesheet" href="css/roster-formation.css?v=20261017-1">
   <link rel="stylesheet" href="css/portrait-ui.css?v=20261022-portrait-motion1" data-portrait-ui-css>
+  <link rel="stylesheet" href="css/simplified-pieces.css?v=20261025-2">
 </head>
 <body>
   <div class="game-loading-screen" data-game-loading role="status" aria-live="polite" aria-label="Загрузка игры">
@@ -337,6 +338,7 @@
         <label class="reboot-setting"><span data-i18n="settings.music">Музыка</span><input type="range" min="0" max="100" step="1" data-music-volume></label>
         <label class="reboot-setting"><span data-i18n="settings.sfx">Звуки</span><input type="range" min="0" max="100" step="1" data-sfx-volume></label>
         <label class="reboot-setting reboot-setting--toggle"><span data-i18n="settings.reducedMotion">Уменьшить анимации</span><input type="checkbox" data-reduced-motion></label>
+        <label class="reboot-setting reboot-setting--toggle"><span data-i18n="settings.simplePieces">Упрощённый режим</span><input type="checkbox" data-simple-pieces></label>
       </div>
     </section>
   </div>
@@ -365,10 +367,10 @@
   </div>
 
   <script type="module" src="js/screen-loading.mjs?v=20261016-1"></script>
-  <script type="module" src="js/reboot-foundation.mjs?v=20260827-roster-1"></script>
+  <script type="module" src="js/reboot-foundation.mjs?v=20261025-simple-pieces-1"></script>
   <script type="module" src="js/roster-app.mjs?v=20260827-skirmish-1"></script>
-  <script type="module" src="js/classic-chess-app.mjs?v=20261023-named-resume-ad1"></script>
-  <script type="module" src="js/arena-app.mjs?v=20261022-portrait-motion1"></script>
+  <script type="module" src="js/classic-chess-app.mjs?v=20261025-simple-pieces-2"></script>
+  <script type="module" src="js/arena-app.mjs?v=20261025-simple-pieces-2"></script>
   <script type="module" src="js/skirmish-app.mjs?v=20261023-named-resume-ad1"></script>
 </body>
 </html>

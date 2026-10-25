@@ -322,7 +322,11 @@ function renderBoard() {
         marker.textContent = PIECE_GLYPHS[piece.color][piece.type];
         marker.title = pieceName(piece.type);
         marker.setAttribute('aria-hidden', 'true');
-        button.append(image, marker);
+        const symbol = document.createElement('span');
+        symbol.className = 'rpchess-piece-symbol rpchess-piece-symbol--' + piece.color;
+        symbol.textContent = PIECE_GLYPHS.b[piece.type];
+        symbol.setAttribute('aria-hidden','true');
+        button.append(image, marker, symbol);
       }
 
       if (rankPosition === 7) {
@@ -368,7 +372,11 @@ function openPromotion(from, to, color, choices) {
     image.alt = '';
     const label = document.createElement('span');
     label.textContent = pieceName(type);
-    button.append(image, label);
+    const symbol = document.createElement('span');
+    symbol.className = 'rpchess-promotion-symbol rpchess-piece-symbol--' + color;
+    symbol.textContent = PIECE_GLYPHS.b[type];
+    symbol.setAttribute('aria-hidden','true');
+    button.append(image, symbol, label);
     button.addEventListener('click', () => {
       const pending = pendingPromotion;
       pendingPromotion = null;
@@ -387,7 +395,8 @@ function openPromotion(from, to, color, choices) {
 function setThinking(value) { aiThinking = Boolean(value); renderBoard(); renderStatus(); }
 
 function captureAnimationGeometry(from, to, moving, capturedPiece) {
-  if (prefersReducedMotion()) return null;
+  // In glyph mode, skip illustration-based flyers so fantasy art never flashes.
+  if (prefersReducedMotion() || document.documentElement.dataset.simplePieces === '1') return null;
   const sourceImage = board.querySelector(`[data-square="${from}"] .classic-piece`);
   const targetImage = board.querySelector(`[data-square="${to}"] .classic-piece`);
   if (!sourceImage) return null;

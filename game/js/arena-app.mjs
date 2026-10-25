@@ -107,7 +107,7 @@ function renderBoard(){
     if(piece){
       const race=piece.color===state.match.playerColor?state.match.squad:foe.race;
       const pieceArt=boardRacePiecePath(race,({p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'})[piece.type],piece.color);
-      cell.innerHTML=img(pieceArt,'classic-piece'+(pieceArt.includes('/pieces/board/')?' classic-piece--new-race':''),'')+'<span class="classic-piece-marker classic-piece-marker--'+piece.color+'" data-piece-marker="'+piece.type+'" aria-hidden="true">'+glyphs[piece.color][piece.type]+'</span>';
+      cell.innerHTML=img(pieceArt,'classic-piece'+(pieceArt.includes('/pieces/board/')?' classic-piece--new-race':''),'')+'<span class="classic-piece-marker classic-piece-marker--'+piece.color+'" data-piece-marker="'+piece.type+'" aria-hidden="true">'+glyphs[piece.color][piece.type]+'</span>'+'<span class="rpchess-piece-symbol rpchess-piece-symbol--'+piece.color+'" aria-hidden="true">'+glyphs.b[piece.type]+'</span>';
       cell.querySelector('.classic-piece').draggable=false;
       if(animating&&square===animationDestination)cell.querySelector('.classic-piece').classList.add('classic-piece--arriving');
     }
@@ -182,7 +182,7 @@ function stopMoveAnimation(){
   animating=false;animationDestination=null;
 }
 function moveGeometry(from,to,promo){
-  if(document.documentElement.dataset.reducedMotion==='1'||globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches||typeof Element.prototype.animate!=='function')return null;
+  if(document.documentElement.dataset.reducedMotion==='1'||document.documentElement.dataset.simplePieces==='1'||globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches||typeof Element.prototype.animate!=='function')return null;
   const candidate=engine.legalMoves(from).find(move=>(move.uciTo||move.to)===to&&(!move.promotion||move.promotion===promo));
   if(!candidate||candidate.castle)return null;
   const source=board.querySelector('[data-square="'+from+'"] .classic-piece');
