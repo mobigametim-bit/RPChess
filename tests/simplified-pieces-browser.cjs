@@ -95,11 +95,22 @@ async function drag(page,from,to){
     await puzzle.evaluate(()=>localStorage.setItem('rpchess.reboot.v1.settings',JSON.stringify({language:'ru',simplePieces:true,reducedMotion:false,music:20,sfx:80})));
     await puzzle.reload({waitUntil:'networkidle'});
     await startNewRun(puzzle);
-    await puzzle.evaluate(async()=>{
-      const {createTravelChoices}=await import('./js/travel-choice-core.mjs');
-      const {readRun,writeRun}=await import('./js/run-persistence.mjs');
-      const run=readRun();
-      writeRun({...run,currentTravelChoices:createTravelChoices({runId:run.id,types:['puzzle'],step:1}),activeTravelChoice:null});
+    // Reuse the working Training acceptance fixture: open a concrete puzzle
+    // route from the roster instead of generating random travel choices.
+    await puzzle.evaluate(()=>{
+      const key='rpchess.reboot.v1.run',run=JSON.parse(localStorage.getItem(key));
+      const choice={
+        id:'manual.puzzle.simplified-glyphs',step:1,type:'puzzle',label:'ЗАДАЧА',
+        stars:1,threatLabel:'СЛОЖНОСТЬ ★1',
+        flavor:'Тренировочная позиция для проверки шахматных символов.',
+        mechanicalHint:'Найдите точный ход.',seed:'manual-puzzle-simplified-glyphs',
+        supplyCostAtSelection:1,supplyPaid:1
+      };
+      localStorage.setItem(key,JSON.stringify({
+        ...run,id:'simplified-glyphs-browser-run',supplies:9,journeyStep:1,
+        currentTravelChoices:null,activeTravelChoice:choice,
+        currentPuzzle:null,lastPuzzle:null,puzzleHistory:[]
+      }));
       dispatchEvent(new CustomEvent('rpchess:run-updated'));
     });
     await puzzle.locator('[data-roster-travel]').click();
