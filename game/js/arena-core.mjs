@@ -3,7 +3,7 @@ import { ARTIFACTS } from './artifact-core.mjs';
 
 const ARENA_KEY = 'rpchess.reboot.v1.arena';
 // Isolated QA preview only. Never adds purchase/progress events or alters players' receipts.
-const ARENA_PREVIEW_ALL = typeof location !== 'undefined' && new URLSearchParams(location.search).get('arenaPreviewAll') === '1';
+export const ARENA_PREVIEW_ALL = typeof location !== 'undefined' && new URLSearchParams(location.search).get('arenaPreviewAll') === '1';
 const SHARD_ICON = 'assets/arena/mirror_shard.png';
 const PIECE_CODE = Object.freeze({ pawn:'p', knight:'n', bishop:'b', rook:'r', queen:'q', king:'k' });
 const OPPONENTS = Object.freeze(PIECE_TYPES.flatMap((type, typeIndex) => RACE_TAGS.map((race, raceIndex) => {
