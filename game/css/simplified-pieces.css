@@ -19,8 +19,8 @@
 }
 .rpchess-piece-symbol--w {
   color:#fffaf0;
-  -webkit-text-stroke:.35px #17202b;
-  text-shadow:0 2px 1px #17202b,0 0 4px rgba(7,15,22,.95);
+  -webkit-text-stroke:1px #17202b;
+  text-shadow:0 2px 2px #17202b,0 0 4px rgba(7,15,22,.8);
 }
 .rpchess-piece-symbol--b {
   color:#151b20;
