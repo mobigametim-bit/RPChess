@@ -2,6 +2,8 @@ import { RACE_TAGS, PIECE_TYPES, racePiecePath } from './race-assets.mjs';
 import { ARTIFACTS } from './artifact-core.mjs';
 
 const ARENA_KEY = 'rpchess.reboot.v1.arena';
+// Isolated QA preview only. Never adds purchase/progress events or alters players' receipts.
+const ARENA_PREVIEW_ALL = typeof location !== 'undefined' && new URLSearchParams(location.search).get('arenaPreviewAll') === '1';
 const SHARD_ICON = 'assets/arena/mirror_shard.png';
 const PIECE_CODE = Object.freeze({ pawn:'p', knight:'n', bishop:'b', rook:'r', queen:'q', king:'k' });
 const OPPONENTS = Object.freeze(PIECE_TYPES.flatMap((type, typeIndex) => RACE_TAGS.map((race, raceIndex) => {
@@ -62,7 +64,9 @@ function arenaSummary(state){
     }
     accepted.add(event.id);
   }
-  return {balance,owned,highest,stats,accepted};
+  return ARENA_PREVIEW_ALL
+    ? {balance,owned:new Set(RACE_TAGS),highest:OPPONENTS.length-1,stats,accepted}
+    : {balance,owned,highest,stats,accepted};
 }
 function addEvent(state,event){
   const normalized=normalizeArena(state);
