@@ -152,7 +152,7 @@ const languageModal = document.querySelector('[data-language-modal]');
 const music = document.querySelector('[data-music-volume]');
 const sfx = document.querySelector('[data-sfx-volume]');
 const reducedMotion = document.querySelector('[data-reduced-motion]');
-const simplePieces = document.querySelector('[data-simple-pieces]');
+const simplePieces = document.querySelector('input[data-simple-pieces]');
 
 if (music) music.value = String(settings.music);
 if (sfx) sfx.value = String(settings.sfx);
@@ -251,7 +251,7 @@ function saveSettings({ previewSfx = false } = {}) {
   settings.simplePieces = Boolean(simplePieces?.checked);
   writeSettings(settings);
   document.documentElement.dataset.reducedMotion = settings.reducedMotion ? '1' : '0';
-document.documentElement.dataset.simplePieces = settings.simplePieces ? '1' : '0';
+  document.documentElement.dataset.simplePieces = settings.simplePieces ? '1' : '0';
   audio.applySettings(settings);
   if (previewSfx) audio.adjust();
 }
