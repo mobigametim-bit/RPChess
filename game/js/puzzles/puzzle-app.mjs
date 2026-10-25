@@ -289,7 +289,7 @@ function renderBoard() {
         marker.setAttribute('aria-hidden', 'true');
         const symbol = document.createElement('span');
         symbol.className = 'rpchess-piece-symbol rpchess-piece-symbol--' + piece.color;
-        symbol.textContent = PIECE_GLYPHS[piece.color][piece.type];
+        symbol.textContent = PIECE_GLYPHS.b[piece.type];
         symbol.setAttribute('aria-hidden','true');
         button.append(image, marker, symbol);
       }
