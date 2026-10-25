@@ -14,6 +14,8 @@ async function checkSymbols(page,selector,count=32){
       glyphs:node.querySelectorAll('.rpchess-piece-symbol').length,
       white:white?.textContent,
       black:black?.textContent,
+      whiteColor:getComputedStyle(white).color,
+      blackColor:getComputedStyle(black).color,
       whiteDisplay:getComputedStyle(white).display,
       blackDisplay:getComputedStyle(black).display,
       imageOpacity:getComputedStyle(image).opacity,
@@ -21,8 +23,9 @@ async function checkSymbols(page,selector,count=32){
     };
   });
   assert.equal(visual.glyphs,count);
-  assert('♙♔♕♖♗♘'.includes(visual.white),'White must use Unicode chess outline');
-  assert('♟♚♛♜♝♞'.includes(visual.black),'Black must use Unicode filled chess glyph');
+  assert('♟♚♛♜♝♞'.includes(visual.white),'White must use the filled chess silhouettes, tinted white');
+  assert('♟♚♛♜♝♞'.includes(visual.black),'Black must use the same filled chess silhouettes');
+  assert.notEqual(visual.whiteColor,visual.blackColor,'White and black army silhouettes must have distinct fill colors');
   assert.equal(visual.whiteDisplay,'flex');assert.equal(visual.blackDisplay,'flex');
   assert.equal(visual.imageOpacity,'0');assert.equal(visual.glyphPointerEvents,'none');
 }
@@ -35,7 +38,7 @@ async function drag(page,from,to){
   const ghost=page.locator('.rpchess-piece-drag-ghost');
   await ghost.waitFor({timeout:3000});
   assert.equal(await ghost.evaluate(n=>n.tagName),'SPAN','Glyph mode must not show fantasy image drag ghost');
-  assert.equal(await ghost.textContent(),'♙');
+  assert.equal(await ghost.textContent(),'♟');
   await page.mouse.move(b.x+b.width/2,b.y+b.height/2,{steps:12});
   await page.mouse.up();
   await page.waitForFunction(()=>window.RPChessClassicChess?.engine?.pieceAt('e4')?.type==='p');
@@ -74,7 +77,7 @@ async function drag(page,from,to){
     assert.equal(await page.locator('[data-promotion-modal] img').first().evaluate(n=>getComputedStyle(n).display),'none');
     await page.locator('[data-promotion="q"]').click();
     await page.waitForFunction(()=>window.RPChessClassicChess?.engine?.pieceAt('a8')?.type==='q');
-    assert.equal(await page.locator('[data-chess-board] [data-square="a8"] .rpchess-piece-symbol').textContent(),'♕');
+    assert.equal(await page.locator('[data-chess-board] [data-square="a8"] .rpchess-piece-symbol').textContent(),'♛');
     await page.reload({waitUntil:'networkidle'});
     assert.equal(await page.locator('html').getAttribute('data-simple-pieces'),'1','Mode survives reload');
     await page.locator('[data-arena-open]').click();
