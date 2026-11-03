@@ -173,6 +173,12 @@ const { pathToFileURL } = require('url');
   assert.deepStrictEqual(sanJournal.map(m=>m.san),['f3','e5','g4','Qh4#'],
     'Lichess-style move journal uses accurate SAN including the final checkmate');
   assert.deepStrictEqual(sanJournal.map(m=>m.color),['w','b','w','b']);
+  assert.deepStrictEqual(sanJournal.map(m=>m.pieceType),['p','p','p','q'],
+    'the move journal preserves the original moving piece for glyphs, including pawn moves and checkmate');
+  assert.deepStrictEqual(review.reviewMoveJournal(['g1f3','g8f6']).map(m=>m.pieceType),['n','n'],
+    'the journal correctly distinguishes the white and black knight glyphs');
+  assert.equal(review.reviewMoveJournal(['e2e4','e7e5','g1f3','b8c6','f1c4','g8f6','e1g1'])[6].pieceType,'k',
+    'castling displays the moving king glyph rather than a rook or pawn');
   const completePositions=review.prepareFinishedReview({
     mode:'arena',finished:true,moves:['f2f3','e7e5','g2g4','d8h4'],playerColor:'w',allColors:true
   });
