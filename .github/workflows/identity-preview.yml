@@ -1,0 +1,67 @@
+name: Explicit commander portrait preview
+
+on:
+  push:
+    branches:
+      - feature/identity-require-portrait-20261103
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: identity-explicit-portrait-preview
+  cancel-in-progress: true
+
+jobs:
+  verify-preview:
+    # Playwright 1.54.2 requires an image it supports; ubuntu-latest has moved to 26.04.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Restore transformed asset cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Install and validate
+        run: |
+          npm ci --no-audit --no-fund
+          npm run gate:local
+      - name: Publish isolated Cloudflare Preview
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config identity-preview/wrangler.toml
+      - name: Verify published preview
+        run: |
+          set -euo pipefail
+          base='https://rpchess-identity-preview.mobigametim.workers.dev'
+          for attempt in $(seq 1 15); do
+            if curl -fsS --max-time 20 "$base/" -o /tmp/identity-preview.html &&
+              grep -q 'data-new-game' /tmp/identity-preview.html &&
+              curl -fsS --max-time 20 "$base/js/player-identity-chronicle.mjs" -o /tmp/identity-preview.mjs &&
+              grep -Fq 'selectedCommanderId=null' /tmp/identity-preview.mjs; then
+              echo "Explicit portrait preview: $base/"
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1
+      - name: Install Chromium
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+      - name: Explicit portrait and localization browser acceptance
+        run: RPCHESS_BROWSER_TEST=chronicle-localization-browser.cjs npm run test:browser
