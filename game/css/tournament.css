@@ -477,3 +477,19 @@
     border:0;margin:0;max-height:220px;overflow-y:auto;
   }
 }
+
+
+
+/* Shared regular/Fantasy switch sits beside the moves caption and avoids
+   spending vertical space from the journal on small landscape boards. */
+.tournament-journal-heading{
+ display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+ gap:4px;min-width:0;
+}
+.tournament-journal-heading h3{flex:0 0 auto;margin:0!important}
+.tournament-journal-heading .rpchess-board-view-toggle{
+ flex:0 0 auto;margin:0;min-height:34px;padding:1px 3px;gap:3px;
+}
+.tournament-journal-heading .rpchess-board-view-toggle__king{width:24px;height:28px}
+.tournament-journal-heading .rpchess-board-view-toggle__switch{width:46px;height:32px;flex-basis:46px}
+.tournament-journal-heading .rpchess-board-view-toggle__track{left:2px}

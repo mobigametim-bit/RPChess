@@ -85,6 +85,29 @@ try {
  }
  const white=colorA==='w'?first.page:second.page;
  const black=colorB==='b'?second.page:first.page;
+ // The Fantasy art toggle is local to each player and never alters the
+ // server-authoritative 10+0 match or the opponent's preferred artwork.
+ for(const client of [white,black]){
+  assert.equal(await client.locator('[data-tour-board] .classic-piece').count(),32,'Tournament retains 32 regular race figures');
+  assert.equal(await client.locator('[data-tour-board] .rpchess-fantasy-piece').count(),32,'Tournament also renders 32 Fantasy SVGs');
+  assert.equal(await client.locator('[data-tournament-screen] [data-board-view-switch]').count(),1,'One tournament art switch in the move journal');
+ }
+ await white.locator('[data-tournament-screen] [data-board-view-switch]').check();
+ const artMode=await white.evaluate(()=>{
+  const pawn=document.querySelector('[data-tour-board] [data-square="e2"]');
+  return {
+   mode:document.documentElement.dataset.simplePieces,
+   saved:JSON.parse(localStorage.getItem('rpchess.reboot.v1.settings')||'{}').simplePieces,
+   normalOpacity:getComputedStyle(pawn.querySelector('.classic-piece')).opacity,
+   symbolDisplay:getComputedStyle(pawn.querySelector('.rpchess-piece-symbol')).display
+  };
+ });
+ assert.equal(artMode.mode,'1','Tournament toggles the shared Fantasy mode');
+ assert.equal(artMode.saved,true,'Tournament shares saved piece-art settings');
+ assert.equal(artMode.normalOpacity,'0','Fantasy hides the regular race sprite without deleting it');
+ assert.equal(artMode.symbolDisplay,'flex','Fantasy SVG is displayed on the Tournament board');
+ assert.equal(await black.evaluate(()=>document.documentElement.dataset.simplePieces),'0',
+  'Another online player may independently stay in regular mode');
  async function moveByClicks(page,from,to){
   const origin=page.locator('[data-tour-board] [data-square="'+from+'"]');
   const destination=page.locator('[data-tour-board] [data-square="'+to+'"]');
@@ -106,7 +129,7 @@ try {
     opacity:getComputedStyle(img).opacity,
     display:getComputedStyle(img).display
   }));
-  assert(ghostState.src.includes('pawn')&&ghostState.rect.width>10&&ghostState.opacity!=='0',
+  assert((ghostState.src.includes('pawn')||ghostState.src.includes('P.svg'))&&ghostState.rect.width>10&&ghostState.opacity!=='0',
     'Mouse drag must SHOW piece following cursor: '+JSON.stringify(ghostState));
   await page.mouse.move(dx,dy,{steps:8});
   await page.mouse.up();
@@ -132,7 +155,7 @@ try {
     top:img.getBoundingClientRect().top,
     opacity:getComputedStyle(img).opacity
    }));
-   assert(state.src.includes('pawn')&&state.width>10&&state.opacity!=='0',
+   assert((state.src.includes('pawn')||state.src.includes('P.svg'))&&state.width>10&&state.opacity!=='0',
     'Finger drag must SHOW carried figure: '+JSON.stringify(state));
    for(let i=8;i<=14;i++)await event('touchMove',sx+(dx-sx)*i/14,sy+(dy-sy)*i/14);
    await event('touchEnd',dx,dy);

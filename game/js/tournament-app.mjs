@@ -4,6 +4,7 @@
 import { arenaSummary, normalizeArena, ARENA_KEY, SHARD_ICON } from './arena-core.mjs';
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { attachPieceDrag } from './piece-drag.mjs';
+import { fantasyPieceMarkup } from './fantasy-piece.mjs';
 import { applyPinIce } from './king-pin-ice.mjs';
 import { RACE_TAGS, RACE_LABELS, racePiecePath, applyRaceBoardTheme } from './race-assets.mjs';
 import { readPlayerRating } from './player-rating.mjs';
@@ -73,8 +74,9 @@ function boardMarkup(){
   const sq='abcdefgh'[file]+(rank+1),piece=snapshot.board[idx];
   const light=(rank+file)%2!==0;
   const img=piece?'<img class="classic-piece" draggable="false" alt="" src="'+racePiecePath(matchState.players.find(p=>p.color===piece.color)?.race||'humans',ROLE[piece.type],piece.color)+'">':'';
+  const symbol=piece?'<span class="rpchess-piece-symbol" aria-hidden="true">'+fantasyPieceMarkup(piece.type,piece.color)+'</span>':'';
   const mark=legal.includes(sq)?'<span class="tournament-legal"></span>':'';
-  output+='<button type="button" class="classic-square '+(light?'classic-square--light':'classic-square--dark')+(selectedSquare===sq?' is-selected':'')+(idx===checkedKing?' classic-square--check':'')+'" data-square="'+sq+'" aria-label="'+sq+'">'+img+mark+'</button>';
+  output+='<button type="button" class="classic-square '+(light?'classic-square--light':'classic-square--dark')+(selectedSquare===sq?' is-selected':'')+(idx===checkedKing?' classic-square--check':'')+'" data-square="'+sq+'" aria-label="'+sq+'">'+img+symbol+mark+'</button>';
  }
  return output;
 }
@@ -124,7 +126,7 @@ function showBattle(){
            '</div>'+
            '<section class="tournament-journal">'+
              '<small>'+(lang()==='en'?'BATTLE LOG':'ЖУРНАЛ БОЯ')+'</small>'+
-             '<h3>'+(lang()==='en'?'Moves':'Ходы')+'</h3>'+
+             '<div class="tournament-journal-heading"><h3>'+(lang()==='en'?'Moves':'Ходы')+'</h3></div>'+
              '<div class="tournament-moves" data-tour-history aria-label="'+(lang()==='en'?'Moves':'Ходы')+'"></div>'+
            '</section>'+
          '</aside>'+
@@ -153,6 +155,9 @@ function showBattle(){
    }
   });
   matchRendered=true;
+  // This panel is dynamically created only during an online match.
+  // The shared switch owns the saved art preference; PvP state stays on the server.
+  dispatchEvent(new Event('rpchess:tournament-board-mounted'));
  }
  refreshBoard();
 }
