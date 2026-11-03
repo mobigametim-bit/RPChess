@@ -19,7 +19,7 @@ function ensureCss() {
   if (document.querySelector('[data-player-identity-chronicle-css]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/player-identity-chronicle.css?v=20261017-commander-gold-vk-3';
+  link.href = 'css/player-identity-chronicle.css?v=20261103-identity-empty-center-1';
   link.dataset.playerIdentityChronicleCss = '';
   document.head.append(link);
 }
@@ -119,6 +119,8 @@ function ensureIdentityModal() {
 function renderCommanderChoice(){
   if(!identityModal)return;
   const commander=selectedCommanderId;
+  identityModal.querySelector('[data-identity-commander-preview]')
+    .classList.toggle('identity-commander-preview--empty',!commander);
   for(const b of identityModal.querySelectorAll('[data-identity-commander]'))
     b.setAttribute('aria-pressed',String(Boolean(commander)&&b.dataset.identityCommander===commander));
   const image=identityModal.querySelector('[data-identity-commander-image]');
