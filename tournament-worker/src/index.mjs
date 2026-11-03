@@ -216,7 +216,14 @@ export class TournamentLobby extends DurableObject {
 
 export class TournamentMatch extends DurableObject {
  async get(){return await this.ctx.storage.get('match')||null;}
- async put(value){await this.ctx.storage.put('match',value);if(!value.result)await this.ctx.storage.setAlarm(Date.now()+Math.max(1000,value.remaining[value.turn]));}
+ async put(value){
+  // Store final per-color Elo receipts together with the immutable finished
+  // match. Later updates to the Elo formula must never reprice past results.
+  if(value.result&&value.ratingVersion===1&&!value.ratings)
+   value.ratings=Object.fromEntries(value.players.map(player=>[player.color,ratedResult(value,player)]));
+  await this.ctx.storage.put('match',value);
+  if(!value.result)await this.ctx.storage.setAlarm(Date.now()+Math.max(1000,value.remaining[value.turn]));
+ }
  reconstruct(match){
   const engine=new ClassicChessEngine();
   for(const mv of match.moves) {const result=engine.move(mv.from,mv.to,mv.promotion||null);if(!result.ok)throw Error('Corrupted match history');}
@@ -238,7 +245,7 @@ export class TournamentMatch extends DurableObject {
     players:m.players.map(p=>({name:p.name,color:p.color,race:p.race,power:p.power})),
     fen:engine.fen(),moves:m.moves,turn:m.turn,remaining:m.remaining,
     serverTime:Date.now(),tick:m.tick,result:m.result,drawOffer:m.drawOffer||null,
-    rating:ratedResult(m,player)};
+    rating:m.ratings?.[player.color]||null};
  }
  async fetch(request){
   const path=new URL(request.url).pathname,body=await request.json(),now=Date.now();
@@ -252,6 +259,9 @@ export class TournamentMatch extends DurableObject {
   const uid=body.user?.id,player=m.players.find(p=>p.id===uid);
   if(!player)return problem('not_a_player',403);
   m=await this.advance(m,now);
+  // Upgrade a previously completed v1 match (created before receipts were
+  // persisted) exactly once, then always return its stored rating.
+  if(m.result&&m.ratingVersion===1&&!m.ratings)await this.put(m);
   if(path==='/snapshot')return json(this.snapshot(m,uid));
   if(m.result)return json(this.snapshot(m,uid));
   if(path==='/move'){
