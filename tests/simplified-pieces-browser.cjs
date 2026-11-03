@@ -6,16 +6,17 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
 async function checkSymbols(page,selector,count=32){
   const board=page.locator(selector);
   await page.waitForFunction(({selector,count})=>document.querySelectorAll(selector+' .rpchess-piece-symbol').length===count,{selector,count});
+  await page.waitForFunction(({selector})=>[...document.querySelectorAll(selector+' .rpchess-fantasy-piece')].every(img=>img.complete&&img.naturalWidth>0),{selector});
   const visual=await board.evaluate(node=>{
     const white=node.querySelector('.rpchess-piece-symbol--w');
     const black=node.querySelector('.rpchess-piece-symbol--b');
     const image=node.querySelector('.classic-piece,.puzzle-piece');
     return {
       glyphs:node.querySelectorAll('.rpchess-piece-symbol').length,
-      white:white?.querySelector('.rpchess-race-glyph')?.dataset.role,
-      black:black?.querySelector('.rpchess-race-glyph')?.dataset.role,
-      whiteFill:getComputedStyle(white.querySelector('.rpchess-race-glyph .main')).fill,
-      blackFill:getComputedStyle(black.querySelector('.rpchess-race-glyph .main')).fill,
+      white:white?.querySelector('.rpchess-fantasy-piece')?.getAttribute('src'),
+      black:black?.querySelector('.rpchess-fantasy-piece')?.getAttribute('src'),
+      whiteLoaded:white?.querySelector('.rpchess-fantasy-piece')?.naturalWidth>0,
+      blackLoaded:black?.querySelector('.rpchess-fantasy-piece')?.naturalWidth>0,
       whiteColor:getComputedStyle(white).color,
       blackColor:getComputedStyle(black).color,
       whiteDisplay:getComputedStyle(white).display,
@@ -25,10 +26,10 @@ async function checkSymbols(page,selector,count=32){
     };
   });
   assert.equal(visual.glyphs,count);
-  assert('pnbrqk'.includes(visual.white),'White must have a vector chess role');
-  assert('pnbrqk'.includes(visual.black),'Black must have a vector chess role');
-  assert.notEqual(visual.whiteFill,visual.blackFill,'White/black SVG fill differs');
-  assert.notEqual(visual.whiteColor,visual.blackColor,'White and black army silhouettes must have distinct fill colors');
+  assert.match(visual.white,/^assets\/pieces\/fantasy\/w[PNBRQK]\.svg$/,'White must use the official Fantasy SVG file');
+  assert.match(visual.black,/^assets\/pieces\/fantasy\/b[PNBRQK]\.svg$/,'Black must use the official Fantasy SVG file');
+  assert.equal(visual.whiteLoaded,true,'White SVG must load');
+  assert.equal(visual.blackLoaded,true,'Black SVG must load');
   assert.equal(visual.whiteDisplay,'flex');assert.equal(visual.blackDisplay,'flex');
   assert.equal(visual.imageOpacity,'0');assert.equal(visual.glyphPointerEvents,'none');
 }
@@ -40,8 +41,8 @@ async function drag(page,from,to){
   await page.mouse.move(x+14,y,{steps:7});
   const ghost=page.locator('.rpchess-piece-drag-ghost');
   await ghost.waitFor({timeout:3000});
-  assert.equal(await ghost.evaluate(n=>n.tagName),'SPAN','Glyph mode must not show fantasy image drag ghost');
-  assert.equal(await ghost.locator('svg.rpchess-race-glyph[data-role="p"]').count(),1);
+  assert.equal(await ghost.evaluate(n=>n.tagName),'IMG','Fantasy drag preview must be the matching SVG image');
+  assert.equal(await ghost.getAttribute('src'),'assets/pieces/fantasy/wP.svg');
   await page.mouse.move(b.x+b.width/2,b.y+b.height/2,{steps:12});
   await page.mouse.up();
   await page.waitForFunction(()=>window.RPChessClassicChess?.engine?.pieceAt('e4')?.type==='p');
@@ -53,6 +54,16 @@ async function drag(page,from,to){
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.goto(url,{waitUntil:'networkidle'});
     assert.notEqual(await page.locator('html').getAttribute('data-simple-pieces'),'1','Detailed art default');
+    // Pin all twelve MIT-licensed Fantasy SVGs; no race-specific simplified art.
+    const assets=await page.evaluate(async()=>{
+      const roles=['P','N','B','R','Q','K'];
+      return await Promise.all(['w','b'].flatMap(side=>roles.map(role=>side+role)).map(async name=>{
+        const response=await fetch('./assets/pieces/fantasy/'+name+'.svg');
+        return {name,ok:response.ok,svg:(await response.text()).trimStart().startsWith('<svg')};
+      }));
+    });
+    assert.equal(assets.length,12);
+    assert(assets.every(asset=>asset.ok&&asset.svg),'Fantasy assets must be present and valid SVG');
     await page.locator('[data-reboot-foundation] [data-settings]').first().click();
     const toggle=page.locator('input[data-simple-pieces]');
     assert.equal(await toggle.isChecked(),false);
@@ -77,10 +88,11 @@ async function drag(page,from,to){
     await page.locator('[data-chess-board] [data-square="a8"]').click();
     await page.locator('[data-promotion-modal]:not([hidden])').waitFor();
     assert.equal(await page.locator('[data-promotion-modal] .rpchess-promotion-symbol').count(),4);
+    assert.equal(await page.locator('[data-promotion-modal] .rpchess-fantasy-piece').count(),4);
     assert.equal(await page.locator('[data-promotion-modal] img').first().evaluate(n=>getComputedStyle(n).display),'none');
     await page.locator('[data-promotion="q"]').click();
     await page.waitForFunction(()=>window.RPChessClassicChess?.engine?.pieceAt('a8')?.type==='q');
-    assert.equal(await page.locator('[data-chess-board] [data-square="a8"] .rpchess-race-glyph').getAttribute('data-role'),'q');
+    assert.equal(await page.locator('[data-chess-board] [data-square="a8"] .rpchess-fantasy-piece').getAttribute('src'),'assets/pieces/fantasy/wQ.svg');
     await page.reload({waitUntil:'networkidle'});
     assert.equal(await page.locator('html').getAttribute('data-simple-pieces'),'1','Mode survives reload');
     await page.locator('[data-arena-open]').click();
@@ -124,6 +136,6 @@ async function drag(page,from,to){
     const n=await puzzle.locator('[data-puzzle-board] .rpchess-piece-symbol').count();
     await checkSymbols(puzzle,'[data-puzzle-board]',n);
     assert.deepEqual(puzzleErrors,[]);
-    console.log('Simplified glyphs: settings live/reload, classic, promotion, mouse drag, Arena portrait, puzzle: PASS');
+    console.log('Fantasy chess pieces: all 12 SVGs, live settings/reload, classic, promotion, mouse drag, Arena, portrait and puzzle: PASS');
   }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
