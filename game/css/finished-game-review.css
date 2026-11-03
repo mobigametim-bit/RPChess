@@ -139,7 +139,7 @@
 .rpchess-review-board .review-square .rpchess-piece-symbol{pointer-events:none}
 .rpchess-review-board .review-square .rpchess-fantasy-piece{max-width:100%;width:94%;height:94%;object-fit:contain}
 .rpchess-review-right{grid-column:3;pointer-events:none}
-@media(max-width:700px),(orientation:portrait){
+@media(orientation:portrait){
  .rpchess-review-overlay{overflow:auto;--review-board-size:min(calc(100vw - 44px),calc(65dvh - 10px))}
  .rpchess-review-shell{
    min-height:100dvh;height:auto;grid-template-columns:minmax(0,1fr);
@@ -163,4 +163,117 @@
  .rpchess-review-case{padding:5px}
  .rpchess-review-details{margin-top:5px;padding-top:5px}
  .rpchess-review-overlay{--review-board-size:min(calc(100dvh - 34px),calc(100vw - var(--review-rail-min) - var(--review-rail-min) - 8px))}
+}
+
+
+/* Lichess-inspired *learning* composition — original RPChess gold visuals.
+ * The journal, annotation legend and two practice actions share the LEFT rail;
+ * the board keeps its viewport-centered battle position; evaluation is RIGHT. */
+.rpchess-review-content{
+ display:flex;flex-direction:column;gap:7px;padding:6px 1px 12px;
+}
+.rpchess-review-moves-section{display:flex;flex-direction:column;flex:1 1 auto;min-height:85px}
+.rpchess-review-section-title{
+ flex:0 0 auto;margin:5px 1px 6px;font-size:clamp(16px,1.65vw,20px);
+}
+.rpchess-review-movelist{
+ display:flex;flex-direction:column;flex:1 1 auto;min-height:60px;
+ overflow:auto;scrollbar-width:thin;scrollbar-color:#9b794a #121820;
+ border:1px solid rgba(216,177,93,.2);border-radius:4px;
+ background:rgba(11,18,25,.8);
+}
+.rpchess-review-move-row{
+ display:grid;grid-template-columns:26px minmax(0,1fr) minmax(0,1fr);
+ gap:1px;align-items:stretch;min-height:29px;
+ border-bottom:1px solid rgba(197,163,99,.1);
+}
+.rpchess-review-move-row:nth-child(even){background:rgba(206,184,124,.035)}
+.rpchess-review-move-no{font-size:11px;color:#a99b80;padding:7px 2px 4px 4px}
+.rpchess-review-move{
+ display:flex;gap:3px;align-items:center;text-align:left;min-width:0;
+ padding:3px 4px;border:0;border-radius:2px;background:transparent;
+ color:#e5d7b6;cursor:pointer;font:600 12px/1.2 system-ui,sans-serif;
+}
+.rpchess-review-move>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rpchess-review-move.is-error{color:#f2ce9b}
+.rpchess-review-move.is-active{background:rgba(196,150,64,.32);box-shadow:inset 2px 0 0 #e9bd67}
+.rpchess-review-move.is-browsing{outline:1px solid #bbd1b0;outline-offset:-1px}
+.rpchess-review-move:hover{background:rgba(209,170,94,.17)}
+.rpchess-review-done{color:#90d39d;margin-left:auto;font-size:11px}
+.rpchess-review-move .rpchess-review-symbol{font-size:11px;min-width:18px;padding:1px 2px}
+.rpchess-review-legend{
+ flex:0 0 auto;border-top:1px solid rgba(216,177,93,.24);
+ padding-top:4px;
+}
+.rpchess-review-legend-grid{display:flex;flex-wrap:wrap;gap:3px 8px}
+.rpchess-review-legend-item{display:flex;align-items:center;gap:4px;color:#bfb6a1;font-size:11px}
+.rpchess-review-legend-item strong{font-size:11px;color:#ead5a8}
+.rpchess-review-learning{
+ flex:0 0 auto;border:1px solid rgba(191,155,88,.46);
+ border-radius:4px;background:rgba(10,17,25,.86);padding:8px;
+}
+.rpchess-review-learning .rpchess-review-summary{
+ display:flex;align-items:center;justify-content:space-between;gap:8px;
+ margin:0;border-bottom:1px solid rgba(216,177,93,.24);padding-bottom:6px;
+ color:#edcd8c;font-size:12px;
+}
+.rpchess-review-learning .rpchess-review-summary span{
+ flex:0 0 auto;font-size:12px;color:#d7c69d;
+}
+.rpchess-review-learning .rpchess-review-details{
+ margin:0;padding:8px 0 0;border:0;
+}
+.rpchess-review-task{display:grid;gap:5px}
+.rpchess-review-task strong{
+ display:flex;align-items:center;gap:4px;flex-wrap:wrap;
+ color:#f4dfb9;font-size:12px;line-height:1.32;
+}
+.rpchess-review-task p{color:#cbbfa7;font-size:12px;margin:0}
+.rpchess-review-task .rpchess-review-symbol{font-size:11px;min-width:18px}
+.rpchess-review-learning .rpchess-review-actions{gap:6px;margin-top:9px}
+.rpchess-review-learning .rpchess-review-button{
+ font-size:11px;min-height:33px;flex:1 1 auto;padding:7px 8px;
+}
+.rpchess-review-learning .rpchess-review-prompt{
+ padding:7px 8px;margin:8px 0!important;
+}
+.rpchess-review-outcome,.rpchess-review-empty{font-size:12px;color:#d5c9ae;line-height:1.4;margin:5px 0}
+.rpchess-review-eval{
+ position:absolute;top:0;bottom:0;left:calc(100% + 7px);
+ z-index:4;width:clamp(16px,1.9vw,25px);
+ overflow:hidden;pointer-events:none;
+ background:linear-gradient(#1d1e22,#282b31);border:1px solid #927750;
+ box-shadow:0 0 9px #0006;border-radius:3px;
+}
+.rpchess-review-eval-white{
+ position:absolute;left:0;right:0;bottom:0;height:50%;
+ background:linear-gradient(#fff0d6,#d9ceba);transition:height 270ms ease-out;
+}
+.rpchess-review-eval.is-flipped .rpchess-review-eval-white{bottom:auto;top:0}
+.rpchess-review-eval-score{
+ position:absolute;z-index:2;bottom:4px;left:0;right:0;text-align:center;
+ font:800 clamp(7px,.72vw,10px)/1 system-ui,sans-serif;
+ color:#1e2530;text-shadow:0 1px #fff8a3;
+ writing-mode:vertical-rl;transform:rotate(180deg);
+}
+.rpchess-review-eval.is-flipped .rpchess-review-eval-score{
+ bottom:auto;top:4px;color:#27272c;
+}
+@media(orientation:portrait){
+ .rpchess-review-content{overflow:visible;display:block}
+ .rpchess-review-moves-section{min-height:0}
+ .rpchess-review-movelist{max-height:210px;min-height:80px}
+ .rpchess-review-legend,.rpchess-review-learning{margin-top:10px}
+ .rpchess-review-board-frame{max-width:calc(100vw - 54px)}
+ .rpchess-review-eval{width:16px;left:calc(100% + 5px)}
+ .rpchess-review-legend-grid{gap:6px 12px}
+}
+@media(orientation:landscape) and (max-height:540px){
+ .rpchess-review-content{gap:3px;padding-top:2px}
+ .rpchess-review-moves-section{min-height:54px}
+ .rpchess-review-move-row{min-height:25px}
+ .rpchess-review-learning{padding:5px}
+ .rpchess-review-learning .rpchess-review-details{padding-top:4px}
+ .rpchess-review-learning .rpchess-review-actions{margin-top:5px}
+ .rpchess-review-legend .rpchess-review-section-title{margin:3px 0}
 }
