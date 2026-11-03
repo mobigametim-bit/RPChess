@@ -230,7 +230,7 @@ export class TournamentLobby extends DurableObject {
    ?(await this.ctx.storage.get(pairKey)||[]).filter(time=>now-time<86400000):[];
   const rated=publicQueue&&isVerified(a,this.env)&&isVerified(b,this.env)&&recent.length<2;
   const init=await internal(this.env.MATCHES.get(this.env.MATCHES.idFromName(id)),'/init',{
-   players:pair.map((p,i)=>({...p,race:races[i],color:i===0?'w':'b'})),now,rated
+   id,players:pair.map((p,i)=>({...p,race:races[i],color:i===0?'w':'b'})),now,rated
   });
   if(!init.ok)throw Error('Match initialization failed');
   if(rated)await this.ctx.storage.put(pairKey,[...recent,now]);
@@ -295,9 +295,11 @@ export class TournamentMatch extends DurableObject {
   const path=new URL(request.url).pathname,body=await request.json(),now=Date.now();
   if(path==='/init'){
    if(await this.get())return problem('already_initialized',409);
-   if(!Array.isArray(body.players)||body.players.length!==2||body.players[0].id===body.players[1].id)return problem('invalid_players',400);
+   if(!/^[0-9a-f-]{36}$/.test(body.id||'')||
+      !Array.isArray(body.players)||body.players.length!==2||body.players[0].id===body.players[1].id)
+    return problem('invalid_players',400);
    const rated=Boolean(body.rated)&&body.players.every(p=>isVerified(p,this.env));
-   const match={id:this.ctx.id.toString(),ratingVersion:2,rated,players:body.players,remaining:{w:CONTROL,b:CONTROL},tick:now,turn:'w',moves:[],drawOffer:null,result:null};
+   const match={id:body.id,ratingVersion:2,rated,players:body.players,remaining:{w:CONTROL,b:CONTROL},tick:now,turn:'w',moves:[],drawOffer:null,result:null};
    await this.put(match);return json({ok:true});
   }
   let m=await this.get();if(!m)return problem('match_not_found',404);
