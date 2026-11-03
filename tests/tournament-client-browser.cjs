@@ -325,7 +325,9 @@ try {
  }
  await white.locator('[data-tour-action="review"]').click();
  await white.locator('[data-finished-review] [data-review-action="close"]').waitFor({timeout:15000});
- assert.equal(await white.locator('[data-finished-review] h2').innerText(),'Разбор ошибок');
+ assert.equal(await white.locator('[data-finished-review] h2').innerText(),'Анализ партии');
+ assert.equal(await white.locator('[data-finished-review] .rpchess-review-eval').count(),1,
+  'the completed Tournament opens training with the evaluation meter to the right of the board');
  await white.locator('[data-finished-review] [data-review-action="close"]').click();
  assert.equal(await white.locator('[data-finished-review]').count(),0);
  assert.equal(await white.locator('[data-tour-action="review"]').count(),1,'Closing review preserves result and Elo');
