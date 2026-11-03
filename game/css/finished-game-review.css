@@ -1,0 +1,380 @@
+/* Owner-approved training layout. The chessboard stays centered against the
+ * whole viewport, identical to Classic, Battle and Arena (not centered in the
+ * space remaining after the information rail). Coordinates live OUTSIDE it. */
+.rpchess-review-overlay{
+  --review-rail-min:clamp(160px,18vw,380px);
+  --review-board-size:min(calc(100dvh - 34px),calc(100vw - var(--review-rail-min) - var(--review-rail-min) - 8px));
+  position:fixed;z-index:90000;inset:0;overflow:hidden;
+  box-sizing:border-box;background:#050a12;color:#f4e2b7;
+  font:14px/1.35 system-ui,-apple-system,Segoe UI,sans-serif;
+}
+.rpchess-review-overlay *{box-sizing:border-box}
+.rpchess-review-shell{
+  position:relative;height:100dvh;width:100vw;display:grid;
+  grid-template-columns:minmax(0,1fr) var(--review-board-size) minmax(0,1fr);
+  grid-template-rows:minmax(0,1fr);align-items:stretch;
+  background:
+  linear-gradient(90deg,rgba(3,7,15,.95),rgba(7,15,26,.6) 45%,rgba(3,7,15,.94)),
+  url('../generated_assets/scene_battle.webp') center / cover no-repeat;
+}
+/* Own column one explicitly: never let implicit grid placement or unsupported
+ * CSS arithmetic stretch the information rail across the chessboard. */
+.rpchess-review-rail{
+  /* The rail is laid out from the actual coordinate gutter by review JS.
+   * This avoids invalid CSS calc/grid sizing on old Chrome/WebView. */
+  position:absolute;top:0;bottom:0;left:0;z-index:2;
+  width:180px;max-width:180px;
+  min-width:0;min-height:0;height:100%;overflow:hidden;padding:8px 9px;
+  display:flex;flex-direction:column;gap:0;
+  background:rgba(4,8,13,.93);border-right:1px solid rgba(216,177,93,.28);
+}
+.rpchess-review-header{
+  flex:0 0 auto;display:flex;align-items:start;justify-content:space-between;
+  gap:7px;padding:8px 4px 11px;border-bottom:1px solid rgba(216,177,93,.26);
+}
+.rpchess-review-header h2{
+  font:400 clamp(21px,2.5vw,32px) 'BrahmsGotischCyr',Georgia,serif;
+  margin:0;color:#f4ddaa;line-height:1.15;
+}
+.rpchess-review-header small{display:block;color:#bdaf90;font-size:11px;margin-top:5px}
+.rpchess-review-content{
+  flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  padding:8px 2px 15px;scrollbar-width:thin;scrollbar-color:#aa8a50 #0d1721;
+}
+.rpchess-review-section-title{
+  margin:10px 1px 6px;font:400 clamp(17px,1.9vw,23px) 'BrahmsGotischCyr',Georgia,serif;
+  color:#e5bd70;
+}
+.rpchess-review-summary{
+  display:flex;gap:6px;justify-content:space-between;flex-wrap:wrap;
+  margin:5px 0;color:#e5bd70;font-size:12px;
+}
+.rpchess-review-summary span{color:#a6d59a}
+.rpchess-review-note{font-size:11px;color:#a8a598;line-height:1.35;margin:5px 0}
+.rpchess-review-cases{display:grid;gap:3px}
+.rpchess-review-case{
+  cursor:pointer;text-align:left;display:flex;align-items:center;gap:5px;
+  background:rgba(23,33,42,.82);border:1px solid rgba(181,147,83,.4);
+  border-radius:4px;padding:6px 7px;color:#f4dfbb;font:inherit;min-width:0;
+}
+.rpchess-review-case strong{font-size:12px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rpchess-review-case small{font-size:11px;color:#e0ac87;margin-left:auto;white-space:nowrap}
+.rpchess-review-symbol{display:inline-grid;place-items:center;flex:0 0 auto;min-width:21px;
+ font:800 13px/1.15 system-ui,sans-serif;border-radius:3px;padding:2px 3px;
+ background:rgba(185,87,45,.18);color:#eeaa65}
+.rpchess-review-symbol--inaccuracy{color:#e8ce80;background:rgba(233,201,119,.12)}
+.rpchess-review-symbol--mistake{color:#f1a968;background:rgba(224,132,52,.16)}
+.rpchess-review-symbol--blunder{color:#ff8c82;background:rgba(226,83,76,.17)}
+.rpchess-review-case.is-active{background:#544223;border-color:#f2c56b;box-shadow:inset 3px 0 0 #f4ce7d}
+.rpchess-review-case.is-solved:not(.is-active){border-color:#6b9e69}
+.rpchess-review-details{margin-top:8px;border-top:1px solid rgba(216,177,93,.25);padding:7px 2px 0}
+.rpchess-review-details h3{margin:0 0 4px;color:#f3d68a;font-size:15px}
+.rpchess-review-current{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.rpchess-review-current-loss{margin-left:auto;color:#d9a47d;font:500 12px/1.2 system-ui,sans-serif}
+.rpchess-review-details p{margin:5px 0}
+.rpchess-review-detail{color:#ede4d2;font-size:12px;font-weight:600}
+.rpchess-review-meta{font-size:12px;color:#c5c2b5}
+.rpchess-review-prompt{
+  padding:6px 8px;margin:6px 0!important;background:rgba(25,46,43,.72);
+  border-left:3px solid #cba55c;line-height:1.42;color:#ecdfbc;
+}
+.rpchess-review-prompt--correct{border-color:#71b582;background:rgba(32,62,43,.54)}
+.rpchess-review-prompt--error{border-color:#ce7366;background:rgba(69,30,34,.42)}
+.rpchess-review-answer{color:#ace0a1;font-size:12px;overflow-wrap:anywhere}
+.rpchess-review-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.rpchess-review-button{
+  background:rgba(41,34,22,.92);border:1px solid #ab8b4f;color:#f4e0bb;
+  min-height:32px;padding:6px 9px;border-radius:4px;cursor:pointer;
+  font:600 12px/1.2 system-ui,sans-serif;
+}
+.rpchess-review-button:hover,.rpchess-review-case:hover{border-color:#f9d58e}
+.rpchess-review-button--primary{background:linear-gradient(#846335,#573a18);border-color:#e1ad5b}
+.rpchess-review-close{white-space:nowrap;flex:0 0 auto}
+.rpchess-review-button:focus-visible,.rpchess-review-case:focus-visible,
+.rpchess-review-board .review-square:focus-visible{outline:2px solid #f8d98a;outline-offset:1px}
+.rpchess-review-loading{padding:20px 5px;color:#f2d8a1}
+.rpchess-review-promotions{margin:8px 0;color:#f4dfbb}
+.rpchess-review-promotions>div{display:flex;gap:5px;margin-top:5px}
+.rpchess-review-board-column{
+  grid-column:2;min-width:0;min-height:0;
+  display:grid;place-items:center;overflow:visible;
+}
+.rpchess-review-board-frame{
+  position:relative;width:var(--review-board-size);height:var(--review-board-size);
+  max-width:100%;aspect-ratio:1;
+}
+.rpchess-review-board.classic-board{
+  position:relative;display:grid;width:100%!important;height:100%!important;
+  aspect-ratio:1;grid-template-columns:repeat(8,minmax(0,1fr));
+  grid-template-rows:repeat(8,minmax(0,1fr));padding:0!important;margin:0!important;
+  border:0!important;border-radius:0;box-shadow:0 5px 30px #000a;
+  background:#64563e;overflow:hidden;touch-action:manipulation;
+}
+.rpchess-review-ranks{
+  position:absolute;right:100%;top:0;bottom:0;display:grid;grid-template-rows:repeat(8,1fr);
+  width:17px;align-items:center;text-align:center;color:#e5d0a1;font-size:11px;
+}
+.rpchess-review-files{
+  position:absolute;top:100%;left:0;right:0;height:17px;display:grid;
+  grid-template-columns:repeat(8,1fr);align-items:center;text-align:center;
+  color:#e5d0a1;font-size:11px;
+}
+.rpchess-review-board .review-square{
+  position:relative;display:grid;place-items:center;min-width:0;min-height:0;
+  width:100%;height:100%;padding:0;border:0;border-radius:0;cursor:pointer;
+  touch-action:manipulation;
+}
+.rpchess-review-board .review-square--light{background:#cdb88a}
+.rpchess-review-board .review-square--dark{background:#62543d}
+.rpchess-review-board .review-square.is-selected{outline:4px solid #f7d74e;outline-offset:-4px;z-index:2}
+.rpchess-review-board .review-square.is-last{box-shadow:inset 0 0 0 4px rgba(255,203,81,.58)}
+.rpchess-review-board .review-square.is-hint-from{box-shadow:inset 0 0 0 5px rgba(82,186,133,.8)}
+.rpchess-review-board .review-square.is-hint-to::after{
+  content:'';position:absolute;inset:28%;border:4px solid #64db92;
+  border-radius:50%;box-shadow:0 0 9px #0006;pointer-events:none;
+}
+.rpchess-review-board .review-square .classic-piece{
+  display:block;width:94%;height:94%;max-width:100%;object-fit:contain;pointer-events:none;
+}
+.rpchess-review-board .review-square .rpchess-piece-symbol{pointer-events:none}
+.rpchess-review-board .review-square .rpchess-fantasy-piece{max-width:100%;width:94%;height:94%;object-fit:contain}
+.rpchess-review-right{grid-column:3;pointer-events:none}
+@media(orientation:portrait){
+ .rpchess-review-overlay{overflow:auto;--review-board-size:min(calc(100vw - 44px),calc(65dvh - 10px))}
+ .rpchess-review-shell{
+   min-height:100dvh;height:auto;grid-template-columns:minmax(0,1fr);
+   grid-template-rows:auto auto;gap:0;align-items:start;
+ }
+ .rpchess-review-rail{position:relative;z-index:auto;
+   grid-column:1;grid-row:2;width:100%;max-width:none;height:auto;overflow:visible;
+   min-height:0;border-right:0;border-top:1px solid rgba(216,177,93,.25)}
+ .rpchess-review-board-column{grid-column:1;grid-row:1;padding:8px 0 22px;min-height:0}
+ .rpchess-review-right{display:none}
+ .rpchess-review-content{overflow:visible}
+ .rpchess-review-cases{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .rpchess-review-case{display:flex;flex-wrap:wrap;gap:3px;padding:5px}
+ .rpchess-review-case small{margin-left:0;width:100%;text-align:left}
+ .rpchess-review-board-frame{width:var(--review-board-size);height:var(--review-board-size)}
+}
+@media(orientation:landscape) and (max-height:540px){
+ .rpchess-review-rail{padding:3px 6px}
+ .rpchess-review-header{padding:3px 0 5px}
+ .rpchess-review-header h2{font-size:20px}
+ .rpchess-review-case{padding:5px}
+ .rpchess-review-details{margin-top:5px;padding-top:5px}
+ .rpchess-review-overlay{--review-board-size:min(calc(100dvh - 34px),calc(100vw - var(--review-rail-min) - var(--review-rail-min) - 8px))}
+}
+
+
+/* Lichess-inspired *learning* composition — original RPChess gold visuals.
+ * The journal, annotation legend and two practice actions share the LEFT rail;
+ * the board keeps its viewport-centered battle position; evaluation is RIGHT. */
+.rpchess-review-content{
+ display:flex;flex-direction:column;gap:7px;padding:6px 1px 12px;
+}
+.rpchess-review-moves-section{display:flex;flex-direction:column;flex:1 1 auto;min-height:85px}
+.rpchess-review-section-title{
+ flex:0 0 auto;margin:5px 1px 6px;font-size:clamp(16px,1.65vw,20px);
+}
+.rpchess-review-movelist{
+ display:flex;flex-direction:column;flex:1 1 auto;min-height:60px;
+ overflow:auto;scrollbar-width:thin;scrollbar-color:#9b794a #121820;
+ border:1px solid rgba(216,177,93,.2);border-radius:4px;
+ background:rgba(11,18,25,.8);
+}
+/* A move is one rigid 3-column row, never three independently sized boxes.
+ * The active gold fill follows the EXACT white/black move cell bounds. */
+[data-finished-review] .rpchess-review-move-row{
+ display:grid;
+ grid-template-columns:28px minmax(0,1fr) minmax(0,1fr);
+ grid-template-rows:28px;
+ column-gap:0;row-gap:0;
+ height:28px;min-height:28px;max-height:28px;
+ align-items:stretch;
+ box-sizing:border-box;overflow:hidden;
+ border-bottom:1px solid rgba(197,163,99,.1);
+}
+.rpchess-review-move-row:nth-child(even){background:rgba(206,184,124,.035)}
+[data-finished-review] .rpchess-review-move-no{
+ display:grid;place-items:center;
+ margin:0;padding:0;min-width:0;min-height:0;
+ color:#a99b80;font:500 11px/1 system-ui,sans-serif;
+ font-variant-numeric:tabular-nums;
+}
+[data-finished-review] .rpchess-review-move,
+[data-finished-review] .rpchess-review-move-empty{
+ box-sizing:border-box;min-width:0;min-height:0;
+ width:100%;height:100%;max-height:100%;
+ margin:0;padding:0 4px;
+ border:0;border-radius:0;
+}
+[data-finished-review] .rpchess-review-move{
+ position:relative;display:flex;flex-direction:row;
+ align-items:center;justify-content:center;gap:4px;
+ text-align:center;white-space:nowrap;overflow:hidden;
+ background:transparent;color:#e5d7b6;cursor:pointer;
+ font:600 12px/1 system-ui,sans-serif;
+}
+.rpchess-review-move>span:first-child{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rpchess-review-move.is-error{color:#f2ce9b}
+[data-finished-review] .rpchess-review-move.is-active{
+ background:rgba(196,150,64,.32);
+ box-shadow:inset 0 0 0 1px #b8914b,inset 3px 0 0 #e9bd67;
+}
+[data-finished-review] .rpchess-review-move.is-browsing{outline:1px solid #bbd1b0;outline-offset:-1px}
+.rpchess-review-move:hover{background:rgba(209,170,94,.17)}
+[data-finished-review] .rpchess-review-done{
+ position:absolute;right:3px;top:50%;transform:translateY(-50%);
+ color:#90d39d;font-size:10px;pointer-events:none;
+}
+.rpchess-review-move .rpchess-review-symbol{font-size:11px;min-width:18px;padding:1px 2px}
+/* Center the glyph + notation + assessment as ONE group in each equal-size cell. */
+[data-finished-review] .rpchess-review-move-content{
+ display:inline-flex;align-items:center;justify-content:center;gap:4px;
+ min-width:0;max-width:100%;height:100%;white-space:nowrap;overflow:hidden;
+}
+[data-finished-review] .rpchess-review-san{
+ min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+[data-finished-review] .rpchess-review-piece-glyph{
+ display:inline-flex;align-items:center;justify-content:center;
+ width:16px;min-width:16px;flex:0 0 16px;height:19px;
+ font:normal 17px/1 "DejaVu Sans","Segoe UI Symbol","Noto Sans Symbols 2",sans-serif;
+ user-select:none;pointer-events:none;
+}
+[data-finished-review] .rpchess-review-piece-glyph--w{
+ color:#fff5de;text-shadow:0 1px 1px #000,0 0 2px #121921;
+}
+[data-finished-review] .rpchess-review-piece-glyph--b{
+ color:#818a9e;-webkit-text-stroke:.3px #c3c6d0;
+ text-shadow:0 0 2px #c9c6cf,0 1px 1px #000;
+}
+.rpchess-review-legend{
+ flex:0 0 auto;border-top:1px solid rgba(216,177,93,.24);
+ padding-top:4px;
+}
+.rpchess-review-legend-grid{display:flex;flex-wrap:wrap;gap:3px 8px}
+.rpchess-review-legend-item{display:flex;align-items:center;gap:4px;color:#bfb6a1;font-size:11px}
+.rpchess-review-legend-item strong{font-size:11px;color:#ead5a8}
+.rpchess-review-learning{
+ flex:0 0 auto;border:1px solid rgba(191,155,88,.46);
+ border-radius:4px;background:rgba(10,17,25,.86);padding:8px;
+}
+.rpchess-review-learning .rpchess-review-summary{
+ display:flex;align-items:center;justify-content:space-between;gap:8px;
+ margin:0;border-bottom:1px solid rgba(216,177,93,.24);padding-bottom:6px;
+ color:#edcd8c;font-size:12px;
+}
+.rpchess-review-learning .rpchess-review-summary span{
+ flex:0 0 auto;font-size:12px;color:#d7c69d;
+}
+.rpchess-review-learning .rpchess-review-details{
+ margin:0;padding:8px 0 0;border:0;
+}
+.rpchess-review-task{display:grid;gap:5px}
+.rpchess-review-task strong{
+ display:flex;align-items:center;gap:4px;flex-wrap:wrap;
+ color:#f4dfb9;font-size:12px;line-height:1.32;
+}
+.rpchess-review-task p{color:#cbbfa7;font-size:12px;margin:0}
+.rpchess-review-task .rpchess-review-symbol{font-size:11px;min-width:18px}
+.rpchess-review-learning .rpchess-review-actions{gap:6px;margin-top:9px}
+.rpchess-review-learning .rpchess-review-button{
+ font-size:11px;min-height:33px;flex:1 1 auto;padding:7px 8px;
+}
+.rpchess-review-learning .rpchess-review-prompt{
+ padding:7px 8px;margin:8px 0!important;
+}
+.rpchess-review-outcome,.rpchess-review-empty{font-size:12px;color:#d5c9ae;line-height:1.4;margin:5px 0}
+.rpchess-review-eval{
+ position:absolute;top:0;bottom:0;left:calc(100% + 7px);
+ z-index:4;width:clamp(16px,1.9vw,25px);
+ overflow:hidden;pointer-events:none;
+ background:linear-gradient(#1d1e22,#282b31);border:1px solid #927750;
+ box-shadow:0 0 9px #0006;border-radius:3px;
+}
+.rpchess-review-eval-white{
+ position:absolute;left:0;right:0;bottom:0;height:50%;
+ background:linear-gradient(#fff0d6,#d9ceba);transition:height 270ms ease-out;
+}
+.rpchess-review-eval.is-flipped .rpchess-review-eval-white{bottom:auto;top:0}
+.rpchess-review-eval-score{
+ position:absolute;z-index:2;bottom:4px;left:0;right:0;text-align:center;
+ font:800 clamp(7px,.72vw,10px)/1 system-ui,sans-serif;
+ color:#1e2530;text-shadow:0 1px #fff8a3;
+ writing-mode:vertical-rl;transform:rotate(180deg);
+}
+.rpchess-review-eval.is-flipped .rpchess-review-eval-score{
+ bottom:auto;top:4px;color:#27272c;
+}
+@media(orientation:portrait){
+ .rpchess-review-content{overflow:visible;display:block}
+ .rpchess-review-moves-section{min-height:0}
+ .rpchess-review-movelist{max-height:210px;min-height:80px}
+ .rpchess-review-legend,.rpchess-review-learning{margin-top:10px}
+ .rpchess-review-board-frame{max-width:calc(100vw - 54px)}
+ .rpchess-review-eval{width:16px;left:calc(100% + 5px)}
+ .rpchess-review-legend-grid{gap:6px 12px}
+}
+@media(orientation:landscape) and (max-height:540px){
+ .rpchess-review-content{gap:3px;padding-top:2px}
+ .rpchess-review-moves-section{min-height:54px}
+ [data-finished-review] .rpchess-review-move-row{
+  grid-template-rows:25px;height:25px;min-height:25px;max-height:25px;
+ }
+ .rpchess-review-learning{padding:5px}
+ .rpchess-review-learning .rpchess-review-details{padding-top:4px}
+ .rpchess-review-learning .rpchess-review-actions{margin-top:5px}
+ .rpchess-review-legend .rpchess-review-section-title{margin:3px 0}
+}
+
+/* Annotation of engine-supported standout moves; good/excellent are intentionally
+ * rarer than an ordinary "best move" (conservative MultiPV gap thresholds). */
+.rpchess-review-symbol--good{color:#9bd5ac;background:rgba(55,139,89,.19)}
+.rpchess-review-symbol--excellent{color:#7ee6bb;background:rgba(33,157,119,.23);box-shadow:inset 0 0 0 1px rgba(79,192,148,.2)}
+.rpchess-review-move:has(.rpchess-review-symbol--good),
+.rpchess-review-move:has(.rpchess-review-symbol--excellent){color:#d4f3dd}
+.rpchess-review-variation{
+ margin-top:8px;padding:7px 6px;border:1px solid rgba(205,170,102,.4);
+ border-radius:4px;background:rgba(12,22,29,.9);font:12px/1.35 system-ui,sans-serif;
+}
+.rpchess-review-variation h4{margin:0 0 6px;color:#f0d79e;font-size:12px}
+.rpchess-review-line-compare{display:grid;gap:4px;color:#c8ba9e;overflow-wrap:anywhere}
+.rpchess-review-line-compare strong{color:#efdfb8;font-weight:600;line-height:1.5}
+.rpchess-review-line-compare span+span strong{color:#a8e2af}
+.rpchess-review-variation-controls{
+ display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:8px;
+}
+.rpchess-review-variation-controls .rpchess-review-button{
+ flex:1 1 0;min-height:30px;font-size:11px;padding:5px 6px;
+}
+.rpchess-review-variation-controls .rpchess-review-button:disabled{opacity:.43;cursor:default}
+.rpchess-review-line-progress{font-size:11px;color:#f0d79e;white-space:nowrap}
+.rpchess-review-line-note{font-size:10px;color:#bdb29a;margin:6px 0 0}
+.rpchess-review-line-loading{font-size:11px;color:#efcf9a;margin:7px 0 0}
+
+/* Full-game scan shows the actual game evolving on the board instead of a
+ * blank 8x8 field. A temporary source piece flies to each inspected square. */
+.rpchess-review-analysis-flyer{
+ position:fixed;z-index:95000;box-sizing:border-box;pointer-events:none;
+ display:grid;place-items:center;overflow:visible;will-change:transform;
+}
+.rpchess-review-analysis-flyer .rpchess-piece-symbol{
+ display:flex!important;position:relative!important;inset:auto!important;
+ width:100%;height:100%;
+}
+.rpchess-review-analysis-flyer .classic-piece{
+ display:block;max-width:100%;max-height:100%;object-fit:contain;
+}
+.rpchess-review-loading{
+ display:grid;gap:9px;padding:16px 8px;color:#f2d8a1;
+ font:500 12px/1.3 system-ui,sans-serif;
+}
+.rpchess-review-loading strong{color:#f0d7a3;font-size:13px}
+.rpchess-review-loading span{font-size:12px;color:#e1cfac}
+.rpchess-review-loading progress{
+ display:block;width:100%;height:8px;accent-color:#e3b564;
+ border:1px solid #92764d;border-radius:4px;
+}
+.rpchess-review-loading progress::-webkit-progress-bar{background:#17232c;border-radius:4px}
+.rpchess-review-loading progress::-webkit-progress-value{background:#d4a550;border-radius:4px}

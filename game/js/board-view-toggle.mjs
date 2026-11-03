@@ -1,6 +1,6 @@
 /* One on-board switch for the existing simplified-piece setting.
- * Battle, Skirmish and Caravan share the Classic board; Arena has its own
- * journal; Training creates its left-side panel only on demand.
+ * Battle, Skirmish and Caravan share the Classic board; Arena and Tournament
+ * have their own journals; Training creates its left-side panel on demand.
  * Never mutate chess state or duplicate the persistent settings contract.
  */
 import { boardRacePiecePath } from './race-assets.mjs';
@@ -81,13 +81,21 @@ function mountAll() {
   const classic = document.querySelector('[data-classic-screen] .classic-panel--moves');
   const arena = document.querySelector('[data-arena-screen] .arena-battle-journal');
   const training = document.querySelector('[data-puzzle-screen] .puzzle-layout > .puzzle-panel:first-child');
+  const tournament = document.querySelector('[data-tournament-screen] .tournament-journal-heading');
   mount(classic, classic?.firstChild);
   mount(arena, arena?.firstChild);
   mount(training, null);
+  mount(tournament, null);
   syncToggles();
 }
 
-mountAll();
-addEventListener('rpchess:puzzle-shown', mountAll);
-document.querySelector(SETTINGS_INPUT)?.addEventListener('change', syncToggles);
-subscribe(syncToggles);
+if (typeof document !== 'undefined') {
+  mountAll();
+  globalThis.addEventListener?.('rpchess:puzzle-shown', mountAll);
+  globalThis.addEventListener?.('rpchess:tournament-board-mounted', mountAll);
+  document.querySelector(SETTINGS_INPUT)?.addEventListener('change', syncToggles);
+  subscribe(syncToggles);
+}
+
+// Reuse the identical persistent board-art switch in postgame review.
+export { makeToggle, syncToggles };

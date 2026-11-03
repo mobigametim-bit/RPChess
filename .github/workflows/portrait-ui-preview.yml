@@ -5,10 +5,12 @@ on:
     branches:
       - feature/portrait-mobile-tablet-ui-20261021
       - feature/portrait-piece-motion-cleanup-20261022
+      - feature/tournament-pvp-mvp-20261022
     paths:
       - .github/workflows/portrait-ui-preview.yml
       - portrait-ui-preview/wrangler.toml
       - game/**
+      - tournament-worker/**
       - scripts/**
       - tests/**
       - package.json
@@ -24,7 +26,8 @@ concurrency:
 jobs:
   deploy:
     if: github.repository == 'mobigametim-bit/RPChess'
-    runs-on: ubuntu-latest
+    # Playwright 1.54.2 Chromium is not supported by ubuntu-26.04 runners.
+    runs-on: ubuntu-24.04
     timeout-minutes: 22
     steps:
       - uses: actions/checkout@v4
@@ -93,3 +96,21 @@ jobs:
           done
           echo "::error::PR162 preview did not serve fresh art/css"
           exit 1
+      - name: Validate two-human Tournament via live browser UI
+        if: github.ref == 'refs/heads/feature/tournament-pvp-mvp-20261022'
+        env:
+          RPCHESS_ACCEPTANCE_URL: https://rpchess-portrait-ui-preview.mobigametim.workers.dev/
+        run: node tests/tournament-client-browser.cjs
+      - name: Verify Arena postgame review using real Stockfish on deployed preview
+        if: github.ref == 'refs/heads/feature/tournament-pvp-mvp-20261022'
+        env:
+          RPCHESS_ACCEPTANCE_URL: https://rpchess-portrait-ui-preview.mobigametim.workers.dev/
+        run: node tests/arena-browser.cjs
+      - name: Upload live Tournament screenshots
+        if: always() && github.ref == 'refs/heads/feature/tournament-pvp-mvp-20261022'
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpchess-tournament-live-${{ github.sha }}
+          path: test-results/tournament
+          if-no-files-found: warn
+          retention-days: 14

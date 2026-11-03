@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#050a12">
-  <meta name="description" content="RPChess — фэнтезийный шахматный roguelite">
+  <meta name="description" content="Герои Шаха и мата — фэнтезийное шахматное приключение и рогалик">
   <meta name="rpchess-leaderboard-api" content="https://rpchess-leaderboard.mobigametim.workers.dev">
-  <title>RPChess</title>
+  <meta name="rpchess-tournament-api" content="https://rpchess-tournament-preview.mobigametim.workers.dev">
+  <title>Герои Шаха и мата</title>
   <script>
     try {
       const settings = JSON.parse(localStorage.getItem('rpchess.reboot.v1.settings') || '{}');
@@ -27,6 +28,8 @@
   <link rel="stylesheet" href="css/ui-redesign-final.css?v=20260902-cleanup2" data-ui-redesign-final-css>
   <link rel="stylesheet" href="css/landscape-ui-redesign.css?v=20260918-vk-menu-1" data-landscape-ui-css>
   <link rel="stylesheet" href="css/arena.css?v=20260924-6">
+  <link rel="stylesheet" href="css/tournament.css?v=20261103-gold-flight-1">
+  <link rel="stylesheet" href="css/finished-game-review.css?v=20261104-piece-glyph-11">
   <link rel="stylesheet" href="css/combat-centered-layout.css?v=20261018-centered1">
   <link rel="stylesheet" href="css/piece-drag.css?v=20261018-drag1">
   <link rel="stylesheet" href="css/roster-formation.css?v=20261017-1">
@@ -61,6 +64,7 @@
             <button class="reboot-button reboot-button--primary" type="button" data-new-game data-i18n="menu.newGame">Новое Путешествие</button>
             <button class="reboot-button reboot-button--primary" type="button" data-continue-run data-i18n="menu.continue" disabled aria-disabled="true">Продолжить</button>
             <button class="reboot-button reboot-button--primary" type="button" data-arena-open>Арена</button>
+            <button class="reboot-button reboot-button--primary" type="button" data-tournament-open>Турнир</button>
             <div class="reboot-menu-secondary">
               <button class="reboot-button reboot-button--primary" type="button" data-settings data-i18n="menu.settings">Настройки</button>
               <button class="reboot-button reboot-button--primary" type="button" data-language data-i18n="menu.language">Язык</button>
@@ -370,8 +374,9 @@
   <script type="module" src="js/reboot-foundation.mjs?v=20261025-simple-pieces-1"></script>
   <script type="module" src="js/roster-app.mjs?v=20260827-skirmish-1"></script>
   <script type="module" src="js/classic-chess-app.mjs?v=20261103-fantasy-1"></script>
-  <script type="module" src="js/arena-app.mjs?v=20261103-fantasy-1"></script>
+  <script type="module" src="js/arena-app.mjs?v=20261104-piece-glyph-7"></script>
   <script type="module" src="js/skirmish-app.mjs?v=20261023-named-resume-ad1"></script>
-  <script type="module" src="js/board-view-toggle.mjs?v=20261103-board-switch-1"></script>
+  <script type="module" src="js/tournament-app.mjs?v=20261104-piece-glyph-7"></script>
+  <script type="module" src="js/board-view-toggle.mjs?v=20261103-board-switch-tournament-1"></script>
 </body>
 </html>

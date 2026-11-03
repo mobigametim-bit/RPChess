@@ -5,6 +5,14 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
   const browser=await chromium.launch({headless:true});
   try{
     const page=await browser.newPage({viewport:{width:950,height:530}});
+    // This test exercises Arena mechanics, not first-visit onboarding. A
+    // completed tutorial profile prevents real modal hints intercepting chess
+    // clicks while onboarding-browser.cjs owns their independent acceptance.
+    await page.addInitScript(()=>{
+      const hints=['arenaCatalog','arenaFoe','arenaArtifact','arenaChess','arenaResult'];
+      const dismissed=Object.fromEntries(hints.map(key=>[key,true]));
+      localStorage.setItem('rpchess.reboot.v1.tutorial',JSON.stringify({schemaVersion:1,activated:true,dismissed}));
+    });
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
     // Simulate a slow initial Arena catalog image. The mask must cover its loading.
     await page.route('**/assets/races/humans/pieces/board/white/king.png',async route=>{
@@ -248,6 +256,249 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     const resultButton=await page.locator('.arena-dialog-panel--result .arena-result-actions button').first().evaluate(node=>getComputedStyle(node).backgroundImage);
     assert(resultButton.includes('58, 45, 27'),'victory buttons use gold UI styling');
     assert(await page.locator('.arena-dialog-panel--result .arena-result-actions button').first().evaluate(node=>node.classList.contains('reboot-button--primary')),'result actions reuse the common primary button');
+    assert.equal(await page.locator('.arena-dialog-panel--result [data-arena-action="review"]').count(),1,'Finished Arena result offers mistake review');
+    assert.equal(await page.locator('.arena-dialog-panel--result [data-arena-action="review"]').innerText(),
+      'Анализировать','postgame action uses the new short title');
+    // Review UI only after finishing; a mocked short finish is not fed into
+    // the evaluation engine because its handcrafted FEN is not in move history.
+    // Review is a landscape game scene. Earlier checks used a 667px compact
+    // Arena viewport; restore real landscape BEFORE checking its geometry.
+    await page.setViewportSize({width:950,height:530});
+    await page.evaluate(async()=>{
+      const {openFinishedGameReview}=await import('./js/finished-game-review.mjs');
+      window.__reviewDemo=openFinishedGameReview({mode:'arena',finished:true,moves:['f2f3','e7e5','g2g4','d8h4'],playerColor:'w'});
+    });
+    await page.locator('[data-finished-review] [data-review-action="close"]').waitFor();
+    assert.equal(await page.locator('[data-finished-review] .rpchess-review-header small').count(),0,
+      'the redundant Stockfish approximation subtitle is absent');
+    assert.equal(await page.locator('[data-finished-review] [data-review-square]').count(),64,
+      'the chessboard is populated immediately even before the engine finishes');
+    // Real Stockfish identifies Fool's Mate; all four recorded moves remain in
+    // the journal, while at least one error is a playable teaching exercise.
+    await page.locator('[data-finished-review] [data-review-case]').first().waitFor({timeout:35000});
+    assert.equal(await page.locator('[data-finished-review] [data-review-square]').count(),64);
+    const scan=await page.locator('[data-finished-review] [data-review-board]').evaluate(node=>({
+      replayed:node.dataset.reviewAnalysisPly,animated:Number(node.dataset.reviewAnalysisAnimations||0)
+    }));
+    assert.equal(scan.replayed,'4','all completed-game moves are replayed on the board during analysis');
+    assert(scan.animated>0,'the replay visibly animates inspected figures during the Stockfish scan');
+    assert.equal(await page.locator('[data-finished-review] [data-review-move]').count(),4,
+      'Lichess-style journal includes both players and every move');
+    assert((await page.locator('[data-finished-review] .rpchess-review-movelist').innerText()).includes('Qh4#'),
+      'completed game journal shows chess SAN and checkmate suffix');
+    const moveGrid=await page.evaluate(()=>{
+      const rows=[...document.querySelectorAll('[data-finished-review] .rpchess-review-move-row')];
+      const box=el=>{const b=el.getBoundingClientRect();return {x:b.x,y:b.y,w:b.width,h:b.height,cx:b.x+b.width/2,cy:b.y+b.height/2};};
+      return rows.map(row=>{
+        const children=[...row.children];
+        const number=box(children[0]),white=box(children[1]),black=box(children[2]);
+        const moves=children.slice(1).filter(el=>el.classList.contains('rpchess-review-move'));
+        return {row:box(row),number,white,black,items:moves.map(move=>{
+          const content=move.querySelector('.rpchess-review-move-content'),
+            glyph=move.querySelector('.rpchess-review-piece-glyph'),
+            san=move.querySelector('.rpchess-review-san'),rect=box(move);
+          return {rect,selected:move.classList.contains('is-active'),
+            contentCenter:box(content).cx,glyphCenter:box(glyph).cy,sanCenter:box(san).cy,
+            justify:getComputedStyle(move).justifyContent,
+            glyphColor:getComputedStyle(glyph).color};
+        })};
+      });
+    });
+    assert(moveGrid.length>=2,'the review journal contains aligned chess move rows');
+    for(const entry of moveGrid){
+      assert(Math.abs(entry.white.w-entry.black.w)<=1,'white and black move columns have equal widths: '+JSON.stringify(entry));
+      assert(Math.abs(entry.number.cy-entry.white.cy)<=1 && Math.abs(entry.white.cy-entry.black.cy)<=1,
+        'move numbers, white and black moves are vertically centered: '+JSON.stringify(entry));
+      for(const item of entry.items){
+        assert(Math.abs(item.rect.y-entry.row.y)<=1 && Math.abs(item.rect.h-entry.row.h)<=1,
+          'a move and its highlight are confined to precisely one row: '+JSON.stringify(entry));
+        assert(item.justify==='center' && Math.abs(item.contentCenter-item.rect.cx)<=3,
+          'piece glyph, SAN notation and annotation badge are centered as a group: '+JSON.stringify(item));
+        assert(Math.abs(item.glyphCenter-item.sanCenter)<=3,
+          'chess piece glyph and SAN stay vertically aligned: '+JSON.stringify(item));
+      }
+    }
+    assert(moveGrid.some(entry=>entry.items.some(item=>item.selected)),
+      'the active gold selection is confined to its own move cell');
+    const glyphs=await page.locator('[data-finished-review] .rpchess-review-piece-glyph').allTextContents();
+    assert.deepStrictEqual(glyphs,['♙','♟','♙','♛'],
+      'Fool\'s Mate shows white/black pawn glyphs and the black queen on the mating move');
+    assert.notEqual(moveGrid[0].items[0].glyphColor,moveGrid[0].items[1].glyphColor,
+      'white and black chess glyphs use distinct text colors');
+    assert.equal(await page.locator('[data-finished-review] .rpchess-review-legend-item').count(),5,
+      'legend includes !, !!, ?!, ? and ?? for both sides of the finished game');
+    const labels=await page.locator('[data-finished-review] .rpchess-review-legend-item').allInnerTexts();
+    assert(labels.some(x=>x.includes('!')) && labels.some(x=>x.includes('!!')),
+      'strong and outstanding move symbols appear in the left legend');
+    assert.equal(await page.locator('[data-finished-review] [data-review-action="view"]').count(),0);
+    assert.equal(await page.locator('[data-finished-review] [data-review-action="solution"]').innerText(),'Посмотреть решение',
+      'Lichess-inspired solution action is a real button');
+    assert.equal(await page.locator('[data-finished-review] [data-review-action="skip"]').innerText(),'Пропустить ход',
+      'skip is a real button rather than a hyperlink');
+    assert.equal(await page.locator('[data-finished-review] .rpchess-review-prompt').count(),0,
+      'no duplicative callout is shown before player interaction');
+    assert.equal(await page.locator('.rpchess-review-ranks span').count(),8);
+    assert.equal(await page.locator('.rpchess-review-files span').count(),8);
+    const reviewGeometry=await page.evaluate(()=>{
+      const rect=s=>document.querySelector(s).getBoundingClientRect();
+      const board=rect('[data-finished-review] [data-review-board]');
+      const rail=rect('[data-finished-review] .rpchess-review-rail');
+      const ranks=rect('[data-finished-review] .rpchess-review-ranks');
+      const meter=rect('[data-finished-review] [data-review-eval]');
+      return {center:board.left+board.width/2-innerWidth/2,railRight:rail.right,
+        ranksLeft:ranks.left,boardLeft:board.left,boardRight:board.right,
+        boardTop:board.top,boardBottom:board.bottom,meterLeft:meter.left,
+        meterRight:meter.right,meterTop:meter.top,meterBottom:meter.bottom};
+    });
+    assert(Math.abs(reviewGeometry.center)<4,
+      'review board stays centered relative to the whole viewport: '+JSON.stringify(reviewGeometry));
+    assert(reviewGeometry.railRight<=reviewGeometry.ranksLeft+2,
+      'the left information rail does not overlap coordinates: '+JSON.stringify(reviewGeometry));
+    assert(reviewGeometry.meterLeft>=reviewGeometry.boardRight &&
+      reviewGeometry.meterRight<=950 &&
+      Math.abs(reviewGeometry.meterTop-reviewGeometry.boardTop)<3 &&
+      Math.abs(reviewGeometry.meterBottom-reviewGeometry.boardBottom)<3,
+      'position evaluation meter occupies the right edge of the board: '+JSON.stringify(reviewGeometry));
+    assert((await page.locator('[data-review-eval]').getAttribute('aria-label')).includes('Оценка позиции'),
+      'meter provides accessible evaluation text from actual Stockfish');
+    const artSwitch=page.locator('[data-finished-review] [data-board-view-switch]');
+    assert.equal(await artSwitch.count(),1,'review reuses the shared regular/Fantasy control');
+    const initialArt=await page.locator('html').getAttribute('data-simple-pieces');
+    await artSwitch.click();
+    assert.notEqual(await page.locator('html').getAttribute('data-simple-pieces'),initialArt);
+    await artSwitch.click();
+    assert.equal(await page.locator('html').getAttribute('data-simple-pieces'),initialArt);
+    // Reveal a genuine engine move to verify the proper Lichess training flow.
+    await page.locator('[data-finished-review] [data-review-action="solution"]').click();
+    const solutionText=await page.locator('[data-finished-review] .rpchess-review-prompt').innerText();
+    const best=solutionText.match(/Лучший ход:\s*([a-h][1-8][a-h][1-8][qrbn]?)/)?.[1];
+    assert(best,'solution button must show the actual engine recommendation: '+solutionText);
+    assert((await page.locator('[data-finished-review] .rpchess-review-summary').innerText()).includes('1 / '),
+      'viewing a solution advances training progress');
+    const variationButton=page.locator('[data-finished-review] [data-review-action="variation"]');
+    assert.equal(await variationButton.innerText(),'Посмотреть продолжение',
+      'after revealing a best move the lesson offers an explicit engine variation');
+    await variationButton.click();
+    await page.locator('[data-finished-review] .rpchess-review-variation').waitFor({timeout:15000});
+    assert((await page.locator('[data-finished-review] .rpchess-review-line-compare').innerText()).includes('В партии'),
+      'the variation presents the actually played branch for comparison');
+    assert((await page.locator('[data-finished-review] .rpchess-review-line-compare').innerText()).includes('Сильнее'),
+      'the alternative principal variation is grounded in Stockfish');
+    const initialProgress=await page.locator('[data-finished-review] .rpchess-review-line-progress').innerText();
+    const initialLayout=await page.locator('[data-finished-review] [data-review-board]').innerHTML();
+    await page.locator('[data-finished-review] [data-review-action="line-next"]').click();
+    assert.notEqual(await page.locator('[data-finished-review] [data-review-board]').innerHTML(),initialLayout,
+      'next step replays a different real position on the chessboard');
+    assert.notEqual(await page.locator('[data-finished-review] .rpchess-review-line-progress').innerText(),initialProgress);
+    await page.locator('[data-finished-review] [data-review-action="line-prev"]').click();
+    assert.equal(await page.locator('[data-finished-review] .rpchess-review-line-progress').innerText(),initialProgress);
+    await page.locator('[data-finished-review] [data-review-action="next"]').click();
+    // Skip the remaining errors, then practise again and play the discovered
+    // move by clicking squares. There are only up to four moves in the fixture.
+    for(let i=0;i<4&&!(await page.locator('[data-finished-review] [data-review-action="again"]').count());i++)
+      await page.locator('[data-finished-review] [data-review-action="skip"]').click();
+    await page.locator('[data-finished-review] [data-review-action="again"]').click();
+    await page.locator('[data-finished-review] [data-review-square="'+best.slice(0,2)+'"]').click();
+    await page.locator('[data-finished-review] [data-review-square="'+best.slice(2,4)+'"]').click();
+    await page.waitForFunction(()=>document.querySelector('[data-finished-review] .rpchess-review-summary')?.textContent.includes('1 / '));
+    assert((await page.locator('[data-finished-review] .rpchess-review-prompt').innerText()).includes('Хороший ход'),
+      'the actual engine move is accepted after restarting training');
+    // Clicking an ordinary move previews the game but does not erase progress.
+    await page.locator('[data-finished-review] [data-review-move="2"]').click();
+    assert.equal(await page.locator('[data-finished-review] [data-review-action="resume"]').count(),1);
+    await page.locator('[data-finished-review] [data-review-action="resume"]').click();
+    assert((await page.locator('[data-finished-review] .rpchess-review-summary').innerText()).includes('1 / '));
+    await page.setViewportSize({width:390,height:844});
+    const portrait=await page.evaluate(()=>({
+      boardWidth:document.querySelector('[data-finished-review] [data-review-board]').getBoundingClientRect().width,
+      overflow:document.documentElement.scrollWidth-innerWidth
+    }));
+    assert(portrait.boardWidth<=390&&portrait.boardWidth>=280,'portrait review remains readable');
+    assert(portrait.overflow<=2,'portrait review has no horizontal overflow');
+    await page.setViewportSize({width:950,height:530});
+    await page.locator('[data-finished-review] [data-review-action="close"]').click();
+    assert.equal(await page.locator('[data-finished-review]').count(),0,'Analysis dialog cleans up on close');
+    // Deterministic regression for the reported bug: d4 is a valid near-best
+    // alternative while the original best is e4. PV MUST start from d4.
+    await page.evaluate(async()=>{
+      const {openFinishedGameReview}=await import('./js/finished-game-review.mjs');
+      let evaluated=0;
+      window.__branchFen=null;
+      window.__alternateReview=openFinishedGameReview({
+        mode:'arena',finished:true,playerColor:'w',
+        moves:['f2f3','e7e5','g2g4','d8h4'],
+        engineFactory:()=>({
+          async start(){},
+          async evaluate(fen,{movetime=180}={}){
+            if(movetime===850){
+              window.__branchFen=fen;
+              return {cp:-20,bestMove:'d7d5',pv:['d7d5','c2c4','g8f6'],depth:14};
+            }
+            evaluated++;
+            if(evaluated<=8)return evaluated%2
+              ?{cp:80,bestMove:'e2e4',depth:12,secondCp:15,secondDepth:11,pv:['e2e4','e7e5']}
+              :{cp:240,bestMove:'e7e5',depth:12,pv:['e7e5']};
+            return {cp:-30,bestMove:'d7d5',depth:12,pv:['d7d5']};
+          },
+          close(){}
+        })
+      });
+    });
+    await page.locator('[data-finished-review] [data-review-case]').first().waitFor({timeout:8000});
+    await page.locator('[data-finished-review] [data-review-square="d2"]').click();
+    await page.locator('[data-finished-review] [data-review-square="d4"]').click();
+    await page.waitForFunction(()=>document.querySelector('[data-finished-review] .rpchess-review-summary')?.textContent.includes('1 / '));
+    assert((await page.locator('[data-finished-review] .rpchess-review-prompt').innerText()).includes('Хороший ход'),
+      'the learner alternative d4 is accepted while Stockfish first choice remains e4');
+    await page.locator('[data-finished-review] [data-review-action="variation"]').click();
+    await page.locator('[data-finished-review] .rpchess-review-variation').waitFor({timeout:8000});
+    const branchLabel=await page.locator('[data-finished-review] .rpchess-review-line-compare').innerText();
+    assert(branchLabel.includes('Ваш вариант')&&branchLabel.includes('d4'),
+      'the UI explicitly shows the learner branch, not the engine best variation: '+branchLabel);
+    const actualFen=await page.evaluate(()=>window.__branchFen);
+    const desiredFen=await page.evaluate(async()=>{
+      const {ClassicChessEngine}=await import('./js/classic-chess-engine.mjs');
+      const game=new ClassicChessEngine();game.move('d2','d4');return game.fen();
+    });
+    assert.equal(actualFen,desiredFen,
+      'follow-up engine evaluation starts from precisely the accepted alternative position');
+    await page.locator('[data-finished-review] [data-review-action="close"]').click();
+    assert.equal(await page.locator('[data-finished-review]').count(),0,'fake analysis engine closes cleanly');
+    // Long journal regression: selecting a move near the bottom must NOT
+    // destroy its scroll offset when render() rebuilds the left panel.
+    await page.addStyleTag({content:
+      '[data-finished-review] .rpchess-review-movelist{max-height:110px!important;min-height:110px!important;flex:0 0 110px!important;}'
+    });
+    await page.evaluate(async moves=>{
+      const {openFinishedGameReview}=await import('./js/finished-game-review.mjs');
+      window.__scrollReview=openFinishedGameReview({
+        mode:'arena',finished:true,playerColor:'w',moves,
+        engineFactory:()=>({
+          async start(){},
+          async evaluate(){return {cp:0,depth:8,bestMove:null};},
+          close(){}
+        })
+      });
+    }, 'g2g3 e7e6 g1f3 d7d6 b2b3 g8e7 a2a3 e7c6 b1c3 a7a6 h2h4 g7g6 f3e5 f8e7 f2f3 c6a5 a1b1 b7b6 h1g1 b8d7 f1h3 h8f8 e1f2 a8a7 e5c6 f8g8 b3b4 a5c6 f2f1 c6d4 e2e4 h7h6 h3e6 a7a8 e6f7 e8f7 d2d3 d4c2 f3f4 c7c5 c3b5 a8b8 c1e3 a6a5 b1b3 c2e1 b3c3 f7g7 d3d4 g6g5'.split(' '));
+    const longList=page.locator('[data-finished-review] .rpchess-review-movelist');
+    await longList.waitFor({timeout:10000});
+    assert.equal(await page.locator('[data-finished-review] [data-review-move]').count(),50,
+      'long legal game provides 50 moves for scroll regression');
+    await longList.evaluate(el=>{el.scrollTop=245;});
+    const beforeMid=await longList.evaluate(el=>el.scrollTop);
+    assert(beforeMid>=200,'the move list is genuinely scrolled before selecting a middle move');
+    await page.locator('[data-finished-review] [data-review-move="22"]').click();
+    const afterMid=await longList.evaluate(el=>el.scrollTop);
+    assert(Math.abs(afterMid-beforeMid)<=2,
+      'selecting a middle move preserves journal scrollTop: '+beforeMid+' -> '+afterMid);
+    await longList.evaluate(el=>{el.scrollTop=el.scrollHeight-el.clientHeight;});
+    const beforeBottom=await longList.evaluate(el=>el.scrollTop);
+    assert(beforeBottom>beforeMid,'the list can reach the final moves');
+    await page.locator('[data-finished-review] [data-review-move="50"]').click();
+    const afterBottom=await longList.evaluate(el=>el.scrollTop);
+    assert(Math.abs(afterBottom-beforeBottom)<=2,
+      'selecting the final move does not jump the journal back to the top: '+beforeBottom+' -> '+afterBottom);
+    await page.locator('[data-finished-review] [data-review-action="close"]').click();
     await page.evaluate(()=>{
       const key='rpchess.reboot.v1.arena';
       const saved=JSON.parse(localStorage.getItem(key));saved.match=null;localStorage.setItem(key,JSON.stringify(saved));

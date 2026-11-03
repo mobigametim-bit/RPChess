@@ -160,5 +160,125 @@ const { pathToFileURL } = require('url');
   assert.strictEqual(core.arenaSummary(chosen.payload.arena).stats[foes[0].id].wins,2);
   const arenaOnly=cloud.authoritativeEnvelope({revision:9,updatedAt:300,payload:{run:null,arena:lost}},older);
   assert.strictEqual(arenaOnly.payload.run.journeyStep,5,'arena-only device must retain the other device journey');
-  console.log('Arena catalog, continuous Elo, chess AI, economy, resume, ad and cloud merge: PASS');
+  const review=await import(pathToFileURL(path.join(root,'game/js/finished-game-review.mjs')).href);
+  assert.throws(()=>review.prepareFinishedReview({mode:'travel',finished:true,moves:['e2e4'],playerColor:'w'}),/only for completed/,'Journey can never request error tutoring');
+  assert.throws(()=>review.prepareFinishedReview({mode:'tournament',finished:false,moves:['e2e4'],playerColor:'w'}),/only for completed/,'PvP cannot show engine advice during a live game');
+  const positions=review.prepareFinishedReview({mode:'arena',finished:true,moves:['e2e4','e7e5','g1f3'],playerColor:'w'});
+  assert.equal(positions.length,2);
+  assert.equal(positions[0].ply,1);
+  assert.equal(positions[0].uci,'e2e4');
+  assert.equal(positions[1].ply,3);
+  assert.equal(positions[1].uci,'g1f3');
+  const sanJournal=review.reviewMoveJournal(['f2f3','e7e5','g2g4','d8h4']);
+  assert.deepStrictEqual(sanJournal.map(m=>m.san),['f3','e5','g4','Qh4#'],
+    'Lichess-style move journal uses accurate SAN including the final checkmate');
+  assert.deepStrictEqual(sanJournal.map(m=>m.color),['w','b','w','b']);
+  assert.deepStrictEqual(sanJournal.map(m=>m.pieceType),['p','p','p','q'],
+    'the move journal preserves the original moving piece for glyphs, including pawn moves and checkmate');
+  assert.deepStrictEqual(review.reviewMoveJournal(['g1f3','g8f6']).map(m=>m.pieceType),['n','n'],
+    'the journal correctly distinguishes the white and black knight glyphs');
+  assert.equal(review.reviewMoveJournal(['e2e4','e7e5','g1f3','b8c6','f1c4','g8f6','e1g1'])[6].pieceType,'k',
+    'castling displays the moving king glyph rather than a rook or pawn');
+  const completePositions=review.prepareFinishedReview({
+    mode:'arena',finished:true,moves:['f2f3','e7e5','g2g4','d8h4'],playerColor:'w',allColors:true
+  });
+  assert.deepStrictEqual(completePositions.map(x=>x.ply),[1,2,3,4],
+    'annotations evaluate every move of both sides, unlike player-only exercises');
+  assert.deepStrictEqual(completePositions.map(x=>x.color),['w','b','w','b']);
+  const candidate={beforeFen:completePositions[0].beforeFen,uci:'f2f3'};
+  assert.equal(review.classifyStrongMove(candidate,{
+    cp:80,secondCp:0,depth:12,secondDepth:11,bestMove:'f2f3'
+  },5),'good','a clear engine runner-up gap can justify a ! mark');
+  assert.equal(review.classifyStrongMove(candidate,{
+    cp:80,secondCp:-125,depth:12,secondDepth:11,bestMove:'f2f3'
+  },5),'excellent','an exceptional critical gap may justify !!');
+  assert.equal(review.classifyStrongMove(candidate,{
+    cp:80,secondCp:78,depth:12,secondDepth:11,bestMove:'f2f3'
+  },5),null,'not every best move receives ! or !!');
+  assert.equal(review.classifyStrongMove(candidate,{
+    cp:80,secondCp:-125,depth:12,secondDepth:4,bestMove:'f2f3'
+  },5),null,'uncertain multiPV is never treated as brilliant');
+  const line=review.reviewEngineLine(completePositions[0].beforeFen,['f2f3','e7e5','g2g4','d8h4'],9);
+  assert.deepStrictEqual(line.map(x=>x.san),['f3','e5','g4','Qh4#'],
+    'validated engine variation includes actual human-readable SAN and a checkmate');
+  assert.equal(review.reviewEngineLine(completePositions[0].beforeFen,['f2f3','a7a4'],9).length,1,
+    'a malformed or illegal PV is truncated rather than fabricated');
+  const annotated=await review.analyseFinishedReview([{
+    ...completePositions[0],uci:'f2f3'
+  }],{annotate:true,playerColor:'b',engine:{
+    evaluate:async fen=>fen.includes(' w ')?{
+      cp:80,secondCp:0,depth:12,secondDepth:11,bestMove:'f2f3',pv:['f2f3','e7e5']
+    }:{cp:-75,bestMove:'e7e5',depth:12}
+  }});
+  assert.equal(annotated.errors.length,0,'strong move annotations are not mistakes');
+  assert.equal(annotated.annotations[1].kind,'good','complete journal preserves positive annotation');
+
+  assert.equal(sanJournal[3].fen.split(' ')[1],'w',
+    'journal positions are recorded after each complete legal move');
+  const whiteEval=review.reviewEvaluation(100,'w');
+  const blackEval=review.reviewEvaluation(100,'b');
+  assert.equal(whiteEval.display,'+1.00','positive white evaluation is formatted from White POV');
+  assert.equal(blackEval.display,'−1.00','positive Black-POV analysis maps to negative White eval');
+  assert(whiteEval.whitePercent>50&&blackEval.whitePercent<50,
+    'the right evaluation meter correctly reflects both board orientations');
+  assert(review.reviewEvaluation(100,'w',160).whitePercent<50,
+    'the right evaluation meter accounts for the loss from a real attempted move');
+  assert.equal(review.reviewEvaluation(null,'w'),null,'missing scores never become fabricated evaluations');
+  assert.equal(review.sampleReviewTurns(Array.from({length:64},(_,i)=>({ply:i+1}))).length,64,
+    'full-game review keeps every move rather than sampling sixteen');
+  const allTurns=Array.from({length:22},(_,i)=>({...positions[0],ply:2*i+1}));
+  let fullGameEvaluations=0;
+  const allMistakes=await review.analyseFinishedReview(allTurns,{
+    engine:{evaluate:async fen=>{fullGameEvaluations++;
+      return fen.includes(' w ')?{cp:60,bestMove:'d2d4',depth:10}:{cp:240,bestMove:'e7e5',depth:10};
+    }}
+  });
+  assert.equal(fullGameEvaluations,44,'every player move is assessed before and after, even past move 16');
+  assert.equal(allMistakes.length,22,'all detected lessons are retained, not only the top three');
+  assert.deepStrictEqual(allMistakes.map(x=>x.ply),allTurns.map(x=>x.ply),
+    'mistakes remain in game order for progressive training');
+  assert.deepStrictEqual(review.parseInfo('info depth 9 score cp -121 pv d2d4 d7d5'),{depth:9,cp:-121,pv:'d2d4'});
+  assert.equal(review.classifyLoss(250),'blunder');
+  assert.equal(review.classifyLoss(120),'mistake');
+  assert.equal(review.classifyLoss(65),'inaccuracy');
+  const fakeEngine={evaluate:async fen=>fen.includes(' w ')?{cp:60,bestMove:'d2d4',depth:10}:{cp:240,bestMove:'e7e5',depth:10}};
+  const found=await review.analyseFinishedReview(positions.slice(0,1),{engine:fakeEngine});
+  assert.equal(found.length,1,'Only evaluated legal positions can generate lessons');
+  assert.equal(found[0].severity,'blunder');
+  assert.equal(found[0].bestMove,'d2d4');
+  assert.equal(found[0].beforeCp,60,'baseline evaluation is retained for comparing alternate player moves');
+  assert.equal(found[0].originalReply,'e7e5','the actual engine reply is available for teaching');
+  const lesson={beforeFen:positions[0].beforeFen,beforeCp:80,bestMove:'e2e4'};
+  let assessed=0;
+  const examiner={evaluate:async()=>{assessed++;return {cp:-30,depth:12,bestMove:'d7d5'};}};
+  const exact=await review.gradeReviewAttempt(lesson,'e2e4',{engine:examiner});
+  assert.equal(exact.accepted,true,'known best move is accepted');
+  assert.equal(assessed,0,'no redundant Stockfish query for a known best move');
+  const nearBest=await review.gradeReviewAttempt(lesson,'d2d4',{engine:examiner});
+  assert.equal(nearBest.accepted,true,'an alternative within 70cp is accepted');
+  assert.equal(nearBest.loss,50);
+  assert.equal(assessed,1,'a different legal attempt is evaluated by the engine');
+  const chosenAlt=review.reviewContinuationStart(lesson,'d2d4');
+  const chosenBest=review.reviewContinuationStart(lesson);
+  assert.equal(chosenAlt.uci,'d2d4','variation starts from accepted learner move, not the original engine first choice');
+  assert.equal(chosenAlt.isEngineBest,false);
+  assert.equal(chosenBest.isEngineBest,true);
+  assert.notEqual(chosenAlt.afterFen,chosenBest.afterFen,
+    'different accepted moves lead to different Stockfish positions for on-demand PV');
+  const altLine=review.reviewEngineLine(lesson.beforeFen,['d2d4','d7d5','c2c4'],9);
+  assert.deepStrictEqual(altLine.map(x=>x.uci),['d2d4','d7d5','c2c4'],
+    'legal principal variation keeps the chosen alternative as its first move');
+  assert.throws(()=>review.reviewContinuationStart(lesson,'d2d5'),/Illegal continuation move/,
+    'an impossible learner move cannot be analysed as a valid branch');
+  const poor=await review.gradeReviewAttempt(lesson,'g2g4',{
+    engine:{evaluate:async()=>({cp:240,depth:12,bestMove:'e7e5'})}
+  });
+  assert.equal(poor.accepted,false,'a substantially losing legal move is rejected');
+  assert.equal((await review.gradeReviewAttempt(lesson,'e2e5',{engine:examiner})).invalid,true,
+    'illegal moves are rejected before invoking the engine');
+  const uncertain=await review.gradeReviewAttempt(lesson,'b1c3',{
+    engine:{evaluate:async()=>({cp:null,depth:0,bestMove:null})}
+  });
+  assert.equal(uncertain.unavailable,true,'failed Stockfish evaluations never fabricate a verdict');
+  console.log('Arena catalog, Elo, economy, error review isolation & evaluation, resume, ad and cloud merge: PASS');
 })().catch(error=>{console.error(error);process.exitCode=1;});

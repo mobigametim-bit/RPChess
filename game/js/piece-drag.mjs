@@ -1,15 +1,25 @@
 /* Shared pointer drag input for real 8x8 chess boards.
    Click-to-select remains authoritative: drag begins only after a short move.
    The move is committed by the owning screen's existing rules/validation. */
-function attachPieceDrag(board, { canPick, onStart, onDrop }) {
+function attachPieceDrag(board, { canPick, onStart, onDrop, onCancel }) {
   if (!board) return;
   board.classList.add('rpchess-draggable-board');
   let gesture = null;
   let suppressClick = null;
 
   function squareAt(x, y) {
-    const target = document.elementFromPoint(x, y)?.closest?.('[data-square]');
-    return target && board.contains(target) ? target : null;
+    // Pointer capture and top-level overlays (including translucent mobile UI)
+    // can retarget elementFromPoint during an active drag. The chess board is
+    // authoritative for the drop cell: hit-test its actual square rectangles.
+    const hit = document.elementFromPoint(x, y)?.closest?.('[data-square]');
+    if (hit && board.contains(hit)) return hit;
+    const bounds = board.getBoundingClientRect();
+    if (x < bounds.left || x >= bounds.right || y < bounds.top || y >= bounds.bottom) return null;
+    for (const cell of board.querySelectorAll('[data-square]')) {
+      const rect = cell.getBoundingClientRect();
+      if (x >= rect.left && x < rect.right && y >= rect.top && y < rect.bottom) return cell;
+    }
+    return null;
   }
 
   function removeFeedback() {
@@ -95,7 +105,13 @@ function attachPieceDrag(board, { canPick, onStart, onDrop }) {
     if (dragging) onDrop(from, target && target.dataset.square !== from ? target.dataset.square : null);
   }
 
-  function cancel() { reset(); }
+  function cancel() {
+    const wasDragging=Boolean(gesture?.dragging);
+    reset();
+    // Optional: an owning screen may be holding its board DOM stable while a
+    // drag is active. A cancelled pointer/blur must release that state.
+    if(wasDragging)onCancel?.();
+  }
 
   board.addEventListener('pointerdown', event => {
     // A new real press must never be mistaken for the synthetic click from

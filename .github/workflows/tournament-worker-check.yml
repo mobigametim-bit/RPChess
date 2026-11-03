@@ -1,0 +1,27 @@
+name: Check Tournament PvP Worker
+
+on:
+  push:
+    branches:
+      - feature/tournament-pvp-mvp-20261022
+    paths:
+      - tournament-worker/**
+      - game/js/classic-chess-engine.mjs
+      - .github/workflows/tournament-worker-check.yml
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Verify dedicated Worker bundling and SQLite Durable Object migration
+        run: npx wrangler deploy --config tournament-worker/wrangler.toml --dry-run --outdir /tmp/rpchess-tournament-worker

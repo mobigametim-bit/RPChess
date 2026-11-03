@@ -1,5 +1,6 @@
 import { ChessAIAdapter } from './chess-ai-adapter.mjs';
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
+import { openFinishedGameReview } from './finished-game-review.mjs?v=20261104-piece-glyph-7';
 import { RACE_TAGS, RACE_LABELS, racePiecePath, boardRacePiecePath, applyRaceBoardTheme } from './race-assets.mjs';
 import { fantasyPieceMarkup } from './fantasy-piece.mjs';
 import { attachPieceDrag } from './piece-drag.mjs?v=20261022-portrait-motion1';
@@ -11,8 +12,8 @@ import { platform } from './platform.mjs';
 import { ARENA_KEY, SHARD_ICON, PIECE_CODE, OPPONENTS, OPPONENT_BY_ID, SQUAD_PRICES, ARTIFACT_PRICES, emptyArena, normalizeArena, arenaSummary, newMatch, chooseArtifact, finishMatch, claimDouble, purchaseSquad } from './arena-core.mjs';
 
 const copy = {
-  ru:{foesAria:'Соперники: горизонтальная карусель',restoreError:'Не удалось восстановить сохранённую партию',engineUnavailable:'Шахматный движок недоступен',title:'Арена',back:'Главное меню',shards:'Осколки чести',squads:'Ваш отряд',enemies:'Соперники',section:'Раздел',power:'Мощь',wins:'Побед',losses:'Поражений',draws:'Ничьих',fight:'В бой!',locked:'Победите предыдущего соперника',buy:'Купить',select:'Выбрать',owned:'Выбран',resume:'Продолжить бой',offer:'Выберите артефакт',offerKicker:'ПЕРЕД СРАЖЕНИЕМ',offerText:'Выберите один артефакт на эту партию',none:'Без артефакта',noneText:'Начать бой без дополнительного эффекта.',insufficient:'Недостаточно осколков чести',victory:'Победа!',defeat:'Поражение',draw:'Ничья',continue:'Продолжить',again:'Сыграть ещё',rivals:'К соперникам',double:'Реклама: награда ×2',adError:'Реклама не завершена. Основная награда сохранена.',move:'Ваш ход',thinking:'Противник думает…',promotion:'Превращение пешки',result:'Партия завершена',drawText:'Следующий противник открывается за победу.',defeatText:'Можно попробовать снова.',opponent:'Соперник',squad:'Отряд',party:'Битва',white:'Белые',black:'Чёрные',journal:'ЖУРНАЛ БОЯ',moves:'Ходы',noMoves:'Ходов пока нет',check:'Шах!'},
-  en:{foesAria:'Opponents: horizontal carousel',restoreError:'Cannot restore the saved match',engineUnavailable:'Engine is unavailable',title:'Arena',back:'Main menu',shards:'Honor shards',squads:'Your squad',enemies:'Opponents',section:'Section',power:'Power',wins:'Wins',losses:'Losses',draws:'Draws',fight:'Fight!',locked:'Defeat the previous opponent',buy:'Buy',select:'Select',owned:'Selected',resume:'Resume match',offer:'Choose an artifact',offerKicker:'BEFORE BATTLE',offerText:'Choose one artifact for this match',none:'No artifact',noneText:'Start the match without an additional effect.',insufficient:'Not enough honor shards',victory:'Victory!',defeat:'Defeat',draw:'Draw',continue:'Continue',again:'Play again',rivals:'Opponents',double:'Watch ad: reward ×2',adError:'Ad was not completed. Your base reward is safe.',move:'Your move',thinking:'Opponent is thinking…',promotion:'Promote pawn',result:'Match complete',drawText:'Win to unlock the next opponent.',defeatText:'You can try again.',opponent:'Opponent',squad:'Squad',party:'Battle',white:'White',black:'Black',journal:'BATTLE LOG',moves:'Moves',noMoves:'No moves yet',check:'Check!'}
+  ru:{foesAria:'Соперники: горизонтальная карусель',restoreError:'Не удалось восстановить сохранённую партию',engineUnavailable:'Шахматный движок недоступен',title:'Арена',back:'Главное меню',shards:'Осколки чести',squads:'Ваш отряд',enemies:'Соперники',section:'Раздел',power:'Мощь',wins:'Побед',losses:'Поражений',draws:'Ничьих',fight:'В бой!',locked:'Победите предыдущего соперника',buy:'Купить',select:'Выбрать',owned:'Выбран',resume:'Продолжить бой',offer:'Выберите артефакт',offerKicker:'ПЕРЕД СРАЖЕНИЕМ',offerText:'Выберите один артефакт на эту партию',none:'Без артефакта',noneText:'Начать бой без дополнительного эффекта.',insufficient:'Недостаточно осколков чести',victory:'Победа!',defeat:'Поражение',draw:'Ничья',continue:'Продолжить',again:'Сыграть ещё',rivals:'К соперникам',double:'Реклама: награда ×2',adError:'Реклама не завершена. Основная награда сохранена.',move:'Ваш ход',thinking:'Противник думает…',promotion:'Превращение пешки',result:'Партия завершена',drawText:'Следующий противник открывается за победу.',defeatText:'Можно попробовать снова.',opponent:'Соперник',squad:'Отряд',party:'Битва',white:'Белые',black:'Чёрные',journal:'ЖУРНАЛ БОЯ',moves:'Ходы',noMoves:'Ходов пока нет',check:'Шах!',review:'Анализировать'},
+  en:{foesAria:'Opponents: horizontal carousel',restoreError:'Cannot restore the saved match',engineUnavailable:'Engine is unavailable',title:'Arena',back:'Main menu',shards:'Honor shards',squads:'Your squad',enemies:'Opponents',section:'Section',power:'Power',wins:'Wins',losses:'Losses',draws:'Draws',fight:'Fight!',locked:'Defeat the previous opponent',buy:'Buy',select:'Select',owned:'Selected',resume:'Resume match',offer:'Choose an artifact',offerKicker:'BEFORE BATTLE',offerText:'Choose one artifact for this match',none:'No artifact',noneText:'Start the match without an additional effect.',insufficient:'Not enough honor shards',victory:'Victory!',defeat:'Defeat',draw:'Draw',continue:'Continue',again:'Play again',rivals:'Opponents',double:'Watch ad: reward ×2',adError:'Ad was not completed. Your base reward is safe.',move:'Your move',thinking:'Opponent is thinking…',promotion:'Promote pawn',result:'Match complete',drawText:'Win to unlock the next opponent.',defeatText:'You can try again.',opponent:'Opponent',squad:'Squad',party:'Battle',white:'White',black:'Black',journal:'BATTLE LOG',moves:'Moves',noMoves:'No moves yet',check:'Check!',review:'Analyze'}
 };
 const types = {ru:{pawn:'Пешка',knight:'Конь',bishop:'Слон',rook:'Ладья',queen:'Ферзь',king:'Король'},en:{pawn:'Pawn',knight:'Knight',bishop:'Bishop',rook:'Rook',queen:'Queen',king:'King'}};
 const raceEn = ['Humans','Elves','Orcs','Undead','Dark elves','Dwarves','Demons','Angels','Dragonborn','Beastfolk','Constructs','Animals','Fae','Goblins'];
@@ -39,7 +40,7 @@ function save(next){state=normalizeArena(next);platform.storage.local?.setItem(A
 function id(){return globalThis.crypto?.randomUUID?.()||'arena:'+Date.now()+':'+Math.random().toString(36).slice(2);}
 function escape(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 function img(src,cls,alt=''){return '<img class="'+cls+'" src="'+src+'" alt="'+escape(alt)+'">';}
-function button(action,label,extra=''){const shared=['double','continue','again'].includes(action)?' class="reboot-button reboot-button--primary"':'';return '<button type="button"'+shared+' data-arena-action="'+action+'" '+extra+'>'+label+'</button>';}
+function button(action,label,extra=''){const shared=['double','continue','again','review'].includes(action)?' class="reboot-button reboot-button--primary"':'';return '<button type="button"'+shared+' data-arena-action="'+action+'" '+extra+'>'+label+'</button>';}
 function statIcon(kind){return img(statIcons[kind],'arena-stat-icon','');}
 function visible(open){
   root.hidden=!open;menu.hidden=open;document.body.classList.toggle('arena-active',open);
@@ -233,7 +234,7 @@ function renderDialog(){
     const icon=win?img(SHARD_ICON,'arena-result-icon',''):loss?img('assets/arena/defeat_crown.png','arena-result-icon',''):'<span class="arena-result-icon">½</span>';
     const ad=win && platform.storage.cloud.available && !claimed?button('double',l('double'),' '+(adBusy?'disabled':'')):'';
     const message=win?('+'+match.reward+(claimed?' ×2':'')+' '+l('shards')):loss?l('defeatText'):l('drawText');
-    openDialog('result','<h2>'+l(win?'victory':loss?'defeat':'draw')+'</h2>'+icon+'<p>'+message+'</p><p class="arena-notice" role="status">'+escape(notice?l(notice):'')+'</p><div class="arena-result-actions">'+ad+button('continue',l('continue'),adBusy?'disabled':'')+(loss?button('again',l('again')):'')+'</div>');
+    openDialog('result','<h2>'+l(win?'victory':loss?'defeat':'draw')+'</h2>'+icon+'<p>'+message+'</p><p class="arena-notice" role="status">'+escape(notice?l(notice):'')+'</p><div class="arena-result-actions">'+ad+(match.moves.length?button('review',l('review')):'')+button('continue',l('continue'),adBusy?'disabled':'')+(loss?button('again',l('again')):'')+'</div>');
   }else if(dialogType==='promotion'){
     openDialog('promotion','<h2>'+l('promotion')+'</h2><div class="arena-promotions">'+['q','r','b','n'].map(type=>button('promote',(document.documentElement.dataset.simplePieces==='1'?fantasyPieceMarkup(type,state.match.playerColor):img(boardRacePiecePath(state.match.squad,({q:'queen',r:'rook',b:'bishop',n:'knight'})[type],state.match.playerColor),'arena-promotion-art','')),'data-promotion="'+type+'"')).join('')+'</div>');
   }
@@ -339,6 +340,15 @@ dialog?.addEventListener('click',async event=>{
   const target=event.target.closest('[data-arena-action]');if(!target||target.disabled)return;
   const action=target.dataset.arenaAction;
   if(action==='close'){closeDialog();return;}
+  if(action==='review'){
+    const match=state.match;
+    if(!match||match.phase!=='result'||!match.outcome||!match.moves?.length)return;
+    const rival=OPPONENT_BY_ID.get(match.foe);
+    openFinishedGameReview({mode:'arena',finished:true,moves:match.moves,
+     playerColor:match.playerColor,lang:currentLanguage(),
+     sides:{[match.playerColor]:match.squad,[match.playerColor==='w'?'b':'w']:rival?.race||'humans'}});
+    return;
+  }
   if(action==='fight'){
     const next=newMatch(state,dialog.dataset.foe,id());if(next===state)return;
     save(next);dialogType='offer';renderDialog();

@@ -3,6 +3,12 @@ function memoryStorage(){const data=new Map();return{getItem:k=>data.has(k)?data
 (async()=>{
   const game=path.resolve(__dirname,'..','game');
   const rating=await import(pathToFileURL(path.join(game,'js/player-rating.mjs')).href);
+  const sharedElo=await import(pathToFileURL(path.join(game,'js/power-elo.mjs')).href);
+  for(const [me,opponent,score] of [[500,500,1],[500,500,0],[500,800,1],[500,800,0],[2500,500,0]])
+    assert.strictEqual(sharedElo.ratingDelta(me,opponent,score),rating.ratingDelta(me,opponent,score),
+      'PvP and Journey must use the same K=32 Elo curve');
+  assert.equal(sharedElo.ratingDelta(500,500,1),16);
+  assert.equal(sharedElo.ratingDelta(500,500,0),-16);
   const persistence=await import(pathToFileURL(path.join(game,'js/run-persistence.mjs')).href);
   const travelSource=fs.readFileSync(path.join(game,'js/travel-choice-app.mjs'),'utf8');
   const ratingRuntimeSource=fs.readFileSync(path.join(game,'js/player-rating-runtime.mjs'),'utf8');
@@ -26,6 +32,12 @@ function memoryStorage(){const data=new Map();return{getItem:k=>data.has(k)?data
   const puzzleStorage=memoryStorage();const puzzleWin=rating.settlePlayerRating({receiptId:'puzzle-win',opponentElo:800,result:1,gainDivisor:rating.PUZZLE_WIN_GAIN_DIVISOR,storage:puzzleStorage});assert.strictEqual(puzzleWin.receipt.delta,9,'Training positive Power gain must be divided by three');
   const puzzleLossStorage=memoryStorage();const puzzleLoss=rating.settlePlayerRating({receiptId:'puzzle-loss',opponentElo:800,result:0,gainDivisor:rating.PUZZLE_WIN_GAIN_DIVISOR,storage:puzzleLossStorage});assert.strictEqual(puzzleLoss.receipt.delta,-5,'Training loss must retain the canonical Elo penalty');
   const carryStorage=memoryStorage();rating.writePlayerRating({power:1000,receipts:[]},carryStorage);const carry=rating.applyNewRunPowerCarryover(carryStorage);assert.strictEqual(carry.before,1000);assert.strictEqual(carry.after,750);assert.strictEqual(rating.readPlayerRating(carryStorage).power,750);
+  const serverStorage=memoryStorage();
+  const receipt={id:'tournament:12345678-aaaa-bbbb-cccc-123456789abc:w',before:500,after:516,delta:16,opponentElo:500,result:1};
+  assert.equal(rating.importTournamentRatingReceipt(receipt,serverStorage).changed,true);
+  assert.equal(rating.readPlayerRating(serverStorage).power,516);
+  assert.equal(rating.importTournamentRatingReceipt(receipt,serverStorage).changed,false,'Client cannot credit duplicate server match');
+  assert.throws(()=>rating.importTournamentRatingReceipt({...receipt,delta:100},serverStorage),/Untrusted/);
   const duplicate=rating.settlePlayerRating({receiptId:'rated-1',opponentElo:400,result:0,storage});assert.strictEqual(duplicate.changed,false);assert.deepStrictEqual(duplicate.receipt,win.receipt);assert.strictEqual(rating.readPlayerRating(storage).power,527,'same result receipt must never apply twice');
   const draw=rating.settlePlayerRating({receiptId:'rated-2',opponentElo:600,result:.5,storage});assert([0,1,2,3,4,5,6,7,8].includes(Math.abs(draw.receipt.delta)),'draw delta should use Elo expectation rather than fixed reward');
   assert.strictEqual(rating.combatResultScore({type:'checkmate',winner:'b'},'b'),1);assert.strictEqual(rating.combatResultScore({type:'checkmate',winner:'w'},'b'),0);assert.strictEqual(rating.combatResultScore({type:'stalemate',winner:null},'b'),.5);
