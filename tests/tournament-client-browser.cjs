@@ -85,6 +85,7 @@ try {
  }
  const white=colorA==='w'?first.page:second.page;
  const black=colorB==='b'?second.page:first.page;
+ assert.equal(await first.page.locator('[data-tournament-screen] small').filter({hasText:'RPChess · PvP'}).count(),0,'Retired RPChess PvP subtitle is removed');
  // The Fantasy art toggle is local to each player and never alters the
  // server-authoritative 10+0 match or the opponent's preferred artwork.
  for(const client of [white,black]){
@@ -162,6 +163,8 @@ try {
    await ghost.waitFor({state:'detached',timeout:5000});
   }finally{await cdp.detach();}
  }
+ assert.equal(await white.locator('[data-tour-action="review"]').count(),0,'No engine hints during a live match');
+ assert.equal(await black.locator('[data-tour-action="review"]').count(),0,'Opponent has no live move hint');
  // Mouse and touch dragging are the primary Tourney controls. The original
  // tap-source/tap-destination path remains available as an alternative.
  const moveResponses=[];
@@ -293,6 +296,15 @@ try {
  // Browser acceptance uses independent guest sessions; these remain casual.
  assert.equal(await white.locator('[data-tour-rating]').count(),0);
  assert.equal(await black.locator('[data-tour-rating]').count(),0);
+ for(const screen of [white,black]){
+   assert.equal(await screen.locator('[data-tour-action="review"]').count(),1,'Completed Tournament has mistake review');
+ }
+ await white.locator('[data-tour-action="review"]').click();
+ await white.locator('[data-finished-review] [data-review-action="close"]').waitFor({timeout:15000});
+ assert.equal(await white.locator('[data-finished-review] h2').innerText(),'Разбор ошибок');
+ await white.locator('[data-finished-review] [data-review-action="close"]').click();
+ assert.equal(await white.locator('[data-finished-review]').count(),0);
+ assert.equal(await white.locator('[data-tour-action="review"]').count(),1,'Closing review preserves result and Elo');
  const readPower=page=>page.evaluate(async()=>{
   const {readPlayerRating}=await import('./js/player-rating.mjs');
   const profile=readPlayerRating();

@@ -248,6 +248,16 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     const resultButton=await page.locator('.arena-dialog-panel--result .arena-result-actions button').first().evaluate(node=>getComputedStyle(node).backgroundImage);
     assert(resultButton.includes('58, 45, 27'),'victory buttons use gold UI styling');
     assert(await page.locator('.arena-dialog-panel--result .arena-result-actions button').first().evaluate(node=>node.classList.contains('reboot-button--primary')),'result actions reuse the common primary button');
+    assert.equal(await page.locator('.arena-dialog-panel--result [data-arena-action="review"]').count(),1,'Finished Arena result offers mistake review');
+    // Review UI only after finishing; a mocked short finish is not fed into
+    // the evaluation engine because its handcrafted FEN is not in move history.
+    await page.evaluate(async()=>{
+      const {openFinishedGameReview}=await import('./js/finished-game-review.mjs');
+      window.__reviewDemo=openFinishedGameReview({mode:'arena',finished:true,moves:['e2e4','e7e5'],playerColor:'w'});
+    });
+    await page.locator('[data-finished-review] [data-review-action="close"]').waitFor();
+    await page.locator('[data-finished-review] [data-review-action="close"]').click();
+    assert.equal(await page.locator('[data-finished-review]').count(),0,'Analysis dialog cleans up on close');
     await page.evaluate(()=>{
       const key='rpchess.reboot.v1.arena';
       const saved=JSON.parse(localStorage.getItem(key));saved.match=null;localStorage.setItem(key,JSON.stringify(saved));
