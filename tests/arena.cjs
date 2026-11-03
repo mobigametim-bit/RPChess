@@ -252,6 +252,18 @@ const { pathToFileURL } = require('url');
   assert.equal(nearBest.accepted,true,'an alternative within 70cp is accepted');
   assert.equal(nearBest.loss,50);
   assert.equal(assessed,1,'a different legal attempt is evaluated by the engine');
+  const chosenAlt=review.reviewContinuationStart(lesson,'d2d4');
+  const chosenBest=review.reviewContinuationStart(lesson);
+  assert.equal(chosenAlt.uci,'d2d4','variation starts from accepted learner move, not the original engine first choice');
+  assert.equal(chosenAlt.isEngineBest,false);
+  assert.equal(chosenBest.isEngineBest,true);
+  assert.notEqual(chosenAlt.afterFen,chosenBest.afterFen,
+    'different accepted moves lead to different Stockfish positions for on-demand PV');
+  const altLine=review.reviewEngineLine(lesson.beforeFen,['d2d4','d7d5','c2c4'],9);
+  assert.deepStrictEqual(altLine.map(x=>x.uci),['d2d4','d7d5','c2c4'],
+    'legal principal variation keeps the chosen alternative as its first move');
+  assert.throws(()=>review.reviewContinuationStart(lesson,'d2d5'),/Illegal continuation move/,
+    'an impossible learner move cannot be analysed as a valid branch');
   const poor=await review.gradeReviewAttempt(lesson,'g2g4',{
     engine:{evaluate:async()=>({cp:240,depth:12,bestMove:'e7e5'})}
   });
