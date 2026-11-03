@@ -251,7 +251,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
       alternative:'Your alternative is acceptable according to the engine.',
       wrong:'This move still loses too much evaluation. Try again.',
       checking:'Stockfish is assessing your move…',fail:'Could not assess this move. Try again.',
-      invalid:'This move is not legal.',tryAgain:'Try again',next:'Next mistake',solution:'Show solution',
+      invalid:'This move is not legal.',tryAgain:'Try again',next:'Next mistake',solution:'Best move',
       original:'Why was it a mistake?',opponent:'Show opponent reply',back:'Back to exercise',
       hint:'Hint',hideHint:'Hide hint',show:'Engine suggestion',solved:'Solved',
       intro:'Solve each position before checking the answer.',completed:'Practice complete!',
@@ -266,7 +266,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
       alternative:'Хороший ход! Движок подтверждает, что этот вариант достаточно силён.',
       wrong:'Этот ход по-прежнему теряет слишком много оценки. Попробуйте другой.',
       checking:'Stockfish проверяет ваш ход…',fail:'Не удалось проверить ход. Попробуйте ещё.',
-      invalid:'Недопустимый ход.',tryAgain:'Попробовать ещё',next:'Следующая ошибка',solution:'Показать решение',
+      invalid:'Недопустимый ход.',tryAgain:'Попробовать ещё',next:'Следующая ошибка',solution:'Лучший ход',
       original:'Почему это ошибка?',opponent:'Ответ соперника',back:'Вернуться к задаче',
       hint:'Подсказка',hideHint:'Скрыть подсказку',show:'Предложение движка',solved:'Решено',
       intro:'Найдите хороший ход самостоятельно, а затем сравните варианты.',
@@ -289,8 +289,9 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
   const item=cases[selected],moveNo=Math.ceil(item.ply/2)+(item.ply%2===1?'.':'…');
   const list=cases.map((c,i)=>{
    const type=L[c.severity],num=Math.ceil(c.ply/2)+(c.ply%2===1?'.':'…');
+   const mark={inaccuracy:'?!',mistake:'?',blunder:'??'}[c.severity]||'';
    return '<button type="button" data-review-case="'+i+'" class="rpchess-review-case'+(i===selected?' is-active':'')+(solved.has(i)?' is-solved':'')+'">'+
-    '<span>'+tx.issues+' '+(i+1)+'</span><strong>'+num+' '+esc(c.uci)+'</strong><small>'+type+' · −'+(c.loss/100).toFixed(2)+(solved.has(i)?' ✓':'')+'</small></button>';
+    '<strong>'+num+' '+esc(c.uci)+'</strong><b class="rpchess-review-symbol rpchess-review-symbol--'+c.severity+'" aria-label="'+esc(type)+'">'+mark+'</b><small>−'+(c.loss/100).toFixed(2)+(solved.has(i)?' ✓':'')+'</small></button>';
   }).join('');
   const complete=solved.size===cases.length;
   const viewingOriginal=boardMode==='original'||boardMode==='reply';
@@ -300,9 +301,11 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
   const actualHint=hint&&!viewingOriginal&&boardMode==='before'?item.bestMove:'';
   board.innerHTML=chessSquareBoard(currentFen,playerColor,sides,selectedSquare,actualHint,lastMove);
   const title=tx.task+' '+(playerColor==='w'?(lang==='en'?'White':'белых'):(lang==='en'?'Black':'чёрных'));
-  let details='<div class="rpchess-review-details"><h3>'+moveNo+' · '+esc(L[item.severity])+'</h3>'+
-   '<p class="rpchess-review-detail">'+title+'</p><p class="rpchess-review-meta">'+tx.mistake+': <strong>'+esc(item.uci)+'</strong></p>'+
-   '<p class="rpchess-review-meta">'+tx.loss+': <strong>−'+(item.loss/100).toFixed(2)+'</strong></p>';
+  const symbol={inaccuracy:'?!',mistake:'?',blunder:'??'}[item.severity]||'';
+  let details='<div class="rpchess-review-details"><h3 class="rpchess-review-current">'+moveNo+' '+esc(item.uci)+
+   '<b class="rpchess-review-symbol rpchess-review-symbol--'+item.severity+'" aria-label="'+esc(L[item.severity])+'">'+symbol+'</b>'+
+   '<span class="rpchess-review-current-loss">−'+(item.loss/100).toFixed(2)+'</span></h3>'+
+   '<p class="rpchess-review-detail">'+title+'</p>';
   if(viewingOriginal){
    details+='<p class="rpchess-review-prompt">'+tx.explanation+'</p><p class="rpchess-review-meta">'+tx.original2+': <strong>'+esc(item.uci)+'</strong></p>';
    details+='<p class="rpchess-review-meta">'+tx.reply+': <strong>'+(item.originalReply?esc(item.originalReply):tx.noReply)+'</strong></p>';
@@ -310,7 +313,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
    if(boardMode==='original'&&item.originalReply)details+='<button type="button" data-review-action="opponent" class="rpchess-review-button">'+tx.opponent+'</button>';
    details+='</div>';
   }else{
-   details+='<p class="rpchess-review-prompt">'+(feedback||tx.pending)+'</p>';
+   if(feedback)details+='<p class="rpchess-review-prompt rpchess-review-prompt--'+feedbackKind+'" role="status">'+feedback+'</p>';
    if(hint)details+='<p class="rpchess-review-answer">'+tx.show+': <strong>'+esc(item.bestMove)+'</strong></p>';
    if(pendingPromotion){
     details+='<div class="rpchess-review-promotions"><strong>'+tx.promotion+'</strong><div>';
@@ -321,8 +324,6 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
    if(boardMode==='attempt')details+='<button type="button" data-review-action="retry" class="rpchess-review-button">'+tx.tryAgain+'</button>';
    details+='<button type="button" data-review-action="hint" class="rpchess-review-button">'+(hint?tx.hideHint:tx.hint)+'</button>';
    details+='<button type="button" data-review-action="solution" class="rpchess-review-button">'+tx.solution+'</button>';
-   details+='<button type="button" data-review-action="original" class="rpchess-review-button">'+tx.original+'</button>';
-   if(solved.has(selected)||feedbackKind==='correct')details+='<button type="button" data-review-action="next" class="rpchess-review-button rpchess-review-button--primary">'+tx.next+'</button>';
    details+='</div>';
   }
   details+='</div>';
