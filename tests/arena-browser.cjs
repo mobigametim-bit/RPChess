@@ -275,6 +275,36 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       'Lichess-style journal includes both players and every move');
     assert((await page.locator('[data-finished-review] .rpchess-review-movelist').innerText()).includes('Qh4#'),
       'completed game journal shows chess SAN and checkmate suffix');
+    const moveGrid=await page.evaluate(()=>{
+      const rows=[...document.querySelectorAll('[data-finished-review] .rpchess-review-move-row')];
+      const box=el=>{const b=el.getBoundingClientRect();return {x:b.x,y:b.y,w:b.width,h:b.height,cx:b.x+b.width/2,cy:b.y+b.height/2};};
+      return rows.map(row=>{
+        const children=[...row.children];
+        const number=box(children[0]),white=box(children[1]),black=box(children[2]);
+        const moves=children.slice(1).filter(el=>el.classList.contains('rpchess-review-move'));
+        return {row:box(row),number,white,black,items:moves.map(move=>{
+          const text=move.querySelector('span:first-child'),badge=move.querySelector('.rpchess-review-symbol');
+          const first=box(text),last=badge?box(badge):first,rect=box(move);
+          return {rect,selected:move.classList.contains('is-active'),
+            contentCenter:(Math.min(first.x,last.x)+Math.max(first.x+first.w,last.x+last.w))/2,
+            justify:getComputedStyle(move).justifyContent};
+        })};
+      });
+    });
+    assert(moveGrid.length>=2,'the review journal contains aligned chess move rows');
+    for(const entry of moveGrid){
+      assert(Math.abs(entry.white.w-entry.black.w)<=1,'white and black move columns have equal widths: '+JSON.stringify(entry));
+      assert(Math.abs(entry.number.cy-entry.white.cy)<=1 && Math.abs(entry.white.cy-entry.black.cy)<=1,
+        'move numbers, white and black moves are vertically centered: '+JSON.stringify(entry));
+      for(const item of entry.items){
+        assert(Math.abs(item.rect.y-entry.row.y)<=1 && Math.abs(item.rect.h-entry.row.h)<=1,
+          'a move and its highlight are confined to precisely one row: '+JSON.stringify(entry));
+        assert(item.justify==='center' && Math.abs(item.contentCenter-item.rect.cx)<=3,
+          'move notation and annotation badge are centered as a group: '+JSON.stringify(item));
+      }
+    }
+    assert(moveGrid.some(entry=>entry.items.some(item=>item.selected)),
+      'the active gold selection is confined to its own move cell');
     assert.equal(await page.locator('[data-finished-review] .rpchess-review-legend-item').count(),3,
       'annotation legend appears in the left information rail');
     assert.equal(await page.locator('[data-finished-review] [data-review-action="view"]').count(),0);
