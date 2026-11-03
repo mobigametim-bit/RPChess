@@ -62,6 +62,37 @@ async function capturePhoneOrTablet(browser,width,height){
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   try {
     await menu(page);
+    // PWA smoke checks share the existing real-device portrait browser test:
+    // installation stays independent of orientation and GitHub Pages prefix.
+    const pwa=await page.evaluate(async()=>{
+      const link=document.querySelector('link[rel="manifest"]');
+      const response=link?await fetch(link.href):null;
+      const manifest=response?.ok?await response.json():null;
+      const {canRegisterPwa}=await import('./js/pwa-install.mjs');
+      const vkBlocked=!canRegisterPwa({
+        host:'mobigametim-bit.github.io',topLevel:true,supported:true,embedded:true
+      });
+      const directAllowed=canRegisterPwa({
+        host:'mobigametim-bit.github.io',topLevel:true,supported:true,embedded:false
+      });
+      const reg=await Promise.race([
+        navigator.serviceWorker?.ready.then(item=>item)||Promise.resolve(null),
+        new Promise(resolve=>setTimeout(()=>resolve(null),10000))
+      ]);
+      return {link:!!link,manifest,scope:reg?.scope||null,vkBlocked,directAllowed,
+        landscapeAllowed:!manifest?.orientation||manifest.orientation==='any'};
+    });
+    assert(pwa.link&&pwa.manifest,'installable game has a readable manifest');
+    assert.equal(pwa.manifest.display,'standalone');
+    assert(pwa.vkBlocked&&pwa.directAllowed,'direct web installation must not register in a VK launch');
+    assert(pwa.landscapeAllowed,'PWA must not lock portrait/landscape');
+    assert(pwa.scope&&pwa.scope.endsWith(new URL('./',url.endsWith('/')?url:url+'/').pathname),
+      'service worker must control the web app inside its own route prefix');
+    const iconUrl=new URL('icons/icon-512.png',page.url()).href;
+    const iconResponse=await page.request.get(iconUrl);
+    assert(iconResponse.ok(),'a real 512px PNG is published for Android install');
+    assert((await iconResponse.body()).subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])),
+      'the app icon is PNG bytes, not an HTML fallback');
     await capture(page,'01-main-menu');
     assert.equal(await page.locator('[data-tournament-open]').count(),1,'Tournament menu button');
     await page.locator('[data-tournament-open]').click();

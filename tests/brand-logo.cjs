@@ -11,6 +11,25 @@ assert.strictEqual(index.includes('FANTASY TACTICAL CHESS ROGUELITE'), false, 'm
 assert.strictEqual((index.match(/data-brand-logo/g) || []).length, 5, 'all visible static screens must use the brand-logo hook');
 assert.strictEqual(index.includes('generated_assets/title_wordmark.png'), false, 'static UI must not reference the legacy wordmark');
 
+// An installable web app must stay independently scoped on GitHub Pages
+// and on the Cloudflare acceptance root; both orientations are supported.
+const manifest = JSON.parse(read('manifest.webmanifest'));
+assert.equal(manifest.display,'standalone');
+assert.equal(manifest.start_url,'./');
+assert.equal(manifest.scope,'./');
+assert.equal(manifest.orientation,'any');
+assert(manifest.icons.some(x=>x.sizes==='192x192'&&x.purpose==='any'));
+assert(manifest.icons.some(x=>x.sizes==='512x512'&&x.purpose==='any'));
+assert(manifest.icons.some(x=>x.purpose==='maskable'));
+assert(index.includes('rel="manifest" href="manifest.webmanifest"'));
+assert(index.includes('rel="apple-touch-icon"'));
+assert(index.includes('js/pwa-install.mjs'));
+const pwa=read('js/pwa-install.mjs'),sw=read('service-worker.js');
+assert(pwa.includes("mobigametim-bit.github.io")&&pwa.includes("topLevel"),
+  'PWA registration is limited to standalone hosts and never VK embeds');
+assert(sw.includes("request.mode!=='navigate'")&&sw.includes('offline.html'),
+  'PWA shell does not intercept live chess multiplayer traffic or static assets');
+
 const resolver = read('js/brand-logo.mjs');
 for (const token of ['logo_ru.png', 'logo_en.png', 'currentLanguage', 'subscribe', '[data-brand-logo]']) assert(resolver.includes(token), `brand-logo resolver missing ${token}`);
 

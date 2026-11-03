@@ -6,6 +6,7 @@ on:
       - feature/portrait-mobile-tablet-ui-20261021
       - feature/portrait-piece-motion-cleanup-20261022
       - feature/tournament-pvp-mvp-20261022
+      - feature/pwa-installable-20261104
     paths:
       - .github/workflows/portrait-ui-preview.yml
       - portrait-ui-preview/wrangler.toml
@@ -96,6 +97,20 @@ jobs:
           done
           echo "::error::PR162 preview did not serve fresh art/css"
           exit 1
+      - name: Verify PWA install assets on public preview
+        if: github.ref == 'refs/heads/feature/pwa-installable-20261104'
+        run: |
+          set -euo pipefail
+          base='https://rpchess-portrait-ui-preview.mobigametim.workers.dev'
+          curl -fsS "$base/manifest.webmanifest" -o /tmp/rpchess-manifest.json
+          grep -q '"standalone"' /tmp/rpchess-manifest.json
+          curl -fsS "$base/service-worker.js" -o /tmp/rpchess-sw.js
+          grep -q 'rpchess-pwa-shell' /tmp/rpchess-sw.js
+          for file in icon-192.png icon-512.png icon-maskable-512.png apple-touch-icon.png; do
+            curl -fsS "$base/icons/$file" -o "/tmp/$file"
+            test "$(head -c 8 "/tmp/$file" | base64 -w0)" = 'iVBORw0KGgo='
+          done
+          echo 'Installable PWA assets are live on Cloudflare preview.'
       - name: Validate two-human Tournament via live browser UI
         if: github.ref == 'refs/heads/feature/tournament-pvp-mvp-20261022'
         env:

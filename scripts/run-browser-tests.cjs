@@ -48,7 +48,7 @@ const DEFAULT_TESTS=[
 const requested=String(process.env.RPCHESS_BROWSER_TEST||'').trim();
 const TESTS=requested?requested.split(',').map(item=>item.trim()).filter(Boolean):DEFAULT_TESTS;
 for(const test of TESTS)if(!DEFAULT_TESTS.includes(test))throw new Error(`Unknown RPChess browser test: ${test}`);
-const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.svg':'image/svg+xml','.mp3':'audio/mpeg','.wasm':'application/wasm','.otf':'font/otf'};
+const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.webmanifest':'application/manifest+json; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.svg':'image/svg+xml','.mp3':'audio/mpeg','.wasm':'application/wasm','.otf':'font/otf'};
 
 function requirePrerequisites(){
   if(!fs.existsSync(path.join(DIST,'index.html')))throw new Error('dist/index.html is missing. Run npm run gate:local first.');
