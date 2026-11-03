@@ -68,15 +68,23 @@ async function capturePhoneOrTablet(browser,width,height){
       const link=document.querySelector('link[rel="manifest"]');
       const response=link?await fetch(link.href):null;
       const manifest=response?.ok?await response.json():null;
+      const {canRegisterPwa}=await import('./js/pwa-install.mjs');
+      const vkBlocked=!canRegisterPwa({
+        host:'mobigametim-bit.github.io',topLevel:true,supported:true,embedded:true
+      });
+      const directAllowed=canRegisterPwa({
+        host:'mobigametim-bit.github.io',topLevel:true,supported:true,embedded:false
+      });
       const reg=await Promise.race([
         navigator.serviceWorker?.ready.then(item=>item)||Promise.resolve(null),
         new Promise(resolve=>setTimeout(()=>resolve(null),10000))
       ]);
-      return {link:!!link,manifest,scope:reg?.scope||null,
+      return {link:!!link,manifest,scope:reg?.scope||null,vkBlocked,directAllowed,
         landscapeAllowed:!manifest?.orientation||manifest.orientation==='any'};
     });
     assert(pwa.link&&pwa.manifest,'installable game has a readable manifest');
     assert.equal(pwa.manifest.display,'standalone');
+    assert(pwa.vkBlocked&&pwa.directAllowed,'direct web installation must not register in a VK launch');
     assert(pwa.landscapeAllowed,'PWA must not lock portrait/landscape');
     assert(pwa.scope&&pwa.scope.endsWith(new URL('./',url.endsWith('/')?url:url+'/').pathname),
       'service worker must control the web app inside its own route prefix');
