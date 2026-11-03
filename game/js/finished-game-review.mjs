@@ -341,6 +341,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
  let solved=new Set(),revealed=new Set(),skipped=new Set(),acceptedMoves=new Map(),boardMode='before',browsePly=null;
  let attemptFen='',attemptUci='',attemptLoss=null,pendingPromotion=null,serial=0;
  let variation=null,variationIndex=0,variationLoading=false;
+ let replayFlight=null,replayFlightSerial=0,replayAnimationCount=0;
  const tx=en?{
   learn:'Learn from your mistakes',moves:'Moves',legend:'Annotations',
   progress:'Reviewed',total:'issues',find:'Find a better move for',
@@ -378,6 +379,72 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
   lineUnavailable:'Stockfish не смог построить достоверное продолжение.',
   status:'Готово',solved:'Решено',skipped:'Пропущено'
  };
+ // While the engine checks the complete finished game, replay each analysed
+ // move on the actual board. Never suggest unsaved analysis moves at this stage.
+ function stopReplayFlight(){
+  replayFlightSerial++;
+  if(replayFlight){
+   replayFlight.animation?.cancel();
+   replayFlight.flyer.remove();
+   replayFlight.target?.style.removeProperty('visibility');
+   replayFlight=null;
+  }
+ }
+ function showReplayStep(done){
+  if(cancelled||done<1||done>journal.length)return;
+  const entry=journal[done-1],from=entry.uci.slice(0,2),to=entry.uci.slice(2,4);
+  const sourceSquare=board.querySelector('[data-review-square="'+from+'"]');
+  const oldRect=sourceSquare?.getBoundingClientRect();
+  const fantasy=document.documentElement.dataset.simplePieces==='1';
+  const sourcePiece=sourceSquare?.querySelector(fantasy?'.rpchess-piece-symbol':'.classic-piece');
+  const candidate=sourcePiece?.cloneNode(true);
+  stopReplayFlight();
+  board.innerHTML=chessSquareBoard(entry.fen,playerColor,sides,'','',entry.uci);
+  board.dataset.reviewAnalysisPly=String(done);
+  const destSquare=board.querySelector('[data-review-square="'+to+'"]');
+  if(!oldRect||!candidate||!destSquare||
+     typeof Element.prototype.animate!=='function'||
+     globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return;
+  const destRect=destSquare.getBoundingClientRect();
+  const target=destSquare.querySelector(fantasy?'.rpchess-piece-symbol':'.classic-piece');
+  if(!target)return;
+  target.style.setProperty('visibility','hidden','important');
+  const flyer=document.createElement('div');
+  flyer.className='rpchess-review-analysis-flyer';
+  Object.assign(flyer.style,{left:oldRect.left+'px',top:oldRect.top+'px',
+   width:oldRect.width+'px',height:oldRect.height+'px'});
+  if(fantasy){
+   candidate.style.setProperty('display','flex','important');
+   candidate.style.setProperty('position','relative','important');
+   candidate.style.setProperty('inset','auto','important');
+   candidate.style.setProperty('width','100%','important');
+   candidate.style.setProperty('height','100%','important');
+  }else{
+   Object.assign(candidate.style,{display:'block',width:'94%',height:'94%',objectFit:'contain'});
+  }
+  flyer.append(candidate);
+  overlay.append(flyer);
+  const token=++replayFlightSerial;
+  const animation=flyer.animate([
+   {transform:'translate3d(0,0,0)'},
+   {transform:'translate3d('+(destRect.left-oldRect.left)+'px,'+
+      (destRect.top-oldRect.top)+'px,0)'}
+  ],{duration:260,easing:'cubic-bezier(.22,.8,.24,1)',fill:'forwards'});
+  replayFlight={animation,flyer,target};
+  board.dataset.reviewAnalysisAnimations=String(++replayAnimationCount);
+  animation.finished.catch(()=>{}).finally(()=>{
+   if(token===replayFlightSerial)stopReplayFlight();
+  });
+ }
+ function showAnalysisProgress(done,total){
+  if(cancelled)return;
+  showReplayStep(done);
+  const move=journal[done-1],label=move?((Math.ceil(move.ply/2))+(move.color==='w'?'.':'…')+' '+move.san):'';
+  target.innerHTML='<div class="rpchess-review-loading" role="status">'+
+   '<strong>'+tx.loading+': '+done+' / '+total+'</strong>'+
+   (move?'<span>'+esc(label)+'</span>':'')+
+   '<progress max="'+total+'" value="'+done+'" aria-label="'+tx.loading+'"></progress></div>';
+ }
  function layoutReviewRail(){
   if(cancelled)return;
   const portrait=window.innerHeight>window.innerWidth;
@@ -391,6 +458,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
  function close(){
   if(cancelled)return;
   cancelled=true;serial++;
+  stopReplayFlight();
   worker?.close();worker=null;
   window.removeEventListener('resize',layoutReviewRail);
   document.removeEventListener('keydown',onEscape);
@@ -641,6 +709,11 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
   if(options.some(m=>m.promotion)){pendingPromotion=uci;render();return;}
   submit(uci);
  });
+ // Draw the real starting position immediately: the board is never empty
+ // while Stockfish is performing its (potentially long) full-game analysis.
+ board.innerHTML=chessSquareBoard(new ClassicChessEngine().fen(),playerColor,sides);
+ board.dataset.reviewAnalysisPly='0';
+ showEvaluation(null);
  (async()=>{
   if(!turns.length){
    target.innerHTML='<p>'+L.noMoves+'</p>';
@@ -652,14 +725,14 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
    worker=new StockfishReviewEngine();await worker.start();
    if(cancelled)return;
    const analysed=await analyseFinishedReview(turns,{engine:worker,annotate:true,playerColor,
-    onProgress:(done,total)=>{
-     if(!cancelled)target.innerHTML='<div class="rpchess-review-loading">'+tx.loading+': '+done+' / '+total+'…</div>';
-    }});
+    onProgress:showAnalysisProgress});
    if(cancelled)return;
+   stopReplayFlight();
    cases=analysed.errors;annotations=analysed.annotations;
    if(!cases.length){worker.close();worker=null;}
    render();
   }catch{
+   stopReplayFlight();
    if(!cancelled)target.innerHTML='<p>'+L.error+'</p>';
    worker?.close();worker=null;
   }
