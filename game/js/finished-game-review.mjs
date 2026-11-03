@@ -12,7 +12,7 @@ const MODES=new Set(['arena','tournament']);
 const WORKER_URL='vendor/stockfish/stockfish-18-lite-single.js';
 const ROLES={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
 const RU={
- title:'Разбор ошибок',subtitle:'Stockfish 18 · приблизительная оценка позиций',
+ title:'Разбор ошибок',
  loading:'Запускаем шахматный анализ…',working:'Проверено ходов',notFound:'В проверенных ходах крупных ошибок не обнаружено.',
  noMoves:'В завершённой партии нет ходов для разбора.',
  error:'Не удалось получить достоверную оценку Stockfish. Повторите попытку позже.',
@@ -26,7 +26,7 @@ const RU={
  white:'белыми',black:'чёрными'
 };
 const EN={
- title:'Review mistakes',subtitle:'Stockfish 18 · approximate position evaluation',
+ title:'Review mistakes',
  loading:'Starting chess analysis…',working:'Moves checked',notFound:'No major mistakes found in the checked moves.',
  noMoves:'No moves to review in this finished game.',
  error:'Stockfish could not provide a reliable evaluation. Try again later.',
@@ -262,6 +262,16 @@ function reviewMoveJournal(moves,{startFen=null}={}){
  }
  return entries;
 }
+/* Use the actual accepted attempt as the source of a follow-up engine line.
+ * On a revealed solution use the engine best move; a legal, near-equivalent
+ * player alternative must NEVER be replaced by the engine first choice. */
+function reviewContinuationStart(lesson,chosenUci=null){
+ const uci=chosenUci||lesson?.bestMove;
+ if(!lesson?.beforeFen||!UCI.test(String(uci)))throw new Error('Invalid review continuation');
+ const game=new ClassicChessEngine(lesson.beforeFen);
+ if(!reviewUci(game,uci))throw new Error('Illegal continuation move');
+ return {uci,afterFen:game.fen(),isEngineBest:uci===lesson.bestMove};
+}
 /* A validated, playable engine variation. The source is Stockfish's UCI
  * principal variation, not a fabricated natural-language explanation. */
 function reviewEngineLine(beforeFen,ucis,maxPlies=9){
@@ -299,7 +309,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
  overlay.setAttribute('aria-label',en?'Learn from your mistakes':'Учиться на своих ошибках');
  overlay.innerHTML='<div class="rpchess-review-shell"><aside class="rpchess-review-rail">'+
   '<header class="rpchess-review-header"><div><h2>'+(en?'Game analysis':'Анализ партии')+'</h2>'+
-  '<small>'+L.subtitle+'</small></div>'+
+  '</div>'+
   '<button type="button" data-review-action="close" class="rpchess-review-button rpchess-review-close">'+L.close+'</button></header>'+
   '<div class="rpchess-review-content" data-review-content aria-live="polite">'+L.loading+'</div></aside>'+
   '<section class="rpchess-review-board-column" aria-label="'+(en?'Training chessboard':'Тренировочная доска')+'">'+
@@ -647,4 +657,4 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
  })();
  return {close};
 }
-export { prepareFinishedReview,sampleReviewTurns,parseInfo,classifyLoss,classifyStrongMove,analyseFinishedReview,gradeReviewAttempt,reviewMoveJournal,reviewEngineLine,reviewEvaluation,StockfishReviewEngine,openFinishedGameReview };
+export { prepareFinishedReview,sampleReviewTurns,parseInfo,classifyLoss,classifyStrongMove,analyseFinishedReview,gradeReviewAttempt,reviewMoveJournal,reviewEngineLine,reviewContinuationStart,reviewEvaluation,StockfishReviewEngine,openFinishedGameReview };
