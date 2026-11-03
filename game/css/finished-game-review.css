@@ -17,13 +17,13 @@
   linear-gradient(90deg,rgba(3,7,15,.95),rgba(7,15,26,.6) 45%,rgba(3,7,15,.94)),
   url('../generated_assets/scene_battle.webp') center / cover no-repeat;
 }
-/* Pin the rail to the free LEFT half of the viewport. Do not let an
- * unrelated global combat/aside rule enlarge a grid auto-placed aside over the
- * board. The board remains centered on the *whole* viewport. */
+/* Own column one explicitly: never let implicit grid placement or unsupported
+ * CSS arithmetic stretch the information rail across the chessboard. */
 .rpchess-review-rail{
-  position:absolute;z-index:2;top:0;bottom:0;left:0;
-  width:calc((100vw - var(--review-board-size)) / 2 - 20px);
-  max-width:calc((100vw - var(--review-board-size)) / 2 - 20px);
+  /* Keep this AS A GRID ITEM: Chrome 139 cannot reliably compute CSS length division.
+   * Width comes from the first actual grid track, not viewport arithmetic. */
+  grid-column:1;grid-row:1;position:relative;z-index:2;
+  width:calc(100% - 20px);max-width:calc(100% - 20px);
   min-width:0;min-height:0;height:100%;overflow:hidden;padding:8px 9px;
   display:flex;flex-direction:column;gap:0;
   background:rgba(4,8,13,.93);border-right:1px solid rgba(216,177,93,.28);
@@ -136,7 +136,7 @@
    min-height:100dvh;height:auto;grid-template-columns:minmax(0,1fr);
    grid-template-rows:auto auto;gap:0;align-items:start;
  }
- .rpchess-review-rail{position:relative;z-index:auto;top:auto;bottom:auto;left:auto;
+ .rpchess-review-rail{position:relative;z-index:auto;
    grid-column:1;grid-row:2;width:100%;max-width:none;height:auto;overflow:visible;
    min-height:0;border-right:0;border-top:1px solid rgba(216,177,93,.25)}
  .rpchess-review-board-column{grid-column:1;grid-row:1;padding:8px 0 22px;min-height:0}
