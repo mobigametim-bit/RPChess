@@ -22,8 +22,8 @@
  * board. The board remains centered on the *whole* viewport. */
 .rpchess-review-rail{
   position:absolute;z-index:2;top:0;bottom:0;left:0;
-  width:calc((100vw - var(--review-board-size)) / 2);
-  max-width:calc((100vw - var(--review-board-size)) / 2);
+  width:calc((100vw - var(--review-board-size)) / 2 - 20px);
+  max-width:calc((100vw - var(--review-board-size)) / 2 - 20px);
   min-width:0;min-height:0;height:100%;overflow:hidden;padding:8px 9px;
   display:flex;flex-direction:column;gap:0;
   background:rgba(4,8,13,.93);border-right:1px solid rgba(216,177,93,.28);
