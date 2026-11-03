@@ -89,11 +89,13 @@ function mountAll() {
   syncToggles();
 }
 
-mountAll();
-addEventListener('rpchess:puzzle-shown', mountAll);
-addEventListener('rpchess:tournament-board-mounted', mountAll);
-document.querySelector(SETTINGS_INPUT)?.addEventListener('change', syncToggles);
-subscribe(syncToggles);
+if (typeof document !== 'undefined') {
+  mountAll();
+  globalThis.addEventListener?.('rpchess:puzzle-shown', mountAll);
+  globalThis.addEventListener?.('rpchess:tournament-board-mounted', mountAll);
+  document.querySelector(SETTINGS_INPUT)?.addEventListener('change', syncToggles);
+  subscribe(syncToggles);
+}
 
 // Reuse the identical persistent board-art switch in postgame review.
 export { makeToggle, syncToggles };
