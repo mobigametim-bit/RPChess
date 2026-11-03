@@ -1,36 +1,149 @@
-/* Post-game review is opened only by completed Tournament/Arena results. */
-.rpchess-review-overlay{position:fixed;z-index:90000;inset:0;padding:12px;background:rgba(3,7,12,.94);
- display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:auto;color:#f4e2b7}
-.rpchess-review-panel{width:min(950px,100%);max-height:calc(100dvh - 24px);overflow:auto;
- border:1px solid #c8a360;border-radius:8px;background:linear-gradient(145deg,#142536,#080e16);
- box-shadow:0 16px 70px #000e;box-sizing:border-box;padding:clamp(10px,2vw,22px);overscroll-behavior:contain}
-.rpchess-review-panel *{box-sizing:border-box}
-.rpchess-review-header{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #b692574d;padding-bottom:9px}
-.rpchess-review-header h2{font:400 clamp(22px,3vw,35px) 'BrahmsGotischCyr',Georgia,serif;margin:0}
-.rpchess-review-header small,.rpchess-review-note{color:#c5b995;font-size:12px;line-height:1.35}
-.rpchess-review-content{padding:14px 2px}
-.rpchess-review-button,.rpchess-review-case{background:#302818;border:1px solid #b89555;color:#f5deb0;border-radius:5px;padding:8px 12px;cursor:pointer;
- font:600 14px/1.25 system-ui,sans-serif}
-.rpchess-review-button:focus-visible,.rpchess-review-case:focus-visible,.review-square:focus-visible{outline:2px solid #f8d98a;outline-offset:2px}
-.rpchess-review-cases{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
-.rpchess-review-case.is-active{background:#76602f;color:#fff}
-.rpchess-review-body{display:grid;grid-template-columns:minmax(250px,440px) minmax(205px,1fr);gap:20px;align-items:start}
-.rpchess-review-board.classic-board{position:relative;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));
- aspect-ratio:1;width:100%;min-width:0;padding:0;margin:0;border:3px solid #c09c59;box-shadow:0 4px 16px #0008}
-.rpchess-review-board .review-square{position:relative;display:grid;place-items:center;min-width:0;min-height:0;
- aspect-ratio:1;padding:0;border:0;border-radius:0;cursor:pointer;touch-action:manipulation}
+/* Owner-approved training layout. The chessboard stays centered against the
+ * whole viewport, identical to Classic, Battle and Arena (not centered in the
+ * space remaining after the information rail). Coordinates live OUTSIDE it. */
+.rpchess-review-overlay{
+  --review-rail-min:clamp(160px,18vw,380px);
+  --review-board-size:min(calc(100dvh - 30px),calc(100vw - var(--review-rail-min) - var(--review-rail-min) - 8px));
+  position:fixed;z-index:90000;inset:0;overflow:hidden;
+  box-sizing:border-box;background:#050a12;color:#f4e2b7;
+  font:14px/1.35 system-ui,-apple-system,Segoe UI,sans-serif;
+}
+.rpchess-review-overlay *{box-sizing:border-box}
+.rpchess-review-shell{
+  height:100dvh;width:100vw;display:grid;
+  grid-template-columns:minmax(0,1fr) var(--review-board-size) minmax(0,1fr);
+  grid-template-rows:minmax(0,1fr);align-items:stretch;
+  background:
+  linear-gradient(90deg,rgba(3,7,15,.95),rgba(7,15,26,.6) 45%,rgba(3,7,15,.94)),
+  url('../generated_assets/scene_battle.webp') center / cover no-repeat;
+}
+.rpchess-review-rail{
+  min-width:0;min-height:0;padding:8px 9px;
+  display:flex;flex-direction:column;gap:0;
+  background:rgba(4,8,13,.93);border-right:1px solid rgba(216,177,93,.28);
+}
+.rpchess-review-header{
+  flex:0 0 auto;display:flex;align-items:start;justify-content:space-between;
+  gap:7px;padding:8px 4px 11px;border-bottom:1px solid rgba(216,177,93,.26);
+}
+.rpchess-review-header h2{
+  font:400 clamp(21px,2.5vw,32px) 'BrahmsGotischCyr',Georgia,serif;
+  margin:0;color:#f4ddaa;line-height:1.15;
+}
+.rpchess-review-header small{display:block;color:#bdaf90;font-size:11px;margin-top:5px}
+.rpchess-review-content{
+  flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  padding:8px 2px 15px;scrollbar-width:thin;scrollbar-color:#aa8a50 #0d1721;
+}
+.rpchess-review-section-title{
+  margin:10px 1px 6px;font:400 clamp(17px,1.9vw,23px) 'BrahmsGotischCyr',Georgia,serif;
+  color:#e5bd70;
+}
+.rpchess-review-summary{
+  display:flex;gap:6px;justify-content:space-between;flex-wrap:wrap;
+  margin:5px 0;color:#e5bd70;font-size:12px;
+}
+.rpchess-review-summary span{color:#a6d59a}
+.rpchess-review-note{font-size:11px;color:#a8a598;line-height:1.35;margin:5px 0}
+.rpchess-review-cases{display:grid;gap:5px}
+.rpchess-review-case{
+  cursor:pointer;text-align:left;display:grid;grid-template-columns:1fr auto;gap:2px 4px;
+  background:rgba(23,33,42,.82);border:1px solid rgba(181,147,83,.4);
+  border-radius:4px;padding:8px;color:#f4dfbb;font:inherit;min-width:0;
+}
+.rpchess-review-case span{grid-column:1/-1;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#cfb882}
+.rpchess-review-case strong{font-size:13px;min-width:0;word-break:break-word}
+.rpchess-review-case small{font-size:11px;color:#e0ac87;text-align:right}
+.rpchess-review-case.is-active{background:#544223;border-color:#f2c56b;box-shadow:inset 3px 0 0 #f4ce7d}
+.rpchess-review-case.is-solved:not(.is-active){border-color:#6b9e69}
+.rpchess-review-details{margin-top:12px;border-top:1px solid rgba(216,177,93,.25);padding:9px 2px 0}
+.rpchess-review-details h3{margin:0 0 6px;color:#f3d68a;font-size:18px}
+.rpchess-review-details p{margin:5px 0}
+.rpchess-review-detail{color:#ede4d2;font-weight:600}
+.rpchess-review-meta{font-size:12px;color:#c5c2b5}
+.rpchess-review-prompt{
+  padding:9px 10px;margin:10px 0!important;background:rgba(25,46,43,.72);
+  border-left:3px solid #cba55c;line-height:1.42;color:#ecdfbc;
+}
+.rpchess-review-answer{color:#ace0a1;font-size:12px;overflow-wrap:anywhere}
+.rpchess-review-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.rpchess-review-button{
+  background:rgba(41,34,22,.92);border:1px solid #ab8b4f;color:#f4e0bb;
+  min-height:32px;padding:6px 9px;border-radius:4px;cursor:pointer;
+  font:600 12px/1.2 system-ui,sans-serif;
+}
+.rpchess-review-button:hover,.rpchess-review-case:hover{border-color:#f9d58e}
+.rpchess-review-button--primary{background:linear-gradient(#846335,#573a18);border-color:#e1ad5b}
+.rpchess-review-close{white-space:nowrap;flex:0 0 auto}
+.rpchess-review-button:focus-visible,.rpchess-review-case:focus-visible,
+.rpchess-review-board .review-square:focus-visible{outline:2px solid #f8d98a;outline-offset:1px}
+.rpchess-review-loading{padding:20px 5px;color:#f2d8a1}
+.rpchess-review-promotions{margin:8px 0;color:#f4dfbb}
+.rpchess-review-promotions>div{display:flex;gap:5px;margin-top:5px}
+.rpchess-review-board-column{
+  grid-column:2;min-width:0;min-height:0;
+  display:grid;place-items:center;overflow:visible;
+}
+.rpchess-review-board-frame{
+  position:relative;width:var(--review-board-size);height:var(--review-board-size);
+  max-width:100%;aspect-ratio:1;
+}
+.rpchess-review-board.classic-board{
+  position:relative;display:grid;width:100%!important;height:100%!important;
+  aspect-ratio:1;grid-template-columns:repeat(8,minmax(0,1fr));
+  grid-template-rows:repeat(8,minmax(0,1fr));padding:0!important;margin:0!important;
+  border:0!important;border-radius:0;box-shadow:0 5px 30px #000a;
+  background:#64563e;overflow:hidden;touch-action:manipulation;
+}
+.rpchess-review-ranks{
+  position:absolute;right:100%;top:0;bottom:0;display:grid;grid-template-rows:repeat(8,1fr);
+  width:17px;align-items:center;text-align:center;color:#e5d0a1;font-size:11px;
+}
+.rpchess-review-files{
+  position:absolute;top:100%;left:0;right:0;height:17px;display:grid;
+  grid-template-columns:repeat(8,1fr);align-items:center;text-align:center;
+  color:#e5d0a1;font-size:11px;
+}
+.rpchess-review-board .review-square{
+  position:relative;display:grid;place-items:center;min-width:0;min-height:0;
+  width:100%;height:100%;padding:0;border:0;border-radius:0;cursor:pointer;
+  touch-action:manipulation;
+}
 .rpchess-review-board .review-square--light{background:#cdb88a}
 .rpchess-review-board .review-square--dark{background:#62543d}
-.rpchess-review-board .review-square.is-selected{outline:3px solid #f6d44c;outline-offset:-3px}
-.rpchess-review-board .review-square .classic-piece{display:block;width:94%;height:94%;max-width:100%;object-fit:contain;pointer-events:none}
+.rpchess-review-board .review-square.is-selected{outline:4px solid #f7d74e;outline-offset:-4px;z-index:2}
+.rpchess-review-board .review-square.is-last{box-shadow:inset 0 0 0 4px rgba(255,203,81,.58)}
+.rpchess-review-board .review-square.is-hint-from{box-shadow:inset 0 0 0 5px rgba(82,186,133,.8)}
+.rpchess-review-board .review-square.is-hint-to::after{
+  content:'';position:absolute;inset:28%;border:4px solid #64db92;
+  border-radius:50%;box-shadow:0 0 9px #0006;pointer-events:none;
+}
+.rpchess-review-board .review-square .classic-piece{
+  display:block;width:94%;height:94%;max-width:100%;object-fit:contain;pointer-events:none;
+}
 .rpchess-review-board .review-square .rpchess-piece-symbol{pointer-events:none}
-.rpchess-review-details h3{font-size:21px;margin:0 0 12px;color:#f1d68f}
-.rpchess-review-details p{line-height:1.4;margin:8px 0}
-.rpchess-review-feedback{min-height:2.6em;color:#b8e6b1}
-@media(max-width:680px){.rpchess-review-overlay{align-items:flex-start}
- .rpchess-review-body{grid-template-columns:1fr;justify-items:center;gap:10px}
- .rpchess-review-board.classic-board{width:min(100%,360px)}
- .rpchess-review-details{width:100%}}
-@media(orientation:landscape) and (max-height:540px){.rpchess-review-overlay{align-items:flex-start}
- .rpchess-review-board.classic-board{max-width:min(72dvh,380px)}
- .rpchess-review-content{padding:5px 0}}
+.rpchess-review-board .review-square .rpchess-fantasy-piece{max-width:100%;width:94%;height:94%;object-fit:contain}
+.rpchess-review-right{grid-column:3;pointer-events:none}
+@media(max-width:700px),(orientation:portrait){
+ .rpchess-review-overlay{overflow:auto;--review-board-size:min(calc(100vw - 30px),calc(65dvh - 10px))}
+ .rpchess-review-shell{
+   min-height:100dvh;height:auto;grid-template-columns:minmax(0,1fr);
+   grid-template-rows:auto auto;gap:0;align-items:start;
+ }
+ .rpchess-review-rail{grid-column:1;grid-row:2;min-height:0;border-right:0;border-top:1px solid rgba(216,177,93,.25)}
+ .rpchess-review-board-column{grid-column:1;grid-row:1;padding:8px 0 22px;min-height:0}
+ .rpchess-review-right{display:none}
+ .rpchess-review-content{overflow:visible}
+ .rpchess-review-cases{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .rpchess-review-case{display:block}
+ .rpchess-review-case small,.rpchess-review-case span{display:block;text-align:left}
+ .rpchess-review-board-frame{width:var(--review-board-size);height:var(--review-board-size)}
+}
+@media(orientation:landscape) and (max-height:540px){
+ .rpchess-review-rail{padding:3px 6px}
+ .rpchess-review-header{padding:3px 0 5px}
+ .rpchess-review-header h2{font-size:20px}
+ .rpchess-review-case{padding:5px}
+ .rpchess-review-details{margin-top:5px;padding-top:5px}
+ .rpchess-review-overlay{--review-board-size:min(calc(100dvh - 21px),calc(100vw - 2 * var(--review-rail-min)))}
+}
