@@ -269,6 +269,16 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     await page.locator('[data-finished-review] [data-review-case]').first().waitFor({timeout:35000});
     assert.equal(await page.locator('[data-finished-review] [data-review-square]').count(),64,
       'Stockfish review renders a full replayable chessboard after analysis');
+    assert.equal(await page.locator('[data-finished-review] .rpchess-review-prompt').count(),0,
+      'idle review has no duplicative instruction callout');
+    assert.equal(await page.locator('[data-finished-review] [data-review-action="original"]').count(),0,
+      'removed Why was this a mistake button is absent');
+    assert.equal(await page.locator('[data-finished-review] [data-review-action="next"]').count(),0,
+      'removed Next mistake button is absent');
+    assert.equal(await page.locator('[data-finished-review] [data-review-action="solution"]').innerText(),'Лучший ход',
+      'solution button has the compact requested caption');
+    assert((await page.locator('[data-finished-review] .rpchess-review-symbol').count())>0,
+      'each practice mistake carries a chess annotation glyph');
     await page.locator('[data-finished-review] [data-review-action="hint"]').click();
     const hintText=await page.locator('[data-finished-review] .rpchess-review-details').innerText();
     assert(/Предложение движка:\s*[a-h][1-8][a-h][1-8]/.test(hintText),
@@ -305,12 +315,10 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     await page.waitForFunction(()=>document.querySelector('[data-finished-review] .rpchess-review-summary')?.textContent.includes('1 / '));
     assert((await page.locator('[data-finished-review] .rpchess-review-prompt').innerText()).includes('Хороший ход'),
       'training marks the real Stockfish move as correct');
-    await page.locator('[data-finished-review] [data-review-action="original"]').click();
-    assert((await page.locator('[data-finished-review] .rpchess-review-details').innerText()).includes('Ответ движка'),
-      'player can inspect the original mistake and engine reply');
-    if(await page.locator('[data-finished-review] [data-review-action="opponent"]').count())
-      await page.locator('[data-finished-review] [data-review-action="opponent"]').click();
-    await page.locator('[data-finished-review] [data-review-action="back"]').click();
+    assert.equal(await page.locator('[data-finished-review] [data-review-action="original"]').count(),0,
+      'the obsolete explanation action remains absent after a successful try');
+    assert.equal(await page.locator('[data-finished-review] [data-review-action="next"]').count(),0,
+      'player selects another mistake from the compact list instead of a Next button');
     await page.setViewportSize({width:390,height:844});
     const portrait=await page.evaluate(()=>({
       boardWidth:document.querySelector('[data-finished-review] [data-review-board]').getBoundingClientRect().width,
