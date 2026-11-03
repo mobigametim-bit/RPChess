@@ -101,6 +101,11 @@ jobs:
         env:
           RPCHESS_ACCEPTANCE_URL: https://rpchess-portrait-ui-preview.mobigametim.workers.dev/
         run: node tests/tournament-client-browser.cjs
+      - name: Verify Arena postgame review using real Stockfish on deployed preview
+        if: github.ref == 'refs/heads/feature/tournament-pvp-mvp-20261022'
+        env:
+          RPCHESS_ACCEPTANCE_URL: https://rpchess-portrait-ui-preview.mobigametim.workers.dev/
+        run: node tests/arena-browser.cjs
       - name: Upload live Tournament screenshots
         if: always() && github.ref == 'refs/heads/feature/tournament-pvp-mvp-20261022'
         uses: actions/upload-artifact@v4

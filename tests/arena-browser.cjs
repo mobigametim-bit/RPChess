@@ -253,9 +253,18 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     // the evaluation engine because its handcrafted FEN is not in move history.
     await page.evaluate(async()=>{
       const {openFinishedGameReview}=await import('./js/finished-game-review.mjs');
-      window.__reviewDemo=openFinishedGameReview({mode:'arena',finished:true,moves:['e2e4','e7e5'],playerColor:'w'});
+      window.__reviewDemo=openFinishedGameReview({mode:'arena',finished:true,moves:['f2f3','e7e5','g2g4','d8h4'],playerColor:'w'});
     });
     await page.locator('[data-finished-review] [data-review-action="close"]').waitFor();
+    // Fool's mate: 2.g4 allows ...Qh4#, so this completed sample should
+    // produce a genuine Stockfish mistake and a playable position.
+    await page.locator('[data-finished-review] [data-review-case]').first().waitFor({timeout:35000});
+    assert.equal(await page.locator('[data-finished-review] [data-review-square]').count(),64,
+      'Stockfish review renders a full replayable chessboard after analysis');
+    await page.locator('[data-finished-review] [data-review-action="hint"]').click();
+    const hintText=await page.locator('[data-finished-review] .rpchess-review-details').innerText();
+    assert(/Предложение движка:\s*[a-h][1-8][a-h][1-8]/.test(hintText),
+      'Stockfish best-move hint is shown on the replay board: '+hintText);
     await page.locator('[data-finished-review] [data-review-action="close"]').click();
     assert.equal(await page.locator('[data-finished-review]').count(),0,'Analysis dialog cleans up on close');
     await page.evaluate(()=>{
