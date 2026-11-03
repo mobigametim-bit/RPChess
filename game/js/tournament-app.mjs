@@ -5,7 +5,7 @@ import { arenaSummary, normalizeArena, ARENA_KEY, SHARD_ICON } from './arena-cor
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { attachPieceDrag } from './piece-drag.mjs';
 import { fantasyPieceMarkup } from './fantasy-piece.mjs';
-import { openFinishedGameReview } from './finished-game-review.mjs?v=20261103-full-lesson-2';
+import { openFinishedGameReview } from './finished-game-review.mjs?v=20261103-compact-3';
 import { applyPinIce } from './king-pin-ice.mjs';
 import { RACE_TAGS, RACE_LABELS, racePiecePath, applyRaceBoardTheme } from './race-assets.mjs';
 import { readPlayerRating, importTournamentRatingReceipt, ratingDelta } from './player-rating.mjs';
