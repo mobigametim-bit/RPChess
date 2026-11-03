@@ -5,6 +5,7 @@
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { racePiecePath } from './race-assets.mjs';
 import { fantasyPieceMarkup } from './fantasy-piece.mjs';
+import { makeToggle, syncToggles } from './board-view-toggle.mjs';
 
 const UCI=/^[a-h][1-8][a-h][1-8][qrbn]?$/;
 const MODES=new Set(['arena','tournament']);
@@ -219,6 +220,9 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
   '<div class="rpchess-review-files" aria-hidden="true"></div></div></section>'+
   '<div class="rpchess-review-right" aria-hidden="true"></div></div>';
  document.body.append(overlay);
+ const artSwitch=makeToggle();
+ overlay.querySelector('.rpchess-review-rail').insertBefore(artSwitch,overlay.querySelector('[data-review-content]'));
+ syncToggles();
  const target=overlay.querySelector('[data-review-content]');
  const board=overlay.querySelector('[data-review-board]');
  const rankLabels=overlay.querySelector('.rpchess-review-ranks');
