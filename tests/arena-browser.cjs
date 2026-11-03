@@ -275,6 +275,15 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       'Stockfish best-move hint is shown on the replay board: '+hintText);
     assert.equal(await page.locator('.rpchess-review-ranks span').count(),8,'each rank has a coordinate');
     assert.equal(await page.locator('.rpchess-review-files span').count(),8,'each file has a coordinate');
+    const artSwitch=page.locator('[data-finished-review] [data-board-view-switch]');
+    assert.equal(await artSwitch.count(),1,'learning screen reuses the shared regular/Fantasy control');
+    const initialArt=await page.locator('html').getAttribute('data-simple-pieces');
+    await artSwitch.click();
+    assert.notEqual(await page.locator('html').getAttribute('data-simple-pieces'),initialArt,
+      'learning view toggle changes the real persisted setting');
+    await artSwitch.click();
+    assert.equal(await page.locator('html').getAttribute('data-simple-pieces'),initialArt,
+      'test restores the initial preference');
     const reviewGeometry=await page.evaluate(()=>{
       const board=document.querySelector('[data-finished-review] [data-review-board]').getBoundingClientRect();
       const rail=document.querySelector('[data-finished-review] .rpchess-review-rail').getBoundingClientRect();
