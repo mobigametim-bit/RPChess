@@ -305,8 +305,11 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     }
     assert(moveGrid.some(entry=>entry.items.some(item=>item.selected)),
       'the active gold selection is confined to its own move cell');
-    assert.equal(await page.locator('[data-finished-review] .rpchess-review-legend-item').count(),3,
-      'annotation legend appears in the left information rail');
+    assert.equal(await page.locator('[data-finished-review] .rpchess-review-legend-item').count(),5,
+      'legend includes !, !!, ?!, ? and ?? for both sides of the finished game');
+    const labels=await page.locator('[data-finished-review] .rpchess-review-legend-item').allInnerTexts();
+    assert(labels.some(x=>x.includes('!')) && labels.some(x=>x.includes('!!')),
+      'strong and outstanding move symbols appear in the left legend');
     assert.equal(await page.locator('[data-finished-review] [data-review-action="view"]').count(),0);
     assert.equal(await page.locator('[data-finished-review] [data-review-action="solution"]').innerText(),'Посмотреть решение',
       'Lichess-inspired solution action is a real button');
@@ -352,6 +355,23 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert(best,'solution button must show the actual engine recommendation: '+solutionText);
     assert((await page.locator('[data-finished-review] .rpchess-review-summary').innerText()).includes('1 / '),
       'viewing a solution advances training progress');
+    const variationButton=page.locator('[data-finished-review] [data-review-action="variation"]');
+    assert.equal(await variationButton.innerText(),'Посмотреть продолжение',
+      'after revealing a best move the lesson offers an explicit engine variation');
+    await variationButton.click();
+    await page.locator('[data-finished-review] .rpchess-review-variation').waitFor({timeout:15000});
+    assert((await page.locator('[data-finished-review] .rpchess-review-line-compare').innerText()).includes('В партии'),
+      'the variation presents the actually played branch for comparison');
+    assert((await page.locator('[data-finished-review] .rpchess-review-line-compare').innerText()).includes('Сильнее'),
+      'the alternative principal variation is grounded in Stockfish');
+    const initialProgress=await page.locator('[data-finished-review] .rpchess-review-line-progress').innerText();
+    const initialLayout=await page.locator('[data-finished-review] [data-review-board]').innerHTML();
+    await page.locator('[data-finished-review] [data-review-action="line-next"]').click();
+    assert.notEqual(await page.locator('[data-finished-review] [data-review-board]').innerHTML(),initialLayout,
+      'next step replays a different real position on the chessboard');
+    assert.notEqual(await page.locator('[data-finished-review] .rpchess-review-line-progress').innerText(),initialProgress);
+    await page.locator('[data-finished-review] [data-review-action="line-prev"]').click();
+    assert.equal(await page.locator('[data-finished-review] .rpchess-review-line-progress').innerText(),initialProgress);
     await page.locator('[data-finished-review] [data-review-action="next"]').click();
     // Skip the remaining errors, then practise again and play the discovered
     // move by clicking squares. There are only up to four moves in the fixture.
