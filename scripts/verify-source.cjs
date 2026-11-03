@@ -144,7 +144,8 @@ module.exports=function verifySource(root){
   if(/journeyButton\.textContent\s*=\s*['"](?:Вернуться в поселение|В путь|Загрузка пути…)/.test(rosterApp))fail('Roster runtime must not hardcode keyed journey labels');
 
   const difficulty=read(root,'js/encounter-difficulty.mjs');requireTokens(difficulty,['MAX_ENCOUNTER_STARS = 12','elo: 400','elo: 2600','difficultyForStars','value.slice(0, 6)'],'12-level difficulty');
-  const rating=read(root,'js/player-rating.mjs');requireTokens(rating,["PLAYER_RATING_STORAGE_KEY = 'rpchess.reboot.v1.player-rating'",'STARTING_POWER = 500','ELO_K = 32','threatStarsForPower','expectedScore','settlePlayerRating','adaptiveEncounterStars','opponentEloForStars'],'Power/Elo core');
+  const elo=read(root,'js/power-elo.mjs');requireTokens(elo,['STARTING_POWER = 500','ELO_K = 32','normalizePower','expectedScore','ratingDelta'],'shared Journey/Tournament Elo formula');
+  const rating=read(root,'js/player-rating.mjs');requireTokens(rating,["PLAYER_RATING_STORAGE_KEY = 'rpchess.reboot.v1.player-rating'","from './power-elo.mjs'",'threatStarsForPower','settlePlayerRating','adaptiveEncounterStars','opponentEloForStars'],'Power/Elo core');
   const ratingRuntime=read(root,'js/player-rating-runtime.mjs');requireTokens(ratingRuntime,['settleCombat','settlePuzzle','data-power-result','rpchess:combat-completed','rpchess:puzzle-resolved','RPChessPower','css/player-rating.css?v=20261021-after-battle'],'semantic Power result runtime');
   if(ratingRuntime.includes("addEventListener('rpchess:run-updated'"))fail('Power runtime must not subscribe to broad run-updated');
   const ratingCss=read(root,'css/player-rating.css');requireTokens(ratingCss,['.travel-player-rating','.power-result','.power-result__delta.is-positive','.power-result__threat'],'Power/Threat CSS');
