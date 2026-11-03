@@ -232,6 +232,11 @@ function reviewContinuation(lesson,step=1){
 /* Full-screen teaching screen uses the same centered-viewport board contract as
  * Battle, Arena and Classic. The left rail owns all explanatory UI. */
 const REVIEW_MARKS={excellent:'!!',good:'!',inaccuracy:'?!',mistake:'?',blunder:'??'};
+// Original moving piece, not the SAN prefix: pawn moves and castling need glyphs too.
+const REVIEW_PIECE_GLYPHS={
+ w:{p:'♙',n:'♘',b:'♗',r:'♖',q:'♕',k:'♔'},
+ b:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'}
+};
 
 /* Rebuild SAN from the verified completed UCI history. This is a readable
  * game journal, not a new game state and not an engine recommendation. */
@@ -258,7 +263,7 @@ function reviewMoveJournal(moves,{startFen=null}={}){
    }
    san=prefix+(candidate.capture?'x':'')+to+(promotion?'='+promotion.toUpperCase():'')+suffix;
   }
-  entries.push({ply:i+1,uci,san,fen:game.fen(),color:moving.color});
+  entries.push({ply:i+1,uci,san,fen:game.fen(),color:moving.color,pieceType:moving.type});
  }
  return entries;
 }
@@ -513,8 +518,10 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
      (error?' data-review-case="'+error.index+'"':'')+
      ' class="rpchess-review-move'+highlight+shown+(error?' is-error':'')+
      '" aria-label="'+esc((Math.ceil(entry.ply/2))+(entry.color==='w'?'.':'…')+' '+entry.san+(kind?' '+(kind==='good'?tx.goodMove:tx[kind]):''))+'">'+
-     '<span>'+esc(entry.san)+'</span>'+
+     '<span class="rpchess-review-move-content"><span class="rpchess-review-piece-glyph rpchess-review-piece-glyph--'+entry.color+'" aria-hidden="true">'+REVIEW_PIECE_GLYPHS[entry.color][entry.pieceType]+'</span>'+
+     '<span class="rpchess-review-san">'+esc(entry.san)+'</span>'+
      (kind?'<b class="rpchess-review-symbol rpchess-review-symbol--'+kind+'">'+mark+'</b>':'')+
+     '</span>'+
      (error&&done(error.index)?'<span class="rpchess-review-done">✓</span>':'')+
      '</button>';
    }
@@ -524,6 +531,12 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
  }
  function render(){
   if(cancelled)return;
+  // Rebuilding the panel used to recreate the move-list DOM and reset its
+  // scrollTop to zero on every move selection. Restore the player's viewport.
+  const oldList=target.querySelector('.rpchess-review-movelist');
+  const moveListScrollTop=oldList?oldList.scrollTop:null;
+  const focusedPly=oldList?.contains(document.activeElement)?
+   document.activeElement.closest('[data-review-move]')?.dataset.reviewMove:null;
   const active=cases[selected],doneCount=completedCount();
   let fen=active?.beforeFen||journal.at(-1)?.fen||new ClassicChessEngine().fen(),lastMove='';
   if(browsePly!==null){
@@ -594,6 +607,13 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
     '<section class="rpchess-review-learning"><div class="rpchess-review-summary">'+
     '<strong>'+tx.learn+'</strong><span>'+doneCount+' / '+cases.length+'</span></div>'+
     '<div class="rpchess-review-details">'+practice+'</div></section>';
+  if(moveListScrollTop!==null){
+   const newList=target.querySelector('.rpchess-review-movelist');
+   if(newList)newList.scrollTop=moveListScrollTop;
+  }
+  if(focusedPly){
+   target.querySelector('[data-review-move="'+focusedPly+'"]')?.focus({preventScroll:true});
+  }
   board.setAttribute('aria-busy',String(busy));
  }
  async function submit(uci){
