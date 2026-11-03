@@ -49,7 +49,7 @@ jobs:
             if [ "$attempt" -eq 40 ]; then cat /tmp/tournament-rated-local.log; exit 1; fi
             sleep 1
           done
-          node tests/tournament-rated-local.mjs
+          node tests/tournament-rated-local.mjs || { tail -150 /tmp/tournament-rated-local.log; exit 1; }
       - name: Install and verify
         run: |
           npm ci --no-audit --no-fund
