@@ -179,5 +179,27 @@ const { pathToFileURL } = require('url');
   assert.equal(found.length,1,'Only evaluated legal positions can generate lessons');
   assert.equal(found[0].severity,'blunder');
   assert.equal(found[0].bestMove,'d2d4');
+  assert.equal(found[0].beforeCp,60,'baseline evaluation is retained for comparing alternate player moves');
+  assert.equal(found[0].originalReply,'e7e5','the actual engine reply is available for teaching');
+  const lesson={beforeFen:positions[0].beforeFen,beforeCp:80,bestMove:'e2e4'};
+  let assessed=0;
+  const examiner={evaluate:async()=>{assessed++;return {cp:-30,depth:12,bestMove:'d7d5'};}};
+  const exact=await review.gradeReviewAttempt(lesson,'e2e4',{engine:examiner});
+  assert.equal(exact.accepted,true,'known best move is accepted');
+  assert.equal(assessed,0,'no redundant Stockfish query for a known best move');
+  const nearBest=await review.gradeReviewAttempt(lesson,'d2d4',{engine:examiner});
+  assert.equal(nearBest.accepted,true,'an alternative within 70cp is accepted');
+  assert.equal(nearBest.loss,50);
+  assert.equal(assessed,1,'a different legal attempt is evaluated by the engine');
+  const poor=await review.gradeReviewAttempt(lesson,'g2g4',{
+    engine:{evaluate:async()=>({cp:240,depth:12,bestMove:'e7e5'})}
+  });
+  assert.equal(poor.accepted,false,'a substantially losing legal move is rejected');
+  assert.equal((await review.gradeReviewAttempt(lesson,'e2e5',{engine:examiner})).invalid,true,
+    'illegal moves are rejected before invoking the engine');
+  const uncertain=await review.gradeReviewAttempt(lesson,'b1c3',{
+    engine:{evaluate:async()=>({cp:null,depth:0,bestMove:null})}
+  });
+  assert.equal(uncertain.unavailable,true,'failed Stockfish evaluations never fabricate a verdict');
   console.log('Arena catalog, Elo, economy, error review isolation & evaluation, resume, ad and cloud merge: PASS');
 })().catch(error=>{console.error(error);process.exitCode=1;});
