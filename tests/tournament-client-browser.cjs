@@ -184,6 +184,20 @@ try {
   }));
   throw new Error('Mouse drag did not reach server/opponent: '+JSON.stringify({moveResponses,debug,cause:error.message}));
  }
+ // Full WebView restart during a live 10+0 game must restore the same
+ // server match and the locally persisted Fantasy art selection.
+ await white.reload({waitUntil:'networkidle'});
+ await white.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
+ await white.locator('[data-tournament-open]').click();
+ await white.locator('[data-tour-board]').waitFor({timeout:20000});
+ await white.waitForFunction(()=>!!document.querySelector('[data-tour-board] [data-square="e4"] .classic-piece'),
+  null,{timeout:16000});
+ assert.equal(await white.locator('[data-tour-board]').getAttribute('data-player-color'),'w',
+  'Reload preserves this exact white-player match');
+ assert.equal(await white.evaluate(()=>document.documentElement.dataset.simplePieces),'1',
+  'Reload preserves the selected Fantasy artwork');
+ assert.equal(await white.locator('[data-tournament-screen] [data-board-view-switch]').count(),1,
+  'Restored match has the same shared art toggle');
  await dragTouch(black,'e7','e5');
  await white.waitForFunction(()=>!!document.querySelector('[data-tour-board] [data-square="e5"] .classic-piece'),null,{timeout:16000});
  await moveByClicks(white,'g1','f3');
