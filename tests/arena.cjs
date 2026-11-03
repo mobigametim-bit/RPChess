@@ -169,6 +169,21 @@ const { pathToFileURL } = require('url');
   assert.equal(positions[0].uci,'e2e4');
   assert.equal(positions[1].ply,3);
   assert.equal(positions[1].uci,'g1f3');
+  const sanJournal=review.reviewMoveJournal(['f2f3','e7e5','g2g4','d8h4']);
+  assert.deepStrictEqual(sanJournal.map(m=>m.san),['f3','e5','g4','Qh4#'],
+    'Lichess-style move journal uses accurate SAN including the final checkmate');
+  assert.deepStrictEqual(sanJournal.map(m=>m.color),['w','b','w','b']);
+  assert.equal(sanJournal[3].fen.split(' ')[1],'w',
+    'journal positions are recorded after each complete legal move');
+  const whiteEval=review.reviewEvaluation(100,'w');
+  const blackEval=review.reviewEvaluation(100,'b');
+  assert.equal(whiteEval.display,'+1.00','positive white evaluation is formatted from White POV');
+  assert.equal(blackEval.display,'−1.00','positive Black-POV analysis maps to negative White eval');
+  assert(whiteEval.whitePercent>50&&blackEval.whitePercent<50,
+    'the right evaluation meter correctly reflects both board orientations');
+  assert(review.reviewEvaluation(100,'w',160).whitePercent<50,
+    'the right evaluation meter accounts for the loss from a real attempted move');
+  assert.equal(review.reviewEvaluation(null,'w'),null,'missing scores never become fabricated evaluations');
   assert.equal(review.sampleReviewTurns(Array.from({length:64},(_,i)=>({ply:i+1}))).length,64,
     'full-game review keeps every move rather than sampling sixteen');
   const allTurns=Array.from({length:22},(_,i)=>({...positions[0],ply:2*i+1}));
