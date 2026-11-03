@@ -117,7 +117,7 @@ function renderStaticCopy() {
     setText(promotionModal, '.reboot-eyebrow', 'classic.promotion.kicker');
     setText(promotionModal, '#promotion-title', 'classic.promotion.title');
     for (const option of promotionOptions?.querySelectorAll('[data-promotion]') || []) {
-      const label = option.querySelector('span');
+      const label = option.querySelector('.classic-promotion-name');
       if (label) label.textContent = pieceName(option.dataset.promotion);
     }
   }
@@ -372,6 +372,7 @@ function openPromotion(from, to, color, choices) {
     image.src = promotionArtResolver?.(from,type,color) || pieceAsset({ type, color });
     image.alt = '';
     const label = document.createElement('span');
+    label.className = 'classic-promotion-name';
     label.textContent = pieceName(type);
     const symbol = document.createElement('span');
     symbol.className = 'rpchess-promotion-symbol rpchess-piece-symbol--' + color;
