@@ -202,41 +202,124 @@ function reviewContinuation(lesson,step=1){
 }
 /* Full-screen teaching screen uses the same centered-viewport board contract as
  * Battle, Arena and Classic. The left rail owns all explanatory UI. */
+const REVIEW_MARKS={inaccuracy:'?!',mistake:'?',blunder:'??'};
+
+/* Rebuild SAN from the verified completed UCI history. This is a readable
+ * game journal, not a new game state and not an engine recommendation. */
+function reviewMoveJournal(moves){
+ const game=new ClassicChessEngine(),entries=[];
+ for(let i=0;i<moves.length;i++){
+  const uci=moveUci(moves[i]),from=uci.slice(0,2),to=uci.slice(2,4),promotion=uci.slice(4)||null;
+  const moving=game.pieceAt(from),before=game.legalMoves();
+  if(!moving)throw new Error('Corrupted finished game journal');
+  const candidate=before.find(m=>m.from===from&&m.to===to&&(!m.promotion||m.promotion===promotion));
+  const alternatives=before.filter(m=>m.from!==from&&m.to===to&&game.pieceAt(m.from)?.type===moving.type);
+  const result=game.move(from,to,promotion);
+  if(!result.ok||!candidate)throw new Error('Invalid finished game move');
+  const suffix=result.status.type==='checkmate'?'#':result.status.checked?'+':'';
+  let san='';
+  if(result.move.castle==='K'||result.move.castle==='Q'){
+   san=(result.move.castle==='K'?'O-O':'O-O-O')+suffix;
+  }else{
+   let prefix=moving.type==='p'?(candidate.capture?from[0]:''):{n:'N',b:'B',r:'R',q:'Q',k:'K'}[moving.type]||'';
+   if(moving.type!=='p'&&alternatives.length){
+    const sameFile=alternatives.some(m=>m.from[0]===from[0]);
+    const sameRank=alternatives.some(m=>m.from[1]===from[1]);
+    prefix+=!sameFile?from[0]:!sameRank?from[1]:from;
+   }
+   san=prefix+(candidate.capture?'x':'')+to+(promotion?'='+promotion.toUpperCase():'')+suffix;
+  }
+  entries.push({ply:i+1,uci,san,fen:game.fen(),color:moving.color});
+ }
+ return entries;
+}
+/* Stockfish's centipawn evaluation is side-to-move relative. For a lesson the
+ * player is the side to move. The right-hand bar always indicates the board
+ * advantage for WHITE, while the colored section follows board orientation. */
+function reviewEvaluation(beforeCp,playerColor,loss=null){
+ if(!Number.isFinite(beforeCp))return null;
+ const playerCp=beforeCp-(Number.isFinite(loss)?loss:0);
+ const whiteCp=playerColor==='w'?playerCp:-playerCp;
+ const fraction=Math.max(.015,Math.min(.985,1/(1+Math.exp(-whiteCp/310))));
+ return {whiteCp,whitePercent:Math.round(fraction*1000)/10,display:(whiteCp>=0?'+':'−')+(Math.abs(whiteCp)/100).toFixed(2)};
+}
+/* Explicitly invoked from the completed Arena or Tournament result button.
+ * There is no live-match Stockfish worker or reward/rating side effect. */
 function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides={}}={}){
  const turns=prepareFinishedReview({mode,moves,playerColor,finished});
- // One open analysis at a time. No worker survives the screen.
+ const journal=reviewMoveJournal(moves);
  document.querySelector('[data-finished-review]')?.querySelector('[data-review-action="close"]')?.click();
- const L=localized(lang),overlay=document.createElement('div');
- overlay.className='rpchess-review-overlay';overlay.setAttribute('data-finished-review','');
- overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-label',L.title);
+ const L=localized(lang),en=lang==='en',overlay=document.createElement('div');
+ overlay.className='rpchess-review-overlay';
+ overlay.setAttribute('data-finished-review','');
+ overlay.setAttribute('role','dialog');
+ overlay.setAttribute('aria-modal','true');
+ overlay.setAttribute('aria-label',en?'Learn from your mistakes':'Учиться на своих ошибках');
  overlay.innerHTML='<div class="rpchess-review-shell"><aside class="rpchess-review-rail">'+
-  '<header class="rpchess-review-header"><div><h2>'+L.title+'</h2><small>'+L.subtitle+'</small></div>'+
+  '<header class="rpchess-review-header"><div><h2>'+(en?'Game analysis':'Анализ партии')+'</h2>'+
+  '<small>'+L.subtitle+'</small></div>'+
   '<button type="button" data-review-action="close" class="rpchess-review-button rpchess-review-close">'+L.close+'</button></header>'+
   '<div class="rpchess-review-content" data-review-content aria-live="polite">'+L.loading+'</div></aside>'+
-  '<section class="rpchess-review-board-column" aria-label="'+(lang==='en'?'Training chessboard':'Тренировочная доска')+'">'+
-  '<div class="rpchess-review-board-frame"><div class="rpchess-review-ranks" aria-hidden="true"></div>'+
+  '<section class="rpchess-review-board-column" aria-label="'+(en?'Training chessboard':'Тренировочная доска')+'">'+
+  '<div class="rpchess-review-board-frame">'+
+  '<div class="rpchess-review-ranks" aria-hidden="true"></div>'+
   '<div class="rpchess-review-board classic-board" data-review-board></div>'+
-  '<div class="rpchess-review-files" aria-hidden="true"></div></div></section>'+
-  '<div class="rpchess-review-right" aria-hidden="true"></div></div>';
+  '<div class="rpchess-review-files" aria-hidden="true"></div>'+
+  '<div class="rpchess-review-eval" data-review-eval role="img" aria-label="'+(en?'Position evaluation':'Оценка позиции')+'">'+
+  '<div class="rpchess-review-eval-white" data-review-eval-white></div>'+
+  '<span class="rpchess-review-eval-score" data-review-eval-score>—</span></div>'+
+  '</div></section><div class="rpchess-review-right" aria-hidden="true"></div></div>';
  document.body.append(overlay);
  const artSwitch=makeToggle();
  overlay.querySelector('.rpchess-review-rail').insertBefore(artSwitch,overlay.querySelector('[data-review-content]'));
  syncToggles();
  const target=overlay.querySelector('[data-review-content]');
  const board=overlay.querySelector('[data-review-board]');
+ const rail=overlay.querySelector('.rpchess-review-rail');
  const rankLabels=overlay.querySelector('.rpchess-review-ranks');
  const fileLabels=overlay.querySelector('.rpchess-review-files');
+ const evalBar=overlay.querySelector('[data-review-eval]');
+ const evalWhite=overlay.querySelector('[data-review-eval-white]');
+ const evalScore=overlay.querySelector('[data-review-eval-score]');
  const reverse=playerColor==='b';
  rankLabels.innerHTML=(reverse?['1','2','3','4','5','6','7','8']:['8','7','6','5','4','3','2','1']).map(x=>'<span>'+x+'</span>').join('');
  fileLabels.innerHTML=(reverse?[...'hgfedcba']:[...'abcdefgh']).map(x=>'<span>'+x+'</span>').join('');
+ evalBar.classList.toggle('is-flipped',reverse);
  let cancelled=false,cases=[],worker=null,selected=0,selectedSquare='',feedback='',feedbackKind='',busy=false;
- // Actual pixels are authoritative: older WebViews can resolve nested CSS
- // min()/calc() grid tracks incorrectly and stretch the panel over the board.
- // Keep the separate coordinate labels visible at every landscape size.
- const rail=overlay.querySelector('.rpchess-review-rail');
+ let solved=new Set(),revealed=new Set(),skipped=new Set(),boardMode='before',browsePly=null;
+ let attemptFen='',attemptUci='',attemptLoss=null,pendingPromotion=null,serial=0;
+ const tx=en?{
+  learn:'Learn from your mistakes',moves:'Moves',legend:'Annotations',
+  progress:'Reviewed',total:'issues',find:'Find a better move for',
+  played:'was played',inaccuracy:'Inaccuracy',mistake:'Mistake',blunder:'Blunder',
+  view:'View solution',skip:'Skip this move',next:'Next',retry:'Try again',
+  resume:'Resume learning',again:'Practice again',solution:'Best was',
+  good:'Good move!',wrong:'You can do better. Try another move.',
+  check:'Evaluating your move…',unavailable:'Unable to evaluate the move. Try again.',
+  invalid:'Illegal move.',completed:'You have reviewed all your mistakes.',
+  nothing:'No significant errors found in this completed game.',
+  note:'Stockfish analysis of every move · approximate evaluations',
+  yourTurn:'Your move',offTrack:'You browsed away from the exercise.',
+  label:'Position evaluation',loading:'Analysed',white:'White',black:'Black',
+  status:'Done',solved:'Solved',skipped:'Skipped'
+ }:{
+  learn:'Учиться на своих ошибках',moves:'Ходы партии',legend:'Обозначения',
+  progress:'Разобрано',total:'ошибок',find:'Найдите более сильный ход за',
+  played:'был сыгран',inaccuracy:'Неточность',mistake:'Ошибка',blunder:'Зевок',
+  view:'Посмотреть решение',skip:'Пропустить ход',next:'Следующая',retry:'Попробовать снова',
+  resume:'Продолжить обучение',again:'Разобрать заново',solution:'Лучший ход',
+  good:'Хороший ход!',wrong:'Можно сыграть сильнее. Попробуйте другой ход.',
+  check:'Проверяем ваш ход…',unavailable:'Не удалось оценить ход. Попробуйте ещё.',
+  invalid:'Недопустимый ход.',completed:'Вы разобрали все ошибки этой партии.',
+  nothing:'В завершённой партии существенных ошибок не найдено.',
+  note:'Stockfish проверяет все ходы · оценки приблизительные',
+  yourTurn:'Ваш ход',offTrack:'Вы отошли от учебной позиции.',
+  label:'Оценка позиции',loading:'Проверено',white:'белых',black:'чёрных',
+  status:'Готово',solved:'Решено',skipped:'Пропущено'
+ };
  function layoutReviewRail(){
   if(cancelled)return;
-  const portrait=window.innerWidth<=700||window.innerHeight>window.innerWidth;
+  const portrait=window.innerHeight>window.innerWidth;
   if(portrait){rail.style.width='100%';rail.style.maxWidth='none';return;}
   const gutter=rankLabels.getBoundingClientRect().left-overlay.getBoundingClientRect().left-4;
   const width=Math.max(0,Math.floor(gutter))+'px';
@@ -244,158 +327,218 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
  }
  window.addEventListener('resize',layoutReviewRail);
  layoutReviewRail();
- let solved=new Set(),hint=false,boardMode='before',attemptFen='',attemptUci='',pendingPromotion=null,serial=0;
- const tx={
-  en:{issues:'Key moments',task:'Find a better move for',mistake:'Your move',loss:'Evaluation drop',
-      pending:'Analyse the position and play a stronger move on the board.',
-      alternative:'Your alternative is acceptable according to the engine.',
-      wrong:'This move still loses too much evaluation. Try again.',
-      checking:'Stockfish is assessing your move…',fail:'Could not assess this move. Try again.',
-      invalid:'This move is not legal.',tryAgain:'Try again',next:'Next mistake',solution:'Best move',
-      original:'Why was it a mistake?',opponent:'Show opponent reply',back:'Back to exercise',
-      hint:'Hint',hideHint:'Hide hint',show:'Engine suggestion',solved:'Solved',
-      intro:'Solve each position before checking the answer.',completed:'Practice complete!',
-      progress:'Solved',from:'Position before the mistake',after:'Your attempted move',played:'Original move',
-      reply:'Engine reply to that move',noReply:'No engine reply available for this position.',
-      explanation:'Compare your move with the actual engine continuation on the board.',
-      side:'to move',promotion:'Choose promotion',unavailable:'The engine could not verify this move. Retry.',
-      noMistakes:'No major mistakes found in the finished game.',limited:'Every move you played is analysed; evaluations are approximate.',
-      original2:'Original move',examining:'Checking'},
-  ru:{issues:'Ключевые моменты',task:'Найдите более сильный ход за',mistake:'Ваш ход',loss:'Потеря оценки',
-      pending:'Посмотрите на позицию и сделайте более сильный ход на доске.',
-      alternative:'Хороший ход! Движок подтверждает, что этот вариант достаточно силён.',
-      wrong:'Этот ход по-прежнему теряет слишком много оценки. Попробуйте другой.',
-      checking:'Stockfish проверяет ваш ход…',fail:'Не удалось проверить ход. Попробуйте ещё.',
-      invalid:'Недопустимый ход.',tryAgain:'Попробовать ещё',next:'Следующая ошибка',solution:'Лучший ход',
-      original:'Почему это ошибка?',opponent:'Ответ соперника',back:'Вернуться к задаче',
-      hint:'Подсказка',hideHint:'Скрыть подсказку',show:'Предложение движка',solved:'Решено',
-      intro:'Найдите хороший ход самостоятельно, а затем сравните варианты.',
-      completed:'Разбор завершён!',progress:'Разобрано',from:'Позиция до ошибки',
-      after:'Ваш вариант',played:'Исходный ход',reply:'Ответ движка на этот ход',
-      noReply:'Достоверный ответ движка для этой позиции недоступен.',
-      explanation:'Сравните исходный ход с продолжением, найденным движком.',
-      side:'ход',promotion:'Выберите превращение',unavailable:'Движок не смог оценить этот ход. Попробуйте ещё.',
-      noMistakes:'В завершённой партии крупных ошибок не найдено.',
-      limited:'Проверяем каждый ваш ход за всю партию. Оценки приблизительные.',original2:'Сыграно',examining:'Проверено'}
- }[lang==='en'?'en':'ru'];
- const close=()=>{if(cancelled)return;cancelled=true;serial++;worker?.close();overlay.remove();document.removeEventListener('keydown',onEscape);window.removeEventListener('resize',layoutReviewRail);};
- const onEscape=e=>{if(e.key==='Escape'){e.preventDefault();close();}};
+ function close(){
+  if(cancelled)return;
+  cancelled=true;serial++;
+  worker?.close();worker=null;
+  window.removeEventListener('resize',layoutReviewRail);
+  document.removeEventListener('keydown',onEscape);
+  overlay.remove();
+ }
+ function onEscape(e){if(e.key==='Escape'){e.preventDefault();close();}}
  document.addEventListener('keydown',onEscape);
- function resetView(){serial++;selectedSquare='';feedback='';feedbackKind='';hint=false;boardMode='before';attemptFen='';attemptUci='';pendingPromotion=null;busy=false;}
- function goTo(index){if(index<0||index>=cases.length)return;selected=index;resetView();render();}
+ function resetExercise(){
+  serial++;selectedSquare='';feedback='';feedbackKind='';
+  boardMode='before';browsePly=null;attemptFen='';attemptUci='';attemptLoss=null;
+  pendingPromotion=null;busy=false;
+ }
+ function done(i){return solved.has(i)||revealed.has(i)||skipped.has(i);}
+ function completedCount(){return cases.filter((_,i)=>done(i)).length;}
+ function goTo(index){
+  if(busy||index<0||index>=cases.length)return;
+  selected=index;resetExercise();render();
+ }
+ function nextLesson(){
+  if(busy)return;
+  let next=cases.findIndex((_,i)=>i>selected&&!done(i));
+  if(next<0)next=cases.findIndex((_,i)=>!done(i));
+  if(next>=0){selected=next;resetExercise();}
+  else{selected=cases.length;resetExercise();}
+  render();
+ }
+ function showEvaluation(model){
+  evalWhite.style.height=model?model.whitePercent+'%':'50%';
+  evalScore.textContent=model?model.display:'—';
+  evalBar.setAttribute('aria-label',tx.label+': '+(model?model.display:(en?'unknown':'нет данных')));
+ }
+ function renderJournal(){
+  const errorsByPly=new Map(cases.map((item,i)=>[item.ply,{...item,index:i}]));
+  let rows='';
+  for(let n=0;n<journal.length;n+=2){
+   rows+='<div class="rpchess-review-move-row"><span class="rpchess-review-move-no">'+(Math.floor(n/2)+1)+'.</span>';
+   for(let off=0;off<2;off++){
+    const entry=journal[n+off],error=entry&&errorsByPly.get(entry.ply);
+    if(!entry){rows+='<span class="rpchess-review-move-empty"></span>';continue;}
+    const mark=error?REVIEW_MARKS[error.severity]:'';
+    const highlight=error?.index===selected&&browsePly===null?' is-active':'';
+    const shown=browsePly===entry.ply?' is-browsing':'';
+    rows+='<button type="button" data-review-move="'+entry.ply+'"'+
+     (error?' data-review-case="'+error.index+'"':'')+
+     ' class="rpchess-review-move'+highlight+shown+(error?' is-error':'')+
+     '" aria-label="'+esc((Math.ceil(entry.ply/2))+(entry.color==='w'?'.':'…')+' '+entry.san+(error?' '+tx[error.severity]:''))+'">'+
+     '<span>'+esc(entry.san)+'</span>'+
+     (error?'<b class="rpchess-review-symbol rpchess-review-symbol--'+error.severity+'">'+mark+'</b>':'')+
+     (error&&done(error.index)?'<span class="rpchess-review-done">✓</span>':'')+
+     '</button>';
+   }
+   rows+='</div>';
+  }
+  return rows;
+ }
  function render(){
   if(cancelled)return;
-  if(!cases.length){board.innerHTML='';return;}
-  const item=cases[selected],moveNo=Math.ceil(item.ply/2)+(item.ply%2===1?'.':'…');
-  const list=cases.map((c,i)=>{
-   const type=L[c.severity],num=Math.ceil(c.ply/2)+(c.ply%2===1?'.':'…');
-   const mark={inaccuracy:'?!',mistake:'?',blunder:'??'}[c.severity]||'';
-   return '<button type="button" data-review-case="'+i+'" class="rpchess-review-case'+(i===selected?' is-active':'')+(solved.has(i)?' is-solved':'')+'">'+
-    '<strong>'+num+' '+esc(c.uci)+'</strong><b class="rpchess-review-symbol rpchess-review-symbol--'+c.severity+'" aria-label="'+esc(type)+'">'+mark+'</b><small>−'+(c.loss/100).toFixed(2)+(solved.has(i)?' ✓':'')+'</small></button>';
-  }).join('');
-  const complete=solved.size===cases.length;
-  const viewingOriginal=boardMode==='original'||boardMode==='reply';
-  let currentFen=item.beforeFen,lastMove='',label=tx.from;
-  if(boardMode==='attempt'&&attemptFen){currentFen=attemptFen;lastMove=attemptUci;label=tx.after;}
-  if(viewingOriginal){const view=reviewContinuation(item,boardMode==='original'?1:2);currentFen=view.fen;lastMove=view.last;label=tx.played;}
-  const actualHint=hint&&!viewingOriginal&&boardMode==='before'?item.bestMove:'';
-  board.innerHTML=chessSquareBoard(currentFen,playerColor,sides,selectedSquare,actualHint,lastMove);
-  const title=tx.task+' '+(playerColor==='w'?(lang==='en'?'White':'белых'):(lang==='en'?'Black':'чёрных'));
-  const symbol={inaccuracy:'?!',mistake:'?',blunder:'??'}[item.severity]||'';
-  let details='<div class="rpchess-review-details"><h3 class="rpchess-review-current">'+moveNo+' '+esc(item.uci)+
-   '<b class="rpchess-review-symbol rpchess-review-symbol--'+item.severity+'" aria-label="'+esc(L[item.severity])+'">'+symbol+'</b>'+
-   '<span class="rpchess-review-current-loss">−'+(item.loss/100).toFixed(2)+'</span></h3>'+
-   '<p class="rpchess-review-detail">'+title+'</p>';
-  if(viewingOriginal){
-   details+='<p class="rpchess-review-prompt">'+tx.explanation+'</p><p class="rpchess-review-meta">'+tx.original2+': <strong>'+esc(item.uci)+'</strong></p>';
-   details+='<p class="rpchess-review-meta">'+tx.reply+': <strong>'+(item.originalReply?esc(item.originalReply):tx.noReply)+'</strong></p>';
-   details+='<div class="rpchess-review-actions"><button type="button" data-review-action="back" class="rpchess-review-button">'+tx.back+'</button>';
-   if(boardMode==='original'&&item.originalReply)details+='<button type="button" data-review-action="opponent" class="rpchess-review-button">'+tx.opponent+'</button>';
-   details+='</div>';
+  const active=cases[selected],doneCount=completedCount();
+  let fen=active?.beforeFen||journal.at(-1)?.fen||new ClassicChessEngine().fen(),lastMove='';
+  if(browsePly!==null){
+   const entry=journal[browsePly-1];
+   if(entry){fen=entry.fen;lastMove=entry.uci;}
+  }else if(boardMode==='attempt'&&attemptFen){fen=attemptFen;lastMove=attemptUci;}
+  board.innerHTML=chessSquareBoard(fen,playerColor,sides,selectedSquare,'',lastMove);
+  const model=active&&browsePly===null?reviewEvaluation(active.beforeCp,playerColor,
+    boardMode==='attempt'?attemptLoss:null):null;
+  showEvaluation(model);
+  const counts={inaccuracy:0,mistake:0,blunder:0};
+  cases.forEach(item=>{counts[item.severity]++;});
+  const legend=['inaccuracy','mistake','blunder'].map(kind=>
+   '<div class="rpchess-review-legend-item"><b class="rpchess-review-symbol rpchess-review-symbol--'+kind+'">'+
+   REVIEW_MARKS[kind]+'</b><span>'+tx[kind]+'</span><strong>'+counts[kind]+'</strong></div>').join('');
+  let practice='';
+  if(!cases.length){
+   practice='<p class="rpchess-review-empty">'+tx.nothing+'</p>';
+  }else if(!active){
+   practice='<p class="rpchess-review-outcome">'+tx.completed+'</p>'+
+    '<div class="rpchess-review-actions"><button type="button" data-review-action="again" class="rpchess-review-button rpchess-review-button--primary">'+tx.again+'</button></div>';
+  }else if(browsePly!==null){
+   practice='<p class="rpchess-review-prompt">'+tx.offTrack+'</p>'+
+    '<div class="rpchess-review-actions"><button type="button" data-review-action="resume" class="rpchess-review-button rpchess-review-button--primary">'+tx.resume+'</button></div>';
   }else{
-   if(feedback)details+='<p class="rpchess-review-prompt rpchess-review-prompt--'+feedbackKind+'" role="status">'+feedback+'</p>';
-   if(hint)details+='<p class="rpchess-review-answer">'+tx.show+': <strong>'+esc(item.bestMove)+'</strong></p>';
+   const entry=journal[active.ply-1],moveNo=Math.ceil(active.ply/2)+(active.ply%2===1?'.':'…');
+   const severity=REVIEW_MARKS[active.severity],position=tx.find+' '+(playerColor==='w'?tx.white:tx.black);
+   practice='<div class="rpchess-review-task"><strong>'+moveNo+' '+esc(entry?.san||active.uci)+
+     ' <b class="rpchess-review-symbol rpchess-review-symbol--'+active.severity+'">'+severity+'</b> '+tx.played+'</strong>'+
+     '<p>'+position+'</p></div>';
+   if(feedback)practice+='<p class="rpchess-review-prompt rpchess-review-prompt--'+feedbackKind+'" role="status">'+feedback+'</p>';
    if(pendingPromotion){
-    details+='<div class="rpchess-review-promotions"><strong>'+tx.promotion+'</strong><div>';
-    for(const role of ['q','r','b','n'])details+='<button type="button" class="rpchess-review-button" data-review-promotion="'+role+'">'+role.toUpperCase()+'</button>';
-    details+='</div></div>';
+    practice+='<div class="rpchess-review-promotions"><strong>'+(en?'Promote to':'Превращение в')+'</strong><div>';
+    for(const kind of ['q','r','b','n'])practice+='<button type="button" data-review-promotion="'+kind+'" class="rpchess-review-button">'+kind.toUpperCase()+'</button>';
+    practice+='</div></div>';
    }
-   details+='<div class="rpchess-review-actions">';
-   if(boardMode==='attempt')details+='<button type="button" data-review-action="retry" class="rpchess-review-button">'+tx.tryAgain+'</button>';
-   details+='<button type="button" data-review-action="hint" class="rpchess-review-button">'+(hint?tx.hideHint:tx.hint)+'</button>';
-   details+='<button type="button" data-review-action="solution" class="rpchess-review-button">'+tx.solution+'</button>';
-   details+='</div>';
+   const finished=done(selected);
+   practice+='<div class="rpchess-review-actions">';
+   if(finished){
+    practice+='<button type="button" data-review-action="next" class="rpchess-review-button rpchess-review-button--primary">'+tx.next+'</button>';
+   }else{
+    practice+='<button type="button" data-review-action="solution" class="rpchess-review-button">'+tx.view+'</button>'+
+     '<button type="button" data-review-action="skip" class="rpchess-review-button">'+tx.skip+'</button>';
+   }
+   practice+='</div>';
   }
-  details+='</div>';
-  target.innerHTML='<div class="rpchess-review-summary"><strong>'+tx.progress+': '+solved.size+' / '+cases.length+'</strong>'+
-    (complete?'<span>'+tx.completed+'</span>':'')+'</div>'+
-   '<p class="rpchess-review-note">'+tx.limited+'</p><h3 class="rpchess-review-section-title">'+tx.issues+'</h3>'+
-   '<div class="rpchess-review-cases">'+list+'</div>'+details;
-  const labelEl=overlay.querySelector('[data-review-board-label]');
-  if(labelEl)labelEl.textContent=label;
+  target.innerHTML='<section class="rpchess-review-moves-section"><h3 class="rpchess-review-section-title">'+tx.moves+'</h3>'+
+    '<div class="rpchess-review-movelist">'+renderJournal()+'</div></section>'+
+    '<section class="rpchess-review-legend" aria-label="'+tx.legend+'">'+
+    '<h3 class="rpchess-review-section-title">'+tx.legend+'</h3><div class="rpchess-review-legend-grid">'+legend+'</div></section>'+
+    '<section class="rpchess-review-learning"><div class="rpchess-review-summary">'+
+    '<strong>'+tx.learn+'</strong><span>'+doneCount+' / '+cases.length+'</span></div>'+
+    '<div class="rpchess-review-details">'+practice+'</div></section>';
   board.setAttribute('aria-busy',String(busy));
  }
  async function submit(uci){
-  if(cancelled||busy||!cases.length)return;
-  const current=cases[selected],stamp=++serial;
-  const game=new ClassicChessEngine(current.beforeFen);
-  const played=reviewUci(game,uci);
-  if(!played){feedback=tx.invalid;feedbackKind='error';render();return;}
-  busy=true;pendingPromotion=null;selectedSquare='';feedback=tx.checking;feedbackKind='checking';
-  attemptFen=game.fen();attemptUci=uci;boardMode='attempt';render();
+  if(cancelled||busy||!cases[selected]||browsePly!==null||done(selected))return;
+  const item=cases[selected],stamp=++serial;
+  const game=new ClassicChessEngine(item.beforeFen);
+  const applied=reviewUci(game,uci);
+  if(!applied){feedback=tx.invalid;feedbackKind='error';render();return;}
+  busy=true;pendingPromotion=null;selectedSquare='';
+  boardMode='attempt';attemptFen=game.fen();attemptUci=uci;attemptLoss=null;
+  feedback=tx.check;feedbackKind='checking';render();
   try{
-   const result=await gradeReviewAttempt(current,uci,{engine:worker});
+   const result=await gradeReviewAttempt(item,uci,{engine:worker});
    if(cancelled||stamp!==serial)return;
    busy=false;
-   if(result.unavailable){feedback=tx.unavailable;feedbackKind='error';}
-   else if(result.accepted){solved.add(selected);feedback=tx.alternative;feedbackKind='correct';}
-   else{feedback=tx.wrong;feedbackKind='error';}
-  }catch{if(!cancelled&&stamp===serial){busy=false;feedback=tx.fail;feedbackKind='error';}}
-  if(!cancelled&&stamp===serial)render();
+   if(result.unavailable){
+    feedback=tx.unavailable;feedbackKind='error';boardMode='before';attemptLoss=null;
+   }else if(result.accepted){
+    solved.add(selected);feedback=tx.good;feedbackKind='correct';
+    attemptLoss=result.loss;
+   }else{
+    feedback=tx.wrong;feedbackKind='error';boardMode='before';attemptLoss=null;
+   }
+  }catch{
+   if(cancelled||stamp!==serial)return;
+   busy=false;feedback=tx.unavailable;feedbackKind='error';boardMode='before';attemptLoss=null;
+  }
+  render();
  }
  overlay.addEventListener('click',event=>{
   const action=event.target.closest('[data-review-action]');
   if(action){
-   const a=action.dataset.reviewAction;
-   if(a==='close'){close();return;}
+   const key=action.dataset.reviewAction;
+   if(key==='close'){close();return;}
    if(busy)return;
-   if(a==='next'){const next=cases.findIndex((_,i)=>i>selected&&!solved.has(i));const start=cases.findIndex((_,i)=>!solved.has(i));goTo(next>=0?next:start>=0?start:Math.min(selected+1,cases.length-1));return;}
-   if(a==='hint'){hint=!hint;render();return;}
-   if(a==='retry'||a==='back'){resetView();render();return;}
-   if(a==='solution'){
-    const item=cases[selected],game=new ClassicChessEngine(item.beforeFen);
-    const applied=reviewUci(game,item.bestMove);
-    if(applied){attemptFen=game.fen();attemptUci=item.bestMove;boardMode='attempt';feedback=tx.show+': '+item.bestMove;feedbackKind='revealed';solved.add(selected);}
-    render();return;
+   if(key==='resume'){browsePly=null;render();return;}
+   if(key==='again'){solved.clear();revealed.clear();skipped.clear();selected=0;resetExercise();render();return;}
+   if(key==='next'){nextLesson();return;}
+   if(key==='skip'){
+    if(cases[selected]){skipped.add(selected);nextLesson();}
+    return;
    }
-   if(a==='original'){boardMode='original';selectedSquare='';render();return;}
-   if(a==='opponent'){boardMode='reply';render();return;}
+   if(key==='solution'){
+    const item=cases[selected];
+    if(!item)return;
+    const game=new ClassicChessEngine(item.beforeFen);
+    if(reviewUci(game,item.bestMove)){
+     revealed.add(selected);boardMode='attempt';attemptFen=game.fen();attemptUci=item.bestMove;
+     attemptLoss=0;selectedSquare='';pendingPromotion=null;
+     feedback=tx.solution+': '+item.bestMove;feedbackKind='correct';
+     render();
+    }
+    return;
+   }
   }
-  const choice=event.target.closest('[data-review-case]');
-  if(choice){if(!busy)goTo(Number(choice.dataset.reviewCase));return;}
+  if(busy)return;
+  const move=event.target.closest('[data-review-move]');
+  if(move){
+   const index=move.dataset.reviewCase;
+   if(index!==undefined){goTo(Number(index));return;}
+   browsePly=Number(move.dataset.reviewMove);
+   selectedSquare='';render();return;
+  }
   const promotion=event.target.closest('[data-review-promotion]');
-  if(promotion&&pendingPromotion){const uci=pendingPromotion+promotion.dataset.reviewPromotion;pendingPromotion=null;submit(uci);return;}
+  if(promotion&&pendingPromotion){
+   const uci=pendingPromotion+promotion.dataset.reviewPromotion;
+   pendingPromotion=null;submit(uci);return;
+  }
   const square=event.target.closest('[data-review-square]');
-  if(!square||busy||boardMode!=='before'||pendingPromotion||!cases.length)return;
-  const current=cases[selected],game=new ClassicChessEngine(current.beforeFen),sq=square.dataset.reviewSquare;
-  if(!selectedSquare){if(game.pieceAt(sq)?.color===playerColor){selectedSquare=sq;render();}return;}
+  if(!square||!cases[selected]||browsePly!==null||boardMode!=='before'||done(selected)||pendingPromotion)return;
+  const item=cases[selected],game=new ClassicChessEngine(item.beforeFen),sq=square.dataset.reviewSquare;
+  if(!selectedSquare){
+   if(game.pieceAt(sq)?.color===playerColor){selectedSquare=sq;render();}
+   return;
+  }
   if(sq===selectedSquare){selectedSquare='';render();return;}
   const options=game.legalMoves(selectedSquare).filter(m=>(m.uciTo||m.to)===sq);
-  if(!options.length){selectedSquare=game.pieceAt(sq)?.color===playerColor?sq:'';render();return;}
-  const move=selectedSquare+sq;
-  if(options.some(m=>m.promotion)){pendingPromotion=move;render();return;}
-  submit(move);
+  if(!options.length){
+   selectedSquare=game.pieceAt(sq)?.color===playerColor?sq:'';render();return;
+  }
+  const uci=selectedSquare+sq;
+  if(options.some(m=>m.promotion)){pendingPromotion=uci;render();return;}
+  submit(uci);
  });
  (async()=>{
-  if(!turns.length){target.innerHTML='<p>'+L.noMoves+'</p>';return;}
+  if(!turns.length){
+   target.innerHTML='<p>'+L.noMoves+'</p>';
+   board.innerHTML=chessSquareBoard(journal.at(-1)?.fen||new ClassicChessEngine().fen(),playerColor,sides);
+   showEvaluation(null);
+   return;
+  }
   try{
    worker=new StockfishReviewEngine();await worker.start();
    if(cancelled)return;
    cases=await analyseFinishedReview(turns,{engine:worker,onProgress:(done,total)=>{
-    if(!cancelled)target.innerHTML='<div class="rpchess-review-loading">'+tx.examining+': '+done+'/'+total+'…</div>';
+    if(!cancelled)target.innerHTML='<div class="rpchess-review-loading">'+tx.loading+': '+done+' / '+total+'…</div>';
    }});
    if(cancelled)return;
-   if(!cases.length){target.innerHTML='<p>'+tx.noMistakes+'</p><p class="rpchess-review-note">'+tx.limited+'</p>';worker.close();worker=null;return;}
+   if(!cases.length){worker.close();worker=null;}
    render();
   }catch{
    if(!cancelled)target.innerHTML='<p>'+L.error+'</p>';
@@ -404,4 +547,4 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
  })();
  return {close};
 }
-export { prepareFinishedReview, sampleReviewTurns, parseInfo, classifyLoss, analyseFinishedReview, gradeReviewAttempt, StockfishReviewEngine, openFinishedGameReview };
+export { prepareFinishedReview,sampleReviewTurns,parseInfo,classifyLoss,analyseFinishedReview,gradeReviewAttempt,reviewMoveJournal,reviewEvaluation,StockfishReviewEngine,openFinishedGameReview };
