@@ -31,6 +31,8 @@ let page='setup',squad='humans',queueSince=0,searchJob=null,session=null,live=nu
 let lastSearch=0;
 let matchState=null,chess=null,selectedSquare=null,matchJob=null,matchRendered=false,lastSnapshotAt=0,busyMove=false,dragActive=false;
 let ratedReceipt=null,resumeSerial=0,connectJob=null,tournamentProfile=null;
+// Arena-matched 290 ms smooth move flight for authoritative server moves.
+let pendingFlight=null,moveFlyer=null,captureGhost=null,moveAnimation=null,moveAnimationSerial=0;
 const ROLE={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
 function lang(){return currentLanguage()==='en'?'en':'ru';}
 function t(key){return words[lang()][key]||key;}
@@ -77,7 +79,7 @@ function boardMarkup(){
  const snapshot=chess.snapshot();
  const checkedKing=snapshot.status.checked?snapshot.board.findIndex(piece=>piece?.type==='k'&&piece.color===snapshot.turn):-1;
  const reverse=matchState.playerColor==='b';
- const legal=selectedSquare?chess.legalMoves(selectedSquare).map(m=>m.to):[];
+ const legal=selectedSquare?chess.legalMoves(selectedSquare):[];
  let output='';
  for(let y=0;y<8;y++)for(let x=0;x<8;x++){
   const rank=reverse?y:7-y, file=reverse?7-x:x,idx=rank*8+file;
@@ -85,8 +87,10 @@ function boardMarkup(){
   const light=(rank+file)%2!==0;
   const img=piece?'<img class="classic-piece" draggable="false" alt="" src="'+racePiecePath(matchState.players.find(p=>p.color===piece.color)?.race||'humans',ROLE[piece.type],piece.color)+'">':'';
   const symbol=piece?'<span class="rpchess-piece-symbol" aria-hidden="true">'+fantasyPieceMarkup(piece.type,piece.color)+'</span>':'';
-  const mark=legal.includes(sq)?'<span class="tournament-legal"></span>':'';
-  output+='<button type="button" class="classic-square '+(light?'classic-square--light':'classic-square--dark')+(selectedSquare===sq?' is-selected':'')+(idx===checkedKing?' classic-square--check':'')+'" data-square="'+sq+'" aria-label="'+sq+'">'+img+symbol+mark+'</button>';
+  const move=legal.find(m=>m.to===sq);
+  const arriving=pendingFlight?.to===sq;
+  const art=arriving?img.replace('class="classic-piece"','class="classic-piece classic-piece--arriving"'):img;
+  output+='<button type="button" class="classic-square '+(light?'classic-square--light':'classic-square--dark')+(selectedSquare===sq?' classic-square--selected':'')+(move?' classic-square--legal':'')+(move?.capture?' classic-square--capture':'')+(idx===checkedKing?' classic-square--check':'')+'" data-square="'+sq+'" aria-label="'+sq+'">'+art+symbol+'</button>';
  }
  return output;
 }
@@ -160,7 +164,7 @@ function showBattle(){
   applyRaceBoardTheme(root.querySelector('[data-tour-board]'),
    matchState.players.find(p=>p.color==='w')?.race||'humans');
   attachPieceDrag(root.querySelector('[data-tour-board]'),{
-   canPick:square=>Boolean(chess&&matchState.status==='playing'&&chess.turn()===matchState.playerColor&&chess.pieceAt(square)?.color===matchState.playerColor&&!busyMove),
+   canPick:square=>Boolean(chess&&matchState.status==='playing'&&chess.turn()===matchState.playerColor&&chess.pieceAt(square)?.color===matchState.playerColor&&!busyMove&&!pendingFlight),
    onStart:from=>highlightDragFrom(from),
    onDrop:(from,to)=>{
     dragActive=false;
@@ -179,6 +183,66 @@ function showBattle(){
  }
  refreshBoard();
 }
+/* Capture the position BEFORE applying the server snapshot. This animates
+ * both our confirmed move and an opponent move, never speculative client state.
+ * Arena uses the same 290ms timing, easing and flyer/capture VFX. */
+function stopTournamentFlight(){
+ moveAnimationSerial++;
+ const active=moveAnimation;moveAnimation=null;
+ active?.cancel();moveFlyer?.remove();captureGhost?.remove();
+ moveFlyer=null;captureGhost=null;pendingFlight=null;
+ root.querySelectorAll('[data-tour-board] .classic-piece--arriving').forEach(img=>img.classList.remove('classic-piece--arriving'));
+}
+function geometryForServerMove(response){
+ if(!matchRendered||!matchState||!chess||page!=='match'||dragActive||
+    !Array.isArray(response.moves)||response.status!=='playing'||
+    response.matchId!==matchState.matchId||
+    response.moves.length!==matchState.moves.length+1||
+    document.documentElement.dataset.reducedMotion==='1'||
+    globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches||
+    typeof Element.prototype.animate!=='function')return null;
+ const step=response.moves.at(-1),board=root.querySelector('[data-tour-board]');
+ if(!board||!step||typeof step.from!=='string'||typeof step.to!=='string')return null;
+ const candidate=chess.legalMoves(step.from).find(m=>m.to===step.to&&(!m.promotion||m.promotion===step.promotion));
+ if(!candidate||candidate.castle)return null;
+ const selector=document.documentElement.dataset.simplePieces==='1'?'.rpchess-fantasy-piece':'.classic-piece';
+ const source=board.querySelector('[data-square="'+step.from+'"] '+selector);
+ const target=board.querySelector('[data-square="'+step.to+'"]');
+ if(!source||!target)return null;
+ const capture=candidate.capture?board.querySelector('[data-square="'+candidate.capture+'"] '+selector):null;
+ return {to:step.to,src:source.getAttribute('src'),source:source.getBoundingClientRect(),
+  target:target.getBoundingClientRect(),selector,capturedSrc:capture?.getAttribute('src'),
+  capturedRect:capture?.getBoundingClientRect()};
+}
+function startTournamentFlight(geometry){
+ if(!geometry||pendingFlight!==geometry||!root.querySelector('[data-tour-board]'))return;
+ const dest=root.querySelector('[data-tour-board] [data-square="'+geometry.to+'"] '+geometry.selector)?.getBoundingClientRect();
+ const left=dest?.left??geometry.target.left+(geometry.target.width-geometry.source.width)/2;
+ const top=dest?.top??geometry.target.top+(geometry.target.height-geometry.source.height)/2;
+ const flyer=document.createElement('img');
+ flyer.className='classic-piece-flyer';flyer.src=geometry.src;flyer.alt='';
+ Object.assign(flyer.style,{left:geometry.source.left+'px',top:geometry.source.top+'px',
+  width:geometry.source.width+'px',height:geometry.source.height+'px'});
+ document.body.append(flyer);moveFlyer=flyer;
+ if(geometry.capturedSrc&&geometry.capturedRect){
+  const ghost=document.createElement('img');ghost.className='classic-captured-ghost';
+  ghost.src=geometry.capturedSrc;ghost.alt='';
+  Object.assign(ghost.style,{left:geometry.capturedRect.left+'px',top:geometry.capturedRect.top+'px',
+   width:geometry.capturedRect.width+'px',height:geometry.capturedRect.height+'px'});
+  document.body.append(ghost);captureGhost=ghost;
+  ghost.animate([{opacity:1,transform:'scale(1)'},{opacity:0,transform:'scale(.72)'}],
+   {duration:240,easing:'ease-out',fill:'forwards'});
+ }
+ const stamp=++moveAnimationSerial;
+ const animation=flyer.animate(
+  [{transform:'translate3d(0,0,0) scale(1)'},
+   {transform:'translate3d('+(left-geometry.source.left)+'px,'+(top-geometry.source.top)+'px,0) scale(1.025)'}],
+  {duration:290,easing:'cubic-bezier(.22,.8,.24,1)',fill:'forwards'});
+ moveAnimation=animation;
+ animation.finished.catch(()=>{}).finally(()=>{
+  if(stamp===moveAnimationSerial&&moveAnimation===animation)stopTournamentFlight();
+ });
+}
 function highlightDragFrom(from){
  const board=root.querySelector('[data-tour-board]');
  if(!board||!chess)return;
@@ -187,15 +251,13 @@ function highlightDragFrom(from){
  // A pointer gesture starts on a square that is currently the pointer target.
  // Replacing its HTML at this moment cancels touch dragging in WebView. Keep
  // those nodes in place and decorate existing squares instead.
- board.querySelectorAll('.tournament-legal').forEach(node=>node.remove());
- board.querySelectorAll('.classic-square.is-selected').forEach(node=>node.classList.remove('is-selected'));
- board.querySelector('[data-square="'+from+'"]')?.classList.add('is-selected');
+ board.querySelectorAll('.classic-square--legal,.classic-square--capture,.classic-square--selected').forEach(node=>node.classList.remove('classic-square--legal','classic-square--capture','classic-square--selected'));
+ board.querySelector('[data-square="'+from+'"]')?.classList.add('classic-square--selected');
  for(const move of chess.legalMoves(from)){
   const target=board.querySelector('[data-square="'+move.to+'"]');
   if(target){
-   const marker=document.createElement('span');
-   marker.className='tournament-legal';
-   target.append(marker);
+   target.classList.add('classic-square--legal');
+   if(move.capture)target.classList.add('classic-square--capture');
   }
  }
 }
@@ -230,6 +292,9 @@ async function syncMatch(){
   const response=await call('/v1/match/'+encodeURIComponent(expectedMatch)+'/snapshot',{});
   // A delayed old-match response must not replace a fresh matchmaking screen.
   if(live?.matchId!==expectedMatch||(page!=='match'&&page!=='result'))return;
+  const flight=geometryForServerMove(response);
+  if(flight){stopTournamentFlight();pendingFlight=flight;}
+  else if(matchState&&response.moves?.length!==matchState.moves?.length)stopTournamentFlight();
   matchState=response;lastSnapshotAt=Date.now();
   chess=new ClassicChessEngine();
   for(const mv of response.moves){const result=chess.move(mv.from,mv.to,mv.promotion||null);if(!result.ok)throw Error('Invalid server history');}
@@ -259,20 +324,21 @@ async function syncMatch(){
    stopMatch();page='result';render();return;
   }
   page='match';render();
+  if(flight)startTournamentFlight(flight);
  }catch(err){
   if(live?.matchId!==expectedMatch||(page!=='match'&&page!=='result'))return;
   message=err.message;const tag=root.querySelector('[data-tour-turn]');if(tag)tag.textContent=message;
  }
 }
-function stopMatch(){dragActive=false;if(matchJob){clearInterval(matchJob);matchJob=null;}}
+function stopMatch(){dragActive=false;stopTournamentFlight();if(matchJob){clearInterval(matchJob);matchJob=null;}}
 async function sendMove(from,to,promotion=null){
  if(busyMove||!chess||!matchState||chess.turn()!==matchState.playerColor)return;
  const choices=chess.promotionChoices(from,to);
  const promoted=choices.length?(promotion||'q'):null;
  busyMove=true;
  try{
-  const result=await call('/v1/match/'+encodeURIComponent(live.matchId)+'/move',{from,to,promotion:promoted});
-  selectedSquare=null;matchState=result;lastSnapshotAt=Date.now();await syncMatch();
+  await call('/v1/match/'+encodeURIComponent(live.matchId)+'/move',{from,to,promotion:promoted});
+  selectedSquare=null;await syncMatch();
  }catch(err){message=err.message;await syncMatch();}finally{busyMove=false;}
 }
 async function matchAction(action){
@@ -385,7 +451,7 @@ async function joinRoom(){
 button?.addEventListener('click',()=>{open();void Promise.resolve(globalThis.RPChessCloudReady).then(()=>{if(page==='setup')render();}).catch(()=>{});});
 root.addEventListener('click',event=>{
  const square=event.target.closest('[data-tour-board] [data-square]');
- if(square&&chess&&matchState?.status==='playing'){
+ if(square&&chess&&matchState?.status==='playing'&&!pendingFlight){
   const clicked=square.dataset.square,own=chess.pieceAt(clicked)?.color===matchState.playerColor;
   if(chess.turn()!==matchState.playerColor)return;
   if(selectedSquare&&chess.legalMoves(selectedSquare).some(m=>m.to===clicked)){void sendMove(selectedSquare,clicked);return;}
