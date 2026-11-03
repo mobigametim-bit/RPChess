@@ -5,6 +5,14 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
   const browser=await chromium.launch({headless:true});
   try{
     const page=await browser.newPage({viewport:{width:950,height:530}});
+    // This test exercises Arena mechanics, not first-visit onboarding. A
+    // completed tutorial profile prevents real modal hints intercepting chess
+    // clicks while onboarding-browser.cjs owns their independent acceptance.
+    await page.addInitScript(()=>{
+      const hints=['arenaCatalog','arenaFoe','arenaArtifact','arenaChess','arenaResult'];
+      const dismissed=Object.fromEntries(hints.map(key=>[key,true]));
+      localStorage.setItem('rpchess.reboot.v1.tutorial',JSON.stringify({schemaVersion:1,activated:true,dismissed}));
+    });
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
     // Simulate a slow initial Arena catalog image. The mask must cover its loading.
     await page.route('**/assets/races/humans/pieces/board/white/king.png',async route=>{
