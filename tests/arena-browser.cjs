@@ -257,6 +257,8 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert(resultButton.includes('58, 45, 27'),'victory buttons use gold UI styling');
     assert(await page.locator('.arena-dialog-panel--result .arena-result-actions button').first().evaluate(node=>node.classList.contains('reboot-button--primary')),'result actions reuse the common primary button');
     assert.equal(await page.locator('.arena-dialog-panel--result [data-arena-action="review"]').count(),1,'Finished Arena result offers mistake review');
+    assert.equal(await page.locator('.arena-dialog-panel--result [data-arena-action="review"]').innerText(),
+      'Анализировать','postgame action uses the new short title');
     // Review UI only after finishing; a mocked short finish is not fed into
     // the evaluation engine because its handcrafted FEN is not in move history.
     // Review is a landscape game scene. Earlier checks used a 667px compact
@@ -267,10 +269,19 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       window.__reviewDemo=openFinishedGameReview({mode:'arena',finished:true,moves:['f2f3','e7e5','g2g4','d8h4'],playerColor:'w'});
     });
     await page.locator('[data-finished-review] [data-review-action="close"]').waitFor();
+    assert.equal(await page.locator('[data-finished-review] .rpchess-review-header small').count(),0,
+      'the redundant Stockfish approximation subtitle is absent');
+    assert.equal(await page.locator('[data-finished-review] [data-review-square]').count(),64,
+      'the chessboard is populated immediately even before the engine finishes');
     // Real Stockfish identifies Fool's Mate; all four recorded moves remain in
     // the journal, while at least one error is a playable teaching exercise.
     await page.locator('[data-finished-review] [data-review-case]').first().waitFor({timeout:35000});
     assert.equal(await page.locator('[data-finished-review] [data-review-square]').count(),64);
+    const scan=await page.locator('[data-finished-review] [data-review-board]').evaluate(node=>({
+      replayed:node.dataset.reviewAnalysisPly,animated:Number(node.dataset.reviewAnalysisAnimations||0)
+    }));
+    assert.equal(scan.replayed,'4','all completed-game moves are replayed on the board during analysis');
+    assert(scan.animated>0,'the replay visibly animates inspected figures during the Stockfish scan');
     assert.equal(await page.locator('[data-finished-review] [data-review-move]').count(),4,
       'Lichess-style journal includes both players and every move');
     assert((await page.locator('[data-finished-review] .rpchess-review-movelist').innerText()).includes('Qh4#'),
