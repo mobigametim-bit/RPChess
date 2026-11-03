@@ -13,3 +13,4 @@ html[data-simple-pieces="1"] .classic-promotion-option>img {display:none!importa
 html[data-simple-pieces="1"] .classic-promotion-option>.rpchess-promotion-symbol {display:flex!important}
 .arena-promotions .rpchess-fantasy-piece,.arena-promotions .arena-promotion-art {display:block;width:64px;height:70px;max-width:100%;object-fit:contain}
 html[data-simple-pieces="1"] :is(.classic-piece-flyer,.classic-captured-ghost) {opacity:0!important}
+.puzzle-promotion .rpchess-fantasy-piece {display:block;width:100%;height:46px;object-fit:contain;pointer-events:none}

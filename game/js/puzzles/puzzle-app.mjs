@@ -330,7 +330,13 @@ function choosePromotion(choices) {
     for (const value of choices) {
       const button = document.createElement('button');
       button.type = 'button';
-      button.textContent = t(PROMOTION_KEYS[value] || 'piece.queen');
+      const label = t(PROMOTION_KEYS[value] || 'piece.queen');
+      if (document.documentElement.dataset.simplePieces === '1') {
+        button.innerHTML = fantasyPieceMarkup(value, engine.turn());
+        button.setAttribute('aria-label', label);
+      } else {
+        button.textContent = label;
+      }
       button.addEventListener('click', () => {
         root.hidden = true;
         promotionResolve = null;
