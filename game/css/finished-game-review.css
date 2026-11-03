@@ -228,6 +228,27 @@
  color:#90d39d;font-size:10px;pointer-events:none;
 }
 .rpchess-review-move .rpchess-review-symbol{font-size:11px;min-width:18px;padding:1px 2px}
+/* Center the glyph + notation + assessment as ONE group in each equal-size cell. */
+[data-finished-review] .rpchess-review-move-content{
+ display:inline-flex;align-items:center;justify-content:center;gap:4px;
+ min-width:0;max-width:100%;height:100%;white-space:nowrap;overflow:hidden;
+}
+[data-finished-review] .rpchess-review-san{
+ min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+[data-finished-review] .rpchess-review-piece-glyph{
+ display:inline-flex;align-items:center;justify-content:center;
+ width:16px;min-width:16px;flex:0 0 16px;height:19px;
+ font:normal 17px/1 "DejaVu Sans","Segoe UI Symbol","Noto Sans Symbols 2",sans-serif;
+ user-select:none;pointer-events:none;
+}
+[data-finished-review] .rpchess-review-piece-glyph--w{
+ color:#fff5de;text-shadow:0 1px 1px #000,0 0 2px #121921;
+}
+[data-finished-review] .rpchess-review-piece-glyph--b{
+ color:#818a9e;-webkit-text-stroke:.3px #c3c6d0;
+ text-shadow:0 0 2px #c9c6cf,0 1px 1px #000;
+}
 .rpchess-review-legend{
  flex:0 0 auto;border-top:1px solid rgba(216,177,93,.24);
  padding-top:4px;
