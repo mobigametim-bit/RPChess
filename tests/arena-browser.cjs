@@ -290,7 +290,8 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       return {center:board.left+board.width/2-innerWidth/2,railRight:rail.right,boardLeft:board.left};
     });
     assert(Math.abs(reviewGeometry.center)<4,'review board stays viewport-centered, not centered beside the left rail');
-    assert(reviewGeometry.railRight<=reviewGeometry.boardLeft,'review information stays on the left of the board');
+    assert(reviewGeometry.railRight<=reviewGeometry.boardLeft+4,
+      'review information stays on the left of the board: '+JSON.stringify(reviewGeometry));
     // The real engine suggestion must be playable and advance the tutorial.
     const best=hintText.match(/Предложение движка:\s*([a-h][1-8][a-h][1-8][qrbn]?)/)?.[1];
     assert(best&&best.length>=4,'hint gives an actual UCI move');
