@@ -409,6 +409,52 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     await page.setViewportSize({width:950,height:530});
     await page.locator('[data-finished-review] [data-review-action="close"]').click();
     assert.equal(await page.locator('[data-finished-review]').count(),0,'Analysis dialog cleans up on close');
+    // Deterministic regression for the reported bug: d4 is a valid near-best
+    // alternative while the original best is e4. PV MUST start from d4.
+    await page.evaluate(async()=>{
+      const {openFinishedGameReview}=await import('./js/finished-game-review.mjs');
+      let evaluated=0;
+      window.__branchFen=null;
+      window.__alternateReview=openFinishedGameReview({
+        mode:'arena',finished:true,playerColor:'w',
+        moves:['f2f3','e7e5','g2g4','d8h4'],
+        engineFactory:()=>({
+          async start(){},
+          async evaluate(fen,{movetime=180}={}){
+            if(movetime===850){
+              window.__branchFen=fen;
+              return {cp:-20,bestMove:'d7d5',pv:['d7d5','c2c4','g8f6'],depth:14};
+            }
+            evaluated++;
+            if(evaluated<=8)return evaluated%2
+              ?{cp:80,bestMove:'e2e4',depth:12,secondCp:15,secondDepth:11,pv:['e2e4','e7e5']}
+              :{cp:240,bestMove:'e7e5',depth:12,pv:['e7e5']};
+            return {cp:-30,bestMove:'d7d5',depth:12,pv:['d7d5']};
+          },
+          close(){}
+        })
+      });
+    });
+    await page.locator('[data-finished-review] [data-review-case]').first().waitFor({timeout:8000});
+    await page.locator('[data-finished-review] [data-review-square="d2"]').click();
+    await page.locator('[data-finished-review] [data-review-square="d4"]').click();
+    await page.waitForFunction(()=>document.querySelector('[data-finished-review] .rpchess-review-summary')?.textContent.includes('1 / '));
+    assert((await page.locator('[data-finished-review] .rpchess-review-prompt').innerText()).includes('Хороший ход'),
+      'the learner alternative d4 is accepted while Stockfish first choice remains e4');
+    await page.locator('[data-finished-review] [data-review-action="variation"]').click();
+    await page.locator('[data-finished-review] .rpchess-review-variation').waitFor({timeout:8000});
+    const branchLabel=await page.locator('[data-finished-review] .rpchess-review-line-compare').innerText();
+    assert(branchLabel.includes('Ваш вариант')&&branchLabel.includes('d4'),
+      'the UI explicitly shows the learner branch, not the engine best variation: '+branchLabel);
+    const actualFen=await page.evaluate(()=>window.__branchFen);
+    const desiredFen=await page.evaluate(async()=>{
+      const {ClassicChessEngine}=await import('./js/classic-chess-engine.mjs');
+      const game=new ClassicChessEngine();game.move('d2','d4');return game.fen();
+    });
+    assert.equal(actualFen,desiredFen,
+      'follow-up engine evaluation starts from precisely the accepted alternative position');
+    await page.locator('[data-finished-review] [data-review-action="close"]').click();
+    assert.equal(await page.locator('[data-finished-review]').count(),0,'fake analysis engine closes cleanly');
     await page.evaluate(()=>{
       const key='rpchess.reboot.v1.arena';
       const saved=JSON.parse(localStorage.getItem(key));saved.match=null;localStorage.setItem(key,JSON.stringify(saved));
