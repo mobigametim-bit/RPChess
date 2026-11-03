@@ -294,11 +294,13 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
         const number=box(children[0]),white=box(children[1]),black=box(children[2]);
         const moves=children.slice(1).filter(el=>el.classList.contains('rpchess-review-move'));
         return {row:box(row),number,white,black,items:moves.map(move=>{
-          const text=move.querySelector('span:first-child'),badge=move.querySelector('.rpchess-review-symbol');
-          const first=box(text),last=badge?box(badge):first,rect=box(move);
+          const content=move.querySelector('.rpchess-review-move-content'),
+            glyph=move.querySelector('.rpchess-review-piece-glyph'),
+            san=move.querySelector('.rpchess-review-san'),rect=box(move);
           return {rect,selected:move.classList.contains('is-active'),
-            contentCenter:(Math.min(first.x,last.x)+Math.max(first.x+first.w,last.x+last.w))/2,
-            justify:getComputedStyle(move).justifyContent};
+            contentCenter:box(content).cx,glyphCenter:box(glyph).cy,sanCenter:box(san).cy,
+            justify:getComputedStyle(move).justifyContent,
+            glyphColor:getComputedStyle(glyph).color};
         })};
       });
     });
@@ -311,11 +313,18 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
         assert(Math.abs(item.rect.y-entry.row.y)<=1 && Math.abs(item.rect.h-entry.row.h)<=1,
           'a move and its highlight are confined to precisely one row: '+JSON.stringify(entry));
         assert(item.justify==='center' && Math.abs(item.contentCenter-item.rect.cx)<=3,
-          'move notation and annotation badge are centered as a group: '+JSON.stringify(item));
+          'piece glyph, SAN notation and annotation badge are centered as a group: '+JSON.stringify(item));
+        assert(Math.abs(item.glyphCenter-item.sanCenter)<=3,
+          'chess piece glyph and SAN stay vertically aligned: '+JSON.stringify(item));
       }
     }
     assert(moveGrid.some(entry=>entry.items.some(item=>item.selected)),
       'the active gold selection is confined to its own move cell');
+    const glyphs=await page.locator('[data-finished-review] .rpchess-review-piece-glyph').allTextContents();
+    assert.deepStrictEqual(glyphs,['♙','♟','♙','♛'],
+      'Fool\'s Mate shows white/black pawn glyphs and the black queen on the mating move');
+    assert.notEqual(moveGrid[0].items[0].glyphColor,moveGrid[0].items[1].glyphColor,
+      'white and black chess glyphs use distinct text colors');
     assert.equal(await page.locator('[data-finished-review] .rpchess-review-legend-item').count(),5,
       'legend includes !, !!, ?!, ? and ?? for both sides of the finished game');
     const labels=await page.locator('[data-finished-review] .rpchess-review-legend-item').allInnerTexts();
