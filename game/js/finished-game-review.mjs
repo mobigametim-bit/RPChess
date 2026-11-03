@@ -140,23 +140,46 @@ class StockfishReviewEngine {
  }
 }
 function classifyLoss(cp){return cp>=250?'blunder':cp>=120?'mistake':cp>=65?'inaccuracy':null;}
-async function analyseFinishedReview(turns,{engine,onProgress=()=>{}}={}){
+/* A best move is not automatically brilliant. Positive marks require a clear
+ * measurable gap to the runner-up MultiPV option, adequate search depth, and
+ * a non-trivial competitive position. !! is a conservative critical-move
+ * heuristic, NOT a verified sacrifice or Lichess classification. */
+function classifyStrongMove(turn,before,loss){
+ if(!before||before.bestMove!==turn.uci||before.depth<9||before.secondDepth<8||
+    !Number.isFinite(before.cp)||!Number.isFinite(before.secondCp)||
+    !Number.isFinite(loss)||loss>40||Math.abs(before.cp)>600)return null;
+ const margin=before.cp-before.secondCp;
+ if(!Number.isFinite(margin)||margin<65)return null;
+ const options=new ClassicChessEngine(turn.beforeFen).legalMoves().length;
+ if(options<8)return null;
+ if(margin>=175&&options>=12&&Math.abs(before.cp)<=350&&loss<=20)return 'excellent';
+ return 'good';
+}
+async function analyseFinishedReview(turns,{engine,onProgress=()=>{},annotate=false,playerColor=null}={}){
  if(!engine||typeof engine.evaluate!=='function')throw new Error('Stockfish review engine is required');
- const sampled=sampleReviewTurns(turns),errors=[];
+ const sampled=sampleReviewTurns(turns),errors=[],annotations={};
  for(let i=0;i<sampled.length;i++){
   const turn=sampled[i];
   const before=await engine.evaluate(turn.beforeFen);
   const after=await engine.evaluate(turn.afterFen);
   const drop=(before.cp===null||after.cp===null)?null:before.cp+after.cp;
-  // Stockfish reports score from side to move; after the move, the opponent
-  // is to move, hence the sign reversal when comparing evaluations.
+  // Stockfish scores are from side-to-move POV; after the move it reverses.
   const severity=drop===null?null:classifyLoss(drop);
-  if(severity&&before.bestMove&&UCI.test(before.bestMove)&&before.bestMove!==turn.uci&&
-    before.depth>=5&&after.depth>=5)
-   errors.push({...turn,loss:Math.round(drop),severity,bestMove:before.bestMove,beforeCp:before.cp,originalReply:after.bestMove||null});
+  const reliable=Number.isFinite(drop)&&before.depth>=5&&after.depth>=5&&
+    before.bestMove&&UCI.test(before.bestMove);
+  if(reliable){
+   const mistake=severity&&before.bestMove!==turn.uci;
+   const strong=!mistake&&annotate?classifyStrongMove(turn,before,drop):null;
+   const kind=mistake?severity:strong;
+   if(kind)annotations[turn.ply]={kind,loss:Math.round(drop)};
+   if(mistake&&(!playerColor||!turn.color||turn.color===playerColor))
+    errors.push({...turn,loss:Math.round(drop),severity,bestMove:before.bestMove,
+     beforeCp:before.cp,pv:before.pv||[],originalReply:after.bestMove||null});
+  }
   onProgress(i+1,sampled.length);
  }
- return errors.sort((a,b)=>a.ply-b.ply);
+ errors.sort((a,b)=>a.ply-b.ply);
+ return annotate?{errors,annotations}:errors;
 }
 function esc(x){return String(x??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 function localized(lang){return lang==='en'?EN:RU;}
@@ -212,8 +235,8 @@ const REVIEW_MARKS={inaccuracy:'?!',mistake:'?',blunder:'??'};
 
 /* Rebuild SAN from the verified completed UCI history. This is a readable
  * game journal, not a new game state and not an engine recommendation. */
-function reviewMoveJournal(moves){
- const game=new ClassicChessEngine(),entries=[];
+function reviewMoveJournal(moves,{startFen=null}={}){
+ const game=new ClassicChessEngine(startFen||undefined),entries=[];
  for(let i=0;i<moves.length;i++){
   const uci=moveUci(moves[i]),from=uci.slice(0,2),to=uci.slice(2,4),promotion=uci.slice(4)||null;
   const moving=game.pieceAt(from),before=game.legalMoves();
@@ -238,6 +261,19 @@ function reviewMoveJournal(moves){
   entries.push({ply:i+1,uci,san,fen:game.fen(),color:moving.color});
  }
  return entries;
+}
+/* A validated, playable engine variation. The source is Stockfish's UCI
+ * principal variation, not a fabricated natural-language explanation. */
+function reviewEngineLine(beforeFen,ucis,maxPlies=9){
+ const game=new ClassicChessEngine(beforeFen),valid=[];
+ for(const uci of ucis.slice(0,maxPlies)){
+  if(!UCI.test(uci))break;
+  const move=reviewUci(game,uci);
+  if(!move)break;
+  valid.push(uci);
+  if(move.status.over)break;
+ }
+ return valid.length?reviewMoveJournal(valid,{startFen:beforeFen}):[];
 }
 /* Stockfish's centipawn evaluation is side-to-move relative. For a lesson the
  * player is the side to move. The right-hand bar always indicates the board
