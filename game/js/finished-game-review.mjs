@@ -231,7 +231,7 @@ function reviewContinuation(lesson,step=1){
 }
 /* Full-screen teaching screen uses the same centered-viewport board contract as
  * Battle, Arena and Classic. The left rail owns all explanatory UI. */
-const REVIEW_MARKS={inaccuracy:'?!',mistake:'?',blunder:'??'};
+const REVIEW_MARKS={excellent:'!!',good:'!',inaccuracy:'?!',mistake:'?',blunder:'??'};
 
 /* Rebuild SAN from the verified completed UCI history. This is a readable
  * game journal, not a new game state and not an engine recommendation. */
@@ -288,7 +288,7 @@ function reviewEvaluation(beforeCp,playerColor,loss=null){
 /* Explicitly invoked from the completed Arena or Tournament result button.
  * There is no live-match Stockfish worker or reward/rating side effect. */
 function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides={}}={}){
- const turns=prepareFinishedReview({mode,moves,playerColor,finished});
+ const turns=prepareFinishedReview({mode,moves,playerColor,finished,allColors:true});
  const journal=reviewMoveJournal(moves);
  document.querySelector('[data-finished-review]')?.querySelector('[data-review-action="close"]')?.click();
  const L=localized(lang),en=lang==='en',overlay=document.createElement('div');
@@ -327,9 +327,10 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
  rankLabels.innerHTML=(reverse?['1','2','3','4','5','6','7','8']:['8','7','6','5','4','3','2','1']).map(x=>'<span>'+x+'</span>').join('');
  fileLabels.innerHTML=(reverse?[...'hgfedcba']:[...'abcdefgh']).map(x=>'<span>'+x+'</span>').join('');
  evalBar.classList.toggle('is-flipped',reverse);
- let cancelled=false,cases=[],worker=null,selected=0,selectedSquare='',feedback='',feedbackKind='',busy=false;
+ let cancelled=false,cases=[],annotations={},worker=null,selected=0,selectedSquare='',feedback='',feedbackKind='',busy=false;
  let solved=new Set(),revealed=new Set(),skipped=new Set(),boardMode='before',browsePly=null;
  let attemptFen='',attemptUci='',attemptLoss=null,pendingPromotion=null,serial=0;
+ let variation=null,variationIndex=0,variationLoading=false;
  const tx=en?{
   learn:'Learn from your mistakes',moves:'Moves',legend:'Annotations',
   progress:'Reviewed',total:'issues',find:'Find a better move for',
@@ -343,6 +344,10 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
   note:'Stockfish analysis of every move · approximate evaluations',
   yourTurn:'Your move',offTrack:'You browsed away from the exercise.',
   label:'Position evaluation',loading:'Analysed',white:'White',black:'Black',
+  excellent:'Outstanding',goodMove:'Strong move',showLine:'See best continuation',
+  lineTitle:'Stockfish continuation',lineNote:'Illustrative engine line · short search, not a forced outcome',
+  originalLine:'Played',betterLine:'Better',linePrev:'Previous',lineNext:'Next move',lineLoading:'Analysing continuation…',
+  lineUnavailable:'Stockfish did not return a reliable continuation.',
   status:'Done',solved:'Solved',skipped:'Skipped'
  }:{
   learn:'Учиться на своих ошибках',moves:'Ходы партии',legend:'Обозначения',
@@ -357,6 +362,10 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
   note:'Stockfish проверяет все ходы · оценки приблизительные',
   yourTurn:'Ваш ход',offTrack:'Вы отошли от учебной позиции.',
   label:'Оценка позиции',loading:'Проверено',white:'белых',black:'чёрных',
+  excellent:'Выдающийся ход',goodMove:'Сильный ход',showLine:'Посмотреть продолжение',
+  lineTitle:'Продолжение Stockfish',lineNote:'Примерный вариант движка · не единственный исход',
+  originalLine:'В партии',betterLine:'Сильнее',linePrev:'Назад',lineNext:'Вперёд',lineLoading:'Анализируем продолжение…',
+  lineUnavailable:'Stockfish не смог построить достоверное продолжение.',
   status:'Готово',solved:'Решено',skipped:'Пропущено'
  };
  function layoutReviewRail(){
@@ -382,7 +391,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
  function resetExercise(){
   serial++;selectedSquare='';feedback='';feedbackKind='';
   boardMode='before';browsePly=null;attemptFen='';attemptUci='';attemptLoss=null;
-  pendingPromotion=null;busy=false;
+  pendingPromotion=null;busy=false;variation=null;variationIndex=0;variationLoading=false;
  }
  function done(i){return solved.has(i)||revealed.has(i)||skipped.has(i);}
  function completedCount(){return cases.filter((_,i)=>done(i)).length;}
@@ -411,15 +420,15 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
    for(let off=0;off<2;off++){
     const entry=journal[n+off],error=entry&&errorsByPly.get(entry.ply);
     if(!entry){rows+='<span class="rpchess-review-move-empty"></span>';continue;}
-    const mark=error?REVIEW_MARKS[error.severity]:'';
+    const kind=annotations[entry.ply]?.kind||(error?.severity)||null,mark=kind?REVIEW_MARKS[kind]:'';
     const highlight=error?.index===selected&&browsePly===null?' is-active':'';
     const shown=browsePly===entry.ply?' is-browsing':'';
     rows+='<button type="button" data-review-move="'+entry.ply+'"'+
      (error?' data-review-case="'+error.index+'"':'')+
      ' class="rpchess-review-move'+highlight+shown+(error?' is-error':'')+
-     '" aria-label="'+esc((Math.ceil(entry.ply/2))+(entry.color==='w'?'.':'…')+' '+entry.san+(error?' '+tx[error.severity]:''))+'">'+
+     '" aria-label="'+esc((Math.ceil(entry.ply/2))+(entry.color==='w'?'.':'…')+' '+entry.san+(kind?' '+(kind==='good'?tx.goodMove:tx[kind]):''))+'">'+
      '<span>'+esc(entry.san)+'</span>'+
-     (error?'<b class="rpchess-review-symbol rpchess-review-symbol--'+error.severity+'">'+mark+'</b>':'')+
+     (kind?'<b class="rpchess-review-symbol rpchess-review-symbol--'+kind+'">'+mark+'</b>':'')+
      (error&&done(error.index)?'<span class="rpchess-review-done">✓</span>':'')+
      '</button>';
    }
@@ -434,16 +443,19 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
   if(browsePly!==null){
    const entry=journal[browsePly-1];
    if(entry){fen=entry.fen;lastMove=entry.uci;}
+  }else if(variation?.length&&variationIndex>0){
+   const step=variation[variationIndex-1];
+   if(step){fen=step.fen;lastMove=step.uci;}
   }else if(boardMode==='attempt'&&attemptFen){fen=attemptFen;lastMove=attemptUci;}
   board.innerHTML=chessSquareBoard(fen,playerColor,sides,selectedSquare,'',lastMove);
-  const model=active&&browsePly===null?reviewEvaluation(active.beforeCp,playerColor,
-    boardMode==='attempt'?attemptLoss:null):null;
+  const model=active&&browsePly===null&&(!variation||variationIndex<=1)?
+   reviewEvaluation(active.beforeCp,playerColor,boardMode==='attempt'?attemptLoss:null):null;
   showEvaluation(model);
-  const counts={inaccuracy:0,mistake:0,blunder:0};
-  cases.forEach(item=>{counts[item.severity]++;});
-  const legend=['inaccuracy','mistake','blunder'].map(kind=>
+  const counts={excellent:0,good:0,inaccuracy:0,mistake:0,blunder:0};
+  Object.values(annotations).forEach(item=>{if(Object.hasOwn(counts,item.kind))counts[item.kind]++;});
+  const legend=['excellent','good','inaccuracy','mistake','blunder'].map(kind=>
    '<div class="rpchess-review-legend-item"><b class="rpchess-review-symbol rpchess-review-symbol--'+kind+'">'+
-   REVIEW_MARKS[kind]+'</b><span>'+tx[kind]+'</span><strong>'+counts[kind]+'</strong></div>').join('');
+   REVIEW_MARKS[kind]+'</b><span>'+(kind==='good'?tx.goodMove:tx[kind])+'</span><strong>'+counts[kind]+'</strong></div>').join('');
   let practice='';
   if(!cases.length){
    practice='<p class="rpchess-review-empty">'+tx.nothing+'</p>';
@@ -468,12 +480,24 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
    const finished=done(selected);
    practice+='<div class="rpchess-review-actions">';
    if(finished){
+    if(!skipped.has(selected))practice+='<button type="button" data-review-action="variation" class="rpchess-review-button"'+(variationLoading?' disabled':'')+'>'+tx.showLine+'</button>';
     practice+='<button type="button" data-review-action="next" class="rpchess-review-button rpchess-review-button--primary">'+tx.next+'</button>';
    }else{
     practice+='<button type="button" data-review-action="solution" class="rpchess-review-button">'+tx.view+'</button>'+
      '<button type="button" data-review-action="skip" class="rpchess-review-button">'+tx.skip+'</button>';
    }
    practice+='</div>';
+   if(variationLoading)practice+='<p class="rpchess-review-line-loading" role="status">'+tx.lineLoading+'</p>';
+   if(variation?.length){
+    const original=esc(entry?.san||active.uci),nextReal=journal[active.ply]?.san;
+    practice+='<div class="rpchess-review-variation"><h4>'+tx.lineTitle+'</h4>'+
+     '<div class="rpchess-review-line-compare"><span>'+tx.originalLine+': <strong>'+original+(nextReal?' '+esc(nextReal):'')+'</strong></span>'+
+     '<span>'+tx.betterLine+': <strong>'+variation.map(s=>esc(s.san)).join(' ')+'</strong></span></div>'+
+     '<div class="rpchess-review-variation-controls"><button type="button" data-review-action="line-prev" class="rpchess-review-button"'+(variationIndex<=0?' disabled':'')+'>'+tx.linePrev+'</button>'+
+     '<span class="rpchess-review-line-progress">'+variationIndex+' / '+variation.length+'</span>'+
+     '<button type="button" data-review-action="line-next" class="rpchess-review-button"'+(variationIndex>=variation.length?' disabled':'')+'>'+tx.lineNext+'</button></div>'+
+     '<p class="rpchess-review-line-note">'+tx.lineNote+'</p></div>';
+   }
   }
   target.innerHTML='<section class="rpchess-review-moves-section"><h3 class="rpchess-review-section-title">'+tx.moves+'</h3>'+
     '<div class="rpchess-review-movelist">'+renderJournal()+'</div></section>'+
