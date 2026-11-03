@@ -10,6 +10,7 @@ on:
       - .github/workflows/portrait-ui-preview.yml
       - portrait-ui-preview/wrangler.toml
       - game/**
+      - tournament-worker/**
       - scripts/**
       - tests/**
       - package.json
