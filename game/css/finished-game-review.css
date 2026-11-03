@@ -182,24 +182,51 @@
  border:1px solid rgba(216,177,93,.2);border-radius:4px;
  background:rgba(11,18,25,.8);
 }
-.rpchess-review-move-row{
- display:grid;grid-template-columns:26px minmax(0,1fr) minmax(0,1fr);
- gap:1px;align-items:stretch;min-height:29px;
+/* A move is one rigid 3-column row, never three independently sized boxes.
+ * The active gold fill follows the EXACT white/black move cell bounds. */
+[data-finished-review] .rpchess-review-move-row{
+ display:grid;
+ grid-template-columns:28px minmax(0,1fr) minmax(0,1fr);
+ grid-template-rows:28px;
+ column-gap:0;row-gap:0;
+ height:28px;min-height:28px;max-height:28px;
+ align-items:stretch;
+ box-sizing:border-box;overflow:hidden;
  border-bottom:1px solid rgba(197,163,99,.1);
 }
 .rpchess-review-move-row:nth-child(even){background:rgba(206,184,124,.035)}
-.rpchess-review-move-no{font-size:11px;color:#a99b80;padding:7px 2px 4px 4px}
-.rpchess-review-move{
- display:flex;gap:3px;align-items:center;text-align:left;min-width:0;
- padding:3px 4px;border:0;border-radius:2px;background:transparent;
- color:#e5d7b6;cursor:pointer;font:600 12px/1.2 system-ui,sans-serif;
+[data-finished-review] .rpchess-review-move-no{
+ display:grid;place-items:center;
+ margin:0;padding:0;min-width:0;min-height:0;
+ color:#a99b80;font:500 11px/1 system-ui,sans-serif;
+ font-variant-numeric:tabular-nums;
 }
-.rpchess-review-move>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-finished-review] .rpchess-review-move,
+[data-finished-review] .rpchess-review-move-empty{
+ box-sizing:border-box;min-width:0;min-height:0;
+ width:100%;height:100%;max-height:100%;
+ margin:0;padding:0 4px;
+ border:0;border-radius:0;
+}
+[data-finished-review] .rpchess-review-move{
+ position:relative;display:flex;flex-direction:row;
+ align-items:center;justify-content:center;gap:4px;
+ text-align:center;white-space:nowrap;overflow:hidden;
+ background:transparent;color:#e5d7b6;cursor:pointer;
+ font:600 12px/1 system-ui,sans-serif;
+}
+.rpchess-review-move>span:first-child{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rpchess-review-move.is-error{color:#f2ce9b}
-.rpchess-review-move.is-active{background:rgba(196,150,64,.32);box-shadow:inset 2px 0 0 #e9bd67}
-.rpchess-review-move.is-browsing{outline:1px solid #bbd1b0;outline-offset:-1px}
+[data-finished-review] .rpchess-review-move.is-active{
+ background:rgba(196,150,64,.32);
+ box-shadow:inset 0 0 0 1px #b8914b,inset 3px 0 0 #e9bd67;
+}
+[data-finished-review] .rpchess-review-move.is-browsing{outline:1px solid #bbd1b0;outline-offset:-1px}
 .rpchess-review-move:hover{background:rgba(209,170,94,.17)}
-.rpchess-review-done{color:#90d39d;margin-left:auto;font-size:11px}
+[data-finished-review] .rpchess-review-done{
+ position:absolute;right:3px;top:50%;transform:translateY(-50%);
+ color:#90d39d;font-size:10px;pointer-events:none;
+}
 .rpchess-review-move .rpchess-review-symbol{font-size:11px;min-width:18px;padding:1px 2px}
 .rpchess-review-legend{
  flex:0 0 auto;border-top:1px solid rgba(216,177,93,.24);
@@ -271,7 +298,9 @@
 @media(orientation:landscape) and (max-height:540px){
  .rpchess-review-content{gap:3px;padding-top:2px}
  .rpchess-review-moves-section{min-height:54px}
- .rpchess-review-move-row{min-height:25px}
+ [data-finished-review] .rpchess-review-move-row{
+  grid-template-rows:25px;height:25px;min-height:25px;max-height:25px;
+ }
  .rpchess-review-learning{padding:5px}
  .rpchess-review-learning .rpchess-review-details{padding-top:4px}
  .rpchess-review-learning .rpchess-review-actions{margin-top:5px}
