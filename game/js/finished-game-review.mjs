@@ -9,7 +9,6 @@ import { makeToggle, syncToggles } from './board-view-toggle.mjs';
 
 const UCI=/^[a-h][1-8][a-h][1-8][qrbn]?$/;
 const MODES=new Set(['arena','tournament']);
-const MAX_SAMPLED_TURNS=16;
 const WORKER_URL='vendor/stockfish/stockfish-18-lite-single.js';
 const ROLES={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
 const RU={
@@ -23,7 +22,7 @@ const RU={
  retry:'Этот ход отличается от варианта движка. Попробуйте ещё — хорошие альтернативы тоже возможны.',
  correct:'Верно — вы нашли рекомендованный движком ход!',answer:'Показать подсказку',
  hide:'Скрыть подсказку',close:'Закрыть',examined:'Проанализировано позиций',
- limited:'Проверяем до 16 ходов игрока, равномерно по партии. Это не полный анализ каждого хода.',
+ limited:'Проверяем все ходы игрока в партии. Оценки приблизительные.',
  white:'белыми',black:'чёрными'
 };
 const EN={
@@ -37,7 +36,7 @@ const EN={
  retry:'That differs from the engine line. Try again; other strong moves can exist.',
  correct:'Correct — you found the engine recommendation!',answer:'Show hint',
  hide:'Hide hint',close:'Close',examined:'Positions analysed',
- limited:'Up to 16 player turns sampled throughout the game. This is not a full move-by-move analysis.',
+ limited:'Every player move is checked throughout the game. Evaluations are approximate.',
  white:'as White',black:'as Black'
 };
 
@@ -56,13 +55,13 @@ function prepareFinishedReview({mode,moves,playerColor,finished}={}){
   const fenBefore=engine.fen(),ours=engine.turn()===playerColor;
   const applied=engine.move(uci.slice(0,2),uci.slice(2,4),uci.slice(4)||null);
   if(!applied.ok)throw new Error('Corrupted game move history');
-  if(ours&&!applied.status.over)turns.push({ply:i+1,uci,beforeFen:fenBefore,afterFen:engine.fen()});
+  if(ours)turns.push({ply:i+1,uci,beforeFen:fenBefore,afterFen:engine.fen()});
  }
  return turns;
 }
-function sampleReviewTurns(turns,maximum=MAX_SAMPLED_TURNS){
- if(turns.length<=maximum)return turns.slice();
- return Array.from({length:maximum},(_,i)=>turns[Math.min(turns.length-1,Math.floor((i+.5)*turns.length/maximum))]);
+function sampleReviewTurns(turns){
+ // Legacy export kept for callers. Full-game analysis never samples or caps turns.
+ return turns.slice();
 }
 function parseScore(line){
  const cp=line.match(/\bscore cp (-?\d+)/);
@@ -151,7 +150,7 @@ async function analyseFinishedReview(turns,{engine,onProgress=()=>{}}={}){
    errors.push({...turn,loss:Math.round(drop),severity,bestMove:before.bestMove,beforeCp:before.cp,originalReply:after.bestMove||null});
   onProgress(i+1,sampled.length);
  }
- return errors.sort((a,b)=>b.loss-a.loss).slice(0,3).sort((a,b)=>a.ply-b.ply);
+ return errors.sort((a,b)=>a.ply-b.ply);
 }
 function esc(x){return String(x??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 function localized(lang){return lang==='en'?EN:RU;}
@@ -246,7 +245,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
       reply:'Engine reply to that move',noReply:'No engine reply available for this position.',
       explanation:'Compare your move with the actual engine continuation on the board.',
       side:'to move',promotion:'Choose promotion',unavailable:'The engine could not verify this move. Retry.',
-      noMistakes:'No major mistakes in the sampled turns.',limited:'Sampling up to 16 moves from the finished game; assessments are approximate.',
+      noMistakes:'No major mistakes found in the finished game.',limited:'Every move you played is analysed; evaluations are approximate.',
       original2:'Original move',examining:'Checking'},
   ru:{issues:'Ключевые моменты',task:'Найдите более сильный ход за',mistake:'Ваш ход',loss:'Потеря оценки',
       pending:'Посмотрите на позицию и сделайте более сильный ход на доске.',
@@ -262,8 +261,8 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
       noReply:'Достоверный ответ движка для этой позиции недоступен.',
       explanation:'Сравните исходный ход с продолжением, найденным движком.',
       side:'ход',promotion:'Выберите превращение',unavailable:'Движок не смог оценить этот ход. Попробуйте ещё.',
-      noMistakes:'В проверенных ходах крупных ошибок нет.',
-      limited:'Проверяем до 16 ходов за партию. Оценки приблизительные.',original2:'Сыграно',examining:'Проверено'}
+      noMistakes:'В завершённой партии крупных ошибок не найдено.',
+      limited:'Проверяем каждый ваш ход за всю партию. Оценки приблизительные.',original2:'Сыграно',examining:'Проверено'}
  }[lang==='en'?'en':'ru'];
  const close=()=>{if(cancelled)return;cancelled=true;serial++;worker?.close();overlay.remove();document.removeEventListener('keydown',onEscape);};
  const onEscape=e=>{if(e.key==='Escape'){e.preventDefault();close();}};
