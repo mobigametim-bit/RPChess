@@ -191,8 +191,8 @@ try {
   easing:el.getAnimations()[0]?.effect?.getTiming().easing
  }));
  assert.equal(motion.duration,290,'Tournament movement duration matches Arena');
- assert.equal(motion.easing,'cubic-bezier(0.22, 0.8, 0.24, 1)',
-  'Tournament movement easing matches Arena');
+ assert.equal(motion.easing.replace(/\s+/g,'').replace(/0\./g,'.'),'cubic-bezier(.22,.8,.24,1)',
+  'Tournament movement easing matches Arena regardless of browser serialization');
  await moveFlyer.waitFor({state:'detached',timeout:5000});
  try {
   await black.waitForFunction(()=>!!document.querySelector('[data-tour-board] [data-square="e4"] .classic-piece'),null,{timeout:16000});
