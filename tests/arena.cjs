@@ -169,7 +169,19 @@ const { pathToFileURL } = require('url');
   assert.equal(positions[0].uci,'e2e4');
   assert.equal(positions[1].ply,3);
   assert.equal(positions[1].uci,'g1f3');
-  assert.equal(review.sampleReviewTurns(Array.from({length:64},(_,i)=>({ply:i+1}))).length,16);
+  assert.equal(review.sampleReviewTurns(Array.from({length:64},(_,i)=>({ply:i+1}))).length,64,
+    'full-game review keeps every move rather than sampling sixteen');
+  const allTurns=Array.from({length:22},(_,i)=>({...positions[0],ply:2*i+1}));
+  let fullGameEvaluations=0;
+  const allMistakes=await review.analyseFinishedReview(allTurns,{
+    engine:{evaluate:async fen=>{fullGameEvaluations++;
+      return fen.includes(' w ')?{cp:60,bestMove:'d2d4',depth:10}:{cp:240,bestMove:'e7e5',depth:10};
+    }}
+  });
+  assert.equal(fullGameEvaluations,44,'every player move is assessed before and after, even past move 16');
+  assert.equal(allMistakes.length,22,'all detected lessons are retained, not only the top three');
+  assert.deepStrictEqual(allMistakes.map(x=>x.ply),allTurns.map(x=>x.ply),
+    'mistakes remain in game order for progressive training');
   assert.deepStrictEqual(review.parseInfo('info depth 9 score cp -121 pv d2d4 d7d5'),{depth:9,cp:-121,pv:'d2d4'});
   assert.equal(review.classifyLoss(250),'blunder');
   assert.equal(review.classifyLoss(120),'mistake');
