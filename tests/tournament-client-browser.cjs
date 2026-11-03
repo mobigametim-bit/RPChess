@@ -110,6 +110,9 @@ try {
  assert.equal(await black.evaluate(()=>document.documentElement.dataset.simplePieces),'0',
   'Another online player may independently stay in regular mode');
  async function moveByClicks(page,from,to){
+  // Arena/Tournament intentionally lock input during their 290ms flight.
+  // Wait for the prior server-confirmed move to land before selecting our piece.
+  await page.locator('.classic-piece-flyer').waitFor({state:'detached',timeout:5000});
   const origin=page.locator('[data-tour-board] [data-square="'+from+'"]');
   const destination=page.locator('[data-tour-board] [data-square="'+to+'"]');
   await origin.click();await destination.click();
