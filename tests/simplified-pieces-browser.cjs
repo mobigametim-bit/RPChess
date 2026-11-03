@@ -76,6 +76,21 @@ async function drag(page,from,to){
     await page.locator('[data-game-mode-select]').selectOption('local');
     await page.locator('[data-start-game]').click();
     await checkSymbols(page,'[data-chess-board]');
+    const classicSwitch=page.locator('[data-classic-screen] .classic-panel--moves [data-board-view-switch]');
+    assert.equal(await classicSwitch.count(),1,'Shared Battle/Skirmish/Caravan board journal has one in-game switch');
+    assert.equal(await classicSwitch.isChecked(),true);
+    const beforeSwitchFen=await page.evaluate(()=>RPChessClassicChess.engine.fen());
+    const kingIcons=page.locator('[data-classic-screen] .rpchess-board-view-toggle__king');
+    assert.equal(await kingIcons.count(),2);
+    assert.match(await kingIcons.nth(0).getAttribute('src'),/\/humans\/pieces\/board\/white\/king\.png$/);
+    assert.equal(await kingIcons.nth(1).getAttribute('src'),'assets/pieces/fantasy/wK.svg');
+    await classicSwitch.uncheck();
+    assert.equal(await page.locator('html').getAttribute('data-simple-pieces'),'0');
+    assert.equal(await page.locator('[data-chess-board] .classic-piece').first().evaluate(n=>getComputedStyle(n).opacity),'1');
+    assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('rpchess.reboot.v1.settings')).simplePieces),false);
+    await classicSwitch.check();
+    assert.equal(await page.evaluate(()=>RPChessClassicChess.engine.fen()),beforeSwitchFen,'Changing art must not reset the board');
+    await checkSymbols(page,'[data-chess-board]');
     await page.locator('[data-classic-screen] [data-settings]').click();
     await toggle.uncheck();
     assert.equal(await page.locator('[data-chess-board] .rpchess-piece-symbol').first().evaluate(n=>getComputedStyle(n).display),'none','Should return to detailed art without board reset');
@@ -102,7 +117,17 @@ async function drag(page,from,to){
     await page.locator('[data-arena-action="fight"]').click();
     await page.locator('[data-artifact="none"]').click();
     await checkSymbols(page,'[data-arena-board]');
+    const arenaSwitch=page.locator('[data-arena-screen] .arena-battle-journal [data-board-view-switch]');
+    assert.equal(await arenaSwitch.count(),1);
+    assert.equal(await arenaSwitch.isChecked(),true);
+    const arenaFen=await page.evaluate(()=>RPChessArena.engine.fen());
+    await arenaSwitch.uncheck();
+    assert.equal(await page.locator('html').getAttribute('data-simple-pieces'),'0');
+    await arenaSwitch.check();
+    assert.equal(await page.evaluate(()=>RPChessArena.engine.fen()),arenaFen);
+    await checkSymbols(page,'[data-arena-board]');
     await page.setViewportSize({width:390,height:844});
+    assert.equal(await arenaSwitch.isVisible(),true,'In-game switch remains visible in phone portrait');
     await checkSymbols(page,'[data-arena-board]');
     assert.deepEqual(errors,[],'No runtime exceptions in chess or Arena');
 
@@ -135,7 +160,14 @@ async function drag(page,from,to){
     await puzzle.waitForFunction(()=>document.querySelectorAll('[data-puzzle-board] .rpchess-piece-symbol').length>2);
     const n=await puzzle.locator('[data-puzzle-board] .rpchess-piece-symbol').count();
     await checkSymbols(puzzle,'[data-puzzle-board]',n);
+    const puzzleSwitch=puzzle.locator('[data-puzzle-screen] .puzzle-layout > .puzzle-panel:first-child [data-board-view-switch]');
+    assert.equal(await puzzleSwitch.count(),1,'Training has its own left-panel switch');
+    assert.equal(await puzzleSwitch.isChecked(),true);
+    await puzzleSwitch.uncheck();
+    assert.equal(await puzzle.locator('html').getAttribute('data-simple-pieces'),'0');
+    await puzzleSwitch.check();
+    await checkSymbols(puzzle,'[data-puzzle-board]',n);
     assert.deepEqual(puzzleErrors,[]);
-    console.log('Fantasy chess pieces: all 12 SVGs, live settings/reload, classic, promotion, mouse drag, Arena, portrait and puzzle: PASS');
+    console.log('Fantasy chess pieces: all 12 SVGs, in-game toggles (shared combats, Arena, Training), settings sync/reload, promotion, drag, portrait: PASS');
   }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

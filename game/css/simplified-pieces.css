@@ -14,3 +14,56 @@ html[data-simple-pieces="1"] .classic-promotion-option>.rpchess-promotion-symbol
 .arena-promotions .rpchess-fantasy-piece,.arena-promotions .arena-promotion-art {display:block;width:64px;height:70px;max-width:100%;object-fit:contain}
 html[data-simple-pieces="1"] :is(.classic-piece-flyer,.classic-captured-ghost) {opacity:0!important}
 .puzzle-promotion .rpchess-fantasy-piece {display:block;width:100%;height:46px;object-fit:contain;pointer-events:none}
+
+/* Compact art-only view switch above the moves journal, or in Training's left rail.
+ * The native settings checkbox owns persistence. This element only mirrors it.
+ */
+.rpchess-board-view-toggle {
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  box-sizing:border-box;max-width:100%;width:max-content;min-height:42px;
+  margin:0 auto 9px;padding:3px 8px;
+  border:1px solid rgba(216,177,93,.43);border-radius:6px;
+  background:linear-gradient(160deg,rgba(57,43,24,.76),rgba(9,13,18,.96));
+  box-shadow:inset 0 1px 0 rgba(246,220,158,.11);
+}
+.rpchess-board-view-toggle__king {
+  display:block;flex:none;width:32px;height:34px;object-fit:contain;
+  pointer-events:none;user-select:none;opacity:.5;
+  transition:opacity .14s ease,filter .14s ease;
+}
+.rpchess-board-view-toggle__separator{color:#c5a365;font-size:19px;line-height:1;pointer-events:none}
+html[data-simple-pieces="0"] .rpchess-board-view-toggle__king--regular,
+html[data-simple-pieces="1"] .rpchess-board-view-toggle__king--fantasy{
+  opacity:1;filter:drop-shadow(0 1px 5px rgba(236,190,92,.48));
+}
+.rpchess-board-view-toggle__switch {
+  position:relative;flex:0 0 52px;display:block;
+  width:52px;height:40px;cursor:pointer;touch-action:manipulation;
+}
+.rpchess-board-view-toggle__input {
+  position:absolute;z-index:2;inset:0;width:100%;height:100%;margin:0;
+  opacity:0;cursor:pointer;
+}
+.rpchess-board-view-toggle__track {
+  position:absolute;left:5px;top:50%;width:42px;height:23px;
+  transform:translateY(-50%);box-sizing:border-box;
+  border:1px solid #8f7546;border-radius:99px;
+  background:#1b2026;pointer-events:none;
+  box-shadow:inset 0 2px 4px rgba(0,0,0,.6);
+}
+.rpchess-board-view-toggle__track::after {
+  content:'';position:absolute;top:2px;left:2px;width:17px;height:17px;
+  border-radius:50%;background:linear-gradient(#f8dfa0,#bb8d3b);
+  box-shadow:0 1px 3px rgba(0,0,0,.7);
+  transition:transform .14s ease;
+}
+.rpchess-board-view-toggle__input:checked + .rpchess-board-view-toggle__track {
+  background:#4e3b1f;border-color:#d8b15d;
+}
+.rpchess-board-view-toggle__input:checked + .rpchess-board-view-toggle__track::after{transform:translateX(19px)}
+.rpchess-board-view-toggle__input:focus-visible + .rpchess-board-view-toggle__track {
+  outline:2px solid #ffe6a1;outline-offset:3px;
+}
+@media (prefers-reduced-motion:reduce) {
+  .rpchess-board-view-toggle__king,.rpchess-board-view-toggle__track::after{transition:none}
+}
