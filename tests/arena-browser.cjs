@@ -288,7 +288,11 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       const board=document.querySelector('[data-finished-review] [data-review-board]').getBoundingClientRect();
       const rail=document.querySelector('[data-finished-review] .rpchess-review-rail').getBoundingClientRect();
       const rankLabels=document.querySelector('[data-finished-review] .rpchess-review-ranks').getBoundingClientRect();
-      return {center:board.left+board.width/2-innerWidth/2,railRight:rail.right,boardLeft:board.left,ranksLeft:rankLabels.left};
+      const railNode=document.querySelector('[data-finished-review] .rpchess-review-rail');
+      const shell=document.querySelector('[data-finished-review] .rpchess-review-shell');
+      return {center:board.left+board.width/2-innerWidth/2,railRight:rail.right,boardLeft:board.left,ranksLeft:rankLabels.left,
+        railPosition:getComputedStyle(railNode).position,railWidth:getComputedStyle(railNode).width,
+        railColumn:getComputedStyle(railNode).gridColumn,columns:getComputedStyle(shell).gridTemplateColumns};
     });
     assert(Math.abs(reviewGeometry.center)<4,'review board stays viewport-centered, not centered beside the left rail');
     assert(reviewGeometry.railRight<=reviewGeometry.ranksLeft+2,
