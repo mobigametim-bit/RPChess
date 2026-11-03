@@ -173,6 +173,40 @@ const { pathToFileURL } = require('url');
   assert.deepStrictEqual(sanJournal.map(m=>m.san),['f3','e5','g4','Qh4#'],
     'Lichess-style move journal uses accurate SAN including the final checkmate');
   assert.deepStrictEqual(sanJournal.map(m=>m.color),['w','b','w','b']);
+  const completePositions=review.prepareFinishedReview({
+    mode:'arena',finished:true,moves:['f2f3','e7e5','g2g4','d8h4'],playerColor:'w',allColors:true
+  });
+  assert.deepStrictEqual(completePositions.map(x=>x.ply),[1,2,3,4],
+    'annotations evaluate every move of both sides, unlike player-only exercises');
+  assert.deepStrictEqual(completePositions.map(x=>x.color),['w','b','w','b']);
+  const candidate={beforeFen:completePositions[0].beforeFen,uci:'f2f3'};
+  assert.equal(review.classifyStrongMove(candidate,{
+    cp:80,secondCp:0,depth:12,secondDepth:11,bestMove:'f2f3'
+  },5),'good','a clear engine runner-up gap can justify a ! mark');
+  assert.equal(review.classifyStrongMove(candidate,{
+    cp:80,secondCp:-125,depth:12,secondDepth:11,bestMove:'f2f3'
+  },5),'excellent','an exceptional critical gap may justify !!');
+  assert.equal(review.classifyStrongMove(candidate,{
+    cp:80,secondCp:78,depth:12,secondDepth:11,bestMove:'f2f3'
+  },5),null,'not every best move receives ! or !!');
+  assert.equal(review.classifyStrongMove(candidate,{
+    cp:80,secondCp:-125,depth:12,secondDepth:4,bestMove:'f2f3'
+  },5),null,'uncertain multiPV is never treated as brilliant');
+  const line=review.reviewEngineLine(completePositions[0].beforeFen,['f2f3','e7e5','g2g4','d8h4'],9);
+  assert.deepStrictEqual(line.map(x=>x.san),['f3','e5','g4','Qh4#'],
+    'validated engine variation includes actual human-readable SAN and a checkmate');
+  assert.equal(review.reviewEngineLine(completePositions[0].beforeFen,['f2f3','a7a4'],9).length,1,
+    'a malformed or illegal PV is truncated rather than fabricated');
+  const annotated=await review.analyseFinishedReview([{
+    ...completePositions[0],uci:'f2f3'
+  }],{annotate:true,playerColor:'b',engine:{
+    evaluate:async fen=>fen.includes(' w ')?{
+      cp:80,secondCp:0,depth:12,secondDepth:11,bestMove:'f2f3',pv:['f2f3','e7e5']
+    }:{cp:-75,bestMove:'e7e5',depth:12}
+  }});
+  assert.equal(annotated.errors.length,0,'strong move annotations are not mistakes');
+  assert.equal(annotated.annotations[1].kind,'good','complete journal preserves positive annotation');
+
   assert.equal(sanJournal[3].fen.split(' ')[1],'w',
     'journal positions are recorded after each complete legal move');
   const whiteEval=review.reviewEvaluation(100,'w');
