@@ -3,6 +3,12 @@ function memoryStorage(){const data=new Map();return{getItem:k=>data.has(k)?data
 (async()=>{
   const game=path.resolve(__dirname,'..','game');
   const rating=await import(pathToFileURL(path.join(game,'js/player-rating.mjs')).href);
+  const sharedElo=await import(pathToFileURL(path.join(game,'js/power-elo.mjs')).href);
+  for(const [me,opponent,score] of [[500,500,1],[500,500,0],[500,800,1],[500,800,0],[2500,500,0]])
+    assert.strictEqual(sharedElo.ratingDelta(me,opponent,score),rating.ratingDelta(me,opponent,score),
+      'PvP and Journey must use the same K=32 Elo curve');
+  assert.equal(sharedElo.ratingDelta(500,500,1),16);
+  assert.equal(sharedElo.ratingDelta(500,500,0),-16);
   const persistence=await import(pathToFileURL(path.join(game,'js/run-persistence.mjs')).href);
   const travelSource=fs.readFileSync(path.join(game,'js/travel-choice-app.mjs'),'utf8');
   const ratingRuntimeSource=fs.readFileSync(path.join(game,'js/player-rating-runtime.mjs'),'utf8');

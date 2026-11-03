@@ -7,7 +7,7 @@ import { attachPieceDrag } from './piece-drag.mjs';
 import { fantasyPieceMarkup } from './fantasy-piece.mjs';
 import { applyPinIce } from './king-pin-ice.mjs';
 import { RACE_TAGS, RACE_LABELS, racePiecePath, applyRaceBoardTheme } from './race-assets.mjs';
-import { readPlayerRating } from './player-rating.mjs';
+import { readPlayerRating, settlePlayerRating, ratingDelta } from './player-rating.mjs';
 import { currentLanguage, subscribe } from './i18n.mjs';
 import { platform } from './platform.mjs';
 
@@ -28,6 +28,7 @@ const words={
 let page='setup',squad='humans',queueSince=0,searchJob=null,session=null,live=null,roomCode='',message='',tabVisible=false;
 let lastSearch=0;
 let matchState=null,chess=null,selectedSquare=null,matchJob=null,matchRendered=false,lastSnapshotAt=0,busyMove=false,dragActive=false;
+let ratedReceipt=null,resumeSerial=0,connectJob=null;
 const ROLE={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
 function lang(){return currentLanguage()==='en'?'en':'ru';}
 function t(key){return words[lang()][key]||key;}
@@ -91,7 +92,13 @@ function resultView(){
  const outcome=matchState.result;
  const win=outcome?.winner===matchState.playerColor,draw=!outcome?.winner;
  const title=lang()==='ru'?(draw?'Ничья':win?'Победа!':'Поражение'):(draw?'Draw':win?'Victory!':'Defeat');
- return '<section class="tournament-card tournament-center"><h2>'+title+'</h2><p>'+esc(outcome?.kind||'')+'</p><p class="tournament-muted">'+(lang()==='ru'?'Матч завершён на сервере. Награды и изменение Мощи будут включены после приёмки защищённой экономики.':'Server-confirmed result. Rewards and Power updates are pending secure economy validation.')+'</p><div class="tournament-actions">'+action('again',t('again'))+action('cancel',t('leave'))+'</div></section>';
+ const rating=ratedReceipt;
+ const ratingMarkup=rating
+  ?'<div class="tournament-rating-result" data-tour-rating><span>'+(lang()==='ru'?'Мощь':'Power')+'</span><strong>'+rating.before+' → '+rating.after+'</strong><b class="'+(rating.delta<0?'is-loss':rating.delta>0?'is-win':'')+'">'+(rating.delta>0?'+':'')+rating.delta+'</b></div>'
+  :'';
+ return '<section class="tournament-card tournament-center"><h2>'+title+'</h2><p>'+esc(outcome?.kind||'')+'</p>'+ratingMarkup+
+  '<p class="tournament-muted">'+(lang()==='ru'?'Результат подтверждён сервером. Осколки чести пока не начисляются до защиты соревновательной экономики.':'Result confirmed by the server. Honor shards remain disabled until ranked economy is secured.')+'</p>'+
+  '<div class="tournament-actions">'+action('again',t('again'))+action('cancel',t('leave'))+'</div></section>';
 }
 function showBattle(){
  if(!matchState)return;
@@ -215,7 +222,26 @@ async function syncMatch(){
   matchState=response;lastSnapshotAt=Date.now();
   chess=new ClassicChessEngine();
   for(const mv of response.moves){const result=chess.move(mv.from,mv.to,mv.promotion||null);if(!result.ok)throw Error('Invalid server history');}
-  if(response.status==='finished'){stopMatch();page='result';render();return;}
+  if(response.status==='finished'){
+   // Only a server-confirmed terminal game can change shared Journey Power.
+   // The deterministic match+color receipt prevents double Elo on reconnect.
+   const rating=response.rating;
+   if(rating){
+    const expected='tournament:'+response.matchId+':'+response.playerColor;
+    const opponent=response.players.find(p=>p.color!==response.playerColor);
+    const self=response.players.find(p=>p.color===response.playerColor);
+    const score=response.result?.winner==null?0.5:response.result.winner===response.playerColor?1:0;
+    if(rating.id!==expected||!opponent||!self||
+      rating.before!==self.power||rating.opponentElo!==opponent.power||
+      rating.result!==score||rating.delta!==ratingDelta(rating.before,rating.opponentElo,score)||
+      rating.after!==Math.max(0,rating.before+rating.delta))
+     throw Error('Invalid server rating receipt');
+    ratedReceipt=settlePlayerRating({
+     receiptId:rating.id,opponentElo:rating.opponentElo,result:rating.result
+    }).receipt;
+   }
+   stopMatch();page='result';render();return;
+  }
   page='match';render();
  }catch(err){
   if(live?.matchId!==expectedMatch||(page!=='match'&&page!=='result'))return;
@@ -245,8 +271,23 @@ function visible(active){
  if(!active){root.classList.remove('tournament-screen--match');document.body.classList.remove('tournament-battle-active');}
  if(active){window.scrollTo(0,0);render();}
 }
-function open(){squad=arena().owned.has(saved().squad)?saved().squad:'humans';page='setup';message='';visible(true);}
-function leave(){if(page==='search')void cancelQueue();if(page==='invite')void cancelRoom();stopPolling();stopMatch();visible(false);}
+function open(){
+ squad=arena().owned.has(saved().squad)?saved().squad:'humans';
+ page='setup';message='';visible(true);
+ const serial=++resumeSerial;
+ // Recover the server match after a full page/WebView restart, including a
+ // completed game's single Power receipt. Stale requests must not override UI.
+ if(API)void (async()=>{
+  try{
+   await connect();
+   if(!tabVisible||page!=='setup'||serial!==resumeSerial)return;
+   const match=await call('/v1/queue/status',{});
+   if(tabVisible&&page==='setup'&&serial===resumeSerial&&match.status==='matched')
+    await openMatch(match);
+  }catch{ /* Offline state still allows opening Tournament setup. */ }
+ })();
+}
+function leave(){resumeSerial++;if(page==='search')void cancelQueue();if(page==='invite')void cancelRoom();stopPolling();stopMatch();visible(false);}
 function stopPolling(){if(searchJob){clearInterval(searchJob);searchJob=null;}}
 function endpoint(path){return API.replace(/\/$/,'')+path;}
 async function call(path,data){
@@ -258,23 +299,29 @@ async function call(path,data){
  if(!response.ok)throw Error(json.error||t('error'));
  return json;
 }
-async function connect(){
- if(session)return session;
- const previous=platform.storage.local?.getItem('rpchess.reboot.v1.tournament-session')||'';
- const obtained=await call('/v1/session',{previous,nick:'Guest',power:readPlayerRating().power,launch:location.search.slice(1)});
- if(!obtained.token)throw Error('No tournament session');
- session=obtained;platform.storage.local?.setItem('rpchess.reboot.v1.tournament-session',session.token);
- return session;
+async function connect({refreshPower=false}={}){
+ // An automatic resume and a quick Invite/Search click may race. Reuse one
+ // in-flight session to avoid accidentally creating different guest IDs.
+ if(connectJob)return connectJob;
+ if(session&&!refreshPower)return session;
+ connectJob=(async()=>{
+  const previous=session?.token||platform.storage.local?.getItem('rpchess.reboot.v1.tournament-session')||'';
+  const obtained=await call('/v1/session',{previous,nick:'Guest',power:readPlayerRating().power,launch:location.search.slice(1)});
+  if(!obtained.token)throw Error('No tournament session');
+  session=obtained;platform.storage.local?.setItem('rpchess.reboot.v1.tournament-session',session.token);
+  return session;
+ })();
+ try{return await connectJob;}finally{connectJob=null;}
 }
 async function beginSearch(){
  if(!API){message=t('offline');page='setup';render();return;}
  // A previous completed match must not keep polling and redraw its Victory
  // screen over the next search (the old interval ran every 2.4 seconds).
  stopMatch();stopPolling();
- live=null;matchState=null;chess=null;selectedSquare=null;matchRendered=false;
+ live=null;matchState=null;chess=null;selectedSquare=null;matchRendered=false;ratedReceipt=null;
  queueSince=Date.now();page='search';message=t('searchPending');render();
  try{
-  await connect();
+  await connect({refreshPower:true});
   if(page!=='search')return; // user may have cancelled during authentication
   const res=await call('/v1/queue/join',{squad,power:readPlayerRating().power,newSearch:true,lossStreak:0});
   if(page!=='search')return;
@@ -297,7 +344,7 @@ async function pollQueue(){
  }catch(err){message=err.message;render();}
 }
 async function openMatch(response){
- stopPolling();stopMatch();live=response;page='match';message='';selectedSquare=null;matchRendered=false;
+ stopPolling();stopMatch();live=response;page='match';message='';selectedSquare=null;matchRendered=false;ratedReceipt=null;
  await syncMatch();
  // A finished game never receives another polling interval. Otherwise the
  // timer continues and overwrites the next search with its old result.
@@ -308,13 +355,13 @@ async function cancelQueue(){stopPolling();if(session&&API)await call('/v1/queue
 async function cancelRoom(){stopPolling();if(session&&API&&roomCode)await call('/v1/room/cancel',{code:roomCode}).catch(()=>{});}
 async function makeRoom(){
  if(!API){message=t('offline');render();return;}
- try{await connect();const response=await call('/v1/room/create',{squad,power:readPlayerRating().power});roomCode=response.code;page='invite';message='';render();stopPolling();searchJob=setInterval(async()=>{if(page!=='invite')return;try{const status=await call('/v1/room/status',{code:roomCode});if(status.status==='matched')openMatch(status);}catch(e){message=e.message;render();}},2400);}
+ try{await connect({refreshPower:true});const response=await call('/v1/room/create',{squad,power:readPlayerRating().power});roomCode=response.code;page='invite';message='';render();stopPolling();searchJob=setInterval(async()=>{if(page!=='invite')return;try{const status=await call('/v1/room/status',{code:roomCode});if(status.status==='matched')openMatch(status);}catch(e){message=e.message;render();}},2400);}
  catch(err){message=err.message;render();}
 }
 async function joinRoom(){
  const code=root.querySelector('[data-tour-code]')?.value.trim().toUpperCase()||roomCode;
  if(!/^[A-Z0-9-]{4,12}$/.test(code)){message=t('entry');render();return;}
- try{await connect();const res=await call('/v1/room/join',{code,squad,power:readPlayerRating().power});if(res.status==='matched')openMatch(res);else{message=res.error||t('waitFriend');render();}}
+ try{await connect({refreshPower:true});const res=await call('/v1/room/join',{code,squad,power:readPlayerRating().power});if(res.status==='matched')openMatch(res);else{message=res.error||t('waitFriend');render();}}
  catch(err){message=err.message;render();}
 }
 button?.addEventListener('click',()=>{open();void Promise.resolve(globalThis.RPChessCloudReady).then(()=>{if(page==='setup')render();}).catch(()=>{});});

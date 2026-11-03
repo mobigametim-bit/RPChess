@@ -1,10 +1,9 @@
 import { clampStars, difficultyForStars } from './encounter-difficulty.mjs';
 import { platform } from './platform.mjs';
+import { STARTING_POWER, ELO_K, normalizePower, normalizeResult, expectedScore, ratingDelta } from './power-elo.mjs';
 
 const PLAYER_RATING_STORAGE_KEY = 'rpchess.reboot.v1.player-rating';
 const PLAYER_RATING_SCHEMA_VERSION = 1;
-const STARTING_POWER = 500;
-const ELO_K = 32;
 const SKIRMISH_WIN_GAIN_DIVISOR = 2;
 const PUZZLE_WIN_GAIN_DIVISOR = 3;
 const NEW_RUN_POWER_FACTOR = 0.75;
@@ -24,11 +23,6 @@ function hashSeed(input) {
   return h >>> 0;
 }
 
-function normalizePower(value) {
-  const numeric = Number(value);
-  return Math.max(0, Number.isFinite(numeric) ? Math.round(numeric) : STARTING_POWER);
-}
-
 function threatStarsForPower(power) {
   return clampStars(Math.floor((normalizePower(power) - 400) / 200) + 1);
 }
@@ -38,27 +32,11 @@ function threatForPower(power) {
   return Object.freeze({ ...difficultyForStars(stars), stars });
 }
 
-function expectedScore(power, opponentElo) {
-  const player = normalizePower(power);
-  const opponent = Math.max(0, Number.isFinite(Number(opponentElo)) ? Number(opponentElo) : 0);
-  return 1 / (1 + Math.pow(10, (opponent - player) / 400));
-}
-
-function normalizeResult(result) {
-  const numeric = Number(result);
-  if (!Number.isFinite(numeric)) return 0;
-  return Math.max(0, Math.min(1, numeric));
-}
-
 function scaledPositiveRatingDelta(delta, gainDivisor = 1) {
   const normalized = Math.round(Number(delta) || 0);
   if (normalized <= 0) return normalized;
   const divisor = Math.max(1, Number(gainDivisor) || 1);
   return Math.max(1, Math.round(normalized / divisor));
-}
-
-function ratingDelta(power, opponentElo, result, k = ELO_K) {
-  return Math.round(Math.max(1, Number(k) || ELO_K) * (normalizeResult(result) - expectedScore(power, opponentElo)));
 }
 
 function defaultRating() {

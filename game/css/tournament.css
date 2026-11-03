@@ -493,3 +493,16 @@
 .tournament-journal-heading .rpchess-board-view-toggle__king{width:24px;height:28px}
 .tournament-journal-heading .rpchess-board-view-toggle__switch{width:46px;height:32px;flex-basis:46px}
 .tournament-journal-heading .rpchess-board-view-toggle__track{left:2px}
+
+
+/* Server-confirmed Tournament Elo: shared Journey Power, no shard payout. */
+.tournament-rating-result {
+ display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px;
+ margin:12px auto;padding:11px 14px;max-width:440px;
+ border:1px solid rgba(224,181,99,.6);border-radius:5px;
+ background:rgba(30,24,15,.82);font:18px/1.25 Georgia,serif;color:#f6dba1;
+}
+.tournament-rating-result strong{font-variant-numeric:tabular-nums}
+.tournament-rating-result b{font:800 20px/1.2 ui-monospace,monospace;color:#e5d4aa}
+.tournament-rating-result b.is-win{color:#6feb91}
+.tournament-rating-result b.is-loss{color:#ff938d}

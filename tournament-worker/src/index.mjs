@@ -2,6 +2,7 @@
    Dedicated Worker (never the existing leaderboard service). */
 import { DurableObject } from 'cloudflare:workers';
 import { ClassicChessEngine } from '../../game/js/classic-chess-engine.mjs';
+import { normalizePower, ratingDelta } from '../../game/js/power-elo.mjs';
 
 const MINUTE=60000, CONTROL=10*MINUTE, MAX_MOVES=600;
 const ORIGINS=['https://mobigametim-bit.github.io','https://rpchess-portrait-ui-preview.mobigametim.workers.dev'];
@@ -36,6 +37,19 @@ async function vkIdentity(launch,secret){
 }
 function safePower(x){return Math.max(100,Math.min(3500,Math.round(Number(x)||500)));}
 function safeRace(r){return ['humans','elves','orcs','undead','dark_elves','dwarves','demons','angels','dragonborn','beastfolk','constructs','animals','fae','goblins'].includes(r)?r:'humans';}
+/* Result + score are authoritative inside this match Durable Object; the
+ * same immutable receipt is exposed on reconnect. Shards remain disabled.
+ */
+function ratedResult(match,player){
+ if(!match.result||match.ratingVersion!==1)return null;
+ const opponent=match.players.find(p=>p.color!==player.color);
+ if(!opponent)return null;
+ const before=normalizePower(player.power),opponentElo=normalizePower(opponent.power);
+ const result=match.result.winner==null?0.5:match.result.winner===player.color?1:0;
+ const delta=ratingDelta(before,opponentElo,result);
+ const after=Math.max(0,before+delta);
+ return {id:'tournament:'+match.id+':'+player.color,before,after,delta:after-before,opponentElo,result};
+}
 async function parse(request){return await request.json().catch(()=>null);}
 async function internal(stub,path,body){const res=await stub.fetch(new Request('https://tournament.internal'+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}));return res;}
 function route(env,key){return env.MATCHES.get(env.MATCHES.idFromName(key));}
@@ -58,6 +72,11 @@ export default {
     const vk=await vkIdentity(body.launch,env.VK_APP_SECRET);
     const nickname=String(body.nick||'Гость').trim().slice(0,28)||'Гость';
     session={id:vk||'guest:'+crypto.randomUUID(),name:nickname,kind:vk?'vk':'guest',power:safePower(body.power),created:Date.now(),exp:Date.now()+30*86400000};
+   }
+   else {
+    // The signed session is reissued with the current in-game Power at match
+    // entry. Client-sourced starting Power is provisional until ranked auth.
+    session={...session,power:safePower(body.power)};
    }
    const raw=encode(JSON.stringify(session));
    return json({token:raw+'.'+await sign(raw,env.PVP_SESSION_SECRET),kind:session.kind,name:session.name},200,cors);
@@ -218,14 +237,15 @@ export class TournamentMatch extends DurableObject {
   return {status:m.result?'finished':'playing',matchId:m.id,playerColor:player.color,
     players:m.players.map(p=>({name:p.name,color:p.color,race:p.race,power:p.power})),
     fen:engine.fen(),moves:m.moves,turn:m.turn,remaining:m.remaining,
-    serverTime:Date.now(),tick:m.tick,result:m.result,drawOffer:m.drawOffer||null};
+    serverTime:Date.now(),tick:m.tick,result:m.result,drawOffer:m.drawOffer||null,
+    rating:ratedResult(m,player)};
  }
  async fetch(request){
   const path=new URL(request.url).pathname,body=await request.json(),now=Date.now();
   if(path==='/init'){
    if(await this.get())return problem('already_initialized',409);
    if(!Array.isArray(body.players)||body.players.length!==2||body.players[0].id===body.players[1].id)return problem('invalid_players',400);
-   const match={id:this.ctx.id.toString(),players:body.players,remaining:{w:CONTROL,b:CONTROL},tick:now,turn:'w',moves:[],drawOffer:null,result:null};
+   const match={id:this.ctx.id.toString(),ratingVersion:1,players:body.players,remaining:{w:CONTROL,b:CONTROL},tick:now,turn:'w',moves:[],drawOffer:null,result:null};
    await this.put(match);return json({ok:true});
   }
   let m=await this.get();if(!m)return problem('match_not_found',404);
