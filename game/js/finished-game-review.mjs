@@ -297,7 +297,7 @@ function reviewEvaluation(beforeCp,playerColor,loss=null){
 }
 /* Explicitly invoked from the completed Arena or Tournament result button.
  * There is no live-match Stockfish worker or reward/rating side effect. */
-function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides={}}={}){
+function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides={},engineFactory=null}={}){
  const turns=prepareFinishedReview({mode,moves,playerColor,finished,allColors:true});
  const journal=reviewMoveJournal(moves);
  document.querySelector('[data-finished-review]')?.querySelector('[data-review-action="close"]')?.click();
@@ -722,7 +722,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
    return;
   }
   try{
-   worker=new StockfishReviewEngine();await worker.start();
+   worker=engineFactory?engineFactory():new StockfishReviewEngine();await worker.start();
    if(cancelled)return;
    const analysed=await analyseFinishedReview(turns,{engine:worker,annotate:true,playerColor,
     onProgress:showAnalysisProgress});
