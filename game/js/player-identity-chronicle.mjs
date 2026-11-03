@@ -5,12 +5,12 @@ import { readPlayerRating } from './player-rating.mjs';
 import { PLAYER_NAME_MAX_LENGTH, normalizePlayerName } from './player-identity-core.mjs';
 import { activeRunSnapshot, recordCompletedRun } from './chronicle-core.mjs';
 import { currentLeaderboard, loadLeaderboard, submitBestChronicle } from './leaderboard-client.mjs';
-import { COMMANDERS,DEFAULT_COMMANDER_ID,normalizeCommanderId,commanderTitle,commanderDescription,commanderPortrait } from './commander-portraits.mjs';
+import { COMMANDERS,normalizeCommanderId,commanderTitle,commanderDescription,commanderPortrait } from './commander-portraits.mjs';
 import {bestChronicleRun,readChronicle} from './chronicle-core.mjs';
 
 let identityModal = null;
 let chroniclePanel = null;
-let selectedCommanderId = DEFAULT_COMMANDER_ID;
+let selectedCommanderId = null;
 
 function l(key) { return runtimeT(currentLanguage(), key); }
 
@@ -50,14 +50,14 @@ function ensureIdentityModal() {
           <div class="identity-commander-label" data-identity-commander-label>${l('identity.choosePortrait')}</div>
           <div class="identity-commander-layout">
             <div class="identity-commander-grid" role="group" aria-label="${l('identity.choosePortrait')}" data-identity-commander-grid>
-              ${COMMANDERS.map(c=>`<button type="button" class="identity-commander-option" data-identity-commander="${c.id}" aria-pressed="${c.id===DEFAULT_COMMANDER_ID}">
+              ${COMMANDERS.map(c=>`<button type="button" class="identity-commander-option" data-identity-commander="${c.id}" aria-pressed="false">
                 <img src="${c.portrait}" alt="" loading="lazy"><span data-commander-label="${c.id}">${commanderTitle(c.id,currentLanguage())}</span>
               </button>`).join('')}
             </div>
             <aside class="identity-commander-preview" data-identity-commander-preview aria-live="polite">
-              <img src="${commanderPortrait(DEFAULT_COMMANDER_ID)}" alt="" data-identity-commander-image>
-              <div><h3 data-identity-commander-title>${commanderTitle(DEFAULT_COMMANDER_ID,currentLanguage())}</h3>
-              <p data-identity-commander-description>${commanderDescription(DEFAULT_COMMANDER_ID,currentLanguage())}</p></div>
+              <img alt="" data-identity-commander-image hidden>
+              <div><h3 data-identity-commander-title>${l('identity.choosePortrait')}</h3>
+              <p data-identity-commander-description></p></div>
             </aside>
           </div>
         </div>
@@ -76,6 +76,7 @@ function ensureIdentityModal() {
     button.addEventListener('click',()=>{
       selectedCommanderId=normalizeCommanderId(button.dataset.identityCommander);
       renderCommanderChoice();
+      validate();
       globalThis.RPChessLoading?.requestVisibleAssets?.();
       audio()?.click?.();
     });
@@ -83,7 +84,7 @@ function ensureIdentityModal() {
 
   const validate = () => {
     const name = normalizePlayerName(input?.value || '');
-    if (submit) submit.disabled = !name;
+    if (submit) submit.disabled = !(name && selectedCommanderId);
     if (error) error.textContent = input?.value && !name ? l('identity.error') : '';
     return name;
   };
@@ -96,8 +97,9 @@ function ensureIdentityModal() {
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const playerName = validate();
-    if (!playerName) {
-      input?.focus();
+    if (!playerName || !selectedCommanderId) {
+      if (!playerName) input?.focus();
+      else identityModal.querySelector('[data-identity-commander]')?.focus();
       return;
     }
     if (submit) submit.disabled = true;
@@ -107,7 +109,7 @@ function ensureIdentityModal() {
       closeIdentityPrompt({ silent: true });
       globalThis.dispatchEvent(new CustomEvent('rpchess:run-new', { detail: { playerName, commanderId:selectedCommanderId, source: 'player-identity' } }));
     } finally {
-      if (submit) submit.disabled = false;
+      validate();
     }
   });
 
@@ -116,12 +118,17 @@ function ensureIdentityModal() {
 
 function renderCommanderChoice(){
   if(!identityModal)return;
-  const commander=normalizeCommanderId(selectedCommanderId);
+  const commander=selectedCommanderId;
   for(const b of identityModal.querySelectorAll('[data-identity-commander]'))
-    b.setAttribute('aria-pressed',String(b.dataset.identityCommander===commander));
-  identityModal.querySelector('[data-identity-commander-image]').src=commanderPortrait(commander);
-  identityModal.querySelector('[data-identity-commander-title]').textContent=commanderTitle(commander,currentLanguage());
-  identityModal.querySelector('[data-identity-commander-description]').textContent=commanderDescription(commander,currentLanguage());
+    b.setAttribute('aria-pressed',String(Boolean(commander)&&b.dataset.identityCommander===commander));
+  const image=identityModal.querySelector('[data-identity-commander-image]');
+  image.hidden=!commander;
+  if(commander) image.src=commanderPortrait(commander);
+  else image.removeAttribute('src');
+  identityModal.querySelector('[data-identity-commander-title]').textContent=commander
+    ?commanderTitle(commander,currentLanguage()):l('identity.choosePortrait');
+  identityModal.querySelector('[data-identity-commander-description]').textContent=commander
+    ?commanderDescription(commander,currentLanguage()):'';
   identityModal.querySelector('[data-identity-commander-label]').textContent=l('identity.choosePortrait');
   identityModal.querySelector('[data-identity-commander-grid]').setAttribute('aria-label',l('identity.choosePortrait'));
   for(const c of COMMANDERS)
@@ -145,7 +152,7 @@ function openIdentityPrompt() {
   const input = modal.querySelector('[data-player-identity-input]');
   const error = modal.querySelector('[data-player-identity-error]');
   if (input) input.value = '';
-  selectedCommanderId=DEFAULT_COMMANDER_ID;
+  selectedCommanderId=null;
   renderCommanderChoice();
   if (error) error.textContent = '';
   const submit = modal.querySelector('[data-player-identity-submit]');
