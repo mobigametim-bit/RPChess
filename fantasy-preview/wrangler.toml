@@ -1,5 +1,5 @@
-name = "rpchess-simple-pieces-preview"
-compatibility_date = "2026-10-25"
+name = "rpchess-fantasy-preview"
+compatibility_date = "2026-11-03"
 
 [assets]
 directory = "../dist"

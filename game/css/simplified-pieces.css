@@ -1,83 +1,71 @@
-/* Optional classic Unicode chess piece presentation, scoped to playable boards.
-   Keep image DOM nodes intact for hit-testing, saved hero IDs and art observers.
-   Only visual presentation changes: the rules, pieces, and formations do not. */
-.rpchess-piece-symbol {
-  display:none!important;
-  position:absolute;
-  z-index:3;
-  inset:0;
-  align-items:center;
-  justify-content:center;
-  pointer-events:none;
-  user-select:none;
-  font-family:"DejaVu Sans","Segoe UI Symbol","Noto Sans Symbols 2",serif;
-  font-weight:400;
-  font-size:clamp(23px,7.6vmin,82px);
-  line-height:1;
-  text-rendering:optimizeLegibility;
-  -webkit-font-smoothing:antialiased;
+/* Simplified mode displays one Fantasy SVG set for every race.
+ * Regular hero sprites remain in the DOM for gameplay, art identity and VFX.
+ */
+.rpchess-piece-symbol {display:none!important;position:absolute;z-index:3;inset:0;align-items:center;justify-content:center;pointer-events:none;user-select:none}
+.rpchess-piece-symbol .rpchess-fantasy-piece {display:block;width:92%;height:92%;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+html[data-simple-pieces="1"] :is(.classic-board,.puzzle-board) :is(.classic-piece,.puzzle-piece) {opacity:0!important}
+html[data-simple-pieces="1"] :is(.classic-board,.puzzle-board) :is(.classic-piece-marker,.puzzle-piece-marker) {display:none!important}
+html[data-simple-pieces="1"] :is(.classic-board,.puzzle-board) .rpchess-piece-symbol {display:flex!important}
+html[data-simple-pieces="1"] .rpchess-draggable-board .rpchess-drag-origin .rpchess-piece-symbol {opacity:.26!important}
+.rpchess-promotion-symbol {display:none!important;align-items:center;justify-content:center;width:100%;height:90px;pointer-events:none}
+.rpchess-promotion-symbol .rpchess-fantasy-piece {width:100%;height:88px;object-fit:contain}
+html[data-simple-pieces="1"] .classic-promotion-option>img {display:none!important}
+html[data-simple-pieces="1"] .classic-promotion-option>.rpchess-promotion-symbol {display:flex!important}
+.arena-promotions .rpchess-fantasy-piece,.arena-promotions .arena-promotion-art {display:block;width:64px;height:70px;max-width:100%;object-fit:contain}
+/* The Fantasy destination remains hidden until the same smooth flyer lands.
+ * The race/hero image already uses classic-piece--arriving to do this. */
+html[data-simple-pieces="1"] .classic-board .classic-piece--arriving ~ .rpchess-piece-symbol {visibility:hidden!important}
+.puzzle-promotion .rpchess-fantasy-piece {display:block;width:100%;height:46px;object-fit:contain;pointer-events:none}
+
+/* Compact art-only view switch above the moves journal, or in Training's left rail.
+ * The native settings checkbox owns persistence. This element only mirrors it.
+ */
+.rpchess-board-view-toggle {
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  box-sizing:border-box;max-width:100%;width:max-content;min-height:42px;
+  margin:0 auto 9px;padding:3px 8px;
+  border:1px solid rgba(216,177,93,.43);border-radius:6px;
+  background:linear-gradient(160deg,rgba(57,43,24,.76),rgba(9,13,18,.96));
+  box-shadow:inset 0 1px 0 rgba(246,220,158,.11);
 }
-/* In the approved set the SVG shape — not a text font — is the piece. */
-.rpchess-piece-symbol .rpchess-race-glyph {
-  display:block;
-  width:94%;
-  height:94%;
-  max-width:100%;
-  max-height:100%;
-  overflow:visible;
-  pointer-events:none;
+.rpchess-board-view-toggle__king {
+  display:block;flex:none;width:32px;height:34px;object-fit:contain;
+  pointer-events:none;user-select:none;opacity:.5;
+  transition:opacity .14s ease,filter .14s ease;
 }
-.rpchess-race-glyph .main { fill:var(--fill); stroke:var(--stroke); stroke-width:4.2; stroke-linecap:round; stroke-linejoin:round; }
-.rpchess-race-glyph .cut { fill:var(--stroke); }
-.rpchess-race-glyph .line { fill:none; stroke:var(--stroke); stroke-width:3.2; stroke-linecap:round; stroke-linejoin:round; }
-.rpchess-race-glyph .accent { fill:var(--secondary); stroke:var(--stroke); stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round; }
-.rpchess-piece-symbol--w {
-  color:#fffaf0;
-  -webkit-text-stroke:1px #17202b;
-  text-shadow:0 2px 2px #17202b,0 0 4px rgba(7,15,22,.8);
+.rpchess-board-view-toggle__separator{color:#c5a365;font-size:19px;line-height:1;pointer-events:none}
+html[data-simple-pieces="0"] .rpchess-board-view-toggle__king--regular,
+html[data-simple-pieces="1"] .rpchess-board-view-toggle__king--fantasy{
+  opacity:1;filter:drop-shadow(0 1px 5px rgba(236,190,92,.48));
 }
-.rpchess-piece-symbol--b {
-  color:#151b20;
-  -webkit-text-stroke:.5px #f2e8d2;
-  text-shadow:0 0 2px #fff4d6,0 2px 2px rgba(255,255,255,.62);
+.rpchess-board-view-toggle__switch {
+  position:relative;flex:0 0 52px;display:block;
+  width:52px;height:40px;cursor:pointer;touch-action:manipulation;
 }
-html[data-simple-pieces="1"] :is(.classic-board,.puzzle-board) :is(.classic-piece,.puzzle-piece) {
-  opacity:0!important;
+.rpchess-board-view-toggle__input {
+  position:absolute;z-index:2;inset:0;width:100%;height:100%;margin:0;
+  opacity:0;cursor:pointer;
 }
-html[data-simple-pieces="1"] :is(.classic-board,.puzzle-board) :is(.classic-piece-marker,.puzzle-piece-marker) {
-  display:none!important;
+.rpchess-board-view-toggle__track {
+  position:absolute;left:5px;top:50%;width:42px;height:23px;
+  transform:translateY(-50%);box-sizing:border-box;
+  border:1px solid #8f7546;border-radius:99px;
+  background:#1b2026;pointer-events:none;
+  box-shadow:inset 0 2px 4px rgba(0,0,0,.6);
 }
-html[data-simple-pieces="1"] :is(.classic-board,.puzzle-board) .rpchess-piece-symbol {
-  display:flex!important;
+.rpchess-board-view-toggle__track::after {
+  content:'';position:absolute;top:2px;left:2px;width:17px;height:17px;
+  border-radius:50%;background:linear-gradient(#f8dfa0,#bb8d3b);
+  box-shadow:0 1px 3px rgba(0,0,0,.7);
+  transition:transform .14s ease;
 }
-html[data-simple-pieces="1"] .rpchess-draggable-board .rpchess-drag-origin .rpchess-piece-symbol {
-  opacity:.26!important;
+.rpchess-board-view-toggle__input:checked + .rpchess-board-view-toggle__track {
+  background:#4e3b1f;border-color:#d8b15d;
 }
-html[data-simple-pieces="1"] .rpchess-piece-drag-ghost.rpchess-piece-symbol {
-  display:flex!important;
-  inset:auto;
-  border:0;
-  width:auto;
-  height:auto;
+.rpchess-board-view-toggle__input:checked + .rpchess-board-view-toggle__track::after{transform:translateX(19px)}
+.rpchess-board-view-toggle__input:focus-visible + .rpchess-board-view-toggle__track {
+  outline:2px solid #ffe6a1;outline-offset:3px;
 }
-.rpchess-promotion-symbol {
-  display:none!important;
-  font-family:"DejaVu Sans","Segoe UI Symbol","Noto Sans Symbols 2",serif;
-  font-weight:400;
-  font-size:clamp(48px,5.8vmin,76px);
-  line-height:90px;
-  height:90px;
-  text-align:center;
-  pointer-events:none;
-}
-html[data-simple-pieces="1"] .classic-promotion-option>img { display:none!important; }
-html[data-simple-pieces="1"] .rpchess-promotion-symbol .rpchess-race-glyph {height:78px;width:auto;max-width:100%;margin:0 auto;}
-html[data-simple-pieces="1"] .arena-promotions .rpchess-race-glyph {width:58px;height:72px;display:inline-block;vertical-align:middle;}
-html[data-simple-pieces="1"] .rpchess-piece-drag-ghost .rpchess-race-glyph {width:100%;height:100%;}
-html[data-simple-pieces="1"] .classic-promotion-option>.rpchess-promotion-symbol {display:block!important;}
-/* Do not display a transient fantasy-art image in the middle of changing mode. */
-html[data-simple-pieces="1"] :is(.classic-piece-flyer,.classic-captured-ghost) {opacity:0!important;}
-@media (orientation:portrait) and (max-width:600px) {
-  .rpchess-piece-symbol {font-size:clamp(25px,8.2vw,48px);}
-  .rpchess-promotion-symbol {font-size:56px;}
+@media (prefers-reduced-motion:reduce) {
+  .rpchess-board-view-toggle__king,.rpchess-board-view-toggle__track::after{transition:none}
 }

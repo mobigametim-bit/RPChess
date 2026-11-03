@@ -139,7 +139,7 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     await clickMove(page,'a7','a8');
     await page.locator('[data-promotion-modal]:not([hidden])').waitFor();
     for(const [role,name] of [['q','queen'],['r','rook'],['b','bishop'],['n','knight']]){
-      const src=await page.locator(`[data-promotion="${role}"] img`).getAttribute('src');
+      const src=await page.locator(`[data-promotion="${role}"] > img`).getAttribute('src');
       assert(src.includes(`/heroes/mara_chain/pieces/white/${name}.webp`),
         `promoting Mara must offer her own WHITE ${name}, not a generic piece`);
     }
@@ -156,7 +156,7 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     await dragMove(page,'a2','a1');
     await page.locator('[data-promotion-modal]:not([hidden])').waitFor();
     for(const [role,name] of [['q','queen'],['r','rook'],['b','bishop'],['n','knight']]){
-      const src=await page.locator(`[data-promotion="${role}"] img`).getAttribute('src');
+      const src=await page.locator(`[data-promotion="${role}"] > img`).getAttribute('src');
       assert(src.includes(`/heroes/kael_cinder/pieces/black/${name}.webp`),
         `promoting Kael must offer his own BLACK ${name}, not a generic piece`);
     }
