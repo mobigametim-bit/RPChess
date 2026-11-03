@@ -464,6 +464,41 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       'follow-up engine evaluation starts from precisely the accepted alternative position');
     await page.locator('[data-finished-review] [data-review-action="close"]').click();
     assert.equal(await page.locator('[data-finished-review]').count(),0,'fake analysis engine closes cleanly');
+    // Long journal regression: selecting a move near the bottom must NOT
+    // destroy its scroll offset when render() rebuilds the left panel.
+    await page.addStyleTag({content:
+      '[data-finished-review] .rpchess-review-movelist{max-height:110px!important;min-height:110px!important;flex:0 0 110px!important;}'
+    });
+    await page.evaluate(async moves=>{
+      const {openFinishedGameReview}=await import('./js/finished-game-review.mjs');
+      window.__scrollReview=openFinishedGameReview({
+        mode:'arena',finished:true,playerColor:'w',moves,
+        engineFactory:()=>({
+          async start(){},
+          async evaluate(){return {cp:0,depth:8,bestMove:null};},
+          close(){}
+        })
+      });
+    }, 'g2g3 e7e6 g1f3 d7d6 b2b3 g8e7 a2a3 e7c6 b1c3 a7a6 h2h4 g7g6 f3e5 f8e7 f2f3 c6a5 a1b1 b7b6 h1g1 b8d7 f1h3 h8f8 e1f2 a8a7 e5c6 f8g8 b3b4 a5c6 f2f1 c6d4 e2e4 h7h6 h3e6 a7a8 e6f7 e8f7 d2d3 d4c2 f3f4 c7c5 c3b5 a8b8 c1e3 a6a5 b1b3 c2e1 b3c3 f7g7 d3d4 g6g5'.split(' '));
+    const longList=page.locator('[data-finished-review] .rpchess-review-movelist');
+    await longList.waitFor({timeout:10000});
+    assert.equal(await page.locator('[data-finished-review] [data-review-move]').count(),50,
+      'long legal game provides 50 moves for scroll regression');
+    await longList.evaluate(el=>{el.scrollTop=245;});
+    const beforeMid=await longList.evaluate(el=>el.scrollTop);
+    assert(beforeMid>=200,'the move list is genuinely scrolled before selecting a middle move');
+    await page.locator('[data-finished-review] [data-review-move="22"]').click();
+    const afterMid=await longList.evaluate(el=>el.scrollTop);
+    assert(Math.abs(afterMid-beforeMid)<=2,
+      'selecting a middle move preserves journal scrollTop: '+beforeMid+' -> '+afterMid);
+    await longList.evaluate(el=>{el.scrollTop=el.scrollHeight-el.clientHeight;});
+    const beforeBottom=await longList.evaluate(el=>el.scrollTop);
+    assert(beforeBottom>beforeMid,'the list can reach the final moves');
+    await page.locator('[data-finished-review] [data-review-move="50"]').click();
+    const afterBottom=await longList.evaluate(el=>el.scrollTop);
+    assert(Math.abs(afterBottom-beforeBottom)<=2,
+      'selecting the final move does not jump the journal back to the top: '+beforeBottom+' -> '+afterBottom);
+    await page.locator('[data-finished-review] [data-review-action="close"]').click();
     await page.evaluate(()=>{
       const key='rpchess.reboot.v1.arena';
       const saved=JSON.parse(localStorage.getItem(key));saved.match=null;localStorage.setItem(key,JSON.stringify(saved));
