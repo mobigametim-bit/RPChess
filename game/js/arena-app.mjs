@@ -183,17 +183,20 @@ function stopMoveAnimation(){
   animating=false;animationDestination=null;
 }
 function moveGeometry(from,to,promo){
-  if(document.documentElement.dataset.reducedMotion==='1'||document.documentElement.dataset.simplePieces==='1'||globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches||typeof Element.prototype.animate!=='function')return null;
+  if(document.documentElement.dataset.reducedMotion==='1'||globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches||typeof Element.prototype.animate!=='function')return null;
   const candidate=engine.legalMoves(from).find(move=>(move.uciTo||move.to)===to&&(!move.promotion||move.promotion===promo));
   if(!candidate||candidate.castle)return null;
-  const source=board.querySelector('[data-square="'+from+'"] .classic-piece');
+  const simplified=document.documentElement.dataset.simplePieces==='1';
+  const artSelector=simplified?'.rpchess-fantasy-piece':'.classic-piece';
+  const source=board.querySelector('[data-square="'+from+'"] '+artSelector);
   const target=board.querySelector('[data-square="'+to+'"]');
   if(!source||!target)return null;
-  const captured=candidate.capture?board.querySelector('[data-square="'+candidate.capture+'"] .classic-piece'):null;
-  return {source:source.getBoundingClientRect(),target:target.getBoundingClientRect(),src:source.getAttribute('src'),capturedSrc:captured?.getAttribute('src'),capturedRect:captured?.getBoundingClientRect()};
+  const captured=candidate.capture?board.querySelector('[data-square="'+candidate.capture+'"] '+artSelector):null;
+  return {source:source.getBoundingClientRect(),target:target.getBoundingClientRect(),artSelector,
+    src:source.getAttribute('src'),capturedSrc:captured?.getAttribute('src'),capturedRect:captured?.getBoundingClientRect()};
 }
 function animateCommittedMove(geometry,to,onDone){
-  const target=board.querySelector('[data-square="'+to+'"] .classic-piece')?.getBoundingClientRect();
+  const target=board.querySelector('[data-square="'+to+'"] '+geometry.artSelector)?.getBoundingClientRect();
   const left=target?.left??geometry.target.left+(geometry.target.width-geometry.source.width)/2;
   const top=target?.top??geometry.target.top+(geometry.target.height-geometry.source.height)/2;
   const flyer=document.createElement('img');flyer.className='classic-piece-flyer';flyer.src=geometry.src;flyer.alt='';

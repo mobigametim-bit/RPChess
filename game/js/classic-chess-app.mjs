@@ -1,7 +1,7 @@
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { attachPieceDrag } from './piece-drag.mjs?v=20261022-portrait-motion1';
 import { boardRacePiecePath } from './race-assets.mjs';
-import { fantasyPieceMarkup } from './fantasy-piece.mjs';
+import { fantasyPieceMarkup, fantasyPiecePath } from './fantasy-piece.mjs';
 import { ChessAIAdapter, ELO_LEVELS, profileForElo } from './chess-ai-adapter.mjs';
 import { currentLanguage, subscribe, translateLegacy } from './i18n.mjs';
 import { classicT } from '../localization/classic-ui.mjs';
@@ -396,20 +396,24 @@ function openPromotion(from, to, color, choices) {
 
 function setThinking(value) { aiThinking = Boolean(value); renderBoard(); renderStatus(); }
 
-function captureAnimationGeometry(from, to, moving, capturedPiece) {
-  // In glyph mode, skip illustration-based flyers so fantasy art never flashes.
-  if (prefersReducedMotion() || document.documentElement.dataset.simplePieces === '1') return null;
-  const sourceImage = board.querySelector(`[data-square="${from}"] .classic-piece`);
-  const targetImage = board.querySelector(`[data-square="${to}"] .classic-piece`);
+function captureAnimationGeometry(from, to, moving, capturedPiece, capturedSquare = to) {
+  if (prefersReducedMotion()) return null;
+  // Move the image that is actually visible: a race/hero sprite or a Fantasy SVG.
+  // Both use the same path, timings and easing; only the artwork changes.
+  const simplified = document.documentElement.dataset.simplePieces === '1';
+  const artSelector = simplified ? '.rpchess-fantasy-piece' : '.classic-piece';
+  const sourceImage = board.querySelector(`[data-square="${from}"] ${artSelector}`);
+  const capturedImage = board.querySelector(`[data-square="${capturedSquare}"] ${artSelector}`);
   if (!sourceImage) return null;
   return {
     source: sourceImage.getBoundingClientRect(),
     target: board.querySelector(`[data-square="${to}"]`)?.getBoundingClientRect() || null,
+    artSelector,
     moving: { ...moving },
-    movingSrc: sourceImage.getAttribute('src') || sourceImage.currentSrc || sourceImage.src || pieceAsset(moving),
+    movingSrc: sourceImage.getAttribute('src') || sourceImage.currentSrc || (simplified ? fantasyPiecePath(moving.type, moving.color) : pieceAsset(moving)),
     capturedPiece: capturedPiece ? { ...capturedPiece } : null,
-    capturedSrc: targetImage?.getAttribute('src') || targetImage?.currentSrc || targetImage?.src || (capturedPiece ? pieceAsset(capturedPiece) : null),
-    capturedRect: targetImage?.getBoundingClientRect() || null
+    capturedSrc: capturedImage?.getAttribute('src') || capturedImage?.currentSrc || (capturedPiece ? (simplified ? fantasyPiecePath(capturedPiece.type, capturedPiece.color) : pieceAsset(capturedPiece)) : null),
+    capturedRect: capturedImage?.getBoundingClientRect() || null
   };
 }
 
@@ -448,7 +452,7 @@ function animateCommittedMove(geometry, to, onDone) {
     capturedGhost.animate([{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.72)' }], { duration: 190, easing: 'ease-out', fill: 'forwards' });
   }
 
-  const targetImage = destinationImage?.getBoundingClientRect();
+  const targetImage = board.querySelector(`[data-square="${to}"] ${geometry.artSelector}`)?.getBoundingClientRect();
   const targetLeft = targetImage ? targetImage.left : geometry.target.left + (geometry.target.width - geometry.source.width) / 2;
   const targetTop = targetImage ? targetImage.top : geometry.target.top + (geometry.target.height - geometry.source.height) / 2;
   const dx = targetLeft - geometry.source.left;
@@ -475,7 +479,7 @@ function executeMove(from, to, promotion = null, { triggerAI = true } = {}) {
   const legalBefore = engine.legalMoves();
   const candidate = legalBefore.find((move) => move.from === from && (move.uciTo || move.to) === to && (!move.promotion || move.promotion === promotion));
   const capturedPiece = candidate?.castle ? null : candidate?.capture ? engine.pieceAt(candidate.capture) : engine.pieceAt(to);
-  const geometry = candidate && !candidate.castle ? captureAnimationGeometry(from, to, moving, capturedPiece) : null;
+  const geometry = candidate && !candidate.castle ? captureAnimationGeometry(from, to, moving, capturedPiece, candidate.capture || to) : null;
   const result = engine.move(from, to, promotion);
   if (!result.ok) {
     if (result.reason === 'promotion_required') {

@@ -12,7 +12,9 @@ html[data-simple-pieces="1"] .rpchess-draggable-board .rpchess-drag-origin .rpch
 html[data-simple-pieces="1"] .classic-promotion-option>img {display:none!important}
 html[data-simple-pieces="1"] .classic-promotion-option>.rpchess-promotion-symbol {display:flex!important}
 .arena-promotions .rpchess-fantasy-piece,.arena-promotions .arena-promotion-art {display:block;width:64px;height:70px;max-width:100%;object-fit:contain}
-html[data-simple-pieces="1"] :is(.classic-piece-flyer,.classic-captured-ghost) {opacity:0!important}
+/* The Fantasy destination remains hidden until the same smooth flyer lands.
+ * The race/hero image already uses classic-piece--arriving to do this. */
+html[data-simple-pieces="1"] .classic-board .classic-piece--arriving ~ .rpchess-piece-symbol {visibility:hidden!important}
 .puzzle-promotion .rpchess-fantasy-piece {display:block;width:100%;height:46px;object-fit:contain;pointer-events:none}
 
 /* Compact art-only view switch above the moves journal, or in Training's left rail.
