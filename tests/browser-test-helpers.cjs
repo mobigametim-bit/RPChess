@@ -70,7 +70,9 @@ async function startNewRun(page, { playerName = 'Browser Tester' } = {}) {
   const identity = await waitForVisible(page, '[data-player-identity-modal]:not([hidden])', 'Player Identity');
   await identity.locator('[data-player-identity-input]').fill(playerName);
   const submit = identity.locator('[data-player-identity-submit]');
-  if (await submit.isDisabled()) throw new Error(`Player Identity did not accept test name: ${playerName}`);
+  if (await submit.isEnabled()) throw new Error('Player Identity accepted a name without an explicit portrait selection');
+  await identity.locator('[data-identity-commander="oathkeeper"]').click();
+  if (await submit.isDisabled()) throw new Error(`Player Identity did not accept name + chosen portrait: ${playerName}`);
   await submit.click();
   await waitForVisible(page, '[data-roster-screen]:not([hidden])', 'Roster');
   await installManualTravelFixtureNormalizer(page);

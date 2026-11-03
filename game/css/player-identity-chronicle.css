@@ -321,3 +321,30 @@
   .identity-commander-preview p{font-size:9px;line-height:1.16}
   .identity-submit{min-height:32px!important;font-size:17px!important}
 }
+
+/* Empty portrait choice: show its instruction in the full-width preview, centered.
+   The class is removed as soon as a commander is selected, so the portrait
+   and biography retain their existing responsive layout. */
+.identity-commander-preview--empty{
+  grid-template-columns:minmax(0,1fr);
+  place-items:center;
+  text-align:center;
+}
+.identity-commander-preview--empty>div{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  min-width:0;
+  width:100%;
+  max-width:100%;
+}
+.identity-commander-preview--empty h3{
+  width:100%;
+  margin:0;
+  font-size:clamp(14px,1.6vw,22px);
+  line-height:1.25;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  text-wrap:balance;
+}

@@ -140,7 +140,44 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     await page.locator('.chronicle-leaderboard-row').nth(1).waitFor();
     await page.evaluate(()=>window.RPChessPlayerIdentity.open());
     assert.strictEqual(await page.locator('[data-identity-commander]').count(),7,'seven original commanders available in the name dialog');
+    const identitySubmit=page.locator('[data-player-identity-submit]');
+    const identityName=page.locator('[data-player-identity-input]');
+    assert.strictEqual(await page.locator('[data-identity-commander][aria-pressed="true"]').count(),0,
+      'new Journey must not preselect the Guardian or any other commander');
+    assert.strictEqual(await page.locator('[data-identity-commander-image]').isHidden(),true,
+      'preview must stay empty until the player explicitly chooses a portrait');
+    assert.strictEqual(await identitySubmit.isDisabled(),true,'Continue starts disabled');
+    // The empty-state instruction must fit and be centered in the preview on
+    // desktop, short landscape and portrait; chosen portraits keep old layout.
+    for (const [width,height] of [[1313,641],[844,390],[390,844]]) {
+      await page.setViewportSize({width,height});
+      const layout=await page.evaluate(()=>{
+        const preview=document.querySelector('[data-identity-commander-preview]');
+        const title=preview.querySelector('h3');
+        const frame=preview.getBoundingClientRect();
+        const text=title.getBoundingClientRect();
+        return {
+          empty:preview.classList.contains('identity-commander-preview--empty'),
+          dx:Math.abs((frame.left+frame.right-text.left-text.right)/2),
+          dy:Math.abs((frame.top+frame.bottom-text.top-text.bottom)/2),
+          contained:text.left>=frame.left-1&&text.right<=frame.right+1&&text.top>=frame.top-1&&text.bottom<=frame.bottom+1,
+          fits:title.scrollWidth<=title.clientWidth+1&&title.scrollHeight<=title.clientHeight+1,
+          wrapped:getComputedStyle(title).whiteSpace==='normal'
+        };
+      });
+      assert(layout.empty&&layout.contained&&layout.fits&&layout.wrapped&&layout.dx<=5&&layout.dy<=5,
+        `empty portrait instruction must be centered and never clipped at ${width}x${height}: ${JSON.stringify(layout)}`);
+    }
+    await page.setViewportSize({width:1653,height:760});
+    await identityName.fill('Тимур');
+    assert.strictEqual(await identitySubmit.isDisabled(),true,'name alone cannot start a Journey');
     await page.locator('[data-identity-commander="wanderer_queen"]').click();
+    assert.strictEqual(await identitySubmit.isEnabled(),true,'Continue requires both a valid name and an explicit portrait');
+    assert.strictEqual(await page.locator('[data-identity-commander-preview]').evaluate(n=>n.classList.contains('identity-commander-preview--empty')),false,
+      'the selected portrait must preserve its existing preview layout');
+    await identityName.fill('  ');
+    assert.strictEqual(await identitySubmit.isDisabled(),true,'removing the name must disable Continue again');
+    await identityName.fill('Тимур');
     assert.strictEqual(await page.locator('[data-identity-commander="wanderer_queen"]').getAttribute('aria-pressed'),'true');
     assert((await page.locator('[data-identity-commander-image]').getAttribute('src')).includes('wanderer_queen/portrait.webp'));
     // Guard the actual 1313x641 modal layout: warm-gold cards, and both
@@ -172,6 +209,14 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert(portrait.includes('/kings/oathkeeper/portrait.webp'),'legacy current runs keep the default royal portrait');
 
     assert.strictEqual(await page.locator('[data-player-identity-close]').getAttribute('aria-label'),'Close');
+    await page.evaluate(()=>window.RPChessPlayerIdentity.close());
+    await page.evaluate(()=>window.RPChessPlayerIdentity.open());
+    assert.strictEqual(await identityName.inputValue(),'','reopening New Journey clears previous name');
+    assert.strictEqual(await page.locator('[data-identity-commander][aria-pressed="true"]').count(),0,
+      'reopening New Journey requires a new explicit portrait choice');
+    assert.strictEqual(await identitySubmit.isDisabled(),true,'Continue remains disabled on reopening');
+    assert.strictEqual(await page.locator('[data-identity-commander-title]').innerText(),'CHOOSE YOUR COMMANDER',
+      'empty preview prompt must localize when no portrait is selected');
     await page.evaluate(()=>{
       window.RPChessPlayerIdentity.close();
       // The synthetic signed VK launch is only for the in-page leaderboard
