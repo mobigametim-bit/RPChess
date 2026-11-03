@@ -7,6 +7,7 @@ on:
     paths:
       - tournament-worker/**
       - tests/tournament-live-smoke.mjs
+      - tests/tournament-rated-local.mjs
       - .github/workflows/tournament-api-staging-deploy.yml
   workflow_dispatch:
 
@@ -34,6 +35,21 @@ jobs:
           test -n "$ACCOUNT" || { echo "::error::CLOUDFLARE_ACCOUNT_ID is missing"; exit 1; }
           test -n "$SESSION" || { echo "::error::PVP_SESSION_SECRET is missing"; exit 1; }
           [ "$(printf '%s' "$SESSION" | wc -c)" -ge 40 ] || { echo "::error::PVP_SESSION_SECRET must be at least 40 characters"; exit 1; }
+      - name: Local verified-VK rating regression (disposable secrets, isolated SQLite)
+        run: |
+          set -euo pipefail
+          npx wrangler dev --local --config tournament-worker/wrangler.toml --ip 127.0.0.1 --port 8789 \
+            --var PVP_SESSION_SECRET:rpchess-local-session-secret-for-ci-only-12345678901234567890 \
+            --var VK_APP_SECRET:rpchess-local-vk-secret-for-ci-only-do-not-deploy \
+            > /tmp/tournament-rated-local.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 40); do
+            if curl -fsS --max-time 2 http://127.0.0.1:8789/health > /dev/null; then break; fi
+            if [ "$attempt" -eq 40 ]; then cat /tmp/tournament-rated-local.log; exit 1; fi
+            sleep 1
+          done
+          node tests/tournament-rated-local.mjs
       - name: Install and verify
         run: |
           npm ci --no-audit --no-fund

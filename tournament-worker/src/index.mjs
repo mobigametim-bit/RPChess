@@ -4,7 +4,7 @@ import { DurableObject } from 'cloudflare:workers';
 import { ClassicChessEngine } from '../../game/js/classic-chess-engine.mjs';
 import { normalizePower, ratingDelta } from '../../game/js/power-elo.mjs';
 
-const MINUTE=60000, CONTROL=10*MINUTE, MAX_MOVES=600;
+const MINUTE=60000, CONTROL=10*MINUTE, MAX_MOVES=600, VK_LAUNCH_TTL=3600;
 const ORIGINS=['https://mobigametim-bit.github.io','https://rpchess-portrait-ui-preview.mobigametim.workers.dev'];
 function json(data,status=200,extra={}){return new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store',...extra}});}
 function problem(code,status=400){return json({error:code},status);}
@@ -28,8 +28,11 @@ async function verify(token,secret){
 async function vkIdentity(launch,secret){
  if(!secret||typeof launch!=='string'||launch.length>3000)return null;
  const p=new URLSearchParams(launch);
- const id=p.get('vk_user_id'),signature=p.get('sign');
- if(!/^[1-9]\d*$/.test(id||'')||p.get('vk_app_id')!=='54754579'||!signature)return null;
+ const id=p.get('vk_user_id'),signature=p.get('sign'),ts=Number(p.get('vk_ts'));
+ // VK signed launch data is short-lived. A valid prior server session may
+ // persist across reloads, but stale launch parameters cannot mint a new one.
+ if(!/^[1-9]\d*$/.test(id||'')||p.get('vk_app_id')!=='54754579'||!signature||
+    !Number.isSafeInteger(ts)||Math.abs(Date.now()/1000-ts)>VK_LAUNCH_TTL)return null;
  const sorted=new URLSearchParams([...p.entries()].filter(([k])=>k.startsWith('vk_')).sort(([a],[b])=>a.localeCompare(b))).toString();
  const computed=await sign(sorted,secret);if(computed.length!==signature.length)return null;
  let diff=0;for(let i=0;i<computed.length;i++)diff|=computed.charCodeAt(i)^signature.charCodeAt(i);
@@ -53,6 +56,14 @@ function ratedResult(match,player){
 async function parse(request){return await request.json().catch(()=>null);}
 async function internal(stub,path,body){const res=await stub.fetch(new Request('https://tournament.internal'+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}));return res;}
 function route(env,key){return env.MATCHES.get(env.MATCHES.idFromName(key));}
+function account(env,id){return env.ACCOUNTS.get(env.ACCOUNTS.idFromName(id));}
+async function accountCall(env,id,path,data={}){
+ const result=await internal(account(env,id),path,data);
+ if(!result.ok)throw Error('Tournament account ledger unavailable: '+result.status);
+ return await result.json();
+}
+function isVerified(user,env){return user?.kind==='vk'&&/^vk:[1-9]\d*$/.test(user.id||'')&&Boolean(env.VK_APP_SECRET);}
+
 export default {
  async fetch(request,env){
   const origin=request.headers.get('Origin');const list=String(env.ALLOWED_ORIGINS||ORIGINS.join(',')).split(',').map(v=>v.trim());
@@ -67,24 +78,28 @@ export default {
   const body=await parse(request);
   if(!body||typeof body!=='object'||Array.isArray(body))return json({error:'invalid_json'},400,cors);
   if(path==='/v1/session'){
+   const vk=await vkIdentity(body.launch,env.VK_APP_SECRET);
    let session=await verify(body.previous,env.PVP_SESSION_SECRET);
-   if(!session){
-    const vk=await vkIdentity(body.launch,env.VK_APP_SECRET);
-    const nickname=String(body.nick||'Гость').trim().slice(0,28)||'Гость';
-    session={id:vk||'guest:'+crypto.randomUUID(),name:nickname,kind:vk?'vk':'guest',power:safePower(body.power),created:Date.now(),exp:Date.now()+30*86400000};
-   }
-   else {
-    // The signed session is reissued with the current in-game Power at match
-    // entry. Client-sourced starting Power is provisional until ranked auth.
-    session={...session,power:safePower(body.power)};
-   }
+   const nickname=String(body.nick||'Гость').trim().slice(0,28)||'Гость';
+   // A freshly verified VK launch upgrades a guest. Signed old VK sessions
+   // remain valid until expiry, but no unverified client may set its rating.
+   if(vk&&session?.id!==vk)session=null;
+   if(!session)session={id:vk||'guest:'+crypto.randomUUID(),name:nickname,kind:vk?'vk':'guest',created:Date.now(),exp:Date.now()+30*86400000};
+   session={...session,power:isVerified(session,env)
+    ?(await accountCall(env,session.id,'/profile')).power:safePower(body.power)};
    const raw=encode(JSON.stringify(session));
-   return json({token:raw+'.'+await sign(raw,env.PVP_SESSION_SECRET),kind:session.kind,name:session.name},200,cors);
+   return json({token:raw+'.'+await sign(raw,env.PVP_SESSION_SECRET),kind:session.kind,name:session.name,ranked:isVerified(session,env)},200,cors);
   }
   const bearer=(request.headers.get('Authorization')||'').replace(/^Bearer /i,'');
   const user=await verify(bearer,env.PVP_SESSION_SECRET);
   if(!user)return json({error:'not_authenticated'},401,cors);
-  const requestData={...body,user:{id:user.id,name:user.name,kind:user.kind,power:user.power},now:Date.now()};
+  const verified=isVerified(user,env);
+  const profile=verified?await accountCall(env,user.id,'/profile'):null;
+  const serverPower=profile?.power??safePower(user.power);
+  if(path==='/v1/profile')return json({ranked:verified,power:serverPower,kind:verified?'vk':'guest',ratedGames:profile?.ratedGames||0},200,cors);
+  // All server-internal user fields override browser input, including Power.
+  const requestData={...body,user:{id:user.id,name:user.name,kind:verified?'vk':'guest',power:serverPower},now:Date.now()};
+  if(path==='/v1/queue/join')requestData.power=serverPower;
   let stub,pathDo;
   if(path.startsWith('/v1/queue/')||path.startsWith('/v1/room/')){stub=env.LOBBY.get(env.LOBBY.idFromName('world'));pathDo=path;}
   else if(path.startsWith('/v1/match/')){
@@ -137,7 +152,7 @@ export class TournamentLobby extends DurableObject {
    }
    if(partner<0)return null;
    const other=queue[partner];
-   const made=await this.createMatch(seeker.user,other.user,seeker.race,other.race,now);
+   const made=await this.createMatch(seeker.user,other.user,seeker.race,other.race,now,true);
    matches[seeker.user.id]=made;matches[other.user.id]=made;
    queue=queue.filter(x=>x.user.id!==seeker.user.id&&x.user.id!==other.user.id);
    await Promise.all([this.ctx.storage.put('queue',queue),this.ctx.storage.put('matched',matches)]);
@@ -180,7 +195,7 @@ export class TournamentLobby extends DurableObject {
    if(!room||room.owner.id===uid)return problem('room_unavailable',404);
    if(matches[uid])return json(matches[uid]);
    delete rooms[code];
-   const made=await this.createMatch(room.owner,body.user,room.race,safeRace(body.squad),now);
+   const made=await this.createMatch(room.owner,body.user,room.race,safeRace(body.squad),now,false);
    matches[room.owner.id]=made;matches[uid]=made;
    await Promise.all([this.ctx.storage.put('matched',matches),this.ctx.storage.put('rooms',rooms)]);
    return json(made);
@@ -196,7 +211,7 @@ export class TournamentLobby extends DurableObject {
     await this.ctx.storage.put('matched',matches);
    }
    if(queue.some(x=>x.user.id===uid))return json({status:'waiting'});
-   const power=safePower(body.power),shift=Math.min(150,Math.max(0,body.lossStreak||0)>=2?120:0);
+   const power=safePower(body.user.power),shift=Math.min(150,Math.max(0,body.lossStreak||0)>=2?120:0);
    queue.push({user:body.user,race:safeRace(body.squad),power,desired:power-shift,at:now,seenAt:now});
    const paired=await matchQueued(queue.length-1);
    if(paired)return json(paired);
@@ -205,12 +220,21 @@ export class TournamentLobby extends DurableObject {
   }
   return problem('not_found',404);
  }
- async createMatch(a,b,ra,rb,now){
+ async createMatch(a,b,ra,rb,now,publicQueue=false){
   const id=crypto.randomUUID();
   const pair=Math.random()<.5?[a,b]:[b,a],races=pair[0].id===a.id?[ra,rb]:[rb,ra];
-  const init=await internal(this.env.MATCHES.get(this.env.MATCHES.idFromName(id)),'/init',{players:pair.map((p,i)=>({...p,race:races[i],color:i===0?'w':'b'})),now});
+  // Invitations are always casual. Repeated VK pairings are also casual:
+  // max 2 rated meetings per pair in a rolling 24 h to limit Elo farming.
+  const pairKey='ratedPair:'+ [a.id,b.id].sort().join('|');
+  const recent=publicQueue&&isVerified(a,this.env)&&isVerified(b,this.env)
+   ?(await this.ctx.storage.get(pairKey)||[]).filter(time=>now-time<86400000):[];
+  const rated=publicQueue&&isVerified(a,this.env)&&isVerified(b,this.env)&&recent.length<2;
+  const init=await internal(this.env.MATCHES.get(this.env.MATCHES.idFromName(id)),'/init',{
+   players:pair.map((p,i)=>({...p,race:races[i],color:i===0?'w':'b'})),now,rated
+  });
   if(!init.ok)throw Error('Match initialization failed');
-  return {status:'matched',matchId:id};
+  if(rated)await this.ctx.storage.put(pairKey,[...recent,now]);
+  return {status:'matched',matchId:id,rated};
  }
 }
 
@@ -219,10 +243,29 @@ export class TournamentMatch extends DurableObject {
  async put(value){
   // Store final per-color Elo receipts together with the immutable finished
   // match. Later updates to the Elo formula must never reprice past results.
-  if(value.result&&value.ratingVersion===1&&!value.ratings)
-   value.ratings=Object.fromEntries(value.players.map(player=>[player.color,ratedResult(value,player)]));
+  // Historic staging v1 records cannot create new trusted ranked credits.
   await this.ctx.storage.put('match',value);
   if(!value.result)await this.ctx.storage.setAlarm(Date.now()+Math.max(1000,value.remaining[value.turn]));
+  if(value.result&&value.ratingVersion===2&&value.rated)await this.settle(value);
+
+ }
+ async settle(match){
+  if(!match.rated||match.ratingVersion!==2||!match.result)return match;
+  const receipts={...(match.ratings||{})};
+  for(const player of match.players){
+   if(receipts[player.color])continue;
+   const rival=match.players.find(p=>p.color!==player.color);
+   const score=match.result.winner==null?.5:match.result.winner===player.color?1:0;
+   // Only this match Durable Object may send a settlement to an account DO.
+   // Account DO owns atomic Power + an unbounded idempotency receipt key.
+   receipts[player.color]=await accountCall(this.env,player.id,'/settle',{
+    receiptId:'tournament:'+match.id+':'+player.color,opponentElo:rival.power,
+    result:score,opponentId:rival.id
+   });
+  }
+  match.ratings=receipts;
+  await this.ctx.storage.put('match',match);
+  return match;
  }
  reconstruct(match){
   const engine=new ClassicChessEngine();
@@ -245,23 +288,27 @@ export class TournamentMatch extends DurableObject {
     players:m.players.map(p=>({name:p.name,color:p.color,race:p.race,power:p.power})),
     fen:engine.fen(),moves:m.moves,turn:m.turn,remaining:m.remaining,
     serverTime:Date.now(),tick:m.tick,result:m.result,drawOffer:m.drawOffer||null,
-    rating:m.ratings?.[player.color]||null};
+    rated:Boolean(m.rated&&m.ratingVersion===2),
+    rating:m.ratingVersion===2&&m.rated?m.ratings?.[player.color]||null:null};
  }
  async fetch(request){
   const path=new URL(request.url).pathname,body=await request.json(),now=Date.now();
   if(path==='/init'){
    if(await this.get())return problem('already_initialized',409);
    if(!Array.isArray(body.players)||body.players.length!==2||body.players[0].id===body.players[1].id)return problem('invalid_players',400);
-   const match={id:this.ctx.id.toString(),ratingVersion:1,players:body.players,remaining:{w:CONTROL,b:CONTROL},tick:now,turn:'w',moves:[],drawOffer:null,result:null};
+   const rated=Boolean(body.rated)&&body.players.every(p=>isVerified(p,this.env));
+   const match={id:this.ctx.id.toString(),ratingVersion:2,rated,players:body.players,remaining:{w:CONTROL,b:CONTROL},tick:now,turn:'w',moves:[],drawOffer:null,result:null};
    await this.put(match);return json({ok:true});
   }
   let m=await this.get();if(!m)return problem('match_not_found',404);
   const uid=body.user?.id,player=m.players.find(p=>p.id===uid);
   if(!player)return problem('not_a_player',403);
   m=await this.advance(m,now);
-  // Upgrade a previously completed v1 match (created before receipts were
-  // persisted) exactly once, then always return its stored rating.
-  if(m.result&&m.ratingVersion===1&&!m.ratings)await this.put(m);
+  // Retry a partially committed cross-account settlement after a restart.
+  // Each account applies each receipt only once, even if one side failed.
+  if(m.result&&m.rated&&m.ratingVersion===2&&!m.ratings){
+   try{m=await this.settle(m);}catch(error){console.error('Rating settlement retry',error);}
+  }
   if(path==='/snapshot')return json(this.snapshot(m,uid));
   if(m.result)return json(this.snapshot(m,uid));
   if(path==='/move'){
@@ -284,4 +331,36 @@ export class TournamentMatch extends DurableObject {
   return problem('not_found',404);
  }
  async alarm(){let m=await this.get();if(m)await this.advance(m,Date.now());}
+}
+
+// One SQLite-backed Durable Object per verified VK player. This class is
+// never dispatched to from an HTTP client route; only Worker-internal stubs.
+export class TournamentAccount extends DurableObject {
+ async fetch(request){
+  const path=new URL(request.url).pathname;
+  const body=await request.json().catch(()=>({}));
+  if(path==='/profile'){
+   const profile=await this.ctx.storage.get('profile')||{power:500,ratedGames:0};
+   return json({power:profile.power,ratedGames:profile.ratedGames});
+  }
+  if(path!=='/settle')return problem('not_found',404);
+  const id=String(body.receiptId||''),opponent=String(body.opponentId||'');
+  if(!/^tournament:[0-9a-f-]{36}:[wb]$/.test(id)||!/^vk:[1-9]\d*$/.test(opponent)||
+    ![0,.5,1].includes(body.result)||!Number.isInteger(body.opponentElo))
+   return problem('invalid_receipt',400);
+  const receipt=await this.ctx.storage.transaction(async tx=>{
+   const existing=await tx.get('receipt:'+id);
+   if(existing)return existing;
+   const profile=await tx.get('profile')||{power:500,ratedGames:0};
+   const before=normalizePower(profile.power);
+   const opponentElo=safePower(body.opponentElo);
+   const delta=ratingDelta(before,opponentElo,body.result);
+   const after=Math.max(0,before+delta);
+   const record={id,before,after,delta:after-before,opponentElo,result:body.result};
+   await tx.put('receipt:'+id,record);
+   await tx.put('profile',{power:after,ratedGames:profile.ratedGames+1,updatedAt:Date.now()});
+   return record;
+  });
+  return json(receipt);
+ }
 }

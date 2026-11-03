@@ -116,6 +116,28 @@ function settlePlayerRating({ receiptId, opponentElo, result, gainDivisor = 1, s
   return { profile:next, receipt, changed:true };
 }
 
+/* Import only a verified server-settled Tournament receipt. Keep the
+ * existing Journey/Training/ Arena Power; transfer the server rating delta,
+ * never the account's initially-500 PvP rating baseline.
+ */
+function importTournamentRatingReceipt(serverReceipt, storage = null) {
+  const v=serverReceipt;
+  if(!v||!/^tournament:[0-9a-f-]{36}:[wb]$/.test(v.id||'')||
+    ![0,.5,1].includes(v.result)||
+    ![v.before,v.after,v.delta,v.opponentElo].every(Number.isInteger)||
+    v.before<0||v.opponentElo<0||
+    v.after!==Math.max(0,v.before+ratingDelta(v.before,v.opponentElo,v.result))||
+    v.delta!==v.after-v.before)throw new Error('Untrusted Tournament rating receipt');
+  const profile=readPlayerRating(storage);
+  const existing=profile.receipts.find(r=>r.id===v.id);
+  if(existing)return {profile,receipt:existing,changed:false};
+  const before=profile.power,after=Math.max(0,before+v.delta);
+  const receipt=Object.freeze({id:v.id,before,after,delta:after-before,opponentElo:v.opponentElo,result:v.result});
+  const next=writePlayerRating({...profile,power:after,receipts:[...profile.receipts,receipt]},storage);
+  if(typeof globalThis!=='undefined'&&typeof globalThis.dispatchEvent==='function'&&typeof CustomEvent!=='undefined')
+    globalThis.dispatchEvent(new CustomEvent('rpchess:power-updated',{detail:{power:after,receipt,source:'tournament-server'}}));
+  return {profile:next,receipt,changed:true};
+}
 function adaptiveEncounterStars(power, seed = 'rpchess-adaptive') {
   const base = threatStarsForPower(power);
   const roll = hashSeed(`${seed}:power-difficulty`) % 100;
@@ -182,6 +204,7 @@ export {
   applyNewRunPowerCarryover,
   ratingReceipt,
   settlePlayerRating,
+  importTournamentRatingReceipt,
   adaptiveEncounterStars,
   opponentEloForStars,
   combatResultScore,

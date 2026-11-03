@@ -5,12 +5,17 @@ compatibility_date = "2026-10-22"
 [durable_objects]
 bindings = [
   { name = "LOBBY", class_name = "TournamentLobby" },
-  { name = "MATCHES", class_name = "TournamentMatch" }
+  { name = "MATCHES", class_name = "TournamentMatch" },
+  { name = "ACCOUNTS", class_name = "TournamentAccount" }
 ]
 
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["TournamentLobby", "TournamentMatch"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["TournamentAccount"]
 
 [vars]
 ALLOWED_ORIGINS = "https://mobigametim-bit.github.io,https://rpchess-portrait-ui-preview.mobigametim.workers.dev"

@@ -7,7 +7,7 @@ import { attachPieceDrag } from './piece-drag.mjs';
 import { fantasyPieceMarkup } from './fantasy-piece.mjs';
 import { applyPinIce } from './king-pin-ice.mjs';
 import { RACE_TAGS, RACE_LABELS, racePiecePath, applyRaceBoardTheme } from './race-assets.mjs';
-import { readPlayerRating, settlePlayerRating, ratingDelta } from './player-rating.mjs';
+import { readPlayerRating, importTournamentRatingReceipt, ratingDelta } from './player-rating.mjs';
 import { currentLanguage, subscribe } from './i18n.mjs';
 import { platform } from './platform.mjs';
 
@@ -28,7 +28,7 @@ const words={
 let page='setup',squad='humans',queueSince=0,searchJob=null,session=null,live=null,roomCode='',message='',tabVisible=false;
 let lastSearch=0;
 let matchState=null,chess=null,selectedSquare=null,matchJob=null,matchRendered=false,lastSnapshotAt=0,busyMove=false,dragActive=false;
-let ratedReceipt=null,resumeSerial=0,connectJob=null;
+let ratedReceipt=null,resumeSerial=0,connectJob=null,tournamentProfile=null;
 const ROLE={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
 function lang(){return currentLanguage()==='en'?'en':'ru';}
 function t(key){return words[lang()][key]||key;}
@@ -38,7 +38,14 @@ function saved(){try{return JSON.parse(platform.storage.local?.getItem(STORAGE_K
 function remember(){platform.storage.local?.setItem(STORAGE_KEY,JSON.stringify({squad}));}
 function raceLabel(r){return lang()==='en'?EN[RACE_TAGS.indexOf(r)]||r:RACE_LABELS[r]||r;}
 function head(){return '<header class="tournament-header"><div><small>♛ RPChess · PvP</small><h1>'+t('title')+'</h1></div><button type="button" class="classic-mini-button" data-tour-action="back">'+t('back')+'</button></header>';}
-function stats(){const a=arena(),power=readPlayerRating().power;return '<div class="tournament-stats"><span>'+t('power')+': <b>'+power+'</b></span><span><img src="'+SHARD_ICON+'" alt="">'+t('shards')+': <b>'+a.balance+'</b></span></div>';}
+function stats(){
+ const a=arena(),power=readPlayerRating().power;
+ const online=tournamentProfile?.ranked
+  ?'<span>'+(lang()==='ru'?'Рейтинг Турнира':'Tournament rating')+': <b>'+tournamentProfile.power+'</b></span>'
+  :tournamentProfile?'<span>'+(lang()==='ru'?'Гостевая игра · без рейтинга':'Guest play · unrated')+'</span>':'';
+ return '<div class="tournament-stats"><span>'+t('power')+': <b>'+power+'</b></span>'+online+
+  '<span><img src="'+SHARD_ICON+'" alt="">'+t('shards')+': <b>'+a.balance+'</b></span></div>';
+}
 function action(name,label,extra=''){return '<button type="button" class="reboot-button reboot-button--primary" data-tour-action="'+name+'" '+extra+'>'+label+'</button>';}
 function notice(text){return '<p class="tournament-notice" role="status">'+esc(text||'')+'</p>';}
 function setup(){
@@ -97,7 +104,9 @@ function resultView(){
   ?'<div class="tournament-rating-result" data-tour-rating><span>'+(lang()==='ru'?'Мощь':'Power')+'</span><strong>'+rating.before+' → '+rating.after+'</strong><b class="'+(rating.delta<0?'is-loss':rating.delta>0?'is-win':'')+'">'+(rating.delta>0?'+':'')+rating.delta+'</b></div>'
   :'';
  return '<section class="tournament-card tournament-center"><h2>'+title+'</h2><p>'+esc(outcome?.kind||'')+'</p>'+ratingMarkup+
-  '<p class="tournament-muted">'+(lang()==='ru'?'Результат подтверждён сервером. Осколки чести пока не начисляются до защиты соревновательной экономики.':'Result confirmed by the server. Honor shards remain disabled until ranked economy is secured.')+'</p>'+
+  '<p class="tournament-muted">'+(matchState.rated
+   ?(lang()==='ru'?'Рейтинговый результат подтверждён сервером. Осколки чести пока не начисляются.':'Rated result confirmed by server. Honor shards are still disabled.')
+   :(lang()==='ru'?'Товарищеская партия: Мощь и Осколки чести не изменяются.':'Casual match: Power and Honor shards remain unchanged.'))+'</p>'+
   '<div class="tournament-actions">'+action('again',t('again'))+action('cancel',t('leave'))+'</div></section>';
 }
 function showBattle(){
@@ -226,19 +235,24 @@ async function syncMatch(){
    // Only a server-confirmed terminal game can change shared Journey Power.
    // The deterministic match+color receipt prevents double Elo on reconnect.
    const rating=response.rating;
+   if(response.rated&&!rating){
+    message=lang()==='ru'?'Сервер сохраняет рейтинг…':'Saving the server rating…';
+    const tag=root.querySelector('[data-tour-turn]');if(tag)tag.textContent=message;
+    return; // Retry receipt next snapshot, never silently lose a rated result.
+   }
    if(rating){
     const expected='tournament:'+response.matchId+':'+response.playerColor;
     const opponent=response.players.find(p=>p.color!==response.playerColor);
     const self=response.players.find(p=>p.color===response.playerColor);
     const score=response.result?.winner==null?0.5:response.result.winner===response.playerColor?1:0;
-    if(rating.id!==expected||!opponent||!self||
-      rating.before!==self.power||rating.opponentElo!==opponent.power||
-      rating.result!==score||rating.delta!==ratingDelta(rating.before,rating.opponentElo,score)||
-      rating.after!==Math.max(0,rating.before+rating.delta))
+    if(!response.rated||rating.id!==expected||!opponent||!self||
+      rating.opponentElo!==opponent.power||
+      rating.result!==score||rating.after!==Math.max(0,rating.before+ratingDelta(rating.before,rating.opponentElo,score))||
+      rating.delta!==rating.after-rating.before)
      throw Error('Invalid server rating receipt');
-    ratedReceipt=settlePlayerRating({
-     receiptId:rating.id,opponentElo:rating.opponentElo,result:rating.result
-    }).receipt;
+    importTournamentRatingReceipt(rating);
+    ratedReceipt=rating;
+    tournamentProfile={ranked:true,power:rating.after};
    }
    stopMatch();page='result';render();return;
   }
@@ -309,6 +323,8 @@ async function connect({refreshPower=false}={}){
   const obtained=await call('/v1/session',{previous,nick:'Guest',power:readPlayerRating().power,launch:location.search.slice(1)});
   if(!obtained.token)throw Error('No tournament session');
   session=obtained;platform.storage.local?.setItem('rpchess.reboot.v1.tournament-session',session.token);
+  tournamentProfile=await call('/v1/profile',{});
+  if(page==='setup')render();
   return session;
  })();
  try{return await connectJob;}finally{connectJob=null;}

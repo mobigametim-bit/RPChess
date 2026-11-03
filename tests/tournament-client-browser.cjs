@@ -290,25 +290,25 @@ try {
  }
  await white.locator('[data-tour-action="resign"]').click();
  await Promise.all([first.page.locator('.tournament-center h2').waitFor({timeout:16000}),second.page.locator('.tournament-center h2').waitFor({timeout:16000})]);
- await Promise.all([white.locator('[data-tour-rating]').waitFor({timeout:16000}),black.locator('[data-tour-rating]').waitFor({timeout:16000})]);
+ // Browser acceptance uses independent guest sessions; these remain casual.
+ assert.equal(await white.locator('[data-tour-rating]').count(),0);
+ assert.equal(await black.locator('[data-tour-rating]').count(),0);
  const readPower=page=>page.evaluate(async()=>{
   const {readPlayerRating}=await import('./js/player-rating.mjs');
   const profile=readPlayerRating();
   return {power:profile.power,receipts:profile.receipts.filter(r=>r.id.startsWith('tournament:'))};
  });
  const loserPower=await readPower(white),winnerPower=await readPower(black);
- assert.equal(loserPower.power,484,'Losing an equal-Power real PvP match must subtract 16 Elo');
- assert.equal(winnerPower.power,516,'Winning an equal-Power real PvP match must add 16 Elo');
- assert.equal(loserPower.receipts.length,1,'Exactly one server-derived Power receipt for the losing player');
- assert.equal(winnerPower.receipts.length,1,'Exactly one server-derived Power receipt for the winner');
- assert.equal(loserPower.receipts[0].result,0);
- assert.equal(winnerPower.receipts[0].result,1);
+ assert.equal(loserPower.power,500,'Guest loss does not decrease shared Power');
+ assert.equal(winnerPower.power,500,'Guest win does not increase shared Power');
+ assert.equal(loserPower.receipts.length,0,'Guests do not receive Elo receipts');
+ assert.equal(winnerPower.receipts.length,0,'Guests do not receive Elo receipts');
  // Reload the winner's WebView: Tournament restores the server-finished game
  // and displays its existing receipt, never adding Power a second time.
  await black.reload({waitUntil:'networkidle'});
  await black.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
  await black.locator('[data-tournament-open]').click();
- await black.locator('[data-tour-rating]').waitFor({timeout:20000});
+ await black.locator('.tournament-center h2').waitFor({timeout:20000});
  assert.deepEqual(await readPower(black),winnerPower,'Full reload must not double-award Elo');
  // Regression for real user's bug: the completed game's 2.4-second poll must
  // NOT resurrect Victory / timeout after starting a new opponent search.
