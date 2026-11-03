@@ -10,15 +10,21 @@
 }
 .rpchess-review-overlay *{box-sizing:border-box}
 .rpchess-review-shell{
-  height:100dvh;width:100vw;display:grid;
+  position:relative;height:100dvh;width:100vw;display:grid;
   grid-template-columns:minmax(0,1fr) var(--review-board-size) minmax(0,1fr);
   grid-template-rows:minmax(0,1fr);align-items:stretch;
   background:
   linear-gradient(90deg,rgba(3,7,15,.95),rgba(7,15,26,.6) 45%,rgba(3,7,15,.94)),
   url('../generated_assets/scene_battle.webp') center / cover no-repeat;
 }
+/* Pin the rail to the free LEFT half of the viewport. Do not let an
+ * unrelated global combat/aside rule enlarge a grid auto-placed aside over the
+ * board. The board remains centered on the *whole* viewport. */
 .rpchess-review-rail{
-  min-width:0;min-height:0;padding:8px 9px;
+  position:absolute;z-index:2;top:0;bottom:0;left:0;
+  width:calc((100vw - var(--review-board-size)) / 2);
+  max-width:calc((100vw - var(--review-board-size)) / 2);
+  min-width:0;min-height:0;height:100%;overflow:hidden;padding:8px 9px;
   display:flex;flex-direction:column;gap:0;
   background:rgba(4,8,13,.93);border-right:1px solid rgba(216,177,93,.28);
 }
@@ -130,7 +136,9 @@
    min-height:100dvh;height:auto;grid-template-columns:minmax(0,1fr);
    grid-template-rows:auto auto;gap:0;align-items:start;
  }
- .rpchess-review-rail{grid-column:1;grid-row:2;min-height:0;border-right:0;border-top:1px solid rgba(216,177,93,.25)}
+ .rpchess-review-rail{position:relative;z-index:auto;top:auto;bottom:auto;left:auto;
+   grid-column:1;grid-row:2;width:100%;max-width:none;height:auto;overflow:visible;
+   min-height:0;border-right:0;border-top:1px solid rgba(216,177,93,.25)}
  .rpchess-review-board-column{grid-column:1;grid-row:1;padding:8px 0 22px;min-height:0}
  .rpchess-review-right{display:none}
  .rpchess-review-content{overflow:visible}
@@ -145,5 +153,5 @@
  .rpchess-review-header h2{font-size:20px}
  .rpchess-review-case{padding:5px}
  .rpchess-review-details{margin-top:5px;padding-top:5px}
- .rpchess-review-overlay{--review-board-size:min(calc(100dvh - 34px),calc(100vw - 2 * var(--review-rail-min)))}
+ .rpchess-review-overlay{--review-board-size:min(calc(100dvh - 34px),calc(100vw - var(--review-rail-min) - var(--review-rail-min) - 8px))}
 }
