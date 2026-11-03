@@ -338,7 +338,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
  fileLabels.innerHTML=(reverse?[...'hgfedcba']:[...'abcdefgh']).map(x=>'<span>'+x+'</span>').join('');
  evalBar.classList.toggle('is-flipped',reverse);
  let cancelled=false,cases=[],annotations={},worker=null,selected=0,selectedSquare='',feedback='',feedbackKind='',busy=false;
- let solved=new Set(),revealed=new Set(),skipped=new Set(),boardMode='before',browsePly=null;
+ let solved=new Set(),revealed=new Set(),skipped=new Set(),acceptedMoves=new Map(),boardMode='before',browsePly=null;
  let attemptFen='',attemptUci='',attemptLoss=null,pendingPromotion=null,serial=0;
  let variation=null,variationIndex=0,variationLoading=false;
  const tx=en?{
@@ -356,7 +356,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
   label:'Position evaluation',loading:'Analysed',white:'White',black:'Black',
   excellent:'Outstanding',goodMove:'Strong move',showLine:'See best continuation',
   lineTitle:'Stockfish continuation',lineNote:'Illustrative engine line · short search, not a forced outcome',
-  originalLine:'Played',betterLine:'Better',linePrev:'Previous',lineNext:'Next move',lineLoading:'Analysing continuation…',
+  originalLine:'Played',betterLine:'Better',yourLine:'Your line',linePrev:'Previous',lineNext:'Next move',lineLoading:'Analysing continuation…',
   lineUnavailable:'Stockfish did not return a reliable continuation.',
   status:'Done',solved:'Solved',skipped:'Skipped'
  }:{
@@ -374,7 +374,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
   label:'Оценка позиции',loading:'Проверено',white:'белых',black:'чёрных',
   excellent:'Выдающийся ход',goodMove:'Сильный ход',showLine:'Посмотреть продолжение',
   lineTitle:'Продолжение Stockfish',lineNote:'Примерный вариант движка · не единственный исход',
-  originalLine:'В партии',betterLine:'Сильнее',linePrev:'Назад',lineNext:'Вперёд',lineLoading:'Анализируем продолжение…',
+  originalLine:'В партии',betterLine:'Сильнее',yourLine:'Ваш вариант',linePrev:'Назад',lineNext:'Вперёд',lineLoading:'Анализируем продолжение…',
   lineUnavailable:'Stockfish не смог построить достоверное продолжение.',
   status:'Готово',solved:'Решено',skipped:'Пропущено'
  };
@@ -402,6 +402,14 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
   serial++;selectedSquare='';feedback='';feedbackKind='';
   boardMode='before';browsePly=null;attemptFen='';attemptUci='';attemptLoss=null;
   pendingPromotion=null;busy=false;variation=null;variationIndex=0;variationLoading=false;
+  const remembered=acceptedMoves.get(selected),item=cases[selected];
+  if(remembered&&item){
+   const game=new ClassicChessEngine(item.beforeFen);
+   if(reviewUci(game,remembered.uci)){
+    boardMode='attempt';attemptUci=remembered.uci;
+    attemptFen=game.fen();attemptLoss=remembered.loss;
+   }
+  }
  }
  function done(i){return solved.has(i)||revealed.has(i)||skipped.has(i);}
  function completedCount(){return cases.filter((_,i)=>done(i)).length;}
@@ -504,7 +512,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
     const original=esc(entry?.san||active.uci),nextReal=journal[active.ply]?.san;
     practice+='<div class="rpchess-review-variation"><h4>'+tx.lineTitle+'</h4>'+
      '<div class="rpchess-review-line-compare"><span>'+tx.originalLine+': <strong>'+original+(nextReal?' '+esc(nextReal):'')+'</strong></span>'+
-     '<span>'+tx.betterLine+': <strong>'+variation.map(s=>esc(s.san)).join(' ')+'</strong></span></div>'+
+     '<span>'+(acceptedMoves.get(selected)?.uci&&acceptedMoves.get(selected).uci!==active.bestMove?tx.yourLine:tx.betterLine)+': <strong>'+variation.map(s=>esc(s.san)).join(' ')+'</strong></span></div>'+
      '<div class="rpchess-review-variation-controls"><button type="button" data-review-action="line-prev" class="rpchess-review-button"'+(variationIndex<=0?' disabled':'')+'>'+tx.linePrev+'</button>'+
      '<span class="rpchess-review-line-progress">'+variationIndex+' / '+variation.length+'</span>'+
      '<button type="button" data-review-action="line-next" class="rpchess-review-button"'+(variationIndex>=variation.length?' disabled':'')+'>'+tx.lineNext+'</button></div>'+
@@ -536,7 +544,8 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
    if(result.unavailable){
     feedback=tx.unavailable;feedbackKind='error';boardMode='before';attemptLoss=null;
    }else if(result.accepted){
-    solved.add(selected);feedback=tx.good;feedbackKind='correct';
+    solved.add(selected);acceptedMoves.set(selected,{uci,loss:result.loss});
+    feedback=tx.good;feedbackKind='correct';
     attemptLoss=result.loss;
    }else{
     feedback=tx.wrong;feedbackKind='error';boardMode='before';attemptLoss=null;
@@ -554,19 +563,18 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
   if(!worker){feedback=tx.lineUnavailable;feedbackKind='error';render();return;}
   const stamp=++serial;busy=true;variationLoading=true;render();
   try{
-   const game=new ClassicChessEngine(item.beforeFen);
-   if(!reviewUci(game,item.bestMove))throw new Error('Illegal engine best move');
-   // Run only on explicit request: deeper PV at the position AFTER the
-   // originally recommended move, so the branch always starts with that move.
-   const analysis=await worker.evaluate(game.fen(),{movetime:850});
+   // The learner's accepted move may differ from the engine's first choice.
+   // Analyse the actual accepted position, not a different recommendation.
+   const chosen=reviewContinuationStart(item,acceptedMoves.get(selected)?.uci||item.bestMove);
+   const analysis=await worker.evaluate(chosen.afterFen,{movetime:850});
    if(cancelled||serial!==stamp)return;
-   const follow=analysis.pv?.length?analysis.pv:(item.pv||[]).slice(1);
-   variation=reviewEngineLine(item.beforeFen,[item.bestMove,...follow],9);
+   const follow=analysis.pv?.length?analysis.pv:(chosen.isEngineBest?(item.pv||[]).slice(1):[]);
+   variation=reviewEngineLine(item.beforeFen,[chosen.uci,...follow],9);
    if(variation.length<2){
     variation=null;feedback=tx.lineUnavailable;feedbackKind='error';
    }else{
     variationIndex=1;
-    attemptLoss=0;
+    attemptLoss=acceptedMoves.get(selected)?.loss??0;
    }
   }catch{
    if(!cancelled&&serial===stamp){variation=null;feedback=tx.lineUnavailable;feedbackKind='error';}
@@ -581,7 +589,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
    if(key==='close'){close();return;}
    if(busy)return;
    if(key==='resume'){browsePly=null;render();return;}
-   if(key==='again'){solved.clear();revealed.clear();skipped.clear();selected=0;resetExercise();render();return;}
+   if(key==='again'){solved.clear();revealed.clear();skipped.clear();acceptedMoves.clear();selected=0;resetExercise();render();return;}
    if(key==='next'){nextLesson();return;}
    if(key==='line-prev'&&variation){variationIndex=Math.max(0,variationIndex-1);render();return;}
    if(key==='line-next'&&variation){variationIndex=Math.min(variation.length,variationIndex+1);render();return;}
@@ -595,7 +603,8 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
     if(!item)return;
     const game=new ClassicChessEngine(item.beforeFen);
     if(reviewUci(game,item.bestMove)){
-     revealed.add(selected);boardMode='attempt';attemptFen=game.fen();attemptUci=item.bestMove;
+     revealed.add(selected);acceptedMoves.set(selected,{uci:item.bestMove,loss:0});
+     boardMode='attempt';attemptFen=game.fen();attemptUci=item.bestMove;
      attemptLoss=0;selectedSquare='';pendingPromotion=null;
      feedback=tx.solution+': '+item.bestMove;feedbackKind='correct';
      render();
