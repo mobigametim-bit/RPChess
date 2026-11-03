@@ -172,7 +172,28 @@ try {
   if(response.url().includes('/v1/match/')&&response.url().endsWith('/move'))
    moveResponses.push({status:response.status(),url:response.url()});
  });
+ // Tournament uses exactly the same shared gold/yellow legal-circle contract
+ // as Arena and Battle, never the old custom green dots.
+ await white.locator('[data-tour-board] [data-square="e2"]').click();
+ const gold=await white.locator('[data-tour-board] [data-square="e4"]').evaluate(square=>{
+  const dot=getComputedStyle(square,'::before');
+  return {marked:square.classList.contains('classic-square--legal'),color:dot.backgroundColor,
+    selected:document.querySelector('[data-tour-board] [data-square="e2"]')?.classList.contains('classic-square--selected')};
+ });
+ const rgb=gold.color.match(/\d+(?:\.\d+)?/g)?.map(Number)||[];
+ assert(gold.marked&&gold.selected&&rgb[0]>rgb[1]&&rgb[1]>rgb[2]&&rgb[0]>210,
+  'Tournament legal dots and selection should use the canonical yellow/gold palette: '+JSON.stringify(gold));
  await dragMouse(white,'e2','e4');
+ const moveFlyer=white.locator('.classic-piece-flyer');
+ await moveFlyer.waitFor({state:'visible',timeout:15000});
+ const motion=await moveFlyer.evaluate(el=>({
+  duration:el.getAnimations()[0]?.effect?.getTiming().duration,
+  easing:el.getAnimations()[0]?.effect?.getTiming().easing
+ }));
+ assert.equal(motion.duration,290,'Tournament movement duration matches Arena');
+ assert.equal(motion.easing,'cubic-bezier(0.22, 0.8, 0.24, 1)',
+  'Tournament movement easing matches Arena');
+ await moveFlyer.waitFor({state:'detached',timeout:5000});
  try {
   await black.waitForFunction(()=>!!document.querySelector('[data-tour-board] [data-square="e4"] .classic-piece'),null,{timeout:16000});
  } catch(error) {
