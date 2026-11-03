@@ -25,7 +25,8 @@ concurrency:
 jobs:
   deploy:
     if: github.repository == 'mobigametim-bit/RPChess'
-    runs-on: ubuntu-latest
+    # Playwright 1.54.2 Chromium is not supported by ubuntu-26.04 runners.
+    runs-on: ubuntu-24.04
     timeout-minutes: 22
     steps:
       - uses: actions/checkout@v4
