@@ -40,10 +40,10 @@ async function glow(page,selector){
       await page.reload({waitUntil:'networkidle'});await page.locator('[data-continue-run]').click();await page.locator('[data-classic-screen]:not([hidden])').waitFor();
       assert.strictEqual(await page.locator('[data-artifact-choice-modal]').count(),0);assert.strictEqual(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts['vision.piercing'],key),1);
       await page.setViewportSize({width:1440,height:900});
-      await page.evaluate(fen=>window.RPChessClassicChess.loadFen(fen,{mode:'hotseat',playerColor:'w',blockedSquares:['d7']}),fen);
+      await page.evaluate(({fen,type})=>window.RPChessClassicChess.loadFen(fen,{mode:'hotseat',playerColor:'w',blockedSquares:['d7'],combatOwner:type}),{fen,type});
       await glow(page,'[data-chess-board]');
       // A checked enemy king keeps the red aura even when it is a vision target.
-      await page.evaluate(()=>window.RPChessClassicChess.loadFen('3k4/8/8/8/8/8/3R4/3K4 b - - 0 1',{mode:'hotseat',playerColor:'w'}));
+      await page.evaluate(type=>window.RPChessClassicChess.loadFen('3k4/8/8/8/8/8/3R4/3K4 b - - 0 1',{mode:'hotseat',playerColor:'w',combatOwner:type}),type);
       const checked=await page.locator('[data-chess-board] [data-square="d8"]').evaluate(async cell=>{
         const {renderThreatOverlay}=await import('./js/artifact-combat-ui.mjs');const {artifactById}=await import('./js/artifact-core.mjs');
         renderThreatOverlay(document.querySelector('[data-chess-board]'),window.RPChessClassicChess.snapshot(),artifactById('vision.piercing'),'w','d2');

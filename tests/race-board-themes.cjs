@@ -145,12 +145,17 @@ const {BOARD_RACES,BOARD_FILES,collectBoardAssetPaths}=require('../scripts/board
   assert.ok(!('--board-light-tile' in properties));
   assert.ok(!('--board-dark-tile' in properties));
 
+  globalThis.RPChessClassicChess={combatOwner:'battle'};
   globalThis.RPChessBattle={battlePlan:{encounter:{enemyRaceTag:'fae'}}};
   assert.strictEqual(mod.currentCombatBoardRace(),'fae','Battle must drive board race from encounter.enemyRaceTag');
-  delete globalThis.RPChessBattle;
   globalThis.RPChessSkirmish={battlePlan:{encounter:{enemyRaceTag:'undead'}}};
+  globalThis.RPChessClassicChess.combatOwner='skirmish';
   assert.strictEqual(mod.currentCombatBoardRace(),'undead','Skirmish must drive board race from encounter.enemyRaceTag');
+  globalThis.RPChessClassicChess.combatOwner=null;
+  assert.strictEqual(mod.currentCombatBoardRace(),null,'An inactive old combat plan must not recolor standalone chess');
+  delete globalThis.RPChessBattle;
   delete globalThis.RPChessSkirmish;
+  delete globalThis.RPChessClassicChess;
 
   const source=fs.readFileSync(path.join(game,'js','race-assets.mjs'),'utf8');
   assert.ok(source.includes('.classic-board[data-board-race] .classic-square--light'),'runtime CSS must target light cells under a themed board');

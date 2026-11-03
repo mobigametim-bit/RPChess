@@ -15,6 +15,7 @@ const DEFAULT_TESTS=[
   'chronicle-localization-browser.cjs',
   'localization-ui-browser.cjs',
   'classic-chess-browser.cjs',
+  'simplified-pieces-browser.cjs',
   'arena-browser.cjs',
   'piercing-vision-browser.cjs',
   'fork-master-browser.cjs',

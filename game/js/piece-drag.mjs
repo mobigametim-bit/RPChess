@@ -60,13 +60,13 @@ function attachPieceDrag(board, { canPick, onStart, onDrop, onCancel }) {
     // Capture only after actual movement. Capturing during a simple tap would
     // redirect click-to-select events from the square to the board.
     try { board.setPointerCapture?.(gesture.id); } catch { /* pointer already ended */ }
-    const { from, src, size } = gesture;
+    const { from, src, size, simplifiedSrc } = gesture;
     // The owner highlights legal destinations; re-rendering cells is safe.
     onStart(from);
     if (!gesture) return;
     const ghost = document.createElement('img');
     ghost.className = 'rpchess-piece-drag-ghost';
-    ghost.src = src;
+    ghost.src = simplifiedSrc || src;
     ghost.alt = '';
     ghost.draggable = false;
     ghost.style.width = size + 'px';
@@ -122,9 +122,12 @@ function attachPieceDrag(board, { canPick, onStart, onDrop, onCancel }) {
     if (!square || !board.contains(square) || square.disabled) return;
     const image = square.querySelector('.classic-piece,.puzzle-piece');
     if (!image || !canPick(square.dataset.square)) return;
+    const simplifiedImage = document.documentElement.dataset.simplePieces === '1'
+      ? square.querySelector('.rpchess-fantasy-piece') : null;
     gesture = {
       id:event.pointerId, pointerType:event.pointerType, from:square.dataset.square, x:event.clientX, y:event.clientY,
       src:image.currentSrc || image.src, size:square.getBoundingClientRect().width * .85,
+      simplifiedSrc:simplifiedImage?.getAttribute('src') || null,
       dragging:false, ghost:null
     };
     window.addEventListener('pointermove', move, { passive:false });

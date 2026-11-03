@@ -1,0 +1,6 @@
+Chess Art – Fantasy SVG chess pieces by Maurizio Monge
+License: MIT (see LICENSE.txt)
+Source: https://github.com/maurimo/chess-art
+Distributed SVGs: https://github.com/lichess-org/lila/tree/be002be9cd55e74327543af82bcab6cab65c1566/public/piece/fantasy
+Pinned Lichess commit: be002be9cd55e74327543af82bcab6cab65c1566
+12 original SVG files, six white and six black. No color or geometry modifications.

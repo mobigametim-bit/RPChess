@@ -28,6 +28,8 @@ const { pathToFileURL } = require('url');
   assert.strictEqual(mod.promotedArtSource('assets/races/humans/pieces/white/pawn.png', 'r'), 'assets/races/humans/pieces/white/rook.png');
   assert.strictEqual(mod.promotedArtSource('generated_assets/unit_pawn_enemy.png', 'n'), 'generated_assets/unit_knight_enemy.png');
   assert.strictEqual(mod.promotedArtSource('assets/heroes/some_named_pawn.png', 'b'), 'assets/heroes/some_named_pawn.png', 'named art must keep its identity when its path is not a role asset');
+  assert.strictEqual(mod.promotedArtSource('assets/heroes/mara_chain/pieces/white/pawn.webp', 'q'),'assets/heroes/mara_chain/pieces/white/queen.webp','named pawn queen promotion must keep the hero and change the illustration');
+  assert.strictEqual(mod.promotedArtSource('assets/heroes/nemea_quill/pieces/black/pawn.webp', 'n'),'assets/heroes/nemea_quill/pieces/black/knight.webp','named pawn knight promotion must keep the hero and black side');
 
   const promotion = mod.advanceTrackedArt(
     new Map([['a2', 'assets/races/humans/pieces/white/pawn.png']]),

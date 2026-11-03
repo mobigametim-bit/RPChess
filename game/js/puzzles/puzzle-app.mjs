@@ -1,6 +1,7 @@
 import { ClassicChessEngine } from '../classic-chess-engine.mjs';
 import { attachPieceDrag } from '../piece-drag.mjs?v=20261022-portrait-motion1';
 import { boardRacePiecePath } from '../race-assets.mjs';
+import { fantasyPieceMarkup } from '../fantasy-piece.mjs';
 import { readRun, writeRun } from '../run-persistence.mjs';
 import { t, subscribe } from '../i18n.mjs';
 import { brandLogoSrc } from '../brand-logo.mjs';
@@ -287,7 +288,11 @@ function renderBoard() {
         marker.textContent = PIECE_GLYPHS[piece.color][piece.type];
         marker.title = pieceLabel(piece.type);
         marker.setAttribute('aria-hidden', 'true');
-        button.append(image, marker);
+        const symbol = document.createElement('span');
+        symbol.className = 'rpchess-piece-symbol rpchess-piece-symbol--' + piece.color;
+        symbol.innerHTML = fantasyPieceMarkup(piece.type, piece.color);
+        symbol.setAttribute('aria-hidden','true');
+        button.append(image, marker, symbol);
       }
       if (rankPosition === 7) {
         const fileLabel = document.createElement('span');
@@ -325,7 +330,13 @@ function choosePromotion(choices) {
     for (const value of choices) {
       const button = document.createElement('button');
       button.type = 'button';
-      button.textContent = t(PROMOTION_KEYS[value] || 'piece.queen');
+      const label = t(PROMOTION_KEYS[value] || 'piece.queen');
+      if (document.documentElement.dataset.simplePieces === '1') {
+        button.innerHTML = fantasyPieceMarkup(value, engine.turn());
+        button.setAttribute('aria-label', label);
+      } else {
+        button.textContent = label;
+      }
       button.addEventListener('click', () => {
         root.hidden = true;
         promotionResolve = null;

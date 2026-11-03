@@ -42,7 +42,8 @@ assert(app.includes('maybeScheduleAI'), 'automatic AI response flow is missing')
 assert(app.includes("engine.turn() !== gameConfig.playerColor"), 'player input is not guarded during AI turns');
 assert(app.includes("movingSrc: sourceImage.getAttribute('src')"), 'move animation must snapshot the actual rendered source art before board rebuild');
 assert(app.includes('flyer.src = geometry.movingSrc || pieceAsset(geometry.moving)'), 'move flyer must preserve custom race/hero art instead of reverting to generic Classic art');
-assert(app.includes("capturedSrc: targetImage?.getAttribute('src')"), 'capture animation must snapshot the actual rendered captured-piece art');
+assert(app.includes("capturedSrc: capturedImage?.getAttribute('src')"), 'capture animation must snapshot the visible captured-piece art at the actual capture square');
+assert(app.includes("artSelector = simplified ? '.rpchess-fantasy-piece' : '.classic-piece'"), 'visual movement must use the currently selected piece artwork');
 assert(app.includes('capturedGhost.src = geometry.capturedSrc || pieceAsset(geometry.capturedPiece)'), 'capture ghost must preserve custom race/hero art');
 assert(css.includes('grid-template-columns: repeat(8, 1fr)'), 'board is not an 8-column grid');
 assert(css.includes('grid-template-rows: repeat(8, 1fr)'), 'board is not an 8-row grid');

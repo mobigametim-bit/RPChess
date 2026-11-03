@@ -83,7 +83,35 @@ class MemoryStorage {
   assert(foundation.indexOf("import('./content/monetization.mjs')") < foundation.indexOf("import('./battle-route.mjs')"), 'Ad gate must register before route owners');
   assert(foundation.includes('bindStarvationRescue'), 'Starvation rescue must bind only after the Starvation owner exists');
 
-  console.log('VK monetization cadence, cooldown, receipt persistence, rewarded priority and platform-boundary contract: PASS');
+  // A mobile VK host can expose ShowNativeAds but omit CheckNativeAds and
+  // SetSupportedHandlers. The rewarded tap must still reach the host directly.
+  const bus = new EventTarget();
+  globalThis.addEventListener = bus.addEventListener.bind(bus);
+  globalThis.removeEventListener = bus.removeEventListener.bind(bus);
+  globalThis.location.search = '?vk_app_id=54754579';
+  const adsModule = await import(pathToFileURL(path.join(root, 'game/js/platform.mjs')).href);
+  const calls = [];
+  let adSuccess = true;
+  globalThis.AndroidBridge = {
+    VKWebAppShowNativeAds(serialized) {
+      const params = JSON.parse(serialized);
+      calls.push({ method:'VKWebAppShowNativeAds', format:params.ad_format });
+      const response = new Event('VKWebAppEvent');
+      response.detail = { type:'VKWebAppShowNativeAdsResult', data:{ request_id:params.request_id, result:adSuccess } };
+      queueMicrotask(() => bus.dispatchEvent(response));
+    }
+  };
+  assert.equal((await adsModule.ads.show('reward')).status,'completed','Mobile rewarded ad completion must be honored');
+  adSuccess = false;
+  assert.equal((await adsModule.ads.show('reward')).status,'error','No reward on a negative ad completion');
+  assert.deepStrictEqual(calls,[
+    {method:'VKWebAppShowNativeAds',format:'reward'},
+    {method:'VKWebAppShowNativeAds',format:'reward'}
+  ],'Rewarded ads must not wait for unsupported mobile capability/availability probes');
+  delete globalThis.AndroidBridge;
+  globalThis.location.search = '';
+  assert.equal((await adsModule.ads.show('reward')).status,'unavailable','Standalone web never grants VK rewards');
+  console.log('VK monetization cadence, cooldown, receipts, and direct mobile rewarded Bridge dispatch: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;

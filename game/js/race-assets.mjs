@@ -159,10 +159,11 @@ function applyRaceBoardTheme(board,raceTag){
   return tiles;
 }
 function currentCombatBoardRace(){
-  const battle=globalThis.RPChessBattle?.battlePlan;
-  if(battle)return battle.encounter?.enemyRaceTag||globalThis.RPChessBattle?.encounter?.enemyRaceTag||null;
-  const skirmish=globalThis.RPChessSkirmish?.battlePlan;
-  if(skirmish)return skirmish.encounter?.enemyRaceTag||globalThis.RPChessSkirmish?.encounter?.enemyRaceTag||null;
+  // Both combat owners keep their last plan in memory. Only the screen that
+  // owns the current chess engine may set its race tiles after switching fights.
+  const owner=globalThis.RPChessClassicChess?.combatOwner;
+  if(owner==='skirmish')return globalThis.RPChessSkirmish?.battlePlan?.encounter?.enemyRaceTag||null;
+  if(owner==='battle'||owner==='caravan')return globalThis.RPChessBattle?.battlePlan?.encounter?.enemyRaceTag||null;
   return null;
 }
 function queueRaceBoardRuntimeInstall(){

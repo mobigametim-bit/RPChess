@@ -337,7 +337,7 @@ function pieceImage(piece, side) {
   return enemyArt(piece.pieceType);
 }
 function applyBoardArt() {
-  if (!board || !battlePlan) return;
+  if (!board || !battlePlan || !['battle','caravan'].includes(globalThis.RPChessClassicChess?.combatOwner)) return;
   for (const [square,piece] of playerBySquare) {
     const cell=board.querySelector(`[data-square="${square}"]`),image=cell?.querySelector('.classic-piece');if(!image)continue;setBoardPieceArt(image,pieceImage(piece,'player'));if(piece.id){image.dataset.personalizedId=piece.id;image.classList.add('classic-piece--personalized');cell.dataset.personalizedId=piece.id;const character=characterForId(piece.id);cell.setAttribute('aria-label',`${square}: ${contentText(character?.name||piece.name)}, ${pieceLabel(piece.pieceType)}`);}
   }
@@ -345,7 +345,7 @@ function applyBoardArt() {
   renderThreatOverlay(board,globalThis.RPChessClassicChess?.snapshot?.(),artifactForCombat(activeRun,{combatType,encounterId:battlePlan.encounter.id}),battlePlan.playerColor);
 }
 function patchTransientBattleArt() {
-  if (!battlePlan || !globalThis.RPChessClassicChess) return;
+  if (!battlePlan || !['battle','caravan'].includes(globalThis.RPChessClassicChess?.combatOwner)) return;
   const log=globalThis.RPChessClassicChess.moveLog||[],last=log[log.length-1];if(!last)return;
   for(const flyer of document.querySelectorAll('.classic-piece-flyer:not([data-battle-visualized])')){const map=last.color===battlePlan.playerColor?playerBySquare:enemyBySquare,piece=map.get(last.move?.to)||map.get(last.move?.from);if(piece)flyer.src=pieceImage(piece,last.color===battlePlan.playerColor?'player':'enemy');flyer.dataset.battleVisualized='1';}
   for(const ghost of document.querySelectorAll('.classic-captured-ghost:not([data-battle-visualized])')){if(last.color===battlePlan.enemyColor&&lastCapturedVisual?.logLength===log.length&&lastCapturedVisual.art)ghost.src=lastCapturedVisual.art;else if(last.color===battlePlan.playerColor&&last.captured){const code=String(last.captured).toLowerCase(),type={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'}[code]||'pawn';ghost.src=enemyArt(type);}ghost.dataset.battleVisualized='1';}
@@ -362,7 +362,10 @@ function launchBattle(resume = false) {
   }
   playerBySquare=new Map(battlePlan.playerFormation.map((piece)=>[piece.square,piece])); enemyBySquare=new Map(battlePlan.enemyFormation.map((piece)=>[piece.square,piece]));
   capturedIds=new Set();processedMoves=0;battleFinalized=false;lastCapturedVisual=null;lastBattleStatus=null;lastMercenaryCasualty=null;clearTimeout(finalizeTimer);audio()?.click?.();showOnly('classic');setBattleNavigationLocked(true);
-  globalThis.RPChessClassicChess?.newGame(battlePlan.fen,{mode:'ai',playerColor:battlePlan.playerColor,aiElo:encounter.aiElo,chess960:isCaravan(),moves:isCaravan()?activeRun.currentCaravan.moves:saved?.moves||[],promotionArtResolver:(from,type,color)=>{if(color!==battlePlan.playerColor)return null;const pawn=playerBySquare.get(from);return pawn?.id?namedPawnPieceArt(characterForId(pawn.id),type,color):null;}});
+  globalThis.RPChessClassicChess?.newGame(battlePlan.fen,{mode:'ai',playerColor:battlePlan.playerColor,aiElo:encounter.aiElo,chess960:isCaravan(),moves:isCaravan()?activeRun.currentCaravan.moves:saved?.moves||[],combatOwner:combatType,
+    boardArtResolver:(square,piece)=>piece.color===battlePlan.playerColor&&playerBySquare.get(square)?.id?pieceImage(playerBySquare.get(square),'player'):null,
+    onCommittedMove:(entry,replayed)=>{processMove(entry,replayed);processedMoves++;},
+    promotionArtResolver:(from,type,color)=>{if(color!==battlePlan.playerColor)return null;const pawn=playerBySquare.get(from);return pawn?.id?namedPawnPieceArt(characterForId(pawn.id),type,color):null;}});
   restoring=true;syncBattleFromChess();restoring=false;applyBoardArt();
   const mode=document.querySelector('[data-game-mode]');if(mode)mode.textContent=combatDifficultyLabel();
   globalThis.dispatchEvent(new CustomEvent('rpchess:combat-started',{detail:{combatType}}));
@@ -375,7 +378,7 @@ function startBattle() {
 
 function renderWoundToast(){const toast=document.querySelector('[data-battle-toast]'),character=characterForId(toast?.dataset.woundedCharacter);if(toast&&!toast.hidden&&character)toast.textContent=t('battle.woundToast',{name:contentText(character.name)});}
 function showWoundToast(id){let toast=document.querySelector('[data-battle-toast]');if(!toast){toast=document.createElement('div');toast.className='battle-toast';toast.dataset.battleToast='';toast.setAttribute('role','status');toast.setAttribute('aria-live','polite');toast.hidden=true;document.body.append(toast);}const c=characterForId(id);if(!c)return;toast.dataset.woundedCharacter=id;toast.textContent=t('battle.woundToast',{name:contentText(c.name)});toast.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{toast.hidden=true;},2200);}
-function processMove(entry) {
+function processMove(entry,replayed=false) {
   if(!entry?.move||!battlePlan)return;
   const {from,to,capture,castle,rookFrom,rookTo,promotion}=entry.move;
   const own=entry.color===battlePlan.playerColor?playerBySquare:enemyBySquare;
@@ -389,11 +392,11 @@ function processMove(entry) {
     if(entry.color===battlePlan.enemyColor&&captured?.id){
       const character=characterForId(captured.id);
       lastCapturedVisual=character?{id:captured.id,art:boardPieceArtForCharacter(character,battlePlan.playerColor,captured.pieceType),logLength:processedMoves+1}:null;
-      if(character&&!character.isRunKing){capturedIds.add(captured.id);if(!restoring)showWoundToast(captured.id);}
+      if(character&&!character.isRunKing){capturedIds.add(captured.id);if(!restoring&&!replayed)showWoundToast(captured.id);}
     }
   }
 }
-function syncBattleFromChess(){if(!battlePlan||battleFinalized||!globalThis.RPChessClassicChess)return;const log=globalThis.RPChessClassicChess.moveLog||[];while(processedMoves<log.length){processMove(log[processedMoves]);processedMoves++;}
+function syncBattleFromChess(){if(!battlePlan||battleFinalized||!['battle','caravan'].includes(globalThis.RPChessClassicChess?.combatOwner))return;const log=globalThis.RPChessClassicChess.moveLog||[];while(processedMoves<log.length){processMove(log[processedMoves]);processedMoves++;}
   if(isCaravan() && activeRun.currentCaravan.moves.length!==log.length){
     activeRun=writeRun({...readRun(),currentCaravan:{...activeRun.currentCaravan,moves:log.map(({move})=>({from:move.from,to:move.uciTo||move.to,promotion:move.promotion||null}))}});
   } else if (!isCaravan() && checkpointFor(activeRun,'battle',encounter)?.moves.length!==log.length) {

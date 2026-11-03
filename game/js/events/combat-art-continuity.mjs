@@ -30,7 +30,13 @@ function promotedArtSource(src, promotion) {
     return value.replace(/unit_pawn_(player|enemy)\.png(?=([?#].*)?$)/, `unit_${assetName}_$1.png`);
   }
 
-  // Named/personalized pawns intentionally keep their identity artwork.
+  // Named pawn art is role-specific, too. Preserve the hero and side while
+  // changing just the promoted role, rather than keeping the pawn image.
+  if (/\/heroes\/[^/]+\/pieces\/(white|black)\/pawn\.webp(?:[?#].*)?$/.test(value)) {
+    return value.replace(/\/pawn\.webp(?=([?#].*)?$)/, `/${assetName}.webp`);
+  }
+
+  // Unversioned legacy portraits and badges have no dedicated promotion art.
   return value;
 }
 
@@ -87,6 +93,14 @@ function installCombatArtContinuity() {
     scheduled = false;
     const api = globalThis.RPChessClassicChess;
     const log = Array.isArray(api?.moveLog) ? api.moveLog : [];
+    // Battle, Skirmish and Caravan now provide an authoritative hero identity
+    // resolver on every redraw and during replay. The legacy art tracker must
+    // not reapply an outdated generic snapshot over those named illustrations.
+    if (['battle','skirmish','caravan'].includes(api?.combatOwner)) {
+      tracked = new Map();
+      processedMoves = 0;
+      return;
+    }
 
     if (log.length < processedMoves) {
       tracked = new Map();

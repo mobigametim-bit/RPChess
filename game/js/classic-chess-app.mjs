@@ -1,6 +1,7 @@
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { attachPieceDrag } from './piece-drag.mjs?v=20261022-portrait-motion1';
 import { boardRacePiecePath } from './race-assets.mjs';
+import { fantasyPieceMarkup, fantasyPiecePath } from './fantasy-piece.mjs';
 import { ChessAIAdapter, ELO_LEVELS, profileForElo } from './chess-ai-adapter.mjs';
 import { currentLanguage, subscribe, translateLegacy } from './i18n.mjs';
 import { classicT } from '../localization/classic-ui.mjs';
@@ -47,6 +48,9 @@ let selectedMoves = [];
 let moveLog = [];
 let pendingPromotion = null;
 let promotionArtResolver = null;
+let boardArtResolver = null;
+let onCommittedMove = null;
+let combatOwner = null;
 let aiThinking = false;
 let visualAnimating = false;
 let gameGeneration = 0;
@@ -113,7 +117,7 @@ function renderStaticCopy() {
     setText(promotionModal, '.reboot-eyebrow', 'classic.promotion.kicker');
     setText(promotionModal, '#promotion-title', 'classic.promotion.title');
     for (const option of promotionOptions?.querySelectorAll('[data-promotion]') || []) {
-      const label = option.querySelector('span');
+      const label = option.querySelector('.classic-promotion-name');
       if (label) label.textContent = pieceName(option.dataset.promotion);
     }
   }
@@ -305,7 +309,12 @@ function renderBoard() {
       if (piece) {
         const image = document.createElement('img');
         image.className = 'classic-piece classic-piece--new-race';
-        image.src = pieceAsset(piece);
+        // Combat scenes provide the hero's stable sprite before the cell enters
+        // the DOM. Painting generic art first and replacing it from a mutation
+        // observer caused promoted heroes to flash/revert after restoration.
+        const namedArt = boardArtResolver?.(square, piece) || null;
+        image.src = namedArt || pieceAsset(piece);
+        if (namedArt) image.dataset.personalizedArt = '1';
         image.alt = '';
         image.draggable = false;
         const marker = document.createElement('span');
@@ -314,7 +323,11 @@ function renderBoard() {
         marker.textContent = PIECE_GLYPHS[piece.color][piece.type];
         marker.title = pieceName(piece.type);
         marker.setAttribute('aria-hidden', 'true');
-        button.append(image, marker);
+        const symbol = document.createElement('span');
+        symbol.className = 'rpchess-piece-symbol rpchess-piece-symbol--' + piece.color;
+        symbol.innerHTML = fantasyPieceMarkup(piece.type, piece.color);
+        symbol.setAttribute('aria-hidden','true');
+        button.append(image, marker, symbol);
       }
 
       if (rankPosition === 7) {
@@ -359,8 +372,13 @@ function openPromotion(from, to, color, choices) {
     image.src = promotionArtResolver?.(from,type,color) || pieceAsset({ type, color });
     image.alt = '';
     const label = document.createElement('span');
+    label.className = 'classic-promotion-name';
     label.textContent = pieceName(type);
-    button.append(image, label);
+    const symbol = document.createElement('span');
+    symbol.className = 'rpchess-promotion-symbol rpchess-piece-symbol--' + color;
+    symbol.innerHTML = fantasyPieceMarkup(type, color);
+    symbol.setAttribute('aria-hidden','true');
+    button.append(image, symbol, label);
     button.addEventListener('click', () => {
       const pending = pendingPromotion;
       pendingPromotion = null;
@@ -378,19 +396,24 @@ function openPromotion(from, to, color, choices) {
 
 function setThinking(value) { aiThinking = Boolean(value); renderBoard(); renderStatus(); }
 
-function captureAnimationGeometry(from, to, moving, capturedPiece) {
+function captureAnimationGeometry(from, to, moving, capturedPiece, capturedSquare = to) {
   if (prefersReducedMotion()) return null;
-  const sourceImage = board.querySelector(`[data-square="${from}"] .classic-piece`);
-  const targetImage = board.querySelector(`[data-square="${to}"] .classic-piece`);
+  // Move the image that is actually visible: a race/hero sprite or a Fantasy SVG.
+  // Both use the same path, timings and easing; only the artwork changes.
+  const simplified = document.documentElement.dataset.simplePieces === '1';
+  const artSelector = simplified ? '.rpchess-fantasy-piece' : '.classic-piece';
+  const sourceImage = board.querySelector(`[data-square="${from}"] ${artSelector}`);
+  const capturedImage = board.querySelector(`[data-square="${capturedSquare}"] ${artSelector}`);
   if (!sourceImage) return null;
   return {
     source: sourceImage.getBoundingClientRect(),
     target: board.querySelector(`[data-square="${to}"]`)?.getBoundingClientRect() || null,
+    artSelector,
     moving: { ...moving },
-    movingSrc: sourceImage.getAttribute('src') || sourceImage.currentSrc || sourceImage.src || pieceAsset(moving),
+    movingSrc: sourceImage.getAttribute('src') || sourceImage.currentSrc || (simplified ? fantasyPiecePath(moving.type, moving.color) : pieceAsset(moving)),
     capturedPiece: capturedPiece ? { ...capturedPiece } : null,
-    capturedSrc: targetImage?.getAttribute('src') || targetImage?.currentSrc || targetImage?.src || (capturedPiece ? pieceAsset(capturedPiece) : null),
-    capturedRect: targetImage?.getBoundingClientRect() || null
+    capturedSrc: capturedImage?.getAttribute('src') || capturedImage?.currentSrc || (capturedPiece ? (simplified ? fantasyPiecePath(capturedPiece.type, capturedPiece.color) : pieceAsset(capturedPiece)) : null),
+    capturedRect: capturedImage?.getBoundingClientRect() || null
   };
 }
 
@@ -429,7 +452,7 @@ function animateCommittedMove(geometry, to, onDone) {
     capturedGhost.animate([{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.72)' }], { duration: 190, easing: 'ease-out', fill: 'forwards' });
   }
 
-  const targetImage = destinationImage?.getBoundingClientRect();
+  const targetImage = board.querySelector(`[data-square="${to}"] ${geometry.artSelector}`)?.getBoundingClientRect();
   const targetLeft = targetImage ? targetImage.left : geometry.target.left + (geometry.target.width - geometry.source.width) / 2;
   const targetTop = targetImage ? targetImage.top : geometry.target.top + (geometry.target.height - geometry.source.height) / 2;
   const dx = targetLeft - geometry.source.left;
@@ -456,7 +479,7 @@ function executeMove(from, to, promotion = null, { triggerAI = true } = {}) {
   const legalBefore = engine.legalMoves();
   const candidate = legalBefore.find((move) => move.from === from && (move.uciTo || move.to) === to && (!move.promotion || move.promotion === promotion));
   const capturedPiece = candidate?.castle ? null : candidate?.capture ? engine.pieceAt(candidate.capture) : engine.pieceAt(to);
-  const geometry = candidate && !candidate.castle ? captureAnimationGeometry(from, to, moving, capturedPiece) : null;
+  const geometry = candidate && !candidate.castle ? captureAnimationGeometry(from, to, moving, capturedPiece, candidate.capture || to) : null;
   const result = engine.move(from, to, promotion);
   if (!result.ok) {
     if (result.reason === 'promotion_required') {
@@ -467,7 +490,9 @@ function executeMove(from, to, promotion = null, { triggerAI = true } = {}) {
   }
 
   const san = sanNotation({ moving, from, to, promotion: result.move.promotion, resultMove: result.move, status: result.status, legalBefore });
-  moveLog.push({ color: moving.color, san, notation: san, move: result.move, captured: capturedPiece });
+  const committed = { color: moving.color, san, notation: san, move: result.move, captured: capturedPiece };
+  moveLog.push(committed);
+  onCommittedMove?.(committed, false);
   selected = null;
   selectedMoves = [];
   if (result.move.capture) audio()?.capture?.() || audio()?.tone?.(250, .08, 'triangle', .04);
@@ -559,6 +584,9 @@ function newGame(fen = null, options = {}) {
   cancelAI();
   gameConfig = normalizeConfig(options);
   promotionArtResolver = typeof options.promotionArtResolver==='function'?options.promotionArtResolver:null;
+  boardArtResolver = typeof options.boardArtResolver==='function'?options.boardArtResolver:null;
+  onCommittedMove = typeof options.onCommittedMove==='function'?options.onCommittedMove:null;
+  combatOwner = options.combatOwner || null;
   engine = new ClassicChessEngine(fen, { blockedSquares: options.blockedSquares, chess960: options.chess960 });
   selected = null;
   selectedMoves = [];
@@ -569,7 +597,9 @@ function newGame(fen = null, options = {}) {
     const captured = candidate?.capture ? engine.pieceAt(candidate.capture) : null;
     const result = engine.move(saved.from, saved.to, saved.promotion);
     if (!result.ok) throw new Error('Invalid saved combat move');
-    moveLog.push({ color: moving.color, san: sanNotation({moving,from:saved.from,to:result.move.to,promotion:result.move.promotion,resultMove:result.move,status:result.status,legalBefore}), move: result.move, captured });
+    const replayed = { color: moving.color, san: sanNotation({moving,from:saved.from,to:result.move.to,promotion:result.move.promotion,resultMove:result.move,status:result.status,legalBefore}), move: result.move, captured };
+    moveLog.push(replayed);
+    onCommittedMove?.(replayed, true);
   }
   pendingPromotion = null;
   closePromotion();
@@ -651,6 +681,7 @@ attachPieceDrag(board, {
 globalThis.RPChessClassicChess = {
   get engine() { return engine; },
   get moveLog() { return moveLog.map((entry) => ({ ...entry })); },
+  get combatOwner() { return combatOwner; },
   newGame,
   openGameSetup,
   loadFen(fen, options = {}) { newGame(fen, options); return engine.snapshot(); },
