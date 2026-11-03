@@ -304,6 +304,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
    if(boardMode==='attempt')details+='<button type="button" data-review-action="retry" class="rpchess-review-button">'+tx.tryAgain+'</button>';
    details+='<button type="button" data-review-action="hint" class="rpchess-review-button">'+(hint?tx.hideHint:tx.hint)+'</button>';
    details+='<button type="button" data-review-action="solution" class="rpchess-review-button">'+tx.solution+'</button>';
+   details+='<button type="button" data-review-action="original" class="rpchess-review-button">'+tx.original+'</button>';
    if(solved.has(selected)||feedbackKind==='correct')details+='<button type="button" data-review-action="next" class="rpchess-review-button rpchess-review-button--primary">'+tx.next+'</button>';
    details+='</div>';
   }
