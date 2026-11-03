@@ -322,6 +322,8 @@ try {
  assert.equal(await black.locator('[data-tour-rating]').count(),0);
  for(const screen of [white,black]){
    assert.equal(await screen.locator('[data-tour-action="review"]').count(),1,'Completed Tournament has mistake review');
+   assert.equal(await screen.locator('[data-tour-action="review"]').innerText(),'Анализировать',
+    'Tournament postgame review uses the short Analyze action caption');
  }
  await white.locator('[data-tour-action="review"]').click();
  await white.locator('[data-finished-review] [data-review-action="close"]').waitFor({timeout:15000});
