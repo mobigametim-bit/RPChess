@@ -3,7 +3,7 @@
  * space remaining after the information rail). Coordinates live OUTSIDE it. */
 .rpchess-review-overlay{
   --review-rail-min:clamp(160px,18vw,380px);
-  --review-board-size:min(calc(100dvh - 30px),calc(100vw - var(--review-rail-min) - var(--review-rail-min) - 8px));
+  --review-board-size:min(calc(100dvh - 34px),calc(100vw - var(--review-rail-min) - var(--review-rail-min) - 8px));
   position:fixed;z-index:90000;inset:0;overflow:hidden;
   box-sizing:border-box;background:#050a12;color:#f4e2b7;
   font:14px/1.35 system-ui,-apple-system,Segoe UI,sans-serif;
@@ -125,7 +125,7 @@
 .rpchess-review-board .review-square .rpchess-fantasy-piece{max-width:100%;width:94%;height:94%;object-fit:contain}
 .rpchess-review-right{grid-column:3;pointer-events:none}
 @media(max-width:700px),(orientation:portrait){
- .rpchess-review-overlay{overflow:auto;--review-board-size:min(calc(100vw - 30px),calc(65dvh - 10px))}
+ .rpchess-review-overlay{overflow:auto;--review-board-size:min(calc(100vw - 44px),calc(65dvh - 10px))}
  .rpchess-review-shell{
    min-height:100dvh;height:auto;grid-template-columns:minmax(0,1fr);
    grid-template-rows:auto auto;gap:0;align-items:start;
@@ -145,5 +145,5 @@
  .rpchess-review-header h2{font-size:20px}
  .rpchess-review-case{padding:5px}
  .rpchess-review-details{margin-top:5px;padding-top:5px}
- .rpchess-review-overlay{--review-board-size:min(calc(100dvh - 21px),calc(100vw - 2 * var(--review-rail-min)))}
+ .rpchess-review-overlay{--review-board-size:min(calc(100dvh - 34px),calc(100vw - 2 * var(--review-rail-min)))}
 }
