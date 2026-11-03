@@ -96,7 +96,39 @@ async function drag(page,from,to){
     assert.equal(await page.locator('[data-chess-board] .rpchess-piece-symbol').first().evaluate(n=>getComputedStyle(n).display),'none','Should return to detailed art without board reset');
     assert.equal(await page.locator('[data-chess-board] .classic-piece').first().evaluate(n=>getComputedStyle(n).opacity),'1');
     await toggle.check();await page.locator('[data-settings-modal] [data-close-modal]').click();
+    // Existing animation must now move the visible Fantasy SVG, not an invisible PNG.
+    await page.evaluate(() => {
+      window.__fantasyFlyers = [];
+      const original = Element.prototype.animate;
+      Element.prototype.animate = function(keyframes, options) {
+        if (this.classList.contains('classic-piece-flyer') || this.classList.contains('classic-captured-ghost')) {
+          const destination = document.querySelector('[data-chess-board] [data-square="e4"] .rpchess-piece-symbol');
+          window.__fantasyFlyers.push({
+            role: this.className, src: this.getAttribute('src'),
+            opacity: getComputedStyle(this).opacity, duration: options?.duration,
+            destinationHidden: destination ? getComputedStyle(destination).visibility === 'hidden' : null
+          });
+        }
+        return original.call(this, keyframes, options);
+      };
+    });
     await drag(page,'e2','e4');
+    assert(await page.evaluate(() => __fantasyFlyers.some(f =>
+      f.role === 'classic-piece-flyer' && f.src === 'assets/pieces/fantasy/wP.svg' &&
+      f.duration === 230 && f.opacity === '1' && f.destinationHidden)),
+      'Fantasy pawn must fly visibly for the usual 230 ms; the landing image must not flash');
+    await page.waitForFunction(() => !RPChessChessAI.snapshot().animating);
+
+    // A capture uses the actual black Fantasy figure as its disappearing ghost.
+    await page.evaluate(() => RPChessClassicChess.loadFen('4k3/8/8/8/4p3/3P4/8/4K3 w - - 0 1', { mode:'local' }));
+    await page.locator('[data-chess-board] [data-square="d3"]').click();
+    await page.locator('[data-chess-board] [data-square="e4"]').click();
+    assert(await page.evaluate(() => __fantasyFlyers.some(f =>
+      f.role === 'classic-captured-ghost' && f.src === 'assets/pieces/fantasy/bP.svg' &&
+      f.duration === 190 && f.opacity === '1')),
+      'A captured Fantasy piece must fade using its own SVG');
+    await page.waitForFunction(() => !RPChessChessAI.snapshot().animating);
+
     // Real pawn promotion, including the choice dialog.
     await page.evaluate(()=>RPChessClassicChess.loadFen('4k3/P7/8/8/8/8/8/4K3 w - - 0 1',{mode:'local'}));
     await page.locator('[data-chess-board] [data-square="a7"]').click();
@@ -107,6 +139,10 @@ async function drag(page,from,to){
     assert.equal(await page.locator('[data-promotion-modal] img').first().evaluate(n=>getComputedStyle(n).display),'none');
     await page.locator('[data-promotion="q"]').click();
     await page.waitForFunction(()=>window.RPChessClassicChess?.engine?.pieceAt('a8')?.type==='q');
+    assert(await page.evaluate(() => __fantasyFlyers.some(f =>
+      f.role === 'classic-piece-flyer' && f.src === 'assets/pieces/fantasy/wP.svg')),
+      'Promotion must animate the moving pawn before displaying the promoted piece');
+    await page.waitForFunction(() => !RPChessChessAI.snapshot().animating);
     assert.equal(await page.locator('[data-chess-board] [data-square="a8"] .rpchess-fantasy-piece').getAttribute('src'),'assets/pieces/fantasy/wQ.svg');
     await page.reload({waitUntil:'networkidle'});
     assert.equal(await page.locator('html').getAttribute('data-simple-pieces'),'1','Mode survives reload');
@@ -126,6 +162,37 @@ async function drag(page,from,to){
     await arenaSwitch.check();
     assert.equal(await page.evaluate(()=>RPChessArena.engine.fen()),arenaFen);
     await checkSymbols(page,'[data-arena-board]');
+    // Arena may give the player either color; await the actual local turn.
+    await page.waitForFunction(() => window.RPChessArena?.engine &&
+      RPChessArena.engine.turn() === RPChessArena.state.match?.playerColor &&
+      !document.querySelector('[data-arena-board] [data-square]')?.disabled,
+      null, { timeout:45000 });
+    const arenaMove = await page.evaluate(() => {
+      const engine = RPChessArena.engine;
+      const move = engine.legalMoves().find(m => !m.castle && !m.promotion);
+      return { from:move.from, to:move.uciTo || move.to };
+    });
+    await page.evaluate(to => {
+      window.__arenaFlyers = [];
+      const original = Element.prototype.animate;
+      Element.prototype.animate = function(keyframes, options) {
+        if (this.classList.contains('classic-piece-flyer')) {
+          const marker = document.querySelector('[data-arena-board] [data-square="' + to + '"] .rpchess-piece-symbol');
+          window.__arenaFlyers.push({
+            src:this.getAttribute('src'), duration:options?.duration,
+            opacity:getComputedStyle(this).opacity,
+            destinationHidden:marker ? getComputedStyle(marker).visibility === 'hidden' : null
+          });
+        }
+        return original.call(this, keyframes, options);
+      };
+    }, arenaMove.to);
+    await page.locator('[data-arena-board] [data-square="' + arenaMove.from + '"]').click();
+    await page.locator('[data-arena-board] [data-square="' + arenaMove.to + '"]').click();
+    assert(await page.evaluate(() => __arenaFlyers.some(f =>
+      /^assets\/pieces\/fantasy\/[wb][PNBRQK]\.svg$/.test(f.src) &&
+      f.duration === 290 && f.opacity === '1' && f.destinationHidden)),
+      'Arena Fantasy figures must use the same visible 290ms animation as the detailed art');
     await page.setViewportSize({width:390,height:844});
     assert.equal(await arenaSwitch.isVisible(),true,'In-game switch remains visible in phone portrait');
     await checkSymbols(page,'[data-arena-board]');
@@ -168,6 +235,6 @@ async function drag(page,from,to){
     await puzzleSwitch.check();
     await checkSymbols(puzzle,'[data-puzzle-board]',n);
     assert.deepEqual(puzzleErrors,[]);
-    console.log('Fantasy chess pieces: all 12 SVGs, in-game toggles (shared combats, Arena, Training), settings sync/reload, promotion, drag, portrait: PASS');
+    console.log('Fantasy chess pieces: SVG motion/captures/promotion, live toggles (shared combats, Arena, Training), settings sync/reload, drag and portrait: PASS');
   }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
