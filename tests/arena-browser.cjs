@@ -273,6 +273,37 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     const hintText=await page.locator('[data-finished-review] .rpchess-review-details').innerText();
     assert(/Предложение движка:\s*[a-h][1-8][a-h][1-8]/.test(hintText),
       'Stockfish best-move hint is shown on the replay board: '+hintText);
+    assert.equal(await page.locator('.rpchess-review-ranks span').count(),8,'each rank has a coordinate');
+    assert.equal(await page.locator('.rpchess-review-files span').count(),8,'each file has a coordinate');
+    const reviewGeometry=await page.evaluate(()=>{
+      const board=document.querySelector('[data-finished-review] [data-review-board]').getBoundingClientRect();
+      const rail=document.querySelector('[data-finished-review] .rpchess-review-rail').getBoundingClientRect();
+      return {center:board.left+board.width/2-innerWidth/2,railRight:rail.right,boardLeft:board.left};
+    });
+    assert(Math.abs(reviewGeometry.center)<4,'review board stays viewport-centered, not centered beside the left rail');
+    assert(reviewGeometry.railRight<=reviewGeometry.boardLeft,'review information stays on the left of the board');
+    // The real engine suggestion must be playable and advance the tutorial.
+    const best=hintText.match(/Предложение движка:\s*([a-h][1-8][a-h][1-8][qrbn]?)/)?.[1];
+    assert(best&&best.length>=4,'hint gives an actual UCI move');
+    await page.locator('[data-finished-review] [data-review-square="'+best.slice(0,2)+'"]').click();
+    await page.locator('[data-finished-review] [data-review-square="'+best.slice(2,4)+'"]').click();
+    await page.waitForFunction(()=>document.querySelector('[data-finished-review] .rpchess-review-summary')?.textContent.includes('1 / '));
+    assert((await page.locator('[data-finished-review] .rpchess-review-prompt').innerText()).includes('Хороший ход'),
+      'training marks the real Stockfish move as correct');
+    await page.locator('[data-finished-review] [data-review-action="original"]').click();
+    assert((await page.locator('[data-finished-review] .rpchess-review-details').innerText()).includes('Ответ движка'),
+      'player can inspect the original mistake and engine reply');
+    if(await page.locator('[data-finished-review] [data-review-action="opponent"]').count())
+      await page.locator('[data-finished-review] [data-review-action="opponent"]').click();
+    await page.locator('[data-finished-review] [data-review-action="back"]').click();
+    await page.setViewportSize({width:390,height:844});
+    const portrait=await page.evaluate(()=>({
+      boardWidth:document.querySelector('[data-finished-review] [data-review-board]').getBoundingClientRect().width,
+      overflow:document.documentElement.scrollWidth-innerWidth
+    }));
+    assert(portrait.boardWidth<=390&&portrait.boardWidth>=280,'portrait review remains readable');
+    assert(portrait.overflow<=2,'portrait review has no horizontal overflow');
+    await page.setViewportSize({width:950,height:530});
     await page.locator('[data-finished-review] [data-review-action="close"]').click();
     assert.equal(await page.locator('[data-finished-review]').count(),0,'Analysis dialog cleans up on close');
     await page.evaluate(()=>{
