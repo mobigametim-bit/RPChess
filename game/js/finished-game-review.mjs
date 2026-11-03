@@ -230,6 +230,20 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
  rankLabels.innerHTML=(reverse?['1','2','3','4','5','6','7','8']:['8','7','6','5','4','3','2','1']).map(x=>'<span>'+x+'</span>').join('');
  fileLabels.innerHTML=(reverse?[...'hgfedcba']:[...'abcdefgh']).map(x=>'<span>'+x+'</span>').join('');
  let cancelled=false,cases=[],worker=null,selected=0,selectedSquare='',feedback='',feedbackKind='',busy=false;
+ // Actual pixels are authoritative: older WebViews can resolve nested CSS
+ // min()/calc() grid tracks incorrectly and stretch the panel over the board.
+ // Keep the separate coordinate labels visible at every landscape size.
+ const rail=overlay.querySelector('.rpchess-review-rail');
+ function layoutReviewRail(){
+  if(cancelled)return;
+  const portrait=window.innerWidth<=700||window.innerHeight>window.innerWidth;
+  if(portrait){rail.style.width='100%';rail.style.maxWidth='none';return;}
+  const gutter=rankLabels.getBoundingClientRect().left-overlay.getBoundingClientRect().left-4;
+  const width=Math.max(0,Math.floor(gutter))+'px';
+  rail.style.width=width;rail.style.maxWidth=width;
+ }
+ window.addEventListener('resize',layoutReviewRail);
+ layoutReviewRail();
  let solved=new Set(),hint=false,boardMode='before',attemptFen='',attemptUci='',pendingPromotion=null,serial=0;
  const tx={
   en:{issues:'Key moments',task:'Find a better move for',mistake:'Your move',loss:'Evaluation drop',
@@ -264,7 +278,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
       noMistakes:'В завершённой партии крупных ошибок не найдено.',
       limited:'Проверяем каждый ваш ход за всю партию. Оценки приблизительные.',original2:'Сыграно',examining:'Проверено'}
  }[lang==='en'?'en':'ru'];
- const close=()=>{if(cancelled)return;cancelled=true;serial++;worker?.close();overlay.remove();document.removeEventListener('keydown',onEscape);};
+ const close=()=>{if(cancelled)return;cancelled=true;serial++;worker?.close();overlay.remove();document.removeEventListener('keydown',onEscape);window.removeEventListener('resize',layoutReviewRail);};
  const onEscape=e=>{if(e.key==='Escape'){e.preventDefault();close();}};
  document.addEventListener('keydown',onEscape);
  function resetView(){serial++;selectedSquare='';feedback='';feedbackKind='';hint=false;boardMode='before';attemptFen='';attemptUci='';pendingPromotion=null;busy=false;}
