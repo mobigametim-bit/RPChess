@@ -443,9 +443,11 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
   if(browsePly!==null){
    const entry=journal[browsePly-1];
    if(entry){fen=entry.fen;lastMove=entry.uci;}
-  }else if(variation?.length&&variationIndex>0){
-   const step=variation[variationIndex-1];
-   if(step){fen=step.fen;lastMove=step.uci;}
+  }else if(variation?.length){
+   if(variationIndex>0){
+    const step=variation[variationIndex-1];
+    if(step){fen=step.fen;lastMove=step.uci;}
+   }else{fen=active.beforeFen;lastMove='';}
   }else if(boardMode==='attempt'&&attemptFen){fen=attemptFen;lastMove=attemptUci;}
   board.innerHTML=chessSquareBoard(fen,playerColor,sides,selectedSquare,'',lastMove);
   const model=active&&browsePly===null&&(!variation||variationIndex<=1)?
@@ -535,6 +537,33 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
   }
   render();
  }
+ async function showBestContinuation(){
+  const item=cases[selected];
+  if(!item||!done(selected)||skipped.has(selected)||busy||browsePly!==null)return;
+  if(variation?.length){variationIndex=1;render();return;}
+  if(!worker){feedback=tx.lineUnavailable;feedbackKind='error';render();return;}
+  const stamp=++serial;busy=true;variationLoading=true;render();
+  try{
+   const game=new ClassicChessEngine(item.beforeFen);
+   if(!reviewUci(game,item.bestMove))throw new Error('Illegal engine best move');
+   // Run only on explicit request: deeper PV at the position AFTER the
+   // originally recommended move, so the branch always starts with that move.
+   const analysis=await worker.evaluate(game.fen(),{movetime:850});
+   if(cancelled||serial!==stamp)return;
+   const follow=analysis.pv?.length?analysis.pv:(item.pv||[]).slice(1);
+   variation=reviewEngineLine(item.beforeFen,[item.bestMove,...follow],9);
+   if(variation.length<2){
+    variation=null;feedback=tx.lineUnavailable;feedbackKind='error';
+   }else{
+    variationIndex=1;
+    attemptLoss=0;
+   }
+  }catch{
+   if(!cancelled&&serial===stamp){variation=null;feedback=tx.lineUnavailable;feedbackKind='error';}
+  }finally{
+   if(!cancelled&&serial===stamp){busy=false;variationLoading=false;render();}
+  }
+ }
  overlay.addEventListener('click',event=>{
   const action=event.target.closest('[data-review-action]');
   if(action){
@@ -544,6 +573,9 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
    if(key==='resume'){browsePly=null;render();return;}
    if(key==='again'){solved.clear();revealed.clear();skipped.clear();selected=0;resetExercise();render();return;}
    if(key==='next'){nextLesson();return;}
+   if(key==='line-prev'&&variation){variationIndex=Math.max(0,variationIndex-1);render();return;}
+   if(key==='line-next'&&variation){variationIndex=Math.min(variation.length,variationIndex+1);render();return;}
+   if(key==='variation'){showBestContinuation();return;}
    if(key==='skip'){
     if(cases[selected]){skipped.add(selected);nextLesson();}
     return;
@@ -600,10 +632,12 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
   try{
    worker=new StockfishReviewEngine();await worker.start();
    if(cancelled)return;
-   cases=await analyseFinishedReview(turns,{engine:worker,onProgress:(done,total)=>{
-    if(!cancelled)target.innerHTML='<div class="rpchess-review-loading">'+tx.loading+': '+done+' / '+total+'…</div>';
-   }});
+   const analysed=await analyseFinishedReview(turns,{engine:worker,annotate:true,playerColor,
+    onProgress:(done,total)=>{
+     if(!cancelled)target.innerHTML='<div class="rpchess-review-loading">'+tx.loading+': '+done+' / '+total+'…</div>';
+    }});
    if(cancelled)return;
+   cases=analysed.errors;annotations=analysed.annotations;
    if(!cases.length){worker.close();worker=null;}
    render();
   }catch{
@@ -613,4 +647,4 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
  })();
  return {close};
 }
-export { prepareFinishedReview,sampleReviewTurns,parseInfo,classifyLoss,analyseFinishedReview,gradeReviewAttempt,reviewMoveJournal,reviewEvaluation,StockfishReviewEngine,openFinishedGameReview };
+export { prepareFinishedReview,sampleReviewTurns,parseInfo,classifyLoss,classifyStrongMove,analyseFinishedReview,gradeReviewAttempt,reviewMoveJournal,reviewEngineLine,reviewEvaluation,StockfishReviewEngine,openFinishedGameReview };
