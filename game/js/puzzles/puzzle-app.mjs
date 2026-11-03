@@ -1,7 +1,7 @@
 import { ClassicChessEngine } from '../classic-chess-engine.mjs';
 import { attachPieceDrag } from '../piece-drag.mjs?v=20261022-portrait-motion1';
 import { boardRacePiecePath } from '../race-assets.mjs';
-import { raceGlyphMarkup } from '../race-glyphs.mjs';
+import { fantasyPieceMarkup } from '../fantasy-piece.mjs';
 import { readRun, writeRun } from '../run-persistence.mjs';
 import { t, subscribe } from '../i18n.mjs';
 import { brandLogoSrc } from '../brand-logo.mjs';
@@ -290,7 +290,7 @@ function renderBoard() {
         marker.setAttribute('aria-hidden', 'true');
         const symbol = document.createElement('span');
         symbol.className = 'rpchess-piece-symbol rpchess-piece-symbol--' + piece.color;
-        symbol.innerHTML = raceGlyphMarkup('humans', piece.type, piece.color);
+        symbol.innerHTML = fantasyPieceMarkup(piece.type, piece.color);
         symbol.setAttribute('aria-hidden','true');
         button.append(image, marker, symbol);
       }
