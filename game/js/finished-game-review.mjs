@@ -45,7 +45,7 @@ function moveUci(value){
  if(value&&typeof value==='object')return String(value.from||'')+String(value.to||'')+String(value.promotion||'').toLowerCase();
  return '';
 }
-function prepareFinishedReview({mode,moves,playerColor,finished}={}){
+function prepareFinishedReview({mode,moves,playerColor,finished,allColors=false}={}){
  if(!MODES.has(mode)||finished!==true)throw new Error('Error review is allowed only for completed Tournament or Arena matches');
  if(!['w','b'].includes(playerColor)||!Array.isArray(moves)||moves.length>1000)throw new Error('Invalid completed game data');
  const engine=new ClassicChessEngine(),turns=[];
@@ -55,7 +55,7 @@ function prepareFinishedReview({mode,moves,playerColor,finished}={}){
   const fenBefore=engine.fen(),ours=engine.turn()===playerColor;
   const applied=engine.move(uci.slice(0,2),uci.slice(2,4),uci.slice(4)||null);
   if(!applied.ok)throw new Error('Corrupted game move history');
-  if(ours)turns.push({ply:i+1,uci,beforeFen:fenBefore,afterFen:engine.fen()});
+  if(ours||allColors)turns.push({ply:i+1,uci,beforeFen:fenBefore,afterFen:engine.fen(),color:ours?playerColor:(playerColor==='w'?'b':'w')});
  }
  return turns;
 }
@@ -88,14 +88,19 @@ class StockfishReviewEngine {
     if(waiter){this.waiters.splice(this.waiters.indexOf(waiter),1);clearTimeout(waiter.timer);waiter.resolve();}
     const search=this.search;if(!search)continue;
     if(text.startsWith('info ')){
-     const info=parseInfo(text);
-     if(info.cp!==null&&info.depth>=search.depth){
-      search.depth=info.depth;search.cp=info.cp;
-      if(info.pv)search.bestMove=info.pv;
+     const info=parseInfo(text),pvIndex=Number(text.match(/\bmultipv (\d+)/)?.[1]||1);
+     const pv=text.match(/\bpv\s+(.+)$/)?.[1]?.trim().split(/\s+/).filter(x=>UCI.test(x))||[];
+     const previous=search.variants.get(pvIndex);
+     if(info.cp!==null&&info.depth>=5&&pv.length&&(!previous||info.depth>=previous.depth)){
+      search.variants.set(pvIndex,{depth:info.depth,cp:info.cp,pv});
+      if(pvIndex===1){search.depth=info.depth;search.cp=info.cp;search.bestMove=pv[0];search.pv=pv;}
      }
     }else if(text.startsWith('bestmove ')){
      this.search=null;clearTimeout(search.timer);
-     search.resolve({cp:search.cp,bestMove:search.bestMove,depth:search.depth});
+     const second=search.variants.get(2);
+     search.resolve({cp:search.cp,bestMove:search.bestMove,depth:search.depth,
+      pv:search.pv.slice(),secondCp:second?.cp??null,secondMove:second?.pv[0]??null,
+      secondDepth:second?.depth??0});
     }
    }
   };
@@ -115,16 +120,17 @@ class StockfishReviewEngine {
  async start(){
   const uci=this._wait('uciok');this.worker.postMessage('uci');await uci;
   this.worker.postMessage('setoption name Hash value 16');
-  this.worker.postMessage('setoption name MultiPV value 1');
+  this.worker.postMessage('setoption name MultiPV value 2');
   this.worker.postMessage('setoption name UCI_LimitStrength value false');
   const ready=this._wait('readyok');this.worker.postMessage('isready');await ready;
  }
- async evaluate(fen){
+ async evaluate(fen,{movetime=180}={}){
   if(this.closed||this.search)throw new Error('Invalid review engine state');
   return await new Promise((resolve,reject)=>{
-   const search={resolve,reject,depth:0,cp:null,bestMove:null,timer:null};
+   const search={resolve,reject,depth:0,cp:null,bestMove:null,pv:[],variants:new Map(),timer:null};
    search.timer=setTimeout(()=>{if(this.search===search){this.search=null;this.worker.postMessage('stop');reject(new Error('Stockfish analysis timeout'));}},this.timeoutMs);
-   this.search=search;this.worker.postMessage('position fen '+fen);this.worker.postMessage('go movetime 180');
+   this.search=search;this.worker.postMessage('position fen '+fen);
+   this.worker.postMessage('go movetime '+Math.max(120,Math.min(1400,Math.round(movetime))));
   });
  }
  close(){
