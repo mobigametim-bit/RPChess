@@ -21,6 +21,12 @@ const cloudReady = Promise.all([platformReady, import('./cloud-save.mjs')])
     // The VK GamePush test build migrates only completed meta statistics.
     // Do this before Chronicle/Rating/Run modules open their first screen.
     // Standalone Web and unchanged production use their previous boot paths.
+    if (platform.profileEnabled) {
+      // Unified RPChess profile is now the source for Web/PWA and VK opt-in.
+      // Legacy VK Cloud is read-only for a verified one-time meta import.
+      const profile = await import('./profile-client.mjs');
+      return profile.bootstrapProfile();
+    }
     if (platform.gamepush.enabled && platform.launch.isVK()) {
       const meta = await import('./gamepush-meta-sync.mjs');
       return meta.bootstrapGamePushMeta();
