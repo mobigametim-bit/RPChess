@@ -21,6 +21,7 @@ const gamepushSource=fs.readFileSync(path.join(game,'js/gamepush-sdk.mjs'),'utf8
 for(const token of ["const PROJECT_ID = 31247","rpchess_gamepush","instance.player.ready","isRewardedAvailable","showRewardedVideo","showFullscreen","sdk.gameStart","status:success === true ? 'completed' : 'closed'"])assert(gamepushSource.includes(token),`GamePush trial missing ${token}`);
 for(const token of ["gamepushSdk.enabled && !isVKLaunch()","gamepush:gamepushSdk","gamepushSdk.ads.show(format)","rpchess:gamepush-pause","rpchess:gamepush-resume"])assert(platform.includes(token),`Platform GamePush preview missing ${token}`);
 assert(js.includes('platform.gamepush.markReady()'),'GamePush ready should occur after first-screen bootstrap');
+assert(js.indexOf('globalThis.RPChessRouteReady = routeReady') < js.indexOf('Promise.all([routeReady, identityReady])'),'GamePush ready must not access routeReady before declaration');
 assert(build.includes("'js/gamepush-sdk.mjs'"),'GamePush adapter must be included in production packaging');
 assert(!gamepushSource.includes('PVP_SESSION_SECRET')&&!gamepushSource.includes('VK_APP_SECRET'),'GamePush client must not contain server secrets');
 
