@@ -27,6 +27,27 @@ function isEnabled() {
   }
 }
 
+// Public, non-sensitive diagnostic of launch context. Never expose IDs,
+ // signed VK query values, SDK auth tokens, or the protected VK app key.
+function safeDiagnostics() {
+  const query=new URLSearchParams(globalThis.location?.search || '');
+  const host=(() => {
+    try { return new URL(globalThis.document?.referrer || '').hostname; }
+    catch { return ''; }
+  })();
+  return Object.freeze({
+    sdkStatus:state,
+    platform:typeof sdk?.platform?.type==='string' ? sdk.platform.type : '',
+    inIframe:globalThis.parent !== globalThis,
+    vkAppParamPresent:query.has('vk_app_id'),
+    vkUserParamPresent:query.has('vk_user_id'),
+    vkSignParamPresent:query.has('sign'),
+    vkReferrer:/^(.+\.)?vk\.(com|ru)$/i.test(host),
+    playerIdPresent:Boolean(sdk?.player?.id),
+    playerLoggedIn:sdk?.player?.isLoggedIn === true
+  });
+}
+
 function notify(reason) {
   try {
     globalThis.dispatchEvent?.(new CustomEvent('rpchess:gamepush-status', {
@@ -96,6 +117,15 @@ async function boot() {
     if (!instance?.player?.ready) throw new Error('GamePush SDK or player readiness missing');
     await withDeadline(instance.player.ready, PLAYER_TIMEOUT_MS, 'GamePush player');
     sdk = instance;
+    // A VK iframe may load the SDK while its platform-auth request has failed.
+    // Do not mark that as ready or run migration/gameStart without a VK player.
+    const d=safeDiagnostics();
+    const launchedFromVK=d.vkAppParamPresent || d.vkUserParamPresent || d.vkReferrer
+      || /^VK/i.test(d.platform);
+    if (launchedFromVK && (!/^VK/i.test(d.platform)
+      || !d.playerIdPresent || !d.playerLoggedIn)) {
+      throw new Error('VK GamePush player identity is unavailable');
+    }
     sdk.on?.('pause', () => {
       globalThis.dispatchEvent?.(new Event('rpchess:gamepush-pause'));
     });
@@ -166,6 +196,7 @@ const gamepushSdk = Object.freeze({
   get platformType() { return state === 'ready' ? String(sdk?.platform?.type || '') : ''; },
   get playerId() { return state === 'ready' ? sdk?.player?.id ?? null : null; },
   get loggedIn() { return state === 'ready' && sdk?.player?.isLoggedIn === true; },
+  get diagnostics() { return safeDiagnostics(); },
   init,
   markReady,
   ads:Object.freeze({
