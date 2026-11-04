@@ -15,6 +15,12 @@ const EVENTS=[
 const MAX_TIMEOUT_MS=12000;
 let bootPromise=null,sessionReady=false,provider='',token='',revision=0,lastFingerprint='',syncing=null,timer=null,installed=false;
 let status='disabled',profileId='';
+let migration=Object.freeze({status:'not-checked',legacyV1:'unknown',previousGP:'unknown',source:'none',serverMigrated:false,chronicle:0,arenaEvents:0,hasRatingProgress:false});
+function setMigration(next) {
+  migration=Object.freeze({...migration,...next});
+  globalThis.RPChessProfileMigration=migration;
+}
+
 function enabled() { return platform.profileEnabled===true; }
 function root() {
   const fromPage=globalThis.document?.querySelector?.('meta[name="rpchess-profile-api"]')?.content||'';
@@ -30,7 +36,7 @@ function writeToken(kind,value) {
 }
 function state(next,reason='') {
   status=next;
-  globalThis.RPChessProfileStatus=Object.freeze({status:next,reason,provider,profileId});
+  globalThis.RPChessProfileStatus=Object.freeze({status:next,reason,provider,profileId,migration:migration.status});
   try {globalThis.dispatchEvent?.(new CustomEvent('rpchess:profile-status',{detail:{status:next,reason,provider}}));}catch{}
 }
 async function request(path,{method='GET',data=null,auth=true}={}) {
@@ -121,18 +127,81 @@ function legacyVKMeta(source) {
     // Do not include p.run, any active combat or an unfinished Arena match.
   };
 }
+function hasCompletedMeta(meta) {
+  return Boolean(meta && (
+    (Number(meta.rating?.power) > 0 && Number(meta.rating.power) !== 500)
+    || (meta.rating?.receipts?.length||0)>0
+    || (meta.chronicle?.history?.length||0)>0
+    || (meta.arena?.events?.length||0)>0
+  ));
+}
+function publicMetaSummary(meta) {
+  return {
+    chronicle:Math.max(0,meta?.chronicle?.history?.length||0),
+    arenaEvents:Math.max(0,meta?.arena?.events?.length||0),
+    hasRatingProgress: Boolean(Number(meta?.rating?.power)>0 &&
+      Number(meta.rating.power)!==500 || (meta?.rating?.receipts?.length||0)>0)
+  };
+}
 async function importOldVKIfPresent(profile) {
-  if(provider!=='vk'||profile.migratedVK)return profile;
+  if(provider!=='vk') {
+    setMigration({status:'not-vk'});
+    return profile;
+  }
+  if(profile.migratedVK) {
+    setMigration({status:'already-imported',serverMigrated:true, ...publicMetaSummary(profile.snapshot)});
+    return profile;
+  }
+  setMigration({status:'searching'});
   const reader=platform.storage.legacyVKProfileReader;
-  if(!reader?.available)return profile;
+  if(!reader?.available) {
+    setMigration({status:'bridge-unavailable'});
+    return profile;
+  }
   const legacy=await readCloudEnvelope(reader);
-  if(legacy.error)throw Error('Legacy VK backup has a validation error: '+legacy.error);
-  const meta=legacyVKMeta(legacy.envelope);
-  if(!meta)return profile; // Nothing to migrate, do not falsely mark complete.
-  const done=await request('/v1/vk-import',{method:'POST',data:{meta}});
+  if(legacy.error) {
+    setMigration({status:'corrupt-v1',legacyV1:'invalid'});
+    throw Error('Legacy VK cloud backup invalid: '+legacy.error);
+  }
+  let source=legacyVKMeta(legacy.envelope);
+  const foundV1=hasCompletedMeta(source);
+  setMigration({legacyV1:legacy.manifest ? (foundV1?'found':'no-completed-stats') : 'missing'});
+  let v2=null;
+  const prior=platform.storage.previousGamePushMetaReader;
+  if(prior?.available) {
+    try {
+      const module=await import('./gamepush-meta-sync.mjs');
+      const oldGP=await module.readNewMeta(prior);
+      v2=oldGP?.meta||null;
+      setMigration({previousGP:oldGP ? (hasCompletedMeta(v2)?'found':'no-completed-stats') : 'missing'});
+      if(hasCompletedMeta(v2)) {
+        source=hasCompletedMeta(source) ? module.mergeMeta(v2,source) : v2;
+        setMigration({source:foundV1?'both':'gp-v2'});
+      }
+    } catch (error) {
+      // Inconsistent GP test data must not prevent recovery from an intact v1.
+      setMigration({previousGP:'unreadable'});
+      if(!foundV1) {
+        setMigration({status:'corrupt-gp-v2'});
+        throw Error('Prior GamePush backup invalid: '+String(error?.message||'unreadable'));
+      }
+    }
+  }
+  if(foundV1 && !hasCompletedMeta(v2))setMigration({source:'vk-v1'});
+  if(!hasCompletedMeta(source)) {
+    setMigration({status:'no-legacy-stats',source:'none'});
+    return profile; // Never mark as successfully migrated when nothing was found.
+  }
+  const stats={rating:source.rating,chronicle:source.chronicle,
+    arena:source.arena?{...source.arena,match:null}:null};
+  setMigration({status:'uploading',...publicMetaSummary(stats)});
+  const done=await request('/v1/vk-import',{method:'POST',data:{meta:stats}});
   if(!done?.profile)throw Error('Legacy VK migration was not verified by server');
+  setMigration({status:'imported',serverMigrated:Boolean(done.profile.migratedVK),
+    ...publicMetaSummary(done.profile.snapshot)});
   return done.profile;
 }
+
 function scheduleSave({immediate=false}={}) {
   if(timer)clearTimeout(timer);
   timer=setTimeout(()=>{timer=null;void syncNow();},immediate?100:750);
@@ -221,6 +290,7 @@ async function boot() {
     if(lastFingerprint!==payloadFingerprint(localPayload()))scheduleSave({immediate:true});
     return {status:'ready',profileId,provider,restored:remote.revision>0};
   }catch(error){
+    if(migration.status==='uploading'||migration.status==='searching')setMigration({status:'error'});
     state('offline',String(error.message||error).slice(0,160));
     // A cloud failure must never destroy old VK or local progress.
     return {status:'offline'};
@@ -230,5 +300,5 @@ async function bootstrapProfile() {
   if(!bootPromise)bootPromise=boot();
   return bootPromise;
 }
-function statusInfo() {return Object.freeze({status,provider,profileId,revision,enabled:enabled()});}
+function statusInfo() {return Object.freeze({status,provider,profileId,revision,enabled:enabled(),migration:migration.status});}
 export {bootstrapProfile,syncNow,statusInfo,signedParams,legacyVKMeta};
