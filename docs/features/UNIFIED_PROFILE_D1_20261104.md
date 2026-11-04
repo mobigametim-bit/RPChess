@@ -1,5 +1,14 @@
 # Единый профиль RPChess ID и сохранения в D1 — 2026-11-04
 
+**Автопроверка 2026-11-04 — SUCCESS:** https://github.com/mobigametim-bit/RPChess/actions/runs/41893399202. Пройдены npm run gate:local, Chrome key scenes, additive D1 schema, новый API Worker, отдельный статический Web/PWA Worker, живые проверки выпуска ID, bearer, CORS, CAS 409 и сохранения одного и того же ID после перезагрузки и запуска корневого URL PWA.
+
+**Подтверждённые адреса стейджинга:**
+- API: https://rpchess-profile-preview.mobigametim.workers.dev
+- Web/PWA: https://rpchess-profile-game-preview.mobigametim.workers.dev/?rpchess_profile=1
+- PWA start_url ./ на этом отдельном origin автоматически включает профиль без query-флага.
+
+**Пока НЕ проверено:** новый VK Worker должен получить защищённый `VK_APP_SECRET` в Cloudflare, после чего проверить signed launch, прочитать сохранение конкретного игрока через VK Bridge, импортировать старые Power/Chronicle/Arena (без незавершённых партий) и провести тест на двух устройствах. До этого не сливать в main, не менять VK production.
+
 **Решение владельца:** игрок любой площадки автоматически получает внутренний RPChess ID. Никакой регистрации, ссылок между аккаунтами VK и Яндекса, повторного ввода паролей и кодов. VK ID используется *только* для подтверждённого входа VK и однократного переноса метастатистики; Яндекс пока не подключать.
 
 ## Безопасный план и текущее состояние
