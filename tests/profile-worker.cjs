@@ -47,7 +47,7 @@ class FakeD1 {
       const migration=sql.includes('migrated_vk_v1=1');
       const [snapshot_json,updated_at,id,revision]=values;
       const entry=this.players.get(id);
-      if(!entry||entry.revision!==revision||(migration&&entry.migrated_vk_v1))return {meta:{changes:0}};
+      if(!entry||entry.revision!==revision)return {meta:{changes:0}};
       Object.assign(entry,{snapshot_json,updated_at,revision:revision+1});
       if(migration)entry.migrated_vk_v1=1;
       return {meta:{changes:1}};
