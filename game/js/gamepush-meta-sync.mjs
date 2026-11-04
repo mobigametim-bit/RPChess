@@ -11,6 +11,8 @@ import { ARENA_KEY, normalizeArena, mergeArena } from './arena-core.mjs';
 const META_MANIFEST_KEY = 'rpchess_gp_v2_manifest';
 const META_PREFIX = 'rpchess_gp_v2_';
 const LOCAL_SYNC_FINGERPRINT_KEY = 'rpchess.reboot.v2.meta-uploaded';
+const LOCAL_MIGRATED_KEY = 'rpchess.reboot.v2.meta-migrated';
+const LOCAL_LEGACY_FINGERPRINT = 'rpchess.reboot.v2.legacy-fingerprint';
 const META_VERSION = 1;
 const META_MAX_BYTES = 320000;
 const META_CHUNK_BYTES = 3000;
@@ -77,6 +79,8 @@ function normalizeMeta(value) {
 function extractLocalMeta() {
   const store=platform.storage.sync();
   const meta=normalizeMeta({
+    migratedFromVK:store?.getItem(LOCAL_MIGRATED_KEY)==='1',
+    sourceVKFingerprint:store?.getItem(LOCAL_LEGACY_FINGERPRINT)||'',
     rating:readPlayerRating(store),
     chronicle:readChronicle(store),
     arena:parse(store?.getItem(ARENA_KEY))
@@ -92,6 +96,8 @@ function applyLocalMeta(meta) {
   writePlayerRating(clean.rating,store);
   writeChronicle(clean.chronicle,store);
   store.setItem(ARENA_KEY,JSON.stringify(clean.arena));
+  if (clean.migratedFromVK) store.setItem(LOCAL_MIGRATED_KEY,'1');
+  if (clean.sourceVKFingerprint) store.setItem(LOCAL_LEGACY_FINGERPRINT,clean.sourceVKFingerprint);
   // Neither RUN_STORAGE_KEY nor any current-combat key is touched.
   return clean;
 }
