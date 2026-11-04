@@ -147,7 +147,15 @@ jobs:
               await page.waitForFunction(()=>window.RPChessProfileStatus?.status==='ready',null,{timeout:30000});
               const after=await page.evaluate(()=>window.RPChessProfileStatus.profileId);
               assert.equal(after,before.profile,'Web profile must survive reload without VK');
-              console.log('UNIFIED RPCHESS PROFILE LIVE: D1 guest + credential + CAS + browser reload PASS');
+              // PWA manifest has start_url "./", so test a clean root launch too.
+              await page.goto(game+'/',{waitUntil:'domcontentloaded'});
+              await page.waitForFunction(()=>window.RPChessProfileStatus?.status==='ready',null,{timeout:30000});
+              const pwa=await page.evaluate(()=>({
+                id:window.RPChessProfileStatus.profileId,
+                enabled:window.RPChessPlatform.profileEnabled
+              }));
+              assert(pwa.enabled && pwa.id===before.profile,'installed PWA root must keep the same RPChess ID');
+              console.log('UNIFIED RPCHESS PROFILE LIVE: D1 guest + credential + CAS + Web/PWA reload PASS');
             } finally {await browser.close();}
           })().catch(error=>{console.error(error);process.exitCode=1;});
           NODE
