@@ -169,17 +169,22 @@ async function save(db,row,body) {
 }
 async function importVK(db,row,body) {
   if(row.provider!=='vk')return {error:'vk_identity_required',status:403};
-  if(row.migrated_vk_v1===1)return {profile:profileResult(row),alreadyImported:true};
+  // An early preview might have seen a valid but empty legacy snapshot and
+  // already set the migrated marker. Allow a subsequent richer VK read to
+  // enrich the SAME profile. Merging is receipt-idempotent and CAS-protected;
+  // old active runs and old Arena matches are never imported.
   const legacy=cleanLegacyMeta(body.meta);
   if(!legacy)return {error:'invalid_legacy_meta',status:422};
   const merged=mergeLegacy(unpack(row.snapshot_json)||{schemaVersion:1},legacy);
   const json=safeSnapshot(merged);
   if(!json)return {error:'meta_limit_exceeded',status:422};
+  if(row.migrated_vk_v1===1 && json===row.snapshot_json)
+    return {profile:profileResult(row),alreadyImported:true};
   const at=now();
-  const result=await db.prepare('UPDATE rpchess_profile_v1 SET snapshot_json=?,revision=revision+1,migrated_vk_v1=1,updated_at=? WHERE id=? AND revision=? AND migrated_vk_v1=0')
+  const result=await db.prepare('UPDATE rpchess_profile_v1 SET snapshot_json=?,revision=revision+1,migrated_vk_v1=1,updated_at=? WHERE id=? AND revision=?')
     .bind(json,at,row.id,row.revision).run();
   if(result.meta?.changes!==1)return {error:'revision_conflict',status:409,profile:profileResult(await readProfile(db,row.id))};
-  return {profile:profileResult(await readProfile(db,row.id)),alreadyImported:false};
+  return {profile:profileResult(await readProfile(db,row.id)),alreadyImported:false,recovered:row.migrated_vk_v1===1};
 }
 async function handler(request,env) {
   const origin=request.headers.get('Origin');
