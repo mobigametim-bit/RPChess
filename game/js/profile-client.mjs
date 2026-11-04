@@ -130,7 +130,9 @@ function profileRestoreMatches(remote,local) {
   };
   return containsAll(remote.chronicle?.history,local.chronicle?.history,'runId')
     && containsAll(remote.arena?.events,local.arena?.events,'id')
-    && containsAll(remote.rating?.receipts,local.rating?.receipts,'id');
+    // Current on-device cloud snapshots intentionally compact Power history
+    // to its most recent 128 receipts. Do not treat that as data loss.
+    && containsAll((remote.rating?.receipts||[]).slice(-128),local.rating?.receipts,'id');
 }
 function recordReconcile(data) {
   // Accessible only to this game's iframe. Never include account IDs or tokens.
