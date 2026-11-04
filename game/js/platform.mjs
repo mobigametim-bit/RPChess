@@ -398,6 +398,10 @@ const legacyVKMetaReader = makeScopedVKCloud(OLD_CLOUD_KEY,false);
 // NOT depend on GamePush working inside VK (the current SDK may reject userId).
 const legacyVKProfileReader=makeScopedVKCloud(OLD_CLOUD_KEY,false,
   ()=>rpchessProfileEnabled()&&isVKLaunch());
+// A previous GP preview may have its completed-statistics backup in its
+// separate VK cloud namespace. Read-only recovery is permitted without GP SDK.
+const previousGamePushMetaReader=makeScopedVKCloud(GP_META_CLOUD_KEY,false,
+  ()=>rpchessProfileEnabled()&&isVKLaunch());
 const gamepushVKMetaStore = makeScopedVKCloud(GP_META_CLOUD_KEY,true);
 
 const storage = Object.freeze({
@@ -405,6 +409,7 @@ const storage = Object.freeze({
   cloud:cloudStorageAdapter,
   legacyVKMetaReader,
   legacyVKProfileReader,
+  previousGamePushMetaReader,
   gamepushVKMetaStore,
   sync() { return localStorageAdapter.sync(); },
   getItem(key) { return localStorageAdapter.getItem(key); },
