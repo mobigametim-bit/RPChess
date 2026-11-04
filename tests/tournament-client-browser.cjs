@@ -101,7 +101,7 @@ try {
   const pawn=document.querySelector('[data-tour-board] [data-square="e2"]');
   return {
    mode:document.documentElement.dataset.simplePieces,
-   saved:JSON.parse(localStorage.getItem('rpchess.reboot.v1.settings')||'{}').simplePieces,
+   saved:JSON.parse(globalThis.RPChessPlatform.storage.getItem('rpchess.reboot.v1.settings')||'{}').simplePieces,
    normalOpacity:getComputedStyle(pawn.querySelector('.classic-piece')).opacity,
    symbolDisplay:getComputedStyle(pawn.querySelector('.rpchess-piece-symbol')).display
   };
