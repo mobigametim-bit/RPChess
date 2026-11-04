@@ -12,7 +12,17 @@ on:
       - tests/**
       - package.json
       - package-lock.json
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/gamepush-preview.yml
+      - gamepush-preview/**
+      - game/**
+      - scripts/**
+      - tests/**
+      - package.json
+      - package-lock.json
 
 permissions:
   contents: read
@@ -23,7 +33,7 @@ concurrency:
 
 jobs:
   build-and-publish:
-    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/gamepush-sdk-foundation-20261104'
+    if: github.repository == 'mobigametim-bit/RPChess' && (github.ref == 'refs/heads/feature/gamepush-sdk-foundation-20261104' || (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feature/gamepush-sdk-foundation-20261104' && github.event.pull_request.head.repo.full_name == 'mobigametim-bit/RPChess'))
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
