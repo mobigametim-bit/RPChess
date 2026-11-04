@@ -20,7 +20,7 @@
     try {
       const params=new URLSearchParams(location.search);
       const gpFreshStart=params.get('rpchess_gamepush') === '1';
-      const profileMode=params.get('rpchess_profile') === '1';
+      const profileMode=params.get('rpchess_profile') === '1' || location.hostname==='rpchess-profile-game-preview.mobigametim.workers.dev';
       const vkHosted=params.has('vk_app_id') || /(^|\\.)vk\\.(com|ru)$/i.test(new URL(document.referrer||location.href).hostname);
       const kind=vkHosted?'vk':'web';
       const cached=localStorage.getItem('rpchess.profile.cached-id.'+kind)||'';
