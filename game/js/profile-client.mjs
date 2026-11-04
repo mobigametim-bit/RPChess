@@ -13,7 +13,7 @@ const EVENTS=[
   'rpchess:arena-updated'
 ];
 const MAX_TIMEOUT_MS=12000;
-let ready=null,provider='',token='',revision=0,lastFingerprint='',syncing=null,timer=null,installed=false;
+let bootPromise=null,sessionReady=false,provider='',token='',revision=0,lastFingerprint='',syncing=null,timer=null,installed=false;
 let status='disabled',profileId='';
 function enabled() { return platform.profileEnabled===true; }
 function root() {
@@ -147,7 +147,7 @@ function install() {
   platform.lifecycle.subscribe(({active})=>{if(!active)scheduleSave({immediate:true});},{immediate:false});
 }
 async function syncNow() {
-  if(!ready||!token||status==='conflict'||status==='offline')return false;
+  if(!sessionReady||!token||status==='conflict'||status==='offline')return false;
   if(syncing)return syncing;
   syncing=(async()=>{
     const before=localPayload(),fingerprint=payloadFingerprint(before);
@@ -184,6 +184,7 @@ async function boot() {
     if(!/^[A-Za-z0-9_-]{43}$/.test(token||''))throw Error('Invalid session credential');
     profileId=session.profile?.id||'';
     if(!profileId||session.profile?.provider!==provider)throw Error('Profile belongs to another platform');
+    if(!platform.setProfileStorageIdentity(provider,profileId))throw Error('Invalid RPChess profile identity');
     writeToken(provider,token);
     let remote=await importOldVKIfPresent(session.profile);
     const local=localPayload(),localHash=payloadFingerprint(local);
@@ -205,8 +206,9 @@ async function boot() {
       lastFingerprint=marker.fingerprint||'';
     }
     revision=remote.revision||0;
-    setLocalMeta(revision,remote.revision>0?localPayload():remoteData);
-    ready=true;
+    // Do not advance the local last-synced marker until the server has
+    // acknowledged a save (or until an authentic server snapshot was restored).
+    sessionReady=true;
     install();
     state('ready');
     if(lastFingerprint!==payloadFingerprint(localPayload()))scheduleSave({immediate:true});
@@ -218,8 +220,8 @@ async function boot() {
   }
 }
 async function bootstrapProfile() {
-  if(!ready)ready=boot();
-  return ready;
+  if(!bootPromise)bootPromise=boot();
+  return bootPromise;
 }
 function statusInfo() {return Object.freeze({status,provider,profileId,revision,enabled:enabled()});}
 export {bootstrapProfile,syncNow,statusInfo,signedParams,legacyVKMeta};
