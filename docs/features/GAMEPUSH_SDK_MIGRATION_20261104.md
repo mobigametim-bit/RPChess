@@ -89,3 +89,18 @@ GamePush SDK готов на доверенном Web-origin; Web и Турни�
 - CI GamePush preview дополнен проверкой того, что seed legacy-run остаётся целым, GP его не видит, а новые записи попадают только в v2 namespace.
 
 **Дальнейшие шаги:** после CI пройти VK Dev/GamePush и Yandex Dev/GamePush connection без копирования секретов в код; протестировать на платформенных стендах рекламу, старты и сохранения; затем подготовить серверное подтверждение GamePush JWT для рейтингового Турнира. Чистый старт уже согласован, отдельного импорта legacy VK делать не нужно.
+
+## VK Games — подготовка реального dev-теста (2026-11-04)
+
+**Владелец подтвердил:** VK Games подключён в GamePush Project ID 31247. **Яндекс Игры отложены — в этом цикле не трогать.**
+
+- VK app ID: `54754579`. Канонический production URL: `https://mobigametim-bit.github.io/RPChess/`. Текущий production/deploy contract в `docs/platforms/DEPLOYMENT_CONTRACT.md` — не переходить на VK Hosting без согласования.
+- **Отдельная dev-сборка:** `https://rpchess-gamepush-preview.mobigametim.workers.dev/?rpchess_gamepush=1`. Это единственная тестовая ссылка, не менять production URL, `main`, VK Hosting, VK-модерацию и Yandex.
+- [Официальный пример VK по адресу разработки](https://github.com/VKCOM/vk-mini-apps-course-frontend): в dev.vk.com / управлении приложением `54754579` включить режим разработки для нужной версии и установить **URL для разработки**, а не production URL. Начать с VK Web (desktop). При наличии отдельной группы тестирования использовать её, не затрагивая массовую аудиторию. Владельцу потребуется вручную открыть приложение `https://vk.com/app54754579`.
+- На VK Web проверить DevTools: `window.RPChessPlatform.gamepush.enabled === true`, `status === 'ready'`, `platformType` соответствует VK (не WEB), `storage.cloud.available === false`; не снимать и не пересылать `authToken`/подписанные `vk_*` launch params.
+- Проверить первый чистый старт, окно короля, Путешествие, Стычку, Арену, Турнир, сохранение/reload в пределах одного устройства.
+- Пока нет отдельного полноценного backend/save adapter, новый GP прогресс хранится в `rpchess.gamepush.v2.*` локально. Его нельзя выдавать за облачное сохранение или перенос между устройствами.
+- Rewarded: не давать золото при отмене/недоступности рекламы; статус completed только при `success === true`. Сначала проверить настройку и доступность AppsCentrum/VK; SDK сам выбирает провайдера, не дублировать VK Bridge; не покупать ничего.
+- После теста вернуть дев-URL при необходимости. При любом падении SDK — зафиксировать `status`, `platformType` и ошибку из Console без секретов, передать скриншот. От владельца не нужны секреты или токены.
+
+Стадия разработки: в feature-ветке дополнительно защищены все прямые методы прежнего VK cloud storage и актуализированы capabilities; минимальный VK regression в `tests/cloud-save.cjs` утверждает, что legacy прогресс остаётся прежним, даже если GP-вариант создаёт новый run. До PASS GitHub Actions последнего коммита не маркировать этап как принятый.
