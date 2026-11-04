@@ -189,13 +189,16 @@ try {
  const rgb=gold.color.match(/\d+(?:\.\d+)?/g)?.map(Number)||[];
  assert(gold.marked&&gold.selected&&rgb[0]>rgb[1]&&rgb[1]>rgb[2]&&rgb[0]>210,
   'Tournament legal dots and selection should use the canonical yellow/gold palette: '+JSON.stringify(gold));
+ // Start watching BEFORE the drag concludes; a 290-ms flyer may already
+ // have finished when the drag helper resolves on a busy CI runner.
+ const flyerMotion=white.waitForFunction(()=>{
+  const el=document.querySelector('.classic-piece-flyer');
+  const timing=el?.getAnimations()[0]?.effect?.getTiming();
+  return timing?{duration:timing.duration,easing:timing.easing}:null;
+ },null,{timeout:15000});
  await dragMouse(white,'e2','e4');
+ const motion=await flyerMotion;
  const moveFlyer=white.locator('.classic-piece-flyer');
- await moveFlyer.waitFor({state:'visible',timeout:15000});
- const motion=await moveFlyer.evaluate(el=>({
-  duration:el.getAnimations()[0]?.effect?.getTiming().duration,
-  easing:el.getAnimations()[0]?.effect?.getTiming().easing
- }));
  assert.equal(motion.duration,290,'Tournament movement duration matches Arena');
  assert.equal(motion.easing.replace(/\s+/g,'').replace(/0\./g,'.'),'cubic-bezier(.22,.8,.24,1)',
   'Tournament movement easing matches Arena regardless of browser serialization');
