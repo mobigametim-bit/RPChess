@@ -12,7 +12,9 @@ const errors=[];
 async function client(width,height){
  const context=await browser.newContext({viewport:{width,height},isMobile:width<600,hasTouch:true});
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
- await page.goto(url,{waitUntil:'networkidle',timeout:45000});
+ // GamePush initializes with background network traffic; networkidle is not a valid
+ // navigation contract for its live preview. The game's own loading gate is authoritative.
+ await page.goto(url,{waitUntil:url.includes('rpchess_gamepush=1')?'domcontentloaded':'networkidle',timeout:45000});
  await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
  await page.locator('[data-tournament-open]').click();
  await page.locator('[data-tournament-screen]:not([hidden])').waitFor();
