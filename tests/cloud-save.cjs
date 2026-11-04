@@ -357,6 +357,19 @@ class MemoryStorage {
   const firstId='00000000-0000-4000-8000-000000000001';
   const secondId='00000000-0000-4000-8000-000000000002';
   assert.strictEqual(platformModule.platform.setProfileStorageIdentity('vk',firstId),true);
+  const restoredPayload={...historical,run:null};
+  assert.strictEqual(cloudSave.restoreLocalEnvelope({payload:restoredPayload,revision:1,updatedAt:25000}),true);
+  const hydrated=cloudSave.localPayload();
+  assert.strictEqual(profileClient.profileRestoreMatches(restoredPayload,hydrated),true,
+    'legacy Power/Chronicle/Arena must be actually visible after D1 snapshot restoration');
+  assert.strictEqual(profileClient.summaryOfMeta(hydrated).power,845);
+  assert.strictEqual(profileClient.summaryOfMeta(hydrated).chronicle,1);
+  assert.strictEqual(profileClient.summaryOfMeta(hydrated).arenaEvents,1);
+  assert.strictEqual(profileClient.profileRestoreMatches({...restoredPayload,
+    chronicle:{...restoredPayload.chronicle,history:[
+      ...restoredPayload.chronicle.history,{...restoredPayload.chronicle.history[0],runId:'another-finished-run'}
+    ]}},hydrated),false,'missing Chronicle must fail restore readback');
+  assert.strictEqual(persistence.readRun(),null,'legacy active run must remain absent');
   platformModule.storage.setItem('profile-account-test','first-account-only');
   assert.strictEqual(platformModule.platform.setProfileStorageIdentity('vk',secondId),true);
   assert.strictEqual(platformModule.storage.getItem('profile-account-test'),null,'VK account switch cannot see former local profile');
