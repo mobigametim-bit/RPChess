@@ -14,6 +14,19 @@ on:
       - package.json
       - package-lock.json
 
+  pull_request:
+    branches:
+      - feature/gamepush-sdk-foundation-20261104
+    paths:
+      - .github/workflows/profile-preview.yml
+      - profile-worker/**
+      - profile-preview/**
+      - game/**
+      - scripts/**
+      - tests/**
+      - package.json
+      - package-lock.json
+
 permissions:
   contents: read
 
@@ -23,7 +36,7 @@ concurrency:
 
 jobs:
   test-and-deploy:
-    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/unified-player-profile-20261104'
+    if: github.repository == 'mobigametim-bit/RPChess' && (github.ref == 'refs/heads/feature/unified-player-profile-20261104' || (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feature/unified-player-profile-20261104' && github.event.pull_request.head.repo.full_name == 'mobigametim-bit/RPChess'))
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
