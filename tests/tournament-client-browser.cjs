@@ -4,6 +4,7 @@ const path=require('node:path');
 const fs=require('node:fs');
 const {chromium}=require('playwright');
 const url=process.env.RPCHESS_ACCEPTANCE_URL;
+const navigationReady=url.includes('rpchess_gamepush=1')?'domcontentloaded':'networkidle';
 assert(url?.startsWith('https://'),'Use deployed HTTPS acceptance URL');
 const dir=process.env.RPCHESS_TOURNAMENT_SCREENSHOT_DIR||'test-results/tournament';
 async function main(){
@@ -14,7 +15,7 @@ async function client(width,height){
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
  // GamePush initializes with background network traffic; networkidle is not a valid
  // navigation contract for its live preview. The game's own loading gate is authoritative.
- await page.goto(url,{waitUntil:url.includes('rpchess_gamepush=1')?'domcontentloaded':'networkidle',timeout:45000});
+ await page.goto(url,{waitUntil:navigationReady,timeout:45000});
  await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
  await page.locator('[data-tournament-open]').click();
  await page.locator('[data-tournament-screen]:not([hidden])').waitFor();
@@ -215,7 +216,7 @@ try {
  }
  // Full WebView restart during a live 10+0 game must restore the same
  // server match and the locally persisted Fantasy art selection.
- await white.reload({waitUntil:'networkidle'});
+ await white.reload({waitUntil:navigationReady});
  await white.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
  await white.locator('[data-tournament-open]').click();
  await white.locator('[data-tour-board]').waitFor({timeout:20000});
@@ -347,7 +348,7 @@ try {
  assert.equal(winnerPower.receipts.length,0,'Guests do not receive Elo receipts');
  // Reload the winner's WebView: Tournament restores the server-finished game
  // and displays its existing receipt, never adding Power a second time.
- await black.reload({waitUntil:'networkidle'});
+ await black.reload({waitUntil:navigationReady});
  await black.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
  await black.locator('[data-tournament-open]').click();
  await black.locator('.tournament-center h2').waitFor({timeout:20000});
