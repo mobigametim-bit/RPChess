@@ -18,7 +18,7 @@ assert(build.includes("'js/screen-loading.mjs'")&&build.includes("'css/screen-lo
 
 // GamePush opt-in preview must remain isolated from legacy VK/cloud-save production paths.
 const gamepushSource=fs.readFileSync(path.join(game,'js/gamepush-sdk.mjs'),'utf8');
-for(const token of ["const PROJECT_ID = 31247","rpchess_gamepush","instance.player.ready","isRewardedAvailable","showRewardedVideo","showFullscreen","sdk.gameStart","status:success === true ? 'completed' : 'closed'"])assert(gamepushSource.includes(token),`GamePush trial missing ${token}`);
+for(const token of ["const PROJECT_ID = 31247","rpchess_gamepush","instance.player.ready","isRewardedAvailable","showRewardedVideo","showFullscreen","sdk.gameStart","status:success === true ? 'completed' : 'closed'","get diagnostics()","vkUserParamPresent","vkAppParamPresent","playerIdPresent","playerLoggedIn","state !== 'ready' || !sdk"])assert(gamepushSource.includes(token),`GamePush trial missing ${token}`);
 for(const token of ["if (gamepushSdk.enabled)","gamepush:gamepushSdk","gamepushSdk.ads.show(format)","rpchess:gamepush-pause","rpchess:gamepush-resume","rpchess.gamepush.v2.","scopedGamePushStore","!gamepushSdk.enabled","return 'yandex'"])assert(platform.includes(token),`Platform GamePush preview missing ${token}`);
 const gamepushMonetization=fs.readFileSync(path.join(game,'js/content/monetization.mjs'),'utf8');
 assert(gamepushMonetization.includes("gp.ready && /^(?:VK(?:_|$)|YANDEX)/i.test(gp.platformType)"),'GamePush ads must require a real VK/Yandex platform and a ready SDK');
