@@ -147,7 +147,7 @@ function install() {
 async function syncNow() {
   if(!sessionReady||!token||status==='conflict'||status==='offline')return false;
   if(syncing)return syncing;
-  syncing=(async()=>{
+  syncing=Promise.resolve().then(async()=>{
     const before=localPayload(),fingerprint=payloadFingerprint(before);
     if(lastFingerprint===fingerprint)return true;
     try{
@@ -168,8 +168,8 @@ async function syncNow() {
       }
       state('offline','Sync unavailable; progress is kept locally');
       return false;
-    }finally{syncing=null;}
-  })();
+    }
+  }).finally(()=>{syncing=null;});
   return syncing;
 }
 async function boot() {
