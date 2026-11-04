@@ -1,0 +1,142 @@
+name: Verify and publish unified RPChess profile staging
+
+on:
+  push:
+    branches:
+      - feature/unified-player-profile-20261104
+    paths:
+      - .github/workflows/profile-preview.yml
+      - profile-worker/**
+      - profile-preview/**
+      - game/**
+      - scripts/**
+      - tests/**
+      - package.json
+      - package-lock.json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rpchess-unified-profile-staging
+  cancel-in-progress: true
+
+jobs:
+  test-and-deploy:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/unified-player-profile-20261104'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Restore runtime asset cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Verify existing game, profile security and build
+        run: |
+          npm ci --no-audit --no-fund
+          npm run gate:local
+      - name: Browser runtime prerequisite
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+      - name: Verify key game scenes with Chromium
+        env:
+          RPCHESS_BROWSER_TEST: portrait-key-scenes-browser.cjs
+        run: npm run test:browser
+      - name: Require existing Cloudflare credentials
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$TOKEN" || { echo "::error::CLOUDFLARE_API_TOKEN missing"; exit 1; }
+          test -n "$ACCOUNT" || { echo "::error::CLOUDFLARE_ACCOUNT_ID missing"; exit 1; }
+      - name: Create ONLY new rpchess_profile tables in existing D1
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler d1 execute rpchess-leaderboard --remote --file profile-worker/schema.sql --config profile-worker/wrangler.toml --yes
+      - name: Deploy new profile API Worker (not leaderboard or Tournament)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config profile-worker/wrangler.toml
+      - name: Deploy dedicated static Web/PWA test build
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config profile-preview/wrangler.toml
+      - name: Live API auth, isolation and browser smoke
+        run: |
+          RPCHESS_PROFILE_API='https://rpchess-profile-preview.mobigametim.workers.dev' \
+          RPCHESS_PROFILE_GAME='https://rpchess-profile-game-preview.mobigametim.workers.dev' node <<'NODE'
+          const assert=require('node:assert/strict');
+          const {chromium}=require('playwright');
+          const api=process.env.RPCHESS_PROFILE_API,game=process.env.RPCHESS_PROFILE_GAME;
+          (async()=>{
+            const health=await fetch(api+'/health');
+            assert.equal(health.status,200,'isolated profile Worker is live');
+            const source=game;
+            const cors=await fetch(api+'/v1/session',{method:'OPTIONS',headers:{
+              Origin:source,'Access-Control-Request-Method':'POST',
+              'Access-Control-Request-Headers':'Authorization, Content-Type'
+            }});
+            assert.equal(cors.status,204,'profile CORS preflight');
+            assert.equal(cors.headers.get('Access-Control-Allow-Origin'),source);
+            const blocked=await fetch(api+'/v1/session',{method:'OPTIONS',headers:{Origin:'https://untrusted.invalid'}});
+            assert.equal(blocked.status,403,'unknown browser origin is blocked');
+            const guest=await fetch(api+'/v1/session',{method:'POST',headers:{
+              Origin:source,'Content-Type':'application/json'
+            },body:'{}'});
+            assert.equal(guest.status,200,'guest identity can be issued without provider auth');
+            const issued=await guest.json();
+            assert.match(issued.token,/^[A-Za-z0-9_-]{43}$/);
+            assert.match(issued.profile.id,/^[0-9a-f-]{36}$/);
+            assert.equal(issued.profile.provider,'web');
+            assert.equal((await fetch(api+'/v1/profile',{headers:{Origin:source}})).status,401,'RPChess ID alone is not authorization');
+            const auth={Origin:source,Authorization:'Bearer '+issued.token};
+            const get=await fetch(api+'/v1/profile',{headers:auth});
+            assert.equal(get.status,200,'server profile resolves opaque token');
+            const payload={schemaVersion:1,run:null,rating:{schemaVersion:1,power:500,receipts:[]},
+              chronicle:{schemaVersion:1,history:[]},arena:{version:1,events:[],match:null}};
+            const write=await fetch(api+'/v1/profile',{method:'PUT',headers:{...auth,'Content-Type':'application/json'},
+              body:JSON.stringify({revision:0,snapshot:payload})});
+            assert.equal(write.status,200,'CAS profile save');
+            assert.equal((await fetch(api+'/v1/profile',{method:'PUT',headers:{...auth,'Content-Type':'application/json'},
+              body:JSON.stringify({revision:0,snapshot:{...payload,run:{id:'stale'}}})})).status,409,'stale save rejected');
+            const browser=await chromium.launch({headless:true});
+            try {
+              const page=await browser.newPage();
+              await page.goto(game+'/?rpchess_profile=1',{waitUntil:'domcontentloaded',timeout:40000});
+              await page.locator('[data-new-game]').waitFor({state:'visible',timeout:45000});
+              await page.waitForFunction(()=>window.RPChessProfileStatus?.status==='ready',null,{timeout:30000});
+              const before=await page.evaluate(()=>({
+                enabled:window.RPChessPlatform?.profileEnabled,
+                profile:window.RPChessProfileStatus?.profileId,
+                provider:window.RPChessProfileStatus?.provider,
+                cloud:window.RPChessPlatform?.storage.cloud.available
+              }));
+              assert(before.enabled&&before.provider==='web'&&/^[0-9a-f-]{36}$/.test(before.profile));
+              await page.reload({waitUntil:'domcontentloaded'});
+              await page.waitForFunction(()=>window.RPChessProfileStatus?.status==='ready',null,{timeout:30000});
+              const after=await page.evaluate(()=>window.RPChessProfileStatus.profileId);
+              assert.equal(after,before.profile,'Web profile must survive reload without VK');
+              console.log('UNIFIED RPCHESS PROFILE LIVE: D1 guest + credential + CAS + browser reload PASS');
+            } finally {await browser.close();}
+          })().catch(error=>{console.error(error);process.exitCode=1;});
+          NODE
+          echo "Profile API: https://rpchess-profile-preview.mobigametim.workers.dev" >> "$GITHUB_STEP_SUMMARY"
+          echo "Web/PWA profile trial: https://rpchess-profile-game-preview.mobigametim.workers.dev/?rpchess_profile=1" >> "$GITHUB_STEP_SUMMARY"
