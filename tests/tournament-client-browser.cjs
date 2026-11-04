@@ -197,7 +197,8 @@ try {
   return timing?{duration:timing.duration,easing:timing.easing}:null;
  },null,{timeout:15000});
  await dragMouse(white,'e2','e4');
- const motion=await flyerMotion;
+ // Playwright waitForFunction resolves to a JSHandle, not the returned object.
+ const motion=await (await flyerMotion).jsonValue();
  const moveFlyer=white.locator('.classic-piece-flyer');
  assert.equal(motion.duration,290,'Tournament movement duration matches Arena');
  assert.equal(motion.easing.replace(/\s+/g,'').replace(/0\./g,'.'),'cubic-bezier(.22,.8,.24,1)',
