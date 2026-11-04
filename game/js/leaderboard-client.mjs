@@ -94,6 +94,10 @@ function changed(next){
 }
 function currentLeaderboard(){return board;}
 async function loadLeaderboard({force=false}={}){
+  // The old VK-only leaderboard does not accept this staging origin.
+  // D1 profile progress is independent; do not post to production leaderboard
+  // from an unaccepted test build. Re-enable via the unified rating adapter.
+  if(platform.profileEnabled)return changed({top:[],me:null,status:'unavailable'});
   if(!apiRoot())return changed({top:[],me:null,status:'unavailable'});
   if(!force&&Date.now()-cachedAt<(board.status==='offline'?5000:CACHE_MS))return board;
   if(pending)return pending;
@@ -154,6 +158,7 @@ function alreadyRanked(best) {
   return me.week>best.week||(me.week===best.week&&me.power>=best.power);
 }
 async function submitBestChronicle(){
+  if(platform.profileEnabled)return {status:'unavailable'};
   if(!apiRoot())return {status:'unavailable'};
   const launch=await vkLaunch();
   if(!launch)return {status:'unavailable'};
