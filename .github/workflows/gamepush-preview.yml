@@ -57,9 +57,9 @@ jobs:
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
-      - name: Verify unchanged foundation with Chromium
+      - name: Verify accepted gameplay scenes with Chromium
         env:
-          RPCHESS_BROWSER_TEST: reboot-foundation-browser.cjs
+          RPCHESS_BROWSER_TEST: portrait-key-scenes-browser.cjs
         run: npm run test:browser
       - name: Require existing Cloudflare credentials
         env:
