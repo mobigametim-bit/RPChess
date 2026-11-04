@@ -315,6 +315,11 @@ class MemoryStorage {
   assert.strictEqual(migration.extractLocalMeta().migratedFromVK,true,'local marker must persist for retry/reload');
   assert.strictEqual(oldDevice.getItem(persistence.RUN_STORAGE_KEY),storedLegacyRun,'old VK local save must survive GP migration');
 
+  // The previous GamePush test stored its own metadata in VK under a different
+  // namespace. The unified profile may read it but must never change it.
+  for (const [key,value] of cloudMeta) cloud.set(key,value);
+  const originalGPManifest=cloud.get('rpchess_gp_v2_manifest');
+
   // The unified D1-backed profile MUST disable all legacy VK Cloud writes,
   // while the explicitly read-only migration reader still sees the backup.
   globalThis.location.search='?vk_app_id=54754579&rpchess_profile=1';
@@ -324,6 +329,11 @@ class MemoryStorage {
   assert.strictEqual(await platformModule.storage.cloud.setItem(cloudSave.CLOUD_SAVE_MANIFEST_KEY,'unsafe'),false);
   assert.strictEqual(await platformModule.storage.cloud.getItemStrict(cloudSave.CLOUD_SAVE_MANIFEST_KEY),null);
   assert.strictEqual(platformModule.storage.legacyVKProfileReader.available,true);
+  assert.strictEqual(platformModule.storage.previousGamePushMetaReader.available,true);
+  const previouslySavedGP=await migration.readNewMeta(platformModule.storage.previousGamePushMetaReader);
+  assert.strictEqual(previouslySavedGP.meta.rating.power,845,'previous GP completed meta must be readable without GP SDK');
+  assert.strictEqual(previouslySavedGP.meta.arena.match,null);
+  assert.strictEqual(cloud.get('rpchess_gp_v2_manifest'),originalGPManifest,'GP cloud must remain byte-identical after read');
   const originalFromProfile=await cloudSave.readCloudEnvelope(platformModule.storage.legacyVKProfileReader);
   assert.strictEqual(originalFromProfile.error,null);
   assert(originalFromProfile.envelope?.payload?.run,'legacy reader can recover historical VK snapshot');
