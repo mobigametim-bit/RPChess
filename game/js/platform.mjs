@@ -444,7 +444,11 @@ const platform = Object.freeze({
   gamepush:gamepushSdk,
   async init() {
     // Trial mode only on standalone Web; VK cloud saves and VK ads stay untouched.
-    if (gamepushSdk.enabled && !isVKLaunch()) return gamepushSdk.init();
+    if (gamepushSdk.enabled && !isVKLaunch()) {
+      // Do not block the menu if a test origin is not yet allowed by GamePush.
+      void gamepushSdk.init();
+      return true;
+    }
     return await discoverVKHost() ? sendVKWebAppInit() : false;
   },
   capabilities
