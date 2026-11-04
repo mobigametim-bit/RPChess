@@ -110,6 +110,12 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   assert(!ui.includes('Новое имя ещё ждёт своей дороги.'),'Chronicle must not show the removed empty current-run sentence');
   for(const token of ['personalizePlayerNarrative','personalizePlayerTitle','playerNameForRun'])assert(events.includes(token),`Events player-name integration missing ${token}`);
   for(const token of ['.chronicle-panel','.identity-panel','.chronicle-metric'])assert(css.includes(token),`identity/chronicle CSS missing ${token}`);
+  for(const token of ['renderPersonalChronicle(bestRoot)','data.chronicle','chronicle-personal-history','chronicle-personal-overview','chronicle.arenaEvents'])
+    assert(ui.includes(token) || css.includes(token),`profile-backed Chronicle missing ${token}`);
+  const runtimeUI=fs.readFileSync(path.join(game,'localization/runtime-ui.mjs'),'utf8');
+  for(const key of ['chronicle.personalHistory','chronicle.completedCount','chronicle.arenaEvents'])
+    assert.strictEqual(runtimeUI.split(key).length,3,`both RU/EN must translate ${key}`);
+
   const leaderboard=await import(pathToFileURL(path.join(game,'../leaderboard-worker/src/index.mjs')).href);
   assert.strictEqual(leaderboard.validatedRecord({runId:'run-1',playerName:'Элиана',week:36,power:556,glory:14}).glory,14);
   assert.strictEqual(leaderboard.validatedRecord({runId:'run-1',playerName:'Элиана',week:36,power:556,glory:14,commanderId:'stone_crown'}).commanderId,'stone_crown');
