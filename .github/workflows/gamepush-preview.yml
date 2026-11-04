@@ -99,6 +99,12 @@ jobs:
             const browser=await chromium.launch({headless:true});
             try {
               const page=await browser.newPage();
+              // Seed an old-style save before page boot. The new GamePush
+              // namespace must neither read, delete, nor modify it.
+              await page.addInitScript(()=>{
+                localStorage.setItem('rpchess.reboot.v1.run','legacy-keep-intact');
+                localStorage.setItem('rpchess.reboot.v1.settings',JSON.stringify({language:'en',simplePieces:true}));
+              });
               const issues=[];
               page.on('pageerror',error=>issues.push('runtime: '+error.message.slice(0,240)));
               page.on('requestfailed',request=>{
@@ -127,6 +133,21 @@ jobs:
                 menuVisible:!document.querySelector('[data-reboot-foundation]')?.hidden,
                 reasons:window.__gpTrialEvents||[]
               }));
+              const fresh=await page.evaluate(()=>{
+                const store=globalThis.RPChessPlatform?.storage;
+                const local=globalThis.localStorage;
+                store?.setItem('rpchess.gp-smoke','ok');
+                return {
+                  priorSaveIntact:local.getItem('rpchess.reboot.v1.run')==='legacy-keep-intact',
+                  freshSave:store?.getItem('rpchess.reboot.v1.run')===null,
+                  freshSettings:store?.getItem('rpchess.reboot.v1.settings')===null,
+                  scopedWrite:local.getItem('rpchess.gamepush.v2.rpchess.gp-smoke')==='ok',
+                  noLegacyWrite:local.getItem('rpchess.gp-smoke')===null,
+                  noLegacyCloud:store?.cloud?.available===false
+                };
+              });
+              if(Object.values(fresh).some(v=>!v))throw Error('Fresh GamePush namespace regression: '+JSON.stringify(fresh));
+              console.log('GamePush v2 fresh-start isolation:',JSON.stringify(fresh));
               console.log('GamePush trusted-origin SDK check:',JSON.stringify(result));
               if(issues.length)console.log('GamePush network/runtime diagnostics:',JSON.stringify(issues.slice(0,10)));
               if(!result.gamepushEnabled||result.projectId!==31247||!result.menuVisible)throw Error('Game/menu readiness failed');
