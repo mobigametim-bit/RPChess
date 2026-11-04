@@ -143,9 +143,11 @@ function needsLegacyEnrichment(profile,meta) {
     const saved=new Set((items||[]).map(row=>row?.[key]).filter(Boolean));
     return (oldItems||[]).some(row=>row?.[key]&&!saved.has(row[key]));
   };
-  return missing(stored.chronicle?.history,meta.chronicle?.history,'runId')
+  return ((stored.chronicle?.history?.length||0)<20 &&
+      missing(stored.chronicle?.history,meta.chronicle?.history,'runId'))
     || missing(stored.arena?.events,meta.arena?.events,'id')
-    || missing(stored.rating?.receipts,meta.rating?.receipts,'id');
+    || ((stored.rating?.receipts?.length||0)<2048 &&
+      missing(stored.rating?.receipts,meta.rating?.receipts,'id'));
 }
 function publicMetaSummary(meta) {
   return {
