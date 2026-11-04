@@ -166,7 +166,50 @@ jobs:
                 enabled:window.RPChessPlatform.profileEnabled
               }));
               assert(pwa.enabled && pwa.id===before.profile,'installed PWA root must keep the same RPChess ID');
-              console.log('UNIFIED RPCHESS PROFILE LIVE: D1 guest + credential + CAS + Web/PWA reload PASS');
+              // Seed a fresh test-only Web profile via its own bearer token.
+              // Verify the complete chain: D1 -> per-player local snapshot ->
+              // personal Chronicle flag and Arena, not merely a matching ID.
+              const seed=await page.evaluate(async profileApi=>{
+                const secret=localStorage.getItem('rpchess.profile.auth.web.v1');
+                const auth={'Authorization':'Bearer '+secret};
+                const current=await fetch(profileApi+'/v1/profile',{headers:auth});
+                const {profile}=await current.json();
+                const stamp=Date.now();
+                const snapshot={schemaVersion:1,run:null,
+                  rating:{schemaVersion:1,power:734,receipts:[]},
+                  chronicle:{schemaVersion:1,history:[{
+                    runId:'smoke-personal-history-1',playerName:'Smoke Tester',
+                    commanderId:'oathkeeper',week:7,power:734,completedAt:stamp
+                  }]},
+                  arena:{version:1,squad:'humans',match:null,updatedAt:stamp,
+                    events:[{id:'smoke-arena-win-1',kind:'win',
+                      foe:'pawn:humans',amount:30,at:stamp}]}
+                };
+                const saved=await fetch(profileApi+'/v1/profile',{method:'PUT',
+                  headers:{...auth,'Content-Type':'application/json'},
+                  body:JSON.stringify({revision:profile.revision,snapshot})});
+                return saved.status;
+              },api);
+              assert.equal(seed,200,'test-only D1 history snapshot was saved');
+              await page.reload({waitUntil:'domcontentloaded'});
+              await page.waitForFunction(()=>window.RPChessProfileStatus?.status==='ready',null,{timeout:30000});
+              const history=page.locator('[data-chronicle-personal-history] .chronicle-leaderboard-row');
+              await history.first().waitFor({state:'attached',timeout:15000});
+              assert.equal(await history.count(),1,'restored completed Chronicle must appear in the flag');
+              const overview=await page.locator('[data-chronicle-profile-summary]').innerText();
+              assert(overview.includes('734'),'profile Power must be visible');
+              assert(overview.includes('1'),'completed Journey and Arena receipts must be visible');
+              assert((await history.first().innerText()).includes('Smoke Tester'));
+              const restored=await page.evaluate(()=>window.RPChessProfileReconcile);
+              assert.equal(restored.remote.power,734);
+              assert.equal(restored.localAfter.chronicle,1);
+              assert.equal(restored.localAfter.arenaEvents,1);
+              assert.equal(restored.readbackMatches,true);
+              await page.locator('[data-arena-open]').click();
+              await page.locator('[data-arena-screen]:not([hidden])').waitFor({timeout:30000});
+              assert((await page.locator('[data-arena-shards]').innerText()).includes('30'),
+                'restored Arena victory must fund exactly 30 shards');
+              console.log('UNIFIED RPCHESS PROFILE LIVE: D1 guest + CAS + Web/PWA ID + visible Chronicle/Arena restore PASS');
             } finally {await browser.close();}
           })().catch(error=>{console.error(error);process.exitCode=1;});
           NODE
