@@ -161,6 +161,11 @@ const gamepushSdk = Object.freeze({
   get ready() { return state === 'ready'; },
   get status() { return state; },
   get projectId() { return PROJECT_ID; },
+  // SDK-supplied platform/player values are UI hints, not server authority.
+  // Never trust playerId without verifying player.authToken on Cloudflare.
+  get platformType() { return state === 'ready' ? String(sdk?.platform?.type || '') : ''; },
+  get playerId() { return state === 'ready' ? sdk?.player?.id ?? null : null; },
+  get loggedIn() { return state === 'ready' && sdk?.player?.isLoggedIn === true; },
   init,
   markReady,
   ads:Object.freeze({
