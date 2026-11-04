@@ -142,10 +142,11 @@ function install() {
   if(installed)return;
   installed=true;
   for(const name of EVENTS)globalThis.addEventListener?.(name,()=>scheduleSave({immediate:name==='rpchess:run-persisted'}));
+  globalThis.addEventListener?.('online',()=>scheduleSave({immediate:true}));
   platform.lifecycle.subscribe(({active})=>{if(!active)scheduleSave({immediate:true});},{immediate:false});
 }
 async function syncNow() {
-  if(!sessionReady||!token||status==='conflict'||status==='offline')return false;
+  if(!sessionReady||!token||status==='conflict')return false;
   if(syncing)return syncing;
   syncing=Promise.resolve().then(async()=>{
     const before=localPayload(),fingerprint=payloadFingerprint(before);
