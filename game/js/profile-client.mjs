@@ -110,12 +110,41 @@ function setLocalMeta(remoteRevision,payload) {
   store?.setItem(SYNC_REV_KEY,String(remoteRevision));
   store?.setItem(SYNC_FINGERPRINT_KEY,payloadFingerprint(payload));
 }
+function summaryOfMeta(payload) {
+  // Deliberately omit identity, run content, receipt IDs and access tokens.
+  const power=Number(payload?.rating?.power);
+  return Object.freeze({
+    power:Number.isFinite(power)?power:null,
+    chronicle:Math.max(0,payload?.chronicle?.history?.length||0),
+    arenaEvents:Math.max(0,payload?.arena?.events?.length||0),
+    powerReceipts:Math.max(0,payload?.rating?.receipts?.length||0),
+    hasActiveRun:Boolean(payload?.run)
+  });
+}
+function profileRestoreMatches(remote,local) {
+  if(!remote||!local)return false;
+  if(Number(remote.rating?.power)!==Number(local.rating?.power))return false;
+  const containsAll=(remoteItems,localItems,key)=>{
+    const have=new Set((localItems||[]).map(item=>item?.[key]).filter(Boolean));
+    return (remoteItems||[]).every(item=>item?.[key]&&have.has(item[key]));
+  };
+  return containsAll(remote.chronicle?.history,local.chronicle?.history,'runId')
+    && containsAll(remote.arena?.events,local.arena?.events,'id')
+    && containsAll(remote.rating?.receipts,local.rating?.receipts,'id');
+}
+function recordReconcile(data) {
+  // Accessible only to this game's iframe. Never include account IDs or tokens.
+  globalThis.RPChessProfileReconcile=Object.freeze(data);
+}
 function restoreProfile(profile) {
   const payload=profile?.snapshot;
   if(!payloadHasProgress(payload))return false;
   const ok=restoreLocalEnvelope({payload,revision:Math.max(0,profile.revision),updatedAt:profile.updatedAt});
-  if(ok)setLocalMeta(profile.revision,payload);
-  return ok;
+  if(!ok)return false;
+  const local=localPayload();
+  const matched=profileRestoreMatches(payload,local);
+  if(matched)setLocalMeta(profile.revision,payload);
+  return matched;
 }
 function legacyVKMeta(source) {
   const p=source?.payload;
@@ -288,16 +317,50 @@ async function boot() {
     const remoteHash=payloadFingerprint(remoteData);
     // If the server has a newer revision AND this device contains offline
     // edits since its last synced revision, don't choose a winner silently.
+    const remoteStats=summaryOfMeta(remoteData);
+    const localBeforeStats=summaryOfMeta(local);
+    const note=(decision,restored=false)=>recordReconcile({
+      decision, restored, revision:remote.revision,
+      remote:remoteStats, localBefore:localBeforeStats,
+      localAfter:summaryOfMeta(localPayload()),
+      readbackMatches:profileRestoreMatches(remoteData,localPayload())
+    });
     if(remote.revision>0 && marker.revision!==null && remote.revision!==marker.revision
       && marker.fingerprint && localHash!==marker.fingerprint && localHash!==remoteHash) {
       revision=remote.revision;
+      note('conflict-newer-server');
       state('conflict','Remote profile changed while this device was offline');
       return {status:'conflict',profileId};
     }
-    if(remote.revision>0 && (marker.revision!==remote.revision || localHash===marker.fingerprint)){
-      restoreProfile(remote);
+    const localMissingAchievements=
+      (remoteStats.chronicle>localBeforeStats.chronicle)
+      || (remoteStats.arenaEvents>localBeforeStats.arenaEvents)
+      || (remoteStats.powerReceipts>localBeforeStats.powerReceipts)
+      || (remoteStats.power!==null && remoteStats.power!==500 &&
+          (localBeforeStats.power===null||localBeforeStats.power===500));
+    // A locally changed but incomplete profile must not silently replace
+    // completed server history. Preserve local run separately on conflict.
+    const localDiverged=marker.revision===remote.revision &&
+      marker.fingerprint && localHash!==marker.fingerprint;
+    if(remote.revision>0 && localDiverged && localMissingAchievements &&
+       payloadHasProgress(local)) {
+      revision=remote.revision;
+      note('conflict-incomplete-local');
+      state('conflict','Local save differs and lacks completed server achievements');
+      return {status:'conflict',profileId};
+    }
+    let restored=false;
+    if(remote.revision>0 && (marker.revision!==remote.revision ||
+      localHash===marker.fingerprint || localMissingAchievements)){
+      restored=restoreProfile(remote);
+      note(restored?'restored':'restore-readback-failed',restored);
+      if(!restored){
+        state('offline','D1 profile could not be restored to the current local account');
+        return {status:'offline',profileId};
+      }
       lastFingerprint=payloadFingerprint(localPayload());
     }else{
+      note(remote.revision>0?'local-kept':'new-profile');
       lastFingerprint=marker.fingerprint||'';
     }
     revision=remote.revision||0;
@@ -320,4 +383,4 @@ async function bootstrapProfile() {
   return bootPromise;
 }
 function statusInfo() {return Object.freeze({status,provider,profileId,revision,enabled:enabled(),migration:migration.status});}
-export {bootstrapProfile,syncNow,statusInfo,signedParams,legacyVKMeta,hasCompletedMeta,needsLegacyEnrichment};
+export {bootstrapProfile,syncNow,statusInfo,signedParams,legacyVKMeta,hasCompletedMeta,needsLegacyEnrichment,profileRestoreMatches,summaryOfMeta};
