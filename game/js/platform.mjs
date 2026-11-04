@@ -7,6 +7,11 @@ const VK_AD_FORMATS = new Set(['reward', 'interstitial']);
 // GamePush cutover v2 is a fresh local namespace. Legacy player data remains
 // untouched and is not silently migrated from this origin or VK cloud.
 const GAMEPUSH_SAVE_PREFIX = 'rpchess.gamepush.v2.';
+const PROFILE_SAVE_PREFIX = 'rpchess.profile.v1.';
+function rpchessProfileEnabled() {
+  try { return new URLSearchParams(globalThis.location?.search||'').get('rpchess_profile')==='1'; }
+  catch { return false; }
+}
 
 function safeLocalStorage() {
   try { return globalThis.localStorage || null; }
@@ -215,10 +220,10 @@ async function supportsVKMethod(method) {
 
 // Wrap the synchronous Web Storage contract (including length/key enumeration)
 // instead of deleting the previous user's data. Browser reloads still persist v2.
-function scopedGamePushStore() {
+function scopedGamePushStore(prefixOverride = GAMEPUSH_SAVE_PREFIX) {
   const raw = safeLocalStorage();
   if (!raw) return null;
-  const prefix = GAMEPUSH_SAVE_PREFIX;
+  const prefix = prefixOverride;
   return {
     get length() {
       let count = 0;
@@ -249,6 +254,7 @@ function scopedGamePushStore() {
   };
 }
 function gameStore() {
+  if (rpchessProfileEnabled()) return scopedGamePushStore(PROFILE_SAVE_PREFIX);
   return gamepushSdk.enabled ? scopedGamePushStore() : safeLocalStorage();
 }
 const localStorageAdapter = Object.freeze({
@@ -332,13 +338,13 @@ function gpVkCloudAvailable() {
   return gamepushSdk.enabled && gamepushSdk.ready && gamepushSdk.loggedIn
     && /VK/i.test(gamepushSdk.platformType) && isVKLaunch();
 }
-function makeScopedVKCloud(keyPattern, writeEnabled) {
+function makeScopedVKCloud(keyPattern, writeEnabled, canAccess=gpVkCloudAvailable) {
   const assertKeys = keys => {
-    if (!gpVkCloudAvailable() || keys.some(key=>!keyPattern.test(String(key))))
+    if (!canAccess() || keys.some(key=>!keyPattern.test(String(key))))
       throw new Error('VK migration cloud scope unavailable');
   };
   const reader = {
-    get available() { return gpVkCloudAvailable(); },
+    get available() { return canAccess(); },
     async getItemStrict(key) {
       assertKeys([key]);
       const data=await sendVKRequest('VKWebAppStorageGet',{keys:[String(key)]});
@@ -364,12 +370,17 @@ function makeScopedVKCloud(keyPattern, writeEnabled) {
   return Object.freeze(reader);
 }
 const legacyVKMetaReader = makeScopedVKCloud(OLD_CLOUD_KEY,false);
+// Profile migration requires only the verified RPChess server session. It does
+// NOT depend on GamePush working inside VK (the current SDK may reject userId).
+const legacyVKProfileReader=makeScopedVKCloud(OLD_CLOUD_KEY,false,
+  ()=>rpchessProfileEnabled()&&isVKLaunch());
 const gamepushVKMetaStore = makeScopedVKCloud(GP_META_CLOUD_KEY,true);
 
 const storage = Object.freeze({
   local:localStorageAdapter,
   cloud:cloudStorageAdapter,
   legacyVKMetaReader,
+  legacyVKProfileReader,
   gamepushVKMetaStore,
   sync() { return localStorageAdapter.sync(); },
   getItem(key) { return localStorageAdapter.getItem(key); },
@@ -539,6 +550,7 @@ const platform = Object.freeze({
   identity,
   lifecycle,
   gamepush:gamepushSdk,
+  get profileEnabled() { return rpchessProfileEnabled(); },
   async init() {
     // GamePush opt-in owns platform initialization on Web, VK and Yandex test
     // builds. No parallel VK Bridge init, ad call or legacy VK cloud restore.
