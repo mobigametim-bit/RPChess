@@ -43,19 +43,10 @@ async function waitForVisible(page, selector, label = selector, timeout = 10000)
         href: location.href,
         lang: document.documentElement.lang,
         bodyClass: document.body.className,
-        identityModal: (() => { const el = document.querySelector('[data-player-identity-modal]'); return { exists:!!el, hidden:el?.hidden, display:el ? getComputedStyle(el).display : null }; })(),
-        routeState: { identityPromise:!!globalThis.RPChessIdentityReady, cloudPromise:!!globalThis.RPChessCloudReady, onboardPromise:!!globalThis.RPChessOnboardingReady },
         active
       };
     }).catch(() => null);
-    const modules = await page.evaluate(async () => {
-      const status = async (promise) => {
-        if (!promise) return 'missing';
-        return Promise.race([Promise.resolve(promise).then(value => value ? 'ready' : 'null', error => String(error)), new Promise(resolve => setTimeout(() => resolve('pending'), 1000))]);
-      };
-      return { identity:await status(globalThis.RPChessIdentityReady), cloud:await status(globalThis.RPChessCloudReady), route:await status(globalThis.RPChessRouteReady) };
-    }).catch(() => null);
-    throw new Error(`${label} did not become visible. Boot diagnostics: ${JSON.stringify(modules)}. Scene diagnostic: ${JSON.stringify(diagnostic)}\n${error.stack || error}`);
+    throw new Error(`${label} did not become visible. Scene diagnostic: ${JSON.stringify(diagnostic)}\n${error.stack || error}`);
   }
   return locator;
 }
