@@ -13,6 +13,7 @@ const META_PREFIX = 'rpchess_gp_v2_';
 const LOCAL_SYNC_FINGERPRINT_KEY = 'rpchess.reboot.v2.meta-uploaded';
 const LOCAL_MIGRATED_KEY = 'rpchess.reboot.v2.meta-migrated';
 const LOCAL_LEGACY_FINGERPRINT = 'rpchess.reboot.v2.legacy-fingerprint';
+const LOCAL_GP_OWNER = 'rpchess.reboot.v2.meta-owner';
 const META_VERSION = 1;
 const META_MAX_BYTES = 320000;
 const META_CHUNK_BYTES = 3000;
@@ -251,8 +252,17 @@ async function bootstrapGamePushMeta() {
         emit('skipped','VK Bridge unavailable');
         return {status:'skipped'};
       }
+      const owner=String(platform.gamepush.playerId||'');
+      if (!owner) {
+        emit('skipped','GamePush player identity missing');
+        return {status:'skipped'};
+      }
+      const previousOwner=platform.storage.getItem(LOCAL_GP_OWNER);
+      // A shared browser may switch VK accounts. Never upload another
+      // account's local meta into the newly authenticated VK cloud.
+      const ownerChanged=Boolean(previousOwner && previousOwner!==owner);
       const remote=await readNewMeta();
-      const local=extractLocalMeta();
+      const local=ownerChanged?normalizeMeta({}):extractLocalMeta();
       let candidate=remote ? mergeMeta(remote.meta,local,{
         preferSecondaryRating: !platform.storage.getItem(LOCAL_SYNC_FINGERPRINT_KEY)&&hasMetaProgress(local)
       }) : local;
@@ -272,6 +282,7 @@ async function bootstrapGamePushMeta() {
       const ok=await writeNewMeta(candidate,platform.storage.gamepushVKMetaStore,remote);
       if (!ok) throw new Error('New VK meta cloud write not verified');
       applyLocalMeta(candidate);
+      platform.storage.setItem(LOCAL_GP_OWNER,owner);
       platform.storage.setItem(LOCAL_SYNC_FINGERPRINT_KEY,fingerprint(candidate));
       baseline=candidate;
       installAutosync();
