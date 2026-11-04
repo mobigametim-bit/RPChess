@@ -5,7 +5,7 @@ import { ClassicChessEngine } from '../../game/js/classic-chess-engine.mjs';
 import { normalizePower, ratingDelta } from '../../game/js/power-elo.mjs';
 
 const MINUTE=60000, CONTROL=10*MINUTE, MAX_MOVES=600, VK_LAUNCH_TTL=3600;
-const ORIGINS=['https://mobigametim-bit.github.io','https://rpchess-portrait-ui-preview.mobigametim.workers.dev'];
+const ORIGINS=['https://mobigametim-bit.github.io','https://rpchess-portrait-ui-preview.mobigametim.workers.dev','https://rpchess-gamepush-preview.mobigametim.workers.dev'];
 function json(data,status=200,extra={}){return new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store',...extra}});}
 function problem(code,status=400){return json({error:code},status);}
 const encode=value=>btoa(String.fromCharCode(...new TextEncoder().encode(value))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
