@@ -1,0 +1,7 @@
+name = "rpchess-profile-game-preview"
+compatibility_date = "2026-11-04"
+
+# Standalone staging URL only. No writes to GitHub Pages, VK or Yandex hosting.
+[assets]
+directory = "../dist"
+not_found_handling = "single-page-application"
