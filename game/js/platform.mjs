@@ -9,8 +9,13 @@ const VK_AD_FORMATS = new Set(['reward', 'interstitial']);
 const GAMEPUSH_SAVE_PREFIX = 'rpchess.gamepush.v2.';
 const PROFILE_SAVE_PREFIX = 'rpchess.profile.v1.';
 function rpchessProfileEnabled() {
-  try { return new URLSearchParams(globalThis.location?.search||'').get('rpchess_profile')==='1'; }
-  catch { return false; }
+  try {
+    const query=new URLSearchParams(globalThis.location?.search||'');
+    // An installed staging PWA starts from its manifest (without query flags).
+    // Never enable this implicitly on GitHub Pages / production VK.
+    return query.get('rpchess_profile')==='1'
+      || globalThis.location?.hostname==='rpchess-profile-game-preview.mobigametim.workers.dev';
+  } catch { return false; }
 }
 
 let activeProfileStore='';
