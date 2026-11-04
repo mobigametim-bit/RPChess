@@ -1,6 +1,6 @@
 # GamePush SDK — безопасная подготовка миграции (2026-11-04)
 
-**Статус:** IMPLEMENTED (opt-in SDK foundation); NOT DEPLOYED; NOT HUMAN ACCEPTED.
+**Статус:** IMPLEMENTED + CI PASS + ISOLATED PREVIEW DEPLOYED; GAMEPUSH SDK AUTH NOT YET LIVE-VERIFIED; NOT HUMAN ACCEPTED.
 **Ветка:** `feature/gamepush-sdk-foundation-20261104`. **Production `main` и действующие VK/Яндекс публикации не изменять.**
 
 ## Цель и границы
@@ -23,9 +23,22 @@
 
 **Важно:** обычный Web-режим RPChess не показывает рекламные предложения на экранах, потому что `monetization.mjs` сейчас активирует их только в контексте VK. Это намеренно: нельзя включить новые награды до аудита и приёмки на площадках.
 
+## Проверка независимого preview (2026-11-04)
+
+- Worker: `rpchess-gamepush-preview` (новый отдельный Worker со статическими assets; Tournament, leaderboard, RPChess main Worker не менялись).
+- Обычный тестовый адрес: https://rpchess-gamepush-preview.mobigametim.workers.dev/
+- **SDK trial URL:** https://rpchess-gamepush-preview.mobigametim.workers.dev/?rpchess_gamepush=1
+- Actions run: https://github.com/mobigametim-bit/RPChess/actions/runs/41826383331 — **SUCCESS**.
+- `npm run gate:local` — PASS; `portrait-key-scenes-browser.cjs` — PASS.
+- Cloudflare Wrangler: загружены 957 файлов, выдан публичный Worker URL.
+- Live HTTP проверка: возвращаются HTML и `js/gamepush-sdk.mjs`; Chromium на опубликованном адресе подтверждает меню, `enabled:true`, `projectId:31247`.
+- Снимок сразу после загрузки: `status:"loading"`; **не означает подтверждённую авторизацию**. Установить исход в доверенных сайтах GamePush и пометить тестовым; затем проверить `status:"ready"` на реальной странице.
+- `main`/GitHub Pages/VK/Яндекс/Cloudflare Tournament API не менялись.
+- Workflow: `.github/workflows/gamepush-preview.yml`, config: `gamepush-preview/wrangler.toml`.
+
 ## Что осталось до реального переключения площадок
 
-1. Пользователь добавляет **тестовый origin** в GamePush → Allowed Sites / Доверенные сайты, включает Test. Не трогать Production URL.
+1. Пользователь добавляет **тестовый origin** `https://rpchess-gamepush-preview.mobigametim.workers.dev` в GamePush → Allowed Sites / Доверенные сайты, включает Allow и Test/Dev. Не трогать Production URL.
 2. Создать preview-развёртывание этой ветки (через существующий staging/Netlify, без GitHub Pages production).
 3. В Chrome / DevTools проверить статус `RPChessPlatform.gamepush.status === 'ready'`; при недоступности SDK игра должна продолжать работать. Не публиковать токены авторизации.
 4. Утвердить слой удостоверения личности: подписанный `gp.player.authToken` проверяется **только** в Cloudflare Worker с серверным Secret. Никогда не доверять клиентскому player ID.
