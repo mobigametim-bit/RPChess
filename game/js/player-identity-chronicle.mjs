@@ -7,6 +7,8 @@ import { activeRunSnapshot, recordCompletedRun } from './chronicle-core.mjs';
 import { currentLeaderboard, loadLeaderboard, submitBestChronicle } from './leaderboard-client.mjs';
 import { COMMANDERS,normalizeCommanderId,commanderTitle,commanderDescription,commanderPortrait } from './commander-portraits.mjs';
 import {bestChronicleRun,readChronicle} from './chronicle-core.mjs';
+import { ARENA_KEY, normalizeArena } from './arena-core.mjs';
+import { platform } from './platform.mjs';
 
 let identityModal = null;
 let chroniclePanel = null;
@@ -224,6 +226,66 @@ function sectionTitle(kicker, name) {
   return fragment;
 }
 
+// In the unified RPChess profile trial the legacy VK-only leaderboard is
+// disabled. Show the player's *own* completed history instead of an empty
+// leaderboard: these values come from the restored D1 profile, not a ranking.
+function renderPersonalChronicle(target) {
+  const records=readChronicle().history.slice().sort((a,b)=>
+    (b.completedAt||0)-(a.completedAt||0) || b.runId.localeCompare(a.runId));
+  const power=readPlayerRating().power;
+  let arenaCount=0;
+  try {
+    const raw=JSON.parse(platform.storage.local?.getItem(ARENA_KEY)||'null');
+    arenaCount=normalizeArena(raw).events.length;
+  }catch{}
+  const heading=document.createElement('h3');
+  heading.className='chronicle-commanders-title';
+  heading.textContent=l('chronicle.personalHistory');
+  const overview=document.createElement('div');
+  overview.className='chronicle-personal-overview';
+  overview.dataset.chronicleProfileSummary='';
+  const counters=[
+    [l('chronicle.power'),power],
+    [l('chronicle.completedCount'),records.length],
+    [l('chronicle.arenaEvents'),arenaCount]
+  ];
+  for(const [label,value] of counters) {
+    const item=document.createElement('div');
+    const caption=document.createElement('span');caption.textContent=label;
+    const strong=document.createElement('strong');strong.textContent=String(value);
+    item.append(caption,strong);overview.append(item);
+  }
+  target.append(heading,overview);
+  if(!records.length) {
+    const empty=document.createElement('p');
+    empty.className='chronicle-leaderboard-note';
+    empty.textContent=l('chronicle.emptyCopy');
+    target.append(empty);
+    return;
+  }
+  const list=document.createElement('ol');
+  list.className='chronicle-leaderboard-list chronicle-personal-history';
+  list.dataset.chroniclePersonalHistory='';
+  for(const [index,record] of records.entries()){
+    const row=document.createElement('li');row.className='chronicle-leaderboard-row';
+    const rank=document.createElement('span');rank.className='chronicle-leaderboard-rank';
+    rank.textContent=String(index+1)+'.';
+    const avatar=document.createElement('img');avatar.className='chronicle-leaderboard-avatar';
+    avatar.src=commanderPortrait(record.commanderId);avatar.alt='';avatar.loading='lazy';
+    const detail=document.createElement('div');detail.className='chronicle-personal-history-detail';
+    const name=document.createElement('strong');name.textContent=record.playerName;
+    const meta=document.createElement('small');
+    meta.textContent=l('chronicle.week')+' '+record.week+' · '+l('chronicle.power')+' '+record.power;
+    detail.append(name,meta);
+    const glory=document.createElement('strong');glory.className='chronicle-leaderboard-glory';
+    glory.textContent=String(record.glory);
+    glory.title=l('chronicle.glory');
+    row.append(rank,avatar,detail,glory);
+    list.append(row);
+  }
+  target.append(list);
+}
+
 function renderChronicle() {
   const root = ensureChroniclePanel();
   if (!root) return;
@@ -253,6 +315,10 @@ function renderChronicle() {
 
   bestRoot?.replaceChildren();
   if (bestRoot) {
+    if(platform.profileEnabled) {
+      renderPersonalChronicle(bestRoot);
+      return;
+    }
     const title=document.createElement('h3');
     title.className='chronicle-commanders-title';
     title.textContent=l('chronicle.commanders');
