@@ -28,6 +28,8 @@ function setProfileStorageIdentity(kind,id) {
 function profileStoragePrefix() {
   if(activeProfileStore)return activeProfileStore;
   const kind=isVKLaunch()?'vk':'web';
+  // Never expose the previous VK user's cached progress before verification.
+  if(kind==='vk')return 'rpchess.profile.v1.vk.pending.';
   let id='';
   try { id=globalThis.localStorage?.getItem('rpchess.profile.cached-id.'+kind)||''; }catch{}
   return /^[0-9a-f-]{36}$/i.test(id)
@@ -285,18 +287,19 @@ const localStorageAdapter = Object.freeze({
   removeItem(key) { gameStore()?.removeItem(key); }
 });
 
+const legacyCloudDisabled = () => gamepushSdk.enabled || rpchessProfileEnabled();
 const cloudStorageAdapter = Object.freeze({
-  get available() { return isVKLaunch() && !gamepushSdk.enabled; },
-  async supported() { return !gamepushSdk.enabled && supportsVKMethod('VKWebAppStorageGet'); },
+  get available() { return isVKLaunch() && !legacyCloudDisabled(); },
+  async supported() { return !legacyCloudDisabled() && supportsVKMethod('VKWebAppStorageGet'); },
   async getItemStrict(key) {
-    if (gamepushSdk.enabled) return null;
+    if (legacyCloudDisabled()) return null;
     const data = await sendVKRequest('VKWebAppStorageGet', { keys:[String(key)] });
     if (!Array.isArray(data?.keys)) throw new Error('Invalid VK cloud storage response');
     const entry = data.keys.find((item) => item?.key === String(key));
     return typeof entry?.value === 'string' && entry.value.length ? entry.value : null;
   },
   async getItemsStrict(keys) {
-    if (gamepushSdk.enabled) return {};
+    if (legacyCloudDisabled()) return {};
     const normalized = [...new Set((keys || []).map((key) => String(key)).filter(Boolean))];
     if (!normalized.length) return {};
     const data = await sendVKRequest('VKWebAppStorageGet', { keys:normalized });
@@ -304,7 +307,7 @@ const cloudStorageAdapter = Object.freeze({
     return Object.fromEntries(data.keys.filter((entry) => entry && typeof entry.key === 'string').map((entry) => [entry.key, typeof entry.value === 'string' ? entry.value : '']));
   },
   async getItem(key) {
-    if (gamepushSdk.enabled || !isVKLaunch()) return null;
+    if (legacyCloudDisabled() || !isVKLaunch()) return null;
     try {
       const data = await sendVKRequest('VKWebAppStorageGet', { keys:[String(key)] });
       const entry = Array.isArray(data?.keys) ? data.keys.find((item) => item?.key === String(key)) : null;
@@ -315,7 +318,7 @@ const cloudStorageAdapter = Object.freeze({
     }
   },
   async getItems(keys) {
-    if (gamepushSdk.enabled) return {};
+    if (legacyCloudDisabled()) return {};
     const normalized = [...new Set((keys || []).map((key) => String(key)).filter(Boolean))];
     if (!isVKLaunch() || !normalized.length) return {};
     try {
@@ -329,7 +332,7 @@ const cloudStorageAdapter = Object.freeze({
     }
   },
   async setItem(key, value) {
-    if (gamepushSdk.enabled || !isVKLaunch()) return false;
+    if (legacyCloudDisabled() || !isVKLaunch()) return false;
     try {
       const data = await sendVKRequest('VKWebAppStorageSet', { key:String(key), value:String(value) });
       return data?.result === true;
@@ -548,7 +551,7 @@ const bridge = Object.freeze({
 
 const capabilities = Object.freeze({
   // Avoid promising native VK functionality when GamePush has replaced Bridge.
-  get cloudStorage() { return isVKLaunch() && !gamepushSdk.enabled; },
+  get cloudStorage() { return isVKLaunch() && !legacyCloudDisabled(); },
   get ads() { return gamepushSdk.enabled ? gamepushSdk.ready && /^VK(?:_|$)/i.test(gamepushSdk.platformType) : isVKLaunch(); },
   get sharing() { return isVKLaunch() && !gamepushSdk.enabled; },
   get leaderboard() { return isVKLaunch() && !gamepushSdk.enabled; },
