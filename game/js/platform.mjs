@@ -4,6 +4,9 @@ const VK_CONNECT_VERSION = '2.15.12';
 const VK_REQUEST_TIMEOUT_MS = 7000;
 const VK_AD_SHOW_TIMEOUT_MS = 180_000;
 const VK_AD_FORMATS = new Set(['reward', 'interstitial']);
+// GamePush cutover v2 is a fresh local namespace. Legacy player data remains
+// untouched and is not silently migrated from this origin or VK cloud.
+const GAMEPUSH_SAVE_PREFIX = 'rpchess.gamepush.v2.';
 
 function safeLocalStorage() {
   try { return globalThis.localStorage || null; }
@@ -210,16 +213,54 @@ async function supportsVKMethod(method) {
   return methods.has(method);
 }
 
+// Wrap the synchronous Web Storage contract (including length/key enumeration)
+// instead of deleting the previous user's data. Browser reloads still persist v2.
+function scopedGamePushStore() {
+  const raw = safeLocalStorage();
+  if (!raw) return null;
+  const prefix = GAMEPUSH_SAVE_PREFIX;
+  return {
+    get length() {
+      let count = 0;
+      for (let index = 0; index < raw.length; index++)
+        if (raw.key(index)?.startsWith(prefix)) count++;
+      return count;
+    },
+    key(index) {
+      if (!Number.isInteger(index) || index < 0) return null;
+      let offset = 0;
+      for (let i = 0; i < raw.length; i++) {
+        const key = raw.key(i);
+        if (!key?.startsWith(prefix)) continue;
+        if (offset++ === index) return key.slice(prefix.length);
+      }
+      return null;
+    },
+    getItem(key) { return raw.getItem(prefix + String(key)); },
+    setItem(key, value) { raw.setItem(prefix + String(key), String(value)); },
+    removeItem(key) { raw.removeItem(prefix + String(key)); },
+    clear() {
+      // A scoped clear must never erase the old player's progress.
+      for (let i = raw.length - 1; i >= 0; i--) {
+        const key = raw.key(i);
+        if (key?.startsWith(prefix)) raw.removeItem(key);
+      }
+    }
+  };
+}
+function gameStore() {
+  return gamepushSdk.enabled ? scopedGamePushStore() : safeLocalStorage();
+}
 const localStorageAdapter = Object.freeze({
-  sync() { return safeLocalStorage(); },
-  getItem(key) { return safeLocalStorage()?.getItem(key) ?? null; },
-  setItem(key, value) { safeLocalStorage()?.setItem(key, String(value)); },
-  removeItem(key) { safeLocalStorage()?.removeItem(key); }
+  sync() { return gameStore(); },
+  getItem(key) { return gameStore()?.getItem(key) ?? null; },
+  setItem(key, value) { gameStore()?.setItem(key, String(value)); },
+  removeItem(key) { gameStore()?.removeItem(key); }
 });
 
 const cloudStorageAdapter = Object.freeze({
-  get available() { return isVKLaunch(); },
-  async supported() { return supportsVKMethod('VKWebAppStorageGet'); },
+  get available() { return isVKLaunch() && !gamepushSdk.enabled; },
+  async supported() { return !gamepushSdk.enabled && supportsVKMethod('VKWebAppStorageGet'); },
   async getItemStrict(key) {
     const data = await sendVKRequest('VKWebAppStorageGet', { keys:[String(key)] });
     if (!Array.isArray(data?.keys)) throw new Error('Invalid VK cloud storage response');
@@ -299,13 +340,13 @@ function adErrorStatus(error) {
 
 const ads = Object.freeze({
   async supported(format) {
-    if (gamepushSdk.enabled && !isVKLaunch()) return gamepushSdk.ads.supported(format);
+    if (gamepushSdk.enabled) return gamepushSdk.ads.supported(format);
     return Boolean(normalizeAdFormat(format))
       && await supportsVKMethod('VKWebAppCheckNativeAds')
       && await supportsVKMethod('VKWebAppShowNativeAds');
   },
   async check(format) {
-    if (gamepushSdk.enabled && !isVKLaunch()) return gamepushSdk.ads.check(format);
+    if (gamepushSdk.enabled) return gamepushSdk.ads.check(format);
     const normalized = normalizeAdFormat(format);
     if (!normalized || !await this.supported(normalized)) return false;
     try {
@@ -316,7 +357,7 @@ const ads = Object.freeze({
     }
   },
   async show(format) {
-    if (gamepushSdk.enabled && !isVKLaunch()) return gamepushSdk.ads.show(format);
+    if (gamepushSdk.enabled) return gamepushSdk.ads.show(format);
     const normalized = normalizeAdFormat(format);
     if (!normalized || !isVKLaunch()) return Object.freeze({ status:'unavailable', format:normalized || String(format || '') });
     // Launch directly from the player's tap. On VK mobile WebViews a preliminary
@@ -414,7 +455,8 @@ function createLifecycle() {
 const lifecycle = createLifecycle();
 const launch = Object.freeze({
   params() { return Object.fromEntries(parseLaunchParams().entries()); },
-  isVK:isVKLaunch
+  isVK:isVKLaunch,
+  isYandex() { return gamepushSdk.enabled && /YANDEX/i.test(gamepushSdk.platformType); }
 });
 
 const bridge = Object.freeze({
@@ -433,7 +475,13 @@ const capabilities = Object.freeze({
 });
 
 const platform = Object.freeze({
-  get kind() { return isVKLaunch() ? 'vk' : 'web'; },
+  get kind() {
+    if (gamepushSdk.enabled && gamepushSdk.ready) {
+      if (/YANDEX/i.test(gamepushSdk.platformType)) return 'yandex';
+      if (/^VK(?:_|$)|VK_GAMES/i.test(gamepushSdk.platformType)) return 'vk';
+    }
+    return isVKLaunch() ? 'vk' : 'web';
+  },
   launch,
   bridge,
   storage,
@@ -443,9 +491,10 @@ const platform = Object.freeze({
   lifecycle,
   gamepush:gamepushSdk,
   async init() {
-    // Trial mode only on standalone Web; VK cloud saves and VK ads stay untouched.
-    if (gamepushSdk.enabled && !isVKLaunch()) {
-      // Do not block the menu if a test origin is not yet allowed by GamePush.
+    // GamePush opt-in owns platform initialization on Web, VK and Yandex test
+    // builds. No parallel VK Bridge init, ad call or legacy VK cloud restore.
+    // Do not block the menu if a test origin has not been configured yet.
+    if (gamepushSdk.enabled) {
       void gamepushSdk.init();
       return true;
     }
