@@ -233,18 +233,18 @@ function chunkKey(slot, index) {
   return `rpchess_v1_cloud_${slot}_${index}`;
 }
 
-async function readCloudManifest() {
-  if (!platform.storage.cloud.available) return null;
-  const raw = await platform.storage.cloud.getItemStrict(CLOUD_SAVE_MANIFEST_KEY);
+async function readCloudManifest(reader=platform.storage.cloud) {
+  if (!reader.available) return null;
+  const raw = await reader.getItemStrict(CLOUD_SAVE_MANIFEST_KEY);
   if (raw && !normalizeManifest(raw)) throw new Error('Invalid VK cloud save manifest');
   return normalizeManifest(raw);
 }
 
-async function readCloudEnvelope() {
-  const manifest = await readCloudManifest();
+async function readCloudEnvelope(reader=platform.storage.cloud) {
+  const manifest = await readCloudManifest(reader);
   if (!manifest) return { manifest:null, envelope:null, error:null };
   const keys = Array.from({ length:manifest.chunks }, (_, index) => chunkKey(manifest.slot, index));
-  const values = await platform.storage.cloud.getItemsStrict(keys);
+  const values = await reader.getItemsStrict(keys);
   const chunks = keys.map((key) => values[key]);
   if (chunks.some((value) => typeof value !== 'string')) return { manifest, envelope:null, error:'missing-chunk' };
   const serialized = chunks.join('');
@@ -531,6 +531,8 @@ export {
   payloadHasProgress,
   checksum,
   splitUtf8,
+  encodeCloudPayload,
+  decodeCloudPayload,
   payloadFingerprint,
   prepareLocalEnvelope,
   normalizeManifest,
