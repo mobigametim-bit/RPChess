@@ -402,7 +402,10 @@ const legacyVKProfileReader=makeScopedVKCloud(OLD_CLOUD_KEY,false,
 // separate VK cloud namespace. Read-only recovery is permitted without GP SDK.
 const previousGamePushMetaReader=makeScopedVKCloud(GP_META_CLOUD_KEY,false,
   ()=>rpchessProfileEnabled()&&isVKLaunch());
-const gamepushVKMetaStore = makeScopedVKCloud(GP_META_CLOUD_KEY,true);
+// GamePush v2 is a read-only recovery source once RPChess ID/D1 owns saves.
+// Even an accidentally invoked old GP sync must not write its cloud namespace.
+const gamepushVKMetaStore = makeScopedVKCloud(GP_META_CLOUD_KEY,true,
+  ()=>!rpchessProfileEnabled()&&gpVkCloudAvailable());
 
 const storage = Object.freeze({
   local:localStorageAdapter,
