@@ -82,12 +82,10 @@ async function openSession(kind) {
       if(result.profile?.provider!=='vk')throw Error('Expected a signed VK player');
       return result;
     }
-    // Without fresh launch params, only a previously authenticated same-origin
-    // VK token may recover the account. Never invent a VK ID.
-    if(!saved)throw Error('VK signed launch parameters unavailable');
-    const resumed=await request('/v1/session',{method:'POST',auth:false,data:{accessToken:saved}});
-    if(resumed.profile?.provider!=='vk')throw Error('Stored token is not a VK player');
-    return resumed;
+    // Never accept a cached VK bearer alone when the current launch identity
+    // is unknown: a different VK account on this browser could inherit the
+    // previous player's profile. Only freshly signed VK params may log in.
+    throw Error('Fresh VK signed launch parameters unavailable');
   }
   // Guest Web: never silently replace an expired credential with a new identity.
   if(saved)return request('/v1/session',{method:'POST',auth:false,data:{accessToken:saved}});
