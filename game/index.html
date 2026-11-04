@@ -14,11 +14,20 @@
   <meta name="description" content="Герои Шаха и мата — фэнтезийное шахматное приключение и рогалик">
   <meta name="rpchess-leaderboard-api" content="https://rpchess-leaderboard.mobigametim.workers.dev">
   <meta name="rpchess-tournament-api" content="https://rpchess-tournament-preview.mobigametim.workers.dev">
+  <meta name="rpchess-profile-api" content="https://rpchess-profile-preview.mobigametim.workers.dev">
   <title>Герои Шаха и мата</title>
   <script>
     try {
-      const gpFreshStart = new URLSearchParams(location.search).get('rpchess_gamepush') === '1';
-      const key = (gpFreshStart ? 'rpchess.gamepush.v2.' : '') + 'rpchess.reboot.v1.settings';
+      const params=new URLSearchParams(location.search);
+      const gpFreshStart=params.get('rpchess_gamepush') === '1';
+      const profileMode=params.get('rpchess_profile') === '1';
+      const vkHosted=params.has('vk_app_id') || /(^|\\.)vk\\.(com|ru)$/i.test(new URL(document.referrer||location.href).hostname);
+      const kind=vkHosted?'vk':'web';
+      const cached=localStorage.getItem('rpchess.profile.cached-id.'+kind)||'';
+      const prefix=profileMode
+        ? 'rpchess.profile.v1.'+kind+'.'+(/^[0-9a-f-]{36}$/i.test(cached)?cached:'pending')+'.'
+        : gpFreshStart ? 'rpchess.gamepush.v2.' : '';
+      const key = prefix + 'rpchess.reboot.v1.settings';
       const settings = JSON.parse(localStorage.getItem(key) || '{}');
       if (settings.language === 'en') document.documentElement.lang = 'en';
       document.documentElement.dataset.simplePieces = settings.simplePieces === true ? '1' : '0';
