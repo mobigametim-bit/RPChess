@@ -99,18 +99,38 @@ jobs:
             const browser=await chromium.launch({headless:true});
             try {
               const page=await browser.newPage();
+              const issues=[];
+              page.on('pageerror',error=>issues.push('runtime: '+error.message.slice(0,240)));
+              page.on('requestfailed',request=>{
+                const host=new URL(request.url()).hostname;
+                if(/gamepush|eponesh/.test(host)) issues.push('cdn: '+host+' '+request.failure()?.errorText);
+              });
               await page.goto(process.env.RPCHESS_GAMEPUSH_PREVIEW+'/?rpchess_gamepush=1',{waitUntil:'domcontentloaded',timeout:40000});
               await page.locator('[data-new-game]').waitFor({state:'visible',timeout:35000});
-              await page.waitForFunction(()=>globalThis.RPChessPlatform?.gamepush?.enabled===true,{timeout:20000});
+              await page.waitForFunction(()=>globalThis.RPChessPlatform?.gamepush?.enabled===true,null,{timeout:20000});
+              const statusEvents=await page.evaluate(()=>{
+                window.__gpTrialEvents=[];
+                addEventListener('rpchess:gamepush-status',event=>{
+                  window.__gpTrialEvents.push({status:event.detail?.status,reason:String(event.detail?.reason||'').slice(0,240)});
+                });
+                return true;
+              });
+              try {
+                await page.waitForFunction(()=>['ready','unavailable'].includes(globalThis.RPChessPlatform?.gamepush?.status),null,{timeout:55000});
+              } catch {
+                console.log('GamePush SDK readiness deadline hit');
+              }
               const result=await page.evaluate(()=>({
                 gamepushEnabled:globalThis.RPChessPlatform.gamepush.enabled,
                 projectId:globalThis.RPChessPlatform.gamepush.projectId,
                 status:globalThis.RPChessPlatform.gamepush.status,
-                menuVisible:!document.querySelector('[data-reboot-foundation]')?.hidden
+                menuVisible:!document.querySelector('[data-reboot-foundation]')?.hidden,
+                reasons:window.__gpTrialEvents||[]
               }));
-              if(!result.gamepushEnabled||result.projectId!==31247||!result.menuVisible)throw Error(JSON.stringify(result));
-              console.log('Public GamePush preview boot:',JSON.stringify(result));
-              // A trusted GamePush origin is required to assert status=ready.
+              console.log('GamePush trusted-origin SDK check:',JSON.stringify(result));
+              if(issues.length)console.log('GamePush network/runtime diagnostics:',JSON.stringify(issues.slice(0,10)));
+              if(!result.gamepushEnabled||result.projectId!==31247||!result.menuVisible)throw Error('Game/menu readiness failed');
+              if(result.status!=='ready')throw Error('GamePush player did not become ready: '+result.status);
             } finally {await browser.close();}
           })().catch(error=>{console.error(error);process.exitCode=1;});
           NODE
