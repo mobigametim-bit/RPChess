@@ -135,6 +135,18 @@ function hasCompletedMeta(meta) {
     || (meta.arena?.events?.length||0)>0
   ));
 }
+function needsLegacyEnrichment(profile,meta) {
+  if(!profile?.migratedVK)return true;
+  const stored=profile.snapshot||{};
+  if(Number(stored.rating?.power)===500 && Number(meta.rating?.power)!==500)return true;
+  const missing=(items,oldItems,key)=> {
+    const saved=new Set((items||[]).map(row=>row?.[key]).filter(Boolean));
+    return (oldItems||[]).some(row=>row?.[key]&&!saved.has(row[key]));
+  };
+  return missing(stored.chronicle?.history,meta.chronicle?.history,'runId')
+    || missing(stored.arena?.events,meta.arena?.events,'id')
+    || missing(stored.rating?.receipts,meta.rating?.receipts,'id');
+}
 function publicMetaSummary(meta) {
   return {
     chronicle:Math.max(0,meta?.chronicle?.history?.length||0),
@@ -148,11 +160,8 @@ async function importOldVKIfPresent(profile) {
     setMigration({status:'not-vk'});
     return profile;
   }
-  if(profile.migratedVK) {
-    setMigration({status:'already-imported',serverMigrated:true, ...publicMetaSummary(profile.snapshot)});
-    return profile;
-  }
-  setMigration({status:'searching'});
+  setMigration({status:'searching',serverMigrated:Boolean(profile.migratedVK),
+    ...publicMetaSummary(profile.snapshot)});
   const reader=platform.storage.legacyVKProfileReader;
   if(!reader?.available) {
     setMigration({status:'bridge-unavailable'});
@@ -189,15 +198,23 @@ async function importOldVKIfPresent(profile) {
   }
   if(foundV1 && !hasCompletedMeta(v2))setMigration({source:'vk-v1'});
   if(!hasCompletedMeta(source)) {
-    setMigration({status:'no-legacy-stats',source:'none'});
+    setMigration({status:profile.migratedVK ? 'previously-imported-no-source' : 'no-legacy-stats',
+      source:'none'});
     return profile; // Never mark as successfully migrated when nothing was found.
   }
   const stats={rating:source.rating,chronicle:source.chronicle,
     arena:source.arena?{...source.arena,match:null}:null};
-  setMigration({status:'uploading',...publicMetaSummary(stats)});
+  if(!needsLegacyEnrichment(profile,stats)) {
+    setMigration({status:'already-imported',serverMigrated:true,
+      ...publicMetaSummary(profile.snapshot)});
+    return profile;
+  }
+  setMigration({status:profile.migratedVK?'recovering':'uploading',
+    ...publicMetaSummary(stats)});
   const done=await request('/v1/vk-import',{method:'POST',data:{meta:stats}});
   if(!done?.profile)throw Error('Legacy VK migration was not verified by server');
-  setMigration({status:'imported',serverMigrated:Boolean(done.profile.migratedVK),
+  setMigration({status:done.recovered?'recovered':done.alreadyImported?'already-imported':'imported',
+    serverMigrated:Boolean(done.profile.migratedVK),
     ...publicMetaSummary(done.profile.snapshot)});
   return done.profile;
 }
@@ -290,7 +307,7 @@ async function boot() {
     if(lastFingerprint!==payloadFingerprint(localPayload()))scheduleSave({immediate:true});
     return {status:'ready',profileId,provider,restored:remote.revision>0};
   }catch(error){
-    if(migration.status==='uploading'||migration.status==='searching')setMigration({status:'error'});
+    if(['uploading','recovering','searching'].includes(migration.status))setMigration({status:'error'});
     state('offline',String(error.message||error).slice(0,160));
     // A cloud failure must never destroy old VK or local progress.
     return {status:'offline'};
@@ -301,4 +318,4 @@ async function bootstrapProfile() {
   return bootPromise;
 }
 function statusInfo() {return Object.freeze({status,provider,profileId,revision,enabled:enabled(),migration:migration.status});}
-export {bootstrapProfile,syncNow,statusInfo,signedParams,legacyVKMeta};
+export {bootstrapProfile,syncNow,statusInfo,signedParams,legacyVKMeta,hasCompletedMeta,needsLegacyEnrichment};
