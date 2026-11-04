@@ -13,6 +13,22 @@ function rpchessProfileEnabled() {
   catch { return false; }
 }
 
+let activeProfileStore='';
+function setProfileStorageIdentity(kind,id) {
+  if(!['web','vk'].includes(kind)||!/^[0-9a-f-]{36}$/i.test(String(id)))return false;
+  activeProfileStore='rpchess.profile.v1.'+kind+'.'+id+'.';
+  try { globalThis.localStorage?.setItem('rpchess.profile.cached-id.'+kind,id); }catch{}
+  return true;
+}
+function profileStoragePrefix() {
+  if(activeProfileStore)return activeProfileStore;
+  const kind=isVKLaunch()?'vk':'web';
+  let id='';
+  try { id=globalThis.localStorage?.getItem('rpchess.profile.cached-id.'+kind)||''; }catch{}
+  return /^[0-9a-f-]{36}$/i.test(id)
+    ? 'rpchess.profile.v1.'+kind+'.'+id+'.'
+    : 'rpchess.profile.v1.'+kind+'.pending.';
+}
 function safeLocalStorage() {
   try { return globalThis.localStorage || null; }
   catch { return null; }
@@ -254,7 +270,7 @@ function scopedGamePushStore(prefixOverride = GAMEPUSH_SAVE_PREFIX) {
   };
 }
 function gameStore() {
-  if (rpchessProfileEnabled()) return scopedGamePushStore(PROFILE_SAVE_PREFIX);
+  if (rpchessProfileEnabled()) return scopedGamePushStore(profileStoragePrefix());
   return gamepushSdk.enabled ? scopedGamePushStore() : safeLocalStorage();
 }
 const localStorageAdapter = Object.freeze({
@@ -551,6 +567,7 @@ const platform = Object.freeze({
   lifecycle,
   gamepush:gamepushSdk,
   get profileEnabled() { return rpchessProfileEnabled(); },
+  setProfileStorageIdentity,
   async init() {
     // GamePush opt-in owns platform initialization on Web, VK and Yandex test
     // builds. No parallel VK Bridge init, ad call or legacy VK cloud restore.
