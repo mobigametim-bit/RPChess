@@ -133,6 +133,16 @@ const origin='https://rpchess-profile-game-preview.mobigametim.workers.dev';
  const third=await call('/v1/vk-import',{data:{meta:fuller},token:verified.body.token});
  assert.equal(third.body.alreadyImported,true);
  assert.equal(third.body.profile.revision,enriched.body.profile.revision,'repeat recovery is idempotent');
+ // Simulate a different VK device: fresh signed launch, fresh session, same
+ // verified VK profile and its server-restored completed history.
+ const otherDevice=await call('/v1/session',{data:{vkLaunch:launch}});
+ assert.equal(otherDevice.status,200);
+ assert.equal(otherDevice.body.profile.id,verified.body.profile.id);
+ assert.equal(otherDevice.body.profile.snapshot.rating.power,845);
+ assert.equal(otherDevice.body.profile.snapshot.chronicle.history.length,2);
+ assert.equal(otherDevice.body.profile.snapshot.arena.events.length,2);
+ assert.equal(otherDevice.body.profile.snapshot.arena.match,null);
+ assert.equal(otherDevice.body.profile.snapshot.run,undefined);
  const malicious=await call('/v1/vk-import',{data:{meta:legacy},token});
  assert.equal(malicious.status,403);
  console.log('PROFILE WORKER: guest RPChess ID, opaque-token restore, CAS, strict VK proof and one-time legacy meta import: PASS');
