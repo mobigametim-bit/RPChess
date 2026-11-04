@@ -142,8 +142,15 @@ function cleanLegacyMeta(data) {
 function mergeLegacy(snapshot,legacy) {
   const updated={...snapshot,schemaVersion:1};
   const activeRating=Number(snapshot?.rating?.power);
-  if(!Number.isFinite(activeRating)||activeRating===500)
-    updated.rating=legacy.rating;
+  const keepExistingPower=Number.isFinite(activeRating)&&activeRating!==500;
+  const ratings=new Map();
+  for(const receipt of [...(legacy.rating?.receipts||[]),...(snapshot?.rating?.receipts||[])])
+    if(typeof receipt?.id==='string'&&receipt.id)ratings.set(receipt.id,receipt);
+  updated.rating={
+    ...legacy.rating,...(snapshot?.rating||{}),
+    power:keepExistingPower?activeRating:legacy.rating.power,
+    receipts:[...ratings.values()].slice(-2048)
+  };
   const history=new Map();
   for(const row of [...(legacy.chronicle?.history||[]),...(snapshot?.chronicle?.history||[])])
     if(row&&typeof row.runId==='string')history.set(row.runId,row);
