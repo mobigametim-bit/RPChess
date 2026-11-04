@@ -16,4 +16,12 @@ assert(fs.readFileSync(path.join(game,'js/artifact-combat-ui.mjs'),'utf8').inclu
   'artifact modal must predecode images and stylesheet before unmasking');
 assert(build.includes("'js/screen-loading.mjs'")&&build.includes("'css/screen-loading.css'"),'Production build must package loader JS and CSS');
 
+// GamePush opt-in preview must remain isolated from legacy VK/cloud-save production paths.
+const gamepushSource=fs.readFileSync(path.join(game,'js/gamepush-sdk.mjs'),'utf8');
+for(const token of ["const PROJECT_ID = 31247","rpchess_gamepush","gp.player.ready","isRewardedAvailable","showRewardedVideo","showFullscreen","gp.gameStart","status:success === true ? 'completed' : 'closed'"])assert(gamepushSource.includes(token),`GamePush trial missing ${token}`);
+for(const token of ["gamepushSdk.enabled && !isVKLaunch()","gamepush:gamepushSdk","gamepushSdk.ads.show(format)","rpchess:gamepush-pause","rpchess:gamepush-resume"])assert(platform.includes(token),`Platform GamePush preview missing ${token}`);
+assert(js.includes('platform.gamepush.markReady()'),'GamePush ready should occur after first-screen bootstrap');
+assert(build.includes("'js/gamepush-sdk.mjs'"),'GamePush adapter must be included in production packaging');
+assert(!gamepushSource.includes('PVP_SESSION_SECRET')&&!gamepushSource.includes('VK_APP_SECRET'),'GamePush client must not contain server secrets');
+
 console.log('Reboot Foundation keeps New Game independent, initializes VK host launches, preserves canonical CSS-only controls, Player Identity prompt, Travel fallback and shared UX runtime: PASS');
