@@ -18,7 +18,7 @@ tag = "v2"
 new_sqlite_classes = ["TournamentAccount"]
 
 [vars]
-ALLOWED_ORIGINS = "https://mobigametim-bit.github.io,https://rpchess-portrait-ui-preview.mobigametim.workers.dev"
+ALLOWED_ORIGINS = "https://mobigametim-bit.github.io,https://rpchess-portrait-ui-preview.mobigametim.workers.dev,https://rpchess-gamepush-preview.mobigametim.workers.dev"
 
 # Required private Cloudflare Worker secrets:
 # PVP_SESSION_SECRET: long random signing secret (never commit it).
