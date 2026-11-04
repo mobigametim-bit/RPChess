@@ -253,6 +253,68 @@ class MemoryStorage {
   assert(oldDevice.getItem('rpchess.gamepush.v2.'+persistence.RUN_STORAGE_KEY),'fresh GP progress must persist under v2 prefix');
   assert.strictEqual(oldDevice.getItem(persistence.RUN_STORAGE_KEY),storedLegacyRun,'opt-in GP must not mutate old player progress');
   assert.strictEqual(cloud.get(cloudSave.CLOUD_SAVE_MANIFEST_KEY),savedVKManifest,'opt-in GP must not mutate VK cloud manifest');
+  // Test real v1 cloud envelope reader in GP mode using a strictly read-only
+  // source: the legacy manifest and chunks stay available for migration.
+  const legacyReader={
+    available:true,
+    getItemStrict:async key=>cloud.get(key)||null,
+    getItemsStrict:async keys=>Object.fromEntries(keys.map(key=>[key,cloud.get(key)||'']))
+  };
+  const oldBefore=await cloudSave.readCloudEnvelope(legacyReader);
+  assert.strictEqual(oldBefore.error,null);
+  assert(oldBefore.envelope?.payload?.run,'legacy snapshot includes the old active run');
+
+  const migration=await import(pathToFileURL(path.join(root,'game/js/gamepush-meta-sync.mjs')).href);
+  const historical=await migration.oldMeta({
+    fingerprint:'old-vk-backup',
+    payload:{
+      run:{id:'legacy-active-run',journeyStep:200},
+      rating:{schemaVersion:1,power:845,receipts:[]},
+      chronicle:{schemaVersion:1,history:[{
+        runId:'historic-1',playerName:'Old Player',commanderId:'oathkeeper',
+        week:24,power:845,completedAt:17000
+      }]},
+      arena:{version:1,events:[{
+        id:'historic-foe:win',kind:'win',foe:'pawn:humans',amount:30,at:17000
+      }],squad:'humans',match:{
+        id:'old-incomplete',foe:'pawn:humans',squad:'humans',
+        playerColor:'w',phase:'playing',moves:['e2e4'],at:17001
+      }}
+    }
+  });
+  const localBefore=migration.extractLocalMeta();
+  const combined=migration.mergeMeta(localBefore,historical);
+  assert.strictEqual(combined.rating.power,845,'legacy Power must migrate into unused GP profile');
+  assert.strictEqual(combined.chronicle.history.length,1,'historic completed runs survive');
+  assert.strictEqual(combined.arena.events.length,1,'Arena victory receipts survive');
+  assert.strictEqual(combined.arena.match,null,'unfinished Arena match cannot migrate');
+  assert.strictEqual(Object.hasOwn(combined,'run'),false,'the old active run never enters GP meta');
+  assert.strictEqual(migration.mergeMeta(combined,historical).chronicle.history.length,1,'reimport is idempotent');
+  const migrated={...combined,migratedFromVK:true};
+  const cloudMeta=new Map(),v2={
+    available:true,
+    getItemStrict:async key=>cloudMeta.get(key)||null,
+    getItemsStrict:async keys=>Object.fromEntries(keys.map(key=>[key,cloudMeta.get(key)||''])),
+    setItem:async (key,value)=>{
+      assert(/^rpchess_gp_v2_/.test(key),'new upload must never touch old VK cloud keys');
+      cloudMeta.set(key,value);
+      return true;
+    }
+  };
+  assert.strictEqual(await migration.writeNewMeta(migrated,v2),true,'new metadata must be checked after publishing');
+  const written=await migration.readNewMeta(v2);
+  assert.strictEqual(written.meta.migratedFromVK,true,'migration marker persists in the new cloud');
+  assert.strictEqual(written.meta.rating.power,845);
+  assert.strictEqual(written.meta.arena.match,null);
+  assert.strictEqual(await migration.writeNewMeta(written.meta,v2,written),true,'second upload is idempotent');
+  assert.strictEqual((await migration.readNewMeta(v2)).meta.chronicle.history.length,1);
+  assert.strictEqual(cloud.get(cloudSave.CLOUD_SAVE_MANIFEST_KEY),savedVKManifest,'old cloud manifest must remain byte-identical');
+  const existingGPRun=platformModule.storage.getItem(persistence.RUN_STORAGE_KEY);
+  migration.applyLocalMeta(migrated);
+  assert.strictEqual(platformModule.storage.getItem(persistence.RUN_STORAGE_KEY),existingGPRun,'new GP active run must survive meta migration');
+  assert.strictEqual(migration.extractLocalMeta().migratedFromVK,true,'local marker must persist for retry/reload');
+  assert.strictEqual(oldDevice.getItem(persistence.RUN_STORAGE_KEY),storedLegacyRun,'old VK local save must survive GP migration');
+
   globalThis.location.search='?vk_app_id=54754579';
   assert.strictEqual(platformModule.storage.getItem(persistence.RUN_STORAGE_KEY),storedLegacyRun,'production VK retains original progress');
   assert.strictEqual(platformModule.platform.storage.cloud.available,true,'VK production storage remains intact');
