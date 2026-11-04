@@ -85,6 +85,17 @@ jobs:
         run: |
           export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
           npx wrangler deploy --config profile-worker/wrangler.toml
+      - name: Check VK authentication secret is installed (names only)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler secret list --config profile-worker/wrangler.toml | grep -q 'VK_APP_SECRET' || {
+            echo "::error::VK_APP_SECRET is not configured for rpchess-profile-preview"
+            exit 1
+          }
+          echo "VK protected secret name verified; no value read or logged"
       - name: Deploy dedicated static Web/PWA test build
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
