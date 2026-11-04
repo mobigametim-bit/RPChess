@@ -179,6 +179,9 @@ async function boot() {
   try{
     state('loading');
     provider=platform.launch.isVK()||await discoverVKHost()?'vk':'web';
+    // A first-time Web visitor may have played offline before the server
+    // issued an ID. Preserve the isolated pending save when it becomes online.
+    const orphanWeb=provider==='web'&&!readToken('web')?localPayload():null;
     const session=await openSession(provider);
     token=session.token;
     if(!/^[A-Za-z0-9_-]{43}$/.test(token||''))throw Error('Invalid session credential');
@@ -187,6 +190,11 @@ async function boot() {
     if(!platform.setProfileStorageIdentity(provider,profileId))throw Error('Invalid RPChess profile identity');
     writeToken(provider,token);
     let remote=await importOldVKIfPresent(session.profile);
+    if(orphanWeb&&payloadHasProgress(orphanWeb)&&!payloadHasProgress(remote.snapshot)) {
+      // The fresh account is empty; migrate only the player's own pending
+      // Web sandbox. Never transplant a prior VK account's local data.
+      restoreLocalEnvelope({payload:orphanWeb,revision:0,updatedAt:Date.now()});
+    }
     const local=localPayload(),localHash=payloadFingerprint(local);
     const marker=getLocalMeta();
     const remoteData=remote?.snapshot||{schemaVersion:1};
