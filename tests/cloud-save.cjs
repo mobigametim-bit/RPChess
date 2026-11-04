@@ -231,7 +231,33 @@ class MemoryStorage {
   assert.strictEqual(persistence.readRun()?.activeTravelChoice?.type, 'skirmish');
 
   globalThis.localStorage = oldDevice;
-  console.log('VK CloudSave compact payload, atomic slots, automatic newer-save restore and failed-read protection: PASS');
+
+  // Same mock VK app launches with GamePush opt-in: it must not see old local
+  // progress, restore legacy VK cloud slots, or call VK Bridge ad methods.
+  const storedLegacyRun=oldDevice.getItem(persistence.RUN_STORAGE_KEY);
+  const savedVKManifest=cloud.get(cloudSave.CLOUD_SAVE_MANIFEST_KEY);
+  globalThis.location.search='?vk_app_id=54754579&rpchess_gamepush=1';
+  assert.strictEqual(platformModule.platform.gamepush.enabled,true);
+  assert.strictEqual(platformModule.platform.storage.cloud.available,false);
+  assert.strictEqual(platformModule.platform.capabilities.cloudStorage,false);
+  assert.strictEqual(platformModule.storage.getItem(persistence.RUN_STORAGE_KEY),null,'GamePush v2 cannot import legacy local run');
+  assert.strictEqual(persistence.readRun(),null,'GamePush starts without existing VK progress');
+  assert.strictEqual(await platformModule.storage.cloud.getItemStrict(cloudSave.CLOUD_SAVE_MANIFEST_KEY),null);
+  assert.deepStrictEqual(await platformModule.storage.cloud.getItemsStrict([cloudSave.CLOUD_SAVE_MANIFEST_KEY]),{});
+  assert.strictEqual(await platformModule.storage.cloud.getItem(cloudSave.CLOUD_SAVE_MANIFEST_KEY),null);
+  assert.deepStrictEqual(await platformModule.storage.cloud.getItems([cloudSave.CLOUD_SAVE_MANIFEST_KEY]),{});
+  assert.strictEqual(await platformModule.storage.cloud.setItem('rpchess-old-test','danger'),false);
+  assert.strictEqual(await platformModule.ads.show('reward').then(result=>result.status),'unavailable','SDK unavailable must not fall back to VK Bridge reward');
+  const freshRun=persistence.createRun({now:2001,playerName:'GamePush VK Tester'});
+  persistence.writeRun(freshRun,null,2002);
+  assert(oldDevice.getItem('rpchess.gamepush.v2.'+persistence.RUN_STORAGE_KEY),'fresh GP progress must persist under v2 prefix');
+  assert.strictEqual(oldDevice.getItem(persistence.RUN_STORAGE_KEY),storedLegacyRun,'opt-in GP must not mutate old player progress');
+  assert.strictEqual(cloud.get(cloudSave.CLOUD_SAVE_MANIFEST_KEY),savedVKManifest,'opt-in GP must not mutate VK cloud manifest');
+  globalThis.location.search='?vk_app_id=54754579';
+  assert.strictEqual(platformModule.storage.getItem(persistence.RUN_STORAGE_KEY),storedLegacyRun,'production VK retains original progress');
+  assert.strictEqual(platformModule.platform.storage.cloud.available,true,'VK production storage remains intact');
+
+  console.log('VK CloudSave compact payload, atomic slots, automatic newer-save restore and failed-read protection + GamePush cutover isolation: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;
