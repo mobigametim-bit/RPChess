@@ -315,6 +315,28 @@ class MemoryStorage {
   assert.strictEqual(migration.extractLocalMeta().migratedFromVK,true,'local marker must persist for retry/reload');
   assert.strictEqual(oldDevice.getItem(persistence.RUN_STORAGE_KEY),storedLegacyRun,'old VK local save must survive GP migration');
 
+  // The unified D1-backed profile MUST disable all legacy VK Cloud writes,
+  // while the explicitly read-only migration reader still sees the backup.
+  globalThis.location.search='?vk_app_id=54754579&rpchess_profile=1';
+  assert.strictEqual(platformModule.platform.profileEnabled,true);
+  assert.strictEqual(platformModule.storage.cloud.available,false);
+  assert.strictEqual(platformModule.platform.capabilities.cloudStorage,false);
+  assert.strictEqual(await platformModule.storage.cloud.setItem(cloudSave.CLOUD_SAVE_MANIFEST_KEY,'unsafe'),false);
+  assert.strictEqual(await platformModule.storage.cloud.getItemStrict(cloudSave.CLOUD_SAVE_MANIFEST_KEY),null);
+  assert.strictEqual(platformModule.storage.legacyVKProfileReader.available,true);
+  const originalFromProfile=await cloudSave.readCloudEnvelope(platformModule.storage.legacyVKProfileReader);
+  assert.strictEqual(originalFromProfile.error,null);
+  assert(originalFromProfile.envelope?.payload?.run,'legacy reader can recover historical VK snapshot');
+  assert.strictEqual(cloud.get(cloudSave.CLOUD_SAVE_MANIFEST_KEY),savedVKManifest,'no profile write may touch old manifest');
+  assert.strictEqual(platformModule.storage.getItem(persistence.RUN_STORAGE_KEY),null,'before login no previous VK account cache is visible');
+  const firstId='00000000-0000-4000-8000-000000000001';
+  const secondId='00000000-0000-4000-8000-000000000002';
+  assert.strictEqual(platformModule.platform.setProfileStorageIdentity('vk',firstId),true);
+  platformModule.storage.setItem('profile-account-test','first-account-only');
+  assert.strictEqual(platformModule.platform.setProfileStorageIdentity('vk',secondId),true);
+  assert.strictEqual(platformModule.storage.getItem('profile-account-test'),null,'VK account switch cannot see former local profile');
+  assert.strictEqual(cloud.get(cloudSave.CLOUD_SAVE_MANIFEST_KEY),savedVKManifest,'legacy VK Cloud is still preserved');
+
   globalThis.location.search='?vk_app_id=54754579';
   assert.strictEqual(platformModule.storage.getItem(persistence.RUN_STORAGE_KEY),storedLegacyRun,'production VK retains original progress');
   assert.strictEqual(platformModule.platform.storage.cloud.available,true,'VK production storage remains intact');
