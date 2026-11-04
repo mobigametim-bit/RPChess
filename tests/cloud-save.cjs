@@ -338,6 +338,21 @@ class MemoryStorage {
   assert.strictEqual(originalFromProfile.error,null);
   assert(originalFromProfile.envelope?.payload?.run,'legacy reader can recover historical VK snapshot');
   assert.strictEqual(cloud.get(cloudSave.CLOUD_SAVE_MANIFEST_KEY),savedVKManifest,'no profile write may touch old manifest');
+  const profileClient=await import(pathToFileURL(path.join(root,'game/js/profile-client.mjs')).href);
+  const oldMeta=profileClient.legacyVKMeta(originalFromProfile.envelope);
+  assert.strictEqual(Object.hasOwn(oldMeta,'run'),false,'legacy importer must drop unfinished run');
+  assert.strictEqual(profileClient.hasCompletedMeta({rating:{power:500,receipts:[]},chronicle:{history:[]},arena:{events:[]}}),false);
+  assert.strictEqual(profileClient.hasCompletedMeta(historical),true);
+  const started={migratedVK:true,snapshot:{
+    rating:{power:500,receipts:[]},chronicle:{history:[]},arena:{events:[]}}};
+  assert.strictEqual(profileClient.needsLegacyEnrichment(started,historical),true,
+    'a prematurely marked empty import must be eligible for recovery');
+  assert.strictEqual(profileClient.needsLegacyEnrichment({migratedVK:true,snapshot:historical},historical),false,
+    'a complete VK import must be idempotent');
+  const oldLeaderboard=await import(pathToFileURL(path.join(root,'game/js/leaderboard-client.mjs')).href);
+  assert.strictEqual((await oldLeaderboard.loadLeaderboard()).status,'unavailable',
+    'profile preview must not call production VK leaderboard from an unapproved origin');
+  assert.strictEqual((await oldLeaderboard.submitBestChronicle()).status,'unavailable');
   assert.strictEqual(platformModule.storage.getItem(persistence.RUN_STORAGE_KEY),null,'before login no previous VK account cache is visible');
   const firstId='00000000-0000-4000-8000-000000000001';
   const secondId='00000000-0000-4000-8000-000000000002';
