@@ -1,3 +1,5 @@
+import { gamepushSdk } from './gamepush-sdk.mjs';
+
 const VK_CONNECT_VERSION = '2.15.12';
 const VK_REQUEST_TIMEOUT_MS = 7000;
 const VK_AD_SHOW_TIMEOUT_MS = 180_000;
@@ -297,11 +299,13 @@ function adErrorStatus(error) {
 
 const ads = Object.freeze({
   async supported(format) {
+    if (gamepushSdk.enabled && !isVKLaunch()) return gamepushSdk.ads.supported(format);
     return Boolean(normalizeAdFormat(format))
       && await supportsVKMethod('VKWebAppCheckNativeAds')
       && await supportsVKMethod('VKWebAppShowNativeAds');
   },
   async check(format) {
+    if (gamepushSdk.enabled && !isVKLaunch()) return gamepushSdk.ads.check(format);
     const normalized = normalizeAdFormat(format);
     if (!normalized || !await this.supported(normalized)) return false;
     try {
@@ -312,6 +316,7 @@ const ads = Object.freeze({
     }
   },
   async show(format) {
+    if (gamepushSdk.enabled && !isVKLaunch()) return gamepushSdk.ads.show(format);
     const normalized = normalizeAdFormat(format);
     if (!normalized || !isVKLaunch()) return Object.freeze({ status:'unavailable', format:normalized || String(format || '') });
     // Launch directly from the player's tap. On VK mobile WebViews a preliminary
@@ -391,6 +396,8 @@ function createLifecycle() {
     globalThis.document.addEventListener('visibilitychange', () => emit('visibilitychange'));
     globalThis.addEventListener?.('pagehide', () => emit('pagehide', false));
     globalThis.addEventListener?.('pageshow', () => emit('pageshow', true));
+    globalThis.addEventListener?.('rpchess:gamepush-pause', () => emit('gamepush-pause', false));
+    globalThis.addEventListener?.('rpchess:gamepush-resume', () => emit('gamepush-resume', true));
   };
   return Object.freeze({
     isActive:active,
@@ -434,7 +441,12 @@ const platform = Object.freeze({
   social,
   identity,
   lifecycle,
-  async init() { return await discoverVKHost() ? sendVKWebAppInit() : false; },
+  gamepush:gamepushSdk,
+  async init() {
+    // Trial mode only on standalone Web; VK cloud saves and VK ads stay untouched.
+    if (gamepushSdk.enabled && !isVKLaunch()) return gamepushSdk.init();
+    return await discoverVKHost() ? sendVKWebAppInit() : false;
+  },
   capabilities
 });
 
