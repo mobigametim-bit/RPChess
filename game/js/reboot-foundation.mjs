@@ -79,12 +79,6 @@ const identityReady = cloudReady
   });
 globalThis.RPChessIdentityReady = identityReady;
 
-// Tell GamePush that the first interactive screen is ready, only in explicit SDK trial mode.
-// Platform auth/saves and existing VK launch behavior are not switched by this preview.
-Promise.all([routeReady, identityReady]).then(() => {
-  if (platform.gamepush.enabled) void platform.gamepush.markReady();
-});
-
 // Route/content modules wait for the ad gate registration. Once Starvation exists, monetization
 // replaces only the public starvation entry point with the optional rewarded-rescue gate.
 const routeReady = Promise.all([cloudReady, monetizationReady])
@@ -99,6 +93,13 @@ const routeReady = Promise.all([cloudReady, monetizationReady])
     return null;
   });
 globalThis.RPChessRouteReady = routeReady;
+
+// Tell GamePush that the first interactive screen is ready, only in explicit SDK trial mode.
+// Platform auth/saves and existing VK launch behavior are not switched by this preview.
+Promise.all([routeReady, identityReady]).then(() => {
+  if (platform.gamepush.enabled) void platform.gamepush.markReady();
+});
+
 
 const REBOOT_INIT_KEY = 'rpchess.reboot.v1.initialized';
 const SETTINGS_KEY = 'rpchess.reboot.v1.settings';
