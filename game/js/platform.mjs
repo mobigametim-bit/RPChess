@@ -262,12 +262,14 @@ const cloudStorageAdapter = Object.freeze({
   get available() { return isVKLaunch() && !gamepushSdk.enabled; },
   async supported() { return !gamepushSdk.enabled && supportsVKMethod('VKWebAppStorageGet'); },
   async getItemStrict(key) {
+    if (gamepushSdk.enabled) return null;
     const data = await sendVKRequest('VKWebAppStorageGet', { keys:[String(key)] });
     if (!Array.isArray(data?.keys)) throw new Error('Invalid VK cloud storage response');
     const entry = data.keys.find((item) => item?.key === String(key));
     return typeof entry?.value === 'string' && entry.value.length ? entry.value : null;
   },
   async getItemsStrict(keys) {
+    if (gamepushSdk.enabled) return {};
     const normalized = [...new Set((keys || []).map((key) => String(key)).filter(Boolean))];
     if (!normalized.length) return {};
     const data = await sendVKRequest('VKWebAppStorageGet', { keys:normalized });
@@ -275,7 +277,7 @@ const cloudStorageAdapter = Object.freeze({
     return Object.fromEntries(data.keys.filter((entry) => entry && typeof entry.key === 'string').map((entry) => [entry.key, typeof entry.value === 'string' ? entry.value : '']));
   },
   async getItem(key) {
-    if (!isVKLaunch()) return null;
+    if (gamepushSdk.enabled || !isVKLaunch()) return null;
     try {
       const data = await sendVKRequest('VKWebAppStorageGet', { keys:[String(key)] });
       const entry = Array.isArray(data?.keys) ? data.keys.find((item) => item?.key === String(key)) : null;
@@ -286,6 +288,7 @@ const cloudStorageAdapter = Object.freeze({
     }
   },
   async getItems(keys) {
+    if (gamepushSdk.enabled) return {};
     const normalized = [...new Set((keys || []).map((key) => String(key)).filter(Boolean))];
     if (!isVKLaunch() || !normalized.length) return {};
     try {
@@ -299,7 +302,7 @@ const cloudStorageAdapter = Object.freeze({
     }
   },
   async setItem(key, value) {
-    if (!isVKLaunch()) return false;
+    if (gamepushSdk.enabled || !isVKLaunch()) return false;
     try {
       const data = await sendVKRequest('VKWebAppStorageSet', { key:String(key), value:String(value) });
       return data?.result === true;
@@ -467,10 +470,11 @@ const bridge = Object.freeze({
 });
 
 const capabilities = Object.freeze({
-  get cloudStorage() { return isVKLaunch(); },
-  get ads() { return isVKLaunch(); },
-  get sharing() { return isVKLaunch(); },
-  get leaderboard() { return isVKLaunch(); },
+  // Avoid promising native VK functionality when GamePush has replaced Bridge.
+  get cloudStorage() { return isVKLaunch() && !gamepushSdk.enabled; },
+  get ads() { return gamepushSdk.enabled ? gamepushSdk.ready && /^VK(?:_|$)/i.test(gamepushSdk.platformType) : isVKLaunch(); },
+  get sharing() { return isVKLaunch() && !gamepushSdk.enabled; },
+  get leaderboard() { return isVKLaunch() && !gamepushSdk.enabled; },
   payments:false
 });
 
