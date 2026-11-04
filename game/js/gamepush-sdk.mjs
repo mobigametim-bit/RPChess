@@ -18,6 +18,7 @@ let state = 'disabled';
 let pending = null;
 let gameStartRequested = false;
 let gameStartSent = false;
+let lastAuthDiagnostic = null;
 
 function isEnabled() {
   try {
@@ -103,6 +104,7 @@ function injectSdk(source) {
 
 async function boot() {
   state = 'loading';
+  lastAuthDiagnostic = null;
   notify('start');
   try {
     let instance = null;
@@ -115,8 +117,8 @@ async function boot() {
       }
     }
     if (!instance?.player?.ready) throw new Error('GamePush SDK or player readiness missing');
-    await withDeadline(instance.player.ready, PLAYER_TIMEOUT_MS, 'GamePush player');
     sdk = instance;
+    await withDeadline(instance.player.ready, PLAYER_TIMEOUT_MS, 'GamePush player');
     // A VK iframe may load the SDK while its platform-auth request has failed.
     // Do not mark that as ready or run migration/gameStart without a VK player.
     const d=safeDiagnostics();
@@ -137,6 +139,7 @@ async function boot() {
     if (gameStartRequested) void markReady();
     return true;
   } catch (error) {
+    lastAuthDiagnostic = safeDiagnostics();
     sdk = null;
     state = 'unavailable';
     notify(error?.message || 'sdk-unavailable');
@@ -153,7 +156,7 @@ async function init() {
 
 async function markReady() {
   gameStartRequested = true;
-  if (!sdk || gameStartSent) return false;
+  if (state !== 'ready' || !sdk || gameStartSent) return false;
   if (typeof sdk.gameStart !== 'function') return false;
   gameStartSent = true;
   try {
@@ -196,7 +199,14 @@ const gamepushSdk = Object.freeze({
   get platformType() { return state === 'ready' ? String(sdk?.platform?.type || '') : ''; },
   get playerId() { return state === 'ready' ? sdk?.player?.id ?? null : null; },
   get loggedIn() { return state === 'ready' && sdk?.player?.isLoggedIn === true; },
-  get diagnostics() { return safeDiagnostics(); },
+  get diagnostics() {
+    const live=safeDiagnostics();
+    return Object.freeze({ ...live,
+      platform:live.platform || lastAuthDiagnostic?.platform || '',
+      playerIdPresent:live.playerIdPresent || lastAuthDiagnostic?.playerIdPresent || false,
+      playerLoggedIn:live.playerLoggedIn || lastAuthDiagnostic?.playerLoggedIn || false
+    });
+  },
   init,
   markReady,
   ads:Object.freeze({
