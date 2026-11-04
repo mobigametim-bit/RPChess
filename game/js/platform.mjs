@@ -323,9 +323,54 @@ const cloudStorageAdapter = Object.freeze({
   }
 });
 
+// Only the migration module may access these narrowly scoped VK keys while
+// GamePush replaces the old VK save adapter. VK Bridge verifies the signed
+// session; a plain Web visitor cannot read or write another player's cloud.
+const OLD_CLOUD_KEY = /^rpchess_v1_cloud_(?:manifest|[ab]_\d{1,3})$/;
+const GP_META_CLOUD_KEY = /^rpchess_gp_v2_(?:manifest|[ab]_\d{1,3})$/;
+function gpVkCloudAvailable() {
+  return gamepushSdk.enabled && gamepushSdk.ready && gamepushSdk.loggedIn
+    && /VK/i.test(gamepushSdk.platformType) && isVKLaunch();
+}
+function makeScopedVKCloud(keyPattern, writeEnabled) {
+  const assertKeys = keys => {
+    if (!gpVkCloudAvailable() || keys.some(key=>!keyPattern.test(String(key))))
+      throw new Error('VK migration cloud scope unavailable');
+  };
+  const reader = {
+    get available() { return gpVkCloudAvailable(); },
+    async getItemStrict(key) {
+      assertKeys([key]);
+      const data=await sendVKRequest('VKWebAppStorageGet',{keys:[String(key)]});
+      if (!Array.isArray(data?.keys)) throw new Error('Malformed VK cloud read');
+      const item=data.keys.find(entry=>entry?.key===String(key));
+      return typeof item?.value==='string' && item.value.length ? item.value:null;
+    },
+    async getItemsStrict(keys) {
+      const normalized=[...new Set((keys||[]).map(key=>String(key)))];
+      assertKeys(normalized);
+      if (!normalized.length) return {};
+      const data=await sendVKRequest('VKWebAppStorageGet',{keys:normalized});
+      if (!Array.isArray(data?.keys)) throw new Error('Malformed VK cloud read');
+      return Object.fromEntries(data.keys.filter(entry=>typeof entry?.key==='string')
+        .map(entry=>[entry.key,typeof entry.value==='string'?entry.value:'']));
+    }
+  };
+  if (writeEnabled) reader.setItem=async (key,value) => {
+    assertKeys([key]);
+    const response=await sendVKRequest('VKWebAppStorageSet',{key:String(key),value:String(value)});
+    return response?.result===true;
+  };
+  return Object.freeze(reader);
+}
+const legacyVKMetaReader = makeScopedVKCloud(OLD_CLOUD_KEY,false);
+const gamepushVKMetaStore = makeScopedVKCloud(GP_META_CLOUD_KEY,true);
+
 const storage = Object.freeze({
   local:localStorageAdapter,
   cloud:cloudStorageAdapter,
+  legacyVKMetaReader,
+  gamepushVKMetaStore,
   sync() { return localStorageAdapter.sync(); },
   getItem(key) { return localStorageAdapter.getItem(key); },
   setItem(key, value) { localStorageAdapter.setItem(key, value); },
