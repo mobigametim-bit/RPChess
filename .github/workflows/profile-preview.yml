@@ -170,6 +170,10 @@ jobs:
               // Verify the complete chain: D1 -> per-player local snapshot ->
               // personal Chronicle flag and Arena, not merely a matching ID.
               const seed=await page.evaluate(async profileApi=>{
+                // Settle the ordinary first-launch autosave before our CAS seed.
+                // Otherwise the independent client write correctly returns 409.
+                const profileClient=await import('./js/profile-client.mjs');
+                if(!await profileClient.syncNow())return 0;
                 const secret=localStorage.getItem('rpchess.profile.auth.web.v1');
                 const auth={'Authorization':'Bearer '+secret};
                 const current=await fetch(profileApi+'/v1/profile',{headers:auth});
