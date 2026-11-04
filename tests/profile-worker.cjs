@@ -115,6 +115,24 @@ const origin='https://rpchess-profile-game-preview.mobigametim.workers.dev';
  const repeat=await call('/v1/vk-import',{data:{meta:legacy},token:verified.body.token});
  assert.equal(repeat.status,200);assert.equal(repeat.body.alreadyImported,true);
  assert.equal(repeat.body.profile.revision,imported.body.profile.revision);
+ // A first test may have marked an incomplete snapshot as already imported.
+ // Later discovered VK history must enrich the SAME ID, never duplicate data.
+ const fuller={...legacy,chronicle:{history:[
+   ...legacy.chronicle.history,{runId:'old-2',playerName:'Player',completedAt:700}
+ ]},arena:{...legacy.arena,events:[
+   ...legacy.arena.events,{id:'old-win:2',kind:'win',amount:30,at:700}
+ ]}};
+ const enriched=await call('/v1/vk-import',{data:{meta:fuller},token:verified.body.token});
+ assert.equal(enriched.status,200);
+ assert.equal(enriched.body.recovered,true,'recovery must be explicitly flagged');
+ assert.equal(enriched.body.profile.id,verified.body.profile.id);
+ assert.equal(enriched.body.profile.snapshot.chronicle.history.length,2);
+ assert.equal(enriched.body.profile.snapshot.arena.events.length,2);
+ assert.equal(enriched.body.profile.snapshot.arena.match,null);
+ assert.equal(enriched.body.profile.snapshot.run,undefined);
+ const third=await call('/v1/vk-import',{data:{meta:fuller},token:verified.body.token});
+ assert.equal(third.body.alreadyImported,true);
+ assert.equal(third.body.profile.revision,enriched.body.profile.revision,'repeat recovery is idempotent');
  const malicious=await call('/v1/vk-import',{data:{meta:legacy},token});
  assert.equal(malicious.status,403);
  console.log('PROFILE WORKER: guest RPChess ID, opaque-token restore, CAS, strict VK proof and one-time legacy meta import: PASS');
