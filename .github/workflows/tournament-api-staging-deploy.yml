@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/tournament-pvp-mvp-20261022
+      - feature/gamepush-sdk-foundation-20261104
     paths:
       - tournament-worker/**
       - tests/tournament-live-smoke.mjs
@@ -16,8 +17,8 @@ permissions:
 
 jobs:
   staging:
-    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/tournament-pvp-mvp-20261022'
-    runs-on: ubuntu-latest
+    if: github.repository == 'mobigametim-bit/RPChess' && (github.ref == 'refs/heads/feature/tournament-pvp-mvp-20261022' || github.ref == 'refs/heads/feature/gamepush-sdk-foundation-20261104')
+    runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
@@ -73,5 +74,15 @@ jobs:
         env:
           RPCHESS_TOURNAMENT_API: https://rpchess-tournament-preview.mobigametim.workers.dev
         run: node tests/tournament-live-smoke.mjs
+      - name: Install Playwright for real two-browser GamePush Tournament check
+        if: github.ref == 'refs/heads/feature/gamepush-sdk-foundation-20261104'
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+      - name: Verify live two-browser match on GamePush preview
+        if: github.ref == 'refs/heads/feature/gamepush-sdk-foundation-20261104'
+        env:
+          RPCHESS_ACCEPTANCE_URL: https://rpchess-gamepush-preview.mobigametim.workers.dev/?rpchess_gamepush=1
+        run: node tests/tournament-client-browser.cjs
       - name: Final note
         run: echo "Tournament staging Worker deployed and exercised; existing leaderboard is untouched."
