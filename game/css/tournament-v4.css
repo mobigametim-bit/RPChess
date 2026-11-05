@@ -221,7 +221,8 @@
  .tournament-screen--match .tournament-match-main{grid-column:2;grid-row:1}
  .tournament-screen--match .tournament-clock-panel--self{grid-column:3;grid-row:1}
  .tournament-screen--match .tournament-playerbar{
-  width:100%;flex-direction:column;text-align:center;align-items:center;padding:7px 5px;
+  width:min(100%,148px);flex-direction:column;text-align:center;align-items:center;
+  justify-self:center;padding:7px 5px;
  }
  .tournament-screen--match .tournament-player{align-items:center}
  .tournament-screen--match .tournament-player .tournament-race-mark{justify-content:center}
