@@ -54,7 +54,7 @@ if(!['ready','failed','untrusted'].includes(mode))throw Error('Unknown ad case')
   let nextNativeResult=true,nextSDKResult=true;
   const fakeSDK={
     player:{
-      ready:mode==='ready'?Promise.resolve():Promise.reject(new Error('400 invalid player data userId not found')),
+      ready:mode==='ready'?Promise.resolve():{then(_resolve,reject){reject(new Error('400 invalid player data userId not found'));}},
       id:mode==='ready'?1234:null,
       isLoggedIn:mode==='ready'
     },
