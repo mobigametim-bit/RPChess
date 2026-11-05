@@ -156,5 +156,52 @@ const origin='https://rpchess-profile-game-preview.mobigametim.workers.dev';
  assert.equal(otherDevice.body.profile.snapshot.run,undefined);
  const malicious=await call('/v1/vk-import',{data:{meta:legacy},token});
  assert.equal(malicious.status,403);
- console.log('PROFILE WORKER: guest RPChess ID, opaque-token restore, CAS, strict VK proof and one-time legacy meta import: PASS');
+ // Exercise the actual D1 SQLite ranking SQL, not a guessed JS top-ten mock.
+ // Old VK rows remain in leaderboard_v1; migrated VK + new RPChess profiles
+ // must compete in one deterministic ranking without duplicate accounts.
+ const {DatabaseSync}=require('node:sqlite');
+ const fs=require('node:fs');
+ const sqlite=new DatabaseSync(':memory:');
+ sqlite.exec(fs.readFileSync(path.join(root,'leaderboard-worker/schema.sql'),'utf8'));
+ sqlite.exec(fs.readFileSync(path.join(root,'profile-worker/schema.sql'),'utf8'));
+ const adapter={prepare(sql){
+   const statement=sqlite.prepare(sql);
+   return {bind:(...args)=>({
+     first:async()=>statement.get(...args)||null,
+     all:async()=>({results:statement.all(...args)}),
+     run:async()=>({meta:{changes:statement.run(...args).changes}})
+   })};
+ }};
+ const {refreshProfileBoard,readUnifiedBoard,bestFromSnapshot}
+   =await import(pathToFileURL(path.join(root,'profile-worker/src/unified-board.mjs')).href);
+ const webId='00000000-0000-4000-8000-000000000010';
+ const vkId='00000000-0000-4000-8000-000000000011';
+ const ts=Date.now();
+ const addProfile=sqlite.prepare('INSERT INTO rpchess_profile_v1(id,provider,vk_user_id,snapshot_json,created_at,updated_at) VALUES(?,?,?,?,?,?)');
+ const webSnapshot={schemaVersion:1,rating:{power:1000},
+   chronicle:{history:[{runId:'web-finished',playerName:'Web Champion',week:200,power:1000,commanderId:'pilgrim'}]}};
+ const vkSnapshot={schemaVersion:1,rating:{power:600},
+   chronicle:{history:[{runId:'vk-finished',playerName:'VK Player',week:100,power:600}]}};
+ addProfile.run(webId,'web',null,JSON.stringify(webSnapshot),ts,ts);
+ addProfile.run(vkId,'vk','12345',JSON.stringify(vkSnapshot),ts,ts);
+ sqlite.prepare('INSERT INTO leaderboard_v1(vk_id,player_name,glory,week,power,run_id,commander_id,achieved_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)')
+  .run('12345','Legacy VK',31,100,1000,'legacy-finished','oathkeeper',ts-1,ts-1);
+ const webRow={id:webId,snapshot_json:JSON.stringify(webSnapshot)};
+ const vkRow={id:vkId,snapshot_json:JSON.stringify(vkSnapshot)};
+ assert.equal(bestFromSnapshot(webSnapshot).glory,44);
+ assert.equal(await refreshProfileBoard(adapter,webRow),true);
+ assert.equal(await refreshProfileBoard(adapter,vkRow),true);
+ const global=await readUnifiedBoard(adapter,webRow);
+ assert.equal(global.top.length,2,'one Web profile and one deduplicated VK profile');
+ assert.deepEqual(global.top.map(r=>r.name),['Web Champion','Legacy VK']);
+ assert.equal(global.me.rank,1);
+ assert.equal((await readUnifiedBoard(adapter,vkRow)).me.rank,2);
+ assert.equal((await readUnifiedBoard(adapter,null)).me,null);
+ assert.equal(Object.hasOwn(global.top[0],'owner_key'),false,'do not publish internal account keys');
+ const lower={...webSnapshot,chronicle:{history:[{runId:'web-lower',playerName:'Weak',week:1,power:100}]}};
+ assert.equal(await refreshProfileBoard(adapter,{id:webId,snapshot_json:JSON.stringify(lower)}),false);
+ assert.equal((await readUnifiedBoard(adapter,webRow)).top[0].name,'Web Champion','all-time high-water result must not be lowered');
+ assert.equal(bestFromSnapshot({schemaVersion:1,run:{id:'bad',journeyStep:6000},rating:{power:1000}}),null);
+ sqlite.close();
+ console.log('PROFILE WORKER: secure session + D1 unified leaderboard SQL, legacy VK dedup, monotonic Glory: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1;});
