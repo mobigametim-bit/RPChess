@@ -1,3 +1,18 @@
+## 2026-11-05 — автоматическая приёмка TOP-10 + RPChess ID Турнира: SUCCESS
+
+**Точный проверенный код:** `29d76b83bf4df5a854e1414c5b60fed0c3a3da05`.
+
+**[GitHub Actions #42014811976](https://github.com/mobigametim-bit/RPChess/actions/runs/42014811976) — SUCCESS.** Пройдены `gate:local` (включая реальную SQLite-таблицу рейтинга, dedup, high-water и аутентификацию), локальная RPChess→Tournament проверка, Chromium, отдельные D1 миграции, деплой Profile Worker, отдельный Tournament Worker с Cloudflare Service Binding, live PvP двух гостей, живое получение RPChess ID в Tournament API и браузерное восстановление Летописи/Арены. Последний шаг удалил CI-only `Smoke Tester` результат из `rpchess_leaderboard_v2`: D1 подтвердил `changes:1` — ненастоящий пользователь не остаётся в публичном TOP-10.
+
+**Для ручной проверки:**
+- Игра: https://rpchess-profile-game-preview.mobigametim.workers.dev/?rpchess_profile=1
+- Profile API: https://rpchess-profile-preview.mobigametim.workers.dev
+- Отдельный Tournament API: https://rpchess-tournament-profile-preview.mobigametim.workers.dev
+
+**Не подтверждено вручную:** два независимых реальных VK-профиля через подписанный VK запуск, реальная межустройственная проверка, проверка уже существующего VK-пользователя в глобальном рейтинге и реальный рейтинговый VK→VK матч. Рабочий `main`/VK/Яндекс и старый Tournament Worker не затронуты, PR остаётся draft. Никаких наград Осколками чести от PvP.
+
+---
+
 # Единый профиль RPChess ID и сохранения в D1 — 2026-11-04
 
 **Автопроверка 2026-11-04 — SUCCESS:** https://github.com/mobigametim-bit/RPChess/actions/runs/41893399202. Пройдены npm run gate:local, Chrome key scenes, additive D1 schema, новый API Worker, отдельный статический Web/PWA Worker, живые проверки выпуска ID, bearer, CORS, CAS 409 и сохранения одного и того же ID после перезагрузки и запуска корневого URL PWA.
