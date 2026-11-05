@@ -315,10 +315,6 @@ function renderChronicle() {
 
   bestRoot?.replaceChildren();
   if (bestRoot) {
-    if(platform.profileEnabled) {
-      renderPersonalChronicle(bestRoot);
-      return;
-    }
     const title=document.createElement('h3');
     title.className='chronicle-commanders-title';
     title.textContent=l('chronicle.commanders');
