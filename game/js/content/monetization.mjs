@@ -141,12 +141,13 @@ function featureOverride(name) {
 
 function featureEnabled(name) {
   const override = featureOverride(name);
-  // GamePush owns ad dispatch in the opt-in build for BOTH VK and Yandex.
-  // A standalone Web/test SDK must not start showing platform ad rewards.
-  // Do not fall back to VK Bridge ads while GamePush is enabled.
+  // With a healthy GamePush SDK only its ads may display. If VK player
+  // authentication fails, the adapter can restore the already-working native
+  // VK ad path, but never in Web/PWA or while SDK is loading.
   const gp = platform.gamepush;
   const availableHost = gp.enabled
-    ? gp.ready && /^(?:VK(?:_|$)|YANDEX)/i.test(gp.platformType)
+    ? platform.ads.backend === 'vk-bridge'
+      || gp.ready && /^(?:VK(?:_|$)|YANDEX)/i.test(gp.platformType)
     : platform.launch.isVK();
   return override === null ? availableHost : override && availableHost;
 }
