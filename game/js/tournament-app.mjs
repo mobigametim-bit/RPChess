@@ -404,7 +404,7 @@ async function sendMove(from,to,promotion=null){
  const promoted=choices.length?(promotion||'q'):null;
  if(shadowGame){
   const applied=shadowGame.move(from,to,promoted);
-  if(applied.ok){selectedSquare=null;syncShadow();}
+  if(applied.ok){selectedSquare=null;saveShadowGame(platform.storage.local,shadowGame);syncShadow();}
   else if(applied.reason==='finished')syncShadow();
   return;
  }
@@ -537,8 +537,10 @@ async function openMatch(response){
 function syncShadow(){
  if(!shadowGame||!tabVisible)return;
  matchState=shadowGame.tick();chess=shadowGame.chess;lastSnapshotAt=Date.now();
- saveShadowGame(platform.storage.local,shadowGame);
+ // An active clock is reconstructed from the original wall-clock anchor.
+ // Avoid rewriting localStorage four times per second just to paint digits.
  if(matchState.status==='finished'){
+  saveShadowGame(platform.storage.local,shadowGame);
   stopMatch();page='result';render();return;
  }
  if(page==='match'){
