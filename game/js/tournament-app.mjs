@@ -11,6 +11,9 @@ import { RACE_TAGS, RACE_LABELS, racePiecePath, applyRaceBoardTheme } from './ra
 import { readPlayerRating, importTournamentRatingReceipt, ratingDelta } from './player-rating.mjs';
 import { currentLanguage, subscribe } from './i18n.mjs';
 import { platform } from './platform.mjs';
+import { readRun } from './run-persistence.mjs';
+import { readChronicle } from './chronicle-core.mjs';
+import { commanderPortrait,normalizeCommanderId } from './commander-portraits.mjs';
 
 const root=document.createElement('main');
 root.className='tournament-screen';
@@ -44,21 +47,56 @@ function saved(){try{return JSON.parse(platform.storage.local?.getItem(STORAGE_K
 function remember(){platform.storage.local?.setItem(STORAGE_KEY,JSON.stringify({squad}));}
 function raceLabel(r){return lang()==='en'?EN[RACE_TAGS.indexOf(r)]||r:RACE_LABELS[r]||r;}
 function head(){return '<header class="tournament-header"><div><h1>'+t('title')+'</h1></div><button type="button" class="classic-mini-button" data-tour-action="back">'+t('back')+'</button></header>';}
-function stats(){
- const a=arena(),power=readPlayerRating().power;
- const online=tournamentProfile?.ranked
-  ?'<span>'+(lang()==='ru'?'Рейтинг Турнира':'Tournament rating')+': <b>'+tournamentProfile.power+'</b></span>'
-  :tournamentProfile?'<span>'+(lang()==='ru'?'Гостевая игра · без рейтинга':'Guest play · unrated')+'</span>':'';
- return '<div class="tournament-stats"><span>'+t('power')+': <b>'+power+'</b></span>'+online+
-  '<span><img src="'+SHARD_ICON+'" alt="">'+t('shards')+': <b>'+a.balance+'</b></span></div>';
+const POWER_ICON='assets/doctrines/royal_court/emblem.png';
+const POWER_NAME=()=>lang()==='ru'?'Мощь':'Power';
+const modeClock='<svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="32" cy="33" r="23" stroke="#e3c177" stroke-width="3"/><path d="M32 18v15l9 7" stroke="#ffe5a8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M26 3h12M32 3v6" stroke="#e2b86b" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="33" r="2.5" fill="#ffe5a8"/></svg>';
+function identity(){
+  const run=readRun();
+  const history=readChronicle().history.slice().sort((a,b)=>(b.completedAt||0)-(a.completedAt||0));
+  const best=run?.playerName?run:history[0]||{};
+  return {name:String(best.playerName||(lang()==='ru'?'Воин':'Warrior')).slice(0,24),
+    commanderId:normalizeCommanderId(best.commanderId),power:readPlayerRating().power};
+}
+function powerMark(value){
+  const safe=Number.isFinite(value)?Math.max(0,Math.round(value)):500;
+  return '<span class="tournament-power-mark" title="'+POWER_NAME()+'" aria-label="'+POWER_NAME()+' '+safe+'"><img src="'+POWER_ICON+'" alt="" aria-hidden="true"><b>'+safe+'</b></span>';
+}
+function raceMark(race,color='w'){
+  const r=RACE_TAGS.includes(race)?race:'humans';
+  return '<span class="tournament-race-mark"><img src="'+racePiecePath(r,'king',color)+'" alt="" aria-hidden="true"><b>'+esc(raceLabel(r))+'</b></span>';
+}
+function profileCard(){
+  const player=identity();
+  return '<div class="tournament-profile-card" aria-label="'+esc(player.name)+'">'+
+    '<img class="tournament-profile-avatar" src="'+commanderPortrait(player.commanderId)+'" alt="">'+
+    '<strong class="tournament-profile-name">'+esc(player.name)+'</strong>'+
+    raceMark(squad)+powerMark(player.power)+'</div>';
 }
 function action(name,label,extra=''){return '<button type="button" class="reboot-button reboot-button--primary" data-tour-action="'+name+'" '+extra+'>'+label+'</button>';}
 function notice(text){return '<p class="tournament-notice" role="status">'+esc(text||'')+'</p>';}
 function setup(){
- const owned=arena().owned;
- if(!owned.has(squad))squad='humans';
- const choices=RACE_TAGS.map(r=>{const available=owned.has(r);return '<button type="button" data-tour-squad="'+r+'" class="tournament-squad'+(r===squad?' is-selected':'')+(available?'':' is-locked')+'" '+(available?'':'disabled')+' aria-pressed="'+(r===squad)+'"><img src="'+racePiecePath(r,'king','w')+'" alt=""><strong>'+esc(raceLabel(r))+'</strong><small>'+(available?t('owned'):'🔒 '+t('locked'))+'</small></button>';}).join('');
- return '<section class="tournament-layout"><div class="tournament-card tournament-mode"><small>10+0</small><h2>'+t('clock')+'</h2><p>'+t('clockNote')+'</p></div><div class="tournament-card"><h2>'+t('squad')+'</h2><p class="tournament-muted">'+t('pick')+'</p><div class="tournament-squads">'+choices+'</div></div>'+stats()+'<div class="tournament-actions">'+action('search',t('find'))+action('invite',t('invite'))+action('join-screen',t('join'))+'</div>'+notice(API?t('notice'):t('offline'))+'</section>';
+  const owned=arena().owned;
+  if(!owned.has(squad))squad='humans';
+  const choices=RACE_TAGS.map(r=>{
+    const available=owned.has(r);
+    return '<button type="button" data-tour-squad="'+r+'" class="tournament-squad'+
+      (r===squad?' is-selected':'')+(available?'':' is-locked')+'" '+
+      (available?'':'disabled')+' aria-label="'+esc(raceLabel(r))+
+      '" aria-pressed="'+(r===squad)+'">'+
+      '<img src="'+racePiecePath(r,'king','w')+'" alt=""><strong>'+esc(raceLabel(r))+'</strong></button>';
+  }).join('');
+  return '<section class="tournament-layout tournament-setup">'+
+    '<div class="tournament-setup-primary">'+profileCard()+
+      '<div class="tournament-card tournament-squad-card"><h2>'+t('squad')+'</h2>'+
+        '<div class="tournament-squads" tabindex="0" role="group" aria-label="'+t('squad')+'">'+choices+'</div></div></div>'+
+    '<div class="tournament-setup-secondary">'+
+      '<div class="tournament-card tournament-modes"><h2>'+(lang()==='ru'?'Режимы игры':'Game modes')+'</h2>'+
+        '<div class="tournament-mode-grid"><button type="button" class="tournament-mode-tile is-selected" aria-pressed="true" aria-label="10+0">'+
+          modeClock+'<strong>10+0</strong></button></div></div>'+
+      '<div class="tournament-actions">'+action('search',t('find'))+
+        action('invite',t('invite'))+action('join-screen',t('join'))+'</div>'+
+      (API?'':notice(t('offline')))+
+    '</div></section>';
 }
 function search(){
  const sec=Math.floor((Date.now()-queueSince)/1000);
