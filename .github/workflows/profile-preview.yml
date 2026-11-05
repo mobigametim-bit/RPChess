@@ -59,7 +59,7 @@ jobs:
       - name: Local RPChess Tournament ID verification (disposable credentials)
         run: |
           set -euo pipefail
-          npx wrangler dev --local --config tournament-worker/wrangler-profile.toml --ip 127.0.0.1 --port 8789 \
+          npx wrangler dev --local --config tournament-worker/wrangler-profile-local.toml --ip 127.0.0.1 --port 8789 \
             --var ALLOW_LOCAL_PROFILE_API:1 \
             --var RPCHESS_PROFILE_API:http://127.0.0.1:8788 \
             --var PVP_SESSION_SECRET:rpchess-local-session-secret-for-ci-only-12345678901234567890 \
