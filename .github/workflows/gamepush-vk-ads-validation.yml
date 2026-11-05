@@ -1,0 +1,105 @@
+name: Verify VK GamePush ads and publish isolated preview
+
+on:
+  push:
+    branches:
+      - feature/gamepush-vk-ads-validation-20261105
+    paths:
+      - .github/workflows/gamepush-vk-ads-validation.yml
+      - game/**
+      - tests/**
+      - scripts/**
+      - package.json
+      - package-lock.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rpchess-gamepush-vk-ads-preview
+  cancel-in-progress: true
+
+jobs:
+  verify-and-preview:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/gamepush-vk-ads-validation-20261105'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Restore existing optimized runtime assets
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Verify code, ads reward semantics, saved state and build
+        run: |
+          npm ci --no-audit --no-fund
+          npm run gate:local
+      - name: Install Chromium for key-scene regression
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+      - name: Verify game in actual Chromium
+        env:
+          RPCHESS_BROWSER_TEST: portrait-key-scenes-browser.cjs
+        run: npm run test:browser
+      - name: Require isolated Cloudflare preview credentials
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$TOKEN" || { echo "::error::CLOUDFLARE_API_TOKEN missing"; exit 1; }
+          test -n "$ACCOUNT" || { echo "::error::CLOUDFLARE_ACCOUNT_ID missing"; exit 1; }
+      - name: Publish GamePush test page only (not VK, Pages, main, D1 or Tournament)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config gamepush-preview/wrangler.toml
+      - name: Smoke combined RPChess ID and GamePush controls on allowed Web origin
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const {chromium}=require('playwright');
+          const base='https://rpchess-gamepush-preview.mobigametim.workers.dev';
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            try{
+              const page=await browser.newPage();
+              await page.goto(base+'/?rpchess_profile=1&rpchess_gamepush=1',
+                {waitUntil:'domcontentloaded',timeout:45000});
+              await page.locator('[data-new-game]').waitFor({state:'visible',timeout:40000});
+              await page.waitForFunction(()=>window.RPChessProfileStatus?.status==='ready',null,{timeout:35000});
+              const diagnostics=await page.evaluate(()=>{
+                const p=window.RPChessPlatform;
+                return {gamepushEnabled:p.gamepush.enabled,
+                  profileEnabled:p.profileEnabled,
+                  backend:p.ads.backend,
+                  gamepush:p.gamepush.diagnostics,
+                  ads:p.ads.diagnostics,
+                  sameData:window.RPChessProfileStatus?.provider==='web'
+                };
+              });
+              assert.equal(diagnostics.gamepushEnabled,true);
+              assert.equal(diagnostics.profileEnabled,true);
+              assert.equal(diagnostics.sameData,true);
+              assert(['none','gamepush'].includes(diagnostics.backend),
+                'outside VK the app must not dispatch native VK advertisements');
+              assert.equal(diagnostics.ads.vkHostConfirmed,false);
+              assert.equal((await page.evaluate(()=>window.RPChessPlatform.ads.show('reward'))).status,'unavailable',
+                'standalone Web preview must never grant VK rewarded ads');
+              const safe=JSON.stringify(diagnostics);
+              assert(!safe.includes('token')&&!safe.includes('sign='),'never print SDK tokens or signed launches');
+              console.log('GamePush + RPChess ID preview PASS — no native VK ad outside VK, no bonus');
+            }finally{await browser.close();}
+          })().catch(e=>{console.error(e);process.exitCode=1;});
+          NODE
+          echo "VK ads validation preview: https://rpchess-gamepush-preview.mobigametim.workers.dev/?rpchess_profile=1&rpchess_gamepush=1" >> "$GITHUB_STEP_SUMMARY"
