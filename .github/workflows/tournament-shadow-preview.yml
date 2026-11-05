@@ -1,0 +1,103 @@
+name: Shadow Tournament isolated playable preview
+
+on:
+  push:
+    branches: [feature/tournament-shadow-local-20261106]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rpchess-tournament-shadow-preview
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/tournament-shadow-local-20261106'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Restore optimized art cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Full local regression gate and production-equivalent build
+        run: |
+          npm ci --no-audit --no-fund
+          npm run gate:local
+      - name: Install Chromium
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+      - name: Validate six layouts, Shadow moves and both clock modes
+        env:
+          RPCHESS_BROWSER_TEST: tournament-v4-browser.cjs
+        run: npm run test:browser
+      - name: Save Shadow layout screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tournament-shadow-viewport-screenshots
+          path: test-results/tournament-v4
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Verify existing Cloudflare publishing credentials
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$TOKEN" && test -n "$ACCOUNT" || {
+            echo "::error::Missing existing Cloudflare deployment credentials"
+            exit 1
+          }
+      - name: Publish isolated Shadow game assets only (no production or D1 changes)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config tournament-shadow-preview/wrangler.toml
+      - name: Smoke live preview and bundled local rules
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const base='https://rpchess-shadow-preview.mobigametim.workers.dev';
+          (async()=>{
+            // The Workers.dev hostname for a new Worker can briefly resolve
+            // before its asset route is globally active. Verify the *actual*
+            // freshly deployed content, not a preexisting page or HTTP 404.
+            const paths=[
+              ['/', 'tournament-v4.css'],
+              ['/js/tournament-app.mjs','tournament-shadow-game.mjs'],
+              ['/js/tournament-shadow-game.mjs','LocalShadowGame'],
+              ['/css/tournament-v4.css','tournament-clock-panel--shadow']
+            ];
+            for(let attempt=0;attempt<20;attempt++){
+              let available=true;
+              for(const [path,needle] of paths){
+                try{
+                  const res=await fetch(base+path,{redirect:'follow'});
+                  if(res.status!==200||(await res.text()).includes(needle)===false){
+                    available=false;break;
+                  }
+                }catch{available=false;break;}
+              }
+              if(available){
+                console.log('SHADOW TOURNAMENT ACCEPTANCE PREVIEW READY: '+base+'/');
+                return;
+              }
+              if(attempt<19)await new Promise(resolve=>setTimeout(resolve,3000));
+            }
+            throw Error('New Shadow preview hostname is not publicly serving the deployed v4 assets');
+          })().catch(error=>{console.error(error);process.exitCode=1;});
+          NODE
+          echo "Playable isolated Shadow review: https://rpchess-shadow-preview.mobigametim.workers.dev/" >> "$GITHUB_STEP_SUMMARY"
