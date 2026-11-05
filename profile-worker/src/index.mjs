@@ -3,6 +3,7 @@
 // All credentials are opaque random capabilities; a public RPChess ID never grants access.
 // Client-supplied progress is UNVERIFIED, so it must not award rated PvP/leaderboard prizes.
 import { verifiedVKId } from '../../leaderboard-worker/src/index.mjs';
+import { readUnifiedBoard,refreshProfileBoard } from './unified-board.mjs';
 
 const APP_ID='54754579';
 const TOKEN_LIFETIME_MS=400*86400000;
@@ -205,15 +206,30 @@ async function handler(request,env) {
   if(path==='/health'&&request.method==='GET')
     return response({ok:Boolean(env.DB),service:'rpchess-profile-preview',version:1},env.DB?200:503,cors);
   if(!env.DB)return response({error:'d1_not_configured'},503,cors);
+  // Public cross-platform TOP-10; a valid bearer additionally reveals own rank.
+  if(path==='/v1/leaderboard'&&request.method==='GET'){
+    const tokenHeader=request.headers.get('Authorization');
+    const player=tokenHeader?await withAuth(request,env.DB):null;
+    if(tokenHeader&&!player)return response({error:'unauthorized'},401,cors);
+    return response(await readUnifiedBoard(env.DB,player),200,cors);
+  }
   if(path==='/v1/session'&&request.method==='POST'){
     const body=await parse(request,10000);
     const result=await openSession(env.DB,body,env);
     const {status=200,...data}=result;
     return response(data,status,cors);
   }
-  if(!['/v1/profile','/v1/vk-import'].includes(path))return response({error:'not_found'},404,cors);
+  if(!['/v1/profile','/v1/vk-import','/v1/leaderboard/refresh','/v1/tournament-binding'].includes(path))return response({error:'not_found'},404,cors);
   const row=await withAuth(request,env.DB);
   if(!row)return response({error:'unauthorized'},401,cors);
+  // Tournament may redeem this bearer only server-side. It cannot bind an
+  // arbitrary browser-provided ID, and public RPChess IDs are never credentials.
+  if(path==='/v1/tournament-binding'&&request.method==='GET')
+    return response({id:row.id,provider:row.provider,vkUserId:row.provider==='vk'?row.vk_user_id:null},200,cors);
+  if(path==='/v1/leaderboard/refresh'&&request.method==='POST'){
+    await refreshProfileBoard(env.DB,row);
+    return response(await readUnifiedBoard(env.DB,row),200,cors);
+  }
   if(path==='/v1/profile'&&request.method==='GET')return response({profile:profileResult(row)},200,cors);
   if(path==='/v1/profile'&&request.method==='PUT'){
     const body=await parse(request);
