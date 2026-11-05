@@ -12,8 +12,8 @@ const VK_SECRET='rpchess-local-vk-secret-for-ci-only-do-not-deploy';
 const profile=createServer((req,res)=>{
   if(req.url!=='/v1/tournament-binding'){res.writeHead(404);res.end();return;}
   const bearer=(req.headers.authorization||'').replace(/^Bearer /,'');
-  const response=bearer===VK_TOKEN?{id:ID_VK,provider:'vk',vkUserId:'234567810'}
-    :bearer===WEB_TOKEN?{id:ID_WEB,provider:'web',vkUserId:null}:null;
+  const response=bearer===VK_TOKEN?{id:ID_VK,provider:'vk',vkUserId:'234567810',name:'Грегори',commanderId:'ash_regent',displayPower:812}
+    :bearer===WEB_TOKEN?{id:ID_WEB,provider:'web',vkUserId:null,name:'Йо',commanderId:'pilgrim',displayPower:623}:null;
   res.writeHead(response?200:401,{'Content-Type':'application/json'});
   res.end(JSON.stringify(response||{error:'unauthorized'}));
 });
@@ -52,6 +52,22 @@ try{
  assert.equal((await request('/v1/profile',{},repeat.data.token)).data.rpchessId,ID_VK);
  const mismatched=await request('/v1/session',{launch:launch(234567811),profileCredential:VK_TOKEN});
  assert.equal(mismatched.status,403,'a different signed VK identity must not claim this profile');
+ // Legacy signed VK host has no RPChess profile credential yet. Its
+ // commander/name/Power are display-only, and must not alter trusted Elo.
+ const legacy=await request('/v1/session',{launch:launch(234567812),nick:'Рыцарь',
+   commanderId:'fox_prince',displayPower:774,power:3500});
+ assert.equal(legacy.status,200);
+ assert.equal(legacy.data.kind,'vk');
+ const legacyRoom=await request('/v1/room/create',{squad:'elves'},legacy.data.token);
+ assert.equal(legacyRoom.status,200);
+ const legacy2=await request('/v1/room/join',{code:legacyRoom.data.code,squad:'orcs'},vk.data.token);
+ assert.equal(legacy2.status,200);
+ const legacyMatch=await request('/v1/match/'+legacy2.data.matchId+'/snapshot',{},legacy.data.token);
+ const legacyRow=legacyMatch.data.players.find(p=>p.name==='Рыцарь');
+ assert.equal(legacyRow.commanderId,'fox_prince');
+ assert.equal(legacyRow.displayPower,774);
+ assert.equal(legacyRow.race,'elves');
+ assert.equal(legacyRow.power,500,'VK UI metadata must never set rated server Elo');
  const web=await request('/v1/session',{nick:'Web',power:1000,profileCredential:WEB_TOKEN});
  assert.equal(web.status,200);
  assert.equal(web.data.ranked,false,'Web profile is stable but unverified for rated PvP');
@@ -60,6 +76,25 @@ try{
  const webRepeat=await request('/v1/session',{previous:web.data.token,profileCredential:WEB_TOKEN});
  assert.equal((await request('/v1/profile',{},webRepeat.data.token)).data.rpchessId,ID_WEB);
  assert.equal(webRepeat.data.ranked,false);
+ assert.equal(web.data.name,'Йо','a signed server binding, not the browser nickname, sets player name');
+ assert.equal(vk.data.name,'Грегори','VK player receives their D1 identity');
+ // A real Durable Object match keeps a different portrait, race and shared
+ // Power for each player without changing the server's rated Elo ledger.
+ const invitation=await request('/v1/room/create',{squad:'orcs'},vk.data.token);
+ assert.equal(invitation.status,200);
+ const joined=await request('/v1/room/join',{code:invitation.data.code,squad:'humans'},web.data.token);
+ assert.equal(joined.data.status,'matched');
+ const game=await request('/v1/match/'+joined.data.matchId+'/snapshot',{},web.data.token);
+ assert.equal(game.status,200);
+ assert.equal(game.data.players.length,2);
+ const byName=Object.fromEntries(game.data.players.map(p=>[p.name,p]));
+ assert.equal(byName['Йо'].commanderId,'pilgrim');
+ assert.equal(byName['Йо'].displayPower,623);
+ assert.equal(byName['Йо'].race,'humans');
+ assert.equal(byName['Грегори'].commanderId,'ash_regent');
+ assert.equal(byName['Грегори'].displayPower,812);
+ assert.equal(byName['Грегори'].race,'orcs');
+ assert.equal(byName['Грегори'].power,500,'shared Power never replaces server-controlled Elo');
  console.log('TOURNAMENT RPCHESS LINK PASS: verified VK, Web casual, stable ID, invalid/mismatched tokens, server Power');
 }finally{
  await new Promise(resolve=>profile.close(resolve));

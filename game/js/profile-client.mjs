@@ -23,6 +23,8 @@ function setMigration(next) {
 
 function enabled() { return platform.profileEnabled===true; }
 function root() {
+  if(globalThis.location?.hostname==='rpchess-tournament-v4-preview.mobigametim.workers.dev')
+    return 'https://rpchess-profile-v4-preview.mobigametim.workers.dev';
   const fromPage=globalThis.document?.querySelector?.('meta[name="rpchess-profile-api"]')?.content||'';
   const value=String(globalThis.RPChessProfileAPI||fromPage).replace(/\/+$/,'');
   return /^https:\/\/[A-Za-z0-9.-]+(?::\d+)?$/.test(value)?value:'';

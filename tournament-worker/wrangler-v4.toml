@@ -1,0 +1,26 @@
+name = "rpchess-tournament-v4-api-preview"
+main = "src/index.mjs"
+compatibility_date = "2026-09-15"
+
+[durable_objects]
+bindings = [
+  { name = "LOBBY", class_name = "TournamentLobby" },
+  { name = "MATCHES", class_name = "TournamentMatch" },
+  { name = "ACCOUNTS", class_name = "TournamentAccount" }
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["TournamentLobby", "TournamentMatch"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["TournamentAccount"]
+
+[[services]]
+binding = "PROFILE_SERVICE"
+service = "rpchess-profile-v4-preview"
+
+[vars]
+RPCHESS_PROFILE_API = "https://rpchess-profile-v4-preview.mobigametim.workers.dev"
+ALLOWED_ORIGINS = "https://rpchess-tournament-v4-preview.mobigametim.workers.dev"

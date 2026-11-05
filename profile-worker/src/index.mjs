@@ -224,8 +224,22 @@ async function handler(request,env) {
   if(!row)return response({error:'unauthorized'},401,cors);
   // Tournament may redeem this bearer only server-side. It cannot bind an
   // arbitrary browser-provided ID, and public RPChess IDs are never credentials.
-  if(path==='/v1/tournament-binding'&&request.method==='GET')
-    return response({id:row.id,provider:row.provider,vkUserId:row.provider==='vk'?row.vk_user_id:null},200,cors);
+  if(path==='/v1/tournament-binding'&&request.method==='GET'){
+    // Read a player's appearance from their authenticated D1 save; never
+    // allow a Tournament client to declare another player's name or portrait.
+    const data=unpack(row.snapshot_json)||{schemaVersion:1};
+    const history=Array.isArray(data.chronicle?.history)?data.chronicle.history:[];
+    const last=history.slice().sort((a,b)=>(b?.completedAt||0)-(a?.completedAt||0))[0];
+    const appearance=data.run?.playerName?data.run:last||{};
+    const name=String(appearance.playerName||'Воин').trim().slice(0,24)||'Воин';
+    const commanders=['oathkeeper','stone_crown','wanderer_queen','pilgrim','fox_prince','ash_regent','nameless_heir'];
+    const commanderId=commanders.includes(appearance.commanderId)?appearance.commanderId:'oathkeeper';
+    const displayPower=Number.isSafeInteger(data.rating?.power)
+      ?Math.min(1000000,Math.max(0,data.rating.power)):500;
+    return response({id:row.id,provider:row.provider,
+      vkUserId:row.provider==='vk'?row.vk_user_id:null,
+      name,commanderId,displayPower},200,cors);
+  }
   if(path==='/v1/leaderboard/refresh'&&request.method==='POST'){
     await refreshProfileBoard(env.DB,row);
     return response(await readUnifiedBoard(env.DB,row),200,cors);
