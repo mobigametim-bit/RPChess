@@ -385,4 +385,14 @@ async function bootstrapProfile() {
   return bootPromise;
 }
 function statusInfo() {return Object.freeze({status,provider,profileId,revision,enabled:enabled(),migration:migration.status});}
-export {bootstrapProfile,syncNow,statusInfo,signedParams,legacyVKMeta,hasCompletedMeta,needsLegacyEnrichment,profileRestoreMatches,summaryOfMeta};
+// Profile API owns leaderboard writes and re-derives candidate Glory from the
+// server-stored D1 snapshot. Browser-supplied arbitrary scores are never sent.
+async function unifiedLeaderboard({refresh=false}={}) {
+  if(refresh&&sessionReady&&token)
+    return request('/v1/leaderboard/refresh',{method:'POST',data:{}});
+  return request('/v1/leaderboard',{auth:sessionReady});
+}
+// The existing Tournament client sends this credential ONLY to our staging
+// Tournament Worker. Never log it, include it in URLs, or expose it in UI.
+function tournamentCredential() { return sessionReady&&status==='ready'?token:''; }
+export {bootstrapProfile,syncNow,statusInfo,signedParams,legacyVKMeta,hasCompletedMeta,needsLegacyEnrichment,profileRestoreMatches,summaryOfMeta,unifiedLeaderboard,tournamentCredential};
