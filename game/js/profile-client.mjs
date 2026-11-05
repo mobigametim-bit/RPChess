@@ -388,8 +388,12 @@ function statusInfo() {return Object.freeze({status,provider,profileId,revision,
 // Profile API owns leaderboard writes and re-derives candidate Glory from the
 // server-stored D1 snapshot. Browser-supplied arbitrary scores are never sent.
 async function unifiedLeaderboard({refresh=false}={}) {
-  if(refresh&&sessionReady&&token)
+  if(refresh&&sessionReady&&token){
+    // The menu can open before the autosave debounce fires. Flush the actual
+    // Journey/Chronicle snapshot first, then let the server derive best Glory.
+    if(!await syncNow())return request('/v1/leaderboard');
     return request('/v1/leaderboard/refresh',{method:'POST',data:{}});
+  }
   return request('/v1/leaderboard',{auth:sessionReady});
 }
 // The existing Tournament client sends this credential ONLY to our staging
