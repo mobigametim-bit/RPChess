@@ -25,7 +25,9 @@ document.querySelector('#app')?.append(root);
 const menu=document.querySelector('[data-reboot-foundation]');
 const button=document.querySelector('[data-tournament-open]');
 const STORAGE_KEY='rpchess.reboot.v1.tournament-ui';
-const API=globalThis.location?.hostname==='rpchess-tournament-v4-preview.mobigametim.workers.dev'
+const API=globalThis.location?.hostname==='rpchess-shadow-preview.mobigametim.workers.dev'
+ ? '' // Shadow acceptance runs entirely offline; never touch production PvP.
+ :globalThis.location?.hostname==='rpchess-tournament-v4-preview.mobigametim.workers.dev'
  ? 'https://rpchess-tournament-v4-api-preview.mobigametim.workers.dev'
  :platform.profileEnabled
  ? 'https://rpchess-tournament-profile-preview.mobigametim.workers.dev'
