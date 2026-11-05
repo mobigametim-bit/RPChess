@@ -19,6 +19,10 @@ new_sqlite_classes = ["TournamentLobby", "TournamentMatch"]
 tag = "v2"
 new_sqlite_classes = ["TournamentAccount"]
 
+[[services]]
+binding = "PROFILE_SERVICE"
+service = "rpchess-profile-preview"
+
 [vars]
 ALLOWED_ORIGINS = "https://mobigametim-bit.github.io,https://rpchess-portrait-ui-preview.mobigametim.workers.dev,https://rpchess-gamepush-preview.mobigametim.workers.dev,https://rpchess-profile-game-preview.mobigametim.workers.dev"
 RPCHESS_PROFILE_API = "https://rpchess-profile-preview.mobigametim.workers.dev"
