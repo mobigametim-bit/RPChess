@@ -315,6 +315,81 @@ class MemoryStorage {
   assert.strictEqual(migration.extractLocalMeta().migratedFromVK,true,'local marker must persist for retry/reload');
   assert.strictEqual(oldDevice.getItem(persistence.RUN_STORAGE_KEY),storedLegacyRun,'old VK local save must survive GP migration');
 
+  // The previous GamePush test stored its own metadata in VK under a different
+  // namespace. The unified profile may read it but must never change it.
+  for (const [key,value] of cloudMeta) cloud.set(key,value);
+  const originalGPManifest=cloud.get('rpchess_gp_v2_manifest');
+
+  // The unified D1-backed profile MUST disable all legacy VK Cloud writes,
+  // while the explicitly read-only migration reader still sees the backup.
+  globalThis.location.search='?vk_app_id=54754579&rpchess_profile=1';
+  assert.strictEqual(platformModule.platform.profileEnabled,true);
+  assert.strictEqual(platformModule.storage.cloud.available,false);
+  assert.strictEqual(platformModule.platform.capabilities.cloudStorage,false);
+  assert.strictEqual(await platformModule.storage.cloud.setItem(cloudSave.CLOUD_SAVE_MANIFEST_KEY,'unsafe'),false);
+  assert.strictEqual(await platformModule.storage.cloud.getItemStrict(cloudSave.CLOUD_SAVE_MANIFEST_KEY),null);
+  assert.strictEqual(platformModule.storage.legacyVKProfileReader.available,true);
+  assert.strictEqual(platformModule.storage.previousGamePushMetaReader.available,true);
+  const previouslySavedGP=await migration.readNewMeta(platformModule.storage.previousGamePushMetaReader);
+  assert.strictEqual(previouslySavedGP.meta.rating.power,845,'previous GP completed meta must be readable without GP SDK');
+  assert.strictEqual(previouslySavedGP.meta.arena.match,null);
+  assert.strictEqual(cloud.get('rpchess_gp_v2_manifest'),originalGPManifest,'GP cloud must remain byte-identical after read');
+  const originalFromProfile=await cloudSave.readCloudEnvelope(platformModule.storage.legacyVKProfileReader);
+  assert.strictEqual(originalFromProfile.error,null);
+  assert(originalFromProfile.envelope?.payload?.run,'legacy reader can recover historical VK snapshot');
+  assert.strictEqual(cloud.get(cloudSave.CLOUD_SAVE_MANIFEST_KEY),savedVKManifest,'no profile write may touch old manifest');
+  const profileClient=await import(pathToFileURL(path.join(root,'game/js/profile-client.mjs')).href);
+  const oldMeta=profileClient.legacyVKMeta(originalFromProfile.envelope);
+  assert.strictEqual(Object.hasOwn(oldMeta,'run'),false,'legacy importer must drop unfinished run');
+  assert.strictEqual(profileClient.hasCompletedMeta({rating:{power:500,receipts:[]},chronicle:{history:[]},arena:{events:[]}}),false);
+  assert.strictEqual(profileClient.hasCompletedMeta(historical),true);
+  const started={migratedVK:true,snapshot:{
+    rating:{power:500,receipts:[]},chronicle:{history:[]},arena:{events:[]}}};
+  assert.strictEqual(profileClient.needsLegacyEnrichment(started,historical),true,
+    'a prematurely marked empty import must be eligible for recovery');
+  assert.strictEqual(profileClient.needsLegacyEnrichment({migratedVK:true,snapshot:historical},historical),false,
+    'a complete VK import must be idempotent');
+  const oldLeaderboard=await import(pathToFileURL(path.join(root,'game/js/leaderboard-client.mjs')).href);
+  assert.notStrictEqual((await oldLeaderboard.loadLeaderboard()).status,'ready',
+    'profile preview must never fake a ranking when its D1 API is unavailable');
+  assert.strictEqual((await oldLeaderboard.submitBestChronicle()).status,'unavailable');
+  assert.strictEqual(platformModule.storage.getItem(persistence.RUN_STORAGE_KEY),null,'before login no previous VK account cache is visible');
+  const firstId='00000000-0000-4000-8000-000000000001';
+  const secondId='00000000-0000-4000-8000-000000000002';
+  assert.strictEqual(platformModule.platform.setProfileStorageIdentity('vk',firstId),true);
+  const restoredPayload={...historical,run:null};
+  assert.strictEqual(cloudSave.restoreLocalEnvelope({payload:restoredPayload,revision:1,updatedAt:25000}),true);
+  const hydrated=cloudSave.localPayload();
+  assert.strictEqual(profileClient.profileRestoreMatches(restoredPayload,hydrated),true,
+    'legacy Power/Chronicle/Arena must be actually visible after D1 snapshot restoration');
+  assert.strictEqual(profileClient.summaryOfMeta(hydrated).power,845);
+  assert.strictEqual(profileClient.summaryOfMeta(hydrated).chronicle,1);
+  assert.strictEqual(profileClient.summaryOfMeta(hydrated).arenaEvents,1);
+  assert.strictEqual(profileClient.profileRestoreMatches({...restoredPayload,
+    chronicle:{...restoredPayload.chronicle,history:[
+      ...restoredPayload.chronicle.history,{...restoredPayload.chronicle.history[0],runId:'another-finished-run'}
+    ]}},hydrated),false,'missing Chronicle must fail restore readback');
+  assert.strictEqual(persistence.readRun(),null,'legacy active run must remain absent');
+  platformModule.storage.setItem('profile-account-test','first-account-only');
+  assert.strictEqual(platformModule.platform.setProfileStorageIdentity('vk',secondId),true);
+  assert.strictEqual(platformModule.storage.getItem('profile-account-test'),null,'VK account switch cannot see former local profile');
+  assert.strictEqual(cloud.get(cloudSave.CLOUD_SAVE_MANIFEST_KEY),savedVKManifest,'legacy VK Cloud is still preserved');
+
+  // Both preview flags may be present during the staged SDK cutover. D1 must
+  // remain the ONLY writable cloud, regardless of GamePush SDK readiness.
+  globalThis.location.search='?vk_app_id=54754579&rpchess_gamepush=1&rpchess_profile=1';
+  assert.strictEqual(platformModule.platform.profileEnabled,true);
+  assert.strictEqual(platformModule.platform.gamepush.enabled,true);
+  assert.strictEqual(platformModule.storage.cloud.available,false);
+  assert.strictEqual(platformModule.storage.gamepushVKMetaStore.available,false,
+    'the old GP v2 writer must be disabled when RPChess ID manages D1 saves');
+  assert.strictEqual(platformModule.storage.previousGamePushMetaReader.available,true,
+    'GP v2 completed statistics remain available for read-only recovery');
+  assert.strictEqual(cloud.get('rpchess_gp_v2_manifest'),originalGPManifest,
+    'the fallback GamePush manifest must never be rewritten by profile mode');
+  assert.strictEqual(cloud.get(cloudSave.CLOUD_SAVE_MANIFEST_KEY),savedVKManifest,
+    'the original VK Cloud must never be rewritten by profile mode');
+
   globalThis.location.search='?vk_app_id=54754579';
   assert.strictEqual(platformModule.storage.getItem(persistence.RUN_STORAGE_KEY),storedLegacyRun,'production VK retains original progress');
   assert.strictEqual(platformModule.platform.storage.cloud.available,true,'VK production storage remains intact');

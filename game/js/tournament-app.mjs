@@ -21,7 +21,9 @@ document.querySelector('#app')?.append(root);
 const menu=document.querySelector('[data-reboot-foundation]');
 const button=document.querySelector('[data-tournament-open]');
 const STORAGE_KEY='rpchess.reboot.v1.tournament-ui';
-const API=document.querySelector('meta[name="rpchess-tournament-api"]')?.content?.trim()||'';
+const API=platform.profileEnabled
+ ? 'https://rpchess-tournament-profile-preview.mobigametim.workers.dev'
+ : (document.querySelector('meta[name="rpchess-tournament-api"]')?.content?.trim()||'');
 const EN=['Humans','Elves','Orcs','Undead','Dark elves','Dwarves','Demons','Angels','Dragonkin','Beastfolk','Constructs','Animals','Fae','Goblins'];
 const words={
  ru:{title:'Турнир',back:'Главное меню',subtitle:'Шахматный бой с настоящим соперником',clock:'Классика · 10 минут',clockNote:'По 10 минут каждому игроку, без добавления секунд',squad:'Ваш отряд',pick:'Выберите доступный скин, купленный на Арене',power:'Мощь',shards:'Осколки чести',find:'Найти соперника',invite:'Пригласить друга',join:'Войти по коду',owned:'Открыт',locked:'Не куплен',search:'Поиск соперника',searchHint:'Подбираем живого игрока по Мощи',cancel:'Отменить поиск',bot:'Сыграть с ИИ на Арене',offline:'Сервер Турнира ещё не подключён. PvP станет доступен после отдельной серверной приёмки.',searchPending:'Ожидание соперника',wait:'В поиске',noMatch:'Соперник пока не найден. Можно продолжить поиск или сыграть с ИИ на Арене.',continue:'Продолжить поиск',waitFriend:'Ожидание друга',room:'Код комнаты',copy:'Копировать код',link:'Копировать ссылку',private:'Приватная партия · 10+0',entry:'Введите код приглашения',enter:'Присоединиться',closeRoom:'Отменить комнату',match:'Матч',you:'Вы',opponent:'Противник',draw:'Предложить ничью',resign:'Сдаться',leave:'К Турниру',yourTurn:'Ваш ход',theirTurn:'Ход соперника',connection:'Соединение',result:'Результат',again:'Найти ещё соперника',notice:'Это реальный PvP: бот никогда не выдаётся за человека.',loading:'Подключение…',error:'Ошибка соединения',needServer:'Онлайн-матчи пока недоступны',newInvite:'Создать комнату',review:'Анализировать'},
@@ -388,7 +390,19 @@ async function connect({refreshPower=false}={}){
  if(session&&!refreshPower)return session;
  connectJob=(async()=>{
   const previous=session?.token||platform.storage.local?.getItem('rpchess.reboot.v1.tournament-session')||'';
-  const obtained=await call('/v1/session',{previous,nick:'Guest',power:readPlayerRating().power,launch:location.search.slice(1)});
+  let profileCredential;
+  if(platform.profileEnabled){
+    await globalThis.RPChessCloudReady;
+    const profile=await import('./profile-client.mjs');
+    profileCredential=profile.tournamentCredential();
+    if(!profileCredential)throw Error(lang()==='ru'
+      ? 'Профиль RPChess пока не подтверждён'
+      : 'RPChess profile is not authenticated yet');
+  }
+  const obtained=await call('/v1/session',{
+    previous,nick:'Guest',power:readPlayerRating().power,launch:location.search.slice(1),
+    ...(profileCredential?{profileCredential}:{})
+  });
   if(!obtained.token)throw Error('No tournament session');
   session=obtained;platform.storage.local?.setItem('rpchess.reboot.v1.tournament-session',session.token);
   tournamentProfile=await call('/v1/profile',{});

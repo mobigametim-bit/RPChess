@@ -94,6 +94,22 @@ function changed(next){
 }
 function currentLeaderboard(){return board;}
 async function loadLeaderboard({force=false}={}){
+  // RPChess ID previews use the additive D1 union of new profiles and
+  // legacy VK leaderboard entries; never call the old production leaderboard.
+  if(platform.profileEnabled){
+    if(!force&&Date.now()-cachedAt<CACHE_MS&&board.status==='ready')return board;
+    if(pending)return pending;
+    pending=(async()=>{
+      try{
+        const {unifiedLeaderboard}=await import('./profile-client.mjs');
+        return changed(normalize(await unifiedLeaderboard({refresh:force})));
+      }catch(error){
+        console.warn('[RPChess] unified leaderboard unavailable',String(error?.message||error));
+        return changed({top:[],me:null,status:'offline'});
+      }finally{pending=null;}
+    })();
+    return pending;
+  }
   if(!apiRoot())return changed({top:[],me:null,status:'unavailable'});
   if(!force&&Date.now()-cachedAt<(board.status==='offline'?5000:CACHE_MS))return board;
   if(pending)return pending;
@@ -154,6 +170,7 @@ function alreadyRanked(best) {
   return me.week>best.week||(me.week===best.week&&me.power>=best.power);
 }
 async function submitBestChronicle(){
+  if(platform.profileEnabled)return {status:board.status==='ready'?'already-submitted':'unavailable'};
   if(!apiRoot())return {status:'unavailable'};
   const launch=await vkLaunch();
   if(!launch)return {status:'unavailable'};

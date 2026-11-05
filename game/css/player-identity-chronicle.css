@@ -348,3 +348,26 @@
   overflow-wrap:anywhere;
   text-wrap:balance;
 }
+
+
+/* Profile-backed personal history: visible even when the platform-specific
+   online leaderboard is unavailable. The flag's existing safe area scrolls. */
+.chronicle-personal-overview{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:3px;
+  margin:4px 0 7px;
+  padding:5px 0;
+  border-block:1px solid rgba(231,179,80,.43);
+}
+.chronicle-personal-overview>div{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center}
+.chronicle-personal-overview span{color:#f4d49a;font:700 clamp(9px,.78vw,11px)/1.12 Georgia,serif;overflow-wrap:anywhere}
+.chronicle-personal-overview strong{color:#fff3d3;font:400 clamp(17px,1.7vw,24px)/1 'BrahmsGotischCyr',Georgia,serif;font-variant-numeric:tabular-nums}
+.chronicle-personal-history .chronicle-leaderboard-row{min-height:33px;padding-block:3px}
+.chronicle-personal-history-detail{display:flex;flex-direction:column;gap:2px;min-width:0;overflow:hidden}
+.chronicle-personal-history-detail>strong{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:clamp(10px,.87vw,13px)}
+.chronicle-personal-history-detail>small{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#dec997;font:clamp(9px,.7vw,11px)/1.15 Georgia,serif}
+@media(orientation:landscape) and (max-height:600px){
+  html[data-landscape-ui='1'] .chronicle-personal-history .chronicle-leaderboard-row{min-height:29px!important}
+  html[data-landscape-ui='1'] .chronicle-personal-overview{margin:2px 0 4px;padding:3px 0}
+}

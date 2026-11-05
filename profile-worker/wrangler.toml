@@ -1,0 +1,18 @@
+name = "rpchess-profile-preview"
+main = "src/index.mjs"
+compatibility_date = "2026-11-04"
+
+# New Worker, additive rpchess_profile_* tables only. Existing leaderboard_v1
+# and tournament Durable Objects are not modified.
+# Reuse free D1 already configured for RPChess; no new paid backend.
+[[d1_databases]]
+binding = "DB"
+database_name = "rpchess-leaderboard"
+database_id = "8452f616-2982-428a-ad59-57cb8238708f"
+
+[vars]
+ALLOWED_ORIGINS = "https://mobigametim-bit.github.io,https://rpchess-gamepush-preview.mobigametim.workers.dev,https://rpchess-profile-game-preview.mobigametim.workers.dev"
+
+# For *verified VK login* only, add the protected key in Cloudflare:
+# wrangler secret put VK_APP_SECRET --config profile-worker/wrangler.toml
+# NEVER use a public token in place of this secret.
