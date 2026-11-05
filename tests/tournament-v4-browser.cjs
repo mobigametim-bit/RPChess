@@ -72,14 +72,14 @@ async function main(){
    assert(setup.powerIcon.includes('royal_court/emblem.png'),label+' must reuse Chronicle power emblem');
    assert(setup.text.includes('Йо')&&setup.text.includes('Ваш отряд'),label+' player and squad');
    assert(!setup.text.includes('Не куплен')&&!setup.text.includes('Открыт'),label+' no noisy labels');
+   await page.screenshot({path:path.join(dir,label+'-preparation.png'),animations:'disabled'});
    for(const box of setup.row)assert(Math.abs(box.y+box.height/2-(setup.portrait.y+setup.portrait.height/2))<18,
-     label+' profile stats are vertically centered with portrait');
+     label+' profile stats are vertically centered with portrait: '+JSON.stringify({portrait:setup.portrait,row:setup.row}));
    if(width>height){
     assert(setup.scrollHeight<=setup.height+4,label+' landscape preparation must not scroll as a page: '+JSON.stringify(setup));
     assert(setup.btns.every(b=>b.y>=0&&b.y+b.height<=height+2),
       label+' all three match buttons must fit screen');
    }
-   await page.screenshot({path:path.join(dir,label+'-preparation.png'),animations:'disabled'});
    await page.locator('[data-tour-action="search"]').click();
    await page.locator('[data-tour-board]').waitFor({state:'visible',timeout:15000});
    const view=await page.evaluate(()=>{
