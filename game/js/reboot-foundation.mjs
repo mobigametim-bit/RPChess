@@ -17,7 +17,16 @@ installBrandLogos();
 // immediately; VK failures are non-fatal and leave the local cache authoritative for this session.
 // A genuine local/cloud run conflict blocks run bootstrap until the player explicitly chooses one.
 const cloudReady = Promise.all([platformReady, import('./cloud-save.mjs')])
-  .then(([, module]) => module.bootstrapCloudSave())
+  .then(async ([, module]) => {
+    // The VK GamePush test build migrates only completed meta statistics.
+    // Do this before Chronicle/Rating/Run modules open their first screen.
+    // Standalone Web and unchanged production use their previous boot paths.
+    if (platform.gamepush.enabled && platform.launch.isVK()) {
+      const meta = await import('./gamepush-meta-sync.mjs');
+      return meta.bootstrapGamePushMeta();
+    }
+    return module.bootstrapCloudSave();
+  })
   .catch((error) => {
     console.error('[RPChess] Cloud Save bootstrap failed', error);
     return { status:'error', conflict:null };
@@ -93,6 +102,13 @@ const routeReady = Promise.all([cloudReady, monetizationReady])
     return null;
   });
 globalThis.RPChessRouteReady = routeReady;
+
+// Tell GamePush that the first interactive screen is ready, only in explicit SDK trial mode.
+// Platform auth/saves and existing VK launch behavior are not switched by this preview.
+Promise.all([routeReady, identityReady]).then(() => {
+  if (platform.gamepush.enabled) void platform.gamepush.markReady();
+});
+
 
 const REBOOT_INIT_KEY = 'rpchess.reboot.v1.initialized';
 const SETTINGS_KEY = 'rpchess.reboot.v1.settings';

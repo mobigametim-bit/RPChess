@@ -9,6 +9,13 @@ on:
       - tests/tournament-live-smoke.mjs
       - tests/tournament-rated-local.mjs
       - .github/workflows/tournament-api-staging-deploy.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - tournament-worker/**
+      - tests/tournament-live-smoke.mjs
+      - .github/workflows/tournament-api-staging-deploy.yml
   workflow_dispatch:
 
 permissions:
@@ -16,8 +23,8 @@ permissions:
 
 jobs:
   staging:
-    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/tournament-pvp-mvp-20261022'
-    runs-on: ubuntu-latest
+    if: github.repository == 'mobigametim-bit/RPChess' && (github.ref == 'refs/heads/feature/tournament-pvp-mvp-20261022' || (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feature/gamepush-sdk-foundation-20261104' && github.event.pull_request.head.repo.full_name == 'mobigametim-bit/RPChess'))
+    runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
@@ -73,5 +80,15 @@ jobs:
         env:
           RPCHESS_TOURNAMENT_API: https://rpchess-tournament-preview.mobigametim.workers.dev
         run: node tests/tournament-live-smoke.mjs
+      - name: Install Playwright for real two-browser GamePush Tournament check
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feature/gamepush-sdk-foundation-20261104'
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+      - name: Verify live two-browser match on GamePush preview
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feature/gamepush-sdk-foundation-20261104'
+        env:
+          RPCHESS_ACCEPTANCE_URL: https://rpchess-gamepush-preview.mobigametim.workers.dev/?rpchess_gamepush=1
+        run: node tests/tournament-client-browser.cjs
       - name: Final note
         run: echo "Tournament staging Worker deployed and exercised; existing leaderboard is untouched."

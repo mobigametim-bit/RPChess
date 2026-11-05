@@ -17,7 +17,9 @@
   <title>Герои Шаха и мата</title>
   <script>
     try {
-      const settings = JSON.parse(localStorage.getItem('rpchess.reboot.v1.settings') || '{}');
+      const gpFreshStart = new URLSearchParams(location.search).get('rpchess_gamepush') === '1';
+      const key = (gpFreshStart ? 'rpchess.gamepush.v2.' : '') + 'rpchess.reboot.v1.settings';
+      const settings = JSON.parse(localStorage.getItem(key) || '{}');
       if (settings.language === 'en') document.documentElement.lang = 'en';
       document.documentElement.dataset.simplePieces = settings.simplePieces === true ? '1' : '0';
     } catch {}

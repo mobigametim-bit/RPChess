@@ -1,0 +1,8 @@
+name = "rpchess-gamepush-preview"
+compatibility_date = "2026-10-15"
+
+# Independent static-only preview. Not the production RPChess worker,
+# Tournament API, leaderboard, GitHub Pages, or VK/Yandex publication.
+[assets]
+directory = "../dist"
+not_found_handling = "single-page-application"

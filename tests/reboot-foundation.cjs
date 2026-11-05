@@ -16,4 +16,16 @@ assert(fs.readFileSync(path.join(game,'js/artifact-combat-ui.mjs'),'utf8').inclu
   'artifact modal must predecode images and stylesheet before unmasking');
 assert(build.includes("'js/screen-loading.mjs'")&&build.includes("'css/screen-loading.css'"),'Production build must package loader JS and CSS');
 
+// GamePush opt-in preview must remain isolated from legacy VK/cloud-save production paths.
+const gamepushSource=fs.readFileSync(path.join(game,'js/gamepush-sdk.mjs'),'utf8');
+for(const token of ["const PROJECT_ID = 31247","rpchess_gamepush","instance.player.ready","isRewardedAvailable","showRewardedVideo","showFullscreen","sdk.gameStart","status:success === true ? 'completed' : 'closed'","get diagnostics()","vkUserParamPresent","vkAppParamPresent","playerIdPresent","playerLoggedIn","state !== 'ready' || !sdk"])assert(gamepushSource.includes(token),`GamePush trial missing ${token}`);
+for(const token of ["if (gamepushSdk.enabled)","gamepush:gamepushSdk","gamepushSdk.ads.show(format)","rpchess:gamepush-pause","rpchess:gamepush-resume","rpchess.gamepush.v2.","scopedGamePushStore","!gamepushSdk.enabled","return 'yandex'"])assert(platform.includes(token),`Platform GamePush preview missing ${token}`);
+const gamepushMonetization=fs.readFileSync(path.join(game,'js/content/monetization.mjs'),'utf8');
+assert(gamepushMonetization.includes("gp.ready && /^(?:VK(?:_|$)|YANDEX)/i.test(gp.platformType)"),'GamePush ads must require a real VK/Yandex platform and a ready SDK');
+assert(html.includes("gpFreshStart ? 'rpchess.gamepush.v2.'"),'First-paint settings must stay in the separate GamePush save namespace');
+assert(js.includes('platform.gamepush.markReady()'),'GamePush ready should occur after first-screen bootstrap');
+assert(js.indexOf('globalThis.RPChessRouteReady = routeReady') < js.indexOf('Promise.all([routeReady, identityReady])'),'GamePush ready must not access routeReady before declaration');
+assert(build.includes("'js/gamepush-sdk.mjs'"),'GamePush adapter must be included in production packaging');
+assert(!gamepushSource.includes('PVP_SESSION_SECRET')&&!gamepushSource.includes('VK_APP_SECRET'),'GamePush client must not contain server secrets');
+
 console.log('Reboot Foundation keeps New Game independent, initializes VK host launches, preserves canonical CSS-only controls, Player Identity prompt, Travel fallback and shared UX runtime: PASS');

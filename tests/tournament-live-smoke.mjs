@@ -20,6 +20,25 @@ async function pass(path,options,expected=200){
 }
 const health=await pass('/health');
 assert.equal(health.ok,true);
+// Browser CORS regression: newly published GamePush preview must be able to
+// create tournament sessions; existing production preview remains allowed.
+for(const origin of [
+ 'https://mobigametim-bit.github.io',
+ 'https://rpchess-portrait-ui-preview.mobigametim.workers.dev',
+ 'https://rpchess-gamepush-preview.mobigametim.workers.dev'
+]){
+ const response=await fetch(base+'/v1/session',{
+  method:'OPTIONS',headers:{
+   Origin:origin,'Access-Control-Request-Method':'POST',
+   'Access-Control-Request-Headers':'Content-Type,Authorization'
+  }
+ });
+ assert.equal(response.status,204,origin+' should pass preflight');
+ assert.equal(response.headers.get('Access-Control-Allow-Origin'),origin);
+}
+const forbidden=await fetch(base+'/v1/session',{method:'OPTIONS',headers:{Origin:'https://unknown.invalid','Access-Control-Request-Method':'POST'}});
+assert.equal(forbidden.status,403,'Untrusted origins remain forbidden');
+
 async function guest(name,power=900){
  const data=await pass('/v1/session',{body:{nick:name,power,launch:''}});
  assert.equal(data.kind,'guest');assert(data.token?.length>40);
