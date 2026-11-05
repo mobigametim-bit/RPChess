@@ -81,6 +81,76 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+      # Keep public profile and BOTH PvP transports aligned with the v4 client.
+      # Preserve existing secrets and Durable Objects: never re-key active games.
+      # Run only for an explicitly requested production release, never a PR.
+      - name: Publish compatible Profile and Tournament Workers before Pages
+        if: >-
+          github.ref == 'refs/heads/main' &&
+          (github.event_name == 'workflow_dispatch' ||
+          (github.event_name == 'push' && github.event.head_commit.message == 'deploy: active Glory menu sync'))
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          for cfg in profile-worker/wrangler.toml tournament-worker/wrangler-profile.toml tournament-worker/wrangler.toml; do
+            npx wrangler secret list --config "$cfg" > /tmp/rpchess-worker-secrets.json
+            case "$cfg" in
+              profile-worker/*)
+                grep -q 'VK_APP_SECRET' /tmp/rpchess-worker-secrets.json ||
+                  { echo "::error::VK authentication secret missing for $cfg"; exit 1; }
+                ;;
+              tournament-worker/*)
+                grep -q 'PVP_SESSION_SECRET' /tmp/rpchess-worker-secrets.json ||
+                  { echo "::error::Existing Tournament signing secret missing for $cfg"; exit 1; }
+                ;;
+            esac
+          done
+          npx wrangler deploy --config profile-worker/wrangler.toml
+          npx wrangler deploy --config tournament-worker/wrangler-profile.toml
+          npx wrangler deploy --config tournament-worker/wrangler.toml
+      - name: Verify live Tournament and profile API health before Pages
+        if: >-
+          github.ref == 'refs/heads/main' &&
+          (github.event_name == 'workflow_dispatch' ||
+          (github.event_name == 'push' && github.event.head_commit.message == 'deploy: active Glory menu sync'))
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          (async()=>{
+            const endpoints=[
+              ['https://rpchess-profile-preview.mobigametim.workers.dev/health','rpchess-profile-preview'],
+              ['https://rpchess-tournament-profile-preview.mobigametim.workers.dev/health','tournament'],
+              ['https://rpchess-tournament-preview.mobigametim.workers.dev/health','tournament']
+            ];
+            for(const [url,service]of endpoints){
+              const response=await fetch(url);
+              assert.equal(response.status,200,url);
+              assert.equal((await response.json()).service,service,url);
+            }
+            // The current Pages client uses profile-backed identity; test
+            // that deployment kept its server-to-server RPChess ID binding.
+            const origin='https://mobigametim-bit.github.io';
+            const profile='https://rpchess-profile-preview.mobigametim.workers.dev';
+            const tour='https://rpchess-tournament-profile-preview.mobigametim.workers.dev';
+            const guest=await fetch(profile+'/v1/session',{method:'POST',headers:{
+              Origin:origin,'Content-Type':'application/json'
+            },body:'{}'});
+            assert.equal(guest.status,200,'Web guest profile');
+            const profileSession=await guest.json();
+            const joined=await fetch(tour+'/v1/session',{method:'POST',headers:{
+              Origin:origin,'Content-Type':'application/json'
+            },body:JSON.stringify({profileCredential:profileSession.token})});
+            assert.equal(joined.status,200,'D1 profile -> Tournament identity');
+            const bound=await joined.json();
+            assert(bound.token,'Tournament signed session');
+            console.log('Production Profile + Tournament Workers ready. RPChess ID verified.');
+          })().catch(e=>{console.error(e);process.exitCode=1;});
+          NODE
       - name: Configure Pages
         if: >-
           github.ref == 'refs/heads/main' &&
