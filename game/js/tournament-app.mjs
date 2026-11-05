@@ -561,7 +561,7 @@ function startShadow({resume=false}={}){
  else shadowClock=saved.mode;
  page='match';message='';matchState=null;chess=shadowGame.chess;
  syncShadow();
- if(page==='match')matchJob=setInterval(syncShadow,250);
+ if(page==='match'&&shadowGame.isTimed)matchJob=setInterval(syncShadow,250);
 }
 async function cancelQueue(){stopPolling();if(session&&API)await call('/v1/queue/cancel',{}).catch(()=>{});}
 async function cancelRoom(){stopPolling();if(session&&API&&roomCode)await call('/v1/room/cancel',{code:roomCode}).catch(()=>{});}
