@@ -25,7 +25,7 @@
       const profileMode=params.get('rpchess_profile')!=='0'
         && (params.get('rpchess_profile')==='1' || releasePages
           || location.hostname==='rpchess-profile-game-preview.mobigametim.workers.dev');
-      const vkHosted=params.has('vk_app_id') || /(^|\\.)vk\\.(com|ru)$/i.test(new URL(document.referrer||location.href).hostname);
+      const vkHosted=params.has('vk_app_id') || /(^|\.)vk\.(com|ru)$/i.test(new URL(document.referrer||location.href).hostname);
       const kind=vkHosted?'vk':'web';
       const cached=localStorage.getItem('rpchess.profile.cached-id.'+kind)||'';
       const prefix=profileMode
