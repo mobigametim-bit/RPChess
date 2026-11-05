@@ -62,7 +62,32 @@ async function accountCall(env,id,path,data={}){
  if(!result.ok)throw Error('Tournament account ledger unavailable: '+result.status);
  return await result.json();
 }
-function isVerified(user,env){return user?.kind==='vk'&&/^vk:[1-9]\d*$/.test(user.id||'')&&Boolean(env.VK_APP_SECRET);}
+function isVerified(user,env){
+ // Historic signed VK sessions stay ranked; new RPChess IDs are ranked only
+ // after independent verification against the Profile Worker.
+ return user?.kind==='vk'&&(
+   (/^vk:[1-9]\d*$/.test(user.id||'')&&Boolean(env.VK_APP_SECRET))
+   || (user.profileVerified===true&&/^rpchess:[0-9a-f-]{36}$/i.test(user.id||''))
+ );
+}
+async function profileBinding(credential,env){
+ if(typeof credential!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(credential))return null;
+ const base=String(env.RPCHESS_PROFILE_API||'').replace(/\/+$/,'');
+ if(!/^https:\/\/[a-z0-9.-]+$/i.test(base))throw Error('Profile API unavailable');
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),6500);
+ try{
+  const res=await fetch(base+'/v1/tournament-binding',{
+   headers:{Authorization:'Bearer '+credential},signal:controller.signal,cache:'no-store'
+  });
+  if(res.status===401)return null;
+  if(!res.ok)throw Error('Profile identity service unavailable');
+  const binding=await res.json();
+  if(!/^[0-9a-f-]{36}$/i.test(binding?.id||''))return null;
+  if(binding.provider==='web'&&binding.vkUserId==null)return binding;
+  if(binding.provider==='vk'&&/^[1-9]\d*$/.test(binding.vkUserId||''))return binding;
+  return null;
+ }finally{clearTimeout(timeout);}
+}
 
 export default {
  async fetch(request,env){
@@ -79,12 +104,29 @@ export default {
   if(!body||typeof body!=='object'||Array.isArray(body))return json({error:'invalid_json'},400,cors);
   if(path==='/v1/session'){
    const vk=await vkIdentity(body.launch,env.VK_APP_SECRET);
+   // Explicit profile credential is verified via our independent D1 Worker;
+   // never accept a browser-supplied profile ID as authentication.
+   let binding=null;
+   if(Object.hasOwn(body,'profileCredential')){
+    try{binding=await profileBinding(body.profileCredential,env);}
+    catch{return json({error:'profile_service_unavailable'},503,cors);}
+    if(!binding)return json({error:'profile_auth_required'},401,cors);
+    if(vk && (binding.provider!=='vk'||vk!=='vk:'+binding.vkUserId))
+      return json({error:'profile_vk_identity_mismatch'},403,cors);
+   }
+   const linked=binding?'rpchess:'+binding.id:null;
    let session=await verify(body.previous,env.PVP_SESSION_SECRET);
    const nickname=String(body.nick||'Гость').trim().slice(0,28)||'Гость';
-   // A freshly verified VK launch upgrades a guest. Signed old VK sessions
-   // remain valid until expiry, but no unverified client may set its rating.
-   if(vk&&session?.id!==vk)session=null;
-   if(!session)session={id:vk||'guest:'+crypto.randomUUID(),name:nickname,kind:vk?'vk':'guest',created:Date.now(),exp:Date.now()+30*86400000};
+   // A newly verified RPChess profile supersedes any previous guest/VK token.
+   // Unlinked legacy sessions retain their historical behavior.
+   if(linked && session?.id!==linked)session=null;
+   if(!linked&&vk&&session?.id!==vk)session=null;
+   if(!session)session={
+    id:linked||vk||'guest:'+crypto.randomUUID(),name:nickname,
+    kind:binding?(binding.provider==='vk'?'vk':'guest'):(vk?'vk':'guest'),
+    profileVerified:Boolean(binding&&binding.provider==='vk'),
+    created:Date.now(),exp:Date.now()+30*86400000
+   };
    session={...session,power:isVerified(session,env)
     ?(await accountCall(env,session.id,'/profile')).power:safePower(body.power)};
    const raw=encode(JSON.stringify(session));
@@ -98,7 +140,8 @@ export default {
   const serverPower=profile?.power??safePower(user.power);
   if(path==='/v1/profile')return json({ranked:verified,power:serverPower,kind:verified?'vk':'guest',ratedGames:profile?.ratedGames||0},200,cors);
   // All server-internal user fields override browser input, including Power.
-  const requestData={...body,user:{id:user.id,name:user.name,kind:verified?'vk':'guest',power:serverPower},now:Date.now()};
+  const requestData={...body,user:{id:user.id,name:user.name,kind:verified?'vk':'guest',
+    profileVerified:verified&&user.profileVerified===true,power:serverPower},now:Date.now()};
   if(path==='/v1/queue/join')requestData.power=serverPower;
   let stub,pathDo;
   if(path.startsWith('/v1/queue/')||path.startsWith('/v1/room/')){stub=env.LOBBY.get(env.LOBBY.idFromName('world'));pathDo=path;}
