@@ -52,6 +52,22 @@ try{
  assert.equal((await request('/v1/profile',{},repeat.data.token)).data.rpchessId,ID_VK);
  const mismatched=await request('/v1/session',{launch:launch(234567811),profileCredential:VK_TOKEN});
  assert.equal(mismatched.status,403,'a different signed VK identity must not claim this profile');
+ // Legacy signed VK host has no RPChess profile credential yet. Its
+ // commander/name/Power are display-only, and must not alter trusted Elo.
+ const legacy=await request('/v1/session',{launch:launch(234567812),nick:'Рыцарь',
+   commanderId:'fox_prince',displayPower:774,power:3500});
+ assert.equal(legacy.status,200);
+ assert.equal(legacy.data.kind,'vk');
+ const legacyRoom=await request('/v1/room/create',{squad:'elves'},legacy.data.token);
+ assert.equal(legacyRoom.status,200);
+ const legacy2=await request('/v1/room/join',{code:legacyRoom.data.code,squad:'orcs'},vk.data.token);
+ assert.equal(legacy2.status,200);
+ const legacyMatch=await request('/v1/match/'+legacy2.data.matchId+'/snapshot',{},legacy.data.token);
+ const legacyRow=legacyMatch.data.players.find(p=>p.name==='Рыцарь');
+ assert.equal(legacyRow.commanderId,'fox_prince');
+ assert.equal(legacyRow.displayPower,774);
+ assert.equal(legacyRow.race,'elves');
+ assert.equal(legacyRow.power,500,'VK UI metadata must never set rated server Elo');
  const web=await request('/v1/session',{nick:'Web',power:1000,profileCredential:WEB_TOKEN});
  assert.equal(web.status,200);
  assert.equal(web.data.ranked,false,'Web profile is stable but unverified for rated PvP');
