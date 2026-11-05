@@ -445,7 +445,7 @@ function open(){
    await connect();
    if(!tabVisible||page!=='setup'||serial!==resumeSerial)return;
    const match=await call('/v1/queue/status',{});
-   if(tabVisible&&page==='setup'&&serial===resumeSerial&&match.status==='matched')
+   if(tabVisible&&page==='setup'&&chosenMode==='online'&&serial===resumeSerial&&match.status==='matched')
     await openMatch(match);
   }catch{ /* Offline state still allows opening Tournament setup. */ }
  })();
