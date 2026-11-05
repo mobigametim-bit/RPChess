@@ -278,13 +278,14 @@ jobs:
               });
               assert.equal(board.status,'ready','unified D1 leaderboard must load');
               assert(board.me&&board.me.glory===7,'own completed-run Glory must be server-recomputed');
-              assert(board.top.some(row=>row.name==='Smoke Tester'),
-                'D1 ranking must contain the new Web account without test placeholders');
+              assert.equal(board.me.name,'Smoke Tester','personal rank must resolve the correct player');
+              assert(board.top.length>=1&&board.top.length<=10,
+                'global TOP-10 must contain real D1 entries, never more than ten');
               const rankings=page.locator('[data-chronicle-best] .chronicle-leaderboard-row');
-              await page.waitForFunction(()=>
-                [...document.querySelectorAll('[data-chronicle-best] .chronicle-leaderboard-row')]
-                  .some(row=>row.textContent.includes('Smoke Tester')),null,{timeout:15000});
+              await rankings.first().waitFor({state:'attached',timeout:15000});
               assert(await rankings.count()>=1,'global TOP-10 must be visible inside the flag');
+              const ownRank=await page.locator('[data-chronicle-best] .chronicle-leaderboard-self').innerText();
+              assert(ownRank.includes('#'+board.me.rank),'own exact global rank must be displayed');
               assert.equal(await page.locator('[data-chronicle-personal-history]').count(),0,
                 'personal history must not replace global TOP-10');
               const restored=await page.evaluate(()=>window.RPChessProfileReconcile);
