@@ -129,7 +129,7 @@ const origin='https://rpchess-profile-game-preview.mobigametim.workers.dev';
  // A first test may have marked an incomplete snapshot as already imported.
  // Later discovered VK history must enrich the SAME ID, never duplicate data.
  const fuller={...legacy,chronicle:{history:[
-   ...legacy.chronicle.history,{runId:'old-2',playerName:'Player',completedAt:700}
+   ...legacy.chronicle.history,{runId:'old-2',playerName:'Player',commanderId:'ash_regent',completedAt:700}
  ]},arena:{...legacy.arena,events:[
    ...legacy.arena.events,{id:'old-win:2',kind:'win',amount:30,at:700}
  ]}};
@@ -141,6 +141,10 @@ const origin='https://rpchess-profile-game-preview.mobigametim.workers.dev';
  assert.equal(enriched.body.profile.snapshot.arena.events.length,2);
  assert.equal(enriched.body.profile.snapshot.arena.match,null);
  assert.equal(enriched.body.profile.snapshot.run,undefined);
+ const appearance=await call('/v1/tournament-binding',{method:'GET',token:verified.body.token});
+ assert.equal(appearance.body.name,'Player','Tournament uses authenticated D1 identity');
+ assert.equal(appearance.body.commanderId,'ash_regent','latest D1 portrait is transported');
+ assert.equal(appearance.body.displayPower,845,'shared Power is separate from Tournament Elo');
  const third=await call('/v1/vk-import',{data:{meta:fuller},token:verified.body.token});
  assert.equal(third.body.alreadyImported,true);
  assert.equal(third.body.profile.revision,enriched.body.profile.revision,'repeat recovery is idempotent');
