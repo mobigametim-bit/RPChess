@@ -529,6 +529,9 @@ const social = Object.freeze({
   },
   async showStory({ blob = '', link = '' } = {}) {
     if (!isVKLaunch()) return Object.freeze({ status:'unavailable' });
+    // GamePush only owns ads/player lifecycle; VK stories still use VK Bridge.
+    // Initialize that host lazily on the user's sharing gesture.
+    sendVKWebAppInit();
     if (!/^data:image\/(?:png|jpeg);base64,[a-z\d+/=]+$/i.test(blob)) return Object.freeze({ status:'error', reason:'invalid-image' });
     const payload = {
       background_type:'image',
@@ -614,8 +617,8 @@ const capabilities = Object.freeze({
   // Avoid promising native VK functionality when GamePush has replaced Bridge.
   get cloudStorage() { return isVKLaunch() && !legacyCloudDisabled(); },
   get ads() { return gamepushSdk.enabled ? advertisingBackend()!=='none' : isVKLaunch(); },
-  get sharing() { return isVKLaunch() && !gamepushSdk.enabled; },
-  get leaderboard() { return isVKLaunch() && !gamepushSdk.enabled; },
+  get sharing() { return isVKLaunch(); }, // VK Story/Share remain via Bridge.
+  get leaderboard() { return rpchessProfileEnabled() || isVKLaunch() && !gamepushSdk.enabled; },
   payments:false
 });
 
