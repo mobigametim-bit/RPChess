@@ -78,9 +78,14 @@ async function profileBinding(credential,env){
  if(!secure&&!localTest)throw Error('Profile API unavailable');
  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),6500);
  try{
-  const res=await fetch(base+'/v1/tournament-binding',{
+  // Cloudflare disallows ordinary same-account workers.dev subrequests in
+  // some deployments; a named service binding is the trusted production path.
+  const transport=env.PROFILE_SERVICE?.fetch
+    ? req=>env.PROFILE_SERVICE.fetch(req)
+    : req=>fetch(req);
+  const res=await transport(new Request(base+'/v1/tournament-binding',{
    headers:{Authorization:'Bearer '+credential},signal:controller.signal,cache:'no-store'
-  });
+  }));
   if(res.status===401)return null;
   if(!res.ok)throw Error('Profile identity service unavailable');
   const binding=await res.json();
