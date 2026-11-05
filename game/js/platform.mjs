@@ -486,6 +486,10 @@ const ads = Object.freeze({
     const backend=advertisingBackend();
     if(backend==='gamepush')return gamepushSdk.ads.check(normalized);
     if(backend!=='vk-bridge' || gamepushSdk.enabled && !confirmedVKAdHost())return false;
+    // VK mobile may have ShowNativeAds without the optional CheckNativeAds
+    // method; offer rescue if its native Show handler is explicitly available.
+    if(gamepushSdk.enabled && nativeMethodSupported('VKWebAppCheckNativeAds')===false)
+      return nativeMethodSupported('VKWebAppShowNativeAds')===true;
     if(!await this.supported(normalized))return false;
     try {
       const response=await sendVKRequest('VKWebAppCheckNativeAds', { ad_format:normalized });
