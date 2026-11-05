@@ -429,38 +429,86 @@ function adErrorStatus(error) {
   return /close|cancel|denied|user/.test(text) ? 'closed' : 'error';
 }
 
+// In VK the already-monetized native Bridge is a fallback ONLY after an
+// opt-in GamePush SDK failed to initialize. Never mix both backends while the
+// SDK is loading, ready, or has simply exhausted its ad inventory.
+function confirmedVKAdHost() {
+  if (!isVKLaunch()) return false;
+  const native=Boolean(globalThis.AndroidBridge?.VKWebAppShowNativeAds
+    || globalThis.webkit?.messageHandlers?.VKWebAppShowNativeAds?.postMessage
+    || globalThis.ReactNativeWebView?.postMessage);
+  return native || verifiedVKHost
+    || /(^|\.)vk\.(com|ru)$/i.test(referrerHost());
+}
+function advertisingBackend() {
+  if (!gamepushSdk.enabled) return 'vk-bridge';
+  if (gamepushSdk.ready)
+    return /^(?:VK(?:_|$)|YANDEX)/i.test(gamepushSdk.platformType) ? 'gamepush' : 'none';
+  if (gamepushSdk.status === 'unavailable' && confirmedVKAdHost()) return 'vk-bridge';
+  return 'none';
+}
+let adShowing=false;
+async function nativeVKShow(normalized) {
+  // The call must originate directly from a click. Checking ad availability
+  // first consumes the user gesture on some VK mobile WebViews.
+  try {
+    const response=await sendVKRequest('VKWebAppShowNativeAds',
+      { ad_format:normalized },{ timeoutMs:VK_AD_SHOW_TIMEOUT_MS });
+    return Object.freeze({ status:response?.result === true ? 'completed' : 'error', format:normalized });
+  } catch(error) {
+    return Object.freeze({ status:adErrorStatus(error), format:normalized });
+  }
+}
 const ads = Object.freeze({
+  get backend() { return advertisingBackend(); },
+  get diagnostics() { return Object.freeze({
+    backend:advertisingBackend(),
+    sdkStatus:gamepushSdk.status,
+    vkHostConfirmed:confirmedVKAdHost(),
+    rewardedAvailable:gamepushSdk.ready ? gamepushSdk.ads.check('reward') : null,
+    fullscreenAvailable:gamepushSdk.ready ? gamepushSdk.ads.check('interstitial') : null
+  }); },
   async supported(format) {
-    if (gamepushSdk.enabled) return gamepushSdk.ads.supported(format);
-    return Boolean(normalizeAdFormat(format))
-      && await supportsVKMethod('VKWebAppCheckNativeAds')
+    const normalized=normalizeAdFormat(format);
+    if(!normalized)return false;
+    const backend=advertisingBackend();
+    if(backend==='none')return false;
+    if(backend==='gamepush')return gamepushSdk.ads.supported(normalized);
+    // On native VK mobile, the CheckNativeAds capability can be missing even
+    // when ShowNativeAds is fully functional. In fallback we never require it.
+    if(gamepushSdk.enabled)return confirmedVKAdHost();
+    return await supportsVKMethod('VKWebAppCheckNativeAds')
       && await supportsVKMethod('VKWebAppShowNativeAds');
   },
   async check(format) {
-    if (gamepushSdk.enabled) return gamepushSdk.ads.check(format);
-    const normalized = normalizeAdFormat(format);
-    if (!normalized || !await this.supported(normalized)) return false;
+    const normalized=normalizeAdFormat(format);
+    if(!normalized)return false;
+    const backend=advertisingBackend();
+    if(backend==='gamepush')return gamepushSdk.ads.check(normalized);
+    if(backend!=='vk-bridge' || gamepushSdk.enabled && !confirmedVKAdHost())return false;
+    // VK mobile may have ShowNativeAds without the optional CheckNativeAds
+    // method; offer rescue if its native Show handler is explicitly available.
+    if(gamepushSdk.enabled && nativeMethodSupported('VKWebAppCheckNativeAds')===false)
+      return nativeMethodSupported('VKWebAppShowNativeAds')===true;
+    if(!await this.supported(normalized))return false;
     try {
-      const response = await sendVKRequest('VKWebAppCheckNativeAds', { ad_format:normalized });
-      return response?.result === true;
-    } catch {
-      return false;
-    }
+      const response=await sendVKRequest('VKWebAppCheckNativeAds', { ad_format:normalized });
+      return response?.result===true;
+    } catch { return false; }
   },
   async show(format) {
-    if (gamepushSdk.enabled) return gamepushSdk.ads.show(format);
-    const normalized = normalizeAdFormat(format);
-    if (!normalized || !isVKLaunch()) return Object.freeze({ status:'unavailable', format:normalized || String(format || '') });
-    // Launch directly from the player's tap. On VK mobile WebViews a preliminary
-    // SetSupportedHandlers/CheckNativeAds roundtrip can report a false negative,
-    // or consume the user gesture before ShowNativeAds reaches the host.
-    // VK itself decides whether inventory exists; grant only on result === true.
+    const normalized=normalizeAdFormat(format);
+    const backend=advertisingBackend();
+    if(!normalized || adShowing || backend==='none'
+      || backend==='vk-bridge' && (!isVKLaunch() || gamepushSdk.enabled && !confirmedVKAdHost()))
+      return Object.freeze({ status:'unavailable', format:normalized || String(format || '') });
+    adShowing=true;
     try {
-      const response = await sendVKRequest('VKWebAppShowNativeAds', { ad_format:normalized }, { timeoutMs:VK_AD_SHOW_TIMEOUT_MS });
-      return Object.freeze({ status:response?.result === true ? 'completed' : 'error', format:normalized });
-    } catch (error) {
-      return Object.freeze({ status:adErrorStatus(error), format:normalized, error });
-    }
+      // Exactly one backend is chosen BEFORE dispatch, so a close/error never
+      // retries the same tap using another provider or grants a duplicate.
+      if(backend==='gamepush')return await gamepushSdk.ads.show(normalized);
+      return await nativeVKShow(normalized);
+    } finally { adShowing=false; }
   }
 });
 
@@ -560,7 +608,7 @@ const bridge = Object.freeze({
 const capabilities = Object.freeze({
   // Avoid promising native VK functionality when GamePush has replaced Bridge.
   get cloudStorage() { return isVKLaunch() && !legacyCloudDisabled(); },
-  get ads() { return gamepushSdk.enabled ? gamepushSdk.ready && /^VK(?:_|$)/i.test(gamepushSdk.platformType) : isVKLaunch(); },
+  get ads() { return gamepushSdk.enabled ? advertisingBackend()!=='none' : isVKLaunch(); },
   get sharing() { return isVKLaunch() && !gamepushSdk.enabled; },
   get leaderboard() { return isVKLaunch() && !gamepushSdk.enabled; },
   payments:false
@@ -589,7 +637,12 @@ const platform = Object.freeze({
     // builds. No parallel VK Bridge init, ad call or legacy VK cloud restore.
     // Do not block the menu if a test origin has not been configured yet.
     if (gamepushSdk.enabled) {
-      void gamepushSdk.init();
+      // Native VK is not initialized concurrently with a healthy GamePush SDK.
+      // If SDK player auth fails (e.g. VK userId not found), restore the
+      // existing ad mechanism without changing RPChess ID/D1 persistence.
+      void gamepushSdk.init().then(ready=>{
+        if(!ready && confirmedVKAdHost())sendVKWebAppInit();
+      }).catch(()=>{});
       return true;
     }
     return await discoverVKHost() ? sendVKWebAppInit() : false;

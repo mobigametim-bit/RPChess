@@ -141,12 +141,13 @@ function featureOverride(name) {
 
 function featureEnabled(name) {
   const override = featureOverride(name);
-  // GamePush owns ad dispatch in the opt-in build for BOTH VK and Yandex.
-  // A standalone Web/test SDK must not start showing platform ad rewards.
-  // Do not fall back to VK Bridge ads while GamePush is enabled.
+  // With a healthy GamePush SDK only its ads may display. If VK player
+  // authentication fails, the adapter can restore the already-working native
+  // VK ad path, but never in Web/PWA or while SDK is loading.
   const gp = platform.gamepush;
   const availableHost = gp.enabled
-    ? gp.ready && /^(?:VK(?:_|$)|YANDEX)/i.test(gp.platformType)
+    ? platform.ads.backend === 'vk-bridge'
+      || gp.ready && /^(?:VK(?:_|$)|YANDEX)/i.test(gp.platformType)
     : platform.launch.isVK();
   return override === null ? availableHost : override && availableHost;
 }
@@ -597,6 +598,18 @@ function installMonetization() {
   for (const name of TRAVEL_EVENTS) globalThis.addEventListener?.(name, onTravelOpenEvent);
   globalThis.addEventListener?.('rpchess:combat-completed', onCombatCompleted);
   globalThis.addEventListener?.('rpchess:run-updated', onDoubleGoldRunUpdated);
+  // GP may report VK player-auth failure after the victory screen was drawn.
+  // When the native VK fallback becomes available, restore the existing offer
+  // without replaying a match or issuing any reward automatically.
+  globalThis.addEventListener?.('rpchess:gamepush-status',event=>{
+    if(event?.detail?.status!=='unavailable'||platform.ads.backend!=='vk-bridge')return;
+    const run=readRun();
+    if(!run||run.ended)return;
+    for(const kind of ['battle','skirmish','caravan']){
+      const count=run[`${kind}Count`];
+      if(Number.isInteger(count)&&count>0)renderDoubleGoldOffer(kind,count);
+    }
+  });
   unsubscribeLanguage = subscribe(() => {
     renderRescueCopy();
     for (const button of document.querySelectorAll('[data-ad-double-gold-button]')) {

@@ -77,7 +77,7 @@ class MemoryStorage {
 
   assert(!source.includes('VKWebAppShowNativeAds') && !source.includes('VKWebAppCheckNativeAds'), 'Gameplay monetization must not call VK Bridge directly');
   assert(platformSource.includes('const VK_AD_SHOW_TIMEOUT_MS = 180_000;'), 'Rewarded ads must have enough time to finish before the Bridge request expires');
-  assert(platformSource.includes("sendVKRequest('VKWebAppShowNativeAds', { ad_format:normalized }, { timeoutMs:VK_AD_SHOW_TIMEOUT_MS })"), 'Native ad show must use the dedicated long timeout');
+  assert(platformSource.includes("sendVKRequest('VKWebAppShowNativeAds'") && platformSource.includes('timeoutMs:VK_AD_SHOW_TIMEOUT_MS'), 'Native ad show must use the dedicated long timeout');
   assert(starvationSource.includes('starvationVictimPreviousStatus: victim.status'), 'Starvation must preserve the victim status so rewarded rescue can restore it exactly');
   assert(foundation.includes("import('./content/monetization.mjs')"), 'Foundation must load the monetization owner');
   assert(foundation.indexOf("import('./content/monetization.mjs')") < foundation.indexOf("import('./battle-route.mjs')"), 'Ad gate must register before route owners');

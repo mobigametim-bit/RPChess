@@ -19,6 +19,7 @@ let pending = null;
 let gameStartRequested = false;
 let gameStartSent = false;
 let lastAuthDiagnostic = null;
+let failureCode = '';
 
 function isEnabled() {
   try {
@@ -105,6 +106,7 @@ function injectSdk(source) {
 async function boot() {
   state = 'loading';
   lastAuthDiagnostic = null;
+  failureCode = '';
   notify('start');
   try {
     let instance = null;
@@ -140,9 +142,16 @@ async function boot() {
     return true;
   } catch (error) {
     lastAuthDiagnostic = safeDiagnostics();
+    // SDK diagnostics can contain signed parameters or raw player data.
+    // Only publish a coarse error class in logs, events and support reports.
+    const reason=String(error?.message||'');
+    failureCode=/user.?id not found|invalid player data|identity is unavailable/i.test(reason)
+      ? 'vk-player-auth'
+      : /timeout|timed out/i.test(reason) ? 'timeout'
+      : /script|missing/i.test(reason) ? 'sdk-load' : 'sdk-unavailable';
     sdk = null;
     state = 'unavailable';
-    notify(error?.message || 'sdk-unavailable');
+    notify(failureCode);
     console.warn('[RPChess] GamePush trial unavailable; local game remains playable');
     return false;
   }
@@ -185,7 +194,7 @@ async function showAd(format) {
     await sdk.ads.showFullscreen();
     return Object.freeze({ status:'completed', format });
   } catch (error) {
-    return Object.freeze({ status:'error', format, error });
+    return Object.freeze({ status:'error', format });
   }
 }
 
@@ -193,6 +202,7 @@ const gamepushSdk = Object.freeze({
   get enabled() { return isEnabled(); },
   get ready() { return state === 'ready'; },
   get status() { return state; },
+  get failureCode() { return failureCode; },
   get projectId() { return PROJECT_ID; },
   // SDK-supplied platform/player values are UI hints, not server authority.
   // Never trust playerId without verifying player.authToken on Cloudflare.
@@ -201,7 +211,7 @@ const gamepushSdk = Object.freeze({
   get loggedIn() { return state === 'ready' && sdk?.player?.isLoggedIn === true; },
   get diagnostics() {
     const live=safeDiagnostics();
-    return Object.freeze({ ...live,
+    return Object.freeze({ ...live, failureCode,
       platform:live.platform || lastAuthDiagnostic?.platform || '',
       playerIdPresent:live.playerIdPresent || lastAuthDiagnostic?.playerIdPresent || false,
       playerLoggedIn:live.playerLoggedIn || lastAuthDiagnostic?.playerLoggedIn || false
