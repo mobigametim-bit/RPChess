@@ -73,7 +73,7 @@ async function main(){
      modeCount:root.querySelectorAll('.tournament-mode-tile').length,
      powerIcon:root.querySelector('.tournament-power-mark img')?.getAttribute('src')};
    });
-   assert.equal(setup.modeCount,1,label+' must have one mode tile');
+   assert.equal(setup.modeCount,2,label+' has online 10+0 and offline Shadow mode tiles');
    assert(setup.powerIcon.includes('royal_court/emblem.png'),label+' must reuse Chronicle power emblem');
    assert(setup.text.includes('Йо')&&setup.text.includes('Ваш отряд'),label+' player and squad');
    assert(!setup.text.includes('Не куплен')&&!setup.text.includes('Открыт'),label+' no noisy labels');
@@ -128,6 +128,82 @@ async function main(){
    assert.equal(await page.locator('[data-tour-action="resign"]').count(),1);
    await page.keyboard.press('Escape');
    await page.locator('#tournament-tools').waitFor({state:'hidden'});
+   // The same accepted layout must also play local hot-seat chess, both
+   // colors, without rotating the board or changing Tournament Elo.
+   await page.evaluate(()=>window.RPChessTournament.close());
+   await page.locator('[data-tournament-open]').click();
+   await page.locator('[data-tour-mode="shadow"]').click();
+   await page.locator('[data-shadow-clock="unlimited"]').click();
+   const shadowSetup=await page.evaluate(()=>{
+    const root=document.querySelector('[data-tournament-screen]');
+    const tile=root.querySelector('[data-tour-mode="shadow"]');
+    return {height:root.clientHeight,scrollHeight:root.scrollHeight,
+      selected:tile.getAttribute('aria-pressed'),
+      shadowButtons:[...root.querySelectorAll('.tournament-shadow-clocks button')].length};
+   });
+   assert.equal(shadowSetup.selected,'true');
+   assert.equal(shadowSetup.shadowButtons,2);
+   if(width>height)assert(shadowSetup.scrollHeight<=shadowSetup.height+4,
+     label+' Shadow mode must fit landscape without page scroll');
+   await page.screenshot({path:path.join(dir,label+'-shadow-setup.png'),animations:'disabled'});
+   await page.locator('[data-tour-action="shadow-start"]').click();
+   await page.locator('[data-tour-board]').waitFor({state:'visible'});
+   const shadow=await page.evaluate(()=>{
+     const root=document.querySelector('[data-tournament-screen]');
+     const self=root.querySelector('[data-tour-player="w"]');
+     const rival=root.querySelector('[data-tour-player="b"]');
+     return {name:rival.querySelector('.tournament-player strong')?.textContent,
+       selfName:self.querySelector('.tournament-player strong')?.textContent,
+       portraits:[self,rival].map(el=>el.querySelector('.tournament-duel-portrait')?.getAttribute('src')),
+       filter:getComputedStyle(rival.querySelector('.tournament-duel-portrait')).filter,
+       firstSquare:root.querySelector('[data-tour-board] [data-square]')?.dataset.square,
+       clocks:[...root.querySelectorAll('[data-tour-clock]')].map(n=>n.textContent),
+       board:root.querySelector('[data-tour-board]').getBoundingClientRect().toJSON()};
+   });
+   assert.equal(shadow.name,'Тень Йо');
+   assert.equal(shadow.selfName,'Йо');
+   assert.equal(shadow.portraits[0],shadow.portraits[1],'shadow uses exactly the same portrait asset');
+   assert(shadow.filter.includes('brightness(0.38)'),label+' must shade shadow portrait');
+   assert.equal(shadow.firstSquare,'a8','white must always stay at bottom');
+   assert(shadow.clocks.every(x=>x==='∞'),label+' unlimited time shows infinity');
+   if(width>height)assert(shadow.board.height>=Math.min(height,width-150)-15,
+     label+' Shadow should preserve full-height landscape chessboard');
+   await page.locator('[data-square="e2"]').click();
+   await page.locator('[data-square="e4"]').click();
+   await page.locator('[data-square="e7"]').click();
+   await page.locator('[data-square="e5"]').click();
+   const after=await page.evaluate(()=>{
+     const b=document.querySelector('[data-tour-board]');
+     return {first:b.querySelector('[data-square]')?.dataset.square,
+       squares:[...b.querySelectorAll('.classic-piece')].length,
+       saved:localStorage.getItem('rpchess.reboot.v1.tournament-shadow')};
+   });
+   assert.equal(after.first,'a8',label+' no board flip after either player moves');
+   assert.equal(after.squares,32);
+   assert(after.saved?.includes('e4')&&after.saved?.includes('e5'),label+' local game saved both turns');
+   await page.screenshot({path:path.join(dir,label+'-shadow-match.png'),animations:'disabled'});
+   await page.locator('[data-tour-action="panel"]').click();
+   await page.locator('#tournament-tools [data-tour-action="back"]').click();
+   await page.locator('[data-tour-mode="shadow"]').click();
+   await page.locator('[data-tour-action="shadow-resume"]').click();
+   assert.equal(await page.locator('[data-square="e4"] .classic-piece').count(),1,
+     label+' local shadow resumed after leaving match');
+   assert.equal(await page.locator('[data-square="e5"] .classic-piece').count(),1);
+   // Exercise 10+0 selection without a separate browser suite.
+   if(label==='phone-portrait'||label==='desktop-landscape'){
+    await page.locator('[data-tour-action="panel"]').click();
+    await page.locator('#tournament-tools [data-tour-action="back"]').click();
+    await page.locator('[data-tour-mode="shadow"]').click();
+    await page.locator('[data-shadow-clock="10+0"]').click();
+    await page.locator('[data-tour-action="shadow-start"]').click();
+    const clocks=await page.locator('[data-tour-clock]').allTextContents();
+    assert(clocks.length===2&&clocks.every(x=>/^0?9:|^10:00$/.test(x)),
+      label+' both 10+0 clocks start at 10 minutes');
+    await page.locator('[data-tour-action="panel"]').click();
+    await page.locator('#tournament-tools [data-tour-action="offer-draw"]').click();
+    await page.locator('.tournament-shadow-result h2').waitFor({state:'visible'});
+    assert.equal(await page.locator('.tournament-shadow-result h2').textContent(),'Ничья');
+   }
    assert.equal(errors.length,0,label+': JS errors '+errors.join(' | '));
    await context.close();
    console.log('TOURNAMENT V4 '+label+' PASS');
