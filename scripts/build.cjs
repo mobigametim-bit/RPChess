@@ -26,6 +26,9 @@ const NAMED_QUEEN_ART=Object.freeze(NAMED_QUEEN_IDS.flatMap(id=>['white','black'
 const NAMED_QUEEN_PORTRAITS=Object.freeze(NAMED_QUEEN_IDS.map(id=>`assets/heroes/${id}/portrait_named.webp`));
 function copy(relative){const from=path.join(source,relative),to=path.join(dist,relative);if(!fs.existsSync(from))throw new Error(`missing Reboot build input: ${relative}`);fs.mkdirSync(path.dirname(to),{recursive:true});fs.cpSync(from,to,{recursive:true,force:true});}
 const MUSIC_EXTENSIONS=new Set(['.mp3','.ogg','.wav']);
+// Noncommercial Freesound CC BY-NC track: keep source+attribution for audit,
+// but never ship it in an advertising-supported commercial distribution.
+const NON_COMMERCIAL_MUSIC=new Set(['epic_music3.mp3']);
 function collectMusicTracks(directory=path.join(source,'music')){
   if(!fs.existsSync(directory))return [];
   const tracks=[];
@@ -35,6 +38,7 @@ function collectMusicTracks(directory=path.join(source,'music')){
       if(entry.isDirectory()){visit(absolute);continue;}
       if(!entry.isFile()||!MUSIC_EXTENSIONS.has(path.extname(entry.name).toLowerCase()))continue;
       const relative=path.relative(directory,absolute).split(path.sep).join('/');
+      if(NON_COMMERCIAL_MUSIC.has(relative))continue;
       tracks.push(`music/${relative}`);
     }
   };
@@ -61,9 +65,16 @@ async function main(){
     'assets/pieces/fantasy','assets/vfx/pin_ice_full.png','assets/vfx/pin_ice_partial.png','assets/vfx/aura_white.png','assets/vfx/aura_black.png','assets/vfx/aura_red.png','assets/artifacts','assets/boards/obstacles','assets/doctrines/cavalry/emblem.png','assets/doctrines/royal_court/emblem.png','fonts','music','SFX',
     ...collectBoardAssetPaths(source),...collectPieceAssetPaths(source),...collectPortraitAssetPaths(source),...collectBackgroundAssetPaths(source),...COMMANDER_ART,...NAMED_PAWN_ART,...NAMED_PAWN_PORTRAITS,...NAMED_BISHOP_ART,...NAMED_BISHOP_PORTRAITS,...NAMED_KNIGHT_ART,...NAMED_KNIGHT_PORTRAITS,...NAMED_ROOK_ART,...NAMED_ROOK_PORTRAITS,...NAMED_QUEEN_ART,...NAMED_QUEEN_PORTRAITS,...GENERATED_RUNTIME_ASSETS
   ])copy(relative);
+  // Remove excluded tracks from the output immediately after directory copy.
+  // The review-only source remains unchanged, and the catalog omits it too.
+  for(const filename of NON_COMMERCIAL_MUSIC)fs.rmSync(path.join(dist,'music',filename),{force:true});
   for(const master of collectBackgroundAssetPaths(source))copy(master.replace(/\.png$/,'.webp'));
   makePwaIcons(source,dist);
   const musicTracks=writeMusicCatalog();
+  for(const filename of NON_COMMERCIAL_MUSIC){
+    if(fs.existsSync(path.join(dist,'music',filename))||musicTracks.includes('music/'+filename))
+      throw new Error('Commercial distribution contains blocked noncommercial music: '+filename);
+  }
   console.log(`Runtime music catalog: ${musicTracks.length} track${musicTracks.length===1?'':'s'}`);
   const runtime=materializeRuntimeAssets(dist);
   assertBoardAssetBudget(dist);
