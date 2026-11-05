@@ -72,17 +72,32 @@ jobs:
           const assert=require('node:assert/strict');
           const base='https://rpchess-shadow-preview.mobigametim.workers.dev';
           (async()=>{
-            for(const [path,needle] of [
+            // The Workers.dev hostname for a new Worker can briefly resolve
+            // before its asset route is globally active. Verify the *actual*
+            // freshly deployed content, not a preexisting page or HTTP 404.
+            const paths=[
               ['/', 'tournament-v4.css'],
               ['/js/tournament-app.mjs','tournament-shadow-game.mjs'],
               ['/js/tournament-shadow-game.mjs','LocalShadowGame'],
               ['/css/tournament-v4.css','tournament-clock-panel--shadow']
-            ]){
-              const res=await fetch(base+path,{redirect:'follow'});
-              assert.equal(res.status,200,path);
-              assert((await res.text()).includes(needle),path+' not published');
+            ];
+            for(let attempt=0;attempt<20;attempt++){
+              let available=true;
+              for(const [path,needle] of paths){
+                try{
+                  const res=await fetch(base+path,{redirect:'follow'});
+                  if(res.status!==200||(await res.text()).includes(needle)===false){
+                    available=false;break;
+                  }
+                }catch{available=false;break;}
+              }
+              if(available){
+                console.log('SHADOW TOURNAMENT ACCEPTANCE PREVIEW READY: '+base+'/');
+                return;
+              }
+              if(attempt<19)await new Promise(resolve=>setTimeout(resolve,3000));
             }
-            console.log('SHADOW TOURNAMENT ACCEPTANCE PREVIEW READY: '+base+'/');
+            throw Error('New Shadow preview hostname is not publicly serving the deployed v4 assets');
           })().catch(error=>{console.error(error);process.exitCode=1;});
           NODE
           echo "Playable isolated Shadow review: https://rpchess-shadow-preview.mobigametim.workers.dev/" >> "$GITHUB_STEP_SUMMARY"
