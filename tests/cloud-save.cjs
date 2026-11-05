@@ -350,8 +350,8 @@ class MemoryStorage {
   assert.strictEqual(profileClient.needsLegacyEnrichment({migratedVK:true,snapshot:historical},historical),false,
     'a complete VK import must be idempotent');
   const oldLeaderboard=await import(pathToFileURL(path.join(root,'game/js/leaderboard-client.mjs')).href);
-  assert.strictEqual((await oldLeaderboard.loadLeaderboard()).status,'unavailable',
-    'profile preview must not call production VK leaderboard from an unapproved origin');
+  assert.notStrictEqual((await oldLeaderboard.loadLeaderboard()).status,'ready',
+    'profile preview must never fake a ranking when its D1 API is unavailable');
   assert.strictEqual((await oldLeaderboard.submitBestChronicle()).status,'unavailable');
   assert.strictEqual(platformModule.storage.getItem(persistence.RUN_STORAGE_KEY),null,'before login no previous VK account cache is visible');
   const firstId='00000000-0000-4000-8000-000000000001';
