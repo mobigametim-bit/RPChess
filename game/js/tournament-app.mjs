@@ -96,10 +96,22 @@ function setup(){
         '<div class="tournament-squads" tabindex="0" role="group" aria-label="'+t('squad')+'">'+choices+'</div></div></div>'+
     '<div class="tournament-setup-secondary">'+
       '<div class="tournament-card tournament-modes"><h2>'+(lang()==='ru'?'Режимы игры':'Game modes')+'</h2>'+
-        '<div class="tournament-mode-grid"><button type="button" class="tournament-mode-tile is-selected" aria-pressed="true" aria-label="10+0">'+
-          modeClock+'<strong>10+0</strong></button></div></div>'+
-      '<div class="tournament-actions">'+action('search',t('find'))+
-        action('invite',t('invite'))+action('join-screen',t('join'))+'</div>'+
+        '<div class="tournament-mode-grid">'+
+          '<button type="button" data-tour-mode="online" class="tournament-mode-tile'+(chosenMode==='online'?' is-selected':'')+
+          '" aria-pressed="'+(chosenMode==='online')+'" aria-label="10+0">'+modeClock+'<strong>10+0</strong></button>'+
+          '<button type="button" data-tour-mode="shadow" class="tournament-mode-tile tournament-shadow-tile'+(chosenMode==='shadow'?' is-selected':'')+
+          '" aria-pressed="'+(chosenMode==='shadow')+'">'+shadowIcon+'<strong>'+t('shadow')+'</strong></button></div>'+
+        (chosenMode==='shadow'?'<div class="tournament-shadow-clocks" role="group" aria-label="'+t('shadowTime')+'">'+
+          '<button type="button" data-shadow-clock="unlimited" aria-pressed="'+(shadowClock==='unlimited')+
+          '" class="'+(shadowClock==='unlimited'?'is-selected':'')+'">'+t('noClock')+'</button>'+
+          '<button type="button" data-shadow-clock="10+0" aria-pressed="'+(shadowClock==='10+0')+
+          '" class="'+(shadowClock==='10+0'?'is-selected':'')+'">10+0</button>'+
+          '</div>':'')+'</div>'+
+      '<div class="tournament-actions">'+(chosenMode==='shadow'?
+        action('shadow-start',t('startShadow'))+
+          (loadShadowGame(platform.storage.local)?.status==='playing'?action('shadow-resume',t('resumeShadow')):''):
+        action('search',t('find'))+action('invite',t('invite'))+action('join-screen',t('join')))+
+      '</div>'+
       (API?'':notice(t('offline')))+
     '</div></section>';
 }
