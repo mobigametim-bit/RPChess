@@ -39,6 +39,10 @@ async function vkIdentity(launch,secret){
  return diff?null:'vk:'+id;
 }
 function safePower(x){return Math.max(100,Math.min(3500,Math.round(Number(x)||500)));}
+const COMMANDER_IDS=new Set(['oathkeeper','stone_crown','wanderer_queen','pilgrim','fox_prince','ash_regent','nameless_heir']);
+function safeCommander(id){return COMMANDER_IDS.has(id)?id:'oathkeeper';}
+function displayPower(value){return Number.isSafeInteger(value)?Math.min(1000000,Math.max(0,value)):500;}
+function playerName(value){return String(value||'Воин').trim().slice(0,24)||'Воин';}
 function safeRace(r){return ['humans','elves','orcs','undead','dark_elves','dwarves','demons','angels','dragonborn','beastfolk','constructs','animals','fae','goblins'].includes(r)?r:'humans';}
 /* Result + score are authoritative inside this match Durable Object; the
  * same immutable receipt is exposed on reconnect. Shards remain disabled.
@@ -123,18 +127,23 @@ export default {
    }
    const linked=binding?'rpchess:'+binding.id:null;
    let session=await verify(body.previous,env.PVP_SESSION_SECRET);
-   const nickname=String(body.nick||'Гость').trim().slice(0,28)||'Гость';
+   const nickname=playerName(body.nick||'Гость');
    // A newly verified RPChess profile supersedes any previous guest/VK token.
    // Unlinked legacy sessions retain their historical behavior.
    if(linked && session?.id!==linked)session=null;
    if(!linked&&vk&&session?.id!==vk)session=null;
    if(!session)session={
-    id:linked||vk||'guest:'+crypto.randomUUID(),name:nickname,
+    id:linked||vk||'guest:'+crypto.randomUUID(),name:binding?playerName(binding.name):nickname,
+    commanderId:safeCommander(binding?.commanderId),displayPower:binding
+      ?displayPower(binding.displayPower):displayPower(body.power),
     kind:binding?(binding.provider==='vk'?'vk':'guest'):(vk?'vk':'guest'),
     profileVerified:Boolean(binding&&binding.provider==='vk'),
     created:Date.now(),exp:Date.now()+30*86400000
    };
-   session={...session,power:isVerified(session,env)
+   session={...session,
+    ...(binding?{name:playerName(binding.name),commanderId:safeCommander(binding.commanderId),
+      displayPower:displayPower(binding.displayPower)}:{}),
+    power:isVerified(session,env)
     ?(await accountCall(env,session.id,'/profile')).power:safePower(body.power)};
    const raw=encode(JSON.stringify(session));
    return json({token:raw+'.'+await sign(raw,env.PVP_SESSION_SECRET),kind:session.kind,name:session.name,ranked:isVerified(session,env)},200,cors);
@@ -149,7 +158,8 @@ export default {
     rpchessId:/^rpchess:[0-9a-f-]{36}$/i.test(user.id||'')?user.id.slice(8):null,
     ratedGames:profile?.ratedGames||0},200,cors);
   // All server-internal user fields override browser input, including Power.
-  const requestData={...body,user:{id:user.id,name:user.name,kind:verified?'vk':'guest',
+  const requestData={...body,user:{id:user.id,name:playerName(user.name),
+    commanderId:safeCommander(user.commanderId),displayPower:displayPower(user.displayPower),kind:verified?'vk':'guest',
     profileVerified:verified&&user.profileVerified===true,power:serverPower},now:Date.now()};
   if(path==='/v1/queue/join')requestData.power=serverPower;
   let stub,pathDo;
@@ -337,7 +347,8 @@ export class TournamentMatch extends DurableObject {
   if(!player)return {error:'not_a_player'};
   const engine=this.reconstruct(m);
   return {status:m.result?'finished':'playing',matchId:m.id,playerColor:player.color,
-    players:m.players.map(p=>({name:p.name,color:p.color,race:p.race,power:p.power})),
+    players:m.players.map(p=>({name:p.name,color:p.color,race:p.race,power:p.power,
+      displayPower:displayPower(p.displayPower),commanderId:safeCommander(p.commanderId)})),
     fen:engine.fen(),moves:m.moves,turn:m.turn,remaining:m.remaining,
     serverTime:Date.now(),tick:m.tick,result:m.result,drawOffer:m.drawOffer||null,
     rated:Boolean(m.rated&&m.ratingVersion===2),
