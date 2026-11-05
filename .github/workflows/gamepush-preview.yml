@@ -16,6 +16,7 @@ on:
   pull_request:
     branches:
       - main
+      - feature/unified-player-profile-20261104
     paths:
       - .github/workflows/gamepush-preview.yml
       - gamepush-preview/**
@@ -34,7 +35,7 @@ concurrency:
 
 jobs:
   build-and-publish:
-    if: github.repository == 'mobigametim-bit/RPChess' && (github.ref == 'refs/heads/feature/gamepush-sdk-foundation-20261104' || github.ref == 'refs/heads/feature/gamepush-vk-ads-validation-20261105' || (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feature/gamepush-sdk-foundation-20261104' && github.event.pull_request.head.repo.full_name == 'mobigametim-bit/RPChess'))
+    if: github.repository == 'mobigametim-bit/RPChess' && (github.ref == 'refs/heads/feature/gamepush-sdk-foundation-20261104' || github.ref == 'refs/heads/feature/gamepush-vk-ads-validation-20261105' || (github.event_name == 'pull_request' && (github.event.pull_request.head.ref == 'feature/gamepush-sdk-foundation-20261104' || github.event.pull_request.head.ref == 'feature/gamepush-vk-ads-validation-20261105') && github.event.pull_request.head.repo.full_name == 'mobigametim-bit/RPChess'))
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
