@@ -134,15 +134,19 @@ export default {
    if(!linked&&vk&&session?.id!==vk)session=null;
    if(!session)session={
     id:linked||vk||'guest:'+crypto.randomUUID(),name:binding?playerName(binding.name):nickname,
-    commanderId:safeCommander(binding?.commanderId),displayPower:binding
-      ?displayPower(binding.displayPower):displayPower(body.power),
+    commanderId:safeCommander(binding?.commanderId??body.commanderId),displayPower:binding
+      ?displayPower(binding.displayPower):displayPower(body.displayPower),
     kind:binding?(binding.provider==='vk'?'vk':'guest'):(vk?'vk':'guest'),
     profileVerified:Boolean(binding&&binding.provider==='vk'),
     created:Date.now(),exp:Date.now()+30*86400000
    };
    session={...session,
+    // Verified profile attributes are always server-controlled. Legacy VK
+    // cosmetic choices are client-provided, validated and NEVER used for Elo.
     ...(binding?{name:playerName(binding.name),commanderId:safeCommander(binding.commanderId),
-      displayPower:displayPower(binding.displayPower)}:{}),
+      displayPower:displayPower(binding.displayPower)}:
+      {name:nickname,commanderId:safeCommander(body.commanderId),
+       displayPower:displayPower(body.displayPower)}),
     power:isVerified(session,env)
     ?(await accountCall(env,session.id,'/profile')).power:safePower(body.power)};
    const raw=encode(JSON.stringify(session));
