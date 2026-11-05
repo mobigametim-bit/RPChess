@@ -80,6 +80,12 @@ const origin='https://rpchess-profile-game-preview.mobigametim.workers.dev';
  assert.equal(profile.provider,'web');assert.match(token,/^[\w-]{43}$/);
  assert.equal(db.tokens.has(token),false,'raw credentials may never be stored in D1');
  assert.equal((await call('/v1/profile',{method:'GET'})).status,401);
+ assert.equal((await call('/v1/tournament-binding',{method:'GET'})).status,401);
+ const boundWeb=await call('/v1/tournament-binding',{method:'GET',token});
+ assert.equal(boundWeb.status,200);
+ assert.equal(boundWeb.body.id,profile.id);
+ assert.equal(boundWeb.body.provider,'web');
+ assert.equal(boundWeb.body.vkUserId,null);
  assert.equal((await call('/v1/profile',{method:'GET',token})).body.profile.id,profile.id);
  assert.equal((await call('/v1/vk-import',{data:{meta:{rating:{power:999}}},token})).status,403);
  const payload={schemaVersion:1,run:null,rating:{schemaVersion:1,power:650,receipts:[]},
@@ -103,6 +109,11 @@ const origin='https://rpchess-profile-game-preview.mobigametim.workers.dev';
  const vkAgain=await call('/v1/session',{data:{vkLaunch:launch}});
  assert.equal(vkAgain.body.profile.id,verified.body.profile.id);
  assert.notEqual(verified.body.profile.id,profile.id);
+ const boundVK=await call('/v1/tournament-binding',{method:'GET',token:verified.body.token});
+ assert.equal(boundVK.status,200);
+ assert.equal(boundVK.body.id,verified.body.profile.id);
+ assert.equal(boundVK.body.provider,'vk');
+ assert.equal(boundVK.body.vkUserId,'12345');
  const legacy={rating:{power:845,receipts:[]},chronicle:{history:[{runId:'old-1',playerName:'Player',completedAt:500}]},
    arena:{version:1,events:[{id:'old-win:1',kind:'win',amount:30,at:500}],match:{id:'unfinished'}},
    run:{id:'old-unfinished'}};
