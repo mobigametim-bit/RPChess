@@ -176,16 +176,16 @@ const origin='https://rpchess-profile-game-preview.mobigametim.workers.dev';
    =await import(pathToFileURL(path.join(root,'profile-worker/src/unified-board.mjs')).href);
  const webId='00000000-0000-4000-8000-000000000010';
  const vkId='00000000-0000-4000-8000-000000000011';
- const ts=Date.now();
+ const rankTime=Date.now();
  const addProfile=sqlite.prepare('INSERT INTO rpchess_profile_v1(id,provider,vk_user_id,snapshot_json,created_at,updated_at) VALUES(?,?,?,?,?,?)');
  const webSnapshot={schemaVersion:1,rating:{power:1000},
    chronicle:{history:[{runId:'web-finished',playerName:'Web Champion',week:200,power:1000,commanderId:'pilgrim'}]}};
  const vkSnapshot={schemaVersion:1,rating:{power:600},
    chronicle:{history:[{runId:'vk-finished',playerName:'VK Player',week:100,power:600}]}};
- addProfile.run(webId,'web',null,JSON.stringify(webSnapshot),ts,ts);
- addProfile.run(vkId,'vk','12345',JSON.stringify(vkSnapshot),ts,ts);
+ addProfile.run(webId,'web',null,JSON.stringify(webSnapshot),rankTime,rankTime);
+ addProfile.run(vkId,'vk','12345',JSON.stringify(vkSnapshot),rankTime,rankTime);
  sqlite.prepare('INSERT INTO leaderboard_v1(vk_id,player_name,glory,week,power,run_id,commander_id,achieved_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)')
-  .run('12345','Legacy VK',31,100,1000,'legacy-finished','oathkeeper',ts-1,ts-1);
+  .run('12345','Legacy VK',31,100,1000,'legacy-finished','oathkeeper',rankTime-1,rankTime-1);
  const webRow={id:webId,snapshot_json:JSON.stringify(webSnapshot)};
  const vkRow={id:vkId,snapshot_json:JSON.stringify(vkSnapshot)};
  assert.equal(bestFromSnapshot(webSnapshot).glory,44);
