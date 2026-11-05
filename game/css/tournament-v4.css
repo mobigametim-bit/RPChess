@@ -294,3 +294,70 @@
  .tournament-screen--match .tournament-power-mark b{font-size:16px!important}
  .tournament-screen--match .tournament-clock{font-size:17px;padding:3px 7px}
 }
+
+
+/* Shadow mode — same accepted v4 layout, no outside page scrolling. */
+.tournament-mode-tile[data-tour-mode] { cursor:pointer; }
+.tournament-mode-tile[data-tour-mode]:focus-visible {
+ outline:2px solid #ffe3a8;outline-offset:3px;
+}
+.tournament-mode-tile[data-tour-mode]:not(.is-selected) {
+ border-color:#706143;box-shadow:inset 0 0 14px #12171e80;
+}
+.tournament-shadow-tile strong {
+ font:400 clamp(14px,1.55vw,21px)/1.05 'BrahmsGotischCyr',Georgia,serif;
+ text-align:center;max-width:95%;overflow-wrap:normal;
+}
+.tournament-shadow-tile svg { width:39%; }
+.tournament-shadow-clocks {
+ display:flex;flex-wrap:wrap;gap:7px;justify-content:center;
+ flex:0 0 auto;padding:5px 0 2px;
+}
+.tournament-shadow-clocks button {
+ min-height:36px;padding:5px 12px;
+ border:1px solid #8d754b;background:#111c2d;color:#ebd4a4;
+ border-radius:8px;font:500 clamp(12px,1.3vw,15px)/1.1 Georgia,serif;
+ cursor:pointer;
+}
+.tournament-shadow-clocks button.is-selected {
+ border-color:#e9b862;background:#343221;box-shadow:0 0 0 1px #d8a95080 inset;
+ color:#ffe3a8;
+}
+.tournament-shadow-clocks button:focus-visible {
+ outline:2px solid #ffe4ad;outline-offset:2px;
+}
+.tournament-clock-panel--shadow .tournament-duel-portrait--shadow {
+ filter:grayscale(.75) brightness(.38) contrast(1.12);
+}
+.tournament-screen--shadow .tournament-clock-panel--shadow {
+ border-color:#696678;background:linear-gradient(140deg,#111d2d,#070f1c);
+}
+.tournament-shadow-result { max-width:580px; }
+@media (orientation:landscape) {
+ .tournament-screen--setup .tournament-mode-grid {
+  flex-wrap:nowrap;align-content:center;gap:8px;
+ }
+ .tournament-screen--setup .tournament-mode-tile[data-tour-mode] {
+  flex:0 1 min(30vh,144px);width:min(30vh,144px);
+  max-width:calc((100% - 8px)/2);min-width:0;aspect-ratio:1;
+ }
+ .tournament-screen--setup .tournament-shadow-tile strong {
+  font-size:clamp(12px,1.5vw,18px);
+ }
+}
+@media (orientation:landscape) and (max-height:440px) {
+ .tournament-screen--setup .tournament-mode-tile[data-tour-mode] {
+  flex-basis:min(23vh,96px);width:min(23vh,96px);
+ }
+ .tournament-screen--setup .tournament-shadow-tile strong{font-size:12px;}
+ .tournament-screen--setup .tournament-shadow-clocks { gap:4px;padding:1px 0; }
+ .tournament-screen--setup .tournament-shadow-clocks button {
+  min-height:29px;padding:4px 7px;font-size:11px;
+ }
+}
+@media (orientation:portrait) and (max-width:430px) {
+ .tournament-screen--setup .tournament-mode-tile[data-tour-mode] {
+  flex-basis:min(30vw,125px);width:min(30vw,125px);
+ }
+ .tournament-screen--setup .tournament-shadow-tile strong {font-size:15px;}
+}
