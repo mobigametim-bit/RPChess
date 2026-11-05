@@ -11,10 +11,15 @@ const PROFILE_SAVE_PREFIX = 'rpchess.profile.v1.';
 function rpchessProfileEnabled() {
   try {
     const query=new URLSearchParams(globalThis.location?.search||'');
-    // An installed staging PWA starts from its manifest (without query flags).
-    // Never enable this implicitly on GitHub Pages / production VK.
-    return query.get('rpchess_profile')==='1'
-      || globalThis.location?.hostname==='rpchess-profile-game-preview.mobigametim.workers.dev';
+    // Emergency rollback keeps the previous VK / local storage untouched.
+    if(query.get('rpchess_profile')==='0')return false;
+    if(query.get('rpchess_profile')==='1')return true;
+    // The accepted Cloudflare preview stays active for installed PWAs.
+    if(globalThis.location?.hostname==='rpchess-profile-game-preview.mobigametim.workers.dev')return true;
+    // Release scope: canonical GitHub Pages build only. Yandex/other portals
+    // remain on their previously accepted storage until a separate rollout.
+    return globalThis.location?.hostname==='mobigametim-bit.github.io'
+      && /^\/RPChess(?:\/|$)/.test(globalThis.location?.pathname||'');
   } catch { return false; }
 }
 
