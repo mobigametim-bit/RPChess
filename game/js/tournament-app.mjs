@@ -432,6 +432,7 @@ function visible(active){
  if(active){window.scrollTo(0,0);render();}
 }
 function open(){
+ shadowGame=null;chosenMode='online';shadowClock='unlimited';
  squad=arena().owned.has(saved().squad)?saved().squad:'humans';
  page='setup';message='';visible(true);
  const serial=++resumeSerial;
@@ -447,7 +448,7 @@ function open(){
   }catch{ /* Offline state still allows opening Tournament setup. */ }
  })();
 }
-function leave(){resumeSerial++;if(page==='search')void cancelQueue();if(page==='invite')void cancelRoom();stopPolling();stopMatch();visible(false);}
+function leave(){if(shadowGame)saveShadowGame(platform.storage.local,shadowGame);shadowGame=null;resumeSerial++;if(page==='search')void cancelQueue();if(page==='invite')void cancelRoom();stopPolling();stopMatch();visible(false);}
 function stopPolling(){if(searchJob){clearInterval(searchJob);searchJob=null;}}
 function endpoint(path){return API.replace(/\/$/,'')+path;}
 async function call(path,data){
@@ -494,6 +495,7 @@ async function connect({refreshPower=false}={}){
  try{return await connectJob;}finally{connectJob=null;}
 }
 async function beginSearch(){
+ shadowGame=null;
  if(!API){message=t('offline');page='setup';render();return;}
  // A previous completed match must not keep polling and redraw its Victory
  // screen over the next search (the old interval ran every 2.4 seconds).
@@ -524,12 +526,38 @@ async function pollQueue(){
  }catch(err){message=err.message;render();}
 }
 async function openMatch(response){
+ shadowGame=null;
  stopPolling();stopMatch();live=response;page='match';message='';selectedSquare=null;matchRendered=false;ratedReceipt=null;
  await syncMatch();
  // A finished game never receives another polling interval. Otherwise the
  // timer continues and overwrites the next search with its old result.
  if(page==='match'&&live?.matchId===response.matchId)
   matchJob=setInterval(()=>{void syncMatch();},2400);
+}
+function syncShadow(){
+ if(!shadowGame||!tabVisible)return;
+ matchState=shadowGame.tick();chess=shadowGame.chess;lastSnapshotAt=Date.now();
+ saveShadowGame(platform.storage.local,shadowGame);
+ if(matchState.status==='finished'){
+  stopMatch();page='result';render();return;
+ }
+ if(page==='match'){
+  if(!matchRendered)render();else refreshBoard();
+ }
+}
+function startShadow({resume=false}={}){
+ stopMatch();stopPolling();
+ // No network request, cloud save, rating receipt or online Tournament match.
+ live=null;selectedSquare=null;matchRendered=false;busyMove=false;ratedReceipt=null;
+ const owner=identity();
+ const saved=resume?loadShadowGame(platform.storage.local):null;
+ shadowGame=saved||new LocalShadowGame({mode:shadowClock,name:owner.name,
+   commanderId:owner.commanderId,power:owner.power,race:squad});
+ if(!saved)saveShadowGame(platform.storage.local,shadowGame);
+ else shadowClock=saved.mode;
+ page='match';message='';matchState=null;chess=shadowGame.chess;
+ syncShadow();
+ if(page==='match')matchJob=setInterval(syncShadow,250);
 }
 async function cancelQueue(){stopPolling();if(session&&API)await call('/v1/queue/cancel',{}).catch(()=>{});}
 async function cancelRoom(){stopPolling();if(session&&API&&roomCode)await call('/v1/room/cancel',{code:roomCode}).catch(()=>{});}
@@ -549,15 +577,19 @@ root.addEventListener('click',event=>{
  const square=event.target.closest('[data-tour-board] [data-square]');
  if(square&&chess&&matchState?.status==='playing'&&!pendingFlight){
   const clicked=square.dataset.square,own=chess.pieceAt(clicked)?.color===matchState.playerColor;
-  if(chess.turn()!==matchState.playerColor)return;
+  if(!shadowGame&&chess.turn()!==matchState.playerColor)return;
   if(selectedSquare&&chess.legalMoves(selectedSquare).some(m=>m.to===clicked)){void sendMove(selectedSquare,clicked);return;}
-  selectedSquare=own?clicked:null;refreshBoard();return;
+  selectedSquare=(shadowGame?chess.pieceAt(clicked)?.color===chess.turn():own)?clicked:null;refreshBoard();return;
  }
+ const modeButton=event.target.closest('[data-tour-mode]');
+ if(modeButton){chosenMode=modeButton.dataset.tourMode==='shadow'?'shadow':'online';render();return;}
+ const clockButton=event.target.closest('[data-shadow-clock]');
+ if(clockButton){shadowClock=clockButton.dataset.shadowClock==='10+0'?'10+0':'unlimited';render();return;}
  const squadButton=event.target.closest('[data-tour-squad]');
  if(squadButton){squad=squadButton.dataset.tourSquad;remember();render();return;}
  const btn=event.target.closest('[data-tour-action]');if(!btn)return;
  const a=btn.dataset.tourAction;
- if(a==='back'||a==='cancel'){if(page==='setup'){leave();return;}if(page==='match'){stopMatch();page='setup';message='';render();return;}if(page==='search')void cancelQueue();if(page==='invite')void cancelRoom();stopPolling();page='setup';message='';render();return;}
+ if(a==='back'||a==='cancel'){if(page==='setup'){leave();return;}if(page==='match'){if(shadowGame)saveShadowGame(platform.storage.local,shadowGame);stopMatch();shadowGame=null;page='setup';message='';render();return;}if(page==='search')void cancelQueue();if(page==='invite')void cancelRoom();stopPolling();page='setup';message='';render();return;}
  if(a==='review'){
   if(page!=='result'||matchState?.status!=='finished'||!Array.isArray(matchState.moves))return;
   const sides=Object.fromEntries(matchState.players.map(player=>[player.color,player.race]));
@@ -572,7 +604,12 @@ root.addEventListener('click',event=>{
  }
  if(a==='settings'){globalThis.RPChessOpenSettings?.();return;}
  if(a==='menu'){leave();return;}
- if(a==='search'||a==='again'){void beginSearch();return;}
+ if(a==='shadow-start'){startShadow();return;}
+ if(a==='shadow-resume'){startShadow({resume:true});return;}
+ if(a==='search'||a==='again'){
+  if(shadowGame&&a==='again'){startShadow();return;}
+  void beginSearch();return;
+ }
  if(a==='offer-draw'||a==='resign'){void matchAction(a==='offer-draw'?'draw':'resign');return;}
  if(a==='invite'){void makeRoom();return;}
  if(a==='join-screen'){page='join';message='';render();return;}
@@ -581,6 +618,7 @@ root.addEventListener('click',event=>{
  if(a==='copy-code')void navigator.clipboard?.writeText(roomCode);
  if(a==='copy-link')void navigator.clipboard?.writeText(new URL('?tournament_room='+encodeURIComponent(roomCode),location.href).href);
 });
+addEventListener('pagehide',()=>{if(shadowGame)saveShadowGame(platform.storage.local,shadowGame);});
 addEventListener('rpchess:arena-updated',()=>{if(page==='setup')render();});
 subscribe(()=>{if(button)button.textContent=t('title');render();});
 const incoming=new URLSearchParams(location.search).get('tournament_room');
