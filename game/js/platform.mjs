@@ -438,7 +438,7 @@ function confirmedVKAdHost() {
     || globalThis.webkit?.messageHandlers?.VKWebAppShowNativeAds?.postMessage
     || globalThis.ReactNativeWebView?.postMessage);
   return native || verifiedVKHost
-    || /(^|\\.)vk\\.(com|ru)$/i.test(referrerHost());
+    || /(^|\.)vk\.(com|ru)$/i.test(referrerHost());
 }
 function advertisingBackend() {
   if (!gamepushSdk.enabled) return 'vk-bridge';
