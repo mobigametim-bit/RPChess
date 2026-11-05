@@ -168,10 +168,10 @@ async function main(){
    assert(shadow.clocks.every(x=>x==='∞'),label+' unlimited time shows infinity');
    if(width>height)assert(shadow.board.height>=Math.min(height,width-150)-15,
      label+' Shadow should preserve full-height landscape chessboard');
-   await page.locator('[data-square="e2"]').click();
-   await page.locator('[data-square="e4"]').click();
-   await page.locator('[data-square="e7"]').click();
-   await page.locator('[data-square="e5"]').click();
+   await page.locator('[data-tour-board] [data-square="e2"]').click();
+   await page.locator('[data-tour-board] [data-square="e4"]').click();
+   await page.locator('[data-tour-board] [data-square="e7"]').click();
+   await page.locator('[data-tour-board] [data-square="e5"]').click();
    const after=await page.evaluate(()=>{
      const b=document.querySelector('[data-tour-board]');
      return {first:b.querySelector('[data-square]')?.dataset.square,
@@ -186,9 +186,9 @@ async function main(){
    await page.locator('#tournament-tools [data-tour-action="back"]').click();
    await page.locator('[data-tour-mode="shadow"]').click();
    await page.locator('[data-tour-action="shadow-resume"]').click();
-   assert.equal(await page.locator('[data-square="e4"] .classic-piece').count(),1,
+   assert.equal(await page.locator('[data-tour-board] [data-square="e4"] .classic-piece').count(),1,
      label+' local shadow resumed after leaving match');
-   assert.equal(await page.locator('[data-square="e5"] .classic-piece').count(),1);
+   assert.equal(await page.locator('[data-tour-board] [data-square="e5"] .classic-piece').count(),1);
    // Exercise 10+0 selection without a separate browser suite.
    if(label==='phone-portrait'||label==='desktop-landscape'){
     await page.locator('[data-tour-action="panel"]').click();
