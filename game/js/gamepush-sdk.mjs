@@ -32,7 +32,7 @@ function isEnabled() {
     return globalThis.location?.hostname==='mobigametim-bit.github.io'
       && /^\/RPChess(?:\/|$)/.test(globalThis.location?.pathname||'')
       && query.get('vk_app_id')==='54754579'
-      && /^[1-9]\\d*$/.test(query.get('vk_user_id')||'')
+      && /^[1-9]\d*$/.test(query.get('vk_user_id')||'')
       && Boolean(query.get('sign'));
   } catch {
     return false;
