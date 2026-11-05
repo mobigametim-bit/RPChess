@@ -107,6 +107,7 @@ function joining(){return '<section class="tournament-card tournament-center"><h
 function render(){
  if(!tabVisible)return;
  const inBattle=page==='match'&&matchState?.status==='playing';
+ root.classList.toggle('tournament-screen--setup',page==='setup');
  root.classList.toggle('tournament-screen--match',Boolean(inBattle));
  document.body.classList.toggle('tournament-battle-active',Boolean(inBattle));
  if(inBattle){showBattle();return;}
