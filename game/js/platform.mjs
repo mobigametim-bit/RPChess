@@ -11,10 +11,15 @@ const PROFILE_SAVE_PREFIX = 'rpchess.profile.v1.';
 function rpchessProfileEnabled() {
   try {
     const query=new URLSearchParams(globalThis.location?.search||'');
-    // An installed staging PWA starts from its manifest (without query flags).
-    // Never enable this implicitly on GitHub Pages / production VK.
-    return query.get('rpchess_profile')==='1'
-      || globalThis.location?.hostname==='rpchess-profile-game-preview.mobigametim.workers.dev';
+    // Emergency rollback keeps the previous VK / local storage untouched.
+    if(query.get('rpchess_profile')==='0')return false;
+    if(query.get('rpchess_profile')==='1')return true;
+    // The accepted Cloudflare preview stays active for installed PWAs.
+    if(globalThis.location?.hostname==='rpchess-profile-game-preview.mobigametim.workers.dev')return true;
+    // Release scope: canonical GitHub Pages build only. Yandex/other portals
+    // remain on their previously accepted storage until a separate rollout.
+    return globalThis.location?.hostname==='mobigametim-bit.github.io'
+      && /^\/RPChess(?:\/|$)/.test(globalThis.location?.pathname||'');
   } catch { return false; }
 }
 
@@ -524,6 +529,9 @@ const social = Object.freeze({
   },
   async showStory({ blob = '', link = '' } = {}) {
     if (!isVKLaunch()) return Object.freeze({ status:'unavailable' });
+    // GamePush only owns ads/player lifecycle; VK stories still use VK Bridge.
+    // Initialize that host lazily on the user's sharing gesture.
+    sendVKWebAppInit();
     if (!/^data:image\/(?:png|jpeg);base64,[a-z\d+/=]+$/i.test(blob)) return Object.freeze({ status:'error', reason:'invalid-image' });
     const payload = {
       background_type:'image',
@@ -609,8 +617,8 @@ const capabilities = Object.freeze({
   // Avoid promising native VK functionality when GamePush has replaced Bridge.
   get cloudStorage() { return isVKLaunch() && !legacyCloudDisabled(); },
   get ads() { return gamepushSdk.enabled ? advertisingBackend()!=='none' : isVKLaunch(); },
-  get sharing() { return isVKLaunch() && !gamepushSdk.enabled; },
-  get leaderboard() { return isVKLaunch() && !gamepushSdk.enabled; },
+  get sharing() { return isVKLaunch(); }, // VK Story/Share remain via Bridge.
+  get leaderboard() { return rpchessProfileEnabled() || isVKLaunch() && !gamepushSdk.enabled; },
   payments:false
 });
 

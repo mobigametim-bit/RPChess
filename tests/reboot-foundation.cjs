@@ -27,5 +27,12 @@ assert(js.includes('platform.gamepush.markReady()'),'GamePush ready should occur
 assert(js.indexOf('globalThis.RPChessRouteReady = routeReady') < js.indexOf('Promise.all([routeReady, identityReady])'),'GamePush ready must not access routeReady before declaration');
 assert(build.includes("'js/gamepush-sdk.mjs'"),'GamePush adapter must be included in production packaging');
 assert(!gamepushSource.includes('PVP_SESSION_SECRET')&&!gamepushSource.includes('VK_APP_SECRET'),'GamePush client must not contain server secrets');
+// Commercial release: source+attribution can remain for audit but the generated
+// distribution and music manifest must never include the CC BY-NC track.
+for(const token of ['NON_COMMERCIAL_MUSIC',"'epic_music3.mp3'","fs.rmSync(path.join(dist,'music',filename)","if(NON_COMMERCIAL_MUSIC.has(relative))continue"])
+  assert(build.includes(token),'Commercial packager must exclude noncommercial music: '+token);
+assert(html.includes('const releasePages=location.hostname'),'First paint must use canonical release origin for profile settings');
+assert(platform.includes("query.get('rpchess_profile')==='0'"),'D1 release must allow explicit legacy rollback');
+assert(gamepushSource.includes("query.get('rpchess_gamepush')==='0'"),'GamePush release must allow explicit native ads rollback');
 
-console.log('Reboot Foundation keeps New Game independent, initializes VK host launches, preserves canonical CSS-only controls, Player Identity prompt, Travel fallback and shared UX runtime: PASS');
+console.log('Reboot Foundation, profile release flags and noncommercial music exclusion: PASS');
