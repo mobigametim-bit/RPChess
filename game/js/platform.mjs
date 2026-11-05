@@ -442,7 +442,8 @@ function confirmedVKAdHost() {
 }
 function advertisingBackend() {
   if (!gamepushSdk.enabled) return 'vk-bridge';
-  if (gamepushSdk.ready) return 'gamepush';
+  if (gamepushSdk.ready)
+    return /^(?:VK(?:_|$)|YANDEX)/i.test(gamepushSdk.platformType) ? 'gamepush' : 'none';
   if (gamepushSdk.status === 'unavailable' && confirmedVKAdHost()) return 'vk-bridge';
   return 'none';
 }
