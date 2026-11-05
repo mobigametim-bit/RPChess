@@ -401,6 +401,8 @@ class MemoryStorage {
   globalThis.location.search='?vk_app_id=54754579&vk_user_id=12345&sign=mock-signed-launch';
   assert.strictEqual(platformModule.platform.profileEnabled,true,'canonical Pages activates D1 profile');
   assert.strictEqual(platformModule.platform.gamepush.enabled,true,'canonical signed VK activates SDK');
+  assert.strictEqual(platformModule.platform.capabilities.sharing,true,'VK story sharing remains available with GP ads');
+  assert.strictEqual(platformModule.platform.capabilities.leaderboard,true,'D1 global leaderboard remains available with GP ads');
   assert.strictEqual(platformModule.storage.cloud.available,false,'old VK Cloud is read-only during release');
   assert.strictEqual(platformModule.storage.gamepushVKMetaStore.available,false);
   assert.strictEqual(cloud.get(cloudSave.CLOUD_SAVE_MANIFEST_KEY),savedVKManifest);
