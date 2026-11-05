@@ -1,0 +1,28 @@
+# Local-only test configuration. No production Worker, no service binding.
+name = "rpchess-tournament-profile-local"
+main = "src/index.mjs"
+compatibility_date = "2026-09-15"
+
+# Isolated Durable Objects for RPChess-ID acceptance only. No production
+# Tournament storage or Worker deployment is changed.
+[durable_objects]
+bindings = [
+  { name = "LOBBY", class_name = "TournamentLobby" },
+  { name = "MATCHES", class_name = "TournamentMatch" },
+  { name = "ACCOUNTS", class_name = "TournamentAccount" }
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["TournamentLobby", "TournamentMatch"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["TournamentAccount"]
+
+[vars]
+ALLOWED_ORIGINS = "https://mobigametim-bit.github.io,https://rpchess-portrait-ui-preview.mobigametim.workers.dev,https://rpchess-gamepush-preview.mobigametim.workers.dev,https://rpchess-profile-game-preview.mobigametim.workers.dev"
+RPCHESS_PROFILE_API = "https://rpchess-profile-preview.mobigametim.workers.dev"
+
+# PVP_SESSION_SECRET is configured separately as an encrypted Worker secret.
+# No GamePush paid services or admin credentials are involved.
