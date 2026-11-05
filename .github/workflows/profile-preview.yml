@@ -137,6 +137,45 @@ jobs:
         env:
           RPCHESS_TOURNAMENT_API: https://rpchess-tournament-profile-preview.mobigametim.workers.dev
         run: node tests/tournament-live-smoke.mjs
+      - name: Live RPChess ID to Tournament session exchange (test-only Web account)
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const origin='https://rpchess-profile-game-preview.mobigametim.workers.dev';
+          const profile='https://rpchess-profile-preview.mobigametim.workers.dev';
+          const tournament='https://rpchess-tournament-profile-preview.mobigametim.workers.dev';
+          const post=async (root,path,data)=>{
+            const response=await fetch(root+path,{method:'POST',headers:{
+              Origin:origin,'Content-Type':'application/json'
+            },body:JSON.stringify(data)});
+            return {status:response.status,body:await response.json()};
+          };
+          (async()=>{
+            const guest=await post(profile,'/v1/session',{});
+            assert.equal(guest.status,200);
+            assert.match(guest.body.profile.id,/^[0-9a-f-]{36}$/);
+            const session=await post(tournament,'/v1/session',{profileCredential:guest.body.token,power:3500});
+            assert.equal(session.status,200);
+            assert.equal(session.body.ranked,false);
+            const get=async token=>{
+              const response=await fetch(tournament+'/v1/profile',{method:'POST',headers:{
+                Origin:origin,'Content-Type':'application/json',Authorization:'Bearer '+token
+              },body:'{}'});
+              assert.equal(response.status,200);
+              return response.json();
+            };
+            const linked=await get(session.body.token);
+            assert.equal(linked.rpchessId,guest.body.profile.id,'profile ID is server-verified');
+            assert.equal(linked.ranked,false,'Web cannot spoof rated VK status');
+            const repeat=await post(tournament,'/v1/session',{
+              previous:session.body.token,profileCredential:guest.body.token,power:99999
+            });
+            assert.equal((await get(repeat.body.token)).rpchessId,guest.body.profile.id);
+            const invalid=await post(tournament,'/v1/session',{profileCredential:'Z'.repeat(43)});
+            assert.equal(invalid.status,401,'unknown profile bearer rejected');
+            console.log('LIVE D1 TOURNAMENT BINDING PASS: stable Web RPChess ID, unrated, no ID spoofing');
+          })().catch(e=>{console.error(e);process.exitCode=1;});
+          NODE
       - name: Live API auth, isolation and browser smoke
         run: |
           RPCHESS_PROFILE_API='https://rpchess-profile-preview.mobigametim.workers.dev' \
