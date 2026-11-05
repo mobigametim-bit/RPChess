@@ -38,7 +38,12 @@ async function main(){
      return;
     }
     let data={status:'waiting'};
-    if(p==='/v1/session')data={token:'fake-test-only-session',kind:'guest',ranked:false,name:'Йо'};
+    if(p==='/v1/session'){
+     const identity=route.request().postDataJSON();
+     assert.equal(identity.nick,'Йо','legacy Web/VK Tournament must send saved name');
+     assert.equal(identity.commanderId,'pilgrim','legacy Web/VK Tournament must send saved king');
+     data={token:'fake-test-only-session',kind:'guest',ranked:false,name:'Йо'};
+    }
     else if(p==='/v1/profile')data={ranked:false,power:500,kind:'guest'};
     else if(p==='/v1/queue/join')data={status:'matched',matchId};
     else if(p.endsWith('/snapshot'))data=response;
