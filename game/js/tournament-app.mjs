@@ -195,7 +195,7 @@ function showBattle(){
    const power=Number.isFinite(p.displayPower)?p.displayPower:(own?local.power:p.power);
    const name=p.name==='Guest'&&own?local.name:p.name;
    const isShadow=Boolean(shadowGame)&&!own;
-   const shownName=isShadow?(lang()==='ru'?'Тень ':'Shadow ')+local.name:name;
+   const shownName=isShadow?(lang()==='ru'?'Тень ':'Shadow ')+mine.name:name;
    return '<section class="tournament-playerbar tournament-clock-panel '+(own?'tournament-clock-panel--self':'tournament-clock-panel--rival')+
      (isShadow?' tournament-clock-panel--shadow':'')+
      '" data-tour-player="'+p.color+'" aria-label="'+esc(shownName)+'">'+
