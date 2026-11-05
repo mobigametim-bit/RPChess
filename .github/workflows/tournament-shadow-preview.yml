@@ -2,7 +2,7 @@ name: Shadow Tournament isolated playable preview
 
 on:
   push:
-    branches: [feature/tournament-shadow-local-20261106]
+    branches: [feature/tournament-shadow-local-20261106, fix/tournament-shadow-header-controls-20261106]
   workflow_dispatch:
 
 permissions:
@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   preview:
-    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/tournament-shadow-local-20261106'
+    if: github.repository == 'mobigametim-bit/RPChess' && (github.ref == 'refs/heads/feature/tournament-shadow-local-20261106' || github.ref == 'refs/heads/fix/tournament-shadow-header-controls-20261106')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
