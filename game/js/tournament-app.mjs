@@ -157,52 +157,47 @@ function resultView(){
 }
 function showBattle(){
  if(!matchState)return;
- const my=matchState.players.find(p=>p.color===matchState.playerColor);
- const enemy=matchState.players.find(p=>p.color!==matchState.playerColor);
- if(!my||!enemy)return;
- const clockPanel=(p,isSelf)=>'<div class="tournament-playerbar tournament-clock-panel '+(isSelf?'tournament-clock-panel--self':'tournament-clock-panel--rival')+'">'+
-  '<div class="tournament-player"><strong>'+esc(isSelf?t('you'):p.name)+'</strong><small>'+esc(raceLabel(p.race))+'</small></div>'+
-  '<span class="tournament-clock" data-tour-clock="'+p.color+'"></span></div>';
+ const mine=matchState.players.find(p=>p.color===matchState.playerColor);
+ const rival=matchState.players.find(p=>p.color!==matchState.playerColor);
+ if(!mine||!rival)return;
+ const local=identity();
+ const panel=(p,own)=>{
+   const commander=normalizeCommanderId(p.commanderId||(own?local.commanderId:null));
+   const power=Number.isFinite(p.displayPower)?p.displayPower:(own?local.power:p.power);
+   const name=p.name==='Guest'&&own?local.name:p.name;
+   return '<section class="tournament-playerbar tournament-clock-panel '+(own?'tournament-clock-panel--self':'tournament-clock-panel--rival')+
+     '" data-tour-player="'+p.color+'" aria-label="'+esc(name)+'">'+
+     '<img class="tournament-duel-portrait" src="'+commanderPortrait(commander)+'" alt="">'+
+     '<div class="tournament-player"><strong>'+esc(name)+'</strong>'+
+       powerMark(power)+raceMark(p.race,p.color)+'</div>'+
+     '<span class="tournament-clock" data-tour-clock="'+p.color+'"></span></section>';
+ };
  if(!matchRendered||!root.querySelector('[data-tour-board]')){
   root.innerHTML=
-   '<header class="tournament-battle-mobile-header">'+
-     '<strong>'+t('title')+' · 10+0</strong>'+
-     '<button type="button" class="classic-mini-button" data-tour-action="menu">'+t('back')+'</button>'+
-   '</header>'+
-   '<section class="tournament-match" aria-label="'+t('match')+'">'+
-     '<div class="tournament-match-layout">'+
-       '<nav class="tournament-battle-nav" aria-label="'+t('match')+'">'+
-         '<button type="button" class="classic-mini-button" data-tour-action="settings">'+(lang()==='en'?'Settings':'Настройки')+'</button>'+
-         '<button type="button" class="classic-mini-button" data-tour-action="menu">'+t('back')+'</button>'+
-       '</nav>'+
-       '<div class="tournament-battle-rail">'+
-         clockPanel(enemy,false)+
-         '<aside class="tournament-card tournament-match-sidebar">'+
-           '<h2>'+t('title')+'</h2>'+
-           '<small class="tournament-match-kicker">'+t('match')+' · 10+0</small>'+
-           '<p data-tour-turn role="status"></p>'+
-           '<div class="tournament-actions">'+
-             action('offer-draw',t('draw'))+
-             action('resign',t('resign'))+
-             action('back',t('leave'))+
-           '</div>'+
-           '<section class="tournament-journal">'+
-             '<small>'+(lang()==='en'?'BATTLE LOG':'ЖУРНАЛ БОЯ')+'</small>'+
-             '<div class="tournament-journal-heading"><h3>'+(lang()==='en'?'Moves':'Ходы')+'</h3></div>'+
-             '<div class="tournament-moves" data-tour-history aria-label="'+(lang()==='en'?'Moves':'Ходы')+'"></div>'+
-           '</section>'+
-         '</aside>'+
-         clockPanel(my,true)+
-       '</div>'+
-       '<div class="tournament-match-main">'+
-         '<div class="classic-board tournament-board" data-tour-board data-player-color="'+esc(matchState.playerColor)+'" role="grid" aria-label="Tournament chessboard"></div>'+
-       '</div>'+
-     '</div>'+
-   '</section>';
-  // Shared Journey/Arena race board tiles. The *white* squad controls the
-  // common board design, regardless of which side this client plays.
+   '<header class="tournament-battle-mobile-header"><strong>'+t('title')+' · 10+0</strong>'+
+      '<button type="button" class="classic-mini-button" data-tour-action="menu">'+t('back')+'</button></header>'+
+   '<section class="tournament-match" aria-label="'+t('match')+'"><div class="tournament-match-layout">'+
+     '<nav class="tournament-battle-nav" aria-label="'+t('match')+'">'+
+       '<button type="button" class="classic-mini-button" data-tour-action="panel" aria-expanded="false" aria-controls="tournament-tools" title="'+
+         (lang()==='ru'?'Ходы и управление':'Moves and controls')+'">☰</button>'+
+       '<button type="button" class="classic-mini-button" data-tour-action="settings" title="'+(lang()==='ru'?'Настройки':'Settings')+'">⚙</button>'+
+       '<button type="button" class="classic-mini-button" data-tour-action="menu" title="'+t('back')+'">⌂</button>'+
+     '</nav>'+
+     '<div class="tournament-battle-rail">'+panel(rival,false)+
+       '<aside id="tournament-tools" class="tournament-card tournament-match-sidebar" hidden>'+
+         '<h2>'+t('title')+'</h2><small class="tournament-match-kicker">10+0</small>'+
+         '<p data-tour-turn role="status"></p><div class="tournament-actions">'+
+           action('offer-draw',t('draw'))+action('resign',t('resign'))+action('back',t('leave'))+
+         '</div><section class="tournament-journal">'+
+           '<div class="tournament-journal-heading"><h3>'+(lang()==='en'?'Moves':'Ходы')+'</h3></div>'+
+           '<div class="tournament-moves" data-tour-history aria-label="'+(lang()==='en'?'Moves':'Ходы')+'"></div>'+
+         '</section></aside>'+
+         panel(mine,true)+'</div>'+
+     '<div class="tournament-match-main">'+
+       '<div class="classic-board tournament-board" data-tour-board data-player-color="'+esc(matchState.playerColor)+'" role="grid" aria-label="Tournament chessboard"></div>'+
+     '</div></div></section>';
   applyRaceBoardTheme(root.querySelector('[data-tour-board]'),
-   matchState.players.find(p=>p.color==='w')?.race||'humans');
+    matchState.players.find(p=>p.color==='w')?.race||'humans');
   attachPieceDrag(root.querySelector('[data-tour-board]'),{
    canPick:square=>Boolean(chess&&matchState.status==='playing'&&chess.turn()===matchState.playerColor&&chess.pieceAt(square)?.color===matchState.playerColor&&!busyMove&&!pendingFlight),
    onStart:from=>highlightDragFrom(from),
@@ -211,14 +206,9 @@ function showBattle(){
     if(to&&chess?.legalMoves(from).some(move=>move.to===to))void sendMove(from,to);
     else {selectedSquare=from;refreshBoard();}
    },
-   onCancel:()=>{
-    dragActive=false;
-    refreshBoard();
-   }
+   onCancel:()=>{dragActive=false;refreshBoard();}
   });
   matchRendered=true;
-  // This panel is dynamically created only during an online match.
-  // The shared switch owns the saved art preference; PvP state stays on the server.
   dispatchEvent(new Event('rpchess:tournament-board-mounted'));
  }
  refreshBoard();
@@ -521,6 +511,11 @@ root.addEventListener('click',event=>{
    playerColor:matchState.playerColor,sides,lang:lang()});
   return;
  }
+ if(a==='panel'){
+  const panel=root.querySelector('#tournament-tools');
+  if(panel){panel.hidden=!panel.hidden;btn.setAttribute('aria-expanded',String(!panel.hidden));}
+  return;
+ }
  if(a==='settings'){globalThis.RPChessOpenSettings?.();return;}
  if(a==='menu'){leave();return;}
  if(a==='search'||a==='again'){void beginSearch();return;}
@@ -538,4 +533,9 @@ const incoming=new URLSearchParams(location.search).get('tournament_room');
 if(incoming&&/^[a-zA-Z0-9-]{4,12}$/.test(incoming)){
  addEventListener('load',()=>{roomCode=incoming.toUpperCase();open();page='join';render();},{once:true});
 }
+addEventListener('keydown',event=>{
+ if(event.key!=='Escape'||!tabVisible||page!=='match')return;
+ const panel=root.querySelector('#tournament-tools');
+ if(panel&&!panel.hidden){panel.hidden=true;root.querySelector('[data-tour-action="panel"]')?.setAttribute('aria-expanded','false');}
+});
 globalThis.RPChessTournament={enter:open,close:leave,get page(){return page;},get apiConfigured(){return Boolean(API);}};
