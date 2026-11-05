@@ -230,9 +230,11 @@
 }
 @media (orientation:landscape){
  html[data-landscape-ui='1'] body.tournament-battle-active{
-  --tour-portrait-width:clamp(75px,11vh + 33px,142px);
+  --tour-portrait-width:clamp(75px,10vh + 30px,130px);
   --tour-card-overhang:18px;
-  --tour-board-size:min(100dvh,calc(100vw - 2 * (var(--tour-portrait-width) + 32px)));
+  /* Reserve only the actual portrait card; do not waste side gutters that
+     shrink a landscape tablet board below full viewport height. */
+  --tour-board-size:min(100dvh,calc(100vw - 2 * (var(--tour-portrait-width) + var(--tour-card-overhang))));
   overflow:hidden!important;
  }
  html[data-landscape-ui='1'] body.tournament-battle-active #app>main.tournament-screen--match:not([hidden]){
