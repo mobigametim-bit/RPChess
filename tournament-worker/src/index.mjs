@@ -73,7 +73,9 @@ function isVerified(user,env){
 async function profileBinding(credential,env){
  if(typeof credential!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(credential))return null;
  const base=String(env.RPCHESS_PROFILE_API||'').replace(/\/+$/,'');
- if(!/^https:\/\/[a-z0-9.-]+$/i.test(base))throw Error('Profile API unavailable');
+ const secure=/^https:\/\/[a-z0-9.-]+$/i.test(base);
+ const localTest=env.ALLOW_LOCAL_PROFILE_API==='1'&&/^http:\/\/127\.0\.0\.1:\d+$/.test(base);
+ if(!secure&&!localTest)throw Error('Profile API unavailable');
  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),6500);
  try{
   const res=await fetch(base+'/v1/tournament-binding',{
@@ -138,7 +140,9 @@ export default {
   const verified=isVerified(user,env);
   const profile=verified?await accountCall(env,user.id,'/profile'):null;
   const serverPower=profile?.power??safePower(user.power);
-  if(path==='/v1/profile')return json({ranked:verified,power:serverPower,kind:verified?'vk':'guest',ratedGames:profile?.ratedGames||0},200,cors);
+  if(path==='/v1/profile')return json({ranked:verified,power:serverPower,kind:verified?'vk':'guest',
+    rpchessId:/^rpchess:[0-9a-f-]{36}$/i.test(user.id||'')?user.id.slice(8):null,
+    ratedGames:profile?.ratedGames||0},200,cors);
   // All server-internal user fields override browser input, including Power.
   const requestData={...body,user:{id:user.id,name:user.name,kind:verified?'vk':'guest',
     profileVerified:verified&&user.profileVerified===true,power:serverPower},now:Date.now()};
