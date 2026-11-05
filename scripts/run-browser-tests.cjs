@@ -23,6 +23,7 @@ const DEFAULT_TESTS=[
   'king-pin-ice-browser.cjs',
   'responsive-viewport-browser.cjs',
   'portrait-key-scenes-browser.cjs',
+  'tournament-v4-browser.cjs',
   'onboarding-browser.cjs',
   'roster-browser.cjs',
   'cloud-continue-browser.cjs',
