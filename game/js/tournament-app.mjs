@@ -162,6 +162,15 @@ function timeLeft(color){
 }
 function clock(ms){if(!Number.isFinite(ms))return '∞';const sec=Math.ceil(Math.max(0,ms)/1000);return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');}
 function resultView(){
+ if(shadowGame){
+  const outcome=matchState?.result;
+  const title=outcome?.winner==null?t('shadowDraw'):
+    outcome.winner==='w'?t('shadowWinWhite'):t('shadowWinBlack');
+  return '<section class="tournament-card tournament-center tournament-shadow-result">'+
+    '<h2>'+title+'</h2><p class="tournament-muted">'+t('shadowLocal')+'</p>'+
+    '<div class="tournament-actions">'+(matchState?.moves?.length?action('review',t('review')):'')+
+      action('again',t('shadowNew'))+action('cancel',t('leave'))+'</div></section>';
+ }
  const outcome=matchState.result;
  const win=outcome?.winner===matchState.playerColor,draw=!outcome?.winner;
  const title=lang()==='ru'?(draw?'Ничья':win?'Победа!':'Поражение'):(draw?'Draw':win?'Victory!':'Defeat');
@@ -185,10 +194,14 @@ function showBattle(){
    const commander=normalizeCommanderId(p.commanderId||(own?local.commanderId:null));
    const power=Number.isFinite(p.displayPower)?p.displayPower:(own?local.power:p.power);
    const name=p.name==='Guest'&&own?local.name:p.name;
+   const isShadow=Boolean(shadowGame)&&!own;
+   const shownName=isShadow?(lang()==='ru'?'Тень ':'Shadow ')+local.name:name;
    return '<section class="tournament-playerbar tournament-clock-panel '+(own?'tournament-clock-panel--self':'tournament-clock-panel--rival')+
-     '" data-tour-player="'+p.color+'" aria-label="'+esc(name)+'">'+
-     '<img class="tournament-duel-portrait" src="'+commanderPortrait(commander)+'" alt="">'+
-     '<div class="tournament-player"><strong>'+esc(name)+'</strong>'+
+     (isShadow?' tournament-clock-panel--shadow':'')+
+     '" data-tour-player="'+p.color+'" aria-label="'+esc(shownName)+'">'+
+     '<img class="tournament-duel-portrait'+(isShadow?' tournament-duel-portrait--shadow':'')+
+       '" src="'+commanderPortrait(commander)+'" alt="">'+
+     '<div class="tournament-player"><strong>'+esc(shownName)+'</strong>'+
        powerMark(power)+raceMark(p.race,p.color)+'</div>'+
      '<span class="tournament-clock" data-tour-clock="'+p.color+'"></span></section>';
  };
@@ -207,7 +220,7 @@ function showBattle(){
        '<aside id="tournament-tools" class="tournament-card tournament-match-sidebar" hidden>'+
          '<h2>'+t('title')+'</h2><small class="tournament-match-kicker">10+0</small>'+
          '<p data-tour-turn role="status"></p><div class="tournament-actions">'+
-           action('offer-draw',t('draw'))+action('resign',t('resign'))+action('back',t('leave'))+
+           action('offer-draw',shadowGame?t('shadowDrawAction'):t('draw'))+action('resign',t('resign'))+action('back',t('leave'))+
          '</div><section class="tournament-journal">'+
            '<div class="tournament-journal-heading"><h3>'+(lang()==='en'?'Moves':'Ходы')+'</h3></div>'+
            '<div class="tournament-moves" data-tour-history aria-label="'+(lang()==='en'?'Moves':'Ходы')+'"></div>'+
@@ -219,7 +232,9 @@ function showBattle(){
   applyRaceBoardTheme(root.querySelector('[data-tour-board]'),
     matchState.players.find(p=>p.color==='w')?.race||'humans');
   attachPieceDrag(root.querySelector('[data-tour-board]'),{
-   canPick:square=>Boolean(chess&&matchState.status==='playing'&&chess.turn()===matchState.playerColor&&chess.pieceAt(square)?.color===matchState.playerColor&&!busyMove&&!pendingFlight),
+   canPick:square=>Boolean(chess&&matchState.status==='playing'&&
+     (shadowGame?chess.pieceAt(square)?.color===chess.turn():
+       chess.turn()===matchState.playerColor&&chess.pieceAt(square)?.color===matchState.playerColor)&&!busyMove&&!pendingFlight),
    onStart:from=>highlightDragFrom(from),
    onDrop:(from,to)=>{
     dragActive=false;
@@ -325,7 +340,9 @@ function refreshBoard(){
  const journal=root.querySelector('[data-tour-history]');
  if(journal)journal.textContent=matchState.moves.map((m,i)=> (i+1)+'. '+m.from+'–'+m.to).join('  ');
  const turn=root.querySelector('[data-tour-turn]');
- if(turn)turn.textContent=chess.turn()===matchState.playerColor?t('yourTurn'):t('theirTurn');
+ if(turn)turn.textContent=shadowGame?
+   (chess.turn()==='w'?identity().name:(lang()==='ru'?'Тень ':'Shadow ')+identity().name)+' · '+t('shadowTurn'):
+   chess.turn()===matchState.playerColor?t('yourTurn'):t('theirTurn');
  updateClocks();
 }
 function updateClocks(){
@@ -382,9 +399,15 @@ async function syncMatch(){
 }
 function stopMatch(){dragActive=false;stopTournamentFlight();if(matchJob){clearInterval(matchJob);matchJob=null;}}
 async function sendMove(from,to,promotion=null){
- if(busyMove||!chess||!matchState||chess.turn()!==matchState.playerColor)return;
+ if(busyMove||!chess||!matchState||(!shadowGame&&chess.turn()!==matchState.playerColor))return;
  const choices=chess.promotionChoices(from,to);
  const promoted=choices.length?(promotion||'q'):null;
+ if(shadowGame){
+  const applied=shadowGame.move(from,to,promoted);
+  if(applied.ok){selectedSquare=null;syncShadow();}
+  else if(applied.reason==='finished')syncShadow();
+  return;
+ }
  busyMove=true;
  try{
   await call('/v1/match/'+encodeURIComponent(live.matchId)+'/move',{from,to,promotion:promoted});
@@ -392,6 +415,11 @@ async function sendMove(from,to,promotion=null){
  }catch(err){message=err.message;await syncMatch();}finally{busyMove=false;}
 }
 async function matchAction(action){
+ if(shadowGame){
+  if(action==='resign')shadowGame.resign();
+  else if(action==='draw')shadowGame.draw();
+  syncShadow();return;
+ }
  if(!live?.matchId)return;
  try{const result=await call('/v1/match/'+encodeURIComponent(live.matchId)+'/'+action,{});matchState=result;lastSnapshotAt=Date.now();await syncMatch();}
  catch(err){message=err.message;const tag=root.querySelector('[data-tour-turn]');if(tag)tag.textContent=message;}
