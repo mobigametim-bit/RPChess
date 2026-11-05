@@ -52,7 +52,7 @@ const {pathToFileURL}=require('node:url');
  assert.equal(loaded.move('g1','f3',null,start+CLOCK_MS+40000).ok,false,
    'no moves after flag');
  saveShadowGame(storage,loaded);
- assert.equal(storage.has(SHADOW_SAVE_KEY),false,'finished games cannot resume as live matches');
+ assert.equal(saved.has(SHADOW_SAVE_KEY),false,'finished games cannot resume as live matches');
 
  const mated=new LocalShadowGame({mode:'unlimited',turnStartedAt:start});
  for(const [from,to] of [['f2','f3'],['e7','e5'],['g2','g4'],['d8','h4']])
