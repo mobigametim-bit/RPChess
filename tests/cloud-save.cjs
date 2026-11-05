@@ -394,7 +394,41 @@ class MemoryStorage {
   assert.strictEqual(platformModule.storage.getItem(persistence.RUN_STORAGE_KEY),storedLegacyRun,'production VK retains original progress');
   assert.strictEqual(platformModule.platform.storage.cloud.available,true,'VK production storage remains intact');
 
-  console.log('VK CloudSave compact payload, atomic slots, automatic newer-save restore and failed-read protection + GamePush cutover isolation: PASS');
+  // Release Pages should activate RPChess ID and GamePush automatically ONLY
+  // inside the signed VK launch, without touching old cloud or local records.
+  globalThis.location.hostname='mobigametim-bit.github.io';
+  globalThis.location.pathname='/RPChess/';
+  globalThis.location.search='?vk_app_id=54754579&vk_user_id=12345&sign=mock-signed-launch';
+  assert.strictEqual(platformModule.platform.profileEnabled,true,'canonical Pages activates D1 profile');
+  assert.strictEqual(platformModule.platform.gamepush.enabled,true,'canonical signed VK activates SDK');
+  assert.strictEqual(platformModule.storage.cloud.available,false,'old VK Cloud is read-only during release');
+  assert.strictEqual(platformModule.storage.gamepushVKMetaStore.available,false);
+  assert.strictEqual(cloud.get(cloudSave.CLOUD_SAVE_MANIFEST_KEY),savedVKManifest);
+  assert.strictEqual(cloud.get('rpchess_gp_v2_manifest'),originalGPManifest);
+
+  // URL rollback restores the untouched legacy game and native advertising.
+  globalThis.location.search+='&rpchess_profile=0&rpchess_gamepush=0';
+  assert.strictEqual(platformModule.platform.profileEnabled,false);
+  assert.strictEqual(platformModule.platform.gamepush.enabled,false);
+  assert.strictEqual(platformModule.storage.cloud.available,true);
+  assert.strictEqual(platformModule.storage.getItem(persistence.RUN_STORAGE_KEY),storedLegacyRun);
+
+  // Standalone Pages Web/PWA uses D1 but never asks VK for GamePush ads.
+  globalThis.location.search='';
+  assert.strictEqual(platformModule.platform.profileEnabled,true);
+  assert.strictEqual(platformModule.platform.gamepush.enabled,false);
+
+  // Separate Yandex and unrelated site deployments stay on their old code path.
+  globalThis.location.hostname='yandex.ru';
+  globalThis.location.pathname='/RPChess/';
+  assert.strictEqual(platformModule.platform.profileEnabled,false);
+  assert.strictEqual(platformModule.platform.gamepush.enabled,false);
+  globalThis.location.hostname='mobigametim-bit.github.io';
+  globalThis.location.pathname='/unrelated/';
+  assert.strictEqual(platformModule.platform.profileEnabled,false);
+  assert.strictEqual(platformModule.platform.gamepush.enabled,false);
+
+  console.log('VK CloudSave compact payload, additive D1 release, signed VK GamePush and emergency legacy rollback: PASS');
 })().catch((error) => {
   console.error(error.stack || error);
   process.exitCode = 1;
