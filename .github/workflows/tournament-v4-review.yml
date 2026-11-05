@@ -77,7 +77,7 @@ jobs:
           SESSION: ${{ secrets.PVP_SESSION_SECRET }}
           VK: ${{ secrets.VK_APP_SECRET }}
         run: |
-          test -n "$TOKEN" && test -n "$ACCOUNT" && test -n "$SESSION" && test -n "$VK" || {
+          test -n "$TOKEN" && test -n "$ACCOUNT" && test -n "$SESSION" || {
             echo "::error::Existing Cloudflare and VK secret names are required for an isolated preview"
             exit 1
           }
@@ -89,7 +89,11 @@ jobs:
         run: |
           export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
           npx wrangler deploy --config profile-worker/wrangler-v4.toml
-          printf '%s' "$VK" | npx wrangler secret put VK_APP_SECRET --config profile-worker/wrangler-v4.toml
+          if [ -n "$VK" ]; then
+            printf '%s' "$VK" | npx wrangler secret put VK_APP_SECRET --config profile-worker/wrangler-v4.toml
+          else
+            echo "::warning::VK_APP_SECRET not in Actions secrets: Web preview works; signed VK preview unavailable"
+          fi
       - name: Deploy isolated v4 Tournament Worker and private DO
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -100,7 +104,9 @@ jobs:
           export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
           npx wrangler deploy --config tournament-worker/wrangler-v4.toml
           printf '%s' "$SESSION" | npx wrangler secret put PVP_SESSION_SECRET --config tournament-worker/wrangler-v4.toml
-          printf '%s' "$VK" | npx wrangler secret put VK_APP_SECRET --config tournament-worker/wrangler-v4.toml
+          if [ -n "$VK" ]; then
+            printf '%s' "$VK" | npx wrangler secret put VK_APP_SECRET --config tournament-worker/wrangler-v4.toml
+          fi
       - name: Publish static v4 review game only
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
