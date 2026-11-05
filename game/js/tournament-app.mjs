@@ -112,7 +112,7 @@ function setup(){
           (loadShadowGame(platform.storage.local)?.status==='playing'?action('shadow-resume',t('resumeShadow')):''):
         action('search',t('find'))+action('invite',t('invite'))+action('join-screen',t('join')))+
       '</div>'+
-      (API?'':notice(t('offline')))+
+      (API||chosenMode==='shadow'?'':notice(t('offline')))+
     '</div></section>';
 }
 function search(){
@@ -207,7 +207,7 @@ function showBattle(){
  };
  if(!matchRendered||!root.querySelector('[data-tour-board]')){
   root.innerHTML=
-   '<header class="tournament-battle-mobile-header"><strong>'+t('title')+' · 10+0</strong>'+
+   '<header class="tournament-battle-mobile-header"><strong>'+t('title')+' · '+(shadowGame?(shadowGame.isTimed?'10+0':'∞'):'10+0')+'</strong>'+
       '<button type="button" class="classic-mini-button" data-tour-action="menu">'+t('back')+'</button></header>'+
    '<section class="tournament-match" aria-label="'+t('match')+'"><div class="tournament-match-layout">'+
      '<nav class="tournament-battle-nav" aria-label="'+t('match')+'">'+
@@ -218,7 +218,7 @@ function showBattle(){
      '</nav>'+
      '<div class="tournament-battle-rail">'+panel(rival,false)+
        '<aside id="tournament-tools" class="tournament-card tournament-match-sidebar" hidden>'+
-         '<h2>'+t('title')+'</h2><small class="tournament-match-kicker">10+0</small>'+
+         '<h2>'+t('title')+'</h2><small class="tournament-match-kicker">'+(shadowGame?(shadowGame.isTimed?'10+0':'∞'):'10+0')+'</small>'+
          '<p data-tour-turn role="status"></p><div class="tournament-actions">'+
            action('offer-draw',shadowGame?t('shadowDrawAction'):t('draw'))+action('resign',t('resign'))+action('back',t('leave'))+
          '</div><section class="tournament-journal">'+
