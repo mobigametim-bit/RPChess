@@ -430,8 +430,14 @@ async function connect({refreshPower=false}={}){
       ? 'Профиль RPChess пока не подтверждён'
       : 'RPChess profile is not authenticated yet');
   }
+  // The existing VK/GamePush launch still uses the legacy local profile
+  // namespace. Send only cosmetic identity for that mode; the verified
+  // RPChess ID binding takes precedence whenever profile mode is enabled.
+  const local=identity();
   const obtained=await call('/v1/session',{
-    previous,nick:'Guest',power:readPlayerRating().power,launch:location.search.slice(1),
+    previous,nick:local.name,commanderId:local.commanderId,
+    displayPower:local.power,power:readPlayerRating().power,
+    launch:location.search.slice(1),
     ...(profileCredential?{profileCredential}:{})
   });
   if(!obtained.token)throw Error('No tournament session');
