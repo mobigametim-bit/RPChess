@@ -598,6 +598,18 @@ function installMonetization() {
   for (const name of TRAVEL_EVENTS) globalThis.addEventListener?.(name, onTravelOpenEvent);
   globalThis.addEventListener?.('rpchess:combat-completed', onCombatCompleted);
   globalThis.addEventListener?.('rpchess:run-updated', onDoubleGoldRunUpdated);
+  // GP may report VK player-auth failure after the victory screen was drawn.
+  // When the native VK fallback becomes available, restore the existing offer
+  // without replaying a match or issuing any reward automatically.
+  globalThis.addEventListener?.('rpchess:gamepush-status',event=>{
+    if(event?.detail?.status!=='unavailable'||platform.ads.backend!=='vk-bridge')return;
+    const run=readRun();
+    if(!run||run.ended)return;
+    for(const kind of ['battle','skirmish','caravan']){
+      const count=run[`${kind}Count`];
+      if(Number.isInteger(count)&&count>0)renderDoubleGoldOffer(kind,count);
+    }
+  });
   unsubscribeLanguage = subscribe(() => {
     renderRescueCopy();
     for (const button of document.querySelectorAll('[data-ad-double-gold-button]')) {
