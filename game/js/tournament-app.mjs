@@ -210,7 +210,7 @@ function showBattle(){
  if(!matchRendered||!root.querySelector('[data-tour-board]')){
   root.innerHTML=
    '<header class="tournament-battle-mobile-header"><strong>'+t('title')+' · '+(shadowGame?(shadowGame.isTimed?'10+0':'∞'):'10+0')+'</strong>'+
-      '<button type="button" class="classic-mini-button" data-tour-action="menu">'+t('back')+'</button></header>'+
+      (shadowGame?'':'<button type="button" class="classic-mini-button" data-tour-action="menu">'+t('back')+'</button>')+'</header>'+
    '<section class="tournament-match" aria-label="'+t('match')+'"><div class="tournament-match-layout">'+
      '<nav class="tournament-battle-nav" aria-label="'+t('match')+'">'+
        '<button type="button" class="classic-mini-button" data-tour-action="panel" aria-expanded="false" aria-controls="tournament-tools" title="'+
