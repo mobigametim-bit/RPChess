@@ -1,0 +1,11 @@
+name = "rpchess-profile-v4-preview"
+main = "src/index.mjs"
+compatibility_date = "2026-11-04"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "rpchess-leaderboard"
+database_id = "8452f616-2982-428a-ad59-57cb8238708f"
+
+[vars]
+ALLOWED_ORIGINS = "https://rpchess-tournament-v4-preview.mobigametim.workers.dev"
