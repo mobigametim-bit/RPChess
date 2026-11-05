@@ -1,5 +1,5 @@
 // GamePush SDK trial integration. Public SDK credentials only; no admin/server secrets.
-// Opt-in with ?rpchess_gamepush=1 on an allowed test origin. Default production is unchanged.
+// VK production enabled on canonical Pages with valid-shaped launch params; explicit ?rpchess_gamepush=0 disables. Other platforms opt-in only.
 // References: https://docs.gamepush.com/ru/docs/get-start/getting-started/
 //             https://docs.gamepush.com/tutorials/game-with-own-backend/
 const PROJECT_ID = 31247;
@@ -23,7 +23,17 @@ let failureCode = '';
 
 function isEnabled() {
   try {
-    return new URLSearchParams(globalThis.location?.search || '').get('rpchess_gamepush') === '1';
+    const query=new URLSearchParams(globalThis.location?.search||'');
+    if(query.get('rpchess_gamepush')==='0')return false; // Safe VK Bridge rollback.
+    if(query.get('rpchess_gamepush')==='1')return true; // Isolated preview opt-in.
+    // Turn on GamePush ONLY for real signed VK launches from the canonical
+    // Pages release; other sites/standalone Web and Yandex remain unchanged.
+    // SDK failure leaves the existing native VK ad path available.
+    return globalThis.location?.hostname==='mobigametim-bit.github.io'
+      && /^\/RPChess(?:\/|$)/.test(globalThis.location?.pathname||'')
+      && query.get('vk_app_id')==='54754579'
+      && /^[1-9]\\d*$/.test(query.get('vk_user_id')||'')
+      && Boolean(query.get('sign'));
   } catch {
     return false;
   }
