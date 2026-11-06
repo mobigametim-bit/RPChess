@@ -1,0 +1,62 @@
+# RPChess: READ-ONLY Yandex Cloud API Gateway connectivity probe.
+# No gameplay, player data, credentials or persistent services hosted here.
+# Paste into Yandex Cloud > API Gateway > Create > Specification.
+openapi: "3.0.0"
+info:
+  title: RPChess Yandex outbound connectivity probe
+  version: "1.0.0"
+paths:
+  /ping:
+    get:
+      summary: Check direct reachability of Yandex API Gateway
+      operationId: pingYandex
+      responses:
+        "200":
+          description: Yandex gateway is reachable
+          content:
+            application/json:
+              schema:
+                type: object
+      x-yc-apigateway-integration:
+        type: dummy
+        http_code: 200
+        http_headers:
+          Content-Type: application/json
+        content:
+          application/json: '{"ok":true,"via":"yandex-api-gateway"}'
+  /probe/profile:
+    get:
+      summary: Check outbound Yandex-to-Cloudflare profile Worker HTTPS
+      operationId: probeProfileWorker
+      responses:
+        "200":
+          description: Upstream Worker health JSON
+          content:
+            application/json:
+              schema:
+                type: object
+      x-yc-apigateway-integration:
+        type: http
+        url: https://rpchess-profile-preview.mobigametim.workers.dev/health
+        method: GET
+        timeouts:
+          connect: 3
+          read: 10
+  /probe/tournament:
+    get:
+      summary: Check outbound Yandex-to-Cloudflare tournament Worker HTTPS
+      operationId: probeTournamentWorker
+      responses:
+        "200":
+          description: Upstream Worker health JSON
+          content:
+            application/json:
+              schema:
+                type: object
+      x-yc-apigateway-integration:
+        type: http
+        url: https://rpchess-tournament-profile-preview.mobigametim.workers.dev/health
+        method: GET
+        timeouts:
+          connect: 3
+          read: 10
