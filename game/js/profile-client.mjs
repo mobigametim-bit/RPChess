@@ -143,7 +143,16 @@ function recordReconcile(data) {
 }
 function restoreProfile(profile) {
   const payload=profile?.snapshot;
-  if(!payloadHasProgress(payload))return false;
+  if(!payload||payload.schemaVersion!==1)return false;
+  if(!payloadHasProgress(payload)){
+    // A saved revision-1 account may legitimately have ZERO progress.
+    // On reload it must remain authenticated, not enter "offline" merely
+    // because restoreLocalEnvelope expects a non-empty game snapshot.
+    // Never wipe real local progress with an empty server snapshot.
+    if(payloadHasProgress(localPayload()))return false;
+    setLocalMeta(profile.revision,localPayload());
+    return true;
+  }
   const ok=restoreLocalEnvelope({payload,revision:Math.max(0,profile.revision),updatedAt:profile.updatedAt});
   if(!ok)return false;
   const local=localPayload();
