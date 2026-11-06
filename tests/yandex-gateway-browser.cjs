@@ -77,15 +77,31 @@ async function main(){
   console.log('MATCHMAKING ERROR VIEW:',JSON.stringify({errorView,queueJoins,failedQueueRequests,profile:await page.evaluate(()=>({status:globalThis.RPChessProfileStatus?.status}))}));
   assert(errorView.includes('HTTP 503: qa_queue_temporarily_unavailable'),
    'Queue failure detail must remain visible on a dedicated retry screen');
+  // Simulate a lost response after the Worker accepted the first join:
+  // retry MUST consult read-only queue/status before sending any new join.
+  let queueStatusReads=0;
+  await page.route('**/tournament/v1/queue/status',route=>{
+   if(route.request().method()!=='POST')return route.continue();
+   queueStatusReads++;
+   return route.fulfill({status:200,
+    headers:{'Access-Control-Allow-Origin':'https://mobigametim-bit.github.io',
+     'Access-Control-Allow-Headers':'Authorization, Content-Type',
+     'Content-Type':'application/json'},
+    body:JSON.stringify({status:'waiting'})});
+  });
   await page.locator('[data-tour-action="search"]').click();
   await page.waitForFunction(()=>globalThis.RPChessTournament?.page==='search'
     &&document.querySelector('.tournament-spinner')
     &&!document.querySelector('[data-tour-action="search"]'),
     null,{timeout:35000});
-  await secondJoin;
-  assert.equal(queueJoins,2,'Public queue retry should send a second POST');
+  assert(queueStatusReads>=1,'Retry must inspect server queue after an ambiguous 503');
+  assert.equal(queueJoins,1,'Ambiguous join must not be sent twice');
   await page.locator('[data-tour-action="cancel"]').click();
-  console.log('PUBLIC MATCHMAKING: JOIN 503 EXPLAINED, RETRY WAITING, CANCEL PASS');
+  await page.locator('[data-tour-action="search"]').click();
+  await secondJoin;
+  assert.equal(queueJoins,2,'A genuinely new search can create a new join');
+  await page.locator('[data-tour-action="cancel"]').click();
+  console.log('PUBLIC MATCHMAKING: AMBIGUOUS 503, STATUS RECOVERY, NO DUPLICATE JOIN, NEW SEARCH PASS');
   // Simulate an ISP where direct workers.dev /health fails, while the
   // published GitHub Pages HTML/CSS/JS and Yandex API remain reachable.
   const blocked=await browser.newContext({serviceWorkers:'block',viewport:{width:1360,height:850}});
