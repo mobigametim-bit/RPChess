@@ -212,10 +212,22 @@ async function importOldVKIfPresent(profile) {
     setMigration({status:'bridge-unavailable'});
     return profile;
   }
-  const legacy=await readCloudEnvelope(reader);
+  let legacy;
+  try{
+    legacy=await readCloudEnvelope(reader);
+  }catch{
+    // A valid signed VK login is independent of the legacy VK Storage
+    // service. A missing/blocked Bridge response must not keep Tournament
+    // or personal D1 rankings permanently unauthenticated.
+    // Do not write or erase any of the old VK cloud data.
+    setMigration({status:'bridge-unavailable',legacyV1:'unreadable'});
+    return profile;
+  }
   if(legacy.error) {
+    // Do not import damaged data, but preserve the verified new identity.
+    // The old backup stays untouched for later manual recovery.
     setMigration({status:'corrupt-v1',legacyV1:'invalid'});
-    throw Error('Legacy VK cloud backup invalid: '+legacy.error);
+    return profile;
   }
   let source=legacyVKMeta(legacy.envelope);
   const foundV1=hasCompletedMeta(source);
@@ -236,8 +248,10 @@ async function importOldVKIfPresent(profile) {
       // Inconsistent GP test data must not prevent recovery from an intact v1.
       setMigration({previousGP:'unreadable'});
       if(!foundV1) {
+        // No validated old snapshot to import. Keep D1 login available and
+        // leave GP/VK legacy storage untouched for a later retry.
         setMigration({status:'corrupt-gp-v2'});
-        throw Error('Prior GamePush backup invalid: '+String(error?.message||'unreadable'));
+        return profile;
       }
     }
   }
@@ -319,7 +333,17 @@ async function boot() {
     if(!profileId||session.profile?.provider!==provider)throw Error('Profile belongs to another platform');
     if(!platform.setProfileStorageIdentity(provider,profileId))throw Error('Invalid RPChess profile identity');
     writeToken(provider,token);
-    let remote=await importOldVKIfPresent(session.profile);
+    let remote=session.profile;
+    try{remote=await importOldVKIfPresent(remote);}
+    catch{
+      // The signed VK session has already been validated by the Profile
+      // Worker. A failed/ambiguous legacy migration is not an auth failure.
+      // Re-read D1 in case an import POST committed before losing its response.
+      setMigration({status:'deferred'});
+      const latest=await request('/v1/profile').catch(()=>null);
+      if(latest?.profile)remote=latest.profile;
+      console.warn('[RPChess] VK legacy migration deferred; verified profile login retained');
+    }
     if(orphanWeb&&payloadHasProgress(orphanWeb)&&!payloadHasProgress(remote.snapshot)) {
       // The fresh account is empty; migrate only the player's own pending
       // Web sandbox. Never transplant a prior VK account's local data.
