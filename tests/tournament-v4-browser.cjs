@@ -19,6 +19,59 @@ const response={
  ],
  moves:[],turn:'w',remaining:{w:600000,b:600000},rated:false,serverTime:Date.now()
 };
+// Scope: a single menu/mini-toolbar in each real phone/tablet/desktop
+// Tournament match, both online and Shadow. No other game mode is involved.
+async function verifyMatchToolbar(page,label,width,height,mode){
+ const c=await page.evaluate(()=>{
+  const root=document.querySelector('[data-tournament-screen]');
+  const header=root.querySelector('.tournament-battle-mobile-header');
+  const title=header.querySelector('strong');
+  const nav=root.querySelector('.tournament-battle-nav');
+  const board=root.querySelector('[data-tour-board]');
+  const rect=el=>el.getBoundingClientRect().toJSON();
+  return {
+   navParentIsHeader:nav.parentElement===header,
+   menuCount:root.querySelectorAll('[data-tour-action="menu"]').length,
+   actions:[...nav.querySelectorAll('button')].map(el=>el.dataset.tourAction),
+   buttons:[...nav.querySelectorAll('button')].map(rect),
+   visible:getComputedStyle(nav).display!=='none',
+   headerVisible:getComputedStyle(header).display!=='none',
+   titleVisible:getComputedStyle(title).display!=='none',
+   header:rect(header),title:rect(title),nav:rect(nav),board:rect(board),
+   headerText:header.innerText
+  };
+ });
+ const overlap=(a,b)=>a.left<b.right-1&&a.right>b.left+1&&
+   a.top<b.bottom-1&&a.bottom>b.top+1;
+ const tag=label+' '+mode;
+ assert(c.navParentIsHeader,tag+' mini controls must belong to title header');
+ assert.equal(c.menuCount,1,tag+' must have exactly one Main menu action');
+ assert.deepEqual(c.actions,['panel','settings','menu'],tag+' must keep all three mini controls');
+ assert(c.visible,tag+' nav must be visible');
+ assert(c.nav.left>=-1&&c.nav.top>=-1&&c.nav.right<=width+1&&c.nav.bottom<=height+1,
+   tag+' mini controls must fit viewport: '+JSON.stringify(c));
+ assert(!overlap(c.nav,c.board),tag+' mini controls must not cover board');
+ for(let i=0;i<c.buttons.length;i++){
+  const b=c.buttons[i];
+  assert(b.width>=29&&b.width<=36&&b.height>=29&&b.height<=36,
+   tag+' actions must stay compact: '+JSON.stringify(c.buttons));
+  for(let j=i+1;j<c.buttons.length;j++)
+   assert(!overlap(b,c.buttons[j]),tag+' buttons must not overlap');
+ }
+ if(height>width){
+  assert(c.headerVisible&&c.titleVisible,tag+' header title remains visible');
+  assert(!/Главное меню|Main menu/.test(c.headerText),
+   tag+' oversized Main menu text button must be removed');
+  assert(c.nav.left>=c.title.right-1,
+   tag+' toolbar must sit after title in same row: '+JSON.stringify(c));
+  assert(c.nav.top>=c.header.top-1&&c.nav.bottom<=c.header.bottom+1,
+   tag+' toolbar must fit entirely inside header: '+JSON.stringify(c));
+  assert(!overlap(c.nav,c.title),tag+' mini controls must not cover title');
+ }else{
+  assert(!c.titleVisible,tag+' landscape title is visually hidden');
+ }
+ return c;
+}
 async function main(){
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  try{
@@ -121,6 +174,7 @@ async function main(){
     assert(view.l.x+view.l.width<=view.board.x+2&&view.board.x+view.board.width<=view.r.x+2,
       label+' portrait cards flank, not cover, board');
    }
+   await verifyMatchToolbar(page,label,width,height,'online');
    await page.screenshot({path:path.join(dir,label+'-match.png'),animations:'disabled'});
    await page.locator('[data-tour-action="panel"]').click();
    await page.locator('#tournament-tools').waitFor({state:'visible'});
@@ -169,38 +223,9 @@ async function main(){
    assert(shadow.clocks.every(x=>x==='∞'),label+' unlimited time shows infinity');
    if(width>height)assert(shadow.board.height>=Math.min(height,width-150)-15,
      label+' Shadow should preserve full-height landscape chessboard');
-   // Guard all existing Chromium viewports against stacked header/menu controls.
-   const controls=await page.evaluate(()=>{
-     const root=document.querySelector('[data-tournament-screen]');
-     const header=root.querySelector('.tournament-battle-mobile-header');
-     const title=header.querySelector('strong');
-     const nav=root.querySelector('.tournament-battle-nav');
-     const board=root.querySelector('[data-tour-board]');
-     return {headerMenuCount:header.querySelectorAll('[data-tour-action="menu"]').length,
-       allMenuCount:root.querySelectorAll('[data-tour-action="menu"]').length,
-       actions:[...nav.querySelectorAll('button')].map(el=>el.dataset.tourAction),
-       visible:getComputedStyle(nav).display!=='none',
-       headerVisible:getComputedStyle(header).display!=='none',
-       nav:nav.getBoundingClientRect().toJSON(),
-       title:title.getBoundingClientRect().toJSON(),
-       board:board.getBoundingClientRect().toJSON()};
-   });
-   const overlap=(a,b)=>a.left<b.right-1&&a.right>b.left+1&&
-     a.top<b.bottom-1&&a.bottom>b.top+1;
-   assert.equal(controls.headerMenuCount,0,label+' Shadow hides duplicate header menu');
-   assert.equal(controls.allMenuCount,1,label+' Shadow has exactly one menu action');
-   assert.deepEqual(controls.actions,['panel','settings','menu'],label+' retains three compact actions');
-   assert(controls.visible,label+' mini controls must be visible');
-   assert(controls.nav.left>=0&&controls.nav.top>=0&&
-     controls.nav.right<=width+1&&controls.nav.bottom<=height+1,
-     label+' controls inside viewport: '+JSON.stringify(controls.nav));
-   assert(!overlap(controls.nav,controls.board),label+' controls must not overlay board');
-   if(height>width){
-     assert(controls.headerVisible,label+' portrait title remains visible');
-     assert(!overlap(controls.nav,controls.title),label+' controls must not overlay title');
-     assert(controls.nav.top<=controls.title.bottom+2,
-       label+' controls lifted to title row');
-   }
+   // Reuse the same single-toolbar assertions on Shadow without creating a
+   // new permanent suite or running unrelated game-mode browser tests.
+   const controls=await verifyMatchToolbar(page,label,width,height,'shadow');
    await page.locator('.tournament-battle-nav [data-tour-action="panel"]').click();
    const drawer=await page.locator('#tournament-tools').evaluate(el=>el.getBoundingClientRect().toJSON());
    assert(drawer.top>=controls.nav.bottom+2,label+' drawer clears mini controls');
