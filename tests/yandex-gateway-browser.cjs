@@ -14,7 +14,7 @@ async function verifyVKRecovery(browser){
  // Simulate a VK native Bridge. No fake vk_app_id in the browser URL:
  // the production VK platform can independently reject forged host params.
  await page.addInitScript(()=>{
-  window.__testVKLaunchFresh=false;
+  window.__testVKLaunchFresh=localStorage.getItem('__rpchess_test_launch_fresh')==='1';
   window.AndroidBridge={
    VKWebAppInit(){},
    VKWebAppGetLaunchParams(raw){
@@ -44,14 +44,14 @@ async function verifyVKRecovery(browser){
  const profileId='00000000-0000-4000-8000-000000000123';
  const profileToken='P'.repeat(43),tournamentToken='T'.repeat(48);
  const snapshot={schemaVersion:1};
- const profileResult={id:profileId,provider:'vk',revision:0,migratedVK:false,snapshot};
+ let profileResult={id:profileId,provider:'vk',revision:0,migratedVK:false,snapshot};
  const cors={
   'Access-Control-Allow-Origin':origin,
   'Access-Control-Allow-Methods':'GET, POST, PUT, OPTIONS',
   'Access-Control-Allow-Headers':'Authorization, Content-Type',
   'Content-Type':'application/json'
  };
- let verifiedLaunches=0,queueJoins=0;
+ let verifiedLaunches=0,queueJoins=0,profileWrites=0,authorizedBoardReads=0;
  await page.route('**/v1/**',route=>{
   const request=route.request(),url=new URL(request.url());
   if(![profileHost,tournamentHost].includes(url.hostname))return route.continue();
@@ -67,12 +67,16 @@ async function verifyVKRecovery(browser){
     verifiedLaunches++;
     return reply(200,{token:profileToken,profile:profileResult});
    }
-   if(pathname==='/v1/profile'&&method==='PUT')
-    return reply(200,{profile:{...profileResult,revision:1}});
+   if(pathname==='/v1/profile'&&method==='PUT'){
+    profileWrites++;
+    return reply(200,{profile:{...profileResult,revision:profileResult.revision+1}});
+   }
    if(pathname==='/v1/profile'&&method==='GET')
     return reply(200,{profile:profileResult});
-   if(pathname==='/v1/leaderboard')
+   if(pathname==='/v1/leaderboard'){
+    if(request.headers().authorization==='Bearer '+profileToken)authorizedBoardReads++;
     return reply(200,{top:[],me:null,viewerAuthenticated:true});
+   }
    if(pathname==='/v1/leaderboard/refresh')
     return reply(200,{top:[],me:null,viewerAuthenticated:true});
   }else{
@@ -93,7 +97,7 @@ async function verifyVKRecovery(browser){
   assert.equal(verifiedLaunches,0,'VK backend must reject the first invalid signature');
   // A later valid VK host launch is available. Client must not keep the
   // rejected bootPromise forever after the user explicitly clicks Search.
-  await page.evaluate(()=>{window.__testVKLaunchFresh=true;});
+  await page.evaluate(()=>{window.__testVKLaunchFresh=true;localStorage.setItem('__rpchess_test_launch_fresh','1');});
   await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
   await page.locator('[data-tournament-open]').click();
   await page.locator('[data-tour-action="search"]').click();
@@ -114,6 +118,60 @@ async function verifyVKRecovery(browser){
    'Legacy migration must degrade independently: '+JSON.stringify(identity));
   await page.locator('[data-tour-action="cancel"]').click();
   console.log('VK PROFILE RECOVERY PASS: invalid launch denied, fresh signed retry accepted, legacy Bridge unavailable but Tournament queue entered');
+
+  // A verified VK user already has finished achievements in D1, but this
+  // device has divergent local play. Do not merge or overwrite either copy
+  // without an explicit decision. Tournament/leaderboard identity remains
+  // valid even while the save reconciliation says "conflict".
+  profileResult={...profileResult,revision:2,snapshot:{
+   schemaVersion:1,
+   rating:{schemaVersion:1,power:780,receipts:[]},
+   chronicle:{schemaVersion:1,history:[
+    {runId:'remote-one',week:2,power:700,glory:3,completedAt:10},
+    {runId:'remote-two',week:4,power:780,glory:5,completedAt:20}
+   ]}
+  }};
+  const localHistory={schemaVersion:1,history:[
+   {runId:'local-only',week:3,power:650,glory:4,completedAt:30}
+  ]};
+  await page.evaluate(({id,localHistory})=>{
+   const prefix='rpchess.profile.v1.vk.'+id+'.';
+   localStorage.setItem(prefix+'rpchess.reboot.v1.chronicle',JSON.stringify(localHistory));
+   localStorage.setItem(prefix+'rpchess.reboot.v1.profile-revision','2');
+   localStorage.setItem(prefix+'rpchess.reboot.v1.profile-fingerprint','fingerprint-from-last-server-save');
+  },{id:profileId,localHistory});
+  const beforeWrites=profileWrites;
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>globalThis.RPChessProfileStatus?.status==='conflict',null,{timeout:35000});
+  const state=await page.evaluate(async id=>{
+   const profile=await import('./js/profile-client.mjs');
+   const storeKey='rpchess.profile.v1.vk.'+id+'.rpchess.reboot.v1.chronicle';
+   const persisted=JSON.parse(localStorage.getItem(storeKey)||'null');
+   const board=await profile.unifiedLeaderboard({refresh:true});
+   return {
+    status:globalThis.RPChessProfileStatus?.status,
+    reason:globalThis.RPChessProfileStatus?.reason,
+    credentialPresent:profile.tournamentCredential().length===43,
+    savedRuns:persisted?.history?.map(row=>row.runId),
+    boardAuthenticated:board.viewerAuthenticated
+   };
+  },profileId);
+  assert.equal(state.status,'conflict');
+  assert.equal(state.reason,'Local save differs and lacks completed server achievements');
+  assert(state.credentialPresent,'Signed VK user must stay authorized despite unrelated save conflict');
+  assert.deepEqual(state.savedRuns,['local-only'],'Local save must not be overwritten');
+  assert(state.boardAuthenticated,'Leaderboard should use verified RPChess identity');
+  assert(authorizedBoardReads>0,'Leaderboard API must receive verified bearer');
+  assert.equal(profileWrites,beforeWrites,'Conflicted local snapshot must never overwrite D1');
+  await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
+  await page.locator('[data-tournament-open]').click();
+  await page.locator('[data-tour-action="search"]').click();
+  await page.waitForFunction(()=>globalThis.RPChessTournament?.page==='search'&&
+   !!document.querySelector('.tournament-spinner'),null,{timeout:30000});
+  assert.equal(queueJoins,2,'Conflicted but verified VK account must still enter the queue');
+  assert.equal(profileWrites,beforeWrites,'Tournament search must not upload unresolved conflict');
+  await page.locator('[data-tour-action="cancel"]').click();
+  console.log('VK SAVE CONFLICT PASS: D1 achievements untouched, local run preserved, authenticated leaderboard and Tournament search usable');
  }catch(error){
   const status=await page.evaluate(()=>({
    profile:globalThis.RPChessProfileStatus,
@@ -122,7 +180,7 @@ async function verifyVKRecovery(browser){
   })).catch(()=>null);
   console.error('VK RECOVERY DIAGNOSTIC',JSON.stringify({status,verifiedLaunches,queueJoins,
    apiRequests:apiRequests.slice(-20),pageErrors:pageErrors.slice(-10),
-   pageHost:new URL(page.url()).hostname}));
+   profileWrites,authorizedBoardReads,pageHost:new URL(page.url()).hostname}));
   throw error;
  }finally{await context.close();}
 }
