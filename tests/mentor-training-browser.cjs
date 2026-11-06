@@ -22,6 +22,28 @@ fs.mkdirSync(output,{recursive:true});
   await page.screenshot({path:path.join(output,'setup-landscape.png'),animations:'disabled'});
   await page.locator('[data-mentor-action="start"]').click();
   assert.equal(await page.locator('[data-mentor-square]').count(),64);
+  assert.equal(await page.locator('.mentor-board [data-square]').count(),64);
+  const tile=await page.locator('.mentor-board [data-square="a8"]').evaluate(node=>getComputedStyle(node).backgroundImage);
+  assert(tile.includes('/fae/board/'),'mentor squares use the selected race tile set: '+tile);
+  const size=await page.locator('.mentor-board').evaluate(node=>{
+   const rect=node.getBoundingClientRect();
+   return {height:rect.height,width:rect.width,screenHeight:innerHeight};
+  });
+  assert(Math.abs(size.width-size.height)<4,'landscape chessboard is square');
+  assert(size.height>=size.screenHeight-3,'landscape chessboard fills viewport height: '+JSON.stringify(size));
+  assert.equal(await page.locator('.mentor-journal-head [data-board-view-toggle]').count(),1,'same board-view switch as Tournament');
+  await page.locator('.mentor-journal-head [data-board-view-switch]').check({force:true});
+  assert.equal(await page.evaluate(()=>document.documentElement.dataset.simplePieces),'1');
+  await page.locator('.mentor-journal-head [data-board-view-switch]').uncheck({force:true});
+  assert.equal(await page.evaluate(()=>document.documentElement.dataset.simplePieces),'0');
+  await page.evaluate(()=>{
+   const original=Element.prototype.animate;
+   window.__mentorFlightCount=0;
+   Element.prototype.animate=function(...args){
+    if(this.classList?.contains('mentor-flight'))window.__mentorFlightCount++;
+    return original.apply(this,args);
+   };
+  });
   assert.equal(await page.locator('.mentor-piece').count(),32);
   const initial=await page.evaluate(()=>window.RPChessMentorTraining.state.fen);
   await page.locator('[data-mentor-square="e2"]').click();
@@ -38,11 +60,20 @@ fs.mkdirSync(output,{recursive:true});
   await page.locator('.mentor-journal [data-mentor-action="prev"]').click();
   await page.locator('.mentor-journal [data-mentor-action="prev"]').click();
   assert.equal(await page.evaluate(()=>window.RPChessMentorTraining.state.fen),initial);
-  await page.locator('[data-mentor-square="d2"]').click();
-  await page.locator('[data-mentor-square="d4"]').click();
+  const source=await page.locator('[data-mentor-square="d2"]').boundingBox();
+  const target=await page.locator('[data-mentor-square="d4"]').boundingBox();
+  await page.mouse.move(source.x+source.width/2,source.y+source.height/2);
+  await page.mouse.down();
+  await page.mouse.move(target.x+target.width/2,target.y+target.height/2,{steps:6});
+  assert.equal(await page.locator('.rpchess-piece-drag-ghost').count(),1,'drag must show shared piece ghost');
+  await page.mouse.up();
   await page.waitForFunction(()=>window.RPChessMentorTraining.state.moves.length>=2,{timeout:30000});
   const branch=await page.evaluate(()=>window.RPChessMentorTraining.state);
-  assert.equal(branch.moves[0].uci,'d2d4','playing from the past replaces the old main line');
+  assert.equal(branch.moves[0].uci,'d2d4','dragging from the past replaces the old main line');
+  assert(await page.evaluate(()=>window.__mentorFlightCount)>=2,'both player and Stockfish moves animate with Tournament timing');
+  assert.equal(await page.locator('.mentor-feedback-grade').count()&&
+   (await page.locator('.mentor-feedback-grade').innerText()).includes('cp'),false,
+   'centipawn loss must not be shown to the player');
   assert.equal(branch.cursor,branch.moves.length);
   await page.setViewportSize({width:390,height:844});
   await page.screenshot({path:path.join(output,'battle-portrait.png'),animations:'disabled'});
@@ -52,6 +83,8 @@ fs.mkdirSync(output,{recursive:true});
   });
   assert(Math.abs(metrics.boardWidth-metrics.boardHeight)<4,'portrait board square');
   assert(metrics.screenWidth<=metrics.viewport+4,'portrait has no horizontal overflow: '+JSON.stringify(metrics));
+  assert.equal(await page.locator('.mentor-mobile-toggle [data-board-view-toggle]').count(),1,
+   'portrait has an accessible board art switch');
   await page.locator('[data-mentor-action="journal"]').first().click();
   assert(await page.locator('.mentor-journal').evaluate(e=>e.classList.contains('is-open')),'portrait journal opens');
   await page.locator('.mentor-journal [data-mentor-action="journal"]').click();

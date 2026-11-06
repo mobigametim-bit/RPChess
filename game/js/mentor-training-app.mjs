@@ -1,7 +1,11 @@
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { ChessAIAdapter } from './chess-ai-adapter.mjs';
 import { StockfishReviewEngine, reviewMoveJournal } from './finished-game-review.mjs';
-import { boardRacePiecePath, racePiecePath } from './race-assets.mjs';
+import { boardRacePiecePath, racePiecePath, raceBoardTiles } from './race-assets.mjs';
+import { attachPieceDrag } from './piece-drag.mjs';
+import { applyPinIce } from './king-pin-ice.mjs';
+import { makeToggle, syncToggles } from './board-view-toggle.mjs';
+import { createMentorMotion } from './mentor-training-motion.mjs';
 import { fantasyPieceMarkup } from './fantasy-piece.mjs';
 import { currentLanguage, subscribe } from './i18n.mjs';
 import { TRAINING_MENTORS, UCI, rebuildTraining, extendTraining, trainingMoveQuality } from './mentor-training-history.mjs';
@@ -22,6 +26,7 @@ const menu=document.querySelector('[data-reboot-foundation]');
 let root=null,ai=null,review=null,reviewStarted=null,reviewChain=Promise.resolve();
 let selected=1,color='w',playing=false,moves=[],cursor=0,square=null,promotion=null,busy=false,gameEpoch=0,journalOpen=false,analysisPending=false;
 let feedbackCache=new Map(),evaluationInFlight=new Map();
+let boardNode=null,dragActive=false,motion=null;
 function lang(){return currentLanguage()==='en'?'en':'ru';}
 function t(name){return TEXT[lang()][name]||name;}
 function title(mentor){return mentor[lang()];}
@@ -44,8 +49,8 @@ function restore(){
 }
 function game(){return rebuildTraining(moves,cursor);}
 function cancel(){
- gameEpoch++;busy=false;analysisPending=false;square=null;promotion=null;
- ai?.stop();review?.close();review=null;reviewStarted=null;reviewChain=Promise.resolve();evaluationInFlight=new Map();
+ gameEpoch++;busy=false;analysisPending=false;square=null;promotion=null;dragActive=false;
+ motion?.clear();ai?.stop();review?.close();review=null;reviewStarted=null;reviewChain=Promise.resolve();evaluationInFlight=new Map();
 }
 function show(open){
  if(!root)return;
@@ -64,6 +69,7 @@ function ensure(){
  actions?.insertBefore(entry,actions.querySelector('.reboot-menu-secondary'));
  root=document.createElement('main');root.className='mentor-training';root.dataset.mentorScreen='';root.hidden=true;
  (app||document.body).append(root);
+ motion=createMentorMotion(root);
  root.addEventListener('click',onClick);
  subscribe(()=>{entry.textContent=t('title');if(!root.hidden)render();});
  addEventListener('beforeunload',()=>{ai?.destroy();review?.close();});
@@ -131,6 +137,7 @@ function navigation(){
 }
 function boardHTML(chess){
  const whiteBottom=currentPlayerColor()==='w',state=chess.snapshot(),files='abcdefgh',legal=square?chess.legalMoves(square):[];
+ const tiles=raceBoardTiles(mentor().race);
  const last=moves[cursor-1];
  const recentOwn=moves.slice(0,cursor).reverse().find(entry=>entry.color===currentPlayerColor());
  const mark=recentOwn?.grade?recentOwn.uci.slice(2,4):null;
@@ -143,13 +150,13 @@ function boardHTML(chess){
   const ownRace=piece?.color===currentPlayerColor()?'humans':mentor().race;
   let figure='';
   if(piece){
-   figure='<img alt="" class="mentor-piece" draggable="false" src="'+boardRacePiecePath(ownRace,ROLES[piece.type],piece.color)+'"><span class="mentor-piece-fallback">'+SYMBOLS[piece.color][piece.type]+'</span>'+fantasyPieceMarkup(piece.type,piece.color);
+   figure='<img alt="" class="mentor-piece classic-piece" draggable="false" src="'+boardRacePiecePath(ownRace,ROLES[piece.type],piece.color)+'"><span class="mentor-piece-fallback">'+SYMBOLS[piece.color][piece.type]+'</span>'+fantasyPieceMarkup(piece.type,piece.color);
   }
   const sign=mark===sq&&piece?.color===currentPlayerColor()?'<span class="mentor-square-grade">'+({'inaccuracy':'?!','mistake':'?','blunder':'??'}[recentOwn.grade])+'</span>':'';
-  grid+='<button type="button" data-mentor-square="'+sq+'" class="mentor-square '+(dark?'is-dark':'is-light')+(highlight?' is-last':'')+(active?' is-selected':'')+(possible?' is-legal':'')+'" aria-label="'+sq+'">'+figure+sign+'</button>';
+  grid+='<button type="button" data-mentor-square="'+sq+'" data-square="'+sq+'" class="mentor-square '+(dark?'is-dark':'is-light')+(highlight?' is-last':'')+(active?' is-selected':'')+(possible?' is-legal':'')+'" aria-label="'+sq+'">'+figure+sign+'</button>';
  }
  const status=chess.status();
- return '<div class="mentor-board-shell"><div class="mentor-board">'+grid+'</div><div class="mentor-file-coords">'+(whiteBottom?files.split(''):[...files].reverse()).map(v=>'<span>'+v+'</span>').join('')+'</div><div class="mentor-rank-coords">'+(whiteBottom?[8,7,6,5,4,3,2,1]:[1,2,3,4,5,6,7,8]).map(v=>'<span>'+v+'</span>').join('')+'</div></div>'+
+ return '<div class="mentor-board-shell"><div class="mentor-board" style="--mentor-light-tile:url('+tiles.light+');--mentor-dark-tile:url('+tiles.dark+')">'+grid+'</div><div class="mentor-file-coords">'+(whiteBottom?files.split(''):[...files].reverse()).map(v=>'<span>'+v+'</span>').join('')+'</div><div class="mentor-rank-coords">'+(whiteBottom?[8,7,6,5,4,3,2,1]:[1,2,3,4,5,6,7,8]).map(v=>'<span>'+v+'</span>').join('')+'</div></div>'+
  (status.over?'<div class="mentor-board-message">'+t('gameOver')+'</div>':'');
 }
 function latestPlayerNote(){
@@ -168,7 +175,7 @@ function feedbackHTML(){
  else if(!data&&!busy)copy=t('fine');
  return '<section class="mentor-feedback mentor-card"><div class="mentor-feedback-head">'+picture(mentor(),'mentor-face')+
  '<h2>'+t('mentor')+'</h2></div>'+
- (data?'<div class="mentor-feedback-grade"><strong>'+mark+'</strong><span>'+label+(Number.isFinite(data.loss)?' · '+data.loss+' cp':'')+'</span></div>':'')+
+ (data?'<div class="mentor-feedback-grade"><strong>'+mark+'</strong><span>'+label+'</span></div>':'')+
  '<p class="mentor-feedback-text">'+esc(copy)+'</p>'+
  (found?button('before-error',t('before'),'mentor-outline mentor-undo-error'):'')+'</section>';
 }
@@ -184,19 +191,55 @@ function battleHTML(){
  '<div class="mentor-history-head"><span>№</span><span>'+t('white')+'</span><span>'+t('black')+'</span></div>'+
  '<div class="mentor-history">'+getJournal()+'</div>'+navigation()+'</aside>'+
  '<div class="mentor-center"><div class="mentor-status">'+esc(notice)+'</div>'+boardHTML(chess)+
- '<div class="mentor-mobile-navigation">'+navigation()+'</div></div>'+
+ '<div class="mentor-mobile-navigation">'+navigation()+'<div class="mentor-mobile-toggle"></div></div></div>'+
  feedbackHTML()+
  (promotion?'<div class="mentor-promotion"><div class="mentor-promotion-dialog"><h2>'+t('promotion')+'</h2>'+
  ['q','r','b','n'].map(v=>'<button type="button" data-mentor-promote="'+v+'">'+SYMBOLS[currentPlayerColor()][v]+'</button>').join('')+'</div></div>':'')+
  '</section>';
 }
+function highlightDragFrom(from){
+ const board=boardNode;if(!board||!playing)return;
+ square=from;
+ board.querySelectorAll('.is-selected,.is-legal').forEach(node=>node.classList.remove('is-selected','is-legal'));
+ board.querySelector('[data-square="'+from+'"]')?.classList.add('is-selected');
+ for(const move of game().legalMoves(from))board.querySelector('[data-square="'+move.to+'"]')?.classList.add('is-legal');
+}
+function installMentorDrag(board){
+ attachPieceDrag(board,{
+  canPick:from=>Boolean(playing&&!busy&&!promotion&&cursor<=moves.length&&
+   game().turn()===currentPlayerColor()&&game().pieceAt(from)?.color===currentPlayerColor()&&!game().status().over),
+  onStart:from=>{dragActive=true;highlightDragFrom(from);},
+  onDrop:(from,to)=>{
+   dragActive=false;
+   if(to&&game().legalMoves(from).some(move=>move.to===to))void userMove(from,to);
+   else {square=from;render();}
+  },
+  onCancel:()=>{dragActive=false;render();}
+ });
+}
 function render(){
- if(!root||root.hidden)return;
+ if(!root||root.hidden||dragActive)return;
  const list=root.querySelector('.mentor-catalog-scroll'),oldScroll=list?.scrollTop||0;
  const historyList=root.querySelector('.mentor-history'),oldHistory=historyList?.scrollTop||0;
  root.innerHTML=playing?battleHTML():setupHTML();
  if(!playing&&root.querySelector('.mentor-catalog-scroll'))root.querySelector('.mentor-catalog-scroll').scrollTop=oldScroll;
- if(playing&&root.querySelector('.mentor-history'))root.querySelector('.mentor-history').scrollTop=oldHistory;
+ if(playing){
+  const fresh=root.querySelector('.mentor-board');
+  if(boardNode){
+   boardNode.innerHTML=fresh.innerHTML;
+   boardNode.style.cssText=fresh.style.cssText;
+   fresh.replaceWith(boardNode);
+  }else{
+   boardNode=fresh;
+   installMentorDrag(boardNode);
+  }
+  applyPinIce(boardNode,game().snapshot());
+  motion?.markArrival();
+  root.querySelector('.mentor-journal-head')?.append(makeToggle());
+  root.querySelector('.mentor-mobile-toggle')?.append(makeToggle());
+  syncToggles();
+  if(root.querySelector('.mentor-history'))root.querySelector('.mentor-history').scrollTop=oldHistory;
+ }
 }
 function moveCursor(next){
  if(!playing||promotion)return;
@@ -206,7 +249,7 @@ function moveCursor(next){
  // Browsing a previous move never requests a new computer response.
 }
 function cancelPending(){
- gameEpoch++;busy=false;analysisPending=false;square=null;promotion=null;ai?.stop();
+ gameEpoch++;busy=false;analysisPending=false;square=null;promotion=null;dragActive=false;motion?.clear();ai?.stop();
 }
 async function ensureReview(){
  if(review)return reviewStarted;
@@ -250,9 +293,10 @@ async function computerMove(){
  }catch{}
  if(epoch!==gameEpoch||!playing||cursor!==moves.length)return;
  if(!UCI.test(uci||'')){busy=false;render();return;}
+ const geometry=motion?.capture(chess,uci);
  const step=extendTraining(moves,cursor,uci);
  if(step.ok){moves=step.moves;cursor=step.cursor;moves[cursor-1].color=chess.turn();save();}
- busy=false;render();preEvaluate();
+ busy=false;render();if(step.ok)motion?.play(geometry);preEvaluate();
 }
 async function userMove(from,to,promote=null){
  if(busy||!playing)return;
@@ -264,11 +308,12 @@ async function userMove(from,to,promote=null){
  const beforeFen=chess.fen(),uci=from+to+(promote||'');
  const change=extendTraining(moves,cursor,uci);
  if(!change.ok)return;
+ const geometry=motion?.capture(chess,uci);
  cancelPending();
  const epoch=gameEpoch;
  moves=change.moves;cursor=change.cursor;
  moves[cursor-1].color=who;
- square=null;busy=true;analysisPending=true;save();render();
+ square=null;busy=true;analysisPending=true;save();render();motion?.play(geometry);
  let data=null;
  try{
   const before=await evaluate(beforeFen);
