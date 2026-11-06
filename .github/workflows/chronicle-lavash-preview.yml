@@ -1,0 +1,127 @@
+name: Chronicle Lavash isolated playable preview
+
+on:
+  push:
+    branches: [feature/chronicle-lavash-font-preview-20261106]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rpchess-chronicle-lavash-preview
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/chronicle-lavash-font-preview-20261106'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      # Source font is identical to the attached user file only when SHA-256
+      # matches; no substitute or synthetic font may be committed.
+      - name: Add checked Lavash font to this preview branch
+        run: |
+          set -euo pipefail
+          if test -s game/fonts/Lavash.woff2; then
+            echo 'Font already stored in the preview branch'
+          else
+            curl --fail --location --silent --show-error --retry 3 \
+              'https://online-fonts.com/fonts/lavash/download' -o /tmp/rpchess-lavash-download
+            python3 - <<'PY'
+          import zipfile, pathlib, hashlib
+          source=pathlib.Path('/tmp/rpchess-lavash-download')
+          expected='35d14b89855e9861a33eab355e56c5fbda93578f9a0b9229a06f2e428dcb6347'
+          if zipfile.is_zipfile(source):
+              with zipfile.ZipFile(source) as archive:
+                  names=[name for name in archive.namelist() if name.lower().endswith('/lavash.ttf') or name.lower()=='lavash.ttf']
+                  assert len(names)==1, 'Font archive must include one lavash.ttf'
+                  contents=archive.read(names[0])
+          else:
+              contents=source.read_bytes()
+          sha=hashlib.sha256(contents).hexdigest()
+          assert sha==expected, 'The downloaded font differs from the user-provided Lavash TTF: '+sha
+          pathlib.Path('/tmp/lavash.ttf').write_bytes(contents)
+          print('Lavash exact user-font SHA-256 verified:',sha)
+          PY
+            python3 -m pip install --disable-pip-version-check --quiet 'fonttools[woff2]'
+            python3 - <<'PY'
+          from fontTools.ttLib import TTFont
+          from pathlib import Path
+          target=Path('game/fonts/Lavash.woff2')
+          font=TTFont('/tmp/lavash.ttf')
+          font.flavor='woff2'
+          font.save(target)
+          assert target.stat().st_size>5000
+          print('Bundled web font:',target, target.stat().st_size,'bytes')
+          PY
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add game/fonts/Lavash.woff2
+            git commit -m 'assets(chronicle): bundle verified Lavash WOFF2 [skip ci]'
+            git push origin HEAD:feature/chronicle-lavash-font-preview-20261106
+          fi
+      - name: Install dependencies and run canonical regression/build gate
+        run: |
+          npm ci --no-audit --no-fund
+          npm run gate:local
+      - name: Install Chromium for Chronicle rendering acceptance
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+      - name: Verify Chronicle font and existing localized content in Chromium
+        env:
+          RPCHESS_BROWSER_TEST: chronicle-localization-browser.cjs
+          RPCHESS_FLAG_SCREENSHOT_DIR: test-results/lavash-chronicle
+        run: npm run test:browser
+      - name: Upload Chronicle screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lavash-chronicle-preview-screenshots
+          path: test-results/lavash-chronicle
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Verify Cloudflare credentials
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: test -n "$TOKEN" && test -n "$ACCOUNT"
+      - name: Deploy isolated Chronicle preview (not production)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config chronicle-lavash-preview/wrangler.toml
+      - name: Verify published preview serves a real WOFF2
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const origin='https://rpchess-chronicle-lavash-preview.mobigametim.workers.dev';
+          (async()=>{
+            for(let i=0;i<20;i++){
+              try{
+                const res=await fetch(origin+'/fonts/Lavash.woff2');
+                const buf=Buffer.from(await res.arrayBuffer());
+                const css=await fetch(origin+'/css/player-identity-chronicle.css');
+                const script=await fetch(origin+'/js/player-identity-chronicle.mjs');
+                if(res.status===200&&buf.subarray(0,4).toString()==='wOF2'&&
+                  (await css.text()).includes("LavashChronicle")&&
+                  (await script.text()).includes("20261106-lavash-preview-1")){
+                    console.log('Chronicle font preview LIVE:',origin+'/');
+                    return;
+                  }
+              }catch(e){console.log('Preview activation:',e.message);}
+              await new Promise(resolve=>setTimeout(resolve,3000));
+            }
+            throw new Error('Preview is not yet serving the bundled Lavash font');
+          })().catch(e=>{console.error(e);process.exitCode=1;});
+          NODE
