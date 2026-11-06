@@ -74,6 +74,20 @@ node tests/yandex-gateway-health-probe.mjs https://<ваш-id>.apigw.yandexcloud
 - https://yandex.cloud/ru/docs/api-gateway/quickstart/
 
 
+## Этап 2: живое тестирование — подтверждено 2026-11-06
+
+Владелец установил `proxy.openapi.yaml` в существующий шлюз. Выполнены тесты [safe + isolated guest e2e](https://github.com/mobigametim-bit/RPChess/actions/runs/42241522118), оба задания **SUCCESS**:
+
+1. `GET /ping`, `/probe/profile`, `/probe/tournament`, `/profile/health`, `/tournament/health` → HTTP 200.
+2. CORS preflight из `https://mobigametim-bit.github.io` к Profile POST/PUT и Tournament POST → HTTP 204, правильный `Access-Control-Allow-Origin`.
+3. Незнакомый `Origin` `https://example.invalid` отклонён upstream HTTP 403; запрос `PUT` без авторизации отклонён HTTP 401.
+4. Создан отдельный гостевой профиль, получен токен (не печатался в логах), выполнен настоящий `PUT /profile/v1/profile` с revision и GET-чтение сохранённого snapshot — **PASS**.
+5. Две отдельные гостевые сессии Турнира, приватная комната, подключение второго игрока, ходы e2-e4 и e7-e5, восстановление состояния, сдача; **rated=false**, общий поиск игроков и Elo не затронуты.
+
+**Что всё ещё не подтверждено:** браузерное CORS из реального GitHub Pages/VK, доступность всех новых путей `/profile/health` и `/tournament/health` из РФ без VPN (старые `/probe/` подтверждены), автоматический выбор шлюза из игры и матч двух реальных клиентов. Эти проверки нужны до `main`.
+
+**Дальнейший шаг:** подготовить отдельную тестовую интеграцию RPChess JS transport с Yandex URL, без файлов игры на Yandex, и передать ссылку на игру в настоящем GH/VK-окружении. Не объединять с `main` без явной ручной приёмки.
+
 ## Этап 2: Yandex API Gateway как только HTTP-прокси
 
 **Статус:** подготовлено к установке владельцем в существующий Yandex API Gateway. Ничего в Yandex Cloud автоматически не обновлено — доступ к аккаунту не подключён. Этап 1 уже подтверждён из России без VPN.
