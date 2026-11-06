@@ -63,6 +63,27 @@ const source=await module.text();
 assert.equal(module.status,200);
 assert.ok(source.includes("'/preview-api'"),'new adaptive API client missing from playable preview');
 console.log('/play/index.html','HTTP 200; new API route module HTTP 200');
+
+// Release assets not copied into Netlify's /play directory were previously
+// served by a proxy to GitHub Pages. Verify status, MIME and bytes — a live
+// HTML entrypoint alone does not prove the game can actually boot.
+for(const [path,type] of [
+ ['/play/js/reboot-foundation.mjs','javascript'],
+ ['/play/js/screen-loading.mjs','javascript'],
+ ['/play/css/reboot-foundation.css','css'],
+ ['/play/css/screen-loading.css','css'],
+ ['/play/generated_assets/logo_ru.png','image'],
+ ['/play/fonts/Goznak-SemiBold.woff2','font']
+]){
+ const response=await request(path);
+ const mime=response.headers.get('content-type')||'';
+ const bytes=(await response.arrayBuffer()).byteLength;
+ console.log('ASSET',path,'HTTP',response.status,'MIME',mime,'BYTES',bytes);
+ assert.equal(response.status,200,path+' returned '+response.status);
+ assert.ok(mime.includes(type),path+' returned unexpected '+mime);
+ assert.ok(bytes>100,path+' is empty');
+}
+
 // Verify authorized POST forwarding with real *unrated guest* sessions and a
 // private room. Avoid the shared public queue so no live player is disrupted.
 async function tournamentPost(path,body,token=''){
