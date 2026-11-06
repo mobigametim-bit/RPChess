@@ -71,8 +71,8 @@ fs.mkdirSync(output,{recursive:true});
   const branch=await page.evaluate(()=>window.RPChessMentorTraining.state);
   assert.equal(branch.moves[0].uci,'d2d4','dragging from the past replaces the old main line');
   assert(await page.evaluate(()=>window.__mentorFlightCount)>=2,'both player and Stockfish moves animate with Tournament timing');
-  assert.equal(await page.locator('.mentor-feedback-grade').count()&&
-   (await page.locator('.mentor-feedback-grade').innerText()).includes('cp'),false,
+  const feedbackGradeText=await page.locator('.mentor-feedback-grade').allTextContents();
+  assert(feedbackGradeText.every(value=>!/(?:^|\\s)\\d+\\s*cp\\b/i.test(value)),
    'centipawn loss must not be shown to the player');
   assert.equal(branch.cursor,branch.moves.length);
   await page.setViewportSize({width:390,height:844});
