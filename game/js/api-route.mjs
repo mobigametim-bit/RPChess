@@ -1,6 +1,6 @@
-/* RPChess transport selector. Yandex is strictly an API gateway:
- * game JS, art and saves remain at their existing hosts/workers.
- * Choose once BEFORE the first API mutation. Never replay a POST/PUT on error.
+/* RPChess API transport. Profile and Tournament independently choose
+ * direct Cloudflare or the Yandex HTTP proxy, but always reach the SAME
+ * authoritative Workers. Never replay a POST/PUT after an ambiguous failure.
  */
 const YANDEX='https://d5ds3hf0ei1mlkgjrnlm.d8epmcec.apigw.yandexcloud.net';
 const DIRECT=Object.freeze({
@@ -9,7 +9,7 @@ const DIRECT=Object.freeze({
 });
 const PREF_KEY='rpchess.yandex-api-route.v1';
 const MODES=['auto','direct','yandex'];
-let routePromise=null;
+const routePromises=new Map();
 function browserEnabled() {
  try {
   const location=globalThis.location;
@@ -17,15 +17,20 @@ function browserEnabled() {
   const force=new URLSearchParams(location.search).get('rpchess_api_route');
   if(MODES.includes(force))return true;
   if(location.hostname==='mobigametim-bit.github.io'&&/^\/RPChess(?:\/|$)/.test(location.pathname))return true;
-  // VK Mini App hosts are app-specific and HTTPS.
+  // Accepted staging host for manual Russian/overseas acceptance; it already
+  // appears in both canonical Workers' CORS origin allowlists.
+  if(location.hostname==='rpchess-profile-game-preview.mobigametim.workers.dev')return true;
   if(/^app54754579(?:-[a-z0-9]+)?\.pages\.vk-apps\.(ru|com)$/i.test(location.hostname))return true;
   if(new URLSearchParams(location.search).has('vk_app_id'))return true;
   return false;
  }catch{return false;}
 }
-export function routePreference(){
+export function routePreference(service='profile'){
  try {
-  const forced=new URLSearchParams(globalThis.location?.search||'').get('rpchess_api_route');
+  const query=new URLSearchParams(globalThis.location?.search||'');
+  const scoped=query.get('rpchess_'+service+'_route');
+  if(MODES.includes(scoped))return scoped;
+  const forced=query.get('rpchess_api_route');
   if(MODES.includes(forced))return forced;
   const stored=globalThis.localStorage?.getItem(PREF_KEY);
   return MODES.includes(stored)?stored:'auto';
@@ -33,41 +38,57 @@ export function routePreference(){
 }
 export function setRoutePreference(mode){
  if(!MODES.includes(mode))return false;
- try{globalThis.localStorage?.setItem(PREF_KEY,mode);routePromise=null;return true;}
+ try{globalThis.localStorage?.setItem(PREF_KEY,mode);routePromises.clear();return true;}
  catch{return false;}
 }
-async function responsive(fetcher,url,timeoutMs){
- const controller=new AbortController();
- const timer=setTimeout(()=>controller.abort(),timeoutMs);
+// Both checks are safe GET requests. /v1/session intentionally answers with
+// an auth/method error, proving real HTTP routing rather than a dummy /ping.
+async function responsive(fetcher,base,timeoutMs){
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
  try{
-  const response=await fetcher(url+'/health',{method:'GET',cache:'no-store',signal:controller.signal});
-  if(!response?.ok)return false;
-  const data=await response.json();
-  return data?.ok===true;
+  const opts={method:'GET',cache:'no-store',signal:controller.signal};
+  // Run safe checks concurrently so the fallback doesn't add another full
+  // gateway round trip to the player's login or matchmaking startup.
+  // Non-simple headers make browsers verify Authorization/Content-Type CORS
+  // without creating sessions or mutating the public queue.
+  const [health,route]=await Promise.all([
+   fetcher(base+'/health',opts),
+   fetcher(base+'/v1/session',{...opts,
+    headers:{'Content-Type':'application/json','Authorization':'Bearer rpchess-route-probe'}})
+  ]);
+  if(!health?.ok||!(await health.json())?.ok)return false;
+  // Exact known Workers: Profile responds 404, Tournament responds 405.
+  // A 403 (forbidden origin), 502, 503 or redirect is never healthy.
+  return [404,405].includes(route?.status);
  }catch{return false;}finally{clearTimeout(timer);}
 }
-export async function chooseRoute({preference='auto',enabled=true,
-  fetcher=globalThis.fetch,timeoutMs=2600,direct=DIRECT}={}){
+export async function chooseRoute({service='profile',preference='auto',enabled=true,
+  fetcher=globalThis.fetch,timeoutMs=3500,direct=DIRECT,yandex=YANDEX}={}){
+ if(!Object.prototype.hasOwnProperty.call(direct,service))throw Error('Unknown RPChess API: '+service);
  if(!enabled)return 'direct';
  if(preference==='direct'||preference==='yandex')return preference;
- // Test both Workers. A profile-only health check would falsely prefer direct
- // when Tournament is blocked by a particular ISP.
- const ok=await Promise.all(
-  ['profile','tournament'].map(service=>responsive(fetcher,direct[service],timeoutMs))
- );
- return ok.every(Boolean)?'direct':'yandex';
+ if(await responsive(fetcher,direct[service],timeoutMs))return 'direct';
+ // The Yandex dummy ping alone doesn't prove its HTTP integration works.
+ // A transient upstream 502 must not be mistaken for a healthy fallback.
+ if(await responsive(fetcher,yandex+'/'+service,timeoutMs))return 'yandex';
+ throw Error('RPChess '+service+' API is unreachable via Cloudflare and Yandex');
 }
-export function chosenRoute(){
- if(!routePromise)routePromise=chooseRoute({
-  preference:routePreference(),enabled:browserEnabled()
- });
- return routePromise;
+export function chosenRoute(service='profile'){
+ if(!Object.prototype.hasOwnProperty.call(DIRECT,service))return Promise.reject(Error('Unknown RPChess API: '+service));
+ if(!routePromises.has(service)){
+  const pending=chooseRoute({service,preference:routePreference(service),enabled:browserEnabled()});
+  routePromises.set(service,pending);
+  // A failed pre-mutation probe is retriable on the NEXT user action; a
+  // successful decision is sticky so no ambiguous POST switches backends.
+  pending.catch(()=>{if(routePromises.get(service)===pending)routePromises.delete(service);});
+ }
+ return routePromises.get(service);
 }
 export async function apiBase(service,directUrl){
- // Never change legacy Tournament, v4-specific previews or other services.
- // Those use DIFFERENT Cloudflare workers and must keep their own identity.
+ // Other preview Workers are independent environments. Never redirect their
+ // tokens, rating receipts or Durable Object traffic to this public backend.
  if(!Object.prototype.hasOwnProperty.call(DIRECT,service)||directUrl!==DIRECT[service])
   return directUrl;
- return await chosenRoute()==='yandex'?YANDEX+'/'+service:directUrl;
+ return await chosenRoute(service)==='yandex'?YANDEX+'/'+service:directUrl;
 }
 export {YANDEX,DIRECT};

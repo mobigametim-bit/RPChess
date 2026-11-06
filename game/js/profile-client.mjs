@@ -143,7 +143,16 @@ function recordReconcile(data) {
 }
 function restoreProfile(profile) {
   const payload=profile?.snapshot;
-  if(!payloadHasProgress(payload))return false;
+  if(!payload||payload.schemaVersion!==1)return false;
+  if(!payloadHasProgress(payload)){
+    // A saved revision-1 account may legitimately have ZERO progress.
+    // On reload it must remain authenticated, not enter "offline" merely
+    // because restoreLocalEnvelope expects a non-empty game snapshot.
+    // Never wipe real local progress with an empty server snapshot.
+    if(payloadHasProgress(localPayload()))return false;
+    setLocalMeta(profile.revision,localPayload());
+    return true;
+  }
   const ok=restoreLocalEnvelope({payload,revision:Math.max(0,profile.revision),updatedAt:profile.updatedAt});
   if(!ok)return false;
   const local=localPayload();
@@ -401,5 +410,10 @@ async function unifiedLeaderboard({refresh=false}={}) {
 }
 // The existing Tournament client sends this credential ONLY to our staging
 // Tournament Worker. Never log it, include it in URLs, or expose it in UI.
-function tournamentCredential() { return sessionReady&&status==='ready'?token:''; }
+// A temporary D1 autosave failure switches UI sync status to "offline" but
+// does NOT revoke an already verified RPChess identity. Tournament must not
+// log the player out because an unrelated profile snapshot PUT timed out.
+// The Tournament Worker independently redeems and verifies this bearer;
+// before sessionReady there is never a credential to expose.
+function tournamentCredential() { return sessionReady&&token?token:''; }
 export {bootstrapProfile,syncNow,statusInfo,signedParams,legacyVKMeta,hasCompletedMeta,needsLegacyEnrichment,profileRestoreMatches,summaryOfMeta,unifiedLeaderboard,tournamentCredential};

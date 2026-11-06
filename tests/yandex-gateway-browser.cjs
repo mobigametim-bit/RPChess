@@ -46,8 +46,62 @@ async function main(){
   console.log('YANDEX API PATHS',JSON.stringify(requests));
   console.log('JS ERRORS',JSON.stringify(errors.slice(0,5)));
   assert.equal(errors.length,0,'JavaScript errors in game browser');
-  await page.locator('[data-tour-action="cancel"]').click().catch(()=>{});
+  await page.locator('[data-tour-action="cancel"]').click();
   console.log('CHROMIUM REAL GAME MENU, PROFILE AND PRIVATE ROOM OVER YANDEX PASS');
+
+  // Regression: on a failed public queue join the UI must not silently bounce
+  // back to setup. A retry can recover without joining the live public lobby.
+  let queueJoins=0,notifySecondJoin;
+  const failedQueueRequests=[];
+  page.on('requestfailed',req=>{if(req.url().includes('/tournament/v1/queue/'))failedQueueRequests.push({url:new URL(req.url()).pathname,method:req.method(),failure:req.failure()});});
+  const secondJoin=new Promise(resolve=>{notifySecondJoin=resolve;});
+  await page.route('**/tournament/v1/queue/join',route=>{
+   const cors={
+    'Access-Control-Allow-Origin':'https://mobigametim-bit.github.io',
+    'Access-Control-Allow-Methods':'POST, OPTIONS',
+    'Access-Control-Allow-Headers':'Authorization, Content-Type'
+   };
+   if(route.request().method()!=='POST')return route.continue();
+   queueJoins++;
+   if(queueJoins===2)notifySecondJoin();
+   return route.fulfill({
+    status:queueJoins===1?503:200,headers:{...cors,'Content-Type':'application/json'},
+    body:JSON.stringify(queueJoins===1?{error:'qa_queue_temporarily_unavailable'}:{status:'waiting'})
+   });
+  });
+  await page.locator('[data-tour-action="search"]').click();
+  await page.waitForFunction(()=>document.querySelector('[data-tour-action="search"]')
+    ?.textContent?.includes('Повторить')&&globalThis.RPChessTournament?.page==='search',
+    null,{timeout:35000});
+  const errorView=await page.locator('[data-tournament-screen]').innerText();
+  console.log('MATCHMAKING ERROR VIEW:',JSON.stringify({errorView,queueJoins,failedQueueRequests,profile:await page.evaluate(()=>({status:globalThis.RPChessProfileStatus?.status}))}));
+  assert(errorView.includes('HTTP 503: qa_queue_temporarily_unavailable'),
+   'Queue failure detail must remain visible on a dedicated retry screen');
+  // Simulate a lost response after the Worker accepted the first join:
+  // retry MUST consult read-only queue/status before sending any new join.
+  let queueStatusReads=0;
+  await page.route('**/tournament/v1/queue/status',route=>{
+   if(route.request().method()!=='POST')return route.continue();
+   queueStatusReads++;
+   return route.fulfill({status:200,
+    headers:{'Access-Control-Allow-Origin':'https://mobigametim-bit.github.io',
+     'Access-Control-Allow-Headers':'Authorization, Content-Type',
+     'Content-Type':'application/json'},
+    body:JSON.stringify({status:'waiting'})});
+  });
+  await page.locator('[data-tour-action="search"]').click();
+  await page.waitForFunction(()=>globalThis.RPChessTournament?.page==='search'
+    &&document.querySelector('.tournament-spinner')
+    &&!document.querySelector('[data-tour-action="search"]'),
+    null,{timeout:35000});
+  assert(queueStatusReads>=1,'Retry must inspect server queue after an ambiguous 503');
+  assert.equal(queueJoins,1,'Ambiguous join must not be sent twice');
+  await page.locator('[data-tour-action="cancel"]').click();
+  await page.locator('[data-tour-action="search"]').click();
+  await secondJoin;
+  assert.equal(queueJoins,2,'A genuinely new search can create a new join');
+  await page.locator('[data-tour-action="cancel"]').click();
+  console.log('PUBLIC MATCHMAKING: AMBIGUOUS 503, STATUS RECOVERY, NO DUPLICATE JOIN, NEW SEARCH PASS');
   // Simulate an ISP where direct workers.dev /health fails, while the
   // published GitHub Pages HTML/CSS/JS and Yandex API remain reachable.
   const blocked=await browser.newContext({serviceWorkers:'block',viewport:{width:1360,height:850}});

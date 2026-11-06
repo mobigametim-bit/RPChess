@@ -1,16 +1,18 @@
 /* Optional real guest match through Yandex API Gateway.
   - Mutates only temporary unrated guest test state
   - Does NOT join public matchmaking, award rating, or upload any profile
+  - Proves Yandex and direct Cloudflare share the SAME private-room lobby
   - MUST be run only after the safe CORS smoke passes
 */
 import assert from 'node:assert/strict';
 const base='https://d5ds3hf0ei1mlkgjrnlm.d8epmcec.apigw.yandexcloud.net/tournament';
 const origin='https://mobigametim-bit.github.io';
-async function post(path,body,token=''){
+const direct='https://rpchess-tournament-profile-preview.mobigametim.workers.dev';
+async function post(path,body,token='',apiBase=base){
  const controller=new AbortController();
  const timer=setTimeout(()=>controller.abort(),12000);
  try{
-  const r=await fetch(base+path,{method:'POST',signal:controller.signal,cache:'no-store',headers:{
+  const r=await fetch(apiBase+path,{method:'POST',signal:controller.signal,cache:'no-store',headers:{
     Origin:origin,'Content-Type':'application/json',
     ...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(body)});
   const data=await r.json().catch(()=>null);
@@ -54,21 +56,21 @@ console.log('YANDEX PROFILE GUEST SESSION, AUTHORIZED PUT AND RESTORE PASS');
 
 const suffix=Date.now().toString(36);
 const a=await post('/v1/session',{nick:'yc-qa-a-'+suffix,power:750,launch:''});
-const b=await post('/v1/session',{nick:'yc-qa-b-'+suffix,power:750,launch:''});
+const b=await post('/v1/session',{nick:'yc-qa-b-'+suffix,power:750,launch:''},'',direct);
 assert.equal(a.kind,'guest');assert.equal(b.kind,'guest');
 assert(a.token?.length>40&&b.token?.length>40&&a.token!==b.token);
 const room=await post('/v1/room/create',{squad:'humans',power:750},a.token);
 assert(/^[A-Z0-9]{6}$/.test(room.code));
-const joined=await post('/v1/room/join',{code:room.code,squad:'humans',power:750},b.token);
+const joined=await post('/v1/room/join',{code:room.code,squad:'humans',power:750},b.token,direct);
 assert.equal(joined.status,'matched');assert(joined.matchId);
 const path='/v1/match/'+encodeURIComponent(joined.matchId);
-const wa=await post(path+'/snapshot',{},a.token), wb=await post(path+'/snapshot',{},b.token);
+const wa=await post(path+'/snapshot',{},a.token), wb=await post(path+'/snapshot',{},b.token,direct);
 assert.equal(wa.matchId,wb.matchId);assert.notEqual(wa.playerColor,wb.playerColor);
-const white=wa.playerColor==='w'?a.token:b.token;
-const black=wa.playerColor==='b'?a.token:b.token;
-assert.equal((await post(path+'/move',{from:'e2',to:'e4'},white)).moves.length,1);
-assert.equal((await post(path+'/move',{from:'e7',to:'e5'},black)).moves.length,2);
-assert.equal((await post(path+'/snapshot',{},white)).moves.length,2);
-const end=await post(path+'/resign',{},white);
+const white=wa.playerColor==='w'?{token:a.token,route:base}:{token:b.token,route:direct};
+const black=wa.playerColor==='b'?{token:a.token,route:base}:{token:b.token,route:direct};
+assert.equal((await post(path+'/move',{from:'e2',to:'e4'},white.token,white.route)).moves.length,1);
+assert.equal((await post(path+'/move',{from:'e7',to:'e5'},black.token,black.route)).moves.length,2);
+assert.equal((await post(path+'/snapshot',{},white.token,white.route)).moves.length,2);
+const end=await post(path+'/resign',{},white.token,white.route);
 assert.equal(end.rated,false);
-console.log('YANDEX UNRATED GUEST PRIVATE MATCH, MOVES, RECONNECT AND RESIGN PASSED');
+console.log('YANDEX + DIRECT CLOUDFLARE SHARED LOBBY, UNRATED PRIVATE MATCH, MOVES, RECONNECT AND RESIGN PASSED');

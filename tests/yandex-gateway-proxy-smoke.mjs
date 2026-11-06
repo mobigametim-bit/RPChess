@@ -23,15 +23,46 @@ async function jsonGet(path,expected){
  if(expected)assert.equal(j?.service,expected,path+' wrong upstream');
  console.log('OK',path,r.status,expected||'gateway');
 }
-await jsonGet('/ping');
-await jsonGet('/probe/profile','rpchess-profile-preview');
-await jsonGet('/probe/tournament','tournament');
-await jsonGet('/profile/health','rpchess-profile-preview');
-await jsonGet('/tournament/health','tournament');
+// Distinguish a live gateway/upstream failure from a game client bug, without
+// tokens, production queue writes or Yandex Cloud logs. Do not print identities.
+async function diagnostic(name,url,method='GET'){
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),12000);
+ const start=Date.now();
+ try{
+  const headers=method==='OPTIONS'
+   ?{'Origin':trusted,'Access-Control-Request-Method':'POST',
+     'Access-Control-Request-Headers':'Authorization, Content-Type'}
+   :{};
+  const response=await fetch(url,{method,headers,cache:'no-store',signal:controller.signal});
+  return {name,status:response.status,ms:Date.now()-start,
+   origin:response.headers.get('access-control-allow-origin')===trusted,
+   contentType:response.headers.get('content-type')||'none'};
+ }catch(e){return {name,error:e?.name||'NetworkError',message:String(e?.message||e).slice(0,100),ms:Date.now()-start};}
+ finally{clearTimeout(timeout);}
+}
+const comparisons=[
+ ['yandex self ping',base+'/ping'],
+ ['direct profile health','https://rpchess-profile-preview.mobigametim.workers.dev/health'],
+ ['gateway profile health',base+'/profile/health'],
+ ['gateway profile probe',base+'/probe/profile'],
+ ['direct tournament health','https://rpchess-tournament-profile-preview.mobigametim.workers.dev/health'],
+ ['gateway tournament health',base+'/tournament/health'],
+ ['gateway tournament probe',base+'/probe/tournament'],
+ ['direct profile preflight','https://rpchess-profile-preview.mobigametim.workers.dev/v1/session','OPTIONS'],
+ ['gateway profile preflight',base+'/profile/v1/session','OPTIONS'],
+ ['direct queue preflight','https://rpchess-tournament-profile-preview.mobigametim.workers.dev/v1/queue/join','OPTIONS'],
+ ['gateway queue preflight',base+'/tournament/v1/queue/join','OPTIONS']
+];
+console.log('GATEWAY / DIRECT NETWORK COMPARISON START');
+for(const row of await Promise.all(comparisons.map(x=>diagnostic(...x))))
+ console.log('NETWORK COMPARE',JSON.stringify(row));
+console.log('GATEWAY / DIRECT NETWORK COMPARISON END');
 for(const item of [
  {path:'/profile/v1/session',method:'POST'},
  {path:'/profile/v1/profile',method:'PUT'},
- {path:'/tournament/v1/session',method:'POST'}
+ {path:'/tournament/v1/session',method:'POST'},
+ {path:'/tournament/v1/queue/join',method:'POST'}
 ]){
  const r=await fetchApi(item.path,{method:'OPTIONS',headers:{
   'Origin':trusted,
@@ -47,6 +78,11 @@ for(const item of [
  assert(allowedMethods.includes(item.method),'method not allowed by CORS');
  assert(/Authorization/i.test(allowedHeaders),'Authorization not allowed by CORS');
 }
+await jsonGet('/ping');
+await jsonGet('/probe/profile','rpchess-profile-preview');
+await jsonGet('/probe/tournament','tournament');
+await jsonGet('/profile/health','rpchess-profile-preview');
+await jsonGet('/tournament/health','tournament');
 const forbidden=await fetchApi('/tournament/v1/session',{
  method:'OPTIONS',headers:{'Origin':blocked,
   'Access-Control-Request-Method':'POST',

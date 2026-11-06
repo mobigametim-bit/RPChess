@@ -11,7 +11,7 @@ import { RACE_TAGS, RACE_LABELS, racePiecePath, applyRaceBoardTheme } from './ra
 import { readPlayerRating, importTournamentRatingReceipt, ratingDelta } from './player-rating.mjs';
 import { currentLanguage, subscribe } from './i18n.mjs';
 import { platform } from './platform.mjs';
-import { apiBase } from './api-route.mjs';
+import { apiBase, DIRECT } from './api-route.mjs';
 import { readRun } from './run-persistence.mjs';
 import { readChronicle } from './chronicle-core.mjs';
 import { commanderPortrait,normalizeCommanderId } from './commander-portraits.mjs';
@@ -26,22 +26,31 @@ document.querySelector('#app')?.append(root);
 const menu=document.querySelector('[data-reboot-foundation]');
 const button=document.querySelector('[data-tournament-open]');
 const STORAGE_KEY='rpchess.reboot.v1.tournament-ui';
+// Only the canonical Tournament backend may use the shared public queue.
+// Preserve isolated v4/offline previews and an explicit legacy rollback
+// while migrating live clients; never migrate existing Durable Object data.
+const legacyTournamentAPI=document.querySelector('meta[name="rpchess-tournament-api"]')?.content?.trim()||'';
+const backendOverride=new URLSearchParams(globalThis.location?.search||'').get('rpchess_tournament_backend');
 const API=globalThis.location?.hostname==='rpchess-shadow-preview.mobigametim.workers.dev'
- ? '' // Shadow acceptance runs entirely offline; never touch production PvP.
+ ? '' // Shadow acceptance stays entirely offline.
  :globalThis.location?.hostname==='rpchess-tournament-v4-preview.mobigametim.workers.dev'
  ? 'https://rpchess-tournament-v4-api-preview.mobigametim.workers.dev'
- :platform.profileEnabled
- ? 'https://rpchess-tournament-profile-preview.mobigametim.workers.dev'
- : (document.querySelector('meta[name="rpchess-tournament-api"]')?.content?.trim()||'');
+ :backendOverride==='legacy'
+ ? legacyTournamentAPI
+ :legacyTournamentAPI&&
+   !['https://rpchess-tournament-preview.mobigametim.workers.dev',DIRECT.tournament].includes(legacyTournamentAPI)
+ ? legacyTournamentAPI // a deliberately configured independent preview
+ : DIRECT.tournament;
 const EN=['Humans','Elves','Orcs','Undead','Dark elves','Dwarves','Demons','Angels','Dragonkin','Beastfolk','Constructs','Animals','Fae','Goblins'];
 const words={
- ru:{title:'Турнир',back:'Главное меню',subtitle:'Шахматный бой с настоящим соперником',clock:'Классика · 10 минут',clockNote:'По 10 минут каждому игроку, без добавления секунд',squad:'Ваш отряд',pick:'Выберите доступный скин, купленный на Арене',power:'Мощь',shards:'Осколки чести',find:'Найти соперника',invite:'Пригласить друга',join:'Войти по коду',owned:'Открыт',locked:'Не куплен',search:'Поиск соперника',searchHint:'Подбираем живого игрока по Мощи',cancel:'Отменить поиск',bot:'Сыграть с ИИ на Арене',offline:'Сервер Турнира ещё не подключён. PvP станет доступен после отдельной серверной приёмки.',searchPending:'Ожидание соперника',wait:'В поиске',noMatch:'Соперник пока не найден. Можно продолжить поиск или сыграть с ИИ на Арене.',continue:'Продолжить поиск',waitFriend:'Ожидание друга',room:'Код комнаты',copy:'Копировать код',link:'Копировать ссылку',private:'Приватная партия · 10+0',entry:'Введите код приглашения',enter:'Присоединиться',closeRoom:'Отменить комнату',match:'Матч',you:'Вы',opponent:'Противник',draw:'Предложить ничью',resign:'Сдаться',leave:'К Турниру',yourTurn:'Ваш ход',theirTurn:'Ход соперника',connection:'Соединение',result:'Результат',again:'Найти ещё соперника',notice:'Это реальный PvP: бот никогда не выдаётся за человека.',loading:'Подключение…',error:'Ошибка соединения',needServer:'Онлайн-матчи пока недоступны',newInvite:'Создать комнату',review:'Анализировать',shadow:'Бой с тенью',shadowTime:'Время партии',noClock:'Без времени',startShadow:'Играть',resumeShadow:'Продолжить',shadowWinWhite:'Победа белых',shadowWinBlack:'Победа чёрных',shadowDraw:'Ничья',shadowTurn:'Ход',shadowNew:'Новая партия',shadowDrawAction:'Ничья',shadowLocal:'Локальная партия · рейтинг не изменяется'},
- en:{title:'Tournament',back:'Main menu',subtitle:'Real chess against another player',clock:'Classic · 10 minutes',clockNote:'10 minutes per player, no increment',squad:'Your squad',pick:'Choose an Arena squad you own',power:'Power',shards:'Honor shards',find:'Find opponent',invite:'Invite a friend',join:'Join by code',owned:'Owned',locked:'Locked',search:'Matchmaking',searchHint:'Looking for a real player near your power',cancel:'Cancel search',bot:'Play AI in Arena',offline:'Tournament server is not connected yet. PvP goes live after separate server testing.',searchPending:'Waiting for opponent',wait:'Searching',noMatch:'No opponent found yet. Continue searching or play Arena AI.',continue:'Keep searching',waitFriend:'Waiting for friend',room:'Room code',copy:'Copy code',link:'Copy invite URL',private:'Private game · 10+0',entry:'Enter invite code',enter:'Join',closeRoom:'Close room',match:'Match',you:'You',opponent:'Opponent',draw:'Offer draw',resign:'Resign',leave:'Tournament',yourTurn:'Your move',theirTurn:"Opponent's move",connection:'Connection',result:'Result',again:'Find another player',notice:'Real PvP only: AI is never disguised as a human.',loading:'Connecting…',error:'Connection error',needServer:'Online unavailable',newInvite:'Create room',review:'Analyze',shadow:'Shadow Battle',shadowTime:'Game clock',noClock:'Unlimited',startShadow:'Play',resumeShadow:'Resume',shadowWinWhite:'White wins',shadowWinBlack:'Black wins',shadowDraw:'Draw',shadowTurn:'To move',shadowNew:'New game',shadowDrawAction:'Draw',shadowLocal:'Local match · ratings unchanged'}
+ ru:{title:'Турнир',back:'Главное меню',subtitle:'Шахматный бой с настоящим соперником',clock:'Классика · 10 минут',clockNote:'По 10 минут каждому игроку, без добавления секунд',squad:'Ваш отряд',pick:'Выберите доступный скин, купленный на Арене',power:'Мощь',shards:'Осколки чести',find:'Найти соперника',invite:'Пригласить друга',join:'Войти по коду',owned:'Открыт',locked:'Не куплен',search:'Поиск соперника',searchHint:'Подбираем живого игрока по Мощи',cancel:'Отменить поиск',bot:'Сыграть с ИИ на Арене',offline:'Сервер Турнира ещё не подключён. PvP станет доступен после отдельной серверной приёмки.',searchPending:'Ожидание соперника',searchRetry:'Повторить поиск',searchBack:'К подготовке',searchError:'Не удалось начать поиск',wait:'В поиске',noMatch:'Соперник пока не найден. Можно продолжить поиск или сыграть с ИИ на Арене.',continue:'Продолжить поиск',waitFriend:'Ожидание друга',room:'Код комнаты',copy:'Копировать код',link:'Копировать ссылку',private:'Приватная партия · 10+0',entry:'Введите код приглашения',enter:'Присоединиться',closeRoom:'Отменить комнату',match:'Матч',you:'Вы',opponent:'Противник',draw:'Предложить ничью',resign:'Сдаться',leave:'К Турниру',yourTurn:'Ваш ход',theirTurn:'Ход соперника',connection:'Соединение',result:'Результат',again:'Найти ещё соперника',notice:'Это реальный PvP: бот никогда не выдаётся за человека.',loading:'Подключение…',error:'Ошибка соединения',needServer:'Онлайн-матчи пока недоступны',newInvite:'Создать комнату',review:'Анализировать',shadow:'Бой с тенью',shadowTime:'Время партии',noClock:'Без времени',startShadow:'Играть',resumeShadow:'Продолжить',shadowWinWhite:'Победа белых',shadowWinBlack:'Победа чёрных',shadowDraw:'Ничья',shadowTurn:'Ход',shadowNew:'Новая партия',shadowDrawAction:'Ничья',shadowLocal:'Локальная партия · рейтинг не изменяется'},
+ en:{title:'Tournament',back:'Main menu',subtitle:'Real chess against another player',clock:'Classic · 10 minutes',clockNote:'10 minutes per player, no increment',squad:'Your squad',pick:'Choose an Arena squad you own',power:'Power',shards:'Honor shards',find:'Find opponent',invite:'Invite a friend',join:'Join by code',owned:'Owned',locked:'Locked',search:'Matchmaking',searchHint:'Looking for a real player near your power',cancel:'Cancel search',bot:'Play AI in Arena',offline:'Tournament server is not connected yet. PvP goes live after separate server testing.',searchPending:'Waiting for opponent',searchRetry:'Retry search',searchBack:'Back to setup',searchError:'Could not start matchmaking',wait:'Searching',noMatch:'No opponent found yet. Continue searching or play Arena AI.',continue:'Keep searching',waitFriend:'Waiting for friend',room:'Room code',copy:'Copy code',link:'Copy invite URL',private:'Private game · 10+0',entry:'Enter invite code',enter:'Join',closeRoom:'Close room',match:'Match',you:'You',opponent:'Opponent',draw:'Offer draw',resign:'Resign',leave:'Tournament',yourTurn:'Your move',theirTurn:"Opponent's move",connection:'Connection',result:'Result',again:'Find another player',notice:'Real PvP only: AI is never disguised as a human.',loading:'Connecting…',error:'Connection error',needServer:'Online unavailable',newInvite:'Create room',review:'Analyze',shadow:'Shadow Battle',shadowTime:'Game clock',noClock:'Unlimited',startShadow:'Play',resumeShadow:'Resume',shadowWinWhite:'White wins',shadowWinBlack:'Black wins',shadowDraw:'Draw',shadowTurn:'To move',shadowNew:'New game',shadowDrawAction:'Draw',shadowLocal:'Local match · ratings unchanged'}
 };
-let page='setup',squad='humans',queueSince=0,searchJob=null,session=null,live=null,roomCode='',message='',tabVisible=false;
+let page='setup',squad='humans',queueSince=0,searchJob=null,searchFailure=false,searchAttempt=0,queueMayExist=false,session=null,live=null,roomCode='',message='',tabVisible=false;
 let lastSearch=0;
 let matchState=null,chess=null,selectedSquare=null,matchJob=null,matchRendered=false,lastSnapshotAt=0,busyMove=false,dragActive=false;
 let ratedReceipt=null,resumeSerial=0,connectJob=null,tournamentProfile=null;
+let queueWriteJob=Promise.resolve(); // serialize join/cancel so a late join cannot outlive its cancel
 let chosenMode='online',shadowClock='unlimited',shadowGame=null;
 // Arena-matched 290 ms smooth move flight for authoritative server moves.
 let pendingFlight=null,moveFlyer=null,captureGhost=null,moveAnimation=null,moveAnimationSerial=0;
@@ -115,10 +124,11 @@ function setup(){
           (loadShadowGame(platform.storage.local)?.status==='playing'?action('shadow-resume',t('resumeShadow')):''):
         action('search',t('find'))+action('invite',t('invite'))+action('join-screen',t('join')))+
       '</div>'+
-      (API||chosenMode==='shadow'?'':notice(t('offline')))+
+      (message?notice(message):(API||chosenMode==='shadow'?'':notice(t('offline'))))+
     '</div></section>';
 }
 function search(){
+ if(searchFailure)return '<section class="tournament-card tournament-center" role="alert"><h2>'+t('error')+'</h2><p>'+t('searchError')+'</p><div class="tournament-actions">'+action('search',t('searchRetry'))+action('cancel',t('searchBack'))+'</div>'+notice(message)+'</section>';
  const sec=Math.floor((Date.now()-queueSince)/1000);
  return '<section class="tournament-card tournament-center"><div class="tournament-spinner">♞</div><h2>'+t('search')+'</h2><p>'+t('searchHint')+'</p><strong>'+Math.floor(sec/60).toString().padStart(2,'0')+':'+(sec%60).toString().padStart(2,'0')+'</strong><div class="tournament-actions">'+action('cancel',t('cancel'))+action('arena',t('bot'))+'</div>'+notice(message||t('noMatch'))+'</section>';
 }
@@ -460,8 +470,20 @@ async function call(path,data){
  if(session?.token)headers.Authorization='Bearer '+session.token;
  const response=await fetch(await endpoint(path),{method:'POST',headers,body:JSON.stringify(data||{})});
  const json=await response.json().catch(()=>({}));
- if(!response.ok)throw Error(json.error||t('error'));
+ if(!response.ok){
+  // An expired signed Tournament session must be refreshed on the next
+  // explicit user action. Never resend this POST automatically.
+  if(response.status===401&&path!=='/v1/session')session=null;
+  throw Object.assign(new Error(json.error||t('error')),{status:response.status});
+ }
  return json;
+}
+// Browser requests can finish out of order. Queue writes for this profile must
+// be ordered: JOIN -> CANCEL -> next JOIN. Never automatically retry a write.
+function queueWrite(path,data){
+ const job=queueWriteJob.catch(()=>{}).then(()=>call(path,data));
+ queueWriteJob=job;
+ return job;
 }
 async function connect({refreshPower=false}={}){
  // An automatic resume and a quick Invite/Search click may race. Reuse one
@@ -503,16 +525,44 @@ async function beginSearch(){
  // A previous completed match must not keep polling and redraw its Victory
  // screen over the next search (the old interval ran every 2.4 seconds).
  stopMatch();stopPolling();
+ const attempt=++searchAttempt;
+ searchFailure=false;
  live=null;matchState=null;chess=null;selectedSquare=null;matchRendered=false;ratedReceipt=null;
  queueSince=Date.now();page='search';message=t('searchPending');render();
  try{
-  await connect({refreshPower:true});
-  if(page!=='search')return; // user may have cancelled during authentication
-  const res=await call('/v1/queue/join',{squad,power:readPlayerRating().power,newSearch:true,lossStreak:0});
-  if(page!=='search')return;
+  // The Worker itself reads the current server-rated Power on queue/join.
+  // A valid session does not need two new HTTP mutations before each search.
+  await connect();
+  if(page!=='search'||!tabVisible||attempt!==searchAttempt)return;
+  if(queueMayExist){
+   // A previous join may have been committed even if Yandex returned 502.
+   // Read status before ever sending another newSearch:true, which would
+   // otherwise delete an already paired match.
+   const recovered=await call('/v1/queue/status',{});
+   if(page!=='search'||!tabVisible||attempt!==searchAttempt)return;
+   if(recovered.status==='matched'){void openMatch(recovered);return;}
+   if(recovered.status==='waiting'){
+    searchFailure=false;message=t('searchPending');render();
+    searchJob=setInterval(()=>{void pollQueue();},2400);return;
+   }
+   if(recovered.status!=='not_queued')throw Error('Unexpected queue status');
+   queueMayExist=false;
+  }
+  // Mark this BEFORE the network write: an HTTP 502 can be an ambiguous
+  // success, and the next click must check status instead of blindly retrying.
+  queueMayExist=true;
+  const res=await queueWrite('/v1/queue/join',{squad,power:readPlayerRating().power,newSearch:true,lossStreak:0});
+  if(page!=='search'||!tabVisible||attempt!==searchAttempt)return;
   if(res.status==='matched'){void openMatch(res);return;}
   searchJob=setInterval(()=>{void pollQueue();},2400);
- }catch(err){if(page==='search'){page='setup';message=err.message;render();}}
+ }catch(err){
+  if(page==='search'&&tabVisible&&attempt===searchAttempt){
+   searchFailure=true;
+   message=(err?.status?'HTTP '+err.status+': ':'')+String(err?.message||t('error'));
+   console.warn('[RPChess] Tournament matchmaking start failed:',message);
+   render();
+  }
+ }
 }
 async function pollQueue(){
  if(page!=='search')return;
@@ -529,7 +579,7 @@ async function pollQueue(){
  }catch(err){message=err.message;render();}
 }
 async function openMatch(response){
- shadowGame=null;
+ queueMayExist=false;shadowGame=null;
  stopPolling();stopMatch();live=response;page='match';message='';selectedSquare=null;matchRendered=false;ratedReceipt=null;
  await syncMatch();
  // A finished game never receives another polling interval. Otherwise the
@@ -564,17 +614,17 @@ function startShadow({resume=false}={}){
  syncShadow();
  if(page==='match'&&shadowGame.isTimed)matchJob=setInterval(syncShadow,250);
 }
-async function cancelQueue(){stopPolling();if(session&&API)await call('/v1/queue/cancel',{}).catch(()=>{});}
+async function cancelQueue(){searchAttempt++;stopPolling();queueMayExist=false;if(session&&API)await queueWrite('/v1/queue/cancel',{}).catch(()=>{});}
 async function cancelRoom(){stopPolling();if(session&&API&&roomCode)await call('/v1/room/cancel',{code:roomCode}).catch(()=>{});}
 async function makeRoom(){
  if(!API){message=t('offline');render();return;}
- try{await connect({refreshPower:true});const response=await call('/v1/room/create',{squad,power:readPlayerRating().power});roomCode=response.code;page='invite';message='';render();stopPolling();searchJob=setInterval(async()=>{if(page!=='invite')return;try{const status=await call('/v1/room/status',{code:roomCode});if(status.status==='matched')openMatch(status);}catch(e){message=e.message;render();}},2400);}
+ try{await connect();const response=await call('/v1/room/create',{squad,power:readPlayerRating().power});roomCode=response.code;page='invite';message='';render();stopPolling();searchJob=setInterval(async()=>{if(page!=='invite')return;try{const status=await call('/v1/room/status',{code:roomCode});if(status.status==='matched')openMatch(status);}catch(e){message=e.message;render();}},2400);}
  catch(err){message=err.message;render();}
 }
 async function joinRoom(){
  const code=root.querySelector('[data-tour-code]')?.value.trim().toUpperCase()||roomCode;
  if(!/^[A-Z0-9-]{4,12}$/.test(code)){message=t('entry');render();return;}
- try{await connect({refreshPower:true});const res=await call('/v1/room/join',{code,squad,power:readPlayerRating().power});if(res.status==='matched')openMatch(res);else{message=res.error||t('waitFriend');render();}}
+ try{await connect();const res=await call('/v1/room/join',{code,squad,power:readPlayerRating().power});if(res.status==='matched')openMatch(res);else{message=res.error||t('waitFriend');render();}}
  catch(err){message=err.message;render();}
 }
 button?.addEventListener('click',()=>{open();void Promise.resolve(globalThis.RPChessCloudReady).then(()=>{if(page==='setup')render();}).catch(()=>{});});

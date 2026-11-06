@@ -4,18 +4,30 @@ const path=require('node:path');
 const fs=require('node:fs');
 const {chromium}=require('playwright');
 const url=process.env.RPCHESS_ACCEPTANCE_URL;
+const secondaryUrl=process.env.RPCHESS_ACCEPTANCE_URL_SECONDARY||url;
 const navigationReady=url.includes('rpchess_gamepush=1')?'domcontentloaded':'networkidle';
 assert(url?.startsWith('https://'),'Use deployed HTTPS acceptance URL');
 const dir=process.env.RPCHESS_TOURNAMENT_SCREENSHOT_DIR||'test-results/tournament';
 async function main(){
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
-const errors=[];
-async function client(width,height){
+const errors=[],apiFailures=[];
+async function client(width,height,clientUrl=url){
  const context=await browser.newContext({viewport:{width,height},isMobile:width<600,hasTouch:true});
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
+ page.on('response',r=>{
+  if(r.status()>=400&&new URL(r.url()).pathname.includes('/v1/')){
+   const url=new URL(r.url());
+   apiFailures.push({status:r.status(),path:url.pathname,host:url.hostname});
+  }
+ });
+ page.on('requestfailed',r=>{
+  const url=new URL(r.url());
+  if(url.pathname.includes('/v1/'))
+   apiFailures.push({failed:true,path:url.pathname,host:url.hostname,reason:r.failure()?.errorText?.slice(0,100)});
+ });
  // GamePush initializes with background network traffic; networkidle is not a valid
  // navigation contract for its live preview. The game's own loading gate is authoritative.
- await page.goto(url,{waitUntil:navigationReady,timeout:45000});
+ await page.goto(clientUrl,{waitUntil:navigationReady,timeout:45000});
  await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
  await page.locator('[data-tournament-open]').click();
  await page.locator('[data-tournament-screen]:not([hidden])').waitFor();
@@ -60,7 +72,7 @@ try {
  await desktop.context.close();desktop=null;
 
  first=await client(390,844);
- second=await client(768,1024);
+ second=await client(768,1024,secondaryUrl);
  await first.page.locator('[data-tour-action="invite"]').click();
  await first.page.locator('.tournament-room-code').waitFor({state:'visible',timeout:15000});
  const code=(await first.page.locator('.tournament-room-code').innerText()).trim();
@@ -96,6 +108,9 @@ try {
   assert.equal(await client.locator('[data-tour-board] .rpchess-fantasy-piece').count(),32,'Tournament also renders 32 Fantasy SVGs');
   assert.equal(await client.locator('[data-tournament-screen] [data-board-view-switch]').count(),1,'One tournament art switch in the move journal');
  }
+ // v4 Tournament keeps journal controls inside a closed overlay on mobile.
+ // Open the real panel before interacting rather than clicking hidden input.
+ await white.locator('[data-tour-action="panel"]').click();
  await white.locator('[data-tournament-screen] [data-board-view-switch]').check();
  const artMode=await white.evaluate(()=>{
   const pawn=document.querySelector('[data-tour-board] [data-square="e2"]');
@@ -112,6 +127,7 @@ try {
  assert.equal(artMode.symbolDisplay,'flex','Fantasy SVG is displayed on the Tournament board');
  assert.equal(await black.evaluate(()=>document.documentElement.dataset.simplePieces),'0',
   'Another online player may independently stay in regular mode');
+ await white.locator('[data-tour-action="panel"]').click();
  async function moveByClicks(page,from,to){
   // Arena/Tournament intentionally lock input during their 290ms flight.
   // Wait for the prior server-confirmed move to land before selecting our piece.
@@ -277,8 +293,8 @@ try {
  await first.page.screenshot({path:path.join(dir,'phone-390x844-live-pvp.png'),fullPage:true});
  await second.page.screenshot({path:path.join(dir,'tablet-768x1024-live-pvp.png'),fullPage:true});
  // Test the same *live* online match at both conventional desktop sizes.
- // The board, both chess clocks and the draw/resign/leave controls must fit
- // without scrolling at these viewport heights.
+ // The board and two clocks fit without scrolling. In v4, actions and the
+ // journal intentionally live inside an overlay opened by the panel control.
  for(const [screen,width,height,label] of [
   [first.page,1898,786,'desktop-1898x786-live-pvp.png'],
   [second.page,1366,768,'desktop-1366x768-live-pvp.png'],
@@ -295,8 +311,9 @@ try {
    return {width:innerWidth,height:innerHeight,board:board&&{left:board.left,right:board.right,top:board.top,bottom:board.bottom,width:board.width},
     bars:bars.map(b=>({top:b.top,bottom:b.bottom})),
     buttons:buttons.map(b=>b&&({top:b.top,bottom:b.bottom})),
+    panelHidden:document.querySelector('#tournament-tools')?.hidden,
     leftRail:el('.tournament-battle-rail')&&{left:el('.tournament-battle-rail').left,right:el('.tournament-battle-rail').right,top:el('.tournament-battle-rail').top,bottom:el('.tournament-battle-rail').bottom},
-    journal:el('[data-tour-history]')&&{top:el('[data-tour-history]').top,bottom:el('[data-tour-history]').bottom},
+    journalPresent:!!document.querySelector('#tournament-tools [data-tour-history]'),
     nav:[...document.querySelectorAll('.tournament-battle-nav button')].map(n=>({top:n.getBoundingClientRect().top,bottom:n.getBoundingClientRect().bottom})),
     panelScroll:getComputedStyle(document.querySelector('[data-tournament-screen]')).overflowY,
     scrollHeight:document.querySelector('[data-tournament-screen]').scrollHeight,
@@ -307,14 +324,14 @@ try {
    'Desktop chess board must fit: '+JSON.stringify(layout));
   assert(layout.bars.length===2&&layout.bars.every(b=>b.top>=0&&b.bottom<=height),
    'Both player clocks must fit on desktop: '+JSON.stringify(layout));
-  assert(layout.buttons.every(b=>b&&b.top>=0&&b.bottom<=height),
-   'All match actions must fit on desktop: '+JSON.stringify(layout));
-  assert(layout.nav.length===2&&layout.nav.every(b=>b.top>=0&&b.bottom<=height),
-   'Settings and Main Menu must fit: '+JSON.stringify(layout));
-  assert(layout.journal&&layout.journal.top>=0&&layout.journal.bottom<=height,
-   'Move journal must remain in viewport: '+JSON.stringify(layout));
-  assert(layout.leftRail&&layout.leftRail.right<layout.board.left-3,
-   'Left-side panels must remain LEFT of the centered board: '+JSON.stringify(layout));
+  assert(layout.buttons.length===3&&layout.buttons.every(Boolean),
+   'Draw, resign and leave actions must remain mounted inside the panel: '+JSON.stringify(layout));
+  assert(layout.panelHidden||layout.buttons.every(b=>b.top>=0&&b.bottom<=height),
+   'Visible v4 panel actions must fit: '+JSON.stringify(layout));
+  assert(layout.nav.length===3&&layout.nav.every(b=>b.top>=0&&b.bottom<=height),
+   'Panel, Settings and Main Menu must fit: '+JSON.stringify(layout));
+  assert(layout.journalPresent,'Move journal must remain mounted in the v4 overlay');
+  assert(layout.leftRail,'Tournament player rail must remain mounted');
   assert(Math.abs((layout.board.left+layout.board.right)/2-width/2)<=2.5 &&
           Math.abs((layout.board.top+layout.board.bottom)/2-height/2)<=2.5,
    'Board must be centered within WHOLE viewport, not remaining space: '+JSON.stringify(layout));
@@ -322,6 +339,8 @@ try {
    'Landscape match must NOT require scrolling: '+JSON.stringify(layout));
   await screen.screenshot({path:path.join(dir,label)});
  }
+ if(!await white.locator('[data-tour-action="resign"]').isVisible())
+  await white.locator('[data-tour-action="panel"]').click();
  await white.locator('[data-tour-action="resign"]').click();
  await Promise.all([first.page.locator('.tournament-center h2').waitFor({timeout:16000}),second.page.locator('.tournament-center h2').waitFor({timeout:16000})]);
  // Browser acceptance uses independent guest sessions; these remain casual.
@@ -359,6 +378,16 @@ try {
  assert.deepEqual(await readPower(black),winnerPower,'Full reload must not double-award Elo');
  // Regression for real user's bug: the completed game's 2.4-second poll must
  // NOT resurrect Victory / timeout after starting a new opponent search.
+ // This is a UI-only regression: NEVER insert our automation user into the
+ // live public queue, where they could unexpectedly match a real player.
+ const fakeHeaders={'Content-Type':'application/json',
+  'Access-Control-Allow-Origin':new URL(url).origin,
+  'Access-Control-Allow-Headers':'Authorization, Content-Type'};
+ for(const endpoint of ['/v1/queue/join','/v1/queue/status']){
+  await white.route('**'+endpoint,route=>route.request().method()==='POST'
+   ?route.fulfill({status:200,headers:fakeHeaders,body:'{"status":"waiting"}'})
+   :route.continue());
+ }
  await white.locator('[data-tour-action="again"]').click();
  await white.waitForTimeout(6100);
  const state=await white.evaluate(()=>({
@@ -370,7 +399,19 @@ try {
  await white.locator('[data-tour-action="cancel"]').click();
  assert.equal(errors.length,0,'No browser page errors: '+errors.join('|'));
  console.log('TOURNAMENT TWO-BROWSER UI PASS: real mouse drag and touch drag with visible ghost, click-to-move, two players and resign');
-}catch(error){console.error('TOURNAMENT TWO-BROWSER UI FAILURE',error.message,'pageErrors:',errors);throw error;}
+}catch(error){
+ const diagnostics=await Promise.all([first,second].map(async client=>{
+  try{return {page:await client?.page?.evaluate(()=>globalThis.RPChessTournament?.page),
+   profile:await client?.page?.evaluate(()=>globalThis.RPChessProfileStatus?.status),
+   reason:await client?.page?.evaluate(()=>globalThis.RPChessProfileStatus?.reason),
+   view:(await client?.page?.locator('[data-tournament-screen]')?.innerText())?.slice(-600)};}
+  catch{return null;}
+ }));
+ console.error('TOURNAMENT TWO-BROWSER UI FAILURE',error.message,
+  'pageErrors:',errors,'apiFailures:',apiFailures.slice(-20),
+  'players:',JSON.stringify(diagnostics));
+ throw error;
+}
 finally {await Promise.all([first?.context?.close(),second?.context?.close(),desktop?.context?.close()]);await browser.close();}
 
 }

@@ -2,7 +2,7 @@ name: Yandex Gateway full proxy safe live smoke
 
 on:
   push:
-    branches: [feature/yandex-gateway-health-probe-20261106]
+    branches: [feature/yandex-gateway-health-probe-20261106, fix/tournament-search-recovery-20261106]
     paths:
       - '.github/workflows/yandex-gateway-proxy-smoke.yml'
       - 'tests/yandex-gateway-proxy-smoke.mjs'
