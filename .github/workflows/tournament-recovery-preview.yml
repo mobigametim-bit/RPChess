@@ -8,6 +8,7 @@ on:
       - 'game/**'
       - 'tests/yandex-gateway-route-local.mjs'
       - 'tests/yandex-gateway-browser.cjs'
+      - 'tests/tournament-client-browser.cjs'
       - 'profile-preview/wrangler.toml'
   workflow_dispatch:
 
@@ -72,6 +73,24 @@ jobs:
             console.log('REVIEW STATIC PREVIEW READY:',base+'/?rpchess_profile=1');
           })().catch(e=>{console.error(e);process.exitCode=1});
           NODE
+      - name: Install Chromium for genuine two-browser Tournament smoke
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+      - name: Real two-player private room — direct versus Yandex browser clients
+        env:
+          RPCHESS_ACCEPTANCE_URL: https://rpchess-profile-game-preview.mobigametim.workers.dev/?rpchess_profile=1&rpchess_api_route=direct
+          RPCHESS_ACCEPTANCE_URL_SECONDARY: https://rpchess-profile-game-preview.mobigametim.workers.dev/?rpchess_profile=1&rpchess_profile_route=direct&rpchess_tournament_route=yandex
+          RPCHESS_TOURNAMENT_SCREENSHOT_DIR: test-results/tournament-routing
+        run: node tests/tournament-client-browser.cjs
+      - name: Upload live mixed-route browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tournament-direct-vs-yandex
+          path: test-results/tournament-routing
+          if-no-files-found: warn
+          retention-days: 7
       - name: Candidate link and caveats
         run: |
           echo '### Playable candidate (staging; not main)' >> "$GITHUB_STEP_SUMMARY"
