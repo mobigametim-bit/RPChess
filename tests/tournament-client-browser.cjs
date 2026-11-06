@@ -15,14 +15,14 @@ async function client(width,height,clientUrl=url){
  const context=await browser.newContext({viewport:{width,height},isMobile:width<600,hasTouch:true});
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
  page.on('response',r=>{
-  if(r.status()>=400&&/\\/v1\\//.test(new URL(r.url()).pathname)){
+  if(r.status()>=400&&new URL(r.url()).pathname.includes('/v1/')){
    const url=new URL(r.url());
    apiFailures.push({status:r.status(),path:url.pathname,host:url.hostname});
   }
  });
  page.on('requestfailed',r=>{
   const url=new URL(r.url());
-  if(/\\/v1\\//.test(url.pathname))
+  if(url.pathname.includes('/v1/'))
    apiFailures.push({failed:true,path:url.pathname,host:url.hostname,reason:r.failure()?.errorText?.slice(0,100)});
  });
  // GamePush initializes with background network traffic; networkidle is not a valid
