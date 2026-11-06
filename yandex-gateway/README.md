@@ -133,3 +133,17 @@ node tests/yandex-gateway-health-probe.mjs https://<ваш-id>.apigw.yandexcloud
 
 Для теста без отдельного хостинга игры добавим браузерную проверку GitHub Pages с подстановкой только этих трёх новых JS-модулей в Playwright. Ветки/репозитории и основная публикация GitHub Pages/VK не меняются. Прямой браузерный тест из РФ с настоящего клиента потребуется перед слиянием.
 
+
+
+## Этап 3 — фактический браузерный тест без развёртывания игры
+
+Проверка через GitHub Actions на **настоящем Origin GitHub Pages** с временной подстановкой ТОЛЬКО модулей из ветки во время Playwright-запросов (публичную игру тест не изменяет):
+
+- [GitHub Actions 42243505643](https://github.com/mobigametim-bit/RPChess/actions/runs/42243505643): **SUCCESS**.
+- `?rpchess_profile=1&rpchess_api_route=yandex` — загрузочный экран скрывается, профиль `ready`, главное меню, открытие Турнира, создание приватной комнаты. Реальные запросы Яндекс: `POST /profile/v1/session`, `PUT /profile/v1/profile`, `POST /tournament/v1/session`, `POST /tournament/v1/profile`, `POST /tournament/v1/queue/status`, `POST /tournament/v1/room/create`. Ошибок JavaScript: 0.
+- `?rpchess_profile=1&rpchess_api_route=auto` с **имитацией блокировки прямых Cloudflare `/health`** — игра автоматически выбирает `yandex`, профиль готов и запрос создания сессии проходит через Яндекс.
+- [Тесты модулей](../tests/yandex-gateway-route-local.mjs) проверяют прямые/отключённые/принудительные маршруты, отсутствие переадресации legacy Tournament и специальных preview Workers.
+- В [scripts/build.cjs](../scripts/build.cjs) добавлен `js/api-route.mjs` в явный список файлов сборки; без этого `dist` не мог бы загрузить импортируемый модуль. Проверка полного набора тестов GitHub Pages проводится отдельно.
+
+**Ограничения приёмки:** реальное устройство и провайдер РФ (не имитация), две независимые вкладки/устройства, общая очередь и сохранение партии через перезагрузку, VK origin, ситуация с уже существующим токеном/сохранением, общий полный CI gate. Основной сайт GitHub Pages всё ещё использует старый JS до слияния; не давать `?rpchess_api_route=yandex` как ручной играбельный стенд на основном сайте. Отдельная публичная играбельная версия потребует второй публикации GitHub Pages либо отдельного согласования feature flag в `main`. Не размещать игровые файлы на Netlify или Yandex Cloud.
+
