@@ -509,8 +509,8 @@ async function connect({refreshPower=false}={}){
     if(!profileCredential){
       const detail=profile.statusInfo().reason;
       const prefix=lang()==='ru'
-        ? 'Профиль RPChess пока не подтверждён'
-        : 'RPChess profile is not authenticated yet';
+        ? 'Профиль игрока пока не подтверждён'
+        : 'Player profile is not verified yet';
       throw Error(detail?prefix+': '+detail:prefix);
     }
   }
