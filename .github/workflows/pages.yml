@@ -117,7 +117,7 @@ jobs:
         if: >-
           github.ref == 'refs/heads/main' &&
           (github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery'))))
+          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery'))))
         run: |
           node <<'NODE'
           const assert=require('node:assert/strict');
@@ -155,14 +155,14 @@ jobs:
         if: >-
           github.ref == 'refs/heads/main' &&
           (github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery'))))
+          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery'))))
         uses: actions/configure-pages@v5
 
       - name: Upload Pages artifact
         if: >-
           github.ref == 'refs/heads/main' &&
           (github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery'))))
+          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery'))))
         uses: actions/upload-pages-artifact@v4
         with:
           path: ./dist
@@ -171,7 +171,7 @@ jobs:
     if: >-
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery'))))
+      (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery'))))
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
