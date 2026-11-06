@@ -1,0 +1,80 @@
+name: Review Tournament routing recovery on isolated static preview
+
+on:
+  push:
+    branches: [fix/tournament-search-recovery-20261106]
+    paths:
+      - '.github/workflows/tournament-recovery-preview.yml'
+      - 'game/**'
+      - 'tests/yandex-gateway-route-local.mjs'
+      - 'tests/yandex-gateway-browser.cjs'
+      - 'profile-preview/wrangler.toml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rpchess-profile-static-review
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/fix/tournament-search-recovery-20261106'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Restore runtime asset cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Verify game and create static dist
+        run: |
+          npm ci --no-audit --no-fund
+          npm run gate:local
+          node tests/yandex-gateway-route-local.mjs
+      - name: Publish STATIC files to existing RPChess profile-game preview ONLY
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          # This config publishes only static assets. It does NOT deploy a
+          # Tournament Worker, touch Durable Objects, D1 or the production Pages.
+          test "$(grep '^name =' profile-preview/wrangler.toml)" = 'name = "rpchess-profile-game-preview"'
+          npx wrangler deploy --config profile-preview/wrangler.toml
+      - name: Verify published preview has this branch's module contents
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          (async()=>{
+            const base='https://rpchess-profile-game-preview.mobigametim.workers.dev';
+            const html=await fetch(base+'/?rpchess_profile=1',{cache:'no-store'});
+            assert.equal(html.status,200,'preview game not served');
+            assert((await html.text()).includes('data-tournament-open'),'unexpected preview HTML');
+            const js=await fetch(base+'/js/tournament-app.mjs',{cache:'no-store'});
+            assert.equal(js.status,200,'Tournament client not served');
+            assert((await js.text()).includes('queueMayExist'),'branch Tournament recovery is not published');
+            const api=await fetch(base+'/js/api-route.mjs',{cache:'no-store'});
+            assert.equal(api.status,200,'API transport not served');
+            assert((await api.text()).includes('routePromises=new Map'),'route isolation not published');
+            console.log('REVIEW STATIC PREVIEW READY:',base+'/?rpchess_profile=1');
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          NODE
+      - name: Candidate link and caveats
+        run: |
+          echo '### Playable candidate (staging; not main)' >> "$GITHUB_STEP_SUMMARY"
+          echo 'https://rpchess-profile-game-preview.mobigametim.workers.dev/?rpchess_profile=1' >> "$GITHUB_STEP_SUMMARY"
+          echo 'API fallback: ?rpchess_profile=1&rpchess_api_route=yandex' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Static-only deployment; existing canonical Tournament Worker and D1 were not deployed.' >> "$GITHUB_STEP_SUMMARY"
