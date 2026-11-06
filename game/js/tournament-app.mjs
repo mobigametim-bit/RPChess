@@ -25,6 +25,7 @@ document.querySelector('#app')?.append(root);
 const menu=document.querySelector('[data-reboot-foundation]');
 const button=document.querySelector('[data-tournament-open]');
 const STORAGE_KEY='rpchess.reboot.v1.tournament-ui';
+import {apiBase,routePreference,setRoutePreference} from './api-route.mjs';
 const API=globalThis.location?.hostname==='rpchess-shadow-preview.mobigametim.workers.dev'
  ? '' // Shadow acceptance runs entirely offline; never touch production PvP.
  :globalThis.location?.hostname==='rpchess-tournament-v4-preview.mobigametim.workers.dev'
@@ -114,7 +115,8 @@ function setup(){
           (loadShadowGame(platform.storage.local)?.status==='playing'?action('shadow-resume',t('resumeShadow')):''):
         action('search',t('find'))+action('invite',t('invite'))+action('join-screen',t('join')))+
       '</div>'+
-      (API||chosenMode==='shadow'?'':notice(t('offline')))+
+      (API&&chosenMode==='online'?'<label class="tournament-api-route">'+(lang()==='ru'?'Подключение':'Connection')+' <select data-tour-api-route aria-label="'+(lang()==='ru'?'Маршрут API':'API route')+'">'+['auto','direct','proxy'].map(k=>'<option value="'+k+'"'+(routePreference()===k?' selected':'')+'>'+({auto:lang()==='ru'?'Автоматически':'Automatic',direct:lang()==='ru'?'Напрямую':'Direct',proxy:lang()==='ru'?'Через прокси':'Proxy'}[k])+'</option>').join('')+'</select></label>':'')+
+      (message?notice(message):(API||chosenMode==='shadow'?'':notice(t('offline'))))+
     '</div></section>';
 }
 function search(){
@@ -452,12 +454,17 @@ function open(){
 }
 function leave(){if(shadowGame)saveShadowGame(platform.storage.local,shadowGame);shadowGame=null;resumeSerial++;if(page==='search')void cancelQueue();if(page==='invite')void cancelRoom();stopPolling();stopMatch();visible(false);}
 function stopPolling(){if(searchJob){clearInterval(searchJob);searchJob=null;}}
-function endpoint(path){return API.replace(/\/$/,'')+path;}
+async function endpoint(path){return (await apiBase('tournament',API)).replace(/\/$/,'')+path;}
 async function call(path,data){
  if(!API)throw Error(t('offline'));
  const headers={'Content-Type':'application/json'};
  if(session?.token)headers.Authorization='Bearer '+session.token;
- const response=await fetch(endpoint(path),{method:'POST',headers,body:JSON.stringify(data||{})});
+ const target=await endpoint(path);
+ const abort=new AbortController();const timer=setTimeout(()=>abort.abort(),12000);
+ let response;
+ try{response=await fetch(target,{method:'POST',headers,body:JSON.stringify(data||{}),signal:abort.signal});}
+ catch(err){throw Error(lang()==='ru'?'Нет соединения с сервером Турнира. Проверьте маршрут подключения.':'Tournament server unreachable. Check connection route.');}
+ finally{clearTimeout(timer);}
  const json=await response.json().catch(()=>({}));
  if(!response.ok)throw Error(json.error||t('error'));
  return json;
@@ -577,6 +584,10 @@ async function joinRoom(){
  catch(err){message=err.message;render();}
 }
 button?.addEventListener('click',()=>{open();void Promise.resolve(globalThis.RPChessCloudReady).then(()=>{if(page==='setup')render();}).catch(()=>{});});
+root.addEventListener('change',event=>{
+ const choice=event.target.closest('[data-tour-api-route]');
+ if(choice&&setRoutePreference(choice.value))globalThis.location.reload();
+});
 root.addEventListener('click',event=>{
  const square=event.target.closest('[data-tour-board] [data-square]');
  if(square&&chess&&matchState?.status==='playing'&&!pendingFlight){

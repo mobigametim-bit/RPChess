@@ -1,0 +1,14 @@
+[build]
+  publish = "netlify-gateway/public"
+
+[[redirects]]
+  from = "/tournament/*"
+  to = "https://rpchess-tournament-profile-preview.mobigametim.workers.dev/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/profile/*"
+  to = "https://rpchess-profile-preview.mobigametim.workers.dev/:splat"
+  status = 200
+  force = true
