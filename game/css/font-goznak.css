@@ -1,0 +1,38 @@
+/* Goznak: game-wide display typography. The two original fonts remain attributed
+   in THIRD_PARTY_NOTICES.md; legacy font files are retained for rollback.
+   Important cascade layer overrides historical unlayered font declarations. */
+@font-face {
+ font-family:'GoznakUI';
+ src:url('../fonts/Goznak-SemiBold.woff2') format('woff2');
+ font-style:normal;
+ font-weight:400 900;
+ font-display:swap;
+}
+@font-face {
+ font-family:'GoznakUI';
+ src:url('../fonts/Goznak-SemiBoldOblique.woff2') format('woff2');
+ font-style:italic;
+ font-weight:400 900;
+ font-display:swap;
+}
+@layer goznak-ui {
+ html body,
+ html body *:not(svg):not(svg *) {
+  font-family:'GoznakUI',Georgia,serif!important;
+ }
+}
+
+/* At compact desktop/tablet landscape widths, the event action's right-side
+   metadata can otherwise squeeze its English title under 180px with Goznak.
+   Stack that metadata rather than reduce readable text size. */
+@media (orientation:landscape) and (min-width:901px) and (max-width:1100px) {
+ html[data-landscape-ui='1'] body.events-active .events-choice__head {
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  align-items:start!important;
+  gap:3px!important;
+ }
+ html[data-landscape-ui='1'] body.events-active .events-choice__head > span {
+  justify-self:start!important;
+ }
+}

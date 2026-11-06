@@ -124,6 +124,29 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     }
     await setLanguage('ru');
     assert.strictEqual(await panel.locator('h2').innerText(),'Летопись');
+    // Existing Chronicle acceptance also verifies the global Goznak font:
+    // all text uses Goznak, not just Chronicle, while SVG artwork is untouched.
+    const fontPreview=await page.evaluate(async()=>{
+      await document.fonts.load("400 32px GoznakUI","Строчные буквы Aa Бб 2026");
+      await document.fonts.load("italic 400 32px GoznakUI","Наклонные Aa Бб");
+      const family=selector=>{
+        const node=document.querySelector(selector);
+        return node?getComputedStyle(node).fontFamily:null;
+      };
+      return {loaded:document.fonts.check("400 32px GoznakUI","Строчные буквы Aa Бб 2026"),
+        italic:document.fonts.check("italic 400 32px GoznakUI","Наклонные Aa Бб"),
+        body:family('body'),title:family('.chronicle-header h2'),
+        subheading:family('.chronicle-current h3'),
+        button:family('.reboot-menu-actions .reboot-button'),
+        label:family('.chronicle-section-label'),
+        otherTitle:family('.reboot-menu-screen h1')};
+    });
+    assert(fontPreview.loaded,'global Goznak web font must load');
+    assert(fontPreview.italic,'Goznak Oblique web font must load');
+    for(const [part,family] of Object.entries(fontPreview)){
+      if(part==='loaded'||part==='italic'||family===null)continue;
+      assert(family.includes('GoznakUI'),part+' must use global Goznak: '+family);
+    }
     assert((await panel.innerText()).includes('Великие полководцы'));
     if(process.env.RPCHESS_FLAG_SCREENSHOT_DIR) {
       const dir=path.resolve(process.env.RPCHESS_FLAG_SCREENSHOT_DIR);

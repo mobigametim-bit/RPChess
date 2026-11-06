@@ -12,6 +12,14 @@ RPChess is licensed under the MIT License except for third-party components and 
 
 The font may be bundled and embedded with RPChess under the terms of the SIL Open Font License 1.1. The font software is not sold by itself.
 
+## Goznak Semi Bold / Oblique (game-wide typography)
+
+- Files: `game/fonts/Goznak-SemiBold.woff2` and `game/fonts/Goznak-SemiBoldOblique.woff2`, converted from the user-supplied `goznak.zip` (two original OTF files).
+- Original design: Vladimir Adrianov; digital version: Wladyslaw Borisov (as stated in the font metadata).
+- Designer's original page: https://www.behance.net/gallery/209422945/sovetskij-shrift-goznak-Soviet-Font-Goznak . The author says the typeface may be used freely and asks for attribution when redistributed.
+- The attached ZIP does not include a license file; the font's OS/2 embedding flag is Preview & Print and the designer download tile is also labeled "Personal License". These two statements present a commercial-use ambiguity. Seek written permission for commercial web embedding and distribution; this notice does not itself grant font rights.
+- RPChess uses Goznak for the game-wide UI. Existing BrahmsGotischCyr files remain in the repository for rollback. Attribution and links are retained here.
+
 ## Stockfish.js / Stockfish 18
 
 - Runtime distribution: `vendor/stockfish/stockfish-18-lite-single.js` and `vendor/stockfish/stockfish-18-lite-single.wasm`
