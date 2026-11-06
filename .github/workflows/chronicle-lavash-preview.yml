@@ -52,7 +52,7 @@ jobs:
           pathlib.Path('/tmp/lavash.ttf').write_bytes(contents)
           print('Lavash exact user-font SHA-256 verified:',sha)
           PY
-            python3 -m pip install --disable-pip-version-check --quiet 'fonttools[woff2]'
+            python3 -m pip install --disable-pip-version-check --quiet fonttools brotli
             python3 - <<'PY'
           from fontTools.ttLib import TTFont
           from pathlib import Path
