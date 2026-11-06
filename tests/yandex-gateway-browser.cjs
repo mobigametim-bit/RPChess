@@ -48,6 +48,35 @@ async function main(){
   assert.equal(errors.length,0,'JavaScript errors in game browser');
   await page.locator('[data-tour-action="cancel"]').click().catch(()=>{});
   console.log('CHROMIUM REAL GAME MENU, PROFILE AND PRIVATE ROOM OVER YANDEX PASS');
+  // Simulate an ISP where direct workers.dev /health fails, while the
+  // published GitHub Pages HTML/CSS/JS and Yandex API remain reachable.
+  const blocked=await browser.newContext({serviceWorkers:'block',viewport:{width:1360,height:850}});
+  const probe=await blocked.newPage(),blockedApi=[];
+  probe.on('request',r=>{
+   if(r.url().startsWith(gateway+'/profile/')||r.url().startsWith(gateway+'/tournament/'))
+    blockedApi.push(new URL(r.url()).pathname);
+  });
+  await probe.route('**/RPChess/js/*',async route=>{
+   const name=new URL(route.request().url()).pathname.split('/').pop();
+   return modules.has(name)?route.fulfill({status:200,contentType:'text/javascript',body:modules.get(name)}):route.continue();
+  });
+  await probe.route('**/health',route=>{
+   return new URL(route.request().url()).hostname.endsWith('.workers.dev')
+     ?route.abort('failed'):route.continue();
+  });
+  await probe.goto(base+'?rpchess_profile=1&rpchess_api_route=auto&gateway_test=blocked-worker',
+   {waitUntil:'domcontentloaded',timeout:45000});
+  await probe.waitForFunction(()=>['ready','offline'].includes(globalThis.RPChessProfileStatus?.status),
+   null,{timeout:60000});
+  const result=await probe.evaluate(async()=>({
+   profile:globalThis.RPChessProfileStatus?.status,
+   route:await (await import('./js/api-route.mjs')).chosenRoute()
+  }));
+  assert.equal(result.profile,'ready','Guest profile failed when direct Workers blocked');
+  assert.equal(result.route,'yandex','Auto selector did not switch to Yandex');
+  assert(blockedApi.includes('/profile/v1/session'),'Auto route did not use Yandex Profile');
+  console.log('SIMULATED RUSSIAN ISP: direct workers.dev blocked, automatic Yandex fallback PASS');
+  await blocked.close();
  }catch(e){
   console.error('FAIL',String(e));
   console.error('REQUESTS',JSON.stringify(requests));

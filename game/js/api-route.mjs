@@ -64,7 +64,10 @@ export function chosenRoute(){
  return routePromise;
 }
 export async function apiBase(service,directUrl){
- if(!Object.prototype.hasOwnProperty.call(DIRECT,service))return directUrl;
+ // Never change legacy Tournament, v4-specific previews or other services.
+ // Those use DIFFERENT Cloudflare workers and must keep their own identity.
+ if(!Object.prototype.hasOwnProperty.call(DIRECT,service)||directUrl!==DIRECT[service])
+  return directUrl;
  return await chosenRoute()==='yandex'?YANDEX+'/'+service:directUrl;
 }
 export {YANDEX,DIRECT};

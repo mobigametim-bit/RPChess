@@ -15,5 +15,11 @@ assert.equal(await chooseRoute({enabled:false,preference:'yandex',direct}),'dire
 assert.equal(routePreference(),'auto');
 assert.equal(await apiBase('profile',profile),profile,'no production browser, no rerouting');
 assert.equal(await apiBase('unknown','https://example.test'),'https://example.test');
+assert.equal(await apiBase('tournament','https://rpchess-tournament-preview.mobigametim.workers.dev'),
+ 'https://rpchess-tournament-preview.mobigametim.workers.dev',
+ 'Legacy Tournament must never point to profile-backed Yandex upstream');
+assert.equal(await apiBase('profile','https://rpchess-profile-v4-preview.mobigametim.workers.dev'),
+ 'https://rpchess-profile-v4-preview.mobigametim.workers.dev',
+ 'Independent preview Profile must not be rerouted');
 assert.ok(YANDEX.endsWith('.apigw.yandexcloud.net'));
-console.log('RPChess Yandex transport selection: 10 assertions PASS');
+console.log('RPChess Yandex transport selection: 12 assertions PASS');
