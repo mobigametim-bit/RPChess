@@ -73,6 +73,7 @@ async function main(){
     ?.textContent?.includes('Повторить')&&globalThis.RPChessTournament?.page==='search',
     null,{timeout:35000});
   const errorView=await page.locator('[data-tournament-screen]').innerText();
+  console.log('MATCHMAKING ERROR VIEW:',JSON.stringify({errorView,queueJoins,profile:await page.evaluate(()=>globalThis.RPChessProfileStatus)}));
   assert(errorView.includes('HTTP 503: qa_queue_temporarily_unavailable'),
    'Queue failure detail must remain visible on a dedicated retry screen');
   await page.locator('[data-tour-action="search"]').click();
