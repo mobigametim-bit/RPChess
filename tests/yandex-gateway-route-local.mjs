@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import {chooseRoute,routePreference,apiBase,YANDEX} from '../game/js/api-route.mjs';
+import {chooseRoute,routePreference,apiBase,invalidateRoute,YANDEX} from '../game/js/api-route.mjs';
+import {platform,isVKLaunch} from '../game/js/platform.mjs';
 const profile='https://rpchess-profile-preview.mobigametim.workers.dev';
 const tour='https://rpchess-tournament-profile-preview.mobigametim.workers.dev';
 const direct={profile,tournament:tour};
@@ -29,6 +30,27 @@ assert.equal(await chooseRoute({service:'profile',preference:'direct',fetcher:of
 assert.equal(await chooseRoute({service:'profile',enabled:false,preference:'yandex',direct}),'direct');
 assert.equal(routePreference(),'auto');
 assert.equal(await apiBase('profile',profile),profile,'non-browser must not reroute');
+assert.equal(invalidateRoute('profile'),true,'failed Profile route may be rechecked on explicit retry');
+assert.equal(invalidateRoute('invalid'),false,'cannot invalidate an unknown backend');
+const priorLocation=globalThis.location;
+try{
+  for(const host of [
+   'app54754579.pages.vk-apps.ru',
+   'stage-app54754579.pages.vk-apps.com',
+   'prod-app54754579-test.pages.vk-apps.ru'
+  ]){
+   globalThis.location={hostname:host,pathname:'/index.html',search:''};
+   assert.equal(platform.profileEnabled,true,'approved mobile VK host must use verified Profile: '+host);
+   assert.equal(isVKLaunch(),true,'approved mobile VK origin must not become anonymous Web: '+host);
+  }
+  globalThis.location={hostname:'app12345678.pages.vk-apps.ru',pathname:'/',search:''};
+  assert.equal(platform.profileEnabled,false,'unrelated VK app must not share our saved profiles');
+  assert.equal(isVKLaunch(),false,'unrelated VK app must not claim our VK identity');
+}finally{
+ if(priorLocation===undefined)delete globalThis.location;
+ else globalThis.location=priorLocation;
+}
+
 assert.equal(await apiBase('unknown','https://example.test'),'https://example.test');
 assert.equal(await apiBase('tournament','https://rpchess-tournament-preview.mobigametim.workers.dev'),
  'https://rpchess-tournament-preview.mobigametim.workers.dev',
