@@ -46,7 +46,10 @@ async function responsive(fetcher,base,timeoutMs){
   const opts={method:'GET',cache:'no-store',signal:controller.signal};
   const health=await fetcher(base+'/health',opts);
   if(!health?.ok||!(await health.json())?.ok)return false;
-  const route=await fetcher(base+'/v1/session',opts);
+  // A harmless GET with non-simple headers triggers the browser's real CORS
+  // preflight for Authorization/Content-Type without creating any sessions.
+  const route=await fetcher(base+'/v1/session',{...opts,
+   headers:{'Content-Type':'application/json','Authorization':'Bearer rpchess-route-probe'}});
   // Profile responds 404, Tournament 405. A 502/503/redirect is NOT healthy.
   return [401,403,404,405].includes(route?.status);
  }catch{return false;}finally{clearTimeout(timer);}
