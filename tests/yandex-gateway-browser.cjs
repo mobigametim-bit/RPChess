@@ -11,6 +11,23 @@ const modules=new Map(names.map(n=>[n,fs.readFileSync(path.resolve(__dirname,'..
 async function verifyVKRecovery(browser){
  const context=await browser.newContext({serviceWorkers:'block',viewport:{width:1440,height:900}});
  const page=await context.newPage();
+ // Simulate a VK native Bridge. No fake vk_app_id in the browser URL:
+ // the production VK platform can independently reject forged host params.
+ await page.addInitScript(()=>{
+  window.__testVKLaunchFresh=false;
+  window.AndroidBridge={
+   VKWebAppInit(){},
+   VKWebAppGetLaunchParams(raw){
+    const {request_id}=JSON.parse(raw);
+    const data={request_id,vk_app_id:54754579,vk_user_id:777,
+      vk_ts:Math.floor(Date.now()/1000),
+      sign:window.__testVKLaunchFresh?'fresh-signed-launch':'bad-signed-launch'};
+    window.dispatchEvent(new CustomEvent('VKWebAppEvent',{
+      detail:{type:'VKWebAppGetLaunchParamsResult',data}
+    }));
+   }
+  };
+ });
  const pageErrors=[],apiRequests=[];
  page.on('pageerror',e=>pageErrors.push(String(e)));
  const origin='https://mobigametim-bit.github.io';
@@ -62,17 +79,13 @@ async function verifyVKRecovery(browser){
   return reply(404,{error:'test_unknown_route'});
  });
  try{
-  const now=Math.floor(Date.now()/1000);
-  const first=base+'?rpchess_profile=1&rpchess_api_route=direct&vk_app_id=54754579&vk_user_id=777&vk_ts='+now+'&sign=bad-signed-launch';
-  await page.goto(first,{waitUntil:'domcontentloaded',timeout:45000});
+  await page.goto(base+'?rpchess_profile=1&rpchess_api_route=direct&vk_test=1',
+   {waitUntil:'domcontentloaded',timeout:45000});
   await page.waitForFunction(()=>globalThis.RPChessProfileStatus?.status==='offline',null,{timeout:30000});
   assert.equal(verifiedLaunches,0,'VK backend must reject the first invalid signature');
   // A later valid VK host launch is available. Client must not keep the
   // rejected bootPromise forever after the user explicitly clicks Search.
-  await page.evaluate(()=>{
-   const url=new URL(location.href);url.searchParams.set('sign','fresh-signed-launch');
-   history.replaceState(null,'',url.toString());
-  });
+  await page.evaluate(()=>{window.__testVKLaunchFresh=true;});
   await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
   await page.locator('[data-tournament-open]').click();
   await page.locator('[data-tour-action="search"]').click();
@@ -99,7 +112,8 @@ async function verifyVKRecovery(browser){
    text:document.querySelector('[data-tournament-screen]')?.innerText?.().slice(0,700)
   })).catch(()=>null);
   console.error('VK RECOVERY DIAGNOSTIC',JSON.stringify({status,verifiedLaunches,queueJoins,
-   apiRequests:apiRequests.slice(-20),pageErrors:pageErrors.slice(-10)}));
+   apiRequests:apiRequests.slice(-20),pageErrors:pageErrors.slice(-10),
+   pageHost:new URL(page.url()).hostname}));
   throw error;
  }finally{await context.close();}
 }
