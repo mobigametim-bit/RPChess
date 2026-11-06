@@ -1,0 +1,27 @@
+name: Yandex Cloud API Gateway network probe
+
+on:
+  push:
+    branches:
+      - feature/yandex-gateway-health-probe-20261106
+    paths:
+      - '.github/workflows/yandex-gateway-network-probe.yml'
+      - 'tests/yandex-gateway-health-probe.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect DNS connectivity, no credentials
+        env:
+          TARGET: d5ds3hf0ei1mlkgjrnlm.d8epmcec.apigw.yandexcloud.net
+        run: |
+          node -e "require('node:dns').promises.lookup(process.env.TARGET).then(x=>console.log('Resolved gateway IPv4/IPv6:',x.family)).catch(e=>{console.error('DNS probe failed:', e.code);process.exitCode=1})"
+      - name: Check read-only Yandex /ping and Cloudflare Worker /health routes
+        run: node tests/yandex-gateway-health-probe.mjs https://d5ds3hf0ei1mlkgjrnlm.d8epmcec.apigw.yandexcloud.net
