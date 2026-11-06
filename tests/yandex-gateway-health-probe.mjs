@@ -7,8 +7,8 @@ let base;
 try{
   const value=new URL(input);
   if(value.protocol!=='https:'||value.username||value.password||value.search||value.hash||
-    !/\\.apigw\\.yandexcloud\\.net$/.test(value.hostname))throw Error('invalid Yandex API Gateway domain');
-  base=value.origin+value.pathname.replace(/\\/$/,'');
+    !value.hostname.endsWith('.apigw.yandexcloud.net'))throw Error('invalid Yandex API Gateway domain');
+  base=value.origin+value.pathname.replace(/[/]$/,'');
 }catch{
   throw Error('Usage: node tests/yandex-gateway-health-probe.mjs https://<your-id>.apigw.yandexcloud.net');
 }
