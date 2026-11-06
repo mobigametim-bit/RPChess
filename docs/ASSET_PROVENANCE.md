@@ -15,7 +15,7 @@ These assets were not intentionally imported from a commercial stock-art pack or
 Known non-RPChess-original/generated components are tracked separately, including:
 
 - `BrahmsGotischCyr.otf` — SIL OFL 1.1; attribution recorded in `THIRD_PARTY_NOTICES.md`.
-- `Goznak-SemiBold.woff2` and `Goznak-SemiBoldOblique.woff2` — font supplied by the user (original design Vladimir Adrianov, digital version Wladyslaw Borisov); provenance and license caveats recorded in `THIRD_PARTY_NOTICES.md`. Staging preview only.
+- `Goznak-SemiBold.woff2` and `Goznak-SemiBoldOblique.woff2` — font supplied by the user (original design Vladimir Adrianov, digital version Wladyslaw Borisov); provenance and license caveats recorded in `THIRD_PARTY_NOTICES.md`. Used for the game-wide UI; preserve the creator attribution and license caveat.
 - Stockfish runtime — GPLv3; source/license handling recorded in `THIRD_PARTY_NOTICES.md`.
 - Lichess Open Database Puzzles — CC0; source recorded in `THIRD_PARTY_NOTICES.md`.
 - `game/SFX/win_fanfare.mp3` — derived from `_MC5_`, `Short Brass Fanfare 1.wav`, Freesound sound 524849, CC BY 4.0; attribution recorded in `THIRD_PARTY_NOTICES.md` and `CREDITS.md`.
