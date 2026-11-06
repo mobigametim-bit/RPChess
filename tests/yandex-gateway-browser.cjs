@@ -227,7 +227,7 @@ async function verifyMobileVKTransport(browser){
  let healthyDirect=true,directPosts=0,yandexPosts=0,queueJoins=0;
  await page.route('**/*',route=>{
   const req=route.request(),url=new URL(req.url()),host=url.hostname;
-  if(![directProfile,directTournament,yandexHost].includes(host))return route.continue();
+  if(![directProfile,directTournament,yandexHost].includes(host))return route.fallback();
   const isProfile=host===directProfile||(host===yandexHost&&url.pathname.startsWith('/profile/'));
   const isTournament=host===directTournament||(host===yandexHost&&url.pathname.startsWith('/tournament/'));
   const method=req.method(),pathname=url.pathname;
