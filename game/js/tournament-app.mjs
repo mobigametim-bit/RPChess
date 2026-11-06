@@ -221,15 +221,18 @@ function showBattle(){
  };
  if(!matchRendered||!root.querySelector('[data-tour-board]')){
   root.innerHTML=
-   '<header class="tournament-battle-mobile-header"><strong>'+t('title')+' · '+(shadowGame?(shadowGame.isTimed?'10+0':'∞'):'10+0')+'</strong>'+
-      (shadowGame?'':'<button type="button" class="classic-mini-button" data-tour-action="menu">'+t('back')+'</button>')+'</header>'+
-   '<section class="tournament-match" aria-label="'+t('match')+'"><div class="tournament-match-layout">'+
+   // One header row is shared by mobile and portrait tablets. The three
+   // compact controls replace (rather than overlap) the large Main menu
+   // action. In landscape only the icon nav is shown, outside the board grid.
+   '<div class="tournament-battle-topbar">'+
+     '<header class="tournament-battle-mobile-header"><strong>'+t('title')+' · '+(shadowGame?(shadowGame.isTimed?'10+0':'∞'):'10+0')+'</strong></header>'+
      '<nav class="tournament-battle-nav" aria-label="'+t('match')+'">'+
        '<button type="button" class="classic-mini-button" data-tour-action="panel" aria-expanded="false" aria-controls="tournament-tools" title="'+
          (lang()==='ru'?'Ходы и управление':'Moves and controls')+'">☰</button>'+
        '<button type="button" class="classic-mini-button" data-tour-action="settings" title="'+(lang()==='ru'?'Настройки':'Settings')+'">⚙</button>'+
-       '<button type="button" class="classic-mini-button" data-tour-action="menu" title="'+t('back')+'">⌂</button>'+
-     '</nav>'+
+       '<button type="button" class="classic-mini-button" data-tour-action="menu" title="'+t('back')+'" aria-label="'+t('back')+'">⌂</button>'+
+     '</nav></div>'+
+   '<section class="tournament-match" aria-label="'+t('match')+'"><div class="tournament-match-layout">'+
      '<div class="tournament-battle-rail">'+panel(rival,false)+
        '<aside id="tournament-tools" class="tournament-card tournament-match-sidebar" hidden>'+
          '<h2>'+t('title')+'</h2><small class="tournament-match-kicker">'+(shadowGame?(shadowGame.isTimed?'10+0':'∞'):'10+0')+'</small>'+
