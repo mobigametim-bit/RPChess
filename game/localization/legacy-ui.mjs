@@ -1,6 +1,6 @@
 const EN_EXACT = Object.freeze({
   'Главное меню': 'Main Menu',
-  'Главное меню Героев Шаха и Мата': 'Heroes of Check and Mate Main Menu',
+  'Главное меню игры Герои Шаха и Мата': 'Heroes of Check and Mate Main Menu',
   'Новая игра': 'New Game',
   'Новая партия': 'New Game',
   'Продолжить': 'Continue',
