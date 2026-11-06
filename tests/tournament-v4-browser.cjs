@@ -138,10 +138,11 @@ async function main(){
     const root=document.querySelector('[data-tournament-screen]');
     const tile=root.querySelector('[data-tour-mode="shadow"]');
     return {height:root.clientHeight,scrollHeight:root.scrollHeight,
-      selected:tile.getAttribute('aria-pressed'),
+      selected:tile.getAttribute('aria-pressed'),label:tile.querySelector('strong')?.textContent.trim(),
       shadowButtons:[...root.querySelectorAll('.tournament-shadow-clocks button')].length};
    });
    assert.equal(shadowSetup.selected,'true');
+   assert.equal(shadowSetup.label,'Бой с тенью',label+' renamed Shadow mode label');
    assert.equal(shadowSetup.shadowButtons,2);
    if(width>height)assert(shadowSetup.scrollHeight<=shadowSetup.height+4,
      label+' Shadow mode must fit landscape without page scroll');
@@ -168,6 +169,45 @@ async function main(){
    assert(shadow.clocks.every(x=>x==='∞'),label+' unlimited time shows infinity');
    if(width>height)assert(shadow.board.height>=Math.min(height,width-150)-15,
      label+' Shadow should preserve full-height landscape chessboard');
+   // Guard all existing Chromium viewports against stacked header/menu controls.
+   const controls=await page.evaluate(()=>{
+     const root=document.querySelector('[data-tournament-screen]');
+     const header=root.querySelector('.tournament-battle-mobile-header');
+     const title=header.querySelector('strong');
+     const nav=root.querySelector('.tournament-battle-nav');
+     const board=root.querySelector('[data-tour-board]');
+     return {headerMenuCount:header.querySelectorAll('[data-tour-action="menu"]').length,
+       allMenuCount:root.querySelectorAll('[data-tour-action="menu"]').length,
+       actions:[...nav.querySelectorAll('button')].map(el=>el.dataset.tourAction),
+       visible:getComputedStyle(nav).display!=='none',
+       headerVisible:getComputedStyle(header).display!=='none',
+       nav:nav.getBoundingClientRect().toJSON(),
+       title:title.getBoundingClientRect().toJSON(),
+       board:board.getBoundingClientRect().toJSON()};
+   });
+   const overlap=(a,b)=>a.left<b.right-1&&a.right>b.left+1&&
+     a.top<b.bottom-1&&a.bottom>b.top+1;
+   assert.equal(controls.headerMenuCount,0,label+' Shadow hides duplicate header menu');
+   assert.equal(controls.allMenuCount,1,label+' Shadow has exactly one menu action');
+   assert.deepEqual(controls.actions,['panel','settings','menu'],label+' retains three compact actions');
+   assert(controls.visible,label+' mini controls must be visible');
+   assert(controls.nav.left>=0&&controls.nav.top>=0&&
+     controls.nav.right<=width+1&&controls.nav.bottom<=height+1,
+     label+' controls inside viewport: '+JSON.stringify(controls.nav));
+   assert(!overlap(controls.nav,controls.board),label+' controls must not overlay board');
+   if(height>width){
+     assert(controls.headerVisible,label+' portrait title remains visible');
+     assert(!overlap(controls.nav,controls.title),label+' controls must not overlay title');
+     assert(controls.nav.top<=controls.title.bottom+2,
+       label+' controls lifted to title row');
+   }
+   await page.locator('.tournament-battle-nav [data-tour-action="panel"]').click();
+   const drawer=await page.locator('#tournament-tools').evaluate(el=>el.getBoundingClientRect().toJSON());
+   assert(drawer.top>=controls.nav.bottom+2,label+' drawer clears mini controls');
+   assert(drawer.left>=0&&drawer.right<=width+1&&drawer.bottom<=height+1,
+     label+' drawer fits viewport');
+   await page.keyboard.press('Escape');
+   await page.locator('#tournament-tools').waitFor({state:'hidden'});
    await page.locator('[data-tour-board] [data-square="e2"]').click();
    await page.locator('[data-tour-board] [data-square="e4"]').click();
    await page.locator('[data-tour-board] [data-square="e7"]').click();

@@ -361,3 +361,18 @@
  }
  .tournament-screen--setup .tournament-shadow-tile strong {font-size:15px;}
 }
+
+/* Shadow: compact controls replace the portrait header menu button.
+   Online Tournament match positioning remains unchanged. */
+@media (orientation:portrait) {
+ .tournament-screen--match.tournament-screen--shadow .tournament-battle-mobile-header {
+  min-height:31px;padding-right:112px;
+ }
+ .tournament-screen--match.tournament-screen--shadow .tournament-battle-nav {
+  top:max(12px,env(safe-area-inset-top,0px));
+  right:max(clamp(12px,3vw,24px),calc((100vw - 768px)/2));
+ }
+ .tournament-screen--match.tournament-screen--shadow .tournament-match-sidebar:not([hidden]) {
+  top:52px;max-height:calc(100dvh - 62px);
+ }
+}
