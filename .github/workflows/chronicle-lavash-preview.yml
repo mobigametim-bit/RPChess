@@ -80,7 +80,7 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Verify Chronicle font and existing localized content in Chromium
         env:
-          RPCHESS_BROWSER_TEST: chronicle-localization-browser.cjs
+          RPCHESS_BROWSER_TEST: chronicle-localization-browser.cjs,responsive-viewport-browser.cjs
           RPCHESS_FLAG_SCREENSHOT_DIR: test-results/lavash-chronicle
         run: npm run test:browser
       - name: Upload Chronicle screenshots
