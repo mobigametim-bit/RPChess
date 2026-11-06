@@ -469,7 +469,12 @@ async function call(path,data){
  if(session?.token)headers.Authorization='Bearer '+session.token;
  const response=await fetch(await endpoint(path),{method:'POST',headers,body:JSON.stringify(data||{})});
  const json=await response.json().catch(()=>({}));
- if(!response.ok)throw Object.assign(new Error(json.error||t('error')),{status:response.status});
+ if(!response.ok){
+  // An expired signed Tournament session must be refreshed on the next
+  // explicit user action. Never resend this POST automatically.
+  if(response.status===401&&path!=='/v1/session')session=null;
+  throw Object.assign(new Error(json.error||t('error')),{status:response.status});
+ }
  return json;
 }
 async function connect({refreshPower=false}={}){
