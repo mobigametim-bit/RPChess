@@ -187,8 +187,120 @@ async function verifyVKRecovery(browser){
  }finally{await context.close();}
 }
 
+// A mobile VK WebView may lose the first profile POST while direct Cloudflare
+// appears healthy to the preflight GET probe. Do not replay the POST until
+// the player explicitly retries; at that point probe Yandex independently.
+async function verifyMobileVKTransport(browser){
+ const context=await browser.newContext({serviceWorkers:'block',isMobile:true,hasTouch:true,
+  viewport:{width:390,height:844}});
+ const page=await context.newPage(),errors=[];
+ page.on('pageerror',e=>errors.push(String(e)));
+ await page.addInitScript(()=>{
+  window.AndroidBridge={
+   VKWebAppInit(){},
+   VKWebAppGetLaunchParams(raw){
+    const {request_id}=JSON.parse(raw);
+    window.dispatchEvent(new CustomEvent('VKWebAppEvent',{detail:{
+      type:'VKWebAppGetLaunchParamsResult',
+      data:{request_id,vk_app_id:54754579,vk_user_id:777,vk_ts:Math.floor(Date.now()/1000),
+       sign:'mobile-test-signed-launch'}
+    }}));
+   }
+  };
+ });
+ const mobileModules=new Map([...modules,['platform.mjs',
+  fs.readFileSync(path.resolve(__dirname,'../game/js/platform.mjs'),'utf8')]]);
+ const html=fs.readFileSync(path.resolve(__dirname,'../game/index.html'),'utf8');
+ await page.route('**/RPChess/js/*',route=>{
+  const name=new URL(route.request().url()).pathname.split('/').pop();
+  if(!mobileModules.has(name))return route.continue();
+  return route.fulfill({status:200,contentType:'text/javascript',body:mobileModules.get(name)});
+ });
+ await page.route(/^https:\/\/mobigametim-bit\.github\.io\/RPChess\/(?:\?.*)?$/,route=>
+  route.fulfill({status:200,contentType:'text/html; charset=utf-8',body:html}));
+ const cors={'Access-Control-Allow-Origin':'https://mobigametim-bit.github.io',
+  'Access-Control-Allow-Methods':'GET,POST,PUT,OPTIONS',
+  'Access-Control-Allow-Headers':'Content-Type, Authorization','Content-Type':'application/json'};
+ const directProfile='rpchess-profile-preview.mobigametim.workers.dev';
+ const directTournament='rpchess-tournament-profile-preview.mobigametim.workers.dev';
+ const yandexHost=new URL(gateway).hostname;
+ let healthyDirect=true,directPosts=0,yandexPosts=0,queueJoins=0;
+ await page.route('**/*',route=>{
+  const req=route.request(),url=new URL(req.url()),host=url.hostname;
+  if(![directProfile,directTournament,yandexHost].includes(host))return route.continue();
+  const isProfile=host===directProfile||(host===yandexHost&&url.pathname.startsWith('/profile/'));
+  const isTournament=host===directTournament||(host===yandexHost&&url.pathname.startsWith('/tournament/'));
+  const method=req.method(),pathname=url.pathname;
+  const respond=(status,body)=>route.fulfill({status,headers:cors,body:JSON.stringify(body)});
+  if(method==='OPTIONS')return respond(204,{});
+  if(pathname.endsWith('/health')){
+   if(host===directProfile&&!healthyDirect)return respond(502,{error:'route_offline'});
+   return respond(200,{ok:true,service:isProfile?'rpchess-profile-preview':'tournament'});
+  }
+  if(pathname.endsWith('/v1/session')&&method==='GET')
+   return respond(isProfile?404:405,{error:'method_not_allowed'});
+  if(isProfile){
+   if(pathname.endsWith('/v1/session')&&method==='POST'){
+    if(host===directProfile){
+     directPosts++;healthyDirect=false;
+     return route.abort('failed'); // loss of response, NOT permission denied
+    }
+    yandexPosts++;
+    const launch=JSON.parse(req.postData()||'{}').vkLaunch||'';
+    assert(new URLSearchParams(launch).get('sign')==='mobile-test-signed-launch',
+     'Only actual signed VK launch data may authorize player');
+    return respond(200,{token:'P'.repeat(43),profile:{id:'00000000-0000-4000-8000-000000000123',
+     provider:'vk',revision:0,snapshot:{schemaVersion:1},migratedVK:false}});
+   }
+   if(pathname.endsWith('/v1/profile')&&method==='GET')
+    return respond(200,{profile:{revision:0,snapshot:{schemaVersion:1}}});
+   if(pathname.endsWith('/v1/leaderboard'))return respond(200,{top:[],me:null,viewerAuthenticated:true});
+   if(pathname.endsWith('/v1/profile')&&method==='PUT')
+    return respond(200,{profile:{revision:1}});
+  }
+  if(isTournament){
+   if(pathname.endsWith('/v1/session'))return respond(200,{token:'T'.repeat(48),kind:'vk'});
+   if(pathname.endsWith('/v1/profile'))return respond(200,{power:500,ratedGames:0});
+   if(pathname.endsWith('/v1/queue/join')){queueJoins++;return respond(200,{status:'waiting'});}
+   if(pathname.endsWith('/v1/queue/status'))return respond(200,{status:'waiting'});
+   if(pathname.endsWith('/v1/queue/cancel'))return respond(200,{status:'not_queued'});
+  }
+  return respond(404,{error:'no_mock'});
+ });
+ try{
+  await page.goto(base+'?rpchess_api_route=auto',{waitUntil:'domcontentloaded',timeout:45000});
+  await page.waitForFunction(()=>globalThis.RPChessProfileStatus?.status==='offline',null,{timeout:25000});
+  const reason=await page.evaluate(()=>globalThis.RPChessProfileStatus?.reason||'');
+  assert.match(reason,/Не удалось связаться с сервером профиля/,
+   'A mobile fetch error must have a Russian, actionable diagnostic: '+reason);
+  assert(!/RPChess|signal is aborted/i.test(reason),'No internal codename or raw abort shown');
+  assert.equal(directPosts,1,'Profile POST must not be replayed automatically');
+  await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
+  await page.locator('[data-tournament-open]').click();
+  await page.locator('[data-tour-action="search"]').click();
+  await page.waitForFunction(()=>globalThis.RPChessProfileStatus?.status==='ready'&&
+   globalThis.RPChessTournament?.page==='search'&&!!document.querySelector('.tournament-spinner'),
+   null,{timeout:35000});
+  assert.equal(directPosts,1,'Never replay failed session POST against direct route');
+  assert.equal(yandexPosts,1,'Next explicit Search must recheck and use working Yandex profile route');
+  assert.equal(queueJoins,1,'Verified VK profile should be allowed into Tournament');
+  assert.equal(errors.length,0,'Browser errors: '+errors.slice(0,3).join('|'));
+  await page.locator('[data-tour-action="cancel"]').click();
+  console.log('MOBILE VK TRANSPORT RECOVERY PASS: direct network loss shown clearly, no automatic duplicate POST, next Search reaches Yandex and Tournament');
+ }catch(error){
+  const st=await page.evaluate(()=>({profile:globalThis.RPChessProfileStatus,
+   tournament:globalThis.RPChessTournament?.page})).catch(()=>null);
+  console.error('MOBILE VK RECOVERY DIAGNOSTIC',JSON.stringify({st,directPosts,yandexPosts,queueJoins,errors}));
+  throw error;
+ }finally{await context.close();}
+}
+
 async function main(){
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ if(process.env.RPCHESS_VK_MOBILE_MOCK_ONLY==='1'){
+  try{await verifyMobileVKTransport(browser);}finally{await browser.close();}
+  return;
+ }
  if(process.env.RPCHESS_VK_AUTH_MOCK_ONLY==='1'){
   try{await verifyVKRecovery(browser);}finally{await browser.close();}
   return;
