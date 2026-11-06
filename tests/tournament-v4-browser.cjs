@@ -7,7 +7,7 @@ const url=(process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173').replace(
 const dir=process.env.RPCHESS_TOURNAMENT_V4_SCREENSHOT_DIR||'test-results/tournament-v4';
 const sizes=[
  ['phone-portrait',390,844],['phone-landscape',844,390],
- ['tablet-portrait',768,1024],['tablet-landscape',1024,768],
+ ['tablet-portrait',768,1024],['tablet-wide-portrait',820,1180],['tablet-landscape',1024,768],
  ['desktop-portrait',900,1180],['desktop-landscape',1440,840]
 ];
 const matchId='00000000-0000-4000-8000-000000000044';
@@ -121,9 +121,62 @@ async function main(){
     assert(view.l.x+view.l.width<=view.board.x+2&&view.board.x+view.board.width<=view.r.x+2,
       label+' portrait cards flank, not cover, board');
    }
+   // The phone and portrait-tablet toolbar must occupy the exact header
+   // space of the removed large Main menu button. No fixed-position nav may
+   // overlap either player card, title or board. Landscape keeps its overlay
+   // outside the centered full-size board.
+   const headerLayout=await page.evaluate(()=>{
+     const root=document.querySelector('[data-tournament-screen]');
+     const rect=sel=>root.querySelector(sel)?.getBoundingClientRect().toJSON();
+     const nav=root.querySelector('.tournament-battle-nav');
+     const buttons=[...nav.querySelectorAll('button')];
+     return {topbar:rect('.tournament-battle-topbar'),
+       title:rect('.tournament-battle-mobile-header strong'),
+       header:rect('.tournament-battle-mobile-header'),
+       nav:nav.getBoundingClientRect().toJSON(),
+       navPosition:getComputedStyle(nav).position,
+       buttons:buttons.map(b=>b.getBoundingClientRect().toJSON()),
+       actions:buttons.map(b=>b.dataset.tourAction),
+       mainMenuCount:root.querySelectorAll('[data-tour-action="menu"]').length,
+       largeMainMenuCount:root.querySelectorAll('.tournament-battle-mobile-header [data-tour-action="menu"]').length,
+       rival:rect('.tournament-clock-panel--rival'),
+       self:rect('.tournament-clock-panel--self'),
+       board:rect('[data-tour-board]')};
+   });
+   const intersects=(a,b)=>a.left<b.right-1&&a.right>b.left+1&&
+     a.top<b.bottom-1&&a.bottom>b.top+1;
+   assert.equal(headerLayout.mainMenuCount,1,label+' exactly one compact Main menu control');
+   assert.equal(headerLayout.largeMainMenuCount,0,label+' duplicate large Main menu is removed');
+   assert.deepEqual(headerLayout.actions,['panel','settings','menu'],label+' mini toolbar contains only expected actions');
+   assert.equal(headerLayout.buttons.length,3,label+' mini buttons are not duplicated');
+   assert(headerLayout.buttons.every(b=>b.width>=29&&b.height>=29&&b.left>=0&&b.right<=width+1),
+     label+' mini actions fit the viewport: '+JSON.stringify(headerLayout));
+   for(let i=0;i<headerLayout.buttons.length;i++)
+     for(let j=i+1;j<headerLayout.buttons.length;j++)
+       assert(!intersects(headerLayout.buttons[i],headerLayout.buttons[j]),
+         label+' mini buttons cannot overlap each other');
+   assert(!intersects(headerLayout.nav,headerLayout.board),
+     label+' controls cannot overlap chessboard: '+JSON.stringify(headerLayout));
+   assert(!intersects(headerLayout.nav,headerLayout.rival)&&!intersects(headerLayout.nav,headerLayout.self),
+     label+' controls cannot cover either player card: '+JSON.stringify(headerLayout));
+   if(height>width){
+     assert.equal(headerLayout.navPosition,'static',label+' portrait controls must be laid out, not fixed');
+     assert(!intersects(headerLayout.nav,headerLayout.title),label+' mini buttons cannot cover title');
+     assert(headerLayout.nav.left>=headerLayout.title.right+2,
+       label+' toolbar occupies former Main menu place on the right: '+JSON.stringify(headerLayout));
+     assert(headerLayout.nav.bottom<=headerLayout.rival.top-2,
+       label+' toolbar must end before rival card begins: '+JSON.stringify(headerLayout));
+     assert(headerLayout.nav.right<=headerLayout.topbar.right+1,
+       label+' mini buttons stay within shared title row');
+   }
    await page.screenshot({path:path.join(dir,label+'-match.png'),animations:'disabled'});
    await page.locator('[data-tour-action="panel"]').click();
    await page.locator('#tournament-tools').waitFor({state:'visible'});
+   if(height>width){
+     const drawer=await page.locator('#tournament-tools').evaluate(node=>node.getBoundingClientRect().toJSON());
+     assert(drawer.top>=headerLayout.nav.bottom+2,
+       label+' open drawer must stay below toolbar: '+JSON.stringify({drawer,nav:headerLayout.nav}));
+   }
    assert.equal(await page.locator('[data-tour-action="offer-draw"]').count(),1);
    assert.equal(await page.locator('[data-tour-action="resign"]').count(),1);
    await page.keyboard.press('Escape');
