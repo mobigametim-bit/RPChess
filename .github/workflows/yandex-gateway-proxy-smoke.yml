@@ -1,0 +1,31 @@
+name: Yandex Gateway full proxy safe live smoke
+
+on:
+  push:
+    branches: [feature/yandex-gateway-health-probe-20261106]
+    paths:
+      - '.github/workflows/yandex-gateway-proxy-smoke.yml'
+      - 'tests/yandex-gateway-proxy-smoke.mjs'
+      - 'tests/yandex-gateway-private-match-smoke.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify_proxy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: GET health, CORS preflight, unauthorized PUT, forbidden origin
+        run: node tests/yandex-gateway-proxy-smoke.mjs
+
+  guest_e2e:
+    needs: verify_proxy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Isolated guest profile PUT/GET and unrated private match with reconnection
+        run: node tests/yandex-gateway-private-match-smoke.mjs

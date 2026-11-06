@@ -2,6 +2,7 @@
 // VK signature is verified by OUR server; no login/registration UI.
 // GamePush is optional. Yandex is deliberately not integrated in this phase.
 import { platform, discoverVKHost } from './platform.mjs';
+import { apiBase } from './api-route.mjs';
 import { localPayload, payloadFingerprint, payloadHasProgress, restoreLocalEnvelope, readCloudEnvelope } from './cloud-save.mjs';
 
 const AUTH_PREFIX='rpchess.profile.auth.';
@@ -42,7 +43,7 @@ function state(next,reason='') {
   try {globalThis.dispatchEvent?.(new CustomEvent('rpchess:profile-status',{detail:{status:next,reason,provider}}));}catch{}
 }
 async function request(path,{method='GET',data=null,auth=true}={}) {
-  const base=root();
+  const base=await apiBase('profile',root());
   if(!base)throw Error('RPChess profile API endpoint not configured');
   const controller=new AbortController();
   const timeout=setTimeout(()=>controller.abort(),MAX_TIMEOUT_MS);

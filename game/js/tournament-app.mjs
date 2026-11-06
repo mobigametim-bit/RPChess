@@ -11,6 +11,7 @@ import { RACE_TAGS, RACE_LABELS, racePiecePath, applyRaceBoardTheme } from './ra
 import { readPlayerRating, importTournamentRatingReceipt, ratingDelta } from './player-rating.mjs';
 import { currentLanguage, subscribe } from './i18n.mjs';
 import { platform } from './platform.mjs';
+import { apiBase } from './api-route.mjs';
 import { readRun } from './run-persistence.mjs';
 import { readChronicle } from './chronicle-core.mjs';
 import { commanderPortrait,normalizeCommanderId } from './commander-portraits.mjs';
@@ -452,12 +453,12 @@ function open(){
 }
 function leave(){if(shadowGame)saveShadowGame(platform.storage.local,shadowGame);shadowGame=null;resumeSerial++;if(page==='search')void cancelQueue();if(page==='invite')void cancelRoom();stopPolling();stopMatch();visible(false);}
 function stopPolling(){if(searchJob){clearInterval(searchJob);searchJob=null;}}
-function endpoint(path){return API.replace(/\/$/,'')+path;}
+async function endpoint(path){return (await apiBase('tournament',API)).replace(/\/$/,'')+path;}
 async function call(path,data){
  if(!API)throw Error(t('offline'));
  const headers={'Content-Type':'application/json'};
  if(session?.token)headers.Authorization='Bearer '+session.token;
- const response=await fetch(endpoint(path),{method:'POST',headers,body:JSON.stringify(data||{})});
+ const response=await fetch(await endpoint(path),{method:'POST',headers,body:JSON.stringify(data||{})});
  const json=await response.json().catch(()=>({}));
  if(!response.ok)throw Error(json.error||t('error'));
  return json;
