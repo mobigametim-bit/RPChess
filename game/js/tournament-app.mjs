@@ -497,9 +497,21 @@ async function connect({refreshPower=false}={}){
     await globalThis.RPChessCloudReady;
     const profile=await import('./profile-client.mjs');
     profileCredential=profile.tournamentCredential();
-    if(!profileCredential)throw Error(lang()==='ru'
-      ? 'Профиль RPChess пока не подтверждён'
-      : 'RPChess profile is not authenticated yet');
+    if(!profileCredential){
+      // The first VK Bridge launch handshake may be delayed or unavailable
+      // while the rest of the menu loads. An explicit Search/Invite click
+      // may safely retry the bootstrap with CURRENT signed VK launch params.
+      // Never use a cached VK bearer as a fallback for a different account.
+      await profile.bootstrapProfile({retry:true});
+      profileCredential=profile.tournamentCredential();
+    }
+    if(!profileCredential){
+      const detail=profile.statusInfo().reason;
+      const prefix=lang()==='ru'
+        ? 'Профиль RPChess пока не подтверждён'
+        : 'RPChess profile is not authenticated yet';
+      throw Error(detail?prefix+': '+detail:prefix);
+    }
   }
   // The existing VK/GamePush launch still uses the legacy local profile
   // namespace. Send only cosmetic identity for that mode; the verified
