@@ -20,3 +20,18 @@
   font-family:'GoznakPreview',Georgia,serif!important;
  }
 }
+
+/* At compact desktop/tablet landscape widths, the event action's right-side
+   metadata can otherwise squeeze its English title under 180px with Goznak.
+   Stack that metadata rather than reduce readable text size. */
+@media (orientation:landscape) and (min-width:901px) and (max-width:1100px) {
+ html[data-landscape-ui='1'] body.events-active .events-choice__head {
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  align-items:start!important;
+  gap:3px!important;
+ }
+ html[data-landscape-ui='1'] body.events-active .events-choice__head > span {
+  justify-self:start!important;
+ }
+}
