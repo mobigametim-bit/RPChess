@@ -46,8 +46,41 @@ async function main(){
   console.log('YANDEX API PATHS',JSON.stringify(requests));
   console.log('JS ERRORS',JSON.stringify(errors.slice(0,5)));
   assert.equal(errors.length,0,'JavaScript errors in game browser');
-  await page.locator('[data-tour-action="cancel"]').click().catch(()=>{});
+  await page.locator('[data-tour-action="cancel"]').click();
   console.log('CHROMIUM REAL GAME MENU, PROFILE AND PRIVATE ROOM OVER YANDEX PASS');
+
+  // Regression: on a failed public queue join the UI must not silently bounce
+  // back to setup. A retry can recover without joining the live public lobby.
+  let queueJoins=0;
+  await page.route('**/tournament/v1/queue/join',route=>{
+   const cors={
+    'Access-Control-Allow-Origin':'https://mobigametim-bit.github.io',
+    'Access-Control-Allow-Methods':'POST, OPTIONS',
+    'Access-Control-Allow-Headers':'Authorization, Content-Type'
+   };
+   if(route.request().method()==='OPTIONS')
+    return route.fulfill({status:204,headers:cors});
+   queueJoins++;
+   return route.fulfill({
+    status:queueJoins===1?503:200,headers:{...cors,'Content-Type':'application/json'},
+    body:JSON.stringify(queueJoins===1?{error:'qa_queue_temporarily_unavailable'}:{status:'waiting'})
+   });
+  });
+  await page.locator('[data-tour-action="search"]').click();
+  await page.waitForFunction(()=>document.querySelector('[data-tour-action="search"]')
+    ?.textContent?.includes('Повторить')&&globalThis.RPChessTournament?.page==='search',
+    null,{timeout:35000});
+  const errorView=await page.locator('[data-tournament-screen]').innerText();
+  assert(errorView.includes('HTTP 503: qa_queue_temporarily_unavailable'),
+   'Queue failure detail must remain visible on a dedicated retry screen');
+  await page.locator('[data-tour-action="search"]').click();
+  await page.waitForFunction(()=>globalThis.RPChessTournament?.page==='search'
+    &&document.querySelector('.tournament-spinner')
+    &&!document.querySelector('[data-tour-action="search"]'),
+    null,{timeout:35000});
+  assert.equal(queueJoins,2,'Public queue retry should send a second POST');
+  await page.locator('[data-tour-action="cancel"]').click();
+  console.log('PUBLIC MATCHMAKING: JOIN 503 EXPLAINED, RETRY WAITING, CANCEL PASS');
   // Simulate an ISP where direct workers.dev /health fails, while the
   // published GitHub Pages HTML/CSS/JS and Yandex API remain reachable.
   const blocked=await browser.newContext({serviceWorkers:'block',viewport:{width:1360,height:850}});
