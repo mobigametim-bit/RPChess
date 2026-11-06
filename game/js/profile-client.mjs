@@ -401,5 +401,10 @@ async function unifiedLeaderboard({refresh=false}={}) {
 }
 // The existing Tournament client sends this credential ONLY to our staging
 // Tournament Worker. Never log it, include it in URLs, or expose it in UI.
-function tournamentCredential() { return sessionReady&&status==='ready'?token:''; }
+// A temporary D1 autosave failure switches UI sync status to "offline" but
+// does NOT revoke an already verified RPChess identity. Tournament must not
+// log the player out because an unrelated profile snapshot PUT timed out.
+// The Tournament Worker independently redeems and verifies this bearer;
+// before sessionReady there is never a credential to expose.
+function tournamentCredential() { return sessionReady&&token?token:''; }
 export {bootstrapProfile,syncNow,statusInfo,signedParams,legacyVKMeta,hasCompletedMeta,needsLegacyEnrichment,profileRestoreMatches,summaryOfMeta,unifiedLeaderboard,tournamentCredential};
