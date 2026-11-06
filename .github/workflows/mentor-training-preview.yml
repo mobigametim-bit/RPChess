@@ -71,14 +71,27 @@ jobs:
           const assert=require('node:assert/strict');
           (async()=>{
            const base='https://rpchess-mentor-training-preview.mobigametim.workers.dev';
-           const page=await fetch(base,{cache:'no-store'});
-           assert.equal(page.status,200);
-           assert((await page.text()).includes('js/mentor-training-app.mjs'));
-           const script=await fetch(base+'/js/mentor-training-app.mjs',{cache:'no-store'});
-           assert.equal(script.status,200);
-           assert((await script.text()).includes('RPChessMentorTraining'));
-           const css=await fetch(base+'/css/mentor-training.css',{cache:'no-store'});
-           assert.equal(css.status,200);
+           // A newly created workers.dev subdomain can briefly return 404
+           // after the deployment API has completed. Require live 200s,
+           // with bounded propagation retries instead of reporting a false outage.
+           let verified=false;
+           for(let attempt=1;attempt<=24;attempt++){
+            try{
+             const page=await fetch(base+'/?mentor_release=922ab661',{cache:'no-store'});
+             if(page.status!==200)throw Error('index HTTP '+page.status);
+             assert((await page.text()).includes('js/mentor-training-app.mjs'));
+             const script=await fetch(base+'/js/mentor-training-app.mjs',{cache:'no-store'});
+             if(script.status!==200)throw Error('script HTTP '+script.status);
+             assert((await script.text()).includes('RPChessMentorTraining'));
+             const css=await fetch(base+'/css/mentor-training.css',{cache:'no-store'});
+             if(css.status!==200)throw Error('styles HTTP '+css.status);
+             verified=true;break;
+            }catch(error){
+             console.log('Preview propagation check '+attempt+'/24: '+error.message);
+             if(attempt<24)await new Promise(resolve=>setTimeout(resolve,5000));
+            }
+           }
+           assert(verified,'isolated public preview did not become ready');
            console.log('Mentor MVP playable:',base);
           })().catch(e=>{console.error(e);process.exitCode=1});
           NODE
