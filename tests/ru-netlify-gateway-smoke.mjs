@@ -84,6 +84,17 @@ for(const [path,type] of [
  assert.ok(bytes>100,path+' is empty');
 }
 
+// Profile synchronization uses PUT; it must be forwarded instead of being
+// rejected by the test Edge bridge. Missing authentication must remain 401.
+const unauthorizedProfilePut=await request('/preview-api/profile/v1/profile',{
+ method:'PUT',headers:{'Content-Type':'application/json'},
+ body:JSON.stringify({revision:0,snapshot:{}})
+});
+const denied=await unauthorizedProfilePut.json().catch(()=>({}));
+assert.equal(unauthorizedProfilePut.status,401,
+ 'Profile PUT must reach Cloudflare and reject unauthenticated writes: '+JSON.stringify(denied));
+console.log('PROFILE PUT forwarded to upstream (401 without auth)');
+
 // Verify authorized POST forwarding with real *unrated guest* sessions and a
 // private room. Avoid the shared public queue so no live player is disrupted.
 async function tournamentPost(path,body,token=''){

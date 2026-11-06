@@ -14,8 +14,14 @@ permissions:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - name: Confirm deployed Netlify gateway and CORS preflights
         run: node tests/ru-netlify-gateway-smoke.mjs
+      - name: Install browser for actual playable-loading check
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+      - name: Verify game boots and Tournament opens in Chromium
+        run: node tests/ru-netlify-playable-browser.cjs
