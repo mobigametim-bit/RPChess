@@ -1,9 +1,10 @@
-# RPChess: READ-ONLY Yandex Cloud API Gateway connectivity probe.
-# No gameplay, player data, credentials or persistent services hosted here.
-# Paste into Yandex Cloud > API Gateway > Create > Specification.
+# RPChess API-only Yandex Cloud Gateway (staging, not yet acceptance tested).
+# Forwarding includes authenticated POST/PUT; Yandex stores no player data.
+# Game files, game hosting and state remain on GitHub Pages/VK/Cloudflare.
+# Replace the entire existing API Gateway specification with this document.
 openapi: "3.0.0"
 info:
-  title: RPChess Yandex outbound connectivity probe
+  title: RPChess Yandex API-only gateway candidate
   version: "1.0.0"
 paths:
   /ping:
