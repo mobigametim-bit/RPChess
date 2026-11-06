@@ -138,10 +138,11 @@ async function main(){
     const root=document.querySelector('[data-tournament-screen]');
     const tile=root.querySelector('[data-tour-mode="shadow"]');
     return {height:root.clientHeight,scrollHeight:root.scrollHeight,
-      selected:tile.getAttribute('aria-pressed'),
+      selected:tile.getAttribute('aria-pressed'),label:tile.querySelector('strong')?.textContent.trim(),
       shadowButtons:[...root.querySelectorAll('.tournament-shadow-clocks button')].length};
    });
    assert.equal(shadowSetup.selected,'true');
+   assert.equal(shadowSetup.label,'Бой с тенью',label+' renamed Shadow mode label');
    assert.equal(shadowSetup.shadowButtons,2);
    if(width>height)assert(shadowSetup.scrollHeight<=shadowSetup.height+4,
      label+' Shadow mode must fit landscape without page scroll');
