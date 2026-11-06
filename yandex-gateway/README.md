@@ -1,5 +1,27 @@
 # Проверка Yandex API Gateway для RPChess
 
+## Результат живой проверки — 2026-11-06
+
+Пользователь создал API Gateway с публичным служебным адресом:
+`https://d5ds3hf0ei1mlkgjrnlm.d8epmcec.apigw.yandexcloud.net`
+
+**[GitHub Actions проверка #42231590821](https://github.com/mobigametim-bit/RPChess/actions/runs/42231590821) — SUCCESS:**
+
+- DNS: внешний GitHub Runner успешно определил IPv4.
+- `GET /ping` → **HTTP 200**, `via=yandex-api-gateway`.
+- `GET /probe/profile` → **HTTP 200**, `service=rpchess-profile-preview`.
+- `GET /probe/tournament` → **HTTP 200**, `service=tournament`.
+
+Это подтверждает доступность публичного шлюза из внешней сети и HTTPS-доступ к обоим Workers **из инфраструктуры Yandex API Gateway**. Но ещё **не** доказывает доступ из российских домашних/мобильных сетей и полноценное проксирование клиентских POST/PUT/CORS, игровых сессий и матчмейкинга. Эти тесты обязательны до изменения игрового клиента.
+
+## Следующий этап
+
+1. Вручную из РФ без VPN открыть эти три URL и подтвердить ответы.
+2. Разработать отдельную версию **только API gateway** (без игровых файлов) с строго разрешёнными маршрутами, корректной передачей `Authorization`, `Origin`, `Content-Type`, `GET`, `POST`, `PUT`, `OPTIONS`, тела запроса и CORS, сохранив существующие Workers.
+3. Протестировать реальную пару игроков и сохранение/восстановление профиля без VPN. Отделить гостевой тест (без рейтинга) от VK-rated.
+4. Оставить основную игру на GitHub Pages/ВК; `main` не менять без прямого разрешения пользователя.
+
+
 **Статус:** подготовлена конфигурация теста, но ни один ресурс Yandex Cloud не создан. У нас нет подключения к аккаунту Yandex Cloud. `main`, Netlify и действующие Cloudflare Workers не изменены.
 
 Цель: выяснить, получится ли заменить нестабильный Netlify-шлюз российским Yandex API Gateway **только для HTTP API**. Все игровые файлы остаются на GitHub Pages / ВК. До успешного теста не подключать Yandex Gateway к игровому клиенту.
