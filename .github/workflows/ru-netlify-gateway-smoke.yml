@@ -1,0 +1,21 @@
+name: RU Netlify API gateway live smoke
+
+on:
+  push:
+    branches: [feature/ru-netlify-gateway-20261106]
+    paths:
+      - '.github/workflows/ru-netlify-gateway-smoke.yml'
+      - 'tests/ru-netlify-gateway-smoke.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm deployed Netlify gateway and CORS preflights
+        run: node tests/ru-netlify-gateway-smoke.mjs
