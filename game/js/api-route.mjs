@@ -64,14 +64,18 @@ async function responsive(fetcher,base,timeoutMs){
 }
 export async function chooseRoute({service='profile',preference='auto',enabled=true,
   fetcher=globalThis.fetch,timeoutMs=3500,direct=DIRECT,yandex=YANDEX}={}){
- if(!Object.prototype.hasOwnProperty.call(direct,service))throw Error('Unknown RPChess API: '+service);
+ if(!Object.prototype.hasOwnProperty.call(direct,service))throw Error('Unknown game API: '+service);
  if(!enabled)return 'direct';
  if(preference==='direct'||preference==='yandex')return preference;
  if(await responsive(fetcher,direct[service],timeoutMs))return 'direct';
  // The Yandex dummy ping alone doesn't prove its HTTP integration works.
  // A transient upstream 502 must not be mistaken for a healthy fallback.
  if(await responsive(fetcher,yandex+'/'+service,timeoutMs))return 'yandex';
- throw Error('RPChess '+service+' API is unreachable via Cloudflare and Yandex');
+ throw Error(globalThis.document?.documentElement?.lang==='ru'
+  ?(service==='profile'
+    ?'Сервер профиля игры недоступен. Проверьте соединение и повторите попытку.'
+    :'Сервер Турнира недоступен. Проверьте соединение и повторите попытку.')
+  :'Game '+service+' API is unreachable via Cloudflare and Yandex');
 }
 export function chosenRoute(service='profile'){
  if(!Object.prototype.hasOwnProperty.call(DIRECT,service))return Promise.reject(Error('Unknown RPChess API: '+service));
