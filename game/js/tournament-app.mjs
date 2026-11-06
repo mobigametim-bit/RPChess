@@ -50,6 +50,7 @@ let page='setup',squad='humans',queueSince=0,searchJob=null,searchFailure=false,
 let lastSearch=0;
 let matchState=null,chess=null,selectedSquare=null,matchJob=null,matchRendered=false,lastSnapshotAt=0,busyMove=false,dragActive=false;
 let ratedReceipt=null,resumeSerial=0,connectJob=null,tournamentProfile=null;
+let queueWriteJob=Promise.resolve(); // serialize join/cancel so a late join cannot outlive its cancel
 let chosenMode='online',shadowClock='unlimited',shadowGame=null;
 // Arena-matched 290 ms smooth move flight for authoritative server moves.
 let pendingFlight=null,moveFlyer=null,captureGhost=null,moveAnimation=null,moveAnimationSerial=0;
@@ -477,6 +478,13 @@ async function call(path,data){
  }
  return json;
 }
+// Browser requests can finish out of order. Queue writes for this profile must
+// be ordered: JOIN -> CANCEL -> next JOIN. Never automatically retry a write.
+function queueWrite(path,data){
+ const job=queueWriteJob.catch(()=>{}).then(()=>call(path,data));
+ queueWriteJob=job;
+ return job;
+}
 async function connect({refreshPower=false}={}){
  // An automatic resume and a quick Invite/Search click may race. Reuse one
  // in-flight session to avoid accidentally creating different guest IDs.
@@ -543,7 +551,7 @@ async function beginSearch(){
   // Mark this BEFORE the network write: an HTTP 502 can be an ambiguous
   // success, and the next click must check status instead of blindly retrying.
   queueMayExist=true;
-  const res=await call('/v1/queue/join',{squad,power:readPlayerRating().power,newSearch:true,lossStreak:0});
+  const res=await queueWrite('/v1/queue/join',{squad,power:readPlayerRating().power,newSearch:true,lossStreak:0});
   if(page!=='search'||!tabVisible||attempt!==searchAttempt)return;
   if(res.status==='matched'){void openMatch(res);return;}
   searchJob=setInterval(()=>{void pollQueue();},2400);
@@ -606,7 +614,7 @@ function startShadow({resume=false}={}){
  syncShadow();
  if(page==='match'&&shadowGame.isTimed)matchJob=setInterval(syncShadow,250);
 }
-async function cancelQueue(){searchAttempt++;stopPolling();queueMayExist=false;if(session&&API)await call('/v1/queue/cancel',{}).catch(()=>{});}
+async function cancelQueue(){searchAttempt++;stopPolling();queueMayExist=false;if(session&&API)await queueWrite('/v1/queue/cancel',{}).catch(()=>{});}
 async function cancelRoom(){stopPolling();if(session&&API&&roomCode)await call('/v1/room/cancel',{code:roomCode}).catch(()=>{});}
 async function makeRoom(){
  if(!API){message=t('offline');render();return;}
