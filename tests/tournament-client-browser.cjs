@@ -10,10 +10,21 @@ assert(url?.startsWith('https://'),'Use deployed HTTPS acceptance URL');
 const dir=process.env.RPCHESS_TOURNAMENT_SCREENSHOT_DIR||'test-results/tournament';
 async function main(){
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
-const errors=[];
+const errors=[],apiFailures=[];
 async function client(width,height,clientUrl=url){
  const context=await browser.newContext({viewport:{width,height},isMobile:width<600,hasTouch:true});
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
+ page.on('response',r=>{
+  if(r.status()>=400&&/\\/v1\\//.test(new URL(r.url()).pathname)){
+   const url=new URL(r.url());
+   apiFailures.push({status:r.status(),path:url.pathname,host:url.hostname});
+  }
+ });
+ page.on('requestfailed',r=>{
+  const url=new URL(r.url());
+  if(/\\/v1\\//.test(url.pathname))
+   apiFailures.push({failed:true,path:url.pathname,host:url.hostname,reason:r.failure()?.errorText?.slice(0,100)});
+ });
  // GamePush initializes with background network traffic; networkidle is not a valid
  // navigation contract for its live preview. The game's own loading gate is authoritative.
  await page.goto(clientUrl,{waitUntil:navigationReady,timeout:45000});
@@ -387,7 +398,18 @@ try {
  await white.locator('[data-tour-action="cancel"]').click();
  assert.equal(errors.length,0,'No browser page errors: '+errors.join('|'));
  console.log('TOURNAMENT TWO-BROWSER UI PASS: real mouse drag and touch drag with visible ghost, click-to-move, two players and resign');
-}catch(error){console.error('TOURNAMENT TWO-BROWSER UI FAILURE',error.message,'pageErrors:',errors);throw error;}
+}catch(error){
+ const diagnostics=await Promise.all([first,second].map(async client=>{
+  try{return {page:await client?.page?.evaluate(()=>globalThis.RPChessTournament?.page),
+   profile:await client?.page?.evaluate(()=>globalThis.RPChessProfileStatus?.status),
+   view:(await client?.page?.locator('[data-tournament-screen]')?.innerText())?.slice(-600)};}
+  catch{return null;}
+ }));
+ console.error('TOURNAMENT TWO-BROWSER UI FAILURE',error.message,
+  'pageErrors:',errors,'apiFailures:',apiFailures.slice(-20),
+  'players:',JSON.stringify(diagnostics));
+ throw error;
+}
 finally {await Promise.all([first?.context?.close(),second?.context?.close(),desktop?.context?.close()]);await browser.close();}
 
 }
