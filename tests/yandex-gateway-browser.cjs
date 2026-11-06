@@ -51,7 +51,8 @@ async function main(){
 
   // Regression: on a failed public queue join the UI must not silently bounce
   // back to setup. A retry can recover without joining the live public lobby.
-  let queueJoins=0;
+  let queueJoins=0,notifySecondJoin;
+  const secondJoin=new Promise(resolve=>{notifySecondJoin=resolve;});
   await page.route('**/tournament/v1/queue/join',route=>{
    const cors={
     'Access-Control-Allow-Origin':'https://mobigametim-bit.github.io',
@@ -61,6 +62,7 @@ async function main(){
    if(route.request().method()==='OPTIONS')
     return route.fulfill({status:204,headers:cors});
    queueJoins++;
+   if(queueJoins===2)notifySecondJoin();
    return route.fulfill({
     status:queueJoins===1?503:200,headers:{...cors,'Content-Type':'application/json'},
     body:JSON.stringify(queueJoins===1?{error:'qa_queue_temporarily_unavailable'}:{status:'waiting'})
@@ -78,6 +80,7 @@ async function main(){
     &&document.querySelector('.tournament-spinner')
     &&!document.querySelector('[data-tour-action="search"]'),
     null,{timeout:35000});
+  await secondJoin;
   assert.equal(queueJoins,2,'Public queue retry should send a second POST');
   await page.locator('[data-tour-action="cancel"]').click();
   console.log('PUBLIC MATCHMAKING: JOIN 503 EXPLAINED, RETRY WAITING, CANCEL PASS');
