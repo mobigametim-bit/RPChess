@@ -20,7 +20,7 @@ export function setRoutePreference(value){
  try{globalThis.localStorage?.setItem(SETTING,value);selected=null;return true;}catch{return false;}
 }
 const production=()=>globalThis.location?.hostname==='mobigametim-bit.github.io'&&
- /^\\/RPChess(?:\\/|$)/.test(globalThis.location?.pathname||'');
+ /^\/RPChess(?:\/|$)/.test(globalThis.location?.pathname||'');
 function timedFetch(url,{timeout=2800,fetcher=fetch}={}){
  const abort=new AbortController();
  const timer=setTimeout(()=>abort.abort(),timeout);
