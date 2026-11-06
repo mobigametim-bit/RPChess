@@ -84,6 +84,14 @@ export function chosenRoute(service='profile'){
  }
  return routePromises.get(service);
 }
+// Only forget a transport decision after a confirmed network failure (not an
+// authorization failure). An explicit subsequent player action can then test
+// both routes again. Never replay an ambiguous POST automatically.
+export function invalidateRoute(service){
+ if(!Object.prototype.hasOwnProperty.call(DIRECT,service))return false;
+ routePromises.delete(service);
+ return true;
+}
 export async function apiBase(service,directUrl){
  // Other preview Workers are independent environments. Never redirect their
  // tokens, rating receipts or Durable Object traffic to this public backend.
