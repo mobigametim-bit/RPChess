@@ -28,7 +28,15 @@ async function verifyVKRecovery(browser){
    }
   };
  });
- const pageErrors=[],apiRequests=[];
+ const pageErrors=[],apiRequests=[],patchedModules=new Set();
+ // Exercise the proposed branch modules on the public GitHub Pages origin.
+ // Without this route Chromium would silently load unpatched main instead.
+ await page.route('**/RPChess/js/*',route=>{
+  const name=new URL(route.request().url()).pathname.split('/').pop();
+  if(!modules.has(name))return route.continue();
+  patchedModules.add(name);
+  return route.fulfill({status:200,contentType:'text/javascript',body:modules.get(name)});
+ });
  page.on('pageerror',e=>pageErrors.push(String(e)));
  const origin='https://mobigametim-bit.github.io';
  const profileHost='rpchess-profile-preview.mobigametim.workers.dev';
@@ -92,6 +100,7 @@ async function verifyVKRecovery(browser){
   await page.waitForFunction(()=>globalThis.RPChessProfileStatus?.status==='ready'&&
    globalThis.RPChessTournament?.page==='search'&&
    !!document.querySelector('.tournament-spinner'),null,{timeout:30000});
+  for(const name of names)assert(patchedModules.has(name),'VK regression must test branch module '+name);
   assert.equal(verifiedLaunches,1,'Retry must submit fresh signed VK data exactly once');
   assert.equal(queueJoins,1,'Verified VK identity must reach the public queue');
   assert(apiRequests.some(x=>x.service==='tournament'&&x.pathname==='/v1/session'));
