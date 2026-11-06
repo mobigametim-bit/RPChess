@@ -183,6 +183,9 @@
 .tournament-screen--match .tournament-match-sidebar .tournament-moves{
  flex:1 1 auto;min-height:0;max-height:none;overflow-y:auto;
 }
+/* Outside portrait the icon toolbar stays in its established compact
+   landscape position without consuming space from the chessboard. */
+.tournament-screen--match .tournament-battle-topbar{display:contents}
 .tournament-screen--match .tournament-battle-nav{
  position:fixed;z-index:42;display:flex;gap:4px;top:5px;right:7px;
  width:auto;min-width:0;margin:0;
@@ -194,7 +197,28 @@
 }
 /* Phone/tablet portrait: opponent, board, own card; portrait desktop uses three columns. */
 @media (orientation:portrait){
- .tournament-screen--match .tournament-battle-mobile-header{display:flex;align-items:center;justify-content:space-between}
+ .tournament-screen--match .tournament-battle-topbar{
+   display:flex;align-items:center;justify-content:space-between;
+   gap:clamp(6px,2vw,14px);width:100%;max-width:768px;min-width:0;
+   min-height:38px;margin:0 auto 10px;padding:0;
+ }
+ .tournament-screen--match .tournament-battle-mobile-header{
+   display:flex;flex:1 1 auto;min-width:0;max-width:none;
+   align-items:center;margin:0;padding:0;
+ }
+ .tournament-screen--match .tournament-battle-mobile-header strong{
+   min-width:0;font-size:clamp(15px,3.7vw,24px);line-height:1.1;
+ }
+ .tournament-screen--match .tournament-battle-nav{
+   position:static;display:flex;flex:0 0 auto;align-items:center;
+   gap:5px;width:auto;max-width:none;height:auto;
+   min-width:0;margin:0;inset:auto;z-index:auto;overflow:visible;
+ }
+ .tournament-screen--match .tournament-battle-nav .classic-mini-button{
+   width:36px!important;min-width:36px!important;
+   height:36px!important;min-height:36px!important;
+   padding:3px!important;font-size:20px!important;
+ }
  .tournament-screen--match .tournament-battle-rail{display:contents!important}
  .tournament-screen--match .tournament-match-layout{
   display:flex!important;flex-direction:column;gap:7px;align-items:stretch;
@@ -209,7 +233,8 @@
  .tournament-screen--match .tournament-player{align-items:flex-start;flex:1 1 auto}
  .tournament-screen--match .tournament-player .tournament-race-mark{justify-content:flex-start}
  .tournament-screen--match .tournament-clock{margin-left:auto}
- .tournament-screen--match .tournament-battle-nav{top:55px;right:8px}
+ /* The three mini actions live INSIDE the title row, not fixed above the
+    opponent card. The journal drawer alone remains an overlay on demand. */
  .tournament-screen--match .tournament-match-sidebar:not([hidden]){top:92px;max-height:calc(100dvh - 102px)}
 }
 @media (orientation:portrait) and (min-width:800px){
@@ -362,17 +387,10 @@
  .tournament-screen--setup .tournament-shadow-tile strong {font-size:15px;}
 }
 
-/* Shadow: compact controls replace the portrait header menu button.
-   Online Tournament match positioning remains unchanged. */
+/* Both online PvP and Shadow use the same single, non-overlapping portrait
+   header row. The side drawer appears below that row when opened. */
 @media (orientation:portrait) {
- .tournament-screen--match.tournament-screen--shadow .tournament-battle-mobile-header {
-  min-height:31px;padding-right:112px;
- }
- .tournament-screen--match.tournament-screen--shadow .tournament-battle-nav {
-  top:max(12px,env(safe-area-inset-top,0px));
-  right:max(clamp(12px,3vw,24px),calc((100vw - 768px)/2));
- }
  .tournament-screen--match.tournament-screen--shadow .tournament-match-sidebar:not([hidden]) {
-  top:52px;max-height:calc(100dvh - 62px);
+  top:92px;max-height:calc(100dvh - 102px);
  }
 }
