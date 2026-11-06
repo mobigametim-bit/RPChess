@@ -97,6 +97,9 @@ try {
   assert.equal(await client.locator('[data-tour-board] .rpchess-fantasy-piece').count(),32,'Tournament also renders 32 Fantasy SVGs');
   assert.equal(await client.locator('[data-tournament-screen] [data-board-view-switch]').count(),1,'One tournament art switch in the move journal');
  }
+ // v4 Tournament keeps journal controls inside a closed overlay on mobile.
+ // Open the real panel before interacting rather than clicking hidden input.
+ await white.locator('[data-tour-action="panel"]').click();
  await white.locator('[data-tournament-screen] [data-board-view-switch]').check();
  const artMode=await white.evaluate(()=>{
   const pawn=document.querySelector('[data-tour-board] [data-square="e2"]');
@@ -113,6 +116,7 @@ try {
  assert.equal(artMode.symbolDisplay,'flex','Fantasy SVG is displayed on the Tournament board');
  assert.equal(await black.evaluate(()=>document.documentElement.dataset.simplePieces),'0',
   'Another online player may independently stay in regular mode');
+ await white.locator('[data-tour-action="panel"]').click();
  async function moveByClicks(page,from,to){
   // Arena/Tournament intentionally lock input during their 290ms flight.
   // Wait for the prior server-confirmed move to land before selecting our piece.
@@ -323,6 +327,8 @@ try {
    'Landscape match must NOT require scrolling: '+JSON.stringify(layout));
   await screen.screenshot({path:path.join(dir,label)});
  }
+ if(!await white.locator('[data-tour-action="resign"]').isVisible())
+  await white.locator('[data-tour-action="panel"]').click();
  await white.locator('[data-tour-action="resign"]').click();
  await Promise.all([first.page.locator('.tournament-center h2').waitFor({timeout:16000}),second.page.locator('.tournament-center h2').waitFor({timeout:16000})]);
  // Browser acceptance uses independent guest sessions; these remain casual.
