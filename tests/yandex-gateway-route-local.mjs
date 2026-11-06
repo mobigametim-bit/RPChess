@@ -22,4 +22,8 @@ assert.equal(await apiBase('profile','https://rpchess-profile-v4-preview.mobigam
  'https://rpchess-profile-v4-preview.mobigametim.workers.dev',
  'Independent preview Profile must not be rerouted');
 assert.ok(YANDEX.endsWith('.apigw.yandexcloud.net'));
-console.log('RPChess Yandex transport selection: 12 assertions PASS');
+const {readFileSync}=await import('node:fs');
+const {fileURLToPath}=await import('node:url');
+const buildSource=readFileSync(new URL('../scripts/build.cjs',import.meta.url),'utf8');
+assert(buildSource.includes("'js/api-route.mjs'"),'Production build must package the new transport module');
+console.log('RPChess Yandex transport selection and release build contract PASS');
