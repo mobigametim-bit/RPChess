@@ -52,6 +52,8 @@ async function main(){
   // Regression: on a failed public queue join the UI must not silently bounce
   // back to setup. A retry can recover without joining the live public lobby.
   let queueJoins=0,notifySecondJoin;
+  const failedQueueRequests=[];
+  page.on('requestfailed',req=>{if(req.url().includes('/tournament/v1/queue/'))failedQueueRequests.push({url:new URL(req.url()).pathname,method:req.method(),failure:req.failure()});});
   const secondJoin=new Promise(resolve=>{notifySecondJoin=resolve;});
   await page.route('**/tournament/v1/queue/join',route=>{
    const cors={
@@ -59,8 +61,7 @@ async function main(){
     'Access-Control-Allow-Methods':'POST, OPTIONS',
     'Access-Control-Allow-Headers':'Authorization, Content-Type'
    };
-   if(route.request().method()==='OPTIONS')
-    return route.fulfill({status:204,headers:cors});
+   if(route.request().method()!=='POST')return route.continue();
    queueJoins++;
    if(queueJoins===2)notifySecondJoin();
    return route.fulfill({
@@ -73,7 +74,7 @@ async function main(){
     ?.textContent?.includes('Повторить')&&globalThis.RPChessTournament?.page==='search',
     null,{timeout:35000});
   const errorView=await page.locator('[data-tournament-screen]').innerText();
-  console.log('MATCHMAKING ERROR VIEW:',JSON.stringify({errorView,queueJoins,profile:await page.evaluate(()=>globalThis.RPChessProfileStatus)}));
+  console.log('MATCHMAKING ERROR VIEW:',JSON.stringify({errorView,queueJoins,failedQueueRequests,profile:await page.evaluate(()=>({status:globalThis.RPChessProfileStatus?.status}))}));
   assert(errorView.includes('HTTP 503: qa_queue_temporarily_unavailable'),
    'Queue failure detail must remain visible on a dedicated retry screen');
   await page.locator('[data-tour-action="search"]').click();
