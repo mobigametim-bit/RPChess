@@ -222,14 +222,13 @@ function showBattle(){
  if(!matchRendered||!root.querySelector('[data-tour-board]')){
   root.innerHTML=
    '<header class="tournament-battle-mobile-header"><strong>'+t('title')+' · '+(shadowGame?(shadowGame.isTimed?'10+0':'∞'):'10+0')+'</strong>'+
-      (shadowGame?'':'<button type="button" class="classic-mini-button" data-tour-action="menu">'+t('back')+'</button>')+'</header>'+
-   '<section class="tournament-match" aria-label="'+t('match')+'"><div class="tournament-match-layout">'+
-     '<nav class="tournament-battle-nav" aria-label="'+t('match')+'">'+
+     '<nav class="tournament-battle-nav" aria-label="'+(lang()==='ru'?'Управление Турниром':'Tournament controls')+'">'+
        '<button type="button" class="classic-mini-button" data-tour-action="panel" aria-expanded="false" aria-controls="tournament-tools" title="'+
          (lang()==='ru'?'Ходы и управление':'Moves and controls')+'">☰</button>'+
        '<button type="button" class="classic-mini-button" data-tour-action="settings" title="'+(lang()==='ru'?'Настройки':'Settings')+'">⚙</button>'+
        '<button type="button" class="classic-mini-button" data-tour-action="menu" title="'+t('back')+'">⌂</button>'+
-     '</nav>'+
+     '</nav></header>'+
+   '<section class="tournament-match" aria-label="'+t('match')+'"><div class="tournament-match-layout">'+
      '<div class="tournament-battle-rail">'+panel(rival,false)+
        '<aside id="tournament-tools" class="tournament-card tournament-match-sidebar" hidden>'+
          '<h2>'+t('title')+'</h2><small class="tournament-match-kicker">'+(shadowGame?(shadowGame.isTimed?'10+0':'∞'):'10+0')+'</small>'+
