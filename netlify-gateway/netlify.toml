@@ -1,0 +1,17 @@
+# RPChess Netlify gateway: only API forwarding plus a lightweight status page.
+# No gameplay, art, music, fonts, or game asset copying on Netlify.
+[build]
+  publish = "public"
+  edge_functions = "netlify/edge-functions"
+
+[[redirects]]
+  from = "/tournament/*"
+  to = "https://rpchess-tournament-profile-preview.mobigametim.workers.dev/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/profile/*"
+  to = "https://rpchess-profile-preview.mobigametim.workers.dev/:splat"
+  status = 200
+  force = true

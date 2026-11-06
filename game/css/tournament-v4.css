@@ -376,3 +376,7 @@
   top:52px;max-height:calc(100dvh - 62px);
  }
 }
+
+/* Accessible Tournament endpoint override: auto / direct / gateway. */
+.tournament-api-route{display:flex;align-items:center;gap:8px;justify-content:center;margin:12px auto 0;font-size:14px;flex-wrap:wrap}
+.tournament-api-route select{background:#211a13;color:#f4e4c0;border:1px solid #b58a4b;border-radius:6px;padding:5px 8px;max-width:220px;font:inherit}

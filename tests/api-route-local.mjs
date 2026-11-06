@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {chooseRoute} from '../game/js/api-route.mjs';
+const fake=country=>async url=>({ok:true,json:async()=>({country})});
+assert.equal(await chooseRoute({fetcher:fake('RU')}),'proxy');
+assert.equal(await chooseRoute({fetcher:fake('DE')}),'direct');
+assert.equal(await chooseRoute({enabled:false,preference:'proxy',fetcher:fake('RU')}),'direct');
+assert.equal(await chooseRoute({preference:'direct',fetcher:fake('RU')}),'direct');
+assert.equal(await chooseRoute({preference:'proxy',fetcher:fake('DE')}),'proxy');
+const broken=async url=>{if(url.endsWith('/health'))return {ok:true};throw Error('geo offline');};
+assert.equal(await chooseRoute({fetcher:broken}),'direct');
+const offline=async()=>{throw Error('offline');};
+assert.equal(await chooseRoute({fetcher:offline}),'proxy');
+console.log('Tournament API routing: all 7 cases passed.');

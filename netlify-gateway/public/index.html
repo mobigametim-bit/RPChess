@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src 'self'; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+  <link rel="stylesheet" href="/diagnostics.css">
+  <title>RPChess — проверка соединения</title>
+  <script src="/diagnostics.js" defer></script>
+</head>
+<body>
+  <main>
+    <h1>Проверка соединения RPChess</h1>
+    <p>Это <strong>API-шлюз</strong>, а не игровая сборка. Здесь нет файлов игры.
+       Проверяются только доступность Netlify и соединение с серверами профилей и Турнира.</p>
+    <dl aria-live="polite">
+      <div><dt>Страна подключения</dt><dd id="geo">Проверка…</dd></div>
+      <div><dt>API профилей</dt><dd id="profile">Проверка…</dd></div>
+      <div><dt>API Турнира</dt><dd id="tournament">Проверка…</dd></div>
+    </dl>
+    <button id="recheck" type="button">Проверить ещё раз</button>
+    <p class="note">Успешные проверки не означают, что поиск соперника уже проверен.
+       Для проверки матчмейкинга нужны два игрока в самой игре.</p>
+  </main>
+</body>
+</html>

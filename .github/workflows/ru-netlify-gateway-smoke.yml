@@ -1,0 +1,29 @@
+name: RU Netlify API gateway live smoke
+
+on:
+  push:
+    branches: [feature/ru-netlify-gateway-20261106]
+    paths:
+      - '.github/workflows/ru-netlify-gateway-smoke.yml'
+      - 'tests/ru-netlify-gateway-smoke.mjs'
+      - 'netlify-gateway/**'
+      - 'game/js/api-route.mjs'
+  workflow_dispatch:
+
+concurrency:
+  group: ru-netlify-gateway-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check isolated API-only gateway and real CDN tournament requests
+        run: node tests/ru-netlify-gateway-smoke.mjs
+      - name: Verify local client route selection
+        run: node tests/api-route-local.mjs
