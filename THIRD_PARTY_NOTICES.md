@@ -12,14 +12,14 @@ RPChess is licensed under the MIT License except for third-party components and 
 
 The font may be bundled and embedded with RPChess under the terms of the SIL Open Font License 1.1. The font software is not sold by itself.
 
-## Lavash (Chronicle font trial)
+## Lavash (game-wide typography trial)
 
 - Bundled runtime file: `game/fonts/Lavash.woff2`, web-optimized from the provided `lavash.ttf`.
 - Copyright notice included with the user-supplied archive: Andrew Marcus.
 - Supplied `README.txt` says Lavash is free to use for all purposes, including commercial use.
 - Original README and COPYRIGHT texts: `game/fonts/Lavash_README.txt` and `game/fonts/Lavash_COPYRIGHT.txt`.
 - No separate standard license text was supplied. Do not misidentify the font as SIL OFL or MIT.
-- Only used to display Chronicle headings and numeric values during a reversible preview; the rest of the game retains BrahmsGotischCyr.
+- Applied to text across all game screens in a reversible, isolated visual test branch. The previous BrahmsGotischCyr files remain bundled and unchanged.
 
 ## Stockfish.js / Stockfish 18
 
