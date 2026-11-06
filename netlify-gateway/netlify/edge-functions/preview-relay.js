@@ -15,7 +15,7 @@ export default async function previewRelay(request){
  const url=new URL(request.url);
  const match=/^\/preview-api\/(profile|tournament)(\/.*)$/.exec(url.pathname);
  if(!match)return error('not_found',404);
- if(!['GET','POST','OPTIONS'].includes(request.method))return error('method_not_allowed',405);
+ if(!['GET','POST','PUT','OPTIONS'].includes(request.method))return error('method_not_allowed',405);
  if(request.method==='OPTIONS')return new Response(null,{status:204,
    headers:{'Cache-Control':'no-store'}});
  const target=UPSTREAMS[match[1]]+match[2]+url.search;
@@ -26,9 +26,11 @@ export default async function previewRelay(request){
  if(auth)headers.set('Authorization',auth);
  headers.set('Accept','application/json');
  let body;
- if(request.method==='POST'){
-  body=await request.text();
-  if(body.length>16384)return error('payload_too_large',413);
+ if(request.method==='POST'||request.method==='PUT'){
+  const data=await request.arrayBuffer();
+  // Profile saves are substantially larger than small tournament commands.
+  if(data.byteLength>1024*1024)return error('payload_too_large',413);
+  body=data;
  }
  try{
   const upstream=await fetch(target,{method:request.method,headers,
