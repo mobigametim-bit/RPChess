@@ -1,0 +1,18 @@
+/* Trial typography across every RPChess screen: isolated branch only.
+   Leave SVG artwork, vector chess-piece glyphs and icon graphics intact.
+   Reverts cleanly by removing this single stylesheet link. */
+@font-face{
+  font-family:'LavashPreview';
+  src:url('../fonts/Lavash.woff2') format('woff2');
+  font-style:normal;
+  font-weight:400;
+  font-display:swap;
+}
+/* An important layer wins over any legacy unlayered !important font declarations,
+   including dynamically injected screen styles and mobile overrides. */
+@layer lavash-preview{
+  html body,
+  html body *:not(svg):not(svg *){
+    font-family:'LavashPreview',Georgia,serif!important;
+  }
+}
