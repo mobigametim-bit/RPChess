@@ -131,7 +131,9 @@ function navigation(){
 }
 function boardHTML(chess){
  const whiteBottom=currentPlayerColor()==='w',state=chess.snapshot(),files='abcdefgh',legal=square?chess.legalMoves(square):[];
- const last=moves[cursor-1],mark=last?.grade&&last.uci.slice(2,4);
+ const last=moves[cursor-1];
+ const recentOwn=moves.slice(0,cursor).reverse().find(entry=>entry.color===currentPlayerColor());
+ const mark=recentOwn?.grade?recentOwn.uci.slice(2,4):null;
  let grid='';
  for(let r=0;r<8;r++)for(let f=0;f<8;f++){
   const file=whiteBottom?f:7-f,rank=whiteBottom?7-r:r,index=rank*8+file;
@@ -143,7 +145,7 @@ function boardHTML(chess){
   if(piece){
    figure='<img alt="" class="mentor-piece" draggable="false" src="'+boardRacePiecePath(ownRace,ROLES[piece.type],piece.color)+'"><span class="mentor-piece-fallback">'+SYMBOLS[piece.color][piece.type]+'</span>'+fantasyPieceMarkup(piece.type,piece.color);
   }
-  const sign=mark===sq?'<span class="mentor-square-grade">'+({'inaccuracy':'?!','mistake':'?','blunder':'??'}[last.grade])+'</span>':'';
+  const sign=mark===sq&&piece?.color===currentPlayerColor()?'<span class="mentor-square-grade">'+({'inaccuracy':'?!','mistake':'?','blunder':'??'}[recentOwn.grade])+'</span>':'';
   grid+='<button type="button" data-mentor-square="'+sq+'" class="mentor-square '+(dark?'is-dark':'is-light')+(highlight?' is-last':'')+(active?' is-selected':'')+(possible?' is-legal':'')+'" aria-label="'+sq+'">'+figure+sign+'</button>';
  }
  const status=chess.status();
@@ -153,7 +155,7 @@ function boardHTML(chess){
 function latestPlayerNote(){
  for(let index=cursor-1;index>=0;index--){
   const move=moves[index];
-  if(move?.color===currentPlayerColor()&&move.grade)return {move,index};
+  if(move?.color===currentPlayerColor())return move.grade?{move,index}:null;
  }
  return null;
 }

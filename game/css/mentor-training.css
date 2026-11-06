@@ -106,8 +106,8 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
  .mentor-setup{height:100dvh;min-height:0;overflow:hidden;padding:8px;gap:8px}
  .mentor-top{height:44px;padding-bottom:5px}
  .mentor-setup-body{display:flex;flex-direction:column;gap:8px;overflow:hidden}
- .mentor-selected{display:grid;grid-template-columns:minmax(90px,32%) minmax(0,1fr);grid-template-rows:auto auto auto;gap:5px 8px;flex:0 0 170px;padding:8px;align-content:center}
- .mentor-selected-art{grid-column:1;grid-row:1/4;height:150px;width:100%;align-self:center}
+ .mentor-selected{display:grid;grid-template-columns:minmax(90px,32%) minmax(0,1fr);grid-template-rows:auto auto auto;gap:5px 8px;flex:0 0 194px;padding:8px;align-content:center}
+ .mentor-selected-art{grid-column:1;grid-row:1/4;height:125px;width:100%;align-self:center}
  .mentor-selected-name{grid-column:2;grid-row:1;font-size:22px}
  .mentor-selected-level{grid-column:2;grid-row:2;font-size:13px;text-align:left}
  .mentor-colors{grid-column:2;grid-row:3;flex-wrap:wrap;align-items:center}
