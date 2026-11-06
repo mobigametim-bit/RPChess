@@ -19,8 +19,13 @@ export function setRoutePreference(value){
  if(!CHOICES.includes(value))return false;
  try{globalThis.localStorage?.setItem(SETTING,value);selected=null;return true;}catch{return false;}
 }
-const production=()=>globalThis.location?.hostname==='mobigametim-bit.github.io'&&
- /^\/RPChess(?:\/|$)/.test(globalThis.location?.pathname||'');
+const production=()=>{
+ const url=globalThis.location;
+ if(url?.hostname==='mobigametim-bit.github.io'&&/^\/RPChess(?:\/|$)/.test(url?.pathname||''))return true;
+ if(new URLSearchParams(url?.search||'').has('vk_app_id'))return true;
+ try{return /(^|\.)vk\.(com|ru)$/i.test(new URL(globalThis.document?.referrer||url.href).hostname);}
+ catch{return false;}
+};
 function timedFetch(url,{timeout=2800,fetcher=fetch}={}){
  const abort=new AbortController();
  const timer=setTimeout(()=>abort.abort(),timeout);
