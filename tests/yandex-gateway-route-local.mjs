@@ -10,7 +10,8 @@ const good=async url=>url.endsWith('/health')
  :{ok:false,status:405};
 const blockedProfile=async url=>url.startsWith(profile)?{ok:false,status:502}:good(url);
 const blockedTournament=async url=>url.startsWith(tour)?{ok:false,status:502}:good(url);
-const blockedYandex=async url=>url.startsWith(YANDEX)?{ok:false,status:502}:good(url);
+const blockedYandex=async url=>(url.startsWith(YANDEX)||url.startsWith(profile))?{ok:false,status:502}:good(url);
+const directDown=async url=>(url.startsWith(profile)||url.startsWith(tour))?{ok:false,status:502}:good(url);
 const offline=async()=>{throw Error('network blocked');};
 assert.equal(await chooseRoute({service:'profile',fetcher:good,direct}),'direct');
 assert.equal(await chooseRoute({service:'tournament',fetcher:good,direct}),'direct');
@@ -20,9 +21,9 @@ assert.equal(await chooseRoute({service:'tournament',fetcher:blockedProfile,dire
 assert.equal(await chooseRoute({service:'profile',fetcher:blockedTournament,direct}),'direct',
  'Blocked Tournament must not force Profile through Yandex');
 assert.equal(await chooseRoute({service:'tournament',fetcher:blockedTournament,direct}),'yandex');
-assert.equal(await chooseRoute({service:'profile',fetcher:offline,direct}),'yandex');
-await assert.rejects(chooseRoute({service:'profile',fetcher:blockedYandex,
- direct:{profile:'https://blocked.invalid',tournament:tour}}),/unreachable/);
+assert.equal(await chooseRoute({service:'profile',fetcher:directDown,direct}),'yandex');
+await assert.rejects(chooseRoute({service:'profile',fetcher:offline,direct}),/unreachable/);
+await assert.rejects(chooseRoute({service:'profile',fetcher:blockedYandex,direct}),/unreachable/);
 assert.equal(await chooseRoute({service:'profile',preference:'yandex',fetcher:offline,direct}),'yandex');
 assert.equal(await chooseRoute({service:'profile',preference:'direct',fetcher:offline,direct}),'direct');
 assert.equal(await chooseRoute({service:'profile',enabled:false,preference:'yandex',direct}),'direct');
