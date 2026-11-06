@@ -239,7 +239,10 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   assert(ui.includes('leaderboard.notAuthenticated')&&ui.includes('leaderboard.notRanked'),
     'personal rank must distinguish unverified VK from authenticated players without a completed run');
   const translations=fs.readFileSync(path.join(game,'localization/runtime-ui.mjs'),'utf8');
-  assert(translations.includes("'leaderboard.notAuthenticated':'VK не подтверждён'"));
+  assert(translations.includes("'leaderboard.notAuthenticated':'Профиль не подтверждён'"),
+    'Chronicle must use player-facing profile wording, not VK-specific legacy text');
+  assert(translations.includes("'leaderboard.notAuthenticated':'Profile not verified'"),
+    'English personal profile status must match the new verified identity wording');
   assert(translations.includes("'leaderboard.notRanked':'Нет результата'"));
   assert(fs.readFileSync(path.join(game,'../leaderboard-worker/src/index.mjs'),'utf8').includes('viewerAuthenticated:Boolean(id)'),
     'the API must distinguish verified users with no ranking from unsigned reads');

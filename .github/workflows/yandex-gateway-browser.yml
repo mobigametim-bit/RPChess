@@ -1,7 +1,7 @@
 name: Yandex Gateway game Chromium smoke
 on:
   push:
-    branches: [feature/yandex-gateway-health-probe-20261106, fix/tournament-search-recovery-20261106, fix/vk-profile-auth-retry-20261106]
+    branches: [feature/yandex-gateway-health-probe-20261106, fix/tournament-search-recovery-20261106, fix/vk-profile-auth-retry-20261106, fix/mobile-vk-profile-transport-ui-20261106]
     paths:
       - '.github/workflows/yandex-gateway-browser.yml'
       - 'tests/yandex-gateway-route-local.mjs'
@@ -9,6 +9,10 @@ on:
       - 'game/js/api-route.mjs'
       - 'game/js/profile-client.mjs'
       - 'game/js/tournament-app.mjs'
+      - 'game/js/platform.mjs'
+      - 'game/index.html'
+      - 'game/localization/ui.mjs'
+      - 'game/localization/runtime-ui.mjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -29,10 +33,15 @@ jobs:
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install chromium
       - name: Browser recovery of signed VK profile after initial failure
-        if: github.ref == 'refs/heads/fix/vk-profile-auth-retry-20261106'
+        if: github.ref == 'refs/heads/fix/vk-profile-auth-retry-20261106' || github.ref == 'refs/heads/fix/mobile-vk-profile-transport-ui-20261106'
         env:
           RPCHESS_VK_AUTH_MOCK_ONLY: '1'
         run: node tests/yandex-gateway-browser.cjs
+      - name: Mobile VK WebView first request abort and safe route retry
+        if: github.ref == 'refs/heads/fix/mobile-vk-profile-transport-ui-20261106'
+        env:
+          RPCHESS_VK_MOBILE_MOCK_ONLY: '1'
+        run: node tests/yandex-gateway-browser.cjs
       - name: Live GitHub Pages origin with branch JS modules and Yandex API
-        if: github.ref != 'refs/heads/fix/vk-profile-auth-retry-20261106'
+        if: github.ref != 'refs/heads/fix/vk-profile-auth-retry-20261106' && github.ref != 'refs/heads/fix/mobile-vk-profile-transport-ui-20261106'
         run: node tests/yandex-gateway-browser.cjs

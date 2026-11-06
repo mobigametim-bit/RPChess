@@ -2,7 +2,7 @@
 // VK signature is verified by OUR server; no login/registration UI.
 // GamePush is optional. Yandex is deliberately not integrated in this phase.
 import { platform, discoverVKHost } from './platform.mjs';
-import { apiBase } from './api-route.mjs';
+import { apiBase, invalidateRoute } from './api-route.mjs';
 import { localPayload, payloadFingerprint, payloadHasProgress, restoreLocalEnvelope, readCloudEnvelope } from './cloud-save.mjs';
 
 const AUTH_PREFIX='rpchess.profile.auth.';
@@ -13,7 +13,7 @@ const EVENTS=[
   'rpchess:chronicle-updated','rpchess:tutorial-updated','rpchess:ad-receipts-updated',
   'rpchess:arena-updated'
 ];
-const MAX_TIMEOUT_MS=12000;
+const MAX_TIMEOUT_MS=15000;
 let bootPromise=null,sessionReady=false,provider='',token='',revision=0,lastFingerprint='',syncing=null,timer=null,installed=false;
 let status='disabled',profileId='';
 let migration=Object.freeze({status:'not-checked',legacyV1:'unknown',previousGP:'unknown',source:'none',serverMigrated:false,chronicle:0,arenaEvents:0,hasRatingProgress:false});
@@ -37,6 +37,8 @@ function readToken(kind) {
 function writeToken(kind,value) {
   try {globalThis.localStorage?.setItem(localAuthKey(kind),value);}catch{}
 }
+function userLanguage(){return globalThis.document?.documentElement?.lang==='en'?'en':'ru';}
+function userMessage(ru,en){return userLanguage()==='en'?en:ru;}
 function state(next,reason='') {
   status=next;
   globalThis.RPChessProfileStatus=Object.freeze({status:next,reason,provider,profileId,migration:migration.status});
@@ -44,7 +46,7 @@ function state(next,reason='') {
 }
 async function request(path,{method='GET',data=null,auth=true}={}) {
   const base=await apiBase('profile',root());
-  if(!base)throw Error('RPChess profile API endpoint not configured');
+  if(!base)throw Error(userMessage('Сервер профиля игры не настроен','Game profile server is not configured'));
   const controller=new AbortController();
   const timeout=setTimeout(()=>controller.abort(),MAX_TIMEOUT_MS);
   try{
@@ -56,10 +58,37 @@ async function request(path,{method='GET',data=null,auth=true}={}) {
     });
     let body=null;try{body=await res.json();}catch{}
     if(!res.ok){
-      const error=new Error('RPChess profile API '+res.status+': '+(body?.error||'unavailable'));
+      if([502,503,504].includes(res.status))invalidateRoute('profile');
+      const code=String(body?.error||'unavailable');
+      const hint=code==='vk_signature_required'
+        ?userMessage('Не удалось подтвердить вход через ВКонтакте. Откройте игру из ВКонтакте повторно.',
+          'Could not verify the VK launch. Reopen the game from VK.')
+        :code==='session_expired'
+        ?userMessage('Срок действия профиля истёк. Войдите снова.','Profile session expired. Please sign in again.')
+        :userMessage('Сервер профиля игры: HTTP ','Game profile server: HTTP ')+res.status+' ('+code+')';
+      const error=new Error(hint);
       error.status=res.status;error.details=body;throw error;
     }
     return body;
+  }catch(error){
+    // On mobile VK WebView an expired request can surface as
+    // "signal is aborted without reason". Report a useful message instead.
+    // Never replay this POST: the Worker may have already committed it.
+    if(controller.signal.aborted){
+      invalidateRoute('profile');
+      throw Object.assign(new Error(userMessage(
+        'Превышено время ответа сервера профиля. Проверьте подключение и повторите попытку.',
+        'Game profile server timed out. Check the connection and retry.')),
+        {reason:'transport_timeout'});
+    }
+    if(error instanceof TypeError || error?.name==='AbortError'){
+      invalidateRoute('profile');
+      throw Object.assign(new Error(userMessage(
+        'Не удалось связаться с сервером профиля. Повторите попытку.',
+        'Could not reach the game profile server. Please retry.')),
+        {reason:'transport_unavailable'});
+    }
+    throw error;
   }finally{clearTimeout(timeout);}
 }
 function signedParams(input) {
@@ -88,13 +117,13 @@ async function openSession(kind) {
     const launch=await signedVKLaunch();
     if(launch) {
       const result=await request('/v1/session',{method:'POST',auth:false,data:{vkLaunch:launch}});
-      if(result.profile?.provider!=='vk')throw Error('Expected a signed VK player');
+      if(result.profile?.provider!=='vk')throw Error(userMessage('Не удалось подтвердить игрока ВКонтакте','Could not verify the VK player'));
       return result;
     }
     // Never accept a cached VK bearer alone when the current launch identity
     // is unknown: a different VK account on this browser could inherit the
     // previous player's profile. Only freshly signed VK params may log in.
-    throw Error('Fresh VK signed launch parameters unavailable');
+    throw Error(userMessage('Нет подписанных параметров входа ВКонтакте. Откройте игру из ВКонтакте повторно.','Signed VK launch parameters are unavailable. Reopen the game from VK.'));
   }
   // Guest Web: never silently replace an expired credential with a new identity.
   if(saved)return request('/v1/session',{method:'POST',auth:false,data:{accessToken:saved}});
@@ -331,7 +360,7 @@ async function boot() {
     if(!/^[A-Za-z0-9_-]{43}$/.test(token||''))throw Error('Invalid session credential');
     profileId=session.profile?.id||'';
     if(!profileId||session.profile?.provider!==provider)throw Error('Profile belongs to another platform');
-    if(!platform.setProfileStorageIdentity(provider,profileId))throw Error('Invalid RPChess profile identity');
+    if(!platform.setProfileStorageIdentity(provider,profileId))throw Error(userMessage('Не удалось подтвердить профиль игрока','Could not verify the player profile'));
     writeToken(provider,token);
     // Successful server identity verification is separate from reconciling
     // local game progress. A save conflict must NEVER revoke this credential:

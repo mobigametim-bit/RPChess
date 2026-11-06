@@ -8,6 +8,11 @@ const VK_AD_FORMATS = new Set(['reward', 'interstitial']);
 // untouched and is not silently migrated from this origin or VK cloud.
 const GAMEPUSH_SAVE_PREFIX = 'rpchess.gamepush.v2.';
 const PROFILE_SAVE_PREFIX = 'rpchess.profile.v1.';
+// Only the configured VK Mini App (54754579), including its stage/prod
+// domains, may activate the shared VK identity and storage namespace.
+function isKnownVKAppHosting(hostname=globalThis.location?.hostname||''){
+  return /^(?:(?:stage|prod)-)?app54754579(?:-[a-z0-9]+)?\.pages\.vk-apps\.(?:ru|com)$/i.test(hostname);
+}
 function rpchessProfileEnabled() {
   try {
     const query=new URLSearchParams(globalThis.location?.search||'');
@@ -16,9 +21,13 @@ function rpchessProfileEnabled() {
     if(query.get('rpchess_profile')==='1')return true;
     // The accepted Cloudflare preview stays active for installed PWAs.
     if(globalThis.location?.hostname==='rpchess-profile-game-preview.mobigametim.workers.dev')return true;
-    // Release scope: canonical GitHub Pages build only. Yandex/other portals
-    // remain on their previously accepted storage until a separate rollout.
-    return globalThis.location?.hostname==='mobigametim-bit.github.io'
+    // The official VK mobile WebView can use this exact app's VK Hosting
+    // instead of the GitHub Pages iframe. Keep RPChess ID enabled on both
+    // approved hosts; the server still requires a *signed* VK launch.
+    const host=globalThis.location?.hostname||'';
+    if(isKnownVKAppHosting(host))return true;
+    // Other portals remain isolated from this storage/identity rollout.
+    return host==='mobigametim-bit.github.io'
       && /^\/RPChess(?:\/|$)/.test(globalThis.location?.pathname||'');
   } catch { return false; }
 }
@@ -59,7 +68,7 @@ function referrerHost(referrer = globalThis.document?.referrer || '') {
 
 function isVKLaunch() {
   const params = parseLaunchParams();
-  return verifiedVKHost || params.has('vk_app_id')
+  return verifiedVKHost || isKnownVKAppHosting() || params.has('vk_app_id')
     || /(^|\.)vk\.(com|ru)$/i.test(referrerHost())
     || Boolean(globalThis.AndroidBridge?.VKWebAppInit)
     || Boolean(globalThis.webkit?.messageHandlers?.VKWebAppInit?.postMessage)

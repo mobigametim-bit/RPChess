@@ -11,21 +11,25 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Шах и Мат">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="Герои Шаха и мата — фэнтезийное шахматное приключение и рогалик">
+  <meta name="description" content="Герои Шаха и Мата — фэнтезийное шахматное приключение и рогалик">
   <meta name="rpchess-leaderboard-api" content="https://rpchess-leaderboard.mobigametim.workers.dev">
   <meta name="rpchess-tournament-api" content="https://rpchess-tournament-preview.mobigametim.workers.dev">
   <meta name="rpchess-profile-api" content="https://rpchess-profile-preview.mobigametim.workers.dev">
-  <title>Герои Шаха и мата</title>
+  <title>Герои Шаха и Мата</title>
   <script>
     try {
       const params=new URLSearchParams(location.search);
       const releasePages=location.hostname==='mobigametim-bit.github.io'
         && /^\/RPChess(?:\/|$)/.test(location.pathname||'');
       const gpFreshStart=params.get('rpchess_gamepush') === '1';
+      const vkAppHosting=/^(?:(?:stage|prod)-)?app54754579(?:-[a-z0-9]+)?\.pages\.vk-apps\.(?:ru|com)$/i.test(location.hostname);
       const profileMode=params.get('rpchess_profile')!=='0'
-        && (params.get('rpchess_profile')==='1' || releasePages
+        && (params.get('rpchess_profile')==='1' || releasePages || vkAppHosting
           || location.hostname==='rpchess-profile-game-preview.mobigametim.workers.dev');
-      const vkHosted=params.has('vk_app_id') || /(^|\.)vk\.(com|ru)$/i.test(new URL(document.referrer||location.href).hostname);
+      const vkHosted=vkAppHosting||params.has('vk_app_id') ||
+        /(^|\.)vk\.(com|ru)$/i.test(new URL(document.referrer||location.href).hostname) ||
+        Boolean(window.AndroidBridge?.VKWebAppInit) ||
+        Boolean(window.webkit?.messageHandlers?.VKWebAppInit);
       const kind=vkHosted?'vk':'web';
       const cached=localStorage.getItem('rpchess.profile.cached-id.'+kind)||'';
       const prefix=profileMode
@@ -62,7 +66,7 @@
 <body>
   <div class="game-loading-screen" data-game-loading role="status" aria-live="polite" aria-label="Загрузка игры">
     <div class="game-loading-screen__content">
-      <img class="game-loading-screen__logo" data-game-loading-logo src="generated_assets/logo_ru.png" alt="RPChess" fetchpriority="high">
+      <img class="game-loading-screen__logo" data-game-loading-logo src="generated_assets/logo_ru.png" alt="Герои Шаха и Мата" fetchpriority="high">
       <p class="game-loading-screen__label" data-game-loading-label>ЗАГРУЗКА...</p>
     </div>
   </div>
@@ -79,10 +83,10 @@
     }, 22000);
   </script>
   <div id="app">
-    <main class="reboot-menu-screen" data-reboot-foundation aria-label="Главное меню RPChess" data-i18n-aria-label="menu.ariaLabel">
+    <main class="reboot-menu-screen" data-reboot-foundation aria-label="Главное меню игры Герои Шаха и Мата" data-i18n-aria-label="menu.ariaLabel">
       <div class="reboot-menu-screen__layout">
         <section class="reboot-menu-screen__main">
-          <img class="reboot-wordmark" data-brand-logo src="generated_assets/logo_ru.png" alt="RPChess">
+          <img class="reboot-wordmark" data-brand-logo src="generated_assets/logo_ru.png" alt="Герои Шаха и Мата">
           <div class="reboot-menu-actions" aria-label="Главное меню" data-i18n-aria-label="menu.actionsLabel">
             <button class="reboot-button reboot-button--primary" type="button" data-new-game data-i18n="menu.newGame">Новое Путешествие</button>
             <button class="reboot-button reboot-button--primary" type="button" data-continue-run data-i18n="menu.continue" disabled aria-disabled="true">Продолжить</button>
@@ -117,7 +121,7 @@
     <main class="roster-screen" data-roster-screen aria-label="Отряд текущего забега" hidden>
       <div class="roster-shell">
         <header class="roster-topbar">
-          <img class="roster-logo" data-brand-logo src="generated_assets/logo_ru.png" alt="RPChess">
+          <img class="roster-logo" data-brand-logo src="generated_assets/logo_ru.png" alt="Герои Шаха и Мата">
           <div class="roster-topbar__actions">
             <button class="reboot-button reboot-button--primary roster-journey-button" type="button" data-roster-travel>Начать путешествие</button>
             <button class="reboot-button reboot-button--primary" type="button" data-settings data-i18n="menu.settings">Настройки</button>
@@ -147,7 +151,7 @@
     <main class="skirmish-screen" data-skirmish-screen aria-label="Подготовка к стычке" hidden>
       <div class="skirmish-shell">
         <header class="skirmish-topbar">
-          <img class="skirmish-logo" data-brand-logo src="generated_assets/logo_ru.png" alt="RPChess">
+          <img class="skirmish-logo" data-brand-logo src="generated_assets/logo_ru.png" alt="Герои Шаха и Мата">
         </header>
 
         <header class="skirmish-heading">
@@ -204,7 +208,7 @@
 
     <main class="skirmish-aftermath" data-skirmish-aftermath aria-label="Итоги стычки" hidden>
       <div class="skirmish-aftermath-shell">
-        <img class="skirmish-logo" data-brand-logo src="generated_assets/logo_ru.png" alt="RPChess">
+        <img class="skirmish-logo" data-brand-logo src="generated_assets/logo_ru.png" alt="Герои Шаха и Мата">
         <section class="skirmish-aftermath-panel ui-panel-safe">
           <div class="reboot-eyebrow">СТЫЧКА ЗАВЕРШЕНА</div>
           <h1 data-aftermath-result>ИТОГ</h1>
@@ -231,7 +235,7 @@
     <main class="classic-screen" data-classic-screen aria-label="Классические шахматы" hidden>
       <div class="classic-shell">
         <header class="classic-topbar">
-          <img class="classic-logo" data-brand-logo src="generated_assets/logo_ru.png" alt="RPChess">
+          <img class="classic-logo" data-brand-logo src="generated_assets/logo_ru.png" alt="Герои Шаха и Мата">
           <div class="classic-toolbar">
             <button class="classic-mini-button" type="button" data-classic-new>Новая партия</button>
             <button class="classic-mini-button" type="button" data-settings data-i18n="menu.settings">Настройки</button>
@@ -356,7 +360,7 @@
     <section class="reboot-modal__panel classic-commander-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
       <header class="reboot-modal__header">
         <div>
-          <div class="reboot-eyebrow">RPCHESS</div>
+          <div class="reboot-eyebrow" data-i18n="brand.name">ГЕРОИ ШАХА И МАТА</div>
           <h2 id="settings-title" data-i18n="settings.title">Настройки</h2>
         </div>
         <button class="reboot-close" type="button" data-close-modal aria-label="Закрыть настройки" data-i18n-aria-label="settings.close">×</button>
