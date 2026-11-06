@@ -31,7 +31,8 @@ await jsonGet('/tournament/health','tournament');
 for(const item of [
  {path:'/profile/v1/session',method:'POST'},
  {path:'/profile/v1/profile',method:'PUT'},
- {path:'/tournament/v1/session',method:'POST'}
+ {path:'/tournament/v1/session',method:'POST'},
+ {path:'/tournament/v1/queue/join',method:'POST'}
 ]){
  const r=await fetchApi(item.path,{method:'OPTIONS',headers:{
   'Origin':trusted,
