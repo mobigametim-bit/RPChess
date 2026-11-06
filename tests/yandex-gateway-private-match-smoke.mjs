@@ -18,6 +18,40 @@ async function post(path,body,token=''){
   return data;
  }finally{clearTimeout(timer);}
 }
+// Isolated web guest: verify authorized Profile POST + PUT + GET roundtrip.
+// This never touches existing accounts, VK launch data, ratings or inventory.
+const profileBase='https://d5ds3hf0ei1mlkgjrnlm.d8epmcec.apigw.yandexcloud.net/profile';
+async function profileRequest(path,method='GET',data=null,token=''){
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),12000);
+ try{
+  const response=await fetch(profileBase+path,{
+   method,signal:controller.signal,cache:'no-store',
+   headers:{Origin:origin,...(data?{'Content-Type':'application/json'}:{}),
+    ...(token?{Authorization:'Bearer '+token}:{})},
+   ...(data?{body:JSON.stringify(data)}:{})
+  });
+  const json=await response.json().catch(()=>null);
+  assert.equal(response.status,200,'profile '+method+' '+path+' HTTP '+response.status+
+   ' '+(json?.error||'invalid response'));
+  return json;
+ }finally{clearTimeout(timer);}
+}
+const profileSession=await profileRequest('/v1/session','POST',{});
+assert.equal(profileSession.profile?.provider,'web');
+assert(/^[A-Za-z0-9_-]{43}$/.test(profileSession.token));
+const profileToken=profileSession.token;
+const stamp='yc-proxy-smoke-'+Date.now().toString(36);
+const initialRevision=profileSession.profile.revision;
+const newSnapshot={schemaVersion:1,gatewaySmoke:{marker:stamp}};
+const changed=await profileRequest('/v1/profile','PUT',{
+ revision:initialRevision,snapshot:newSnapshot},profileToken);
+assert.equal(changed.profile?.revision,initialRevision+1);
+const restored=await profileRequest('/v1/profile','GET',null,profileToken);
+assert.equal(restored.profile?.snapshot?.gatewaySmoke?.marker,stamp);
+assert.equal(restored.profile?.revision,initialRevision+1);
+console.log('YANDEX PROFILE GUEST SESSION, AUTHORIZED PUT AND RESTORE PASS');
+
 const suffix=Date.now().toString(36);
 const a=await post('/v1/session',{nick:'yc-qa-a-'+suffix,power:750,launch:''});
 const b=await post('/v1/session',{nick:'yc-qa-b-'+suffix,power:750,launch:''});
