@@ -124,22 +124,26 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     }
     await setLanguage('ru');
     assert.strictEqual(await panel.locator('h2').innerText(),'Летопись');
-    // Extend the existing UI acceptance: this font must be real, loaded, and
-    // scoped to the Chronicle rather than replacing global BrahmsGotisch.
-    const chronicleFace=await page.evaluate(async()=>{
-      await document.fonts.load("400 32px LavashChronicle","Летопись 2026");
-      const title=document.querySelector('.chronicle-header h2');
-      const display=document.querySelector('.chronicle-current h3');
-      const mainButton=document.querySelector('.reboot-menu-actions .reboot-button');
-      return {status:document.fonts.check("400 32px LavashChronicle","Летопись 2026"),
-        title:getComputedStyle(title).fontFamily,
-        display:display?getComputedStyle(display).fontFamily:null,
-        mainMenu:mainButton?getComputedStyle(mainButton).fontFamily:null};
+    // Existing Chronicle acceptance also verifies the global font experiment:
+    // all text uses Lavash, not just Chronicle, while SVG artwork is untouched.
+    const fontPreview=await page.evaluate(async()=>{
+      await document.fonts.load("400 32px LavashPreview","Летопись 2026");
+      const family=selector=>{
+        const node=document.querySelector(selector);
+        return node?getComputedStyle(node).fontFamily:null;
+      };
+      return {loaded:document.fonts.check("400 32px LavashPreview","Летопись 2026"),
+        body:family('body'),title:family('.chronicle-header h2'),
+        subheading:family('.chronicle-current h3'),
+        button:family('.reboot-menu-actions .reboot-button'),
+        label:family('.chronicle-section-label'),
+        otherTitle:family('.reboot-menu-screen h1')};
     });
-    assert(chronicleFace.status,'Lavash font must load without fallback');
-    assert(chronicleFace.title.includes('LavashChronicle'),'Chronicle heading uses Lavash');
-    if(chronicleFace.display)assert(chronicleFace.display.includes('LavashChronicle'),'Chronicle subheading uses Lavash');
-    assert(!chronicleFace.mainMenu?.includes('LavashChronicle'),'menu buttons keep original font');
+    assert(fontPreview.loaded,'global Lavash web font must load');
+    for(const [part,family] of Object.entries(fontPreview)){
+      if(part==='loaded'||family===null)continue;
+      assert(family.includes('LavashPreview'),part+' must use global Lavash: '+family);
+    }
     assert((await panel.innerText()).includes('Великие полководцы'));
     if(process.env.RPCHESS_FLAG_SCREENSHOT_DIR) {
       const dir=path.resolve(process.env.RPCHESS_FLAG_SCREENSHOT_DIR);
