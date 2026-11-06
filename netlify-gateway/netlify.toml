@@ -1,5 +1,6 @@
+# RPChess Netlify gateway: only API forwarding plus a lightweight status page.
+# No gameplay, art, music, fonts, or game asset copying on Netlify.
 [build]
-  command = "node scripts/prepare-playable-preview.cjs"
   publish = "public"
   edge_functions = "netlify/edge-functions"
 
@@ -14,12 +15,3 @@
   to = "https://rpchess-profile-preview.mobigametim.workers.dev/:splat"
   status = 200
   force = true
-
-# Only resources modified by the branch are local; all other game assets
-# are streamed from the unchanged production GitHub Pages build for review.
-# Netlify serves existing files first when force=false.
-[[redirects]]
-  from = "/play/*"
-  to = "https://mobigametim-bit.github.io/RPChess/:splat"
-  status = 200
-  force = false

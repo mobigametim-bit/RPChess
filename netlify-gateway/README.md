@@ -1,27 +1,33 @@
-# RPChess RU API gateway — Netlify Free
+# RPChess: бесплатный Netlify API-шлюз (только API)
 
-This independent Netlify site uses **CDN proxy rewrites**, not per-request Functions. It forwards both Tournament and RPChess Profile API traffic to the existing Cloudflare Workers, retaining the same Durable Objects and D1 state. A single Edge Function at /geo supplies a non-authenticated country hint.
+**Production game remains on GitHub Pages / VK.** Netlify `rpchess-ru-api-gateway` is NOT a game host and does not contain playable RPChess pages, images, music, chess assets, fonts, or scripts. The isolated `/play/` and `/preview-api/` experiments were removed after user feedback. No changes to `main` until user acceptance.
 
-Netlify project: https://app.netlify.com/projects/rpchess-ru-api-gateway . Public hostname: https://rpchess-ru-api-gateway.netlify.app (confirmed live on 2026-11-06, including all three /geo and /health endpoints from Russia without VPN).
+Live gateway: https://rpchess-ru-api-gateway.netlify.app
 
-## First deployment (one-time owner action)
+The Netlify Free project has **Base directory = `netlify-gateway`**, **Publish directory = `public`** and no build command. Its `netlify.toml` configures only:
 
-Connect GitHub repository `mobigametim-bit/RPChess` to the new Netlify project. Set **Base directory** to `netlify-gateway` (there is no Package directory field on this setup screen), **Publish directory** to `public`, and clear the suggested build command (leave it empty). The gateway's own `netlify.toml` is relative to the chosen base directory. Use branch `feature/ru-netlify-gateway-20261106` for initial testing and review actual deploy URL in Netlify. Do not attach the existing RPChess Netlify site or modify the root netlify.toml.
+| Route | Purpose | Implementation |
+|---|---|---|
+| `/geo` | One-shot visitor country hint | tiny Netlify Edge Function; no credentials |
+| `/profile/*` | D1 profile API, including POST/PUT | Netlify CDN proxy rewrite to existing Cloudflare Worker |
+| `/tournament/*` | One global queue and real matches | Netlify CDN proxy rewrite to existing Cloudflare Worker |
+| `/` | Read-only connection diagnostics | a tiny local HTML+JS+CSS page |
 
-Verify from Russia without VPN: GET /geo returns {country:"RU"}; GET /tournament/health and GET /profile/health return 200 JSON; then check OPTIONS and authenticated POST flows from a separate **isolated game preview**. If the country hint is null/incorrect, the browser first probes direct /health before using the proxy. Note: Netlify may be restricted by some Russian providers too; verify on target connections.
+No extra origin credentials, logins, persistence or tournament queues are created on Netlify. No API backend is migrated. The same Cloudflare workers keep token validation, rating and state. Proxied traffic incurs CDN requests/bandwidth credits, not Netlify Functions invocations. `/geo` consumes one Edge invocation per routing check.
 
-## Safety
+## Client routing
 
-Only allowlisted route prefixes are proxied. No persistent credentials at gateway; do not log Authorization, VK params, profiles or response bodies. Existing Cloudflare CORS allowlist must include the game's origin; preflight OPTIONS and Authorization need live browser verification. Do not automatically re-send an ambiguous POST, even on network errors. The live client uses a shared connection path for Profile and Tournament and exposes a per-device route override: auto/direct/proxy.
+- At GitHub Pages / VK runtime, `game/js/api-route.mjs` checks geo once.
+- `RU` selects Netlify for both profile + tournament; other resolved countries select direct Cloudflare.
+- Unknown geo uses a short, read-only GET `/health` direct probe, selecting proxy only when that fails. On a single selected route, no non-idempotent POST auto-retries.
+- User can override the choice in the Tournament UI (auto/direct/proxy). `?rpchess_api_route=proxy` forces gateway for testing.
+- The route is shared for profile and tournament to avoid mixing sessions; original cached identity/token storage is preserved. No `/play` references should remain.
 
-No commercial deployment or merge until proxy functionality is confirmed from Russia without VPN and with two real players. Switching route does not create a new queue or ledger.
+## Verification
 
-## Playable acceptance without changing main
+1. From Russia **without VPN**, open https://rpchess-ru-api-gateway.netlify.app/ and check country `RU`, Profile `Работает`, Tournament `Работает`.
+2. GitHub Actions `.github/workflows/ru-netlify-gateway-smoke.yml` confirms live health/CORS and exercises **real guest/private-match POSTs, two legal moves, restore, resign**, via CDN endpoints with GitHub Pages `Origin`. Also ensures obsolete `/play/` and `/preview-api/` no longer respond.
+3. Before merging PR #180, validate route selection and browser API calls on a separate game origin (GitHub Pages/VK), including a pair of players located in Russia. Do not give the diagnostic page as a playable build.
+4. Approve and merge only after 2-player acceptance; rollback is reverting the client route CSS/JS PR, leaving the existing workers and data untouched.
 
-Open `https://rpchess-ru-api-gateway.netlify.app/play/?rpchess_profile=1&rpchess_api_route=proxy` in two independent browsers/devices. The branch-specific HTML and changed JS/CSS files are served locally, while unchanged game assets are CDN-rewritten to the currently published GitHub Pages game. This is a test harness using the actual RPChess UI and both real Cloudflare profile/tournament services.
-
-The temporary `/preview-api/*` Netlify Edge Function forwards to those two existing origin-verified backends but strips the original Netlify page Origin. This is needed only because a game hosted on Netlify is not a Cloudflare-CORS-approved GitHub Pages/VK origin. It is **not** used by production Github Pages/VK users, who still use cheap `/profile/*` and `/tournament/*` CDN rewrites. Preview Edge invocations consume a small amount of free quota.
-
-The Netlify project must retain **Base directory** = `netlify-gateway`; **Publish directory** = `public`. It automatically runs the small preview copier as its build command. No npm installation or full game build is needed.
-
-Manual checklist: test from Russia with VPN OFF; launch two browsers with distinct local profile storage; find match, make legal moves, reload/reconnect, and verify result. Web guests have unranked matches by design; do not assert real VK Elo changes from the web preview. On GH/VK production, inspect browser Network to confirm the CDN path is used, not `/preview-api`. No mutation of `main` until approval.
+Security: never log `Authorization`, VK launch params, access tokens or user data. The diagnostics UI uses only GET health/geo. The profile and tournament API origins remain allowlisted by Cloudflare. Confirm CORS for VK and GitHub Pages and the profile PUT method; Netlify is not an open proxy.

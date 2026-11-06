@@ -1,137 +1,99 @@
 import assert from 'node:assert/strict';
 
-const base = 'https://rpchess-ru-api-gateway.netlify.app';
-const origin = 'https://mobigametim-bit.github.io';
-async function request(path, options={}) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
-  try {
-    return await fetch(base+path,{cache:'no-store',signal:controller.signal,...options});
-  } finally { clearTimeout(timeout); }
+const base='https://rpchess-ru-api-gateway.netlify.app';
+const origin='https://mobigametim-bit.github.io';
+async function request(path,options={}){
+ const abort=new AbortController();
+ const timer=setTimeout(()=>abort.abort(),12000);
+ try{return await fetch(base+path,{cache:'no-store',signal:abort.signal,...options});}
+ finally{clearTimeout(timer);}
 }
-for (const path of ['/geo','/profile/health','/tournament/health']) {
-  const res = await request(path);
-  const text = await res.text();
-  assert.equal(res.status,200,path+' HTTP status: '+res.status+' '+text.slice(0,240));
-  let data;try{data=JSON.parse(text);}catch{throw Error(path+' is not JSON: '+text.slice(0,240));}
-  if(path==='/geo') assert.ok(data.country===null||/^[A-Z]{2}$/.test(data.country),'invalid country');
-  else assert.equal(data.ok,true,path+' upstream is not healthy: '+text.slice(0,240));
-  console.log(path,'HTTP',res.status,JSON.stringify(data).slice(0,160));
+async function liveOk(path){
+ const response=await request(path);
+ assert.equal(response.status,200,path+' status '+response.status);
+ const data=await response.json();
+ if(path==='/geo')assert.ok(data.country===null||/^[A-Z]{2}$/.test(data.country));
+ else assert.equal(data.ok,true,path+' unavailable');
+ console.log(path,'200',JSON.stringify(data));
 }
-for(const service of ['profile','tournament']) {
-  const path='/'+service+'/v1/session';
-  const res=await request(path,{
-    method:'OPTIONS',
-    headers:{
-      Origin:origin,
-      'Access-Control-Request-Method':'POST',
-      'Access-Control-Request-Headers':'Authorization, Content-Type'
-    }
-  });
-  const allowOrigin=res.headers.get('access-control-allow-origin');
-  assert.equal(res.status,204,path+' preflight status '+res.status);
-  assert.equal(allowOrigin,origin,path+' wrong allow-origin');
-  const allow=(res.headers.get('access-control-allow-headers')||'').toLowerCase();
-  assert.ok(allow.includes('authorization')&&allow.includes('content-type'),path+' missing auth/content-type preflight');
-  console.log(path,'OPTIONS',res.status,'CORS OK');
-}
-
-// Wait for the Netlify Git-based production deployment: GitHub Actions can
-// reach this step before the Netlify build has finished.
-async function waitForPreview(path,attempts=30){
- for(let i=0;i<attempts;i++){
+async function waitGatewayUpdated(){
+ // Netlify build and GitHub Actions start independently. Wait for new
+ // diagnostics to replace previous /play page before testing route removal.
+ for(let attempt=0;attempt<30;attempt++){
   try{
-   const res=await request(path);
-   if(res.status===200){
-    const body=await res.json();
-    if(body.ok===true){console.log(path,'HTTP 200',JSON.stringify(body).slice(0,150));return;}
+   const res=await request('/');
+   if(res.status===200&&(await res.text()).includes('Проверка соединения RPChess')){
+    const gone=await request('/play/index.html');
+    if(gone.status===404)return;
    }
   }catch{}
-  if(i!==attempts-1)await new Promise(resolve=>setTimeout(resolve,12000));
+  if(attempt<29)await new Promise(resolve=>setTimeout(resolve,8000));
  }
- throw Error(path+' was not healthy after Netlify build');
+ throw Error('New API-only gateway deploy is not live, or /play still exists');
 }
-await waitForPreview('/preview-api/profile/health');
-await waitForPreview('/preview-api/tournament/health');
-const playable=await request('/play/index.html');
-const page=await playable.text();
-assert.equal(playable.status,200,'playable page HTTP status '+playable.status);
-assert.ok(page.includes('data-tournament-open')&&page.includes('rpchess-gateway'),
- 'playable game HTML not deployed or wrong version');
-const module=await request('/play/js/api-route.mjs');
-const source=await module.text();
-assert.equal(module.status,200);
-assert.ok(source.includes("'/preview-api'"),'new adaptive API client missing from playable preview');
-console.log('/play/index.html','HTTP 200; new API route module HTTP 200');
-
-// Release assets not copied into Netlify's /play directory were previously
-// served by a proxy to GitHub Pages. Verify status, MIME and bytes — a live
-// HTML entrypoint alone does not prove the game can actually boot.
-for(const [path,type] of [
- ['/play/js/reboot-foundation.mjs','javascript'],
- ['/play/js/screen-loading.mjs','javascript'],
- ['/play/css/reboot-foundation.css','css'],
- ['/play/css/screen-loading.css','css'],
- ['/play/generated_assets/logo_ru.png','image'],
- ['/play/fonts/Goznak-SemiBold.woff2','font']
-]){
- const response=await request(path);
- const mime=response.headers.get('content-type')||'';
- const bytes=(await response.arrayBuffer()).byteLength;
- console.log('ASSET',path,'HTTP',response.status,'MIME',mime,'BYTES',bytes);
- assert.equal(response.status,200,path+' returned '+response.status);
- assert.ok(mime.includes(type),path+' returned unexpected '+mime);
- assert.ok(bytes>100,path+' is empty');
+await waitGatewayUpdated();
+await liveOk('/geo');await liveOk('/profile/health');await liveOk('/tournament/health');
+for(const endpoint of ['/play/','/play/index.html','/play/js/tournament-app.mjs','/preview-api/profile/health','/preview-api/tournament/health']){
+ const res=await request(endpoint);
+ assert.equal(res.status,404,'Obsolete route '+endpoint+' must be removed, got '+res.status);
+ console.log(endpoint,'404 removed');
 }
-
-// Profile synchronization uses PUT; it must be forwarded instead of being
-// rejected by the test Edge bridge. Missing authentication must remain 401.
-const unauthorizedProfilePut=await request('/preview-api/profile/v1/profile',{
- method:'PUT',headers:{'Content-Type':'application/json'},
- body:JSON.stringify({revision:0,snapshot:{}})
-});
-const denied=await unauthorizedProfilePut.json().catch(()=>({}));
-assert.equal(unauthorizedProfilePut.status,401,
- 'Profile PUT must reach Cloudflare and reject unauthenticated writes: '+JSON.stringify(denied));
-console.log('PROFILE PUT forwarded to upstream (401 without auth)');
-
-// Verify authorized POST forwarding with real *unrated guest* sessions and a
-// private room. Avoid the shared public queue so no live player is disrupted.
-async function tournamentPost(path,body,token=''){
- const res=await request('/preview-api/tournament'+path,{
-   method:'POST',headers:{'Content-Type':'application/json',
-     ...(token?{Authorization:'Bearer '+token}:{})},
-   body:JSON.stringify(body)
+for(const method of ['POST','PUT']){
+ const route=method==='POST'?'/v1/session':'/v1/profile';
+ const res=await request('/profile'+route,{
+  method:'OPTIONS',
+  headers:{Origin:origin,'Access-Control-Request-Method':method,
+   'Access-Control-Request-Headers':'Content-Type,Authorization'}
  });
- const data=await res.json().catch(()=>({}));
- assert.equal(res.status,200,path+' status '+res.status+': '+JSON.stringify(data).slice(0,240));
+ assert.equal(res.status,204,'Profile '+method+' preflight '+res.status);
+ assert.equal(res.headers.get('access-control-allow-origin'),origin);
+ console.log('profile',method,'preflight 204');
+}
+const preflight=await request('/tournament/v1/session',{
+ method:'OPTIONS',
+ headers:{Origin:origin,'Access-Control-Request-Method':'POST',
+  'Access-Control-Request-Headers':'Content-Type,Authorization'}
+});
+assert.equal(preflight.status,204,'Tournament POST preflight');
+assert.equal(preflight.headers.get('access-control-allow-origin'),origin);
+console.log('tournament POST preflight 204');
+
+async function post(path,body,token=''){
+ const response=await request('/tournament'+path,{
+  method:'POST',headers:{Origin:origin,'Content-Type':'application/json',
+    ...(token?{Authorization:'Bearer '+token}:{})},
+  body:JSON.stringify(body)});
+ const data=await response.json().catch(()=>({}));
+ assert.equal(response.status,200,path+' HTTP '+response.status+': '+JSON.stringify(data).slice(0,140));
  return data;
 }
-const stamp=Date.now().toString(36);
-const owner=await tournamentPost('/v1/session',{nick:'gateway-qa-a-'+stamp,power:700,launch:''});
-const joiner=await tournamentPost('/v1/session',{nick:'gateway-qa-b-'+stamp,power:700,launch:''});
-assert.ok(owner.token?.length>40&&joiner.token?.length>40&&owner.token!==joiner.token);
-assert.equal(owner.kind,'guest');assert.equal(joiner.kind,'guest');
-const room=await tournamentPost('/v1/room/create',{squad:'humans',power:700},owner.token);
-assert.ok(/^[A-Z0-9]{6}$/.test(room.code),'valid private invitation');
-const matched=await tournamentPost('/v1/room/join',{code:room.code,squad:'humans',power:700},joiner.token);
-assert.equal(matched.status,'matched');assert.ok(matched.matchId);
-const id=encodeURIComponent(matched.matchId);
-const a=await tournamentPost('/v1/match/'+id+'/snapshot',{},owner.token);
-const b=await tournamentPost('/v1/match/'+id+'/snapshot',{},joiner.token);
-assert.equal(a.matchId,b.matchId);
-assert.notEqual(a.playerColor,b.playerColor);
-const white=a.playerColor==='w'?owner.token:joiner.token;
-const black=a.playerColor==='b'?owner.token:joiner.token;
-const move1=await tournamentPost('/v1/match/'+id+'/move',{from:'e2',to:'e4'},white);
-assert.equal(move1.moves.length,1);
-const move2=await tournamentPost('/v1/match/'+id+'/move',{from:'e7',to:'e5'},black);
-assert.equal(move2.moves.length,2);
-const resumed=await tournamentPost('/v1/match/'+id+'/snapshot',{},white);
-assert.equal(resumed.moves.length,2,'moves restored from server');
-const resigned=await tournamentPost('/v1/match/'+id+'/resign',{},white);
-assert.equal(resigned.status,'finished');
-assert.equal(resigned.rated,false,'test guests must never change Power');
-console.log('Netlify Edge relay: 2 signed guest sessions, private matchmaking, 2 moves, reconnect and resign PASS');
+// Two isolated unrated guest players; avoid touching public queue / Elo.
+// No bearer tokens or other sensitive values are printed.
+const a=await post('/v1/session',{nick:'gw-smoke-a',power:700,launch:''});
+const b=await post('/v1/session',{nick:'gw-smoke-b',power:710,launch:''});
+assert.ok(a.token?.length>40&&b.token?.length>40&&a.token!==b.token);
+assert.equal(a.kind,'guest');assert.equal(b.kind,'guest');
+const room=await post('/v1/room/create',{squad:'humans',power:700},a.token);
+assert.ok(/^[A-Z0-9]{6}$/.test(room.code),'private room code');
+const joined=await post('/v1/room/join',{code:room.code,squad:'humans',power:710},b.token);
+assert.equal(joined.status,'matched');
+const id=encodeURIComponent(joined.matchId);
+const s1=await post('/v1/match/'+id+'/snapshot',{},a.token);
+const s2=await post('/v1/match/'+id+'/snapshot',{},b.token);
+assert.equal(s1.matchId,s2.matchId);
+assert.notEqual(s1.playerColor,s2.playerColor);
+const w=s1.playerColor==='w'?a.token:b.token;
+const black=s1.playerColor==='b'?a.token:b.token;
+assert.equal((await post('/v1/match/'+id+'/move',{from:'e2',to:'e4'},w)).moves.length,1);
+assert.equal((await post('/v1/match/'+id+'/move',{from:'e7',to:'e5'},black)).moves.length,2);
+assert.equal((await post('/v1/match/'+id+'/snapshot',{},w)).moves.length,2,'reconnect');
+const done=await post('/v1/match/'+id+'/resign',{},w);
+assert.equal(done.rated,false,'guest match must remain unrated');
+console.log('CDN Tournament: guest pairing, moves, snapshot and resign PASS');
 
-console.log('Gateway, preflight, and playable preview reachability passed. Two real players still need manual acceptance.');
+const denied=await request('/profile/v1/profile',{
+ method:'PUT',headers:{Origin:origin,'Content-Type':'application/json'},
+ body:JSON.stringify({revision:0,snapshot:{}})});
+assert.equal(denied.status,401,'Profile PUT should reach Worker and reject anonymous request');
+console.log('CDN profile PUT forwarded to auth validator (401 anonymous)');
+console.log('API-ONLY GATEWAY LIVE SMOKE PASS');

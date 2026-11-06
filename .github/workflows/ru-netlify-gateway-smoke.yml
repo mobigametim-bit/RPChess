@@ -6,6 +6,8 @@ on:
     paths:
       - '.github/workflows/ru-netlify-gateway-smoke.yml'
       - 'tests/ru-netlify-gateway-smoke.mjs'
+      - 'netlify-gateway/**'
+      - 'game/js/api-route.mjs'
   workflow_dispatch:
 
 concurrency:
@@ -18,14 +20,10 @@ permissions:
 jobs:
   smoke:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 9
     steps:
       - uses: actions/checkout@v4
-      - name: Confirm deployed Netlify gateway and CORS preflights
+      - name: Check isolated API-only gateway and real CDN tournament requests
         run: node tests/ru-netlify-gateway-smoke.mjs
-      - name: Install browser for actual playable-loading check
-        run: |
-          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
-          npx playwright install chromium
-      - name: Verify game boots and Tournament opens in Chromium
-        run: node tests/ru-netlify-playable-browser.cjs
+      - name: Verify local client route selection
+        run: node tests/api-route-local.mjs
