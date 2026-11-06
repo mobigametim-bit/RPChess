@@ -64,7 +64,7 @@ function ensureScreen() {
     </div>
     <div class="events-shell">
       <header class="events-topbar">
-        <img class="events-logo" data-brand-logo src="${brandLogoSrc()}" alt="RPChess">
+        <img class="events-logo" data-brand-logo src="${brandLogoSrc()}" alt="Герои Шаха и Мата">
       </header>
       <section class="events-panel">
         <div class="events-copy-frame ui-panel-safe">
