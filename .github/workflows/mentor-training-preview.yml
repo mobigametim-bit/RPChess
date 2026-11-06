@@ -1,0 +1,90 @@
+name: Mentor training MVP isolated preview
+
+on:
+  push:
+    branches: [feature/mentor-training-mvp-20261107]
+    paths:
+      - '.github/workflows/mentor-training-preview.yml'
+      - 'game/**'
+      - 'mentor-preview/**'
+      - 'scripts/build.cjs'
+      - 'scripts/run-browser-tests.cjs'
+      - 'tests/mentor-training*'
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rpchess-mentor-training-mvp
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/mentor-training-mvp-20261107'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Build and regression gate
+        run: |
+          npm ci --no-audit --no-fund
+          npm run gate:local
+      - name: Chromium training acceptance
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+          RPCHESS_BROWSER_TEST=mentor-training-browser.cjs npm run test:browser
+      - name: Save landscape and portrait acceptance screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mentor-training-mvp-viewport-screenshots
+          path: test-results/mentor-training
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Deploy isolated static Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          test "$(grep '^name =' mentor-preview/wrangler.toml)" = 'name = "rpchess-mentor-training-preview"'
+          npx wrangler deploy --config mentor-preview/wrangler.toml
+      - name: Verify live preview contains mentor MVP
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          (async()=>{
+           const base='https://rpchess-mentor-training-preview.mobigametim.workers.dev';
+           const page=await fetch(base,{cache:'no-store'});
+           assert.equal(page.status,200);
+           assert((await page.text()).includes('js/mentor-training-app.mjs'));
+           const script=await fetch(base+'/js/mentor-training-app.mjs',{cache:'no-store'});
+           assert.equal(script.status,200);
+           assert((await script.text()).includes('RPChessMentorTraining'));
+           const css=await fetch(base+'/css/mentor-training.css',{cache:'no-store'});
+           assert.equal(css.status,200);
+           console.log('Mentor MVP playable:',base);
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          NODE
+      - name: Preview release summary
+        run: |
+          echo '### Mentor training MVP candidate' >> "$GITHUB_STEP_SUMMARY"
+          echo 'https://rpchess-mentor-training-preview.mobigametim.workers.dev/' >> "$GITHUB_STEP_SUMMARY"
+          echo 'No DeepSeek/Gonka requests; local Stockfish analysis and explanations only.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'No production code or Workers deployed.' >> "$GITHUB_STEP_SUMMARY"
