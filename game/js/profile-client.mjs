@@ -333,6 +333,10 @@ async function boot() {
     if(!profileId||session.profile?.provider!==provider)throw Error('Profile belongs to another platform');
     if(!platform.setProfileStorageIdentity(provider,profileId))throw Error('Invalid RPChess profile identity');
     writeToken(provider,token);
+    // Successful server identity verification is separate from reconciling
+    // local game progress. A save conflict must NEVER revoke this credential:
+    // Tournament may use it, while syncNow() remains blocked on 'conflict'.
+    sessionReady=true;
     let remote=session.profile;
     try{remote=await importOldVKIfPresent(remote);}
     catch{
@@ -404,7 +408,6 @@ async function boot() {
     revision=remote.revision||0;
     // Do not advance the local last-synced marker until the server has
     // acknowledged a save (or until an authentic server snapshot was restored).
-    sessionReady=true;
     install();
     state('ready');
     if(lastFingerprint!==payloadFingerprint(localPayload()))scheduleSave({immediate:true});
@@ -442,9 +445,9 @@ async function unifiedLeaderboard({refresh=false}={}) {
 }
 // The existing Tournament client sends this credential ONLY to our staging
 // Tournament Worker. Never log it, include it in URLs, or expose it in UI.
-// A temporary D1 autosave failure switches UI sync status to "offline" but
-// does NOT revoke an already verified RPChess identity. Tournament must not
-// log the player out because an unrelated profile snapshot PUT timed out.
+// Verified RPChess identity stays usable even if D1 autosave is offline or
+// a local-versus-server save conflict is unresolved. Tournament must not
+// log out a player because their separate game-progress sync is paused.
 // The Tournament Worker independently redeems and verifies this bearer;
 // before sessionReady there is never a credential to expose.
 function tournamentCredential() { return sessionReady&&token?token:''; }
