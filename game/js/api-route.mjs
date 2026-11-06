@@ -64,7 +64,14 @@ export function chooseOnce(){
 }
 export async function apiBase(service,directUrl){
  const route=await chooseOnce();
- return route==='proxy'&&SERVICES[service]?GATEWAY+SERVICES[service]:directUrl;
+ if(route!=='proxy'||!SERVICES[service])return directUrl;
+ // Only the temporary Netlify-hosted playable test uses a server-side Edge
+ // bridge, because Cloudflare does not CORS-allow the Netlify page origin.
+ // The published GitHub Pages/VK game retains cheap CDN redirects.
+ if(globalThis.location?.hostname==='rpchess-ru-api-gateway.netlify.app'&&
+    /^\/play(?:\/|$)/.test(globalThis.location?.pathname||''))
+  return GATEWAY+'/preview-api'+SERVICES[service];
+ return GATEWAY+SERVICES[service];
 }
 export async function apiHealthHint(){
  return chooseOnce();

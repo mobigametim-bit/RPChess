@@ -36,15 +36,31 @@ for(const service of ['profile','tournament']) {
   console.log(path,'OPTIONS',res.status,'CORS OK');
 }
 
-// A Netlify-hosted playable candidate has its own Origin. Confirm that the
-// proxy can route these same-origin requests into existing Cloudflare CORS.
-for(const service of ['profile','tournament']) {
-  const path='/'+service+'/health';
-  const res=await request(path,{headers:{Origin:base}});
-  assert.equal(res.status,200,path+' with Netlify Origin failed: '+res.status);
-  const data=await res.json();
-  assert.equal(data.ok,true,path+' missing healthy upstream');
-  console.log(path,'Netlify-Origin GET',res.status);
+// Wait for the Netlify Git-based production deployment: GitHub Actions can
+// reach this step before the Netlify build has finished.
+async function waitForPreview(path,attempts=30){
+ for(let i=0;i<attempts;i++){
+  try{
+   const res=await request(path);
+   if(res.status===200){
+    const body=await res.json();
+    if(body.ok===true){console.log(path,'HTTP 200',JSON.stringify(body).slice(0,150));return;}
+   }
+  }catch{}
+  if(i!==attempts-1)await new Promise(resolve=>setTimeout(resolve,12000));
+ }
+ throw Error(path+' was not healthy after Netlify build');
 }
-
-console.log('Gateway health and preflight checks passed. Browser matchmaking remains separate manual acceptance.');
+await waitForPreview('/preview-api/profile/health');
+await waitForPreview('/preview-api/tournament/health');
+const playable=await request('/play/index.html');
+const page=await playable.text();
+assert.equal(playable.status,200,'playable page HTTP status '+playable.status);
+assert.ok(page.includes('data-tournament-open')&&page.includes('rpchess-gateway'),
+ 'playable game HTML not deployed or wrong version');
+const module=await request('/play/js/api-route.mjs');
+const source=await module.text();
+assert.equal(module.status,200);
+assert.ok(source.includes("'/preview-api'"),'new adaptive API client missing from playable preview');
+console.log('/play/index.html','HTTP 200; new API route module HTTP 200');
+console.log('Gateway, preflight, and playable preview reachability passed. Two real players still need manual acceptance.');
