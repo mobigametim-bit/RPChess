@@ -23,8 +23,24 @@ fs.mkdirSync(output,{recursive:true});
   await page.locator('[data-mentor-action="start"]').click();
   assert.equal(await page.locator('[data-mentor-square]').count(),64);
   assert.equal(await page.locator('.mentor-board [data-square]').count(),64);
-  const tile=await page.locator('.mentor-board [data-square="a8"]').evaluate(node=>getComputedStyle(node).backgroundImage);
-  assert(tile.includes('/fae/board/'),'mentor squares use the selected race tile set: '+tile);
+  // Check the actual PNG response, not just the race name in computed CSS.
+  // A relative url() consumed from /css/ silently requests /css/assets/...
+  async function checkLiveRaceTile(race){
+   for(const [square,filename] of [['a8','white.png'],['a7','black.png']]){
+    const result=await page.locator('.mentor-board [data-square="'+square+'"]').evaluate(async node=>{
+     const cssImage=getComputedStyle(node).backgroundImage;
+     const resolved=cssImage.match(/url\(["']?([^"')]+)["']?\)/)?.[1]||'';
+     if(!resolved)return {cssImage,resolved,status:null,mime:null};
+     const response=await fetch(resolved,{cache:'no-store'});
+     return {cssImage,resolved,status:response.status,mime:response.headers.get('content-type')};
+    });
+    assert(result.resolved.includes('/assets/races/'+race+'/board/'+filename),'wrong race tile: '+JSON.stringify(result));
+    assert(!result.resolved.includes('/css/assets/'),'tile URL resolved relative to CSS, not document: '+JSON.stringify(result));
+    assert.equal(result.status,200,'race tile must load, not fall back to plain colors: '+JSON.stringify(result));
+    assert.match(result.mime||'',/image\/png/,'race tile must be a real PNG: '+JSON.stringify(result));
+   }
+  }
+  await checkLiveRaceTile('fae');
   const size=await page.locator('.mentor-board').evaluate(node=>{
    const rect=node.getBoundingClientRect();
    return {height:rect.height,width:rect.width,screenHeight:innerHeight};
@@ -95,6 +111,14 @@ fs.mkdirSync(output,{recursive:true});
   await page.locator('[data-mentor-action="start"]').click();
   await page.waitForFunction(()=>window.RPChessMentorTraining.state.moves.length>=1,{timeout:30000});
   assert.equal((await page.evaluate(()=>window.RPChessMentorTraining.state)).moves[0].color,'w','computer opens for black player');
+  // Reported regression: elf mentor ("Сильвена") showed beige default tiles.
+  await page.locator('[data-mentor-action="catalog"]').click();
+  await page.locator('[data-mentor-id="9"]').click();
+  await page.locator('[data-mentor-color="w"]').click();
+  await page.locator('[data-mentor-action="start"]').click();
+  await checkLiveRaceTile('elves');
+  await page.setViewportSize({width:1280,height:800});
+  await page.screenshot({path:path.join(output,'battle-elven-race-tiles.png'),animations:'disabled'});
   assert.equal(errors.length,0,'browser errors: '+errors.join('\n'));
   console.log('Mentor training real Stockfish, history branch, 12 mentors and phone: PASS');
  }finally{await browser.close();}

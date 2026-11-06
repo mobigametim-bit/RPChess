@@ -156,7 +156,11 @@ function boardHTML(chess){
   grid+='<button type="button" data-mentor-square="'+sq+'" data-square="'+sq+'" class="mentor-square '+(dark?'is-dark':'is-light')+(highlight?' is-last':'')+(active?' is-selected':'')+(possible?' is-legal':'')+'" aria-label="'+sq+'">'+figure+sign+'</button>';
  }
  const status=chess.status();
- return '<div class="mentor-board-shell"><div class="mentor-board" style="--mentor-light-tile:url('+tiles.light+');--mentor-dark-tile:url('+tiles.dark+')">'+grid+'</div><div class="mentor-file-coords">'+(whiteBottom?files.split(''):[...files].reverse()).map(v=>'<span>'+v+'</span>').join('')+'</div><div class="mentor-rank-coords">'+(whiteBottom?[8,7,6,5,4,3,2,1]:[1,2,3,4,5,6,7,8]).map(v=>'<span>'+v+'</span>').join('')+'</div></div>'+
+ // CSS variables consumed by an external stylesheet resolve relative url() against /css/.
+ // Use document-absolute URLs so race artwork also works under /RPChess/ on GitHub Pages.
+ const lightTile=new URL(tiles.light,document.baseURI).href;
+ const darkTile=new URL(tiles.dark,document.baseURI).href;
+ return '<div class="mentor-board-shell"><div class="mentor-board" data-mentor-race="'+tiles.raceTag+'" style="--mentor-light-tile:url('+lightTile+');--mentor-dark-tile:url('+darkTile+')">'+grid+'</div><div class="mentor-file-coords">'+(whiteBottom?files.split(''):[...files].reverse()).map(v=>'<span>'+v+'</span>').join('')+'</div><div class="mentor-rank-coords">'+(whiteBottom?[8,7,6,5,4,3,2,1]:[1,2,3,4,5,6,7,8]).map(v=>'<span>'+v+'</span>').join('')+'</div></div>'+
  (status.over?'<div class="mentor-board-message">'+t('gameOver')+'</div>':'');
 }
 function latestPlayerNote(){

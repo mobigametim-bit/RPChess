@@ -85,6 +85,11 @@ jobs:
              assert((await script.text()).includes('RPChessMentorTraining'));
              const css=await fetch(base+'/css/mentor-training.css',{cache:'no-store'});
              if(css.status!==200)throw Error('styles HTTP '+css.status);
+             for(const race of ['elves','fae'])for(const tile of ['white','black']){
+              const image=await fetch(base+'/assets/races/'+race+'/board/'+tile+'.png',{cache:'no-store'});
+              if(image.status!==200 || !(image.headers.get('content-type')||'').includes('image/png'))
+               throw Error('race tile '+race+'/'+tile+': HTTP '+image.status);
+             }
              verified=true;break;
             }catch(error){
              console.log('Preview propagation check '+attempt+'/24: '+error.message);
