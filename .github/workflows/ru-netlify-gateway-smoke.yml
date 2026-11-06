@@ -8,6 +8,10 @@ on:
       - 'tests/ru-netlify-gateway-smoke.mjs'
   workflow_dispatch:
 
+concurrency:
+  group: ru-netlify-gateway-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -22,6 +26,6 @@ jobs:
       - name: Install browser for actual playable-loading check
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
       - name: Verify game boots and Tournament opens in Chromium
         run: node tests/ru-netlify-playable-browser.cjs
