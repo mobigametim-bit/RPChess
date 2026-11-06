@@ -293,8 +293,8 @@ try {
  await first.page.screenshot({path:path.join(dir,'phone-390x844-live-pvp.png'),fullPage:true});
  await second.page.screenshot({path:path.join(dir,'tablet-768x1024-live-pvp.png'),fullPage:true});
  // Test the same *live* online match at both conventional desktop sizes.
- // The board, both chess clocks and the draw/resign/leave controls must fit
- // without scrolling at these viewport heights.
+ // The board and two clocks fit without scrolling. In v4, actions and the
+ // journal intentionally live inside an overlay opened by the panel control.
  for(const [screen,width,height,label] of [
   [first.page,1898,786,'desktop-1898x786-live-pvp.png'],
   [second.page,1366,768,'desktop-1366x768-live-pvp.png'],
@@ -311,8 +311,9 @@ try {
    return {width:innerWidth,height:innerHeight,board:board&&{left:board.left,right:board.right,top:board.top,bottom:board.bottom,width:board.width},
     bars:bars.map(b=>({top:b.top,bottom:b.bottom})),
     buttons:buttons.map(b=>b&&({top:b.top,bottom:b.bottom})),
+    panelHidden:document.querySelector('#tournament-tools')?.hidden,
     leftRail:el('.tournament-battle-rail')&&{left:el('.tournament-battle-rail').left,right:el('.tournament-battle-rail').right,top:el('.tournament-battle-rail').top,bottom:el('.tournament-battle-rail').bottom},
-    journal:el('[data-tour-history]')&&{top:el('[data-tour-history]').top,bottom:el('[data-tour-history]').bottom},
+    journalPresent:!!document.querySelector('#tournament-tools [data-tour-history]'),
     nav:[...document.querySelectorAll('.tournament-battle-nav button')].map(n=>({top:n.getBoundingClientRect().top,bottom:n.getBoundingClientRect().bottom})),
     panelScroll:getComputedStyle(document.querySelector('[data-tournament-screen]')).overflowY,
     scrollHeight:document.querySelector('[data-tournament-screen]').scrollHeight,
@@ -323,14 +324,14 @@ try {
    'Desktop chess board must fit: '+JSON.stringify(layout));
   assert(layout.bars.length===2&&layout.bars.every(b=>b.top>=0&&b.bottom<=height),
    'Both player clocks must fit on desktop: '+JSON.stringify(layout));
-  assert(layout.buttons.every(b=>b&&b.top>=0&&b.bottom<=height),
-   'All match actions must fit on desktop: '+JSON.stringify(layout));
-  assert(layout.nav.length===2&&layout.nav.every(b=>b.top>=0&&b.bottom<=height),
-   'Settings and Main Menu must fit: '+JSON.stringify(layout));
-  assert(layout.journal&&layout.journal.top>=0&&layout.journal.bottom<=height,
-   'Move journal must remain in viewport: '+JSON.stringify(layout));
-  assert(layout.leftRail&&layout.leftRail.right<layout.board.left-3,
-   'Left-side panels must remain LEFT of the centered board: '+JSON.stringify(layout));
+  assert(layout.buttons.length===3&&layout.buttons.every(Boolean),
+   'Draw, resign and leave actions must remain mounted inside the panel: '+JSON.stringify(layout));
+  assert(layout.panelHidden||layout.buttons.every(b=>b.top>=0&&b.bottom<=height),
+   'Visible v4 panel actions must fit: '+JSON.stringify(layout));
+  assert(layout.nav.length===3&&layout.nav.every(b=>b.top>=0&&b.bottom<=height),
+   'Panel, Settings and Main Menu must fit: '+JSON.stringify(layout));
+  assert(layout.journalPresent,'Move journal must remain mounted in the v4 overlay');
+  assert(layout.leftRail,'Tournament player rail must remain mounted');
   assert(Math.abs((layout.board.left+layout.board.right)/2-width/2)<=2.5 &&
           Math.abs((layout.board.top+layout.board.bottom)/2-height/2)<=2.5,
    'Board must be centered within WHOLE viewport, not remaining space: '+JSON.stringify(layout));
