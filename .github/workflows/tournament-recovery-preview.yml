@@ -2,13 +2,14 @@ name: Review Tournament routing recovery on isolated static preview
 
 on:
   push:
-    branches: [fix/tournament-search-recovery-20261106]
+    branches: [fix/tournament-search-recovery-20261106, fix/tournament-portrait-header-controls-20261107]
     paths:
       - '.github/workflows/tournament-recovery-preview.yml'
       - 'game/**'
       - 'tests/yandex-gateway-route-local.mjs'
       - 'tests/yandex-gateway-browser.cjs'
       - 'tests/tournament-client-browser.cjs'
+      - 'tests/tournament-v4-browser.cjs'
       - 'profile-preview/wrangler.toml'
   workflow_dispatch:
 
@@ -21,7 +22,7 @@ concurrency:
 
 jobs:
   review:
-    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/fix/tournament-search-recovery-20261106'
+    if: github.repository == 'mobigametim-bit/RPChess' && (github.ref == 'refs/heads/fix/tournament-search-recovery-20261106' || github.ref == 'refs/heads/fix/tournament-portrait-header-controls-20261107')
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
@@ -42,6 +43,24 @@ jobs:
           npm ci --no-audit --no-fund
           npm run gate:local
           node tests/yandex-gateway-route-local.mjs
+      - name: Install Chromium for phone and tablet toolbar acceptance
+        if: github.ref == 'refs/heads/fix/tournament-portrait-header-controls-20261107'
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+      - name: Validate portrait header, Shadow and online Tournament across seven viewports
+        if: github.ref == 'refs/heads/fix/tournament-portrait-header-controls-20261107'
+        env:
+          RPCHESS_BROWSER_TEST: tournament-v4-browser.cjs
+        run: npm run test:browser
+      - name: Preserve viewport screenshots from the UI candidate
+        if: always() && github.ref == 'refs/heads/fix/tournament-portrait-header-controls-20261107'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tournament-portrait-toolbar-screenshots
+          path: test-results/tournament-v4
+          if-no-files-found: warn
+          retention-days: 7
       - name: Publish STATIC files to existing RPChess profile-game preview ONLY
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -66,7 +85,10 @@ jobs:
             assert((await html.text()).includes('data-tournament-open'),'unexpected preview HTML');
             const js=await fetch(base+'/js/tournament-app.mjs',{cache:'no-store'});
             assert.equal(js.status,200,'Tournament client not served');
-            assert((await js.text()).includes('queueMayExist'),'branch Tournament recovery is not published');
+            const body=await js.text();
+            assert(body.includes('queueMayExist'),'Tournament recovery module is not published');
+            if(process.env.GITHUB_REF==='refs/heads/fix/tournament-portrait-header-controls-20261107')
+              assert(body.includes('tournament-battle-topbar'),'Portrait header fix is not published');
             const api=await fetch(base+'/js/api-route.mjs',{cache:'no-store'});
             assert.equal(api.status,200,'API transport not served');
             assert((await api.text()).includes('routePromises=new Map'),'route isolation not published');
@@ -74,17 +96,19 @@ jobs:
           })().catch(e=>{console.error(e);process.exitCode=1});
           NODE
       - name: Install Chromium for genuine two-browser Tournament smoke
+        if: github.ref == 'refs/heads/fix/tournament-search-recovery-20261106'
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install chromium
       - name: Real two-player private room — direct versus Yandex browser clients
+        if: github.ref == 'refs/heads/fix/tournament-search-recovery-20261106'
         env:
           RPCHESS_ACCEPTANCE_URL: https://rpchess-profile-game-preview.mobigametim.workers.dev/?rpchess_profile=1&rpchess_api_route=direct
           RPCHESS_ACCEPTANCE_URL_SECONDARY: https://rpchess-profile-game-preview.mobigametim.workers.dev/?rpchess_profile=1&rpchess_profile_route=direct&rpchess_tournament_route=yandex
           RPCHESS_TOURNAMENT_SCREENSHOT_DIR: test-results/tournament-routing
         run: node tests/tournament-client-browser.cjs
       - name: Upload live mixed-route browser screenshots
-        if: always()
+        if: always() && github.ref == 'refs/heads/fix/tournament-search-recovery-20261106'
         uses: actions/upload-artifact@v4
         with:
           name: tournament-direct-vs-yandex
