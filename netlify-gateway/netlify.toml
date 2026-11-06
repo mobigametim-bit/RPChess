@@ -1,5 +1,6 @@
 [build]
   publish = "netlify-gateway/public"
+  edge_functions = "netlify-gateway/netlify/edge-functions"
 
 [[redirects]]
   from = "/tournament/*"
