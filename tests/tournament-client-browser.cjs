@@ -4,18 +4,19 @@ const path=require('node:path');
 const fs=require('node:fs');
 const {chromium}=require('playwright');
 const url=process.env.RPCHESS_ACCEPTANCE_URL;
+const secondaryUrl=process.env.RPCHESS_ACCEPTANCE_URL_SECONDARY||url;
 const navigationReady=url.includes('rpchess_gamepush=1')?'domcontentloaded':'networkidle';
 assert(url?.startsWith('https://'),'Use deployed HTTPS acceptance URL');
 const dir=process.env.RPCHESS_TOURNAMENT_SCREENSHOT_DIR||'test-results/tournament';
 async function main(){
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 const errors=[];
-async function client(width,height){
+async function client(width,height,clientUrl=url){
  const context=await browser.newContext({viewport:{width,height},isMobile:width<600,hasTouch:true});
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
  // GamePush initializes with background network traffic; networkidle is not a valid
  // navigation contract for its live preview. The game's own loading gate is authoritative.
- await page.goto(url,{waitUntil:navigationReady,timeout:45000});
+ await page.goto(clientUrl,{waitUntil:navigationReady,timeout:45000});
  await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
  await page.locator('[data-tournament-open]').click();
  await page.locator('[data-tournament-screen]:not([hidden])').waitFor();
@@ -60,7 +61,7 @@ try {
  await desktop.context.close();desktop=null;
 
  first=await client(390,844);
- second=await client(768,1024);
+ second=await client(768,1024,secondaryUrl);
  await first.page.locator('[data-tour-action="invite"]').click();
  await first.page.locator('.tournament-room-code').waitFor({state:'visible',timeout:15000});
  const code=(await first.page.locator('.tournament-room-code').innerText()).trim();
