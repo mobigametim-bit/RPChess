@@ -63,4 +63,43 @@ const source=await module.text();
 assert.equal(module.status,200);
 assert.ok(source.includes("'/preview-api'"),'new adaptive API client missing from playable preview');
 console.log('/play/index.html','HTTP 200; new API route module HTTP 200');
+// Verify authorized POST forwarding with real *unrated guest* sessions and a
+// private room. Avoid the shared public queue so no live player is disrupted.
+async function tournamentPost(path,body,token=''){
+ const res=await request('/preview-api/tournament'+path,{
+   method:'POST',headers:{'Content-Type':'application/json',
+     ...(token?{Authorization:'Bearer '+token}:{})},
+   body:JSON.stringify(body)
+ });
+ const data=await res.json().catch(()=>({}));
+ assert.equal(res.status,200,path+' status '+res.status+': '+JSON.stringify(data).slice(0,240));
+ return data;
+}
+const stamp=Date.now().toString(36);
+const owner=await tournamentPost('/v1/session',{nick:'gateway-qa-a-'+stamp,power:700,launch:''});
+const joiner=await tournamentPost('/v1/session',{nick:'gateway-qa-b-'+stamp,power:700,launch:''});
+assert.ok(owner.token?.length>40&&joiner.token?.length>40&&owner.token!==joiner.token);
+assert.equal(owner.kind,'guest');assert.equal(joiner.kind,'guest');
+const room=await tournamentPost('/v1/room/create',{squad:'humans',power:700},owner.token);
+assert.ok(/^[A-Z0-9]{6}$/.test(room.code),'valid private invitation');
+const matched=await tournamentPost('/v1/room/join',{code:room.code,squad:'humans',power:700},joiner.token);
+assert.equal(matched.status,'matched');assert.ok(matched.matchId);
+const id=encodeURIComponent(matched.matchId);
+const a=await tournamentPost('/v1/match/'+id+'/snapshot',{},owner.token);
+const b=await tournamentPost('/v1/match/'+id+'/snapshot',{},joiner.token);
+assert.equal(a.matchId,b.matchId);
+assert.notEqual(a.playerColor,b.playerColor);
+const white=a.playerColor==='w'?owner.token:joiner.token;
+const black=a.playerColor==='b'?owner.token:joiner.token;
+const move1=await tournamentPost('/v1/match/'+id+'/move',{from:'e2',to:'e4'},white);
+assert.equal(move1.moves.length,1);
+const move2=await tournamentPost('/v1/match/'+id+'/move',{from:'e7',to:'e5'},black);
+assert.equal(move2.moves.length,2);
+const resumed=await tournamentPost('/v1/match/'+id+'/snapshot',{},white);
+assert.equal(resumed.moves.length,2,'moves restored from server');
+const resigned=await tournamentPost('/v1/match/'+id+'/resign',{},white);
+assert.equal(resigned.status,'finished');
+assert.equal(resigned.rated,false,'test guests must never change Power');
+console.log('Netlify Edge relay: 2 signed guest sessions, private matchmaking, 2 moves, reconnect and resign PASS');
+
 console.log('Gateway, preflight, and playable preview reachability passed. Two real players still need manual acceptance.');
