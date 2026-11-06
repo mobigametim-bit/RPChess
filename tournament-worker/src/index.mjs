@@ -44,6 +44,16 @@ function safeCommander(id){return COMMANDER_IDS.has(id)?id:'oathkeeper';}
 function displayPower(value){return Number.isSafeInteger(value)?Math.min(1000000,Math.max(0,value)):500;}
 function playerName(value){return String(value||'Воин').trim().slice(0,24)||'Воин';}
 function safeRace(r){return ['humans','elves','orcs','undead','dark_elves','dwarves','demons','angels','dragonborn','beastfolk','constructs','animals','fae','goblins'].includes(r)?r:'humans';}
+function allowedOrigin(origin,env){
+ if(!origin)return true; // Server-side smoke still needs a valid bearer.
+ const explicit=String(env.ALLOWED_ORIGINS||ORIGINS.join(',')).split(',').map(v=>v.trim());
+ if(explicit.includes(origin))return true;
+ try{
+  const url=new URL(origin);
+  return url.origin===origin&&url.protocol==='https:'&&
+   /^(?:(?:stage|prod)-)?app54754579(?:-[a-z0-9]+)?\.pages\.vk-apps\.(?:ru|com)$/i.test(url.hostname);
+ }catch{return false;}
+}
 /* Result + score are authoritative inside this match Durable Object; the
  * same immutable receipt is exposed on reconnect. Shards remain disabled.
  */
@@ -102,8 +112,8 @@ async function profileBinding(credential,env){
 
 export default {
  async fetch(request,env){
-  const origin=request.headers.get('Origin');const list=String(env.ALLOWED_ORIGINS||ORIGINS.join(',')).split(',').map(v=>v.trim());
-  const allowed=!origin||list.includes(origin);
+  const origin=request.headers.get('Origin');
+  const allowed=allowedOrigin(origin,env);
   const cors=allowed&&origin?{'Access-Control-Allow-Origin':origin,'Vary':'Origin'}:{};
   if(request.method==='OPTIONS')return new Response(null,{status:allowed?204:403,headers:{...cors,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Max-Age':'600'}});
   if(!allowed)return problem('origin_forbidden',403);
