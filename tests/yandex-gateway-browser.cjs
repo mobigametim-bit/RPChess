@@ -165,6 +165,8 @@ async function verifyVKRecovery(browser){
   assert.equal(profileWrites,beforeWrites,'Conflicted local snapshot must never overwrite D1');
   await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
   await page.locator('[data-tournament-open]').click();
+  assert.match(await page.locator('[data-tournament-screen]').innerText(),/Сохранения конфликтуют/,
+   'The player must be warned that profile sync remains paused');
   await page.locator('[data-tour-action="search"]').click();
   await page.waitForFunction(()=>globalThis.RPChessTournament?.page==='search'&&
    !!document.querySelector('.tournament-spinner'),null,{timeout:30000});
