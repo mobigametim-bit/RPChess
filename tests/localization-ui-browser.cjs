@@ -86,6 +86,12 @@ async function seed(page, type, index = 0, eventId = null) {
   try {
     let page = await fresh();
     await roundtrip(page,'menu and empty Chronicle');
+    assert.strictEqual(await page.locator('[data-reboot-foundation] [data-brand-logo]').getAttribute('alt'),
+      'Heroes of Check and Mate','main menu logo accessibility label must switch to English');
+    await language(page,'ru');
+    assert.strictEqual(await page.locator('[data-reboot-foundation] [data-brand-logo]').getAttribute('alt'),
+      'Герои Шаха и Мата','main menu logo accessibility label must return to Russian');
+    await language(page,'en');
     await page.evaluate(()=>globalThis.RPChessOpenSettings());
     await roundtrip(page,'settings');
     await page.close();
