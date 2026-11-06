@@ -21,7 +21,7 @@ function ensureCss() {
   if (document.querySelector('[data-player-identity-chronicle-css]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/player-identity-chronicle.css?v=20261104-profile-chronicle-1';
+  link.href = 'css/player-identity-chronicle.css?v=20261106-lavash-preview-1';
   link.dataset.playerIdentityChronicleCss = '';
   document.head.append(link);
 }
