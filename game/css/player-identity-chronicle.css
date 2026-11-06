@@ -1,3 +1,12 @@
+/* A self-contained face used only by the Chronicle flag. Other game views keep BrahmsGotisch. */
+@font-face {
+ font-family:'LavashChronicle';
+ src:url('../fonts/Lavash.woff2') format('woff2');
+ font-weight:400;
+ font-style:normal;
+ font-display:swap;
+}
+
 /* --------------------------------------------------------------------------
    Global modal 01 — Player identity
    Presentation-only. Runtime hooks, validation and run creation stay unchanged.
@@ -147,16 +156,16 @@
 .chronicle-flag-art{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:fill;pointer-events:none}
 .chronicle-safe{position:absolute;inset:14% 22% 24%;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#bf9554 transparent;padding-inline:2px;color:#fff0cd;text-shadow:0 2px 5px #001326}
 .chronicle-header{text-align:center;padding:0 0 5px;border-bottom:1px solid rgba(235,187,91,.7)}
-.chronicle-header h2{margin:0;font:400 clamp(25px,2.6vw,42px)/1 'BrahmsGotischCyr',Georgia,serif;color:#ffde90}
+.chronicle-header h2{margin:0;font:400 clamp(25px,2.6vw,42px)/1 'LavashChronicle',Georgia,serif;color:#ffde90}
 .chronicle-current,.chronicle-best{padding:6px 0 0;min-width:0}
 .chronicle-section-label{text-align:center;color:#ffde96;font:700 clamp(11px,1.1vw,16px)/1.05 Georgia,serif;text-transform:uppercase}
-.chronicle-current h3,.chronicle-best h3{margin:3px 0 5px;text-align:center;font:400 clamp(19px,2vw,29px)/1.08 'BrahmsGotischCyr',Georgia,serif;color:#fff2d1;overflow-wrap:anywhere}
+.chronicle-current h3,.chronicle-best h3{margin:3px 0 5px;text-align:center;font:400 clamp(19px,2vw,29px)/1.08 'LavashChronicle',Georgia,serif;color:#fff2d1;overflow-wrap:anywhere}
 .chronicle-divider{height:1px;margin:3px 0;background:linear-gradient(90deg,transparent,#edc46c,transparent)}
 .chronicle-metric{display:grid;grid-template-columns:clamp(30px,4.5vw,55px) minmax(0,1fr);align-items:center;gap:5px;min-width:0;min-height:clamp(39px,5.1vh,55px);padding:2px 0;border-bottom:1px solid rgba(231,179,80,.38)}
 .chronicle-metric img{width:100%;height:100%;max-height:52px;object-fit:contain;filter:drop-shadow(0 2px 3px #07162f)}
 .chronicle-metric-detail{min-width:0;display:flex;flex-direction:column;align-items:flex-start;line-height:1.05}
 .chronicle-metric span{color:#ffdf9c;font:700 clamp(11px,1.02vw,15px)/1.05 Georgia,serif;text-transform:uppercase;overflow-wrap:anywhere}
-.chronicle-metric strong{color:#fff6e2;font:400 clamp(19px,1.9vw,28px)/1 'BrahmsGotischCyr',Georgia,serif}
+.chronicle-metric strong{color:#fff6e2;font:400 clamp(19px,1.9vw,28px)/1 'LavashChronicle',Georgia,serif}
 .chronicle-empty-copy{margin:6px 0 0;color:#e3d8be;text-align:center;font-size:clamp(12px,1vw,15px);line-height:1.3}
 @media (orientation:landscape){
   html[data-landscape-ui='1'] .chronicle-panel{width:min(100%,calc((100dvh - 84px)*1086/1448))!important;height:auto!important;max-height:calc(100dvh - 84px)!important;aspect-ratio:1086/1448!important;padding:0!important;overflow:hidden!important;justify-self:center!important;align-self:center!important}
@@ -186,7 +195,7 @@
 }
 
 /* Great Commanders leaderboard: compact rows inside the existing royal flag. */
-.chronicle-commanders-title{margin:1px 0 5px;text-align:center;font:400 clamp(18px,1.7vw,25px)/1.1 'BrahmsGotischCyr',Georgia,serif;color:#ffe0a1;overflow-wrap:anywhere}
+.chronicle-commanders-title{margin:1px 0 5px;text-align:center;font:400 clamp(18px,1.7vw,25px)/1.1 'LavashChronicle',Georgia,serif;color:#ffe0a1;overflow-wrap:anywhere}
 .chronicle-leaderboard-self{display:flex;align-items:center;justify-content:space-between;gap:5px;padding:4px 2px;border-bottom:1px solid #d4aa6f;background:rgba(1,15,39,.13);font:700 clamp(10px,.92vw,13px)/1.2 Georgia,serif;color:#ffe1a6}
 .chronicle-leaderboard-self strong{white-space:nowrap;font-size:clamp(10px,1vw,14px);color:#fff4dd}
 .chronicle-leaderboard-list{list-style:none;padding:0;margin:3px 0 0;min-width:0;display:grid;gap:0}
@@ -362,7 +371,7 @@
 }
 .chronicle-personal-overview>div{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center}
 .chronicle-personal-overview span{color:#f4d49a;font:700 clamp(9px,.78vw,11px)/1.12 Georgia,serif;overflow-wrap:anywhere}
-.chronicle-personal-overview strong{color:#fff3d3;font:400 clamp(17px,1.7vw,24px)/1 'BrahmsGotischCyr',Georgia,serif;font-variant-numeric:tabular-nums}
+.chronicle-personal-overview strong{color:#fff3d3;font:400 clamp(17px,1.7vw,24px)/1 'LavashChronicle',Georgia,serif;font-variant-numeric:tabular-nums}
 .chronicle-personal-history .chronicle-leaderboard-row{min-height:33px;padding-block:3px}
 .chronicle-personal-history-detail{display:flex;flex-direction:column;gap:2px;min-width:0;overflow:hidden}
 .chronicle-personal-history-detail>strong{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:clamp(10px,.87vw,13px)}
