@@ -360,6 +360,16 @@ try {
  assert.deepEqual(await readPower(black),winnerPower,'Full reload must not double-award Elo');
  // Regression for real user's bug: the completed game's 2.4-second poll must
  // NOT resurrect Victory / timeout after starting a new opponent search.
+ // This is a UI-only regression: NEVER insert our automation user into the
+ // live public queue, where they could unexpectedly match a real player.
+ const fakeHeaders={'Content-Type':'application/json',
+  'Access-Control-Allow-Origin':new URL(url).origin,
+  'Access-Control-Allow-Headers':'Authorization, Content-Type'};
+ for(const endpoint of ['/v1/queue/join','/v1/queue/status']){
+  await white.route('**'+endpoint,route=>route.request().method()==='POST'
+   ?route.fulfill({status:200,headers:fakeHeaders,body:'{"status":"waiting"}'})
+   :route.continue());
+ }
  await white.locator('[data-tour-action="again"]').click();
  await white.waitForTimeout(6100);
  const state=await white.evaluate(()=>({
