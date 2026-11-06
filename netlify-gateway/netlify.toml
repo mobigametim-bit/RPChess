@@ -7,9 +7,11 @@
   to = "https://rpchess-tournament-profile-preview.mobigametim.workers.dev/:splat"
   status = 200
   force = true
+  headers = { Origin = "https://mobigametim-bit.github.io" }
 
 [[redirects]]
   from = "/profile/*"
   to = "https://rpchess-profile-preview.mobigametim.workers.dev/:splat"
   status = 200
   force = true
+  headers = { Origin = "https://mobigametim-bit.github.io" }

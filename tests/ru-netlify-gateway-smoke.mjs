@@ -35,4 +35,16 @@ for(const service of ['profile','tournament']) {
   assert.ok(allow.includes('authorization')&&allow.includes('content-type'),path+' missing auth/content-type preflight');
   console.log(path,'OPTIONS',res.status,'CORS OK');
 }
+
+// A Netlify-hosted playable candidate has its own Origin. Confirm that the
+// proxy can route these same-origin requests into existing Cloudflare CORS.
+for(const service of ['profile','tournament']) {
+  const path='/'+service+'/health';
+  const res=await request(path,{headers:{Origin:base}});
+  assert.equal(res.status,200,path+' with Netlify Origin failed: '+res.status);
+  const data=await res.json();
+  assert.equal(data.ok,true,path+' missing healthy upstream');
+  console.log(path,'Netlify-Origin GET',res.status);
+}
+
 console.log('Gateway health and preflight checks passed. Browser matchmaking remains separate manual acceptance.');
