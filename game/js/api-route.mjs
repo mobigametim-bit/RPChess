@@ -20,7 +20,7 @@ function browserEnabled() {
   // Accepted staging host for manual Russian/overseas acceptance; it already
   // appears in both canonical Workers' CORS origin allowlists.
   if(location.hostname==='rpchess-profile-game-preview.mobigametim.workers.dev')return true;
-  if(/^app54754579(?:-[a-z0-9]+)?\.pages\.vk-apps\.(ru|com)$/i.test(location.hostname))return true;
+  if(/^(?:(?:stage|prod)-)?app54754579(?:-[a-z0-9]+)?\.pages\.vk-apps\.(ru|com)$/i.test(location.hostname))return true;
   if(new URLSearchParams(location.search).has('vk_app_id'))return true;
   return false;
  }catch{return false;}
