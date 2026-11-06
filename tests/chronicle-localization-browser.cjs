@@ -124,6 +124,22 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     }
     await setLanguage('ru');
     assert.strictEqual(await panel.locator('h2').innerText(),'Летопись');
+    // Extend the existing UI acceptance: this font must be real, loaded, and
+    // scoped to the Chronicle rather than replacing global BrahmsGotisch.
+    const chronicleFace=await page.evaluate(async()=>{
+      await document.fonts.load("400 32px LavashChronicle","Летопись 2026");
+      const title=document.querySelector('.chronicle-header h2');
+      const display=document.querySelector('.chronicle-current h3');
+      const mainButton=document.querySelector('.reboot-menu-actions .reboot-button');
+      return {status:document.fonts.check("400 32px LavashChronicle","Летопись 2026"),
+        title:getComputedStyle(title).fontFamily,
+        display:display?getComputedStyle(display).fontFamily:null,
+        mainMenu:mainButton?getComputedStyle(mainButton).fontFamily:null};
+    });
+    assert(chronicleFace.status,'Lavash font must load without fallback');
+    assert(chronicleFace.title.includes('LavashChronicle'),'Chronicle heading uses Lavash');
+    if(chronicleFace.display)assert(chronicleFace.display.includes('LavashChronicle'),'Chronicle subheading uses Lavash');
+    assert(!chronicleFace.mainMenu?.includes('LavashChronicle'),'menu buttons keep original font');
     assert((await panel.innerText()).includes('Великие полководцы'));
     if(process.env.RPCHESS_FLAG_SCREENSHOT_DIR) {
       const dir=path.resolve(process.env.RPCHESS_FLAG_SCREENSHOT_DIR);
