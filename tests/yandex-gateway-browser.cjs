@@ -92,6 +92,15 @@ async function verifyVKRecovery(browser){
    'Legacy migration must degrade independently: '+JSON.stringify(identity));
   await page.locator('[data-tour-action="cancel"]').click();
   console.log('VK PROFILE RECOVERY PASS: invalid launch denied, fresh signed retry accepted, legacy Bridge unavailable but Tournament queue entered');
+ }catch(error){
+  const status=await page.evaluate(()=>({
+   profile:globalThis.RPChessProfileStatus,
+   tournament:globalThis.RPChessTournament?.page,
+   text:document.querySelector('[data-tournament-screen]')?.innerText?.().slice(0,700)
+  })).catch(()=>null);
+  console.error('VK RECOVERY DIAGNOSTIC',JSON.stringify({status,verifiedLaunches,queueJoins,
+   apiRequests:apiRequests.slice(-20),pageErrors:pageErrors.slice(-10)}));
+  throw error;
  }finally{await context.close();}
 }
 
