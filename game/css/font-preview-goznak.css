@@ -1,0 +1,22 @@
+/* Global Goznak font trial (only this preview branch); original fonts retained.
+   Layered !important overrides unlayered legacy fonts in every game mode. */
+@font-face {
+ font-family:'GoznakPreview';
+ src:url('../fonts/Goznak-SemiBold.woff2') format('woff2');
+ font-style:normal;
+ font-weight:400 900;
+ font-display:swap;
+}
+@font-face {
+ font-family:'GoznakPreview';
+ src:url('../fonts/Goznak-SemiBoldOblique.woff2') format('woff2');
+ font-style:italic;
+ font-weight:400 900;
+ font-display:swap;
+}
+@layer goznak-preview {
+ html body,
+ html body *:not(svg):not(svg *) {
+  font-family:'GoznakPreview',Georgia,serif!important;
+ }
+}

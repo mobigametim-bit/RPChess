@@ -1,0 +1,129 @@
+name: Goznak game-wide isolated playable preview
+
+on:
+  push:
+    branches: [feature/chronicle-lavash-font-preview-20261106]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rpchess-goznak-preview
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/chronicle-lavash-font-preview-20261106'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Verify user Goznak fonts and bundle WOFF2 faces
+        run: |
+          set -euo pipefail
+          if test -s game/fonts/Goznak-SemiBold.woff2 && test -s game/fonts/Goznak-SemiBoldOblique.woff2; then
+            echo 'Verified font faces are already bundled'
+          else
+            python3 -m pip install --disable-pip-version-check --quiet fonttools brotli
+            python3 - <<'PY'
+          import zipfile, hashlib, pathlib, io
+          from fontTools.ttLib import TTFont
+          source=pathlib.Path('game/fonts/goznak_source.zip')
+          assert hashlib.sha256(source.read_bytes()).hexdigest()=='26c59d6e8be69c4eeaa75a724444a9a9fe38b5b38109442dac9e1d84a25dd99e', 'Supplied archive checksum mismatch'
+          variants=[
+            ('Gosznak-Semi Bold.otf','0027c2c735b2e286a0f0352b245436824792828bfd621f6837aa969037a3a874','Goznak-SemiBold.woff2'),
+            ('Gosznak-Semi Bold Oblique.otf','f5e9a9f5a27c376debf469498311956554f64edbd9b35d950acaa27b53ad6488','Goznak-SemiBoldOblique.woff2')
+          ]
+          with zipfile.ZipFile(source) as archive:
+              for name,checksum,filename in variants:
+                  data=archive.read(name)
+                  assert hashlib.sha256(data).hexdigest()==checksum, 'Font checksum mismatch: '+name
+                  font=TTFont(io.BytesIO(data))
+                  cmap=font.getBestCmap()
+                  for alphabet in ['abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ','абвгдеёжзийклмнопрстуфхцчшщъыьэюя','АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ','0123456789']:
+                      assert all(ord(char) in cmap for char in alphabet), 'Incomplete glyph repertoire: '+name
+                  assert cmap[ord('А')]!=cmap[ord('а')], 'Uppercase and lowercase Cyrillic glyphs not distinct'
+                  font.flavor='woff2'
+                  dest=pathlib.Path('game/fonts')/filename
+                  font.save(dest)
+                  assert dest.stat().st_size>5000
+                  print('Prepared',filename,dest.stat().st_size,'bytes')
+          PY
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add game/fonts/Goznak-SemiBold.woff2 game/fonts/Goznak-SemiBoldOblique.woff2
+            git rm game/fonts/goznak_source.zip
+            git commit -m 'assets(font): bundle exact Goznak webfonts [skip ci]'
+            git push origin HEAD:feature/chronicle-lavash-font-preview-20261106
+          fi
+      - name: Build and run canonical regression gate
+        run: |
+          npm ci --no-audit --no-fund
+          npm run gate:local
+      - name: Install Chromium
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install --with-deps chromium
+      - name: Verify game-wide font, responsive layouts and shadow mode
+        env:
+          RPCHESS_BROWSER_TEST: chronicle-localization-browser.cjs,responsive-viewport-browser.cjs,tournament-v4-browser.cjs
+          RPCHESS_FLAG_SCREENSHOT_DIR: test-results/goznak-font
+        run: npm run test:browser
+      - name: Save responsive font preview screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: goznak-game-font-screenshots
+          path: test-results/goznak-font
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Verify Cloudflare credentials
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: test -n "$TOKEN" && test -n "$ACCOUNT"
+      - name: Deploy isolated Goznak preview (not production)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config goznak-preview/wrangler.toml
+      - name: Smoke live preview and two WOFF2 files
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const root='https://rpchess-goznak-preview.mobigametim.workers.dev';
+          (async()=>{
+            for(let trial=0;trial<20;trial++){
+              try{
+                const html=await fetch(root+'/');
+                const css=await fetch(root+'/css/font-preview-goznak.css');
+                const content=await css.text();
+                const faces=await Promise.all([
+                  '/fonts/Goznak-SemiBold.woff2',
+                  '/fonts/Goznak-SemiBoldOblique.woff2'
+                ].map(async path=>{
+                  const response=await fetch(root+path);
+                  const data=Buffer.from(await response.arrayBuffer());
+                  return response.status===200&&data.subarray(0,4).toString()==='wOF2';
+                }));
+                if(html.status===200&&(await html.text()).includes('font-preview-goznak.css')&&
+                   css.status===200&&content.includes('GoznakPreview')&&
+                   content.includes('@layer goznak-preview')&&faces.every(Boolean)){
+                  console.log('Goznak preview LIVE:',root+'/');
+                  return;
+                }
+              }catch(e){console.log('Preview propagation:',e.message);}
+              await new Promise(resolve=>setTimeout(resolve,3000));
+            }
+            throw Error('Goznak web fonts not live');
+          })().catch(e=>{console.error(e);process.exitCode=1;});
+          NODE
