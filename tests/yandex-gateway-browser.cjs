@@ -109,7 +109,7 @@ async function verifyVKRecovery(browser){
   const status=await page.evaluate(()=>({
    profile:globalThis.RPChessProfileStatus,
    tournament:globalThis.RPChessTournament?.page,
-   text:document.querySelector('[data-tournament-screen]')?.innerText?.().slice(0,700)
+   text:document.querySelector('[data-tournament-screen]')?.innerText?.slice(0,700)
   })).catch(()=>null);
   console.error('VK RECOVERY DIAGNOSTIC',JSON.stringify({status,verifiedLaunches,queueJoins,
    apiRequests:apiRequests.slice(-20),pageErrors:pageErrors.slice(-10),
