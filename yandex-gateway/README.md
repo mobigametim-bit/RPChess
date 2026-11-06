@@ -72,3 +72,42 @@ node tests/yandex-gateway-health-probe.mjs https://<ваш-id>.apigw.yandexcloud
 - https://yandex.cloud/ru/docs/api-gateway/concepts/networking
 - https://yandex.cloud/ru/docs/api-gateway/pricing
 - https://yandex.cloud/ru/docs/api-gateway/quickstart/
+
+
+## Этап 2: Yandex API Gateway как только HTTP-прокси
+
+**Статус:** подготовлено к установке владельцем в существующий Yandex API Gateway. Ничего в Yandex Cloud автоматически не обновлено — доступ к аккаунту не подключён. Этап 1 уже подтверждён из России без VPN.
+
+Текущая спецификация: [proxy.openapi.yaml](proxy.openapi.yaml). Она полностью заменяет содержимое поля спецификации, **не удаляя** предыдущие `/ping` и `/probe/*`, и добавляет только два префикса API:
+`/profile/{profilePath+}` и `/tournament/{tournamentPath+}`.
+
+- `x-yc-apigateway-any-method` пересылает исходный метод запроса; текущие Workers сами ограничивают его (Profile: GET/POST/PUT/OPTIONS, Tournament: GET/POST/OPTIONS).
+- `headers: {'*':'*'}` сохраняет `Origin`, `Authorization`, `Content-Type` и CORS preflight; явный `Host` устанавливает правильный Cloudflare Worker.
+- `query: {'*':'*'}` сохраняет query-параметры. Без двух wildcard-полей Yandex Cloud их не пересылает по умолчанию, что ломает авторизацию и CORS. [Официальная инструкция](https://yandex.cloud/ru/docs/api-gateway/concepts/extensions/http).
+- Не используем `origin: true` или `Access-Control-Allow-Origin: '*'` в Яндексе: исходный `OPTIONS` передаём Worker, который проверяет разрешённые origins, и возвращает браузеру только согласованный `Access-Control-Allow-Origin`. [Yandex CORS](https://yandex.cloud/ru/docs/api-gateway/concepts/extensions/cors).
+- Запросы проксируются **только** к двум фиксированным Worker URL. Нет размещения игры, базы данных, лобби или секретов в Яндексе.
+- Существующий Web/VK RPChess не перенастраиваем до результатов реальных браузерных тестов и отдельного подтверждения пользователя. `main` не трогаем.
+
+### Действие владельца
+
+1. [Yandex Cloud Console](https://console.yandex.cloud/) → каталог → API Gateway → `rpchess-api-network-probe` → **Редактировать**.
+2. Заменить **всё содержимое** поля **Спецификация** содержимым `proxy.openapi.yaml`, нажать **Сохранить**. Не вставлять ключи API и не создавать новых ресурсов.
+3. Проверить из России без VPN:
+   - `https://d5ds3hf0ei1mlkgjrnlm.d8epmcec.apigw.yandexcloud.net/profile/health` → `"ok":true, "service":"rpchess-profile-preview"`;
+   - `https://d5ds3hf0ei1mlkgjrnlm.d8epmcec.apigw.yandexcloud.net/tournament/health` → `"ok":true, "service":"tournament"`.
+4. После подтверждения обновлённой спецификации запустить безопасный тест:
+   `node tests/yandex-gateway-proxy-smoke.mjs`.
+5. **Только если безопасный тест пройден**, протестировать реальную гостевую закрытую партию:
+   `node tests/yandex-gateway-private-match-smoke.mjs`.
+6. После двух зелёных тестов проверить сам игровой клиент с двух устройств в РФ, включая восстановление после обновления страницы, и отдельно профиль PUT с валидным гостевым токеном.
+7. Только после приёмки перенести клиентскую маршрутизацию на новый Yandex Gateway в отдельной ветке/PR.
+
+### Откат
+
+В любой момент можно вернуть старую `probe.openapi.yaml` в поле спецификации. Откат не затрагивает данные, Worker, Netlify, `main` и игровые ассеты.
+
+### Нерешённые риски
+
+- Передача HTTP body, заголовков, методов и preflight требует живого теста после установки. Подготовленная YAML корректно описывает ожидаемую интеграцию по документации, но ещё не прошла серверную валидацию в Yandex Cloud.
+- При изменении набора разрешённых браузерных origins (VK/GitHub Pages) нужно проверить актуальный allowlist Workers; **не включать отражение любого Origin** в Яндексе.
+- Турнир опрашивает сервер примерно раз в 2.4 секунды: при росте онлайна нужно мониторить бесплатный лимит вызовов шлюза и стоимость.
