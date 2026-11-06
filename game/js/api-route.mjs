@@ -17,6 +17,9 @@ function browserEnabled() {
   const force=new URLSearchParams(location.search).get('rpchess_api_route');
   if(MODES.includes(force))return true;
   if(location.hostname==='mobigametim-bit.github.io'&&/^\/RPChess(?:\/|$)/.test(location.pathname))return true;
+  // Accepted staging host for manual Russian/overseas acceptance; it already
+  // appears in both canonical Workers' CORS origin allowlists.
+  if(location.hostname==='rpchess-profile-game-preview.mobigametim.workers.dev')return true;
   if(/^app54754579(?:-[a-z0-9]+)?\.pages\.vk-apps\.(ru|com)$/i.test(location.hostname))return true;
   if(new URLSearchParams(location.search).has('vk_app_id'))return true;
   return false;
