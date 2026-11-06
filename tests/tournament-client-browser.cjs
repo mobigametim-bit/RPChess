@@ -402,6 +402,7 @@ try {
  const diagnostics=await Promise.all([first,second].map(async client=>{
   try{return {page:await client?.page?.evaluate(()=>globalThis.RPChessTournament?.page),
    profile:await client?.page?.evaluate(()=>globalThis.RPChessProfileStatus?.status),
+   reason:await client?.page?.evaluate(()=>globalThis.RPChessProfileStatus?.reason),
    view:(await client?.page?.locator('[data-tournament-screen]')?.innerText())?.slice(-600)};}
   catch{return null;}
  }));
