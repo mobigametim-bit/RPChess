@@ -44,14 +44,19 @@ async function responsive(fetcher,base,timeoutMs){
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
  try{
   const opts={method:'GET',cache:'no-store',signal:controller.signal};
-  const health=await fetcher(base+'/health',opts);
+  // Run safe checks concurrently so the fallback doesn't add another full
+  // gateway round trip to the player's login or matchmaking startup.
+  // Non-simple headers make browsers verify Authorization/Content-Type CORS
+  // without creating sessions or mutating the public queue.
+  const [health,route]=await Promise.all([
+   fetcher(base+'/health',opts),
+   fetcher(base+'/v1/session',{...opts,
+    headers:{'Content-Type':'application/json','Authorization':'Bearer rpchess-route-probe'}})
+  ]);
   if(!health?.ok||!(await health.json())?.ok)return false;
-  // A harmless GET with non-simple headers triggers the browser's real CORS
-  // preflight for Authorization/Content-Type without creating any sessions.
-  const route=await fetcher(base+'/v1/session',{...opts,
-   headers:{'Content-Type':'application/json','Authorization':'Bearer rpchess-route-probe'}});
-  // Profile responds 404, Tournament 405. A 502/503/redirect is NOT healthy.
-  return [401,403,404,405].includes(route?.status);
+  // Exact known Workers: Profile responds 404, Tournament responds 405.
+  // A 403 (forbidden origin), 502, 503 or redirect is never healthy.
+  return [404,405].includes(route?.status);
  }catch{return false;}finally{clearTimeout(timer);}
 }
 export async function chooseRoute({service='profile',preference='auto',enabled=true,
