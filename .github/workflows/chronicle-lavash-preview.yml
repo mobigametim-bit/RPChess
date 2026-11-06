@@ -114,9 +114,11 @@ jobs:
                 const res=await fetch(origin+'/fonts/Lavash.woff2');
                 const buf=Buffer.from(await res.arrayBuffer());
                 const css=await fetch(origin+'/css/player-identity-chronicle.css');
+                const globalCss=await fetch(origin+'/css/font-preview-lavash.css');
                 const script=await fetch(origin+'/js/player-identity-chronicle.mjs');
                 if(res.status===200&&buf.subarray(0,4).toString()==='wOF2'&&
                   (await css.text()).includes("LavashChronicle")&&
+                  globalCss.status===200&&(await globalCss.text()).includes("@layer lavash-preview")&&
                   (await script.text()).includes("20261106-lavash-preview-1")){
                     console.log('Chronicle font preview LIVE:',origin+'/');
                     return;
