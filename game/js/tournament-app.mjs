@@ -586,7 +586,13 @@ async function joinRoom(){
 button?.addEventListener('click',()=>{open();void Promise.resolve(globalThis.RPChessCloudReady).then(()=>{if(page==='setup')render();}).catch(()=>{});});
 root.addEventListener('change',event=>{
  const choice=event.target.closest('[data-tour-api-route]');
- if(choice&&setRoutePreference(choice.value))globalThis.location.reload();
+ if(choice&&setRoutePreference(choice.value)){
+  const url=new URL(globalThis.location.href);
+  if(url.searchParams.has('rpchess_api_route')){
+   url.searchParams.set('rpchess_api_route',choice.value);
+   globalThis.location.replace(url.href);
+  }else globalThis.location.reload();
+ }
 });
 root.addEventListener('click',event=>{
  const square=event.target.closest('[data-tour-board] [data-square]');
