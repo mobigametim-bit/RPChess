@@ -392,11 +392,19 @@ async function boot() {
     return {status:'offline'};
   }
 }
-async function bootstrapProfile() {
-  if(!bootPromise)bootPromise=boot();
+async function bootstrapProfile({retry=false}={}) {
+  // A failed first VK launch check must not permanently strand Tournament
+  // and Chronicle in offline mode for the whole browser tab. Retry is only
+  // triggered by explicit user action, never by a timer or silent login.
+  // The server must still validate fresh VK signed launch data before any
+  // new identity is trusted. A verified, active session is never replaced.
+  if(!bootPromise||(retry&&status==='offline'&&!sessionReady))bootPromise=boot();
   return bootPromise;
 }
-function statusInfo() {return Object.freeze({status,provider,profileId,revision,enabled:enabled(),migration:migration.status});}
+function statusInfo() {return Object.freeze({
+ status,reason:globalThis.RPChessProfileStatus?.reason||'',
+ provider,profileId,revision,enabled:enabled(),migration:migration.status
+});}
 // Profile API owns leaderboard writes and re-derives candidate Glory from the
 // server-stored D1 snapshot. Browser-supplied arbitrary scores are never sent.
 async function unifiedLeaderboard({refresh=false}={}) {
