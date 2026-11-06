@@ -23,11 +23,6 @@ async function jsonGet(path,expected){
  if(expected)assert.equal(j?.service,expected,path+' wrong upstream');
  console.log('OK',path,r.status,expected||'gateway');
 }
-await jsonGet('/ping');
-await jsonGet('/probe/profile','rpchess-profile-preview');
-await jsonGet('/probe/tournament','tournament');
-await jsonGet('/profile/health','rpchess-profile-preview');
-await jsonGet('/tournament/health','tournament');
 for(const item of [
  {path:'/profile/v1/session',method:'POST'},
  {path:'/profile/v1/profile',method:'PUT'},
@@ -48,6 +43,11 @@ for(const item of [
  assert(allowedMethods.includes(item.method),'method not allowed by CORS');
  assert(/Authorization/i.test(allowedHeaders),'Authorization not allowed by CORS');
 }
+await jsonGet('/ping');
+await jsonGet('/probe/profile','rpchess-profile-preview');
+await jsonGet('/probe/tournament','tournament');
+await jsonGet('/profile/health','rpchess-profile-preview');
+await jsonGet('/tournament/health','tournament');
 const forbidden=await fetchApi('/tournament/v1/session',{
  method:'OPTIONS',headers:{'Origin':blocked,
   'Access-Control-Request-Method':'POST',
