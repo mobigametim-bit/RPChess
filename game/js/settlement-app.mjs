@@ -2,7 +2,7 @@ import { heroPortraitArt } from './race-assets.mjs';
 import { PIECE_GLYPHS } from './roster-data.mjs';
 import { readRun, writeRun } from './run-persistence.mjs';
 import { subscribe, t, translateLegacy } from './i18n.mjs';
-import { brandLogoSrc } from './brand-logo.mjs';
+import { brandLogoSrc, brandLogoAlt } from './brand-logo.mjs';
 import { heroNoteForId } from './content/hero-notes.mjs';
 import {
   SETTLEMENT_SUPPLY_PRICE,
@@ -97,7 +97,7 @@ function ensureScreen() {
   screen.innerHTML = `
     <div class="settlement-shell">
       <header class="settlement-topbar">
-        <img class="settlement-logo" data-brand-logo src="${brandLogoSrc()}" alt="Герои Шаха и Мата">
+        <img class="settlement-logo" data-brand-logo src="${brandLogoSrc()}" alt="${brandLogoAlt()}">
       </header>
       <header class="settlement-heading">
         <div class="reboot-eyebrow" data-settlement-kicker></div>
