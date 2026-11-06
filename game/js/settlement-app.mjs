@@ -97,7 +97,7 @@ function ensureScreen() {
   screen.innerHTML = `
     <div class="settlement-shell">
       <header class="settlement-topbar">
-        <img class="settlement-logo" data-brand-logo src="${brandLogoSrc()}" alt="RPChess">
+        <img class="settlement-logo" data-brand-logo src="${brandLogoSrc()}" alt="Герои Шаха и Мата">
       </header>
       <header class="settlement-heading">
         <div class="reboot-eyebrow" data-settlement-kicker></div>
