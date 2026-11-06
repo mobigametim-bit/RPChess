@@ -20,7 +20,7 @@ function rpchessProfileEnabled() {
     // instead of the GitHub Pages iframe. Keep RPChess ID enabled on both
     // approved hosts; the server still requires a *signed* VK launch.
     const host=globalThis.location?.hostname||'';
-    if(/^(?:(?:stage|prod)-)?app54754579(?:-[a-z0-9]+)?\\.pages\\.vk-apps\\.(?:ru|com)$/i.test(host))return true;
+    if(/^(?:(?:stage|prod)-)?app54754579(?:-[a-z0-9]+)?\.pages\.vk-apps\.(?:ru|com)$/i.test(host))return true;
     // Other portals remain isolated from this storage/identity rollout.
     return host==='mobigametim-bit.github.io'
       && /^\/RPChess(?:\/|$)/.test(globalThis.location?.pathname||'');
