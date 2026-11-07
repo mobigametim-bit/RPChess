@@ -418,6 +418,8 @@ fs.mkdirSync(output,{recursive:true});
   assert.equal(await positionalPage.evaluate(()=>window.__mentorPositionalDeepCalls),0,
    'no extra 1700ms search on an obvious non-tactical error');
   assert.equal(positionalCalls,0,'positional comments must not invoke paid LLM broker');
+  assert.equal(await positionalPage.locator('[data-mentor-action="before-error"]').count(),0,
+   'positional response is a short comment, not a tactical rewind exercise');
   assert((await positionalPage.locator('.mentor-feedback-text').textContent()).includes('непосредственная тактическая угроза не подтверждена'),
    'short local explanation is shown');
   assert.equal(positionalErrors.length,0,'positional browser errors '+positionalErrors.join('\n'));
