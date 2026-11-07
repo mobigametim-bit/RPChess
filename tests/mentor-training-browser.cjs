@@ -23,7 +23,7 @@ fs.mkdirSync(output,{recursive:true});
     speak:utterance=>{
      window.__mentorSpeechLast=utterance;
      window.__mentorSpeechEvents.push({type:'speak',text:utterance.text,
-      language:utterance.lang,voice:utterance.voice?.lang,voiceName:utterance.voice?.name});
+      language:utterance.lang,rate:utterance.rate,voice:utterance.voice?.lang,voiceName:utterance.voice?.name});
     }
    };
    Object.defineProperty(window,'speechSynthesis',{value:synth,configurable:true});
@@ -91,7 +91,8 @@ fs.mkdirSync(output,{recursive:true});
   assert(spoken.text.includes('Продолжайте партию'),'only displayed mentor text is spoken');
   assert.equal(spoken.language,'ru-RU');
   assert.equal(spoken.voice,'ru-RU');
-  assert.equal(spoken.voiceName,'Microsoft Pavel',
+  assert.equal(spoken.rate,1.5,'speech runs at 150% normal speed');
+   assert.equal(spoken.voiceName,'Microsoft Pavel',
    'Pavel wins over the default local Russian female voice');
   // The shared speech controller must prefer the requested UK male voice
   // over default en-US voices without another backend or LLM request.
@@ -105,11 +106,11 @@ fs.mkdirSync(output,{recursive:true});
    panel.insertAdjacentHTML('beforeend',narration.buttonMarkup());
    narration.toggle();
    const selection={name:window.__mentorSpeechLast.voice?.name,
-    lang:window.__mentorSpeechLast.lang};
+    lang:window.__mentorSpeechLast.lang,rate:window.__mentorSpeechLast.rate};
    narration.stop();
    return selection;
   });
-  assert.deepEqual(englishVoice,{name:'Google UK English Male',lang:'en-GB'},
+  assert.deepEqual(englishVoice,{name:'Google UK English Male',lang:'en-GB',rate:1.5},
    'Google UK English Male is preferred and utterance uses its actual locale');
   await speak.click();
   assert.equal(await speak.getAttribute('aria-pressed'),'false');
