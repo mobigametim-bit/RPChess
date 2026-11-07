@@ -580,9 +580,7 @@ function onClick(event){
   const chosen=promotion;promotion=null;void userMove(chosen.from,chosen.to,button.dataset.mentorPromote);return;
  }
  if(button.dataset.mentorSquare){
-  // A lesson never permits accidental changes to the live game, including
-  // a positional lesson with no selectable tactical piece.
-  if(lessonView&&!analysisView)return;
+  // Select rival pieces in the paused, unchanged post-mistake position.
   if(lessonView){
    if(!lessonView.plan||lessonView.stage===3)return;
    const cell=button.dataset.mentorSquare;
