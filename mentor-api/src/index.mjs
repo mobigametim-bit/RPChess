@@ -119,7 +119,7 @@ async function handleMentorApi(request,env,fetcher=fetch){
      const output=safeExplanation(parsed?.explanation,data);
      if(output){
       return reply({explanation:output,grade:data.grade,
-       source:selected.source,model:selected.id,attempts:attempts.length+1},200,origin);
+       source:selected.source,model:selected.id,attempts:attempts.length+1,failures:attempts},200,origin);
      }
     }
     problem='broker_invalid';

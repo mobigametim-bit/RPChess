@@ -390,6 +390,7 @@ async function deliverMentorFeedback(entry,payload,verified,cacheKey,epoch){
  entry.mentorModel=outcome.model||null;
  entry.mentorReason=outcome.reason||null;
  entry.mentorAttempts=outcome.attempts;
+ entry.mentorFailures=outcome.failures||[];
  save();render();
 }
 async function explainVerifiedMove({beforeFen,afterFen,uci,kind,before,after,entry,epoch}){

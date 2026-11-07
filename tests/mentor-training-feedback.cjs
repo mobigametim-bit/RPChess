@@ -159,6 +159,8 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  assert.equal(recoveredData.source,'minimax');
  assert.equal(recoveredData.model,models[1]);
  assert.equal(recoveredData.attempts,2);
+ assert.deepEqual(recoveredData.failures,[{model:models[0],reason:'broker_unavailable'}],
+  'accepted fallback response retains sanitized cause of first failure');
  assert.deepEqual(requested,models.slice(0,2),'third model is not charged after success');
  requested=[];
  const thirdFetcher=async(url,opts)=>{

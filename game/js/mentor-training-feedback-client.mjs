@@ -62,7 +62,8 @@ async function requestMentorText({payload,verified,signal,fallbackText=null,fetc
   if(!supported[json.source]||json.model&&json.model!==supported[json.source])
    return mentorFallback(fallback,'invalid_source');
   return {explanation:json.explanation,source:json.source,
-   model:supported[json.source],reason:null,attempts:json.attempts||1,retryable:false};
+   model:supported[json.source],reason:null,attempts:json.attempts||1,
+   failures:Array.isArray(json.failures)?json.failures.slice(0,2):[],retryable:false};
  }catch{
   return mentorFallback(fallback,controller.signal.aborted?'broker_timeout':'network_error');
  }finally{clearTimeout(timer);signal?.removeEventListener('abort',onAbort);}
