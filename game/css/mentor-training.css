@@ -437,6 +437,10 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
 .mentor-training .mentor-lesson-burst--correct{
  color:#81f5a0;text-shadow:0 2px 4px #092010,0 0 10px #32b858,1px 1px #06140a
 }
+.mentor-training .mentor-lesson-burst--correction{
+ font-size:clamp(17px,2vw,25px);max-width:min(450px,80vw);min-width:0;
+ line-height:1.18;overflow-wrap:normal
+}
 @keyframes mentor-lesson-pulse{
  0%{opacity:0;transform:scale(.65)}
  16%{opacity:1;transform:scale(1.2)}
@@ -480,6 +484,13 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
  color:#f5a6a3;background:#451f2299;border:1px solid #e16a6966
 }
 .mentor-training .mentor-correction-start{border-color:#cba65f;background:#534023}
+.mentor-training .mentor-correction-strong{border-color:#cba65f;background:linear-gradient(#4b3924,#292118);color:#ffe3a6}
+.mentor-training .mentor-correction-strong:disabled{opacity:.65;cursor:default}
+.mentor-training .mentor-correction-best{
+ margin:0;padding:9px 11px;border:1px solid #cba65f88;border-radius:4px;
+ background:#2c342b;color:#d8f3bb;font-size:clamp(16px,1.3vw,19px);
+ letter-spacing:.025em;line-height:1.4
+}
 @media(max-width:720px){
  .mentor-training .mentor-correction-result{font-size:14px;padding:6px 8px}
 }
