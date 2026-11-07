@@ -4,7 +4,7 @@
  */
 import { validateMentorInput, promptForMentor, safeExplanation, localMentorFallback } from '../../game/js/mentor-training-feedback-core.mjs';
 import {handleMentorBenchmark,benchRequestConfig} from './benchmark.mjs';
-import {validatedV2Facts,promptForMentorV2,safeMentorAdvice,composeMentorV2Explanation} from '../../game/js/mentor-training-feedback-v2.mjs';
+import {validatedV2Facts,promptForMentorV2,safeMentorAdvice,mentorAdviceValidationIssue,composeMentorV2Explanation} from '../../game/js/mentor-training-feedback-v2.mjs';
 
 const DEFAULT_BROKER_BASE='https://hskyauefqcgbvgvxkluj.supabase.co/functions/v1/gonka';
 // Bounded sequential failover, always preferring the requested DeepSeek model.
@@ -116,7 +116,7 @@ async function handleMentorApi(request,env,fetcher=fetch,sleep=waitForRetry,cont
    const timer=setTimeout(()=>controller.abort(),selected.timeout);
    let problem='broker_network',fatal=false;
    // Keep parsed in scope for diagnostics; invalid answers are not network failures.
-   let content=null,parsed=null,finishReason=null;
+   let content=null,parsed=null,finishReason=null,validationIssue=null;
    try{
     const response=await fetcher(endpoint.toString(),{
      method:'POST',signal:controller.signal,
@@ -155,6 +155,7 @@ async function handleMentorApi(request,env,fetcher=fetch,sleep=waitForRetry,cont
      if(typeof content==='string'&&content.length<=5000){
       const clean=content.trim().replace(/^\`\`\`(?:json)?\s*/i,'').replace(/\s*\`\`\`$/,'');
       try{parsed=JSON.parse(clean);}catch{}
+      validationIssue=isV2?mentorAdviceValidationIssue(parsed?.advice,data):null;
       const advice=isV2?safeMentorAdvice(parsed?.advice,data):null;
       const output=isV2?composeMentorV2Explanation(advice,data):
        safeExplanation(parsed?.explanation,data);
@@ -186,7 +187,8 @@ async function handleMentorApi(request,env,fetcher=fetch,sleep=waitForRetry,cont
    if(request.signal?.aborted)
     return reply({error:'client_cancelled'},499,origin);
    // No raw provider text, FEN, tokens, secrets or user prompt in diagnostics.
-   attempts.push({model:selected.id,attempt:tryNo,reason:problem});
+   attempts.push({model:selected.id,attempt:tryNo,reason:problem,
+    ...(problem==='broker_unsafe_advice'?{validation:validationIssue||'unknown'}:{})});
    if(fatal){
     stoppedForCredentials=true;
     break;
