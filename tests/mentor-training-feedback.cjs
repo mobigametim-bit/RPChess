@@ -155,6 +155,9 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  assert.equal(provenMate.evidence.firstMove,'d8h4');
  assert.equal(provenMate.evidence.secondMove,'a7a6','MultiPV alternative is preserved for ambiguity auditing');
  assert.equal(verifyImmediateThreat({afterFen,after:fastMate,
+  deep:{...deepMate,secondMove:'e8e7',secondDepth:15,secondCp:1190},player:'w'}).status,POS,
+ 'two nearly equal replies from different pieces cannot become a single-answer quiz');
+ assert.equal(verifyImmediateThreat({afterFen,after:fastMate,
   deep:{...deepMate,bestMove:'a7a6',pv:['a7a6']},player:'w'}).status,POS,
  'deep search disagreement is not an invitation to guess the attacking piece');
  assert.equal(verifyImmediateThreat({afterFen,after:fastMate,
