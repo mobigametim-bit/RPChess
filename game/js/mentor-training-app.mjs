@@ -13,6 +13,7 @@ import {buildMentorPayload,requestMentorText} from './mentor-training-feedback-c
 import {validateMentorInput} from './mentor-training-feedback-core.mjs?v=20261107-mentor-auto-pause-v3';
 import {lessonFromVerified,mentorLessonCopy,validateLessonGuess} from './mentor-training-teaching.mjs?v=20261107-mentor-auto-pause-v3';
 import {thinkingText,praiseText,fallbackText} from './mentor-training-copy.mjs';
+import {POS,TACTIC,quickThreatProbe,verifyImmediateThreat} from './mentor-training-threat.mjs?v=20261107-mentor-stage4-v1';
 
 const STORAGE_KEY='rpchess.mentor-training.v1';
 const DEEP_ANALYSIS_MS=1700; // Only after a confirmed quick-analysis error.
@@ -20,8 +21,8 @@ const DEEP_PV_LIMIT=20;
 const ROLES={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
 const SYMBOLS={w:{p:'♙',n:'♘',b:'♗',r:'♖',q:'♕',k:'♔'},b:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'}};
 const TEXT={
- ru:{title:'Тренировка с наставником',back:'Главное меню',mentor:'Наставник',mentorThinking:'Думаю…',lesson:'Проверить себя',lessonHint:'Подсказка',lessonShow:'Показать ответ',lessonExit:'Продолжить партию',lessonBoard:'Найди ответ соперника',lessonPending:'Наставник ищет опасное продолжение…',moves:'Ходы',white:'Белые',black:'Чёрные',random:'Случайно',start:'Начать тренировку',new:'Новая тренировка',exit:'К наставникам',prev:'Назад',next:'Вперёд',close:'Закрыть',journal:'Ходы',ready:'Ваш ход',thinking:'Соперник думает…',analysing:'Анализ хода…',waiting:'Оценка недоступна',fine:'Продолжайте партию.',inaccuracy:'Неточность',mistake:'Ошибка',blunder:'Зевок',noGrade:'Нет замечаний',loss:'Потеря оценки',retry:'Позиция ухудшилась. Попробуйте вернуться назад и найти более сильное продолжение.',reviewFail:'Не удалось проверить ход. Партию можно продолжать.',gameOver:'Партия завершена',check:'Шах!',promotion:'Превращение пешки',before:'Вернуться перед ошибкой',clear:'Начать заново',profile:'Мощь',restore:'Продолжить тренировку',victory:'Победа!',defeat:'Поражение',draw:'Ничья',reviewGame:'Анализировать',menu:'Главное меню',mentors:'К наставникам',good:'Хороший ход',excellent:'Блестящий ход',view:'Посмотреть',engineLine:'Вариант Stockfish',afterMistake:'После ошибки',returnToGame:'К партии',retryAI:'Повторить запрос ИИ'},
- en:{title:'Training with a Mentor',back:'Main menu',mentor:'Mentor',mentorThinking:'Thinking…',lesson:'Test yourself',lessonHint:'Hint',lessonShow:'Reveal answer',lessonExit:'Continue game',lessonBoard:'Find the opponent’s reply',lessonPending:'Mentor is checking the opponent’s reply…',moves:'Moves',white:'White',black:'Black',random:'Random',start:'Start training',new:'New training',exit:'Mentors',prev:'Back',next:'Forward',close:'Close',journal:'Moves',ready:'Your move',thinking:'Opponent thinking…',analysing:'Analysing move…',waiting:'Evaluation unavailable',fine:'Continue the game.',inaccuracy:'Inaccuracy',mistake:'Mistake',blunder:'Blunder',noGrade:'No issues found',loss:'Evaluation lost',retry:'This move worsened your position. Go back and try to find a stronger continuation.',reviewFail:'The move could not be evaluated. You can continue playing.',gameOver:'Game over',check:'Check!',promotion:'Promote pawn',before:'Return before error',clear:'Start over',profile:'Strength',restore:'Resume training',victory:'Victory!',defeat:'Defeat',draw:'Draw',reviewGame:'Analyse',menu:'Main menu',mentors:'Mentors',good:'Good move',excellent:'Brilliant move',view:'View',engineLine:'Stockfish line',afterMistake:'After the mistake',returnToGame:'Back to game',retryAI:'Retry AI explanation'}
+ ru:{title:'Тренировка с наставником',back:'Главное меню',mentor:'Наставник',mentorThinking:'Думаю…',lesson:'Проверить себя',lessonHint:'Подсказка',lessonShow:'Показать ответ',lessonExit:'Продолжить партию',lessonBoard:'Найди ответ соперника',lessonPending:'Наставник ищет опасное продолжение…',positional:'Позиция ухудшилась, но непосредственная тактическая угроза не подтверждена. Продолжай партию и следи за безопасностью фигур.',moves:'Ходы',white:'Белые',black:'Чёрные',random:'Случайно',start:'Начать тренировку',new:'Новая тренировка',exit:'К наставникам',prev:'Назад',next:'Вперёд',close:'Закрыть',journal:'Ходы',ready:'Ваш ход',thinking:'Соперник думает…',analysing:'Анализ хода…',waiting:'Оценка недоступна',fine:'Продолжайте партию.',inaccuracy:'Неточность',mistake:'Ошибка',blunder:'Зевок',noGrade:'Нет замечаний',loss:'Потеря оценки',retry:'Позиция ухудшилась. Попробуйте вернуться назад и найти более сильное продолжение.',reviewFail:'Не удалось проверить ход. Партию можно продолжать.',gameOver:'Партия завершена',check:'Шах!',promotion:'Превращение пешки',before:'Вернуться перед ошибкой',clear:'Начать заново',profile:'Мощь',restore:'Продолжить тренировку',victory:'Победа!',defeat:'Поражение',draw:'Ничья',reviewGame:'Анализировать',menu:'Главное меню',mentors:'К наставникам',good:'Хороший ход',excellent:'Блестящий ход',view:'Посмотреть',engineLine:'Вариант Stockfish',afterMistake:'После ошибки',returnToGame:'К партии',retryAI:'Повторить запрос ИИ'},
+ en:{title:'Training with a Mentor',back:'Main menu',mentor:'Mentor',mentorThinking:'Thinking…',lesson:'Test yourself',lessonHint:'Hint',lessonShow:'Reveal answer',lessonExit:'Continue game',lessonBoard:'Find the opponent’s reply',lessonPending:'Mentor is checking the opponent’s reply…',positional:'The position became worse, but no immediate tactical threat was verified. Keep playing and watch your pieces’ safety.',moves:'Moves',white:'White',black:'Black',random:'Random',start:'Start training',new:'New training',exit:'Mentors',prev:'Back',next:'Forward',close:'Close',journal:'Moves',ready:'Your move',thinking:'Opponent thinking…',analysing:'Analysing move…',waiting:'Evaluation unavailable',fine:'Continue the game.',inaccuracy:'Inaccuracy',mistake:'Mistake',blunder:'Blunder',noGrade:'No issues found',loss:'Evaluation lost',retry:'This move worsened your position. Go back and try to find a stronger continuation.',reviewFail:'The move could not be evaluated. You can continue playing.',gameOver:'Game over',check:'Check!',promotion:'Promote pawn',before:'Return before error',clear:'Start over',profile:'Strength',restore:'Resume training',victory:'Victory!',defeat:'Defeat',draw:'Draw',reviewGame:'Analyse',menu:'Main menu',mentors:'Mentors',good:'Good move',excellent:'Brilliant move',view:'View',engineLine:'Stockfish line',afterMistake:'After the mistake',returnToGame:'Back to game',retryAI:'Retry AI explanation'}
 };
 const RACES={
  ru:{humans:'Люди',orcs:'Орки',fae:'Феи',dark_elves:'Тёмные эльфы',dwarves:'Гномы',undead:'Нежить',demons:'Демоны',elves:'Эльфы',dragonborn:'Дракониды',angels:'Ангелы',constructs:'Конструкты'},
@@ -60,7 +61,7 @@ function restore(){
   selected=raw.selected;color=['w','b','r'].includes(raw.color)?raw.color:'w';
   moves=restoredMoves;cursor=Math.max(0,Math.min(moves.length,Number(raw.cursor)||0));playing=Boolean(raw.playing);
   pausedEntry=Number.isInteger(raw.pausedAt)&&raw.pausedAt>=0&&raw.pausedAt===cursor-1&&
-   cursor===moves.length&&['inaccuracy','mistake','blunder'].includes(moves[raw.pausedAt]?.grade)
+   cursor===moves.length&&moves[raw.pausedAt]?.threatStatus===TACTIC&&['inaccuracy','mistake','blunder'].includes(moves[raw.pausedAt]?.grade)
    ?moves[raw.pausedAt]:null;
   lessonView=pausedEntry?{entry:pausedEntry,plan:pausedEntry.mentorLesson||null,
    stage:pausedEntry.mentorLesson?0:-1,feedback:null}:null;
@@ -459,12 +460,9 @@ async function deliverMentorFeedback(entry,payload,verified,cacheKey,epoch){
  entry.mentorFailures=outcome.failures||[];
  save();render();
 }
-async function explainVerifiedMove({beforeFen,afterFen,uci,kind,before,after,entry,epoch}){
- // An extra bounded search is performed only when the 260 ms assessment
- // identified an error. It is NOT on the critical path of the rival's move.
- let continuation=null;
- try{continuation=await evaluateDeep(afterFen);}catch{}
- if(epoch!==gameEpoch||!playing||!moves.includes(entry))return;
+async function explainVerifiedMove({beforeFen,afterFen,uci,kind,before,after,continuation,entry,epoch}){
+ // The deep search was checked BEFORE pausing. Do not invent a second result.
+ if(epoch!==gameEpoch||!playing||!moves.includes(entry)||entry.threatStatus!==TACTIC)return;
  let request;
  try{
   request=buildMentorPayload({
@@ -475,7 +473,10 @@ async function explainVerifiedMove({beforeFen,afterFen,uci,kind,before,after,ent
   if(epoch===gameEpoch&&playing&&moves.includes(entry)){
    entry.message=fallbackText(lang(),kind);
    entry.mentorSource='fallback';entry.mentorReason='analysis_invalid';
-   entry.pending=false;save();render();
+   entry.pending=false;
+   // Never retain a pause if the lesson cannot be validated end-to-end.
+   if(pausedEntry===entry){pausedEntry=null;lessonView=null;entry.threatStatus=POS;}
+   save();render();resumeAI();
   }
   return;
  }
@@ -539,28 +540,48 @@ async function userMove(from,to,promote=null){
  }catch{}
  if(epoch!==gameEpoch||!playing)return;
  if(data?.kind){
-  moves[cursor-1].grade=data.kind;moves[cursor-1].loss=data.loss;
-  moves[cursor-1].pending=true;
-  moves[cursor-1].message=thinkingText(lang(),beforeFen+'|'+uci);
-  pausedEntry=moves[cursor-1];
-  lessonView={entry:pausedEntry,plan:null,stage:-1,feedback:null};
+  const entry=moves[cursor-1];
+  entry.grade=data.kind;entry.loss=data.loss;
+  // An ordinary positional inaccuracy never stops the game. Deep analysis
+  // is reserved for concrete, immediate and legible tactical candidates.
+  const quick=quickThreatProbe({afterFen:change.fen,after,player:who});
+  if(quick.status==='candidate'){
+   entry.message=t('analysing');entry.threatStatus='checking';
+   save();render();
+   let continuation=null;
+   try{continuation=await evaluateDeep(change.fen);}catch{}
+   if(epoch!==gameEpoch||!playing||!moves.includes(entry)||cursor!==moves.length)return;
+   const verdict=verifyImmediateThreat({afterFen:change.fen,after,deep:continuation,player:who});
+   entry.threatStatus=verdict.status;
+   entry.threatReason=verdict.reason||null;
+   if(verdict.status===TACTIC){
+    entry.mentorThreat=verdict.evidence;
+    entry.pending=true;
+    entry.message=thinkingText(lang(),beforeFen+'|'+uci);
+    pausedEntry=entry;
+    lessonView={entry,plan:null,stage:-1,feedback:null};
+    busy=false;analysisPending=false;save();render();
+    // The verified lesson uses the exact search already confirmed.
+    void explainVerifiedMove({beforeFen,afterFen:change.fen,uci,kind:data.kind,
+     before,after,continuation,entry,epoch});
+    return;
+   }
+  }else{
+   entry.threatStatus=POS;
+   entry.threatReason=quick.reason;
+  }
+  entry.message=t('positional');entry.pending=false;
  }else if(data){
   const quality=classifyStrongMove({uci,beforeFen},before,data.loss);
   if(quality){
    moves[cursor-1].grade=quality;
    moves[cursor-1].message=praiseText(lang(),quality,beforeFen+'|'+uci);
   }
- }else if(data===null){
+ }else{
   moves[cursor-1].analysisUnavailable=true;
  }
  busy=false;analysisPending=false;save();render();
- if(data?.kind&&before&&after){
-  const entry=moves[cursor-1];
-  // Fire-and-forget deep search and LLM; unlike before, the RIVAL remains paused.
-  void explainVerifiedMove({beforeFen,afterFen:change.fen,uci,kind:data.kind,before,after,entry,epoch});
- }
- if(cursor===moves.length&&game().status().over)return;
- if(!pausedEntry)resumeAI();
+ if(cursor===moves.length&&!game().status().over)resumeAI();
 }
 function setVariationStep(step){
  if(!analysisView)return;
