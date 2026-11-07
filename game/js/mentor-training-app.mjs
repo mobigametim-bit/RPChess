@@ -9,9 +9,9 @@ import { createMentorMotion } from './mentor-training-motion.mjs';
 import { fantasyPieceMarkup } from './fantasy-piece.mjs';
 import { currentLanguage, subscribe } from './i18n.mjs';
 import { TRAINING_MENTORS, UCI, rebuildTraining, extendTraining, trainingMoveQuality } from './mentor-training-history.mjs';
-import {buildMentorPayload,requestMentorText} from './mentor-training-feedback-client.mjs?v=20261107-mentor-learning-v2';
-import {validateMentorInput} from './mentor-training-feedback-core.mjs?v=20261107-mentor-learning-v2';
-import {lessonFromVerified,mentorLessonCopy,validateLessonGuess} from './mentor-training-teaching.mjs';
+import {buildMentorPayload,requestMentorText} from './mentor-training-feedback-client.mjs?v=20261107-mentor-auto-pause-v3';
+import {validateMentorInput} from './mentor-training-feedback-core.mjs?v=20261107-mentor-auto-pause-v3';
+import {lessonFromVerified,mentorLessonCopy,validateLessonGuess} from './mentor-training-teaching.mjs?v=20261107-mentor-auto-pause-v3';
 import {thinkingText,praiseText,fallbackText} from './mentor-training-copy.mjs';
 
 const STORAGE_KEY='rpchess.mentor-training.v1';
