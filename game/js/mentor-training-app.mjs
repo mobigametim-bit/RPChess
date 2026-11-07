@@ -6,7 +6,7 @@ import { attachPieceDrag } from './piece-drag.mjs';
 import { applyPinIce } from './king-pin-ice.mjs';
 import { makeToggle, syncToggles } from './board-view-toggle.mjs';
 import { createMentorMotion } from './mentor-training-motion.mjs';
-import { createMentorSpeech } from './mentor-training-speech.mjs';
+import { createMentorSpeech } from './mentor-training-speech.mjs?v=20261108-voice-choices-v2';
 import { fantasyPieceMarkup } from './fantasy-piece.mjs';
 import { currentLanguage, subscribe } from './i18n.mjs';
 import { TRAINING_MENTORS, UCI, rebuildTraining, extendTraining, trainingMoveQualityWinChance } from './mentor-training-history.mjs';
