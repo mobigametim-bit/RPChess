@@ -239,6 +239,8 @@ fs.mkdirSync(output,{recursive:true});
    'correct answer reveals only the verified Stockfish move');
   assert.equal(await page.locator('[data-mentor-square="h4"].mentor-lesson-target').count(),1,
    'resolved tactic points to its real destination');
+  assert.equal(await page.locator('[data-mentor-square="e1"].mentor-lesson-threat').count(),1,
+   'the revealed mate highlights the actually threatened king');
   await page.screenshot({path:path.join(output,'battle-interactive-mate-lesson.png'),animations:'disabled'});
   await page.locator('[data-mentor-action="lesson-close"]').click();
   assert.deepEqual(await page.evaluate(()=>window.RPChessMentorTraining.state.moves.map(m=>m.uci)),
