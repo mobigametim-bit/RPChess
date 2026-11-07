@@ -476,7 +476,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
   const x=Math.max(10+width/2,Math.min(innerWidth-10-width/2,bounds.left+bounds.width/2));
   const y=Math.max(down?14:78,Math.min(innerHeight-height-(down?72:10),bounds.top+bounds.height/2));
   node.style.left=x+'px';node.style.top=Math.max(10,y)+'px';
-  sq.classList.add('has-review-piece-speech');
+  sq.classList.add('has-review-piece-speech','has-review-piece-speech--'+pieceSpeech.kind);
  }
  function startPieceSpeech(uci,kind,text,restoreBoard=false){
   clearPieceSpeech();
