@@ -34,7 +34,7 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  assert(!validateLessonGuess(lesson,'e8'));
  assert(mentorLessonCopy(lesson,'ru').answer.includes('d8–h4'));
  assert(mentorLessonCopy(lesson,'en').question.includes('piece'));
- assert.equal(Object.keys(GUIDES).length,17,'full grounded tactical lesson catalog');
+ assert.equal(Object.keys(GUIDES).length,18,'full grounded tactical lesson catalog');
  assert.deepEqual(Object.keys(PRIORITY).sort(),Object.keys(GUIDES).sort());
  assert.equal(THINKING.ru.length,20,'20 waiting phrases in Russian');
  assert.equal(THINKING.en.length,20,'20 waiting phrases in English');
