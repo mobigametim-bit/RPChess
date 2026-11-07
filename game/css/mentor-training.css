@@ -80,7 +80,28 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
 .mentor-board-message{color:#f6d4a5;font-size:15px;padding:4px}
 .mentor-mobile-navigation{display:none}
 .mentor-feedback{grid-column:3;grid-row:2;align-self:stretch;padding:13px;display:flex;flex-direction:column;gap:13px;overflow-y:auto}
-.mentor-feedback-head{display:flex;align-items:center;gap:12px}
+.mentor-feedback-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mentor-training .mentor-speech-button{
+ display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;
+ margin-left:-5px;padding:6px;border-radius:50%;cursor:pointer;
+ border:1px solid rgba(216,176,92,.66);color:#f4dfa9;
+ background:linear-gradient(150deg,#493921,#201b17);
+ box-shadow:inset 0 1px 0 #e7c47e33
+}
+.mentor-training .mentor-speech-button:hover:not(:disabled){border-color:#f1c977;background:#594326}
+.mentor-training .mentor-speech-button.is-speaking{
+ color:#8ef6b3;border-color:#72cb8d;box-shadow:0 0 10px #5cbf7b66;
+ background:#234331
+}
+.mentor-training .mentor-speech-button:disabled{opacity:.45;cursor:default}
+.mentor-training .mentor-speech-button:focus-visible{outline:2px solid #ffda8e;outline-offset:2px}
+.mentor-training .mentor-speech-button svg{display:block;pointer-events:none}
+@media(orientation:landscape) and (max-height:540px){
+ .mentor-training .mentor-speech-button{flex-basis:30px;width:30px;height:30px;padding:4px}
+}
+@media(orientation:portrait){
+ .mentor-training .mentor-speech-button{flex-basis:36px;width:36px;height:36px}
+}
 .mentor-feedback h2{font-size:25px;margin:0;color:#f4dfa9}
 .mentor-training .mentor-thinking{flex:0 0 auto;color:#e3be72;font-size:clamp(13px,1.2vw,17px);white-space:nowrap;animation:mentor-thinking-blink 1.15s steps(2,end) infinite}
 @keyframes mentor-thinking-blink{0%,45%{opacity:1}50%,100%{opacity:.25}}
