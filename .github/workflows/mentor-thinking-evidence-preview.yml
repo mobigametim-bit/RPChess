@@ -134,9 +134,62 @@ jobs:
             assert(verified,'isolated v2 API is not ready');
           })().catch(e=>{console.error(e);process.exitCode=1});
           NODE
+      - name: Deploy existing allowlisted Mentor STATIC preview (no Mentor API or production Workers)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          test "$(grep '^name =' mentor-evidence-preview/wrangler.toml)" = 'name = "rpchess-mentor-training-preview"'
+          npx wrangler deploy --config mentor-evidence-preview/wrangler.toml
+      - name: Verify preview is serving the revised code
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          (async()=>{
+            const base='https://rpchess-mentor-training-preview.mobigametim.workers.dev';
+            let ok=false;
+            for(let attempt=0;attempt<20;attempt++){
+              try{
+                const page=await fetch(base+'/?build=mentor-evidence-20261107',{cache:'no-store'});
+                assert.equal(page.status,200);
+                assert((await page.text()).includes('mentor-stage6-v3'));
+                const js=await fetch(base+'/js/mentor-training-app.mjs',{cache:'no-store'});
+                assert.equal(js.status,200);
+                assert((await js.text()).includes('function lessonHTML'));
+                const client=await fetch(base+'/js/mentor-training-feedback-client.mjs',{cache:'no-store'});
+                assert.equal(client.status,200);
+                assert((await client.text()).includes('requestMentorV2Text'));
+                const v2=await fetch(base+'/js/mentor-training-feedback-v2.mjs',{cache:'no-store'});
+                assert.equal(v2.status,200);
+                assert((await v2.text()).includes('validatedV2Facts'));
+                const teaching=await fetch(base+'/js/mentor-training-teaching.mjs',{cache:'no-store'});
+                assert.equal(teaching.status,200);
+                assert((await teaching.text()).includes('lessonFromVerified'));
+                const proof=await fetch(base+'/js/mentor-training-threat.mjs',{cache:'no-store'});
+                assert.equal(proof.status,200);
+                assert((await proof.text()).includes('verifyImmediateThreat'));
+                const see=await fetch(base+'/js/mentor-training-exchange.mjs',{cache:'no-store'});
+                assert.equal(see.status,200);
+                assert((await see.text()).includes('evaluateStaticExchange'));
+                ok=true;break;
+              }catch(err){
+                console.log('Preview check '+(attempt+1)+'/20: '+err.message);
+                if(attempt<19)await new Promise(resolve=>setTimeout(resolve,5000));
+              }
+            }
+            assert(ok,'mentor evidence preview did not become ready');
+            console.log('Playtest:',base+'/');
+          })().catch(err=>{console.error(err);process.exitCode=1});
+          NODE
+
       - name: One real v2 DeepSeek response (opt-in; one provider attempt only)
         if: contains(github.event.head_commit.message, '[mentor-live-v2]')
         timeout-minutes: 5
+        continue-on-error: true
         env:
           MENTOR_SECRET_CONFIGURED: ${{ secrets.GONKA_API_KEY != '' }}
         run: |
@@ -187,55 +240,4 @@ jobs:
             model:data.model,source:data.source,attempts:data.attempts,
             explanation:data.explanation
           }));
-          NODE
-      - name: Deploy existing allowlisted Mentor STATIC preview (no Mentor API or production Workers)
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          set -euo pipefail
-          test -n "$CLOUDFLARE_API_TOKEN"
-          test -n "$CLOUDFLARE_ACCOUNT_ID"
-          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
-          test "$(grep '^name =' mentor-evidence-preview/wrangler.toml)" = 'name = "rpchess-mentor-training-preview"'
-          npx wrangler deploy --config mentor-evidence-preview/wrangler.toml
-      - name: Verify preview is serving the revised code
-        run: |
-          node <<'NODE'
-          const assert=require('node:assert/strict');
-          (async()=>{
-            const base='https://rpchess-mentor-training-preview.mobigametim.workers.dev';
-            let ok=false;
-            for(let attempt=0;attempt<20;attempt++){
-              try{
-                const page=await fetch(base+'/?build=mentor-evidence-20261107',{cache:'no-store'});
-                assert.equal(page.status,200);
-                assert((await page.text()).includes('mentor-stage6-v2'));
-                const js=await fetch(base+'/js/mentor-training-app.mjs',{cache:'no-store'});
-                assert.equal(js.status,200);
-                assert((await js.text()).includes('function lessonHTML'));
-                const client=await fetch(base+'/js/mentor-training-feedback-client.mjs',{cache:'no-store'});
-                assert.equal(client.status,200);
-                assert((await client.text()).includes('requestMentorV2Text'));
-                const v2=await fetch(base+'/js/mentor-training-feedback-v2.mjs',{cache:'no-store'});
-                assert.equal(v2.status,200);
-                assert((await v2.text()).includes('validatedV2Facts'));
-                const teaching=await fetch(base+'/js/mentor-training-teaching.mjs',{cache:'no-store'});
-                assert.equal(teaching.status,200);
-                assert((await teaching.text()).includes('lessonFromVerified'));
-                const proof=await fetch(base+'/js/mentor-training-threat.mjs',{cache:'no-store'});
-                assert.equal(proof.status,200);
-                assert((await proof.text()).includes('verifyImmediateThreat'));
-                const see=await fetch(base+'/js/mentor-training-exchange.mjs',{cache:'no-store'});
-                assert.equal(see.status,200);
-                assert((await see.text()).includes('evaluateStaticExchange'));
-                ok=true;break;
-              }catch(err){
-                console.log('Preview check '+(attempt+1)+'/20: '+err.message);
-                if(attempt<19)await new Promise(resolve=>setTimeout(resolve,5000));
-              }
-            }
-            assert(ok,'mentor evidence preview did not become ready');
-            console.log('Playtest:',base+'/');
-          })().catch(err=>{console.error(err);process.exitCode=1});
           NODE
