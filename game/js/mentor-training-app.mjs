@@ -50,7 +50,8 @@ function race(mentor){return RACES[lang()][mentor.race]||mentor.race;}
 function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function mentor(){return TRAINING_MENTORS[selected-1];}
 function save(){
- try{localStorage.setItem(STORAGE_KEY,JSON.stringify({version:1,selected,color,playing,moves,cursor,pausedAt:pausedEntry?moves.indexOf(pausedEntry):-1}));}catch{}
+ try{localStorage.setItem(STORAGE_KEY,JSON.stringify({version:1,selected,color,playing,moves,cursor,pausedAt:pausedEntry?moves.indexOf(pausedEntry):-1,
+  lessonSolved:Boolean(pausedEntry&&(lessonView?.stage===3||correctionView?.entry===pausedEntry))}));}catch{}
 }
 function restore(){
  try{
@@ -64,9 +65,12 @@ function restore(){
   pausedEntry=Number.isInteger(raw.pausedAt)&&raw.pausedAt>=0&&raw.pausedAt===cursor-1&&
    cursor===moves.length&&moves[raw.pausedAt]?.threatStatus===TACTIC&&['inaccuracy','mistake','blunder'].includes(moves[raw.pausedAt]?.grade)
    ?moves[raw.pausedAt]:null;
+  const lessonSolved=Boolean(raw.lessonSolved&&pausedEntry?.mentorLesson);
   lessonView=pausedEntry?{entry:pausedEntry,plan:pausedEntry.mentorLesson||null,
-   stage:pausedEntry.mentorLesson?0:-1,feedback:null}:null;
-  analysisView=null;correctionView=null;
+   stage:pausedEntry.mentorLesson?(lessonSolved?3:0):-1,feedback:null}:null;
+  analysisView=lessonSolved&&pausedEntry?.analysisLine?.length
+   ?{entry:pausedEntry,index:raw.pausedAt,offset:1}:null;
+  correctionView=null;
  }catch{playing=false;moves=[];cursor=0;pausedEntry=null;lessonView=null;correctionView=null;}
 }
 function game(){return rebuildTraining(moves,cursor);}
