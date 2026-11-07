@@ -1,6 +1,6 @@
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { ChessAIAdapter } from './chess-ai-adapter.mjs';
-import { StockfishReviewEngine, reviewMoveJournal, classifyStrongMove } from './finished-game-review.mjs';
+import { StockfishReviewEngine, reviewMoveJournal, classifyStrongMove, openFinishedGameReview } from './finished-game-review.mjs';
 import { boardRacePiecePath, racePiecePath, raceBoardTiles } from './race-assets.mjs';
 import { attachPieceDrag } from './piece-drag.mjs';
 import { applyPinIce } from './king-pin-ice.mjs';
@@ -19,8 +19,8 @@ const DEEP_PV_LIMIT=20;
 const ROLES={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
 const SYMBOLS={w:{p:'♙',n:'♘',b:'♗',r:'♖',q:'♕',k:'♔'},b:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'}};
 const TEXT={
- ru:{title:'Тренировка с наставником',back:'Главное меню',mentor:'Наставник',moves:'Ходы',white:'Белые',black:'Чёрные',random:'Случайно',start:'Начать тренировку',new:'Новая тренировка',exit:'К наставникам',prev:'Назад',next:'Вперёд',close:'Закрыть',journal:'Ходы',ready:'Ваш ход',thinking:'Соперник думает…',analysing:'Анализ хода…',waiting:'Оценка недоступна',fine:'Продолжайте партию.',inaccuracy:'Неточность',mistake:'Ошибка',blunder:'Зевок',noGrade:'Нет замечаний',loss:'Потеря оценки',retry:'Позиция ухудшилась. Попробуйте вернуться назад и найти более сильное продолжение.',reviewFail:'Не удалось проверить ход. Партию можно продолжать.',gameOver:'Партия завершена',check:'Шах!',promotion:'Превращение пешки',before:'Вернуться перед ошибкой',clear:'Начать заново',profile:'Мощь',restore:'Продолжить тренировку',good:'Хороший ход',excellent:'Блестящий ход',view:'Посмотреть',engineLine:'Вариант Stockfish',afterMistake:'После ошибки',returnToGame:'К партии',retryAI:'Повторить запрос ИИ'},
- en:{title:'Training with a Mentor',back:'Main menu',mentor:'Mentor',moves:'Moves',white:'White',black:'Black',random:'Random',start:'Start training',new:'New training',exit:'Mentors',prev:'Back',next:'Forward',close:'Close',journal:'Moves',ready:'Your move',thinking:'Opponent thinking…',analysing:'Analysing move…',waiting:'Evaluation unavailable',fine:'Continue the game.',inaccuracy:'Inaccuracy',mistake:'Mistake',blunder:'Blunder',noGrade:'No issues found',loss:'Evaluation lost',retry:'This move worsened your position. Go back and try to find a stronger continuation.',reviewFail:'The move could not be evaluated. You can continue playing.',gameOver:'Game over',check:'Check!',promotion:'Promote pawn',before:'Return before error',clear:'Start over',profile:'Strength',restore:'Resume training',good:'Good move',excellent:'Brilliant move',view:'View',engineLine:'Stockfish line',afterMistake:'After the mistake',returnToGame:'Back to game',retryAI:'Retry AI explanation'}
+ ru:{title:'Тренировка с наставником',back:'Главное меню',mentor:'Наставник',moves:'Ходы',white:'Белые',black:'Чёрные',random:'Случайно',start:'Начать тренировку',new:'Новая тренировка',exit:'К наставникам',prev:'Назад',next:'Вперёд',close:'Закрыть',journal:'Ходы',ready:'Ваш ход',thinking:'Соперник думает…',analysing:'Анализ хода…',waiting:'Оценка недоступна',fine:'Продолжайте партию.',inaccuracy:'Неточность',mistake:'Ошибка',blunder:'Зевок',noGrade:'Нет замечаний',loss:'Потеря оценки',retry:'Позиция ухудшилась. Попробуйте вернуться назад и найти более сильное продолжение.',reviewFail:'Не удалось проверить ход. Партию можно продолжать.',gameOver:'Партия завершена',check:'Шах!',promotion:'Превращение пешки',before:'Вернуться перед ошибкой',clear:'Начать заново',profile:'Мощь',restore:'Продолжить тренировку',victory:'Победа!',defeat:'Поражение',draw:'Ничья',reviewGame:'Анализировать',menu:'Главное меню',mentors:'К наставникам',good:'Хороший ход',excellent:'Блестящий ход',view:'Посмотреть',engineLine:'Вариант Stockfish',afterMistake:'После ошибки',returnToGame:'К партии',retryAI:'Повторить запрос ИИ'},
+ en:{title:'Training with a Mentor',back:'Main menu',mentor:'Mentor',moves:'Moves',white:'White',black:'Black',random:'Random',start:'Start training',new:'New training',exit:'Mentors',prev:'Back',next:'Forward',close:'Close',journal:'Moves',ready:'Your move',thinking:'Opponent thinking…',analysing:'Analysing move…',waiting:'Evaluation unavailable',fine:'Continue the game.',inaccuracy:'Inaccuracy',mistake:'Mistake',blunder:'Blunder',noGrade:'No issues found',loss:'Evaluation lost',retry:'This move worsened your position. Go back and try to find a stronger continuation.',reviewFail:'The move could not be evaluated. You can continue playing.',gameOver:'Game over',check:'Check!',promotion:'Promote pawn',before:'Return before error',clear:'Start over',profile:'Strength',restore:'Resume training',victory:'Victory!',defeat:'Defeat',draw:'Draw',reviewGame:'Analyse',menu:'Main menu',mentors:'Mentors',good:'Good move',excellent:'Brilliant move',view:'View',engineLine:'Stockfish line',afterMistake:'After the mistake',returnToGame:'Back to game',retryAI:'Retry AI explanation'}
 };
 const RACES={
  ru:{humans:'Люди',orcs:'Орки',fae:'Феи',dark_elves:'Тёмные эльфы',dwarves:'Гномы',undead:'Нежить',demons:'Демоны',elves:'Эльфы',dragonborn:'Дракониды',angels:'Ангелы',constructs:'Конструкты'},
@@ -142,6 +142,21 @@ function getJournal(){
  }
  return rows||'<div class="mentor-empty">—</div>';
 }
+function resultHTML(status){
+ const won=status.type==='checkmate'&&status.winner===currentPlayerColor();
+ const draw=status.winner===null;
+ const headline=won?t('victory'):draw?t('draw'):t('defeat');
+ const symbol=won?'♕':draw?'½':'♚';
+ return '<div class="mentor-result-overlay" data-mentor-result>'+
+ '<section class="mentor-result-panel" role="dialog" aria-modal="true" aria-label="'+esc(headline)+'">'+
+ '<span class="mentor-result-emblem" aria-hidden="true">'+symbol+'</span>'+
+ '<h2>'+esc(headline)+'</h2>'+
+ '<div class="mentor-result-actions">'+
+ button('result-review',t('reviewGame'),'mentor-primary')+
+ button('leave',t('menu'),'mentor-outline')+
+ button('catalog',t('mentors'),'mentor-outline')+
+ '</div></section></div>';
+}
 function navigation(){
  return '<div class="mentor-navigation"><button type="button" data-mentor-action="prev" '+(cursor===0?'disabled':'')+' aria-label="'+t('prev')+'">❮ '+t('prev')+'</button>'+
  '<button type="button" data-mentor-action="next" '+(cursor===moves.length?'disabled':'')+' aria-label="'+t('next')+'">'+t('next')+' ❯</button></div>';
@@ -149,6 +164,8 @@ function navigation(){
 function boardHTML(chess,preview=false){
  const whiteBottom=currentPlayerColor()==='w',state=chess.snapshot(),files='abcdefgh',legal=square?chess.legalMoves(square):[];
  const tiles=raceBoardTiles(mentor().race);
+ const checkedKing=state.status.checked
+  ?state.board.findIndex(piece=>piece?.type==='k'&&piece.color===state.turn):-1;
  const last=preview&&analysisView ? (analysisView.offset ? {uci:analysisView.entry.analysisLine[analysisView.offset-1]} : analysisView.entry) : moves[cursor-1];
  const recentOwn=preview ? (analysisView?.offset===0 ? analysisView.entry : null) : moves.slice(0,cursor).reverse().find(entry=>entry.color===currentPlayerColor());
  const mark=recentOwn?.grade?recentOwn.uci.slice(2,4):null;
@@ -164,15 +181,14 @@ function boardHTML(chess,preview=false){
    figure='<img alt="" class="mentor-piece classic-piece" draggable="false" src="'+boardRacePiecePath(ownRace,ROLES[piece.type],piece.color)+'"><span class="mentor-piece-fallback">'+SYMBOLS[piece.color][piece.type]+'</span>'+fantasyPieceMarkup(piece.type,piece.color);
   }
   const sign=mark===sq&&piece?.color===currentPlayerColor()?'<span class="mentor-square-grade'+(['good','excellent'].includes(recentOwn.grade)?' mentor-square-grade--good':'')+'">'+({'inaccuracy':'?!','mistake':'?','blunder':'??',good:'!',excellent:'!!'}[recentOwn.grade])+'</span>':'';
-  grid+='<button type="button" data-mentor-square="'+sq+'" data-square="'+sq+'" class="mentor-square '+(dark?'is-dark':'is-light')+(highlight?' is-last':'')+(active?' is-selected':'')+(possible?' is-legal':'')+'" aria-label="'+sq+'">'+figure+sign+'</button>';
+  grid+='<button type="button" data-mentor-square="'+sq+'" data-square="'+sq+'" class="mentor-square '+(dark?'is-dark':'is-light')+(highlight?' is-last':'')+(active?' is-selected':'')+(possible?' is-legal':'')+(index===checkedKing?' is-check classic-square--check':'')+'" aria-label="'+sq+'">'+figure+sign+'</button>';
  }
  const status=chess.status();
  // CSS variables consumed by an external stylesheet resolve relative url() against /css/.
  // Use document-absolute URLs so race artwork also works under /RPChess/ on GitHub Pages.
  const lightTile=new URL(tiles.light,document.baseURI).href;
  const darkTile=new URL(tiles.dark,document.baseURI).href;
- return '<div class="mentor-board-shell"><div class="mentor-board" data-mentor-race="'+tiles.raceTag+'" style="--mentor-light-tile:url('+lightTile+');--mentor-dark-tile:url('+darkTile+')">'+grid+'</div><div class="mentor-file-coords">'+(whiteBottom?files.split(''):[...files].reverse()).map(v=>'<span>'+v+'</span>').join('')+'</div><div class="mentor-rank-coords">'+(whiteBottom?[8,7,6,5,4,3,2,1]:[1,2,3,4,5,6,7,8]).map(v=>'<span>'+v+'</span>').join('')+'</div></div>'+
- (status.over?'<div class="mentor-board-message">'+t('gameOver')+'</div>':'');
+ return '<div class="mentor-board-shell"><div class="mentor-board" data-mentor-race="'+tiles.raceTag+'" style="--mentor-light-tile:url('+lightTile+');--mentor-dark-tile:url('+darkTile+')">'+grid+'</div><div class="mentor-file-coords">'+(whiteBottom?files.split(''):[...files].reverse()).map(v=>'<span>'+v+'</span>').join('')+'</div><div class="mentor-rank-coords">'+(whiteBottom?[8,7,6,5,4,3,2,1]:[1,2,3,4,5,6,7,8]).map(v=>'<span>'+v+'</span>').join('')+'</div></div>';
 }
 function latestPlayerNote(){
  for(let index=cursor-1;index>=0;index--){
@@ -240,6 +256,7 @@ function battleHTML(){
  '<div class="mentor-center"><div class="mentor-status">'+esc(notice)+'</div>'+boardHTML(chess,Boolean(analysisView))+
  '<div class="mentor-mobile-navigation">'+navigation()+'<div class="mentor-mobile-toggle"></div></div></div>'+
  feedbackHTML()+
+ (!analysisView&&cursor===moves.length&&status.over?resultHTML(status):'')+
  (promotion?'<div class="mentor-promotion"><div class="mentor-promotion-dialog"><h2>'+t('promotion')+'</h2>'+
  ['q','r','b','n'].map(v=>'<button type="button" data-mentor-promote="'+v+'">'+SYMBOLS[currentPlayerColor()][v]+'</button>').join('')+'</div></div>':'')+
  '</section>';
@@ -452,6 +469,13 @@ async function userMove(from,to,promote=null){
  const epoch=gameEpoch;
  moves=change.moves;cursor=change.cursor;
  moves[cursor-1].color=who;
+ // A terminal move is authoritative immediately. Never wait for Stockfish's
+ // grading or for DeepSeek before presenting the game result.
+ if(change.status.over){
+  square=null;busy=false;analysisPending=false;
+  save();render();motion?.play(geometry);
+  return;
+ }
  square=null;busy=true;analysisPending=true;save();render();motion?.play(geometry);
  let data=null,before=null,after=null;
  try{
@@ -511,6 +535,17 @@ function onClick(event){
  }
  const action=button.dataset.mentorAction;
  if(action==='start')startTraining();
+ if(action==='result-review'){
+  if(!playing||cursor!==moves.length||!moves.length||!game().status().over)return;
+  const ours=currentPlayerColor(),theirs=ours==='w'?'b':'w';
+  // Reuse the finished-game analysis UI, without Arena/Tournament rewards.
+  openFinishedGameReview({
+   mode:'mentor',finished:true,moves:moves.map(item=>item.uci),
+   playerColor:ours,lang:lang(),
+   sides:{[ours]:'humans',[theirs]:mentor().race}
+  });
+  return;
+ }
  if(action==='retry-explanation')void retryMentorFeedback();
  if(action==='open-variation'){
   const found=latestPlayerNote();

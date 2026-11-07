@@ -5,8 +5,28 @@ const path=require('node:path');
  const {TRAINING_MENTORS,rebuildTraining,extendTraining,trainingMoveQuality}=await import(pathToFileURL(path.resolve(__dirname,'../game/js/mentor-training-history.mjs')).href);
  assert.equal(TRAINING_MENTORS.length,12);
  assert.deepEqual(TRAINING_MENTORS.map(x=>x.elo),[400,600,800,1000,1200,1400,1600,1800,2000,2200,2400,2600]);
+ const {prepareFinishedReview}=await import(pathToFileURL(path.resolve(__dirname,'../game/js/finished-game-review.mjs')).href);
  const record=['f2f3','e7e5','g2g4','d8h4'].map(uci=>({uci}));
  assert.equal(rebuildTraining(record,4).status().type,'checkmate');
+ assert.equal(rebuildTraining(record,4).status().winner,'b','mentor recognises a loss when AI checkmates');
+ const checkMoves=['e2e4','e7e5','f2f4','e5f4','g1f3','d8h4'];
+ assert.equal(rebuildTraining(checkMoves).status().checked,true,'check must highlight the white king before the game ends');
+ assert.equal(rebuildTraining(checkMoves).status().over,false);
+ const mateSetup=['e2e4','e7e5','d1h5','b8c6','f1c4','g8f6'];
+ assert.equal(rebuildTraining(mateSetup).status().over,false);
+ const winning=extendTraining(mateSetup.map(uci=>({uci})),mateSetup.length,'h5f7');
+ assert.equal(winning.ok,true);
+ assert.equal(winning.status.type,'checkmate','scholars mate must close immediately after final move');
+ assert.equal(winning.status.winner,'w');
+ assert.equal(rebuildTraining(winning.moves,winning.cursor).status().checked,true,'checked king remains highlighted at mate');
+ const reviewTurns=prepareFinishedReview({mode:'mentor',finished:true,
+  moves:winning.moves,playerColor:'w',allColors:true});
+ assert.equal(reviewTurns.length,winning.moves.length,'shared finished-game analysis accepts a completed mentor game');
+ assert.equal(reviewTurns.at(-1).uci,'h5f7');
+ assert.throws(()=>prepareFinishedReview({mode:'mentor',finished:true,
+  moves:mateSetup,playerColor:'w',allColors:true}),/finished chess game/,
+ 'cannot analyse an unfinished mentor training session');
+
  const correction=extendTraining(record,2,'b1c3');
  assert(correction.ok&&correction.branched);
  assert.deepEqual(correction.moves.map(x=>x.uci),['f2f3','e7e5','b1c3']);

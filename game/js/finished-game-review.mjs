@@ -1,4 +1,4 @@
-/* Completed-game error review: ONLY Tournament and Arena.
+/* Completed-game error review: Tournament, Arena, and Mentor.
  * A fresh Stockfish 18 lite worker evaluates completed chess positions.
  * Never instantiate this module from Journey or from a live PvP match.
  */
@@ -8,7 +8,7 @@ import { fantasyPieceMarkup } from './fantasy-piece.mjs';
 import { makeToggle, syncToggles } from './board-view-toggle.mjs';
 
 const UCI=/^[a-h][1-8][a-h][1-8][qrbn]?$/;
-const MODES=new Set(['arena','tournament']);
+const MODES=new Set(['arena','tournament','mentor']);
 const WORKER_URL='vendor/stockfish/stockfish-18-lite-single.js';
 const ROLES={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
 const RU={
@@ -46,7 +46,7 @@ function moveUci(value){
  return '';
 }
 function prepareFinishedReview({mode,moves,playerColor,finished,allColors=false}={}){
- if(!MODES.has(mode)||finished!==true)throw new Error('Error review is allowed only for completed Tournament or Arena matches');
+ if(!MODES.has(mode)||finished!==true)throw new Error('Error review is allowed only for completed Arena, Tournament or Mentor matches');
  if(!['w','b'].includes(playerColor)||!Array.isArray(moves)||moves.length>1000)throw new Error('Invalid completed game data');
  const engine=new ClassicChessEngine(),turns=[];
  for(let i=0;i<moves.length;i++){
@@ -57,6 +57,9 @@ function prepareFinishedReview({mode,moves,playerColor,finished,allColors=false}
   if(!applied.ok)throw new Error('Corrupted game move history');
   if(ours||allColors)turns.push({ply:i+1,uci,beforeFen:fenBefore,afterFen:engine.fen(),color:ours?playerColor:(playerColor==='w'?'b':'w')});
  }
+ // A mentor review can only start after an actually finished chess game;
+ // never open the completed-game analyzer over a live training position.
+ if(mode==='mentor'&&!engine.status().over)throw new Error('Mentor review requires a finished chess game');
  return turns;
 }
 function sampleReviewTurns(turns){
@@ -300,7 +303,7 @@ function reviewEvaluation(beforeCp,playerColor,loss=null){
  const fraction=Math.max(.015,Math.min(.985,1/(1+Math.exp(-whiteCp/310))));
  return {whiteCp,whitePercent:Math.round(fraction*1000)/10,display:(whiteCp>=0?'+':'−')+(Math.abs(whiteCp)/100).toFixed(2)};
 }
-/* Explicitly invoked from the completed Arena or Tournament result button.
+/* Explicitly invoked from a completed Arena, Tournament or Mentor result button.
  * There is no live-match Stockfish worker or reward/rating side effect. */
 function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides={},engineFactory=null}={}){
  const turns=prepareFinishedReview({mode,moves,playerColor,finished,allColors:true});

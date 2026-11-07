@@ -308,3 +308,73 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
 
 /* Only shown after a failed AI request. Never interferes with navigation. */
 .mentor-training .mentor-retry-ai{min-height:34px;font-size:13px;padding:5px 9px;align-self:flex-start;border-color:#927c50}
+
+
+/* The same checked-king red aura asset and opacity used in Tournament. */
+.mentor-training .mentor-board .mentor-square.is-check::after{
+ content:'';
+ position:absolute;
+ inset:0;
+ background:url('../assets/vfx/aura_red.png') center/100% 100% no-repeat!important;
+ opacity:.72!important;
+ z-index:3;
+ pointer-events:none;
+}
+/* All three game-ending states are terminal; the result is independent of AI
+ * evaluation and stays available after a reload or a history rewind/forward. */
+.mentor-training .mentor-result-overlay{
+ position:fixed;
+ inset:0;
+ z-index:34;
+ display:grid;
+ place-items:center;
+ padding:clamp(12px,3vw,28px);
+ background:rgba(1,5,12,.78);
+ overflow-y:auto;
+}
+.mentor-training .mentor-result-panel{
+ width:min(610px,95vw);
+ max-height:calc(100dvh - 24px);
+ overflow-y:auto;
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+ gap:14px;
+ padding:clamp(21px,4vw,38px);
+ border:2px solid #c9a05b;
+ border-radius:7px;
+ background:linear-gradient(145deg,rgba(28,36,42,.98),rgba(8,12,18,.99));
+ box-shadow:0 15px 70px #000b,0 0 32px #e9bc4817 inset;
+ color:#f7e6c2;
+ text-align:center;
+}
+.mentor-training .mentor-result-emblem{
+ font:normal clamp(52px,10vh,88px)/1 'BrahmsGotischCyr',Georgia,serif;
+ color:#f1cb80;
+ text-shadow:0 3px 20px #d4a1435e;
+}
+.mentor-training .mentor-result-panel h2{
+ font:normal clamp(30px,4vw,46px)/1.1 'BrahmsGotischCyr',Georgia,serif;
+ color:#ffdfa0;
+ margin:0;
+}
+.mentor-training .mentor-result-actions{
+ width:100%;
+ display:flex;
+ flex-wrap:wrap;
+ justify-content:center;
+ gap:9px;
+ margin-top:8px;
+}
+.mentor-training .mentor-result-actions button{
+ flex:1 1 160px;
+ min-height:46px;
+ max-width:100%;
+ padding:9px 14px;
+ font-size:clamp(15px,1.35vw,19px);
+ white-space:normal;
+}
+@media (orientation:portrait){
+ .mentor-training .mentor-result-actions{flex-direction:column;align-items:stretch}
+ .mentor-training .mentor-result-actions button{width:100%;flex:auto;min-height:46px}
+}

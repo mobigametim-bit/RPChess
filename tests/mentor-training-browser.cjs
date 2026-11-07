@@ -197,6 +197,74 @@ fs.mkdirSync(output,{recursive:true});
    'closing analysis restores the live board');
   assert.deepEqual(await page.evaluate(()=>window.RPChessMentorTraining.state.moves.map(m=>m.uci)),
    playedHistory,'returning to the game keeps moves intact');
+  // The same king-check aura as Arena/Tournament must be visible during
+  // an ordinary (non-terminal) check, independently of player orientation.
+  const saveMentorPosition=async(seq,player='w')=>page.evaluate(({seq,player})=>{
+   localStorage.setItem('rpchess.mentor-training.v1',JSON.stringify({
+    version:1,selected:1,color:player,playing:true,
+    moves:seq.map((uci,i)=>({uci,color:i%2?'b':'w'})),cursor:seq.length
+   }));
+  },{seq,player});
+  await saveMentorPosition(['e2e4','e7e5','f2f4','e5f4','g1f3','d8h4']);
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('[data-mentor-open]').click();
+  const checkedKing=page.locator('[data-mentor-square="e1"].is-check');
+  await checkedKing.waitFor({timeout:15000});
+  const checkVfx=await checkedKing.evaluate(node=>{
+   const style=getComputedStyle(node,'::after');
+   return {image:style.backgroundImage,opacity:style.opacity,content:style.content};
+  });
+  assert(checkVfx.image.includes('aura_red.png'),'checked king must use the shared red aura art');
+  assert(Number(checkVfx.opacity)>=.7,'red aura must be visible, not fully transparent');
+  assert.equal(await page.locator('[data-mentor-result]').count(),0,'a check without mate must not end the game');
+  await page.screenshot({path:path.join(output,'battle-red-check-aura.png'),animations:'disabled'});
+  // Scholar's mate: the player makes the final move, game ends instantly,
+  // without awaiting the move-evaluation worker or a paid Gonka call.
+  const mateSetup=['e2e4','e7e5','d1h5','b8c6','f1c4','g8f6'];
+  await saveMentorPosition(mateSetup);
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('[data-mentor-open]').click();
+  await page.locator('[data-mentor-square="h5"]').click();
+  await page.locator('[data-mentor-square="f7"]').click();
+  await page.locator('[data-mentor-result] h2').waitFor({timeout:15000});
+  assert.equal((await page.locator('[data-mentor-result] h2').textContent()).trim(),'Победа!');
+  assert.equal(await page.locator('.mentor-result-actions button').count(),3);
+  const actions=await page.locator('.mentor-result-actions button').allTextContents();
+  assert.deepEqual(actions.map(x=>x.trim()),['Анализировать','Главное меню','К наставникам']);
+  assert(await page.locator('[data-mentor-square="e8"].is-check').count(),
+   'checkmate must keep the checked king red');
+  const terminal=await page.evaluate(()=>window.RPChessMentorTraining.state);
+  assert.equal(terminal.moves.length,7,'the winning move is in the saved game history');
+  assert.equal(terminal.cursor,7);
+  await page.screenshot({path:path.join(output,'battle-mentor-victory.png'),animations:'disabled'});
+  // The win must still be visible after reload, with review accessible.
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('[data-mentor-open]').click();
+  await page.locator('[data-mentor-result]').waitFor({timeout:15000});
+  await page.locator('[data-mentor-action="result-review"]').click();
+  await page.locator('[data-finished-review]').waitFor({timeout:15000});
+  assert.equal(await page.locator('[data-finished-review] [data-review-square]').count(),64,
+   'Mentor reuses the actual Arena/Tournament completed-game review overlay');
+  assert.match((await page.locator('[data-finished-review] h2').first().textContent()),/Анализ партии/);
+  await page.screenshot({path:path.join(output,'battle-mentor-finished-analysis.png'),animations:'disabled'});
+  await page.locator('[data-finished-review] [data-review-action="close"]').click();
+  assert.equal(await page.locator('[data-mentor-result]').count(),1,'closing review returns to the result');
+  await page.setViewportSize({width:390,height:844});
+  const resultBounds=await page.locator('.mentor-result-panel').boundingBox();
+  assert(resultBounds&&resultBounds.width<=390&&resultBounds.x>=-2,
+   'result panel fits portrait view without horizontal clipping');
+  await page.screenshot({path:path.join(output,'battle-mentor-victory-portrait.png'),animations:'disabled'});
+  await page.locator('.mentor-result-actions [data-mentor-action="catalog"]').click();
+  assert.equal(await page.locator('[data-mentor-id]').count(),12,'Mentors button returns to preparation screen');
+  // Computer checkmate / defeat uses the same result UI and shows the check aura.
+  await saveMentorPosition(['f2f3','e7e5','g2g4','d8h4']);
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('[data-mentor-open]').click();
+  assert.equal((await page.locator('[data-mentor-result] h2').textContent()).trim(),'Поражение');
+  assert.equal(await page.locator('[data-mentor-square="e1"].is-check').count(),1);
+  await page.locator('.mentor-result-actions [data-mentor-action="leave"]').click();
+  assert.equal(await page.locator('[data-mentor-screen]:not([hidden])').count(),0,
+   'Main menu button leaves mentor training');
   assert.equal(errors.length,0,'browser errors: '+errors.join('\n'));
   console.log('Mentor training real Stockfish, history branch, 12 mentors and phone: PASS');
  }finally{await browser.close();}
