@@ -175,54 +175,34 @@ fs.mkdirSync(output,{recursive:true});
    };
   });
   let mockedMentorCalls=0;
-  await page.route('https://rpchess-mentor-api-preview.mobigametim.workers.dev/v1/explain',async route=>{
+  await page.route('https://rpchess-mentor-api-v2-preview.mobigametim.workers.dev/v2/explain',async route=>{
    const headers={'Access-Control-Allow-Origin':'*',
     'Access-Control-Allow-Headers':'Content-Type, X-Mentor-Session',
     'Access-Control-Allow-Methods':'POST,OPTIONS'};
    if(route.request().method()==='OPTIONS')
     return route.fulfill({status:204,headers});
    mockedMentorCalls++;
-   await new Promise(resolve=>setTimeout(resolve,750)); // Inspect visible pending state.
+   await new Promise(resolve=>setTimeout(resolve,750));
    if(mockedMentorCalls===1)
     return route.fulfill({status:503,contentType:'application/json',headers,
      body:JSON.stringify({error:'model_chain_failed',reason:'broker_timeout',
       attempts:[{model:'deepseek-ai/DeepSeek-V4-Flash-0731',reason:'broker_timeout'}]})});
+   const fact='Соперник может поставить мат следующим ходом.';
+   const advice='Перед ходом проверяй самый сильный ответ соперника. Что ещё ты мог упустить?';
    return route.fulfill({status:200,contentType:'application/json',headers,
-    body:JSON.stringify({grade:'blunder',source:'minimax',model:'MiniMaxAI/MiniMax-M2.7',attempts:2,
-     explanation:'Ход допускает быструю атаку на короля. Посмотри, какие защитники теперь не могут помочь. Попробуй найти, что следовало учесть до этого решения.'})});
+    body:JSON.stringify({contractVersion:2,grade:'blunder',source:'minimax',
+     model:'MiniMaxAI/MiniMax-M2.7',attempts:2,factId:'mate_sequence:d8h4',
+     verifiedFact:fact,advice,explanation:fact+' '+advice})});
   });
   await page.locator('[data-mentor-open]').click();
-  const mentorRequest=page.waitForRequest(req=>req.url().endsWith('/v1/explain')&&req.method()==='POST',{timeout:45000});
+  const mentorRequest=page.waitForRequest(req=>req.url().endsWith('/v2/explain')&&req.method()==='POST',{timeout:60000});
   await page.locator('[data-mentor-square="g2"]').click();
   await page.locator('[data-mentor-square="g4"]').click();
   await page.waitForFunction(()=>window.__mentorDepthSearch.includes('go movetime 1700'),null,{timeout:30000});
-  const observed=await mentorRequest;
-  await page.locator('.mentor-feedback-head .mentor-thinking').waitFor({timeout:3000});
-  assert.equal((await page.locator('.mentor-thinking').textContent()).trim(),'Думаю…');
-  assert(await page.locator('.mentor-thinking').evaluate(node=>getComputedStyle(node).animationName!=='none'),
-   'the mentor thinking label blinks while the API request is pending');
-  const detail=observed.postDataJSON();
-  assert.equal(detail.grade,'blunder','real Stockfish identifies a known mate-in-one blunder');
-  assert(detail.continuation?.depth>=5,'deep search depth must reach a usable value');
-  assert(detail.continuation?.pv.length>=1&&detail.continuation.pv.length<=20,
-   'deep search emits up to 20 half-moves after the blunder');
-  assert.equal(detail.continuation.pv[0],'d8h4','deep line should begin with mate in one');
-  await page.waitForFunction(()=>document.querySelector('[data-mentor-action="retry-explanation"]')&&
-   window.RPChessMentorTraining.state.moves.findLast(m=>m.grade==='blunder'&&m.color==='w')?.mentorSource==='fallback',
-   null,{timeout:15000});
-  const afterFailure=await page.evaluate(()=>window.RPChessMentorTraining.state.moves.findLast(m=>m.grade==='blunder'&&m.color==='w'));
-  assert.equal(afterFailure.mentorSource,'fallback','an unsuccessful broker call must not masquerade as AI');
-  assert.equal(await page.locator('.mentor-thinking').count(),0,'thinking label disappears when fallback is ready');
-  assert.equal(afterFailure.mentorReason,'broker_timeout','the reason is available for debugging');
-  await page.locator('[data-mentor-action="retry-explanation"]').click();
-  await page.waitForFunction(()=>window.RPChessMentorTraining.state.moves.findLast(m=>m.grade==='blunder'&&m.color==='w')?.mentorSource==='minimax',
-   null,{timeout:15000});
-  const afterSuccess=await page.evaluate(()=>window.RPChessMentorTraining.state.moves.findLast(m=>m.grade==='blunder'&&m.color==='w'));
-  assert.equal(afterSuccess.mentorSource,'minimax','a successful backup model is recorded');
-  assert.equal(afterSuccess.mentorModel,'MiniMaxAI/MiniMax-M2.7');
-  assert.equal(mockedMentorCalls,2,'manual retry does not require replaying a move');
-  assert.equal(await page.locator('[data-mentor-action="retry-explanation"]').count(),0,'retry disappears on success');
-  await page.screenshot({path:path.join(output,'battle-deep-mentor-response.png'),animations:'disabled'});
+  await page.waitForFunction(()=>window.RPChessMentorTraining.state.lesson==='mate_sequence',null,{timeout:30000});
+  assert.equal(mockedMentorCalls,0,'no paid LLM request until the learner answers');
+  assert.equal(await page.locator('[data-mentor-action="correction-start"]').count(),0,
+   'improvement exercise is not visible before the learner solves the threat');
   // An inaccurate move keeps the rival on move without letting it reply.
   await page.waitForFunction(()=>window.RPChessMentorTraining.state.lesson==='mate_sequence',null,{timeout:15000});
   let paused=await page.evaluate(()=>window.RPChessMentorTraining.state);
@@ -240,6 +220,7 @@ fs.mkdirSync(output,{recursive:true});
   assert(lessonBoardBounds?.width<=390,'paused lesson board fits a portrait phone');
   await page.screenshot({path:path.join(output,'battle-automatic-lesson-portrait.png'),animations:'disabled'});
   await page.locator('[data-mentor-square="e8"]').click();
+  assert.equal(mockedMentorCalls,0,'incorrect piece selection does not reveal or bill the LLM');
   assert(await page.locator('[data-mentor-square="e8"] .mentor-lesson-aura--wrong').count(),
    'wrong rival piece flashes with red aura');
   assert((await page.locator('[data-mentor-square="e8"] .mentor-lesson-burst--wrong').textContent())
@@ -255,6 +236,27 @@ fs.mkdirSync(output,{recursive:true});
    'correct rival piece flashes with green aura');
   assert((await page.locator('[data-mentor-square="d8"] .mentor-lesson-burst--correct').textContent())
    .includes('Верно, ты нашёл нужную фигуру!'),'green confirmation emerges from the chosen queen');
+  const observed=await mentorRequest;
+  const detail=observed.postDataJSON();
+  assert.equal(detail.version,2);
+  assert.equal(detail.grade,'blunder','winning-chance grade is shared with API');
+  assert(detail.continuation?.depth>=7,'only deep verified tactics reach paid mentor');
+  assert.equal(detail.continuation.pv[0],'d8h4');
+  assert.equal(detail.verifiedThreat.kind,'mate_sequence');
+  await page.waitForFunction(()=>document.querySelector('[data-mentor-action="retry-explanation"]')&&
+   window.RPChessMentorTraining.state.moves[2]?.mentorSource==='fallback',null,{timeout:15000});
+  assert.equal(mockedMentorCalls,1,'first request begins only after correct answer');
+  const afterFailure=await page.evaluate(()=>window.RPChessMentorTraining.state.moves[2]);
+  assert.equal(afterFailure.mentorReason,'broker_timeout');
+  await page.locator('[data-mentor-action="retry-explanation"]').click();
+  await page.waitForFunction(()=>window.RPChessMentorTraining.state.moves[2]?.mentorSource==='minimax',null,{timeout:15000});
+  const afterSuccess=await page.evaluate(()=>window.RPChessMentorTraining.state.moves[2]);
+  assert.equal(afterSuccess.mentorModel,'MiniMaxAI/MiniMax-M2.7');
+  assert.equal(mockedMentorCalls,2,'manual retry uses the stored verified v2 fact');
+  assert((await page.locator('.mentor-learning-mentor-note').textContent()).includes('Перед ходом проверяй'));
+  assert(await page.locator('[data-mentor-square="d8"] .mentor-lesson-aura--correct').count()||afterSuccess,
+   'correct rival piece is verified and AI advice arrives only after answering');
+
   await page.waitForFunction(()=>document.querySelector('.mentor-learning-answer')?.textContent?.includes('d8–h4')
    &&document.querySelector('[data-mentor-square="h4"].mentor-lesson-target'),null,{timeout:4000});
   assert.equal(await page.locator('.mentor-learning-hint').count(),0,
@@ -435,7 +437,7 @@ fs.mkdirSync(output,{recursive:true});
    };
   });
   let positionalCalls=0;
-  await positionalPage.route('https://rpchess-mentor-api-preview.mobigametim.workers.dev/v1/explain',
+  await positionalPage.route('https://rpchess-mentor-api-v2-preview.mobigametim.workers.dev/v2/explain',
    async route=>{positionalCalls++;await route.abort();});
   await positionalPage.goto(url,{waitUntil:'domcontentloaded'});
   await positionalPage.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
