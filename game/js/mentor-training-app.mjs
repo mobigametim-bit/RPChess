@@ -8,10 +8,10 @@ import { makeToggle, syncToggles } from './board-view-toggle.mjs';
 import { createMentorMotion } from './mentor-training-motion.mjs';
 import { fantasyPieceMarkup } from './fantasy-piece.mjs';
 import { currentLanguage, subscribe } from './i18n.mjs';
-import { TRAINING_MENTORS, UCI, rebuildTraining, extendTraining, trainingMoveQuality } from './mentor-training-history.mjs';
-import {buildMentorPayload,requestMentorText} from './mentor-training-feedback-client.mjs?v=20261107-mentor-auto-pause-v3';
-import {validateMentorInput} from './mentor-training-feedback-core.mjs?v=20261107-mentor-auto-pause-v3';
-import {lessonFromVerified,mentorLessonCopy,validateLessonGuess} from './mentor-training-teaching.mjs?v=20261107-mentor-auto-pause-v3';
+import { TRAINING_MENTORS, UCI, rebuildTraining, extendTraining, trainingMoveQualityWinChance } from './mentor-training-history.mjs';
+import {buildMentorV2Payload,requestMentorV2Text} from './mentor-training-feedback-client.mjs?v=20261107-mentor-stage6-v1';
+import {validatedV2Facts,localMentorV2Fallback} from './mentor-training-feedback-v2.mjs?v=20261107-mentor-stage6-v1';
+import {mentorLessonCopy,validateLessonGuess} from './mentor-training-teaching.mjs?v=20261107-mentor-auto-pause-v3';
 import {thinkingText,praiseText,fallbackText} from './mentor-training-copy.mjs';
 import {POS,TACTIC,quickThreatProbe,verifyImmediateThreat} from './mentor-training-threat.mjs?v=20261107-mentor-stage4-v1';
 
@@ -71,6 +71,10 @@ function restore(){
   analysisView=lessonSolved&&pausedEntry?.analysisLine?.length
    ?{entry:pausedEntry,index:raw.pausedAt,offset:1}:null;
   correctionView=null;
+  if(pausedEntry?.mentorRequested&&!pausedEntry?.mentorSource){
+   // Never charge again for a request lost during reload.
+   pausedEntry.mentorRequested=false;pausedEntry.pending=false;
+  }
  }catch{playing=false;moves=[];cursor=0;pausedEntry=null;lessonView=null;correctionView=null;}
 }
 function game(){return rebuildTraining(moves,cursor);}
