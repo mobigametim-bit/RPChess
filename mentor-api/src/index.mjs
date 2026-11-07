@@ -96,10 +96,16 @@ async function handleMentorApi(request,env,fetcher=fetch,sleep=waitForRetry,cont
     (endpoint.origin!=='https://hskyauefqcgbvgvxkluj.supabase.co'&&
      endpoint.origin!=='https://gonka-api.org'))
   return reply({error:'broker_config'},503,origin);
+ // A diagnostic caller can explicitly request just ONE primary-model attempt.
+ // This can only REDUCE spend and never overrides origin, validation or rate
+ // limits. Live acceptance must not accidentally trigger 12 billable calls.
+ const singleAttempt=isV2&&request.headers.get('X-Mentor-Diagnostic')==='one';
+ const selectedModels=singleAttempt?MODELS.slice(0,1):MODELS;
+ const maxAttempts=singleAttempt?1:MAX_ATTEMPTS_PER_MODEL;
  const attempts=[];
  let stoppedForCredentials=false;
- for(const selected of MODELS){
-  for(let tryNo=1;tryNo<=MAX_ATTEMPTS_PER_MODEL;tryNo++){
+ for(const selected of selectedModels){
+  for(let tryNo=1;tryNo<=maxAttempts;tryNo++){
    // Stop paid retries if the caller has already left the page.
    if(request.signal?.aborted)
     return reply({error:'client_cancelled'},499,origin);
@@ -152,7 +158,14 @@ async function handleMentorApi(request,env,fetcher=fetch,sleep=waitForRetry,cont
         attempts:attempts.length+1,modelAttempt:tryNo,failures:attempts},200,origin);
       }
      }
-     problem='broker_invalid';
+     // Only report a general rejection category; never log or return a
+     // provider response, user position, key or raw completion.
+     problem=isV2?(
+       typeof content!=='string'?'broker_missing_content':
+       !parsed?'broker_invalid_json':
+       typeof parsed.advice!=='string'?'broker_missing_advice':
+       'broker_unsafe_advice'
+     ):'broker_invalid';
     }
    }catch{
     problem=controller.signal.aborted?'broker_timeout':'broker_network';
@@ -168,7 +181,7 @@ async function handleMentorApi(request,env,fetcher=fetch,sleep=waitForRetry,cont
     stoppedForCredentials=true;
     break;
    }
-   if(tryNo<MAX_ATTEMPTS_PER_MODEL)
+   if(tryNo<maxAttempts)
     await sleep(RETRY_DELAYS_MS[tryNo-1]);
   }
   if(stoppedForCredentials)break;
