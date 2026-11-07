@@ -42,6 +42,47 @@ function extendTraining(moves, cursor, uci) {
  return {ok:true,moves:next,cursor:cursor+1,branched:!same&&cursor<moves.length,fen:game.fen(),status:applied.status};
 }
 
+/* Stage 2: independent, Mentor-only evaluation proposal.
+ * Logistic score calibration is a simple monotonic approximation of winning
+ * chances, not a tablebase result or a statement about actual game outcomes.
+ * Kept opt-in until the deployed Mentor API Worker accepts the new grading
+ * contract; otherwise a 422 invalid_grade would silently replace AI feedback.
+ * Engine scores are side-to-move POV: after the move, reverse the probability.
+ */
+function mentorCpWinProbability(cp) {
+ if (!Number.isFinite(cp)) return null;
+ const bounded=Math.max(-1000,Math.min(1000,cp));
+ return 1/(1+Math.exp(-0.0037*bounded));
+}
+function mentorScoreWinProbability(score) {
+ if (!score || !Number.isFinite(score.cp)) return null;
+ // UCI mate scores are relative to the side to move. Mate 0 is checkmated.
+ if (Number.isInteger(score.mate)) return score.mate>0?1:0;
+ return mentorCpWinProbability(score.cp);
+}
+function trainingMoveQualityWinChance(before,after,uci) {
+ if (!before || !after || !UCI.test(uci) ||
+     before.depth<5 || after.depth<5 ||
+     !Number.isFinite(before.cp) || !Number.isFinite(after.cp) ||
+     !UCI.test(before.bestMove)) return null;
+ const beforeWin=mentorScoreWinProbability(before),afterWin=mentorScoreWinProbability(after);
+ if (beforeWin===null || afterWin===null) return null;
+ const lostCp=Math.max(0,Math.round(before.cp+after.cp));
+ const winLoss=Math.max(0,beforeWin-(1-afterWin));
+ let kind=winLoss>=0.3?'blunder':winLoss>=0.2?'mistake':winLoss>=0.1?'inaccuracy':null;
+ if (before.bestMove===uci) kind=null;
+ // Losing or failing to convert a proven mate needs separate treatment: the
+ // saturated cp proxy (+/-1200) loses the actual forced-mate information.
+ else if (Number.isInteger(before.mate) && before.mate>0 &&
+          !(Number.isInteger(after.mate) && after.mate<0)) {
+  kind=after.cp<=-1000?'inaccuracy':after.cp<=-700?'mistake':'blunder';
+ }else if (Number.isInteger(after.mate) && after.mate>0 &&
+           !(Number.isInteger(before.mate) && before.mate<0)) {
+  kind=before.cp<=-1000?'inaccuracy':before.cp<=-700?'mistake':'blunder';
+ }
+ return {kind,loss:lostCp,winLoss:Math.round(winLoss*1000)/10};
+}
+
 function trainingMoveQuality(before,after,uci) {
  if (!before || !after || !UCI.test(uci) || before.depth < 5 || after.depth < 5 ||
      !Number.isFinite(before.cp) || !Number.isFinite(after.cp) || !UCI.test(before.bestMove))
@@ -51,4 +92,4 @@ function trainingMoveQuality(before,after,uci) {
  return {kind:loss>=250?'blunder':loss>=120?'mistake':'inaccuracy',loss};
 }
 
-export { TRAINING_MENTORS, UCI, rebuildTraining, extendTraining, trainingMoveQuality };
+export { TRAINING_MENTORS, UCI, rebuildTraining, extendTraining, trainingMoveQuality, trainingMoveQualityWinChance, mentorCpWinProbability, mentorScoreWinProbability };
