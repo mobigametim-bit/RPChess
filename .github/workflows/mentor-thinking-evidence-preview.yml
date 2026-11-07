@@ -96,7 +96,7 @@ jobs:
               try{
                 const page=await fetch(base+'/?build=mentor-evidence-20261107',{cache:'no-store'});
                 assert.equal(page.status,200);
-                assert((await page.text()).includes('mentor-stage4-v1'));
+                assert((await page.text()).includes('mentor-stage5-v1'));
                 const js=await fetch(base+'/js/mentor-training-app.mjs',{cache:'no-store'});
                 assert.equal(js.status,200);
                 assert((await js.text()).includes('function lessonHTML'));
