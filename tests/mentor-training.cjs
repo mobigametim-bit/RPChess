@@ -20,7 +20,7 @@ const path=require('node:path');
  assert.equal(winning.status.winner,'w');
  assert.equal(rebuildTraining(winning.moves,winning.cursor).status().checked,true,'checked king remains highlighted at mate');
  const reviewTurns=prepareFinishedReview({mode:'mentor',finished:true,
-  moves:winning.moves,playerColor:'w',allColors:true});
+  moves:winning.moves.map(item=>item.uci),playerColor:'w',allColors:true});
  assert.equal(reviewTurns.length,winning.moves.length,'shared finished-game analysis accepts a completed mentor game');
  assert.equal(reviewTurns.at(-1).uci,'h5f7');
  assert.throws(()=>prepareFinishedReview({mode:'mentor',finished:true,
