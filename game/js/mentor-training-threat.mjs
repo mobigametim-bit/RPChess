@@ -34,7 +34,7 @@ function legalFirstReply(fen,uci,player){
    targetSquare:move.capture||to,status:step.status};
  }catch{return null;}
 }
-function immediateCandidate(fen,analysis,player){
+function immediateCandidate(fen,analysis,player,{seeMaxNodes=96}={}){
  if(!analysis||analysis.depth<5||!UCI.test(analysis.bestMove)||!Array.isArray(analysis.pv)||
     analysis.pv[0]!==analysis.bestMove)return null;
  const reply=legalFirstReply(fen,analysis.bestMove,player);
@@ -48,7 +48,7 @@ function immediateCandidate(fen,analysis,player){
    basis:'legal_checkmate',depth:analysis.depth};
  }
  if(reply.victim){
-  const exchange=evaluateStaticExchange(fen,analysis.bestMove);
+  const exchange=evaluateStaticExchange(fen,analysis.bestMove,{maxNodes:seeMaxNodes});
   if(exchange?.exact&&exchange.scoreCp>=100){
    // An actual legal, profitable immediate capture is a demonstrable tactical
    // opportunity. Determine the motif from the *same* move, not later PV.
@@ -96,7 +96,7 @@ function immediateCandidate(fen,analysis,player){
  * inspectable tactical candidate on the post-move board.
  */
 function quickThreatProbe({afterFen,after,player}){
- const candidate=immediateCandidate(afterFen,after,player);
+ const candidate=immediateCandidate(afterFen,after,player,{seeMaxNodes:96});
  return candidate?{status:'candidate',candidate}:{status:POS,reason:'no_immediate_tactic'};
 }
 /**
@@ -122,7 +122,7 @@ function verifyImmediateThreat({afterFen,after,deep,player}){
     deep.secondDepth>=7&&Number.isFinite(deep.secondCp)&&
     deep.secondCp>=deep.cp-65)
   return {status:POS,reason:'ambiguous_equivalent_attackers'};
- const deepCandidate=immediateCandidate(afterFen,deep,player);
+ const deepCandidate=immediateCandidate(afterFen,deep,player,{seeMaxNodes:512});
  if(!deepCandidate||deepCandidate.kind!==quick.candidate.kind||
     deepCandidate.basis!==quick.candidate.basis)
   return {status:POS,reason:'motif_unconfirmed'};
