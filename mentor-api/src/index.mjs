@@ -113,7 +113,7 @@ async function handleMentorApi(request,env,fetcher=fetch,sleep=waitForRetry,cont
    const controller=new AbortController();
    const onClientAbort=()=>controller.abort();
    request.signal?.addEventListener('abort',onClientAbort,{once:true});
-   const timer=setTimeout(()=>controller.abort(),selected.timeout);
+   const timer=setTimeout(()=>controller.abort(),isV2&&selected.source==='deepseek'?25000:selected.timeout);
    let problem='broker_network',fatal=false;
    // Keep parsed in scope for diagnostics; invalid answers are not network failures.
    let content=null,parsed=null,finishReason=null,validationIssue=null;
