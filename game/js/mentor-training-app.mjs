@@ -281,8 +281,77 @@ function lessonHTML(data){
   if(lessonView.stage<2)section+=button('lesson-hint',t('lessonHint'),'mentor-outline');
   section+=button('lesson-reveal',t('lessonShow'),'mentor-outline');
  }
+ if(solved&&pausedEntry===data&&data.mentorPayload?.beforeFen&&UCI.test(data.mentorPayload.before?.bestMove||''))
+  section+=button('correction-start',t('correctionStart'),'mentor-outline mentor-correction-start');
  section+=button('lesson-close',t('lessonExit'),'mentor-outline')+'</div></section>';
  return section;
+}
+function correctionHTML(data){
+ if(!correctionView||correctionView.entry!==data)return '';
+ const c=correctionView;
+ const reply=c.checking?t('correctionChecking'):c.accepted?t('correctionGood'):
+  c.outcome==='wrong'?t('correctionWrong'):
+  c.outcome==='unavailable'?t('correctionUnavailable'):'';
+ const result=reply?'<p class="mentor-correction-result'+(c.accepted?' is-correct':c.outcome==='wrong'?' is-wrong':'')+'" role="status">'+esc(reply)+'</p>':'';
+ return '<section class="mentor-learning mentor-correction" aria-label="'+esc(t('correctionTitle'))+'">'+
+  '<strong class="mentor-learning-question">'+esc(t('correctionTitle'))+'</strong>'+
+  '<p class="mentor-learning-instruction">'+esc(t('correctionInstruction'))+'</p>'+result+
+  '<div class="mentor-learning-buttons">'+
+  (c.accepted?button('correction-again',t('correctionAgain'),'mentor-outline'):'')+
+  button('correction-back',t('correctionBack'),'mentor-outline')+
+  button('correction-close',t('lessonExit'),'mentor-outline')+'</div></section>';
+}
+function startCorrection(){
+ const entry=lessonView?.entry,payload=entry?.mentorPayload;
+ if(!entry||lessonView?.stage!==3||pausedEntry!==entry||cursor!==moves.length||
+    !payload?.beforeFen||!UCI.test(payload.before?.bestMove||'')||!Number.isFinite(payload.before?.cp))return;
+ try{
+  const board=new ClassicChessEngine(payload.beforeFen);
+  if(board.turn()!==currentPlayerColor()||board.status().over)return;
+ }catch{return;}
+ correctionView={entry,beforeFen:payload.beforeFen,beforeCp:payload.before.cp,
+  bestMove:payload.before.bestMove,accepted:false,chosenUci:null,checking:false,outcome:null};
+ lessonView=null;analysisView=null;promotion=null;square=null;motion?.clear();
+ save();render();
+}
+async function submitCorrection(from,to,promote=null){
+ const c=correctionView;
+ if(!c||c.checking||c.accepted||cursor!==moves.length||pausedEntry!==c.entry)return;
+ const uci=from+to+(promote||'');
+ const board=new ClassicChessEngine(c.beforeFen);
+ if(!board.legalMoves(from).some(m=>m.to===to&&(m.promotion||null)===(promote||null)))return;
+ c.checking=true;c.outcome=null;square=null;promotion=null;render();
+ try{
+  // Reuse existing game-review grading. A 70cp tolerance accepts equivalent
+  // moves, not only exact engine UCI. Review and rival use separate workers.
+  const result=await gradeReviewAttempt(
+   {beforeFen:c.beforeFen,beforeCp:c.beforeCp,bestMove:c.bestMove},
+   uci,{engine:{evaluate:fen=>evaluate(fen)},tolerance:70});
+  if(c!==correctionView||cursor!==moves.length||pausedEntry!==c.entry)return;
+  c.checking=false;c.accepted=Boolean(result.accepted);
+  c.chosenUci=c.accepted?uci:null;
+  c.outcome=c.accepted?'correct':result.unavailable?'unavailable':'wrong';
+ }catch{
+  if(c!==correctionView||cursor!==moves.length||pausedEntry!==c.entry)return;
+  c.checking=false;c.outcome='unavailable';
+ }
+ save();render();
+}
+function returnFromCorrection(resume){
+ const c=correctionView;
+ if(!c)return;
+ correctionView=null;analysisView=null;square=null;promotion=null;
+ if(resume){
+  const shouldResume=pausedEntry===c.entry&&cursor===moves.length;
+  if(shouldResume)pausedEntry=null;
+  lessonView=null;save();render();
+  if(shouldResume)resumeAI();
+ }else{
+  lessonView={entry:c.entry,plan:c.entry.mentorLesson,stage:3,feedback:null};
+  if(Array.isArray(c.entry.analysisLine)&&c.entry.analysisLine.length)
+   analysisView={entry:c.entry,index:moves.indexOf(c.entry),offset:1};
+  save();render();
+ }
 }
 function feedbackHTML(){
  const found=latestPlayerNote(),data=found?.move||null;
@@ -296,15 +365,15 @@ function feedbackHTML(){
  return '<section class="mentor-feedback mentor-card"><div class="mentor-feedback-head">'+picture(mentor(),'mentor-face')+
  '<h2>'+t('mentor')+'</h2>'+(data?.pending?'<span class="mentor-thinking" role="status" aria-live="polite">'+t('mentorThinking')+'</span>':'')+'</div>'+
  (data?'<div class="mentor-feedback-grade'+(positive?' mentor-feedback-grade--good':'')+'"><strong>'+mark+'</strong><span>'+label+'</span></div>':'')+
- (lessonView?.entry===data?'':'<p class="mentor-feedback-text">'+esc(copy)+'</p>')+
- (canView&&!lessonView?(analysisView?'':'<div class="mentor-analysis-actions">'+button('open-variation',t('view'),'mentor-outline mentor-view-btn')+'</div>')+variationHTML(data,found.index):'')+
- lessonHTML(data)+
+ (lessonView?.entry===data||correctionView?.entry===data?'':'<p class="mentor-feedback-text">'+esc(copy)+'</p>')+
+ (canView&&!lessonView&&!correctionView?(analysisView?'':'<div class="mentor-analysis-actions">'+button('open-variation',t('view'),'mentor-outline mentor-view-btn')+'</div>')+variationHTML(data,found.index):'')+
+ lessonHTML(data)+correctionHTML(data)+
  (data?.mentorSource==='fallback'&&data.mentorPayload?button('retry-explanation',t('retryAI'),'mentor-outline mentor-retry-ai'):'')+
- (found&&!positive&&data?.threatStatus===TACTIC?button('before-error',t('before'),'mentor-outline mentor-undo-error'):'')+'</section>';
+ (found&&!positive&&!lessonView&&!correctionView&&data?.threatStatus===TACTIC?button('before-error',t('before'),'mentor-outline mentor-undo-error'):'')+'</section>';
 }
 function battleHTML(){
  const chess=variationPosition(),m=mentor(),status=chess.status();
- const notice=lessonView?(lessonView.plan?t('lessonBoard'):t('analysing')):busy?(analysisPending?t('analysing'):t('thinking')):status.over?t('gameOver'):status.checked?t('check'):t('ready');
+ const notice=correctionView?t('correctionBoard'):lessonView?(lessonView.plan?t('lessonBoard'):t('analysing')):busy?(analysisPending?t('analysing'):t('thinking')):status.over?t('gameOver'):status.checked?t('check'):t('ready');
  return '<section class="mentor-battle"><header class="mentor-battle-top"><h1>'+t('title')+'</h1>'+
  '<div class="mentor-top-actions">'+button('journal',t('journal'),'mentor-small-btn mentor-journal-toggle')+
  button('catalog',t('exit'),'mentor-small-btn')+button('leave',t('back'),'mentor-small-btn')+'</div></header>'+
@@ -313,7 +382,7 @@ function battleHTML(){
  '<div class="mentor-rival">'+picture(m,'mentor-rival-art')+'<div><strong>'+esc(title(m))+'</strong><small>'+m.elo+' Elo</small></div></div>'+
  '<div class="mentor-history-head"><span>№</span><span>'+t('white')+'</span><span>'+t('black')+'</span></div>'+
  '<div class="mentor-history">'+getJournal()+'</div>'+navigation()+'</aside>'+
- '<div class="mentor-center"><div class="mentor-status">'+esc(notice)+'</div>'+boardHTML(chess,Boolean(analysisView))+
+ '<div class="mentor-center"><div class="mentor-status">'+esc(notice)+'</div>'+boardHTML(chess,Boolean(analysisView||correctionView))+
  '<div class="mentor-mobile-navigation">'+navigation()+'<div class="mentor-mobile-toggle"></div></div></div>'+
  feedbackHTML()+
  (!analysisView&&cursor===moves.length&&status.over?resultHTML(status):'')+
