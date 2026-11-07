@@ -90,6 +90,10 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  assert(!promptForMentor(facts).user.includes('b1c3'),'model prompt must not reveal the engine solution');
  assert(localMentorFallback(facts).includes('мат'));
  assert(!safeExplanation('Сыграй b1c3, и всё будет хорошо.',facts));
+ assert(!safeExplanation('Конь идёт на a6 и атакует вашего коня на b5. Затем последует размен на a3.',facts),
+  'model must not invent concrete squares, threats or an exchange');
+ assert(!safeExplanation('После размена фигур соперник получает инициативу. Поищи защиту.',facts),
+  'unverified exchange narratives are rejected even without board squares');
  assert(!safeExplanation('<script>alert(1)</script>',facts));
  assert.throws(()=>validateMentorInput({...body,grade:'mistake'}),/grade/);
  assert.throws(()=>validateMentorInput({...body,afterFen:beforeFen}),/position/);
@@ -124,6 +128,11 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  assert.equal(client.explanation,result.explanation);
  assert.equal(client.source,'deepseek');
  assert.equal(client.model,'deepseek-ai/DeepSeek-V4-Flash-0731');
+ const unverified=await requestMentorText({payload:built.payload,verified:built.verified,fetcher:async()=>new Response(JSON.stringify({
+  ...result,explanation:'Конь пойдёт на a6, нападая на другую фигуру. После размена на a3 вы потеряете слона.'
+ }),{status:200})});
+ assert.equal(unverified.source,'fallback','browser rejects unsafe old-Worker text without redeployment');
+ assert.equal(unverified.reason,'unverified_explanation');
  const fallback=await requestMentorText({payload:built.payload,verified:built.verified,fetcher:async()=>new Response('{}',{status:503})});
  assert.equal(fallback.explanation,localMentorFallback(facts));
  assert.equal(fallback.source,'fallback');
