@@ -1,7 +1,8 @@
-name = "rpchess-mentor-evidence-preview"
+name = "rpchess-mentor-training-preview"
 compatibility_date = "2026-11-04"
 
-# Isolated STATIC assets only; never deploys Mentor API or production Workers.
+# Reuse the existing Mentor static preview hostname, already allowlisted by Mentor API CORS.
+# This updates only the old static preview, NEVER Mentor API or production Workers.
 [assets]
 directory = "../dist"
 not_found_handling = "single-page-application"
