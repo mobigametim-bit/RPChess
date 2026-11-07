@@ -289,7 +289,7 @@ function feedbackHTML(){
  (canView&&!lessonView?(analysisView?'':'<div class="mentor-analysis-actions">'+button('open-variation',t('view'),'mentor-outline mentor-view-btn')+'</div>')+variationHTML(data,found.index):'')+
  lessonHTML(data)+
  (data?.mentorSource==='fallback'&&data.mentorPayload?button('retry-explanation',t('retryAI'),'mentor-outline mentor-retry-ai'):'')+
- (found&&!positive?button('before-error',t('before'),'mentor-outline mentor-undo-error'):'')+'</section>';
+ (found&&!positive&&data?.threatStatus===TACTIC?button('before-error',t('before'),'mentor-outline mentor-undo-error'):'')+'</section>';
 }
 function battleHTML(){
  const chess=variationPosition(),m=mentor(),status=chess.status();
