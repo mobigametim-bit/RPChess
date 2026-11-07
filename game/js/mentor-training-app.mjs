@@ -96,6 +96,11 @@ function leave(){
  save();cancel();playing=false;
  show(false);if(root)root.innerHTML='';
 }
+function powerValue(value){
+ return '<span class="mentor-power" aria-label="'+esc(t('profile')+': '+value)+'">'+
+ '<img class="mentor-power-icon" alt="" aria-hidden="true" src="generated_assets/node_battle.png">'+
+ '<span>'+value+'</span></span>';
+}
 function picture(mentor,cl=''){
  return '<img class="'+cl+'" alt="" loading="lazy" src="'+racePiecePath(mentor.race,mentor.type,'b')+'">';
 }
@@ -108,8 +113,8 @@ function setupHTML(){
  for(let group=0;group<6;group++){
   cards+='<div class="mentor-pair">';
   for(const item of TRAINING_MENTORS.slice(group*2,group*2+2)){
-   cards+='<button type="button" class="mentor-choice'+(selected===item.id?' is-selected':'')+'" data-mentor-id="'+item.id+'" aria-label="'+esc(title(item)+' '+item.elo+' Elo')+'" aria-pressed="'+(selected===item.id)+'">'+picture(item,'mentor-choice-art')+
-   '<span class="mentor-choice-meta"><strong>'+esc(title(item))+'</strong><small>'+esc(race(item))+'</small><b>'+item.elo+' Elo</b></span></button>';
+   cards+='<button type="button" class="mentor-choice'+(selected===item.id?' is-selected':'')+'" data-mentor-id="'+item.id+'" aria-label="'+esc(title(item)+', '+race(item)+', '+t('profile')+': '+item.elo)+'" aria-pressed="'+(selected===item.id)+'">'+picture(item,'mentor-choice-art')+
+   '<span class="mentor-choice-meta"><strong>'+esc(title(item))+'</strong><small>'+esc(race(item))+'</small>'+powerValue(item.elo)+'</span></button>';
   }
   cards+='</div>';
  }
@@ -117,7 +122,7 @@ function setupHTML(){
  return '<section class="mentor-setup"><header class="mentor-top">'+
  '<h1>'+t('title')+'</h1>'+button('leave',t('back'),'mentor-small-btn')+'</header>'+
  '<div class="mentor-setup-body"><section class="mentor-selected mentor-card">'+picture(m,'mentor-selected-art')+
- '<strong class="mentor-selected-name">'+esc(title(m))+'</strong><span class="mentor-selected-level">'+esc(race(m))+' · '+m.elo+' Elo</span>'+
+ '<strong class="mentor-selected-name">'+esc(title(m))+'</strong><span class="mentor-selected-level"><span class="mentor-selected-race">'+esc(race(m))+'</span>'+powerValue(m.elo)+'</span>'+
  '<div class="mentor-colors">'+colors+'</div>'+button('start',t('start'),'mentor-primary')+'</section>'+
  '<section class="mentor-catalog mentor-card"><div class="mentor-catalog-scroll">'+cards+'</div></section></div></section>';
 }

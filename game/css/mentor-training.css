@@ -16,22 +16,25 @@ body.mentor-training-active{overflow:hidden}
 .mentor-selected{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 12px}
 .mentor-selected-art{min-height:0;object-fit:contain;width:min(90%,360px);flex:1;filter:drop-shadow(0 9px 12px #0008)}
 .mentor-selected-name{font-size:clamp(25px,3vw,37px);color:#ffdda0}
-.mentor-selected-level{font-size:clamp(13px,1.2vw,18px);color:#d6c4a0;text-align:center}
+.mentor-selected-level{font-size:clamp(13px,1.2vw,18px);color:#d6c4a0;text-align:center;display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap}
+.mentor-selected-race{white-space:nowrap}
+.mentor-power{display:inline-flex;align-items:center;justify-content:center;gap:4px;color:#edd09a;font-weight:800;white-space:nowrap}
+.mentor-power-icon{width:clamp(17px,1.5vw,23px);height:clamp(17px,1.5vw,23px);object-fit:contain;flex:0 0 auto}
 .mentor-colors{display:flex;width:100%;gap:6px}
 .mentor-colors button{flex:1;padding-inline:3px}
 .mentor-colors button.is-selected{border-color:#eac66f;background:#65502b;color:#fff5cb}
 .mentor-selected .mentor-primary{width:100%;margin-top:6px}
 .mentor-catalog{padding:9px;overflow:hidden}
-.mentor-catalog-scroll{overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;height:100%;scrollbar-color:#a98b50 #10141a;display:flex;flex-direction:column;gap:9px}
+.mentor-catalog-scroll{overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;height:100%;scrollbar-color:#a98b50 #10141a;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;gap:9px}
 .mentor-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-.mentor-choice{display:flex;align-items:center;gap:12px;min-height:105px;border:1px solid #8c6556;border-radius:5px;background:linear-gradient(110deg,#48252e,#201921);color:#fbe8c8;text-align:left;padding:8px;min-width:0}
+.mentor-choice{display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:4px;aspect-ratio:1/1;width:100%;min-height:0;border:1px solid #8c6556;border-radius:5px;background:linear-gradient(110deg,#48252e,#201921);color:#fbe8c8;text-align:center;padding:clamp(5px,.65vw,11px);min-width:0;overflow:hidden}
 .mentor-choice:hover,.mentor-choice.is-selected{border-color:#f0ca7d;background:linear-gradient(110deg,#663841,#252026)}
 .mentor-choice.is-selected{box-shadow:inset 0 0 0 2px #d8af67}
-.mentor-choice-art{height:94px;width:clamp(70px,10vw,126px);object-fit:contain;flex:0 0 clamp(70px,10vw,126px);filter:drop-shadow(0 4px 5px #0009)}
-.mentor-choice-meta{display:flex;flex-direction:column;min-width:0;gap:5px}
-.mentor-choice-meta strong{font-size:clamp(17px,1.6vw,23px);color:#ffdfa2;overflow:hidden;text-overflow:ellipsis}
-.mentor-choice-meta small{font-size:13px;color:#d5bda9}
-.mentor-choice-meta b{font-size:14px;color:#edd09a}
+.mentor-choice-art{width:100%;height:0;min-height:0;object-fit:contain;flex:1 1 0;filter:drop-shadow(0 4px 5px #0009)}
+.mentor-choice-meta{display:flex;flex-direction:column;align-items:center;min-width:0;width:100%;gap:2px;flex:0 0 auto}
+.mentor-choice-meta strong{font-size:clamp(15px,1.5vw,23px);color:#ffdfa2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;line-height:1.12}
+.mentor-choice-meta small{font-size:clamp(11px,1vw,14px);color:#d5bda9;line-height:1.12}
+.mentor-choice-meta .mentor-power{font-size:clamp(13px,1.05vw,17px)}
 .mentor-battle{width:100%;height:100dvh;display:grid;grid-template-columns:minmax(190px,1fr) min(82dvh,calc(100vw - 580px)) minmax(210px,1fr);grid-template-rows:52px minmax(0,1fr);align-items:center;gap:6px;padding:5px 10px 9px;overflow:hidden}
 .mentor-battle-top{grid-column:1/4;grid-row:1;width:100%;height:48px}
 .mentor-top-actions{display:flex;gap:7px;align-items:center}
@@ -95,7 +98,7 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
  .mentor-journal,.mentor-feedback{padding:6px;gap:4px}
  .mentor-feedback h2,.mentor-journal-head h2{font-size:19px}.mentor-face{height:43px;width:46px}
  .mentor-rival{height:47px}.mentor-rival-art{height:44px;width:41px}
- .mentor-choice{min-height:73px}.mentor-choice-art{height:64px;width:65px;flex-basis:65px}
+ .mentor-choice{min-height:0;padding:4px;gap:2px}.mentor-choice-art{height:0;width:100%;flex-basis:0}
  .mentor-selected{padding:8px}.mentor-selected-name{font-size:23px}
  .mentor-feedback-text{font-size:13px}.mentor-undo-error{min-height:32px}
 }
@@ -109,19 +112,19 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
  .mentor-selected{display:grid;grid-template-columns:minmax(90px,32%) minmax(0,1fr);grid-template-rows:auto auto auto;gap:5px 8px;flex:0 0 194px;padding:8px;align-content:center}
  .mentor-selected-art{grid-column:1;grid-row:1/4;height:125px;width:100%;align-self:center}
  .mentor-selected-name{grid-column:2;grid-row:1;font-size:22px}
- .mentor-selected-level{grid-column:2;grid-row:2;font-size:13px;text-align:left}
+ .mentor-selected-level{grid-column:2;grid-row:2;font-size:13px;text-align:left;justify-content:flex-start}
  .mentor-colors{grid-column:2;grid-row:3;flex-wrap:wrap;align-items:center}
  .mentor-colors button{min-width:31%;min-height:31px;font-size:11px;padding:3px}
  .mentor-selected .mentor-primary{grid-column:1/3;grid-row:4;margin:0;min-height:36px;font-size:15px}
  .mentor-catalog{flex:1;min-height:0;padding:6px}
- .mentor-catalog-scroll{gap:6px}
+ .mentor-catalog-scroll{grid-template-columns:minmax(0,1fr);gap:6px}
  .mentor-pair{gap:6px}
- .mentor-choice{min-height:77px;gap:4px;padding:3px;overflow:hidden}
- .mentor-choice-art{width:55px;height:67px;flex-basis:55px}
+ .mentor-choice{min-height:0;gap:3px;padding:5px;overflow:hidden}
+ .mentor-choice-art{width:100%;height:0;flex-basis:0}
  .mentor-choice-meta{gap:2px}
- .mentor-choice-meta strong{font-size:14px}
- .mentor-choice-meta small{font-size:10px}
- .mentor-choice-meta b{font-size:11px}
+ .mentor-choice-meta strong{font-size:clamp(14px,4vw,18px)}
+ .mentor-choice-meta small{font-size:12px}
+ .mentor-choice-meta .mentor-power{font-size:13px}.mentor-choice .mentor-power-icon{width:17px;height:17px}
  .mentor-battle{height:100dvh;display:flex;flex-direction:column;gap:5px;align-items:stretch;overflow-y:auto;overflow-x:hidden;padding:6px}
  .mentor-battle-top{width:100%;height:46px;flex:0 0 46px;padding:2px;min-height:0}
  .mentor-top-actions{gap:3px}

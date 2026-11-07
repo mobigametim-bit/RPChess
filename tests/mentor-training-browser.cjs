@@ -16,6 +16,37 @@ fs.mkdirSync(output,{recursive:true});
   await page.locator('[data-mentor-screen]:not([hidden])').waitFor();
   assert.equal(await page.locator('[data-mentor-id]').count(),12);
   assert.equal(await page.locator('.mentor-pair').count(),6);
+
+  async function verifySquareMentorCards(columns){
+   const layout=await page.evaluate(()=>{
+    const scroll=document.querySelector('.mentor-catalog-scroll');
+    const choices=[...document.querySelectorAll('.mentor-choice')];
+    const sizes=choices.map(node=>{
+     const rect=node.getBoundingClientRect();
+     return {width:rect.width,height:rect.height};
+    });
+    const icons=[...document.querySelectorAll('.mentor-choice .mentor-power-icon')];
+    const selected=document.querySelector('.mentor-selected .mentor-power-icon');
+    return {columns:getComputedStyle(scroll).gridTemplateColumns.split(' ').length,
+     sizes,icons:icons.map(x=>({src:x.getAttribute('src'),loaded:x.complete&&x.naturalWidth>0})),
+     selected:{src:selected?.getAttribute('src'),loaded:selected?.complete&&selected.naturalWidth>0},
+     text:document.querySelector('.mentor-setup').textContent};
+   });
+   assert.equal(layout.columns,columns,'mentor pairs must keep a responsive grid');
+   assert.equal(layout.sizes.length,12);
+   for(const size of layout.sizes)
+    assert(size.width>70&&Math.abs(size.width-size.height)<2.5,
+     'mentor card must be square: '+JSON.stringify(size));
+   assert.equal(layout.icons.length,12);
+   for(const icon of layout.icons){
+    assert.equal(icon.src,'generated_assets/node_battle.png','use the existing Arena power icon');
+    assert.equal(icon.loaded,true,'power icon must be loaded and visible');
+   }
+   assert.equal(layout.selected.src,'generated_assets/node_battle.png');
+   assert.equal(layout.selected.loaded,true,'selected mentor power icon must load');
+   assert(!/\bElo\b/.test(layout.text),'setup must display power icons, not Elo labels');
+  }
+  await verifySquareMentorCards(2);
   await page.locator('[data-mentor-id="3"]').click();
   assert((await page.locator('.mentor-selected-name').textContent()).includes('Эйрин'));
   assert((await page.locator('.mentor-selected-level').textContent()).includes('800'));
@@ -106,6 +137,7 @@ fs.mkdirSync(output,{recursive:true});
   await page.locator('.mentor-journal [data-mentor-action="journal"]').click();
   await page.locator('[data-mentor-action="catalog"]').click();
   assert.equal(await page.locator('[data-mentor-id]').count(),12);
+  await verifySquareMentorCards(1);
   await page.screenshot({path:path.join(output,'setup-portrait.png'),animations:'disabled'});
   await page.locator('[data-mentor-color="b"]').click();
   await page.locator('[data-mentor-action="start"]').click();
