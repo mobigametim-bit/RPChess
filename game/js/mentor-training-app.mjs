@@ -287,7 +287,7 @@ function feedbackHTML(){
  (lessonView?.entry===data?'':'<p class="mentor-feedback-text">'+esc(copy)+'</p>')+
  (canView&&!lessonView?(analysisView?'':'<div class="mentor-analysis-actions">'+button('open-variation',t('view'),'mentor-outline mentor-view-btn')+'</div>')+variationHTML(data,found.index):'')+
  lessonHTML(data)+
- (data?.mentorSource==='fallback'&&data.mentorPayload&&!lessonView?button('retry-explanation',t('retryAI'),'mentor-outline mentor-retry-ai'):'')+
+ (data?.mentorSource==='fallback'&&data.mentorPayload?button('retry-explanation',t('retryAI'),'mentor-outline mentor-retry-ai'):'')+
  (found&&!positive?button('before-error',t('before'),'mentor-outline mentor-undo-error'):'')+'</section>';
 }
 function battleHTML(){
@@ -588,7 +588,7 @@ function onClick(event){
    const cell=button.dataset.mentorSquare;
    const chess=game(),piece=chess.pieceAt(cell);
    // Only attempts on actual rival pieces produce feedback.
-   if(piece?.color===currentPlayerColor())return;
+   if(!piece||piece.color===currentPlayerColor())return;
    const correct=validateLessonGuess(lessonView.plan,cell);
    const feedback={square:cell,kind:correct?'correct':'wrong',id:++lessonFlashSeq};
    lessonView.feedback=feedback;
