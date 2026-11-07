@@ -75,7 +75,7 @@ jobs:
              const index=await fetch(base+'/?mentor_speech=20261108',{cache:'no-store'});
              assert.equal(index.status,200,'preview index must respond');
              const html=await index.text();
-             assert(html.includes('mentor-training-app.mjs?v=20261108-speech-v1'));
+             assert(html.includes('mentor-training-app.mjs?v=20261108-voice-choices-v2'));
              const module=await fetch(base+'/js/mentor-training-speech.mjs',{cache:'no-store'});
              assert.equal(module.status,200,'voice controller module must be deployed');
              const source=await module.text();
