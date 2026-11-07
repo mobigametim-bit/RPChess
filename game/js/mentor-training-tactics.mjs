@@ -126,7 +126,7 @@ function tacticalEvidence(fen,pv,player,maxPlies=MAX_PV){
    const kingAttackers=king?piecesOn(board,mover).filter(({at})=>attacks(board,at,king)):[];
    if(result.status.type==='checkmate'&&result.status.winner===mover){
     events.push({...common,kind:'mate_sequence',targetSquares:king?[king]:[]});
-    if(king&&to[1]===king[1]&&(player==='w'?king[1]==='1':king[1]==='8')&&['r','q'].includes(moving.type))
+    if(king&&to[1]===king[1]&&(player==='w'?king[1]==='1':king[1]==='8')&&['r','q'].includes(moving.type)&&attacks(board,to,king))
      events.push({...common,kind:'back_rank_mate',targetSquares:[king]});
    }else if(result.status.checked){
     events.push({...common,kind:'check',targetSquares:king?[king]:[]});
