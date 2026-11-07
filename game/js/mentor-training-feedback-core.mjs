@@ -62,9 +62,9 @@ function validateMentorInput(raw){
  // A mate in the actual first reply is stronger evidence than a longer PV.
  if(response.status.type==='checkmate')motive='checkmate';
  else if(replay.events.some(e=>e.kind==='mate_sequence'))motive='mate_sequence';
- else if(replay.events.some(e=>e.kind==='material_loss'))motive='material_loss';
  else if(replay.events.some(e=>e.kind==='fork'))motive='fork';
  else if(replay.events.some(e=>e.kind==='pin'))motive='pin';
+ else if(replay.events.some(e=>e.kind==='material_loss'))motive='material_loss';
  else if(captured&&captured.color===player){motive='capture';capturedType=captured.type;}
  else if(response.status.checked)motive='check';
  return {
@@ -74,31 +74,76 @@ function validateMentorInput(raw){
   continuationDepth:extended?.depth??after.depth,tactics:replay.events,netMaterialLoss:replay.netMaterialLoss
  };
 }
+const RU_TARGET={p:'пешку',n:'коня',b:'слона',r:'ладью',q:'ферзя',k:'короля'};
+const RU_PINNED={p:'пешка',n:'конь',b:'слон',r:'ладья',q:'ферзь'};
+const EN_TARGET={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
+const RU_COUNTS=['','один ход','два хода','три хода','четыре хода','пять ходов',
+ 'шесть ходов','семь ходов','восемь ходов','девять ходов','десять ходов'];
+function leadTime(ply,language){
+ const n=Math.min(10,Math.max(1,Math.ceil((ply||1)/2)));
+ if(language==='en')return n===1?'On the next move':'In about '+n+' moves';
+ return n===1?'Следующим ходом':'Через '+RU_COUNTS[n];
+}
+function typeNames(types,language){
+ const dictionary=language==='en'?EN_TARGET:RU_TARGET;
+ const names=(types||[]).map(type=>dictionary[type]).filter(Boolean);
+ const conj=language==='en'?' and ':' и ';
+ return names.length?names.join(', ').replace(/, ([^,]+)$/,(m,last)=>conj+last):'';
+}
+function describeMentorFact(data,language=data.language){
+ const en=language==='en',kind=data.motive;
+ const event=data.tactics?.find(e=>e.kind===kind || (kind==='checkmate'&&e.kind==='mate_sequence'));
+ const time=leadTime(event?.ply||1,language);
+ if(kind==='checkmate')return en
+  ?'The very next reply can checkmate you. Find the threat near your king.'
+  :'Соперник может сразу поставить мат. Найди угрозу своему королю.';
+ if(kind==='mate_sequence')return en
+  ?time+', your opponent may reach a checkmate. Find how to stop this threat.'
+  :time+' соперник может довести атаку до мата. Подумай, как это предотвратить.';
+ if(kind==='fork'){
+  const targets=typeNames(event?.targets?.slice(0,2),language);
+  return en
+   ?time+', your opponent may create a fork attacking the '+(targets||'important pieces')+'. Find how to prevent it.'
+   :time+' у соперника может возникнуть вилка на '+(targets||'важные фигуры')+'. Найди, как её предотвратить.';
+ }
+ if(kind==='pin'){
+  const piece=en?(EN_TARGET[event?.piece]||'piece'):(RU_PINNED[event?.piece]||'фигура');
+  return en
+   ?time+', your '+piece+' may become pinned to the king. Look for a way to avoid it.'
+   :time+' твой '+piece+' может оказаться связан с королём. Подумай, как избежать связки.';
+ }
+ if(kind==='material_loss'){
+  const piece=en?(EN_TARGET[event?.piece]||'material'):(RU_TARGET[event?.piece]||'материал');
+  return en
+   ?time+', the opponent may win material, including a '+piece+'. Examine the exchanges.'
+   :time+' соперник может выиграть материал, в том числе '+piece+'. Проверь последовательность разменов.';
+ }
+ if(kind==='capture')return en
+  ?'Your opponent can capture a piece immediately. See what was left unprotected.'
+  :'Соперник может сразу забрать фигуру. Посмотри, что осталось под ударом.';
+ if(kind==='check')return en
+  ?'The next reply may give check. Pay attention to your king’s safety.'
+  :'Следующим ходом соперник может дать шах. Проверь безопасность своего короля.';
+ return en
+  ?'Your position worsened, but no concrete tactical reason was verified. Look for a safer plan.'
+  :'Позиция ухудшилась, но конкретная тактическая причина не подтверждена. Поищи более надёжный план.';
+}
 function promptForMentor(data){
  const ru=data.language==='ru';
- const descriptions={
-  checkmate:ru?'Первый ответ соперника непосредственно ставит мат.':'The immediate opponent reply is checkmate.',
-  mate_sequence:ru?'В просчитанном варианте возникает мат игроку; альтернативные ответы не исключены.':'The calculated variation ends in checkmate against the player; alternative replies are not excluded.',
-  material_loss:ru?'В просчитанном варианте соперник получает материальное преимущество после разменов.':'The calculated variation shows a net material gain for the opponent after exchanges.',
-  fork:ru?'В просчитанном варианте одна фигура соперника нападает сразу на две важные фигуры.':'In the variation, one opposing piece attacks two valuable pieces at once.',
-  pin:ru?'В просчитанном варианте фигура игрока оказывается связана с королём.':'The calculated variation includes an absolute pin against the player’s king.',
-  capture:ru?'Первый ответ соперника берёт фигуру игрока.':'The first reply captures a player piece.',
-  check:ru?'Первый ответ соперника даёт шах.':'The first reply gives check.',
-  positional:ru?'Подтверждено только ухудшение оценки; конкретную тактическую причину не установили.':'Only evaluation deterioration is established; no specific tactic has been verified.'
- };
  const instructions=ru
-  ?'Ты шахматный наставник. Верни строго JSON {"explanation":"..."} на русском, 1–2 коротких предложения, до 250 символов. Используй только подтверждённые факты. Линия Stockfish — пример продолжения, НЕ доказательство вынужденного варианта при всех ответах. Объясни суть ошибки: потеря материала, связка, вилка, матовая угроза или ухудшение позиции — только если подтверждено. Не называй лучший ход до ошибки, не подсказывай следующий ход или клетку и не пересказывай линию ходов. Не придумывай угрозы и уверенность в форсированном исходе.'
-  :'You are a chess mentor. Return strict JSON {"explanation":"..."} in English, 1–2 short sentences under 250 characters. Only explain verified facts. Stockfish PV is ONE illustrative line, not proof that all replies are forced. Discuss a verified material loss, pin, fork, mating line or general decline. Never reveal the best move before the mistake, suggest the player’s next move or destination, or recite the variation. Never fabricate tactics or certainty.';
+  ?'Ты шахматный наставник. Верни строго JSON {"explanation":"..."} на русском: одно-два коротких предложения, не более 250 символов. Говори конкретно, по схеме «Через [N] ходов соперник может [подтверждённое событие: вилка на ферзя и ладью, связка слона, потеря ладьи, мат]. Подумай, как это предотвратить». Для немедленной угрозы используй «Следующим ходом». НЕ пиши «В рассчитанной линии», «По расчёту движка», «В просчитанном варианте» и подобные канцеляризмы. Важно: линия Stockfish — один возможный вариант, не доказательство неизбежности; поэтому говори «может», а не «обязательно». Только подтверждённые факты! Не называй лучший альтернативный ход игрока, не предлагай готовые ходы и клетки, не пересказывай UCI.'
+  :'You are a chess mentor. Return strict JSON {"explanation":"..."} in English, 1–2 short sentences, max 250 characters. Be concrete: "In about [N] moves, your opponent may [verified tactic such as a knight fork attacking your queen and rook]. Find a way to prevent it." Use "On the next move" for immediate replies. Never write "In the calculated line" or similar jargon. Stockfish PV is ONE possible variation, not an inevitable outcome, so say "may". Mention ONLY verified facts. Never reveal the player’s best alternative move, offer a ready-made next move, or recite UCI.';
  const message={
   severity:data.grade,playerColor:data.player,playedUci:data.uci,
   positionBefore:data.beforeFen,positionAfter:data.afterFen,
-  verifiedFact:descriptions[data.motive],
+  verifiedFact:describeMentorFact(data),
   opponentContinuation:data.afterLine.slice(0,MAX_PV),
   continuationDepth:data.continuationDepth,
-  verifiedTactics:data.tactics.map(({kind,ply,piece,targets,net})=>({
-   kind,ply,...(piece?{piece}:{}),...(targets?{targets}:{}),...(Number.isFinite(net)?{net}: {})
-  })),
-  note:ru?'Тактические факты относятся к указанной линии, а не гарантированы при любой защите.':'Tactical facts apply to this line, not to every possible defense.'
+  verifiedTactics:data.tactics.map(({kind,ply,piece,pinner,targets,net})=>({
+   kind,ply,opponentMovesAway:Math.ceil(ply/2),
+   ...(piece?{piece}:{}),...(pinner?{pinner}:{}),
+   ...(targets?{targets}:{}),...(Number.isFinite(net)?{net}: {})
+  }))
  };
  return {system:instructions,user:JSON.stringify(message)};
 }
@@ -106,22 +151,11 @@ function safeExplanation(value,data){
  if(typeof value!=='string')return null;
  const s=value.trim().replace(/\s+/g,' ');
  if(s.length<12||s.length>260||/<|>|https?:|www\.|\x60{3}|[{}\n\r]/i.test(s))return null;
+ if(/в рассчитанной линии|в просчитанном варианте|in the calculated line|in the calculated variation/i.test(s))return null;
  const best=data.bestMove,dst=best.slice(2,4),src=best.slice(0,2);
  if(s.toLowerCase().includes(best)||new RegExp('(?:^|[^a-h0-9])'+src+'\\s*[-–→]\\s*'+dst+'(?:$|[^a-z0-9])','i').test(s))return null;
  if(new RegExp('(?:ходи|сыграй|переведи|move to|play)\\s+.{0,14}\\b'+dst+'\\b','i').test(s))return null;
  return s;
 }
-function localMentorFallback(data){
- const ru=data.language==='ru';
- switch(data.motive){
-  case 'checkmate':return ru?'Этот ход допускает немедленный мат. Найди пропущенную угрозу.':'This move allows immediate checkmate. Look for the overlooked threat.';
-  case 'mate_sequence':return ru?'В рассчитанном продолжении соперник приходит к мату. Проверь безопасность короля и угрозы.':'The calculated continuation ends with a mate against you. Review your king’s safety.';
-  case 'material_loss':return ru?'В рассчитанном продолжении соперник выигрывает материал. Посмотри, как развиваются размены после твоего хода.':'The calculated continuation costs you material. Examine how the exchanges unfold.';
-  case 'fork':return ru?'В рассчитанной линии соперник создаёт двойное нападение на важные фигуры. Попробуй найти, как оно возникает.':'The calculated line contains a fork against your important pieces. See how it arises.';
-  case 'pin':return ru?'В рассчитанной линии одна из твоих фигур оказывается связана с королём. Найди эту уязвимость.':'The calculated line includes a pin against your king. Find the vulnerable piece.';
-  case 'capture':return ru?'После этого хода соперник может сразу забрать фигуру. Посмотри, почему она под ударом.':'After this move, the opponent can immediately capture a piece. See why it is exposed.';
-  case 'check':return ru?'Соперник может сразу объявить шах. Проверь безопасность короля.':'The opponent can immediately check. Reconsider your king’s safety.';
-  default:return ru?'Позиция ухудшилась, но конкретная тактическая причина не подтверждена. Поищи более надёжный план.':'Your position worsened, but no concrete tactic is verified. Look for a more reliable plan.';
- }
-}
-export {legalLine,validateMentorInput,promptForMentor,safeExplanation,localMentorFallback};
+function localMentorFallback(data){return describeMentorFact(data,data.language);}
+export {legalLine,validateMentorInput,promptForMentor,safeExplanation,localMentorFallback,describeMentorFact,leadTime};

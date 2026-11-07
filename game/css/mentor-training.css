@@ -262,3 +262,46 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
  .mentor-training .mentor-journal-head .rpchess-board-view-toggle{display:none}
  .mentor-training .mentor-status{min-height:24px}
 }
+
+
+/* Inline Stockfish line preview. Game history stays untouched. */
+.mentor-training .mentor-square-grade--good{color:#b8e9a0;text-shadow:0 2px 3px #081209,0 0 5px #183310}
+.mentor-training .mentor-grade--good{color:#badf87}
+.mentor-training .mentor-grade--excellent{color:#eac574}
+.mentor-training .mentor-feedback-grade--good strong{color:#b9dfa1}
+.mentor-training .mentor-feedback-grade--good span{color:#e8d6a4}
+.mentor-training .mentor-analysis-actions{display:flex;gap:6px;min-height:37px}
+.mentor-training .mentor-view-btn{width:100%;min-height:36px;background:linear-gradient(#4d432e,#2c251c);border-color:#d0aa63}
+.mentor-training .mentor-variation[hidden]{display:none!important}
+.mentor-training .mentor-variation{
+ border:1px solid #b497594e;border-radius:4px;background:#0d121acc;
+ display:flex;flex-direction:column;gap:8px;padding:9px;min-height:100px;
+}
+.mentor-training .mentor-variation-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:15px;color:#e9d2a4}
+.mentor-training .mentor-variation-heading button{font-size:12px;min-height:29px}
+.mentor-training .mentor-variation-moves{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:5px;overflow-y:auto;max-height:clamp(98px,30vh,260px);
+ scrollbar-width:thin;min-height:0;
+}
+.mentor-training .mentor-variation-move{
+ min-width:0;min-height:34px;padding:5px 7px;
+ background:#26221d;border:1px solid #8b754c88;border-radius:3px;
+ color:#f2e1c3;font-size:14px;text-align:center;
+}
+.mentor-training .mentor-variation-move:hover{background:#54402b}
+.mentor-training .mentor-variation-move.is-active{border-color:#e2bf74;background:#65512d;color:#fff3d6}
+.mentor-training .mentor-variation-navigation{display:flex;gap:6px}
+.mentor-training .mentor-variation-navigation button{
+ flex:1;min-height:32px;background:#272319;border:1px solid #9c8055;border-radius:4px;
+ color:#efd7aa;padding:5px 7px;font-size:12px;
+}
+.mentor-training .mentor-variation-navigation button:disabled{opacity:.4}
+@media(orientation:portrait){
+ .mentor-training .mentor-variation-moves{max-height:220px}
+ .mentor-training .mentor-variation{margin-top:2px}
+}
+@media(orientation:landscape) and (max-height:540px){
+ .mentor-training .mentor-variation-moves{max-height:100px}
+ .mentor-training .mentor-variation{padding:5px;gap:4px}
+}

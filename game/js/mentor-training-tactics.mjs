@@ -39,7 +39,7 @@ function forkTargets(board,at,color){
 }
 function tacticalEvidence(fen,pv,player,maxPlies=MAX_PV){
  if(!['w','b'].includes(player))throw Error('invalid_color');
- const board=new ClassicChessEngine(fen),initial=board.fen();
+ const board=new ClassicChessEngine(fen);
  const legal=[],events=[];
  let valueDiff=0,biggestLoss=null;
  const limit=Math.min(MAX_PV,Math.max(1,Math.floor(maxPlies)));
@@ -51,6 +51,7 @@ function tacticalEvidence(fen,pv,player,maxPlies=MAX_PV){
   if(!proposed||!moving)break;
   const capture=proposed.capture?board.pieceAt(proposed.capture):null;
   const beforePins=mover!==player?classifyAbsolutePins(board.snapshot()).filter(p=>p.color===player):[];
+  const beforeForkTargets=mover!==player?forkTargets(board,from,mover):[];
   const played=board.move(from,to,promote);
   if(!played.ok)break;
   legal.push(raw);
@@ -71,28 +72,20 @@ function tacticalEvidence(fen,pv,player,maxPlies=MAX_PV){
     const targets=forkTargets(board,to,mover);
     // New double attack on important pieces. For a pawn/slider this is
     // only an observed double attack, not proof that material must be won.
-    if(targets.length>=2){
-     const previous=forkTargets(new ClassicChessEngine(
-      // no FEN reconstruction needed: moved piece was on "from" before.
-      // Dynamic fork detection restricts to newly occupied destination.
-      initial
-     ),from,mover);
-     // Compare only when first PV ply: for later moves we conservatively
-     // accept a newly occupied destination with two present targets.
-     if(ply>1||previous.length<2)
-      events.push({kind:'fork',ply,piece:moving.type,targets:targets.map(t=>t.type).slice(0,3)});
-    }
+    if(targets.length>=2&&beforeForkTargets.length<2)
+     events.push({kind:'fork',ply,piece:moving.type,
+      targets:targets.map(t=>t.type).slice(0,3)});
    }
    const afterPins=classifyAbsolutePins(board.snapshot()).filter(p=>p.color===player);
    for(const pin of afterPins){
     if(!beforePins.some(prev=>prev.square===pin.square&&prev.pinner===pin.pinner))
-     events.push({kind:'pin',ply,piece:pin.piece});
+     events.push({kind:'pin',ply,piece:pin.piece,pinner:board.pieceAt(pin.pinner)?.type||null});
    }
   }
   if(played.status.over)break;
  }
  if(legal.length&&valueDiff>=1&&biggestLoss)
-  events.push({kind:'material_loss',ply:legal.length,piece:biggestLoss.piece,net:valueDiff});
+  events.push({kind:'material_loss',ply:biggestLoss.ply,piece:biggestLoss.piece,net:valueDiff});
  // Avoid an implausibly long list of duplicate checks/pins/forks in model context.
  const unique=[],seen=new Set();
  for(const event of events){

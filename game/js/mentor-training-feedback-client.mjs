@@ -33,8 +33,8 @@ function buildMentorPayload({beforeFen,afterFen,uci,grade,before,after,continuat
  }
  return {payload,verified};
 }
-async function requestMentorText({payload,verified,signal,fetcher=globalThis.fetch}){
- const fallback=localMentorFallback(verified);
+async function requestMentorText({payload,verified,signal,fallbackText=null,fetcher=globalThis.fetch}){
+ const fallback=typeof fallbackText==='string'&&fallbackText.length?fallbackText:localMentorFallback(verified);
  const controller=new AbortController();
  const onAbort=()=>controller.abort();
  signal?.addEventListener('abort',onAbort,{once:true});
@@ -50,6 +50,7 @@ async function requestMentorText({payload,verified,signal,fetcher=globalThis.fet
   const json=await response.json();
   if(!json||json.grade!==verified.grade||typeof json.explanation!=='string'||
    json.explanation.length>260||json.explanation.length<12)return fallback;
+  if(json.source==='verified_fallback')return fallback;
   return json.explanation;
  }catch{return fallback;}
  finally{clearTimeout(timer);signal?.removeEventListener('abort',onAbort);}

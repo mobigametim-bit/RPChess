@@ -161,6 +161,24 @@ fs.mkdirSync(output,{recursive:true});
   await page.waitForFunction(()=>document.querySelector('.mentor-feedback-text')?.textContent?.includes('матовую угрозу'),
    null,{timeout:15000});
   await page.screenshot({path:path.join(output,'battle-deep-mentor-response.png'),animations:'disabled'});
+  // The computed line can be explored without modifying actual training moves.
+  const playedHistory=await page.evaluate(()=>window.RPChessMentorTraining.state.moves.map(m=>m.uci));
+  await page.locator('[data-mentor-action="open-variation"]').click();
+  assert.equal(await page.locator('.mentor-variation:not([hidden])').count(),1,'variation panel opens');
+  assert.equal(await page.locator('[data-mentor-line="1"]').count(),1,'every PV ply is clickable');
+  await page.locator('[data-mentor-line="1"]').click();
+  assert(await page.locator('[data-mentor-line="1"]').evaluate(e=>e.classList.contains('is-active')),
+   'clicking an engine move selects that exact board position');
+  assert.equal(await page.locator('[data-mentor-square="h4"] .mentor-piece').count(),1,
+   'first PV move places the enemy queen on h4');
+  assert.deepEqual(await page.evaluate(()=>window.RPChessMentorTraining.state.moves.map(m=>m.uci)),
+   playedHistory,'PV inspection must not change the real move history');
+  await page.screenshot({path:path.join(output,'battle-clickable-stockfish-line.png'),animations:'disabled'});
+  await page.locator('[data-mentor-action="close-variation"]').click();
+  assert.equal(await page.locator('.mentor-variation:not([hidden])').count(),0,
+   'closing analysis restores the live board');
+  assert.deepEqual(await page.evaluate(()=>window.RPChessMentorTraining.state.moves.map(m=>m.uci)),
+   playedHistory,'returning to the game keeps moves intact');
   assert.equal(errors.length,0,'browser errors: '+errors.join('\n'));
   console.log('Mentor training real Stockfish, history branch, 12 mentors and phone: PASS');
  }finally{await browser.close();}

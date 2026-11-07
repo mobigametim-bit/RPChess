@@ -5,6 +5,7 @@
 import { validateMentorInput, promptForMentor, safeExplanation, localMentorFallback } from '../../game/js/mentor-training-feedback-core.mjs';
 
 const DEFAULT_BROKER_BASE='https://hskyauefqcgbvgvxkluj.supabase.co/functions/v1/gonka';
+// Model is intentionally pinned: the requested DeepSeek version is not overridable.
 const DEFAULT_MODEL='deepseek-ai/DeepSeek-V4-Flash-0731';
 const TRUSTED=new Set([
  'https://rpchess-mentor-training-preview.mobigametim.workers.dev',
@@ -37,7 +38,7 @@ function reply(body,status,origin){
 async function handleMentorApi(request,env,fetcher=fetch){
  const url=new URL(request.url),origin=request.headers.get('Origin')||'';
  if(url.pathname==='/health'&&request.method==='GET')
-  return reply({ok:true,configured:Boolean(env.GONKA_API_KEY),modelConfigured:Boolean(env.GONKA_MODEL||DEFAULT_MODEL)},200,origin);
+  return reply({ok:true,configured:Boolean(env.GONKA_API_KEY),modelConfigured:true,model:DEFAULT_MODEL},200,origin);
  if(url.pathname!=='/v1/explain')return reply({error:'not_found'},404,origin);
  if(!validOrigin(origin))return reply({error:'forbidden_origin'},403);
  if(request.method==='OPTIONS')return new Response(null,{status:204,headers:cors(origin)});
@@ -83,9 +84,9 @@ async function handleMentorApi(request,env,fetcher=fetch){
    method:'POST',signal:controller.signal,
    headers:{Authorization:'Bearer '+env.GONKA_API_KEY,'Content-Type':'application/json'},
    body:JSON.stringify({
-    model:env.GONKA_MODEL||DEFAULT_MODEL,
+    model:DEFAULT_MODEL,
     messages:[{role:'system',content:settings.system},{role:'user',content:settings.user}],
-    temperature:0.2,max_tokens:185,stream:false,response_format:{type:'json_object'}
+    temperature:0.2,max_tokens:245,stream:false,response_format:{type:'json_object'}
    })
   });
   if(!response.ok)return reply({error:response.status===429?'broker_busy':response.status>=400&&response.status<500?'broker_http_'+response.status:'broker_unavailable'},503,origin);

@@ -6,7 +6,9 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
 (async()=>{
  const {ClassicChessEngine}=await imp('game/js/classic-chess-engine.mjs');
  const {rebuildTraining}=await imp('game/js/mentor-training-history.mjs');
- const {validateMentorInput,promptForMentor,safeExplanation,localMentorFallback}=await imp('game/js/mentor-training-feedback-core.mjs');
+ const {validateMentorInput,promptForMentor,safeExplanation,localMentorFallback,describeMentorFact}=await imp('game/js/mentor-training-feedback-core.mjs');
+ const {THINKING,PRAISE,thinkingText,praiseText,fallbackText}=await imp('game/js/mentor-training-copy.mjs');
+ const {classifyStrongMove}=await imp('game/js/finished-game-review.mjs');
  const {buildMentorPayload,requestMentorText}=await imp('game/js/mentor-training-feedback-client.mjs');
  const {tacticalEvidence,MAX_PV}=await imp('game/js/mentor-training-tactics.mjs');
  const {handleMentorApi,validOrigin}=await imp('mentor-api/src/index.mjs');
@@ -20,6 +22,29 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  const facts=validateMentorInput(body);
  assert.equal(facts.motive,'checkmate');
  assert.equal(facts.loss,290);
+ assert.equal(THINKING.ru.length,20,'20 waiting phrases in Russian');
+ assert.equal(THINKING.en.length,20,'20 waiting phrases in English');
+ for(const mark of ['good','excellent']){
+  assert.equal(PRAISE.ru[mark].length,10,'10 local praise phrases for each mark');
+  assert.equal(PRAISE.en[mark].length,10,'localized praise exists');
+  assert(praiseText('ru',mark,'sample').length>10);
+ }
+ assert.equal(thinkingText('ru','seed'),thinkingText('ru','seed'),'phrase choice is deterministic');
+ assert(fallbackText('ru','blunder').includes('Зевок'),'generic grade fallback exists');
+ assert.equal(classifyStrongMove({
+  uci:'g1f3',beforeFen:new ClassicChessEngine().fen()
+ },{
+  cp:110,secondCp:-140,bestMove:'g1f3',depth:14,secondDepth:13
+ },0),'excellent','use same strict positive classification as completed reviews');
+ const forkDetail={...facts,motive:'fork',tactics:[{kind:'fork',ply:3,piece:'n',targets:['q','r']}]};
+ const concrete=describeMentorFact(forkDetail,'ru');
+ assert(concrete.includes('Через два хода')&&concrete.includes('ферзя и ладью'),
+  'explanation gives the timeline and named targets');
+ assert(!concrete.includes('рассчитанной линии'));
+ assert(JSON.parse(promptForMentor(forkDetail).user).verifiedFact.includes('ферзя и ладью'));
+ assert(!safeExplanation('В рассчитанной линии возможна вилка.',forkDetail),
+  'vague AI phrases are rejected');
+ 
 
  // Replayed line is evidence only: actual mating move, not speculative intent.
  const mate=tacticalEvidence(afterFen,['d8h4'],'w');
@@ -79,7 +104,7 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
   assert.equal(opts.headers.Authorization,'Bearer test-key');
   return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({explanation:'Этот ход открыл дорогу к немедленному мату. Найди, какую угрозу упустил.'})}}]}),{status:200,headers:{'content-type':'application/json'}});
  };
- const good={GONKA_API_KEY:'test-key',MENTOR_ACTOR_LIMIT:{limit:async()=>({success:true})},MENTOR_GLOBAL_LIMIT:{limit:async()=>({success:true})}};
+ const good={GONKA_API_KEY:'test-key',GONKA_MODEL:'should-not-be-used',MENTOR_ACTOR_LIMIT:{limit:async()=>({success:true})},MENTOR_GLOBAL_LIMIT:{limit:async()=>({success:true})}};
  const origin='https://rpchess-mentor-training-preview.mobigametim.workers.dev';
  const req=(data,from=origin)=>new Request('https://rpchess-mentor-api-preview.mobigametim.workers.dev/v1/explain',{
   method:'POST',headers:{Origin:from,'Content-Type':'application/json','X-Mentor-Session':'123456789012345678901234'},body:JSON.stringify(data)
@@ -104,7 +129,9 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  assert.equal(safe.status,200);
  assert.equal((await safe.json()).source,'verified_fallback');
  const health=await handleMentorApi(new Request('https://rpchess-mentor-api-preview.mobigametim.workers.dev/health'),{},fetcher);
- assert.equal(health.status,200);assert.equal((await health.json()).configured,false);
+ assert.equal(health.status,200);const healthData=await health.json();
+ assert.equal(healthData.configured,false);
+ assert.equal(healthData.model,'deepseek-ai/DeepSeek-V4-Flash-0731');
  // Regress Cloudflare module-handler calling convention: the third argument
  // supplied by Workers is ExecutionContext, not our injectable fetcher.
  const actualFetch=globalThis.fetch;
