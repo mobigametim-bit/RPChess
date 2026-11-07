@@ -42,7 +42,7 @@ function createMentorSpeech({getRoot,getLanguage,translate}){
   try{
    const synth=globalThis.speechSynthesis;
    const utterance=new globalThis.SpeechSynthesisUtterance(text);
-   utterance.lang=locale;utterance.rate=.96;utterance.pitch=1;
+   utterance.lang=locale;utterance.rate=1.5;utterance.pitch=1;
    const voices=typeof synth.getVoices==='function'?synth.getVoices():[];
    const prefix=locale.slice(0,2).toLowerCase();
    const matchesLanguage=v=>String(v.lang||'').toLowerCase().startsWith(prefix);
