@@ -11,6 +11,7 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  const {classifyStrongMove}=await imp('game/js/finished-game-review.mjs');
  const {buildMentorPayload,requestMentorText}=await imp('game/js/mentor-training-feedback-client.mjs');
  const {tacticalEvidence,MAX_PV}=await imp('game/js/mentor-training-tactics.mjs');
+ const {PRIORITY,GUIDES,lessonFromVerified,mentorLessonCopy,validateLessonGuess}=await imp('game/js/mentor-training-teaching.mjs');
  const {handleMentorApi,validOrigin,MAX_ATTEMPTS_PER_MODEL}=await imp('mentor-api/src/index.mjs');
  assert.equal(MAX_ATTEMPTS_PER_MODEL,4,'initial request plus 3 retries');
  const {handleMentorBenchmark,benchRequestConfig}=await imp('mentor-api/src/benchmark.mjs');
@@ -24,6 +25,17 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  const facts=validateMentorInput(body);
  assert.equal(facts.motive,'checkmate');
  assert.equal(facts.loss,290);
+ const lesson=lessonFromVerified(facts);
+ assert.equal(lesson.kind,'mate_sequence');
+ assert.equal(lesson.from,'d8');
+ assert.equal(lesson.to,'h4');
+ assert.equal(lesson.ply,1);
+ assert(validateLessonGuess(lesson,'d8'));
+ assert(!validateLessonGuess(lesson,'e8'));
+ assert(mentorLessonCopy(lesson,'ru').answer.includes('d8–h4'));
+ assert(mentorLessonCopy(lesson,'en').question.includes('piece'));
+ assert.equal(Object.keys(GUIDES).length,18,'full grounded tactical lesson catalog');
+ assert.deepEqual(Object.keys(PRIORITY).sort(),Object.keys(GUIDES).sort());
  assert.equal(THINKING.ru.length,20,'20 waiting phrases in Russian');
  assert.equal(THINKING.en.length,20,'20 waiting phrases in English');
  for(const mark of ['good','excellent']){
@@ -58,6 +70,25 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  assert(pin.events.some(e=>e.kind==='pin'),'rook newly pins bishop to king');
  const material=tacticalEvidence('r3k3/8/8/8/8/8/8/R3K3 b - - 0 1',['a8a1'],'w');
  assert(material.events.some(e=>e.kind==='material_loss'&&e.net===5));
+ assert(material.events.some(e=>e.kind==='undefended_capture'),
+  'an unprotected rook is distinguished from a defended exchange');
+ const skewer=tacticalEvidence('4k2r/8/8/8/8/8/8/5RK1 b - - 0 1',['h8h1'],'w');
+ assert(skewer.events.some(e=>e.kind==='skewer_pattern'&&e.targetSquares.includes('g1')),
+  'rook / king / rook alignment is a visible skewer pattern');
+ const opened=tacticalEvidence('4r1k1/8/4n3/8/8/8/4Q3/7K b - - 0 1',['e6f4'],'w');
+ assert(opened.events.some(e=>e.kind==='discovered_attack'&&e.targetSquares.includes('e2')),
+  'moving knight uncovers rook attack on queen');
+ const promo=tacticalEvidence('4k3/P7/8/8/8/8/8/7K w - - 0 1',['a7a8q'],'b');
+ assert(promo.events.some(e=>e.kind==='promotion'),'actual pawn promotion detected');
+ const passed=tacticalEvidence('4k3/8/8/8/8/p7/8/7K b - - 0 1',['a3a2'],'w');
+ assert(passed.events.some(e=>e.kind==='advanced_passed_pawn'),
+  'advanced passer with no opposing pawn ahead recognized');
+ // Avoid inventing tactics for a position where Stockfish did not prove them.
+ const quiet=tacticalEvidence('4k3/8/8/8/8/8/8/4K3 b - - 0 1',['e8d8'],'w');
+ assert(!quiet.events.some(e=>['fork','pin','skewer_pattern','material_loss'].includes(e.kind)));
+ const noLesson=lessonFromVerified({...facts,afterFen:'4k3/8/8/8/8/8/8/4K3 b - - 0 1',
+  afterLine:['e8d8'],tactics:quiet.events});
+ assert.equal(noLesson.kind,'positional','no unproven tactics or clickable solution');
  // No tactical claim from an invalid move or a guessed continuation.
  assert.equal(tacticalEvidence(afterFen,['d8g7','d8h4'],'w').line.length,0);
  const opening=['e2e4','e7e5','g1f3','b8c6','f1c4','g8f6','d2d3','f8c5',
@@ -90,6 +121,10 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  assert(!promptForMentor(facts).user.includes('b1c3'),'model prompt must not reveal the engine solution');
  assert(localMentorFallback(facts).includes('мат'));
  assert(!safeExplanation('Сыграй b1c3, и всё будет хорошо.',facts));
+ assert(!safeExplanation('Конь идёт на a6 и атакует вашего коня на b5. Затем последует размен на a3.',facts),
+  'model must not invent concrete squares, threats or an exchange');
+ assert(!safeExplanation('После размена фигур соперник получает инициативу. Поищи защиту.',facts),
+  'unverified exchange narratives are rejected even without board squares');
  assert(!safeExplanation('<script>alert(1)</script>',facts));
  assert.throws(()=>validateMentorInput({...body,grade:'mistake'}),/grade/);
  assert.throws(()=>validateMentorInput({...body,afterFen:beforeFen}),/position/);
@@ -124,6 +159,11 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  assert.equal(client.explanation,result.explanation);
  assert.equal(client.source,'deepseek');
  assert.equal(client.model,'deepseek-ai/DeepSeek-V4-Flash-0731');
+ const unverified=await requestMentorText({payload:built.payload,verified:built.verified,fetcher:async()=>new Response(JSON.stringify({
+  ...result,explanation:'Конь пойдёт на a6, нападая на другую фигуру. После размена на a3 вы потеряете слона.'
+ }),{status:200})});
+ assert.equal(unverified.source,'fallback','browser rejects unsafe old-Worker text without redeployment');
+ assert.equal(unverified.reason,'unverified_explanation');
  const fallback=await requestMentorText({payload:built.payload,verified:built.verified,fetcher:async()=>new Response('{}',{status:503})});
  assert.equal(fallback.explanation,localMentorFallback(facts));
  assert.equal(fallback.source,'fallback');

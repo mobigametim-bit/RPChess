@@ -18,6 +18,12 @@ fs.mkdirSync(output,{recursive:true});
   assert.equal(await page.locator('.mentor-pair').count(),6);
 
   async function verifySquareMentorCards(columns){
+   // Catalog DOM is rebuilt on every view switch; icons decode asynchronously.
+   await page.waitForFunction(()=>{
+    const icons=[...document.querySelectorAll('.mentor-choice .mentor-power-icon'),
+     ...document.querySelectorAll('.mentor-selected .mentor-power-icon')];
+    return icons.length===13&&icons.every(img=>img.complete&&img.naturalWidth>0);
+   },null,{timeout:10000});
    const layout=await page.evaluate(()=>{
     const scroll=document.querySelector('.mentor-catalog-scroll');
     const choices=[...document.querySelectorAll('.mentor-choice')];
@@ -176,6 +182,7 @@ fs.mkdirSync(output,{recursive:true});
    if(route.request().method()==='OPTIONS')
     return route.fulfill({status:204,headers});
    mockedMentorCalls++;
+   await new Promise(resolve=>setTimeout(resolve,750)); // Inspect visible pending state.
    if(mockedMentorCalls===1)
     return route.fulfill({status:503,contentType:'application/json',headers,
      body:JSON.stringify({error:'model_chain_failed',reason:'broker_timeout',
@@ -190,6 +197,10 @@ fs.mkdirSync(output,{recursive:true});
   await page.locator('[data-mentor-square="g4"]').click();
   await page.waitForFunction(()=>window.__mentorDepthSearch.includes('go movetime 1700'),null,{timeout:30000});
   const observed=await mentorRequest;
+  await page.locator('.mentor-feedback-head .mentor-thinking').waitFor({timeout:3000});
+  assert.equal((await page.locator('.mentor-thinking').textContent()).trim(),'Думаю…');
+  assert(await page.locator('.mentor-thinking').evaluate(node=>getComputedStyle(node).animationName!=='none'),
+   'the mentor thinking label blinks while the API request is pending');
   const detail=observed.postDataJSON();
   assert.equal(detail.grade,'blunder','real Stockfish identifies a known mate-in-one blunder');
   assert(detail.continuation?.depth>=5,'deep search depth must reach a usable value');
@@ -201,6 +212,7 @@ fs.mkdirSync(output,{recursive:true});
    null,{timeout:15000});
   const afterFailure=await page.evaluate(()=>window.RPChessMentorTraining.state.moves.findLast(m=>m.grade==='blunder'&&m.color==='w'));
   assert.equal(afterFailure.mentorSource,'fallback','an unsuccessful broker call must not masquerade as AI');
+  assert.equal(await page.locator('.mentor-thinking').count(),0,'thinking label disappears when fallback is ready');
   assert.equal(afterFailure.mentorReason,'broker_timeout','the reason is available for debugging');
   await page.locator('[data-mentor-action="retry-explanation"]').click();
   await page.waitForFunction(()=>document.querySelector('.mentor-feedback-text')?.textContent?.includes('быструю атаку'),
@@ -211,6 +223,28 @@ fs.mkdirSync(output,{recursive:true});
   assert.equal(mockedMentorCalls,2,'manual retry does not require replaying a move');
   assert.equal(await page.locator('[data-mentor-action="retry-explanation"]').count(),0,'retry disappears on success');
   await page.screenshot({path:path.join(output,'battle-deep-mentor-response.png'),animations:'disabled'});
+  // The learning exercise uses the verified pre-tactic position, not the live game.
+  const lessonBefore=await page.evaluate(()=>window.RPChessMentorTraining.state.moves.map(m=>m.uci));
+  await page.locator('[data-mentor-action="lesson-start"]').click();
+  assert(await page.locator('.mentor-learning-question').count(),'verified lesson opens');
+  assert.equal((await page.locator('[data-mentor-square="d8"] .mentor-piece').count()),1,
+   'question board resets to the position before the dangerous black queen move');
+  await page.locator('[data-mentor-square="e8"]').click();
+  assert((await page.locator('.mentor-learning-response').textContent()).includes('другая фигура'),
+   'incorrect selection gets feedback without revealing the answer');
+  await page.locator('[data-mentor-action="lesson-hint"]').click();
+  assert(await page.locator('.mentor-learning-hint').count(),'graded hint appears on demand');
+  await page.locator('[data-mentor-square="d8"]').click();
+  assert((await page.locator('.mentor-learning-answer').textContent()).includes('d8–h4'),
+   'correct answer reveals only the verified Stockfish move');
+  assert.equal(await page.locator('[data-mentor-square="h4"].mentor-lesson-target').count(),1,
+   'resolved tactic points to its real destination');
+  assert.equal(await page.locator('[data-mentor-square="e1"].mentor-lesson-threat').count(),1,
+   'the revealed mate highlights the actually threatened king');
+  await page.screenshot({path:path.join(output,'battle-interactive-mate-lesson.png'),animations:'disabled'});
+  await page.locator('[data-mentor-action="lesson-close"]').click();
+  assert.deepEqual(await page.evaluate(()=>window.RPChessMentorTraining.state.moves.map(m=>m.uci)),
+   lessonBefore,'training on the analysis board never changes the live game');
   // The computed line can be explored without modifying actual training moves.
   const playedHistory=await page.evaluate(()=>window.RPChessMentorTraining.state.moves.map(m=>m.uci));
   await page.locator('[data-mentor-action="open-variation"]').click();

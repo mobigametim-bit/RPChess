@@ -82,6 +82,9 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
 .mentor-feedback{grid-column:3;grid-row:2;align-self:stretch;padding:13px;display:flex;flex-direction:column;gap:13px;overflow-y:auto}
 .mentor-feedback-head{display:flex;align-items:center;gap:12px}
 .mentor-feedback h2{font-size:25px;margin:0;color:#f4dfa9}
+.mentor-training .mentor-thinking{flex:0 0 auto;color:#e3be72;font-size:clamp(13px,1.2vw,17px);white-space:nowrap;animation:mentor-thinking-blink 1.15s steps(2,end) infinite}
+@keyframes mentor-thinking-blink{0%,45%{opacity:1}50%,100%{opacity:.25}}
+@media(prefers-reduced-motion:reduce){.mentor-training .mentor-thinking{animation:none}}
 .mentor-face{width:80px;height:85px;object-fit:contain}
 .mentor-feedback-grade{display:flex;align-items:center;gap:10px;border-top:1px solid #a68b554d;padding-top:12px}
 .mentor-feedback-grade strong{font-size:39px;color:#f08779;font-family:Arial,sans-serif!important}
@@ -380,4 +383,26 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
 @media (orientation:portrait){
  .mentor-training .mentor-result-actions{flex-direction:column;align-items:stretch}
  .mentor-training .mentor-result-actions button{width:100%;flex:auto;min-height:46px}
+}
+
+
+/* Verified board lesson: works without a paid LLM response. */
+.mentor-training .mentor-learning-actions{display:flex;gap:6px}
+.mentor-training .mentor-learning-start{width:100%;min-height:38px;border-color:#cba65f;background:linear-gradient(#4a3b28,#262119)}
+.mentor-training .mentor-learning{display:flex;flex-direction:column;gap:8px;padding:11px;border:1px solid #b4975966;border-radius:5px;background:linear-gradient(145deg,#24251e,#121a20)}
+.mentor-training .mentor-learning-question{font-size:clamp(14px,1.3vw,18px);color:#f4dfad;line-height:1.4}
+.mentor-training .mentor-learning-instruction,.mentor-training .mentor-learning-hint,.mentor-training .mentor-learning-answer,.mentor-training .mentor-learning-response{margin:0;font-size:clamp(13px,1.1vw,16px);line-height:1.45}
+.mentor-training .mentor-learning-hint{color:#e6c789}
+.mentor-training .mentor-learning-response{color:#d6dfaa}
+.mentor-training .mentor-learning-answer{color:#fff0ce}
+.mentor-training .mentor-learning-caveat{color:#baa77d;line-height:1.3}
+.mentor-training .mentor-learning-buttons{display:flex;gap:6px;flex-wrap:wrap}
+.mentor-training .mentor-learning-buttons button{flex:1;min-width:98px;min-height:36px;white-space:normal}
+.mentor-training .mentor-square.mentor-lesson-origin{outline:3px solid #94cbe3;outline-offset:-4px;z-index:1}
+.mentor-training .mentor-square.mentor-lesson-target{outline:3px solid #e7bd6f;outline-offset:-4px;z-index:1}
+.mentor-training .mentor-square.mentor-lesson-threat{outline:3px solid #d77971;outline-offset:-4px;z-index:1}
+@media(orientation:portrait){
+ .mentor-training .mentor-learning{padding:8px;gap:7px}
+ .mentor-training .mentor-learning-question{font-size:16px}
+ .mentor-training .mentor-learning-instruction,.mentor-training .mentor-learning-hint,.mentor-training .mentor-learning-answer,.mentor-training .mentor-learning-response{font-size:14px}
 }
