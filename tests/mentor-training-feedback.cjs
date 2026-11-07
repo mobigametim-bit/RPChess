@@ -204,7 +204,7 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  assert.equal(unsafeCalls,1,'v2 is limited to one DeepSeek provider call');
  assert.equal(unsafeResult.attempts.length,1);
  assert.equal(unsafeResult.reason,'broker_unsafe_advice','preserve validation failure reason');
- assert.equal(unsafeResult.attempts[0].validation,'piece_or_motif','no raw model response in diagnostics');
+ assert.equal(unsafeResult.attempts[0].validation,'coordinates','no raw model response in diagnostics');
  const exhaustedThink=await handleMentorApi(v2Req(preparedV2.payload),v2Env,async()=>
   new Response(JSON.stringify({choices:[{finish_reason:'length',message:{content:''}}]}),{status:200}),async()=>{},2);
  assert.equal((await exhaustedThink.json()).reason,'broker_thinking_exhausted');
