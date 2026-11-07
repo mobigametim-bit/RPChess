@@ -471,7 +471,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
   node.textContent=pieceSpeech.text;
   overlay.append(node);
   const bounds=sq.getBoundingClientRect();
-  const speechBounds=node.getBoundingClientRect(),height=speechBounds.height,width=speechBounds.width;
+  const height=node.offsetHeight,width=node.offsetWidth; // Layout size before animation scaling.
   // Fixed positioning escapes clipped board squares and keeps mobile text in view.
   const x=Math.max(10+width/2,Math.min(innerWidth-10-width/2,bounds.left+bounds.width/2));
   const y=Math.max(down?14:78,Math.min(innerHeight-height-(down?72:10),bounds.top+bounds.height/2));
