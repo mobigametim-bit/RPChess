@@ -11,9 +11,9 @@ const FORK_TARGETS=new Set(['n','b','r','q','k']);
 const MAX_PV=20;
 function opposite(color){return color==='w'?'b':'w';}
 function coord(square){return {f:FILES.indexOf(square[0]),r:Number(square[1])-1};}
-function attacks(board,from,to){
+function attacks(board,from,to,includeFriendly=false){
  const attacker=board.pieceAt(from),target=board.pieceAt(to);
- if(!attacker||!target||attacker.color===target.color||from===to)return false;
+ if(!attacker||!target||(!includeFriendly&&attacker.color===target.color)||from===to)return false;
  const a=coord(from),b=coord(to),dx=b.f-a.f,dy=b.r-a.r;
  if(attacker.type==='n')return Math.abs(dx)*Math.abs(dy)===2;
  if(attacker.type==='p')return Math.abs(dx)===1&&dy===(attacker.color==='w'?1:-1);
@@ -47,7 +47,7 @@ function piecesOn(board,color){
  return result;
 }
 function defenders(board,square,color){
- return piecesOn(board,color).filter(({at})=>at!==square&&attacks(board,at,square));
+ return piecesOn(board,color).filter(({at})=>at!==square&&attacks(board,at,square,true));
 }
 function pawnPassed(board,square,color){
  const p=coord(square);
@@ -109,7 +109,7 @@ function tacticalEvidence(fen,pv,player,maxPlies=MAX_PV){
   const beforeFork=mover!==player?forkTargets(before,from,mover):[];
   const beforeRays=mover!==player?slidingAttacks(before,mover):[];
   const victimGuards=capture&&mover!==player
-   ?piecesOn(before,player).filter(({at,p})=>at!==proposed.capture&&p.type!=='k'&&attacks(before,proposed.capture,at))
+   ?piecesOn(before,player).filter(({at,p})=>at!==proposed.capture&&p.type!=='k'&&attacks(before,proposed.capture,at,true))
    :[];
   const result=board.move(from,to,promote);
   if(!result.ok)break;
