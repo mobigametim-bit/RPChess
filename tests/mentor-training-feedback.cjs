@@ -128,6 +128,8 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  assert.equal(preparedV2.verified.verifiedFact,'Соперник может поставить мат следующим ходом.');
  assert(!promptForMentorV2(preparedV2.verified).user.includes('b1c3'),
   'best alternative and exact board position never sent to model');
+ assert(promptForMentorV2(preparedV2.verified).system.includes('ровно ОДНО'),
+  'v2 prompt requests one safe general coaching sentence');
  assert(!promptForMentorV2(preparedV2.verified).user.includes(beforeFen),
   'v2 LLM receives facts and pedagogy, not raw FEN');
  const goodAdvice='Перед ходом проверяй самый сильный ответ соперника. Что ещё ты мог упустить?';
