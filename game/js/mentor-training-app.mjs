@@ -11,6 +11,7 @@ import { currentLanguage, subscribe } from './i18n.mjs';
 import { TRAINING_MENTORS, UCI, rebuildTraining, extendTraining, trainingMoveQuality } from './mentor-training-history.mjs';
 import {buildMentorPayload,requestMentorText} from './mentor-training-feedback-client.mjs?v=20261107-mentor-evidence-v1';
 import {validateMentorInput} from './mentor-training-feedback-core.mjs';
+import {lessonFromVerified,mentorLessonCopy,validateLessonGuess} from './mentor-training-teaching.mjs';
 import {thinkingText,praiseText,fallbackText} from './mentor-training-copy.mjs';
 
 const STORAGE_KEY='rpchess.mentor-training.v1';
@@ -19,8 +20,8 @@ const DEEP_PV_LIMIT=20;
 const ROLES={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
 const SYMBOLS={w:{p:'♙',n:'♘',b:'♗',r:'♖',q:'♕',k:'♔'},b:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'}};
 const TEXT={
- ru:{title:'Тренировка с наставником',back:'Главное меню',mentor:'Наставник',mentorThinking:'Думаю…',moves:'Ходы',white:'Белые',black:'Чёрные',random:'Случайно',start:'Начать тренировку',new:'Новая тренировка',exit:'К наставникам',prev:'Назад',next:'Вперёд',close:'Закрыть',journal:'Ходы',ready:'Ваш ход',thinking:'Соперник думает…',analysing:'Анализ хода…',waiting:'Оценка недоступна',fine:'Продолжайте партию.',inaccuracy:'Неточность',mistake:'Ошибка',blunder:'Зевок',noGrade:'Нет замечаний',loss:'Потеря оценки',retry:'Позиция ухудшилась. Попробуйте вернуться назад и найти более сильное продолжение.',reviewFail:'Не удалось проверить ход. Партию можно продолжать.',gameOver:'Партия завершена',check:'Шах!',promotion:'Превращение пешки',before:'Вернуться перед ошибкой',clear:'Начать заново',profile:'Мощь',restore:'Продолжить тренировку',victory:'Победа!',defeat:'Поражение',draw:'Ничья',reviewGame:'Анализировать',menu:'Главное меню',mentors:'К наставникам',good:'Хороший ход',excellent:'Блестящий ход',view:'Посмотреть',engineLine:'Вариант Stockfish',afterMistake:'После ошибки',returnToGame:'К партии',retryAI:'Повторить запрос ИИ'},
- en:{title:'Training with a Mentor',back:'Main menu',mentor:'Mentor',mentorThinking:'Thinking…',moves:'Moves',white:'White',black:'Black',random:'Random',start:'Start training',new:'New training',exit:'Mentors',prev:'Back',next:'Forward',close:'Close',journal:'Moves',ready:'Your move',thinking:'Opponent thinking…',analysing:'Analysing move…',waiting:'Evaluation unavailable',fine:'Continue the game.',inaccuracy:'Inaccuracy',mistake:'Mistake',blunder:'Blunder',noGrade:'No issues found',loss:'Evaluation lost',retry:'This move worsened your position. Go back and try to find a stronger continuation.',reviewFail:'The move could not be evaluated. You can continue playing.',gameOver:'Game over',check:'Check!',promotion:'Promote pawn',before:'Return before error',clear:'Start over',profile:'Strength',restore:'Resume training',victory:'Victory!',defeat:'Defeat',draw:'Draw',reviewGame:'Analyse',menu:'Main menu',mentors:'Mentors',good:'Good move',excellent:'Brilliant move',view:'View',engineLine:'Stockfish line',afterMistake:'After the mistake',returnToGame:'Back to game',retryAI:'Retry AI explanation'}
+ ru:{title:'Тренировка с наставником',back:'Главное меню',mentor:'Наставник',mentorThinking:'Думаю…',lesson:'Проверить себя',lessonHint:'Подсказка',lessonShow:'Показать ответ',lessonExit:'Вернуться к партии',lessonBoard:'Найди фигуру с угрозой',moves:'Ходы',white:'Белые',black:'Чёрные',random:'Случайно',start:'Начать тренировку',new:'Новая тренировка',exit:'К наставникам',prev:'Назад',next:'Вперёд',close:'Закрыть',journal:'Ходы',ready:'Ваш ход',thinking:'Соперник думает…',analysing:'Анализ хода…',waiting:'Оценка недоступна',fine:'Продолжайте партию.',inaccuracy:'Неточность',mistake:'Ошибка',blunder:'Зевок',noGrade:'Нет замечаний',loss:'Потеря оценки',retry:'Позиция ухудшилась. Попробуйте вернуться назад и найти более сильное продолжение.',reviewFail:'Не удалось проверить ход. Партию можно продолжать.',gameOver:'Партия завершена',check:'Шах!',promotion:'Превращение пешки',before:'Вернуться перед ошибкой',clear:'Начать заново',profile:'Мощь',restore:'Продолжить тренировку',victory:'Победа!',defeat:'Поражение',draw:'Ничья',reviewGame:'Анализировать',menu:'Главное меню',mentors:'К наставникам',good:'Хороший ход',excellent:'Блестящий ход',view:'Посмотреть',engineLine:'Вариант Stockfish',afterMistake:'После ошибки',returnToGame:'К партии',retryAI:'Повторить запрос ИИ'},
+ en:{title:'Training with a Mentor',back:'Main menu',mentor:'Mentor',mentorThinking:'Thinking…',lesson:'Test yourself',lessonHint:'Hint',lessonShow:'Reveal answer',lessonExit:'Return to game',lessonBoard:'Find the threatening piece',moves:'Moves',white:'White',black:'Black',random:'Random',start:'Start training',new:'New training',exit:'Mentors',prev:'Back',next:'Forward',close:'Close',journal:'Moves',ready:'Your move',thinking:'Opponent thinking…',analysing:'Analysing move…',waiting:'Evaluation unavailable',fine:'Continue the game.',inaccuracy:'Inaccuracy',mistake:'Mistake',blunder:'Blunder',noGrade:'No issues found',loss:'Evaluation lost',retry:'This move worsened your position. Go back and try to find a stronger continuation.',reviewFail:'The move could not be evaluated. You can continue playing.',gameOver:'Game over',check:'Check!',promotion:'Promote pawn',before:'Return before error',clear:'Start over',profile:'Strength',restore:'Resume training',victory:'Victory!',defeat:'Defeat',draw:'Draw',reviewGame:'Analyse',menu:'Main menu',mentors:'Mentors',good:'Good move',excellent:'Brilliant move',view:'View',engineLine:'Stockfish line',afterMistake:'After the mistake',returnToGame:'Back to game',retryAI:'Retry AI explanation'}
 };
 const RACES={
  ru:{humans:'Люди',orcs:'Орки',fae:'Феи',dark_elves:'Тёмные эльфы',dwarves:'Гномы',undead:'Нежить',demons:'Демоны',elves:'Эльфы',dragonborn:'Дракониды',angels:'Ангелы',constructs:'Конструкты'},
@@ -36,6 +37,7 @@ const deepInFlight=new Map();
 let boardNode=null,dragActive=false,motion=null;
 let mentorReplyAbort=null;
 let analysisView=null; // Separate engine variation viewer; never mutates played history.
+let lessonView=null; // Interactive position from verified Stockfish PV, not live game.
 const mentorReplyCache=new Map();
 function lang(){return currentLanguage()==='en'?'en':'ru';}
 function t(name){return TEXT[lang()][name]||name;}
@@ -59,7 +61,7 @@ function restore(){
 }
 function game(){return rebuildTraining(moves,cursor);}
 function cancel(){
- mentorReplyAbort?.abort();mentorReplyAbort=null;analysisView=null;
+ mentorReplyAbort?.abort();mentorReplyAbort=null;analysisView=null;lessonView=null;
  gameEpoch++;busy=false;analysisPending=false;square=null;promotion=null;dragActive=false;
  motion?.clear();ai?.stop();review?.close();review=null;reviewStarted=null;reviewChain=Promise.resolve();evaluationInFlight=new Map();deepInFlight.clear();
 }
@@ -180,13 +182,16 @@ function boardHTML(chess,preview=false){
   const sq=files[file]+(rank+1),piece=state.board[index],dark=(file+rank)%2===0;
   const active=selected!==null&&square===sq,possible=legal.some(m=>(m.uciTo||m.to)===sq);
   const highlight=last&&[last.uci.slice(0,2),last.uci.slice(2,4)].includes(sq);
+  const lessonMark=lessonView?.entry===analysisView?.entry&&lessonView?.stage===3;
+  const lessonOrigin=lessonMark&&sq===lessonView.plan.from;
+  const lessonTarget=lessonMark&&sq===lessonView.plan.to;
   const ownRace=piece?.color===currentPlayerColor()?'humans':mentor().race;
   let figure='';
   if(piece){
    figure='<img alt="" class="mentor-piece classic-piece" draggable="false" src="'+boardRacePiecePath(ownRace,ROLES[piece.type],piece.color)+'"><span class="mentor-piece-fallback">'+SYMBOLS[piece.color][piece.type]+'</span>'+fantasyPieceMarkup(piece.type,piece.color);
   }
   const sign=mark===sq&&piece?.color===currentPlayerColor()?'<span class="mentor-square-grade'+(['good','excellent'].includes(recentOwn.grade)?' mentor-square-grade--good':'')+'">'+({'inaccuracy':'?!','mistake':'?','blunder':'??',good:'!',excellent:'!!'}[recentOwn.grade])+'</span>':'';
-  grid+='<button type="button" data-mentor-square="'+sq+'" data-square="'+sq+'" class="mentor-square '+(dark?'is-dark':'is-light')+(highlight?' is-last':'')+(active?' is-selected':'')+(possible?' is-legal':'')+(index===checkedKing?' is-check classic-square--check':'')+'" aria-label="'+sq+'">'+figure+sign+'</button>';
+  grid+='<button type="button" data-mentor-square="'+sq+'" data-square="'+sq+'" class="mentor-square '+(dark?'is-dark':'is-light')+(highlight?' is-last':'')+(active?' is-selected':'')+(possible?' is-legal':'')+(index===checkedKing?' is-check classic-square--check':'')+(lessonOrigin?' mentor-lesson-origin':'')+(lessonTarget?' mentor-lesson-target':'')+'" aria-label="'+sq+'">'+figure+sign+'</button>';
  }
  const status=chess.status();
  // CSS variables consumed by an external stylesheet resolve relative url() against /css/.
@@ -230,6 +235,25 @@ function variationHTML(entry,index){
  '<div class="mentor-variation-navigation"><button type="button" data-mentor-action="line-prev" '+(active&&analysisView.offset===0?'disabled':'')+'>❮ '+t('prev')+'</button>'+
  '<button type="button" data-mentor-action="line-next" '+(active&&analysisView.offset>=entry.analysisLine.length?'disabled':'')+'>'+t('next')+' ❯</button></div></div>';
 }
+function lessonHTML(data){
+ if(!data?.mentorLesson||['good','excellent'].includes(data.grade))return '';
+ const active=lessonView?.entry===data;
+ if(!active)return '<div class="mentor-learning-actions">'+button('lesson-start',t('lesson'),'mentor-outline mentor-learning-start')+'</div>';
+ const plan=lessonView.plan,copy=mentorLessonCopy(plan,lang());
+ let section='<section class="mentor-learning" aria-label="'+esc(t('lesson'))+'">'+
+  '<strong class="mentor-learning-question">'+esc(copy.question)+'</strong>';
+ if(plan.from&&lessonView.stage<3)section+='<p class="mentor-learning-instruction">'+esc(copy.instruction)+'</p>';
+ if(lessonView.stage>=1)section+='<p class="mentor-learning-hint">'+esc(copy.hint1)+'</p>';
+ if(lessonView.stage>=2)section+='<p class="mentor-learning-hint">'+esc(copy.hint2)+'</p>';
+ if(lessonView.feedback)section+='<p class="mentor-learning-response">'+esc(copy[lessonView.feedback]||'')+'</p>';
+ if(lessonView.stage===3)section+='<p class="mentor-learning-answer">'+esc(copy.answer)+'</p>'+
+   '<small class="mentor-learning-caveat">'+esc(copy.optional)+'</small>';
+ section+='<div class="mentor-learning-buttons">';
+ if(lessonView.stage<2&&plan.from)section+=button('lesson-hint',t('lessonHint'),'mentor-outline');
+ if(lessonView.stage<3)section+=button('lesson-reveal',t('lessonShow'),'mentor-outline');
+ section+=button('lesson-close',t('lessonExit'),'mentor-outline')+'</div></section>';
+ return section;
+}
 function feedbackHTML(){
  const found=latestPlayerNote(),data=found?.move||null;
  const mark=data?({inaccuracy:'?!',mistake:'?',blunder:'??',good:'!',excellent:'!!'}[data.grade]||''):'';
@@ -243,13 +267,14 @@ function feedbackHTML(){
  '<h2>'+t('mentor')+'</h2>'+(data?.pending?'<span class="mentor-thinking" role="status" aria-live="polite">'+t('mentorThinking')+'</span>':'')+'</div>'+
  (data?'<div class="mentor-feedback-grade'+(positive?' mentor-feedback-grade--good':'')+'"><strong>'+mark+'</strong><span>'+label+'</span></div>':'')+
  '<p class="mentor-feedback-text">'+esc(copy)+'</p>'+
- (canView?(analysisView?'':'<div class="mentor-analysis-actions">'+button('open-variation',t('view'),'mentor-outline mentor-view-btn')+'</div>')+variationHTML(data,found.index):'')+
+ (canView&&!lessonView?(analysisView?'':'<div class="mentor-analysis-actions">'+button('open-variation',t('view'),'mentor-outline mentor-view-btn')+'</div>')+variationHTML(data,found.index):'')+
+ lessonHTML(data)+
  (data?.mentorSource==='fallback'&&data.mentorPayload?button('retry-explanation',t('retryAI'),'mentor-outline mentor-retry-ai'):'')+
  (found&&!positive?button('before-error',t('before'),'mentor-outline mentor-undo-error'):'')+'</section>';
 }
 function battleHTML(){
  const chess=variationPosition(),m=mentor(),status=chess.status();
- const notice=busy?(analysisPending?t('analysing'):t('thinking')):status.over?t('gameOver'):status.checked?t('check'):t('ready');
+ const notice=lessonView?t('lessonBoard'):busy?(analysisPending?t('analysing'):t('thinking')):status.over?t('gameOver'):status.checked?t('check'):t('ready');
  return '<section class="mentor-battle"><header class="mentor-battle-top"><h1>'+t('title')+'</h1>'+
  '<div class="mentor-top-actions">'+button('journal',t('journal'),'mentor-small-btn mentor-journal-toggle')+
  button('catalog',t('exit'),'mentor-small-btn')+button('leave',t('back'),'mentor-small-btn')+'</div></header>'+
@@ -318,7 +343,7 @@ function moveCursor(next){
  // Browsing a previous move never requests a new computer response.
 }
 function cancelPending(){
- mentorReplyAbort?.abort();mentorReplyAbort=null;analysisView=null;
+ mentorReplyAbort?.abort();mentorReplyAbort=null;analysisView=null;lessonView=null;
  gameEpoch++;busy=false;analysisPending=false;square=null;promotion=null;dragActive=false;motion?.clear();ai?.stop();
 }
 async function ensureReview(){
@@ -440,6 +465,7 @@ async function explainVerifiedMove({beforeFen,afterFen,uci,kind,before,after,ent
  // Analysis and optional retry survive reload without a second Stockfish pass.
  entry.analysisFen=afterFen;
  entry.analysisLine=request.verified.afterLine.slice(0,DEEP_PV_LIMIT);
+ entry.mentorLesson=lessonFromVerified(request.verified);
  entry.mentorPayload=request.payload;
  save();render();
  await deliverMentorFeedback(entry,request.payload,request.verified,cacheKey,epoch);
@@ -529,6 +555,13 @@ function onClick(event){
   const chosen=promotion;promotion=null;void userMove(chosen.from,chosen.to,button.dataset.mentorPromote);return;
  }
  if(button.dataset.mentorSquare){
+  if(lessonView&&analysisView?.entry===lessonView.entry){
+   if(lessonView.stage===3)return;
+   const correct=validateLessonGuess(lessonView.plan,button.dataset.mentorSquare);
+   lessonView.feedback=correct?'correct':'wrong';
+   if(correct){lessonView.stage=3;analysisView.offset=lessonView.plan.ply;}
+   render();return;
+  }
   if(busy||!playing||analysisView)return;
   const chess=game(),cell=button.dataset.mentorSquare;
   if(chess.turn()!==currentPlayerColor()||chess.status().over)return;
@@ -551,15 +584,35 @@ function onClick(event){
   });
   return;
  }
+ if(action==='lesson-start'){
+  const found=latestPlayerNote(),entry=found?.move,plan=entry?.mentorLesson;
+  if(!entry||!plan)return;
+  lessonView={entry,plan,stage:plan.from?0:3,feedback:null};
+  analysisView=plan.from?{entry,index:found.index,offset:Math.max(0,plan.ply-1)}:null;
+  motion?.clear();square=null;render();return;
+ }
+ if(action==='lesson-hint'&&lessonView){
+  lessonView.stage=Math.min(2,lessonView.stage+1);lessonView.feedback=null;
+  render();return;
+ }
+ if(action==='lesson-reveal'&&lessonView){
+  lessonView.stage=3;lessonView.feedback=null;
+  if(analysisView)analysisView.offset=lessonView.plan.ply;
+  render();return;
+ }
+ if(action==='lesson-close'&&lessonView){
+  lessonView=null;analysisView=null;square=null;render();return;
+ }
  if(action==='retry-explanation')void retryMentorFeedback();
  if(action==='open-variation'){
+  lessonView=null;
   const found=latestPlayerNote();
   if(found?.move?.analysisFen&&found.move.analysisLine?.length){
    analysisView={entry:found.move,index:found.index,offset:0};
    motion?.clear();square=null;render();
   }
  }
- if(action==='close-variation'){analysisView=null;square=null;render();}
+ if(action==='close-variation'){analysisView=null;lessonView=null;square=null;render();}
  if(action==='line-prev'){setVariationStep((analysisView?.offset||0)-1);}
  if(action==='line-next'){setVariationStep((analysisView?.offset||0)+1);}
  if(action==='prev')moveCursor(cursor-1);
