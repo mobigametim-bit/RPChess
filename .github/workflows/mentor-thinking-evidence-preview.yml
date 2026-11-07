@@ -96,7 +96,7 @@ jobs:
               try{
                 const page=await fetch(base+'/?build=mentor-evidence-20261107',{cache:'no-store'});
                 assert.equal(page.status,200);
-                assert((await page.text()).includes('mentor-auto-pause-v3'));
+                assert((await page.text()).includes('mentor-stage4-v1'));
                 const js=await fetch(base+'/js/mentor-training-app.mjs',{cache:'no-store'});
                 assert.equal(js.status,200);
                 assert((await js.text()).includes('function lessonHTML'));
@@ -106,6 +106,12 @@ jobs:
                 const teaching=await fetch(base+'/js/mentor-training-teaching.mjs',{cache:'no-store'});
                 assert.equal(teaching.status,200);
                 assert((await teaching.text()).includes('lessonFromVerified'));
+                const proof=await fetch(base+'/js/mentor-training-threat.mjs',{cache:'no-store'});
+                assert.equal(proof.status,200);
+                assert((await proof.text()).includes('verifyImmediateThreat'));
+                const see=await fetch(base+'/js/mentor-training-exchange.mjs',{cache:'no-store'});
+                assert.equal(see.status,200);
+                assert((await see.text()).includes('evaluateStaticExchange'));
                 ok=true;break;
               }catch(err){
                 console.log('Preview check '+(attempt+1)+'/20: '+err.message);
