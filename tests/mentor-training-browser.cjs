@@ -368,6 +368,61 @@ fs.mkdirSync(output,{recursive:true});
   await page.locator('.mentor-result-actions [data-mentor-action="leave"]').click();
   assert.equal(await page.locator('[data-mentor-screen]:not([hidden])').count(),0,
    'Main menu button leaves mentor training');
+  // Stage 4: an actual browser session with a synthetic positional error.
+  // Mock ONLY the review worker's quick scores; the rival's ChessAIAdapter
+  // remains a real Stockfish worker. No paid LLM request is allowed.
+  const positionalPage=await browser.newPage({viewport:{width:1280,height:800}});
+  const positionalErrors=[];positionalPage.on('pageerror',e=>positionalErrors.push(e.message));
+  await positionalPage.addInitScript(()=>{
+   const send=Worker.prototype.postMessage;
+   window.__mentorPositionalDeepCalls=0;
+   Worker.prototype.postMessage=function(message,...args){
+    if(message==='setoption name MultiPV value 2')this.__mentorIsReview=true;
+    if(this.__mentorIsReview&&typeof message==='string'&&message.startsWith('position fen '))
+     this.__mentorPosition=message.slice('position fen '.length);
+    if(this.__mentorIsReview&&message==='go movetime 1700')
+     window.__mentorPositionalDeepCalls++;
+    if(this.__mentorIsReview&&message==='go movetime 260'){
+     const opponentToMove=this.__mentorPosition?.split(' ')[1]==='b';
+     const best=opponentToMove?'e7e5':'d2d4';
+     const cp=opponentToMove?400:0;
+     queueMicrotask(()=>{
+      this.onmessage?.({data:'info depth 12 multipv 1 score cp '+cp+' pv '+best});
+      this.onmessage?.({data:'bestmove '+best});
+     });
+     return;
+    }
+    return send.call(this,message,...args);
+   };
+  });
+  let positionalCalls=0;
+  await positionalPage.route('https://rpchess-mentor-api-preview.mobigametim.workers.dev/v1/explain',
+   async route=>{positionalCalls++;await route.abort();});
+  await positionalPage.goto(url,{waitUntil:'domcontentloaded'});
+  await positionalPage.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
+  await positionalPage.evaluate(()=>localStorage.removeItem('rpchess.mentor-training.v1'));
+  await positionalPage.locator('[data-mentor-open]').click();
+  await positionalPage.locator('[data-mentor-action="start"]').click();
+  await positionalPage.locator('[data-mentor-square="e2"]').click();
+  await positionalPage.locator('[data-mentor-square="e4"]').click();
+  await positionalPage.waitForFunction(()=>{
+   const state=window.RPChessMentorTraining.state;
+   return state.moves.length>=2&&state.moves[0].grade==='blunder';
+  },null,{timeout:30000});
+  const positionalState=await positionalPage.evaluate(()=>window.RPChessMentorTraining.state);
+  assert.equal(positionalState.moves[0].threatStatus,'unverified_or_positional');
+  assert.equal(positionalState.paused,false,'a grading error with quiet reply must never stop the rival');
+  assert.equal(positionalState.moves[1].color,'b','real rival worker responds after positional error');
+  assert.equal(await positionalPage.locator('.mentor-learning-question').count(),0,
+   'no synthetic tactical quiz after an ordinary positional error');
+  assert.equal(await positionalPage.evaluate(()=>window.__mentorPositionalDeepCalls),0,
+   'no extra 1700ms search on an obvious non-tactical error');
+  assert.equal(positionalCalls,0,'positional comments must not invoke paid LLM broker');
+  assert((await positionalPage.locator('.mentor-feedback-text').textContent()).includes('непосредственная тактическая угроза не подтверждена'),
+   'short local explanation is shown');
+  assert.equal(positionalErrors.length,0,'positional browser errors '+positionalErrors.join('\n'));
+  await positionalPage.screenshot({path:path.join(output,'battle-positional-error-continues.png'),animations:'disabled'});
+  await positionalPage.close();
   assert.equal(errors.length,0,'browser errors: '+errors.join('\n'));
   console.log('Mentor training real Stockfish, history branch, 12 mentors and phone: PASS');
  }finally{await browser.close();}
