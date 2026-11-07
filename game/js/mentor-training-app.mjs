@@ -216,7 +216,7 @@ function boardHTML(chess,preview=false){
   const sign=mark===sq&&piece?.color===currentPlayerColor()?'<span class="mentor-square-grade'+(['good','excellent'].includes(recentOwn.grade)?' mentor-square-grade--good':'')+'">'+({'inaccuracy':'?!','mistake':'?','blunder':'??',good:'!',excellent:'!!'}[recentOwn.grade])+'</span>':'';
   const flashText=flash?(flash.text||mentorLessonCopy(lessonView.plan,lang())[flash.kind]):'';
   const flashArt=flash?'<span class="mentor-lesson-aura mentor-lesson-aura--'+flash.kind+'" aria-hidden="true"></span>'+
-    '<span class="mentor-lesson-burst mentor-lesson-burst--'+flash.kind+(flyDown?' mentor-lesson-burst--down':'')+'" role="status">'+esc(flashText)+'</span>':'';
+    '<span class="mentor-lesson-burst mentor-lesson-burst--'+flash.kind+(flash.correction?' mentor-lesson-burst--correction':'')+(flyDown?' mentor-lesson-burst--down':'')+'" role="status">'+esc(flashText)+'</span>':'';
   grid+='<button type="button" data-mentor-square="'+sq+'" data-square="'+sq+'" class="mentor-square '+(dark?'is-dark':'is-light')+(highlight?' is-last':'')+(active?' is-selected':'')+(possible?' is-legal':'')+(index===checkedKing?' is-check classic-square--check':'')+(lessonOrigin?' mentor-lesson-origin':'')+(lessonTarget?' mentor-lesson-target':'')+(lessonThreat?' mentor-lesson-threat':'')+(flash?' mentor-square-flash':'')+'" aria-label="'+sq+'">'+figure+sign+flashArt+'</button>';
  }
  const status=chess.status();
