@@ -18,6 +18,12 @@ fs.mkdirSync(output,{recursive:true});
   assert.equal(await page.locator('.mentor-pair').count(),6);
 
   async function verifySquareMentorCards(columns){
+   // Catalog DOM is rebuilt on every view switch; icons decode asynchronously.
+   await page.waitForFunction(()=>{
+    const icons=[...document.querySelectorAll('.mentor-choice .mentor-power-icon'),
+     ...document.querySelectorAll('.mentor-selected .mentor-power-icon')];
+    return icons.length===13&&icons.every(img=>img.complete&&img.naturalWidth>0);
+   },null,{timeout:10000});
    const layout=await page.evaluate(()=>{
     const scroll=document.querySelector('.mentor-catalog-scroll');
     const choices=[...document.querySelectorAll('.mentor-choice')];
