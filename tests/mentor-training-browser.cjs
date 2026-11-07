@@ -223,6 +223,26 @@ fs.mkdirSync(output,{recursive:true});
   assert.equal(mockedMentorCalls,2,'manual retry does not require replaying a move');
   assert.equal(await page.locator('[data-mentor-action="retry-explanation"]').count(),0,'retry disappears on success');
   await page.screenshot({path:path.join(output,'battle-deep-mentor-response.png'),animations:'disabled'});
+  // The learning exercise uses the verified pre-tactic position, not the live game.
+  const lessonBefore=await page.evaluate(()=>window.RPChessMentorTraining.state.moves.map(m=>m.uci));
+  await page.locator('[data-mentor-action="lesson-start"]').click();
+  assert(await page.locator('.mentor-learning-question').count(),'verified lesson opens');
+  assert.equal((await page.locator('[data-mentor-square="d8"] .mentor-piece').count()),1,
+   'question board resets to the position before the dangerous black queen move');
+  await page.locator('[data-mentor-square="e8"]').click();
+  assert((await page.locator('.mentor-learning-response').textContent()).includes('другая фигура'),
+   'incorrect selection gets feedback without revealing the answer');
+  await page.locator('[data-mentor-action="lesson-hint"]').click();
+  assert(await page.locator('.mentor-learning-hint').count(),'graded hint appears on demand');
+  await page.locator('[data-mentor-square="d8"]').click();
+  assert((await page.locator('.mentor-learning-answer').textContent()).includes('d8–h4'),
+   'correct answer reveals only the verified Stockfish move');
+  assert.equal(await page.locator('[data-mentor-square="h4"].mentor-lesson-target').count(),1,
+   'resolved tactic points to its real destination');
+  await page.screenshot({path:path.join(output,'battle-interactive-mate-lesson.png'),animations:'disabled'});
+  await page.locator('[data-mentor-action="lesson-close"]').click();
+  assert.deepEqual(await page.evaluate(()=>window.RPChessMentorTraining.state.moves.map(m=>m.uci)),
+   lessonBefore,'training on the analysis board never changes the live game');
   // The computed line can be explored without modifying actual training moves.
   const playedHistory=await page.evaluate(()=>window.RPChessMentorTraining.state.moves.map(m=>m.uci));
   await page.locator('[data-mentor-action="open-variation"]').click();
