@@ -13,6 +13,7 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  const {buildMentorPayload,requestMentorText}=await imp('game/js/mentor-training-feedback-client.mjs');
  const {tacticalEvidence,MAX_PV}=await imp('game/js/mentor-training-tactics.mjs');
  const {evaluateStaticExchange}=await imp('game/js/mentor-training-exchange.mjs');
+ const {POS,TACTIC,quickThreatProbe,verifyImmediateThreat}=await imp('game/js/mentor-training-threat.mjs');
  const {PRIORITY,GUIDES,lessonFromVerified,mentorLessonCopy,validateLessonGuess}=await imp('game/js/mentor-training-teaching.mjs');
  const {handleMentorApi,validOrigin,MAX_ATTEMPTS_PER_MODEL}=await imp('mentor-api/src/index.mjs');
 
@@ -142,6 +143,51 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  const boundedExchange=evaluateStaticExchange('r3k3/8/8/8/8/8/1Q2K3/R7 b - - 0 1','a8a1',{maxPlies:1});
  assert.equal(boundedExchange.exact,false,'truncated capture tree cannot be trusted as proven');
  assert(boundedExchange.nodes<=1,'node budget respected');
+
+
+ // Stage 4: a legal PV is never, by itself, permission to pause the rival.
+ const fastMate={depth:10,cp:1200,bestMove:'d8h4',pv:['d8h4']};
+ const deepMate={...fastMate,depth:17,secondMove:'a7a6',secondCp:190};
+ assert.equal(quickThreatProbe({afterFen,after:fastMate,player:'w'}).status,'candidate');
+ const provenMate=verifyImmediateThreat({afterFen,after:fastMate,deep:deepMate,player:'w'});
+ assert.equal(provenMate.status,TACTIC,'checkmate in the actual immediate reply is verified');
+ assert.equal(provenMate.evidence.kind,'mate_sequence');
+ assert.equal(provenMate.evidence.firstMove,'d8h4');
+ assert.equal(provenMate.evidence.secondMove,'a7a6','MultiPV alternative is preserved for ambiguity auditing');
+ assert.equal(verifyImmediateThreat({afterFen,after:fastMate,
+  deep:{...deepMate,bestMove:'a7a6',pv:['a7a6']},player:'w'}).status,POS,
+ 'deep search disagreement is not an invitation to guess the attacking piece');
+ assert.equal(verifyImmediateThreat({afterFen,after:fastMate,
+  deep:{...deepMate,depth:4},player:'w'}).status,POS,
+ 'shallow deep search cannot certify an immediate threat');
+ assert.equal(verifyImmediateThreat({afterFen,after:fastMate,
+  deep:{...deepMate,cp:0},player:'w'}).status,POS,
+ 'large evaluation disagreement must fall back to positional comment');
+ const emptyQuick=quickThreatProbe({afterFen:new ClassicChessEngine().fen(),
+  after:{cp:10,depth:12,bestMove:'e2e4',pv:['e2e4']},player:'b'});
+ assert.equal(emptyQuick.status,POS,'ordinary quiet reply cannot trigger a forced quiz');
+ const noDefenseFen='r3k3/8/8/8/8/8/4K3/R7 b - - 0 1';
+ const defendedFen='r3k3/8/8/8/8/8/1Q2K3/R7 b - - 0 1';
+ const quickCapture={depth:10,cp:330,bestMove:'a8a1',pv:['a8a1']};
+ const deepCapture={...quickCapture,depth:16,cp:320,secondCp:160,secondMove:'a8a4'};
+ assert.equal(verifyImmediateThreat({afterFen:noDefenseFen,after:quickCapture,
+  deep:deepCapture,player:'w'}).status,TACTIC,
+ 'profitable and fully inspected immediate capture is a teachable threat');
+ assert.equal(quickThreatProbe({afterFen:defendedFen,after:quickCapture,player:'w'}).status,POS,
+ 'a rook protected by a queen cannot be called unprotected simply because it is attacked');
+ const badQueenFen='q3k3/8/8/8/8/8/P7/R3K3 b - - 0 1';
+ assert.equal(quickThreatProbe({afterFen:badQueenFen,
+  after:{depth:10,cp:180,bestMove:'a8a2',pv:['a8a2']},player:'w'}).status,POS,
+ 'a material-losing capture is not a verified opportunity even when it appears in a PV');
+ const checkForkFen='4k3/8/8/8/1n6/8/8/Q3K3 b - - 0 1';
+ const checkingFork={depth:10,cp:330,bestMove:'b4c2',pv:['b4c2']};
+ assert.equal(verifyImmediateThreat({afterFen:checkForkFen,after:checkingFork,
+  deep:{...checkingFork,depth:15,cp:360},player:'w'}).status,TACTIC,
+ 'legally verified checking fork of king and queen is a tactical exercise');
+ const unverifiedSkewer='4k2r/8/8/8/8/8/8/5RK1 b - - 0 1';
+ assert.equal(quickThreatProbe({afterFen:unverifiedSkewer,
+  after:{depth:10,cp:300,bestMove:'h8h1',pv:['h8h1']},player:'w'}).status,POS,
+ 'skewer-shaped geometry in one PV alone must not pause play without verified material');
 
  const mate=tacticalEvidence(afterFen,['d8h4'],'w');
  assert.deepEqual(mate.line,['d8h4']);
