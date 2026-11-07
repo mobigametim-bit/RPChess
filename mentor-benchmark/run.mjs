@@ -5,12 +5,14 @@
 import fs from 'node:fs/promises';
 import assert from 'node:assert/strict';
 const API='https://rpchess-mentor-api-preview.mobigametim.workers.dev/_internal/benchmark';
-const MODELS=[
+const ALL_MODELS=[
  'deepseek-ai/DeepSeek-V4-Flash-0731',
  'MiniMaxAI/MiniMax-M2.7','zai-org/GLM-5.3-Flash'
 ];
+const MODELS=(process.env.BENCHMARK_MODELS||ALL_MODELS.join(',')).split(',');
+assert(MODELS.every(m=>ALL_MODELS.includes(m)));
 const VARIANTS=(process.env.BENCHMARK_VARIANTS||'baseline,fast,schema').split(',');
-assert(VARIANTS.every(v=>['baseline','fast','schema','optimized'].includes(v)));
+assert(VARIANTS.every(v=>['baseline','fast','schema','optimized','balanced'].includes(v)));
 const N=Number(process.env.BENCHMARK_PER_CELL||8);
 assert(Number.isInteger(N)&&N>0&&N<=30);
 assert(N*MODELS.length*VARIANTS.length<=600);

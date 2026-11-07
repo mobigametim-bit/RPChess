@@ -39,6 +39,7 @@ export function benchRequestConfig(model,variant,settings){
   if(model.startsWith('deepseek-ai/')){base.response_format=SCHEMA;base.reasoning_effort='none';}
   if(model.startsWith('zai-org/'))base.reasoning_effort='none';
  }
+ if(variant==='balanced'){base.max_tokens=900;}
  if(variant==='larger'){
   base.max_tokens=1600;
   if(!model.startsWith('MiniMaxAI/'))base.reasoning_effort='none';
@@ -72,7 +73,7 @@ export async function handleMentorBenchmark(request,env,fetcher=fetch){
   const raw=await request.text();
   if(raw.length>4500)throw Error('big');
   body=JSON.parse(raw);
-  if(!BENCH_MODELS.includes(body?.model)||!['baseline','fast','schema','optimized','larger'].includes(body?.variant))
+  if(!BENCH_MODELS.includes(body?.model)||!['baseline','fast','schema','optimized','balanced','larger'].includes(body?.variant))
    throw Error('invalid settings');
   data=validateMentorInput(body.payload);
  }catch{return json({error:'bad_request'},400);}
@@ -93,7 +94,9 @@ export async function handleMentorBenchmark(request,env,fetcher=fetch){
  const settings=promptForMentor(data);
  const controller=new AbortController();
  // Same time windows as the production chain in the baseline/fast variants.
- const timeout=variant==='optimized'?(model.startsWith('deepseek-ai/')?15000:model.startsWith('MiniMaxAI/')?18000:20000):model.startsWith('deepseek-ai/')?15000:10000;
+ const timeout=variant==='balanced'&&model.startsWith('MiniMaxAI/')?18000:
+  variant==='optimized'?(model.startsWith('deepseek-ai/')?15000:model.startsWith('MiniMaxAI/')?18000:20000):
+  model.startsWith('deepseek-ai/')?15000:10000;
  const timer=setTimeout(()=>controller.abort(),timeout);
  let output={model,variant,ok:false,reason:'unknown',httpStatus:null,
   elapsedMs:null,finishReason:null,completionTokens:null,

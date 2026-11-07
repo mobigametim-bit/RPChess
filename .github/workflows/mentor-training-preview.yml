@@ -159,20 +159,21 @@ jobs:
           echo "MENTOR_BENCHMARK_TOKEN_FILE=$TOKEN_FILE" >> "$GITHUB_ENV"
           cat "$TOKEN_FILE" | npx wrangler secret put MENTOR_BENCHMARK_TOKEN --config mentor-api/wrangler.toml
           echo 'Temporary benchmark authentication enabled.'
-      - name: Run comparative Gonka optimized model reliability benchmark (max 60 calls)
+      - name: Run MiniMax JSON reliability benchmark (max 30 calls)
         if: contains(github.event.head_commit.message, '[mentor-benchmark]')
         continue-on-error: true
         timeout-minutes: 32
         env:
-          BENCHMARK_PER_CELL: '20'
-          BENCHMARK_VARIANTS: 'optimized'
+          BENCHMARK_PER_CELL: '30'
+          BENCHMARK_VARIANTS: 'balanced'
+          BENCHMARK_MODELS: 'MiniMaxAI/MiniMax-M2.7'
         run: |
           node mentor-benchmark/run.mjs
       - name: Upload benchmark evidence (no secrets)
         if: always() && contains(github.event.head_commit.message, '[mentor-benchmark]')
         uses: actions/upload-artifact@v4
         with:
-          name: mentor-gonka-reliability-optimized-60
+          name: mentor-gonka-minimax-900-tokens-30
           path: test-results/mentor-benchmark
           retention-days: 14
           if-no-files-found: warn
