@@ -309,7 +309,13 @@ function updateCorrectionCountdown(c,epoch){
  const delay=Math.max(20,leftMs-(correctionSeconds(c)-1)*1000+30);
  setTimeout(()=>{
   if(correctionView!==c||gameEpoch!==epoch)return;
-  render();updateCorrectionCountdown(c,epoch);
+  const seconds=correctionSeconds(c);
+  const button=root?.querySelector('[data-mentor-action="correction-strong"]');
+  if(button){
+   button.textContent=t('correctionStrong')+(seconds?' ('+seconds+')':'');
+   button.disabled=seconds>0||c.checking;
+  }
+  if(seconds)updateCorrectionCountdown(c,epoch);
  },delay);
 }
 function correctionHTML(data){
@@ -368,7 +374,7 @@ async function submitCorrection(from,to,promote=null){
    setTimeout(()=>{
     if(correctionView!==c||c.flash!==flash||gameEpoch!==epoch)return;
     c.flash=null;render();
-   },1200);
+   },c.outcome==='wrong'?3600:1200);
   }
  }catch{
   if(c!==correctionView||cursor!==moves.length||pausedEntry!==c.entry)return;
