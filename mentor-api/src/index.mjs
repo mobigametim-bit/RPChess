@@ -52,7 +52,7 @@ async function handleMentorApi(request,env,fetcher=fetch,sleep=waitForRetry,cont
   return reply({ok:true,configured:Boolean(env.GONKA_API_KEY),modelConfigured:true,
    model:MODELS[0].id,fallbackModels:MODELS.slice(1).map(m=>m.id),
    contractVersion:isV2?2:1,
-   attemptsPerModel:MAX_ATTEMPTS_PER_MODEL,maxProviderCalls:MODELS.length*MAX_ATTEMPTS_PER_MODEL},200,origin);
+   attemptsPerModel:isV2?1:MAX_ATTEMPTS_PER_MODEL,maxProviderCalls:isV2?1:MODELS.length*MAX_ATTEMPTS_PER_MODEL},200,origin);
  if(url.pathname!==(isV2?'/v2/explain':'/v1/explain'))return reply({error:'not_found'},404,origin);
  if(!validOrigin(origin))return reply({error:'forbidden_origin'},403);
  if(request.method==='OPTIONS')return new Response(null,{status:204,headers:cors(origin)});
@@ -100,8 +100,9 @@ async function handleMentorApi(request,env,fetcher=fetch,sleep=waitForRetry,cont
  // This can only REDUCE spend and never overrides origin, validation or rate
  // limits. Live acceptance must not accidentally trigger 12 billable calls.
  const singleAttempt=isV2&&request.headers.get('X-Mentor-Diagnostic')==='one';
- const selectedModels=singleAttempt?MODELS.slice(0,1):MODELS;
- const maxAttempts=singleAttempt?1:MAX_ATTEMPTS_PER_MODEL;
+ // V2: at most one paid primary-model call per learner action.
+ const selectedModels=isV2||singleAttempt?MODELS.slice(0,1):MODELS;
+ const maxAttempts=isV2||singleAttempt?1:MAX_ATTEMPTS_PER_MODEL;
  const attempts=[];
  let stoppedForCredentials=false;
  for(const selected of selectedModels){
@@ -114,6 +115,8 @@ async function handleMentorApi(request,env,fetcher=fetch,sleep=waitForRetry,cont
    request.signal?.addEventListener('abort',onClientAbort,{once:true});
    const timer=setTimeout(()=>controller.abort(),selected.timeout);
    let problem='broker_network',fatal=false;
+   // Keep parsed in scope for diagnostics; invalid answers are not network failures.
+   let content=null,parsed=null,finishReason=null;
    try{
     const response=await fetcher(endpoint.toString(),{
      method:'POST',signal:controller.signal,
@@ -143,10 +146,15 @@ async function handleMentorApi(request,env,fetcher=fetch,sleep=waitForRetry,cont
       const raw=await response.text();
       if(raw.length<=5000)payload=JSON.parse(raw);
      }catch{}
-     const content=payload?.choices?.[0]?.message?.content;
+     const first=payload?.choices?.[0];
+     finishReason=first?.finish_reason||null;
+     const value=first?.message?.content;
+     content=typeof value==='string'?value:Array.isArray(value)
+      ?value.filter(part=>part?.type==='text'&&typeof part.text==='string')
+       .map(part=>part.text).join(''):null;
      if(typeof content==='string'&&content.length<=5000){
-      let parsed;
-      try{parsed=JSON.parse(content);}catch{}
+      const clean=content.trim().replace(/^\`\`\`(?:json)?\s*/i,'').replace(/\s*\`\`\`$/,'');
+      try{parsed=JSON.parse(clean);}catch{}
       const advice=isV2?safeMentorAdvice(parsed?.advice,data):null;
       const output=isV2?composeMentorV2Explanation(advice,data):
        safeExplanation(parsed?.explanation,data);
@@ -162,6 +170,8 @@ async function handleMentorApi(request,env,fetcher=fetch,sleep=waitForRetry,cont
      // provider response, user position, key or raw completion.
      problem=isV2?(
        typeof content!=='string'?'broker_missing_content':
+       !content.trim()?(finishReason==='length'?'broker_thinking_exhausted':'broker_empty_content'):
+       content.length>5000?'broker_oversize_content':
        !parsed?'broker_invalid_json':
        typeof parsed.advice!=='string'?'broker_missing_advice':
        'broker_unsafe_advice'
