@@ -44,34 +44,25 @@ const DEFAULT={
 };
 function lessonFromVerified(verified){
  if(!verified||!Array.isArray(verified.afterLine)||typeof verified.afterFen!=='string')return null;
- const events=Array.isArray(verified.tactics)?verified.tactics:[];
- // Prefer a concrete early motif over a late speculative feature of a long PV.
- const ranked=events.filter(e=>PRIORITY[e.kind]&&Number.isInteger(e.ply)&&e.ply>=1&&e.ply<=verified.afterLine.length)
-  .map(event=>({event,score:PRIORITY[event.kind]-Math.max(0,event.ply-1)*3}))
-  .sort((a,b)=>b.score-a.score||a.event.ply-b.event.ply);
- for(const {event} of ranked){
-  const board=new ClassicChessEngine(verified.afterFen);
-  let valid=true;
-  for(let n=0;n<event.ply-1;n++){
-   const uci=verified.afterLine[n];
-   if(!board.move(uci.slice(0,2),uci.slice(2,4),uci.slice(4)||null).ok){valid=false;break;}
-  }
-  const move=verified.afterLine[event.ply-1];
-  if(!valid||!move||move.slice(0,2)!==event.from||move.slice(2,4)!==event.to)continue;
-  const actor=board.pieceAt(event.from);
-  if(!actor||actor.color===verified.player)continue;
-  const found=board.legalMoves(event.from).some(m=>m.to===event.to&&(!m.promotion||m.promotion===move.slice(4)));
-  if(!found)continue;
-  return {kind:event.kind,ply:event.ply,from:event.from,to:event.to,actor:actor.type,
-   targets:Array.isArray(event.targetSquares)?event.targetSquares.slice(0,3):[],
-   targetTypes:Array.isArray(event.targets)?event.targets.slice(0,3):[],
-   totalPlies:verified.afterLine.length};
- }
- return {kind:'positional',ply:0,from:null,to:null,targets:[],totalPlies:verified.afterLine.length};
+ const board=new ClassicChessEngine(verified.afterFen);
+ const first=verified.afterLine[0]||'';
+ if(!/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(first))return null;
+ const from=first.slice(0,2),to=first.slice(2,4),actor=board.pieceAt(from);
+ if(!actor||actor.color===verified.player||
+    !board.legalMoves(from).some(m=>m.to===to&&(!m.promotion||m.promotion===first.slice(4))))return null;
+ // Interactive exercise is ALWAYS shown on the board immediately after the
+ // learner's mistake. Never ask them to click a piece from a future PV position.
+ const immediate=(Array.isArray(verified.tactics)?verified.tactics:[])
+  .filter(e=>e.ply===1&&PRIORITY[e.kind]&&e.from===from&&e.to===to)
+  .sort((a,b)=>PRIORITY[b.kind]-PRIORITY[a.kind])[0];
+ return {kind:immediate?.kind||'positional',ply:1,from,to,actor:actor.type,
+  targets:Array.isArray(immediate?.targetSquares)?immediate.targetSquares.slice(0,3):[],
+  targetTypes:Array.isArray(immediate?.targets)?immediate.targets.slice(0,3):[],
+  totalPlies:verified.afterLine.length};
 }
 function mentorLessonCopy(plan,language='ru',stage=0){
  const loc=language==='en'?'en':'ru',topic=GUIDES[plan?.kind]?.[loc],fallback=DEFAULT[loc];
- const question=topic?.[0]||fallback.question;
+ const question=topic?.[0]||(plan?.from?(loc==='ru'?'Какой фигурой соперник может ответить на твой ход?':'Which piece could the opponent use to reply to your move?'):fallback.question);
  const principle=topic?.[1]||fallback.tip;
  const noun=NAMES[loc][plan?.actor]|| (loc==='ru'?'фигуру':'piece');
  const from=plan?.from||'',to=plan?.to||'';
