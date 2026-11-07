@@ -228,6 +228,42 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
   v2Env,v2Fetcher,async()=>{},2);
  assert.equal((await v2Health.json()).contractVersion,2);
  assert.equal(v2Calls,1,'all negative cases are rejected before any paid call');
+ // EN is a distinct end-to-end contract: the UI sends language=en, the
+ // deterministic Stockfish fact is translated, and the DeepSeek response is
+ // independently validated before display or browser TTS.
+ const enPayload={...preparedV2.payload,language:'en'};
+ const enFacts=validatedV2Facts(enPayload);
+ assert.equal(enFacts.language,'en');
+ assert.match(enFacts.verifiedFact,/^The opponent can /);
+ assert(!/[\u0400-\u052f]/.test(enFacts.verifiedFact));
+ assert(promptForMentorV2(enFacts).system.includes('ONE complete English sentence'));
+ const englishTip='Before deciding, imagine the hardest reply your opponent might choose and compare your options.';
+ assert.equal(safeMentorAdvice(englishTip,enFacts),englishTip);
+ assert.equal(safeMentorAdvice('Перед ходом проверь самый сильный ответ соперника.',enFacts),null,
+  'reject a Russian provider answer in English mode and use the English fallback');
+ let englishBrokerCalls=0;
+ const enResponse=await handleMentorApi(v2Req(enPayload),v2Env,async(url,opts)=>{
+  englishBrokerCalls++;
+  const upstream=JSON.parse(opts.body);
+  assert(upstream.messages?.[0]?.content?.includes('English sentence'),
+   'DeepSeek must receive the English-language prompt');
+  return new Response(JSON.stringify({choices:[{message:{
+   content:JSON.stringify({advice:englishTip})
+  }}]}),{status:200});
+ },async()=>{},2);
+ assert.equal(enResponse.status,200);
+ assert.equal(englishBrokerCalls,1);
+ const enAnswer=await enResponse.json();
+ assert.equal(enAnswer.contractVersion,2);
+ assert.equal(enAnswer.source,'deepseek');
+ assert.equal(enAnswer.verifiedFact,enFacts.verifiedFact);
+ assert.equal(enAnswer.explanation,composeMentorV2Explanation(englishTip,enFacts));
+ const enBrowser=await requestMentorV2Text({payload:enPayload,verified:enFacts,
+  fetcher:async()=>new Response(JSON.stringify(enAnswer),{status:200})});
+ assert.equal(enBrowser.source,'deepseek');
+ assert.equal(enBrowser.explanation,enAnswer.explanation);
+ assert(!/[\u0400-\u052f]/.test(enBrowser.explanation));
+
 
  assert.equal(facts.motive,'checkmate');
  assert.equal(facts.loss,290);
