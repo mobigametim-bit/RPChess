@@ -81,10 +81,53 @@ function mentorLessonCopy(plan,language='ru',stage=0){
  const hint2=from
   ?loc==='ru'?'Она находится на вертикали '+from[0]+'.':'It stands on the '+from[0]+'-file.'
   :principle;
+ const locations=(Array.isArray(plan?.targets)?plan.targets:[]).filter(v=>/^[a-h][1-8]$/.test(v)).slice(0,3);
+ const shown=locations.join(loc==='ru'?' и ':' and ');
+ const concrete={
+  ru:{
+   mate_sequence:'Здесь возможен мат королю'+(shown?' на '+shown:'')+'.',
+   back_rank_mate:'Здесь показан мат по последней горизонтали'+(shown?' королю на '+shown:'')+'.',
+   double_check:'После хода король'+(shown?' на '+shown:'')+' получает двойной шах.',
+   discovered_check:'Освобождается линия атаки на короля'+(shown?' на '+shown:'')+'.',
+   fork:'После хода фигура одновременно атакует'+(shown?' цели '+shown:' несколько целей')+'.',
+   pin:'Возникает связка'+(shown?' фигуры на '+shown:' фигуры у короля')+'.',
+   skewer_pattern:'В одной линии стоят две ценные цели'+(shown?': '+shown:'')+'. Это геометрический мотив, но выигрыш материала не гарантирован.',
+   overloaded_defender:'После снятия защитника под ударом оказываются'+(shown?' цели '+shown:' несколько целей')+'.',
+   removed_defender:'После снятия защитника цель'+(shown?' на '+shown:'')+' остаётся без защиты и под ударом.',
+   undefended_capture:'Происходит взятие'+(shown?' на '+shown:'')+'. Перед этим фигура не имела защитников.',
+   promotion:'Пешка превращается'+(shown?' на '+shown:'')+'.',
+   advanced_passed_pawn:'Проходная пешка достигает'+(shown?' поля '+shown:' предпоследней горизонтали')+'.',
+   discovered_attack:'Открывается новая линия атаки'+(shown?' на '+shown:'')+'.',
+   interference:'Ход перекрывает линию нападения'+(shown?' между '+shown:'')+'.',
+   capture:'В линии есть взятие'+(shown?' на '+shown:'')+'.',
+   material_loss:'В этой линии происходит потеря материала'+(shown?' на '+shown:'')+'.',
+   en_passant:'В этой линии возможно взятие на проходе'+(shown?' пешки на '+shown:'')+'.',
+   check:'Следует шах'+(shown?' королю на '+shown:'')+'.'
+  },
+  en:{
+   mate_sequence:'This line ends in checkmate'+(shown?' against the king on '+shown:'')+'.',
+   back_rank_mate:'This is a back-rank mate'+(shown?' against the king on '+shown:'')+'.',
+   double_check:'The king'+(shown?' on '+shown:'')+' faces a double check.',
+   discovered_check:'A discovered check opens against the king'+(shown?' on '+shown:'')+'.',
+   fork:'The piece attacks'+(shown?' targets on '+shown:' multiple targets')+' simultaneously.',
+   pin:'A piece becomes pinned'+(shown?' on '+shown:'')+'.',
+   skewer_pattern:'Two targets align on the same ray'+(shown?': '+shown:'')+'. This pattern does not guarantee a material gain.',
+   overloaded_defender:'After removing a defender, several targets are under attack'+(shown?': '+shown:'')+'.',
+   removed_defender:'After the defender is removed, the target'+(shown?' on '+shown:'')+' is attacked and unprotected.',
+   undefended_capture:'A capture occurs'+(shown?' on '+shown:'')+'. The target had no defenders.',
+   promotion:'A pawn promotes'+(shown?' on '+shown:'')+'.',
+   advanced_passed_pawn:'An advanced passed pawn reaches'+(shown?' '+shown:' the seventh rank')+'.',
+   discovered_attack:'A line opens to attack'+(shown?' '+shown:' a piece')+'.',
+   interference:'The move blocks a sliding attack'+(shown?' between '+shown:'')+'.',
+   capture:'This line contains a capture'+(shown?' on '+shown:'')+'.',
+   material_loss:'Material is lost in this line'+(shown?' on '+shown:'')+'.',
+   en_passant:'This line contains an en passant capture'+(shown?' of the pawn on '+shown:'')+'.',
+   check:'A check is given'+(shown?' to the king on '+shown:'')+'.'
+  }
+ };
+ const consequence=concrete[loc][plan?.kind]||'';
  const answer=from
-  ?loc==='ru'
-   ?'В одном из легальных продолжений Stockfish соперник начинает мотив ходом '+from+'–'+to+'. '+principle
-   :'In one legal Stockfish continuation, the opponent starts the idea with '+from+'–'+to+'. '+principle
+  ?(loc==='ru'?'В проверенной линии соперник ходит ':'In the verified line the opponent plays ')+from+'–'+to+'. '+consequence+' '+principle
   :fallback.answer;
  return {question,hint1,hint2,answer,principle,
   optional:loc==='ru'?'Это одна возможная линия, а не вынужденный результат.':'This is one possible line, not a forced outcome.',
