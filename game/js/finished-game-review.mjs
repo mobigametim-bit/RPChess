@@ -77,7 +77,9 @@ function parseInfo(line){
  const depth=Number(line.match(/\bdepth (\d+)/)?.[1]||0);
  const cp=parseScore(line);
  const pv=line.match(/\bpv ([a-h][1-8][a-h][1-8][qrbn]?)/i)?.[1]?.toLowerCase()||null;
- return {depth,cp,pv};
+ const mateText=line.match(/\bscore mate (-?\d+)/)?.[1];
+ const mate=mateText===undefined?null:Number(mateText);
+ return {depth,cp,pv,mate};
 }
 class StockfishReviewEngine {
  constructor({WorkerClass=globalThis.Worker,workerUrl=WORKER_URL,timeoutMs=8000}={}){
@@ -95,15 +97,15 @@ class StockfishReviewEngine {
      const pv=text.match(/\bpv\s+(.+)$/)?.[1]?.trim().split(/\s+/).filter(x=>UCI.test(x))||[];
      const previous=search.variants.get(pvIndex);
      if(info.cp!==null&&info.depth>=5&&pv.length&&(!previous||info.depth>=previous.depth)){
-      search.variants.set(pvIndex,{depth:info.depth,cp:info.cp,pv});
-      if(pvIndex===1){search.depth=info.depth;search.cp=info.cp;search.bestMove=pv[0];search.pv=pv;}
+      search.variants.set(pvIndex,{depth:info.depth,cp:info.cp,mate:info.mate,pv});
+      if(pvIndex===1){search.depth=info.depth;search.cp=info.cp;search.mate=info.mate;search.bestMove=pv[0];search.pv=pv;}
      }
     }else if(text.startsWith('bestmove ')){
      this.search=null;clearTimeout(search.timer);
      const second=search.variants.get(2);
-     search.resolve({cp:search.cp,bestMove:search.bestMove,depth:search.depth,
-      pv:search.pv.slice(),secondCp:second?.cp??null,secondMove:second?.pv[0]??null,
-      secondDepth:second?.depth??0});
+     search.resolve({cp:search.cp,mate:search.mate,bestMove:search.bestMove,depth:search.depth,
+      pv:search.pv.slice(),secondCp:second?.cp??null,secondMate:second?.mate??null,
+      secondMove:second?.pv[0]??null,secondDepth:second?.depth??0});
     }
    }
   };
@@ -130,7 +132,7 @@ class StockfishReviewEngine {
  async evaluate(fen,{movetime=180}={}){
   if(this.closed||this.search)throw new Error('Invalid review engine state');
   return await new Promise((resolve,reject)=>{
-   const search={resolve,reject,depth:0,cp:null,bestMove:null,pv:[],variants:new Map(),timer:null};
+   const search={resolve,reject,depth:0,cp:null,mate:null,bestMove:null,pv:[],variants:new Map(),timer:null};
    search.timer=setTimeout(()=>{if(this.search===search){this.search=null;this.worker.postMessage('stop');reject(new Error('Stockfish analysis timeout'));}},this.timeoutMs);
    this.search=search;this.worker.postMessage('position fen '+fen);
    this.worker.postMessage('go movetime '+Math.max(120,Math.min(2200,Math.round(movetime))));
