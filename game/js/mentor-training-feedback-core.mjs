@@ -70,10 +70,10 @@ function validateMentorInput(raw){
   const recognized=['double_check','discovered_check','skewer_pattern','overloaded_defender',
    'removed_defender','undefended_capture','promotion','advanced_passed_pawn',
    'discovered_attack','interference','en_passant','check'];
-  motive=recognized.find(kind=>replay.events.some(e=>e.kind===kind))||'positional';
+  motive=recognized.find(kind=>replay.events.some(e=>e.kind===kind))||
+   (captured?.color===player?'capture':response.status.checked?'check':'positional');
+  if(motive==='capture')capturedType=captured?.type||null;
  }
- else if(captured&&captured.color===player){motive='capture';capturedType=captured.type;}
- else if(response.status.checked)motive='check';
  return {
   version:1,language:raw.language,uci:raw.uci,grade:quality.kind,loss:quality.loss,
   beforeFen,afterFen:board.fen(),player,bestMove:before.bestMove,
