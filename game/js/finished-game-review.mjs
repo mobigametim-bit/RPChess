@@ -78,8 +78,8 @@ function parseInfo(line){
  const cp=parseScore(line);
  const pv=line.match(/\bpv ([a-h][1-8][a-h][1-8][qrbn]?)/i)?.[1]?.toLowerCase()||null;
  const mateText=line.match(/\bscore mate (-?\d+)/)?.[1];
- const mate=mateText===undefined?null:Number(mateText);
- return {depth,cp,pv,mate};
+ if(mateText===undefined)return {depth,cp,pv}; // Preserve the legacy parseInfo shape.
+ return {depth,cp,pv,mate:Number(mateText)};
 }
 class StockfishReviewEngine {
  constructor({WorkerClass=globalThis.Worker,workerUrl=WORKER_URL,timeoutMs=8000}={}){
@@ -103,9 +103,12 @@ class StockfishReviewEngine {
     }else if(text.startsWith('bestmove ')){
      this.search=null;clearTimeout(search.timer);
      const second=search.variants.get(2);
-     search.resolve({cp:search.cp,mate:search.mate,bestMove:search.bestMove,depth:search.depth,
-      pv:search.pv.slice(),secondCp:second?.cp??null,secondMate:second?.mate??null,
-      secondMove:second?.pv[0]??null,secondDepth:second?.depth??0});
+     const result={cp:search.cp,bestMove:search.bestMove,depth:search.depth,
+      pv:search.pv.slice(),secondCp:second?.cp??null,secondMove:second?.pv[0]??null,
+      secondDepth:second?.depth??0};
+     if(Number.isInteger(search.mate))result.mate=search.mate;
+     if(Number.isInteger(second?.mate))result.secondMate=second.mate;
+     search.resolve(result);
     }
    }
   };
