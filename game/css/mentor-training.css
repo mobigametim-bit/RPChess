@@ -472,3 +472,13 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
 @media(max-width:720px){
  .mentor-training .mentor-correction-result{font-size:14px;padding:6px 8px}
 }
+
+/* V2 pedagogical explanation appears only after the learner answers. */
+.mentor-training .mentor-learning-mentor-note{
+ padding:9px 11px;border-left:3px solid #d7b773;border-radius:4px;
+ background:#41342399;color:#f3e3bb;font-size:clamp(13px,1.15vw,16px);line-height:1.45;
+ margin:0;overflow-wrap:anywhere
+}
+@media(max-width:720px){
+ .mentor-training .mentor-learning-mentor-note{font-size:14px;padding:6px 8px}
+}
