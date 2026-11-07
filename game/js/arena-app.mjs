@@ -1,6 +1,6 @@
 import { ChessAIAdapter } from './chess-ai-adapter.mjs';
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
-import { openFinishedGameReview } from './finished-game-review.mjs?v=20261104-piece-glyph-7';
+import { openFinishedGameReview } from './finished-game-review.mjs?v=20261108-piece-verdicts-1';
 import { RACE_TAGS, RACE_LABELS, racePiecePath, boardRacePiecePath, applyRaceBoardTheme } from './race-assets.mjs';
 import { fantasyPieceMarkup } from './fantasy-piece.mjs';
 import { attachPieceDrag } from './piece-drag.mjs?v=20261022-portrait-motion1';

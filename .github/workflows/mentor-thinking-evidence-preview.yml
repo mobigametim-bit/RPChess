@@ -1,0 +1,251 @@
+name: Mentor thinking and evidence isolated preview
+
+on:
+  push:
+    branches: [fix/mentor-thinking-evidence-20261107]
+    paths:
+      - '.github/workflows/mentor-thinking-evidence-preview.yml'
+      - 'game/**'
+      - 'mentor-evidence-preview/**'
+      - 'mentor-api/**'
+      - 'tests/mentor-training*'
+      - 'tests/arena-browser.cjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rpchess-mentor-evidence-preview
+  cancel-in-progress: true
+
+jobs:
+  gate-and-preview:
+    if: github.repository == 'mobigametim-bit/RPChess'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Existing local regression gate and optimized static build
+        run: |
+          npm ci --no-audit --no-fund
+          npm run gate:local
+      - name: Existing mentor browser regression (Chromium)
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+          RPCHESS_BROWSER_TEST=mentor-training-browser.cjs npm run test:browser
+      - name: Shared Arena/Tournament/Mentor review feedback (Chromium)
+        run: |
+          RPCHESS_BROWSER_TEST=arena-browser.cjs npm run test:browser
+      - name: Save browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mentor-evidence-viewport-screenshots
+          path: test-results/mentor-training
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Verify Mentor API CORS for the exact preview hostname (no billable calls)
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          (async()=>{
+            const api='https://rpchess-mentor-api-preview.mobigametim.workers.dev/v1/explain';
+            const origin='https://rpchess-mentor-training-preview.mobigametim.workers.dev';
+            const preflight=await fetch(api,{method:'OPTIONS',headers:{
+              Origin:origin,
+              'Access-Control-Request-Method':'POST',
+              'Access-Control-Request-Headers':'content-type,x-mentor-session'
+            }});
+            assert.equal(preflight.status,204,'preview CORS preflight must be allowed');
+            assert.equal(preflight.headers.get('access-control-allow-origin'),origin,
+              'the preview origin must be explicitly allowed');
+            const invalid=await fetch(api,{method:'POST',headers:{
+              Origin:origin,'Content-Type':'application/json'
+            },body:'{}'});
+            assert.equal(invalid.status,422,'API should accept origin and reject invalid test payload before Gonka');
+            assert.equal(invalid.headers.get('access-control-allow-origin'),origin);
+            console.log('Mentor API preflight and non-billable validation: PASS');
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          NODE
+      - name: Deploy isolated Mentor V2 API Worker (NEVER overwrite v1)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          test "$(grep -m 1 '^name =' mentor-api/wrangler-v2.toml)" = 'name = "rpchess-mentor-api-v2-preview"'
+          test "$(grep -m 1 '^main =' mentor-api/wrangler-v2.toml)" = 'main = "src/v2-index.mjs"'
+          npx wrangler deploy --config mentor-api/wrangler-v2.toml
+      - name: Install optional Gonka secret on V2 ONLY
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          MENTOR_GONKA_SECRET: ${{ secrets.GONKA_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -n "$MENTOR_GONKA_SECRET" ]; then
+            export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+            printf '%s' "$MENTOR_GONKA_SECRET" | npx wrangler secret put GONKA_API_KEY --config mentor-api/wrangler-v2.toml
+            echo 'V2 broker secret configured securely.'
+          else
+            echo 'V2 broker is unconfigured. Local verified fallback remains available.'
+          fi
+      - name: Verify V2 API health, CORS and safe rejection without paid calls
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          (async()=>{
+            const base='https://rpchess-mentor-api-v2-preview.mobigametim.workers.dev';
+            const origin='https://rpchess-mentor-training-preview.mobigametim.workers.dev';
+            let verified=false;
+            for(let i=0;i<18;i++){
+              try{
+                const health=await fetch(base+'/health',{cache:'no-store'});
+                assert.equal(health.status,200);
+                const state=await health.json();
+                assert.equal(state.contractVersion,2);
+                console.log('V2 health:',JSON.stringify({ok:state.ok,configured:state.configured}));
+                const pre=await fetch(base+'/v2/explain',{method:'OPTIONS',
+                  headers:{Origin:origin,'Access-Control-Request-Method':'POST',
+                    'Access-Control-Request-Headers':'content-type,x-mentor-session'}});
+                assert.equal(pre.status,204);
+                assert.equal(pre.headers.get('access-control-allow-origin'),origin);
+                const invalid=await fetch(base+'/v2/explain',{method:'POST',
+                  headers:{Origin:origin,'Content-Type':'application/json'},body:'{}'});
+                assert.equal(invalid.status,422);
+                const forbidden=await fetch(base+'/v1/explain',{method:'POST',
+                  headers:{Origin:origin,'Content-Type':'application/json'},body:'{}'});
+                assert.equal(forbidden.status,404,'v2 Worker must not serve v1 endpoint');
+                verified=true;break;
+              }catch(e){console.log('V2 readiness check '+(i+1)+'/18: '+e.message);
+                if(i<17)await new Promise(r=>setTimeout(r,5000));}
+            }
+            assert(verified,'isolated v2 API is not ready');
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          NODE
+      - name: Deploy existing allowlisted Mentor STATIC preview (no Mentor API or production Workers)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          test "$(grep '^name =' mentor-evidence-preview/wrangler.toml)" = 'name = "rpchess-mentor-training-preview"'
+          npx wrangler deploy --config mentor-evidence-preview/wrangler.toml
+      - name: Verify preview is serving the revised code
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          (async()=>{
+            const base='https://rpchess-mentor-training-preview.mobigametim.workers.dev';
+            let ok=false;
+            for(let attempt=0;attempt<20;attempt++){
+              try{
+                const page=await fetch(base+'/?build=mentor-evidence-20261107',{cache:'no-store'});
+                assert.equal(page.status,200);
+                const html=await page.text();
+                assert(html.includes('20261108-piece-verdicts-1'));
+                const review=await fetch(base+'/js/finished-game-review.mjs',{cache:'no-store'});
+                assert.equal(review.status,200);
+                assert((await review.text()).includes('startPieceSpeech'));
+                const js=await fetch(base+'/js/mentor-training-app.mjs',{cache:'no-store'});
+                assert.equal(js.status,200);
+                assert((await js.text()).includes('function lessonHTML'));
+                const client=await fetch(base+'/js/mentor-training-feedback-client.mjs',{cache:'no-store'});
+                assert.equal(client.status,200);
+                assert((await client.text()).includes('requestMentorV2Text'));
+                const v2=await fetch(base+'/js/mentor-training-feedback-v2.mjs',{cache:'no-store'});
+                assert.equal(v2.status,200);
+                assert((await v2.text()).includes('validatedV2Facts'));
+                const teaching=await fetch(base+'/js/mentor-training-teaching.mjs',{cache:'no-store'});
+                assert.equal(teaching.status,200);
+                assert((await teaching.text()).includes('lessonFromVerified'));
+                const proof=await fetch(base+'/js/mentor-training-threat.mjs',{cache:'no-store'});
+                assert.equal(proof.status,200);
+                assert((await proof.text()).includes('verifyImmediateThreat'));
+                const see=await fetch(base+'/js/mentor-training-exchange.mjs',{cache:'no-store'});
+                assert.equal(see.status,200);
+                assert((await see.text()).includes('evaluateStaticExchange'));
+                ok=true;break;
+              }catch(err){
+                console.log('Preview check '+(attempt+1)+'/20: '+err.message);
+                if(attempt<19)await new Promise(resolve=>setTimeout(resolve,5000));
+              }
+            }
+            assert(ok,'mentor evidence preview did not become ready');
+            console.log('Playtest:',base+'/');
+          })().catch(err=>{console.error(err);process.exitCode=1});
+          NODE
+
+      - name: One real v2 DeepSeek response (opt-in; one provider attempt only)
+        if: contains(github.event.head_commit.message, '[mentor-live-v2]')
+        timeout-minutes: 5
+        continue-on-error: true
+        env:
+          MENTOR_SECRET_CONFIGURED: ${{ secrets.GONKA_API_KEY != '' }}
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {buildMentorV2Payload} from './game/js/mentor-training-feedback-client.mjs';
+          import {composeMentorV2Explanation} from './game/js/mentor-training-feedback-v2.mjs';
+          const base='https://rpchess-mentor-api-v2-preview.mobigametim.workers.dev';
+          const origin='https://rpchess-mentor-training-preview.mobigametim.workers.dev';
+          assert.equal(process.env.MENTOR_SECRET_CONFIGURED,'true',
+            'Set GONKA_API_KEY GitHub Actions repository secret before running the opt-in smoke');
+          const health=await fetch(base+'/health',{cache:'no-store'});
+          assert.equal(health.status,200);
+          const configuration=await health.json();
+          assert.equal(configuration.contractVersion,2);
+          assert.equal(configuration.configured,true,'v2 Worker has not received its private broker key');
+          const beforeFen='rnbqkbnr/pppp1ppp/8/4p3/8/5P2/PPPPP1PP/RNBQKBNR w KQkq e6 0 2';
+          const afterFen='rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq g3 0 2';
+          const {payload,verified}=buildMentorV2Payload({
+            beforeFen,afterFen,uci:'g2g4',grade:'blunder',language:'ru',
+            before:{cp:90,depth:12,bestMove:'b1c3'},
+            after:{cp:1200,mate:1,depth:12,bestMove:'d8h4',pv:['d8h4']},
+            continuation:{cp:1200,mate:1,depth:18,bestMove:'d8h4',pv:['d8h4'],
+              secondMove:'a7a6',secondCp:80,secondDepth:17},
+            verifiedThreat:{kind:'mate_sequence',uci:'d8h4',basis:'legal_checkmate'}
+          });
+          const start=Date.now();
+          const reply=await fetch(base+'/v2/explain',{
+            method:'POST',
+            headers:{Origin:origin,'Content-Type':'application/json',
+              'X-Mentor-Session':crypto.randomUUID(),'X-Mentor-Diagnostic':'one'},
+            body:JSON.stringify(payload),
+            signal:AbortSignal.timeout(230000)
+          });
+          const data=await reply.json();
+          console.log('V2 live status:',reply.status,'elapsedMs:',Date.now()-start,
+            'source:',data.source||null,'reason:',data.reason||data.error||null,
+            'attempts:',data.attempts||null);
+          assert.equal(reply.status,200,'LLM did not return a validated answer');
+          assert.equal(data.contractVersion,2);
+          assert.equal(data.grade,verified.grade);
+          assert.equal(data.factId,verified.factId);
+          assert.equal(data.verifiedFact,verified.verifiedFact);
+          assert(['deepseek','minimax','glm'].includes(data.source),'unexpected provider source');
+          assert.equal(data.explanation,composeMentorV2Explanation(data.advice,verified),
+            'real output must pass the chess grounding validator');
+          console.log('MENTOR_V2_LIVE_RESULT',JSON.stringify({
+            model:data.model,source:data.source,attempts:data.attempts,
+            explanation:data.explanation
+          }));
+          NODE

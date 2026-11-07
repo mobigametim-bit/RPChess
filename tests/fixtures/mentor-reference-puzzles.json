@@ -1,0 +1,918 @@
+{
+  "version": 1,
+  "origin": "Lichess Open Puzzle Database (CC0), curated from first 500 puzzle CSV rows",
+  "sourceDataset": "https://database.lichess.org/#puzzles",
+  "sampleUrl": "https://github.com/DSerejo/lichess-puzzle-mixer/blob/master/testdata/lichess_sample.csv",
+  "license": "CC0-1.0",
+  "downloadedFromSample": "2026-11-07",
+  "interpretation": "fenBeforeSetup = position before the opponent's setup move; line[0] = opponent's move; line[1] = first solution move. Never label setup as independently engine-verified blunder.",
+  "puzzles": [
+    {
+      "id": "00BNd",
+      "fenBeforeSetup": "1rr3k1/3bppbp/3p1np1/1B1N4/P2BP3/5P2/P2R2PP/R5K1 b - - 0 21",
+      "line": [
+        "d7b5",
+        "d5e7",
+        "g8f8",
+        "e7c8"
+      ],
+      "rating": 888,
+      "popularity": 100,
+      "themes": [
+        "advantage",
+        "fork",
+        "middlegame",
+        "short"
+      ],
+      "gameUrl": "https://lichess.org/52dQ8pN2/black#42",
+      "puzzleUrl": "https://lichess.org/training/00BNd"
+    },
+    {
+      "id": "00C8e",
+      "fenBeforeSetup": "8/5p1k/5Ppb/2p3P1/1p6/8/KB5Q/3q4 b - - 4 58",
+      "line": [
+        "d1a4",
+        "a2b1",
+        "a4d1",
+        "b2c1"
+      ],
+      "rating": 1540,
+      "popularity": 100,
+      "themes": [
+        "endgame",
+        "equality",
+        "pin",
+        "short"
+      ],
+      "gameUrl": "https://lichess.org/YqVcRoWF/black#116",
+      "puzzleUrl": "https://lichess.org/training/00C8e"
+    },
+    {
+      "id": "004mT",
+      "fenBeforeSetup": "5Q2/8/1b1kp1p1/5p2/3p4/5qPK/7P/8 b - - 1 51",
+      "line": [
+        "d6c6",
+        "f8a8",
+        "c6d6",
+        "a8f3"
+      ],
+      "rating": 1392,
+      "popularity": 98,
+      "themes": [
+        "advantage",
+        "endgame",
+        "short",
+        "skewer"
+      ],
+      "gameUrl": "https://lichess.org/Jqhi4ozb/black#102",
+      "puzzleUrl": "https://lichess.org/training/004mT"
+    },
+    {
+      "id": "00GBX",
+      "fenBeforeSetup": "r6k/pp2n1pp/2nN4/4p1Br/1PB5/2P4b/P3Nb1P/R2R3K b - - 1 22",
+      "line": [
+        "h5g5",
+        "d6f7",
+        "h8g8",
+        "f7g5"
+      ],
+      "rating": 864,
+      "popularity": 97,
+      "themes": [
+        "advantage",
+        "discoveredAttack",
+        "discoveredCheck",
+        "fork",
+        "middlegame",
+        "short"
+      ],
+      "gameUrl": "https://lichess.org/1YLxwOt0/black#44",
+      "puzzleUrl": "https://lichess.org/training/00GBX"
+    },
+    {
+      "id": "00GiQ",
+      "fenBeforeSetup": "5r2/1p3p1k/6pp/p1qp1P2/7Q/5N2/6PP/5N1K b - - 4 31",
+      "line": [
+        "b7b5",
+        "f3g5",
+        "h7g7",
+        "f5f6",
+        "g7f6",
+        "g5e4"
+      ],
+      "rating": 1834,
+      "popularity": 94,
+      "themes": [
+        "attraction",
+        "crushing",
+        "discoveredCheck",
+        "doubleCheck",
+        "endgame",
+        "long",
+        "pin"
+      ],
+      "gameUrl": "https://lichess.org/XLwP4TgT/black#62",
+      "puzzleUrl": "https://lichess.org/training/00GiQ"
+    },
+    {
+      "id": "00IUW",
+      "fenBeforeSetup": "8/Q1p1r1kp/5pp1/3P3r/4P3/2N2bPq/PPP2R1P/5RK1 w - - 3 23",
+      "line": [
+        "a7e3",
+        "h3g3",
+        "h2g3",
+        "h5h1"
+      ],
+      "rating": 1784,
+      "popularity": 97,
+      "themes": [
+        "clearance",
+        "kingsideAttack",
+        "mate",
+        "mateIn2",
+        "middlegame",
+        "operaMate",
+        "sacrifice",
+        "short"
+      ],
+      "gameUrl": "https://lichess.org/83tyhOfz#45",
+      "puzzleUrl": "https://lichess.org/training/00IUW"
+    },
+    {
+      "id": "00BJm",
+      "fenBeforeSetup": "r2q1rk1/1Q2bppp/p1N1p3/1p6/2pP1n2/2P5/PP3PPP/R4RK1 b - - 1 18",
+      "line": [
+        "d8d5",
+        "c6e7",
+        "g8h8",
+        "e7d5"
+      ],
+      "rating": 1198,
+      "popularity": 97,
+      "themes": [
+        "advantage",
+        "fork",
+        "hangingPiece",
+        "middlegame",
+        "short"
+      ],
+      "gameUrl": "https://lichess.org/Umzi5RNZ/black#36",
+      "puzzleUrl": "https://lichess.org/training/00BJm"
+    },
+    {
+      "id": "00Bp0",
+      "fenBeforeSetup": "1r2kr2/pp3p1p/2b1pn2/4N3/2P5/1N1B4/P3KP1P/6R1 b - - 4 21",
+      "line": [
+        "f6e4",
+        "e5c6",
+        "b7c6",
+        "d3e4"
+      ],
+      "rating": 1234,
+      "popularity": 93,
+      "themes": [
+        "advantage",
+        "capturingDefender",
+        "middlegame",
+        "short"
+      ],
+      "gameUrl": "https://lichess.org/GN8F9TsL/black#42",
+      "puzzleUrl": "https://lichess.org/training/00Bp0"
+    },
+    {
+      "id": "002Mm",
+      "fenBeforeSetup": "rn1qr1k1/ppp3pQ/3p1pP1/3Pp3/2P1P3/8/PP3PP1/R1B1K3 b Q - 2 16",
+      "line": [
+        "g8f8",
+        "h7h8",
+        "f8e7",
+        "h8g7"
+      ],
+      "rating": 947,
+      "popularity": 97,
+      "themes": [
+        "deflection",
+        "mate",
+        "mateIn2",
+        "middlegame",
+        "short"
+      ],
+      "gameUrl": "https://lichess.org/wAkPv4uG/black#32",
+      "puzzleUrl": "https://lichess.org/training/002Mm"
+    },
+    {
+      "id": "00761",
+      "fenBeforeSetup": "3r2k1/1b3pbR/p2P2P1/3p2N1/2p5/2P2N2/PP6/2K5 b - - 0 28",
+      "line": [
+        "f7g6",
+        "h7g7",
+        "g8g7",
+        "g5e6",
+        "g7g8",
+        "e6d8"
+      ],
+      "rating": 1420,
+      "popularity": 94,
+      "themes": [
+        "attraction",
+        "crushing",
+        "endgame",
+        "exposedKing",
+        "fork",
+        "long",
+        "sacrifice"
+      ],
+      "gameUrl": "https://lichess.org/vu70Maig/black#56",
+      "puzzleUrl": "https://lichess.org/training/00761"
+    },
+    {
+      "id": "004Ud",
+      "fenBeforeSetup": "r1bqk2r/p3Bppp/3p4/1ppn4/4P3/4Q3/PPP2PPP/2KR1B1R b kq - 0 11",
+      "line": [
+        "d5e7",
+        "f1b5",
+        "c8d7",
+        "d1d6",
+        "d7b5",
+        "d6d8"
+      ],
+      "rating": 1678,
+      "popularity": 94,
+      "themes": [
+        "advantage",
+        "interference",
+        "long",
+        "middlegame"
+      ],
+      "gameUrl": "https://lichess.org/pJ7nXTvE/black#22",
+      "puzzleUrl": "https://lichess.org/training/004Ud"
+    },
+    {
+      "id": "00DII",
+      "fenBeforeSetup": "2rr2k1/p5p1/1p5p/2pP1p1P/2q5/P4QR1/5PP1/4R1K1 b - - 3 31",
+      "line": [
+        "c4d5",
+        "e1e8",
+        "g8f7",
+        "f3d5",
+        "d8d5",
+        "e8c8"
+      ],
+      "rating": 1729,
+      "popularity": 97,
+      "themes": [
+        "advantage",
+        "endgame",
+        "intermezzo",
+        "long"
+      ],
+      "gameUrl": "https://lichess.org/vJnBcDxi/black#62",
+      "puzzleUrl": "https://lichess.org/training/00DII"
+    },
+    {
+      "id": "001aK",
+      "fenBeforeSetup": "6k1/5p2/4p3/P1B5/2P4P/4Pnp1/Rb1rN3/5K2 b - - 1 33",
+      "line": [
+        "d2e2",
+        "f1e2",
+        "g3g2",
+        "e3e4",
+        "f3d4",
+        "e2f2"
+      ],
+      "rating": 2069,
+      "popularity": 94,
+      "themes": [
+        "crushing",
+        "endgame",
+        "hangingPiece",
+        "long",
+        "quietMove"
+      ],
+      "gameUrl": "https://lichess.org/Epr0AiEh/black#66",
+      "puzzleUrl": "https://lichess.org/training/001aK"
+    },
+    {
+      "id": "004LZ",
+      "fenBeforeSetup": "8/7R/5p2/p7/7P/2p5/3k2r1/1K2N3 w - - 3 48",
+      "line": [
+        "e1g2",
+        "c3c2",
+        "b1a2",
+        "c2c1q",
+        "h7d7",
+        "d2e2"
+      ],
+      "rating": 1187,
+      "popularity": 93,
+      "themes": [
+        "advancedPawn",
+        "crushing",
+        "defensiveMove",
+        "deflection",
+        "endgame",
+        "long",
+        "promotion"
+      ],
+      "gameUrl": "https://lichess.org/drahwNdj#95",
+      "puzzleUrl": "https://lichess.org/training/004LZ"
+    },
+    {
+      "id": "00HqY",
+      "fenBeforeSetup": "8/6p1/8/6k1/4P3/5KpP/8/8 b - - 3 46",
+      "line": [
+        "g5h4",
+        "f3g2",
+        "h4g5",
+        "g2g3"
+      ],
+      "rating": 1907,
+      "popularity": 95,
+      "themes": [
+        "crushing",
+        "endgame",
+        "master",
+        "pawnEndgame",
+        "short",
+        "zugzwang"
+      ],
+      "gameUrl": "https://lichess.org/eG289RUU/black#92",
+      "puzzleUrl": "https://lichess.org/training/00HqY"
+    },
+    {
+      "id": "009FP",
+      "fenBeforeSetup": "r1b1k1nr/ppp2pbp/3ppqp1/8/2BnP3/N2P2QP/PPP2PP1/R1B1K2R b KQkq - 4 9",
+      "line": [
+        "e6e5",
+        "c1g5",
+        "f6g5",
+        "g3g5"
+      ],
+      "rating": 1234,
+      "popularity": 97,
+      "themes": [
+        "advantage",
+        "opening",
+        "short",
+        "trappedPiece"
+      ],
+      "gameUrl": "https://lichess.org/2ndCtdd9/black#18",
+      "puzzleUrl": "https://lichess.org/training/009FP"
+    },
+    {
+      "id": "007mr",
+      "fenBeforeSetup": "5k2/p2r3p/1p4pP/3r1q2/3Rp3/2P5/PP3PQ1/K3R3 w - - 0 33",
+      "line": [
+        "d4e4",
+        "d5d1",
+        "e1d1",
+        "d7d1"
+      ],
+      "rating": 733,
+      "popularity": 100,
+      "themes": [
+        "backRankMate",
+        "endgame",
+        "mate",
+        "mateIn2",
+        "short"
+      ],
+      "gameUrl": "https://lichess.org/J12UnEgz#65",
+      "puzzleUrl": "https://lichess.org/training/007mr"
+    },
+    {
+      "id": "002Q2",
+      "fenBeforeSetup": "7k/p4R1p/3p3r/2pN1n2/2PbBBb1/3P2P1/P3r3/5R1K w - - 1 28",
+      "line": [
+        "f4h6",
+        "f5g3"
+      ],
+      "rating": 925,
+      "popularity": 100,
+      "themes": [
+        "cornerMate",
+        "mate",
+        "mateIn1",
+        "middlegame",
+        "oneMove"
+      ],
+      "gameUrl": "https://lichess.org/yqAJ1jMv#55",
+      "puzzleUrl": "https://lichess.org/training/002Q2"
+    },
+    {
+      "id": "00Gv1",
+      "fenBeforeSetup": "8/1pp1r1kp/4r1p1/p1P5/5Q2/P4PPq/1P1R3P/3R2K1 w - - 2 32",
+      "line": [
+        "d2d8",
+        "e6e1",
+        "d1e1",
+        "e7e1",
+        "g1f2",
+        "h3f1"
+      ],
+      "rating": 916,
+      "popularity": 100,
+      "themes": [
+        "endgame",
+        "long",
+        "mate",
+        "mateIn3"
+      ],
+      "gameUrl": "https://lichess.org/cF0zaKHB#63",
+      "puzzleUrl": "https://lichess.org/training/00Gv1"
+    },
+    {
+      "id": "005YX",
+      "fenBeforeSetup": "2rr4/2N2pk1/p1Q1b1pp/1p4q1/3pP3/1B1P4/PPP3PP/6RK w - - 7 25",
+      "line": [
+        "c7e6",
+        "f7e6",
+        "c6b7",
+        "g7h8"
+      ],
+      "rating": 1899,
+      "popularity": 100,
+      "themes": [
+        "defensiveMove",
+        "equality",
+        "middlegame",
+        "short"
+      ],
+      "gameUrl": "https://lichess.org/zbi5w5Qy#49",
+      "puzzleUrl": "https://lichess.org/training/005YX"
+    },
+    {
+      "id": "00IHi",
+      "fenBeforeSetup": "8/4R3/1k6/8/p7/1p1N2P1/5KP1/r7 w - - 0 55",
+      "line": [
+        "e7e1",
+        "a1e1",
+        "f2e1",
+        "a4a3",
+        "e1d2",
+        "a3a2",
+        "d2c3",
+        "a2a1q"
+      ],
+      "rating": 1682,
+      "popularity": 94,
+      "themes": [
+        "advancedPawn",
+        "crushing",
+        "endgame",
+        "promotion",
+        "veryLong"
+      ],
+      "gameUrl": "https://lichess.org/DiBepPdz#109",
+      "puzzleUrl": "https://lichess.org/training/00IHi"
+    },
+    {
+      "id": "00Ar2",
+      "fenBeforeSetup": "r2q1r2/1n4pk/p6p/1pp2pb1/3n1B2/P1NPN2P/1PPQ1PP1/R3R1K1 w - - 0 21",
+      "line": [
+        "c3d5",
+        "g5f4",
+        "d5f4",
+        "d8g5",
+        "d2d1",
+        "g5f4"
+      ],
+      "rating": 1762,
+      "popularity": 93,
+      "themes": [
+        "advantage",
+        "clearance",
+        "long",
+        "middlegame"
+      ],
+      "gameUrl": "https://lichess.org/fRlxRFsV#41",
+      "puzzleUrl": "https://lichess.org/training/00Ar2"
+    },
+    {
+      "id": "00Bg4",
+      "fenBeforeSetup": "3r2k1/1q3ppp/p2rp3/Qp1B4/7P/P4P2/1PP3P1/1K1R3R b - - 0 21",
+      "line": [
+        "d6d5",
+        "a5d8",
+        "d5d8",
+        "d1d8"
+      ],
+      "rating": 1373,
+      "popularity": 75,
+      "themes": [
+        "backRankMate",
+        "endgame",
+        "mate",
+        "mateIn2",
+        "short",
+        "xRayAttack"
+      ],
+      "gameUrl": "https://lichess.org/6qWf8wOP/black#42",
+      "puzzleUrl": "https://lichess.org/training/00Bg4"
+    },
+    {
+      "id": "00Bot",
+      "fenBeforeSetup": "8/5p2/p3kP2/8/5r2/R1P5/4P3/4K3 b - - 2 52",
+      "line": [
+        "f4f6",
+        "a3a6",
+        "e6e5",
+        "a6f6"
+      ],
+      "rating": 762,
+      "popularity": 100,
+      "themes": [
+        "crushing",
+        "endgame",
+        "rookEndgame",
+        "short"
+      ],
+      "gameUrl": "https://lichess.org/FWA12ElZ/black#104",
+      "puzzleUrl": "https://lichess.org/training/00Bot"
+    },
+    {
+      "id": "00ICz",
+      "fenBeforeSetup": "2k2rr1/1p1q3p/1p2p3/1NbpQ3/P1p2P2/6P1/6KP/R4R2 b - - 0 31",
+      "line": [
+        "f8f5",
+        "b5a7",
+        "c8d8",
+        "e5b8",
+        "d8e7",
+        "b8g8"
+      ],
+      "rating": 1184,
+      "popularity": 95,
+      "themes": [
+        "crushing",
+        "long",
+        "middlegame",
+        "skewer"
+      ],
+      "gameUrl": "https://lichess.org/aGEDdbh2/black#62",
+      "puzzleUrl": "https://lichess.org/training/00ICz"
+    },
+    {
+      "id": "00H87",
+      "fenBeforeSetup": "6k1/2q1pp2/p5pB/2p4n/3pP1Q1/P2P3P/1r4P1/5RK1 b - - 1 30",
+      "line": [
+        "c7g3",
+        "g4c8",
+        "g8h7",
+        "f1f7",
+        "h5g7",
+        "f7g7",
+        "h7h6",
+        "c8h8",
+        "h6g5",
+        "g7g6",
+        "g5g6",
+        "h8g8",
+        "g6f6",
+        "g8g3"
+      ],
+      "rating": 1912,
+      "popularity": 88,
+      "themes": [
+        "attraction",
+        "crushing",
+        "deflection",
+        "endgame",
+        "sacrifice",
+        "skewer",
+        "veryLong"
+      ],
+      "gameUrl": "https://lichess.org/hQEAqclb/black#60",
+      "puzzleUrl": "https://lichess.org/training/00H87"
+    },
+    {
+      "id": "00KNK",
+      "fenBeforeSetup": "r3r1k1/p1p4p/3b4/4p1qN/8/1P1b1Q2/P2P1PP1/B5KR b - - 2 22",
+      "line": [
+        "e5e4",
+        "h5f6",
+        "g8f8",
+        "f6h7",
+        "f8e7",
+        "a1f6",
+        "g5f6",
+        "f3f6"
+      ],
+      "rating": 1997,
+      "popularity": 92,
+      "themes": [
+        "advantage",
+        "deflection",
+        "discoveredCheck",
+        "doubleCheck",
+        "fork",
+        "middlegame",
+        "veryLong"
+      ],
+      "gameUrl": "https://lichess.org/L8oTZ2cM/black#44",
+      "puzzleUrl": "https://lichess.org/training/00KNK"
+    },
+    {
+      "id": "00CYP",
+      "fenBeforeSetup": "3rk2r/p1p2pp1/1p6/2pQ1b2/2Pn1P2/8/PP1P1KBq/R1B1R3 b - - 3 25",
+      "line": [
+        "e8f8",
+        "d5d8"
+      ],
+      "rating": 791,
+      "popularity": 100,
+      "themes": [
+        "hangingPiece",
+        "mate",
+        "mateIn1",
+        "middlegame",
+        "oneMove"
+      ],
+      "gameUrl": "https://lichess.org/LywFPEls/black#50",
+      "puzzleUrl": "https://lichess.org/training/00CYP"
+    },
+    {
+      "id": "00H5n",
+      "fenBeforeSetup": "8/5Rpk/3p3p/p1qPp3/P3n3/5N1P/1Q3PPK/2r5 b - - 0 35",
+      "line": [
+        "e4f2",
+        "b2b7",
+        "c1h1",
+        "h2g3",
+        "f2e4",
+        "g3g4",
+        "e4f6",
+        "f7f6",
+        "c5b4",
+        "b7b4"
+      ],
+      "rating": 2435,
+      "popularity": 91,
+      "themes": [
+        "advantage",
+        "endgame",
+        "pin",
+        "quietMove",
+        "veryLong"
+      ],
+      "gameUrl": "https://lichess.org/84oSZ8O3/black#70",
+      "puzzleUrl": "https://lichess.org/training/00H5n"
+    },
+    {
+      "id": "00JR7",
+      "fenBeforeSetup": "r4rk1/pp2q1p1/2p1p2p/3nP1pP/3P2P1/2PQ1R2/PPB5/R5K1 b - - 1 23",
+      "line": [
+        "f8f3",
+        "d3h7",
+        "g8f7",
+        "c2g6",
+        "f7f8",
+        "h7h8"
+      ],
+      "rating": 1442,
+      "popularity": 95,
+      "themes": [
+        "kingsideAttack",
+        "long",
+        "mate",
+        "mateIn3",
+        "middlegame"
+      ],
+      "gameUrl": "https://lichess.org/jSoa2xnc/black#46",
+      "puzzleUrl": "https://lichess.org/training/00JR7"
+    },
+    {
+      "id": "00Htd",
+      "fenBeforeSetup": "rnbqk2r/1p3ppp/p4b2/2Pp4/8/2N2N2/PP2PPPP/R2QKB1R w KQkq - 0 9",
+      "line": [
+        "d1d5",
+        "f6c3",
+        "b2c3",
+        "d8d5"
+      ],
+      "rating": 954,
+      "popularity": 94,
+      "themes": [
+        "crushing",
+        "intermezzo",
+        "opening",
+        "short"
+      ],
+      "gameUrl": "https://lichess.org/ZWQwqa9S#17",
+      "puzzleUrl": "https://lichess.org/training/00Htd"
+    },
+    {
+      "id": "00AFG",
+      "fenBeforeSetup": "r4rk1/2q2ppp/p3bp2/2P2N1Q/Ppp5/8/1PP2PPP/R2R2K1 b - - 6 21",
+      "line": [
+        "c7c5",
+        "f5h6",
+        "g7h6",
+        "h5c5"
+      ],
+      "rating": 1491,
+      "popularity": 100,
+      "themes": [
+        "advantage",
+        "discoveredAttack",
+        "middlegame",
+        "short"
+      ],
+      "gameUrl": "https://lichess.org/xpx24bwV/black#42",
+      "puzzleUrl": "https://lichess.org/training/00AFG"
+    },
+    {
+      "id": "00AdI",
+      "fenBeforeSetup": "3r4/4kp1p/1PQ1p1p1/p3b3/1p2P2P/1P6/6PK/8 w - - 1 36",
+      "line": [
+        "h2h3",
+        "d8d3",
+        "g2g3",
+        "d3g3",
+        "h3h2",
+        "g3c3"
+      ],
+      "rating": 1274,
+      "popularity": 97,
+      "themes": [
+        "crushing",
+        "discoveredAttack",
+        "discoveredCheck",
+        "endgame",
+        "long",
+        "master"
+      ],
+      "gameUrl": "https://lichess.org/WWyIGzPi#71",
+      "puzzleUrl": "https://lichess.org/training/00AdI"
+    },
+    {
+      "id": "00BCa",
+      "fenBeforeSetup": "1r6/p2kp1P1/3p4/2pP4/2P2B2/pN6/5PK1/8 b - - 1 41",
+      "line": [
+        "a3a2",
+        "b3c5",
+        "d6c5",
+        "f4b8",
+        "a2a1q",
+        "g7g8q"
+      ],
+      "rating": 1463,
+      "popularity": 99,
+      "themes": [
+        "advancedPawn",
+        "crushing",
+        "endgame",
+        "long",
+        "master",
+        "promotion"
+      ],
+      "gameUrl": "https://lichess.org/B8N0BmLk/black#82",
+      "puzzleUrl": "https://lichess.org/training/00BCa"
+    },
+    {
+      "id": "00JqT",
+      "fenBeforeSetup": "2r2rk1/pp2R3/5p2/3p1q2/3P4/4QPPp/PP3R1P/6K1 w - - 2 30",
+      "line": [
+        "g3g4",
+        "f5b1",
+        "f2f1",
+        "b1b2",
+        "e3e6",
+        "g8h8"
+      ],
+      "rating": 1913,
+      "popularity": 98,
+      "themes": [
+        "crushing",
+        "deflection",
+        "endgame",
+        "long"
+      ],
+      "gameUrl": "https://lichess.org/HwVtqWsg#59",
+      "puzzleUrl": "https://lichess.org/training/00JqT"
+    },
+    {
+      "id": "00KYE",
+      "fenBeforeSetup": "r1b2k1r/pp4p1/2pq2p1/3p4/3p4/1N6/PPP2PPP/R2Q1RK1 w - - 0 17",
+      "line": [
+        "d1d4",
+        "d6h2"
+      ],
+      "rating": 917,
+      "popularity": 86,
+      "themes": [
+        "kingsideAttack",
+        "mate",
+        "mateIn1",
+        "middlegame",
+        "oneMove"
+      ],
+      "gameUrl": "https://lichess.org/IOpSkMQi#33",
+      "puzzleUrl": "https://lichess.org/training/00KYE"
+    },
+    {
+      "id": "00FND",
+      "fenBeforeSetup": "8/1P6/8/7p/3P4/3k1p1P/4p3/3K4 w - - 0 49",
+      "line": [
+        "d1e1",
+        "d3e3",
+        "h3h4",
+        "f3f2"
+      ],
+      "rating": 1865,
+      "popularity": 96,
+      "themes": [
+        "advancedPawn",
+        "endgame",
+        "mate",
+        "mateIn2",
+        "pawnEndgame",
+        "short"
+      ],
+      "gameUrl": "https://lichess.org/C4mOV5Og#97",
+      "puzzleUrl": "https://lichess.org/training/00FND"
+    },
+    {
+      "id": "00Bul",
+      "fenBeforeSetup": "rnbqk2r/pp3ppp/5n2/3pN3/2B5/2P5/P1PPQPPP/R1B1K2R b KQkq - 1 8",
+      "line": [
+        "d5c4",
+        "e5c6",
+        "c8e6",
+        "c6d8"
+      ],
+      "rating": 1330,
+      "popularity": 96,
+      "themes": [
+        "advantage",
+        "discoveredAttack",
+        "discoveredCheck",
+        "opening",
+        "short"
+      ],
+      "gameUrl": "https://lichess.org/70pObIpq/black#16",
+      "puzzleUrl": "https://lichess.org/training/00Bul"
+    },
+    {
+      "id": "00HLP",
+      "fenBeforeSetup": "r4rk1/3nqpp1/4p2p/1p2P3/2pn1Q2/P2B3N/1P3PPP/3R1RK1 w - - 0 24",
+      "line": [
+        "d3b1",
+        "d4e2",
+        "g1h1",
+        "e2f4"
+      ],
+      "rating": 1500,
+      "popularity": 100,
+      "themes": [
+        "crushing",
+        "fork",
+        "middlegame",
+        "short"
+      ],
+      "gameUrl": "https://lichess.org/KFAwEaua#47",
+      "puzzleUrl": "https://lichess.org/training/00HLP"
+    },
+    {
+      "id": "00HAM",
+      "fenBeforeSetup": "R2q1r1k/1p3Qpp/1n6/3P2pP/2PP2P1/1P6/2K5/5R2 b - - 0 29",
+      "line": [
+        "d8a8",
+        "f7f8",
+        "a8f8",
+        "f1f8"
+      ],
+      "rating": 582,
+      "popularity": 100,
+      "themes": [
+        "backRankMate",
+        "endgame",
+        "mate",
+        "mateIn2",
+        "short"
+      ],
+      "gameUrl": "https://lichess.org/BgVpYpY8/black#58",
+      "puzzleUrl": "https://lichess.org/training/00HAM"
+    },
+    {
+      "id": "00Evs",
+      "fenBeforeSetup": "5qk1/pQ3pp1/7p/b2N1b2/P3r3/5K2/7P/R4B2 b - - 1 24",
+      "line": [
+        "g7g5",
+        "d5f6",
+        "g8h8",
+        "f6e4"
+      ],
+      "rating": 1060,
+      "popularity": 92,
+      "themes": [
+        "advantage",
+        "fork",
+        "middlegame",
+        "short"
+      ],
+      "gameUrl": "https://lichess.org/ZuufvD5S/black#48",
+      "puzzleUrl": "https://lichess.org/training/00Evs"
+    }
+  ]
+}

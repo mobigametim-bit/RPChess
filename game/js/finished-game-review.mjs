@@ -77,7 +77,9 @@ function parseInfo(line){
  const depth=Number(line.match(/\bdepth (\d+)/)?.[1]||0);
  const cp=parseScore(line);
  const pv=line.match(/\bpv ([a-h][1-8][a-h][1-8][qrbn]?)/i)?.[1]?.toLowerCase()||null;
- return {depth,cp,pv};
+ const mateText=line.match(/\bscore mate (-?\d+)/)?.[1];
+ if(mateText===undefined)return {depth,cp,pv}; // Preserve the legacy parseInfo shape.
+ return {depth,cp,pv,mate:Number(mateText)};
 }
 class StockfishReviewEngine {
  constructor({WorkerClass=globalThis.Worker,workerUrl=WORKER_URL,timeoutMs=8000}={}){
@@ -95,15 +97,18 @@ class StockfishReviewEngine {
      const pv=text.match(/\bpv\s+(.+)$/)?.[1]?.trim().split(/\s+/).filter(x=>UCI.test(x))||[];
      const previous=search.variants.get(pvIndex);
      if(info.cp!==null&&info.depth>=5&&pv.length&&(!previous||info.depth>=previous.depth)){
-      search.variants.set(pvIndex,{depth:info.depth,cp:info.cp,pv});
-      if(pvIndex===1){search.depth=info.depth;search.cp=info.cp;search.bestMove=pv[0];search.pv=pv;}
+      search.variants.set(pvIndex,{depth:info.depth,cp:info.cp,mate:info.mate,pv});
+      if(pvIndex===1){search.depth=info.depth;search.cp=info.cp;search.mate=info.mate;search.bestMove=pv[0];search.pv=pv;}
      }
     }else if(text.startsWith('bestmove ')){
      this.search=null;clearTimeout(search.timer);
      const second=search.variants.get(2);
-     search.resolve({cp:search.cp,bestMove:search.bestMove,depth:search.depth,
+     const result={cp:search.cp,bestMove:search.bestMove,depth:search.depth,
       pv:search.pv.slice(),secondCp:second?.cp??null,secondMove:second?.pv[0]??null,
-      secondDepth:second?.depth??0});
+      secondDepth:second?.depth??0};
+     if(Number.isInteger(search.mate))result.mate=search.mate;
+     if(Number.isInteger(second?.mate))result.secondMate=second.mate;
+     search.resolve(result);
     }
    }
   };
@@ -130,7 +135,7 @@ class StockfishReviewEngine {
  async evaluate(fen,{movetime=180}={}){
   if(this.closed||this.search)throw new Error('Invalid review engine state');
   return await new Promise((resolve,reject)=>{
-   const search={resolve,reject,depth:0,cp:null,bestMove:null,pv:[],variants:new Map(),timer:null};
+   const search={resolve,reject,depth:0,cp:null,mate:null,bestMove:null,pv:[],variants:new Map(),timer:null};
    search.timer=setTimeout(()=>{if(this.search===search){this.search=null;this.worker.postMessage('stop');reject(new Error('Stockfish analysis timeout'));}},this.timeoutMs);
    this.search=search;this.worker.postMessage('position fen '+fen);
    this.worker.postMessage('go movetime '+Math.max(120,Math.min(2200,Math.round(movetime))));
@@ -350,6 +355,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
  let attemptFen='',attemptUci='',attemptLoss=null,pendingPromotion=null,serial=0;
  let variation=null,variationIndex=0,variationLoading=false;
  let replayFlight=null,replayFlightSerial=0,replayAnimationCount=0;
+ let pieceSpeech=null,pieceSpeechTimer=null;
  const tx=en?{
   learn:'Learn from your mistakes',moves:'Moves',legend:'Annotations',
   progress:'Reviewed',total:'issues',find:'Find a better move for',
@@ -444,6 +450,48 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
    if(token===replayFlightSerial)stopReplayFlight();
   });
  }
+ // Same review overlay is shared by Tournament, Arena, and Mentor.
+ // Spoken verdicts are grounded in Stockfish's accepted/rejected attempt.
+ function clearPieceSpeech(){
+  if(pieceSpeechTimer){clearTimeout(pieceSpeechTimer);pieceSpeechTimer=null;}
+  pieceSpeech=null;
+  overlay.querySelector('[data-review-piece-speech]')?.remove();
+ }
+ function drawPieceSpeech(){
+  overlay.querySelector('[data-review-piece-speech]')?.remove();
+  if(!pieceSpeech)return;
+  const sq=board.querySelector('[data-review-square="'+pieceSpeech.square+'"]');
+  if(!sq?.querySelector('.classic-piece,.rpchess-piece-symbol'))return;
+  const down=[1,2,7,8].includes(Number(pieceSpeech.square[1]));
+  const node=document.createElement('span');
+  node.className='rpchess-review-piece-speech rpchess-review-piece-speech--'+pieceSpeech.kind+
+   (down?' rpchess-review-piece-speech--down':'');
+  node.setAttribute('data-review-piece-speech','');
+  node.setAttribute('role','status');
+  node.textContent=pieceSpeech.text;
+  overlay.append(node);
+  const bounds=sq.getBoundingClientRect();
+  const height=node.offsetHeight,width=node.offsetWidth; // Layout size before animation scaling.
+  // Fixed positioning escapes clipped board squares and keeps mobile text in view.
+  const x=Math.max(10+width/2,Math.min(innerWidth-10-width/2,bounds.left+bounds.width/2));
+  const y=Math.max(down?14:78,Math.min(innerHeight-height-(down?72:10),bounds.top+bounds.height/2));
+  node.style.left=x+'px';node.style.top=Math.max(10,y)+'px';
+  sq.classList.add('has-review-piece-speech','has-review-piece-speech--'+pieceSpeech.kind);
+ }
+ function startPieceSpeech(uci,kind,text,restoreBoard=false){
+  clearPieceSpeech();
+  const token=serial;
+  pieceSpeech={square:uci.slice(2,4),kind,text};
+  render();
+  pieceSpeechTimer=setTimeout(()=>{
+   if(cancelled||token!==serial)return;
+   clearPieceSpeech();
+   if(restoreBoard){
+    boardMode='before';attemptFen='';attemptUci='';attemptLoss=null;render();
+   }else board.querySelectorAll('.has-review-piece-speech')
+    .forEach(node=>node.classList.remove('has-review-piece-speech'));
+  },kind==='wrong'?2900:1700);
+ }
  function showAnalysisProgress(done,total){
   if(cancelled)return;
   showReplayStep(done);
@@ -467,6 +515,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
   if(cancelled)return;
   cancelled=true;serial++;
   stopReplayFlight();
+  clearPieceSpeech();
   worker?.close();worker=null;
   window.removeEventListener('resize',layoutReviewRail);
   document.removeEventListener('keydown',onEscape);
@@ -475,6 +524,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
  function onEscape(e){if(e.key==='Escape'){e.preventDefault();close();}}
  document.addEventListener('keydown',onEscape);
  function resetExercise(){
+  clearPieceSpeech();
   serial++;selectedSquare='';feedback='';feedbackKind='';
   boardMode='before';browsePly=null;attemptFen='';attemptUci='';attemptLoss=null;
   pendingPromotion=null;busy=false;variation=null;variationIndex=0;variationLoading=false;
@@ -552,6 +602,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
    }else{fen=active.beforeFen;lastMove='';}
   }else if(boardMode==='attempt'&&attemptFen){fen=attemptFen;lastMove=attemptUci;}
   board.innerHTML=chessSquareBoard(fen,playerColor,sides,selectedSquare,'',lastMove);
+  drawPieceSpeech();
   const model=active&&browsePly===null&&(!variation||variationIndex<=1)?
    reviewEvaluation(active.beforeCp,playerColor,boardMode==='attempt'?attemptLoss:null):null;
   showEvaluation(model);
@@ -636,10 +687,15 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
     feedback=tx.unavailable;feedbackKind='error';boardMode='before';attemptLoss=null;
    }else if(result.accepted){
     solved.add(selected);acceptedMoves.set(selected,{uci,loss:result.loss});
-    feedback=tx.good;feedbackKind='correct';
-    attemptLoss=result.loss;
+    feedback='';feedbackKind='';attemptLoss=result.loss;
+    startPieceSpeech(uci,'good',tx.good);
+    return;
    }else{
-    feedback=tx.wrong;feedbackKind='error';boardMode='before';attemptLoss=null;
+    feedback='';feedbackKind='';attemptLoss=null;
+    // Leave the tested piece where it landed during its red feedback, then
+    // restore the exercise's original pre-error position for the next attempt.
+    startPieceSpeech(uci,'wrong',tx.wrong,true);
+    return;
    }
   }catch{
    if(cancelled||stamp!==serial)return;
@@ -690,6 +746,7 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
     return;
    }
    if(key==='solution'){
+    clearPieceSpeech();
     const item=cases[selected];
     if(!item)return;
     const game=new ClassicChessEngine(item.beforeFen);
@@ -708,6 +765,12 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
   if(move){
    const index=move.dataset.reviewCase;
    if(index!==undefined){goTo(Number(index));return;}
+   // Browsing the journal during a rejected attempt must not strand the
+   // exercise in a temporary position when its speech timer is cancelled.
+   if(pieceSpeech?.kind==='wrong'&&boardMode==='attempt'){
+    boardMode='before';attemptFen='';attemptUci='';attemptLoss=null;
+   }
+   clearPieceSpeech();
    browsePly=Number(move.dataset.reviewMove);
    selectedSquare='';render();return;
   }

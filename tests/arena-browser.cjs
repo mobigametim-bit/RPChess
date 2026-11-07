@@ -398,11 +398,35 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     for(let i=0;i<4&&!(await page.locator('[data-finished-review] [data-review-action="again"]').count());i++)
       await page.locator('[data-finished-review] [data-review-action="skip"]').click();
     await page.locator('[data-finished-review] [data-review-action="again"]').click();
+    // A blunder submitted as the exercise answer flashes red from the moved
+    // piece and returns to the original position after the animation.
+    await page.locator('[data-finished-review] [data-review-move] .rpchess-review-symbol--blunder').first().click();
+    const blunderPly=Number(await page.locator('[data-finished-review] .rpchess-review-move.is-active')
+      .getAttribute('data-review-move'));
+    const originalError=['f2f3','e7e5','g2g4','d8h4'][blunderPly-1];
+    assert(originalError,'the blunder points to a real player move');
+    await page.locator('[data-finished-review] [data-review-square="'+originalError.slice(0,2)+'"]').click();
+    await page.locator('[data-finished-review] [data-review-square="'+originalError.slice(2,4)+'"]').click();
+    await page.locator('[data-finished-review] [data-review-piece-speech].rpchess-review-piece-speech--wrong')
+      .waitFor({timeout:20000});
+    assert((await page.locator('[data-finished-review] [data-review-piece-speech]').innerText()).includes('Можно сыграть сильнее'));
+    assert.equal(await page.locator('[data-finished-review] .rpchess-review-prompt').count(),0,
+      'red text is attached to the piece, not duplicated in the panel');
+    assert.equal(await page.locator('[data-finished-review] [data-review-square="'+originalError.slice(2,4)+'"].has-review-piece-speech--wrong').count(),1);
+    await page.waitForFunction(()=>!document.querySelector('[data-review-piece-speech]'),null,{timeout:6000});
+    assert.equal(await page.locator('[data-finished-review] [data-review-square="'+originalError.slice(0,2)+'"] .classic-piece').count(),1,
+      'the rejected move restores the initial exercise board');
+    await page.locator('[data-finished-review] [data-review-case="0"]').first().click();
     await page.locator('[data-finished-review] [data-review-square="'+best.slice(0,2)+'"]').click();
     await page.locator('[data-finished-review] [data-review-square="'+best.slice(2,4)+'"]').click();
     await page.waitForFunction(()=>document.querySelector('[data-finished-review] .rpchess-review-summary')?.textContent.includes('1 / '));
-    assert((await page.locator('[data-finished-review] .rpchess-review-prompt').innerText()).includes('Хороший ход'),
-      'the actual engine move is accepted after restarting training');
+    await page.locator('[data-finished-review] [data-review-piece-speech].rpchess-review-piece-speech--good')
+      .waitFor({timeout:7000});
+    assert((await page.locator('[data-finished-review] [data-review-piece-speech]').innerText()).includes('Хороший ход'),
+      'the engine-approved correction speaks from the played figure');
+    assert.equal(await page.locator('[data-finished-review] .rpchess-review-prompt').count(),0,
+      'green speech is not duplicated in the learning panel');
+    assert.equal(await page.locator('[data-finished-review] [data-review-square="'+best.slice(2,4)+'"].has-review-piece-speech--good').count(),1);
     // Clicking an ordinary move previews the game but does not erase progress.
     await page.locator('[data-finished-review] [data-review-move="2"]').click();
     assert.equal(await page.locator('[data-finished-review] [data-review-action="resume"]').count(),1);
@@ -448,8 +472,10 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     await page.locator('[data-finished-review] [data-review-square="d2"]').click();
     await page.locator('[data-finished-review] [data-review-square="d4"]').click();
     await page.waitForFunction(()=>document.querySelector('[data-finished-review] .rpchess-review-summary')?.textContent.includes('1 / '));
-    assert((await page.locator('[data-finished-review] .rpchess-review-prompt').innerText()).includes('Хороший ход'),
-      'the learner alternative d4 is accepted while Stockfish first choice remains e4');
+    await page.locator('[data-finished-review] [data-review-piece-speech].rpchess-review-piece-speech--good')
+      .waitFor({timeout:7000});
+    assert((await page.locator('[data-finished-review] [data-review-piece-speech]').innerText()).includes('Хороший ход'),
+      'a strong alternative uses the same figure-origin positive feedback');
     await page.locator('[data-finished-review] [data-review-action="variation"]').click();
     await page.locator('[data-finished-review] .rpchess-review-variation').waitFor({timeout:8000});
     const branchLabel=await page.locator('[data-finished-review] .rpchess-review-line-compare').innerText();
