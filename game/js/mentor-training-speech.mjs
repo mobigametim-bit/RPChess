@@ -38,17 +38,25 @@ function createMentorSpeech({getRoot,getLanguage,translate}){
   if(active){stop();return;}
   const text=visibleText();
   if(!text||!supported())return;
-  const locale=getLanguage()==='ru'?'ru-RU':'en-US';
+  const locale=getLanguage()==='ru'?'ru-RU':'en-GB';
   try{
    const synth=globalThis.speechSynthesis;
    const utterance=new globalThis.SpeechSynthesisUtterance(text);
    utterance.lang=locale;utterance.rate=.96;utterance.pitch=1;
    const voices=typeof synth.getVoices==='function'?synth.getVoices():[];
    const prefix=locale.slice(0,2).toLowerCase();
-   const voice=voices.find(v=>v.lang?.toLowerCase()===locale.toLowerCase()&&v.localService)||
+   const matchesLanguage=v=>String(v.lang||'').toLowerCase().startsWith(prefix);
+   // Honor the owner's chosen voices, irrespective of localService.
+   // Web Speech exposes names and locales, but no reliable gender property.
+   const preferred=prefix==='ru'
+    ?voices.find(v=>matchesLanguage(v)&&/\bpavel\b/i.test(v.name||''))
+    :voices.find(v=>matchesLanguage(v)&&/^google\s+uk\s+english\s+male$/i.test((v.name||'').trim()));
+   const voice=preferred||
+    voices.find(v=>v.lang?.toLowerCase()===locale.toLowerCase()&&v.localService)||
     voices.find(v=>v.lang?.toLowerCase()===locale.toLowerCase())||
-    voices.find(v=>v.lang?.toLowerCase().startsWith(prefix));
-   if(voice)utterance.voice=voice;
+    voices.find(v=>matchesLanguage(v)&&v.localService)||
+    voices.find(matchesLanguage);
+   if(voice){utterance.voice=voice;utterance.lang=voice.lang||locale;}
    utterance.onend=utterance.onerror=()=>{
     if(active!==utterance)return;
     active=null;activeText='';activeLang='';sync();
