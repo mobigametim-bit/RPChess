@@ -10,12 +10,13 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  const {validateMentorInput,promptForMentor,safeExplanation,localMentorFallback,describeMentorFact}=await imp('game/js/mentor-training-feedback-core.mjs');
  const {THINKING,PRAISE,thinkingText,praiseText,fallbackText}=await imp('game/js/mentor-training-copy.mjs');
  const {classifyStrongMove,gradeReviewAttempt}=await imp('game/js/finished-game-review.mjs');
- const {buildMentorPayload,requestMentorText}=await imp('game/js/mentor-training-feedback-client.mjs');
+ const {buildMentorPayload,requestMentorText,buildMentorV2Payload,requestMentorV2Text}=await imp('game/js/mentor-training-feedback-client.mjs');
  const {tacticalEvidence,MAX_PV}=await imp('game/js/mentor-training-tactics.mjs');
  const {evaluateStaticExchange}=await imp('game/js/mentor-training-exchange.mjs');
  const {POS,TACTIC,quickThreatProbe,verifyImmediateThreat}=await imp('game/js/mentor-training-threat.mjs');
  const {PRIORITY,GUIDES,lessonFromVerified,mentorLessonCopy,validateLessonGuess}=await imp('game/js/mentor-training-teaching.mjs');
  const {handleMentorApi,validOrigin,MAX_ATTEMPTS_PER_MODEL}=await imp('mentor-api/src/index.mjs');
+ const {validatedV2Facts,promptForMentorV2,safeMentorAdvice,composeMentorV2Explanation,localMentorV2Fallback}=await imp('game/js/mentor-training-feedback-v2.mjs');
 
  // CC0 public chess reference corpus: do not mistake Lichess's setup move
  // for the learner's solution. Do not convert theme tags into inferred errors.
@@ -109,6 +110,83 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  });
  assert.equal(illegal.invalid,true);
  const facts=validateMentorInput(body);
+
+ // Stage 6 opt-in v2 contract; old deployed v1 payload is also tested below.
+ const v2Fast={cp:1200,mate:1,depth:12,bestMove:'d8h4',pv:['d8h4']};
+ const v2Deep={cp:1200,mate:1,depth:18,bestMove:'d8h4',pv:['d8h4'],
+  secondMove:'a7a6',secondCp:80,secondDepth:17};
+ const preparedV2=buildMentorV2Payload({
+  beforeFen,afterFen,uci:'g2g4',grade:'blunder',language:'ru',
+  before:{cp:90,depth:12,bestMove:'b1c3'},after:v2Fast,
+  continuation:v2Deep,verifiedThreat:{kind:'mate_sequence',uci:'d8h4',basis:'legal_checkmate'}
+ });
+ assert.equal(preparedV2.payload.version,2);
+ assert.equal(preparedV2.verified.version,2);
+ assert.equal(preparedV2.verified.motive,'mate_sequence');
+ assert.equal(preparedV2.verified.lesson.from,'d8');
+ assert.equal(preparedV2.verified.factId,'mate_sequence:d8h4');
+ assert.equal(preparedV2.verified.verifiedFact,'Соперник может поставить мат следующим ходом.');
+ assert(!promptForMentorV2(preparedV2.verified).user.includes('b1c3'),
+  'best alternative and exact board position never sent to model');
+ assert(!promptForMentorV2(preparedV2.verified).user.includes(beforeFen),
+  'v2 LLM receives facts and pedagogy, not raw FEN');
+ const goodAdvice='Перед ходом проверяй самый сильный ответ соперника. Что ещё ты мог упустить?';
+ assert.equal(composeMentorV2Explanation(goodAdvice,preparedV2.verified),
+  preparedV2.verified.verifiedFact+' '+goodAdvice);
+ for(const invented of [
+  'Сыграй b1c3 и сразу выиграешь материал. Какой ещё ход помогает?',
+  'Забери ферзя на a3, затем добей короля. Что дальше?',
+  'Соперник сможет выиграть ладью. Передвинь коня.'
+ ])assert.equal(safeMentorAdvice(invented,preparedV2.verified),null,
+  'v2 must reject unverified squares, moves, exchanges and tactical claims');
+ assert.throws(()=>validatedV2Facts({...preparedV2.payload,grade:'mistake'}),/invalid_grade/);
+ assert.throws(()=>validatedV2Facts({...preparedV2.payload,verifiedThreat:{
+  kind:'fork',uci:'d8h4',basis:'legal_checkmate'}}),/mismatched_tactic/);
+ assert.throws(()=>validatedV2Facts({...preparedV2.payload,continuation:{
+  ...preparedV2.payload.continuation,pv:['a7a6'],bestMove:'a7a6'}}),/unverified_tactic/);
+ const v2Origin='https://rpchess-mentor-training-preview.mobigametim.workers.dev';
+ const v2Req=(payload,origin=v2Origin)=>new Request('https://rpchess-mentor-api-v2-preview.mobigametim.workers.dev/v2/explain',{
+  method:'POST',headers:{Origin:origin,'Content-Type':'application/json','X-Mentor-Session':'123456789012345678901234'},
+  body:JSON.stringify(payload)
+ });
+ let v2Calls=0;
+ const v2Env={GONKA_API_KEY:'test-key',
+  MENTOR_GLOBAL_LIMIT:{limit:async()=>({success:true})},
+  MENTOR_ACTOR_LIMIT:{limit:async()=>({success:true})}};
+ const v2Fetcher=async(url,opts)=>{
+  v2Calls++;
+  const upstream=JSON.parse(opts.body);
+  assert.equal(upstream.model,'deepseek-ai/DeepSeek-V4-Flash-0731');
+  assert.equal(upstream.response_format.json_schema.schema.required[0],'advice');
+  assert(!JSON.stringify(upstream).includes(beforeFen),'no raw FEN in LLM prompt');
+  assert(!JSON.stringify(upstream).includes('b1c3'),'no best engine alternative in LLM prompt');
+  return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({advice:goodAdvice})}}]}),{status:200});
+ };
+ const v2Response=await handleMentorApi(v2Req(preparedV2.payload),v2Env,v2Fetcher,async()=>{},2);
+ assert.equal(v2Response.status,200);
+ const v2Answer=await v2Response.json();
+ assert.equal(v2Answer.contractVersion,2);
+ assert.equal(v2Answer.verifiedFact,preparedV2.verified.verifiedFact);
+ assert.equal(v2Answer.explanation,preparedV2.verified.verifiedFact+' '+goodAdvice);
+ assert.equal(v2Calls,1);
+ const v2Browser=await requestMentorV2Text({payload:preparedV2.payload,verified:preparedV2.verified,
+  fetcher:async()=>new Response(JSON.stringify(v2Answer),{status:200})});
+ assert.equal(v2Browser.source,'deepseek');
+ const forged=await requestMentorV2Text({payload:preparedV2.payload,verified:preparedV2.verified,
+  fetcher:async()=>new Response(JSON.stringify({
+   ...v2Answer,verifiedFact:'Вилка на a3.',explanation:'Вилка на a3. '+goodAdvice
+  }),{status:200})});
+ assert.equal(forged.source,'fallback','browser enforces the exact verified fact independently');
+ assert.equal(forged.explanation,localMentorV2Fallback(preparedV2.verified));
+ assert.equal((await handleMentorApi(v2Req({...preparedV2.payload,grade:'mistake'}),v2Env,v2Fetcher,async()=>{},2)).status,422);
+ assert.equal((await handleMentorApi(v2Req(preparedV2.payload,'https://attacker.example'),v2Env,v2Fetcher,async()=>{},2)).status,403);
+ assert.equal((await handleMentorApi(new Request('https://rpchess-mentor-api-v2-preview.mobigametim.workers.dev/v1/explain'),
+  v2Env,v2Fetcher,async()=>{},2)).status,404);
+ const v2Health=await handleMentorApi(new Request('https://rpchess-mentor-api-v2-preview.mobigametim.workers.dev/health'),
+  v2Env,v2Fetcher,async()=>{},2);
+ assert.equal((await v2Health.json()).contractVersion,2);
+ assert.equal(v2Calls,1,'all negative cases are rejected before any paid call');
+
  assert.equal(facts.motive,'checkmate');
  assert.equal(facts.loss,290);
  const lesson=lessonFromVerified(facts);
