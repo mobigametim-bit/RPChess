@@ -765,6 +765,11 @@ function openFinishedGameReview({mode,moves,playerColor,finished,lang='ru',sides
   if(move){
    const index=move.dataset.reviewCase;
    if(index!==undefined){goTo(Number(index));return;}
+   // Browsing the journal during a rejected attempt must not strand the
+   // exercise in a temporary position when its speech timer is cancelled.
+   if(pieceSpeech?.kind==='wrong'&&boardMode==='attempt'){
+    boardMode='before';attemptFen='';attemptUci='';attemptLoss=null;
+   }
    clearPieceSpeech();
    browsePly=Number(move.dataset.reviewMove);
    selectedSquare='';render();return;
