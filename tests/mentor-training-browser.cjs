@@ -176,6 +176,7 @@ fs.mkdirSync(output,{recursive:true});
    if(route.request().method()==='OPTIONS')
     return route.fulfill({status:204,headers});
    mockedMentorCalls++;
+   await new Promise(resolve=>setTimeout(resolve,750)); // Inspect visible pending state.
    if(mockedMentorCalls===1)
     return route.fulfill({status:503,contentType:'application/json',headers,
      body:JSON.stringify({error:'model_chain_failed',reason:'broker_timeout',
@@ -190,6 +191,10 @@ fs.mkdirSync(output,{recursive:true});
   await page.locator('[data-mentor-square="g4"]').click();
   await page.waitForFunction(()=>window.__mentorDepthSearch.includes('go movetime 1700'),null,{timeout:30000});
   const observed=await mentorRequest;
+  await page.locator('.mentor-feedback-head .mentor-thinking').waitFor({timeout:3000});
+  assert.equal((await page.locator('.mentor-thinking').textContent()).trim(),'Думаю…');
+  assert(await page.locator('.mentor-thinking').evaluate(node=>getComputedStyle(node).animationName!=='none'),
+   'the mentor thinking label blinks while the API request is pending');
   const detail=observed.postDataJSON();
   assert.equal(detail.grade,'blunder','real Stockfish identifies a known mate-in-one blunder');
   assert(detail.continuation?.depth>=5,'deep search depth must reach a usable value');
@@ -201,6 +206,7 @@ fs.mkdirSync(output,{recursive:true});
    null,{timeout:15000});
   const afterFailure=await page.evaluate(()=>window.RPChessMentorTraining.state.moves.findLast(m=>m.grade==='blunder'&&m.color==='w'));
   assert.equal(afterFailure.mentorSource,'fallback','an unsuccessful broker call must not masquerade as AI');
+  assert.equal(await page.locator('.mentor-thinking').count(),0,'thinking label disappears when fallback is ready');
   assert.equal(afterFailure.mentorReason,'broker_timeout','the reason is available for debugging');
   await page.locator('[data-mentor-action="retry-explanation"]').click();
   await page.waitForFunction(()=>document.querySelector('.mentor-feedback-text')?.textContent?.includes('быструю атаку'),
