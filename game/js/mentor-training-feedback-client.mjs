@@ -114,7 +114,7 @@ async function requestMentorV2Text({payload,verified,signal,fetcher=globalThis.f
  const fallback=localMentorV2Fallback(verified);
  const controller=new AbortController(),onAbort=()=>controller.abort();
  signal?.addEventListener('abort',onAbort,{once:true});
- const timer=setTimeout(()=>controller.abort(),TIMEOUT_MS);
+ const timer=setTimeout(()=>controller.abort(),35000); // One 25s DeepSeek attempt plus network overhead.
  try{
   if(signal?.aborted)return {...mentorFallback(fallback,'aborted'),retryable:false};
   const response=await fetcher(MENTOR_API_V2+'/v2/explain',{
