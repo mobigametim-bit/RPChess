@@ -104,7 +104,7 @@ function tacticalEvidence(fen,pv,player,maxPlies=MAX_PV){
   const proposed=board.legalMoves(from).find(m=>m.to===to&&(!m.promotion||m.promotion===promote));
   if(!proposed||!moving)break;
   const capture=proposed.capture?board.pieceAt(proposed.capture):null;
-  const before=board;
+  const before=new ClassicChessEngine(board.fen()); // Immutable pre-move position for fact checks.
   const beforePins=mover!==player?classifyAbsolutePins(before.snapshot()).filter(p=>p.color===player):[];
   const beforeFork=mover!==player?forkTargets(before,from,mover):[];
   const beforeRays=mover!==player?slidingAttacks(before,mover):[];
