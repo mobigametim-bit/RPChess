@@ -81,6 +81,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+      # Mentor-only releases may publish Pages without redeploying profile/PvP Workers.
       # Keep public profile and BOTH PvP transports aligned with the v4 client.
       # Preserve existing secrets and Durable Objects: never re-key active games.
       # Run only for an explicitly requested production release, never a PR.
@@ -117,7 +118,7 @@ jobs:
         if: >-
           github.ref == 'refs/heads/main' &&
           (github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization'))))
+          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout'))))
         run: |
           node <<'NODE'
           const assert=require('node:assert/strict');
@@ -155,14 +156,14 @@ jobs:
         if: >-
           github.ref == 'refs/heads/main' &&
           (github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization'))))
+          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout'))))
         uses: actions/configure-pages@v5
 
       - name: Upload Pages artifact
         if: >-
           github.ref == 'refs/heads/main' &&
           (github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization'))))
+          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout'))))
         uses: actions/upload-pages-artifact@v4
         with:
           path: ./dist
@@ -171,7 +172,7 @@ jobs:
     if: >-
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization'))))
+      (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout'))))
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
