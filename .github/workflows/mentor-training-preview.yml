@@ -107,6 +107,7 @@ jobs:
            assert(verified,'mentor API did not become ready');
           })().catch(e=>{console.error(e);process.exitCode=1});
           NODE
+      # Paid one-shot check: opt in with [mentor-live-smoke] in the triggering commit.
       - name: One-time live Gonka / DeepSeek chess explanation check
         if: contains(github.event.head_commit.message, '[mentor-live-smoke]')
         continue-on-error: true
