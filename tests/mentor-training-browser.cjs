@@ -212,10 +212,16 @@ fs.mkdirSync(output,{recursive:true});
   await checkedKing.waitFor({timeout:15000});
   const checkVfx=await checkedKing.evaluate(node=>{
    const style=getComputedStyle(node,'::after');
-   return {image:style.backgroundImage,opacity:style.opacity,content:style.content};
+   const image=node.querySelector('.mentor-piece.classic-piece');
+   const simple=node.querySelector('.rpchess-fantasy-piece');
+   return {image:style.backgroundImage,opacity:style.opacity,content:style.content,
+    auraLayer:Number(style.zIndex),pieceLayer:Number(getComputedStyle(image).zIndex),
+    simpleLayer:Number(getComputedStyle(simple).zIndex)};
   });
   assert(checkVfx.image.includes('aura_red.png'),'checked king must use the shared red aura art');
   assert(Number(checkVfx.opacity)>=.7,'red aura must be visible, not fully transparent');
+  assert(checkVfx.auraLayer<checkVfx.pieceLayer,'red check aura must be BEHIND the king image');
+  assert(checkVfx.auraLayer<checkVfx.simpleLayer,'red check aura must be BEHIND the simplified king');
   assert.equal(await page.locator('[data-mentor-result]').count(),0,'a check without mate must not end the game');
   await page.screenshot({path:path.join(output,'battle-red-check-aura.png'),animations:'disabled'});
   // Scholar's mate: the player makes the final move, game ends instantly,

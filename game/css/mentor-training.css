@@ -310,14 +310,14 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
 .mentor-training .mentor-retry-ai{min-height:34px;font-size:13px;padding:5px 9px;align-self:flex-start;border-color:#927c50}
 
 
-/* The same checked-king red aura asset and opacity used in Tournament. */
+/* Tournament's red check aura, stacked BEHIND the king's sprites (normal and simple). */
 .mentor-training .mentor-board .mentor-square.is-check::after{
  content:'';
  position:absolute;
  inset:0;
  background:url('../assets/vfx/aura_red.png') center/100% 100% no-repeat!important;
  opacity:.72!important;
- z-index:3;
+ z-index:1; /* king sprite & simple-mode glyph use z-index:2 */
  pointer-events:none;
 }
 /* All three game-ending states are terminal; the result is independent of AI
