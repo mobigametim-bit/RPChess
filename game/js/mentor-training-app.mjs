@@ -10,6 +10,7 @@ import { fantasyPieceMarkup } from './fantasy-piece.mjs';
 import { currentLanguage, subscribe } from './i18n.mjs';
 import { TRAINING_MENTORS, UCI, rebuildTraining, extendTraining, trainingMoveQuality } from './mentor-training-history.mjs';
 import {buildMentorPayload,requestMentorText} from './mentor-training-feedback-client.mjs';
+import {validateMentorInput} from './mentor-training-feedback-core.mjs';
 import {thinkingText,praiseText,fallbackText} from './mentor-training-copy.mjs';
 
 const STORAGE_KEY='rpchess.mentor-training.v1';
@@ -18,8 +19,8 @@ const DEEP_PV_LIMIT=20;
 const ROLES={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
 const SYMBOLS={w:{p:'♙',n:'♘',b:'♗',r:'♖',q:'♕',k:'♔'},b:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'}};
 const TEXT={
- ru:{title:'Тренировка с наставником',back:'Главное меню',mentor:'Наставник',moves:'Ходы',white:'Белые',black:'Чёрные',random:'Случайно',start:'Начать тренировку',new:'Новая тренировка',exit:'К наставникам',prev:'Назад',next:'Вперёд',close:'Закрыть',journal:'Ходы',ready:'Ваш ход',thinking:'Соперник думает…',analysing:'Анализ хода…',waiting:'Оценка недоступна',fine:'Продолжайте партию.',inaccuracy:'Неточность',mistake:'Ошибка',blunder:'Зевок',noGrade:'Нет замечаний',loss:'Потеря оценки',retry:'Позиция ухудшилась. Попробуйте вернуться назад и найти более сильное продолжение.',reviewFail:'Не удалось проверить ход. Партию можно продолжать.',gameOver:'Партия завершена',check:'Шах!',promotion:'Превращение пешки',before:'Вернуться перед ошибкой',clear:'Начать заново',profile:'Мощь',restore:'Продолжить тренировку',good:'Хороший ход',excellent:'Блестящий ход',view:'Посмотреть',engineLine:'Вариант Stockfish',afterMistake:'После ошибки',returnToGame:'К партии'},
- en:{title:'Training with a Mentor',back:'Main menu',mentor:'Mentor',moves:'Moves',white:'White',black:'Black',random:'Random',start:'Start training',new:'New training',exit:'Mentors',prev:'Back',next:'Forward',close:'Close',journal:'Moves',ready:'Your move',thinking:'Opponent thinking…',analysing:'Analysing move…',waiting:'Evaluation unavailable',fine:'Continue the game.',inaccuracy:'Inaccuracy',mistake:'Mistake',blunder:'Blunder',noGrade:'No issues found',loss:'Evaluation lost',retry:'This move worsened your position. Go back and try to find a stronger continuation.',reviewFail:'The move could not be evaluated. You can continue playing.',gameOver:'Game over',check:'Check!',promotion:'Promote pawn',before:'Return before error',clear:'Start over',profile:'Strength',restore:'Resume training',good:'Good move',excellent:'Brilliant move',view:'View',engineLine:'Stockfish line',afterMistake:'After the mistake',returnToGame:'Back to game'}
+ ru:{title:'Тренировка с наставником',back:'Главное меню',mentor:'Наставник',moves:'Ходы',white:'Белые',black:'Чёрные',random:'Случайно',start:'Начать тренировку',new:'Новая тренировка',exit:'К наставникам',prev:'Назад',next:'Вперёд',close:'Закрыть',journal:'Ходы',ready:'Ваш ход',thinking:'Соперник думает…',analysing:'Анализ хода…',waiting:'Оценка недоступна',fine:'Продолжайте партию.',inaccuracy:'Неточность',mistake:'Ошибка',blunder:'Зевок',noGrade:'Нет замечаний',loss:'Потеря оценки',retry:'Позиция ухудшилась. Попробуйте вернуться назад и найти более сильное продолжение.',reviewFail:'Не удалось проверить ход. Партию можно продолжать.',gameOver:'Партия завершена',check:'Шах!',promotion:'Превращение пешки',before:'Вернуться перед ошибкой',clear:'Начать заново',profile:'Мощь',restore:'Продолжить тренировку',good:'Хороший ход',excellent:'Блестящий ход',view:'Посмотреть',engineLine:'Вариант Stockfish',afterMistake:'После ошибки',returnToGame:'К партии',retryAI:'Повторить запрос ИИ'},
+ en:{title:'Training with a Mentor',back:'Main menu',mentor:'Mentor',moves:'Moves',white:'White',black:'Black',random:'Random',start:'Start training',new:'New training',exit:'Mentors',prev:'Back',next:'Forward',close:'Close',journal:'Moves',ready:'Your move',thinking:'Opponent thinking…',analysing:'Analysing move…',waiting:'Evaluation unavailable',fine:'Continue the game.',inaccuracy:'Inaccuracy',mistake:'Mistake',blunder:'Blunder',noGrade:'No issues found',loss:'Evaluation lost',retry:'This move worsened your position. Go back and try to find a stronger continuation.',reviewFail:'The move could not be evaluated. You can continue playing.',gameOver:'Game over',check:'Check!',promotion:'Promote pawn',before:'Return before error',clear:'Start over',profile:'Strength',restore:'Resume training',good:'Good move',excellent:'Brilliant move',view:'View',engineLine:'Stockfish line',afterMistake:'After the mistake',returnToGame:'Back to game',retryAI:'Retry AI explanation'}
 };
 const RACES={
  ru:{humans:'Люди',orcs:'Орки',fae:'Феи',dark_elves:'Тёмные эльфы',dwarves:'Гномы',undead:'Нежить',demons:'Демоны',elves:'Эльфы',dragonborn:'Дракониды',angels:'Ангелы',constructs:'Конструкты'},
@@ -222,6 +223,7 @@ function feedbackHTML(){
  (data?'<div class="mentor-feedback-grade'+(positive?' mentor-feedback-grade--good':'')+'"><strong>'+mark+'</strong><span>'+label+'</span></div>':'')+
  '<p class="mentor-feedback-text">'+esc(copy)+'</p>'+
  (canView?(analysisView?'':'<div class="mentor-analysis-actions">'+button('open-variation',t('view'),'mentor-outline mentor-view-btn')+'</div>')+variationHTML(data,found.index):'')+
+ (data?.mentorSource==='fallback'&&data.mentorPayload?button('retry-explanation',t('retryAI'),'mentor-outline mentor-retry-ai'):'')+
  (found&&!positive?button('before-error',t('before'),'mentor-outline mentor-undo-error'):'')+'</section>';
 }
 function battleHTML(){
@@ -363,6 +365,33 @@ async function computerMove(){
  if(step.ok){moves=step.moves;cursor=step.cursor;moves[cursor-1].color=chess.turn();save();}
  busy=false;render();if(step.ok)motion?.play(geometry);preEvaluate();
 }
+async function deliverMentorFeedback(entry,payload,verified,cacheKey,epoch){
+ let outcome=mentorReplyCache.get(cacheKey);
+ if(!outcome){
+  const controller=new AbortController();
+  mentorReplyAbort?.abort();
+  mentorReplyAbort=controller;
+  try{
+   outcome=await requestMentorText({payload,verified,signal:controller.signal,
+    fallbackText:fallbackText(lang(),entry.grade)});
+  }catch{
+   outcome={explanation:fallbackText(lang(),entry.grade),source:'fallback',
+    model:null,reason:'client_error',attempts:[],retryable:true};
+  }
+  if(controller.signal.aborted)return;
+  if(mentorReplyAbort===controller)mentorReplyAbort=null;
+  // Never cache an unsuccessful model response: the user can retry this position.
+  if(outcome.source!=='fallback')mentorReplyCache.set(cacheKey,outcome);
+ }
+ if(epoch!==gameEpoch||!playing||!moves.includes(entry))return;
+ entry.message=outcome.explanation;
+ entry.pending=false;
+ entry.mentorSource=outcome.source;
+ entry.mentorModel=outcome.model||null;
+ entry.mentorReason=outcome.reason||null;
+ entry.mentorAttempts=outcome.attempts;
+ save();render();
+}
 async function explainVerifiedMove({beforeFen,afterFen,uci,kind,before,after,entry,epoch}){
  // An extra bounded search is performed only when the 260 ms assessment
  // identified an error. It is NOT on the critical path of the rival's move.
@@ -377,30 +406,34 @@ async function explainVerifiedMove({beforeFen,afterFen,uci,kind,before,after,ent
   });
  }catch{
   if(epoch===gameEpoch&&playing&&moves.includes(entry)){
-   entry.message=fallbackText(lang(),kind);entry.pending=false;save();render();
+   entry.message=fallbackText(lang(),kind);
+   entry.mentorSource='fallback';entry.mentorReason='analysis_invalid';
+   entry.pending=false;save();render();
   }
   return;
  }
  const cacheKey=beforeFen+'|'+uci+'|'+kind+'|'+lang();
- // The Stockfish line becomes viewable even while DeepSeek is working.
+ // Analysis and optional retry survive reload without a second Stockfish pass.
  entry.analysisFen=afterFen;
  entry.analysisLine=request.verified.afterLine.slice(0,DEEP_PV_LIMIT);
+ entry.mentorPayload=request.payload;
  save();render();
- let explanation=mentorReplyCache.get(cacheKey);
- if(!explanation){
-  const controller=new AbortController();
-  mentorReplyAbort=controller;
-  try{explanation=await requestMentorText({payload:request.payload,verified:request.verified,signal:controller.signal,fallbackText:fallbackText(lang(),kind)});}
-  catch{explanation=fallbackText(lang(),kind);}
-  if(controller.signal.aborted)return;
-  if(mentorReplyAbort===controller)mentorReplyAbort=null;
-  mentorReplyCache.set(cacheKey,explanation);
- }
- if(epoch!==gameEpoch||!playing||!moves.includes(entry))return;
- entry.message=explanation;
- entry.pending=false;
- save();
- render();
+ await deliverMentorFeedback(entry,request.payload,request.verified,cacheKey,epoch);
+}
+async function retryMentorFeedback(){
+ const found=latestPlayerNote(),entry=found?.move;
+ if(!entry||entry.pending||entry.mentorSource!=='fallback'||!entry.mentorPayload)return;
+ let verified;
+ try{verified=validateMentorInput(entry.mentorPayload);}
+ catch{return;}
+ const payload=entry.mentorPayload;
+ const cacheKey=payload.beforeFen+'|'+payload.uci+'|'+payload.grade+'|'+payload.language;
+ const epoch=gameEpoch;
+ entry.pending=true;
+ entry.message=thinkingText(lang(),cacheKey+'|retry');
+ entry.mentorReason=null;
+ save();render();
+ await deliverMentorFeedback(entry,payload,verified,cacheKey,epoch);
 }
 async function userMove(from,to,promote=null){
  if(busy||!playing)return;
@@ -476,6 +509,7 @@ function onClick(event){
  }
  const action=button.dataset.mentorAction;
  if(action==='start')startTraining();
+ if(action==='retry-explanation')void retryMentorFeedback();
  if(action==='open-variation'){
   const found=latestPlayerNote();
   if(found?.move?.analysisFen&&found.move.analysisLine?.length){

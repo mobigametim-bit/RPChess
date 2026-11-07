@@ -116,18 +116,81 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  assert.equal(result.source,'deepseek');assert.equal(result.grade,'blunder');
  assert.equal(calls,1);
  const client=await requestMentorText({payload:built.payload,verified:built.verified,fetcher:async()=>new Response(JSON.stringify(result),{status:200})});
- assert.equal(client,result.explanation);
+ assert.equal(client.explanation,result.explanation);
+ assert.equal(client.source,'deepseek');
+ assert.equal(client.model,'deepseek-ai/DeepSeek-V4-Flash-0731');
  const fallback=await requestMentorText({payload:built.payload,verified:built.verified,fetcher:async()=>new Response('{}',{status:503})});
- assert.equal(fallback,localMentorFallback(facts));
+ assert.equal(fallback.explanation,localMentorFallback(facts));
+ assert.equal(fallback.source,'fallback');
+ assert.equal(fallback.retryable,true);
  assert.equal((await handleMentorApi(req(body,'https://fake.example'),good,fetcher)).status,403);
  assert.equal((await handleMentorApi(req({...body,grade:'mistake'}),good,fetcher)).status,422);
  assert.equal((await handleMentorApi(req(body),{...good,GONKA_API_KEY:''},fetcher)).status,503);
  assert.equal((await handleMentorApi(req(body),{...good,MENTOR_GLOBAL_LIMIT:{limit:async()=>({success:false})}},fetcher)).status,429);
  assert.equal((await handleMentorApi(req(body),{GONKA_API_KEY:'test-key'},fetcher)).status,503);
- const badModel=async()=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({explanation:'Сыграй b1c3, это решит проблему.'})}}]}),{status:200});
+ // Three consecutive attempts use the SAME Gonka Base URL and correct model ids.
+ const models=[
+  'deepseek-ai/DeepSeek-V4-Flash-0731',
+  'MiniMaxAI/MiniMax-M2.7',
+  'zai-org/GLM-5.3-Flash'
+ ];
+ const overLimit='Этот ход оставляет короля под серьёзной угрозой, и соперник может немедленно воспользоваться этим. Проверь, какие поля оказались без защиты, и найди, где потеряна возможность отразить атаку.';
+ assert(overLimit.length>130&&overLimit.length<=500,'sample answer must fit the new limit');
+ const longAnswer=overLimit+' Помни, что найденное продолжение — только один возможный вариант.';
+ assert(longAnswer.length<=500);
+ assert(safeExplanation(longAnswer,facts),'500-character answers with 2–5 sentences are now accepted');
+ const tooLong='Первое предложение. '+'Дополнительное предложение. '.repeat(30);
+ assert(tooLong.length>500);
+ assert.equal(safeExplanation(tooLong,facts),null,'over 500 characters must be rejected');
+ assert(promptForMentor(facts).system.includes('500 символов'));
+ assert(promptForMentor({...facts,language:'en'}).system.includes('500 characters'));
+ let requested=[];
+ const fallbackFetcher=async(url,opts)=>{
+  assert(url.includes('/functions/v1/gonka/chat/completions'));
+  const m=JSON.parse(opts.body);
+  requested.push(m.model);
+  assert.equal(m.max_tokens,900,'reserve enough tokens for reasoning and longer feedback');
+  if(m.model===models[0])return new Response('{}',{status:503});
+  return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({explanation:longAnswer})}}]}),{status:200});
+ };
+ const recovered=await handleMentorApi(req(body),good,fallbackFetcher);
+ assert.equal(recovered.status,200,'second model should recover from first failure');
+ const recoveredData=await recovered.json();
+ assert.equal(recoveredData.source,'minimax');
+ assert.equal(recoveredData.model,models[1]);
+ assert.equal(recoveredData.attempts,2);
+ assert.deepEqual(requested,models.slice(0,2),'third model is not charged after success');
+ requested=[];
+ const thirdFetcher=async(url,opts)=>{
+  const m=JSON.parse(opts.body).model;
+  requested.push(m);
+  if(m===models[0])return new Response('{}',{status:429});
+  if(m===models[1])return new Response('{}',{status:502});
+  return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({explanation:longAnswer})}}]}),{status:200});
+ };
+ const third=await handleMentorApi(req(body),good,thirdFetcher);
+ assert.equal(third.status,200);
+ assert.equal((await third.json()).source,'glm');
+ assert.deepEqual(requested,models,'sequential fallthrough reaches GLM');
+ requested=[];
+ const badModel=async(url,opts)=>{
+  requested.push(JSON.parse(opts.body).model);
+  return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({explanation:'Сыграй b1c3, это решит проблему.'})}}]}),{status:200});
+ };
  const safe=await handleMentorApi(req(body),good,badModel);
- assert.equal(safe.status,200);
- assert.equal((await safe.json()).source,'verified_fallback');
+ assert.equal(safe.status,503);
+ const fail=await safe.json();
+ assert.equal(fail.error,'model_chain_failed');
+ assert.equal(fail.attempts.length,3,'invalid explanation triggers model fallthrough');
+ assert.deepEqual(requested,models);
+ requested=[];
+ const exhausted=await handleMentorApi(req(body),good,async(url,opts)=>{
+  requested.push(JSON.parse(opts.body).model);
+  return new Response('{}',{status:401});
+ });
+ assert.equal(exhausted.status,503,'invalid API key cannot be fixed by swapping models');
+ assert.equal((await exhausted.json()).reason,'broker_auth_or_balance');
+ assert.deepEqual(requested,[models[0]],'no repeated paid calls for global auth failure');
  const health=await handleMentorApi(new Request('https://rpchess-mentor-api-preview.mobigametim.workers.dev/health'),{},fetcher);
  assert.equal(health.status,200);const healthData=await health.json();
  assert.equal(healthData.configured,false);

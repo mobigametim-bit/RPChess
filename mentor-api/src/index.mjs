@@ -5,8 +5,13 @@
 import { validateMentorInput, promptForMentor, safeExplanation, localMentorFallback } from '../../game/js/mentor-training-feedback-core.mjs';
 
 const DEFAULT_BROKER_BASE='https://hskyauefqcgbvgvxkluj.supabase.co/functions/v1/gonka';
-// Model is intentionally pinned: the requested DeepSeek version is not overridable.
-const DEFAULT_MODEL='deepseek-ai/DeepSeek-V4-Flash-0731';
+// Bounded sequential failover, always preferring the requested DeepSeek model.
+// A model is attempted at most once per explanation; rate limiting occurs first.
+const MODELS=Object.freeze([
+ {id:'deepseek-ai/DeepSeek-V4-Flash-0731',source:'deepseek',timeout:10500},
+ {id:'MiniMaxAI/MiniMax-M2.7',source:'minimax',timeout:9500},
+ {id:'zai-org/GLM-5.3-Flash',source:'glm',timeout:9500}
+]);
 const TRUSTED=new Set([
  'https://rpchess-mentor-training-preview.mobigametim.workers.dev',
  'https://rpchess-profile-game-preview.mobigametim.workers.dev',
@@ -38,7 +43,8 @@ function reply(body,status,origin){
 async function handleMentorApi(request,env,fetcher=fetch){
  const url=new URL(request.url),origin=request.headers.get('Origin')||'';
  if(url.pathname==='/health'&&request.method==='GET')
-  return reply({ok:true,configured:Boolean(env.GONKA_API_KEY),modelConfigured:true,model:DEFAULT_MODEL},200,origin);
+  return reply({ok:true,configured:Boolean(env.GONKA_API_KEY),modelConfigured:true,
+   model:MODELS[0].id,fallbackModels:MODELS.slice(1).map(m=>m.id)},200,origin);
  if(url.pathname!=='/v1/explain')return reply({error:'not_found'},404,origin);
  if(!validOrigin(origin))return reply({error:'forbidden_origin'},403);
  if(request.method==='OPTIONS')return new Response(null,{status:204,headers:cors(origin)});
@@ -71,37 +77,64 @@ async function handleMentorApi(request,env,fetcher=fetch){
   if(!global.success||!personal.success)return reply({error:'rate_limited'},429,origin);
  }catch{return reply({error:'limit_unavailable'},503,origin);}
  const settings=promptForMentor(data);
- const controller=new AbortController();
- const timer=setTimeout(()=>controller.abort(),11000);
- try{
-  const base=String(env.GONKA_BASE_URL||DEFAULT_BROKER_BASE).replace(/\/+$/,'');
-  const endpoint=new URL(base+'/chat/completions');
-  if(endpoint.protocol!=='https:')return reply({error:'broker_config'},503,origin);
-  // Permit only the exact user-selected Gonka broker endpoint; never proxy to arbitrary URLs.
-  if(endpoint.origin!=='https://hskyauefqcgbvgvxkluj.supabase.co'&&
-     endpoint.origin!=='https://gonka-api.org')return reply({error:'broker_config'},503,origin);
-  const response=await fetcher(endpoint.toString(),{
-   method:'POST',signal:controller.signal,
-   headers:{Authorization:'Bearer '+env.GONKA_API_KEY,'Content-Type':'application/json'},
-   body:JSON.stringify({
-    model:DEFAULT_MODEL,
-    messages:[{role:'system',content:settings.system},{role:'user',content:settings.user}],
-    temperature:0.2,max_tokens:245,stream:false,response_format:{type:'json_object'}
-   })
-  });
-  if(!response.ok)return reply({error:response.status===429?'broker_busy':response.status>=400&&response.status<500?'broker_http_'+response.status:'broker_unavailable'},503,origin);
-  let payload;
-  try{payload=await response.json();}catch{return reply({error:'broker_invalid'},502,origin);}
-  let content=payload?.choices?.[0]?.message?.content;
-  if(typeof content!=='string'||content.length>2000)return reply({error:'broker_invalid'},502,origin);
-  let parsed;
-  try{parsed=JSON.parse(content);}catch{return reply({error:'broker_invalid'},502,origin);}
-  let output=safeExplanation(parsed?.explanation,data);
-  if(!output)output=localMentorFallback(data);
-  return reply({explanation:output,grade:data.grade,source:output===parsed?.explanation?'deepseek':'verified_fallback'},200,origin);
- }catch(error){
-  return reply({error:controller.signal.aborted?'broker_timeout':'broker_network'},503,origin);
- }finally{clearTimeout(timer);}
+ const base=String(env.GONKA_BASE_URL||DEFAULT_BROKER_BASE).replace(/\/+$/,'');
+ let endpoint;
+ try{endpoint=new URL(base+'/chat/completions');}
+ catch{return reply({error:'broker_config'},503,origin);}
+ if(endpoint.protocol!=='https:'||
+    (endpoint.origin!=='https://hskyauefqcgbvgvxkluj.supabase.co'&&
+     endpoint.origin!=='https://gonka-api.org'))
+  return reply({error:'broker_config'},503,origin);
+ const attempts=[];
+ for(const selected of MODELS){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),selected.timeout);
+  let problem='broker_network',fatal=false;
+  try{
+   const response=await fetcher(endpoint.toString(),{
+    method:'POST',signal:controller.signal,
+    headers:{Authorization:'Bearer '+env.GONKA_API_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({
+     model:selected.id,
+     messages:[{role:'system',content:settings.system},{role:'user',content:settings.user}],
+     temperature:0.2,max_tokens:900,stream:false,
+     response_format:{type:'json_object'}
+    })
+   });
+   if(!response.ok){
+    // Another model cannot fix an invalid API key or depleted balance.
+    fatal=[401,402,403].includes(response.status);
+    problem=fatal?'broker_auth_or_balance':response.status===429?'broker_busy':
+     response.status>=400&&response.status<500?'broker_http_'+response.status:'broker_unavailable';
+   }else{
+    let payload;
+    try{
+     const raw=await response.text();
+     if(raw.length<=5000)payload=JSON.parse(raw);
+    }catch{}
+    const content=payload?.choices?.[0]?.message?.content;
+    if(typeof content==='string'&&content.length<=5000){
+     let parsed;
+     try{parsed=JSON.parse(content);}catch{}
+     const output=safeExplanation(parsed?.explanation,data);
+     if(output){
+      return reply({explanation:output,grade:data.grade,
+       source:selected.source,model:selected.id,attempts:attempts.length+1},200,origin);
+     }
+    }
+    problem='broker_invalid';
+   }
+  }catch(error){
+   problem=controller.signal.aborted?'broker_timeout':'broker_network';
+  }finally{clearTimeout(timer);}
+  // Stable, non-sensitive codes: never log prompts, user FENs, keys or provider bodies.
+  attempts.push({model:selected.id,reason:problem});
+  if(fatal)break;
+ }
+ // The browser displays its localized, grade-specific fallback and offers a manual retry.
+ // Unlike a 200 response, a 503 must never be cached as successful AI feedback.
+ return reply({error:'model_chain_failed',
+  attempts,reason:attempts[attempts.length-1]?.reason||'broker_unavailable'},503,origin);
 }
 /* Cloudflare's third fetch argument is ExecutionContext, not a fetch function.
  * Adapt explicitly so the mockable helper never mistakes ctx for fetcher. */

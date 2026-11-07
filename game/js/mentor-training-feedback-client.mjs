@@ -1,7 +1,7 @@
 import {validateMentorInput,localMentorFallback} from './mentor-training-feedback-core.mjs';
 
 const MENTOR_API='https://rpchess-mentor-api-preview.mobigametim.workers.dev';
-const TIMEOUT_MS=11500;
+const TIMEOUT_MS=34000; // Three bounded, sequential broker attempts (10.5 + 9.5 + 9.5 seconds).
 function mentorSession(){
  try{
   let id=sessionStorage.getItem('rpchess.mentor-session.v1');
@@ -33,6 +33,9 @@ function buildMentorPayload({beforeFen,afterFen,uci,grade,before,after,continuat
  }
  return {payload,verified};
 }
+function mentorFallback(fallback,reason='broker_unavailable',attempts=[]){
+ return {explanation:fallback,source:'fallback',model:null,reason,attempts,retryable:true};
+}
 async function requestMentorText({payload,verified,signal,fallbackText=null,fetcher=globalThis.fetch}){
  const fallback=typeof fallbackText==='string'&&fallbackText.length?fallbackText:localMentorFallback(verified);
  const controller=new AbortController();
@@ -40,19 +43,29 @@ async function requestMentorText({payload,verified,signal,fallbackText=null,fetc
  signal?.addEventListener('abort',onAbort,{once:true});
  const timer=setTimeout(()=>controller.abort(),TIMEOUT_MS);
  try{
-  if(signal?.aborted)return fallback;
+  if(signal?.aborted)return { ...mentorFallback(fallback,'aborted'),retryable:false };
   const response=await fetcher(MENTOR_API+'/v1/explain',{
    method:'POST',mode:'cors',cache:'no-store',signal:controller.signal,
    headers:{'Content-Type':'application/json','X-Mentor-Session':mentorSession()},
    body:JSON.stringify(payload)
   });
-  if(!response.ok)return fallback;
-  const json=await response.json();
+  let json;
+  try{json=await response.json();}catch{return mentorFallback(fallback,'invalid_json');}
+  if(!response.ok)
+   return mentorFallback(fallback,json?.reason||json?.error||'broker_http_'+response.status,
+    Array.isArray(json?.attempts)?json.attempts.slice(0,3):[]);
   if(!json||json.grade!==verified.grade||typeof json.explanation!=='string'||
-   json.explanation.length>260||json.explanation.length<12)return fallback;
-  if(json.source==='verified_fallback')return fallback;
-  return json.explanation;
- }catch{return fallback;}
- finally{clearTimeout(timer);signal?.removeEventListener('abort',onAbort);}
+    json.explanation.length>500||json.explanation.length<12)
+   return mentorFallback(fallback,'invalid_response');
+  const supported={deepseek:'deepseek-ai/DeepSeek-V4-Flash-0731',
+   minimax:'MiniMaxAI/MiniMax-M2.7',glm:'zai-org/GLM-5.3-Flash'};
+  if(!supported[json.source]||json.model&&json.model!==supported[json.source])
+   return mentorFallback(fallback,'invalid_source');
+  return {explanation:json.explanation,source:json.source,
+   model:supported[json.source],reason:null,attempts:json.attempts||1,retryable:false};
+ }catch{
+  return mentorFallback(fallback,controller.signal.aborted?'broker_timeout':'network_error');
+ }finally{clearTimeout(timer);signal?.removeEventListener('abort',onAbort);}
 }
+
 export {MENTOR_API,buildMentorPayload,requestMentorText};

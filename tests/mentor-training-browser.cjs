@@ -136,15 +136,21 @@ fs.mkdirSync(output,{recursive:true});
     return original.call(this,message,...args);
    };
   });
+  let mockedMentorCalls=0;
   await page.route('https://rpchess-mentor-api-preview.mobigametim.workers.dev/v1/explain',async route=>{
    const headers={'Access-Control-Allow-Origin':'*',
     'Access-Control-Allow-Headers':'Content-Type, X-Mentor-Session',
     'Access-Control-Allow-Methods':'POST,OPTIONS'};
    if(route.request().method()==='OPTIONS')
     return route.fulfill({status:204,headers});
+   mockedMentorCalls++;
+   if(mockedMentorCalls===1)
+    return route.fulfill({status:503,contentType:'application/json',headers,
+     body:JSON.stringify({error:'model_chain_failed',reason:'broker_timeout',
+      attempts:[{model:'deepseek-ai/DeepSeek-V4-Flash-0731',reason:'broker_timeout'}]})});
    return route.fulfill({status:200,contentType:'application/json',headers,
-    body:JSON.stringify({grade:'blunder',
-     explanation:'Ход допустил матовую угрозу. Проверь, какие поля возле короля остались без защиты.'})});
+    body:JSON.stringify({grade:'blunder',source:'minimax',model:'MiniMaxAI/MiniMax-M2.7',attempts:2,
+     explanation:'Ход допускает быструю атаку на короля. Посмотри, какие защитники теперь не могут помочь. Попробуй найти, что следовало учесть до этого решения.'})});
   });
   await page.locator('[data-mentor-open]').click();
   const mentorRequest=page.waitForRequest(req=>req.url().endsWith('/v1/explain')&&req.method()==='POST',{timeout:45000});
@@ -158,8 +164,20 @@ fs.mkdirSync(output,{recursive:true});
   assert(detail.continuation?.pv.length>=1&&detail.continuation.pv.length<=20,
    'deep search emits up to 20 half-moves after the blunder');
   assert.equal(detail.continuation.pv[0],'d8h4','deep line should begin with mate in one');
-  await page.waitForFunction(()=>document.querySelector('.mentor-feedback-text')?.textContent?.includes('матовую угрозу'),
+  await page.waitForFunction(()=>document.querySelector('[data-mentor-action="retry-explanation"]')&&
+   document.querySelector('.mentor-feedback-text')?.textContent?.includes('Зевок.'),
    null,{timeout:15000});
+  const afterFailure=await page.evaluate(()=>window.RPChessMentorTraining.state.moves.at(-1));
+  assert.equal(afterFailure.mentorSource,'fallback','an unsuccessful broker call must not masquerade as AI');
+  assert.equal(afterFailure.mentorReason,'broker_timeout','the reason is available for debugging');
+  await page.locator('[data-mentor-action="retry-explanation"]').click();
+  await page.waitForFunction(()=>document.querySelector('.mentor-feedback-text')?.textContent?.includes('быструю атаку'),
+   null,{timeout:15000});
+  const afterSuccess=await page.evaluate(()=>window.RPChessMentorTraining.state.moves.at(-1));
+  assert.equal(afterSuccess.mentorSource,'minimax','a successful backup model is recorded');
+  assert.equal(afterSuccess.mentorModel,'MiniMaxAI/MiniMax-M2.7');
+  assert.equal(mockedMentorCalls,2,'manual retry does not require replaying a move');
+  assert.equal(await page.locator('[data-mentor-action="retry-explanation"]').count(),0,'retry disappears on success');
   await page.screenshot({path:path.join(output,'battle-deep-mentor-response.png'),animations:'disabled'});
   // The computed line can be explored without modifying actual training moves.
   const playedHistory=await page.evaluate(()=>window.RPChessMentorTraining.state.moves.map(m=>m.uci));

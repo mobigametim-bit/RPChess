@@ -305,3 +305,6 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
  .mentor-training .mentor-variation-moves{max-height:100px}
  .mentor-training .mentor-variation{padding:5px;gap:4px}
 }
+
+/* Only shown after a failed AI request. Never interferes with navigation. */
+.mentor-training .mentor-retry-ai{min-height:34px;font-size:13px;padding:5px 9px;align-self:flex-start;border-color:#927c50}

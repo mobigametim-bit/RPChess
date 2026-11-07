@@ -131,8 +131,8 @@ function describeMentorFact(data,language=data.language){
 function promptForMentor(data){
  const ru=data.language==='ru';
  const instructions=ru
-  ?'Ты шахматный наставник. Верни строго JSON {"explanation":"..."} на русском: одно-два коротких предложения, не более 250 символов. Говори конкретно, по схеме «Через [N] ходов соперник может [подтверждённое событие: вилка на ферзя и ладью, связка слона, потеря ладьи, мат]. Подумай, как это предотвратить». Для немедленной угрозы используй «Следующим ходом». НЕ пиши «В рассчитанной линии», «По расчёту движка», «В просчитанном варианте» и подобные канцеляризмы. Важно: линия Stockfish — один возможный вариант, не доказательство неизбежности; поэтому говори «может», а не «обязательно». Только подтверждённые факты! Не называй лучший альтернативный ход игрока, не предлагай готовые ходы и клетки, не пересказывай UCI.'
-  :'You are a chess mentor. Return strict JSON {"explanation":"..."} in English, 1–2 short sentences, max 250 characters. Be concrete: "In about [N] moves, your opponent may [verified tactic such as a knight fork attacking your queen and rook]. Find a way to prevent it." Use "On the next move" for immediate replies. Never write "In the calculated line" or similar jargon. Stockfish PV is ONE possible variation, not an inevitable outcome, so say "may". Mention ONLY verified facts. Never reveal the player’s best alternative move, offer a ready-made next move, or recite UCI.';
+  ?'Ты шахматный наставник. Верни строго JSON {"explanation":"..."} на русском: от двух до пяти законченных предложений, суммарно не более 500 символов. Говори конкретно, по схеме «Через [N] ходов соперник может [подтверждённое событие: вилка на ферзя и ладью, связка слона, потеря ладьи, мат]. Подумай, как это предотвратить». Для немедленной угрозы используй «Следующим ходом». НЕ пиши «В рассчитанной линии», «По расчёту движка», «В просчитанном варианте» и подобные канцеляризмы. Важно: линия Stockfish — один возможный вариант, не доказательство неизбежности; поэтому говори «может», а не «обязательно». Только подтверждённые факты! Не называй лучший альтернативный ход игрока, не предлагай готовые ходы и клетки, не пересказывай UCI.'
+  :'You are a chess mentor. Return strict JSON {"explanation":"..."} in English, 2–5 complete sentences, max 500 characters total. Be concrete: "In about [N] moves, your opponent may [verified tactic such as a knight fork attacking your queen and rook]. Find a way to prevent it." Use "On the next move" for immediate replies. Never write "In the calculated line" or similar jargon. Stockfish PV is ONE possible variation, not an inevitable outcome, so say "may". Mention ONLY verified facts. Never reveal the player’s best alternative move, offer a ready-made next move, or recite UCI.';
  const message={
   severity:data.grade,playerColor:data.player,playedUci:data.uci,
   positionBefore:data.beforeFen,positionAfter:data.afterFen,
@@ -150,7 +150,11 @@ function promptForMentor(data){
 function safeExplanation(value,data){
  if(typeof value!=='string')return null;
  const s=value.trim().replace(/\s+/g,' ');
- if(s.length<12||s.length>260||/<|>|https?:|www\.|\x60{3}|[{}\n\r]/i.test(s))return null;
+ if(s.length<12||s.length>500||/<|>|https?:|www\.|\x60{3}|[{}\n\r]/i.test(s))return null;
+ // Explanations are deliberately short, but no longer restricted to two sentences.
+ // Reject truncated, unterminated or overly verbose outputs so a second model can try.
+ const sentenceCount=(s.match(/[.!?](?=\s|$)/g)||[]).length;
+ if(sentenceCount<2||sentenceCount>5||!/[.!?]$/.test(s))return null;
  if(/в рассчитанной линии|в просчитанном варианте|in the calculated line|in the calculated variation/i.test(s))return null;
  const best=data.bestMove,dst=best.slice(2,4),src=best.slice(0,2);
  if(s.toLowerCase().includes(best)||new RegExp('(?:^|[^a-h0-9])'+src+'\\s*[-–→]\\s*'+dst+'(?:$|[^a-z0-9])','i').test(s))return null;
