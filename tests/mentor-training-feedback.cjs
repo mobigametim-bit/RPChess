@@ -11,7 +11,8 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  const {classifyStrongMove}=await imp('game/js/finished-game-review.mjs');
  const {buildMentorPayload,requestMentorText}=await imp('game/js/mentor-training-feedback-client.mjs');
  const {tacticalEvidence,MAX_PV}=await imp('game/js/mentor-training-tactics.mjs');
- const {handleMentorApi,validOrigin}=await imp('mentor-api/src/index.mjs');
+ const {handleMentorApi,validOrigin,MAX_ATTEMPTS_PER_MODEL}=await imp('mentor-api/src/index.mjs');
+ assert.equal(MAX_ATTEMPTS_PER_MODEL,4,'initial request plus 3 retries');
  const {handleMentorBenchmark,benchRequestConfig}=await imp('mentor-api/src/benchmark.mjs');
  const beforeFen=rebuildTraining(['f2f3','e7e5'],2).fen();
  const chess=new ClassicChessEngine(beforeFen);
@@ -149,11 +150,42 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  assert(promptForMentor(facts).system.includes('500 символов'));
  assert(promptForMentor({...facts,language:'en'}).system.includes('500 characters'));
  let requested=[];
+ const noDelay=async()=>{};
+ const failuresFor=(model,reason)=>Array.from({length:4},(_,i)=>({model,attempt:i+1,reason}));
+ // A transient invalid payload must be retried on DeepSeek itself three
+ // times BEFORE MiniMax is contacted; a valid fourth attempt stops.
+ let repeated=0;
+ const recovery=await handleMentorApi(req(body),good,async(url,opts)=>{
+  const m=JSON.parse(opts.body);
+  requested.push(m.model);
+  assert.equal(m.model,models[0],'retry does not skip directly to MiniMax');
+  repeated++;
+  if(repeated===1)return new Response('{}',{status:503});
+  if(repeated===2)return new Response(JSON.stringify({
+   choices:[{message:{content:'not JSON'}}]
+  }),{status:200});
+  if(repeated===3)return new Response('{}',{status:429});
+  return new Response(JSON.stringify({choices:[{message:{
+   content:JSON.stringify({explanation:longAnswer})
+  }}]}),{status:200});
+ },noDelay);
+ assert.equal(recovery.status,200);
+ const recoveredSame=await recovery.json();
+ assert.equal(recoveredSame.source,'deepseek');
+ assert.equal(recoveredSame.modelAttempt,4);
+ assert.equal(recoveredSame.attempts,4);
+ assert.deepEqual(requested,[models[0],models[0],models[0],models[0]]);
+ assert.deepEqual(recoveredSame.failures,[
+  {model:models[0],attempt:1,reason:'broker_unavailable'},
+  {model:models[0],attempt:2,reason:'broker_invalid'},
+  {model:models[0],attempt:3,reason:'broker_busy'}
+ ],'record failure reason per retry for debugging');
+ requested=[];
  const fallbackFetcher=async(url,opts)=>{
   assert(url.includes('/functions/v1/gonka/chat/completions'));
   const m=JSON.parse(opts.body);
   requested.push(m.model);
-  assert.equal(m.max_tokens,m.model===models[0]?1000:900,'model-specific tested token budgets');
+  assert.equal(m.max_tokens,m.model===models[0]?1000:900,'tested model token budgets');
   if(m.model===models[1]){
    assert.equal(m.response_format.type,'json_object','MiniMax must not use schema');
    assert.equal(m.reasoning_effort,undefined,'MiniMax thinking cannot be disabled');
@@ -161,52 +193,75 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
   if(m.model===models[0])return new Response('{}',{status:503});
   return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({explanation:longAnswer})}}]}),{status:200});
  };
- const recovered=await handleMentorApi(req(body),good,fallbackFetcher);
- assert.equal(recovered.status,200,'second model should recover from first failure');
+ const recovered=await handleMentorApi(req(body),good,fallbackFetcher,noDelay);
+ assert.equal(recovered.status,200,'second model recovers only after four failed primary attempts');
  const recoveredData=await recovered.json();
  assert.equal(recoveredData.source,'minimax');
  assert.equal(recoveredData.model,models[1]);
- assert.equal(recoveredData.attempts,2);
- assert.deepEqual(recoveredData.failures,[{model:models[0],reason:'broker_unavailable'}],
-  'accepted fallback response retains sanitized cause of first failure');
- assert.deepEqual(requested,models.slice(0,2),'third model is not charged after success');
+ assert.equal(recoveredData.attempts,5,'four DeepSeek attempts plus one MiniMax attempt');
+ assert.equal(recoveredData.modelAttempt,1);
+ assert.deepEqual(recoveredData.failures,failuresFor(models[0],'broker_unavailable'));
+ assert.deepEqual(requested,[...Array(4).fill(models[0]),models[1]],'model order is stable');
+ // MiniMax also gets up to three retries before fallback to GLM.
+ requested=[];
+ let miniCount=0;
+ const miniRecovery=await handleMentorApi(req(body),good,async(url,opts)=>{
+  const {model}=JSON.parse(opts.body);
+  requested.push(model);
+  if(model===models[0])return new Response('{}',{status:503});
+  miniCount++;
+  if(miniCount<=2)return new Response(JSON.stringify({choices:[{
+   message:{content:'{"explanation":"truncated"'}
+  }]}),{status:200});
+  return new Response(JSON.stringify({choices:[{
+   message:{content:JSON.stringify({explanation:longAnswer})}
+  }]}),{status:200});
+ },noDelay);
+ assert.equal(miniRecovery.status,200);
+ assert.equal((await miniRecovery.json()).modelAttempt,3);
+ assert.deepEqual(requested,[...Array(4).fill(models[0]),...Array(3).fill(models[1])],
+  'one successful MiniMax retry must prevent a GLM call');
  requested=[];
  const thirdFetcher=async(url,opts)=>{
-  const requestModel=JSON.parse(opts.body);
-  const m=requestModel.model;
-  if(m===models[2]){
-   assert.equal(requestModel.response_format.type,'json_object');
-   assert.equal(requestModel.reasoning_effort,'none','GLM uses measured low-latency mode');
-   assert.equal(requestModel.max_tokens,1200);
+  const m=JSON.parse(opts.body);
+  requested.push(m.model);
+  if(m.model===models[2]){
+   assert.equal(m.response_format.type,'json_object');
+   assert.equal(m.reasoning_effort,'none','GLM uses measured low-latency mode');
+   assert.equal(m.max_tokens,1200);
   }
-  requested.push(m);
-  if(m===models[0])return new Response('{}',{status:429});
-  if(m===models[1])return new Response('{}',{status:502});
+  if(m.model===models[0])return new Response('{}',{status:429});
+  if(m.model===models[1])return new Response('{}',{status:502});
   return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({explanation:longAnswer})}}]}),{status:200});
  };
- const third=await handleMentorApi(req(body),good,thirdFetcher);
+ const third=await handleMentorApi(req(body),good,thirdFetcher,noDelay);
  assert.equal(third.status,200);
- assert.equal((await third.json()).source,'glm');
- assert.deepEqual(requested,models,'sequential fallthrough reaches GLM');
+ const thirdData=await third.json();
+ assert.equal(thirdData.source,'glm');
+ assert.equal(thirdData.attempts,9);
+ assert.equal(thirdData.modelAttempt,1);
+ assert.deepEqual(requested,[...Array(4).fill(models[0]),...Array(4).fill(models[1]),models[2]],
+  'GLM is only attempted after four failures of each preceding model');
  requested=[];
  const badModel=async(url,opts)=>{
   requested.push(JSON.parse(opts.body).model);
   return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({explanation:'Сыграй b1c3, это решит проблему.'})}}]}),{status:200});
  };
- const safe=await handleMentorApi(req(body),good,badModel);
+ const safe=await handleMentorApi(req(body),good,badModel,noDelay);
  assert.equal(safe.status,503);
  const fail=await safe.json();
  assert.equal(fail.error,'model_chain_failed');
- assert.equal(fail.attempts.length,3,'invalid explanation triggers model fallthrough');
- assert.deepEqual(requested,models);
+ assert.equal(fail.attempts.length,12,'all three models must get initial plus 3 retries');
+ assert.deepEqual(requested,[...Array(4).fill(models[0]),...Array(4).fill(models[1]),...Array(4).fill(models[2])]);
+ assert.equal(fail.attempts[11].attempt,4);
  requested=[];
  const exhausted=await handleMentorApi(req(body),good,async(url,opts)=>{
   requested.push(JSON.parse(opts.body).model);
   return new Response('{}',{status:401});
- });
+ },noDelay);
  assert.equal(exhausted.status,503,'invalid API key cannot be fixed by swapping models');
  assert.equal((await exhausted.json()).reason,'broker_auth_or_balance');
- assert.deepEqual(requested,[models[0]],'no repeated paid calls for global auth failure');
+ assert.deepEqual(requested,[models[0]],'credential failures must never retry or switch models');
  const health=await handleMentorApi(new Request('https://rpchess-mentor-api-preview.mobigametim.workers.dev/health'),{},fetcher);
  assert.equal(health.status,200);const healthData=await health.json();
  assert.equal(healthData.configured,false);

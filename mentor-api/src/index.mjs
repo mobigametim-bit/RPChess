@@ -7,12 +7,15 @@ import {handleMentorBenchmark,benchRequestConfig} from './benchmark.mjs';
 
 const DEFAULT_BROKER_BASE='https://hskyauefqcgbvgvxkluj.supabase.co/functions/v1/gonka';
 // Bounded sequential failover, always preferring the requested DeepSeek model.
-// A model is attempted at most once per explanation; rate limiting occurs first.
+// Up to three RETRIES after the initial call, then the next model. Rate limiting occurs first.
 const MODELS=Object.freeze([
  {id:'deepseek-ai/DeepSeek-V4-Flash-0731',source:'deepseek',timeout:15000,variant:'optimized'},
  {id:'MiniMaxAI/MiniMax-M2.7',source:'minimax',timeout:18000,variant:'balanced'},
  {id:'zai-org/GLM-5.3-Flash',source:'glm',timeout:20000,variant:'optimized'}
 ]);
+const MAX_ATTEMPTS_PER_MODEL=4; // Initial + 3 automatic retries per model, 12 max total.
+const RETRY_DELAYS_MS=[250,500,1000];
+const waitForRetry=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const TRUSTED=new Set([
  'https://rpchess-mentor-training-preview.mobigametim.workers.dev',
  'https://rpchess-profile-game-preview.mobigametim.workers.dev',
@@ -41,11 +44,12 @@ function reply(body,status,origin){
    ...(origin&&validOrigin(origin)?cors(origin):{})}
  });
 }
-async function handleMentorApi(request,env,fetcher=fetch){
+async function handleMentorApi(request,env,fetcher=fetch,sleep=waitForRetry){
  const url=new URL(request.url),origin=request.headers.get('Origin')||'';
  if(url.pathname==='/health'&&request.method==='GET')
   return reply({ok:true,configured:Boolean(env.GONKA_API_KEY),modelConfigured:true,
-   model:MODELS[0].id,fallbackModels:MODELS.slice(1).map(m=>m.id)},200,origin);
+   model:MODELS[0].id,fallbackModels:MODELS.slice(1).map(m=>m.id),
+   attemptsPerModel:MAX_ATTEMPTS_PER_MODEL,maxProviderCalls:MODELS.length*MAX_ATTEMPTS_PER_MODEL},200,origin);
  if(url.pathname!=='/v1/explain')return reply({error:'not_found'},404,origin);
  if(!validOrigin(origin))return reply({error:'forbidden_origin'},403);
  if(request.method==='OPTIONS')return new Response(null,{status:204,headers:cors(origin)});
@@ -87,47 +91,66 @@ async function handleMentorApi(request,env,fetcher=fetch){
      endpoint.origin!=='https://gonka-api.org'))
   return reply({error:'broker_config'},503,origin);
  const attempts=[];
+ let stoppedForCredentials=false;
  for(const selected of MODELS){
-  const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),selected.timeout);
-  let problem='broker_network',fatal=false;
-  try{
-   const response=await fetcher(endpoint.toString(),{
-    method:'POST',signal:controller.signal,
-    headers:{Authorization:'Bearer '+env.GONKA_API_KEY,'Content-Type':'application/json'},
-    // Exactly the request shapes independently checked in the 162-call
-   // Gonka benchmark; never send the same JSON settings to every provider.
-   body:JSON.stringify(benchRequestConfig(selected.id,selected.variant,settings))
-   });
-   if(!response.ok){
-    // Another model cannot fix an invalid API key or depleted balance.
-    fatal=[401,402,403].includes(response.status);
-    problem=fatal?'broker_auth_or_balance':response.status===429?'broker_busy':
-     response.status>=400&&response.status<500?'broker_http_'+response.status:'broker_unavailable';
-   }else{
-    let payload;
-    try{
-     const raw=await response.text();
-     if(raw.length<=5000)payload=JSON.parse(raw);
-    }catch{}
-    const content=payload?.choices?.[0]?.message?.content;
-    if(typeof content==='string'&&content.length<=5000){
-     let parsed;
-     try{parsed=JSON.parse(content);}catch{}
-     const output=safeExplanation(parsed?.explanation,data);
-     if(output){
-      return reply({explanation:output,grade:data.grade,
-       source:selected.source,model:selected.id,attempts:attempts.length+1,failures:attempts},200,origin);
+  for(let tryNo=1;tryNo<=MAX_ATTEMPTS_PER_MODEL;tryNo++){
+   // Stop paid retries if the caller has already left the page.
+   if(request.signal?.aborted)
+    return reply({error:'client_cancelled'},499,origin);
+   const controller=new AbortController();
+   const onClientAbort=()=>controller.abort();
+   request.signal?.addEventListener('abort',onClientAbort,{once:true});
+   const timer=setTimeout(()=>controller.abort(),selected.timeout);
+   let problem='broker_network',fatal=false;
+   try{
+    const response=await fetcher(endpoint.toString(),{
+     method:'POST',signal:controller.signal,
+     headers:{Authorization:'Bearer '+env.GONKA_API_KEY,'Content-Type':'application/json'},
+     // Same shape used by the successful real-Gonka benchmark.
+     body:JSON.stringify(benchRequestConfig(selected.id,selected.variant,settings))
+    });
+    if(!response.ok){
+     // Auth/payment problems cannot be fixed by repeating a billable request.
+     fatal=[401,402,403].includes(response.status);
+     problem=fatal?'broker_auth_or_balance':response.status===429?'broker_busy':
+      response.status>=400&&response.status<500?'broker_http_'+response.status:'broker_unavailable';
+    }else{
+     let payload;
+     try{
+      const raw=await response.text();
+      if(raw.length<=5000)payload=JSON.parse(raw);
+     }catch{}
+     const content=payload?.choices?.[0]?.message?.content;
+     if(typeof content==='string'&&content.length<=5000){
+      let parsed;
+      try{parsed=JSON.parse(content);}catch{}
+      const output=safeExplanation(parsed?.explanation,data);
+      if(output){
+       return reply({explanation:output,grade:data.grade,
+        source:selected.source,model:selected.id,
+        attempts:attempts.length+1,modelAttempt:tryNo,failures:attempts},200,origin);
+      }
      }
+     problem='broker_invalid';
     }
-    problem='broker_invalid';
+   }catch{
+    problem=controller.signal.aborted?'broker_timeout':'broker_network';
+   }finally{
+    clearTimeout(timer);
+    request.signal?.removeEventListener('abort',onClientAbort);
    }
-  }catch(error){
-   problem=controller.signal.aborted?'broker_timeout':'broker_network';
-  }finally{clearTimeout(timer);}
-  // Stable, non-sensitive codes: never log prompts, user FENs, keys or provider bodies.
-  attempts.push({model:selected.id,reason:problem});
-  if(fatal)break;
+   if(request.signal?.aborted)
+    return reply({error:'client_cancelled'},499,origin);
+   // No raw provider text, FEN, tokens, secrets or user prompt in diagnostics.
+   attempts.push({model:selected.id,attempt:tryNo,reason:problem});
+   if(fatal){
+    stoppedForCredentials=true;
+    break;
+   }
+   if(tryNo<MAX_ATTEMPTS_PER_MODEL)
+    await sleep(RETRY_DELAYS_MS[tryNo-1]);
+  }
+  if(stoppedForCredentials)break;
  }
  // The browser displays its localized, grade-specific fallback and offers a manual retry.
  // Unlike a 200 response, a 503 must never be cached as successful AI feedback.
@@ -142,4 +165,4 @@ export default {fetch(request,env){
   return handleMentorBenchmark(request,env,globalThis.fetch);
  return handleMentorApi(request,env,globalThis.fetch);
 }};
-export {handleMentorApi,validOrigin,reply};
+export {handleMentorApi,validOrigin,reply,MAX_ATTEMPTS_PER_MODEL};

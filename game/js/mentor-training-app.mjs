@@ -9,7 +9,7 @@ import { createMentorMotion } from './mentor-training-motion.mjs';
 import { fantasyPieceMarkup } from './fantasy-piece.mjs';
 import { currentLanguage, subscribe } from './i18n.mjs';
 import { TRAINING_MENTORS, UCI, rebuildTraining, extendTraining, trainingMoveQuality } from './mentor-training-history.mjs';
-import {buildMentorPayload,requestMentorText} from './mentor-training-feedback-client.mjs?v=20261107-mentor-tuned-7';
+import {buildMentorPayload,requestMentorText} from './mentor-training-feedback-client.mjs?v=20261107-mentor-retries-8';
 import {validateMentorInput} from './mentor-training-feedback-core.mjs';
 import {thinkingText,praiseText,fallbackText} from './mentor-training-copy.mjs';
 
@@ -390,6 +390,7 @@ async function deliverMentorFeedback(entry,payload,verified,cacheKey,epoch){
  entry.mentorModel=outcome.model||null;
  entry.mentorReason=outcome.reason||null;
  entry.mentorAttempts=outcome.attempts;
+ entry.mentorModelAttempt=outcome.modelAttempt||1;
  entry.mentorFailures=outcome.failures||[];
  save();render();
 }

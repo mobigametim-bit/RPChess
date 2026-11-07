@@ -95,6 +95,7 @@ jobs:
              const health=await r.json();
              assert.equal(health.ok,true);
              assert.equal(typeof health.configured,'boolean');
+             assert.equal(health.attemptsPerModel,4,'retry-enabled API is deployed');
              const deny=await fetch(base+'/v1/explain',{method:'POST',
               headers:{Origin:'https://invalid.example','Content-Type':'application/json'},body:'{}'});
              assert.equal(deny.status,403);
@@ -108,7 +109,7 @@ jobs:
            assert(verified,'mentor API did not become ready');
           })().catch(e=>{console.error(e);process.exitCode=1});
           NODE
-      # Opt-in final end-to-end reliability test; 12 ingress calls, <=36 provider calls.
+      # Opt-in end-to-end reliability test; 12 incoming calls, at most 144 provider calls.
       - name: Twelve-call live Gonka mentor reliability acceptance
         if: contains(github.event.head_commit.message, '[mentor-live-smoke]')
         continue-on-error: true
@@ -123,6 +124,7 @@ jobs:
            const health=await healthResponse.json();
            console.log('Gonka secret configured in Cloudflare:',health.configured);
            assert.equal(health.configured,true,'GONKA_API_KEY is not configured on the API Worker');
+           assert.equal(health.attemptsPerModel,4,'the deployed Worker must have 3 retries per model');
            const beforeFen='rnbqkbnr/pppp1ppp/8/4p3/8/5P2/PPPPP1PP/RNBQKBNR w KQkq e6 0 2';
            const afterFen='rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq g3 0 2';
            const payload={

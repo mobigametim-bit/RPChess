@@ -1,7 +1,7 @@
 import {validateMentorInput,localMentorFallback} from './mentor-training-feedback-core.mjs';
 
 const MENTOR_API='https://rpchess-mentor-api-preview.mobigametim.workers.dev';
-const TIMEOUT_MS=60000; // Optimized bounded chain: 15 + 18 + 20 seconds plus network overhead.
+const TIMEOUT_MS=230000; // Max four attempts/model: (15 + 18 + 20)*4s + retry delays + network overhead.
 function mentorSession(){
  try{
   let id=sessionStorage.getItem('rpchess.mentor-session.v1');
@@ -53,7 +53,7 @@ async function requestMentorText({payload,verified,signal,fallbackText=null,fetc
   try{json=await response.json();}catch{return mentorFallback(fallback,'invalid_json');}
   if(!response.ok)
    return mentorFallback(fallback,json?.reason||json?.error||'broker_http_'+response.status,
-    Array.isArray(json?.attempts)?json.attempts.slice(0,3):[]);
+    Array.isArray(json?.attempts)?json.attempts.slice(0,12):[]);
   if(!json||json.grade!==verified.grade||typeof json.explanation!=='string'||
     json.explanation.length>500||json.explanation.length<12)
    return mentorFallback(fallback,'invalid_response');
@@ -63,7 +63,8 @@ async function requestMentorText({payload,verified,signal,fallbackText=null,fetc
    return mentorFallback(fallback,'invalid_source');
   return {explanation:json.explanation,source:json.source,
    model:supported[json.source],reason:null,attempts:json.attempts||1,
-   failures:Array.isArray(json.failures)?json.failures.slice(0,2):[],retryable:false};
+   modelAttempt:json.modelAttempt||1,
+   failures:Array.isArray(json.failures)?json.failures.slice(0,11):[],retryable:false};
  }catch{
   return mentorFallback(fallback,controller.signal.aborted?'broker_timeout':'network_error');
  }finally{clearTimeout(timer);signal?.removeEventListener('abort',onAbort);}
