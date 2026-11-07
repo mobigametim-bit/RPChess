@@ -395,16 +395,22 @@ function highlightDragFrom(from){
  square=from;
  board.querySelectorAll('.is-selected,.is-legal').forEach(node=>node.classList.remove('is-selected','is-legal'));
  board.querySelector('[data-square="'+from+'"]')?.classList.add('is-selected');
- for(const move of game().legalMoves(from))board.querySelector('[data-square="'+move.to+'"]')?.classList.add('is-legal');
+ for(const move of variationPosition().legalMoves(from))board.querySelector('[data-square="'+move.to+'"]')?.classList.add('is-legal');
 }
 function installMentorDrag(board){
  attachPieceDrag(board,{
-  canPick:from=>Boolean(playing&&!busy&&!promotion&&!analysisView&&!lessonView&&cursor<=moves.length&&
-   game().turn()===currentPlayerColor()&&game().pieceAt(from)?.color===currentPlayerColor()&&!game().status().over),
+  canPick:from=>Boolean(playing&&!busy&&!promotion&&!analysisView&&!lessonView&&!correctionView?.checking&&!correctionView?.accepted&&cursor<=moves.length&&
+   variationPosition().turn()===currentPlayerColor()&&variationPosition().pieceAt(from)?.color===currentPlayerColor()&&!variationPosition().status().over),
   onStart:from=>{dragActive=true;highlightDragFrom(from);},
   onDrop:(from,to)=>{
    dragActive=false;
-   if(to&&game().legalMoves(from).some(move=>move.to===to))void userMove(from,to);
+   if(to&&variationPosition().legalMoves(from).some(move=>move.to===to)){
+    if(correctionView){
+     const candidate=variationPosition().legalMoves(from).filter(m=>m.to===to);
+     if(candidate.some(m=>m.promotion)){promotion={from,to,correction:true};render();}
+     else void submitCorrection(from,to);
+    }else void userMove(from,to);
+   }
    else {square=from;render();}
   },
   onCancel:()=>{dragActive=false;render();}
@@ -678,7 +684,24 @@ function onClick(event){
  if(button.dataset.mentorPly){moveCursor(Number(button.dataset.mentorPly));return;}
  if(button.dataset.mentorLine!==undefined){setVariationStep(Number(button.dataset.mentorLine));return;}
  if(button.dataset.mentorPromote&&promotion){
-  const chosen=promotion;promotion=null;void userMove(chosen.from,chosen.to,button.dataset.mentorPromote);return;
+  const chosen=promotion;promotion=null;
+  if(chosen.correction)void submitCorrection(chosen.from,chosen.to,button.dataset.mentorPromote);
+  else void userMove(chosen.from,chosen.to,button.dataset.mentorPromote);
+  return;
+ }
+ if(button.dataset.mentorSquare&&correctionView){
+  if(correctionView.checking||correctionView.accepted)return;
+  const cell=button.dataset.mentorSquare,board=correctionBoard();
+  if(board.turn()!==currentPlayerColor())return;
+  if(square&&board.legalMoves(square).some(m=>m.to===cell)){
+   const options=board.legalMoves(square).filter(m=>m.to===cell);
+   if(options.some(m=>m.promotion)){promotion={from:square,to:cell,correction:true};render();}
+   else void submitCorrection(square,cell);
+   return;
+  }
+  if(square===cell)square=null;
+  else square=board.pieceAt(cell)?.color===currentPlayerColor()?cell:null;
+  render();return;
  }
  if(button.dataset.mentorSquare){
   // Select rival pieces in the paused, unchanged post-mistake position.
@@ -726,6 +749,12 @@ function onClick(event){
   });
   return;
  }
+ if(action==='correction-start'){startCorrection();return;}
+ if(action==='correction-again'&&correctionView&&!correctionView.checking){
+  correctionView.accepted=false;correctionView.chosenUci=null;correctionView.outcome=null;square=null;render();return;
+ }
+ if(action==='correction-back'){returnFromCorrection(false);return;}
+ if(action==='correction-close'){returnFromCorrection(true);return;}
  if(action==='lesson-hint'&&lessonView?.plan&&lessonView.stage<3){
   lessonView.stage=Math.min(2,lessonView.stage+1);lessonView.feedback=null;
   render();return;
@@ -745,7 +774,7 @@ function onClick(event){
  }
  if(action==='retry-explanation')void retryMentorFeedback();
  if(action==='open-variation'){
-  lessonView=null;
+  lessonView=null;correctionView=null;
   const found=latestPlayerNote();
   if(found?.move?.analysisFen&&found.move.analysisLine?.length){
    analysisView={entry:found.move,index:found.index,offset:0};
@@ -765,5 +794,5 @@ function onClick(event){
 ensure();
 globalThis.RPChessMentorTraining={
  enter,start:startTraining,back:()=>moveCursor(cursor-1),forward:()=>moveCursor(cursor+1),
- get state(){return {selected,color,playing,cursor,moves:moves.map(m=>({...m})),fen:playing?game().fen():null,busy,paused:Boolean(pausedEntry),lesson:lessonView?.plan?.kind||null};}
+ get state(){return {selected,color,playing,cursor,moves:moves.map(m=>({...m})),fen:playing?game().fen():null,busy,paused:Boolean(pausedEntry),lesson:lessonView?.plan?.kind||null,correction:correctionView?{checking:correctionView.checking,accepted:correctionView.accepted,outcome:correctionView.outcome,chosenUci:correctionView.chosenUci}:null};}
 };
