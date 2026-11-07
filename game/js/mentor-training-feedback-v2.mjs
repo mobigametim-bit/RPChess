@@ -134,26 +134,31 @@ function promptForMentorV2(data){
    constraints:'general thinking process only; no chess facts beyond verifiedFact'})
  };
 }
-function safeMentorAdvice(value,data){
- if(typeof value!=='string'||!data?.verifiedFact)return null;
+// Only a coarse rejection category is returned to the Worker diagnostics.
+ // Never reveal provider text, board position, fact or prompt in logs.
+function mentorAdviceValidationIssue(value,data){
+ if(typeof value!=='string'||!data?.verifiedFact)return 'invalid_type';
  const s=value.trim().replace(/\s+/g,' ');
- if(s.length<25||s.length>230||/[<>{}\r\n\x60]|https?:|www\./i.test(s))return null;
+ if(s.length<25||s.length>230)return 'length';
+ if(/[<>{}\r\n\x60]|https?:|www\./i.test(s))return 'markup';
  const sentences=(s.match(/[.!?](?=\s|$)/g)||[]).length;
- if(sentences<1||sentences>2||!/[.!?]$/.test(s))return null;
- // No new board claims, moves, exchanges, piece-specific plans, or
- // tactical motifs; the verified, explicit chess fact is prepended by code.
- if(/(?:^|[^a-z0-9])[a-h][1-8](?=$|[^a-z0-9])/i.test(s))return null;
- if(/\b[a-h][1-8][a-h][1-8][qrbn]?\b/i.test(s))return null;
- // Generic educational habits (check checks/captures/threats) are NOT
- // positional chess claims. Never forbid these universal concepts outright:
- // otherwise the model's safest, most helpful coaching output is rejected.
- // Still reject new board-specific claims, tactical conclusions and named
- // pieces, because no additional chess facts can come from free-form text.
- if(/вилк|связк|размен|сруб|забра|потер|выигра|жертв|ферз|ладь|слон|конь|пешк|корол|fork|pin|skewer|checkmate|exchang|sacrific|queens?|rooks?|bishops?|knights?|pawns?|kings?/i.test(s))return null;
- if(/(?:соперник|противник|opponent|enemy).{0,70}(?:может|сможет|сделает|поставит|нанес|будет|will|can).{0,70}(?:шах|мат|взя|атак|check|capture|mate)/i.test(s))return null;
- if(/(?:в этой позиции|здесь|именно сейчас|теперь|in this position|right now|this move).{0,85}(?:шах|мат|взят|атак|check|capture|mate)/i.test(s))return null;
- if(s.includes(data.verifiedFact)||s.includes(data.factId))return null;
- return s;
+ if(sentences<1||sentences>2||!/[.!?]$/.test(s))return 'sentence_format';
+ if(/(?:^|[^a-z0-9])[a-h][1-8](?=$|[^a-z0-9])/i.test(s)||
+    /\b[a-h][1-8][a-h][1-8][qrbn]?\b/i.test(s))return 'coordinates';
+ // Reusable mental habits may refer to checks, captures and threats.
+ // Specific tactics, piece types and invented board claims are prohibited.
+ if(/вилк|связк|размен|сруб|забра|потер|выигра|жертв|ферз|ладь|слон|конь|пешк|корол|fork|pin|skewer|checkmate|exchang|sacrific|queens?|rooks?|bishops?|knights?|pawns?|kings?/i.test(s))
+  return 'piece_or_motif';
+ if(/(?:соперник|противник|opponent|enemy).{0,70}(?:может|сможет|сделает|поставит|нанес|будет|will|can).{0,70}(?:шах|мат|взя|атак|check|capture|mate)/i.test(s))
+  return 'specific_opponent_claim';
+ if(/(?:в этой позиции|здесь|именно сейчас|теперь|in this position|right now|this move).{0,85}(?:шах|мат|взят|атак|check|capture|mate)/i.test(s))
+  return 'specific_position_claim';
+ if(s.includes(data.verifiedFact)||s.includes(data.factId))return 'repeated_fact';
+ return null;
+}
+function safeMentorAdvice(value,data){
+ if(mentorAdviceValidationIssue(value,data))return null;
+ return value.trim().replace(/\s+/g,' ');
 }
 function composeMentorV2Explanation(advice,data){
  const safe=safeMentorAdvice(advice,data);
@@ -168,4 +173,4 @@ function localMentorV2Fallback(data){
   :'Before every move, imagine the opponent’s strongest reply. Which risk might you have overlooked?';
  return data.verifiedFact+' '+generic;
 }
-export {validatedV2Facts,promptForMentorV2,safeMentorAdvice,composeMentorV2Explanation,localMentorV2Fallback,verifiedImmediateFact};
+export {validatedV2Facts,promptForMentorV2,safeMentorAdvice,mentorAdviceValidationIssue,composeMentorV2Explanation,localMentorV2Fallback,verifiedImmediateFact};
