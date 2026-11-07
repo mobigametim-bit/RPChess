@@ -1,5 +1,6 @@
 const assert=require('node:assert/strict');
 const path=require('node:path');
+const fs=require('node:fs');
 const {pathToFileURL}=require('node:url');
 const base=path.resolve(__dirname,'..');
 function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
@@ -13,6 +14,59 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  const {tacticalEvidence,MAX_PV}=await imp('game/js/mentor-training-tactics.mjs');
  const {PRIORITY,GUIDES,lessonFromVerified,mentorLessonCopy,validateLessonGuess}=await imp('game/js/mentor-training-teaching.mjs');
  const {handleMentorApi,validOrigin,MAX_ATTEMPTS_PER_MODEL}=await imp('mentor-api/src/index.mjs');
+
+ // CC0 public chess reference corpus: do not mistake Lichess's setup move
+ // for the learner's solution. Do not convert theme tags into inferred errors.
+ const lichess=JSON.parse(fs.readFileSync(path.join(base,'tests/fixtures/mentor-reference-puzzles.json'),'utf8'));
+ const referenceGames=JSON.parse(fs.readFileSync(path.join(base,'tests/fixtures/mentor-reference-games.json'),'utf8'));
+ assert.equal(lichess.license,'CC0-1.0');
+ assert(lichess.puzzles.length>=40,'enough distinct reference positions for stage-1 baselining');
+ assert(referenceGames.games.length>=5,'real game provenance and separate positional cases');
+ const corpusThemes=new Set();
+ for(const item of lichess.puzzles){
+  const initial=new ClassicChessEngine(item.fenBeforeSetup);
+  const originalColor=initial.turn();
+  const apply=(engine,uci)=>{
+   const result=engine.move(uci.slice(0,2),uci.slice(2,4),uci.slice(4)||null);
+   assert(result.ok,'reference '+item.id+': illegal published move '+uci);
+   return result;
+  };
+  assert(item.line.length>=2,'reference '+item.id+' includes a setup move and a solution');
+  apply(initial,item.line[0]); // Lichess puzzles start only AFTER this opponent move
+  assert.notEqual(initial.turn(),originalColor,'reference '+item.id+' alternates sides');
+  const puzzleFen=initial.fen(),sol=item.line.slice(1);
+  assert(sol.length<=MAX_PV,'reference '+item.id+' within the mentor PV limit');
+  const playing=new ClassicChessEngine(puzzleFen);
+  for(const move of sol)apply(playing,move);
+  const evidence=tacticalEvidence(puzzleFen,sol,originalColor);
+  assert.deepEqual(evidence.line,sol,'reference '+item.id+': replay exactly the published legal line');
+  assert(evidence.events.every(ev=>ev.ply>=1&&ev.ply<=sol.length),
+   'reference '+item.id+': no invented events outside the line');
+  const lessonFromLine=lessonFromVerified({
+   afterFen:puzzleFen,afterLine:sol,tactics:evidence.events,player:originalColor
+  });
+  assert.equal(lessonFromLine.from,sol[0].slice(0,2),'reference '+item.id+': point to solution-side piece');
+  assert(validateLessonGuess(lessonFromLine,sol[0].slice(0,2)),
+   'reference '+item.id+': correct piece can be selected on post-setup board');
+  assert(item.puzzleUrl.endsWith(item.id)&&item.gameUrl.startsWith('https://lichess.org/'));
+  for(const theme of item.themes)corpusThemes.add(theme);
+ }
+ assert(corpusThemes.size>=35,'corpus covers rare attacks, defense, endgames, and quiet moves');
+ for(const gameFixture of referenceGames.games){
+  assert(gameFixture.gameUrl.startsWith('https://lichess.org/'));
+  assert(gameFixture.sanMoves.trim().split(/\s+/).length>=60,
+   'full historical game trace, not just one tactical puzzle');
+  assert(gameFixture.analysisReference.annotatedPlies>=gameFixture.numberOfPlies,
+   'historical engine judgments align with trace length');
+  const setup=new ClassicChessEngine(gameFixture.sourcePosition);
+  const first=gameFixture.sourceLine[0],response=setup.move(first.slice(0,2),first.slice(2,4),first.slice(4)||null);
+  assert(response.ok,'source game setup move is legal '+gameFixture.puzzleId);
+  for(const uci of gameFixture.sourceLine.slice(1)){
+   const played=setup.move(uci.slice(0,2),uci.slice(2,4),uci.slice(4)||null);
+   assert(played.ok,'source game puzzle continuation legal '+gameFixture.puzzleId+': '+uci);
+  }
+ }
+
  assert.equal(MAX_ATTEMPTS_PER_MODEL,4,'initial request plus 3 retries');
  const {handleMentorBenchmark,benchRequestConfig}=await imp('mentor-api/src/benchmark.mjs');
  const beforeFen=rebuildTraining(['f2f3','e7e5'],2).fen();
