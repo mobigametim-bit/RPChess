@@ -1,6 +1,6 @@
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { ChessAIAdapter } from './chess-ai-adapter.mjs';
-import { StockfishReviewEngine, reviewMoveJournal, classifyStrongMove, openFinishedGameReview } from './finished-game-review.mjs';
+import { StockfishReviewEngine, reviewMoveJournal, gradeReviewAttempt, classifyStrongMove, openFinishedGameReview } from './finished-game-review.mjs';
 import { boardRacePiecePath, racePiecePath, raceBoardTiles } from './race-assets.mjs';
 import { attachPieceDrag } from './piece-drag.mjs';
 import { applyPinIce } from './king-pin-ice.mjs';
@@ -21,8 +21,8 @@ const DEEP_PV_LIMIT=20;
 const ROLES={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
 const SYMBOLS={w:{p:'♙',n:'♘',b:'♗',r:'♖',q:'♕',k:'♔'},b:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'}};
 const TEXT={
- ru:{title:'Тренировка с наставником',back:'Главное меню',mentor:'Наставник',mentorThinking:'Думаю…',lesson:'Проверить себя',lessonHint:'Подсказка',lessonShow:'Показать ответ',lessonExit:'Продолжить партию',lessonBoard:'Найди ответ соперника',lessonPending:'Наставник ищет опасное продолжение…',positional:'Позиция ухудшилась, но непосредственная тактическая угроза не подтверждена. Продолжай партию и следи за безопасностью фигур.',moves:'Ходы',white:'Белые',black:'Чёрные',random:'Случайно',start:'Начать тренировку',new:'Новая тренировка',exit:'К наставникам',prev:'Назад',next:'Вперёд',close:'Закрыть',journal:'Ходы',ready:'Ваш ход',thinking:'Соперник думает…',analysing:'Анализ хода…',waiting:'Оценка недоступна',fine:'Продолжайте партию.',inaccuracy:'Неточность',mistake:'Ошибка',blunder:'Зевок',noGrade:'Нет замечаний',loss:'Потеря оценки',retry:'Позиция ухудшилась. Попробуйте вернуться назад и найти более сильное продолжение.',reviewFail:'Не удалось проверить ход. Партию можно продолжать.',gameOver:'Партия завершена',check:'Шах!',promotion:'Превращение пешки',before:'Вернуться перед ошибкой',clear:'Начать заново',profile:'Мощь',restore:'Продолжить тренировку',victory:'Победа!',defeat:'Поражение',draw:'Ничья',reviewGame:'Анализировать',menu:'Главное меню',mentors:'К наставникам',good:'Хороший ход',excellent:'Блестящий ход',view:'Посмотреть',engineLine:'Вариант Stockfish',afterMistake:'После ошибки',returnToGame:'К партии',retryAI:'Повторить запрос ИИ'},
- en:{title:'Training with a Mentor',back:'Main menu',mentor:'Mentor',mentorThinking:'Thinking…',lesson:'Test yourself',lessonHint:'Hint',lessonShow:'Reveal answer',lessonExit:'Continue game',lessonBoard:'Find the opponent’s reply',lessonPending:'Mentor is checking the opponent’s reply…',positional:'The position became worse, but no immediate tactical threat was verified. Keep playing and watch your pieces’ safety.',moves:'Moves',white:'White',black:'Black',random:'Random',start:'Start training',new:'New training',exit:'Mentors',prev:'Back',next:'Forward',close:'Close',journal:'Moves',ready:'Your move',thinking:'Opponent thinking…',analysing:'Analysing move…',waiting:'Evaluation unavailable',fine:'Continue the game.',inaccuracy:'Inaccuracy',mistake:'Mistake',blunder:'Blunder',noGrade:'No issues found',loss:'Evaluation lost',retry:'This move worsened your position. Go back and try to find a stronger continuation.',reviewFail:'The move could not be evaluated. You can continue playing.',gameOver:'Game over',check:'Check!',promotion:'Promote pawn',before:'Return before error',clear:'Start over',profile:'Strength',restore:'Resume training',victory:'Victory!',defeat:'Defeat',draw:'Draw',reviewGame:'Analyse',menu:'Main menu',mentors:'Mentors',good:'Good move',excellent:'Brilliant move',view:'View',engineLine:'Stockfish line',afterMistake:'After the mistake',returnToGame:'Back to game',retryAI:'Retry AI explanation'}
+ ru:{title:'Тренировка с наставником',back:'Главное меню',mentor:'Наставник',mentorThinking:'Думаю…',lesson:'Проверить себя',lessonHint:'Подсказка',lessonShow:'Показать ответ',lessonExit:'Продолжить партию',correctionStart:'Исправить ход',correctionTitle:'Попробуй исправить свой ход',correctionInstruction:'Это учебная позиция до ошибки. Выбери более сильный ход на доске — сыгранная партия останется неизменной.',correctionChecking:'Проверяю твой ход…',correctionGood:'Хорошее решение! Stockfish подтверждает, что этот ход достаточно силён.',correctionWrong:'Этот ход недостаточно улучшает позицию. Попробуй другое продолжение.',correctionUnavailable:'Не удалось проверить этот ход. Можешь попробовать снова или продолжить партию.',correctionBack:'К объяснению',correctionAgain:'Другой вариант',correctionBoard:'Найди более сильный ход',lessonBoard:'Найди ответ соперника',lessonPending:'Наставник ищет опасное продолжение…',positional:'Позиция ухудшилась, но непосредственная тактическая угроза не подтверждена. Продолжай партию и следи за безопасностью фигур.',moves:'Ходы',white:'Белые',black:'Чёрные',random:'Случайно',start:'Начать тренировку',new:'Новая тренировка',exit:'К наставникам',prev:'Назад',next:'Вперёд',close:'Закрыть',journal:'Ходы',ready:'Ваш ход',thinking:'Соперник думает…',analysing:'Анализ хода…',waiting:'Оценка недоступна',fine:'Продолжайте партию.',inaccuracy:'Неточность',mistake:'Ошибка',blunder:'Зевок',noGrade:'Нет замечаний',loss:'Потеря оценки',retry:'Позиция ухудшилась. Попробуйте вернуться назад и найти более сильное продолжение.',reviewFail:'Не удалось проверить ход. Партию можно продолжать.',gameOver:'Партия завершена',check:'Шах!',promotion:'Превращение пешки',before:'Вернуться перед ошибкой',clear:'Начать заново',profile:'Мощь',restore:'Продолжить тренировку',victory:'Победа!',defeat:'Поражение',draw:'Ничья',reviewGame:'Анализировать',menu:'Главное меню',mentors:'К наставникам',good:'Хороший ход',excellent:'Блестящий ход',view:'Посмотреть',engineLine:'Вариант Stockfish',afterMistake:'После ошибки',returnToGame:'К партии',retryAI:'Повторить запрос ИИ'},
+ en:{title:'Training with a Mentor',back:'Main menu',mentor:'Mentor',mentorThinking:'Thinking…',lesson:'Test yourself',lessonHint:'Hint',lessonShow:'Reveal answer',lessonExit:'Continue game',correctionStart:'Improve your move',correctionTitle:'Try a better move',correctionInstruction:'This is a practice position before the mistake. Choose a stronger move on the board; your original game stays unchanged.',correctionChecking:'Checking your move…',correctionGood:'Good solution! Stockfish confirms this is a strong alternative.',correctionWrong:'This move does not improve the position enough. Try another continuation.',correctionUnavailable:'The move could not be checked. Try again or continue the game.',correctionBack:'Back to explanation',correctionAgain:'Try another',correctionBoard:'Find a stronger move',lessonBoard:'Find the opponent’s reply',lessonPending:'Mentor is checking the opponent’s reply…',positional:'The position became worse, but no immediate tactical threat was verified. Keep playing and watch your pieces’ safety.',moves:'Moves',white:'White',black:'Black',random:'Random',start:'Start training',new:'New training',exit:'Mentors',prev:'Back',next:'Forward',close:'Close',journal:'Moves',ready:'Your move',thinking:'Opponent thinking…',analysing:'Analysing move…',waiting:'Evaluation unavailable',fine:'Continue the game.',inaccuracy:'Inaccuracy',mistake:'Mistake',blunder:'Blunder',noGrade:'No issues found',loss:'Evaluation lost',retry:'This move worsened your position. Go back and try to find a stronger continuation.',reviewFail:'The move could not be evaluated. You can continue playing.',gameOver:'Game over',check:'Check!',promotion:'Promote pawn',before:'Return before error',clear:'Start over',profile:'Strength',restore:'Resume training',victory:'Victory!',defeat:'Defeat',draw:'Draw',reviewGame:'Analyse',menu:'Main menu',mentors:'Mentors',good:'Good move',excellent:'Brilliant move',view:'View',engineLine:'Stockfish line',afterMistake:'After the mistake',returnToGame:'Back to game',retryAI:'Retry AI explanation'}
 };
 const RACES={
  ru:{humans:'Люди',orcs:'Орки',fae:'Феи',dark_elves:'Тёмные эльфы',dwarves:'Гномы',undead:'Нежить',demons:'Демоны',elves:'Эльфы',dragonborn:'Дракониды',angels:'Ангелы',constructs:'Конструкты'},
@@ -39,6 +39,7 @@ let boardNode=null,dragActive=false,motion=null;
 let mentorReplyAbort=null;
 let analysisView=null; // Separate engine variation viewer; never mutates played history.
 let lessonView=null; // Automatic interactive lesson, on the post-mistake position.
+let correctionView=null; // Ephemeral practice board before the error: NEVER mutates actual moves.
 let pausedEntry=null; // Delay the opponent's move until the learner continues.
 let lessonFlashSeq=0;
 const mentorReplyCache=new Map();
@@ -65,12 +66,12 @@ function restore(){
    ?moves[raw.pausedAt]:null;
   lessonView=pausedEntry?{entry:pausedEntry,plan:pausedEntry.mentorLesson||null,
    stage:pausedEntry.mentorLesson?0:-1,feedback:null}:null;
-  analysisView=null;
- }catch{playing=false;moves=[];cursor=0;pausedEntry=null;lessonView=null;}
+  analysisView=null;correctionView=null;
+ }catch{playing=false;moves=[];cursor=0;pausedEntry=null;lessonView=null;correctionView=null;}
 }
 function game(){return rebuildTraining(moves,cursor);}
 function cancel(){
- mentorReplyAbort?.abort();mentorReplyAbort=null;analysisView=null;lessonView=null;pausedEntry=null;
+ mentorReplyAbort?.abort();mentorReplyAbort=null;analysisView=null;lessonView=null;correctionView=null;pausedEntry=null;
  gameEpoch++;busy=false;analysisPending=false;square=null;promotion=null;dragActive=false;
  motion?.clear();ai?.stop();review?.close();review=null;reviewStarted=null;reviewChain=Promise.resolve();evaluationInFlight=new Map();deepInFlight.clear();
 }
@@ -182,7 +183,7 @@ function boardHTML(chess,preview=false){
  const tiles=raceBoardTiles(mentor().race);
  const checkedKing=state.status.checked
   ?state.board.findIndex(piece=>piece?.type==='k'&&piece.color===state.turn):-1;
- const last=preview&&analysisView ? (analysisView.offset ? {uci:analysisView.entry.analysisLine[analysisView.offset-1]} : analysisView.entry) : moves[cursor-1];
+ const last=correctionView ? (correctionView.accepted&&correctionView.chosenUci?{uci:correctionView.chosenUci}:null) : preview&&analysisView ? (analysisView.offset ? {uci:analysisView.entry.analysisLine[analysisView.offset-1]} : analysisView.entry) : moves[cursor-1];
  const recentOwn=preview ? (analysisView?.offset===0 ? analysisView.entry : null) : moves.slice(0,cursor).reverse().find(entry=>entry.color===currentPlayerColor());
  const mark=recentOwn?.grade?recentOwn.uci.slice(2,4):null;
  let grid='';
@@ -221,7 +222,17 @@ function latestPlayerNote(){
  }
  return null;
 }
+function correctionBoard(){
+ if(!correctionView)return game();
+ const board=new ClassicChessEngine(correctionView.beforeFen);
+ if(correctionView.accepted&&correctionView.chosenUci){
+  const uci=correctionView.chosenUci;
+  board.move(uci.slice(0,2),uci.slice(2,4),uci.slice(4)||null);
+ }
+ return board;
+}
 function variationPosition(){
+ if(correctionView)return correctionBoard();
  if(!analysisView)return game();
  const chess=new ClassicChessEngine(analysisView.entry.analysisFen);
  for(const uci of analysisView.entry.analysisLine.slice(0,analysisView.offset)){
@@ -362,7 +373,7 @@ function moveCursor(next){
  // Browsing a previous move never requests a new computer response.
 }
 function cancelPending(){
- mentorReplyAbort?.abort();mentorReplyAbort=null;analysisView=null;lessonView=null;pausedEntry=null;
+ mentorReplyAbort?.abort();mentorReplyAbort=null;analysisView=null;lessonView=null;correctionView=null;pausedEntry=null;
  gameEpoch++;busy=false;analysisPending=false;square=null;promotion=null;dragActive=false;motion?.clear();ai?.stop();
 }
 async function ensureReview(){
