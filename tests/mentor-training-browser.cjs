@@ -208,14 +208,14 @@ fs.mkdirSync(output,{recursive:true});
    'deep search emits up to 20 half-moves after the blunder');
   assert.equal(detail.continuation.pv[0],'d8h4','deep line should begin with mate in one');
   await page.waitForFunction(()=>document.querySelector('[data-mentor-action="retry-explanation"]')&&
-   document.querySelector('.mentor-feedback-text')?.textContent?.includes('Зевок.'),
+   window.RPChessMentorTraining.state.moves.findLast(m=>m.grade==='blunder'&&m.color==='w')?.mentorSource==='fallback',
    null,{timeout:15000});
   const afterFailure=await page.evaluate(()=>window.RPChessMentorTraining.state.moves.findLast(m=>m.grade==='blunder'&&m.color==='w'));
   assert.equal(afterFailure.mentorSource,'fallback','an unsuccessful broker call must not masquerade as AI');
   assert.equal(await page.locator('.mentor-thinking').count(),0,'thinking label disappears when fallback is ready');
   assert.equal(afterFailure.mentorReason,'broker_timeout','the reason is available for debugging');
   await page.locator('[data-mentor-action="retry-explanation"]').click();
-  await page.waitForFunction(()=>document.querySelector('.mentor-feedback-text')?.textContent?.includes('быструю атаку'),
+  await page.waitForFunction(()=>window.RPChessMentorTraining.state.moves.findLast(m=>m.grade==='blunder'&&m.color==='w')?.mentorSource==='minimax',
    null,{timeout:15000});
   const afterSuccess=await page.evaluate(()=>window.RPChessMentorTraining.state.moves.findLast(m=>m.grade==='blunder'&&m.color==='w'));
   assert.equal(afterSuccess.mentorSource,'minimax','a successful backup model is recorded');
@@ -223,28 +223,51 @@ fs.mkdirSync(output,{recursive:true});
   assert.equal(mockedMentorCalls,2,'manual retry does not require replaying a move');
   assert.equal(await page.locator('[data-mentor-action="retry-explanation"]').count(),0,'retry disappears on success');
   await page.screenshot({path:path.join(output,'battle-deep-mentor-response.png'),animations:'disabled'});
-  // The learning exercise uses the verified pre-tactic position, not the live game.
-  const lessonBefore=await page.evaluate(()=>window.RPChessMentorTraining.state.moves.map(m=>m.uci));
-  await page.locator('[data-mentor-action="lesson-start"]').click();
-  assert(await page.locator('.mentor-learning-question').count(),'verified lesson opens');
-  assert.equal((await page.locator('[data-mentor-square="d8"] .mentor-piece').count()),1,
-   'question board resets to the position before the dangerous black queen move');
+  // An inaccurate move keeps the rival on move without letting it reply.
+  await page.waitForFunction(()=>window.RPChessMentorTraining.state.lesson==='mate_sequence',null,{timeout:15000});
+  let paused=await page.evaluate(()=>window.RPChessMentorTraining.state);
+  assert(paused.paused,'the rival turn is paused on a classified error');
+  assert.equal(paused.moves.length,3,'the rival must NOT answer before the learner resolves the lesson');
+  assert.equal(await page.locator('[data-mentor-action="lesson-start"]').count(),0,
+   'the question opens automatically without an extra button');
+  assert(await page.locator('.mentor-learning-question').count(),'question displayed immediately');
+  assert.equal(await page.locator('[data-mentor-square="d8"] .mentor-piece').count(),1,
+   'the real board after the player move still shows black queen on d8');
   await page.locator('[data-mentor-square="e8"]').click();
-  assert((await page.locator('.mentor-learning-response').textContent()).includes('другая фигура'),
-   'incorrect selection gets feedback without revealing the answer');
+  assert(await page.locator('[data-mentor-square="e8"] .mentor-lesson-aura--wrong').count(),
+   'wrong rival piece flashes with red aura');
+  assert((await page.locator('[data-mentor-square="e8"] .mentor-lesson-burst--wrong').textContent())
+   .includes('Это другая фигура.'),'large red text emerges from the incorrect piece');
+  assert.equal(await page.locator('.mentor-learning-response').count(),0,
+   'click feedback never duplicates in the mentor panel');
   await page.locator('[data-mentor-action="lesson-hint"]').click();
   assert(await page.locator('.mentor-learning-hint').count(),'graded hint appears on demand');
   await page.locator('[data-mentor-square="d8"]').click();
-  assert((await page.locator('.mentor-learning-answer').textContent()).includes('d8–h4'),
-   'correct answer reveals only the verified Stockfish move');
-  assert.equal(await page.locator('[data-mentor-square="h4"].mentor-lesson-target').count(),1,
-   'resolved tactic points to its real destination');
+  assert(await page.locator('[data-mentor-square="d8"] .mentor-lesson-aura--correct').count(),
+   'correct rival piece flashes with green aura');
+  assert((await page.locator('[data-mentor-square="d8"] .mentor-lesson-burst--correct').textContent())
+   .includes('Верно, ты нашёл нужную фигуру!'),'green confirmation emerges from the chosen queen');
+  await page.waitForFunction(()=>document.querySelector('.mentor-learning-answer')?.textContent?.includes('d8–h4')
+   &&document.querySelector('[data-mentor-square="h4"].mentor-lesson-target'),null,{timeout:4000});
+  assert.equal(await page.locator('.mentor-learning-hint').count(),0,
+   'hints disappear from the final mentor explanation');
+  assert.equal(await page.locator('.mentor-learning-instruction').count(),0);
+  assert.equal(await page.locator('.mentor-learning-response').count(),0);
+  assert.equal(await page.locator('.mentor-learning-question').count(),0,
+   'the final explanation contains no redundant question or repeated success label');
   assert.equal(await page.locator('[data-mentor-square="e1"].mentor-lesson-threat').count(),1,
-   'the revealed mate highlights the actually threatened king');
+   'revealed mate shows the actual threatened king');
+  assert.equal((await page.evaluate(()=>window.RPChessMentorTraining.state)).moves.length,3,
+   'rival is still paused while the learner reads the explanation');
   await page.screenshot({path:path.join(output,'battle-interactive-mate-lesson.png'),animations:'disabled'});
   await page.locator('[data-mentor-action="lesson-close"]').click();
-  assert.deepEqual(await page.evaluate(()=>window.RPChessMentorTraining.state.moves.map(m=>m.uci)),
-   lessonBefore,'training on the analysis board never changes the live game');
+  await page.waitForFunction(()=>window.RPChessMentorTraining.state.moves.length>3,null,{timeout:25000});
+  const afterResume=await page.evaluate(()=>window.RPChessMentorTraining.state);
+  assert(!afterResume.paused,'explicit continue releases the rival turn');
+  assert.equal(afterResume.moves[3].color,'b','rival responds only AFTER the learner continues');
+  await page.evaluate(()=>window.RPChessMentorTraining.back());
+  assert.equal((await page.evaluate(()=>window.RPChessMentorTraining.state)).cursor,3,
+   'history review is still available after the paused turn is released');
   // The computed line can be explored without modifying actual training moves.
   const playedHistory=await page.evaluate(()=>window.RPChessMentorTraining.state.moves.map(m=>m.uci));
   await page.locator('[data-mentor-action="open-variation"]').click();
