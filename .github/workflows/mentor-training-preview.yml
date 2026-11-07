@@ -64,7 +64,7 @@ jobs:
           test -n "$CLOUDFLARE_API_TOKEN"
           test -n "$CLOUDFLARE_ACCOUNT_ID"
           export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
-          test "$(grep '^name =' mentor-api/wrangler.toml)" = 'name = "rpchess-mentor-api-preview"'
+          test "$(grep -m 1 '^name =' mentor-api/wrangler.toml)" = 'name = "rpchess-mentor-api-preview"'
           npx wrangler deploy --config mentor-api/wrangler.toml
       - name: Install optional Gonka broker secret (never in browser or logs)
         env:
