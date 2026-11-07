@@ -60,7 +60,7 @@ async function handleMentorApi(request,env,fetcher=fetch,sleep=waitForRetry,cont
  // Never run a paid upstream request when no rate-limiting binding is installed.
  if(!env.MENTOR_GLOBAL_LIMIT?.limit||!env.MENTOR_ACTOR_LIMIT?.limit)
   return reply({error:'limit_unconfigured'},503,origin);
- if(!env.GONKA_API_KEY)return reply({error:'broker_unconfigured'},503,origin);
+ if(!isV2&&!env.GONKA_API_KEY)return reply({error:'broker_unconfigured'},503,origin);
  if(!request.headers.get('Content-Type')?.startsWith('application/json'))
   return reply({error:'content_type'},415,origin);
  if(Number(request.headers.get('Content-Length')||0)>4096)return reply({error:'too_large'},413,origin);
@@ -73,6 +73,9 @@ async function handleMentorApi(request,env,fetcher=fetch,sleep=waitForRetry,cont
  let data;
  try{data=isV2?validatedV2Facts(json):validateMentorInput(json);}
  catch{return reply({error:'invalid_analysis'},422,origin);}
+ // V2 must reject forged/non-chess payloads even when no Gonka key exists.
+ // No rate-limit token or paid provider call is consumed by these requests.
+ if(isV2&&!env.GONKA_API_KEY)return reply({error:'broker_unconfigured'},503,origin);
  // A visitor ID is client-generated, not authentication; global budget protects
  // against unlimited visitor-ID rotation. Limit binding is approximate per PoP.
  const visitor=request.headers.get('X-Mentor-Session')||'';
