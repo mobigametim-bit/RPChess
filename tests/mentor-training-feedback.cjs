@@ -9,7 +9,7 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  const {rebuildTraining}=await imp('game/js/mentor-training-history.mjs');
  const {validateMentorInput,promptForMentor,safeExplanation,localMentorFallback,describeMentorFact}=await imp('game/js/mentor-training-feedback-core.mjs');
  const {THINKING,PRAISE,thinkingText,praiseText,fallbackText}=await imp('game/js/mentor-training-copy.mjs');
- const {classifyStrongMove}=await imp('game/js/finished-game-review.mjs');
+ const {classifyStrongMove,gradeReviewAttempt}=await imp('game/js/finished-game-review.mjs');
  const {buildMentorPayload,requestMentorText}=await imp('game/js/mentor-training-feedback-client.mjs');
  const {tacticalEvidence,MAX_PV}=await imp('game/js/mentor-training-tactics.mjs');
  const {evaluateStaticExchange}=await imp('game/js/mentor-training-exchange.mjs');
@@ -78,6 +78,36 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  const body={version:1,language:'ru',beforeFen,afterFen,uci:'g2g4',grade:'blunder',
   before:{cp:90,depth:11,bestMove:'b1c3',pv:['b1c3','b8c6']},
   after:{cp:200,depth:10,pv:['d8h4']}};
+ // Stage 5: optional correction is judged from the pre-error position.
+ const strongAlternative={beforeFen,beforeCp:50,bestMove:'b1c3'};
+ let alternativeEvaluations=0;
+ const alternate=await gradeReviewAttempt(strongAlternative,'g1f3',{
+  engine:{evaluate:async fen=>{
+   alternativeEvaluations++;
+   assert.equal(new ClassicChessEngine(fen).turn(),'b');
+   return {cp:-35,depth:12,bestMove:'b8c6'};
+  }},tolerance:70
+ });
+ assert.equal(alternate.accepted,true,'a good alternative need not match engine UCI');
+ assert.equal(alternate.loss,15);
+ assert.equal(alternativeEvaluations,1);
+ const badCorrection=await gradeReviewAttempt(strongAlternative,'g2g4',{
+  engine:{evaluate:async()=>({cp:250,depth:12,bestMove:'d8h4'})},tolerance:70
+ });
+ assert.equal(badCorrection.accepted,false);
+ assert.equal(badCorrection.loss,300);
+ const exactBest=await gradeReviewAttempt(strongAlternative,'b1c3',{
+  engine:{evaluate:async()=>{throw Error('best move should bypass new evaluation');}}
+ });
+ assert.equal(exactBest.accepted,true);
+ const shallow=await gradeReviewAttempt(strongAlternative,'g1f3',{
+  engine:{evaluate:async()=>({cp:-20,depth:2})}
+ });
+ assert.equal(shallow.unavailable,true);
+ const illegal=await gradeReviewAttempt(strongAlternative,'e2e5',{
+  engine:{evaluate:async()=>{throw Error('illegal move should not reach review');}}
+ });
+ assert.equal(illegal.invalid,true);
  const facts=validateMentorInput(body);
  assert.equal(facts.motive,'checkmate');
  assert.equal(facts.loss,290);
