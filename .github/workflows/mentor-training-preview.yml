@@ -7,6 +7,7 @@ on:
       - '.github/workflows/mentor-training-preview.yml'
       - 'game/**'
       - 'mentor-preview/**'
+      - 'mentor-api/**'
       - 'scripts/build.cjs'
       - 'scripts/run-browser-tests.cjs'
       - 'tests/mentor-training*'
@@ -54,6 +55,58 @@ jobs:
           path: test-results/mentor-training
           retention-days: 7
           if-no-files-found: warn
+      - name: Deploy isolated mentor explanation API Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          test "$(grep '^name =' mentor-api/wrangler.toml)" = 'name = "rpchess-mentor-api-preview"'
+          npx wrangler deploy --config mentor-api/wrangler.toml
+      - name: Install optional Gonka broker secret (never in browser or logs)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          MENTOR_GONKA_SECRET: ${{ secrets.GONKA_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -n "$MENTOR_GONKA_SECRET" ]; then
+            export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+            printf '%s' "$MENTOR_GONKA_SECRET" | npx wrangler secret put GONKA_API_KEY --config mentor-api/wrangler.toml
+            echo 'Mentor broker secret configured.'
+          else
+            echo 'Mentor API deployed without Gonka key (safe local fallback).'
+          fi
+      - name: Verify API Worker is isolated and health endpoint is public
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          (async()=>{
+           const base='https://rpchess-mentor-api-preview.mobigametim.workers.dev';
+           let verified=false;
+           for(let attempt=1;attempt<=18;attempt++){
+            try{
+             const r=await fetch(base+'/health',{cache:'no-store'});
+             assert.equal(r.status,200);
+             const health=await r.json();
+             assert.equal(health.ok,true);
+             assert.equal(typeof health.configured,'boolean');
+             const deny=await fetch(base+'/v1/explain',{method:'POST',
+              headers:{Origin:'https://invalid.example','Content-Type':'application/json'},body:'{}'});
+             assert.equal(deny.status,403);
+             console.log('Mentor API deployed. Broker key configured:',health.configured);
+             verified=true;break;
+            }catch(error){
+             console.log('Mentor API propagation check '+attempt+'/18: '+error.message);
+             if(attempt<18)await new Promise(resolve=>setTimeout(resolve,5000));
+            }
+           }
+           assert(verified,'mentor API did not become ready');
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          NODE
       - name: Deploy isolated static Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -104,5 +157,5 @@ jobs:
         run: |
           echo '### Mentor training MVP candidate' >> "$GITHUB_STEP_SUMMARY"
           echo 'https://rpchess-mentor-training-preview.mobigametim.workers.dev/' >> "$GITHUB_STEP_SUMMARY"
-          echo 'No DeepSeek/Gonka requests; local Stockfish analysis and explanations only.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'DeepSeek via separate API Worker; missing secret → verified local fallback. API Worker rate limits enabled.' >> "$GITHUB_STEP_SUMMARY"
           echo 'No production code or Workers deployed.' >> "$GITHUB_STEP_SUMMARY"

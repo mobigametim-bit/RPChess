@@ -9,6 +9,7 @@ import { createMentorMotion } from './mentor-training-motion.mjs';
 import { fantasyPieceMarkup } from './fantasy-piece.mjs';
 import { currentLanguage, subscribe } from './i18n.mjs';
 import { TRAINING_MENTORS, UCI, rebuildTraining, extendTraining, trainingMoveQuality } from './mentor-training-history.mjs';
+import {buildMentorPayload,requestMentorText} from './mentor-training-feedback-client.mjs';
 
 const STORAGE_KEY='rpchess.mentor-training.v1';
 const ROLES={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
@@ -27,6 +28,8 @@ let root=null,ai=null,review=null,reviewStarted=null,reviewChain=Promise.resolve
 let selected=1,color='w',playing=false,moves=[],cursor=0,square=null,promotion=null,busy=false,gameEpoch=0,journalOpen=false,analysisPending=false;
 let feedbackCache=new Map(),evaluationInFlight=new Map();
 let boardNode=null,dragActive=false,motion=null;
+let mentorReplyAbort=null;
+const mentorReplyCache=new Map();
 function lang(){return currentLanguage()==='en'?'en':'ru';}
 function t(name){return TEXT[lang()][name]||name;}
 function title(mentor){return mentor[lang()];}
@@ -49,6 +52,7 @@ function restore(){
 }
 function game(){return rebuildTraining(moves,cursor);}
 function cancel(){
+ mentorReplyAbort?.abort();mentorReplyAbort=null;
  gameEpoch++;busy=false;analysisPending=false;square=null;promotion=null;dragActive=false;
  motion?.clear();ai?.stop();review?.close();review=null;reviewStarted=null;reviewChain=Promise.resolve();evaluationInFlight=new Map();
 }
@@ -253,6 +257,7 @@ function moveCursor(next){
  // Browsing a previous move never requests a new computer response.
 }
 function cancelPending(){
+ mentorReplyAbort?.abort();mentorReplyAbort=null;
  gameEpoch++;busy=false;analysisPending=false;square=null;promotion=null;dragActive=false;motion?.clear();ai?.stop();
 }
 async function ensureReview(){
@@ -302,6 +307,27 @@ async function computerMove(){
  if(step.ok){moves=step.moves;cursor=step.cursor;moves[cursor-1].color=chess.turn();save();}
  busy=false;render();if(step.ok)motion?.play(geometry);preEvaluate();
 }
+async function explainVerifiedMove({beforeFen,afterFen,uci,kind,before,after,entry,epoch}){
+ let request;
+ try{
+  request=buildMentorPayload({beforeFen,afterFen,uci,grade:kind,before,after,language:lang()});
+ }catch{return;}
+ const cacheKey=beforeFen+'|'+uci+'|'+kind+'|'+lang();
+ let explanation=mentorReplyCache.get(cacheKey);
+ if(!explanation){
+  const controller=new AbortController();
+  mentorReplyAbort=controller;
+  try{explanation=await requestMentorText({payload:request.payload,verified:request.verified,signal:controller.signal});}
+  catch{return;}
+  if(controller.signal.aborted)return;
+  if(mentorReplyAbort===controller)mentorReplyAbort=null;
+  mentorReplyCache.set(cacheKey,explanation);
+ }
+ if(epoch!==gameEpoch||!playing||!moves.includes(entry))return;
+ entry.message=explanation;
+ save();
+ render();
+}
 async function userMove(from,to,promote=null){
  if(busy||!playing)return;
  const chess=game(),who=chess.turn();
@@ -318,10 +344,10 @@ async function userMove(from,to,promote=null){
  moves=change.moves;cursor=change.cursor;
  moves[cursor-1].color=who;
  square=null;busy=true;analysisPending=true;save();render();motion?.play(geometry);
- let data=null;
+ let data=null,before=null,after=null;
  try{
-  const before=await evaluate(beforeFen);
-  const after=await evaluate(change.fen);
+  before=await evaluate(beforeFen);
+  after=await evaluate(change.fen);
   data=trainingMoveQuality(before,after,uci);
  }catch{}
  if(epoch!==gameEpoch||!playing)return;
@@ -332,8 +358,12 @@ async function userMove(from,to,promote=null){
   moves[cursor-1].analysisUnavailable=true;
  }
  busy=false;analysisPending=false;save();render();
+ if(data?.kind&&before&&after){
+  const entry=moves[cursor-1];
+  // Fire-and-forget: the rival is free to respond without waiting for DeepSeek.
+  void explainVerifiedMove({beforeFen,afterFen:change.fen,uci,kind:data.kind,before,after,entry,epoch});
+ }
  if(cursor===moves.length&&game().status().over)return;
- // The next move is independent of a remote language model.
  resumeAI();
 }
 function onClick(event){
