@@ -85,7 +85,7 @@ function validatedV2Facts(raw){
   bestMove:before.bestMove,afterLine:deep.pv.slice(0,MAX_PV),
   motive:threat.kind,tactics:captures.events,verifiedThreat:threat,
   factId,verifiedFact:fact,learningPrinciple:copy.principle,
-  learningQuestion:copy.question
+  learningQuestion:copy.question,lesson
  };
 }
 function verifiedImmediateFact({threat,afterFen,language}){
