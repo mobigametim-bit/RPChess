@@ -139,6 +139,7 @@ function promptForMentorV2(data){
 function mentorAdviceValidationIssue(value,data){
  if(typeof value!=='string'||!data?.verifiedFact)return 'invalid_type';
  const s=value.trim().replace(/\s+/g,' ');
+ if(data.language==='en'&&/[\u0400-\u052f]/.test(s))return 'wrong_language';
  if(s.length<25||s.length>230)return 'length';
  if(/[<>{}\r\n\x60]|https?:|www\./i.test(s))return 'markup';
  const sentences=(s.match(/[.!?](?=\s|$)/g)||[]).length;
