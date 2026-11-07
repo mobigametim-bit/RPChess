@@ -7,6 +7,7 @@ on:
       - '.github/workflows/mentor-web-speech-preview.yml'
       - 'game/**'
       - 'tests/mentor-training-browser.cjs'
+      - 'scripts/build.cjs'
       - 'mentor-evidence-preview/**'
   workflow_dispatch:
 
