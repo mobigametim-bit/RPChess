@@ -9,6 +9,29 @@ fs.mkdirSync(output,{recursive:true});
  const browser=await chromium.launch({headless:true});
  try{
   const page=await browser.newPage({viewport:{width:1280,height:800}});
+  // Stub only browser TTS: tests need neither a speaker nor external audio calls.
+  await page.addInitScript(()=>{
+   window.__mentorSpeechEvents=[];window.__mentorSpeechLast=null;
+   const synth={
+    getVoices:()=>[
+     {name:'Russian female',lang:'ru-RU',localService:true},
+     {name:'Microsoft Pavel',lang:'ru-RU',localService:false},
+     {name:'US English female',lang:'en-US',localService:true},
+     {name:'Google UK English Male',lang:'en-GB',localService:false}
+    ],
+    cancel:()=>window.__mentorSpeechEvents.push({type:'cancel'}),
+    speak:utterance=>{
+     window.__mentorSpeechLast=utterance;
+     window.__mentorSpeechEvents.push({type:'speak',text:utterance.text,
+      language:utterance.lang,rate:utterance.rate,voice:utterance.voice?.lang,voiceName:utterance.voice?.name});
+    }
+   };
+   Object.defineProperty(window,'speechSynthesis',{value:synth,configurable:true});
+   Object.defineProperty(window,'SpeechSynthesisUtterance',{
+    value:class SpeechSynthesisUtteranceStub{constructor(text){this.text=text;}},
+    configurable:true
+   });
+  });
   const errors=[];page.on('pageerror',err=>errors.push(err.message));
   await page.goto(url,{waitUntil:'domcontentloaded'});
   await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
@@ -58,6 +81,40 @@ fs.mkdirSync(output,{recursive:true});
   assert((await page.locator('.mentor-selected-level').textContent()).includes('800'));
   await page.screenshot({path:path.join(output,'setup-landscape.png'),animations:'disabled'});
   await page.locator('[data-mentor-action="start"]').click();
+  const speak=page.locator('[data-mentor-action="speech"]');
+  assert.equal(await speak.count(),1,'speaker appears beside the mentor title');
+  assert.equal(await speak.isDisabled(),false,'speaker is available with visible mentor text');
+  assert.equal(await speak.getAttribute('aria-label'),'Озвучить текст наставника');
+  await speak.click();
+  assert.equal(await speak.getAttribute('aria-pressed'),'true');
+  const spoken=await page.evaluate(()=>window.__mentorSpeechEvents.find(e=>e.type==='speak'));
+  assert(spoken.text.includes('Продолжайте партию'),'only displayed mentor text is spoken');
+  assert.equal(spoken.language,'ru-RU');
+  assert.equal(spoken.voice,'ru-RU');
+  assert.equal(spoken.rate,1.5,'speech runs at 150% normal speed');
+   assert.equal(spoken.voiceName,'Microsoft Pavel',
+   'Pavel wins over the default local Russian female voice');
+  // The shared speech controller must prefer the requested UK male voice
+  // over default en-US voices without another backend or LLM request.
+  const englishVoice=await page.evaluate(async()=>{
+   const {createMentorSpeech}=await import('./js/mentor-training-speech.mjs');
+   const panel=document.createElement('section');
+   panel.innerHTML='<p class="mentor-feedback-text">Check the next move.</p>';
+   const narration=createMentorSpeech({
+    getRoot:()=>panel,getLanguage:()=> 'en',translate:key=>key
+   });
+   panel.insertAdjacentHTML('beforeend',narration.buttonMarkup());
+   narration.toggle();
+   const selection={name:window.__mentorSpeechLast.voice?.name,
+    lang:window.__mentorSpeechLast.lang,rate:window.__mentorSpeechLast.rate};
+   narration.stop();
+   return selection;
+  });
+  assert.deepEqual(englishVoice,{name:'Google UK English Male',lang:'en-GB',rate:1.5},
+   'Google UK English Male is preferred and utterance uses its actual locale');
+  await speak.click();
+  assert.equal(await speak.getAttribute('aria-pressed'),'false');
+  assert((await page.evaluate(()=>window.__mentorSpeechEvents)).some(e=>e.type==='cancel'));
   assert.equal(await page.locator('[data-mentor-square]').count(),64);
   assert.equal(await page.locator('.mentor-board [data-square]').count(),64);
   // Check the actual PNG response, not just the race name in computed CSS.
@@ -258,6 +315,16 @@ fs.mkdirSync(output,{recursive:true});
   assert.equal(afterSuccess.mentorModel,'MiniMaxAI/MiniMax-M2.7');
   assert.equal(mockedMentorCalls,2,'manual retry uses the stored verified v2 fact');
   assert((await page.locator('.mentor-learning-mentor-note').textContent()).includes('Перед ходом проверяй'));
+  const displayedNarration=(await page.locator('[data-mentor-ai-explanation]').textContent()).trim();
+  const callsBeforeNarration=mockedMentorCalls;
+  await page.locator('[data-mentor-action="speech"]').click();
+  const narration=await page.evaluate(()=>window.__mentorSpeechLast.text);
+  assert.equal(narration,displayedNarration,'TTS reads the displayed AI explanation verbatim');
+  assert.equal(mockedMentorCalls,callsBeforeNarration,'speech must not make another Gonka request');
+  assert.equal(await page.locator('[data-mentor-action="speech"]').getAttribute('aria-pressed'),'true');
+  await page.evaluate(()=>window.__mentorSpeechLast.onend());
+  assert.equal(await page.locator('[data-mentor-action="speech"]').getAttribute('aria-pressed'),'false',
+   'completed speech resets the toggle');
   assert.equal(await page.locator('.mentor-feedback-grade + .mentor-ai-explanation').count(),1,
    'independent AI explanation must follow error grade');
   assert.equal(await page.locator('.mentor-learning .mentor-learning-mentor-note').count(),0);

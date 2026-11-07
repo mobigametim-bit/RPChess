@@ -1,0 +1,154 @@
+name: Mentor Web Speech isolated preview
+
+on:
+  push:
+    branches: [feature/mentor-web-speech-20261108]
+    paths:
+      - '.github/workflows/mentor-web-speech-preview.yml'
+      - 'game/**'
+      - 'tests/mentor-training-browser.cjs'
+      - 'tests/mentor-training-feedback.cjs'
+      - 'scripts/build.cjs'
+      - 'mentor-evidence-preview/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rpchess-mentor-web-speech-preview
+  cancel-in-progress: true
+
+jobs:
+  gate-and-preview:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/mentor-web-speech-20261108'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Canonical local regression gate and static build
+        run: |
+          npm ci --no-audit --no-fund
+          npm run gate:local
+      - name: Mentor browser voice interaction regression (Chromium)
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+          RPCHESS_BROWSER_TEST=mentor-training-browser.cjs npm run test:browser
+      - name: Save mentor preview browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mentor-web-speech-screenshots
+          path: test-results/mentor-training
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Deploy STATIC Mentor preview only (do not touch Mentor API or production)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          test "$(grep -m 1 '^name =' mentor-evidence-preview/wrangler.toml)" = 'name = "rpchess-mentor-training-preview"'
+          npx wrangler deploy --config mentor-evidence-preview/wrangler.toml
+      - name: Verify deployed Web Speech module (no external TTS or paid calls)
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          (async()=>{
+           const base='https://rpchess-mentor-training-preview.mobigametim.workers.dev';
+           let ok=false;
+           for(let i=0;i<12;i++){
+            try{
+             const index=await fetch(base+'/?mentor_speech=20261108',{cache:'no-store'});
+             assert.equal(index.status,200,'preview index must respond');
+             const html=await index.text();
+             assert(html.includes('mentor-training-app.mjs?v=20261108-tts-speed-v3'));
+             const module=await fetch(base+'/js/mentor-training-speech.mjs',{cache:'no-store'});
+             assert.equal(module.status,200,'voice controller module must be deployed');
+             const source=await module.text();
+             assert(source.includes('createMentorSpeech'));
+             assert(source.includes('speechSynthesis'));
+             assert(source.includes('utterance.rate=1.5'));
+             console.log('Mentor Web Speech static preview: PASS');
+             ok=true;break;
+            }catch(error){
+             console.log('Static propagation '+(i+1)+'/12: '+error.message);
+             if(i<11)await new Promise(resolve=>setTimeout(resolve,3000));
+            }
+           }
+           assert(ok,'Web Speech preview did not become ready');
+          })().catch(error=>{console.error(error);process.exitCode=1});
+          NODE
+
+      - name: Two real English DeepSeek v2 explanations (opt-in, one provider call per request)
+        if: contains(github.event.head_commit.message, '[mentor-en-live]')
+        timeout-minutes: 5
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {buildMentorV2Payload} from './game/js/mentor-training-feedback-client.mjs';
+          import {composeMentorV2Explanation} from './game/js/mentor-training-feedback-v2.mjs';
+          const origin='https://rpchess-mentor-training-preview.mobigametim.workers.dev';
+          const base='https://rpchess-mentor-api-v2-preview.mobigametim.workers.dev';
+          const health=await fetch(base+'/health',{cache:'no-store'});
+          assert.equal(health.status,200);
+          const config=await health.json();
+          assert.equal(config.contractVersion,2);
+          assert.equal(config.configured,true,'DeepSeek Worker has no configured key');
+          assert.equal(config.attemptsPerModel,1,'one upstream request maximum');
+          const beforeFen='rnbqkbnr/pppp1ppp/8/4p3/8/5P2/PPPPP1PP/RNBQKBNR w KQkq e6 0 2';
+          const afterFen='rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq g3 0 2';
+          const {payload,verified}=buildMentorV2Payload({
+           beforeFen,afterFen,uci:'g2g4',grade:'blunder',language:'en',
+           before:{cp:90,depth:12,bestMove:'b1c3'},
+           after:{cp:1200,mate:1,depth:12,bestMove:'d8h4',pv:['d8h4']},
+           continuation:{cp:1200,mate:1,depth:18,bestMove:'d8h4',pv:['d8h4'],
+            secondMove:'a7a6',secondCp:80,secondDepth:17},
+           verifiedThreat:{kind:'mate_sequence',uci:'d8h4',basis:'legal_checkmate'}
+          });
+          assert.equal(verified.language,'en');
+          let successful=0;
+          for(let i=1;i<=2;i++){
+           const start=Date.now();
+           const reply=await fetch(base+'/v2/explain',{
+            method:'POST',headers:{
+             Origin:origin,'Content-Type':'application/json',
+             'X-Mentor-Session':crypto.randomUUID(),'X-Mentor-Diagnostic':'one'
+            },
+            body:JSON.stringify(payload),signal:AbortSignal.timeout(90000)
+           });
+           const answer=await reply.json();
+           const valid=reply.status===200&&answer.contractVersion===2&&
+            answer.source==='deepseek'&&answer.model==='deepseek-ai/DeepSeek-V4-Flash-0731'&&
+            answer.grade===verified.grade&&answer.factId===verified.factId&&
+            answer.verifiedFact===verified.verifiedFact&&
+            answer.explanation===composeMentorV2Explanation(answer.advice,verified)&&
+            !/[\u0400-\u052f]/.test(answer.explanation||'');
+           console.log('EN_MENTOR_LIVE',JSON.stringify({
+            call:i,valid,http:reply.status,source:answer.source||null,
+            reason:valid?null:answer.reason||answer.error||'invalid_contract',
+            elapsedMs:Date.now()-start,attempts:answer.attempts||0
+           }));
+           if(valid){
+            successful++;
+            if(i===1)console.log('EN_MENTOR_EXAMPLE',answer.explanation);
+           }
+           if(i===1)await new Promise(resolve=>setTimeout(resolve,3000));
+          }
+          console.log('EN_MENTOR_SUMMARY',JSON.stringify({successful,total:2}));
+          assert.equal(successful,2,'two English DeepSeek answers must validate');
+          NODE
