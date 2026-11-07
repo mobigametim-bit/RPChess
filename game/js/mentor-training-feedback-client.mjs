@@ -1,4 +1,4 @@
-import {validateMentorInput,localMentorFallback,safeExplanation} from './mentor-training-feedback-core.mjs?v=20261107-mentor-learning-v2';
+import {validateMentorInput,localMentorFallback,safeExplanation} from './mentor-training-feedback-core.mjs?v=20261107-mentor-auto-pause-v3';
 
 const MENTOR_API='https://rpchess-mentor-api-preview.mobigametim.workers.dev';
 const TIMEOUT_MS=230000; // Max four attempts/model: (15 + 18 + 20)*4s + retry delays + network overhead.
