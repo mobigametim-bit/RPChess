@@ -51,7 +51,30 @@ jobs:
           path: test-results/mentor-training
           retention-days: 7
           if-no-files-found: warn
-      - name: Deploy isolated STATIC preview only (no Mentor API or production Workers)
+      - name: Verify Mentor API CORS for the exact preview hostname (no billable calls)
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          (async()=>{
+            const api='https://rpchess-mentor-api-preview.mobigametim.workers.dev/v1/explain';
+            const origin='https://rpchess-mentor-training-preview.mobigametim.workers.dev';
+            const preflight=await fetch(api,{method:'OPTIONS',headers:{
+              Origin:origin,
+              'Access-Control-Request-Method':'POST',
+              'Access-Control-Request-Headers':'content-type,x-mentor-session'
+            }});
+            assert.equal(preflight.status,204,'preview CORS preflight must be allowed');
+            assert.equal(preflight.headers.get('access-control-allow-origin'),origin,
+              'the preview origin must be explicitly allowed');
+            const invalid=await fetch(api,{method:'POST',headers:{
+              Origin:origin,'Content-Type':'application/json'
+            },body:'{}'});
+            assert.equal(invalid.status,422,'API should accept origin and reject invalid test payload before Gonka');
+            assert.equal(invalid.headers.get('access-control-allow-origin'),origin);
+            console.log('Mentor API preflight and non-billable validation: PASS');
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          NODE
+      - name: Deploy existing allowlisted Mentor STATIC preview (no Mentor API or production Workers)
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -60,14 +83,14 @@ jobs:
           test -n "$CLOUDFLARE_API_TOKEN"
           test -n "$CLOUDFLARE_ACCOUNT_ID"
           export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
-          test "$(grep '^name =' mentor-evidence-preview/wrangler.toml)" = 'name = "rpchess-mentor-evidence-preview"'
+          test "$(grep '^name =' mentor-evidence-preview/wrangler.toml)" = 'name = "rpchess-mentor-training-preview"'
           npx wrangler deploy --config mentor-evidence-preview/wrangler.toml
       - name: Verify preview is serving the revised code
         run: |
           node <<'NODE'
           const assert=require('node:assert/strict');
           (async()=>{
-            const base='https://rpchess-mentor-evidence-preview.mobigametim.workers.dev';
+            const base='https://rpchess-mentor-training-preview.mobigametim.workers.dev';
             let ok=false;
             for(let attempt=0;attempt<20;attempt++){
               try{
