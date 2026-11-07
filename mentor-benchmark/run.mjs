@@ -9,7 +9,8 @@ const MODELS=[
  'deepseek-ai/DeepSeek-V4-Flash-0731',
  'MiniMaxAI/MiniMax-M2.7','zai-org/GLM-5.3-Flash'
 ];
-const VARIANTS=['baseline','fast','schema'];
+const VARIANTS=(process.env.BENCHMARK_VARIANTS||'baseline,fast,schema').split(',');
+assert(VARIANTS.every(v=>['baseline','fast','schema','optimized'].includes(v)));
 const N=Number(process.env.BENCHMARK_PER_CELL||8);
 assert(Number.isInteger(N)&&N>0&&N<=30);
 assert(N*MODELS.length*VARIANTS.length<=600);
@@ -29,6 +30,20 @@ function percentile(items,p){
  const sorted=[...items].sort((a,b)=>a-b);
  return sorted[Math.min(sorted.length-1,Math.floor((sorted.length-1)*p))];
 }
+// Wait until the newly-provisioned short-lived Worker secret is visible.
+ // This sends malformed JSON to the authenticated endpoint and costs NO model calls.
+let ready=false;
+for(let attempt=0;attempt<20;attempt++){
+ try{
+  const response=await fetch(API,{method:'POST',
+   headers:{'content-type':'application/json','x-mentor-benchmark-token':secret},
+   body:'{}'});
+  if(response.status===400){ready=true;break;}
+ }catch{}
+ await sleep(1000);
+}
+assert(ready,'benchmark secret was not propagated to Cloudflare');
+console.log('BENCH_READY authenticated; paid calls not yet started');
 const cases=[];
 for(let i=0;i<N;i++)
  for(const model of MODELS)
