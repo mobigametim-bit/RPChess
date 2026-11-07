@@ -64,6 +64,14 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  assert.equal((await safe.json()).source,'verified_fallback');
  const health=await handleMentorApi(new Request('https://rpchess-mentor-api-preview.mobigametim.workers.dev/health'),{},fetcher);
  assert.equal(health.status,200);assert.equal((await health.json()).configured,false);
- assert.equal(calls,1,'never call broker for forbidden requests');
+ // Regress Cloudflare module-handler calling convention: the third argument
+ // supplied by Workers is ExecutionContext, not our injectable fetcher.
+ const actualFetch=globalThis.fetch;
+ try{
+  globalThis.fetch=fetcher;
+  const production=await (await imp('mentor-api/src/index.mjs')).default.fetch(req(body),good,{waitUntil(){}});
+  assert.equal(production.status,200,'Cloudflare fetch(request,env,ctx) must work');
+ }finally{globalThis.fetch=actualFetch;}
+ assert.equal(calls,2,'broker requested only for two valid, authorized inference tests');
  console.log('Mentor DeepSeek contract, API CORS, budgets, fallback & client: PASS');
 })().catch(err=>{console.error(err.stack||err);process.exitCode=1;});

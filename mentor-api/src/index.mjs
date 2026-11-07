@@ -102,5 +102,7 @@ async function handleMentorApi(request,env,fetcher=fetch){
   return reply({error:controller.signal.aborted?'broker_timeout':'broker_network'},503,origin);
  }finally{clearTimeout(timer);}
 }
-export default {fetch:handleMentorApi};
+/* Cloudflare's third fetch argument is ExecutionContext, not a fetch function.
+ * Adapt explicitly so the mockable helper never mistakes ctx for fetcher. */
+export default {fetch(request,env){return handleMentorApi(request,env,globalThis.fetch);}};
 export {handleMentorApi,validOrigin,reply};
