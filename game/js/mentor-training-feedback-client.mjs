@@ -1,4 +1,4 @@
-import {validateMentorInput,localMentorFallback} from './mentor-training-feedback-core.mjs';
+import {validateMentorInput,localMentorFallback,safeExplanation} from './mentor-training-feedback-core.mjs';
 
 const MENTOR_API='https://rpchess-mentor-api-preview.mobigametim.workers.dev';
 const TIMEOUT_MS=230000; // Max four attempts/model: (15 + 18 + 20)*4s + retry delays + network overhead.
@@ -61,7 +61,11 @@ async function requestMentorText({payload,verified,signal,fallbackText=null,fetc
    minimax:'MiniMaxAI/MiniMax-M2.7',glm:'zai-org/GLM-5.3-Flash'};
   if(!supported[json.source]||json.model&&json.model!==supported[json.source])
    return mentorFallback(fallback,'invalid_source');
-  return {explanation:json.explanation,source:json.source,
+  // Independently reject invented squares/exchanges even if the remote Worker
+  // has not yet been redeployed with the stricter shared checker.
+  const explanation=safeExplanation(json.explanation,verified);
+  if(!explanation)return mentorFallback(localMentorFallback(verified),'unverified_explanation');
+  return {explanation,source:json.source,
    model:supported[json.source],reason:null,attempts:json.attempts||1,
    modelAttempt:json.modelAttempt||1,
    failures:Array.isArray(json.failures)?json.failures.slice(0,11):[],retryable:false};
