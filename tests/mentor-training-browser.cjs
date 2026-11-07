@@ -233,6 +233,12 @@ fs.mkdirSync(output,{recursive:true});
   assert(await page.locator('.mentor-learning-question').count(),'question displayed immediately');
   assert.equal(await page.locator('[data-mentor-square="d8"] .mentor-piece').count(),1,
    'the real board after the player move still shows black queen on d8');
+  await page.setViewportSize({width:390,height:844});
+  assert((await page.locator('.mentor-learning-question').isVisible()),
+   'the automatic question must be visible on phones');
+  const lessonBoardBounds=await page.locator('.mentor-board').boundingBox();
+  assert(lessonBoardBounds?.width<=390,'paused lesson board fits a portrait phone');
+  await page.screenshot({path:path.join(output,'battle-automatic-lesson-portrait.png'),animations:'disabled'});
   await page.locator('[data-mentor-square="e8"]').click();
   assert(await page.locator('[data-mentor-square="e8"] .mentor-lesson-aura--wrong').count(),
    'wrong rival piece flashes with red aura');
@@ -240,6 +246,8 @@ fs.mkdirSync(output,{recursive:true});
    .includes('Это другая фигура.'),'large red text emerges from the incorrect piece');
   assert.equal(await page.locator('.mentor-learning-response').count(),0,
    'click feedback never duplicates in the mentor panel');
+  await page.screenshot({path:path.join(output,'battle-wrong-red-aura-portrait.png'),animations:'disabled'});
+  await page.setViewportSize({width:1280,height:800});
   await page.locator('[data-mentor-action="lesson-hint"]').click();
   assert(await page.locator('.mentor-learning-hint').count(),'graded hint appears on demand');
   await page.locator('[data-mentor-square="d8"]').click();
