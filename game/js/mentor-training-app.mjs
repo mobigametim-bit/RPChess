@@ -281,7 +281,8 @@ function lessonHTML(data){
   if(lessonView.stage>=1)section+='<p class="mentor-learning-hint">'+esc(copy.hint1)+'</p>';
   if(lessonView.stage>=2)section+='<p class="mentor-learning-hint">'+esc(copy.hint2)+'</p>';
  }else{
-  section+='<p class="mentor-learning-answer">'+esc(copy.answer)+'</p>'+
+  section+='<p class="mentor-learning-answer">'+esc(copy.answer)+'</p>'+ 
+   (data.mentorSource&&data.message?'<p class="mentor-learning-mentor-note">'+esc(data.message)+'</p>':'')+
    '<small class="mentor-learning-caveat">'+esc(copy.optional)+'</small>';
  }
  section+='<div class="mentor-learning-buttons">';
@@ -532,10 +533,9 @@ async function deliverMentorFeedback(entry,payload,verified,cacheKey,epoch){
   mentorReplyAbort?.abort();
   mentorReplyAbort=controller;
   try{
-   outcome=await requestMentorText({payload,verified,signal:controller.signal,
-    fallbackText:fallbackText(lang(),entry.grade)});
+   outcome=await requestMentorV2Text({payload,verified,signal:controller.signal});
   }catch{
-   outcome={explanation:fallbackText(lang(),entry.grade),source:'fallback',
+   outcome={explanation:localMentorV2Fallback(verified),source:'fallback',
     model:null,reason:'client_error',attempts:[],retryable:true};
   }
   if(controller.signal.aborted)return;
@@ -559,9 +559,10 @@ async function explainVerifiedMove({beforeFen,afterFen,uci,kind,before,after,con
  if(epoch!==gameEpoch||!playing||!moves.includes(entry)||entry.threatStatus!==TACTIC)return;
  let request;
  try{
-  request=buildMentorPayload({
+  request=buildMentorV2Payload({
    beforeFen,afterFen,uci,grade:kind,before,after,
-   continuation:continuation?.depth>=5?continuation:null,language:lang()
+   continuation:continuation?.depth>=5?continuation:null,language:lang(),
+   verifiedThreat:entry.mentorThreat
   });
  }catch{
   if(epoch===gameEpoch&&playing&&moves.includes(entry)){
@@ -578,21 +579,31 @@ async function explainVerifiedMove({beforeFen,afterFen,uci,kind,before,after,con
  // Analysis and optional retry survive reload without a second Stockfish pass.
  entry.analysisFen=afterFen;
  entry.analysisLine=request.verified.afterLine.slice(0,DEEP_PV_LIMIT);
- entry.mentorLesson=lessonFromVerified(request.verified);
+ entry.mentorLesson=request.verified.lesson;
  entry.mentorPayload=request.payload;
  if(pausedEntry===entry&&cursor===moves.length){
   // No opponent move has happened: the real board is exactly the exercise board.
   lessonView={entry,plan:entry.mentorLesson,stage:0,feedback:null};
   analysisView=null;square=null;
  }
+ entry.pending=false;entry.mentorRequested=false;entry.message='';
  save();render();
- await deliverMentorFeedback(entry,request.payload,request.verified,cacheKey,epoch);
+ // Do not call the provider before the learner has answered.
+}
+function requestAfterAnswer(entry){
+ if(!entry?.mentorPayload||entry.mentorRequested||entry.mentorSource)return;
+ let verified;
+ try{verified=validatedV2Facts(entry.mentorPayload);}catch{return;}
+ entry.mentorRequested=true;entry.pending=true;
+ const cacheKey='v2|'+verified.factId+'|'+verified.beforeFen+'|'+lang();
+ save();render();
+ void deliverMentorFeedback(entry,entry.mentorPayload,verified,cacheKey,gameEpoch);
 }
 async function retryMentorFeedback(){
  const found=latestPlayerNote(),entry=found?.move;
  if(!entry||entry.pending||entry.mentorSource!=='fallback'||!entry.mentorPayload)return;
  let verified;
- try{verified=validateMentorInput(entry.mentorPayload);}
+ try{verified=validatedV2Facts(entry.mentorPayload);}
  catch{return;}
  const payload=entry.mentorPayload;
  const cacheKey=payload.beforeFen+'|'+payload.uci+'|'+payload.grade+'|'+payload.language;
@@ -630,7 +641,7 @@ async function userMove(from,to,promote=null){
  try{
   before=await evaluate(beforeFen);
   after=await evaluate(change.fen);
-  data=trainingMoveQuality(before,after,uci);
+  data=trainingMoveQualityWinChance(before,after,uci);
  }catch{}
  if(epoch!==gameEpoch||!playing)return;
  if(data?.kind){
@@ -724,6 +735,7 @@ function onClick(event){
    lessonView.feedback=feedback;
    if(correct){lessonView.stage=3;lessonView.revealPending=true;}
    render();
+   if(correct)requestAfterAnswer(lessonView.entry);
    if(correct){
     const current=lessonView,epoch=gameEpoch;
     setTimeout(()=>{
@@ -770,7 +782,7 @@ function onClick(event){
  if(action==='lesson-reveal'&&lessonView?.plan){
   lessonView.stage=3;lessonView.feedback=null;lessonView.revealPending=false;
   analysisView={entry:lessonView.entry,index:moves.indexOf(lessonView.entry),offset:lessonView.plan.ply};
-  render();return;
+  render();requestAfterAnswer(lessonView.entry);return;
  }
  if(action==='lesson-close'&&lessonView){
   const shouldResume=pausedEntry===lessonView.entry&&cursor===moves.length;
