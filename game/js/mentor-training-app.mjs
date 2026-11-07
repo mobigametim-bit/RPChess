@@ -20,8 +20,8 @@ const DEEP_PV_LIMIT=20;
 const ROLES={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
 const SYMBOLS={w:{p:'♙',n:'♘',b:'♗',r:'♖',q:'♕',k:'♔'},b:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'}};
 const TEXT={
- ru:{title:'Тренировка с наставником',back:'Главное меню',mentor:'Наставник',mentorThinking:'Думаю…',lesson:'Проверить себя',lessonHint:'Подсказка',lessonShow:'Показать ответ',lessonExit:'Вернуться к партии',lessonBoard:'Найди фигуру с угрозой',moves:'Ходы',white:'Белые',black:'Чёрные',random:'Случайно',start:'Начать тренировку',new:'Новая тренировка',exit:'К наставникам',prev:'Назад',next:'Вперёд',close:'Закрыть',journal:'Ходы',ready:'Ваш ход',thinking:'Соперник думает…',analysing:'Анализ хода…',waiting:'Оценка недоступна',fine:'Продолжайте партию.',inaccuracy:'Неточность',mistake:'Ошибка',blunder:'Зевок',noGrade:'Нет замечаний',loss:'Потеря оценки',retry:'Позиция ухудшилась. Попробуйте вернуться назад и найти более сильное продолжение.',reviewFail:'Не удалось проверить ход. Партию можно продолжать.',gameOver:'Партия завершена',check:'Шах!',promotion:'Превращение пешки',before:'Вернуться перед ошибкой',clear:'Начать заново',profile:'Мощь',restore:'Продолжить тренировку',victory:'Победа!',defeat:'Поражение',draw:'Ничья',reviewGame:'Анализировать',menu:'Главное меню',mentors:'К наставникам',good:'Хороший ход',excellent:'Блестящий ход',view:'Посмотреть',engineLine:'Вариант Stockfish',afterMistake:'После ошибки',returnToGame:'К партии',retryAI:'Повторить запрос ИИ'},
- en:{title:'Training with a Mentor',back:'Main menu',mentor:'Mentor',mentorThinking:'Thinking…',lesson:'Test yourself',lessonHint:'Hint',lessonShow:'Reveal answer',lessonExit:'Return to game',lessonBoard:'Find the threatening piece',moves:'Moves',white:'White',black:'Black',random:'Random',start:'Start training',new:'New training',exit:'Mentors',prev:'Back',next:'Forward',close:'Close',journal:'Moves',ready:'Your move',thinking:'Opponent thinking…',analysing:'Analysing move…',waiting:'Evaluation unavailable',fine:'Continue the game.',inaccuracy:'Inaccuracy',mistake:'Mistake',blunder:'Blunder',noGrade:'No issues found',loss:'Evaluation lost',retry:'This move worsened your position. Go back and try to find a stronger continuation.',reviewFail:'The move could not be evaluated. You can continue playing.',gameOver:'Game over',check:'Check!',promotion:'Promote pawn',before:'Return before error',clear:'Start over',profile:'Strength',restore:'Resume training',victory:'Victory!',defeat:'Defeat',draw:'Draw',reviewGame:'Analyse',menu:'Main menu',mentors:'Mentors',good:'Good move',excellent:'Brilliant move',view:'View',engineLine:'Stockfish line',afterMistake:'After the mistake',returnToGame:'Back to game',retryAI:'Retry AI explanation'}
+ ru:{title:'Тренировка с наставником',back:'Главное меню',mentor:'Наставник',mentorThinking:'Думаю…',lesson:'Проверить себя',lessonHint:'Подсказка',lessonShow:'Показать ответ',lessonExit:'Продолжить партию',lessonBoard:'Найди ответ соперника',lessonPending:'Наставник ищет опасное продолжение…',moves:'Ходы',white:'Белые',black:'Чёрные',random:'Случайно',start:'Начать тренировку',new:'Новая тренировка',exit:'К наставникам',prev:'Назад',next:'Вперёд',close:'Закрыть',journal:'Ходы',ready:'Ваш ход',thinking:'Соперник думает…',analysing:'Анализ хода…',waiting:'Оценка недоступна',fine:'Продолжайте партию.',inaccuracy:'Неточность',mistake:'Ошибка',blunder:'Зевок',noGrade:'Нет замечаний',loss:'Потеря оценки',retry:'Позиция ухудшилась. Попробуйте вернуться назад и найти более сильное продолжение.',reviewFail:'Не удалось проверить ход. Партию можно продолжать.',gameOver:'Партия завершена',check:'Шах!',promotion:'Превращение пешки',before:'Вернуться перед ошибкой',clear:'Начать заново',profile:'Мощь',restore:'Продолжить тренировку',victory:'Победа!',defeat:'Поражение',draw:'Ничья',reviewGame:'Анализировать',menu:'Главное меню',mentors:'К наставникам',good:'Хороший ход',excellent:'Блестящий ход',view:'Посмотреть',engineLine:'Вариант Stockfish',afterMistake:'После ошибки',returnToGame:'К партии',retryAI:'Повторить запрос ИИ'},
+ en:{title:'Training with a Mentor',back:'Main menu',mentor:'Mentor',mentorThinking:'Thinking…',lesson:'Test yourself',lessonHint:'Hint',lessonShow:'Reveal answer',lessonExit:'Continue game',lessonBoard:'Find the opponent’s reply',lessonPending:'Mentor is checking the opponent’s reply…',moves:'Moves',white:'White',black:'Black',random:'Random',start:'Start training',new:'New training',exit:'Mentors',prev:'Back',next:'Forward',close:'Close',journal:'Moves',ready:'Your move',thinking:'Opponent thinking…',analysing:'Analysing move…',waiting:'Evaluation unavailable',fine:'Continue the game.',inaccuracy:'Inaccuracy',mistake:'Mistake',blunder:'Blunder',noGrade:'No issues found',loss:'Evaluation lost',retry:'This move worsened your position. Go back and try to find a stronger continuation.',reviewFail:'The move could not be evaluated. You can continue playing.',gameOver:'Game over',check:'Check!',promotion:'Promote pawn',before:'Return before error',clear:'Start over',profile:'Strength',restore:'Resume training',victory:'Victory!',defeat:'Defeat',draw:'Draw',reviewGame:'Analyse',menu:'Main menu',mentors:'Mentors',good:'Good move',excellent:'Brilliant move',view:'View',engineLine:'Stockfish line',afterMistake:'After the mistake',returnToGame:'Back to game',retryAI:'Retry AI explanation'}
 };
 const RACES={
  ru:{humans:'Люди',orcs:'Орки',fae:'Феи',dark_elves:'Тёмные эльфы',dwarves:'Гномы',undead:'Нежить',demons:'Демоны',elves:'Эльфы',dragonborn:'Дракониды',angels:'Ангелы',constructs:'Конструкты'},
@@ -37,7 +37,9 @@ const deepInFlight=new Map();
 let boardNode=null,dragActive=false,motion=null;
 let mentorReplyAbort=null;
 let analysisView=null; // Separate engine variation viewer; never mutates played history.
-let lessonView=null; // Interactive position from verified Stockfish PV, not live game.
+let lessonView=null; // Automatic interactive lesson, on the post-mistake position.
+let pausedEntry=null; // Delay the opponent's move until the learner continues.
+let lessonFlashSeq=0;
 const mentorReplyCache=new Map();
 function lang(){return currentLanguage()==='en'?'en':'ru';}
 function t(name){return TEXT[lang()][name]||name;}
@@ -46,7 +48,7 @@ function race(mentor){return RACES[lang()][mentor.race]||mentor.race;}
 function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function mentor(){return TRAINING_MENTORS[selected-1];}
 function save(){
- try{localStorage.setItem(STORAGE_KEY,JSON.stringify({version:1,selected,color,playing,moves,cursor}));}catch{}
+ try{localStorage.setItem(STORAGE_KEY,JSON.stringify({version:1,selected,color,playing,moves,cursor,pausedAt:pausedEntry?moves.indexOf(pausedEntry):-1}));}catch{}
 }
 function restore(){
  try{
@@ -57,11 +59,17 @@ function restore(){
   rebuildTraining(restoredMoves,restoredMoves.length);
   selected=raw.selected;color=['w','b','r'].includes(raw.color)?raw.color:'w';
   moves=restoredMoves;cursor=Math.max(0,Math.min(moves.length,Number(raw.cursor)||0));playing=Boolean(raw.playing);
- }catch{playing=false;moves=[];cursor=0;}
+  pausedEntry=Number.isInteger(raw.pausedAt)&&raw.pausedAt>=0&&raw.pausedAt===cursor-1&&
+   cursor===moves.length&&['inaccuracy','mistake','blunder'].includes(moves[raw.pausedAt]?.grade)
+   ?moves[raw.pausedAt]:null;
+  lessonView=pausedEntry?{entry:pausedEntry,plan:pausedEntry.mentorLesson||null,
+   stage:pausedEntry.mentorLesson?0:-1,feedback:null}:null;
+  analysisView=null;
+ }catch{playing=false;moves=[];cursor=0;pausedEntry=null;lessonView=null;}
 }
 function game(){return rebuildTraining(moves,cursor);}
 function cancel(){
- mentorReplyAbort?.abort();mentorReplyAbort=null;analysisView=null;lessonView=null;
+ mentorReplyAbort?.abort();mentorReplyAbort=null;analysisView=null;lessonView=null;pausedEntry=null;
  gameEpoch++;busy=false;analysisPending=false;square=null;promotion=null;dragActive=false;
  motion?.clear();ai?.stop();review?.close();review=null;reviewStarted=null;reviewChain=Promise.resolve();evaluationInFlight=new Map();deepInFlight.clear();
 }
@@ -186,13 +194,17 @@ function boardHTML(chess,preview=false){
   const lessonOrigin=lessonMark&&sq===lessonView.plan.from;
   const lessonTarget=lessonMark&&sq===lessonView.plan.to;
   const lessonThreat=lessonMark&&lessonView.plan.targets?.includes(sq)&&!lessonOrigin&&!lessonTarget;
+  const flash=lessonView?.feedback?.square===sq?lessonView.feedback:null;
   const ownRace=piece?.color===currentPlayerColor()?'humans':mentor().race;
   let figure='';
   if(piece){
    figure='<img alt="" class="mentor-piece classic-piece" draggable="false" src="'+boardRacePiecePath(ownRace,ROLES[piece.type],piece.color)+'"><span class="mentor-piece-fallback">'+SYMBOLS[piece.color][piece.type]+'</span>'+fantasyPieceMarkup(piece.type,piece.color);
   }
   const sign=mark===sq&&piece?.color===currentPlayerColor()?'<span class="mentor-square-grade'+(['good','excellent'].includes(recentOwn.grade)?' mentor-square-grade--good':'')+'">'+({'inaccuracy':'?!','mistake':'?','blunder':'??',good:'!',excellent:'!!'}[recentOwn.grade])+'</span>':'';
-  grid+='<button type="button" data-mentor-square="'+sq+'" data-square="'+sq+'" class="mentor-square '+(dark?'is-dark':'is-light')+(highlight?' is-last':'')+(active?' is-selected':'')+(possible?' is-legal':'')+(index===checkedKing?' is-check classic-square--check':'')+(lessonOrigin?' mentor-lesson-origin':'')+(lessonTarget?' mentor-lesson-target':'')+(lessonThreat?' mentor-lesson-threat':'')+'" aria-label="'+sq+'">'+figure+sign+'</button>';
+  const flashText=flash?mentorLessonCopy(lessonView.plan,lang())[flash.kind]:'';
+  const flashArt=flash?'<span class="mentor-lesson-aura mentor-lesson-aura--'+flash.kind+'" aria-hidden="true"></span>'+
+    '<span class="mentor-lesson-burst mentor-lesson-burst--'+flash.kind+'" role="status">'+esc(flashText)+'</span>':'';
+  grid+='<button type="button" data-mentor-square="'+sq+'" data-square="'+sq+'" class="mentor-square '+(dark?'is-dark':'is-light')+(highlight?' is-last':'')+(active?' is-selected':'')+(possible?' is-legal':'')+(index===checkedKing?' is-check classic-square--check':'')+(lessonOrigin?' mentor-lesson-origin':'')+(lessonTarget?' mentor-lesson-target':'')+(lessonThreat?' mentor-lesson-threat':'')+(flash?' mentor-square-flash':'')+'" aria-label="'+sq+'">'+figure+sign+flashArt+'</button>';
  }
  const status=chess.status();
  // CSS variables consumed by an external stylesheet resolve relative url() against /css/.
@@ -237,21 +249,26 @@ function variationHTML(entry,index){
  '<button type="button" data-mentor-action="line-next" '+(active&&analysisView.offset>=entry.analysisLine.length?'disabled':'')+'>'+t('next')+' ❯</button></div></div>';
 }
 function lessonHTML(data){
- if(!data?.mentorLesson||['good','excellent'].includes(data.grade))return '';
- const active=lessonView?.entry===data;
- if(!active)return '<div class="mentor-learning-actions">'+button('lesson-start',t('lesson'),'mentor-outline mentor-learning-start')+'</div>';
- const plan=lessonView.plan,copy=mentorLessonCopy(plan,lang());
- let section='<section class="mentor-learning" aria-label="'+esc(t('lesson'))+'">'+
-  '<strong class="mentor-learning-question">'+esc(copy.question)+'</strong>';
- if(plan.from&&lessonView.stage<3)section+='<p class="mentor-learning-instruction">'+esc(copy.instruction)+'</p>';
- if(lessonView.stage>=1)section+='<p class="mentor-learning-hint">'+esc(copy.hint1)+'</p>';
- if(lessonView.stage>=2)section+='<p class="mentor-learning-hint">'+esc(copy.hint2)+'</p>';
- if(lessonView.feedback)section+='<p class="mentor-learning-response">'+esc(copy[lessonView.feedback]||'')+'</p>';
- if(lessonView.stage===3)section+='<p class="mentor-learning-answer">'+esc(copy.answer)+'</p>'+
+ if(!data||!lessonView||lessonView.entry!==data)return '';
+ const waiting=!lessonView.plan;
+ if(waiting)return '<section class="mentor-learning" aria-live="polite"><strong class="mentor-learning-question">'+t('lessonPending')+'</strong>'+
+  '<div class="mentor-learning-buttons">'+button('lesson-close',t('lessonExit'),'mentor-outline')+'</div></section>';
+ const plan=lessonView.plan,copy=mentorLessonCopy(plan,lang()),solved=lessonView.stage===3;
+ let section='<section class="mentor-learning" aria-label="'+esc(t('lesson'))+'">';
+ if(!solved){
+  section+='<strong class="mentor-learning-question">'+esc(copy.question)+'</strong>'+
+   '<p class="mentor-learning-instruction">'+esc(copy.instruction)+'</p>';
+  if(lessonView.stage>=1)section+='<p class="mentor-learning-hint">'+esc(copy.hint1)+'</p>';
+  if(lessonView.stage>=2)section+='<p class="mentor-learning-hint">'+esc(copy.hint2)+'</p>';
+ }else{
+  section+='<p class="mentor-learning-answer">'+esc(copy.answer)+'</p>'+
    '<small class="mentor-learning-caveat">'+esc(copy.optional)+'</small>';
+ }
  section+='<div class="mentor-learning-buttons">';
- if(lessonView.stage<2&&plan.from)section+=button('lesson-hint',t('lessonHint'),'mentor-outline');
- if(lessonView.stage<3)section+=button('lesson-reveal',t('lessonShow'),'mentor-outline');
+ if(!solved){
+  if(lessonView.stage<2)section+=button('lesson-hint',t('lessonHint'),'mentor-outline');
+  section+=button('lesson-reveal',t('lessonShow'),'mentor-outline');
+ }
  section+=button('lesson-close',t('lessonExit'),'mentor-outline')+'</div></section>';
  return section;
 }
@@ -267,15 +284,15 @@ function feedbackHTML(){
  return '<section class="mentor-feedback mentor-card"><div class="mentor-feedback-head">'+picture(mentor(),'mentor-face')+
  '<h2>'+t('mentor')+'</h2>'+(data?.pending?'<span class="mentor-thinking" role="status" aria-live="polite">'+t('mentorThinking')+'</span>':'')+'</div>'+
  (data?'<div class="mentor-feedback-grade'+(positive?' mentor-feedback-grade--good':'')+'"><strong>'+mark+'</strong><span>'+label+'</span></div>':'')+
- '<p class="mentor-feedback-text">'+esc(copy)+'</p>'+
+ (lessonView?.entry===data?'':'<p class="mentor-feedback-text">'+esc(copy)+'</p>')+
  (canView&&!lessonView?(analysisView?'':'<div class="mentor-analysis-actions">'+button('open-variation',t('view'),'mentor-outline mentor-view-btn')+'</div>')+variationHTML(data,found.index):'')+
  lessonHTML(data)+
- (data?.mentorSource==='fallback'&&data.mentorPayload?button('retry-explanation',t('retryAI'),'mentor-outline mentor-retry-ai'):'')+
+ (data?.mentorSource==='fallback'&&data.mentorPayload&&!lessonView?button('retry-explanation',t('retryAI'),'mentor-outline mentor-retry-ai'):'')+
  (found&&!positive?button('before-error',t('before'),'mentor-outline mentor-undo-error'):'')+'</section>';
 }
 function battleHTML(){
  const chess=variationPosition(),m=mentor(),status=chess.status();
- const notice=lessonView?t('lessonBoard'):busy?(analysisPending?t('analysing'):t('thinking')):status.over?t('gameOver'):status.checked?t('check'):t('ready');
+ const notice=lessonView?(lessonView.plan?t('lessonBoard'):t('analysing')):busy?(analysisPending?t('analysing'):t('thinking')):status.over?t('gameOver'):status.checked?t('check'):t('ready');
  return '<section class="mentor-battle"><header class="mentor-battle-top"><h1>'+t('title')+'</h1>'+
  '<div class="mentor-top-actions">'+button('journal',t('journal'),'mentor-small-btn mentor-journal-toggle')+
  button('catalog',t('exit'),'mentor-small-btn')+button('leave',t('back'),'mentor-small-btn')+'</div></header>'+
@@ -301,7 +318,7 @@ function highlightDragFrom(from){
 }
 function installMentorDrag(board){
  attachPieceDrag(board,{
-  canPick:from=>Boolean(playing&&!busy&&!promotion&&!analysisView&&cursor<=moves.length&&
+  canPick:from=>Boolean(playing&&!busy&&!promotion&&!analysisView&&!lessonView&&cursor<=moves.length&&
    game().turn()===currentPlayerColor()&&game().pieceAt(from)?.color===currentPlayerColor()&&!game().status().over),
   onStart:from=>{dragActive=true;highlightDragFrom(from);},
   onDrop:(from,to)=>{
@@ -344,7 +361,7 @@ function moveCursor(next){
  // Browsing a previous move never requests a new computer response.
 }
 function cancelPending(){
- mentorReplyAbort?.abort();mentorReplyAbort=null;analysisView=null;lessonView=null;
+ mentorReplyAbort?.abort();mentorReplyAbort=null;analysisView=null;lessonView=null;pausedEntry=null;
  gameEpoch++;busy=false;analysisPending=false;square=null;promotion=null;dragActive=false;motion?.clear();ai?.stop();
 }
 async function ensureReview(){
@@ -390,7 +407,7 @@ function preEvaluate(){
  if(playing&&currentPlayerColor()===game().turn()&&!game().status().over)void evaluate(game().fen()).catch(()=>{});
 }
 function resumeAI(){
- if(!playing||cursor!==moves.length||busy)return;
+ if(!playing||cursor!==moves.length||busy||pausedEntry)return;
  const chess=game();
  if(chess.status().over)return;
  if(chess.turn()!==currentPlayerColor())void computerMove();
@@ -468,6 +485,11 @@ async function explainVerifiedMove({beforeFen,afterFen,uci,kind,before,after,ent
  entry.analysisLine=request.verified.afterLine.slice(0,DEEP_PV_LIMIT);
  entry.mentorLesson=lessonFromVerified(request.verified);
  entry.mentorPayload=request.payload;
+ if(pausedEntry===entry&&cursor===moves.length){
+  // No opponent move has happened: the real board is exactly the exercise board.
+  lessonView={entry,plan:entry.mentorLesson,stage:0,feedback:null};
+  analysisView=null;square=null;
+ }
  save();render();
  await deliverMentorFeedback(entry,request.payload,request.verified,cacheKey,epoch);
 }
@@ -520,6 +542,8 @@ async function userMove(from,to,promote=null){
   moves[cursor-1].grade=data.kind;moves[cursor-1].loss=data.loss;
   moves[cursor-1].pending=true;
   moves[cursor-1].message=thinkingText(lang(),beforeFen+'|'+uci);
+  pausedEntry=moves[cursor-1];
+  lessonView={entry:pausedEntry,plan:null,stage:-1,feedback:null};
  }else if(data){
   const quality=classifyStrongMove({uci,beforeFen},before,data.loss);
   if(quality){
@@ -532,11 +556,11 @@ async function userMove(from,to,promote=null){
  busy=false;analysisPending=false;save();render();
  if(data?.kind&&before&&after){
   const entry=moves[cursor-1];
-  // Fire-and-forget: the rival is free to respond without waiting for DeepSeek.
+  // Fire-and-forget deep search and LLM; unlike before, the RIVAL remains paused.
   void explainVerifiedMove({beforeFen,afterFen:change.fen,uci,kind:data.kind,before,after,entry,epoch});
  }
  if(cursor===moves.length&&game().status().over)return;
- resumeAI();
+ if(!pausedEntry)resumeAI();
 }
 function setVariationStep(step){
  if(!analysisView)return;
@@ -559,12 +583,27 @@ function onClick(event){
   // A lesson never permits accidental changes to the live game, including
   // a positional lesson with no selectable tactical piece.
   if(lessonView&&!analysisView)return;
-  if(lessonView&&analysisView?.entry===lessonView.entry){
-   if(lessonView.stage===3)return;
-   const correct=validateLessonGuess(lessonView.plan,button.dataset.mentorSquare);
-   lessonView.feedback=correct?'correct':'wrong';
-   if(correct){lessonView.stage=3;analysisView.offset=lessonView.plan.ply;}
-   render();return;
+  if(lessonView){
+   if(!lessonView.plan||lessonView.stage===3)return;
+   const cell=button.dataset.mentorSquare;
+   const chess=game(),piece=chess.pieceAt(cell);
+   // Only attempts on actual rival pieces produce feedback.
+   if(piece?.color===currentPlayerColor())return;
+   const correct=validateLessonGuess(lessonView.plan,cell);
+   const feedback={square:cell,kind:correct?'correct':'wrong',id:++lessonFlashSeq};
+   lessonView.feedback=feedback;
+   if(correct){lessonView.stage=3;lessonView.revealPending=true;}
+   render();
+   if(correct){
+    const current=lessonView,epoch=gameEpoch;
+    setTimeout(()=>{
+     if(lessonView!==current||gameEpoch!==epoch||current.feedback!==feedback)return;
+     current.feedback=null;current.revealPending=false;
+     analysisView={entry:current.entry,index:moves.indexOf(current.entry),offset:current.plan.ply};
+     square=null;render();
+    },1200);
+   }
+   return;
   }
   if(busy||!playing||analysisView)return;
   const chess=game(),cell=button.dataset.mentorSquare;
@@ -588,24 +627,22 @@ function onClick(event){
   });
   return;
  }
- if(action==='lesson-start'){
-  const found=latestPlayerNote(),entry=found?.move,plan=entry?.mentorLesson;
-  if(!entry||!plan)return;
-  lessonView={entry,plan,stage:plan.from?0:3,feedback:null};
-  analysisView=plan.from?{entry,index:found.index,offset:Math.max(0,plan.ply-1)}:null;
-  motion?.clear();square=null;render();return;
- }
- if(action==='lesson-hint'&&lessonView){
+ if(action==='lesson-hint'&&lessonView?.plan&&lessonView.stage<3){
   lessonView.stage=Math.min(2,lessonView.stage+1);lessonView.feedback=null;
   render();return;
  }
- if(action==='lesson-reveal'&&lessonView){
-  lessonView.stage=3;lessonView.feedback=null;
-  if(analysisView)analysisView.offset=lessonView.plan.ply;
+ if(action==='lesson-reveal'&&lessonView?.plan){
+  lessonView.stage=3;lessonView.feedback=null;lessonView.revealPending=false;
+  analysisView={entry:lessonView.entry,index:moves.indexOf(lessonView.entry),offset:lessonView.plan.ply};
   render();return;
  }
  if(action==='lesson-close'&&lessonView){
-  lessonView=null;analysisView=null;square=null;render();return;
+  const shouldResume=pausedEntry===lessonView.entry&&cursor===moves.length;
+  lessonView=null;analysisView=null;square=null;
+  if(shouldResume)pausedEntry=null;
+  save();render();
+  if(shouldResume)resumeAI();
+  return;
  }
  if(action==='retry-explanation')void retryMentorFeedback();
  if(action==='open-variation'){
@@ -629,5 +666,5 @@ function onClick(event){
 ensure();
 globalThis.RPChessMentorTraining={
  enter,start:startTraining,back:()=>moveCursor(cursor-1),forward:()=>moveCursor(cursor+1),
- get state(){return {selected,color,playing,cursor,moves:moves.map(m=>({...m})),fen:playing?game().fen():null,busy};}
+ get state(){return {selected,color,playing,cursor,moves:moves.map(m=>({...m})),fen:playing?game().fen():null,busy,paused:Boolean(pausedEntry),lesson:lessonView?.plan?.kind||null};}
 };
