@@ -191,6 +191,23 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  assert.equal(v2Answer.verifiedFact,preparedV2.verified.verifiedFact);
  assert.equal(v2Answer.explanation,preparedV2.verified.verifiedFact+' '+goodAdvice);
  assert.equal(v2Calls,1);
+ // Mock a paid provider's 200 with untrusted advice. It must never be misdiagnosed
+ // as a network failure, nor silently run eleven additional paid attempts.
+ let unsafeCalls=0;
+ const unsafeAdvice=await handleMentorApi(v2Req(preparedV2.payload),v2Env,async()=>{
+  unsafeCalls++;
+  return new Response(JSON.stringify({choices:[{finish_reason:'stop',message:{
+   content:JSON.stringify({advice:'Сыграй конём на a3, затем забери ладью.'})}}]}),{status:200});
+ },async()=>{},2);
+ assert.equal(unsafeAdvice.status,503);
+ const unsafeResult=await unsafeAdvice.json();
+ assert.equal(unsafeCalls,1,'v2 is limited to one DeepSeek provider call');
+ assert.equal(unsafeResult.attempts.length,1);
+ assert.equal(unsafeResult.reason,'broker_unsafe_advice','preserve validation failure reason');
+ const exhaustedThink=await handleMentorApi(v2Req(preparedV2.payload),v2Env,async()=>
+  new Response(JSON.stringify({choices:[{finish_reason:'length',message:{content:''}}]}),{status:200}),async()=>{},2);
+ assert.equal((await exhaustedThink.json()).reason,'broker_thinking_exhausted');
+
  const v2Browser=await requestMentorV2Text({payload:preparedV2.payload,verified:preparedV2.verified,
   fetcher:async()=>new Response(JSON.stringify(v2Answer),{status:200})});
  assert.equal(v2Browser.source,'deepseek');
