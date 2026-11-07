@@ -119,6 +119,48 @@ fs.mkdirSync(output,{recursive:true});
   await checkLiveRaceTile('elves');
   await page.setViewportSize({width:1280,height:800});
   await page.screenshot({path:path.join(output,'battle-elven-race-tiles.png'),animations:'disabled'});
+  // An actual blunder after 1.f3 e5 2.g4 must trigger the 1700 ms
+  // secondary Stockfish search. Mock only the paid API response.
+  await page.evaluate(()=>localStorage.setItem('rpchess.mentor-training.v1',JSON.stringify({
+   version:1,selected:1,color:'w',playing:true,
+   moves:[{uci:'f2f3',color:'w'},{uci:'e7e5',color:'b'}],cursor:2
+  })));
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('[data-mentor-open]').waitFor({timeout:30000});
+  await page.evaluate(()=>{
+   const original=Worker.prototype.postMessage;
+   window.__mentorDepthSearch=[];
+   Worker.prototype.postMessage=function(message,...args){
+    if(typeof message==='string'&&message.startsWith('go movetime '))
+     window.__mentorDepthSearch.push(message);
+    return original.call(this,message,...args);
+   };
+  });
+  await page.route('https://rpchess-mentor-api-preview.mobigametim.workers.dev/v1/explain',async route=>{
+   const headers={'Access-Control-Allow-Origin':'*',
+    'Access-Control-Allow-Headers':'Content-Type, X-Mentor-Session',
+    'Access-Control-Allow-Methods':'POST,OPTIONS'};
+   if(route.request().method()==='OPTIONS')
+    return route.fulfill({status:204,headers});
+   return route.fulfill({status:200,contentType:'application/json',headers,
+    body:JSON.stringify({grade:'blunder',
+     explanation:'Ход допустил матовую угрозу. Проверь, какие поля возле короля остались без защиты.'})});
+  });
+  await page.locator('[data-mentor-open]').click();
+  const mentorRequest=page.waitForRequest(req=>req.url().endsWith('/v1/explain')&&req.method()==='POST',{timeout:45000});
+  await page.locator('[data-mentor-square="g2"]').click();
+  await page.locator('[data-mentor-square="g4"]').click();
+  await page.waitForFunction(()=>window.__mentorDepthSearch.includes('go movetime 1700'),null,{timeout:30000});
+  const observed=await mentorRequest;
+  const detail=observed.postDataJSON();
+  assert.equal(detail.grade,'blunder','real Stockfish identifies a known mate-in-one blunder');
+  assert(detail.continuation?.depth>=5,'deep search depth must reach a usable value');
+  assert(detail.continuation?.pv.length>=1&&detail.continuation.pv.length<=20,
+   'deep search emits up to 20 half-moves after the blunder');
+  assert.equal(detail.continuation.pv[0],'d8h4','deep line should begin with mate in one');
+  await page.waitForFunction(()=>document.querySelector('.mentor-feedback-text')?.textContent?.includes('матовую угрозу'),
+   null,{timeout:15000});
+  await page.screenshot({path:path.join(output,'battle-deep-mentor-response.png'),animations:'disabled'});
   assert.equal(errors.length,0,'browser errors: '+errors.join('\n'));
   console.log('Mentor training real Stockfish, history branch, 12 mentors and phone: PASS');
  }finally{await browser.close();}
