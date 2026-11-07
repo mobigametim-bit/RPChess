@@ -12,6 +12,7 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  const {buildMentorPayload,requestMentorText}=await imp('game/js/mentor-training-feedback-client.mjs');
  const {tacticalEvidence,MAX_PV}=await imp('game/js/mentor-training-tactics.mjs');
  const {handleMentorApi,validOrigin}=await imp('mentor-api/src/index.mjs');
+ const {handleMentorBenchmark,benchRequestConfig}=await imp('mentor-api/src/benchmark.mjs');
  const beforeFen=rebuildTraining(['f2f3','e7e5'],2).fen();
  const chess=new ClassicChessEngine(beforeFen);
  assert(chess.move('g2','g4').ok);
@@ -206,5 +207,35 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
   assert.equal(production.status,200,'Cloudflare fetch(request,env,ctx) must work');
  }finally{globalThis.fetch=actualFetch;}
  assert.equal(calls,2,'broker requested only for two valid, authorized inference tests');
+
+ // The benchmark is inaccessible without an ephemeral secret; one authorized
+ // request sends only one model and never uses the production fallback chain.
+ const secret='a'.repeat(64);
+ let benchmarkCalls=0;
+ const benchBody={model:'deepseek-ai/DeepSeek-V4-Flash-0731',variant:'fast',payload:body};
+ const makeBench=token=>new Request('https://rpchess-mentor-api-preview.mobigametim.workers.dev/_internal/benchmark',{
+  method:'POST',headers:{'content-type':'application/json',
+   'X-Mentor-Benchmark-Token':token},
+  body:JSON.stringify(benchBody)
+ });
+ const benchmarkEnv={...good,MENTOR_BENCHMARK_TOKEN:secret};
+ const mockBench=async(url,opts)=>{
+  benchmarkCalls++;
+  assert.equal(JSON.parse(opts.body).reasoning_effort,'none');
+  return new Response(JSON.stringify({choices:[{finish_reason:'stop',
+   message:{content:JSON.stringify({explanation:longAnswer})}}],
+   usage:{prompt_tokens:120,completion_tokens:90}}),{status:200});
+ };
+ assert.equal((await handleMentorBenchmark(makeBench('invalid'),benchmarkEnv,mockBench)).status,404);
+ assert.equal((await handleMentorBenchmark(makeBench(secret),good,mockBench)).status,404);
+ assert.equal(benchmarkCalls,0,'unauthorized attempts never spend tokens');
+ const benchmarkResp=await handleMentorBenchmark(makeBench(secret),benchmarkEnv,mockBench);
+ assert.equal(benchmarkResp.status,200);
+ const benchmarkData=await benchmarkResp.json();
+ assert.equal(benchmarkData.ok,true,'one requested model returns valid chess explanation');
+ assert.equal(benchmarkData.model,benchBody.model);
+ assert.equal(benchmarkCalls,1,'no automatic fallthrough for benchmark');
+ assert.equal(benchRequestConfig('zai-org/GLM-5.3-Flash','fast',promptForMentor(facts)).reasoning_effort,'none');
+ assert.equal(benchRequestConfig('MiniMaxAI/MiniMax-M2.7','fast',promptForMentor(facts)).reasoning_effort,undefined);
  console.log('Mentor DeepSeek contract, API CORS, budgets, fallback & client: PASS');
 })().catch(err=>{console.error(err.stack||err);process.exitCode=1;});

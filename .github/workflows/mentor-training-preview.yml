@@ -8,6 +8,7 @@ on:
       - 'game/**'
       - 'mentor-preview/**'
       - 'mentor-api/**'
+      - 'mentor-benchmark/**'
       - 'scripts/build.cjs'
       - 'scripts/run-browser-tests.cjs'
       - 'tests/mentor-training*'
@@ -144,6 +145,49 @@ jobs:
            console.log('Chess explanation:',result.explanation);
           })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
           NODE
+      - name: Provision one-time benchmark token
+        if: contains(github.event.head_commit.message, '[mentor-benchmark]')
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          TOKEN_FILE="$RUNNER_TEMP/mentor-benchmark-token"
+          umask 077
+          openssl rand -hex 32 > "$TOKEN_FILE"
+          echo "MENTOR_BENCHMARK_TOKEN_FILE=$TOKEN_FILE" >> "$GITHUB_ENV"
+          cat "$TOKEN_FILE" | npx wrangler secret put MENTOR_BENCHMARK_TOKEN --config mentor-api/wrangler.toml
+          echo 'Temporary benchmark authentication enabled.'
+      - name: Run comparative Gonka model reliability benchmark (max 72 calls)
+        if: contains(github.event.head_commit.message, '[mentor-benchmark]')
+        continue-on-error: true
+        timeout-minutes: 32
+        env:
+          BENCHMARK_PER_CELL: '8'
+        run: |
+          node mentor-benchmark/run.mjs
+      - name: Upload benchmark evidence (no secrets)
+        if: always() && contains(github.event.head_commit.message, '[mentor-benchmark]')
+        uses: actions/upload-artifact@v4
+        with:
+          name: mentor-gonka-reliability-72
+          path: test-results/mentor-benchmark
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Revoke temporary benchmark token
+        if: always() && contains(github.event.head_commit.message, '[mentor-benchmark]')
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          if [ -n "${MENTOR_BENCHMARK_TOKEN_FILE:-}" ] && [ -f "$MENTOR_BENCHMARK_TOKEN_FILE" ]; then
+            printf 'y\n' | npx wrangler secret delete MENTOR_BENCHMARK_TOKEN --config mentor-api/wrangler.toml
+            rm -f "$MENTOR_BENCHMARK_TOKEN_FILE"
+          fi
+          echo 'Temporary benchmark authentication revoked.'
       - name: Deploy isolated static Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

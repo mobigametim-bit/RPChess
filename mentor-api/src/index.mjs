@@ -3,6 +3,7 @@
  * Rate limits are approximate by Cloudflare PoP; never pretend they're a strict billing cap.
  */
 import { validateMentorInput, promptForMentor, safeExplanation, localMentorFallback } from '../../game/js/mentor-training-feedback-core.mjs';
+import {handleMentorBenchmark} from './benchmark.mjs';
 
 const DEFAULT_BROKER_BASE='https://hskyauefqcgbvgvxkluj.supabase.co/functions/v1/gonka';
 // Bounded sequential failover, always preferring the requested DeepSeek model.
@@ -138,5 +139,10 @@ async function handleMentorApi(request,env,fetcher=fetch){
 }
 /* Cloudflare's third fetch argument is ExecutionContext, not a fetch function.
  * Adapt explicitly so the mockable helper never mistakes ctx for fetcher. */
-export default {fetch(request,env){return handleMentorApi(request,env,globalThis.fetch);}};
+export default {fetch(request,env){
+ // Isolated temporary benchmark only exists when one-time secret is set.
+ if(new URL(request.url).pathname==='/_internal/benchmark')
+  return handleMentorBenchmark(request,env,globalThis.fetch);
+ return handleMentorApi(request,env,globalThis.fetch);
+}};
 export {handleMentorApi,validOrigin,reply};
