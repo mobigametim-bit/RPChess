@@ -107,6 +107,40 @@ jobs:
            assert(verified,'mentor API did not become ready');
           })().catch(e=>{console.error(e);process.exitCode=1});
           NODE
+      - name: One-time live Gonka / DeepSeek chess explanation check
+        if: contains(github.event.head_commit.message, '[mentor-live-smoke]')
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          (async()=>{
+           const origin='https://rpchess-mentor-training-preview.mobigametim.workers.dev';
+           const api='https://rpchess-mentor-api-preview.mobigametim.workers.dev';
+           const healthResponse=await fetch(api+'/health',{cache:'no-store'});
+           assert.equal(healthResponse.status,200,'health endpoint');
+           const health=await healthResponse.json();
+           console.log('Gonka secret configured in Cloudflare:',health.configured);
+           assert.equal(health.configured,true,'GONKA_API_KEY is not configured on the API Worker');
+           const beforeFen='rnbqkbnr/pppp1ppp/8/4p3/8/5P2/PPPPP1PP/RNBQKBNR w KQkq e6 0 2';
+           const afterFen='rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq g3 0 2';
+           const payload={
+            version:1,language:'ru',beforeFen,afterFen,uci:'g2g4',grade:'blunder',
+            before:{cp:90,depth:11,bestMove:'b1c3'},
+            after:{cp:200,depth:10,pv:['d8h4']}
+           };
+           const reply=await fetch(api+'/v1/explain',{
+            method:'POST',headers:{Origin:origin,'Content-Type':'application/json','X-Mentor-Session':'a42f1028-2026-11a7-1107-234567890abc'},
+            body:JSON.stringify(payload)
+           });
+           const raw=(await reply.text()).slice(0,1000);
+           let result;try{result=JSON.parse(raw)}catch{throw Error('non-JSON API response, HTTP '+reply.status)}
+           console.log('Mentor API response HTTP:',reply.status,'source:',result.source||'none','error:',result.error||'none');
+           if(reply.status!==200)throw Error('Mentor API HTTP '+reply.status+': '+(result.error||'unknown'));
+           assert.equal(result.grade,'blunder');
+           assert.equal(result.source,'deepseek','Real model explanation not yet confirmed; API may be using fallback');
+           assert(typeof result.explanation==='string'&&result.explanation.length>=12);
+           console.log('Real DeepSeek explanation (from verified checkmate test position):',result.explanation);
+          })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
+          NODE
       - name: Deploy isolated static Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
