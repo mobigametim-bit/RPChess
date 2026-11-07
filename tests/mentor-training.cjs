@@ -84,8 +84,8 @@ const path=require('node:path');
   'UCI mate distance survives instead of collapsing into a centipawn sentinel');
  assert.equal(parseInfo('info depth 14 multipv 1 score mate -3 pv d8h4').cp,-1200,
   'existing full-game review retains its previous score proxy');
- assert.equal(parseInfo('info depth 12 score cp 42 pv g1f3').mate,null,
-  'normal UCI centipawn evaluation does not become a false mate');
+ assert.equal(parseInfo('info depth 12 score cp 42 pv g1f3').mate,undefined,
+  'normal UCI centipawn evaluation preserves the old object shape');
 
  // Replaying the entire actual move path preserves repetition and the fifty-move counter.
  const repeat=['g1f3','g8f6','f3g1','f6g8','g1f3','g8f6','f3g1','f6g8'];
