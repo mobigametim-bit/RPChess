@@ -100,6 +100,9 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  const fetcher=async(url,opts)=>{
   calls++;const sent=JSON.parse(opts.body);
   assert.equal(sent.model,'deepseek-ai/DeepSeek-V4-Flash-0731');
+  assert.equal(sent.response_format.type,'json_schema','DeepSeek receives tested strict JSON');
+  assert.equal(sent.reasoning_effort,'none','DeepSeek skips reasoning for short replies');
+  assert.equal(sent.max_tokens,1000,'DeepSeek uses measured response budget');
   assert(!JSON.stringify(sent).includes('b1c3'),'upstream must not see best move');
   assert.match(url,/\/chat\/completions$/);
   assert.equal(opts.headers.Authorization,'Bearer test-key');
@@ -150,7 +153,11 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
   assert(url.includes('/functions/v1/gonka/chat/completions'));
   const m=JSON.parse(opts.body);
   requested.push(m.model);
-  assert.equal(m.max_tokens,900,'reserve enough tokens for reasoning and longer feedback');
+  assert.equal(m.max_tokens,m.model===models[0]?1000:900,'model-specific tested token budgets');
+  if(m.model===models[1]){
+   assert.equal(m.response_format.type,'json_object','MiniMax must not use schema');
+   assert.equal(m.reasoning_effort,undefined,'MiniMax thinking cannot be disabled');
+  }
   if(m.model===models[0])return new Response('{}',{status:503});
   return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({explanation:longAnswer})}}]}),{status:200});
  };
@@ -165,7 +172,13 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  assert.deepEqual(requested,models.slice(0,2),'third model is not charged after success');
  requested=[];
  const thirdFetcher=async(url,opts)=>{
-  const m=JSON.parse(opts.body).model;
+  const requestModel=JSON.parse(opts.body);
+  const m=requestModel.model;
+  if(m===models[2]){
+   assert.equal(requestModel.response_format.type,'json_object');
+   assert.equal(requestModel.reasoning_effort,'none','GLM uses measured low-latency mode');
+   assert.equal(requestModel.max_tokens,1200);
+  }
   requested.push(m);
   if(m===models[0])return new Response('{}',{status:429});
   if(m===models[1])return new Response('{}',{status:502});

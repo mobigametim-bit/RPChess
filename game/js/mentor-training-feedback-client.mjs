@@ -1,7 +1,7 @@
 import {validateMentorInput,localMentorFallback} from './mentor-training-feedback-core.mjs';
 
 const MENTOR_API='https://rpchess-mentor-api-preview.mobigametim.workers.dev';
-const TIMEOUT_MS=41000; // Three bounded attempts (15 + 10 + 10 sec) plus response overhead.
+const TIMEOUT_MS=60000; // Optimized bounded chain: 15 + 18 + 20 seconds plus network overhead.
 function mentorSession(){
  try{
   let id=sessionStorage.getItem('rpchess.mentor-session.v1');

@@ -3,15 +3,15 @@
  * Rate limits are approximate by Cloudflare PoP; never pretend they're a strict billing cap.
  */
 import { validateMentorInput, promptForMentor, safeExplanation, localMentorFallback } from '../../game/js/mentor-training-feedback-core.mjs';
-import {handleMentorBenchmark} from './benchmark.mjs';
+import {handleMentorBenchmark,benchRequestConfig} from './benchmark.mjs';
 
 const DEFAULT_BROKER_BASE='https://hskyauefqcgbvgvxkluj.supabase.co/functions/v1/gonka';
 // Bounded sequential failover, always preferring the requested DeepSeek model.
 // A model is attempted at most once per explanation; rate limiting occurs first.
 const MODELS=Object.freeze([
- {id:'deepseek-ai/DeepSeek-V4-Flash-0731',source:'deepseek',timeout:15000},
- {id:'MiniMaxAI/MiniMax-M2.7',source:'minimax',timeout:10000},
- {id:'zai-org/GLM-5.3-Flash',source:'glm',timeout:10000}
+ {id:'deepseek-ai/DeepSeek-V4-Flash-0731',source:'deepseek',timeout:15000,variant:'optimized'},
+ {id:'MiniMaxAI/MiniMax-M2.7',source:'minimax',timeout:18000,variant:'balanced'},
+ {id:'zai-org/GLM-5.3-Flash',source:'glm',timeout:20000,variant:'optimized'}
 ]);
 const TRUSTED=new Set([
  'https://rpchess-mentor-training-preview.mobigametim.workers.dev',
@@ -95,12 +95,9 @@ async function handleMentorApi(request,env,fetcher=fetch){
    const response=await fetcher(endpoint.toString(),{
     method:'POST',signal:controller.signal,
     headers:{Authorization:'Bearer '+env.GONKA_API_KEY,'Content-Type':'application/json'},
-    body:JSON.stringify({
-     model:selected.id,
-     messages:[{role:'system',content:settings.system},{role:'user',content:settings.user}],
-     temperature:0.2,max_tokens:900,stream:false,
-     response_format:{type:'json_object'}
-    })
+    // Exactly the request shapes independently checked in the 162-call
+   // Gonka benchmark; never send the same JSON settings to every provider.
+   body:JSON.stringify(benchRequestConfig(selected.id,selected.variant,settings))
    });
    if(!response.ok){
     // Another model cannot fix an invalid API key or depleted balance.

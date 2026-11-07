@@ -108,8 +108,8 @@ jobs:
            assert(verified,'mentor API did not become ready');
           })().catch(e=>{console.error(e);process.exitCode=1});
           NODE
-      # Paid one-shot check: opt in with [mentor-live-smoke] in the triggering commit.
-      - name: One-time live Gonka / DeepSeek chess explanation check
+      # Opt-in final end-to-end reliability test; 12 ingress calls, <=36 provider calls.
+      - name: Twelve-call live Gonka mentor reliability acceptance
         if: contains(github.event.head_commit.message, '[mentor-live-smoke]')
         continue-on-error: true
         run: |
@@ -130,19 +130,34 @@ jobs:
             before:{cp:90,depth:11,bestMove:'b1c3'},
             after:{cp:200,depth:10,pv:['d8h4']}
            };
-           const reply=await fetch(api+'/v1/explain',{
-            method:'POST',headers:{Origin:origin,'Content-Type':'application/json','X-Mentor-Session':'a42f1028-2026-11a7-1107-234567890abc'},
-            body:JSON.stringify(payload)
-           });
-           const raw=(await reply.text()).slice(0,1000);
-           let result;try{result=JSON.parse(raw)}catch{throw Error('non-JSON API response, HTTP '+reply.status)}
-           console.log('Mentor API response HTTP:',reply.status,'source:',result.source||'none','error:',result.error||'none');
-           if(reply.status!==200)throw Error('Mentor API HTTP '+reply.status+': '+(result.error||'unknown'));
-           assert.equal(result.grade,'blunder');
-           assert(['deepseek','minimax','glm'].includes(result.source),'No valid model answer returned');
-           assert(typeof result.explanation==='string'&&result.explanation.length>=12&&result.explanation.length<=500);
-           console.log('Live Gonka model:',result.model,'attempts:',result.attempts);
-           console.log('Chess explanation:',result.explanation);
+           const records=[];
+           for(let i=1;i<=12;i++){
+            const start=Date.now();
+            const reply=await fetch(api+'/v1/explain',{
+             method:'POST',headers:{Origin:origin,'Content-Type':'application/json',
+              'X-Mentor-Session':crypto.randomUUID()},
+             body:JSON.stringify(payload)
+            });
+            const raw=(await reply.text()).slice(0,4000);
+            let result;try{result=JSON.parse(raw)}catch{result={error:'invalid_json'};}
+            const accepted=reply.status===200&&result.grade==='blunder'&&
+             ['deepseek','minimax','glm'].includes(result.source)&&
+             typeof result.explanation==='string'&&result.explanation.length>=12&&result.explanation.length<=500;
+            const row={i,ok:accepted,http:reply.status,source:result.source||null,
+             model:result.model||null,attempts:result.attempts||0,
+             failures:result.failures||result.attempts||[],
+             reason:accepted?null:result.reason||result.error||'invalid_response',
+             elapsedMs:Date.now()-start};
+            records.push(row);
+            console.log('SMOKE_CALL',JSON.stringify(row));
+            if(accepted&&i===1)console.log('SMOKE_EXAMPLE',result.explanation);
+            if(i<12)await new Promise(r=>setTimeout(r,4200));
+           }
+           const success=records.filter(r=>r.ok).length;
+           const sources=records.reduce((a,r)=>(a[r.source||'none']=(a[r.source||'none']||0)+1,a),{});
+           console.log('SMOKE_SUMMARY',JSON.stringify({calls:records.length,successful:success,
+            successPct:Math.round(100*success/records.length),sources}));
+           assert.equal(success,12,'12/12 valid final explanations required for this acceptance check');
           })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
           NODE
       - name: Provision one-time benchmark token
