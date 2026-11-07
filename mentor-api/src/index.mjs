@@ -8,9 +8,9 @@ const DEFAULT_BROKER_BASE='https://hskyauefqcgbvgvxkluj.supabase.co/functions/v1
 // Bounded sequential failover, always preferring the requested DeepSeek model.
 // A model is attempted at most once per explanation; rate limiting occurs first.
 const MODELS=Object.freeze([
- {id:'deepseek-ai/DeepSeek-V4-Flash-0731',source:'deepseek',timeout:10500},
- {id:'MiniMaxAI/MiniMax-M2.7',source:'minimax',timeout:9500},
- {id:'zai-org/GLM-5.3-Flash',source:'glm',timeout:9500}
+ {id:'deepseek-ai/DeepSeek-V4-Flash-0731',source:'deepseek',timeout:15000},
+ {id:'MiniMaxAI/MiniMax-M2.7',source:'minimax',timeout:10000},
+ {id:'zai-org/GLM-5.3-Flash',source:'glm',timeout:10000}
 ]);
 const TRUSTED=new Set([
  'https://rpchess-mentor-training-preview.mobigametim.workers.dev',

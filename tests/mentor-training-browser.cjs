@@ -167,13 +167,13 @@ fs.mkdirSync(output,{recursive:true});
   await page.waitForFunction(()=>document.querySelector('[data-mentor-action="retry-explanation"]')&&
    document.querySelector('.mentor-feedback-text')?.textContent?.includes('Зевок.'),
    null,{timeout:15000});
-  const afterFailure=await page.evaluate(()=>window.RPChessMentorTraining.state.moves.at(-1));
+  const afterFailure=await page.evaluate(()=>window.RPChessMentorTraining.state.moves.findLast(m=>m.grade==='blunder'&&m.color==='w'));
   assert.equal(afterFailure.mentorSource,'fallback','an unsuccessful broker call must not masquerade as AI');
   assert.equal(afterFailure.mentorReason,'broker_timeout','the reason is available for debugging');
   await page.locator('[data-mentor-action="retry-explanation"]').click();
   await page.waitForFunction(()=>document.querySelector('.mentor-feedback-text')?.textContent?.includes('быструю атаку'),
    null,{timeout:15000});
-  const afterSuccess=await page.evaluate(()=>window.RPChessMentorTraining.state.moves.at(-1));
+  const afterSuccess=await page.evaluate(()=>window.RPChessMentorTraining.state.moves.findLast(m=>m.grade==='blunder'&&m.color==='w'));
   assert.equal(afterSuccess.mentorSource,'minimax','a successful backup model is recorded');
   assert.equal(afterSuccess.mentorModel,'MiniMaxAI/MiniMax-M2.7');
   assert.equal(mockedMentorCalls,2,'manual retry does not require replaying a move');
