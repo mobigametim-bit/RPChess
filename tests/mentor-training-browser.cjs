@@ -227,6 +227,8 @@ fs.mkdirSync(output,{recursive:true});
    .includes('Это другая фигура.'),'large red text emerges from the incorrect piece');
   assert.equal(await page.locator('.mentor-learning-response').count(),0,
    'click feedback never duplicates in the mentor panel');
+  assert.equal(await page.locator('[data-mentor-square="e8"] .mentor-lesson-burst--down').count(),1,
+   'top-rank wrong answer must fly downward');
   await page.screenshot({path:path.join(output,'battle-wrong-red-aura-portrait.png'),animations:'disabled'});
   await page.setViewportSize({width:1280,height:800});
   await page.locator('[data-mentor-action="lesson-hint"]').click();
@@ -236,6 +238,8 @@ fs.mkdirSync(output,{recursive:true});
    'correct rival piece flashes with green aura');
   assert((await page.locator('[data-mentor-square="d8"] .mentor-lesson-burst--correct').textContent())
    .includes('Верно, ты нашёл нужную фигуру!'),'green confirmation emerges from the chosen queen');
+  assert.equal(await page.locator('[data-mentor-square="d8"] .mentor-lesson-burst--down').count(),1,
+   'top-rank right answer must fly downward');
   const observed=await mentorRequest;
   const detail=observed.postDataJSON();
   assert.equal(detail.version,2);
@@ -254,6 +258,14 @@ fs.mkdirSync(output,{recursive:true});
   assert.equal(afterSuccess.mentorModel,'MiniMaxAI/MiniMax-M2.7');
   assert.equal(mockedMentorCalls,2,'manual retry uses the stored verified v2 fact');
   assert((await page.locator('.mentor-learning-mentor-note').textContent()).includes('Перед ходом проверяй'));
+  assert.equal(await page.locator('.mentor-feedback-grade + .mentor-ai-explanation').count(),1,
+   'independent AI explanation must follow error grade');
+  assert.equal(await page.locator('.mentor-learning .mentor-learning-mentor-note').count(),0);
+  const mentorNoteMetrics=await page.locator('.mentor-ai-explanation').evaluate(el=>({
+   size:parseFloat(getComputedStyle(el).fontSize),
+   tracking:parseFloat(getComputedStyle(el).letterSpacing)
+  }));
+  assert(mentorNoteMetrics.size>=18&&mentorNoteMetrics.tracking>0,'AI text font/tracking increased');
   assert(await page.locator('[data-mentor-square="d8"] .mentor-lesson-aura--correct').count()||afterSuccess,
    'correct rival piece is verified and AI advice arrives only after answering');
 
@@ -287,6 +299,12 @@ fs.mkdirSync(output,{recursive:true});
   await page.locator('[data-mentor-square="'+bestCorrection.slice(2,4)+'"]').click();
   await page.waitForFunction(()=>window.RPChessMentorTraining.state.correction?.accepted,null,{timeout:12000});
   assert((await page.locator('.mentor-correction-result.is-correct').textContent()).includes('Хорошее решение'));
+  const correctionSquare=bestCorrection.slice(2,4);
+  assert.equal((await page.locator('.mentor-correction-result.is-correct').textContent()).trim(),'Хорошее решение!');
+  assert.equal((await page.locator('[data-mentor-square="'+correctionSquare+'"] .mentor-lesson-burst--correct').textContent()).trim(),
+   'Хорошее решение!','corrected figure emits short green praise');
+  assert.equal(await page.locator('[data-mentor-square="'+correctionSquare+'"] .mentor-lesson-burst--down').count(),
+   ['1','2','7','8'].includes(correctionSquare[1])?1:0,'correction burst follows rank rule');
   assert.deepEqual(await page.evaluate(()=>window.RPChessMentorTraining.state.moves.map(m=>m.uci)),
    originalGame.moves.map(m=>m.uci),'successful practice must not replace the real game');
   await page.screenshot({path:path.join(output,'battle-correction-success.png'),animations:'disabled'});
