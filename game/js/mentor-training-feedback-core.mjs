@@ -1,7 +1,7 @@
 /* Pure mentor feedback contract. Broker text is never authoritative for chess. */
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { trainingMoveQuality, UCI } from './mentor-training-history.mjs';
-import {tacticalEvidence,MAX_PV} from './mentor-training-tactics.mjs';
+import {tacticalEvidence,MAX_PV} from './mentor-training-tactics.mjs?v=20261107-mentor-learning-v2';
 import {lessonFromVerified,mentorLessonCopy} from './mentor-training-teaching.mjs';
 
 const GRADE_SET=new Set(['inaccuracy','mistake','blunder']);
