@@ -4,6 +4,7 @@
  */
 import { validateMentorInput, promptForMentor, safeExplanation, localMentorFallback } from '../../game/js/mentor-training-feedback-core.mjs';
 import {handleMentorBenchmark,benchRequestConfig} from './benchmark.mjs';
+import {validatedV2Facts,promptForMentorV2,safeMentorAdvice,composeMentorV2Explanation} from '../../game/js/mentor-training-feedback-v2.mjs';
 
 const DEFAULT_BROKER_BASE='https://hskyauefqcgbvgvxkluj.supabase.co/functions/v1/gonka';
 // Bounded sequential failover, always preferring the requested DeepSeek model.
@@ -44,13 +45,15 @@ function reply(body,status,origin){
    ...(origin&&validOrigin(origin)?cors(origin):{})}
  });
 }
-async function handleMentorApi(request,env,fetcher=fetch,sleep=waitForRetry){
+async function handleMentorApi(request,env,fetcher=fetch,sleep=waitForRetry,contractVersion=1){
+ const isV2=contractVersion===2;
  const url=new URL(request.url),origin=request.headers.get('Origin')||'';
  if(url.pathname==='/health'&&request.method==='GET')
   return reply({ok:true,configured:Boolean(env.GONKA_API_KEY),modelConfigured:true,
    model:MODELS[0].id,fallbackModels:MODELS.slice(1).map(m=>m.id),
+   contractVersion:isV2?2:1,
    attemptsPerModel:MAX_ATTEMPTS_PER_MODEL,maxProviderCalls:MODELS.length*MAX_ATTEMPTS_PER_MODEL},200,origin);
- if(url.pathname!=='/v1/explain')return reply({error:'not_found'},404,origin);
+ if(url.pathname!==(isV2?'/v2/explain':'/v1/explain'))return reply({error:'not_found'},404,origin);
  if(!validOrigin(origin))return reply({error:'forbidden_origin'},403);
  if(request.method==='OPTIONS')return new Response(null,{status:204,headers:cors(origin)});
  if(request.method!=='POST')return reply({error:'method_not_allowed'},405,origin);
@@ -68,7 +71,7 @@ async function handleMentorApi(request,env,fetcher=fetch,sleep=waitForRetry){
   json=JSON.parse(raw);
  }catch{return reply({error:'invalid_json'},400,origin);}
  let data;
- try{data=validateMentorInput(json);}
+ try{data=isV2?validatedV2Facts(json):validateMentorInput(json);}
  catch{return reply({error:'invalid_analysis'},422,origin);}
  // A visitor ID is client-generated, not authentication; global budget protects
  // against unlimited visitor-ID rotation. Limit binding is approximate per PoP.
@@ -81,7 +84,7 @@ async function handleMentorApi(request,env,fetcher=fetch,sleep=waitForRetry){
   ]);
   if(!global.success||!personal.success)return reply({error:'rate_limited'},429,origin);
  }catch{return reply({error:'limit_unavailable'},503,origin);}
- const settings=promptForMentor(data);
+ const settings=isV2?promptForMentorV2(data):promptForMentor(data);
  const base=String(env.GONKA_BASE_URL||DEFAULT_BROKER_BASE).replace(/\/+$/,'');
  let endpoint;
  try{endpoint=new URL(base+'/chat/completions');}
@@ -107,7 +110,18 @@ async function handleMentorApi(request,env,fetcher=fetch,sleep=waitForRetry){
      method:'POST',signal:controller.signal,
      headers:{Authorization:'Bearer '+env.GONKA_API_KEY,'Content-Type':'application/json'},
      // Same shape used by the successful real-Gonka benchmark.
-     body:JSON.stringify(benchRequestConfig(selected.id,selected.variant,settings))
+     body:JSON.stringify((()=>{
+      const config=benchRequestConfig(selected.id,selected.variant,settings);
+      // The deployed v1 schema remains untouched. The isolated v2 schema
+      // accepts only general teaching advice; all concrete facts are code.
+      if(isV2&&config.response_format?.type==='json_schema')
+       config.response_format={type:'json_schema',json_schema:{
+        name:'mentor_general_advice',strict:true,
+        schema:{type:'object',properties:{advice:{type:'string'}},
+         required:['advice'],additionalProperties:false}
+       }};
+      return config;
+     })())
     });
     if(!response.ok){
      // Auth/payment problems cannot be fixed by repeating a billable request.
@@ -124,9 +138,13 @@ async function handleMentorApi(request,env,fetcher=fetch,sleep=waitForRetry){
      if(typeof content==='string'&&content.length<=5000){
       let parsed;
       try{parsed=JSON.parse(content);}catch{}
-      const output=safeExplanation(parsed?.explanation,data);
+      const advice=isV2?safeMentorAdvice(parsed?.advice,data):null;
+      const output=isV2?composeMentorV2Explanation(advice,data):
+       safeExplanation(parsed?.explanation,data);
       if(output){
        return reply({explanation:output,grade:data.grade,
+        ...(isV2?{contractVersion:2,factId:data.factId,
+         verifiedFact:data.verifiedFact,advice}:{}),
         source:selected.source,model:selected.id,
         attempts:attempts.length+1,modelAttempt:tryNo,failures:attempts},200,origin);
       }
