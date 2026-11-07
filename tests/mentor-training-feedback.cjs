@@ -56,8 +56,8 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
   assert(gameFixture.gameUrl.startsWith('https://lichess.org/'));
   assert(gameFixture.sanMoves.trim().split(/\s+/).length>=60,
    'full historical game trace, not just one tactical puzzle');
-  assert(gameFixture.analysisReference.annotatedPlies>=gameFixture.numberOfPlies,
-   'historical engine judgments align with trace length');
+  assert(Math.abs(gameFixture.analysisReference.annotatedPlies-gameFixture.numberOfPlies)<=1,
+   'historical analysis may omit the final move of a finished game');
   const setup=new ClassicChessEngine(gameFixture.sourcePosition);
   const first=gameFixture.sourceLine[0],response=setup.move(first.slice(0,2),first.slice(2,4),first.slice(4)||null);
   assert(response.ok,'source game setup move is legal '+gameFixture.puzzleId);
