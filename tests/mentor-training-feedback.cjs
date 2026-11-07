@@ -118,11 +118,11 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  // Replayed line is evidence only: actual mating move, not speculative intent.
 
  // Stage 3 groundwork: legal capture/recapture tree, no guessed material loss.
- const undefended=evaluateStaticExchange('r3k3/8/8/8/8/8/8/R3K3 b - - 0 1','a8a1');
+ const undefended=evaluateStaticExchange('r3k3/8/8/8/8/8/4K3/R7 b - - 0 1','a8a1');
  assert.equal(undefended.scoreCp,500,'unprotected rook is won');
  assert.equal(undefended.exact,true);
  assert.deepEqual(undefended.line,['a8a1']);
- const guarded=evaluateStaticExchange('r3k3/8/8/8/8/8/1Q6/R3K3 b - - 0 1','a8a1');
+ const guarded=evaluateStaticExchange('r3k3/8/8/8/8/8/1Q2K3/R7 b - - 0 1','a8a1');
  assert.equal(guarded.scoreCp,0,'defended rook can be recaptured by the queen');
  assert.deepEqual(guarded.line,['a8a1','b2a1'],'defending queen can immediately recapture');
  const badQueen=evaluateStaticExchange('q3k3/8/8/8/8/8/P7/R3K3 b - - 0 1','a8a2');
@@ -139,7 +139,7 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
   'non-captures have no exchange verdict');
  assert.equal(evaluateStaticExchange(new ClassicChessEngine().fen(),'e2e5'),null,
   'illegal moves cannot produce exchange claims');
- const boundedExchange=evaluateStaticExchange('r3k3/8/8/8/8/8/1Q6/R3K3 b - - 0 1','a8a1',{maxPlies:1});
+ const boundedExchange=evaluateStaticExchange('r3k3/8/8/8/8/8/1Q2K3/R7 b - - 0 1','a8a1',{maxPlies:1});
  assert.equal(boundedExchange.exact,false,'truncated capture tree cannot be trusted as proven');
  assert(boundedExchange.nodes<=1,'node budget respected');
 
