@@ -126,8 +126,8 @@ function promptForMentorV2(data){
  const ru=data.language==='ru';
  return {
   system:ru
-   ?'Ты шахматный педагог. Верни строго JSON {"advice":"..."} на русском. Напиши 1–2 коротких законченных предложения (всего 25–230 символов) с практическим способом проверять собственные решения в будущих позициях. Пользуйся проверенными verifiedFact и learningPrinciple, но НЕ повторяй сам verifiedFact, не пересказывай конкретную комбинацию, не называй ходы, клетки, фигуры или шахматные события. Не предлагай готовый ответ. Можно задать один короткий вопрос для самопроверки. Не утверждай, что конкретный исход неизбежен. Не добавляй иные поля.'
-   :'You are a chess educator. Return strictly JSON {"advice":"..."} in English. Write 1–2 short complete sentences (25–230 characters total) giving a reusable thinking habit. Take verifiedFact and learningPrinciple as context, but DO NOT repeat the verified fact or describe a specific tactic, move, square, piece or chess event. Do not reveal a solution. You may ask one short self-check question. Do not assert an inevitable result. Do not add fields.',
+   ?'Ты шахматный педагог. Верни строго JSON {"advice":"..."} на русском. Напиши 1–2 коротких законченных предложения (всего 25–230 символов) с практическим способом проверять собственные решения в будущих позициях. Пользуйся проверенными verifiedFact и learningPrinciple, но НЕ повторяй сам verifiedFact, не пересказывай конкретную комбинацию, не называй ходы, клетки, фигуры или шахматные события. Не предлагай готовый ответ. Можно задать один короткий вопрос для самопроверки. Не утверждай, что конкретный исход неизбежен. Пример безопасного совета: «Перед ходом проверь шахи, взятия и угрозы соперника. Какой ответ самый опасный?» Это общий совет, а НЕ утверждение об этой позиции. Не добавляй иные поля.'
+   :'You are a chess educator. Return strictly JSON {"advice":"..."} in English. Write 1–2 short complete sentences (25–230 characters total) giving a reusable thinking habit. Take verifiedFact and learningPrinciple as context, but DO NOT repeat the verified fact or describe a specific tactic, move, square, piece or chess event. Do not reveal a solution. You may ask one short self-check question. Do not assert an inevitable result. Example of safe generic advice: "Before moving, look for the opponent’s checks, captures, and threats. Which reply is most dangerous?" This is a general habit, NOT an assertion about this position. Do not add fields.',
   user:JSON.stringify({language:data.language,lessonFactId:data.factId,
    verifiedFact:data.verifiedFact,learningPrinciple:data.learningPrinciple,
    learningQuestion:data.learningQuestion,skillLevel:'beginner-friendly',
@@ -144,7 +144,14 @@ function safeMentorAdvice(value,data){
  // tactical motifs; the verified, explicit chess fact is prepended by code.
  if(/(?:^|[^a-z0-9])[a-h][1-8](?=$|[^a-z0-9])/i.test(s))return null;
  if(/\b[a-h][1-8][a-h][1-8][qrbn]?\b/i.test(s))return null;
- if(/мат|вилк|связк|шах|размен|взяти|взят|сруб|забра|потер|выигра|жертв|ферз|ладь|слон|конь|пешк|корол|атаку[ею]|fork|pin|skewer|checkmate|check\b|exchang|captur|sacrific|queens?|rooks?|bishops?|knights?|pawns?|kings?/i.test(s))return null;
+ // Generic educational habits (check checks/captures/threats) are NOT
+ // positional chess claims. Never forbid these universal concepts outright:
+ // otherwise the model's safest, most helpful coaching output is rejected.
+ // Still reject new board-specific claims, tactical conclusions and named
+ // pieces, because no additional chess facts can come from free-form text.
+ if(/вилк|связк|размен|сруб|забра|потер|выигра|жертв|ферз|ладь|слон|конь|пешк|корол|fork|pin|skewer|checkmate|exchang|sacrific|queens?|rooks?|bishops?|knights?|pawns?|kings?/i.test(s))return null;
+ if(/(?:соперник|противник|opponent|enemy).{0,70}(?:может|сможет|сделает|поставит|нанес|будет|will|can).{0,70}(?:шах|мат|взя|атак|check|capture|mate)/i.test(s))return null;
+ if(/(?:в этой позиции|здесь|именно сейчас|теперь|in this position|right now|this move).{0,85}(?:шах|мат|взят|атак|check|capture|mate)/i.test(s))return null;
  if(s.includes(data.verifiedFact)||s.includes(data.factId))return null;
  return s;
 }
