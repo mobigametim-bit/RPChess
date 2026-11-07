@@ -290,6 +290,16 @@ fs.mkdirSync(output,{recursive:true});
   await page.screenshot({path:path.join(output,'battle-correction-success.png'),animations:'disabled'});
   await page.locator('[data-mentor-action="correction-back"]').click();
   assert.equal(await page.locator('.mentor-learning-answer').count(),1,'can return to verified explanation');
+  // Reload during a solved lesson/correction must not silently execute the
+  // rival reply or force the player to repeat the already-solved threat quiz.
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('[data-mentor-open]').click();
+  await page.locator('.mentor-learning-answer').waitFor({timeout:12000});
+  const restored=await page.evaluate(()=>window.RPChessMentorTraining.state);
+  assert.equal(restored.moves.length,3);
+  assert(restored.paused,'reload preserves the active pause');
+  assert.equal(await page.locator('[data-mentor-action="correction-start"]').count(),1,
+   'reload preserves the completed lesson and optional correction');
   await page.locator('[data-mentor-action="correction-start"]').click();
   // Replaying the original blunder is legal but NOT an acceptable repair.
   await page.locator('[data-mentor-square="g2"]').click();
