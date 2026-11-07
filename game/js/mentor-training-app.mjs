@@ -185,13 +185,14 @@ function boardHTML(chess,preview=false){
   const lessonMark=lessonView?.entry===analysisView?.entry&&lessonView?.stage===3;
   const lessonOrigin=lessonMark&&sq===lessonView.plan.from;
   const lessonTarget=lessonMark&&sq===lessonView.plan.to;
+  const lessonThreat=lessonMark&&lessonView.plan.targets?.includes(sq)&&!lessonOrigin&&!lessonTarget;
   const ownRace=piece?.color===currentPlayerColor()?'humans':mentor().race;
   let figure='';
   if(piece){
    figure='<img alt="" class="mentor-piece classic-piece" draggable="false" src="'+boardRacePiecePath(ownRace,ROLES[piece.type],piece.color)+'"><span class="mentor-piece-fallback">'+SYMBOLS[piece.color][piece.type]+'</span>'+fantasyPieceMarkup(piece.type,piece.color);
   }
   const sign=mark===sq&&piece?.color===currentPlayerColor()?'<span class="mentor-square-grade'+(['good','excellent'].includes(recentOwn.grade)?' mentor-square-grade--good':'')+'">'+({'inaccuracy':'?!','mistake':'?','blunder':'??',good:'!',excellent:'!!'}[recentOwn.grade])+'</span>':'';
-  grid+='<button type="button" data-mentor-square="'+sq+'" data-square="'+sq+'" class="mentor-square '+(dark?'is-dark':'is-light')+(highlight?' is-last':'')+(active?' is-selected':'')+(possible?' is-legal':'')+(index===checkedKing?' is-check classic-square--check':'')+(lessonOrigin?' mentor-lesson-origin':'')+(lessonTarget?' mentor-lesson-target':'')+'" aria-label="'+sq+'">'+figure+sign+'</button>';
+  grid+='<button type="button" data-mentor-square="'+sq+'" data-square="'+sq+'" class="mentor-square '+(dark?'is-dark':'is-light')+(highlight?' is-last':'')+(active?' is-selected':'')+(possible?' is-legal':'')+(index===checkedKing?' is-check classic-square--check':'')+(lessonOrigin?' mentor-lesson-origin':'')+(lessonTarget?' mentor-lesson-target':'')+(lessonThreat?' mentor-lesson-threat':'')+'" aria-label="'+sq+'">'+figure+sign+'</button>';
  }
  const status=chess.status();
  // CSS variables consumed by an external stylesheet resolve relative url() against /css/.
