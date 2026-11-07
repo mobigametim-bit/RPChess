@@ -130,7 +130,7 @@ class StockfishReviewEngine {
    const search={resolve,reject,depth:0,cp:null,bestMove:null,pv:[],variants:new Map(),timer:null};
    search.timer=setTimeout(()=>{if(this.search===search){this.search=null;this.worker.postMessage('stop');reject(new Error('Stockfish analysis timeout'));}},this.timeoutMs);
    this.search=search;this.worker.postMessage('position fen '+fen);
-   this.worker.postMessage('go movetime '+Math.max(120,Math.min(1400,Math.round(movetime))));
+   this.worker.postMessage('go movetime '+Math.max(120,Math.min(2200,Math.round(movetime))));
   });
  }
  close(){

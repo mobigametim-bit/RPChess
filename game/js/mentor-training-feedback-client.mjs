@@ -12,14 +12,25 @@ function mentorSession(){
   return id;
  }catch{return '';}
 }
-function buildMentorPayload({beforeFen,afterFen,uci,grade,before,after,language}){
+function buildMentorPayload({beforeFen,afterFen,uci,grade,before,after,continuation,language}){
  const payload={
   version:1,language:language==='en'?'en':'ru',uci,grade,beforeFen,afterFen,
   before:{cp:before?.cp,depth:before?.depth,bestMove:before?.bestMove},
-  after:{cp:after?.cp,depth:after?.depth,pv:Array.isArray(after?.pv)?after.pv.slice(0,4):[]}
+  after:{cp:after?.cp,depth:after?.depth,pv:Array.isArray(after?.pv)?after.pv.slice(0,4):[]},
+  ...(continuation&&Array.isArray(continuation.pv)&&continuation.pv.length?{
+   continuation:{depth:continuation.depth,pv:continuation.pv.slice(0,20)}
+  }:{})
  };
  // Validate locally too, so the game never sends arbitrary positions to a paid API.
- const verified=validateMentorInput(payload);
+ let verified;
+ try{verified=validateMentorInput(payload);}
+ catch(error){
+  // Deep search can produce an incomplete or invalid PV at timeout.
+  // Never discard a valid short explanation just because the long PV failed.
+  if(!payload.continuation)throw error;
+  delete payload.continuation;
+  verified=validateMentorInput(payload);
+ }
  return {payload,verified};
 }
 async function requestMentorText({payload,verified,signal,fetcher=globalThis.fetch}){

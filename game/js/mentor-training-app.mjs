@@ -12,6 +12,8 @@ import { TRAINING_MENTORS, UCI, rebuildTraining, extendTraining, trainingMoveQua
 import {buildMentorPayload,requestMentorText} from './mentor-training-feedback-client.mjs';
 
 const STORAGE_KEY='rpchess.mentor-training.v1';
+const DEEP_ANALYSIS_MS=1700; // Only after a confirmed quick-analysis error.
+const DEEP_PV_LIMIT=20;
 const ROLES={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
 const SYMBOLS={w:{p:'♙',n:'♘',b:'♗',r:'♖',q:'♕',k:'♔'},b:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'}};
 const TEXT={
@@ -27,6 +29,8 @@ const menu=document.querySelector('[data-reboot-foundation]');
 let root=null,ai=null,review=null,reviewStarted=null,reviewChain=Promise.resolve();
 let selected=1,color='w',playing=false,moves=[],cursor=0,square=null,promotion=null,busy=false,gameEpoch=0,journalOpen=false,analysisPending=false;
 let feedbackCache=new Map(),evaluationInFlight=new Map();
+const deepFeedbackCache=new Map();
+const deepInFlight=new Map();
 let boardNode=null,dragActive=false,motion=null;
 let mentorReplyAbort=null;
 const mentorReplyCache=new Map();
@@ -54,7 +58,7 @@ function game(){return rebuildTraining(moves,cursor);}
 function cancel(){
  mentorReplyAbort?.abort();mentorReplyAbort=null;
  gameEpoch++;busy=false;analysisPending=false;square=null;promotion=null;dragActive=false;
- motion?.clear();ai?.stop();review?.close();review=null;reviewStarted=null;reviewChain=Promise.resolve();evaluationInFlight=new Map();
+ motion?.clear();ai?.stop();review?.close();review=null;reviewStarted=null;reviewChain=Promise.resolve();evaluationInFlight=new Map();deepInFlight.clear();
 }
 function show(open){
  if(!root)return;
@@ -118,7 +122,7 @@ function currentPlayerColor(){return color==='r'?'w':color;}
 function startTraining(){
  cancel();moves=[];cursor=0;playing=true;journalOpen=false;
  if(color==='r')color=Math.random()<.5?'w':'b';
- ai?.destroy();ai=new ChessAIAdapter();feedbackCache.clear();
+ ai?.destroy();ai=new ChessAIAdapter();feedbackCache.clear();deepFeedbackCache.clear();
  save();render();resumeAI();
 }
 function getJournal(){
@@ -280,6 +284,25 @@ function evaluate(fen){
  scheduled.finally(()=>{if(evaluationInFlight.get(fen)===scheduled)evaluationInFlight.delete(fen);}).catch(()=>{});
  return scheduled;
 }
+function evaluateDeep(fen){
+ if(deepFeedbackCache.has(fen))return Promise.resolve(deepFeedbackCache.get(fen));
+ if(deepInFlight.has(fen))return deepInFlight.get(fen);
+ // The same non-weakened Stockfish worker is shared with the quick review.
+ // Rival replies run on the independent ChessAIAdapter and are not delayed.
+ const task=reviewChain.catch(()=>{}).then(async()=>{
+  const worker=await ensureReview();
+  const result=await worker.evaluate(fen,{movetime:DEEP_ANALYSIS_MS});
+  if(result?.depth>=5&&Array.isArray(result.pv)&&result.pv.length){
+   result.pv=result.pv.slice(0,DEEP_PV_LIMIT);
+   deepFeedbackCache.set(fen,result);
+  }
+  return result;
+ });
+ reviewChain=task.catch(()=>{});
+ deepInFlight.set(fen,task);
+ task.finally(()=>{if(deepInFlight.get(fen)===task)deepInFlight.delete(fen);}).catch(()=>{});
+ return task;
+}
 function preEvaluate(){
  if(playing&&currentPlayerColor()===game().turn()&&!game().status().over)void evaluate(game().fen()).catch(()=>{});
 }
@@ -308,9 +331,17 @@ async function computerMove(){
  busy=false;render();if(step.ok)motion?.play(geometry);preEvaluate();
 }
 async function explainVerifiedMove({beforeFen,afterFen,uci,kind,before,after,entry,epoch}){
+ // An extra bounded search is performed only when the 260 ms assessment
+ // identified an error. It is NOT on the critical path of the rival's move.
+ let continuation=null;
+ try{continuation=await evaluateDeep(afterFen);}catch{}
+ if(epoch!==gameEpoch||!playing||!moves.includes(entry))return;
  let request;
  try{
-  request=buildMentorPayload({beforeFen,afterFen,uci,grade:kind,before,after,language:lang()});
+  request=buildMentorPayload({
+   beforeFen,afterFen,uci,grade:kind,before,after,
+   continuation:continuation?.depth>=5?continuation:null,language:lang()
+  });
  }catch{return;}
  const cacheKey=beforeFen+'|'+uci+'|'+kind+'|'+lang();
  let explanation=mentorReplyCache.get(cacheKey);

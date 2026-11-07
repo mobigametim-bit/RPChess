@@ -8,6 +8,7 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  const {rebuildTraining}=await imp('game/js/mentor-training-history.mjs');
  const {validateMentorInput,promptForMentor,safeExplanation,localMentorFallback}=await imp('game/js/mentor-training-feedback-core.mjs');
  const {buildMentorPayload,requestMentorText}=await imp('game/js/mentor-training-feedback-client.mjs');
+ const {tacticalEvidence,MAX_PV}=await imp('game/js/mentor-training-tactics.mjs');
  const {handleMentorApi,validOrigin}=await imp('mentor-api/src/index.mjs');
  const beforeFen=rebuildTraining(['f2f3','e7e5'],2).fen();
  const chess=new ClassicChessEngine(beforeFen);
@@ -19,6 +20,46 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  const facts=validateMentorInput(body);
  assert.equal(facts.motive,'checkmate');
  assert.equal(facts.loss,290);
+
+ // Replayed line is evidence only: actual mating move, not speculative intent.
+ const mate=tacticalEvidence(afterFen,['d8h4'],'w');
+ assert.deepEqual(mate.line,['d8h4']);
+ assert(mate.events.some(e=>e.kind==='mate_sequence'));
+ const fork=tacticalEvidence('4k3/8/8/8/1n6/8/8/Q3K3 b - - 0 1',['b4c2'],'w');
+ assert(fork.events.some(e=>e.kind==='fork'),'the knight move forks king and queen');
+ const pin=tacticalEvidence('k6r/8/8/8/8/8/4B3/4K3 b - - 0 1',['h8e8'],'w');
+ assert(pin.events.some(e=>e.kind==='pin'),'rook newly pins bishop to king');
+ const material=tacticalEvidence('r3k3/8/8/8/8/8/8/R3K3 b - - 0 1',['a8a1'],'w');
+ assert(material.events.some(e=>e.kind==='material_loss'&&e.net===5));
+ // No tactical claim from an invalid move or a guessed continuation.
+ assert.equal(tacticalEvidence(afterFen,['d8g7','d8h4'],'w').line.length,0);
+ const opening=['e2e4','e7e5','g1f3','b8c6','f1c4','g8f6','d2d3','f8c5',
+  'b1c3','d7d6','c1g5','h7h6','g5h4','c8e6','d1d2','a7a6',
+  'a2a3','b7b5','c4b3','a8b8','h2h3'];
+ const deepGame=new ClassicChessEngine();
+ const firstMove=deepGame.move('e2','e4');
+ assert(firstMove.ok);
+ const longPayload={
+  version:1,language:'ru',beforeFen:new ClassicChessEngine().fen(),
+  afterFen:firstMove.fen,uci:'e2e4',grade:'blunder',
+  before:{cp:150,depth:12,bestMove:'d2d4'},
+  after:{cp:180,depth:10,pv:['e7e5']},
+  continuation:{depth:24,pv:opening.slice(1)}
+ };
+ assert.equal(longPayload.continuation.pv.length,MAX_PV);
+ const detailed=validateMentorInput(longPayload);
+ assert.equal(detailed.afterLine.length,20,'20 legal half-moves accepted from Stockfish PV');
+ assert.equal(JSON.parse(promptForMentor(detailed).user).opponentContinuation.length,20,
+  'DeepSeek receives up to 20 verified half-moves, not only the first three');
+ assert(!promptForMentor(detailed).user.includes('d2d4'),'correct move remains hidden');
+ assert.throws(()=>validateMentorInput({
+  ...longPayload,continuation:{depth:24,pv:['e7e5','a8a1']}
+ }),/refutation/,'malformed PV must not produce a tactical claim');
+ const bounded=buildMentorPayload({...longPayload,continuation:{
+  depth:24,pv:[...opening.slice(1),'e2e5']
+ }});
+ assert.equal(bounded.payload.continuation.pv.length,20,'client caps PV at 20 plies');
+
  assert(!promptForMentor(facts).user.includes('b1c3'),'model prompt must not reveal the engine solution');
  assert(localMentorFallback(facts).includes('мат'));
  assert(!safeExplanation('Сыграй b1c3, и всё будет хорошо.',facts));
