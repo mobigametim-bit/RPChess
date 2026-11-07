@@ -133,6 +133,28 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  const goodAdvice='Перед ходом проверяй самый сильный ответ соперника. Что ещё ты мог упустить?';
  assert.equal(composeMentorV2Explanation(goodAdvice,preparedV2.verified),
   preparedV2.verified.verifiedFact+' '+goodAdvice);
+
+ const genericChecks='Перед ходом проверь шахи, взятия и угрозы соперника. Какой ответ кажется самым опасным?';
+ assert.equal(safeMentorAdvice(genericChecks,preparedV2.verified),genericChecks,
+  'general advice may mention checks and captures without claiming one occurred');
+ assert.equal(safeMentorAdvice('Соперник сможет поставить шах твоему королю. Проверь нападения.',
+  preparedV2.verified),null,
+  'a specific imagined chess event must still be rejected');
+ const oneAttemptReq=new Request('https://rpchess-mentor-api-v2-preview.mobigametim.workers.dev/v2/explain',{
+  method:'POST',headers:{Origin:'https://rpchess-mentor-training-preview.mobigametim.workers.dev',
+  'Content-Type':'application/json','X-Mentor-Diagnostic':'one',
+  'X-Mentor-Session':'123456789012345678901234'},
+  body:JSON.stringify(preparedV2.payload)
+ });
+ let singleModelCalls=0;
+ const singleAnswer=await handleMentorApi(oneAttemptReq,{
+  GONKA_API_KEY:'test-key',MENTOR_GLOBAL_LIMIT:{limit:async()=>({success:true})},
+  MENTOR_ACTOR_LIMIT:{limit:async()=>({success:true})}
+ },async()=>{singleModelCalls++;return new Response('{}',{status:503})},async()=>{},2);
+ assert.equal(singleAnswer.status,503);
+ assert.equal(singleModelCalls,1,'opt-in diagnostic cannot call secondary models or retry');
+ assert.equal((await singleAnswer.json()).attempts.length,1);
+
  for(const invented of [
   'Сыграй b1c3 и сразу выиграешь материал. Какой ещё ход помогает?',
   'Забери ферзя на a3, затем добей короля. Что дальше?',
