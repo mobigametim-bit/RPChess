@@ -114,6 +114,14 @@ function verifyImmediateThreat({afterFen,after,deep,player}){
  if(!Number.isFinite(after.cp)||!Number.isFinite(deep.cp)||
     Math.abs(after.cp-deep.cp)>280)
   return {status:POS,reason:'unstable_engine_score'};
+ // MultiPV 2 can reveal two nearly equal responses by DIFFERENT pieces.
+ // Do not teach a one-piece answer if another piece offers an equivalent
+ // response in the same search. The second line is an alternative, not a
+ // proof against every defender.
+ if(UCI.test(deep.secondMove||'')&&deep.secondMove.slice(0,2)!==deep.bestMove.slice(0,2)&&
+    deep.secondDepth>=7&&Number.isFinite(deep.secondCp)&&
+    deep.secondCp>=deep.cp-65)
+  return {status:POS,reason:'ambiguous_equivalent_attackers'};
  const deepCandidate=immediateCandidate(afterFen,deep,player);
  if(!deepCandidate||deepCandidate.kind!==quick.candidate.kind||
     deepCandidate.basis!==quick.candidate.basis)
