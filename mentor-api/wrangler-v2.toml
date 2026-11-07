@@ -1,0 +1,21 @@
+name = "rpchess-mentor-api-v2-preview"
+main = "src/v2-index.mjs"
+compatibility_date = "2026-11-04"
+workers_dev = true
+
+# Dedicated, isolated v2 validation and broker Worker.
+# No production D1, player data, Tournament or shared v1 rate-limit binding.
+# Secret is provisioned ONLY via the GitHub Actions encrypted secret.
+[[ratelimits]]
+name = "MENTOR_GLOBAL_LIMIT"
+namespace_id = "1861201"
+  [ratelimits.simple]
+  limit = 12
+  period = 60
+
+[[ratelimits]]
+name = "MENTOR_ACTOR_LIMIT"
+namespace_id = "1861202"
+  [ratelimits.simple]
+  limit = 3
+  period = 60
