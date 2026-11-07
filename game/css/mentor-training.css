@@ -82,6 +82,9 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
 .mentor-feedback{grid-column:3;grid-row:2;align-self:stretch;padding:13px;display:flex;flex-direction:column;gap:13px;overflow-y:auto}
 .mentor-feedback-head{display:flex;align-items:center;gap:12px}
 .mentor-feedback h2{font-size:25px;margin:0;color:#f4dfa9}
+.mentor-training .mentor-thinking{flex:0 0 auto;color:#e3be72;font-size:clamp(13px,1.2vw,17px);white-space:nowrap;animation:mentor-thinking-blink 1.15s steps(2,end) infinite}
+@keyframes mentor-thinking-blink{0%,45%{opacity:1}50%,100%{opacity:.25}}
+@media(prefers-reduced-motion:reduce){.mentor-training .mentor-thinking{animation:none}}
 .mentor-face{width:80px;height:85px;object-fit:contain}
 .mentor-feedback-grade{display:flex;align-items:center;gap:10px;border-top:1px solid #a68b554d;padding-top:12px}
 .mentor-feedback-grade strong{font-size:39px;color:#f08779;font-family:Arial,sans-serif!important}
