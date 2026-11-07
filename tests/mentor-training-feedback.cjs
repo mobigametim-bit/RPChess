@@ -139,9 +139,9 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
   'non-captures have no exchange verdict');
  assert.equal(evaluateStaticExchange(new ClassicChessEngine().fen(),'e2e5'),null,
   'illegal moves cannot produce exchange claims');
- const bounded=evaluateStaticExchange('r3k3/8/8/8/8/8/1Q6/R3K3 b - - 0 1','a8a1',{maxPlies:1});
- assert.equal(bounded.exact,false,'truncated capture tree cannot be trusted as proven');
- assert(bounded.nodes<=1,'node budget respected');
+ const boundedExchange=evaluateStaticExchange('r3k3/8/8/8/8/8/1Q6/R3K3 b - - 0 1','a8a1',{maxPlies:1});
+ assert.equal(boundedExchange.exact,false,'truncated capture tree cannot be trusted as proven');
+ assert(boundedExchange.nodes<=1,'node budget respected');
 
  const mate=tacticalEvidence(afterFen,['d8h4'],'w');
  assert.deepEqual(mate.line,['d8h4']);
