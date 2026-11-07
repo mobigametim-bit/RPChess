@@ -134,7 +134,7 @@ jobs:
             assert(verified,'isolated v2 API is not ready');
           })().catch(e=>{console.error(e);process.exitCode=1});
           NODE
-      - name: One real v2 mentor explanation (opt-in; at most one client request)
+      - name: One real v2 DeepSeek response (opt-in; one provider attempt only)
         if: contains(github.event.head_commit.message, '[mentor-live-v2]')
         timeout-minutes: 5
         env:
@@ -167,7 +167,7 @@ jobs:
           const reply=await fetch(base+'/v2/explain',{
             method:'POST',
             headers:{Origin:origin,'Content-Type':'application/json',
-              'X-Mentor-Session':crypto.randomUUID()},
+              'X-Mentor-Session':crypto.randomUUID(),'X-Mentor-Diagnostic':'one'},
             body:JSON.stringify(payload),
             signal:AbortSignal.timeout(230000)
           });
