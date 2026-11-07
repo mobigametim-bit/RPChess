@@ -88,7 +88,7 @@ async function handleMentorApi(request,env,fetcher=fetch){
     temperature:0.2,max_tokens:185,stream:false,response_format:{type:'json_object'}
    })
   });
-  if(!response.ok)return reply({error:response.status===429?'broker_busy':'broker_unavailable'},503,origin);
+  if(!response.ok)return reply({error:response.status===429?'broker_busy':response.status>=400&&response.status<500?'broker_http_'+response.status:'broker_unavailable'},503,origin);
   let payload;
   try{payload=await response.json();}catch{return reply({error:'broker_invalid'},502,origin);}
   let content=payload?.choices?.[0]?.message?.content;
@@ -98,8 +98,8 @@ async function handleMentorApi(request,env,fetcher=fetch){
   let output=safeExplanation(parsed?.explanation,data);
   if(!output)output=localMentorFallback(data);
   return reply({explanation:output,grade:data.grade,source:output===parsed?.explanation?'deepseek':'verified_fallback'},200,origin);
- }catch{
-  return reply({error:'broker_unavailable'},503,origin);
+ }catch(error){
+  return reply({error:controller.signal.aborted?'broker_timeout':'broker_network'},503,origin);
  }finally{clearTimeout(timer);}
 }
 export default {fetch:handleMentorApi};
