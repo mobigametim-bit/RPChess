@@ -81,7 +81,7 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  // Stage 5: optional correction is judged from the pre-error position.
  const strongAlternative={beforeFen,beforeCp:50,bestMove:'b1c3'};
  let alternativeEvaluations=0;
- const alternate=await gradeReviewAttempt(strongAlternative,'g1f3',{
+ const alternate=await gradeReviewAttempt(strongAlternative,'d2d4',{
   engine:{evaluate:async fen=>{
    alternativeEvaluations++;
    assert.equal(new ClassicChessEngine(fen).turn(),'b');
@@ -100,7 +100,7 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
   engine:{evaluate:async()=>{throw Error('best move should bypass new evaluation');}}
  });
  assert.equal(exactBest.accepted,true);
- const shallow=await gradeReviewAttempt(strongAlternative,'g1f3',{
+ const shallow=await gradeReviewAttempt(strongAlternative,'d2d4',{
   engine:{evaluate:async()=>({cp:-20,depth:2})}
  });
  assert.equal(shallow.unavailable,true);
