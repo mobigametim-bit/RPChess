@@ -12,6 +12,7 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  const {classifyStrongMove}=await imp('game/js/finished-game-review.mjs');
  const {buildMentorPayload,requestMentorText}=await imp('game/js/mentor-training-feedback-client.mjs');
  const {tacticalEvidence,MAX_PV}=await imp('game/js/mentor-training-tactics.mjs');
+ const {evaluateStaticExchange}=await imp('game/js/mentor-training-exchange.mjs');
  const {PRIORITY,GUIDES,lessonFromVerified,mentorLessonCopy,validateLessonGuess}=await imp('game/js/mentor-training-teaching.mjs');
  const {handleMentorApi,validOrigin,MAX_ATTEMPTS_PER_MODEL}=await imp('mentor-api/src/index.mjs');
 
@@ -115,6 +116,33 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  
 
  // Replayed line is evidence only: actual mating move, not speculative intent.
+
+ // Stage 3 groundwork: legal capture/recapture tree, no guessed material loss.
+ const undefended=evaluateStaticExchange('r3k3/8/8/8/8/8/8/R3K3 b - - 0 1','a8a1');
+ assert.equal(undefended.scoreCp,500,'unprotected rook is won');
+ assert.equal(undefended.exact,true);
+ assert.deepEqual(undefended.line,['a8a1']);
+ const guarded=evaluateStaticExchange('r3k3/8/8/8/8/8/1Q6/R3K3 b - - 0 1','a8a1');
+ assert.equal(guarded.scoreCp,0,'defended rook can be recaptured by the queen');
+ assert.deepEqual(guarded.line,['a8a1'],'queen can decline recapture if it is neutral');
+ const badQueen=evaluateStaticExchange('q3k3/8/8/8/8/8/P7/R3K3 b - - 0 1','a8a2');
+ assert.equal(badQueen.scoreCp,-800,'a queen losing to rook recapture makes pawn capture unsound');
+ assert.deepEqual(badQueen.line,['a8a2','a1a2']);
+ const pinned=evaluateStaticExchange('2q1r2k/8/8/8/8/8/2P1R3/4K3 b - - 0 1','c8c2');
+ assert.equal(pinned.scoreCp,100,'white rook pinned on e2 cannot illegally recapture c2');
+ assert(pinned.exact);
+ const ep=evaluateStaticExchange('4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 1','e5d6');
+ assert.equal(ep.scoreCp,100,'en passant captured pawn is on d5 not d6');
+ const promoted=evaluateStaticExchange('r3k3/1P6/8/8/8/8/8/4K3 w - - 0 1','b7a8q');
+ assert.equal(promoted.scoreCp,1300,'capturing rook and promoting includes pawn conversion');
+ assert.equal(evaluateStaticExchange(new ClassicChessEngine().fen(),'e2e4'),null,
+  'non-captures have no exchange verdict');
+ assert.equal(evaluateStaticExchange(new ClassicChessEngine().fen(),'e2e5'),null,
+  'illegal moves cannot produce exchange claims');
+ const bounded=evaluateStaticExchange('r3k3/8/8/8/8/8/1Q6/R3K3 b - - 0 1','a8a1',{maxPlies:1});
+ assert.equal(bounded.exact,false,'truncated capture tree cannot be trusted as proven');
+ assert(bounded.nodes<=1,'node budget respected');
+
  const mate=tacticalEvidence(afterFen,['d8h4'],'w');
  assert.deepEqual(mate.line,['d8h4']);
  assert(mate.events.some(e=>e.kind==='mate_sequence'));
