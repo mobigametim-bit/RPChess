@@ -2,6 +2,7 @@
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { trainingMoveQuality, UCI } from './mentor-training-history.mjs';
 import {tacticalEvidence,MAX_PV} from './mentor-training-tactics.mjs';
+import {lessonFromVerified,mentorLessonCopy} from './mentor-training-teaching.mjs';
 
 const GRADE_SET=new Set(['inaccuracy','mistake','blunder']);
 const RU={p:'пешку',n:'коня',b:'слона',r:'ладью',q:'ферзя',k:'короля'};
@@ -65,6 +66,12 @@ function validateMentorInput(raw){
  else if(replay.events.some(e=>e.kind==='fork'))motive='fork';
  else if(replay.events.some(e=>e.kind==='pin'))motive='pin';
  else if(replay.events.some(e=>e.kind==='material_loss'))motive='material_loss';
+ else {
+  const recognized=['double_check','discovered_check','skewer_pattern','overloaded_defender',
+   'removed_defender','undefended_capture','promotion','advanced_passed_pawn',
+   'discovered_attack','interference','en_passant','check'];
+  motive=recognized.find(kind=>replay.events.some(e=>e.kind===kind))||'positional';
+ }
  else if(captured&&captured.color===player){motive='capture';capturedType=captured.type;}
  else if(response.status.checked)motive='check';
  return {
@@ -124,6 +131,13 @@ function describeMentorFact(data,language=data.language){
  if(kind==='check')return en
   ?'The next reply may give check. Pay attention to your king’s safety.'
   :'Следующим ходом соперник может дать шах. Проверь безопасность своего короля.';
+ const lesson=lessonFromVerified(data);
+ if(lesson?.kind===kind){
+  const guide=mentorLessonCopy(lesson,language);
+  return en
+   ?'One legal continuation contains a possible '+kind.replace(/_/g,' ')+' pattern. '+guide.principle
+   :'В одном из легальных продолжений виден тактический мотив. '+guide.principle;
+ }
  return en
   ?'Your position worsened, but no concrete tactical reason was verified. Look for a safer plan.'
   :'Позиция ухудшилась, но конкретная тактическая причина не подтверждена. Поищи более надёжный план.';
@@ -131,10 +145,12 @@ function describeMentorFact(data,language=data.language){
 function promptForMentor(data){
  const ru=data.language==='ru';
  const instructions=ru
-  ?'Ты шахматный наставник. Верни строго JSON {"explanation":"..."} на русском: от двух до пяти законченных предложений, суммарно не более 500 символов. Говори конкретно, по схеме «Через [N] ходов соперник может [подтверждённое событие: вилка на ферзя и ладью, связка слона, потеря ладьи, мат]. Подумай, как это предотвратить». Для немедленной угрозы используй «Следующим ходом». НЕ пиши «В рассчитанной линии», «По расчёту движка», «В просчитанном варианте» и подобные канцеляризмы. Важно: линия Stockfish — один возможный вариант, не доказательство неизбежности; поэтому говори «может», а не «обязательно». Только подтверждённые факты! Не называй лучший альтернативный ход игрока, не предлагай готовые ходы и клетки, не пересказывай UCI. Не называй шахматные координаты и не придумывай размены или цепочки взятий: текст не должен утверждать ни одного конкретного хода, кроме проверенного verifiedFact.'
-  :'You are a chess mentor. Return strict JSON {"explanation":"..."} in English, 2–5 complete sentences, max 500 characters total. Be concrete: "In about [N] moves, your opponent may [verified tactic such as a knight fork attacking your queen and rook]. Find a way to prevent it." Use "On the next move" for immediate replies. Never write "In the calculated line" or similar jargon. Stockfish PV is ONE possible variation, not an inevitable outcome, so say "may". Mention ONLY verified facts. Never reveal the player’s best alternative move, offer a ready-made next move, or recite UCI. Do not name board squares, invented exchanges or capture sequences; never assert a concrete move not established by verifiedFact.';
+  ?'Ты шахматный наставник. Верни строго JSON {"explanation":"..."} на русском: от двух до пяти законченных предложений, суммарно не более 500 символов. Говори конкретно, по схеме «Через [N] ходов соперник может [подтверждённое событие: вилка на ферзя и ладью, связка слона, потеря ладьи, мат]. Подумай, как это предотвратить». Для немедленной угрозы используй «Следующим ходом». НЕ пиши «В рассчитанной линии», «По расчёту движка», «В просчитанном варианте» и подобные канцеляризмы. Важно: линия Stockfish — один возможный вариант, не доказательство неизбежности; поэтому говори «может», а не «обязательно». Объясни игроку, что ему нужно замечать перед каждым ходом, и заверши объяснение одним вопросом о проверенной угрозе. Используй learningPrinciple и learningQuestion, но не выдумывай мотивов. Только подтверждённые факты! Не называй лучший альтернативный ход игрока, не предлагай готовые ходы и клетки, не пересказывай UCI. Не называй шахматные координаты и не придумывай размены или цепочки взятий: текст не должен утверждать ни одного конкретного хода, кроме проверенного verifiedFact.'
+  :'You are a chess mentor. Return strict JSON {"explanation":"..."} in English, 2–5 complete sentences, max 500 characters total. Be concrete: "In about [N] moves, your opponent may [verified tactic such as a knight fork attacking your queen and rook]. Find a way to prevent it." Use "On the next move" for immediate replies. Never write "In the calculated line" or similar jargon. Stockfish PV is ONE possible variation, not an inevitable outcome, so say "may". Explain a reusable pattern the learner should check before moving, and end with a question grounded in learningQuestion. Use learningPrinciple; do not invent tactics. Mention ONLY verified facts. Never reveal the player’s best alternative move, offer a ready-made next move, or recite UCI. Do not name board squares, invented exchanges or capture sequences; never assert a concrete move not established by verifiedFact.';
+ const learning=mentorLessonCopy(lessonFromVerified(data),data.language);
  const message={
   severity:data.grade,playerColor:data.player,playedUci:data.uci,
+  learningQuestion:learning.question,learningPrinciple:learning.principle,
   positionBefore:data.beforeFen,positionAfter:data.afterFen,
   verifiedFact:describeMentorFact(data),
   opponentContinuation:data.afterLine.slice(0,MAX_PV),
