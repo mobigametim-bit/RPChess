@@ -1,0 +1,92 @@
+name: Mentor Web Speech isolated preview
+
+on:
+  push:
+    branches: [feature/mentor-web-speech-20261108]
+    paths:
+      - '.github/workflows/mentor-web-speech-preview.yml'
+      - 'game/**'
+      - 'tests/mentor-training-browser.cjs'
+      - 'mentor-evidence-preview/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rpchess-mentor-web-speech-preview
+  cancel-in-progress: true
+
+jobs:
+  gate-and-preview:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/mentor-web-speech-20261108'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Canonical local regression gate and static build
+        run: |
+          npm ci --no-audit --no-fund
+          npm run gate:local
+      - name: Mentor browser voice interaction regression (Chromium)
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+          RPCHESS_BROWSER_TEST=mentor-training-browser.cjs npm run test:browser
+      - name: Save mentor preview browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mentor-web-speech-screenshots
+          path: test-results/mentor-training
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Deploy STATIC Mentor preview only (do not touch Mentor API or production)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          test "$(grep -m 1 '^name =' mentor-evidence-preview/wrangler.toml)" = 'name = "rpchess-mentor-training-preview"'
+          npx wrangler deploy --config mentor-evidence-preview/wrangler.toml
+      - name: Verify deployed Web Speech module (no external TTS or paid calls)
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          (async()=>{
+           const base='https://rpchess-mentor-training-preview.mobigametim.workers.dev';
+           let ok=false;
+           for(let i=0;i<12;i++){
+            try{
+             const index=await fetch(base+'/?mentor_speech=20261108',{cache:'no-store'});
+             assert.equal(index.status,200,'preview index must respond');
+             const html=await index.text();
+             assert(html.includes('mentor-training-app.mjs?v=20261108-speech-v1'));
+             const module=await fetch(base+'/js/mentor-training-speech.mjs',{cache:'no-store'});
+             assert.equal(module.status,200,'voice controller module must be deployed');
+             const source=await module.text();
+             assert(source.includes('createMentorSpeech'));
+             assert(source.includes('speechSynthesis'));
+             console.log('Mentor Web Speech static preview: PASS');
+             ok=true;break;
+            }catch(error){
+             console.log('Static propagation '+(i+1)+'/12: '+error.message);
+             if(i<11)await new Promise(resolve=>setTimeout(resolve,3000));
+            }
+           }
+           assert(ok,'Web Speech preview did not become ready');
+          })().catch(error=>{console.error(error);process.exitCode=1});
+          NODE
