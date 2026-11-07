@@ -268,7 +268,36 @@ fs.mkdirSync(output,{recursive:true});
   assert.equal((await page.evaluate(()=>window.RPChessMentorTraining.state)).moves.length,3,
    'rival is still paused while the learner reads the explanation');
   await page.screenshot({path:path.join(output,'battle-interactive-mate-lesson.png'),animations:'disabled'});
-  await page.locator('[data-mentor-action="lesson-close"]').click();
+  // After spotting the verified danger the learner may voluntarily repair
+  // the move from an isolated pre-blunder FEN, never overwriting the game.
+  const originalGame=await page.evaluate(()=>window.RPChessMentorTraining.state);
+  const bestCorrection=originalGame.moves[2].mentorPayload.before.bestMove;
+  assert.match(bestCorrection,/^[a-h][1-8][a-h][1-8][qrbn]?$/);
+  await page.locator('[data-mentor-action="correction-start"]').click();
+  assert.equal(await page.locator('.mentor-correction').count(),1,'repair exercise opens only after answer');
+  assert(await page.locator('.mentor-correction .mentor-learning-instruction').textContent()
+   .then(text=>text.includes('сыгранная партия останется неизменной')));
+  assert.equal(await page.locator('[data-mentor-square="g2"] .mentor-piece').count(),1,
+   'pre-error board restores pawn on g2 instead of g4');
+  assert.equal((await page.evaluate(()=>window.RPChessMentorTraining.state)).fen,originalGame.fen,
+   'correction board never writes into the original game state');
+  await page.locator('[data-mentor-square="'+bestCorrection.slice(0,2)+'"]').click();
+  await page.locator('[data-mentor-square="'+bestCorrection.slice(2,4)+'"]').click();
+  await page.waitForFunction(()=>window.RPChessMentorTraining.state.correction?.accepted,null,{timeout:12000});
+  assert((await page.locator('.mentor-correction-result.is-correct').textContent()).includes('Хорошее решение'));
+  assert.deepEqual(await page.evaluate(()=>window.RPChessMentorTraining.state.moves.map(m=>m.uci)),
+   originalGame.moves.map(m=>m.uci),'successful practice must not replace the real game');
+  await page.screenshot({path:path.join(output,'battle-correction-success.png'),animations:'disabled'});
+  await page.locator('[data-mentor-action="correction-back"]').click();
+  assert.equal(await page.locator('.mentor-learning-answer').count(),1,'can return to verified explanation');
+  await page.locator('[data-mentor-action="correction-start"]').click();
+  // Replaying the original blunder is legal but NOT an acceptable repair.
+  await page.locator('[data-mentor-square="g2"]').click();
+  await page.locator('[data-mentor-square="g4"]').click();
+  await page.waitForFunction(()=>window.RPChessMentorTraining.state.correction?.outcome==='wrong',null,{timeout:12000});
+  assert((await page.locator('.mentor-correction-result.is-wrong').textContent()).includes('недостаточно'));
+  assert.equal((await page.evaluate(()=>window.RPChessMentorTraining.state)).moves.length,3);
+  await page.locator('[data-mentor-action="correction-close"]').click();
   await page.waitForFunction(()=>window.RPChessMentorTraining.state.moves.length>3,null,{timeout:25000});
   const afterResume=await page.evaluate(()=>window.RPChessMentorTraining.state);
   assert(!afterResume.paused,'explicit continue releases the rival turn');
