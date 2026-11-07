@@ -1,0 +1,261 @@
+name: Mentor training MVP isolated preview
+
+on:
+  push:
+    branches: [feature/mentor-training-mvp-20261107]
+    paths:
+      - '.github/workflows/mentor-training-preview.yml'
+      - 'game/**'
+      - 'mentor-preview/**'
+      - 'mentor-api/**'
+      - 'mentor-benchmark/**'
+      - 'scripts/build.cjs'
+      - 'scripts/run-browser-tests.cjs'
+      - 'tests/mentor-training*'
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rpchess-mentor-training-mvp
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/mentor-training-mvp-20261107'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Build and regression gate
+        run: |
+          npm ci --no-audit --no-fund
+          npm run gate:local
+      - name: Chromium training acceptance
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+          RPCHESS_BROWSER_TEST=mentor-training-browser.cjs npm run test:browser
+      - name: Save landscape and portrait acceptance screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mentor-training-mvp-viewport-screenshots
+          path: test-results/mentor-training
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Deploy isolated mentor explanation API Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          test "$(grep -m 1 '^name =' mentor-api/wrangler.toml)" = 'name = "rpchess-mentor-api-preview"'
+          npx wrangler deploy --config mentor-api/wrangler.toml
+      - name: Install optional Gonka broker secret (never in browser or logs)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          MENTOR_GONKA_SECRET: ${{ secrets.GONKA_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -n "$MENTOR_GONKA_SECRET" ]; then
+            export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+            printf '%s' "$MENTOR_GONKA_SECRET" | npx wrangler secret put GONKA_API_KEY --config mentor-api/wrangler.toml
+            echo 'Mentor broker secret configured.'
+          else
+            echo 'Mentor API deployed without Gonka key (safe local fallback).'
+          fi
+      - name: Verify API Worker is isolated and health endpoint is public
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          (async()=>{
+           const base='https://rpchess-mentor-api-preview.mobigametim.workers.dev';
+           let verified=false;
+           for(let attempt=1;attempt<=18;attempt++){
+            try{
+             const r=await fetch(base+'/health',{cache:'no-store'});
+             assert.equal(r.status,200);
+             const health=await r.json();
+             assert.equal(health.ok,true);
+             assert.equal(typeof health.configured,'boolean');
+             assert.equal(health.attemptsPerModel,4,'retry-enabled API is deployed');
+             const deny=await fetch(base+'/v1/explain',{method:'POST',
+              headers:{Origin:'https://invalid.example','Content-Type':'application/json'},body:'{}'});
+             assert.equal(deny.status,403);
+             console.log('Mentor API deployed. Broker key configured:',health.configured);
+             verified=true;break;
+            }catch(error){
+             console.log('Mentor API propagation check '+attempt+'/18: '+error.message);
+             if(attempt<18)await new Promise(resolve=>setTimeout(resolve,5000));
+            }
+           }
+           assert(verified,'mentor API did not become ready');
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          NODE
+      # Opt-in end-to-end reliability test; 12 incoming calls, at most 144 provider calls.
+      - name: Twelve-call live Gonka mentor reliability acceptance
+        if: contains(github.event.head_commit.message, '[mentor-live-smoke]')
+        continue-on-error: true
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          (async()=>{
+           const origin='https://rpchess-mentor-training-preview.mobigametim.workers.dev';
+           const api='https://rpchess-mentor-api-preview.mobigametim.workers.dev';
+           const healthResponse=await fetch(api+'/health',{cache:'no-store'});
+           assert.equal(healthResponse.status,200,'health endpoint');
+           const health=await healthResponse.json();
+           console.log('Gonka secret configured in Cloudflare:',health.configured);
+           assert.equal(health.configured,true,'GONKA_API_KEY is not configured on the API Worker');
+           assert.equal(health.attemptsPerModel,4,'the deployed Worker must have 3 retries per model');
+           const beforeFen='rnbqkbnr/pppp1ppp/8/4p3/8/5P2/PPPPP1PP/RNBQKBNR w KQkq e6 0 2';
+           const afterFen='rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq g3 0 2';
+           const payload={
+            version:1,language:'ru',beforeFen,afterFen,uci:'g2g4',grade:'blunder',
+            before:{cp:90,depth:11,bestMove:'b1c3'},
+            after:{cp:200,depth:10,pv:['d8h4']}
+           };
+           const records=[];
+           for(let i=1;i<=12;i++){
+            const start=Date.now();
+            const reply=await fetch(api+'/v1/explain',{
+             method:'POST',headers:{Origin:origin,'Content-Type':'application/json',
+              'X-Mentor-Session':crypto.randomUUID()},
+             body:JSON.stringify(payload)
+            });
+            const raw=(await reply.text()).slice(0,4000);
+            let result;try{result=JSON.parse(raw)}catch{result={error:'invalid_json'};}
+            const accepted=reply.status===200&&result.grade==='blunder'&&
+             ['deepseek','minimax','glm'].includes(result.source)&&
+             typeof result.explanation==='string'&&result.explanation.length>=12&&result.explanation.length<=500;
+            const row={i,ok:accepted,http:reply.status,source:result.source||null,
+             model:result.model||null,attempts:result.attempts||0,
+             failures:result.failures||result.attempts||[],
+             reason:accepted?null:result.reason||result.error||'invalid_response',
+             elapsedMs:Date.now()-start};
+            records.push(row);
+            console.log('SMOKE_CALL',JSON.stringify(row));
+            if(accepted&&i===1)console.log('SMOKE_EXAMPLE',result.explanation);
+            if(i<12)await new Promise(r=>setTimeout(r,4200));
+           }
+           const success=records.filter(r=>r.ok).length;
+           const sources=records.reduce((a,r)=>(a[r.source||'none']=(a[r.source||'none']||0)+1,a),{});
+           console.log('SMOKE_SUMMARY',JSON.stringify({calls:records.length,successful:success,
+            successPct:Math.round(100*success/records.length),sources}));
+           assert.equal(success,12,'12/12 valid final explanations required for this acceptance check');
+          })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
+          NODE
+      - name: Provision one-time benchmark token
+        if: contains(github.event.head_commit.message, '[mentor-benchmark]')
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          TOKEN_FILE="$RUNNER_TEMP/mentor-benchmark-token"
+          umask 077
+          openssl rand -hex 32 > "$TOKEN_FILE"
+          echo "MENTOR_BENCHMARK_TOKEN_FILE=$TOKEN_FILE" >> "$GITHUB_ENV"
+          cat "$TOKEN_FILE" | npx wrangler secret put MENTOR_BENCHMARK_TOKEN --config mentor-api/wrangler.toml
+          echo 'Temporary benchmark authentication enabled.'
+      - name: Run MiniMax JSON reliability benchmark (max 30 calls)
+        if: contains(github.event.head_commit.message, '[mentor-benchmark]')
+        continue-on-error: true
+        timeout-minutes: 32
+        env:
+          BENCHMARK_PER_CELL: '30'
+          BENCHMARK_VARIANTS: 'balanced'
+          BENCHMARK_MODELS: 'MiniMaxAI/MiniMax-M2.7'
+        run: |
+          node mentor-benchmark/run.mjs
+      - name: Upload benchmark evidence (no secrets)
+        if: always() && contains(github.event.head_commit.message, '[mentor-benchmark]')
+        uses: actions/upload-artifact@v4
+        with:
+          name: mentor-gonka-minimax-900-tokens-30
+          path: test-results/mentor-benchmark
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Revoke temporary benchmark token
+        if: always() && contains(github.event.head_commit.message, '[mentor-benchmark]')
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          if [ -n "${MENTOR_BENCHMARK_TOKEN_FILE:-}" ] && [ -f "$MENTOR_BENCHMARK_TOKEN_FILE" ]; then
+            printf 'y\n' | npx wrangler secret delete MENTOR_BENCHMARK_TOKEN --config mentor-api/wrangler.toml
+            rm -f "$MENTOR_BENCHMARK_TOKEN_FILE"
+          fi
+          echo 'Temporary benchmark authentication revoked.'
+      - name: Deploy isolated static Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          test "$(grep '^name =' mentor-preview/wrangler.toml)" = 'name = "rpchess-mentor-training-preview"'
+          npx wrangler deploy --config mentor-preview/wrangler.toml
+      - name: Verify live preview contains mentor MVP
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          (async()=>{
+           const base='https://rpchess-mentor-training-preview.mobigametim.workers.dev';
+           // A newly created workers.dev subdomain can briefly return 404
+           // after the deployment API has completed. Require live 200s,
+           // with bounded propagation retries instead of reporting a false outage.
+           let verified=false;
+           for(let attempt=1;attempt<=24;attempt++){
+            try{
+             const page=await fetch(base+'/?mentor_release=922ab661',{cache:'no-store'});
+             if(page.status!==200)throw Error('index HTTP '+page.status);
+             assert((await page.text()).includes('js/mentor-training-app.mjs'));
+             const script=await fetch(base+'/js/mentor-training-app.mjs',{cache:'no-store'});
+             if(script.status!==200)throw Error('script HTTP '+script.status);
+             assert((await script.text()).includes('RPChessMentorTraining'));
+             const css=await fetch(base+'/css/mentor-training.css',{cache:'no-store'});
+             if(css.status!==200)throw Error('styles HTTP '+css.status);
+             for(const race of ['elves','fae'])for(const tile of ['white','black']){
+              const image=await fetch(base+'/assets/races/'+race+'/board/'+tile+'.png',{cache:'no-store'});
+              if(image.status!==200 || !(image.headers.get('content-type')||'').includes('image/png'))
+               throw Error('race tile '+race+'/'+tile+': HTTP '+image.status);
+             }
+             verified=true;break;
+            }catch(error){
+             console.log('Preview propagation check '+attempt+'/24: '+error.message);
+             if(attempt<24)await new Promise(resolve=>setTimeout(resolve,5000));
+            }
+           }
+           assert(verified,'isolated public preview did not become ready');
+           console.log('Mentor MVP playable:',base);
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          NODE
+      - name: Preview release summary
+        run: |
+          echo '### Mentor training MVP candidate' >> "$GITHUB_STEP_SUMMARY"
+          echo 'https://rpchess-mentor-training-preview.mobigametim.workers.dev/' >> "$GITHUB_STEP_SUMMARY"
+          echo 'DeepSeek via separate API Worker; missing secret → verified local fallback. API Worker rate limits enabled.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'No production code or Workers deployed.' >> "$GITHUB_STEP_SUMMARY"

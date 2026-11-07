@@ -1,0 +1,21 @@
+name = "rpchess-mentor-api-preview"
+main = "src/index.mjs"
+compatibility_date = "2026-11-04"
+workers_dev = true
+
+# Separate from production D1, Tournament, Profile and their secrets.
+# No GONKA_API_KEY in code or plaintext wrangler variables.
+# Rate limiting is PoP-local and approximate, not a strict global billing cap.
+[[ratelimits]]
+name = "MENTOR_GLOBAL_LIMIT"
+namespace_id = "1861101"
+  [ratelimits.simple]
+  limit = 20
+  period = 60
+
+[[ratelimits]]
+name = "MENTOR_ACTOR_LIMIT"
+namespace_id = "1861102"
+  [ratelimits.simple]
+  limit = 5
+  period = 60
