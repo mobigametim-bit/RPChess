@@ -13,12 +13,17 @@ fs.mkdirSync(output,{recursive:true});
   await page.addInitScript(()=>{
    window.__mentorSpeechEvents=[];window.__mentorSpeechLast=null;
    const synth={
-    getVoices:()=>[{name:'Russian local',lang:'ru-RU',localService:true}],
+    getVoices:()=>[
+     {name:'Russian female',lang:'ru-RU',localService:true},
+     {name:'Microsoft Pavel',lang:'ru-RU',localService:false},
+     {name:'US English female',lang:'en-US',localService:true},
+     {name:'Google UK English Male',lang:'en-GB',localService:false}
+    ],
     cancel:()=>window.__mentorSpeechEvents.push({type:'cancel'}),
     speak:utterance=>{
      window.__mentorSpeechLast=utterance;
      window.__mentorSpeechEvents.push({type:'speak',text:utterance.text,
-      language:utterance.lang,voice:utterance.voice?.lang});
+      language:utterance.lang,voice:utterance.voice?.lang,voiceName:utterance.voice?.name});
     }
    };
    Object.defineProperty(window,'speechSynthesis',{value:synth,configurable:true});
@@ -86,6 +91,26 @@ fs.mkdirSync(output,{recursive:true});
   assert(spoken.text.includes('Продолжайте партию'),'only displayed mentor text is spoken');
   assert.equal(spoken.language,'ru-RU');
   assert.equal(spoken.voice,'ru-RU');
+  assert.equal(spoken.voiceName,'Microsoft Pavel',
+   'Pavel wins over the default local Russian female voice');
+  // The shared speech controller must prefer the requested UK male voice
+  // over default en-US voices without another backend or LLM request.
+  const englishVoice=await page.evaluate(async()=>{
+   const {createMentorSpeech}=await import('./js/mentor-training-speech.mjs');
+   const panel=document.createElement('section');
+   panel.innerHTML='<p class="mentor-feedback-text">Check the next move.</p>';
+   const narration=createMentorSpeech({
+    getRoot:()=>panel,getLanguage:()=> 'en',translate:key=>key
+   });
+   panel.insertAdjacentHTML('beforeend',narration.buttonMarkup());
+   narration.toggle();
+   const selection={name:window.__mentorSpeechLast.voice?.name,
+    lang:window.__mentorSpeechLast.lang};
+   narration.stop();
+   return selection;
+  });
+  assert.deepEqual(englishVoice,{name:'Google UK English Male',lang:'en-GB'},
+   'Google UK English Male is preferred and utterance uses its actual locale');
   await speak.click();
   assert.equal(await speak.getAttribute('aria-pressed'),'false');
   assert((await page.evaluate(()=>window.__mentorSpeechEvents)).some(e=>e.type==='cancel'));
