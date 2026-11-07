@@ -378,3 +378,57 @@
 }
 .rpchess-review-loading progress::-webkit-progress-bar{background:#17232c;border-radius:4px}
 .rpchess-review-loading progress::-webkit-progress-value{background:#d4a550;border-radius:4px}
+
+/* A single shared Stockfish review overlay serves Tournament, Arena and Mentor.
+ * Speech is drawn at the played figure, outside the board's overflow clipping. */
+.rpchess-review-board .review-square.has-review-piece-speech{isolation:isolate;z-index:5}
+.rpchess-review-board .review-square.has-review-piece-speech::before{
+ content:'';position:absolute;inset:8%;border-radius:50%;pointer-events:none;
+ z-index:4;animation:rpchess-review-piece-pulse 1.45s ease-out both;
+}
+.rpchess-review-board .review-square.has-review-piece-speech--good::before{
+ background:radial-gradient(ellipse,#52ef8888 0%,#36c96544 52%,transparent 78%);
+ box-shadow:0 0 15px 5px #44e67895,inset 0 0 17px #68e09abb;
+}
+.rpchess-review-board .review-square.has-review-piece-speech--wrong::before{
+ background:radial-gradient(ellipse,#ff505078 0%,#e42d2d42 52%,transparent 78%);
+ box-shadow:0 0 15px 5px #f4313199,inset 0 0 17px #fa5f5fbb;
+}
+.rpchess-review-piece-speech{
+ position:fixed;z-index:95020;pointer-events:none;display:block;
+ width:max-content;max-width:min(370px,calc(100vw - 20px));
+ padding:3px 8px;text-align:center;white-space:normal;overflow-wrap:break-word;
+ font:900 clamp(20px,2.7vw,35px)/1.14 Arial,sans-serif;
+ transform-origin:center bottom;animation:rpchess-review-piece-fly-up 1.7s ease-out both;
+}
+.rpchess-review-piece-speech--good{
+ color:#8cf5ac;text-shadow:0 2px 4px #0d2311,0 0 12px #249749,1px 1px #071009;
+}
+.rpchess-review-piece-speech--wrong{
+ color:#ff7d79;text-shadow:0 2px 4px #290b0b,0 0 12px #c52527,1px 1px #100606;
+ font-size:clamp(18px,2.3vw,28px);animation-duration:2.9s;
+}
+.rpchess-review-piece-speech--down{transform-origin:center top;animation-name:rpchess-review-piece-fly-down}
+@keyframes rpchess-review-piece-fly-up{
+ 0%{opacity:0;transform:translate(-50%,18px) scale(.72)}
+ 16%{opacity:1;transform:translate(-50%,-7px) scale(1.05)}
+ 78%{opacity:1;transform:translate(-50%,-40px) scale(1)}
+ 100%{opacity:0;transform:translate(-50%,-70px) scale(1.02)}
+}
+@keyframes rpchess-review-piece-fly-down{
+ 0%{opacity:0;transform:translate(-50%,-12px) scale(.72)}
+ 16%{opacity:1;transform:translate(-50%,8px) scale(1.05)}
+ 78%{opacity:1;transform:translate(-50%,44px) scale(1)}
+ 100%{opacity:0;transform:translate(-50%,67px) scale(1.02)}
+}
+@keyframes rpchess-review-piece-pulse{
+ 0%{opacity:0;transform:scale(.65)}
+ 19%{opacity:1;transform:scale(1.15)}
+ 55%{opacity:.55;transform:scale(.95)}
+ 100%{opacity:0;transform:scale(1.25)}
+}
+@media(prefers-reduced-motion:reduce){
+ .rpchess-review-piece-speech{animation:none;opacity:1;transform:translate(-50%,-28px)}
+ .rpchess-review-piece-speech--down{transform:translate(-50%,15px)}
+ .rpchess-review-board .review-square.has-review-piece-speech::before{animation:none;opacity:.8}
+}
