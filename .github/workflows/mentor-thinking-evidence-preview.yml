@@ -96,13 +96,16 @@ jobs:
               try{
                 const page=await fetch(base+'/?build=mentor-evidence-20261107',{cache:'no-store'});
                 assert.equal(page.status,200);
-                assert((await page.text()).includes('mentor-thinking-evidence-v1'));
+                assert((await page.text()).includes('mentor-learning-v2'));
                 const js=await fetch(base+'/js/mentor-training-app.mjs',{cache:'no-store'});
                 assert.equal(js.status,200);
-                assert((await js.text()).includes('mentor-thinking'));
+                assert((await js.text()).includes('function lessonHTML'));
                 const client=await fetch(base+'/js/mentor-training-feedback-client.mjs',{cache:'no-store'});
                 assert.equal(client.status,200);
                 assert((await client.text()).includes('unverified_explanation'));
+                const teaching=await fetch(base+'/js/mentor-training-teaching.mjs',{cache:'no-store'});
+                assert.equal(teaching.status,200);
+                assert((await teaching.text()).includes('lessonFromVerified'));
                 ok=true;break;
               }catch(err){
                 console.log('Preview check '+(attempt+1)+'/20: '+err.message);
