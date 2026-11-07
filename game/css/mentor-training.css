@@ -400,6 +400,7 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
 .mentor-training .mentor-learning-buttons button{flex:1;min-width:98px;min-height:36px;white-space:normal}
 .mentor-training .mentor-square.mentor-lesson-origin{outline:3px solid #94cbe3;outline-offset:-4px;z-index:1}
 .mentor-training .mentor-square.mentor-lesson-target{outline:3px solid #e7bd6f;outline-offset:-4px;z-index:1}
+.mentor-training .mentor-square.mentor-lesson-threat{outline:3px solid #d77971;outline-offset:-4px;z-index:1}
 @media(orientation:portrait){
  .mentor-training .mentor-learning{padding:8px;gap:7px}
  .mentor-training .mentor-learning-question{font-size:16px}
