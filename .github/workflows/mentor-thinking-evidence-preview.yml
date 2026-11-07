@@ -134,6 +134,60 @@ jobs:
             assert(verified,'isolated v2 API is not ready');
           })().catch(e=>{console.error(e);process.exitCode=1});
           NODE
+      - name: One real v2 mentor explanation (opt-in; at most one client request)
+        if: contains(github.event.head_commit.message, '[mentor-live-v2]')
+        timeout-minutes: 5
+        env:
+          MENTOR_SECRET_CONFIGURED: ${{ secrets.GONKA_API_KEY != '' }}
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {buildMentorV2Payload} from './game/js/mentor-training-feedback-client.mjs';
+          import {composeMentorV2Explanation} from './game/js/mentor-training-feedback-v2.mjs';
+          const base='https://rpchess-mentor-api-v2-preview.mobigametim.workers.dev';
+          const origin='https://rpchess-mentor-training-preview.mobigametim.workers.dev';
+          assert.equal(process.env.MENTOR_SECRET_CONFIGURED,'true',
+            'Set GONKA_API_KEY GitHub Actions repository secret before running the opt-in smoke');
+          const health=await fetch(base+'/health',{cache:'no-store'});
+          assert.equal(health.status,200);
+          const configuration=await health.json();
+          assert.equal(configuration.contractVersion,2);
+          assert.equal(configuration.configured,true,'v2 Worker has not received its private broker key');
+          const beforeFen='rnbqkbnr/pppp1ppp/8/4p3/8/5P2/PPPPP1PP/RNBQKBNR w KQkq e6 0 2';
+          const afterFen='rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq g3 0 2';
+          const {payload,verified}=buildMentorV2Payload({
+            beforeFen,afterFen,uci:'g2g4',grade:'blunder',language:'ru',
+            before:{cp:90,depth:12,bestMove:'b1c3'},
+            after:{cp:1200,mate:1,depth:12,bestMove:'d8h4',pv:['d8h4']},
+            continuation:{cp:1200,mate:1,depth:18,bestMove:'d8h4',pv:['d8h4'],
+              secondMove:'a7a6',secondCp:80,secondDepth:17},
+            verifiedThreat:{kind:'mate_sequence',uci:'d8h4',basis:'legal_checkmate'}
+          });
+          const start=Date.now();
+          const reply=await fetch(base+'/v2/explain',{
+            method:'POST',
+            headers:{Origin:origin,'Content-Type':'application/json',
+              'X-Mentor-Session':crypto.randomUUID()},
+            body:JSON.stringify(payload),
+            signal:AbortSignal.timeout(230000)
+          });
+          const data=await reply.json();
+          console.log('V2 live status:',reply.status,'elapsedMs:',Date.now()-start,
+            'source:',data.source||null,'reason:',data.reason||data.error||null,
+            'attempts:',data.attempts||null);
+          assert.equal(reply.status,200,'LLM did not return a validated answer');
+          assert.equal(data.contractVersion,2);
+          assert.equal(data.grade,verified.grade);
+          assert.equal(data.factId,verified.factId);
+          assert.equal(data.verifiedFact,verified.verifiedFact);
+          assert(['deepseek','minimax','glm'].includes(data.source),'unexpected provider source');
+          assert.equal(data.explanation,composeMentorV2Explanation(data.advice,verified),
+            'real output must pass the chess grounding validator');
+          console.log('MENTOR_V2_LIVE_RESULT',JSON.stringify({
+            model:data.model,source:data.source,attempts:data.attempts,
+            explanation:data.explanation
+          }));
+          NODE
       - name: Deploy existing allowlisted Mentor STATIC preview (no Mentor API or production Workers)
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
