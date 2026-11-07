@@ -124,7 +124,7 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  assert.deepEqual(undefended.line,['a8a1']);
  const guarded=evaluateStaticExchange('r3k3/8/8/8/8/8/1Q6/R3K3 b - - 0 1','a8a1');
  assert.equal(guarded.scoreCp,0,'defended rook can be recaptured by the queen');
- assert.deepEqual(guarded.line,['a8a1'],'queen can decline recapture if it is neutral');
+ assert.deepEqual(guarded.line,['a8a1','b2a1'],'defending queen can immediately recapture');
  const badQueen=evaluateStaticExchange('q3k3/8/8/8/8/8/P7/R3K3 b - - 0 1','a8a2');
  assert.equal(badQueen.scoreCp,-800,'a queen losing to rook recapture makes pawn capture unsound');
  assert.deepEqual(badQueen.line,['a8a2','a1a2']);
