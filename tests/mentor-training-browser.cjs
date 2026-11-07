@@ -289,6 +289,9 @@ fs.mkdirSync(output,{recursive:true});
   assert.match(bestCorrection,/^[a-h][1-8][a-h][1-8][qrbn]?$/);
   await page.locator('[data-mentor-action="correction-start"]').click();
   assert.equal(await page.locator('.mentor-correction').count(),1,'repair exercise opens only after answer');
+  const strongButton=page.locator('[data-mentor-action="correction-strong"]');
+  assert.equal(await strongButton.isDisabled(),true,'strong move is initially gated for 10 seconds');
+  assert.match((await strongButton.textContent()).trim(),/Сильный ход \(10\)/,'countdown starts at ten');
   assert(await page.locator('.mentor-correction .mentor-learning-instruction').textContent()
    .then(text=>text.includes('сыгранная партия останется неизменной')));
   assert.equal(await page.locator('[data-mentor-square="g2"] .mentor-piece').count(),1,
@@ -298,9 +301,9 @@ fs.mkdirSync(output,{recursive:true});
   await page.locator('[data-mentor-square="'+bestCorrection.slice(0,2)+'"]').click();
   await page.locator('[data-mentor-square="'+bestCorrection.slice(2,4)+'"]').click();
   await page.waitForFunction(()=>window.RPChessMentorTraining.state.correction?.accepted,null,{timeout:12000});
-  assert((await page.locator('.mentor-correction-result.is-correct').textContent()).includes('Хорошее решение'));
   const correctionSquare=bestCorrection.slice(2,4);
-  assert.equal((await page.locator('.mentor-correction-result.is-correct').textContent()).trim(),'Хорошее решение!');
+  assert.equal(await page.locator('.mentor-correction-result.is-correct').count(),0,
+   'successful move message must emerge from the figure, not duplicate in mentor panel');
   assert.equal((await page.locator('[data-mentor-square="'+correctionSquare+'"] .mentor-lesson-burst--correct').textContent()).trim(),
    'Хорошее решение!','corrected figure emits short green praise');
   assert.equal(await page.locator('[data-mentor-square="'+correctionSquare+'"] .mentor-lesson-burst--down').count(),
@@ -325,8 +328,35 @@ fs.mkdirSync(output,{recursive:true});
   await page.locator('[data-mentor-square="g2"]').click();
   await page.locator('[data-mentor-square="g4"]').click();
   await page.waitForFunction(()=>window.RPChessMentorTraining.state.correction?.outcome==='wrong',null,{timeout:12000});
-  assert((await page.locator('.mentor-correction-result.is-wrong').textContent()).includes('недостаточно'));
+  assert.equal(await page.locator('.mentor-correction-result.is-wrong').count(),0,
+   'rejected correction must not be repeated in the mentor panel');
+  assert((await page.locator('[data-mentor-square="g2"] .mentor-lesson-burst--wrong').textContent())
+   .includes('недостаточно улучшает позицию'),
+   'red rejected-move feedback emerges from the original piece');
+  assert.equal(await page.locator('[data-mentor-square="g2"] .mentor-lesson-burst--down').count(),1,
+   'feedback on the second rank flies downward');
   assert.equal((await page.evaluate(()=>window.RPChessMentorTraining.state)).moves.length,3);
+  const hintButton=page.locator('[data-mentor-action="correction-strong"]');
+  assert.equal(await hintButton.isDisabled(),true,'new correction has its own 10-second delay');
+  await page.waitForFunction(()=>{
+   const hint=document.querySelector('[data-mentor-action="correction-strong"]');
+   return hint&&!hint.disabled&&hint.textContent.trim()==='Сильный ход';
+  },null,{timeout:13000});
+  await hintButton.click();
+  assert((await page.locator('.mentor-correction-best').textContent()).includes(
+   bestCorrection.slice(0,2)+'–'+bestCorrection.slice(2)),
+   'Stockfish best move is revealed in the pre-error practice position');
+  assert.equal(await page.locator('[data-mentor-square="'+bestCorrection.slice(2,4)+'"] .mentor-piece').count(),1,
+   'Stockfish best-move figure appears at the correct destination');
+  assert.equal(await page.locator('[data-mentor-square="'+bestCorrection.slice(0,2)+'"].is-last').count(),1);
+  assert.equal(await page.locator('[data-mentor-square="'+bestCorrection.slice(2,4)+'"].is-last').count(),1);
+  assert.deepEqual(await page.evaluate(()=>window.RPChessMentorTraining.state.moves.map(m=>m.uci)),
+   originalGame.moves.map(m=>m.uci),'best-move reveal does not alter real game history');
+  await page.screenshot({path:path.join(output,'battle-correction-strong-move.png'),animations:'disabled'});
+  await page.locator('[data-mentor-action="correction-again"]').click();
+  assert.equal(await page.locator('.mentor-correction-best').count(),0,
+   'other variant restores the original practice position');
+  assert.equal(await page.locator('[data-mentor-square="g2"] .mentor-piece').count(),1);
   await page.locator('[data-mentor-action="correction-close"]').click();
   await page.waitForFunction(()=>window.RPChessMentorTraining.state.moves.length>3,null,{timeout:25000});
   const afterResume=await page.evaluate(()=>window.RPChessMentorTraining.state);
