@@ -454,3 +454,21 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
  .mentor-training .mentor-lesson-aura{animation:none;opacity:.8}
  .mentor-training .mentor-lesson-burst{animation:none;opacity:1;transform:translate(-50%,-28px)}
 }
+
+/* Stage 5: voluntary correction of the learner's own move. The board is a
+ * separate ephemeral FEN; real move history is never modified. */
+.mentor-training .mentor-correction{border-color:#bda26888}
+.mentor-training .mentor-correction-result{
+ margin:0;padding:8px 10px;border-radius:5px;font-size:clamp(13px,1.2vw,17px);
+ font-weight:700;line-height:1.35;color:#e8cf9e;background:#3d3021aa
+}
+.mentor-training .mentor-correction-result.is-correct{
+ color:#a3eec1;background:#173b2b99;border:1px solid #4acb7a66
+}
+.mentor-training .mentor-correction-result.is-wrong{
+ color:#f5a6a3;background:#451f2299;border:1px solid #e16a6966
+}
+.mentor-training .mentor-correction-start{border-color:#cba65f;background:#534023}
+@media(max-width:720px){
+ .mentor-training .mentor-correction-result{font-size:14px;padding:6px 8px}
+}
