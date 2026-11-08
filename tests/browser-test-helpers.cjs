@@ -61,7 +61,10 @@ async function markOnboardingComplete(page) {
   }, { key:TUTORIAL_KEY, hints:TUTORIAL_HINTS });
 }
 
-async function startNewRun(page, { playerName = 'Browser Tester' } = {}) {
+async function startNewRun(page, { playerName = 'Browser Tester', legacyTravel = true } = {}) {
+  // Older scene suites explicitly exercise the legacy three-card Journey UI.
+  // The new kingdom acceptance suite opts out and verifies the production map.
+  await page.evaluate(value=>sessionStorage.setItem('rpchess.test.legacyTravel',value?'1':'0'),legacyTravel);
   const menu = await waitForVisible(page, '[data-reboot-foundation]:not([hidden])', 'Main menu');
   await markOnboardingComplete(page);
   const newGame = menu.locator('[data-new-game]');
