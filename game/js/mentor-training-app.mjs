@@ -6,13 +6,13 @@ import { attachPieceDrag } from './piece-drag.mjs';
 import { applyPinIce } from './king-pin-ice.mjs';
 import { makeToggle, syncToggles } from './board-view-toggle.mjs';
 import { createMentorMotion } from './mentor-training-motion.mjs';
-import { createMentorSpeech } from './mentor-training-speech.mjs?v=20261108-tts-speed-v3';
+import { createMentorSpeech } from './mentor-training-speech.mjs?v=20261108-task-narration-v2';
 import { fantasyPieceMarkup } from './fantasy-piece.mjs';
 import { currentLanguage, subscribe } from './i18n.mjs';
 import { TRAINING_MENTORS, UCI, rebuildTraining, extendTraining, trainingMoveQualityWinChance } from './mentor-training-history.mjs';
-import {buildMentorV2Payload,requestMentorV2Text} from './mentor-training-feedback-client.mjs?v=20261108-en-validation-v4';
-import {validatedV2Facts,localMentorV2Fallback} from './mentor-training-feedback-v2.mjs?v=20261108-en-validation-v4';
-import {mentorLessonCopy,validateLessonGuess} from './mentor-training-teaching.mjs?v=20261107-mentor-auto-pause-v3';
+import {buildMentorV2Payload,requestMentorV2Text} from './mentor-training-feedback-client.mjs?v=20261108-figure-wording-v2';
+import {validatedV2Facts,localMentorV2Fallback} from './mentor-training-feedback-v2.mjs?v=20261108-figure-wording-v2';
+import {mentorLessonCopy,validateLessonGuess} from './mentor-training-teaching.mjs?v=20261108-figure-wording-v2';
 import {thinkingText,praiseText,fallbackText} from './mentor-training-copy.mjs';
 import {POS,TACTIC,quickThreatProbe,verifyImmediateThreat} from './mentor-training-threat.mjs?v=20261107-mentor-stage4-v1';
 
