@@ -152,13 +152,34 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
         `assets/kingdom-map/${race}/${race}_${kind}_128.svg`);
   assert.strictEqual(kingdomMapSprite('puzzle','orcs'),
     'assets/kingdom-map/puzzle/puzzle_128.svg');
-  assert.strictEqual(kingdomMapSprite('event','mixed'),
-    'generated_assets/node_story.png','mixed Events must not falsely claim a human race');
+  const legacyMixedSvg=kingdomMapSprite('event','mixed','saved-mixed-event-id');
+  assert(/^assets\/kingdom-map\/([a-z_]+)\/\1_event_128\.svg$/.test(legacyMixedSvg),
+    'legacy mixed Events must display an existing race SVG, not the book icon');
+  assert.strictEqual(kingdomMapSprite('event','mixed','saved-mixed-event-id'),legacyMixedSvg,
+    'existing saved mixed Events keep the same SVG across rerenders');
   assert.strictEqual(kingdomMapSprite('unexpected','elves'),null);
   // Use the current Journey suite to assert named races and old-save hydration.
   const commanders=await import(pathToFileURL(path.join(game,'js/commander-portraits.mjs')).href);
   const settlement=await import(pathToFileURL(path.join(game,'js/settlement-core.mjs')).href);
   const raceAssets=await import(pathToFileURL(path.join(game,'js/race-assets.mjs')).href);
+
+  const mixedEvent=Array.from({length:512},(_,index)=>
+    mapCore.randomEncounter(mapRun,{x:index+2,y:2},500))
+    .find(choice=>choice.type==='event'&&choice.raceTag==='mixed');
+  assert(mixedEvent,'the event catalog must produce mixed-race Kingdom events');
+  assert(raceAssets.RACE_TAGS.includes(mixedEvent.visualRaceTag),
+    'a mixed event keeps its narrative race but pins a valid cosmetic SVG race');
+  const eventSvg=`assets/kingdom-map/${mixedEvent.visualRaceTag}/${mixedEvent.visualRaceTag}_event_128.svg`;
+  assert.strictEqual(kingdomMapSprite('event',mixedEvent.raceTag,mixedEvent.visualRaceTag),eventSvg);
+  assert.strictEqual(kingdomMapSprite('event',mixedEvent.raceTag,mixedEvent.seed),eventSvg,
+    'old saved events without visualRaceTag recover the same per-cell art from the seed');
+  const mixedMap={...startMap,cells:{...startMap.cells,
+    [mixedEvent.kingdomCell]:{status:'completed',annexed:false,selectedEncounter:mixedEvent}}};
+  persistence.writeRun({...mapRun,kingdomMap:mixedMap},storage,1510);
+  const savedMixed=persistence.readRun(storage).kingdomMap.cells[mixedEvent.kingdomCell].selectedEncounter;
+  assert.strictEqual(savedMixed.raceTag,'mixed','saving cosmetic art must not change event narrative');
+  assert.strictEqual(savedMixed.visualRaceTag,mixedEvent.visualRaceTag,
+    'selected visual race is stored with its cell for reloads');
   assert.strictEqual(commanders.COMMANDERS.length,7);
   for(const king of commanders.COMMANDERS)assert(raceAssets.RACE_TAGS.includes(king.raceTag),
     'commander must have an existing race: '+king.id);
