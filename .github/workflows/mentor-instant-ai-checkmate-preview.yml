@@ -74,7 +74,7 @@ jobs:
              const res=await fetch(base+'/?mentor_scene=20261108-v1',{cache:'no-store'});
              assert.equal(res.status,200);
              const html=await res.text();
-             assert(html.includes('mentor-training-app.mjs?v=20261108-lesson-mate-v1'));
+             assert(html.includes('mentor-training-app.mjs?v=20261108-task-narration-v2'));
              assert(html.includes('mentor-training.css?v=20261108-lesson-mate-v1'));
              const [js,css]=await Promise.all([
               fetch(base+'/js/mentor-training-app.mjs',{cache:'no-store'}),
