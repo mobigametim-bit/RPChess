@@ -6,11 +6,10 @@ const GROUPS=Object.freeze({
  forest_clusters:'01_small_grove 02_round_grove 03_dense_wood 04_horizontal_forest 05_vertical_forest 06_sparse_edge 07_convex_north 08_convex_south 09_west_edge 10_east_edge 11_l_shaped 12_crescent_grove 13_open_clearing 14_scattered_trees 15_conifer_strip 16_mixed_forest'.split(' '),
  mountain_clusters:'01_single_summit 02_two_peaks 03_three_peaks 04_horizontal_ridge 05_vertical_ridge 06_curved_ridge 07_diagonal_slash 08_diagonal_backslash 09_sparse_mountains 10_dense_massif 11_saddle 12_mountain_pass 13_cliff_edge 14_foothills 15_dominant_peak 16_fading_edge'.split(' '),
  hills_rocks:'01_three_hills 02_long_low_ridge 03_prominent_hill 04_low_hill_group 05_pale_boulders 06_dark_boulders 07_rocky_spur 08_sparse_rocks 09_terrain_contours 10_diagonal_ridge 11_stone_scree 12_soft_bluff 13_rocks_and_grass 14_branched_crest 15_single_round_hill 16_low_foothills'.split(' '),
- road_segments:'01_wide_we 02_wide_ns 03_wide_ne 04_wide_es 05_wide_sw 06_wide_wn 07_wide_winding_we 08_wide_winding_ns 09_wide_tee_wes 10_wide_cross 11_narrow_we 12_narrow_ns 13_narrow_ne 14_narrow_es 15_narrow_end_w 16_narrow_site_s'.split(' '),
- river_segments:'01_horizontal_we 02_vertical_ns 03_turn_ne 04_turn_es 05_turn_sw 06_turn_wn 07_s_curve_we 08_s_curve_ns 09_tee_wes 10_tee_nse 11_tee_nsw 12_tee_wen 13_cross_news 14_spring_e 15_river_mouth_w 16_island_we'.split(' '),
  fog_of_war_shapes:'01_broad_blot 02_long_blot 03_round_blot 04_thin_edge 05_ragged_horizontal 06_ragged_vertical 07_soft_corner 08_jagged_corner 09_loose_wisps 10_dense_blot 11_crescent 12_tendril 13_open_center 14_deep_recess 15_haze_ribbon 16_small_islands'.split(' ')
 });
 const PARCHMENT_TILE=142,PARCHMENT_CHUNK_CELLS=4;
+// Additional uploaded artwork is discovered at build time, not guessed by filename.
 const PARCHMENT_MODE_KEY='rpchess.kingdom.visual.v1';
 function hash32(value){
  let hash=2166136261;
