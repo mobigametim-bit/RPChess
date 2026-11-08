@@ -2,7 +2,7 @@
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { trainingMoveQuality, UCI } from './mentor-training-history.mjs';
 import {tacticalEvidence,MAX_PV} from './mentor-training-tactics.mjs?v=20261107-mentor-auto-pause-v3';
-import {lessonFromVerified,mentorLessonCopy} from './mentor-training-teaching.mjs?v=20261107-mentor-auto-pause-v3';
+import {lessonFromVerified,mentorLessonCopy} from './mentor-training-teaching.mjs?v=20261108-figure-wording-v2';
 
 const GRADE_SET=new Set(['inaccuracy','mistake','blunder']);
 const RU={p:'пешку',n:'коня',b:'слона',r:'ладью',q:'ферзя',k:'короля'};
