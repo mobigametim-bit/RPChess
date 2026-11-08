@@ -46,6 +46,7 @@ function report(text){const node=screen?.querySelector('[data-kingdom-toast]');i
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
  const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261108-terrain-c1';link.dataset.kingdomStyle='';
+ link.addEventListener('load',()=>{if(screen&&!screen.hidden)render();});
  document.head.append(link);
 }
 function screenReady(){
@@ -148,6 +149,15 @@ function render(){
  const run=readRun();if(!run||!validateKingdomMap(run.kingdomMap)||!screen||screen.hidden)return;
  const map=run.kingdomMap;const view=camera||map.king;
  const world=screen.querySelector('[data-kingdom-world]');
+ const frame=screen.querySelector('.km-map-frame').getBoundingClientRect();
+ const originalTile=Math.min(Math.max(0,frame.width-4)/WIDTH,Math.max(0,frame.height-4)/HEIGHT);
+ if(originalTile>1){
+  // 2x relative to the former square cells, while always filling the frame.
+  // The 3px world borders are excluded from the 9x7 tile dimensions.
+  const tile=Math.max(originalTile*2,frame.width/WIDTH,frame.height/HEIGHT);
+  world.style.width=(tile*WIDTH+6)+'px';
+  world.style.height=(tile*HEIGHT+6)+'px';
+ }
  screen.querySelector('[data-kingdom-title]').textContent=tr('title');
  screen.querySelector('[data-kingdom-roster]').textContent=tr('return');
  screen.querySelector('[data-kingdom-power]').textContent=tr('power')+': '+readPlayerRating().power;
@@ -201,9 +211,7 @@ function render(){
  avatar.src=kingArt(run);avatar.alt='';avatar.setAttribute('aria-hidden','true');
  // The king is not zoomed. Retain its pre-change physical size rather than
  // halving an enlarged cell (which varies with the map frame aspect ratio).
- const bounds=screen.querySelector('.km-map-frame').getBoundingClientRect();
- const oldTile=Math.min((bounds.width-4)/WIDTH,(bounds.height-4)/HEIGHT);
- avatar.style.width=oldTile+'px';avatar.style.height=oldTile+'px';
+ if(originalTile>1){avatar.style.width=originalTile+'px';avatar.style.height=originalTile+'px';}
  // Position the king at the chosen cell's visual center, not at the camera
  // center. Inline coordinates override the CSS fallback for initial loads.
  avatar.style.left=((map.king.x-view.x+CENTER_X+.5)*100/WIDTH)+'%';
@@ -296,6 +304,7 @@ function syncPower(){
   if(level>previous)report(tr('congrat')+' '+['','I','II','III','IV','V'][level]+'!');
  }
 }
+addEventListener('resize',()=>{if(screen&&!screen.hidden)render();});
 addEventListener('rpchess:power-updated',syncPower);
 addEventListener('rpchess:scene-changed',e=>{if(e.detail?.scene==='menu'||e.detail?.scene==='roster')hideMap();});
 subscribe(()=>{if(screen&&!screen.hidden)render();});
