@@ -98,9 +98,10 @@ async function assertTileImage(page,cellId,relativePath){
   for(const sprite of artProbe)assert.equal(sprite.status===200&&sprite.decoded,true,
     'artist SVG must be shipped and decoded at 128px: '+sprite.file);
   await page.waitForFunction(()=>
-    performance.getEntriesByType('resource').some(entry=>
-      entry.name.includes('/kingdom-parchment/forest_clusters/01_small_grove.svg')),
+    document.querySelector('[data-kingdom-parchment]')?.dataset.parchmentArt==='loaded',
     null,{timeout:15000});
+  assert.equal(await atlas.getAttribute('data-parchment-art'),'loaded',
+    'the parchment renderer uses the uploaded SVGs rather than its fallback');
   assert.equal(await page.locator('[data-kingdom-cell]').count(),77,
     'changing artwork cannot change the underlying 11x7 logical chess grid');
   const terrain=await atlas.evaluate(canvas=>{
