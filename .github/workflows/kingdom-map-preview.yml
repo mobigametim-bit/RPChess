@@ -36,8 +36,20 @@ jobs:
             rpchess-runtime-assets-v1-${{ runner.os }}-
       - name: Canonical gate and static build
         run: |
+          set -euo pipefail
           npm ci --no-audit --no-fund
-          npm run gate:local
+          # GitHub Releases sometimes returns 504 and public CDNs can rate-limit.
+          # Fetch the same stockfish@18.0.0 package through npm registry,
+          # and retain the canonical SHA256/GPL verification inside build.cjs.
+          npm pack stockfish@18.0.0 --silent --pack-destination /tmp
+          mkdir -p /tmp/rpchess-stockfish-package /tmp/rpchess-stockfish-verified
+          tar -xzf /tmp/stockfish-18.0.0.tgz -C /tmp/rpchess-stockfish-package
+          cp /tmp/rpchess-stockfish-package/package/bin/stockfish-18-lite-single.js /tmp/rpchess-stockfish-verified/
+          cp /tmp/rpchess-stockfish-package/package/bin/stockfish-18-lite-single.wasm /tmp/rpchess-stockfish-verified/
+          license=$(find /tmp/rpchess-stockfish-package/package -iname 'Copying.txt' -o -iname 'COPYING.txt' | head -n 1)
+          test -n "$license"
+          cp "$license" /tmp/rpchess-stockfish-verified/COPYING.txt
+          RPCHESS_STOCKFISH_ASSET_DIR=/tmp/rpchess-stockfish-verified npm run gate:local
       - name: Kingdom and legacy Travel Chromium tests
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
