@@ -171,8 +171,8 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     .filter(entry=>entry.isDirectory()&&!Object.keys(parchment.GROUPS).includes(entry.name));
   for(const entry of extraGroups){
     const files=fs.readdirSync(path.join(parchmentRoot,entry.name))
-      .filter(name=>name.endsWith('.svg'));
-    assert.strictEqual(files.length,16,entry.name+' must contain exactly 16 new SVG sprites');
+      .filter(name=>/\.(svg|png)$/i.test(name));
+    assert.strictEqual(files.length,16,entry.name+' must contain exactly 16 new SVG/PNG sprites');
   }
   // The experimental source archive is delivered independently of the app.
   // When installed, ensure the release contains the whole exact vector set.
