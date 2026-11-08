@@ -10,7 +10,7 @@ const chunkCache=new Map(),spriteCache=new Map();
 const MAX_CHUNKS=18,MAX_SPRITES=64;
 let assetProbe=null,assetsReady=null,latest=null,redrawQueued=false;
 let extraManifestRequested=false;
-const extraGroups={marsh:[],landmarks:[],borders:[]};
+const extraGroups={marsh:[],landmarks:[]};
 function requestExtraManifest(){
  if(extraManifestRequested)return;
  extraManifestRequested=true;
@@ -18,17 +18,15 @@ function requestExtraManifest(){
   .then(res=>res.ok?res.json():{})
   .then(data=>{
    const groups=data?.groups||{};
-   const extras=Object.entries(groups).filter(([group])=>
-    !['parchment_base_variations','forest_clusters','mountain_clusters',
-      'hills_rocks','fog_of_war_shapes'].includes(group));
-   const used=new Set();
-   for(const [kind,re] of [['marsh',/marsh|waste|swamp|bog/i],
-      ['landmarks',/decor|landmark|ruin|minor/i],
-      ['borders',/border|territory|accent/i]]){
-    const match=extras.find(([name])=>!used.has(name)&&re.test(name))||
-      extras.find(([name])=>!used.has(name));
-    if(match){used.add(match[0]);extraGroups[kind]=match[1].map(file=>
-      'assets/kingdom-parchment/'+match[0]+'/'+file);}
+   // Artist-approved groups only. Never fall back to an unrelated directory:
+   // renamed/misplaced sprites must not silently render as marshes.
+   for(const [kind,folder] of [
+    ['marsh','marsh_wasteland_optional'],
+    ['landmarks','decor_minor_landmarks']
+   ]){
+    const names=Array.isArray(groups[folder])?groups[folder]:[];
+    extraGroups[kind]=names.filter(file=>/\.(svg|png)$/i.test(file))
+      .map(file=>'assets/kingdom-parchment/'+folder+'/'+file);
    }
    queueRedraw();
   })
@@ -139,21 +137,6 @@ function drawOptionalNature(ctx,seed,left,top,width,height,map,repaint){
    drawVector(ctx,src,(wx-left)*PARCHMENT_TILE-size/2,
     (wy-top)*PARCHMENT_TILE-size/2,size,size,marsh?.72:.86,repaint);
   }
-}
-function drawBorderAccents(ctx,seed,map,left,top,width,height,repaint){
- const cells=map?.cells||{},keys=Object.keys(cells);
- for(const id of keys){
-  const cell=cells[id];if(!cell?.annexed)continue;
-  const [x,y]=id.split(',').map(Number);
-  if(x<left-1||x>=left+width+1||y<top-1||y>=top+height+1)continue;
-  if(randomAt(seed,x,y,'border-accent')>.14)continue;
-  if([[-1,0],[1,0],[0,-1],[0,1]].every(([dx,dy])=>
-   cells[(x+dx)+','+(y+dy)]?.annexed))continue;
-  const src=extraSprite(seed,'borders',x,y);if(!src)continue;
-  const size=PARCHMENT_TILE*.66;
-  drawVector(ctx,src,(x+.5-left)*PARCHMENT_TILE-size/2,
-   (y+.5-top)*PARCHMENT_TILE-size/2,size,size,.65,repaint);
- }
 }
 function fallbackSymbol(ctx,kind,x,y,size,seed){
  ctx.save();ctx.translate(x,y);
@@ -308,6 +291,6 @@ function renderParchment(canvas,{seed,view,columns,rows,map}){
  drawFog(ctx,map,left,top,columns,rows);
  drawFogInk(ctx,seed,left,top,columns,rows,map,repaint);
  drawBorders(ctx,map,left,top,columns,rows);
- drawBorderAccents(ctx,seed,map,left,top,columns,rows,repaint);
+
 }
 export {renderParchment,drawWaterRoads};
