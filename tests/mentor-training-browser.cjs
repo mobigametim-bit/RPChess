@@ -518,8 +518,11 @@ fs.mkdirSync(output,{recursive:true});
   assert.equal(await page.locator('[data-mentor-result]').count(),0,
    'royal animations remain visible before the result dialog');
   const matrix=await loser.locator('.mentor-piece').evaluate(node=>getComputedStyle(node).transform);
-  assert.match(matrix,/matrix\\(0,\\s*1,\\s*-1,\\s*0,/,
-   'defeated king must lie at 90 degrees');
+  const angle=matrix.startsWith('matrix(')&&matrix.endsWith(')')
+   ?matrix.slice(7,-1).split(',').map(Number):null;
+  assert(angle&&Math.abs(angle[0])<.03&&Math.abs(angle[1]-1)<.03&&
+   Math.abs(angle[2]+1)<.03&&Math.abs(angle[3])<.03,
+   'defeated king must lie at 90 degrees: '+matrix);
   await page.locator('[data-mentor-result] h2').waitFor({timeout:15000});
   assert(Date.now()-mateClickAt>=2700,'the result must wait approximately three seconds');
   assert.equal((await page.locator('[data-mentor-result] h2').textContent()).trim(),'Победа!');
