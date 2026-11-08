@@ -50,5 +50,83 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const legacyActive={...activeTwelve,difficultyModel:undefined};const legacyCompleted={...run,updatedAt:1410,skirmishCount:1,currentTravelChoices:null,activeTravelChoice:legacyActive};storage.setItem(persistence.RUN_STORAGE_KEY,JSON.stringify(legacyCompleted));const legacyRecovered=persistence.readRun(storage);assert(legacyRecovered);assert.strictEqual(legacyRecovered.activeTravelChoice,null,'legacy completed combat route still auto-recovers');
   const manualSkirmish={id:'manual.s',step:1,type:'skirmish',label:'СТЫЧКА',stars:12,threatLabel:'ЛЕГЕНДАРНАЯ',flavor:'Путь.',mechanicalHint:'Нестандартный состав противника.',seed:'manual-s',playerColor:'b',enemyRaceTag:'orcs'};globalThis.RPChessTravelEncounterOverride=manualSkirmish;const rs=skirmish.createEncounter({seed:'fallback',stars:5});assert.strictEqual(rs.seed,'manual-s');assert.strictEqual(rs.stars,12);assert.strictEqual(rs.aiElo,2600);assert.strictEqual(rs.playerColor,'b');
   const manualBattle={...manualSkirmish,id:'manual.b',type:'battle',label:'БИТВА',seed:'manual-b'};globalThis.RPChessTravelEncounterOverride=manualBattle;const rb=battle.createBattleEncounter({seed:'fallback',stars:1});assert.strictEqual(rb.seed,'manual-b');assert.strictEqual(rb.stars,12);assert.strictEqual(rb.aiElo,2600);
+
+  // New Journey is a sparse infinite kingdom map. The legacy three-card
+  // generator remains a compatibility API, but the map discovers ONE route.
+  const mapCore=await import(pathToFileURL(path.join(game,'js/kingdom-map-core.mjs')).href);
+  const mapRun=persistence.createRun({id:'kingdom-map-contract',now:1700000000000});
+  const startMap=mapCore.createKingdomMap(mapRun,500);
+  assert(mapCore.validateKingdomMap(startMap));
+  assert.strictEqual(mapCore.pointsAvailable(startMap),2,'starting 500 Power earns 2 irreversible points');
+  assert.strictEqual(mapCore.castleLevel(500),2);
+  assert.strictEqual(mapCore.castleLevel(2000),5);
+  assert.deepStrictEqual([1,2,3,4,5,6,7,8,9,10,11,12].map(mapCore.romanForStars),
+    ['I','II','II','II','III','III','IV','IV','IV','V','V','V']);
+  assert(!mapCore.adjacent({x:0,y:0},{x:2,y:0}));
+  for(const [x,y] of [[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]]){
+    const point={x,y},choice=mapCore.randomEncounter(mapRun,point,500);
+    assert(travel.isTravelChoice(choice)&&choice.kingdomCell===mapCore.keyOf(x,y));
+    assert.deepStrictEqual(choice,mapCore.randomEncounter(mapRun,point,500),
+      'the map must not reroll the outcome for the same coordinate');
+    assert(['skirmish','battle','event','settlement','puzzle','caravan'].includes(choice.type));
+    if(choice.type==='puzzle')assert.strictEqual(choice.raceTag,null);
+    const step=mapCore.enterCell(startMap,point,choice,1000);
+    assert(step.ok&&step.kind==='discover');
+    assert(!mapCore.enterCell(step.map,{x:x+1,y},choice).ok,'cannot move during a pending encounter');
+    const started=mapCore.beginEncounter(step.map,mapCore.keyOf(x,y));
+    assert(started.ok);
+    const lost=mapCore.finishEncounter(started.map,mapCore.keyOf(x,y),{success:false});
+    assert(lost.ok&&lost.retreated);
+    assert.deepStrictEqual(lost.map.king,{x:0,y:0},'draw/defeat rolls the king back');
+    assert.strictEqual(lost.map.cells[mapCore.keyOf(x,y)].status,'failed');
+    assert.strictEqual(mapCore.canAnnex(lost.map,point),false);
+    const repeat=mapCore.enterCell(lost.map,point);
+    assert(repeat.ok&&repeat.kind==='retry'&&repeat.cell.selectedEncounter.id===choice.id,
+      'a failed encounter is always the same encounter on retry');
+  }
+  const diag={x:1,y:1},diagonalChoice=mapCore.randomEncounter(mapRun,diag,500);
+  const diagEntry=mapCore.enterCell(startMap,diag,diagonalChoice);
+  const diagDone=mapCore.finishEncounter(mapCore.beginEncounter(diagEntry.map,'1,1').map,'1,1',{success:true});
+  assert(diagDone.ok&&!mapCore.canAnnex(diagDone.map,diag),
+    'a diagonal touch is not sufficient for annexation');
+  const ortho={x:1,y:0},orthoChoice=mapCore.randomEncounter(mapRun,ortho,500);
+  const orthoEntry=mapCore.enterCell(startMap,ortho,orthoChoice);
+  const orthoDone=mapCore.finishEncounter(mapCore.beginEncounter(orthoEntry.map,'1,0').map,'1,0',{success:true});
+  assert(orthoDone.ok&&mapCore.canAnnex(orthoDone.map,ortho));
+  const joined=mapCore.annexCell(orthoDone.map,ortho);
+  assert(joined.ok&&mapCore.pointsAvailable(joined.map)===1);
+  assert(mapCore.borderEdges(joined.map,{x:0,y:0}).includes('w')&&
+    !mapCore.borderEdges(joined.map,{x:0,y:0}).includes('e'),
+    'castle external perimeter omits the shared border with owned eastern cell');
+  assert(!mapCore.annexCell(joined.map,ortho).ok,'never spend twice on the same cell');
+  assert(mapCore.canAnnex({...joined.map,king:{x:1,y:1},
+    cells:{...joined.map.cells,'1,1':diagDone.map.cells['1,1']}},diag),
+    'a previously completed diagonal cell becomes annexable when a cardinal neighbor is owned');
+  const climbed=mapCore.updatePeak(joined.map,1100);
+  assert.strictEqual(mapCore.pointsAvailable(climbed),4);
+  assert.strictEqual(mapCore.pointsAvailable(mapCore.updatePeak(climbed,650)),4,
+    'rating loss never revokes earned annexation points');
+  // Battle bonus is unique to a won BATTLE, not a draw, and uses actual
+  // opponent Elo (the same aiElo generated from encounter stars).
+  const battlePoint={x:0,y:1},battleRoute={...mapCore.randomEncounter(mapRun,battlePoint,500),
+    id:'kingdom.test-battle',type:'battle'};
+  const battleEnter=mapCore.enterCell(startMap,battlePoint,battleRoute);
+  const battleStart=mapCore.beginEncounter(battleEnter.map,'0,1');
+  const battleWin=mapCore.finishEncounter(battleStart.map,'0,1',{success:true,opponentPower:630});
+  assert.strictEqual(battleWin.map.battlePointsEarned,3);
+  assert.strictEqual(battleWin.map.creditedBattleEncounterIds.length,1);
+  assert(!mapCore.finishEncounter(battleWin.map,'0,1',{success:true,opponentPower:630}).ok);
+  const persistedMap=persistence.writeRun({...mapRun,kingdomMap:joined.map},storage,1420);
+  const roundTrip=persistence.readRun(storage);
+  assert(roundTrip?.kingdomMap?.cells['1,0'].annexed,'new map must survive run storage');
+  assert.strictEqual(roundTrip.schemaVersion,persistence.RUN_SCHEMA_VERSION,'old saves must remain compatible');
+  const oldCopy={...mapRun,kingdomMap:undefined};
+  persistence.writeRun(oldCopy,storage,1430);
+  assert.strictEqual(persistence.readRun(storage).kingdomMap,null,'legacy saves load without a map');
+  assert(travelAppSource.includes("import('./kingdom-map-app.mjs?"),'new Journey loads its own map scene');
+  assert(travelAppSource.includes('startMapEncounter'),'new Journey routes directly to encounters');
+  assert(fs.readFileSync(path.join(game,'css/kingdom-map.css'),'utf8').includes('km-king-step'),
+    'king moves use a smooth, explicit CSS transition');
+
   console.log('Travel Choice keeps 6-type ~16.7% pool, owner-keyed RU/EN compact UI and player Threat..Threat+3 encounter contract: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
