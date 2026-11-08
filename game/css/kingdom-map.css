@@ -29,7 +29,7 @@ body.kingdom-map-active{overflow:hidden}
 .km-cell{border:1px solid #23342baa;min-width:0;min-height:0;overflow:hidden;
  position:relative;display:grid;place-items:center;padding:0;isolation:isolate;
  background:#536d62;transition:filter .22s}
-.km-cell--terrain{background-image:var(--km-tile-image);background-size:cover;background-position:center;background-repeat:no-repeat}
+.km-cell--terrain{background-size:cover;background-position:center;background-repeat:no-repeat}
 .km-cell--fog.km-cell--dark{background:linear-gradient(140deg,#333735,#22282b)}
 .km-cell--fog.km-cell--light{background:linear-gradient(140deg,#616660,#3c4341)}
 .km-fog-mark{font-family:Georgia,serif;color:#e5e3d3cf;font-size:clamp(18px,2.7vw,42px);
