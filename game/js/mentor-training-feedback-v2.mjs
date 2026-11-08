@@ -126,7 +126,7 @@ function promptForMentorV2(data){
  const ru=data.language==='ru';
  return {
   system:ru
-   ?'Ты редактор шахматных учебных советов. Верни ТОЛЬКО JSON {"advice":"..."} без markdown и других полей. advice — ровно ОДНО законченное предложение на русском длиной 45–150 символов с точкой в конце. Дай универсальный совет, как мысленно проверять опасный ответ соперника перед решением. Не описывай текущую позицию или исход, не пересказывай verifiedFact. ЗАПРЕЩЕНЫ: координаты, названия фигур, названия тактических приёмов, слова «потеря», «выигрыш», «размен», «жертва», конкретные ходы и утверждения о случившемся. Допустимый пример: {"advice":"Перед решением мысленно проверь самый неприятный ответ соперника и сравни несколько возможных продолжений."}'
+   ?'Ты редактор шахматных учебных советов. Верни ТОЛЬКО JSON {"advice":"..."} без markdown и других полей. advice — ровно ОДНО законченное предложение на русском длиной 45–150 символов с точкой в конце. Дай универсальный совет, как мысленно проверять опасный ответ соперника перед решением. Не описывай текущую позицию или исход, не пересказывай verifiedFact. Не употребляй слово «материал» и его производные — говори о фигурах. ЗАПРЕЩЕНЫ: координаты, названия фигур, названия тактических приёмов, слова «потеря», «выигрыш», «размен», «жертва», конкретные ходы и утверждения о случившемся. Допустимый пример: {"advice":"Перед решением мысленно проверь самый неприятный ответ соперника и сравни несколько возможных продолжений."}'
    :'You are an editor of chess learning tips. Return ONLY JSON {"advice":"..."} with no markdown or extra fields. advice must be exactly ONE complete English sentence (45–150 characters) ending in a period. Give a reusable mental habit for checking the opponent’s most dangerous reply. Do not describe the current position, outcome or repeat verifiedFact. FORBIDDEN: coordinates, piece names, tactical motif names, words "loss", "win", "exchange", "sacrifice", specific moves, and claims about this game. Valid example: {"advice":"Before deciding, imagine the opponent’s most uncomfortable reply and compare a few possible continuations."}',
   user:JSON.stringify({language:data.language,lessonFactId:data.factId,
    verifiedFact:data.verifiedFact,learningPrinciple:data.learningPrinciple,
@@ -140,6 +140,7 @@ function mentorAdviceValidationIssue(value,data){
  if(typeof value!=='string'||!data?.verifiedFact)return 'invalid_type';
  const s=value.trim().replace(/\s+/g,' ');
  if(data.language==='en'&&/[\u0400-\u052f]/.test(s))return 'wrong_language';
+ if(data.language==='ru'&&/материал|материаль/i.test(s))return 'piece_terminology';
  if(s.length<25||s.length>230)return 'length';
  if(/[<>{}\r\n\x60]|https?:|www\./i.test(s))return 'markup';
  const sentences=(s.match(/[.!?](?=\s|$)/g)||[]).length;
