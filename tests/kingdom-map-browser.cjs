@@ -52,10 +52,10 @@ const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)
    const frame=document.querySelector('.km-map-frame').getBoundingClientRect();
    const world=document.querySelector('.km-world').getBoundingClientRect();
    const cell=document.querySelector('[data-kingdom-cell="0,0"]').getBoundingClientRect();
-   const king=document.querySelector('.km-king').getBoundingClientRect();
+   const king=document.querySelector('.km-king');
    return {frame:{width:frame.width,height:frame.height,left:frame.left,right:frame.right,top:frame.top,bottom:frame.bottom},
     world:{width:world.width,height:world.height,left:world.left,right:world.right,top:world.top,bottom:world.bottom},
-    tile:{width:cell.width,height:cell.height},king:{width:king.width,height:king.height}};
+    tile:{width:cell.width,height:cell.height},king:{width:parseFloat(getComputedStyle(king).width),height:parseFloat(getComputedStyle(king).height)}};
   });
   assert(dimensions.world.left<=dimensions.frame.left&&dimensions.world.right>=dimensions.frame.right&&
     dimensions.world.top<=dimensions.frame.top&&dimensions.world.bottom>=dimensions.frame.bottom,
