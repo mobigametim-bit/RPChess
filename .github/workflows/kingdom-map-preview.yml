@@ -97,9 +97,16 @@ jobs:
            const {GROUPS}=await import('./game/js/kingdom-parchment-core.mjs');
            const parchmentPaths=Object.entries(GROUPS).flatMap(([group,names])=>
              names.map(name=>group+'/'+name+'.svg'));
-           assert.equal(parchmentPaths.length,112,'seven complete SVG sprite groups');
-           for(const entry of parchmentPaths){
-             const p='dist/assets/kingdom-parchment/'+entry;
+           assert.equal(parchmentPaths.length,80,'five core groups remain after retiring roads and rivers');
+           const root='dist/assets/kingdom-parchment';
+           const manifest=JSON.parse(fs.readFileSync(root+'/extra-manifest.json','utf8'));
+           const allPaths=Object.entries(manifest.groups).flatMap(([group,names])=>
+             names.map(name=>group+'/'+name));
+           for(const removed of ['road_segments','river_segments'])
+             assert(!fs.existsSync(root+'/'+removed),'discontinued module still shipped: '+removed);
+           assert(allPaths.length>=80,'complete core artwork must be bundled');
+           for(const entry of allPaths){
+             const p=root+'/'+entry;
              assert(fs.statSync(p).size>100,'missing built parchment art: '+p);
            }
            const base='https://rpchess-kingdom-map-preview.mobigametim.workers.dev';
@@ -115,8 +122,8 @@ jobs:
              for(const name of ['/assets/kingdom-map/humans/humans_castle_128.svg',
                 '/assets/kingdom-map/orcs/orcs_battle_128.svg',
                 '/assets/kingdom-map/puzzle/puzzle_128.svg',
-                ...Object.entries(GROUPS).map(([group,names])=>
-                  '/assets/kingdom-parchment/'+group+'/'+names[0]+'.svg')]){
+                ...Object.entries(manifest.groups).map(([group,names])=>
+                  '/assets/kingdom-parchment/'+group+'/'+names[0])]){
                 const res=await fetch(base+name,{cache:'no-store'});
                 assert.equal(res.status,200,name);
                 assert((res.headers.get('content-type')||'').includes('image/svg+xml'),name+' SVG MIME');
@@ -124,7 +131,7 @@ jobs:
                 assert(markup.startsWith('<svg ')&&markup.trimEnd().endsWith('</svg>'),name+' SVG markup');
                 assert(markup.includes('viewBox="0 0 128 128"'),name+' vector dimensions');
              }
-             console.log('Kingdom map static preview: PASS (112 SVG bundled; 7 SVG groups served)');return;
+             console.log('Kingdom map static preview: PASS ('+allPaths.length+' SVG bundled; '+Object.keys(manifest.groups).length+' groups served)');return;
             }catch(e){
              console.log('Preview propagation '+(i+1)+'/12: '+e.message);
              if(i===11)throw e;
