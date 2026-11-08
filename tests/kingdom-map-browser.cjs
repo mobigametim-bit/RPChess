@@ -206,14 +206,16 @@ async function assertTileImage(page,cellId,relativePath){
   assert(['battle','skirmish','caravan','event','settlement','puzzle'].includes(encounter.type));
   assert.deepEqual(moved.kingdomMap.king,{x:1,y:0});
   assert.equal(moved.kingdomMap.cells['1,0'].status,'revealed');
-  const race=encounter.raceTag&&encounter.raceTag!=='mixed'?encounter.raceTag:'humans';
+  const race=encounter.enemyRaceTag||encounter.raceTag;
+  const role=['pawn','knight','bishop','rook','queen','king'][Math.floor((encounter.stars-1)/2)];
+  const expectedPiece=`assets/races/${race}/pieces/board/black/${role}.png`;
   const encounterSprite=page.locator('[data-kingdom-cell="1,0"] img.km-object');
-  assert.equal(await encounterSprite.getAttribute('src'),
-    `assets/kingdom-map/${race}/${race}_battle_128.svg`);
+  assert.equal(await encounterSprite.getAttribute('src'),expectedPiece,
+    'Battle map icon must show enemy-race chess piece for the saved Threat level');
   await assertTileImage(page,'1,0','assets/races/'+race+'/board/black.png');
   await page.waitForFunction(()=>{
     const sprite=document.querySelector('[data-kingdom-cell="1,0"] img.km-object');
-    return sprite?.complete&&sprite.naturalWidth===128;
+    return sprite?.complete&&sprite.naturalWidth>0;
   },null,{timeout:15000});
   assert.equal(moved.supplies,before.supplies,'moving and unveiling do not charge resources prematurely');
   assert.equal(await page.locator('[data-kingdom-cell="1,0"] .km-fog-mark').count(),0,
@@ -227,6 +229,8 @@ async function assertTileImage(page,cellId,relativePath){
     'an unresolved cell shows a full Travel-style card on the right');
   const routeCard=page.locator('[data-kingdom-route-card]');
   assert.equal(await routeCard.getAttribute('data-kingdom-route-status'),'revealed');
+  assert.equal(await routeCard.locator('.km-route-card__icon').getAttribute('src'),expectedPiece,
+    'right encounter card should show the same race/Threat piece as the map');
   assert.equal(await routeCard.locator('.km-route-card__stars').count(),1,'route card shows real difficulty stars');
   assert.equal(await routeCard.locator('.km-route-resource').count(),2,
     'Battle route card displays supply cost and gold reward');
