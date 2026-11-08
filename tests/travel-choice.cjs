@@ -174,22 +174,26 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
       .filter(name=>/\.(svg|png)$/i.test(name));
     assert.strictEqual(files.length,16,entry.name+' must contain exactly 16 new SVG/PNG sprites');
   }
-  // Prevent the marsh and border directories from being swapped again:
-  // author-supplied semantic filenames are the stable source of truth.
-  for(const [folder,expected,wrong] of [
-    ['marsh_wasteland_optional','01_pale_marsh.svg','01_straight_line.svg'],
-    ['territory_border_accents_optional','01_straight_line.svg','01_pale_marsh.svg'],
-    ['decor_minor_landmarks','01_broken_wall.svg',null]
-  ]){
-    const dir=path.join(parchmentRoot,folder);
-    assert(fs.existsSync(path.join(dir,expected)),
-      'wrong parchment group assignment: '+folder+' must contain '+expected);
-    if(wrong)assert(!fs.existsSync(path.join(dir,wrong)),
-      'marsh and territory-border sprite groups were swapped');
-    assert.strictEqual(fs.readdirSync(dir).filter(n=>/\.(svg|png)$/i.test(n)).length,16);
+  // Keep the artwork itself in the matching filename and remove frame art.
+  const expectedMarsh=[
+    '01_pale_marsh.svg','02_dark_marsh.svg','03_reeds.svg','04_hummocks.svg',
+    '05_murky_pool.svg','06_bog.svg','07_dry_wasteland.svg',
+    '08_cracked_earth.svg','09_dead_shrubs.svg','10_scorched_earth.svg',
+    '11_ash_patch.svg','12_bare_stones.svg','13_marsh_edge.svg',
+    '14_marsh_to_meadow.svg','15_wasteland_to_plain.svg','16_exposed_roots.svg'
+  ];
+  const marshDir=path.join(parchmentRoot,'marsh_wasteland_optional');
+  assert.deepStrictEqual(fs.readdirSync(marshDir).filter(n=>n.endsWith('.svg')).sort(),expectedMarsh,
+    'all 16 marsh artwork filenames must match their visual role');
+  assert(!fs.existsSync(path.join(parchmentRoot,'territory_border_accents_optional')),
+    'unused ornamental border assets must be deleted, not disguised as swamps');
+  const landmarksDir=path.join(parchmentRoot,'decor_minor_landmarks');
+  assert.strictEqual(fs.readdirSync(landmarksDir).filter(n=>n.endsWith('.svg')).length,16,
+    'the 16 small landmarks remain available');
+  assert.strictEqual(extraGroups.length,2,'only marsh and landmarks remain as optional groups');
+  for(const dir of [marshDir,landmarksDir])
     assert.strictEqual(fs.readdirSync(dir).filter(n=>n.endsWith('.png')).length,0,
-      folder+' must only contain converted SVG assets');
-  }
+      'no duplicate PNG previews may be shipped in the SVG groups');
   // The experimental source archive is delivered independently of the app.
   // When installed, ensure the release contains the whole exact vector set.
   if(fs.existsSync(firstSvg)){
