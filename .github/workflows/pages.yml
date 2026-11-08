@@ -42,7 +42,28 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
+      # Pull the exact upstream engine version from the npm registry when
+      # GitHub Releases/CDN rejects CI downloads. The build still enforces
+      # the pinned JS/WASM SHA-256 and GPL license blob hashes.
+      - name: Prepare verified Stockfish 18 package
+        run: |
+          set -euo pipefail
+          npm pack stockfish@18.0.0 --silent --pack-destination /tmp
+          mkdir -p /tmp/rpchess-stockfish-package /tmp/rpchess-stockfish-verified
+          tar -xzf /tmp/stockfish-18.0.0.tgz -C /tmp/rpchess-stockfish-package
+          package=/tmp/rpchess-stockfish-package/package
+          for name in stockfish-18-lite-single.js stockfish-18-lite-single.wasm; do
+            source=$(find "$package" -type f -name "$name" -print -quit)
+            test -n "$source"
+            cp "$source" "/tmp/rpchess-stockfish-verified/$name"
+          done
+          license=$(find "$package" -type f -iname 'Copying.txt' -print -quit)
+          test -n "$license"
+          cp "$license" /tmp/rpchess-stockfish-verified/COPYING.txt
+
       - name: Run canonical gate and build
+        env:
+          RPCHESS_STOCKFISH_ASSET_DIR: /tmp/rpchess-stockfish-verified
         run: npm run gate:local
 
       - name: Check Pages artifact size
