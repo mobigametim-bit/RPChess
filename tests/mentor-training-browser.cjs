@@ -489,15 +489,39 @@ fs.mkdirSync(output,{recursive:true});
   assert(checkVfx.auraLayer<checkVfx.simpleLayer,'red check aura must be BEHIND the simplified king');
   assert.equal(await page.locator('[data-mentor-result]').count(),0,'a check without mate must not end the game');
   await page.screenshot({path:path.join(output,'battle-red-check-aura.png'),animations:'disabled'});
-  // Scholar's mate: the player makes the final move, game ends instantly,
-  // without awaiting the move-evaluation worker or a paid Gonka call.
+  // Scholar's mate: the move is final immediately, but the result dialog
+  // waits for the two royal auras and the defeated king's fall (3 seconds).
   const mateSetup=['e2e4','e7e5','d1h5','b8c6','f1c4','g8f6'];
   await saveMentorPosition(mateSetup);
   await page.reload({waitUntil:'domcontentloaded'});
   await page.locator('[data-mentor-open]').click();
   await page.locator('[data-mentor-square="h5"]').click();
+  const mateClickAt=Date.now();
   await page.locator('[data-mentor-square="f7"]').click();
+  assert.equal(await page.locator('[data-mentor-result]').count(),0,
+   'the result window must not appear immediately after the final move');
+  const loser=page.locator('[data-mentor-square="e8"].mentor-king-defeated');
+  const victor=page.locator('[data-mentor-square="e1"].mentor-king-victorious');
+  assert.equal(await loser.count(),1,'losing king marked defeated');
+  assert.equal(await victor.count(),1,'winning king marked victorious');
+  const kings=await page.evaluate(()=>{
+   const losing=document.querySelector('.mentor-king-defeated');
+   const winning=document.querySelector('.mentor-king-victorious');
+   return {fall:getComputedStyle(losing.querySelector('.mentor-piece')).animationName,
+    red:getComputedStyle(losing,'::before').backgroundImage,
+    green:getComputedStyle(winning,'::before').backgroundImage};
+  });
+  assert.equal(kings.fall,'mentor-mate-king-fall');
+  assert(kings.red.includes('radial-gradient'),'red aura glows behind defeated king');
+  assert(kings.green.includes('radial-gradient'),'green aura glows behind victorious king');
+  await page.waitForTimeout(1200);
+  assert.equal(await page.locator('[data-mentor-result]').count(),0,
+   'royal animations remain visible before the result dialog');
+  const matrix=await loser.locator('.mentor-piece').evaluate(node=>getComputedStyle(node).transform);
+  assert.match(matrix,/matrix\\(0,\\s*1,\\s*-1,\\s*0,/,
+   'defeated king must lie at 90 degrees');
   await page.locator('[data-mentor-result] h2').waitFor({timeout:15000});
+  assert(Date.now()-mateClickAt>=2700,'the result must wait approximately three seconds');
   assert.equal((await page.locator('[data-mentor-result] h2').textContent()).trim(),'Победа!');
   assert.equal(await page.locator('.mentor-result-actions button').count(),3);
   const actions=await page.locator('.mentor-result-actions button').allTextContents();
@@ -532,7 +556,8 @@ fs.mkdirSync(output,{recursive:true});
   await page.reload({waitUntil:'domcontentloaded'});
   await page.locator('[data-mentor-open]').click();
   assert.equal((await page.locator('[data-mentor-result] h2').textContent()).trim(),'Поражение');
-  assert.equal(await page.locator('[data-mentor-square="e1"].is-check').count(),1);
+  assert.equal(await page.locator('[data-mentor-square="e1"].is-check.mentor-king-defeated').count(),1);
+  assert.equal(await page.locator('[data-mentor-square="e8"].mentor-king-victorious').count(),1);
   await page.locator('.mentor-result-actions [data-mentor-action="leave"]').click();
   assert.equal(await page.locator('[data-mentor-screen]:not([hidden])').count(),0,
    'Main menu button leaves mentor training');
