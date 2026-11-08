@@ -120,10 +120,10 @@ function describeMentorFact(data,language=data.language){
    :time+' твой '+piece+' может оказаться связан с королём. Подумай, как избежать связки.';
  }
  if(kind==='material_loss'){
-  const piece=en?(EN_TARGET[event?.piece]||'material'):(RU_TARGET[event?.piece]||'материал');
+  const piece=en?(EN_TARGET[event?.piece]||'piece'):(RU_TARGET[event?.piece]||'фигуру');
   return en
    ?time+', the opponent may win material, including a '+piece+'. Check which piece may become vulnerable.'
-   :time+' соперник может выиграть материал, в том числе '+piece+'. Проверь, какая фигура может оказаться под ударом.';
+   :time+' соперник может забрать '+piece+'. Проверь, как можно предотвратить это взятие.';
  }
  if(kind==='capture')return en
   ?'Your opponent can capture a piece immediately. See what was left unprotected.'
