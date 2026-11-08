@@ -49,6 +49,7 @@ function explicitReferences(relative){
 
 function dynamicFamily(relative){
   const parts=unix(relative).split('/');
+  if(parts[0]==='assets'&&parts[1]==='kingdom-map')return 'kingdom-map-sprites';
   if(parts[0]==='assets'&&parts[1]==='races'&&RACES.has(parts[2])){
     if(parts[3]==='board'&&['white.png','black.png'].includes(parts[4]))return'race-board-tiles';
     if(parts[3]==='pieces'){
