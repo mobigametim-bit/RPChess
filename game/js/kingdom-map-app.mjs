@@ -12,7 +12,7 @@ import {platform} from './platform.mjs';
 import {FLAVOR_POOLS} from './travel-choice-core.mjs';
 import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
-import {kingdomMapSprite} from './kingdom-map-assets.mjs';
+import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
@@ -100,9 +100,9 @@ function routeCard(choice,run,cell){
  const visual=document.createElement('div');visual.className='km-route-card__visual';
  visual.style.setProperty('--km-card-backdrop','url("'+new URL(routeBackdrop(choice),document.baseURI).href+'")');
  const icon=document.createElement('img');icon.className='km-route-card__icon';
- icon.src=choice.type==='event'?
-  kingdomMapSprite('event',choice.raceTag||choice.enemyRaceTag,
-   choice.visualRaceTag||choice.seed||choice.id):
+ icon.src=['battle','skirmish','caravan'].includes(choice.type)?
+  kingdomEncounterSprite(choice):
+  choice.type==='event'?kingdomEncounterSprite(choice):
   (ROUTE_ICONS[choice.type]||ROUTE_ICONS.puzzle);
  icon.alt='';icon.setAttribute('aria-hidden','true');
  const details=document.createElement('div');details.className='km-route-card__details';
@@ -339,10 +339,9 @@ function render(){
     const choice=cell.selectedEncounter;
     if(choice){
      const img=document.createElement('img');img.className='km-object';
-     // Use the saved cosmetic race for new mixed Events. Legacy saves retain
-     // stable artwork from their persisted route seed/ID, without migration.
-     img.src=kingdomMapSprite(choice.type,choice.raceTag||choice.enemyRaceTag,
-      choice.visualRaceTag||choice.seed||choice.id);img.alt='';img.loading='lazy';
+     // Combat displays the enemy race's piece for its exact saved Threat tier.
+     // Mixed Events still use their pinned cosmetic race; no save migration.
+     img.src=kingdomEncounterSprite(choice);img.alt='';img.loading='lazy';
      btn.append(img);
      const lvl=document.createElement('small');lvl.className='km-level';lvl.textContent=romanForStars(choice.stars);btn.append(lvl);
     }
