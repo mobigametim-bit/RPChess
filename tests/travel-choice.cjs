@@ -145,6 +145,26 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const kingdomAssets=require('../scripts/kingdom-map-asset-runtime.cjs');
   const registered=kingdomAssets.assertKingdomMapAssetBudget(game);
   assert.strictEqual(registered.count,85);
+  const parchment=await import(pathToFileURL(path.join(game,'js/kingdom-parchment-core.mjs')).href);
+  assert.deepStrictEqual(Object.keys(parchment.GROUPS).sort(),[
+    'fog_of_war_shapes','forest_clusters','hills_rocks','mountain_clusters',
+    'parchment_base_variations','river_segments','road_segments'
+  ],'the experimental parchment world registers all seven supplied sheets');
+  assert.strictEqual(Object.values(parchment.GROUPS).reduce((count,names)=>count+names.length,0),112,
+    'all 112 individually vectorized assets are named without invention');
+  for(const [kind,names] of Object.entries(parchment.GROUPS)){
+    assert.strictEqual(names.length,16,kind+' has 16 separate sprites');
+    for(let i=0;i<16;i++)assert.strictEqual(parchment.spritePath(kind,i),
+      'assets/kingdom-parchment/'+kind+'/'+names[i]+'.svg');
+  }
+  assert.strictEqual(parchment.pickSprite('saved-run','forest_clusters',-8,12),
+    parchment.pickSprite('saved-run','forest_clusters',-8,12),
+    'world sprite selection is stable for negative and positive coordinates');
+  assert.strictEqual(parchment.chunkCoordinate(-1),-1,
+    'negative world chunks use floor and do not mirror/repeat at origin');
+  assert(Math.abs(parchment.terrainAt('saved-run',5.13,-8.1).elevation-
+    parchment.terrainAt('saved-run',5.130001,-8.1).elevation)<.00001,
+    'continuous world terrain must not exhibit chunk boundary discontinuities');
   const {kingdomMapSprite,kingdomEncounterSprite}=await import(pathToFileURL(path.join(game,'js/kingdom-map-assets.mjs')).href);
   for(const race of kingdomAssets.KINGDOM_RACES)
     for(const kind of kingdomAssets.KINGDOM_TYPES)
