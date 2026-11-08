@@ -250,5 +250,7 @@ body.kingdom-map-active{overflow:hidden}
  .km-route-card__details{padding:10px}
 }
 @media(prefers-reduced-motion:reduce){
- .km-cell--opening::after,.km-flavor-flyout{animation:none!important;opacity:0!important}
+ .km-cell--opening::after{animation:none!important;opacity:0!important}
+ .km-flavor-flyout{animation:none!important;opacity:1!important;transform:translate(-50%,-13px)!important}
 }
+body.kingdom-map-active .resource-hud{display:none!important}
