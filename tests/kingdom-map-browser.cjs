@@ -47,6 +47,25 @@ const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)
     const sprite=document.querySelector('[data-kingdom-cell="0,0"] img.km-object');
     return sprite?.complete&&sprite.naturalWidth===128&&sprite.naturalHeight===128;
   },null,{timeout:15000});
+  // Full bleed 2x zoom: the world must cover all edges of its frame.
+  const dimensions=await page.evaluate(()=>{
+   const frame=document.querySelector('.km-map-frame').getBoundingClientRect();
+   const world=document.querySelector('.km-world').getBoundingClientRect();
+   const cell=document.querySelector('[data-kingdom-cell="0,0"]').getBoundingClientRect();
+   const king=document.querySelector('.km-king').getBoundingClientRect();
+   return {frame:{width:frame.width,height:frame.height,left:frame.left,right:frame.right,top:frame.top,bottom:frame.bottom},
+    world:{width:world.width,height:world.height,left:world.left,right:world.right,top:world.top,bottom:world.bottom},
+    tile:{width:cell.width,height:cell.height},king:{width:king.width,height:king.height}};
+  });
+  assert(dimensions.world.left<=dimensions.frame.left&&dimensions.world.right>=dimensions.frame.right&&
+    dimensions.world.top<=dimensions.frame.top&&dimensions.world.bottom>=dimensions.frame.bottom,
+    'enlarged cells must fill the map frame with no empty gutters');
+  assert(dimensions.world.width/dimensions.frame.width>=1.99&&dimensions.world.height/dimensions.frame.height>=1.99,
+    'world scale is doubled on both axes');
+  assert(dimensions.king.width<dimensions.tile.width*.7&&dimensions.king.height<dimensions.tile.height*.7,
+    'king image remains the original physical size relative to doubled event tiles');
+  assert((await page.locator('[data-kingdom-cell="0,0"]').evaluate(el=>getComputedStyle(el).backgroundImage))
+    .includes('/races/humans/board/white.png'),'human castle renders the white world tile');
   await page.screenshot({path:path.join(output,'kingdom-01-fog-start.png')});
   // Regression: the camera must not recenter on every click. Before the fix,
   // the clicked tile slid to the middle, making a different tile appear opened.
@@ -71,6 +90,8 @@ const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)
   const encounterSprite=page.locator('[data-kingdom-cell="1,0"] img.km-object');
   assert.equal(await encounterSprite.getAttribute('src'),
     `assets/kingdom-map/${race}/${race}_battle_128.png`);
+  assert((await page.locator('[data-kingdom-cell="1,0"]').evaluate(el=>getComputedStyle(el).backgroundImage))
+    .includes('/races/'+race+'/board/black.png'),'opened odd-parity cell uses race-specific black tile');
   await page.waitForFunction(()=>{
     const sprite=document.querySelector('[data-kingdom-cell="1,0"] img.km-object');
     return sprite?.complete&&sprite.naturalWidth===128;
@@ -200,10 +221,29 @@ const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)
     assert(Math.hypot(actual.x-target.x,actual.y-target.y)<4,
       'king must visually occupy clicked '+id+': '+JSON.stringify({actual,target}));
     const anchored=await visual('[data-kingdom-cell="0,0"]');
-    assert(Math.hypot(anchored.x-castleAnchor.x,anchored.y-castleAnchor.y)<4,
-      'camera must not jump on one-cell steps '+id);
+    if(dy===0)assert(Math.hypot(anchored.x-castleAnchor.x,anchored.y-castleAnchor.y)<4,
+      'horizontal one-step moves retain camera slack '+id);
+    // The enlarged map pans one row vertically to keep adjacent targets visible.
     await walking.locator('[data-kingdom-cell="0,0"]').click();
     assert.deepEqual((await read(walking)).kingdomMap.king,{x:0,y:0});
+  }
+  // Mixed/unknown race cells retain neutral background tiles.
+  await walking.evaluate(storage=>{
+    const run=JSON.parse(localStorage.getItem(storage));
+    run.kingdomMap.cells['1,0']={status:'completed',annexed:false,
+      selectedEncounter:{id:'kingdom.neutral-fixture',type:'event',raceTag:'mixed',stars:1}};
+    run.kingdomMap.cells['-1,0']={status:'completed',annexed:false,
+      selectedEncounter:{id:'kingdom.elven-fixture',type:'event',raceTag:'elves',stars:1}};
+    run.kingdomMap.cells['1,1']={status:'completed',annexed:false,
+      selectedEncounter:{id:'kingdom.orc-fixture',type:'battle',raceTag:'orcs',stars:1}};
+    localStorage.setItem(storage,JSON.stringify(run));
+    globalThis.RPChessKingdomMap.open();
+  },key);
+  for(const [id,expected] of [['1,0','assets/boards/neutral/tile_dark.png'],
+    ['-1,0','assets/races/elves/board/black.png'],
+    ['1,1','assets/races/orcs/board/white.png']]){
+    const image=await walking.locator('[data-kingdom-cell="'+id+'"]').evaluate(el=>getComputedStyle(el).backgroundImage);
+    assert(image.includes(expected),'tile at '+id+' preserves world parity and encounter race: '+image);
   }
   assert.equal((await read(walking)).supplies,10,
     'free movement through completed tiles must not spend Supplies');
