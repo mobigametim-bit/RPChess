@@ -9,6 +9,7 @@ on:
       - 'tests/mentor-training-browser.cjs'
       - 'tests/mentor-training-feedback.cjs'
       - 'tests/localization-owner-contract.cjs'
+      - 'tests/classic-chess-static.cjs'
       - 'docs/features/MENTOR_CHESS_VISION_ROADMAP.md'
   workflow_dispatch:
 
