@@ -174,6 +174,22 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
       .filter(name=>/\.(svg|png)$/i.test(name));
     assert.strictEqual(files.length,16,entry.name+' must contain exactly 16 new SVG/PNG sprites');
   }
+  // Prevent the marsh and border directories from being swapped again:
+  // author-supplied semantic filenames are the stable source of truth.
+  for(const [folder,expected,wrong] of [
+    ['marsh_wasteland_optional','01_pale_marsh.svg','01_straight_line.svg'],
+    ['territory_border_accents_optional','01_straight_line.svg','01_pale_marsh.svg'],
+    ['decor_minor_landmarks','01_broken_wall.svg',null]
+  ]){
+    const dir=path.join(parchmentRoot,folder);
+    assert(fs.existsSync(path.join(dir,expected)),
+      'wrong parchment group assignment: '+folder+' must contain '+expected);
+    if(wrong)assert(!fs.existsSync(path.join(dir,wrong)),
+      'marsh and territory-border sprite groups were swapped');
+    assert.strictEqual(fs.readdirSync(dir).filter(n=>/\.(svg|png)$/i.test(n)).length,16);
+    assert.strictEqual(fs.readdirSync(dir).filter(n=>n.endsWith('.png')).length,0,
+      folder+' must only contain converted SVG assets');
+  }
   // The experimental source archive is delivered independently of the app.
   // When installed, ensure the release contains the whole exact vector set.
   if(fs.existsSync(firstSvg)){
