@@ -9,6 +9,35 @@ const CHUNK_PX=PARCHMENT_TILE*PARCHMENT_CHUNK_CELLS;
 const chunkCache=new Map(),spriteCache=new Map();
 const MAX_CHUNKS=18,MAX_SPRITES=64;
 let assetProbe=null,assetsReady=null,latest=null,redrawQueued=false;
+let extraManifestRequested=false;
+const extraGroups={marsh:[],landmarks:[],borders:[]};
+function requestExtraManifest(){
+ if(extraManifestRequested)return;
+ extraManifestRequested=true;
+ fetch('assets/kingdom-parchment/extra-manifest.json')
+  .then(res=>res.ok?res.json():{})
+  .then(data=>{
+   const groups=data?.groups||{};
+   const extras=Object.entries(groups).filter(([group])=>
+    !['parchment_base_variations','forest_clusters','mountain_clusters',
+      'hills_rocks','fog_of_war_shapes'].includes(group));
+   const used=new Set();
+   for(const [kind,re] of [['marsh',/marsh|waste|swamp|bog/i],
+      ['landmarks',/decor|landmark|ruin|minor/i],
+      ['borders',/border|territory|accent/i]]){
+    const match=extras.find(([name])=>!used.has(name)&&re.test(name))||
+      extras.find(([name])=>!used.has(name));
+    if(match){used.add(match[0]);extraGroups[kind]=match[1].map(file=>
+      'assets/kingdom-parchment/'+match[0]+'/'+file);}
+   }
+   queueRedraw();
+  })
+  .catch(()=>{}); // Old builds without optional groups remain playable.
+}
+function extraSprite(seed,group,x,y){
+ const names=extraGroups[group]||[];
+ return names.length?names[Math.floor(randomAt(seed,x,y,'extra:'+group)*names.length)]:null;
+}
 function queueRedraw(){
  if(redrawQueued)return;
  redrawQueued=true;
@@ -79,35 +108,6 @@ function drawBasePatches(ctx,seed,left,top,width,height,repaint){
     px,py,size,size,.34,repaint);
   }
 }
-function drawLineArt(ctx,seed,left,top,width,height,repaint){
- // Connected Canvas strokes remain authoritative. SVG road/river segments
- // add brush detail, never determine path continuity or map collision.
- const riverDrift=randomAt(seed,1,1,'river')*12;
- const lower=Math.floor((left-riverDrift-12)/17)-1;
- const upper=Math.ceil((left+width-riverDrift+12)/17)+1;
- for(let r=lower;r<=upper;r++){
-  const center=r*17+riverDrift;
-  for(let y=Math.floor(top/4)*4;y<top+height+4;y+=4){
-   const x=center+Math.sin(y*.21+r*1.7)*2.15+Math.sin(y*.79+r*.3)*.55;
-   const px=(x-left)*PARCHMENT_TILE,py=(y-top)*PARCHMENT_TILE;
-   const size=PARCHMENT_TILE*1.72;
-   drawVector(ctx,pickSprite(seed,'river_segments',r,y),px-size/2,py-size/2,
-    size,size,.41,repaint);
-  }
- }
- const roadDrift=randomAt(seed,1,1,'road')*8;
- const first=Math.floor((top-roadDrift-8)/12)-1,last=Math.ceil((top+height-roadDrift+8)/12)+1;
- for(let road=first;road<=last;road++){
-  const center=road*12+roadDrift;
-  for(let x=Math.floor(left/4)*4;x<left+width+4;x+=4){
-   const y=center+Math.sin(x*.37+road*2.1)*1.25+Math.sin(x*.83+road)*.18;
-   const px=(x-left)*PARCHMENT_TILE,py=(y-top)*PARCHMENT_TILE;
-   const size=PARCHMENT_TILE*1.72;
-   drawVector(ctx,pickSprite(seed,'road_segments',road,x),px-size/2,py-size/2,
-    size,size,.32,repaint);
-  }
- }
-}
 function drawFogInk(ctx,seed,left,top,width,height,map,repaint){
  // Decorative fog shapes belong only in unexplored areas; the gradient mask
  // above still decides what the player is allowed to see.
@@ -120,6 +120,40 @@ function drawFogInk(ctx,seed,left,top,width,height,map,repaint){
    const px=(wx-left)*PARCHMENT_TILE-size/2,py=(wy-top)*PARCHMENT_TILE-size/2;
    drawVector(ctx,pickSprite(seed,'fog_of_war_shapes',x,y),px,py,size,size,.19,repaint);
   }
+}
+function drawOptionalNature(ctx,seed,left,top,width,height,map,repaint){
+ // Only sparse, world-anchored organic accents; no replacement roads/rivers.
+ const step=3.6;
+ for(let iy=Math.floor(top/step)-1;iy<=Math.ceil((top+height)/step);iy++)
+  for(let ix=Math.floor(left/step)-1;ix<=Math.ceil((left+width)/step);ix++){
+   const wx=ix*step+randomAt(seed,ix,iy,'extra-x')*step;
+   const wy=iy*step+randomAt(seed,ix,iy,'extra-y')*step;
+   const terrain=terrainAt(seed,wx,wy);
+   const marsh=terrain.wet>.59&&terrain.elevation<.59;
+   const group=marsh?'marsh':'landmarks';
+   if(randomAt(seed,ix,iy,'extra-visible')>(marsh?.8:.16))continue;
+   if(map?.cells?.[Math.round(wx)+','+Math.round(wy)]?.selectedEncounter)continue;
+   const src=extraSprite(seed,group,ix,iy);
+   if(!src)continue;
+   const size=PARCHMENT_TILE*(marsh?1.9:1.15);
+   drawVector(ctx,src,(wx-left)*PARCHMENT_TILE-size/2,
+    (wy-top)*PARCHMENT_TILE-size/2,size,size,marsh?.72:.86,repaint);
+  }
+}
+function drawBorderAccents(ctx,seed,map,left,top,width,height,repaint){
+ const cells=map?.cells||{},keys=Object.keys(cells);
+ for(const id of keys){
+  const cell=cells[id];if(!cell?.annexed)continue;
+  const [x,y]=id.split(',').map(Number);
+  if(x<left-1||x>=left+width+1||y<top-1||y>=top+height+1)continue;
+  if(randomAt(seed,x,y,'border-accent')>.14)continue;
+  if([[-1,0],[1,0],[0,-1],[0,1]].every(([dx,dy])=>
+   cells[(x+dx)+','+(y+dy)]?.annexed))continue;
+  const src=extraSprite(seed,'borders',x,y);if(!src)continue;
+  const size=PARCHMENT_TILE*.66;
+  drawVector(ctx,src,(x+.5-left)*PARCHMENT_TILE-size/2,
+   (y+.5-top)*PARCHMENT_TILE-size/2,size,size,.65,repaint);
+ }
 }
 function fallbackSymbol(ctx,kind,x,y,size,seed){
  ctx.save();ctx.translate(x,y);
@@ -167,38 +201,6 @@ function drawTerrainSymbols(ctx,seed,left,top,width,height,repaint){
   ctx.restore();
  }
 }
-function drawWaterRoads(ctx,seed,left,top,width,height){
- const toLocalX=x=>(x-left)*PARCHMENT_TILE;
- const toLocalY=y=>(y-top)*PARCHMENT_TILE;
- const riverDrift=randomAt(seed,1,1,'river')*12;
- const lower=Math.floor((left-riverDrift-12)/17)-1;
- const upper=Math.ceil((left+width-riverDrift+12)/17)+1;
- for(let river=lower;river<=upper;river++){
-  const center=river*17+riverDrift;
-  ctx.beginPath();
-  for(let y=top-1;y<=top+height+1;y+=.16){
-   const x=center+Math.sin(y*.21+river*1.7)*2.15+Math.sin(y*.79+river*.3)*.55;
-   const px=toLocalX(x),py=toLocalY(y);
-   if(y===top-1)ctx.moveTo(px,py);else ctx.lineTo(px,py);
-  }
-  ctx.lineWidth=14;ctx.strokeStyle='#b7a78c';ctx.stroke();
-  ctx.lineWidth=9;ctx.strokeStyle='#849a9e';ctx.stroke();
-  ctx.lineWidth=2;ctx.strokeStyle='#c8d0ba';ctx.stroke();
- }
- const roadDrift=randomAt(seed,1,1,'road')*8;
- const first=Math.floor((top-roadDrift-8)/12)-1,last=Math.ceil((top+height-roadDrift+8)/12)+1;
- for(let road=first;road<=last;road++){
-  const center=road*12+roadDrift;
-  ctx.beginPath();
-  for(let x=left-1;x<=left+width+1;x+=.16){
-   const y=center+Math.sin(x*.37+road*2.1)*1.25+Math.sin(x*.83+road)*.18;
-   const px=toLocalX(x),py=toLocalY(y);
-   if(x===left-1)ctx.moveTo(px,py);else ctx.lineTo(px,py);
-  }
-  ctx.lineWidth=8;ctx.strokeStyle='#b6a17c';ctx.stroke();
-  ctx.lineWidth=2.5;ctx.strokeStyle='#746245';ctx.setLineDash([9,7]);ctx.stroke();ctx.setLineDash([]);
- }
-}
 function drawFog(ctx,map,left,top,width,height){
  const fog=document.createElement('canvas');fog.width=Math.round(width*PARCHMENT_TILE);
  fog.height=Math.round(height*PARCHMENT_TILE);
@@ -244,6 +246,7 @@ function drawBorders(ctx,map,left,top,width,height){
 function renderParchment(canvas,{seed,view,columns,rows,map}){
  if(!canvas)return;
  probeArt();
+ requestExtraManifest();
  // Observable renderer state for acceptance tests: the SVG probe, not the
  // browser's bounded resource-timing buffer, determines whether real art loaded.
  canvas.dataset.parchmentArt=assetsReady===true?'loaded':
@@ -264,11 +267,11 @@ function renderParchment(canvas,{seed,view,columns,rows,map}){
  }
  const repaint=()=>{if(canvas.isConnected)latest?.();};
  drawBasePatches(ctx,seed,left,top,columns,rows,repaint);
- drawWaterRoads(ctx,seed,left,top,columns,rows);
- drawLineArt(ctx,seed,left,top,columns,rows,repaint);
  drawTerrainSymbols(ctx,seed,left,top,columns,rows,repaint);
+ drawOptionalNature(ctx,seed,left,top,columns,rows,map,repaint);
  drawFog(ctx,map,left,top,columns,rows);
  drawFogInk(ctx,seed,left,top,columns,rows,map,repaint);
  drawBorders(ctx,map,left,top,columns,rows);
+ drawBorderAccents(ctx,seed,map,left,top,columns,rows,repaint);
 }
 export {renderParchment};
