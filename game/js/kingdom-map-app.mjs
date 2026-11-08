@@ -72,7 +72,7 @@ function screenReady(){
  '<button type="button" data-kingdom-annex hidden></button>'+
  '<button type="button" data-kingdom-services hidden></button></div>'+
  '<p class="km-hint" data-kingdom-hint></p></aside></section></div>';
- screen.style.setProperty('--km-event-size',MAP_LAYOUT.eventScalePercent+'%');
+ screen.style.setProperty('--km-event-size-px',(MAP_LAYOUT.cellPx*MAP_LAYOUT.eventScalePercent/100)+'px');
  screen.style.setProperty('--km-king-px',MAP_LAYOUT.kingPx+'px');
  screen.style.setProperty('--km-inspector-width',MAP_LAYOUT.inspectorWidthPercent+'%');
  (document.querySelector('#app')||document.body).append(screen);
