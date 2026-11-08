@@ -92,7 +92,7 @@ function isEventState(value) {
 function createEventState(run, routeChoice) {
   if (!run || routeChoice?.type !== 'event') throw new Error('Event state requires an active Event route');
   if (isEventState(run.currentEvent) && run.currentEvent.routeId === routeChoice.id) return { run, state: run.currentEvent };
-  const eventId = nextEventId(run);
+  const eventId = routeChoice.eventId && eventById(routeChoice.eventId) ? routeChoice.eventId : nextEventId(run);
   const history = [...eventHistory(run), eventId];
   const state = { routeId: routeChoice.id, eventId, choiceId: null, roll: null, success: null, resolved: false, outcome: null, combat: null };
   return { run: { ...run, eventHistory: history, currentEvent: state }, state };
