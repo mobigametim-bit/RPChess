@@ -99,19 +99,24 @@ fs.mkdirSync(output,{recursive:true});
   const englishVoice=await page.evaluate(async()=>{
    const {createMentorSpeech}=await import('./js/mentor-training-speech.mjs');
    const panel=document.createElement('section');
-   panel.innerHTML='<p class="mentor-feedback-text">Check the next move.</p>';
+   panel.innerHTML='<section class="mentor-learning">'+
+    '<strong class="mentor-learning-question">Which piece can take the undefended piece?</strong>'+
+    '<p class="mentor-learning-instruction">Tap an opponent piece on the board.</p></section>'+
+    '<span class="mentor-thinking">Thinking…</span>';
    const narration=createMentorSpeech({
     getRoot:()=>panel,getLanguage:()=> 'en',translate:key=>key
    });
    panel.insertAdjacentHTML('beforeend',narration.buttonMarkup());
    narration.toggle();
    const selection={name:window.__mentorSpeechLast.voice?.name,
-    lang:window.__mentorSpeechLast.lang,rate:window.__mentorSpeechLast.rate};
+    lang:window.__mentorSpeechLast.lang,rate:window.__mentorSpeechLast.rate,
+    text:window.__mentorSpeechLast.text};
    narration.stop();
    return selection;
   });
-  assert.deepEqual(englishVoice,{name:'Google UK English Male',lang:'en-GB',rate:1.5},
-   'Google UK English Male is preferred and utterance uses its actual locale');
+  assert.deepEqual(englishVoice,{name:'Google UK English Male',lang:'en-GB',rate:1.5,
+   text:'Which piece can take the undefended piece? Tap an opponent piece on the board.'},
+   'English instruction must be readable even when the AI is still thinking');
   await speak.click();
   assert.equal(await speak.getAttribute('aria-pressed'),'false');
   assert((await page.evaluate(()=>window.__mentorSpeechEvents)).some(e=>e.type==='cancel'));
@@ -279,6 +284,18 @@ fs.mkdirSync(output,{recursive:true});
    'AI text is visible while the tactical question is still unanswered');
   assert.equal(await page.locator('.mentor-learning-question').count(),1,
    'the verified question remains interactive beneath the AI text');
+  const taskQuestion=(await page.locator('.mentor-learning-question').textContent()).trim();
+  const taskInstruction=(await page.locator('.mentor-learning-instruction').textContent()).trim();
+  const taskExplanation=(await page.locator('.mentor-ai-explanation').textContent()).trim();
+  assert.equal(taskInstruction,'Нажми на фигуру соперника на доске.');
+  assert(!/материал|материаль/i.test(taskQuestion));
+  await page.locator('[data-mentor-action="speech"]').click();
+  const spokenTask=await page.evaluate(()=>window.__mentorSpeechLast.text);
+  assert.equal(spokenTask,[taskQuestion,taskInstruction,taskExplanation].join(' '),
+   'unsolved question and instruction must be narrated before the visible AI advice');
+  assert.equal(mockedMentorCalls,2,'speaking task and AI must not call provider again');
+  await page.locator('[data-mentor-action="speech"]').click();
+  assert.equal(await page.locator('[data-mentor-action="speech"]').getAttribute('aria-pressed'),'false');
   assert.equal(await page.locator('[data-mentor-action="correction-start"]').count(),0,
    'improvement exercise is not visible before the learner solves the threat');
   // An inaccurate move keeps the rival on move without letting it reply.
@@ -328,10 +345,13 @@ fs.mkdirSync(output,{recursive:true});
 
   assert((await page.locator('.mentor-learning-mentor-note').textContent()).includes('Перед ходом проверяй'));
   const displayedNarration=(await page.locator('[data-mentor-ai-explanation]').textContent()).trim();
+  const visibleAnswer=await page.locator('.mentor-learning-answer,.mentor-learning-caveat').allTextContents();
+  assert.equal(visibleAnswer.length,2,'revealed verified solution and its caveat are visible');
   const callsBeforeNarration=mockedMentorCalls;
   await page.locator('[data-mentor-action="speech"]').click();
   const narration=await page.evaluate(()=>window.__mentorSpeechLast.text);
-  assert.equal(narration,displayedNarration,'TTS reads the displayed AI explanation verbatim');
+  assert.equal(narration,[...visibleAnswer.map(s=>s.trim()),displayedNarration].join(' '),
+   'TTS reads the revealed answer and explanation verbatim, in that order');
   assert.equal(mockedMentorCalls,callsBeforeNarration,'speech must not make another Gonka request');
   assert.equal(await page.locator('[data-mentor-action="speech"]').getAttribute('aria-pressed'),'true');
   await page.evaluate(()=>window.__mentorSpeechLast.onend());
