@@ -5,8 +5,14 @@ const races=new Set(RACE_TAGS),types=new Set(KINGDOM_MAP_TYPES);
 function kingdomMapSprite(type,raceTag){
  if(type==='puzzle')return 'assets/kingdom-map/puzzle/puzzle_128.png';
  if(!types.has(type))return null;
- // Unknown/mixed is a visual fallback only: never change the saved raceTag.
- const race=races.has(raceTag)?raceTag:'humans';
- return `assets/kingdom-map/${race}/${race}_${type}_128.png`;
+ // Never invent a race for mixed events. Existing generic art is neutral;
+ // the castle's current human placeholder is kept until commander races exist.
+ if(!races.has(raceTag)){
+  if(type==='castle')return 'assets/kingdom-map/humans/humans_castle_128.png';
+  return ({battle:'generated_assets/node_elite.png',skirmish:'generated_assets/node_battle.png',
+    caravan:'assets/doctrines/cavalry/emblem.png',event:'generated_assets/node_story.png',
+    settlement:'generated_assets/node_shop.png'})[type]||null;
+ }
+ return `assets/kingdom-map/${raceTag}/${raceTag}_${type}_128.png`;
 }
 export {KINGDOM_MAP_TYPES,kingdomMapSprite};

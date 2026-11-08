@@ -153,7 +153,7 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert.strictEqual(kingdomMapSprite('puzzle','orcs'),
     'assets/kingdom-map/puzzle/puzzle_128.png');
   assert.strictEqual(kingdomMapSprite('event','mixed'),
-    'assets/kingdom-map/humans/humans_event_128.png');
+    'generated_assets/node_story.png','mixed Events must not falsely claim a human race');
   assert.strictEqual(kingdomMapSprite('unexpected','elves'),null);
   console.log('Kingdom map sprite register: PASS (85 RGBA PNGs, 14 races, 6 classes, neutral puzzle)');
   console.log('Travel Choice keeps 6-type ~16.7% pool, owner-keyed RU/EN compact UI and player Threat..Threat+3 encounter contract: PASS');
