@@ -92,7 +92,16 @@ jobs:
         run: |
           node <<'NODE'
           const assert=require('node:assert/strict');
+          const fs=require('node:fs');
           (async()=>{
+           const {GROUPS}=await import('./game/js/kingdom-parchment-core.mjs');
+           const parchmentPaths=Object.entries(GROUPS).flatMap(([group,names])=>
+             names.map(name=>group+'/'+name+'.svg'));
+           assert.equal(parchmentPaths.length,112,'seven complete SVG sprite groups');
+           for(const entry of parchmentPaths){
+             const p='dist/assets/kingdom-parchment/'+entry;
+             assert(fs.statSync(p).size>100,'missing built parchment art: '+p);
+           }
            const base='https://rpchess-kingdom-map-preview.mobigametim.workers.dev';
            for(let i=0;i<12;i++){
             try{
@@ -105,7 +114,9 @@ jobs:
              assert(html[3].includes('km-king-step'));
              for(const name of ['/assets/kingdom-map/humans/humans_castle_128.svg',
                 '/assets/kingdom-map/orcs/orcs_battle_128.svg',
-                '/assets/kingdom-map/puzzle/puzzle_128.svg']){
+                '/assets/kingdom-map/puzzle/puzzle_128.svg',
+                ...Object.entries(GROUPS).map(([group,names])=>
+                  '/assets/kingdom-parchment/'+group+'/'+names[0]+'.svg')]){
                 const res=await fetch(base+name,{cache:'no-store'});
                 assert.equal(res.status,200,name);
                 assert((res.headers.get('content-type')||'').includes('image/svg+xml'),name+' SVG MIME');
@@ -113,7 +124,7 @@ jobs:
                 assert(markup.startsWith('<svg ')&&markup.trimEnd().endsWith('</svg>'),name+' SVG markup');
                 assert(markup.includes('viewBox="0 0 128 128"'),name+' vector dimensions');
              }
-             console.log('Kingdom map static preview: PASS');return;
+             console.log('Kingdom map static preview: PASS (112 SVG bundled; 7 SVG groups served)');return;
             }catch(e){
              console.log('Preview propagation '+(i+1)+'/12: '+e.message);
              if(i===11)throw e;
