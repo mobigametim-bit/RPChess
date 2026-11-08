@@ -301,6 +301,7 @@ function render(){
     (cell?.annexed?' km-cell--annexed':'')+(within?' km-cell--adjacent':'')+
     (selected===id?' km-cell--selected':'')+(here?' km-cell--here':'')+
     (movement?.phase==='reveal'&&selected===id?' km-cell--opening':'')+
+    (flavorBurst?.id===id?' km-cell--story':'')+
     edges.map(edge=>' km-edge-'+edge).join('');
    btn.style.setProperty('--km-index',String(row+3));
    if(cell){
@@ -339,7 +340,7 @@ function render(){
    cells.append(btn);
   }
  world.replaceChildren(cells);
- const avatar=document.createElement('img');avatar.className='km-king'+(movement?' km-king--moving':'');
+ const avatar=document.createElement('img');avatar.className='km-king'+(movement?.phase==='moving'?' km-king--moving':'');
  avatar.src=kingArt(run);avatar.alt='';avatar.setAttribute('aria-hidden','true');
  // King image dimensions stay independent of the tile scale.
  avatar.style.width=MAP_LAYOUT.kingPx+'px';avatar.style.height=MAP_LAYOUT.kingPx+'px';
@@ -397,7 +398,7 @@ function onCell(event){
  // The logical encounter is persisted immediately for crash-safe resume,
  // but the visual king stays put until the fog/terrain reveal has finished.
  if(entered.kind!=='walk'){
-  const delay=discovering?DISCOVERY_WAIT_MS:3000;
+  const delay=discovering?DISCOVERY_WAIT_MS:3300;
   nextMap.cells[id]={...nextMap.cells[id],revealUntil:Date.now()+delay};
  }
  clearTimeout(flightTimer);clearTimeout(flavorTimer);flavorBurst=null;
