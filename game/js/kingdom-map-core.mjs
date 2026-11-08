@@ -106,7 +106,7 @@ function finishEncounter(map,id,{success=false,opponentPower=0}={}){
   next.completedNewEncounterCount++;
   if(prev.selectedEncounter?.type==='battle'&&!next.creditedBattleEncounterIds.includes(prev.selectedEncounter.id)){
    next.creditedBattleEncounterIds=[...next.creditedBattleEncounterIds,prev.selectedEncounter.id];
-   next.battlePointsEarned+=Math.max(0,Math.floor(Number(opponentPower)||0)/200);
+   next.battlePointsEarned+=Math.floor(Math.max(0,Number(opponentPower)||0)/200);
   }
  }
  return {ok:true,map:next,first,retreated:!success};
