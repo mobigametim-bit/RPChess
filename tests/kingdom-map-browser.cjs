@@ -401,6 +401,10 @@ async function assertTileImage(page,cellId,relativePath){
       selectedEncounter:{id:'kingdom.elven-fixture',type:'event',raceTag:'elves',stars:1}};
     run.kingdomMap.cells['1,1']={status:'completed',annexed:false,
       selectedEncounter:{id:'kingdom.orc-fixture',type:'battle',raceTag:'orcs',stars:1}};
+    run.kingdomMap.cells['-1,1']={status:'completed',annexed:false,
+      selectedEncounter:{id:'kingdom.undead-fixture',type:'skirmish',raceTag:'undead',stars:4}};
+    run.kingdomMap.cells['0,-1']={status:'completed',annexed:false,
+      selectedEncounter:{id:'kingdom.elven-caravan-fixture',type:'caravan',raceTag:'elves',stars:12}};
     localStorage.setItem(storage,JSON.stringify(run));
     globalThis.RPChessKingdomMap.open();
   },key);
@@ -429,6 +433,22 @@ async function assertTileImage(page,cellId,relativePath){
     'assets/kingdom-map/orcs/orcs_battle_128.svg','saved Battle retains its location SVG');
   assert.equal(await orcCell.locator('.km-object--defender').getAttribute('src'),
     'assets/races/orcs/pieces/board/black/pawn.png','saved Battle overlays an orc pawn');
+  for(const [point,type,race,role] of [
+    ['-1,1','skirmish','undead','knight'],['0,-1','caravan','elves','king']
+  ]){
+    const cell=walking.locator('[data-kingdom-cell="'+point+'"]');
+    assert.equal(await cell.locator('.km-object--site').getAttribute('src'),
+      `assets/kingdom-map/${race}/${race}_${type}_128.svg`,
+      type+' preserves its racial encounter site artwork');
+    assert.equal(await cell.locator('.km-object--defender').getAttribute('src'),
+      `assets/races/${race}/pieces/board/black/${role}.png`,
+      type+' has the correct enemy-race figure layered on top');
+    await walking.waitForFunction(id=>{
+      const cell=document.querySelector('[data-kingdom-cell="'+id+'"]');
+      return [...cell.querySelectorAll('img.km-object')].length===2 &&
+        [...cell.querySelectorAll('img.km-object')].every(img=>img.complete&&img.naturalWidth>0);
+    },point,{timeout:15000});
+  }
   assert.equal((await read(walking)).supplies,10,
     'free movement through completed tiles must not spend Supplies');
   await walking.close();
