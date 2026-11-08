@@ -67,7 +67,21 @@ async function main(){
   ])copy(relative);
   // Experimental artwork is optional until the approved seven sheets arrive in
   // the repo; never make classic production builds depend on its presence.
-  if(fs.existsSync(path.join(source,'assets/kingdom-parchment')))copy('assets/kingdom-parchment');
+  if(fs.existsSync(path.join(source,'assets/kingdom-parchment'))){
+    copy('assets/kingdom-parchment');
+    // The extra groups have artist-chosen names. Build a deterministic catalog
+    // from actual SVG files instead of guessing 48 filenames in runtime code.
+    const root=path.join(source,'assets/kingdom-parchment');
+    const groups={};
+    for(const entry of fs.readdirSync(root,{withFileTypes:true})){
+      if(!entry.isDirectory()||['road_segments','river_segments'].includes(entry.name))continue;
+      const files=fs.readdirSync(path.join(root,entry.name))
+        .filter(name=>name.toLowerCase().endsWith('.svg')).sort();
+      if(files.length)groups[entry.name]=files;
+    }
+    fs.writeFileSync(path.join(dist,'assets/kingdom-parchment/extra-manifest.json'),
+      JSON.stringify({version:1,groups},null,2));
+  }
   // Remove excluded tracks from the output immediately after directory copy.
   // The review-only source remains unchanged, and the catalog omits it too.
   for(const filename of NON_COMMERCIAL_MUSIC)fs.rmSync(path.join(dist,'music',filename),{force:true});
