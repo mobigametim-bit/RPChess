@@ -12,6 +12,7 @@ import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite} from './kingdom-map-assets.mjs';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
+import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
  beginEncounter,finishEncounter,matchesCombatReceipt,annexCell,canAnnex,pointsAvailable,castleLevel,
  romanForStars,keyOf,adjacent,borderEdges} from './kingdom-map-core.mjs';
@@ -283,7 +284,7 @@ function render(){
  screen.querySelector('[data-kingdom-threat]').textContent=starsText(Math.max(1,Math.min(12,Math.floor((power-400)/200)+1)));
  screen.querySelector('[data-kingdom-gold]').textContent=String(run.gold??0);
  screen.querySelector('[data-kingdom-supplies]').textContent=String(run.supplies??0);
- screen.querySelector('.km-resource--glory').title=t('chronicle.glory');
+ screen.querySelector('.km-resource--glory').title=runtimeT(currentLanguage(),'chronicle.glory');
  screen.querySelector('[data-kingdom-glory]').textContent=String(gloryForRun(run.journeyStep,power));
  screen.querySelector('[data-kingdom-points-label]').textContent=tr('points');
  screen.querySelector('[data-kingdom-points]').textContent=String(pointsAvailable(map));
