@@ -257,7 +257,28 @@ fs.mkdirSync(output,{recursive:true});
   await page.locator('[data-mentor-square="g4"]').click();
   await page.waitForFunction(()=>window.__mentorDepthSearch.includes('go movetime 1700'),null,{timeout:30000});
   await page.waitForFunction(()=>window.RPChessMentorTraining.state.lesson==='mate_sequence',null,{timeout:30000});
-  assert.equal(mockedMentorCalls,0,'no paid LLM request until the learner answers');
+  const observed=await mentorRequest;
+  const detail=observed.postDataJSON();
+  assert.equal(detail.version,2);
+  assert.equal(detail.grade,'blunder','winning-chance grade is shared with API');
+  assert(detail.continuation?.depth>=7,'only deep verified tactics reach paid mentor');
+  assert.equal(detail.continuation.pv[0],'d8h4');
+  assert.equal(detail.verifiedThreat.kind,'mate_sequence');
+  await page.waitForFunction(()=>document.querySelector('[data-mentor-action="retry-explanation"]')&&
+   window.RPChessMentorTraining.state.moves[2]?.mentorSource==='fallback',null,{timeout:15000});
+  assert.equal(mockedMentorCalls,1,'first request arrives before the learner has answered');
+  const afterFailure=await page.evaluate(()=>window.RPChessMentorTraining.state.moves[2]);
+  assert.equal(afterFailure.mentorReason,'broker_timeout');
+  await page.locator('[data-mentor-action="retry-explanation"]').click();
+  await page.waitForFunction(()=>window.RPChessMentorTraining.state.moves[2]?.mentorSource==='minimax',null,{timeout:15000});
+  const afterSuccess=await page.evaluate(()=>window.RPChessMentorTraining.state.moves[2]);
+  assert.equal(afterSuccess.mentorModel,'MiniMaxAI/MiniMax-M2.7');
+  assert.equal(mockedMentorCalls,2,'manual retry uses the stored verified v2 fact');
+  assert.equal(await page.locator('.mentor-ai-label').textContent(),'Объяснение ИИ');
+  assert((await page.locator('.mentor-ai-explanation').textContent()).includes('Перед ходом проверяй'),
+   'AI text is visible while the tactical question is still unanswered');
+  assert.equal(await page.locator('.mentor-learning-question').count(),1,
+   'the verified question remains interactive beneath the AI text');
   assert.equal(await page.locator('[data-mentor-action="correction-start"]').count(),0,
    'improvement exercise is not visible before the learner solves the threat');
   // An inaccurate move keeps the rival on move without letting it reply.
@@ -277,15 +298,22 @@ fs.mkdirSync(output,{recursive:true});
   assert(lessonBoardBounds?.width<=390,'paused lesson board fits a portrait phone');
   await page.screenshot({path:path.join(output,'battle-automatic-lesson-portrait.png'),animations:'disabled'});
   await page.locator('[data-mentor-square="e8"]').click();
-  assert.equal(mockedMentorCalls,0,'incorrect piece selection does not reveal or bill the LLM');
+  assert.equal(mockedMentorCalls,2,'incorrect guess does not issue additional LLM requests');
   assert(await page.locator('[data-mentor-square="e8"] .mentor-lesson-aura--wrong').count(),
    'wrong rival piece flashes with red aura');
-  assert((await page.locator('[data-mentor-square="e8"] .mentor-lesson-burst--wrong').textContent())
+  assert((await page.locator('[data-mentor-board-burst="e8"].mentor-lesson-burst--wrong').textContent())
    .includes('Это другая фигура.'),'large red text emerges from the incorrect piece');
   assert.equal(await page.locator('.mentor-learning-response').count(),0,
    'click feedback never duplicates in the mentor panel');
-  assert.equal(await page.locator('[data-mentor-square="e8"] .mentor-lesson-burst--down').count(),1,
-   'top-rank wrong answer must fly downward');
+  assert.equal(await page.locator('[data-mentor-board-burst="e8"]').count(),1,
+   'top-rank wrong answer must fly to board center');
+  const pathToCenter=await page.locator('[data-mentor-board-burst="e8"]').evaluate(node=>({
+   animation:getComputedStyle(node).animationName,
+   final:node.getAnimations()[0]?.effect?.getKeyframes()?.at(-1)
+  }));
+  assert.equal(pathToCenter.animation,'mentor-feedback-to-center');
+  assert.equal(pathToCenter.final.left,'50%');
+  assert.equal(pathToCenter.final.top,'50%');
   await page.screenshot({path:path.join(output,'battle-wrong-red-aura-portrait.png'),animations:'disabled'});
   await page.setViewportSize({width:1280,height:800});
   await page.locator('[data-mentor-action="lesson-hint"]').click();
@@ -293,27 +321,11 @@ fs.mkdirSync(output,{recursive:true});
   await page.locator('[data-mentor-square="d8"]').click();
   assert(await page.locator('[data-mentor-square="d8"] .mentor-lesson-aura--correct').count(),
    'correct rival piece flashes with green aura');
-  assert((await page.locator('[data-mentor-square="d8"] .mentor-lesson-burst--correct').textContent())
+  assert((await page.locator('[data-mentor-board-burst="d8"].mentor-lesson-burst--correct').textContent())
    .includes('Верно, ты нашёл нужную фигуру!'),'green confirmation emerges from the chosen queen');
-  assert.equal(await page.locator('[data-mentor-square="d8"] .mentor-lesson-burst--down').count(),1,
-   'top-rank right answer must fly downward');
-  const observed=await mentorRequest;
-  const detail=observed.postDataJSON();
-  assert.equal(detail.version,2);
-  assert.equal(detail.grade,'blunder','winning-chance grade is shared with API');
-  assert(detail.continuation?.depth>=7,'only deep verified tactics reach paid mentor');
-  assert.equal(detail.continuation.pv[0],'d8h4');
-  assert.equal(detail.verifiedThreat.kind,'mate_sequence');
-  await page.waitForFunction(()=>document.querySelector('[data-mentor-action="retry-explanation"]')&&
-   window.RPChessMentorTraining.state.moves[2]?.mentorSource==='fallback',null,{timeout:15000});
-  assert.equal(mockedMentorCalls,1,'first request begins only after correct answer');
-  const afterFailure=await page.evaluate(()=>window.RPChessMentorTraining.state.moves[2]);
-  assert.equal(afterFailure.mentorReason,'broker_timeout');
-  await page.locator('[data-mentor-action="retry-explanation"]').click();
-  await page.waitForFunction(()=>window.RPChessMentorTraining.state.moves[2]?.mentorSource==='minimax',null,{timeout:15000});
-  const afterSuccess=await page.evaluate(()=>window.RPChessMentorTraining.state.moves[2]);
-  assert.equal(afterSuccess.mentorModel,'MiniMaxAI/MiniMax-M2.7');
-  assert.equal(mockedMentorCalls,2,'manual retry uses the stored verified v2 fact');
+  assert.equal(await page.locator('[data-mentor-board-burst="d8"]').count(),1,
+   'top-rank right answer must fly to board center');
+
   assert((await page.locator('.mentor-learning-mentor-note').textContent()).includes('Перед ходом проверяй'));
   const displayedNarration=(await page.locator('[data-mentor-ai-explanation]').textContent()).trim();
   const callsBeforeNarration=mockedMentorCalls;
@@ -325,7 +337,7 @@ fs.mkdirSync(output,{recursive:true});
   await page.evaluate(()=>window.__mentorSpeechLast.onend());
   assert.equal(await page.locator('[data-mentor-action="speech"]').getAttribute('aria-pressed'),'false',
    'completed speech resets the toggle');
-  assert.equal(await page.locator('.mentor-feedback-grade + .mentor-ai-explanation').count(),1,
+  assert.equal(await page.locator('.mentor-feedback-grade + .mentor-ai-block .mentor-ai-explanation').count(),1,
    'independent AI explanation must follow error grade');
   assert.equal(await page.locator('.mentor-learning .mentor-learning-mentor-note').count(),0);
   const mentorNoteMetrics=await page.locator('.mentor-ai-explanation').evaluate(el=>({
@@ -334,7 +346,7 @@ fs.mkdirSync(output,{recursive:true});
   }));
   assert(mentorNoteMetrics.size>=18&&mentorNoteMetrics.tracking>0,'AI text font/tracking increased');
   assert(await page.locator('[data-mentor-square="d8"] .mentor-lesson-aura--correct').count()||afterSuccess,
-   'correct rival piece is verified and AI advice arrives only after answering');
+   'correct rival piece is verified and the early AI advice remains visible');
 
   await page.waitForFunction(()=>document.querySelector('.mentor-learning-answer')?.textContent?.includes('d8–h4')
    &&document.querySelector('[data-mentor-square="h4"].mentor-lesson-target'),null,{timeout:4000});
@@ -371,10 +383,10 @@ fs.mkdirSync(output,{recursive:true});
   const correctionSquare=bestCorrection.slice(2,4);
   assert.equal(await page.locator('.mentor-correction-result.is-correct').count(),0,
    'successful move message must emerge from the figure, not duplicate in mentor panel');
-  assert.equal((await page.locator('[data-mentor-square="'+correctionSquare+'"] .mentor-lesson-burst--correct').textContent()).trim(),
+  assert.equal((await page.locator('[data-mentor-board-burst="'+correctionSquare+'"].mentor-lesson-burst--correct').textContent()).trim(),
    'Хорошее решение!','corrected figure emits short green praise');
-  assert.equal(await page.locator('[data-mentor-square="'+correctionSquare+'"] .mentor-lesson-burst--down').count(),
-   ['1','2','7','8'].includes(correctionSquare[1])?1:0,'correction burst follows rank rule');
+  assert.equal(await page.locator('[data-mentor-board-burst="'+correctionSquare+'"]').count(),
+   1,'correction burst heads to center at any rank');
   assert.deepEqual(await page.evaluate(()=>window.RPChessMentorTraining.state.moves.map(m=>m.uci)),
    originalGame.moves.map(m=>m.uci),'successful practice must not replace the real game');
   await page.screenshot({path:path.join(output,'battle-correction-success.png'),animations:'disabled'});
@@ -397,11 +409,11 @@ fs.mkdirSync(output,{recursive:true});
   await page.waitForFunction(()=>window.RPChessMentorTraining.state.correction?.outcome==='wrong',null,{timeout:12000});
   assert.equal(await page.locator('.mentor-correction-result.is-wrong').count(),0,
    'rejected correction must not be repeated in the mentor panel');
-  assert((await page.locator('[data-mentor-square="g2"] .mentor-lesson-burst--wrong').textContent())
+  assert((await page.locator('[data-mentor-board-burst="g2"].mentor-lesson-burst--wrong').textContent())
    .includes('недостаточно улучшает позицию'),
    'red rejected-move feedback emerges from the original piece');
-  assert.equal(await page.locator('[data-mentor-square="g2"] .mentor-lesson-burst--down').count(),1,
-   'feedback on the second rank flies downward');
+  assert.equal(await page.locator('[data-mentor-board-burst="g2"]').count(),1,
+   'feedback on the second rank flies to board center');
   assert.equal((await page.evaluate(()=>window.RPChessMentorTraining.state)).moves.length,3);
   const hintButton=page.locator('[data-mentor-action="correction-strong"]');
   assert.equal(await hintButton.isDisabled(),true,'new correction has its own 10-second delay');
