@@ -145,7 +145,7 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const kingdomAssets=require('../scripts/kingdom-map-asset-runtime.cjs');
   const registered=kingdomAssets.assertKingdomMapAssetBudget(game);
   assert.strictEqual(registered.count,85);
-  const {kingdomMapSprite}=await import(pathToFileURL(path.join(game,'js/kingdom-map-assets.mjs')).href);
+  const {kingdomMapSprite,kingdomEncounterSprite}=await import(pathToFileURL(path.join(game,'js/kingdom-map-assets.mjs')).href);
   for(const race of kingdomAssets.KINGDOM_RACES)
     for(const kind of kingdomAssets.KINGDOM_TYPES)
       assert.strictEqual(kingdomMapSprite(kind,race),
@@ -162,6 +162,20 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const commanders=await import(pathToFileURL(path.join(game,'js/commander-portraits.mjs')).href);
   const settlement=await import(pathToFileURL(path.join(game,'js/settlement-core.mjs')).href);
   const raceAssets=await import(pathToFileURL(path.join(game,'js/race-assets.mjs')).href);
+  const expectedRoles=['pawn','knight','bishop','rook','queen','king'];
+  for(const type of ['battle','skirmish','caravan'])
+    for(const race of raceAssets.RACE_TAGS)
+      for(let stars=1;stars<=12;stars++){
+        const role=expectedRoles[Math.floor((stars-1)/2)];
+        assert.strictEqual(kingdomEncounterSprite({type,enemyRaceTag:race,stars}),
+          raceAssets.racePiecePath(race,role,'b'),
+          type+' / '+race+' / Threat '+stars+' must show the matching enemy-race figure');
+      }
+  assert.strictEqual(kingdomEncounterSprite({type:'battle',raceTag:'mixed',stars:12}),
+    kingdomMapSprite('battle','mixed'),'unknown race must not be falsely represented by humans');
+  assert.strictEqual(kingdomEncounterSprite({type:'event',raceTag:'mixed',seed:'fixed'}),
+    kingdomMapSprite('event','mixed','fixed'),'mixed Events keep their deterministic cosmetic SVG');
+
 
   const mixedEvent=Array.from({length:512},(_,index)=>
     mapCore.randomEncounter(mapRun,{x:index+2,y:2},500))
