@@ -310,6 +310,19 @@ async function assertTileImage(page,cellId,relativePath){
     ['1,1','assets/races/orcs/board/white.png']]){
     await assertTileImage(walking,id,expected);
   }
+  const mixedSprite=walking.locator('[data-kingdom-cell="1,0"] img.km-object');
+  const mixedSrc=await mixedSprite.getAttribute('src');
+  assert(/^assets\/kingdom-map\/([a-z_]+)\/\1_event_128\.svg$/.test(mixedSrc),
+    'old saved mixed Event renders a race SVG instead of the book icon');
+  await walking.waitForFunction(()=>{
+    const img=document.querySelector('[data-kingdom-cell="1,0"] img.km-object');
+    return img?.complete&&img.naturalWidth===128;
+  },null,{timeout:15000});
+  await walking.evaluate(()=>globalThis.RPChessKingdomMap.open());
+  assert.strictEqual(await walking.locator('[data-kingdom-cell="1,0"] img.km-object').getAttribute('src'),mixedSrc,
+    'legacy mixed event SVG is stable after rerender');
+  assert.strictEqual((await read(walking)).kingdomMap.cells['1,0'].selectedEncounter.raceTag,'mixed',
+    'cosmetic SVG must not modify narrative race or neutral tile');
   assert.equal((await read(walking)).supplies,10,
     'free movement through completed tiles must not spend Supplies');
   await walking.close();
