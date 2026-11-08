@@ -260,7 +260,7 @@ body.kingdom-map-active .resource-hud{display:none!important}
    Keep all five counters single-line and avoid covering the Day heading. */
 .kingdom-map-screen .km-header{
  display:grid;grid-template-columns:132px minmax(0,1fr);align-items:stretch;
- min-height:84px;overflow:hidden;
+ min-height:92px;overflow:hidden;
 }
 .kingdom-map-screen .km-heading{
  display:flex;flex:none;justify-content:center;align-items:flex-start;
@@ -270,18 +270,15 @@ body.kingdom-map-active .resource-hud{display:none!important}
  margin:0;font-size:clamp(25px,2.4vw,34px);line-height:1.1;
 }
 .kingdom-map-screen .km-commandbar{
- display:grid;grid-template-columns:155px minmax(0,1fr) max-content;
+ display:grid;grid-template-columns:86px minmax(0,1fr) max-content;
  align-items:center;gap:6px;min-width:0;padding:6px 9px;
 }
 .km-commander-meta{
- display:flex;align-items:center;min-width:0;
+ display:flex;align-items:center;justify-content:center;min-width:0;
  padding-right:10px;border-right:1px solid rgba(218,178,88,.26);
 }
 .km-commander-meta .km-commander-portrait{
- width:43px;height:43px;flex:none;margin:0 9px 0 0;
-}
-.km-commander-meta .km-power-group{
- flex:1;min-width:0;padding:0;border:0;gap:5px;
+ width:72px;height:72px;flex:none;margin:0;object-fit:cover;
 }
 .kingdom-map-screen .km-resource-group{
  display:flex;flex:1;align-items:center;justify-content:center;
@@ -308,9 +305,9 @@ body.kingdom-map-active .resource-hud{display:none!important}
  .kingdom-map-screen .km-header{grid-template-columns:104px minmax(0,1fr)}
  .kingdom-map-screen .km-heading{padding:6px 10px}
  .kingdom-map-screen .km-heading h1{font-size:25px}
- .kingdom-map-screen .km-commandbar{grid-template-columns:118px minmax(0,1fr) max-content;gap:4px;padding:4px 6px}
+ .kingdom-map-screen .km-commandbar{grid-template-columns:70px minmax(0,1fr) max-content;gap:4px;padding:4px 6px}
  .km-commander-meta{padding-right:5px}
- .km-commander-meta .km-commander-portrait{width:32px;height:32px;margin-right:5px}
+ .km-commander-meta .km-commander-portrait{width:58px;height:58px;margin:0}
  .kingdom-map-screen .km-resource-group{gap:7px;padding:0 5px}
  .kingdom-map-screen .km-resource{gap:4px}
  .kingdom-map-screen .km-resource img{width:32px;height:32px}
@@ -320,12 +317,8 @@ body.kingdom-map-active .resource-hud{display:none!important}
  .kingdom-map-screen .km-header{grid-template-columns:77px minmax(0,1fr);min-height:44px}
  .kingdom-map-screen .km-heading{padding:3px 5px}
  .kingdom-map-screen .km-heading h1{font-size:19px}
- .kingdom-map-screen .km-commandbar{grid-template-columns:82px minmax(0,1fr) max-content;gap:2px;padding:2px 3px}
- .km-commander-meta .km-commander-portrait{width:24px;height:24px;margin-right:3px}
- .km-commander-meta .km-power-group{gap:2px}
- .km-commander-meta .km-power-group span{gap:2px}
- .km-commander-meta .km-power-group small{font-size:6px}
- .km-commander-meta .km-power-group strong{font-size:9px}
+ .kingdom-map-screen .km-commandbar{grid-template-columns:49px minmax(0,1fr) max-content;gap:2px;padding:2px 3px}
+ .km-commander-meta .km-commander-portrait{width:42px;height:42px;margin:0}
  .kingdom-map-screen .km-resource-group{gap:3px;padding:0 3px}
  .kingdom-map-screen .km-resource{gap:2px}
  .kingdom-map-screen .km-resource img{width:23px;height:23px}
