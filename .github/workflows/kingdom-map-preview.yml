@@ -126,10 +126,18 @@ jobs:
                   '/assets/kingdom-parchment/'+group+'/'+names[0])]){
                 const res=await fetch(base+name,{cache:'no-store'});
                 assert.equal(res.status,200,name);
-                assert((res.headers.get('content-type')||'').includes('image/svg+xml'),name+' SVG MIME');
-                const markup=await res.text();
-                assert(markup.startsWith('<svg ')&&markup.trimEnd().endsWith('</svg>'),name+' SVG markup');
-                assert(markup.includes('viewBox="0 0 128 128"'),name+' vector dimensions');
+                if(name.endsWith('.png')){
+                  assert((res.headers.get('content-type')||'').includes('image/png'),name+' PNG MIME');
+                  const bytes=Buffer.from(await res.arrayBuffer());
+                  assert(bytes.subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex')),name+' PNG signature');
+                  assert.equal(bytes.readUInt32BE(16),128,name+' PNG width');
+                  assert.equal(bytes.readUInt32BE(20),128,name+' PNG height');
+                }else{
+                  assert((res.headers.get('content-type')||'').includes('image/svg+xml'),name+' SVG MIME');
+                  const markup=await res.text();
+                  assert(markup.startsWith('<svg ')&&markup.trimEnd().endsWith('</svg>'),name+' SVG markup');
+                  assert(markup.includes('viewBox="0 0 128 128"'),name+' vector dimensions');
+                }
              }
              console.log('Kingdom map static preview: PASS ('+allPaths.length+' SVG bundled; '+Object.keys(manifest.groups).length+' groups served)');return;
             }catch(e){
