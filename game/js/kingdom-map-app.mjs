@@ -45,7 +45,7 @@ function report(text){const node=screen?.querySelector('[data-kingdom-toast]');i
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261108-terrain-c1';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261108-terrain-c3';link.dataset.kingdomStyle='';
  link.addEventListener('load',()=>{if(screen&&!screen.hidden)render();});
  document.head.append(link);
 }
@@ -185,7 +185,10 @@ function render(){
     // Mixed/no-race events keep the neutral chessboard instead of masquerading as humans.
     const tile=tiles?(light?tiles.light:tiles.dark):
       'assets/boards/neutral/tile_'+(light?'light':'dark')+'.png';
-    btn.style.setProperty('--km-tile-image','url("'+tile+'")');
+    // CSS custom properties with relative url(...) resolve from the CSS file
+    // (/css/), not the document (/). Resolve the runtime asset against the
+    // document base explicitly so preview root and GitHub Pages /RPChess/ work.
+    btn.style.backgroundImage='url("'+new URL(tile,document.baseURI).href+'")';
    }
    btn.setAttribute('aria-label',isCastle?tr('castle'):cell?.selectedEncounter?
     t('travel.type.'+cell.selectedEncounter.type):tr('hidden'));
