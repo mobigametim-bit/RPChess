@@ -538,7 +538,7 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
 .mentor-training .mentor-board .mentor-king-defeated .mentor-piece.classic-piece,
 .mentor-training .mentor-board .mentor-king-defeated .rpchess-fantasy-piece,
 .mentor-training .mentor-board .mentor-king-defeated .mentor-piece-fallback{
- transform:rotate(90deg)!important;transform-origin:50% 50%;
+ transform-origin:50% 50%;
  animation:mentor-mate-king-fall .55s cubic-bezier(.2,.6,.2,1) both
 }
 @keyframes mentor-mate-king-fall{
