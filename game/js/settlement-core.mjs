@@ -31,6 +31,14 @@ const ORIGINS = Object.freeze({
   sky_khanate: 'Небесный Каганат'
 });
 
+// Named recruits receive a stable race; faction defaults are conservative and
+// only explicit character motifs depart from their faction's predominant race.
+const FACTION_RACE_TAGS=Object.freeze({
+ iron_marches:'humans',luminous_synod:'angels',free_cities:'humans',
+ thorn_covenant:'elves',ashen_dominion:'undead',sky_khanate:'humans'
+});
+const HERO_RACE_OVERRIDES=Object.freeze({roan_stag:'beastfolk',puck_ember:'fae'});
+
 const RECRUIT_ROWS = Object.freeze([
   ['aldric_wall', 'Альдрик Стена', 'iron_marches', 'rook', 'Ветеран пограничных гарнизонов, привыкший держать линию до последнего.'],
   ['mara_chain', 'Мара Цепь', 'iron_marches', 'pawn', 'Упрямая воительница из низших рядов, для которой каждый шаг вперёд имеет цену.'],
@@ -72,6 +80,7 @@ const RECRUIT_LIBRARY = Object.freeze(RECRUIT_ROWS.map(([slug, name, factionId, 
   slug,
   name,
   pieceType,
+  raceTag:HERO_RACE_OVERRIDES[slug]||FACTION_RACE_TAGS[factionId],
   origin: ORIGINS[factionId],
   portrait: `assets/heroes/${slug}/${pieceType==='pawn'||pieceType==='bishop'?'portrait_named.webp':'portrait.png'}`,
   pieceArt: `assets/heroes/${slug}/${pieceType==='bishop'?'pieces/white/bishop.webp':'piece_badge.png'}`,
