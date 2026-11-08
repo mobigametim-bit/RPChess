@@ -254,3 +254,80 @@ body.kingdom-map-active{overflow:hidden}
  .km-flavor-flyout{animation:none!important;opacity:1!important;transform:translate(-50%,-13px)!important}
 }
 body.kingdom-map-active .resource-hud{display:none!important}
+
+
+/* Compact three-zone command bar: Day | commander/resources | actions.
+   Keep all five counters single-line and avoid covering the Day heading. */
+.kingdom-map-screen .km-header{
+ display:grid;grid-template-columns:132px minmax(0,1fr);align-items:stretch;
+ min-height:70px;overflow:hidden;
+}
+.kingdom-map-screen .km-heading{
+ display:flex;flex:none;justify-content:center;align-items:flex-start;
+ padding:8px 14px;min-width:0;overflow:hidden;
+}
+.kingdom-map-screen .km-heading h1{
+ margin:0;font-size:clamp(25px,2.4vw,34px);line-height:1.1;
+}
+.kingdom-map-screen .km-commandbar{
+ display:grid;grid-template-columns:155px minmax(0,1fr) max-content;
+ align-items:center;gap:6px;min-width:0;padding:6px 9px;
+}
+.km-commander-meta{
+ display:flex;align-items:center;min-width:0;
+ padding-right:10px;border-right:1px solid rgba(218,178,88,.26);
+}
+.km-commander-meta .km-commander-portrait{
+ width:43px;height:43px;flex:none;margin:0 9px 0 0;
+}
+.km-commander-meta .km-power-group{
+ flex:1;min-width:0;padding:0;border:0;gap:5px;
+}
+.kingdom-map-screen .km-resource-group{
+ display:flex;flex:1;align-items:center;justify-content:center;
+ gap:clamp(6px,1.15vw,17px);padding:0 8px;min-width:0;
+}
+.kingdom-map-screen .km-resource{
+ display:inline-flex;flex:0 0 auto;min-width:0;flex-direction:row;
+ align-items:center;gap:4px;white-space:nowrap;
+}
+.kingdom-map-screen .km-resource img{
+ width:clamp(20px,1.8vw,26px);height:clamp(20px,1.8vw,26px);
+ object-fit:contain;flex:none;
+}
+.kingdom-map-screen .km-resource strong{
+ font:800 clamp(12px,1.12vw,16px)/1 Inter,Arial,sans-serif;
+ font-variant-numeric:tabular-nums;
+}
+.kingdom-map-screen .km-actions{
+ display:flex;align-items:center;justify-content:flex-end;
+ padding:0;gap:5px;min-width:0;
+}
+@media(max-width:1180px){
+ .kingdom-map-screen .km-header{grid-template-columns:104px minmax(0,1fr)}
+ .kingdom-map-screen .km-heading{padding:6px 10px}
+ .kingdom-map-screen .km-heading h1{font-size:25px}
+ .kingdom-map-screen .km-commandbar{grid-template-columns:118px minmax(0,1fr) max-content;gap:4px;padding:4px 6px}
+ .km-commander-meta{padding-right:5px}
+ .km-commander-meta .km-commander-portrait{width:32px;height:32px;margin-right:5px}
+ .kingdom-map-screen .km-resource-group{gap:5px;padding:0 5px}
+ .kingdom-map-screen .km-resource img{width:21px;height:21px}
+ .kingdom-map-screen .km-resource strong{font-size:13px}
+}
+@media(max-width:790px){
+ .kingdom-map-screen .km-header{grid-template-columns:77px minmax(0,1fr);min-height:44px}
+ .kingdom-map-screen .km-heading{padding:3px 5px}
+ .kingdom-map-screen .km-heading h1{font-size:19px}
+ .kingdom-map-screen .km-commandbar{grid-template-columns:82px minmax(0,1fr) max-content;gap:2px;padding:2px 3px}
+ .km-commander-meta .km-commander-portrait{width:24px;height:24px;margin-right:3px}
+ .km-commander-meta .km-power-group{gap:2px}
+ .km-commander-meta .km-power-group span{gap:2px}
+ .km-commander-meta .km-power-group small{font-size:6px}
+ .km-commander-meta .km-power-group strong{font-size:9px}
+ .kingdom-map-screen .km-resource-group{gap:3px;padding:0 3px}
+ .kingdom-map-screen .km-resource{gap:2px}
+ .kingdom-map-screen .km-resource img{width:16px;height:16px}
+ .kingdom-map-screen .km-resource strong{font-size:11px}
+ .kingdom-map-screen .km-actions{gap:2px}
+ .kingdom-map-screen .km-actions .reboot-button{font-size:9px;padding:4px 3px;min-height:27px}
+}
