@@ -99,12 +99,21 @@ function routeCard(choice,run,cell){
  card.dataset.kingdomRouteCard=choice.id;card.dataset.kingdomRouteStatus=cell.status;
  const visual=document.createElement('div');visual.className='km-route-card__visual';
  visual.style.setProperty('--km-card-backdrop','url("'+new URL(routeBackdrop(choice),document.baseURI).href+'")');
+ const combat=['battle','skirmish','caravan'].includes(choice.type);
+ const siteArt=kingdomMapSprite(choice.type,choice.raceTag||choice.enemyRaceTag,
+  choice.visualRaceTag||choice.seed||choice.id);
  const icon=document.createElement('img');icon.className='km-route-card__icon';
- icon.src=['battle','skirmish','caravan'].includes(choice.type)?
-  kingdomEncounterSprite(choice):
-  choice.type==='event'?kingdomEncounterSprite(choice):
+ // The location remains visible behind the racial defender, like the king
+ // layered over map sites. Unrelated encounter cards keep their prior art.
+ icon.src=combat||choice.type==='event'?siteArt:
   (ROUTE_ICONS[choice.type]||ROUTE_ICONS.puzzle);
  icon.alt='';icon.setAttribute('aria-hidden','true');
+ const defenderArt=combat?kingdomEncounterSprite(choice):null;
+ let defender=null;
+ if(defenderArt&&defenderArt!==siteArt){
+  defender=document.createElement('img');defender.className='km-route-card__defender';
+  defender.src=defenderArt;defender.alt='';defender.setAttribute('aria-hidden','true');
+ }
  const details=document.createElement('div');details.className='km-route-card__details';
  const name=document.createElement('h3');name.textContent=t('travel.type.'+choice.type);
  const status=document.createElement('span');status.className='km-route-card__status';
@@ -133,14 +142,16 @@ function routeCard(choice,run,cell){
     status:{over:true,type:'checkmate',winner:playerColor}});
   stats.append(resourceBadge(t('travel.rewardAria',{reward:amount}),GOLD_ICON,'+'+amount));
  }
- details.append(name,status,stats);visual.append(icon);card.append(visual,details);return card;
+ details.append(name,status,stats);visual.append(icon);
+ if(defender)visual.append(defender);
+ card.append(visual,details);return card;
 }
 function tr(k){return COPY[lang()][k]||k;}
 function report(text){const node=screen?.querySelector('[data-kingdom-toast]');if(!node)return;
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261108-power-portrait-d1';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261108-layered-guards-e1';link.dataset.kingdomStyle='';
  link.addEventListener('load',()=>{if(screen&&!screen.hidden)render();});
  document.head.append(link);
 }
@@ -338,11 +349,20 @@ function render(){
    else{
     const choice=cell.selectedEncounter;
     if(choice){
-     const img=document.createElement('img');img.className='km-object';
-     // Combat displays the enemy race's piece for its exact saved Threat tier.
-     // Mixed Events still use their pinned cosmetic race; no save migration.
-     img.src=kingdomEncounterSprite(choice);img.alt='';img.loading='lazy';
-     btn.append(img);
+     // The encounter SVG is the site itself. Its defending chess piece is a
+     // separate foreground element (just as our king moves over map assets).
+     const siteArt=kingdomMapSprite(choice.type,choice.raceTag||choice.enemyRaceTag,
+      choice.visualRaceTag||choice.seed||choice.id);
+     const img=document.createElement('img');img.className='km-object km-object--site';
+     img.src=siteArt;img.alt='';img.loading='lazy';btn.append(img);
+     if(['battle','skirmish','caravan'].includes(choice.type)){
+      const defenderArt=kingdomEncounterSprite(choice);
+      if(defenderArt&&defenderArt!==siteArt){
+       const guard=document.createElement('img');
+       guard.className='km-object km-object--defender';
+       guard.src=defenderArt;guard.alt='';guard.loading='lazy';btn.append(guard);
+      }
+     }
      const lvl=document.createElement('small');lvl.className='km-level';lvl.textContent=romanForStars(choice.stars);btn.append(lvl);
     }
     if(cell.status==='failed'){const flag=document.createElement('span');flag.className='km-failure';flag.textContent='!';btn.append(flag);}
