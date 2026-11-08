@@ -232,14 +232,14 @@ async function assertDecoratedBackdrops(page, label) {
     assert.strictEqual(await page.locator('[data-travel-choice]').count(), 3);
     await assertDecoratedBackdrops(page, 'initial roster-to-Travel open');
     assert.strictEqual((await page.locator('[data-travel-week]').innerText()).trim(), 'Неделя 1');
-    // The legacy owner stylesheet is created asynchronously and may still be
-    // loading after the screen becomes visible on a fast CI browser.
+    // Legacy Travel still uses the global Goznak UI font. Brahms was
+    // superseded by PR #179; do not wait forever for a font no longer used.
     await page.waitForFunction(() => {
       const heading=document.querySelector('[data-travel-week]');
-      return heading && getComputedStyle(heading).fontFamily.includes('BrahmsGotischCyr');
+      return heading && getComputedStyle(heading).fontFamily.includes('GoznakUI');
     }, null, { timeout: 12000 });
-    const font = await page.locator('[data-travel-week]').evaluate((element) => getComputedStyle(element).fontFamily);
-    assert(font.includes('BrahmsGotischCyr'));
+    const font = await page.locator('[data-travel-week]').evaluate(element=>getComputedStyle(element).fontFamily);
+    assert(font.includes('GoznakUI'), `Travel heading must honor the released Goznak UI font, got ${font}`);
     const copy = await travel.innerText();
     for (const removed of ['Исход неизвестен','3–5 решений','Выбрать путь','Каждая карточка выбирается независимо','Куда двигаться дальше?','Шаг путешествия']) assert(!copy.includes(removed), `removed Travel copy leaked: ${removed}`);
     const types = await page.locator('[data-travel-choice]').evaluateAll((nodes) => nodes.map((node) => node.dataset.travelType));
