@@ -62,8 +62,10 @@ const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)
     'enlarged cells must fill the map frame with no empty gutters');
   assert(dimensions.world.width/dimensions.frame.width>=1.99&&dimensions.world.height/dimensions.frame.height>=1.99,
     'world scale is doubled on both axes');
-  assert(dimensions.king.width<dimensions.tile.width*.7&&dimensions.king.height<dimensions.tile.height*.7,
-    'king image remains the original physical size relative to doubled event tiles');
+  const previousKingSize=Math.min((dimensions.frame.width-4)/9,(dimensions.frame.height-4)/7);
+  assert(Math.abs(dimensions.king.width-previousKingSize)<2&&
+    Math.abs(dimensions.king.height-previousKingSize)<2,
+    'king image keeps the original pre-zoom CSS pixel size');
   assert((await page.locator('[data-kingdom-cell="0,0"]').evaluate(el=>getComputedStyle(el).backgroundImage))
     .includes('/races/humans/board/white.png'),'human castle renders the white world tile');
   await page.screenshot({path:path.join(output,'kingdom-01-fog-start.png')});
