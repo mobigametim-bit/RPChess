@@ -93,6 +93,15 @@ jobs:
              assert(html[1].includes('schedulePending')&&html[1].includes('2450'));
              assert(html[2].includes('randomEncounter')&&html[2].includes('annexCell'));
              assert(html[3].includes('km-king-step'));
+             for(const name of ['/assets/kingdom-map/humans/humans_castle_128.png',
+                '/assets/kingdom-map/orcs/orcs_battle_128.png',
+                '/assets/kingdom-map/puzzle/puzzle_128.png']){
+                const res=await fetch(base+name,{cache:'no-store'});
+                assert.equal(res.status,200,name);
+                const bytes=new Uint8Array(await res.arrayBuffer());
+                assert.equal(bytes[0],137,name+' signature');
+                assert.equal(bytes[1],80,name+' signature');
+             }
              console.log('Kingdom map static preview: PASS');return;
             }catch(e){
              console.log('Preview propagation '+(i+1)+'/12: '+e.message);

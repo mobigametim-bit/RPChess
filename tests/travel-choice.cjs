@@ -140,5 +140,21 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(fs.readFileSync(path.join(game,'css/kingdom-map.css'),'utf8').includes('km-king-step'),
     'king moves use a smooth, explicit CSS transition');
 
+  // Keep the existing Journey regression responsible for the asset register:
+  // no extra suite just to count files.
+  const kingdomAssets=require('../scripts/kingdom-map-asset-runtime.cjs');
+  const registered=kingdomAssets.assertKingdomMapAssetBudget(game);
+  assert.strictEqual(registered.count,85);
+  const {kingdomMapSprite}=await import(pathToFileURL(path.join(game,'js/kingdom-map-assets.mjs')).href);
+  for(const race of kingdomAssets.KINGDOM_RACES)
+    for(const kind of kingdomAssets.KINGDOM_TYPES)
+      assert.strictEqual(kingdomMapSprite(kind,race),
+        `assets/kingdom-map/${race}/${race}_${kind}_128.png`);
+  assert.strictEqual(kingdomMapSprite('puzzle','orcs'),
+    'assets/kingdom-map/puzzle/puzzle_128.png');
+  assert.strictEqual(kingdomMapSprite('event','mixed'),
+    'assets/kingdom-map/humans/humans_event_128.png');
+  assert.strictEqual(kingdomMapSprite('unexpected','elves'),null);
+  console.log('Kingdom map sprite register: PASS (85 RGBA PNGs, 14 races, 6 classes, neutral puzzle)');
   console.log('Travel Choice keeps 6-type ~16.7% pool, owner-keyed RU/EN compact UI and player Threat..Threat+3 encounter contract: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});

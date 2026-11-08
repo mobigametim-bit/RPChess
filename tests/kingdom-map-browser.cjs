@@ -40,6 +40,13 @@ const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)
   assert(before.kingdomMap&&before.kingdomMap.cells['0,0'].annexed);
   assert.deepEqual(before.kingdomMap.king,{x:0,y:0});
   assert.equal(await page.locator('[data-kingdom-cell="1,0"] .km-fog-mark').textContent(),'?');
+  const castleSprite=page.locator('[data-kingdom-cell="0,0"] img.km-object');
+  assert.equal(await castleSprite.getAttribute('src'),
+    'assets/kingdom-map/humans/humans_castle_128.png');
+  await page.waitForFunction(()=>{
+    const sprite=document.querySelector('[data-kingdom-cell="0,0"] img.km-object');
+    return sprite?.complete&&sprite.naturalWidth===128&&sprite.naturalHeight===128;
+  },null,{timeout:15000});
   await page.screenshot({path:path.join(output,'kingdom-01-fog-start.png')});
   // Regression: the camera must not recenter on every click. Before the fix,
   // the clicked tile slid to the middle, making a different tile appear opened.
@@ -60,6 +67,14 @@ const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)
   assert(['battle','skirmish','caravan','event','settlement','puzzle'].includes(encounter.type));
   assert.deepEqual(moved.kingdomMap.king,{x:1,y:0});
   assert.equal(moved.kingdomMap.cells['1,0'].status,'revealed');
+  const race=encounter.raceTag&&encounter.raceTag!=='mixed'?encounter.raceTag:'humans';
+  const encounterSprite=page.locator('[data-kingdom-cell="1,0"] img.km-object');
+  assert.equal(await encounterSprite.getAttribute('src'),
+    `assets/kingdom-map/${race}/${race}_battle_128.png`);
+  await page.waitForFunction(()=>{
+    const sprite=document.querySelector('[data-kingdom-cell="1,0"] img.km-object');
+    return sprite?.complete&&sprite.naturalWidth===128;
+  },null,{timeout:15000});
   assert.equal(moved.supplies,before.supplies,'moving and unveiling do not charge resources prematurely');
   assert.equal(await page.locator('[data-kingdom-cell="1,0"] .km-fog-mark').count(),0,
    'the fog opens before the encounter begins');
@@ -193,6 +208,6 @@ const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)
   assert.equal((await read(walking)).supplies,10,
     'free movement through completed tiles must not spend Supplies');
   await walking.close();
-  console.log('KINGDOM MAP PASS — multi-step Battle draw -> Battle win -> third tile, native engine IDs unlock map, 8-direction stable camera');
+  console.log('KINGDOM MAP PASS — race sprites load, Battle draw -> Battle win -> third tile, eight-direction camera');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
