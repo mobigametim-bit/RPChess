@@ -180,6 +180,41 @@ function fallbackSymbol(ctx,kind,x,y,size,seed){
  }
  ctx.restore();
 }
+// Roads and rivers are drawn as continuous world-coordinate Canvas strokes.
+// No road_segments / river_segments assets or sprite-layer overlays are used.
+function drawWaterRoads(ctx,seed,left,top,width,height){
+ const toLocalX=x=>(x-left)*PARCHMENT_TILE;
+ const toLocalY=y=>(y-top)*PARCHMENT_TILE;
+ const riverDrift=randomAt(seed,1,1,'river')*12;
+ const lower=Math.floor((left-riverDrift-12)/17)-1;
+ const upper=Math.ceil((left+width-riverDrift+12)/17)+1;
+ for(let river=lower;river<=upper;river++){
+  const center=river*17+riverDrift;
+  ctx.beginPath();
+  for(let y=top-1,first=true;y<=top+height+1;y+=.16){
+   const x=center+Math.sin(y*.21+river*1.7)*2.15+Math.sin(y*.79+river*.3)*.55;
+   const px=toLocalX(x),py=toLocalY(y);
+   if(first){ctx.moveTo(px,py);first=false;}else ctx.lineTo(px,py);
+  }
+  ctx.lineWidth=14;ctx.strokeStyle='#b7a78c';ctx.stroke();
+  ctx.lineWidth=9;ctx.strokeStyle='#849a9e';ctx.stroke();
+  ctx.lineWidth=2;ctx.strokeStyle='#c8d0ba';ctx.stroke();
+ }
+ const roadDrift=randomAt(seed,1,1,'road')*8;
+ const first=Math.floor((top-roadDrift-8)/12)-1;
+ const last=Math.ceil((top+height-roadDrift+8)/12)+1;
+ for(let road=first;road<=last;road++){
+  const center=road*12+roadDrift;
+  ctx.beginPath();
+  for(let x=left-1,firstPoint=true;x<=left+width+1;x+=.16){
+   const y=center+Math.sin(x*.37+road*2.1)*1.25+Math.sin(x*.83+road)*.18;
+   const px=toLocalX(x),py=toLocalY(y);
+   if(firstPoint){ctx.moveTo(px,py);firstPoint=false;}else ctx.lineTo(px,py);
+  }
+  ctx.lineWidth=8;ctx.strokeStyle='#b6a17c';ctx.stroke();
+  ctx.lineWidth=2.5;ctx.strokeStyle='#746245';ctx.setLineDash([9,7]);ctx.stroke();ctx.setLineDash([]);
+ }
+}
 function drawTerrainSymbols(ctx,seed,left,top,width,height,repaint){
  const step=3; // Fewer heavy vector pictures: approximately one stamp per 3x3 cells.
  const minX=Math.floor((left-2)/step),maxX=Math.ceil((left+width+2)/step);
@@ -267,6 +302,7 @@ function renderParchment(canvas,{seed,view,columns,rows,map}){
  }
  const repaint=()=>{if(canvas.isConnected)latest?.();};
  drawBasePatches(ctx,seed,left,top,columns,rows,repaint);
+ drawWaterRoads(ctx,seed,left,top,columns,rows);
  drawTerrainSymbols(ctx,seed,left,top,columns,rows,repaint);
  drawOptionalNature(ctx,seed,left,top,columns,rows,map,repaint);
  drawFog(ctx,map,left,top,columns,rows);
