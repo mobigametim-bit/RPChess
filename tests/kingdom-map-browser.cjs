@@ -101,10 +101,18 @@ async function assertTileImage(page,cellId,relativePath){
     return response.json();
   });
   assert.equal(manifest.version,1);
-  for(const old of ['road_segments','river_segments'])
-    assert.equal(old in manifest.groups,false,'removed road and river art stays out of build');
+  for(const old of ['road_segments','river_segments','territory_border_accents_optional'])
+    assert.equal(old in manifest.groups,false,'retired road/river/border art stays out of build');
+  assert.equal(Object.keys(manifest.groups).length,7,
+    'the atlas contains five core groups, one marsh group and one landmark group');
+  assert.equal(manifest.groups.marsh_wasteland_optional?.length,16,
+    'all sixteen correct marsh SVGs are included');
+  assert(manifest.groups.marsh_wasteland_optional.includes('01_pale_marsh.svg')&&
+    !manifest.groups.marsh_wasteland_optional.includes('01_straight_line.svg'),
+    'marsh sprites must not be mislabeled frame shapes');
   for(const [group,names] of Object.entries(manifest.groups)){
-    assert.equal(names.length,16,'each uploaded sprite group has 16 SVGs: '+group);
+    assert.equal(names.length,16,'each valid sprite group has 16 SVGs: '+group);
+    assert(names.every(name=>name.endsWith('.svg')),'sprite group must be SVG-only: '+group);
   }
   const expectedCore=['fog_of_war_shapes','forest_clusters','hills_rocks',
     'mountain_clusters','parchment_base_variations'];
