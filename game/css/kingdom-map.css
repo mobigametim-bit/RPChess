@@ -39,6 +39,12 @@ body.kingdom-map-active{overflow:hidden}
  object-fit:contain;object-position:center;max-width:100%;max-height:100%;z-index:2;
  filter:drop-shadow(0 4px 3px #07110dbb);pointer-events:none}
 .km-object--castle{display:block}
+/* The race defender is a separate foreground piece over the site SVG. */
+.km-object--defender{
+ left:61%;top:62%;width:calc(var(--km-event-size-px,103.66px) * .72);
+ height:calc(var(--km-event-size-px,103.66px) * .72);z-index:4;
+ filter:drop-shadow(0 5px 5px #030606e8) drop-shadow(0 0 4px #e8bf7680)
+}
 .km-cell--adjacent{cursor:pointer}
 .km-cell--adjacent:hover{filter:brightness(1.22)}
 .km-cell--adjacent::before{content:'';position:absolute;inset:4px;border:1px solid #ded2a378;pointer-events:none;z-index:3}
@@ -182,6 +188,12 @@ body.kingdom-map-active{overflow:hidden}
 .km-route-card__icon{position:absolute;left:50%;top:44%;width:115px;height:115px;
  max-width:60%;max-height:78%;object-fit:contain;transform:translate(-50%,-50%);
  filter:drop-shadow(0 8px 15px #000c)}
+.km-route-card__defender{
+ position:absolute;left:61%;top:58%;width:88px;height:88px;z-index:2;
+ max-width:50%;max-height:65%;object-fit:contain;transform:translate(-50%,-50%);
+ filter:drop-shadow(0 7px 8px #000e) drop-shadow(0 0 5px #f2c87a77);
+ pointer-events:none
+}
 .km-route-card__details{display:flex;flex-direction:column;gap:8px;padding:12px 15px 16px}
 .km-route-card__details h3{margin:0;color:#f8dfad;
  font:400 clamp(26px,2.4vw,34px)/1 'BrahmsGotischCyr',Georgia,serif}
