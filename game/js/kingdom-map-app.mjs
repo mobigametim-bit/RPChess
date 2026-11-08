@@ -456,10 +456,14 @@ function openMap(event){
  movement=null;flavorBurst=null;
  if(runId!==run.id||!camera)camera={...run.kingdomMap.king};
  runId=run.id;
+ const previousPending=run.kingdomMap?.pendingCell;
  run=settleIfReturned(run,event?.detail?.source||'');
  followCamera(run.kingdomMap.king);
  showMap();
- selected=keyOf(run.kingdomMap.king.x,run.kingdomMap.king.y);
+ // On defeat the king retreats, but the failed route remains selected
+ // so the canonical card is still shown for a future retry.
+ selected=previousPending&&run.kingdomMap.cells[previousPending]?.status==='failed'?
+  previousPending:keyOf(run.kingdomMap.king.x,run.kingdomMap.king.y);
  render();schedulePending(run);
 }
 function syncPower(){
