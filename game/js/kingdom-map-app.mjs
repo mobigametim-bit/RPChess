@@ -199,14 +199,20 @@ function render(){
  world.replaceChildren(cells);
  const avatar=document.createElement('img');avatar.className='km-king'+(movement?' km-king--moving':'');
  avatar.src=kingArt(run);avatar.alt='';avatar.setAttribute('aria-hidden','true');
+ // The king is not zoomed. Retain its pre-change physical size rather than
+ // halving an enlarged cell (which varies with the map frame aspect ratio).
+ const bounds=screen.querySelector('.km-map-frame').getBoundingClientRect();
+ const oldTile=Math.min((bounds.width-4)/WIDTH,(bounds.height-4)/HEIGHT);
+ avatar.style.width=oldTile+'px';avatar.style.height=oldTile+'px';
  // Position the king at the chosen cell's visual center, not at the camera
  // center. Inline coordinates override the CSS fallback for initial loads.
  avatar.style.left=((map.king.x-view.x+CENTER_X+.5)*100/WIDTH)+'%';
  avatar.style.top=((map.king.y-view.y+CENTER_Y+.5)*100/HEIGHT)+'%';
  if(movement){
-  // King remains physically unzoomed: two king widths/heights per world tile.
-  avatar.style.setProperty('--km-from-x',String((movement.x-map.king.x)*200)+'%');
-  avatar.style.setProperty('--km-from-y',String((movement.y-map.king.y)*200)+'%');
+  // Animation traverses one NEW cell even though the king keeps its old size.
+  const cellBounds=world.querySelector('.km-cell').getBoundingClientRect();
+  avatar.style.setProperty('--km-from-x',(movement.x-map.king.x)*cellBounds.width+'px');
+  avatar.style.setProperty('--km-from-y',(movement.y-map.king.y)*cellBounds.height+'px');
  }
  world.append(avatar);
  const chosen=selected?map.cells[selected]:null;
