@@ -313,7 +313,14 @@ function continuePath() {
   busy = true;
   audio()?.click?.();
   const suppliesBefore = activeRun.supplies;
-  activeRun = writeRun(completeSettlement(activeRun));
+  const selected=activeRun.activeTravelChoice;
+  let finished=completeSettlement(activeRun);
+  const map=activeRun.kingdomMap,cell=map?.cells?.[selected?.kingdomCell];
+  if(cell&&cell.selectedEncounter?.id===selected.id&&activeRun.currentSettlement){
+    finished={...finished,kingdomMap:{...map,cells:{...map.cells,
+      [selected.kingdomCell]:{...cell,settlementState:activeRun.currentSettlement}}}};
+  }
+  activeRun = writeRun(finished);
   if (activeRun.supplies !== suppliesBefore) throw new Error('Settlement exit must not spend Supplies');
   globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated', { detail:{ source:'settlement-complete' } }));
   hideSettlement();
