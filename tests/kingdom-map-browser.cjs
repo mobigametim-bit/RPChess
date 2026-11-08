@@ -30,7 +30,7 @@ async function assertTileImage(page,cellId,relativePath){
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  try{
   fs.mkdirSync(output,{recursive:true});
-  const page=await browser.newPage({viewport:{width:1280,height:720}});
+  const page=await browser.newPage({viewport:{width:1366,height:768}});
   const errors=[];page.on('pageerror',e=>errors.push(String(e.stack||e)));
   await page.goto(url,{waitUntil:'domcontentloaded'});
   await startNewRun(page,{playerName:'Kingdom Explorer',legacyTravel:false});
@@ -54,7 +54,8 @@ async function assertTileImage(page,cellId,relativePath){
   await page.locator('[data-kingdom-map-screen]:not([hidden])').waitFor({timeout:20000});
   assert.equal(await page.locator('[data-travel-choice-screen]:not([hidden])').count(),0,
    'the old three-card choice is not the live Journey screen');
-  assert.equal(await page.locator('[data-kingdom-cell]').count(),63);
+  assert.equal(await page.locator('[data-kingdom-cell]').count(),77,
+    '1366x768 target viewport requires 11x7 fixed-size grid for full-bleed coverage');
   const before=await read(page);
   assert(before.kingdomMap&&before.kingdomMap.cells['0,0'].annexed);
   assert.deepEqual(before.kingdomMap.king,{x:0,y:0});
@@ -66,27 +67,41 @@ async function assertTileImage(page,cellId,relativePath){
     const sprite=document.querySelector('[data-kingdom-cell="0,0"] img.km-object');
     return sprite?.complete&&sprite.naturalWidth===128&&sprite.naturalHeight===128;
   },null,{timeout:15000});
-  // Full bleed 2x zoom: the world must cover all edges of its frame.
+  // Accepted 142px/73%/92px map geometry and 25% floating inspector.
   const dimensions=await page.evaluate(()=>{
    const frame=document.querySelector('.km-map-frame').getBoundingClientRect();
    const world=document.querySelector('.km-world').getBoundingClientRect();
    const cell=document.querySelector('[data-kingdom-cell="0,0"]').getBoundingClientRect();
    const king=document.querySelector('.km-king');
+   const object=document.querySelector('[data-kingdom-cell="0,0"] img.km-object');
+   const artwork=object.getBoundingClientRect();
+   const inspector=document.querySelector('.km-inspector').getBoundingClientRect();
    return {frame:{width:frame.width,height:frame.height,left:frame.left,right:frame.right,top:frame.top,bottom:frame.bottom},
     world:{width:world.width,height:world.height,left:world.left,right:world.right,top:world.top,bottom:world.bottom},
-    tile:{width:cell.width,height:cell.height},king:{width:parseFloat(getComputedStyle(king).width),height:parseFloat(getComputedStyle(king).height)}};
+    tile:{width:cell.width,height:cell.height,left:cell.left,right:cell.right,top:cell.top,bottom:cell.bottom},
+    king:{width:parseFloat(getComputedStyle(king).width),height:parseFloat(getComputedStyle(king).height)},
+    object:{width:artwork.width,height:artwork.height,left:artwork.left,right:artwork.right,
+      top:artwork.top,bottom:artwork.bottom,fit:getComputedStyle(object).objectFit},
+    cellOverflow:getComputedStyle(document.querySelector('[data-kingdom-cell="0,0"]')).overflow,
+    inspector:{width:inspector.width,left:inspector.left,right:inspector.right}};
   });
   assert(dimensions.world.left<=dimensions.frame.left&&dimensions.world.right>=dimensions.frame.right&&
     dimensions.world.top<=dimensions.frame.top&&dimensions.world.bottom>=dimensions.frame.bottom,
     'enlarged cells must fill the map frame with no empty gutters');
-  const previousKingSize=Math.min((dimensions.frame.width-4)/9,(dimensions.frame.height-4)/7);
-  assert(dimensions.tile.width>=previousKingSize*1.99&&dimensions.tile.height>=previousKingSize*1.99,
-    'each world tile is at least twice the former chess-cell size');
-  assert(Math.abs(dimensions.tile.width-dimensions.tile.height)<2,
-    'race chess tiles retain square geometry at 2x zoom');
-  assert(Math.abs(dimensions.king.width-previousKingSize)<2&&
-    Math.abs(dimensions.king.height-previousKingSize)<2,
-    'king image keeps the original pre-zoom CSS pixel size');
+  assert(Math.abs(dimensions.tile.width-142)<1&&Math.abs(dimensions.tile.height-142)<1,
+    'user-selected 142px cells remain perfectly square');
+  assert(Math.abs(dimensions.king.width-92)<1&&Math.abs(dimensions.king.height-92)<1,
+    'king keeps a fixed 92px size');
+  assert(Math.abs(dimensions.object.width-142*.73)<1&&Math.abs(dimensions.object.height-142*.73)<1,
+    'SVG art displays at exactly 73% of the tile');
+  assert(dimensions.object.fit==='contain'&&dimensions.cellOverflow==='visible',
+    'SVG is contained without object clipping or unwanted stretching');
+  assert(dimensions.object.left>=dimensions.tile.left&&dimensions.object.right<=dimensions.tile.right&&
+    dimensions.object.top>=dimensions.tile.top&&dimensions.object.bottom<=dimensions.tile.bottom,
+    'full SVG artwork fits inside its own square');
+  assert(Math.abs(dimensions.inspector.width-dimensions.frame.width*.25)<3&&
+    dimensions.inspector.left>dimensions.frame.left&&dimensions.inspector.right<dimensions.frame.right,
+    'inspector floats over the map and occupies 25% of its width');
   await assertTileImage(page,'0,0','assets/races/humans/board/white.png');
   await page.screenshot({path:path.join(output,'kingdom-01-fog-start.png')});
   // Regression: the camera must not recenter on every click. Before the fix,
