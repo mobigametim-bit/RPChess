@@ -518,22 +518,21 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
 }
 
 
-/* Checkmate: fallen defeated king, red aura; victorious king, green aura. */
-.mentor-training .mentor-board .mentor-square.mentor-king-defeated,
-.mentor-training .mentor-board .mentor-square.mentor-king-victorious{isolation:isolate}
-.mentor-training .mentor-board .mentor-square.mentor-king-defeated::before,
-.mentor-training .mentor-board .mentor-square.mentor-king-victorious::before{
- content:'';position:absolute;inset:-5%;border-radius:50%;
- z-index:1;pointer-events:none;
+/* Checkmate uses the EXACT same animated-image artwork as normal check.
+ * Red remains the original asset; green recolors its pixels without replacing
+ * the sprite with a flat radial-gradient highlight. Both sit behind the king. */
+.mentor-training .mentor-board .mentor-square.mentor-king-defeated::after,
+.mentor-training .mentor-board .mentor-square.mentor-king-victorious::after{
+ content:'';position:absolute;inset:0;
+ background:url('../assets/vfx/aura_red.png') center/100% 100% no-repeat!important;
+ opacity:.8!important;z-index:1;pointer-events:none;
  animation:mentor-mate-royal-aura 1.25s ease-in-out infinite alternate
 }
-.mentor-training .mentor-board .mentor-square.mentor-king-defeated::before{
- background:radial-gradient(ellipse,#ff333389 6%,#e92a2a55 46%,transparent 75%);
- box-shadow:0 0 17px 6px #e93839a6,inset 0 0 16px #fa4646bb
+.mentor-training .mentor-board .mentor-square.mentor-king-defeated::after{
+ filter:none
 }
-.mentor-training .mentor-board .mentor-square.mentor-king-victorious::before{
- background:radial-gradient(ellipse,#67ff9f96 6%,#28bd5a59 46%,transparent 75%);
- box-shadow:0 0 17px 6px #35e978ac,inset 0 0 16px #5cffa4bb
+.mentor-training .mentor-board .mentor-square.mentor-king-victorious::after{
+ filter:hue-rotate(125deg) saturate(1.5)
 }
 .mentor-training .mentor-board .mentor-king-defeated .mentor-piece.classic-piece,
 .mentor-training .mentor-board .mentor-king-defeated .rpchess-fantasy-piece,
@@ -551,8 +550,8 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
  .mentor-training .mentor-board .mentor-king-defeated .mentor-piece-fallback{
   animation:none;transform:rotate(90deg)!important
  }
- .mentor-training .mentor-board .mentor-square.mentor-king-defeated::before,
- .mentor-training .mentor-board .mentor-square.mentor-king-victorious::before{animation:none;opacity:1}
+ .mentor-training .mentor-board .mentor-square.mentor-king-defeated::after,
+ .mentor-training .mentor-board .mentor-square.mentor-king-victorious::after{animation:none;opacity:1!important}
 }
 /* Show the AI note before the learner answers the tactical question. */
 .mentor-training .mentor-ai-block{display:flex;flex-direction:column;gap:7px;min-width:0}
