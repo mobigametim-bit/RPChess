@@ -74,6 +74,33 @@ async function assertTileImage(page,cellId,relativePath){
   assert.equal(await mapSkin.getAttribute('aria-pressed'),'true');
   const atlas=page.locator('[data-kingdom-parchment]');
   assert.equal(await atlas.count(),1,'parchment must draw one continuous canvas behind clickable cells');
+  // Exercise actual uploaded sprites in the bundled dist, not just the
+  // procedural Canvas fallback that worked before the artist supplied art.
+  const artProbe=await page.evaluate(async()=>{
+    const files=[
+      'parchment_base_variations/01_light_ochre_plain.svg',
+      'forest_clusters/01_small_grove.svg',
+      'mountain_clusters/01_single_summit.svg',
+      'hills_rocks/01_three_hills.svg',
+      'road_segments/01_wide_we.svg',
+      'river_segments/01_horizontal_we.svg',
+      'fog_of_war_shapes/01_broad_blot.svg'
+    ];
+    return Promise.all(files.map(async file=>{
+      const src='assets/kingdom-parchment/'+file;
+      const response=await fetch(src,{cache:'no-store'});
+      if(!response.ok)return {file,status:response.status,decoded:false};
+      const img=new Image();img.src=src;
+      try{await img.decode();}catch{return {file,status:response.status,decoded:false};}
+      return {file,status:response.status,decoded:img.naturalWidth===128&&img.naturalHeight===128};
+    }));
+  });
+  for(const sprite of artProbe)assert.equal(sprite.status===200&&sprite.decoded,true,
+    'artist SVG must be shipped and decoded at 128px: '+sprite.file);
+  await page.waitForFunction(()=>
+    performance.getEntriesByType('resource').some(entry=>
+      entry.name.includes('/kingdom-parchment/forest_clusters/01_small_grove.svg')),
+    null,{timeout:15000});
   assert.equal(await page.locator('[data-kingdom-cell]').count(),77,
     'changing artwork cannot change the underlying 11x7 logical chess grid');
   const terrain=await atlas.evaluate(canvas=>{
