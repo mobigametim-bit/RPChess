@@ -38,7 +38,7 @@ const { pathToFileURL } = require('url');
   }
 
   const classic = read('js/classic-chess-app.mjs');
-  assert(classic.includes("from '../localization/classic-ui.mjs'") && classic.includes('classicT(currentLanguage()'), 'Classic must render through its semantic owner registry');
+  assert(/from '\.\.\/localization\/classic-ui\.mjs(?:\?v=[^']+)?'/.test(classic) && classic.includes('classicT(currentLanguage()'), 'Classic must render through its semantic owner registry');
   assert(classic.includes('subscribe(() => { renderStaticCopy(); render(); });'), 'Classic must rerender dynamic UI on language change');
   for (const literal of ['Локальная партия · два игрока', 'Ходов пока нет', 'Компьютер думает…']) assert(!classic.includes(literal), `Classic must not restore dynamic RU literal: ${literal}`);
 
