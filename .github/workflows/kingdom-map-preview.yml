@@ -67,6 +67,16 @@ jobs:
           path: test-results/kingdom-map
           retention-days: 7
           if-no-files-found: warn
+      # Temporary QA artifact: combine the tested game with the 112 supplied
+      # vector sprites outside GitHub to review their appearance before commit.
+      - name: Export playable parchment QA build
+        uses: actions/upload-artifact@v4
+        with:
+          name: kingdom-parchment-dist
+          path: dist/
+          retention-days: 3
+          compression-level: 1
+          if-no-files-found: error
       - name: Deploy isolated kingdom map
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
