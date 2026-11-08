@@ -1,7 +1,8 @@
 /* Journey's infinite kingdom map presentation. Existing encounter owners remain intact. */
 import {readRun,writeRun} from './run-persistence.mjs';
 import {readPlayerRating} from './player-rating.mjs';
-import {commanderPieceArt} from './commander-portraits.mjs';
+import {commanderPieceArt,commanderById} from './commander-portraits.mjs';
+import {raceBoardTiles} from './race-assets.mjs';
 import {difficultyForStars} from './encounter-difficulty.mjs';
 import {kingdomMapSprite} from './kingdom-map-assets.mjs';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
@@ -31,7 +32,8 @@ const WIDTH=9,HEIGHT=7,CENTER_X=4,CENTER_Y=3;
 let screen=null,selected=null,movement=null,camera=null,flightTimer=null,launchTimer=null,runId=null,toastTimer=null;
 function followCamera(point){
  if(!camera)camera={...point};
- const limitX=CENTER_X-1,limitY=CENTER_Y-1;
+ // With 2x zoom, follow vertically each step so the next row remains clickable.
+ const limitX=1,limitY=0;
  if(point.x-camera.x>limitX)camera.x=point.x-limitX;
  else if(point.x-camera.x < -limitX)camera.x=point.x+limitX;
  if(point.y-camera.y>limitY)camera.y=point.y-limitY;
@@ -43,7 +45,7 @@ function report(text){const node=screen?.querySelector('[data-kingdom-toast]');i
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261108-art-b1';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261108-terrain-c1';link.dataset.kingdomStyle='';
  document.head.append(link);
 }
 function screenReady(){
@@ -83,13 +85,15 @@ function showMap(){
 }
 function ensureMap(run){
  const power=readPlayerRating().power;
+ // Race comes from the stable named commander ID, never from the old castle placeholder.
+ const race=commanderById(run.commanderId).raceTag;
  if(validateKingdomMap(run.kingdomMap)&&run.kingdomMap.seed===run.id){
-  const map=updatePeak(run.kingdomMap,power);
+  const peaked=updatePeak(run.kingdomMap,power);
+  const map=peaked.castle.raceTag===race?peaked:
+   {...peaked,castle:{...peaked.castle,raceTag:race}};
   return map===run.kingdomMap?run:writeRun({...run,kingdomMap:map});
  }
- // No race is stored for current named commanders. Their existing starting
- // roster is human; map uses the human castle placeholder until race selection exists.
- return writeRun({...run,kingdomMap:createKingdomMap(run,power,run.kingdomRaceTag||'humans')});
+ return writeRun({...run,kingdomMap:createKingdomMap(run,power,race)});
 }
 function encounterResult(run,source,choice){
  if(!choice)return null;
@@ -157,12 +161,22 @@ function render(){
    const within=adjacent(map.king,point),here=id===keyOf(map.king.x,map.king.y);
    const edges=cell?.annexed?borderEdges(map,point):[];
    const btn=document.createElement('button');btn.type='button';btn.dataset.kingdomCell=id;
+   const light=(point.x+point.y)%2===0;
    btn.setAttribute('role','gridcell');btn.className='km-cell'+
-    (!cell?' km-cell--fog':' km-cell--'+cell.status)+
+    (light?' km-cell--light':' km-cell--dark')+
+    (!cell?' km-cell--fog':' km-cell--terrain km-cell--'+cell.status)+
     (cell?.annexed?' km-cell--annexed':'')+(within?' km-cell--adjacent':'')+
     (selected===id?' km-cell--selected':'')+(here?' km-cell--here':'')+
     edges.map(edge=>' km-edge-'+edge).join('');
    btn.style.setProperty('--km-index',String(row+3));
+   if(cell){
+    const race=isCastle?map.castle.raceTag:cell.selectedEncounter?.raceTag||cell.selectedEncounter?.enemyRaceTag;
+    const tiles=raceBoardTiles(race);
+    // Mixed/no-race events keep the neutral chessboard instead of masquerading as humans.
+    const tile=tiles?(light?tiles.light:tiles.dark):
+      'assets/boards/neutral/tile_'+(light?'light':'dark')+'.png';
+    btn.style.setProperty('--km-tile-image','url("'+tile+'")');
+   }
    btn.setAttribute('aria-label',isCastle?tr('castle'):cell?.selectedEncounter?
     t('travel.type.'+cell.selectedEncounter.type):tr('hidden'));
    if(!cell){const mark=document.createElement('strong');mark.textContent='?';mark.className='km-fog-mark';btn.append(mark);}
@@ -190,8 +204,9 @@ function render(){
  avatar.style.left=((map.king.x-view.x+CENTER_X+.5)*100/WIDTH)+'%';
  avatar.style.top=((map.king.y-view.y+CENTER_Y+.5)*100/HEIGHT)+'%';
  if(movement){
-  avatar.style.setProperty('--km-from-x',String((movement.x-map.king.x)*100)+'%');
-  avatar.style.setProperty('--km-from-y',String((movement.y-map.king.y)*100)+'%');
+  // King remains physically unzoomed: two king widths/heights per world tile.
+  avatar.style.setProperty('--km-from-x',String((movement.x-map.king.x)*200)+'%');
+  avatar.style.setProperty('--km-from-y',String((movement.y-map.king.y)*200)+'%');
  }
  world.append(avatar);
  const chosen=selected?map.cells[selected]:null;
