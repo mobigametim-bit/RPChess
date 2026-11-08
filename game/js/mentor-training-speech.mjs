@@ -9,8 +9,28 @@ function createMentorSpeech({getRoot,getLanguage,translate}){
  }
  function visibleText(){
   const root=getRoot();
-  if(!root||root.hidden||root.querySelector('.mentor-thinking'))return '';
-  return root.querySelector('.mentor-ai-explanation,.mentor-feedback-text')?.textContent?.trim()||'';
+  if(!root||root.hidden)return '';
+  const parts=[];
+  // The exercise text precedes the AI explanation in the spoken narration,
+  // even though the AI card is visually placed above the exercise panel.
+  const exercise=root.querySelector('.mentor-learning');
+  if(exercise){
+   for(const node of exercise.querySelectorAll(
+    '.mentor-learning-question,.mentor-learning-instruction,.mentor-learning-hint,'+
+    '.mentor-learning-answer,.mentor-learning-caveat'
+   )){
+    const words=node.textContent?.trim();
+    if(words)parts.push(words);
+   }
+  }
+  const explanation=root.querySelector('.mentor-ai-explanation')?.textContent?.trim();
+  if(explanation)parts.push(explanation);
+  // Ordinary comments are still read when no lesson or AI note is showing.
+  if(!parts.length){
+   const comment=root.querySelector('.mentor-feedback-text')?.textContent?.trim();
+   if(comment)parts.push(comment);
+  }
+  return parts.join(' ');
  }
  function buttonMarkup(){
   return '<button type="button" class="mentor-speech-button" data-mentor-action="speech"'+

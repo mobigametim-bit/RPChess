@@ -63,7 +63,7 @@ body.mentor-training-active{overflow:hidden}
 .mentor-center{grid-column:2;grid-row:2;display:flex;flex-direction:column;align-items:center;min-width:0;min-height:0;justify-content:center}
 .mentor-status{height:28px;line-height:25px;font-size:15px;color:#e4c894}
 .mentor-board-shell{--mb:min(82dvh,calc(100vw - 580px));position:relative;width:var(--mb);height:var(--mb);max-width:100%;flex:0 0 auto;padding:0 14px 14px 0}
-.mentor-board{display:grid;grid-template:repeat(8,minmax(0,1fr))/repeat(8,minmax(0,1fr));height:100%;width:100%;border:2px solid #a07d3b;box-shadow:0 12px 30px #0009}
+.mentor-board{position:relative;isolation:isolate;display:grid;grid-template:repeat(8,minmax(0,1fr))/repeat(8,minmax(0,1fr));height:100%;width:100%;border:2px solid #a07d3b;box-shadow:0 12px 30px #0009}
 .mentor-square{padding:0;border:0;position:relative;display:grid;place-items:center;aspect-ratio:1;min-width:0;min-height:0}
 .mentor-square.is-light{background:#e2d3ad}.mentor-square.is-dark{background:#807052}
 .mentor-square.is-last{box-shadow:inset 0 0 0 80px #e0b65140}
@@ -443,24 +443,25 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
  background:radial-gradient(ellipse,#66f78977 0%,#24b75d31 48%,transparent 72%);
  box-shadow:0 0 18px 9px #39e77b99,inset 0 0 20px #81f3aabb
 }
-.mentor-training .mentor-lesson-burst{
- position:absolute;left:50%;bottom:65%;z-index:30;pointer-events:none;
- width:max-content;max-width:min(430px,78vw);min-width:min(240px,64vw);
- padding:4px 10px;text-align:center;white-space:normal;
+.mentor-training .mentor-board-burst{
+ position:absolute;left:var(--fly-from-x);top:var(--fly-from-y);z-index:42;
+ width:max-content;max-width:83%;min-width:0;
+ padding:4px 10px;text-align:center;white-space:normal;overflow-wrap:break-word;
+ pointer-events:none;
  font-family:Arial,sans-serif!important;font-weight:900;
- font-size:clamp(23px,2.9vw,43px);line-height:1.1;
- transform-origin:center bottom;
- animation:mentor-lesson-fly 1.2s ease-out both
+ font-size:clamp(19px,2.9vw,40px);line-height:1.14;
+ transform:translate(-50%,-50%);
+ animation:mentor-feedback-to-center 1.2s ease-out both
 }
-.mentor-training .mentor-lesson-burst--wrong{
- color:#ff6666;text-shadow:0 2px 4px #220101,0 0 10px #d92020,1px 1px #100606
+.mentor-training .mentor-board-burst.mentor-lesson-burst--wrong{
+ color:#ff7774;text-shadow:0 2px 4px #220101,0 0 12px #d92020,1px 1px #100606
 }
-.mentor-training .mentor-lesson-burst--correct{
- color:#81f5a0;text-shadow:0 2px 4px #092010,0 0 10px #32b858,1px 1px #06140a
+.mentor-training .mentor-board-burst.mentor-lesson-burst--correct{
+ color:#91ffaf;text-shadow:0 2px 4px #092010,0 0 12px #32b858,1px 1px #06140a
 }
-.mentor-training .mentor-lesson-burst--correction{
- font-size:clamp(17px,2vw,25px);max-width:min(450px,80vw);min-width:0;
- line-height:1.18;overflow-wrap:normal;animation-duration:3.6s
+.mentor-training .mentor-board-burst--correction{
+ font-size:clamp(15px,2vw,24px);line-height:1.2;animation-duration:3.6s;
+ max-width:92%
 }
 @keyframes mentor-lesson-pulse{
  0%{opacity:0;transform:scale(.65)}
@@ -469,26 +470,16 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
  60%{opacity:1;transform:scale(1.12)}
  100%{opacity:0;transform:scale(1.25)}
 }
-@keyframes mentor-lesson-fly{
- 0%{opacity:0;transform:translate(-50%,16px) scale(.72)}
- 16%{opacity:1;transform:translate(-50%,-7px) scale(1.07)}
- 76%{opacity:1;transform:translate(-50%,-45px) scale(1)}
- 100%{opacity:0;transform:translate(-50%,-75px) scale(1.03)}
-}
-/* Edge-rank feedback descends rather than flying outside the chessboard. */
-.mentor-training .mentor-lesson-burst--down{
- top:70%;bottom:auto;transform-origin:center top;animation-name:mentor-lesson-fly-down
-}
-@keyframes mentor-lesson-fly-down{
- 0%{opacity:0;transform:translate(-50%,-12px) scale(.72)}
- 16%{opacity:1;transform:translate(-50%,6px) scale(1.07)}
- 76%{opacity:1;transform:translate(-50%,46px) scale(1)}
- 100%{opacity:0;transform:translate(-50%,74px) scale(1.03)}
+@keyframes mentor-feedback-to-center{
+ 0%{opacity:0;left:var(--fly-from-x);top:var(--fly-from-y);transform:translate(-50%,-50%) scale(.65)}
+ 15%{opacity:1;left:var(--fly-from-x);top:var(--fly-from-y);transform:translate(-50%,-50%) scale(1)}
+ 78%{opacity:1;left:50%;top:50%;transform:translate(-50%,-50%) scale(1.07)}
+ 94%{opacity:1;left:50%;top:50%;transform:translate(-50%,-50%) scale(1)}
+ 100%{opacity:0;left:50%;top:50%;transform:translate(-50%,-50%) scale(1)}
 }
 @media(prefers-reduced-motion:reduce){
  .mentor-training .mentor-lesson-aura{animation:none;opacity:.8}
- .mentor-training .mentor-lesson-burst{animation:none;opacity:1;transform:translate(-50%,-28px)}
- .mentor-training .mentor-lesson-burst--down{transform:translate(-50%,28px)}
+ .mentor-training .mentor-board-burst{animation:none;left:50%;top:50%;opacity:1;transform:translate(-50%,-50%)}
 }
 
 /* Stage 5: voluntary correction of the learner's own move. The board is a
@@ -524,4 +515,56 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
 }
 @media(max-width:720px){
  .mentor-training .mentor-learning-mentor-note{font-size:18px;letter-spacing:.035em;padding:10px 11px}
+}
+
+
+/* Checkmate uses the EXACT same animated-image artwork as normal check.
+ * Red remains the original asset; green recolors its pixels without replacing
+ * the sprite with a flat radial-gradient highlight. Both sit behind the king. */
+.mentor-training .mentor-board .mentor-square.mentor-king-defeated::after,
+.mentor-training .mentor-board .mentor-square.mentor-king-victorious::after{
+ content:'';position:absolute;inset:0;
+ background:url('../assets/vfx/aura_red.png') center/100% 100% no-repeat!important;
+ opacity:.8!important;z-index:1;pointer-events:none;
+ animation:mentor-mate-royal-aura 1.25s ease-in-out infinite alternate
+}
+.mentor-training .mentor-board .mentor-square.mentor-king-defeated::after{
+ filter:none
+}
+.mentor-training .mentor-board .mentor-square.mentor-king-victorious::after{
+ filter:hue-rotate(125deg) saturate(1.5)
+}
+.mentor-training .mentor-board .mentor-king-defeated .mentor-piece.classic-piece,
+.mentor-training .mentor-board .mentor-king-defeated .rpchess-fantasy-piece,
+.mentor-training .mentor-board .mentor-king-defeated .mentor-piece-fallback{
+ transform-origin:50% 50%;
+ animation:mentor-mate-king-fall .55s cubic-bezier(.2,.6,.2,1) both
+}
+@keyframes mentor-mate-king-fall{
+ 0%{transform:rotate(0deg)}100%{transform:rotate(90deg)}
+}
+@keyframes mentor-mate-royal-aura{from{opacity:.62}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){
+ .mentor-training .mentor-board .mentor-king-defeated .mentor-piece.classic-piece,
+ .mentor-training .mentor-board .mentor-king-defeated .rpchess-fantasy-piece,
+ .mentor-training .mentor-board .mentor-king-defeated .mentor-piece-fallback{
+  animation:none;transform:rotate(90deg)!important
+ }
+ .mentor-training .mentor-board .mentor-square.mentor-king-defeated::after,
+ .mentor-training .mentor-board .mentor-square.mentor-king-victorious::after{animation:none;opacity:1!important}
+}
+/* Show the AI note before the learner answers the tactical question. */
+.mentor-training .mentor-ai-block{display:flex;flex-direction:column;gap:7px;min-width:0}
+/* The mentor rail scrolls as a whole. Do not squeeze its children when the
+ * early AI explanation and the Stockfish variation occupy more than one screen. */
+.mentor-training .mentor-feedback > .mentor-ai-block,
+.mentor-training .mentor-feedback > .mentor-learning,
+.mentor-training .mentor-feedback > .mentor-variation{
+ flex:0 0 auto
+}
+.mentor-training .mentor-ai-label{font-size:clamp(15px,1.3vw,19px);color:#f1cb85}
+.mentor-training .mentor-ai-waiting{
+ margin:0;padding:9px 11px;border-left:3px solid #d7b773;
+ border-radius:4px;color:#e2c590;background:#41342399;
+ font-size:clamp(15px,1.3vw,18px)
 }

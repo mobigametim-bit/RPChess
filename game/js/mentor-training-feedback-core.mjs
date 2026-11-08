@@ -2,7 +2,7 @@
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { trainingMoveQuality, UCI } from './mentor-training-history.mjs';
 import {tacticalEvidence,MAX_PV} from './mentor-training-tactics.mjs?v=20261107-mentor-auto-pause-v3';
-import {lessonFromVerified,mentorLessonCopy} from './mentor-training-teaching.mjs?v=20261107-mentor-auto-pause-v3';
+import {lessonFromVerified,mentorLessonCopy} from './mentor-training-teaching.mjs?v=20261108-figure-wording-v2';
 
 const GRADE_SET=new Set(['inaccuracy','mistake','blunder']);
 const RU={p:'пешку',n:'коня',b:'слона',r:'ладью',q:'ферзя',k:'короля'};
@@ -120,10 +120,10 @@ function describeMentorFact(data,language=data.language){
    :time+' твой '+piece+' может оказаться связан с королём. Подумай, как избежать связки.';
  }
  if(kind==='material_loss'){
-  const piece=en?(EN_TARGET[event?.piece]||'material'):(RU_TARGET[event?.piece]||'материал');
+  const piece=en?(EN_TARGET[event?.piece]||'piece'):(RU_TARGET[event?.piece]||'фигуру');
   return en
    ?time+', the opponent may win material, including a '+piece+'. Check which piece may become vulnerable.'
-   :time+' соперник может выиграть материал, в том числе '+piece+'. Проверь, какая фигура может оказаться под ударом.';
+   :time+' соперник может забрать '+piece+'. Проверь, как можно предотвратить это взятие.';
  }
  if(kind==='capture')return en
   ?'Your opponent can capture a piece immediately. See what was left unprotected.'

@@ -1,0 +1,99 @@
+name: Mentor instant AI and checkmate VFX preview
+
+on:
+  push:
+    branches: [fix/mentor-immediate-explanation-mate-vfx-20261108]
+    paths:
+      - '.github/workflows/mentor-instant-ai-checkmate-preview.yml'
+      - 'game/**'
+      - 'tests/mentor-training-browser.cjs'
+      - 'tests/mentor-training-feedback.cjs'
+      - 'tests/localization-owner-contract.cjs'
+      - 'tests/classic-chess-static.cjs'
+      - 'docs/features/MENTOR_CHESS_VISION_ROADMAP.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rpchess-mentor-lesson-mate-preview
+  cancel-in-progress: true
+
+jobs:
+  gate-and-preview:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/fix/mentor-immediate-explanation-mate-vfx-20261108'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Canonical regression and optimized static build
+        run: |
+          npm ci --no-audit --no-fund
+          npm run gate:local
+      - name: Mentor Chromium regression for early AI and mate animation
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+          RPCHESS_BROWSER_TEST=mentor-training-browser.cjs npm run test:browser
+      - name: Preserve screenshot artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mentor-lesson-mate-screenshots
+          path: test-results/mentor-training
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Deploy isolated static Mentor preview
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          test "$(grep -m 1 '^name =' mentor-evidence-preview/wrangler.toml)" = 'name = "rpchess-mentor-training-preview"'
+          npx wrangler deploy --config mentor-evidence-preview/wrangler.toml
+      - name: Verify published static artifacts
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          (async()=>{
+           const base='https://rpchess-mentor-training-preview.mobigametim.workers.dev';
+           let ready=false;
+           for(let i=0;i<12;i++){
+            try{
+             const res=await fetch(base+'/?mentor_scene=20261108-v1',{cache:'no-store'});
+             assert.equal(res.status,200);
+             const html=await res.text();
+             assert(html.includes('mentor-training-app.mjs?v=20261108-task-narration-v2'));
+             assert(html.includes('mentor-training.css?v=20261108-king-check-aura-v2'));
+             const [js,css]=await Promise.all([
+              fetch(base+'/js/mentor-training-app.mjs',{cache:'no-store'}),
+              fetch(base+'/css/mentor-training.css',{cache:'no-store'})
+             ]);
+             assert.equal(js.status,200);
+             assert.equal(css.status,200);
+             assert((await js.text()).includes('scheduleMateResult'));
+             assert((await css.text()).includes('mentor-feedback-to-center'));
+             console.log('Mentor instant AI/checkmate static preview: PASS');
+             ready=true;break;
+            }catch(error){
+             console.log('Preview propagation '+(i+1)+'/12: '+error.message);
+             if(i<11)await new Promise(resolve=>setTimeout(resolve,3000));
+            }
+           }
+           assert(ready,'Mentor scene preview did not update');
+          })().catch(err=>{console.error(err);process.exitCode=1});
+          NODE

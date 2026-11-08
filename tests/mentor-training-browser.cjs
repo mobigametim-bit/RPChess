@@ -99,19 +99,24 @@ fs.mkdirSync(output,{recursive:true});
   const englishVoice=await page.evaluate(async()=>{
    const {createMentorSpeech}=await import('./js/mentor-training-speech.mjs');
    const panel=document.createElement('section');
-   panel.innerHTML='<p class="mentor-feedback-text">Check the next move.</p>';
+   panel.innerHTML='<section class="mentor-learning">'+
+    '<strong class="mentor-learning-question">Which piece can take the undefended piece?</strong>'+
+    '<p class="mentor-learning-instruction">Tap an opponent piece on the board.</p></section>'+
+    '<span class="mentor-thinking">Thinking…</span>';
    const narration=createMentorSpeech({
     getRoot:()=>panel,getLanguage:()=> 'en',translate:key=>key
    });
    panel.insertAdjacentHTML('beforeend',narration.buttonMarkup());
    narration.toggle();
    const selection={name:window.__mentorSpeechLast.voice?.name,
-    lang:window.__mentorSpeechLast.lang,rate:window.__mentorSpeechLast.rate};
+    lang:window.__mentorSpeechLast.lang,rate:window.__mentorSpeechLast.rate,
+    text:window.__mentorSpeechLast.text};
    narration.stop();
    return selection;
   });
-  assert.deepEqual(englishVoice,{name:'Google UK English Male',lang:'en-GB',rate:1.5},
-   'Google UK English Male is preferred and utterance uses its actual locale');
+  assert.deepEqual(englishVoice,{name:'Google UK English Male',lang:'en-GB',rate:1.5,
+   text:'Which piece can take the undefended piece? Tap an opponent piece on the board.'},
+   'English instruction must be readable even when the AI is still thinking');
   await speak.click();
   assert.equal(await speak.getAttribute('aria-pressed'),'false');
   assert((await page.evaluate(()=>window.__mentorSpeechEvents)).some(e=>e.type==='cancel'));
@@ -257,7 +262,40 @@ fs.mkdirSync(output,{recursive:true});
   await page.locator('[data-mentor-square="g4"]').click();
   await page.waitForFunction(()=>window.__mentorDepthSearch.includes('go movetime 1700'),null,{timeout:30000});
   await page.waitForFunction(()=>window.RPChessMentorTraining.state.lesson==='mate_sequence',null,{timeout:30000});
-  assert.equal(mockedMentorCalls,0,'no paid LLM request until the learner answers');
+  const observed=await mentorRequest;
+  const detail=observed.postDataJSON();
+  assert.equal(detail.version,2);
+  assert.equal(detail.grade,'blunder','winning-chance grade is shared with API');
+  assert(detail.continuation?.depth>=7,'only deep verified tactics reach paid mentor');
+  assert.equal(detail.continuation.pv[0],'d8h4');
+  assert.equal(detail.verifiedThreat.kind,'mate_sequence');
+  await page.waitForFunction(()=>document.querySelector('[data-mentor-action="retry-explanation"]')&&
+   window.RPChessMentorTraining.state.moves[2]?.mentorSource==='fallback',null,{timeout:15000});
+  assert.equal(mockedMentorCalls,1,'first request arrives before the learner has answered');
+  const afterFailure=await page.evaluate(()=>window.RPChessMentorTraining.state.moves[2]);
+  assert.equal(afterFailure.mentorReason,'broker_timeout');
+  await page.locator('[data-mentor-action="retry-explanation"]').click();
+  await page.waitForFunction(()=>window.RPChessMentorTraining.state.moves[2]?.mentorSource==='minimax',null,{timeout:15000});
+  const afterSuccess=await page.evaluate(()=>window.RPChessMentorTraining.state.moves[2]);
+  assert.equal(afterSuccess.mentorModel,'MiniMaxAI/MiniMax-M2.7');
+  assert.equal(mockedMentorCalls,2,'manual retry uses the stored verified v2 fact');
+  assert.equal(await page.locator('.mentor-ai-label').textContent(),'Объяснение ИИ');
+  assert((await page.locator('.mentor-ai-explanation').textContent()).includes('Перед ходом проверяй'),
+   'AI text is visible while the tactical question is still unanswered');
+  assert.equal(await page.locator('.mentor-learning-question').count(),1,
+   'the verified question remains interactive beneath the AI text');
+  const taskQuestion=(await page.locator('.mentor-learning-question').textContent()).trim();
+  const taskInstruction=(await page.locator('.mentor-learning-instruction').textContent()).trim();
+  const taskExplanation=(await page.locator('.mentor-ai-explanation').textContent()).trim();
+  assert.equal(taskInstruction,'Нажми на фигуру соперника на доске.');
+  assert(!/материал|материаль/i.test(taskQuestion));
+  await page.locator('[data-mentor-action="speech"]').click();
+  const spokenTask=await page.evaluate(()=>window.__mentorSpeechLast.text);
+  assert.equal(spokenTask,[taskQuestion,taskInstruction,taskExplanation].join(' '),
+   'unsolved question and instruction must be narrated before the visible AI advice');
+  assert.equal(mockedMentorCalls,2,'speaking task and AI must not call provider again');
+  await page.locator('[data-mentor-action="speech"]').click();
+  assert.equal(await page.locator('[data-mentor-action="speech"]').getAttribute('aria-pressed'),'false');
   assert.equal(await page.locator('[data-mentor-action="correction-start"]').count(),0,
    'improvement exercise is not visible before the learner solves the threat');
   // An inaccurate move keeps the rival on move without letting it reply.
@@ -277,15 +315,22 @@ fs.mkdirSync(output,{recursive:true});
   assert(lessonBoardBounds?.width<=390,'paused lesson board fits a portrait phone');
   await page.screenshot({path:path.join(output,'battle-automatic-lesson-portrait.png'),animations:'disabled'});
   await page.locator('[data-mentor-square="e8"]').click();
-  assert.equal(mockedMentorCalls,0,'incorrect piece selection does not reveal or bill the LLM');
+  assert.equal(mockedMentorCalls,2,'incorrect guess does not issue additional LLM requests');
   assert(await page.locator('[data-mentor-square="e8"] .mentor-lesson-aura--wrong').count(),
    'wrong rival piece flashes with red aura');
-  assert((await page.locator('[data-mentor-square="e8"] .mentor-lesson-burst--wrong').textContent())
+  assert((await page.locator('[data-mentor-board-burst="e8"].mentor-lesson-burst--wrong').textContent())
    .includes('Это другая фигура.'),'large red text emerges from the incorrect piece');
   assert.equal(await page.locator('.mentor-learning-response').count(),0,
    'click feedback never duplicates in the mentor panel');
-  assert.equal(await page.locator('[data-mentor-square="e8"] .mentor-lesson-burst--down').count(),1,
-   'top-rank wrong answer must fly downward');
+  assert.equal(await page.locator('[data-mentor-board-burst="e8"]').count(),1,
+   'top-rank wrong answer must fly to board center');
+  const pathToCenter=await page.locator('[data-mentor-board-burst="e8"]').evaluate(node=>({
+   animation:getComputedStyle(node).animationName,
+   final:node.getAnimations()[0]?.effect?.getKeyframes()?.at(-1)
+  }));
+  assert.equal(pathToCenter.animation,'mentor-feedback-to-center');
+  assert.equal(pathToCenter.final.left,'50%');
+  assert.equal(pathToCenter.final.top,'50%');
   await page.screenshot({path:path.join(output,'battle-wrong-red-aura-portrait.png'),animations:'disabled'});
   await page.setViewportSize({width:1280,height:800});
   await page.locator('[data-mentor-action="lesson-hint"]').click();
@@ -293,39 +338,26 @@ fs.mkdirSync(output,{recursive:true});
   await page.locator('[data-mentor-square="d8"]').click();
   assert(await page.locator('[data-mentor-square="d8"] .mentor-lesson-aura--correct').count(),
    'correct rival piece flashes with green aura');
-  assert((await page.locator('[data-mentor-square="d8"] .mentor-lesson-burst--correct').textContent())
+  assert((await page.locator('[data-mentor-board-burst="d8"].mentor-lesson-burst--correct').textContent())
    .includes('Верно, ты нашёл нужную фигуру!'),'green confirmation emerges from the chosen queen');
-  assert.equal(await page.locator('[data-mentor-square="d8"] .mentor-lesson-burst--down').count(),1,
-   'top-rank right answer must fly downward');
-  const observed=await mentorRequest;
-  const detail=observed.postDataJSON();
-  assert.equal(detail.version,2);
-  assert.equal(detail.grade,'blunder','winning-chance grade is shared with API');
-  assert(detail.continuation?.depth>=7,'only deep verified tactics reach paid mentor');
-  assert.equal(detail.continuation.pv[0],'d8h4');
-  assert.equal(detail.verifiedThreat.kind,'mate_sequence');
-  await page.waitForFunction(()=>document.querySelector('[data-mentor-action="retry-explanation"]')&&
-   window.RPChessMentorTraining.state.moves[2]?.mentorSource==='fallback',null,{timeout:15000});
-  assert.equal(mockedMentorCalls,1,'first request begins only after correct answer');
-  const afterFailure=await page.evaluate(()=>window.RPChessMentorTraining.state.moves[2]);
-  assert.equal(afterFailure.mentorReason,'broker_timeout');
-  await page.locator('[data-mentor-action="retry-explanation"]').click();
-  await page.waitForFunction(()=>window.RPChessMentorTraining.state.moves[2]?.mentorSource==='minimax',null,{timeout:15000});
-  const afterSuccess=await page.evaluate(()=>window.RPChessMentorTraining.state.moves[2]);
-  assert.equal(afterSuccess.mentorModel,'MiniMaxAI/MiniMax-M2.7');
-  assert.equal(mockedMentorCalls,2,'manual retry uses the stored verified v2 fact');
+  assert.equal(await page.locator('[data-mentor-board-burst="d8"]').count(),1,
+   'top-rank right answer must fly to board center');
+
   assert((await page.locator('.mentor-learning-mentor-note').textContent()).includes('Перед ходом проверяй'));
   const displayedNarration=(await page.locator('[data-mentor-ai-explanation]').textContent()).trim();
+  const visibleAnswer=await page.locator('.mentor-learning-answer,.mentor-learning-caveat').allTextContents();
+  assert.equal(visibleAnswer.length,2,'revealed verified solution and its caveat are visible');
   const callsBeforeNarration=mockedMentorCalls;
   await page.locator('[data-mentor-action="speech"]').click();
   const narration=await page.evaluate(()=>window.__mentorSpeechLast.text);
-  assert.equal(narration,displayedNarration,'TTS reads the displayed AI explanation verbatim');
+  assert.equal(narration,[...visibleAnswer.map(s=>s.trim()),displayedNarration].join(' '),
+   'TTS reads the revealed answer and explanation verbatim, in that order');
   assert.equal(mockedMentorCalls,callsBeforeNarration,'speech must not make another Gonka request');
   assert.equal(await page.locator('[data-mentor-action="speech"]').getAttribute('aria-pressed'),'true');
   await page.evaluate(()=>window.__mentorSpeechLast.onend());
   assert.equal(await page.locator('[data-mentor-action="speech"]').getAttribute('aria-pressed'),'false',
    'completed speech resets the toggle');
-  assert.equal(await page.locator('.mentor-feedback-grade + .mentor-ai-explanation').count(),1,
+  assert.equal(await page.locator('.mentor-feedback-grade + .mentor-ai-block .mentor-ai-explanation').count(),1,
    'independent AI explanation must follow error grade');
   assert.equal(await page.locator('.mentor-learning .mentor-learning-mentor-note').count(),0);
   const mentorNoteMetrics=await page.locator('.mentor-ai-explanation').evaluate(el=>({
@@ -334,7 +366,7 @@ fs.mkdirSync(output,{recursive:true});
   }));
   assert(mentorNoteMetrics.size>=18&&mentorNoteMetrics.tracking>0,'AI text font/tracking increased');
   assert(await page.locator('[data-mentor-square="d8"] .mentor-lesson-aura--correct').count()||afterSuccess,
-   'correct rival piece is verified and AI advice arrives only after answering');
+   'correct rival piece is verified and the early AI advice remains visible');
 
   await page.waitForFunction(()=>document.querySelector('.mentor-learning-answer')?.textContent?.includes('d8–h4')
    &&document.querySelector('[data-mentor-square="h4"].mentor-lesson-target'),null,{timeout:4000});
@@ -371,10 +403,10 @@ fs.mkdirSync(output,{recursive:true});
   const correctionSquare=bestCorrection.slice(2,4);
   assert.equal(await page.locator('.mentor-correction-result.is-correct').count(),0,
    'successful move message must emerge from the figure, not duplicate in mentor panel');
-  assert.equal((await page.locator('[data-mentor-square="'+correctionSquare+'"] .mentor-lesson-burst--correct').textContent()).trim(),
+  assert.equal((await page.locator('[data-mentor-board-burst="'+correctionSquare+'"].mentor-lesson-burst--correct').textContent()).trim(),
    'Хорошее решение!','corrected figure emits short green praise');
-  assert.equal(await page.locator('[data-mentor-square="'+correctionSquare+'"] .mentor-lesson-burst--down').count(),
-   ['1','2','7','8'].includes(correctionSquare[1])?1:0,'correction burst follows rank rule');
+  assert.equal(await page.locator('[data-mentor-board-burst="'+correctionSquare+'"]').count(),
+   1,'correction burst heads to center at any rank');
   assert.deepEqual(await page.evaluate(()=>window.RPChessMentorTraining.state.moves.map(m=>m.uci)),
    originalGame.moves.map(m=>m.uci),'successful practice must not replace the real game');
   await page.screenshot({path:path.join(output,'battle-correction-success.png'),animations:'disabled'});
@@ -397,11 +429,11 @@ fs.mkdirSync(output,{recursive:true});
   await page.waitForFunction(()=>window.RPChessMentorTraining.state.correction?.outcome==='wrong',null,{timeout:12000});
   assert.equal(await page.locator('.mentor-correction-result.is-wrong').count(),0,
    'rejected correction must not be repeated in the mentor panel');
-  assert((await page.locator('[data-mentor-square="g2"] .mentor-lesson-burst--wrong').textContent())
+  assert((await page.locator('[data-mentor-board-burst="g2"].mentor-lesson-burst--wrong').textContent())
    .includes('недостаточно улучшает позицию'),
    'red rejected-move feedback emerges from the original piece');
-  assert.equal(await page.locator('[data-mentor-square="g2"] .mentor-lesson-burst--down').count(),1,
-   'feedback on the second rank flies downward');
+  assert.equal(await page.locator('[data-mentor-board-burst="g2"]').count(),1,
+   'feedback on the second rank flies to board center');
   assert.equal((await page.evaluate(()=>window.RPChessMentorTraining.state)).moves.length,3);
   const hintButton=page.locator('[data-mentor-action="correction-strong"]');
   assert.equal(await hintButton.isDisabled(),true,'new correction has its own 10-second delay');
@@ -477,15 +509,53 @@ fs.mkdirSync(output,{recursive:true});
   assert(checkVfx.auraLayer<checkVfx.simpleLayer,'red check aura must be BEHIND the simplified king');
   assert.equal(await page.locator('[data-mentor-result]').count(),0,'a check without mate must not end the game');
   await page.screenshot({path:path.join(output,'battle-red-check-aura.png'),animations:'disabled'});
-  // Scholar's mate: the player makes the final move, game ends instantly,
-  // without awaiting the move-evaluation worker or a paid Gonka call.
+  // Scholar's mate: the move is final immediately, but the result dialog
+  // waits for the two royal auras and the defeated king's fall (3 seconds).
   const mateSetup=['e2e4','e7e5','d1h5','b8c6','f1c4','g8f6'];
   await saveMentorPosition(mateSetup);
   await page.reload({waitUntil:'domcontentloaded'});
   await page.locator('[data-mentor-open]').click();
   await page.locator('[data-mentor-square="h5"]').click();
+  const mateClickAt=Date.now();
   await page.locator('[data-mentor-square="f7"]').click();
+  assert.equal(await page.locator('[data-mentor-result]').count(),0,
+   'the result window must not appear immediately after the final move');
+  const loser=page.locator('[data-mentor-square="e8"].mentor-king-defeated');
+  const victor=page.locator('[data-mentor-square="e1"].mentor-king-victorious');
+  assert.equal(await loser.count(),1,'losing king marked defeated');
+  assert.equal(await victor.count(),1,'winning king marked victorious');
+  const kings=await page.evaluate(()=>{
+   const losing=document.querySelector('.mentor-king-defeated');
+   const winning=document.querySelector('.mentor-king-victorious');
+   const red=getComputedStyle(losing,'::after');
+   const green=getComputedStyle(winning,'::after');
+   const kingStyle=getComputedStyle(losing.querySelector('.mentor-piece'));
+   return {fall:kingStyle.animationName,red:red.backgroundImage,
+    green:green.backgroundImage,redFilter:red.filter,greenFilter:green.filter,
+    redZ:Number(red.zIndex),greenZ:Number(green.zIndex),
+    kingZ:Number(kingStyle.zIndex)};
+  });
+  assert.equal(kings.fall,'mentor-mate-king-fall');
+  assert(kings.red.includes('aura_red.png'),'loser uses the original red CHECK aura sprite');
+  assert(kings.green.includes('aura_red.png'),'winner uses the SAME CHECK aura sprite');
+  assert(!kings.red.includes('radial-gradient')&&!kings.green.includes('radial-gradient'),
+   'mate uses actual artwork, not CSS radial glow');
+  assert.equal(kings.redFilter,'none','losing king keeps the original red tint');
+  assert(kings.greenFilter.includes('hue-rotate(125deg)'),
+   'winning king recolors the existing check aura sprite green');
+  assert(kings.redZ<kings.kingZ&&kings.greenZ<kings.kingZ,
+   'both aura sprites must be behind the chess pieces');
+  await page.waitForTimeout(1200);
+  assert.equal(await page.locator('[data-mentor-result]').count(),0,
+   'royal animations remain visible before the result dialog');
+  const matrix=await loser.locator('.mentor-piece').evaluate(node=>getComputedStyle(node).transform);
+  const angle=matrix.startsWith('matrix(')&&matrix.endsWith(')')
+   ?matrix.slice(7,-1).split(',').map(Number):null;
+  assert(angle&&Math.abs(angle[0])<.03&&Math.abs(angle[1]-1)<.03&&
+   Math.abs(angle[2]+1)<.03&&Math.abs(angle[3])<.03,
+   'defeated king must lie at 90 degrees: '+matrix);
   await page.locator('[data-mentor-result] h2').waitFor({timeout:15000});
+  assert(Date.now()-mateClickAt>=2700,'the result must wait approximately three seconds');
   assert.equal((await page.locator('[data-mentor-result] h2').textContent()).trim(),'Победа!');
   assert.equal(await page.locator('.mentor-result-actions button').count(),3);
   const actions=await page.locator('.mentor-result-actions button').allTextContents();
@@ -520,7 +590,8 @@ fs.mkdirSync(output,{recursive:true});
   await page.reload({waitUntil:'domcontentloaded'});
   await page.locator('[data-mentor-open]').click();
   assert.equal((await page.locator('[data-mentor-result] h2').textContent()).trim(),'Поражение');
-  assert.equal(await page.locator('[data-mentor-square="e1"].is-check').count(),1);
+  assert.equal(await page.locator('[data-mentor-square="e1"].is-check.mentor-king-defeated').count(),1);
+  assert.equal(await page.locator('[data-mentor-square="e8"].mentor-king-victorious').count(),1);
   await page.locator('.mentor-result-actions [data-mentor-action="leave"]').click();
   assert.equal(await page.locator('[data-mentor-screen]:not([hidden])').count(),0,
    'Main menu button leaves mentor training');

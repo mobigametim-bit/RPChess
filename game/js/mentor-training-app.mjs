@@ -6,13 +6,13 @@ import { attachPieceDrag } from './piece-drag.mjs';
 import { applyPinIce } from './king-pin-ice.mjs';
 import { makeToggle, syncToggles } from './board-view-toggle.mjs';
 import { createMentorMotion } from './mentor-training-motion.mjs';
-import { createMentorSpeech } from './mentor-training-speech.mjs?v=20261108-tts-speed-v3';
+import { createMentorSpeech } from './mentor-training-speech.mjs?v=20261108-task-narration-v2';
 import { fantasyPieceMarkup } from './fantasy-piece.mjs';
 import { currentLanguage, subscribe } from './i18n.mjs';
 import { TRAINING_MENTORS, UCI, rebuildTraining, extendTraining, trainingMoveQualityWinChance } from './mentor-training-history.mjs';
-import {buildMentorV2Payload,requestMentorV2Text} from './mentor-training-feedback-client.mjs?v=20261108-en-validation-v4';
-import {validatedV2Facts,localMentorV2Fallback} from './mentor-training-feedback-v2.mjs?v=20261108-en-validation-v4';
-import {mentorLessonCopy,validateLessonGuess} from './mentor-training-teaching.mjs?v=20261107-mentor-auto-pause-v3';
+import {buildMentorV2Payload,requestMentorV2Text} from './mentor-training-feedback-client.mjs?v=20261108-figure-wording-v2';
+import {validatedV2Facts,localMentorV2Fallback} from './mentor-training-feedback-v2.mjs?v=20261108-figure-wording-v2';
+import {mentorLessonCopy,validateLessonGuess} from './mentor-training-teaching.mjs?v=20261108-figure-wording-v2';
 import {thinkingText,praiseText,fallbackText} from './mentor-training-copy.mjs';
 import {POS,TACTIC,quickThreatProbe,verifyImmediateThreat} from './mentor-training-threat.mjs?v=20261107-mentor-stage4-v1';
 
@@ -22,8 +22,8 @@ const DEEP_PV_LIMIT=20;
 const ROLES={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
 const SYMBOLS={w:{p:'♙',n:'♘',b:'♗',r:'♖',q:'♕',k:'♔'},b:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'}};
 const TEXT={
- ru:{title:'Тренировка с наставником',back:'Главное меню',mentor:'Наставник',mentorThinking:'Думаю…',mentorSpeak:'Озвучить текст наставника',mentorStopSpeech:'Остановить озвучивание',mentorSpeechUnavailable:'Озвучивание недоступно в этом браузере',lesson:'Проверить себя',lessonHint:'Подсказка',lessonShow:'Показать ответ',lessonExit:'Продолжить партию',lessonAskAI:'Попросить совет наставника',correctionStart:'Исправить ход',correctionTitle:'Попробуй исправить свой ход',correctionInstruction:'Это учебная позиция до ошибки. Выбери более сильный ход на доске — сыгранная партия останется неизменной.',correctionChecking:'Проверяю твой ход…',correctionGood:'Хорошее решение!',correctionWrong:'Этот ход недостаточно улучшает позицию. Попробуй другое продолжение.',correctionUnavailable:'Не удалось проверить этот ход. Можешь попробовать снова или продолжить партию.',correctionBack:'К объяснению',correctionAgain:'Другой вариант',correctionStrong:'Сильный ход',correctionBest:'Лучший ход Stockfish:',correctionBoard:'Найди более сильный ход',lessonBoard:'Найди ответ соперника',lessonPending:'Наставник ищет опасное продолжение…',positional:'Позиция ухудшилась, но непосредственная тактическая угроза не подтверждена. Продолжай партию и следи за безопасностью фигур.',moves:'Ходы',white:'Белые',black:'Чёрные',random:'Случайно',start:'Начать тренировку',new:'Новая тренировка',exit:'К наставникам',prev:'Назад',next:'Вперёд',close:'Закрыть',journal:'Ходы',ready:'Ваш ход',thinking:'Соперник думает…',analysing:'Анализ хода…',waiting:'Оценка недоступна',fine:'Продолжайте партию.',inaccuracy:'Неточность',mistake:'Ошибка',blunder:'Зевок',noGrade:'Нет замечаний',loss:'Потеря оценки',retry:'Позиция ухудшилась. Попробуйте вернуться назад и найти более сильное продолжение.',reviewFail:'Не удалось проверить ход. Партию можно продолжать.',gameOver:'Партия завершена',check:'Шах!',promotion:'Превращение пешки',before:'Вернуться перед ошибкой',clear:'Начать заново',profile:'Мощь',restore:'Продолжить тренировку',victory:'Победа!',defeat:'Поражение',draw:'Ничья',reviewGame:'Анализировать',menu:'Главное меню',mentors:'К наставникам',good:'Хороший ход',excellent:'Блестящий ход',view:'Посмотреть',engineLine:'Вариант Stockfish',afterMistake:'После ошибки',returnToGame:'К партии',retryAI:'Повторить запрос ИИ'},
- en:{title:'Training with a Mentor',back:'Main menu',mentor:'Mentor',mentorThinking:'Thinking…',mentorSpeak:'Read mentor text aloud',mentorStopSpeech:'Stop narration',mentorSpeechUnavailable:'Text-to-speech is unavailable in this browser',lesson:'Test yourself',lessonHint:'Hint',lessonShow:'Reveal answer',lessonExit:'Continue game',lessonAskAI:'Ask the mentor for advice',correctionStart:'Improve your move',correctionTitle:'Try a better move',correctionInstruction:'This is a practice position before the mistake. Choose a stronger move on the board; your original game stays unchanged.',correctionChecking:'Checking your move…',correctionGood:'Good solution!',correctionWrong:'This move does not improve the position enough. Try another continuation.',correctionUnavailable:'The move could not be checked. Try again or continue the game.',correctionBack:'Back to explanation',correctionAgain:'Try another',correctionStrong:'Strong move',correctionBest:'Stockfish best move:',correctionBoard:'Find a stronger move',lessonBoard:'Find the opponent’s reply',lessonPending:'Mentor is checking the opponent’s reply…',positional:'The position became worse, but no immediate tactical threat was verified. Keep playing and watch your pieces’ safety.',moves:'Moves',white:'White',black:'Black',random:'Random',start:'Start training',new:'New training',exit:'Mentors',prev:'Back',next:'Forward',close:'Close',journal:'Moves',ready:'Your move',thinking:'Opponent thinking…',analysing:'Analysing move…',waiting:'Evaluation unavailable',fine:'Continue the game.',inaccuracy:'Inaccuracy',mistake:'Mistake',blunder:'Blunder',noGrade:'No issues found',loss:'Evaluation lost',retry:'This move worsened your position. Go back and try to find a stronger continuation.',reviewFail:'The move could not be evaluated. You can continue playing.',gameOver:'Game over',check:'Check!',promotion:'Promote pawn',before:'Return before error',clear:'Start over',profile:'Strength',restore:'Resume training',victory:'Victory!',defeat:'Defeat',draw:'Draw',reviewGame:'Analyse',menu:'Main menu',mentors:'Mentors',good:'Good move',excellent:'Brilliant move',view:'View',engineLine:'Stockfish line',afterMistake:'After the mistake',returnToGame:'Back to game',retryAI:'Retry AI explanation'}
+ ru:{title:'Тренировка с наставником',back:'Главное меню',mentor:'Наставник',mentorThinking:'Думаю…',mentorSpeak:'Озвучить текст наставника',mentorStopSpeech:'Остановить озвучивание',mentorSpeechUnavailable:'Озвучивание недоступно в этом браузере',aiExplanationLabel:'Объяснение ИИ',lesson:'Проверить себя',lessonHint:'Подсказка',lessonShow:'Показать ответ',lessonExit:'Продолжить партию',lessonAskAI:'Попросить совет наставника',correctionStart:'Исправить ход',correctionTitle:'Попробуй исправить свой ход',correctionInstruction:'Это учебная позиция до ошибки. Выбери более сильный ход на доске — сыгранная партия останется неизменной.',correctionChecking:'Проверяю твой ход…',correctionGood:'Хорошее решение!',correctionWrong:'Этот ход недостаточно улучшает позицию. Попробуй другое продолжение.',correctionUnavailable:'Не удалось проверить этот ход. Можешь попробовать снова или продолжить партию.',correctionBack:'К объяснению',correctionAgain:'Другой вариант',correctionStrong:'Сильный ход',correctionBest:'Лучший ход Stockfish:',correctionBoard:'Найди более сильный ход',lessonBoard:'Найди ответ соперника',lessonPending:'Наставник ищет опасное продолжение…',positional:'Позиция ухудшилась, но непосредственная тактическая угроза не подтверждена. Продолжай партию и следи за безопасностью фигур.',moves:'Ходы',white:'Белые',black:'Чёрные',random:'Случайно',start:'Начать тренировку',new:'Новая тренировка',exit:'К наставникам',prev:'Назад',next:'Вперёд',close:'Закрыть',journal:'Ходы',ready:'Ваш ход',thinking:'Соперник думает…',analysing:'Анализ хода…',waiting:'Оценка недоступна',fine:'Продолжайте партию.',inaccuracy:'Неточность',mistake:'Ошибка',blunder:'Зевок',noGrade:'Нет замечаний',loss:'Потеря оценки',retry:'Позиция ухудшилась. Попробуйте вернуться назад и найти более сильное продолжение.',reviewFail:'Не удалось проверить ход. Партию можно продолжать.',gameOver:'Партия завершена',check:'Шах!',promotion:'Превращение пешки',before:'Вернуться перед ошибкой',clear:'Начать заново',profile:'Мощь',restore:'Продолжить тренировку',victory:'Победа!',defeat:'Поражение',draw:'Ничья',reviewGame:'Анализировать',menu:'Главное меню',mentors:'К наставникам',good:'Хороший ход',excellent:'Блестящий ход',view:'Посмотреть',engineLine:'Вариант Stockfish',afterMistake:'После ошибки',returnToGame:'К партии',retryAI:'Повторить запрос ИИ'},
+ en:{title:'Training with a Mentor',back:'Main menu',mentor:'Mentor',mentorThinking:'Thinking…',mentorSpeak:'Read mentor text aloud',mentorStopSpeech:'Stop narration',mentorSpeechUnavailable:'Text-to-speech is unavailable in this browser',aiExplanationLabel:'AI explanation',lesson:'Test yourself',lessonHint:'Hint',lessonShow:'Reveal answer',lessonExit:'Continue game',lessonAskAI:'Ask the mentor for advice',correctionStart:'Improve your move',correctionTitle:'Try a better move',correctionInstruction:'This is a practice position before the mistake. Choose a stronger move on the board; your original game stays unchanged.',correctionChecking:'Checking your move…',correctionGood:'Good solution!',correctionWrong:'This move does not improve the position enough. Try another continuation.',correctionUnavailable:'The move could not be checked. Try again or continue the game.',correctionBack:'Back to explanation',correctionAgain:'Try another',correctionStrong:'Strong move',correctionBest:'Stockfish best move:',correctionBoard:'Find a stronger move',lessonBoard:'Find the opponent’s reply',lessonPending:'Mentor is checking the opponent’s reply…',positional:'The position became worse, but no immediate tactical threat was verified. Keep playing and watch your pieces’ safety.',moves:'Moves',white:'White',black:'Black',random:'Random',start:'Start training',new:'New training',exit:'Mentors',prev:'Back',next:'Forward',close:'Close',journal:'Moves',ready:'Your move',thinking:'Opponent thinking…',analysing:'Analysing move…',waiting:'Evaluation unavailable',fine:'Continue the game.',inaccuracy:'Inaccuracy',mistake:'Mistake',blunder:'Blunder',noGrade:'No issues found',loss:'Evaluation lost',retry:'This move worsened your position. Go back and try to find a stronger continuation.',reviewFail:'The move could not be evaluated. You can continue playing.',gameOver:'Game over',check:'Check!',promotion:'Promote pawn',before:'Return before error',clear:'Start over',profile:'Strength',restore:'Resume training',victory:'Victory!',defeat:'Defeat',draw:'Draw',reviewGame:'Analyse',menu:'Main menu',mentors:'Mentors',good:'Good move',excellent:'Brilliant move',view:'View',engineLine:'Stockfish line',afterMistake:'After the mistake',returnToGame:'Back to game',retryAI:'Retry AI explanation'}
 };
 const RACES={
  ru:{humans:'Люди',orcs:'Орки',fae:'Феи',dark_elves:'Тёмные эльфы',dwarves:'Гномы',undead:'Нежить',demons:'Демоны',elves:'Эльфы',dragonborn:'Дракониды',angels:'Ангелы',constructs:'Конструкты'},
@@ -43,6 +43,7 @@ let lessonView=null; // Automatic interactive lesson, on the post-mistake positi
 let correctionView=null; // Ephemeral practice board before the error: NEVER mutates actual moves.
 let pausedEntry=null; // Delay the opponent's move until the learner continues.
 let lessonFlashSeq=0;
+let mateResultTimer=null,mateResultWaiting=false;
 const mentorReplyCache=new Map();
 function lang(){return currentLanguage()==='en'?'en':'ru';}
 function t(name){return TEXT[lang()][name]||name;}
@@ -80,7 +81,23 @@ function restore(){
  }catch{playing=false;moves=[];cursor=0;pausedEntry=null;lessonView=null;correctionView=null;}
 }
 function game(){return rebuildTraining(moves,cursor);}
+function cancelMateResult(){
+ if(mateResultTimer!==null)clearTimeout(mateResultTimer);
+ mateResultTimer=null;mateResultWaiting=false;
+}
+function scheduleMateResult(){
+ cancelMateResult();
+ mateResultWaiting=true;
+ const epoch=gameEpoch,ply=cursor,last=moves[ply-1]?.uci;
+ mateResultTimer=setTimeout(()=>{
+  mateResultTimer=null;
+  if(epoch!==gameEpoch||!playing||cursor!==ply||cursor!==moves.length||
+    moves[ply-1]?.uci!==last||game().status().type!=='checkmate')return;
+  mateResultWaiting=false;render();
+ },3000);
+}
 function cancel(){
+ cancelMateResult();
  speech.stop();
  mentorReplyAbort?.abort();mentorReplyAbort=null;analysisView=null;lessonView=null;correctionView=null;pausedEntry=null;
  gameEpoch++;busy=false;analysisPending=false;square=null;promotion=null;dragActive=false;
@@ -193,6 +210,7 @@ function navigation(){
 function boardHTML(chess,preview=false){
  const whiteBottom=currentPlayerColor()==='w',state=chess.snapshot(),files='abcdefgh',legal=square?chess.legalMoves(square):[];
  const tiles=raceBoardTiles(mentor().race);
+ const terminalMate=state.status.type==='checkmate'&&!preview&&!analysisView&&!correctionView;
  const checkedKing=state.status.checked
   ?state.board.findIndex(piece=>piece?.type==='k'&&piece.color===state.turn):-1;
  const last=correctionView ? ((correctionView.bestShown?correctionView.bestMove:correctionView.accepted?correctionView.chosenUci:null)?{uci:correctionView.bestShown?correctionView.bestMove:correctionView.chosenUci}:null) : preview&&analysisView ? (analysisView.offset ? {uci:analysisView.entry.analysisLine[analysisView.offset-1]} : analysisView.entry) : moves[cursor-1];
@@ -211,24 +229,36 @@ function boardHTML(chess,preview=false){
   const correctionFlash=correctionView?.flash;
   const flash=lessonView?.feedback?.square===sq?lessonView.feedback:
    correctionFlash?.square===sq?correctionFlash:null;
-   const flyDown=['1','2','7','8'].includes(sq[1]);
+  const kingResult=terminalMate&&piece?.type==='k'?
+   (piece.color===state.status.winner?' mentor-king-victorious':' mentor-king-defeated'):'';
   const ownRace=piece?.color===currentPlayerColor()?'humans':mentor().race;
   let figure='';
   if(piece){
    figure='<img alt="" class="mentor-piece classic-piece" draggable="false" src="'+boardRacePiecePath(ownRace,ROLES[piece.type],piece.color)+'"><span class="mentor-piece-fallback">'+SYMBOLS[piece.color][piece.type]+'</span>'+fantasyPieceMarkup(piece.type,piece.color);
   }
   const sign=mark===sq&&piece?.color===currentPlayerColor()?'<span class="mentor-square-grade'+(['good','excellent'].includes(recentOwn.grade)?' mentor-square-grade--good':'')+'">'+({'inaccuracy':'?!','mistake':'?','blunder':'??',good:'!',excellent:'!!'}[recentOwn.grade])+'</span>':'';
-  const flashText=flash?(flash.text||mentorLessonCopy(lessonView.plan,lang())[flash.kind]):'';
-  const flashArt=flash?'<span class="mentor-lesson-aura mentor-lesson-aura--'+flash.kind+'" aria-hidden="true"></span>'+
-    '<span class="mentor-lesson-burst mentor-lesson-burst--'+flash.kind+(flash.correction?' mentor-lesson-burst--correction':'')+(flyDown?' mentor-lesson-burst--down':'')+'" role="status">'+esc(flashText)+'</span>':'';
-  grid+='<button type="button" data-mentor-square="'+sq+'" data-square="'+sq+'" class="mentor-square '+(dark?'is-dark':'is-light')+(highlight?' is-last':'')+(active?' is-selected':'')+(possible?' is-legal':'')+(index===checkedKing?' is-check classic-square--check':'')+(lessonOrigin?' mentor-lesson-origin':'')+(lessonTarget?' mentor-lesson-target':'')+(lessonThreat?' mentor-lesson-threat':'')+(flash?' mentor-square-flash':'')+'" aria-label="'+sq+'">'+figure+sign+flashArt+'</button>';
+  const flashArt=flash?'<span class="mentor-lesson-aura mentor-lesson-aura--'+flash.kind+'" aria-hidden="true"></span>':'';
+  grid+='<button type="button" data-mentor-square="'+sq+'" data-square="'+sq+'" class="mentor-square '+(dark?'is-dark':'is-light')+(highlight?' is-last':'')+(active?' is-selected':'')+(possible?' is-legal':'')+(index===checkedKing?' is-check classic-square--check':'')+(lessonOrigin?' mentor-lesson-origin':'')+(lessonTarget?' mentor-lesson-target':'')+(lessonThreat?' mentor-lesson-threat':'')+(flash?' mentor-square-flash':'')+kingResult+'" aria-label="'+sq+'">'+figure+sign+flashArt+'</button>';
  }
  const status=chess.status();
+ // Board-level text starts at the clicked figure and always arrives at the
+ // center of the board, regardless of orientation or edge rank.
+ const boardFlash=lessonView?.feedback||correctionView?.flash;
+ let flight='';
+ if(boardFlash&&/^[a-h][1-8]$/.test(boardFlash.square)){
+  const file=boardFlash.square.charCodeAt(0)-97,rank=Number(boardFlash.square[1])-1;
+  const col=whiteBottom?file:7-file,row=whiteBottom?7-rank:rank;
+  const flashText=boardFlash.text||mentorLessonCopy(lessonView.plan,lang())[boardFlash.kind];
+  flight='<span class="mentor-board-burst mentor-lesson-burst--'+boardFlash.kind+
+   (boardFlash.correction?' mentor-board-burst--correction':'')+'" data-mentor-board-burst="'+
+   esc(boardFlash.square)+'" role="status" style="--fly-from-x:'+((col+.5)*12.5)+
+   '%;--fly-from-y:'+((row+.5)*12.5)+'%">'+esc(flashText)+'</span>';
+ }
  // CSS variables consumed by an external stylesheet resolve relative url() against /css/.
  // Use document-absolute URLs so race artwork also works under /RPChess/ on GitHub Pages.
  const lightTile=new URL(tiles.light,document.baseURI).href;
  const darkTile=new URL(tiles.dark,document.baseURI).href;
- return '<div class="mentor-board-shell"><div class="mentor-board" data-mentor-race="'+tiles.raceTag+'" style="--mentor-light-tile:url('+lightTile+');--mentor-dark-tile:url('+darkTile+')">'+grid+'</div><div class="mentor-file-coords">'+(whiteBottom?files.split(''):[...files].reverse()).map(v=>'<span>'+v+'</span>').join('')+'</div><div class="mentor-rank-coords">'+(whiteBottom?[8,7,6,5,4,3,2,1]:[1,2,3,4,5,6,7,8]).map(v=>'<span>'+v+'</span>').join('')+'</div></div>';
+ return '<div class="mentor-board-shell"><div class="mentor-board" data-mentor-race="'+tiles.raceTag+'" style="--mentor-light-tile:url('+lightTile+');--mentor-dark-tile:url('+darkTile+')">'+grid+flight+'</div><div class="mentor-file-coords">'+(whiteBottom?files.split(''):[...files].reverse()).map(v=>'<span>'+v+'</span>').join('')+'</div><div class="mentor-rank-coords">'+(whiteBottom?[8,7,6,5,4,3,2,1]:[1,2,3,4,5,6,7,8]).map(v=>'<span>'+v+'</span>').join('')+'</div></div>';
 }
 function latestPlayerNote(){
  for(let index=cursor-1;index>=0;index--){
@@ -414,8 +444,11 @@ function feedbackHTML(){
  return '<section class="mentor-feedback mentor-card"><div class="mentor-feedback-head">'+picture(mentor(),'mentor-face')+
  '<h2>'+t('mentor')+'</h2>'+speech.buttonMarkup()+(data?.pending?'<span class="mentor-thinking" role="status" aria-live="polite">'+t('mentorThinking')+'</span>':'')+'</div>'+
  (data?'<div class="mentor-feedback-grade'+(positive?' mentor-feedback-grade--good':'')+'"><strong>'+mark+'</strong><span>'+label+'</span></div>':'')+
- (data?.mentorSource&&data.message&&(!lessonView||lessonView.stage===3)?
-   '<p class="mentor-learning-mentor-note mentor-ai-explanation" data-mentor-ai-explanation role="note">'+esc(data.message)+'</p>':'')+
+ (data?.mentorPayload&&(data.pending||data.mentorSource&&data.message)?
+   '<div class="mentor-ai-block"><strong class="mentor-ai-label">'+esc(t('aiExplanationLabel'))+'</strong>'+
+   (data.mentorSource&&data.message?
+    '<p class="mentor-learning-mentor-note mentor-ai-explanation" data-mentor-ai-explanation role="note">'+esc(data.message)+'</p>':
+    '<p class="mentor-ai-waiting" role="status">'+esc(t('mentorThinking'))+'</p>')+'</div>':'')+
   (lessonView?.entry===data||correctionView?.entry===data||(data?.mentorSource&&data.message)?'':'<p class="mentor-feedback-text">'+esc(copy)+'</p>')+
  (canView&&!lessonView&&!correctionView?(analysisView?'':'<div class="mentor-analysis-actions">'+button('open-variation',t('view'),'mentor-outline mentor-view-btn')+'</div>')+variationHTML(data,found.index):'')+
  lessonHTML(data)+correctionHTML(data)+
@@ -436,7 +469,7 @@ function battleHTML(){
  '<div class="mentor-center"><div class="mentor-status">'+esc(notice)+'</div>'+boardHTML(chess,Boolean(analysisView||correctionView))+
  '<div class="mentor-mobile-navigation">'+navigation()+'<div class="mentor-mobile-toggle"></div></div></div>'+
  feedbackHTML()+
- (!analysisView&&cursor===moves.length&&status.over?resultHTML(status):'')+
+ (!analysisView&&cursor===moves.length&&status.over&&!(status.type==='checkmate'&&mateResultWaiting)?resultHTML(status):'')+
  (promotion?'<div class="mentor-promotion"><div class="mentor-promotion-dialog"><h2>'+t('promotion')+'</h2>'+
  ['q','r','b','n'].map(v=>'<button type="button" data-mentor-promote="'+v+'">'+SYMBOLS[currentPlayerColor()][v]+'</button>').join('')+'</div></div>':'')+
  '</section>';
@@ -500,6 +533,7 @@ function moveCursor(next){
  // Browsing a previous move never requests a new computer response.
 }
 function cancelPending(){
+ cancelMateResult();
  mentorReplyAbort?.abort();mentorReplyAbort=null;analysisView=null;lessonView=null;correctionView=null;pausedEntry=null;
  gameEpoch++;busy=false;analysisPending=false;square=null;promotion=null;dragActive=false;motion?.clear();ai?.stop();
 }
@@ -567,7 +601,9 @@ async function computerMove(){
  const geometry=motion?.capture(chess,uci);
  const step=extendTraining(moves,cursor,uci);
  if(step.ok){moves=step.moves;cursor=step.cursor;moves[cursor-1].color=chess.turn();save();}
- busy=false;render();if(step.ok)motion?.play(geometry);preEvaluate();
+ busy=false;
+ if(step.ok&&step.status?.type==='checkmate')scheduleMateResult();
+ render();if(step.ok)motion?.play(geometry);preEvaluate();
 }
 async function deliverMentorFeedback(entry,payload,verified,cacheKey,epoch){
  let outcome=mentorReplyCache.get(cacheKey);
@@ -630,8 +666,9 @@ async function explainVerifiedMove({beforeFen,afterFen,uci,kind,before,after,con
   analysisView=null;square=null;
  }
  entry.pending=false;entry.mentorRequested=false;entry.message='';
- save();render();
- // Do not call the provider before the learner has answered.
+ // Show the AI coaching note beside the tactical question, not after the answer.
+ // The payload is built from a validated Stockfish fact; only one request is sent.
+ requestAfterAnswer(entry);
 }
 function requestAfterAnswer(entry){
  if(!entry?.mentorPayload||entry.mentorRequested||entry.mentorSource)return;
@@ -676,6 +713,7 @@ async function userMove(from,to,promote=null){
  // grading or for DeepSeek before presenting the game result.
  if(change.status.over){
   square=null;busy=false;analysisPending=false;
+  if(change.status.type==='checkmate')scheduleMateResult();
   save();render();motion?.play(geometry);
   return;
  }
@@ -779,13 +817,16 @@ function onClick(event){
    if(correct){lessonView.stage=3;lessonView.revealPending=true;}
    render();
    if(correct)requestAfterAnswer(lessonView.entry);
-   if(correct){
+   {
     const current=lessonView,epoch=gameEpoch;
     setTimeout(()=>{
      if(lessonView!==current||gameEpoch!==epoch||current.feedback!==feedback)return;
      current.feedback=null;current.revealPending=false;
-     analysisView={entry:current.entry,index:moves.indexOf(current.entry),offset:current.plan.ply};
-     square=null;render();
+     if(correct){
+      analysisView={entry:current.entry,index:moves.indexOf(current.entry),offset:current.plan.ply};
+      square=null;
+     }
+     render();
     },1200);
    }
    return;

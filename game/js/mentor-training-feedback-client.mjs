@@ -1,5 +1,5 @@
-import {validateMentorInput,localMentorFallback,safeExplanation} from './mentor-training-feedback-core.mjs?v=20261107-mentor-auto-pause-v3';
-import {validatedV2Facts,composeMentorV2Explanation,localMentorV2Fallback} from './mentor-training-feedback-v2.mjs?v=20261108-en-validation-v4';
+import {validateMentorInput,localMentorFallback,safeExplanation} from './mentor-training-feedback-core.mjs?v=20261108-figure-wording-v2';
+import {validatedV2Facts,composeMentorV2Explanation,localMentorV2Fallback} from './mentor-training-feedback-v2.mjs?v=20261108-figure-wording-v2';
 
 const MENTOR_API='https://rpchess-mentor-api-preview.mobigametim.workers.dev';
 const TIMEOUT_MS=230000; // Max four attempts/model: (15 + 18 + 20)*4s + retry delays + network overhead.

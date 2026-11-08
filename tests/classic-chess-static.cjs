@@ -31,7 +31,7 @@ assert(html.includes('css/chess-ai-polish.css?v=20260827-frameless-1'), 'framele
 assert(html.includes('js/classic-chess-app.mjs'), 'Classic Chess app is not loaded');
 assert(app.includes("from './classic-chess-engine.mjs'"), 'Classic app does not use standalone engine');
 assert(app.includes("from './chess-ai-adapter.mjs'"), 'Classic app does not use ChessAIAdapter boundary');
-assert(app.includes("from './i18n.mjs'") && app.includes("from '../localization/classic-ui.mjs'"), 'Classic owner must import language state plus its semantic registry');
+assert(app.includes("from './i18n.mjs'") && /from '\.\.\/localization\/classic-ui\.mjs(?:\?v=[^']+)?'/.test(app), 'Classic owner must import language state plus its semantic registry');
 assert(app.includes('subscribe(() => { renderStaticCopy(); render(); });'), 'Classic owner must rerender dynamic presentation on language changes');
 assert(classicUi.includes('CLASSIC_UI_MESSAGES') && classicUi.includes("'classic.boardCell'") && classicUi.includes("'classic.result.drawThreefoldText'"), 'Classic semantic RU/EN registry must cover board and dynamic result presentation');
 for (const forbidden of ['Локальная партия · два игрока','Ходов пока нет','Компьютер думает…','Мат — победа ${sideName']) assert(!app.includes(forbidden), `Classic owner still hardcodes translated presentation: ${forbidden}`);

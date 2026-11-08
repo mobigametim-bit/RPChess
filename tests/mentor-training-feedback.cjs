@@ -55,6 +55,21 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
   for(const theme of item.themes)corpusThemes.add(theme);
  }
  assert(corpusThemes.size>=35,'corpus covers rare attacks, defense, endgames, and quiet moves');
+ const sampleCapture=mentorLessonCopy({kind:'undefended_capture',from:'d8',to:'a5',actor:'q'},'ru');
+ assert.equal(sampleCapture.question,'Какая фигура может взять незащищённую фигуру?');
+ assert.equal(sampleCapture.instruction,'Нажми на фигуру соперника на доске.');
+ for(const [kind,guide] of Object.entries(GUIDES)){
+  assert(!/материал|материаль/i.test(guide.ru.join(' ')),
+   'Russian mentor lesson should name figures rather than material: '+kind);
+ }
+ const lossCopy=mentorLessonCopy({kind:'material_loss',from:'d8',to:'a5',actor:'q'},'ru');
+ assert(lossCopy.answer.includes('потеря фигуры'));
+ assert(!/материал|материаль/i.test(lossCopy.answer));
+ const legacyFact=describeMentorFact({motive:'material_loss',language:'ru',
+  tactics:[{kind:'material_loss',ply:1,piece:'r'}]},'ru');
+ assert(legacyFact.includes('забрать ладью'),'legacy mentor fact also talks about a piece');
+ assert(!/материал|материаль/i.test(legacyFact));
+
  for(const gameFixture of referenceGames.games){
   assert(gameFixture.gameUrl.startsWith('https://lichess.org/'));
   assert(gameFixture.sanMoves.trim().split(/\s+/).length>=60,
@@ -123,6 +138,11 @@ function imp(p){return import(pathToFileURL(path.join(base,p)).href);}
  assert.equal(preparedV2.payload.version,2);
  assert.equal(preparedV2.verified.version,2);
  assert.equal(preparedV2.verified.motive,'mate_sequence');
+ assert.equal(safeMentorAdvice(
+  'Перед ходом полезно оценивать материал и сравнивать ответы соперника.',
+  preparedV2.verified
+ ),null,'model text cannot reintroduce unwanted Russian material terminology');
+
  assert.equal(preparedV2.verified.lesson.from,'d8');
  assert.equal(preparedV2.verified.factId,'mate_sequence:d8h4');
  assert.equal(preparedV2.verified.verifiedFact,'Соперник может поставить мат следующим ходом.');
