@@ -103,6 +103,12 @@ async function assertTileImage(page,cellId,relativePath){
     dimensions.inspector.left>dimensions.frame.left&&dimensions.inspector.right<dimensions.frame.right,
     'inspector floats over the map and occupies 25% of its width');
   await assertTileImage(page,'0,0','assets/races/humans/board/white.png');
+  assert.equal(await page.locator('[data-kingdom-glory]').textContent(),'0',
+    'current Glory uses the Chronicle formula, not an invented currency');
+  assert.equal(await page.locator('[data-kingdom-gold]').textContent(),String(before.gold),
+    'the gold header matches the current run');
+  assert.equal(await page.locator('[data-kingdom-supplies]').textContent(),String(before.supplies),
+    'the supplies header matches the current run');
   await page.screenshot({path:path.join(output,'kingdom-01-fog-start.png')});
   // Regression: the camera must not recenter on every click. Before the fix,
   // the clicked tile slid to the middle, making a different tile appear opened.
@@ -135,10 +141,30 @@ async function assertTileImage(page,cellId,relativePath){
   assert.equal(moved.supplies,before.supplies,'moving and unveiling do not charge resources prematurely');
   assert.equal(await page.locator('[data-kingdom-cell="1,0"] .km-fog-mark').count(),0,
    'the fog opens before the encounter begins');
+  // Reveal precedes movement. The route card is visible while the king still
+  // stands on the previous cell; its literary flavor lives only in the flyout.
+  const opening=page.locator('[data-kingdom-cell="1,0"].km-cell--opening');
+  assert.equal(await opening.count(),1,'fog begins revealing before king motion');
+  assert.equal(await page.locator('.km-king--moving').count(),0,'king stays still while fog is lifted');
+  assert.equal(await page.locator('[data-kingdom-route-card]').count(),1,
+    'an unresolved cell shows a full Travel-style card on the right');
+  const routeCard=page.locator('[data-kingdom-route-card]');
+  assert.equal(await routeCard.getAttribute('data-kingdom-route-status'),'revealed');
+  assert.equal(await routeCard.locator('.km-route-card__stars').count(),1,'route card shows real difficulty stars');
+  assert.equal(await routeCard.locator('.km-route-resource').count(),2,
+    'Battle route card displays supply cost and gold reward');
+  assert.equal(await routeCard.locator('.travel-choice-card__flavor,.km-route-card__flavor').count(),0,
+    'literary flavor must not be duplicated in the information card');
+  const still=await centers();
+  assert(Math.hypot(still.king.x-beforeCenters.king.x,still.king.y-beforeCenters.king.y)<4,
+    'opening cell must not move the king yet');
+  await page.locator('.km-king--moving').waitFor({timeout:2500});
   const king=page.locator('.km-king--moving');
-  assert.equal(await king.count(),1,'the king has an explicit motion animation');
   assert.equal(await king.evaluate(el=>getComputedStyle(el).animationName),'km-king-step');
-  await page.waitForTimeout(550);
+  await page.waitForTimeout(540);
+  await page.locator('[data-kingdom-cell="1,0"] .km-flavor-flyout').waitFor({timeout:2000});
+  const story=await page.locator('[data-kingdom-cell="1,0"] .km-flavor-flyout').textContent();
+  assert(story?.trim().length>0,'the original route narrative flies out of the entered tile');
   const afterCenters=await centers();
   const near=(p,q)=>Math.hypot(p.x-q.x,p.y-q.y)<4;
   assert(near(afterCenters.castle,beforeCenters.castle),
@@ -150,15 +176,15 @@ async function assertTileImage(page,cellId,relativePath){
   assert.equal(await page.locator('[data-kingdom-cell="1,0"].km-cell--here').count(),1,
     'the actual selected tile must be marked as the king position');
   assert.equal(await page.locator('[data-travel-choice]').count(),0,'no three-card popup appears');
-  await page.waitForTimeout(1100);
-  assert.equal((await read(page)).activeTravelChoice,null,'no encounter before the 2-second reveal');
+  assert.equal((await read(page)).activeTravelChoice,null,
+    'no encounter starts before reveal, movement and narrative flight finish');
   await page.screenshot({path:path.join(output,'kingdom-02-revealed.png')});
   await page.waitForFunction(k=>{
    const r=JSON.parse(localStorage.getItem(k)||'null');
    return r?.activeTravelChoice?.kingdomCell==='1,0'&&r?.kingdomMap?.cells?.['1,0']?.status==='in_progress';
   },key,{timeout:15000});
   const elapsed=Date.now()-clicked;
-  assert(elapsed>=2300,'the user gets ~450ms king animation and two seconds of reveal before entering');
+  assert(elapsed>=3850,'encounter waits for reveal, king movement and readable narrative');
   const started=await read(page);
   assert.equal(started.activeTravelChoice.id,encounter.id);
   assert.equal(started.supplies,before.supplies-1,'the encounter takes supplies exactly once');
@@ -186,6 +212,11 @@ async function assertTileImage(page,cellId,relativePath){
    await page.locator('[data-kingdom-map-screen]:not([hidden])').waitFor({timeout:15000});
    const lost=await read(page);
    assert.equal(lost.kingdomMap.cells['1,0'].status,'failed');
+   assert.equal(await page.locator('[data-kingdom-route-card]').count(),0,
+     'returning to the castle shows its summary until an unfinished route is selected');
+   await page.locator('[data-kingdom-cell="1,0"]').click({modifiers:['Alt']}).catch(()=>{});
+   // Failed routes retain their saved encounter and display the same preview
+   // when selected without changing the route identity.
    assert.equal(lost.kingdomMap.pendingCell,null,
     'completed real Battle must release the pending map cell');
    assert.deepEqual(lost.kingdomMap.king,{x:0,y:0});
