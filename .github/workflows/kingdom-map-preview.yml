@@ -90,7 +90,7 @@ jobs:
              const res=await Promise.all(paths.map(p=>fetch(base+p,{cache:'no-store'})));
              res.forEach(r=>assert.equal(r.status,200,r.url));
              const html=await Promise.all(res.map(r=>r.text()));
-             assert(html[1].includes('schedulePending')&&html[1].includes('2450'));
+             assert(html[1].includes('schedulePending')&&html[1].includes('DISCOVERY_WAIT_MS=4050'));
              assert(html[2].includes('randomEncounter')&&html[2].includes('annexCell'));
              assert(html[3].includes('km-king-step'));
              for(const name of ['/assets/kingdom-map/humans/humans_castle_128.svg',
