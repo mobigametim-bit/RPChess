@@ -215,13 +215,12 @@ const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)
   const castleAnchor=await visual('[data-kingdom-cell="0,0"]');
   for(const [dx,dy] of [[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]]){
     const id=dx+','+dy,cell='[data-kingdom-cell="'+id+'"]';
-    const target=await visual(cell);
     await walking.locator(cell).click({position:{x:20,y:20}});
     assert.deepEqual((await read(walking)).kingdomMap.king,{x:dx,y:dy},
       'the map must move to the specific clicked coordinate '+id);
     assert.equal(await walking.locator(cell+'.km-cell--here').count(),1,
       'king marker must be on the clicked world tile '+id);
-    const actual=await visual('.km-king');
+    const actual=await visual('.km-king'),target=await visual(cell);
     assert(Math.hypot(actual.x-target.x,actual.y-target.y)<4,
       'king must visually occupy clicked '+id+': '+JSON.stringify({actual,target}));
     const anchored=await visual('[data-kingdom-cell="0,0"]');
