@@ -44,8 +44,12 @@ jobs:
           npm pack stockfish@18.0.0 --silent --pack-destination /tmp
           mkdir -p /tmp/rpchess-stockfish-package /tmp/rpchess-stockfish-verified
           tar -xzf /tmp/stockfish-18.0.0.tgz -C /tmp/rpchess-stockfish-package
-          cp /tmp/rpchess-stockfish-package/package/bin/stockfish-18-lite-single.js /tmp/rpchess-stockfish-verified/
-          cp /tmp/rpchess-stockfish-package/package/bin/stockfish-18-lite-single.wasm /tmp/rpchess-stockfish-verified/
+          find /tmp/rpchess-stockfish-package/package -maxdepth 4 -type f | head -n 60
+          engine_js=$(find /tmp/rpchess-stockfish-package/package -type f -name 'stockfish-18-lite-single.js' | head -n 1)
+          engine_wasm=$(find /tmp/rpchess-stockfish-package/package -type f -name 'stockfish-18-lite-single.wasm' | head -n 1)
+          test -n "$engine_js" && test -n "$engine_wasm"
+          cp "$engine_js" /tmp/rpchess-stockfish-verified/
+          cp "$engine_wasm" /tmp/rpchess-stockfish-verified/
           license=$(find /tmp/rpchess-stockfish-package/package -iname 'Copying.txt' -o -iname 'COPYING.txt' | head -n 1)
           test -n "$license"
           cp "$license" /tmp/rpchess-stockfish-verified/COPYING.txt
