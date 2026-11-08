@@ -30,14 +30,24 @@ const COPY={
    empty:'Explore the realm to found a kingdom'}
 };
 const WIDTH=9,HEIGHT=7,CENTER_X=4,CENTER_Y=3;
-let screen=null,selected=null,movement=null,flightTimer=null,launchTimer=null,runId=null,toastTimer=null;
+// The camera is independent of the king: keep world cells stationary when he
+// moves inside the viewport. Only pan after he reaches its inner edge.
+let screen=null,selected=null,movement=null,camera=null,flightTimer=null,launchTimer=null,runId=null,toastTimer=null;
+function followCamera(point){
+ if(!camera)camera={...point};
+ const limitX=CENTER_X-1,limitY=CENTER_Y-1;
+ if(point.x-camera.x>limitX)camera.x=point.x-limitX;
+ else if(point.x-camera.x < -limitX)camera.x=point.x+limitX;
+ if(point.y-camera.y>limitY)camera.y=point.y-limitY;
+ else if(point.y-camera.y < -limitY)camera.y=point.y+limitY;
+}
 function lang(){return currentLanguage()==='en'?'en':'ru';}
 function tr(k){return COPY[lang()][k]||k;}
 function report(text){const node=screen?.querySelector('[data-kingdom-toast]');if(!node)return;
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261108-a1';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261108-a2';link.dataset.kingdomStyle='';
  document.head.append(link);
 }
 function screenReady(){
@@ -136,7 +146,8 @@ function schedulePending(run){
 function kingArt(run){return commanderPieceArt(run.commanderId,'w');}
 function render(){
  const run=readRun();if(!run||!validateKingdomMap(run.kingdomMap)||!screen||screen.hidden)return;
- const map=run.kingdomMap;const world=screen.querySelector('[data-kingdom-world]');
+ const map=run.kingdomMap;const view=camera||map.king;
+ const world=screen.querySelector('[data-kingdom-world]');
  screen.querySelector('[data-kingdom-title]').textContent=tr('title');
  screen.querySelector('[data-kingdom-roster]').textContent=tr('return');
  screen.querySelector('[data-kingdom-power]').textContent=tr('power')+': '+readPlayerRating().power;
@@ -145,9 +156,9 @@ function render(){
  const cells=document.createDocumentFragment();
  for(let row=-CENTER_Y;row<HEIGHT-CENTER_Y;row++)
   for(let col=-CENTER_X;col<WIDTH-CENTER_X;col++){
-   const point={x:map.king.x+col,y:map.king.y+row},id=keyOf(point.x,point.y);
+   const point={x:view.x+col,y:view.y+row},id=keyOf(point.x,point.y);
    const cell=map.cells[id],isCastle=id===keyOf(map.castle.x,map.castle.y);
-   const within=adjacent(map.king,point),here=col===0&&row===0;
+   const within=adjacent(map.king,point),here=id===keyOf(map.king.x,map.king.y);
    const edges=cell?.annexed?borderEdges(map,point):[];
    const btn=document.createElement('button');btn.type='button';btn.dataset.kingdomCell=id;
    btn.setAttribute('role','gridcell');btn.className='km-cell'+
@@ -176,6 +187,10 @@ function render(){
  world.replaceChildren(cells);
  const avatar=document.createElement('img');avatar.className='km-king'+(movement?' km-king--moving':'');
  avatar.src=kingArt(run);avatar.alt='';avatar.setAttribute('aria-hidden','true');
+ // Position the king at the chosen cell's visual center, not at the camera
+ // center. Inline coordinates override the CSS fallback for initial loads.
+ avatar.style.left=((map.king.x-view.x+CENTER_X+.5)*100/WIDTH)+'%';
+ avatar.style.top=((map.king.y-view.y+CENTER_Y+.5)*100/HEIGHT)+'%';
  if(movement){
   avatar.style.setProperty('--km-from-x',String((movement.x-map.king.x)*100)+'%');
   avatar.style.setProperty('--km-from-y',String((movement.y-map.king.y)*100)+'%');
@@ -212,6 +227,7 @@ function onCell(event){
  if(!entered.ok){render();return;}
  movement={...map.king};
  const nextMap=entered.map;
+ followCamera(nextMap.king);
  if(entered.kind!=='walk'){
   const delay=entered.kind==='discover'?2450:700;
   nextMap.cells[id]={...nextMap.cells[id],revealUntil:Date.now()+delay};
@@ -240,8 +256,11 @@ function visitSettlement(){
 }
 function openMap(event){
  let run=readRun();if(!run||run.ended)return;
- runId=run.id;run=ensureMap(run);
+ run=ensureMap(run);
+ if(runId!==run.id||!camera)camera={...run.kingdomMap.king};
+ runId=run.id;
  run=settleIfReturned(run,event?.detail?.source||'');
+ followCamera(run.kingdomMap.king);
  showMap();
  selected=keyOf(run.kingdomMap.king.x,run.kingdomMap.king.y);
  movement=null;render();schedulePending(run);
