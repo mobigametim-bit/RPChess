@@ -41,6 +41,8 @@ const MIN_COLUMNS=9,MIN_ROWS=7;
 const REVEAL_MS=680,MOVE_MS=460,FLAVOR_MS=2600,DISCOVERY_WAIT_MS=4050;
 const GOLD_ICON='generated_assets/reward_gold.png';
 const SUPPLIES_ICON='generated_assets/reward_supplies.png';
+// Reuse Arena's canonical Power icon; already included in the optimized build.
+const POWER_ICON='generated_assets/node_battle.png';
 const GLORY_ICON='assets/relics/banner_nine.png';
 const ANNEX_ICON='assets/relics/diplomat_seal.png';
 const ROUTE_ICONS=Object.freeze({caravan:'assets/doctrines/cavalry/emblem.png',
@@ -138,7 +140,7 @@ function report(text){const node=screen?.querySelector('[data-kingdom-toast]');i
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261108-commandbar-c1';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261108-power-portrait-d1';link.dataset.kingdomStyle='';
  link.addEventListener('load',()=>{if(screen&&!screen.hidden)render();});
  document.head.append(link);
 }
@@ -150,13 +152,9 @@ function screenReady(){
  <header class="km-header">
  <div class="km-heading"><h1 data-kingdom-day></h1></div>
  <div class="km-commandbar">
- <div class="km-commander-meta">
- <img class="km-commander-portrait" data-kingdom-portrait alt="">
- <div class="km-power-group">
- <span><small data-kingdom-power-label></small><strong data-kingdom-power></strong></span>
- <span><small data-kingdom-threat-label></small><strong data-kingdom-threat></strong></span>
- </div></div>
+ <div class="km-commander-meta"><img class="km-commander-portrait" data-kingdom-portrait alt=""></div>
  <div class="km-resource-group">
+ <span class="km-resource km-resource--power"><img src="${POWER_ICON}" alt="" aria-hidden="true"><strong data-kingdom-power></strong></span>
  <span class="km-resource km-resource--gold"><img src="${GOLD_ICON}" alt="" aria-hidden="true"><strong data-kingdom-gold></strong></span>
  <span class="km-resource km-resource--supplies"><img src="${SUPPLIES_ICON}" alt="" aria-hidden="true"><strong data-kingdom-supplies></strong></span>
  <span class="km-resource km-resource--glory"><img src="${GLORY_ICON}" alt="" aria-hidden="true"><strong data-kingdom-glory></strong></span>
@@ -287,13 +285,11 @@ function render(){
  const portrait=screen.querySelector('[data-kingdom-portrait]');
  portrait.src=commanderPortrait(run.commanderId);
  portrait.alt=commanderTitle(run.commanderId,currentLanguage());
- screen.querySelector('[data-kingdom-power-label]').textContent=t('travel.power');
  screen.querySelector('[data-kingdom-power]').textContent=String(power);
- screen.querySelector('[data-kingdom-threat-label]').textContent=t('travel.threat');
- screen.querySelector('[data-kingdom-threat]').textContent=starsText(Math.max(1,Math.min(12,Math.floor((power-400)/200)+1)));
  screen.querySelector('[data-kingdom-gold]').textContent=String(run.gold??0);
  screen.querySelector('[data-kingdom-supplies]').textContent=String(run.supplies??0);
  for(const [selector,label] of [
+  ['.km-resource--power',t('travel.power')],
   ['.km-resource--gold',t('travel.goldAria')],
   ['.km-resource--supplies',t('travel.suppliesAria')],
   ['.km-resource--glory',runtimeT(currentLanguage(),'chronicle.glory')],
