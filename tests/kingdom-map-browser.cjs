@@ -65,6 +65,41 @@ async function assertTileImage(page,cellId,relativePath){
     '1366x768 target viewport requires 11x7 fixed-size grid for full-bleed coverage');
   const before=await read(page);
   assert(before.kingdomMap&&before.kingdomMap.cells['0,0'].annexed);
+  // The new parchment map is visual only: the original tile view remains
+  // available and selected runs never inherit a new save schema.
+  const mapSkin=page.locator('[data-kingdom-skin-switch]');
+  assert.equal(await mapSkin.getAttribute('aria-pressed'),'false',
+    'classic board remains the default unless the user opts into parchment');
+  await mapSkin.click();
+  assert.equal(await mapSkin.getAttribute('aria-pressed'),'true');
+  const atlas=page.locator('[data-kingdom-parchment]');
+  assert.equal(await atlas.count(),1,'parchment must draw one continuous canvas behind clickable cells');
+  assert.equal(await page.locator('[data-kingdom-cell]').count(),77,
+    'changing artwork cannot change the underlying 11x7 logical chess grid');
+  const terrain=await atlas.evaluate(canvas=>{
+    const world=document.querySelector('.km-world');
+    const ctx=canvas.getContext('2d');
+    const center=ctx.getImageData(Math.floor(canvas.width/2),Math.floor(canvas.height/2),1,1).data;
+    const corner=ctx.getImageData(20,20,1,1).data;
+    return {w:canvas.width,h:canvas.height,pixels:[...center,...corner],
+      bg:getComputedStyle(document.querySelector('[data-kingdom-cell="0,0"]')).backgroundImage,
+      fogVisible:getComputedStyle(document.querySelector('[data-kingdom-cell="1,0"] .km-fog-mark')).display,
+      worldWidth:world.getBoundingClientRect().width};
+  });
+  assert(terrain.w>=terrain.worldWidth&&terrain.h>=7*142,
+    'procedural landscape covers the visible infinite-world viewport');
+  assert.equal(terrain.bg,'none','parchment mode hides individual racial chessboard textures');
+  assert.equal(terrain.fogVisible,'none','organic fog replaces a grid of question marks');
+  assert(terrain.pixels[3]>0&&terrain.pixels[7]>0,
+    'procedurally painted terrain and fog must both have visible pixels');
+  assert.deepEqual(await read(page),before,'skin toggle must not change the run, encounters or save state');
+  await page.screenshot({path:path.join(output,'kingdom-parchment-experiment.png')});
+  await mapSkin.click();
+  assert.equal(await atlas.count(),0,'switching back must remove the optional canvas');
+  assert.equal(await mapSkin.getAttribute('aria-pressed'),'false');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('rpchess.kingdom.visual.v1')),'classic',
+    'the visual preference is independent from the Journey save');
+
   assert.deepEqual(before.kingdomMap.king,{x:0,y:0});
   assert.equal(await page.locator('[data-kingdom-cell="1,0"] .km-fog-mark').textContent(),'?');
   const castleSprite=page.locator('[data-kingdom-cell="0,0"] img.km-object');
