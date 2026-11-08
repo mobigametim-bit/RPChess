@@ -78,7 +78,7 @@ async function main(){
   console.log(`Runtime music catalog: ${musicTracks.length} track${musicTracks.length===1?'':'s'}`);
   const runtime=materializeRuntimeAssets(dist);
   const kingdomAssets=assertKingdomMapAssetBudget(dist);
-  console.log(`Runtime Kingdom sprites: ${kingdomAssets.count} transparent 128px PNG, ${formatBytes(kingdomAssets.totalBytes)} total`);
+  console.log(`Runtime Kingdom sprites: ${kingdomAssets.count} vector 128px SVG, ${formatBytes(kingdomAssets.totalBytes)} total`);
   assertBoardAssetBudget(dist);
   assertPinIceAssetBudget(dist);
   assertAuraAssetBudget(dist);

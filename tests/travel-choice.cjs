@@ -149,9 +149,9 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   for(const race of kingdomAssets.KINGDOM_RACES)
     for(const kind of kingdomAssets.KINGDOM_TYPES)
       assert.strictEqual(kingdomMapSprite(kind,race),
-        `assets/kingdom-map/${race}/${race}_${kind}_128.png`);
+        `assets/kingdom-map/${race}/${race}_${kind}_128.svg`);
   assert.strictEqual(kingdomMapSprite('puzzle','orcs'),
-    'assets/kingdom-map/puzzle/puzzle_128.png');
+    'assets/kingdom-map/puzzle/puzzle_128.svg');
   assert.strictEqual(kingdomMapSprite('event','mixed'),
     'generated_assets/node_story.png','mixed Events must not falsely claim a human race');
   assert.strictEqual(kingdomMapSprite('unexpected','elves'),null);
@@ -178,6 +178,6 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert.strictEqual(rehydrated.roster[0].raceTag,'dwarves','legacy commander gets canonical race');
   assert.strictEqual(rehydrated.roster.find(c=>c.id==='hero.roan_stag').raceTag,'beastfolk',
     'legacy recruited hero gets canonical race');
-  console.log('Kingdom map sprite register: PASS (85 RGBA PNGs, 14 races, 6 classes, neutral puzzle)');
+  console.log('Kingdom map sprite register: PASS (85 standalone SVGs, 14 races, 6 classes, neutral puzzle)');
   console.log('Travel Choice keeps 6-type ~16.7% pool, owner-keyed RU/EN compact UI and player Threat..Threat+3 encounter contract: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});

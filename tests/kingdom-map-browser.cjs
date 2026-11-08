@@ -61,7 +61,7 @@ async function assertTileImage(page,cellId,relativePath){
   assert.equal(await page.locator('[data-kingdom-cell="1,0"] .km-fog-mark').textContent(),'?');
   const castleSprite=page.locator('[data-kingdom-cell="0,0"] img.km-object');
   assert.equal(await castleSprite.getAttribute('src'),
-    'assets/kingdom-map/humans/humans_castle_128.png');
+    'assets/kingdom-map/humans/humans_castle_128.svg');
   await page.waitForFunction(()=>{
     const sprite=document.querySelector('[data-kingdom-cell="0,0"] img.km-object');
     return sprite?.complete&&sprite.naturalWidth===128&&sprite.naturalHeight===128;
@@ -111,7 +111,7 @@ async function assertTileImage(page,cellId,relativePath){
   const race=encounter.raceTag&&encounter.raceTag!=='mixed'?encounter.raceTag:'humans';
   const encounterSprite=page.locator('[data-kingdom-cell="1,0"] img.km-object');
   assert.equal(await encounterSprite.getAttribute('src'),
-    `assets/kingdom-map/${race}/${race}_battle_128.png`);
+    `assets/kingdom-map/${race}/${race}_battle_128.svg`);
   await assertTileImage(page,'1,0','assets/races/'+race+'/board/black.png');
   await page.waitForFunction(()=>{
     const sprite=document.querySelector('[data-kingdom-cell="1,0"] img.km-object');
