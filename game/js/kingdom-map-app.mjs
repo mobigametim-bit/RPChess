@@ -73,8 +73,13 @@ function followCamera(point){
  else if(point.y-camera.y < -limitY)camera.y=point.y+limitY;
 }
 function mapSkin(){
- try{return localStorage.getItem(PARCHMENT_MODE_KEY)==='classic'?'classic':'parchment';}
- catch{return 'parchment';}
+ try{
+  const saved=localStorage.getItem(PARCHMENT_MODE_KEY);
+  if(saved==='classic'||saved==='parchment')return saved;
+  // Explicit preview URL enables the experiment without changing old saves.
+  if(new URLSearchParams(location.search).get('parchment')==='1')return 'parchment';
+ }catch{}
+ return 'classic';
 }
 function setMapSkin(value){
  try{localStorage.setItem(PARCHMENT_MODE_KEY,value);}catch{}
