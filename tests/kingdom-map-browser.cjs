@@ -15,7 +15,7 @@ const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)
   const errors=[];page.on('pageerror',e=>errors.push(String(e.stack||e)));
   await page.goto(url,{waitUntil:'domcontentloaded'});
   await startNewRun(page,{playerName:'Kingdom Explorer',legacyTravel:false});
-  // Force a real Battle followed by Skirmish to catch the original bug:
+  // Force consecutive real Battles to catch the original bug:
   // their engine encounter IDs differ from the route ID kept by the map.
   await page.evaluate(async storage=>{
     const {randomEncounter}=await import('./js/kingdom-map-core.mjs');
@@ -24,11 +24,11 @@ const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)
     for(let i=0;i<1200;i++){
       const probe={...run,id:'kingdom-e2e-chain-'+i};
       if(randomEncounter(probe,{x:1,y:0},500).type==='battle'&&
-         randomEncounter(probe,{x:0,y:1},500).type==='skirmish'){
+         randomEncounter(probe,{x:0,y:1},500).type==='battle'){
         run.id=probe.id;found=true;break;
       }
     }
-    if(!found)throw new Error('No deterministic battle/skirmish map fixture found');
+    if(!found)throw new Error('No deterministic two-Battle map fixture found');
     localStorage.setItem(storage,JSON.stringify(run));
   },key);
   await page.locator('[data-roster-travel]').click();
@@ -127,8 +127,8 @@ const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)
      'the king must be able to make a second Journey step after Battle');
    assert.equal(second.kingdomMap.pendingCell,'0,1');
    assert.equal(second.kingdomMap.cells['0,1'].status,'revealed');
-   assert.equal(second.kingdomMap.cells['0,1'].selectedEncounter.type,'skirmish');
-   const skirmish=second.kingdomMap.cells['0,1'].selectedEncounter;
+   assert.equal(second.kingdomMap.cells['0,1'].selectedEncounter.type,'battle');
+   const secondBattle=second.kingdomMap.cells['0,1'].selectedEncounter;
    await page.waitForFunction(storage=>{
      const run=JSON.parse(localStorage.getItem(storage));
      return run?.activeTravelChoice?.kingdomCell==='0,1';
@@ -136,21 +136,21 @@ const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)
    await page.evaluate(async ({storage,choice})=>{
      const {hashString}=await import('./js/race-assets.mjs');
      const run=JSON.parse(localStorage.getItem(storage));
-     run.lastSkirmish={encounterId:'skirmish-'+hashString(choice.seed).toString(36)+'-'+choice.stars,
+     run.lastBattle={encounterId:'battle-'+hashString(choice.seed).toString(36)+'-'+choice.stars,
        result:'checkmate',winner:choice.playerColor,playerColor:choice.playerColor,encounterStars:choice.stars};
      run.activeTravelChoice=null;
      localStorage.setItem(storage,JSON.stringify(run));
-     dispatchEvent(new CustomEvent('rpchess:travel-open',{detail:{source:'skirmish-aftermath'}}));
-   },{storage:key,choice:skirmish});
+     dispatchEvent(new CustomEvent('rpchess:travel-open',{detail:{source:'battle-aftermath'}}));
+   },{storage:key,choice:secondBattle});
    await page.locator('[data-kingdom-map-screen]:not([hidden])').waitFor({timeout:15000});
    const won=await read(page);
    assert.equal(won.kingdomMap.pendingCell,null,
-     'successful real Skirmish must also release pendingCell');
+     'successful real second Battle must also release pendingCell');
    assert.equal(won.kingdomMap.cells['0,1'].status,'completed');
    assert.deepEqual(won.kingdomMap.king,{x:0,y:1});
    await page.locator('[data-kingdom-cell="0,2"]').click();
    assert.deepEqual((await read(page)).kingdomMap.king,{x:0,y:2},
-     'the king must be able to make a third step after Skirmish victory');
+     'the king must be able to make a third step after another Battle victory');
   }
   // Walk-only fixture: all eight neighbors are already completed. Check real
   // pointer hit-testing AND the visual center for every direction (no timers,
@@ -193,6 +193,6 @@ const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)
   assert.equal((await read(walking)).supplies,10,
     'free movement through completed tiles must not spend Supplies');
   await walking.close();
-  console.log('KINGDOM MAP PASS — multi-step Battle draw -> Skirmish win -> third tile, native engine IDs unlock map, 8-direction stable camera');
+  console.log('KINGDOM MAP PASS — multi-step Battle draw -> Battle win -> third tile, native engine IDs unlock map, 8-direction stable camera');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
