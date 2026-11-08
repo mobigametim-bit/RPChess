@@ -119,7 +119,20 @@ async function assertTileImage(page,cellId,relativePath){
     'Honor shards reflect the persistent Arena ledger, not current run data');
   assert.equal(await page.locator('[data-kingdom-points]').textContent(),'2',
     'Annexation shows the real available points');
+  assert.equal(await page.locator('[data-kingdom-power]').textContent(),'500',
+    'Power appears in the shared resource strip with its real rating');
+  assert.equal(await page.locator('[data-kingdom-threat]').count(),0,
+    'do not show the player Threat stars in the Kingdom header');
+  assert.equal(await page.locator('.km-power-group').count(),0,
+    'the old separate Power/Threat block has been removed');
+  const portraitSize=await page.locator('[data-kingdom-portrait]').evaluate(img=>{
+    const bounds=img.getBoundingClientRect();
+    return {width:bounds.width,height:bounds.height,loaded:img.complete&&img.naturalWidth>0};
+  });
+  assert(portraitSize.loaded&&portraitSize.width>=70&&portraitSize.height>=70,
+    'the named king portrait is enlarged to 72px and its image loads');
   for(const [kind,src] of [
+    ['power','generated_assets/node_battle.png'],
     ['glory','assets/relics/banner_nine.png'],
     ['points','assets/relics/diplomat_seal.png'],
     ['shards','assets/arena/mirror_shard.png']
@@ -155,7 +168,7 @@ async function assertTileImage(page,cellId,relativePath){
         valueFont:parseFloat(getComputedStyle(value).fontSize)};
     })};
   });
-  assert.equal(resourceMetrics.items.length,5,'all five resource counters stay visible');
+  assert.equal(resourceMetrics.items.length,6,'Power and five currencies all stay visible');
   for(const [index,item] of resourceMetrics.items.entries()){
     assert(item.iconSize>=43&&item.valueFont>=21,
       'resource '+index+' should display enlarged icon (44px) and value (22px)');
