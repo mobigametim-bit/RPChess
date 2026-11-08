@@ -7,6 +7,8 @@ import {difficultyForStars,starsText} from './encounter-difficulty.mjs';
 import {TRAVEL_SUPPLY_COST,combatGoldReward} from './resources-core.mjs';
 import {puzzleBaseGold} from './puzzles/puzzle-core.mjs';
 import {gloryForRun} from './chronicle-core.mjs';
+import {ARENA_KEY,SHARD_ICON,normalizeArena,arenaSummary} from './arena-core.mjs';
+import {platform} from './platform.mjs';
 import {FLAVOR_POOLS} from './travel-choice-core.mjs';
 import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
@@ -18,14 +20,14 @@ import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell
  romanForStars,keyOf,adjacent,borderEdges} from './kingdom-map-core.mjs';
 
 const COPY={
- ru:{title:'Карта королевства',castle:'Замок',supply:'Припасы',power:'Мощь',points:'Очки присоединения',
+ ru:{day:'День',shards:'Осколки чести',castle:'Замок',supply:'Припасы',power:'Мощь',points:'Очки присоединения',
    hidden:'Неизведанная территория',annex:'Присоединить · 1 очко',annexed:'В составе королевства',
    complete:'Пройдена',failed:'Неудача — повторная попытка',inProgress:'Встреча продолжается',
    return:'К отряду',reveal:'Открыта встреча',entry:'Начинается',services:'Услуги поселения',
    pending:'Открываю путь…',level:'Уровень',unavailable:'Недоступно для присоединения',
    discover:'Выбери соседнюю клетку, чтобы исследовать её',congrat:'Замок получил уровень',
    empty:'Открывайте территорию, чтобы основать королевство'},
- en:{title:'Kingdom Map',castle:'Castle',supply:'Supplies',power:'Power',points:'Annexation points',
+ en:{day:'Day',shards:'Honor shards',castle:'Castle',supply:'Supplies',power:'Power',points:'Annexation points',
    hidden:'Unexplored territory',annex:'Annex · 1 point',annexed:'Part of your kingdom',
    complete:'Cleared',failed:'Failed — retry encounter',inProgress:'Encounter in progress',
    return:'Squad',reveal:'Encounter discovered',entry:'Entering',services:'Settlement services',
@@ -39,10 +41,17 @@ const MIN_COLUMNS=9,MIN_ROWS=7;
 const REVEAL_MS=680,MOVE_MS=460,FLAVOR_MS=2600,DISCOVERY_WAIT_MS=4050;
 const GOLD_ICON='generated_assets/reward_gold.png';
 const SUPPLIES_ICON='generated_assets/reward_supplies.png';
+const GLORY_ICON='assets/relics/banner_nine.png';
+const ANNEX_ICON='assets/relics/diplomat_seal.png';
 const ROUTE_ICONS=Object.freeze({caravan:'assets/doctrines/cavalry/emblem.png',
  skirmish:'generated_assets/node_battle.png',battle:'generated_assets/node_elite.png',
  settlement:'generated_assets/node_shop.png',
  puzzle:'generated_assets/node_training.png'});
+// Honor shards are persistent Arena currency, not a resource on the Journey run.
+function honorShards(){
+ try{return arenaSummary(normalizeArena(JSON.parse(platform.storage.local?.getItem(ARENA_KEY)||'null'))).balance;}
+ catch{return 0;}
+}
 function oddCoverCount(pixels,minimum){
  const count=Math.max(minimum,Math.ceil(pixels/MAP_LAYOUT.cellPx));
  return count%2===0?count+1:count;
@@ -129,7 +138,7 @@ function report(text){const node=screen?.querySelector('[data-kingdom-toast]');i
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261108-map-card-b1';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261108-commandbar-c1';link.dataset.kingdomStyle='';
  link.addEventListener('load',()=>{if(screen&&!screen.hidden)render();});
  document.head.append(link);
 }
@@ -138,26 +147,21 @@ function screenReady(){
  cssReady();screen=document.createElement('main');screen.className='kingdom-map-screen';
  screen.dataset.kingdomMapScreen='';screen.hidden=true;
  screen.innerHTML=`<div class="km-shell">
- <header class="km-header travel-choice-topbar--command">
- <div class="km-heading"><small>RPCHESS · JOURNEY</small><h1 data-kingdom-title></h1></div>
+ <header class="km-header">
+ <div class="km-heading"><h1 data-kingdom-day></h1></div>
  <div class="km-commandbar">
+ <div class="km-commander-meta">
  <img class="km-commander-portrait" data-kingdom-portrait alt="">
  <div class="km-power-group">
  <span><small data-kingdom-power-label></small><strong data-kingdom-power></strong></span>
  <span><small data-kingdom-threat-label></small><strong data-kingdom-threat></strong></span>
- </div>
+ </div></div>
  <div class="km-resource-group">
- <span class="km-resource km-resource--gold"><img src="${GOLD_ICON}" alt=""><strong data-kingdom-gold></strong></span>
- <span class="km-resource km-resource--supplies"><img src="${SUPPLIES_ICON}" alt=""><strong data-kingdom-supplies></strong></span>
- <span class="km-resource km-resource--glory">
-  <svg class="km-glory-icon" viewBox="0 0 32 32" aria-hidden="true" fill="none">
-  <path d="M9 5h14v7c0 6-3.1 10-7 10S9 18 9 12V5Z" fill="#cfaa57" stroke="#ffdf92" stroke-width="1.7"/>
-  <path d="M9 8H5c0 6 2 9 6 9M23 8h4c0 6-2 9-6 9" stroke="#ffdf92" stroke-width="2" stroke-linecap="round"/>
-  <path d="m16 8 1.7 3.5 3.8.5-2.8 2.7.7 3.8-3.4-1.8-3.4 1.8.7-3.8-2.8-2.7 3.8-.5L16 8Z" fill="#4b351b"/>
-  <path d="M16 22v5m-6 2h12" stroke="#ffdf92" stroke-width="2.4" stroke-linecap="round"/>
-  </svg><strong data-kingdom-glory></strong>
- </span>
- <span class="km-resource km-resource--points"><small data-kingdom-points-label></small><strong data-kingdom-points></strong></span>
+ <span class="km-resource km-resource--gold"><img src="${GOLD_ICON}" alt="" aria-hidden="true"><strong data-kingdom-gold></strong></span>
+ <span class="km-resource km-resource--supplies"><img src="${SUPPLIES_ICON}" alt="" aria-hidden="true"><strong data-kingdom-supplies></strong></span>
+ <span class="km-resource km-resource--glory"><img src="${GLORY_ICON}" alt="" aria-hidden="true"><strong data-kingdom-glory></strong></span>
+ <span class="km-resource km-resource--points"><img src="${ANNEX_ICON}" alt="" aria-hidden="true"><strong data-kingdom-points></strong></span>
+ <span class="km-resource km-resource--shards"><img src="${SHARD_ICON}" alt="" aria-hidden="true"><strong data-kingdom-shards></strong></span>
  </div>
  <div class="km-actions">
   <button class="reboot-button reboot-button--primary km-back" data-kingdom-roster type="button"></button>
@@ -275,7 +279,8 @@ function render(){
  world.style.gridTemplateColumns=`repeat(${WIDTH},${MAP_LAYOUT.cellPx}px)`;
  world.style.gridTemplateRows=`repeat(${HEIGHT},${MAP_LAYOUT.cellPx}px)`;
  const power=readPlayerRating().power;
- screen.querySelector('[data-kingdom-title]').textContent=tr('title');
+ // Display-only day counter: keep existing Journey progression intact for future rules.
+ screen.querySelector('[data-kingdom-day]').textContent=tr('day')+' '+(Math.max(0,Number.isInteger(run.journeyStep)?run.journeyStep:0)+1);
  screen.querySelector('[data-kingdom-roster]').textContent=t('travel.roster');
  screen.querySelector('[data-kingdom-settings]').textContent=t('travel.settings');
  screen.querySelector('[data-kingdom-menu]').textContent=t('menu.actionsLabel');
@@ -288,10 +293,16 @@ function render(){
  screen.querySelector('[data-kingdom-threat]').textContent=starsText(Math.max(1,Math.min(12,Math.floor((power-400)/200)+1)));
  screen.querySelector('[data-kingdom-gold]').textContent=String(run.gold??0);
  screen.querySelector('[data-kingdom-supplies]').textContent=String(run.supplies??0);
- screen.querySelector('.km-resource--glory').title=runtimeT(currentLanguage(),'chronicle.glory');
+ for(const [selector,label] of [
+  ['.km-resource--gold',t('travel.goldAria')],
+  ['.km-resource--supplies',t('travel.suppliesAria')],
+  ['.km-resource--glory',runtimeT(currentLanguage(),'chronicle.glory')],
+  ['.km-resource--points',tr('points')],
+  ['.km-resource--shards',tr('shards')]
+ ]){const item=screen.querySelector(selector);item.title=label;item.setAttribute('aria-label',label);}
  screen.querySelector('[data-kingdom-glory]').textContent=String(gloryForRun(run.journeyStep,power));
- screen.querySelector('[data-kingdom-points-label]').textContent=tr('points');
  screen.querySelector('[data-kingdom-points]').textContent=String(pointsAvailable(map));
+ screen.querySelector('[data-kingdom-shards]').textContent=String(honorShards());
  const cells=document.createDocumentFragment();
  for(let row=-CENTER_Y;row<HEIGHT-CENTER_Y;row++)
   for(let col=-CENTER_X;col<WIDTH-CENTER_X;col++){
@@ -488,6 +499,7 @@ function syncPower(){
 }
 addEventListener('resize',()=>{if(screen&&!screen.hidden)render();});
 addEventListener('rpchess:power-updated',syncPower);
+addEventListener('rpchess:arena-updated',()=>{if(screen&&!screen.hidden)render();});
 addEventListener('rpchess:scene-changed',e=>{if(e.detail?.scene==='menu'||e.detail?.scene==='roster')hideMap();});
 subscribe(()=>{if(screen&&!screen.hidden)render();});
 globalThis.RPChessKingdomMap=Object.freeze({open:openMap,hide:hideMap,get map(){return readRun()?.kingdomMap||null;}});
