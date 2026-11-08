@@ -148,10 +148,10 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const parchment=await import(pathToFileURL(path.join(game,'js/kingdom-parchment-core.mjs')).href);
   assert.deepStrictEqual(Object.keys(parchment.GROUPS).sort(),[
     'fog_of_war_shapes','forest_clusters','hills_rocks','mountain_clusters',
-    'parchment_base_variations','river_segments','road_segments'
-  ],'the experimental parchment world registers all seven supplied sheets');
-  assert.strictEqual(Object.values(parchment.GROUPS).reduce((count,names)=>count+names.length,0),112,
-    'all 112 individually vectorized assets are named without invention');
+    'parchment_base_variations'
+  ],'the parchment atlas keeps exactly five core SVG groups');
+  assert.strictEqual(Object.values(parchment.GROUPS).reduce((count,names)=>count+names.length,0),80,
+    'road and river module assets are removed from the permanent catalog');
   for(const [kind,names] of Object.entries(parchment.GROUPS)){
     assert.strictEqual(names.length,16,kind+' has 16 separate sprites');
     for(let i=0;i<16;i++)assert.strictEqual(parchment.spritePath(kind,i),
@@ -164,6 +164,16 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'negative world chunks use floor and do not mirror/repeat at origin');
   const parchmentRoot=path.join(game,'assets/kingdom-parchment');
   const firstSvg=path.join(parchmentRoot,'forest_clusters/01_small_grove.svg');
+  for(const retired of ['road_segments','river_segments'])
+    assert(!fs.existsSync(path.join(parchmentRoot,retired)),
+      'discontinued modular '+retired+' must not be shipped');
+  const extraGroups=fs.readdirSync(parchmentRoot,{withFileTypes:true})
+    .filter(entry=>entry.isDirectory()&&!Object.keys(parchment.GROUPS).includes(entry.name));
+  for(const entry of extraGroups){
+    const files=fs.readdirSync(path.join(parchmentRoot,entry.name))
+      .filter(name=>name.endsWith('.svg'));
+    assert.strictEqual(files.length,16,entry.name+' must contain exactly 16 new SVG sprites');
+  }
   // The experimental source archive is delivered independently of the app.
   // When installed, ensure the release contains the whole exact vector set.
   if(fs.existsSync(firstSvg)){
