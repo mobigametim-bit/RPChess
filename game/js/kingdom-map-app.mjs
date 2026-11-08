@@ -26,7 +26,13 @@ const COPY={
    discover:'Select an adjacent tile to explore',congrat:'Castle reached level',
    empty:'Explore the realm to found a kingdom'}
 };
-const WIDTH=9,HEIGHT=7,CENTER_X=4,CENTER_Y=3;
+// Accepted visual-tuner preset. Fixed cell dimensions with a responsive virtual grid.
+const MAP_LAYOUT=Object.freeze({cellPx:142,eventScalePercent:73,kingPx:92,inspectorWidthPercent:25});
+const MIN_COLUMNS=9,MIN_ROWS=7;
+function oddCoverCount(pixels,minimum){
+ const count=Math.max(minimum,Math.ceil(pixels/MAP_LAYOUT.cellPx));
+ return count%2===0?count+1:count;
+}
 // The camera is independent of the king: keep world cells stationary when he
 // moves inside the viewport. Only pan after he reaches its inner edge.
 let screen=null,selected=null,movement=null,camera=null,flightTimer=null,launchTimer=null,runId=null,toastTimer=null;
@@ -45,7 +51,7 @@ function report(text){const node=screen?.querySelector('[data-kingdom-toast]');i
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261108-terrain-c3';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261108-layout-142-v1';link.dataset.kingdomStyle='';
  link.addEventListener('load',()=>{if(screen&&!screen.hidden)render();});
  document.head.append(link);
 }
@@ -66,6 +72,9 @@ function screenReady(){
  '<button type="button" data-kingdom-annex hidden></button>'+
  '<button type="button" data-kingdom-services hidden></button></div>'+
  '<p class="km-hint" data-kingdom-hint></p></aside></section></div>';
+ screen.style.setProperty('--km-event-size',MAP_LAYOUT.eventScalePercent+'%');
+ screen.style.setProperty('--km-king-px',MAP_LAYOUT.kingPx+'px');
+ screen.style.setProperty('--km-inspector-width',MAP_LAYOUT.inspectorWidthPercent+'%');
  (document.querySelector('#app')||document.body).append(screen);
  screen.querySelector('[data-kingdom-roster]').addEventListener('click',()=>{hideMap();globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue'));});
  screen.querySelector('[data-kingdom-annex]').addEventListener('click',claim);
@@ -150,14 +159,14 @@ function render(){
  const map=run.kingdomMap;const view=camera||map.king;
  const world=screen.querySelector('[data-kingdom-world]');
  const frame=screen.querySelector('.km-map-frame').getBoundingClientRect();
- const originalTile=Math.min(Math.max(0,frame.width-4)/WIDTH,Math.max(0,frame.height-4)/HEIGHT);
- if(originalTile>1){
-  // 2x relative to the former square cells, while always filling the frame.
-  // The 3px world borders are excluded from the 9x7 tile dimensions.
-  const tile=Math.max(originalTile*2,frame.width/WIDTH,frame.height/HEIGHT);
-  world.style.width=(tile*WIDTH+6)+'px';
-  world.style.height=(tile*HEIGHT+6)+'px';
- }
+ const WIDTH=oddCoverCount(frame.width,MIN_COLUMNS);
+ const HEIGHT=oddCoverCount(frame.height,MIN_ROWS);
+ const CENTER_X=Math.floor(WIDTH/2),CENTER_Y=Math.floor(HEIGHT/2);
+ // 142px squares; virtual grid expands to cover every edge without stretching.
+ world.style.width=(WIDTH*MAP_LAYOUT.cellPx)+'px';
+ world.style.height=(HEIGHT*MAP_LAYOUT.cellPx)+'px';
+ world.style.gridTemplateColumns=`repeat(${WIDTH},${MAP_LAYOUT.cellPx}px)`;
+ world.style.gridTemplateRows=`repeat(${HEIGHT},${MAP_LAYOUT.cellPx}px)`;
  screen.querySelector('[data-kingdom-title]').textContent=tr('title');
  screen.querySelector('[data-kingdom-roster]').textContent=tr('return');
  screen.querySelector('[data-kingdom-power]').textContent=tr('power')+': '+readPlayerRating().power;
@@ -212,18 +221,16 @@ function render(){
  world.replaceChildren(cells);
  const avatar=document.createElement('img');avatar.className='km-king'+(movement?' km-king--moving':'');
  avatar.src=kingArt(run);avatar.alt='';avatar.setAttribute('aria-hidden','true');
- // The king is not zoomed. Retain its pre-change physical size rather than
- // halving an enlarged cell (which varies with the map frame aspect ratio).
- if(originalTile>1){avatar.style.width=originalTile+'px';avatar.style.height=originalTile+'px';}
+ // King image dimensions stay independent of the tile scale.
+ avatar.style.width=MAP_LAYOUT.kingPx+'px';avatar.style.height=MAP_LAYOUT.kingPx+'px';
  // Position the king at the chosen cell's visual center, not at the camera
  // center. Inline coordinates override the CSS fallback for initial loads.
  avatar.style.left=((map.king.x-view.x+CENTER_X+.5)*100/WIDTH)+'%';
  avatar.style.top=((map.king.y-view.y+CENTER_Y+.5)*100/HEIGHT)+'%';
  if(movement){
-  // Animation traverses one NEW cell even though the king keeps its old size.
-  const cellBounds=world.querySelector('.km-cell').getBoundingClientRect();
-  avatar.style.setProperty('--km-from-x',(movement.x-map.king.x)*cellBounds.width+'px');
-  avatar.style.setProperty('--km-from-y',(movement.y-map.king.y)*cellBounds.height+'px');
+  // Movement always covers one fixed-size 142px tile.
+  avatar.style.setProperty('--km-from-x',(movement.x-map.king.x)*MAP_LAYOUT.cellPx+'px');
+  avatar.style.setProperty('--km-from-y',(movement.y-map.king.y)*MAP_LAYOUT.cellPx+'px');
  }
  world.append(avatar);
  const chosen=selected?map.cells[selected]:null;
