@@ -82,8 +82,6 @@ async function assertTileImage(page,cellId,relativePath){
       'forest_clusters/01_small_grove.svg',
       'mountain_clusters/01_single_summit.svg',
       'hills_rocks/01_three_hills.svg',
-      'road_segments/01_wide_we.svg',
-      'river_segments/01_horizontal_we.svg',
       'fog_of_war_shapes/01_broad_blot.svg'
     ];
     return Promise.all(files.map(async file=>{
@@ -97,6 +95,29 @@ async function assertTileImage(page,cellId,relativePath){
   });
   for(const sprite of artProbe)assert.equal(sprite.status===200&&sprite.decoded,true,
     'artist SVG must be shipped and decoded at 128px: '+sprite.file);
+  const manifest=await page.evaluate(async()=>{
+    const response=await fetch('assets/kingdom-parchment/extra-manifest.json');
+    if(!response.ok)throw Error('Parchment manifest missing: '+response.status);
+    return response.json();
+  });
+  assert.equal(manifest.version,1);
+  for(const old of ['road_segments','river_segments'])
+    assert.equal(old in manifest.groups,false,'removed road and river art stays out of build');
+  for(const [group,names] of Object.entries(manifest.groups)){
+    assert.equal(names.length,16,'each uploaded sprite group has 16 SVGs: '+group);
+  }
+  const expectedCore=['fog_of_war_shapes','forest_clusters','hills_rocks',
+    'mountain_clusters','parchment_base_variations'];
+  for(const key of expectedCore)assert(key in manifest.groups,'core sprite group missing: '+key);
+  for(const group of Object.keys(manifest.groups).filter(key=>!expectedCore.includes(key))){
+    const first=manifest.groups[group][0];
+    const decoded=await page.evaluate(async path=>{
+      const img=new Image();img.src=path;
+      try{await img.decode();return img.naturalWidth===128&&img.naturalHeight===128}
+      catch{return false}
+    },'assets/kingdom-parchment/'+group+'/'+first);
+    assert.equal(decoded,true,'new optional sprite group must decode: '+group);
+  }
   await page.waitForFunction(()=>
     document.querySelector('[data-kingdom-parchment]')?.dataset.parchmentArt==='loaded',
     null,{timeout:15000});
