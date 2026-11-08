@@ -100,7 +100,8 @@ function resumeMapEncounter(choice){
 }
 function aftermathEncounterType(source){if(source==='skirmish-aftermath')return'skirmish';if(source==='battle-aftermath')return'battle';return null;}
 function recoverAftermathRoute(run,source){const expected=aftermathEncounterType(source);if(!expected||run?.activeTravelChoice?.type!==expected)return run;return writeRun({...run,activeTravelChoice:null,currentTravelChoices:null});}
-function openTravel(event){routing=false;activeRun=readRun();if(!activeRun)return;const source=event?.detail?.source||null;activeRun=recoverAftermathRoute(activeRun,source);if(showPendingStarvation()||activeRun.ended)return;if(isTravelChoice(activeRun.activeTravelChoice)&&PLAYABLE_TRAVEL_TYPES.includes(activeRun.activeTravelChoice.type)){dispatchEncounter(activeRun.activeTravelChoice);return;}if(typeof location!=='undefined'&&new URLSearchParams(location.search).has('legacy_travel')){
+function openTravel(event){routing=false;activeRun=readRun();if(!activeRun)return;const source=event?.detail?.source||null;activeRun=recoverAftermathRoute(activeRun,source);if(showPendingStarvation()||activeRun.ended)return;if(isTravelChoice(activeRun.activeTravelChoice)&&PLAYABLE_TRAVEL_TYPES.includes(activeRun.activeTravelChoice.type)){dispatchEncounter(activeRun.activeTravelChoice);return;}if((typeof location!=='undefined'&&new URLSearchParams(location.search).has('legacy_travel'))||
+    globalThis.sessionStorage?.getItem('rpchess.test.legacyTravel')==='1'){
   activeRun=ensureChoices(activeRun);renderChoices();showTravel();return;
  }
  void import('./kingdom-map-app.mjs?v=20261108-infinite-map-a1').then(mod=>mod.openMap(event))
