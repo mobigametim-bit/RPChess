@@ -7,14 +7,19 @@ import {PARCHMENT_TILE,PARCHMENT_CHUNK_CELLS,randomAt,noise2D,terrainAt,pickSpri
 
 const CHUNK_PX=PARCHMENT_TILE*PARCHMENT_CHUNK_CELLS;
 const chunkCache=new Map(),spriteCache=new Map();
-const MAX_CHUNKS=18,MAX_SPRITES=36;
-let assetProbe=null,assetsReady=null,latest=null;
+const MAX_CHUNKS=18,MAX_SPRITES=64;
+let assetProbe=null,assetsReady=null,latest=null,redrawQueued=false;
+function queueRedraw(){
+ if(redrawQueued)return;
+ redrawQueued=true;
+ requestAnimationFrame(()=>{redrawQueued=false;latest?.();});
+}
 
 function probeArt(){
  if(assetProbe||typeof Image==='undefined')return;
  assetProbe=new Image();
- assetProbe.onload=()=>{assetsReady=true;latest?.();};
- assetProbe.onerror=()=>{assetsReady=false;latest?.();};
+ assetProbe.onload=()=>{assetsReady=true;queueRedraw();};
+ assetProbe.onerror=()=>{assetsReady=false;queueRedraw();};
  assetProbe.src='assets/kingdom-parchment/forest_clusters/01_small_grove.svg';
 }
 function getArt(src,repaint){
@@ -23,7 +28,7 @@ function getArt(src,repaint){
  if(entry){spriteCache.delete(src);spriteCache.set(src,entry);return entry.ready?entry.image:null;}
  if(spriteCache.size>=MAX_SPRITES)spriteCache.delete(spriteCache.keys().next().value);
  const image=new Image();entry={image,ready:false};spriteCache.set(src,entry);
- image.onload=()=>{entry.ready=true;repaint();};
+ image.onload=()=>{entry.ready=true;queueRedraw();};
  image.onerror=()=>{entry.ready=false;};
  image.src=src;
  return null;
@@ -65,7 +70,7 @@ function drawVector(ctx,src,x,y,width,height,alpha,repaint){
 }
 function drawBasePatches(ctx,seed,left,top,width,height,repaint){
  // Small, sparse parchment watercolor overlays. World anchored, no tile grid.
- const step=PARCHMENT_CHUNK_CELLS;
+ const step=PARCHMENT_CHUNK_CELLS*1.5;
  for(let y=Math.floor(top/step)-1;y<=Math.ceil((top+height)/step);y++)
   for(let x=Math.floor(left/step)-1;x<=Math.ceil((left+width)/step);x++){
    const px=(x*step-left+.32)*PARCHMENT_TILE,py=(y*step-top+.15)*PARCHMENT_TILE;
@@ -106,9 +111,10 @@ function drawLineArt(ctx,seed,left,top,width,height,repaint){
 function drawFogInk(ctx,seed,left,top,width,height,map,repaint){
  // Decorative fog shapes belong only in unexplored areas; the gradient mask
  // above still decides what the player is allowed to see.
- for(let y=Math.floor(top/4);y<=Math.ceil((top+height)/4);y++)
-  for(let x=Math.floor(left/4);x<=Math.ceil((left+width)/4);x++){
-   const wx=x*4+1,wy=y*4+1;
+ const step=6;
+ for(let y=Math.floor(top/step);y<=Math.ceil((top+height)/step);y++)
+  for(let x=Math.floor(left/step);x<=Math.ceil((left+width)/step);x++){
+   const wx=x*step+3,wy=y*step+3;
    if(map?.cells?.[wx+','+wy])continue;
    const size=PARCHMENT_TILE*2.7;
    const px=(wx-left)*PARCHMENT_TILE-size/2,py=(wy-top)*PARCHMENT_TILE-size/2;
