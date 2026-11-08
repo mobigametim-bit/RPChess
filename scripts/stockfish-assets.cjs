@@ -21,7 +21,7 @@ const ASSETS = Object.freeze([
 const LICENSE_URL = `https://raw.githubusercontent.com/nmrugg/stockfish.js/v${STOCKFISH_VERSION}/Copying.txt`;
 const LICENSE_GIT_BLOB_SHA1 = '818433ecc0e094a4db1023c68b33f24344643ad8';
 
-function requestBuffer(url, redirects = 0) {
+function requestBuffer(url, redirects = 0, retries = 0) {
   return new Promise((resolve, reject) => {
     if (redirects > 6) return reject(new Error(`too many redirects while downloading ${url}`));
     https.get(url, {
@@ -37,6 +37,10 @@ function requestBuffer(url, redirects = 0) {
       }
       if (status < 200 || status >= 300) {
         response.resume();
+        // GitHub releases periodically returns 502/503/504 from its CDN.
+        // Retry only transient statuses; original SHA-256 verification stays strict.
+        if ([429, 502, 503, 504].includes(status) && retries < 4)
+          return setTimeout(() => resolve(requestBuffer(url, redirects, retries + 1)), 1200 * (retries + 1));
         return reject(new Error(`download failed ${status}: ${url}`));
       }
       const chunks = [];
