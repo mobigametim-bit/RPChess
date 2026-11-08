@@ -245,8 +245,8 @@ async function assertDecoratedBackdrops(page, label) {
     const types = await page.locator('[data-travel-choice]').evaluateAll((nodes) => nodes.map((node) => node.dataset.travelType));
     assert.deepStrictEqual(types, ['puzzle','puzzle','puzzle'], 'known six-type seed proves duplicate Puzzle cards are allowed');
     assert.strictEqual(await page.locator('[data-travel-type="puzzle"]').count(), 3);
-    assert((await travel.innerText()).includes('Тренировка'), 'Puzzle route must expose the semantic Training label in DOM text');
-    assert((await travel.innerText()).includes('СЛОЖНОСТЬ'));
+    assert((await travel.innerText()).includes('Задача'), 'Puzzle route must retain the distinct chess Puzzle label, not Mentor Training');
+    assert.strictEqual(await page.locator('[data-travel-type="puzzle"] .travel-choice-card__threat > strong').count(), 3, 'all Puzzle route cards must show their difficulty stars');
     assert.strictEqual((await page.locator('[data-travel-inline-gold]').innerText()).trim(), '80');
     assert.strictEqual((await page.locator('[data-travel-inline-supplies]').innerText()).trim(), '10');
     await assertResourceAlignment(page);
