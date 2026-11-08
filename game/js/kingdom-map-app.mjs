@@ -13,6 +13,8 @@ import {FLAVOR_POOLS} from './travel-choice-core.mjs';
 import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
+import {PARCHMENT_MODE_KEY} from './kingdom-parchment-core.mjs';
+import {renderParchment} from './kingdom-parchment-app.mjs';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
@@ -20,14 +22,14 @@ import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell
  romanForStars,keyOf,adjacent,borderEdges} from './kingdom-map-core.mjs';
 
 const COPY={
- ru:{day:'День',shards:'Осколки чести',castle:'Замок',supply:'Припасы',power:'Мощь',points:'Очки присоединения',
+ ru:{classicMap:'Классика',parchmentMap:'Пергамент',switchMap:'Оформление карты',day:'День',shards:'Осколки чести',castle:'Замок',supply:'Припасы',power:'Мощь',points:'Очки присоединения',
    hidden:'Неизведанная территория',annex:'Присоединить · 1 очко',annexed:'В составе королевства',
    complete:'Пройдена',failed:'Неудача — повторная попытка',inProgress:'Встреча продолжается',
    return:'К отряду',reveal:'Открыта встреча',entry:'Начинается',services:'Услуги поселения',
    pending:'Открываю путь…',level:'Уровень',unavailable:'Недоступно для присоединения',
    discover:'Выбери соседнюю клетку, чтобы исследовать её',congrat:'Замок получил уровень',
    empty:'Открывайте территорию, чтобы основать королевство'},
- en:{day:'Day',shards:'Honor shards',castle:'Castle',supply:'Supplies',power:'Power',points:'Annexation points',
+ en:{classicMap:'Classic',parchmentMap:'Parchment',switchMap:'Map appearance',day:'Day',shards:'Honor shards',castle:'Castle',supply:'Supplies',power:'Power',points:'Annexation points',
    hidden:'Unexplored territory',annex:'Annex · 1 point',annexed:'Part of your kingdom',
    complete:'Cleared',failed:'Failed — retry encounter',inProgress:'Encounter in progress',
    return:'Squad',reveal:'Encounter discovered',entry:'Entering',services:'Settlement services',
@@ -69,6 +71,13 @@ function followCamera(point){
  else if(point.x-camera.x < -limitX)camera.x=point.x+limitX;
  if(point.y-camera.y>limitY)camera.y=point.y-limitY;
  else if(point.y-camera.y < -limitY)camera.y=point.y+limitY;
+}
+function mapSkin(){
+ try{return localStorage.getItem(PARCHMENT_MODE_KEY)==='classic'?'classic':'parchment';}
+ catch{return 'parchment';}
+}
+function setMapSkin(value){
+ try{localStorage.setItem(PARCHMENT_MODE_KEY,value);}catch{}
 }
 function lang(){return currentLanguage()==='en'?'en':'ru';}
 function storyText(choice){
@@ -151,7 +160,7 @@ function report(text){const node=screen?.querySelector('[data-kingdom-toast]');i
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261108-layered-guards-e1';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261108-parchment-preview-f1';link.dataset.kingdomStyle='';
  link.addEventListener('load',()=>{if(screen&&!screen.hidden)render();});
  document.head.append(link);
 }
@@ -178,6 +187,7 @@ function screenReady(){
   <button class="reboot-button reboot-button--primary" data-kingdom-menu type="button"></button>
  </div></div></header>
  <section class="km-layout"><div class="km-map-frame">
+ <button type="button" class="km-map-skin-switch" data-kingdom-skin-switch></button>
  <div class="km-world" data-kingdom-world role="grid" aria-label="Kingdom chess map"></div>
  <div class="km-toast" data-kingdom-toast role="status" hidden></div></div>
  <aside class="km-inspector"><div class="km-route-slot" data-kingdom-route-slot hidden></div>
@@ -196,6 +206,9 @@ function screenReady(){
  screen.querySelector('[data-kingdom-annex]').addEventListener('click',claim);
  screen.querySelector('[data-kingdom-services]').addEventListener('click',visitSettlement);
  screen.querySelector('[data-kingdom-world]').addEventListener('click',onCell);
+ screen.querySelector('[data-kingdom-skin-switch]').addEventListener('click',()=>{
+  setMapSkin(mapSkin()==='parchment'?'classic':'parchment');render();
+ });
  return screen;
 }
 function stopTimers(){
@@ -276,6 +289,12 @@ function kingArt(run){return commanderPieceArt(run.commanderId,'w');}
 function render(){
  const run=readRun();if(!run||!validateKingdomMap(run.kingdomMap)||!screen||screen.hidden)return;
  const map=run.kingdomMap;const view=camera||map.king;
+ const parchment=mapSkin()==='parchment';
+ screen.classList.toggle('km-parchment-mode',parchment);
+ const skinSwitch=screen.querySelector('[data-kingdom-skin-switch]');
+ skinSwitch.textContent=tr('switchMap')+': '+tr(parchment?'parchmentMap':'classicMap');
+ skinSwitch.title=tr('switchMap');
+ skinSwitch.setAttribute('aria-pressed',String(parchment));
  const visualKing=movement?.phase==='reveal'?movement:map.king;
  const world=screen.querySelector('[data-kingdom-world]');
  const frame=screen.querySelector('.km-map-frame').getBoundingClientRect();
@@ -375,6 +394,12 @@ function render(){
    cells.append(btn);
   }
  world.replaceChildren(cells);
+ if(parchment){
+  const atlas=document.createElement('canvas');atlas.className='km-parchment-canvas';
+  atlas.dataset.kingdomParchment='';atlas.setAttribute('aria-hidden','true');
+  world.prepend(atlas);
+  renderParchment(atlas,{seed:map.seed,view,columns:WIDTH,rows:HEIGHT,map});
+ }
  const avatar=document.createElement('img');avatar.className='km-king'+(movement?.phase==='moving'?' km-king--moving':'');
  avatar.src=kingArt(run);avatar.alt='';avatar.setAttribute('aria-hidden','true');
  // King image dimensions stay independent of the tile scale.
