@@ -232,6 +232,12 @@ async function assertDecoratedBackdrops(page, label) {
     assert.strictEqual(await page.locator('[data-travel-choice]').count(), 3);
     await assertDecoratedBackdrops(page, 'initial roster-to-Travel open');
     assert.strictEqual((await page.locator('[data-travel-week]').innerText()).trim(), 'Неделя 1');
+    // The legacy owner stylesheet is created asynchronously and may still be
+    // loading after the screen becomes visible on a fast CI browser.
+    await page.waitForFunction(() => {
+      const heading=document.querySelector('[data-travel-week]');
+      return heading && getComputedStyle(heading).fontFamily.includes('BrahmsGotischCyr');
+    }, null, { timeout: 12000 });
     const font = await page.locator('[data-travel-week]').evaluate((element) => getComputedStyle(element).fontFamily);
     assert(font.includes('BrahmsGotischCyr'));
     const copy = await travel.innerText();
