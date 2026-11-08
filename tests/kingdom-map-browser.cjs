@@ -214,9 +214,7 @@ async function assertTileImage(page,cellId,relativePath){
    assert.equal(lost.kingdomMap.cells['1,0'].status,'failed');
    assert.equal(await page.locator('[data-kingdom-route-card]').count(),0,
      'returning to the castle shows its summary until an unfinished route is selected');
-   await page.locator('[data-kingdom-cell="1,0"]').click({modifiers:['Alt']}).catch(()=>{});
-   // Failed routes retain their saved encounter and display the same preview
-   // when selected without changing the route identity.
+   // Failed routes retain their previously generated encounter until a retry.
    assert.equal(lost.kingdomMap.pendingCell,null,
     'completed real Battle must release the pending map cell');
    assert.deepEqual(lost.kingdomMap.king,{x:0,y:0});
