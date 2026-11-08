@@ -527,13 +527,24 @@ fs.mkdirSync(output,{recursive:true});
   const kings=await page.evaluate(()=>{
    const losing=document.querySelector('.mentor-king-defeated');
    const winning=document.querySelector('.mentor-king-victorious');
-   return {fall:getComputedStyle(losing.querySelector('.mentor-piece')).animationName,
-    red:getComputedStyle(losing,'::before').backgroundImage,
-    green:getComputedStyle(winning,'::before').backgroundImage};
+   const red=getComputedStyle(losing,'::after');
+   const green=getComputedStyle(winning,'::after');
+   const kingStyle=getComputedStyle(losing.querySelector('.mentor-piece'));
+   return {fall:kingStyle.animationName,red:red.backgroundImage,
+    green:green.backgroundImage,redFilter:red.filter,greenFilter:green.filter,
+    redZ:Number(red.zIndex),greenZ:Number(green.zIndex),
+    kingZ:Number(kingStyle.zIndex)};
   });
   assert.equal(kings.fall,'mentor-mate-king-fall');
-  assert(kings.red.includes('radial-gradient'),'red aura glows behind defeated king');
-  assert(kings.green.includes('radial-gradient'),'green aura glows behind victorious king');
+  assert(kings.red.includes('aura_red.png'),'loser uses the original red CHECK aura sprite');
+  assert(kings.green.includes('aura_red.png'),'winner uses the SAME CHECK aura sprite');
+  assert(!kings.red.includes('radial-gradient')&&!kings.green.includes('radial-gradient'),
+   'mate uses actual artwork, not CSS radial glow');
+  assert.equal(kings.redFilter,'none','losing king keeps the original red tint');
+  assert(kings.greenFilter.includes('hue-rotate(125deg)'),
+   'winning king recolors the existing check aura sprite green');
+  assert(kings.redZ<kings.kingZ&&kings.greenZ<kings.kingZ,
+   'both aura sprites must be behind the chess pieces');
   await page.waitForTimeout(1200);
   assert.equal(await page.locator('[data-mentor-result]').count(),0,
    'royal animations remain visible before the result dialog');
