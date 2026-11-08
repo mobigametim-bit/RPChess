@@ -57,6 +57,10 @@ function randomEncounter(run,point,power){
   const eventId=EVENT_IDS[hashString(seed+':event')%EVENT_IDS.length];
   const race=eventById(eventId)?.raceTag||'mixed';
   route.eventId=eventId;route.raceTag=race;
+  // Visual-only race: pinned to the persisted cell's seed. Never rewrite
+  // mixed/unknown narrative event races or their neutral chessboard tiles.
+  route.visualRaceTag=RACE_TAGS.includes(race)?race:
+    RACE_TAGS[hashString(seed+':event-visual-race')%RACE_TAGS.length];
  }else if(kind==='settlement'){
   // Settlement data has no canonical race field. This is a map-visual,
   // coordinate-seeded affiliation, independent of recruitment offers.
