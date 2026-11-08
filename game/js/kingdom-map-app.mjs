@@ -328,7 +328,10 @@ function render(){
     const choice=cell.selectedEncounter;
     if(choice){
      const img=document.createElement('img');img.className='km-object';
-     img.src=kingdomMapSprite(choice.type,choice.raceTag||choice.enemyRaceTag);img.alt='';img.loading='lazy';
+     // Use the saved cosmetic race for new mixed Events. Legacy saves retain
+     // stable artwork from their persisted route seed/ID, without migration.
+     img.src=kingdomMapSprite(choice.type,choice.raceTag||choice.enemyRaceTag,
+      choice.visualRaceTag||choice.seed||choice.id);img.alt='';img.loading='lazy';
      btn.append(img);
      const lvl=document.createElement('small');lvl.className='km-level';lvl.textContent=romanForStars(choice.stars);btn.append(lvl);
     }
