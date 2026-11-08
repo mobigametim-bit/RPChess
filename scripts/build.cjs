@@ -76,7 +76,7 @@ async function main(){
     for(const entry of fs.readdirSync(root,{withFileTypes:true})){
       if(!entry.isDirectory()||['road_segments','river_segments'].includes(entry.name))continue;
       const files=fs.readdirSync(path.join(root,entry.name))
-        .filter(name=>name.toLowerCase().endsWith('.svg')).sort();
+        .filter(name=>/\.(svg|png)$/i.test(name)).sort();
       if(files.length)groups[entry.name]=files;
     }
     fs.writeFileSync(path.join(dist,'assets/kingdom-parchment/extra-manifest.json'),
