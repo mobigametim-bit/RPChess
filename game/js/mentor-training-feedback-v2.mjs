@@ -7,7 +7,7 @@ import {ClassicChessEngine} from './classic-chess-engine.mjs';
 import {UCI,trainingMoveQualityWinChance} from './mentor-training-history.mjs';
 import {tacticalEvidence,MAX_PV} from './mentor-training-tactics.mjs';
 import {verifyImmediateThreat,TACTIC} from './mentor-training-threat.mjs';
-import {lessonFromVerified,mentorLessonCopy} from './mentor-training-teaching.mjs';
+import {lessonFromVerified,mentorLessonCopy} from './mentor-training-teaching.mjs?v=20261108-figure-wording-v2';
 
 const GRADE=new Set(['inaccuracy','mistake','blunder']);
 const THREAT_KINDS=new Set(['mate_sequence','undefended_capture','material_loss',
