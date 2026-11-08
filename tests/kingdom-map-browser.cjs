@@ -7,6 +7,25 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
 const key='rpchess.reboot.v1.run';
 const output=process.env.RPCHESS_KINGDOM_SCREENSHOT_DIR||'test-results/kingdom-map';
 const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)||'null'),key);
+// Check the actual computed URL AND successful bitmap decoding. The earlier
+// pathname-only test passed even when CSS requested /css/assets/... (404).
+async function assertTileImage(page,cellId,relativePath){
+ const result=await page.locator('[data-kingdom-cell="'+cellId+'"]').evaluate(async (element,path)=>{
+  const expected=new URL(path,document.baseURI).href;
+  const css=getComputedStyle(element).backgroundImage;
+  const decoded=await new Promise(resolve=>{
+   const img=new Image();
+   img.onload=()=>resolve(img.naturalWidth>0&&img.naturalHeight>0);
+   img.onerror=()=>resolve(false);
+   img.src=expected;
+  });
+  return {expected,css,decoded};
+ },relativePath);
+ assert(result.css.includes(result.expected),
+  'cell '+cellId+' must use the real asset URL, not a /css/assets/ relative path: '+result.css);
+ assert(result.decoded,'terrain image must load and decode: '+result.expected);
+}
+
 (async()=>{
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  try{
@@ -68,8 +87,7 @@ const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)
   assert(Math.abs(dimensions.king.width-previousKingSize)<2&&
     Math.abs(dimensions.king.height-previousKingSize)<2,
     'king image keeps the original pre-zoom CSS pixel size');
-  assert((await page.locator('[data-kingdom-cell="0,0"]').evaluate(el=>getComputedStyle(el).backgroundImage))
-    .includes('/races/humans/board/white.png'),'human castle renders the white world tile');
+  await assertTileImage(page,'0,0','assets/races/humans/board/white.png');
   await page.screenshot({path:path.join(output,'kingdom-01-fog-start.png')});
   // Regression: the camera must not recenter on every click. Before the fix,
   // the clicked tile slid to the middle, making a different tile appear opened.
@@ -94,8 +112,7 @@ const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)
   const encounterSprite=page.locator('[data-kingdom-cell="1,0"] img.km-object');
   assert.equal(await encounterSprite.getAttribute('src'),
     `assets/kingdom-map/${race}/${race}_battle_128.png`);
-  assert((await page.locator('[data-kingdom-cell="1,0"]').evaluate(el=>getComputedStyle(el).backgroundImage))
-    .includes('/races/'+race+'/board/black.png'),'opened odd-parity cell uses race-specific black tile');
+  await assertTileImage(page,'1,0','assets/races/'+race+'/board/black.png');
   await page.waitForFunction(()=>{
     const sprite=document.querySelector('[data-kingdom-cell="1,0"] img.km-object');
     return sprite?.complete&&sprite.naturalWidth===128;
@@ -245,8 +262,7 @@ const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)
   for(const [id,expected] of [['1,0','assets/boards/neutral/tile_dark.png'],
     ['-1,0','assets/races/elves/board/black.png'],
     ['1,1','assets/races/orcs/board/white.png']]){
-    const image=await walking.locator('[data-kingdom-cell="'+id+'"]').evaluate(el=>getComputedStyle(el).backgroundImage);
-    assert(image.includes(expected),'tile at '+id+' preserves world parity and encounter race: '+image);
+    await assertTileImage(walking,id,expected);
   }
   assert.equal((await read(walking)).supplies,10,
     'free movement through completed tiles must not spend Supplies');
