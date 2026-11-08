@@ -41,7 +41,7 @@ const GOLD_ICON='generated_assets/reward_gold.png';
 const SUPPLIES_ICON='generated_assets/reward_supplies.png';
 const ROUTE_ICONS=Object.freeze({caravan:'assets/doctrines/cavalry/emblem.png',
  skirmish:'generated_assets/node_battle.png',battle:'generated_assets/node_elite.png',
- event:'generated_assets/node_story.png',settlement:'generated_assets/node_shop.png',
+ settlement:'generated_assets/node_shop.png',
  puzzle:'generated_assets/node_training.png'});
 function oddCoverCount(pixels,minimum){
  const count=Math.max(minimum,Math.ceil(pixels/MAP_LAYOUT.cellPx));
@@ -89,7 +89,11 @@ function routeCard(choice,run,cell){
  const visual=document.createElement('div');visual.className='km-route-card__visual';
  visual.style.setProperty('--km-card-backdrop','url("'+new URL(routeBackdrop(choice),document.baseURI).href+'")');
  const icon=document.createElement('img');icon.className='km-route-card__icon';
- icon.src=ROUTE_ICONS[choice.type]||ROUTE_ICONS.event;icon.alt='';icon.setAttribute('aria-hidden','true');
+ icon.src=choice.type==='event'?
+  kingdomMapSprite('event',choice.raceTag||choice.enemyRaceTag,
+   choice.visualRaceTag||choice.seed||choice.id):
+  (ROUTE_ICONS[choice.type]||ROUTE_ICONS.puzzle);
+ icon.alt='';icon.setAttribute('aria-hidden','true');
  const details=document.createElement('div');details.className='km-route-card__details';
  const name=document.createElement('h3');name.textContent=t('travel.type.'+choice.type);
  const status=document.createElement('span');status.className='km-route-card__status';
