@@ -1,4 +1,4 @@
-/* Kingdom Journey: horizontal-only sparse chess world with virtualized 9x7 viewport. */
+/* Kingdom Journey: 2x zoomed chess terrain, clipped to a full-bleed frame. */
 .kingdom-map-screen[hidden]{display:none!important}
 body.kingdom-map-active{overflow:hidden}
 .kingdom-map-screen{
@@ -22,17 +22,16 @@ body.kingdom-map-active{overflow:hidden}
 .km-layout{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) clamp(230px,23vw,365px);gap:clamp(9px,1.3vw,20px)}
 .km-map-frame{min-height:0;min-width:0;position:relative;display:flex;align-items:center;justify-content:center;
  overflow:hidden;border:2px solid #9c814a;border-radius:10px;background:#101b19;box-shadow:inset 0 0 30px #02090b}
-.km-world{position:relative;isolation:isolate;display:grid;flex:none;
- width:min(100%, calc((100dvh - 110px) * 9 / 7));
- max-height:100%;aspect-ratio:9 / 7;
+.km-world{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+ isolation:isolate;display:grid;width:200%;height:200%;aspect-ratio:auto;
  grid-template-columns:repeat(9,minmax(0,1fr));grid-template-rows:repeat(7,minmax(0,1fr));
  border:3px solid #6f6642;box-shadow:0 0 28px #000a}
 .km-cell{border:1px solid #23342baa;min-width:0;min-height:0;overflow:hidden;
  position:relative;display:grid;place-items:center;padding:0;isolation:isolate;
- background:linear-gradient(140deg,#77866a,#536d62);transition:filter .22s,background .22s}
-.km-cell:nth-child(odd){background:linear-gradient(140deg,#aab48f,#889781)}
-.km-cell--fog{background:linear-gradient(140deg,#333735,#22282b)!important;filter:grayscale(1)}
-.km-cell--fog:nth-child(odd){background:linear-gradient(140deg,#616660,#3c4341)!important}
+ background:#536d62;transition:filter .22s}
+.km-cell--terrain{background-image:var(--km-tile-image);background-size:cover;background-position:center;background-repeat:no-repeat}
+.km-cell--fog.km-cell--dark{background:linear-gradient(140deg,#333735,#22282b)}
+.km-cell--fog.km-cell--light{background:linear-gradient(140deg,#616660,#3c4341)}
 .km-fog-mark{font-family:Georgia,serif;color:#e5e3d3cf;font-size:clamp(18px,2.7vw,42px);
  font-weight:900;text-shadow:0 3px 4px #151818,0 0 8px #0e1612}
 .km-object{width:94%;height:94%;position:absolute;object-fit:contain;z-index:2;
@@ -43,8 +42,7 @@ body.kingdom-map-active{overflow:hidden}
 .km-cell--adjacent::before{content:'';position:absolute;inset:4px;border:1px solid #ded2a378;pointer-events:none;z-index:3}
 .km-cell--selected{box-shadow:inset 0 0 0 3px #fff1ab;z-index:2}
 .km-cell--here{box-shadow:inset 0 0 0 2px #ffcf7a;z-index:2}
-.km-cell--failed{background:#813b3a!important}
-.km-cell--failed:nth-child(odd){background:#9d5750!important}
+.km-cell--failed{box-shadow:inset 0 0 0 3px #d44d46}
 .km-cell--in_progress,.km-cell--revealed{box-shadow:inset 0 0 0 3px #e9c16e9c}
 .km-failure{position:absolute;top:0;right:5px;color:#fff;font-size:22px;font-weight:900;text-shadow:0 1px 5px #490807;z-index:5}
 .km-level{position:absolute;right:4px;bottom:2px;z-index:5;padding:1px 3px;color:#fff8d8;
@@ -54,7 +52,7 @@ body.kingdom-map-active{overflow:hidden}
 .km-cell--annexed.km-edge-s{border-bottom:4px solid #d7bd5c}
 .km-cell--annexed.km-edge-w{border-left:4px solid #d7bd5c}
 .km-king{position:absolute;top:50%;left:50%;z-index:10;
- width:calc(100% / 9);height:calc(100% / 7);object-fit:contain;
+ width:calc(100% / 18);height:calc(100% / 14);object-fit:contain;
  transform:translate(-50%,-50%) scale(1.13);pointer-events:none;
  filter:drop-shadow(0 3px 4px #060e12) drop-shadow(0 0 5px #ffe7a2)}
 .km-king--moving{animation:km-king-step .46s cubic-bezier(.16,.74,.29,1.01) both}
@@ -86,7 +84,6 @@ body.kingdom-map-active{overflow:hidden}
  .km-inspector{padding:10px;gap:8px}
  .km-inspector h2{font-size:19px}
  .km-inspector p{font-size:13px}
- .km-world{width:min(100%, calc((100dvh - 62px) * 9 / 7))}
 }
 @media(max-width:790px){
  .km-shell{padding:4px 6px;gap:4px}
