@@ -7,6 +7,8 @@ on:
       - '.github/workflows/mentor-instant-ai-checkmate-preview.yml'
       - 'game/**'
       - 'tests/mentor-training-browser.cjs'
+      - 'tests/mentor-training-feedback.cjs'
+      - 'tests/localization-owner-contract.cjs'
       - 'docs/features/MENTOR_CHESS_VISION_ROADMAP.md'
   workflow_dispatch:
 
