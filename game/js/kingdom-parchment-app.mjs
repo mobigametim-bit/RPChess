@@ -244,6 +244,10 @@ function drawBorders(ctx,map,left,top,width,height){
 function renderParchment(canvas,{seed,view,columns,rows,map}){
  if(!canvas)return;
  probeArt();
+ // Observable renderer state for acceptance tests: the SVG probe, not the
+ // browser's bounded resource-timing buffer, determines whether real art loaded.
+ canvas.dataset.parchmentArt=assetsReady===true?'loaded':
+  assetsReady===false?'missing':'loading';
  const width=columns*PARCHMENT_TILE,height=rows*PARCHMENT_TILE;
  if(canvas.width!==width)canvas.width=width;
  if(canvas.height!==height)canvas.height=height;
