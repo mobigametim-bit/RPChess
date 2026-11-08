@@ -123,6 +123,25 @@ async function assertTileImage(page,cellId,relativePath){
     null,{timeout:15000});
   assert.equal(await atlas.getAttribute('data-parchment-art'),'loaded',
     'the parchment renderer uses the uploaded SVGs rather than its fallback');
+  // Procedural world-space roads and rivers are independent of the retired
+  // road_segments/river_segments assets: exercise both Canvas stroke types.
+  const linePixels=await page.evaluate(async()=>{
+    const {drawWaterRoads}=await import('./js/kingdom-parchment-app.mjs');
+    const canvas=document.createElement('canvas');
+    canvas.width=11*142;canvas.height=7*142;
+    const ctx=canvas.getContext('2d');
+    drawWaterRoads(ctx,'kingdom-test-seed',-5,-3,11,7);
+    const p=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+    let river=0,road=0;
+    for(let k=0;k<p.length;k+=16){
+      // River is capped with #c8d0ba; road uses dashed #746245.
+      if(p[k]===200&&p[k+1]===208&&p[k+2]===186&&p[k+3]===255)river++;
+      if(p[k]===116&&p[k+1]===98&&p[k+2]===69&&p[k+3]===255)road++;
+    }
+    return {river,road};
+  });
+  assert(linePixels.river>10&&linePixels.road>10,
+    'continuous algorithmic roads and rivers must paint independently of removed SVG modules');
   assert.equal(await page.locator('[data-kingdom-cell]').count(),77,
     'changing artwork cannot change the underlying 11x7 logical chess grid');
   const terrain=await atlas.evaluate(canvas=>{
