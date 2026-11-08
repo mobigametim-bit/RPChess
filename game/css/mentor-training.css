@@ -556,6 +556,13 @@ html[data-simple-pieces='1'] .mentor-square .rpchess-fantasy-piece{display:block
 }
 /* Show the AI note before the learner answers the tactical question. */
 .mentor-training .mentor-ai-block{display:flex;flex-direction:column;gap:7px;min-width:0}
+/* The mentor rail scrolls as a whole. Do not squeeze its children when the
+ * early AI explanation and the Stockfish variation occupy more than one screen. */
+.mentor-training .mentor-feedback > .mentor-ai-block,
+.mentor-training .mentor-feedback > .mentor-learning,
+.mentor-training .mentor-feedback > .mentor-variation{
+ flex:0 0 auto
+}
 .mentor-training .mentor-ai-label{font-size:clamp(15px,1.3vw,19px);color:#f1cb85}
 .mentor-training .mentor-ai-waiting{
  margin:0;padding:9px 11px;border-left:3px solid #d7b773;
