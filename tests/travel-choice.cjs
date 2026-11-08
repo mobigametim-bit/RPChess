@@ -162,6 +162,20 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'world sprite selection is stable for negative and positive coordinates');
   assert.strictEqual(parchment.chunkCoordinate(-1),-1,
     'negative world chunks use floor and do not mirror/repeat at origin');
+  const parchmentRoot=path.join(game,'assets/kingdom-parchment');
+  const firstSvg=path.join(parchmentRoot,'forest_clusters/01_small_grove.svg');
+  // The experimental source archive is delivered independently of the app.
+  // When installed, ensure the release contains the whole exact vector set.
+  if(fs.existsSync(firstSvg)){
+    for(const [kind,names] of Object.entries(parchment.GROUPS))
+      for(const name of names){
+        const file=path.join(parchmentRoot,kind,name+'.svg');
+        assert(fs.existsSync(file),'parchment map missing art: '+file);
+        const svg=fs.readFileSync(file,'utf8');
+        assert(svg.includes('viewBox="0 0 128 128"')&&!/<(?:script|image|foreignObject)\b/i.test(svg),
+          'parchment art must remain self-contained 128x128 SVG: '+name);
+      }
+  }
   assert(Math.abs(parchment.terrainAt('saved-run',5.13,-8.1).elevation-
     parchment.terrainAt('saved-run',5.130001,-8.1).elevation)<.00001,
     'continuous world terrain must not exhibit chunk boundary discontinuities');
