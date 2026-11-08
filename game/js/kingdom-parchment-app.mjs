@@ -310,4 +310,4 @@ function renderParchment(canvas,{seed,view,columns,rows,map}){
  drawBorders(ctx,map,left,top,columns,rows);
  drawBorderAccents(ctx,seed,map,left,top,columns,rows,repaint);
 }
-export {renderParchment};
+export {renderParchment,drawWaterRoads};
