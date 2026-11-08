@@ -102,9 +102,14 @@ jobs:
            const manifest=JSON.parse(fs.readFileSync(root+'/extra-manifest.json','utf8'));
            const allPaths=Object.entries(manifest.groups).flatMap(([group,names])=>
              names.map(name=>group+'/'+name));
-           for(const removed of ['road_segments','river_segments'])
-             assert(!fs.existsSync(root+'/'+removed),'discontinued module still shipped: '+removed);
-           assert(allPaths.length>=80,'complete core artwork must be bundled');
+           for(const removed of ['road_segments','river_segments','territory_border_accents_optional'])
+             assert(!fs.existsSync(root+'/'+removed),'retired visual assets must not be shipped: '+removed);
+           assert.equal(allPaths.length,112,'five core sets plus correct marsh and landmark SVGs');
+           assert.equal(Object.keys(manifest.groups).length,7,'there should be exactly seven sprite groups');
+           assert(manifest.groups.marsh_wasteland_optional.includes('01_pale_marsh.svg'),
+             'correct marsh artwork must be shipped');
+           assert(!manifest.groups.marsh_wasteland_optional.includes('01_straight_line.svg'),
+             'border-line artwork cannot masquerade as a marsh');
            for(const entry of allPaths){
              const p=root+'/'+entry;
              assert(fs.statSync(p).size>100,'missing built parchment art: '+p);
