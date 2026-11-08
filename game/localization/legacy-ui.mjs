@@ -119,7 +119,7 @@ const EN_EXACT = Object.freeze({
   'Классические шахматы': 'Classic Chess',
   'Партия': 'Game',
   'Локальная партия': 'Local Game',
-  'Взятые фигуры и перевес по материалу': 'Captured pieces and material advantage',
+  'Взятые фигуры и перевес по фигурам': 'Captured pieces and material advantage',
   'Фигуры, взятые белыми': 'Pieces captured by White',
   'Фигуры, взятые чёрными': 'Pieces captured by Black',
   'Белые начинают партию.': 'White starts the game.',
