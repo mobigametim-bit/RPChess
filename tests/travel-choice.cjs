@@ -155,6 +155,29 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert.strictEqual(kingdomMapSprite('event','mixed'),
     'generated_assets/node_story.png','mixed Events must not falsely claim a human race');
   assert.strictEqual(kingdomMapSprite('unexpected','elves'),null);
+  // Use the current Journey suite to assert named races and old-save hydration.
+  const commanders=await import(pathToFileURL(path.join(game,'js/commander-portraits.mjs')).href);
+  const settlement=await import(pathToFileURL(path.join(game,'js/settlement-core.mjs')).href);
+  const raceAssets=await import(pathToFileURL(path.join(game,'js/race-assets.mjs')).href);
+  assert.strictEqual(commanders.COMMANDERS.length,7);
+  for(const king of commanders.COMMANDERS)assert(raceAssets.RACE_TAGS.includes(king.raceTag),
+    'commander must have an existing race: '+king.id);
+  for(const hero of settlement.RECRUIT_LIBRARY)assert(raceAssets.RACE_TAGS.includes(hero.raceTag),
+    'recruit must have an existing race: '+hero.id);
+  for(const king of commanders.COMMANDERS){
+    const a=persistence.createRun({id:'race-test-'+king.id,commanderId:king.id});
+    assert.strictEqual(a.roster[0].raceTag,king.raceTag);
+    assert.strictEqual(mapCore.createKingdomMap(a,500,king.raceTag).castle.raceTag,king.raceTag);
+  }
+  const oldNamed=persistence.createRun({id:'legacy-named-races',commanderId:'stone_crown'});
+  const legacyRecruited={...settlement.recruitProfile('hero.roan_stag')};
+  delete legacyRecruited.raceTag;
+  const legacyRoster=oldNamed.roster.map(c=>{const x={...c};delete x.raceTag;return x});
+  persistence.writeRun({...oldNamed,roster:[...legacyRoster,legacyRecruited]},storage,1500);
+  const rehydrated=persistence.readRun(storage);
+  assert.strictEqual(rehydrated.roster[0].raceTag,'dwarves','legacy commander gets canonical race');
+  assert.strictEqual(rehydrated.roster.find(c=>c.id==='hero.roan_stag').raceTag,'beastfolk',
+    'legacy recruited hero gets canonical race');
   console.log('Kingdom map sprite register: PASS (85 RGBA PNGs, 14 races, 6 classes, neutral puzzle)');
   console.log('Travel Choice keeps 6-type ~16.7% pool, owner-keyed RU/EN compact UI and player Threat..Threat+3 encounter contract: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
