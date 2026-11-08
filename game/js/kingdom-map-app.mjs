@@ -391,17 +391,43 @@ function onCell(event){
   randomEncounter(run,point,readPlayerRating().power):null;
  const entered=enterCell(map,point,encounter);
  if(!entered.ok){render();return;}
- movement={...map.king};
- const nextMap=entered.map;
- followCamera(nextMap.king);
+ const nextMap=entered.map,from={...map.king},to={...nextMap.king};
+ const reduced=document.documentElement.dataset.reducedMotion==='1';
+ const discovering=entered.kind==='discover';
+ // The logical encounter is persisted immediately for crash-safe resume,
+ // but the visual king stays put until the fog/terrain reveal has finished.
  if(entered.kind!=='walk'){
-  const delay=entered.kind==='discover'?2450:700;
+  const delay=discovering?DISCOVERY_WAIT_MS:3000;
   nextMap.cells[id]={...nextMap.cells[id],revealUntil:Date.now()+delay};
  }
+ clearTimeout(flightTimer);clearTimeout(flavorTimer);flavorBurst=null;
  writeRun({...run,kingdomMap:nextMap});
- render();
- clearTimeout(flightTimer);
- flightTimer=setTimeout(()=>{movement=null;render();},450);
+ const finishStep=()=>{
+  movement=null;
+  if(entered.kind!=='walk'){
+   const narrative=storyText(nextMap.cells[id]?.selectedEncounter);
+   if(narrative){
+    flavorBurst={id,text:narrative};
+    flavorTimer=setTimeout(()=>{flavorBurst=null;if(screen&&!screen.hidden)render();},FLAVOR_MS);
+   }
+  }
+  if(screen&&!screen.hidden&&runId===run.id)render();
+ };
+ const moveKing=()=>{
+  if(!screen||screen.hidden||runId!==run.id)return;
+  followCamera(to);
+  if(reduced){finishStep();return;}
+  movement={...from,phase:'moving'};
+  render();
+  flightTimer=setTimeout(finishStep,MOVE_MS);
+ };
+ if(discovering){
+  movement={...from,phase:'reveal'};
+  render(); // terrain and route card are visible; the king remains on the old tile
+  flightTimer=setTimeout(moveKing,reduced?80:REVEAL_MS);
+ }else{
+  moveKing(); // already revealed/completed tiles do not repeat the fog opening
+ }
  if(entered.kind!=='walk')schedulePending(readRun());
 }
 function claim(){
@@ -423,13 +449,16 @@ function visitSettlement(){
 function openMap(event){
  let run=readRun();if(!run||run.ended)return;
  run=ensureMap(run);
+ // A saved reveal can be resumed without replaying a misleading in-flight king.
+ clearTimeout(flightTimer);clearTimeout(flavorTimer);
+ movement=null;flavorBurst=null;
  if(runId!==run.id||!camera)camera={...run.kingdomMap.king};
  runId=run.id;
  run=settleIfReturned(run,event?.detail?.source||'');
  followCamera(run.kingdomMap.king);
  showMap();
  selected=keyOf(run.kingdomMap.king.x,run.kingdomMap.king.y);
- movement=null;render();schedulePending(run);
+ render();schedulePending(run);
 }
 function syncPower(){
  const run=readRun();if(!run||run.ended||!validateKingdomMap(run.kingdomMap))return;
