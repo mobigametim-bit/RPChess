@@ -55,6 +55,18 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   // generator remains a compatibility API, but the map discovers ONE route.
   const mapCore=await import(pathToFileURL(path.join(game,'js/kingdom-map-core.mjs')).href);
   const mapRun=persistence.createRun({id:'kingdom-map-contract',now:1700000000000});
+  for(const type of ['battle','skirmish']){
+    const route={id:'kingdom.test.'+type,type,seed:'seed-'+type,stars:7};
+    const engineId=type+'-'+travel.hashString(route.seed).toString(36)+'-7';
+    assert(mapCore.matchesCombatReceipt(route,{encounterId:engineId}),
+      'existing '+type+' results must match their genuine engine encounter ID');
+    assert(mapCore.matchesCombatReceipt(route,{routeId:route.id,encounterId:engineId}),
+      'new '+type+' receipts store the map route ID explicitly');
+    assert(mapCore.matchesCombatReceipt(route,{encounterId:route.id}),
+      'legacy synthetic route ID remains readable');
+    assert(!mapCore.matchesCombatReceipt(route,{encounterId:engineId+'-other'}),
+      'unrelated '+type+' results must not unlock a map cell');
+  }
   const startMap=mapCore.createKingdomMap(mapRun,500);
   assert(mapCore.validateKingdomMap(startMap));
   assert.strictEqual(mapCore.pointsAvailable(startMap),2,'starting 500 Power earns 2 irreversible points');

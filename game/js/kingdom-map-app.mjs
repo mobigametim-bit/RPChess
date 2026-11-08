@@ -5,7 +5,7 @@ import {commanderPieceArt} from './commander-portraits.mjs';
 import {difficultyForStars} from './encounter-difficulty.mjs';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
- beginEncounter,finishEncounter,annexCell,canAnnex,pointsAvailable,castleLevel,
+ beginEncounter,finishEncounter,matchesCombatReceipt,annexCell,canAnnex,pointsAvailable,castleLevel,
  romanForStars,keyOf,adjacent,borderEdges} from './kingdom-map-core.mjs';
 
 const IMAGES=Object.freeze({
@@ -108,7 +108,7 @@ function encounterResult(run,source,choice){
   return last?.routeId===choice.id?{success:last.result==='solved'}:null;
  }
  const last=choice.type==='battle'?run.lastBattle:choice.type==='skirmish'?run.lastSkirmish:run.lastCaravan;
- if(last?.encounterId!==choice.id)return null;
+ if(!matchesCombatReceipt(choice,last))return null;
  const success=last.result==='checkmate'&&last.winner===last.playerColor;
  return {success,opponentPower:choice.type==='battle'?
   difficultyForStars(last.encounterStars||choice.stars).elo:0};

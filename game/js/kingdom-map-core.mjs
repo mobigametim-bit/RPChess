@@ -111,6 +111,15 @@ function finishEncounter(map,id,{success=false,opponentPower=0}={}){
  }
  return {ok:true,map:next,first,retreated:!success};
 }
+// Engine encounter IDs are derived from the seed; map route IDs identify
+// cells. Accept both, including old saves created before explicit receipts.
+function matchesCombatReceipt(choice,last){
+ if(!choice||!last||!['battle','skirmish','caravan'].includes(choice.type))return false;
+ if(last.routeId===choice.id||last.encounterId===choice.id)return true;
+ if(!['battle','skirmish'].includes(choice.type)||
+    typeof choice.seed!=='string'||!Number.isInteger(choice.stars))return false;
+ return last.encounterId===`${choice.type}-${hashString(choice.seed).toString(36)}-${choice.stars}`;
+}
 function canAnnex(map,point){
  if(!validateKingdomMap(map)||pointsAvailable(map)<1)return false;
  const id=keyOf(point.x,point.y),cell=map.cells[id];
@@ -132,4 +141,4 @@ function borderEdges(map,point){
 }
 export {MAP_VERSION,TYPES,ROMANS,keyOf,isPoint,adjacent,orthogonal,romanForStars,castleLevel,
  createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,beginEncounter,
- finishEncounter,canAnnex,annexCell,pointsEarned,pointsAvailable,borderEdges};
+ finishEncounter,matchesCombatReceipt,canAnnex,annexCell,pointsEarned,pointsAvailable,borderEdges};
