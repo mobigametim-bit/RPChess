@@ -35,10 +35,9 @@ body.kingdom-map-active{overflow:hidden}
 .km-cell--fog:nth-child(odd){background:linear-gradient(140deg,#616660,#3c4341)!important}
 .km-fog-mark{font-family:Georgia,serif;color:#e5e3d3cf;font-size:clamp(18px,2.7vw,42px);
  font-weight:900;text-shadow:0 3px 4px #151818,0 0 8px #0e1612}
-.km-object{width:82%;height:82%;position:absolute;object-fit:contain;z-index:2;
+.km-object{width:94%;height:94%;position:absolute;object-fit:contain;z-index:2;
  filter:drop-shadow(0 4px 3px #07110dbb);pointer-events:none}
-.km-object--castle{display:grid;place-items:center;font-size:clamp(24px,4vw,56px);
- color:#ffe2a8;text-shadow:0 2px 0 #533b25,0 0 18px #e4bd72}
+.km-object--castle{width:94%;height:94%;object-fit:contain;display:block}
 .km-cell--adjacent{cursor:pointer}
 .km-cell--adjacent:hover{filter:brightness(1.22)}
 .km-cell--adjacent::before{content:'';position:absolute;inset:4px;border:1px solid #ded2a378;pointer-events:none;z-index:3}

@@ -3,16 +3,12 @@ import {readRun,writeRun} from './run-persistence.mjs';
 import {readPlayerRating} from './player-rating.mjs';
 import {commanderPieceArt} from './commander-portraits.mjs';
 import {difficultyForStars} from './encounter-difficulty.mjs';
+import {kingdomMapSprite} from './kingdom-map-assets.mjs';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
  beginEncounter,finishEncounter,matchesCombatReceipt,annexCell,canAnnex,pointsAvailable,castleLevel,
  romanForStars,keyOf,adjacent,borderEdges} from './kingdom-map-core.mjs';
 
-const IMAGES=Object.freeze({
- battle:'generated_assets/node_elite.png',skirmish:'generated_assets/node_battle.png',
- caravan:'assets/doctrines/cavalry/emblem.png',event:'generated_assets/node_story.png',
- settlement:'generated_assets/node_shop.png',puzzle:'generated_assets/node_training.png'
-});
 const COPY={
  ru:{title:'Карта королевства',castle:'Замок',supply:'Припасы',power:'Мощь',points:'Очки присоединения',
    hidden:'Неизведанная территория',annex:'Присоединить · 1 очко',annexed:'В составе королевства',
@@ -47,7 +43,7 @@ function report(text){const node=screen?.querySelector('[data-kingdom-toast]');i
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261108-a2';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261108-art-b1';link.dataset.kingdomStyle='';
  document.head.append(link);
 }
 function screenReady(){
@@ -170,13 +166,15 @@ function render(){
    btn.setAttribute('aria-label',isCastle?tr('castle'):cell?.selectedEncounter?
     t('travel.type.'+cell.selectedEncounter.type):tr('hidden'));
    if(!cell){const mark=document.createElement('strong');mark.textContent='?';mark.className='km-fog-mark';btn.append(mark);}
-   else if(isCastle){const mark=document.createElement('span');mark.textContent='♜';mark.className='km-object km-object--castle';btn.append(mark);
+   else if(isCastle){
+    const mark=document.createElement('img');mark.className='km-object km-object--castle';
+    mark.src=kingdomMapSprite('castle',map.castle.raceTag);mark.alt='';mark.loading='lazy';btn.append(mark);
     const level=document.createElement('small');level.className='km-level';level.textContent=['','I','II','III','IV','V'][castleLevel(map.peakKingPower)];btn.append(level);}
    else{
     const choice=cell.selectedEncounter;
     if(choice){
      const img=document.createElement('img');img.className='km-object';
-     img.src=IMAGES[choice.type]||IMAGES.puzzle;img.alt='';
+     img.src=kingdomMapSprite(choice.type,choice.raceTag||choice.enemyRaceTag);img.alt='';img.loading='lazy';
      btn.append(img);
      const lvl=document.createElement('small');lvl.className='km-level';lvl.textContent=romanForStars(choice.stars);btn.append(lvl);
     }
