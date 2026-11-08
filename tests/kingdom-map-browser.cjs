@@ -50,6 +50,13 @@ async function assertTileImage(page,cellId,relativePath){
     if(!found)throw new Error('No deterministic two-Battle map fixture found');
     localStorage.setItem(storage,JSON.stringify(run));
   },key);
+  // Arena shards are account currency; the Kingdom HUD must use its ledger.
+  await page.evaluate(()=>{
+    localStorage.setItem('rpchess.reboot.v1.arena',JSON.stringify({
+      version:1,events:[{id:'hud-fixture:win',kind:'win',foe:'pawn:humans',amount:37,at:1}],
+      squad:'humans',match:null,updatedAt:1
+    }));
+  });
   await page.locator('[data-roster-travel]').click();
   await page.locator('[data-kingdom-map-screen]:not([hidden])').waitFor({timeout:20000});
   assert.equal(await page.locator('[data-travel-choice-screen]:not([hidden])').count(),0,
@@ -105,6 +112,44 @@ async function assertTileImage(page,cellId,relativePath){
   await assertTileImage(page,'0,0','assets/races/humans/board/white.png');
   assert.equal(await page.locator('[data-kingdom-glory]').textContent(),'0',
     'current Glory uses the Chronicle formula, not an invented currency');
+  assert.equal(await page.locator('[data-kingdom-day]').textContent(),'День 1',
+    'the left header contains only the new Day counter');
+  assert.equal(await page.locator('.km-heading').innerText(),'День 1');
+  assert.equal(await page.locator('[data-kingdom-shards]').textContent(),'37',
+    'Honor shards reflect the persistent Arena ledger, not current run data');
+  assert.equal(await page.locator('[data-kingdom-points]').textContent(),'2',
+    'Annexation shows the real available points');
+  for(const [kind,src] of [
+    ['glory','assets/relics/banner_nine.png'],
+    ['points','assets/relics/diplomat_seal.png'],
+    ['shards','assets/arena/mirror_shard.png']
+  ]){
+    const icon=page.locator('.km-resource--'+kind+' img');
+    assert.equal(await icon.getAttribute('src'),src);
+    await page.waitForFunction(kind=>{
+      const image=document.querySelector('.km-resource--'+kind+' img');
+      return image?.complete&&image.naturalWidth>0;
+    },kind,{timeout:15000});
+  }
+  const hudBounds=await page.evaluate(()=>{
+    const rect=selector=>{
+      const box=document.querySelector(selector).getBoundingClientRect();
+      return {left:box.left,right:box.right,top:box.top,bottom:box.bottom};
+    };
+    return {header:rect('.km-header'),day:rect('.km-heading h1'),
+      portrait:rect('.km-commander-meta'),resources:rect('.km-resource-group'),
+      actions:rect('.km-actions')};
+  });
+  assert(hudBounds.day.right<hudBounds.portrait.left &&
+    hudBounds.portrait.right<=hudBounds.resources.left+3 &&
+    hudBounds.resources.right<=hudBounds.actions.left+3 &&
+    hudBounds.actions.right<=hudBounds.header.right+1,
+    'Day, commander, resources and action buttons must not overlap at 1366x768');
+  await page.evaluate(()=>globalThis.RPChessI18n.setLanguage('en'));
+  assert.equal(await page.locator('[data-kingdom-day]').textContent(),'Day 1');
+  assert.equal(await page.locator('.km-resource--shards').getAttribute('title'),'Honor shards');
+  await page.evaluate(()=>globalThis.RPChessI18n.setLanguage('ru'));
+  assert.equal(await page.locator('[data-kingdom-day]').textContent(),'День 1');
   assert.equal(await page.locator('[data-kingdom-gold]').textContent(),String(before.gold),
     'the gold header matches the current run');
   assert.equal(await page.locator('[data-kingdom-supplies]').textContent(),String(before.supplies),
