@@ -60,9 +60,11 @@ const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)
   assert(dimensions.world.left<=dimensions.frame.left&&dimensions.world.right>=dimensions.frame.right&&
     dimensions.world.top<=dimensions.frame.top&&dimensions.world.bottom>=dimensions.frame.bottom,
     'enlarged cells must fill the map frame with no empty gutters');
-  assert(dimensions.world.width/dimensions.frame.width>=1.96&&dimensions.world.height/dimensions.frame.height>=1.96,
-    'world scale is doubled on both axes');
   const previousKingSize=Math.min((dimensions.frame.width-4)/9,(dimensions.frame.height-4)/7);
+  assert(dimensions.tile.width>=previousKingSize*1.99&&dimensions.tile.height>=previousKingSize*1.99,
+    'each world tile is at least twice the former chess-cell size');
+  assert(Math.abs(dimensions.tile.width-dimensions.tile.height)<2,
+    'race chess tiles retain square geometry at 2x zoom');
   assert(Math.abs(dimensions.king.width-previousKingSize)<2&&
     Math.abs(dimensions.king.height-previousKingSize)<2,
     'king image keeps the original pre-zoom CSS pixel size');
