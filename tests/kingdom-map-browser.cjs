@@ -145,6 +145,25 @@ async function assertTileImage(page,cellId,relativePath){
     hudBounds.resources.right<=hudBounds.actions.left+3 &&
     hudBounds.actions.right<=hudBounds.header.right+1,
     'Day, commander, resources and action buttons must not overlap at 1366x768');
+  const resourceMetrics=await page.locator('.km-resource-group').evaluate(group=>{
+    const bounds=group.getBoundingClientRect();
+    return {bounds:{left:bounds.left,right:bounds.right},items:[...group.querySelectorAll('.km-resource')].map(item=>{
+      const icon=item.querySelector('img').getBoundingClientRect();
+      const value=item.querySelector('strong');
+      const box=item.getBoundingClientRect();
+      return {left:box.left,right:box.right,iconSize:icon.width,
+        valueFont:parseFloat(getComputedStyle(value).fontSize)};
+    })};
+  });
+  assert.equal(resourceMetrics.items.length,5,'all five resource counters stay visible');
+  for(const [index,item] of resourceMetrics.items.entries()){
+    assert(item.iconSize>=43&&item.valueFont>=21,
+      'resource '+index+' should display enlarged icon (44px) and value (22px)');
+    assert(item.left>=resourceMetrics.bounds.left-1&&item.right<=resourceMetrics.bounds.right+1,
+      'resource '+index+' must stay within its header area at 1366x768');
+    if(index)assert(item.left>=resourceMetrics.items[index-1].right,
+      'resource '+index+' must not overlap the preceding counter');
+  }
   await page.evaluate(()=>globalThis.RPChessI18n.setLanguage('en'));
   assert.equal(await page.locator('[data-kingdom-day]').textContent(),'Day 1');
   assert.equal(await page.locator('.km-resource--shards').getAttribute('title'),'Honor shards');
