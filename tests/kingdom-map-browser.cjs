@@ -209,14 +209,30 @@ async function assertTileImage(page,cellId,relativePath){
   const race=encounter.enemyRaceTag||encounter.raceTag;
   const role=['pawn','knight','bishop','rook','queen','king'][Math.floor((encounter.stars-1)/2)];
   const expectedPiece=`assets/races/${race}/pieces/board/black/${role}.png`;
-  const encounterSprite=page.locator('[data-kingdom-cell="1,0"] img.km-object');
-  assert.equal(await encounterSprite.getAttribute('src'),expectedPiece,
-    'Battle map icon must show enemy-race chess piece for the saved Threat level');
+  const expectedSite=`assets/kingdom-map/${race}/${race}_battle_128.svg`;
+  const site=page.locator('[data-kingdom-cell="1,0"] img.km-object--site');
+  const defender=page.locator('[data-kingdom-cell="1,0"] img.km-object--defender');
+  assert.equal(await site.getAttribute('src'),expectedSite,
+    'Battle location SVG must stay visible on the map beneath the guardian');
+  assert.equal(await defender.getAttribute('src'),expectedPiece,
+    'enemy race/Threat figure guards the site as a separate foreground sprite');
   await assertTileImage(page,'1,0','assets/races/'+race+'/board/black.png');
   await page.waitForFunction(()=>{
-    const sprite=document.querySelector('[data-kingdom-cell="1,0"] img.km-object');
-    return sprite?.complete&&sprite.naturalWidth>0;
+    const cell=document.querySelector('[data-kingdom-cell="1,0"]');
+    return [...cell.querySelectorAll('img.km-object')].length===2 &&
+      [...cell.querySelectorAll('img.km-object')].every(img=>img.complete&&img.naturalWidth>0);
   },null,{timeout:15000});
+  const layers=await page.locator('[data-kingdom-cell="1,0"]').evaluate(cell=>{
+    const back=cell.querySelector('.km-object--site');
+    const front=cell.querySelector('.km-object--defender');
+    const a=back.getBoundingClientRect(),b=front.getBoundingClientRect();
+    return {siteSize:a.width,defenderSize:b.width,
+      siteDepth:Number(getComputedStyle(back).zIndex),
+      defenderDepth:Number(getComputedStyle(front).zIndex),
+      overlap:a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top};
+  });
+  assert(layers.siteSize>layers.defenderSize&&layers.defenderDepth>layers.siteDepth&&layers.overlap,
+    'enemy guardian must be smaller, overlaid and visually in front of the site');
   assert.equal(moved.supplies,before.supplies,'moving and unveiling do not charge resources prematurely');
   assert.equal(await page.locator('[data-kingdom-cell="1,0"] .km-fog-mark').count(),0,
    'the fog opens before the encounter begins');
@@ -229,8 +245,10 @@ async function assertTileImage(page,cellId,relativePath){
     'an unresolved cell shows a full Travel-style card on the right');
   const routeCard=page.locator('[data-kingdom-route-card]');
   assert.equal(await routeCard.getAttribute('data-kingdom-route-status'),'revealed');
-  assert.equal(await routeCard.locator('.km-route-card__icon').getAttribute('src'),expectedPiece,
-    'right encounter card should show the same race/Threat piece as the map');
+  assert.equal(await routeCard.locator('.km-route-card__icon').getAttribute('src'),expectedSite,
+    'the right card must preserve the original site SVG beneath the defender');
+  assert.equal(await routeCard.locator('.km-route-card__defender').getAttribute('src'),expectedPiece,
+    'the right card must also render the enemy guard on top of the site');
   assert.equal(await routeCard.locator('.km-route-card__stars').count(),1,'route card shows real difficulty stars');
   assert.equal(await routeCard.locator('.km-route-resource').count(),2,
     'Battle route card displays supply cost and gold reward');
@@ -404,6 +422,13 @@ async function assertTileImage(page,cellId,relativePath){
     'legacy mixed event SVG is stable after rerender');
   assert.strictEqual((await read(walking)).kingdomMap.cells['1,0'].selectedEncounter.raceTag,'mixed',
     'cosmetic SVG must not modify narrative race or neutral tile');
+  assert.equal(await walking.locator('[data-kingdom-cell="1,0"] .km-object--defender').count(),0,
+    'mixed narrative event keeps only its event SVG, no combat guardian');
+  const orcCell=walking.locator('[data-kingdom-cell="1,1"]');
+  assert.equal(await orcCell.locator('.km-object--site').getAttribute('src'),
+    'assets/kingdom-map/orcs/orcs_battle_128.svg','saved Battle retains its location SVG');
+  assert.equal(await orcCell.locator('.km-object--defender').getAttribute('src'),
+    'assets/races/orcs/pieces/board/black/pawn.png','saved Battle overlays an orc pawn');
   assert.equal((await read(walking)).supplies,10,
     'free movement through completed tiles must not spend Supplies');
   await walking.close();
