@@ -210,6 +210,7 @@ function navigation(){
 function boardHTML(chess,preview=false){
  const whiteBottom=currentPlayerColor()==='w',state=chess.snapshot(),files='abcdefgh',legal=square?chess.legalMoves(square):[];
  const tiles=raceBoardTiles(mentor().race);
+ const terminalMate=state.status.type==='checkmate'&&!preview&&!analysisView&&!correctionView;
  const checkedKing=state.status.checked
   ?state.board.findIndex(piece=>piece?.type==='k'&&piece.color===state.turn):-1;
  const last=correctionView ? ((correctionView.bestShown?correctionView.bestMove:correctionView.accepted?correctionView.chosenUci:null)?{uci:correctionView.bestShown?correctionView.bestMove:correctionView.chosenUci}:null) : preview&&analysisView ? (analysisView.offset ? {uci:analysisView.entry.analysisLine[analysisView.offset-1]} : analysisView.entry) : moves[cursor-1];
@@ -228,24 +229,36 @@ function boardHTML(chess,preview=false){
   const correctionFlash=correctionView?.flash;
   const flash=lessonView?.feedback?.square===sq?lessonView.feedback:
    correctionFlash?.square===sq?correctionFlash:null;
-   const flyDown=['1','2','7','8'].includes(sq[1]);
+  const kingResult=terminalMate&&piece?.type==='k'?
+   (piece.color===state.status.winner?' mentor-king-victorious':' mentor-king-defeated'):'';
   const ownRace=piece?.color===currentPlayerColor()?'humans':mentor().race;
   let figure='';
   if(piece){
    figure='<img alt="" class="mentor-piece classic-piece" draggable="false" src="'+boardRacePiecePath(ownRace,ROLES[piece.type],piece.color)+'"><span class="mentor-piece-fallback">'+SYMBOLS[piece.color][piece.type]+'</span>'+fantasyPieceMarkup(piece.type,piece.color);
   }
   const sign=mark===sq&&piece?.color===currentPlayerColor()?'<span class="mentor-square-grade'+(['good','excellent'].includes(recentOwn.grade)?' mentor-square-grade--good':'')+'">'+({'inaccuracy':'?!','mistake':'?','blunder':'??',good:'!',excellent:'!!'}[recentOwn.grade])+'</span>':'';
-  const flashText=flash?(flash.text||mentorLessonCopy(lessonView.plan,lang())[flash.kind]):'';
-  const flashArt=flash?'<span class="mentor-lesson-aura mentor-lesson-aura--'+flash.kind+'" aria-hidden="true"></span>'+
-    '<span class="mentor-lesson-burst mentor-lesson-burst--'+flash.kind+(flash.correction?' mentor-lesson-burst--correction':'')+(flyDown?' mentor-lesson-burst--down':'')+'" role="status">'+esc(flashText)+'</span>':'';
-  grid+='<button type="button" data-mentor-square="'+sq+'" data-square="'+sq+'" class="mentor-square '+(dark?'is-dark':'is-light')+(highlight?' is-last':'')+(active?' is-selected':'')+(possible?' is-legal':'')+(index===checkedKing?' is-check classic-square--check':'')+(lessonOrigin?' mentor-lesson-origin':'')+(lessonTarget?' mentor-lesson-target':'')+(lessonThreat?' mentor-lesson-threat':'')+(flash?' mentor-square-flash':'')+'" aria-label="'+sq+'">'+figure+sign+flashArt+'</button>';
+  const flashArt=flash?'<span class="mentor-lesson-aura mentor-lesson-aura--'+flash.kind+'" aria-hidden="true"></span>':'';
+  grid+='<button type="button" data-mentor-square="'+sq+'" data-square="'+sq+'" class="mentor-square '+(dark?'is-dark':'is-light')+(highlight?' is-last':'')+(active?' is-selected':'')+(possible?' is-legal':'')+(index===checkedKing?' is-check classic-square--check':'')+(lessonOrigin?' mentor-lesson-origin':'')+(lessonTarget?' mentor-lesson-target':'')+(lessonThreat?' mentor-lesson-threat':'')+(flash?' mentor-square-flash':'')+kingResult+'" aria-label="'+sq+'">'+figure+sign+flashArt+'</button>';
  }
  const status=chess.status();
+ // Board-level text starts at the clicked figure and always arrives at the
+ // center of the board, regardless of orientation or edge rank.
+ const boardFlash=lessonView?.feedback||correctionView?.flash;
+ let flight='';
+ if(boardFlash&&/^[a-h][1-8]$/.test(boardFlash.square)){
+  const file=boardFlash.square.charCodeAt(0)-97,rank=Number(boardFlash.square[1])-1;
+  const col=whiteBottom?file:7-file,row=whiteBottom?7-rank:rank;
+  const flashText=boardFlash.text||mentorLessonCopy(lessonView.plan,lang())[boardFlash.kind];
+  flight='<span class="mentor-board-burst mentor-lesson-burst--'+boardFlash.kind+
+   (boardFlash.correction?' mentor-board-burst--correction':'')+'" data-mentor-board-burst="'+
+   esc(boardFlash.square)+'" role="status" style="--fly-from-x:'+((col+.5)*12.5)+
+   '%;--fly-from-y:'+((row+.5)*12.5)+'%">'+esc(flashText)+'</span>';
+ }
  // CSS variables consumed by an external stylesheet resolve relative url() against /css/.
  // Use document-absolute URLs so race artwork also works under /RPChess/ on GitHub Pages.
  const lightTile=new URL(tiles.light,document.baseURI).href;
  const darkTile=new URL(tiles.dark,document.baseURI).href;
- return '<div class="mentor-board-shell"><div class="mentor-board" data-mentor-race="'+tiles.raceTag+'" style="--mentor-light-tile:url('+lightTile+');--mentor-dark-tile:url('+darkTile+')">'+grid+'</div><div class="mentor-file-coords">'+(whiteBottom?files.split(''):[...files].reverse()).map(v=>'<span>'+v+'</span>').join('')+'</div><div class="mentor-rank-coords">'+(whiteBottom?[8,7,6,5,4,3,2,1]:[1,2,3,4,5,6,7,8]).map(v=>'<span>'+v+'</span>').join('')+'</div></div>';
+ return '<div class="mentor-board-shell"><div class="mentor-board" data-mentor-race="'+tiles.raceTag+'" style="--mentor-light-tile:url('+lightTile+');--mentor-dark-tile:url('+darkTile+')">'+grid+flight+'</div><div class="mentor-file-coords">'+(whiteBottom?files.split(''):[...files].reverse()).map(v=>'<span>'+v+'</span>').join('')+'</div><div class="mentor-rank-coords">'+(whiteBottom?[8,7,6,5,4,3,2,1]:[1,2,3,4,5,6,7,8]).map(v=>'<span>'+v+'</span>').join('')+'</div></div>';
 }
 function latestPlayerNote(){
  for(let index=cursor-1;index>=0;index--){
@@ -804,13 +817,16 @@ function onClick(event){
    if(correct){lessonView.stage=3;lessonView.revealPending=true;}
    render();
    if(correct)requestAfterAnswer(lessonView.entry);
-   if(correct){
+   {
     const current=lessonView,epoch=gameEpoch;
     setTimeout(()=>{
      if(lessonView!==current||gameEpoch!==epoch||current.feedback!==feedback)return;
      current.feedback=null;current.revealPending=false;
-     analysisView={entry:current.entry,index:moves.indexOf(current.entry),offset:current.plan.ply};
-     square=null;render();
+     if(correct){
+      analysisView={entry:current.entry,index:moves.indexOf(current.entry),offset:current.plan.ply};
+      square=null;
+     }
+     render();
     },1200);
    }
    return;
