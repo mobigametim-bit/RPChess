@@ -258,6 +258,7 @@ function kingArt(run){return commanderPieceArt(run.commanderId,'w');}
 function render(){
  const run=readRun();if(!run||!validateKingdomMap(run.kingdomMap)||!screen||screen.hidden)return;
  const map=run.kingdomMap;const view=camera||map.king;
+ const visualKing=movement?.phase==='reveal'?movement:map.king;
  const world=screen.querySelector('[data-kingdom-world]');
  const frame=screen.querySelector('.km-map-frame').getBoundingClientRect();
  const WIDTH=oddCoverCount(frame.width,MIN_COLUMNS);
@@ -291,7 +292,7 @@ function render(){
   for(let col=-CENTER_X;col<WIDTH-CENTER_X;col++){
    const point={x:view.x+col,y:view.y+row},id=keyOf(point.x,point.y);
    const cell=map.cells[id],isCastle=id===keyOf(map.castle.x,map.castle.y);
-   const within=adjacent(map.king,point),here=id===keyOf(map.king.x,map.king.y);
+   const within=adjacent(visualKing,point),here=id===keyOf(visualKing.x,visualKing.y);
    const edges=cell?.annexed?borderEdges(map,point):[];
    const btn=document.createElement('button');btn.type='button';btn.dataset.kingdomCell=id;
    const light=(point.x+point.y)%2===0;
