@@ -4,7 +4,7 @@ import { boardRacePiecePath } from './race-assets.mjs';
 import { fantasyPieceMarkup, fantasyPiecePath } from './fantasy-piece.mjs';
 import { ChessAIAdapter, ELO_LEVELS, profileForElo } from './chess-ai-adapter.mjs';
 import { currentLanguage, subscribe, translateLegacy } from './i18n.mjs';
-import { classicT } from '../localization/classic-ui.mjs';
+import { classicT } from '../localization/classic-ui.mjs?v=20261108-figure-wording-v2';
 
 const FILES = 'abcdefgh';
 const PIECE_NAMES = Object.freeze({ p: 'Пешка', n: 'Конь', b: 'Слон', r: 'Ладья', q: 'Ферзь', k: 'Король' });
