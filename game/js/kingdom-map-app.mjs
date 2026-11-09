@@ -366,7 +366,7 @@ function render(){
     btn.style.backgroundImage='url("'+new URL(tile,document.baseURI).href+'")';
    }
    btn.setAttribute('aria-label',isCastle?tr('castle'):cell?.selectedEncounter?
-    t('travel.type.'+cell.selectedEncounter.type):tr('hidden'));
+    t('travel.type.'+cell.selectedEncounter.type):cell?.type==='empty'?tr('empty'):tr('hidden'));
    if(!cell){const mark=document.createElement('strong');mark.textContent='?';mark.className='km-fog-mark';btn.append(mark);}
    else if(isCastle){
     const mark=document.createElement('img');mark.className='km-object km-object--castle';
