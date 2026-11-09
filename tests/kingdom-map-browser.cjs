@@ -21,6 +21,18 @@ async function dragKing(page,id){
  const tile=await page.locator('[data-kingdom-cell="'+id+'"]').boundingBox();
  assert(handle&&tile,'king drag requires a visible start and target tile '+id);
  await page.mouse.move(handle.x+handle.width/2,handle.y+handle.height/2);
+ await page.evaluate(({x,y})=>{
+   const hit=document.elementFromPoint(x,y);
+   const handle=document.querySelector('[data-kingdom-king-handle]');
+   window.__kingStartHit={
+     hit:hit?.outerHTML?.slice(0,300),
+     nearest:hit?.closest('main,button,.km-world,.km-map-frame')?.outerHTML?.slice(0,180),
+     isHandle:hit===handle||handle?.contains(hit),
+     handlePointer:handle?getComputedStyle(handle).pointerEvents:'none',
+     framePointer:getComputedStyle(document.querySelector('.km-map-frame')).pointerEvents,
+     overlays:[...document.querySelectorAll('#app > main')].filter(m=>!m.hidden).map(m=>m.className)
+   };
+ },{x:handle.x+handle.width/2,y:handle.y+handle.height/2});
  await page.mouse.down();
  await page.mouse.move(tile.x+tile.width/2,tile.y+tile.height/2,{steps:9});
  await page.mouse.up();
@@ -553,7 +565,7 @@ async function assertTileImage(page,cellId,relativePath){
    assert.deepEqual(second.kingdomMap.king,{x:0,y:1},
      'the king must be able to make a second Journey step after Battle; '+
       JSON.stringify(await page.evaluate(()=>({
-       events:window.__kingDragEvents||[],
+       events:window.__kingDragEvents||[],hit:window.__kingStartHit,
        handle:document.querySelector('[data-kingdom-king-handle]')?.getBoundingClientRect().toJSON(),
        target:document.querySelector('[data-kingdom-cell="0,1"]')?.getBoundingClientRect().toJSON(),
        scene:document.querySelector('[data-kingdom-map-screen]')?.hidden
