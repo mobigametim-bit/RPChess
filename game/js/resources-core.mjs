@@ -1,8 +1,9 @@
+import {DEFAULT_KINGDOM_ECONOMY as K} from './kingdom-economy-config.mjs';
 import { clampStars } from './encounter-difficulty.mjs';
 
-const STARTING_GOLD = 80;
-const STARTING_SUPPLIES = 10;
-const TRAVEL_SUPPLY_COST = 1;
+const STARTING_GOLD = K.starting.gold;
+const STARTING_SUPPLIES = K.starting.supplies;
+const TRAVEL_SUPPLY_COST = K.travel.foreignCellSupplies;
 
 function resourceAmount(value, fallback = 0) {
   return Number.isInteger(value) && value >= 0 ? value : fallback;
@@ -43,11 +44,11 @@ function combatGoldReward({ encounterType, stars, status, playerColor = 'w' } = 
   if (!victory && !draw) return 0;
 
   let victoryGold = 0;
-  if (encounterType === 'battle') victoryGold = 36 + (6 * level);
-  else if (encounterType === 'skirmish') victoryGold = 12 + (4 * level);
+  if (encounterType === 'battle') victoryGold = K.combat.battleGoldBase + (K.combat.battleGoldPerStar * level);
+  else if (encounterType === 'skirmish') victoryGold = K.combat.skirmishGoldBase + (K.combat.skirmishGoldPerStar * level);
   else return 0;
 
-  return victory ? victoryGold : Math.floor(victoryGold / 2);
+  return victory ? victoryGold : Math.floor(victoryGold * K.combat.drawRewardPercent / 100);
 }
 
 function applyGoldReward(run, amount) {
