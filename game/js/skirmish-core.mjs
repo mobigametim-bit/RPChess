@@ -1,3 +1,4 @@
+import {consumeCapturedRecruits} from './kingdom-army-core.mjs';
 import { PIECE_VALUES } from './roster-data.mjs';
 import { MAX_ENCOUNTER_STARS, clampStars, difficultyForStars } from './encounter-difficulty.mjs';
 import { combatTheme, oppositeColor } from './race-assets.mjs';
@@ -136,6 +137,6 @@ function createBattlePlan({roster,selectedIds,encounter,formation=null}={}){
   return{encounter:resolved,playerColor,enemyColor,selectedIds:validation.members.map((m)=>m.id),playerPoints:validation.points,enemyPoints:enemy.points,playerFormation,enemyFormation,obstacles,blockedSquares:obstacles.map((obstacle)=>obstacle.square),fen:fenFromPlacements([...playerFormation,...enemyFormation],'w')};
 }
 
-function applyBattleOutcome(run,{capturedIds=[],status=null,playerColor='w'}={}){const captured=new Set(capturedIds||[]);const roster=(run?.roster||[]).map((c)=>{if(!c.isRunKing&&captured.has(c.id)&&c.status==='healthy')return{...c,status:'wounded'};return{...c};});const woundedIds=roster.filter((c)=>captured.has(c.id)&&!c.isRunKing&&c.status==='wounded').map((c)=>c.id);return{...run,roster,ended:Boolean(run?.ended),endReason:run?.endReason||null,lastSkirmish:{result:status?.type||'unknown',winner:status?.winner||null,woundedIds,kingDied:false}};}
+function applyBattleOutcome(run,{capturedIds=[],status=null,playerColor='w',receiptId=null}={}){const captured=new Set(capturedIds||[]);const roster=(run?.roster||[]).map((c)=>{if(!c.isRunKing&&captured.has(c.id)&&c.status==='healthy')return{...c,status:'wounded'};return{...c};});const woundedIds=roster.filter((c)=>captured.has(c.id)&&!c.isRunKing&&c.status==='wounded').map((c)=>c.id);const casualties=consumeCapturedRecruits(run,{capturedIds,receiptId:receiptId||'skirmish:'+run?.id+':'+(run?.skirmishCount||0)});const armyState=casualties.ok?casualties.run:run;return{...armyState,roster,ended:Boolean(run?.ended),endReason:run?.endReason||null,lastSkirmish:{result:status?.type||'unknown',winner:status?.winner||null,woundedIds,kingDied:false}};}
 
 export {MIN_SKIRMISH_PIECES,MAX_SKIRMISH_PIECES,MAX_SKIRMISH_POINTS,ENCOUNTER_TIERS,combatEligible,createEncounter,selectionSummary,validateSelection,defaultCombatSelection,automaticCombatSelection,placeArmy,fenFromPlacements,generateEnemyArmy,createBattlePlan,applyBattleOutcome};
