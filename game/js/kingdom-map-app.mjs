@@ -15,7 +15,7 @@ import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
 import {PARCHMENT_MODE_KEY} from './kingdom-parchment-core.mjs';
-import {renderParchment} from './kingdom-parchment-app.mjs?v=20261109-atlas-visual5';
+import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261110-fog';
 import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261109-kingdom-feedback1';
 import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
@@ -267,6 +267,22 @@ function resourceBadge(ariaLabel,imagePath,value){
  const icon=document.createElement('img');icon.src=imagePath;icon.alt='';icon.setAttribute('aria-hidden','true');
  container.append(amount,icon);return container;
 }
+function castleCard(map){
+ const race=map.castle.raceTag||'humans',seed=map.seed+':castle';
+ const card=document.createElement('article');card.className='km-route-card km-route-card--castle';
+ card.dataset.kingdomCastleCard=race;
+ const visual=document.createElement('div');visual.className='km-route-card__visual';
+ const backdrop=globalThis.RPChessSceneVisuals?.backdropPath?.(seed,race)||
+  'generated_assets/scene_campaign.webp';
+ visual.style.setProperty('--km-card-backdrop','url("'+new URL(backdrop,document.baseURI).href+'")');
+ const icon=document.createElement('img');icon.className='km-route-card__icon';
+ icon.src=kingdomMapSprite('castle',race);icon.alt='';icon.setAttribute('aria-hidden','true');
+ const details=document.createElement('div');details.className='km-route-card__details';
+ const title=document.createElement('h3');title.textContent=tr('castle');
+ const level=document.createElement('span');level.className='km-route-card__status';
+ level.textContent=tr('level')+' '+['','I','II','III','IV','V'][castleLevel(map.peakKingPower)];
+ details.append(title,level);visual.append(icon);card.append(visual,details);return card;
+}
 function routeCard(choice,run,cell){
  // Uses the Travel scene's canonical type, star, supply and reward rules.
  // Intentionally omits flavor; this will fly out of the entered map tile.
@@ -425,7 +441,9 @@ function ensureMap(run){
  const power=readPlayerRating().power;
  // Race comes from the stable named commander ID, never from the old castle placeholder.
  const race=commanderById(run.commanderId).raceTag;
- if(validateKingdomMap(run.kingdomMap)&&run.kingdomMap.seed===run.id&&run.kingdomMap.worldGeneratorVersion===4){
+ if(validateKingdomMap(run.kingdomMap)&&
+     (run.kingdomMap.seed===run.id||run.kingdomMap.seed.startsWith(run.id+':castle-biome:'))&&
+     [4,5].includes(run.kingdomMap.worldGeneratorVersion)){
   const peaked=updatePeak(migrateKingdomMap(run.kingdomMap,run),power);
   const map=peaked.castle.raceTag===race?peaked:
    {...peaked,castle:{...peaked.castle,raceTag:race}};
@@ -450,7 +468,7 @@ function encounterResult(run,source,choice){
  const last=choice.type==='battle'?run.lastBattle:choice.type==='skirmish'?run.lastSkirmish:run.lastCaravan;
  if(!matchesCombatReceipt(choice,last))return null;
  const success=last.result==='checkmate'&&last.winner===last.playerColor;
- return {success,opponentPower:['battle','caravan'].includes(choice.type)?
+ return {success,opponentPower:['battle','skirmish','caravan'].includes(choice.type)?
   difficultyForStars(last.encounterStars||choice.stars).elo:0};
 }
 function settleIfReturned(run,source){
@@ -564,6 +582,7 @@ function render(){
   for(let col=-CENTER_X;col<WIDTH-CENTER_X;col++){
    const point={x:view.x+col,y:view.y+row},id=keyOf(point.x,point.y);
    const cell=map.cells[id],isCastle=id===keyOf(map.castle.x,map.castle.y);
+    const visible=Boolean(isCastle||cell?.explored);
    const within=adjacent(visualKing,point),here=id===keyOf(visualKing.x,visualKing.y);
    const owned=isOwned(map,point);
    const edges=owned?borderEdges(map,point):[];
@@ -571,14 +590,14 @@ function render(){
    const light=(point.x+point.y)%2===0;
    btn.setAttribute('role','gridcell');btn.className='km-cell'+
     (light?' km-cell--light':' km-cell--dark')+
-    (!cell?' km-cell--fog':' km-cell--terrain km-cell--'+cell.status)+
+    (!visible?' km-cell--fog':' km-cell--terrain km-cell--'+cell.status)+
     (owned?' km-cell--annexed':'')+(within?' km-cell--adjacent':'')+
     (selected===id?' km-cell--selected':'')+(here?' km-cell--here':'')+
     (movement?.phase==='reveal'&&selected===id?' km-cell--opening':'')+
     (flavorBurst?.id===id?' km-cell--story':'')+
     edges.map(edge=>' km-edge-'+edge).join('');
    btn.style.setProperty('--km-index',String(row+3));
-   if(cell){
+   if(visible&&cell){
     const race=isCastle?map.castle.raceTag:cell.selectedEncounter?.raceTag||cell.selectedEncounter?.enemyRaceTag;
     const tiles=raceBoardTiles(race);
     // Mixed/no-race events keep the neutral chessboard instead of masquerading as humans.
@@ -589,7 +608,7 @@ function render(){
     // document base explicitly so preview root and GitHub Pages /RPChess/ work.
     btn.style.backgroundImage='url("'+new URL(tile,document.baseURI).href+'")';
    }
-   btn.setAttribute('aria-label',isCastle?tr('castle'):cell?.selectedEncounter?
+   btn.setAttribute('aria-label',isCastle?tr('castle'):visible&&cell?.selectedEncounter?
     t('travel.type.'+cell.selectedEncounter.type):cell?.type==='empty'?tr('empty'):tr('hidden'));
    // Outside scouting range: fog only, with no mystery punctuation or encounter placeholder.
    // Once scouted, the stored encounter SVG is drawn immediately on its revealed cell.
@@ -597,7 +616,7 @@ function render(){
     const mark=document.createElement('img');mark.className='km-object km-object--castle';
     mark.src=kingdomMapSprite('castle',map.castle.raceTag);mark.alt='';mark.loading='lazy';btn.append(mark);
     const level=document.createElement('small');level.className='km-level';level.textContent=['','I','II','III','IV','V'][castleLevel(map.peakKingPower)];btn.append(level);}
-   else if(cell){
+   else if(visible&&cell){
     const choice=cell.selectedEncounter;
     if(choice){
      // The encounter SVG is the site itself. Its defending chess piece is a
@@ -632,12 +651,12 @@ function render(){
     });
     btn.append(group);
    }
-   if(outpostCenters.has(id)){
+   if(visible&&outpostCenters.has(id)){
     const tower=document.createElement('img');tower.className='km-object km-object--outpost';
     tower.src='assets/kingdom-parchment/decor_minor_landmarks/04_watchtower.svg';
     tower.alt='';tower.loading='lazy';btn.append(tower);
    }
-   if(cell?.production&&owned&&cell.status==='completed'){
+   if(visible&&cell?.production&&owned&&cell.status==='completed'){
     const item=cell.production,marker=document.createElement('button');
     marker.type='button';marker.className='km-production-marker';
     marker.dataset.kingdomCollect=id;marker.dataset.productionKind=item.kind;
@@ -670,6 +689,11 @@ function render(){
  overlay.dataset.kingdomOverlay='';overlay.setAttribute('aria-hidden','true');
  world.append(overlay);
  drawKingdomOverlay(overlay,{map,view,columns:WIDTH,rows:HEIGHT});
+  if(parchment){
+   const fog=document.createElement('canvas');fog.className='km-parchment-fog';
+   fog.dataset.kingdomFog='';fog.setAttribute('aria-hidden','true');
+   world.append(fog);renderParchmentFog(fog,{view,columns:WIDTH,rows:HEIGHT,map});
+  }
  world.append(productions);
  const avatar=document.createElement('img');avatar.className='km-king'+(movement?.phase==='moving'?' km-king--moving':'');
  avatar.src=kingArt(run);avatar.alt='';avatar.setAttribute('aria-hidden','true');
@@ -709,12 +733,15 @@ function render(){
  world.append(kingHandle);
  const chosen=selected?map.cells[selected]:null;
  const current=map.cells[keyOf(map.king.x,map.king.y)];
- const info=chosen||current;
+ const knownChosen=chosen&&(selected===keyOf(map.castle.x,map.castle.y)||chosen.explored)?chosen:null;
+ const info=knownChosen||(!chosen?current:null);
+ const castleSelected=(selected||keyOf(map.king.x,map.king.y))===keyOf(map.castle.x,map.castle.y);
  const slot=screen.querySelector('[data-kingdom-route-slot]');
  const summary=screen.querySelector('[data-kingdom-summary]');
  const activeChoice=Boolean(info?.selectedEncounter);
- slot.hidden=!activeChoice;summary.hidden=Boolean(activeChoice);
- if(activeChoice)slot.replaceChildren(routeCard(info.selectedEncounter,run,info));
+ slot.hidden=!(activeChoice||castleSelected);summary.hidden=Boolean(activeChoice||castleSelected);
+ if(castleSelected)slot.replaceChildren(castleCard(map));
+ else if(activeChoice)slot.replaceChildren(routeCard(info.selectedEncounter,run,info));
  else{
   slot.replaceChildren();
   const header=(map.outposts||[]).some(p=>p.id===(selected||keyOf(map.king.x,map.king.y)))?tr('outpost'):info?.type==='castle'?tr('castle'):
@@ -739,7 +766,7 @@ function render(){
  earn.replaceChildren(document.createTextNode(tr('earn')+' '),shardIcon(),
   document.createTextNode(' '+tr('onArena')));
  earn.title=tr('earn')+' '+tr('shards')+' '+tr('onArena');
- services.hidden=!(id===keyOf(map.king.x,map.king.y)&&chosen?.status==='completed'&&chosen.selectedEncounter?.type==='settlement');
+ services.hidden=!(id===keyOf(map.king.x,map.king.y)&&knownChosen?.status==='completed'&&knownChosen.selectedEncounter?.type==='settlement');
  services.textContent=tr('services');
  const hint=screen.querySelector('[data-kingdom-hint]');
  hint.hidden=!map.pendingCell;
