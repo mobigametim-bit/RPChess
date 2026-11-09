@@ -43,9 +43,12 @@ const DEFAULT_KINGDOM_ECONOMY=Object.freeze({
   schemaVersion:1,
   starting:{gold:80,supplies:10,shards:0,kingPower:600},
   travel:{foreignCellSupplies:1,ownedCellSupplies:0,starvationCharacterLoss:1},
-  combat:{battleGoldBase:36,battleGoldPerStar:6,skirmishGoldBase:12,skirmishGoldPerStar:4,drawRewardPercent:50,puzzleGoldBase:5,puzzleGoldPerStar:2,caravanGoldBonus:12,caravanSuppliesBonus:5},
+  combat:{battleGoldBase:36,battleGoldPerStar:6,skirmishGoldBase:12,skirmishGoldPerStar:4,drawRewardPercent:50,puzzleGoldBase:9,puzzleGoldPerStar:3,puzzleError1Percent:70,puzzleError2Percent:40,puzzleError3Percent:0,
+    caravanRewardGoldBase:40,caravanRewardGoldPerStar:10,caravanRewardSuppliesBase:3,
+    caravanRewardSuppliesPer3Stars:1,caravanRewardArtifactBase:1,caravanRewardArtifactPer5Stars:1},
   settlementServices:{
     supplyUnitGold:12,supplyStock:4,
+    artifactGoldPerCharge:{'tactics.fork_master':15,'threat.defense':18,'threat.attack':18,'threat.great':30,'vision.piercing':15},
     healing:{pawn:10,knight:18,bishop:18,rook:26,queen:42},
     namedHeroPrices:{
     "hero.aldric_wall": 134,
@@ -121,6 +124,7 @@ const ECONOMY_GROUPS=Object.freeze([
  ['Награды боёв, задач и Каравана','combat'],
  ['Поселение · товары и лечение','settlementServices','supplyUnitGold','supplyStock','healing'],
  ['Именные герои · цены отдельно','settlementServices','namedHeroPrices'],
+ ['Артефакты · цены в золоте','settlementServices','artifactGoldPerCharge'],
  ['Замок · найм обычных фигур','castle'],
  ['Строительство · внутри / вне владений','building'],
  ['Недельное производство','production'],
@@ -130,8 +134,9 @@ const ECONOMY_GROUPS=Object.freeze([
 const ECONOMY_LABELS=Object.freeze({
   gold:'Золото',supplies:'Припасы',shards:'Осколки чести',kingPower:'Мощь короля',
   foreignCellSupplies:'Шаг вне владений · припасы',ownedCellSupplies:'Шаг по своим землям · припасы',starvationCharacterLoss:'Жертвы от истощения',
-  battleGoldBase:'Битва · золото за победу (база)',battleGoldPerStar:'Битва · золото за звезду',skirmishGoldBase:'Стычка · золото за победу (база)',skirmishGoldPerStar:'Стычка · золото за звезду',drawRewardPercent:'Ничья · % награды',puzzleGoldBase:'Задача · базовое золото',puzzleGoldPerStar:'Задача · золото за звезду',caravanGoldBonus:'Караван · золото',caravanSuppliesBonus:'Караван · припасы',
-  supplyUnitGold:'Лавка · золото за 1 припас',supplyStock:'Лавка · запас припасов',healing:'Лечение',namedHeroPrices:'Именные герои',recruitGold:'Цена рекрута · золото',
+  battleGoldBase:'Битва · золото за победу (база)',battleGoldPerStar:'Битва · золото за звезду',skirmishGoldBase:'Стычка · золото за победу (база)',skirmishGoldPerStar:'Стычка · золото за звезду',drawRewardPercent:'Ничья · % награды',puzzleGoldBase:'Задача · базовое золото',puzzleGoldPerStar:'Задача · золото за звезду',puzzleError1Percent:'Задача · награда после 1 ошибки (%)',puzzleError2Percent:'Задача · после 2 ошибок (%)',puzzleError3Percent:'Задача · после 3 ошибок (%)',
+  caravanRewardGoldBase:'Караван · награда золотом (база)',caravanRewardGoldPerStar:'Караван · золото за звезду',caravanRewardSuppliesBase:'Караван · припасы (база)',caravanRewardSuppliesPer3Stars:'Караван · припасы каждые 3 звезды',caravanRewardArtifactBase:'Караван · заряд артефакта (база)',caravanRewardArtifactPer5Stars:'Караван · заряд каждые 5 звёзд',
+  supplyUnitGold:'Лавка · золото за 1 припас',supplyStock:'Лавка · запас припасов',healing:'Лечение',namedHeroPrices:'Именные герои',artifactGoldPerCharge:'Артефакты · золото за заряд',recruitGold:'Цена рекрута · золото',
   outpostShards:'Аванпост · осколки',outpostGold:'Аванпост · золото',settlementOwnedGold:'Поселение на своей земле · золото',settlementOwnedShards:'Поселение на своей земле · осколки',settlementForeignGold:'Поселение за границей · золото',settlementForeignShards:'Поселение за границей · осколки',
   weekDays:'Игровых дней за неделю',settlementGold:'Поселение · золото',caravanGold:'Караван · золото',caravanSupplies:'Караван · припасы',eventGold:'Событие · золото',eventSupplies:'Событие · припасы',puzzleShards:'Задача · осколки',skirmishRecruits:'Стычка · рекрутов за неделю',battleRespawnWeeks:'Битва · недель до возвращения защитника',
   firstWinShardsBase:'Арена · первая победа (база)',firstWinShardsPer7:'Арена · первая победа, плюс каждые 7 соперников',repeatWinShardsBase:'Арена · повторная победа (база)',repeatWinShardsPer7:'Арена · повторная победа, плюс каждые 7',rewardedAdMultiplier:'Арена · множитель рекламы',squadShards:'Арена · купить расовый отряд',artifactShards:'Арена · артефакты',levelWeights:'Тип фигуры по уровню Стычки',...PIECE_LABELS,...NAMED_HERO_LABELS
@@ -146,8 +151,8 @@ function normalizeKingdomEconomy(candidate,base=DEFAULT_KINGDOM_ECONOMY){
     return output;
   }
   const result=normalize(base,candidate);
-  if(result.building.settlementForeignGold<=result.building.settlementOwnedGold)result.building.settlementForeignGold=base.building.settlementForeignGold;
-  if(result.building.settlementForeignShards<=result.building.settlementOwnedShards)result.building.settlementForeignShards=base.building.settlementForeignShards;
+  if(result.building.settlementForeignGold<=result.building.settlementOwnedGold)result.building.settlementForeignGold=Math.max(base.building.settlementForeignGold,result.building.settlementOwnedGold+1);
+  if(result.building.settlementForeignShards<=result.building.settlementOwnedShards)result.building.settlementForeignShards=Math.max(base.building.settlementForeignShards,result.building.settlementOwnedShards+1);
   for(const weights of Object.values(result.recruits.levelWeights))if(!PIECE_TYPES.some(type=>weights[type]>0))weights.pawn=100;
   return result;
 }
