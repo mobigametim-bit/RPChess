@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>RPChess · Atlas Lab v7 — симулятор королевства</title>
+<style>
+:root{--bg:#101823;--panel:#171f2b;--card:#1d2935;--line:#47596e;--gold:#e6c187;--text:#f2ead9;--muted:#aebdc9;--blue:#6bbdf9}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,-apple-system,Segoe UI,sans-serif}
+button,input,select{font:inherit}button{cursor:pointer}header{padding:16px 22px;display:flex;align-items:center;justify-content:space-between;gap:18px;border-bottom:1px solid #95744c75;background:#121a26}
+h1{font:700 27px/1.1 Georgia,serif;margin:0;color:var(--gold)}header p{color:var(--muted);margin:6px 0 0}
+a{color:#92d2fb;text-decoration:none}.shell{display:grid;grid-template-columns:minmax(300px,375px) minmax(0,1fr);min-height:calc(100dvh - 91px)}
+aside{overflow-y:auto;max-height:calc(100dvh - 91px);padding:15px;background:var(--panel);border-right:1px solid var(--line)}
+fieldset{padding:12px 14px;border:1px solid var(--line);border-radius:9px;margin:0 0 14px;background:#1b2430}
+legend{font-weight:750;color:var(--gold);padding:0 6px}label{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:9px 0;font-size:13px}
+label span{min-width:0}label output{color:var(--gold);font-variant-numeric:tabular-nums}
+input[type="range"]{width:136px;accent-color:#5cb9f3}input[type="number"],input[type="text"],select{border:1px solid #556477;background:#101822;color:white;border-radius:5px;padding:6px;max-width:145px;min-width:0}
+input[type="number"]{width:70px}input[type="text"]{width:100%;max-width:unset}
+small,.help{font-size:12px;color:var(--muted)}.help{margin:5px 0 10px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.actions button,.file-action{min-height:42px;border-radius:7px;border:1px solid #a38c63;background:#3b3023;color:#fbe0ae;font-weight:750}
+.actions .primary{background:linear-gradient(#357bb9,#23517a);border-color:#5ca7e5;color:white;grid-column:1/-1;font-size:16px}
+.actions button:hover,.file-action:hover{filter:brightness(1.16)}
+.actions button:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid #9de2ff;outline-offset:2px}
+details{margin-top:10px}summary{cursor:pointer;color:#cee4f5;font-weight:600}table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:4px 3px;border-bottom:1px solid #52617755;text-align:center}th:first-child,td:first-child{text-align:left}
+table input{width:44px!important;padding:4px!important;font-size:12px!important}
+main{padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.topline{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.topline h2{margin:0;color:var(--gold);font:700 20px Georgia,serif}
+.legend{display:flex;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:12px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px}
+.stage{position:relative;overflow:hidden;min-height:360px;background:#d7b47b;border:2px solid #927349;border-radius:8px;box-shadow:0 14px 40px #0008}
+.stage canvas{display:block;width:100%;height:100%}
+.markers{position:absolute;inset:0;pointer-events:none}
+.site{position:absolute;transform:translate(-50%,-50%);display:block;object-fit:contain;filter:drop-shadow(0 2px 3px #20100cc0)}
+.site.guard{filter:drop-shadow(0 3px 3px #140f0be0)}
+.site-label{position:absolute;transform:translate(-50%,-50%);background:#111b25d9;color:#ffedc4;padding:0 3px;border:1px solid #e5c08455;font:800 12px Georgia,serif}
+.stage .pin{position:absolute;z-index:3;width:14px;height:14px;transform:translate(-50%,-50%);border:2px solid #ffe19a;border-radius:50%;background:#2a73b3;box-shadow:0 0 0 5px #11335570}
+.status{background:#151e2b;border:1px solid #3d5168;border-radius:8px;padding:10px 13px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat strong{color:#f0c987;font-size:21px;display:block}.stat span{color:var(--muted);font-size:12px}
+.details{color:#c4d2de;font-size:12px}.details code{color:#9fddff}
+footer{font-size:12px;color:#879bad;margin:10px}
+.importer{display:none}
+@media(max-width:900px){.shell{display:block}aside{max-height:none;border:0;border-bottom:1px solid var(--line)}
+main{padding:10px}.stage{min-height:240px}.status{grid-template-columns:repeat(2,1fr)}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style></head>
+<body>
+<header><div><h1>Atlas Lab <span style="font-size:14px;color:#92bcd6">v7</span></h1>
+<p>Предпросмотр реального генератора «Бесконечного королевства» · без запуска забега</p></div>
+<a href="./?parchment=1">Вернуться в игру</a></header>
+<div class="shell"><aside>
+<fieldset><legend>Балансировка</legend>
+<label for="seed"><span>Seed мира</span></label>
+<input id="seed" type="text" spellcheck="false" autocomplete="off" value="realm-xce3j9bv">
+<label><span>Общая плотность</span><output id="density-out">0.8</output><input id="density" type="range" min="0.2" max="2.5" step="0.1" value="0.8"></label>
+<label><span>Разреженность встреч</span><select id="spacing"><option value="0">0 · без ограничений</option><option value="1" selected>1 · без соседей</option><option value="2">2 · разреженно</option></select></label>
+<p class="help">Расстояние считается по ходам короля (восьми направлениям). Две встречи не могут находиться ближе выбранного радиуса.</p>
+<div class="actions"><button class="primary" id="simulate">Симулировать</button>
+<button id="another">Новый seed</button><button id="export">Скачать JSON</button>
+<button id="import" type="button">Импорт JSON</button><button id="reset" type="button">Сбросить</button></div>
+<input id="file" class="importer" type="file" accept="application/json,.json">
+<details><summary>Плотность в шести биомах</summary><div id="biome-densities"></div></details>
+<details><summary>Веса шести типов встреч</summary><p class="help">Строки — биомы, колонки — типы. Меняются только относительные веса.</p><div id="type-weights"></div></details>
+</fieldset>
+<fieldset><legend>Рельеф · устранение полос</legend>
+<label><span>Шаг расстановки</span><output id="terrain-step-out">1.55</output><input id="terrain-step" type="range" min="0.85" max="3" step="0.05" value="1.55"></label>
+<label><span>Случайное смещение</span><output id="jitter-out">1.05</output><input id="jitter" type="range" min="0" max="1.5" step="0.05" value="1.05"></label>
+<label><span>Раздвижение одинаковых</span><output id="separation-out">0.50</output><input id="separation" type="range" min="0" max="1.5" step="0.05" value="0.5"></label>
+<p class="help">Горы, леса и камни остаются привязаны к биомам. Смещение ломает ряды, раздвижение убирает слишком плотные группы одинаковых объектов.</p>
+<label><span>Масштаб клеток</span><output id="zoom-out">87</output><input id="zoom" type="range" min="45" max="142" step="1" value="87"></label>
+<label><span>Показывать встречи</span><input id="events" type="checkbox" checked></label>
+<label><span>Сетка для сравнения</span><input id="grid" type="checkbox"></label>
+</fieldset>
+<p class="help">Это лаборатория без сохранения игрового прогресса. Изменения параметров вступают в силу только после отдельного согласования и переноса в конфигурацию игры.</p>
+</aside>
+<main><div class="topline"><h2>Карта: <span id="map-seed">—</span></h2>
+<div class="legend"><span><i style="background:#5ab3f5"></i>Встреча</span><span><i style="background:#a1b778"></i>Рельеф из SVG</span><span><i style="background:#edcb88"></i>Нет встречи</span></div></div>
+<div id="stage" class="stage" role="img" aria-label="Реальный рендер карты с событиями и рельефом" style="aspect-ratio:15/11">
+<canvas id="terrain"></canvas><div id="markers" class="markers"></div></div>
+<div class="status" id="stats" aria-live="polite"></div>
+<div class="details" id="summary">Нажми «Симулировать», чтобы увидеть раскладку.</div>
+<footer>Визуализация использует функции <code>worldAt()</code> и <code>renderParchment()</code> из RPChess. Существующие раскрытые клетки в текущих сохранениях не перегенерируются.</footer>
+</main></div>
+<script type="module" src="js/kingdom-atlas-lab.mjs?v=20261109-atlas-lab-v7"></script></body></html>
