@@ -4,8 +4,8 @@
  * the pure Canvas fallback keeps this experimental renderer testable on its own.
  */
 import {PARCHMENT_TILE,PARCHMENT_CHUNK_CELLS,randomAt,noise2D,terrainAt,pickSprite} from './kingdom-parchment-core.mjs';
-import {VISUAL} from './kingdom-world-config.mjs';
-import {landmarkAt,biomeAt} from './kingdom-world-core.mjs';
+import {VISUAL} from './kingdom-world-config.mjs?v=20261109-atlas-v3';
+import {landmarkAt,biomeAt} from './kingdom-world-core.mjs?v=20261109-atlas-v3';
 
 const CHUNK_PX=PARCHMENT_TILE*PARCHMENT_CHUNK_CELLS;
 const chunkCache=new Map(),spriteCache=new Map();
