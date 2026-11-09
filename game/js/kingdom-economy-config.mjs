@@ -43,13 +43,13 @@ const DEFAULT_KINGDOM_ECONOMY=Object.freeze({
   schemaVersion:1,
   starting:{gold:80,supplies:10,shards:0,kingPower:600},
   travel:{foreignCellSupplies:1,ownedCellSupplies:0,starvationCharacterLoss:1},
-  combat:{battleGoldBase:36,battleGoldPerStar:6,skirmishGoldBase:12,skirmishGoldPerStar:4,drawRewardPercent:50,puzzleGoldBase:9,puzzleGoldPerStar:3,puzzleError1Percent:70,puzzleError2Percent:40,puzzleError3Percent:0,
-    caravanRewardGoldBase:40,caravanRewardGoldPerStar:10,caravanRewardSuppliesBase:3,
-    caravanRewardSuppliesPer3Stars:1,caravanRewardArtifactBase:1,caravanRewardArtifactPer5Stars:1},
+  combat:{battleGoldBase:36,battleGoldPerStar:9,skirmishGoldBase:12,skirmishGoldPerStar:4,drawRewardPercent:50,puzzleGoldBase:9,puzzleGoldPerStar:3,puzzleError1Percent:70,puzzleError2Percent:40,puzzleError3Percent:0,
+    caravanRewardGoldBase:40,caravanRewardGoldPerStar:9,caravanRewardSuppliesBase:4,
+    caravanRewardSuppliesPer3Stars:2,caravanRewardArtifactBase:1,caravanRewardArtifactPer5Stars:1},
   settlementServices:{
-    supplyUnitGold:12,supplyStock:4,
+    supplyUnitGold:12,supplyStock:15,
     artifactGoldPerCharge:{'tactics.fork_master':15,'threat.defense':18,'threat.attack':18,'threat.great':30,'vision.piercing':15},
-    healing:{pawn:10,knight:18,bishop:18,rook:26,queen:42},
+    healing:{pawn:6,knight:18,bishop:18,rook:30,queen:54},
     namedHeroPrices:{
     "hero.aldric_wall": 134,
     "hero.mara_chain": 50,
@@ -86,8 +86,8 @@ const DEFAULT_KINGDOM_ECONOMY=Object.freeze({
     "hero.khulan_star": 202
 }
   },
-  castle:{recruitGold:{pawn:8,knight:18,bishop:18,rook:30,queen:55}},
-  mercenaries:{goldCost:{pawn:1,knight:3,bishop:3,rook:5,queen:9,king:0},reserveReplacementGold:{pawn:10,knight:18,bishop:18,rook:26,queen:42},supplyGoldValue:10},
+  castle:{recruitGold:{pawn:1,knight:3,bishop:3,rook:5,queen:9}},
+  mercenaries:{goldCost:{pawn:2,knight:6,bishop:6,rook:10,queen:18,king:0},reserveReplacementGold:{pawn:2,knight:6,bishop:6,rook:10,queen:18},supplyGoldValue:20},
   building:{
     outpostShards:30,outpostGold:0,
     settlementOwnedGold:80,settlementOwnedShards:15,
@@ -104,7 +104,7 @@ const DEFAULT_KINGDOM_ECONOMY=Object.freeze({
   },
   arena:{
     firstWinShardsBase:30,firstWinShardsPer7:5,
-    repeatWinShardsBase:10,repeatWinShardsPer7:2,
+    repeatWinShardsBase:15,repeatWinShardsPer7:2,
     rewardedAdMultiplier:2,
     squadShards:{elves:120,orcs:160,undead:200,dark_elves:240,dwarves:280,demons:320,angels:360,dragonborn:400,beastfolk:440,constructs:480,animals:520,fae:560,goblins:600},
     artifactShards:{'threat.defense':8,'threat.attack':8,'threat.great':14,'vision.piercing':7,'tactics.fork_master':7}
