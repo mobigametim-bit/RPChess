@@ -1,4 +1,4 @@
-/* Atlas Lab v6 config (4) — runtime world generation, 2026-11-09.
+/* Atlas Lab v6 world config (4) + visual preset (5), 2026-11-09.
  * Visual settings are author-chosen. Simulation economy is not live yet.
  * Biome order: forest, mountain, hills, plains, marsh, wasteland.
  * Race order matches race-assets.mjs RACE_TAGS exactly.
@@ -38,15 +38,15 @@ const VISUAL=Object.freeze({
   "landmarkSize": 0.75,
   "landmarkOpacity": 0.92,
   "fogOpacity": 0.88,
-  "fogRadius": 0.85,
-  "fogInner": 0.2,
-  "fogInkOpacity": 0.28,
-  "fogIrregularity": 0.58,
-  "revealRadius": 0.6
+  "fogRadius": 1.1,
+  "fogInner": 0.32,
+  "fogInkOpacity": 0.2,
+  "fogIrregularity": 0.3,
+  "revealRadius": 1.6
 });
 // Atlas editor's approved view; runtime worlds retain their individual run seed.
 const ATLAS_VIEW=Object.freeze({seed:'rpchess-kingdom-2026',centerX:1.1397535385320217,
- centerY:0.8734816261574075,zoom:87});
+ centerY:0.8734816261574075,zoom:117});
 const BIOMES=Object.freeze(['forest','mountain','hills','plains','marsh','wasteland']);
 const RACE_TAGS_ORDER=Object.freeze(['humans','elves','orcs','undead','dark_elves','dwarves','demons','angels','dragonborn','beastfolk','constructs','animals','fae','goblins']);
 const ENCOUNTER_TYPES=Object.freeze(['battle','skirmish','caravan','settlement','event','puzzle']);

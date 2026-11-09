@@ -119,11 +119,11 @@ async function assertTileImage(page,cellId,relativePath){
    'the old three-card choice is not the live Journey screen');
   const expectedViewportCells=await page.evaluate(()=>{
     const f=document.querySelector('.km-map-frame').getBoundingClientRect();
-    const odd=(px,min)=>{const n=Math.max(min,Math.ceil((px+2)/87));return n%2?n:n+1;};
+    const odd=(px,min)=>{const n=Math.max(min,Math.ceil((px+2)/117));return n%2?n:n+1;};
     return odd(f.width,9)*odd(f.height,7);
   });
   assert.equal(await page.locator('[data-kingdom-cell]').count(),expectedViewportCells,
-    'atlas 87px zoom selects an odd full-bleed grid for the viewport');
+    'atlas 117px zoom selects an odd full-bleed grid for the viewport');
   const before=await read(page);
   assert(before.kingdomMap&&before.kingdomMap.cells['0,0'].annexed);
   // The new parchment map is visual only: the original tile view remains
@@ -268,7 +268,7 @@ async function assertTileImage(page,cellId,relativePath){
     const sprite=document.querySelector('[data-kingdom-cell="0,0"] img.km-object');
     return sprite?.complete&&sprite.naturalWidth===128&&sprite.naturalHeight===128;
   },null,{timeout:15000});
-  // Author's Atlas Lab zoom is 87 physical px/cell; contents retain 73%/92:142 proportions.
+  // Author's Atlas Lab visual preset (5) zoom is 117 physical px/cell; contents retain 73%/92:142 proportions.
   const dimensions=await page.evaluate(()=>{
    const frame=document.querySelector('.km-map-frame').getBoundingClientRect();
    const world=document.querySelector('.km-world').getBoundingClientRect();
@@ -289,11 +289,11 @@ async function assertTileImage(page,cellId,relativePath){
   assert(dimensions.world.left<=dimensions.frame.left&&dimensions.world.right>=dimensions.frame.right&&
     dimensions.world.top<=dimensions.frame.top&&dimensions.world.bottom>=dimensions.frame.bottom,
     'enlarged cells must fill the map frame with no empty gutters');
-  assert(Math.abs(dimensions.tile.width-87)<1&&Math.abs(dimensions.tile.height-87)<1,
-    'new Atlas preset renders 87px square cells initially');
-  assert(Math.abs(dimensions.king.width-92*87/142)<1&&Math.abs(dimensions.king.height-92*87/142)<1,
+  assert(Math.abs(dimensions.tile.width-117)<1&&Math.abs(dimensions.tile.height-117)<1,
+    'author preset (5) renders 117px square cells initially');
+  assert(Math.abs(dimensions.king.width-92*117/142)<1&&Math.abs(dimensions.king.height-92*117/142)<1,
     'the named king scales uniformly with the world');
-  assert(Math.abs(dimensions.object.width-87*.73)<1&&Math.abs(dimensions.object.height-87*.73)<1,
+  assert(Math.abs(dimensions.object.width-117*.73)<1&&Math.abs(dimensions.object.height-117*.73)<1,
     'SVG art remains 73% of the scaled tile');
   assert(dimensions.object.fit==='contain'&&dimensions.cellOverflow==='visible',
     'SVG is contained without object clipping or unwanted stretching');
@@ -308,7 +308,7 @@ async function assertTileImage(page,cellId,relativePath){
   const beforeZoomRun=await read(page);
   await page.locator('.km-map-frame').hover({position:{x:260,y:180}});
   await page.mouse.wheel(0,-250);
-  await page.waitForFunction(()=>globalThis.RPChessKingdomMap?.zoom>87);
+  await page.waitForFunction(()=>globalThis.RPChessKingdomMap?.zoom>117);
   const wheelZoom=await page.evaluate(()=>globalThis.RPChessKingdomMap.zoom);
   const wheelCell=await page.locator('[data-kingdom-cell="0,0"]').evaluate(el=>el.getBoundingClientRect().width);
   assert(Math.abs(wheelCell-wheelZoom)<1,'mouse wheel magnifies actual map geometry');
@@ -324,10 +324,10 @@ async function assertTileImage(page,cellId,relativePath){
   assert.equal((await read(page)).kingdomMap.pendingCell,null,
     'two-finger zoom must not accidentally start a Journey encounter');
   await page.locator('[data-kingdom-zoom-reset]').click();
-  await page.waitForFunction(()=>globalThis.RPChessKingdomMap?.zoom===87);
+  await page.waitForFunction(()=>globalThis.RPChessKingdomMap?.zoom===117);
   // updateZoom schedules a paint; wait for the actual replacement DOM as well.
-  await page.waitForFunction(()=>document.querySelector('[data-kingdom-world]')?.dataset.mapZoom==='87');
-  assert.equal(await page.evaluate(()=>localStorage.getItem('rpchess.kingdom.zoom.v1')),'87',
+  await page.waitForFunction(()=>document.querySelector('[data-kingdom-world]')?.dataset.mapZoom==='117');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('rpchess.kingdom.zoom.v2')),'117',
     'reset restores the author zoom and persists it');
   assert.deepEqual(await read(page),beforeZoomRun,'zoom must never edit the run or its saved cells');
   await assertTileImage(page,'0,0','assets/races/humans/board/white.png');
@@ -936,7 +936,7 @@ async function assertTileImage(page,cellId,relativePath){
   // Compare the real game generator against Atlas Lab's LIVE worldAt() on
   // the same seed and coordinates, rather than testing two hardcoded fixtures.
   const atlasGameParity=await labPage.evaluate(async()=>{
-   const game=await import('./js/kingdom-world-core.mjs?v=20261109-config4');
+   const game=await import('./js/kingdom-world-core.mjs?v=20261109-atlas-visual5');
    const atlas=window.RPChessAtlasSimulation;
    const cfg=atlas.exportConfig(),biomes=['forest','mountain','hills','plains','marsh','wasteland'];
    const bad=[];

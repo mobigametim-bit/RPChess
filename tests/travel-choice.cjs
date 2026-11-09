@@ -19,6 +19,11 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(buildSource.includes("'css/travel-choice-compact.css'"),'production build must package the Travel owner stylesheet');
   assert(fs.existsSync(path.join(game,'assets/kingdom-parchment/parchment_tile_256.webp')),
     'optimized user-provided parchment tile is a real packaged asset');
+  const parchmentSource=fs.readFileSync(path.join(game,'js/kingdom-parchment-app.mjs'),'utf8');
+  assert(parchmentSource.includes("const PAPER_TILE_SRC='assets/kingdom-parchment/parchment_tile_256.webp'"),
+    'author WebP tiles remain the parchment ground, not procedural paper');
+  assert(parchmentSource.includes('canvas.dataset.parchmentTexture=drawTiledPaper(ctx,left,top,columns,rows,repaint)'),
+    'tiled paper remains the first painted layer');
   assert(buildSource.includes("'js/kingdom-map-overlay.mjs'"),
     'production build must include the organic border/road module or Journey cannot load');
   assert(travelAppSource.includes('data-travel-run-portrait')&&travelAppSource.includes('function renderPortrait()'),'Travel owner must render and refresh the run king portrait itself');
@@ -77,10 +82,13 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'author approved biome encounter density survives in the playable build');
   assert.strictEqual(worldConfig.DENSITY_MULTIPLIER,1.2,
     'new Atlas Lab config increases encounter frequency without rerolling saved cells');
-  assert.strictEqual(worldConfig.VISUAL.fogRadius,0.85);
-  assert.strictEqual(worldConfig.VISUAL.revealRadius,0.6);
+  assert.strictEqual(worldConfig.VISUAL.fogRadius,1.1);
+  assert.strictEqual(worldConfig.VISUAL.revealRadius,1.6);
+  assert.strictEqual(worldConfig.VISUAL.fogInner,0.32);
+  assert.strictEqual(worldConfig.VISUAL.fogInkOpacity,0.2);
+  assert.strictEqual(worldConfig.VISUAL.fogIrregularity,0.3);
   assert.strictEqual(worldConfig.ATLAS_VIEW.seed,'rpchess-kingdom-2026');
-  assert.strictEqual(worldConfig.ATLAS_VIEW.zoom,87);
+  assert.strictEqual(worldConfig.ATLAS_VIEW.zoom,117);
   for(const row of [...worldConfig.TYPE_WEIGHTS,...worldConfig.RACE_WEIGHTS])
     assert.strictEqual(row.reduce((sum,n)=>sum+n,0),100,
       'each approved biome encounter/race distribution adds up to 100 percent');

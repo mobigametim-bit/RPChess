@@ -3,7 +3,7 @@
  * No engine combat outcome, run calendar or resource transaction belongs here.
  */
 import {terrainAt} from './kingdom-parchment-core.mjs';
-import {VISUAL,BIOMES,RACE_TAGS_ORDER,ENCOUNTER_TYPES,DENSITY,DENSITY_MULTIPLIER,ENCOUNTER_MIN_SPACING,EVENT_NEARBY_MAX,WORLD_SETTINGS,TYPE_WEIGHTS,RACE_WEIGHTS} from './kingdom-world-config.mjs?v=20261109-config4';
+import {VISUAL,BIOMES,RACE_TAGS_ORDER,ENCOUNTER_TYPES,DENSITY,DENSITY_MULTIPLIER,ENCOUNTER_MIN_SPACING,EVENT_NEARBY_MAX,WORLD_SETTINGS,TYPE_WEIGHTS,RACE_WEIGHTS} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
 
 const LANDMARKS=Object.freeze('01_broken_wall 02_stone_circle 03_three_menhirs 04_watchtower 05_abandoned_hut 06_wood_bridge 07_stone_bridge 08_burial_mound 09_dead_tree 10_ruin_arch 11_fallen_column 12_wayside_shrine 13_obelisk 14_pond 15_notable_grove 16_ruined_gate'.split(' '));
 const MODIFIERS=Object.freeze({

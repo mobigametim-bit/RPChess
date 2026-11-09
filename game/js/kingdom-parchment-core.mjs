@@ -1,7 +1,7 @@
 /* Procedural, coordinate-stable terrain for the optional parchment Journey skin.
  * All 112 sprite names match the artist's seven 4x4 sheets. Gameplay is separate.
  */
-import {VISUAL} from './kingdom-world-config.mjs?v=20261109-config4';
+import {VISUAL} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
 const GROUPS=Object.freeze({
  parchment_base_variations:'01_light_ochre_plain 02_faded_olive_meadow 03_warm_dry_earth 04_pale_rocky_soil 05_gray_green_lowland 06_sandy_swirl 07_dry_steppe 08_grassy_islands 09_pale_clay 10_dark_olive_veins 11_weathered_dry_soil 12_chalky_stones 13_embedded_stones 14_withered_grass 15_plain_to_dry 16_plain_to_meadow'.split(' '),
  forest_clusters:'01_small_grove 02_round_grove 03_dense_wood 04_horizontal_forest 05_vertical_forest 06_sparse_edge 07_convex_north 08_convex_south 09_west_edge 10_east_edge 11_l_shaped 12_crescent_grove 13_open_clearing 14_scattered_trees 15_conifer_strip 16_mixed_forest'.split(' '),

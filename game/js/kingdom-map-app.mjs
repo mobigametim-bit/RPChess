@@ -15,15 +15,15 @@ import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
 import {PARCHMENT_MODE_KEY} from './kingdom-parchment-core.mjs';
-import {renderParchment} from './kingdom-parchment-app.mjs?v=20261109-config4';
+import {renderParchment} from './kingdom-parchment-app.mjs?v=20261109-atlas-visual5';
 import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261109-kingdom-controls-v9';
-import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-config4';
+import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
  beginEncounter,finishEncounter,matchesCombatReceipt,migrateKingdomMap,territoryCapacity,castleLevel,revealAround,
  collectProduction,canBuildOutpost,buildOutpost,
- romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges} from './kingdom-map-core.mjs?v=20261109-config4';
+ romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges} from './kingdom-map-core.mjs?v=20261109-atlas-visual5';
 
 const COPY={
  ru:{classicMap:'Классика',parchmentMap:'Пергамент',switchMap:'Оформление карты',day:'День',shards:'Осколки чести',castle:'Замок',supply:'Припасы',power:'Мощь',points:'Очки присоединения',
@@ -54,7 +54,8 @@ const COPY={
 // Atlas view scales the original 142px logical tiles to an interactive 87px default.
 const MAP_LAYOUT=Object.freeze({cellPx:142,eventScalePercent:73,kingPx:92,inspectorWidthPercent:25});
 const MIN_COLUMNS=9,MIN_ROWS=7;
-const ZOOM_KEY='rpchess.kingdom.zoom.v1',ZOOM_MIN=55,ZOOM_MAX=220;
+// Adopt the new authored default once, while continuing to persist manual zoom.
+const ZOOM_KEY='rpchess.kingdom.zoom.v2',ZOOM_MIN=55,ZOOM_MAX=220;
 function clampZoom(value){return Math.max(ZOOM_MIN,Math.min(ZOOM_MAX,Math.round(value)));}
 function savedZoom(){
  try{const raw=localStorage.getItem(ZOOM_KEY);return raw===null?ATLAS_VIEW.zoom:
