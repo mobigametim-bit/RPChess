@@ -508,7 +508,7 @@ body.arena-active .resource-hud{display:none!important}
 /* The existing check-aura image is reused, tinted to green while dragging.
    It moves with the king, never the cell, and has no mouse/touch hitbox. */
 .kingdom-map-screen .km-king-drag-aura{
- position:absolute;z-index:14;pointer-events:none;user-select:none;
+ position:absolute;z-index:9;pointer-events:none;user-select:none;
  width:calc(var(--km-king-px,92px)*1.56);
  height:calc(var(--km-king-px,92px)*1.56);
  transform:translate(-50%,-50%);object-fit:contain;
