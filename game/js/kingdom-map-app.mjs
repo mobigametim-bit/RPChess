@@ -15,9 +15,9 @@ import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
 import {PARCHMENT_MODE_KEY} from './kingdom-parchment-core.mjs';
-import {renderParchment} from './kingdom-parchment-app.mjs?v=20261109-kingdom-parchment-tile-v8';
+import {renderParchment} from './kingdom-parchment-app.mjs?v=20261109-atlas-lab-v7';
 import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261109-kingdom-controls-v9';
-import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-kingdom-parchment-tile-v8';
+import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-lab-v7';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
@@ -142,15 +142,19 @@ function kingPointerDown(e){
  const frame=screen?.querySelector('.km-map-frame');
  try{frame?.setPointerCapture(e.pointerId);}catch{}
  e.currentTarget.classList.add('is-dragging');
+ screen?.querySelector('.km-king-drag-aura')?.classList.add('is-active');
 }
 function kingPointerMove(e){
  if(!kingDrag||e.pointerId!==kingDrag.id)return;
  e.preventDefault();e.stopPropagation();
  kingDrag.dx=e.clientX-kingDrag.x;kingDrag.dy=e.clientY-kingDrag.y;
  const avatar=screen?.querySelector('.km-king');
+ const aura=screen?.querySelector('.km-king-drag-aura');
  if(avatar){
   const scale=zoomPx/MAP_LAYOUT.cellPx;
-  avatar.style.transform='translate(calc(-50% + '+(kingDrag.dx/scale)+'px),calc(-50% + '+(kingDrag.dy/scale)+'px))';
+  const dragTransform='translate(calc(-50% + '+(kingDrag.dx/scale)+'px),calc(-50% + '+(kingDrag.dy/scale)+'px))';
+  avatar.style.transform=dragTransform;
+  if(aura)aura.style.transform=dragTransform;
  }
 }
 function kingPointerEnd(e){
@@ -158,6 +162,8 @@ function kingPointerEnd(e){
  e.preventDefault();e.stopPropagation();
  const gesture=kingDrag;kingDrag=null;
  screen?.querySelector('.km-king-drag-handle')?.classList.remove('is-dragging');
+ const aura=screen?.querySelector('.km-king-drag-aura');
+ if(aura){aura.classList.remove('is-active');aura.style.transform='';}
  const avatar=screen?.querySelector('.km-king');if(avatar)avatar.style.transform='';
  try{e.currentTarget.releasePointerCapture?.(e.pointerId);}catch{}
  if(e.type==='pointercancel'||Math.hypot(e.clientX-gesture.x,e.clientY-gesture.y)<12)return;
@@ -326,7 +332,7 @@ function report(text){const node=screen?.querySelector('[data-kingdom-toast]');i
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261109-kingdom-controls-v9';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261109-atlas-lab-v7';link.dataset.kingdomStyle='';
  link.addEventListener('load',()=>{if(screen&&!screen.hidden)render();});
  document.head.append(link);
 }
@@ -678,6 +684,16 @@ function render(){
   avatar.style.setProperty('--km-from-x',(movement.x-map.king.x)*MAP_LAYOUT.cellPx+'px');
   avatar.style.setProperty('--km-from-y',(movement.y-map.king.y)*MAP_LAYOUT.cellPx+'px');
  }
+ const dragAura=document.createElement('img');dragAura.className='km-king-drag-aura';
+ dragAura.src='assets/vfx/aura_white.png';dragAura.alt='';
+ dragAura.setAttribute('aria-hidden','true');
+ dragAura.style.left=avatar.style.left;dragAura.style.top=avatar.style.top;
+ if(kingDrag){
+  const scale=zoomPx/MAP_LAYOUT.cellPx;
+  dragAura.classList.add('is-active');
+  dragAura.style.transform='translate(calc(-50% + '+(kingDrag.dx/scale)+'px),calc(-50% + '+(kingDrag.dy/scale)+'px))';
+ }
+ world.append(dragAura);
  world.append(avatar);
  const kingHandle=document.createElement('button');
  kingHandle.type='button';kingHandle.className='km-king-drag-handle';
