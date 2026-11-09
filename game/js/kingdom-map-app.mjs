@@ -590,7 +590,7 @@ function render(){
    const light=(point.x+point.y)%2===0;
    btn.setAttribute('role','gridcell');btn.className='km-cell'+
     (light?' km-cell--light':' km-cell--dark')+
-    (!visible?' km-cell--fog':' km-cell--terrain km-cell--'+cell.status)+
+    (!visible?' km-cell--fog':' km-cell--terrain'+(cell?.status?' km-cell--'+cell.status:''))+
     (owned?' km-cell--annexed':'')+(within?' km-cell--adjacent':'')+
     (selected===id?' km-cell--selected':'')+(here?' km-cell--here':'')+
     (movement?.phase==='reveal'&&selected===id?' km-cell--opening':'')+
@@ -833,7 +833,10 @@ function constructOutpost(){
     runId:run.id,cellId:id,amount:KINGDOM_OUTPOST_SHARD_COST})){
   report(tr('outpostNeed'));return;
  }
- writeRun({...run,kingdomMap:candidate.map});
+ // An outpost annexes neighboring squares that have not been visited yet.
+ // Materialize visible territory before re-rendering, without visiting it.
+ const revealed=revealAround(candidate.map,run,readPlayerRating().power);
+ writeRun({...run,kingdomMap:revealed});
  render();report(tr('outpostBuilt'));
 }
 function startKingRoute(point){
