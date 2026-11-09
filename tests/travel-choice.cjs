@@ -103,6 +103,36 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const startMap=mapCore.createKingdomMap(mapRun,500);
   assert(mapCore.validateKingdomMap(startMap));
   assert.strictEqual(startMap.day,1,'the independent calendar begins on Day 1');
+  // Exact production world sampler: no two events may be within the configured
+  // Chebyshev spacing; camera/order changes cannot reshuffle world coordinates.
+  const worldGen=await import(pathToFileURL(path.join(game,'js/kingdom-world-core.mjs')).href);
+  const worldSettings=await import(pathToFileURL(path.join(game,'js/kingdom-world-config.mjs')).href);
+  assert.strictEqual(worldSettings.ENCOUNTER_MIN_SPACING,1);
+  assert.strictEqual(worldSettings.DENSITY_MULTIPLIER,.8);
+  const seed='atlas-lab-v7-acceptance',rawSites=[],filteredSites=[],extraSparse=[];
+  for(let y=-9;y<=9;y++)for(let x=-9;x<=9;x++){
+    const original=worldGen.worldAt(seed,x,y,{spacing:0});
+    const filtered=worldGen.worldAt(seed,x,y,{spacing:1});
+    const sparse=worldGen.worldAt(seed,x,y,{spacing:2});
+    assert.deepStrictEqual(filtered,worldGen.worldAt(seed,x,y,{spacing:1}),
+      'world cell encounters remain deterministic without generation order state');
+    if(original.type)rawSites.push([x,y]);
+    if(filtered.type)filteredSites.push([x,y]);
+    if(sparse.type)extraSparse.push([x,y]);
+  }
+  assert(rawSites.length>filteredSites.length&&filteredSites.length>=extraSparse.length,
+    'min-distance progressively thins local clusters while retaining possible encounters');
+  const minSpacing=(sites,radius)=>sites.every((a,i)=>sites.slice(i+1).every(
+    b=>Math.max(Math.abs(a[0]-b[0]),Math.abs(a[1]-b[1]))>radius));
+  assert(minSpacing(filteredSites,1),'no two retained road events are one king step apart');
+  assert(minSpacing(extraSparse,2),'sparse Atlas setting enforces two-step clearance');
+  assert.equal(fs.existsSync(path.join(game,'atlas-lab.html')),true,
+    'Atlas Lab v7 HTML must be shipped alongside its map preview');
+  assert(fs.readFileSync(path.join(game,'atlas-lab.html'),'utf8').includes('Симулировать'),
+    'balance panel includes the requested simulation action');
+  assert(fs.readFileSync(path.join(game,'js/kingdom-atlas-lab.mjs'),'utf8').includes("from './kingdom-world-core.mjs"),
+    'Atlas preview calls the genuine world generator instead of a disconnected fake');
+
   const route=mapCore.shortestKingRoute(startMap,{x:7,y:-4});
   assert.strictEqual(route.length,7,'diagonal king path has Chebyshev minimum length');
   assert.deepStrictEqual(route[0],{x:1,y:-1});
