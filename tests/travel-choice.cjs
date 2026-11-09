@@ -222,6 +222,20 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert.strictEqual(mapCore.territoryCapacity(startMap),5,
     '500 peak Power automatically grants five lands outside the castle');
   assert.strictEqual(startMap.centralOwnedCells.length,6);
+  // New runs place the castle in an allowed home biome; old maps keep their seeds.
+  const homeBiomes={humans:['plains'],elves:['forest'],orcs:['hills','wasteland'],
+   undead:['marsh','wasteland'],dark_elves:['marsh','wasteland'],
+   dwarves:['mountain','hills'],demons:['wasteland'],angels:['mountain'],
+   dragonborn:['mountain'],beastfolk:['forest','hills'],
+   constructs:['wasteland','hills'],animals:['plains','forest'],
+   fae:['forest'],goblins:['marsh','hills']};
+  for(const [race,allowed] of Object.entries(homeBiomes)){
+   const created=mapCore.createKingdomMap({id:'race-biome-smoke-'+race},500,race);
+   assert(allowed.includes(worldGen.biomeAt(created.seed,0,0)),
+    'new '+race+' castle starts in a preferred biome');
+   assert.strictEqual(created.castle.raceTag,race);
+   assert.strictEqual(created.king.x,0);
+  }
   assert.strictEqual(mapCore.pointsAvailable(startMap),0,
     'automatic annexation leaves no unused manual purchases');
   assert.strictEqual(mapCore.castleLevel(500),2);
@@ -304,7 +318,7 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert.strictEqual(acted.day,8);
   assert.strictEqual(mapCore.advanceDay(acted,'significant:future-action'),acted,
     'replayed action receipts never advance the calendar twice');
-  // First victory against a Battle OR Caravan awards enemyPower/200 once.
+  // First victory bonuses: Battle /200, Skirmish /400 and Caravan /300, rounded down.
   const battlePoint={x:0,y:1},battleRoute={...mapCore.randomEncounter(mapRun,battlePoint,500),
     id:'kingdom.test-battle',type:'battle'};
   const battleEnter=mapCore.enterCell(startMap,battlePoint,battleRoute);
@@ -366,7 +380,20 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert.deepStrictEqual({from:caravanWin.map.completedRoads[0].from,
     to:caravanWin.map.completedRoads[0].to},{from:'0,0',to:'1,0'},
     'a first Caravan completion builds its own initial castle road');
-  assert.strictEqual(mapCore.territoryCapacity(caravanWin.map),9,'Caravan grants four new lands');
+  assert.strictEqual(mapCore.territoryCapacity(caravanWin.map),7,'Caravan 850/300 grants two new lands');
+  const skirmishPoint={x:0,y:-1},skirmishRoute={...mapCore.randomEncounter(mapRun,skirmishPoint,500),
+    id:'kingdom.test-skirmish',type:'skirmish'};
+  const skirmishStarting=mapCore.enterCell(startMap,skirmishPoint,skirmishRoute);
+  const skirmishWin=mapCore.finishEncounter(
+    mapCore.beginEncounter(skirmishStarting.map,'0,-1').map,'0,-1',
+    {success:true,opponentPower:1040});
+  assert(skirmishWin.ok,'Skirmish first victory completes');
+  assert.strictEqual(skirmishWin.map.uniqueFirstConquests[0].type,'skirmish');
+  assert.strictEqual(skirmishWin.map.uniqueFirstConquests[0].bonusLands,2,
+    'Skirmish 1040/400 grants two lands with floor');
+  assert.strictEqual(mapCore.territoryCapacity(skirmishWin.map),7);
+  assert(!mapCore.finishEncounter(skirmishWin.map,'0,-1',{success:true,opponentPower:50000}).ok,
+    'duplicate Skirmish completion is rejected');
   const persistedMap=persistence.writeRun({...mapRun,kingdomMap:climbed},storage,1420);
   const roundTrip=persistence.readRun(storage);
   assert(roundTrip?.kingdomMap?.centralOwnedCells.length===12,
