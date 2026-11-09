@@ -820,6 +820,45 @@ async function assertTileImage(page,cellId,relativePath){
   });
   assert(hudIsHidden,'Arena must hide the global run Gold/Supplies HUD');
   await walking.close();
-  console.log('KINGDOM MAP PASS — race sprites load, Battle draw -> Battle win -> third tile, eight-direction camera');
+  // A distant drag walks by the shortest eight-way route, then halts on the
+  // first encountered road event; clicking a far tile is inspection only.
+  const autopilot=await browser.newPage({viewport:{width:1280,height:720},reducedMotion:'reduce'});
+  await autopilot.goto(url,{waitUntil:'domcontentloaded'});
+  await startNewRun(autopilot,{playerName:'Kingdom Autopilot',legacyTravel:false});
+  await autopilot.locator('[data-roster-travel]').click();
+  await autopilot.locator('[data-kingdom-map-screen]:not([hidden])').waitFor();
+  await autopilot.evaluate(async storage=>{
+    const core=await import('./js/kingdom-map-core.mjs?v=20261109-kingdom-controls-v9');
+    const run=JSON.parse(localStorage.getItem(storage));
+    for(const x of [1,3])run.kingdomMap.cells[x+',0']={status:'completed',type:'empty',explored:true};
+    const road=core.randomEncounter(run,{x:2,y:0},400,
+      {type:'event',biome:'plains',landmark:null,raceTag:null,paths:{}});
+    run.kingdomMap.cells['2,0']={status:'revealed',explored:false,selectedEncounter:road};
+    localStorage.setItem(storage,JSON.stringify(run));
+    globalThis.RPChessKingdomMap.open();
+  },key);
+  await autopilot.locator('[data-kingdom-cell="3,0"]').click();
+  assert.deepEqual((await read(autopilot)).kingdomMap.king,{x:0,y:0},
+    'clicking three squares away selects the card without moving');
+  await dragKing(autopilot,'3,0');
+  await autopilot.waitForFunction(storage=>{
+    const m=JSON.parse(localStorage.getItem(storage))?.kingdomMap;
+    return m?.pendingCell==='2,0'&&m.king.x===2&&m.king.y===0;
+  },key,{timeout:5000});
+  assert.notDeepEqual((await read(autopilot)).kingdomMap.king,{x:3,y:0},
+    'autopilot must halt and open the first encountered road event');
+  const firstCellBefore=await autopilot.locator('[data-kingdom-cell]').first().getAttribute('data-kingdom-cell');
+  const frame=await autopilot.locator('.km-map-frame').boundingBox();
+  await autopilot.mouse.move(frame.x+280,frame.y+190);
+  await autopilot.mouse.down();
+  await autopilot.mouse.move(frame.x+530,frame.y+190,{steps:8});
+  await autopilot.mouse.up();
+  const firstCellAfter=await autopilot.locator('[data-kingdom-cell]').first().getAttribute('data-kingdom-cell');
+  assert.notEqual(firstCellAfter,firstCellBefore,
+    'left-button dragging empty map space actively pans the world');
+  assert.deepEqual((await read(autopilot)).kingdomMap.king,{x:2,y:0},
+    'panning only changes the camera, not the saved king position');
+  await autopilot.close();
+  console.log('KINGDOM MAP PASS — click-inspect, king drag, shortest routes, event stop, map pan, step supplies');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
