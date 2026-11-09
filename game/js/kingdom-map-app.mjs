@@ -91,6 +91,7 @@ function zoomPointerDown(e){
  // the frame and the inspector never gets to display its route card.
 }
 function zoomPointerMove(e){
+ if(kingDrag)return; // The stable frame owns an active king drag, not a map pan.
  if(e.pointerType==='touch'&&activeTouches.has(e.pointerId)){
   activeTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pinch&&activeTouches.size>=2){
@@ -112,6 +113,7 @@ function zoomPointerMove(e){
  if(world)world.style.translate=pan.dx+'px '+pan.dy+'px';
 }
 function zoomPointerEnd(e){
+ if(kingDrag)return; // The king pointerup handler on this same frame finishes it.
  if(e.pointerType==='touch'){
   if(pinch)ignoreCellClicksUntil=Date.now()+650;
   activeTouches.delete(e.pointerId);
@@ -135,7 +137,10 @@ function kingPointerDown(e){
  if(!run?.kingdomMap||run.kingdomMap.pendingCell||routeQueue.length||movement)return;
  e.stopPropagation();e.preventDefault();
  kingDrag={id:e.pointerId,x:e.clientX,y:e.clientY,dx:0,dy:0};
- try{e.currentTarget.setPointerCapture(e.pointerId);}catch{}
+ // render() replaces the king handle during navigation/animation. Capturing
+ // on that ephemeral node loses pointerup. The frame survives every render.
+ const frame=screen?.querySelector('.km-map-frame');
+ try{frame?.setPointerCapture(e.pointerId);}catch{}
  e.currentTarget.classList.add('is-dragging');
 }
 function kingPointerMove(e){
@@ -152,9 +157,10 @@ function kingPointerEnd(e){
  if(!kingDrag||e.pointerId!==kingDrag.id)return;
  e.preventDefault();e.stopPropagation();
  const gesture=kingDrag;kingDrag=null;
- e.currentTarget.classList.remove('is-dragging');
+ screen?.querySelector('.km-king-drag-handle')?.classList.remove('is-dragging');
  const avatar=screen?.querySelector('.km-king');if(avatar)avatar.style.transform='';
- if(Math.hypot(e.clientX-gesture.x,e.clientY-gesture.y)<12)return;
+ try{e.currentTarget.releasePointerCapture?.(e.pointerId);}catch{}
+ if(e.type==='pointercancel'||Math.hypot(e.clientX-gesture.x,e.clientY-gesture.y)<12)return;
  // Hit-test world tile geometry, not elementFromPoint(): the revealed
  // encounter art, overlays and temporary selection layers can cover a tile
  // without changing its actual destination. This also handles mobile touch.
@@ -381,6 +387,9 @@ function screenReady(){
  frame.addEventListener('pointermove',zoomPointerMove);
  frame.addEventListener('pointerup',zoomPointerEnd);
  frame.addEventListener('pointercancel',zoomPointerEnd);
+ frame.addEventListener('pointermove',kingPointerMove);
+ frame.addEventListener('pointerup',kingPointerEnd);
+ frame.addEventListener('pointercancel',kingPointerEnd);
  screen.querySelector('[data-kingdom-zoom-out]').addEventListener('click',()=>updateZoom(zoomPx-12));
  screen.querySelector('[data-kingdom-zoom-in]').addEventListener('click',()=>updateZoom(zoomPx+12));
  screen.querySelector('[data-kingdom-zoom-reset]').addEventListener('click',()=>updateZoom(ATLAS_VIEW.zoom));
@@ -675,9 +684,7 @@ function render(){
  kingHandle.setAttribute('aria-label',tr('moveKing'));
  kingHandle.style.left=avatar.style.left;kingHandle.style.top=avatar.style.top;
  kingHandle.addEventListener('pointerdown',kingPointerDown);
- kingHandle.addEventListener('pointermove',kingPointerMove);
- kingHandle.addEventListener('pointerup',kingPointerEnd);
- kingHandle.addEventListener('pointercancel',kingPointerEnd);
+ // Move and up handlers live on the persistent map frame (screenReady).
  world.append(kingHandle);
  const chosen=selected?map.cells[selected]:null;
  const current=map.cells[keyOf(map.king.x,map.king.y)];
