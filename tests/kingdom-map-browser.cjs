@@ -32,6 +32,9 @@ async function assertTileImage(page,cellId,relativePath){
   fs.mkdirSync(output,{recursive:true});
   const page=await browser.newPage({viewport:{width:1366,height:768}});
   const errors=[];page.on('pageerror',e=>errors.push(String(e.stack||e)));
+  const failedAssets=[];
+  page.on('console',msg=>{if(msg.type()==='error')failedAssets.push(msg.text());});
+  page.on('requestfailed',req=>failedAssets.push(req.url()+': '+req.failure()?.errorText));
   await page.goto(url,{waitUntil:'domcontentloaded'});
   await startNewRun(page,{playerName:'Kingdom Explorer',legacyTravel:false});
   // Force consecutive real Battles to catch the original bug:
@@ -58,7 +61,15 @@ async function assertTileImage(page,cellId,relativePath){
     }));
   });
   await page.locator('[data-roster-travel]').click();
-  await page.locator('[data-kingdom-map-screen]:not([hidden])').waitFor({timeout:20000});
+  try{
+    await page.locator('[data-kingdom-map-screen]:not([hidden])').waitFor({timeout:16000});
+  }catch(error){
+    const state=await page.evaluate(()=>({scriptCount:document.scripts.length,
+      maps:document.querySelectorAll('[data-kingdom-map-screen]').length,
+      active:document.querySelector('.roster-active')?.className||'none'}));
+    throw new Error('Kingdom startup failed: '+JSON.stringify({errors,failedAssets,state})+
+      ' | '+String(error));
+  }
   assert.equal(await page.locator('[data-travel-choice-screen]:not([hidden])').count(),0,
    'the old three-card choice is not the live Journey screen');
   const expectedViewportCells=await page.evaluate(()=>{
