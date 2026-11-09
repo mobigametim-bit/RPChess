@@ -12,8 +12,8 @@ const OPPONENTS = Object.freeze(PIECE_TYPES.flatMap((type, typeIndex) => RACE_TA
 })));
 const OPPONENT_BY_ID = new Map(OPPONENTS.map(foe => [foe.id,foe]));
 const LEGACY_SQUAD_PRICES = Object.freeze(Object.fromEntries(RACE_TAGS.slice(1).map((race,index) => [race,60 + index * 20])));
-const SQUAD_PRICES = Object.freeze(Object.fromEntries(RACE_TAGS.slice(1).map((race,index) => [race,120 + index * 40])));
-const ARTIFACT_PRICES = Object.freeze({ 'threat.defense':8, 'threat.attack':8, 'threat.great':14, 'vision.piercing':7, 'tactics.fork_master':7 });
+const SQUAD_PRICES=Object.freeze({...DEFAULT_KINGDOM_ECONOMY.arena.squadShards});
+const ARTIFACT_PRICES=Object.freeze({...DEFAULT_KINGDOM_ECONOMY.arena.artifactShards});
 function emptyArena(){ return { version:1, events:[], squad:'humans', match:null, updatedAt:0 }; }
 function safeInt(n){ return Number.isSafeInteger(n) && n >= 0 ? n : 0; }
 function validEvent(event){
@@ -100,7 +100,7 @@ function mergeArena(local,remote){
   if(merged.match?.artifactId && !arenaSummary(merged).accepted.has(`${merged.match.id}:artifact`))merged.match.artifactId=null;
   return merged;
 }
-function rewardFor(foe,first){ return (first?30:10)+Math.floor(foe.index/7)*(first?5:2); }
+function rewardFor(foe,first){const e=DEFAULT_KINGDOM_ECONOMY.arena;return (first?e.firstWinShardsBase:e.repeatWinShardsBase)+Math.floor(foe.index/7)*(first?e.firstWinShardsPer7:e.repeatWinShardsPer7);}
 function newMatch(state,foeId,id,playerColor=Math.random()<.5?'w':'b'){
   const summary=arenaSummary(state),foe=OPPONENT_BY_ID.get(foeId);
   if(!foe||foe.index>summary.highest||state.match||!summary.owned.has(state.squad)||!id)return state;
