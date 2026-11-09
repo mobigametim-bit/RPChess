@@ -87,7 +87,8 @@ function zoomPointerDown(e){
   }
  }else if(e.button!==0)return;
  pan={id:e.pointerId,x:e.clientX,y:e.clientY,dx:0,dy:0,moved:false};
- try{e.currentTarget.setPointerCapture(e.pointerId);}catch{}
+ // Do not capture a simple click; otherwise it retargets the cell's click to
+ // the frame and the inspector never gets to display its route card.
 }
 function zoomPointerMove(e){
  if(e.pointerType==='touch'&&activeTouches.has(e.pointerId)){
@@ -100,7 +101,10 @@ function zoomPointerMove(e){
  }
  if(!pan||pan.id!==e.pointerId||pinch)return;
  pan.dx=e.clientX-pan.x;pan.dy=e.clientY-pan.y;
- if(Math.hypot(pan.dx,pan.dy)>8)pan.moved=true;
+ if(Math.hypot(pan.dx,pan.dy)>8&&!pan.moved){
+  pan.moved=true;
+  try{e.currentTarget.setPointerCapture(e.pointerId);}catch{}
+ }
  if(!pan.moved)return;
  e.preventDefault();ignoreCellClicksUntil=Date.now()+650;
  const frame=screen?.querySelector('.km-map-frame'),world=screen?.querySelector('.km-world');
