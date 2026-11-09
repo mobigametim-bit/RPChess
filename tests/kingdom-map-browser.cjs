@@ -684,7 +684,13 @@ async function assertTileImage(page,cellId,relativePath){
       'horizontal one-step moves retain camera slack '+id);
     // The enlarged map pans one row vertically to keep adjacent targets visible.
     await dragKing(walking,'0,0');
-    assert.deepEqual((await read(walking)).kingdomMap.king,{x:0,y:0});
+    assert.deepEqual((await read(walking)).kingdomMap.king,{x:0,y:0},
+      'dragging back to castle from '+id+': '+
+      JSON.stringify(await walking.evaluate(()=>({
+        events:window.__kingDragEvents||[],
+        handle:document.querySelector('[data-kingdom-king-handle]')?.getBoundingClientRect().toJSON(),
+        target:document.querySelector('[data-kingdom-cell="0,0"]')?.getBoundingClientRect().toJSON()
+      }))));
   }
   // Mixed/unknown race cells retain neutral background tiles.
   await walking.evaluate(storage=>{
