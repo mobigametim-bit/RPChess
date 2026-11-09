@@ -3,7 +3,7 @@
  * No engine combat outcome, run calendar or resource transaction belongs here.
  */
 import {terrainAt,randomAt} from './kingdom-parchment-core.mjs';
-import {VISUAL,BIOMES,RACE_TAGS_ORDER,ENCOUNTER_TYPES,DENSITY,DENSITY_MULTIPLIER,TYPE_WEIGHTS,RACE_WEIGHTS} from './kingdom-world-config.mjs?v=20261109-kingdom-parchment-tile-v8';
+import {VISUAL,BIOMES,RACE_TAGS_ORDER,ENCOUNTER_TYPES,DENSITY,DENSITY_MULTIPLIER,ENCOUNTER_MIN_SPACING,TYPE_WEIGHTS,RACE_WEIGHTS} from './kingdom-world-config.mjs?v=20261109-atlas-lab-v7';
 
 const LANDMARKS=Object.freeze('01_broken_wall 02_stone_circle 03_three_menhirs 04_watchtower 05_abandoned_hut 06_wood_bridge 07_stone_bridge 08_burial_mound 09_dead_tree 10_ruin_arch 11_fallen_column 12_wayside_shrine 13_obelisk 14_pond 15_notable_grove 16_ruined_gate'.split(' '));
 const MODIFIERS=Object.freeze({
@@ -59,11 +59,36 @@ function pickWeighted(values,labels,rnd){
  for(let i=0;i<values.length;i++){target-=Math.max(0,values[i]);if(target<0)return labels[i];}
  return labels[labels.length-1];
 }
-function worldAt(seed,x,y,{allowSkirmish=true}={}){
+// Stable priority thinning (blue-noise-like hard-core sampling). A candidate
+// cannot coexist with any higher ranked candidate in its surrounding N tiles.
+// This depends only on seed/world coords: scouting order and camera never alter
+// the placement, and persisted/revealed cells are never rerolled by this module.
+function encounterCandidate(seed,x,y,{densityMultiplier=DENSITY_MULTIPLIER,biomeDensity=DENSITY}={}){
+ const biome=biomeAt(seed,x,y),index=BIOMES.indexOf(biome);
+ const density=Number(biomeDensity[index])||0;
+ const chance=Math.min(1,Math.max(0,density*Math.max(0,Number(densityMultiplier)||0)/100));
+ return randomAt(seed,x,y,'encounter-presence')<chance;
+}
+function encounterPresent(seed,x,y,{spacing=ENCOUNTER_MIN_SPACING,densityMultiplier=DENSITY_MULTIPLIER,biomeDensity=DENSITY}={}){
+ const params={densityMultiplier,biomeDensity};
+ if(!encounterCandidate(seed,x,y,params))return false;
+ const radius=Math.max(0,Math.min(2,Math.floor(Number(spacing)||0)));
+ if(radius===0)return true;
+ const rank=randomAt(seed,x,y,'encounter-priority');
+ for(let dy=-radius;dy<=radius;dy++)for(let dx=-radius;dx<=radius;dx++){
+  if(dx===0&&dy===0)continue;
+  const nx=x+dx,ny=y+dy;
+  if(!encounterCandidate(seed,nx,ny,params))continue;
+  const other=randomAt(seed,nx,ny,'encounter-priority');
+  if(other>rank||(other===rank&&(ny<y||(ny===y&&nx<x))))return false;
+ }
+ return true;
+}
+function worldAt(seed,x,y,{allowSkirmish=true,spacing=ENCOUNTER_MIN_SPACING,
+ densityMultiplier=DENSITY_MULTIPLIER,biomeDensity=DENSITY}={}){
  const biome=biomeAt(seed,x,y),biomeIndex=BIOMES.indexOf(biome);
  const landmark=landmarkAt(seed,x,y),paths=naturalPathAt(seed,x,y);
- // Apply the author's Atlas Lab density multiplier to the biome's base percent.
- const occupied=randomAt(seed,x,y,'encounter-presence')<Math.min(1,DENSITY[biomeIndex]*DENSITY_MULTIPLIER/100);
+ const occupied=encounterPresent(seed,x,y,{spacing,densityMultiplier,biomeDensity});
  if(!occupied)return {biome,landmark,paths,type:null,raceTag:null};
  const mods=MODIFIERS[landmark]||{t:{},r:{}};
  const typeWeights=TYPE_WEIGHTS[biomeIndex].map((w,i)=>{
@@ -91,4 +116,4 @@ function worldAt(seed,x,y,{allowSkirmish=true}={}){
  const raceTag=pickWeighted(raceWeights,RACE_TAGS_ORDER,randomAt(seed,x,y,'encounter-race'));
  return {biome,landmark,paths,type,raceTag};
 }
-export {LANDMARKS,MODIFIERS,biomeAt,landmarkAt,naturalPathAt,pickWeighted,worldAt};
+export {LANDMARKS,MODIFIERS,biomeAt,landmarkAt,naturalPathAt,pickWeighted,encounterCandidate,encounterPresent,worldAt};
