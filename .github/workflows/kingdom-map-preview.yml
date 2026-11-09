@@ -117,17 +117,16 @@ jobs:
            const base='https://rpchess-kingdom-map-preview.mobigametim.workers.dev';
            for(let i=0;i<12;i++){
             try{
-             const paths=['/','/js/kingdom-map-app.mjs','/js/kingdom-map-core.mjs','/css/kingdom-map.css','/atlas-lab.html','/js/kingdom-atlas-lab.mjs'];
+             const paths=['/','/js/kingdom-map-app.mjs','/js/kingdom-map-core.mjs','/css/kingdom-map.css','/atlas-lab.html'];
              const res=await Promise.all(paths.map(p=>fetch(base+p,{cache:'no-store'})));
              res.forEach(r=>assert.equal(r.status,200,r.url));
              const html=await Promise.all(res.map(r=>r.text()));
              assert(html[1].includes('schedulePending')&&html[1].includes('DISCOVERY_WAIT_MS=4050'));
              assert(html[2].includes('randomEncounter')&&html[2].includes('annexCell'));
              assert(html[3].includes('km-king-step'));
-             assert(html[4].includes('Симулировать')&&html[4].includes('Разреженность встреч'),
-               'Atlas Lab must be deployed as a real standalone HTML simulator');
-             assert(html[5].includes('worldAt')&&html[5].includes('renderParchment'),
-               'published Atlas Lab must import the actual Kingdom generator and renderer');
+             assert(html[4].includes('simPreview')&&html[4].includes('simSpacingRules')&&
+               html[4].includes('RPChessAtlasSimulation'),
+               'published HTML must be the full author v6 editor and the extended simulator');
              for(const name of ['/assets/kingdom-map/humans/humans_castle_128.svg',
                 '/assets/kingdom-map/orcs/orcs_battle_128.svg',
                 '/assets/kingdom-map/puzzle/puzzle_128.svg',

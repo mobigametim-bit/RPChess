@@ -2,8 +2,8 @@
  * The existing nature SVGs, world rivers and fog remain separate layers.
  */
 import {PARCHMENT_TILE,randomAt,terrainAt,pickSprite} from './kingdom-parchment-core.mjs';
-import {VISUAL,TERRAIN_LAYOUT} from './kingdom-world-config.mjs?v=20261109-atlas-lab-v7';
-import {landmarkAt,biomeAt} from './kingdom-world-core.mjs?v=20261109-atlas-lab-v7';
+import {VISUAL} from './kingdom-world-config.mjs?v=20261109-atlas-v6-audit-v10';
+import {landmarkAt,biomeAt} from './kingdom-world-core.mjs?v=20261109-atlas-v6-audit-v10';
 
 const PAPER_TILE_SRC='assets/kingdom-parchment/parchment_tile_256.webp',PAPER_TILE_SIZE=256;
 const spriteCache=new Map();
@@ -192,64 +192,31 @@ function drawWaterRoads(ctx,seed,left,top,width,height){
  }
  ctx.restore();
 }
-function terrainStamp(seed,xi,yi,{stampSpacing=VISUAL.stampSpacing,jitter=TERRAIN_LAYOUT.jitter}={}){
- const step=Math.max(.7,Math.min(3.5,Number(stampSpacing)||VISUAL.stampSpacing));
- const scatter=Math.max(0,Math.min(1.55,Number(jitter)||0));
- const gx=(xi+.5+(randomAt(seed,xi,yi,'sx')-.5)*scatter)*step;
- const gy=(yi+.5+(randomAt(seed,xi,yi,'sy')-.5)*scatter)*step;
- const terrain=terrainAt(seed,gx,gy);
- if(biomeAt(seed,gx,gy)==='marsh')return null;
- const kind=terrain.kind==='forest'?'forest_clusters':
-            terrain.kind==='mountain'?'mountain_clusters':'hills_rocks';
- const density=terrain.kind==='forest'?VISUAL.forestDensity:
-  terrain.kind==='mountain'?VISUAL.mountainDensity:
-  terrain.kind==='hill'?VISUAL.hillDensity:VISUAL.plainDensity;
- if(randomAt(seed,xi,yi,'skip')>Math.min(1,Math.max(0,density)))return null;
- return {x:gx,y:gy,kind,priority:randomAt(seed,xi,yi,'stamp-priority'),
-  size:VISUAL.stampSize*(.7+randomAt(seed,xi,yi,'scale')*VISUAL.sizeVariation*.5)*PARCHMENT_TILE,
-  art:pickSprite(seed,kind,xi,yi)};
-}
-function drawTerrainSymbols(ctx,seed,left,top,width,height,repaint,layout=TERRAIN_LAYOUT){
- const stampSpacing=Math.max(.7,Math.min(3.5,Number(layout?.stampSpacing)||VISUAL.stampSpacing));
- const jitter=Math.max(0,Math.min(1.55,Number(layout?.jitter??TERRAIN_LAYOUT.jitter)));
- const separation=Math.max(0,Math.min(1.5,Number(layout?.separation??TERRAIN_LAYOUT.separation)));
- const params={stampSpacing,jitter},near=1+Math.ceil(jitter);
- // Memoize world coordinate samples throughout the frame. The conflict
- // check must not resample the same vegetation stamp dozens of times.
- const memo=new Map();
- const sample=(ix,iy)=>{
-  const key=ix+','+iy;
-  if(!memo.has(key))memo.set(key,terrainStamp(seed,ix,iy,params));
-  return memo.get(key);
- };
- const minX=Math.floor((left-4)/stampSpacing)-near,maxX=Math.ceil((left+width+4)/stampSpacing)+near;
- const minY=Math.floor((top-4)/stampSpacing)-near,maxY=Math.ceil((top+height+4)/stampSpacing)+near;
+function drawTerrainSymbols(ctx,seed,left,top,width,height,repaint){
+ const step=VISUAL.stampSpacing; // author-approved density, anchored to world coords
+ const minX=Math.floor((left-2)/step),maxX=Math.ceil((left+width+2)/step);
+ const minY=Math.floor((top-2)/step),maxY=Math.ceil((top+height+2)/step);
  for(let yi=minY;yi<=maxY;yi++)for(let xi=minX;xi<=maxX;xi++){
-  const stamp=sample(xi,yi);
-  if(!stamp)continue;
-  if(separation>0){
-   let overlaps=false;
-   // Priority rejection is symmetric and world-coordinate-based; it never
-   // depends on which chunk, viewport or row is rendered first.
-   for(let dy=-near;dy<=near&&!overlaps;dy++)for(let dx=-near;dx<=near;dx++){
-    if(dx===0&&dy===0)continue;
-    const other=sample(xi+dx,yi+dy);
-    if(!other||other.kind!==stamp.kind)continue;
-    if(Math.hypot(other.x-stamp.x,other.y-stamp.y)>=separation*stampSpacing)continue;
-    if(other.priority>stamp.priority||(other.priority===stamp.priority&&
-      (dy<0||(dy===0&&dx<0)))){overlaps=true;break;}
-   }
-   if(overlaps)continue;
-  }
-  const x=(stamp.x-left)*PARCHMENT_TILE,y=(stamp.y-top)*PARCHMENT_TILE;
-  const art=getArt(stamp.art,repaint);
+  const gx=xi*step+1.15+randomAt(seed,xi,yi,'sx')*.7;
+  const gy=yi*step+1.15+randomAt(seed,xi,yi,'sy')*.7;
+  const terrain=terrainAt(seed,gx,gy);
+  const kind=terrain.kind==='forest'?'forest_clusters':
+             terrain.kind==='mountain'?'mountain_clusters':'hills_rocks';
+  if(biomeAt(seed,gx,gy)==='marsh')continue;
+  const density=terrain.kind==='forest'?VISUAL.forestDensity:
+   terrain.kind==='mountain'?VISUAL.mountainDensity:
+   terrain.kind==='hill'?VISUAL.hillDensity:VISUAL.plainDensity;
+  if(randomAt(seed,xi,yi,'skip')>Math.min(1,density))continue;
+  const size=VISUAL.stampSize*(.7+randomAt(seed,xi,yi,'scale')*VISUAL.sizeVariation*.5)*PARCHMENT_TILE;
+  const x=(gx-left)*PARCHMENT_TILE,y=(gy-top)*PARCHMENT_TILE;
+  const path=pickSprite(seed,kind,xi,yi);
+  const art=getArt(path,repaint);
   ctx.save();ctx.globalAlpha=VISUAL.stampOpacity;
-  if(art)ctx.drawImage(art,x-stamp.size/2,y-stamp.size/2,stamp.size,stamp.size);
-  else fallbackSymbol(ctx,stamp.kind,x,y,stamp.size,seed+':'+xi+':'+yi);
+  if(art)ctx.drawImage(art,x-size/2,y-size/2,size,size);
+  else fallbackSymbol(ctx,kind,x,y,size,seed+':'+xi+':'+yi);
   ctx.restore();
  }
 }
-
 function drawFog(ctx,map,left,top,width,height){
  const fog=document.createElement('canvas');fog.width=Math.round(width*PARCHMENT_TILE);
  fog.height=Math.round(height*PARCHMENT_TILE);
@@ -271,7 +238,7 @@ function drawFog(ctx,map,left,top,width,height){
  f.globalCompositeOperation='source-over';
  ctx.drawImage(fog,0,0);
 }
-function renderParchment(canvas,{seed,view,columns,rows,map,terrainLayout=TERRAIN_LAYOUT}){
+function renderParchment(canvas,{seed,view,columns,rows,map}){
  if(!canvas)return;
  probeArt();
  requestExtraManifest();
@@ -284,17 +251,17 @@ function renderParchment(canvas,{seed,view,columns,rows,map,terrainLayout=TERRAI
  if(canvas.height!==height)canvas.height=height;
  const ctx=canvas.getContext('2d');if(!ctx)return;
  const left=view.x-Math.floor(columns/2),top=view.y-Math.floor(rows/2);
- latest=()=>{if(canvas.isConnected)renderParchment(canvas,{seed,view,columns,rows,map,terrainLayout});};
+ latest=()=>{if(canvas.isConnected)renderParchment(canvas,{seed,view,columns,rows,map});};
  ctx.clearRect(0,0,width,height);
  const repaint=()=>{if(canvas.isConnected)latest?.();};
  canvas.dataset.parchmentTexture=drawTiledPaper(ctx,left,top,columns,rows,repaint)?'loaded':'loading';
  drawBasePatches(ctx,seed,left,top,columns,rows,repaint);
  drawWaterRoads(ctx,seed,left,top,columns,rows);
- drawTerrainSymbols(ctx,seed,left,top,columns,rows,repaint,terrainLayout);
+ drawTerrainSymbols(ctx,seed,left,top,columns,rows,repaint);
  drawOptionalNature(ctx,seed,left,top,columns,rows,map,repaint);
  drawFog(ctx,map,left,top,columns,rows);
  drawFogInk(ctx,seed,left,top,columns,rows,map,repaint);
  // Sovereignty lines now use the shared organic overlay for both map skins.
 
 }
-export {renderParchment,drawWaterRoads,terrainStamp};
+export {renderParchment,drawWaterRoads};

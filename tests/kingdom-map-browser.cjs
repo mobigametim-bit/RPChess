@@ -907,28 +907,47 @@ async function assertTileImage(page,cellId,relativePath){
   assert.deepEqual((await read(autopilot)).kingdomMap.king,{x:2,y:0},
     'panning only changes the camera, not the saved king position');
   await autopilot.close();
-  // Preview uses the real worldAt, parchment SVG assets and live spacing
-  // overrides; it must be a packaged page, not a separate fake simulator.
+  // The user's original v6 terrain editor and kingdom simulator are intact.
   const labPage=await browser.newPage({viewport:{width:1440,height:900}});
   const atlasErrors=[];labPage.on('pageerror',e=>atlasErrors.push(String(e.stack||e)));
   await labPage.goto(new URL('atlas-lab.html',url.endsWith('/')?url:url+'/').href,
    {waitUntil:'domcontentloaded'});
-  await labPage.locator('#simulate').waitFor({state:'visible'});
-  await labPage.waitForFunction(()=>document.querySelector('#stats .stat strong')?.textContent!==undefined);
-  await labPage.waitForFunction(()=>document.querySelector('#terrain')?.dataset.parchmentTexture==='loaded');
-  assert.equal(await labPage.locator('#stats .stat').count(),4);
-  assert((await labPage.locator('#markers img.site').count())>0,
-    'Atlas Lab renders actual encounter-site art on the generated parchment');
-  const baseline=Number(await labPage.locator('#stats .stat strong').first().textContent());
-  await labPage.locator('#spacing').selectOption('2');
-  await labPage.locator('#simulate').click();
-  const sparse=Number(await labPage.locator('#stats .stat strong').first().textContent());
-  assert(sparse<=baseline,'larger exclusion radius cannot increase generated encounter count');
-  assert.equal(await labPage.locator('#jitter').count(),1);
-  assert.equal(await labPage.locator('#separation').count(),1);
-  assert.equal(await labPage.locator('#type-weights input').count(),36);
-  assert.equal(await labPage.locator('#race-weights input').count(),84);
-  assert.deepEqual(atlasErrors,[],'Atlas Lab must load all game modules without errors');
+  assert.equal(await labPage.locator('#labVisualTab').count(),1);
+  await labPage.locator('#labSimTab').click();
+  await labPage.locator('#simPreview').waitFor({state:'visible'});
+  assert.equal(await labPage.locator('#sc-eventRadius').inputValue(),'1');
+  assert.equal(await labPage.locator('#sc-eventNearbyMax').inputValue(),'2');
+  await labPage.locator('#simPreview').click();
+  await labPage.locator('#simReturn').waitFor({state:'visible'});
+  const nearby=await labPage.evaluate(()=>{
+   const sim=window.RPChessAtlasSimulation,fn=sim.admissionAccepted;
+   let events=0,worst=0;
+   for(let y=-10;y<=10;y++)for(let x=-10;x<=10;x++){
+    if(!fn(x,y))continue;
+    events++;let others=0;
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)
+     if((dx||dy)&&fn(x+dx,y+dy))others++;
+    worst=Math.max(worst,others);
+   }
+   return {events,worst};
+  });
+  assert(nearby.events>0&&nearby.worst<=2,
+    'R=1/N=2 respects the maximum number of other road events per encounter');
+  const countsBefore=await labPage.evaluate(()=>{
+   const x=window.RPChessAtlasSimulation.getSample();
+   return Object.values(x.groups).reduce((a,b)=>a+b,0);
+  });
+  await labPage.locator('#sc-eventNearbyMax').evaluate(el=>{
+   el.value='0';el.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  const countsAfter=await labPage.evaluate(()=>{
+   const x=window.RPChessAtlasSimulation.getSample();
+   return Object.values(x.groups).reduce((a,b)=>a+b,0);
+  });
+  assert(countsAfter<=countsBefore,'forbidding all neighbors cannot create more events');
+  assert.equal(await labPage.locator('#simControls').count(),1);
+  assert.equal(await labPage.locator('#controls').count(),1);
+  assert.deepStrictEqual(atlasErrors,[],'original v6 extension must not emit page errors');
   await labPage.close();
   console.log('KINGDOM MAP PASS — click-inspect, king drag, shortest routes, event stop, map pan, step supplies');
  }finally{await browser.close()}

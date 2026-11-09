@@ -15,7 +15,7 @@ import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
 import {PARCHMENT_MODE_KEY} from './kingdom-parchment-core.mjs';
-import {renderParchment} from './kingdom-parchment-app.mjs?v=20261109-atlas-lab-v7';
+import {renderParchment} from './kingdom-parchment-app.mjs?v=20261109-atlas-v6-audit-v10';
 import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261109-kingdom-controls-v9';
 import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-lab-v7';
 import {subscribe,currentLanguage,t} from './i18n.mjs';

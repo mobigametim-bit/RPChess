@@ -130,8 +130,9 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'Atlas Lab v7 HTML must be shipped alongside its map preview');
   assert(fs.readFileSync(path.join(game,'atlas-lab.html'),'utf8').includes('Симулировать'),
     'balance panel includes the requested simulation action');
-  assert(fs.readFileSync(path.join(game,'js/kingdom-atlas-lab.mjs'),'utf8').includes("from './kingdom-world-core.mjs"),
-    'Atlas preview calls the genuine world generator instead of a disconnected fake');
+  const atlasHtml=fs.readFileSync(path.join(game,'atlas-lab.html'),'utf8');
+  assert(atlasHtml.includes('RPChessAtlasSimulation')&&atlasHtml.includes('simSpacingRules'),
+    'author Atlas Lab v6 must preserve its original simulator and new radius/neighbor settings');
 
   const route=mapCore.shortestKingRoute(startMap,{x:7,y:-4});
   assert.strictEqual(route.length,7,'diagonal king path has Chebyshev minimum length');
