@@ -423,6 +423,8 @@ async function assertTileImage(page,cellId,relativePath){
   assert(layers.siteSize>layers.defenderSize&&layers.defenderDepth>layers.siteDepth&&layers.overlap,
     'enemy guardian must be smaller, overlaid and visually in front of the site');
   assert.equal(moved.supplies,before.supplies,'moving and unveiling do not charge resources prematurely');
+  assert(!fs.readFileSync(path.join(__dirname,'../game/css/kingdom-map.css'),'utf8').includes("content:'?'"),
+    'fog reveal animation cannot reintroduce question marks');
   assert.equal(await page.locator('[data-kingdom-cell="1,0"] .km-fog-mark').count(),0,
    'the fog opens before the encounter begins');
   // Reveal precedes movement. The route card is visible while the king still
@@ -621,7 +623,7 @@ async function assertTileImage(page,cellId,relativePath){
       selectedEncounter:{id:'kingdom.neutral-fixture',type:'event',raceTag:'mixed',stars:1}};
     run.kingdomMap.cells['-1,0']={status:'completed',annexed:false,
       selectedEncounter:{id:'kingdom.elven-fixture',type:'event',raceTag:'elves',stars:1}};
-    run.kingdomMap.cells['1,1']={status:'completed',annexed:false,
+    run.kingdomMap.cells['1,1']={status:'completed',respawnReady:true,annexed:false,
       selectedEncounter:{id:'kingdom.orc-fixture',type:'battle',raceTag:'orcs',stars:1}};
     run.kingdomMap.cells['-1,1']={status:'completed',annexed:false,
       selectedEncounter:{id:'kingdom.undead-fixture',type:'skirmish',raceTag:'undead',stars:4}};
@@ -654,7 +656,7 @@ async function assertTileImage(page,cellId,relativePath){
   assert.equal(await orcCell.locator('.km-object--site').getAttribute('src'),
     'assets/kingdom-map/orcs/orcs_battle_128.svg','saved Battle retains its location SVG');
   assert.equal(await orcCell.locator('.km-object--defender').getAttribute('src'),
-    'assets/races/orcs/pieces/board/black/pawn.png','saved Battle overlays an orc pawn');
+    'assets/races/orcs/pieces/board/black/pawn.png','a respawned Battle restores the orc pawn');
   for(const [point,type,race,role] of [
     ['-1,1','skirmish','undead','knight'],['0,-1','caravan','elves','king']
   ]){
@@ -662,12 +664,11 @@ async function assertTileImage(page,cellId,relativePath){
     assert.equal(await cell.locator('.km-object--site').getAttribute('src'),
       `assets/kingdom-map/${race}/${race}_${type}_128.svg`,
       type+' preserves its racial encounter site artwork');
-    assert.equal(await cell.locator('.km-object--defender').getAttribute('src'),
-      `assets/races/${race}/pieces/board/black/${role}.png`,
-      type+' has the correct enemy-race figure layered on top');
+    assert.equal(await cell.locator('.km-object--defender').count(),0,
+      type+' must not show a defeated figure before an actual respawn');
     await walking.waitForFunction(id=>{
       const cell=document.querySelector('[data-kingdom-cell="'+id+'"]');
-      return [...cell.querySelectorAll('img.km-object')].length===2 &&
+      return [...cell.querySelectorAll('img.km-object')].length===1 &&
         [...cell.querySelectorAll('img.km-object')].every(img=>img.complete&&img.naturalWidth>0);
     },point,{timeout:15000});
   }
