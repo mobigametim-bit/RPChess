@@ -14,13 +14,14 @@ import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
 import {PARCHMENT_MODE_KEY} from './kingdom-parchment-core.mjs';
-import {renderParchment} from './kingdom-parchment-app.mjs?v=20261109-kingdom-calendar-territory-v5';
+import {renderParchment} from './kingdom-parchment-app.mjs?v=20261109-completed-map-v6';
+import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261109-completed-map-v6';
 import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-zoom-v4';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
  beginEncounter,finishEncounter,matchesCombatReceipt,migrateKingdomMap,territoryCapacity,isOwned,castleLevel,revealAround,
- romanForStars,keyOf,adjacent,borderEdges} from './kingdom-map-core.mjs?v=20261109-kingdom-calendar-territory-v5';
+ romanForStars,keyOf,adjacent,borderEdges} from './kingdom-map-core.mjs?v=20261109-completed-map-v6';
 
 const COPY={
  ru:{classicMap:'Классика',parchmentMap:'Пергамент',switchMap:'Оформление карты',day:'День',shards:'Осколки чести',castle:'Замок',supply:'Припасы',power:'Мощь',points:'Очки присоединения',
@@ -30,7 +31,7 @@ const COPY={
    pending:'Открываю путь…',level:'Уровень',unavailable:'Недоступно для присоединения',lands:'Владения',
    discover:'Выбери соседнюю клетку, чтобы исследовать её',congrat:'Замок получил уровень',
    empty:'Открывайте территорию, чтобы основать королевство',
-   zoomGroup:'Масштаб карты',zoomIn:'Увеличить масштаб',zoomOut:'Уменьшить масштаб',zoomReset:'Сбросить масштаб карты'},
+   completedDetail:'Место освоено. Можно вернуться сюда в любой момент.',zoomGroup:'Масштаб карты',zoomIn:'Увеличить масштаб',zoomOut:'Уменьшить масштаб',zoomReset:'Сбросить масштаб карты'},
  en:{classicMap:'Classic',parchmentMap:'Parchment',switchMap:'Map appearance',day:'Day',shards:'Honor shards',castle:'Castle',supply:'Supplies',power:'Power',points:'Annexation points',
    hidden:'Unexplored territory',empty:'Quiet terrain',safeTerrain:'No encounter at this location.',annex:'Annex · 1 point',annexed:'Part of your kingdom',
    complete:'Cleared',failed:'Failed — retry encounter',inProgress:'Encounter in progress',
@@ -38,7 +39,7 @@ const COPY={
    pending:'Exploring…',level:'Level',unavailable:'Cannot annex yet',lands:'Territory',
    discover:'Select an adjacent tile to explore',congrat:'Castle reached level',
    empty:'Explore the realm to found a kingdom',
-   zoomGroup:'Map zoom',zoomIn:'Zoom in',zoomOut:'Zoom out',zoomReset:'Reset map zoom'}
+   completedDetail:'This location is cleared. You can return at any time.',zoomGroup:'Map zoom',zoomIn:'Zoom in',zoomOut:'Zoom out',zoomReset:'Reset map zoom'}
 };
 // Atlas view scales the original 142px logical tiles to an interactive 87px default.
 const MAP_LAYOUT=Object.freeze({cellPx:142,eventScalePercent:73,kingPx:92,inspectorWidthPercent:25});
@@ -93,7 +94,7 @@ function zoomWheel(e){
  updateZoom(zoomPx*Math.exp(-delta*.0015));
 }
 
-const REVEAL_MS=680,MOVE_MS=460,FLAVOR_MS=2600,DISCOVERY_WAIT_MS=4050;
+const REVEAL_MS=680,MOVE_MS=460,FLAVOR_MS=2600,DISCOVERY_WAIT_MS=4050,RESOURCE_FX_MS=2600;
 const GOLD_ICON='generated_assets/reward_gold.png';
 const SUPPLIES_ICON='generated_assets/reward_supplies.png';
 // Reuse Arena's canonical Power icon; already included in the optimized build.
@@ -116,6 +117,7 @@ function oddCoverCount(pixels,minimum,cellPixels=zoomPx){
 // The camera is independent of the king: keep world cells stationary when he
 // moves inside the viewport. Only pan after he reaches its inner edge.
 let screen=null,selected=null,movement=null,camera=null,flightTimer=null,launchTimer=null,runId=null,toastTimer=null,flavorBurst=null,flavorTimer=null;
+let resourceBurst=null,resourceTimer=null;
 function followCamera(point){
  if(!camera)camera={...point};
  // With 2x zoom, follow vertically each step so the next row remains clickable.
@@ -167,24 +169,25 @@ function routeCard(choice,run,cell){
  const visual=document.createElement('div');visual.className='km-route-card__visual';
  visual.style.setProperty('--km-card-backdrop','url("'+new URL(routeBackdrop(choice),document.baseURI).href+'")');
  const combat=['battle','skirmish','caravan'].includes(choice.type);
+ const completed=cell.status==='completed';
+ const defenderActive=!completed||cell.respawnReady===true;
  const siteArt=kingdomMapSprite(choice.type,choice.raceTag||choice.enemyRaceTag,
   choice.visualRaceTag||choice.seed||choice.id);
  const icon=document.createElement('img');icon.className='km-route-card__icon';
  // The location remains visible behind the racial defender, like the king
  // layered over map sites. Unrelated encounter cards keep their prior art.
- icon.src=combat||choice.type==='event'?siteArt:
-  (ROUTE_ICONS[choice.type]||ROUTE_ICONS.puzzle);
+ icon.src=siteArt||(ROUTE_ICONS[choice.type]||ROUTE_ICONS.puzzle);
  icon.alt='';icon.setAttribute('aria-hidden','true');
  const defenderArt=combat?kingdomEncounterSprite(choice):null;
  let defender=null;
- if(defenderArt&&defenderArt!==siteArt){
+ if(defenderActive&&defenderArt&&defenderArt!==siteArt){
   defender=document.createElement('img');defender.className='km-route-card__defender';
   defender.src=defenderArt;defender.alt='';defender.setAttribute('aria-hidden','true');
  }
  const details=document.createElement('div');details.className='km-route-card__details';
  const name=document.createElement('h3');name.textContent=t('travel.type.'+choice.type);
  const status=document.createElement('span');status.className='km-route-card__status';
- status.textContent=cell.status==='failed'?tr('failed'):
+ status.textContent=completed?tr('complete'):cell.status==='failed'?tr('failed'):
   cell.status==='in_progress'?tr('inProgress'):tr('reveal');
  const stats=document.createElement('div');stats.className='km-route-card__stats';
  if(['battle','skirmish','caravan','puzzle'].includes(choice.type)){
@@ -197,6 +200,11 @@ function routeCard(choice,run,cell){
   const services=document.createElement('span');services.className='km-route-card__service';
   services.textContent=t('travel.settlementServices');stats.append(services);
  }
+ if(completed){
+  card.classList.add('km-route-card--completed');
+  const note=document.createElement('span');note.className='km-route-card__cleared';
+  note.textContent=tr('completedDetail');stats.append(note);
+ }else{
  const cost=resourceBadge(t('travel.cost',{cost:TRAVEL_SUPPLY_COST}),SUPPLIES_ICON,'-'+TRAVEL_SUPPLY_COST);
  cost.classList.toggle('is-empty',(run.supplies||0)<TRAVEL_SUPPLY_COST);stats.append(cost);
  if(choice.type==='caravan'){
@@ -209,6 +217,7 @@ function routeCard(choice,run,cell){
     status:{over:true,type:'checkmate',winner:playerColor}});
   stats.append(resourceBadge(t('travel.rewardAria',{reward:amount}),GOLD_ICON,'+'+amount));
  }
+ }
  details.append(name,status,stats);visual.append(icon);
  if(defender)visual.append(defender);
  card.append(visual,details);return card;
@@ -218,7 +227,7 @@ function report(text){const node=screen?.querySelector('[data-kingdom-toast]');i
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261109-atlas-zoom-v4';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261109-completed-map-v6';link.dataset.kingdomStyle='';
  link.addEventListener('load',()=>{if(screen&&!screen.hidden)render();});
  document.head.append(link);
 }
@@ -284,7 +293,8 @@ function screenReady(){
  return screen;
 }
 function stopTimers(){
- clearTimeout(flightTimer);clearTimeout(launchTimer);clearTimeout(flavorTimer);
+ clearTimeout(flightTimer);clearTimeout(launchTimer);clearTimeout(flavorTimer);clearTimeout(resourceTimer);
+ resourceBurst=null;resourceTimer=null;
  flightTimer=null;launchTimer=null;flavorTimer=null;movement=null;flavorBurst=null;
 }
 function hideMap(){stopTimers();activeTouches.clear();pinch=null;if(screen)screen.hidden=true;document.body.classList.remove('kingdom-map-active');}
@@ -338,6 +348,21 @@ function settleIfReturned(run,source){
  if(!outcome)return run;
  const finished=finishEncounter(map,id,outcome);
  if(!finished.ok)return run;
+ const baseline=cell.resourceSnapshot;
+ if(baseline){
+  const current=[['gold',GOLD_ICON,run.gold],['supplies',SUPPLIES_ICON,run.supplies],
+   ['shards',SHARD_ICON,honorShards()]];
+  const changes=current.map(([kind,icon,value])=>({kind,icon,
+   delta:(Number(value)||0)-(Number(baseline[kind])||0)})).filter(item=>item.delta!==0);
+  if(changes.length){
+   resourceBurst={id,changes};clearTimeout(resourceTimer);
+   resourceTimer=setTimeout(()=>{resourceBurst=null;
+    if(screen&&!screen.hidden)render();},RESOURCE_FX_MS);
+  }
+ }
+ // A transient pre-encounter balance should never accumulate in the run save.
+ const {resourceSnapshot,...cleanCell}=finished.map.cells[id];
+ finished.map.cells[id]=cleanCell;
  return writeRun({...run,kingdomMap:finished.map});
 }
 function schedulePending(run){
@@ -354,6 +379,8 @@ function schedulePending(run){
   if(current.kingdomMap?.pendingCell!==id||currentCell?.status!=='revealed')return;
   const beginning=beginEncounter(current.kingdomMap,id);
   if(!beginning.ok)return;
+  beginning.map.cells[id]={...beginning.map.cells[id],resourceSnapshot:{
+   gold:current.gold||0,supplies:current.supplies||0,shards:honorShards()}};
   const launched=globalThis.RPChessTravelChoice?.startMapEncounter?.(currentCell.selectedEncounter,beginning.map);
   if(launched)hideMap();
   else report(tr('inProgress'));
@@ -463,7 +490,8 @@ function render(){
       choice.visualRaceTag||choice.seed||choice.id);
      const img=document.createElement('img');img.className='km-object km-object--site';
      img.src=siteArt;img.alt='';img.loading='lazy';btn.append(img);
-     if(['battle','skirmish','caravan'].includes(choice.type)){
+     if(['battle','skirmish','caravan'].includes(choice.type)&&
+        (cell.status!=='completed'||cell.respawnReady===true)){
       const defenderArt=kingdomEncounterSprite(choice);
       if(defenderArt&&defenderArt!==siteArt){
        const guard=document.createElement('img');
@@ -474,6 +502,19 @@ function render(){
      const lvl=document.createElement('small');lvl.className='km-level';lvl.textContent=romanForStars(choice.stars);btn.append(lvl);
     }
     if(cell.status==='failed'){const flag=document.createElement('span');flag.className='km-failure';flag.textContent='!';btn.append(flag);}
+   }
+   if(resourceBurst?.id===id){
+    const group=document.createElement('span');group.className='km-resource-bursts';
+    group.setAttribute('role','status');
+    resourceBurst.changes.forEach((change,index)=>{
+     const burst=document.createElement('span');burst.className='km-resource-burst';
+     burst.style.setProperty('--km-fx-index',index);
+     const icon=document.createElement('img');icon.src=change.icon;icon.alt='';
+     const label=document.createElement('strong');
+     label.textContent=(change.delta>0?'+':'')+change.delta;
+     burst.append(icon,label);group.append(burst);
+    });
+    btn.append(group);
    }
    if(flavorBurst?.id===id){
     const fly=document.createElement('span');fly.className='km-flavor-flyout';
@@ -489,6 +530,10 @@ function render(){
   world.prepend(atlas);
   renderParchment(atlas,{seed:map.seed,view,columns:WIDTH,rows:HEIGHT,map});
  }
+ const overlay=document.createElement('canvas');overlay.className='km-kingdom-overlay';
+ overlay.dataset.kingdomOverlay='';overlay.setAttribute('aria-hidden','true');
+ world.append(overlay);
+ drawKingdomOverlay(overlay,{map,view,columns:WIDTH,rows:HEIGHT});
  const avatar=document.createElement('img');avatar.className='km-king'+(movement?.phase==='moving'?' km-king--moving':'');
  avatar.src=kingArt(run);avatar.alt='';avatar.setAttribute('aria-hidden','true');
  // King image dimensions stay independent of the tile scale.
@@ -509,7 +554,7 @@ function render(){
  const info=chosen||current;
  const slot=screen.querySelector('[data-kingdom-route-slot]');
  const summary=screen.querySelector('[data-kingdom-summary]');
- const activeChoice=info?.status!=='completed'&&info?.selectedEncounter;
+ const activeChoice=Boolean(info?.selectedEncounter);
  slot.hidden=!activeChoice;summary.hidden=Boolean(activeChoice);
  if(activeChoice)slot.replaceChildren(routeCard(info.selectedEncounter,run,info));
  else{
