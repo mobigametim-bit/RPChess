@@ -433,3 +433,15 @@ body.kingdom-map-active .resource-hud{display:none!important}
 @media(prefers-reduced-motion:reduce){
  .kingdom-map-screen .km-resource-burst{animation:none;opacity:1}
 }
+
+/* World roads are over the ground and UNDER the genuine event/castle sprites.
+   Avoid cell stacking contexts which otherwise flatten the sprites under
+   the road overlay even when the sprite has a larger z-index. */
+.kingdom-map-screen .km-cell,
+.kingdom-map-screen.km-parchment-mode .km-cell{isolation:auto;z-index:auto}
+.kingdom-map-screen .km-kingdom-overlay{z-index:2}
+.kingdom-map-screen .km-object{z-index:7}
+.kingdom-map-screen .km-object--defender{z-index:9}
+.kingdom-map-screen .km-level,.kingdom-map-screen .km-failure{z-index:10}
+.kingdom-map-screen .km-king{z-index:16}
+.kingdom-map-screen .km-resource-bursts{z-index:18}

@@ -29,7 +29,7 @@ const COPY={
    complete:'Пройдена',failed:'Неудача — повторная попытка',inProgress:'Встреча продолжается',
    return:'К отряду',reveal:'Открыта встреча',entry:'Начинается',services:'Услуги поселения',
    pending:'Открываю путь…',level:'Уровень',unavailable:'Недоступно для присоединения',lands:'Владения',
-   discover:'Выбери соседнюю клетку, чтобы исследовать её',congrat:'Замок получил уровень',
+   discover:'',congrat:'Замок получил уровень',
    empty:'Открывайте территорию, чтобы основать королевство',
    completedDetail:'Место освоено. Можно вернуться сюда в любой момент.',zoomGroup:'Масштаб карты',zoomIn:'Увеличить масштаб',zoomOut:'Уменьшить масштаб',zoomReset:'Сбросить масштаб карты'},
  en:{classicMap:'Classic',parchmentMap:'Parchment',switchMap:'Map appearance',day:'Day',shards:'Honor shards',castle:'Castle',supply:'Supplies',power:'Power',points:'Annexation points',
@@ -37,7 +37,7 @@ const COPY={
    complete:'Cleared',failed:'Failed — retry encounter',inProgress:'Encounter in progress',
    return:'Squad',reveal:'Encounter discovered',entry:'Entering',services:'Settlement services',
    pending:'Exploring…',level:'Level',unavailable:'Cannot annex yet',lands:'Territory',
-   discover:'Select an adjacent tile to explore',congrat:'Castle reached level',
+   discover:'',congrat:'Castle reached level',
    empty:'Explore the realm to found a kingdom',
    completedDetail:'This location is cleared. You can return at any time.',zoomGroup:'Map zoom',zoomIn:'Zoom in',zoomOut:'Zoom out',zoomReset:'Reset map zoom'}
 };
@@ -573,7 +573,9 @@ function render(){
  ann.hidden=true; // Annexation is now automatic; keep the legacy button inert.
  services.hidden=!(id===keyOf(map.king.x,map.king.y)&&chosen?.status==='completed'&&chosen.selectedEncounter?.type==='settlement');
  services.textContent=tr('services');
- screen.querySelector('[data-kingdom-hint]').textContent=map.pendingCell?tr('pending'):tr('discover');
+ const hint=screen.querySelector('[data-kingdom-hint]');
+ hint.hidden=!map.pendingCell;
+ hint.textContent=map.pendingCell?tr('pending'):'';
 }
 function parsePoint(id){if(!/^-?\d+,-?\d+$/.test(id||''))return null;const [x,y]=id.split(',').map(Number);return {x,y};}
 function onCell(event){

@@ -561,6 +561,17 @@ async function assertTileImage(page,cellId,relativePath){
    assert.equal(await page.locator('.km-kingdom-overlay').count(),1,
      'organic territory and event roads work in the parchment skin');
    assert.equal(await page.locator('.km-kingdom-overlay').getAttribute('data-road-segments'),'1');
+   const composition=await page.evaluate(()=>{
+     const overlay=document.querySelector('.km-kingdom-overlay');
+     const site=document.querySelector('[data-kingdom-cell="0,1"] .km-object--site');
+     return {overlay:Number(getComputedStyle(overlay).zIndex),
+       site:Number(getComputedStyle(site).zIndex),
+       cellIsolation:getComputedStyle(site.closest('.km-cell')).isolation};
+   });
+   assert(composition.site>composition.overlay&&composition.cellIsolation!=='isolate',
+     'roads stay beneath event/castle art, even on the parchment map');
+   assert.equal(await page.locator('[data-kingdom-hint]').textContent(),'',
+     'no select-the-neighbor instruction appears in completed route cards');
    assert(Number(await page.locator('.km-kingdom-overlay').getAttribute('data-border-segments'))>0,
      'wavy territory bounds are painted on the shared overlay');
    // Starting an encounter spends one Supply; on return the event tile reports
