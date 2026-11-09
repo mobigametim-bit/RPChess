@@ -238,7 +238,8 @@ async function assertTileImage(page,cellId,relativePath){
   const scoutedEvents=Object.entries(before.kingdomMap.cells).filter(([,cell])=>cell.selectedEncounter);
   assert(scoutedEvents.length>0,'world stores deterministic future encounters');
   for(const [id,cell] of scoutedEvents){
-    if(cell.explored)continue;
+    if(cell.explored||before.kingdomMap.centralOwnedCells.includes(id)||
+      (before.kingdomMap.outposts||[]).some(p=>p.cells.includes(id)))continue;
     assert.equal(await page.locator('[data-kingdom-cell="'+id+'"] img.km-object--site').count(),0,
       'unexplored site '+id+' is concealed, even if assigned in save');
     assert.equal(await page.locator('[data-kingdom-cell="'+id+'"] .km-object--defender').count(),0,
@@ -246,8 +247,12 @@ async function assertTileImage(page,cellId,relativePath){
   }
   assert.equal(await page.locator('.km-parchment-fog').count(),1,
     'the upper fog canvas covers the parchment and site art');
-  assert.equal(await page.locator('[data-kingdom-cell="1,0"]').getAttribute('aria-label'),'Неизведанная территория',
-    'unvisited cell does not disclose its encounter via accessible label');
+  assert(before.kingdomMap.centralOwnedCells.includes('1,0'),
+    'the eastern start tile belongs to the kingdom without a king visit');
+  assert.notEqual(await page.locator('[data-kingdom-cell="1,0"]').getAttribute('aria-label'),'Неизведанная территория',
+    'owned territory reveals its encounter even before the king visits');
+  assert.equal(await page.locator('[data-kingdom-cell="1,0"] .km-object--site').count(),1,
+    'owned territory immediately reveals its encounter SVG');
   assert(terrain.pixels[3]>0&&terrain.pixels[7]>0,
     'procedurally painted terrain and fog must both have visible pixels');
   assert.deepEqual(await read(page),before,'skin toggle must not change the run, encounters or save state');
@@ -458,8 +463,8 @@ async function assertTileImage(page,cellId,relativePath){
   await page.locator('[data-kingdom-cell="1,0"]').click();
   assert.deepEqual((await read(page)).kingdomMap.king,{x:0,y:0},
     'click selects the adjacent event for inspection, never moves the king');
-  assert.equal(await page.locator('[data-kingdom-route-card]').count(),0,
-    'selecting a concealed cell must not reveal route details');
+  assert.equal(await page.locator('[data-kingdom-route-card]').count(),1,
+    'selecting owned territory shows its already discovered route details');
   await dragKing(page,'1,0');
   assert.equal(await page.locator('[data-kingdom-route-card]').count(),1,
     'route details become available only after the king enters');
