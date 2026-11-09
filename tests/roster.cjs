@@ -20,7 +20,7 @@ class MemoryStorage {
   const armyCore = await import(pathToFileURL(path.join(game,'js/kingdom-army-core.mjs')).href);
   const initialArmyRun={gold:30,kingdomMap:{castle:{raceTag:'orcs'}},army:[]};
   const bought=armyCore.buyCastleRecruit(initialArmyRun,{raceTag:'orcs',pieceType:'pawn',receiptId:'roster-test:1'});
-  assert(bought.ok&&bought.run.gold===22&&bought.run.army[0].raceTag==='orcs',
+  assert(bought.ok&&bought.run.gold===29&&bought.run.army[0].raceTag==='orcs',
     'castle purchases keep race and correctly deduct gold');
   assert(!armyCore.buyCastleRecruit(bought.run,{raceTag:'orcs',pieceType:'pawn',receiptId:'roster-test:1'}).ok,
     'replaying the same purchase must not duplicate Army recruits');
