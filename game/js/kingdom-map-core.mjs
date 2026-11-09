@@ -75,7 +75,23 @@ function migrateKingdomMap(map,run=null){
   result={...result,calendarActions:[]};
  if(!Number.isInteger(result.processedThroughWeek))
   result={...result,processedThroughWeek:0};
+ // Legacy completions have no reliable chronology; do not invent roads.
+ if(!Array.isArray(result.completedRoads))
+  result={...result,completedRoads:[],lastCompletedRouteCell:null};
  return growTerritory(result);
+}
+// Route paths are historical: each first successful completion links to
+// the last different completed event, or to the castle for the first one.
+function linkCompletedRoad(map,id){
+ if((map.completedRoads||[]).some(road=>road.to===id))return map;
+ const from=map.lastCompletedRouteCell||keyOf(map.castle.x,map.castle.y);
+ if(from===id)return map;
+ const [x1,y1]=from.split(',').map(Number),[x2,y2]=id.split(',').map(Number);
+ const distance=Math.hypot(x2-x1,y2-y1);
+ const entropy=hashString(map.seed+':road:'+from+':'+id)>>>0;
+ const bend=(entropy%2?-1:1)*Math.max(.18,Math.min(1.15,distance*(.18+((entropy>>>8)%80)/1000)));
+ return {...map,completedRoads:[...(map.completedRoads||[]),
+  {id:'completed:'+id,from,to:id,bend}],lastCompletedRouteCell:id};
 }
 function advanceDay(map,actionId){
  if(typeof actionId!=='string'||!actionId)return map;
@@ -95,6 +111,7 @@ function createKingdomMap(run,playerPower=400,raceTag='humans'){
   peakKingPower:power,annexationPointsSpent:0,battlePointsEarned:0,legacyBonusLands:0,
   creditedBattleEncounterIds:[],uniqueFirstConquests:[],centralOwnedCells:[],
   day:1,calendarActions:[],processedThroughWeek:0,
+  completedRoads:[],lastCompletedRouteCell:null,
   completedNewEncounterCount:0,productionCyclesResolved:0});
 }
 function validateKingdomMap(map){
@@ -106,6 +123,11 @@ function validateKingdomMap(map){
     !Number.isInteger(map.battlePointsEarned)||map.battlePointsEarned<0||
     !Array.isArray(map.creditedBattleEncounterIds))return false;
  if(map.day!=null&&(!Number.isSafeInteger(map.day)||map.day<1))return false;
+ if(map.completedRoads!=null&&(!Array.isArray(map.completedRoads)||
+  !map.completedRoads.every(road=>road&&typeof road.id==='string'&&
+   /^-?[0-9]+,-?[0-9]+$/.test(road.from)&&/^-?[0-9]+,-?[0-9]+$/.test(road.to)&&
+   Number.isFinite(road.bend))))return false;
+ if(map.lastCompletedRouteCell!=null&&!/^-?[0-9]+,-?[0-9]+$/.test(map.lastCompletedRouteCell))return false;
  if(map.calendarActions!=null&&(!Array.isArray(map.calendarActions)||
     !map.calendarActions.every(id=>typeof id==='string'&&id.length>0)))return false;
  if(map.centralOwnedCells!=null&&(!Array.isArray(map.centralOwnedCells)||
@@ -222,6 +244,7 @@ function finishEncounter(map,id,{success=false,opponentPower=0}={}){
  if(first){
   next.completedNewEncounterCount++;
   const choice=prev.selectedEncounter;
+  if(choice?.id)next=linkCompletedRoad(next,id);
   if(['battle','caravan'].includes(choice?.type)&&!next.creditedBattleEncounterIds.includes(choice.id)){
    const enemyPower=Math.max(0,Math.floor(Number(opponentPower)||0)),bonusLands=Math.floor(enemyPower/200);
    next.creditedBattleEncounterIds=[...next.creditedBattleEncounterIds,choice.id];
@@ -266,4 +289,4 @@ function borderEdges(map,point){
 export {MAP_VERSION,TYPES,ROMANS,keyOf,isPoint,adjacent,orthogonal,romanForStars,castleLevel,
  createKingdomMap,validateKingdomMap,migrateKingdomMap,updatePeak,randomEncounter,revealAround,enterCell,beginEncounter,
  finishEncounter,matchesCombatReceipt,canAnnex,annexCell,pointsEarned,pointsAvailable,territoryCapacity,
- growTerritory,advanceDay,isOwned,borderEdges};
+ growTerritory,advanceDay,isOwned,linkCompletedRoad,borderEdges};
