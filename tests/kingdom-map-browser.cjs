@@ -529,6 +529,38 @@ async function assertTileImage(page,cellId,relativePath){
      'successful real second Battle must also release pendingCell');
    assert.equal(won.kingdomMap.cells['0,1'].status,'completed');
    assert.deepEqual(won.kingdomMap.king,{x:0,y:1});
+   assert.equal(won.kingdomMap.completedRoads.length,1,
+     'first completed Battle creates exactly one historical road');
+   assert.deepEqual({from:won.kingdomMap.completedRoads[0].from,
+     to:won.kingdomMap.completedRoads[0].to},{from:'0,0',to:'0,1'});
+   const completedTile=page.locator('[data-kingdom-cell="0,1"]');
+   assert.equal(await completedTile.locator('.km-object--defender').count(),0,
+     'the defeated racial guardian disappears; the site remains');
+   assert.equal(await completedTile.locator('.km-object--site').count(),1);
+   const completedCard=page.locator('[data-kingdom-route-card]');
+   assert.equal(await completedCard.getAttribute('data-kingdom-route-status'),'completed',
+     'finished events retain their original beautiful route card');
+   assert.equal(await completedCard.locator('.km-route-card__icon').count(),1);
+   assert.equal(await completedCard.locator('.km-route-card__defender').count(),0);
+   assert.equal(await completedCard.locator('.km-route-card__cleared').count(),1);
+   assert.equal(await completedCard.locator('.km-route-resource').count(),0,
+     'a completed encounter does not advertise a fresh supply charge or repeat reward');
+   assert.equal(await page.locator('.km-kingdom-overlay').count(),1,
+     'organic territory and event roads work in the parchment skin');
+   assert.equal(await page.locator('.km-kingdom-overlay').getAttribute('data-road-segments'),'1');
+   assert(Number(await page.locator('.km-kingdom-overlay').getAttribute('data-border-segments'))>0,
+     'wavy territory bounds are painted on the shared overlay');
+   // Starting an encounter spends one Supply; on return the event tile reports
+   // only the actual resource delta, not a fabricated repeat reward.
+   const fx=completedTile.locator('.km-resource-burst');
+   assert(await fx.count()>0,'the event emits a resource delta flyout on return');
+   assert((await fx.allTextContents()).includes('-1'),
+     'the first receipt shows the actual -1 Supply change');
+   await completedTile.click();
+   assert.equal(await page.locator('[data-kingdom-route-card]').count(),1,
+     'clicking a cleared location again never reverts to the empty inspector');
+   assert.equal(await page.locator('[data-kingdom-route-card]').getAttribute('data-kingdom-route-status'),
+     'completed');
    await page.locator('[data-kingdom-cell="0,2"]').click();
    assert.deepEqual((await read(page)).kingdomMap.king,{x:0,y:2},
      'the king must be able to make a third step after another Battle victory');
