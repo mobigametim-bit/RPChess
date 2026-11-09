@@ -149,7 +149,7 @@ function paymentToast(charged) {
   document.body.append(root);setTimeout(()=>{root.remove();if(refreshPaymentToast===renderCopy)refreshPaymentToast=()=>{};},4200);
 }
 
-// Battle owner copy contract: Замена оставленного в резерве здорового героя стоит как его лечение.
+// Battle reserve replacement uses its separately configurable per-piece Gold tariff (not healing prices).
 function renderBattlePrepQuote() {
   const screen = document.querySelector('[data-battle-screen]');
   if(globalThis.RPChessBattle?.combatType==='caravan'){screen?.querySelector('[data-battle-mercenary-quote]')?.remove();return;}
