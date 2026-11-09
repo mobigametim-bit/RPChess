@@ -353,7 +353,11 @@ body.kingdom-map-active .resource-hud{display:none!important}
 .kingdom-map-screen.km-parchment-mode .km-cell--fog.km-cell--light{
  background:none!important
 }
-.kingdom-map-screen.km-parchment-mode .km-fog-mark{display:none!important}
+/* Question marks exist ONLY on unknown cells, even in parchment mode. */
+.kingdom-map-screen.km-parchment-mode .km-fog-mark{
+ display:block!important;z-index:2;position:relative;color:#e4d1a1;
+ opacity:.84;text-shadow:0 2px 7px #161411,0 0 11px #1d1b19
+}
 .kingdom-map-screen.km-parchment-mode .km-cell--adjacent::before{
  inset:6px;border:1px dashed rgba(233,201,125,.85);border-radius:35% 43% 39% 45%;
  box-shadow:0 0 10px rgba(230,188,98,.12)
