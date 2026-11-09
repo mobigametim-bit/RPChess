@@ -18,19 +18,19 @@ import {renderParchment} from './kingdom-parchment-app.mjs';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
- beginEncounter,finishEncounter,matchesCombatReceipt,annexCell,canAnnex,pointsAvailable,castleLevel,
+ beginEncounter,finishEncounter,matchesCombatReceipt,annexCell,canAnnex,pointsAvailable,castleLevel,revealAround,
  romanForStars,keyOf,adjacent,borderEdges} from './kingdom-map-core.mjs';
 
 const COPY={
  ru:{classicMap:'Классика',parchmentMap:'Пергамент',switchMap:'Оформление карты',day:'День',shards:'Осколки чести',castle:'Замок',supply:'Припасы',power:'Мощь',points:'Очки присоединения',
-   hidden:'Неизведанная территория',annex:'Присоединить · 1 очко',annexed:'В составе королевства',
+   hidden:'Неизведанная территория',empty:'Спокойная местность',safeTerrain:'Здесь нет дорожного события.',annex:'Присоединить · 1 очко',annexed:'В составе королевства',
    complete:'Пройдена',failed:'Неудача — повторная попытка',inProgress:'Встреча продолжается',
    return:'К отряду',reveal:'Открыта встреча',entry:'Начинается',services:'Услуги поселения',
    pending:'Открываю путь…',level:'Уровень',unavailable:'Недоступно для присоединения',
    discover:'Выбери соседнюю клетку, чтобы исследовать её',congrat:'Замок получил уровень',
    empty:'Открывайте территорию, чтобы основать королевство'},
  en:{classicMap:'Classic',parchmentMap:'Parchment',switchMap:'Map appearance',day:'Day',shards:'Honor shards',castle:'Castle',supply:'Supplies',power:'Power',points:'Annexation points',
-   hidden:'Unexplored territory',annex:'Annex · 1 point',annexed:'Part of your kingdom',
+   hidden:'Unexplored territory',empty:'Quiet terrain',safeTerrain:'No encounter at this location.',annex:'Annex · 1 point',annexed:'Part of your kingdom',
    complete:'Cleared',failed:'Failed — retry encounter',inProgress:'Encounter in progress',
    return:'Squad',reveal:'Encounter discovered',entry:'Entering',services:'Settlement services',
    pending:'Exploring…',level:'Level',unavailable:'Cannot annex yet',
@@ -238,9 +238,11 @@ function ensureMap(run){
   const peaked=updatePeak(run.kingdomMap,power);
   const map=peaked.castle.raceTag===race?peaked:
    {...peaked,castle:{...peaked.castle,raceTag:race}};
-  return map===run.kingdomMap?run:writeRun({...run,kingdomMap:map});
+  const revealed=revealAround(map,run,power);
+  return revealed===run.kingdomMap?run:writeRun({...run,kingdomMap:revealed});
  }
- return writeRun({...run,kingdomMap:createKingdomMap(run,power,race)});
+ const fresh=createKingdomMap(run,power,race);
+ return writeRun({...run,kingdomMap:revealAround(fresh,run,power)});
 }
 function encounterResult(run,source,choice){
  if(!choice)return null;
@@ -431,8 +433,9 @@ function render(){
  else{
   slot.replaceChildren();
   const header=info?.type==='castle'?tr('castle'):
-   info?.selectedEncounter?t('travel.type.'+info.selectedEncounter.type):tr('hidden');
+   info?.type==='empty'?tr('empty'):info?.selectedEncounter?t('travel.type.'+info.selectedEncounter.type):tr('hidden');
   const description=info?.type==='castle'?tr('level')+' '+['','I','II','III','IV','V'][castleLevel(map.peakKingPower)]:
+   info?.type==='empty'?tr('safeTerrain'):
    info?.status==='completed'?tr('complete'):tr('discover');
   screen.querySelector('[data-kingdom-inspector-title]').textContent=header;
   screen.querySelector('[data-kingdom-inspector-text]').textContent=description;
@@ -453,11 +456,12 @@ function onCell(event){
  if(!point||!map||map.pendingCell)return;
  selected=id;
  if(!adjacent(map.king,point)){render();return;}
- const encounter=!map.cells[id]?
-  randomEncounter(run,point,readPlayerRating().power):null;
+ // Revealed empty locations are walkable; a known encounter is not rerolled.
+ const encounter=!map.cells[id]?randomEncounter(run,point,readPlayerRating().power):null;
  const entered=enterCell(map,point,encounter);
  if(!entered.ok){render();return;}
- const nextMap=entered.map,from={...map.king},to={...nextMap.king};
+ const nextMap=revealAround(entered.map,run,readPlayerRating().power);
+ const from={...map.king},to={...nextMap.king};
  const reduced=document.documentElement.dataset.reducedMotion==='1';
  const discovering=entered.kind==='discover';
  // The logical encounter is persisted immediately for crash-safe resume,
