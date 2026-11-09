@@ -8,6 +8,13 @@ const { pathToFileURL } = require('url');
   const {arenaProfileForElo,profileForElo,ChessAIAdapter}=await import(pathToFileURL(path.join(root,'game/js/chess-ai-adapter.mjs')).href);
   const {ClassicChessEngine}=await import(pathToFileURL(path.join(root,'game/js/classic-chess-engine.mjs')).href);
   const foes=core.OPPONENTS;
+  let kingdomLedger=core.emptyArena();
+  kingdomLedger=core.addEvent(kingdomLedger,{id:'kingdom:income:1',kind:'kingdom-production',
+    at:1,amount:50,runId:'unit',productionId:'week:1'});
+  kingdomLedger=core.addEvent(kingdomLedger,{id:'kingdom:settlement:1',kind:'kingdom-settlement',
+    at:2,amount:15,runId:'unit',cellId:'20,20',tier:'owned'});
+  assert.equal(core.arenaSummary(kingdomLedger).balance,35,
+    'a Settlement purchase must debit the shared Arena shard ledger exactly once');
   assert.strictEqual(foes.length,84);
   assert.strictEqual(new Set(foes.map(x=>x.id)).size,84);
   assert.strictEqual(foes[0].elo,400);
