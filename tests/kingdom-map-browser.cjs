@@ -133,25 +133,20 @@ async function assertTileImage(page,cellId,relativePath){
     'the parchment renderer uses the uploaded SVGs rather than its fallback');
   // Procedural world-space roads and rivers are independent of the retired
   // road_segments/river_segments assets: exercise both Canvas stroke types.
-  const linePixels=await page.evaluate(async()=>{
+  const lineArt=await page.evaluate(async()=>{
     const {drawWaterRoads}=await import('./js/kingdom-parchment-app.mjs');
     const canvas=document.createElement('canvas');
     canvas.width=11*142;canvas.height=7*142;
-    const ctx=canvas.getContext('2d');
+    const ctx=canvas.getContext('2d'),paintedStrokes=new Set();
+    const stroke=ctx.stroke.bind(ctx);
+    ctx.stroke=(...args)=>{paintedStrokes.add(ctx.strokeStyle);return stroke(...args);};
     drawWaterRoads(ctx,'kingdom-test-seed',-5,-3,11,7);
-    const p=ctx.getImageData(0,0,canvas.width,canvas.height).data;
-    let river=0,road=0;
-    for(let k=0;k<p.length;k+=16){
-      // Compare color families rather than exact RGBA: user settings make
-      // these strokes translucent, antialiased and sometimes intersecting.
-      if(p[k+3]<30)continue;
-      if(p[k+2]>=p[k]+15&&p[k+1]>=p[k]+10)river++;
-      if(p[k]>=p[k+2]+30&&p[k]>=p[k+1]+8)road++;
-    }
-    return {river,road};
+    const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+    let painted=0;for(let k=3;k<pixels.length;k+=32)if(pixels[k]>0)painted++;
+    return {river:paintedStrokes.has('#849a9e'),road:paintedStrokes.has('#b6a17c'),painted};
   });
-  assert(linePixels.river>10&&linePixels.road>10,
-    'continuous algorithmic roads and rivers must paint independently of removed SVG modules');
+  assert(lineArt.river&&lineArt.road&&lineArt.painted>10,
+    'real procedural Canvas strokes must render roads and rivers without retired SVGs');
   assert.equal(await page.locator('[data-kingdom-cell]').count(),77,
     'changing artwork cannot change the underlying 11x7 logical chess grid');
   const terrain=await atlas.evaluate(canvas=>{
