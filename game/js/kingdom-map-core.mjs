@@ -104,6 +104,7 @@ function migrateKingdomMap(map,run=null){
  if(!Number.isInteger(result.processedThroughWeek))
   result={...result,processedThroughWeek:0};
  if(!Array.isArray(result.outposts))result={...result,outposts:[]};
+ if(!Array.isArray(result.builtSettlements))result={...result,builtSettlements:[]};
  if(!Array.isArray(result.outpostRoads))result={...result,outpostRoads:[]};
  if(!Array.isArray(result.productionClaims))result={...result,productionClaims:[]};
  // Legacy completions have no reliable chronology; do not invent roads.
@@ -136,7 +137,7 @@ function settleWeeklyProduction(map){
  let cells=map.cells,created=0;
  for(const [id,cell] of Object.entries(map.cells)){
   const type=cell?.selectedEncounter?.type;
-  if(cell.status!=='completed'||!cell.selectedEncounter||!isOwned(map,id)||
+  if(cell.status!=='completed'||!cell.selectedEncounter||!(isOwned(map,id)||(map.builtSettlements||[]).some(p=>p.id===id))||
      cell.production||cell.respawnReady||!PROTOTYPE_YIELDS[type])continue;
   const production=productionFor(map,id,type,week);
   if(!production)continue;
@@ -158,12 +159,38 @@ function acknowledgeReturn(map,id){
 function collectProduction(map,id){
  const cell=map?.cells?.[id],item=cell?.production;
  if(!cell||!item||!['gold','supplies','shards','recruits'].includes(item.kind)||
-    !isOwned(map,id)||cell.status!=='completed'||
+    !(isOwned(map,id)||(map.builtSettlements||[]).some(p=>p.id===id))||cell.status!=='completed'||
     (map.productionClaims||[]).includes(item.id))return {ok:false,map};
  const next=copyMap(map);
  next.cells[id]={...cell,production:null};
  next.productionClaims=[...(map.productionClaims||[]),item.id];
  return {ok:true,map:next,kind:item.kind,amount:item.amount,receiptId:item.id};
+}
+// Building a Settlement does not annex its cell. Outside sites still produce.
+function canBuildSettlement(map,point){
+ if(!validateKingdomMap(map)||!isPoint(point)||map.pendingCell)return false;
+ const id=keyOf(point.x,point.y),cell=map.cells?.[id];
+ return Boolean(cell?.explored&&cell.type==='empty'&&cell.status==='completed'&&
+  !cell.selectedEncounter&&id!==keyOf(map.castle.x,map.castle.y)&&
+  !(map.outposts||[]).some(post=>post.id===id||post.cells?.includes(id))&&
+  !(map.builtSettlements||[]).some(site=>site.id===id));
+}
+function buildSettlement(map,point,transactionId,{gold,shards,raceTag='humans'}={}){
+ if(!canBuildSettlement(map,point)||typeof transactionId!=='string'||!transactionId||
+  !Number.isSafeInteger(gold)||gold<0||!Number.isSafeInteger(shards)||shards<0)return {ok:false,map};
+ const id=keyOf(point.x,point.y),seed=map.seed+':built-settlement:'+id;
+ const base=createTravelChoices({runId:seed,step:1,types:['settlement'],playerPower:map.peakKingPower})[0];
+ const encounter={...base,id:'kingdom.built.'+hashString(seed).toString(36),seed,
+  type:'settlement',kingdomCell:id,raceTag:RACE_TAGS.includes(raceTag)?raceTag:map.castle.raceTag,
+  builtByPlayer:true};
+ const ownedAtBuild=isOwned(map,point);
+ const previous=map.cells[id];
+ const next=copyMap(map);
+ next.builtSettlements=[...(map.builtSettlements||[]),
+  {id,transactionId,gold,shards,ownedAtBuild}];
+ next.cells[id]={...previous,status:'completed',type:'settlement',completedOnce:true,
+  selectedEncounter:encounter,production:null,explored:true};
+ return {ok:true,map:advanceDay(linkCompletedRoad(next,id),'build-settlement:'+id),encounter};
 }
 function canBuildOutpost(map,point){
  if(!validateKingdomMap(map)||!isPoint(point)||map.pendingCell||isOwned(map,point))return false;
@@ -236,7 +263,7 @@ function createKingdomMap(run,playerPower=400,raceTag='humans'){
   cells:{'0,0':{status:'completed',type:'castle',annexed:true}},pendingCell:null,
   peakKingPower:power,annexationPointsSpent:0,battlePointsEarned:0,legacyBonusLands:0,
   creditedBattleEncounterIds:[],uniqueFirstConquests:[],centralOwnedCells:[],
-  day:1,calendarActions:[],processedThroughWeek:0,outposts:[],productionClaims:[],
+  day:1,calendarActions:[],processedThroughWeek:0,outposts:[],builtSettlements:[],productionClaims:[],
   completedRoads:[],lastCompletedRouteCell:null,outpostRoads:[],
   completedNewEncounterCount:0,productionCyclesResolved:0});
 }
@@ -255,6 +282,7 @@ function validateKingdomMap(map){
      p.cells.length>=1&&p.cells.length<=3&&
      p.cells.every(id=>typeof id==='string'&&/^-?[0-9]+,-?[0-9]+$/.test(id))&&
      typeof p.transactionId==='string')))return false;
+ if(map.builtSettlements!=null&&(!Array.isArray(map.builtSettlements)||!map.builtSettlements.every(p=>p&&typeof p.id==='string'&&/^-?[0-9]+,-?[0-9]+$/.test(p.id)&&typeof p.transactionId==='string'&&Number.isSafeInteger(p.gold)&&p.gold>=0&&Number.isSafeInteger(p.shards)&&p.shards>=0)))return false;
  if(map.productionClaims!=null&&(!Array.isArray(map.productionClaims)||
   !map.productionClaims.every(id=>typeof id==='string')))return false;
  if(map.outpostRoads!=null&&(!Array.isArray(map.outpostRoads)||
@@ -449,4 +477,5 @@ export {MAP_VERSION,TYPES,ROMANS,keyOf,isPoint,adjacent,orthogonal,shortestKingR
  createKingdomMap,validateKingdomMap,migrateKingdomMap,updatePeak,randomEncounter,revealAround,enterCell,beginEncounter,
  finishEncounter,matchesCombatReceipt,canAnnex,annexCell,pointsEarned,pointsAvailable,territoryCapacity,
  growTerritory,advanceDay,isOwned,linkCompletedRoad,borderEdges,weekForDay,productionFor,
- settleWeeklyProduction,collectProduction,acknowledgeReturn,canBuildOutpost,buildOutpost,linkOutpostRoad,WEEK_DAYS,PROTOTYPE_YIELDS};
+ settleWeeklyProduction,collectProduction,acknowledgeReturn,canBuildOutpost,buildOutpost,linkOutpostRoad,
+ canBuildSettlement,buildSettlement,WEEK_DAYS,PROTOTYPE_YIELDS};
