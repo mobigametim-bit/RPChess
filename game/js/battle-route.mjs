@@ -8,7 +8,7 @@ import './settlement-app.mjs';
 import './starvation-app.mjs';
 import './events-app.mjs';
 import './events/combat-art-continuity.mjs';
-import './puzzles/puzzle-app.mjs';
+import './puzzles/puzzle-app.mjs?v=20261109-promotion-v9';
 import './travel-choice-app.mjs';
 import './combat-menu.mjs';
 import './ux-consistency.mjs';
