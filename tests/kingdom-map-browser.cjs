@@ -916,7 +916,7 @@ async function assertTileImage(page,cellId,relativePath){
   await labPage.locator('#labSimTab').click();
   await labPage.locator('#simPreview').waitFor({state:'visible'});
   assert.equal(await labPage.locator('#sc-eventRadius').inputValue(),'1');
-  assert.equal(await labPage.locator('#sc-eventNearbyMax').inputValue(),'2');
+  assert.equal(await labPage.locator('#sc-eventNearbyMax').inputValue(),'3');
   await labPage.locator('#simPreview').click();
   await labPage.locator('#simReturn').waitFor({state:'visible'});
   const nearby=await labPage.evaluate(()=>{
@@ -931,8 +931,27 @@ async function assertTileImage(page,cellId,relativePath){
    }
    return {events,worst};
   });
-  assert(nearby.events>0&&nearby.worst<=2,
-    'R=1/N=2 respects the maximum number of other road events per encounter');
+  assert(nearby.events>0&&nearby.worst<=3,
+    'R=1/N=3 respects the maximum number of other road events per encounter');
+  // Compare the real game generator against Atlas Lab's LIVE worldAt() on
+  // the same seed and coordinates, rather than testing two hardcoded fixtures.
+  const atlasGameParity=await labPage.evaluate(async()=>{
+   const game=await import('./js/kingdom-world-core.mjs?v=20261109-config4');
+   const atlas=window.RPChessAtlasSimulation;
+   const cfg=atlas.exportConfig(),biomes=['forest','mountain','hills','plains','marsh','wasteland'];
+   const bad=[];
+   for(let y=-7;y<=7;y++)for(let x=-7;x<=7;x++){
+    if(x===0&&y===0)continue; // castle belongs to the game UI, not world encounters
+    const a=atlas.worldAt(x,y),g=game.worldAt(cfg.visual.seed,x,y);
+    if(a.type!==g.type||a.biome!==biomes.indexOf(g.biome)||
+       (a.race!=='mixed'?a.race:null)!==g.raceTag||
+       a.road!==g.paths.road||a.river!==g.paths.river)
+     bad.push({x,y,atlas:a,game:g});
+   }
+   return bad.slice(0,5);
+  });
+  assert.deepStrictEqual(atlasGameParity,[],
+    'game world generation must agree with author Atlas Lab v6 for same seed');
   const countsBefore=await labPage.evaluate(()=>{
    const x=window.RPChessAtlasSimulation.getSample();
    return Object.values(x.groups).reduce((a,b)=>a+b,0);

@@ -3,7 +3,7 @@ import { createTravelChoices, hashString, PLAYABLE_TRAVEL_TYPES, hasHealthySkirm
 import { RACE_TAGS } from './race-assets.mjs';
 import { EVENT_IDS, eventById } from './events-data.mjs';
 import {combatTheme} from './race-assets.mjs';
-import {worldAt} from './kingdom-world-core.mjs?v=20261109-atlas-lab-v7';
+import {worldAt} from './kingdom-world-core.mjs?v=20261109-config4';
 import {SCOUT_RADIUS} from './kingdom-world-config.mjs';
 import {KINGDOM_OUTPOST_SHARD_COST} from './arena-core.mjs?v=20261109-kingdom-economy-v7';
 
@@ -14,6 +14,7 @@ const WEEK_DAYS=7,PROTOTYPE_YIELDS=Object.freeze({
 });
 
 const MAP_VERSION=1;
+const WORLD_GENERATOR_VERSION=4;
 const ROMANS=['I','II','III','IV','V'];
 const TYPES=['battle','skirmish','caravan','event','settlement','puzzle'];
 const EMPTY=Object.freeze({});
@@ -210,7 +211,7 @@ function createKingdomMap(run,playerPower=400,raceTag='humans'){
  if(!run?.id)throw new Error('Kingdom map requires run identity');
  const castleRace=RACE_TAGS.includes(raceTag)?raceTag:'humans';
  const power=Math.max(0,Math.floor(Number(playerPower)||0));
- return growTerritory({version:MAP_VERSION,seed:run.id,king:{x:0,y:0},castle:{x:0,y:0,raceTag:castleRace},
+ return growTerritory({version:MAP_VERSION,worldGeneratorVersion:WORLD_GENERATOR_VERSION,seed:run.id,king:{x:0,y:0},castle:{x:0,y:0,raceTag:castleRace},
   cells:{'0,0':{status:'completed',type:'castle',annexed:true}},pendingCell:null,
   peakKingPower:power,annexationPointsSpent:0,battlePointsEarned:0,legacyBonusLands:0,
   creditedBattleEncounterIds:[],uniqueFirstConquests:[],centralOwnedCells:[],

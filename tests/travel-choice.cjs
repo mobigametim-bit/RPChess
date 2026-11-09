@@ -75,11 +75,11 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const worldConfig=await import(pathToFileURL(path.join(game,'js/kingdom-world-config.mjs')).href);
   assert.deepStrictEqual(worldConfig.DENSITY,[27,25,36,25,29,18],
     'author approved biome encounter density survives in the playable build');
-  assert.strictEqual(worldConfig.DENSITY_MULTIPLIER,0.8,
+  assert.strictEqual(worldConfig.DENSITY_MULTIPLIER,1.2,
     'new Atlas Lab config increases encounter frequency without rerolling saved cells');
-  assert.strictEqual(worldConfig.VISUAL.fogRadius,1.3);
-  assert.strictEqual(worldConfig.VISUAL.revealRadius,0.8);
-  assert.strictEqual(worldConfig.ATLAS_VIEW.seed,'realm-xce3j9bv');
+  assert.strictEqual(worldConfig.VISUAL.fogRadius,0.85);
+  assert.strictEqual(worldConfig.VISUAL.revealRadius,0.6);
+  assert.strictEqual(worldConfig.ATLAS_VIEW.seed,'rpchess-kingdom-2026');
   assert.strictEqual(worldConfig.ATLAS_VIEW.zoom,87);
   for(const row of [...worldConfig.TYPE_WEIGHTS,...worldConfig.RACE_WEIGHTS])
     assert.strictEqual(row.reduce((sum,n)=>sum+n,0),100,
@@ -103,31 +103,31 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const startMap=mapCore.createKingdomMap(mapRun,500);
   assert(mapCore.validateKingdomMap(startMap));
   assert.strictEqual(startMap.day,1,'the independent calendar begins on Day 1');
-  // Exact production world sampler: no two events may be within the configured
-  // Chebyshev spacing; camera/order changes cannot reshuffle world coordinates.
+  // Atlas v6 config (4): radius=1, at most 3 OTHER sites in the 8 neighbors.
   const worldGen=await import(pathToFileURL(path.join(game,'js/kingdom-world-core.mjs')).href);
   const worldSettings=await import(pathToFileURL(path.join(game,'js/kingdom-world-config.mjs')).href);
   assert.strictEqual(worldSettings.ENCOUNTER_MIN_SPACING,1);
-  assert.strictEqual(worldSettings.DENSITY_MULTIPLIER,.8);
-  const seed='atlas-lab-v7-acceptance',rawSites=[],filteredSites=[],extraSparse=[];
-  for(let y=-9;y<=9;y++)for(let x=-9;x<=9;x++){
-    const original=worldGen.worldAt(seed,x,y,{spacing:0});
-    const filtered=worldGen.worldAt(seed,x,y,{spacing:1});
-    const sparse=worldGen.worldAt(seed,x,y,{spacing:2});
-    assert.deepStrictEqual(filtered,worldGen.worldAt(seed,x,y,{spacing:1}),
-      'world cell encounters remain deterministic without generation order state');
-    if(original.type)rawSites.push([x,y]);
-    if(filtered.type)filteredSites.push([x,y]);
-    if(sparse.type)extraSparse.push([x,y]);
+  assert.strictEqual(worldSettings.EVENT_NEARBY_MAX,3);
+  assert.strictEqual(worldSettings.DENSITY_MULTIPLIER,1.2);
+  const seed='rpchess-kingdom-2026',rawSites=[],acceptedSites=[];
+  for(let y=-8;y<=8;y++)for(let x=-8;x<=8;x++){
+    const raw=worldGen.worldAt(seed,x,y,{spacing:0});
+    const chosen=worldGen.worldAt(seed,x,y);
+    assert.deepStrictEqual(chosen,worldGen.worldAt(seed,x,y),
+      'coordinate sampling must not depend on exploration or canvas order');
+    if(raw.type)rawSites.push([x,y]);
+    if(chosen.type)acceptedSites.push([x,y]);
   }
-  assert(rawSites.length>filteredSites.length&&filteredSites.length>=extraSparse.length,
-    'min-distance progressively thins local clusters while retaining possible encounters');
-  const minSpacing=(sites,radius)=>sites.every((a,i)=>sites.slice(i+1).every(
-    b=>Math.max(Math.abs(a[0]-b[0]),Math.abs(a[1]-b[1]))>radius));
-  assert(minSpacing(filteredSites,1),'no two retained road events are one king step apart');
-  assert(minSpacing(extraSparse,2),'sparse Atlas setting enforces two-step clearance');
+  assert(rawSites.length>acceptedSites.length&&acceptedSites.length>0,
+    'bounded neighboring quotas keep fewer than the unfiltered candidate sites');
+  for(const [x,y] of acceptedSites){
+    const count=[-1,0,1].flatMap(dy=>[-1,0,1].map(dx=>[dx,dy]))
+      .filter(([dx,dy])=>(dx||dy)&&worldGen.encounterPresent(seed,x+dx,y+dy)).length;
+    assert(count<=3,'each event has at most three other encounters within one king move');
+  }
+  assert(!worldGen.encounterPresent(seed,0,0),'starting castle stays reserved');
   assert.equal(fs.existsSync(path.join(game,'atlas-lab.html')),true,
-    'Atlas Lab v7 HTML must be shipped alongside its map preview');
+    'Atlas Lab v6 HTML must be shipped alongside its map preview');
   assert(fs.readFileSync(path.join(game,'atlas-lab.html'),'utf8').includes('Симулировать'),
     'balance panel includes the requested simulation action');
   const atlasHtml=fs.readFileSync(path.join(game,'atlas-lab.html'),'utf8');

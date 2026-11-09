@@ -2,8 +2,8 @@
  * A cell's terrain, object, type and race are deterministic before fog reveals it.
  * No engine combat outcome, run calendar or resource transaction belongs here.
  */
-import {terrainAt,randomAt} from './kingdom-parchment-core.mjs';
-import {VISUAL,BIOMES,RACE_TAGS_ORDER,ENCOUNTER_TYPES,DENSITY,DENSITY_MULTIPLIER,ENCOUNTER_MIN_SPACING,EVENT_NEARBY_MAX,WORLD_SETTINGS,TYPE_WEIGHTS,RACE_WEIGHTS} from './kingdom-world-config.mjs?v=20261109-atlas-lab-v7';
+import {terrainAt} from './kingdom-parchment-core.mjs';
+import {VISUAL,BIOMES,RACE_TAGS_ORDER,ENCOUNTER_TYPES,DENSITY,DENSITY_MULTIPLIER,ENCOUNTER_MIN_SPACING,EVENT_NEARBY_MAX,WORLD_SETTINGS,TYPE_WEIGHTS,RACE_WEIGHTS} from './kingdom-world-config.mjs?v=20261109-config4';
 
 const LANDMARKS=Object.freeze('01_broken_wall 02_stone_circle 03_three_menhirs 04_watchtower 05_abandoned_hut 06_wood_bridge 07_stone_bridge 08_burial_mound 09_dead_tree 10_ruin_arch 11_fallen_column 12_wayside_shrine 13_obelisk 14_pond 15_notable_grove 16_ruined_gate'.split(' '));
 const MODIFIERS=Object.freeze({
@@ -88,7 +88,14 @@ function normalized(row){
  return row.map(v=>total>0?Math.max(0,Number(v)||0)/total:1/row.length);
 }
 function pickWeighted(weights,labels,rnd){
- let sum=0;for(const weight of weights){sum+=weight;if(rnd<sum)return labels[weights.indexOf(weight)];}
+ let sum=0;
+ for(const weight of weights)sum+=Math.max(0,weight);
+ if(sum<=0)return null;
+ let remaining=rnd*sum;
+ for(let i=0;i<weights.length;i++){
+  remaining-=Math.max(0,weights[i]);
+  if(remaining<0)return labels[i];
+ }
  return labels[labels.length-1];
 }
 function weightedIndex(weights,rnd){let total=0;for(let i=0;i<weights.length;i++){total+=weights[i];if(rnd<total)return i;}return weights.length-1;}

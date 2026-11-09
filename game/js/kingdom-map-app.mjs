@@ -15,15 +15,15 @@ import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
 import {PARCHMENT_MODE_KEY} from './kingdom-parchment-core.mjs';
-import {renderParchment} from './kingdom-parchment-app.mjs?v=20261109-atlas-v6-audit-v10';
+import {renderParchment} from './kingdom-parchment-app.mjs?v=20261109-config4';
 import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261109-kingdom-controls-v9';
-import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-lab-v7';
+import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-config4';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
  beginEncounter,finishEncounter,matchesCombatReceipt,migrateKingdomMap,territoryCapacity,castleLevel,revealAround,
  collectProduction,canBuildOutpost,buildOutpost,
- romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges} from './kingdom-map-core.mjs?v=20261109-atlas-lab-v7';
+ romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges} from './kingdom-map-core.mjs?v=20261109-config4';
 
 const COPY={
  ru:{classicMap:'Классика',parchmentMap:'Пергамент',switchMap:'Оформление карты',day:'День',shards:'Осколки чести',castle:'Замок',supply:'Припасы',power:'Мощь',points:'Очки присоединения',
@@ -424,7 +424,7 @@ function ensureMap(run){
  const power=readPlayerRating().power;
  // Race comes from the stable named commander ID, never from the old castle placeholder.
  const race=commanderById(run.commanderId).raceTag;
- if(validateKingdomMap(run.kingdomMap)&&run.kingdomMap.seed===run.id){
+ if(validateKingdomMap(run.kingdomMap)&&run.kingdomMap.seed===run.id&&run.kingdomMap.worldGeneratorVersion===4){
   const peaked=updatePeak(migrateKingdomMap(run.kingdomMap,run),power);
   const map=peaked.castle.raceTag===race?peaked:
    {...peaked,castle:{...peaked.castle,raceTag:race}};
