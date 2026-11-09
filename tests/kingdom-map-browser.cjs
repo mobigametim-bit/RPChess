@@ -268,6 +268,11 @@ async function assertTileImage(page,cellId,relativePath){
     "unscouted cells have neither question marks nor encounter art");
   assert.equal(await page.locator(".km-fog-mark").count(),0,
     "classic map never draws mystery punctuation");
+  const castleCard=page.locator('[data-kingdom-castle-card="humans"]');
+  assert.equal(await castleCard.count(),1,'castle opens its own race-specific inspector card');
+  assert((await castleCard.locator('.km-route-card__visual').evaluate(el=>
+    el.style.getPropertyValue('--km-card-backdrop'))).includes('/backgrounds/humans/'),
+    'human castle card uses a human-race scene rather than the generic campaign');
   const castleSprite=page.locator('[data-kingdom-cell="0,0"] img.km-object');
   assert.equal(await castleSprite.getAttribute('src'),
     'assets/kingdom-map/humans/humans_castle_128.svg');
@@ -950,6 +955,12 @@ async function assertTileImage(page,cellId,relativePath){
     'R=1/N=3 respects the maximum number of other road events per encounter');
   // Compare the real game generator against Atlas Lab's LIVE worldAt() on
   // the same seed and coordinates, rather than testing two hardcoded fixtures.
+  const currentVisual=await labPage.evaluate(()=>
+    window.RPChessAtlasSimulation.exportConfig().visual);
+  assert.equal(currentVisual.zoom,117,'Atlas Lab starts with the active game zoom');
+  assert.deepStrictEqual([currentVisual.fogRadius,currentVisual.fogInner,
+   currentVisual.fogInkOpacity,currentVisual.fogIrregularity,currentVisual.revealRadius],
+   [1.1,.32,.2,.3,1.6],'Atlas Lab fog matches the active game visual preset');
   const atlasGameParity=await labPage.evaluate(async()=>{
    const game=await import('./js/kingdom-world-core.mjs?v=20261109-kingdom-feedback1');
    const atlas=window.RPChessAtlasSimulation;
