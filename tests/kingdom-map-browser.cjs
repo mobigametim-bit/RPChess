@@ -734,15 +734,15 @@ async function assertTileImage(page,cellId,relativePath){
   // Mixed/unknown race cells retain neutral background tiles.
   await walking.evaluate(storage=>{
     const run=JSON.parse(localStorage.getItem(storage));
-    run.kingdomMap.cells['1,0']={status:'completed',annexed:false,
+    run.kingdomMap.cells['1,0']={status:'completed',explored:true,annexed:false,
       selectedEncounter:{id:'kingdom.neutral-fixture',type:'event',raceTag:'mixed',stars:1}};
-    run.kingdomMap.cells['-1,0']={status:'completed',annexed:false,
+    run.kingdomMap.cells['-1,0']={status:'completed',explored:true,annexed:false,
       selectedEncounter:{id:'kingdom.elven-fixture',type:'event',raceTag:'elves',stars:1}};
-    run.kingdomMap.cells['1,1']={status:'completed',respawnReady:true,annexed:false,
+    run.kingdomMap.cells['1,1']={status:'completed',explored:true,respawnReady:true,annexed:false,
       selectedEncounter:{id:'kingdom.orc-fixture',type:'battle',raceTag:'orcs',stars:1}};
-    run.kingdomMap.cells['-1,1']={status:'completed',annexed:false,
+    run.kingdomMap.cells['-1,1']={status:'completed',explored:true,annexed:false,
       selectedEncounter:{id:'kingdom.undead-fixture',type:'skirmish',raceTag:'undead',stars:4}};
-    run.kingdomMap.cells['0,-1']={status:'completed',annexed:false,
+    run.kingdomMap.cells['0,-1']={status:'completed',explored:true,annexed:false,
       selectedEncounter:{id:'kingdom.elven-caravan-fixture',type:'caravan',raceTag:'elves',stars:12}};
     localStorage.setItem(storage,JSON.stringify(run));
     globalThis.RPChessKingdomMap.open();
