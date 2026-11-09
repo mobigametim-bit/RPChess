@@ -142,9 +142,11 @@ async function assertTileImage(page,cellId,relativePath){
     const p=ctx.getImageData(0,0,canvas.width,canvas.height).data;
     let river=0,road=0;
     for(let k=0;k<p.length;k+=16){
-      // River is capped with #c8d0ba; road uses dashed #746245.
-      if(p[k]===200&&p[k+1]===208&&p[k+2]===186&&p[k+3]>=50)river++;
-      if(p[k]===116&&p[k+1]===98&&p[k+2]===69&&p[k+3]>=50)road++;
+      // Compare color families rather than exact RGBA: user settings make
+      // these strokes translucent, antialiased and sometimes intersecting.
+      if(p[k+3]<30)continue;
+      if(p[k+2]>=p[k]+15&&p[k+1]>=p[k]+10)river++;
+      if(p[k]>=p[k+2]+30&&p[k]>=p[k+1]+8)road++;
     }
     return {river,road};
   });
