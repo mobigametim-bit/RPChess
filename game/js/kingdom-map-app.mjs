@@ -2,12 +2,13 @@
 import {readRun,writeRun} from './run-persistence.mjs';
 import {readPlayerRating} from './player-rating.mjs';
 import {commanderPieceArt,commanderById} from './commander-portraits.mjs';
-import {raceBoardTiles} from './race-assets.mjs';
+import {raceBoardTiles,hashString} from './race-assets.mjs';
 import {difficultyForStars,starsText} from './encounter-difficulty.mjs';
 import {TRAVEL_SUPPLY_COST,combatGoldReward} from './resources-core.mjs';
 import {puzzleBaseGold} from './puzzles/puzzle-core.mjs';
 import {gloryForRun} from './chronicle-core.mjs';
-import {ARENA_KEY,SHARD_ICON,normalizeArena,arenaSummary} from './arena-core.mjs';
+import {ARENA_KEY,SHARD_ICON,normalizeArena,arenaSummary,addEvent,spendingTime,
+ KINGDOM_OUTPOST_SHARD_COST} from './arena-core.mjs?v=20261109-kingdom-economy-v7';
 import {platform} from './platform.mjs';
 import {FLAVOR_POOLS} from './travel-choice-core.mjs';
 import {translateLegacy} from './i18n.mjs';
@@ -21,7 +22,8 @@ import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
  beginEncounter,finishEncounter,matchesCombatReceipt,migrateKingdomMap,territoryCapacity,isOwned,castleLevel,revealAround,
- romanForStars,keyOf,adjacent,borderEdges} from './kingdom-map-core.mjs?v=20261109-completed-map-v6';
+ collectProduction,canBuildOutpost,buildOutpost,
+ romanForStars,keyOf,adjacent,borderEdges} from './kingdom-map-core.mjs?v=20261109-kingdom-economy-v7';
 
 const COPY={
  ru:{classicMap:'Классика',parchmentMap:'Пергамент',switchMap:'Оформление карты',day:'День',shards:'Осколки чести',castle:'Замок',supply:'Припасы',power:'Мощь',points:'Очки присоединения',
@@ -30,6 +32,10 @@ const COPY={
    return:'К отряду',reveal:'Открыта встреча',entry:'Начинается',services:'Услуги поселения',
    pending:'Открываю путь…',level:'Уровень',unavailable:'Недоступно для присоединения',lands:'Владения',
    discover:'',congrat:'Замок получил уровень',
+   buildOutpost:'Построить аванпост',outpost:'Аванпост',outpostDetail:'Удалённое владение королевства',
+   outpostNeed:'Недостаточно осколков чести',outpostBuilt:'Аванпост построен',
+   collect:'Собрать',battleReady:'Защитник вернулся. Войди в клетку для нового боя.',
+   recruitsReady:'Рекруты готовы. Система найма появится в следующем этапе.',
    empty:'Открывайте территорию, чтобы основать королевство',
    completedDetail:'Место освоено. Можно вернуться сюда в любой момент.',zoomGroup:'Масштаб карты',zoomIn:'Увеличить масштаб',zoomOut:'Уменьшить масштаб',zoomReset:'Сбросить масштаб карты'},
  en:{classicMap:'Classic',parchmentMap:'Parchment',switchMap:'Map appearance',day:'Day',shards:'Honor shards',castle:'Castle',supply:'Supplies',power:'Power',points:'Annexation points',
@@ -38,6 +44,10 @@ const COPY={
    return:'Squad',reveal:'Encounter discovered',entry:'Entering',services:'Settlement services',
    pending:'Exploring…',level:'Level',unavailable:'Cannot annex yet',lands:'Territory',
    discover:'',congrat:'Castle reached level',
+   buildOutpost:'Build outpost',outpost:'Outpost',outpostDetail:'A remote kingdom holding',
+   outpostNeed:'Not enough Honor shards',outpostBuilt:'Outpost constructed',
+   collect:'Collect',battleReady:'Defender returned. Enter the cell for a rematch.',
+   recruitsReady:'Recruits are ready. Hiring will be added in the next stage.',
    empty:'Explore the realm to found a kingdom',
    completedDetail:'This location is cleared. You can return at any time.',zoomGroup:'Map zoom',zoomIn:'Zoom in',zoomOut:'Zoom out',zoomReset:'Reset map zoom'}
 };
@@ -106,6 +116,20 @@ const ROUTE_ICONS=Object.freeze({caravan:'assets/doctrines/cavalry/emblem.png',
  settlement:'generated_assets/node_shop.png',
  puzzle:'generated_assets/node_training.png'});
 // Honor shards are persistent Arena currency, not a resource on the Journey run.
+function readShardLedger(){
+ try{return normalizeArena(JSON.parse(platform.storage.local?.getItem(ARENA_KEY)||'null'));}
+ catch{return normalizeArena(null);}
+}
+function shardTransaction(event){
+ const old=readShardLedger(),summary=arenaSummary(old);
+ if(summary.applied.has(event.id))return true;
+ if(event.kind==='kingdom-outpost'&&summary.balance<event.amount)return false;
+ const next=addEvent(old,{...event,at:spendingTime(old)});
+ if(!arenaSummary(next).applied.has(event.id))return false;
+ try{platform.storage.local?.setItem(ARENA_KEY,JSON.stringify(next));}catch{return false;}
+ globalThis.dispatchEvent(new CustomEvent('rpchess:arena-updated'));
+ return true;
+}
 function honorShards(){
  try{return arenaSummary(normalizeArena(JSON.parse(platform.storage.local?.getItem(ARENA_KEY)||'null'))).balance;}
  catch{return 0;}
@@ -227,7 +251,7 @@ function report(text){const node=screen?.querySelector('[data-kingdom-toast]');i
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261109-completed-map-v6';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261109-kingdom-economy-v7';link.dataset.kingdomStyle='';
  link.addEventListener('load',()=>{if(screen&&!screen.hidden)render();});
  document.head.append(link);
 }
@@ -266,7 +290,8 @@ function screenReady(){
  <div class="km-inspector-summary" data-kingdom-summary>
  <h2 data-kingdom-inspector-title></h2><p data-kingdom-inspector-text></p></div>
  <div class="km-inspector-buttons"><button type="button" data-kingdom-annex hidden></button>
- <button type="button" data-kingdom-services hidden></button></div>
+ <button type="button" data-kingdom-services hidden></button>
+ <button type="button" data-kingdom-outpost hidden></button></div>
  <p class="km-hint" data-kingdom-hint></p></aside></section></div>`;
  screen.style.setProperty('--km-event-size-px',(MAP_LAYOUT.cellPx*MAP_LAYOUT.eventScalePercent/100)+'px');
  screen.style.setProperty('--km-king-px',MAP_LAYOUT.kingPx+'px');
@@ -277,7 +302,8 @@ function screenReady(){
  screen.querySelector('[data-kingdom-menu]').addEventListener('click',()=>{hideMap();globalThis.RPChessRoster?.returnToMenu?.();});
  // No manual annex clicks: the growing border follows persistent Power and wins.
  screen.querySelector('[data-kingdom-services]').addEventListener('click',visitSettlement);
- screen.querySelector('[data-kingdom-world]').addEventListener('click',onCell);
+ screen.querySelector('[data-kingdom-outpost]').addEventListener('click',constructOutpost);
+ screen.querySelector('[data-kingdom-world]').addEventListener('click',onWorldClick);
  const frame=screen.querySelector('.km-map-frame');
  frame.addEventListener('wheel',zoomWheel,{passive:false});
  frame.addEventListener('pointerdown',zoomPointerDown);
@@ -443,7 +469,8 @@ function render(){
  screen.querySelector('[data-kingdom-glory]').textContent=String(gloryForRun(run.journeyStep,power));
  screen.querySelector('[data-kingdom-points]').textContent=Math.max(0,(map.centralOwnedCells||[]).length-1)+'/'+territoryCapacity(map);
  screen.querySelector('[data-kingdom-shards]').textContent=String(honorShards());
- const cells=document.createDocumentFragment();
+ const cells=document.createDocumentFragment(),productions=document.createDocumentFragment();
+ const outpostCenters=new Set((map.outposts||[]).map(post=>post.id));
  for(let row=-CENTER_Y;row<HEIGHT-CENTER_Y;row++)
   for(let col=-CENTER_X;col<WIDTH-CENTER_X;col++){
    const point={x:view.x+col,y:view.y+row},id=keyOf(point.x,point.y);
@@ -516,6 +543,26 @@ function render(){
     });
     btn.append(group);
    }
+   if(outpostCenters.has(id)){
+    const tower=document.createElement('img');tower.className='km-object km-object--outpost';
+    tower.src='assets/kingdom-parchment/decor_minor_landmarks/04_watchtower.svg';
+    tower.alt='';tower.loading='lazy';btn.append(tower);
+   }
+   if(cell?.production&&owned&&cell.status==='completed'){
+    const item=cell.production,marker=document.createElement('button');
+    marker.type='button';marker.className='km-production-marker';
+    marker.dataset.kingdomCollect=id;marker.dataset.productionKind=item.kind;
+    marker.style.left=((col+CENTER_X+.62)*100/WIDTH)+'%';
+    marker.style.top=((row+CENTER_Y+.13)*100/HEIGHT)+'%';
+    const resourceIcon={gold:GOLD_ICON,supplies:SUPPLIES_ICON,shards:SHARD_ICON,
+      battle:ROUTE_ICONS.battle,recruits:'generated_assets/node_training.png'}[item.kind];
+    const icon=document.createElement('img');icon.src=resourceIcon;icon.alt='';
+    const amount=document.createElement('strong');
+    amount.textContent=['battle','recruits'].includes(item.kind)?'!':String(item.amount);
+    marker.append(icon,amount);
+    marker.setAttribute('aria-label',tr('collect')+': '+item.kind+' '+item.amount);
+    productions.append(marker);
+   }
    if(flavorBurst?.id===id){
     const fly=document.createElement('span');fly.className='km-flavor-flyout';
     fly.setAttribute('role','status');fly.textContent=flavorBurst.text;
@@ -534,6 +581,7 @@ function render(){
  overlay.dataset.kingdomOverlay='';overlay.setAttribute('aria-hidden','true');
  world.append(overlay);
  drawKingdomOverlay(overlay,{map,view,columns:WIDTH,rows:HEIGHT});
+ world.append(productions);
  const avatar=document.createElement('img');avatar.className='km-king'+(movement?.phase==='moving'?' km-king--moving':'');
  avatar.src=kingArt(run);avatar.alt='';avatar.setAttribute('aria-hidden','true');
  // King image dimensions stay independent of the tile scale.
@@ -559,18 +607,22 @@ function render(){
  if(activeChoice)slot.replaceChildren(routeCard(info.selectedEncounter,run,info));
  else{
   slot.replaceChildren();
-  const header=info?.type==='castle'?tr('castle'):
+  const header=(map.outposts||[]).some(p=>p.id===(selected||keyOf(map.king.x,map.king.y)))?tr('outpost'):info?.type==='castle'?
    info?.type==='empty'?tr('empty'):info?.selectedEncounter?t('travel.type.'+info.selectedEncounter.type):tr('hidden');
-  const description=info?.type==='castle'?tr('level')+' '+['','I','II','III','IV','V'][castleLevel(map.peakKingPower)]:
+  const description=(map.outposts||[]).some(p=>p.id===(selected||keyOf(map.king.x,map.king.y)))?tr('outpostDetail'):info?.type==='castle'?tr('level')+' '+['','I','II','III','IV','V'][castleLevel(map.peakKingPower)]:
    info?.type==='empty'?tr('safeTerrain'):
    info?.status==='completed'?tr('complete'):tr('discover');
   screen.querySelector('[data-kingdom-inspector-title]').textContent=header;
   screen.querySelector('[data-kingdom-inspector-text]').textContent=description;
  }
- const ann=screen.querySelector('[data-kingdom-annex]'),services=screen.querySelector('[data-kingdom-services]');
+ const ann=screen.querySelector('[data-kingdom-annex]'),services=screen.querySelector('[data-kingdom-services]'),outpost=screen.querySelector('[data-kingdom-outpost]');
  const id=selected||keyOf(map.king.x,map.king.y);
  const selectedPoint=parsePoint(id);
  ann.hidden=true; // Annexation is now automatic; keep the legacy button inert.
+ outpost.hidden=!selectedPoint||!canBuildOutpost(map,selectedPoint);
+ outpost.textContent=tr('buildOutpost')+' · '+KINGDOM_OUTPOST_SHARD_COST+' '+tr('shards');
+ outpost.disabled=honorShards()<KINGDOM_OUTPOST_SHARD_COST;
+ outpost.title=outpost.disabled?tr('outpostNeed'):tr('buildOutpost');
  services.hidden=!(id===keyOf(map.king.x,map.king.y)&&chosen?.status==='completed'&&chosen.selectedEncounter?.type==='settlement');
  services.textContent=tr('services');
  const hint=screen.querySelector('[data-kingdom-hint]');
@@ -578,6 +630,53 @@ function render(){
  hint.textContent=map.pendingCell?tr('pending'):'';
 }
 function parsePoint(id){if(!/^-?\d+,-?\d+$/.test(id||''))return null;const [x,y]=id.split(',').map(Number);return {x,y};}
+function onWorldClick(event){
+ const marker=event.target.closest('[data-kingdom-collect]');
+ if(marker){event.preventDefault();event.stopPropagation();
+  claimWeekly(marker.dataset.kingdomCollect);return;}
+ onCell(event);
+}
+function showEconomyBurst(id,kind,amount){
+ const icon={gold:GOLD_ICON,supplies:SUPPLIES_ICON,shards:SHARD_ICON}[kind];
+ if(!icon)return;
+ resourceBurst={id,changes:[{kind,icon,delta:amount}]};
+ clearTimeout(resourceTimer);
+ resourceTimer=setTimeout(()=>{resourceBurst=null;
+  if(screen&&!screen.hidden)render();},RESOURCE_FX_MS);
+}
+function claimWeekly(id){
+ const run=readRun(),item=run?.kingdomMap?.cells?.[id]?.production;
+ if(!run||run.ended||run.activeTravelChoice||run.kingdomMap?.pendingCell||!item)return;
+ if(item.kind==='battle'||item.kind==='recruits'){
+  selected=id;render();report(tr(item.kind==='battle'?'battleReady':'recruitsReady'));return;
+ }
+ const result=collectProduction(run.kingdomMap,id);if(!result.ok)return;
+ if(result.kind==='shards'){
+  const receiptId='kingdom:production:'+hashString(run.id+':'+result.receiptId).toString(36);
+  if(!shardTransaction({id:receiptId,kind:'kingdom-production',
+   runId:run.id,productionId:result.receiptId,amount:result.amount})){
+   report(tr('outpostNeed'));return;
+  }
+ }
+ const next={...run,kingdomMap:result.map,
+  ...(result.kind==='gold'?{gold:run.gold+result.amount}:{}),
+  ...(result.kind==='supplies'?{supplies:run.supplies+result.amount}:{})};
+ writeRun(next);showEconomyBurst(id,result.kind,result.amount);render();
+}
+function constructOutpost(){
+ const run=readRun(),point=parsePoint(selected);
+ if(!run||run.ended||!point||!canBuildOutpost(run.kingdomMap,point))return;
+ const id=keyOf(point.x,point.y);
+ const receiptId='kingdom:outpost:'+hashString(run.id).toString(36)+':'+id.replace(',','_');
+ const candidate=buildOutpost(run.kingdomMap,point,receiptId);
+ if(!candidate.ok)return;
+ if(!shardTransaction({id:receiptId,kind:'kingdom-outpost',
+    runId:run.id,cellId:id,amount:KINGDOM_OUTPOST_SHARD_COST})){
+  report(tr('outpostNeed'));return;
+ }
+ writeRun({...run,kingdomMap:candidate.map});
+ render();report(tr('outpostBuilt'));
+}
 function onCell(event){
  const target=event.target.closest('[data-kingdom-cell]');
  if(!target||!screen||screen.hidden)return;

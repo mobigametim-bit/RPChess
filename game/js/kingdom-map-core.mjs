@@ -5,7 +5,7 @@ import { EVENT_IDS, eventById } from './events-data.mjs';
 import {combatTheme} from './race-assets.mjs';
 import {worldAt} from './kingdom-world-core.mjs?v=20261109-atlas-zoom-v4';
 import {SCOUT_RADIUS} from './kingdom-world-config.mjs';
-import {KINGDOM_OUTPOST_SHARD_COST} from './arena-core.mjs';
+import {KINGDOM_OUTPOST_SHARD_COST} from './arena-core.mjs?v=20261109-kingdom-economy-v7';
 
 // Prototype yields, intentionally centralized until the player approves balance.
 const WEEK_DAYS=7,PROTOTYPE_YIELDS=Object.freeze({
