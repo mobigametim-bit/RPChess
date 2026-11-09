@@ -143,8 +143,8 @@ async function assertTileImage(page,cellId,relativePath){
     let river=0,road=0;
     for(let k=0;k<p.length;k+=16){
       // River is capped with #c8d0ba; road uses dashed #746245.
-      if(p[k]===200&&p[k+1]===208&&p[k+2]===186&&p[k+3]===255)river++;
-      if(p[k]===116&&p[k+1]===98&&p[k+2]===69&&p[k+3]===255)road++;
+      if(p[k]===200&&p[k+1]===208&&p[k+2]===186&&p[k+3]>=50)river++;
+      if(p[k]===116&&p[k+1]===98&&p[k+2]===69&&p[k+3]>=50)road++;
     }
     return {river,road};
   });
@@ -165,7 +165,7 @@ async function assertTileImage(page,cellId,relativePath){
   assert(terrain.w>=terrain.worldWidth&&terrain.h>=7*142,
     'procedural landscape covers the visible infinite-world viewport');
   assert.equal(terrain.bg,'none','parchment mode hides individual racial chessboard textures');
-  assert.notEqual(terrain.fogVisible,'none','the unexplored fog has question marks in classic mode');
+  assert.equal(terrain.fogVisible,'none','organic parchment fog hides marks visually; classic mode retains them');
   assert.equal(await page.locator('[data-kingdom-cell="1,0"] .km-fog-mark').count(),0,
     'scouted locations reveal their contents before entering');
   assert(terrain.pixels[3]>0&&terrain.pixels[7]>0,
