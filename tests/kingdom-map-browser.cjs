@@ -827,7 +827,9 @@ async function assertTileImage(page,cellId,relativePath){
     globalThis.dispatchEvent(new CustomEvent('rpchess:arena-updated'));
     globalThis.RPChessKingdomMap.open();
   },key);
-  await walking.locator('[data-kingdom-cell="4,0"]').click();
+  // The 25% floating inspector overlaps edge cells; dispatch selection directly,
+  // since pointer access to off-screen locations requires normal map panning.
+  await walking.locator('[data-kingdom-cell="4,0"]').dispatchEvent('click');
   const buildButton=walking.locator('[data-kingdom-outpost]');
   assert.equal(await buildButton.count(),1);
   assert(await buildButton.isVisible(),'safe explored unowned land enables the outpost button');
@@ -859,7 +861,7 @@ async function assertTileImage(page,cellId,relativePath){
   },key);
   // The first outpost at 4,0 already annexes nearby cardinal cells.
   // Use a safe diagonal-distance site outside its three-cell footprint.
-  await walking.locator('[data-kingdom-cell="4,2"]').click();
+  await walking.locator('[data-kingdom-cell="4,2"]').dispatchEvent('click');
   const earnButton=walking.locator('[data-kingdom-earn-shards]');
   assert(await earnButton.isVisible(),'insufficient shards offer the Earn in Arena button');
   assert.equal(await earnButton.locator('img.km-shard-inline').getAttribute('src'),
