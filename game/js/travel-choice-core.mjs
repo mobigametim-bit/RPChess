@@ -19,7 +19,7 @@ const FLAVOR_POOLS = Object.freeze({
 });
 function seededRandom(seed){let state=hashString(seed)||1;return()=>{state+=0x6D2B79F5;let t=state;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};}
 function isTravelChoice(value){return Boolean(value&&typeof value==='object'&&typeof value.id==='string'&&value.id&&TRAVEL_ENCOUNTER_TYPES.includes(value.type)&&Number.isInteger(value.step)&&value.step>=1&&Number.isInteger(value.stars)&&value.stars>=1&&value.stars<=MAX_ENCOUNTER_STARS&&typeof value.seed==='string'&&value.seed&&typeof value.flavor==='string'&&value.flavor&&typeof value.mechanicalHint==='string');}
-function hasHealthySkirmishCompanion(run){return Boolean((run?.roster||[]).some((character)=>!character?.isRunKing&&character?.status==='healthy'));}
+function hasHealthySkirmishCompanion(run){return Boolean((run?.roster||[]).some((character)=>!character?.isRunKing&&character?.status==='healthy')||(run?.army||[]).some(unit=>unit&&unit.count>0));}
 function canSelectTravelChoice(run,choice){
   if(!isTravelChoice(choice))return Object.freeze({ok:false,reason:'invalid_choice'});
   if(choice.type==='skirmish'&&!hasHealthySkirmishCompanion(run))return Object.freeze({ok:false,reason:'skirmish_requires_companion'});
