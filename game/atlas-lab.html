@@ -859,7 +859,7 @@ function handleMapClick(e){if(previewMode)return;const p=fromPointer(e),k=key(p.
  $s('simTooltip').textContent='Чтобы пойти, нажми одну из восьми подсвеченных соседних клеток. '+explainHover(p.x,p.y);
 }
 function handleConfigChange(){invalidateSample();updateSimulator();}
-function exportConfig(){return {format:'rpchess.atlas-lab.kingdom-simulator.v1',generator:'Atlas Lab v6 / current RPChess world parameters; economy balance is provisional',savedAt:new Date().toISOString(),visual:Object.fromEntries(Object.entries(S).filter(([key])=>key in BASE)),simulation:clone(C),reference:'docs/KINGDOM_EXPLORATION_ECONOMY_BIOME_DESIGN.md',notes:'Текущие параметры мира и плотности совпадают с игровым конфигом; экономический баланс предварительный, редактируется отдельно.'};}
+function exportConfig(){return {economy:globalThis.RPChessAtlasEconomy?.getConfig?.()||null,format:'rpchess.atlas-lab.kingdom-simulator.v1',generator:'Atlas Lab v6 / current RPChess world parameters; economy balance is provisional',savedAt:new Date().toISOString(),visual:Object.fromEntries(Object.entries(S).filter(([key])=>key in BASE)),simulation:clone(C),reference:'docs/KINGDOM_EXPLORATION_ECONOMY_BIOME_DESIGN.md',notes:'Текущие параметры мира и плотности совпадают с игровым конфигом; экономический баланс предварительный, редактируется отдельно.'};}
 function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);}
 function bind(){
   const tabA=document.getElementById('labVisualTab'),tabB=document.getElementById('labSimTab');
@@ -894,6 +894,7 @@ function bind(){
       for(const [k,len] of [['types',6],['races',14]])if(Array.isArray(b[k])&&b[k].length===6&&b[k].every(row=>Array.isArray(row)&&row.length===len))candidate[k]=b[k].map(row=>row.map(v=>clamp(Number(v)||0,0,500)));
       C=candidate;
     }
+    if(data.economy&&globalThis.RPChessAtlasEconomy?.setConfig)globalThis.RPChessAtlasEconomy.setConfig(data.economy);
     syncUI();renderControls();renderMatrix();initialize();renderSoon();toast('Настройки импортированы в оба режима');
   }catch(ex){toast('Ошибка JSON: '+ex.message)}finally{e.target.value=''}};
   $s('simMap').addEventListener('click',handleMapClick);
@@ -912,4 +913,5 @@ bind();
 })();
 
 </script>
+<script type="module" src="js/kingdom-economy-lab.mjs?v=20261110-economy1"></script>
 </body></html>
