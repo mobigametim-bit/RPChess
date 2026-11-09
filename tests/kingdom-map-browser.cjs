@@ -8,6 +8,15 @@ const key='rpchess.reboot.v1.run';
 const output=process.env.RPCHESS_KINGDOM_SCREENSHOT_DIR||'test-results/kingdom-map';
 const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)||'null'),key);
 async function dragKing(page,id){
+ await page.evaluate(()=>{
+  window.__kingDragEvents=[];
+  const h=document.querySelector('[data-kingdom-king-handle]');
+  for(const type of ['pointerdown','pointerup','pointercancel','lostpointercapture']){
+   h?.addEventListener(type,e=>window.__kingDragEvents.push({
+    type,button:e.button,x:e.clientX,y:e.clientY
+   }),true);
+  }
+ });
  const handle=await page.locator('[data-kingdom-king-handle]').boundingBox();
  const tile=await page.locator('[data-kingdom-cell="'+id+'"]').boundingBox();
  assert(handle&&tile,'king drag requires a visible start and target tile '+id);
@@ -542,7 +551,13 @@ async function assertTileImage(page,cellId,relativePath){
    await dragKing(page,'0,1');
    const second=await read(page);
    assert.deepEqual(second.kingdomMap.king,{x:0,y:1},
-     'the king must be able to make a second Journey step after Battle');
+     'the king must be able to make a second Journey step after Battle; '+
+      JSON.stringify(await page.evaluate(()=>({
+       events:window.__kingDragEvents||[],
+       handle:document.querySelector('[data-kingdom-king-handle]')?.getBoundingClientRect().toJSON(),
+       target:document.querySelector('[data-kingdom-cell="0,1"]')?.getBoundingClientRect().toJSON(),
+       scene:document.querySelector('[data-kingdom-map-screen]')?.hidden
+      }))));
    assert(second.kingdomMap.day>=4,'new map cell and earlier failed completion each advance the calendar');
    assert.equal(second.kingdomMap.pendingCell,'0,1');
    assert.equal(second.kingdomMap.cells['0,1'].status,'revealed');
