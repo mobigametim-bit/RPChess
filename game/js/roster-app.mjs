@@ -1,4 +1,6 @@
-import { heroPortraitArt } from './race-assets.mjs';
+import { heroPortraitArt,boardRacePiecePath,RACE_LABELS } from './race-assets.mjs';
+import {PIECE_TYPES,PIECE_LABELS} from './kingdom-economy-config.mjs';
+import {normalizeArmy} from './kingdom-army-core.mjs';
 import { STATUS_LABELS, PIECE_GLYPHS } from './roster-data.mjs';
 import { createRun, readRun, writeRun } from './run-persistence.mjs';
 import { applyNewRunPowerCarryover } from './player-rating.mjs';
@@ -133,10 +135,61 @@ function renderDetail() {
   rosterDetail.append(media, body);
 }
 
+let activeRosterTab='named';
+function armyEnglishType(type){return {pawn:'Pawn',knight:'Knight',bishop:'Bishop',rook:'Rook',queen:'Queen'}[type]||type;}
+function ensureRosterTabs(){
+  if(!rosterScreen)return;
+  let nav=rosterScreen.querySelector('[data-roster-army-tabs]');
+  if(!nav){
+    nav=document.createElement('div');nav.className='roster-army-tabs';nav.dataset.rosterArmyTabs='';
+    for(const key of ['named','army']){
+      const button=document.createElement('button');button.type='button';button.dataset.rosterArmTab=key;
+      button.addEventListener('click',()=>{activeRosterTab=key;renderRoster();});
+      nav.append(button);
+    }
+    (rosterScreen.querySelector('.roster-catalog__head')||rosterScreen.querySelector('.roster-heading')||rosterScreen).append(nav);
+  }
+  for(const button of nav.querySelectorAll('[data-roster-arm-tab]')){
+    const named=button.dataset.rosterArmTab==='named';
+    button.textContent=named?(currentLanguage()==='en'?'Named heroes':'Именные герои'):(currentLanguage()==='en'?'Army':'Армия');
+    button.classList.toggle('is-active',button.dataset.rosterArmTab===activeRosterTab);
+    button.setAttribute('aria-pressed',String(button.dataset.rosterArmTab===activeRosterTab));
+  }
+}
+function renderArmyRoster(){
+  const english=currentLanguage()==='en',army=normalizeArmy(activeRun?.army),total=army.reduce((n,u)=>n+u.count,0);
+  rosterList.replaceChildren();rosterList.className='roster-army-list';
+  rosterDetail.replaceChildren();
+  const title=document.createElement('h2');title.textContent=english?'Army reserves':'Запас Армии';rosterDetail.append(title);
+  const intro=document.createElement('p');intro.textContent=english?
+    'Permanent recruits grouped by race and chess role. Captured recruits are lost permanently; temporary mercenaries are not stored.':
+    'Постоянные рекруты по расам и типам. Взятые фигуры погибают безвозвратно; временные наёмники не сохраняются.';
+  rosterDetail.append(intro);
+  const summary=document.createElement('p');summary.textContent=(english?'Total recruits: ':'Всего рекрутов: ')+total;rosterDetail.append(summary);
+  if(rosterCount)rosterCount.textContent=String(total);
+  if(!army.length){const empty=document.createElement('p');empty.className='roster-army-empty';empty.textContent=english?'No recruits yet. Hire them in the Castle or collect them from friendly cleared Skirmishes.':'Рекрутов пока нет. Нанимай в Замке или собирай в освоенных своих Стычках.';rosterList.append(empty);return;}
+  for(const raceTag of [...new Set(army.map(entry=>entry.raceTag))]){
+    const group=document.createElement('section');group.className='roster-army-race';
+    const h=document.createElement('h3');h.textContent=english?raceTag.replaceAll('_',' '):RACE_LABELS[raceTag]||raceTag;group.append(h);
+    const grid=document.createElement('div');grid.className='roster-army-grid';
+    for(const pieceType of PIECE_TYPES){
+      const count=army.find(x=>x.raceTag===raceTag&&x.pieceType===pieceType)?.count||0;
+      const item=document.createElement('article');item.className='roster-army-tile';
+      const image=document.createElement('img');image.src=boardRacePiecePath(raceTag,pieceType,'w');
+      image.alt='';image.loading='lazy';
+      const name=document.createElement('span');name.textContent=english?armyEnglishType(pieceType):PIECE_LABELS[pieceType];
+      const number=document.createElement('strong');number.textContent='×'+count;
+      item.append(image,name,number);grid.append(item);
+    }
+    group.append(grid);rosterList.append(group);
+  }
+}
 function renderRoster() {
   if (!activeRun || !rosterList) return;
   applyStaticCopy();
   updateJourneyLabel();
+  ensureRosterTabs();
+  if(activeRosterTab==='army'){renderArmyRoster();return;}
   renderDetail();
   const formation=normalizedFormation(activeRun);
   if (rosterCount) rosterCount.textContent = `${formation.members.length} / 16`;
