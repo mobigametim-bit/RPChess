@@ -20,7 +20,7 @@ body.kingdom-map-active{overflow:hidden}
  border-radius:8px;padding:11px 17px;color:#fff2cc;font-weight:700;white-space:nowrap}
 .km-back:hover,.km-inspector-buttons button:hover{filter:brightness(1.14)}
 .km-layout{flex:1;min-width:0;min-height:0;position:relative;display:block;overflow:hidden}
-.km-map-frame{width:100%;height:100%;min-height:0;min-width:0;position:relative;display:flex;align-items:center;justify-content:center;
+.km-map-frame{touch-action:none;width:100%;height:100%;min-height:0;min-width:0;position:relative;display:flex;align-items:center;justify-content:center;
  overflow:hidden;border:2px solid #9c814a;border-radius:10px;background:#101b19;box-shadow:inset 0 0 30px #02090b}
 .km-world{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
  isolation:isolate;display:grid;width:1278px;height:994px;aspect-ratio:auto;
@@ -351,11 +351,6 @@ body.kingdom-map-active .resource-hud{display:none!important}
 .kingdom-map-screen.km-parchment-mode .km-cell--fog.km-cell--light{
  background:none!important
 }
-/* Question marks exist ONLY on unknown cells, even in parchment mode. */
-.kingdom-map-screen.km-parchment-mode .km-fog-mark{
- display:block!important;z-index:2;position:relative;color:#e4d1a1;
- opacity:.84;text-shadow:0 2px 7px #161411,0 0 11px #1d1b19
-}
 .kingdom-map-screen.km-parchment-mode .km-cell--adjacent::before{
  inset:6px;border:1px dashed rgba(233,201,125,.85);border-radius:35% 43% 39% 45%;
  box-shadow:0 0 10px rgba(230,188,98,.12)
@@ -386,3 +381,19 @@ body.kingdom-map-active .resource-hud{display:none!important}
 @media(max-width:790px){
  .kingdom-map-screen .km-map-skin-switch{top:6px;left:6px;padding:5px 7px;font-size:10px}
 }
+
+/* Wheel and two-touch pinch scale the world without scaling interface panels. */
+.kingdom-map-screen .km-zoom-controls{
+ position:absolute;bottom:10px;left:10px;z-index:35;display:flex;align-items:center;gap:3px;
+ padding:4px;border:1px solid rgba(216,174,90,.72);border-radius:6px;
+ background:linear-gradient(180deg,#242017e8,#15191af0);box-shadow:0 4px 14px #000a;
+}
+.kingdom-map-screen .km-zoom-controls button{
+ min-width:35px;min-height:32px;padding:4px 8px;color:#f8dfa9;
+ border:1px solid rgba(216,174,90,.45);border-radius:4px;background:rgba(29,27,23,.8);
+ font:700 15px/1.1 Inter,Arial,sans-serif;touch-action:manipulation;
+}
+.kingdom-map-screen .km-zoom-controls [data-kingdom-zoom-reset]{min-width:66px;font-size:12px}
+.kingdom-map-screen .km-zoom-controls button:hover{filter:brightness(1.15)}
+.kingdom-map-screen .km-zoom-controls button:focus-visible{outline:2px solid #ffe2a0;outline-offset:2px}
+@media(max-width:790px){.kingdom-map-screen .km-zoom-controls{bottom:6px;left:6px;padding:2px}}

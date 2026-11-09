@@ -194,7 +194,7 @@ async function ensureTravelChoiceReady() {
   if (routeReady && typeof routeReady.then === 'function') await routeReady;
   if (globalThis.RPChessTravelChoice?.open) return globalThis.RPChessTravelChoice;
   try {
-    await import('./travel-choice-app.mjs?v=20261109-atlas-v3');
+    await import('./travel-choice-app.mjs?v=20261109-atlas-zoom-v4');
   } catch (error) {
     console.error('[RPChess] Travel Choice bootstrap failed', error);
     return null;

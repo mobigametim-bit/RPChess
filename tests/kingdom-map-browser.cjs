@@ -61,8 +61,13 @@ async function assertTileImage(page,cellId,relativePath){
   await page.locator('[data-kingdom-map-screen]:not([hidden])').waitFor({timeout:20000});
   assert.equal(await page.locator('[data-travel-choice-screen]:not([hidden])').count(),0,
    'the old three-card choice is not the live Journey screen');
-  assert.equal(await page.locator('[data-kingdom-cell]').count(),77,
-    '1366x768 target viewport requires 11x7 fixed-size grid for full-bleed coverage');
+  const expectedViewportCells=await page.evaluate(()=>{
+    const f=document.querySelector('.km-map-frame').getBoundingClientRect();
+    const odd=(px,min)=>{const n=Math.max(min,Math.ceil((px+2)/87));return n%2?n:n+1;};
+    return odd(f.width,9)*odd(f.height,7);
+  });
+  assert.equal(await page.locator('[data-kingdom-cell]').count(),expectedViewportCells,
+    'atlas 87px zoom selects an odd full-bleed grid for the viewport');
   const before=await read(page);
   assert(before.kingdomMap&&before.kingdomMap.cells['0,0'].annexed);
   // The new parchment map is visual only: the original tile view remains
@@ -147,8 +152,8 @@ async function assertTileImage(page,cellId,relativePath){
   });
   assert(lineArt.river&&lineArt.road&&lineArt.painted>10,
     'real procedural Canvas strokes must render roads and rivers without retired SVGs');
-  assert.equal(await page.locator('[data-kingdom-cell]').count(),77,
-    'changing artwork cannot change the underlying 11x7 logical chess grid');
+  assert.equal(await page.locator('[data-kingdom-cell]').count(),expectedViewportCells,
+    'changing artwork cannot change the atlas-scaled logical grid');
   const terrain=await atlas.evaluate(canvas=>{
     const world=document.querySelector('.km-world');
     const ctx=canvas.getContext('2d');
@@ -193,7 +198,7 @@ async function assertTileImage(page,cellId,relativePath){
     const sprite=document.querySelector('[data-kingdom-cell="0,0"] img.km-object');
     return sprite?.complete&&sprite.naturalWidth===128&&sprite.naturalHeight===128;
   },null,{timeout:15000});
-  // Accepted 142px/73%/92px map geometry and 25% floating inspector.
+  // Author's Atlas Lab zoom is 87 physical px/cell; contents retain 73%/92:142 proportions.
   const dimensions=await page.evaluate(()=>{
    const frame=document.querySelector('.km-map-frame').getBoundingClientRect();
    const world=document.querySelector('.km-world').getBoundingClientRect();
@@ -205,7 +210,7 @@ async function assertTileImage(page,cellId,relativePath){
    return {frame:{width:frame.width,height:frame.height,left:frame.left,right:frame.right,top:frame.top,bottom:frame.bottom},
     world:{width:world.width,height:world.height,left:world.left,right:world.right,top:world.top,bottom:world.bottom},
     tile:{width:cell.width,height:cell.height,left:cell.left,right:cell.right,top:cell.top,bottom:cell.bottom},
-    king:{width:parseFloat(getComputedStyle(king).width),height:parseFloat(getComputedStyle(king).height)},
+    king:{width:king.getBoundingClientRect().width,height:king.getBoundingClientRect().height},
     object:{width:artwork.width,height:artwork.height,left:artwork.left,right:artwork.right,
       top:artwork.top,bottom:artwork.bottom,fit:getComputedStyle(object).objectFit},
     cellOverflow:getComputedStyle(document.querySelector('[data-kingdom-cell="0,0"]')).overflow,
@@ -214,12 +219,12 @@ async function assertTileImage(page,cellId,relativePath){
   assert(dimensions.world.left<=dimensions.frame.left&&dimensions.world.right>=dimensions.frame.right&&
     dimensions.world.top<=dimensions.frame.top&&dimensions.world.bottom>=dimensions.frame.bottom,
     'enlarged cells must fill the map frame with no empty gutters');
-  assert(Math.abs(dimensions.tile.width-142)<1&&Math.abs(dimensions.tile.height-142)<1,
-    'user-selected 142px cells remain perfectly square');
-  assert(Math.abs(dimensions.king.width-92)<1&&Math.abs(dimensions.king.height-92)<1,
-    'king keeps a fixed 92px size');
-  assert(Math.abs(dimensions.object.width-142*.73)<1&&Math.abs(dimensions.object.height-142*.73)<1,
-    'SVG art displays at exactly 73% of the tile');
+  assert(Math.abs(dimensions.tile.width-87)<1&&Math.abs(dimensions.tile.height-87)<1,
+    'new Atlas preset renders 87px square cells initially');
+  assert(Math.abs(dimensions.king.width-92*87/142)<1&&Math.abs(dimensions.king.height-92*87/142)<1,
+    'the named king scales uniformly with the world');
+  assert(Math.abs(dimensions.object.width-87*.73)<1&&Math.abs(dimensions.object.height-87*.73)<1,
+    'SVG art remains 73% of the scaled tile');
   assert(dimensions.object.fit==='contain'&&dimensions.cellOverflow==='visible',
     'SVG is contained without object clipping or unwanted stretching');
   assert(dimensions.object.left>=dimensions.tile.left&&dimensions.object.right<=dimensions.tile.right&&
@@ -228,6 +233,31 @@ async function assertTileImage(page,cellId,relativePath){
   assert(Math.abs(dimensions.inspector.width-dimensions.frame.width*.25)<3&&
     dimensions.inspector.left>dimensions.frame.left&&dimensions.inspector.right<dimensions.frame.right,
     'inspector floats over the map and occupies 25% of its width');
+  // Zoom is only a visual preference: mouse wheel, touch pinch and reset
+  // cannot advance a run, change an encounter or charge Supplies.
+  const beforeZoomRun=await read(page);
+  await page.locator('.km-map-frame').hover({position:{x:260,y:180}});
+  await page.mouse.wheel(0,-250);
+  await page.waitForFunction(()=>globalThis.RPChessKingdomMap?.zoom>87);
+  const wheelZoom=await page.evaluate(()=>globalThis.RPChessKingdomMap.zoom);
+  const wheelCell=await page.locator('[data-kingdom-cell="0,0"]').evaluate(el=>el.getBoundingClientRect().width);
+  assert(Math.abs(wheelCell-wheelZoom)<1,'mouse wheel magnifies actual map geometry');
+  await page.evaluate(()=>{
+    const frame=document.querySelector('.km-map-frame');
+    const emit=(kind,id,x,y)=>frame.dispatchEvent(new PointerEvent(kind,{bubbles:true,
+      cancelable:true,pointerId:id,pointerType:'touch',clientX:x,clientY:y}));
+    emit('pointerdown',71,260,260);emit('pointerdown',72,360,260);
+    emit('pointermove',72,440,260);
+    emit('pointerup',72,440,260);emit('pointerup',71,260,260);
+  });
+  await page.waitForFunction(previous=>globalThis.RPChessKingdomMap?.zoom>previous,wheelZoom);
+  assert.equal((await read(page)).kingdomMap.pendingCell,null,
+    'two-finger zoom must not accidentally start a Journey encounter');
+  await page.locator('[data-kingdom-zoom-reset]').click();
+  await page.waitForFunction(()=>globalThis.RPChessKingdomMap?.zoom===87);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('rpchess.kingdom.zoom.v1')),'87',
+    'reset restores the author zoom and persists it');
+  assert.deepEqual(await read(page),beforeZoomRun,'zoom must never edit the run or its saved cells');
   await assertTileImage(page,'0,0','assets/races/humans/board/white.png');
   assert.equal(await page.locator('[data-kingdom-glory]').textContent(),'0',
     'current Glory uses the Chronicle formula, not an invented currency');

@@ -3,7 +3,7 @@ import { createTravelChoices, hashString, PLAYABLE_TRAVEL_TYPES, hasHealthySkirm
 import { RACE_TAGS } from './race-assets.mjs';
 import { EVENT_IDS, eventById } from './events-data.mjs';
 import {combatTheme} from './race-assets.mjs';
-import {worldAt} from './kingdom-world-core.mjs?v=20261109-atlas-v3';
+import {worldAt} from './kingdom-world-core.mjs?v=20261109-atlas-zoom-v4';
 import {SCOUT_RADIUS} from './kingdom-world-config.mjs';
 
 const MAP_VERSION=1;

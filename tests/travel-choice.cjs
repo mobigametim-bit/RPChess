@@ -73,8 +73,10 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'author approved biome encounter density survives in the playable build');
   assert.strictEqual(worldConfig.DENSITY_MULTIPLIER,1.2,
     'new Atlas Lab config increases encounter frequency without rerolling saved cells');
-  assert.strictEqual(worldConfig.VISUAL.fogRadius,0.85);
-  assert.strictEqual(worldConfig.VISUAL.revealRadius,0.6);
+  assert.strictEqual(worldConfig.VISUAL.fogRadius,1.3);
+  assert.strictEqual(worldConfig.VISUAL.revealRadius,0.8);
+  assert.strictEqual(worldConfig.ATLAS_VIEW.seed,'realm-xce3j9bv');
+  assert.strictEqual(worldConfig.ATLAS_VIEW.zoom,87);
   for(const row of [...worldConfig.TYPE_WEIGHTS,...worldConfig.RACE_WEIGHTS])
     assert.strictEqual(row.reduce((sum,n)=>sum+n,0),100,
       'each approved biome encounter/race distribution adds up to 100 percent');

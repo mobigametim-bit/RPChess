@@ -38,12 +38,15 @@ const VISUAL=Object.freeze({
   "landmarkSize": 0.75,
   "landmarkOpacity": 0.92,
   "fogOpacity": 0.88,
-  "fogRadius": 0.85,
+  "fogRadius": 1.3,
   "fogInner": 0.2,
   "fogInkOpacity": 0.28,
   "fogIrregularity": 0.58,
-  "revealRadius": 0.6
+  "revealRadius": 0.8
 });
+// Atlas editor's approved view; runtime worlds retain their individual run seed.
+const ATLAS_VIEW=Object.freeze({seed:'realm-xce3j9bv',centerX:1.1397535385320217,
+ centerY:0.8734816261574075,zoom:87});
 const BIOMES=Object.freeze(['forest','mountain','hills','plains','marsh','wasteland']);
 const RACE_TAGS_ORDER=Object.freeze(['humans','elves','orcs','undead','dark_elves','dwarves','demons','angels','dragonborn','beastfolk','constructs','animals','fae','goblins']);
 const ENCOUNTER_TYPES=Object.freeze(['battle','skirmish','caravan','settlement','event','puzzle']);
@@ -52,4 +55,4 @@ const TYPE_WEIGHTS=Object.freeze([[12,22,11,10,28,17],[27,23,7,6,17,20],[19,24,1
 const RACE_WEIGHTS=Object.freeze([[6,22,4,2,4,2,1,1,1,14,2,14,19,8],[5,2,9,3,5,17,6,16,20,5,4,3,1,4],[16,4,12,4,5,17,4,4,7,9,5,5,2,6],[25,6,8,4,3,6,3,5,3,9,6,11,5,6],[4,3,5,24,13,1,8,1,3,8,3,8,7,12],[4,1,13,16,6,3,22,1,9,6,9,2,1,7]].map(row=>Object.freeze(row)));
 const DENSITY_MULTIPLIER=1.2;
 const SCOUT_RADIUS=2;
-export {VISUAL,BIOMES,RACE_TAGS_ORDER,ENCOUNTER_TYPES,DENSITY,DENSITY_MULTIPLIER,TYPE_WEIGHTS,RACE_WEIGHTS,SCOUT_RADIUS};
+export {VISUAL,ATLAS_VIEW,BIOMES,RACE_TAGS_ORDER,ENCOUNTER_TYPES,DENSITY,DENSITY_MULTIPLIER,TYPE_WEIGHTS,RACE_WEIGHTS,SCOUT_RADIUS};

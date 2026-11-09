@@ -14,7 +14,8 @@ import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
 import {PARCHMENT_MODE_KEY} from './kingdom-parchment-core.mjs';
-import {renderParchment} from './kingdom-parchment-app.mjs?v=20261109-atlas-v3';
+import {renderParchment} from './kingdom-parchment-app.mjs?v=20261109-atlas-zoom-v4';
+import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-zoom-v4';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
@@ -40,6 +41,56 @@ const COPY={
 // Accepted visual-tuner preset. Fixed cell dimensions with a responsive virtual grid.
 const MAP_LAYOUT=Object.freeze({cellPx:142,eventScalePercent:73,kingPx:92,inspectorWidthPercent:25});
 const MIN_COLUMNS=9,MIN_ROWS=7;
+const ZOOM_KEY='rpchess.kingdom.zoom.v1',ZOOM_MIN=55,ZOOM_MAX=220;
+function clampZoom(value){return Math.max(ZOOM_MIN,Math.min(ZOOM_MAX,Math.round(value)));}
+function savedZoom(){
+ try{const raw=localStorage.getItem(ZOOM_KEY);return raw===null?ATLAS_VIEW.zoom:
+  Number.isFinite(Number(raw))?clampZoom(Number(raw)):ATLAS_VIEW.zoom;}
+ catch{return ATLAS_VIEW.zoom;}
+}
+let zoomPx=savedZoom(),zoomFrame=0,ignoreCellClicksUntil=0,pinch=null;
+const activeTouches=new Map();
+function updateZoom(value){
+ const next=clampZoom(value);if(next===zoomPx)return;
+ zoomPx=next;try{localStorage.setItem(ZOOM_KEY,String(zoomPx));}catch{}
+ if(!zoomFrame)zoomFrame=requestAnimationFrame(()=>{
+  zoomFrame=0;if(screen&&!screen.hidden)render();
+ });
+}
+function touchDistance(){
+ const p=[...activeTouches.values()];return p.length>=2?Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y):0;
+}
+function zoomPointerDown(e){
+ if(e.pointerType!=='touch'||e.target.closest('.km-zoom-controls,.km-map-skin-switch'))return;
+ activeTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(activeTouches.size===2){
+  pinch={distance:Math.max(1,touchDistance()),zoom:zoomPx};
+  const frame=screen?.querySelector('.km-map-frame');
+  for(const id of activeTouches.keys())try{frame?.setPointerCapture(id);}catch{}
+  ignoreCellClicksUntil=Date.now()+650;
+ }
+}
+function zoomPointerMove(e){
+ if(e.pointerType!=='touch'||!activeTouches.has(e.pointerId))return;
+ activeTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(pinch&&activeTouches.size>=2){
+  e.preventDefault();ignoreCellClicksUntil=Date.now()+650;
+  updateZoom(pinch.zoom*touchDistance()/pinch.distance);
+ }
+}
+function zoomPointerEnd(e){
+ if(e.pointerType!=='touch')return;
+ if(pinch)ignoreCellClicksUntil=Date.now()+650;
+ activeTouches.delete(e.pointerId);
+ if(activeTouches.size<2)pinch=null;
+}
+function zoomWheel(e){
+ if(!screen||screen.hidden||e.target.closest('.km-zoom-controls,.km-map-skin-switch'))return;
+ e.preventDefault();
+ const delta=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?400:1);
+ updateZoom(zoomPx*Math.exp(-delta*.0015));
+}
+
 const REVEAL_MS=680,MOVE_MS=460,FLAVOR_MS=2600,DISCOVERY_WAIT_MS=4050;
 const GOLD_ICON='generated_assets/reward_gold.png';
 const SUPPLIES_ICON='generated_assets/reward_supplies.png';
@@ -56,8 +107,8 @@ function honorShards(){
  try{return arenaSummary(normalizeArena(JSON.parse(platform.storage.local?.getItem(ARENA_KEY)||'null'))).balance;}
  catch{return 0;}
 }
-function oddCoverCount(pixels,minimum){
- const count=Math.max(minimum,Math.ceil(pixels/MAP_LAYOUT.cellPx));
+function oddCoverCount(pixels,minimum,cellPixels=zoomPx){
+ const count=Math.max(minimum,Math.ceil((pixels+2)/cellPixels));
  return count%2===0?count+1:count;
 }
 // The camera is independent of the king: keep world cells stationary when he
@@ -165,7 +216,7 @@ function report(text){const node=screen?.querySelector('[data-kingdom-toast]');i
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261109-atlas-v3';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261109-atlas-zoom-v4';link.dataset.kingdomStyle='';
  link.addEventListener('load',()=>{if(screen&&!screen.hidden)render();});
  document.head.append(link);
 }
@@ -193,6 +244,11 @@ function screenReady(){
  </div></div></header>
  <section class="km-layout"><div class="km-map-frame">
  <button type="button" class="km-map-skin-switch" data-kingdom-skin-switch></button>
+ <div class="km-zoom-controls" role="group" aria-label="Map zoom">
+  <button type="button" data-kingdom-zoom-out aria-label="Zoom out">−</button>
+  <button type="button" data-kingdom-zoom-reset aria-label="Reset map zoom"><span data-kingdom-zoom-value></span></button>
+  <button type="button" data-kingdom-zoom-in aria-label="Zoom in">+</button>
+ </div>
  <div class="km-world" data-kingdom-world role="grid" aria-label="Kingdom chess map"></div>
  <div class="km-toast" data-kingdom-toast role="status" hidden></div></div>
  <aside class="km-inspector"><div class="km-route-slot" data-kingdom-route-slot hidden></div>
@@ -211,6 +267,15 @@ function screenReady(){
  screen.querySelector('[data-kingdom-annex]').addEventListener('click',claim);
  screen.querySelector('[data-kingdom-services]').addEventListener('click',visitSettlement);
  screen.querySelector('[data-kingdom-world]').addEventListener('click',onCell);
+ const frame=screen.querySelector('.km-map-frame');
+ frame.addEventListener('wheel',zoomWheel,{passive:false});
+ frame.addEventListener('pointerdown',zoomPointerDown);
+ frame.addEventListener('pointermove',zoomPointerMove);
+ frame.addEventListener('pointerup',zoomPointerEnd);
+ frame.addEventListener('pointercancel',zoomPointerEnd);
+ screen.querySelector('[data-kingdom-zoom-out]').addEventListener('click',()=>updateZoom(zoomPx-12));
+ screen.querySelector('[data-kingdom-zoom-in]').addEventListener('click',()=>updateZoom(zoomPx+12));
+ screen.querySelector('[data-kingdom-zoom-reset]').addEventListener('click',()=>updateZoom(ATLAS_VIEW.zoom));
  screen.querySelector('[data-kingdom-skin-switch]').addEventListener('click',()=>{
   setMapSkin(mapSkin()==='parchment'?'classic':'parchment');render();
  });
@@ -220,7 +285,7 @@ function stopTimers(){
  clearTimeout(flightTimer);clearTimeout(launchTimer);clearTimeout(flavorTimer);
  flightTimer=null;launchTimer=null;flavorTimer=null;movement=null;flavorBurst=null;
 }
-function hideMap(){stopTimers();if(screen)screen.hidden=true;document.body.classList.remove('kingdom-map-active');}
+function hideMap(){stopTimers();activeTouches.clear();pinch=null;if(screen)screen.hidden=true;document.body.classList.remove('kingdom-map-active');}
 function showMap(){
  screenReady();
  for(const main of document.querySelectorAll('#app > main'))main.hidden=true;
@@ -305,10 +370,17 @@ function render(){
  const visualKing=movement?.phase==='reveal'?movement:map.king;
  const world=screen.querySelector('[data-kingdom-world]');
  const frame=screen.querySelector('.km-map-frame').getBoundingClientRect();
+ screen.querySelector('[data-kingdom-zoom-value]').textContent=zoomPx+' px';
+ screen.querySelector('[data-kingdom-zoom-reset]').title=lang()==='ru'?'Сбросить масштаб карты':'Reset map zoom';
+ screen.querySelector('[data-kingdom-zoom-out]').title=lang()==='ru'?'Уменьшить масштаб':'Zoom out';
+ screen.querySelector('[data-kingdom-zoom-in]').title=lang()==='ru'?'Увеличить масштаб':'Zoom in';
+ const scale=zoomPx/MAP_LAYOUT.cellPx;
+ world.style.transform=`translate(-50%,-50%) scale(${scale})`;
+ world.dataset.mapZoom=String(zoomPx);
  const WIDTH=oddCoverCount(frame.width,MIN_COLUMNS);
  const HEIGHT=oddCoverCount(frame.height,MIN_ROWS);
  const CENTER_X=Math.floor(WIDTH/2),CENTER_Y=Math.floor(HEIGHT/2);
- // 142px squares; virtual grid expands to cover every edge without stretching.
+ // The Atlas zoom sets the physical square size; all map art retains its proportions.
  world.style.width=(WIDTH*MAP_LAYOUT.cellPx)+'px';
  world.style.height=(HEIGHT*MAP_LAYOUT.cellPx)+'px';
  world.style.gridTemplateColumns=`repeat(${WIDTH},${MAP_LAYOUT.cellPx}px)`;
@@ -418,7 +490,7 @@ function render(){
  avatar.style.left=((avatarPoint.x-view.x+CENTER_X+.5)*100/WIDTH)+'%';
  avatar.style.top=((avatarPoint.y-view.y+CENTER_Y+.5)*100/HEIGHT)+'%';
  if(movement?.phase==='moving'){
-  // Movement always covers one fixed-size 142px tile.
+  // In-world movement remains 142 logical pixels, scaled with the entire map.
   avatar.style.setProperty('--km-from-x',(movement.x-map.king.x)*MAP_LAYOUT.cellPx+'px');
   avatar.style.setProperty('--km-from-y',(movement.y-map.king.y)*MAP_LAYOUT.cellPx+'px');
  }
@@ -454,7 +526,7 @@ function onCell(event){
  const target=event.target.closest('[data-kingdom-cell]');
  if(!target||!screen||screen.hidden)return;
  const run=readRun(),map=run?.kingdomMap,id=target.dataset.kingdomCell,point=parsePoint(id);
- if(!point||!map||map.pendingCell)return;
+ if(!point||!map||map.pendingCell||pinch||Date.now()<ignoreCellClicksUntil)return;
  selected=id;
  if(!adjacent(map.king,point)){render();return;}
  // Revealed empty locations are walkable; a known encounter is not rerolled.
@@ -552,5 +624,5 @@ addEventListener('rpchess:power-updated',syncPower);
 addEventListener('rpchess:arena-updated',()=>{if(screen&&!screen.hidden)render();});
 addEventListener('rpchess:scene-changed',e=>{if(e.detail?.scene==='menu'||e.detail?.scene==='roster')hideMap();});
 subscribe(()=>{if(screen&&!screen.hidden)render();});
-globalThis.RPChessKingdomMap=Object.freeze({open:openMap,hide:hideMap,get map(){return readRun()?.kingdomMap||null;}});
+globalThis.RPChessKingdomMap=Object.freeze({open:openMap,hide:hideMap,get map(){return readRun()?.kingdomMap||null;},get zoom(){return zoomPx;}});
 export {openMap};
