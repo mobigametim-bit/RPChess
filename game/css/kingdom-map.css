@@ -53,10 +53,7 @@ body.kingdom-map-active{overflow:hidden}
 .km-failure{position:absolute;top:0;right:5px;color:#fff;font-size:22px;font-weight:900;text-shadow:0 1px 5px #490807;z-index:5}
 .km-level{position:absolute;right:4px;bottom:2px;z-index:5;padding:1px 3px;color:#fff8d8;
  background:#111b19b5;border-radius:3px;font:900 clamp(10px,1.45vw,18px)/1.2 Georgia,serif}
-.km-cell--annexed.km-edge-n{border-top:4px solid #d7bd5c}
-.km-cell--annexed.km-edge-e{border-right:4px solid #d7bd5c}
-.km-cell--annexed.km-edge-s{border-bottom:4px solid #d7bd5c}
-.km-cell--annexed.km-edge-w{border-left:4px solid #d7bd5c}
+/* Ownership's external edge is drawn as a soft organic path on the canvas overlay. */
 .km-king{position:absolute;top:50%;left:50%;z-index:10;
  width:var(--km-king-px,92px);height:var(--km-king-px,92px);object-fit:contain;
  transform:translate(-50%,-50%);pointer-events:none;
@@ -397,3 +394,42 @@ body.kingdom-map-active .resource-hud{display:none!important}
 .kingdom-map-screen .km-zoom-controls button:hover{filter:brightness(1.15)}
 .kingdom-map-screen .km-zoom-controls button:focus-visible{outline:2px solid #ffe2a0;outline-offset:2px}
 @media(max-width:790px){.kingdom-map-screen .km-zoom-controls{bottom:6px;left:6px;padding:2px}}
+
+/* The same curved royal-road and organic-boundary overlay is used by both skins.
+   It has no pointer interactions and keeps terrain, SVG sites and king clickable. */
+.kingdom-map-screen .km-kingdom-overlay{
+ position:absolute;inset:0;z-index:5;width:100%;height:100%;
+ pointer-events:none;user-select:none
+}
+.kingdom-map-screen .km-route-card--completed{
+ border-color:rgba(157,196,131,.73);
+ box-shadow:0 10px 25px #0008,inset 0 0 0 1px #c1daa21a
+}
+.kingdom-map-screen .km-route-card--completed .km-route-card__status{
+ color:#c3de9c;font-size:12px;letter-spacing:.07em
+}
+.kingdom-map-screen .km-route-card__cleared{
+ flex-basis:100%;font:600 12px/1.45 Inter,Arial,sans-serif;color:#c5d6ba
+}
+.kingdom-map-screen .km-resource-bursts{
+ position:absolute;left:50%;top:14%;z-index:14;pointer-events:none;
+ display:flex;flex-direction:column;align-items:center;gap:2px;transform:translateX(-50%)
+}
+.kingdom-map-screen .km-resource-burst{
+ display:flex;align-items:center;gap:4px;white-space:nowrap;
+ padding:3px 7px;border:1px solid #d8b16a88;border-radius:5px;
+ background:rgba(10,14,12,.86);box-shadow:0 3px 10px #0009;
+ color:#f9dc91;font:800 17px/1.1 Inter,Arial,sans-serif;
+ animation:km-resource-flight 1.8s ease-out both;
+ animation-delay:calc(var(--km-fx-index,0)*.17s)
+}
+.kingdom-map-screen .km-resource-burst img{width:21px;height:21px;object-fit:contain}
+@keyframes km-resource-flight{
+ 0%{opacity:0;transform:translateY(24px) scale(.72)}
+ 18%{opacity:1;transform:translateY(0) scale(1.1)}
+ 65%{opacity:1;transform:translateY(-21px) scale(1)}
+ 100%{opacity:0;transform:translateY(-49px) scale(.9)}
+}
+@media(prefers-reduced-motion:reduce){
+ .kingdom-map-screen .km-resource-burst{animation:none;opacity:1}
+}

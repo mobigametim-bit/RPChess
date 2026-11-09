@@ -257,28 +257,6 @@ function drawFog(ctx,map,left,top,width,height){
  f.globalCompositeOperation='source-over';
  ctx.drawImage(fog,0,0);
 }
-function drawBorders(ctx,map,left,top,width,height){
- const cells=map?.cells||{};
- const owned=new Set([...(map?.centralOwnedCells||[]),
-  ...Object.keys(cells).filter(id=>cells[id]?.annexed)]);
- ctx.save();ctx.lineWidth=2.5;ctx.strokeStyle='rgba(146,109,46,.86)';ctx.setLineDash([10,6]);
- for(const id of owned){
-  const [x,y]=id.split(',').map(Number);
-  if(x<left-1||x>left+width+1||y<top-1||y>top+height+1)continue;
-  const a=(x-left)*PARCHMENT_TILE,b=(y-top)*PARCHMENT_TILE,t=PARCHMENT_TILE;
-  const sides=[['n',0,-1],['e',1,0],['s',0,1],['w',-1,0]];
-  for(const [side,dx,dy] of sides){
-   if(owned.has((x+dx)+','+(y+dy)))continue;
-   ctx.beginPath();
-   if(side==='n'){ctx.moveTo(a,b);ctx.quadraticCurveTo(a+t*.43,b-4,a+t,b);}
-   else if(side==='e'){ctx.moveTo(a+t,b);ctx.quadraticCurveTo(a+t+4,b+t*.55,a+t,b+t);}
-   else if(side==='s'){ctx.moveTo(a,b+t);ctx.quadraticCurveTo(a+t*.5,b+t+4,a+t,b+t);}
-   else{ctx.moveTo(a,b);ctx.quadraticCurveTo(a-4,b+t*.5,a,b+t);}
-   ctx.stroke();
-  }
- }
- ctx.restore();
-}
 function renderParchment(canvas,{seed,view,columns,rows,map}){
  if(!canvas)return;
  probeArt();
@@ -308,7 +286,7 @@ function renderParchment(canvas,{seed,view,columns,rows,map}){
  drawOptionalNature(ctx,seed,left,top,columns,rows,map,repaint);
  drawFog(ctx,map,left,top,columns,rows);
  drawFogInk(ctx,seed,left,top,columns,rows,map,repaint);
- drawBorders(ctx,map,left,top,columns,rows);
+ // Sovereignty lines now use the shared organic overlay for both map skins.
 
 }
 export {renderParchment,drawWaterRoads};
