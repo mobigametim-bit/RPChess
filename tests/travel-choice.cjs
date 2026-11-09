@@ -99,6 +99,8 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const startMap=mapCore.createKingdomMap(mapRun,500);
   assert(mapCore.validateKingdomMap(startMap));
   assert.strictEqual(startMap.day,1,'the independent calendar begins on Day 1');
+  assert.deepStrictEqual(startMap.completedRoads,[],'no roads before a cleared event');
+  assert.strictEqual(startMap.lastCompletedRouteCell,null);
   assert.strictEqual(mapCore.territoryCapacity(startMap),5,
     '500 peak Power automatically grants five lands outside the castle');
   assert.strictEqual(startMap.centralOwnedCells.length,6);
@@ -155,10 +157,13 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const legacy={...startMap,day:undefined,calendarActions:undefined,
     centralOwnedCells:undefined,legacyBonusLands:undefined,uniqueFirstConquests:undefined,
     battlePointsEarned:3,creditedBattleEncounterIds:['old-battle'],
-    annexationPointsSpent:2,cells:{...startMap.cells,
+    annexationPointsSpent:2,completedRoads:undefined,lastCompletedRouteCell:undefined,
+    cells:{...startMap.cells,
       '9,9':{status:'completed',annexed:true}}};
   const migrated=mapCore.migrateKingdomMap(legacy,{journeyStep:4});
   assert.strictEqual(migrated.day,5,'migration preserves the previously displayed calendar floor');
+  assert.deepStrictEqual(migrated.completedRoads,[],
+    'legacy saves without completion order start fresh roads from the castle');
   assert.strictEqual(mapCore.territoryCapacity(migrated),8,
     'legacy battle bonus is applied once without discarding the old ledger');
   assert(mapCore.isOwned(migrated,'9,9'),'manual old territory survives the migration');
@@ -190,6 +195,24 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert.strictEqual(battleWin.map.battlePointsEarned,3,'legacy battle analytics stay readable');
   assert.strictEqual(battleWin.map.creditedBattleEncounterIds.length,1);
   assert.strictEqual(battleWin.map.uniqueFirstConquests[0].bonusLands,3);
+  assert.equal(battleWin.map.completedRoads.length,1);
+  assert.deepStrictEqual({from:battleWin.map.completedRoads[0].from,
+    to:battleWin.map.completedRoads[0].to},{from:'0,0',to:'0,1'},
+    'first completed Battle links the castle to its actual coordinates');
+  assert.notEqual(battleWin.map.completedRoads[0].bend,0,'road is a non-straight curve');
+  assert.strictEqual(mapCore.linkCompletedRoad(battleWin.map,'0,1'),battleWin.map,
+    'replaying the same completion cannot duplicate the road');
+  const nextPoint={x:1,y:1},nextChoice=mapCore.randomEncounter(mapRun,nextPoint,500);
+  const nextEntered=mapCore.enterCell(battleWin.map,nextPoint,nextChoice);
+  assert(nextEntered.ok&&nextEntered.map.king.x===1);
+  const nextFinished=mapCore.finishEncounter(
+    mapCore.beginEncounter(nextEntered.map,'1,1').map,'1,1',{success:true,opponentPower:400});
+  assert(nextFinished.ok&&nextFinished.map.completedRoads.length===2);
+  assert.deepStrictEqual({from:nextFinished.map.completedRoads[1].from,
+    to:nextFinished.map.completedRoads[1].to},{from:'0,1',to:'1,1'},
+    'second completed event links directly to the last completed event');
+  assert.strictEqual(mapCore.linkCompletedRoad(nextFinished.map,'1,1'),nextFinished.map,
+    'reload or repeat victory does not reroll an existing road');
   assert.strictEqual(mapCore.territoryCapacity(battleWin.map),8);
   assert.strictEqual(battleWin.map.day,3);
   assert(!mapCore.finishEncounter(battleWin.map,'0,1',{success:true,opponentPower:630}).ok,
@@ -202,6 +225,9 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const caravanBegin=mapCore.beginEncounter(caravanStarting.map,'1,0');
   const caravanWin=mapCore.finishEncounter(caravanBegin.map,'1,0',{success:true,opponentPower:850});
   assert(caravanWin.ok&&caravanWin.map.uniqueFirstConquests[0].type==='caravan');
+  assert.deepStrictEqual({from:caravanWin.map.completedRoads[0].from,
+    to:caravanWin.map.completedRoads[0].to},{from:'0,0',to:'1,0'},
+    'a first Caravan completion builds its own initial castle road');
   assert.strictEqual(mapCore.territoryCapacity(caravanWin.map),9,'Caravan grants four new lands');
   const persistedMap=persistence.writeRun({...mapRun,kingdomMap:climbed},storage,1420);
   const roundTrip=persistence.readRun(storage);
