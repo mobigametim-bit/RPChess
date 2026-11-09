@@ -4,6 +4,8 @@
  * the pure Canvas fallback keeps this experimental renderer testable on its own.
  */
 import {PARCHMENT_TILE,PARCHMENT_CHUNK_CELLS,randomAt,noise2D,terrainAt,pickSprite} from './kingdom-parchment-core.mjs';
+import {VISUAL} from './kingdom-world-config.mjs';
+import {landmarkAt,biomeAt} from './kingdom-world-core.mjs';
 
 const CHUNK_PX=PARCHMENT_TILE*PARCHMENT_CHUNK_CELLS;
 const chunkCache=new Map(),spriteCache=new Map();
@@ -76,7 +78,7 @@ function makeChunk(seed,cx,cy){
   const terrain=terrainAt(seed,wx,wy);
   const veins=noise2D(seed,wx*2.9,wy*2.9,'paper')-.5;
   const flecks=randomAt(seed,Math.floor(wx*20),Math.floor(wy*20),'flecks')-.5;
-  const offset=Math.round(veins*23+flecks*9);
+  const offset=Math.round((veins*23+flecks*9)*VISUAL.paperContrast);
   const tint=terrain.kind==='forest'?[-13,1,-16]:
              terrain.kind==='mountain'?[-16,-17,-21]:
              terrain.kind==='hill'?[-6,-8,-12]:[0,0,0];
@@ -97,13 +99,13 @@ function drawVector(ctx,src,x,y,width,height,alpha,repaint){
 }
 function drawBasePatches(ctx,seed,left,top,width,height,repaint){
  // Small, sparse parchment watercolor overlays. World anchored, no tile grid.
- const step=PARCHMENT_CHUNK_CELLS*1.5;
+ const step=VISUAL.baseSpacing;
  for(let y=Math.floor(top/step)-1;y<=Math.ceil((top+height)/step);y++)
   for(let x=Math.floor(left/step)-1;x<=Math.ceil((left+width)/step);x++){
    const px=(x*step-left+.32)*PARCHMENT_TILE,py=(y*step-top+.15)*PARCHMENT_TILE;
    const size=PARCHMENT_TILE*(2.4+randomAt(seed,x,y,'baseSize')*1.2);
    drawVector(ctx,pickSprite(seed,'parchment_base_variations',x,y),
-    px,py,size,size,.34,repaint);
+    px,py,size,size,VISUAL.baseOpacity,repaint);
   }
 }
 function drawFogInk(ctx,seed,left,top,width,height,map,repaint){
@@ -116,26 +118,33 @@ function drawFogInk(ctx,seed,left,top,width,height,map,repaint){
    if(map?.cells?.[wx+','+wy])continue;
    const size=PARCHMENT_TILE*2.7;
    const px=(wx-left)*PARCHMENT_TILE-size/2,py=(wy-top)*PARCHMENT_TILE-size/2;
-   drawVector(ctx,pickSprite(seed,'fog_of_war_shapes',x,y),px,py,size,size,.19,repaint);
+   drawVector(ctx,pickSprite(seed,'fog_of_war_shapes',x,y),px,py,size,size,VISUAL.fogInkOpacity,repaint);
   }
 }
 function drawOptionalNature(ctx,seed,left,top,width,height,map,repaint){
- // Only sparse, world-anchored organic accents; no replacement roads/rivers.
- const step=3.6;
+ // The same coordinate seed controls the decorative landmark and encounter.
+ const step=3.6/VISUAL.marshDensity;
  for(let iy=Math.floor(top/step)-1;iy<=Math.ceil((top+height)/step);iy++)
   for(let ix=Math.floor(left/step)-1;ix<=Math.ceil((left+width)/step);ix++){
    const wx=ix*step+randomAt(seed,ix,iy,'extra-x')*step;
    const wy=iy*step+randomAt(seed,ix,iy,'extra-y')*step;
    const terrain=terrainAt(seed,wx,wy);
-   const marsh=terrain.wet>.59&&terrain.elevation<.59;
-   const group=marsh?'marsh':'landmarks';
-   if(randomAt(seed,ix,iy,'extra-visible')>(marsh?.8:.16))continue;
-   if(map?.cells?.[Math.round(wx)+','+Math.round(wy)]?.selectedEncounter)continue;
-   const src=extraSprite(seed,group,ix,iy);
+   if(terrain.wet<=VISUAL.marshWetThreshold||terrain.elevation>=VISUAL.hillThreshold)continue;
+   if(randomAt(seed,ix,iy,'extra-visible')>.72)continue;
+   const src=extraSprite(seed,'marsh',ix,iy);
    if(!src)continue;
-   const size=PARCHMENT_TILE*(marsh?1.9:1.15);
+   const size=PARCHMENT_TILE*VISUAL.marshSize;
    drawVector(ctx,src,(wx-left)*PARCHMENT_TILE-size/2,
-    (wy-top)*PARCHMENT_TILE-size/2,size,size,marsh?.72:.86,repaint);
+    (wy-top)*PARCHMENT_TILE-size/2,size,size,VISUAL.marshOpacity,repaint);
+  }
+ for(let y=Math.floor(top);y<top+height;y++)
+  for(let x=Math.floor(left);x<left+width;x++){
+   const landmark=landmarkAt(seed,x,y);
+   if(!landmark)continue;
+   const src='assets/kingdom-parchment/decor_minor_landmarks/'+landmark+'.svg';
+   const size=PARCHMENT_TILE*VISUAL.landmarkSize;
+   drawVector(ctx,src,(x-left+.5)*PARCHMENT_TILE-size/2,
+    (y-top+.5)*PARCHMENT_TILE-size/2,size,size,VISUAL.landmarkOpacity,repaint);
   }
 }
 function fallbackSymbol(ctx,kind,x,y,size,seed){
@@ -169,37 +178,41 @@ function drawWaterRoads(ctx,seed,left,top,width,height){
  const toLocalX=x=>(x-left)*PARCHMENT_TILE;
  const toLocalY=y=>(y-top)*PARCHMENT_TILE;
  const riverDrift=randomAt(seed,1,1,'river')*12;
- const lower=Math.floor((left-riverDrift-12)/17)-1;
- const upper=Math.ceil((left+width-riverDrift+12)/17)+1;
+ const lower=Math.floor((left-riverDrift-12)/VISUAL.riverSpacing)-1;
+ const upper=Math.ceil((left+width-riverDrift+12)/VISUAL.riverSpacing)+1;
+ ctx.save();ctx.globalAlpha=VISUAL.riverOpacity;
  for(let river=lower;river<=upper;river++){
-  const center=river*17+riverDrift;
+  const center=river*VISUAL.riverSpacing+riverDrift;
   ctx.beginPath();
   for(let y=top-1,first=true;y<=top+height+1;y+=.16){
-   const x=center+Math.sin(y*.21+river*1.7)*2.15+Math.sin(y*.79+river*.3)*.55;
+   const x=center+Math.sin(y*.21+river*1.7)*2.15*VISUAL.riverCurve+Math.sin(y*.79+river*.3)*.55;
    const px=toLocalX(x),py=toLocalY(y);
    if(first){ctx.moveTo(px,py);first=false;}else ctx.lineTo(px,py);
   }
-  ctx.lineWidth=14;ctx.strokeStyle='#b7a78c';ctx.stroke();
-  ctx.lineWidth=9;ctx.strokeStyle='#849a9e';ctx.stroke();
-  ctx.lineWidth=2;ctx.strokeStyle='#c8d0ba';ctx.stroke();
+  ctx.lineWidth=14*VISUAL.riverWidth;ctx.strokeStyle='#b7a78c';ctx.stroke();
+  ctx.lineWidth=9*VISUAL.riverWidth;ctx.strokeStyle='#849a9e';ctx.stroke();
+  ctx.lineWidth=2*VISUAL.riverWidth;ctx.strokeStyle='#c8d0ba';ctx.stroke();
  }
+ ctx.restore();
  const roadDrift=randomAt(seed,1,1,'road')*8;
- const first=Math.floor((top-roadDrift-8)/12)-1;
- const last=Math.ceil((top+height-roadDrift+8)/12)+1;
+ const first=Math.floor((top-roadDrift-8)/VISUAL.roadSpacing)-1;
+ const last=Math.ceil((top+height-roadDrift+8)/VISUAL.roadSpacing)+1;
+ ctx.save();ctx.globalAlpha=VISUAL.roadOpacity;
  for(let road=first;road<=last;road++){
-  const center=road*12+roadDrift;
+  const center=road*VISUAL.roadSpacing+roadDrift;
   ctx.beginPath();
   for(let x=left-1,firstPoint=true;x<=left+width+1;x+=.16){
-   const y=center+Math.sin(x*.37+road*2.1)*1.25+Math.sin(x*.83+road)*.18;
+   const y=center+Math.sin(x*.37+road*2.1)*1.25*VISUAL.roadCurve+Math.sin(x*.83+road)*.18;
    const px=toLocalX(x),py=toLocalY(y);
    if(firstPoint){ctx.moveTo(px,py);firstPoint=false;}else ctx.lineTo(px,py);
   }
-  ctx.lineWidth=8;ctx.strokeStyle='#b6a17c';ctx.stroke();
-  ctx.lineWidth=2.5;ctx.strokeStyle='#746245';ctx.setLineDash([9,7]);ctx.stroke();ctx.setLineDash([]);
+  ctx.lineWidth=8*VISUAL.roadWidth;ctx.strokeStyle='#b6a17c';ctx.stroke();
+  ctx.lineWidth=2.5*VISUAL.roadWidth;ctx.strokeStyle='#746245';ctx.setLineDash([9,7]);ctx.stroke();ctx.setLineDash([]);
  }
+ ctx.restore();
 }
 function drawTerrainSymbols(ctx,seed,left,top,width,height,repaint){
- const step=3; // Fewer heavy vector pictures: approximately one stamp per 3x3 cells.
+ const step=VISUAL.stampSpacing; // author-approved density, anchored to world coords
  const minX=Math.floor((left-2)/step),maxX=Math.ceil((left+width+2)/step);
  const minY=Math.floor((top-2)/step),maxY=Math.ceil((top+height+2)/step);
  for(let yi=minY;yi<=maxY;yi++)for(let xi=minX;xi<=maxX;xi++){
@@ -208,12 +221,16 @@ function drawTerrainSymbols(ctx,seed,left,top,width,height,repaint){
   const terrain=terrainAt(seed,gx,gy);
   const kind=terrain.kind==='forest'?'forest_clusters':
              terrain.kind==='mountain'?'mountain_clusters':'hills_rocks';
-  if(terrain.kind==='plain'&&randomAt(seed,xi,yi,'skip')>.34)continue;
-  const size=(1.65+randomAt(seed,xi,yi,'scale')*.9)*PARCHMENT_TILE;
+  if(biomeAt(seed,gx,gy)==='marsh')continue;
+  const density=terrain.kind==='forest'?VISUAL.forestDensity:
+   terrain.kind==='mountain'?VISUAL.mountainDensity:
+   terrain.kind==='hill'?VISUAL.hillDensity:VISUAL.plainDensity;
+  if(randomAt(seed,xi,yi,'skip')>Math.min(1,density))continue;
+  const size=VISUAL.stampSize*(.7+randomAt(seed,xi,yi,'scale')*VISUAL.sizeVariation*.5)*PARCHMENT_TILE;
   const x=(gx-left)*PARCHMENT_TILE,y=(gy-top)*PARCHMENT_TILE;
   const path=pickSprite(seed,kind,xi,yi);
   const art=getArt(path,repaint);
-  ctx.save();ctx.globalAlpha=.72;
+  ctx.save();ctx.globalAlpha=VISUAL.stampOpacity;
   if(art)ctx.drawImage(art,x-size/2,y-size/2,size,size);
   else fallbackSymbol(ctx,kind,x,y,size,seed+':'+xi+':'+yi);
   ctx.restore();
@@ -223,14 +240,14 @@ function drawFog(ctx,map,left,top,width,height){
  const fog=document.createElement('canvas');fog.width=Math.round(width*PARCHMENT_TILE);
  fog.height=Math.round(height*PARCHMENT_TILE);
  const f=fog.getContext('2d');if(!f)return;
- f.fillStyle='rgba(41,40,37,.83)';f.fillRect(0,0,fog.width,fog.height);
+ f.fillStyle='rgba(41,40,37,'+VISUAL.fogOpacity+')';f.fillRect(0,0,fog.width,fog.height);
  f.globalCompositeOperation='destination-out';
  const cells=map?.cells||{};
  for(const id of Object.keys(cells)){
   const parts=id.split(','),x=Number(parts[0]),y=Number(parts[1]);
   if(!Number.isFinite(x)||!Number.isFinite(y)||x<left-2||y<top-2||x>left+width+2||y>top+height+2)continue;
   const cx=(x-left+.5)*PARCHMENT_TILE,cy=(y-top+.5)*PARCHMENT_TILE;
-  const radius=PARCHMENT_TILE*1.34;
+  const radius=PARCHMENT_TILE*VISUAL.revealRadius;
   const gradient=f.createRadialGradient(cx,cy,PARCHMENT_TILE*.43,cx,cy,radius);
   gradient.addColorStop(0,'rgba(0,0,0,1)');
   gradient.addColorStop(.68,'rgba(0,0,0,.98)');
