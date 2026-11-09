@@ -172,7 +172,7 @@ class MemoryStorage {
   assert(persistenceSource.includes('hydrateCurrentRosterCopy'), 'saved runs must refresh current static character copy');
   assert(app.includes('async function ensureTravelChoiceReady()'), 'Start Journey must have an explicit Travel runtime readiness gate');
   assert(app.includes('globalThis.RPChessRouteReady'), 'Start Journey must await the asynchronous route bootstrap');
-  assert(app.includes("await import('./travel-choice-app.mjs')"), 'Start Journey must be able to recover Travel Choice independently if the wider route bootstrap fails');
+  assert(/await import\('\.\/travel-choice-app\.mjs(?:\?v=[^']+)?'\)/.test(app), 'Start Journey must be able to recover versioned Travel Choice independently if the wider route bootstrap fails');
   assert(app.includes('travelChoice.open({ detail:'), 'Start Journey must open Travel Choice directly after readiness instead of dispatching a lossy early event');
   assert(!app.includes("setScene('menu');\n  globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open'"), 'Start Journey must never expose the main menu before Travel Choice owns the transition');
   assert(!app.includes("new CustomEvent('rpchess:skirmish-open'"), 'Roster must no longer bypass Travel Choice with direct Skirmish routing');
