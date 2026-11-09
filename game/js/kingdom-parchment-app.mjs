@@ -9,7 +9,7 @@ import {landmarkAt,biomeAt} from './kingdom-world-core.mjs';
 
 const CHUNK_PX=PARCHMENT_TILE*PARCHMENT_CHUNK_CELLS;
 const chunkCache=new Map(),spriteCache=new Map();
-const MAX_CHUNKS=18,MAX_SPRITES=64;
+const MAX_CHUNKS=18,MAX_SPRITES=128; // 112 vector atlas assets can coexist without reload churn.
 let assetProbe=null,assetsReady=null,latest=null,redrawQueued=false;
 let extraManifestRequested=false;
 const extraGroups={marsh:[],landmarks:[]};
