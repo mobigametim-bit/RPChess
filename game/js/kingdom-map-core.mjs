@@ -334,7 +334,7 @@ function revealAround(map,run,power,radius=SCOUT_RADIUS){
   const world=worldAt(map.seed,x,y,{allowSkirmish:hasHealthySkirmishCompanion(run)});
   const entry=world.type?
    {status:'revealed',annexed:isOwned(map,id),explored:false,biome:world.biome,landmark:world.landmark,
-    selectedEncounter:randomEncounter(run,{x,y},power,world)}:
+    selectedEncounter:randomEncounter({...run,kingdomMap:map},{x,y},power,world)}:
    {status:'completed',type:'empty',annexed:isOwned(map,id),explored:false,biome:world.biome,landmark:world.landmark};
   if(!cells)cells={...map.cells};
   cells[id]=entry;
