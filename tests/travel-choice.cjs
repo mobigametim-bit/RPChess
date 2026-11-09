@@ -545,6 +545,23 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert.strictEqual(rehydrated.roster[0].raceTag,'dwarves','legacy commander gets canonical race');
   assert.strictEqual(rehydrated.roster.find(c=>c.id==='hero.roan_stag').raceTag,'beastfolk',
     'legacy recruited hero gets canonical race');
+  // New kingdom settlement is an independent purchased service point; outside construction
+  // must not annex land and must not let a weekly payout be claimed twice.
+  let customMap=mapCore.createKingdomMap({id:'settlement-build-regression'},400,'humans');
+  customMap.cells['20,20']={status:'completed',type:'empty',explored:true,annexed:false};
+  assert(mapCore.canBuildSettlement(customMap,{x:20,y:20}),
+    'explored vacant foreign cell can host a Settlement');
+  const built=mapCore.buildSettlement(customMap,{x:20,y:20},'settlement-regression',
+    {gold:160,shards:30,raceTag:'humans'});
+  assert(built.ok&&!mapCore.isOwned(built.map,{x:20,y:20})&&
+    !mapCore.canBuildSettlement(built.map,{x:20,y:20}),
+    'the constructed Settlement must be permanent and must not annex land');
+  const producing=mapCore.settleWeeklyProduction({...built.map,day:7,processedThroughWeek:0});
+  const claimed=mapCore.collectProduction(producing,'20,20');
+  assert(claimed.ok&&claimed.kind==='gold'&&
+    !mapCore.collectProduction(claimed.map,'20,20').ok,
+    'outside Settlement generates a single collectible weekly payout');
+
   console.log('Kingdom map sprite register: PASS (85 standalone SVGs, 14 races, 6 classes, neutral puzzle)');
   console.log('Travel Choice keeps 6-type ~16.7% pool, owner-keyed RU/EN compact UI and player Threat..Threat+3 encounter contract: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
