@@ -36,7 +36,7 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(key){return this.ma
   assert(!battleAppSource.includes('battle-actionbar')&&!battleAppSource.includes('data-battle-personalized-count'),'Battle owner must not render the obsolete hidden actionbar/counters');
   assert(!redesignSource.includes('syncBattleStart')&&!redesignSource.includes('battleStartHome')&&!redesignSource.includes("insertAdjacentElement('afterend',start)"),'shared redesign runtime must not reparent the Battle Start CTA');
   assert(!mercenarySource.includes('.battle-actionbar')&&!mercenarySource.includes('data-battle-mercenary-action-cost'),'Mercenary presentation must not recreate data for the removed Battle actionbar');
-  assert(mercenarySource.includes('Замена оставленного в резерве здорового героя оплачивается по тарифу наёмника соответствующего типа.'),'Battle prep must explain healthy-reserve replacement pricing');
+  assert(battleAppSource.includes('Замена здорового героя из резерва оплачивается по тарифу наёмника соответствующего типа.'),'Battle prep must state the separately configured reserve replacement tariff');
   const data=await import(pathToFileURL(path.join(game,'js/roster-data.mjs')).href);
   const battle=await import(pathToFileURL(path.join(game,'js/battle-core.mjs')).href);
   const mercenaries=await import(pathToFileURL(path.join(game,'js/battle-mercenaries.mjs')).href);
