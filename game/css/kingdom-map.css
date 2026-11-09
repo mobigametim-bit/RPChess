@@ -523,3 +523,10 @@ body.arena-active .resource-hud{display:none!important}
 /* Parchment fog remains above location art but below the player's king. */
 .kingdom-map-screen .km-parchment-fog{position:absolute;inset:0;z-index:11;width:100%;height:100%;pointer-events:none;user-select:none}
 .kingdom-map-screen .km-route-card--castle .km-route-card__icon{object-fit:contain}
+
+/* Castle's five permanent recruit purchases; the inspector owns its scroll. */
+.km-castle-recruits{display:grid;gap:6px;border-top:1px solid #b592564f;padding-top:11px}
+.km-castle-recruits h4{margin:0 0 2px;color:#f0d39b;font:800 13px/1.2 Inter,Arial,sans-serif}
+.km-castle-recruit{display:flex;align-items:center;justify-content:space-between;gap:8px;font:700 12px/1.2 Inter,Arial,sans-serif;color:#e7dcc9}
+.km-castle-recruit button{padding:7px 10px;border-radius:5px;border:1px solid #af8c4f;background:#594324;color:#fff0c7;font:700 11px Inter,Arial,sans-serif}
+.km-castle-recruit button:disabled{opacity:.45;cursor:not-allowed}
