@@ -229,8 +229,9 @@
       ]
     ],
     "eventRadius": 1,
-    "eventNearbyMax": 3
+    "eventNearbyMax": 3,
+    "settlementProbabilityMultiplier": 1.2
   },
   "reference": "docs/KINGDOM_EXPLORATION_ECONOMY_BIOME_DESIGN.md",
-  "notes": "World R=1/N=3, matrices, economy and gameplay are unchanged from config (4). Visual source: RPChess_Atlas_Parameters_rpchess-kingdom-2026 (5).json. Parchment is the author's tiled assets/kingdom-parchment/parchment_tile_256.webp, not procedural paper."
+  "notes": "World R=1/N=3, matrices, economy and gameplay are unchanged from config (4). Visual source: RPChess_Atlas_Parameters_rpchess-kingdom-2026 (5).json. Parchment is the author's tiled assets/kingdom-parchment/parchment_tile_256.webp, not procedural paper. The playable generator and Atlas Lab apply a relative +20% to the final biome/location-adjusted settlement probability; other types are proportionally rescaled."
 }

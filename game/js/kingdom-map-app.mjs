@@ -16,14 +16,14 @@ import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
 import {PARCHMENT_MODE_KEY} from './kingdom-parchment-core.mjs';
 import {renderParchment} from './kingdom-parchment-app.mjs?v=20261109-atlas-visual5';
-import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261109-kingdom-controls-v9';
+import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261109-kingdom-feedback1';
 import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
  beginEncounter,finishEncounter,matchesCombatReceipt,migrateKingdomMap,territoryCapacity,castleLevel,revealAround,
  collectProduction,canBuildOutpost,buildOutpost,
- romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges} from './kingdom-map-core.mjs?v=20261109-atlas-visual5';
+ romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges} from './kingdom-map-core.mjs?v=20261109-kingdom-feedback1';
 
 const COPY={
  ru:{classicMap:'Классика',parchmentMap:'Пергамент',switchMap:'Оформление карты',day:'День',shards:'Осколки чести',castle:'Замок',supply:'Припасы',power:'Мощь',points:'Очки присоединения',
@@ -333,7 +333,7 @@ function report(text){const node=screen?.querySelector('[data-kingdom-toast]');i
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261109-atlas-lab-v7';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261109-kingdom-feedback1';link.dataset.kingdomStyle='';
  link.addEventListener('load',()=>{if(screen&&!screen.hidden)render();});
  document.head.append(link);
 }

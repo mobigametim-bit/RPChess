@@ -3,7 +3,7 @@
  * No engine combat outcome, run calendar or resource transaction belongs here.
  */
 import {terrainAt} from './kingdom-parchment-core.mjs';
-import {VISUAL,BIOMES,RACE_TAGS_ORDER,ENCOUNTER_TYPES,DENSITY,DENSITY_MULTIPLIER,ENCOUNTER_MIN_SPACING,EVENT_NEARBY_MAX,WORLD_SETTINGS,TYPE_WEIGHTS,RACE_WEIGHTS} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
+import {VISUAL,BIOMES,RACE_TAGS_ORDER,ENCOUNTER_TYPES,DENSITY,DENSITY_MULTIPLIER,ENCOUNTER_MIN_SPACING,EVENT_NEARBY_MAX,WORLD_SETTINGS,SETTLEMENT_PROBABILITY_MULTIPLIER,TYPE_WEIGHTS,RACE_WEIGHTS} from './kingdom-world-config.mjs?v=20261109-kingdom-feedback1';
 
 const LANDMARKS=Object.freeze('01_broken_wall 02_stone_circle 03_three_menhirs 04_watchtower 05_abandoned_hut 06_wood_bridge 07_stone_bridge 08_burial_mound 09_dead_tree 10_ruin_arch 11_fallen_column 12_wayside_shrine 13_obelisk 14_pond 15_notable_grove 16_ruined_gate'.split(' '));
 const MODIFIERS=Object.freeze({
@@ -111,6 +111,15 @@ function applyWeights(base,modifiers,labels){
  }
  return normalized(out);
 }
+// Increase the final settlement probability by 20% after all biome and location
+// modifiers, rescaling the other five types proportionally to keep sum = 1.
+function boostSettlementProbability(weights,multiplier=SETTLEMENT_PROBABILITY_MULTIPLIER){
+ const idx=ENCOUNTER_TYPES.indexOf('settlement'),previous=weights[idx];
+ if(idx<0||previous<=0||previous>=1||multiplier===1)return [...weights];
+ const target=Math.min(1,Math.max(0,previous*multiplier));
+ const otherScale=(1-target)/(1-previous);
+ return weights.map((weight,i)=>i===idx?target:weight*otherScale);
+}
 function encounterCandidate(seed,x,y,{densityMultiplier=DENSITY_MULTIPLIER,biomeDensity=DENSITY}={}){
  if(x===0&&y===0)return false; // starting castle never becomes an event
  const index=BIOMES.indexOf(biomeAt(seed,x,y));
@@ -169,6 +178,7 @@ function encounterPresent(seed,x,y,{spacing=ENCOUNTER_MIN_SPACING,
 function worldAt(seed,x,y,{allowSkirmish=true,spacing=ENCOUNTER_MIN_SPACING,
  eventNearbyMax=EVENT_NEARBY_MAX,densityMultiplier=DENSITY_MULTIPLIER,biomeDensity=DENSITY,
  typeWeights=TYPE_WEIGHTS,raceWeights=RACE_WEIGHTS,
+ settlementProbabilityMultiplier=SETTLEMENT_PROBABILITY_MULTIPLIER,
  biomeInfluence=WORLD_SETTINGS.biomeInfluence,
  landmarkInfluence=WORLD_SETTINGS.landmarkInfluence,roadInfluence=WORLD_SETTINGS.roadInfluence,
  landmarks=WORLD_SETTINGS.landmarks,roads=WORLD_SETTINGS.roads}={}){
@@ -179,12 +189,12 @@ function worldAt(seed,x,y,{allowSkirmish=true,spacing=ENCOUNTER_MIN_SPACING,
   return {biome,landmark,paths,type:null,raceTag:null};
  const idx=BIOMES.indexOf(biome),site=MODIFIERS[landmark]||null;
  const biomeMods=BIOME_MOD[biome];
- const weightedTypes=applyWeights(typeWeights[idx],[
+ const weightedTypes=boostSettlementProbability(applyWeights(typeWeights[idx],[
   scaledWeights(biomeMods[0],biomeInfluence),
   scaledWeights(site?.t,landmarks?landmarkInfluence:0),
   scaledWeights(paths.road?{caravan:1.5,settlement:1.25}:null,roadInfluence),
   scaledWeights(paths.river?{event:1.15,settlement:1.1}:null,roadInfluence)
- ],ENCOUNTER_TYPES);
+ ],ENCOUNTER_TYPES),settlementProbabilityMultiplier);
  const type=ENCOUNTER_TYPES[weightedIndex(weightedTypes,atlasRandom(seed,x,y,'type'))];
  // Gameplay may defer inaccessible Skirmishes; the *world layout* never
  // resamples them, preserving parity with Atlas.
@@ -201,4 +211,4 @@ function worldAt(seed,x,y,{allowSkirmish=true,spacing=ENCOUNTER_MIN_SPACING,
   raceTag:RACE_TAGS_ORDER[weightedIndex(races,atlasRandom(seed,x,y,'race'))]};
 }
 export {LANDMARKS,MODIFIERS,biomeAt,landmarkAt,naturalPathAt,
- pickWeighted,atlasRandom,encounterCandidate,encounterPresent,worldAt};
+ pickWeighted,boostSettlementProbability,atlasRandom,encounterCandidate,encounterPresent,worldAt};

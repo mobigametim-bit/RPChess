@@ -435,6 +435,7 @@ async function assertTileImage(page,cellId,relativePath){
       const story=document.querySelector('[data-kingdom-cell="1,0"] .km-flavor-flyout');
       if(story?.textContent?.trim()&&!snap.story){
         snap.story=story.textContent.trim();
+        snap.storyFontPx=Number.parseFloat(getComputedStyle(story).fontSize);
         snap.arrival={castle:center('[data-kingdom-cell="0,0"]'),
           east:center('[data-kingdom-cell="1,0"]'),king:center('.km-king')};
         snap.activeAtStory=JSON.parse(localStorage.getItem('rpchess.reboot.v1.run')||'null')?.activeTravelChoice||null;
@@ -516,6 +517,8 @@ async function assertTileImage(page,cellId,relativePath){
   await page.waitForFunction(()=>Boolean(window.__kingMotion?.story),{timeout:8000});
   const captured=await page.evaluate(()=>window.__kingMotion);
   assert(captured.story.length>0,'the original route narrative flies out of the entered tile');
+   assert(Math.abs(captured.storyFontPx-2*Math.max(13,Math.min(17,1366*.012)))<1,
+     'pre-encounter narrative font must be twice as large');
   const afterCenters=captured.arrival;
   const near=(p,q)=>Math.hypot(p.x-q.x,p.y-q.y)<4;
   assert(near(afterCenters.castle,beforeCenters.castle),
@@ -936,7 +939,7 @@ async function assertTileImage(page,cellId,relativePath){
   // Compare the real game generator against Atlas Lab's LIVE worldAt() on
   // the same seed and coordinates, rather than testing two hardcoded fixtures.
   const atlasGameParity=await labPage.evaluate(async()=>{
-   const game=await import('./js/kingdom-world-core.mjs?v=20261109-atlas-visual5');
+   const game=await import('./js/kingdom-world-core.mjs?v=20261109-kingdom-feedback1');
    const atlas=window.RPChessAtlasSimulation;
    const cfg=atlas.exportConfig(),biomes=['forest','mountain','hills','plains','marsh','wasteland'];
    const bad=[];

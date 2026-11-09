@@ -38,7 +38,8 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows}){
   ctx.moveTo(x+TILE*.71,y);ctx.arc(x,y,TILE*.71,0,Math.PI*2);
  }
  ctx.clip();
- // Strategy-map treatment: one continuous blue tint across all owned cells,
+ // Strategy-map treatment: all six ownership glow alphas are reduced by 30%.
+ // One continuous blue tint across all owned cells,
  // bright edge bloom and fine light dashes like painted province borders.
  // All operations remain inside scouted territory's clip.
  ctx.save();ctx.beginPath();
@@ -46,7 +47,7 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows}){
   const p=parseTile(id);if(!p)continue;
   ctx.rect((p.x-left)*TILE,(p.y-top)*TILE,TILE,TILE);
  }
- ctx.fillStyle='rgba(35,118,222,.25)';ctx.fill();
+ ctx.fillStyle='rgba(35,118,222,.175)';ctx.fill();
  ctx.restore();
  ctx.save();
  let glowCount=0;
@@ -55,8 +56,8 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows}){
   const x=(p.x-left+.5)*TILE,y=(p.y-top+.5)*TILE;
   if(x<-TILE||y<-TILE||x>width+TILE||y>height+TILE)continue;
   const glow=ctx.createRadialGradient(x,y,TILE*.08,x,y,TILE*.76);
-  glow.addColorStop(0,'rgba(49,151,255,.29)');
-  glow.addColorStop(.56,'rgba(40,133,238,.16)');
+  glow.addColorStop(0,'rgba(49,151,255,.203)');
+  glow.addColorStop(.56,'rgba(40,133,238,.112)');
   glow.addColorStop(1,'rgba(58,134,218,0)');
   ctx.fillStyle=glow;ctx.fillRect(x-TILE*.78,y-TILE*.78,TILE*1.56,TILE*1.56);
   glowCount++;
@@ -108,11 +109,11 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows}){
    // Saturated blue outer province stroke + luminous white/blue inner dashes.
    ctx.setLineDash([]);
    ctx.strokeStyle='rgba(19,58,119,.96)';ctx.lineWidth=10;
-   ctx.shadowColor='rgba(28,115,249,.94)';ctx.shadowBlur=19;ctx.stroke();
+   ctx.shadowColor='rgba(28,115,249,.658)';ctx.shadowBlur=19;ctx.stroke();
    ctx.shadowBlur=0;
-   ctx.strokeStyle='rgba(37,139,254,.97)';ctx.lineWidth=6;ctx.stroke();
+   ctx.strokeStyle='rgba(37,139,254,.679)';ctx.lineWidth=6;ctx.stroke();
    ctx.setLineDash([10,6]);ctx.lineDashOffset=0;
-   ctx.strokeStyle='rgba(201,234,255,.96)';ctx.lineWidth=2.1;ctx.stroke();
+   ctx.strokeStyle='rgba(201,234,255,.672)';ctx.lineWidth=2.1;ctx.stroke();
    ctx.setLineDash([]);
 
    borderCount++;

@@ -19,6 +19,11 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(buildSource.includes("'css/travel-choice-compact.css'"),'production build must package the Travel owner stylesheet');
   assert(fs.existsSync(path.join(game,'assets/kingdom-parchment/parchment_tile_256.webp')),
     'optimized user-provided parchment tile is a real packaged asset');
+  const overlaySource=fs.readFileSync(path.join(game,'js/kingdom-map-overlay.mjs'),'utf8');
+  for(const alpha of ['rgba(35,118,222,.175)','rgba(49,151,255,.203)',
+    'rgba(40,133,238,.112)','rgba(28,115,249,.658)',
+    'rgba(37,139,254,.679)','rgba(201,234,255,.672)'])
+    assert(overlaySource.includes(alpha),'ownership glow should be 30% dimmer: '+alpha);
   const parchmentSource=fs.readFileSync(path.join(game,'js/kingdom-parchment-app.mjs'),'utf8');
   assert(parchmentSource.includes("const PAPER_TILE_SRC='assets/kingdom-parchment/parchment_tile_256.webp'"),
     'author WebP tiles remain the parchment ground, not procedural paper');
@@ -89,6 +94,15 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert.strictEqual(worldConfig.VISUAL.fogIrregularity,0.3);
   assert.strictEqual(worldConfig.ATLAS_VIEW.seed,'rpchess-kingdom-2026');
   assert.strictEqual(worldConfig.ATLAS_VIEW.zoom,117);
+  assert.strictEqual(worldConfig.SETTLEMENT_PROBABILITY_MULTIPLIER,1.2);
+  const startingChances=[.12,.22,.11,.10,.28,.17];
+  const raised=world.boostSettlementProbability(startingChances);
+  assert(Math.abs(raised[3]-.12)<1e-12,'10% settlements should become 12%');
+  assert(Math.abs(raised.reduce((a,b)=>a+b,0)-1)<1e-12,'chance sum must remain 1');
+  assert(raised.every((v,i)=>i===3||Math.abs(v/startingChances[i]-(.88/.90))<1e-12),
+    'five other event types must retain relative proportions');
+  assert(Math.abs(world.boostSettlementProbability([.27,.23,.07,.06,.17,.20])[3]-.072)<1e-12,
+    'the +20% bonus applies to each biome independently');
   for(const row of [...worldConfig.TYPE_WEIGHTS,...worldConfig.RACE_WEIGHTS])
     assert.strictEqual(row.reduce((sum,n)=>sum+n,0),100,
       'each approved biome encounter/race distribution adds up to 100 percent');

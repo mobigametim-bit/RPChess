@@ -210,11 +210,11 @@ body.kingdom-map-active{overflow:hidden}
 }
 .km-cell--story{z-index:auto}
 .km-flavor-flyout{
- position:absolute;left:50%;bottom:78%;z-index:45;width:clamp(240px,26vw,390px);
+ position:absolute;left:50%;bottom:78%;z-index:45;width:clamp(320px,52vw,780px);max-width:calc(100vw - 30px);
  padding:12px 15px;pointer-events:none;white-space:normal;text-align:center;
  border:1px solid #eac579;border-radius:6px;
  background:linear-gradient(160deg,#211b15f5,#0e1118f5);color:#fff0c8;
- font:500 clamp(13px,1.2vw,17px)/1.36 Inter,Arial,sans-serif;
+ font:500 clamp(26px,2.4vw,34px)/1.36 Inter,Arial,sans-serif;
  text-shadow:0 2px 3px #000a;box-shadow:0 9px 28px #000c;
  transform:translate(-50%,15px) scale(.9);opacity:0;
  animation:km-flavor-rise 2600ms ease-out both
