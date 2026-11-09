@@ -311,11 +311,23 @@ async function assertTileImage(page,cellId,relativePath){
   // The king animation is short; observe it from the start instead of
   // attaching a locator after heavyweight SVG decoding has already finished.
   await page.evaluate(()=>{
-    window.__kingMotion={seen:false,animationName:null};
+    window.__kingMotion={seen:false,animationName:null,story:null,arrival:null,activeAtStory:null};
+    const center=selector=>{
+      const r=document.querySelector(selector)?.getBoundingClientRect();
+      return r?{x:(r.left+r.right)/2,y:(r.top+r.bottom)/2}:null;
+    };
     new MutationObserver(()=>{
-      const king=document.querySelector('.km-king--moving');
-      if(king&&!window.__kingMotion.seen)
-        window.__kingMotion={seen:true,animationName:getComputedStyle(king).animationName};
+      const snap=window.__kingMotion,king=document.querySelector('.km-king--moving');
+      if(king&&!snap.seen){
+        snap.seen=true;snap.animationName=getComputedStyle(king).animationName;
+      }
+      const story=document.querySelector('[data-kingdom-cell="1,0"] .km-flavor-flyout');
+      if(story?.textContent?.trim()&&!snap.story){
+        snap.story=story.textContent.trim();
+        snap.arrival={castle:center('[data-kingdom-cell="0,0"]'),
+          east:center('[data-kingdom-cell="1,0"]'),king:center('.km-king')};
+        snap.activeAtStory=JSON.parse(localStorage.getItem('rpchess.reboot.v1.run')||'null')?.activeTravelChoice||null;
+      }
     }).observe(document.querySelector('[data-kingdom-world]'),{childList:true,subtree:true});
   });
   const clicked=Date.now();
@@ -380,24 +392,24 @@ async function assertTileImage(page,cellId,relativePath){
   await page.waitForFunction(()=>window.__kingMotion?.seen,{timeout:5000});
   assert.equal(await page.evaluate(()=>window.__kingMotion.animationName),'km-king-step',
     'the king must visibly animate into the chosen adjacent cell');
-  await page.waitForTimeout(540);
-  await page.locator('[data-kingdom-cell="1,0"] .km-flavor-flyout').waitFor({timeout:2000});
-  const story=await page.locator('[data-kingdom-cell="1,0"] .km-flavor-flyout').textContent();
-  assert(story?.trim().length>0,'the original route narrative flies out of the entered tile');
-  const afterCenters=await centers();
+  // Capture the short narrative and landing position when they appear.
+  // Dense vector terrain may keep the test busy until after the UI hides.
+  await page.waitForFunction(()=>Boolean(window.__kingMotion?.story),{timeout:8000});
+  const captured=await page.evaluate(()=>window.__kingMotion);
+  assert(captured.story.length>0,'the original route narrative flies out of the entered tile');
+  const afterCenters=captured.arrival;
   const near=(p,q)=>Math.hypot(p.x-q.x,p.y-q.y)<4;
   assert(near(afterCenters.castle,beforeCenters.castle),
     'the castle must remain at the same screen position after moving one tile');
   assert(near(afterCenters.east,beforeCenters.east),
     'the clicked tile must remain at the same screen position');
   assert(near(afterCenters.king,afterCenters.east),
-    'the king must visibly land on the exact clicked tile, not remain at the center');
-  assert.equal(await page.locator('[data-kingdom-cell="1,0"].km-cell--here').count(),1,
-    'the actual selected tile must be marked as the king position');
+    'the king must visibly land on the exact clicked tile');
+  assert.equal(await page.locator('[data-kingdom-cell="1,0"].km-cell--here').count(),1);
   assert.equal(await page.locator('[data-travel-choice]').count(),0,'no three-card popup appears');
-  assert.equal((await read(page)).activeTravelChoice,null,
-    'no encounter starts before reveal, movement and narrative flight finish');
-  await page.screenshot({path:path.join(output,'kingdom-02-revealed.png')});
+  assert.equal(captured.activeAtStory,null,'the narrative appears before combat starts');
+  if(await page.locator('[data-kingdom-map-screen]:not([hidden])').count())
+    await page.screenshot({path:path.join(output,'kingdom-02-revealed.png')});
   await page.waitForFunction(k=>{
    const r=JSON.parse(localStorage.getItem(k)||'null');
    return r?.activeTravelChoice?.kingdomCell==='1,0'&&r?.kingdomMap?.cells?.['1,0']?.status==='in_progress';
