@@ -38,8 +38,8 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows}){
   ctx.moveTo(x+TILE*.71,y);ctx.arc(x,y,TILE*.71,0,Math.PI*2);
  }
  ctx.clip();
- // Only blue territory fill and ground glow become 30% dimmer again.
- // Province border highlights and their crisp luminous halo are restored.
+ // Only the flat blue territory tint becomes 30% dimmer again.
+ // Radial halos and luminous province-border strokes keep original definition.
  // One continuous blue tint across all owned cells,
  // bright edge bloom and fine light dashes like painted province borders.
  // All operations remain inside scouted territory's clip.
@@ -57,8 +57,8 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows}){
   const x=(p.x-left+.5)*TILE,y=(p.y-top+.5)*TILE;
   if(x<-TILE||y<-TILE||x>width+TILE||y>height+TILE)continue;
   const glow=ctx.createRadialGradient(x,y,TILE*.08,x,y,TILE*.76);
-  glow.addColorStop(0,'rgba(49,151,255,.1421)');
-  glow.addColorStop(.56,'rgba(40,133,238,.0784)');
+  glow.addColorStop(0,'rgba(49,151,255,.29)');
+  glow.addColorStop(.56,'rgba(40,133,238,.16)');
   glow.addColorStop(1,'rgba(58,134,218,0)');
   ctx.fillStyle=glow;ctx.fillRect(x-TILE*.78,y-TILE*.78,TILE*1.56,TILE*1.56);
   glowCount++;
