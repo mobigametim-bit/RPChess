@@ -508,7 +508,7 @@ function render(){
     group.setAttribute('role','status');
     resourceBurst.changes.forEach((change,index)=>{
      const burst=document.createElement('span');burst.className='km-resource-burst';
-     burst.style.setProperty('--km-fx-index',index);
+     burst.style.setProperty('--km-fx-delay',(index*.17)+'s');
      const icon=document.createElement('img');icon.src=change.icon;icon.alt='';
      const label=document.createElement('strong');
      label.textContent=(change.delta>0?'+':'')+change.delta;

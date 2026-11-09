@@ -421,7 +421,7 @@ body.kingdom-map-active .resource-hud{display:none!important}
  background:rgba(10,14,12,.86);box-shadow:0 3px 10px #0009;
  color:#f9dc91;font:800 17px/1.1 Inter,Arial,sans-serif;
  animation:km-resource-flight 1.8s ease-out both;
- animation-delay:calc(var(--km-fx-index,0)*.17s)
+ animation-delay:var(--km-fx-delay,0s)
 }
 .kingdom-map-screen .km-resource-burst img{width:21px;height:21px;object-fit:contain}
 @keyframes km-resource-flight{
