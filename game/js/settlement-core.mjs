@@ -1,26 +1,13 @@
+import {DEFAULT_KINGDOM_ECONOMY as K} from './kingdom-economy-config.mjs';
 import { PIECE_VALUES } from './roster-data.mjs';
 import { seededRandom } from './travel-choice-core.mjs';
 import { applyArtifactPurchase, deterministicArtifactOffer, isArtifactOffer } from './artifact-core.mjs';
 
 const SETTLEMENT_OFFER_COUNT = 3;
-const SETTLEMENT_SUPPLY_PRICE = 12;
-const SETTLEMENT_SUPPLY_STOCK = 4;
-
-const HEAL_COSTS = Object.freeze({
-  pawn: 10,
-  knight: 18,
-  bishop: 18,
-  rook: 26,
-  queen: 42
-});
-
-const RECRUIT_COSTS = Object.freeze({
-  pawn: 50,
-  knight: 88,
-  bishop: 88,
-  rook: 134,
-  queen: 202
-});
+const SETTLEMENT_SUPPLY_PRICE=K.settlementServices.supplyUnitGold;
+const SETTLEMENT_SUPPLY_STOCK=K.settlementServices.supplyStock;
+const HEAL_COSTS=Object.freeze({...K.settlementServices.healing});
+const RECRUIT_COSTS=Object.freeze({pawn:50,knight:88,bishop:88,rook:134,queen:202});
 
 const ORIGINS = Object.freeze({
   iron_marches: 'Железные Марши',
@@ -145,7 +132,7 @@ function healCost(character) {
 }
 
 function recruitCost(candidate) {
-  return RECRUIT_COSTS[candidate?.pieceType] ?? null;
+  return K.settlementServices.namedHeroPrices[candidate?.id] ?? RECRUIT_COSTS[candidate?.pieceType] ?? null;
 }
 
 function applyHealing(run, characterId) {
