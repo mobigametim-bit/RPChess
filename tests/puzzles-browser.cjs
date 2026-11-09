@@ -214,5 +214,48 @@ async function clickMove(page,from,to,promotion=null){
       `Puzzle objective must fit at ${size.width}×${size.height}: ${JSON.stringify(result)}`);
   }
 
-  assert.deepStrictEqual(errors,[]);assert.deepStrictEqual(resumeErrors,[]);assert.deepStrictEqual(mobileErrors,[]);console.log('Puzzles identity flow, catalog-derived move acceptance, accepted hidden source attribution, canonical wrong-move/resume state, removed obsolete Roster shortcut, compact hidden status, no-repeat history, reward/idempotency, reload resume and landscape-mobile one-screen acceptance: PASS');
+  // Regression for a real CC0 Puzzle ending in f7f8q. The final move is
+  // promoted while drag and native click can both dispatch the target square.
+  const promotionPage=await browser.newPage({viewport:{width:1280,height:720},reducedMotion:'reduce'});
+  const promotionErrors=[];promotionPage.on('pageerror',e=>promotionErrors.push(String(e.stack||e)));
+  await fresh(promotionPage,'puzzles-browser-promotion');
+  const queenRoute={...mate1Route,id:'manual.puzzle.promotion',seed:'manual-promotion',stars:1};
+  const queenState=await promotionPage.evaluate(async route=>{
+    const [{loadPuzzleStar},{ClassicChessEngine},{createPuzzleState}]=await Promise.all([
+      import('./js/puzzles/puzzle-catalog-loader.mjs'),
+      import('./js/classic-chess-engine.mjs'),
+      import('./js/puzzles/puzzle-core.mjs')
+    ]);
+    const puzzle=(await loadPuzzleStar(1)).find(item=>item.id==='puzzle.07A4W');
+    if(!puzzle||puzzle.solution.at(-1)!=='f7f8q')
+      throw new Error('Confirmed CC0 promotion Puzzle fixture not found');
+    const engine=new ClassicChessEngine(puzzle.fen);
+    for(const uci of puzzle.solution.slice(0,-1)){
+      const moved=engine.move(uci.slice(0,2),uci.slice(2,4),uci.slice(4)||null);
+      if(!moved.ok)throw new Error('Illegal forced Puzzle move: '+uci);
+    }
+    return {...createPuzzleState({puzzle,routeId:route.id,stars:1,week:1}),
+      solutionIndex:puzzle.solution.length-1,currentFen:engine.fen()};
+  },queenRoute);
+  await seedPuzzleRoute(promotionPage,queenRoute,queenState);
+  await promotionPage.locator('[data-roster-travel]').click();
+  await promotionPage.locator('[data-puzzle-screen]:not([hidden])').waitFor();
+  await promotionPage.locator('[data-puzzle-board] [data-square="f7"]').click();
+  const targetQueen=promotionPage.locator('[data-puzzle-board] [data-square="f8"]');
+  await targetQueen.evaluate(node=>{node.click();node.click();});
+  const promotionPanel=promotionPage.locator('[data-puzzle-promotion]:not([hidden])');
+  await promotionPanel.waitFor();
+  assert.equal(await promotionPanel.getByRole('button',{name:'Ферзь'}).count(),1,
+    'duplicate click opens only one actionable queen choice');
+  await promotionPanel.getByRole('button',{name:'Ферзь'}).click();
+  await promotionPage.waitForFunction(key=>{
+    const r=JSON.parse(localStorage.getItem(key));
+    return r?.currentPuzzle?.resolved===true&&r.currentPuzzle.result==='solved';
+  },RUN_KEY,{timeout:12000});
+  assert.equal(await promotionPage.locator('[data-puzzle-promotion]:not([hidden])').count(),0,
+    'one queen click closes promotion overlay after completing the task');
+  assert.deepStrictEqual(promotionErrors,[]);
+  await promotionPage.close();
+
+    assert.deepStrictEqual(errors,[]);assert.deepStrictEqual(resumeErrors,[]);assert.deepStrictEqual(mobileErrors,[]);console.log('Puzzles identity flow, catalog-derived move acceptance, accepted hidden source attribution, canonical wrong-move/resume state, removed obsolete Roster shortcut, compact hidden status, no-repeat history, reward/idempotency, reload resume and landscape-mobile one-screen acceptance: PASS');
 }finally{await browser.close();}})().catch(e=>{console.error(e.stack||e);process.exitCode=1});
