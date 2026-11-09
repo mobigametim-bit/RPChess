@@ -1,9 +1,9 @@
 {
   "format": "rpchess.atlas-lab.kingdom-simulator.v1",
-  "generator": "Atlas Lab v6 / draft probabilities; not yet live RPChess mechanics",
-  "savedAt": "2026-11-09T11:23:56.603Z",
+  "generator": "Atlas Lab v6 / config (4), accepted for Kingdom WORLD generation; economy balance stays prototype",
+  "savedAt": "2026-11-09T19:30:36.333Z",
   "visual": {
-    "seed": "realm-xce3j9bv",
+    "seed": "rpchess-kingdom-2026",
     "centerX": 1.1397535385320217,
     "centerY": 0.8734816261574075,
     "zoom": 87,
@@ -41,11 +41,11 @@
     "landmarkSize": 0.75,
     "landmarkOpacity": 0.92,
     "fogOpacity": 0.88,
-    "fogRadius": 1.3,
+    "fogRadius": 0.85,
     "fogInner": 0.2,
     "fogInkOpacity": 0.28,
     "fogIrregularity": 0.58,
-    "revealRadius": 0.8,
+    "revealRadius": 0.6,
     "showFog": true,
     "showObjects": true,
     "showGrid": true,
@@ -59,7 +59,7 @@
     "showRivers": true
   },
   "simulation": {
-    "densityMultiplier": 0.8,
+    "densityMultiplier": 1.2,
     "scout": 2,
     "biomeInfluence": 1,
     "landmarkInfluence": 1,
@@ -227,7 +227,9 @@
         1,
         7
       ]
-    ]
+    ],
+    "eventRadius": 1,
+    "eventNearbyMax": 3
   },
   "reference": "docs/KINGDOM_EXPLORATION_ECONOMY_BIOME_DESIGN.md",
   "notes": "Вероятности и размеры наград являются тестовыми предложениями; пользовательское решение отдельно подтверждает баланс."
