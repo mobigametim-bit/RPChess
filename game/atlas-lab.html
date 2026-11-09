@@ -798,10 +798,12 @@ function drawSim(){
   const prev={P,LEFT,TOP,VW,VH,DPR,CTX};P=simCell;LEFT=simLeft;TOP=simTop;VW=simW;VH=simH;DPR=simDpr;CTX=ctx;
   try{drawBackdrop(ctx);drawParchmentPatches(ctx);drawWaterRoads(ctx);drawNature(ctx);drawOptionalNature(ctx);}finally{P=prev.P;LEFT=prev.LEFT;TOP=prev.TOP;VW=prev.VW;VH=prev.VH;DPR=prev.DPR;CTX=prev.CTX;}
   const minX=Math.floor(simLeft)-1,maxX=Math.ceil(simLeft+simW/simCell)+1,minY=Math.floor(simTop)-1,maxY=Math.ceil(simTop+simH/simCell)+1;
-   if(showFog&&!previewMode){const off=document.createElement('canvas');off.width=Math.ceil(simW);off.height=Math.ceil(simH);const fc=off.getContext('2d');fc.fillStyle='rgba(33,40,38,'+S.fogOpacity+')';fc.fillRect(0,0,simW,simH);fc.globalCompositeOperation='destination-out';
+   if(showFog&&!previewMode){const off=document.createElement('canvas');off.width=Math.ceil(simW);off.height=Math.ceil(simH);const fc=off.getContext('2d');fc.fillStyle='rgba(41,40,37,'+S.fogOpacity+')';fc.fillRect(0,0,simW,simH);fc.globalCompositeOperation='destination-out';
     for(const k of run.visited){const [x,y]=k.split(',').map(Number);if(x<minX-2||x>maxX+2||y<minY-2||y>maxY+2)continue;
-      const cx=worldPixelX(x+.5),cy=worldPixelY(y+.5),rad=simCell*clamp(S.fogRadius,1.15,2.8);const grad=fc.createRadialGradient(cx,cy,simCell*.28,cx,cy,rad);
-      grad.addColorStop(0,'#000');grad.addColorStop(.62,'#000');grad.addColorStop(1,'#0000');fc.fillStyle=grad;fc.fillRect(cx-rad,cy-rad,2*rad,2*rad);
+      const cx=worldPixelX(x+.5),cy=worldPixelY(y+.5),rad=simCell*S.fogRadius;
+      const grad=fc.createRadialGradient(cx,cy,Math.min(rad*.9,simCell*S.fogInner),cx,cy,rad);
+      grad.addColorStop(0,'rgba(0,0,0,1)');grad.addColorStop(.68,'rgba(0,0,0,.98)');
+      grad.addColorStop(1,'rgba(0,0,0,0)');fc.fillStyle=grad;fc.fillRect(cx-rad,cy-rad,2*rad,2*rad);
     }fc.globalCompositeOperation='source-over';ctx.drawImage(off,0,0);
   }
   // Ownership borders are independent from the classic canvas borders preview.
