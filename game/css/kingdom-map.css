@@ -499,3 +499,19 @@ body.kingdom-map-active .resource-hud{display:none!important}
  border-color:#6ba5c9;background:linear-gradient(#315778,#1c344c)
 }
 .kingdom-map-screen [data-kingdom-earn-shards]:hover{filter:brightness(1.16)}
+
+/* Map operation: click selects, king handle drags for movement, ground drags
+   for scrolling. No hover filter or per-tile z-index context may cover roads. */
+.kingdom-map-screen .km-map-frame{cursor:grab;touch-action:none}
+.kingdom-map-screen .km-map-frame.km-is-panning{cursor:grabbing}
+.kingdom-map-screen .km-king-drag-handle{
+ position:absolute;z-index:29;width:var(--km-king-px,92px);
+ height:var(--km-king-px,92px);border:0;background:transparent;
+ border-radius:50%;cursor:grab;touch-action:none;pointer-events:auto;
+ transform:translate(-50%,-50%)
+}
+.kingdom-map-screen .km-king-drag-handle.is-dragging{cursor:grabbing}
+.kingdom-map-screen .km-king-drag-handle:focus-visible{
+ outline:2px solid #88d4ff;outline-offset:3px
+}
+body.arena-active .resource-hud{display:none!important}

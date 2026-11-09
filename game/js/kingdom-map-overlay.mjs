@@ -38,7 +38,16 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows}){
   ctx.moveTo(x+TILE*.71,y);ctx.arc(x,y,TILE*.71,0,Math.PI*2);
  }
  ctx.clip();
- // Blue owned-land glow is fully masked by the previously scouted fog region.
+ // Strategy-map treatment: one continuous blue tint across all owned cells,
+ // bright edge bloom and fine light dashes like painted province borders.
+ // All operations remain inside scouted territory's clip.
+ ctx.save();ctx.beginPath();
+ for(const id of owned){
+  const p=parseTile(id);if(!p)continue;
+  ctx.rect((p.x-left)*TILE,(p.y-top)*TILE,TILE,TILE);
+ }
+ ctx.fillStyle='rgba(35,118,222,.25)';ctx.fill();
+ ctx.restore();
  ctx.save();
  let glowCount=0;
  for(const id of owned){
@@ -46,8 +55,8 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows}){
   const x=(p.x-left+.5)*TILE,y=(p.y-top+.5)*TILE;
   if(x<-TILE||y<-TILE||x>width+TILE||y>height+TILE)continue;
   const glow=ctx.createRadialGradient(x,y,TILE*.08,x,y,TILE*.76);
-  glow.addColorStop(0,'rgba(70,157,240,.18)');
-  glow.addColorStop(.57,'rgba(67,149,238,.12)');
+  glow.addColorStop(0,'rgba(49,151,255,.29)');
+  glow.addColorStop(.56,'rgba(40,133,238,.16)');
   glow.addColorStop(1,'rgba(58,134,218,0)');
   ctx.fillStyle=glow;ctx.fillRect(x-TILE*.78,y-TILE*.78,TILE*1.56,TILE*1.56);
   glowCount++;
@@ -96,12 +105,15 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows}){
       x1+(x2-x1)*.72-nx*amplitude*.62,
       y1+(y2-y1)*.72-ny*amplitude*.62,x2,y2);
    ctx.lineCap='round';ctx.lineJoin='round';
-   // Thin blue dashed line, like the original territorial border, with only
-   // a subtle organic ripple instead of a thick solid gold stroke.
-   ctx.setLineDash([10,7]);ctx.lineDashOffset=-((Math.abs(p.x)+Math.abs(p.y))%3)*5;
-   ctx.strokeStyle='rgba(65,139,197,.94)';ctx.lineWidth=2.7;
-   ctx.shadowColor='rgba(16,61,111,.4)';ctx.shadowBlur=2.5;ctx.stroke();
-   ctx.shadowBlur=0;ctx.setLineDash([]);
+   // Saturated blue outer province stroke + luminous white/blue inner dashes.
+   ctx.setLineDash([]);
+   ctx.strokeStyle='rgba(19,58,119,.96)';ctx.lineWidth=10;
+   ctx.shadowColor='rgba(28,115,249,.94)';ctx.shadowBlur=19;ctx.stroke();
+   ctx.shadowBlur=0;
+   ctx.strokeStyle='rgba(37,139,254,.97)';ctx.lineWidth=6;ctx.stroke();
+   ctx.setLineDash([10,6]);ctx.lineDashOffset=0;
+   ctx.strokeStyle='rgba(201,234,255,.96)';ctx.lineWidth=2.1;ctx.stroke();
+   ctx.setLineDash([]);
 
    borderCount++;
   }
