@@ -2,7 +2,7 @@
 import {readRun,writeRun} from './run-persistence.mjs';
 import {readPlayerRating} from './player-rating.mjs';
 import {commanderPieceArt,commanderById} from './commander-portraits.mjs';
-import {raceBoardTiles,hashString} from './race-assets.mjs';
+import {raceBoardTiles,hashString,RACE_TAGS} from './race-assets.mjs';
 import {difficultyForStars,starsText} from './encounter-difficulty.mjs';
 import {TRAVEL_SUPPLY_COST,combatGoldReward,applyTravelSupplyCost} from './resources-core.mjs';
 import {puzzleBaseGold} from './puzzles/puzzle-core.mjs';
@@ -10,8 +10,8 @@ import {gloryForRun} from './chronicle-core.mjs';
 import {ARENA_KEY,SHARD_ICON,normalizeArena,arenaSummary,addEvent,spendingTime,
  KINGDOM_OUTPOST_SHARD_COST} from './arena-core.mjs?v=20261109-kingdom-economy-v7';
 import {platform} from './platform.mjs';
-import {PIECE_TYPES,PIECE_LABELS,DEFAULT_KINGDOM_ECONOMY} from './kingdom-economy-config.mjs';
-import {buyCastleRecruit} from './kingdom-army-core.mjs';
+import {PIECE_TYPES,PIECE_LABELS,DEFAULT_KINGDOM_ECONOMY,recruitTypeForLevel} from './kingdom-economy-config.mjs';
+import {buyCastleRecruit,addArmyRecruits} from './kingdom-army-core.mjs';
 import {FLAVOR_POOLS} from './travel-choice-core.mjs';
 import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
@@ -815,10 +815,25 @@ function claimWeekly(id){
   writeRun({...run,kingdomMap:acknowledged.map});
   selected=id;render();return; // The already visible defender is the notification.
  }
- if(item.kind==='recruits'){
-  selected=id;render();report(tr('recruitsReady'));return;
- }
  const result=collectProduction(run.kingdomMap,id);if(!result.ok)return;
+ if(result.kind==='recruits'){
+  const route=run.kingdomMap.cells[id]?.selectedEncounter;
+  if(route?.type!=='skirmish')return;
+  const tag=route.raceTag||route.enemyRaceTag;
+  const raceTag=RACE_TAGS.includes(tag)?tag:run.kingdomMap.castle.raceTag;
+  const level=['I','II','III','IV','V'].indexOf(romanForStars(route.stars))+1;
+  const pieceType=recruitTypeForLevel(level,run.kingdomMap.seed+':'+id+':'+item.week);
+  const gain=addArmyRecruits(run,{raceTag,pieceType,count:result.amount,
+    receiptId:'kingdom:'+run.id+':'+result.receiptId});
+  if(!gain.ok)return;
+  writeRun({...gain.run,kingdomMap:result.map});
+  selected=id;render();
+  report((lang()==='en'?'Free recruit: ':'Бесплатный рекрут: ')+
+    (lang()==='en'?pieceType:PIECE_LABELS[pieceType])+' ×'+result.amount);
+  globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'skirmish-production'}}));
+  return;
+ }
+
  if(result.kind==='shards'){
   const receiptId='kingdom:production:'+hashString(run.id+':'+result.receiptId).toString(36);
   if(!shardTransaction({id:receiptId,kind:'kingdom-production',
