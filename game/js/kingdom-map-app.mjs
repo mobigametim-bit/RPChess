@@ -4,7 +4,7 @@ import {readPlayerRating} from './player-rating.mjs';
 import {commanderPieceArt,commanderById} from './commander-portraits.mjs';
 import {raceBoardTiles,hashString} from './race-assets.mjs';
 import {difficultyForStars,starsText} from './encounter-difficulty.mjs';
-import {TRAVEL_SUPPLY_COST,combatGoldReward} from './resources-core.mjs';
+import {TRAVEL_SUPPLY_COST,combatGoldReward,applyTravelSupplyCost} from './resources-core.mjs';
 import {puzzleBaseGold} from './puzzles/puzzle-core.mjs';
 import {gloryForRun} from './chronicle-core.mjs';
 import {ARENA_KEY,SHARD_ICON,normalizeArena,arenaSummary,addEvent,spendingTime,
@@ -21,9 +21,9 @@ import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-kingdom-parchmen
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
- beginEncounter,finishEncounter,matchesCombatReceipt,migrateKingdomMap,territoryCapacity,isOwned,castleLevel,revealAround,
+ beginEncounter,finishEncounter,matchesCombatReceipt,migrateKingdomMap,territoryCapacity,castleLevel,revealAround,
  collectProduction,canBuildOutpost,buildOutpost,
- romanForStars,keyOf,adjacent,borderEdges} from './kingdom-map-core.mjs?v=20261109-kingdom-parchment-tile-v8';
+ romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges} from './kingdom-map-core.mjs?v=20261109-kingdom-controls-v9';
 
 const COPY={
  ru:{classicMap:'Классика',parchmentMap:'Пергамент',switchMap:'Оформление карты',day:'День',shards:'Осколки чести',castle:'Замок',supply:'Припасы',power:'Мощь',points:'Очки присоединения',
@@ -34,7 +34,7 @@ const COPY={
    discover:'',congrat:'Замок получил уровень',
    buildOutpost:'Построить аванпост',earn:'Добыть',onArena:'на Арене',arenaUnavailable:'Арена пока недоступна',outpost:'Аванпост',outpostDetail:'Удалённое владение королевства',
    outpostNeed:'Недостаточно осколков чести',outpostBuilt:'Аванпост построен',
-   collect:'Собрать',battleReady:'Защитник вернулся. Войди в клетку для нового боя.',
+   moveKing:'Перетащите короля для перемещения',collect:'Собрать',battleReady:'Защитник вернулся. Войди в клетку для нового боя.',
    recruitsReady:'Рекруты готовы. Система найма появится в следующем этапе.',
    empty:'Открывайте территорию, чтобы основать королевство',
    completedDetail:'Место освоено. Можно вернуться сюда в любой момент.',zoomGroup:'Масштаб карты',zoomIn:'Увеличить масштаб',zoomOut:'Уменьшить масштаб',zoomReset:'Сбросить масштаб карты'},
@@ -46,7 +46,7 @@ const COPY={
    discover:'',congrat:'Castle reached level',
    buildOutpost:'Build outpost',earn:'Earn',onArena:'in Arena',arenaUnavailable:'Arena is not available yet',outpost:'Outpost',outpostDetail:'A remote kingdom holding',
    outpostNeed:'Not enough Honor shards',outpostBuilt:'Outpost constructed',
-   collect:'Collect',battleReady:'Defender returned. Enter the cell for a rematch.',
+   moveKing:'Drag the king to move',collect:'Collect',battleReady:'Defender returned. Enter the cell for a rematch.',
    recruitsReady:'Recruits are ready. Hiring will be added in the next stage.',
    empty:'Explore the realm to found a kingdom',
    completedDetail:'This location is cleared. You can return at any time.',zoomGroup:'Map zoom',zoomIn:'Zoom in',zoomOut:'Zoom out',zoomReset:'Reset map zoom'}
@@ -62,6 +62,7 @@ function savedZoom(){
  catch{return ATLAS_VIEW.zoom;}
 }
 let zoomPx=savedZoom(),zoomFrame=0,ignoreCellClicksUntil=0,pinch=null;
+let pan=null,kingDrag=null,routeQueue=[];
 const activeTouches=new Map();
 function updateZoom(value){
  const next=clampZoom(value);if(next===zoomPx)return;
@@ -74,28 +75,91 @@ function touchDistance(){
  const p=[...activeTouches.values()];return p.length>=2?Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y):0;
 }
 function zoomPointerDown(e){
- if(e.pointerType!=='touch'||e.target.closest('.km-zoom-controls,.km-map-skin-switch'))return;
- activeTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
- if(activeTouches.size===2){
-  pinch={distance:Math.max(1,touchDistance()),zoom:zoomPx};
-  const frame=screen?.querySelector('.km-map-frame');
-  for(const id of activeTouches.keys())try{frame?.setPointerCapture(id);}catch{}
-  ignoreCellClicksUntil=Date.now()+650;
- }
+ if(e.target.closest('.km-zoom-controls,.km-map-skin-switch,.km-king-drag-handle,.km-production-marker'))return;
+ if(e.pointerType==='touch'){
+  activeTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(activeTouches.size===2){
+   pinch={distance:Math.max(1,touchDistance()),zoom:zoomPx};
+   pan=null;screen?.querySelector('.km-world')?.style.removeProperty('translate');
+   for(const id of activeTouches.keys())try{e.currentTarget.setPointerCapture(id);}catch{}
+   ignoreCellClicksUntil=Date.now()+650;
+   return;
+  }
+ }else if(e.button!==0)return;
+ pan={id:e.pointerId,x:e.clientX,y:e.clientY,dx:0,dy:0,moved:false};
+ try{e.currentTarget.setPointerCapture(e.pointerId);}catch{}
 }
 function zoomPointerMove(e){
- if(e.pointerType!=='touch'||!activeTouches.has(e.pointerId))return;
- activeTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
- if(pinch&&activeTouches.size>=2){
-  e.preventDefault();ignoreCellClicksUntil=Date.now()+650;
-  updateZoom(pinch.zoom*touchDistance()/pinch.distance);
+ if(e.pointerType==='touch'&&activeTouches.has(e.pointerId)){
+  activeTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pinch&&activeTouches.size>=2){
+   e.preventDefault();ignoreCellClicksUntil=Date.now()+650;
+   updateZoom(pinch.zoom*touchDistance()/pinch.distance);
+   return;
+  }
  }
+ if(!pan||pan.id!==e.pointerId||pinch)return;
+ pan.dx=e.clientX-pan.x;pan.dy=e.clientY-pan.y;
+ if(Math.hypot(pan.dx,pan.dy)>8)pan.moved=true;
+ if(!pan.moved)return;
+ e.preventDefault();ignoreCellClicksUntil=Date.now()+650;
+ const frame=screen?.querySelector('.km-map-frame'),world=screen?.querySelector('.km-world');
+ frame?.classList.add('km-is-panning');
+ if(world)world.style.translate=pan.dx+'px '+pan.dy+'px';
 }
 function zoomPointerEnd(e){
- if(e.pointerType!=='touch')return;
- if(pinch)ignoreCellClicksUntil=Date.now()+650;
- activeTouches.delete(e.pointerId);
- if(activeTouches.size<2)pinch=null;
+ if(e.pointerType==='touch'){
+  if(pinch)ignoreCellClicksUntil=Date.now()+650;
+  activeTouches.delete(e.pointerId);
+  if(activeTouches.size<2)pinch=null;
+ }
+ if(!pan||pan.id!==e.pointerId)return;
+ const finished=pan;pan=null;
+ screen?.querySelector('.km-map-frame')?.classList.remove('km-is-panning');
+ const world=screen?.querySelector('.km-world');if(world)world.style.translate='';
+ if(finished.moved){
+  ignoreCellClicksUntil=Date.now()+650;
+  if(!camera){const run=readRun();camera={...(run?.kingdomMap?.king||{x:0,y:0})};}
+  camera.x-=Math.round(finished.dx/zoomPx);
+  camera.y-=Math.round(finished.dy/zoomPx);
+  if(screen&&!screen.hidden)render();
+ }
+}
+function kingPointerDown(e){
+ if(e.button!==0&&e.pointerType!=='touch')return;
+ const run=readRun();
+ if(!run?.kingdomMap||run.kingdomMap.pendingCell||routeQueue.length||movement)return;
+ e.stopPropagation();e.preventDefault();
+ kingDrag={id:e.pointerId,x:e.clientX,y:e.clientY,dx:0,dy:0};
+ try{e.currentTarget.setPointerCapture(e.pointerId);}catch{}
+ e.currentTarget.classList.add('is-dragging');
+}
+function kingPointerMove(e){
+ if(!kingDrag||e.pointerId!==kingDrag.id)return;
+ e.preventDefault();e.stopPropagation();
+ kingDrag.dx=e.clientX-kingDrag.x;kingDrag.dy=e.clientY-kingDrag.y;
+ const avatar=screen?.querySelector('.km-king');
+ if(avatar){
+  const scale=zoomPx/MAP_LAYOUT.cellPx;
+  avatar.style.transform='translate(calc(-50% + '+(kingDrag.dx/scale)+'px),calc(-50% + '+(kingDrag.dy/scale)+'px))';
+ }
+}
+function kingPointerEnd(e){
+ if(!kingDrag||e.pointerId!==kingDrag.id)return;
+ e.preventDefault();e.stopPropagation();
+ const gesture=kingDrag;kingDrag=null;
+ e.currentTarget.classList.remove('is-dragging');
+ const avatar=screen?.querySelector('.km-king');if(avatar)avatar.style.transform='';
+ if(Math.hypot(e.clientX-gesture.x,e.clientY-gesture.y)<12)return;
+ const handle=e.currentTarget;
+ handle.style.pointerEvents='none';
+ const destination=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-kingdom-cell]');
+ handle.style.pointerEvents='';
+ ignoreCellClicksUntil=Date.now()+500;
+ if(destination){
+  const point=parsePoint(destination.dataset.kingdomCell);
+  if(point)startKingRoute(point);
+ }
 }
 function zoomWheel(e){
  if(!screen||screen.hidden||e.target.closest('.km-zoom-controls,.km-map-skin-switch'))return;
@@ -321,6 +385,7 @@ function screenReady(){
  return screen;
 }
 function stopTimers(){
+ routeQueue=[];pan=null;kingDrag=null;
  clearTimeout(flightTimer);clearTimeout(launchTimer);clearTimeout(flavorTimer);clearTimeout(resourceTimer);
  resourceBurst=null;resourceTimer=null;
  flightTimer=null;launchTimer=null;flavorTimer=null;movement=null;flavorBurst=null;
@@ -599,6 +664,16 @@ function render(){
   avatar.style.setProperty('--km-from-y',(movement.y-map.king.y)*MAP_LAYOUT.cellPx+'px');
  }
  world.append(avatar);
+ const kingHandle=document.createElement('button');
+ kingHandle.type='button';kingHandle.className='km-king-drag-handle';
+ kingHandle.dataset.kingdomKingHandle='';
+ kingHandle.setAttribute('aria-label',tr('moveKing'));
+ kingHandle.style.left=avatar.style.left;kingHandle.style.top=avatar.style.top;
+ kingHandle.addEventListener('pointerdown',kingPointerDown);
+ kingHandle.addEventListener('pointermove',kingPointerMove);
+ kingHandle.addEventListener('pointerup',kingPointerEnd);
+ kingHandle.addEventListener('pointercancel',kingPointerEnd);
+ world.append(kingHandle);
  const chosen=selected?map.cells[selected]:null;
  const current=map.cells[keyOf(map.king.x,map.king.y)];
  const info=chosen||current;
@@ -655,8 +730,14 @@ function showEconomyBurst(id,kind,amount){
 function claimWeekly(id){
  const run=readRun(),item=run?.kingdomMap?.cells?.[id]?.production;
  if(!run||run.ended||run.activeTravelChoice||run.kingdomMap?.pendingCell||!item)return;
- if(item.kind==='battle'||item.kind==='recruits'){
-  selected=id;render();report(tr(item.kind==='battle'?'battleReady':'recruitsReady'));return;
+ if(item.kind==='battle'){
+  const acknowledged=acknowledgeReturn(run.kingdomMap,id);
+  if(!acknowledged.ok)return;
+  writeRun({...run,kingdomMap:acknowledged.map});
+  selected=id;render();return; // The already visible defender is the notification.
+ }
+ if(item.kind==='recruits'){
+  selected=id;render();report(tr('recruitsReady'));return;
  }
  const result=collectProduction(run.kingdomMap,id);if(!result.ok)return;
  if(result.kind==='shards'){
@@ -695,29 +776,44 @@ function constructOutpost(){
  writeRun({...run,kingdomMap:candidate.map});
  render();report(tr('outpostBuilt'));
 }
-function onCell(event){
- const target=event.target.closest('[data-kingdom-cell]');
- if(!target||!screen||screen.hidden)return;
- const run=readRun(),map=run?.kingdomMap,id=target.dataset.kingdomCell,point=parsePoint(id);
- if(!point||!map||map.pendingCell||pinch||Date.now()<ignoreCellClicksUntil)return;
+function startKingRoute(point){
+ const run=readRun(),map=run?.kingdomMap;
+ if(!map||map.pendingCell||movement||!point)return;
+ routeQueue=shortestKingRoute(map,point);
+ if(!routeQueue.length)return;
+ selected=keyOf(point.x,point.y);
+ advanceKingRoute();
+}
+function advanceKingRoute(){
+ if(!routeQueue.length)return;
+ const point=routeQueue.shift();
+ moveKingOneStep(point);
+}
+function moveKingOneStep(point){
+ const run=readRun(),map=run?.kingdomMap,id=keyOf(point.x,point.y);
+ if(!run||!map||map.pendingCell||!adjacent(map.king,point)){routeQueue=[];return;}
  selected=id;
- if(!adjacent(map.king,point)){render();return;}
- // Revealed empty locations are walkable; a known encounter is not rerolled.
  const encounter=!map.cells[id]?randomEncounter(run,point,readPlayerRating().power):null;
  const entered=enterCell(map,point,encounter);
- if(!entered.ok){render();return;}
+ if(!entered.ok){routeQueue=[];render();return;}
+ const payment=isOwned(map,point)?{run,paid:0,requested:0}:
+  applyTravelSupplyCost(run,TRAVEL_SUPPLY_COST);
  const nextMap=revealAround(entered.map,run,readPlayerRating().power);
  const from={...map.king},to={...nextMap.king};
  const reduced=document.documentElement.dataset.reducedMotion==='1';
  const discovering=entered.kind==='discover';
- // The logical encounter is persisted immediately for crash-safe resume,
- // but the visual king stays put until the fog/terrain reveal has finished.
  if(entered.kind!=='walk'){
+  routeQueue=[]; // Never auto-run through an encounter or its defeat.
   const delay=discovering?DISCOVERY_WAIT_MS:3300;
   nextMap.cells[id]={...nextMap.cells[id],revealUntil:Date.now()+delay};
  }
+ // Record the actual arrival charge. Encounter dispatch MUST NOT charge again.
+ nextMap.cells[id]={...nextMap.cells[id],stepSuppliesCharged:true,
+  stepSuppliesPaid:payment.paid,stepSuppliesRequested:payment.requested};
  clearTimeout(flightTimer);clearTimeout(flavorTimer);flavorBurst=null;
- writeRun({...run,kingdomMap:nextMap});
+ writeRun({...payment.run,kingdomMap:nextMap});
+ if(payment.paid>0)globalThis.RPChessResources?.showChange?.({
+  suppliesDelta:-payment.paid,labelKey:'travel.change.travel'});
  const finishStep=()=>{
   movement=null;
   if(entered.kind!=='walk'){
@@ -727,24 +823,28 @@ function onCell(event){
     flavorTimer=setTimeout(()=>{flavorBurst=null;if(screen&&!screen.hidden)render();},FLAVOR_MS);
    }
   }
-  if(screen&&!screen.hidden&&runId===run.id)render();
+  if(screen&&!screen.hidden&&runId===run.id){render();if(entered.kind==='walk')advanceKingRoute();}
  };
  const moveKing=()=>{
   if(!screen||screen.hidden||runId!==run.id)return;
   followCamera(to);
   if(reduced){finishStep();return;}
-  movement={...from,phase:'moving'};
-  render();
+  movement={...from,phase:'moving'};render();
   flightTimer=setTimeout(finishStep,MOVE_MS);
  };
  if(discovering){
-  movement={...from,phase:'reveal'};
-  render(); // terrain and route card are visible; the king remains on the old tile
+  movement={...from,phase:'reveal'};render();
   flightTimer=setTimeout(moveKing,reduced?80:REVEAL_MS);
- }else{
-  moveKing(); // already revealed/completed tiles do not repeat the fog opening
- }
+ }else moveKing();
  if(entered.kind!=='walk')schedulePending(readRun());
+}
+function onCell(event){
+ const target=event.target.closest('[data-kingdom-cell]');
+ if(!target||!screen||screen.hidden)return;
+ const run=readRun(),map=run?.kingdomMap,id=target.dataset.kingdomCell;
+ if(!map||map.pendingCell||pinch||Date.now()<ignoreCellClicksUntil)return;
+ selected=id;
+ render(); // A single click is inspection only, regardless of distance.
 }
 function visitSettlement(){
  const run=readRun(),id=keyOf(run?.kingdomMap?.king?.x,run?.kingdomMap?.king?.y);
