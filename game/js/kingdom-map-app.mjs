@@ -19,7 +19,7 @@ import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-zoom-v4';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
- beginEncounter,finishEncounter,matchesCombatReceipt,annexCell,canAnnex,pointsAvailable,castleLevel,revealAround,
+ beginEncounter,finishEncounter,matchesCombatReceipt,migrateKingdomMap,territoryCapacity,isOwned,castleLevel,revealAround,
  romanForStars,keyOf,adjacent,borderEdges} from './kingdom-map-core.mjs?v=20261109-atlas-v3';
 
 const COPY={
@@ -27,7 +27,7 @@ const COPY={
    hidden:'Неизведанная территория',empty:'Спокойная местность',safeTerrain:'Здесь нет дорожного события.',annex:'Присоединить · 1 очко',annexed:'В составе королевства',
    complete:'Пройдена',failed:'Неудача — повторная попытка',inProgress:'Встреча продолжается',
    return:'К отряду',reveal:'Открыта встреча',entry:'Начинается',services:'Услуги поселения',
-   pending:'Открываю путь…',level:'Уровень',unavailable:'Недоступно для присоединения',
+   pending:'Открываю путь…',level:'Уровень',unavailable:'Недоступно для присоединения',lands:'Владения',
    discover:'Выбери соседнюю клетку, чтобы исследовать её',congrat:'Замок получил уровень',
    empty:'Открывайте территорию, чтобы основать королевство',
    zoomGroup:'Масштаб карты',zoomIn:'Увеличить масштаб',zoomOut:'Уменьшить масштаб',zoomReset:'Сбросить масштаб карты'},
@@ -35,7 +35,7 @@ const COPY={
    hidden:'Unexplored territory',empty:'Quiet terrain',safeTerrain:'No encounter at this location.',annex:'Annex · 1 point',annexed:'Part of your kingdom',
    complete:'Cleared',failed:'Failed — retry encounter',inProgress:'Encounter in progress',
    return:'Squad',reveal:'Encounter discovered',entry:'Entering',services:'Settlement services',
-   pending:'Exploring…',level:'Level',unavailable:'Cannot annex yet',
+   pending:'Exploring…',level:'Level',unavailable:'Cannot annex yet',lands:'Territory',
    discover:'Select an adjacent tile to explore',congrat:'Castle reached level',
    empty:'Explore the realm to found a kingdom',
    zoomGroup:'Map zoom',zoomIn:'Zoom in',zoomOut:'Zoom out',zoomReset:'Reset map zoom'}
@@ -266,7 +266,7 @@ function screenReady(){
  screen.querySelector('[data-kingdom-roster]').addEventListener('click',()=>{hideMap();globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue'));});
  screen.querySelector('[data-kingdom-settings]').addEventListener('click',()=>globalThis.RPChessOpenSettings?.());
  screen.querySelector('[data-kingdom-menu]').addEventListener('click',()=>{hideMap();globalThis.RPChessRoster?.returnToMenu?.();});
- screen.querySelector('[data-kingdom-annex]').addEventListener('click',claim);
+ // No manual annex clicks: the growing border follows persistent Power and wins.
  screen.querySelector('[data-kingdom-services]').addEventListener('click',visitSettlement);
  screen.querySelector('[data-kingdom-world]').addEventListener('click',onCell);
  const frame=screen.querySelector('.km-map-frame');
@@ -302,7 +302,7 @@ function ensureMap(run){
  // Race comes from the stable named commander ID, never from the old castle placeholder.
  const race=commanderById(run.commanderId).raceTag;
  if(validateKingdomMap(run.kingdomMap)&&run.kingdomMap.seed===run.id){
-  const peaked=updatePeak(run.kingdomMap,power);
+  const peaked=updatePeak(migrateKingdomMap(run.kingdomMap,run),power);
   const map=peaked.castle.raceTag===race?peaked:
    {...peaked,castle:{...peaked.castle,raceTag:race}};
   const revealed=revealAround(map,run,power);
@@ -326,7 +326,7 @@ function encounterResult(run,source,choice){
  const last=choice.type==='battle'?run.lastBattle:choice.type==='skirmish'?run.lastSkirmish:run.lastCaravan;
  if(!matchesCombatReceipt(choice,last))return null;
  const success=last.result==='checkmate'&&last.winner===last.playerColor;
- return {success,opponentPower:choice.type==='battle'?
+ return {success,opponentPower:['battle','caravan'].includes(choice.type)?
   difficultyForStars(last.encounterStars||choice.stars).elo:0};
 }
 function settleIfReturned(run,source){
@@ -394,8 +394,8 @@ function render(){
  world.style.gridTemplateColumns=`repeat(${WIDTH},${MAP_LAYOUT.cellPx}px)`;
  world.style.gridTemplateRows=`repeat(${HEIGHT},${MAP_LAYOUT.cellPx}px)`;
  const power=readPlayerRating().power;
- // Display-only day counter: keep existing Journey progression intact for future rules.
- screen.querySelector('[data-kingdom-day]').textContent=tr('day')+' '+(Math.max(0,Number.isInteger(run.journeyStep)?run.journeyStep:0)+1);
+ // Independent in-game calendar: one new cell or completed meaningful encounter = one day.
+ screen.querySelector('[data-kingdom-day]').textContent=tr('day')+' '+(map.day||1);
  screen.querySelector('[data-kingdom-roster]').textContent=t('travel.roster');
  screen.querySelector('[data-kingdom-settings]').textContent=t('travel.settings');
  screen.querySelector('[data-kingdom-menu]').textContent=t('menu.actionsLabel');
@@ -410,11 +410,11 @@ function render(){
   ['.km-resource--gold',t('travel.goldAria')],
   ['.km-resource--supplies',t('travel.suppliesAria')],
   ['.km-resource--glory',runtimeT(currentLanguage(),'chronicle.glory')],
-  ['.km-resource--points',tr('points')],
+  ['.km-resource--points',tr('lands')],
   ['.km-resource--shards',tr('shards')]
  ]){const item=screen.querySelector(selector);item.title=label;item.setAttribute('aria-label',label);}
  screen.querySelector('[data-kingdom-glory]').textContent=String(gloryForRun(run.journeyStep,power));
- screen.querySelector('[data-kingdom-points]').textContent=String(pointsAvailable(map));
+ screen.querySelector('[data-kingdom-points]').textContent=Math.max(0,(map.centralOwnedCells||[]).length-1)+'/'+territoryCapacity(map);
  screen.querySelector('[data-kingdom-shards]').textContent=String(honorShards());
  const cells=document.createDocumentFragment();
  for(let row=-CENTER_Y;row<HEIGHT-CENTER_Y;row++)
@@ -422,13 +422,14 @@ function render(){
    const point={x:view.x+col,y:view.y+row},id=keyOf(point.x,point.y);
    const cell=map.cells[id],isCastle=id===keyOf(map.castle.x,map.castle.y);
    const within=adjacent(visualKing,point),here=id===keyOf(visualKing.x,visualKing.y);
-   const edges=cell?.annexed?borderEdges(map,point):[];
+   const owned=isOwned(map,point);
+   const edges=owned?borderEdges(map,point):[];
    const btn=document.createElement('button');btn.type='button';btn.dataset.kingdomCell=id;
    const light=(point.x+point.y)%2===0;
    btn.setAttribute('role','gridcell');btn.className='km-cell'+
     (light?' km-cell--light':' km-cell--dark')+
     (!cell?' km-cell--fog':' km-cell--terrain km-cell--'+cell.status)+
-    (cell?.annexed?' km-cell--annexed':'')+(within?' km-cell--adjacent':'')+
+    (owned?' km-cell--annexed':'')+(within?' km-cell--adjacent':'')+
     (selected===id?' km-cell--selected':'')+(here?' km-cell--here':'')+
     (movement?.phase==='reveal'&&selected===id?' km-cell--opening':'')+
     (flavorBurst?.id===id?' km-cell--story':'')+
@@ -524,7 +525,7 @@ function render(){
  const ann=screen.querySelector('[data-kingdom-annex]'),services=screen.querySelector('[data-kingdom-services]');
  const id=selected||keyOf(map.king.x,map.king.y);
  const selectedPoint=parsePoint(id);
- ann.hidden=!selectedPoint||!canAnnex(map,selectedPoint);ann.textContent=tr('annex');
+ ann.hidden=true; // Annexation is now automatic; keep the legacy button inert.
  services.hidden=!(id===keyOf(map.king.x,map.king.y)&&chosen?.status==='completed'&&chosen.selectedEncounter?.type==='settlement');
  services.textContent=tr('services');
  screen.querySelector('[data-kingdom-hint]').textContent=map.pendingCell?tr('pending'):tr('discover');
@@ -581,14 +582,6 @@ function onCell(event){
  }
  if(entered.kind!=='walk')schedulePending(readRun());
 }
-function claim(){
- const run=readRun(),point=parsePoint(selected);
- if(!run||!point)return;
- const r=annexCell(run.kingdomMap,point);
- if(!r.ok)return;
- writeRun({...run,kingdomMap:r.map});globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'kingdom-annex'}}));
- render();
-}
 function visitSettlement(){
  const run=readRun(),id=keyOf(run?.kingdomMap?.king?.x,run?.kingdomMap?.king?.y);
  const cell=run?.kingdomMap?.cells?.[id];
@@ -618,7 +611,7 @@ function openMap(event){
 function syncPower(){
  const run=readRun();if(!run||run.ended||!validateKingdomMap(run.kingdomMap))return;
  const previous=castleLevel(run.kingdomMap.peakKingPower);
- const updated=updatePeak(run.kingdomMap,readPlayerRating().power);
+ const updated=updatePeak(migrateKingdomMap(run.kingdomMap,run),readPlayerRating().power);
  if(updated===run.kingdomMap)return;
  writeRun({...run,kingdomMap:updated});
  if(screen&&!screen.hidden){
