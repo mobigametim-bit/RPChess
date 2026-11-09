@@ -146,6 +146,8 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const climbed=mapCore.updatePeak(startMap,1100);
   assert.strictEqual(mapCore.territoryCapacity(climbed),11);
   assert.strictEqual(climbed.centralOwnedCells.length,12);
+  assert.strictEqual(Object.keys(climbed.cells).length,1,
+    'newly owned fog squares do not reveal unknown encounters or allocate fake cells');
   assert.strictEqual(mapCore.updatePeak(climbed,650),climbed,
     'loss of current rating never revokes previously owned land');
   assert(!mapCore.annexCell(startMap,{x:1,y:0}).ok,
