@@ -52,12 +52,12 @@ class MemoryStorage {
   assert.strictEqual(core.combatGoldReward({ encounterType: 'skirmish', stars: 1, status: win }), 16);
   assert.strictEqual(core.combatGoldReward({ encounterType: 'skirmish', stars: 5, status: win }), 32);
   assert.strictEqual(core.combatGoldReward({ encounterType: 'skirmish', stars: 5, status: draw }), 16);
-  assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 1, status: win }), 42);
-  assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 5, status: win }), 66);
-  assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 5, status: draw }), 33);
+  assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 1, status: win }), 45);
+  assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 5, status: win }), 81);
+  assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 5, status: draw }), 40);
   assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 5, status: loss }), 0, 'White-side loss must never grant Gold');
   assert.strictEqual(core.combatGoldReward({ encounterType: 'skirmish', stars: 12, status: win }), 60, '12-star Skirmish reward must use the full canonical difficulty range');
-  assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 12, status: win }), 108, '12-star Battle reward must use the Balance Pass 2 formula');
+  assert.strictEqual(core.combatGoldReward({ encounterType: 'battle', stars: 12, status: win }), 144, '12-star Battle reward must use the approved Atlas Lab formula');
   assert.strictEqual(core.combatGoldReward({ encounterType: 'skirmish', stars: 12, status: blackWin, playerColor: 'b' }), 60, 'Black-side victory must receive the same deterministic reward');
 
   const rewarded = core.applyGoldReward(run, 32);
