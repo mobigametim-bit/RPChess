@@ -60,6 +60,7 @@ main{padding:10px}.stage{min-height:240px}.status{grid-template-columns:repeat(2
 <input id="file" class="importer" type="file" accept="application/json,.json">
 <details><summary>Плотность в шести биомах</summary><div id="biome-densities"></div></details>
 <details><summary>Веса шести типов встреч</summary><p class="help">Строки — биомы, колонки — типы. Меняются только относительные веса.</p><div id="type-weights"></div></details>
+<details><summary>Веса 14 рас</summary><p class="help">Таблица прокручивается по горизонтали. Сюжетные события и задачи сохраняют каноническую расу.</p><div id="race-weights" style="overflow-x:auto"></div></details>
 </fieldset>
 <fieldset><legend>Рельеф · устранение полос</legend>
 <label><span>Шаг расстановки</span><output id="terrain-step-out">1.55</output><input id="terrain-step" type="range" min="0.85" max="3" step="0.05" value="1.55"></label>
