@@ -804,7 +804,14 @@ function drawSim(){
       const grad=fc.createRadialGradient(cx,cy,Math.min(rad*.9,simCell*S.fogInner),cx,cy,rad);
       grad.addColorStop(0,'rgba(0,0,0,1)');grad.addColorStop(.68,'rgba(0,0,0,.98)');
       grad.addColorStop(1,'rgba(0,0,0,0)');fc.fillStyle=grad;fc.fillRect(cx-rad,cy-rad,2*rad,2*rad);
-    }fc.globalCompositeOperation='source-over';ctx.drawImage(off,0,0);
+    }
+    // A kingdom holding is fully scouted, including every tile corner.
+    // This includes central lands and the three cells of every outpost.
+    fc.fillStyle='#000';for(const k of run.owned){const [x,y]=k.split(',').map(Number);
+      if(x<minX-2||x>maxX+2||y<minY-2||y>maxY+2)continue;
+      fc.fillRect(worldPixelX(x),worldPixelY(y),simCell,simCell);
+    }
+    fc.globalCompositeOperation='source-over';ctx.drawImage(off,0,0);
   }
   // Ownership borders are independent from the classic canvas borders preview.
   ctx.save();ctx.lineWidth=2;ctx.strokeStyle='#e3c17b';ctx.setLineDash([6,4]);
@@ -814,7 +821,7 @@ function drawSim(){
   }ctx.restore();
   // No scouting question marks: sites are visible only after exploration or in full simulation preview.
   for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++){
-    const k=key(x,y),discovered=run.visited.has(k),w=previewMode?worldAt(x,y):getWorld(x,y),cx=worldPixelX(x+.5),cy=worldPixelY(y+.5);
+    const k=key(x,y),discovered=run.visited.has(k)||run.owned.has(k),w=previewMode?worldAt(x,y):getWorld(x,y),cx=worldPixelX(x+.5),cy=worldPixelY(y+.5);
      if((discovered||previewMode)&&w.type){
       if(w.type!=='castle')drawAsset(ctx,'object/'+w.type,cx,cy,simCell*.69,.95);
       else drawAsset(ctx,'object/castle',cx,cy,simCell*.8,1);
@@ -841,7 +848,7 @@ function drawSim(){
   const hx=worldPixelX(run.x+.5),hy=worldPixelY(run.y+.5);ctx.beginPath();ctx.ellipse(hx,hy+simCell*.24,simCell*.3,simCell*.13,0,0,Math.PI*2);ctx.fillStyle='#0008';ctx.fill();
   ctx.save();ctx.font='bold '+Math.round(simCell*.68)+'px Georgia';ctx.textAlign='center';ctx.textBaseline='middle';ctx.shadowColor='#332410';ctx.shadowBlur=7;ctx.fillStyle='#ffe5a9';ctx.strokeStyle='#4a3920';ctx.lineWidth=3;ctx.strokeText('♔',hx,hy);ctx.fillText('♔',hx,hy);ctx.restore();
 }
-function explainHover(x,y){const w=getWorld(x,y),isKnown=run.visited.has(key(x,y)),distance=Math.max(Math.abs(x-run.x),Math.abs(y-run.y));
+function explainHover(x,y){const w=getWorld(x,y),isKnown=run.visited.has(key(x,y))||run.owned.has(key(x,y)),distance=Math.max(Math.abs(x-run.x),Math.abs(y-run.y));
  if(!isKnown)return (distance===1?'Можно исследовать: ':'Туман войны: ')+BN[w.biome].toLowerCase()+'. Событие и раса пока не раскрыты.';
  return '('+x+','+y+') · '+BN[w.biome]+' · '+(w.type==='castle'?'Замок':w.type?TYPE_NAMES[TYPE_KEYS.indexOf(w.type)]:'спокойная местность')+(run.completed.has(key(x,y))?', освоено':w.type?', не пройдено':'')+(run.owned.has(key(x,y))?' · в королевстве':'');
 }
