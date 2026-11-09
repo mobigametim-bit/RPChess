@@ -832,7 +832,7 @@ async function assertTileImage(page,cellId,relativePath){
   // Unaffordable next outpost offers a real Arena redirect without touching the run.
   await walking.evaluate(storage=>{
     const run=JSON.parse(localStorage.getItem(storage));
-    run.kingdomMap.cells['5,0']={status:'completed',type:'empty',explored:true};
+    run.kingdomMap.cells['4,2']={status:'completed',type:'empty',explored:true};
     localStorage.setItem(storage,JSON.stringify(run));
     localStorage.setItem('rpchess.reboot.v1.arena',JSON.stringify({
       version:1,events:[],squad:'humans',match:null,updatedAt:2
@@ -840,7 +840,9 @@ async function assertTileImage(page,cellId,relativePath){
     globalThis.dispatchEvent(new CustomEvent('rpchess:arena-updated'));
     globalThis.RPChessKingdomMap.open();
   },key);
-  await walking.locator('[data-kingdom-cell="5,0"]').click();
+  // The first outpost at 4,0 already annexes nearby cardinal cells.
+  // Use a safe diagonal-distance site outside its three-cell footprint.
+  await walking.locator('[data-kingdom-cell="4,2"]').click();
   const earnButton=walking.locator('[data-kingdom-earn-shards]');
   assert(await earnButton.isVisible(),'insufficient shards offer the Earn in Arena button');
   assert.equal(await earnButton.locator('img.km-shard-inline').getAttribute('src'),
