@@ -226,6 +226,13 @@ function drawTerrainSymbols(ctx,seed,left,top,width,height,repaint){
   }
  }
 }
+function ownedIds(map){
+ const ids=new Set(map?.centralOwnedCells||[]);
+ if(map?.castle)ids.add(map.castle.x+','+map.castle.y);
+ for(const post of map?.outposts||[])for(const id of post.cells||[])ids.add(id);
+ for(const [id,cell] of Object.entries(map?.cells||{}))if(cell.annexed)ids.add(id);
+ return ids;
+}
 function drawFog(ctx,map,left,top,width,height){
  const fog=document.createElement('canvas');fog.width=Math.round(width*PARCHMENT_TILE);
  fog.height=Math.round(height*PARCHMENT_TILE);
@@ -244,6 +251,14 @@ function drawFog(ctx,map,left,top,width,height){
   gradient.addColorStop(.68,'rgba(0,0,0,.98)');
   gradient.addColorStop(1,'rgba(0,0,0,0)');
   f.fillStyle=gradient;f.fillRect(cx-radius,cy-radius,2*radius,2*radius);
+ }
+ // Every owned tile must be completely free of fog, not merely its center.
+ // Keep the radial scouting gradient outside the kingdom border.
+ f.fillStyle='#000';
+ for(const id of ownedIds(map)){
+  const [x,y]=id.split(',').map(Number);
+  if(!Number.isFinite(x)||!Number.isFinite(y)||x<left-1||y<top-1||x>left+width||y>top+height)continue;
+  f.fillRect((x-left)*PARCHMENT_TILE,(y-top)*PARCHMENT_TILE,PARCHMENT_TILE,PARCHMENT_TILE);
  }
  f.globalCompositeOperation='source-over';
  ctx.drawImage(fog,0,0);
