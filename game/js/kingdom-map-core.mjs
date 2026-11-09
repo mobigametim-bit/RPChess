@@ -3,7 +3,7 @@ import { createTravelChoices, hashString, PLAYABLE_TRAVEL_TYPES, hasHealthySkirm
 import { RACE_TAGS } from './race-assets.mjs';
 import { EVENT_IDS, eventById } from './events-data.mjs';
 import {combatTheme} from './race-assets.mjs';
-import {worldAt} from './kingdom-world-core.mjs?v=20261109-kingdom-feedback1';
+import {worldAt,biomeAt} from './kingdom-world-core.mjs?v=20261109-kingdom-feedback1';
 import {SCOUT_RADIUS} from './kingdom-world-config.mjs';
 import {KINGDOM_OUTPOST_SHARD_COST} from './arena-core.mjs?v=20261109-kingdom-economy-v7';
 
@@ -14,7 +14,7 @@ const WEEK_DAYS=7,PROTOTYPE_YIELDS=Object.freeze({
 });
 
 const MAP_VERSION=1;
-const WORLD_GENERATOR_VERSION=4;
+const WORLD_GENERATOR_VERSION=5;
 const ROMANS=['I','II','III','IV','V'];
 const TYPES=['battle','skirmish','caravan','event','settlement','puzzle'];
 const EMPTY=Object.freeze({});
@@ -207,11 +207,28 @@ function advanceDay(map,actionId){
 function romanForStars(stars){const n=Math.max(1,Math.min(12,Math.round(stars||1)));return n===1?'I':n<=4?'II':n<=6?'III':n<=9?'IV':'V';}
 function castleLevel(power){return Math.max(1,Math.min(5,Math.floor(Math.max(0,power||0)/500)+1));}
 function copyMap(map){return {...map,king:{...map.king},cells:{...map.cells}};}
+// Select the new run's world by king race while preserving the castle at (0,0).
+const CASTLE_BIOMES=Object.freeze({
+ humans:['plains'],elves:['forest'],orcs:['hills','wasteland'],
+ undead:['marsh','wasteland'],dark_elves:['marsh','wasteland'],
+ dwarves:['mountain','hills'],demons:['wasteland'],angels:['mountain'],
+ dragonborn:['mountain'],beastfolk:['forest','hills'],
+ constructs:['wasteland','hills'],animals:['plains','forest'],
+ fae:['forest'],goblins:['marsh','hills']
+});
+function castleWorldSeed(runId,raceTag){
+ const preferred=CASTLE_BIOMES[raceTag]||['plains'];
+ for(let attempt=0;attempt<512;attempt++){
+  const candidate=runId+':castle-biome:'+attempt;
+  if(preferred.includes(biomeAt(candidate,0,0)))return candidate;
+ }
+ return runId;
+}
 function createKingdomMap(run,playerPower=400,raceTag='humans'){
  if(!run?.id)throw new Error('Kingdom map requires run identity');
  const castleRace=RACE_TAGS.includes(raceTag)?raceTag:'humans';
  const power=Math.max(0,Math.floor(Number(playerPower)||0));
- return growTerritory({version:MAP_VERSION,worldGeneratorVersion:WORLD_GENERATOR_VERSION,seed:run.id,king:{x:0,y:0},castle:{x:0,y:0,raceTag:castleRace},
+ return growTerritory({version:MAP_VERSION,worldGeneratorVersion:WORLD_GENERATOR_VERSION,seed:castleWorldSeed(run.id,castleRace),king:{x:0,y:0},castle:{x:0,y:0,raceTag:castleRace},
   cells:{'0,0':{status:'completed',type:'castle',annexed:true}},pendingCell:null,
   peakKingPower:power,annexationPointsSpent:0,battlePointsEarned:0,legacyBonusLands:0,
   creditedBattleEncounterIds:[],uniqueFirstConquests:[],centralOwnedCells:[],
@@ -251,7 +268,7 @@ function validateKingdomMap(map){
     !map.centralOwnedCells.every(id=>/^-?\d+,-?\d+$/.test(id))))return false;
  if(map.uniqueFirstConquests!=null&&(!Array.isArray(map.uniqueFirstConquests)||
     !map.uniqueFirstConquests.every(c=>c&&typeof c.encounterId==='string'&&
-      ['battle','caravan'].includes(c.type)&&Number.isSafeInteger(c.bonusLands)&&c.bonusLands>=0)))return false;
+      ['battle','skirmish','caravan'].includes(c.type)&&Number.isSafeInteger(c.bonusLands)&&c.bonusLands>=0)))return false;
  // Validate only the sparse visited region; NEVER allocate an infinite board.
  return Object.entries(map.cells).every(([id,cell])=>
    /^-?\d+,-?\d+$/.test(id)&&cell&&typeof cell==='object'&&
@@ -268,9 +285,10 @@ function updatePeak(map,power){
  return growTerritory({...map,peakKingPower:next});
 }
 function randomEncounter(run,point,power,planned=null){
- const coord=keyOf(point.x,point.y),seed=run.id+':kingdom:'+coord;
+ const coord=keyOf(point.x,point.y),worldSeed=run.kingdomMap?.seed||run.id,
+  seed=worldSeed+':kingdom:'+coord;
  const possible=PLAYABLE_TRAVEL_TYPES.filter(t=>t!=='skirmish'||hasHealthySkirmishCompanion(run));
- const world=planned||worldAt(run.id,point.x,point.y,{allowSkirmish:hasHealthySkirmishCompanion(run)});
+ const world=planned||worldAt(worldSeed,point.x,point.y,{allowSkirmish:hasHealthySkirmishCompanion(run)});
  // Keep this public factory compatible with the previous map and its existing
  // regression fixtures. Only revealAround decides whether a cell has a meeting.
  const kind=world.type&&possible.includes(world.type)?world.type:possible[hashString(seed+':kind')%possible.length];
@@ -373,8 +391,10 @@ function finishEncounter(map,id,{success=false,opponentPower=0}={}){
   next.completedNewEncounterCount++;
   const choice=prev.selectedEncounter;
   if(choice?.id)next=linkCompletedRoad(next,id);
-  if(['battle','caravan'].includes(choice?.type)&&!next.creditedBattleEncounterIds.includes(choice.id)){
-   const enemyPower=Math.max(0,Math.floor(Number(opponentPower)||0)),bonusLands=Math.floor(enemyPower/200);
+  if(['battle','skirmish','caravan'].includes(choice?.type)&&!next.creditedBattleEncounterIds.includes(choice.id)){
+   const enemyPower=Math.max(0,Math.floor(Number(opponentPower)||0));
+    const divisor={battle:200,skirmish:400,caravan:300}[choice.type];
+    const bonusLands=Math.floor(enemyPower/divisor);
    next.creditedBattleEncounterIds=[...next.creditedBattleEncounterIds,choice.id];
    if(choice.type==='battle')next.battlePointsEarned+=bonusLands; // legacy analytics, not new capacity
    next.uniqueFirstConquests=[...(next.uniqueFirstConquests||[]),
