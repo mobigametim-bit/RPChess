@@ -44,6 +44,24 @@ const { pathToFileURL } = require('url');
   let state=core.emptyArena();
   assert.strictEqual(core.arenaSummary(state).balance,0);
   assert.strictEqual(core.arenaSummary(state).highest,0);
+  // Kingdom production and outposts share the immutable Arena shard ledger.
+  const kingdomCredit={id:'kingdom:production:fixture',kind:'kingdom-production',
+    runId:'test-run',productionId:'production:1,2:1:shards',amount:45,at:1};
+  const funded=core.addEvent(core.emptyArena(),kingdomCredit);
+  assert.strictEqual(core.arenaSummary(funded).balance,45);
+  assert(core.arenaSummary(funded).applied.has(kingdomCredit.id));
+  const outpostSpend={id:'kingdom:outpost:fixture',kind:'kingdom-outpost',runId:'test-run',
+    cellId:'25,25',amount:core.KINGDOM_OUTPOST_SHARD_COST,at:2};
+  const spent=core.addEvent(funded,outpostSpend);
+  assert.strictEqual(core.arenaSummary(spent).balance,15);
+  assert.strictEqual(core.addEvent(spent,outpostSpend),spent,
+    'the same receipt cannot be recorded twice');
+  assert.strictEqual(core.arenaSummary(core.mergeArena(spent,funded)).balance,15,
+    'cross-device event union must never double-count outposts or weekly shards');
+  const unpaidOutpost=core.addEvent(core.emptyArena(),outpostSpend);
+  assert(!core.arenaSummary(unpaidOutpost).applied.has(outpostSpend.id),
+    'an unaffordable outpost event must not charge shards or grant a free purchase');
+
   assert.strictEqual(core.newMatch(state,foes[1].id,'skip'),state,'locked opponent');
   const blackMatch=core.newMatch(state,foes[0].id,'match:black','b');
   assert.strictEqual(core.normalizeArena(JSON.parse(JSON.stringify(blackMatch))).match.playerColor,'b','black color survives reload');

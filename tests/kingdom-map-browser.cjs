@@ -683,7 +683,60 @@ async function assertTileImage(page,cellId,relativePath){
         [...cell.querySelectorAll('img.km-object')].every(img=>img.complete&&img.naturalWidth>0);
     },point,{timeout:15000});
   }
-  assert.equal((await read(walking)).supplies,10,
+  // Weekly economy browser contract: real hit target, one claim, no double credit.
+  await walking.evaluate(async storage=>{
+    const core=await import('./js/kingdom-map-core.mjs?v=20261109-kingdom-economy-v7');
+    const run=JSON.parse(localStorage.getItem(storage));
+    const owned=run.kingdomMap.centralOwnedCells.find(id=>id!=='0,0');
+    window.__producerId=owned;
+    run.kingdomMap.cells[owned]={status:'completed',explored:true,completedOnce:true,
+      selectedEncounter:{id:'kingdom.production.fixture',type:'settlement',stars:1}};
+    run.kingdomMap.day=1;run.kingdomMap.processedThroughWeek=0;
+    run.kingdomMap.calendarActions=[];
+    for(let n=0;n<6;n++)run.kingdomMap=core.advanceDay(run.kingdomMap,'browser-week:'+n);
+    localStorage.setItem(storage,JSON.stringify(run));
+    globalThis.RPChessKingdomMap.open();
+  },key);
+  const ownedProducer=await walking.evaluate(()=>window.__producerId);
+  const collectButton=walking.locator('[data-kingdom-collect="'+ownedProducer+'"]');
+  assert.equal(await collectButton.count(),1,'weekly icon floats separately above the settlement');
+  assert.equal(await collectButton.getAttribute('data-production-kind'),'gold');
+  const beforeClaim=(await read(walking)).gold;
+  await collectButton.click();
+  assert.strictEqual((await read(walking)).gold,beforeClaim+20);
+  assert.equal(await walking.locator('[data-kingdom-collect="'+ownedProducer+'"]').count(),0);
+  assert.equal((await read(walking)).kingdomMap.productionClaims.length,1);
+  const afterClaim=(await read(walking)).gold;
+  await walking.evaluate(()=>globalThis.RPChessKingdomMap.open());
+  assert.strictEqual((await read(walking)).gold,afterClaim,
+    'reopening the map never rewards an already-collected week');
+  // Remote safe cell can become a paid outpost, using the very same Arena ledger.
+  await walking.evaluate(storage=>{
+    const run=JSON.parse(localStorage.getItem(storage));
+    run.kingdomMap.cells['4,0']={status:'completed',type:'empty',explored:true};
+    localStorage.setItem(storage,JSON.stringify(run));
+    localStorage.setItem('rpchess.reboot.v1.arena',JSON.stringify({
+      version:1,events:[{id:'kingdom:production:seed',kind:'kingdom-production',
+        runId:'fixture',productionId:'fixture:seed',amount:100,at:1}],
+      squad:'humans',match:null,updatedAt:1
+    }));
+    globalThis.dispatchEvent(new CustomEvent('rpchess:arena-updated'));
+    globalThis.RPChessKingdomMap.open();
+  },key);
+  await walking.locator('[data-kingdom-cell="4,0"]').click();
+  const buildButton=walking.locator('[data-kingdom-outpost]');
+  assert.equal(await buildButton.count(),1);
+  assert(await buildButton.isVisible(),'safe explored unowned land enables the outpost button');
+  assert.equal(await buildButton.isDisabled(),false,'shared shards are enough for construction');
+  await buildButton.click();
+  assert.equal((await read(walking)).kingdomMap.outposts.length,1);
+  assert.equal((await read(walking)).kingdomMap.day,8,'outpost construction advances one day');
+  assert.equal(await walking.locator('[data-kingdom-cell="4,0"] .km-object--outpost').count(),1);
+  assert.equal(await walking.locator('[data-kingdom-outpost]:visible').count(),0,
+    'built outpost cannot be bought again');
+  const shardBalance=await walking.locator('[data-kingdom-shards]').textContent();
+  assert.equal(shardBalance,'70','outpost cost is debited from the shared Arena ledger');
+    assert.equal((await read(walking)).supplies,10,
     'free movement through completed tiles must not spend Supplies');
   await walking.close();
   console.log('KINGDOM MAP PASS — race sprites load, Battle draw -> Battle win -> third tile, eight-direction camera');

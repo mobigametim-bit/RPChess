@@ -101,6 +101,52 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const startMap=mapCore.createKingdomMap(mapRun,500);
   assert(mapCore.validateKingdomMap(startMap));
   assert.strictEqual(startMap.day,1,'the independent calendar begins on Day 1');
+  // Weekly production is a game-calendar event, never a real-time timer.
+  const producerId=startMap.centralOwnedCells.find(id=>id!=='0,0');
+  const productionMap={...startMap,cells:{...startMap.cells,
+    [producerId]:{status:'completed',explored:true,completedOnce:true,
+      selectedEncounter:{id:'kingdom.settlement.fixture',type:'settlement',stars:1}}}};
+  let weekly=productionMap;
+  for(let day=0;day<6;day++)weekly=mapCore.advanceDay(weekly,'economic-day:'+day);
+  assert.strictEqual(weekly.day,7);
+  assert.strictEqual(mapCore.weekForDay(weekly.day),1);
+  const ready=weekly.cells[producerId].production;
+  assert(ready&&ready.kind==='gold'&&ready.amount===20,
+    'Day 7 queues one Gold reward for an owned completed Settlement');
+  assert.strictEqual(mapCore.settleWeeklyProduction(weekly),weekly,
+    'production is generated at most once per week');
+  const collected=mapCore.collectProduction(weekly,producerId);
+  assert(collected.ok&&collected.kind==='gold'&&collected.amount===20);
+  assert(!mapCore.collectProduction(collected.map,producerId).ok,
+    'the same reward cannot be claimed twice');
+  assert.deepStrictEqual(mapCore.advanceDay(collected.map,'economic-day:5'),collected.map,
+    'calendar replay never spawns the previous production again');
+  let weekTwo=collected.map;
+  for(let day=6;day<13;day++)weekTwo=mapCore.advanceDay(weekTwo,'economic-day:'+day);
+  assert.strictEqual(weekTwo.day,14);
+  assert(weekTwo.cells[producerId].production?.week===2,
+    'after claiming, the next weekly reward can arrive on Day 14');
+  // A still-uncollected reward remains one portion, not an unbounded backlog.
+  let weekThree=weekly;
+  for(let day=6;day<20;day++)weekThree=mapCore.advanceDay(weekThree,'skip-week:'+day);
+  assert.strictEqual(weekThree.cells[producerId].production?.week,1,
+    'uncollected rewards are capped at a single portion');
+  const remote={x:25,y:25},remoteId='25,25';
+  const remoteMap={...startMap,cells:{...startMap.cells,
+    [remoteId]:{status:'completed',explored:true,type:'empty'}}};
+  assert(mapCore.canBuildOutpost(remoteMap,remote));
+  const outpost=mapCore.buildOutpost(remoteMap,remote,'kingdom:outpost:fixture');
+  assert(outpost.ok&&outpost.map.day===2);
+  assert.strictEqual(outpost.map.outposts.length,1);
+  assert(outpost.outpost.cells.length===3&&outpost.outpost.cells.includes(remoteId));
+  assert(mapCore.isOwned(outpost.map,remoteId)&&!mapCore.isOwned(remoteMap,remoteId));
+  assert.strictEqual(mapCore.territoryCapacity(outpost.map),mapCore.territoryCapacity(startMap),
+    'remote outpost does not spend or inflate main-castle land capacity');
+  assert(!mapCore.buildOutpost(outpost.map,remote,'kingdom:outpost:fixture').ok,
+    'same outpost can never be paid for twice');
+  assert.strictEqual(mapCore.migrateKingdomMap(outpost.map),outpost.map,
+    'outpost and old save fields stay valid across hydration');
+
   assert.deepStrictEqual(startMap.completedRoads,[],'no roads before a cleared event');
   assert.strictEqual(startMap.lastCompletedRouteCell,null);
   assert.strictEqual(mapCore.territoryCapacity(startMap),5,
