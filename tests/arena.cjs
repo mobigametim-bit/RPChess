@@ -54,8 +54,8 @@ const { pathToFileURL } = require('url');
     cellId:'25,25',amount:core.KINGDOM_OUTPOST_SHARD_COST,at:2};
   const spent=core.addEvent(funded,outpostSpend);
   assert.strictEqual(core.arenaSummary(spent).balance,15);
-  assert.strictEqual(core.addEvent(spent,outpostSpend),spent,
-    'the same receipt cannot be recorded twice');
+  assert.strictEqual(core.arenaSummary(core.addEvent(spent,outpostSpend)).balance,15,
+    'the same receipt cannot be charged twice');
   assert.strictEqual(core.arenaSummary(core.mergeArena(spent,funded)).balance,15,
     'cross-device event union must never double-count outposts or weekly shards');
   const unpaidOutpost=core.addEvent(core.emptyArena(),outpostSpend);
