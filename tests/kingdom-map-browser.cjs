@@ -615,9 +615,8 @@ async function assertTileImage(page,cellId,relativePath){
    // Starting an encounter spends one Supply; on return the event tile reports
    // only the actual resource delta, not a fabricated repeat reward.
    const fx=completedTile.locator('.km-resource-burst');
-   assert(await fx.count()>0,'the event emits a resource delta flyout on return');
-   assert((await fx.allTextContents()).includes('-1'),
-     'the first receipt shows the actual -1 Supply change');
+   assert.equal(await fx.count(),0,
+     'a previously paid walking Supply cannot be presented again as an encounter reward');
    await completedTile.click();
    assert.equal(await page.locator('[data-kingdom-route-card]').count(),1,
      'clicking a cleared location again never reverts to the empty inspector');
