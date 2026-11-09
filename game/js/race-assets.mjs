@@ -103,6 +103,7 @@ function heroPortraitArt(character){
   return character?.portrait||character?.pieceArt||'';
 }
 function boardPieceArtForCharacter(character,color='w',currentPieceType=character?.pieceType){
+  if(character?.isArmyRecruit)return boardRacePiecePath(character.raceTag,currentPieceType||character.pieceType,color);
   // Roles can change through pawn promotion. Resolve art from the ACTUAL chess piece
   // rather than the saved roster starter role. The hero's identity survives the move.
   if(character?.isRunKing)return commanderPieceArt(character.commanderId,color);
