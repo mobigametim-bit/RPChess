@@ -236,11 +236,18 @@ async function assertTileImage(page,cellId,relativePath){
   assert(terrain.fogCells>0,'unscouted cells remain covered by fog');
   assert.equal(terrain.questionMarks,0,'fog never shows question-mark markers');
   const scoutedEvents=Object.entries(before.kingdomMap.cells).filter(([,cell])=>cell.selectedEncounter);
-  assert(scoutedEvents.length>0,'scouting reveals actual encounters around the king');
-  for(const [id] of scoutedEvents){
-    assert.equal(await page.locator('[data-kingdom-cell="'+id+'"] img.km-object--site').count(),1,
-      'scouted encounter '+id+' displays its genuine SVG before the king enters');
+  assert(scoutedEvents.length>0,'world stores deterministic future encounters');
+  for(const [id,cell] of scoutedEvents){
+    if(cell.explored)continue;
+    assert.equal(await page.locator('[data-kingdom-cell="'+id+'"] img.km-object--site').count(),0,
+      'unexplored site '+id+' is concealed, even if assigned in save');
+    assert.equal(await page.locator('[data-kingdom-cell="'+id+'"] .km-object--defender').count(),0,
+      'unexplored defender cannot leak through fog');
   }
+  assert.equal(await page.locator('.km-parchment-fog').count(),1,
+    'the upper fog canvas covers the parchment and site art');
+  assert.equal(await page.locator('[data-kingdom-cell="1,0"]').getAttribute('aria-label'),'Неизведанная территория',
+    'unvisited cell does not disclose its encounter via accessible label');
   assert(terrain.pixels[3]>0&&terrain.pixels[7]>0,
     'procedurally painted terrain and fog must both have visible pixels');
   assert.deepEqual(await read(page),before,'skin toggle must not change the run, encounters or save state');
@@ -446,8 +453,11 @@ async function assertTileImage(page,cellId,relativePath){
   await page.locator('[data-kingdom-cell="1,0"]').click();
   assert.deepEqual((await read(page)).kingdomMap.king,{x:0,y:0},
     'click selects the adjacent event for inspection, never moves the king');
-  assert.equal(await page.locator('[data-kingdom-route-card]').count(),1);
+  assert.equal(await page.locator('[data-kingdom-route-card]').count(),0,
+    'selecting a concealed cell must not reveal route details');
   await dragKing(page,'1,0');
+  assert.equal(await page.locator('[data-kingdom-route-card]').count(),1,
+    'route details become available only after the king enters');
   const moved=await read(page);
   const encounter=moved.kingdomMap.cells['1,0'].selectedEncounter;
   assert(encounter&&encounter.kingdomCell==='1,0','the selected coordinate gets exactly one saved route');
