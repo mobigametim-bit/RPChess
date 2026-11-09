@@ -255,6 +255,8 @@ async function assertTileImage(page,cellId,relativePath){
     'two-finger zoom must not accidentally start a Journey encounter');
   await page.locator('[data-kingdom-zoom-reset]').click();
   await page.waitForFunction(()=>globalThis.RPChessKingdomMap?.zoom===87);
+  // updateZoom schedules a paint; wait for the actual replacement DOM as well.
+  await page.waitForFunction(()=>document.querySelector('[data-kingdom-world]')?.dataset.mapZoom==='87');
   assert.equal(await page.evaluate(()=>localStorage.getItem('rpchess.kingdom.zoom.v1')),'87',
     'reset restores the author zoom and persists it');
   assert.deepEqual(await read(page),beforeZoomRun,'zoom must never edit the run or its saved cells');
