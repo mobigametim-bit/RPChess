@@ -4,6 +4,7 @@ import { PIECE_GLYPHS } from './roster-data.mjs';
 import { commanderPortrait } from './commander-portraits.mjs';
 import { readRun, writeRun } from './run-persistence.mjs';
 import { checkpointFor, combatMoves } from './combat-checkpoint.mjs';
+import {armyCandidates} from './kingdom-army-core.mjs';
 import { boardPieceArtForTheme, boardPieceArtForCharacter, boardRacePiecePath, namedPawnPieceArt, setBoardPieceArt, racePiecePath } from './race-assets.mjs';
 import { starsText } from './encounter-difficulty.mjs';
 import { subscribe, t, translateLegacy } from './i18n.mjs';
@@ -68,12 +69,24 @@ let toastTimer = null;
 let lastCapturedVisual = null;
 let lastBattleStatus = null;
 let lastMercenaryCasualty = null;
+let combatRosterAtStart=[];
+function combatRoster(){return activeRun?[...activeRun.roster,...armyCandidates(activeRun)]:[];}
+function preferredBattleSelection(run,seed){
+ const named=automaticBattleSelection(run.roster,seed);
+ const counts=selectedTypeCounts(run.roster,named);
+ const chosen=[...named];
+ for(const recruit of armyCandidates(run)){
+  if((counts[recruit.pieceType]||0)>=SLOT_CAPACITY[recruit.pieceType])continue;
+  chosen.push(recruit.id);counts[recruit.pieceType]++;
+ }
+ return chosen;
+}
 
 function audio() { return globalThis.RPChessRebootAudio; }
 function contentText(value) { return translateLegacy(String(value ?? '')); }
 function pieceLabel(type) { return t(`piece.${type}`); }
 function statusLabel(status) { return t(`status.${status}`); }
-function characterForId(id) { return activeRun?.roster?.find((character) => character.id === id) || null; }
+function characterForId(id) { return activeRun?.roster?.find((character) => character.id === id) || combatRosterAtStart.find(c=>c.id===id) || armyCandidates(activeRun).find(c=>c.id===id) || null; }
 function slotLabel(type) { return t('battle.card.slot', { piece:pieceLabel(type), capacity:SLOT_CAPACITY[type] || 0 }); }
 function playerColor() { return battlePlan?.playerColor || encounter?.playerColor || 'w'; }
 function enemyColor() { return battlePlan?.enemyColor || (playerColor() === 'w' ? 'b' : 'w'); }
@@ -258,7 +271,7 @@ function tryToggle(character) {
   if (character.isRunKing) { setNotice(() => t('battle.reason.kingRequired')); return; }
   const next = new Set(selectedIds);
   next.has(character.id) ? next.delete(character.id) : next.add(character.id);
-  const validation = validateBattleSelection(activeRun.roster, [...next]);
+  const validation = validateBattleSelection(combatRoster(), [...next]);
   if (!validation.ok) { setNotice(() => battleReason(validation)); return; }
   selectedIds = next; if(isCaravan()) activeRun=writeRun({...activeRun,currentCaravan:{...activeRun.currentCaravan,selectedIds:[...next]}}); setNotice(''); audio()?.click?.(); renderComposition();
 }
@@ -276,28 +289,29 @@ function battleCard(character) {
   const state=document.createElement('span'); state.className=`battle-card__status battle-card__status--${character.status}`; state.textContent=character.isRunKing?t('battle.card.kingRequired'):statusLabel(character.status);
   body.append(name,meta,state); button.append(art,body); if(!unavailable)button.addEventListener('click',()=>tryToggle(character)); return button;
 }
-function renderAvailable() { const root=prepScreen?.querySelector('[data-battle-available]'); if(!root||!activeRun)return; root.replaceChildren(); const order={healthy:0,wounded:1,dead:2}; for(const c of [...activeRun.roster].sort((a,b)=>order[a.status]-order[b.status]))root.append(battleCard(c)); }
-function renderSlotSummary() { const root=prepScreen?.querySelector('[data-battle-slot-summary]'); if(!root||!activeRun)return; root.replaceChildren(); const counts=selectedTypeCounts(activeRun.roster,[...selectedIds]); for(const type of ['king','queen','rook','bishop','knight','pawn']){const chip=document.createElement('span');chip.className='battle-slot-chip';chip.dataset.battleSlotType=type;chip.textContent=`${PIECE_GLYPHS[type]||''} ${pieceLabel(type)} ${counts[type]} / ${SLOT_CAPACITY[type]}`;root.append(chip);} }
+function renderAvailable() { const root=prepScreen?.querySelector('[data-battle-available]'); if(!root||!activeRun)return; root.replaceChildren(); const order={healthy:0,wounded:1,dead:2}; for(const c of [...combatRoster()].sort((a,b)=>order[a.status]-order[b.status]))root.append(battleCard(c)); }
+function renderSlotSummary() { const root=prepScreen?.querySelector('[data-battle-slot-summary]'); if(!root||!activeRun)return; root.replaceChildren(); const counts=selectedTypeCounts(combatRoster(),[...selectedIds]); for(const type of ['king','queen','rook','bishop','knight','pawn']){const chip=document.createElement('span');chip.className='battle-slot-chip';chip.dataset.battleSlotType=type;chip.textContent=`${PIECE_GLYPHS[type]||''} ${pieceLabel(type)} ${counts[type]} / ${SLOT_CAPACITY[type]}`;root.append(chip);} }
 function renderFormation() {
   const root=prepScreen?.querySelector('[data-battle-formation]'); if(!root||!activeRun||!encounter)return; root.replaceChildren();
-  const color=encounter.playerColor||'w'; let formation=[]; try{formation=isCaravan()?createCaravanPlan({roster:activeRun.roster,selectedIds:[...selectedIds],encounter}).playerFormation:formationFor(color,activeRun.roster,[...selectedIds],color);}catch{return;}
+  const color=encounter.playerColor||'w'; let formation=[]; try{formation=isCaravan()?createCaravanPlan({roster:combatRoster(),selectedIds:[...selectedIds],encounter}).playerFormation:formationFor(color,combatRoster(),[...selectedIds],color);}catch{return;}
   const bySquare=new Map(formation.map((piece)=>[piece.square,piece])),ranks=color==='w'?['2','1']:['7','8'];
   for(const rank of ranks)for(const file of 'abcdefgh'){const square=`${file}${rank}`,piece=bySquare.get(square),cell=document.createElement('div');cell.className='battle-formation-cell';cell.dataset.battlePreviewSquare=square;if(piece){const image=document.createElement('img');image.src=piece.id?(boardPieceArtForCharacter(characterForId(piece.id),color,piece.pieceType)||playerGenericArt(piece.pieceType,color)):playerGenericArt(piece.pieceType,color);image.alt='';if(piece.id)image.dataset.personalizedId=piece.id;const glyph=document.createElement('span');glyph.textContent=PIECE_GLYPHS[piece.pieceType]||'';cell.append(image);if(!piece.id||!characterForId(piece.id)?.isRunKing)cell.append(glyph);cell.title=piece.id?contentText(characterForId(piece.id)?.name||piece.name):contentText(piece.name);}root.append(cell);}
 }
-function renderParticipants() { const root=prepScreen?.querySelector('[data-battle-participants]'); if(!root||!activeRun)return; root.replaceChildren(); const validation=validateBattleSelection(activeRun.roster,[...selectedIds]);if(!validation.ok)return;for(const c of validation.members){const row=document.createElement('button');row.type='button';row.className='battle-participant-row';row.disabled=c.isRunKing;row.dataset.battleParticipant=c.id;const glyph=document.createElement('span');glyph.textContent=PIECE_GLYPHS[c.pieceType]||'';const name=document.createElement('strong');name.textContent=contentText(c.name);const state=document.createElement('small');state.textContent=c.isRunKing?t('battle.participant.required'):t('battle.participant.named');row.append(glyph,name,state);if(!c.isRunKing)row.addEventListener('click',()=>tryToggle(c));root.append(row);} }
+function renderParticipants() { const root=prepScreen?.querySelector('[data-battle-participants]'); if(!root||!activeRun)return; root.replaceChildren(); const validation=validateBattleSelection(combatRoster(),[...selectedIds]);if(!validation.ok)return;for(const c of validation.members){const row=document.createElement('button');row.type='button';row.className='battle-participant-row';row.disabled=c.isRunKing;row.dataset.battleParticipant=c.id;const glyph=document.createElement('span');glyph.textContent=PIECE_GLYPHS[c.pieceType]||'';const name=document.createElement('strong');name.textContent=contentText(c.name);const state=document.createElement('small');state.textContent=c.isRunKing?t('battle.participant.required'):t('battle.participant.named');row.append(glyph,name,state);if(!c.isRunKing)row.addEventListener('click',()=>tryToggle(c));root.append(row);} }
 function renderCounters() { const validation=validateBattleSelection(activeRun?.roster||[],[...selectedIds]);const start=prepScreen?.querySelector('[data-battle-start]');if(start){start.disabled=!validation.ok;start.setAttribute('aria-disabled',validation.ok?'false':'true');} }
 function renderComposition(){renderAvailable();renderSlotSummary();renderFormation();renderParticipants();renderCounters();}
 
-function resetBattleTracking(){battlePlan=null;playerBySquare=new Map();enemyBySquare=new Map();capturedIds=new Set();processedMoves=0;battleFinalized=false;lastCapturedVisual=null;lastBattleStatus=null;lastMercenaryCasualty=null;clearTimeout(finalizeTimer);finalizeTimer=null;setBattleNavigationLocked(false);}
-function openBattle(){combatType='battle';ensureBattleScreens();activeRun=readRun();if(!activeRun||activeRun.ended)return;encounter=encounterForRun(activeRun);const saved=checkpointFor(activeRun,'battle',encounter);selectedIds=new Set(saved?.selectedIds||automaticBattleSelection(activeRun.roster,`${activeRun.id}:${encounter.id}:battle-deployment`));resetBattleTracking();setNotice('');renderStaticCopy();if(saved&&validateBattleSelection(activeRun.roster,saved.selectedIds).ok){launchBattle(true);return;}startBattle();}
+function resetBattleTracking(){combatRosterAtStart=[];battlePlan=null;playerBySquare=new Map();enemyBySquare=new Map();capturedIds=new Set();processedMoves=0;battleFinalized=false;lastCapturedVisual=null;lastBattleStatus=null;lastMercenaryCasualty=null;clearTimeout(finalizeTimer);finalizeTimer=null;setBattleNavigationLocked(false);}
+function openBattle(){combatType='battle';ensureBattleScreens();activeRun=readRun();if(!activeRun||activeRun.ended)return;encounter=encounterForRun(activeRun);const saved=checkpointFor(activeRun,'battle',encounter);selectedIds=new Set(saved?.selectedIds||preferredBattleSelection(activeRun,`${activeRun.id}:${encounter.id}:battle-deployment`));resetBattleTracking();setNotice('');renderStaticCopy();if(saved&&validateBattleSelection(combatRoster(),saved.selectedIds).ok){launchBattle(true);return;}startBattle();}
 function openCaravan(event){
   combatType='caravan';ensureBattleScreens();activeRun=readRun();if(!activeRun||activeRun.ended)return;
   const choice=event?.detail?.choice||activeRun.activeTravelChoice;
   activeRun=writeRun({...activeRun,currentCaravan:createCaravanState(activeRun,choice)});
   const state=activeRun.currentCaravan;encounter=state.encounter;
-  const deployment=validateBattleSelection(activeRun.roster,state.selectedIds).ok
-    ? state.selectedIds
-    : automaticBattleSelection(activeRun.roster,`${activeRun.id}:${encounter.id}:caravan-deployment`);
+  const deployment=state.phase==='preparation'
+    ? preferredBattleSelection(activeRun,`${activeRun.id}:${encounter.id}:caravan-deployment`)
+    : validateBattleSelection(combatRoster(),state.selectedIds).ok
+      ? state.selectedIds : preferredBattleSelection(activeRun,`${activeRun.id}:${encounter.id}:caravan-deployment`);
   selectedIds=new Set(deployment);
   if(state.phase==='preparation' && deployment!==state.selectedIds)
     activeRun=writeRun({...activeRun,currentCaravan:{...state,selectedIds:deployment}});
@@ -352,8 +366,9 @@ function patchTransientBattleArt() {
 }
 
 function launchBattle(resume = false) {
+  combatRosterAtStart=combatRoster();
   const saved = resume && !isCaravan() ? checkpointFor(activeRun,'battle',encounter) : null;
-  battlePlan=(isCaravan() ? createCaravanPlan : createBattlePlan)({roster:activeRun.roster,selectedIds:[...selectedIds],encounter});
+  battlePlan=(isCaravan() ? createCaravanPlan : createBattlePlan)({roster:combatRoster(),selectedIds:[...selectedIds],encounter});
   if(isCaravan()) {
     battlePlan=activeRun.currentCaravan.plan || battlePlan;
     activeRun=writeRun({...activeRun,currentCaravan:{...activeRun.currentCaravan,phase:'combat',plan:battlePlan}});
@@ -371,7 +386,7 @@ function launchBattle(resume = false) {
   globalThis.dispatchEvent(new CustomEvent('rpchess:combat-started',{detail:{combatType}}));
 }
 function startBattle() {
-  activeRun=readRun();if(!activeRun||activeRun.ended)return;const validation=validateBattleSelection(activeRun.roster,[...selectedIds]);if(!validation.ok){setNotice(() => battleReason(validation));return;}
+  activeRun=readRun();if(!activeRun||activeRun.ended)return;const validation=validateBattleSelection(combatRoster(),[...selectedIds]);if(!validation.ok){setNotice(() => battleReason(validation));return;}
   if(isCaravan()) activeRun=writeRun({...activeRun,currentCaravan:{...activeRun.currentCaravan,phase:'artifact',selectedIds:[...selectedIds]}});
   chooseArtifact({run:activeRun,combatType,encounterId:encounter.id,onChoose:(run)=>{activeRun=writeRun(run);globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'artifact-choice'}}));launchBattle();}});
 }
@@ -406,9 +421,9 @@ function syncBattleFromChess(){if(!battlePlan||battleFinalized||!['battle','cara
   applyBoardArt();const mode=document.querySelector('[data-game-mode]');if(mode&&encounter)mode.textContent=combatDifficultyLabel();const status=globalThis.RPChessClassicChess.snapshot()?.status;if(status?.over&&!finalizeTimer)finalizeTimer=setTimeout(()=>finishBattle(status),320);}
 
 function renderCharacterList(root,characters,emptyText){if(!root)return;root.replaceChildren();if(!characters.length){const empty=document.createElement('div');empty.className='battle-aftermath-empty';empty.textContent=emptyText;root.append(empty);return;}for(const character of characters){const row=document.createElement('div');row.className='battle-aftermath-row';const art=document.createElement('img');art.src=boardPieceArtForCharacter(character,battlePlan?.playerColor||'w');art.alt='';const name=document.createElement('strong');name.textContent=contentText(character.name);const status=document.createElement('span');status.textContent=statusLabel(character.status);row.append(art,name,status);root.append(row);}}
-function renderAftermath(status=lastBattleStatus,casualty=lastMercenaryCasualty){if(!activeRun||!battlePlan||!aftermathScreen||!status)return;aftermathScreen.classList.toggle('battle-aftermath--death',Boolean(casualty));const deathLogo=aftermathScreen.querySelector('.battle-aftermath-shell>.battle-logo');if(deathLogo)deathLogo.hidden=Boolean(casualty);aftermathScreen.querySelector('.power-result')?.style.setProperty('--battle-king-portrait',`url("${new URL(commanderPortrait(activeRun.commanderId),document.baseURI).href}")`);const participants=battlePlan.participants.map((id)=>activeRun.roster.find((c)=>c.id===id)).filter(Boolean),survivors=participants.filter((c)=>c.status==='healthy'),wounded=participants.filter((c)=>c.status==='wounded'),victory=status?.type==='checkmate'&&status.winner===battlePlan.playerColor;aftermathScreen.querySelector('[data-battle-aftermath-result]').textContent=victory?t('battle.aftermath.victory'):status?.type==='checkmate'?t('battle.aftermath.defeat'):t('battle.aftermath.draw');let text=isCaravan()?t('caravan.finished'):t(wounded.length?'battle.aftermath.woundedText':'battle.aftermath.healthyText');if(isCaravan()&&activeRun.currentCaravan?.claimedReward)text+=` ${t('caravan.received')}: ${caravanRewardText(activeRun.currentCaravan.claimedReward,activeRun)}.`;if(casualty)text=`${text} ${t('battle.aftermath.debtCasualty',{name:contentText(casualty.name)})}`;aftermathScreen.querySelector('[data-battle-aftermath-text]').textContent=text;renderCharacterList(aftermathScreen.querySelector('[data-battle-survivors]'),survivors,t('battle.aftermath.emptySurvivors'));renderCharacterList(aftermathScreen.querySelector('[data-battle-wounded]'),wounded,t('battle.aftermath.emptyWounded'));}
+function renderAftermath(status=lastBattleStatus,casualty=lastMercenaryCasualty){if(!activeRun||!battlePlan||!aftermathScreen||!status)return;aftermathScreen.classList.toggle('battle-aftermath--death',Boolean(casualty));const deathLogo=aftermathScreen.querySelector('.battle-aftermath-shell>.battle-logo');if(deathLogo)deathLogo.hidden=Boolean(casualty);aftermathScreen.querySelector('.power-result')?.style.setProperty('--battle-king-portrait',`url("${new URL(commanderPortrait(activeRun.commanderId),document.baseURI).href}")`);const participants=battlePlan.participants.map((id)=>characterForId(id)).filter(Boolean),survivors=participants.filter((c)=>c.status==='healthy'),wounded=participants.filter((c)=>c.status==='wounded'),victory=status?.type==='checkmate'&&status.winner===battlePlan.playerColor;aftermathScreen.querySelector('[data-battle-aftermath-result]').textContent=victory?t('battle.aftermath.victory'):status?.type==='checkmate'?t('battle.aftermath.defeat'):t('battle.aftermath.draw');let text=isCaravan()?t('caravan.finished'):t(wounded.length?'battle.aftermath.woundedText':'battle.aftermath.healthyText');if(isCaravan()&&activeRun.currentCaravan?.claimedReward)text+=` ${t('caravan.received')}: ${caravanRewardText(activeRun.currentCaravan.claimedReward,activeRun)}.`;if(casualty)text=`${text} ${t('battle.aftermath.debtCasualty',{name:contentText(casualty.name)})}`;aftermathScreen.querySelector('[data-battle-aftermath-text]').textContent=text;renderCharacterList(aftermathScreen.querySelector('[data-battle-survivors]'),survivors,t('battle.aftermath.emptySurvivors'));renderCharacterList(aftermathScreen.querySelector('[data-battle-wounded]'),wounded,t('battle.aftermath.emptyWounded'));}
 function renderRunEnd(){if(!activeRun||!runEndScreen)return;const king=activeRun.roster.find((c)=>c.isRunKing),healthy=activeRun.roster.filter((c)=>!c.isRunKing&&c.status==='healthy').length,wounded=activeRun.roster.filter((c)=>c.status==='wounded').length;const textKey=activeRun.endReason==='king_solo_battle'?'battle.runEnd.text.soloKing':'battle.runEnd.text';runEndScreen.querySelector('[data-battle-run-end-text]').textContent=t(textKey,{name:contentText(king?.name||t('piece.king'))});const values={combats:String((activeRun.skirmishCount||0)+(activeRun.battleCount||0)),healthy:String(healthy),wounded:String(wounded)};for(const metric of runEndScreen.querySelectorAll('[data-battle-run-metric]'))metric.textContent=values[metric.dataset.battleRunMetric]||'0';}
-function finishBattle(status){if(isCaravan())return finishCaravanBattle(status);finalizeTimer=null;if(battleFinalized||!battlePlan)return;battleFinalized=true;const current=readRun();if(!current)return;const outcome=applyBattleOutcome(current,{capturedIds:[...capturedIds],participantIds:battlePlan.participants,status,playerColor:battlePlan.playerColor});const completed=clearCombatArtifactChoice({...outcome,currentCombat:null,battleCount:(Number.isInteger(current.battleCount)?current.battleCount:0)+1,lastBattle:{...(outcome.lastBattle||{}),encounterId:battlePlan.encounter.id,...(current.activeTravelChoice?.kingdomCell&&current.activeTravelChoice?.type==='battle'&&current.activeTravelChoice.seed===battlePlan.encounter.seed?{routeId:current.activeTravelChoice.id}:{}),encounterStars:battlePlan.encounter.stars,fullArmyPieces:BATTLE_PIECE_COUNT,fullArmyPoints:BATTLE_ARMY_POINTS,playerColor:battlePlan.playerColor,enemyRaceTag:battlePlan.encounter.enemyRaceTag}});const debt=globalThis.RPChessBattleMercenaries?.resolveBattleMercenaryDebt?.(completed)||{run:completed,resolved:false,casualty:null};activeRun=writeRun(debt.run);lastBattleStatus=status;lastMercenaryCasualty=debt.casualty||null;setBattleNavigationLocked(false);clearTimeout(toastTimer);toastTimer=null;document.querySelectorAll('.battle-toast').forEach((toast)=>toast.remove());globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{battleCompleted:true,mercenaryDebtSettled:Boolean(debt.resolved),casualtyId:debt.casualty?.id||null}}));if(activeRun.ended){if(globalThis.RPChessEndlessRun?.open?.(activeRun))return;renderRunEnd();showOnly('battleRunEnd');return;}renderAftermath(status,debt.casualty);showOnly('battleAftermath');globalThis.dispatchEvent?.(new CustomEvent('rpchess:combat-aftermath',{detail:{combatType:'battle'}}));}
+function finishBattle(status){if(isCaravan())return finishCaravanBattle(status);finalizeTimer=null;if(battleFinalized||!battlePlan)return;battleFinalized=true;const current=readRun();if(!current)return;const outcome=applyBattleOutcome(current,{capturedIds:[...capturedIds],participantIds:battlePlan.participants,status,playerColor:battlePlan.playerColor,receiptId:'battle:'+current.id+':'+(current.battleCount||0)+':'+battlePlan.encounter.id});const completed=clearCombatArtifactChoice({...outcome,currentCombat:null,battleCount:(Number.isInteger(current.battleCount)?current.battleCount:0)+1,lastBattle:{...(outcome.lastBattle||{}),encounterId:battlePlan.encounter.id,...(current.activeTravelChoice?.kingdomCell&&current.activeTravelChoice?.type==='battle'&&current.activeTravelChoice.seed===battlePlan.encounter.seed?{routeId:current.activeTravelChoice.id}:{}),encounterStars:battlePlan.encounter.stars,fullArmyPieces:BATTLE_PIECE_COUNT,fullArmyPoints:BATTLE_ARMY_POINTS,playerColor:battlePlan.playerColor,enemyRaceTag:battlePlan.encounter.enemyRaceTag}});const debt=globalThis.RPChessBattleMercenaries?.resolveBattleMercenaryDebt?.(completed)||{run:completed,resolved:false,casualty:null};activeRun=writeRun(debt.run);lastBattleStatus=status;lastMercenaryCasualty=debt.casualty||null;setBattleNavigationLocked(false);clearTimeout(toastTimer);toastTimer=null;document.querySelectorAll('.battle-toast').forEach((toast)=>toast.remove());globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{battleCompleted:true,mercenaryDebtSettled:Boolean(debt.resolved),casualtyId:debt.casualty?.id||null}}));if(activeRun.ended){if(globalThis.RPChessEndlessRun?.open?.(activeRun))return;renderRunEnd();showOnly('battleRunEnd');return;}renderAftermath(status,debt.casualty);showOnly('battleAftermath');globalThis.dispatchEvent?.(new CustomEvent('rpchess:combat-aftermath',{detail:{combatType:'battle'}}));}
 function forfeitBattle(){
   if(!battlePlan||battleFinalized||classicScreen?.hidden||!readRun())return false;
   const previous=readRun(),count=isCaravan()?previous.caravanCount||0:previous.battleCount||0;
