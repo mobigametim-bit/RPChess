@@ -367,12 +367,13 @@ function render(){
    }
    btn.setAttribute('aria-label',isCastle?tr('castle'):cell?.selectedEncounter?
     t('travel.type.'+cell.selectedEncounter.type):cell?.type==='empty'?tr('empty'):tr('hidden'));
-   if(!cell){const mark=document.createElement('strong');mark.textContent='?';mark.className='km-fog-mark';btn.append(mark);}
-   else if(isCastle){
+   // Outside scouting range: fog only, with no mystery punctuation or encounter placeholder.
+   // Once scouted, the stored encounter SVG is drawn immediately on its revealed cell.
+   if(isCastle&&cell){
     const mark=document.createElement('img');mark.className='km-object km-object--castle';
     mark.src=kingdomMapSprite('castle',map.castle.raceTag);mark.alt='';mark.loading='lazy';btn.append(mark);
     const level=document.createElement('small');level.className='km-level';level.textContent=['','I','II','III','IV','V'][castleLevel(map.peakKingPower)];btn.append(level);}
-   else{
+   else if(cell){
     const choice=cell.selectedEncounter;
     if(choice){
      // The encounter SVG is the site itself. Its defending chess piece is a

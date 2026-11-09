@@ -156,15 +156,21 @@ async function assertTileImage(page,cellId,relativePath){
     const corner=ctx.getImageData(20,20,1,1).data;
     return {w:canvas.width,h:canvas.height,pixels:[...center,...corner],
       bg:getComputedStyle(document.querySelector('[data-kingdom-cell="0,0"]')).backgroundImage,
-      fogVisible:getComputedStyle(document.querySelector('[data-kingdom-cell="4,3"] .km-fog-mark')).display,
+      fogCells:document.querySelectorAll('.km-cell--fog').length,
+      questionMarks:document.querySelectorAll('.km-fog-mark').length,
       worldWidth:world.getBoundingClientRect().width};
   });
   assert(terrain.w>=terrain.worldWidth&&terrain.h>=7*142,
     'procedural landscape covers the visible infinite-world viewport');
   assert.equal(terrain.bg,'none','parchment mode hides individual racial chessboard textures');
-  assert.notEqual(terrain.fogVisible,'none','question mark must remain visible over unexplored parchment fog');
-  assert.equal(await page.locator('[data-kingdom-cell="1,0"] .km-fog-mark').count(),0,
-    'scouted locations reveal their contents before entering');
+  assert(terrain.fogCells>0,'unscouted cells remain covered by fog');
+  assert.equal(terrain.questionMarks,0,'fog never shows question-mark markers');
+  const scoutedEvents=Object.entries(before.kingdomMap.cells).filter(([,cell])=>cell.selectedEncounter);
+  assert(scoutedEvents.length>0,'scouting reveals actual encounters around the king');
+  for(const [id] of scoutedEvents){
+    assert.equal(await page.locator('[data-kingdom-cell="'+id+'"] img.km-object--site').count(),1,
+      'scouted encounter '+id+' displays its genuine SVG before the king enters');
+  }
   assert(terrain.pixels[3]>0&&terrain.pixels[7]>0,
     'procedurally painted terrain and fog must both have visible pixels');
   assert.deepEqual(await read(page),before,'skin toggle must not change the run, encounters or save state');
@@ -176,7 +182,10 @@ async function assertTileImage(page,cellId,relativePath){
     'the visual preference is independent from the Journey save');
 
   assert.deepEqual(before.kingdomMap.king,{x:0,y:0});
-  assert.equal(await page.locator('[data-kingdom-cell="4,3"] .km-fog-mark').textContent(),'?');
+  assert.equal(await page.locator('[data-kingdom-cell="4,3"] .km-object').count(),0,
+    "unscouted cells have neither question marks nor encounter art");
+  assert.equal(await page.locator(".km-fog-mark").count(),0,
+    "classic map never draws mystery punctuation");
   const castleSprite=page.locator('[data-kingdom-cell="0,0"] img.km-object');
   assert.equal(await castleSprite.getAttribute('src'),
     'assets/kingdom-map/humans/humans_castle_128.svg');

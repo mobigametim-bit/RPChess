@@ -32,8 +32,6 @@ body.kingdom-map-active{overflow:hidden}
 .km-cell--terrain{background-size:cover;background-position:center;background-repeat:no-repeat}
 .km-cell--fog.km-cell--dark{background:linear-gradient(140deg,#333735,#22282b)}
 .km-cell--fog.km-cell--light{background:linear-gradient(140deg,#616660,#3c4341)}
-.km-fog-mark{font-family:Georgia,serif;color:#e5e3d3cf;font-size:clamp(18px,2.7vw,42px);
- font-weight:900;text-shadow:0 3px 4px #151818,0 0 8px #0e1612}
 .km-object{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
  width:var(--km-event-size-px,103.66px);height:var(--km-event-size-px,103.66px);
  object-fit:contain;object-position:center;max-width:100%;max-height:100%;z-index:2;

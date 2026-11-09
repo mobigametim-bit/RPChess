@@ -3,7 +3,7 @@
  * No engine combat outcome, run calendar or resource transaction belongs here.
  */
 import {terrainAt,randomAt} from './kingdom-parchment-core.mjs';
-import {VISUAL,BIOMES,RACE_TAGS_ORDER,ENCOUNTER_TYPES,DENSITY,TYPE_WEIGHTS,RACE_WEIGHTS} from './kingdom-world-config.mjs';
+import {VISUAL,BIOMES,RACE_TAGS_ORDER,ENCOUNTER_TYPES,DENSITY,DENSITY_MULTIPLIER,TYPE_WEIGHTS,RACE_WEIGHTS} from './kingdom-world-config.mjs';
 
 const LANDMARKS=Object.freeze('01_broken_wall 02_stone_circle 03_three_menhirs 04_watchtower 05_abandoned_hut 06_wood_bridge 07_stone_bridge 08_burial_mound 09_dead_tree 10_ruin_arch 11_fallen_column 12_wayside_shrine 13_obelisk 14_pond 15_notable_grove 16_ruined_gate'.split(' '));
 const MODIFIERS=Object.freeze({
@@ -62,8 +62,8 @@ function pickWeighted(values,labels,rnd){
 function worldAt(seed,x,y,{allowSkirmish=true}={}){
  const biome=biomeAt(seed,x,y),biomeIndex=BIOMES.indexOf(biome);
  const landmark=landmarkAt(seed,x,y),paths=naturalPathAt(seed,x,y);
- // Density is author's approved percent for the particular biome.
- const occupied=randomAt(seed,x,y,'encounter-presence')<DENSITY[biomeIndex]/100;
+ // Apply the author's Atlas Lab density multiplier to the biome's base percent.
+ const occupied=randomAt(seed,x,y,'encounter-presence')<Math.min(1,DENSITY[biomeIndex]*DENSITY_MULTIPLIER/100);
  if(!occupied)return {biome,landmark,paths,type:null,raceTag:null};
  const mods=MODIFIERS[landmark]||{t:{},r:{}};
  const typeWeights=TYPE_WEIGHTS[biomeIndex].map((w,i)=>{

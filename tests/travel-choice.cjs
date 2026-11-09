@@ -71,6 +71,10 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const worldConfig=await import(pathToFileURL(path.join(game,'js/kingdom-world-config.mjs')).href);
   assert.deepStrictEqual(worldConfig.DENSITY,[27,25,36,25,29,18],
     'author approved biome encounter density survives in the playable build');
+  assert.strictEqual(worldConfig.DENSITY_MULTIPLIER,1.2,
+    'new Atlas Lab config increases encounter frequency without rerolling saved cells');
+  assert.strictEqual(worldConfig.VISUAL.fogRadius,0.85);
+  assert.strictEqual(worldConfig.VISUAL.revealRadius,0.6);
   for(const row of [...worldConfig.TYPE_WEIGHTS,...worldConfig.RACE_WEIGHTS])
     assert.strictEqual(row.reduce((sum,n)=>sum+n,0),100,
       'each approved biome encounter/race distribution adds up to 100 percent');
