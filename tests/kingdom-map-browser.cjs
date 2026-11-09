@@ -251,12 +251,13 @@ async function assertTileImage(page,cellId,relativePath){
     const canvas=document.querySelector('.km-parchment-fog');
     const ctx=canvas.getContext('2d');
     const columns=Math.round(document.querySelector('.km-world').clientWidth/142);
+    const cellPx=canvas.width/columns;
     const cells=[...document.querySelectorAll('[data-kingdom-cell]')];
     function alpha(id){
       const i=cells.findIndex(cell=>cell.dataset.kingdomCell===id);
       if(i<0)throw Error('Missing visible test cell '+id);
-      return ctx.getImageData(Math.floor((i%columns+.5)*256),
-        Math.floor((Math.floor(i/columns)+.5)*256),1,1).data[3];
+      return ctx.getImageData(Math.floor((i%columns+.5)*cellPx),
+        Math.floor((Math.floor(i/columns)+.5)*cellPx),1,1).data[3];
     }
     return {owned:alpha('1,0'),unowned:alpha('4,3')};
   });
