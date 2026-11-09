@@ -165,7 +165,7 @@ async function assertTileImage(page,cellId,relativePath){
   assert(terrain.w>=terrain.worldWidth&&terrain.h>=7*142,
     'procedural landscape covers the visible infinite-world viewport');
   assert.equal(terrain.bg,'none','parchment mode hides individual racial chessboard textures');
-  assert.equal(terrain.fogVisible,'none','organic parchment fog hides marks visually; classic mode retains them');
+  assert.notEqual(terrain.fogVisible,'none','question mark must remain visible over unexplored parchment fog');
   assert.equal(await page.locator('[data-kingdom-cell="1,0"] .km-fog-mark').count(),0,
     'scouted locations reveal their contents before entering');
   assert(terrain.pixels[3]>0&&terrain.pixels[7]>0,
