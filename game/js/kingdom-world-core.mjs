@@ -85,13 +85,14 @@ function encounterPresent(seed,x,y,{spacing=ENCOUNTER_MIN_SPACING,densityMultipl
  return true;
 }
 function worldAt(seed,x,y,{allowSkirmish=true,spacing=ENCOUNTER_MIN_SPACING,
- densityMultiplier=DENSITY_MULTIPLIER,biomeDensity=DENSITY}={}){
+ densityMultiplier=DENSITY_MULTIPLIER,biomeDensity=DENSITY,
+ typeWeights=TYPE_WEIGHTS,raceWeights=RACE_WEIGHTS}={}){
  const biome=biomeAt(seed,x,y),biomeIndex=BIOMES.indexOf(biome);
  const landmark=landmarkAt(seed,x,y),paths=naturalPathAt(seed,x,y);
  const occupied=encounterPresent(seed,x,y,{spacing,densityMultiplier,biomeDensity});
  if(!occupied)return {biome,landmark,paths,type:null,raceTag:null};
  const mods=MODIFIERS[landmark]||{t:{},r:{}};
- const typeWeights=TYPE_WEIGHTS[biomeIndex].map((w,i)=>{
+ const weightedTypes=typeWeights[biomeIndex].map((w,i)=>{
   const t=ENCOUNTER_TYPES[i];
   if(t==='skirmish'&&!allowSkirmish)return 0;
   let boost=mods.t[t]||1;
@@ -101,11 +102,11 @@ function worldAt(seed,x,y,{allowSkirmish=true,spacing=ENCOUNTER_MIN_SPACING,
   if(paths.river&&t==='settlement')boost*=1.10;
   return w*Math.min(2.5,Math.max(.5,boost));
  });
- const type=pickWeighted(typeWeights,ENCOUNTER_TYPES,randomAt(seed,x,y,'encounter-type'));
+ const type=pickWeighted(weightedTypes,ENCOUNTER_TYPES,randomAt(seed,x,y,'encounter-type'));
  // Story events and puzzles keep their authored canonical identity. Only
  // combat and the cosmetic settlement affiliation sample the biome race table.
  if(type==='event'||type==='puzzle')return {biome,landmark,paths,type,raceTag:null};
- const raceWeights=RACE_WEIGHTS[biomeIndex].map((w,i)=>{
+ const weightedRaces=raceWeights[biomeIndex].map((w,i)=>{
   const race=RACE_TAGS_ORDER[i];
   let factor=(mods.r[race]||1)*(TYPE_RACE_BOOSTS[type]?.[race]||1);
   if(paths.road&&race==='humans')factor*=1.25;
@@ -113,7 +114,7 @@ function worldAt(seed,x,y,{allowSkirmish=true,spacing=ENCOUNTER_MIN_SPACING,
   if(paths.river&&race==='animals')factor*=1.20;
   return w*Math.min(2.5,Math.max(.5,factor));
  });
- const raceTag=pickWeighted(raceWeights,RACE_TAGS_ORDER,randomAt(seed,x,y,'encounter-race'));
+ const raceTag=pickWeighted(weightedRaces,RACE_TAGS_ORDER,randomAt(seed,x,y,'encounter-race'));
  return {biome,landmark,paths,type,raceTag};
 }
 export {LANDMARKS,MODIFIERS,biomeAt,landmarkAt,naturalPathAt,pickWeighted,encounterCandidate,encounterPresent,worldAt};
