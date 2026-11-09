@@ -10,6 +10,8 @@ import {gloryForRun} from './chronicle-core.mjs';
 import {ARENA_KEY,SHARD_ICON,normalizeArena,arenaSummary,addEvent,spendingTime,
  KINGDOM_OUTPOST_SHARD_COST} from './arena-core.mjs?v=20261109-kingdom-economy-v7';
 import {platform} from './platform.mjs';
+import {PIECE_TYPES,PIECE_LABELS,DEFAULT_KINGDOM_ECONOMY} from './kingdom-economy-config.mjs';
+import {buyCastleRecruit} from './kingdom-army-core.mjs';
 import {FLAVOR_POOLS} from './travel-choice-core.mjs';
 import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
@@ -281,7 +283,20 @@ function castleCard(map){
  const title=document.createElement('h3');title.textContent=tr('castle');
  const level=document.createElement('span');level.className='km-route-card__status';
  level.textContent=tr('level')+' '+['','I','II','III','IV','V'][castleLevel(map.peakKingPower)];
- details.append(title,level);visual.append(icon);card.append(visual,details);return card;
+ details.append(title,level);
+ const recruitment=document.createElement('div');recruitment.className='km-castle-recruits';
+ const heading=document.createElement('h4');heading.textContent=lang()==='en'?'Recruit for the army':'Найм рекрутов';recruitment.append(heading);
+ const gold=readRun()?.gold??0;
+ for(const type of PIECE_TYPES){
+  const price=DEFAULT_KINGDOM_ECONOMY.castle.recruitGold[type];
+  const row=document.createElement('div');row.className='km-castle-recruit';
+  const name=document.createElement('span');name.textContent=lang()==='en'?({pawn:'Pawn',knight:'Knight',bishop:'Bishop',rook:'Rook',queen:'Queen'}[type]):PIECE_LABELS[type];
+  const buy=document.createElement('button');buy.type='button';buy.dataset.kingdomCastleHire=type;
+  buy.disabled=gold<price;
+  buy.textContent=(lang()==='en'?'Hire':'Нанять')+' · '+price+' '+(lang()==='en'?'gold':'зол.');
+  row.append(name,buy);recruitment.append(row);
+ }
+ details.append(recruitment);visual.append(icon);card.append(visual,details);return card;
 }
 function routeCard(choice,run,cell){
  // Uses the Travel scene's canonical type, star, supply and reward rules.
@@ -400,6 +415,10 @@ function screenReady(){
  screen.querySelector('[data-kingdom-settings]').addEventListener('click',()=>globalThis.RPChessOpenSettings?.());
  screen.querySelector('[data-kingdom-menu]').addEventListener('click',()=>{hideMap();globalThis.RPChessRoster?.returnToMenu?.();});
  // No manual annex clicks: the growing border follows persistent Power and wins.
+ screen.addEventListener('click',event=>{
+  const btn=event.target.closest('[data-kingdom-castle-hire]');
+  if(btn&&screen.contains(btn))hireCastleUnit(btn.dataset.kingdomCastleHire);
+ });
  screen.querySelector('[data-kingdom-services]').addEventListener('click',visitSettlement);
  screen.querySelector('[data-kingdom-outpost]').addEventListener('click',constructOutpost);
  screen.querySelector('[data-kingdom-earn-shards]').addEventListener('click',goToArena);
@@ -821,6 +840,17 @@ function goToArena(){
  const arena=globalThis.RPChessArena;
  if(typeof arena?.enter!=='function'){report(tr('arenaUnavailable'));return;}
  hideMap();arena.enter();
+}
+function hireCastleUnit(pieceType){
+ const run=readRun(),map=run?.kingdomMap;
+ if(!run||run.ended||!map||!PIECE_TYPES.includes(pieceType)||map.pendingCell||
+    selected!==keyOf(map.castle.x,map.castle.y))return;
+ const id='castle:'+run.id+':'+pieceType+':'+Date.now()+':'+Math.random().toString(36).slice(2);
+ const result=buyCastleRecruit(run,{raceTag:map.castle.raceTag,pieceType,receiptId:id});
+ if(!result.ok){report(lang()==='en'?'Not enough gold':'Недостаточно золота');return;}
+ writeRun(result.run);render();
+ report((lang()==='en'?'Recruited: ':'Нанят: ')+(lang()==='en'?pieceType:PIECE_LABELS[pieceType]));
+ globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'castle-recruit'}}));
 }
 function constructOutpost(){
  const run=readRun(),point=parsePoint(selected);
