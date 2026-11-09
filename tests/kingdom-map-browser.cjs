@@ -80,22 +80,9 @@ async function assertTileImage(page,cellId,relativePath){
   page.on('requestfailed',req=>failedAssets.push(req.url()+': '+req.failure()?.errorText));
   await page.goto(url,{waitUntil:'domcontentloaded'});
   await startNewRun(page,{playerName:'Kingdom Explorer',legacyTravel:false});
-  // Force consecutive real Battles to catch the original bug:
-  // their engine encounter IDs differ from the route ID kept by the map.
-  await page.evaluate(async storage=>{
-    const {worldAt}=await import('./js/kingdom-world-core.mjs');
-    const run=JSON.parse(localStorage.getItem(storage));
-    let found=false;
-    for(let i=0;i<35000;i++){
-      const id='kingdom-e2e-chain-'+i;
-      if(worldAt(id,1,0,{allowSkirmish:true}).type==='battle'&&
-         worldAt(id,0,1,{allowSkirmish:true}).type==='battle'){
-        run.id=id;found=true;break;
-      }
-    }
-    if(!found)throw new Error('No deterministic two-Battle map fixture found');
-    localStorage.setItem(storage,JSON.stringify(run));
-  },key);
+  // A regression fixture with two adjacent Battles is intentionally *manual*.
+  // The real generator now forbids this cluster at spacing=1. Engine routing
+  // must still survive old saves with neighboring combat encounters.
   // Arena shards are account currency; the Kingdom HUD must use its ledger.
   await page.evaluate(()=>{
     localStorage.setItem('rpchess.reboot.v1.arena',JSON.stringify({
@@ -113,6 +100,21 @@ async function assertTileImage(page,cellId,relativePath){
     throw new Error('Kingdom startup failed: '+JSON.stringify({errors,failedAssets,state})+
       ' | '+String(error));
   }
+  // Explicitly preserve an older, valid saved map containing adjacent
+  // encounters. This proves old saves remain playable without rerolling them.
+  await page.evaluate(async storage=>{
+    const {randomEncounter}=await import('./js/kingdom-map-core.mjs?v=20261109-atlas-lab-v7');
+    const run=JSON.parse(localStorage.getItem(storage));
+    const planned={type:'battle',biome:'plains',landmark:null,raceTag:'humans',
+      paths:{road:false,river:false}};
+    for(const [x,y] of [[1,0],[0,1]]){
+      const id=x+','+y;
+      run.kingdomMap.cells[id]={status:'revealed',explored:false,
+        selectedEncounter:randomEncounter(run,{x,y},500,planned)};
+    }
+    localStorage.setItem(storage,JSON.stringify(run));
+    globalThis.RPChessKingdomMap.open();
+  },key);
   assert.equal(await page.locator('[data-travel-choice-screen]:not([hidden])').count(),0,
    'the old three-card choice is not the live Journey screen');
   const expectedViewportCells=await page.evaluate(()=>{
