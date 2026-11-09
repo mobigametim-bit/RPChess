@@ -582,9 +582,9 @@ function render(){
   for(let col=-CENTER_X;col<WIDTH-CENTER_X;col++){
    const point={x:view.x+col,y:view.y+row},id=keyOf(point.x,point.y);
    const cell=map.cells[id],isCastle=id===keyOf(map.castle.x,map.castle.y);
-    const visible=Boolean(isCastle||cell?.explored);
-   const within=adjacent(visualKing,point),here=id===keyOf(visualKing.x,visualKing.y);
    const owned=isOwned(map,point);
+   const visible=Boolean(isCastle||owned||cell?.explored);
+   const within=adjacent(visualKing,point),here=id===keyOf(visualKing.x,visualKing.y);
    const edges=owned?borderEdges(map,point):[];
    const btn=document.createElement('button');btn.type='button';btn.dataset.kingdomCell=id;
    const light=(point.x+point.y)%2===0;
@@ -733,7 +733,7 @@ function render(){
  world.append(kingHandle);
  const chosen=selected?map.cells[selected]:null;
  const current=map.cells[keyOf(map.king.x,map.king.y)];
- const knownChosen=chosen&&(selected===keyOf(map.castle.x,map.castle.y)||chosen.explored)?chosen:null;
+ const knownChosen=chosen&&(isOwned(map,selected)||chosen.explored)?chosen:null;
  const info=knownChosen||(!chosen?current:null);
  const castleSelected=(selected||keyOf(map.king.x,map.king.y))===keyOf(map.castle.x,map.castle.y);
  const slot=screen.querySelector('[data-kingdom-route-slot]');
