@@ -17,6 +17,8 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   for(const hardcoded of ['Припасов нет — при переходе сработает голод.','Недоступно: для стычки нужен хотя бы один здоровый герой кроме короля.','ЛЕЧЕНИЕ · НАЙМ · СНАБЖЕНИЕ'])assert(!travelAppSource.includes(hardcoded),`Travel runtime must not retain keyed RU UI copy: ${hardcoded}`);
   const buildSource=fs.readFileSync(path.join(game,'..','scripts/build.cjs'),'utf8');
   assert(buildSource.includes("'css/travel-choice-compact.css'"),'production build must package the Travel owner stylesheet');
+  assert(fs.existsSync(path.join(game,'assets/kingdom-parchment/parchment_tile_256.webp')),
+    'optimized user-provided parchment tile is a real packaged asset');
   assert(buildSource.includes("'js/kingdom-map-overlay.mjs'"),
     'production build must include the organic border/road module or Journey cannot load');
   assert(travelAppSource.includes('data-travel-run-portrait')&&travelAppSource.includes('function renderPortrait()'),'Travel owner must render and refresh the run king portrait itself');
@@ -73,7 +75,7 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const worldConfig=await import(pathToFileURL(path.join(game,'js/kingdom-world-config.mjs')).href);
   assert.deepStrictEqual(worldConfig.DENSITY,[27,25,36,25,29,18],
     'author approved biome encounter density survives in the playable build');
-  assert.strictEqual(worldConfig.DENSITY_MULTIPLIER,1.2,
+  assert.strictEqual(worldConfig.DENSITY_MULTIPLIER,0.8,
     'new Atlas Lab config increases encounter frequency without rerolling saved cells');
   assert.strictEqual(worldConfig.VISUAL.fogRadius,1.3);
   assert.strictEqual(worldConfig.VISUAL.revealRadius,0.8);

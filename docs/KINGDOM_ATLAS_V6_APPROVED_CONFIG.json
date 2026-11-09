@@ -59,7 +59,7 @@
     "showRivers": true
   },
   "simulation": {
-    "densityMultiplier": 1.2,
+    "densityMultiplier": 0.8,
     "scout": 2,
     "biomeInfluence": 1,
     "landmarkInfluence": 1,

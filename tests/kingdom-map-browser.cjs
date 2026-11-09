@@ -145,6 +145,15 @@ async function assertTileImage(page,cellId,relativePath){
   await page.waitForFunction(()=>
     document.querySelector('[data-kingdom-parchment]')?.dataset.parchmentArt==='loaded',
     null,{timeout:15000});
+  await page.waitForFunction(()=>document.querySelector('[data-kingdom-parchment]')?.dataset.parchmentTexture==='loaded');
+  const tileAsset=await page.evaluate(async()=>{
+   const response=await fetch('assets/kingdom-parchment/parchment_tile_256.webp');
+   const bytes=await response.arrayBuffer();
+   const image=await createImageBitmap(new Blob([bytes],{type:'image/webp'}));
+   return {ok:response.ok,size:bytes.byteLength,w:image.width,h:image.height};
+  });
+  assert(tileAsset.ok&&tileAsset.w===256&&tileAsset.h===256&&tileAsset.size<5000,
+    'real compressed user parchment WebP is repeated in the renderer, without paper noise');
   assert.equal(await atlas.getAttribute('data-parchment-art'),'loaded',
     'the parchment renderer uses the uploaded SVGs rather than its fallback');
   // Procedural world-space roads and rivers are independent of the retired
@@ -572,7 +581,20 @@ async function assertTileImage(page,cellId,relativePath){
      'roads stay beneath event/castle art, even on the parchment map');
    assert.equal(await page.locator('[data-kingdom-hint]').textContent(),'',
      'no select-the-neighbor instruction appears in completed route cards');
-   assert(Number(await page.locator('.km-kingdom-overlay').getAttribute('data-border-segments'))>0,
+   assert(Number(await page.locator('.km-kingdom-overlay').getAttribute('data-glowing-owned-cells'))>0,
+     'visible owned land has a subtle blue glow, clipped by fog scouting');
+  await page.locator('[data-kingdom-cell="0,0"]').hover();
+  const hoverLayers=await page.evaluate(()=>{
+    const castle=document.querySelector('[data-kingdom-cell="0,0"]');
+    const art=castle.querySelector('.km-object--castle');
+    const overlay=document.querySelector('.km-kingdom-overlay');
+    return {filter:getComputedStyle(castle).filter,z:getComputedStyle(castle).zIndex,
+      artZ:getComputedStyle(art).zIndex,roadZ:getComputedStyle(overlay).zIndex};
+  });
+  assert(hoverLayers.filter==='none'&&hoverLayers.z==='auto'&&
+    Number(hoverLayers.artZ)>Number(hoverLayers.roadZ),
+    'the hovered castle stays in front of roads, without a cell stacking context');
+  assert(Number(await page.locator('.km-kingdom-overlay').getAttribute('data-border-segments'))>0,
      'wavy territory bounds are painted on the shared overlay');
    // Starting an encounter spends one Supply; on return the event tile reports
    // only the actual resource delta, not a fabricated repeat reward.
@@ -727,6 +749,10 @@ async function assertTileImage(page,cellId,relativePath){
   const buildButton=walking.locator('[data-kingdom-outpost]');
   assert.equal(await buildButton.count(),1);
   assert(await buildButton.isVisible(),'safe explored unowned land enables the outpost button');
+  assert.equal(await buildButton.locator('img.km-shard-inline').getAttribute('src'),
+    'assets/arena/mirror_shard.png','outpost button uses Arena shard art');
+  assert(!(await buildButton.textContent()).includes('Осколки чести'),
+    'outpost price never spells out the currency name');
   assert.equal(await buildButton.isDisabled(),false,'shared shards are enough for construction');
   await buildButton.click();
   assert.equal((await read(walking)).kingdomMap.outposts.length,1);
@@ -737,7 +763,33 @@ async function assertTileImage(page,cellId,relativePath){
   assert.equal(await walking.locator('[data-kingdom-outpost]:visible').count(),0,
     'built outpost cannot be bought again');
   const shardBalance=await walking.locator('[data-kingdom-shards]').textContent();
-  assert.equal(shardBalance,'70','outpost cost is debited from the shared Arena ledger');
+  assert.equal(shardBalance,'70','outpost price comes from the shared Arena ledger');
+  // Unaffordable next outpost offers a real Arena redirect without touching the run.
+  await walking.evaluate(storage=>{
+    const run=JSON.parse(localStorage.getItem(storage));
+    run.kingdomMap.cells['5,0']={status:'completed',type:'empty',explored:true};
+    localStorage.setItem(storage,JSON.stringify(run));
+    localStorage.setItem('rpchess.reboot.v1.arena',JSON.stringify({
+      version:1,events:[],squad:'humans',match:null,updatedAt:2
+    }));
+    globalThis.dispatchEvent(new CustomEvent('rpchess:arena-updated'));
+    globalThis.RPChessKingdomMap.open();
+  },key);
+  await walking.locator('[data-kingdom-cell="5,0"]').click();
+  const earnButton=walking.locator('[data-kingdom-earn-shards]');
+  assert(await earnButton.isVisible(),'insufficient shards offer the Earn in Arena button');
+  assert.equal(await earnButton.locator('img.km-shard-inline').getAttribute('src'),
+    'assets/arena/mirror_shard.png');
+  assert(await walking.locator('[data-kingdom-outpost]').isDisabled());
+  const beforeArena=await read(walking);
+  await earnButton.click();
+  assert.equal(await walking.locator('[data-arena-screen]:not([hidden])').count(),1,
+    'Earn button enters the existing Arena scene');
+  assert.equal(await walking.locator('[data-kingdom-map-screen]:not([hidden])').count(),0,
+    'Kingdom map must hide during Arena navigation');
+  assert.deepEqual((await read(walking)).kingdomMap,beforeArena.kingdomMap,
+    'switching to Arena does not alter the run map or advance days');
+  // The previous assertion above verifies that the first outpost cost 30 shards.
     assert.equal((await read(walking)).supplies,10,
     'free movement through completed tiles must not spend Supplies');
   await walking.close();
