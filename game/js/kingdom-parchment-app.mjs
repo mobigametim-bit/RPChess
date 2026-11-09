@@ -214,10 +214,18 @@ function drawTerrainSymbols(ctx,seed,left,top,width,height,repaint,layout=TERRAI
  const jitter=Math.max(0,Math.min(1.55,Number(layout?.jitter??TERRAIN_LAYOUT.jitter)));
  const separation=Math.max(0,Math.min(1.5,Number(layout?.separation??TERRAIN_LAYOUT.separation)));
  const params={stampSpacing,jitter},near=1+Math.ceil(jitter);
+ // Memoize world coordinate samples throughout the frame. The conflict
+ // check must not resample the same vegetation stamp dozens of times.
+ const memo=new Map();
+ const sample=(ix,iy)=>{
+  const key=ix+','+iy;
+  if(!memo.has(key))memo.set(key,terrainStamp(seed,ix,iy,params));
+  return memo.get(key);
+ };
  const minX=Math.floor((left-4)/stampSpacing)-near,maxX=Math.ceil((left+width+4)/stampSpacing)+near;
  const minY=Math.floor((top-4)/stampSpacing)-near,maxY=Math.ceil((top+height+4)/stampSpacing)+near;
  for(let yi=minY;yi<=maxY;yi++)for(let xi=minX;xi<=maxX;xi++){
-  const stamp=terrainStamp(seed,xi,yi,params);
+  const stamp=sample(xi,yi);
   if(!stamp)continue;
   if(separation>0){
    let overlaps=false;
@@ -225,7 +233,7 @@ function drawTerrainSymbols(ctx,seed,left,top,width,height,repaint,layout=TERRAI
    // depends on which chunk, viewport or row is rendered first.
    for(let dy=-near;dy<=near&&!overlaps;dy++)for(let dx=-near;dx<=near;dx++){
     if(dx===0&&dy===0)continue;
-    const other=terrainStamp(seed,xi+dx,yi+dy,params);
+    const other=sample(xi+dx,yi+dy);
     if(!other||other.kind!==stamp.kind)continue;
     if(Math.hypot(other.x-stamp.x,other.y-stamp.y)>=separation*stampSpacing)continue;
     if(other.priority>stamp.priority||(other.priority===stamp.priority&&
