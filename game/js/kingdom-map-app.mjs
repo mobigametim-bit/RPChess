@@ -505,6 +505,7 @@ function render(){
  skinSwitch.setAttribute('aria-pressed',String(parchment));
  const visualKing=movement?.phase==='reveal'?movement:map.king;
  const world=screen.querySelector('[data-kingdom-world]');
+ world.dataset.kingdomMotion=movement?.phase||'idle';
  const frame=screen.querySelector('.km-map-frame').getBoundingClientRect();
  screen.querySelector('[data-kingdom-zoom-value]').textContent=zoomPx+' px';
  screen.querySelector('.km-zoom-controls').setAttribute('aria-label',tr('zoomGroup'));
@@ -682,6 +683,9 @@ function render(){
  kingHandle.type='button';kingHandle.className='km-king-drag-handle';
  kingHandle.dataset.kingdomKingHandle='';
  kingHandle.setAttribute('aria-label',tr('moveKing'));
+ // A new drag cannot be accepted while the previous king step is animating.
+ // Expose the state visibly and to browser tests instead of silently dropping it.
+ kingHandle.disabled=Boolean(movement||routeQueue.length||map.pendingCell);
  kingHandle.style.left=avatar.style.left;kingHandle.style.top=avatar.style.top;
  kingHandle.addEventListener('pointerdown',kingPointerDown);
  // Move and up handlers live on the persistent map frame (screenReady).
