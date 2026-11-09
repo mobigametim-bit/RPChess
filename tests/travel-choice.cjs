@@ -20,9 +20,10 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(fs.existsSync(path.join(game,'assets/kingdom-parchment/parchment_tile_256.webp')),
     'optimized user-provided parchment tile is a real packaged asset');
   const overlaySource=fs.readFileSync(path.join(game,'js/kingdom-map-overlay.mjs'),'utf8');
-  for(const alpha of ['rgba(35,118,222,.1225)','rgba(49,151,255,.1421)',
-    'rgba(40,133,238,.0784)'])
-    assert(overlaySource.includes(alpha),'blue territory fill must be 30% dimmer again: '+alpha);
+  assert(overlaySource.includes('rgba(35,118,222,.1225)'),
+    'blue territory fill alone is reduced by another 30 percent');
+   for(const alpha of ['rgba(49,151,255,.29)','rgba(40,133,238,.16)'])
+    assert(overlaySource.includes(alpha),'radial ownership halos must retain original definition: '+alpha);
    for(const alpha of ['rgba(28,115,249,.94)','rgba(37,139,254,.97)',
     'rgba(201,234,255,.96)'])
     assert(overlaySource.includes(alpha),'province halos stay fully bright: '+alpha);
