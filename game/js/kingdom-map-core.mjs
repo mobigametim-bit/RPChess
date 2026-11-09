@@ -6,11 +6,15 @@ import {combatTheme} from './race-assets.mjs';
 import {worldAt,biomeAt} from './kingdom-world-core.mjs?v=20261109-kingdom-feedback1';
 import {SCOUT_RADIUS} from './kingdom-world-config.mjs';
 import {KINGDOM_OUTPOST_SHARD_COST} from './arena-core.mjs?v=20261109-kingdom-economy-v7';
+import {DEFAULT_KINGDOM_ECONOMY} from './kingdom-economy-config.mjs';
 
-// Prototype yields, intentionally centralized until the player approves balance.
-const WEEK_DAYS=7,PROTOTYPE_YIELDS=Object.freeze({
- settlement:{gold:20},puzzle:{shards:5},skirmish:{recruits:1},battle:{battle:1},
- caravan:{gold:12,supplies:5},event:{gold:10,supplies:4}
+// Live defaults mirror Atlas Lab's canonical economy; change only after acceptance.
+const production=DEFAULT_KINGDOM_ECONOMY.production;
+const WEEK_DAYS=production.weekDays,PROTOTYPE_YIELDS=Object.freeze({
+ settlement:{gold:production.settlementGold},puzzle:{shards:production.puzzleShards},
+ skirmish:{recruits:production.skirmishRecruits},battle:{battle:production.battleRespawnWeeks},
+ caravan:{gold:production.caravanGold,supplies:production.caravanSupplies},
+ event:{gold:production.eventGold,supplies:production.eventSupplies}
 });
 
 const MAP_VERSION=1;
@@ -153,7 +157,7 @@ function acknowledgeReturn(map,id){
 }
 function collectProduction(map,id){
  const cell=map?.cells?.[id],item=cell?.production;
- if(!cell||!item||!['gold','supplies','shards'].includes(item.kind)||
+ if(!cell||!item||!['gold','supplies','shards','recruits'].includes(item.kind)||
     !isOwned(map,id)||cell.status!=='completed'||
     (map.productionClaims||[]).includes(item.id))return {ok:false,map};
  const next=copyMap(map);
