@@ -911,7 +911,7 @@ async function assertTileImage(page,cellId,relativePath){
   // overrides; it must be a packaged page, not a separate fake simulator.
   const labPage=await browser.newPage({viewport:{width:1440,height:900}});
   const atlasErrors=[];labPage.on('pageerror',e=>atlasErrors.push(String(e.stack||e)));
-  await labPage.goto(new URL('labPage-lab.html',url.endsWith('/')?url:url+'/').href,
+  await labPage.goto(new URL('atlas-lab.html',url.endsWith('/')?url:url+'/').href,
    {waitUntil:'domcontentloaded'});
   await labPage.locator('#simulate').waitFor({state:'visible'});
   await labPage.waitForFunction(()=>document.querySelector('#stats .stat strong')?.textContent!==undefined);
