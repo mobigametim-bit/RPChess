@@ -113,7 +113,7 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'the king scouts its 5x5 neighborhood before selecting any encounter');
   assert(exposed.cells['1,0']?.status&&exposed.cells['-1,-1']?.status,
     'nearby terrain must be known without moving onto it');
-  const known=exposed.cells['1,0'],worldIdentity=world.worldAt(mapRun.id,1,0);
+  const known=exposed.cells['1,0'],worldIdentity=world.worldAt(exposed.seed,1,0);
   assert.strictEqual(Boolean(known.selectedEncounter),Boolean(worldIdentity.type),
     'world seed decides whether a cell is quiet before the fog clears');
   assert.deepStrictEqual(world.worldAt(mapRun.id,-7,4),world.worldAt(mapRun.id,-7,4),
