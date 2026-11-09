@@ -7,6 +7,16 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
 const key='rpchess.reboot.v1.run';
 const output=process.env.RPCHESS_KINGDOM_SCREENSHOT_DIR||'test-results/kingdom-map';
 const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)||'null'),key);
+async function dragKing(page,id){
+ const handle=await page.locator('[data-kingdom-king-handle]').boundingBox();
+ const tile=await page.locator('[data-kingdom-cell="'+id+'"]').boundingBox();
+ assert(handle&&tile,'king drag requires a visible start and target tile '+id);
+ await page.mouse.move(handle.x+handle.width/2,handle.y+handle.height/2);
+ await page.mouse.down();
+ await page.mouse.move(tile.x+tile.width/2,tile.y+tile.height/2,{steps:9});
+ await page.mouse.up();
+}
+
 // Check the actual computed URL AND successful bitmap decoding. The earlier
 // pathname-only test passed even when CSS requested /css/assets/... (404).
 async function assertTileImage(page,cellId,relativePath){
@@ -398,6 +408,10 @@ async function assertTileImage(page,cellId,relativePath){
   });
   const clicked=Date.now();
   await page.locator('[data-kingdom-cell="1,0"]').click();
+  assert.deepEqual((await read(page)).kingdomMap.king,{x:0,y:0},
+    'click selects the adjacent event for inspection, never moves the king');
+  assert.equal(await page.locator('[data-kingdom-route-card]').count(),1);
+  await dragKing(page,'1,0');
   const moved=await read(page);
   const encounter=moved.kingdomMap.cells['1,0'].selectedEncounter;
   assert(encounter&&encounter.kingdomCell==='1,0','the selected coordinate gets exactly one saved route');
@@ -431,7 +445,9 @@ async function assertTileImage(page,cellId,relativePath){
   });
   assert(layers.siteSize>layers.defenderSize&&layers.defenderDepth>layers.siteDepth&&layers.overlap,
     'enemy guardian must be smaller, overlaid and visually in front of the site');
-  assert.equal(moved.supplies,before.supplies,'moving and unveiling do not charge resources prematurely');
+  const stepPrice=before.kingdomMap.centralOwnedCells.includes('1,0')?0:1;
+  assert.equal(moved.supplies,before.supplies-stepPrice,
+    'the arrival step charges exactly one Supply outside owned territory');
   assert(!fs.readFileSync(path.join(__dirname,'../game/css/kingdom-map.css'),'utf8').includes("content:'?'"),
     'fog reveal animation cannot reintroduce question marks');
   assert.equal(await page.locator('[data-kingdom-cell="1,0"] .km-fog-mark').count(),0,
@@ -486,7 +502,7 @@ async function assertTileImage(page,cellId,relativePath){
   assert(elapsed>=3850,'encounter waits for reveal, king movement and readable narrative');
   const started=await read(page);
   assert.equal(started.activeTravelChoice.id,encounter.id);
-  assert.equal(started.supplies,before.supplies-1,'the encounter takes supplies exactly once');
+  assert.equal(started.supplies,moved.supplies,'the encounter cannot bill an already paid step twice');
   assert.equal(started.kingdomMap.cells['1,0'].selectedEncounter.id,encounter.id);
   assert.equal(await page.locator('[data-kingdom-map-screen]:not([hidden])').count(),0,
    'the player is routed into an existing encounter owner');
@@ -523,7 +539,7 @@ async function assertTileImage(page,cellId,relativePath){
     'failed visit keeps its original encounter for a paid retry');
    // This second unknown tile is the user's regression: it was ignored
    // forever when the map failed to recognize the engine's encounterId.
-   await page.locator('[data-kingdom-cell="0,1"]').click();
+   await dragKing(page,'0,1');
    const second=await read(page);
    assert.deepEqual(second.kingdomMap.king,{x:0,y:1},
      'the king must be able to make a second Journey step after Battle');
@@ -583,7 +599,7 @@ async function assertTileImage(page,cellId,relativePath){
      'no select-the-neighbor instruction appears in completed route cards');
    assert(Number(await page.locator('.km-kingdom-overlay').getAttribute('data-glowing-owned-cells'))>0,
      'visible owned land has a subtle blue glow, clipped by fog scouting');
-  await page.locator('[data-kingdom-cell="0,0"]').hover();
+  await page.locator('[data-kingdom-cell="0,0"]').hover({position:{x:12,y:12}});
   const hoverLayers=await page.evaluate(()=>{
     const castle=document.querySelector('[data-kingdom-cell="0,0"]');
     const art=castle.querySelector('.km-object--castle');
@@ -607,7 +623,7 @@ async function assertTileImage(page,cellId,relativePath){
      'clicking a cleared location again never reverts to the empty inspector');
    assert.equal(await page.locator('[data-kingdom-route-card]').getAttribute('data-kingdom-route-status'),
      'completed');
-   await page.locator('[data-kingdom-cell="0,2"]').click();
+   await dragKing(page,'0,2');
    assert.deepEqual((await read(page)).kingdomMap.king,{x:0,y:2},
      'the king must be able to make a third step after another Battle victory');
   }
@@ -634,9 +650,16 @@ async function assertTileImage(page,cellId,relativePath){
   const castleAnchor=await visual('[data-kingdom-cell="0,0"]');
   for(const [dx,dy] of [[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]]){
     const id=dx+','+dy,cell='[data-kingdom-cell="'+id+'"]';
+    const prior=await read(walking);
+    const cost=prior.kingdomMap.centralOwnedCells.includes(id)?0:1;
     await walking.locator(cell).click({position:{x:20,y:20}});
+    assert.deepEqual((await read(walking)).kingdomMap.king,{x:0,y:0},
+      'a click on a distant/adjacent site must inspect, not move the king');
+    await dragKing(walking,id);
     assert.deepEqual((await read(walking)).kingdomMap.king,{x:dx,y:dy},
-      'the map must move to the specific clicked coordinate '+id);
+      'dragging the king must move to the selected coordinate '+id);
+    assert.equal((await read(walking)).supplies,Math.max(0,prior.supplies-cost),
+      'each non-owned step consumes one Supply; owned ground is free');
     assert.equal(await walking.locator(cell+'.km-cell--here').count(),1,
       'king marker must be on the clicked world tile '+id);
     const actual=await visual('.km-king'),target=await visual(cell);
@@ -646,7 +669,7 @@ async function assertTileImage(page,cellId,relativePath){
     if(dy===0)assert(Math.hypot(anchored.x-castleAnchor.x,anchored.y-castleAnchor.y)<4,
       'horizontal one-step moves retain camera slack '+id);
     // The enlarged map pans one row vertically to keep adjacent targets visible.
-    await walking.locator('[data-kingdom-cell="0,0"]').click();
+    await dragKing(walking,'0,0');
     assert.deepEqual((await read(walking)).kingdomMap.king,{x:0,y:0});
   }
   // Mixed/unknown race cells retain neutral background tiles.
@@ -789,9 +812,13 @@ async function assertTileImage(page,cellId,relativePath){
     'Kingdom map must hide during Arena navigation');
   assert.deepEqual((await read(walking)).kingdomMap,beforeArena.kingdomMap,
     'switching to Arena does not alter the run map or advance days');
-  // The previous assertion above verifies that the first outpost cost 30 shards.
-    assert.equal((await read(walking)).supplies,10,
-    'free movement through completed tiles must not spend Supplies');
+  // Walking over the three non-owned neighbors spent only their travel Supplies;
+  // returning to the castle or crossing any owned tile remains free.
+  const hudIsHidden=await walking.evaluate(()=>{
+    const hud=document.querySelector('.resource-hud');
+    return !hud||getComputedStyle(hud).display==='none';
+  });
+  assert(hudIsHidden,'Arena must hide the global run Gold/Supplies HUD');
   await walking.close();
   console.log('KINGDOM MAP PASS — race sprites load, Battle draw -> Battle win -> third tile, eight-direction camera');
  }finally{await browser.close()}
