@@ -155,15 +155,16 @@ function kingPointerEnd(e){
  e.currentTarget.classList.remove('is-dragging');
  const avatar=screen?.querySelector('.km-king');if(avatar)avatar.style.transform='';
  if(Math.hypot(e.clientX-gesture.x,e.clientY-gesture.y)<12)return;
- const handle=e.currentTarget;
- handle.style.pointerEvents='none';
- const destination=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-kingdom-cell]');
- handle.style.pointerEvents='';
+ // Hit-test world tile geometry, not elementFromPoint(): the revealed
+ // encounter art, overlays and temporary selection layers can cover a tile
+ // without changing its actual destination. This also handles mobile touch.
+ const destination=[...(screen?.querySelectorAll('[data-kingdom-cell]')||[])].find(el=>{
+  const r=el.getBoundingClientRect();
+  return e.clientX>=r.left&&e.clientX<r.right&&e.clientY>=r.top&&e.clientY<r.bottom;
+ });
  ignoreCellClicksUntil=Date.now()+500;
- if(destination){
-  const point=parsePoint(destination.dataset.kingdomCell);
-  if(point)startKingRoute(point);
- }
+ const point=parsePoint(destination?.dataset.kingdomCell);
+ if(point)startKingRoute(point);
 }
 function zoomWheel(e){
  if(!screen||screen.hidden||e.target.closest('.km-zoom-controls,.km-map-skin-switch'))return;
