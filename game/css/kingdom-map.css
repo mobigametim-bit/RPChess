@@ -45,7 +45,7 @@ body.kingdom-map-active{overflow:hidden}
 }
 .km-cell--adjacent{cursor:pointer}
 .km-cell--adjacent:hover::before{border-color:#ffeda2;box-shadow:0 0 9px #ffe9a654}
-.km-cell--adjacent::before{content:'';position:absolute;inset:4px;border:1px solid #ded2a378;pointer-events:none;z-index:3}
+.km-cell--adjacent::before{display:none!important} /* Drag replaces the old dotted walk ring. */
 .km-cell--selected{box-shadow:inset 0 0 0 3px #fff1ab;z-index:2}
 .km-cell--here{box-shadow:inset 0 0 0 2px #ffcf7a;z-index:2}
 .km-cell--failed{box-shadow:inset 0 0 0 3px #d44d46}
@@ -204,12 +204,7 @@ body.kingdom-map-active{overflow:hidden}
 .km-route-resource img{width:24px;height:24px;object-fit:contain}
 .km-route-card__mystery{color:#f8d477;font:800 18px/1 Inter,Arial,sans-serif}
 .km-cell--opening{z-index:auto}
-.km-cell--opening::after{
- content:'';position:absolute;inset:0;z-index:8;display:grid;place-items:center;
- background:linear-gradient(140deg,#3e4646,#22282d);color:#e5e1d9;
- font:900 39px/1 Georgia,serif;text-shadow:0 3px 4px #101215;
- pointer-events:none;animation:km-cell-unseal 680ms ease-out forwards
-}
+.km-cell--opening::after{display:none!important} /* No grey blot / tile mask during king motion. */
 @keyframes km-cell-unseal{
  0%{opacity:1;filter:grayscale(1)}60%{opacity:.95}100%{opacity:0}
 }
@@ -348,10 +343,7 @@ body.kingdom-map-active .resource-hud{display:none!important}
 .kingdom-map-screen.km-parchment-mode .km-cell--fog.km-cell--light{
  background:none!important
 }
-.kingdom-map-screen.km-parchment-mode .km-cell--adjacent::before{
- inset:6px;border:1px dashed rgba(233,201,125,.85);border-radius:35% 43% 39% 45%;
- box-shadow:0 0 10px rgba(230,188,98,.12)
-}
+.kingdom-map-screen.km-parchment-mode .km-cell--adjacent::before{display:none!important}
 /* Discovered but unvisited sites may be visible across many cells;
    never turn the organic atlas into a board of bright square outlines. */
 .kingdom-map-screen.km-parchment-mode .km-cell--revealed:not(.km-cell--selected),
@@ -359,10 +351,7 @@ body.kingdom-map-active .resource-hud{display:none!important}
 .kingdom-map-screen.km-parchment-mode .km-cell--selected{
  box-shadow:inset 0 0 0 1px rgba(244,208,123,.34)
 }
-.kingdom-map-screen.km-parchment-mode .km-cell--opening::after{
- background:radial-gradient(ellipse at 50% 50%,rgba(61,57,49,.58),rgba(38,39,35,.92) 100%);
- border-radius:42% 58% 48% 52%
-}
+.kingdom-map-screen.km-parchment-mode .km-cell--opening::after{display:none!important}
 .kingdom-map-screen .km-map-skin-switch{
  position:absolute;top:10px;left:10px;z-index:35;max-width:190px;
  padding:8px 12px;border-radius:5px;border:1px solid rgba(216,174,90,.72);
@@ -515,3 +504,18 @@ body.kingdom-map-active .resource-hud{display:none!important}
  outline:2px solid #88d4ff;outline-offset:3px
 }
 body.arena-active .resource-hud{display:none!important}
+
+/* The existing check-aura image is reused, tinted to green while dragging.
+   It moves with the king, never the cell, and has no mouse/touch hitbox. */
+.kingdom-map-screen .km-king-drag-aura{
+ position:absolute;z-index:14;pointer-events:none;user-select:none;
+ width:calc(var(--km-king-px,92px)*1.56);
+ height:calc(var(--km-king-px,92px)*1.56);
+ transform:translate(-50%,-50%);object-fit:contain;
+ display:none;opacity:.82;
+ filter:sepia(1) saturate(9) hue-rotate(58deg) brightness(1.33)
+        drop-shadow(0 0 13px rgba(37,233,78,.85));
+ mix-blend-mode:screen;
+}
+.kingdom-map-screen .km-king-drag-aura.is-active{display:block}
+.kingdom-map-screen .km-cell--adjacent:hover::before{display:none!important}
