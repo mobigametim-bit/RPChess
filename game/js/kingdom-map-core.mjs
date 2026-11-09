@@ -329,7 +329,7 @@ function enterCell(map,point,encounter=null,now=Date.now()){
  let next=copyMap(map);
  next.king={...point};
  if(!existing||existing.explored===false)next=advanceDay(next,'explore:'+id);
- if(existing?.status==='completed'&&existing.production?.kind==='battle'&&existing.respawnReady===true){
+ if(existing?.status==='completed'&&existing.selectedEncounter?.type==='battle'&&existing.respawnReady===true){
   // Returning champion challenge: same stars and race, no repeated land bonus.
   next.cells[id]={...existing,status:'revealed',completedOnce:true,production:null,respawnReady:false,
    explored:true,lastEntryFrom:{...before}};
