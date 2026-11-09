@@ -76,7 +76,13 @@ function startMapEncounter(choice,kingdomMap){
  if(!current||current.ended||current.activeTravelChoice||current.kingdomMap?.pendingCell!==id||
     kingdomMap?.cells?.[id]?.status!=='in_progress'||kingdomMap.cells[id].selectedEncounter?.id!==choice.id)return false;
  routing=true;
- const payment=applyTravelSupplyCost(current),count=combatCount(current,choice);
+ // Arrival now spends the Supply on each non-owned step. Existing saves and
+ // direct encounter-entry tests without a charged step retain legacy billing.
+ const entry=kingdomMap.cells[id];
+ const payment=entry.stepSuppliesCharged===true?
+  {run:current,requested:entry.stepSuppliesRequested||0,paid:entry.stepSuppliesPaid||0}:
+  applyTravelSupplyCost(current);
+ const count=combatCount(current,choice);
  let activeChoice={...choice,...(Number.isInteger(count)?{combatCountAtSelection:count}:{}),
   supplyCostAtSelection:payment.requested,supplyPaid:payment.paid};
  let next={...payment.run,kingdomMap,journeyStep:Math.max(current.journeyStep||0,choice.step),
@@ -85,8 +91,9 @@ function startMapEncounter(choice,kingdomMap){
  next=starvation.run;activeChoice=starvation.choice;
  activeRun=writeRun(next);
  globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'kingdom-encounter-start'}}));
- globalThis.RPChessResources?.showChange?.(payment.paid>0?
-  {suppliesDelta:-payment.paid,labelKey:'travel.change.travel'}:{labelKey:'travel.change.starvation'});
+ if(entry.stepSuppliesCharged!==true)
+  globalThis.RPChessResources?.showChange?.(payment.paid>0?
+   {suppliesDelta:-payment.paid,labelKey:'travel.change.travel'}:{labelKey:'travel.change.starvation'});
  routing=false;
  if(showPendingStarvation())return true;
  if(activeRun?.ended)return true;
