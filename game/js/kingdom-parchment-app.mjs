@@ -269,9 +269,18 @@ function renderParchment(canvas,{seed,view,columns,rows,map}){
  drawWaterRoads(ctx,seed,left,top,columns,rows);
  drawTerrainSymbols(ctx,seed,left,top,columns,rows,repaint);
  drawOptionalNature(ctx,seed,left,top,columns,rows,map,repaint);
- drawFog(ctx,map,left,top,columns,rows);
  drawFogInk(ctx,seed,left,top,columns,rows,map,repaint);
+ // Gameplay fog is rendered separately above hidden site SVGs.
  // Sovereignty lines now use the shared organic overlay for both map skins.
 
 }
-export {renderParchment,drawWaterRoads};
+function renderParchmentFog(canvas,{view,columns,rows,map}){
+ if(!canvas||!view||!map)return;
+ const width=columns*PARCHMENT_TILE,height=rows*PARCHMENT_TILE;
+ if(canvas.width!==width)canvas.width=width;
+ if(canvas.height!==height)canvas.height=height;
+ const ctx=canvas.getContext('2d');if(!ctx)return;
+ ctx.clearRect(0,0,width,height);
+ drawFog(ctx,map,view.x-Math.floor(columns/2),view.y-Math.floor(rows/2),columns,rows);
+}
+export {renderParchment,renderParchmentFog,drawWaterRoads};
