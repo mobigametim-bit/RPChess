@@ -3,6 +3,7 @@ import { ARTIFACTS } from './artifact-core.mjs';
 
 const ARENA_KEY = 'rpchess.reboot.v1.arena';
 const SHARD_ICON = 'assets/arena/mirror_shard.png';
+const KINGDOM_OUTPOST_SHARD_COST=30; // Tunable prototype, not final balance.
 const PIECE_CODE = Object.freeze({ pawn:'p', knight:'n', bishop:'b', rook:'r', queen:'q', king:'k' });
 const OPPONENTS = Object.freeze(PIECE_TYPES.flatMap((type, typeIndex) => RACE_TAGS.map((race, raceIndex) => {
   const index = typeIndex * RACE_TAGS.length + raceIndex;
@@ -15,9 +16,16 @@ const ARTIFACT_PRICES = Object.freeze({ 'threat.defense':8, 'threat.attack':8, '
 function emptyArena(){ return { version:1, events:[], squad:'humans', match:null, updatedAt:0 }; }
 function safeInt(n){ return Number.isSafeInteger(n) && n >= 0 ? n : 0; }
 function validEvent(event){
-  if(!event || typeof event.id!=='string' || !/^[\w:.\-]{1,100}$/.test(event.id) || !['win','loss','draw','ad','squad','artifact'].includes(event.kind) || !Number.isSafeInteger(event.at) || event.at<0) return false;
+  if(!event || typeof event.id!=='string' || !/^[\w:.\-]{1,100}$/.test(event.id) || !['win','loss','draw','ad','squad','artifact','kingdom-outpost','kingdom-production'].includes(event.kind) || !Number.isSafeInteger(event.at) || event.at<0) return false;
   if(['win','loss','draw'].includes(event.kind)) return OPPONENT_BY_ID.has(event.foe) && safeInt(event.amount)===event.amount && event.amount<=500;
   if(event.kind==='ad') return OPPONENT_BY_ID.has(event.foe) && safeInt(event.amount)===event.amount && event.amount<=500;
+  if(event.kind==='kingdom-outpost')
+    return event.amount===KINGDOM_OUTPOST_SHARD_COST&&typeof event.runId==='string'&&event.runId.length>0&&
+     typeof event.cellId==='string'&&/^-?[0-9]+,-?[0-9]+$/.test(event.cellId);
+  if(event.kind==='kingdom-production')
+    return safeInt(event.amount)===event.amount&&event.amount>0&&event.amount<=200&&
+     typeof event.runId==='string'&&event.runId.length>0&&
+     typeof event.productionId==='string'&&event.productionId.length>0;
   if(event.kind==='squad') return SQUAD_PRICES[event.race]!==undefined && (event.amount===SQUAD_PRICES[event.race] || event.amount===LEGACY_SQUAD_PRICES[event.race]);
   return Boolean(ARTIFACTS.find(a=>a.id===event.artifact)) && (event.amount===ARTIFACT_PRICES[event.artifact] || (event.artifact==='vision.piercing' && event.amount===14));
 }
@@ -37,9 +45,14 @@ function normalizeArena(raw){
 function arenaSummary(state){
   const stats=Object.fromEntries(OPPONENTS.map(foe=>[foe.id,{wins:0,losses:0,draws:0}]));
   const owned=new Set(['humans']);let balance=0,highest=0;
-  const accepted=new Set(),pendingBonuses=new Map();
+  const accepted=new Set(),applied=new Set(),pendingBonuses=new Map();
   for(const event of normalizeArena(state).events){
-    if(event.kind==='squad'){
+    if(event.kind==='kingdom-outpost'){
+      if(balance<event.amount){accepted.add(event.id);continue;}
+      balance-=event.amount;applied.add(event.id);
+    }else if(event.kind==='kingdom-production'){
+      balance+=event.amount;applied.add(event.id);
+    }else if(event.kind==='squad'){
       if(owned.has(event.race)||balance<event.amount)continue;
       owned.add(event.race);balance-=event.amount;
     } else if(event.kind==='artifact'){
@@ -62,7 +75,7 @@ function arenaSummary(state){
     }
     accepted.add(event.id);
   }
-  return {balance,owned,highest,stats,accepted};
+  return {balance,owned,highest,stats,accepted,applied};
 }
 function addEvent(state,event){
   const normalized=normalizeArena(state);
@@ -114,4 +127,4 @@ function purchaseSquad(state,race,transactionId=globalThis.crypto?.randomUUID?.(
   const price=SQUAD_PRICES[race];if(!price||arenaSummary(state).owned.has(race)||arenaSummary(state).balance<price)return state;
   return addEvent(state,{id:`squad:${race}:${transactionId}`,kind:'squad',race,amount:price,at:spendingTime(state)});
 }
-export { ARENA_KEY,SHARD_ICON,PIECE_CODE,OPPONENTS,OPPONENT_BY_ID,SQUAD_PRICES,ARTIFACT_PRICES,emptyArena,normalizeArena,arenaSummary,addEvent,mergeArena,rewardFor,newMatch,chooseArtifact,finishMatch,claimDouble,purchaseSquad };
+export { ARENA_KEY,SHARD_ICON,KINGDOM_OUTPOST_SHARD_COST,spendingTime,PIECE_CODE,OPPONENTS,OPPONENT_BY_ID,SQUAD_PRICES,ARTIFACT_PRICES,emptyArena,normalizeArena,arenaSummary,addEvent,mergeArena,rewardFor,newMatch,chooseArtifact,finishMatch,claimDouble,purchaseSquad };

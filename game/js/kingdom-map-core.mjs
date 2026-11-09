@@ -5,6 +5,13 @@ import { EVENT_IDS, eventById } from './events-data.mjs';
 import {combatTheme} from './race-assets.mjs';
 import {worldAt} from './kingdom-world-core.mjs?v=20261109-atlas-zoom-v4';
 import {SCOUT_RADIUS} from './kingdom-world-config.mjs';
+import {KINGDOM_OUTPOST_SHARD_COST} from './arena-core.mjs';
+
+// Prototype yields, intentionally centralized until the player approves balance.
+const WEEK_DAYS=7,PROTOTYPE_YIELDS=Object.freeze({
+ settlement:{gold:20},puzzle:{shards:5},skirmish:{recruits:1},battle:{battle:1},
+ caravan:{gold:12,supplies:5},event:{gold:10,supplies:4}
+});
 
 const MAP_VERSION=1;
 const ROMANS=['I','II','III','IV','V'];
@@ -26,7 +33,8 @@ function pointsAvailable(map){return Math.max(0,territoryCapacity(map)-
 function isOwned(map,point){
  const id=typeof point==='string'?point:keyOf(point.x,point.y);
  return id===keyOf(map.castle.x,map.castle.y)||
-  (map.centralOwnedCells||[]).includes(id)||Boolean(map.cells?.[id]?.annexed);
+  (map.centralOwnedCells||[]).includes(id)||Boolean(map.cells?.[id]?.annexed)||
+  (map.outposts||[]).some(post=>post.cells?.includes(id));
 }
 const CARDINAL=Object.freeze([[0,-1],[1,0],[0,1],[-1,0]]);
 function growTerritory(map){
@@ -75,6 +83,8 @@ function migrateKingdomMap(map,run=null){
   result={...result,calendarActions:[]};
  if(!Number.isInteger(result.processedThroughWeek))
   result={...result,processedThroughWeek:0};
+ if(!Array.isArray(result.outposts))result={...result,outposts:[]};
+ if(!Array.isArray(result.productionClaims))result={...result,productionClaims:[]};
  // Legacy completions have no reliable chronology; do not invent roads.
  if(!Array.isArray(result.completedRoads))
   result={...result,completedRoads:[],lastCompletedRouteCell:null};
@@ -93,11 +103,64 @@ function linkCompletedRoad(map,id){
  return {...map,completedRoads:[...(map.completedRoads||[]),
   {id:'completed:'+id,from,to:id,bend}],lastCompletedRouteCell:id};
 }
+function weekForDay(day){return Math.max(0,Math.floor((day||1)/WEEK_DAYS));}
+function productionFor(map,id,type,week){
+ const choices=PROTOTYPE_YIELDS[type];if(!choices)return null;
+ const kinds=Object.keys(choices),kind=kinds[hashString(map.seed+':production:'+id+':'+week)%kinds.length];
+ return {id:'production:'+id+':'+week+':'+kind,week,kind,amount:choices[kind]};
+}
+function settleWeeklyProduction(map){
+ const week=weekForDay(map.day);
+ if(week<=Math.max(0,map.processedThroughWeek||0))return map;
+ let cells=map.cells,created=0;
+ for(const [id,cell] of Object.entries(map.cells)){
+  const type=cell?.selectedEncounter?.type;
+  if(cell.status!=='completed'||!cell.selectedEncounter||!isOwned(map,id)||
+     cell.production||cell.respawnReady||!PROTOTYPE_YIELDS[type])continue;
+  const production=productionFor(map,id,type,week);
+  if(!production)continue;
+  if(cells===map.cells)cells={...map.cells};
+  cells[id]={...cell,production,
+   ...(production.kind==='battle'?{respawnReady:true}:{})};
+  created++;
+ }
+ return {...map,cells,processedThroughWeek:week,
+  productionCyclesResolved:Math.max(map.productionCyclesResolved||0,week)};
+}
+function collectProduction(map,id){
+ const cell=map?.cells?.[id],item=cell?.production;
+ if(!cell||!item||!['gold','supplies','shards'].includes(item.kind)||
+    !isOwned(map,id)||cell.status!=='completed'||
+    (map.productionClaims||[]).includes(item.id))return {ok:false,map};
+ const next=copyMap(map);
+ next.cells[id]={...cell,production:null};
+ next.productionClaims=[...(map.productionClaims||[]),item.id];
+ return {ok:true,map:next,kind:item.kind,amount:item.amount,receiptId:item.id};
+}
+function canBuildOutpost(map,point){
+ if(!validateKingdomMap(map)||!isPoint(point)||map.pendingCell||isOwned(map,point))return false;
+ const id=keyOf(point.x,point.y),cell=map.cells[id];
+ return Boolean(cell?.explored&&cell.status==='completed'&&
+  (cell.type==='empty'||cell.completedOnce===true)&&
+  !(map.outposts||[]).some(post=>post.id===id));
+}
+function buildOutpost(map,point,transactionId){
+ if(!canBuildOutpost(map,point)||typeof transactionId!=='string'||!transactionId)
+  return {ok:false,map};
+ const id=keyOf(point.x,point.y);
+ const neighbors=CARDINAL.map(([dx,dy])=>keyOf(point.x+dx,point.y+dy))
+  .filter(key=>!isOwned(map,key))
+  .sort((a,b)=>(hashString(map.seed+':outpost:'+id+':'+a)>>>0)-
+   (hashString(map.seed+':outpost:'+id+':'+b)>>>0)).slice(0,2);
+ const post={id,cells:[id,...neighbors],transactionId,price:KINGDOM_OUTPOST_SHARD_COST};
+ const next={...map,outposts:[...(map.outposts||[]),post]};
+ return {ok:true,map:advanceDay(next,'build-outpost:'+id),outpost:post};
+}
 function advanceDay(map,actionId){
  if(typeof actionId!=='string'||!actionId)return map;
  const actions=map.calendarActions||[];
  if(actions.includes(actionId))return map;
- return {...map,day:Math.max(1,map.day||1)+1,calendarActions:[...actions,actionId]};
+ return settleWeeklyProduction({...map,day:Math.max(1,map.day||1)+1,calendarActions:[...actions,actionId]});
 }
 function romanForStars(stars){const n=Math.max(1,Math.min(12,Math.round(stars||1)));return n===1?'I':n<=4?'II':n<=6?'III':n<=9?'IV':'V';}
 function castleLevel(power){return Math.max(1,Math.min(5,Math.floor(Math.max(0,power||0)/500)+1));}
@@ -110,7 +173,7 @@ function createKingdomMap(run,playerPower=400,raceTag='humans'){
   cells:{'0,0':{status:'completed',type:'castle',annexed:true}},pendingCell:null,
   peakKingPower:power,annexationPointsSpent:0,battlePointsEarned:0,legacyBonusLands:0,
   creditedBattleEncounterIds:[],uniqueFirstConquests:[],centralOwnedCells:[],
-  day:1,calendarActions:[],processedThroughWeek:0,
+  day:1,calendarActions:[],processedThroughWeek:0,outposts:[],productionClaims:[],
   completedRoads:[],lastCompletedRouteCell:null,
   completedNewEncounterCount:0,productionCyclesResolved:0});
 }
@@ -123,6 +186,14 @@ function validateKingdomMap(map){
     !Number.isInteger(map.battlePointsEarned)||map.battlePointsEarned<0||
     !Array.isArray(map.creditedBattleEncounterIds))return false;
  if(map.day!=null&&(!Number.isSafeInteger(map.day)||map.day<1))return false;
+ if(map.outposts!=null&&(!Array.isArray(map.outposts)||
+   !map.outposts.every(p=>p&&typeof p.id==='string'&&
+     /^-?[0-9]+,-?[0-9]+$/.test(p.id)&&Array.isArray(p.cells)&&
+     p.cells.length>=1&&p.cells.length<=3&&
+     p.cells.every(id=>typeof id==='string'&&/^-?[0-9]+,-?[0-9]+$/.test(id))&&
+     typeof p.transactionId==='string')))return false;
+ if(map.productionClaims!=null&&(!Array.isArray(map.productionClaims)||
+  !map.productionClaims.every(id=>typeof id==='string')))return false;
  if(map.completedRoads!=null&&(!Array.isArray(map.completedRoads)||
   !map.completedRoads.every(road=>road&&typeof road.id==='string'&&
    /^-?[0-9]+,-?[0-9]+$/.test(road.from)&&/^-?[0-9]+,-?[0-9]+$/.test(road.to)&&
@@ -139,7 +210,11 @@ function validateKingdomMap(map){
  return Object.entries(map.cells).every(([id,cell])=>
    /^-?\d+,-?\d+$/.test(id)&&cell&&typeof cell==='object'&&
    ['completed','revealed','in_progress','failed'].includes(cell.status)&&
-   (!cell.selectedEncounter||TYPES.includes(cell.selectedEncounter.type)));
+   (!cell.selectedEncounter||TYPES.includes(cell.selectedEncounter.type))&&
+   (!cell.production||typeof cell.production.id==='string'&&
+    ['gold','supplies','shards','battle','recruits'].includes(cell.production.kind)&&
+    Number.isSafeInteger(cell.production.week)&&cell.production.week>=1&&
+    Number.isSafeInteger(cell.production.amount)&&cell.production.amount>=0));
 }
 function updatePeak(map,power){
  const next=Math.max(map.peakKingPower,Math.max(0,Math.floor(Number(power)||0)));
@@ -209,6 +284,13 @@ function enterCell(map,point,encounter=null,now=Date.now()){
  let next=copyMap(map);
  next.king={...point};
  if(!existing||existing.explored===false)next=advanceDay(next,'explore:'+id);
+ if(existing?.status==='completed'&&existing.production?.kind==='battle'&&existing.respawnReady===true){
+  // Returning champion challenge: same stars and race, no repeated land bonus.
+  next.cells[id]={...existing,status:'revealed',production:null,respawnReady:false,
+   explored:true,lastEntryFrom:{...before}};
+  next.pendingCell=id;
+  return {ok:true,kind:'retry',map:next,cell:next.cells[id]};
+ }
  if(id===keyOf(map.castle.x,map.castle.y)||existing?.status==='completed'){
   if(existing)next.cells[id]={...existing,explored:true};
   return {ok:true,kind:'walk',map:next,cell:next.cells[id]||EMPTY};
@@ -289,4 +371,5 @@ function borderEdges(map,point){
 export {MAP_VERSION,TYPES,ROMANS,keyOf,isPoint,adjacent,orthogonal,romanForStars,castleLevel,
  createKingdomMap,validateKingdomMap,migrateKingdomMap,updatePeak,randomEncounter,revealAround,enterCell,beginEncounter,
  finishEncounter,matchesCombatReceipt,canAnnex,annexCell,pointsEarned,pointsAvailable,territoryCapacity,
- growTerritory,advanceDay,isOwned,linkCompletedRoad,borderEdges};
+ growTerritory,advanceDay,isOwned,linkCompletedRoad,borderEdges,weekForDay,productionFor,
+ settleWeeklyProduction,collectProduction,canBuildOutpost,buildOutpost,WEEK_DAYS,PROTOTYPE_YIELDS};
