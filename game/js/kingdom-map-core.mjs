@@ -328,9 +328,16 @@ function revealAround(map,run,power,radius=SCOUT_RADIUS){
  if(!validateKingdomMap(map)||!run?.id)return map;
  let cells=null;
  const range=Math.max(0,Math.min(3,Math.floor(radius)));
- for(let dy=-range;dy<=range;dy++)for(let dx=-range;dx<=range;dx++){
-  const x=map.king.x+dx,y=map.king.y+dy,id=keyOf(x,y);
+ // Sovereign land is already discovered, even where the king has never walked.
+ // Generate stable encounter data for those tiles without starting encounters.
+ const locations=new Set([keyOf(map.castle.x,map.castle.y),...(map.centralOwnedCells||[])]);
+ for(let dy=-range;dy<=range;dy++)for(let dx=-range;dx<=range;dx++)
+  locations.add(keyOf(map.king.x+dx,map.king.y+dy));
+ for(const post of map.outposts||[])for(const id of post.cells||[])locations.add(id);
+ for(const [id,cell] of Object.entries(map.cells))if(cell.annexed)locations.add(id);
+ for(const id of locations){
   if(map.cells[id])continue;
+  const [x,y]=id.split(',').map(Number);
   const world=worldAt(map.seed,x,y,{allowSkirmish:hasHealthySkirmishCompanion(run)});
   const entry=world.type?
    {status:'revealed',annexed:isOwned(map,id),explored:false,biome:world.biome,landmark:world.landmark,
