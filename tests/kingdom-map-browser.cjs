@@ -8,6 +8,13 @@ const key='rpchess.reboot.v1.run';
 const output=process.env.RPCHESS_KINGDOM_SCREENSHOT_DIR||'test-results/kingdom-map';
 const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)||'null'),key);
 async function dragKing(page,id){
+ // Position is written at movement start; the old sprite is still animating.
+ // Wait for the actual drag affordance instead of pressing it mid-flight.
+ await page.waitForFunction(()=>{
+  const handle=document.querySelector('[data-kingdom-king-handle]');
+  return handle&&!handle.disabled&&
+   document.querySelector('[data-kingdom-world]')?.dataset.kingdomMotion==='idle';
+ },null,{timeout:7000});
  await page.evaluate(()=>{
   window.__kingDragEvents=[];
   const h=document.querySelector('[data-kingdom-king-handle]');
