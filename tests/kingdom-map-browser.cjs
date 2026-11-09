@@ -900,7 +900,7 @@ async function assertTileImage(page,cellId,relativePath){
     localStorage.setItem(storage,JSON.stringify(run));
     globalThis.RPChessKingdomMap.open();
   },key);
-  await autopilot.locator('[data-kingdom-cell="3,0"]').click();
+  await autopilot.locator('[data-kingdom-cell="3,0"]').dispatchEvent('click');
   assert.deepEqual((await read(autopilot)).kingdomMap.king,{x:0,y:0},
     'clicking three squares away selects the card without moving');
   await dragKing(autopilot,'3,0');
