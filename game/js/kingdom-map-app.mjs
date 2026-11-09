@@ -12,6 +12,7 @@ import {ARENA_KEY,SHARD_ICON,normalizeArena,arenaSummary,addEvent,spendingTime,
 import {platform} from './platform.mjs';
 import {PIECE_TYPES,PIECE_LABELS,DEFAULT_KINGDOM_ECONOMY,recruitTypeForLevel} from './kingdom-economy-config.mjs';
 import {buyCastleRecruit,addArmyRecruits} from './kingdom-army-core.mjs';
+import {createSettlementState} from './settlement-core.mjs';
 import {FLAVOR_POOLS} from './travel-choice-core.mjs';
 import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
@@ -24,7 +25,7 @@ import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
  beginEncounter,finishEncounter,matchesCombatReceipt,migrateKingdomMap,territoryCapacity,castleLevel,revealAround,
- collectProduction,canBuildOutpost,buildOutpost,
+ collectProduction,canBuildOutpost,buildOutpost,canBuildSettlement,buildSettlement,
  romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges} from './kingdom-map-core.mjs?v=20261109-kingdom-feedback1';
 
 const COPY={
@@ -207,7 +208,7 @@ function readShardLedger(){
 function shardTransaction(event){
  const old=readShardLedger(),summary=arenaSummary(old);
  if(summary.applied.has(event.id))return true;
- if(event.kind==='kingdom-outpost'&&summary.balance<event.amount)return false;
+ if(['kingdom-outpost','kingdom-settlement'].includes(event.kind)&&summary.balance<event.amount)return false;
  const next=addEvent(old,{...event,at:spendingTime(old)});
  if(!arenaSummary(next).applied.has(event.id))return false;
  try{platform.storage.local?.setItem(ARENA_KEY,JSON.stringify(next));}catch{return false;}
@@ -405,6 +406,7 @@ function screenReady(){
  <div class="km-inspector-buttons"><button type="button" data-kingdom-annex hidden></button>
  <button type="button" data-kingdom-services hidden></button>
  <button type="button" data-kingdom-outpost hidden></button>
+ <button type="button" data-kingdom-build-settlement hidden></button>
  <button type="button" data-kingdom-earn-shards hidden></button></div>
  <p class="km-hint" data-kingdom-hint></p></aside></section></div>`;
  screen.style.setProperty('--km-event-size-px',(MAP_LAYOUT.cellPx*MAP_LAYOUT.eventScalePercent/100)+'px');
@@ -421,6 +423,7 @@ function screenReady(){
  });
  screen.querySelector('[data-kingdom-services]').addEventListener('click',visitSettlement);
  screen.querySelector('[data-kingdom-outpost]').addEventListener('click',constructOutpost);
+ screen.querySelector('[data-kingdom-build-settlement]').addEventListener('click',constructSettlement);
  screen.querySelector('[data-kingdom-earn-shards]').addEventListener('click',goToArena);
  screen.querySelector('[data-kingdom-world]').addEventListener('click',onWorldClick);
  const frame=screen.querySelector('.km-map-frame');
@@ -771,10 +774,21 @@ function render(){
   screen.querySelector('[data-kingdom-inspector-title]').textContent=header;
   screen.querySelector('[data-kingdom-inspector-text]').textContent=description;
  }
- const ann=screen.querySelector('[data-kingdom-annex]'),services=screen.querySelector('[data-kingdom-services]'),outpost=screen.querySelector('[data-kingdom-outpost]'),earn=screen.querySelector('[data-kingdom-earn-shards]');
+ const ann=screen.querySelector('[data-kingdom-annex]'),services=screen.querySelector('[data-kingdom-services]'),outpost=screen.querySelector('[data-kingdom-outpost]'),earn=screen.querySelector('[data-kingdom-earn-shards]'),settlementBuild=screen.querySelector('[data-kingdom-build-settlement]');
  const id=selected||keyOf(map.king.x,map.king.y);
  const selectedPoint=parsePoint(id);
  ann.hidden=true; // Annexation is now automatic; keep the legacy button inert.
+ const canPlaceSettlement=Boolean(selectedPoint&&canBuildSettlement(map,selectedPoint));
+ const ownSettlement=Boolean(selectedPoint&&isOwned(map,selectedPoint));
+ const costs=settlementPrice(ownSettlement);
+ settlementBuild.hidden=!canPlaceSettlement;
+ settlementBuild.replaceChildren(document.createTextNode((lang()==='en'?'Build Settlement':'Построить Поселение')+' · '+costs.gold+' '));
+ const goldImage=document.createElement('img');goldImage.src=GOLD_ICON;goldImage.alt='';
+ goldImage.style.cssText='height:20px;width:20px;object-fit:contain;vertical-align:middle';
+ settlementBuild.append(goldImage,document.createTextNode(' + '+costs.shards+' '),shardIcon());
+ settlementBuild.disabled=(run.gold||0)<costs.gold||honorShards()<costs.shards;
+ settlementBuild.title=settlementBuild.disabled?(lang()==='en'?'Not enough resources':'Недостаточно ресурсов'):
+  lang()==='en'?(ownSettlement?'Inside your kingdom':'Outside your kingdom'):(ownSettlement?'Внутри владений':'Вне владений');
  const buildable=Boolean(selectedPoint&&canBuildOutpost(map,selectedPoint));
  const needsShards=honorShards()<KINGDOM_OUTPOST_SHARD_COST;
  outpost.hidden=!buildable;
@@ -855,6 +869,33 @@ function goToArena(){
  const arena=globalThis.RPChessArena;
  if(typeof arena?.enter!=='function'){report(tr('arenaUnavailable'));return;}
  hideMap();arena.enter();
+}
+function settlementPrice(owned){
+ const b=DEFAULT_KINGDOM_ECONOMY.building;
+ return owned?{gold:b.settlementOwnedGold,shards:b.settlementOwnedShards}:
+  {gold:b.settlementForeignGold,shards:b.settlementForeignShards};
+}
+function constructSettlement(){
+ const run=readRun(),map=run?.kingdomMap,point=parsePoint(selected);
+ if(!run||run.ended||!map||!point||!canBuildSettlement(map,point))return;
+ const owned=isOwned(map,point),price=settlementPrice(owned);
+ if(run.gold<price.gold||honorShards()<price.shards){
+  report(lang()==='en'?'Not enough resources':'Недостаточно ресурсов');return;
+ }
+ const id=keyOf(point.x,point.y);
+ const receiptId='kingdom:settlement:'+hashString(run.id).toString(36)+':'+id.replace(',','_');
+ const result=buildSettlement(map,point,receiptId,{...price,raceTag:map.castle.raceTag});
+ if(!result.ok)return;
+ const settlementState=createSettlementState(run,result.encounter);
+ // Honor Shards are handled by the global Arena ledger; purchase has a stable receipt.
+ const accepted=shardTransaction({id:receiptId,kind:'kingdom-settlement',
+   runId:run.id,cellId:id,tier:owned?'owned':'foreign',amount:price.shards});
+ if(!accepted){report(lang()==='en'?'Not enough Honor Shards':'Недостаточно осколков чести');return;}
+ result.map.cells[id]={...result.map.cells[id],settlementState};
+ writeRun({...run,gold:run.gold-price.gold,kingdomMap:result.map});
+ selected=id;render();
+ report(lang()==='en'?'Settlement established':'Поселение построено');
+ globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'kingdom-settlement'}}));
 }
 function hireCastleUnit(pieceType){
  const run=readRun(),map=run?.kingdomMap;
