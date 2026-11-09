@@ -1,7 +1,7 @@
 /* Optional parchment atlas: an optimized, seamless author-provided ground tile.
  * The existing nature SVGs, world rivers and fog remain separate layers.
  */
-import {PARCHMENT_TILE,randomAt,pickSprite} from './kingdom-parchment-core.mjs';
+import {PARCHMENT_TILE,randomAt,terrainAt,pickSprite} from './kingdom-parchment-core.mjs';
 import {VISUAL} from './kingdom-world-config.mjs?v=20261109-kingdom-parchment-tile-v8';
 import {landmarkAt,biomeAt} from './kingdom-world-core.mjs?v=20261109-kingdom-parchment-tile-v8';
 
