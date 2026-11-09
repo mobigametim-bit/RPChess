@@ -1,15 +1,13 @@
-/* Optional atlas-style presentation only. No changes to kingdom-map gameplay.
- * Visible world is generated in cacheable 4x4-cell chunks by world coordinates.
- * The 112 artist SVGs are used lazily if assets/kingdom-parchment is installed;
- * the pure Canvas fallback keeps this experimental renderer testable on its own.
+/* Optional parchment atlas: an optimized, seamless author-provided ground tile.
+ * The existing nature SVGs, world rivers and fog remain separate layers.
  */
-import {PARCHMENT_TILE,PARCHMENT_CHUNK_CELLS,randomAt,noise2D,terrainAt,pickSprite} from './kingdom-parchment-core.mjs';
-import {VISUAL} from './kingdom-world-config.mjs?v=20261109-atlas-zoom-v4';
-import {landmarkAt,biomeAt} from './kingdom-world-core.mjs?v=20261109-atlas-v3';
+import {PARCHMENT_TILE,randomAt,pickSprite} from './kingdom-parchment-core.mjs';
+import {VISUAL} from './kingdom-world-config.mjs?v=20261109-kingdom-parchment-tile-v8';
+import {landmarkAt,biomeAt} from './kingdom-world-core.mjs?v=20261109-kingdom-parchment-tile-v8';
 
-const CHUNK_PX=PARCHMENT_TILE*PARCHMENT_CHUNK_CELLS;
-const chunkCache=new Map(),spriteCache=new Map();
-const MAX_CHUNKS=18,MAX_SPRITES=128; // 112 vector atlas assets can coexist without reload churn.
+const PAPER_TILE_SRC='assets/kingdom-parchment/parchment_tile_256.webp',PAPER_TILE_SIZE=256;
+const spriteCache=new Map();
+const MAX_SPRITES=128; // 112 vector atlas assets can coexist without reload churn.
 let assetProbe=null,assetsReady=null,latest=null,redrawQueued=false;
 let extraManifestRequested=false;
 const extraGroups={marsh:[],landmarks:[]};
@@ -62,35 +60,18 @@ function getArt(src,repaint){
  image.src=src;
  return null;
 }
-function makeChunk(seed,cx,cy){
- const key=seed+':'+cx+':'+cy;
- if(chunkCache.has(key)){
-  const hit=chunkCache.get(key);chunkCache.delete(key);chunkCache.set(key,hit);return hit;
- }
- const size=CHUNK_PX/4;
- const canvas=document.createElement('canvas');canvas.width=size;canvas.height=size;
- const ctx=canvas.getContext('2d',{alpha:false});
- if(!ctx)return canvas;
- const pixels=ctx.createImageData(size,size);
- for(let y=0;y<size;y++)for(let x=0;x<size;x++){
-  const wx=(cx*CHUNK_PX+(x+.5)*4)/PARCHMENT_TILE;
-  const wy=(cy*CHUNK_PX+(y+.5)*4)/PARCHMENT_TILE;
-  const terrain=terrainAt(seed,wx,wy);
-  const veins=noise2D(seed,wx*2.9,wy*2.9,'paper')-.5;
-  const flecks=randomAt(seed,Math.floor(wx*20),Math.floor(wy*20),'flecks')-.5;
-  const offset=Math.round((veins*23+flecks*9)*VISUAL.paperContrast);
-  const tint=terrain.kind==='forest'?[-13,1,-16]:
-             terrain.kind==='mountain'?[-16,-17,-21]:
-             terrain.kind==='hill'?[-6,-8,-12]:[0,0,0];
-  const pos=(y*size+x)*4;
-  pixels.data[pos]=Math.max(0,Math.min(255,215+offset+tint[0]));
-  pixels.data[pos+1]=Math.max(0,Math.min(255,196+offset+tint[1]));
-  pixels.data[pos+2]=Math.max(0,Math.min(255,154+offset+tint[2]));
-  pixels.data[pos+3]=255;
- }
- ctx.putImageData(pixels,0,0);
- if(chunkCache.size>=MAX_CHUNKS)chunkCache.delete(chunkCache.keys().next().value);
- chunkCache.set(key,canvas);return canvas;
+function drawTiledPaper(ctx,left,top,width,height,repaint){
+ const texture=getArt(PAPER_TILE_SRC,repaint);
+ const widthPx=Math.round(width*PARCHMENT_TILE),heightPx=Math.round(height*PARCHMENT_TILE);
+ ctx.fillStyle='#d9b77a';ctx.fillRect(0,0,widthPx,heightPx);
+ if(!texture)return false;
+ // All tiles are aligned to world pixels: panning/zoom never moves their seams.
+ const startX=Math.floor(left*PARCHMENT_TILE/PAPER_TILE_SIZE)*PAPER_TILE_SIZE-left*PARCHMENT_TILE;
+ const startY=Math.floor(top*PARCHMENT_TILE/PAPER_TILE_SIZE)*PAPER_TILE_SIZE-top*PARCHMENT_TILE;
+ for(let y=startY;y<heightPx;y+=PAPER_TILE_SIZE)
+  for(let x=startX;x<widthPx;x+=PAPER_TILE_SIZE)
+   ctx.drawImage(texture,x,y,PAPER_TILE_SIZE,PAPER_TILE_SIZE);
+ return true;
 }
 function drawVector(ctx,src,x,y,width,height,alpha,repaint){
  const art=getArt(src,repaint);if(!art)return false;
@@ -272,14 +253,8 @@ function renderParchment(canvas,{seed,view,columns,rows,map}){
  const left=view.x-Math.floor(columns/2),top=view.y-Math.floor(rows/2);
  latest=()=>{if(canvas.isConnected)renderParchment(canvas,{seed,view,columns,rows,map});};
  ctx.clearRect(0,0,width,height);
- const xMin=Math.floor(left/PARCHMENT_CHUNK_CELLS),xMax=Math.floor((left+columns)/PARCHMENT_CHUNK_CELLS);
- const yMin=Math.floor(top/PARCHMENT_CHUNK_CELLS),yMax=Math.floor((top+rows)/PARCHMENT_CHUNK_CELLS);
- for(let y=yMin;y<=yMax;y++)for(let x=xMin;x<=xMax;x++){
-  const chunk=makeChunk(seed,x,y);
-  ctx.drawImage(chunk,(x*PARCHMENT_CHUNK_CELLS-left)*PARCHMENT_TILE,
-   (y*PARCHMENT_CHUNK_CELLS-top)*PARCHMENT_TILE,CHUNK_PX,CHUNK_PX);
- }
  const repaint=()=>{if(canvas.isConnected)latest?.();};
+ canvas.dataset.parchmentTexture=drawTiledPaper(ctx,left,top,columns,rows,repaint)?'loaded':'loading';
  drawBasePatches(ctx,seed,left,top,columns,rows,repaint);
  drawWaterRoads(ctx,seed,left,top,columns,rows);
  drawTerrainSymbols(ctx,seed,left,top,columns,rows,repaint);
