@@ -29,16 +29,18 @@ const COPY={
    return:'К отряду',reveal:'Открыта встреча',entry:'Начинается',services:'Услуги поселения',
    pending:'Открываю путь…',level:'Уровень',unavailable:'Недоступно для присоединения',
    discover:'Выбери соседнюю клетку, чтобы исследовать её',congrat:'Замок получил уровень',
-   empty:'Открывайте территорию, чтобы основать королевство'},
+   empty:'Открывайте территорию, чтобы основать королевство',
+   zoomGroup:'Масштаб карты',zoomIn:'Увеличить масштаб',zoomOut:'Уменьшить масштаб',zoomReset:'Сбросить масштаб карты'},
  en:{classicMap:'Classic',parchmentMap:'Parchment',switchMap:'Map appearance',day:'Day',shards:'Honor shards',castle:'Castle',supply:'Supplies',power:'Power',points:'Annexation points',
    hidden:'Unexplored territory',empty:'Quiet terrain',safeTerrain:'No encounter at this location.',annex:'Annex · 1 point',annexed:'Part of your kingdom',
    complete:'Cleared',failed:'Failed — retry encounter',inProgress:'Encounter in progress',
    return:'Squad',reveal:'Encounter discovered',entry:'Entering',services:'Settlement services',
    pending:'Exploring…',level:'Level',unavailable:'Cannot annex yet',
    discover:'Select an adjacent tile to explore',congrat:'Castle reached level',
-   empty:'Explore the realm to found a kingdom'}
+   empty:'Explore the realm to found a kingdom',
+   zoomGroup:'Map zoom',zoomIn:'Zoom in',zoomOut:'Zoom out',zoomReset:'Reset map zoom'}
 };
-// Accepted visual-tuner preset. Fixed cell dimensions with a responsive virtual grid.
+// Atlas view scales the original 142px logical tiles to an interactive 87px default.
 const MAP_LAYOUT=Object.freeze({cellPx:142,eventScalePercent:73,kingPx:92,inspectorWidthPercent:25});
 const MIN_COLUMNS=9,MIN_ROWS=7;
 const ZOOM_KEY='rpchess.kingdom.zoom.v1',ZOOM_MIN=55,ZOOM_MAX=220;
@@ -371,9 +373,15 @@ function render(){
  const world=screen.querySelector('[data-kingdom-world]');
  const frame=screen.querySelector('.km-map-frame').getBoundingClientRect();
  screen.querySelector('[data-kingdom-zoom-value]').textContent=zoomPx+' px';
- screen.querySelector('[data-kingdom-zoom-reset]').title=lang()==='ru'?'Сбросить масштаб карты':'Reset map zoom';
- screen.querySelector('[data-kingdom-zoom-out]').title=lang()==='ru'?'Уменьшить масштаб':'Zoom out';
- screen.querySelector('[data-kingdom-zoom-in]').title=lang()==='ru'?'Увеличить масштаб':'Zoom in';
+ screen.querySelector('.km-zoom-controls').setAttribute('aria-label',tr('zoomGroup'));
+ for(const [selector,key] of [
+  ['[data-kingdom-zoom-reset]','zoomReset'],
+  ['[data-kingdom-zoom-out]','zoomOut'],
+  ['[data-kingdom-zoom-in]','zoomIn']
+ ]){
+  const button=screen.querySelector(selector);button.title=tr(key);
+  button.setAttribute('aria-label',tr(key));
+ }
  const scale=zoomPx/MAP_LAYOUT.cellPx;
  world.style.transform=`translate(-50%,-50%) scale(${scale})`;
  world.dataset.mapZoom=String(zoomPx);
