@@ -632,7 +632,7 @@ async function assertTileImage(page,cellId,relativePath){
    const fx=completedTile.locator('.km-resource-burst');
    assert.equal(await fx.count(),0,
      'a previously paid walking Supply cannot be presented again as an encounter reward');
-   await completedTile.click();
+   await completedTile.click({position:{x:17,y:17}});
    assert.equal(await page.locator('[data-kingdom-route-card]').count(),1,
      'clicking a cleared location again never reverts to the empty inspector');
    assert.equal(await page.locator('[data-kingdom-route-card]').getAttribute('data-kingdom-route-status'),
