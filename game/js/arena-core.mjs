@@ -1,9 +1,10 @@
 import { RACE_TAGS, PIECE_TYPES, racePiecePath } from './race-assets.mjs';
 import { ARTIFACTS } from './artifact-core.mjs';
+import {DEFAULT_KINGDOM_ECONOMY} from './kingdom-economy-config.mjs';
 
 const ARENA_KEY = 'rpchess.reboot.v1.arena';
 const SHARD_ICON = 'assets/arena/mirror_shard.png';
-const KINGDOM_OUTPOST_SHARD_COST=30; // Tunable prototype, not final balance.
+const KINGDOM_OUTPOST_SHARD_COST=DEFAULT_KINGDOM_ECONOMY.building.outpostShards;
 const PIECE_CODE = Object.freeze({ pawn:'p', knight:'n', bishop:'b', rook:'r', queen:'q', king:'k' });
 const OPPONENTS = Object.freeze(PIECE_TYPES.flatMap((type, typeIndex) => RACE_TAGS.map((race, raceIndex) => {
   const index = typeIndex * RACE_TAGS.length + raceIndex;
@@ -16,12 +17,16 @@ const ARTIFACT_PRICES = Object.freeze({ 'threat.defense':8, 'threat.attack':8, '
 function emptyArena(){ return { version:1, events:[], squad:'humans', match:null, updatedAt:0 }; }
 function safeInt(n){ return Number.isSafeInteger(n) && n >= 0 ? n : 0; }
 function validEvent(event){
-  if(!event || typeof event.id!=='string' || !/^[\w:.\-]{1,100}$/.test(event.id) || !['win','loss','draw','ad','squad','artifact','kingdom-outpost','kingdom-production'].includes(event.kind) || !Number.isSafeInteger(event.at) || event.at<0) return false;
+  if(!event || typeof event.id!=='string' || !/^[\w:.\-]{1,100}$/.test(event.id) || !['win','loss','draw','ad','squad','artifact','kingdom-outpost','kingdom-settlement','kingdom-production'].includes(event.kind) || !Number.isSafeInteger(event.at) || event.at<0) return false;
   if(['win','loss','draw'].includes(event.kind)) return OPPONENT_BY_ID.has(event.foe) && safeInt(event.amount)===event.amount && event.amount<=500;
   if(event.kind==='ad') return OPPONENT_BY_ID.has(event.foe) && safeInt(event.amount)===event.amount && event.amount<=500;
   if(event.kind==='kingdom-outpost')
     return event.amount===KINGDOM_OUTPOST_SHARD_COST&&typeof event.runId==='string'&&event.runId.length>0&&
      typeof event.cellId==='string'&&/^-?[0-9]+,-?[0-9]+$/.test(event.cellId);
+  if(event.kind==='kingdom-settlement')
+    return Number.isSafeInteger(event.amount)&&event.amount>0&&event.amount<=1000000&&
+      ['owned','foreign'].includes(event.tier)&&typeof event.runId==='string'&&event.runId.length>0&&
+      typeof event.cellId==='string'&&/^-?[0-9]+,-?[0-9]+$/.test(event.cellId);
   if(event.kind==='kingdom-production')
     return safeInt(event.amount)===event.amount&&event.amount>0&&event.amount<=200&&
      typeof event.runId==='string'&&event.runId.length>0&&
@@ -47,7 +52,7 @@ function arenaSummary(state){
   const owned=new Set(['humans']);let balance=0,highest=0;
   const accepted=new Set(),applied=new Set(),pendingBonuses=new Map();
   for(const event of normalizeArena(state).events){
-    if(event.kind==='kingdom-outpost'){
+    if(event.kind==='kingdom-outpost'||event.kind==='kingdom-settlement'){
       if(balance<event.amount){accepted.add(event.id);continue;}
       balance-=event.amount;applied.add(event.id);
     }else if(event.kind==='kingdom-production'){
