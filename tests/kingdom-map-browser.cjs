@@ -308,6 +308,16 @@ async function assertTileImage(page,cellId,relativePath){
       east:center('[data-kingdom-cell="1,0"]'),king:center('.km-king')};
   });
   const beforeCenters=await centers();
+  // The king animation is short; observe it from the start instead of
+  // attaching a locator after heavyweight SVG decoding has already finished.
+  await page.evaluate(()=>{
+    window.__kingMotion={seen:false,animationName:null};
+    new MutationObserver(()=>{
+      const king=document.querySelector('.km-king--moving');
+      if(king&&!window.__kingMotion.seen)
+        window.__kingMotion={seen:true,animationName:getComputedStyle(king).animationName};
+    }).observe(document.querySelector('[data-kingdom-world]'),{childList:true,subtree:true});
+  });
   const clicked=Date.now();
   await page.locator('[data-kingdom-cell="1,0"]').click();
   const moved=await read(page);
@@ -367,9 +377,9 @@ async function assertTileImage(page,cellId,relativePath){
   const still=await centers();
   assert(Math.hypot(still.king.x-beforeCenters.king.x,still.king.y-beforeCenters.king.y)<4,
     'opening cell must not move the king yet');
-  await page.locator('.km-king--moving').waitFor({timeout:2500});
-  const king=page.locator('.km-king--moving');
-  assert.equal(await king.evaluate(el=>getComputedStyle(el).animationName),'km-king-step');
+  await page.waitForFunction(()=>window.__kingMotion?.seen,{timeout:5000});
+  assert.equal(await page.evaluate(()=>window.__kingMotion.animationName),'km-king-step',
+    'the king must visibly animate into the chosen adjacent cell');
   await page.waitForTimeout(540);
   await page.locator('[data-kingdom-cell="1,0"] .km-flavor-flyout').waitFor({timeout:2000});
   const story=await page.locator('[data-kingdom-cell="1,0"] .km-flavor-flyout').textContent();
