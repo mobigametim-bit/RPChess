@@ -247,6 +247,23 @@ async function assertTileImage(page,cellId,relativePath){
   }
   assert.equal(await page.locator('.km-parchment-fog').count(),1,
     'the upper fog canvas covers the parchment and site art');
+  const territoryFog=await page.evaluate(()=>{
+    const canvas=document.querySelector('.km-parchment-fog');
+    const ctx=canvas.getContext('2d');
+    const columns=Math.round(document.querySelector('.km-world').clientWidth/142);
+    const cells=[...document.querySelectorAll('[data-kingdom-cell]')];
+    function alpha(id){
+      const i=cells.findIndex(cell=>cell.dataset.kingdomCell===id);
+      if(i<0)throw Error('Missing visible test cell '+id);
+      return ctx.getImageData(Math.floor((i%columns+.5)*256),
+        Math.floor((Math.floor(i/columns)+.5)*256),1,1).data[3];
+    }
+    return {owned:alpha('1,0'),unowned:alpha('4,3')};
+  });
+  assert.equal(territoryFog.owned,0,
+    'owned but unvisited territory is fully clear of parchment fog');
+  assert(territoryFog.unowned>0,
+    'unowned and unvisited territory remains hidden by parchment fog');
   assert(before.kingdomMap.centralOwnedCells.includes('1,0'),
     'the eastern start tile belongs to the kingdom without a king visit');
   assert.notEqual(await page.locator('[data-kingdom-cell="1,0"]').getAttribute('aria-label'),'Неизведанная территория',
