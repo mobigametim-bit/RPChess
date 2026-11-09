@@ -45,11 +45,11 @@ function landmarkAt(seed,x,y){
 function naturalPathAt(seed,x,y){
  // Mirrors the two world-space oscillating Canvas paths. Royal roads are excluded.
  const roadDrift=randomAt(seed,1,1,'road')*8;
- const k=Math.round((y-roadDrift)/12);
- const roadY=k*12+roadDrift+Math.sin(x*.37+k*2.1)*1.25+Math.sin(x*.83+k)*.18;
+ const k=Math.round((y-roadDrift)/VISUAL.roadSpacing);
+ const roadY=k*VISUAL.roadSpacing+roadDrift+Math.sin(x*.37+k*2.1)*1.25*VISUAL.roadCurve+Math.sin(x*.83+k)*.18;
  const riverDrift=randomAt(seed,1,1,'river')*12;
- const j=Math.round((x-riverDrift)/17);
- const riverX=j*17+riverDrift+Math.sin(y*.21+j*1.7)*2.15+Math.sin(y*.79+j*.3)*.55;
+ const j=Math.round((x-riverDrift)/VISUAL.riverSpacing);
+ const riverX=j*VISUAL.riverSpacing+riverDrift+Math.sin(y*.21+j*1.7)*2.15*VISUAL.riverCurve+Math.sin(y*.79+j*.3)*.55;
  return {road:Math.abs(y-roadY)<.68,river:Math.abs(x-riverX)<.55};
 }
 function pickWeighted(values,labels,rnd){
