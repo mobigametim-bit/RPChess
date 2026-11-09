@@ -37,14 +37,14 @@ async function assertTileImage(page,cellId,relativePath){
   // Force consecutive real Battles to catch the original bug:
   // their engine encounter IDs differ from the route ID kept by the map.
   await page.evaluate(async storage=>{
-    const {randomEncounter}=await import('./js/kingdom-map-core.mjs');
+    const {worldAt}=await import('./js/kingdom-world-core.mjs');
     const run=JSON.parse(localStorage.getItem(storage));
     let found=false;
-    for(let i=0;i<1200;i++){
-      const probe={...run,id:'kingdom-e2e-chain-'+i};
-      if(randomEncounter(probe,{x:1,y:0},500).type==='battle'&&
-         randomEncounter(probe,{x:0,y:1},500).type==='battle'){
-        run.id=probe.id;found=true;break;
+    for(let i=0;i<35000;i++){
+      const id='kingdom-e2e-chain-'+i;
+      if(worldAt(id,1,0,{allowSkirmish:true}).type==='battle'&&
+         worldAt(id,0,1,{allowSkirmish:true}).type==='battle'){
+        run.id=id;found=true;break;
       }
     }
     if(!found)throw new Error('No deterministic two-Battle map fixture found');
@@ -159,13 +159,15 @@ async function assertTileImage(page,cellId,relativePath){
     const corner=ctx.getImageData(20,20,1,1).data;
     return {w:canvas.width,h:canvas.height,pixels:[...center,...corner],
       bg:getComputedStyle(document.querySelector('[data-kingdom-cell="0,0"]')).backgroundImage,
-      fogVisible:getComputedStyle(document.querySelector('[data-kingdom-cell="1,0"] .km-fog-mark')).display,
+      fogVisible:getComputedStyle(document.querySelector('[data-kingdom-cell="4,3"] .km-fog-mark')).display,
       worldWidth:world.getBoundingClientRect().width};
   });
   assert(terrain.w>=terrain.worldWidth&&terrain.h>=7*142,
     'procedural landscape covers the visible infinite-world viewport');
   assert.equal(terrain.bg,'none','parchment mode hides individual racial chessboard textures');
-  assert.equal(terrain.fogVisible,'none','organic fog replaces a grid of question marks');
+  assert.notEqual(terrain.fogVisible,'none','the unexplored fog has question marks in classic mode');
+  assert.equal(await page.locator('[data-kingdom-cell="1,0"] .km-fog-mark').count(),0,
+    'scouted locations reveal their contents before entering');
   assert(terrain.pixels[3]>0&&terrain.pixels[7]>0,
     'procedurally painted terrain and fog must both have visible pixels');
   assert.deepEqual(await read(page),before,'skin toggle must not change the run, encounters or save state');
@@ -177,7 +179,7 @@ async function assertTileImage(page,cellId,relativePath){
     'the visual preference is independent from the Journey save');
 
   assert.deepEqual(before.kingdomMap.king,{x:0,y:0});
-  assert.equal(await page.locator('[data-kingdom-cell="1,0"] .km-fog-mark').textContent(),'?');
+  assert.equal(await page.locator('[data-kingdom-cell="4,3"] .km-fog-mark').textContent(),'?');
   const castleSprite=page.locator('[data-kingdom-cell="0,0"] img.km-object');
   assert.equal(await castleSprite.getAttribute('src'),
     'assets/kingdom-map/humans/humans_castle_128.svg');
