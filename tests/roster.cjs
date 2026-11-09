@@ -17,6 +17,16 @@ class MemoryStorage {
   const data = await import(pathToFileURL(path.join(game, 'js/roster-data.mjs')).href);
   const persistence = await import(pathToFileURL(path.join(game, 'js/run-persistence.mjs')).href);
   const roster = data.createStarterRoster();
+  const armyCore = await import(pathToFileURL(path.join(game,'js/kingdom-army-core.mjs')).href);
+  const initialArmyRun={gold:30,kingdomMap:{castle:{raceTag:'orcs'}},army:[]};
+  const bought=armyCore.buyCastleRecruit(initialArmyRun,{raceTag:'orcs',pieceType:'pawn',receiptId:'roster-test:1'});
+  assert(bought.ok&&bought.run.gold===22&&bought.run.army[0].raceTag==='orcs',
+    'castle purchases keep race and correctly deduct gold');
+  assert(!armyCore.buyCastleRecruit(bought.run,{raceTag:'orcs',pieceType:'pawn',receiptId:'roster-test:1'}).ok,
+    'replaying the same purchase must not duplicate Army recruits');
+  const dead=armyCore.consumeCapturedRecruits(bought.run,{capturedIds:['army:orcs:pawn:0'],receiptId:'battle:roster-test'});
+  assert(dead.ok&&dead.run.army.length===0&&!armyCore.consumeCapturedRecruits(dead.run,{capturedIds:['army:orcs:pawn:0'],receiptId:'battle:roster-test'}).ok,
+    'ordinary Army captures must be permanent and idempotent');
 
   assert.strictEqual(roster.length, 6, 'starter roster must contain exactly six personalized characters');
   assert.strictEqual(roster[0].id, 'king.oathkeeper', 'Oathkeeper must be the starter king');
