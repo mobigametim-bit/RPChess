@@ -17,6 +17,8 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   for(const hardcoded of ['Припасов нет — при переходе сработает голод.','Недоступно: для стычки нужен хотя бы один здоровый герой кроме короля.','ЛЕЧЕНИЕ · НАЙМ · СНАБЖЕНИЕ'])assert(!travelAppSource.includes(hardcoded),`Travel runtime must not retain keyed RU UI copy: ${hardcoded}`);
   const buildSource=fs.readFileSync(path.join(game,'..','scripts/build.cjs'),'utf8');
   assert(buildSource.includes("'css/travel-choice-compact.css'"),'production build must package the Travel owner stylesheet');
+  assert(buildSource.includes("'js/kingdom-map-overlay.mjs'"),
+    'production build must include the organic border/road module or Journey cannot load');
   assert(travelAppSource.includes('data-travel-run-portrait')&&travelAppSource.includes('function renderPortrait()'),'Travel owner must render and refresh the run king portrait itself');
   assert(travelAppSource.includes('commanderPortrait(activeRun.commanderId)')&&travelAppSource.includes('commanderTitle(activeRun.commanderId,currentLanguage())'),
     'Travel commander portrait/title must resolve from persisted run commanderId, not stale roster.king.portrait');
