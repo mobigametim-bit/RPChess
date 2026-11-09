@@ -38,6 +38,21 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows}){
   ctx.moveTo(x+TILE*.71,y);ctx.arc(x,y,TILE*.71,0,Math.PI*2);
  }
  ctx.clip();
+ // Blue owned-land glow is fully masked by the previously scouted fog region.
+ ctx.save();
+ let glowCount=0;
+ for(const id of owned){
+  const p=parseTile(id);if(!p)continue;
+  const x=(p.x-left+.5)*TILE,y=(p.y-top+.5)*TILE;
+  if(x<-TILE||y<-TILE||x>width+TILE||y>height+TILE)continue;
+  const glow=ctx.createRadialGradient(x,y,TILE*.08,x,y,TILE*.76);
+  glow.addColorStop(0,'rgba(70,157,240,.18)');
+  glow.addColorStop(.57,'rgba(67,149,238,.12)');
+  glow.addColorStop(1,'rgba(58,134,218,0)');
+  ctx.fillStyle=glow;ctx.fillRect(x-TILE*.78,y-TILE*.78,TILE*1.56,TILE*1.56);
+  glowCount++;
+ }
+ ctx.restore();
  let roadCount=0;
  const painted=new Set();
  for(const road of [...(map.completedRoads||[]),...(map.outpostRoads||[])]){
@@ -92,6 +107,7 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows}){
   }
  }
  ctx.restore();
+ canvas.dataset.glowingOwnedCells=String(glowCount);
  canvas.dataset.roadSegments=String(roadCount);
  canvas.dataset.borderSegments=String(borderCount);
 }

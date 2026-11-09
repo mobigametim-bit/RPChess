@@ -15,15 +15,15 @@ import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
 import {PARCHMENT_MODE_KEY} from './kingdom-parchment-core.mjs';
-import {renderParchment} from './kingdom-parchment-app.mjs?v=20261109-completed-map-v6';
-import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261109-completed-map-v6';
-import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-zoom-v4';
+import {renderParchment} from './kingdom-parchment-app.mjs?v=20261109-kingdom-parchment-tile-v8';
+import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261109-kingdom-parchment-tile-v8';
+import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-kingdom-parchment-tile-v8';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
  beginEncounter,finishEncounter,matchesCombatReceipt,migrateKingdomMap,territoryCapacity,isOwned,castleLevel,revealAround,
  collectProduction,canBuildOutpost,buildOutpost,
- romanForStars,keyOf,adjacent,borderEdges} from './kingdom-map-core.mjs?v=20261109-kingdom-economy-v7';
+ romanForStars,keyOf,adjacent,borderEdges} from './kingdom-map-core.mjs?v=20261109-kingdom-parchment-tile-v8';
 
 const COPY={
  ru:{classicMap:'Классика',parchmentMap:'Пергамент',switchMap:'Оформление карты',day:'День',shards:'Осколки чести',castle:'Замок',supply:'Припасы',power:'Мощь',points:'Очки присоединения',
@@ -32,7 +32,7 @@ const COPY={
    return:'К отряду',reveal:'Открыта встреча',entry:'Начинается',services:'Услуги поселения',
    pending:'Открываю путь…',level:'Уровень',unavailable:'Недоступно для присоединения',lands:'Владения',
    discover:'',congrat:'Замок получил уровень',
-   buildOutpost:'Построить аванпост',outpost:'Аванпост',outpostDetail:'Удалённое владение королевства',
+   buildOutpost:'Построить аванпост',earn:'Добыть',onArena:'на Арене',arenaUnavailable:'Арена пока недоступна',outpost:'Аванпост',outpostDetail:'Удалённое владение королевства',
    outpostNeed:'Недостаточно осколков чести',outpostBuilt:'Аванпост построен',
    collect:'Собрать',battleReady:'Защитник вернулся. Войди в клетку для нового боя.',
    recruitsReady:'Рекруты готовы. Система найма появится в следующем этапе.',
@@ -44,7 +44,7 @@ const COPY={
    return:'Squad',reveal:'Encounter discovered',entry:'Entering',services:'Settlement services',
    pending:'Exploring…',level:'Level',unavailable:'Cannot annex yet',lands:'Territory',
    discover:'',congrat:'Castle reached level',
-   buildOutpost:'Build outpost',outpost:'Outpost',outpostDetail:'A remote kingdom holding',
+   buildOutpost:'Build outpost',earn:'Earn',onArena:'in Arena',arenaUnavailable:'Arena is not available yet',outpost:'Outpost',outpostDetail:'A remote kingdom holding',
    outpostNeed:'Not enough Honor shards',outpostBuilt:'Outpost constructed',
    collect:'Collect',battleReady:'Defender returned. Enter the cell for a rematch.',
    recruitsReady:'Recruits are ready. Hiring will be added in the next stage.',
@@ -251,7 +251,7 @@ function report(text){const node=screen?.querySelector('[data-kingdom-toast]');i
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261109-kingdom-economy-v7';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261109-kingdom-parchment-tile-v8';link.dataset.kingdomStyle='';
  link.addEventListener('load',()=>{if(screen&&!screen.hidden)render();});
  document.head.append(link);
 }
@@ -291,7 +291,8 @@ function screenReady(){
  <h2 data-kingdom-inspector-title></h2><p data-kingdom-inspector-text></p></div>
  <div class="km-inspector-buttons"><button type="button" data-kingdom-annex hidden></button>
  <button type="button" data-kingdom-services hidden></button>
- <button type="button" data-kingdom-outpost hidden></button></div>
+ <button type="button" data-kingdom-outpost hidden></button>
+ <button type="button" data-kingdom-earn-shards hidden></button></div>
  <p class="km-hint" data-kingdom-hint></p></aside></section></div>`;
  screen.style.setProperty('--km-event-size-px',(MAP_LAYOUT.cellPx*MAP_LAYOUT.eventScalePercent/100)+'px');
  screen.style.setProperty('--km-king-px',MAP_LAYOUT.kingPx+'px');
@@ -303,6 +304,7 @@ function screenReady(){
  // No manual annex clicks: the growing border follows persistent Power and wins.
  screen.querySelector('[data-kingdom-services]').addEventListener('click',visitSettlement);
  screen.querySelector('[data-kingdom-outpost]').addEventListener('click',constructOutpost);
+ screen.querySelector('[data-kingdom-earn-shards]').addEventListener('click',goToArena);
  screen.querySelector('[data-kingdom-world]').addEventListener('click',onWorldClick);
  const frame=screen.querySelector('.km-map-frame');
  frame.addEventListener('wheel',zoomWheel,{passive:false});
@@ -615,14 +617,20 @@ function render(){
   screen.querySelector('[data-kingdom-inspector-title]').textContent=header;
   screen.querySelector('[data-kingdom-inspector-text]').textContent=description;
  }
- const ann=screen.querySelector('[data-kingdom-annex]'),services=screen.querySelector('[data-kingdom-services]'),outpost=screen.querySelector('[data-kingdom-outpost]');
+ const ann=screen.querySelector('[data-kingdom-annex]'),services=screen.querySelector('[data-kingdom-services]'),outpost=screen.querySelector('[data-kingdom-outpost]'),earn=screen.querySelector('[data-kingdom-earn-shards]');
  const id=selected||keyOf(map.king.x,map.king.y);
  const selectedPoint=parsePoint(id);
  ann.hidden=true; // Annexation is now automatic; keep the legacy button inert.
- outpost.hidden=!selectedPoint||!canBuildOutpost(map,selectedPoint);
- outpost.textContent=tr('buildOutpost')+' · '+KINGDOM_OUTPOST_SHARD_COST+' '+tr('shards');
- outpost.disabled=honorShards()<KINGDOM_OUTPOST_SHARD_COST;
- outpost.title=outpost.disabled?tr('outpostNeed'):tr('buildOutpost');
+ const buildable=Boolean(selectedPoint&&canBuildOutpost(map,selectedPoint));
+ const needsShards=honorShards()<KINGDOM_OUTPOST_SHARD_COST;
+ outpost.hidden=!buildable;
+ outpost.replaceChildren(document.createTextNode(tr('buildOutpost')+' · '+KINGDOM_OUTPOST_SHARD_COST+' '),shardIcon());
+ outpost.disabled=needsShards;
+ outpost.title=needsShards?tr('outpostNeed'):tr('buildOutpost');
+ earn.hidden=!buildable||!needsShards;
+ earn.replaceChildren(document.createTextNode(tr('earn')+' '),shardIcon(),
+  document.createTextNode(' '+tr('onArena')));
+ earn.title=tr('earn')+' '+tr('shards')+' '+tr('onArena');
  services.hidden=!(id===keyOf(map.king.x,map.king.y)&&chosen?.status==='completed'&&chosen.selectedEncounter?.type==='settlement');
  services.textContent=tr('services');
  const hint=screen.querySelector('[data-kingdom-hint]');
@@ -662,6 +670,16 @@ function claimWeekly(id){
   ...(result.kind==='gold'?{gold:run.gold+result.amount}:{}),
   ...(result.kind==='supplies'?{supplies:run.supplies+result.amount}:{})};
  writeRun(next);showEconomyBurst(id,result.kind,result.amount);render();
+}
+function shardIcon(){
+ const icon=document.createElement('img');
+ icon.src=SHARD_ICON;icon.alt='';icon.className='km-shard-inline';
+ icon.setAttribute('aria-hidden','true');return icon;
+}
+function goToArena(){
+ const arena=globalThis.RPChessArena;
+ if(typeof arena?.enter!=='function'){report(tr('arenaUnavailable'));return;}
+ hideMap();arena.enter();
 }
 function constructOutpost(){
  const run=readRun(),point=parsePoint(selected);
