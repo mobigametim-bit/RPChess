@@ -102,6 +102,13 @@ function overlayMarkers({seed,points,width,height,showEvents,showGrid,center}){
  root.style.backgroundSize=(100/width)+'% '+(100/height)+'%';
  if(!showEvents)return;
  const cx=Math.floor(width/2),cy=Math.floor(height/2);
+ // The real journey always reserves world (0,0) for the starting castle.
+ const castle=document.createElement('img');castle.className='site';
+ castle.src=kingdomMapSprite('castle','humans');castle.alt='Замок игрока';
+ castle.style.left=((0-center.x+cx+.5)*100/width)+'%';
+ castle.style.top=((0-center.y+cy+.5)*100/height)+'%';
+ castle.style.width=(73/width)+'%';castle.style.height=(73/height)+'%';
+ root.append(castle);
  for(const point of points){
   const px=(point.x-center.x+cx+.5)*100/width;
   const py=(point.y-center.y+cy+.5)*100/height;
@@ -136,6 +143,7 @@ function simulate(){
  const left=center.x-Math.floor(width/2),top=center.y-Math.floor(height/2);
  for(let row=0;row<height;row++)for(let col=0;col<width;col++){
   const x=left+col,y=top+row,key=x+','+y;
+  if(x===0&&y===0){cells[key]={status:'completed',explored:true};continue;}
   const opts={spacing:c.spacing,densityMultiplier:c.densityMultiplier,
    biomeDensity:c.biomeDensity,typeWeights:c.typeWeights,raceWeights:c.raceWeights};
   const world=worldAt(c.seed,x,y,opts);
