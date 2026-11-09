@@ -26,6 +26,7 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows}){
  const left=view.x-Math.floor(columns/2),top=view.y-Math.floor(rows/2);
  const cells=map.cells||{};
  const owned=new Set([...(map.centralOwnedCells||[]),
+  ...(map.outposts||[]).flatMap(post=>post.cells||[]),
   ...Object.keys(cells).filter(id=>cells[id]?.annexed)]);
  // Clip roads and sovereignty lines to explored/revealed fog circles. Ownership
  // by Power is not scouting and must not disclose an unknown location.
@@ -39,7 +40,7 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows}){
  ctx.clip();
  let roadCount=0;
  const painted=new Set();
- for(const road of map.completedRoads||[]){
+ for(const road of [...(map.completedRoads||[]),...(map.outpostRoads||[])]){
   const a=parseTile(road.from),b=parseTile(road.to);
   if(!a||!b||!Number.isFinite(road.bend))continue;
   const identity=[road.from,road.to].sort().join('::');

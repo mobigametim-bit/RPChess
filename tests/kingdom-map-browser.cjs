@@ -732,6 +732,8 @@ async function assertTileImage(page,cellId,relativePath){
   assert.equal((await read(walking)).kingdomMap.outposts.length,1);
   assert.equal((await read(walking)).kingdomMap.day,8,'outpost construction advances one day');
   assert.equal(await walking.locator('[data-kingdom-cell="4,0"] .km-object--outpost').count(),1);
+  assert.equal((await read(walking)).kingdomMap.outpostRoads.length,1,
+    'building a remote outpost lays a single connected road without duplication');
   assert.equal(await walking.locator('[data-kingdom-outpost]:visible').count(),0,
     'built outpost cannot be bought again');
   const shardBalance=await walking.locator('[data-kingdom-shards]').textContent();

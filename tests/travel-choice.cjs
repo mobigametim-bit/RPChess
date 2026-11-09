@@ -138,6 +138,11 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const outpost=mapCore.buildOutpost(remoteMap,remote,'kingdom:outpost:fixture');
   assert(outpost.ok&&outpost.map.day===2);
   assert.strictEqual(outpost.map.outposts.length,1);
+  assert.strictEqual(outpost.map.outpostRoads.length,1,
+    'remote outpost gains exactly one stable curving link to the existing network');
+  assert.equal(outpost.map.outpostRoads[0].to,remoteId);
+  assert.equal(mapCore.linkOutpostRoad(outpost.map,remoteId),outpost.map,
+    'reloading an outpost cannot add duplicate road segments');
   assert(outpost.outpost.cells.length===3&&outpost.outpost.cells.includes(remoteId));
   assert(mapCore.isOwned(outpost.map,remoteId)&&!mapCore.isOwned(remoteMap,remoteId));
   assert.strictEqual(mapCore.territoryCapacity(outpost.map),mapCore.territoryCapacity(startMap),

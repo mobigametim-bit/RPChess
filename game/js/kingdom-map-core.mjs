@@ -84,6 +84,7 @@ function migrateKingdomMap(map,run=null){
  if(!Number.isInteger(result.processedThroughWeek))
   result={...result,processedThroughWeek:0};
  if(!Array.isArray(result.outposts))result={...result,outposts:[]};
+ if(!Array.isArray(result.outpostRoads))result={...result,outpostRoads:[]};
  if(!Array.isArray(result.productionClaims))result={...result,productionClaims:[]};
  // Legacy completions have no reliable chronology; do not invent roads.
  if(!Array.isArray(result.completedRoads))
@@ -144,6 +145,24 @@ function canBuildOutpost(map,point){
   (cell.type==='empty'||cell.completedOnce===true)&&
   !(map.outposts||[]).some(post=>post.id===id));
 }
+function linkOutpostRoad(map,id){
+ if((map.outpostRoads||[]).some(road=>road.to===id))return map;
+ const castle=keyOf(map.castle.x,map.castle.y);
+ const nodes=new Set([castle,...(map.completedRoads||[]).map(r=>r.to),
+  ...(map.outpostRoads||[]).map(r=>r.to)]);
+ const [x,y]=id.split(',').map(Number);
+ let from=castle,best=Infinity;
+ for(const node of nodes){
+  if(node===id)continue;
+  const [nx,ny]=node.split(',').map(Number);
+  const dist=Math.hypot(x-nx,y-ny);
+  if(dist<best){best=dist;from=node;}
+ }
+ const e=hashString(map.seed+':outpost-road:'+from+':'+id)>>>0;
+ const bend=(e&1?-1:1)*Math.max(.16,Math.min(1.15,best*.22));
+ return {...map,outpostRoads:[...(map.outpostRoads||[]),
+  {id:'outpost:'+id,from,to:id,bend}]};
+}
 function buildOutpost(map,point,transactionId){
  if(!canBuildOutpost(map,point)||typeof transactionId!=='string'||!transactionId)
   return {ok:false,map};
@@ -153,7 +172,7 @@ function buildOutpost(map,point,transactionId){
   .sort((a,b)=>(hashString(map.seed+':outpost:'+id+':'+a)>>>0)-
    (hashString(map.seed+':outpost:'+id+':'+b)>>>0)).slice(0,2);
  const post={id,cells:[id,...neighbors],transactionId,price:KINGDOM_OUTPOST_SHARD_COST};
- const next={...map,outposts:[...(map.outposts||[]),post]};
+ const next=linkOutpostRoad({...map,outposts:[...(map.outposts||[]),post]},id);
  return {ok:true,map:advanceDay(next,'build-outpost:'+id),outpost:post};
 }
 function advanceDay(map,actionId){
@@ -174,7 +193,7 @@ function createKingdomMap(run,playerPower=400,raceTag='humans'){
   peakKingPower:power,annexationPointsSpent:0,battlePointsEarned:0,legacyBonusLands:0,
   creditedBattleEncounterIds:[],uniqueFirstConquests:[],centralOwnedCells:[],
   day:1,calendarActions:[],processedThroughWeek:0,outposts:[],productionClaims:[],
-  completedRoads:[],lastCompletedRouteCell:null,
+  completedRoads:[],lastCompletedRouteCell:null,outpostRoads:[],
   completedNewEncounterCount:0,productionCyclesResolved:0});
 }
 function validateKingdomMap(map){
@@ -194,6 +213,10 @@ function validateKingdomMap(map){
      typeof p.transactionId==='string')))return false;
  if(map.productionClaims!=null&&(!Array.isArray(map.productionClaims)||
   !map.productionClaims.every(id=>typeof id==='string')))return false;
+ if(map.outpostRoads!=null&&(!Array.isArray(map.outpostRoads)||
+  !map.outpostRoads.every(road=>road&&typeof road.id==='string'&&
+   /^-?[0-9]+,-?[0-9]+$/.test(road.from)&&/^-?[0-9]+,-?[0-9]+$/.test(road.to)&&
+   Number.isFinite(road.bend))))return false;
  if(map.completedRoads!=null&&(!Array.isArray(map.completedRoads)||
   !map.completedRoads.every(road=>road&&typeof road.id==='string'&&
    /^-?[0-9]+,-?[0-9]+$/.test(road.from)&&/^-?[0-9]+,-?[0-9]+$/.test(road.to)&&
@@ -372,4 +395,4 @@ export {MAP_VERSION,TYPES,ROMANS,keyOf,isPoint,adjacent,orthogonal,romanForStars
  createKingdomMap,validateKingdomMap,migrateKingdomMap,updatePeak,randomEncounter,revealAround,enterCell,beginEncounter,
  finishEncounter,matchesCombatReceipt,canAnnex,annexCell,pointsEarned,pointsAvailable,territoryCapacity,
  growTerritory,advanceDay,isOwned,linkCompletedRoad,borderEdges,weekForDay,productionFor,
- settleWeeklyProduction,collectProduction,canBuildOutpost,buildOutpost,WEEK_DAYS,PROTOTYPE_YIELDS};
+ settleWeeklyProduction,collectProduction,canBuildOutpost,buildOutpost,linkOutpostRoad,WEEK_DAYS,PROTOTYPE_YIELDS};
