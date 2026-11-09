@@ -8,6 +8,9 @@ const key='rpchess.reboot.v1.run';
 const output=process.env.RPCHESS_KINGDOM_SCREENSHOT_DIR||'test-results/kingdom-map';
 const read=page=>page.evaluate(storage=>JSON.parse(localStorage.getItem(storage)||'null'),key);
 async function dragKing(page,id){
+ // Scene transitions intentionally show an opaque full-screen asset loader.
+ // It must finish before any pointer input can reach the map or the king.
+ await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
  // Position is written at movement start; the old sprite is still animating.
  // Wait for the actual drag affordance instead of pressing it mid-flight.
  await page.waitForFunction(()=>{
