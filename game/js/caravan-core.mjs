@@ -1,3 +1,4 @@
+import {DEFAULT_KINGDOM_ECONOMY as K} from './kingdom-economy-config.mjs';
 import { chess960BackRank, chess960Fen } from './chess960.mjs';
 import { createBattlePlan, automaticBattleSelection, applyBattleOutcome } from './battle-core.mjs';
 import { combatTheme, hashString } from './race-assets.mjs';
@@ -33,9 +34,9 @@ export function caravanRewardOffers(run, encounter) {
   const pick = list => list[Math.floor(random() * list.length)];
   const artifact = pick(ARTIFACTS);
   const pool = [
-    { kind:'gold', amount:40 + encounter.stars * 10 },
-    { kind:'supplies', amount:3 + Math.floor(encounter.stars / 3) },
-    { kind:'artifact', artifactId:artifact.id, amount:1 + Math.floor(encounter.stars / 5) }
+    { kind:'gold', amount:K.combat.caravanRewardGoldBase + encounter.stars * K.combat.caravanRewardGoldPerStar },
+    { kind:'supplies', amount:K.combat.caravanRewardSuppliesBase + Math.floor(encounter.stars / 3) * K.combat.caravanRewardSuppliesPer3Stars },
+    { kind:'artifact', artifactId:artifact.id, amount:K.combat.caravanRewardArtifactBase + Math.floor(encounter.stars / 5) * K.combat.caravanRewardArtifactPer5Stars }
   ];
   const wounded = run.roster.filter(c => !c.isRunKing && c.status === 'wounded');
   if (wounded.length) pool.push({ kind:'healing', heroId:pick(wounded).id });
