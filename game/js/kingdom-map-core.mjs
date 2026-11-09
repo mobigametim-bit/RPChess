@@ -21,6 +21,21 @@ function keyOf(x,y){return x+','+y;}
 function isPoint(p){return !!p&&Number.isSafeInteger(p.x)&&Number.isSafeInteger(p.y);}
 function adjacent(a,b){return isPoint(a)&&isPoint(b)&&Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y))===1;}
 function orthogonal(a,b){return isPoint(a)&&isPoint(b)&&Math.abs(a.x-b.x)+Math.abs(a.y-b.y)===1;}
+// Every king step is 8-neighbor, so a diagonal-first Chebyshev route is the
+// shortest possible path on unobstructed kingdom terrain. Any encounter along
+// the route interrupts the remaining steps and opens its existing game owner.
+function shortestKingRoute(map,destination,maxSteps=400){
+ if(!map||!isPoint(map.king)||!isPoint(destination))return [];
+ const count=Math.max(Math.abs(destination.x-map.king.x),Math.abs(destination.y-map.king.y));
+ if(!count||count>maxSteps)return [];
+ const path=[],point={...map.king};
+ for(let n=0;n<count;n++){
+  point.x+=Math.sign(destination.x-point.x);
+  point.y+=Math.sign(destination.y-point.y);
+  path.push({...point});
+ }
+ return path;
+}
 // Central territory grows automatically and retains previously annexed land.
 function territoryCapacity(map){
  const legacy=map.legacyBonusLands??map.battlePointsEarned??0;
@@ -127,6 +142,13 @@ function settleWeeklyProduction(map){
  }
  return {...map,cells,processedThroughWeek:week,
   productionCyclesResolved:Math.max(map.productionCyclesResolved||0,week)};
+}
+function acknowledgeReturn(map,id){
+ const cell=map?.cells?.[id];
+ if(cell?.production?.kind!=='battle'||cell?.respawnReady!==true)return {ok:false,map};
+ const next=copyMap(map);
+ next.cells[id]={...cell,production:null}; // Defender sprite stays visible.
+ return {ok:true,map:next};
 }
 function collectProduction(map,id){
  const cell=map?.cells?.[id],item=cell?.production;
@@ -309,7 +331,7 @@ function enterCell(map,point,encounter=null,now=Date.now()){
  if(!existing||existing.explored===false)next=advanceDay(next,'explore:'+id);
  if(existing?.status==='completed'&&existing.production?.kind==='battle'&&existing.respawnReady===true){
   // Returning champion challenge: same stars and race, no repeated land bonus.
-  next.cells[id]={...existing,status:'revealed',production:null,respawnReady:false,
+  next.cells[id]={...existing,status:'revealed',completedOnce:true,production:null,respawnReady:false,
    explored:true,lastEntryFrom:{...before}};
   next.pendingCell=id;
   return {ok:true,kind:'retry',map:next,cell:next.cells[id]};
@@ -391,8 +413,8 @@ function borderEdges(map,point){
   .filter(([_,dx,dy])=>!isOwned(map,keyOf(point.x+dx,point.y+dy)))
   .map(([edge])=>edge);
 }
-export {MAP_VERSION,TYPES,ROMANS,keyOf,isPoint,adjacent,orthogonal,romanForStars,castleLevel,
+export {MAP_VERSION,TYPES,ROMANS,keyOf,isPoint,adjacent,orthogonal,shortestKingRoute,romanForStars,castleLevel,
  createKingdomMap,validateKingdomMap,migrateKingdomMap,updatePeak,randomEncounter,revealAround,enterCell,beginEncounter,
  finishEncounter,matchesCombatReceipt,canAnnex,annexCell,pointsEarned,pointsAvailable,territoryCapacity,
  growTerritory,advanceDay,isOwned,linkCompletedRoad,borderEdges,weekForDay,productionFor,
- settleWeeklyProduction,collectProduction,canBuildOutpost,buildOutpost,linkOutpostRoad,WEEK_DAYS,PROTOTYPE_YIELDS};
+ settleWeeklyProduction,collectProduction,acknowledgeReturn,canBuildOutpost,buildOutpost,linkOutpostRoad,WEEK_DAYS,PROTOTYPE_YIELDS};
