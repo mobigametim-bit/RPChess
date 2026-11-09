@@ -211,3 +211,18 @@ body.roster-active .roster-detail__facts > .roster-detail__piece-glyph {
     grid-template-rows: minmax(145px,1fr) auto !important;
   }
 }
+
+/* Persistent anonymous army inventory is visually separate from named roster. */
+.roster-army-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.roster-army-tabs button{font:800 12px/1.2 Inter,Arial,sans-serif;padding:9px 12px;border:1px solid #a48856;border-radius:6px;color:#d6c49b;background:#2b261b;cursor:pointer}
+.roster-army-tabs button.is-active{border-color:#e5c587;background:#594327;color:#fff1d0}
+.roster-army-list{display:grid;gap:14px;width:100%;overflow:auto;min-height:0}
+.roster-army-empty{padding:20px;color:#d6c59d}
+.roster-army-race{padding:14px;border:1px solid #826b45;background:#151a16;border-radius:8px;min-width:0}
+.roster-army-race h3{margin:0 0 10px;font:800 15px/1.2 Inter,Arial,sans-serif;color:#f3d99e}
+.roster-army-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.roster-army-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:8px 3px;border:1px solid #5d5943;border-radius:7px;background:#19241d;min-width:0}
+.roster-army-tile img{width:clamp(38px,5vw,76px);height:clamp(38px,5vw,76px);object-fit:contain}
+.roster-army-tile span{font:700 11px/1.2 Inter,Arial,sans-serif;text-align:center;color:#e5d7b3}
+.roster-army-tile strong{font:800 16px/1.2 Inter,Arial,sans-serif;color:#f3cf7f}
+@media(max-width:650px){.roster-army-grid{gap:3px}.roster-army-tile{padding:4px 1px}.roster-army-tile span{font-size:9px}}
