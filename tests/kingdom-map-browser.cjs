@@ -907,27 +907,27 @@ async function assertTileImage(page,cellId,relativePath){
   await autopilot.close();
   // Preview uses the real worldAt, parchment SVG assets and live spacing
   // overrides; it must be a packaged page, not a separate fake simulator.
-  const atlas=await browser.newPage({viewport:{width:1440,height:900}});
-  const atlasErrors=[];atlas.on('pageerror',e=>atlasErrors.push(String(e.stack||e)));
-  await atlas.goto(new URL('atlas-lab.html',url.endsWith('/')?url:url+'/').href,
+  const labPage=await browser.newPage({viewport:{width:1440,height:900}});
+  const atlasErrors=[];labPage.on('pageerror',e=>atlasErrors.push(String(e.stack||e)));
+  await labPage.goto(new URL('labPage-lab.html',url.endsWith('/')?url:url+'/').href,
    {waitUntil:'domcontentloaded'});
-  await atlas.locator('#simulate').waitFor({state:'visible'});
-  await atlas.waitForFunction(()=>document.querySelector('#stats .stat strong')?.textContent!==undefined);
-  await atlas.waitForFunction(()=>document.querySelector('#terrain')?.dataset.parchmentTexture==='loaded');
-  assert.equal(await atlas.locator('#stats .stat').count(),4);
-  assert((await atlas.locator('#markers img.site').count())>0,
+  await labPage.locator('#simulate').waitFor({state:'visible'});
+  await labPage.waitForFunction(()=>document.querySelector('#stats .stat strong')?.textContent!==undefined);
+  await labPage.waitForFunction(()=>document.querySelector('#terrain')?.dataset.parchmentTexture==='loaded');
+  assert.equal(await labPage.locator('#stats .stat').count(),4);
+  assert((await labPage.locator('#markers img.site').count())>0,
     'Atlas Lab renders actual encounter-site art on the generated parchment');
-  const baseline=Number(await atlas.locator('#stats .stat strong').first().textContent());
-  await atlas.locator('#spacing').selectOption('2');
-  await atlas.locator('#simulate').click();
-  const sparse=Number(await atlas.locator('#stats .stat strong').first().textContent());
+  const baseline=Number(await labPage.locator('#stats .stat strong').first().textContent());
+  await labPage.locator('#spacing').selectOption('2');
+  await labPage.locator('#simulate').click();
+  const sparse=Number(await labPage.locator('#stats .stat strong').first().textContent());
   assert(sparse<=baseline,'larger exclusion radius cannot increase generated encounter count');
-  assert.equal(await atlas.locator('#jitter').count(),1);
-  assert.equal(await atlas.locator('#separation').count(),1);
-  assert.equal(await atlas.locator('#type-weights input').count(),36);
-  assert.equal(await atlas.locator('#race-weights input').count(),84);
+  assert.equal(await labPage.locator('#jitter').count(),1);
+  assert.equal(await labPage.locator('#separation').count(),1);
+  assert.equal(await labPage.locator('#type-weights input').count(),36);
+  assert.equal(await labPage.locator('#race-weights input').count(),84);
   assert.deepEqual(atlasErrors,[],'Atlas Lab must load all game modules without errors');
-  await atlas.close();
+  await labPage.close();
   console.log('KINGDOM MAP PASS — click-inspect, king drag, shortest routes, event stop, map pan, step supplies');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
