@@ -67,6 +67,29 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     assert(!mapCore.matchesCombatReceipt(route,{encounterId:engineId+'-other'}),
       'unrelated '+type+' results must not unlock a map cell');
   }
+  const world=await import(pathToFileURL(path.join(game,'js/kingdom-world-core.mjs')).href);
+  const worldConfig=await import(pathToFileURL(path.join(game,'js/kingdom-world-config.mjs')).href);
+  assert.deepStrictEqual(worldConfig.DENSITY,[27,25,36,25,29,18],
+    'author approved biome encounter density survives in the playable build');
+  for(const row of [...worldConfig.TYPE_WEIGHTS,...worldConfig.RACE_WEIGHTS])
+    assert.strictEqual(row.reduce((sum,n)=>sum+n,0),100,
+      'each approved biome encounter/race distribution adds up to 100 percent');
+  const exposed=mapCore.revealAround(mapCore.createKingdomMap(mapRun,500),mapRun,500);
+  assert.strictEqual(Object.keys(exposed.cells).length,25,
+    'the king scouts its 5x5 neighborhood before selecting any encounter');
+  assert(exposed.cells['1,0']?.status&&exposed.cells['-1,-1']?.status,
+    'nearby terrain must be known without moving onto it');
+  const known=exposed.cells['1,0'],worldIdentity=world.worldAt(mapRun.id,1,0);
+  assert.strictEqual(Boolean(known.selectedEncounter),Boolean(worldIdentity.type),
+    'world seed decides whether a cell is quiet before the fog clears');
+  assert.deepStrictEqual(world.worldAt(mapRun.id,-7,4),world.worldAt(mapRun.id,-7,4),
+    'negative-coordinate biome, landmark, type and race are stable');
+  assert.strictEqual(mapCore.revealAround(exposed,mapRun,500),exposed,
+    'reveal repeatedly must not reroll existing cells or reallocate the save');
+  // Both empty land and eventual encounters exist in the same procedural world.
+  const probes=Array.from({length:200},(_,x)=>world.worldAt(mapRun.id,x-100,4));
+  assert(probes.some(item=>!item.type)&&probes.some(item=>item.type),
+    'the map must contain both calm terrain and interesting encounters');
   const startMap=mapCore.createKingdomMap(mapRun,500);
   assert(mapCore.validateKingdomMap(startMap));
   assert.strictEqual(mapCore.pointsAvailable(startMap),2,'starting 500 Power earns 2 irreversible points');
