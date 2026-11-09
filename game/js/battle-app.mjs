@@ -132,7 +132,7 @@ function ensureBattleScreens() {
         <aside class="battle-army ui-panel-safe" aria-label="Ваша полная армия">
           <header class="battle-section-head">
             <div><div class="reboot-eyebrow" data-battle-army-kicker>СТАНДАРТНЫЙ КОМПЛЕКТ</div><h2 data-battle-army-title>Боевой строй</h2></div>
-            <span data-battle-army-note>Свободный слот — дешёвый Наёмник. Замена оставленного в резерве здорового героя стоит как его лечение.</span>
+            <span data-battle-army-note>Свободный слот — наёмник. Замена здорового героя из резерва оплачивается по тарифу наёмника соответствующего типа.</span>
           </header>
           <div class="battle-slot-summary" data-battle-slot-summary></div>
           <div class="battle-formation" data-battle-formation aria-label="Стандартная стартовая армия"></div>
