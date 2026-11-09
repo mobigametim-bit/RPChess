@@ -290,10 +290,10 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert.equal(ack.map.cells['0,1'].production,null);
   assert(!mapCore.acknowledgeReturn(ack.map,'0,1').ok);
   const home=mapCore.enterCell(ack.map,{x:0,y:0});
-  const repeat=mapCore.enterCell(home.map,{x:0,y:1});
-  assert(repeat.ok&&repeat.kind==='retry'&&repeat.map.cells['0,1'].completedOnce===true);
+  const respawnEntry=mapCore.enterCell(home.map,{x:0,y:1});
+  assert(respawnEntry.ok&&respawnEntry.kind==='retry'&&respawnEntry.map.cells['0,1'].completedOnce===true);
   const rematch=mapCore.finishEncounter(
-    mapCore.beginEncounter(repeat.map,'0,1').map,'0,1',{success:true,opponentPower:15000});
+    mapCore.beginEncounter(respawnEntry.map,'0,1').map,'0,1',{success:true,opponentPower:15000});
   assert(rematch.ok&&!rematch.first,'returning defender is never a first conquest');
   assert.strictEqual(rematch.map.uniqueFirstConquests.length,battleWin.map.uniqueFirstConquests.length,
     'second win against same road object never expands kingdom');
