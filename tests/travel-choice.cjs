@@ -98,77 +98,122 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'the map must contain both calm terrain and interesting encounters');
   const startMap=mapCore.createKingdomMap(mapRun,500);
   assert(mapCore.validateKingdomMap(startMap));
-  assert.strictEqual(mapCore.pointsAvailable(startMap),2,'starting 500 Power earns 2 irreversible points');
+  assert.strictEqual(startMap.day,1,'the independent calendar begins on Day 1');
+  assert.strictEqual(mapCore.territoryCapacity(startMap),5,
+    '500 peak Power automatically grants five lands outside the castle');
+  assert.strictEqual(startMap.centralOwnedCells.length,6);
+  assert.strictEqual(mapCore.pointsAvailable(startMap),0,
+    'automatic annexation leaves no unused manual purchases');
   assert.strictEqual(mapCore.castleLevel(500),2);
   assert.strictEqual(mapCore.castleLevel(2000),5);
   assert.deepStrictEqual([1,2,3,4,5,6,7,8,9,10,11,12].map(mapCore.romanForStars),
     ['I','II','II','II','III','III','IV','IV','IV','V','V','V']);
+  const owned=new Set(startMap.centralOwnedCells);
+  assert(owned.has('0,0')&&owned.size===6);
+  const connected=new Set(['0,0']),queue=['0,0'];
+  for(let n=0;n<queue.length;n++){
+    const [x,y]=queue[n].split(',').map(Number);
+    for(const [dx,dy] of [[0,1],[1,0],[-1,0],[0,-1]]){
+      const id=(x+dx)+','+(y+dy);
+      if(owned.has(id)&&!connected.has(id)){connected.add(id);queue.push(id);}
+    }
+  }
+  assert.strictEqual(connected.size,owned.size,'all automatic lands connect to the castle orthogonally');
   assert(!mapCore.adjacent({x:0,y:0},{x:2,y:0}));
   for(const [x,y] of [[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]]){
     const point={x,y},choice=mapCore.randomEncounter(mapRun,point,500);
     assert(travel.isTravelChoice(choice)&&choice.kingdomCell===mapCore.keyOf(x,y));
     assert.deepStrictEqual(choice,mapCore.randomEncounter(mapRun,point,500),
-      'the map must not reroll the outcome for the same coordinate');
+      'the same world coordinate retains the same route');
     assert(['skirmish','battle','event','settlement','puzzle','caravan'].includes(choice.type));
     if(choice.type==='puzzle')assert.strictEqual(choice.raceTag,null);
     const step=mapCore.enterCell(startMap,point,choice,1000);
     assert(step.ok&&step.kind==='discover');
-    assert(!mapCore.enterCell(step.map,{x:x+1,y},choice).ok,'cannot move during a pending encounter');
+    assert.strictEqual(step.map.day,2,'first exploration is exactly one day');
+    assert(!mapCore.enterCell(step.map,{x:x+1,y},choice).ok,'cannot move during pending encounter');
     const started=mapCore.beginEncounter(step.map,mapCore.keyOf(x,y));
     assert(started.ok);
     const lost=mapCore.finishEncounter(started.map,mapCore.keyOf(x,y),{success:false});
-    assert(lost.ok&&lost.retreated);
-    assert.deepStrictEqual(lost.map.king,{x:0,y:0},'draw/defeat rolls the king back');
+    assert(lost.ok&&lost.retreated&&lost.map.day===3,
+      'the unsuccessful encounter is a separate meaningful day');
+    assert.deepStrictEqual(lost.map.king,{x:0,y:0},'draw/defeat retreats the king');
     assert.strictEqual(lost.map.cells[mapCore.keyOf(x,y)].status,'failed');
-    assert.strictEqual(mapCore.canAnnex(lost.map,point),false);
+    assert(!mapCore.canAnnex(lost.map,point),'manual annexation is disabled');
     const repeat=mapCore.enterCell(lost.map,point);
-    assert(repeat.ok&&repeat.kind==='retry'&&repeat.cell.selectedEncounter.id===choice.id,
-      'a failed encounter is always the same encounter on retry');
+    assert(repeat.ok&&repeat.kind==='retry'&&repeat.cell.selectedEncounter.id===choice.id);
+    assert.strictEqual(repeat.map.day,3,'retrying a known cell does not repeat exploration day');
   }
-  const diag={x:1,y:1},diagonalChoice=mapCore.randomEncounter(mapRun,diag,500);
-  const diagEntry=mapCore.enterCell(startMap,diag,diagonalChoice);
-  const diagDone=mapCore.finishEncounter(mapCore.beginEncounter(diagEntry.map,'1,1').map,'1,1',{success:true});
-  assert(diagDone.ok&&!mapCore.canAnnex(diagDone.map,diag),
-    'a diagonal touch is not sufficient for annexation');
-  const ortho={x:1,y:0},orthoChoice=mapCore.randomEncounter(mapRun,ortho,500);
-  const orthoEntry=mapCore.enterCell(startMap,ortho,orthoChoice);
-  const orthoDone=mapCore.finishEncounter(mapCore.beginEncounter(orthoEntry.map,'1,0').map,'1,0',{success:true});
-  assert(orthoDone.ok&&mapCore.canAnnex(orthoDone.map,ortho));
-  const joined=mapCore.annexCell(orthoDone.map,ortho);
-  assert(joined.ok&&mapCore.pointsAvailable(joined.map)===1);
-  assert(mapCore.borderEdges(joined.map,{x:0,y:0}).includes('w')&&
-    !mapCore.borderEdges(joined.map,{x:0,y:0}).includes('e'),
-    'castle external perimeter omits the shared border with owned eastern cell');
-  assert(!mapCore.annexCell(joined.map,ortho).ok,'never spend twice on the same cell');
-  assert(mapCore.canAnnex({...joined.map,king:{x:1,y:1},
-    cells:{...joined.map.cells,'1,1':diagDone.map.cells['1,1']}},diag),
-    'a previously completed diagonal cell becomes annexable when a cardinal neighbor is owned');
-  const climbed=mapCore.updatePeak(joined.map,1100);
-  assert.strictEqual(mapCore.pointsAvailable(climbed),4);
-  assert.strictEqual(mapCore.pointsAvailable(mapCore.updatePeak(climbed,650)),4,
-    'rating loss never revokes earned annexation points');
-  // Battle bonus is unique to a won BATTLE, not a draw, and uses actual
-  // opponent Elo (the same aiElo generated from encounter stars).
+  const climbed=mapCore.updatePeak(startMap,1100);
+  assert.strictEqual(mapCore.territoryCapacity(climbed),11);
+  assert.strictEqual(climbed.centralOwnedCells.length,12);
+  assert.strictEqual(mapCore.updatePeak(climbed,650),climbed,
+    'loss of current rating never revokes previously owned land');
+  assert(!mapCore.annexCell(startMap,{x:1,y:0}).ok,
+    'the obsolete manual annex button cannot consume points');
+  const legacy={...startMap,day:undefined,calendarActions:undefined,
+    centralOwnedCells:undefined,legacyBonusLands:undefined,uniqueFirstConquests:undefined,
+    battlePointsEarned:3,creditedBattleEncounterIds:['old-battle'],
+    annexationPointsSpent:2,cells:{...startMap.cells,
+      '9,9':{status:'completed',annexed:true}}};
+  const migrated=mapCore.migrateKingdomMap(legacy,{journeyStep:4});
+  assert.strictEqual(migrated.day,5,'migration preserves the previously displayed calendar floor');
+  assert.strictEqual(mapCore.territoryCapacity(migrated),8,
+    'legacy battle bonus is applied once without discarding the old ledger');
+  assert(mapCore.isOwned(migrated,'9,9'),'manual old territory survives the migration');
+  assert.strictEqual(mapCore.migrateKingdomMap(migrated),migrated,
+    'loading an already migrated kingdom does not add days or reallocate land');
+  // Idempotent +1 day per new peaceful cell, even if its contents were already scouted.
+  let walk=startMap;
+  for(let x=1;x<=6;x++){
+    const id=x+',0';
+    walk={...walk,cells:{...walk.cells,[id]:{status:'completed',type:'empty',
+      explored:false,annexed:mapCore.isOwned(walk,id)}}};
+    const entered=mapCore.enterCell(walk,{x,y:0});
+    assert(entered.ok&&entered.kind==='walk');walk=entered.map;
+    assert.strictEqual(walk.day,x+1);
+  }
+  assert.strictEqual(walk.day,7,'the first in-game week reaches Day 7');
+  const back=mapCore.enterCell(walk,{x:5,y:0});
+  assert.strictEqual(back.map.day,7,'backtracking through explored land costs no days');
+  const acted=mapCore.advanceDay(back.map,'significant:future-action');
+  assert.strictEqual(acted.day,8);
+  assert.strictEqual(mapCore.advanceDay(acted,'significant:future-action'),acted,
+    'replayed action receipts never advance the calendar twice');
+  // First victory against a Battle OR Caravan awards enemyPower/200 once.
   const battlePoint={x:0,y:1},battleRoute={...mapCore.randomEncounter(mapRun,battlePoint,500),
     id:'kingdom.test-battle',type:'battle'};
   const battleEnter=mapCore.enterCell(startMap,battlePoint,battleRoute);
   const battleStart=mapCore.beginEncounter(battleEnter.map,'0,1');
   const battleWin=mapCore.finishEncounter(battleStart.map,'0,1',{success:true,opponentPower:630});
-  assert.strictEqual(battleWin.map.battlePointsEarned,3);
+  assert.strictEqual(battleWin.map.battlePointsEarned,3,'legacy battle analytics stay readable');
   assert.strictEqual(battleWin.map.creditedBattleEncounterIds.length,1);
-  assert(!mapCore.finishEncounter(battleWin.map,'0,1',{success:true,opponentPower:630}).ok);
-  const persistedMap=persistence.writeRun({...mapRun,kingdomMap:joined.map},storage,1420);
+  assert.strictEqual(battleWin.map.uniqueFirstConquests[0].bonusLands,3);
+  assert.strictEqual(mapCore.territoryCapacity(battleWin.map),8);
+  assert.strictEqual(battleWin.map.day,3);
+  assert(!mapCore.finishEncounter(battleWin.map,'0,1',{success:true,opponentPower:630}).ok,
+    'the first victory receipt cannot be counted again');
+  const caravanPoint={x:1,y:0},caravanRoute={...mapCore.randomEncounter(mapRun,caravanPoint,500),
+    id:'kingdom.test-caravan',type:'caravan'};
+  const caravanEnter=mapCore.enterCell(battleWin.map,caravanPoint,caravanRoute);
+  // Use a separate starting map: battle winner's king currently occupies 0,1.
+  const caravanStarting=mapCore.enterCell(startMap,caravanPoint,caravanRoute);
+  const caravanBegin=mapCore.beginEncounter(caravanStarting.map,'1,0');
+  const caravanWin=mapCore.finishEncounter(caravanBegin.map,'1,0',{success:true,opponentPower:850});
+  assert(caravanWin.ok&&caravanWin.map.uniqueFirstConquests[0].type==='caravan');
+  assert.strictEqual(mapCore.territoryCapacity(caravanWin.map),9,'Caravan grants four new lands');
+  const persistedMap=persistence.writeRun({...mapRun,kingdomMap:climbed},storage,1420);
   const roundTrip=persistence.readRun(storage);
-  assert(roundTrip?.kingdomMap?.cells['1,0'].annexed,'new map must survive run storage');
-  assert.strictEqual(roundTrip.schemaVersion,persistence.RUN_SCHEMA_VERSION,'old saves must remain compatible');
+  assert(roundTrip?.kingdomMap?.centralOwnedCells.length===12,
+    'new land and calendar survive run persistence');
+  assert.strictEqual(roundTrip.kingdomMap.day,1);
+  assert.strictEqual(roundTrip.schemaVersion,persistence.RUN_SCHEMA_VERSION);
   const oldCopy={...mapRun,kingdomMap:undefined};
   persistence.writeRun(oldCopy,storage,1430);
-  assert.strictEqual(persistence.readRun(storage).kingdomMap,null,'legacy saves load without a map');
-  assert(travelAppSource.includes("import('./kingdom-map-app.mjs?"),'new Journey loads its own map scene');
-  assert(travelAppSource.includes('startMapEncounter'),'new Journey routes directly to encounters');
+  assert.strictEqual(persistence.readRun(storage).kingdomMap,null,'legacy saves still load without a map');
+  assert(travelAppSource.includes("import('./kingdom-map-app.mjs?"),'Journey loads its own map');
+  assert(travelAppSource.includes('startMapEncounter'),'Journey routes directly to encounters');
   assert(fs.readFileSync(path.join(game,'css/kingdom-map.css'),'utf8').includes('km-king-step'),
-    'king moves use a smooth, explicit CSS transition');
-
+    'king uses a smooth CSS step');
   // Keep the existing Journey regression responsible for the asset register:
   // no extra suite just to count files.
   const kingdomAssets=require('../scripts/kingdom-map-asset-runtime.cjs');

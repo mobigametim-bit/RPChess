@@ -187,6 +187,11 @@ async function assertTileImage(page,cellId,relativePath){
     'the visual preference is independent from the Journey save');
 
   assert.deepEqual(before.kingdomMap.king,{x:0,y:0});
+  assert.equal(before.kingdomMap.day,1,'new game begins on Day 1');
+  assert.equal(before.kingdomMap.centralOwnedCells.length,6,
+    'castle and five automatic lands exist without visiting their cells');
+  assert.equal(await page.locator('[data-kingdom-annex]:visible').count(),0,
+    'manual annex button disappears when territory is automatic');
   assert.equal(await page.locator('[data-kingdom-cell="4,3"] .km-object').count(),0,
     "unscouted cells have neither question marks nor encounter art");
   assert.equal(await page.locator(".km-fog-mark").count(),0,
@@ -268,8 +273,8 @@ async function assertTileImage(page,cellId,relativePath){
   assert.equal(await page.locator('.km-heading').innerText(),'День 1');
   assert.equal(await page.locator('[data-kingdom-shards]').textContent(),'37',
     'Honor shards reflect the persistent Arena ledger, not current run data');
-  assert.equal(await page.locator('[data-kingdom-points]').textContent(),'2',
-    'Annexation shows the real available points');
+  assert.equal(await page.locator('[data-kingdom-points]').textContent(),'5/5',
+    'the header shows five automatically held lands out of five Power-based capacity');
   assert.equal(await page.locator('[data-kingdom-power]').textContent(),'500',
     'Power appears in the shared resource strip with its real rating');
   assert.equal(await page.locator('[data-kingdom-threat]').count(),0,
@@ -500,6 +505,7 @@ async function assertTileImage(page,cellId,relativePath){
    const second=await read(page);
    assert.deepEqual(second.kingdomMap.king,{x:0,y:1},
      'the king must be able to make a second Journey step after Battle');
+   assert(second.kingdomMap.day>=4,'new map cell and earlier failed completion each advance the calendar');
    assert.equal(second.kingdomMap.pendingCell,'0,1');
    assert.equal(second.kingdomMap.cells['0,1'].status,'revealed');
    assert.equal(second.kingdomMap.cells['0,1'].selectedEncounter.type,'battle');
