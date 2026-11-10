@@ -6,6 +6,8 @@ const root = path.resolve(__dirname, '..');
 const onboarding = fs.readFileSync(path.join(root, 'game/js/content/onboarding.mjs'), 'utf8');
 const foundation = fs.readFileSync(path.join(root, 'game/js/reboot-foundation.mjs'), 'utf8');
 const cloud = fs.readFileSync(path.join(root, 'game/js/cloud-save.mjs'), 'utf8');
+const kingdom = fs.readFileSync(path.join(root, 'game/js/kingdom-map-app.mjs'), 'utf8');
+const settlement = fs.readFileSync(path.join(root, 'game/js/settlement-app.mjs'), 'utf8');
 
 const approved = ["identity","roster","kingdomMap","kingdomCastle","kingdomProduction","artifact","skirmishChess","battleChess","event","settlement","puzzle","caravanChess","starvation","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess"];
 const arrayMatch = onboarding.match(/const INCLUDED_HINTS = Object\.freeze\(\[([\s\S]*?)\]\);/);
@@ -43,6 +45,11 @@ assert(cloud.includes("'rpchess:tutorial-updated'"), 'Cloud autosync must react 
 assert(!actual.includes('skirmishPrep')&&!actual.includes('battlePrep')&&!actual.includes('caravanPrep'),'removed deployment screen hints must never reappear');
 assert(onboarding.includes('jester-patrick.webp'),'approved jester portrait missing');
 assert(onboarding.includes('rpchess:arena-catalog-shown'),'Arena first-visit tutorial wiring missing');
+for(const event of ['rpchess:kingdom-map-shown',
+  'rpchess:kingdom-castle-inspected','rpchess:kingdom-production-collected'])
+  assert(kingdom.includes(`new CustomEvent('${event}'`),`Map milestone not emitted: ${event}`);
+assert(settlement.includes("new CustomEvent('rpchess:settlement-shown')"),
+  'Settlement first-visit event must fire even when scene is opened directly');
 assert(!onboarding.includes('Three roads')&&!onboarding.includes('Три дороги'),
   'Deprecated three-road instructions must not appear in the Kingdom onboarding copy');
 console.log('First-run jester onboarding (18 moments), persistence, localization, accessibility and cloud wiring: PASS');
