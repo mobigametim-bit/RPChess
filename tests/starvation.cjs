@@ -115,7 +115,7 @@ class MemoryStorage {
   assert.strictEqual(reloaded.activeTravelChoice.starvationVictimId, persistentResolved.choice.starvationVictimId, 'victim id must persist through reload');
   assert.strictEqual(reloaded.roster.filter((character) => character.status === 'dead').length, 1, 'exactly one casualty must persist through reload');
 
-  const travelSource = fs.readFileSync(path.join(game, 'js/travel-choice-app.mjs'), 'utf8');
+  // Reuse travelSource declared above to inspect both new and legacy routing contracts.
   const mapCore = await import(pathToFileURL(path.join(game,'js/kingdom-map-core.mjs')).href);
   const checkRun=persistence.createRun({now:1111,id:'starvation-entrance-guard'});
   const initialMap=mapCore.createKingdomMap(checkRun,500);
