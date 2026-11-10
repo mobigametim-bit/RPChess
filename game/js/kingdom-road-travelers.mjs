@@ -176,10 +176,14 @@ function naturalTrip(map,start,index,seed,owned){
  }
  return {origin:start,index,legs};
 }
-// All five quotas are independent: ceil(DISTINCT owned cells / 5). An NPC
-// type with no lawful route contributes zero actors, never a placeholder.
+// The HUD's land count excludes the Castle. Each of the five actor types
+// may have at most floor(DISTINCT owned lands / 5) travelers. An unavailable
+// lawful route yields zero actors instead of inventing a placeholder.
 function territoryTravelerQuota(map){
- return Math.ceil(ownedKeys(map).size/5);
+ if(!map?.castle)return 0;
+ const castle=map.castle.x+','+map.castle.y;
+ const lands=[...ownedKeys(map)].filter(id=>id!==castle).length;
+ return Math.floor(lands/5);
 }
 function settlementStops(map){
  const built=new Set((map.builtSettlements||[]).map(s=>s.id));
