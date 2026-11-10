@@ -76,6 +76,45 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   // New Journey is a sparse infinite kingdom map. The legacy three-card
   // generator remains a compatibility API, but the map discovers ONE route.
   const mapCore=await import(pathToFileURL(path.join(game,'js/kingdom-map-core.mjs')).href);
+  const roadGraph=await import(pathToFileURL(path.join(game,'js/kingdom-road-network.mjs')).href);
+  const walkers=await import(pathToFileURL(path.join(game,'js/kingdom-road-travelers.mjs')).href);
+  const roadSeed=mapCore.createKingdomMap({id:'road-graph-scouting'},400,'humans');
+  const scoutedOwned={...roadSeed,cells:{...roadSeed.cells,
+   '1,0':{status:'revealed',explored:false,annexed:true,selectedEncounter:{id:'road-event-a',type:'battle'}},
+   '2,0':{status:'revealed',explored:false,annexed:true,selectedEncounter:{id:'road-event-b',type:'skirmish'}}}};
+  const firstRoad=roadGraph.synchronizeRoyalRoads({...scoutedOwned,
+    cells:{...scoutedOwned.cells,'2,0':undefined}});
+  assert(firstRoad.royalRoads.some(road=>roadGraph.pairKey(road.from,road.to)==='0,0::1,0'),
+    'a scouted owned event gets a Castle road without being completed or visited');
+  const secondRoad=roadGraph.synchronizeRoyalRoads(scoutedOwned);
+  const secondKeys=secondRoad.royalRoads.map(road=>roadGraph.pairKey(road.from,road.to));
+  for(const edge of ['0,0::1,0','0,0::2,0','1,0::2,0'])
+   assert(secondKeys.includes(edge),'each owned event connects to Castle and its nearest neighbor: '+edge);
+  assert.equal(secondKeys.length,new Set(secondKeys).size,'royal roads are undirected and unique');
+  assert.strictEqual(roadGraph.synchronizeRoyalRoads(secondRoad),secondRoad,
+    'a reload/sync never rerolls or adds the same road');
+  const expanded=roadGraph.synchronizeRoyalRoads({...secondRoad,cells:{...secondRoad.cells,
+   '1,1':{status:'revealed',explored:false,annexed:true,selectedEncounter:{id:'road-event-c',type:'event'}}}});
+  assert(secondKeys.every(id=>expanded.royalRoads.some(r=>roadGraph.pairKey(r.from,r.to)===id)),
+    'adding a nearer event never erases existing built roads');
+  assert.deepStrictEqual(roadGraph.synchronizeRoyalRoads({...expanded,royalRoads:undefined}).royalRoads,
+    roadGraph.synchronizeRoyalRoads({...expanded,royalRoads:undefined}).royalRoads,
+    'legacy save migration is deterministic without a new schema version');
+  const dedup=roadGraph.visibleRoyalRoads({...secondRoad,outpostRoads:[
+   {id:'old-reverse',from:'2,0',to:'0,0',bend:.5}]});
+  assert.equal(dedup.length,secondRoad.royalRoads.length,
+    'old outpost roads may not draw a duplicate reversed royal segment');
+  assert(!walkers.entirelyOwned({from:'0,0',to:'3,0',bend:0},new Set(['0,0','3,0'])),
+    'patrols and builders cannot cross foreign cells between owned endpoints');
+  assert(walkers.entirelyOwned({from:'0,0',to:'1,0',bend:0},new Set(['0,0','1,0'])),
+    'an internal straight road is eligible for guards and builders');
+  const travelerTypes=new Set(walkers.createTravelers(secondRoad,{parchment:true}).map(w=>w.type));
+  assert(travelerTypes.has('merchant')||travelerTypes.has('convoy')||travelerTypes.has('courier'),
+    'at least one free traveler can follow the newly discovered road network');
+  const firstTraveler=walkers.createTravelers(secondRoad,{parchment:true})[0];
+  assert(firstTraveler&&walkers.travelerPosition(secondRoad,firstTraveler,0),
+    'decorative travelers have a position without altering map state');
+
   const mapRun=persistence.createRun({id:'kingdom-map-contract',now:1700000000000});
   for(const type of ['battle','skirmish']){
     const route={id:'kingdom.test.'+type,type,seed:'seed-'+type,stars:7};
