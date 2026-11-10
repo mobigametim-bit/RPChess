@@ -41,7 +41,7 @@ async function captureFlagScreens(browser, width, height) {
     await page.screenshot({ path:path.join(FLAG_SCREENSHOT_DIR,`menu-${width}x${height}.png`),fullPage:false });
     await assertViewportContained(page, '[data-chronicle-panel]', `${label} Chronicle frame`);
     await assertPageFitsViewport(page, `${label} menu`);
-    const menuButtonHeight = 42; // Result CTAs remain 42px; main menu now uses independent icon targets.
+    // Result CTA dimensions follow responsive typography, not the pictogram sizes.
     await page.evaluate((key) => {
       const run = JSON.parse(localStorage.getItem(key));
       run.ended = true;
@@ -63,7 +63,9 @@ async function captureFlagScreens(browser, width, height) {
     }
     await assertFlagSafety(page,'.endless-run-panel','.endless-run-flag-content',`${label} result`);
     const buttonHeights = await page.locator('.endless-run-actions .reboot-button').evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().height));
-    assert(buttonHeights.every((height) => Math.abs(height-menuButtonHeight)<3), `${label}: result buttons ${buttonHeights} differ from menu ${menuButtonHeight}`);
+    assert(buttonHeights.length===3 && buttonHeights.every((h)=>h>=38&&h<=64) &&
+      Math.max(...buttonHeights)-Math.min(...buttonHeights)<=2,
+      `${label}: result CTAs must remain three matching, touch-sized buttons: ${buttonHeights}`);
     const brokenIcons = await page.locator('.endless-run-metric img').evaluateAll((images) => images.filter((img) => !img.complete || !img.naturalWidth).map((img) => img.getAttribute('src')));
     assert.deepStrictEqual(brokenIcons,[],`${label}: broken result icons`);
   } finally {
