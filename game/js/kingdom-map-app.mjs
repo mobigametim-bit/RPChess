@@ -18,8 +18,8 @@ import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
 import {PARCHMENT_MODE_KEY} from './kingdom-parchment-core.mjs';
-import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261110-fog';
-import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261109-kingdom-feedback1';
+import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261110-terrain-boundary';
+import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261110-terrain-boundary';
 import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
@@ -720,7 +720,12 @@ function render(){
  const overlay=document.createElement('canvas');overlay.className='km-kingdom-overlay';
  overlay.dataset.kingdomOverlay='';overlay.setAttribute('aria-hidden','true');
  world.append(overlay);
- drawKingdomOverlay(overlay,{map,view,columns:WIDTH,rows:HEIGHT});
+ drawKingdomOverlay(overlay,{map,view,columns:WIDTH,rows:HEIGHT,drawBorder:!parchment});
+  if(parchment){
+   // Preserve legacy diagnostic metadata on the overlay without painting
+   // the border above player-created roads or world objects.
+   overlay.dataset.borderSegments=world.querySelector('.km-parchment-canvas')?.dataset.borderSegments||'0';
+  }
   if(parchment){
    const fog=document.createElement('canvas');fog.className='km-parchment-fog';
    fog.dataset.kingdomFog='';fog.setAttribute('aria-hidden','true');
