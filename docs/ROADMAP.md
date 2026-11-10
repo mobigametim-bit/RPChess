@@ -27,11 +27,19 @@
 - [x] Караван / Caravan — Chess960, бесплатные наёмники, артефакты, три награды, сохранение; ручная приёмка и merge PR #144 (`a706eb8`).
 - [x] VK Cloud Save / возобновление боёв — PR #145–147 в `main`; один реальный cross-device resume подтверждён после ручного восстановления checksum. Автоматическое восстановление повреждённого облака и полный acceptance matrix не подтверждены.
 
-## Current
+## Current — 10.11.2026: «Бесконечное королевство»
 
-- [ ] **Арена / Arena** — 84 соперника, плавная ≈400–2600 Elo, отдельная валюта «Осколок чести», отряды 14 рас, артефакты, реклама ×2, независимые облачные метаданные. Спецификация и этапы: `docs/features/ARENA_PLAN.md`; реализация не начата, цены/награды остаются балансным решением.
+Основная активная разработка — **Draft [PR #190](https://github.com/mobigametim-bit/RPChess/pull/190)**, изолированный Cloudflare Preview. `main` не менять до явного подтверждения игроком. Актуальные [дизайн королевства](KINGDOM_EXPLORATION_ECONOMY_BIOME_DESIGN.md), [экономика и Армия](KINGDOM_ECONOMY_ARMY_SPEC.md), [дороги и путешественники](features/KINGDOM_ROADS_AND_TRAVELERS_PLAN.md).
 
-## Next
+- [x] Прототип основного цикла: мир с 6 семантическими биомами, туман, календарь, расширение земель, события, Castle, аванпосты, дороги первой версии, недельная экономика, Atlas Lab v6.
+- [x] Авторский экономический JSON перенесён в канонический `kingdom-economy-config.mjs`; Castle показывает расовые фигуры и значок золота; вкладка `Герои / Heroes`; кнопки строительства недоступны при нехватке любого ресурса. Стычки принимают **только именных героев**, не обычные фигуры Армии.
+- [ ] **K-E7 и баланс:** подтвердить стоимость/награды и сохранения, долгие прогоны 30/50/100 внутриигровых дней, повторных врагов и Армию; мобильная приёмка ПК/Android.
+- [ ] **K-R1 — правильный граф дорог:** каждая известная точка дорожного события, оказавшаяся во владениях, соединяется **с замком** и **с ближайшей другой такой точкой**. Уникальные недиректированные сегменты, отсутствуют дубли; старую хронологическую связку `completedRoads` заменить совместимо с сохранениями.
+- [ ] **K-R2 — движущиеся персонажи:** использовать авторские 20 PNG-кадров (5 типов × 4 кадра 64×64). Торговцы, конвои, курьеры идут **по всем дорогам**; патрули и строители — **строго внутри владений**; начало маршрута — замок или дорожное событие. Пока **не реализовано**.
+- [ ] **K-R3 — безопасность и скорость:** не раскрывать туман дорогами/персонажами, запретить дубли, проверить выбор маршрутов, ограничить offscreen-render, профилировать SVG/Canvas и FPS/память на слабом Android.
+- [ ] **K-R4 — ручная приёмка + релиз:** проверить RU/EN, сохранения и CI на ПК/Android; зафиксировать принятые результаты в GitHub. Только после явного согласия — перенос в `main`.
+
+## Next (after accepted Kingdom)
 
 - [ ] Region Content Framework.
 - [ ] Tutorial Campaign — позднее.
@@ -39,7 +47,7 @@
 
 ## Current phase
 
-**Events v4 — DONE. Puzzles — DONE. Power / Threat — DONE. Content Framework — DONE. First Complete Endless Run — RECONCILED / HUMAN ACCEPTED / DONE. Battle Mercenaries Economy — HUMAN ACCEPTED / DONE. Player Identity + Chronicle — HUMAN ACCEPTED / DONE. Hero Notes — HUMAN ACCEPTED / MERGED / DONE. Events v5 Hero Choices — HUMAN ACCEPTED / MERGED / DONE. Skirmish obstacles and the latest mobile settlement/combat corrections — DONE on `main`. Current phase: Arena plan recorded, implementation not started. Caravan accepted and merged in PR #144; VK Cloud Save merged in PRs #145–147, with one owner-confirmed cross-device resume after manual checksum repair.**
+**Активный этап: стабилизация экономики «Бесконечного королевства» и согласованный следующий план дорожной сети/анимированных путников.** Дорожная сеть первого прототипа есть; правило «замок + ближайшее собственное событие» и анимация пяти типов путников **ещё не реализованы**. Arena уже имеет runtime в `main`; старое описание «Арена ещё не начата» ниже относится только к историческому плану. **Документация: только GitHub, без обязательной синхронизации с Notion.**
 
 ### Events v5 Hero Choices — accepted contract 2026-08-31
 
@@ -155,7 +163,7 @@ Acceptance receipt:
 
 ## Development rule
 
-Feature lifecycle: `UX/SPEC APPROVED → IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → DOCS SYNCED → DONE`.
+Feature lifecycle для новых работ: `UX/SPEC APPROVED → IMPLEMENTED → AUTOTESTED → DEPLOYED → HUMAN ACCEPTED → GITHUB DOCS UPDATED → DONE`. Исторические статусы `DOCS SYNCED` в прежних milestones — запись о тогдашней работе, не обязательство по Notion для новых задач.
 
 Proposal о постоянной трёхветочной схеме `main / deploy / Legasy` и автоматической очистке остальных веток **отменён пользователем 2026-08-31**. Ветки пользователь почистит самостоятельно; branch-management не является частью текущего roadmap.
 
