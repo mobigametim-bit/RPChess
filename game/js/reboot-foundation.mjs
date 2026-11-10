@@ -235,7 +235,7 @@ function updateMainMenuIconLabels(){
 }
 updateMainMenuIconLabels();
 subscribe(updateMainMenuIconLabels);
-function activateAudio() { audio.activate();
+function activateAudio() { audio.activate(); }
 document.addEventListener('pointerdown', activateAudio, { once: true, capture: true });
 document.addEventListener('keydown', activateAudio, { once: true, capture: true });
 
