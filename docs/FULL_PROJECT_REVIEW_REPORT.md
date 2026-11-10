@@ -247,7 +247,7 @@ Every subsequent remediation checkpoint must update this report and end with a c
 2. If green, run the complete Chromium contract set on the same lineage; otherwise fix only the next exact measured geometry defect.
 3. Complete conservative asset classification and preserve all ambiguous/planned/source-reserve files.
 4. Remove temporary/duplicate audit workflows after final browser evidence.
-5. Synchronize `CURRENT_STATE.md`, remaining GitHub docs and Notion on the final accepted candidate SHA.
+5. Update `CURRENT_STATE.md` and applicable GitHub documents on the final accepted candidate SHA. **Superseded policy as of 10.11.2026: no mandatory Notion copy/synchronization.**
 
 ### Battle aftermath / Stockfish lifecycle checkpoint — 316d567b
 
