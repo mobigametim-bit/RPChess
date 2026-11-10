@@ -191,7 +191,7 @@ function buildSettlement(map,point,transactionId,{gold,shards,raceTag='humans'}=
   {id,transactionId,gold,shards,ownedAtBuild}];
  next.cells[id]={...previous,status:'completed',type:'settlement',completedOnce:true,
   selectedEncounter:encounter,production:null,explored:true};
- return {ok:true,map:synchronizeRoyalRoads(advanceDay(linkCompletedRoad(next,id),'build-settlement:'+id)),encounter};
+ return {ok:true,map:synchronizeRoyalRoads(advanceDay(next,'build-settlement:'+id)),encounter};
 }
 function canBuildOutpost(map,point){
  if(!validateKingdomMap(map)||!isPoint(point)||map.pendingCell||isOwned(map,point))return false;
