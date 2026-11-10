@@ -176,14 +176,15 @@ function naturalTrip(map,start,index,seed,owned){
  }
  return {origin:start,index,legs};
 }
-// The HUD's land count excludes the Castle. Each of the five actor types
-// may have at most floor(DISTINCT owned lands / 5) travelers. An unavailable
-// lawful route yields zero actors instead of inventing a placeholder.
+// Match the HUD's 5/5 land counter exactly: only distinct central lands
+// excluding the Castle count toward each actor class's floor(lands / 5).
+// Outpost cells are valid routes but do not inflate the visible land counter.
+// An unavailable lawful route yields zero actors, never a placeholder.
 function territoryTravelerQuota(map){
  if(!map?.castle)return 0;
  const castle=map.castle.x+','+map.castle.y;
- const lands=[...ownedKeys(map)].filter(id=>id!==castle).length;
- return Math.floor(lands/5);
+ const lands=new Set((map.centralOwnedCells||[]).filter(id=>id!==castle));
+ return Math.floor(lands.size/5);
 }
 function settlementStops(map){
  const built=new Set((map.builtSettlements||[]).map(s=>s.id));
