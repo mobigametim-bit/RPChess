@@ -9,14 +9,19 @@ const PALETTE=Object.freeze({
  joint:'#796a52',
  edge:'#786347'
 });
+const GRAY_STONE=Object.freeze({
+ base:'#9a9b98',bricks:['#bec1bf','#aeb3b1','#c8c9c5','#929896'],
+ joint:'#555c5d',edge:'#55595b'
+});
 const BRICK_LENGTH=22,BRICK_STEP=24,ROWS=3;
 function hash32(value){
  let h=2166136261;
  for(let i=0;i<value.length;i++){h^=value.charCodeAt(i);h=Math.imul(h,16777619);}
  return h>>>0;
 }
-function drawSandstoneRoad(ctx,{x1,y1,x2,y2,bend=0,id=''}) {
+function drawSandstoneRoad(ctx,{x1,y1,x2,y2,bend=0,id='',tone='sandstone'}) {
  if(!ctx||![x1,y1,x2,y2,bend].every(Number.isFinite))return false;
+ const palette=tone==='gray'?GRAY_STONE:PALETTE;
  const dx=x2-x1,dy=y2-y1,length=Math.hypot(dx,dy);
  if(length<1)return false;
  const nx=-dy/length,ny=dx/length,offset=bend;
@@ -36,10 +41,10 @@ function drawSandstoneRoad(ctx,{x1,y1,x2,y2,bend=0,id=''}) {
  ctx.save();
  ctx.lineCap='round';ctx.lineJoin='round';
  // Dusty undercut and restrained shadow match the accepted sandstone preview.
- ctx.save();ctx.shadowColor='#432b1866';ctx.shadowBlur=9;ctx.shadowOffsetY=4;
- begin();ctx.lineWidth=SANDSTONE_WIDTH+7;ctx.strokeStyle=PALETTE.edge;ctx.stroke();ctx.restore();
- begin();ctx.lineWidth=SANDSTONE_WIDTH+2;ctx.strokeStyle=PALETTE.edge;ctx.stroke();
- begin();ctx.lineWidth=SANDSTONE_WIDTH;ctx.strokeStyle=PALETTE.base;ctx.stroke();
+ ctx.save();ctx.shadowColor=tone==='gray'?'#1e252866':'#432b1866';ctx.shadowBlur=9;ctx.shadowOffsetY=4;
+ begin();ctx.lineWidth=SANDSTONE_WIDTH+7;ctx.strokeStyle=palette.edge;ctx.stroke();ctx.restore();
+ begin();ctx.lineWidth=SANDSTONE_WIDTH+2;ctx.strokeStyle=palette.edge;ctx.stroke();
+ begin();ctx.lineWidth=SANDSTONE_WIDTH;ctx.strokeStyle=palette.base;ctx.stroke();
  // Arc-length table: stable stone spacing independent of Bezier curvature.
  const steps=Math.min(1800,Math.max(32,Math.ceil((length+Math.abs(offset)*2)/4)));
  const points=[],arcs=[0];
@@ -78,8 +83,8 @@ function drawSandstoneRoad(ctx,{x1,y1,x2,y2,bend=0,id=''}) {
    const x=p.x+p.nx*lateral,y=p.y+p.ny*lateral;
    ctx.save();ctx.translate(x,y);ctx.rotate(p.angle);
    const height=rowHeight+1;
-   ctx.fillStyle=PALETTE.joint;ctx.fillRect(-brickLength/2,-height/2,brickLength,height);
-   ctx.fillStyle=PALETTE.bricks[(h>>>8)%PALETTE.bricks.length];
+   ctx.fillStyle=palette.joint;ctx.fillRect(-brickLength/2,-height/2,brickLength,height);
+   ctx.fillStyle=palette.bricks[(h>>>8)%palette.bricks.length];
    ctx.fillRect(-brickLength/2+1.1,-height/2+1.05,brickLength-2.2,height-2.1);
    ctx.fillStyle='#fff7d120';
    ctx.fillRect(-brickLength/2+1.5,-height/2+1.4,brickLength-3.1,Math.max(1,height*.19));
@@ -91,9 +96,9 @@ function drawSandstoneRoad(ctx,{x1,y1,x2,y2,bend=0,id=''}) {
   }
  }
  ctx.restore();
- begin();ctx.lineWidth=1.35;ctx.strokeStyle='#f7dfacb8';ctx.stroke();
+ begin();ctx.lineWidth=1.35;ctx.strokeStyle=tone==='gray'?'#e0e5e5a8':'#f7dfacb8';ctx.stroke();
  // Subtle broken curb edges, no glowing UI highlights.
- ctx.save();ctx.lineWidth=1.4;ctx.strokeStyle='#786347a8';ctx.setLineDash([24,5,8,4]);
+ ctx.save();ctx.lineWidth=1.4;ctx.strokeStyle=tone==='gray'?'#454c4ca8':'#786347a8';ctx.setLineDash([24,5,8,4]);
  for(const sign of [-1,1]){
   ctx.beginPath();
   for(let i=0;i<=steps;i+=3){const p=points[i];
