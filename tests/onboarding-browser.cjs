@@ -1,5 +1,6 @@
 const assert = require('assert');
 const { chromium } = require('playwright');
+const {startNewRun}=require('./browser-test-helpers.cjs');
 
 const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
 const HINTS = ["identity","roster","kingdomMap","kingdomCastle","kingdomProduction","artifact","skirmishChess","battleChess","event","settlement","puzzle","caravanChess","starvation","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess"];
@@ -143,6 +144,32 @@ async function audit(browser, { width, height, language, mobile = false }) {
     await page.waitForTimeout(250);
     assert.strictEqual(await page.locator('[data-tutorial-overlay]:not([hidden])').count(),0,
       `${label}: real Arena catalog tutorial must not repeat`);
+
+    // One actual Journey visit verifies the new tips are connected to real
+    // owners, not just showHint() calls or synthetic tutorial events.
+    if (!mobile && language === 'ru' && width === 1366) {
+      await page.locator('[data-arena-back]').click();
+      await startNewRun(page,{playerName:'Jester Kingdom QA',legacyTravel:false});
+      await page.evaluate(key=>{
+        const state=JSON.parse(localStorage.getItem(key));
+        delete state.dismissed.kingdomMap;
+        delete state.dismissed.kingdomCastle;
+        localStorage.setItem(key,JSON.stringify(state));
+      },TUTORIAL_KEY);
+      await page.locator('[data-roster-travel]').click();
+      await page.locator('[data-kingdom-map-screen]:not([hidden])').waitFor({timeout:20000});
+      await assertOverlay(page,`${label} real Kingdom map`,'kingdomMap');
+      await page.locator('[data-tutorial-dismiss]').click();
+      await page.locator('[data-tutorial-overlay]').waitFor({state:'hidden'});
+      await page.locator('[data-kingdom-cell="0,0"]').click({position:{x:12,y:12}});
+      await assertOverlay(page,`${label} real Castle inspector`,'kingdomCastle');
+      await page.locator('[data-tutorial-dismiss]').click();
+      await page.locator('[data-tutorial-overlay]').waitFor({state:'hidden'});
+      await page.locator('[data-kingdom-cell="0,0"]').click({position:{x:12,y:12}});
+      await page.waitForTimeout(120);
+      assert.strictEqual(await page.locator('[data-tutorial-overlay]:not([hidden])').count(),0,
+        'dismissed Castle hint must not repeat on another inspection');
+    }
 
     assert.deepStrictEqual(errors, [], `${label} browser errors:\n${errors.join('\n')}`);
   } finally {
