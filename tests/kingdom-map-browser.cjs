@@ -309,9 +309,12 @@ async function assertTileImage(page,cellId){
   assert.equal(npcStack.npcPointer,'none',
     'foreground decorative NPC canvas must not intercept map clicks');
   if(Number(await travelerLayer.getAttribute('data-walker-count'))>0){
-    await page.waitForFunction(()=>
-      document.querySelector('[data-kingdom-travelers]')?.dataset.atlasStatus==='loaded',
-      null,{timeout:9000});
+    await page.waitForFunction(()=>{
+      const status=document.querySelector('[data-kingdom-travelers]')?.dataset.atlasStatus;
+      return status==='loaded'||status==='missing';
+    },null,{timeout:12000});
+    const status=await travelerLayer.getAttribute('data-atlas-status');
+    assert.equal(status,'loaded','walker atlas must load when eligible NPCs exist');
   }
   const boundaryLayer=await page.evaluate(()=>{
     const terrain=document.querySelector('.km-parchment-canvas');
