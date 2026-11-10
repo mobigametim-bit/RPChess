@@ -2,6 +2,10 @@ const fs=require('fs'),path=require('path'),assert=require('assert');const root=
 for(const token of ['data-reboot-foundation','data-new-game','data-continue-run','data-settings','data-language','data-language-modal','data-brand-logo','generated_assets/logo_ru.png','css/language.css'])assert(html.includes(token),`Foundation contract missing ${token}`);assert(!html.includes('title_wordmark.png'),'Foundation must not retain the legacy runtime wordmark');for(const forbidden of ['iron-marches-runtime.bundle.js','vertical-slice-app.mjs','explicit-run-setup.mjs','ui-approved-campaign.mjs','commander-selection-final.mjs'])assert(!html.includes(forbidden),`legacy runtime leaked: ${forbidden}`);assert(html.indexOf('data-settings aria-label="Настройки"')<html.indexOf('data-language aria-label="Язык"'),'Language must appear directly after Settings in the main menu');
 assert(html.includes('mm-menu-approved')&&html.includes('data-main-menu-kingdom'),'Approved responsive menu must expose the live kingdom');
 assert(!html.includes('data-continue-run data-i18n="menu.continue"'),'Old standalone Continue button must be removed');
+for(const key of ['data-journey-choice-modal','data-journey-new','data-journey-continue','menu.journeyTitle','menu.journeyClose'])
+ assert(html.includes(key)||js.includes(key),'Journey menu picker missing '+key);
+assert(html.includes('role="dialog"')&&js.includes("const active=Boolean(readRun()&&!readRun().ended)"),
+ 'Journey picker must use an accessible dialog and live saved-run status');
 assert(!html.includes('class="reboot-wordmark"'),'Main-menu brand logo must be absent');
 assert(html.includes('css/hud-nav-icons.css?v=20261110-icon-safe-v4'),
  'The shared top-HUD pictograms must be included after scene styling');

@@ -130,7 +130,7 @@ async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
     assert.strictEqual(await page.locator('[data-skirmish-screen]:not([hidden])').count(), 0, 'encounter must not start before Starvation acknowledgement');
 
     await page.reload({ waitUntil: 'networkidle' });
-    await page.locator('[data-continue-run]').click();
+    await page.locator('[data-continue-run]').click();await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
     await page.locator('[data-roster-screen]:not([hidden])').waitFor();
     await page.locator('[data-roster-travel]').click();
     await page.locator('[data-starvation-screen]:not([hidden])').waitFor();

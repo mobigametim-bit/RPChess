@@ -81,6 +81,7 @@ async function assertOneScreen(page,label){
     await page.reload({waitUntil:'networkidle'});
     const reloadedMenu=await waitForVisible(page,'[data-reboot-foundation]:not([hidden])','Menu after reload');
     await reloadedMenu.locator('[data-continue-run]').click();
+    await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
     await waitForVisible(page,'[data-roster-screen]:not([hidden])','Roster after Continue');
     assert((await page.locator('[data-roster-detail]').innerText()).includes('Альдрик Стена'));
     assert.strictEqual(await page.locator('[data-roster-slot="h2"] [data-roster-piece="hero.aldric_wall"]').count(),1,'formation survives save/reload');
@@ -94,6 +95,7 @@ async function assertOneScreen(page,label){
     await mobile.reload({waitUntil:'networkidle'});
     const mobileMenu=await waitForVisible(mobile,'[data-reboot-foundation]:not([hidden])','Landscape phone menu');
     await mobileMenu.locator('[data-continue-run]').click();
+    await mobile.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
     await waitForVisible(mobile,'[data-roster-screen]:not([hidden])','Landscape phone Roster');
     await assertOneScreen(mobile,'landscape phone Roster');
     const frame=await mobile.locator('.roster-catalog').evaluate((element)=>{

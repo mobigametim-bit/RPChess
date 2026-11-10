@@ -99,6 +99,7 @@ async function audit(browser, { width, height, language, mobile = false }) {
     await page.evaluate(async () => { await globalThis.RPChessOnboardingReady; return true; });
 
     await page.locator('[data-new-game]').first().click();
+    await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-new]').click();
     await assertOverlay(page, `${label} identity`, 'identity');
     const firstDismiss = await page.locator('[data-tutorial-dismiss]').textContent();
     assert.strictEqual(firstDismiss.trim(), language === 'en' ? 'Got it' : 'Понятно', `${label}: wrong dismissal localization`);

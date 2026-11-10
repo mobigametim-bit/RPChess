@@ -168,6 +168,9 @@ function closeModal(modal, audio) {
   modal.hidden = true;
   document.body.classList.remove('reboot-modal-open');
   audio?.close();
+  if (modal.matches('[data-journey-choice-modal]')) {
+    document.querySelector('[data-new-game][data-continue-run]')?.focus();
+  }
 }
 
 clearLegacySavesOnce();
@@ -176,6 +179,8 @@ const settings = readSettings();
 const audio = new RebootAudio(settings);
 const settingsModal = document.querySelector('[data-settings-modal]');
 const languageModal = document.querySelector('[data-language-modal]');
+const journeyChoiceModal = document.querySelector('[data-journey-choice-modal]');
+const journeyIcon = document.querySelector('[data-new-game][data-continue-run]');
 const music = document.querySelector('[data-music-volume]');
 const sfx = document.querySelector('[data-sfx-volume]');
 const reducedMotion = document.querySelector('[data-reduced-motion]');
@@ -232,6 +237,10 @@ function updateMainMenuIconLabels(){
     element.setAttribute('aria-label',labels[role]);
     element.title=labels[role];
   }
+  // The visible note changes immediately if the user switches RU/EN.
+  const note=journeyChoiceModal?.querySelector('[data-journey-choice-note]');
+  const resume=journeyChoiceModal?.querySelector('[data-journey-continue]');
+  if(note&&resume)note.textContent=t(resume.disabled?'menu.journeyEmpty':'menu.journeyReplace');
 }
 updateMainMenuIconLabels();
 subscribe(updateMainMenuIconLabels);
@@ -239,21 +248,60 @@ function activateAudio() { audio.activate(); }
 document.addEventListener('pointerdown', activateAudio, { once: true, capture: true });
 document.addEventListener('keydown', activateAudio, { once: true, capture: true });
 
-// One Journey icon starts a new run or resumes the saved journey.
-document.querySelector('[data-new-game][data-continue-run]')?.addEventListener('click', async () => {
+// The icon opens two explicit choices; merely opening the dialog never
+// alters a saved run. Cloud-state reconciliation always finishes first.
+let journeyChoiceOpening = false;
+journeyIcon?.addEventListener('click', async () => {
+  if (!journeyChoiceModal || journeyChoiceOpening || !journeyChoiceModal.hidden) return;
   audio.click();
-  await cloudReady;
-  const {readRun}=await import('./run-persistence.mjs');
-  const run=readRun();
-  if(run&&!run.ended){
-    globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue'));
-    return;
+  journeyChoiceOpening = true;
+  try {
+    await cloudReady;
+    const {readRun}=await import('./run-persistence.mjs');
+    if (!journeyIcon.isConnected || document.querySelector('[data-reboot-foundation]')?.hidden) return;
+    const active=Boolean(readRun()&&!readRun().ended);
+    const resume=journeyChoiceModal.querySelector('[data-journey-continue]');
+    resume.disabled=!active;
+    resume.setAttribute('aria-disabled',String(!active));
+    updateMainMenuIconLabels();
+    openModal(journeyChoiceModal,audio);
+    (active?resume:journeyChoiceModal.querySelector('[data-journey-new]'))?.focus();
+  } catch(error) {
+    console.error('[RPChess] Journey choice failed to open',error);
+  } finally {
+    journeyChoiceOpening=false;
   }
-  const onboarding = await onboardingReady;
+});
+journeyChoiceModal?.querySelector('[data-journey-new]')?.addEventListener('click',async()=>{
+  audio.click();
+  closeModal(journeyChoiceModal,audio);
+  const onboarding=await onboardingReady;
   onboarding?.activateOnboarding?.();
-  const identity = await identityReady;
+  const identity=await identityReady;
   identity?.openIdentityPrompt?.();
   onboarding?.showHint?.('identity');
+});
+journeyChoiceModal?.querySelector('[data-journey-continue]')?.addEventListener('click',async()=>{
+  const {readRun}=await import('./run-persistence.mjs');
+  if(!readRun()||readRun().ended){
+    const resume=journeyChoiceModal.querySelector('[data-journey-continue]');
+    resume.disabled=true;
+    resume.setAttribute('aria-disabled','true');
+    updateMainMenuIconLabels();
+    return;
+  }
+  audio.click();
+  closeModal(journeyChoiceModal,audio);
+  globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue'));
+});
+// Keep keyboard focus inside the choice dialog; Escape and backdrop close
+// through the shared modal handler, restoring focus to the Journey icon.
+journeyChoiceModal?.addEventListener('keydown',event=>{
+  if(event.key!=='Tab')return;
+  const buttons=[...journeyChoiceModal.querySelectorAll('button:not([disabled])')];
+  const first=buttons[0],last=buttons[buttons.length-1];
+  if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}
+  else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
 });
 
 document.querySelectorAll('[data-settings]').forEach((button) => {

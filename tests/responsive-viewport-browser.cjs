@@ -143,6 +143,7 @@ async function auditPortraitFlow(browser,width,height,language){
     assert(result.scrollWidth<=result.vw+2,`${label}: no horizontal overflow: ${JSON.stringify(result)}`);
     assert(result.buttonHeight>=46,`${label}: menu touch target must be at least 46 CSS px`);
     await page.locator('[data-new-game]').click();
+    await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-new]').click();
     await page.locator('[data-player-identity-modal]:not([hidden])').waitFor({state:'visible'});
     const modal=await page.locator('[data-player-identity-modal] .identity-panel').first().boundingBox();
     assert(modal&&modal.width<=width+2&&modal.x+modal.width<=width+2&&modal.x>=-1,`${label}: identity form must fit portrait; modal=${JSON.stringify(modal)}`);
@@ -169,6 +170,7 @@ async function auditMenuModals(page, label) {
   await page.locator('[data-language-modal] .reboot-close').click();
 
   await page.locator('[data-new-game]').first().click();
+  await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-new]').click();
   await page.locator('[data-player-identity-modal]:not([hidden])').waitFor({ state: 'visible' });
   await assertViewportContained(page, '[data-player-identity-modal]:not([hidden]) .identity-panel', `${label} Identity frame`);
   await assertFrameContains(page, '[data-player-identity-modal]:not([hidden]) .identity-panel', ['[data-player-identity-input]', '[data-player-identity-submit]', '[data-player-identity-close]'], `${label} Identity ownership`);
@@ -196,7 +198,7 @@ async function auditViewport(browser, width, height, language) {
     await assertFlagSafety(page, '[data-chronicle-panel]', '.chronicle-safe', `${label} Chronicle`);
     await assertPageFitsViewport(page, `${label} Chronicle`);
 
-    await page.locator('[data-continue-run]').click();
+    await page.locator('[data-continue-run]').click();await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
     await page.locator('[data-roster-travel]').click();
     await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
     await assertPageFitsViewport(page, `${label} Travel`);

@@ -73,6 +73,8 @@ async function startNewRun(page, { playerName = 'Browser Tester', legacyTravel =
   const newGame = menu.locator('[data-new-game]');
   await newGame.waitFor({ state: 'visible' });
   await newGame.click();
+  const picker=await waitForVisible(page,'[data-journey-choice-modal]:not([hidden])','Journey choices');
+  await picker.locator('[data-journey-new]').click();
   const identity = await waitForVisible(page, '[data-player-identity-modal]:not([hidden])', 'Player Identity');
   await identity.locator('[data-player-identity-input]').fill(playerName);
   const submit = identity.locator('[data-player-identity-submit]');

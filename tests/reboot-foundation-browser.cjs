@@ -59,6 +59,18 @@ async function desktopContract(browser) {
     assert.strictEqual(await newMenuLogo.isVisible(),true,'desktop menu localized logo must be visible');
     assert((await newMenuLogo.getAttribute('src')).endsWith('logo_ru.png'),'default menu wordmark in Russian');
     assert.strictEqual(await menu.locator('[data-main-menu-kingdom]').isHidden(), true);
+    await menu.locator('[data-new-game]').click();
+    const journeyChoice=await waitForVisible(page,'[data-journey-choice-modal]:not([hidden])','Journey choices');
+    await assertInsideViewport(journeyChoice.locator('.journey-choice-panel'),'desktop Journey choices');
+    assert.strictEqual(await journeyChoice.locator('[data-journey-new]').textContent(),'Новая игра');
+    assert.strictEqual(await journeyChoice.locator('[data-journey-continue]').textContent(),'Продолжить путешествие');
+    assert.strictEqual(await journeyChoice.locator('[data-journey-continue]').isDisabled(),true,
+      'Continue is disabled without an unfinished run');
+    assert.strictEqual(await page.evaluate(()=>document.activeElement?.dataset.journeyNew!==undefined),true);
+    await page.keyboard.press('Escape');
+    await journeyChoice.waitFor({state:'hidden'});
+    assert.strictEqual(await page.evaluate(()=>document.activeElement?.dataset.newGame!==undefined),true,
+      'Escape closes the chooser and restores focus to Journey icon');
     assert.strictEqual(await menu.locator('[data-settings]').count(), 1);
     assert.strictEqual(await menu.locator('[data-language]').count(), 1);
     await assertDocumentFits(page, 'desktop menu');
@@ -79,6 +91,11 @@ async function desktopContract(browser) {
     assert.strictEqual(await menu.locator('.mm-brand-logo').getAttribute('alt'),'Heroes of Check and Mate',
       'English language must switch the restored menu wordmark');
     assert.strictEqual(await menu.locator('[data-new-game]').getAttribute('aria-label'), 'Journey');
+    await menu.locator('[data-new-game]').click();
+    const englishChoice=await waitForVisible(page,'[data-journey-choice-modal]:not([hidden])','English Journey');
+    assert.strictEqual(await englishChoice.locator('[data-journey-new]').textContent(),'New Game');
+    assert.strictEqual(await englishChoice.locator('[data-journey-continue]').textContent(),'Continue Journey');
+    await englishChoice.locator('[data-close-modal]').click();
     assert.strictEqual(await menu.locator('.reboot-menu-actions [data-settings]').getAttribute('aria-label'), 'Settings');
     assert.strictEqual((await menu.locator('[data-new-game]').textContent()).trim(),'', 'Icons have no captions');
     assert.strictEqual(await menu.locator('.mm-menu-icon img').count(),6,
@@ -106,6 +123,23 @@ async function desktopContract(browser) {
       journeyIcon.fontSize==='0px'&&journeyIcon.aria,
       'The topbar Journey button uses the approved Journey pictogram but stays accessible');
     assert.strictEqual(await page.locator('[data-roster-card]').count(), 6);
+    const originalRunId=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).id,RUN_KEY);
+    await page.locator('[data-roster-menu]').click();
+    await waitForVisible(page,'[data-reboot-foundation]:not([hidden])','Menu with saved Journey');
+    await menu.locator('[data-new-game]').click();
+    const savedChoice=await waitForVisible(page,'[data-journey-choice-modal]:not([hidden])','Saved Journey choices');
+    assert.strictEqual(await savedChoice.locator('[data-journey-continue]').isEnabled(),true,
+      'Continue is available for a saved unfinished run');
+    await savedChoice.locator('[data-journey-new]').click();
+    await waitForVisible(page,'[data-player-identity-modal]:not([hidden])','New-game identity');
+    assert.strictEqual(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).id,RUN_KEY),
+      originalRunId,'opening New Game identity must not destroy the active Journey');
+    await page.locator('[data-player-identity-close]').click();
+    await menu.locator('[data-new-game]').click();
+    await page.locator('[data-journey-continue]').click();
+    await waitForVisible(page,'[data-roster-screen]:not([hidden])','Continued Journey');
+    assert.strictEqual(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).id,RUN_KEY),
+      originalRunId,'Continue must preserve the saved run');
     await page.locator('[data-roster-travel]').click();
     await waitForVisible(page, '[data-travel-choice-screen]:not([hidden])', 'Travel Choice');
     assert.strictEqual(await page.locator('[data-travel-choice]').count(), 3);

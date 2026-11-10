@@ -86,7 +86,7 @@ async function verifyBoard(page,selector,label,arena=false){
       const panel=await page.locator('.artifact-choice-panel').boundingBox();assert(panel.x>=0&&panel.y>=0&&panel.x+panel.width<=668&&panel.y+panel.height<=376);
       await card.click();await page.locator('[data-classic-screen]:not([hidden])').waitFor();
       assert.strictEqual(await page.evaluate(({key,id})=>JSON.parse(localStorage.getItem(key)).artifacts[id],{key,id}),1);
-      await page.reload({waitUntil:'networkidle'});await page.locator('[data-continue-run]').click();await page.locator('[data-classic-screen]:not([hidden])').waitFor();
+      await page.reload({waitUntil:'networkidle'});await page.locator('[data-continue-run]').click();await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();await page.locator('[data-classic-screen]:not([hidden])').waitFor();
       assert.strictEqual(await page.locator('[data-artifact-choice-modal]').count(),0);
       assert.strictEqual(await page.evaluate(({key,id})=>JSON.parse(localStorage.getItem(key)).artifacts[id],{key,id}),1);
       await verifyBoard(page,'[data-chess-board]',type);

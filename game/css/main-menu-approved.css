@@ -165,3 +165,48 @@ html[data-landscape-ui='1'] .mm-menu-approved [data-main-menu-kingdom][hidden]{
  (orientation:landscape) and (max-height:500px) and (max-width:950px){
  .mm-menu-approved .mm-brand-logo{display:none!important}
 }
+
+/* The Journey icon opens a choice without moving or obscuring menu artwork. */
+[data-journey-choice-modal] .journey-choice-panel{
+ box-sizing:border-box;width:min(490px,calc(100vw - 24px));
+ max-height:calc(100dvh - 24px);overflow-y:auto;
+ padding:clamp(18px,3vw,30px);
+ border:1px solid rgba(226,184,90,.72);border-radius:10px;
+ background:linear-gradient(165deg,rgba(17,20,25,.99),rgba(6,10,17,.99));
+ box-shadow:0 22px 64px #000b,inset 0 1px 0 rgba(241,211,136,.16);
+ color:#f6e6c4;
+}
+[data-journey-choice-modal] .reboot-modal__header{
+ align-items:center;gap:10px;padding-bottom:14px;
+}
+[data-journey-choice-modal] .reboot-modal__header h2{
+ margin:5px 0 0;font:400 clamp(26px,4vw,39px)/1.06 'BrahmsGotischCyr',Georgia,serif;
+ color:#f6e5bc;
+}
+[data-journey-choice-modal] .reboot-close{flex:none}
+[data-journey-choice-modal] .journey-choice-note{
+ margin:16px 0!important;min-height:42px;
+ font:500 14px/1.45 Inter,Arial,sans-serif;color:#d5c4a0;
+}
+[data-journey-choice-modal] .journey-choice-actions{
+ display:grid;grid-template-columns:1fr;gap:11px;min-width:0;
+}
+[data-journey-choice-modal] .journey-choice-actions .reboot-button{
+ min-width:0;width:100%;min-height:54px;padding:12px 10px;
+ border:1px solid #aa8446;border-radius:5px;
+ background:linear-gradient(180deg,#5e4525,#362718);
+ color:#ffe6ac;font:800 clamp(14px,2vw,18px)/1.2 'BrahmsGotischCyr',Georgia,serif;
+ white-space:normal;
+}
+[data-journey-choice-modal] .journey-choice-actions .reboot-button:focus-visible{
+ outline:3px solid #ffd989;outline-offset:3px;
+}
+[data-journey-choice-modal] .journey-choice-actions .reboot-button:disabled{
+ opacity:.38;filter:grayscale(.55);cursor:not-allowed;
+}
+@media(max-height:430px){
+ [data-journey-choice-modal] .journey-choice-panel{padding:12px 16px}
+ [data-journey-choice-modal] .journey-choice-note{margin:9px 0!important;min-height:0;font-size:12px}
+ [data-journey-choice-modal] .journey-choice-actions{gap:7px}
+ [data-journey-choice-modal] .journey-choice-actions .reboot-button{min-height:41px}
+}

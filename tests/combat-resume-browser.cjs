@@ -57,7 +57,7 @@ async function exercise(browser, type) {
       fen:globalThis.RPChessClassicChess.snapshot().fen
     }), runKey);
     await page.reload({ waitUntil:'networkidle' });
-    await page.locator('[data-continue-run]').click();
+    await page.locator('[data-continue-run]').click();await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     try {
       await page.waitForFunction(type=>Boolean(globalThis.RPChessClassicChess?.engine&&(type==='battle'?globalThis.RPChessBattle?.battlePlan:globalThis.RPChessSkirmish?.battlePlan)),type,{timeout:12000});
@@ -120,7 +120,7 @@ async function exercise(browser, type) {
       }, {key:runKey,moves});
       assert(inserted.ok,JSON.stringify(inserted));
       await page.reload({waitUntil:'networkidle'});
-      await page.locator('[data-continue-run]').click();
+      await page.locator('[data-continue-run]').click();await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
       await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     try {
       await page.waitForFunction(type=>Boolean(globalThis.RPChessClassicChess?.engine&&(type==='battle'?globalThis.RPChessBattle?.battlePlan:globalThis.RPChessSkirmish?.battlePlan)),type,{timeout:12000});
@@ -148,7 +148,7 @@ async function exercise(browser, type) {
       await page.waitForFunction(key=>
         JSON.parse(localStorage.getItem(key)).currentCombat?.moves.length>=9,runKey,{timeout:8000});
       await page.reload({waitUntil:'networkidle'});
-      await page.locator('[data-continue-run]').click();
+      await page.locator('[data-continue-run]').click();await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
       await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     try {
       await page.waitForFunction(type=>Boolean(globalThis.RPChessClassicChess?.engine&&(type==='battle'?globalThis.RPChessBattle?.battlePlan:globalThis.RPChessSkirmish?.battlePlan)),type,{timeout:12000});

@@ -63,7 +63,7 @@
   <link rel="stylesheet" href="css/tournament-v4.css?v=20261107-portrait-toolbar-1">
   <link rel="stylesheet" href="css/font-goznak.css?v=20261106-goznak-release-1" data-goznak-ui>
   <link rel="stylesheet" href="css/mentor-training.css?v=20261108-king-check-aura-v2">
-  <link rel="stylesheet" href="css/main-menu-approved.css?v=20261110-brand-return-v1">
+  <link rel="stylesheet" href="css/main-menu-approved.css?v=20261110-journey-choice-v1">
   <link rel="stylesheet" href="css/hud-nav-icons.css?v=20261110-icon-safe-v4">
 </head>
 <body>
@@ -295,6 +295,27 @@
   <div class="skirmish-toast" data-skirmish-toast role="status" aria-live="polite" hidden></div>
   <div class="arena-dialog" data-arena-dialog hidden></div>
 
+  <!-- Main menu: explicit Journey choice, separate from run creation/storage. -->
+  <div class="reboot-modal" data-journey-choice-modal hidden>
+    <section class="reboot-modal__panel journey-choice-panel ui-panel-surface" role="dialog"
+      aria-modal="true" aria-labelledby="journey-choice-title" aria-describedby="journey-choice-note">
+      <header class="reboot-modal__header">
+        <div>
+          <div class="reboot-eyebrow" data-i18n="menu.journeyKicker">ПУТЕШЕСТВИЕ</div>
+          <h2 id="journey-choice-title" data-i18n="menu.journeyTitle">Выберите действие</h2>
+        </div>
+        <button class="reboot-close" type="button" data-close-modal data-i18n-aria-label="menu.journeyClose" aria-label="Закрыть выбор путешествия">×</button>
+      </header>
+      <p class="journey-choice-note" id="journey-choice-note" data-journey-choice-note></p>
+      <div class="journey-choice-actions">
+        <button class="reboot-button reboot-button--primary" type="button"
+          data-journey-new data-i18n="menu.journeyNew">Новая игра</button>
+        <button class="reboot-button reboot-button--primary" type="button"
+          data-journey-continue data-i18n="menu.journeyContinue" disabled>Продолжить путешествие</button>
+      </div>
+    </section>
+  </div>
+
   <div class="reboot-modal" data-game-setup-modal hidden>
     <section class="reboot-modal__panel classic-commander-panel classic-setup-panel" role="dialog" aria-modal="true" aria-labelledby="game-setup-title">
       <header class="reboot-modal__header">
@@ -403,7 +424,7 @@
 
   <script type="module" src="js/pwa-install.mjs?v=20261104-2"></script>
   <script type="module" src="js/screen-loading.mjs?v=20261016-1"></script>
-  <script type="module" src="js/reboot-foundation.mjs?v=20261110-castle-focus-v3"></script>
+  <script type="module" src="js/reboot-foundation.mjs?v=20261110-journey-choice-v1"></script>
   <script type="module" src="js/roster-app.mjs?v=20261110-pre-entry-starvation-v1"></script>
   <script type="module" src="js/classic-chess-app.mjs?v=20261108-figure-wording-v2"></script>
   <script type="module" src="js/arena-app.mjs?v=20261110-icon-preserve"></script>

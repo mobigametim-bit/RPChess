@@ -35,6 +35,7 @@ const RUN_KEY='rpchess.reboot.v1.run';
     },[RUN_KEY,run]);
     await phone.waitForFunction(()=>document.querySelector('[data-continue-run]')?.dataset.journeyActive==='true');
     await button.click();
+    await phone.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
     await waitForVisible(phone,'[data-roster-screen]:not([hidden])','Roster after cloud restore');
     assert.deepStrictEqual(errors,[]);
     await phone.close();

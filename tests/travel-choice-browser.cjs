@@ -260,7 +260,7 @@ async function assertDecoratedBackdrops(page, label) {
     await assertDecoratedBackdrops(page, 'roster re-entry');
     assert.deepStrictEqual(await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).currentTravelChoices, RUN_KEY), first);
     await page.reload({ waitUntil:'networkidle' });
-    await page.locator('[data-continue-run]').click();
+    await page.locator('[data-continue-run]').click();await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
     await page.locator('[data-roster-screen]:not([hidden])').waitFor();
     await page.locator('[data-roster-travel]').click();
     await travel.waitFor();
