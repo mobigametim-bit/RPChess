@@ -864,6 +864,7 @@ function claimWeekly(id){
   report((lang()==='en'?'Free recruit: ':'Бесплатный рекрут: ')+
     (lang()==='en'?pieceType:PIECE_LABELS[pieceType])+' ×'+result.amount);
   globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'skirmish-production'}}));
+  globalThis.dispatchEvent(new CustomEvent('rpchess:kingdom-production-collected'));
   return;
  }
 
@@ -878,6 +879,7 @@ function claimWeekly(id){
   ...(result.kind==='gold'?{gold:run.gold+result.amount}:{}),
   ...(result.kind==='supplies'?{supplies:run.supplies+result.amount}:{})};
  writeRun(next);showEconomyBurst(id,result.kind,result.amount);render();
+ globalThis.dispatchEvent(new CustomEvent('rpchess:kingdom-production-collected'));
 }
 function shardIcon(){
  const icon=document.createElement('img');
@@ -1046,6 +1048,8 @@ function onCell(event){
  if(!map||map.pendingCell||pinch||Date.now()<ignoreCellClicksUntil)return;
  selected=id;
  render(); // A single click is inspection only, regardless of distance.
+ if(id===keyOf(map.castle.x,map.castle.y))
+  globalThis.dispatchEvent(new CustomEvent('rpchess:kingdom-castle-inspected'));
 }
 let settlementOpening=false;
 async function visitSettlement(){
@@ -1106,6 +1110,7 @@ function openMap(event){
  selected=previousPending&&run.kingdomMap.cells[previousPending]?.status==='failed'?
   previousPending:keyOf(run.kingdomMap.king.x,run.kingdomMap.king.y);
  render();schedulePending(run);
+ globalThis.dispatchEvent(new CustomEvent('rpchess:kingdom-map-shown',{detail:{runId:run.id}}));
  if(event?.detail?.source==='skirmish-insufficient-force')report(tr('needCompanion'));
 }
 function syncPower(){
