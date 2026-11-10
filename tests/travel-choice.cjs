@@ -91,6 +91,13 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   for(const edge of ['0,0::1,0','0,0::2,0','1,0::2,0'])
    assert(secondKeys.includes(edge),'each owned event connects to Castle and its nearest neighbor: '+edge);
   assert.equal(secondKeys.length,new Set(secondKeys).size,'royal roads are undirected and unique');
+  const formerRoad={id:'completed:1,0',from:'0,0',to:'1,0',bend:.9};
+  const migratedRoad=roadGraph.synchronizeRoyalRoads({...scoutedOwned,royalRoads:undefined,
+    completedRoads:[formerRoad]});
+  assert.equal(migratedRoad.royalRoads.find(r=>roadGraph.pairKey(r.from,r.to)==='0,0::1,0').bend,.9,
+    'migration preserves painted legacy road geometry instead of rerolling old curves');
+  assert.strictEqual(roadGraph.synchronizeRoyalRoads(migratedRoad),migratedRoad,
+    'legacy road import is one-shot and idempotent');
   assert.strictEqual(roadGraph.synchronizeRoyalRoads(secondRoad),secondRoad,
     'a reload/sync never rerolls or adds the same road');
   const expanded=roadGraph.synchronizeRoyalRoads({...secondRoad,cells:{...secondRoad.cells,
