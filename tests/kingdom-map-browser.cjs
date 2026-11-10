@@ -207,32 +207,32 @@ async function assertTileImage(page,cellId){
     sandstone.outsideAlpha===0&&sandstone.stoneColors>=3,
     'browser Canvas must draw pale sandstone with visible brick variation and approved 16px width');
 
-  // Five distinct NPC policies, each using ceil(owned territory / 5),
+  // Five independent NPC limits use floor(owned lands EXCLUDING castle / 5),
   // with no actors before their destinations/roads exist.
   const npcPolicy=await page.evaluate(async()=>{
     const {createTravelers,territoryTravelerQuota,OWNED_ONLY}=await import(
-      './js/kingdom-road-travelers.mjs?v=20261110-npc-territory-v4');
-    const ids=Array.from({length:5},(_,i)=>i+',0');
+      './js/kingdom-road-travelers.mjs?v=20261111-npc-floor-v1');
+    const ids=Array.from({length:6},(_,i)=>i+',0');
     const castle={x:0,y:0},cells=Object.fromEntries(ids.map((id,i)=>
       [id,{status:'completed',explored:true,annexed:true,...(i===2?{
-        selectedEncounter:{id:'event-a',type:'event'}}:i===4?{
+        selectedEncounter:{id:'event-a',type:'event'}}:i===5?{
         selectedEncounter:{id:'settlement-a',type:'settlement'}}:{})}]));
-    cells['6,0']={status:'completed',explored:true,selectedEncounter:{
+    cells['7,0']={status:'completed',explored:true,selectedEncounter:{
       id:'settlement-b',type:'settlement'}};
-    const edges=Array.from({length:4},(_,i)=>({
+    const edges=Array.from({length:5},(_,i)=>({
       id:'royal:'+i,from:i+',0',to:i+1+',0',bend:0}));
     const map={seed:'walker-route-approval',castle,cells,
       centralOwnedCells:ids,royalRoadsVersion:3,royalRoads:edges,
-      completedRoads:[{from:'4,0',to:'6,0',bend:.3,id:'travel-foreign'}],
+      completedRoads:[{from:'5,0',to:'7,0',bend:.3,id:'travel-foreign'}],
       outposts:[],builtSettlements:[]};
     const byType=walkers=>Object.fromEntries(
       ['merchant','convoy','courier','patrol','builders'].map(type=>[
         type,walkers.filter(actor=>actor.type===type)]));
     const started=byType(createTravelers(map,{parchment:false}));
-    const expanded={...map,centralOwnedCells:[...ids,...Array.from({length:6},(_,i)=>(i+7)+',0')]};
+    const expanded={...map,centralOwnedCells:[...ids,...Array.from({length:6},(_,i)=>(i+6)+',0')]};
     const larger=byType(createTravelers(expanded,{parchment:false}));
-    const missing={...map,cells:{...cells,'4,0':{status:'completed',explored:true,annexed:true},
-      '6,0':{status:'completed',explored:true}},
+    const missing={...map,cells:{...cells,'5,0':{status:'completed',explored:true,annexed:true},
+      '7,0':{status:'completed',explored:true}},
       builtSettlements:[]};
     const noSettlements=byType(createTravelers(missing,{parchment:false}));
     const none={...map,royalRoads:[],completedRoads:[]};
@@ -244,6 +244,11 @@ async function assertTileImage(page,cellId){
       larger:Object.fromEntries(Object.entries(larger).map(([k,v])=>[k,v.length])),
       missing:{merchant:noSettlements.merchant.length,builders:noSettlements.builders.length},
       none:{convoy:noRoads.convoy.length,patrol:noRoads.patrol.length},
+      boundaries:Object.fromEntries([0,4,5,9,10,11].map(lands=>[lands,
+        territoryTravelerQuota({castle,cells:{},centralOwnedCells:[
+          '0,0',...Array.from({length:lands},(_,i)=>(i+1)+',0')
+        ]})])),
+      distinct:territoryTravelerQuota({...map,outposts:[{cells:['1,0','5,0']}]}),
       own:[...OWNED_ONLY],
       routes:{merchant:started.merchant[0]?.legs[0]?.to,
         builder:started.builders[0]?.legs[0]?.to,
@@ -251,18 +256,21 @@ async function assertTileImage(page,cellId){
     };
   });
   assert.equal(npcPolicy.quota,1);
-  assert.equal(npcPolicy.largerQuota,3);
+  assert.equal(npcPolicy.largerQuota,2);
+  assert.deepEqual(npcPolicy.boundaries,{0:0,4:0,5:1,9:1,10:2,11:2},
+    'NPC quotas increase only after each complete block of five owned lands');
+  assert.equal(npcPolicy.distinct,1,'castle and duplicate outpost cells must not inflate territory');
   for(const type of ['merchant','convoy','courier','patrol','builders']){
     assert.equal(npcPolicy.initial[type],1,'one eligible '+type+' for five lands');
-    assert.equal(npcPolicy.larger[type],3,'three eligible '+type+' for eleven lands');
+    assert.equal(npcPolicy.larger[type],2,'at most two eligible '+type+' for eleven lands');
   }
   assert.deepEqual(npcPolicy.missing,{merchant:0,builders:0},
     'merchants and builders cannot appear without settlements');
   assert.deepEqual(npcPolicy.none,{convoy:0,patrol:0},
     'convoys and castle guards cannot appear without an owned road');
-  assert.equal(npcPolicy.routes.builder,'4,0',
+  assert.equal(npcPolicy.routes.builder,'5,0',
     'builders shuttle between the Castle and owned Settlement');
-  assert(['2,0','4,0'].includes(npcPolicy.routes.patrol),
+  assert(['2,0','5,0'].includes(npcPolicy.routes.patrol),
     'patrols shuttle from the Castle to a road encounter');
   assert(npcPolicy.own.includes('convoy')&&npcPolicy.own.includes('builders')&&
     npcPolicy.own.includes('patrol'),'local walkers cannot depart the kingdom');
