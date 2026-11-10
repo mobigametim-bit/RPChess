@@ -2,7 +2,7 @@ const assert = require('assert');
 const { chromium } = require('playwright');
 
 const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
-const HINTS = ["identity","roster","travel","artifact","skirmishChess","battleChess","combatAftermath","event","settlement","puzzle","caravanChess","caravanReward","starvation","runEnd","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess","arenaResult"];
+const HINTS = ["identity","roster","kingdomMap","kingdomCastle","kingdomProduction","artifact","skirmishChess","battleChess","event","settlement","puzzle","caravanChess","starvation","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess"];
 const TUTORIAL_KEY = 'rpchess.reboot.v1.tutorial';
 
 async function setLanguage(page, language) {
@@ -120,7 +120,7 @@ async function audit(browser, { width, height, language, mobile = false }) {
 
     const state = await page.evaluate((key) => JSON.parse(localStorage.getItem(key) || 'null'), TUTORIAL_KEY);
     assert(state?.activated, `${label}: tutorial must remain activated`);
-    assert.deepStrictEqual(Object.keys(state.dismissed).sort(), [...HINTS].sort(), `${label}: dismissed state must contain exactly the twenty approved hints`);
+    assert.deepStrictEqual(Object.keys(state.dismissed).sort(), [...HINTS].sort(), `${label}: dismissed state must contain exactly the eighteen active hints`);
     const repeated = await page.evaluate(async () => {
       const onboarding = await globalThis.RPChessOnboardingReady;
       return onboarding.showHint('travel');
@@ -201,7 +201,7 @@ async function capturePortraitTutorials(browser, width, height) {
     if(process.env.RPCHESS_ONBOARDING_SCREENSHOT_DIR){
       await capturePortraitTutorials(browser,390,844);
       await capturePortraitTutorials(browser,768,1024);
-      console.log('All 20 onboarding hints captured on phone and tablet: PASS');
+      console.log('All 18 onboarding hints captured on phone and tablet: PASS');
       return;
     }
     for (const language of ['ru','en']) {
