@@ -20,6 +20,7 @@ import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs'
 import {PARCHMENT_MODE_KEY} from './kingdom-parchment-core.mjs';
 import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261110-terrain-boundary';
 import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261110-terrain-boundary';
+import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs';
 import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
@@ -452,6 +453,7 @@ function screenReady(){
  return screen;
 }
 function stopTimers(){
+ stopTravelers();
  routeQueue=[];pan=null;kingDrag=null;
  clearTimeout(flightTimer);clearTimeout(launchTimer);clearTimeout(flavorTimer);clearTimeout(resourceTimer);
  resourceBurst=null;resourceTimer=null;
@@ -710,6 +712,7 @@ function render(){
    }
    cells.append(btn);
   }
+ stopTravelers();
  world.replaceChildren(cells);
  if(parchment){
   const atlas=document.createElement('canvas');atlas.className='km-parchment-canvas';
@@ -726,6 +729,11 @@ function render(){
    // the border above player-created roads or world objects.
    overlay.dataset.borderSegments=world.querySelector('.km-parchment-canvas')?.dataset.borderSegments||'0';
   }
+  // One independent, noninteractive animation layer: no run state writes.
+  const travelers=document.createElement('canvas');travelers.className='km-travelers-layer';
+  travelers.dataset.kingdomTravelers='';travelers.setAttribute('aria-hidden','true');
+  world.append(travelers);
+  animateTravelers(travelers,{map,view,columns:WIDTH,rows:HEIGHT,parchment});
   if(parchment){
    const fog=document.createElement('canvas');fog.className='km-parchment-fog';
    fog.dataset.kingdomFog='';fog.setAttribute('aria-hidden','true');
