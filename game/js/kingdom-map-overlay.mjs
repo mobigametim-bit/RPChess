@@ -2,6 +2,7 @@
  * No gameplay mutations, no tile hitboxes, no leaks outside charted fog. */
 import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs';
 import {hashString} from './race-assets.mjs';
+import {visibleRoyalRoads} from './kingdom-road-network.mjs';
 
 const TILE=PARCHMENT_TILE;
 const SIDES=Object.freeze([
@@ -117,7 +118,7 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows,drawBorder=true}){
  ctx.restore();
  let roadCount=0;
  const painted=new Set();
- for(const road of [...(map.completedRoads||[]),...(map.outpostRoads||[])]){
+ for(const road of visibleRoyalRoads(map)){
   const a=parseTile(road.from),b=parseTile(road.to);
   if(!a||!b||!Number.isFinite(road.bend))continue;
   const identity=[road.from,road.to].sort().join('::');
