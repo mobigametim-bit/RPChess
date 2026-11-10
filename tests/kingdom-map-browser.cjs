@@ -717,7 +717,8 @@ async function assertTileImage(page,cellId,relativePath){
      'a completed encounter does not advertise a fresh supply charge or repeat reward');
    assert.equal(await page.locator('.km-kingdom-overlay').count(),1,
      'organic territory and event roads work in the parchment skin');
-   assert.equal(await page.locator('.km-kingdom-overlay').getAttribute('data-road-segments'),'1');
+   assert(Number(await page.locator('.km-kingdom-overlay').getAttribute('data-road-segments'))>=1,
+      'royal roads connect the Castle and all eligible scouted owned events, not only completed events');
    const composition=await page.evaluate(()=>{
      const overlay=document.querySelector('.km-kingdom-overlay');
      const site=document.querySelector('[data-kingdom-cell="0,1"] .km-object--site');
