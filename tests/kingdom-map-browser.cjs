@@ -193,7 +193,7 @@ async function assertTileImage(page,cellId,relativePath){
   if(Number(await travelerLayer.getAttribute('data-walker-count'))>0){
     await page.waitForFunction(()=>
       document.querySelector('[data-kingdom-travelers]')?.dataset.atlasStatus==='loaded',
-      {timeout:9000});
+      null,{timeout:9000});
   }
   const boundaryLayer=await page.evaluate(()=>{
     const terrain=document.querySelector('.km-parchment-canvas');
