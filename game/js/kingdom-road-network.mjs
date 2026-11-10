@@ -220,12 +220,29 @@ function linkNearbyOwnedEvents(map,edges,events){
  return edges;
 }
 function visibleTravelRoads(map){
- const seen=new Set(),roads=[];
+ const seen=new Set(),roads=[],royal=visibleRoyalRoads(map);
+ const owned=ownedKeys(map),adj=new Map(),direct=new Set(royal.map(r=>pairKey(r.from,r.to)));
+ for(const r of royal)for(const [a,b] of [[r.from,r.to],[r.to,r.from]]){
+  if(!adj.has(a))adj.set(a,[]);adj.get(a).push(b);
+ }
+ function connected(a,b){
+  const queue=[a],visited=new Set([a]);
+  for(let i=0;i<queue.length;i++){
+   if(queue[i]===b)return true;
+   for(const next of adj.get(queue[i])||[]){
+    if(!visited.has(next)){visited.add(next);queue.push(next);}
+   }
+  }
+  return false;
+ }
  for(const road of map?.completedRoads||[]){
   if(!point(road?.from)||!point(road?.to)||road.from===road.to)continue;
   const key=pairKey(road.from,road.to);
-  if(seen.has(key))continue;
+  if(seen.has(key)||direct.has(key))continue;
   seen.add(key);
+  // Never paint a parallel, superimposed travel road when the entire route
+  // already lies inside the connected owned road network.
+  if(owned.has(road.from)&&owned.has(road.to)&&connected(road.from,road.to))continue;
   const base=edge(map,road.from,road.to);
   if(base)roads.push({...base,id:road.id||'completed:'+key,kind:'travel',
     bend:Number.isFinite(road.bend)?road.bend:base.bend});
@@ -250,13 +267,12 @@ function visibleRoyalRoads(map){
  const current=map.royalRoadsVersion===3?map:synchronizeRoyalRoads(map);
  // Legacy completedRoads/outpostRoads remain in saves but are not painted
  // over the v2 network, preventing repeated lines at crossings.
- const seen=new Set(),result=[];
+ const seen=new Set(),result=[],own=ownedKeys(map);
  for(const r of current.royalRoads||[]){
   if(!cardinalEdge(r?.from,r?.to))continue;
   const key=pairKey(r.from,r.to);
   if(seen.has(key))continue;
   seen.add(key);
-  const own=ownedKeys(map);
   if(own.has(r.from)&&own.has(r.to))result.push({...r,surface:'sandstone'});
   else {
    const salt=hash32((map.seed||'')+':outbound:'+key);
