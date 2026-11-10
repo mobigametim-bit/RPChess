@@ -1,6 +1,6 @@
 /* Five purely decorative 4-frame 64px road walkers.
  * Single atlas/image decode, single view-canvas, no interaction or persistence. */
-import {createTravelers,travelerMotion,visibleTraveler} from './kingdom-road-travelers.mjs';
+import {createTravelers,travelerMotion,visibleTraveler} from './kingdom-road-travelers.mjs?v=20261110-itineraries';
 import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs';
 const SRC='assets/kingdom-travelers/walkers_64.png';
 const FRAMES=4,FRAME_SIDE=64,ANIM_MS=175,DISPLAY_PX=66;
