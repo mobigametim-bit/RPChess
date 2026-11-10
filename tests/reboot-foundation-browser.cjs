@@ -285,13 +285,72 @@ async function portraitLockContract(browser) {
   } finally { await page.close(); }
 }
 
+
+/* Focused PR gate for the new Journey-choice UX. Existing full Foundation
+ * acceptance still runs normally; its older Roster assumptions are separate. */
+async function journeyPickerContract(browser){
+ const page=await browser.newPage({viewport:{width:1440,height:900}});
+ const errors=[];page.on('pageerror',e=>errors.push(String(e.stack||e)));
+ try{
+  await clearState(page);
+  await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:60000});
+  const icon=page.locator('[data-reboot-foundation] [data-new-game]');
+  await icon.click();
+  const picker=await waitForVisible(page,'[data-journey-choice-modal]:not([hidden])','Journey choice');
+  await assertInsideViewport(picker.locator('.journey-choice-panel'),'Journey picker desktop');
+  assert.equal(await picker.locator('[data-journey-new]').textContent(),'Новая игра');
+  assert.equal(await picker.locator('[data-journey-continue]').textContent(),'Продолжить путешествие');
+  assert.equal(await picker.locator('[data-journey-continue]').isDisabled(),true);
+  assert.equal(await page.evaluate(()=>document.activeElement?.dataset.journeyNew!==undefined),true);
+  await page.keyboard.press('Escape');await picker.waitFor({state:'hidden'});
+  assert.equal(await page.evaluate(()=>document.activeElement?.dataset.newGame!==undefined),true);
+  await page.locator('[data-language]').click();
+  await page.locator('[data-language-modal]:not([hidden]) [data-language-option="en"]').click();
+  await page.locator('[data-language-modal] [data-close-modal]').first().click();
+  await icon.click();await picker.waitFor({state:'visible'});
+  assert.equal(await picker.locator('[data-journey-new]').textContent(),'New Game');
+  assert.equal(await picker.locator('[data-journey-continue]').textContent(),'Continue Journey');
+  await picker.locator('[data-journey-new]').click();
+  await waitForVisible(page,'[data-player-identity-modal]:not([hidden])','Identity after explicit New Game');
+  assert.equal(await page.evaluate(key=>localStorage.getItem(key),RUN_KEY),null);
+  await page.locator('[data-player-identity-close]').click();
+  await startNewRun(page,{playerName:'Menu Picker',legacyTravel:false});
+  const runId=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).id,RUN_KEY);
+  await page.locator('[data-roster-menu]').click();
+  await waitForVisible(page,'[data-reboot-foundation]:not([hidden])','Main menu with saved Journey');
+  await icon.click();await picker.waitFor({state:'visible'});
+  assert.equal(await picker.locator('[data-journey-continue]').isEnabled(),true);
+  await picker.locator('[data-journey-new]').click();
+  await waitForVisible(page,'[data-player-identity-modal]:not([hidden])','New Game with existing save');
+  assert.equal(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).id,RUN_KEY),runId,
+    'merely opening new-game identity must preserve saved progress');
+  await page.locator('[data-player-identity-close]').click();
+  await icon.click();await picker.waitFor({state:'visible'});
+  await picker.locator('[data-journey-continue]').click();
+  await waitForVisible(page,'[data-roster-screen]:not([hidden])','Continued saved Journey');
+  assert.equal(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).id,RUN_KEY),runId);
+  await page.locator('[data-roster-menu]').click();
+  await page.setViewportSize({width:844,height:390});
+  await icon.click();await picker.waitFor({state:'visible'});
+  await assertInsideViewport(picker.locator('.journey-choice-panel'),'Journey picker landscape phone');
+  await picker.locator('[data-close-modal]').click();
+  assert.equal(await picker.isHidden(),true);
+  assert.deepStrictEqual(errors,[],'Journey picker JS console errors');
+ }finally{await page.close();}
+}
+
 (async()=>{
   const browser=await chromium.launch({headless:true});
   try {
-    await desktopContract(browser);
-    await landscapePhoneContract(browser);
-    await kingdomBackdropContract(browser);
-    await portraitLockContract(browser);
-    console.log('Reboot Foundation one-screen desktop/landscape/portrait Chromium acceptance: PASS');
+    if(process.env.RPCHESS_JOURNEY_PICKER_ONLY==='1'){
+      await journeyPickerContract(browser);
+      console.log('Journey picker: RU/EN, no save, current run, cancellation and landscape phone PASS');
+    }else{
+      await desktopContract(browser);
+      await landscapePhoneContract(browser);
+      await kingdomBackdropContract(browser);
+      await portraitLockContract(browser);
+      console.log('Reboot Foundation one-screen desktop/landscape/portrait Chromium acceptance: PASS');
+    }
   } finally { await browser.close(); }
 })().catch((error)=>{ console.error(error.stack||error); process.exitCode=1; });
