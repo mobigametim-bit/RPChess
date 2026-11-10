@@ -21,9 +21,9 @@ for (const token of [
   "'rpchess:run-new':['roster'",
   "'rpchess:kingdom-map-shown':['kingdomMap'",
   "'rpchess:kingdom-castle-inspected':['kingdomCastle'",
-  "'rpchess:kingdom-production-collected':['kingdomProduction'"
+  "'rpchess:kingdom-production-collected':['kingdomProduction'",
   "'rpchess:event-open':['event'",
-  "'rpchess:settlement-shown':['settlement'"
+  "'rpchess:settlement-shown':['settlement'",
   "ru:'Понятно'",
   "en:'Got it'",
   "role=\"dialog\"",
