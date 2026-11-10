@@ -1,7 +1,7 @@
 /* Decorative road walkers: pure route generation with no game-state effects.
  * Travelers are drawn on an independent canvas; they never advance the calendar,
  * trigger an encounter, alter resources or persist animation state. */
-import {visibleRoyalRoads,eligibleRoadNodes,ownedKeys} from './kingdom-road-network.mjs?v=20261110-roadgrid-v2';
+import {visibleRoyalRoads,visibleTravelRoads,eligibleRoadNodes,ownedKeys} from './kingdom-road-network.mjs?v=20261110-roadgrid-v3';
 import {randomAt} from './kingdom-parchment-core.mjs';
 import {VISUAL} from './kingdom-world-config.mjs';
 const TYPES=Object.freeze(['merchant','convoy','courier','patrol','builders']);
@@ -176,16 +176,23 @@ function naturalTrip(map,start,index,seed,owned){
 function createTravelers(map,{parchment=true,maxTravelers=MAX_TRAVELERS}={}){
  if(!map?.cells||!map?.castle)return [];
  const castle=map.castle.x+','+map.castle.y;
- const origins=[castle,...eligibleRoadNodes(map)];
+ const royalOrigins=[castle,...eligibleRoadNodes(map)];
+ const tripRoads=visibleTravelRoads(map);
+ // External road events from cleared Journey encounters are legitimate
+ // departure/arrival points for merchants, convoys and couriers too.
+ const journeyOrigins=tripRoads.flatMap(r=>[r.from,r.to]).filter(id=>map.cells?.[id]);
+ const origins=[...new Set([...royalOrigins,...journeyOrigins])];
  const owned=ownedKeys(map);
- const roads=visibleRoyalRoads(map),inside=roads.filter(e=>entirelyOwned(e,owned));
+ const kingdomRoads=visibleRoyalRoads(map);
+ const roads=[...kingdomRoads,...tripRoads],inside=kingdomRoads.filter(e=>entirelyOwned(e,owned));
  const max=Math.min(MAX_TRAVELERS,Math.max(0,Math.floor(maxTravelers)));
  const walkers=[];
  for(let i=0;i<max;i++){
   const type=TYPES[i%TYPES.length],seed=hash(map.seed+':walker:'+i);
   const pool=OWNED_ONLY.has(type)?inside:roads;
+  const sources=OWNED_ONLY.has(type)?royalOrigins:origins;
   const trails=parchment&&!OWNED_ONLY.has(type)?
-   origins.map(id=>({id,index:nearestNaturalRoad(map,id)}))
+   sources.map(id=>({id,index:nearestNaturalRoad(map,id)}))
     .filter(o=>o.index!==null):[];
   const natural=trails.length>0&&
    (type==='merchant'||type==='courier'||(seed>>>4)%3===0||!pool.length);
@@ -193,7 +200,7 @@ function createTravelers(map,{parchment=true,maxTravelers=MAX_TRAVELERS}={}){
   const itinerary=natural?
    (()=>{const src=trails[seed%trails.length];
      return naturalTrip(map,src.id,src.index,seed,owned);})():
-   royalTrip(map,seed,pool,origins);
+   royalTrip(map,seed,pool,sources);
   if(!itinerary?.legs?.length)continue;
   const kind=natural?'natural':'royal';
   const speed=(natural?.38+(seed%25)/100:.32+(seed%35)/100)*WALK_SPEED_FACTOR;
