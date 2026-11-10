@@ -63,7 +63,8 @@ async function captureFlagScreens(browser, width, height) {
     }
     await assertFlagSafety(page,'.endless-run-panel','.endless-run-flag-content',`${label} result`);
     const buttonHeights = await page.locator('.endless-run-actions .reboot-button').evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().height));
-    assert(buttonHeights.length===3 && buttonHeights.every((h)=>h>=38&&h<=64) &&
+    // The compact landscape CSS intentionally sets 36px CTA height at <=540px.
+    assert(buttonHeights.length===3 && buttonHeights.every((h)=>h>=34&&h<=64) &&
       Math.max(...buttonHeights)-Math.min(...buttonHeights)<=2,
       `${label}: result CTAs must remain three matching, touch-sized buttons: ${buttonHeights}`);
     const brokenIcons = await page.locator('.endless-run-metric img').evaluateAll((images) => images.filter((img) => !img.complete || !img.naturalWidth).map((img) => img.getAttribute('src')));
