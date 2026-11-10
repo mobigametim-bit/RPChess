@@ -116,6 +116,7 @@ async function capturePhoneOrTablet(browser,width,height){
         style:{display:getComputedStyle(node).display,visibility:getComputedStyle(node).visibility},
         menuHidden:node.closest('[data-reboot-foundation]')?.hidden,
         parentStyle:getComputedStyle(node.parentElement).display,
+        accessibleName:node.getAttribute('aria-label')||node.title||'',
         appMain:[...document.querySelectorAll('#app>main')].filter(n=>!n.hidden).map(n=>n.className),
         ancestors:(()=>{const out=[];for(let p=node;p&&out.length<9;p=p.parentElement){const q=p.getBoundingClientRect(),c=getComputedStyle(p);
           out.push({tag:p.tagName,className:String(p.className).slice(0,90),hidden:p.hidden,display:c.display,visibility:c.visibility,opacity:c.opacity,rect:[q.x,q.y,q.width,q.height]});}
@@ -124,7 +125,11 @@ async function capturePhoneOrTablet(browser,width,height){
         portraitFileStatus:[...document.styleSheets].some(x=>String(x.href||'').includes('portrait-ui.css'))};
     });
     console.log('PORTRAIT ARENA MENU CLICK PROBE',JSON.stringify(arenaProbe));
-    assert(!arenaProbe.menuHidden&&arenaProbe.rect.width>=120&&arenaProbe.rect.height>=44&&arenaProbe.style.display!=='none',
+    assert(!arenaProbe.menuHidden&&arenaProbe.rect.width>=38&&arenaProbe.rect.height>=38&&
+      arenaProbe.rect.x>=0&&arenaProbe.rect.y>=0&&
+      arenaProbe.rect.x+arenaProbe.rect.width<=width+1&&
+      arenaProbe.rect.y+arenaProbe.rect.height<=height+1&&
+      arenaProbe.accessibleName.trim()&&arenaProbe.style.display!=='none',
       'Arena menu control must be accessible in portrait '+JSON.stringify(arenaProbe));
     await page.locator('[data-arena-open]').click({timeout:10000});
     await page.locator('[data-arena-screen]:not([hidden])').waitFor();

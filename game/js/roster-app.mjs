@@ -263,17 +263,45 @@ async function beginJourney() {
   if (!activeRun || activeRun.ended) return;
   audio()?.click();
   journeyPending = true;
+  rosterScreen?.querySelector('[data-roster-journey-error]')?.remove();
   if (journeyButton) {
     journeyButton.disabled = true;
     journeyButton.textContent = t('roster.journeyLoading');
   }
   try {
-    const travelChoice = await ensureTravelChoiceReady();
-    activeRun = readRun();
-    if (!travelChoice || !activeRun || activeRun.ended) return;
-    travelChoice.open({ detail: { source: 'roster', runId: activeRun.id } });
+    const runId = activeRun.id;
+    const legacyTravel = new URLSearchParams(location.search).has('legacy_travel') ||
+      globalThis.sessionStorage?.getItem('rpchess.test.legacyTravel') === '1';
+    // The Kingdom map is the normal Roster destination. Do not hold its
+    // navigation behind the unrelated battle/encounter route bootstrap:
+    // slow cloud/platform initialization otherwise leaves the icon inert.
+    // Active encounters and the explicitly requested legacy Travel stay
+    // with their existing route owner, including starvation recovery.
+    if (!legacyTravel && !activeRun.activeTravelChoice) {
+      const { openMap } = await import('./kingdom-map-app.mjs?v=20261110-pre-entry-starvation-v1');
+      const current = readRun();
+      if (!current || current.ended || current.id !== runId) return;
+      openMap({ detail:{ source:'roster', runId } });
+      if (document.querySelector('[data-kingdom-map-screen]')?.hidden !== false) {
+        throw new Error('Kingdom map did not become active');
+      }
+    } else {
+      const travelChoice = await ensureTravelChoiceReady();
+      const current = readRun();
+      if (!travelChoice || !current || current.ended || current.id !== runId) return;
+      travelChoice.open({ detail:{ source:'roster', runId } });
+    }
   } catch (error) {
     console.error('[RPChess] Start Journey failed', error);
+    // A failed dynamic import should never look like an unresponsive button.
+    const notice = document.createElement('p');
+    notice.dataset.rosterJourneyError = '';
+    notice.setAttribute('role', 'alert');
+    notice.className = 'roster-journey-error';
+    notice.textContent = currentLanguage() === 'en' ?
+      'Journey could not open. Please try again.' :
+      'Не удалось открыть Путешествие. Попробуйте ещё раз.';
+    rosterScreen?.querySelector('.roster-heading')?.append(notice);
   } finally {
     journeyPending = false;
     if (journeyButton) journeyButton.disabled = false;

@@ -122,7 +122,8 @@ async function desktopContract(browser) {
     assert(journeyIcon.image.includes('main-menu-journey.png')&&
       journeyIcon.fontSize==='0px'&&journeyIcon.aria,
       'The topbar Journey button uses the approved Journey pictogram but stays accessible');
-    assert.strictEqual(await page.locator('[data-roster-card]').count(), 6);
+    assert.strictEqual(await page.locator('[data-roster-list] [data-roster-piece]').count(), 6,
+      'Six named heroes must appear in the current formation or reserves');
     const originalRunId=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).id,RUN_KEY);
     await page.locator('[data-roster-menu]').click();
     await waitForVisible(page,'[data-reboot-foundation]:not([hidden])','Menu with saved Journey');
@@ -316,6 +317,17 @@ async function journeyPickerContract(browser){
   await page.locator('[data-player-identity-close]').click();
   await startNewRun(page,{playerName:'Menu Picker',legacyTravel:false});
   const runId=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).id,RUN_KEY);
+  const suppliesBefore=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).supplies,RUN_KEY);
+  // Real Roster pictogram click must open the interactive Kingdom, not wait
+  // indefinitely for the wider battle-route bootstrap.
+  await page.locator('[data-roster-travel]').click();
+  await waitForVisible(page,'[data-kingdom-map-screen]:not([hidden])','Kingdom opened from Roster');
+  assert.equal(await page.locator('[data-roster-screen]').isHidden(),true,
+    'Roster must be hidden when the Kingdom map opens');
+  assert.equal(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).supplies,RUN_KEY),suppliesBefore,
+    'Opening the map must not spend provisions');
+  await page.locator('[data-kingdom-roster]').click();
+  await waitForVisible(page,'[data-roster-screen]:not([hidden])','Roster return from Kingdom');
   await page.locator('[data-roster-menu]').click();
   await waitForVisible(page,'[data-reboot-foundation]:not([hidden])','Main menu with saved Journey');
   await icon.click();await picker.waitFor({state:'visible'});
