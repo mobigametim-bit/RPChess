@@ -50,23 +50,12 @@ async function dragKing(page,id){
  await page.mouse.up();
 }
 
-// Check the actual computed URL AND successful bitmap decoding. The earlier
-// pathname-only test passed even when CSS requested /css/assets/... (404).
-async function assertTileImage(page,cellId,relativePath){
- const result=await page.locator('[data-kingdom-cell="'+cellId+'"]').evaluate(async (element,path)=>{
-  const expected=new URL(path,document.baseURI).href;
-  const css=getComputedStyle(element).backgroundImage;
-  const decoded=await new Promise(resolve=>{
-   const img=new Image();
-   img.onload=()=>resolve(img.naturalWidth>0&&img.naturalHeight>0);
-   img.onerror=()=>resolve(false);
-   img.src=expected;
-  });
-  return {expected,css,decoded};
- },relativePath);
- assert(result.css.includes(result.expected),
-  'cell '+cellId+' must use the real asset URL, not a /css/assets/ relative path: '+result.css);
- assert(result.decoded,'terrain image must load and decode: '+result.expected);
+// The removed Classic skin must not leak chessboard tile textures into
+// any Kingdom view, regardless of race, save, movement or zoom state.
+async function assertTileImage(page,cellId){
+ const css=await page.locator('[data-kingdom-cell="'+cellId+'"]').evaluate(element=>
+   getComputedStyle(element).backgroundImage);
+ assert.equal(css,'none','permanent parchment tile '+cellId+' must not show Classic artwork');
 }
 
 (async()=>{
