@@ -2,8 +2,9 @@
  * No gameplay mutations, no tile hitboxes, no leaks outside charted fog. */
 import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs';
 import {hashString} from './race-assets.mjs';
-import {visibleRoyalRoads} from './kingdom-road-network.mjs';
+import {visibleRoyalRoads} from './kingdom-road-network.mjs?v=20261110-roadgrid-v2';
 import {drawSandstoneRoad} from './kingdom-road-paving.mjs';
+import {VISUAL} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
 
 const TILE=PARCHMENT_TILE;
 const SIDES=Object.freeze([
@@ -134,8 +135,10 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows,drawBorder=true}){
   const offset=road.bend*TILE;
   // Player-built royal roads use the preview-approved 16px pale sandstone.
   // Keep the exact cubic centerline and fog clip shared with travelers.
+  ctx.save();ctx.globalAlpha*=VISUAL.roadOpacity;
   if(drawSandstoneRoad(ctx,{x1,y1,x2,y2,bend:offset,id:road.id||identity}))
    roadCount++;
+  ctx.restore();
  }
  // The overlay is beneath all site and king art; never cut off the road
  // before its endpoint. Roads physically reach the tile centers.
