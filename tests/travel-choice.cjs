@@ -22,11 +22,18 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const overlaySource=fs.readFileSync(path.join(game,'js/kingdom-map-overlay.mjs'),'utf8');
   assert(overlaySource.includes('ctx.globalAlpha*=VISUAL.roadOpacity'),
     'Royal-road paving opacity must match naturally generated roads');
+  assert(overlaySource.includes("tone:road.kind==='travel'||road.surface==='gray'?'gray':'sandstone'"),
+    'completed Journey roads and foreign network links must use gray stone');
+  assert(overlaySource.includes('visibleTravelRoads(map)'),
+    'historic roads remain an independent visible layer');
+  const rendererSource=fs.readFileSync(path.join(game,'js/kingdom-traveler-renderer.mjs'),'utf8');
+  assert(rendererSource.includes('if(!motion?.moving)continue'),
+    'NPCs hide during stops and appear again only when a new leg begins');
   const pavingSource=fs.readFileSync(path.join(game,'js/kingdom-road-paving.mjs'),'utf8');
   assert(pavingSource.includes('const SANDSTONE_WIDTH=16')&&
     pavingSource.includes("base:'#bda27a'")&&pavingSource.includes('const BRICK_LENGTH=22,BRICK_STEP=24,ROWS=3'),
     'author-approved 16px pale sandstone uses three staggered running-bond brick courses');
-  assert(overlaySource.includes('drawSandstoneRoad(ctx,{x1,y1,x2,y2,bend:offset,id:road.id||identity})'),
+  assert(overlaySource.includes('drawSandstoneRoad(ctx,{x1,y1,x2,y2,bend:offset,id:road.id||identity,'),
     'only player-built royal road overlay must use sandstone while natural dirt trails stay unchanged');
   assert(buildSource.includes("'js/kingdom-road-paving.mjs'"),
     'production bundle must copy the actual sandstone paving renderer');
@@ -109,7 +116,7 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'unchanged map remains idempotent after load');
   const oldSave=roadGraph.synchronizeRoyalRoads({...scoutedOwned,royalRoads:undefined,
     completedRoads:[{id:'legacy',from:'0,0',to:'2,0',bend:.9}]});
-  assert.equal(oldSave.royalRoadsVersion,2,'old road saves migrate to version 2');
+  assert.equal(oldSave.royalRoadsVersion,3,'old road saves migrate to current v3 network');
   assert(oldSave.completedRoads.length===1,'historic road receipts are retained');
   assert(oldSave.royalRoads.every(e=>e.bend===0),
     'old duplicate/diagonal drawing replaced by canonical cardinal grid');
@@ -136,6 +143,41 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'Castle has exactly one paved exit on each active cardinal side');
   assert.deepStrictEqual(new Set(castleExits.map(e=>e.from==='0,0'?e.to:e.from)),
     new Set(['0,-1','0,1','1,0','-1,0']));
+  // The nearest discovered owned events within TWO king moves must share
+  // a short, orthogonal paved connector without painting edges twice.
+  const shortPair=new Map(),twoStep=roadGraph.linkNearbyOwnedEvents(
+    {...secondRoad,centralOwnedCells:['0,0','1,0','2,0','2,1','2,2']},
+    shortPair,['2,0','2,2']);
+  assert.strictEqual(twoStep.size,2,'nearby owned events two moves apart form two paved tiles');
+  assert(twoStep.has('2,0::2,1')&&twoStep.has('2,1::2,2'),
+    'a two-transition road uses a shared cardinal corridor');
+  roadGraph.linkNearbyOwnedEvents(secondRoad,twoStep,['2,0','2,2']);
+  assert.strictEqual(twoStep.size,2,'re-requesting the same connector does not overlay paving');
+  roadGraph.linkNearbyOwnedEvents(secondRoad,new Map(),['2,0','2,3']);
+  const distant=new Map();
+  roadGraph.linkNearbyOwnedEvents(secondRoad,distant,['2,0','2,3']);
+  assert.equal(distant.size,0,'events farther than two king moves do not get a short connector');
+  // Journey history is independent of owned land and must remain visible
+  // outside the kingdom, in completion order, even with v3 royal roads.
+  const outsideMap={...secondRoad,
+    cells:{...secondRoad.cells,
+      '3,0':{status:'completed',explored:true,annexed:false,selectedEncounter:{id:'outer-1',type:'event'}},
+      '4,1':{status:'completed',explored:true,annexed:false,selectedEncounter:{id:'outer-2',type:'battle'}}},
+    completedRoads:[
+      {id:'journey:1',from:'0,0',to:'3,0',bend:.55},
+      {id:'journey:2',from:'3,0',to:'4,1',bend:-.6}]};
+  const journeyRoads=roadGraph.visibleTravelRoads(outsideMap);
+  assert.equal(journeyRoads.length,2,'historic completed Journey roads are visible beyond owned territory');
+  assert.deepStrictEqual(journeyRoads.map(r=>[r.from,r.to]),[['0,0','3,0'],['3,0','4,1']],
+    'first completed encounter connects to Castle, subsequent one to previous event');
+  assert(journeyRoads.every(r=>r.kind==='travel'&&r.bend!==0),
+    'restored Journey roads retain curved geometry for gray stone paving');
+  const allRoads=walkers.adjacencyOf([...roadGraph.visibleRoyalRoads(outsideMap),...journeyRoads]);
+  assert(walkers.findRoute(allRoads,'0,0','4,1')?.length>=2,
+    'free travelers may use the outside Journey road network');
+  const duplicateInside=roadGraph.visibleTravelRoads({...secondRoad,completedRoads:[
+    {id:'covered:1',from:'0,0',to:'1,0',bend:.4}]});
+  assert.equal(duplicateInside.length,0,'a completed road does not duplicate covered owned paving');
   const dedup=roadGraph.visibleRoyalRoads({...secondRoad,outpostRoads:[
     {id:'old-reverse',from:'2,0',to:'0,0',bend:.5}]});
   assert.equal(dedup.length,secondRoad.royalRoads.length,
