@@ -1,7 +1,7 @@
 /* Compact, live, read-only kingdom projection for the six responsive main-menu layouts.
  * Reuses the game's parchment, roads and NPC renderers; never mutates the saved run. */
 import {readRun} from './run-persistence.mjs';
-import {validateKingdomMap,castleLevel} from './kingdom-map-core.mjs?v=20261110-roadgrid-v3';
+import {validateKingdomMap} from './kingdom-map-core.mjs?v=20261110-roadgrid-v3';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
 import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs';
 import {commanderPieceArt} from './commander-portraits.mjs';
@@ -13,7 +13,7 @@ const TILE=142,MAX_CANVAS=1900;
 const menu=document.querySelector('[data-reboot-foundation]');
 const stage=menu?.querySelector('[data-main-menu-kingdom]');
 let lastKey='',pending=0,installed=false;
-function boundsOf(map){
+function boundsOf(map,aspect=1){
   const ids=new Set([map.castle.x+','+map.castle.y,map.king.x+','+map.king.y,
     ...(map.centralOwnedCells||[]),...(map.outposts||[]).flatMap(post=>post.cells||[]),
     ...Object.keys(map.cells||{}).filter(id=>map.cells[id]?.explored||map.cells[id]?.annexed)]);
@@ -28,6 +28,11 @@ function boundsOf(map){
   const center={x:Math.floor((minX+maxX)/2),y:Math.floor((minY+maxY)/2)};
   let columns=Math.max(9,Math.max(center.x-minX,maxX-center.x)*2+5);
   let rows=Math.max(7,Math.max(center.y-minY,maxY-center.y)*2+5);
+  // Extend uncharted surroundings to match the whole screen; never crop the
+  // explored kingdom, Castle or king just to fill the available background.
+  const target=Math.max(.24,Math.min(6,Number(aspect)||1));
+  if(columns/rows<target)columns=Math.max(columns,Math.ceil(rows*target));
+  else rows=Math.max(rows,Math.ceil(columns/target));
   if(columns%2===0)columns++;if(rows%2===0)rows++;
   return {center,columns,rows,left:center.x-Math.floor(columns/2),
     top:center.y-Math.floor(rows/2)};
@@ -49,9 +54,10 @@ function site(src,x,y,klass,size){
 function fit(){
   if(!stage||stage.hidden||!menu||menu.hidden)return;
   const world=stage.querySelector('[data-main-menu-world]');if(!world)return;
-  const availableWidth=Math.max(0,stage.clientWidth-12);
-  const availableHeight=Math.max(0,stage.clientHeight-12);
-  const scale=Math.min(availableWidth/Number(world.dataset.worldWidth),
+  const availableWidth=Math.max(0,stage.clientWidth);
+  const availableHeight=Math.max(0,stage.clientHeight);
+  // Full-bleed cover. The bounds above preserve two+ cells of safety margin.
+  const scale=Math.max(availableWidth/Number(world.dataset.worldWidth),
     availableHeight/Number(world.dataset.worldHeight));
   if(!Number.isFinite(scale)||scale<=0)return;
   world.style.transform='translate(-50%,-50%) scale('+scale+')';
@@ -66,7 +72,8 @@ function render(){
   if(!stage||!menu||menu.hidden)return;
   const run=readRun(),map=run?.kingdomMap;
   if(!run||run.ended||!validateKingdomMap(map)){clear();return;}
-  const b=boundsOf(map);if(!b){clear();return;}
+  const b=boundsOf(map,menu.clientWidth/Math.max(1,menu.clientHeight));
+  if(!b){clear();return;}
   const owned=(map.centralOwnedCells||[]).length;
   const signature=[run.id,run.savedAt||run.updatedAt||'',map.day||0,map.king.x,map.king.y,
     Object.keys(map.cells||{}).length,owned,b.columns,b.rows].join(':');
@@ -133,8 +140,9 @@ function install(){
     new MutationObserver(()=>{if(menu.hidden){stopTravelers(stage.querySelector('.mm-kingdom-actors'));lastKey='';return;}schedule();})
       .observe(menu,{attributes:true,attributeFilter:['hidden']});
   }
-  if(typeof ResizeObserver!=='undefined')new ResizeObserver(fit).observe(stage);
-  addEventListener('resize',fit);
+  // Recompute world limits on orientation and parent-size changes.
+  if(typeof ResizeObserver!=='undefined')new ResizeObserver(schedule).observe(stage);
+  addEventListener('resize',schedule);
   addEventListener('rpchess:run-updated',schedule);
   addEventListener('rpchess:scene-changed',event=>{
     if(event.detail?.scene==='menu')schedule();

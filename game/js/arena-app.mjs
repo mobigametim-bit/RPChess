@@ -403,7 +403,16 @@ foeCarousel?.addEventListener('scroll',()=>{
 },{passive:true});
 const entryButton=document.querySelector('[data-arena-open]');
 entryButton?.addEventListener('click',()=>{void Promise.all([globalThis.RPChessCloudReady,globalThis.RPChessOnboardingReady]).then(enter);});
-function updateLanguage(){if(entryButton)entryButton.textContent=l('title');render();}
+function updateLanguage(){
+ if(entryButton){
+  const name=l('title');
+  if(entryButton.classList.contains('mm-menu-icon')){
+   entryButton.setAttribute('aria-label',name);
+   entryButton.title=name;
+  }else entryButton.textContent=name;
+ }
+ render();
+}
 subscribe(updateLanguage);
 updateLanguage();
 addEventListener('beforeunload',()=>adapter.destroy(),{once:true});

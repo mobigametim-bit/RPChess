@@ -51,6 +51,9 @@ async function desktopContract(browser) {
     assert.strictEqual(await menu.locator('[data-new-game][data-continue-run]').count(), 1);
     assert.strictEqual(await menu.locator('.mm-menu-icon').count(), 6);
     assert.strictEqual(await menu.locator('.mm-menu-icon img').count(), 6);
+    await page.waitForFunction(()=>[...document.querySelectorAll('.mm-menu-icon')].length===6&&
+      [...document.querySelectorAll('.mm-menu-icon')].every(node=>
+        node.querySelector('img')?.naturalWidth>0&&node.textContent.trim()===''));
     assert.strictEqual(await menu.locator('.reboot-wordmark').count(), 0);
     assert.strictEqual(await menu.locator('[data-main-menu-kingdom]').isHidden(), true);
     assert.strictEqual(await menu.locator('[data-settings]').count(), 1);
@@ -72,6 +75,10 @@ async function desktopContract(browser) {
     assert.strictEqual(await menu.locator('[data-new-game]').getAttribute('aria-label'), 'Journey');
     assert.strictEqual(await menu.locator('.reboot-menu-actions [data-settings]').getAttribute('aria-label'), 'Settings');
     assert.strictEqual((await menu.locator('[data-new-game]').textContent()).trim(),'', 'Icons have no captions');
+    assert.strictEqual(await menu.locator('.mm-menu-icon img').count(),6,
+      'Arena/Tournament icons survive language changes');
+    assert.strictEqual((await menu.locator('[data-arena-open]').textContent()).trim(),'', 'Arena icon must not become text');
+    assert.strictEqual((await menu.locator('[data-tournament-open]').textContent()).trim(),'', 'Tournament icon must not become text');
     assert.strictEqual(await page.evaluate(() => performance.getEntriesByType('navigation').length), navigationCount, 'language switch must not reload');
     assert.strictEqual(await page.evaluate((key)=>localStorage.getItem(key), RUN_KEY), null, 'language switch must not create run state');
     await language.locator('[data-close-modal].reboot-language-back').click();
@@ -108,6 +115,54 @@ async function landscapePhoneContract(browser) {
   } finally { await page.close(); }
 }
 
+// Regression: the current kingdom is a full-screen, read-only backdrop,
+// not an inset map card in the first-column layout.
+async function kingdomBackdropContract(browser) {
+  const page=await browser.newPage({viewport:{width:1440,height:900}});
+  const errors=[];page.on('pageerror',error=>errors.push(String(error)));
+  try{
+    await clearState(page);
+    await startNewRun(page,{playerName:'Backdrop Tester',legacyTravel:false});
+    await page.locator('[data-roster-travel]').click();
+    await waitForVisible(page,'[data-kingdom-map-screen]:not([hidden])','Game kingdom map');
+    await page.locator('[data-kingdom-menu]').click();
+    await waitForVisible(page,'[data-reboot-foundation]:not([hidden])','Full-bleed menu');
+    await page.waitForFunction(()=>{
+      const stage=document.querySelector('[data-main-menu-kingdom]');
+      return stage&&!stage.hidden&&stage.querySelector('[data-main-menu-world]')&&
+        stage.querySelector('.mm-kingdom-parchment')?.width>0;
+    },null,{timeout:16000});
+    for(const [width,height] of [[1440,900],[1024,768],[844,390],[768,1024],[390,844]]){
+      await page.setViewportSize({width,height});
+      await page.waitForFunction(()=>{
+        const stage=document.querySelector('[data-main-menu-kingdom]');
+        const world=stage?.querySelector('[data-main-menu-world]');
+        if(!stage||!world)return false;
+        const a=stage.getBoundingClientRect(),b=world.getBoundingClientRect();
+        return a.width>0&&a.height>0&&b.width>=a.width-2&&b.height>=a.height-2;
+      },null,{timeout:10000});
+      const m=await page.evaluate(()=>{
+        const menu=document.querySelector('[data-reboot-foundation]');
+        const stage=menu.querySelector('[data-main-menu-kingdom]');
+        const a=menu.getBoundingClientRect(),b=stage.getBoundingClientRect();
+        return {menu:[a.left,a.top,a.width,a.height],stage:[b.left,b.top,b.width,b.height],
+          icons:menu.querySelectorAll('.mm-menu-icon img').length,
+          outside:menu.querySelector('.reboot-menu-screen__main')?.contains(stage),
+          pointer:getComputedStyle(stage).pointerEvents,
+          active:menu.classList.contains('mm-has-kingdom')};
+      });
+      assert(m.active,'saved kingdom must activate parchment background');
+      assert.strictEqual(m.outside,false,'kingdom must be outside the left menu column');
+      assert.strictEqual(m.icons,6,'six PNG icons remain visible in '+width+'x'+height);
+      assert.strictEqual(m.pointer,'none','background cannot block menu clicks');
+      for(const idx of [0,1,2,3])
+        assert(Math.abs(m.menu[idx]-m.stage[idx])<=2,
+          width+'x'+height+' backdrop must fill menu edge-to-edge: '+JSON.stringify(m));
+    }
+    assert.deepStrictEqual(errors,[],'backdrop browser errors');
+  }finally{await page.close();}
+}
+
 async function portraitLockContract(browser) {
   const page = await browser.newPage({ viewport:{ width:390, height:844 } });
   const errors=[]; page.on('pageerror', (error)=>errors.push(String(error.stack||error)));
@@ -128,6 +183,7 @@ async function portraitLockContract(browser) {
   try {
     await desktopContract(browser);
     await landscapePhoneContract(browser);
+    await kingdomBackdropContract(browser);
     await portraitLockContract(browser);
     console.log('Reboot Foundation one-screen desktop/landscape/portrait Chromium acceptance: PASS');
   } finally { await browser.close(); }
