@@ -5,7 +5,7 @@ import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs';
 const SRC='assets/kingdom-travelers/walkers_64.png';
 const FRAMES=4,FRAME_SIDE=64,ANIM_MS=175,DISPLAY_PX=66;
 const FRAME_ROWS=Object.freeze({merchant:0,convoy:1,courier:2,patrol:3,builders:4});
-let image=null,loading=null,active=null;
+let image=null,loading=null,active=null,walkClockMs=0;
 function loadAtlas(){
  if(image?.complete&&image.naturalWidth===256&&image.naturalHeight===320)return Promise.resolve(image);
  if(loading)return loading;
@@ -50,15 +50,18 @@ function animateTravelers(canvas,{map,view,columns,rows,parchment=true}){
   const x=(p.x-left)*PARCHMENT_TILE,y=(p.y-top)*PARCHMENT_TILE;
   return x>=-DISPLAY_PX&&x<=width+DISPLAY_PX&&y>=-DISPLAY_PX&&y<=height+DISPLAY_PX;
  };
- let began=null,last=0;
+ let previousTick=null,lastPaint=0;
  const paint=now=>{
   if(controller.cancelled||active!==controller||!canvas.isConnected)return;
   controller.frame=requestAnimationFrame(paint);
-  if(document.hidden)return;
-  if(began===null)began=now;
-  if(now-last<33)return; // Cap this decorative layer to about 30 FPS.
-  last=now;
-  const elapsed=(now-began)/1000,frame=Math.floor((now-began)/ANIM_MS)%FRAMES;
+  if(document.hidden){previousTick=null;return;}
+  // A shared clock persists across camera pans, zoom and redraws, avoiding
+  // repeated sprite teleports. Capping delta also pauses hidden/background time.
+  if(previousTick!==null)walkClockMs+=Math.min(120,Math.max(0,now-previousTick));
+  previousTick=now;
+  if(now-lastPaint<33)return; // Cap this decorative layer to about 30 FPS.
+  lastPaint=now;
+  const elapsed=walkClockMs/1000,frame=Math.floor(walkClockMs/ANIM_MS)%FRAMES;
   ctx.clearRect(0,0,width,height);
   ctx.imageSmoothingEnabled=false;
   for(const walker of walkers){
