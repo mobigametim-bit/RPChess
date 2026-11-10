@@ -3,6 +3,7 @@
 import {readRun} from './run-persistence.mjs';
 import {validateKingdomMap,castleLevel} from './kingdom-map-core.mjs?v=20261110-roadgrid-v3';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
+import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs';
 import {commanderPieceArt} from './commander-portraits.mjs';
 import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261110-menu-resolution';
 import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261110-menu-resolution';
@@ -78,7 +79,7 @@ function render(){
   world.style.width=(b.columns*TILE)+'px';
   world.style.height=(b.rows*TILE)+'px';
   const view=b.center;
-  const resolution=Math.min(1,MAX_CANVAS/Math.max(b.columns*TILE,b.rows*TILE));
+  const resolution=Math.min(1,MAX_CANVAS/Math.max(b.columns*PARCHMENT_TILE,b.rows*PARCHMENT_TILE));
   const parchment=canvas('mm-kingdom-parchment'),overlay=canvas('mm-kingdom-overlay');
   const actors=canvas('mm-kingdom-actors'),fog=canvas('mm-kingdom-fog');
   world.append(parchment,overlay,actors);
