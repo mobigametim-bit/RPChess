@@ -1085,15 +1085,27 @@ async function assertTileImage(page,cellId){
       if(victim?.id===companion.id){route=candidate;break;}
     }
     if(!route)throw new Error('could not select a deterministic companion casualty');
-    const entered=core.enterCell(run.kingdomMap,{x:1,y:0},route);
-    if(!entered.ok)throw new Error('fixture cannot enter adjacent skirmish tile');
-    const map={...entered.map,cells:{...entered.map.cells,
-      '1,0':{...entered.map.cells['1,0'],selectedEncounter:route,
-        stepSuppliesCharged:true,stepSuppliesRequested:1,stepSuppliesPaid:0}}};
+    // Stage the exact pre-entry checkpoint. A randomly generated world might
+    // already have a different pre-revealed route in the neighboring tile.
+    const map={...run.kingdomMap,king:{x:1,y:0},pendingCell:'1,0',
+      cells:{...run.kingdomMap.cells,
+        '1,0':{status:'revealed',explored:true,annexed:true,
+          selectedEncounter:route,lastEntryFrom:{x:0,y:0},
+          stepSuppliesCharged:true,stepSuppliesRequested:1,stepSuppliesPaid:0}}};
+    if(!core.validateKingdomMap(map))throw new Error('invalid starvation map fixture');
     run.kingdomMap=map;
     localStorage.setItem(storage,JSON.stringify(run));
     const accepted=globalThis.RPChessTravelChoice.startMapEncounter(route,map);
-    if(!accepted)throw new Error('pre-battle starvation dispatch was rejected');
+    if(!accepted){
+      const persistence=await import('./js/run-persistence.mjs');
+      const persisted=persistence.readRun();
+      throw new Error('pre-battle starvation dispatch rejected: '+JSON.stringify({
+        valid:Boolean(persisted),pending:persisted?.kingdomMap?.pendingCell,
+        active:persisted?.activeTravelChoice?.id,route:route.id,
+        status:persisted?.kingdomMap?.cells?.['1,0']?.status,
+        inProgress:globalThis.RPChessTravelChoice.activeChoice?.id||null
+      }));
+    }
     return {companion:companion.id,cellId:'1,0',originalDay:map.day};
   },key);
   await starving.locator('[data-starvation-screen]:not([hidden])')
