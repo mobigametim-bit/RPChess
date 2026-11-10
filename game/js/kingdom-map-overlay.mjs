@@ -3,6 +3,7 @@
 import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs';
 import {hashString} from './race-assets.mjs';
 import {visibleRoyalRoads} from './kingdom-road-network.mjs';
+import {drawSandstoneRoad} from './kingdom-road-paving.mjs';
 
 const TILE=PARCHMENT_TILE;
 const SIDES=Object.freeze([
@@ -130,15 +131,11 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows,drawBorder=true}){
      Math.max(y1,y2)<-TILE*2||Math.min(y1,y2)>height+TILE*2)continue;
   const dx=x2-x1,dy=y2-y1,length=Math.hypot(dx,dy);
   if(length<1)continue;
-  const nx=-dy/length,ny=dx/length,offset=road.bend*TILE;
-  ctx.beginPath();ctx.moveTo(x1,y1);
-  ctx.bezierCurveTo(x1+dx*.32+nx*offset,y1+dy*.32+ny*offset,
-   x1+dx*.68-nx*offset*.45,y1+dy*.68-ny*offset*.45,x2,y2);
-  ctx.lineCap='round';ctx.lineJoin='round';
-  ctx.strokeStyle='rgba(57,41,25,.68)';ctx.lineWidth=9;ctx.stroke();
-  ctx.strokeStyle='rgba(220,179,105,.85)';ctx.lineWidth=5;ctx.stroke();
-  ctx.strokeStyle='rgba(250,226,164,.45)';ctx.lineWidth=1.5;ctx.stroke();
-  roadCount++;
+  const offset=road.bend*TILE;
+  // Player-built royal roads use the preview-approved 16px pale sandstone.
+  // Keep the exact cubic centerline and fog clip shared with travelers.
+  if(drawSandstoneRoad(ctx,{x1,y1,x2,y2,bend:offset,id:road.id||identity}))
+   roadCount++;
  }
  // The overlay is beneath all site and king art; never cut off the road
  // before its endpoint. Roads physically reach the tile centers.
