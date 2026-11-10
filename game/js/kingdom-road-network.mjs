@@ -182,7 +182,55 @@ function generateRoads(map,nodes,castle){
   const route=routeTo(id,nearby,{edges,owned});
   if(route){addPath(edges,route);route.forEach(cell=>used.add(cell));}
  }
+ linkNearbyOwnedEvents(map,edges,eligibleRoadNodes(map));
  return [...edges.values()].sort((a,b)=>lex(a.id,b.id));
+}
+// Two king-move transitions means Chebyshev distance <= 2, including
+// diagonal-near events. The physical paving remains cardinal.
+function linkNearbyOwnedEvents(map,edges,events){
+ const owned=ownedKeys(map),ordered=[...events].sort(lex);
+ for(let i=0;i<ordered.length;i++)for(let j=i+1;j<ordered.length;j++){
+  const a=point(ordered[i]),b=point(ordered[j]);
+  const dx=b.x-a.x,dy=b.y-a.y;
+  if(Math.max(Math.abs(dx),Math.abs(dy))>2)continue;
+  const shortest=Math.abs(dx)+Math.abs(dy);
+  if(!shortest)continue;
+  let best=null,bestCost=Infinity;
+  function visit(x,y,path){
+   if(path.length-1===shortest){
+    if(x!==b.x||y!==b.y)return;
+    const existing=path.slice(1).every((id,k)=>edges.has(pairKey(id,path[k])));
+    if(existing){best=null;bestCost=-1;return;}
+    const outside=path.slice(1,-1).filter(id=>!owned.has(id)).length;
+    const added=path.slice(1).filter((id,k)=>!edges.has(pairKey(id,path[k]))).length;
+    const cost=outside*12+added*3;
+    const signature=path.join('|');
+    if(bestCost>=0&&(cost<bestCost||cost===bestCost&&signature<(best?.join('|')||'\uffff'))){
+     bestCost=cost;best=path;
+    }
+    return;
+   }
+   if(bestCost<0)return;
+   if(x!==b.x)visit(x+Math.sign(dx),y,[...path,tileId(x+Math.sign(dx),y)]);
+   if(y!==b.y)visit(x,y+Math.sign(dy),[...path,tileId(x,y+Math.sign(dy))]);
+  }
+  visit(a.x,a.y,[ordered[i]]);
+  if(best) addPath(edges,best);
+ }
+ return edges;
+}
+function visibleTravelRoads(map){
+ const seen=new Set(),roads=[];
+ for(const road of map?.completedRoads||[]){
+  if(!point(road?.from)||!point(road?.to)||road.from===road.to)continue;
+  const key=pairKey(road.from,road.to);
+  if(seen.has(key))continue;
+  seen.add(key);
+  const base=edge(map,road.from,road.to);
+  if(base)roads.push({...base,id:road.id||'completed:'+key,kind:'travel',
+    bend:Number.isFinite(road.bend)?road.bend:base.bend});
+ }
+ return roads;
 }
 function synchronizeRoyalRoads(map){
  if(!map?.castle||!map.cells)return map;
@@ -191,15 +239,15 @@ function synchronizeRoyalRoads(map){
  const extras=(map.outpostRoads||[]).flatMap(r=>[r?.from,r?.to])
   .filter(id=>point(id)&&id!==castle&&owned.has(id)&&map.cells?.[id]);
  const nodes=[...new Set([...events,...extras])].sort(lex);
- const signature=JSON.stringify({castle,owned:[...owned].sort(lex),nodes});
- if(map.royalRoadsVersion===2&&map.royalRoadsSignature===signature&&
+ const signature=JSON.stringify({algorithm:'nearby-two-v3',castle,owned:[...owned].sort(lex),nodes});
+ if(map.royalRoadsVersion===3&&map.royalRoadsSignature===signature&&
     Array.isArray(map.royalRoads))return map;
  const royalRoads=generateRoads(map,nodes,castle);
- return {...map,royalRoadsVersion:2,royalRoadsSignature:signature,royalRoads};
+ return {...map,royalRoadsVersion:3,royalRoadsSignature:signature,royalRoads};
 }
 function visibleRoyalRoads(map){
  if(!map)return [];
- const current=map.royalRoadsVersion===2?map:synchronizeRoyalRoads(map);
+ const current=map.royalRoadsVersion===3?map:synchronizeRoyalRoads(map);
  // Legacy completedRoads/outpostRoads remain in saves but are not painted
  // over the v2 network, preventing repeated lines at crossings.
  const seen=new Set(),result=[];
@@ -207,9 +255,15 @@ function visibleRoyalRoads(map){
   if(!cardinalEdge(r?.from,r?.to))continue;
   const key=pairKey(r.from,r.to);
   if(seen.has(key))continue;
-  seen.add(key);result.push(r);
+  seen.add(key);
+  const own=ownedKeys(map);
+  if(own.has(r.from)&&own.has(r.to))result.push({...r,surface:'sandstone'});
+  else {
+   const salt=hash32((map.seed||'')+':outbound:'+key);
+   result.push({...r,surface:'gray',bend:(salt%2?-1:1)*(.16+(salt%7)*.025)});
+  }
  }
  return result;
 }
 export {eligibleRoadNodes,nearestNode,castleSector,castleSpokes,ownedKeys,
- cardinalEdge,routeTo,generateRoads,synchronizeRoyalRoads,visibleRoyalRoads,pairKey};
+ cardinalEdge,routeTo,generateRoads,linkNearbyOwnedEvents,synchronizeRoyalRoads,visibleRoyalRoads,visibleTravelRoads,pairKey};
