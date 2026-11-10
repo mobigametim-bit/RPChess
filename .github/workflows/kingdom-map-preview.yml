@@ -58,7 +58,7 @@ jobs:
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install chromium
-          RPCHESS_BROWSER_TEST=kingdom-map-browser.cjs,travel-choice-browser.cjs,puzzles-browser.cjs,reboot-foundation-browser.cjs npm run test:browser
+          RPCHESS_BROWSER_TEST=reboot-foundation-browser.cjs,kingdom-map-browser.cjs,travel-choice-browser.cjs,puzzles-browser.cjs npm run test:browser
       - name: Save map screenshots
         if: always()
         uses: actions/upload-artifact@v4
