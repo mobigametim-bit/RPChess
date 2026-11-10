@@ -67,6 +67,9 @@ async function startNewRun(page, { playerName = 'Browser Tester', legacyTravel =
   await page.evaluate(value=>sessionStorage.setItem('rpchess.test.legacyTravel',value?'1':'0'),legacyTravel);
   const menu = await waitForVisible(page, '[data-reboot-foundation]:not([hidden])', 'Main menu');
   await markOnboardingComplete(page);
+  // Menus can paint before the asset/font loader has fully dismissed its
+  // click-intercepting splash. Honor production readiness instead of racing it.
+  await page.locator('[data-game-loading]').waitFor({ state:'hidden', timeout:60000 });
   const newGame = menu.locator('[data-new-game]');
   await newGame.waitFor({ state: 'visible' });
   await newGame.click();
