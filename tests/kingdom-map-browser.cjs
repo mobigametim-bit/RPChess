@@ -309,12 +309,18 @@ async function assertTileImage(page,cellId){
   assert.equal(npcStack.npcPointer,'none',
     'foreground decorative NPC canvas must not intercept map clicks');
   if(Number(await travelerLayer.getAttribute('data-walker-count'))>0){
-    await page.waitForFunction(()=>{
-      const status=document.querySelector('[data-kingdom-travelers]')?.dataset.atlasStatus;
-      return status==='loaded'||status==='missing';
-    },null,{timeout:12000});
-    const status=await travelerLayer.getAttribute('data-atlas-status');
-    assert.equal(status,'loaded','walker atlas must load when eligible NPCs exist');
+    const atlasStatus=await page.evaluate(async()=>{
+      const module=await import('./js/kingdom-traveler-renderer.mjs?v=20261110-npc-territory-v4');
+      const result=await Promise.race([
+        module.loadAtlas().then(img=>img?{loaded:true,w:img.naturalWidth,h:img.naturalHeight}:{loaded:false}),
+        new Promise(resolve=>setTimeout(()=>resolve({timedOut:true}),7000))
+      ]);
+      const canvas=document.querySelector('[data-kingdom-travelers]');
+      return {...result,status:canvas?.dataset.atlasStatus,count:canvas?.dataset.walkerCount,
+        attached:canvas?.isConnected};
+    });
+    assert(atlasStatus.loaded&&atlasStatus.w===256&&atlasStatus.h===320,
+      'NPC walking atlas must decode with its real 256x320 sprite sheet: '+JSON.stringify(atlasStatus));
   }
   const boundaryLayer=await page.evaluate(()=>{
     const terrain=document.querySelector('.km-parchment-canvas');
