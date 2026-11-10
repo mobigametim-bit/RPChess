@@ -2,7 +2,7 @@
  * No gameplay mutations, no tile hitboxes, no leaks outside charted fog. */
 import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs';
 import {hashString} from './race-assets.mjs';
-import {visibleRoyalRoads} from './kingdom-road-network.mjs?v=20261110-roadgrid-v2';
+import {visibleRoyalRoads,visibleTravelRoads} from './kingdom-road-network.mjs?v=20261110-roadgrid-v3';
 import {drawSandstoneRoad} from './kingdom-road-paving.mjs';
 import {VISUAL} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
 
@@ -120,7 +120,9 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows,drawBorder=true}){
  ctx.restore();
  let roadCount=0;
  const painted=new Set();
- for(const road of visibleRoyalRoads(map)){
+ const royalRoads=visibleRoyalRoads(map);
+ const travelRoads=visibleTravelRoads(map);
+ for(const road of [...travelRoads,...royalRoads]){
   const a=parseTile(road.from),b=parseTile(road.to);
   if(!a||!b||!Number.isFinite(road.bend))continue;
   const identity=[road.from,road.to].sort().join('::');
@@ -133,10 +135,12 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows,drawBorder=true}){
   const dx=x2-x1,dy=y2-y1,length=Math.hypot(dx,dy);
   if(length<1)continue;
   const offset=road.bend*TILE;
-  // Player-built royal roads use the preview-approved 16px pale sandstone.
-  // Keep the exact cubic centerline and fog clip shared with travelers.
+  // Pale sandstone belongs inside the kingdom. Journey routes and
+  // roads outside the border use curved gray stone on the same world graph.
+  // Retain the approved 16px width and natural-road opacity.
   ctx.save();ctx.globalAlpha*=VISUAL.roadOpacity;
-  if(drawSandstoneRoad(ctx,{x1,y1,x2,y2,bend:offset,id:road.id||identity}))
+  if(drawSandstoneRoad(ctx,{x1,y1,x2,y2,bend:offset,id:road.id||identity,
+     tone:road.kind==='travel'||road.surface==='gray'?'gray':'sandstone'}))
    roadCount++;
   ctx.restore();
  }
@@ -146,6 +150,8 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows,drawBorder=true}){
  ctx.restore();
  canvas.dataset.glowingOwnedCells=String(glowCount);
  canvas.dataset.roadSegments=String(roadCount);
+ canvas.dataset.journeyRoadSegments=String(travelRoads.length);
+ canvas.dataset.ownedRoadSegments=String(royalRoads.length);
  canvas.dataset.borderSegments=String(borderCount);
 }
 export {drawKingdomOverlay,drawKingdomBoundary};
