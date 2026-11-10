@@ -56,12 +56,16 @@ function nearestNode(id,nodes){
 function synchronizeRoyalRoads(map){
  if(!map?.castle||!map.cells)return map;
  const nodes=eligibleRoadNodes(map),castle=map.castle.x+','+map.castle.y;
- const previous=Array.isArray(map.royalRoads)?map.royalRoads:[];
+ // A legacy save may have painted completedRoads without royalRoads yet.
+ // Keep those exact old curves on first migration instead of erasing them.
+ const previous=Array.isArray(map.royalRoads)?map.royalRoads:(map.completedRoads||[]);
  const edges=new Map();
  for(const old of previous){
   if(!point(old?.from)||!point(old?.to)||old.from===old.to)continue;
   const fixed=edge(map,old.from,old.to);
-  if(fixed)edges.set(pairKey(fixed.from,fixed.to),fixed);
+  if(fixed)edges.set(pairKey(fixed.from,fixed.to),{
+   ...fixed,bend:Number.isFinite(old.bend)?old.bend:fixed.bend
+  });
  }
  for(const id of nodes){
   for(const other of [castle,nearestNode(id,nodes)]){
