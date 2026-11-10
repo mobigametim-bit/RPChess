@@ -91,6 +91,18 @@ function proceedToEncounter(choice){
     {detail:{source:'skirmish-insufficient-force'}}));
   return false;
  }
+ if(choice.type==='settlement'&&choice.kingdomCell){
+  const map=activeRun.kingdomMap,id=choice.kingdomCell,cell=map?.cells?.[id];
+  const king=map?.king;
+  // A completed Settlement can be revisited without pendingCell, travel
+  // billing, or mutating its completed receipt. Also handles restored saves.
+  if(!map?.pendingCell&&cell?.status==='completed'&&
+     cell.selectedEncounter?.id===choice.id&&
+     king&&id===king.x+','+king.y){
+    dispatchEncounter(choice);
+    return true;
+  }
+ }
  if(choice.kingdomCell){
   const map=activeRun.kingdomMap,id=choice.kingdomCell;
   if(map?.pendingCell!==id||map.cells?.[id]?.selectedEncounter?.id!==choice.id)return false;
@@ -146,7 +158,7 @@ function openTravel(event){routing=false;activeRun=readRun();if(!activeRun)retur
     globalThis.sessionStorage?.getItem('rpchess.test.legacyTravel')==='1'){
   activeRun=ensureChoices(activeRun);renderChoices();showTravel();return;
  }
- void import('./kingdom-map-app.mjs?v=20261110-pre-entry-starvation-v1').then(mod=>mod.openMap(event))
+ void import('./kingdom-map-app.mjs?v=20261111-settlement-services-v1').then(mod=>mod.openMap(event))
   .catch(error=>{console.error('[RPChess] Kingdom map could not load',error);
    activeRun=ensureChoices(activeRun);renderChoices();showTravel();});
 }

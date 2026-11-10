@@ -1047,13 +1047,47 @@ function onCell(event){
  selected=id;
  render(); // A single click is inspection only, regardless of distance.
 }
-function visitSettlement(){
+let settlementOpening=false;
+async function visitSettlement(){
+ if(settlementOpening)return;
  const run=readRun(),id=keyOf(run?.kingdomMap?.king?.x,run?.kingdomMap?.king?.y);
  const cell=run?.kingdomMap?.cells?.[id];
  if(!cell||cell.status!=='completed'||cell.selectedEncounter?.type!=='settlement'||run.activeTravelChoice)return;
- const restored={...run,activeTravelChoice:cell.selectedEncounter,currentSettlement:cell.settlementState||null};
- writeRun(restored);hideMap();
- globalThis.RPChessTravelChoice?.resumeMapEncounter?.(cell.selectedEncounter);
+ settlementOpening=true;
+ const button=screen?.querySelector('[data-kingdom-services]');
+ if(button)button.disabled=true;
+ let committed=false;
+ try{
+  // A completed Settlement is a free revisit, NOT a pending map encounter.
+  // Load the owner BEFORE changing the save or hiding the Kingdom map.
+  await import('./settlement-app.mjs');
+  const latest=readRun(),current=latest?.kingdomMap?.cells?.[id];
+  if(!latest||latest.ended||latest.id!==run.id||latest.activeTravelChoice||
+     !screen||screen.hidden||current?.status!=='completed'||
+     current.selectedEncounter?.id!==cell.selectedEncounter.id)return;
+  const owner=globalThis.RPChessSettlement;
+  if(!owner?.open)throw new Error('Settlement scene owner is unavailable');
+  const saved=writeRun({...latest,activeTravelChoice:current.selectedEncounter,
+   currentSettlement:current.settlementState||null});
+  committed=true;
+  owner.open({detail:{source:'kingdom-services',runId:saved.id,choice:current.selectedEncounter}});
+  if(document.querySelector('[data-settlement-screen]')?.hidden!==false)
+   throw new Error('Settlement scene did not become active');
+  hideMap();
+ }catch(error){
+  console.error('[RPChess] Settlement services could not open',error);
+  // Never strand a save on an invisible scene after a failed revisit.
+  const latest=readRun();
+  if(committed&&latest?.id===run.id&&
+     latest.activeTravelChoice?.id===cell.selectedEncounter.id)
+   writeRun({...latest,activeTravelChoice:null,currentSettlement:run.currentSettlement||null});
+  showMap();render();
+  report(lang()==='en'?'Settlement services could not open. Try again.':
+   'Не удалось открыть услуги поселения. Повторите попытку.');
+ }finally{
+  settlementOpening=false;
+  if(button)button.disabled=false;
+ }
 }
 function openMap(event){
  let run=readRun();if(!run||run.ended)return;

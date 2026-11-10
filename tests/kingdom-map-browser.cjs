@@ -1329,6 +1329,58 @@ async function assertTileImage(page,cellId){
   assert.equal(await labPage.locator('#controls').count(),1);
   assert.deepStrictEqual(atlasErrors,[],'original v6 extension must not emit page errors');
   await labPage.close();
+  // Regression: revisiting a cleared Settlement used to hide the Kingdom
+  // without opening Services, then persisted an active choice that blocked
+  // "В путь" after a reload. Exercise both flows against the same saved run.
+  const servicesPage=await browser.newPage({viewport:{width:1280,height:720},reducedMotion:'reduce'});
+  const serviceErrors=[];
+  servicesPage.on('pageerror',error=>serviceErrors.push(String(error.stack||error)));
+  await servicesPage.goto(url,{waitUntil:'domcontentloaded'});
+  await startNewRun(servicesPage,{playerName:'Settlement Revisit',legacyTravel:false});
+  await servicesPage.locator('[data-roster-travel]').click();
+  await servicesPage.locator('[data-kingdom-map-screen]:not([hidden])').waitFor({timeout:20000});
+  await servicesPage.evaluate(async storage=>{
+    const {randomEncounter}=await import('./js/kingdom-map-core.mjs?v=20261109-atlas-lab-v7');
+    const run=JSON.parse(localStorage.getItem(storage)),id='1,0';
+    const encounter=randomEncounter(run,{x:1,y:0},500,
+      {type:'settlement',biome:'plains',landmark:null,raceTag:'humans',paths:{road:false,river:false}});
+    run.kingdomMap.king={x:1,y:0};
+    run.kingdomMap.pendingCell=null;
+    run.kingdomMap.cells[id]={...run.kingdomMap.cells[id],status:'completed',explored:true,
+      completedOnce:true,selectedEncounter:encounter};
+    localStorage.setItem(storage,JSON.stringify(run));
+    globalThis.RPChessKingdomMap.open();
+  },key);
+  const servicesButton=servicesPage.locator('[data-kingdom-services]');
+  await servicesButton.waitFor({state:'visible'});
+  const provisionsBefore=(await read(servicesPage)).supplies;
+  await servicesButton.click();
+  await servicesPage.locator('[data-settlement-screen]:not([hidden])').waitFor({timeout:15000});
+  await servicesPage.locator('[data-settlement-recruits]').waitFor({state:'visible'});
+  assert.equal((await read(servicesPage)).supplies,provisionsBefore,
+    'A completed Settlement revisit must not charge Supplies');
+  assert.equal((await read(servicesPage)).kingdomMap.pendingCell,null,
+    'A cleared Settlement must not become a pending battle');
+  // Reproduce the affected player's reload while the free revisit is active.
+  await servicesPage.reload({waitUntil:'domcontentloaded'});
+  await servicesPage.locator('[data-reboot-foundation]:not([hidden])').waitFor();
+  await servicesPage.locator('[data-new-game]').click();
+  await servicesPage.locator('[data-journey-continue]').click();
+  await servicesPage.locator('[data-roster-screen]:not([hidden])').waitFor();
+  await servicesPage.locator('[data-roster-travel]').click();
+  await servicesPage.locator('[data-settlement-screen]:not([hidden])').waitFor({timeout:18000});
+  assert.equal((await read(servicesPage)).supplies,provisionsBefore,
+    'Resuming a cleared Settlement must not charge Supplies again');
+  await servicesPage.locator('[data-settlement-continue]').click();
+  await servicesPage.locator('[data-kingdom-map-screen]:not([hidden])').waitFor({timeout:18000});
+  const finishedServices=await read(servicesPage);
+  assert.equal(finishedServices.activeTravelChoice,null,
+    'Settlement exit must clear the saved active choice');
+  assert.equal(finishedServices.supplies,provisionsBefore,
+    'Settlement exit must preserve provisions after reload');
+  assert.equal(finishedServices.kingdomMap.cells['1,0'].status,'completed');
+  assert.deepEqual(serviceErrors,[],'Settlement revisit must not throw browser errors');
+  await servicesPage.close();
   console.log('KINGDOM MAP PASS — click-inspect, king drag, shortest routes, event stop, map pan, step supplies');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});

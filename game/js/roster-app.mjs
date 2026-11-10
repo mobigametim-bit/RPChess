@@ -277,8 +277,24 @@ async function beginJourney() {
     // slow cloud/platform initialization otherwise leaves the icon inert.
     // Active encounters and the explicitly requested legacy Travel stay
     // with their existing route owner, including starvation recovery.
-    if (!legacyTravel && !activeRun.activeTravelChoice) {
-      const { openMap } = await import('./kingdom-map-app.mjs?v=20261110-pre-entry-starvation-v1');
+    const resume=activeRun.activeTravelChoice;
+    const settled=resume?.type==='settlement' && resume.kingdomCell &&
+      activeRun.kingdomMap?.cells?.[resume.kingdomCell]?.status==='completed' &&
+      activeRun.kingdomMap.cells[resume.kingdomCell].selectedEncounter?.id===resume.id;
+    if (settled) {
+      // Recover the exact save produced by older broken "Services" clicks.
+      // Do not wait for the whole combat-route bootstrap to reach a completed Settlement.
+      await import('./settlement-app.mjs');
+      const current=readRun();
+      if (!current || current.ended || current.id!==runId ||
+          current.activeTravelChoice?.id!==resume.id) return;
+      const owner=globalThis.RPChessSettlement;
+      if(!owner?.open)throw new Error('Settlement scene owner is unavailable');
+      owner.open({detail:{source:'roster',runId,choice:current.activeTravelChoice}});
+      if(document.querySelector('[data-settlement-screen]')?.hidden!==false)
+        throw new Error('Saved Settlement scene did not become active');
+    } else if (!legacyTravel && !activeRun.activeTravelChoice) {
+      const { openMap } = await import('./kingdom-map-app.mjs?v=20261111-settlement-services-v1');
       const current = readRun();
       if (!current || current.ended || current.id !== runId) return;
       openMap({ detail:{ source:'roster', runId } });
