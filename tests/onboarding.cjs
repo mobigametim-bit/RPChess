@@ -35,10 +35,10 @@ for (const token of [
 
 assert(onboarding.includes("const TUTORIAL_STORAGE_KEY = 'rpchess.reboot.v1.tutorial'"), 'Tutorial persistence key missing');
 assert(onboarding.includes('overflow:hidden'), 'Compact onboarding card must forbid internal scrolling');
-assert(foundation.includes("import('./content/onboarding.mjs')"), 'Foundation must load onboarding after cloud reconciliation');
+assert(foundation.includes("import('./content/onboarding.mjs?v=20261111-goblin-18-v1')"), 'Foundation must load onboarding after cloud reconciliation');
 assert(foundation.includes('onboarding?.activateOnboarding?.()'), 'New Game must activate onboarding');
 assert(foundation.includes("onboarding?.showHint?.('identity')"), 'New Game must show the identity hint');
-assert(foundation.indexOf("import('./content/onboarding.mjs')") > foundation.indexOf('const cloudReady'), 'Onboarding must be sequenced behind Cloud Save');
+assert(foundation.indexOf("import('./content/onboarding.mjs?v=20261111-goblin-18-v1')") > foundation.indexOf('const cloudReady'), 'Onboarding must be sequenced behind Cloud Save');
 assert(cloud.includes("const TUTORIAL_STORAGE_KEY = 'rpchess.reboot.v1.tutorial'"), 'Cloud Save must sync tutorial flags');
 assert(cloud.includes("'rpchess:tutorial-updated'"), 'Cloud autosync must react to tutorial updates');
 

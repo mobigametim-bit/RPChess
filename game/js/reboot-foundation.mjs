@@ -42,7 +42,7 @@ globalThis.RPChessCloudReady = cloudReady;
 // The jester owns the first-visit hints. It loads after Cloud Save so synced
 // tutorial flags are authoritative before any hint can be displayed.
 const onboardingReady = cloudReady
-  .then(() => import('./content/onboarding.mjs'))
+  .then(() => import('./content/onboarding.mjs?v=20261111-goblin-18-v1'))
   .then((module) => {
     module.installOnboarding();
     return module;
@@ -96,7 +96,7 @@ globalThis.RPChessIdentityReady = identityReady;
 
 // The read-only map attaches after the authoritative cloud-state reconciliation.
 const menuReady=cloudReady
- .then(()=>import('./kingdom-menu-preview.mjs?v=20261111-menu-texture-gate-v1'))
+ .then(()=>import('./kingdom-menu-preview.mjs?v=20261111-npc-floor-v1'))
  .then(async module=>{module.install();await module.waitForTextures();})
  .catch(error=>console.error('[RPChess] Main-menu kingdom preview failed',error));
 globalThis.RPChessMainMenuReady=menuReady;

@@ -336,7 +336,7 @@ function continuePath() {
     if(globalThis.RPChessKingdomMap?.open){
       globalThis.RPChessKingdomMap.open({detail});
     }else{
-      void import('./kingdom-map-app.mjs?v=20261111-settlement-services-v1')
+      void import('./kingdom-map-app.mjs?v=20261111-goblin-npc-floor-v1')
         .then(({openMap})=>openMap({detail}))
         .catch(error=>{
           console.error('[RPChess] Return from Settlement to Kingdom failed',error);
