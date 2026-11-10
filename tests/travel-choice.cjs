@@ -118,9 +118,66 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const travelerTypes=new Set(walkers.createTravelers(secondRoad,{parchment:true}).map(w=>w.type));
   assert(travelerTypes.has('merchant')||travelerTypes.has('convoy')||travelerTypes.has('courier'),
     'at least one free traveler can follow the newly discovered road network');
-  const firstTraveler=walkers.createTravelers(secondRoad,{parchment:true})[0];
-  assert(firstTraveler&&walkers.travelerPosition(secondRoad,firstTraveler,0),
-    'decorative travelers have a position without altering map state');
+  const scheduledTravelers=walkers.createTravelers(secondRoad,{parchment:true});
+  const firstTraveler=scheduledTravelers[0];
+  assert(firstTraveler&&walkers.travelerPosition(secondRoad,firstTraveler,firstTraveler.spawnDelay),
+    'decorative travelers spawn at their individual departure times without changing map state');
+  assert(scheduledTravelers.every(actor=>actor.speed>=.10&&actor.speed<=.23),
+    'all five traveler kinds move at one third of their previously approved speed');
+  assert(new Set(scheduledTravelers.map(actor=>actor.spawnDelay)).size===scheduledTravelers.length,
+    'actors must start at different times rather than spawn simultaneously');
+  assert(scheduledTravelers.every(actor=>actor.destinationWait>=5&&actor.originWait>=7),
+    'every actor rests at both its destination and its starting point');
+  if(firstTraveler.spawnDelay>0)
+   assert.strictEqual(walkers.travelerPosition(secondRoad,firstTraveler,firstTraveler.spawnDelay-.01),null,
+     'a traveler remains unspawned until its departure slot');
+  const length=firstTraveler.kind==='natural'?firstTraveler.maxDistance:
+   Math.max(1,Math.hypot(...['x','y'].map(axis=>{
+    const from=firstTraveler.edge.from.split(',').map(Number);
+    const to=firstTraveler.edge.to.split(',').map(Number);
+    return to[axis==='x'?0:1]-from[axis==='x'?0:1];
+   })));
+  const travelSeconds=length/firstTraveler.speed;
+  const atDestination=walkers.travelerMotion(secondRoad,firstTraveler,
+    firstTraveler.spawnDelay+travelSeconds+firstTraveler.destinationWait/2);
+  const stillAtDestination=walkers.travelerMotion(secondRoad,firstTraveler,
+    firstTraveler.spawnDelay+travelSeconds+firstTraveler.destinationWait*.8);
+  assert(atDestination&&!atDestination.moving&&stillAtDestination&&!stillAtDestination.moving,
+    'the actor stops walking at its destination');
+  assert.deepStrictEqual(atDestination.position,stillAtDestination.position,
+    'the actor stays in place during its destination pause');
+  const afterReturn=walkers.travelerMotion(secondRoad,firstTraveler,
+    firstTraveler.spawnDelay+travelSeconds*2+firstTraveler.destinationWait+firstTraveler.originWait/2);
+  assert(afterReturn&&!afterReturn.moving&&afterReturn.progress===0,
+    'the actor waits again at origin before its next trip');
+  // Wild merchants and couriers must use generated natural trails past the
+  // border, not only Royal roads inside the owned territory.
+  let trailId=null;
+  for(let y=-10;y<=10&&!trailId;y++)for(let x=-10;x<=10;x++){
+   const candidate=x+','+y;
+   if(candidate!=='0,0'&&walkers.nearestNaturalRoad(secondRoad,candidate)!==null){
+    trailId=candidate;break;
+   }
+  }
+  assert(trailId,'fixture has a natural trail crossing an event square');
+  const trailMap={...secondRoad,cells:{...secondRoad.cells,
+   [trailId]:{status:'revealed',explored:true,annexed:true,
+    selectedEncounter:{id:'road-trail-source',type:'event'}}}};
+  const roaming=walkers.createTravelers(trailMap,{parchment:true});
+  for(const type of ['merchant','courier']){
+   const actor=roaming.find(w=>w.type===type);
+   assert(actor&&actor.kind==='natural',
+     'roaming '+type+' must use a natural trail when one crosses a Castle/event origin');
+   const destination=walkers.travelerPosition(trailMap,actor,actor.spawnDelay+actor.maxDistance/actor.speed);
+   assert(destination&&!mapCore.isOwned(trailMap,{
+     x:Math.floor(destination.x),y:Math.floor(destination.y)}),
+     'the '+type+' must be able to go beyond the kingdom boundary along that trail');
+   const outsideId=Math.floor(destination.x)+','+Math.floor(destination.y);
+   const visibleOutside={...trailMap,cells:{...trailMap.cells,
+    [outsideId]:{status:'completed',explored:true,annexed:false,type:'empty'}}};
+   assert(walkers.visibleTraveler(visibleOutside,actor,destination),
+     'the '+type+' remains visible on a previously scouted foreign trail');
+  }
 
   const mapRun=persistence.createRun({id:'kingdom-map-contract',now:1700000000000});
   for(const type of ['battle','skirmish']){
