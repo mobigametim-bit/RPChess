@@ -177,6 +177,25 @@ async function assertTileImage(page,cellId,relativePath){
   assert.equal(await mapSkin.getAttribute('aria-pressed'),'true');
   const atlas=page.locator('[data-kingdom-parchment]');
   assert.equal(await atlas.count(),1,'parchment must draw one continuous canvas behind clickable cells');
+  const sandstone=await page.evaluate(async()=>{
+    const {drawSandstoneRoad,SANDSTONE_WIDTH}=await import('./js/kingdom-road-paving.mjs');
+    const canvas=document.createElement('canvas');canvas.width=210;canvas.height=90;
+    const ctx=canvas.getContext('2d');
+    const painted=drawSandstoneRoad(ctx,{x1:20,y1:42,x2:190,y2:42,bend:0,id:'browser-paving-sample'});
+    const center=ctx.getImageData(100,42,1,1).data;
+    const outside=ctx.getImageData(100,82,1,1).data;
+    const hues=new Set();
+    for(let x=45;x<=165;x+=3){
+      const pixel=ctx.getImageData(x,42,1,1).data;
+      if(pixel[3]>100)hues.add(pixel[0]+','+pixel[1]+','+pixel[2]);
+    }
+    return {painted,width:SANDSTONE_WIDTH,centerAlpha:center[3],outsideAlpha:outside[3],
+      stoneColors:hues.size};
+  });
+  assert(sandstone.painted&&sandstone.width===16&&sandstone.centerAlpha>0&&
+    sandstone.outsideAlpha===0&&sandstone.stoneColors>=3,
+    'browser Canvas must draw pale sandstone with visible brick variation and approved 16px width');
+
   const npcAtlas=await page.evaluate(async()=>{
     const src='assets/kingdom-travelers/walkers_64.png';
     const response=await fetch(src,{cache:'no-store'});
