@@ -1,6 +1,6 @@
 const RUN_KEY = 'rpchess.reboot.v1.run';
 const TUTORIAL_KEY = 'rpchess.reboot.v1.tutorial';
-const TUTORIAL_HINTS = ["identity","roster","travel","artifact","skirmishChess","battleChess","combatAftermath","event","settlement","puzzle","caravanChess","caravanReward","starvation","runEnd","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess","arenaResult"];
+const TUTORIAL_HINTS = ["identity","roster","kingdomMap","kingdomCastle","kingdomProduction","artifact","skirmishChess","battleChess","event","settlement","puzzle","caravanChess","starvation","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess"];
 
 async function installManualTravelFixtureNormalizer(page) {
   await page.evaluate((key) => {
