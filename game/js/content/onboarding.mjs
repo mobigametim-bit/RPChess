@@ -3,7 +3,7 @@ import { currentLanguage, subscribe } from '../i18n.mjs';
 
 const TUTORIAL_STORAGE_KEY = 'rpchess.reboot.v1.tutorial';
 const TUTORIAL_SCHEMA_VERSION = 1;
-const INCLUDED_HINTS = Object.freeze(["identity","roster","travel","artifact","skirmishChess","battleChess","combatAftermath","event","settlement","puzzle","caravanChess","caravanReward","starvation","runEnd","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess","arenaResult"]);
+const INCLUDED_HINTS = Object.freeze(["identity","roster","kingdomMap","kingdomCastle","kingdomProduction","artifact","skirmishChess","battleChess","event","settlement","puzzle","caravanChess","starvation","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess"]);
 const INCLUDED_HINT_SET = new Set(INCLUDED_HINTS);
 
 const COPY = Object.freeze({
@@ -13,12 +13,20 @@ const COPY = Object.freeze({
       "body": "Назови героя и выбери портрет короля. Это начало нового похода."
     },
     "roster": {
-      "title": "«Знакомься, твоя славная армия! А короля береги: второго нам не выдадут.»",
-      "body": "Здесь видны герои, их состояние и расстановка. Раненых нужно лечить."
+      "title": "«Знакомься, это твой отряд. Короля береги: запасного не выдадут!»",
+      "body": "Здесь живут именные герои: смотри их состояние и выбирай состав. Раненых лечат в поселениях, а безымянную армию нанимают в замке."
     },
-    "travel": {
-      "title": "«Три дороги, один король и ни одного толкового советника. Не считая меня, разумеется!»",
-      "body": "Смотри на угрозу, награду и запас припасов. Чем больше звёзд, тем опаснее встреча."
+    "kingdomMap": {
+      "title": "«Мир огромный, а ноги у короля короткие. Придётся путешествовать!»",
+      "body": "Перетаскивай короля на соседнюю клетку в любом из 8 направлений. Туман скрывает встречи; касание клетки лишь показывает описание. За шаг вне владений тратится 1 припас."
+    },
+    "kingdomCastle": {
+      "title": "«Замок — сердце королевства. И моя любимая безопасная крепость!»",
+      "body": "Нажми на замок: здесь за золото нанимают безымянные фигуры. Значок ×N показывает их количество. Именные герои остаются в Отряде."
+    },
+    "kingdomProduction": {
+      "title": "«Смотри-ка, трудятся без нас! Вот бы и мои носки так стирались.»",
+      "body": "Раз в игровую неделю освоенные места могут приносить золото, припасы, бойцов и осколки. Нажимай на значок сбора над клеткой, чтобы забрать награду."
     },
     "artifact": {
       "title": "«Магические безделушки! Хороший артефакт спасает даже тех, кто слушает мои советы.»",
@@ -32,17 +40,13 @@ const COPY = Object.freeze({
       "title": "«Вот теперь всё серьёзно. Я, пожалуй, буду командовать из обоза!»",
       "body": "Это полноценная шахматная битва. Береги короля и ценных героев."
     },
-    "combatAftermath": {
-      "title": "«Пересчитаем добычу и выживших. Хотя, пожалуй, сначала выживших.»",
-      "body": "Здесь показаны итог боя, награды и состояние отряда."
-    },
     "event": {
       "title": "«Тут решения принимают словами. Я однажды не прочёл условия и женился!»",
       "body": "Сравни варианты, требования, цену и указанный шанс успеха."
     },
     "settlement": {
-      "title": "«Цивилизация! Бесплатно здесь только мои советы, и то не всегда.»",
-      "body": "Лечи героев, нанимай новых и покупай припасы за золото."
+      "title": "«Цивилизация! Бесплатно здесь только мои советы. И то не всегда.»",
+      "body": "У знахарки лечат именных героев, в таверне нанимают новых, на рынке покупают припасы. В освоенном поселении услуги можно открыть снова без платы за вход."
     },
     "puzzle": {
       "title": "«Проверим, что у тебя под короной! Не волнуйся, я никому не скажу.»",
@@ -52,21 +56,13 @@ const COPY = Object.freeze({
       "title": "«Фигуры стоят как попало! Это не беспорядок, это шахматы Фишера!»",
       "body": "Фигуры ходят по шахматным правилам, но начальная позиция и рокировка особенные."
     },
-    "caravanReward": {
-      "title": "«Караван спасён! Я пытался взять всё, но купцы почему-то возражали.»",
-      "body": "Выбери одну награду из трёх, чтобы продолжить путешествие."
-    },
     "starvation": {
-      "title": "«Мешок пуст, а аппетиты героев — нет. Пора подумать о припасах!»",
-      "body": "Без припасов поход опасен. Следи за запасом перед следующим маршрутом."
-    },
-    "runEnd": {
-      "title": "«Конец похода! Сейчас выясним, кто вошёл в легенды, а кто — в расходы.»",
-      "body": "Итоговая статистика показывает достижения, добычу и результат забега."
+      "title": "«Пустой мешок — плохой спутник. Особенно если он наш!»",
+      "body": "На шаге без припасов случайный именной герой может погибнуть. Даже король: тогда поход закончится. Следи за запасами перед выходом за границу."
     },
     "chronicle": {
-      "title": "«Я лично записывал все подвиги. Про свои, конечно, чуть подробнее.»",
-      "body": "Летопись хранит результаты завершённых походов и лучшие достижения."
+      "title": "«Я записал все подвиги. Мои, разумеется, самые крупные!»",
+      "body": "Летопись показывает достижения текущего похода и историю завершённых. Заглядывай сюда, чтобы оценить, как выросло твоё королевство."
     },
     "arenaCatalog": {
       "title": "«Добро пожаловать на Арену! Здесь за тумаки дают Осколки чести.»",
@@ -83,10 +79,6 @@ const COPY = Object.freeze({
     "arenaChess": {
       "title": "«На доску, герой! Я буду болеть за тебя с безопасного расстояния.»",
       "body": "Играй по шахматным правилам. Победа приносит осколки и открывает новых соперников."
-    },
-    "arenaResult": {
-      "title": "«Победил? Блестяще! Проиграл? Объявим эту партию тренировочной.»",
-      "body": "Забери заслуженную награду или попробуй сразиться ещё раз."
     }
   },
   "en": {
@@ -95,12 +87,20 @@ const COPY = Object.freeze({
       "body": "Name your hero and choose the king’s portrait to begin a new journey."
     },
     "roster": {
-      "title": "“Behold your magnificent army! Mind the king: they will not give us a spare.”",
-      "body": "Review your heroes, their condition and formation. Wounded heroes need healing."
+      "title": "“Meet your squad. Guard the King: we do not get a spare!”",
+      "body": "Named heroes live here. Check their condition and choose your formation. Heal wounds in Settlements; hire unnamed troops at the Castle."
     },
-    "travel": {
-      "title": "“Three roads, one king, and not a single competent adviser. Except me, naturally!”",
-      "body": "Check threat, rewards and Supplies. More stars mean a tougher encounter."
+    "kingdomMap": {
+      "title": "“The world is huge, and our King has tiny legs. Off we go!”",
+      "body": "Drag the King to any adjacent tile, in all 8 directions. Fog hides encounters; tapping a tile only inspects it. Each step outside your territory costs 1 Supply."
+    },
+    "kingdomCastle": {
+      "title": "“The Castle is our kingdom's heart. And my favorite safe place!”",
+      "body": "Tap the Castle to recruit unnamed chess pieces for Gold. The ×N badge shows how many you own. Your named heroes stay in the Squad."
+    },
+    "kingdomProduction": {
+      "title": "“Look at them working without us! If only my socks did that.”",
+      "body": "Once per game week, cleared sites may yield Gold, Supplies, troops or Honor Shards. Tap the collection icon above a tile to claim its reward."
     },
     "artifact": {
       "title": "“Magical trinkets! A good artifact can even save someone who follows my advice.”",
@@ -114,17 +114,13 @@ const COPY = Object.freeze({
       "title": "“Now this is serious. I shall command from the safety of the supply wagon!”",
       "body": "This is a full chess battle. Protect your king and valuable heroes."
     },
-    "combatAftermath": {
-      "title": "“Count the spoils and survivors. On second thought, survivors first.”",
-      "body": "Check the battle result, rewards and your party’s condition."
-    },
     "event": {
       "title": "“Here we fight with words. I once failed to read the fine print and got married!”",
       "body": "Check each option’s requirements, costs and displayed success chance."
     },
     "settlement": {
-      "title": "“Civilization! My advice is the only thing here that might be free.”",
-      "body": "Heal heroes, recruit allies and buy Supplies with gold."
+      "title": "“Civilization! My advice may be the only free thing around.”",
+      "body": "Heal named heroes at the Healer, recruit in the Tavern, buy Supplies at the Market. Reopen services in a cleared Settlement without a new entry fee."
     },
     "puzzle": {
       "title": "“Let us see what is under that crown! I promise I will not tell anyone.”",
@@ -134,21 +130,13 @@ const COPY = Object.freeze({
       "title": "“The pieces are all scrambled! It is not a mess; it is Fischer Random Chess!”",
       "body": "Pieces move as usual, but the starting arrangement and castling are different."
     },
-    "caravanReward": {
-      "title": "“Caravan saved! I tried taking everything, but the merchants disagreed.”",
-      "body": "Choose one reward from the three offers before continuing."
-    },
     "starvation": {
-      "title": "“The bag is empty, but our soldiers’ stomachs are not. Time for Supplies!”",
-      "body": "Running out of Supplies is dangerous. Plan the next route carefully."
-    },
-    "runEnd": {
-      "title": "“Journey over! Let us see who became a legend and who became an expense.”",
-      "body": "Review your run statistics, spoils and final result."
+      "title": "“An empty bag is a terrible traveling companion. Especially ours!”",
+      "body": "If you move without enough Supplies, a random named hero may die. Even the King, ending the run. Watch your stock before leaving your borders."
     },
     "chronicle": {
-      "title": "“I recorded every noble deed. My own in slightly more detail, of course.”",
-      "body": "The Chronicle keeps finished journeys and your best achievements."
+      "title": "“I recorded all heroic deeds. Mine in especially large letters!”",
+      "body": "The Chronicle shows your current run's progress and the history of completed journeys. Check how your kingdom has grown."
     },
     "arenaCatalog": {
       "title": "“Welcome to the Arena! Here they pay you in Honor Shards for getting bruised.”",
@@ -165,10 +153,6 @@ const COPY = Object.freeze({
     "arenaChess": {
       "title": "“To the board! I shall cheer from a safe distance.”",
       "body": "Play by chess rules. Wins earn shards and unlock tougher opponents."
-    },
-    "arenaResult": {
-      "title": "“Victory? Brilliant! Defeat? We shall call it a practice match.”",
-      "body": "Collect your reward or try another fight."
     }
   }
 });
@@ -369,19 +353,17 @@ function installOnboarding() {
   ensureOverlay();
   const eventHints = Object.freeze({
     'rpchess:run-new':['roster','[data-roster-screen]:not([hidden])'],
-    'rpchess:travel-open':['travel','[data-travel-choice-screen]:not([hidden])'],
+    'rpchess:kingdom-map-shown':['kingdomMap','[data-kingdom-map-screen]:not([hidden])'],
+    'rpchess:kingdom-castle-inspected':['kingdomCastle','[data-kingdom-map-screen]:not([hidden])'],
+    'rpchess:kingdom-production-collected':['kingdomProduction','[data-kingdom-map-screen]:not([hidden])'],
     'rpchess:event-open':['event','[data-events-screen]:not([hidden])'],
-    'rpchess:settlement-open':['settlement','[data-settlement-screen]:not([hidden])'],
+    'rpchess:settlement-shown':['settlement','[data-settlement-screen]:not([hidden])'],
     'rpchess:puzzle-shown':['puzzle','[data-puzzle-screen]:not([hidden])'],
     'rpchess:artifact-offer':['artifact','[data-artifact-choice-modal]'],
-    'rpchess:combat-aftermath':['combatAftermath'],
-    'rpchess:caravan-rewards':['caravanReward'],
     'rpchess:starvation-shown':['starvation','[data-starvation-screen]:not([hidden])'],
-    'rpchess:run-summary-shown':['runEnd','[data-endless-run-screen]:not([hidden])'],
     'rpchess:chronicle-visible':['chronicle','[data-chronicle-panel]'],
     'rpchess:arena-foe-shown':['arenaFoe'],
-    'rpchess:arena-artifact-shown':['arenaArtifact'],
-    'rpchess:arena-result-shown':['arenaResult']
+    'rpchess:arena-artifact-shown':['arenaArtifact']
   });
   for (const [eventName, [hint, selector]] of Object.entries(eventHints)) {
     globalThis.addEventListener?.(eventName, () => scheduleHint(hint, selector||null));
