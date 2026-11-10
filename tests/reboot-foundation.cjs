@@ -3,7 +3,7 @@ for(const token of ['data-reboot-foundation','data-new-game','data-continue-run'
 assert(html.includes('mm-menu-approved')&&html.includes('data-main-menu-kingdom'),'Approved responsive menu must expose the live kingdom');
 assert(!html.includes('data-continue-run data-i18n="menu.continue"'),'Old standalone Continue button must be removed');
 assert(!html.includes('class="reboot-wordmark"'),'Main-menu brand logo must be absent');
-assert(html.includes('css/hud-nav-icons.css?v=20261110-hud-journey-v2'),
+assert(html.includes('css/hud-nav-icons.css?v=20261110-icon-safe-v4'),
  'The shared top-HUD pictograms must be included after scene styling');
 const hudNavCss=fs.readFileSync(path.join(game,'css/hud-nav-icons.css'),'utf8');
 for(const relative of ['assets/ui/hud-main-menu.png','assets/ui/hud-squad.png','assets/ui/main-menu-settings.png'])
@@ -14,6 +14,13 @@ for(const token of ['.km-actions','.roster-topbar__actions','.classic-toolbar','
  '[data-travel-roster]','[data-roster-menu]','[data-arena-back]','[data-tour-action="back"]',
  'hud-squad.png','hud-main-menu.png','main-menu-settings.png','button[hidden]'])
  assert(hudNavCss.includes(token),'Upper-HUD pictogram contract missing '+token);
+const combatRail=fs.readFileSync(path.join(game,'css/combat-centered-layout.css'),'utf8');
+assert(combatRail.includes('grid-template-rows:clamp(70px,10dvh,82px)'),
+ 'combat and Caravan topbar must reserve a complete 60px HUD icon row');
+assert(hudNavCss.includes('html[data-landscape-ui=')&&
+       hudNavCss.includes('.classic-toolbar :is([data-settings],[data-classic-menu],[data-combat-menu])'),
+ 'Classic toolbar cannot reuse historical 160px text button sizes');
+
 for(const name of ['journey','arena','tournament','mentor','settings','language'])
  assert(html.includes('assets/ui/main-menu-'+name+'.png'),'Missing authored icon '+name);
 assert(!html.includes('Ваше королевство · автомасштаб'),'No kingdom caption may be shown');

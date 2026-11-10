@@ -17,9 +17,9 @@ import {FLAVOR_POOLS} from './travel-choice-core.mjs';
 import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
-import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261110-terrain-boundary';
-import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261110-journey-gray-v3';
-import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261110-site-hide-v3';
+import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261110-natural-road-layer-v4';
+import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261110-natural-road-layer-v4';
+import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261110-npc-territory-v4';
 import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
@@ -277,7 +277,11 @@ function castleCard(map){
  details.append(title,level);
  const recruitment=document.createElement('div');recruitment.className='km-castle-recruits';
  const heading=document.createElement('h4');heading.textContent=lang()==='en'?'Recruit for the army':'Найм рекрутов';recruitment.append(heading);
- const gold=readRun()?.gold??0;
+ const run=readRun(),gold=run?.gold??0;
+ const typeCounts=Object.fromEntries(PIECE_TYPES.map(type=>[type,0]));
+ for(const entry of run?.army||[])if(PIECE_TYPES.includes(entry?.pieceType)&&
+   Number.isSafeInteger(entry.count)&&entry.count>0)
+  typeCounts[entry.pieceType]+=entry.count;
  for(const type of PIECE_TYPES){
   const price=DEFAULT_KINGDOM_ECONOMY.castle.recruitGold[type];
   const row=document.createElement('div');row.className='km-castle-recruit';
@@ -285,6 +289,13 @@ function castleCard(map){
   const piece=document.createElement('img');piece.className='km-castle-recruit__piece';
   piece.src=boardRacePiecePath(race,type,'w');piece.alt=label;piece.title=label;
   piece.loading='lazy';piece.decoding='async';
+  const portrait=document.createElement('span');portrait.className='km-castle-recruit__portrait';
+  portrait.append(piece);
+  const owned=document.createElement('span');owned.className='km-castle-recruit__count';
+  owned.dataset.kingdomArmyCount=type;
+  owned.textContent='×'+typeCounts[type];
+  owned.title=(lang()==='en'?'In your army: ':'В армии: ')+typeCounts[type];
+  portrait.append(owned);
   const buy=document.createElement('button');buy.type='button';buy.dataset.kingdomCastleHire=type;
   buy.disabled=gold<price;buy.setAttribute('aria-disabled',String(buy.disabled));
   buy.setAttribute('aria-label',(lang()==='en'?'Hire ':'Нанять ')+label+' · '+price+' '+(lang()==='en'?'gold':'золота'));
@@ -293,7 +304,7 @@ function castleCard(map){
   const coin=document.createElement('img');coin.className='km-castle-recruit__gold';coin.src=GOLD_ICON;
   coin.alt='';coin.setAttribute('aria-hidden','true');coin.decoding='async';
   buy.append(action,amount,coin);
-  row.append(piece,buy);recruitment.append(row);
+  row.append(portrait,buy);recruitment.append(row);
  }
  details.append(recruitment);visual.append(icon);card.append(visual,details);return card;
 }
@@ -363,7 +374,7 @@ function report(text){const node=screen?.querySelector('[data-kingdom-toast]');i
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261110-npc-foreground-v1';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261110-recruit-nav-v4';link.dataset.kingdomStyle='';
  link.addEventListener('load',()=>{if(screen&&!screen.hidden)render();});
  document.head.append(link);
 }
@@ -706,7 +717,7 @@ function render(){
  const overlay=document.createElement('canvas');overlay.className='km-kingdom-overlay';
  overlay.dataset.kingdomOverlay='';overlay.setAttribute('aria-hidden','true');
  world.append(overlay);
- drawKingdomOverlay(overlay,{map,view,columns:WIDTH,rows:HEIGHT,drawBorder:!parchment});
+ drawKingdomOverlay(overlay,{map,view,columns:WIDTH,rows:HEIGHT,drawBorder:!parchment,drawRoads:!parchment});
   if(parchment){
    // Preserve legacy diagnostic metadata on the overlay without painting
    // the border above player-created roads or world objects.

@@ -5,9 +5,9 @@ import {validateKingdomMap} from './kingdom-map-core.mjs?v=20261110-roadgrid-v3'
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
 import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs';
 import {commanderPieceArt} from './commander-portraits.mjs';
-import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261110-menu-resolution';
-import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261110-menu-resolution';
-import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261110-menu-resolution';
+import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261110-natural-road-layer-v4';
+import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261110-natural-road-layer-v4';
+import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261110-npc-territory-v4';
 
 const TILE=142,MAX_CANVAS=1900;
 const menu=document.querySelector('[data-reboot-foundation]');
@@ -148,7 +148,7 @@ function render(){
   const actors=canvas('mm-kingdom-actors'),fog=canvas('mm-kingdom-fog');
   world.append(parchment,overlay,actors);
   renderParchment(parchment,{seed:map.seed,view,columns:b.columns,rows:b.rows,map,resolution});
-  drawKingdomOverlay(overlay,{map,view,columns:b.columns,rows:b.rows,drawBorder:false,resolution});
+  drawKingdomOverlay(overlay,{map,view,columns:b.columns,rows:b.rows,drawBorder:false,drawRoads:false,resolution});
   animateTravelers(actors,{map,view,columns:b.columns,rows:b.rows,parchment:true,resolution});
   const items=document.createElement('div');items.className='mm-kingdom-items';
   const add=(src,point,klass,size)=>{

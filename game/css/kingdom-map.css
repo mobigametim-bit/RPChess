@@ -522,3 +522,17 @@ body.arena-active .resource-hud{display:none!important}
 .km-castle-recruit button:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
 .kingdom-map-screen .km-inspector-buttons button:disabled{opacity:.35!important;filter:grayscale(.65)!important;cursor:not-allowed;pointer-events:none;box-shadow:none}
 .kingdom-map-screen .km-inspector-buttons button:disabled:hover{filter:grayscale(.65)!important}
+
+/* Live Army totals beside the Castle's five recruit portraits. */
+.km-castle-recruit__portrait{display:inline-flex;align-items:center;gap:8px;min-width:0;flex:1}
+.km-castle-recruit__count{
+ color:#ffe2a0;font:900 18px/1.1 Inter,Arial,sans-serif;
+ font-variant-numeric:tabular-nums;white-space:nowrap;
+ text-shadow:0 2px 5px #000b
+}
+.km-castle-recruit__portrait .km-castle-recruit__piece{flex:none}
+@media(max-width:790px){
+ .km-castle-recruit__portrait{gap:5px}
+ .km-castle-recruit__count{font-size:15px}
+ .km-castle-recruit button{min-width:110px;padding:6px}
+}

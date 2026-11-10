@@ -124,6 +124,27 @@ async function assertTileImage(page,cellId){
   })));
   assert.equal(recruitArt.length,5,'all five permanent Army roles have Castle hire buttons');
   assert(recruitArt.every(Boolean),'Castle recruit art and Gold currency icons must decode');
+  assert.deepEqual(await page.locator('[data-kingdom-army-count]').allTextContents(),
+    ['×0','×0','×0','×0','×0'],
+    'new runs show zero nameless Army units next to each Castle recruit portrait');
+  await page.evaluate(storage=>{
+    const run=JSON.parse(localStorage.getItem(storage));
+    globalThis.__castleRecruitCountFixture=localStorage.getItem(storage);
+    run.gold=999;
+    run.army=[{raceTag:run.kingdomMap.castle.raceTag,pieceType:'knight',count:3}];
+    localStorage.setItem(storage,JSON.stringify(run));
+    globalThis.RPChessKingdomMap.open();
+  },key);
+  assert.equal(await page.locator('[data-kingdom-army-count="knight"]').innerText(),'×3',
+    'Castle recruit count must reflect persisted Army, not named heroes');
+  await page.locator('[data-kingdom-castle-hire="knight"]').click();
+  assert.equal(await page.locator('[data-kingdom-army-count="knight"]').innerText(),'×4',
+    'Castle portrait count must refresh immediately after a successful hire');
+  await page.evaluate(storage=>{
+    localStorage.setItem(storage,globalThis.__castleRecruitCountFixture);
+    delete globalThis.__castleRecruitCountFixture;
+    globalThis.RPChessKingdomMap.open();
+  },key);
   // Resource affordability must be both semantic and visual, without a full map redraw.
   await page.evaluate(storage=>{
     const arenaKey='rpchess.reboot.v1.arena';
@@ -186,6 +207,65 @@ async function assertTileImage(page,cellId){
     sandstone.outsideAlpha===0&&sandstone.stoneColors>=3,
     'browser Canvas must draw pale sandstone with visible brick variation and approved 16px width');
 
+  // Five distinct NPC policies, each using ceil(owned territory / 5),
+  // with no actors before their destinations/roads exist.
+  const npcPolicy=await page.evaluate(async()=>{
+    const {createTravelers,territoryTravelerQuota,OWNED_ONLY}=await import(
+      './js/kingdom-road-travelers.mjs?v=20261110-npc-territory-v4');
+    const ids=Array.from({length:5},(_,i)=>i+',0');
+    const castle={x:0,y:0},cells=Object.fromEntries(ids.map((id,i)=>
+      [id,{status:'completed',explored:true,annexed:true,...(i===2?{
+        selectedEncounter:{id:'event-a',type:'event'}}:i===4?{
+        selectedEncounter:{id:'settlement-a',type:'settlement'}}:{})}]));
+    cells['6,0']={status:'completed',explored:true,selectedEncounter:{
+      id:'settlement-b',type:'settlement'}};
+    const edges=Array.from({length:4},(_,i)=>({
+      id:'royal:'+i,from:i+',0',to:i+1+',0',bend:0}));
+    const map={seed:'walker-route-approval',castle,cells,
+      centralOwnedCells:ids,royalRoadsVersion:3,royalRoads:edges,
+      completedRoads:[{from:'4,0',to:'6,0',bend:.3,id:'travel-foreign'}],
+      outposts:[],builtSettlements:[]};
+    const byType=walkers=>Object.fromEntries(
+      ['merchant','convoy','courier','patrol','builders'].map(type=>[
+        type,walkers.filter(actor=>actor.type===type)]));
+    const started=byType(createTravelers(map,{parchment:false}));
+    const expanded={...map,centralOwnedCells:[...ids,...Array.from({length:6},(_,i)=>(i+7)+',0')]};
+    const larger=byType(createTravelers(expanded,{parchment:false}));
+    const missing={...map,cells:{...cells,'4,0':{status:'completed',explored:true,annexed:true},
+      '6,0':{status:'completed',explored:true}},
+      builtSettlements:[]};
+    const noSettlements=byType(createTravelers(missing,{parchment:false}));
+    const none={...map,royalRoads:[],completedRoads:[]};
+    const noRoads=byType(createTravelers(none,{parchment:false}));
+    return {
+      quota:territoryTravelerQuota(map),
+      largerQuota:territoryTravelerQuota(expanded),
+      initial:Object.fromEntries(Object.entries(started).map(([k,v])=>[k,v.length])),
+      larger:Object.fromEntries(Object.entries(larger).map(([k,v])=>[k,v.length])),
+      missing:{merchant:noSettlements.merchant.length,builders:noSettlements.builders.length},
+      none:{convoy:noRoads.convoy.length,patrol:noRoads.patrol.length},
+      own:[...OWNED_ONLY],
+      routes:{merchant:started.merchant[0]?.legs[0]?.to,
+        builder:started.builders[0]?.legs[0]?.to,
+        patrol:started.patrol[0]?.legs[0]?.to}
+    };
+  });
+  assert.equal(npcPolicy.quota,1);
+  assert.equal(npcPolicy.largerQuota,3);
+  for(const type of ['merchant','convoy','courier','patrol','builders']){
+    assert.equal(npcPolicy.initial[type],1,'one eligible '+type+' for five lands');
+    assert.equal(npcPolicy.larger[type],3,'three eligible '+type+' for eleven lands');
+  }
+  assert.deepEqual(npcPolicy.missing,{merchant:0,builders:0},
+    'merchants and builders cannot appear without settlements');
+  assert.deepEqual(npcPolicy.none,{convoy:0,patrol:0},
+    'convoys and castle guards cannot appear without an owned road');
+  assert.equal(npcPolicy.routes.builder,'4,0',
+    'builders shuttle between the Castle and owned Settlement');
+  assert(['2,0','4,0'].includes(npcPolicy.routes.patrol),
+    'patrols shuttle from the Castle to a road encounter');
+  assert(npcPolicy.own.includes('convoy')&&npcPolicy.own.includes('builders')&&
+    npcPolicy.own.includes('patrol'),'local walkers cannot depart the kingdom');
   const npcAtlas=await page.evaluate(async()=>{
     const src='assets/kingdom-travelers/walkers_64.png';
     const response=await fetch(src,{cache:'no-store'});
@@ -771,6 +851,14 @@ async function assertTileImage(page,cellId){
      'organic territory and event roads work in the parchment skin');
    assert(Number(await page.locator('.km-kingdom-overlay').getAttribute('data-road-segments'))>=1,
       'royal roads connect the Castle and all eligible scouted owned events, not only completed events');
+   const pavedLayer=await page.locator('[data-kingdom-parchment]').evaluate(canvas=>({
+     layer:canvas.dataset.roadLayer,segments:Number(canvas.dataset.playerRoadSegments),
+     z:Number(getComputedStyle(canvas).zIndex),
+     overlayZ:Number(getComputedStyle(document.querySelector('.km-kingdom-overlay')).zIndex)
+   }));
+   assert(pavedLayer.layer==='terrain'&&pavedLayer.segments>=1&&
+     pavedLayer.z<pavedLayer.overlayZ,
+     'player roads and organic roads must share the terrain canvas and alpha');
    const composition=await page.evaluate(()=>{
      const overlay=document.querySelector('.km-kingdom-overlay');
      const site=document.querySelector('[data-kingdom-cell="0,1"] .km-object--site');

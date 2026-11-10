@@ -24,7 +24,7 @@
     margin:0!important;
     display:grid!important;
     grid-template-columns:minmax(0,1fr) var(--combat-board-size) minmax(0,1fr)!important;
-    grid-template-rows:clamp(42px,7dvh,64px) max-content minmax(0,1fr)!important;
+    grid-template-rows:clamp(70px,10dvh,82px) max-content minmax(0,1fr)!important;
     column-gap:0!important;
     row-gap:0!important;
     align-items:stretch!important;
@@ -167,7 +167,7 @@
     margin:0!important;
     display:grid!important;
     grid-template-columns:minmax(0,1fr) var(--combat-board-size) minmax(0,1fr)!important;
-    grid-template-rows:clamp(42px,7dvh,64px) max-content minmax(0,1fr)!important;
+    grid-template-rows:clamp(70px,10dvh,82px) max-content minmax(0,1fr)!important;
     column-gap:0!important;
     row-gap:0!important;
     align-items:stretch!important;
@@ -286,4 +286,12 @@
   html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen .arena-battle-head h2 {
     font-size:clamp(17px,3.3dvh,24px)!important;
   }
+}
+
+/* The toolbar must own a full row before the dark left rail starts. */
+@media(orientation:landscape) and (max-height:490px){
+ html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen .classic-shell,
+ html[data-landscape-ui='1'] body.arena-battle-active #app main.arena-screen .arena-shell{
+  grid-template-rows:56px max-content minmax(0,1fr)!important;
+ }
 }

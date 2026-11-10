@@ -70,7 +70,44 @@ function drawKingdomBoundary(ctx,{map,view,columns,rows}){
  return borderCount;
 }
 
-function drawKingdomOverlay(canvas,{map,view,columns,rows,drawBorder=true,resolution=1}){
+// Shared player-road painter: on parchment it runs on the SAME terrain
+// canvas, at the same world-road opacity as naturally generated roads.
+function drawKingdomRoads(ctx,{map,view,columns,rows,paint=true}){
+ if(!ctx||!map||!view)return 0;
+ const left=view.x-Math.floor(columns/2),top=view.y-Math.floor(rows/2);
+ const width=columns*TILE,height=rows*TILE;
+ let roadCount=0;
+ const painted=new Set();
+ const royalRoads=visibleRoyalRoads(map);
+ const travelRoads=visibleTravelRoads(map);
+ for(const road of [...travelRoads,...royalRoads]){
+  const a=parseTile(road.from),b=parseTile(road.to);
+  if(!a||!b||!Number.isFinite(road.bend))continue;
+  const identity=[road.from,road.to].sort().join('::');
+  if(painted.has(identity))continue;
+  painted.add(identity);
+  const x1=(a.x-left+.5)*TILE,y1=(a.y-top+.5)*TILE;
+  const x2=(b.x-left+.5)*TILE,y2=(b.y-top+.5)*TILE;
+  if(Math.max(x1,x2)<-TILE*2||Math.min(x1,x2)>width+TILE*2||
+     Math.max(y1,y2)<-TILE*2||Math.min(y1,y2)>height+TILE*2)continue;
+  const dx=x2-x1,dy=y2-y1,length=Math.hypot(dx,dy);
+  if(length<1)continue;
+  const offset=road.bend*TILE;
+  // Pale sandstone belongs inside the kingdom. Journey routes and
+  // roads outside the border use curved gray stone on the same world graph.
+  // Retain the approved 16px width and natural-road opacity.
+  if(!paint){roadCount++;continue;}
+  ctx.save();ctx.globalAlpha*=VISUAL.roadOpacity;
+  if(drawSandstoneRoad(ctx,{x1,y1,x2,y2,bend:offset,id:road.id||identity,
+     tone:road.kind==='travel'||road.surface==='gray'?'gray':'sandstone'}))
+   roadCount++;
+  ctx.restore();
+ }
+
+ return roadCount;
+}
+
+function drawKingdomOverlay(canvas,{map,view,columns,rows,drawBorder=true,drawRoads=true,resolution=1}){
  if(!canvas||!map||!view)return;
  const width=Math.round(columns*TILE),height=Math.round(rows*TILE);
  if(canvas.width!==Math.round(width*resolution))canvas.width=Math.round(width*resolution);
@@ -119,32 +156,7 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows,drawBorder=true,resolu
   glowCount++;
  }
  ctx.restore();
- let roadCount=0;
- const painted=new Set();
- const royalRoads=visibleRoyalRoads(map);
- const travelRoads=visibleTravelRoads(map);
- for(const road of [...travelRoads,...royalRoads]){
-  const a=parseTile(road.from),b=parseTile(road.to);
-  if(!a||!b||!Number.isFinite(road.bend))continue;
-  const identity=[road.from,road.to].sort().join('::');
-  if(painted.has(identity))continue;
-  painted.add(identity);
-  const x1=(a.x-left+.5)*TILE,y1=(a.y-top+.5)*TILE;
-  const x2=(b.x-left+.5)*TILE,y2=(b.y-top+.5)*TILE;
-  if(Math.max(x1,x2)<-TILE*2||Math.min(x1,x2)>width+TILE*2||
-     Math.max(y1,y2)<-TILE*2||Math.min(y1,y2)>height+TILE*2)continue;
-  const dx=x2-x1,dy=y2-y1,length=Math.hypot(dx,dy);
-  if(length<1)continue;
-  const offset=road.bend*TILE;
-  // Pale sandstone belongs inside the kingdom. Journey routes and
-  // roads outside the border use curved gray stone on the same world graph.
-  // Retain the approved 16px width and natural-road opacity.
-  ctx.save();ctx.globalAlpha*=VISUAL.roadOpacity;
-  if(drawSandstoneRoad(ctx,{x1,y1,x2,y2,bend:offset,id:road.id||identity,
-     tone:road.kind==='travel'||road.surface==='gray'?'gray':'sandstone'}))
-   roadCount++;
-  ctx.restore();
- }
+ const roadCount=drawKingdomRoads(ctx,{map,view,columns,rows,paint:drawRoads});
  // The overlay is beneath all site and king art; never cut off the road
  // before its endpoint. Roads physically reach the tile centers.
  const borderCount=drawBorder?drawKingdomBoundary(ctx,{map,view,columns,rows}):0;
@@ -155,4 +167,4 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows,drawBorder=true,resolu
  canvas.dataset.ownedRoadSegments=String(royalRoads.length);
  canvas.dataset.borderSegments=String(borderCount);
 }
-export {drawKingdomOverlay,drawKingdomBoundary};
+export {drawKingdomOverlay,drawKingdomBoundary,drawKingdomRoads};

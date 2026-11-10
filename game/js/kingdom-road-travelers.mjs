@@ -5,8 +5,11 @@ import {visibleRoyalRoads,visibleTravelRoads,eligibleRoadNodes,ownedKeys} from '
 import {randomAt} from './kingdom-parchment-core.mjs';
 import {VISUAL} from './kingdom-world-config.mjs';
 const TYPES=Object.freeze(['merchant','convoy','courier','patrol','builders']);
-const OWNED_ONLY=new Set(['patrol','builders']);
-const MAX_TRAVELERS=8,ROAD_SAMPLES=48;
+const OWNED_ONLY=new Set(['convoy','patrol','builders']);
+const ROAD_SAMPLES=48;
+// A territory-based quota replaces the old eight-actor ceiling. Rendering
+// remains viewport-culling, so expanding kingdoms do not require new assets.
+const MAX_TRAVELERS=Infinity;
 const WALK_SPEED_FACTOR=1/3; // User-approved: all five kinds walk 3 times slower.
 function travelerSchedule(seed,index){
  // Distinct launch times and destination/origin holds per actor; stable
@@ -173,43 +176,148 @@ function naturalTrip(map,start,index,seed,owned){
  }
  return {origin:start,index,legs};
 }
+// All five quotas are independent: ceil(DISTINCT owned cells / 5). An NPC
+// type with no lawful route contributes zero actors, never a placeholder.
+function territoryTravelerQuota(map){
+ return Math.ceil(ownedKeys(map).size/5);
+}
+function settlementStops(map){
+ const built=new Set((map.builtSettlements||[]).map(s=>s.id));
+ for(const [id,cell] of Object.entries(map.cells||{})){
+  if(cell?.selectedEncounter?.type==='settlement'&&
+    cell.status==='completed')built.add(id);
+ }
+ return [...built].filter(id=>numeric(id)?.every(Number.isSafeInteger)).sort();
+}
+function pairTrip(roads,seed,starts,targets){
+ const adj=adjacencyOf(roads);
+ const pairs=[];
+ for(const from of [...new Set(starts)].sort())for(const to of [...new Set(targets)].sort()){
+  if(from===to||!adj.has(from)||!adj.has(to))continue;
+  const outbound=findRoute(adj,from,to);
+  if(outbound?.length)pairs.push({from,to,outbound});
+ }
+ if(!pairs.length)return null;
+ const chosen=pairs[seed%pairs.length];
+ const returnPath=findRoute(adj,chosen.to,chosen.from);
+ if(!returnPath?.length)return null;
+ const leg=(from,to,route,hold)=>({
+  kind:'royal',from,to,route,
+  segmentLengths:route.map(s=>Math.max(.0001,Math.hypot(
+    Number(s.from.split(',')[0])-Number(s.to.split(',')[0]),
+    Number(s.from.split(',')[1])-Number(s.to.split(',')[1])))),
+  hold
+ });
+ const forward=leg(chosen.from,chosen.to,chosen.outbound,5+((seed>>>18)%9));
+ const backward=leg(chosen.to,chosen.from,returnPath,7+((seed>>>22)%12));
+ for(const item of [forward,backward])
+  item.distance=item.segmentLengths.reduce((n,d)=>n+d,0);
+ return {origin:chosen.from,legs:[forward,backward]};
+}
+// A convoy may also use the same naturally generated highways, but the
+// entire trip (outbound and return) must be inside owned territory.
+function ownedNaturalTrip(map,seed,owned){
+ const anchors=[...owned].sort().map(id=>({id,index:nearestNaturalRoad(map,id)}))
+  .filter(a=>a.index!==null);
+ const viable=[];
+ for(const anchor of anchors)for(const sign of [-1,1]){
+  const length=ownedNaturalLength(map,anchor.id,anchor.index,sign,owned);
+  if(length>=.65)viable.push({...anchor,sign,length});
+ }
+ if(!viable.length)return null;
+ const item=viable[seed%viable.length],startX=Number(item.id.split(',')[0])+.5;
+ const endX=startX+item.sign*Math.min(item.length,3.5);
+ const distance=Math.abs(endX-startX);
+ return {origin:item.id,index:item.index,legs:[
+  {kind:'natural',fromX:startX,toX:endX,distance,hold:5+((seed>>>18)%9)},
+  {kind:'natural',fromX:endX,toX:startX,distance,hold:7+((seed>>>22)%12)}
+ ]};
+}
+// For traders a natural road is legal only if it ACTUALLY joins Castle /
+// settlements; arbitrary scenery waypoints may not spawn merchants.
+function settlementNaturalTrip(map,seed,settlements,owned){
+ const castle=map.castle.x+','+map.castle.y;
+ const stops=[castle,...settlements],possibilities=[];
+ for(let i=0;i<stops.length;i++)for(let j=i+1;j<stops.length;j++){
+  const a=stops[i],b=stops[j],p=numeric(a),q=numeric(b);
+  if(!p||!q||p[0]===q[0])continue;
+  const lane=nearestNaturalRoad(map,a);
+  if(lane===null||nearestNaturalRoad(map,b)!==lane)continue;
+  const x1=p[0]+.5,x2=q[0]+.5;
+  let valid=true;
+  for(let k=0;k<=Math.ceil(Math.abs(x2-x1)*32);k++){
+   const x=x1+(x2-x1)*k/Math.max(1,Math.ceil(Math.abs(x2-x1)*32));
+   const y=naturalRoadY(map,lane,x);
+   if(!Number.isFinite(y)){valid=false;break;}
+  }
+  if(valid)possibilities.push({a,b,lane,x1,x2});
+ }
+ if(!possibilities.length)return null;
+ const trip=possibilities[seed%possibilities.length],distance=Math.abs(trip.x2-trip.x1);
+ return {origin:trip.a,index:trip.lane,legs:[
+  {kind:'natural',fromX:trip.x1,toX:trip.x2,distance,hold:6+((seed>>>18)%9)},
+  {kind:'natural',fromX:trip.x2,toX:trip.x1,distance,hold:8+((seed>>>22)%12)}
+ ]};
+}
 function createTravelers(map,{parchment=true,maxTravelers=MAX_TRAVELERS}={}){
  if(!map?.cells||!map?.castle)return [];
+ const owned=ownedKeys(map),quota=territoryTravelerQuota(map);
  const castle=map.castle.x+','+map.castle.y;
- const royalOrigins=[castle,...eligibleRoadNodes(map)];
- const tripRoads=visibleTravelRoads(map);
- // External road events from cleared Journey encounters are legitimate
- // departure/arrival points for merchants, convoys and couriers too.
- const journeyOrigins=tripRoads.flatMap(r=>[r.from,r.to]).filter(id=>map.cells?.[id]);
- const origins=[...new Set([...royalOrigins,...journeyOrigins])];
- const owned=ownedKeys(map);
- const kingdomRoads=visibleRoyalRoads(map);
- const roads=[...kingdomRoads,...tripRoads],inside=kingdomRoads.filter(e=>entirelyOwned(e,owned));
- const max=Math.min(MAX_TRAVELERS,Math.max(0,Math.floor(maxTravelers)));
- const walkers=[];
- for(let i=0;i<max;i++){
-  const type=TYPES[i%TYPES.length],seed=hash(map.seed+':walker:'+i);
-  const pool=OWNED_ONLY.has(type)?inside:roads;
-  const sources=OWNED_ONLY.has(type)?royalOrigins:origins;
-  const trails=parchment&&!OWNED_ONLY.has(type)?
-   sources.map(id=>({id,index:nearestNaturalRoad(map,id)}))
-    .filter(o=>o.index!==null):[];
-  const natural=trails.length>0&&
-   (type==='merchant'||type==='courier'||(seed>>>4)%3===0||!pool.length);
-  if(!natural&&!pool.length)continue;
-  const itinerary=natural?
-   (()=>{const src=trails[seed%trails.length];
-     return naturalTrip(map,src.id,src.index,seed,owned);})():
-   royalTrip(map,seed,pool,sources);
-  if(!itinerary?.legs?.length)continue;
-  const kind=natural?'natural':'royal';
-  const speed=(natural?.38+(seed%25)/100:.32+(seed%35)/100)*WALK_SPEED_FACTOR;
-  const schedule=travelerSchedule(seed,i);
-  walkers.push({id:'walker:'+i,type,kind,start:itinerary.origin,
+ const settlements=settlementStops(map),insideSettlements=settlements.filter(id=>owned.has(id));
+ const roadEvents=eligibleRoadNodes(map);
+ const royal=visibleRoyalRoads(map),travel=visibleTravelRoads(map);
+ const allRoads=[...royal,...travel];
+ const inside=royal.filter(edge=>entirelyOwned(edge,owned));
+ const ownedNodes=[...new Set(inside.flatMap(e=>[e.from,e.to]))].sort();
+ const origins=[castle,...roadEvents,...settlements,
+  ...travel.flatMap(e=>[e.from,e.to])];
+ const couriersOnNatural=parchment?[...new Set(origins)]
+  .filter(id=>map.cells?.[id])
+  .map(id=>({id,index:nearestNaturalRoad(map,id)}))
+  .filter(o=>o.index!==null):[];
+ const limit=Number.isFinite(maxTravelers)?Math.max(0,Math.floor(maxTravelers)):Infinity;
+ const walkers=[],typeCounts=Object.fromEntries(TYPES.map(type=>[type,0]));
+ // Fair round-robin allocation also honors a caller-supplied testing limit.
+ for(let slot=0;slot<quota;slot++)for(const type of TYPES){
+  if(walkers.length>=limit)return walkers;
+  const seed=hash(map.seed+':walker:'+type+':'+slot);
+  let itinerary=null,kind='royal';
+  if(type==='courier'){
+   // Use all painted network edges, including foreign roads; supplement
+   // them with natural highways that extend past the kingdom border.
+   // Spread couriers over all network segments without quadratic searches.
+   const edge=allRoads.length?allRoads[seed%allRoads.length]:null;
+   const royalTripPlan=edge?pairTrip(allRoads,seed,[edge.from],[edge.to]):null;
+   const useNatural=couriersOnNatural.length>0&&(slot%2===1||!royalTripPlan);
+   if(useNatural){
+    const trail=couriersOnNatural[seed%couriersOnNatural.length];
+    itinerary=naturalTrip(map,trail.id,trail.index,seed,owned);kind='natural';
+   }else itinerary=royalTripPlan;
+  }else if(type==='merchant'){
+   itinerary=pairTrip(allRoads,seed,[castle,...settlements],settlements);
+   if(!itinerary&&parchment){
+    itinerary=settlementNaturalTrip(map,seed,settlements,owned);
+    if(itinerary)kind='natural';
+   }
+  }else if(type==='convoy'){
+   itinerary=ownedNodes.length>=2?royalTrip(map,seed,inside,ownedNodes):null;
+   if(parchment&&(!itinerary||slot%2===1)){
+    const natural=ownedNaturalTrip(map,seed,owned);
+    if(natural){itinerary=natural;kind='natural';}
+   }
+  }else if(type==='builders'){
+   itinerary=pairTrip(inside,seed,[castle],insideSettlements);
+  }else if(type==='patrol'){
+   itinerary=pairTrip(inside,seed,[castle],roadEvents.filter(id=>owned.has(id)));
+  }
+  if(!itinerary?.legs?.length)continue; // No road or destination = no NPC.
+  const speed=(kind==='natural'?.38+(seed%25)/100:.32+(seed%35)/100)*WALK_SPEED_FACTOR;
+  const schedule=travelerSchedule(seed,slot*TYPES.length+TYPES.indexOf(type));
+  walkers.push({id:'walker:'+type+':'+slot,type,kind,start:itinerary.origin,
    ...itinerary,...schedule,seed,speed,
-   // Compatibility with existing route tests, now the first of several legs.
    maxDistance:itinerary.legs[0].distance,
    edge:kind==='royal'?itinerary.legs[0].route[0]?.edge:null});
+  typeCounts[type]++;
  }
  return walkers;
 }
@@ -258,6 +366,6 @@ function visibleTraveler(map,walker,pos,owned){
    ['revealed','in_progress','failed','completed'].includes(cell.status)))return false;
  return !OWNED_ONLY.has(walker.type)||(owned||ownedKeys(map)).has(id);
 }
-export {TYPES,OWNED_ONLY,MAX_TRAVELERS,bezierPoint,entirelyOwned,
+export {TYPES,OWNED_ONLY,MAX_TRAVELERS,territoryTravelerQuota,settlementStops,bezierPoint,entirelyOwned,
  naturalRoadY,nearestNaturalRoad,createTravelers,travelerMotion,travelerPosition,
  visibleTraveler,adjacencyOf,findRoute};

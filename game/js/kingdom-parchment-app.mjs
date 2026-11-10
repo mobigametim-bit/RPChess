@@ -3,7 +3,7 @@
  */
 import {PARCHMENT_TILE,randomAt,terrainAt,pickSprite,hash32} from './kingdom-parchment-core.mjs';
 import {VISUAL} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
-import {drawKingdomBoundary} from './kingdom-map-overlay.mjs?v=20261110-terrain-boundary';
+import {drawKingdomBoundary,drawKingdomRoads} from './kingdom-map-overlay.mjs?v=20261110-natural-road-layer-v4';
 
 const PAPER_TILE_SRC='assets/kingdom-parchment/parchment_tile_256.webp',PAPER_TILE_SIZE=256;
 const spriteCache=new Map();
@@ -286,14 +286,17 @@ function renderParchment(canvas,{seed,view,columns,rows,map,resolution=1}){
  canvas.dataset.parchmentTexture=drawTiledPaper(ctx,left,top,columns,rows,repaint)?'loaded':'loading';
  drawBasePatches(ctx,seed,left,top,columns,rows,repaint);
  drawWaterRoads(ctx,seed,left,top,columns,rows);
- // The ownership edge belongs to the naturally generated road/terrain layer,
- // never to the higher layer of player-completed event roads.
+ // Every paved road (royal, inside the kingdom and completed travel roads)
+ // is on this exact terrain canvas, using the same 0.56 opacity as naturally
+ // generated highways. Decorations may overlap both road kinds equally.
+ canvas.dataset.playerRoadSegments=String(drawKingdomRoads(ctx,{map,view,columns,rows}));
+ canvas.dataset.roadLayer='terrain';
  canvas.dataset.borderSegments=String(drawKingdomBoundary(ctx,{map,view,columns,rows}));
  drawTerrainSymbols(ctx,seed,left,top,columns,rows,repaint);
  drawOptionalNature(ctx,seed,left,top,columns,rows,map,repaint);
  drawFogInk(ctx,seed,left,top,columns,rows,map,repaint);
  // Gameplay fog is rendered separately above hidden site SVGs.
- // Sovereignty is painted here before vegetation. Event roads are separately layered above it.
+ // Sovereignty and both sorts of roads are drawn here before vegetation.
 
 }
 function renderParchmentFog(canvas,{view,columns,rows,map,resolution=1}){
