@@ -16,7 +16,58 @@ function parseTile(id){
  const [x,y]=id.split(',').map(Number);
  return Number.isSafeInteger(x)&&Number.isSafeInteger(y)?{x,y}:null;
 }
-function drawKingdomOverlay(canvas,{map,view,columns,rows}){
+// Drawn on the *terrain* layer in parchment mode, beside the natural roads.
+// Unlike event roads, sovereignty strokes must stay beneath world landmarks.
+function drawKingdomBoundary(ctx,{map,view,columns,rows}){
+ if(!ctx||!map||!view)return 0;
+ const left=view.x-Math.floor(columns/2),top=view.y-Math.floor(rows/2);
+ const owned=new Set([...(map.centralOwnedCells||[]),
+  ...(map.outposts||[]).flatMap(post=>post.cells||[]),
+  ...Object.keys(map.cells||{}).filter(id=>map.cells[id]?.annexed)]);
+ ctx.save();ctx.beginPath();
+ for(const id of Object.keys(map.cells||{})){
+  const p=parseTile(id);
+  if(!p||p.x<left-2||p.x>left+columns+1||p.y<top-2||p.y>top+rows+1)continue;
+  const x=(p.x-left+.5)*TILE,y=(p.y-top+.5)*TILE;
+  ctx.moveTo(x+TILE*.71,y);ctx.arc(x,y,TILE*.71,0,Math.PI*2);
+ }
+ ctx.clip();
+ let borderCount=0;
+ for(const id of owned){
+  const p=parseTile(id);if(!p)continue;
+  if(p.x<left-2||p.x>left+columns+1||p.y<top-2||p.y>top+rows+1)continue;
+  for(const [side,dx,dy,edge] of SIDES){
+   if(owned.has((p.x+dx)+','+(p.y+dy)))continue;
+   const [ax,ay,bx,by]=edge(p.x-left,p.y-top);
+   const x1=ax*TILE,y1=ay*TILE,x2=bx*TILE,y2=by*TILE;
+   const nx=-(y2-y1)/TILE,ny=(x2-x1)/TILE;
+   const hash=hashString(map.seed+':boundary:'+id+':'+side)>>>0;
+   const amplitude=(3+hash%4)*(hash&16?-1:1);
+   ctx.beginPath();ctx.moveTo(x1,y1);
+   ctx.bezierCurveTo(x1+(x2-x1)*.23+nx*amplitude,
+      y1+(y2-y1)*.23+ny*amplitude,
+      x1+(x2-x1)*.72-nx*amplitude*.62,
+      y1+(y2-y1)*.72-ny*amplitude*.62,x2,y2);
+   ctx.lineCap='round';ctx.lineJoin='round';
+   // Saturated blue outer province stroke + luminous white/blue inner dashes.
+   ctx.setLineDash([]);
+   ctx.strokeStyle='rgba(19,58,119,.96)';ctx.lineWidth=10;
+   ctx.shadowColor='rgba(28,115,249,.94)';ctx.shadowBlur=19;ctx.stroke();
+   ctx.shadowBlur=0;
+   ctx.strokeStyle='rgba(37,139,254,.97)';ctx.lineWidth=6;ctx.stroke();
+   ctx.setLineDash([10,6]);ctx.lineDashOffset=0;
+   ctx.strokeStyle='rgba(201,234,255,.96)';ctx.lineWidth=2.1;ctx.stroke();
+   ctx.setLineDash([]);
+
+   borderCount++;
+  }
+ }
+
+ ctx.restore();
+ return borderCount;
+}
+
+function drawKingdomOverlay(canvas,{map,view,columns,rows,drawBorder=true}){
  if(!canvas||!map||!view)return;
  const width=Math.round(columns*TILE),height=Math.round(rows*TILE);
  if(canvas.width!==width)canvas.width=width;
@@ -90,39 +141,10 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows}){
  }
  // The overlay is beneath all site and king art; never cut off the road
  // before its endpoint. Roads physically reach the tile centers.
- let borderCount=0;
- for(const id of owned){
-  const p=parseTile(id);if(!p)continue;
-  if(p.x<left-2||p.x>left+columns+1||p.y<top-2||p.y>top+rows+1)continue;
-  for(const [side,dx,dy,edge] of SIDES){
-   if(owned.has((p.x+dx)+','+(p.y+dy)))continue;
-   const [ax,ay,bx,by]=edge(p.x-left,p.y-top);
-   const x1=ax*TILE,y1=ay*TILE,x2=bx*TILE,y2=by*TILE;
-   const nx=-(y2-y1)/TILE,ny=(x2-x1)/TILE;
-   const hash=hashString(map.seed+':boundary:'+id+':'+side)>>>0;
-   const amplitude=(3+hash%4)*(hash&16?-1:1);
-   ctx.beginPath();ctx.moveTo(x1,y1);
-   ctx.bezierCurveTo(x1+(x2-x1)*.23+nx*amplitude,
-      y1+(y2-y1)*.23+ny*amplitude,
-      x1+(x2-x1)*.72-nx*amplitude*.62,
-      y1+(y2-y1)*.72-ny*amplitude*.62,x2,y2);
-   ctx.lineCap='round';ctx.lineJoin='round';
-   // Saturated blue outer province stroke + luminous white/blue inner dashes.
-   ctx.setLineDash([]);
-   ctx.strokeStyle='rgba(19,58,119,.96)';ctx.lineWidth=10;
-   ctx.shadowColor='rgba(28,115,249,.94)';ctx.shadowBlur=19;ctx.stroke();
-   ctx.shadowBlur=0;
-   ctx.strokeStyle='rgba(37,139,254,.97)';ctx.lineWidth=6;ctx.stroke();
-   ctx.setLineDash([10,6]);ctx.lineDashOffset=0;
-   ctx.strokeStyle='rgba(201,234,255,.96)';ctx.lineWidth=2.1;ctx.stroke();
-   ctx.setLineDash([]);
-
-   borderCount++;
-  }
- }
+ const borderCount=drawBorder?drawKingdomBoundary(ctx,{map,view,columns,rows}):0;
  ctx.restore();
  canvas.dataset.glowingOwnedCells=String(glowCount);
  canvas.dataset.roadSegments=String(roadCount);
  canvas.dataset.borderSegments=String(borderCount);
 }
-export {drawKingdomOverlay};
+export {drawKingdomOverlay,drawKingdomBoundary};
