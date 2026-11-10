@@ -103,6 +103,6 @@ GitHub Actions снова является частью активного deliv
 - минимально достаточные deterministic/build проверки;
 - реальный browser check для затронутого responsive/runtime контракта, когда он необходим;
 - Human Acceptance пользователя, если меняется видимый UI/gameplay;
-- синхронизацию GitHub docs + Notion.
+- обновление применимых документов GitHub (`docs/`, `README.md`, PR) как единственного обязательного источника истины; Notion не требуется и не блокирует merge.
 
 После merge обязателен успешный GitHub Pages production run на новом `main`.
