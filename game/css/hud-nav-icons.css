@@ -153,3 +153,28 @@ html[data-landscape-ui='1'] body.classic-chess-active #app main.classic-screen
   height:38px!important;min-height:38px!important;max-height:38px!important;
  }
 }
+
+/* More-specific Roster button reset: older !important text sizing must not
+   override the approved icon hitboxes or hide their background pictures. */
+body.roster-active .roster-topbar .roster-topbar__actions
+ :is([data-roster-menu],[data-roster-travel],[data-settings]){
+ display:inline-block!important;flex:0 0 auto!important;
+ width:clamp(42px,4.1vw,60px)!important;
+ min-width:clamp(42px,4.1vw,60px)!important;
+ max-width:clamp(42px,4.1vw,60px)!important;
+ height:clamp(42px,4.1vw,60px)!important;
+ min-height:clamp(42px,4.1vw,60px)!important;
+ max-height:clamp(42px,4.1vw,60px)!important;
+ padding:0!important;border:0!important;border-radius:0!important;
+ background:transparent var(--hud-nav-image) center/contain no-repeat!important;
+ box-shadow:none!important;color:transparent!important;
+ font-size:0!important;line-height:0!important;letter-spacing:0!important;
+ overflow:visible!important;white-space:nowrap!important;
+}
+@media(max-height:490px),(max-width:640px){
+ body.roster-active .roster-topbar .roster-topbar__actions
+  :is([data-roster-menu],[data-roster-travel],[data-settings]){
+  width:38px!important;min-width:38px!important;max-width:38px!important;
+  height:38px!important;min-height:38px!important;max-height:38px!important;
+ }
+}

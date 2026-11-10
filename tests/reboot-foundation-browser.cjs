@@ -115,7 +115,7 @@ async function desktopContract(browser) {
         readable:el.textContent.trim()}));
     assert(headerIcon.background.includes('hud-main-menu.png')&&
       headerIcon.fontSize==='0px'&&headerIcon.readable.length>0,
-      'Roster topbar uses castle art but keeps a readable accessible name');
+      'Roster topbar uses castle art but keeps a readable accessible name: '+JSON.stringify(headerIcon));
     const journeyIcon=await page.locator('.roster-topbar__actions [data-roster-travel]')
       .evaluate(el=>({image:getComputedStyle(el).backgroundImage,
         fontSize:getComputedStyle(el).fontSize,aria:el.textContent.trim()}));
