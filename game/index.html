@@ -63,6 +63,7 @@
   <link rel="stylesheet" href="css/tournament-v4.css?v=20261107-portrait-toolbar-1">
   <link rel="stylesheet" href="css/font-goznak.css?v=20261106-goznak-release-1" data-goznak-ui>
   <link rel="stylesheet" href="css/mentor-training.css?v=20261108-king-check-aura-v2">
+  <link rel="stylesheet" href="css/main-menu-approved.css?v=20261110-menu-v1">
 </head>
 <body>
   <div class="game-loading-screen" data-game-loading role="status" aria-live="polite" aria-label="Загрузка игры">
@@ -84,20 +85,20 @@
     }, 22000);
   </script>
   <div id="app">
-    <main class="reboot-menu-screen" data-reboot-foundation aria-label="Главное меню игры Герои Шаха и Мата" data-i18n-aria-label="menu.ariaLabel">
+    <main class="reboot-menu-screen mm-menu-approved" data-reboot-foundation aria-label="Главное меню игры Герои Шаха и Мата" data-i18n-aria-label="menu.ariaLabel">
       <div class="reboot-menu-screen__layout">
         <section class="reboot-menu-screen__main">
-          <img class="reboot-wordmark" data-brand-logo src="generated_assets/logo_ru.png" alt="Герои Шаха и Мата">
-          <div class="reboot-menu-actions" aria-label="Главное меню" data-i18n-aria-label="menu.actionsLabel">
-            <button class="reboot-button reboot-button--primary" type="button" data-new-game data-i18n="menu.newGame">Новое Путешествие</button>
-            <button class="reboot-button reboot-button--primary" type="button" data-continue-run data-i18n="menu.continue" disabled aria-disabled="true">Продолжить</button>
-            <button class="reboot-button reboot-button--primary" type="button" data-arena-open>Арена</button>
-            <button class="reboot-button reboot-button--primary" type="button" data-tournament-open>Турнир</button>
+          <div class="mm-kingdom-stage" data-main-menu-kingdom aria-label="Ваше королевство" hidden></div>
+          <nav class="reboot-menu-actions" aria-label="Главное меню" data-i18n-aria-label="menu.actionsLabel">
+            <button class="mm-menu-icon" type="button" data-new-game data-continue-run aria-label="Путешествие" title="Путешествие"><img src="assets/ui/main-menu-journey.png" alt="" aria-hidden="true"></button>
+            <button class="mm-menu-icon" type="button" data-arena-open aria-label="Арена" title="Арена"><img src="assets/ui/main-menu-arena.png" alt="" aria-hidden="true"></button>
+            <button class="mm-menu-icon" type="button" data-tournament-open aria-label="Турнир" title="Турнир"><img src="assets/ui/main-menu-tournament.png" alt="" aria-hidden="true"></button>
+            <button class="mm-menu-icon" type="button" data-mentor-open aria-label="Наставник" title="Наставник"><img src="assets/ui/main-menu-mentor.png" alt="" aria-hidden="true"></button>
             <div class="reboot-menu-secondary">
-              <button class="reboot-button reboot-button--primary" type="button" data-settings data-i18n="menu.settings">Настройки</button>
-              <button class="reboot-button reboot-button--primary" type="button" data-language data-i18n="menu.language">Язык</button>
+              <button class="mm-menu-icon" type="button" data-settings aria-label="Настройки" title="Настройки"><img src="assets/ui/main-menu-settings.png" alt="" aria-hidden="true"></button>
+              <button class="mm-menu-icon" type="button" data-language aria-label="Язык" title="Язык"><img src="assets/ui/main-menu-language.png" alt="" aria-hidden="true"></button>
             </div>
-          </div>
+          </nav>
         </section>
       </div>
     </main>
@@ -400,7 +401,7 @@
 
   <script type="module" src="js/pwa-install.mjs?v=20261104-2"></script>
   <script type="module" src="js/screen-loading.mjs?v=20261016-1"></script>
-  <script type="module" src="js/reboot-foundation.mjs?v=20261025-simple-pieces-1"></script>
+  <script type="module" src="js/reboot-foundation.mjs?v=20261110-menu-v1"></script>
   <script type="module" src="js/roster-app.mjs?v=20261109-atlas-lab-v7"></script>
   <script type="module" src="js/classic-chess-app.mjs?v=20261108-figure-wording-v2"></script>
   <script type="module" src="js/arena-app.mjs?v=20261108-piece-verdicts-1"></script>

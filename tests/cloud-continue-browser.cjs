@@ -28,12 +28,12 @@ const RUN_KEY='rpchess.reboot.v1.run';
     await phone.goto(url,{waitUntil:'networkidle'});
     const button=phone.locator('[data-continue-run]');
     assert.strictEqual(await phone.evaluate(key=>localStorage.getItem(key),RUN_KEY),null);
-    assert.strictEqual(await button.isDisabled(),true,'Continue starts disabled before cloud restore');
+    assert.strictEqual(await button.isDisabled(),false,'Journey icon always allows starting a new run');
     await phone.evaluate(([key,saved])=>{
       localStorage.setItem(key,saved);
       window.__finishCloudRestore({status:'cloud'});
     },[RUN_KEY,run]);
-    await phone.waitForFunction(()=>!document.querySelector('[data-continue-run]').disabled);
+    await phone.waitForFunction(()=>document.querySelector('[data-continue-run]')?.dataset.journeyActive==='true');
     await button.click();
     await waitForVisible(phone,'[data-roster-screen]:not([hidden])','Roster after cloud restore');
     assert.deepStrictEqual(errors,[]);

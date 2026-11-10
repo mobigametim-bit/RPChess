@@ -234,11 +234,13 @@ function ownedIds(map){
  for(const [id,cell] of Object.entries(map?.cells||{}))if(cell.annexed)ids.add(id);
  return ids;
 }
-function drawFog(ctx,map,left,top,width,height){
- const fog=document.createElement('canvas');fog.width=Math.round(width*PARCHMENT_TILE);
- fog.height=Math.round(height*PARCHMENT_TILE);
+function drawFog(ctx,map,left,top,width,height,resolution=1){
+ const fog=document.createElement('canvas');fog.width=Math.round(width*PARCHMENT_TILE*resolution);
+ fog.height=Math.round(height*PARCHMENT_TILE*resolution);
  const f=fog.getContext('2d');if(!f)return;
- f.fillStyle='rgba(41,40,37,'+VISUAL.fogOpacity+')';f.fillRect(0,0,fog.width,fog.height);
+ f.setTransform(resolution,0,0,resolution,0,0);
+ f.fillStyle='rgba(41,40,37,'+VISUAL.fogOpacity+')';
+ f.fillRect(0,0,width*PARCHMENT_TILE,height*PARCHMENT_TILE);
  f.globalCompositeOperation='destination-out';
  const cells=map?.cells||{};
  for(const id of Object.keys(cells)){
@@ -262,9 +264,9 @@ function drawFog(ctx,map,left,top,width,height){
   f.fillRect((x-left)*PARCHMENT_TILE,(y-top)*PARCHMENT_TILE,PARCHMENT_TILE,PARCHMENT_TILE);
  }
  f.globalCompositeOperation='source-over';
- ctx.drawImage(fog,0,0);
+ ctx.drawImage(fog,0,0,width*PARCHMENT_TILE,height*PARCHMENT_TILE);
 }
-function renderParchment(canvas,{seed,view,columns,rows,map}){
+function renderParchment(canvas,{seed,view,columns,rows,map,resolution=1}){
  if(!canvas)return;
  probeArt();
  requestExtraManifest();
@@ -273,11 +275,12 @@ function renderParchment(canvas,{seed,view,columns,rows,map}){
  canvas.dataset.parchmentArt=assetsReady===true?'loaded':
   assetsReady===false?'missing':'loading';
  const width=columns*PARCHMENT_TILE,height=rows*PARCHMENT_TILE;
- if(canvas.width!==width)canvas.width=width;
- if(canvas.height!==height)canvas.height=height;
+ if(canvas.width!==Math.round(width*resolution))canvas.width=Math.round(width*resolution);
+ if(canvas.height!==Math.round(height*resolution))canvas.height=Math.round(height*resolution);
  const ctx=canvas.getContext('2d');if(!ctx)return;
+ ctx.setTransform(resolution,0,0,resolution,0,0);
  const left=view.x-Math.floor(columns/2),top=view.y-Math.floor(rows/2);
- latest=()=>{if(canvas.isConnected)renderParchment(canvas,{seed,view,columns,rows,map});};
+ latest=()=>{if(canvas.isConnected)renderParchment(canvas,{seed,view,columns,rows,map,resolution});};
  ctx.clearRect(0,0,width,height);
  const repaint=()=>{if(canvas.isConnected)latest?.();};
  canvas.dataset.parchmentTexture=drawTiledPaper(ctx,left,top,columns,rows,repaint)?'loaded':'loading';
@@ -293,13 +296,14 @@ function renderParchment(canvas,{seed,view,columns,rows,map}){
  // Sovereignty is painted here before vegetation. Event roads are separately layered above it.
 
 }
-function renderParchmentFog(canvas,{view,columns,rows,map}){
+function renderParchmentFog(canvas,{view,columns,rows,map,resolution=1}){
  if(!canvas||!view||!map)return;
  const width=columns*PARCHMENT_TILE,height=rows*PARCHMENT_TILE;
- if(canvas.width!==width)canvas.width=width;
- if(canvas.height!==height)canvas.height=height;
+ if(canvas.width!==Math.round(width*resolution))canvas.width=Math.round(width*resolution);
+ if(canvas.height!==Math.round(height*resolution))canvas.height=Math.round(height*resolution);
  const ctx=canvas.getContext('2d');if(!ctx)return;
+ ctx.setTransform(resolution,0,0,resolution,0,0);
  ctx.clearRect(0,0,width,height);
- drawFog(ctx,map,view.x-Math.floor(columns/2),view.y-Math.floor(rows/2),columns,rows);
+ drawFog(ctx,map,view.x-Math.floor(columns/2),view.y-Math.floor(rows/2),columns,rows,resolution);
 }
 export {renderParchment,renderParchmentFog,drawWaterRoads};

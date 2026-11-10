@@ -47,7 +47,12 @@ async function desktopContract(browser) {
     await clearState(page);
     const menu = await waitForVisible(page, '[data-reboot-foundation]:not([hidden])', 'Desktop main menu');
     assert.strictEqual(await menu.locator('[data-new-game]').count(), 1);
-    assert.strictEqual(await menu.locator('[data-continue-run]').isDisabled(), true);
+    assert.strictEqual(await menu.locator('[data-continue-run]').isDisabled(), false, 'Journey always starts or resumes');
+    assert.strictEqual(await menu.locator('[data-new-game][data-continue-run]').count(), 1);
+    assert.strictEqual(await menu.locator('.mm-menu-icon').count(), 6);
+    assert.strictEqual(await menu.locator('.mm-menu-icon img').count(), 6);
+    assert.strictEqual(await menu.locator('.reboot-wordmark').count(), 0);
+    assert.strictEqual(await menu.locator('[data-main-menu-kingdom]').isHidden(), true);
     assert.strictEqual(await menu.locator('[data-settings]').count(), 1);
     assert.strictEqual(await menu.locator('[data-language]').count(), 1);
     await assertDocumentFits(page, 'desktop menu');
@@ -64,8 +69,9 @@ async function desktopContract(browser) {
     await assertInsideViewport(language.locator('.reboot-modal__panel'), 'desktop Language frame');
     await language.locator('[data-language-option="en"]').click();
     await page.waitForFunction(() => document.documentElement.lang === 'en');
-    assert.strictEqual(await menu.locator('[data-new-game]').textContent(), 'New Journey');
-    assert.strictEqual(await menu.locator('[data-settings]').textContent(), 'Settings');
+    assert.strictEqual(await menu.locator('[data-new-game]').getAttribute('aria-label'), 'Journey');
+    assert.strictEqual(await menu.locator('.reboot-menu-actions [data-settings]').getAttribute('aria-label'), 'Settings');
+    assert.strictEqual((await menu.locator('[data-new-game]').textContent()).trim(),'', 'Icons have no captions');
     assert.strictEqual(await page.evaluate(() => performance.getEntriesByType('navigation').length), navigationCount, 'language switch must not reload');
     assert.strictEqual(await page.evaluate((key)=>localStorage.getItem(key), RUN_KEY), null, 'language switch must not create run state');
     await language.locator('[data-close-modal].reboot-language-back').click();

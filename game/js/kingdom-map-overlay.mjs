@@ -70,12 +70,13 @@ function drawKingdomBoundary(ctx,{map,view,columns,rows}){
  return borderCount;
 }
 
-function drawKingdomOverlay(canvas,{map,view,columns,rows,drawBorder=true}){
+function drawKingdomOverlay(canvas,{map,view,columns,rows,drawBorder=true,resolution=1}){
  if(!canvas||!map||!view)return;
  const width=Math.round(columns*TILE),height=Math.round(rows*TILE);
- if(canvas.width!==width)canvas.width=width;
- if(canvas.height!==height)canvas.height=height;
+ if(canvas.width!==Math.round(width*resolution))canvas.width=Math.round(width*resolution);
+ if(canvas.height!==Math.round(height*resolution))canvas.height=Math.round(height*resolution);
  const ctx=canvas.getContext('2d');if(!ctx)return;
+ ctx.setTransform(resolution,0,0,resolution,0,0);
  ctx.clearRect(0,0,width,height);
  const left=view.x-Math.floor(columns/2),top=view.y-Math.floor(rows/2);
  const cells=map.cells||{};

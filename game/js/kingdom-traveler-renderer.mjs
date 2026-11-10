@@ -17,26 +17,27 @@ function loadAtlas(){
  }).catch(()=>{loading=null;return null;});
  return loading;
 }
-function stopTravelers(){
- if(!active)return;
+function stopTravelers(canvas=null){
+ if(!active||canvas&&active.canvas!==canvas)return;
  active.cancelled=true;
  if(active.frame!==null)cancelAnimationFrame(active.frame);
  active=null;
 }
-function animateTravelers(canvas,{map,view,columns,rows,parchment=true}){
+function animateTravelers(canvas,{map,view,columns,rows,parchment=true,resolution=1}){
  stopTravelers();
  if(!canvas||!map||!view)return;
  const width=columns*PARCHMENT_TILE,height=rows*PARCHMENT_TILE;
- if(canvas.width!==width)canvas.width=width;
- if(canvas.height!==height)canvas.height=height;
+ if(canvas.width!==Math.round(width*resolution))canvas.width=Math.round(width*resolution);
+ if(canvas.height!==Math.round(height*resolution))canvas.height=Math.round(height*resolution);
  const ctx=canvas.getContext('2d');
  if(!ctx)return;
+ ctx.setTransform(resolution,0,0,resolution,0,0);
  ctx.clearRect(0,0,width,height);
  const walkers=createTravelers(map,{parchment});
  canvas.dataset.walkerCount=String(walkers.length);
  canvas.dataset.decorativeOnly='true';
  canvas.dataset.atlasStatus='loading';
- const controller={cancelled:false,frame:null};
+ const controller={cancelled:false,frame:null,canvas};
  active=controller;
  if(!walkers.length){canvas.dataset.atlasStatus='idle';return;}
  const left=view.x-Math.floor(columns/2),top=view.y-Math.floor(rows/2);

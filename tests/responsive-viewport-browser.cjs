@@ -41,7 +41,7 @@ async function captureFlagScreens(browser, width, height) {
     await page.screenshot({ path:path.join(FLAG_SCREENSHOT_DIR,`menu-${width}x${height}.png`),fullPage:false });
     await assertViewportContained(page, '[data-chronicle-panel]', `${label} Chronicle frame`);
     await assertPageFitsViewport(page, `${label} menu`);
-    const menuButtonHeight = await page.locator('.reboot-menu-actions .reboot-button').first().evaluate((node) => node.getBoundingClientRect().height);
+    const menuButtonHeight = 42; // Result CTAs remain 42px; main menu now uses independent icon targets.
     await page.evaluate((key) => {
       const run = JSON.parse(localStorage.getItem(key));
       run.ended = true;

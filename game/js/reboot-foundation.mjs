@@ -94,6 +94,11 @@ const identityReady = cloudReady
   });
 globalThis.RPChessIdentityReady = identityReady;
 
+// The read-only map attaches after the authoritative cloud-state reconciliation.
+cloudReady.then(()=>import('./kingdom-menu-preview.mjs?v=20261110-menu-v1'))
+  .then(module=>module.install())
+  .catch(error=>console.error('[RPChess] Main-menu kingdom preview failed',error));
+
 // Route/content modules wait for the ad gate registration. Once Starvation exists, monetization
 // replaces only the public starvation entry point with the optional rewarded-rescue gate.
 const routeReady = Promise.all([cloudReady, monetizationReady])
@@ -210,23 +215,45 @@ subscribe((language) => {
   syncLanguageUi();
 });
 
-function activateAudio() { audio.activate(); }
+function updateMainMenuIconLabels(){
+  const en=currentLanguage()==='en';
+  const labels={
+    journey:en?'Journey':'Путешествие',arena:en?'Arena':'Арена',
+    tournament:en?'Tournament':'Турнир',mentor:en?'Mentor training':'Наставник',
+    settings:t('menu.settings'),language:t('menu.language')
+  };
+  for(const [role,selector] of Object.entries({
+    journey:'[data-new-game][data-continue-run]',arena:'[data-arena-open]',
+    tournament:'[data-tournament-open]',mentor:'[data-mentor-open]',
+    settings:'.reboot-menu-actions [data-settings]',language:'.reboot-menu-actions [data-language]'
+  })){
+    const element=document.querySelector('.mm-menu-approved '+selector);
+    if(!element)continue;
+    element.setAttribute('aria-label',labels[role]);
+    element.title=labels[role];
+  }
+}
+updateMainMenuIconLabels();
+subscribe(updateMainMenuIconLabels);
+function activateAudio() { audio.activate();
 document.addEventListener('pointerdown', activateAudio, { once: true, capture: true });
 document.addEventListener('keydown', activateAudio, { once: true, capture: true });
 
-document.querySelector('[data-new-game]')?.addEventListener('click', async () => {
+// One Journey icon starts a new run or resumes the saved journey.
+document.querySelector('[data-new-game][data-continue-run]')?.addEventListener('click', async () => {
   audio.click();
+  await cloudReady;
+  const {readRun}=await import('./run-persistence.mjs');
+  const run=readRun();
+  if(run&&!run.ended){
+    globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue'));
+    return;
+  }
   const onboarding = await onboardingReady;
   onboarding?.activateOnboarding?.();
   const identity = await identityReady;
   identity?.openIdentityPrompt?.();
   onboarding?.showHint?.('identity');
-});
-
-document.querySelector('[data-continue-run]')?.addEventListener('click', (event) => {
-  if (event.currentTarget.disabled) return;
-  audio.click();
-  globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue'));
 });
 
 document.querySelectorAll('[data-settings]').forEach((button) => {

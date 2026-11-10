@@ -63,8 +63,10 @@ function updateContinueState() {
   activeRun = readRun();
   if (!continueButton) return;
   const enabled = Boolean(activeRun && !activeRun.ended);
-  continueButton.disabled = !enabled;
-  continueButton.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+  // The Journey icon is always enabled: new run or resume from the same control.
+  continueButton.disabled = false;
+  continueButton.setAttribute('aria-disabled','false');
+  continueButton.dataset.journeyActive = enabled ? 'true' : 'false';
 }
 
 function updateJourneyLabel() {
