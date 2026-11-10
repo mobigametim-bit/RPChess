@@ -17,6 +17,7 @@ class MemoryStorage {
   const data = await import(pathToFileURL(path.join(game, 'js/roster-data.mjs')).href);
   const persistence = await import(pathToFileURL(path.join(game, 'js/run-persistence.mjs')).href);
   const roster = data.createStarterRoster();
+  assert(fs.readFileSync(path.join(game,'js/roster-app.mjs'),'utf8').includes("currentLanguage()==='en'?'Heroes':'Герои'"),'Roster named-hero tab uses the approved concise RU/EN label');
   const armyCore = await import(pathToFileURL(path.join(game,'js/kingdom-army-core.mjs')).href);
   const initialArmyRun={gold:30,kingdomMap:{castle:{raceTag:'orcs'}},army:[]};
   const bought=armyCore.buyCastleRecruit(initialArmyRun,{raceTag:'orcs',pieceType:'pawn',receiptId:'roster-test:1'});
