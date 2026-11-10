@@ -53,43 +53,163 @@ function nearestNode(id,nodes){
  }
  return best;
 }
-function synchronizeRoyalRoads(map){
- if(!map?.castle||!map.cells)return map;
- const nodes=eligibleRoadNodes(map),castle=map.castle.x+','+map.castle.y;
- // A legacy save may have painted completedRoads without royalRoads yet.
- // Keep those exact old curves on first migration instead of erasing them.
- const previous=Array.isArray(map.royalRoads)?map.royalRoads:(map.completedRoads||[]);
- const edges=new Map();
- for(const old of previous){
-  if(!point(old?.from)||!point(old?.to)||old.from===old.to)continue;
-  const fixed=edge(map,old.from,old.to);
-  if(fixed)edges.set(pairKey(fixed.from,fixed.to),{
-   ...fixed,bend:Number.isFinite(old.bend)?old.bend:fixed.bend
-  });
- }
+
+// v2: a road is a canonical undirected edge between adjacent cardinal cells.
+// A tile already on the network never gets an overlaid second road.
+const DIRECTIONS=Object.freeze([['n',0,-1],['e',1,0],['s',0,1],['w',-1,0]]);
+const tileId=(x,y)=>x+','+y;
+const cardinalEdge=(a,b)=>{
+ const p=point(a),q=point(b);
+ if(!p||!q||Math.abs(p.x-q.x)+Math.abs(p.y-q.y)!==1)return null;
+ const ids=[a,b].sort(lex);
+ return {id:'royal:'+ids.join(':'),from:ids[0],to:ids[1],bend:0};
+};
+function castleSector(castle,id){
+ const a=point(castle),b=point(id);
+ if(!a||!b||a.x===b.x&&a.y===b.y)return null;
+ const dx=b.x-a.x,dy=b.y-a.y;
+ return Math.abs(dx)>Math.abs(dy)?(dx>0?'e':'w'):(dy>0?'s':'n');
+}
+function castleSpokes(castle,nodes){
+ const choices=new Map(),cp=point(castle);
  for(const id of nodes){
-  for(const other of [castle,nearestNode(id,nodes)]){
-   if(!other)continue;
-   const key=pairKey(id,other);
-   if(!edges.has(key))edges.set(key,edge(map,id,other));
+  const sector=castleSector(castle,id),p=point(id);
+  if(!sector||!p)continue;
+  const dist=(p.x-cp.x)**2+(p.y-cp.y)**2,prev=choices.get(sector);
+  if(!prev||dist<prev.dist||dist===prev.dist&&lex(id,prev.id)<0)
+   choices.set(sector,{id,dist});
+ }
+ return DIRECTIONS.filter(d=>choices.has(d[0]))
+  .map(d=>({direction:d[0],id:choices.get(d[0]).id}));
+}
+function addPath(edges,path){
+ for(let i=1;i<path.length;i++){
+  const e=cardinalEdge(path[i-1],path[i]);
+  if(e)edges.set(pairKey(e.from,e.to),e);
+ }
+}
+function cmp(a,b){return a.cost-b.cost||a.steps-b.steps||lex(a.id,b.id);}
+function push(heap,item){
+ let i=heap.length;heap.push(item);
+ while(i>0){const p=(i-1)>>1;if(cmp(heap[p],item)<=0)break;
+  heap[i]=heap[p];i=p;
+ }heap[i]=item;
+}
+function pop(heap){
+ if(!heap.length)return null;
+ const head=heap[0],tail=heap.pop();
+ if(heap.length){
+  let i=0;
+  while(true){
+   const l=i*2+1,r=l+1;
+   if(l>=heap.length)break;
+   const k=r<heap.length&&cmp(heap[r],heap[l])<0?r:l;
+   if(cmp(tail,heap[k])<=0)break;
+   heap[i]=heap[k];i=k;
+  }
+  heap[i]=tail;
+ }
+ return head;
+}
+// Bounded cardinal Dijkstra favors existing road tiles, then owned territory.
+// No diagonal links or duplicated physical segments can be produced.
+function routeTo(start,goals,{edges,owned,forcedFirst=null,margin=5,maxVisited=35000}){
+ const targets=new Set(goals);
+ if(!point(start)||!targets.size)return null;
+ if(targets.has(start)&&!forcedFirst)return [start];
+ const ends=[point(start),...[...targets].map(point)].filter(Boolean);
+ const xs=ends.map(p=>p.x),ys=ends.map(p=>p.y);
+ const minx=Math.min(...xs)-margin,maxx=Math.max(...xs)+margin;
+ const miny=Math.min(...ys)-margin,maxy=Math.max(...ys)+margin;
+ let initial=start,initialCost=0,prefix=[],excluded=null;
+ if(forcedFirst){
+  const d=DIRECTIONS.find(d=>d[0]===forcedFirst);
+  if(!d)return null;
+  const a=point(start);
+  initial=tileId(a.x+d[1],a.y+d[2]);
+  prefix=[start];excluded=start; // Never return through Castle and open a second exit.
+  initialCost=1+(owned.has(initial)?0:2.5);
+ }
+ const heap=[],best=new Map([[initial,{cost:initialCost,steps:0,prev:null}]]);
+ push(heap,{id:initial,cost:initialCost,steps:0});
+ let found=null,visits=0;
+ while(heap.length&&visits++<maxVisited){
+  const cur=pop(heap),stored=best.get(cur.id);
+  if(!stored||cur.cost!==stored.cost||cur.steps!==stored.steps)continue;
+  if(targets.has(cur.id)){found=cur.id;break;}
+  const p=point(cur.id);
+  for(const [,dx,dy] of DIRECTIONS){
+   const next=tileId(p.x+dx,p.y+dy),q=point(next);
+   if(next===excluded||q.x<minx||q.x>maxx||q.y<miny||q.y>maxy)continue;
+   const cost=cur.cost+(edges.has(pairKey(cur.id,next))?.05:1)+(owned.has(next)?0:2.5);
+   const steps=cur.steps+1,prior=best.get(next);
+   if(prior&&(prior.cost<cost-1e-8||
+      Math.abs(prior.cost-cost)<1e-8&&
+      (prior.steps<steps||prior.steps===steps&&lex(prior.prev,cur.id)<=0)))continue;
+   best.set(next,{cost,steps,prev:cur.id});
+   push(heap,{id:next,cost,steps});
   }
  }
- const next=[...edges.values()].sort((a,b)=>lex(a.id,b.id));
- if(previous.length===next.length&&previous.every((r,i)=>
-   r.id===next[i].id&&r.from===next[i].from&&r.to===next[i].to&&r.bend===next[i].bend))return map;
- return {...map,royalRoads:next};
+ if(!found)return null;
+ const path=[found];
+ while(path[0]!==initial){
+  const prior=best.get(path[0])?.prev;if(!prior)return null;
+  path.unshift(prior);
+ }
+ return [...prefix,...path];
+}
+function generateRoads(map,nodes,castle){
+ const owned=ownedKeys(map),edges=new Map(),used=new Set([castle]);
+ for(const {direction,id} of castleSpokes(castle,nodes)){
+  const route=routeTo(castle,[id],{edges,owned,forcedFirst:direction});
+  if(!route)continue;
+  addPath(edges,route);route.forEach(cell=>used.add(cell));
+ }
+ const cp=point(castle);
+ const remain=nodes.filter(id=>!used.has(id)).sort((a,b)=>{
+  const p=point(a),q=point(b);
+  return ((p.x-cp.x)**2+(p.y-cp.y)**2)-((q.x-cp.x)**2+(q.y-cp.y)**2)||lex(a,b);
+ });
+ for(const id of remain){
+  const p=point(id);
+  const nearby=[...used].filter(u=>u!==castle).sort((a,b)=>{
+   const x=point(a),y=point(b);
+   return Math.abs(x.x-p.x)+Math.abs(x.y-p.y)-
+          Math.abs(y.x-p.x)-Math.abs(y.y-p.y)||lex(a,b);
+  }).slice(0,32);
+  // If the event sits directly on a junction, no additional paving.
+  if(!nearby.length)nearby.push(castle);
+  const route=routeTo(id,nearby,{edges,owned});
+  if(route){addPath(edges,route);route.forEach(cell=>used.add(cell));}
+ }
+ return [...edges.values()].sort((a,b)=>lex(a.id,b.id));
+}
+function synchronizeRoyalRoads(map){
+ if(!map?.castle||!map.cells)return map;
+ const castle=tileId(map.castle.x,map.castle.y),owned=ownedKeys(map);
+ const events=eligibleRoadNodes(map);
+ const extras=(map.outpostRoads||[]).flatMap(r=>[r?.from,r?.to])
+  .filter(id=>point(id)&&id!==castle&&owned.has(id)&&map.cells?.[id]);
+ const nodes=[...new Set([...events,...extras])].sort(lex);
+ const signature=JSON.stringify({castle,owned:[...owned].sort(lex),nodes});
+ if(map.royalRoadsVersion===2&&map.royalRoadsSignature===signature&&
+    Array.isArray(map.royalRoads))return map;
+ const royalRoads=generateRoads(map,nodes,castle);
+ return {...map,royalRoadsVersion:2,royalRoadsSignature:signature,royalRoads};
 }
 function visibleRoyalRoads(map){
  if(!map)return [];
- const authoritative=Array.isArray(map.royalRoads)?map.royalRoads:
-  synchronizeRoyalRoads(map).royalRoads||[];
- const found=new Set(),roads=[];
- for(const road of [...authoritative,...(map.outpostRoads||[])]){
-  if(!point(road?.from)||!point(road?.to)||!Number.isFinite(road?.bend))continue;
-  const key=pairKey(road.from,road.to);
-  if(found.has(key))continue;
-  found.add(key);roads.push(road);
+ const current=map.royalRoadsVersion===2?map:synchronizeRoyalRoads(map);
+ // Legacy completedRoads/outpostRoads remain in saves but are not painted
+ // over the v2 network, preventing repeated lines at crossings.
+ const seen=new Set(),result=[];
+ for(const r of current.royalRoads||[]){
+  if(!cardinalEdge(r?.from,r?.to))continue;
+  const key=pairKey(r.from,r.to);
+  if(seen.has(key))continue;
+  seen.add(key);result.push(r);
  }
- return roads;
+ return result;
 }
-export {eligibleRoadNodes,nearestNode,synchronizeRoyalRoads,visibleRoyalRoads,pairKey};
+export {eligibleRoadNodes,nearestNode,castleSector,castleSpokes,ownedKeys,
+ cardinalEdge,routeTo,generateRoads,synchronizeRoyalRoads,visibleRoyalRoads,pairKey};
