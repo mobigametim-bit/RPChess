@@ -2,7 +2,7 @@
 import {readRun,writeRun} from './run-persistence.mjs';
 import {readPlayerRating} from './player-rating.mjs';
 import {commanderPieceArt,commanderById} from './commander-portraits.mjs';
-import {raceBoardTiles,hashString,RACE_TAGS} from './race-assets.mjs';
+import {raceBoardTiles,boardRacePiecePath,hashString,RACE_TAGS} from './race-assets.mjs';
 import {difficultyForStars,starsText} from './encounter-difficulty.mjs';
 import {TRAVEL_SUPPLY_COST,combatGoldReward,applyTravelSupplyCost} from './resources-core.mjs';
 import {puzzleBaseGold} from './puzzles/puzzle-core.mjs';
@@ -291,11 +291,19 @@ function castleCard(map){
  for(const type of PIECE_TYPES){
   const price=DEFAULT_KINGDOM_ECONOMY.castle.recruitGold[type];
   const row=document.createElement('div');row.className='km-castle-recruit';
-  const name=document.createElement('span');name.textContent=lang()==='en'?({pawn:'Pawn',knight:'Knight',bishop:'Bishop',rook:'Rook',queen:'Queen'}[type]):PIECE_LABELS[type];
+  const label=lang()==='en'?({pawn:'Pawn',knight:'Knight',bishop:'Bishop',rook:'Rook',queen:'Queen'}[type]):PIECE_LABELS[type];
+  const piece=document.createElement('img');piece.className='km-castle-recruit__piece';
+  piece.src=boardRacePiecePath(race,type,'w');piece.alt=label;piece.title=label;
+  piece.loading='lazy';piece.decoding='async';
   const buy=document.createElement('button');buy.type='button';buy.dataset.kingdomCastleHire=type;
-  buy.disabled=gold<price;
-  buy.textContent=(lang()==='en'?'Hire':'Нанять')+' · '+price+' '+(lang()==='en'?'gold':'зол.');
-  row.append(name,buy);recruitment.append(row);
+  buy.disabled=gold<price;buy.setAttribute('aria-disabled',String(buy.disabled));
+  buy.setAttribute('aria-label',(lang()==='en'?'Hire ':'Нанять ')+label+' · '+price+' '+(lang()==='en'?'gold':'золота'));
+  const action=document.createElement('span');action.textContent=lang()==='en'?'Hire':'Нанять';
+  const amount=document.createElement('strong');amount.textContent=String(price);
+  const coin=document.createElement('img');coin.className='km-castle-recruit__gold';coin.src=GOLD_ICON;
+  coin.alt='';coin.setAttribute('aria-hidden','true');coin.decoding='async';
+  buy.append(action,amount,coin);
+  row.append(piece,buy);recruitment.append(row);
  }
  details.append(recruitment);visual.append(icon);card.append(visual,details);return card;
 }
@@ -365,7 +373,7 @@ function report(text){const node=screen?.querySelector('[data-kingdom-toast]');i
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261109-kingdom-feedback1';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261110-recruit-controls';link.dataset.kingdomStyle='';
  link.addEventListener('load',()=>{if(screen&&!screen.hidden)render();});
  document.head.append(link);
 }
@@ -599,6 +607,7 @@ function render(){
  screen.querySelector('[data-kingdom-points]').textContent=Math.max(0,(map.centralOwnedCells||[]).length-1)+'/'+territoryCapacity(map);
  screen.querySelector('[data-kingdom-shards]').textContent=String(honorShards());
  const cells=document.createDocumentFragment(),productions=document.createDocumentFragment();
+ const tileUrls=new Map(); // Reuse resolved CSS URLs across the visible grid.
  const outpostCenters=new Set((map.outposts||[]).map(post=>post.id));
  for(let row=-CENTER_Y;row<HEIGHT-CENTER_Y;row++)
   for(let col=-CENTER_X;col<WIDTH-CENTER_X;col++){
@@ -628,7 +637,8 @@ function render(){
     // CSS custom properties with relative url(...) resolve from the CSS file
     // (/css/), not the document (/). Resolve the runtime asset against the
     // document base explicitly so preview root and GitHub Pages /RPChess/ work.
-    btn.style.backgroundImage='url("'+new URL(tile,document.baseURI).href+'")';
+    let tileUrl=tileUrls.get(tile);if(!tileUrl){tileUrl=new URL(tile,document.baseURI).href;tileUrls.set(tile,tileUrl);}
+    btn.style.backgroundImage='url("'+tileUrl+'")';
    }
    btn.setAttribute('aria-label',isCastle?tr('castle'):visible&&cell?.selectedEncounter?
     t('travel.type.'+cell.selectedEncounter.type):cell?.type==='empty'?tr('empty'):tr('hidden'));
@@ -786,14 +796,16 @@ function render(){
  const goldImage=document.createElement('img');goldImage.src=GOLD_ICON;goldImage.alt='';
  goldImage.style.cssText='height:20px;width:20px;object-fit:contain;vertical-align:middle';
  settlementBuild.append(goldImage,document.createTextNode(' + '+costs.shards+' '),shardIcon());
- settlementBuild.disabled=(run.gold||0)<costs.gold||honorShards()<costs.shards;
+ settlementBuild.disabled=!canPlaceSettlement||(run.gold||0)<costs.gold||honorShards()<costs.shards;
+ settlementBuild.setAttribute('aria-disabled',String(settlementBuild.disabled));
  settlementBuild.title=settlementBuild.disabled?(lang()==='en'?'Not enough resources':'Недостаточно ресурсов'):
   lang()==='en'?(ownSettlement?'Inside your kingdom':'Outside your kingdom'):(ownSettlement?'Внутри владений':'Вне владений');
  const buildable=Boolean(selectedPoint&&canBuildOutpost(map,selectedPoint));
  const needsShards=honorShards()<KINGDOM_OUTPOST_SHARD_COST;
  outpost.hidden=!buildable;
  outpost.replaceChildren(document.createTextNode(tr('buildOutpost')+' · '+KINGDOM_OUTPOST_SHARD_COST+' '),shardIcon());
- outpost.disabled=needsShards;
+ outpost.disabled=!buildable||needsShards;
+ outpost.setAttribute('aria-disabled',String(outpost.disabled));
  outpost.title=needsShards?tr('outpostNeed'):tr('buildOutpost');
  earn.hidden=!buildable||!needsShards;
  earn.replaceChildren(document.createTextNode(tr('earn')+' '),shardIcon(),
@@ -874,6 +886,39 @@ function settlementPrice(owned){
  const b=DEFAULT_KINGDOM_ECONOMY.building;
  return owned?{gold:b.settlementOwnedGold,shards:b.settlementOwnedShards}:
   {gold:b.settlementForeignGold,shards:b.settlementForeignShards};
+}
+// Resource changes need not rebuild the grid, SVG/canvas layers or inspector cards.
+function refreshEconomyControls(){
+ if(!screen||screen.hidden)return;
+ const run=readRun(),map=run?.kingdomMap;if(!run||!map)return;
+ const gold=Math.max(0,Number(run.gold)||0),shards=honorShards();
+ const goldHud=screen.querySelector('[data-kingdom-gold]'),shardHud=screen.querySelector('[data-kingdom-shards]');
+ if(goldHud)goldHud.textContent=String(gold);
+ if(shardHud)shardHud.textContent=String(shards);
+ for(const button of screen.querySelectorAll('[data-kingdom-castle-hire]')){
+  const price=DEFAULT_KINGDOM_ECONOMY.castle.recruitGold[button.dataset.kingdomCastleHire];
+  button.disabled=!Number.isSafeInteger(price)||gold<price;
+  button.setAttribute('aria-disabled',String(button.disabled));
+ }
+ const target=screen.querySelector('[data-kingdom-build-settlement]');
+ const outpost=screen.querySelector('[data-kingdom-outpost]');
+ const earn=screen.querySelector('[data-kingdom-earn-shards]');
+ const point=parsePoint(selected||keyOf(map.king.x,map.king.y));
+ if(target){
+  const place=Boolean(point&&canBuildSettlement(map,point));
+  const owned=Boolean(point&&isOwned(map,point)),price=settlementPrice(owned);
+  target.disabled=!place||gold<price.gold||shards<price.shards;
+  target.setAttribute('aria-disabled',String(target.disabled));
+  target.title=target.disabled?(lang()==='en'?'Not enough resources':'Недостаточно ресурсов'):
+   (lang()==='en'?(owned?'Inside your kingdom':'Outside your kingdom'):(owned?'Внутри владений':'Вне владений'));
+ }
+ if(outpost){
+  const place=Boolean(point&&canBuildOutpost(map,point)),needs=shards<KINGDOM_OUTPOST_SHARD_COST;
+  outpost.disabled=!place||needs;
+  outpost.setAttribute('aria-disabled',String(outpost.disabled));
+  outpost.title=needs?tr('outpostNeed'):tr('buildOutpost');
+  if(earn)earn.hidden=!place||!needs;
+ }
 }
 function constructSettlement(){
  const run=readRun(),map=run?.kingdomMap,point=parsePoint(selected);
@@ -1035,7 +1080,8 @@ function syncPower(){
 }
 addEventListener('resize',()=>{if(screen&&!screen.hidden)render();});
 addEventListener('rpchess:power-updated',syncPower);
-addEventListener('rpchess:arena-updated',()=>{if(screen&&!screen.hidden)render();});
+addEventListener('rpchess:arena-updated',refreshEconomyControls);
+addEventListener('rpchess:run-updated',refreshEconomyControls);
 addEventListener('rpchess:scene-changed',e=>{if(e.detail?.scene==='menu'||e.detail?.scene==='roster')hideMap();});
 subscribe(()=>{if(screen&&!screen.hidden)render();});
 globalThis.RPChessKingdomMap=Object.freeze({open:openMap,hide:hideMap,get map(){return readRun()?.kingdomMap||null;},get zoom(){return zoomPx;}});
