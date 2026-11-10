@@ -351,6 +351,39 @@ async function assertTileImage(page,cellId){
   });
   for(const sprite of artProbe)assert.equal(sprite.status===200&&sprite.decoded,true,
     'artist SVG must be shipped and decoded at 128px: '+sprite.file);
+  // The six artist-repaired road-event sprites must remain actual vectors
+  // with the author's transparent margins, not raster images or opaque tiles.
+  const correctedSprites=[
+    'goblins/goblins_castle_128.svg',
+    'fae/fae_event_128.svg',
+    'fae/fae_skirmish_128.svg',
+    'fae/fae_battle_128.svg',
+    'animals/animals_castle_128.svg',
+    'dragonborn/dragonborn_castle_128.svg'
+  ];
+  const correctedResults=await page.evaluate(async files=>Promise.all(files.map(async file=>{
+    const src='assets/kingdom-map/'+file;
+    const response=await fetch(src,{cache:'no-store'});
+    const markup=response.ok?await response.text():'';
+    const img=new Image();img.src=src;
+    try{await img.decode();}catch{return {file,ok:false,reason:'SVG decode failed'};}
+    const canvas=document.createElement('canvas');
+    canvas.width=128;canvas.height=128;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    ctx.drawImage(img,0,0,128,128);
+    const pixels=ctx.getImageData(0,0,128,128).data;
+    let visible=0;
+    for(let i=3;i<pixels.length;i+=4)if(pixels[i]>40)visible++;
+    const cornerAlpha=pixels[3];
+    return {file,ok:response.ok&&
+      (response.headers.get('content-type')||'').includes('image/svg+xml')&&
+      markup.includes('<path')&&markup.includes('id="corrected-alpha"')&&
+      !markup.includes('<image')&&img.naturalWidth===128&&img.naturalHeight===128&&
+      cornerAlpha===0&&visible>150,
+      visible,cornerAlpha,bytes:markup.length};
+  })),correctedSprites);
+  for(const sprite of correctedResults)
+    assert(sprite.ok,'Corrected vector sprite must decode with real alpha: '+JSON.stringify(sprite));
   const manifest=await page.evaluate(async()=>{
     const response=await fetch('assets/kingdom-parchment/extra-manifest.json');
     if(!response.ok)throw Error('Parchment manifest missing: '+response.status);
