@@ -809,6 +809,13 @@ async function assertTileImage(page,cellId){
     assert.deepEqual((await read(walking)).kingdomMap.king,{x:0,y:0},
       'a click on a distant/adjacent site must inspect, not move the king');
     await dragKing(walking,id);
+    // A drag commits coordinates before the visual travel animation finishes;
+    // inspect the sprite only after the world marks the transition idle.
+    await walking.waitForFunction(()=>{
+      const world=document.querySelector('[data-kingdom-world]');
+      const king=document.querySelector('.km-king'),rect=king?.getBoundingClientRect();
+      return world?.dataset.kingdomMotion==='idle'&&rect&&rect.width>0&&rect.height>0;
+    },null,{timeout:9000});
     assert.deepEqual((await read(walking)).kingdomMap.king,{x:dx,y:dy},
       'dragging the king must move to the selected coordinate '+id);
     assert.equal((await read(walking)).supplies,Math.max(0,prior.supplies-cost),
