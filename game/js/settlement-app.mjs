@@ -304,6 +304,9 @@ function openSettlement(event) {
   }
   showSettlement();
   renderSettlement();
+  // Emit only after the scene is visible. The Kingdom's completed-service
+  // revisit invokes the owner directly rather than rpchess:settlement-open.
+  globalThis.dispatchEvent(new CustomEvent('rpchess:settlement-shown'));
 }
 
 function continuePath() {
