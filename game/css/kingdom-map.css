@@ -527,6 +527,11 @@ body.arena-active .resource-hud{display:none!important}
 /* Castle's five permanent recruit purchases; the inspector owns its scroll. */
 .km-castle-recruits{display:grid;gap:6px;border-top:1px solid #b592564f;padding-top:11px}
 .km-castle-recruits h4{margin:0 0 2px;color:#f0d39b;font:800 13px/1.2 Inter,Arial,sans-serif}
-.km-castle-recruit{display:flex;align-items:center;justify-content:space-between;gap:8px;font:700 12px/1.2 Inter,Arial,sans-serif;color:#e7dcc9}
-.km-castle-recruit button{padding:7px 10px;border-radius:5px;border:1px solid #af8c4f;background:#594324;color:#fff0c7;font:700 11px Inter,Arial,sans-serif}
-.km-castle-recruit button:disabled{opacity:.45;cursor:not-allowed}
+.km-castle-recruit{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:50px;color:#e7dcc9}
+.km-castle-recruit__piece{width:52px;height:48px;min-width:0;object-fit:contain;filter:drop-shadow(0 2px 3px #0009)}
+.km-castle-recruit button{display:inline-flex;justify-content:center;align-items:center;gap:5px;min-width:125px;min-height:43px;padding:7px 10px;border-radius:5px;border:1px solid #af8c4f;background:#594324;color:#fff0c7;font:700 12px Inter,Arial,sans-serif}
+.km-castle-recruit button strong{font:800 13px/1 Inter,Arial,sans-serif;font-variant-numeric:tabular-nums}
+.km-castle-recruit__gold{display:block;width:19px;height:19px;object-fit:contain}
+.km-castle-recruit button:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+.kingdom-map-screen .km-inspector-buttons button:disabled{opacity:.35!important;filter:grayscale(.65)!important;cursor:not-allowed;pointer-events:none;box-shadow:none}
+.kingdom-map-screen .km-inspector-buttons button:disabled:hover{filter:grayscale(.65)!important}
