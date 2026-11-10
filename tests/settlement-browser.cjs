@@ -215,13 +215,16 @@ async function auditSettlement(browser, width, height, { gameplay = false } = {}
       }, RUN_KEY);
       await page.locator('[data-settlement-heal="hero.mara_chain"]').click();
       run = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
-      assert.strictEqual(run.gold, 490);
+      assert.strictEqual(run.gold, 494,
+        'Healing a wounded pawn must charge 6 Gold at the current Kingdom rate');
       assert.strictEqual(run.roster.find((character) => character.id === 'hero.mara_chain').status, 'healthy');
       await page.locator('[data-settlement-buy-supply]').click();
       run = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
       assert.strictEqual(run.supplies, 30);
       assert.strictEqual(run.currentSettlement.supplyStock, 14,
         'Buying one Supply must decrement the 15-unit Settlement stock exactly once');
+      assert.strictEqual(run.gold, 482,
+        'Buying one Supply must charge the current Kingdom price of 12 Gold');
       const before = run.supplies;
       await page.locator('[data-settlement-continue]').click();
       await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
