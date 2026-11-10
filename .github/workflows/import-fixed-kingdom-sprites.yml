@@ -83,15 +83,41 @@ jobs:
                   raw_svg=out.read_text(encoding='utf-8')
               match=re.search(r'<svg\b[^>]*>([\s\S]*?)</svg>',raw_svg)
               assert match and '<path' in match.group(1), source + ': vector trace has no paths'
-              # Preserve full author artwork and center it inside 128x128 with
-              # a small safe margin, avoiding the former right-edge clipping.
+              # VTracer traces transparent RGB too. Explicitly mask by the
+              # artist's real alpha channel so no dark background appears.
+              alpha=image.getchannel('A')
+              bins={64:[],128:[],192:[],255:[]}
+              for y in range(h):
+                x=0
+                while x<w:
+                  a=alpha.getpixel((x,y))
+                  level=0 if a==0 else min(255,((a+63)//64)*64)
+                  if level not in bins:
+                    x+=1
+                    continue
+                  start=x
+                  while x<w:
+                    aa=alpha.getpixel((x,y))
+                    nxt=0 if aa==0 else min(255,((aa+63)//64)*64)
+                    if nxt!=level:break
+                    x+=1
+                  width=x-start
+                  bins[level].append(f'M{start} {y}h{width}v1h-{width}z')
+              mask=('<defs><mask id="corrected-alpha" maskUnits="userSpaceOnUse" '
+                    f'maskContentUnits="userSpaceOnUse" x="0" y="0" width="{w}" height="{h}">')
+              for level,runs in bins.items():
+                if runs:
+                  v=f'{level:02x}'
+                  mask+=f'<path fill="#{v}{v}{v}" d="{"".join(runs)}"/>'
+              mask+='</mask></defs>'
+              # Preserve the full corrected drawing and a 6px safe margin.
               scale=min(116/w,116/h)
               dx=(128-w*scale)/2
               dy=(128-h*scale)/2
               svg=('<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" '
                    'viewBox="0 0 128 128" role="img" aria-label="Kingdom map artwork">'
                    f'<g transform="translate({dx:.4f} {dy:.4f}) scale({scale:.6f})">'
-                   +match.group(1)+'</g></svg>\n')
+                   +mask+'<g mask="url(#corrected-alpha)">'+match.group(1)+'</g></g></svg>\n')
               destination=pathlib.Path('game/assets/kingdom-map')/relative
               assert destination.is_file(), 'Cannot replace missing predecessor '+str(destination)
               destination.write_text(svg,encoding='utf-8')
