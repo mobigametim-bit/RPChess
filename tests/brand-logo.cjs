@@ -8,7 +8,7 @@ const read = (relative) => fs.readFileSync(path.join(game, relative), 'utf8');
 
 const index = read('index.html');
 assert.strictEqual(index.includes('FANTASY TACTICAL CHESS ROGUELITE'), false, 'main menu tagline must be removed');
-assert.strictEqual((index.match(/data-brand-logo/g) || []).length, 5, 'all visible static screens must use the brand-logo hook');
+assert.strictEqual((index.match(/data-brand-logo/g) || []).length, 4, 'all non-menu static screens keep the brand-logo hook');
 assert.strictEqual(index.includes('generated_assets/title_wordmark.png'), false, 'static UI must not reference the legacy wordmark');
 
 // An installable web app must stay independently scoped on GitHub Pages
@@ -64,7 +64,9 @@ assert.strictEqual(build.includes("'title_wordmark.png'"), false, 'legacy wordma
 const css = read('css/settlement.css');
 for (const token of ['grid-auto-rows:max-content', 'align-content:start', 'settlement-product-card__icon--artifact{transform:scale(1.55)}']) assert(css.includes(token), `market compact-card contract missing ${token}`);
 
-const menuCss = read('css/ui-redesign-first-three.css');
-for (const token of ['margin:0 0 0 152px', 'transform:translateY(-clamp(12px,1.6vh,20px))', 'margin:34px auto 0']) assert(menuCss.includes(token), `main-menu logo alignment contract missing ${token}`);
+const menuCss = read('css/main-menu-approved.css');
+for (const token of ['.mm-menu-approved', '.mm-menu-icon', '[data-main-menu-kingdom]'])
+  assert(menuCss.includes(token), `approved menu presentation missing ${token}`);
+assert(!index.includes('class="reboot-wordmark"'),'the main menu must not render a logo');
 
 console.log('Localized brand logos, tagline removal and compact market-card contract: PASS');
