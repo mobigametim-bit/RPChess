@@ -7,6 +7,16 @@ import {VISUAL} from './kingdom-world-config.mjs';
 const TYPES=Object.freeze(['merchant','convoy','courier','patrol','builders']);
 const OWNED_ONLY=new Set(['patrol','builders']);
 const MAX_TRAVELERS=8,ROAD_SAMPLES=48;
+const WALK_SPEED_FACTOR=1/3; // User-approved: all five kinds walk 3 times slower.
+function travelerSchedule(seed,index){
+ // Distinct launch times and destination/origin holds per actor; stable
+ // across camera movement, zoom and renderer rebuilds.
+ return {
+  spawnDelay:index*3.5+((seed>>>13)%5)*.6,
+  destinationWait:5+((seed>>>18)%9),
+  originWait:7+((seed>>>22)%12)
+ };
+}
 const numeric=id=>id?.split(',').map(Number);
 function hash(value){
  let h=2166136261;
@@ -99,43 +109,69 @@ function createTravelers(map,{parchment=true,maxTravelers=MAX_TRAVELERS}={}){
     })).filter(choice=>choice.maxDistance>0);
     return directions;
   }):[];
-  const useNatural=naturalChoices.length>0&&((seed>>>4)%3===0||pool.length===0);
+  // Roaming merchants and couriers follow natural trails outside owned lands
+  // whenever a Castle/event starting point lies on one. Convoys can do so too.
+  const useNatural=naturalChoices.length>0&&(
+   type==='merchant'||type==='courier'||(seed>>>4)%3===0||pool.length===0);
   if(!pool.length&&!useNatural)continue;
   if(useNatural){
    const item=naturalChoices[seed%naturalChoices.length];
    const from=numeric(item.id);
    walkers.push({id:'walker:'+i,type,kind:'natural',start:item.id,index:item.road,
     originX:from[0]+.5,direction:item.direction,maxDistance:item.maxDistance,
-    speed:.38+(seed%25)/100,phase:((seed>>>8)%1000)/1000});
+    speed:(.38+(seed%25)/100)*WALK_SPEED_FACTOR,...travelerSchedule(seed,i)});
   }else{
    const edge=pool[seed%pool.length];
    // Actors emerge only from the Castle or event sites, never from a bare outpost.
    const direction=sourceNodes.has(edge.from)&&sourceNodes.has(edge.to)?
      (seed&1?1:-1):sourceNodes.has(edge.from)?1:-1;
    walkers.push({id:'walker:'+i,type,kind:'royal',start:direction===1?edge.from:edge.to,
-    edge,direction,speed:.32+(seed%35)/100,phase:((seed>>>8)%1000)/1000});
+    edge,direction,speed:(.32+(seed%35)/100)*WALK_SPEED_FACTOR,...travelerSchedule(seed,i)});
   }
  }
  return walkers;
 }
-function travelerPosition(map,walker,elapsed){
- if(!walker||!Number.isFinite(elapsed))return null;
+// Outbound walk -> linger at destination -> return -> linger at origin.
+// Returns null until the actor's individual first-spawn time.
+function travelerMotion(map,walker,elapsed){
+ if(!walker||!Number.isFinite(elapsed)||elapsed<(walker.spawnDelay||0))return null;
+ let length,heading;
  if(walker.kind==='royal'){
-  const a=numeric(walker.edge.from),b=numeric(walker.edge.to);
-  const length=Math.max(1,Math.hypot(a[0]-b[0],a[1]-b[1]));
-  const u=((elapsed*walker.speed/length+walker.phase)%2+2)%2;
-  const t=u>1?2-u:u;
-  const parameter=walker.direction===1?t:1-t;
-  return bezierPoint(walker.edge,parameter);
+  const a=numeric(walker.edge?.from),b=numeric(walker.edge?.to);
+  if(!a||!b)return null;
+  length=Math.max(1,Math.hypot(a[0]-b[0],a[1]-b[1]));
+  heading=Math.sign((b[0]-a[0])*walker.direction)||walker.direction;
+ }else if(walker.kind==='natural'){
+  length=walker.maxDistance||9;
+  heading=walker.direction;
+ }else return null;
+ if(!(walker.speed>0))return null;
+ const walkTime=length/walker.speed;
+ const destinationWait=Math.max(0,walker.destinationWait??0);
+ const originWait=Math.max(0,walker.originWait??0);
+ const cycle=walkTime*2+destinationWait+originWait;
+ let phase=((elapsed-(walker.spawnDelay||0))%cycle+cycle)%cycle;
+ let progress=0,moving=false;
+ if(phase<walkTime){
+  progress=phase/walkTime;moving=true;
+ }else if((phase-=walkTime)<destinationWait){
+  progress=1;
+ }else if((phase-=destinationWait)<walkTime){
+  progress=1-phase/walkTime;moving=true;heading=-heading;
+ }else{
+  heading=-heading;
  }
- if(walker.kind==='natural'){
-  const cycle=walker.maxDistance||9;
-  const u=((elapsed*walker.speed+walker.phase*cycle)%(cycle*2)+cycle*2)%(cycle*2);
-  const delta=u>cycle?cycle*2-u:u;
-  const x=walker.originX+walker.direction*delta;
-  return {x,y:naturalRoadY(map,walker.index,x)};
+ let position;
+ if(walker.kind==='royal'){
+  position=bezierPoint(walker.edge,walker.direction===1?progress:1-progress);
+ }else{
+  const x=walker.originX+walker.direction*length*progress;
+  position={x,y:naturalRoadY(map,walker.index,x)};
  }
- return null;
+ return {position,moving,heading,progress};
+}
+function travelerPosition(map,walker,elapsed){
+ return travelerMotion(map,walker,elapsed)?.position||null;
 }
 function visibleTraveler(map,walker,pos,owned=null){
  if(!pos)return false;
@@ -144,4 +180,4 @@ function visibleTraveler(map,walker,pos,owned=null){
  return !OWNED_ONLY.has(walker.type)||(owned||ownedSet(map)).has(id);
 }
 export {TYPES,OWNED_ONLY,MAX_TRAVELERS,bezierPoint,entirelyOwned,
- naturalRoadY,nearestNaturalRoad,createTravelers,travelerPosition,visibleTraveler};
+ naturalRoadY,nearestNaturalRoad,createTravelers,travelerPosition,travelerMotion,visibleTraveler};
