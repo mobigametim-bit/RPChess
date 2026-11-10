@@ -3,6 +3,17 @@ for(const token of ['data-reboot-foundation','data-new-game','data-continue-run'
 assert(html.includes('mm-menu-approved')&&html.includes('data-main-menu-kingdom'),'Approved responsive menu must expose the live kingdom');
 assert(!html.includes('data-continue-run data-i18n="menu.continue"'),'Old standalone Continue button must be removed');
 assert(!html.includes('class="reboot-wordmark"'),'Main-menu brand logo must be absent');
+assert(html.includes('css/hud-nav-icons.css?v=20261110-hud-nav-v1'),
+ 'The shared top-HUD pictograms must be included after scene styling');
+const hudNavCss=fs.readFileSync(path.join(game,'css/hud-nav-icons.css'),'utf8');
+for(const relative of ['assets/ui/hud-main-menu.png','assets/ui/hud-squad.png','assets/ui/main-menu-settings.png'])
+ assert(fs.existsSync(path.join(game,relative)),'Missing uploaded HUD icon '+relative);
+for(const token of ['.km-actions','.roster-topbar__actions','.classic-toolbar','.arena-nav-actions',
+ '.travel-choice-topbar__actions','.puzzle-topbar__actions','.tournament-header','.tournament-battle-nav',
+ '[data-kingdom-roster]','[data-kingdom-settings]','[data-kingdom-menu]',
+ '[data-travel-roster]','[data-roster-menu]','[data-arena-back]','[data-tour-action="back"]',
+ 'hud-squad.png','hud-main-menu.png','main-menu-settings.png','button[hidden]'])
+ assert(hudNavCss.includes(token),'Upper-HUD pictogram contract missing '+token);
 for(const name of ['journey','arena','tournament','mentor','settings','language'])
  assert(html.includes('assets/ui/main-menu-'+name+'.png'),'Missing authored icon '+name);
 assert(!html.includes('Ваше королевство · автомасштаб'),'No kingdom caption may be shown');

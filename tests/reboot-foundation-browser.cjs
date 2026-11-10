@@ -86,6 +86,13 @@ async function desktopContract(browser) {
     await startNewRun(page, { playerName:'Browser Tester' });
     const roster = await waitForVisible(page, '[data-roster-screen]:not([hidden])', 'Roster');
     await assertInsideViewport(roster, 'desktop Roster');
+    const headerIcon=await page.locator('.roster-topbar__actions [data-roster-menu]')
+      .evaluate(el=>({background:getComputedStyle(el).backgroundImage,
+        fontSize:getComputedStyle(el).fontSize,
+        readable:el.textContent.trim()}));
+    assert(headerIcon.background.includes('hud-main-menu.png')&&
+      headerIcon.fontSize==='0px'&&headerIcon.readable.length>0,
+      'Roster topbar uses castle art but keeps a readable accessible name');
     assert.strictEqual(await page.locator('[data-roster-card]').count(), 6);
     await page.locator('[data-roster-travel]').click();
     await waitForVisible(page, '[data-travel-choice-screen]:not([hidden])', 'Travel Choice');

@@ -199,6 +199,17 @@ async function assertTileImage(page,cellId){
   assert.equal(await travelerLayer.count(),1,'decorative travelers occupy one noninteractive canvas');
   assert.equal(await travelerLayer.getAttribute('data-decorative-only'),'true');
   assert.equal(await travelerLayer.evaluate(el=>getComputedStyle(el).pointerEvents),'none');
+  const topNav=await page.evaluate(()=>{
+    return ['kingdom-roster','kingdom-settings','kingdom-menu'].map(role=>{
+      const button=document.querySelector('[data-'+role+']');
+      return {role,background:getComputedStyle(button).backgroundImage,
+        label:button.textContent.trim(),
+        pointer:getComputedStyle(button).pointerEvents};
+    });
+  });
+  for(const [i,file] of ['hud-squad.png','main-menu-settings.png','hud-main-menu.png'].entries())
+   assert(topNav[i].background.includes(file)&&topNav[i].label&&topNav[i].pointer!=='none',
+    'Kingdom HUD icon must preserve action and label: '+JSON.stringify(topNav[i]));
   const npcStack=await page.evaluate(()=>{
     const z=selector=>{
       const el=document.querySelector(selector);
