@@ -33,9 +33,9 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(parchmentSource.includes('canvas.dataset.parchmentTexture=drawTiledPaper(ctx,left,top,columns,rows,repaint)'),
     'tiled paper remains the first painted layer');
   assert(parchmentSource.indexOf('drawKingdomBoundary(ctx,{map,view,columns,rows})')>
-    parchmentSource.indexOf('drawWaterRoads(ctx,seed,left,top,columns,rows)')&&
+    parchmentSource.lastIndexOf('drawWaterRoads(ctx,seed,left,top,columns,rows)')&&
     parchmentSource.indexOf('drawKingdomBoundary(ctx,{map,view,columns,rows})')<
-    parchmentSource.indexOf('drawTerrainSymbols(ctx,seed,left,top,columns,rows,repaint)'),
+    parchmentSource.lastIndexOf('drawTerrainSymbols(ctx,seed,left,top,columns,rows,repaint)'),
     'territory boundary must share the natural-road canvas below terrain landmarks and player-built roads');
   assert(buildSource.includes("'js/kingdom-map-overlay.mjs'"),
     'production build must include the organic border/road module or Journey cannot load');
