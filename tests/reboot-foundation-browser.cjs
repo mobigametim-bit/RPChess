@@ -91,11 +91,6 @@ async function desktopContract(browser) {
     assert.strictEqual(await menu.locator('.mm-brand-logo').getAttribute('alt'),'Heroes of Check and Mate',
       'English language must switch the restored menu wordmark');
     assert.strictEqual(await menu.locator('[data-new-game]').getAttribute('aria-label'), 'Journey');
-    await menu.locator('[data-new-game]').click();
-    const englishChoice=await waitForVisible(page,'[data-journey-choice-modal]:not([hidden])','English Journey');
-    assert.strictEqual(await englishChoice.locator('[data-journey-new]').textContent(),'New Game');
-    assert.strictEqual(await englishChoice.locator('[data-journey-continue]').textContent(),'Continue Journey');
-    await englishChoice.locator('[data-close-modal]').click();
     assert.strictEqual(await menu.locator('.reboot-menu-actions [data-settings]').getAttribute('aria-label'), 'Settings');
     assert.strictEqual((await menu.locator('[data-new-game]').textContent()).trim(),'', 'Icons have no captions');
     assert.strictEqual(await menu.locator('.mm-menu-icon img').count(),6,
@@ -105,6 +100,11 @@ async function desktopContract(browser) {
     assert.strictEqual(await page.evaluate(() => performance.getEntriesByType('navigation').length), navigationCount, 'language switch must not reload');
     assert.strictEqual(await page.evaluate((key)=>localStorage.getItem(key), RUN_KEY), null, 'language switch must not create run state');
     await language.locator('[data-close-modal].reboot-language-back').click();
+    await menu.locator('[data-new-game]').click();
+    const englishChoice=await waitForVisible(page,'[data-journey-choice-modal]:not([hidden])','English Journey');
+    assert.strictEqual(await englishChoice.locator('[data-journey-new]').textContent(),'New Game');
+    assert.strictEqual(await englishChoice.locator('[data-journey-continue]').textContent(),'Continue Journey');
+    await englishChoice.locator('[data-close-modal]').click();
 
     await startNewRun(page, { playerName:'Browser Tester' });
     const roster = await waitForVisible(page, '[data-roster-screen]:not([hidden])', 'Roster');
