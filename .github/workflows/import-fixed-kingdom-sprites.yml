@@ -26,6 +26,9 @@ jobs:
             'https://drive.usercontent.google.com/download?id=1FXse0JG1ACuV_lcOJj1DNDyDbgmGQCS-&export=download&confirm=t' \
             --output /tmp/rpchess-fixed-sprites.zip
           echo 'efd88462efba01de2fb4b634b06c9564210ca31b98bfd048c46fdbf9d3f42618  /tmp/rpchess-fixed-sprites.zip' | sha256sum --check
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: Trace the six corrected transparent PNGs to real SVG paths
         shell: bash
         run: |
@@ -74,8 +77,8 @@ jobs:
                   image.save(inp)
                   vtracer.convert_image_to_svg_py(
                     str(inp),str(out),colormode='color',hierarchical='stacked',
-                    mode='spline',filter_speckle=1,color_precision=8,
-                    layer_difference=4,corner_threshold=60,length_threshold=4.0,
+                    mode='spline',filter_speckle=2,color_precision=6,
+                    layer_difference=8,corner_threshold=60,length_threshold=4.0,
                     max_iterations=10,splice_threshold=45,path_precision=3)
                   raw_svg=out.read_text(encoding='utf-8')
               match=re.search(r'<svg\b[^>]*>([\s\S]*?)</svg>',raw_svg)
