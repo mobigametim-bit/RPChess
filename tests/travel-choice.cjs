@@ -20,6 +20,14 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(fs.existsSync(path.join(game,'assets/kingdom-parchment/parchment_tile_256.webp')),
     'optimized user-provided parchment tile is a real packaged asset');
   const overlaySource=fs.readFileSync(path.join(game,'js/kingdom-map-overlay.mjs'),'utf8');
+  const pavingSource=fs.readFileSync(path.join(game,'js/kingdom-road-paving.mjs'),'utf8');
+  assert(pavingSource.includes('const SANDSTONE_WIDTH=16')&&
+    pavingSource.includes("base:'#bda27a'")&&pavingSource.includes('const BRICK_LENGTH=22,BRICK_STEP=24,ROWS=3'),
+    'author-approved 16px pale sandstone uses three staggered running-bond brick courses');
+  assert(overlaySource.includes('drawSandstoneRoad(ctx,{x1,y1,x2,y2,bend:offset,id:road.id||identity})'),
+    'only player-built royal road overlay must use sandstone while natural dirt trails stay unchanged');
+  assert(buildSource.includes("'js/kingdom-road-paving.mjs'"),
+    'production bundle must copy the actual sandstone paving renderer');
   assert(overlaySource.includes('rgba(35,118,222,.1225)'),
     'blue territory fill alone is reduced by another 30 percent');
    for(const alpha of ['rgba(49,151,255,.29)','rgba(40,133,238,.16)'])
