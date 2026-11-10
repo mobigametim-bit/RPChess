@@ -177,6 +177,24 @@ async function assertTileImage(page,cellId,relativePath){
   assert.equal(await mapSkin.getAttribute('aria-pressed'),'true');
   const atlas=page.locator('[data-kingdom-parchment]');
   assert.equal(await atlas.count(),1,'parchment must draw one continuous canvas behind clickable cells');
+  const npcAtlas=await page.evaluate(async()=>{
+    const src='assets/kingdom-travelers/walkers_64.png';
+    const response=await fetch(src,{cache:'no-store'});
+    if(!response.ok)return {ok:false,status:response.status};
+    const image=new Image();image.src=src;
+    try{await image.decode();}catch{return {ok:false,status:response.status};}
+    return {ok:image.naturalWidth===256&&image.naturalHeight===320,status:response.status};
+  });
+  assert(npcAtlas.ok,'the approved five-by-four 64px animation atlas must be shipped and decodable');
+  const travelerLayer=page.locator('[data-kingdom-travelers]');
+  assert.equal(await travelerLayer.count(),1,'decorative travelers occupy one noninteractive canvas');
+  assert.equal(await travelerLayer.getAttribute('data-decorative-only'),'true');
+  assert.equal(await travelerLayer.evaluate(el=>getComputedStyle(el).pointerEvents),'none');
+  if(Number(await travelerLayer.getAttribute('data-walker-count'))>0){
+    await page.waitForFunction(()=>
+      document.querySelector('[data-kingdom-travelers]')?.dataset.atlasStatus==='loaded',
+      {timeout:9000});
+  }
   const boundaryLayer=await page.evaluate(()=>{
     const terrain=document.querySelector('.km-parchment-canvas');
     const completedRoads=document.querySelector('.km-kingdom-overlay');
