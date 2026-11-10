@@ -95,7 +95,7 @@ const identityReady = cloudReady
 globalThis.RPChessIdentityReady = identityReady;
 
 // The read-only map attaches after the authoritative cloud-state reconciliation.
-cloudReady.then(()=>import('./kingdom-menu-preview.mjs?v=20261110-fullbleed-v2'))
+cloudReady.then(()=>import('./kingdom-menu-preview.mjs?v=20261110-castle-focus-v3'))
   .then(module=>module.install())
   .catch(error=>console.error('[RPChess] Main-menu kingdom preview failed',error));
 

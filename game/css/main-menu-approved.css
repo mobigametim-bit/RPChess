@@ -137,3 +137,11 @@ html[data-landscape-ui='1'] .mm-menu-approved [data-main-menu-kingdom][hidden]{
   isolation:isolate!important;background-attachment:scroll!important;
  }
 }
+
+/* Castle-centered camera uses the actual free region above the icon dock.
+   For portrait reserve a free parchment zone before the navigation. */
+@media (orientation:portrait){
+ html[data-landscape-ui='1'] .mm-menu-approved.mm-has-kingdom .reboot-menu-screen__main{
+  padding-top:clamp(230px,60vw,440px)!important;
+ }
+}

@@ -13,29 +13,74 @@ const TILE=142,MAX_CANVAS=1900;
 const menu=document.querySelector('[data-reboot-foundation]');
 const stage=menu?.querySelector('[data-main-menu-kingdom]');
 let lastKey='',pending=0,installed=false;
-function boundsOf(map,aspect=1){
-  const ids=new Set([map.castle.x+','+map.castle.y,map.king.x+','+map.king.y,
-    ...(map.centralOwnedCells||[]),...(map.outposts||[]).flatMap(post=>post.cells||[]),
-    ...Object.keys(map.cells||{}).filter(id=>map.cells[id]?.explored||map.cells[id]?.annexed)]);
-  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+// The actual kingdom border is OWNED land (not everything scouted). An
+// outpost's cells and castle are valid land even if their entries are sparse.
+function boundsOf(map){
+  const castle=map?.castle;
+  if(!castle)return null;
+  const ids=new Set([castle.x+','+castle.y,
+    ...(map.centralOwnedCells||[]),
+    ...(map.outposts||[]).flatMap(post=>[post.id,...(post.cells||[])]),
+    ...Object.entries(map.cells||{}).filter(([,cell])=>cell?.annexed).map(([id])=>id)]);
+  let minX=castle.x,maxX=castle.x,minY=castle.y,maxY=castle.y;
   for(const id of ids){
     const parts=String(id).split(','),x=Number(parts[0]),y=Number(parts[1]);
     if(!Number.isSafeInteger(x)||!Number.isSafeInteger(y))continue;
     minX=Math.min(minX,x);maxX=Math.max(maxX,x);
     minY=Math.min(minY,y);maxY=Math.max(maxY,y);
   }
-  if(!Number.isFinite(minX))return null;
-  const center={x:Math.floor((minX+maxX)/2),y:Math.floor((minY+maxY)/2)};
-  let columns=Math.max(9,Math.max(center.x-minX,maxX-center.x)*2+5);
-  let rows=Math.max(7,Math.max(center.y-minY,maxY-center.y)*2+5);
-  // Extend uncharted surroundings to match the whole screen; never crop the
-  // explored kingdom, Castle or king just to fill the available background.
-  const target=Math.max(.24,Math.min(6,Number(aspect)||1));
-  if(columns/rows<target)columns=Math.max(columns,Math.ceil(rows*target));
-  else rows=Math.max(rows,Math.ceil(columns/target));
-  if(columns%2===0)columns++;if(rows%2===0)rows++;
-  return {center,columns,rows,left:center.x-Math.floor(columns/2),
-    top:center.y-Math.floor(rows/2)};
+  return {minX,maxX,minY,maxY,castle:{x:castle.x,y:castle.y}};
+}
+
+// The background stage remains 100% of the menu. Only the CAMERA focuses the
+// explored-kingdom artwork into the user-marked region above the icon dock and
+// strictly to the left of the Chronicle. The focus is measured, never hardcoded
+// to a particular 1920x1080 screenshot.
+function focusRegion(){
+  const stageRect=stage.getBoundingClientRect();
+  const layout=menu.querySelector('.reboot-menu-screen__layout')?.getBoundingClientRect();
+  const dock=menu.querySelector('.reboot-menu-actions')?.getBoundingClientRect();
+  const flag=menu.querySelector('[data-chronicle-panel]:not([hidden])')?.getBoundingClientRect();
+  const landscape=matchMedia('(orientation: landscape)').matches;
+  const gutter=Math.max(12,Math.min(24,stageRect.width*.025));
+  const left=landscape&&layout?Math.max(gutter,layout.left-stageRect.left):gutter;
+  const right=landscape&&flag&&flag.left>stageRect.left+left+96
+    ?Math.min(stageRect.width-gutter,flag.left-stageRect.left-24)
+    :stageRect.width-gutter;
+  const top=Math.max(12,Math.min(22,stageRect.height*.018));
+  let bottom=dock?dock.top-stageRect.top-12:stageRect.height*.75;
+  if(bottom-top<96)bottom=Math.min(stageRect.height-12,top+Math.max(96,stageRect.height*.33));
+  return {left,right:Math.max(left+96,right),top,
+    bottom:Math.max(top+96,bottom),
+    centerX:(left+Math.max(left+96,right))/2,
+    centerY:(top+Math.max(top+96,bottom))/2,
+    width:Math.max(96,right-left),
+    height:Math.max(96,bottom-top)};
+}
+
+function cameraFor(map){
+  const territory=boundsOf(map);
+  if(!territory)return null;
+  const focus=focusRegion();
+  const castle=territory.castle;
+  // Include the full perimeter of EACH border cell, not just its center.
+  // Symmetric distance is necessary because the castle must remain centered.
+  const maxX=Math.max(castle.x-territory.minX,territory.maxX-castle.x)+.5;
+  const maxY=Math.max(castle.y-territory.minY,territory.maxY-castle.y)+.5;
+  const padding=Math.min(18,Math.max(7,Math.min(focus.width,focus.height)*.025));
+  const scale=Math.max(.0001,Math.min(
+    (focus.width/2-padding)/(maxX*TILE),
+    (focus.height/2-padding)/(maxY*TILE)));
+  const stageWidth=stage.clientWidth,stageHeight=stage.clientHeight;
+  // Fill the WHOLE menu with surrounding parchment even though the center and
+  // scale are now determined exclusively by the much smaller kingdom focus.
+  const radiusX=Math.max(focus.centerX,stageWidth-focus.centerX)/(scale*TILE);
+  const radiusY=Math.max(focus.centerY,stageHeight-focus.centerY)/(scale*TILE);
+  const halfColumns=Math.max(4,Math.ceil(radiusX+1));
+  const halfRows=Math.max(3,Math.ceil(radiusY+1));
+  const columns=halfColumns*2+1,rows=halfRows*2+1;
+  return {focus,scale,territory,center:castle,columns,rows,
+    left:castle.x-halfColumns,top:castle.y-halfRows};
 }
 function canvas(className){
   const element=document.createElement('canvas');
@@ -54,13 +99,21 @@ function site(src,x,y,klass,size){
 function fit(){
   if(!stage||stage.hidden||!menu||menu.hidden)return;
   const world=stage.querySelector('[data-main-menu-world]');if(!world)return;
-  const availableWidth=Math.max(0,stage.clientWidth);
-  const availableHeight=Math.max(0,stage.clientHeight);
-  // Full-bleed cover. The bounds above preserve two+ cells of safety margin.
-  const scale=Math.max(availableWidth/Number(world.dataset.worldWidth),
-    availableHeight/Number(world.dataset.worldHeight));
-  if(!Number.isFinite(scale)||scale<=0)return;
-  world.style.transform='translate(-50%,-50%) scale('+scale+')';
+  const map=readRun()?.kingdomMap;
+  if(!map||!validateKingdomMap(map))return;
+  const camera=cameraFor(map);
+  if(!camera)return;
+  const {focus,scale,territory}=camera;
+  // CSS transforms apply about the top-left. The world center is EXACTLY
+  // the Castle because camera.center is pinned to map.castle.
+  const x=focus.centerX-Number(world.dataset.worldWidth)*scale/2;
+  const y=focus.centerY-Number(world.dataset.worldHeight)*scale/2;
+  world.style.left='0px';world.style.top='0px';
+  world.style.transformOrigin='top left';
+  world.style.transform='translate('+x+'px, '+y+'px) scale('+scale+')';
+  stage.dataset.kingdomScale=String(scale);
+  stage.dataset.kingdomFocus=JSON.stringify(focus);
+  stage.dataset.kingdomTerritory=JSON.stringify(territory);
 }
 function clear(){
   if(!stage)return;
@@ -72,7 +125,11 @@ function render(){
   if(!stage||!menu||menu.hidden)return;
   const run=readRun(),map=run?.kingdomMap;
   if(!run||run.ended||!validateKingdomMap(map)){clear();return;}
-  const b=boundsOf(map,menu.clientWidth/Math.max(1,menu.clientHeight));
+  // Reveal the stage before geometry reads: [hidden] has zero dimensions.
+  // The active menu class also reserves the portrait focus area.
+  stage.hidden=false;
+  menu.classList.add('mm-has-kingdom');
+  const b=cameraFor(map);
   if(!b){clear();return;}
   const owned=(map.centralOwnedCells||[]).length;
   const signature=[run.id,run.savedAt||run.updatedAt||'',map.day||0,map.king.x,map.king.y,

@@ -9,6 +9,9 @@ assert(!html.includes('Ваше королевство · автомасштаб
 assert(/data-reboot-foundation[^>]*>\s*<div class="mm-kingdom-stage"/.test(html),'Kingdom backdrop must be a full-menu sibling, not a map in the first column');
 const approvedMenu=fs.readFileSync(path.join(game,'css/main-menu-approved.css'),'utf8');
 assert(approvedMenu.includes('position:absolute!important;inset:0!important'),'Kingdom backdrop must fill the menu');
+const menuProjection=fs.readFileSync(path.join(game,'js/kingdom-menu-preview.mjs'),'utf8');
+for(const required of ['function boundsOf(map)','function focusRegion()','function cameraFor(map)','const castle=territory.castle','stage.dataset.kingdomScale'])
+ assert(menuProjection.includes(required),'Castle-centered menu camera missing '+required);
 const arenaMenu=fs.readFileSync(path.join(game,'js/arena-app.mjs'),'utf8');
 const tournamentMenu=fs.readFileSync(path.join(game,'js/tournament-app.mjs'),'utf8');
 assert(arenaMenu.includes("entryButton.classList.contains('mm-menu-icon')")&&

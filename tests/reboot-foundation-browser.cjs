@@ -141,15 +141,30 @@ async function kingdomBackdropContract(browser) {
         const a=stage.getBoundingClientRect(),b=world.getBoundingClientRect();
         return a.width>0&&a.height>0&&b.width>=a.width-2&&b.height>=a.height-2;
       },null,{timeout:10000});
+      await page.waitForFunction(()=>{
+        const s=document.querySelector('[data-main-menu-kingdom]');
+        return s?.dataset.kingdomFocus&&s?.dataset.kingdomScale&&s?.dataset.kingdomTerritory;
+      },null,{timeout:10000});
       const m=await page.evaluate(()=>{
         const menu=document.querySelector('[data-reboot-foundation]');
         const stage=menu.querySelector('[data-main-menu-kingdom]');
         const a=menu.getBoundingClientRect(),b=stage.getBoundingClientRect();
+        const focus=JSON.parse(stage.dataset.kingdomFocus||'null');
+        const territory=JSON.parse(stage.dataset.kingdomTerritory||'null');
+        const world=stage.querySelector('[data-main-menu-world]');
+        const scale=Number(stage.dataset.kingdomScale);
+        const wr=world?.getBoundingClientRect();
         return {menu:[a.left,a.top,a.width,a.height],stage:[b.left,b.top,b.width,b.height],
           icons:menu.querySelectorAll('.mm-menu-icon img').length,
           outside:menu.querySelector('.reboot-menu-screen__main')?.contains(stage),
           pointer:getComputedStyle(stage).pointerEvents,
-          active:menu.classList.contains('mm-has-kingdom')};
+          active:menu.classList.contains('mm-has-kingdom'),
+          focus,territory,scale,
+          worldCenter:wr?[wr.left-b.left+wr.width/2,wr.top-b.top+wr.height/2]:null,
+          navTop:menu.querySelector('.reboot-menu-actions')?.getBoundingClientRect().top-b.top,
+          flagLeft:menu.querySelector('[data-chronicle-panel]')?.getBoundingClientRect().left-b.left,
+          landscape:innerWidth>innerHeight};
+
       });
       assert(m.active,'saved kingdom must activate parchment background');
       assert.strictEqual(m.outside,false,'kingdom must be outside the left menu column');
@@ -158,6 +173,33 @@ async function kingdomBackdropContract(browser) {
       for(const idx of [0,1,2,3])
         assert(Math.abs(m.menu[idx]-m.stage[idx])<=2,
           width+'x'+height+' backdrop must fill menu edge-to-edge: '+JSON.stringify(m));
+      const label=width+'x'+height;
+      assert(m.focus&&m.territory&&m.scale>0,'castle camera must be present at '+label);
+      assert(Math.abs(m.worldCenter[0]-m.focus.centerX)<2&&
+        Math.abs(m.worldCenter[1]-m.focus.centerY)<2,
+        label+': castle must be exactly at focus center');
+      assert(m.focus.bottom<=m.navTop-9,
+        label+': owned kingdom must stay above icon dock');
+      if(m.landscape&&m.flagLeft)
+        assert(m.focus.right<=m.flagLeft-20,
+          label+': owned kingdom must stay left of Chronicle');
+      // The outer HALF of every extreme cell must be inside the free region.
+      // Maximal fit uses the near-exact zoom, not a tiny fit-to-entire-screen.
+      const owned=m.territory,castle=owned.castle,T=142;
+      const left=m.focus.centerX+(owned.minX-castle.x-.5)*T*m.scale;
+      const right=m.focus.centerX+(owned.maxX-castle.x+.5)*T*m.scale;
+      const top=m.focus.centerY+(owned.minY-castle.y-.5)*T*m.scale;
+      const bottom=m.focus.centerY+(owned.maxY-castle.y+.5)*T*m.scale;
+      assert(left>=m.focus.left-2&&right<=m.focus.right+2&&
+        top>=m.focus.top-2&&bottom<=m.focus.bottom+2,
+        label+': whole kingdom perimeter must fit marked zone: '+JSON.stringify(m));
+      const padding=Math.min(18,Math.max(7,Math.min(m.focus.width,m.focus.height)*.025));
+      const xRadius=Math.max(castle.x-owned.minX,owned.maxX-castle.x)+.5;
+      const yRadius=Math.max(castle.y-owned.minY,owned.maxY-castle.y)+.5;
+      const ideal=Math.min((m.focus.width/2-padding)/(xRadius*T),
+        (m.focus.height/2-padding)/(yRadius*T));
+      assert(Math.abs(m.scale-ideal)/Math.max(ideal,.0001)<.001,
+        label+': scale must be maximal and determined by owned boundaries');
     }
     assert.deepStrictEqual(errors,[],'backdrop browser errors');
   }finally{await page.close();}
