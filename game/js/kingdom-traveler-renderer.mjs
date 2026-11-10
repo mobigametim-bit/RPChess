@@ -1,6 +1,6 @@
 /* Five purely decorative 4-frame 64px road walkers.
  * Single atlas/image decode, single view-canvas, no interaction or persistence. */
-import {createTravelers,travelerPosition,visibleTraveler} from './kingdom-road-travelers.mjs';
+import {createTravelers,travelerMotion,visibleTraveler} from './kingdom-road-travelers.mjs';
 import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs';
 const SRC='assets/kingdom-travelers/walkers_64.png';
 const FRAMES=4,FRAME_SIDE=64,ANIM_MS=175,DISPLAY_PX=66;
@@ -61,14 +61,15 @@ function animateTravelers(canvas,{map,view,columns,rows,parchment=true}){
   previousTick=now;
   if(now-lastPaint<33)return; // Cap this decorative layer to about 30 FPS.
   lastPaint=now;
-  const elapsed=walkClockMs/1000,frame=Math.floor(walkClockMs/ANIM_MS)%FRAMES;
+  const elapsed=walkClockMs/1000,walkingFrame=Math.floor(walkClockMs/ANIM_MS)%FRAMES;
   ctx.clearRect(0,0,width,height);
   ctx.imageSmoothingEnabled=false;
   for(const walker of walkers){
-   const pos=travelerPosition(map,walker,elapsed);
+   const motion=travelerMotion(map,walker,elapsed);
+   const pos=motion?.position;
    if(!checkVisible(walker,pos))continue;
-   const next=travelerPosition(map,walker,elapsed+.045);
-   const dir=next&&next.x<pos.x?-1:1;
+   const dir=motion.heading<0?-1:1;
+   const frame=motion.moving?walkingFrame:0; // Stand still while resting.
    const x=(pos.x-left)*PARCHMENT_TILE,y=(pos.y-top)*PARCHMENT_TILE;
    ctx.save();
    if(dir<0){ctx.translate(x,0);ctx.scale(-1,1);ctx.translate(-x,0);}
