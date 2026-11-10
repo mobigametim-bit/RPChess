@@ -7,7 +7,7 @@ import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs';
 import {commanderPieceArt} from './commander-portraits.mjs';
 import {renderParchment,renderParchmentFog,parchmentAssetsSettled} from './kingdom-parchment-app.mjs?v=20261111-menu-texture-gate-v1';
 import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261110-natural-road-layer-v4';
-import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261110-npc-territory-v4';
+import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261111-npc-floor-v1';
 
 const TILE=142,MAX_CANVAS=1900;
 const menu=document.querySelector('[data-reboot-foundation]');
