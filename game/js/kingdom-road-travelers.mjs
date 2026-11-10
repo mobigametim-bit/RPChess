@@ -32,8 +32,15 @@ function bezierPoint(edge,t){
    y:u*u*u*y0+3*u*u*t*y1+3*u*t*t*y2+t*t*t*y3};
 }
 function entirelyOwned(edge,owned){
- for(let i=0;i<=ROAD_SAMPLES;i++){
-  const p=bezierPoint(edge,i/ROAD_SAMPLES);
+ const a=numeric(edge?.from),b=numeric(edge?.to);
+ if(!a||!b)return false;
+ const distance=Math.hypot(a[0]-b[0],a[1]-b[1])+Math.abs(edge.bend||0)*2;
+ // A fixed 48 samples can skip an entire foreign cell on a long road.
+ // Sample at least every 1/32 cell and conservatively reject huge curves.
+ if(distance>64)return false;
+ const samples=Math.max(ROAD_SAMPLES,Math.ceil(distance*32));
+ for(let i=0;i<=samples;i++){
+  const p=bezierPoint(edge,i/samples);
   if(!p||!owned.has(Math.floor(p.x)+','+Math.floor(p.y)))return false;
  }
  return true;
