@@ -17,10 +17,9 @@ import {FLAVOR_POOLS} from './travel-choice-core.mjs';
 import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
-import {PARCHMENT_MODE_KEY} from './kingdom-parchment-core.mjs';
 import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261110-terrain-boundary';
-import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261110-roadgrid-opacity56';
-import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261110-itineraries';
+import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261110-journey-gray-v3';
+import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261110-site-hide-v3';
 import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
@@ -30,7 +29,7 @@ import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell
  romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges} from './kingdom-map-core.mjs?v=20261109-kingdom-feedback1';
 
 const COPY={
- ru:{classicMap:'Классика',parchmentMap:'Пергамент',switchMap:'Оформление карты',day:'День',shards:'Осколки чести',castle:'Замок',supply:'Припасы',power:'Мощь',points:'Очки присоединения',
+ ru:{day:'День',shards:'Осколки чести',castle:'Замок',supply:'Припасы',power:'Мощь',points:'Очки присоединения',
    hidden:'Неизведанная территория',empty:'Спокойная местность',safeTerrain:'Здесь нет дорожного события.',annex:'Присоединить · 1 очко',annexed:'В составе королевства',
    complete:'Пройдена',failed:'Неудача — повторная попытка',inProgress:'Встреча продолжается',
    return:'К отряду',reveal:'Открыта встреча',entry:'Начинается',services:'Услуги поселения',
@@ -42,7 +41,7 @@ const COPY={
    recruitsReady:'Рекруты готовы. Система найма появится в следующем этапе.',
    empty:'Открывайте территорию, чтобы основать королевство',
    completedDetail:'Место освоено. Можно вернуться сюда в любой момент.',zoomGroup:'Масштаб карты',zoomIn:'Увеличить масштаб',zoomOut:'Уменьшить масштаб',zoomReset:'Сбросить масштаб карты'},
- en:{classicMap:'Classic',parchmentMap:'Parchment',switchMap:'Map appearance',day:'Day',shards:'Honor shards',castle:'Castle',supply:'Supplies',power:'Power',points:'Annexation points',
+ en:{day:'Day',shards:'Honor shards',castle:'Castle',supply:'Supplies',power:'Power',points:'Annexation points',
    hidden:'Unexplored territory',empty:'Quiet terrain',safeTerrain:'No encounter at this location.',annex:'Annex · 1 point',annexed:'Part of your kingdom',
    complete:'Cleared',failed:'Failed — retry encounter',inProgress:'Encounter in progress',
    return:'Squad',reveal:'Encounter discovered',entry:'Entering',services:'Settlement services',
@@ -80,7 +79,7 @@ function touchDistance(){
  const p=[...activeTouches.values()];return p.length>=2?Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y):0;
 }
 function zoomPointerDown(e){
- if(e.target.closest('.km-zoom-controls,.km-map-skin-switch,.km-king-drag-handle,.km-production-marker'))return;
+ if(e.target.closest('.km-zoom-controls,.km-king-drag-handle,.km-production-marker'))return;
  if(e.pointerType==='touch'){
   activeTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(activeTouches.size===2){
@@ -184,7 +183,7 @@ function kingPointerEnd(e){
  if(point)startKingRoute(point);
 }
 function zoomWheel(e){
- if(!screen||screen.hidden||e.target.closest('.km-zoom-controls,.km-map-skin-switch'))return;
+ if(!screen||screen.hidden||e.target.closest('.km-zoom-controls'))return;
  e.preventDefault();
  const delta=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?400:1);
  updateZoom(zoomPx*Math.exp(-delta*.0015));
@@ -236,18 +235,6 @@ function followCamera(point){
  else if(point.x-camera.x < -limitX)camera.x=point.x+limitX;
  if(point.y-camera.y>limitY)camera.y=point.y-limitY;
  else if(point.y-camera.y < -limitY)camera.y=point.y+limitY;
-}
-function mapSkin(){
- try{
-  const saved=localStorage.getItem(PARCHMENT_MODE_KEY);
-  if(saved==='classic'||saved==='parchment')return saved;
-  // Explicit preview URL enables the experiment without changing old saves.
-  if(new URLSearchParams(location.search).get('parchment')==='1')return 'parchment';
- }catch{}
- return 'classic';
-}
-function setMapSkin(value){
- try{localStorage.setItem(PARCHMENT_MODE_KEY,value);}catch{}
 }
 function lang(){return currentLanguage()==='en'?'en':'ru';}
 function storyText(choice){
@@ -401,7 +388,6 @@ function screenReady(){
   <button class="reboot-button reboot-button--primary" data-kingdom-menu type="button"></button>
  </div></div></header>
  <section class="km-layout"><div class="km-map-frame">
- <button type="button" class="km-map-skin-switch" data-kingdom-skin-switch></button>
  <div class="km-zoom-controls" role="group" aria-label="Map zoom">
   <button type="button" data-kingdom-zoom-out aria-label="Zoom out">−</button>
   <button type="button" data-kingdom-zoom-reset aria-label="Reset map zoom"><span data-kingdom-zoom-value></span></button>
@@ -447,9 +433,6 @@ function screenReady(){
  screen.querySelector('[data-kingdom-zoom-out]').addEventListener('click',()=>updateZoom(zoomPx-12));
  screen.querySelector('[data-kingdom-zoom-in]').addEventListener('click',()=>updateZoom(zoomPx+12));
  screen.querySelector('[data-kingdom-zoom-reset]').addEventListener('click',()=>updateZoom(ATLAS_VIEW.zoom));
- screen.querySelector('[data-kingdom-skin-switch]').addEventListener('click',()=>{
-  setMapSkin(mapSkin()==='parchment'?'classic':'parchment');render();
- });
  return screen;
 }
 function stopTimers(){
@@ -554,12 +537,8 @@ function kingArt(run){return commanderPieceArt(run.commanderId,'w');}
 function render(){
  const run=readRun();if(!run||!validateKingdomMap(run.kingdomMap)||!screen||screen.hidden)return;
  const map=run.kingdomMap;const view=camera||map.king;
- const parchment=mapSkin()==='parchment';
- screen.classList.toggle('km-parchment-mode',parchment);
- const skinSwitch=screen.querySelector('[data-kingdom-skin-switch]');
- skinSwitch.textContent=tr('switchMap')+': '+tr(parchment?'parchmentMap':'classicMap');
- skinSwitch.title=tr('switchMap');
- skinSwitch.setAttribute('aria-pressed',String(parchment));
+ const parchment=true;
+ screen.classList.add('km-parchment-mode');
  const visualKing=movement?.phase==='reveal'?movement:map.king;
  const world=screen.querySelector('[data-kingdom-world]');
  world.dataset.kingdomMotion=movement?.phase||'idle';
