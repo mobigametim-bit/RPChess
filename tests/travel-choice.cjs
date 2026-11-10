@@ -20,6 +20,8 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(fs.existsSync(path.join(game,'assets/kingdom-parchment/parchment_tile_256.webp')),
     'optimized user-provided parchment tile is a real packaged asset');
   const overlaySource=fs.readFileSync(path.join(game,'js/kingdom-map-overlay.mjs'),'utf8');
+  assert(overlaySource.includes('ctx.globalAlpha*=VISUAL.roadOpacity'),
+    'Royal-road paving opacity must match naturally generated roads');
   const pavingSource=fs.readFileSync(path.join(game,'js/kingdom-road-paving.mjs'),'utf8');
   assert(pavingSource.includes('const SANDSTONE_WIDTH=16')&&
     pavingSource.includes("base:'#bda27a'")&&pavingSource.includes('const BRICK_LENGTH=22,BRICK_STEP=24,ROWS=3'),
@@ -92,72 +94,79 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
    '2,0':{status:'revealed',explored:false,annexed:true,selectedEncounter:{id:'road-event-b',type:'skirmish'}}}};
   const firstRoad=roadGraph.synchronizeRoyalRoads({...scoutedOwned,
     cells:{...scoutedOwned.cells,'2,0':undefined}});
-  assert(firstRoad.royalRoads.some(road=>roadGraph.pairKey(road.from,road.to)==='0,0::1,0'),
-    'a scouted owned event gets a Castle road without being completed or visited');
+  assert(firstRoad.royalRoads.some(e=>roadGraph.pairKey(e.from,e.to)==='0,0::1,0'),
+    'a scouted owned event is connected to Castle before it is completed');
   const secondRoad=roadGraph.synchronizeRoyalRoads(scoutedOwned);
-  const secondKeys=secondRoad.royalRoads.map(road=>roadGraph.pairKey(road.from,road.to));
-  for(const edge of ['0,0::1,0','0,0::2,0','1,0::2,0'])
-   assert(secondKeys.includes(edge),'each owned event connects to Castle and its nearest neighbor: '+edge);
-  assert.equal(secondKeys.length,new Set(secondKeys).size,'royal roads are undirected and unique');
-  const formerRoad={id:'completed:1,0',from:'0,0',to:'1,0',bend:.9};
-  const migratedRoad=roadGraph.synchronizeRoyalRoads({...scoutedOwned,royalRoads:undefined,
-    completedRoads:[formerRoad]});
-  assert.equal(migratedRoad.royalRoads.find(r=>roadGraph.pairKey(r.from,r.to)==='0,0::1,0').bend,.9,
-    'migration preserves painted legacy road geometry instead of rerolling old curves');
-  assert.strictEqual(roadGraph.synchronizeRoyalRoads(migratedRoad),migratedRoad,
-    'legacy road import is one-shot and idempotent');
+  const secondKeys=secondRoad.royalRoads.map(e=>roadGraph.pairKey(e.from,e.to));
+  assert.deepStrictEqual(secondKeys,['0,0::1,0','1,0::2,0'],
+    'one direct exit east from Castle, with the next event reusing the existing road');
+  assert.equal(secondKeys.length,new Set(secondKeys).size,'no physical road segments are duplicated');
+  assert(secondRoad.royalRoads.every(e=>{
+    const a=e.from.split(',').map(Number),b=e.to.split(',').map(Number);
+    return Math.abs(a[0]-b[0])+Math.abs(a[1]-b[1])===1;
+  }),'no diagonal road edges');
   assert.strictEqual(roadGraph.synchronizeRoyalRoads(secondRoad),secondRoad,
-    'a reload/sync never rerolls or adds the same road');
+    'unchanged map remains idempotent after load');
+  const oldSave=roadGraph.synchronizeRoyalRoads({...scoutedOwned,royalRoads:undefined,
+    completedRoads:[{id:'legacy',from:'0,0',to:'2,0',bend:.9}]});
+  assert.equal(oldSave.royalRoadsVersion,2,'old road saves migrate to version 2');
+  assert(oldSave.completedRoads.length===1,'historic road receipts are retained');
+  assert(oldSave.royalRoads.every(e=>e.bend===0),
+    'old duplicate/diagonal drawing replaced by canonical cardinal grid');
   const expanded=roadGraph.synchronizeRoyalRoads({...secondRoad,cells:{...secondRoad.cells,
-   '1,1':{status:'revealed',explored:false,annexed:true,selectedEncounter:{id:'road-event-c',type:'event'}}}});
-  assert(secondKeys.every(id=>expanded.royalRoads.some(r=>roadGraph.pairKey(r.from,r.to)===id)),
-    'adding a nearer event never erases existing built roads');
-  assert.deepStrictEqual(roadGraph.synchronizeRoyalRoads({...expanded,royalRoads:undefined}).royalRoads,
-    roadGraph.synchronizeRoyalRoads({...expanded,royalRoads:undefined}).royalRoads,
-    'legacy save migration is deterministic without a new schema version');
+    '1,1':{status:'revealed',explored:false,annexed:true,
+      selectedEncounter:{id:'road-event-c',type:'event'}}}});
+  assert.equal(expanded.royalRoads.length,
+    new Set(expanded.royalRoads.map(e=>roadGraph.pairKey(e.from,e.to))).size,
+    'constructing an event on a crossing never doubles existing road segments');
+  const reusedCell=expanded.royalRoads.find(e=>e.from!=='0,0'&&e.to!=='0,0').to;
+  const onRoad=roadGraph.synchronizeRoyalRoads({...expanded,cells:{...expanded.cells,
+    [reusedCell]:{...expanded.cells[reusedCell],status:'completed',
+      selectedEncounter:{id:'new-settlement',type:'settlement'}}}});
+  assert.equal(onRoad.royalRoads.length,
+    new Set(onRoad.royalRoads.map(e=>roadGraph.pairKey(e.from,e.to))).size,
+    'a settlement on an already-paved tile must use the existing connection');
+  const sectors=[[0,-4],[0,4],[4,0],[-4,0]].map(([x,y])=>x+','+y);
+  const allCells={...scoutedOwned.cells};
+  for(const id of sectors)allCells[id]={status:'revealed',explored:false,annexed:true,
+    selectedEncounter:{id:'sector-'+id,type:'battle'}};
+  const fourRoad=roadGraph.synchronizeRoyalRoads({...scoutedOwned,cells:allCells});
+  const castleExits=fourRoad.royalRoads.filter(e=>e.from==='0,0'||e.to==='0,0');
+  assert(castleExits.length===4&&new Set(castleExits.map(e=>e.from==='0,0'?e.to:e.from)).size===4,
+    'Castle has exactly one paved exit on each active cardinal side');
+  assert.deepStrictEqual(new Set(castleExits.map(e=>e.from==='0,0'?e.to:e.from)),
+    new Set(['0,-1','0,1','1,0','-1,0']));
   const dedup=roadGraph.visibleRoyalRoads({...secondRoad,outpostRoads:[
-   {id:'old-reverse',from:'2,0',to:'0,0',bend:.5}]});
+    {id:'old-reverse',from:'2,0',to:'0,0',bend:.5}]});
   assert.equal(dedup.length,secondRoad.royalRoads.length,
-    'old outpost roads may not draw a duplicate reversed royal segment');
+    'legacy roads must never be painted over the new canonical network');
   assert(!walkers.entirelyOwned({from:'0,0',to:'3,0',bend:0},new Set(['0,0','3,0'])),
-    'patrols and builders cannot cross foreign cells between owned endpoints');
+    'patrols and builders cannot cross neutral territory');
   assert(walkers.entirelyOwned({from:'0,0',to:'1,0',bend:0},new Set(['0,0','1,0'])),
-    'an internal straight road is eligible for guards and builders');
-  const travelerTypes=new Set(walkers.createTravelers(secondRoad,{parchment:true}).map(w=>w.type));
-  assert(travelerTypes.has('merchant')||travelerTypes.has('convoy')||travelerTypes.has('courier'),
-    'at least one free traveler can follow the newly discovered road network');
-  const scheduledTravelers=walkers.createTravelers(secondRoad,{parchment:true});
+    'a fully owned road segment is available to patrols/builders');
+  const scheduledTravelers=walkers.createTravelers(fourRoad,{parchment:true});
+  assert(scheduledTravelers.length>0,'the network creates decorative travelers');
+  assert(scheduledTravelers.every(a=>a.speed>=.10&&a.speed<=.23),
+    'all five traveler types retain their 3x slower speed');
+  assert(new Set(scheduledTravelers.map(a=>a.spawnDelay)).size===scheduledTravelers.length,
+    'travelers start at staggered times');
   const firstTraveler=scheduledTravelers[0];
-  assert(firstTraveler&&walkers.travelerPosition(secondRoad,firstTraveler,firstTraveler.spawnDelay),
-    'decorative travelers spawn at their individual departure times without changing map state');
-  assert(scheduledTravelers.every(actor=>actor.speed>=.10&&actor.speed<=.23),
-    'all five traveler kinds move at one third of their previously approved speed');
-  assert(new Set(scheduledTravelers.map(actor=>actor.spawnDelay)).size===scheduledTravelers.length,
-    'actors must start at different times rather than spawn simultaneously');
-  assert(scheduledTravelers.every(actor=>actor.destinationWait>=5&&actor.originWait>=7),
-    'every actor rests at both its destination and its starting point');
+  assert(firstTraveler.legs.length>=3,
+    'a journey contains intermediate stops, not only a fixed A-B shuttle');
+  assert(walkers.travelerPosition(fourRoad,firstTraveler,firstTraveler.spawnDelay),
+    'traveler appears at its scheduled start');
   if(firstTraveler.spawnDelay>0)
-   assert.strictEqual(walkers.travelerPosition(secondRoad,firstTraveler,firstTraveler.spawnDelay-.01),null,
-     'a traveler remains unspawned until its departure slot');
-  const length=firstTraveler.kind==='natural'?firstTraveler.maxDistance:
-   Math.max(1,Math.hypot(...['x','y'].map(axis=>{
-    const from=firstTraveler.edge.from.split(',').map(Number);
-    const to=firstTraveler.edge.to.split(',').map(Number);
-    return to[axis==='x'?0:1]-from[axis==='x'?0:1];
-   })));
-  const travelSeconds=length/firstTraveler.speed;
-  const atDestination=walkers.travelerMotion(secondRoad,firstTraveler,
-    firstTraveler.spawnDelay+travelSeconds+firstTraveler.destinationWait/2);
-  const stillAtDestination=walkers.travelerMotion(secondRoad,firstTraveler,
-    firstTraveler.spawnDelay+travelSeconds+firstTraveler.destinationWait*.8);
-  assert(atDestination&&!atDestination.moving&&stillAtDestination&&!stillAtDestination.moving,
-    'the actor stops walking at its destination');
-  assert.deepStrictEqual(atDestination.position,stillAtDestination.position,
-    'the actor stays in place during its destination pause');
-  const afterReturn=walkers.travelerMotion(secondRoad,firstTraveler,
-    firstTraveler.spawnDelay+travelSeconds*2+firstTraveler.destinationWait+firstTraveler.originWait/2);
-  assert(afterReturn&&!afterReturn.moving&&afterReturn.progress===0,
-    'the actor waits again at origin before its next trip');
+    assert.strictEqual(walkers.travelerPosition(fourRoad,firstTraveler,firstTraveler.spawnDelay-.01),null);
+  const firstLeg=firstTraveler.legs[0];
+  const arrival=firstTraveler.spawnDelay+firstLeg.distance/firstTraveler.speed;
+  const hold1=walkers.travelerMotion(fourRoad,firstTraveler,arrival+firstLeg.hold*.3);
+  const hold2=walkers.travelerMotion(fourRoad,firstTraveler,arrival+firstLeg.hold*.7);
+  assert(hold1&&!hold1.moving&&hold2&&!hold2.moving,
+    'traveler is resting at an intermediate waypoint');
+  assert.deepStrictEqual(hold1.position,hold2.position,'no walking during a pause');
+  const multiStop=scheduledTravelers.filter(a=>a.kind==='royal');
+  assert(multiStop.length>0&&multiStop.some(a=>new Set(a.legs.map(l=>l.to)).size>=3),
+    'NPCs can visit at least three distinct event/castle waypoints in one route');
   // Wild merchants and couriers must use generated natural trails past the
   // border, not only Royal roads inside the owned territory.
   let trailId=null;
