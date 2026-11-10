@@ -325,7 +325,24 @@ function continuePath() {
   globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated', { detail:{ source:'settlement-complete' } }));
   hideSettlement();
   busy = false;
-  globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open', { detail: { source: 'settlement-complete', runId: activeRun.id } }));
+  const detail={source:'settlement-complete',runId:activeRun.id};
+  if(selected?.kingdomCell&&activeRun.kingdomMap){
+    // The map owns the return from both first visits and free revisits.
+    // Never rely on Travel Choice having finished its optional bootstrap:
+    // otherwise this button can hide the Settlement and leave a blank screen.
+    if(globalThis.RPChessKingdomMap?.open){
+      globalThis.RPChessKingdomMap.open({detail});
+    }else{
+      void import('./kingdom-map-app.mjs?v=20261111-settlement-services-v1')
+        .then(({openMap})=>openMap({detail}))
+        .catch(error=>{
+          console.error('[RPChess] Return from Settlement to Kingdom failed',error);
+          globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue'));
+        });
+    }
+    return;
+  }
+  globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open', {detail}));
 }
 
 function syncRun() {
