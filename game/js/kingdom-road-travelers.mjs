@@ -106,11 +106,11 @@ function travelerPosition(map,walker,elapsed){
  }
  return null;
 }
-function visibleTraveler(map,walker,pos){
+function visibleTraveler(map,walker,pos,owned=null){
  if(!pos)return false;
  const id=Math.floor(pos.x)+','+Math.floor(pos.y);
  if(!map.cells?.[id])return false; // Never reveal hidden fog by a walker.
- return !OWNED_ONLY.has(walker.type)||ownedSet(map).has(id);
+ return !OWNED_ONLY.has(walker.type)||(owned||ownedSet(map)).has(id);
 }
 export {TYPES,OWNED_ONLY,MAX_TRAVELERS,bezierPoint,entirelyOwned,
  naturalRoadY,nearestNaturalRoad,createTravelers,travelerPosition,visibleTraveler};
