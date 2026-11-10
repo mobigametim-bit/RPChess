@@ -1,7 +1,7 @@
 const playwright = require('playwright');
 
 const TUTORIAL_KEY = 'rpchess.reboot.v1.tutorial';
-const HINTS = ["identity","roster","travel","artifact","skirmishChess","battleChess","combatAftermath","event","settlement","puzzle","caravanChess","caravanReward","starvation","runEnd","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess","arenaResult"];
+const HINTS = ["identity","roster","kingdomMap","kingdomCastle","kingdomProduction","artifact","skirmishChess","battleChess","event","settlement","puzzle","caravanChess","starvation","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess"];
 const COMPLETE_STATE = JSON.stringify({
   schemaVersion:1,
   activated:true,
