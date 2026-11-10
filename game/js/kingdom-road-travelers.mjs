@@ -1,7 +1,7 @@
 /* Decorative road walkers: pure route generation with no game-state effects.
  * Travelers are drawn on an independent canvas; they never advance the calendar,
  * trigger an encounter, alter resources or persist animation state. */
-import {visibleRoyalRoads,eligibleRoadNodes} from './kingdom-road-network.mjs';
+import {visibleRoyalRoads,eligibleRoadNodes,ownedKeys} from './kingdom-road-network.mjs';
 import {randomAt} from './kingdom-parchment-core.mjs';
 import {VISUAL} from './kingdom-world-config.mjs';
 const TYPES=Object.freeze(['merchant','convoy','courier','patrol','builders']);
@@ -89,95 +89,168 @@ function ownedNaturalLength(map,start,road,direction,owned){
  }
  return allowed>=.55?allowed:0;
 }
+
+// The same shared road graph drives both painting and NPC journeys.
+function adjacencyOf(edges){
+ const adj=new Map();
+ for(const edge of edges)for(const [a,b] of [[edge.from,edge.to],[edge.to,edge.from]]){
+  if(!adj.has(a))adj.set(a,[]);
+  adj.get(a).push({to:b,edge});
+ }
+ for(const next of adj.values())next.sort((a,b)=>a.to<b.to?-1:a.to>b.to?1:0);
+ return adj;
+}
+function findRoute(adj,start,end){
+ if(start===end)return [];
+ const seen=new Map([[start,null]]),queue=[start];
+ for(let i=0;i<queue.length;i++){
+  const here=queue[i];if(here===end)break;
+  for(const next of adj.get(here)||[]){
+   if(seen.has(next.to))continue;
+   seen.set(next.to,{prev:here,edge:next.edge});queue.push(next.to);
+  }
+ }
+ if(!seen.has(end))return null;
+ const result=[];
+ for(let id=end;id!==start;){
+  const previous=seen.get(id);
+  result.unshift({from:previous.prev,to:id,edge:previous.edge});
+  id=previous.prev;
+ }
+ return result;
+}
+function royalTrip(map,seed,roads,origins){
+ const adj=adjacencyOf(roads),stops=origins.filter(id=>adj.has(id));
+ if(stops.length<2)return null;
+ const origin=stops[seed%stops.length],visits=new Map([[origin,1]]);
+ let current=origin;const legs=[];
+ for(let n=0;n<Math.min(4,Math.max(2,stops.length));n++){
+  const candidates=stops.filter(id=>id!==current&&findRoute(adj,current,id)?.length);
+  if(!candidates.length)break;
+  candidates.sort((a,b)=>(visits.get(a)||0)-(visits.get(b)||0)||
+   (hash(seed+':'+n+':'+a)%100003)-(hash(seed+':'+n+':'+b)%100003)||
+   (a<b?-1:1));
+  const goal=candidates[0],route=findRoute(adj,current,goal);
+  const segmentLengths=route.map(piece=>Math.hypot(
+   Number(piece.to.split(',')[0])-Number(piece.from.split(',')[0]),
+   Number(piece.to.split(',')[1])-Number(piece.from.split(',')[1])));
+  const distance=segmentLengths.reduce((a,b)=>a+b,0);
+  legs.push({kind:'royal',from:current,to:goal,route,segmentLengths,distance,
+    hold:5+((seed>>>((n*4)%24))%9)});
+  visits.set(goal,(visits.get(goal)||0)+1);current=goal;
+ }
+ if(current!==origin){
+  const route=findRoute(adj,current,origin);
+  if(route?.length)legs.push({kind:'royal',from:current,to:origin,route,
+   segmentLengths:route.map(()=>1),distance:route.length,
+   hold:7+((seed>>>22)%12)});
+ }
+ return legs.length?{origin,legs}:null;
+}
+function naturalHeading(map,start,index,owned,seed){
+ const x=Number(start.split(',')[0])+.5;
+ const outside=sign=>{
+  let count=0;
+  for(let step=1;step<=7;step++){
+   const sx=x+sign*step,y=naturalRoadY(map,index,sx);
+   if(!owned.has(Math.floor(sx)+','+Math.floor(y)))count++;
+  }
+  return count;
+ };
+ const right=outside(1),left=outside(-1);
+ return right===left?(seed&1?1:-1):right>left?1:-1;
+}
+function naturalTrip(map,start,index,seed,owned){
+ const x=Number(start.split(',')[0])+.5,dir=naturalHeading(map,start,index,owned,seed);
+ // Visit distinct trail points beyond the border and on both sides of origin.
+ const stops=[0,dir*(3+seed%3),-dir*(2+((seed>>>3)%4)),
+              dir*(5+((seed>>>7)%3)),0];
+ const legs=[];
+ for(let j=1;j<stops.length;j++){
+  const fromX=x+stops[j-1],toX=x+stops[j];
+  legs.push({kind:'natural',fromX,toX,distance:Math.abs(toX-fromX),
+   hold:j===stops.length-1?7+((seed>>>22)%12):5+((seed>>>(j*4))%9)});
+ }
+ return {origin:start,index,legs};
+}
 function createTravelers(map,{parchment=true,maxTravelers=MAX_TRAVELERS}={}){
  if(!map?.cells||!map?.castle)return [];
- const nodes=[map.castle.x+','+map.castle.y,...eligibleRoadNodes(map)];
- const roads=visibleRoyalRoads(map),owned=ownedSet(map);
- const safe=roads.filter(road=>entirelyOwned(road,owned));
+ const castle=map.castle.x+','+map.castle.y;
+ const origins=[castle,...eligibleRoadNodes(map)];
+ const owned=ownedKeys(map);
+ const roads=visibleRoyalRoads(map),inside=roads.filter(e=>entirelyOwned(e,owned));
  const max=Math.min(MAX_TRAVELERS,Math.max(0,Math.floor(maxTravelers)));
  const walkers=[];
  for(let i=0;i<max;i++){
   const type=TYPES[i%TYPES.length],seed=hash(map.seed+':walker:'+i);
-  const sourceNodes=new Set(nodes);
-  const pool=(OWNED_ONLY.has(type)?safe:roads).filter(edge=>sourceNodes.has(edge.from)||sourceNodes.has(edge.to));
-  const naturalChoices=parchment?nodes.flatMap(id=>{
-    const road=nearestNaturalRoad(map,id);
-    if(road===null)return [];
-    if(!OWNED_ONLY.has(type))return [{id,road,direction:seed%2?-1:1,maxDistance:9}];
-    const directions=[1,-1].map(direction=>({
-      id,road,direction,maxDistance:ownedNaturalLength(map,id,road,direction,owned)
-    })).filter(choice=>choice.maxDistance>0);
-    return directions;
-  }):[];
-  // Roaming merchants and couriers follow natural trails outside owned lands
-  // whenever a Castle/event starting point lies on one. Convoys can do so too.
-  const useNatural=naturalChoices.length>0&&(
-   type==='merchant'||type==='courier'||(seed>>>4)%3===0||pool.length===0);
-  if(!pool.length&&!useNatural)continue;
-  if(useNatural){
-   const item=naturalChoices[seed%naturalChoices.length];
-   const from=numeric(item.id);
-   walkers.push({id:'walker:'+i,type,kind:'natural',start:item.id,index:item.road,
-    originX:from[0]+.5,direction:item.direction,maxDistance:item.maxDistance,
-    speed:(.38+(seed%25)/100)*WALK_SPEED_FACTOR,...travelerSchedule(seed,i)});
-  }else{
-   const edge=pool[seed%pool.length];
-   // Actors emerge only from the Castle or event sites, never from a bare outpost.
-   const direction=sourceNodes.has(edge.from)&&sourceNodes.has(edge.to)?
-     (seed&1?1:-1):sourceNodes.has(edge.from)?1:-1;
-   walkers.push({id:'walker:'+i,type,kind:'royal',start:direction===1?edge.from:edge.to,
-    edge,direction,speed:(.32+(seed%35)/100)*WALK_SPEED_FACTOR,...travelerSchedule(seed,i)});
-  }
+  const pool=OWNED_ONLY.has(type)?inside:roads;
+  const trails=parchment&&!OWNED_ONLY.has(type)?
+   origins.map(id=>({id,index:nearestNaturalRoad(map,id)}))
+    .filter(o=>o.index!==null):[];
+  const natural=trails.length>0&&
+   (type==='merchant'||type==='courier'||(seed>>>4)%3===0||!pool.length);
+  if(!natural&&!pool.length)continue;
+  const itinerary=natural?
+   (()=>{const src=trails[seed%trails.length];
+     return naturalTrip(map,src.id,src.index,seed,owned);})():
+   royalTrip(map,seed,pool,origins);
+  if(!itinerary?.legs?.length)continue;
+  const kind=natural?'natural':'royal';
+  const speed=(natural?.38+(seed%25)/100:.32+(seed%35)/100)*WALK_SPEED_FACTOR;
+  const schedule=travelerSchedule(seed,i);
+  walkers.push({id:'walker:'+i,type,kind,start:itinerary.origin,
+   ...itinerary,...schedule,seed,speed,
+   // Compatibility with existing route tests, now the first of several legs.
+   maxDistance:itinerary.legs[0].distance,
+   edge:kind==='royal'?itinerary.legs[0].route[0]?.edge:null});
  }
  return walkers;
 }
-// Outbound walk -> linger at destination -> return -> linger at origin.
-// Returns null until the actor's individual first-spawn time.
 function travelerMotion(map,walker,elapsed){
  if(!walker||!Number.isFinite(elapsed)||elapsed<(walker.spawnDelay||0))return null;
- let length,heading;
- if(walker.kind==='royal'){
-  const a=numeric(walker.edge?.from),b=numeric(walker.edge?.to);
-  if(!a||!b)return null;
-  length=Math.max(1,Math.hypot(a[0]-b[0],a[1]-b[1]));
-  heading=Math.sign((b[0]-a[0])*walker.direction)||walker.direction;
- }else if(walker.kind==='natural'){
-  length=walker.maxDistance||9;
-  heading=walker.direction;
- }else return null;
- if(!(walker.speed>0))return null;
- const walkTime=length/walker.speed;
- const destinationWait=Math.max(0,walker.destinationWait??0);
- const originWait=Math.max(0,walker.originWait??0);
- const cycle=walkTime*2+destinationWait+originWait;
- let phase=((elapsed-(walker.spawnDelay||0))%cycle+cycle)%cycle;
- let progress=0,moving=false;
- if(phase<walkTime){
-  progress=phase/walkTime;moving=true;
- }else if((phase-=walkTime)<destinationWait){
-  progress=1;
- }else if((phase-=destinationWait)<walkTime){
-  progress=1-phase/walkTime;moving=true;heading=-heading;
- }else{
-  heading=-heading;
+ const legs=walker.legs||[];if(!legs.length||!(walker.speed>0))return null;
+ const cycle=legs.reduce((total,l)=>total+l.distance/walker.speed+l.hold,0);
+ if(!cycle)return null;
+ let time=((elapsed-(walker.spawnDelay||0))%cycle+cycle)%cycle;
+ for(let n=0;n<legs.length;n++){
+  const leg=legs[n],duration=leg.distance/walker.speed;
+  const moving=time<duration,progress=moving?time/duration:1;
+  if(time<duration+leg.hold||n===legs.length-1){
+   let position=null,heading=1;
+   if(leg.kind==='natural'){
+    const x=leg.fromX+(leg.toX-leg.fromX)*progress;
+    position={x,y:naturalRoadY(map,walker.index,x)};
+    heading=Math.sign(leg.toX-leg.fromX)||1;
+   }else{
+    let remaining=leg.distance*progress;
+    for(let i=0;i<leg.route.length;i++){
+     const segment=leg.route[i],span=leg.segmentLengths[i];
+     if(remaining<=span||i===leg.route.length-1){
+      const t=Math.max(0,Math.min(1,remaining/span));
+      position=bezierPoint(segment.edge,segment.from===segment.edge.from?t:1-t);
+      const a=numeric(segment.from),b=numeric(segment.to);
+      heading=Math.sign(b[0]-a[0])||Math.sign(b[1]-a[1])||1;break;
+     }
+     remaining-=span;
+    }
+   }
+   return {position,moving,heading,progress,legIndex:n,
+      from:leg.from??walker.start,to:leg.to??null};
+  }
+  time-=duration+leg.hold;
  }
- let position;
- if(walker.kind==='royal'){
-  position=bezierPoint(walker.edge,walker.direction===1?progress:1-progress);
- }else{
-  const x=walker.originX+walker.direction*length*progress;
-  position={x,y:naturalRoadY(map,walker.index,x)};
- }
- return {position,moving,heading,progress};
+ return null;
 }
 function travelerPosition(map,walker,elapsed){
  return travelerMotion(map,walker,elapsed)?.position||null;
 }
-function visibleTraveler(map,walker,pos,owned=null){
- if(!pos)return false;
- const id=Math.floor(pos.x)+','+Math.floor(pos.y);
- if(!map.cells?.[id])return false; // Never reveal hidden fog by a walker.
- return !OWNED_ONLY.has(walker.type)||(owned||ownedSet(map)).has(id);
+function visibleTraveler(map,walker,pos,owned){
+ if(!pos||!map?.cells)return false;
+ const id=Math.floor(pos.x)+','+Math.floor(pos.y),cell=map.cells[id];
+ if(!cell||!(cell.explored||
+   ['revealed','in_progress','failed','completed'].includes(cell.status)))return false;
+ return !OWNED_ONLY.has(walker.type)||(owned||ownedKeys(map)).has(id);
 }
 export {TYPES,OWNED_ONLY,MAX_TRAVELERS,bezierPoint,entirelyOwned,
- naturalRoadY,nearestNaturalRoad,createTravelers,travelerPosition,travelerMotion,visibleTraveler};
+ naturalRoadY,nearestNaturalRoad,createTravelers,travelerMotion,travelerPosition,
+ visibleTraveler,adjacencyOf,findRoute};
