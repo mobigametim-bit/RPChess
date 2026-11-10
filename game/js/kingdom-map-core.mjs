@@ -7,6 +7,7 @@ import {worldAt,biomeAt} from './kingdom-world-core.mjs?v=20261109-kingdom-feedb
 import {SCOUT_RADIUS} from './kingdom-world-config.mjs';
 import {KINGDOM_OUTPOST_SHARD_COST} from './arena-core.mjs?v=20261109-kingdom-economy-v7';
 import {DEFAULT_KINGDOM_ECONOMY} from './kingdom-economy-config.mjs';
+import {synchronizeRoyalRoads} from './kingdom-road-network.mjs';
 
 // Live defaults mirror Atlas Lab's canonical economy; change only after acceptance.
 const production=DEFAULT_KINGDOM_ECONOMY.production;
@@ -87,8 +88,8 @@ function growTerritory(map){
   if(cells===map.cells)cells={...map.cells};
   cells[id]={...cells[id],annexed:true};
  }
- if(cells===map.cells&&prev.length===ordered.length&&prev.every((id,i)=>id===ordered[i]))return map;
- return {...map,cells,centralOwnedCells:ordered};
+ if(cells===map.cells&&prev.length===ordered.length&&prev.every((id,i)=>id===ordered[i]))return synchronizeRoyalRoads(map);
+ return synchronizeRoyalRoads({...map,cells,centralOwnedCells:ordered});
 }
 function migrateKingdomMap(map,run=null){
  if(!validateKingdomMap(map))return map;
@@ -190,7 +191,7 @@ function buildSettlement(map,point,transactionId,{gold,shards,raceTag='humans'}=
   {id,transactionId,gold,shards,ownedAtBuild}];
  next.cells[id]={...previous,status:'completed',type:'settlement',completedOnce:true,
   selectedEncounter:encounter,production:null,explored:true};
- return {ok:true,map:advanceDay(linkCompletedRoad(next,id),'build-settlement:'+id),encounter};
+ return {ok:true,map:synchronizeRoyalRoads(advanceDay(linkCompletedRoad(next,id),'build-settlement:'+id)),encounter};
 }
 function canBuildOutpost(map,point){
  if(!validateKingdomMap(map)||!isPoint(point)||map.pendingCell||isOwned(map,point))return false;
@@ -227,7 +228,7 @@ function buildOutpost(map,point,transactionId){
    (hashString(map.seed+':outpost:'+id+':'+b)>>>0)).slice(0,2);
  const post={id,cells:[id,...neighbors],transactionId,price:KINGDOM_OUTPOST_SHARD_COST};
  const next=linkOutpostRoad({...map,outposts:[...(map.outposts||[]),post]},id);
- return {ok:true,map:advanceDay(next,'build-outpost:'+id),outpost:post};
+ return {ok:true,map:synchronizeRoyalRoads(advanceDay(next,'build-outpost:'+id)),outpost:post};
 }
 function advanceDay(map,actionId){
  if(typeof actionId!=='string'||!actionId)return map;
@@ -264,7 +265,7 @@ function createKingdomMap(run,playerPower=400,raceTag='humans'){
   peakKingPower:power,annexationPointsSpent:0,battlePointsEarned:0,legacyBonusLands:0,
   creditedBattleEncounterIds:[],uniqueFirstConquests:[],centralOwnedCells:[],
   day:1,calendarActions:[],processedThroughWeek:0,outposts:[],builtSettlements:[],productionClaims:[],
-  completedRoads:[],lastCompletedRouteCell:null,outpostRoads:[],
+  completedRoads:[],lastCompletedRouteCell:null,outpostRoads:[],royalRoads:[],
   completedNewEncounterCount:0,productionCyclesResolved:0});
 }
 function validateKingdomMap(map){
@@ -294,6 +295,10 @@ function validateKingdomMap(map){
    /^-?[0-9]+,-?[0-9]+$/.test(road.from)&&/^-?[0-9]+,-?[0-9]+$/.test(road.to)&&
    Number.isFinite(road.bend))))return false;
  if(map.lastCompletedRouteCell!=null&&!/^-?[0-9]+,-?[0-9]+$/.test(map.lastCompletedRouteCell))return false;
+ if(map.royalRoads!=null&&(!Array.isArray(map.royalRoads)||
+   !map.royalRoads.every(road=>road&&typeof road.id==='string'&&
+    /^-?[0-9]+,-?[0-9]+$/.test(road.from)&&/^-?[0-9]+,-?[0-9]+$/.test(road.to)&&
+    Number.isFinite(road.bend))))return false;
  if(map.calendarActions!=null&&(!Array.isArray(map.calendarActions)||
     !map.calendarActions.every(id=>typeof id==='string'&&id.length>0)))return false;
  if(map.centralOwnedCells!=null&&(!Array.isArray(map.centralOwnedCells)||
@@ -378,8 +383,8 @@ function revealAround(map,run,power,radius=SCOUT_RADIUS){
   if(!cells)cells={...map.cells};
   cells[id]=entry;
  }
- return cells?{...map,cells,explorationVersion:2}:
-  map.explorationVersion===2?map:{...map,explorationVersion:2};
+ return synchronizeRoyalRoads(cells?{...map,cells,explorationVersion:2}:
+  map.explorationVersion===2?map:{...map,explorationVersion:2});
 }
 function enterCell(map,point,encounter=null,now=Date.now()){
  if(!validateKingdomMap(map)||!adjacent(map.king,point)||map.pendingCell)return {ok:false,reason:'not_adjacent_or_busy',map};
@@ -392,10 +397,12 @@ function enterCell(map,point,encounter=null,now=Date.now()){
   next.cells[id]={...existing,status:'revealed',completedOnce:true,production:null,respawnReady:false,
    explored:true,lastEntryFrom:{...before}};
   next.pendingCell=id;
+  next=synchronizeRoyalRoads(next);
   return {ok:true,kind:'retry',map:next,cell:next.cells[id]};
  }
  if(id===keyOf(map.castle.x,map.castle.y)||existing?.status==='completed'){
   if(existing)next.cells[id]={...existing,explored:true};
+  next=synchronizeRoyalRoads(next);
   return {ok:true,kind:'walk',map:next,cell:next.cells[id]||EMPTY};
  }
  if(existing?.status==='failed'||existing?.status==='revealed'){
@@ -403,6 +410,7 @@ function enterCell(map,point,encounter=null,now=Date.now()){
   const first=!existing.explored&&existing.status==='revealed';
   next.cells[id]={...existing,status:'revealed',explored:true,lastEntryFrom:{...before}};
   next.pendingCell=id;
+  next=synchronizeRoyalRoads(next);
   return {ok:true,kind:first?'discover':'retry',map:next,cell:next.cells[id]};
  }
  if(existing?.status==='in_progress')return {ok:false,reason:'active_encounter',map};
@@ -410,6 +418,7 @@ function enterCell(map,point,encounter=null,now=Date.now()){
  next.cells[id]={status:'revealed',annexed:isOwned(map,id),explored:true,selectedEncounter:encounter,lastEntryFrom:{...before},
    discoveredAt:now,firstVisit:true};
  next.pendingCell=id;
+ next=synchronizeRoyalRoads(next);
  return {ok:true,kind:'discover',map:next,cell:next.cells[id]};
 }
 function beginEncounter(map,id){
@@ -442,7 +451,7 @@ function finishEncounter(map,id,{success=false,opponentPower=0}={}){
   }
  }
  next=advanceDay(next,'complete:'+id+':'+(prev.attempts||0)+':'+(success?'success':'failed'));
- return {ok:true,map:next,first,retreated:!success};
+ return {ok:true,map:synchronizeRoyalRoads(next),first,retreated:!success};
 }
 // Engine encounter IDs are derived from the seed; map route IDs identify
 // cells. Accept both, including old saves created before explicit receipts.
