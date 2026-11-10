@@ -68,7 +68,8 @@ function createTravelers(map,{parchment=true,maxTravelers=MAX_TRAVELERS}={}){
  const walkers=[];
  for(let i=0;i<max;i++){
   const type=TYPES[i%TYPES.length],seed=hash(map.seed+':walker:'+i);
-  const pool=OWNED_ONLY.has(type)?safe:roads;
+  const sourceNodes=new Set(nodes);
+  const pool=(OWNED_ONLY.has(type)?safe:roads).filter(edge=>sourceNodes.has(edge.from)||sourceNodes.has(edge.to));
   const naturalChoices=parchment&&!OWNED_ONLY.has(type)?
     nodes.map(id=>({id,road:nearestNaturalRoad(map,id)})).filter(o=>o.road!==null):[];
   const useNatural=naturalChoices.length>0&&((seed>>>4)%3===0||pool.length===0);
@@ -81,7 +82,9 @@ function createTravelers(map,{parchment=true,maxTravelers=MAX_TRAVELERS}={}){
     phase:((seed>>>8)%1000)/1000});
   }else{
    const edge=pool[seed%pool.length];
-   const direction=seed&1?1:-1;
+   // Actors emerge only from the Castle or event sites, never from a bare outpost.
+   const direction=sourceNodes.has(edge.from)&&sourceNodes.has(edge.to)?
+     (seed&1?1:-1):sourceNodes.has(edge.from)?1:-1;
    walkers.push({id:'walker:'+i,type,kind:'royal',start:direction===1?edge.from:edge.to,
     edge,direction,speed:.32+(seed%35)/100,phase:((seed>>>8)%1000)/1000});
   }
