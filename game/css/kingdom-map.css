@@ -390,6 +390,7 @@ body.kingdom-map-active .resource-hud{display:none!important}
  position:absolute;inset:0;z-index:5;width:100%;height:100%;
  pointer-events:none;user-select:none
 }
+.km-travelers-layer{position:absolute;inset:0;z-index:6;width:100%;height:100%;pointer-events:none;user-select:none}
 .kingdom-map-screen .km-route-card--completed{
  border-color:rgba(157,196,131,.73);
  box-shadow:0 10px 25px #0008,inset 0 0 0 1px #c1daa21a
