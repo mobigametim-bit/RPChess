@@ -30,6 +30,13 @@ const assert=require('assert'),fs=require('fs'),path=require('path'),{pathToFile
   const difficulty=await import(pathToFileURL(path.join(root,'game/js/encounter-difficulty.mjs')).href);
   const skirmish=await import(pathToFileURL(path.join(root,'game/js/skirmish-core.mjs')).href);
   const roster=rosterData.createStarterRoster(),selected=skirmish.defaultCombatSelection(roster);
+  const ordinary={id:'army:humans:pawn:0',pieceType:'pawn',status:'healthy',isArmyRecruit:true};
+  assert(!skirmish.automaticCombatSelection([...roster,ordinary]).includes(ordinary.id),
+    'Skirmish automation must never deploy ordinary Army recruits');
+  assert.strictEqual(skirmish.validateSelection([...roster,ordinary],[...selected,ordinary.id]).reason,'character_unavailable',
+    'Skirmish must reject regular recruits even when supplied in a saved or manual squad');
+  assert(!skirmishAppSource.includes('armyCandidates(activeRun)'),
+    'Skirmish presentation must not merge the persistent Army into the named hero roster');
   assert.strictEqual(skirmish.MIN_SKIRMISH_PIECES,2,'Skirmish must require King plus at least one named figure');
   assert.strictEqual(selected.length,6);const valid=skirmish.validateSelection(roster,selected);assert.strictEqual(valid.ok,true);assert.strictEqual(valid.points,13);assert.strictEqual(valid.count,6);assert.ok(selected.includes('king.oathkeeper'));
   assert.strictEqual(skirmish.validateSelection(roster,selected.filter(id=>id!=='king.oathkeeper')).reason,'king_required');
