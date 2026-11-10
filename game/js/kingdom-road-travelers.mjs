@@ -66,6 +66,19 @@ function nearestNaturalRoad(map,origin){
  // Natural line must actually run across the event/castle tile.
  return dist<=.49?nearest:null;
 }
+// For local-only walkers, a natural road is allowed as far as every
+// intermediate location stays inside the kingdom (never only its endpoints).
+function ownedNaturalLength(map,start,road,direction,owned){
+ const cell=numeric(start);if(!cell)return 0;
+ const originX=cell[0]+.5;
+ let allowed=0;
+ for(let d=.025;d<=8;d+=.025){
+  const x=originX+d*direction,y=naturalRoadY(map,road,x);
+  if(!owned.has(Math.floor(x)+','+Math.floor(y)))break;
+  allowed=d;
+ }
+ return allowed>=.55?allowed:0;
+}
 function createTravelers(map,{parchment=true,maxTravelers=MAX_TRAVELERS}={}){
  if(!map?.cells||!map?.castle)return [];
  const nodes=[map.castle.x+','+map.castle.y,...eligibleRoadNodes(map)];
@@ -77,16 +90,23 @@ function createTravelers(map,{parchment=true,maxTravelers=MAX_TRAVELERS}={}){
   const type=TYPES[i%TYPES.length],seed=hash(map.seed+':walker:'+i);
   const sourceNodes=new Set(nodes);
   const pool=(OWNED_ONLY.has(type)?safe:roads).filter(edge=>sourceNodes.has(edge.from)||sourceNodes.has(edge.to));
-  const naturalChoices=parchment&&!OWNED_ONLY.has(type)?
-    nodes.map(id=>({id,road:nearestNaturalRoad(map,id)})).filter(o=>o.road!==null):[];
+  const naturalChoices=parchment?nodes.flatMap(id=>{
+    const road=nearestNaturalRoad(map,id);
+    if(road===null)return [];
+    if(!OWNED_ONLY.has(type))return [{id,road,direction:seed%2?-1:1,maxDistance:9}];
+    const directions=[1,-1].map(direction=>({
+      id,road,direction,maxDistance:ownedNaturalLength(map,id,road,direction,owned)
+    })).filter(choice=>choice.maxDistance>0);
+    return directions;
+  }):[];
   const useNatural=naturalChoices.length>0&&((seed>>>4)%3===0||pool.length===0);
   if(!pool.length&&!useNatural)continue;
   if(useNatural){
    const item=naturalChoices[seed%naturalChoices.length];
-   const from=numeric(item.id),direction=seed%2?-1:1;
+   const from=numeric(item.id);
    walkers.push({id:'walker:'+i,type,kind:'natural',start:item.id,index:item.road,
-    originX:from[0]+.5,direction,speed:.38+(seed%25)/100,
-    phase:((seed>>>8)%1000)/1000});
+    originX:from[0]+.5,direction:item.direction,maxDistance:item.maxDistance,
+    speed:.38+(seed%25)/100,phase:((seed>>>8)%1000)/1000});
   }else{
    const edge=pool[seed%pool.length];
    // Actors emerge only from the Castle or event sites, never from a bare outpost.
@@ -109,7 +129,8 @@ function travelerPosition(map,walker,elapsed){
   return bezierPoint(walker.edge,parameter);
  }
  if(walker.kind==='natural'){
-  const cycle=9;const u=((elapsed*walker.speed+walker.phase*cycle)% (cycle*2)+cycle*2)%(cycle*2);
+  const cycle=walker.maxDistance||9;
+  const u=((elapsed*walker.speed+walker.phase*cycle)%(cycle*2)+cycle*2)%(cycle*2);
   const delta=u>cycle?cycle*2-u:u;
   const x=walker.originX+walker.direction*delta;
   return {x,y:naturalRoadY(map,walker.index,x)};
