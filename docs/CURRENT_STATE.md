@@ -148,7 +148,7 @@ The accepted Reboot core currently includes:
 
 - Caravan Chess960 encounters are merged on `main` through PR #144; cross-device VK Cloud Save through PRs #145–147.
 
-Arena is planned and is not part of this implementation list.
+At the September 2026 baseline, Arena was still listed as planned. This is historical: current `main` contains `game/js/arena-app.mjs` and `game/js/arena-core.mjs`, and the Kingdom branch uses its Honor Shards ledger.
 
 Historical acceptance/build receipts remain in the numbered design documents and changelog.
 
