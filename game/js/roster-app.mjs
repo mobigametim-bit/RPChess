@@ -151,7 +151,7 @@ function ensureRosterTabs(){
   }
   for(const button of nav.querySelectorAll('[data-roster-arm-tab]')){
     const named=button.dataset.rosterArmTab==='named';
-    button.textContent=named?(currentLanguage()==='en'?'Named heroes':'Именные герои'):(currentLanguage()==='en'?'Army':'Армия');
+    button.textContent=named?(currentLanguage()==='en'?'Heroes':'Герои'):(currentLanguage()==='en'?'Army':'Армия');
     button.classList.toggle('is-active',button.dataset.rosterArmTab===activeRosterTab);
     button.setAttribute('aria-pressed',String(button.dataset.rosterArmTab===activeRosterTab));
   }
