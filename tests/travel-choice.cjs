@@ -193,8 +193,8 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(new Set(scheduledTravelers.map(a=>a.spawnDelay)).size===scheduledTravelers.length,
     'travelers start at staggered times');
   const firstTraveler=scheduledTravelers[0];
-  assert(firstTraveler.legs.length>=3,
-    'a journey contains intermediate stops, not only a fixed A-B shuttle');
+  assert(firstTraveler.legs.length>=2,
+    'a traveler must have an outward route and return trip');
   assert(walkers.travelerPosition(fourRoad,firstTraveler,firstTraveler.spawnDelay),
     'traveler appears at its scheduled start');
   if(firstTraveler.spawnDelay>0)
@@ -206,11 +206,10 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(hold1&&!hold1.moving&&hold2&&!hold2.moving,
     'traveler is resting at an intermediate waypoint');
   assert.deepStrictEqual(hold1.position,hold2.position,'no walking during a pause');
-  const multiStop=scheduledTravelers.filter(a=>a.kind==='royal');
-  assert(multiStop.length>0&&multiStop.some(a=>new Set(a.legs.map(l=>l.to)).size>=3),
-    'NPCs can visit at least three distinct event/castle waypoints in one route');
-  // Wild merchants and couriers must use generated natural trails past the
-  // border, not only Royal roads inside the owned territory.
+  assert(scheduledTravelers.every(actor=>actor.legs.length>=2),
+    'every eligible NPC has at least outbound and return legs');
+  // Courier may cross the foreign frontier on a natural road; a merchant
+  // must NOT appear merely because a trail crosses an unrelated road event.
   let trailId=null;
   for(let y=-10;y<=10&&!trailId;y++)for(let x=-10;x<=10;x++){
    const candidate=x+','+y;
@@ -221,22 +220,25 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(trailId,'fixture has a natural trail crossing an event square');
   const trailMap={...secondRoad,cells:{...secondRoad.cells,
    [trailId]:{status:'revealed',explored:true,annexed:true,
-    selectedEncounter:{id:'road-trail-source',type:'event'}}}};
+    selectedEncounter:{id:'road-trail-source',type:'event'}}},
+   // Clear the royal network to isolate the natural-road behavior.
+   royalRoadsVersion:3,royalRoads:[],completedRoads:[]};
   const roaming=walkers.createTravelers(trailMap,{parchment:true});
-  for(const type of ['merchant','courier']){
-   const actor=roaming.find(w=>w.type===type);
-   assert(actor&&actor.kind==='natural',
-     'roaming '+type+' must use a natural trail when one crosses a Castle/event origin');
-   const destination=walkers.travelerPosition(trailMap,actor,actor.spawnDelay+actor.maxDistance/actor.speed);
-   assert(destination&&!mapCore.isOwned(trailMap,{
-     x:Math.floor(destination.x),y:Math.floor(destination.y)}),
-     'the '+type+' must be able to go beyond the kingdom boundary along that trail');
-   const outsideId=Math.floor(destination.x)+','+Math.floor(destination.y);
-   const visibleOutside={...trailMap,cells:{...trailMap.cells,
-    [outsideId]:{status:'completed',explored:true,annexed:false,type:'empty'}}};
-   assert(walkers.visibleTraveler(visibleOutside,actor,destination),
-     'the '+type+' remains visible on a previously scouted foreign trail');
-  }
+  assert(!roaming.some(actor=>actor.type==='merchant'),
+    'merchants need a castle-to-settlement route, not arbitrary road scenery');
+  const courier=roaming.find(actor=>actor.type==='courier');
+  assert(courier?.kind==='natural',
+    'a courier on a scouted natural highway may travel outside the kingdom');
+  const destination=walkers.travelerPosition(trailMap,courier,
+    courier.spawnDelay+courier.maxDistance/courier.speed);
+  assert(destination&&!mapCore.isOwned(trailMap,{
+    x:Math.floor(destination.x),y:Math.floor(destination.y)}),
+    'a courier can continue along a natural highway across the foreign border');
+  const outsideId=Math.floor(destination.x)+','+Math.floor(destination.y);
+  const visibleOutside={...trailMap,cells:{...trailMap.cells,
+   [outsideId]:{status:'completed',explored:true,annexed:false,type:'empty'}}};
+  assert(walkers.visibleTraveler(visibleOutside,courier,destination),
+    'the courier is visible on previously scouted foreign land');
 
   const mapRun=persistence.createRun({id:'kingdom-map-contract',now:1700000000000});
   for(const type of ['battle','skirmish']){
