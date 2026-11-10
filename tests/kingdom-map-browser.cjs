@@ -168,13 +168,14 @@ async function assertTileImage(page,cellId,relativePath){
     else localStorage.setItem('rpchess.reboot.v1.arena',snapshot.arena);
     delete globalThis.__castleEconomyFixture;globalThis.RPChessKingdomMap.open();
   },key);
-  // The new parchment map is visual only: the original tile view remains
-  // available and selected runs never inherit a new save schema.
-  const mapSkin=page.locator('[data-kingdom-skin-switch]');
-  assert.equal(await mapSkin.getAttribute('aria-pressed'),'false',
-    'classic board remains the default unless the user opts into parchment');
-  await mapSkin.click();
-  assert.equal(await mapSkin.getAttribute('aria-pressed'),'true');
+  // Classic was retired. Even an older persisted 'classic' preference must
+  // open parchment; the actual Journey save and encounter data stay unchanged.
+  await page.evaluate(()=>{
+    localStorage.setItem('rpchess.kingdom.visual.v1','classic');
+    globalThis.RPChessKingdomMap.open();
+  });
+  assert.equal(await page.locator('[data-kingdom-skin-switch]').count(),0,
+    'there is no Classic/Parchment switch in the Kingdom interface');
   const atlas=page.locator('[data-kingdom-parchment]');
   assert.equal(await atlas.count(),1,'parchment must draw one continuous canvas behind clickable cells');
   const sandstone=await page.evaluate(async()=>{
@@ -360,13 +361,9 @@ async function assertTileImage(page,cellId,relativePath){
     'owned territory immediately reveals its encounter SVG');
   assert(terrain.pixels[3]>0&&terrain.pixels[7]>0,
     'procedurally painted terrain and fog must both have visible pixels');
-  assert.deepEqual(await read(page),before,'skin toggle must not change the run, encounters or save state');
+  assert.deepEqual(await read(page),before,'retired Classic preference must not modify the Journey save');
   await page.screenshot({path:path.join(output,'kingdom-parchment-experiment.png')});
-  await mapSkin.click();
-  assert.equal(await atlas.count(),0,'switching back must remove the optional canvas');
-  assert.equal(await mapSkin.getAttribute('aria-pressed'),'false');
-  assert.equal(await page.evaluate(()=>localStorage.getItem('rpchess.kingdom.visual.v1')),'classic',
-    'the visual preference is independent from the Journey save');
+  assert.equal(await atlas.count(),1,'parchment remains the only supported Kingdom map skin');
 
   assert.deepEqual(before.kingdomMap.king,{x:0,y:0});
   assert.equal(before.kingdomMap.day,1,'new game begins on Day 1');
@@ -377,7 +374,7 @@ async function assertTileImage(page,cellId,relativePath){
   assert.equal(await page.locator('[data-kingdom-cell="4,3"] .km-object').count(),0,
     "unscouted cells have neither question marks nor encounter art");
   assert.equal(await page.locator(".km-fog-mark").count(),0,
-    "classic map never draws mystery punctuation");
+    "the permanent parchment map never draws mystery punctuation");
   const castleCard=page.locator('[data-kingdom-castle-card="humans"]');
   assert.equal(await castleCard.count(),1,'castle opens its own race-specific inspector card');
   assert((await castleCard.locator('.km-route-card__visual').evaluate(el=>
