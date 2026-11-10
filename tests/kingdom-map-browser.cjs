@@ -248,7 +248,9 @@ async function assertTileImage(page,cellId){
         territoryTravelerQuota({castle,cells:{},centralOwnedCells:[
           '0,0',...Array.from({length:lands},(_,i)=>(i+1)+',0')
         ]})])),
-      distinct:territoryTravelerQuota({...map,outposts:[{cells:['1,0','5,0']}]}),
+      distinct:territoryTravelerQuota({...map,outposts:[{
+        cells:['1,0','5,0','8,0','9,0','10,0','11,0','12,0']
+      }]}),
       own:[...OWNED_ONLY],
       routes:{merchant:started.merchant[0]?.legs[0]?.to,
         builder:started.builders[0]?.legs[0]?.to,
@@ -259,7 +261,8 @@ async function assertTileImage(page,cellId){
   assert.equal(npcPolicy.largerQuota,2);
   assert.deepEqual(npcPolicy.boundaries,{0:0,4:0,5:1,9:1,10:2,11:2},
     'NPC quotas increase only after each complete block of five owned lands');
-  assert.equal(npcPolicy.distinct,1,'castle and duplicate outpost cells must not inflate territory');
+  assert.equal(npcPolicy.distinct,1,
+    'the HUD land count, not distinct Castle/outpost route cells, must determine NPC quota');
   for(const type of ['merchant','convoy','courier','patrol','builders']){
     assert.equal(npcPolicy.initial[type],1,'one eligible '+type+' for five lands');
     assert.equal(npcPolicy.larger[type],2,'at most two eligible '+type+' for eleven lands');
@@ -607,6 +610,9 @@ async function assertTileImage(page,cellId){
     'Honor shards reflect the persistent Arena ledger, not current run data');
   assert.equal(await page.locator('[data-kingdom-points]').textContent(),'5/5',
     'the header shows five automatically held lands out of five Power-based capacity');
+  const liveNpcCount=Number(await page.locator('[data-kingdom-travelers]').getAttribute('data-walker-count'));
+  assert(Number.isInteger(liveNpcCount)&&liveNpcCount<=5,
+    'HUD 5/5 may spawn at most five decorative NPCs, one per type');
   assert.equal(await page.locator('[data-kingdom-power]').textContent(),'500',
     'Power appears in the shared resource strip with its real rating');
   assert.equal(await page.locator('[data-kingdom-threat]').count(),0,
