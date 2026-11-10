@@ -1088,7 +1088,7 @@ async function assertTileImage(page,cellId){
     const entered=core.enterCell(run.kingdomMap,{x:1,y:0},route);
     if(!entered.ok)throw new Error('fixture cannot enter adjacent skirmish tile');
     const map={...entered.map,cells:{...entered.map.cells,
-      '1,0':{...entered.map.cells['1,0'],
+      '1,0':{...entered.map.cells['1,0'],selectedEncounter:route,
         stepSuppliesCharged:true,stepSuppliesRequested:1,stepSuppliesPaid:0}}};
     run.kingdomMap=map;
     localStorage.setItem(storage,JSON.stringify(run));
