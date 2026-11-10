@@ -45,12 +45,13 @@
 .mm-menu-approved .mm-kingdom-items img,.mm-menu-approved .mm-kingdom-king{
   position:absolute;display:block;object-fit:contain;transform:translate(-50%,-50%);pointer-events:none}
 .mm-menu-approved .mm-kingdom-items img{z-index:1}
-.mm-menu-approved .mm-kingdom-king{z-index:6;filter:drop-shadow(0 3px 4px #161c20)}
+.mm-menu-approved .mm-kingdom-king{z-index:7;filter:drop-shadow(0 3px 4px #161c20)}
 .mm-menu-approved .mm-kingdom-parchment{z-index:0}
 .mm-menu-approved .mm-kingdom-overlay{z-index:1}
-.mm-menu-approved .mm-kingdom-actors{z-index:3}
 .mm-menu-approved .mm-kingdom-items{z-index:4}
-.mm-menu-approved .mm-kingdom-fog{z-index:5}
+/* Same order as Journey: NPC over sites, below fog and the player's king. */
+.mm-menu-approved .mm-kingdom-actors{z-index:5}
+.mm-menu-approved .mm-kingdom-fog{z-index:6}
 .mm-menu-approved .chronicle-panel{
   justify-self:center!important;align-self:center!important;min-width:0!important;
   max-width:100%!important;height:auto!important;max-height:calc(100dvh - 24px)!important;

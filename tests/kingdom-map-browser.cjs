@@ -199,6 +199,24 @@ async function assertTileImage(page,cellId){
   assert.equal(await travelerLayer.count(),1,'decorative travelers occupy one noninteractive canvas');
   assert.equal(await travelerLayer.getAttribute('data-decorative-only'),'true');
   assert.equal(await travelerLayer.evaluate(el=>getComputedStyle(el).pointerEvents),'none');
+  const npcStack=await page.evaluate(()=>{
+    const z=selector=>{
+      const el=document.querySelector(selector);
+      return el?Number(getComputedStyle(el).zIndex):null;
+    };
+    return {road:z('.km-kingdom-overlay'),site:z('.km-object--site'),
+      defender:z('.km-object--defender'),npc:z('.km-travelers-layer'),
+      fog:z('.km-parchment-fog'),king:z('.km-king'),
+      npcPointer:getComputedStyle(document.querySelector('.km-travelers-layer')).pointerEvents};
+  });
+  assert(npcStack.site!==null&&npcStack.defender!==null,
+    'encounter fixture must expose both a road site and its defender');
+  assert(npcStack.road<npcStack.site&&npcStack.site<npcStack.npc&&
+    npcStack.defender<npcStack.npc&&npcStack.npc<npcStack.fog&&
+    npcStack.fog<npcStack.king,
+    'walkers must render above encounter site + defender but below fog and king: '+JSON.stringify(npcStack));
+  assert.equal(npcStack.npcPointer,'none',
+    'foreground decorative NPC canvas must not intercept map clicks');
   if(Number(await travelerLayer.getAttribute('data-walker-count'))>0){
     await page.waitForFunction(()=>
       document.querySelector('[data-kingdom-travelers]')?.dataset.atlasStatus==='loaded',

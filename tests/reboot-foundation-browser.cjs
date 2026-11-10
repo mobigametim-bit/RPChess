@@ -170,6 +170,16 @@ async function kingdomBackdropContract(browser) {
       assert.strictEqual(m.outside,false,'kingdom must be outside the left menu column');
       assert.strictEqual(m.icons,6,'six PNG icons remain visible in '+width+'x'+height);
       assert.strictEqual(m.pointer,'none','background cannot block menu clicks');
+      const foreground=await page.evaluate(()=>{
+        const stage=document.querySelector('[data-main-menu-kingdom]');
+        const z=selector=>Number(getComputedStyle(stage.querySelector(selector)).zIndex);
+        return {roads:z('.mm-kingdom-overlay'),site:z('.mm-kingdom-items'),
+          walkers:z('.mm-kingdom-actors'),fog:z('.mm-kingdom-fog'),
+          king:z('.mm-kingdom-king')};
+      });
+      assert(foreground.roads<foreground.site&&foreground.site<foreground.walkers&&
+        foreground.walkers<foreground.fog&&foreground.fog<foreground.king,
+        width+'x'+height+': NPC must pass over sites, under fog/king: '+JSON.stringify(foreground));
       for(const idx of [0,1,2,3])
         assert(Math.abs(m.menu[idx]-m.stage[idx])<=2,
           width+'x'+height+' backdrop must fill menu edge-to-edge: '+JSON.stringify(m));
