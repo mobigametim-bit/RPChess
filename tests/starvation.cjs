@@ -116,6 +116,33 @@ class MemoryStorage {
   assert.strictEqual(reloaded.roster.filter((character) => character.status === 'dead').length, 1, 'exactly one casualty must persist through reload');
 
   const travelSource = fs.readFileSync(path.join(game, 'js/travel-choice-app.mjs'), 'utf8');
+  const mapCore = await import(pathToFileURL(path.join(game,'js/kingdom-map-core.mjs')).href);
+  const checkRun=persistence.createRun({now:1111,id:'starvation-entrance-guard'});
+  const initialMap=mapCore.createKingdomMap(checkRun,500);
+  const pending=mapCore.enterCell(initialMap,{x:1,y:0},{
+    id:'test-skirmish-a',type:'skirmish',stars:2,step:1,seed:'test-skirmish',
+    kingdomCell:'1,0'
+  });
+  assert(pending.ok&&pending.map.pendingCell==='1,0'&&pending.map.cells['1,0'].status==='revealed');
+  const canceled=mapCore.cancelEncounterBeforeStart(pending.map,'1,0');
+  assert(canceled.ok,'invalid encounter must be cancelable before combat begins');
+  assert.strictEqual(canceled.map.pendingCell,null,'the previous encounter cannot lock the map');
+  assert.strictEqual(canceled.map.cells['1,0'].status,'revealed','skirmish remains ready for a future retry');
+  assert.deepStrictEqual(canceled.map.king,{x:0,y:0},'the king retreats from the blocked event');
+  assert.strictEqual(canceled.map.day,pending.map.day,'abort must not count as a combat loss or extra day');
+  assert(!mapCore.cancelEncounterBeforeStart(canceled.map,'1,0').ok,'abort is idempotent');
+  const journeySource=fs.readFileSync(path.join(game,'js/kingdom-map-app.mjs'),'utf8');
+  assert(journeySource.includes('const staged={...current.kingdomMap'),
+    'Kingdom map must stage the route before combat, leaving hunger to resolve first');
+  const travelSource=fs.readFileSync(path.join(game,'js/travel-choice-app.mjs'),'utf8');
+  assert(travelSource.includes('function proceedToEncounter(choice)')&&
+    travelSource.includes('hasHealthySkirmishCompanion(activeRun)')&&
+    travelSource.includes('beginEncounter(map,id)')&&
+    travelSource.includes('cancelEncounterBeforeStart(map,id)'),
+    'skirmish eligibility is rechecked after starvation, before the map fight is begun');
+  assert(travelSource.includes('proceedToEncounter(choice);}')&&
+    travelSource.includes('if(showPendingStarvation())return true;'),
+    'restored or newly acknowledged hunger must not bypass pre-battle validation');
   const appSource = fs.readFileSync(path.join(game, 'js/starvation-app.mjs'), 'utf8');
   const uiSource = fs.readFileSync(path.join(game, 'localization/ui.mjs'), 'utf8');
   const css = fs.readFileSync(path.join(game, 'css/starvation.css'), 'utf8');

@@ -55,6 +55,9 @@ async function desktopContract(browser) {
       [...document.querySelectorAll('.mm-menu-icon')].every(node=>
         node.querySelector('img')?.naturalWidth>0&&node.textContent.trim()===''));
     assert.strictEqual(await menu.locator('.reboot-wordmark').count(), 0);
+    const newMenuLogo=menu.locator('.mm-brand-logo');
+    assert.strictEqual(await newMenuLogo.isVisible(),true,'desktop menu localized logo must be visible');
+    assert((await newMenuLogo.getAttribute('src')).endsWith('logo_ru.png'),'default menu wordmark in Russian');
     assert.strictEqual(await menu.locator('[data-main-menu-kingdom]').isHidden(), true);
     assert.strictEqual(await menu.locator('[data-settings]').count(), 1);
     assert.strictEqual(await menu.locator('[data-language]').count(), 1);
@@ -72,6 +75,9 @@ async function desktopContract(browser) {
     await assertInsideViewport(language.locator('.reboot-modal__panel'), 'desktop Language frame');
     await language.locator('[data-language-option="en"]').click();
     await page.waitForFunction(() => document.documentElement.lang === 'en');
+    await page.waitForFunction(()=>document.querySelector('.mm-brand-logo')?.getAttribute('src')?.endsWith('logo_en.png'));
+    assert.strictEqual(await menu.locator('.mm-brand-logo').getAttribute('alt'),'Heroes of Check and Mate',
+      'English language must switch the restored menu wordmark');
     assert.strictEqual(await menu.locator('[data-new-game]').getAttribute('aria-label'), 'Journey');
     assert.strictEqual(await menu.locator('.reboot-menu-actions [data-settings]').getAttribute('aria-label'), 'Settings');
     assert.strictEqual((await menu.locator('[data-new-game]').textContent()).trim(),'', 'Icons have no captions');
@@ -93,6 +99,12 @@ async function desktopContract(browser) {
     assert(headerIcon.background.includes('hud-main-menu.png')&&
       headerIcon.fontSize==='0px'&&headerIcon.readable.length>0,
       'Roster topbar uses castle art but keeps a readable accessible name');
+    const journeyIcon=await page.locator('.roster-topbar__actions [data-roster-travel]')
+      .evaluate(el=>({image:getComputedStyle(el).backgroundImage,
+        fontSize:getComputedStyle(el).fontSize,aria:el.textContent.trim()}));
+    assert(journeyIcon.image.includes('main-menu-journey.png')&&
+      journeyIcon.fontSize==='0px'&&journeyIcon.aria,
+      'The topbar Journey button uses the approved Journey pictogram but stays accessible');
     assert.strictEqual(await page.locator('[data-roster-card]').count(), 6);
     await page.locator('[data-roster-travel]').click();
     await waitForVisible(page, '[data-travel-choice-screen]:not([hidden])', 'Travel Choice');
@@ -108,6 +120,8 @@ async function landscapePhoneContract(browser) {
   try {
     await clearState(page);
     const menu = await waitForVisible(page, '[data-reboot-foundation]:not([hidden])', 'Phone landscape menu');
+    assert.strictEqual(await menu.locator('.mm-brand-logo').isVisible(),false,
+      'the menu logo must not return on landscape phones');
     await assertInsideViewport(menu, 'phone landscape menu');
     await assertDocumentFits(page, 'phone landscape menu');
     await menu.locator('[data-settings]').click();

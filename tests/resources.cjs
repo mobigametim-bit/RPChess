@@ -19,7 +19,7 @@ class MemoryStorage {
   const persistence = await import(pathToFileURL(path.join(game, 'js/run-persistence.mjs')).href);
 
   assert.strictEqual(core.STARTING_GOLD, 80, 'Resources v1 starts with 80 Gold');
-  assert.strictEqual(core.STARTING_SUPPLIES, 10, 'Resources v1 starts with 10 Supplies');
+  assert.strictEqual(core.STARTING_SUPPLIES, 30, 'New runs start with 30 Supplies');
   assert.strictEqual(core.TRAVEL_SUPPLY_COST, 1, 'every travel transition costs exactly one Supply');
 
   const incompatibleStorage = new MemoryStorage();
@@ -29,7 +29,7 @@ class MemoryStorage {
 
   const run = persistence.createRun({ now: 1000, id: 'resources-test' });
   assert.strictEqual(run.gold, 80);
-  assert.strictEqual(run.supplies, 10);
+  assert.strictEqual(run.supplies, 30);
   assert.deepStrictEqual(run.resourceRewards, { skirmishCount: 0, battleCount: 0 });
   assert(persistence.isValidRun(run), 'new Resources run must pass run validation');
 
@@ -37,7 +37,7 @@ class MemoryStorage {
   assert.strictEqual(paid.requested, 1);
   assert.strictEqual(paid.paid, 1);
   assert.strictEqual(paid.shortage, false);
-  assert.strictEqual(paid.run.supplies, 9, 'travel must atomically reduce Supplies by one');
+  assert.strictEqual(paid.run.supplies, 29, 'travel must atomically reduce Supplies by one');
   assert.strictEqual(paid.run.gold, 80, 'travel must not touch Gold');
 
   const empty = core.applyTravelSupplyCost({ ...run, supplies: 0 });
@@ -62,7 +62,7 @@ class MemoryStorage {
 
   const rewarded = core.applyGoldReward(run, 32);
   assert.strictEqual(rewarded.gold, 112);
-  assert.strictEqual(rewarded.supplies, 10);
+  assert.strictEqual(rewarded.supplies, 30);
   assert.strictEqual(core.applyGoldReward(run, -50).gold, 80, 'invalid negative reward must be ignored');
 
   const storage = new MemoryStorage();
@@ -75,7 +75,7 @@ class MemoryStorage {
   storage.setItem(persistence.RUN_STORAGE_KEY, JSON.stringify(legacy));
   const hydrated = persistence.readRun(storage);
   assert.strictEqual(hydrated.gold, 80, 'same-schema Reboot saves must hydrate starting Gold');
-  assert.strictEqual(hydrated.supplies, 10, 'same-schema Reboot saves must hydrate starting Supplies');
+  assert.strictEqual(hydrated.supplies, 30, 'same-schema Reboot saves must hydrate updated starting Supplies');
   assert.deepStrictEqual(hydrated.resourceRewards, { skirmishCount: 3, battleCount: 2 }, 'old combats must not receive retroactive Gold rewards');
 
   const stored = persistence.writeRun({ ...hydrated, supplies: 4, gold: 137 }, storage, 2500);

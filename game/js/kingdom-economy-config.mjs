@@ -41,7 +41,7 @@ const NAMED_HERO_LABELS=Object.freeze({
 });
 const DEFAULT_KINGDOM_ECONOMY=Object.freeze({
   schemaVersion:1,
-  starting:{gold:80,supplies:10,shards:0,kingPower:600},
+  starting:{gold:80,supplies:30,shards:0,kingPower:600},
   travel:{foreignCellSupplies:1,ownedCellSupplies:0,starvationCharacterLoss:1},
   combat:{battleGoldBase:36,battleGoldPerStar:9,skirmishGoldBase:12,skirmishGoldPerStar:4,drawRewardPercent:50,puzzleGoldBase:9,puzzleGoldPerStar:3,puzzleError1Percent:70,puzzleError2Percent:40,puzzleError3Percent:0,
     caravanRewardGoldBase:40,caravanRewardGoldPerStar:9,caravanRewardSuppliesBase:4,

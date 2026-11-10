@@ -1,7 +1,8 @@
 import { readRun, writeRun } from './run-persistence.mjs';
 import { TRAVEL_SUPPLY_COST, applyTravelSupplyCost, combatGoldReward } from './resources-core.mjs';
 import { hasPendingStarvation, resolveStarvation } from './starvation-core.mjs';
-import { PLAYABLE_TRAVEL_TYPES, FLAVOR_POOLS, TRAVEL_CHOICE_COUNT, canSelectTravelChoice, createTravelChoices, isTravelChoice } from './travel-choice-core.mjs';
+import { PLAYABLE_TRAVEL_TYPES, FLAVOR_POOLS, TRAVEL_CHOICE_COUNT, canSelectTravelChoice, createTravelChoices, isTravelChoice, hasHealthySkirmishCompanion } from './travel-choice-core.mjs';
+import { beginEncounter, cancelEncounterBeforeStart } from './kingdom-map-core.mjs?v=20261110-starvation-guard-v1';
 import { starsText } from './encounter-difficulty.mjs';
 import { readPlayerRating, threatStarsForPower } from './player-rating.mjs';
 import { puzzleBaseGold } from './puzzles/puzzle-core.mjs';
@@ -68,13 +69,47 @@ function renderResources(){if(!screen||!activeRun)return;const gold=screen.query
 function renderChoices(){if(!screen||!activeRun)return;applyStaticCopy();const week=(Number.isInteger(activeRun.journeyStep)?activeRun.journeyStep:0)+1;screen.querySelector('[data-travel-week]').textContent=t('travel.week',{week});renderPortrait();renderRating();renderResources();const routes=screen.querySelector('[data-travel-routes]');routes.replaceChildren();for(const choice of activeRun.currentTravelChoices||[])routes.append(routeCard(choice));globalThis.dispatchEvent(new CustomEvent('rpchess:travel-rendered',{detail:{runId:activeRun.id,week}}));}
 function combatCount(run,choice){if(choice?.type==='caravan')return run?.caravanCount||0;if(choice?.type==='battle')return run?.battleCount||0;if(choice?.type==='skirmish')return run?.skirmishCount||0;return null;}
 function dispatchEncounter(choice){if(!choice.kingdomCell&&['skirmish','battle','caravan'].includes(choice.type))showTravel();else hideTravel();const detail={source:'travel-choice',runId:activeRun?.id||null,choice};if(choice.type==='skirmish'||choice.type==='battle')globalThis.RPChessTravelEncounterOverride=choice;else delete globalThis.RPChessTravelEncounterOverride;if(choice.type==='caravan')return globalThis.dispatchEvent(new CustomEvent('rpchess:caravan-open',{detail}));if(choice.type==='skirmish')return globalThis.dispatchEvent(new CustomEvent('rpchess:skirmish-open',{detail}));if(choice.type==='battle')return globalThis.dispatchEvent(new CustomEvent('rpchess:battle-open',{detail}));if(choice.type==='settlement')return globalThis.dispatchEvent(new CustomEvent('rpchess:settlement-open',{detail}));if(choice.type==='event')return globalThis.dispatchEvent(new CustomEvent('rpchess:event-open',{detail}));if(choice.type==='puzzle')return globalThis.dispatchEvent(new CustomEvent('rpchess:puzzle-open',{detail}));throw new Error(`Unknown Travel Choice encounter type: ${choice.type}`);}
+// One gate for first entry, restored saves and the starvation Continue action.
+ // Commit the fight only AFTER hunger has been resolved and acknowledged.
+function proceedToEncounter(choice){
+ activeRun=readRun()||activeRun;
+ if(!activeRun||activeRun.ended||hasPendingStarvation(activeRun)||
+    activeRun.activeTravelChoice?.id!==choice?.id)return false;
+ if(choice.type==='skirmish'&&!hasHealthySkirmishCompanion(activeRun)){
+  const map=activeRun.kingdomMap,id=choice.kingdomCell;
+  if(id&&map?.pendingCell===id){
+   const canceled=cancelEncounterBeforeStart(map,id);
+   if(!canceled.ok)return false;
+   activeRun=writeRun({...activeRun,activeTravelChoice:null,kingdomMap:canceled.map});
+   globalThis.RPChessKingdomMap?.open?.({detail:{source:'skirmish-insufficient-force'}});
+  }else{
+   // Legacy three-card route: never open an illegal King-only skirmish.
+   activeRun=ensureChoices(writeRun({...activeRun,activeTravelChoice:null,currentTravelChoices:null}));
+   renderChoices();showTravel();
+  }
+  globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',
+    {detail:{source:'skirmish-insufficient-force'}}));
+  return false;
+ }
+ if(choice.kingdomCell){
+  const map=activeRun.kingdomMap,id=choice.kingdomCell;
+  if(map?.pendingCell!==id||map.cells?.[id]?.selectedEncounter?.id!==choice.id)return false;
+  if(map.cells[id].status==='revealed'){
+   const beginning=beginEncounter(map,id);
+   if(!beginning.ok)return false;
+   activeRun=writeRun({...activeRun,kingdomMap:beginning.map});
+  }else if(map.cells[id].status!=='in_progress')return false;
+ }
+ dispatchEncounter(choice);
+ return true;
+}
 function showPendingStarvation(){if(!activeRun||!hasPendingStarvation(activeRun))return false;hideTravel();return Boolean(globalThis.RPChessStarvation?.open?.(activeRun));}
-function chooseChoice(choice,button){if(routing)return;const current=readRun();if(!current||current.ended||current.activeTravelChoice)return;if(!validStoredChoices(current)||!current.currentTravelChoices.some(item=>item.id===choice.id))return;if(!canSelectTravelChoice(current,choice).ok){activeRun=current;renderChoices();return;}routing=true;for(const card of screen?.querySelectorAll('[data-travel-choice]')||[])card.disabled=true;button?.classList.add('is-chosen');audio()?.click?.();const payment=applyTravelSupplyCost(current),count=combatCount(current,choice);let activeChoice={...choice,...(Number.isInteger(count)?{combatCountAtSelection:count}:{}),supplyCostAtSelection:payment.requested,supplyPaid:payment.paid},nextRun={...payment.run,journeyStep:choice.step,currentTravelChoices:null,activeTravelChoice:activeChoice};const starvation=resolveStarvation(nextRun,activeChoice);nextRun=starvation.run;activeChoice=starvation.choice;activeRun=writeRun(nextRun);globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));globalThis.RPChessResources?.showChange?.(payment.paid>0?{suppliesDelta:-payment.paid,labelKey:'travel.change.travel'}:{labelKey:'travel.change.starvation'});setTimeout(()=>{routing=false;if(showPendingStarvation())return;if(activeRun?.ended)return;dispatchEncounter(activeChoice);},document.documentElement.dataset.reducedMotion==='1'?0:180);}
+function chooseChoice(choice,button){if(routing)return;const current=readRun();if(!current||current.ended||current.activeTravelChoice)return;if(!validStoredChoices(current)||!current.currentTravelChoices.some(item=>item.id===choice.id))return;if(!canSelectTravelChoice(current,choice).ok){activeRun=current;renderChoices();return;}routing=true;for(const card of screen?.querySelectorAll('[data-travel-choice]')||[])card.disabled=true;button?.classList.add('is-chosen');audio()?.click?.();const payment=applyTravelSupplyCost(current),count=combatCount(current,choice);let activeChoice={...choice,...(Number.isInteger(count)?{combatCountAtSelection:count}:{}),supplyCostAtSelection:payment.requested,supplyPaid:payment.paid},nextRun={...payment.run,journeyStep:choice.step,currentTravelChoices:null,activeTravelChoice:activeChoice};const starvation=resolveStarvation(nextRun,activeChoice);nextRun=starvation.run;activeChoice=starvation.choice;activeRun=writeRun(nextRun);globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));globalThis.RPChessResources?.showChange?.(payment.paid>0?{suppliesDelta:-payment.paid,labelKey:'travel.change.travel'}:{labelKey:'travel.change.starvation'});setTimeout(()=>{routing=false;if(showPendingStarvation())return;if(activeRun?.ended)return;proceedToEncounter(activeChoice);},document.documentElement.dataset.reducedMotion==='1'?0:180);}
 function startMapEncounter(choice,kingdomMap){
  if(routing||!choice?.kingdomCell)return false;
  const current=readRun(),id=choice.kingdomCell;
  if(!current||current.ended||current.activeTravelChoice||current.kingdomMap?.pendingCell!==id||
-    kingdomMap?.cells?.[id]?.status!=='in_progress'||kingdomMap.cells[id].selectedEncounter?.id!==choice.id)return false;
+    kingdomMap?.cells?.[id]?.status!=='revealed'||kingdomMap.cells[id].selectedEncounter?.id!==choice.id)return false;
  routing=true;
  // Arrival now spends the Supply on each non-owned step. Existing saves and
  // direct encounter-entry tests without a charged step retain legacy billing.
@@ -97,21 +132,21 @@ function startMapEncounter(choice,kingdomMap){
  routing=false;
  if(showPendingStarvation())return true;
  if(activeRun?.ended)return true;
- dispatchEncounter(activeChoice);
+ proceedToEncounter(activeChoice);
  return true;
 }
 function resumeMapEncounter(choice){
  activeRun=readRun();
  if(!activeRun||activeRun.activeTravelChoice?.id!==choice.id)return false;
- dispatchEncounter(choice);return true;
+ return proceedToEncounter(choice);
 }
 function aftermathEncounterType(source){if(source==='skirmish-aftermath')return'skirmish';if(source==='battle-aftermath')return'battle';return null;}
 function recoverAftermathRoute(run,source){const expected=aftermathEncounterType(source);if(!expected||run?.activeTravelChoice?.type!==expected)return run;return writeRun({...run,activeTravelChoice:null,currentTravelChoices:null});}
-function openTravel(event){routing=false;activeRun=readRun();if(!activeRun)return;const source=event?.detail?.source||null;activeRun=recoverAftermathRoute(activeRun,source);if(showPendingStarvation()||activeRun.ended)return;if(isTravelChoice(activeRun.activeTravelChoice)&&PLAYABLE_TRAVEL_TYPES.includes(activeRun.activeTravelChoice.type)){dispatchEncounter(activeRun.activeTravelChoice);return;}if((typeof location!=='undefined'&&new URLSearchParams(location.search).has('legacy_travel'))||
+function openTravel(event){routing=false;activeRun=readRun();if(!activeRun)return;const source=event?.detail?.source||null;activeRun=recoverAftermathRoute(activeRun,source);if(showPendingStarvation()||activeRun.ended)return;if(isTravelChoice(activeRun.activeTravelChoice)&&PLAYABLE_TRAVEL_TYPES.includes(activeRun.activeTravelChoice.type)){proceedToEncounter(activeRun.activeTravelChoice);return;}if((typeof location!=='undefined'&&new URLSearchParams(location.search).has('legacy_travel'))||
     globalThis.sessionStorage?.getItem('rpchess.test.legacyTravel')==='1'){
   activeRun=ensureChoices(activeRun);renderChoices();showTravel();return;
  }
- void import('./kingdom-map-app.mjs?v=20261109-atlas-lab-v7').then(mod=>mod.openMap(event))
+ void import('./kingdom-map-app.mjs?v=20261110-pre-entry-starvation-v1').then(mod=>mod.openMap(event))
   .catch(error=>{console.error('[RPChess] Kingdom map could not load',error);
    activeRun=ensureChoices(activeRun);renderChoices();showTravel();});
 }
@@ -119,5 +154,5 @@ function openRoster(){if(routing)return;audio()?.click?.();hideTravel();globalTh
 function activeChoiceCompleted(run){const choice=run?.activeTravelChoice;if(!isTravelChoice(choice)||!['skirmish','battle'].includes(choice.type)||!Number.isInteger(choice.combatCountAtSelection))return false;return combatCount(run,choice)>choice.combatCountAtSelection;}
 function applyAftermathTravelLabels(){const a=document.querySelector('[data-aftermath-continue]'),b=document.querySelector('[data-battle-continue]');if(a)a.textContent=t('travel.continue');if(b)b.textContent=t('travel.continue');}
 function syncCombatCompletion(){activeRun=readRun();if(!activeRun)return;if(activeChoiceCompleted(activeRun)){activeRun=writeRun({...activeRun,activeTravelChoice:null});queueMicrotask(applyAftermathTravelLabels);}}
-function continueAfterStarvation(){activeRun=readRun();const choice=activeRun?.activeTravelChoice;if(!activeRun||activeRun.ended||!isTravelChoice(choice)||choice.starvationAcknowledged!==true)return;dispatchEncounter(choice);}
+function continueAfterStarvation(){activeRun=readRun();const choice=activeRun?.activeTravelChoice;if(!activeRun||activeRun.ended||!isTravelChoice(choice)||choice.starvationAcknowledged!==true)return;proceedToEncounter(choice);}
 ensureOwnerStylesheet();ensureScreen();applyAftermathTravelLabels();addEventListener('rpchess:travel-open',openTravel);addEventListener('rpchess:combat-completed',syncCombatCompletion);addEventListener('rpchess:resources-updated',()=>{if(screen&&!screen.hidden){activeRun=readRun()||activeRun;renderChoices();}});addEventListener('rpchess:starvation-continue',continueAfterStarvation);addEventListener('rpchess:power-updated',()=>{if(screen&&!screen.hidden)renderRating();});subscribe(()=>{applyStaticCopy();applyAftermathTravelLabels();if(screen&&!screen.hidden&&activeRun&&!activeRun.ended&&!activeRun.activeTravelChoice)renderChoices();});globalThis.RPChessTravelChoice=Object.freeze({open:openTravel,openRoster,recoverAftermathRoute,startMapEncounter,resumeMapEncounter,get run(){return activeRun;},get choices(){return[...(activeRun?.currentTravelChoices||[])];},get activeChoice(){return activeRun?.activeTravelChoice||null;}});

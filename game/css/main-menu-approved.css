@@ -146,3 +146,22 @@ html[data-landscape-ui='1'] .mm-menu-approved [data-main-menu-kingdom][hidden]{
   padding-top:clamp(230px,60vw,440px)!important;
  }
 }
+
+/* Logo in the marked upper-left region, localized by brand-logo.mjs. */
+.mm-menu-approved{position:relative!important}
+.mm-menu-approved .mm-brand-logo{
+ position:absolute!important;z-index:3!important;
+ top:clamp(12px,2.1vh,24px)!important;
+ left:clamp(14px,1.3vw,28px)!important;
+ width:clamp(205px,20.5vw,360px)!important;
+ height:clamp(95px,18vh,162px)!important;
+ max-width:calc(100% - 36px)!important;
+ object-fit:contain!important;object-position:left top!important;
+ pointer-events:none!important;user-select:none!important;
+ filter:drop-shadow(0 4px 7px #000a);
+}
+/* Phone in either orientation: no wordmark. Tablets and desktop retain it. */
+@media(max-width:599px),
+ (orientation:landscape) and (max-height:500px) and (max-width:950px){
+ .mm-menu-approved .mm-brand-logo{display:none!important}
+}

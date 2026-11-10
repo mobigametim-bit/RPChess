@@ -15,7 +15,7 @@
  [data-kingdom-menu],[data-kingdom-settings],[data-kingdom-roster],
  [data-travel-menu],[data-travel-settings],[data-travel-roster],
  [data-roster-menu],[data-settings],[data-classic-menu],[data-combat-menu],
- [data-arena-back],[data-puzzle-settings],
+ [data-arena-back],[data-puzzle-settings],[data-roster-travel],
  [data-tour-action="back"],[data-tour-action="settings"],[data-tour-action="menu"]
 ){
  position:relative!important;
@@ -76,7 +76,7 @@
  :is([data-kingdom-menu],[data-kingdom-settings],[data-kingdom-roster],
  [data-travel-menu],[data-travel-settings],[data-travel-roster],
  [data-roster-menu],[data-settings],[data-classic-menu],[data-combat-menu],
- [data-arena-back],[data-puzzle-settings],[data-tour-action="back"],
+ [data-arena-back],[data-puzzle-settings],[data-roster-travel],[data-tour-action="back"],
  [data-tour-action="settings"],[data-tour-action="menu"]):hover{
  filter:brightness(1.14) drop-shadow(0 4px 7px #000a)!important;
 }
@@ -86,7 +86,7 @@
  :is([data-kingdom-menu],[data-kingdom-settings],[data-kingdom-roster],
  [data-travel-menu],[data-travel-settings],[data-travel-roster],
  [data-roster-menu],[data-settings],[data-classic-menu],[data-combat-menu],
- [data-arena-back],[data-puzzle-settings],[data-tour-action="back"],
+ [data-arena-back],[data-puzzle-settings],[data-roster-travel],[data-tour-action="back"],
  [data-tour-action="settings"],[data-tour-action="menu"]):focus-visible{
  outline:2px solid #f2d288!important;
  outline-offset:2px!important;
@@ -103,9 +103,15 @@
  :is([data-kingdom-menu],[data-kingdom-settings],[data-kingdom-roster],
  [data-travel-menu],[data-travel-settings],[data-travel-roster],
  [data-roster-menu],[data-settings],[data-classic-menu],[data-combat-menu],
- [data-arena-back],[data-puzzle-settings],[data-tour-action="back"],
+ [data-arena-back],[data-puzzle-settings],[data-roster-travel],[data-tour-action="back"],
  [data-tour-action="settings"],[data-tour-action="menu"]){
  width:38px!important;min-width:38px!important;max-width:38px!important;
  height:38px!important;min-height:38px!important;max-height:38px!important;
  }
+}
+
+/* The Roster top bar Journey action remains the same control and localized
+   text, but is displayed as the already accepted Journey map pictogram. */
+:where(.roster-topbar__actions) [data-roster-travel]{
+ --hud-nav-image:url('../assets/ui/main-menu-journey.png');
 }

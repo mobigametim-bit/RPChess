@@ -1,4 +1,4 @@
-import {DEFAULT_KINGDOM_ECONOMY as K} from './kingdom-economy-config.mjs';
+import {DEFAULT_KINGDOM_ECONOMY as K} from './kingdom-economy-config.mjs?v=20261110-start-supplies-30';
 import { clampStars } from './encounter-difficulty.mjs';
 
 const STARTING_GOLD = K.starting.gold;

@@ -427,6 +427,21 @@ function beginEncounter(map,id){
  next.cells[id]={...next.cells[id],status:'in_progress',attempts:(next.cells[id].attempts||0)+1};
  return {ok:true,map:next};
 }
+// An encounter that has not actually started must not count as a defeat.
+// Starvation may leave no legal skirmish companions. Keep the discovered
+// encounter available for a future retry, retreat the king, clear the
+// pending lock and NEVER advance the calendar or charge travel twice.
+function cancelEncounterBeforeStart(map,id){
+ const cell=map?.cells?.[id];
+ if(map?.pendingCell!==id||!cell||
+    !['revealed','in_progress'].includes(cell.status))return {ok:false,map};
+ const next=copyMap(map);
+ const {resourceSnapshot,...persistentCell}=cell;
+ next.cells[id]={...persistentCell,status:'revealed'};
+ if(isPoint(cell.lastEntryFrom))next.king={...cell.lastEntryFrom};
+ next.pendingCell=null;
+ return {ok:true,map:synchronizeRoyalRoads(next)};
+}
 function finishEncounter(map,id,{success=false,opponentPower=0}={}){
  const prev=map?.cells?.[id];
  if(!prev||!['in_progress','revealed'].includes(prev.status))return {ok:false,map};
@@ -483,7 +498,7 @@ function borderEdges(map,point){
   .map(([edge])=>edge);
 }
 export {MAP_VERSION,TYPES,ROMANS,keyOf,isPoint,adjacent,orthogonal,shortestKingRoute,romanForStars,castleLevel,
- createKingdomMap,validateKingdomMap,migrateKingdomMap,updatePeak,randomEncounter,revealAround,enterCell,beginEncounter,
+ createKingdomMap,validateKingdomMap,migrateKingdomMap,updatePeak,randomEncounter,revealAround,enterCell,beginEncounter,cancelEncounterBeforeStart,
  finishEncounter,matchesCombatReceipt,canAnnex,annexCell,pointsEarned,pointsAvailable,territoryCapacity,
  growTerritory,advanceDay,isOwned,linkCompletedRoad,borderEdges,weekForDay,productionFor,
  settleWeeklyProduction,collectProduction,acknowledgeReturn,canBuildOutpost,buildOutpost,linkOutpostRoad,

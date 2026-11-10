@@ -1058,6 +1058,68 @@ async function assertTileImage(page,cellId){
   assert.deepEqual((await read(autopilot)).kingdomMap.king,{x:2,y:0},
     'panning only changes the camera, not the saved king position');
   await autopilot.close();
+  // Regression: if starvation kills the only non-king companion just before
+  // a Skirmish, the combat may not start. Retreat without treating it as a
+  // loss or leaving the pending cell locked.
+  const starving=await browser.newPage({viewport:{width:1280,height:720},reducedMotion:'reduce'});
+  await starving.goto(url,{waitUntil:'domcontentloaded'});
+  await startNewRun(starving,{playerName:'Starving Skirmish',legacyTravel:false});
+  await starving.locator('[data-roster-travel]').click();
+  await starving.locator('[data-kingdom-map-screen]:not([hidden])').waitFor({timeout:16000});
+  const fixture=await starving.evaluate(async storage=>{
+    const core=await import('./js/kingdom-map-core.mjs?v=20261110-roadgrid-v3');
+    const hunger=await import('./js/starvation-core.mjs');
+    let run=JSON.parse(localStorage.getItem(storage));
+    const companion=run.roster.find(c=>!c.isRunKing&&c.status==='healthy');
+    if(!companion)throw new Error('starter roster lacks a healthy companion');
+    run.roster=run.roster.map(c=>
+      c.isRunKing||c.id===companion.id?c:{...c,status:'dead'});
+    run.army=[];run.supplies=0;
+    const generated=core.randomEncounter(run,{x:1,y:0},500,
+      {type:'skirmish',biome:'plains',landmark:null,raceTag:null,paths:{}});
+    let route;
+    for(let i=0;i<32;i++){
+      const candidate={...generated,id:'starvation-min-force-'+i};
+      const victim=hunger.deterministicStarvationVictim(run,
+        {...candidate,supplyCostAtSelection:1,supplyPaid:0});
+      if(victim?.id===companion.id){route=candidate;break;}
+    }
+    if(!route)throw new Error('could not select a deterministic companion casualty');
+    const entered=core.enterCell(run.kingdomMap,{x:1,y:0},route);
+    if(!entered.ok)throw new Error('fixture cannot enter adjacent skirmish tile');
+    const map={...entered.map,cells:{...entered.map.cells,
+      '1,0':{...entered.map.cells['1,0'],
+        stepSuppliesCharged:true,stepSuppliesRequested:1,stepSuppliesPaid:0}}};
+    run.kingdomMap=map;
+    localStorage.setItem(storage,JSON.stringify(run));
+    const accepted=globalThis.RPChessTravelChoice.startMapEncounter(route,map);
+    if(!accepted)throw new Error('pre-battle starvation dispatch was rejected');
+    return {companion:companion.id,cellId:'1,0',originalDay:map.day};
+  },key);
+  await starving.locator('[data-starvation-screen]:not([hidden])')
+    .waitFor({timeout:16000});
+  assert.equal(await starving.locator('[data-skirmish-screen]:not([hidden])').count(),0,
+    'Skirmish must NOT open before starvation is acknowledged');
+  await starving.locator('[data-starvation-continue]').click();
+  await starving.locator('[data-kingdom-map-screen]:not([hidden])')
+    .waitFor({timeout:16000});
+  const recovered=await read(starving);
+  assert.equal(recovered.activeTravelChoice,null,
+    'unavailable combat route must be dropped after starvation');
+  assert.equal(recovered.kingdomMap.pendingCell,null,
+    'starved encounter must not leave the map locked');
+  assert.equal(recovered.kingdomMap.cells[fixture.cellId].status,'revealed',
+    'unavailable encounter remains on the map for a later attempt');
+  assert.deepEqual(recovered.kingdomMap.king,{x:0,y:0},
+    'the King retreats to the previous safe cell');
+  assert.equal(recovered.kingdomMap.day,fixture.originalDay,
+    'failed eligibility does not advance a fake combat day');
+  assert.equal(recovered.roster.find(c=>c.id===fixture.companion).status,'dead');
+  assert.equal(await starving.locator('[data-skirmish-screen]:not([hidden])').count(),0,
+    'no invalid King-only Skirmish screen or combat checkpoint may open');
+  assert.equal(recovered.currentCombat,null);
+  await starving.close();
+
   // The user's original v6 terrain editor and kingdom simulator are intact.
   const labPage=await browser.newPage({viewport:{width:1440,height:900}});
   const atlasErrors=[];labPage.on('pageerror',e=>atlasErrors.push(String(e.stack||e)));

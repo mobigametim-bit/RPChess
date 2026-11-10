@@ -24,7 +24,7 @@ import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
- beginEncounter,finishEncounter,matchesCombatReceipt,migrateKingdomMap,territoryCapacity,castleLevel,revealAround,
+ finishEncounter,matchesCombatReceipt,migrateKingdomMap,territoryCapacity,castleLevel,revealAround,
  collectProduction,canBuildOutpost,buildOutpost,canBuildSettlement,buildSettlement,
  romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges} from './kingdom-map-core.mjs?v=20261110-roadgrid-v3';
 
@@ -39,6 +39,7 @@ const COPY={
    outpostNeed:'Недостаточно осколков чести',outpostBuilt:'Аванпост построен',
    moveKing:'Перетащите короля для перемещения',collect:'Собрать',battleReady:'Защитник вернулся. Войди в клетку для нового боя.',
    recruitsReady:'Рекруты готовы. Система найма появится в следующем этапе.',
+   needCompanion:'Стычка отложена: нужен хотя бы один боец помимо короля. Пополните отряд.',
    empty:'Открывайте территорию, чтобы основать королевство',
    completedDetail:'Место освоено. Можно вернуться сюда в любой момент.',zoomGroup:'Масштаб карты',zoomIn:'Увеличить масштаб',zoomOut:'Уменьшить масштаб',zoomReset:'Сбросить масштаб карты'},
  en:{day:'Day',shards:'Honor shards',castle:'Castle',supply:'Supplies',power:'Power',points:'Annexation points',
@@ -51,6 +52,7 @@ const COPY={
    outpostNeed:'Not enough Honor shards',outpostBuilt:'Outpost constructed',
    moveKing:'Drag the king to move',collect:'Collect',battleReady:'Defender returned. Enter the cell for a rematch.',
    recruitsReady:'Recruits are ready. Hiring will be added in the next stage.',
+   needCompanion:'Skirmish postponed: recruit at least one fighter besides your King.',
    empty:'Explore the realm to found a kingdom',
    completedDetail:'This location is cleared. You can return at any time.',zoomGroup:'Map zoom',zoomIn:'Zoom in',zoomOut:'Zoom out',zoomReset:'Reset map zoom'}
 };
@@ -524,13 +526,15 @@ function schedulePending(run){
   if(!current||current.id!==runId||current.ended||current.activeTravelChoice)return;
   const currentCell=current.kingdomMap?.cells?.[id];
   if(current.kingdomMap?.pendingCell!==id||currentCell?.status!=='revealed')return;
-  const beginning=beginEncounter(current.kingdomMap,id);
-  if(!beginning.ok)return;
-  beginning.map.cells[id]={...beginning.map.cells[id],resourceSnapshot:{
-   gold:current.gold||0,supplies:current.supplies||0,shards:honorShards()}};
-  const launched=globalThis.RPChessTravelChoice?.startMapEncounter?.(currentCell.selectedEncounter,beginning.map);
-  if(launched)hideMap();
-  else report(tr('inProgress'));
+  // Snapshot the balance but DO NOT begin the encounter here. Starvation
+  // resolves and is acknowledged first, before the combat owner can open.
+  const staged={...current.kingdomMap,cells:{...current.kingdomMap.cells,
+   [id]:{...currentCell,resourceSnapshot:{
+    gold:current.gold||0,supplies:current.supplies||0,shards:honorShards()}}}};
+  const launched=globalThis.RPChessTravelChoice?.startMapEncounter?.(currentCell.selectedEncounter,staged);
+  // A refused skirmish returns immediately to the Kingdom map; do not hide it.
+  if(launched&&readRun()?.activeTravelChoice)hideMap();
+  else if(!launched)report(tr('inProgress'));
  },Math.max(0,expires-Date.now()));
 }
 function kingArt(run){return commanderPieceArt(run.commanderId,'w');}
@@ -1057,6 +1061,7 @@ function openMap(event){
  selected=previousPending&&run.kingdomMap.cells[previousPending]?.status==='failed'?
   previousPending:keyOf(run.kingdomMap.king.x,run.kingdomMap.king.y);
  render();schedulePending(run);
+ if(event?.detail?.source==='skirmish-insufficient-force')report(tr('needCompanion'));
 }
 function syncPower(){
  const run=readRun();if(!run||run.ended||!validateKingdomMap(run.kingdomMap))return;

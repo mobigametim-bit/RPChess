@@ -8,7 +8,12 @@ const read = (relative) => fs.readFileSync(path.join(game, relative), 'utf8');
 
 const index = read('index.html');
 assert.strictEqual(index.includes('FANTASY TACTICAL CHESS ROGUELITE'), false, 'main menu tagline must be removed');
-assert.strictEqual((index.match(/data-brand-logo/g) || []).length, 4, 'all non-menu static screens keep the brand-logo hook');
+assert.strictEqual((index.match(/data-brand-logo/g) || []).length, 5,
+  'all non-menu logos and the restored desktop/tablet menu logo use one RU/EN localization hook');
+assert(index.includes('class="mm-brand-logo" data-brand-logo'), 'the desktop/tablet main menu displays the canonical brand logo');
+const menuLogoCss=read('css/main-menu-approved.css');
+assert(menuLogoCss.includes('max-width:599px')&&menuLogoCss.includes('.mm-menu-approved .mm-brand-logo{display:none!important}'),
+ 'phone widths/orientations must suppress the main-menu logo');
 assert.strictEqual(index.includes('generated_assets/title_wordmark.png'), false, 'static UI must not reference the legacy wordmark');
 
 // An installable web app must stay independently scoped on GitHub Pages
