@@ -32,6 +32,11 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'author WebP tiles remain the parchment ground, not procedural paper');
   assert(parchmentSource.includes('canvas.dataset.parchmentTexture=drawTiledPaper(ctx,left,top,columns,rows,repaint)'),
     'tiled paper remains the first painted layer');
+  assert(parchmentSource.indexOf('drawKingdomBoundary(ctx,{map,view,columns,rows})')>
+    parchmentSource.indexOf('drawWaterRoads(ctx,seed,left,top,columns,rows)')&&
+    parchmentSource.indexOf('drawKingdomBoundary(ctx,{map,view,columns,rows})')<
+    parchmentSource.indexOf('drawTerrainSymbols(ctx,seed,left,top,columns,rows,repaint)'),
+    'territory boundary must share the natural-road canvas below terrain landmarks and player-built roads');
   assert(buildSource.includes("'js/kingdom-map-overlay.mjs'"),
     'production build must include the organic border/road module or Journey cannot load');
   assert(travelAppSource.includes('data-travel-run-portrait')&&travelAppSource.includes('function renderPortrait()'),'Travel owner must render and refresh the run king portrait itself');
