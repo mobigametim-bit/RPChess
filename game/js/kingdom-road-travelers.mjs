@@ -294,7 +294,7 @@ function createTravelers(map,{parchment=true,maxTravelers=MAX_TRAVELERS}={}){
     itinerary=naturalTrip(map,trail.id,trail.index,seed,owned);kind='natural';
    }else itinerary=royalTripPlan;
   }else if(type==='merchant'){
-   itinerary=pairTrip(allRoads,seed,[castle,...settlements],settlements);
+   itinerary=pairTrip(allRoads,seed,[castle],settlements);
    if(!itinerary&&parchment){
     itinerary=settlementNaturalTrip(map,seed,settlements,owned);
     if(itinerary)kind='natural';
@@ -362,9 +362,10 @@ function travelerPosition(map,walker,elapsed){
 function visibleTraveler(map,walker,pos,owned){
  if(!pos||!map?.cells)return false;
  const id=Math.floor(pos.x)+','+Math.floor(pos.y),cell=map.cells[id];
- if(!cell||!(cell.explored||
-   ['revealed','in_progress','failed','completed'].includes(cell.status)))return false;
- return !OWNED_ONLY.has(walker.type)||(owned||ownedKeys(map)).has(id);
+ const inside=(owned||ownedKeys(map)).has(id);
+ if(OWNED_ONLY.has(walker.type))return inside;
+ return inside||Boolean(cell&&(cell.explored||
+  ['revealed','in_progress','failed','completed'].includes(cell.status)));
 }
 export {TYPES,OWNED_ONLY,MAX_TRAVELERS,territoryTravelerQuota,settlementStops,bezierPoint,entirelyOwned,
  naturalRoadY,nearestNaturalRoad,createTravelers,travelerMotion,travelerPosition,

@@ -163,8 +163,8 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows,drawBorder=true,drawRo
  ctx.restore();
  canvas.dataset.glowingOwnedCells=String(glowCount);
  canvas.dataset.roadSegments=String(roadCount);
- canvas.dataset.journeyRoadSegments=String(travelRoads.length);
- canvas.dataset.ownedRoadSegments=String(royalRoads.length);
+ canvas.dataset.journeyRoadSegments=String(visibleTravelRoads(map).length);
+ canvas.dataset.ownedRoadSegments=String(visibleRoyalRoads(map).length);
  canvas.dataset.borderSegments=String(borderCount);
 }
 export {drawKingdomOverlay,drawKingdomBoundary,drawKingdomRoads};
