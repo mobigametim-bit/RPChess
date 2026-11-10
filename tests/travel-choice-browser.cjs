@@ -248,7 +248,7 @@ async function assertDecoratedBackdrops(page, label) {
     assert((await travel.innerText()).includes('Задача'), 'Puzzle route must retain the distinct chess Puzzle label, not Mentor Training');
     assert.strictEqual(await page.locator('[data-travel-type="puzzle"] .travel-choice-card__threat > strong').count(), 3, 'all Puzzle route cards must show their difficulty stars');
     assert.strictEqual((await page.locator('[data-travel-inline-gold]').innerText()).trim(), '80');
-    assert.strictEqual((await page.locator('[data-travel-inline-supplies]').innerText()).trim(), '10');
+    assert.strictEqual((await page.locator('[data-travel-inline-supplies]').innerText()).trim(), '30');
     await assertResourceAlignment(page);
     await assertRouteLoopStability(page, travel);
 
@@ -277,7 +277,7 @@ async function assertDecoratedBackdrops(page, label) {
     assert.strictEqual(committed.journeyStep, 1);
     assert.strictEqual(committed.activeTravelChoice.type, 'puzzle');
     assert.strictEqual(committed.activeTravelChoice.stars, first[0].stars);
-    assert.strictEqual(committed.supplies, 9);
+    assert.strictEqual(committed.supplies, 29);
     assert(committed.currentPuzzle?.puzzleId);
 
     const mobile = await browser.newPage({ viewport:{ width:844, height:390 } });

@@ -193,7 +193,7 @@ async function auditSettlement(browser, width, height, { gameplay = false } = {}
     await fresh(page, `Settlement ${width}`);
     await enter(page);
     let run = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
-    assert.strictEqual(run.supplies, 9);
+    assert.strictEqual(run.supplies, 29);
     assert.strictEqual(run.currentSettlement.offers.length, 3);
     assert.strictEqual(run.currentSettlement.supplyStock, 4);
     assert.strictEqual(await page.locator('[data-settlement-roster],[data-settlement-settings]').count(), 0, `${label}: obsolete Settlement shortcuts must remain absent`);
@@ -218,7 +218,7 @@ async function auditSettlement(browser, width, height, { gameplay = false } = {}
       assert.strictEqual(run.roster.find((character) => character.id === 'hero.mara_chain').status, 'healthy');
       await page.locator('[data-settlement-buy-supply]').click();
       run = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
-      assert.strictEqual(run.supplies, 10);
+      assert.strictEqual(run.supplies, 30);
       const before = run.supplies;
       await page.locator('[data-settlement-continue]').click();
       await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();

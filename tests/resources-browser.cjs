@@ -28,12 +28,12 @@ async function fresh(page) {
     page.on('pageerror', (error) => errors.push(String(error.stack || error)));
     await fresh(page);
     assert.strictEqual((await page.locator('[data-resource-gold]').innerText()).trim(), '80');
-    assert.strictEqual((await page.locator('[data-resource-supplies]').innerText()).trim(), '10');
+    assert.strictEqual((await page.locator('[data-resource-supplies]').innerText()).trim(), '30');
     await page.locator('[data-roster-travel]').click();
     const travel = page.locator('[data-travel-choice-screen]:not([hidden])');
     await travel.waitFor();
     assert.strictEqual((await page.locator('[data-travel-inline-gold]').innerText()).trim(), '80');
-    assert.strictEqual((await page.locator('[data-travel-inline-supplies]').innerText()).trim(), '10');
+    assert.strictEqual((await page.locator('[data-travel-inline-supplies]').innerText()).trim(), '30');
     assert.strictEqual(await page.locator('.travel-choice-card__cost').count(), 3);
     for (const amount of await page.locator('.travel-choice-card__cost-amount').allInnerTexts()) assert.strictEqual(amount.trim(), '-1');
     assert.strictEqual(await page.locator('.travel-choice-card__cost-icon').count(), 3);
@@ -42,7 +42,7 @@ async function fresh(page) {
     await page.locator('[data-travel-type="skirmish"]').first().click();
     await page.locator('[data-artifact-choice-modal]').waitFor();
     let run = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
-    assert.strictEqual(run.supplies, 9);
+    assert.strictEqual(run.supplies, 29);
     const stars = run.activeTravelChoice.stars;
     assert.strictEqual(await page.locator('[data-skirmish-screen]').isHidden(),true);
     await page.locator('[data-artifact-choice="none"]').click();
