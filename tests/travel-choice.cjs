@@ -186,8 +186,15 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'patrols and builders cannot cross neutral territory');
   assert(walkers.entirelyOwned({from:'0,0',to:'1,0',bend:0},new Set(['0,0','1,0'])),
     'a fully owned road segment is available to patrols/builders');
-  const scheduledTravelers=walkers.createTravelers(fourRoad,{parchment:true});
-  assert(scheduledTravelers.length>0,'the network creates decorative travelers');
+  assert.equal(walkers.territoryTravelerQuota(fourRoad),0,
+    'a territory below five central lands must have no decorative NPC quota');
+  assert.equal(walkers.createTravelers(fourRoad,{parchment:true}).length,0,
+    'roads alone never spawn walkers when the HUD holds fewer than five lands');
+  const npcLands=['0,0','1,0','2,0','0,1','-1,0','0,-1'];
+  const travelerMap={...fourRoad,centralOwnedCells:npcLands};
+  const scheduledTravelers=walkers.createTravelers(travelerMap,{parchment:true});
+  assert(scheduledTravelers.length>0&&scheduledTravelers.length<=5,
+    'five central lands allow at most one actor of each kind with a valid route');
   assert(scheduledTravelers.every(a=>a.speed>=.10&&a.speed<=.23),
     'all five traveler types retain their 3x slower speed');
   assert(new Set(scheduledTravelers.map(a=>a.spawnDelay)).size===scheduledTravelers.length,
@@ -195,14 +202,14 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const firstTraveler=scheduledTravelers[0];
   assert(firstTraveler.legs.length>=2,
     'a traveler must have an outward route and return trip');
-  assert(walkers.travelerPosition(fourRoad,firstTraveler,firstTraveler.spawnDelay),
+  assert(walkers.travelerPosition(travelerMap,firstTraveler,firstTraveler.spawnDelay),
     'traveler appears at its scheduled start');
   if(firstTraveler.spawnDelay>0)
-    assert.strictEqual(walkers.travelerPosition(fourRoad,firstTraveler,firstTraveler.spawnDelay-.01),null);
+    assert.strictEqual(walkers.travelerPosition(travelerMap,firstTraveler,firstTraveler.spawnDelay-.01),null);
   const firstLeg=firstTraveler.legs[0];
   const arrival=firstTraveler.spawnDelay+firstLeg.distance/firstTraveler.speed;
-  const hold1=walkers.travelerMotion(fourRoad,firstTraveler,arrival+firstLeg.hold*.3);
-  const hold2=walkers.travelerMotion(fourRoad,firstTraveler,arrival+firstLeg.hold*.7);
+  const hold1=walkers.travelerMotion(travelerMap,firstTraveler,arrival+firstLeg.hold*.3);
+  const hold2=walkers.travelerMotion(travelerMap,firstTraveler,arrival+firstLeg.hold*.7);
   assert(hold1&&!hold1.moving&&hold2&&!hold2.moving,
     'traveler is resting at an intermediate waypoint');
   assert.deepStrictEqual(hold1.position,hold2.position,'no walking during a pause');
@@ -218,7 +225,7 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
    }
   }
   assert(trailId,'fixture has a natural trail crossing an event square');
-  const trailMap={...secondRoad,cells:{...secondRoad.cells,
+  const trailMap={...secondRoad,centralOwnedCells:npcLands,cells:{...secondRoad.cells,
    [trailId]:{status:'revealed',explored:true,annexed:true,
     selectedEncounter:{id:'road-trail-source',type:'event'}}},
    // Clear the royal network to isolate the natural-road behavior.
