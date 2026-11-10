@@ -95,9 +95,11 @@ const identityReady = cloudReady
 globalThis.RPChessIdentityReady = identityReady;
 
 // The read-only map attaches after the authoritative cloud-state reconciliation.
-cloudReady.then(()=>import('./kingdom-menu-preview.mjs?v=20261110-npc-territory-v4'))
-  .then(module=>module.install())
-  .catch(error=>console.error('[RPChess] Main-menu kingdom preview failed',error));
+const menuReady=cloudReady
+ .then(()=>import('./kingdom-menu-preview.mjs?v=20261111-menu-texture-gate-v1'))
+ .then(async module=>{module.install();await module.waitForTextures();})
+ .catch(error=>console.error('[RPChess] Main-menu kingdom preview failed',error));
+globalThis.RPChessMainMenuReady=menuReady;
 
 // Route/content modules wait for the ad gate registration. Once Starvation exists, monetization
 // replaces only the public starvation entry point with the optional rewarded-rescue gate.

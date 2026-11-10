@@ -5,7 +5,7 @@ import {validateKingdomMap} from './kingdom-map-core.mjs?v=20261110-roadgrid-v3'
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
 import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs';
 import {commanderPieceArt} from './commander-portraits.mjs';
-import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261110-natural-road-layer-v4';
+import {renderParchment,renderParchmentFog,parchmentAssetsSettled} from './kingdom-parchment-app.mjs?v=20261111-menu-texture-gate-v1';
 import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261110-natural-road-layer-v4';
 import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261110-npc-territory-v4';
 
@@ -90,7 +90,7 @@ function canvas(className){
 function site(src,x,y,klass,size){
   if(!src)return null;
   const img=document.createElement('img');
-  img.src=src;img.alt='';img.decoding='async';img.loading='lazy';
+  img.src=src;img.alt='';img.decoding='async';img.loading='eager';
   img.className=klass;img.style.left=x+'px';img.style.top=y+'px';
   img.style.width=size+'px';img.style.height=size+'px';
   img.setAttribute('aria-hidden','true');
@@ -208,4 +208,36 @@ function install(){
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule();});
   schedule();
 }
-export {install,boundsOf};
+function hasActiveKingdom(){
+ const run=readRun();
+ return Boolean(run&&!run.ended&&validateKingdomMap(run.kingdomMap));
+}
+function texturesSettled(){
+ if(!hasActiveKingdom())return true;
+ if(stage?.hidden||!stage.querySelector('[data-main-menu-world]'))return false;
+ const images=[...stage.querySelectorAll('img')];
+ return parchmentAssetsSettled(stage.querySelector('.mm-kingdom-parchment')) &&
+  images.every(img=>img.complete&&img.naturalWidth>0);
+}
+// Wait only for textures visible on the current finite menu projection,
+// never for the infinite unexplored world.
+async function waitForTextures(){
+ install();
+ if(!menu||menu.hidden)return;
+ const started=Date.now();
+ while(Date.now()-started<17000){
+  if(menu.hidden)return;
+  render();
+  if(texturesSettled()){
+   await Promise.allSettled([...stage.querySelectorAll('img')].map(img=>img.decode?.()||Promise.resolve()));
+   await new Promise(resolve=>requestAnimationFrame(resolve));
+   if(texturesSettled())return;
+  }
+  await new Promise(resolve=>setTimeout(resolve,80));
+ }
+ console.warn('[RPChess] Menu parchment texture wait timed out; allowing gameplay');
+}
+globalThis.RPChessMenuPreview=Object.freeze({
+ needsTextureWait:()=>Boolean(menu&&!menu.hidden&&!texturesSettled()),waitForTextures
+});
+export {install,boundsOf,waitForTextures};

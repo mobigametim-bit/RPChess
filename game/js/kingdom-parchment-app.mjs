@@ -9,7 +9,7 @@ const PAPER_TILE_SRC='assets/kingdom-parchment/parchment_tile_256.webp',PAPER_TI
 const spriteCache=new Map();
 const MAX_SPRITES=128; // 112 vector atlas assets can coexist without reload churn.
 let assetProbe=null,assetsReady=null,latest=null,redrawQueued=false;
-let extraManifestRequested=false;
+let extraManifestRequested=false,extraManifestSettled=false;
 const extraGroups={marsh:[],landmarks:[]};
 function requestExtraManifest(){
  if(extraManifestRequested)return;
@@ -30,7 +30,8 @@ function requestExtraManifest(){
    }
    queueRedraw();
   })
-  .catch(()=>{}); // Old builds without optional groups remain playable.
+  .catch(()=>{}) // Old builds without optional groups remain playable.
+   .finally(()=>{extraManifestSettled=true;queueRedraw();});
 }
 function extraSprite(seed,group,x,y,salt='sprite'){
  const names=extraGroups[group]||[];
@@ -55,9 +56,9 @@ function getArt(src,repaint){
  let entry=spriteCache.get(src);
  if(entry){spriteCache.delete(src);spriteCache.set(src,entry);return entry.ready?entry.image:null;}
  if(spriteCache.size>=MAX_SPRITES)spriteCache.delete(spriteCache.keys().next().value);
- const image=new Image();entry={image,ready:false};spriteCache.set(src,entry);
+ const image=new Image();entry={image,ready:false,failed:false};spriteCache.set(src,entry);
  image.onload=()=>{entry.ready=true;queueRedraw();};
- image.onerror=()=>{entry.ready=false;};
+ image.onerror=()=>{entry.failed=true;queueRedraw();};
  image.src=src;
  return null;
 }
@@ -309,4 +310,10 @@ function renderParchmentFog(canvas,{view,columns,rows,map,resolution=1}){
  ctx.clearRect(0,0,width,height);
  drawFog(ctx,map,view.x-Math.floor(columns/2),view.y-Math.floor(rows/2),columns,rows,resolution);
 }
-export {renderParchment,renderParchmentFog,drawWaterRoads};
+// Canvas textures are loaded asynchronously, outside the regular IMG/CSS gate.
+function parchmentAssetsSettled(canvas){
+ return Boolean(canvas && assetsReady !== null && extraManifestSettled &&
+  canvas.dataset.parchmentTexture === 'loaded' && !redrawQueued &&
+  [...spriteCache.values()].every(entry=>entry.ready||entry.failed));
+}
+export {renderParchment,renderParchmentFog,drawWaterRoads,parchmentAssetsSettled};

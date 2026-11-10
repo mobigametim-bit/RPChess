@@ -183,6 +183,9 @@ async function kingdomBackdropContract(browser) {
     await waitForVisible(page,'[data-kingdom-map-screen]:not([hidden])','Game kingdom map');
     await page.locator('[data-kingdom-menu]').click();
     await waitForVisible(page,'[data-reboot-foundation]:not([hidden])','Full-bleed menu');
+    await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
+    assert.equal(await page.evaluate(()=>globalThis.RPChessMenuPreview?.needsTextureWait?.()),false,
+      'Menu loading mask must wait for Canvas parchment and visible kingdom artwork');
     await page.waitForFunction(()=>{
       const stage=document.querySelector('[data-main-menu-kingdom]');
       return stage&&!stage.hidden&&stage.querySelector('[data-main-menu-world]')&&
