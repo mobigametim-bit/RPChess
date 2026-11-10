@@ -8,7 +8,6 @@ import { artifactForCombat, clearCombatArtifactChoice } from './artifact-core.mj
 import { boardPieceArtForTheme, boardPieceArtForCharacter, namedPawnPieceArt, setBoardPieceArt } from './race-assets.mjs';
 import { starsText } from './encounter-difficulty.mjs';
 import { normalizedFormation, formationSelectedIds } from './roster-formation-core.mjs';
-import {armyCandidates} from './kingdom-army-core.mjs';
 import {
   MAX_SKIRMISH_PIECES,
   MAX_SKIRMISH_POINTS,
@@ -29,17 +28,12 @@ if(aftermathDeadSection)aftermathDeadSection.hidden=true;
 function audio(){return globalThis.RPChessRebootAudio;}
 function contentText(value){return translateLegacy(String(value??''));}
 let combatRosterAtStart=[];
-function combatRoster(){return activeRun?[...activeRun.roster,...armyCandidates(activeRun)]:[];}
+function combatRoster(){return activeRun?.roster||[];}
 function preferredSkirmishSelection(run){
- const selected=[...formationSelectedIds(run)];
- const all=[...run.roster,...armyCandidates(run)];
- for(const c of armyCandidates(run)){
-  const proposal=[...selected,c.id];
-  if(validateSelection(all,proposal).ok)selected.push(c.id);
- }
- return selected;
+ // Skirmish uses only named heroes. The permanent Army stays in reserve.
+ return [...formationSelectedIds(run)];
 }
-function characterForId(id){return activeRun?.roster?.find((character)=>character.id===id)||combatRosterAtStart.find(c=>c.id===id)||armyCandidates(activeRun).find(c=>c.id===id)||null;}
+function characterForId(id){return activeRun?.roster?.find((character)=>character.id===id)||combatRosterAtStart.find(c=>c.id===id)||null;}
 function characterName(character){return contentText(character?.name||'');}
 function pieceLabel(type){return t(`piece.${type}`);}
 function statusLabel(status){return t(`status.${status}`);}
@@ -91,7 +85,7 @@ function renderAvailable(){if(!availableRoot||!activeRun)return;availableRoot.re
 function renderSelected(){if(!selectedRoot||!activeRun)return;selectedRoot.replaceChildren();for(const character of currentSummary().members){const row=document.createElement('button');row.type='button';row.className='skirmish-selected-row';row.disabled=character.isRunKing;row.dataset.selectedCharacter=character.id;const localizedName=characterName(character);row.setAttribute('aria-label',t(character.isRunKing?'skirmish.selected.kingAria':'skirmish.selected.removeAria',{name:localizedName}));const glyph=document.createElement('span');glyph.className='skirmish-selected-row__glyph';glyph.textContent=PIECE_GLYPHS[character.pieceType]||'';const name=document.createElement('strong');name.textContent=localizedName;const cost=document.createElement('span');cost.textContent=character.isRunKing?t('skirmish.required'):String(character.commandCost);row.append(glyph,name,cost);if(!character.isRunKing)row.addEventListener('click',()=>tryToggle(character));selectedRoot.append(row);}}
 function renderFormation(){if(!formationRoot||!activeRun||!encounter)return;formationRoot.replaceChildren();const members=currentSummary().members,color=encounter.playerColor||'w';let placements=[];try{placements=placeArmy(members,color,{seed:`${encounter.seed}:preview:${[...selectedIds].sort().join('|')}`,preferredSquares:normalizedFormation(activeRun).squares});}catch{}const bySquare=new Map(placements.map((piece)=>[piece.square,piece])),ranks=color==='w'?['2','1']:['7','8'];for(const rank of ranks){for(const file of'abcdefgh'){const cell=document.createElement('span');cell.className='skirmish-formation-cell';const piece=bySquare.get(`${file}${rank}`);cell.textContent=piece?(PIECE_GLYPHS[piece.pieceType]||''):'·';cell.title=piece?.name?contentText(piece.name):`${file}${rank}`;formationRoot.append(cell);}}}
 function renderComposition(){renderCounters();renderAvailable();renderSelected();renderFormation();}
-function openSkirmish(){activeRun=readRun();if(!activeRun||activeRun.ended)return;encounter=encounterForRun(activeRun);const saved=checkpointFor(activeRun,'skirmish',encounter);selectedIds=new Set(saved?.selectedIds||preferredSkirmishSelection(activeRun));resetBattleTracking();setBattleNavigationLocked(false);setNotice('');if(saved&&validateSelection(combatRoster(),saved.selectedIds).ok){launchBattle(true);return;}startBattle();}
+function openSkirmish(){activeRun=readRun();if(!activeRun||activeRun.ended)return;encounter=encounterForRun(activeRun);const saved=checkpointFor(activeRun,'skirmish',encounter);const resumable=Boolean(saved&&validateSelection(activeRun.roster,saved.selectedIds).ok);selectedIds=new Set(resumable?saved.selectedIds:preferredSkirmishSelection(activeRun));resetBattleTracking();setBattleNavigationLocked(false);setNotice('');if(resumable){launchBattle(true);return;}startBattle();}
 function resetBattleTracking(){combatRosterAtStart=[];battlePlan=null;identityBySquare=new Map();enemyBySquare=new Map();capturedIds=new Set();processedMoves=0;battleFinalized=false;lastCapturedVisual=null;lastBattleStatus=null;clearTimeout(finalizeTimer);finalizeTimer=null;}
 
 function renderObstacleProps(){
