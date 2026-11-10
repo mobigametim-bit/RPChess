@@ -66,7 +66,10 @@ function animateTravelers(canvas,{map,view,columns,rows,parchment=true}){
   ctx.imageSmoothingEnabled=false;
   for(const walker of walkers){
    const motion=travelerMotion(map,walker,elapsed);
-   const pos=motion?.position;
+   // Enter a site and disappear for the entire rest period; reappear only
+   // when beginning the next leg. Do not keep a static sprite at waypoints.
+   if(!motion?.moving)continue;
+   const pos=motion.position;
    if(!checkVisible(walker,pos))continue;
    const dir=motion.heading<0?-1:1;
    const frame=motion.moving?walkingFrame:0; // Stand still while resting.
