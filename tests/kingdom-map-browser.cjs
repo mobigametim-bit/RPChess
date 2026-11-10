@@ -177,6 +177,14 @@ async function assertTileImage(page,cellId,relativePath){
   assert.equal(await mapSkin.getAttribute('aria-pressed'),'true');
   const atlas=page.locator('[data-kingdom-parchment]');
   assert.equal(await atlas.count(),1,'parchment must draw one continuous canvas behind clickable cells');
+  const boundaryLayer=await page.evaluate(()=>{
+    const terrain=document.querySelector('.km-parchment-canvas');
+    const completedRoads=document.querySelector('.km-kingdom-overlay');
+    return {count:Number(terrain?.dataset.borderSegments),terrainZ:Number(getComputedStyle(terrain).zIndex),
+      playerRoadZ:Number(getComputedStyle(completedRoads).zIndex)};
+  });
+  assert(boundaryLayer.count>0&&boundaryLayer.terrainZ<boundaryLayer.playerRoadZ,
+    'territory boundary is on the original natural-road terrain layer, below later event roads');
   // Exercise actual uploaded sprites in the bundled dist, not just the
   // procedural Canvas fallback that worked before the artist supplied art.
   const artProbe=await page.evaluate(async()=>{
@@ -734,14 +742,6 @@ async function assertTileImage(page,cellId,relativePath){
   assert(hoverLayers.filter==='none'&&hoverLayers.z==='auto'&&
     Number(hoverLayers.artZ)>Number(hoverLayers.roadZ),
     'the hovered castle stays in front of roads, without a cell stacking context');
-  const boundaryLayer=await page.evaluate(()=>{
-    const terrain=document.querySelector('.km-parchment-canvas');
-    const completedRoads=document.querySelector('.km-kingdom-overlay');
-    return {count:Number(terrain?.dataset.borderSegments),terrainZ:Number(getComputedStyle(terrain).zIndex),
-      playerRoadZ:Number(getComputedStyle(completedRoads).zIndex)};
-  });
-  assert(boundaryLayer.count>0&&boundaryLayer.terrainZ<boundaryLayer.playerRoadZ,
-    'territory boundary is on the original natural-road terrain layer, below later event roads');
    // Starting an encounter spends one Supply; on return the event tile reports
    // only the actual resource delta, not a fabricated repeat reward.
    const fx=completedTile.locator('.km-resource-burst');
