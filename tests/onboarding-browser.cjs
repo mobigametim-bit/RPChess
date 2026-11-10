@@ -161,6 +161,7 @@ async function audit(browser, { width, height, language, mobile = false }) {
       await assertOverlay(page,`${label} real Kingdom map`,'kingdomMap');
       await page.locator('[data-tutorial-dismiss]').click();
       await page.locator('[data-tutorial-overlay]').waitFor({state:'hidden'});
+      await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
       await page.locator('[data-kingdom-cell="0,0"]').click({position:{x:12,y:12}});
       await assertOverlay(page,`${label} real Castle inspector`,'kingdomCastle');
       await page.locator('[data-tutorial-dismiss]').click();
