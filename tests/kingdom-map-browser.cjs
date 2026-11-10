@@ -144,22 +144,22 @@ async function assertTileImage(page,cellId,relativePath){
     localStorage.setItem(storage,JSON.stringify(run));globalThis.RPChessKingdomMap.open();
   },key);
   await page.locator('[data-kingdom-cell="1,1"]').evaluate(cell=>cell.click());
-  const buildButton=page.locator('[data-kingdom-build-settlement]');
-  assert.equal(await buildButton.isVisible(),true,'an eligible explored empty cell can host a Settlement');
-  assert.equal(await buildButton.isDisabled(),true,'insufficient Gold must block construction');
-  assert.equal(await buildButton.getAttribute('aria-disabled'),'true');
+  const settlementButton=page.locator('[data-kingdom-build-settlement]');
+  assert.equal(await settlementButton.isVisible(),true,'an eligible explored empty cell can host a Settlement');
+  assert.equal(await settlementButton.isDisabled(),true,'insufficient Gold must block construction');
+  assert.equal(await settlementButton.getAttribute('aria-disabled'),'true');
   await page.evaluate(storage=>{
     const run=JSON.parse(localStorage.getItem(storage));run.gold=1000;
     localStorage.setItem(storage,JSON.stringify(run));
     dispatchEvent(new CustomEvent('rpchess:run-updated'));
   },key);
-  assert.equal(await buildButton.isEnabled(),true,'affordable construction updates without redrawing the grid');
+  assert.equal(await settlementButton.isEnabled(),true,'affordable construction updates without redrawing the grid');
   await page.evaluate(()=>{
     localStorage.setItem('rpchess.reboot.v1.arena',JSON.stringify({version:1,events:[],squad:'humans',match:null,updatedAt:1}));
     dispatchEvent(new CustomEvent('rpchess:arena-updated'));
   });
-  assert.equal(await buildButton.isDisabled(),true,'missing Honor Shards must also block construction');
-  const disabledOpacity=await buildButton.evaluate(button=>Number(getComputedStyle(button).opacity));
+  assert.equal(await settlementButton.isDisabled(),true,'missing Honor Shards must also block construction');
+  const disabledOpacity=await settlementButton.evaluate(button=>Number(getComputedStyle(button).opacity));
   assert(disabledOpacity<.8,'unaffordable construction must be visibly dimmed');
   await page.evaluate(storage=>{
     const snapshot=globalThis.__castleEconomyFixture;
