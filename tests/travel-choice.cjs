@@ -527,6 +527,23 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'neighboring Battle provinces never overlap');
   assert.deepStrictEqual(mapCore.reserveBattleTerritories(reserved).battleTerritories,
     reserved.battleTerritories,'red reservations must survive reload without reroll');
+  // When a later scouting step discovers a Battle inside an older red
+  // reservation, both centers survive and provinces remain disjoint.
+  const singleBattle=mapCore.reserveBattleTerritories({...seeded,cells:{
+    ...startMap.cells,[enemyBattleId]:seeded.cells[enemyBattleId]}});
+  const delayedCenter=singleBattle.battleTerritories[0].cells[1];
+  const delayed=mapCore.reserveBattleTerritories({...singleBattle,cells:{
+    ...singleBattle.cells,[delayedCenter]:{status:'revealed',explored:false,
+      selectedEncounter:{id:'map.test-delayed',type:'battle',stars:6}}}});
+  const oldProvince=delayed.battleTerritories.find(p=>p.id===enemyBattleId);
+  const lateProvince=delayed.battleTerritories.find(p=>p.id===delayedCenter);
+  assert(oldProvince.cells.includes(enemyBattleId)&&lateProvince.cells.includes(delayedCenter),
+    'late-discovered Battle must preserve both province centers');
+  assert.equal(new Set([...oldProvince.cells,...lateProvince.cells]).size,
+    oldProvince.cells.length+lateProvince.cells.length,
+    'rebalanced red provinces must not overlap');
+  assert.deepStrictEqual(mapCore.reserveBattleTerritories(delayed),delayed,
+    'rebalanced red provinces must remain stable on save reload');
   const raisedRed=mapCore.updatePeak(reserved,2400);
   for(const enemyId of [...redA,...redB])assert(!raisedRed.centralOwnedCells.includes(enemyId),
     'Power growth cannot cross red territory');
