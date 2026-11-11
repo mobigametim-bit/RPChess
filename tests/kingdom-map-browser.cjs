@@ -1404,6 +1404,8 @@ async function assertTileImage(page,cellId){
       const panel=rect('.km-inspector'),zoom=rect('.km-zoom-controls');
       const bar=root.querySelector('.km-resource-group');
       const nav=root.querySelector('.km-actions'),day=root.querySelector('.km-heading h1');
+      const heading=root.querySelector('.km-heading'),header=root.querySelector('.km-header');
+      const headingCSS=getComputedStyle(heading),headerCSS=getComputedStyle(header);
       const navIcons=[...nav.querySelectorAll('button')].map(el=>({
         image:getComputedStyle(el).backgroundImage,
         box:el.getBoundingClientRect().toJSON()
@@ -1411,6 +1413,12 @@ async function assertTileImage(page,cellId){
       const mirror=root.querySelector('[data-kingdom-heading-glory]');
       return {root:rootBox.toJSON(),map:map.toJSON(),panel:panel.toJSON(),zoom:zoom.toJSON(),
         title:day.getBoundingClientRect().toJSON(),nav:nav.getBoundingClientRect().toJSON(),
+        heading:heading.getBoundingClientRect().toJSON(),
+        header:header.getBoundingClientRect().toJSON(),
+        headingCSS:{display:headingCSS.display,justify:headingCSS.justifyContent,
+          width:headingCSS.width,gridArea:headingCSS.gridArea,margin:headingCSS.margin},
+        headerCSS:{display:headerCSS.display,areas:headerCSS.gridTemplateAreas,
+          cols:headerCSS.gridTemplateColumns},
         navIcons,mirror:mirror.getBoundingClientRect().toJSON(),
         mirrorDisplay:getComputedStyle(mirror).display,
         originalGloryDisplay:getComputedStyle(root.querySelector('.km-resource--glory')).display,
@@ -1426,9 +1434,15 @@ async function assertTileImage(page,cellId){
       'Inspector must fit map at '+width+'x'+height);
     assert(ui.zoom.top>=ui.map.top-2&&ui.zoom.bottom<=ui.map.bottom+2,
       'Zoom must fit map at '+width+'x'+height);
+    if(process.env.RPCHESS_UI_SCREENSHOT_DIR){
+      fs.mkdirSync(process.env.RPCHESS_UI_SCREENSHOT_DIR,{recursive:true});
+      await servicesPage.screenshot({path:path.join(process.env.RPCHESS_UI_SCREENSHOT_DIR,
+        'journey-'+width+'x'+height+'.png'),fullPage:false});
+    }
     if(height>width){
       assert(Math.abs((ui.title.top+ui.title.bottom)/2-(ui.nav.top+ui.nav.bottom)/2)<12,
-        'Portrait Journey: Day and PNG actions must share header row '+width+'x'+height);
+        'Portrait Journey: Day and PNG actions must share header row '+width+'x'+height+
+        ': '+JSON.stringify(ui));
       assert(ui.navIcons.map(item=>item.image).every((value,i)=>value.includes(
         ['hud-squad.png','main-menu-settings.png','hud-main-menu.png'][i])),
         'Journey must use the original Squad, Settings and Castle menu PNGs');
@@ -1442,11 +1456,6 @@ async function assertTileImage(page,cellId){
     if(width<=844)assert(ui.touch.every(h=>h>=39)&&
       (!ui.resourceOverflow||ui.resourceScroll==='auto'),
       'Phone map controls and resource strip must be reachable');
-    if(process.env.RPCHESS_UI_SCREENSHOT_DIR){
-      fs.mkdirSync(process.env.RPCHESS_UI_SCREENSHOT_DIR,{recursive:true});
-      await servicesPage.screenshot({path:path.join(process.env.RPCHESS_UI_SCREENSHOT_DIR,
-        'journey-'+width+'x'+height+'.png'),fullPage:false});
-    }
   }
   await servicesPage.setViewportSize({width:1280,height:720});
   await servicesPage.close();
