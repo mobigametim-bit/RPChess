@@ -1455,6 +1455,8 @@ async function assertTileImage(page,cellId){
   for(const [width,height] of [[1440,900],[1180,820],[844,390],
     [900,1440],[820,1180],[390,844]]){
     await servicesPage.setViewportSize({width,height});
+    await servicesButton.waitFor({state:'visible',timeout:8000});
+    await servicesPage.waitForTimeout(80); // allow responsive geometry to settle
     const entrance=await servicesButton.evaluate(button=>{
       const card=button.closest('.km-route-card--visitable-settlement');
       const details=button.closest('.km-route-card__details');
@@ -1472,7 +1474,7 @@ async function assertTileImage(page,cellId){
     assert(entrance.src==='assets/ui/settlement_entrance_64x64.png',
       'Settlement must use uploaded image, not a text button');
     assert(entrance.width>=44&&entrance.height>=44&&entrance.aria&&entrance.title,
-      'Settlement entrance must stay accessible and touchable '+width+'x'+height);
+      'Settlement entrance must stay accessible and touchable '+width+'x'+height+': '+JSON.stringify(entrance));
     assert(entrance.x>=entrance.details.left+entrance.details.width*.52&&
       entrance.right<=entrance.details.right+1&&
       entrance.y>=entrance.details.top-1&&entrance.bottom<=entrance.details.bottom+1,
