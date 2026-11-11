@@ -1394,6 +1394,31 @@ async function assertTileImage(page,cellId){
     'Settlement exit must preserve provisions after reload');
   assert.equal(finishedServices.kingdomMap.cells['1,0'].status,'completed');
   assert.deepEqual(serviceErrors,[],'Settlement revisit must not throw browser errors');
+
+  // Existing completed-Settlement fixture doubles as a responsive map check.
+  for(const [width,height] of [[1440,900],[1180,820],[844,390],[900,1440],[820,1180],[390,844]]){
+    await servicesPage.setViewportSize({width,height});
+    const ui=await servicesPage.locator('[data-kingdom-map-screen]').evaluate(root=>{
+      const rect=selector=>root.querySelector(selector)?.getBoundingClientRect();
+      const rootBox=root.getBoundingClientRect(),map=rect('.km-map-frame');
+      const panel=rect('.km-inspector'),zoom=rect('.km-zoom-controls');
+      const bar=root.querySelector('.km-resource-group');
+      return {root:rootBox.toJSON(),map:map.toJSON(),panel:panel.toJSON(),zoom:zoom.toJSON(),
+        touch:[...root.querySelectorAll('.km-actions button')].map(b=>b.getBoundingClientRect().height),
+        resourceOverflow:bar.scrollWidth>bar.clientWidth,resourceScroll:getComputedStyle(bar).overflowX};
+    });
+    assert(ui.root.width<=width+2&&ui.root.height<=height+2,
+      'Map must fit '+width+'x'+height+': '+JSON.stringify(ui));
+    assert(ui.map.height>160&&ui.map.width>220,'Map viewport unusable at '+width+'x'+height);
+    assert(ui.panel.top>=ui.map.top-2&&ui.panel.bottom<=ui.map.bottom+2,
+      'Inspector must fit map at '+width+'x'+height);
+    assert(ui.zoom.top>=ui.map.top-2&&ui.zoom.bottom<=ui.map.bottom+2,
+      'Zoom must fit map at '+width+'x'+height);
+    if(width<=844)assert(ui.touch.every(h=>h>=39)&&
+      (!ui.resourceOverflow||ui.resourceScroll==='auto'),
+      'Phone map controls and resource strip must be reachable');
+  }
+  await servicesPage.setViewportSize({width:1280,height:720});
   await servicesPage.close();
   console.log('KINGDOM MAP PASS — click-inspect, king drag, shortest routes, event stop, map pan, step supplies');
  }finally{await browser.close()}
