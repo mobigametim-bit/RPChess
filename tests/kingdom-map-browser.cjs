@@ -514,6 +514,87 @@ async function assertTileImage(page,cellId){
     'procedurally painted terrain and fog must both have visible pixels');
   assert.deepEqual(await read(page),before,'retired Classic preference must not modify the Journey save');
   await page.screenshot({path:path.join(output,'kingdom-parchment-experiment.png')});
+  // Issue #191: record actual playable SVG/PNG map states at default/min/max zoom
+  // without creating another permanent browser suite.
+  if(process.env.RPCHESS_PARCHMENT_QA_SCREENSHOT_DIR){
+    const qaDir=process.env.RPCHESS_PARCHMENT_QA_SCREENSHOT_DIR;
+    fs.mkdirSync(qaDir,{recursive:true});
+    const format=await page.evaluate(()=>document.querySelector(
+      'meta[name="rpchess-parchment-raster"]')?.content==='png'?'png':'svg');
+    assert.equal(format,process.env.RPCHESS_PARCHMENT_EXPECT_FORMAT||'svg',
+      'Parchment QA must exercise the requested distribution, not a fallback');
+    const sample=await page.evaluate(async extension=>{
+      const target='assets/kingdom-parchment/forest_clusters/01_small_grove.'+extension;
+      const response=await fetch(target,{cache:'no-store'});
+      return {status:response.status,mime:response.headers.get('content-type')||'',
+        bytes:(await response.arrayBuffer()).byteLength,target};
+    },format);
+    assert.equal(sample.status,200,'the raster/vector artwork must be served');
+    assert(sample.mime.includes(format==='png'?'image/png':'image/svg+xml'),
+      'sample artwork must have the expected MIME: '+JSON.stringify(sample));
+    const capture=async(name,expected)=>{
+      await page.waitForFunction(expected=>globalThis.RPChessKingdomMap?.zoom===expected&&
+        document.querySelector('[data-kingdom-world]')?.dataset.mapZoom===String(expected),
+        expected,{timeout:15000});
+      await page.waitForTimeout(250); // let deferred canvas images complete before the screenshot
+      await page.screenshot({path:path.join(qaDir,name+'.png'),fullPage:false});
+    };
+    await capture('desktop-1366x768-default',117);
+    const zoomTo=async(kind,count)=>{
+      await page.evaluate(({kind,count})=>{
+        const control=document.querySelector('[data-kingdom-zoom-'+kind+']');
+        for(let n=0;n<count;n++)control.click();
+      },{kind,count});
+    };
+    await zoomTo('out',30);
+    await capture('desktop-1366x768-min55',55);
+    await zoomTo('in',30);
+    await capture('desktop-1366x768-max220',220);
+    await page.locator('[data-kingdom-zoom-reset]').click();
+    await page.setViewportSize({width:844,height:390});
+    await capture('phone-844x390-default',117);
+    await zoomTo('out',30);
+    await capture('phone-844x390-min55',55);
+    await zoomTo('in',30);
+    await capture('phone-844x390-max220',220);
+    await page.locator('[data-kingdom-zoom-reset]').click();
+    await page.setViewportSize({width:1366,height:768});
+    await page.waitForFunction(()=>globalThis.RPChessKingdomMap?.zoom===117&&
+      document.querySelector('[data-kingdom-world]')?.dataset.mapZoom==='117');
+    // Headless Chromium CI benchmark: alternate adjacent zoom levels to
+    // force real map redraws. Informational only, not a device-FPS guarantee.
+    const frames=await page.evaluate(()=>new Promise(resolve=>{
+      const plus=document.querySelector('[data-kingdom-zoom-in]');
+      const minus=document.querySelector('[data-kingdom-zoom-out]');
+      const samples=[];let last=null,n=0;
+      const frame=now=>{
+        if(last!==null)samples.push(now-last);
+        last=now;
+        if(n<120){
+          (n%2===0?plus:minus).click();
+          n++;requestAnimationFrame(frame);
+        }else resolve(samples);
+      };
+      requestAnimationFrame(frame);
+    }));
+    await page.locator('[data-kingdom-zoom-reset]').click();
+    const sorted=[...frames].sort((a,b)=>a-b),elapsed=frames.reduce((a,b)=>a+b,0);
+    const resourceStats=await page.evaluate(()=>{
+      const all=performance.getEntriesByType('resource').filter(x=>
+        x.name.includes('/assets/kingdom-parchment/'));
+      return {requests:all.length,meanDurationMs:all.length?
+        all.reduce((n,x)=>n+x.duration,0)/all.length:0,
+        maxDurationMs:Math.max(0,...all.map(x=>x.duration))};
+    });
+    const perf={format,sample,resourceStats,headlessCI:true,activeZoomFrames:frames.length,
+      fps:elapsed?1000*frames.length/elapsed:0,
+      medianFrameMs:sorted[Math.floor(sorted.length*.5)],
+      p95FrameMs:sorted[Math.floor(sorted.length*.95)]};
+    fs.writeFileSync(path.join(qaDir,'parchment-map-benchmark.json'),
+      JSON.stringify(perf,null,2)+'\n');
+    console.log('Parchment real game benchmark: '+JSON.stringify(perf));
+    assert.equal(await page.evaluate(()=>globalThis.RPChessKingdomMap.zoom),117);
+  }
   assert.equal(await atlas.count(),1,'parchment remains the only supported Kingdom map skin');
 
   assert.deepEqual(before.kingdomMap.king,{x:0,y:0});

@@ -1,0 +1,168 @@
+name: RPChess parchment PNG release candidate QA
+on:
+  push:
+    branches:
+      - feature/kingdom-roster-responsive-raster-20261111
+    paths:
+      - '.github/workflows/parchment-raster-preview.yml'
+      - 'parchment-raster-preview/**'
+      - 'tests/kingdom-map-browser.cjs'
+      - 'scripts/prepare-parchment-raster.cjs'
+      - 'scripts/build.cjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: rpchess-parchment-raster-rc-20261111
+  cancel-in-progress: true
+jobs:
+  raster-preview:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/kingdom-roster-responsive-raster-20261111'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Prepare and verify Stockfish runtime
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm pack stockfish@18.0.0 --silent --pack-destination /tmp
+          mkdir -p /tmp/rpchess-stockfish-package /tmp/rpchess-stockfish-verified
+          tar -xzf /tmp/stockfish-18.0.0.tgz -C /tmp/rpchess-stockfish-package
+          package=/tmp/rpchess-stockfish-package/package
+          for name in stockfish-18-lite-single.js stockfish-18-lite-single.wasm; do
+            source=$(find "$package" -type f -name "$name" -print -quit)
+            test -n "$source"
+            cp "$source" "/tmp/rpchess-stockfish-verified/$name"
+          done
+          license=$(find "$package" -type f -iname 'Copying.txt' -print -quit)
+          test -n "$license"
+          cp "$license" /tmp/rpchess-stockfish-verified/COPYING.txt
+      - name: Build baseline SVG game with full local gate
+        run: RPCHESS_INCLUDE_ATLAS_LAB=1 RPCHESS_STOCKFISH_ASSET_DIR=/tmp/rpchess-stockfish-verified npm run gate:local
+      - name: Capture SVG footprint and ZIP
+        run: |
+          set -euo pipefail
+          mkdir -p test-results/parchment-release-qa/svg
+          node scripts/build-size-report.cjs dist test-results/parchment-release-qa/svg/size.json
+          zip -qr /tmp/rpchess-svg-rc.zip dist
+          stat -c%s /tmp/rpchess-svg-rc.zip > test-results/parchment-release-qa/svg/zip-bytes.txt
+      - name: Prepare Chromium browser
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+      - name: SVG playable map screenshots and headless zoom benchmark
+        env:
+          RPCHESS_BROWSER_TEST: kingdom-map-browser.cjs
+          RPCHESS_PARCHMENT_QA_SCREENSHOT_DIR: test-results/parchment-release-qa/svg
+          RPCHESS_PARCHMENT_EXPECT_FORMAT: svg
+          RPCHESS_KINGDOM_SCREENSHOT_DIR: test-results/parchment-release-qa/svg/regression
+        run: npm run test:browser
+      - name: Build real PNG release candidate (opt-in production build)
+        run: RPCHESS_INCLUDE_ATLAS_LAB=1 RPCHESS_STOCKFISH_ASSET_DIR=/tmp/rpchess-stockfish-verified RPCHESS_PARCHMENT_RASTER=1 npm run build:materialized
+      - name: Validate real distribution and compare footprint
+        run: |
+          set -euo pipefail
+          mkdir -p test-results/parchment-release-qa/png
+          node scripts/build-size-report.cjs dist test-results/parchment-release-qa/png/size.json
+          zip -qr /tmp/rpchess-png-rc.zip dist
+          stat -c%s /tmp/rpchess-png-rc.zip > test-results/parchment-release-qa/png/zip-bytes.txt
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const fs=require('node:fs');
+          const path=require('node:path');
+          const out='test-results/parchment-release-qa';
+          const svg=require('./'+out+'/svg/size.json');
+          const png=require('./'+out+'/png/size.json');
+          const count=name=>name.categories.find(x=>x.category==='Kingdom parchment');
+          const baseline=count(svg),raster=count(png);
+          const countAssets=ext=>{
+            const root='dist/assets/kingdom-parchment';
+            return fs.readdirSync(root,{withFileTypes:true})
+              .filter(x=>x.isDirectory()).reduce((n,entry)=>n+
+                fs.readdirSync(path.join(root,entry.name)).filter(f=>f.endsWith(ext)).length,0);
+          };
+          const svgZip=Number(fs.readFileSync(out+'/svg/zip-bytes.txt','utf8'));
+          const pngZip=Number(fs.readFileSync(out+'/png/zip-bytes.txt','utf8'));
+          const content=fs.readFileSync('dist/index.html','utf8');
+          assert(content.includes('name="rpchess-parchment-raster" content="png"'));
+          assert.equal(countAssets('.png'),112);
+          assert.equal(countAssets('.svg'),0);
+          assert(raster.bytes<baseline.bytes,'PNG parchment must weigh less than SVG');
+          assert(png.totalBytes<svg.totalBytes,'PNG distribution should be smaller');
+          const report={svgDistBytes:svg.totalBytes,pngDistBytes:png.totalBytes,
+            savedDistBytes:svg.totalBytes-png.totalBytes,
+            svgParchmentBytes:baseline.bytes,pngParchmentBytes:raster.bytes,
+            savedParchmentBytes:baseline.bytes-raster.bytes,
+            svgZipBytes:svgZip,pngZipBytes:pngZip,savedZipBytes:svgZip-pngZip,
+            svgFileCount:svg.fileCount,pngFileCount:png.fileCount,convertedSprites:112};
+          fs.writeFileSync(out+'/footprint-comparison.json',JSON.stringify(report,null,2)+'\n');
+          console.log('Parchment real distribution footprint:',JSON.stringify(report));
+          NODE
+      - name: PNG playable map screenshots and headless zoom benchmark
+        env:
+          RPCHESS_BROWSER_TEST: kingdom-map-browser.cjs
+          RPCHESS_PARCHMENT_QA_SCREENSHOT_DIR: test-results/parchment-release-qa/png
+          RPCHESS_PARCHMENT_EXPECT_FORMAT: png
+          RPCHESS_KINGDOM_SCREENSHOT_DIR: test-results/parchment-release-qa/png/regression
+        run: npm run test:browser
+      - name: Verify all 112 PNGs for native and scaled pixel parity
+        run: |
+          node tests/parchment-raster-qa.cjs
+          node tests/parchment-raster-pixels.cjs
+      - name: Bundle the paired SVG/PNG evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parchment-svg-vs-png-real-game
+          path: |
+            test-results/parchment-release-qa/
+            test-results/parchment-raster-qa/report.json
+            test-results/parchment-raster-qa/pixel-parity.json
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Deploy isolated PNG preview on Cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          grep -Fx 'name = "rpchess-parchment-preview"' parchment-raster-preview/wrangler.toml
+          npx wrangler deploy --config parchment-raster-preview/wrangler.toml
+      - name: Smoke-test live PNG release candidate
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          (async()=>{
+            const base='https://rpchess-parchment-preview.mobigametim.workers.dev';
+            for(let attempt=0;attempt<12;attempt++){
+              try{
+                const html=await (await fetch(base+'/?raster=191',{cache:'no-store'})).text();
+                assert(html.includes('name="rpchess-parchment-raster" content="png"'));
+                const asset=await fetch(base+'/assets/kingdom-parchment/forest_clusters/01_small_grove.png',{cache:'no-store'});
+                assert.equal(asset.status,200);
+                assert((asset.headers.get('content-type')||'').includes('image/png'));
+                assert((await asset.arrayBuffer()).byteLength>100);
+                console.log('Isolated live PNG preview and artwork verified');
+                return;
+              }catch(error){
+                console.log('Propagation '+(attempt+1)+'/12: '+error.message);
+                if(attempt===11)throw error;
+                await new Promise(resolve=>setTimeout(resolve,3000));
+              }
+            }
+          })().catch(e=>{console.error(e);process.exitCode=1;});
+          NODE
