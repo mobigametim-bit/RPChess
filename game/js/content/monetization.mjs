@@ -651,6 +651,8 @@ export {
   rewardedCooldownRemaining,
   installMonetization,
   bindStarvationRescue,
+  applyStarvationRescue,
+  dispatchRescuedEncounter,
   reconcileCompletedRewards,
   destroyMonetization
 };
