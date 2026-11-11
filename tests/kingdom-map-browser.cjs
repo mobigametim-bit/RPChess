@@ -1427,7 +1427,32 @@ async function assertTileImage(page,cellId){
   assert(countsAfter<=countsBefore,'forbidding all neighbors cannot create more events');
   assert.equal(await labPage.locator('#simControls').count(),1);
   assert.equal(await labPage.locator('#controls').count(),1);
-  assert.deepStrictEqual(atlasErrors,[],'original v6 extension must not emit page errors');
+  // Reuse Atlas Lab's real browser QA to verify the editor's N-level preview.
+  await labPage.locator('#labEconomyTab').click();
+  await labPage.locator('#kmEconomyPreviewStars').fill('5');
+  await labPage.locator('#kmEconomyPreviewStars').dispatchEvent('change');
+  const productionPreview=await labPage.evaluate(()=>{
+    const value=(type,kind)=>[...document.querySelectorAll('#kmEconomyProductionPreview tbody tr')]
+      .find(row=>row.dataset.productionType===type&&row.dataset.productionKind===kind)
+      ?.lastElementChild?.textContent;
+    return {level:document.querySelector('#kmEconomyPreviewStars')?.value,
+      settlement:value('settlement','gold'),caravanGold:value('caravan','gold'),
+      caravanSupplies:value('caravan','supplies'),eventGold:value('event','gold'),
+      eventSupplies:value('event','supplies'),puzzle:value('puzzle','shards'),
+      recruits:value('skirmish','recruits'),respawn:value('battle','battle'),
+      exported:window.RPChessAtlasEconomy.exportConfig()};
+  });
+  assert.deepStrictEqual({
+    level:productionPreview.level,settlement:productionPreview.settlement,
+    caravanGold:productionPreview.caravanGold,caravanSupplies:productionPreview.caravanSupplies,
+    eventGold:productionPreview.eventGold,eventSupplies:productionPreview.eventSupplies,
+    puzzle:productionPreview.puzzle,recruits:productionPreview.recruits,respawn:productionPreview.respawn
+  },{level:'5',settlement:'100',caravanGold:'60',caravanSupplies:'25',
+    eventGold:'50',eventSupplies:'20',puzzle:'25',recruits:'1',respawn:'1'},
+    'Atlas Lab weekly calculator must show base×N resources and fixed non-resources');
+  assert.equal(productionPreview.exported.economy.production.settlementGold,20,
+    'preview N is UI-only and must not change exported base economy');
+  assert.deepStrictEqual(atlasErrors,[],'Atlas Lab economy and original simulator must not emit page errors');
   await labPage.close();
   // Regression: revisiting a cleared Settlement used to hide the Kingdom
   // without opening Services, then persisted an active choice that blocked
