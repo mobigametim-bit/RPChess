@@ -35,6 +35,8 @@ const watchdog = setTimeout(() => { console.error('Combat launch blocked browser
         assert(rook);
         await page.mouse.move(rook.x+rook.width/2,rook.y+rook.height/2);
         await page.mouse.down();
+        // Shared drag input intentionally starts only after 7px of movement.
+        await page.mouse.move(rook.x+rook.width/2+11,rook.y+rook.height/2+11,{steps:3});
         await page.waitForFunction(()=>
           document.querySelector('[data-chess-board] [data-square="d6"]')?.dataset.visionDepth==='3',
           null,{timeout:7000});
