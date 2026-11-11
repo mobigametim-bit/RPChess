@@ -17,16 +17,16 @@ import {FLAVOR_POOLS} from './travel-choice-core.mjs';
 import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
-import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261111-parchment-png-only-v1';
-import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261110-natural-road-layer-v4';
+import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261111-battle-province-v1';
+import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261111-battle-province-v1';
 import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261111-npc-floor-v1';
 import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
- finishEncounter,matchesCombatReceipt,migrateKingdomMap,territoryCapacity,castleLevel,revealAround,
+ finishEncounter,matchesCombatReceipt,migrateKingdomMap,territoryCapacity,playerTerritoryCount,castleLevel,revealAround,
  collectProduction,canBuildOutpost,buildOutpost,canBuildSettlement,buildSettlement,
- romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges} from './kingdom-map-core.mjs?v=20261110-roadgrid-v3';
+ romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges} from './kingdom-map-core.mjs?v=20261111-battle-province-v1';
 
 const COPY={
  ru:{day:'День',shards:'Осколки чести',castle:'Замок',supply:'Припасы',power:'Мощь',points:'Очки присоединения',
@@ -567,6 +567,22 @@ function schedulePending(run){
  },Math.max(0,expires-Date.now()));
 }
 function kingArt(run){return commanderPieceArt(run.commanderId,'w');}
+function fitDayHeading(dayNode){
+ const heading=dayNode?.parentElement;
+ if(!heading)return;
+ // Always recompute from CSS so a narrow layout never permanently shrinks
+ // the heading when the viewport grows again.
+ dayNode.style.fontSize='';
+ const style=getComputedStyle(dayNode),parent=getComputedStyle(heading);
+ const max=parseFloat(style.fontSize)||25;
+ const usable=Math.max(10,heading.clientWidth-(parseFloat(parent.paddingLeft)||0)-
+  (parseFloat(parent.paddingRight)||0));
+ const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
+ if(!ctx)return;
+ ctx.font=style.fontWeight+' '+max+'px '+style.fontFamily;
+ const natural=ctx.measureText(dayNode.textContent).width;
+ if(natural>usable)dayNode.style.fontSize=Math.max(9,Math.floor(max*usable/natural*.97))+'px';
+}
 function render(){
  const run=readRun();if(!run||!validateKingdomMap(run.kingdomMap)||!screen||screen.hidden)return;
  const map=run.kingdomMap;const view=camera||map.king;
@@ -599,7 +615,10 @@ function render(){
  world.style.gridTemplateRows=`repeat(${HEIGHT},${MAP_LAYOUT.cellPx}px)`;
  const power=readPlayerRating().power;
  // Independent in-game calendar: one new cell or completed meaningful encounter = one day.
- screen.querySelector('[data-kingdom-day]').textContent=tr('day')+' '+(map.day||1);
+ const dayNode=screen.querySelector('[data-kingdom-day]');
+ dayNode.textContent=tr('day')+' '+(map.day||1);
+ fitDayHeading(dayNode);
+ if(document.fonts?.status==='loading')void document.fonts.ready.then(()=>{if(dayNode.isConnected)fitDayHeading(dayNode);});
  screen.querySelector('[data-kingdom-roster]').textContent=t('travel.roster');
  screen.querySelector('[data-kingdom-settings]').textContent=t('travel.settings');
  screen.querySelector('[data-kingdom-menu]').textContent=t('menu.actionsLabel');
@@ -623,7 +642,7 @@ function render(){
  const gloryLabel=runtimeT(currentLanguage(),'chronicle.glory');
  const headingGlory=screen.querySelector('[data-kingdom-heading-glory]');
  headingGlory.title=gloryLabel;headingGlory.setAttribute('aria-label',gloryLabel);
- screen.querySelector('[data-kingdom-points]').textContent=Math.max(0,(map.centralOwnedCells||[]).length-1)+'/'+territoryCapacity(map);
+ screen.querySelector('[data-kingdom-points]').textContent=String(playerTerritoryCount(map));
  screen.querySelector('[data-kingdom-shards]').textContent=String(honorShards());
  const cells=document.createDocumentFragment(),productions=document.createDocumentFragment();
  const tileUrls=new Map(); // Reuse resolved CSS URLs across the visible grid.
