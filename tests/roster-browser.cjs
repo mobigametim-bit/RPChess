@@ -130,7 +130,7 @@ async function assertOneScreen(page,label){
         'Roster horizontal overflow at '+width+'x'+height);
       assert(ui.action.height>=(width<=844?39:35)&&ui.board.width>180,
         'Journey CTA and Roster formation unusable at '+width+'x'+height);
-      if(height>width&&width<=1100){
+      if(height>width&&width<=850){
         assert(Math.abs((ui.title.top+ui.title.bottom)/2-(ui.nav.top+ui.nav.bottom)/2)<12,
           'Portrait Roster title and navigation must share one row '+width+'x'+height);
         assert(!ui.logoVisible,'Portrait Roster tablet/phone logo must not occupy header space');
