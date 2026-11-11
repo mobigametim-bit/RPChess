@@ -164,7 +164,7 @@ function migrateKingdomMap(map,run=null){
   result={...result,completedRoads:[],lastCompletedRouteCell:null};
  if(!Array.isArray(result.battleTerritories))result={...result,battleTerritories:[]};
  if(!Array.isArray(result.battleConqueredCells))result={...result,battleConqueredCells:[]};
- return reserveBattleTerritories(growTerritory(result));
+ return growTerritory(reserveBattleTerritories(result));
 }
 // Route paths are historical: each first successful completion links to
 // the last different completed event, or to the castle for the first one.
@@ -362,11 +362,11 @@ function validateKingdomMap(map){
  if(map.centralOwnedCells!=null&&(!Array.isArray(map.centralOwnedCells)||
     !map.centralOwnedCells.every(id=>/^-?\d+,-?\d+$/.test(id))))return false;
  if(map.battleConqueredCells!=null&&(!Array.isArray(map.battleConqueredCells)||
-    !map.battleConqueredCells.every(id=>/^-?\\d+,-?\\d+$/.test(id))))return false;
+    !map.battleConqueredCells.every(id=>/^-?\d+,-?\d+$/.test(id))))return false;
  if(map.battleTerritories!=null&&(!Array.isArray(map.battleTerritories)||
-    !map.battleTerritories.every(t=>t&&typeof t.id==='string'&&/^-?\\d+,-?\\d+$/.test(t.id)&&
+    !map.battleTerritories.every(t=>t&&typeof t.id==='string'&&/^-?\d+,-?\d+$/.test(t.id)&&
       typeof t.encounterId==='string'&&Array.isArray(t.cells)&&t.cells.length<=13&&
-      t.cells.every(id=>typeof id==='string'&&/^-?\\d+,-?\\d+$/.test(id)))))return false;
+      t.cells.every(id=>typeof id==='string'&&/^-?\d+,-?\d+$/.test(id)))))return false;
  if(map.uniqueFirstConquests!=null&&(!Array.isArray(map.uniqueFirstConquests)||
     !map.uniqueFirstConquests.every(c=>c&&typeof c.encounterId==='string'&&
       ['battle','skirmish','caravan'].includes(c.type)&&Number.isSafeInteger(c.bonusLands)&&c.bonusLands>=0)))return false;
