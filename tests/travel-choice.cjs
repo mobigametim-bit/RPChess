@@ -37,6 +37,10 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'only player-built royal road overlay must use sandstone while natural dirt trails stay unchanged');
   assert(buildSource.includes("'js/kingdom-road-paving.mjs'"),
     'production bundle must copy the actual sandstone paving renderer');
+  const menuPreviewSource=fs.readFileSync(path.join(game,'js/kingdom-menu-preview.mjs'),'utf8');
+  assert(menuPreviewSource.includes('assets/kingdom-parchment/decor_minor_landmarks/04_watchtower.png')&&
+    !menuPreviewSource.includes('assets/kingdom-parchment/decor_minor_landmarks/04_watchtower.svg'),
+    'main-menu Kingdom preview must use the converted PNG instead of a stripped SVG');
   assert(overlaySource.includes('rgba(35,118,222,.1225)'),
     'blue territory fill alone is reduced by another 30 percent');
    for(const alpha of ['rgba(49,151,255,.29)','rgba(40,133,238,.16)'])
