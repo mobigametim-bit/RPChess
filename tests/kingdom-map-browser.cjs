@@ -1397,6 +1397,11 @@ async function assertTileImage(page,cellId){
       entrance.y>=entrance.details.top-1&&entrance.bottom<=entrance.details.bottom+1,
       'Settlement entrance should occupy top-right of the card '+width+'x'+height+
       ': '+JSON.stringify(entrance));
+    if(process.env.RPCHESS_UI_SCREENSHOT_DIR){
+      fs.mkdirSync(process.env.RPCHESS_UI_SCREENSHOT_DIR,{recursive:true});
+      await servicesPage.screenshot({path:path.join(process.env.RPCHESS_UI_SCREENSHOT_DIR,
+        'settlement-entrance-'+width+'x'+height+'.png'),fullPage:false});
+    }
   }
   await servicesPage.setViewportSize({width:1280,height:720});
   const provisionsBefore=(await read(servicesPage)).supplies;
