@@ -37,9 +37,23 @@ const watchdog = setTimeout(() => { console.error('Combat launch blocked browser
         await page.mouse.down();
         // Shared drag input intentionally starts only after 7px of movement.
         await page.mouse.move(rook.x+rook.width/2+11,rook.y+rook.height/2+11,{steps:3});
-        await page.waitForFunction(()=>
-          document.querySelector('[data-chess-board] [data-square="d6"]')?.dataset.visionDepth==='3',
-          null,{timeout:7000});
+        try {
+          await page.waitForFunction(()=>
+            document.querySelector('[data-chess-board] [data-square="d6"]')?.dataset.visionDepth==='3',
+            null,{timeout:3500});
+        } catch (error) {
+          const diagnostics=await page.evaluate(()=>{
+            const snapshot=globalThis.RPChessClassicChess?.snapshot?.();
+            const cells=[...document.querySelectorAll('[data-chess-board] [data-square]')];
+            return {selected:snapshot?.selectedSquare,owner:globalThis.RPChessClassicChess?.combatOwner,
+              fen:snapshot?.fen,choice:JSON.parse(localStorage.getItem('rpchess.reboot.v1.run'))?.combatArtifactChoice,
+              targets:Object.fromEntries(cells.filter(c=>c.dataset.visionDepth).map(c=>[c.dataset.square,c.dataset.visionDepth])),
+              dragOrigin:document.querySelectorAll('.rpchess-drag-origin').length,
+              dragGhost:document.querySelectorAll('.rpchess-piece-drag-ghost').length,
+              errors:errors};
+          });
+          throw new Error('Skirmish X-ray drag-overlay diagnostics: '+JSON.stringify(diagnostics)+': '+error.message);
+        }
         const depths=await page.locator('[data-chess-board]').evaluate(board=>Object.fromEntries(
           [...board.querySelectorAll('[data-vision-depth]')].map(c=>[c.dataset.square,c.dataset.visionDepth])));
         assert.deepStrictEqual(depths,{d6:'3',d5:'2',d4:'1',f2:'1'},
