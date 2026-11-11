@@ -388,7 +388,7 @@ function report(text){const node=screen?.querySelector('[data-kingdom-toast]');i
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261110-recruit-nav-v4';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261111-polish-v1';link.dataset.kingdomStyle='';
  link.addEventListener('load',()=>{if(screen&&!screen.hidden)render();});
  document.head.append(link);
 }
