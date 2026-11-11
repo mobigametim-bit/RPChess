@@ -4,12 +4,21 @@
 **Production source:** `main`; the September 2026 production baseline retained below is historical and should not be mistaken for the latest feature-branch state.  
 **Latest separately verified Pages release SHA:** not established in this document; deployment is manual.  
 **Production URL:** https://mobigametim-bit.github.io/RPChess/  
-**Current active development:** Infinite Kingdom / «Бесконечное королевство», Draft [PR #190](https://github.com/mobigametim-bit/RPChess/pull/190).  
+**Current active development:** [Draft PR #192](https://github.com/mobigametim-bit/RPChess/pull/192) (responsive Kingdom/Roster plus opt-in parchment PNG) and [Issue #191](https://github.com/mobigametim-bit/RPChess/issues/191) (complete raster visual/release gate). PR #190 merged into `main` on 2026-11-11.  
 **Active specs:** `docs/KINGDOM_EXPLORATION_ECONOMY_BIOME_DESIGN.md`, `docs/KINGDOM_ECONOMY_ARMY_SPEC.md`, `docs/features/KINGDOM_ROADS_AND_TRAVELERS_PLAN.md`.
 
 This file separates production history from active feature work. Older September milestones and acceptance receipts below are retained as historical evidence, not current claims of unimplemented features. The GitHub Pages site is updated only by a manually dispatched Pages workflow from `main`; regular PR checks validate without publishing.
 
-## Active feature branch — Infinite Kingdom, 10.11.2026
+
+## Active QA release gate — 11.11.2026
+
+- PR #190, Infinite Kingdom / settlements / NPC / tutorial, is merged. The dated notes below about its Draft state are **historical**.
+- PR #192 stays Draft and unmerged until both responsive UI and Issue #191 raster PNG release candidate have passed the owner's game playtest.
+- Issue #191: 112 source SVGs remain untouched, conversion runs in distribution only. The PNG runtime is **opt-in**, using `RPCHESS_PARCHMENT_RASTER=1`; a separate Cloudflare Worker and evidence bundle are validated in `.github/workflows/parchment-raster-preview.yml`.
+- Required raster acceptance: screenshots of actual Journey in 1366×768 and 844×390 at 55/117/220 zoom, pixel parity, real dist and ZIP deltas, and informational headless frame pacing. A successful CI does not replace owner acceptance.
+- Neither Issue #191 nor PR #192 is merged into production at this stage.
+
+## Historical feature branch — Infinite Kingdom, 10.11.2026
 
 - Draft PR #190 has a playable isolated Cloudflare Preview; it is not merged into `main`. Hex/grid world, six biome semantics, fog, calendar, territory, Castle recruits, weekly production, Arena Shards and settlement economy have working implementation paths. Final long-run/mobile acceptance is open.
 - Author's Atlas Lab v6 economy preset dated 09.11.2026 is committed as `docs/KINGDOM_ECONOMY_APPROVED_20261110.json`. The Skirmish runtime is **named-heroes only**; ordinary Army recruits are for other eligible modes. Roster tab labels: `Герои / Heroes`, `Армия / Army`.

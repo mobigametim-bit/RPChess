@@ -146,5 +146,19 @@ Append one of the following role/race prompts.
 - **Queen:** Fae queen, ethereal fairy sovereign, elaborate floral crown, luminous wings, elegant magical armor.
 - **King:** Fae king, ancient fairy monarch, branch-and-gold crown, luminous ceremonial armor, magical blade.
 
+## Kingdom parchment runtime rasterization — Issue #191 (release candidate)
+
+The 112 authored `128×128` parchment SVG sprite masters remain in `game/assets/kingdom-parchment/` and are **never overwritten**. Seven sprite categories contain 16 assets each. The release build can convert them to PNG **only inside `dist/`**, update the optional-asset manifest and switch runtime references through the `rpchess-parchment-raster` HTML metadata flag.
+
+- Standard build: `npm run build` (SVG, unchanged).
+- Opt-in PNG distribution: `RPCHESS_PARCHMENT_RASTER=1 npm run build`.
+- Conversion: `scripts/prepare-parchment-raster.cjs` (Node, no image service or Chromium required in production build).
+- Reversible feature: remove the environment flag and rebuild to return to SVG; the source masters stay in Git.
+- Pixel tests: `tests/parchment-raster-qa.cjs` and `tests/parchment-raster-pixels.cjs` compare all 112 assets at 128, 142 and 284 px.
+- Real game QA: `.github/workflows/parchment-raster-preview.yml` builds SVG and PNG games, runs the existing Kingdom Chromium regression on both, captures desktop 1366×768 and mobile 844×390 at 55/117/220 map zoom, measures ZIP/dist footprint and headless active-zoom frame pacing. Those CI frame numbers are relative comparison on runners, **not** smartphone FPS claims.
+- Separate QA Worker: `rpchess-parchment-preview`. It must never overwrite the current SVG layout preview or public production.
+- Release gate: approve pixel boundaries, absence of seams or blur, baseline-vs-PNG real screenshots, loading and footprint numbers; only then enable PNG by default when combining Issue #191 with Draft PR #192. **Do not merge before human visual acceptance.**
+
+
 ## Variant naming
 Future variants use predictable names such as `undead_pawn_01.png`, `undead_pawn_02.png`, `elf_knight_01.png`, etc. Character identity can reference a reusable visual archetype so hundreds of named recruits do not require hundreds of fully unique base models.
