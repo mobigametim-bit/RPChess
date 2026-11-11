@@ -66,6 +66,15 @@ jobs:
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install chromium
           RPCHESS_JOURNEY_PICKER_ONLY=1 RPCHESS_BROWSER_TEST=reboot-foundation-browser.cjs,kingdom-map-browser.cjs,travel-choice-browser.cjs,puzzles-browser.cjs npm run test:browser
+      - name: Benchmark lossless parchment raster prototypes
+        run: node scripts/benchmark-parchment-raster.cjs
+      - name: Save optional raster prototypes and size comparison
+        uses: actions/upload-artifact@v4
+        with:
+          name: parchment-raster-benchmark
+          path: test-results/parchment-raster-benchmark/
+          retention-days: 14
+          if-no-files-found: error
       - name: Save map screenshots
         if: always()
         uses: actions/upload-artifact@v4
