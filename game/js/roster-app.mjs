@@ -294,7 +294,7 @@ async function beginJourney() {
       if(document.querySelector('[data-settlement-screen]')?.hidden!==false)
         throw new Error('Saved Settlement scene did not become active');
     } else if (!legacyTravel && !activeRun.activeTravelChoice) {
-      const { openMap } = await import('./kingdom-map-app.mjs?v=20261111-parchment-png-only-v1');
+      const { openMap } = await import('./kingdom-map-app.mjs?v=20261111-outpost-png-v1');
       const current = readRun();
       if (!current || current.ended || current.id !== runId) return;
       openMap({ detail:{ source:'roster', runId } });
